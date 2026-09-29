@@ -360,12 +360,21 @@ hashes from the start) and `manifest.toml` updated in
 `patch_config.toml`). Isolated pre-live check passed: address, all 30
 original bytes, and all 16 replacement bytes match exactly. Proximity
 check: `0x007AF198` is in `.text`, ~1.85MB from the nearest mystery
-cluster by direct VA comparison — safely clear. **Remaining work is
-purely operational, no more Ghidra needed**: live-install this patch
-(likely bundled with `AdditionalConsoleCommands` once that one's hook1 is
-resolved — see its entry below — per the user's 2026-09-28 preference to
-batch simple ports together), then in-game spot-check that post-combat
-movement no longer locks up.
+cluster by direct VA comparison — safely clear.
+
+**LIVE-INSTALLED 2026-09-28 (same session).** User chose to install this
+one alone rather than wait to batch it with `AdditionalConsoleCommands`
+(both were reasonable per the "batch when simple" direction — forcing the
+easy one to wait on the still-unresolved hard one wasn't the point of
+batching). Installed as the 12th patch alongside the existing 11 (full
+patch-ID list passed to `KPatchLauncher`, never just the new one). Steam
+log confirmed `Applied REPLACE hook at 0x007AF198 (16 bytes code, 31
+bytes replaced)` + `SUCCESS: Patcher initialized`; `AR_ERROR.LOG`
+unchanged from baseline; process healthy post-install (CPU/elapsed ratio
+declined from 94% toward 60% over ~2.5 minutes, log kept advancing with
+normal input-polling activity — no hang). **In-game confirmation that
+post-combat/Force-power/item-use movement no longer locks at high FPS is
+still pending the user's own spot check.**
 
 ### 3a. `AdditionalConsoleCommands` — reclassified: NOT simple, real codegen divergence found
 
@@ -418,30 +427,64 @@ disassembly/decompile findings, is in the `ghidra_knowledge` DB's
 `lessons` table (scope `AdditionalConsoleCommands`) — read that before
 resuming, don't re-derive.
 
-**hook1 next steps (not done)**: (a) check the binary's Memory Map for
-named `.CRT$XC*`-style sections, which is where MSVC actually places the
-static-initializer function-pointer array `__cinit` walks — this is a
-more targeted way to find the real array than the ad-hoc range-heuristic
-already tried; (b) decompile 1-2 of the 35 wrapper functions directly to
-read their embedded command-name string literals, confirming they really
-are `ConsoleFunc` static initializers (not yet done, would be strong
-independent confirmation); (c) once the real array bounds are confirmed,
-the hook insertion point is almost certainly "right after the last
-static initializer in that array runs, before `WinMain`" — find the exact
-Steam-side bytes at that point (they will NOT match GOG's literal 5
-bytes — this is a confirmed-divergent site, don't re-trust
-`68 00 00 40 00` as a search anchor, it's proven wrong).
+**hook1 — RECLASSIFIED 2026-09-28 (follow-on session): likely resolved,
+NOT a real codegen divergence after all.** Both of the prior session's
+"not done" next-steps were completed and together overturn the false-
+positive verdict:
+- Memory Map has no `.CRT$XC*`-named blocks (only `Headers`/`.text`/
+  `.rdata`/`.data`/`.rsrc`/`tdb`) — expected, MSVC merges those into
+  `.rdata`; a negative-but-expected result, not a dead end.
+- Decompiled the first 3 of the 35 wrapper functions at
+  `0x983ea0`-`0x984500`: `FUN_00983ed0` calls the `StringConstructor`
+  with the literal `"setcomputeruse"`, `FUN_00983f00` with
+  `"setdemolitions"` — direct, independent confirmation these are real
+  built-in `ConsoleFunc` static initializers, not an inferred guess.
+- **Re-examined the `0x0091d52d` hit** (previously dismissed as "just
+  `WinMain`'s `hInstance` argument, unrelated to console commands").
+  Disassembly shows it's the *only* call site to the `WinMain`-shaped
+  function anywhere in `___tmainCRTStartup`, sitting immediately after
+  `__cinit(1)` runs all 35 now-confirmed static initializers and
+  immediately before `WinMain` is called — exactly the semantic position
+  both this patch's own README ("shortly after the existing console
+  commands are initialized") and its K1 sibling hook's README ("in the
+  EXE entry point, shortly after all other static structures are
+  initialized, but before the main program begins") describe. The
+  earlier dismissal correctly noted the instruction's own meaning has
+  nothing to do with consoles — but that was never the right test; the
+  hook only needs to be the right *injection point*, and this is it.
+  **GOG and Steam are byte-identical here too** (`68 00 00 40 00`, same
+  5 bytes, same address role, just a different absolute address —
+  `0x0091d52d` on Steam vs. `0x00925133` on GOG) — consistent with every
+  other hook ported in this project. Full trail in the `ghidra_knowledge`
+  DB's `lessons` table (id 9) and `hooks_ported` table
+  (`additional-console-commands-hook1`).
+- **Not yet done**: writing the actual `kotor2_steam_aspyr.hooks.toml`
+  entry, building the `.kpatch`, isolated `patch_config.toml`
+  verification, and the byte-diff-cluster proximity check — this is now
+  a mechanical finish, not open research, but none of those steps have
+  run yet.
 
 **hook2 (console-history-save flag, GOG `0x00867248`, simple, 7 bytes
-`0F B6 15 D0 98 A2 00` = `movzx edx, byte ptr [0x00A298D0]`) — NOT
-INVESTIGATED AT ALL this session.** The 0-hit result on Steam for this
-exact pattern is *expected*, not a problem — the embedded global address
-`0x00A298D0` is GOG-specific, exactly like `K2AspyrLoadingScreenLineFix`'s
-framebuffer-height global differed between builds. Needs its own
-from-scratch search on Steam: likely via the Defined-Strings
-cross-reference fallback (same method that found
-`K2AspyrLoadingScreenLineFix`'s hook), since no byte-pattern anchor
-carries over.
+`0F B6 15 D0 98 A2 00` = `movzx edx, byte ptr [0x00A298D0]`) — attempted
+this session, NOT resolved, genuinely open.** No GOG copy exists on this
+machine, so GOG-side cross-referencing isn't an option here. Two
+independent approaches both came up empty:
+- Defined Strings containing "hist" (case-insensitive): **zero hits**
+  anywhere in the binary — no filename/label anchor to trace forward
+  from, ruling out the Defined-Strings method that worked for hook1's
+  siblings and `K2AspyrLoadingScreenLineFix`.
+- Structural search for the opcode `movzx edx, byte ptr [imm32]`
+  (`0F B6 15`) across all of `.text`: **311 raw hits across ~190 distinct
+  functions** — far too generic to narrow by pattern alone (unlike
+  hook1's much rarer 5-byte anchor, which had only 3 hits total).
+
+Needs a genuinely different approach next session, not a retry of either
+method: e.g. locate the console input/command-dispatch function (not yet
+found) and look for a small cluster of boolean/byte config globals it
+references nearby, or filter the 311 structural hits down to only those
+whose containing function also calls something console-adjacent (a
+call-graph proximity filter) rather than reading all 190 by hand. Full
+detail in the `lessons` table (id 8, updated).
 
 ### 6. `Movie Patch` — newly found, moderate-to-hard, higher payoff
 - **Found 2026-09-28 (later session)**, same manifest-grep correction —
