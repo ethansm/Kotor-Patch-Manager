@@ -497,6 +497,134 @@ three screenshots are the only new evidence this session. Everything
 above is a design question for the next planning session to work
 through, not a decision already made.
 
+## UX redesign findings (2026-09-29, follow-on session — item 1 + U1 step 0/U2/U4)
+
+Executing the "Native-Widget UX Redesign" plan that followed the section
+above. Static research only — no hooks, no `.kpatch`, no live-game
+changes. Full decompile evidence and addresses are in the
+`ghidra_knowledge` DB (`lessons` ids 37-39, `classes`/`class_methods`
+rows for the 5 GUI widget classes below, `functions` rows for
+`00415a60`/`00415d20`) — summarized here.
+
+**Item 1 (naming re-check) RESOLVED**: `0x0074b3f0` (previously recorded
+as `CSWGuiMainInterface::Update`, vtable slot 13) is actually
+**`CSWGuiMainInterface::Draw`** — confirmed by decompile, not just the
+byte-delta arithmetic that first raised the question. The function
+itself calls a child sub-object's vtable-slot-14 `Draw(dt)`, calls
+`FUN_00745770` (→ `FUN_007457e0`, the confirmed icon-tally render
+function) 4×, and loops a 7-slot action-bar array calling `Draw`-shaped
+virtuals 7× — i.e. it's the thing that *drives* this panel's whole
+render pass, not something driven by a separate Draw elsewhere. It also
+decrements several dt-based countdown timers in the same body — this
+engine's GUI panels appear to combine per-frame animation-state-advance
+and paint into one `Draw(dt)` virtual, not a split Update/Draw pair.
+Corollary: since this sits at a real vtable slot (13), the earlier
+"Draw is very likely non-virtual, same pattern as `AddModel`" guess
+(Phase 3 findings, R7/lesson 25) is **overturned** for
+`CSWGuiMainInterface` specifically — Draw is virtual here. The call
+graph and every address involved (R1's chain, Target 2's
+`FUN_007457e0` hook site) are unaffected — only the name was wrong.
+Corrected everywhere it appeared: the `ghidra_knowledge` DB
+(`class_methods` row + 4 `lessons` rows got correction addenda) and
+`Patches/BuffDurationHUD/BuffDurationHUD.cpp`'s
+`CSWGuiMainInterface_Update` constant, renamed to `CSWGuiMainInterface_Draw`
+(scaffold still compiles cleanly after the rename).
+
+**U1 step 0 (icon widget's own Draw + wipe-primitive feasibility)
+ANSWERED, with a real correction along the way.** The icon widget at
+`slotPtr+0x968`/`+0xab0` is confirmed genuinely **embedded** (not a
+heap pointer) — `FUN_007457e0`'s own decompile shows the classic
+single-dereference virtual-call idiom (`**(code**)(*local_24+4)` where
+`local_24 = slotPtr+0xab0`), and reads its own x/y/w/h fields directly
+at `+4/+8/+0xc/+0x10`, right after the vtable pointer — a standard
+`CSWGuiControl`-shaped layout. Rather than chase this specific
+instance's construction site (an expensive, ultimately unnecessary
+detour — see below), the shortcut was to note that **vtables are
+per-class, not per-instance**: since the icon widget is already
+identified as `CSWGuiLabel`-family (R7), finding `CSWGuiLabel`'s own
+*static* vtable resolves this for every instance at once, no
+per-object construction tracing needed.
+
+**Major finding: all 5 of the framework's own shared GameAPI GUI widget
+classes (the ones `Patches/Common/GameAPI/*.h` already model) have real
+RTTI on Steam** — unlike the panel-specific embedded structs
+(`CSWGuiMainInterfaceChar`/`Action`/`Status`, confirmed zero RTTI in an
+earlier session). Found via a plain keyword symbol search, no decompile
+needed:
+
+| Class | Steam `vftable` | slots | notes |
+|---|---|---|---|
+| `CSWGuiControl` | `0x009877d4` | 38 | base; mostly boilerplate, few real overrides |
+| `CSWGuiLabel` | `0x009878bc` | 40 | derives Control; slot14 Draw = `0x00419880` (the icon-tally's actual per-icon draw — **not yet decompiled**, next step) |
+| `CSWGuiProgressBar` | `0x00987bb4` | 40 | derives Control; slot14 Draw = `0x0041bb20` (PB_VIT%d/PB_FORCE%d's real draw — **not yet decompiled**) |
+| `CSWGuiBorder` | `0x009875bc` | 5 | derives `CSWGuiObject`, not `Control` |
+| `CSWGuiImage` | `0x0098764c` | 5 | derives `CSWGuiObject`, not `Control` |
+
+This **resolves U2** (Steam addresses for the shared widget classes) far
+more cheaply than the planned positional-clustering fallback — RTTI
+search first, for any class the framework's own headers already model.
+
+**`CSWGuiBorder`'s Draw/Load/FillTile/FillCenter identities CONFIRMED by
+decompile, correcting a same-session mis-match from raw
+GOG-address-delta size matching alone**: an initial delta-based guess
+mislabeled `CSWGuiBorder`'s vtable slot 4 (`0x00415080`, 639 bytes) as
+`Draw` — a real decompile showed it reads GFF/layout keys (`CORNER`,
+`FILLSTYLE`, `DIMENSION`, `INNEROFFSET`, `INNEROFFSETY`, `COLOR`,
+`PULSING`) into `self`'s fields — it's actually **`Load`**. The real
+**`Draw`** is vtable slot 3 (`0x00415300`, 1886 bytes): it draws 4
+corner images + tiled edges via two embedded image sub-objects
+(`self+0x6c`/`self+0x70`), then dispatches the center fill by a
+`fillstyle` field (`self+0x34 & 3`): `0` → `FillTile` (`0x00415a60`,
+non-virtual, tiles an image across the rect), `1` → `FillCenter`
+(`0x00415d20`, non-virtual, centers one image, no tiling), `2` → a
+direct single-stretch virtual draw. (Lesson: GOG-address-delta size
+estimation is off-by-one-prone — the gap from `function[i]` to
+`function[i+1]` estimates `function[i]`'s size, not `function[i+1]`'s;
+always confirm by decompile, never trust delta-size matching alone.)
+
+**U4 (wipe-visual shape) ANSWERED: rectangular, confirmed by decompile,
+no radial primitive exists anywhere in this widget family.** Every
+fill/draw call found in `CSWGuiBorder::Draw`/`FillTile`/`FillCenter`
+takes a plain axis-aligned `(x, y, w, h)` rect plus a color-tint
+parameter — no rounding, masking, stencil, or pie-slice primitive
+anywhere in the chain. A per-icon time wipe should be a **rectangular**
+wipe (shrink one dimension of the drawn rect proportional to the
+time-remaining ratio, reusing R6's existing
+`(ExpiryTime-now)/Duration` formula) — a radial/pie wipe would need
+genuinely new rendering logic (a custom shader or a pre-baked sprite
+sheet), nothing reachable from this engine's existing GUI primitives.
+
+**Correction to U1(b)'s framing**: `FillCenter`/`FillTile` are always
+**image draws with a color tint**, never flat-color rect fills — U5's
+`CSWGuiImageParams::SetImage`/`CSWGuiBorderParams::SetFillImage` become
+more directly load-bearing than originally scoped: the wipe mechanism
+needs the icon's own resref texture set as the fill image, with the
+*rect* shrunk for the wipe, not a separate flat-fill call.
+
+**U1(a) vs (b) tension**: still not explicitly resolved — genuinely
+open for the next session. `CSWGuiBorder::FillCenter` being a real,
+concrete, decompile-confirmed rect+tint-color image draw makes **(b)**
+(draw new per-power icon+wipe elements, K1 `OptionsEditBox.h`-style
+manual-draw-from-an-override) considerably more concrete than before —
+it's no longer "construct some `CSWGuiImage`/`CSWGuiBorder` and hope,"
+it's "construct a `CSWGuiBorder`, `Load` it (or set its fields
+directly) with `fillstyle=1`, and call its now-identified `Draw` with a
+shrunk rect." Whether to also reuse/repurpose the existing
+`LBL_CMBTEFCTINC%d`/`RED%d` tally (option a) is still a live, unresolved
+design choice.
+
+**Not yet done this round**: `CSWGuiLabel::Draw` (`0x00419880`) and
+`CSWGuiProgressBar::Draw` (`0x0041bb20`) — the *actual* draw functions
+for the existing arrow-tally icon and the vitality/force bars
+respectively — were found (RTTI-confirmed addresses) but not yet
+decompiled. Decompiling `CSWGuiLabel::Draw` next would show exactly
+what the current arrow tally renders (confirms/denies whether it's
+already texture-based, which would make U1(a) reuse simpler) and
+`CSWGuiProgressBar::Draw` remains the fallback lead R7 originally
+flagged, in case the `CSWGuiBorder::FillCenter` approach above proves
+insufficient. `CSWGuiImage`'s own slots 3/4 (`0x004168b0`/`0x00416720`)
+are also still undecompiled (candidates `GetImageExtent`/`Draw`/`Load`).
+
 ## Goal
 
 A per-frame HUD overlay showing remaining duration on active buffs (Force
