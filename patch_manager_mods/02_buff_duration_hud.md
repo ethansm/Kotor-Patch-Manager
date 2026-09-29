@@ -1,6 +1,8 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status (2026-09-29, 10th session, current): Item 5 RESOLVED, POSITIVE
+**CORRECTION (10th session, same day, supersedes the "RESOLVED, POSITIVE" claims below): Item 5 is NOT resolved by an automatic mechanism. Verified against the live `spells.2da`: every `ITEM_ABILITY_*` row (incl. 70, 99) has an EMPTY `iconresref`, and the `SetInteger(0,X)` values found in the item-property handlers (1002/4037/6000/...) exceed its 287 rows and were never shown to belong to the tracked buff effects. Item-ability icons are a DATA gap. Hook 2 keys on `CGameEffect+0x1c` via the mod-owned Effect ID table, so item-ability rows need hand-chosen icon resrefs there (or skip retargeting). The generic icon cache `FUN_005a43c0` and the no-item-back-reference findings stand; the "no special-casing needed because the engine resolves it" conclusion does not. See `ghidra_knowledge` lessons 62.**
+
+**Original (partly retracted) status text:** Item 5 RESOLVED, POSITIVE
 finding -- item-ability icon resolution needs NO special-casing.**
 Phase A.6's two sub-questions (CSWItem icon field; CGameEffect item
 back-reference) were superseded by a better, single answer found via the
