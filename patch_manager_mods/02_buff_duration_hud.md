@@ -1,25 +1,40 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status:** Phase 2 (Ghidra static analysis) **RESOLVED** (2026-09-29, 3rd
-session). Phase 3 (hook/C++ construction: research, investigation, initial
-development) **IN PROGRESS** as of 2026-09-29 (planning session) — R1
-(creature-per-slot) and R6 (max/total duration field) fully resolved, R7
-(drawing primitive) partially resolved with a strong next lead, R2's
-remaining half / R3 / R5 / R4 have concrete next steps but are not yet
-resolved. A real scaffold with decompile-confirmed constants exists at
-`Patches/BuffDurationHUD/` in the `kotor-patch-manager` clone (not
-committed to this repo — see "Phase 3 findings" below). **No `.kpatch`,
-no `hooks.toml`, no live-game changes yet** — Phase 4 remains out of
-scope. See "Phase 3 findings" below for the full research trail; it
-supersedes the "Open item for Phase 3" note at the end of the Phase 2
-findings (that item is now folded into R2).
+**Status (2026-09-29, 5th session, current):** Phase 2 (Ghidra static
+analysis) **RESOLVED**. Phase 3 (render redesign + data-layer research)
+**IN PROGRESS, mostly resolved**:
 
-**UX pivot, same day, later session (2026-09-29): the existing icon row
-IS a generic buff/debuff tally, not per-power icons — user wants
-per-power icons with an integrated time indicator instead.** See "UX
-reconsideration" (new section, right after "Phase 3 findings") for full
-detail — this changes the render design and is the open question the
-next planning session should resolve first.
+- R1 (creature-per-slot), R6 (max/total duration field): **RESOLVED**.
+- UX pivot (per-power icons + integrated time indicator, not the
+  generic arrow tally): **render approach RESOLVED** — U1(a) [reuse the
+  existing `LBL_CMBTEFCTINC%d`/`RED%d` labels by repurposing their
+  visual] beat U1(b) [build new widgets]; U4 (wipe shape: rectangular)
+  and U5 (icon texture assignment: uniform tag-based resource binding,
+  full mechanism traced) are **RESOLVED**. U2 (shared GUI widget class
+  addresses) resolved as a side effect.
+- U3 (on-screen layout of portrait sub-widgets): **PARTIALLY
+  resolved** — the data source (`Adjust`, `0x00745560`) is found and
+  decompile-confirmed, just not yet matched to which array index is
+  which named GUI tag.
+- R3 (game time source) / R5 (spell-ID mapping): **NOT YET RESOLVED** —
+  an RTTI-first shortcut was tried and came back negative; the
+  standing positional-clustering next step (GOG `ApplyEffect`–
+  `RemoveEffectTarget` cluster) is unchanged and still the right path.
+- R4 (precise hook site): **deliberately still deferred**, correctly
+  blocked on R3/R5 (and, before this session, on the render approach —
+  now unblocked on that front).
+- R2 (icon-to-effect matching): **unresolved**, unchanged since Phase
+  3 findings — see that section below.
+
+A real scaffold with decompile-confirmed constants exists at
+`Patches/BuffDurationHUD/` in the `kotor-patch-manager` clone (not
+committed to this repo, compiles cleanly as of this session — see "UX
+redesign findings continued" below). **No `.kpatch`, no `hooks.toml`,
+no live-game changes yet** — development phase remains out of scope
+until R3/R5/R4 resolve. See "UX redesign findings continued" (bottom of
+the UX sections, right before "## Goal") for the most current findings
+and the concrete next steps; it supersedes everything above it in this
+status block for anything it re-addresses.
 
 ## Phase 2 findings (2026-09-29)
 
@@ -630,8 +645,8 @@ are also still undecompiled (candidates `GetImageExtent`/`Draw`/`Load`).
 Executing the "Render-Primitive Resolution + Layout/Texture Assignment"
 plan that followed the section above. Static research only — no hooks,
 no `.kpatch`, no live-game changes. Full decompile evidence in the
-`ghidra_knowledge` DB (`lessons` ids 39-42 — id 39 is U4 from last
-round, 40-42 are new this round — `functions`/`classes`/
+`ghidra_knowledge` DB (`lessons` ids 39-43 — id 39 is U4 from last
+round, 40-43 are new this round — `functions`/`classes`/
 `strings_of_interest` rows for every address below) — summarized here.
 
 **U1(a) vs (b) RESOLVED: (a) — reuse the existing labels, by
