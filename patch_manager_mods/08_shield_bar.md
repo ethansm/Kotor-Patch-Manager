@@ -1,6 +1,6 @@
 # Mod Idea 4: Shield Bar (party portrait HUD)
 
-**Status (2026-09-29): idea captured + data layer verified from the live
+**Status (2026-09-29): Buff HUD (the prerequisite) is complete; S3 resolved. Idea captured + data layer verified from the live
 `forceshields.2da` / `spells.2da`. No Ghidra work yet.** Reuses most of
 [[02_buff_duration_hud.md]]'s already-resolved engine map (portrait slot →
 creature chain, `CSWSObject` active-effect array, `CSWGuiBorder` live
@@ -44,11 +44,9 @@ which carries a real **absorb pool** (`amount`) and a **coverage bitmask**
 vanilla data quirk; display what the bitmask says, don't "fix" it.
 
 Invoking spells.2da rows: 99-107, 110-115, 132, 257 (`k_sup_bands` /
-droid items). Other shield-like sources, **pool status unverified**:
-Force Barrier 135-137 (`m_imp_fpaligned`), Resist Energy 40/42/133 and
-Force Immunity 20 (`k_sp1_generic`), plus effect types
-`DAMAGE_RESISTANCE`(1, has an optional `nLimit` pool),
-`DAMAGE_REDUCTION`(7), `TEMPORARY_HITPOINTS`(9). Force Armor/Shield
+droid items). Other shield-like sources were checked in S3 below: Force
+Barrier and the Resist powers have **no pool**, and Fury uses
+`TEMPORARY_HITPOINTS`(9), which **is** a pool. Force Armor/Shield
 (17/24) are AC/save buffs — **no pool, never on the bar**; they stay in the
 Buff Duration HUD.
 
@@ -58,8 +56,7 @@ Two separate channels: **bar length = remaining absorption**, **color +
 pips = coverage**.
 
 - **One bar per portrait, stacked segments** — not one bar per shield.
-  Overlap in practice is small (a force shield + a Force Barrier, maybe a
-  resistance pool), so cap at 3 segments; merge extras. Segment order =
+  Overlap in practice is small (an item shield + Fury temp HP), so cap at 3 segments; merge extras. Segment order =
   engine absorption order (open item S4). Bar full-scale = sum of the
   active shields' max `amount`, so the bar drains in true proportion.
 - **Segment color by shield family** (derived from `damageflags`, not per
@@ -70,8 +67,7 @@ pips = coverage**.
   | Energy | blaster/elec, no physical | **cyan** `#4FE3FF` |
   | Kinetic | physical only (Mando melee) | **amber** `#F2B640` |
   | Hybrid | energy + physical (Mando power, Drexl) | cyan/amber diagonal stripe |
-  | Force | Force Barrier / Force-type absorb | **violet** `#B07CFF` |
-  | Generic pool | temp HP / resistance limit | **white** `#E8ECEF` |
+  | Generic pool | temp HP (Fury / Wookiee Rage) / any resistance with `nLimit` | **white** `#E8ECEF` |
 
   Must stay distinguishable from the existing **red vitality** and
   **blue Force** bars — hence cyan (lighter, greener) rather than plain
@@ -116,8 +112,20 @@ pips = coverage**.
   effect type + all integer params on apply, take damage, dump again.
 - **S2** Effect-type ID the engine uses for `EffectForceShield` (not in
   pykotor's `EFFECT_TYPE_*` list; `ELEMENTALSHIELD`=60 is a candidate).
-- **S3** Do Force Barrier / Resist Energy use a pool (`nLimit`) or not —
-  decompile `m_imp_fpaligned`/`k_sp1_generic` NSS (data, no Ghidra).
+- **S3 RESOLVED (2026-09-29, from `k_inc_force.nss`)**: **no pool.**
+  Force Barrier / Improved / Master apply
+  `EffectDamageResistance(BLUDGEONING|PIERCING|SLASHING, 4/8/15)` with no
+  `nLimit`. Resist Cold/Heat/Energy, Master Energy Resistance and
+  Resist Poison/Disease/Sonic apply `EffectDamageResistance(cold, fire,
+  sonic, blaster, elec, 12/20/6)`, also with no limit. So these are flat
+  per-hit reduction for a duration, and they stay out of the bar (they are
+  already Buff HUD icons). At most, show a small "−N per hit" badge on the
+  card. The one force-side real pool found is **Fury / Wookiee Rage**:
+  `EffectTemporaryHitpoints(nFinalVP)`, applied deliberately unlinked "since
+  when the points were used up the effect was destroyed". That goes on the
+  bar as the "generic pool" family. Item energy shields
+  (`EffectForceShield`) are not built in `k_sup_bands.nss`; the engine
+  applies them from the item property, so S1/S2 still need the live probe.
 - **S4** Absorption order when two pools cover the same hit; whether a
   second force shield replaces the first (likely) — decides max overlap.
 - **S5** Whether card/bar rects are GUI-data-driven (see engine plan 3).
