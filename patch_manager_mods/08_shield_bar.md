@@ -128,7 +128,19 @@ pips = coverage**.
   applies them from the item property, so S1/S2 still need the live probe.
 - **S4** Absorption order when two pools cover the same hit; whether a
   second force shield replaces the first (likely) — decides max overlap.
-- **S5** Whether card/bar rects are GUI-data-driven (see engine plan 3).
+- **S5 PARTLY RESOLVED (2026-09-29)**: the card/bar rects **are** GUI data,
+  in `mipc28x6_p.gui` (our ultrawide `out/` copy, 800x600 virtual units).
+  Leader card: `PB_VIT1` 677,520 39x78 | `LBL_BACK1` 704,520 78x78
+  (`LBL_CHAR1`/`BTN_CHAR1` 707,523 72x72) | `PB_FORCE1` 771,520 39x78. The
+  bars overlap the portrait frame by about 12 units, probably because the
+  bar textures have transparent padding. Small cards 2/3: `PB_VIT` 737 18x36 |
+  back 750 36x36 | `PB_FORCE` 781 18x36, at y=482 / 443. Health is on the
+  left and Force on the right, so the shield bar belongs **immediately left
+  of `PB_VIT`**. Shifting the card group right (or `PB_VIT` left) is a pure
+  GUI edit in the ultrawide override generator. **Still open**: a new
+  `PB_SHIELD%d` control in the `.gui` would NOT be bound (`FUN_007450e0`
+  binds fixed tags by name), so the bar itself still needs the draw hook.
+  The GUI edit only reserves the space.
 - **S6** Actual vitality/Force bar colors, from a live screenshot.
 
 ## Relationship to other mods
