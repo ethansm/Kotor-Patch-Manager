@@ -15,6 +15,7 @@
 #include <stdarg.h>
 
 #include "EffectIconTable.inc"
+#include "DebuffIconTable.inc"
 
 namespace {
 
@@ -50,6 +51,9 @@ const void* const ClipNoFillColor = reinterpret_cast<const void*>(0x00a1ba3c); /
 constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferred icon size / card width
 constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
 constexpr int MaxColumns = 3;
+constexpr int RightInset = 0;                 // debuff column: extra px in from the card's right edge
+const float LineColor[3] = { 0.0f, 0.16f, 0.14f };  // thin dark-teal edge between remaining and elapsed
+constexpr float LineAlpha = 0.95f;
 constexpr float DimAlpha = 0.35f;
 constexpr float BgAlpha = 0.80f;              // backing disc, full-strength part
 const float BgColor[3] = { 0.035f, 0.415f, 0.34f };  // the HUD border teal (sampled 9,106,87)
@@ -135,7 +139,7 @@ void* imageFor(const char* resref) {
 struct Buff { const char* resref; float ratio; bool item; };
 
 // distinct tracked spell ids on the creature, in application order
-int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int maxOut) {
+int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int maxOut, bool debuff = false) {
     int arr = 0, count = 0;
     if (!readAt(creature, Creature_EffectArrayOffset, &arr) || !readAt(creature, Creature_EffectCountOffset, &count)) return 0;
     if (arr == 0 || count <= 0 || count > MaxEffects) return 0;
@@ -143,7 +147,12 @@ int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int ma
     for (int i = 0; i < count && n < maxOut; ++i) {
         int eff, spell;
         if (!readAt(arr, i * 4, &eff) || !readAt(eff, Effect_SpellIdOffset, &spell)) continue;
-        if (spell < 0 || spell >= kEffectIconTableSize || !kEffectIcons[spell]) continue;
+        const char* resref = nullptr; bool item = false;
+        if (spell >= 0 && spell < kEffectIconTableSize) {
+            if (debuff) { resref = kDebuffIcons[spell].resref; item = kDebuffIcons[spell].item; }
+            else { resref = kEffectIcons[spell]; item = isItemAbility(spell); }
+        }
+        if (!resref) continue;
         bool dup = false;
         for (int k = 0; k < nSeen; ++k) if (seen[k] == spell) { dup = true; break; }
         if (dup) continue;
@@ -157,7 +166,7 @@ int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int ma
             if (ratio > 1.0f) ratio = 1.0f;
             if (ratio < MinWipeRatio) ratio = MinWipeRatio;
         }
-        out[n++] = { kEffectIcons[spell], ratio, isItemAbility(spell) };
+        out[n++] = { resref, ratio, item };
     }
     return n;
 }
@@ -179,7 +188,7 @@ void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
 // the first `tracked` native arrows (CSWGuiBorder::Draw returns at once when +0xc/+0x10 == 0).
 void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichRow) {
     g_saved.active = false;
-    if (whichRow == 0 || iconWidget == 0 || index < 0) return;
+    if (iconWidget == 0 || index < 0) return;
     int creature = creatureForSlot(slotPtr);
     static int callNo = 0; ++callNo;
     bool logIt = callNo <= 40;
@@ -187,13 +196,14 @@ void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichR
     int day = 0, ms = 0;
     bool haveTime = currentTime(&day, &ms);
     Buff buffs[16];
-    int n = collectBuffs(creature, day, ms, haveTime, buffs, 16);
-    if (logIt) logf("arrow slot=%08x idx=%d tracked=%d -> %s", slotPtr, index, n, index < n ? "suppress" : "keep");
+    int n = collectBuffs(creature, day, ms, haveTime, buffs, 16, whichRow == 0);
+    if (logIt) logf("arrow row=%d slot=%08x idx=%d tracked=%d -> %s", whichRow, slotPtr, index, n, index < n ? "suppress" : "keep");
     if (index >= n) return;                     // untracked engine buff: leave its arrow
 
     int border = iconWidget + Label_TextBorderOffset;
     int w = 0, h = 0, bvt = 0;
     if (!readAt(border, 0, &bvt) || bvt != 0x009875bc || !readAt(border, Border_WidthOffset, &w) || !readAt(border, Border_HeightOffset, &h)) return;
+    if (g_saved.active && g_saved.border == border) { w = g_saved.width; h = g_saved.height; }  // debuff row has no restore hook
     g_saved = { true, border, 0, w, h };
     *reinterpret_cast<int*>(border + Border_WidthOffset) = 0;
     *reinterpret_cast<int*>(border + Border_HeightOffset) = 0;
@@ -209,14 +219,18 @@ void __cdecl RestoreBuffIcon() {
 // Hook 5 (once per row call, after the native loop, still inside the card's viewport whose
 // origin is the card's top-left): draw our own icon column down the card's left edge.
 void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
-    if (whichRow == 0 || iconWidget == 0) return;
+    RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook
+    if (iconWidget == 0) return;
+    const bool debuff = whichRow == 0;
     static int callNo = 0; ++callNo;
     int creature = creatureForSlot(slotPtr);
     if (!creature) return;
     int day = 0, ms = 0;
     bool haveTime = currentTime(&day, &ms);
-    Buff buffs[16];
-    int n = collectBuffs(creature, day, ms, haveTime, buffs, 16);
+    Buff buffs[16], other[16];
+    int n = collectBuffs(creature, day, ms, haveTime, buffs, 16, debuff);
+    int nOther = collectBuffs(creature, day, ms, haveTime, other, 16, !debuff);
+    int nSize = n > nOther ? n : nOther;        // both columns share one icon size
 
     float scale = 1.0f;
     { float s = reinterpret_cast<float(__cdecl*)()>(HudScaleFn)(); if (s > 0.1f && s < 10.0f) scale = s; }
@@ -229,7 +243,7 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     if (size < minSize) size = minSize;
     int cols = 1;
     for (;; ++cols) {
-        int perCol = (n + cols - 1) / cols; if (perCol < 1) perCol = 1;
+        int perCol = (nSize + cols - 1) / cols; if (perCol < 1) perCol = 1;
         int fitSize = (cardH - gap) / perCol - gap;
         if (fitSize < size) size = fitSize > 0 ? fitSize : 1;
         if (size >= minSize || cols >= MaxColumns) break;
@@ -243,11 +257,11 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     static int lastSig[8]; static int sigSlot[8]; static int nSig = 0;
     int si = -1; for (int k = 0; k < nSig; ++k) if (sigSlot[k] == slotPtr) si = k;
     if (si < 0 && nSig < 8) { si = nSig++; sigSlot[si] = slotPtr; lastSig[si] = -1; }
-    int sig = (n << 16) ^ (size << 8) ^ (cardW << 20) ^ cardH ^ isLarge;
+    int sig = (n << 16) ^ (debuff << 4) ^ (nOther << 12) ^ (size << 8) ^ (cardW << 20) ^ cardH ^ isLarge;
     bool logIt = callNo <= 30 || (si >= 0 && lastSig[si] != sig);
     if (si >= 0) lastSig[si] = sig;
-    if (logIt) logf("COLUMN#%d slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d cols=%d fit=%d draw=%d size=%d gap=%d",
-                    callNo, slotPtr, isLarge, cardW, cardH, scale, n, cols, fit, drawN, size, gap);
+    if (logIt) logf("COLUMN#%d %s slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d cols=%d fit=%d draw=%d size=%d gap=%d",
+                    callNo, debuff ? "DEBUFF" : "buff", slotPtr, isLarge, cardW, cardH, scale, n, cols, fit, drawN, size, gap);
     if (drawN <= 0) return;
 
     int border = iconWidget + Label_TextBorderOffset;
@@ -269,7 +283,8 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
         if (!image) { if (logIt) logf("  icon[%d] %s: no image", i, buffs[i].resref); continue; }
         auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
             (*reinterpret_cast<void***>(image))[6]);
-        int ix = gap + (i / perCol) * (size + gap), iy = gap + (i % perCol) * (size + gap);
+        int colIdx = i / perCol;
+        int ix = debuff ? cardW - gap - size - colIdx * (size + gap) - RightInset : gap + colIdx * (size + gap), iy = gap + (i % perCol) * (size + gap);
         float ratio = buffs[i].ratio;
         int bright = int(size * ratio + 0.5f);
         if (bright > size) bright = size;
@@ -285,6 +300,7 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
                 if (disc) draw2(disc, 0, -(size - bright), size, size, BgColor, BgAlpha);
                 draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
                 popClip();
+                if (bright < size && pushClip(ix, y0, size, 1, LineColor, 0, LineAlpha)) popClip();  // 1px boundary line
             } else if (logIt) logf("  icon[%d] clip push refused", i);
         }
     }
