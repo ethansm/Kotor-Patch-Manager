@@ -1,15 +1,40 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status:** Phase 2 (Ghidra static analysis) render pipeline RESOLVED
-2026-09-29 (continuation session) — `CSWGuiScene::AddModel` (`0x00418360`),
-`GetArmorModelAndTextureResRef` (`0x008cd060`), and the resolve+render
-function (`0x008cd2c0`) all decompile-confirmed; Branch A/B shared-render-call
-hypothesis confirmed. Two low-priority open items remain (`OnSlotSelected`/
-`OnUpgradeSelected` exact addresses; the two `CSWCItem` RTTI hits'
-relationship), neither blocking Phase 3. **PAUSED as of 2026-09-29** — work
-is focused on Mod 2 (Buff Duration HUD) for now; resume Mod 1 by moving to
-Phase 1 (GUI struct work) or closing the two low-priority items, whichever
-the user prioritizes next. No hooks written, no `.kpatch` built.
+**Status:** ACTIVE — Phase 3 (inventory binding + build), as of 2026-09-29.
+Render pipeline resolved (see Phase 2 findings); the planning session
+(Opus, 2026-09-29) changed the design — see "Planning session findings".
+No hooks written yet, no `.kpatch` built.
+
+## Planning session findings (2026-09-29, Opus)
+
+Four read-only Ghidra runs (raw output: `inventory_3d_viewport_src/research/ghidra_run{1..4}_2026-09-29.txt`) changed the design:
+
+1. **Adding a `CONTROL_3DVIEW` to `inventory_p.gui` alone does nothing.** Panels bind fixed members by tag in their constructor (`StartLoadFromLayout` -> `InitControl` -> `StopLoadFromLayout`). The inventory has no scene-view member, so the DLL allocates and constructs one and binds it inside the ctor layout window.
+2. **`008cd2c0` can be reused unchanged** with a fake `this` = `block - 0x3a30` (reads only `+0x3a30`, `+0x3ac4`, `+0x3d2c`, `+0x3d34`). **R1 must verify from raw disasm before any code.**
+3. **Inventory item objects match** what the render function expects (`+0xc` base item id).
+
+| What | Address | Notes |
+|---|---|---|
+| `CSWGuiUpgrade` ctor | `008c9e10` | 2 embedded `CSWGui3DSceneView` at `+0x3a30`, `+0x3ac4` (0x94 bytes each) |
+| `CSWGuiInGameInventory` ctor | `008a6170` | binds 21 controls, no scene view |
+| `CSWGuiControl` base ctor | `00418990` | fastcall(ECX=ctrl) |
+| `CSWGui3DSceneView::vftable` | `009a3d34` | |
+| `CSWGuiScene` ctor | `00417f40` | scene = view+0x60 (verify) |
+| `StartLoadFromLayout` / `InitControl` / `StopLoadFromLayout` | `0040ee40` / `0040f620` / `0040f5a0` | InitControl stores at panel+0x24 index = ctrl+0x54 |
+| `AddEvent` | `00418af0` | |
+| `CExoString` ctor/dtor, operator new | `00733570` / `00733780` / `00919723` | |
+| `AddModel` | `00418360` | |
+| Workbench render | `008cd2c0` | fastcall(ECX=this); gated by `*(int*)0x009f42b4` |
+| armor resolver | `008cd060` | called with row 0x89 = 137 = `P_MAL_A_MED_01` (fixed male medium body) |
+| non-armor resref builder / base item lookup | `006d5000` / `006d6e30` | |
+| Workbench Update (vt13) | `008cce70` | does NOT call the render; only spins model 1 |
+| Inventory vtable `009a72ac` | slots 0/13/15/18/19 = `008a7030`/`008a7350`/`008a8880`/`008a74c0`/`008a7520` | |
+| Inventory members | `LB_DESCRIPTION` +0x878, `LB_ITEMS` +0x588, entries +0x24b0 | |
+| Inventory populate / CreateItemEntry | `008a7ba0` / `008a75f0` | |
+
+**Design (v1):** GUI script adds `3D_MODEL` (ID 21, rect `[645,134,116,300]`) to `inventory_p.gui`; a DLL hooks (H1) the inventory ctor to allocate+construct+bind a view and init the scene, (H2) the item-shown/description-refresh path to call `008cd2c0` with fake this, (H3) Update for logging/poll fallback.
+
+**Superseded:** the old "Phase 1 — copy CONTROL_3DVIEW" step is insufficient on its own (see 1 above). The "PC-own-appearance-row" Branch B is superseded: v1 uses the Workbench's fixed row 137. A PC-specific body is a possible v2, by calling `008cd060` directly.
 
 ## Phase 2 findings (2026-09-29)
 
