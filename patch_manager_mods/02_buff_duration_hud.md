@@ -1,15 +1,18 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status:** Phase 2 (Ghidra static analysis) **RESOLVED** as of 2026-09-29
-(3rd session). Both Target 1 (`DurationRemaining`-equivalent data offset)
-and Target 2 (render hook point) found and confirmed by decompile — see
-"Phase 2 findings" below and the `ghidra_knowledge` DB's `lessons` table
-(scope `Buff Duration HUD`, "Target 1 RESOLVED" / "Target 2 RESOLVED"
-entries). Phase 3 (hook/C++ construction) and Phase 4 (install/runtime
-verification) have not started — no hooks written, no `.kpatch` built. One
-open item carried into Phase 3 (not a Phase 2 blocker): confirm the
-render-side icon-count bytes are actually driven by the Target-1 active-
-effect list (see "Open item for Phase 3" below).
+**Status:** Phase 2 (Ghidra static analysis) **RESOLVED** (2026-09-29, 3rd
+session). Phase 3 (hook/C++ construction: research, investigation, initial
+development) **IN PROGRESS** as of 2026-09-29 (planning session) — R1
+(creature-per-slot) and R6 (max/total duration field) fully resolved, R7
+(drawing primitive) partially resolved with a strong next lead, R2's
+remaining half / R3 / R5 / R4 have concrete next steps but are not yet
+resolved. A real scaffold with decompile-confirmed constants exists at
+`Patches/BuffDurationHUD/` in the `kotor-patch-manager` clone (not
+committed to this repo — see "Phase 3 findings" below). **No `.kpatch`,
+no `hooks.toml`, no live-game changes yet** — Phase 4 remains out of
+scope. See "Phase 3 findings" below for the full research trail; it
+supersedes the "Open item for Phase 3" note at the end of the Phase 2
+findings (that item is now folded into R2).
 
 ## Phase 2 findings (2026-09-29)
 
@@ -230,6 +233,166 @@ force-power rows found in this install:
 Icon `resref`s confirm the "reuse existing power icons" plan in the
 Implementation pipeline below is viable as-is — every row already has a
 `.tga`-backed icon resref shipped in this build.
+
+## Phase 3 findings (2026-09-29, planning session)
+
+Framework-mechanics research (hook types, the richer detour
+parameter-source syntax added in commits #272–#275, the raw-offset-vs-
+GameAPIObject architecture decision, and a splice-timing correction) is
+persisted in the `ghidra_knowledge` DB's `lessons` table rather than
+duplicated here — see scope `general Ghidra methodology / kotor-patch-manager
+framework` and `Buff Duration HUD`, all dated 2026-09-29. Summary: this
+mod uses raw hardcoded Steam offsets (`K2AspyrMapAspectFix`'s proven
+pattern), not the framework's `GameAPIObject`/`GameVersion` typed-wrapper
+system (which has zero rows for any class this mod needs in the K2 LAA
+runtime address DB); and a detour's `skip_original_bytes=false` runs
+**our** code first, then the original bytes after — the opposite of what
+an earlier draft of this plan assumed, which matters for R4's site choice
+below.
+
+### R1 + R2 (creature identity half) — RESOLVED
+
+`CSWGuiMainInterface::Update` (`0x0074b3f0`) does **not** itself bind
+creatures to portrait slots — full re-decompile showed it only calls
+`FUN_00745770` per slot for the icon-draw pass. Following its earlier
+call to `FUN_0074ee90()` (0 explicit args, matching GOG's
+`UpdatePortraits`, found via a cross-reference search for the portrait
+array's base offset `0x1f34`) found the real per-frame resolution chain,
+every hop decompile-confirmed:
+
+1. `rosterObj = FUN_0073fb90(hudThis)` = `*(*(int*)(hudThis+4)+0x270)`
+2. For raw roster position `p` in 0..2: `handle = FUN_007e5da0(rosterObj, p)`
+   — bounds-checked against `*rosterObj` (a count), array at
+   `rosterObj+0x24` stride `0x88`
+3. If nonzero: `creaturePtr = FUN_0077d800(handle)` — resolves to a
+   `CSWSCreature`-shaped polymorphic object
+
+**The resolved `creaturePtr` is never stored into the portrait slot
+struct** — only two small scalar bookkeeping fields get written there
+(neither is identity). A render-time hook cannot read "which creature
+owns this slot" directly off `slotPtr`. Also confirmed: raw roster
+position ≠ display slot index — `UpdatePortraits` computes a separate
+display-slot remap (gated on `*rosterObj == 2`), meaning the game already
+handles party-control switches correctly by recomputing this every frame
+— our hook just needs to call the same 3-function chain, not reimplement
+the remap rule.
+
+**Recommended hook design**: one small additional detour at
+`CSWGuiMainInterface::Update`'s entry (or anywhere per-frame before our
+render hook runs) that calls the three existing functions above directly
+(no need to hook any of them) to populate a small static 4-entry table
+keyed by the absolute `slotPtr` value → `creaturePtr`. Our Target-2
+render hook (which does receive `slotPtr`) then looks up `creaturePtr` by
+matching `slotPtr` — avoids computing a slot index or splicing into
+`UpdatePortraits`'s own loop body.
+
+**R2's other half is still open**: matching a specific drawn icon within
+`FUN_007457e0`'s per-icon loop to a specific `CGameEffect` in that
+creature's active-effect list. Not moot under the one-hook design — even
+reading the effect list fresh every frame, we still need to know which
+on-screen icon slot corresponds to which effect. Lead:
+`CSWSEffectListHandler::OnApplyEffectIcon`/`OnRemoveEffectIcon` (GOG
+`7630000`/`7631264`) suggest a separate icon-application subsystem, not a
+direct 1:1 walk — not traced this session.
+
+### R6 (max/total duration field) — RESOLVED, definitively
+
+`CGameEffect::LoadGameEffect` (Steam `0x005e5510`, found as a direct
+caller of `SetExpiryTime`) reads a GFF field via the **literal embedded
+string `"Duration"`** and stores it as a float directly at
+`CGameEffect+0xC`, immediately before `"ExpireDay"`/`"ExpireTime"` →
+`SetExpiryTime`. This is a name-confirmed identification, not structural
+inference. **Wipe ratio = `(ExpiryTime − currentGameTime) / (effect+0xC)`,
+fully derivable with no persistent state of our own.** One residual,
+non-blocking gap: confirmed for the save-load path; the runtime
+apply-a-freshly-cast-spell path (one of 118 per-type `Apply` handlers)
+was not independently traced to confirm it also populates `+0xC` the same
+way (near-certain — the constructor defaults it to `0.0` and the engine's
+own expiry math depends on it too — but not independently verified).
+
+### R7 (drawing primitive) — partially resolved
+
+Cross-reference search for the icon-widget sub-offsets (`0xab0`/`0x968`)
+found `FUN_007450e0`, a GUI-control-lookup-by-tag function that resolves
+`"LBL_CMBTEFCTINC%d"` (Combat Effect **Inc**rease = buffs) to `+0x968`
+and `"LBL_CMBTEFCTRED%d"` (Combat Effect **Red**uce = debuffs) to
+`+0xab0` — the icon-tray sub-objects are ordinary `CSWGuiLabel`
+(`CSWGuiControl`-derived) GUI controls, not a bespoke primitive. The
+framework's own `Patches/Common/GameAPI/CSWGuiControl.h` has a **named**
+vtable-slot enum that exactly matches the two virtual calls
+`FUN_007457e0` already makes: `Draw=14` (offset `+0x38`), `SetExtent=1`
+(offset `+4`) — independent, name-based confirmation of what was
+previously just an empirical `(this,float)` fingerprint guess.
+
+**Important caveat, verified against the `.cpp` not assumed**:
+`CSWGuiControl::VTableSlotCount()` explicitly checks
+`GameVersion::GetTitle()==KOTOR1 && GetPlatform()==Windows` and disables
+vtable overriding for anything else — `CSWGuiControl::OverrideDraw()`
+will **not** work out of the box for this K2 mod. The underlying
+`VTableOverride`/`VirtualFunctionCall` primitives (`Patches/Common/
+VTableOverride.h`) are not themselves version-gated and remain a viable
+alternative hook mechanism (per-instance vtable override with full
+control over before/after/replace timing, unlike a detour's binary
+`skip_original_bytes` choice) if R4's plain-detour site selection runs
+into an obstacle — but it needs solving "when do we install the
+override on 4 instances," more plumbing than a static-address detour, so
+it's not currently recommended over the existing plan.
+
+**Remaining gap**: the icon itself already renders correctly via its own
+`Draw` (untouched by our additive hook) — what's still needed is the
+**wipe overlay** (a semi-transparent partial-height quad on top). Strong
+new lead, not yet followed: the same parent object (via the same
+`FUN_007450e0`) also binds `"PB_VIT%d"`/`"PB_FORCE%d"` — vitality/force
+**progress bars**, a live, confirmed-working partial-fill widget in this
+exact GUI system, on the exact same portrait panel. Tracing their own
+`Draw`/fill-percentage logic is a far more concrete next step than
+starting from raw D3D primitives.
+
+### R3 (game time) + R5 (spell ID mapping) — not yet resolved, concrete next step recorded
+
+`CSWSObject` has real RTTI on Steam (vftable `0x0099450c`), and its
+likely `Constructor` (`0x0053e830`, positional match, not fully
+decompile-verified) was found. But it's a 144-function GOG class, and
+both R3's lead (`CSWSObject::UpdateEffectList`, GOG `6993840`) and R5's
+lead (`CSWSObject::HasSpellEffectApplied`, GOG `7005088`) sit 25–36KB /
+100+ functions away from `Constructor` — too far for the cheap
+positional-clustering walk that resolved `CGameEffect`. Tried finding
+direct callers of the already-known `Apply`/`Remove` dispatchers
+(`0x00594740`/`0x005947a0`) as a shortcut anchor — **negative result**,
+confirmed virtual-dispatch-only (0 direct callers), don't retry. Recorded
+next step: `CSWSObject`'s effect-handling cluster is comparatively tight
+in GOG (`ApplyEffect`@6991600 through `RemoveEffectTarget`@6995872, only
+4272 bytes / 8 functions) — finding any *one* Steam address in just that
+sub-cluster (not via `Constructor`) would let `ListFunctionsInRange.java`
+cheaply resolve the rest, the same technique that worked for
+`CGameEffect`. Not attempted this session — no promising anchor found yet.
+
+### R4 (precise hook site) — deliberately not attempted
+
+Sequenced last per the plan, and correctly still blocked: R3/R5 aren't
+resolved yet (site choice may depend on what data the hook needs to read
+inline vs. via a side-table), and the **architecture correction**
+(`skip_original_bytes=false` runs our code *before* the original bytes,
+not after) means the naive "hook `FUN_007457e0`'s entry" site from the
+original Phase-2-era hook plan is wrong — it would draw the overlay
+*underneath* the icons. Real candidates (before the final `ret`, vs.
+after the inner per-icon `Draw` call inside the loop — the latter risks
+splicing across a loop-internal jump target) are recorded but not
+evaluated.
+
+### Initial scaffold
+
+`Patches/BuffDurationHUD/` now exists in the `kotor-patch-manager` clone
+(never committed to this repo): `manifest.toml` (Steam/LAA only, no GOG
+entry — this mod has no GOG counterpart), `BuffDurationHUD.cpp` (every
+constant above as a labeled `constexpr int`, tagged STEAM-CONFIRMED /
+POSITIONAL MATCH / GOG-ONLY-NOT-YET-FOUND, plus `TODO(R2)` through
+`TODO(R7)` markers at the exact point each open item matters), and a
+minimal `DllMain` stub. Compiles cleanly with the project's MinGW
+cross-compiler (`i686-w64-mingw32-g++-posix -std=c++17 -c`, direct
+invocation — not the full `create-patch.py` packaging pipeline, since
+`hooks.toml`/`exports.def` are deliberately absent until R4 settles real
+hook addresses). No `.kpatch` built, no install attempted.
 
 ## Goal
 

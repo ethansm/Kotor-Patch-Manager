@@ -31,6 +31,9 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   lower-risk starting point than our two custom mods: porting existing,
   already-working GOG-only patches to add Steam Aspyr support, since the
   behavior is already proven and only the hook addresses need finding.
+- [`07_force_power_hotbar.md`](07_force_power_hotbar.md) — idea only, not
+  yet researched: a customizable 1-0-keybound hotbar of Force power
+  buttons, to replace the single quickbar item + scroll wheel.
 
 ## Why this matters for our specific install
 
