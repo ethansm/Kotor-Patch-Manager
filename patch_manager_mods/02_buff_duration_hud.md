@@ -14,6 +14,13 @@ scope. See "Phase 3 findings" below for the full research trail; it
 supersedes the "Open item for Phase 3" note at the end of the Phase 2
 findings (that item is now folded into R2).
 
+**UX pivot, same day, later session (2026-09-29): the existing icon row
+IS a generic buff/debuff tally, not per-power icons — user wants
+per-power icons with an integrated time indicator instead.** See "UX
+reconsideration" (new section, right after "Phase 3 findings") for full
+detail — this changes the render design and is the open question the
+next planning session should resolve first.
+
 ## Phase 2 findings (2026-09-29)
 
 **Community database check, per the effort-estimate note below**: no
@@ -394,6 +401,102 @@ invocation — not the full `create-patch.py` packaging pipeline, since
 `hooks.toml`/`exports.def` are deliberately absent until R4 settles real
 hook addresses). No `.kpatch` built, no install attempted.
 
+## UX reconsideration (2026-09-29, user-provided screenshots)
+
+**The existing render target (`FUN_007457e0`, this mod's Target 2 hook
+point) is confirmed — by live in-game screenshots the user provided, not
+just decompile — to draw a generic buff/debuff TALLY, not per-power
+icons.** Three screenshots (player portrait, `PC_Handmaiden`-looking
+character) show a teal upward-pointing triangle centered over the
+portrait, appearing as 1 small arrow, 1 larger/highlighted arrow, and 3
+stacked arrows in the three shots. This is exactly the
+`LBL_CMBTEFCTINC%d` widget found in Phase 3's R7 research (`FUN_007450e0`,
+"Combat Effect **Inc**rease") — its icon **count** (read from
+`slotPtr+0xddc`, R2's still-open "icon count source" question) directly
+controls how many arrows stack, each rendered via the same
+`SetPosition`+`Draw(dt)` virtual-call loop in `FUN_007457e0`. There is
+presumably a mirrored red/downward-pointing stack for
+`LBL_CMBTEFCTRED%d` (debuffs), not captured in these screenshots but
+following the same mechanism. **This is a tally of how many
+stat-increasing effects are active, not an icon identifying which
+specific power** — the original Phase 2/3 assumption that this loop's
+per-icon rects could be reused to place *named* power icons (Force
+Speed's icon, Force Valor's icon, etc.) does not hold; the loop draws the
+same arrow glyph N times, it has no concept of "which power."
+
+**User's proposed redesign, not yet decided in detail**: instead of (or
+in addition to) this generic arrow tally, show the actual per-power icons
+(already identified — see the Effect ID table above, e.g. `ip_speedburst`,
+`ip_mind`, `ip_armor`) fitted onto/around the portrait, each with an
+integrated visual time indicator directly on the icon itself (rather than
+a separate bar or the arrow tally), so the player can see *which* buffs
+are active and *how much time is left on each* at a glance, without
+needing to interpret an abstract stacked-arrow count.
+
+**Implication for R2**: this is actually a simplification, not a new
+blocker. R2's original framing ("match a drawn icon in the existing loop
+to a specific `CGameEffect`") assumed we'd be extending the engine's own
+icon loop — since that loop turns out to be a content-free tally, there's
+nothing there to "match" for a per-power-icon UX. Instead, the icon list
+this mod draws would be built entirely from data already resolved (R1's
+creature-per-slot chain + the already-known active-effect array at
+`ownerObj+0x24`→`+0x148`, filtered by the Effect ID table's spell IDs),
+independent of the engine's own arrow-count mechanism. The open question
+shifts from "how does the engine decide icon-to-effect" to "how do we lay
+out and draw OUR OWN icon row," which is squarely a Phase 3
+research/design question, not yet answered:
+
+- **Placement**: the portrait's screen space is already crowded — GUI
+  tags found via `FUN_007450e0` include `LBL_CHAR%d` (the headshot
+  itself), `PB_VIT%d`/`PB_FORCE%d` (vitality/force bars — very likely the
+  red and cyan side bars visible in the screenshots, flanking the
+  portrait left/right), `LBL_LEVELUP%d`, `LBL_BACK%d`,
+  `LBL_DEBILITATED%d`, `LBL_DISABLED%d`, `LBL_CMBTEFCTINC%d`/
+  `LBL_CMBTEFCTRED%d` (the arrow tally, centered over the portrait),
+  `BTN_CHAR%d`. A new per-power icon row needs screen space that doesn't
+  collide with these — likely a strip along the top or bottom edge of the
+  portrait frame, not decided.
+- **Coexistence with the arrow tally**: keep the existing
+  `LBL_CMBTEFCTINC`/`RED` arrows running untouched (simplest, safest,
+  matches this project's established "additive only, never replace
+  engine logic" pattern — see `hooks_ported`/every prior hook in this
+  framework) vs. suppressing them since they'd become redundant once real
+  per-power icons exist (would require an invasive replace-style hook,
+  a real departure from this mod's design so far). Leaning toward
+  "leave them running" for v1 but not decided.
+- **How many icons fit / overflow behavior**: the Effect ID table lists
+  15 tracked self-buff powers; portrait real estate is small. Needs a
+  concrete max-simultaneous-icons decision and a rule for what happens
+  when more are active than fit (unlikely in practice for one character,
+  but not zero — e.g. Force Valor + Force Speed + Force Armor
+  simultaneously is a realistic 3).
+- **What "visual time indicator directly on the icon" means concretely**:
+  candidates are (a) a radial/pie "clock sweep" wipe masking the icon —
+  visually the cleanest match to the user's ask, but likely the hardest
+  to implement on this era's fixed-function-ish render pipeline (would
+  need a custom shader, a pre-baked sprite-sheet of wipe stages, or a
+  stencil/scissor trick — none confirmed feasible yet); (b) a rectangular
+  partial-height/width wipe directly over the small icon (simpler,
+  directly reuses the original Phase 2 "cooldown wipe" concept, just
+  scaled down onto a per-power icon instead of a separate bar); (c) a
+  thin depleting border/ring; (d) numeric countdown text overlaid on the
+  icon. Not decided — this is the central open question for the next
+  planning session.
+- **R7's progress-bar lead is now more directly relevant than before**:
+  R7 (Phase 3 findings above) already identified `PB_VIT%d`/`PB_FORCE%d`
+  as live, confirmed-working partial-fill bar widgets on this same
+  portrait panel, as the recommended next lead for "how does this engine
+  draw a partial-fill visual" — tracing their exact draw approach (a
+  rectangular wipe, most likely, given typical Aurora-engine progress
+  bars) will directly inform which of the (a)-(d) options above is
+  actually feasible to build, and is the natural starting point for
+  resolving this UX question with real engine data rather than guessing.
+
+No Ghidra work has been done yet against this specific redesign — the
+three screenshots are the only new evidence this session. Everything
+above is a design question for the next planning session to work
+through, not a decision already made.
+
 ## Goal
 
 A per-frame HUD overlay showing remaining duration on active buffs (Force
@@ -416,6 +519,15 @@ directly into the native render cycle, which is exactly what Patch Manager
 provides.
 
 ## Implementation pipeline
+
+**Section 2 (render layer) below predates the "UX reconsideration"
+section above and describes the ORIGINAL plan (reuse `FUN_007457e0`'s
+per-icon loop, draw a wipe over each drawn icon) — now known to be
+unworkable as originally conceived, since that loop draws a generic
+arrow tally with no per-power icon concept. Kept for historical
+reference; the next planning session should treat the render layer as
+open, per "UX reconsideration" above, not follow section 2 literally.
+Section 1 (data layer) is unaffected and still accurate.**
 
 ### 1. Data layer — read the effect list
 - Detour into the game's main per-frame update loop.
