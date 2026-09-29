@@ -1,7 +1,13 @@
 # Mod Idea 4: Shield Bar (party portrait HUD)
 
-**Status (2026-09-29): Buff HUD (the prerequisite) is complete; S3 resolved. Idea captured + data layer verified from the live
-`forceshields.2da` / `spells.2da`. No Ghidra work yet.** Reuses most of
+**Status (2026-09-29, end of research session 1): research-only, no code,
+no live changes.** The Buff HUD (the prerequisite, Mod 2) is complete and
+live. Resolved: data layer (`forceshields.2da`), S3 (which effects have a
+pool), S5 (layout is GUI data, and a collision was found), and the
+per-shield VFX colors (one Ghidra run, `0x00878f10`). Open: S1/S2/S4/S6/S7
+(needs one live probe session) and the draw-site research (R-D below). The
+next-phase plan lives in the Claude plan file written at the end of this
+session; this doc is the research record. Reuses most of
 [[02_buff_duration_hud.md]]'s already-resolved engine map (portrait slot →
 creature chain, `CSWSObject` active-effect array, `CSWGuiBorder` live
 width shrink, `PB_VIT%d`/`PB_FORCE%d` layout slots), so the fresh research
@@ -180,18 +186,92 @@ Fury-red would collide with vitality.
   back 750 36x36 | `PB_FORCE` 781 18x36, at y=482 / 443. Health is on the
   left and Force on the right, so the shield bar belongs **immediately left
   of `PB_VIT`**. Shifting the card group right (or `PB_VIT` left) is a pure
-  GUI edit in the ultrawide override generator. **Still open**: a new
+  GUI edit in the ultrawide override generator.
+  **Collision found:** left of the leader card is the toggle-button row
+  `TB_STEALTH` 548,562 | `TB_SOLO` 584,562 | `BTN_SWAPWEAPONS` 620,562 |
+  `TB_PAUSE` 656,562 (all 36x36). `TB_PAUSE` (x 656–692) already overlaps
+  `PB_VIT1` (x 677–716) at y 562–598, which is harmless today only because
+  the bar texture is padded. A leader shield bar at about x 660–676 would
+  sit on `TB_PAUSE`, so the leader layout needs the 4 buttons shifted left
+  by the bar width + gap (about 16–20 units). The small cards 2/3 have free
+  space left of `PB_VIT2/3` (x < 737, y 443–518); the only overlap there is
+  the invisible `LBL_ARROW_MARGIN` (3,129 794x333).
+  The live HUD file is `override/mipc28x6_p.gui`, byte-identical (md5
+  `53d2035832a81cb8688eb33add8b198f`) to
+  `~/Games/KOTOR2_Mod_Workspace/ultrawide_gui/out/mipc28x6_p.gui`. The
+  vanilla original is `ultrawide_gui/originals/mipc28x6_p.gui`, md5
+  `d043845b...`. The generator is `scripts/generate_ultrawide_gui_overrides.py`.
+  Its docstring says the Aspyr HUD is drawn 1:1, anchored to the screen
+  edges (2.667 px/unit measured), and not resized, and its HUD specs are
+  behind `--include-hud`. So check how the live `out/` copy was produced
+  before editing it.
+  **Still open**: a new
   `PB_SHIELD%d` control in the `.gui` would NOT be bound (`FUN_007450e0`
   binds fixed tags by name), so the bar itself still needs the draw hook.
   The GUI edit only reserves the space.
 - **S6** Actual vitality/Force bar colors, from a live screenshot.
+- **R-D (draw site)**: the Buff HUD's draw hook `0x00745AEC` sits inside
+  `PortraitIconRowDraw` (`0x007457e0`), which the per-slot gate
+  `FUN_00745770` only calls when the engine's own arrow count
+  (`slot+0xddc`/`+0xddd`) is non-zero. It also runs inside the card's
+  clip viewport, while the shield bar sits outside the card. So the shield
+  bar needs its own every-frame, per-portrait draw site in full-HUD
+  coordinates. Candidates, in order: (a) inside `FUN_00745770` before its
+  arrow-count test; (b) near the end of `CSWGuiMainInterface::Draw`
+  (`0x0074b3f0`) after the portrait panel draws. Note the **entry**
+  `0x0074B3F0` is already hooked by Force Power Hotbar (`HotbarHudTick`).
+  The PB_VIT on-screen rect is hypothesized at `slotPtr+0x690`
+  (`CSWGuiControl` header: x `+4`, y `+8`, w `+0xc`, h `+0x10`), where
+  `slotPtr = hudThis+0x1f34+i*0xde4`. This is not yet verified, because
+  `Adjust`'s `this` may be the slot object or something else.
 - **S7** Whether a GUI `CSWGuiBorder` fill animates a `proceduretype
   cycle` texture (decides animated fill vs. flat hue). Cheapest test:
   live, with Mod 2's existing fill-swap pointed at `fx_tex_14`.
 
+## Engine facts reused from Mod 2 (verified, see 02_buff_duration_hud.md)
+
+- `CGameEffect`: `+0x8` ushort type, `+0xa` ushort subtype/flags (the Mod 2
+  probe logged `+0x8` as an int, e.g. `0x90028`), `+0xc` float duration (s),
+  `+0x10`/`+0x14` expiry day/ms, `+0x18` creator id, `+0x1c` spells.2da row,
+  `+0x34` int params (`GetInteger(i)` = `*(int*)(e+0x34+4i)`, `0x005e4e60`),
+  float params `GetFloat` = `e+0x38+4i` (sic, as decompiled), object ids
+  `+0x78`, strings `+0x48` (stride 8).
+- Creature active effects: `creature+0x148` (`CGameEffect**`), `+0x14c` count.
+- Slot → creature: Buff HUD hooks 1a/1b (`SnapshotPortraitSlot`, in
+  `UpdatePortraits`) keep a 4-entry `slotPtr → creaturePtr` side table,
+  refreshed every frame.
+- Drawing: `FUN_0047eb60(char resref[17])` → `CAurGUIImageInternal*`, draw
+  = its vtable slot 6 (thiscall `x,y,w,h,flags=0,rot,float* rgb,alpha`,
+  pixels of the current viewport, full-texture UVs). Clip/fill rect =
+  `FUN_00479460(x,y,w,h,float* color,flag,alpha)`, pop with `FUN_004799c0`
+  (a non-"no fill" color fills the rect, which gives a solid-color bar with
+  no texture). Batch flush = `FUN_0047ea60(float [0x009f5f60])` before and
+  after. HUD scale = `FUN_00479ab0()` (2.0 here).
+- Reference implementation: `buff_duration_hud_src/BuffDurationHUD.cpp`
+  (identical to the framework clone's `Patches/BuffDurationHUD/`).
+
+## Live patch state + hook addresses already taken (2026-09-29)
+
+16 patches live (`patch_config.toml` in the game dir): k2-visible-console,
+good-alignment-heads, k2-aspyr-normal-map-fix,
+k2-aspyr-saber-hilt-texture-fix, k2-finesse-melee-fix, k2_grass_fog_fix,
+max-lights, semi-transparent-letterbox, k2-mp3-playback-fix,
+loading_screen_line_fix_k2, k2-aspyr-map-aspect-fix,
+post-combat-movement-fix-v1, additional-console-commands,
+buff-duration-hud, force-power-hotbar, inventory-3d-viewport. Newest full
+staging dir: `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/inv3d_live_patches/`
+(16 `.kpatch`). Addresses already hooked; a new hook must not reuse
+these or overlap their byte windows: `0x0070CDCB`, `0x0070CF34`,
+`0x00885197`, `0x00894435`, `0x00895E6D`, `0x007508AA`, `0x007AF198`,
+`0x0091D52D`, `0x004752D8`, `0x0074F25A`, `0x0074F8AB`, `0x00745A84`,
+`0x00745A97`, `0x00745AEC`, `0x0072CB63`, `0x0074B3F0`, `0x008A69AD`,
+`0x008A8172`, `0x008A7350` (plus the Max Lights / letterbox / normal-map /
+saber / finesse / grass hooks, which are in their `.kpatch` hooks files).
+Get the complete list from the steam log's `Applied ... hook at` lines.
+
 ## Relationship to other mods
 
-Shares Mod 2's creature/effect snapshot, so build it **after** Mod 2's
-display redesign settles and ideally as a mode of the same DLL (one
+Shares Mod 2's creature/effect snapshot. Mod 2 is done, so build it now,
+as a feature of the same DLL/patch (`buff-duration-hud`) (one
 effect walk per frame, one set of portrait hooks) rather than a second
 patch hooking the same functions.
