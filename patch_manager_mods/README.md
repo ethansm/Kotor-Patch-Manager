@@ -36,6 +36,9 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   spec & pre-Ghidra design: customizable 1-0-keybound hotbar of Force power
   buttons, incorporating lessons from Mods 1 & 2, framework DB symbol
   discoveries, and context-gated input design.
+- [`08_shield_bar.md`](08_shield_bar.md) — shield-absorption bar beside each
+  party portrait's vitality/Force bars (stacked segments, colored by shield
+  family). **Status 2026-09-29: idea + verified `forceshields.2da` data, no Ghidra yet.**
 
 ## Why this matters for our specific install
 
