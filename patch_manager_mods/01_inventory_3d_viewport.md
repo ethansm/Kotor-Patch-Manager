@@ -1,6 +1,97 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status:** concept — not started. No Ghidra analysis, no hooks written.
+**Status:** Phase 2 (Ghidra static analysis) IN PROGRESS, started 2026-09-29.
+Real class names confirmed via RTTI for every class in both branches; exact
+addresses for the trigger/render call functions not yet pinned down. No
+hooks written, no `.kpatch` built.
+
+## Phase 2 findings (2026-09-29)
+
+**Methodology shortcut found — check this FIRST for any future mod using
+this framework**: the framework's `AddressDatabases/kotor2_gog_aspyr.db`
+already has fully-mapped function tables (real names, addresses, calling
+conventions) for every class this mod needs — `CSWGuiUpgrade`,
+`CSWGuiUpgradeSelection`, `CSWGuiUpgradeItemSelect`, `CSWGuiInGameInventory`,
+`CSWUpgradeItemEntry`, `CSWItem`, `CSWCItem`, `CSWGuiScene`, `CAurScene`/
+`Scene`, `Gob`, `CSWBaseItem` — none of which any *shipped* GOG-port
+candidate actually uses. There's no GOG binary on this machine to
+byte-diff against, but the class/method **names** and relative shape are
+still a massive head start: confirm the same RTTI class exists on our
+Steam binary (fast), then use GOG's named functions as a hypothesis list
+for what a given Steam vtable slot does, verified by decompile — never
+assumed from name/position alone (see the `lessons` table for a case where
+that assumption was wrong). Query every `AddressDatabases/*.db`, not just
+the versions being actively ported, before starting fresh RTTI work.
+
+**Real class names confirmed via RTTI on our Steam binary (overturning
+every SDK-style guess in this doc's earlier drafts):**
+- `CSWGuiInGameInventory` (vftable `0x009a72ac`) — the real inventory
+  screen class. **Not `CUIInventory`.**
+- `CSWGuiUpgrade` (`0x009a88a4`), `CSWGuiUpgradeSelection` (`0x009a86cc`),
+  `CSWGuiUpgradeItemSelect` (`0x009a876c`) — the three real Workbench
+  screen classes (main panel / category-filter sub-screen / item-to-upgrade
+  sub-screen). Per GOG, `CSWGuiUpgrade` owns `Update3DView`,
+  `GetArmorModelAndTextureResRef`, `OnSlotSelected`, `OnUpgradeSelected`,
+  `VerifyUpgrade`, `InsertUpgrade` as real named member functions —
+  **`GetArmorModelAndTextureResRef` existing directly on the Workbench
+  class is a significant simplification of the Branch A/B split below**:
+  the Workbench itself already resolves armor model+texture together, not
+  just standalone weapon models.
+- `CSWUpgradeItemEntry` (`0x009a899c`) — per-slot item-entry widget.
+- `CSWItem` (`0x0099a8a0`) — UI-side item wrapper (`GetBaseItem()` per
+  GOG). `CSWCItem` (two RTTI hits, `0x009a25fc` and `0x009a2748`,
+  relationship not yet resolved) — the in-world/rendered item object
+  (`LoadModel`, `SpawnVisualEffect`, `PowerItem`, etc. per GOG).
+- `CSWGuiScene` (`0x0098771c`) — the scene embedded in a `CONTROL_3DVIEW`.
+  **Confirmed render-call target**: GOG has
+  `CSWGuiScene::AddModel(CExoString* model, int insertIndex)` — takes a
+  model **resref string directly**. Only a 5-slot vtable (mostly
+  `CSWGuiObject` base overrides) — `AddModel` is very likely a plain
+  (non-virtual) member function, so it won't show up in a vtable dump;
+  needs a direct xref/string-anchor search on Steam, not attempted yet.
+- `CSWGui3DSceneView` (`0x009a3d34`) — the `CONTROL_3DVIEW` control itself
+  (wraps a `CSWGuiScene`, per the framework's own `CSWGui3DSceneView.h`).
+- `CAurScene` (`0x0098bc7c`, mostly `__purecall` — an abstract interface)
+  and `Gob` (`0x0098b5cc`, 60-slot vtable — the generic renderable-object
+  class `AddModel` returns) — both confirmed present, not yet needed at
+  function level.
+
+**Vtable-shape finding**: `CSWGuiUpgrade`/`CSWGuiUpgradeSelection`/
+`CSWGuiUpgradeItemSelect`/`CSWGuiInGameInventory` all share an *identical*
+29-slot vtable shape (common GUI-panel base class), diverging only at
+slots 13/15/18/19 — each class's own overrides. On `CSWGuiUpgrade`
+specifically:
+- **Slot 13** (`FUN_008cce70`, `(this, float dt)`) — confirmed per-frame
+  `Update`. Gated by a flag at instance `+0x3d2c`; when set, computes
+  `-dt * (a constant)` — consistent with animating the previewed item's
+  spin/rotation in the 3D view every frame.
+- **Slot 19** (`FUN_008cca70`) — likely `OnPanelRemoved`/teardown: zeroes
+  the same `+0x3d2c` flag and frees a handle at `+0x3d38` (likely the
+  preview item/model handle).
+- **Slot 15** (`FUN_008cfc10`, `(this, int, int)`) — likely
+  `OnControlEntered`, toggles two related UI control states.
+- **Slot 18** (`FUN_008cbde0`, 3215 bytes, the largest override) — **ruled
+  out as `HandleInputEvent`** despite being the biggest function (no
+  switch/case shape in the decompile). Instead resolves `baseitems.2da`
+  model-variant columns by literal name (`"DoubleMdlVar"`,
+  `"ShortMdlVar"`, `"LongMdlVar"`, `"UpgradeType"`, `"Template"`) —
+  real, useful confirmation that this class does exactly the kind of
+  `baseitems.2da`-driven model resolution Branch A needs, but not yet
+  matched to one specific GOG-named method with confidence.
+
+**Not yet resolved (concrete next steps for whoever resumes)**:
+- Exact Steam addresses for `CSWGuiUpgrade::Update3DView`,
+  `GetArmorModelAndTextureResRef`, `OnSlotSelected`, `OnUpgradeSelected` —
+  not yet matched from GOG's named list to specific Steam addresses.
+  Recommended next move: string-anchor search for the literal 2DA column
+  names found in `FUN_008cbde0` (`"DoubleMdlVar"` etc.) and for
+  `"UpgradeType"`/`"Template"`, following each into its containing
+  function, same technique that has worked repeatedly on this binary —
+  likely faster than continuing to guess from vtable slot position.
+- `CSWGuiScene::AddModel`'s Steam address — needs a direct search (it's
+  non-virtual), not a vtable dump.
+- Full detail, addresses, and evidence trail: `ghidra_knowledge` DB's
+  `classes`/`functions`/`stack_offsets`/`lessons` tables.
 
 ## Goal
 
@@ -133,6 +224,21 @@ adoption:**
 Now two branches, per the armor-vs-weapon split above — not one uniform
 path. Community GZF/SARIF databases should be checked first for both, same
 as before.
+
+**2026-09-29 update — see "Phase 2 findings" above for the full confirmed
+picture.** Real class names found for every target below (`CUIUpgrade` →
+`CSWGuiUpgrade`, `CUIInventory` → `CSWGuiInGameInventory`, `CUI3DView` →
+`CSWGui3DSceneView`/`CSWGuiScene`). **Branch A/B render-call question
+answered: they very likely DO share one call.** `CSWGuiUpgrade` itself
+owns both `Update3DView` (the render/update call) and
+`GetArmorModelAndTextureResRef` (armor-specific data resolution) as real
+named methods per the GOG address database — i.e. the same class already
+handles both the standalone-item case (Branch A) and the
+armor-model+texture case (Branch B) internally, which is stronger evidence
+for "one shared render call, two data-resolution paths" than the original
+spec's guess that Branch B would need the separate Character/Equipment
+screen. Exact Steam addresses for these specific named methods are still
+open — see "Phase 2 findings" for the recommended next search technique.
 
 **Branch A — weapons/shields/headgear (standalone item, unchanged from
 original spec).** Primary reference: the workbench item-modification flow
