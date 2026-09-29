@@ -338,3 +338,52 @@ should explicitly check for this and record it here too if found.
   - Mod 2 already solved 2DA parsing and effect decoupling.
   - The primary remaining investigation is the keyboard input context gate and
     the Steam address for `UseForcePower`.
+
+## Next-phase findings (2026-09-29): input -> invoke prototype, no bars
+
+Status: `ForcePowerHotbar` 0.1.0-dev built (`force_power_hotbar_src/`, framework clone `Patches/ForcePowerHotbar/`),
+**not yet live-tested**. Scope: 30 slots key -> invoke, INI config (hot-reloaded), verbose logging, no on-screen bars.
+
+### Rosetta stone
+`Patches/ExpandedKeyboardControl` (GOG-only) already does capture + gating + invoke. GOG->Steam delta for
+`CSWGuiMainInterface` is a constant **+0x22E880** for GOG >= 0x51cb20 (22 functions checked); `CExoInputInternal::GetEvents`
+delta +0x119300 (only +0x383 verified). Steam addresses (all in the knowledge DB `functions`, `hooks_ported`):
+
+| Role | Steam |
+|---|---|
+| HUD Draw / tick hook (`55 8b ec 6a ff`, ECX=hud) | `0x0074B3F0` |
+| DirectInput capture hook (`89 85 bc fe ff ff`; EAX=record{dwOfs,dwData}, `[ebp-0x10]`=device) | `0x0072CB63` |
+| activate button | `0x007516B0` thiscall(hud, button) RET 4 |
+| personal invoke | `0x00751750` thiscall(hud, group 0..6, 0) RET 8 |
+| target invoke | `0x00751710` thiscall(hud,i,0) RET 8 -> `007445d0(hud+0xCC, i, 1)` |
+| keyboard device index | `0x0099C884` rdata constant = 0 (unverified live) |
+| gate whitelist vtables (RTTI) | Messages `0x0099E5EC`, Fade `0x009A044C`, Pause `0x009A7BAC`, AutoPause `0x009A8FCC`; HUD `0x0099DCC4` |
+
+Hook bytes verified against the live exe; no live hook within 64 bytes of either site.
+
+### Entry model (corrects lesson 55 / Buff HUD 9th session)
+The HUD action bar has **6 personal groups** (`hud+0x733C+g*0x750`) + 3 target groups (`hud+0x120+i*0x750`); the four
+`0x1D0`-spaced arrays are the 4 sub-controls of each group, NOT one bar per portrait. Per-group entry list
+`hud+0x78+g*0xC` {ptr,count,cap}, stride **0x3C**; selected key `hud+0x1C7C+g*4` (-1 none); active group `hud+0x1C98`.
+Entry: `+0x8` key, `+0xC..0x18` callback blob, `+0x1C` owner id, `+0x30` flags (bit0 usable, bits1-4 why-not), `+0x0` name (CExoString, unconfirmed).
+- **Items ARE in the bar**: `FUN_0077c510` (groups 1-3, mask 1/4/2) builds inventory-item entries via `FUN_0077bcf0`,
+  key = `itemObjectId | 0x40000000`, name `"%s (%d)"`, callback `FUN_0077c780`/`c80` (mask `0xBFFFFFFF`).
+- **Powers**: `FUN_008495c0` (groups 0 and 5) iterates the creature's known spells (spells.2da row via `FUN_006c1450`),
+  key = `spellRow | 0x20000000`; specials 0x102-0x10c are mode toggles (`FUN_0077d120`). Group 4 = AI modes.
+- Invoke design: set `hud+0x1C7C+g*4` = wanted key, call `0x751750(hud,g,0)`, restore selection + active group.
+- Items have no stable numeric id (object id changes across loads) -> bindings store an `ActionRef` (see Configuration).
+  Item identity is currently the display name (text before " ("); resref/tag offsets not found statically -- the live probe
+  scans objects for strings. Character key: `CreatureTagOffset` INI setting (0 = fall back to object id) once the probe finds it.
+
+### Configuration (schema v1)
+`force_power_hotbar.ini` in the game dir, hot-reloaded (<= 1/s). `[General]` `Invoke=0|1`, `Verbose`, `KeyboardDevice`, `CreatureTagOffset`.
+`[Profile.Default]` + `[Profile.<characterKey>]`; keys `Bottom1..0`, `Left1..0`, `Right1..0`; values `spell:<row>`, `feat:<row>`,
+`item:<name>`, `other:<hex>`; per-slot fallback character -> Default. `HotbarConfig.h` is pure C++ (host-tested round trip:
+`config_roundtrip_test.cpp`, `g++ -std=c++17`). The future in-game editor mutates a `Profile` and calls `Config::Save`
+(atomic tmp+rename; Save drops free comments but keeps per-slot trailing notes). Catalog: `force_power_hotbar_available.txt`.
+Key bindings, bar layout and per-save profiles are data tables in code (`kRows`, `kFirstDik`), not yet user-exposed.
+
+### Open items
+- Target-menu slots not supported this phase (`menu = hud+0xCC` confirmed via 0x751710, selection storage unverified).
+- Item/creature identity fields, keyboard device constant, gate behaviour: verify from the first live probe log.
+- Render phase candidate hook: end of `FUN_0074b3f0` after the action-bar draw loop (`FUN_007417d0` x7); `GetActionIcon` candidate `0x0074E0B0` -- not researched further.
