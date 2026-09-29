@@ -36,6 +36,16 @@ Four read-only Ghidra runs (raw output: `inventory_3d_viewport_src/research/ghid
 
 **Superseded:** the old "Phase 1 — copy CONTROL_3DVIEW" step is insufficient on its own (see 1 above). The "PC-own-appearance-row" Branch B is superseded: v1 uses the Workbench's fixed row 137. A PC-specific body is a possible v2, by calling `008cd060` directly.
 
+## Phase 1 results (2026-09-29, raw disasm; evidence in `inventory_3d_viewport_src/research/R*_*.txt`)
+
+- **R1 PASS (GATE A).** `008cd2c0` keeps `this` at `[ebp-0xac]`; it only reads `+0x3a30`, `+0x3ac4` (category==1 only), `+0x3d2c` (byte) and `+0x3d34` (item ptr, never written or freed). `008cd060` is called with `ECX=this` but only spills it (`[ebp-0x78]`, never read). Scene calls use `ECX=view+0x60`. Item fields read: `+0xc`, `+0x2a4`, `+0x2a6`. `GetModel(0)` must be `upgitem_light` (hook nodes), so scene init is mandatory. Use category 2 (never 1) so the saber view (`block+0x94`) is untouched. Fake-`this` offsets: category = `block+0x2fc`, item = `block+0x304`.
+- **R2.** `00418990` ECX=`this+0x3a30`; vftable `0x9a3d34` stored at `[view]`; `00417f40` ECX=`view+0x60`; `InitControl(panel, view, &CExoString("3D_MODEL"), 1, 1)`. Scene init: `Scene*=[view+0x60+0x14]`; `(*Scene)->vt[0x70]` thiscall with 3 stack args (`"gui3D_room"` char*, float pos[3]={0,0,0}, float quat[4]={0,0,0,1}); then `AddModel(scene,&CExoString("upgitem_light"),-1)`. Gated on `*(int*)0x009f42b4`.
+- **R3 (H1 site).** `0x008A69AD`, original bytes `8B 8D 08 FD FF FF`, param `[ebp-0x2f8]` = panel. Immediately before `StopLoadFromLayout` (`008a69b3`), so the GFF is still open. No branch targets. Verified against the live exe.
+- **R4 (H2 site).** Entry event 0 handler `008a8100(panel=ECX, entry)`: item = `EAX` after `CALL 0051c0e0` (`008a816d`). Splice `0x008A8172`, original `89 45 D4 8D 55 CC`, params `eax` (item) and `[ebp-0x68]` (panel). Verified vs the live exe. Known gap: the "Error: Invalid item" branch (`entry+0x1d0==0x7f000000`) returns before the splice, so the preview would not clear there. The selected object id is also in `panel+0x24c8`.
+- **R5 (H3 site).** `0x008A7350`, `55 8B EC 83 EC 0C`, params `ecx` and `[esp+4]` (float dt). Verified vs the live exe.
+- **R6.** The panel is `0x24d4` bytes, built by factory `007d0760` / manager init `007be4c0` once per GUI init. Base dtor `0040e860` does not delete `panel+0x24` list entries, so v1 leaks the `0x400` block (log every construction) and there is no double free.
+- **R7.** `CSWGui3DSceneView` vtable differs from `CSWGuiControl` at slot 0 (`0084de70`), slot 1 (`00420f50`, extent override) and slot 14 (`0084de40`, probably Draw). Informational.
+
 ## Phase 2 findings (2026-09-29)
 
 **Methodology shortcut found — check this FIRST for any future mod using
