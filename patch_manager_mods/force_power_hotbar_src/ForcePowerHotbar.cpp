@@ -67,12 +67,14 @@ std::string readCExoString(uintptr_t addr) {
     if (!readAt(addr, 0, &p) || !readAt(addr, 4, &len)) return "";
     if (len <= 0 || len > 80 || p == 0 || IsBadReadPtr(reinterpret_cast<const void*>(p), len)) return "";
     std::string s(reinterpret_cast<const char*>(p), len);
+    while (!s.empty() && s.back() == '\0') s.pop_back();   // engine lengths include the trailing NUL (live-verified)
+    if (s.empty()) return "";
     for (unsigned char c : s) if (c < 0x20 || c > 0x7E) return "";
     return s;
 }
 
 // ---- action decode (shared by the catalog, the INI and the resolver) --------------------------------
-struct Entry { int group, index, key, flags; std::string name; hb::ActionRef ref; };
+struct Entry { int group, index, key, flags; std::string name, icon; hb::ActionRef ref; };
 
 hb::ActionRef decodeKey(int key, const std::string& name) {
     hb::ActionRef r;
@@ -93,6 +95,7 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
         if (IsBadReadPtr(reinterpret_cast<const void*>(e), EntryStride)) { logf("readGroup g=%d: entry %d at %08x unreadable, stopping", g, i, (unsigned)e); break; }
         Entry en; en.group = g; en.index = i; en.key = rdInt(e, Entry_Key); en.flags = rdInt(e, Entry_Flags);
         en.name = readCExoString(e);
+        { char ib[17] = {0}; if (!IsBadReadPtr(reinterpret_cast<const void*>(e + 0x1C + 4), 16)) { memcpy(ib, reinterpret_cast<const void*>(e + 0x20), 16); for (int k = 0; k < 16; ++k) if (ib[k] && (ib[k] < 0x20 || ib[k] > 0x7E)) ib[k] = '?'; } en.icon = ib; }
         en.ref = decodeKey(en.key, en.name);
         out->push_back(en);
     }
@@ -264,8 +267,8 @@ void probe(uintptr_t hud, bool force) {
             uintptr_t ep = (uintptr_t)rdInt(hud, Hud_GroupLists + g * 12) + (uintptr_t)e.index * EntryStride;
             char raw[300]; int p = 0;
             for (int w = 0; w < EntryStride / 4; ++w) p += snprintf(raw + p, sizeof raw - p, " %08x", (unsigned)rdInt(ep, w * 4));
-            logf("    [%d.%d] key=%08x flags=%08x usable=%d why=%d name=\"%s\" ref=%s raw:%s", g, e.index, (unsigned)e.key, (unsigned)e.flags,
-                 e.flags & 1, (e.flags >> 1) & 0xF, e.name.c_str(), hb::Format(e.ref).c_str(), raw);
+            logf("    [%d.%d] key=%08x flags=%08x usable=%d why=%d name=\"%s\" icon=\"%s\" ref=%s raw:%s", g, e.index, (unsigned)e.key, (unsigned)e.flags,
+                 e.flags & 1, (e.flags >> 1) & 0xF, e.name.c_str(), e.icon.c_str(), hb::Format(e.ref).c_str(), raw);
             if (!e.ref.empty()) appendCatalog(g_charKey + " | " + hb::Format(e.ref) + " | group " + std::to_string(g) + " | " + e.name);
         }
     }
