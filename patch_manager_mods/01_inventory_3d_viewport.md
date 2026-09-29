@@ -1,6 +1,6 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status:** ACTIVE — Phase 3 (inventory binding + build), as of 2026-09-29.
+**Status:** ACTIVE — research (Phases 0-1) DONE and GUI control (Phase 2) DEPLOYED as of 2026-09-29. **NEXT: Phase 3 build** (model table + `Inventory3DViewport` patch), then live test. User paused execution here on 2026-09-29; the full self-contained plan is the approved plan file for the next phase.
 Render pipeline resolved (see Phase 2 findings); the planning session
 (Opus, 2026-09-29) changed the design — see "Planning session findings".
 No hooks written yet, no `.kpatch` built.
@@ -45,6 +45,10 @@ Four read-only Ghidra runs (raw output: `inventory_3d_viewport_src/research/ghid
 - **R5 (H3 site).** `0x008A7350`, `55 8B EC 83 EC 0C`, params `ecx` and `[esp+4]` (float dt). Verified vs the live exe.
 - **R6.** The panel is `0x24d4` bytes, built by factory `007d0760` / manager init `007be4c0` once per GUI init. Base dtor `0040e860` does not delete `panel+0x24` list entries, so v1 leaks the `0x400` block (log every construction) and there is no double free.
 - **R7.** `CSWGui3DSceneView` vtable differs from `CSWGuiControl` at slot 0 (`0084de70`), slot 1 (`00420f50`, extent override) and slot 14 (`0084de40`, probably Draw). Informational.
+
+## Phase 2 (GUI) DEPLOYED 2026-09-29
+
+`scripts/add_inventory_3dview_control.py` appended `3D_MODEL` (copy of `upgrade_p.gui`'s, CONTROLTYPE 4, ID 21, EXTENT `[645,134,116,300]`, empty BORDER resrefs) to the live `override/inventory_p.gui`. New sha256 `46d84b7d5a4d…` (was `5980756fa20a…` = generator manifest `deployed_sha256`). Backup: `~/Games/KOTOR2_Mod_Workspace/backups/inventory3d_20260929_183902_373234/`. Rollback: `.venv/bin/python scripts/add_inventory_3dview_control.py --rollback` (restores the OLDEST backup). Options `--rect L,T,W,H --replace --dry-run`. Idempotent. **Generator interaction:** `generate_ultrawide_gui_overrides.py` refuses to overwrite a live file whose sha is neither the recorded original, the previous deploy nor its output ("foreign file"), so after this deploy a generator re-run for `inventory_p` fails loudly: run `--rollback` here first, re-run the generator, then re-apply this script. pykotor gotchas: `GFFStruct.get_struct()` returns a COPY (edit then `set_struct`); `get_list` may return a detached list (`set_list` after append); `ID` is Int32 (`get_int32`). Effect in game before the DLL exists: none (unbound control is ignored) — not yet visually confirmed in game.
 
 ## Phase 2 findings (2026-09-29)
 

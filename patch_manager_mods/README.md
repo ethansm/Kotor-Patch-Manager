@@ -16,6 +16,7 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
 
 - [`01_inventory_3d_viewport.md`](01_inventory_3d_viewport.md) — render a
   live 3D model of the selected inventory item in unused ultrawide space.
+  **Status 2026-09-29: research done, GUI control deployed, C++ patch (Phase 3) not yet built.**
 - [`02_buff_duration_hud.md`](02_buff_duration_hud.md) — visual
   countdown/cooldown-wipe overlay for active Force power / buff durations.
 - [`03_framework_research.md`](03_framework_research.md) — findings on the
