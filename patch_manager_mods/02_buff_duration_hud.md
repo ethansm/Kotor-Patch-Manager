@@ -6,12 +6,17 @@ as hoped**: the vanilla "quickbar" turned out to be a per-party-member
 6-category cycling action-selector (Attack-mode/3 feat+power tabs/Combat
 AI toggles/generic), and **none of its categories is "assign an item to
 a slot"** -- the shared assumption behind Item 5 and Force Power
-Hotbar's item-row research does not match this system. See "Item 5"
-below for the full finding and the resulting decision point (continue
-chasing a `CGameEffect`/`CSWItem` item-back-reference lead, or accept the
-"track item-ability durations, skip their icon retarget" fallback and
-proceed to Phase B). **Development phase (real hook C++ + `hooks.toml` +
-`.kpatch`) has NOT started yet**, pending that decision.
+Hotbar's item-row research does not match this system. **User chose to
+keep researching** (not accept the fallback yet); two follow-up leads
+(`CGameEffect::SetString` callers, `CSWItem`'s vtable) were both
+**inconclusive** -- see "Item 5" below for full detail and the one
+concrete next step identified (a GFF `"ICON"`-tag search, not yet done,
+budget-limited this session) for whoever resumes. **Development phase
+(real hook C++ + `hooks.toml` + `.kpatch`) has NOT started yet.** This
+status header, the "Item 5" section, and the `ghidra_knowledge` DB
+(`lessons` 54-58 + new `functions` rows) are the complete, currently
+up-to-date record of this session's item-5 research -- nothing beyond
+what's written here happened.
 
 **Status as of the previous (8th) session, superseded above on Item 5's
 premise, otherwise still accurate:** Item 3 is **CONFIRMED empirically**
@@ -1252,8 +1257,59 @@ branching**, not a silent scope-downgrade: continue chasing the
 accept the documented fallback (track item-ability effect durations in
 the side-table same as force powers, but skip icon retargeting for them
 -- the native arrow glyph renders as-is for that slot) and proceed to
-Phase B now. Presented to the user as a choice; see the session's own
-resolution for which branch was taken.
+Phase B now. **User's choice (2026-09-29, same 9th session): keep
+chasing the `CGameEffect`/`CSWItem` lead before writing any hook code.**
+
+**Continued research, same session -- both leads inconclusive, one
+concrete next step identified for whoever resumes:**
+
+1. **`CGameEffect::SetString` callers, decompiled** (the two call sites
+   that invoke it more than once each, a weak signal of "stores more than
+   one descriptive string"): `FUN_0065a170` (3452 bytes) turned out to be
+   a giant switch on a single opcode byte (case labels `0x41/0x43/0x44/
+   0x47/0x48/0x4c/0x4d/0x50/0x52/0x54`, i.e. ASCII `A/C/D/G/H/L/M/P/R/T`)
+   with wildly different behavior per case -- reads as a general
+   NWScript-command or cutscene/camera-effect dispatcher, **not**
+   item-property-specific. `FUN_00671e20` (766 bytes) builds one
+   `CGameEffect` via the confirmed constructor (`FUN_005e4920`) with
+   `SetInteger(0, intFromScriptStack)` + `SetString(0/1/2,
+   threeStringsFromScriptStack)` -- a generic 1-int-3-string effect
+   constructor, most likely one specific `ExecuteCommand`-style NWScript
+   engine function, but its exact identity/purpose was not pinned down
+   (no nearby debug/tag strings to name it, no confirmed match to item
+   properties specifically). **Inconclusive** -- doesn't confirm or rule
+   out an item back-reference on item-granted effects.
+2. **`CSWItem`'s vtable, dumped** (`DumpCSWItemVtable.java`, walking
+   `CSWItem::vftable` at `0x0099a8a0`): only **ONE** resolvable virtual
+   slot exists (`FUN_006d6de0`, 44 bytes -- shape consistent with a
+   destructor thunk, not decompiled further); slot 1 is not a valid
+   function pointer, so the walk stopped there. **`CSWItem` overrides
+   almost none of its base class's virtual surface** -- consistent with
+   this project's repeated pattern (`CGameEffect`, the `CSWGuiBorder`
+   family, etc.) where "get this object's icon" turns out to be a plain
+   struct-offset **field read**, not a method call.
+3. **Recommended next step, not done this session (budget)**: search for
+   a GFF tag literally named `"ICON"` (`baseitems.2da`'s own icon column
+   is named `Icon`) in the item/`.uti` loader's tag-lookup calls -- the
+   exact same technique that already found `CSWGuiImage_Load`'s
+   `"IMAGE"` tag and `CSWGuiBorder`'s `"CORNER"`/`"EDGE"`/`"FILL"` tags
+   earlier in this project. This is very likely cheaper and more direct
+   than continuing to chase `SetString`/`SetObjectID` callers (both
+   inconclusive) or virtual methods (confirmed to be a dead end above)
+   -- find the tag-lookup site, read the offset it writes the resolved
+   resref/icon reference into, and that offset is `CSWItem`'s icon field.
+   Full evidence: `ghidra_knowledge` DB `lessons` ids 57-58.
+
+**Where this stands for whoever resumes**: neither branch (chase the
+lead further, or accept the fallback) is closed out yet. The concrete
+next action if research continues is the GFF `"ICON"` tag search in
+point 3 above -- NOT another round of `SetString`/`SetObjectID`
+caller-tracing (both already tried, both inconclusive) and NOT further
+`CSWItem` vtable work (confirmed near-empty). If the next session doesn't
+want to spend more Ghidra time on this, the documented fallback (item-
+ability effects tracked for duration, icon retargeting skipped, native
+arrow glyph renders as-is) remains available and was never rejected --
+only deferred by the user's explicit choice to keep digging first.
 
 ## Goal
 
