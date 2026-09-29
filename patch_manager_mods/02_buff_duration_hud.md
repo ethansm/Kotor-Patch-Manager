@@ -1,40 +1,49 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status (2026-09-29, 5th session, current):** Phase 2 (Ghidra static
+**Status (2026-09-29, 6th session, current):** Phase 2 (Ghidra static
 analysis) **RESOLVED**. Phase 3 (render redesign + data-layer research)
-**IN PROGRESS, mostly resolved**:
+**NEARLY ALL RESOLVED**:
 
 - R1 (creature-per-slot), R6 (max/total duration field): **RESOLVED**.
-- UX pivot (per-power icons + integrated time indicator, not the
-  generic arrow tally): **render approach RESOLVED** — U1(a) [reuse the
-  existing `LBL_CMBTEFCTINC%d`/`RED%d` labels by repurposing their
-  visual] beat U1(b) [build new widgets]; U4 (wipe shape: rectangular)
-  and U5 (icon texture assignment: uniform tag-based resource binding,
-  full mechanism traced) are **RESOLVED**. U2 (shared GUI widget class
-  addresses) resolved as a side effect.
-- U3 (on-screen layout of portrait sub-widgets): **PARTIALLY
-  resolved** — the data source (`Adjust`, `0x00745560`) is found and
-  decompile-confirmed, just not yet matched to which array index is
-  which named GUI tag.
-- R3 (game time source) / R5 (spell-ID mapping): **NOT YET RESOLVED** —
-  an RTTI-first shortcut was tried and came back negative; the
-  standing positional-clustering next step (GOG `ApplyEffect`–
-  `RemoveEffectTarget` cluster) is unchanged and still the right path.
-- R4 (precise hook site): **deliberately still deferred**, correctly
-  blocked on R3/R5 (and, before this session, on the render approach —
-  now unblocked on that front).
-- R2 (icon-to-effect matching): **unresolved**, unchanged since Phase
-  3 findings — see that section below.
+- UX pivot render approach (U1(a)/U2/U4/U5): **RESOLVED** (prior
+  session).
+- **U3 (on-screen layout of portrait sub-widgets): FULLY RESOLVED** —
+  all 8 of `Adjust`'s (`0x00745560`) sub-control array slots matched
+  1:1 to their GUI tag names via `FUN_007450e0`'s storage offsets.
+- **U1 residual (which embedded border is frame vs. fill): RESOLVED**
+  — `CSWGuiLabel::Load` found (`0x004198d0`), profiler-scope strings
+  prove `self+0x60`="BORDER" (frame), `self+0xd8`="TEXT" (content/fill,
+  the one to retarget).
+- **U5 residual (literal resref-bind mechanism): RESOLVED** — full
+  chain traced (`FUN_0047eb60`→`FUN_0047d070`→`FUN_004da820`, param_2
+  confirmed literal C-string resref); recommended mod entry point is
+  `FUN_0047eb60` itself (already fully understood), not the deeper
+  `FUN_004da3f0` (turned out to be a resource-file line parser, not a
+  simple bind).
+- **R2 (icon-to-effect matching): DISSOLVED**, as predicted — confirmed
+  from existing decompile (no new Ghidra work) that `FUN_007457e0`
+  repositions+redraws a SINGLE shared widget instance N times, with no
+  engine-side per-icon identity to match. The mod assigns its own
+  active-effect list to iteration order.
+- **R3 (game time source): RESOLVED** (mechanism + exact call chain),
+  one small residual (the world-timer `this`-pointer's ultimate source,
+  one more decompile hop away, not blocking).
+- **R5 (spell-ID mapping): RESOLVED** — `HasSpellEffectApplied` found,
+  active-effect array offsets and the per-effect spell-ID field
+  identified.
+- R4 (precise hook site): **still deliberately deferred** per this
+  plan's own gating (R3 has a small flagged residual) — next session's
+  focus.
 
 A real scaffold with decompile-confirmed constants exists at
 `Patches/BuffDurationHUD/` in the `kotor-patch-manager` clone (not
-committed to this repo, compiles cleanly as of this session — see "UX
-redesign findings continued" below). **No `.kpatch`, no `hooks.toml`,
-no live-game changes yet** — development phase remains out of scope
-until R3/R5/R4 resolve. See "UX redesign findings continued" (bottom of
-the UX sections, right before "## Goal") for the most current findings
-and the concrete next steps; it supersedes everything above it in this
-status block for anything it re-addresses.
+committed to this repo). **No `.kpatch`, no `hooks.toml`, no
+live-game changes yet** — development phase remains out of scope until
+R4 resolves (now the only remaining open item). See "Resource-bind
+completion + icon/effect correspondence findings" (bottom of the UX
+sections, right before "## Goal") for the most current findings; it
+supersedes everything above it in this status block for anything it
+re-addresses.
 
 ## Phase 2 findings (2026-09-29)
 
@@ -763,6 +772,143 @@ these widgets. Which of `CSWGuiLabel`'s two embedded borders
 determined — likely needs either a decompile of whatever calls
 `CSWGuiLabel::Load` to see construction order, or a live memory dump
 of a real instance.
+
+## Resource-bind completion + icon/effect correspondence findings (2026-09-29, follow-on session)
+
+Executed the "Resource-Bind Completion + Icon/Effect Correspondence +
+R2/R3/R5/R4" plan. Static research only — no hooks, no `.kpatch`, no
+live-game changes. Full decompile evidence in the `ghidra_knowledge` DB
+(`lessons` table + `functions`/`classes`/`class_methods` rows for every
+address below) — summarized here.
+
+**Item 1 (U5 residual — literal resref-bind mechanism) RESOLVED, with a
+recommended entry point.** `FUN_0047eb60` (called by all 3
+`CSWGuiBorder::Load` setters and by `CSWGuiImage::Load`) does NOT itself
+take a literal resref — it dispatches on whether its one param (a
+resolved tag/16-byte-resref-shaped buffer) is null, calling
+`FUN_0047cd50()` (blank/default) or `FUN_0047d070(param)` (real). Traced
+2 more hops: `FUN_0047d070` placement-constructs a **newly-discovered
+real class**, `CAurGUIImageInternal` (derives `CAurGUIImage`, both with
+real Steam RTTI — vftables `0x0098c1fc`/`0x0098c228`), then calls
+`FUN_004da820(param_2,0,0,0)`. **`FUN_004da820`'s `param_2` is
+confirmed a literal `char*` resref** — guarded by
+`param_2 != NULL && *param_2 != '\0'` then `strcmp("NULL", param_2) != 0`
+(the standard Aurora-engine "NULL"-sentinel-string idiom for "no
+resource") before calling `FUN_004da3f0(param_2)` for the real load.
+Decompiled `FUN_004da3f0` too (849 bytes) — it turned out to be a
+**line-oriented resource-file parser** (opens the resref as a resource,
+reads it line by line, trims whitespace, calls a per-line handler), not
+a simple texture-handle bind — traced far enough to identify this shape,
+deliberately not chased further (disproportionate to the mod's actual
+need). **Recommendation: the mod's hook should call `FUN_0047eb60`
+directly** (or the already-understood `CSWGuiBorder::Load` FILL setter,
+`0x00414840`) with a manufactured resref buffer, going through the
+correct release-old/acquire-new dance automatically — not hand-replicate
+`FUN_004da3f0`'s undocumented parsing. Also decompiled the small
+`FUN_00710xxx` helper family (`00710980`/`00710a70`/`00710b40`/
+`00710a10`/`00710ca0`) that prepares literal 16-char resref buffers one
+level up from `FUN_0047eb60` — confirms literal-resref-string handling
+genuinely exists in this chain, just a couple of hops from where U5
+originally stopped.
+
+**Item 2 (U1 residual — which embedded border is frame vs. fill)
+RESOLVED.** Found `CSWGuiLabel`'s own `Load`/Initialize override at
+vtable slot 18 (`0x004198d0`, decompile-confirmed by ruling out the
+other 4 own-override slots 34/35/38/39 as rect/property helpers, not
+Load). It calls `Load` (vtable slot 4) on both embedded sub-widgets,
+each bracketed by a profiler-scope name call
+(`FUN_00733570`/`FUN_00733780`): `self+0xd8` first, scoped by the string
+at `0x009876d0`, dumped and confirmed = `"TEXT"`; then `self+0x60`,
+scoped by the literal string `"BORDER"`. **Conclusion: `self+0x60` =
+"BORDER" (frame/background, leave alone), `self+0xd8` = "TEXT"
+(content/fill, the one to retarget for icon-resref repurposing)** —
+resolved by decompile, no live memory dump needed.
+
+**Item 3 (U3 residual — tag-to-array-slot matching) FULLY RESOLVED, a
+perfect match.** Re-decompiled `FUN_007450e0` in full (previously only
+tag lookup *order* had been read) to extract each tag's storage offset.
+Converting each to a byte offset and comparing against `Adjust`'s 3
+array groups gives an exact 1:1 match for all 8 slots: group 1 (5
+controls, stride `0x148`, base `+0x28`) = `LBL_BACK%d`(i0),
+`LBL_DEBILATATED%d`[sic — literal game-data spelling, confirmed by the
+decompiled string bytes, not a transcription slip](i1),
+`LBL_DISABLED%d`(i2), `LBL_LEVELUP%d`(i3), `LBL_CHAR%d`(i4); group 2 (2
+controls, stride `0x16c`, base `+0x690`) = `PB_VIT%d`(i0),
+`PB_FORCE%d`(i1); singleton (`+0xbf8`) = `BTN_CHAR%d`. (The
+`LBL_CMBTEFCTINC%d`/`RED%d` icon-row tags at `+0x968`/`+0xab0` are
+confirmed NOT among `Adjust`'s 8 slots — consistent with them being
+dynamically iterated by `FUN_007457e0` rather than statically laid out.)
+
+**Item 4 (R2 reopened) DISSOLVED, from existing decompile — no new
+Ghidra work needed.** Re-reading the already-recorded `FUN_007457e0`/
+`FUN_007450e0` notes directly answered the premise question: the render
+loop calls `SetPosition`+`Draw(dt)` repeatedly on ONE embedded object at
+a *fixed* offset (`slotPtr+0xab0`/`+0x968`), and `FUN_007450e0` confirms
+that offset holds exactly one `CSWGuiLabel`-shaped tag lookup per
+portrait (`%d`=portraitIndex only, no per-icon index) — i.e. a single
+shared widget stamped at N positions per frame, not N distinct
+instances. R2 dissolves exactly as predicted: the hook can freely assign
+its own tracked active-effect list to iteration indices 0..N-1 in its
+own order, since the engine has no per-icon identity to match against.
+
+**R3 (game time source) RESOLVED (mechanism + call chain), one small
+residual.** Rather than retry the RTTI-vtable-dump shortcut (already
+ruled out last round), searched Steam **callers of the already-confirmed
+non-virtual `CGameEffect` accessors** (`CopyEffect`/`SetExpiryTime`/
+`GetExpiryTime`) — this succeeds where a virtual-dispatch-only target's
+own xref search fails. Found `FUN_0059de30`, a compound-effect
+decomposition helper that calls `FUN_00544210(newEffect,target,0)`
+repeatedly — content- and size-matched (1067 bytes vs. GOG's ~1072) to
+**`CSWSObject::ApplyEffect`** (GOG `0x6aaef0`). Walking forward from
+there, 4 more consecutive functions size-match GOG's named siblings
+almost exactly (within ~12 bytes each): `RemoveEffect`(`0x00544640`),
+**`RemoveEffectById`(`0x00544790`, also content-confirmed — called by
+UpdateEffectList on an expired effect)**, and
+**`UpdateEffectList`(`0x00544ad0`, content-confirmed)**. `UpdateEffectList`
+iterates the active-effect array (`self+0x148` ptr/`self+0x14c` count),
+calls `GetExpiryTime` per effect, and compares the result against **its
+own caller-supplied `param_2`/`param_3`** — a (day, timeOfDay) pair.
+Tracing `UpdateEffectList`'s 3 callers found the literal time source:
+**`FUN_0051ad20(this=worldTimerObj, int* outDay, uint* outTimeOfDay)`**
+— decompile-confirmed as an elapsed-tick-based day/timeOfDay clock (or a
+cached value when a paused-mode flag is set) with day-boundary-wraparound
+normalization, called immediately before `UpdateEffectList` in all 3
+sites. This is R3's answer, in the same (day,timeOfDay) units
+`CGameEffect::ExpiryTime` (R6) already uses. **Residual**: the
+`worldTimerObj this` pointer's ultimate source (`FUN_0051c350`→
+`FUN_00538e00`, one more un-decompiled hop) isn't traced — no RTTI found
+under WorldTimer/Calendar/GameClock/CExoTimer keywords (0 hits). Concrete
+next step: decompile `FUN_00538e00` to see whether it's a fixed global
+singleton (ideal) or a handle/id lookup.
+
+**R5 (spell-ID mapping) RESOLVED.** Projecting GOG's offset from
+`ApplyEffect` to `HasSpellEffectApplied` (`0x34b0` bytes) onto the
+confirmed Steam `ApplyEffect` address landed almost exactly on a real
+function boundary: `FUN_005476c0` (101 bytes vs. GOG's 112).
+Content-confirmed: it iterates the *same* `self+0x148`/`self+0x14c`
+active-effect array `UpdateEffectList` uses, checking each effect's
+`+0x1c` field (an int) against a passed-in spell ID, short-circuiting
+false if the ID is `-1` — classic `HasSpellEffectApplied(spellId)`
+semantics, and an independent cross-confirmation of the array offsets.
+**New fields for the mod**: `CSWSObject`'s active-effect array =
+`self+0x148`(ptr)/`self+0x14c`(count); effect-struct `+0x1c` = the
+spell/feat ID that produced the effect. The render hook can read this
+per-effect (alongside the already-known `+0x8` type tag, `+0xC`
+duration, `+0x10`/`+0x14` `ExpiryTime`) to decide which power's icon to
+show — spellID→icon-resref is now a data lookup (e.g. `spells.2da`), not
+a further reverse-engineering problem.
+
+**R4 (precise hook site): still deliberately deferred**, correctly, per
+this plan's own gating — R3 has one small flagged residual (not a
+re-opened unknown, a single concrete next decompile). Next session:
+close R3's residual (cheap, one hop), then attempt R4 — the hook design
+is now well-specified: detour `FUN_007457e0`, and *before* each
+iteration's native `Draw(dt)` call, retarget the shared icon widget's
+`self+0xd8` ("TEXT") embedded border's FILL resource via
+`FUN_0047eb60` to the resref for `thisMod'sActiveEffectList[i]`'s power
+(read via the effect's `+0x1c` spell-ID field → a resref lookup),
+computing wipe state from `CGameEffect::ExpiryTime` vs. `FUN_0051ad20`'s
+current time.
 
 ## Goal
 
