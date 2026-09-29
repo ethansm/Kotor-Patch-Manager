@@ -1,0 +1,5 @@
+LIBRARY BuffDurationHUD
+EXPORTS
+    SnapshotPortraitSlot
+    RetargetBuffIcon
+    RestoreBuffIcon

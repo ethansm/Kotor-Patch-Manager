@@ -1,0 +1,67 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# UpdatePortraits, normal slot: EAX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0074F25A
+type = "detour"
+function = "SnapshotPortraitSlot"
+original_bytes = [0x89, 0x85, 0x44, 0xFF, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# UpdatePortraits, extra/mirror slot: EDX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0074F8AB
+type = "detour"
+function = "SnapshotPortraitSlot"
+original_bytes = [0x89, 0x95, 0xA4, 0xFE, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "edx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# PortraitIconRowDraw, just before the icon widget Draw(): swap FILL image + shrink
+[[hooks]]
+address = 0x00745A84
+type = "detour"
+function = "RetargetBuffIcon"
+original_bytes = [0x8B, 0x4D, 0xE0, 0x8B, 0x11, 0x8B, 0x4D, 0xE0, 0x8B, 0x42, 0x38, 0xFF, 0xD0]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x4c]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x18]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0x10]"
+type = "int"
+
+# PortraitIconRowDraw, after Draw() on the buff row: restore image and size
+[[hooks]]
+address = 0x00745A97
+type = "detour"
+function = "RestoreBuffIcon"
+original_bytes = [0x0F, 0xB6, 0x4D, 0xEF, 0x03, 0x4D, 0xC4]
+exclude_from_restore = []
+

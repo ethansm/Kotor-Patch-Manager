@@ -1,0 +1,604 @@
+// Buff Duration HUD -- Phase 3 scaffold (2026-09-29 planning session).
+//
+// NOT A WORKING PATCH YET. No hooks.toml exists for this patch and none
+// of the functions below are wired to anything -- this file exists so a
+// future session has real (decompile-confirmed, not guessed) constants to
+// build on, instead of re-deriving Phase 2/3 research from scratch.
+//
+// Every constant below is labeled:
+//   STEAM-CONFIRMED  -- decompile-verified against the Steam Aspyr pristine
+//                        build (hash 6a522e71...04dbbffef). Safe to use
+//                        directly.
+//   POSITIONAL MATCH  -- found via GOG-address-delta positional clustering
+//                        and consistent in size/shape, but not individually
+//                        decompiled line-by-line this session. Very likely
+//                        correct (this technique has been reliable
+//                        throughout this project) but flagged so a future
+//                        reader knows the confidence is slightly lower.
+//   GOG-ONLY, NOT YET FOUND ON STEAM -- a real GOG address from
+//                        kotor2_gog_aspyr.db, Steam counterpart not yet
+//                        located. DO NOT use the raw GOG address for
+//                        anything on the Steam build.
+//
+// Full research trail, decompile evidence, and open items:
+// patch_manager_mods/02_buff_duration_hud.md and the ghidra_knowledge DB
+// (patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db),
+// both in the local-setup/KOTOR-II worktree -- read those before changing
+// anything here, don't re-derive.
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+namespace {
+
+// ---------------------------------------------------------------------
+// CGameEffect field layout. STEAM-CONFIRMED (decompile, 3rd Phase-2
+// session + this Phase-3 session). Non-virtual, non-polymorphic class --
+// no vtable, every field is a direct offset read, no function call needed
+// for a read-only HUD display.
+// ---------------------------------------------------------------------
+constexpr int CGameEffect_TypeTagOffset = 0x8;      // ushort SWEFFECTTYPE category tag
+constexpr int CGameEffect_DurationOffset = 0xC;     // float, TOTAL/ORIGINAL duration in
+                                                     // seconds -- confirmed via LoadGameEffect
+                                                     // reading the literal GFF field "Duration"
+constexpr int CGameEffect_ExpiryDayOffset = 0x10;   // int, absolute expiry day
+constexpr int CGameEffect_ExpiryTimeOffset = 0x14;  // int, absolute expiry time-of-day (ms)
+constexpr int CGameEffect_IntArrayOffset = 0x34;    // indexed int params (GetInteger/SetInteger)
+constexpr int CGameEffect_FloatArrayOffset = 0x38;  // indexed float params (GetFloat/SetFloat)
+constexpr int CGameEffect_StringArrayOffset = 0x48; // indexed CExoString params, stride 8
+constexpr int CGameEffect_ObjectIdArrayOffset = 0x78; // indexed ObjectID params
+
+// CGameEffect member functions. STEAM-CONFIRMED unless noted.
+constexpr int CGameEffect_GetInteger = 0x005e4e60;
+constexpr int CGameEffect_SetInteger = 0x005e4e80;
+constexpr int CGameEffect_GetFloat = 0x005e4ea0;
+constexpr int CGameEffect_SetFloat = 0x005e4ec0;
+constexpr int CGameEffect_GetObjectID = 0x005e4ee0;
+constexpr int CGameEffect_SetObjectID = 0x005e4f00;
+constexpr int CGameEffect_GetString = 0x005e4f20;
+constexpr int CGameEffect_SetString = 0x005e4f60;
+constexpr int CGameEffect_SetExpiryTime = 0x005e4f80; // (this, int day, int timeMs)
+constexpr int CGameEffect_GetExpiryTime = 0x005e4fa0; // (this, int* outDay, int* outTimeMs)
+constexpr int CGameEffect_CopyEffect = 0x005e4fd0;
+constexpr int CGameEffect_Constructor = 0x005e4920;   // POSITIONAL MATCH (exact byte-delta hit,
+                                                       // not individually decompile-verified)
+constexpr int CGameEffect_Constructor2 = 0x005e4ac0;  // decompile-read this session (copy-ctor
+                                                       // variant), STEAM-CONFIRMED
+constexpr int CGameEffect_Destructor = 0x005e4ca0;    // POSITIONAL MATCH ONLY, not decompiled
+constexpr int CGameEffect_LoadGameEffect = 0x005e5510; // STEAM-CONFIRMED (save-load path only --
+                                                        // see TODO(R6) below for the one residual
+                                                        // gap on the live-cast path)
+
+// ---------------------------------------------------------------------
+// CSWGuiMainInterface (the main HUD class). STEAM-CONFIRMED addresses
+// below; see 02_buff_duration_hud.md for the full call chain
+// (Draw -> UpdatePortraits -> per-slot gate -> render).
+// ---------------------------------------------------------------------
+constexpr int CSWGuiMainInterface_Draw = 0x0074b3f0;        // vtbl[13], per-frame (this, float dt).
+                                                              // RENAMED 2026-09-29 from "_Update" --
+                                                              // decompile-confirmed this is Draw, not
+                                                              // Update (drives the childrens Draw
+                                                              // virtuals + the icon-tally render
+                                                              // itself; also VIRTUAL, overturning an
+                                                              // earlier "Draw is non-virtual" guess).
+                                                              // Address/call-graph unaffected -- name
+                                                              // only. See ghidra_knowledge lesson 37.
+constexpr int CSWGuiMainInterface_UpdatePortraits = 0x0074ee90; // called directly from Draw(),
+                                                                 // 0 explicit args; resolves
+                                                                 // creature-per-slot every frame,
+                                                                 // never persists it (see R1 note)
+constexpr int CSWGuiMainInterface_PortraitSlotGate = 0x00745770; // (slotPtr, dt, isFirstSlot)
+constexpr int CSWGuiMainInterface_PortraitIconRowDraw = 0x007457e0; // TARGET 2 hook point --
+                                                                     // (slotPtr, dt, stackKind,
+                                                                     // whichRow). See TODO(R4).
+
+// Portrait sub-object array: CSWGuiMainInterface_this + PortraitArrayBase +
+// i*PortraitSlotStride, for i = 0..2 (loop) plus one more explicit call at
+// i = 3 (PortraitArrayBase + 3*PortraitSlotStride == PortraitExtraSlotOffset,
+// arithmetic double-checked: 0x1f34 + 3*0xde4 = 0x48e0).
+constexpr int PortraitArrayBase = 0x1f34;
+constexpr int PortraitSlotStride = 0xde4;
+constexpr int PortraitExtraSlotOffset = 0x48e0; // the 4th "extra"/self slot
+constexpr int PortraitSlotCount = 4;
+
+// Per-slot icon-row sub-fields (relative to a slot pointer, i.e.
+// CSWGuiMainInterface_this + PortraitArrayBase + i*PortraitSlotStride).
+constexpr int PortraitSlot_IconCountBuff = 0xddc;   // byte -- icon count, "buff" row (whichRow=1)
+constexpr int PortraitSlot_IconCountDebuff = 0xddd; // byte -- icon count, "debuff" row (whichRow=0)
+// Embedded polymorphic icon-widget sub-objects, one per row. GUI-layout
+// tag confirmed via FUN_007450e0 (a GUI-control-lookup-by-tag function):
+// "LBL_CMBTEFCTINC%d" (Combat Effect Increase = buffs) and
+// "LBL_CMBTEFCTRED%d" (Combat Effect Reduce = debuffs). Both are
+// CSWGuiLabel-family (CSWGuiControl-derived) GUI controls.
+constexpr int PortraitSlot_BuffIconWidget = 0x968;   // "LBL_CMBTEFCTINC%d"
+constexpr int PortraitSlot_DebuffIconWidget = 0xab0; // "LBL_CMBTEFCTRED%d"
+// CSWGuiControl vtable slots (name-confirmed against the framework's own
+// Patches/Common/GameAPI/CSWGuiControl.h ControlVTableSlot enum -- exact
+// index match, not just an empirical (this,float) guess).
+constexpr int CSWGuiControl_SetExtentVtableIndex = 1;  // offset +0x4
+constexpr int CSWGuiControl_DrawVtableIndex = 14;      // offset +0x38
+
+// ---------------------------------------------------------------------
+// Party-roster resolution chain. STEAM-CONFIRMED this session (R1). This
+// is how UpdatePortraits itself finds "which creature is in party
+// position N" every frame -- reuse these calls directly rather than
+// hooking UpdatePortraits' own loop body (see R1 hook-design note below).
+// ---------------------------------------------------------------------
+// rosterObj = *(*(int*)(hudThis + 4) + 0x270)
+constexpr int HudThis_ClientBackPointerOffset = 0x4;
+constexpr int ClientObject_RosterPointerOffset = 0x270;
+constexpr int HudToRosterAccessor = 0x0073fb90; // (this=hudThis) -> rosterObj
+
+// handle = FUN_007e5da0(rosterObj, position); bounds-checked against
+// *rosterObj (a count), array at rosterObj+0x24, stride 0x88.
+constexpr int RosterCountOffset = 0x0;
+constexpr int RosterArrayOffset = 0x24;
+constexpr int RosterEntryStride = 0x88;
+constexpr int RosterPositionAccessor = 0x007e5da0; // (this=rosterObj, int position) -> handle
+
+// creaturePtr = FUN_0077d800(handle) -- resolves a roster-slot handle to
+// its live CSWSCreature-shaped object (virtual calls at +0x94/+0x98/+0x9c
+// seen on the result immediately after in UpdatePortraits).
+constexpr int RosterHandleToCreature = 0x0077d800; // (this=handle) -> creaturePtr
+
+// Raw roster position (0..2) count for the display-slot swap that
+// UpdatePortraits applies: read *rosterObj (RosterCountOffset) and compare
+// to 2 to decide whether/how to remap. NOT fully pinned down this session
+// -- see TODO(R1 residual) below.
+
+// ---------------------------------------------------------------------
+// Shared GameAPI GUI widget classes -- UX-redesign session (2026-09-29,
+// U1 step 0 / U2). STEAM-CONFIRMED vftable addresses below, found via a
+// plain RTTI keyword search (unlike the panel-specific embedded structs
+// above, these are framework-wide classes -- Patches/Common/GameAPI/*.h
+// already models them -- and DO have real RTTI on Steam). See
+// 02_buff_duration_hud.md's "UX redesign findings" section for the full
+// vtable dumps (ghidra_knowledge class_methods table has every slot).
+// ---------------------------------------------------------------------
+constexpr int CSWGuiControl_Vftable = 0x009877d4;      // STEAM-CONFIRMED, 38 slots
+constexpr int CSWGuiLabel_Vftable = 0x009878bc;        // STEAM-CONFIRMED, 40 slots
+constexpr int CSWGuiLabel_Draw = 0x00419880;           // STEAM-CONFIRMED by decompile: 2-line
+                                                        // forwarder, calls vtbl-slot-3 Draw on
+                                                        // embedded sub-widgets at self+0x60 and
+                                                        // self+0xd8 (both CSWGuiBorder-shaped --
+                                                        // same slot CSWGuiBorder_Draw occupies).
+                                                        // *** U1(a) vs (b) RESOLVED: (a) wins ***
+                                                        // the arrow-tally label is ALREADY
+                                                        // CSWGuiBorder/tag-driven -- reuse by
+                                                        // retargeting one border's FILL resource
+                                                        // (see CSWGuiBorder_Load_FillSetter below),
+                                                        // not by constructing new widgets. This
+                                                        // REPURPOSES the tally's own visual per-
+                                                        // instance, does not add alongside it.
+                                                        // Which of self+0x60/self+0xd8 is frame vs.
+                                                        // fill is NOT yet determined.
+constexpr int CSWGuiLabel_EmbeddedBorderA = 0x60;      // "BORDER" -- frame/background, leave alone.
+constexpr int CSWGuiLabel_EmbeddedBorderB = 0xd8;      // "TEXT" -- content/fill, RETARGET THIS ONE
+                                                        // for icon-resref repurposing. Both roles
+                                                        // STEAM-CONFIRMED via CSWGuiLabel_Load below
+                                                        // (profiler-scope literal strings, not a
+                                                        // guess).
+constexpr int CSWGuiLabel_Load = 0x004198d0;           // STEAM-CONFIRMED by decompile: vtable slot
+                                                        // 18, CSWGuiLabel's own (non-inherited)
+                                                        // override. Calls Load (vtbl slot 4) on
+                                                        // self+0xd8 first (profiler-scoped by the
+                                                        // literal string "TEXT", string@0x009876d0),
+                                                        // then self+0x60 (scoped by literal "BORDER").
+                                                        // This is how self+0x60 vs self+0xd8's roles
+                                                        // were determined -- U1 residual RESOLVED.
+constexpr int CSWGuiProgressBar_Vftable = 0x00987bb4;  // STEAM-CONFIRMED, 40 slots
+constexpr int CSWGuiProgressBar_Draw = 0x0041bb20;     // STEAM-CONFIRMED by decompile: identical
+                                                        // 2-line forwarder shape to
+                                                        // CSWGuiLabel_Draw (self+0x6c/self+0xe4,
+                                                        // same 0x78-byte spacing) -- confirms
+                                                        // PB_VIT%d/PB_FORCE%d use the SAME
+                                                        // CSWGuiBorder-chain mechanism, folded
+                                                        // into the U1(a) resolution above; no
+                                                        // longer a distinct fallback lead.
+constexpr int CSWGuiBorder_Vftable = 0x009875bc;       // STEAM-CONFIRMED, 5 slots (derives
+                                                        // CSWGuiObject, not CSWGuiControl)
+constexpr int CSWGuiBorder_Draw = 0x00415300;          // STEAM-CONFIRMED by decompile: draws
+                                                        // 4 corner images + tiled edges, then
+                                                        // dispatches center fill by fillstyle
+                                                        // (self+0x34 & 3): 0->FillTile,
+                                                        // 1->FillCenter, 2->direct stretch
+constexpr int CSWGuiBorder_Load = 0x00415080;          // STEAM-CONFIRMED by decompile: reads
+                                                        // GFF keys CORNER/FILLSTYLE/DIMENSION/
+                                                        // INNEROFFSET(Y)/COLOR/PULSING
+constexpr int CSWGuiBorder_FillTile = 0x00415a60;      // STEAM-CONFIRMED by decompile,
+                                                        // NON-VIRTUAL. Tiles an image across a
+                                                        // rect. (height? actually 6 raw params,
+                                                        // see decompile) -- ALWAYS an image draw
+                                                        // with a color tint, never flat-fill.
+constexpr int CSWGuiBorder_FillCenter = 0x00415d20;    // STEAM-CONFIRMED by decompile,
+                                                        // NON-VIRTUAL. Centers ONE image in a
+                                                        // rect (no tiling), color-tinted.
+                                                        // U1(b)/U4 CANDIDATE for the per-icon
+                                                        // wipe primitive: call with a rect whose
+                                                        // width/height is shrunk proportional to
+                                                        // the time-remaining ratio (R6 formula).
+                                                        // U4 ANSWERED: wipe is rectangular, no
+                                                        // radial primitive exists anywhere in
+                                                        // this widget family.
+constexpr int CSWGuiImage_Vftable = 0x0098764c;        // STEAM-CONFIRMED, 5 slots (derives
+                                                        // CSWGuiObject)
+constexpr int CSWGuiImage_Draw = 0x004168b0;           // STEAM-CONFIRMED by decompile (vtbl
+                                                        // slot 3 -- confirms slot 3 = Draw is
+                                                        // universal across the CSWGuiObject
+                                                        // family, matching CSWGuiBorder_Draw).
+constexpr int CSWGuiImage_Load = 0x00416720;           // STEAM-CONFIRMED by decompile (vtbl
+                                                        // slot 4): reads GFF keys IMAGE/
+                                                        // DRAWSTYLE/FLIPSTYLE/ALIGNMENT/
+                                                        // ROTATE(STYLE); the "IMAGE" tag result
+                                                        // is passed to CSWGuiImage_SetImage
+                                                        // below -- the most direct lead for
+                                                        // binding a literal resref to an icon.
+constexpr int CSWGuiImage_SetImage = 0x00416090;       // STEAM-CONFIRMED by decompile: the
+                                                        // "IMAGE"-tag binder called from
+                                                        // CSWGuiImage_Load. Prepares a literal
+                                                        // 16-char resref buffer (lowercase-
+                                                        // normalized via FUN_00710ca0, copied via
+                                                        // FUN_00710980) then calls
+                                                        // CSWGuiBorder_LoadResource with it -- same
+                                                        // downstream mechanism as the Border FILL
+                                                        // setter, see that constant's note below for
+                                                        // the full resolved chain.
+
+// CSWGuiBorder's Load (0x00415080) resolves its CORNER/EDGE/FILL sub-
+// widgets via a uniform tag-lookup + release-old/acquire-new resource-
+// swap pattern (STEAM-CONFIRMED by decompile of all 3 setters below) --
+// NOT a CSWGuiBorderParams struct as Patches/Common/GameAPI/
+// CSWGuiBorderParams.h models (that class does not correspond to
+// anything in this decompile). Each setter: if the tag resolves, release
+// [*(this+0x54)+offset]'s old value via its own vtbl+4 call if bound,
+// then acquire a new one via CSWGuiBorder_LoadResource and store it.
+constexpr const char* CSWGuiBorder_CornerTag = "CORNER";
+constexpr const char* CSWGuiBorder_EdgeTag = "EDGE";     // STEAM-CONFIRMED, string@0x0098762c
+constexpr const char* CSWGuiBorder_FillTag = "FILL";     // STEAM-CONFIRMED, string@0x00987624 --
+                                                          // the tag governing CSWGuiBorder_Draw's
+                                                          // FillTile/FillCenter/direct-stretch
+                                                          // fill image. THE mechanism for U5
+                                                          // (retarget this to show a power icon).
+constexpr int CSWGuiBorder_Load_CornerSetter = 0x00414680; // writes [self+0x54]+0x6c
+constexpr int CSWGuiBorder_Load_EdgeSetter = 0x00414760;   // writes [self+0x54]+0x70
+constexpr int CSWGuiBorder_Load_FillSetter = 0x00414840;   // writes [self+0x54]+0x74 -- the
+                                                            // setter to call/emulate for U1(a)'s
+                                                            // icon-retargeting mechanism
+constexpr int CSWGuiBorder_LoadResource = 0x0047eb60;      // STEAM-CONFIRMED by decompile.
+                                                            // *** THE RECOMMENDED MOD ENTRY POINT
+                                                            // for retargeting an icon resref ***.
+                                                            // Takes one param: a resolved tag /
+                                                            // 16-byte-resref-shaped buffer pointer
+                                                            // (NOT a literal char* directly -- pass
+                                                            // a manufactured resref buffer, same
+                                                            // shape FUN_00710980/FUN_00710ca0
+                                                            // produce). Dispatches to
+                                                            // FUN_0047d070(buf) if non-null (real
+                                                            // resource construct) or FUN_0047cd50()
+                                                            // if null (blank/default). Full chain
+                                                            // beneath this (documented for
+                                                            // completeness, NOT recommended as a
+                                                            // direct call site -- use THIS constant
+                                                            // instead): FUN_0047d070 placement-
+                                                            // constructs a CAurGUIImageInternal
+                                                            // object (real RTTI, vftable
+                                                            // 0x0098c1fc, derives CAurGUIImage
+                                                            // 0x0098c228 -- NOT the framework's
+                                                            // CSWGuiImageParams/CSWGuiBorderParams,
+                                                            // confirmed not to correspond to
+                                                            // anything real here) then calls
+                                                            // FUN_004da820(resrefCharPtr,0,0,0) --
+                                                            // param 2 there IS confirmed a literal
+                                                            // C-string resref (guarded by the
+                                                            // standard Aurora "NULL"-sentinel-string
+                                                            // idiom) -- which calls FUN_004da3f0
+                                                            // (0x004da3f0) for the real load, a
+                                                            // line-oriented RESOURCE-FILE PARSER
+                                                            // (opens+reads the resref line by line),
+                                                            // not a simple texture-handle bind --
+                                                            // deliberately not traced further, use
+                                                            // CSWGuiBorder_LoadResource instead of
+                                                            // hand-replicating this.
+
+// ---------------------------------------------------------------------
+// U3 (portrait sub-widget on-screen layout) -- STEAM-CONFIRMED by
+// decompile. Adjust iterates 8 sub-controls total (5+2+1, three separate
+// array strides) belonging to the portrait panel object, reading each
+// one's CURRENT (x,y,w,h) as plain ints and calling SetRect with an
+// added viewport offset. FULLY RESOLVED this session: each array index
+// matched 1:1 to its GUI tag name by cross-referencing FUN_007450e0's
+// (the tag-lookup init function) storage offsets -- see the per-index
+// comments below. (LBL_CMBTEFCTINC%d/RED%d, the icon-row widgets, are
+// NOT among these 8 -- confirmed separately, they're at
+// PortraitSlot_BuffIconWidget/DebuffIconWidget above instead, iterated
+// dynamically by CSWGuiMainInterface_PortraitIconRowDraw, not statically
+// laid out here.)
+// ---------------------------------------------------------------------
+constexpr int CSWGuiMainInterfaceChar_Adjust = 0x00745560; // (this=panelObj)
+constexpr int Adjust_ArrayA_VtablePtrBase = 0x28;   // + i*0x148, i=0..4 (5 controls):
+                                                     // i0=LBL_BACK%d, i1=LBL_DEBILATATED%d [sic,
+                                                     // literal game-data spelling], i2=
+                                                     // LBL_DISABLED%d, i3=LBL_LEVELUP%d,
+                                                     // i4=LBL_CHAR%d
+constexpr int Adjust_ArrayA_RectBase = 0x2c;        // + i*0x148 -- (x,y,w,h) ints
+constexpr int Adjust_ArrayA_Stride = 0x148;
+constexpr int Adjust_ArrayA_Count = 5;
+constexpr int Adjust_ArrayB_VtablePtrBase = 0x690;  // + i*0x16c, i=0..1 (2 controls):
+                                                     // i0=PB_VIT%d, i1=PB_FORCE%d
+constexpr int Adjust_ArrayB_RectBase = 0x694;       // + i*0x16c
+constexpr int Adjust_ArrayB_Stride = 0x16c;
+constexpr int Adjust_ArrayB_Count = 2;
+constexpr int Adjust_Single_VtablePtr = 0xbf8;      // final 1 control, no array: BTN_CHAR%d
+constexpr int Adjust_Single_RectBase = 0xbfc;
+constexpr int CSWGuiMainInterfaceChar_TagLookupInit = 0x007450e0; // (this=panelObj, guiOwnerHandle,
+                                                     // portraitIndex) -- the tag-lookup/init
+                                                     // function whose storage offsets resolved
+                                                     // the mapping above. Also stores
+                                                     // LBL_CMBTEFCTINC%d/RED%d at
+                                                     // PortraitSlot_BuffIconWidget/
+                                                     // DebuffIconWidget.
+
+// ---------------------------------------------------------------------
+// R2 DISSOLVED (confirmed from existing decompile, no new Ghidra work
+// needed): PortraitSlot_BuffIconWidget/DebuffIconWidget is a SINGLE
+// shared CSWGuiLabel instance that CSWGuiMainInterface_PortraitIconRowDraw
+// repositions (SetPosition) and redraws (Draw) N times per frame, not N
+// distinct pre-existing instances -- confirmed both by that function's
+// loop shape (fixed offset, not an array walk) and by
+// CSWGuiMainInterfaceChar_TagLookupInit doing exactly ONE tag lookup per
+// portrait for LBL_CMBTEFCTINC%d/RED%d (%d=portraitIndex only, no
+// per-icon index). The engine has NO per-icon identity concept to match
+// -- the hook can freely assign its own tracked active-effect list to
+// iteration indices 0..N-1 in its own chosen order.
+// ---------------------------------------------------------------------
+
+// ---------------------------------------------------------------------
+// CSWSObject effect-management cluster -- R3/R5 RESOLVED this session,
+// found via searching Steam callers of the already-confirmed NON-VIRTUAL
+// CGameEffect accessors (CopyEffect/SetExpiryTime/GetExpiryTime), NOT via
+// RTTI (CSWSEffectListHandler::Apply/Remove are virtual-dispatch-only,
+// confirmed to have no useful direct xrefs -- don't retry that route).
+// Positionally + size-matched against GOG's kotor2_gog_aspyr.db cluster,
+// with 3 of the 5 independently content-confirmed by decompile (marked
+// below).
+// ---------------------------------------------------------------------
+constexpr int CSWSObject_ApplyEffect = 0x00544210;         // STEAM-CONFIRMED by decompile+size
+                                                            // (1067B vs GOG's ~1072B). (this,
+                                                            // effectPtr, targetObj, 0)
+constexpr int CSWSObject_RemoveEffect = 0x00544640;        // POSITIONAL MATCH (325B vs GOG's
+                                                            // ~336B), not individually decompiled
+constexpr int CSWSObject_RemoveEffectById = 0x00544790;    // STEAM-CONFIRMED by decompile+size
+                                                            // (500B vs GOG's ~512B): (this,
+                                                            // idComponentA, idComponentB)
+constexpr int CSWSObject_UpdateEffectList = 0x00544ad0;    // STEAM-CONFIRMED by decompile+size
+                                                            // (2020B vs GOG's ~2032B). (this,
+                                                            // currentDay, currentTimeOfDay).
+                                                            // Iterates the active-effect array
+                                                            // (below), compares each effect's
+                                                            // GetExpiryTime to (currentDay,
+                                                            // currentTimeOfDay), calls
+                                                            // RemoveEffectById on expiry.
+constexpr int CSWSObject_HasSpellEffectApplied = 0x005476c0; // STEAM-CONFIRMED by decompile+size
+                                                            // (101B vs GOG's ~112B). (this,
+                                                            // spellId) -> bool. Iterates the SAME
+                                                            // active-effect array, checks each
+                                                            // effect's +0x1c field == spellId.
+constexpr int CSWSObject_ActiveEffectArrayPtr = 0x148;     // int* -- array of CGameEffect*
+constexpr int CSWSObject_ActiveEffectArrayCount = 0x14c;   // int -- element count
+constexpr int CGameEffect_SpellIdOffset = 0x1c;            // R5 RESOLVED: int, the spell/feat ID
+                                                            // that produced this effect --
+                                                            // cross-confirmed independently by
+                                                            // CSWSObject_HasSpellEffectApplied.
+                                                            // spellId -> icon resref is a data
+                                                            // lookup (e.g. spells.2da), not a
+                                                            // further RE problem.
+
+// ---------------------------------------------------------------------
+// Game time source -- R3 RESOLVED (mechanism + call), one small residual
+// flagged below. Found via UpdateEffectList's own callers: all 3 call
+// this immediately before UpdateEffectList, filling the exact
+// (currentDay, currentTimeOfDay) pair UpdateEffectList compares against.
+// Same (day, timeOfDay) units CGameEffect_ExpiryDayOffset/
+// CGameEffect_ExpiryTimeOffset (R6) already use.
+// ---------------------------------------------------------------------
+constexpr int WorldTimer_GetCurrentTime = 0x0051ad20;      // STEAM-CONFIRMED by decompile.
+                                                            // (this=worldTimerObj, int* outDay,
+                                                            // uint* outTimeOfDay). Elapsed-tick-
+                                                            // based clock (or a cached value when
+                                                            // a this+0x24==1 paused-mode flag is
+                                                            // set) with day-boundary-wraparound
+                                                            // normalization.
+// R3 residual RESOLVED (2026-09-29, follow-on session, item 1): the
+// worldTimerObj `this` pointer resolves via a FIXED GLOBAL chain -- no
+// per-object/CSWSObject/creature context needed at all. Raw disasm of
+// FUN_0051c350 (28 bytes) showed it's thiscall and dereferences its OWN
+// `this`+0x4 to get FUN_00538e00's `this` (the decompiler hid BOTH
+// implicit ECX args, same class of issue as lesson 28); tracing the
+// heartbeat's call site (0x00569525) backward found the ONE write
+// feeding FUN_0051c350's own `this` is a load from a fixed global
+// pointer, not anything CSWSObject-specific:
+//   ecx_for_FUN_00538e00 = *(*( *(int*)WorldTimerSingletonGlobal + 0x8 ) + 0x4)
+//   worldTimerObj = FUN_00538e00(ecx_for_FUN_00538e00, WorldTimerSlotSentinel)
+//   WorldTimer_GetCurrentTime(worldTimerObj, &day, &timeOfDay)
+// Callable from ANYWHERE in the process, including the render hook,
+// with zero per-slot/per-creature context.
+constexpr int WorldTimerSingletonGlobal = 0x00a1b4a4; // STEAM-CONFIRMED. Global int* --
+                                                       // *(int*)this holds a pointer; +0x8 on
+                                                       // THAT object, dereferenced again, feeds
+                                                       // FUN_00538e00's `this` (via FUN_0051c350's
+                                                       // own this+0x4 indirection, folded in here
+                                                       // for the render hook -- no need to call
+                                                       // FUN_0051c350 itself, replicate its one
+                                                       // dereference directly).
+constexpr int WorldTimerSlotSentinel = 0x7f000000;    // STEAM-CONFIRMED. Passing this as
+                                                       // FUN_00538e00's 2nd param unconditionally
+                                                       // selects the DEFAULT/main world-timer slot
+                                                       // (this+0x10048), skipping its mode/handle
+                                                       // check entirely -- the safe choice with no
+                                                       // per-object context.
+constexpr int WorldTimerSlotSelector = 0x00538e00;    // STEAM-CONFIRMED. __thiscall(this, int
+                                                       // param2) -> worldTimerObj*. this = the
+                                                       // value computed via WorldTimerSingletonGlobal
+                                                       // above; param2 = WorldTimerSlotSentinel.
+
+// ---------------------------------------------------------------------
+// Resource-bind chain -- U5/item-1 RESOLVED. See CSWGuiBorder_LoadResource
+// above for the full recommended-entry-point note; CAurGUIImage/
+// CAurGUIImageInternal (newly-discovered real RTTI classes) are the
+// actual bound-image-resource object types this chain constructs.
+// ---------------------------------------------------------------------
+constexpr int CAurGUIImage_Vftable = 0x0098c228;           // STEAM-CONFIRMED, real RTTI (newly
+                                                            // discovered this session)
+constexpr int CAurGUIImageInternal_Vftable = 0x0098c1fc;   // STEAM-CONFIRMED, derives
+                                                            // CAurGUIImage, real RTTI
+
+// ---------------------------------------------------------------------
+// R4 RESOLVED (2026-09-29, follow-on session, item 4): both hook sites,
+// byte patterns, and the wipe mechanism, all found via raw disassembly.
+// ---------------------------------------------------------------------
+
+// Hook 2 of 2: icon-retarget + wipe splice, inside
+// CSWGuiMainInterface_PortraitIconRowDraw's (0x007457e0) per-icon loop,
+// immediately before the native per-icon Draw(dt) virtual call.
+// RAW-DISASM CONFIRMED -- 13-byte clean instruction-boundary window,
+// comfortably >= 5 bytes needed for a JMP rel32 trampoline.
+constexpr int PortraitIconRowDraw_RetargetSplice = 0x00745a84;
+constexpr int PortraitIconRowDraw_RetargetSpliceLength = 13; // original bytes:
+    // 8b 4d e0            MOV ECX,[EBP-0x20]      (icon widget ptr, reload)
+    // 8b 11               MOV EDX,[ECX]           (vtable)
+    // 8b 4d e0            MOV ECX,[EBP-0x20]      (icon widget ptr, this for the call)
+    // 8b 42 38            MOV EAX,[EDX+0x38]      (vtbl slot 14 = Draw)
+    // ff d0               CALL EAX                (the native per-icon Draw(dt))
+// At this splice point, all needed values sit in stable EBP-relative
+// stack slots (function prologue spills `this` at entry, confirmed via
+// raw disasm) -- no register-pressure/reload-ordering risk:
+//   slotPtr (this of the whole function)   = [EBP-0x4c]
+//   loop index (which icon, 0..count-1)     = [EBP-0x18]
+//   icon widget ptr (CSWGuiLabel*)          = [EBP-0x20]
+//   whichRow (0=debuff/RED, nonzero=buff)   = [EBP+0x10]  -- only retarget if nonzero
+//   dt                                      = [EBP+0x8]
+// Hook body (skip_original_bytes=false, our code runs first): look up
+// creaturePtr from the item-2 side-table keyed by slotPtr; walk
+// creaturePtr's active-effect array (CSWSObject_ActiveEffectArrayPtr/
+// Count) filtered to buff-type effects present in the Effect ID table;
+// pick the entry at [loop index] (policy: iterate
+// min(engineIconCount, ourFilteredActiveBuffCount), leave native glyph
+// alone for any extra engine slots); if found, retarget the icon
+// widget's CSWGuiLabel_EmbeddedBorderB (self+0xd8, "TEXT") FILL resource
+// via CSWGuiBorder_LoadResource to that effect's spell-ID's resref, AND
+// shrink that SAME embedded border's own width/height (self+0xd8+0xc /
+// self+0xd8+0x10 -- see CSWGuiBorder_WidthOffset/HeightOffset below) by
+// the wipe ratio. Then the original 13 bytes run, and the native Draw
+// paints the retargeted, shrunk resource.
+
+// Wipe mechanism RESOLVED: decompiling CSWGuiBorder::Draw (0x00415300)
+// showed its VERY FIRST instruction reads self+0xc/self+0x10
+// (width/height) directly and gates+drives its ENTIRE layout computation
+// off them -- these are LIVE fields re-read every Draw call, not cached
+// or passed in by the caller. So the wipe needs no second draw call and
+// no FillCenter-parameter replication: just overwrite
+// self+0xd8+0xc/self+0xd8+0x10 (the retargeted FILL border's own
+// dimensions) with a shrunk value before the native Draw executes.
+// Because only self+0xd8 ("TEXT"/fill) is touched, not self+0x60
+// ("BORDER"/frame), the decorative frame stays full-size while only the
+// icon image shrinks -- the intended "cooldown wipe over the icon" look.
+constexpr int CSWGuiBorder_WidthOffset = 0xc;   // self-relative, STEAM-CONFIRMED (CSWGuiBorder::Draw
+                                                 // guard clause + all downstream layout math)
+constexpr int CSWGuiBorder_HeightOffset = 0x10; // self-relative, STEAM-CONFIRMED (same)
+
+// Hook 1 of 2 (snapshot): see UpdatePortraits_SnapshotSpliceA/B above,
+// declared alongside the item-2 side-table design.
+//
+// ITEM 3 CONFIRMED (2026-09-29, 8th session, empirical): a throwaway probe
+// hook at CSWSObject::ApplyEffect logged live CGameEffect+0x1c values
+// in-game. Casting Force Speed logged spellId=8 across several
+// sub-effects; casting Force Valor logged spellId=22. Both are EXACT
+// matches to their spells.2da row (8=FORCE_POWER_SPEED_BURST,
+// 22=FORCE_POWER_FORCE_VALOR). CGameEffect_SpellIdOffset IS a literal
+// spells.2da row index -- fully confirmed, no remaining ambiguity.
+//
+// ITEM 5 (2026-09-29, 8th session, OPEN -- new scope): item-granted buffs
+// (energy shields, stims) route through the SAME +0x1c=spells.2da-row
+// mechanism (confirmed: the same probe logged spellId=70/99 =
+// ITEM_ABILITY_ADRENAL_SHOT_ALACRITY/ITEM_ABILITY_ENERGY_SHIELD from
+// items used during the same test) -- but spells.2da's iconresref column
+// is EMPTY for item-ability rows, so the icon can't come from the same
+// lookup the force-power icons use. User directed researching the HUD
+// quickbar's (CSWGuiMainInterfaceAction) own icon-resolution logic
+// (it has a SetIcon method, GOG 0x512ea0, Steam counterpart not yet
+// found) and reusing it, rather than hardcoding a stopgap icon list.
+// See 02_buff_duration_hud.md's "Item 5" section -- this is now the one
+// blocker for hook 2's icon-lookup logic to handle item-ability buffs
+// correctly; hooks 1a/1b (snapshot) do not depend on it.
+
+// ---------------------------------------------------------------------
+// TODO(R1 residual, low priority): the exact trigger condition for
+// UpdatePortraits' raw-position -> display-slot swap (gated on
+// *rosterObj == 2, i.e. RosterCountOffset's value) is understood at the
+// "what" level (see the chain above) but its precise "why 2 specifically"
+// semantics were not chased further -- not blocking, since our hook only
+// needs to CALL the same chain UpdatePortraits already calls, not
+// reimplement the swap rule itself.
+// ---------------------------------------------------------------------
+
+// ---------------------------------------------------------------------
+// Item 2 (2026-09-29, follow-on session): multi-slot creature resolution,
+// driven by the all-party-members scope decision. RESOLVED by decompile:
+// full disassembly of UpdatePortraits found local_1c (the DISPLAY slot
+// index, 0..2, after the raw-position swap) and local_3c (creaturePtr)
+// both live right before it computes the slot pointer
+// `hudThis + 0x1f34 + local_1c*0xde4` -- the EXACT same slotPtr value
+// PortraitIconRowDraw (0x007457e0) will receive as its own `this` later
+// the same frame (single HUD instance, same constants). DESIGN DECISION:
+// key the side-table by the RAW slotPtr address itself, never by a
+// derived index -- there are only 4 possible slotPtr values per session
+// (3 loop slots + 1 "extra"/mirror slot), so a 4-entry linear-scan table
+// needs no reverse index math and no access to hudThis from
+// PortraitIconRowDraw's own call frame. BONUS FINDING: the 4th "extra"
+// portrait slot (PortraitExtraSlotOffset, the larger selected-character
+// card, user-screenshot-confirmed bigger) is NOT an independent roster
+// position -- decompile shows it's gated on `local_1c==0` and mirrors
+// WHICHEVER creature occupies display slot 0. The snapshot hook must
+// therefore write BOTH (normalSlotPtr, creaturePtr) and, only when
+// local_1c==0, (extraSlotPtr, creaturePtr) using the SAME creaturePtr.
+// ---------------------------------------------------------------------
+struct PortraitSlotCreatureEntry {
+    int slotPtr;      // raw absolute address, hudThis + PortraitArrayBase + i*Stride, or +PortraitExtraSlotOffset
+    int creaturePtr;  // resolved via the R1 chain above (HudToRosterAccessor/RosterPositionAccessor/RosterHandleToCreature)
+};
+constexpr int PortraitSlotCreatureTableSize = 4; // 3 loop slots + 1 extra/mirror slot
+
+// Snapshot-hook splice site A (2026-09-29): inside UpdatePortraits'
+// per-position loop, immediately after it computes the normal (0..2)
+// slot pointer, before storing it to a local. RAW-DISASM CONFIRMED.
+constexpr int UpdatePortraits_SnapshotSpliceA = 0x0074f25a; // 6 original bytes:
+                                                             // 89 85 44 ff ff ff
+                                                             // (MOV [EBP+0xffffff44],EAX)
+                                                             // At this address: EAX=slotPtr
+                                                             // (freshly computed), [EBP-0x38]=
+                                                             // creaturePtr (stable all iteration).
+// Snapshot-hook splice site B: the "extra"/mirror slot (only reached
+// when local_1c==0 this iteration). RAW-DISASM CONFIRMED.
+constexpr int UpdatePortraits_SnapshotSpliceB = 0x0074f8ab; // 6 original bytes:
+                                                             // 89 95 a4 fe ff ff
+                                                             // (MOV [EBP+0xfffffea4],EDX)
+                                                             // At this address: EDX=extraSlotPtr
+                                                             // = hudThis+0x48e0, [EBP-0x38]=
+                                                             // creaturePtr (same value as splice A
+                                                             // this same iteration).
+// ---------------------------------------------------------------------
+
+} // namespace
+
+BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
+    UNREFERENCED_PARAMETER(instance);
+    UNREFERENCED_PARAMETER(reason);
+    UNREFERENCED_PARAMETER(reserved);
+    return TRUE;
+}
+
+// No hook entry points defined yet -- see exports.def note (not created
+// yet either) and TODO(R4) above. hooks.toml is deliberately left
+// unwritten (per the Phase 3 plan) until R4 produces a real address +
+// byte pattern; a placeholder entry would risk looking "done" when it
+// isn't even byte-verified yet.
