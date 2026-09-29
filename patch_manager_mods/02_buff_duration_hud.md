@@ -1081,6 +1081,18 @@ reference; the next planning session should treat the render layer as
 open, per "UX reconsideration" above, not follow section 2 literally.
 Section 1 (data layer) is unaffected and still accurate.**
 
+**Sections 1-3 below predate the item 1-4 findings above (7th session)
+and describe an OLDER plan shape (a separate update-loop-tick hook for
+data + a fixed-coordinate quad draw) — superseded in the specifics
+covered by the findings above (there is no separate update-loop-tick
+hook; data reading happens inline inside the icon-retarget hook itself,
+driven by the item-2 side-table; there is no quad draw, the wipe is a
+dimension-field shrink on the existing retargeted border). Section 1's
+general idea (walk the active-effect array, filter by type, read
+duration fields) is still correct and now per-creature (via the item-2
+side-table), not per-"owner object" singular — kept below for the
+underlying data-layer logic, not the hook-count/shape specifics.**
+
 ### 1. Data layer — read the effect list
 - Detour into the game's main per-frame update loop.
 - Each frame, walk the owner object's active-effect array
@@ -1114,14 +1126,24 @@ Section 1 (data layer) is unaffected and still accurate.**
 - Draw a semi-transparent quad over it, height scaled by
   `DurationRemaining / MaxDuration`, for the cooldown-wipe effect.
 
-**Open item before Phase 3 hook-writing**: confirm the icon-count bytes
-`FUN_007457e0` reads (`slotPtr+0xddc`/`+0xddd`) are actually driven by this
-same active-effect list per party member, not a different status-icon
-source — not traced this session (see Phase 2 findings above).
+**Open item before Phase 3 hook-writing — MOOT, resolved by policy (item
+4, this session)**: whether `slotPtr+0xddc`/`+0xddd` (the engine's own
+icon count) is driven by the same active-effect list no longer needs
+tracing — the locked-in policy is to iterate
+`min(engineIconCount, ourFilteredActiveBuffCount)`, using the engine's
+count only as a loop-iteration upper bound, never assuming it maps 1:1
+to our own tracked list's contents or order.
 
-### 3. Hook construction (`.kpatch`)
-- Two hooks needed (update-loop tick to read effect data + `FUN_007457e0`
-  detour for render), likely in the same patch package.
+### 3. Hook construction (`.kpatch`) — SUPERSEDED, see item 4 findings above
+- ~~Two hooks needed (update-loop tick to read effect data + `FUN_007457e0`
+  detour for render), likely in the same patch package.~~ Actual design
+  (item 4, this session): **three** detours, all additive
+  (`skip_original_bytes=false`) — two snapshot-hook splices inside
+  `UpdatePortraits` (`0x0074f25a` normal slots, `0x0074f8ab` extra slot)
+  that populate the item-2 side-table, and one icon-retarget+wipe splice
+  inside `PortraitIconRowDraw` (`0x00745a84`) that reads the effect list
+  inline (no separate update-loop-tick hook) and both retargets the
+  icon's FILL resource and shrinks its dimension fields for the wipe.
 - `skip_original_bytes = false` on both — we are strictly additive, never
   replacing engine logic.
 - New `.tga` icon assets: can mostly reuse existing power icons already
