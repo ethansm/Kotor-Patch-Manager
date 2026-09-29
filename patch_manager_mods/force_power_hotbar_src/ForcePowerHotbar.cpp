@@ -42,13 +42,14 @@ constexpr int MaxEntries = 256;
 
 // ---- logging: force_power_hotbar_log.txt in the game dir, capped ------------------------------------
 int g_logLines = 0;
-constexpr int MaxLogLines = 12000;
+long g_frameForLog = 0;   // mirrors g_frame so every line is frame-stamped
+constexpr int MaxLogLines = 60000;
 void logf(const char* fmt, ...) {
-    if (g_logLines >= MaxLogLines) return;
+    if (g_logLines >= MaxLogLines) { if (g_logLines == MaxLogLines) { ++g_logLines; FILE* f = fopen("force_power_hotbar_log.txt", "a"); if (f) { fputs("LOG CAP REACHED -- further lines dropped\n", f); fclose(f); } } return; }
     FILE* f = fopen("force_power_hotbar_log.txt", "a");
     if (!f) return;
     ++g_logLines;
-    fprintf(f, "[%lu] ", (unsigned long)GetTickCount());
+    fprintf(f, "[%lu f%ld] ", (unsigned long)GetTickCount(), g_frameForLog);
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
 }
@@ -85,10 +86,11 @@ hb::ActionRef decodeKey(int key, const std::string& name) {
 int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
     out->clear();
     int base = rdInt(hud, Hud_GroupLists + g * 12), count = rdInt(hud, Hud_GroupLists + 4 + g * 12);
-    if (base == 0 || count <= 0 || count > MaxEntries) return 0;
+    if (count < 0 || count > MaxEntries) { logf("readGroup g=%d: implausible count=%d base=%08x", g, count, (unsigned)base); return 0; }
+    if (base == 0 || count == 0) return 0;
     for (int i = 0; i < count; ++i) {
         uintptr_t e = (uintptr_t)base + (uintptr_t)i * EntryStride;
-        if (IsBadReadPtr(reinterpret_cast<const void*>(e), EntryStride)) break;
+        if (IsBadReadPtr(reinterpret_cast<const void*>(e), EntryStride)) { logf("readGroup g=%d: entry %d at %08x unreadable, stopping", g, i, (unsigned)e); break; }
         Entry en; en.group = g; en.index = i; en.key = rdInt(e, Entry_Key); en.flags = rdInt(e, Entry_Flags);
         en.name = readCExoString(e);
         en.ref = decodeKey(en.key, en.name);
@@ -156,11 +158,14 @@ void logPanels(uintptr_t hud) {
 
 // ---- controlled creature + characterKey ---------------------------------------------------------------
 uintptr_t controlledCreature() {
-    int app; if (!readAt(AppGlobal, 0, &app) || !app) return 0;
-    int a; if (!readAt(app, 4, &a) || !a) return 0;
-    int b; if (!readAt(a, 4, &b) || !b) return 0;
-    int party; if (!readAt(b, 0x270, &party) || !party) return 0;
-    if (rdInt(party, 0) <= 0) return 0;   // member count
+    static const char* lastFail = nullptr;
+    auto fail = [&](const char* why) { if (lastFail != why) { lastFail = why; logf("creature: unavailable (%s)", why); } return (uintptr_t)0; };
+    int app; if (!readAt(AppGlobal, 0, &app) || !app) return fail("app global null");
+    int a; if (!readAt(app, 4, &a) || !a) return fail("app+4 null");
+    int b; if (!readAt(a, 4, &b) || !b) return fail("a+4 null");
+    int party; if (!readAt(b, 0x270, &party) || !party) return fail("party table null");
+    if (rdInt(party, 0) <= 0) return fail("party count 0");   // member count
+    lastFail = nullptr;
     using Fn = uintptr_t(__thiscall*)(void*);
     return reinterpret_cast<Fn>(GetControlledCreature)(reinterpret_cast<void*>(party));
 }
@@ -221,7 +226,7 @@ void checkConfig(bool force) {
     if (mt == -1 && g_cfgMtime == -2) { writeTemplateIni(); mt = hb::Config::mtimeOf(IniPath); }
     if (mt == g_cfgMtime) return;
     hb::Config c;
-    if (!c.Load(IniPath)) { logf("cfg: cannot read %s (keeping previous)", IniPath); g_cfgMtime = mt; return; }
+    if (!c.Load(IniPath)) { logf("cfg: cannot read %s (mtime=%lld, keeping previous)", IniPath, mt); g_cfgMtime = mt; return; }
     g_cfg = c; g_cfgMtime = mt;
     logf("cfg: loaded %s: invoke=%d verbose=%d kbdev=%d tagoff=%x profiles=%d warnings=%d",
          IniPath, g_cfg.general.invoke, g_cfg.general.verbose, g_cfg.general.keyboardDevice, g_cfg.general.creatureTagOffset,
@@ -280,12 +285,14 @@ void invokeEntry(uintptr_t hud, const Entry& e) {
     int* sel = reinterpret_cast<int*>(hud + Hud_GroupSel + e.group * 4);
     int* active = reinterpret_cast<int*>(hud + Hud_ActiveGroup);
     if (IsBadWritePtr(sel, 4) || IsBadWritePtr(active, 4)) { logf("  invoke: hud selection not writable"); return; }
+    logf("  invoke: pre group=%d key=%08x sel=%08x active=%d ownerId=%08x", e.group, (unsigned)e.key, (unsigned)*sel, *active, (unsigned)rdInt((uintptr_t)rdInt(hud, Hud_GroupLists + e.group * 12) + (uintptr_t)e.index * EntryStride, Entry_Owner));
     int oldSel = *sel, oldActive = *active;
     *sel = e.key;
     using Fn = void(__thiscall*)(void*, int, int);
     reinterpret_cast<Fn>(HudInvokeGroup)(reinterpret_cast<void*>(hud), e.group, 0);
-    logf("  invoke: called group=%d key=%08x (sel before=%08x after=%08x)", e.group, (unsigned)e.key, (unsigned)oldSel, (unsigned)*sel);
-    if (*sel == e.key) *sel = oldSel;
+    logf("  invoke: returned group=%d key=%08x (sel before=%08x after=%08x active before=%d after=%d)", e.group, (unsigned)e.key, (unsigned)oldSel, (unsigned)*sel, oldActive, *active);
+    if (*sel == e.key) { *sel = oldSel; logf("  invoke: selection restored to %08x", (unsigned)oldSel); }
+    else logf("  invoke: selection changed by the game to %08x, NOT restoring", (unsigned)*sel);
     *active = oldActive;
 }
 
@@ -296,7 +303,12 @@ void drainRing(uintptr_t hud) {
         std::string sk = hb::SlotKeyName(r.row, r.slot);
         if (a.empty()) { logf("slot %s: unbound now (config changed?)", sk.c_str()); continue; }
         Entry e;
-        if (!resolve(hud, a, &e)) { logf("slot %s: %s -> entry not available for '%s'", sk.c_str(), hb::Format(a).c_str(), g_charKey.c_str()); continue; }
+        if (!resolve(hud, a, &e)) {
+            logf("slot %s: %s -> entry not available for '%s'; available now:", sk.c_str(), hb::Format(a).c_str(), g_charKey.c_str());
+            std::vector<Entry> es;
+            for (int g = 0; g < 6; ++g) { readGroup(hud, g, &es); for (auto& x : es) logf("    avail g%d.%d key=%08x %s \"%s\"", g, x.index, (unsigned)x.key, hb::Format(x.ref).c_str(), x.name.c_str()); }
+            continue;
+        }
         logf("slot %s: %s -> group %d index %d key=%08x flags=%08x usable=%d %s", sk.c_str(), hb::Format(a).c_str(), e.group, e.index,
              (unsigned)e.key, (unsigned)e.flags, e.flags & 1, g_cfg.general.invoke ? "INVOKING" : "(Invoke=0: would invoke)");
         if (g_cfg.general.invoke) invokeEntry(hud, e);
@@ -343,10 +355,14 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
 extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     uintptr_t hud = reinterpret_cast<uintptr_t>(hudPtr);
-    ++g_frame;
+    ++g_frame; g_frameForLog = g_frame;
+    static DWORD lastTickTime = 0; DWORD nowT = GetTickCount();
+    if (lastTickTime && nowT - lastTickTime > 1500) logf("tick: gap of %lu ms since previous HUD tick (load/menu/HUD destroyed?)", (unsigned long)(nowT - lastTickTime));
+    lastTickTime = nowT;
+    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d capLogged=%d ctrl/alt/shift=%d%d%d", g_frame, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke, g_capLogged, (int)g_ctrl, (int)g_alt, (int)g_shift);
     if (g_frame == 1) logf("tick: first HUD tick hud=%08x kbdev=%d", (unsigned)hud, g_kbDevice);
     if (hud != g_hud) { g_hud = hud; logf("tick: hud pointer now %08x", (unsigned)hud); }
-    if (!hud || IsBadReadPtr(hudPtr, 0x1CA0)) { g_hudGateOk = false; return; }
+    if (!hud || IsBadReadPtr(hudPtr, 0x1CA0)) { if (g_hudGateOk) logf("tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }
 
     checkConfig(g_frame == 1);
 
@@ -360,10 +376,15 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
         if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; recomputeBound(); }
     }
     probe(hud, g_frame == 60);
-    if (gate) drainRing(hud); else g_ringTail = g_ringHead;   // never invoke while the HUD is not the active panel
+    if (gate) drainRing(hud);
+    else if (g_ringTail != g_ringHead) { logf("tick: gate closed, discarding %d queued request(s)", (g_ringHead - g_ringTail + 16) % 16); g_ringTail = g_ringHead; }   // never invoke while the HUD is not the active panel
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_ATTACH) logf("force-power-hotbar 0.1.0-dev loaded");
+    if (reason == DLL_PROCESS_ATTACH) {
+        char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
+        logf("force-power-hotbar 0.1.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
+        logf("addresses: invoke=%08x kbdevGlobal=%08x app=%08x getCreature=%08x hudVt=%08x whitelist=%08x,%08x,%08x,%08x", (unsigned)HudInvokeGroup, (unsigned)KeyboardDeviceGlobal, (unsigned)AppGlobal, (unsigned)GetControlledCreature, (unsigned)HudVtable, (unsigned)PanelWhitelist[0], (unsigned)PanelWhitelist[1], (unsigned)PanelWhitelist[2], (unsigned)PanelWhitelist[3]);
+    }
     return TRUE;
 }
