@@ -40,6 +40,11 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   party portrait's vitality/Force bars (stacked segments, colored by shield
   family). **Status 2026-09-29: idea + verified `forceshields.2da` data, no Ghidra yet.**
 
+- [`09_load_hang_investigation.md`](09_load_hang_investigation.md) — the intermittent
+  load-screen hang (`NtGetContextThread` spin, ~7 incidents, unattributed): incident
+  table, log evidence, ranked hypotheses (incl. `taskset -c 0,6` = one physical core),
+  capture procedure and an A/B experiment plan.
+
 ## Why this matters for our specific install
 
 Two things about this build make Patch Manager both *more* attractive and
