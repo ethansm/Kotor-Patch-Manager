@@ -51,6 +51,8 @@ constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferr
 constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
 constexpr int MaxColumns = 3;
 constexpr float DimAlpha = 0.35f;
+constexpr float BgAlpha = 0.45f;              // green backing square, full-strength part
+const float BgColor[3] = { 0.10f, 0.75f, 0.25f };
 
 // ---- diagnostics: buffhud_log.txt in the game dir, capped, off the hot path when full ----
 int g_logLines = 0;
@@ -262,9 +264,12 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
         int bright = int(size * ratio + 0.5f);
         if (bright > size) bright = size;
         if (logIt) logf("  icon[%d] %s rect=(%d,%d,%d,%d) ratio=%.3f bright=%d dimAlpha=%.2f", i, buffs[i].resref, ix, iy, size, size, ratio, bright, DimAlpha);
-        draw(image, ix, iy, size, size, 0, rotBits, color, baseAlpha * DimAlpha);          // elapsed part: dim
-        if (bright > 0) {                                                                    // remaining part, bottom-anchored
+        // elapsed part (whole square, dim): green backing + icon
+        if (pushClip(ix, iy, size, size, BgColor, 0, BgAlpha * DimAlpha)) popClip();   // the push itself fills
+        draw(image, ix, iy, size, size, 0, rotBits, color, baseAlpha * DimAlpha);
+        if (bright > 0) {                                                               // remaining part, bottom-anchored
             int y0 = iy + size - bright;
+            if (pushClip(ix, y0, size, bright, BgColor, 0, BgAlpha)) popClip();
             int ok = pushClip(ix, y0, size, bright, ClipNoFillColor, 0, 1.0f);
             if (ok) {
                 draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
