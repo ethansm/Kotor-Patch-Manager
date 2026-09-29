@@ -51,8 +51,14 @@ constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferr
 constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
 constexpr int MaxColumns = 3;
 constexpr float DimAlpha = 0.35f;
-constexpr float BgAlpha = 0.45f;              // green backing square, full-strength part
-const float BgColor[3] = { 0.10f, 0.75f, 0.25f };
+constexpr float BgAlpha = 0.65f;              // backing disc, full-strength part
+const float BgColor[3] = { 0.05f, 0.30f, 0.30f };  // tint of the round backing (dark teal)
+const char* const CircleResref = "buffhud_circle";  // white disc TGA shipped in override/
+
+// spells.2da rows that are ITEM abilities (stims, shots, shields, cloak); force powers get no backing
+bool isItemAbility(int spell) {
+    return (spell >= 69 && spell <= 77) || (spell >= 99 && spell <= 108) || spell == 129 || spell == 132 || spell == 257;
+}
 
 // ---- diagnostics: buffhud_log.txt in the game dir, capped, off the hot path when full ----
 int g_logLines = 0;
@@ -126,7 +132,7 @@ void* imageFor(const char* resref) {
     return image;
 }
 
-struct Buff { const char* resref; float ratio; };
+struct Buff { const char* resref; float ratio; bool item; };
 
 // distinct tracked spell ids on the creature, in application order
 int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int maxOut) {
@@ -151,7 +157,7 @@ int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int ma
             if (ratio > 1.0f) ratio = 1.0f;
             if (ratio < MinWipeRatio) ratio = MinWipeRatio;
         }
-        out[n++] = { kEffectIcons[spell], ratio };
+        out[n++] = { kEffectIcons[spell], ratio, isItemAbility(spell) };
     }
     return n;
 }
@@ -253,6 +259,10 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
     auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
 
+    auto draw2 = [&](void* img, int x, int y, int w, int h, const float* tint, float alpha) {
+        reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
+            (*reinterpret_cast<void***>(img))[6])(img, x, y, w, h, 0, rotBits, tint, alpha);
+    };
     flush(flushArg);
     for (int i = 0; i < drawN; ++i) {
         void* image = imageFor(buffs[i].resref);
@@ -264,14 +274,15 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
         int bright = int(size * ratio + 0.5f);
         if (bright > size) bright = size;
         if (logIt) logf("  icon[%d] %s rect=(%d,%d,%d,%d) ratio=%.3f bright=%d dimAlpha=%.2f", i, buffs[i].resref, ix, iy, size, size, ratio, bright, DimAlpha);
-        // elapsed part (whole square, dim): green backing + icon
-        if (pushClip(ix, iy, size, size, BgColor, 0, BgAlpha * DimAlpha)) popClip();   // the push itself fills
+        void* disc = buffs[i].item ? imageFor(CircleResref) : nullptr;   // round backing for item abilities only
+        // elapsed part (whole square, dim): backing disc + icon
+        if (disc) draw2(disc, ix, iy, size, size, BgColor, BgAlpha * DimAlpha);
         draw(image, ix, iy, size, size, 0, rotBits, color, baseAlpha * DimAlpha);
         if (bright > 0) {                                                               // remaining part, bottom-anchored
             int y0 = iy + size - bright;
-            if (pushClip(ix, y0, size, bright, BgColor, 0, BgAlpha)) popClip();
             int ok = pushClip(ix, y0, size, bright, ClipNoFillColor, 0, 1.0f);
             if (ok) {
+                if (disc) draw2(disc, 0, -(size - bright), size, size, BgColor, BgAlpha);
                 draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
                 popClip();
             } else if (logIt) logf("  icon[%d] clip push refused", i);
