@@ -4,3 +4,4 @@ EXPORTS
     RetargetBuffIcon
     RestoreBuffIcon
     DrawBuffColumn
+    ShieldProbeSlot

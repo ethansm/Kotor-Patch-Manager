@@ -163,12 +163,96 @@ int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int ma
 // state saved by hook 2 for hook 3
 struct Saved { bool active; int border; int origImage; int width; int height; } g_saved;
 
+
+// ---- Shield Bar PROBE (1.1.0-probe): OFF unless "shieldprobe.txt" exists in the game dir.
+// Writes shieldprobe_log.txt: effect APPLY/CHANGE/REMOVE per creature (S1/S2/S4) and the
+// portrait slot rects + test rects drawn at the new every-frame draw site (R-D/S6/S7). ----
+bool g_probe = false;
+int g_probeLines = 0, g_frame = 0, g_firstSlot = 0;
+constexpr int MaxProbeLines = 20000;
+void probeLog(const char* fmt, ...) {
+    if (!g_probe || g_probeLines >= MaxProbeLines) return;
+    FILE* f = fopen("shieldprobe_log.txt", "a");
+    if (!f) return;
+    ++g_probeLines;
+    fprintf(f, "[t=%lu f=%d] ", GetTickCount(), g_frame);
+    va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
+    fputc('\n', f); fclose(f);
+}
+
+struct EffRec { int eff; unsigned short type, sub; int spell, creator; float dur; int ints[8]; bool seen; };
+constexpr int ProbeMaxEff = 128, ProbeMaxCreatures = 8;
+struct CreatureRec { int creature; unsigned lastTick; bool primed; int n; EffRec e[ProbeMaxEff]; };
+CreatureRec g_cr[ProbeMaxCreatures];
+
+void probeDump(int eff, char* out, int cap) {
+    int len = 0;
+    for (int row = 0; row < 12; ++row) {
+        len += snprintf(out + len, cap - len, "\n    +%02x:", row * 16);
+        for (int k = 0; k < 16; ++k) {
+            unsigned char b = 0;
+            if (!readAt(eff, row * 16 + k, &b)) { len += snprintf(out + len, cap - len, " .."); continue; }
+            len += snprintf(out + len, cap - len, " %02x", b);
+        }
+    }
+}
+
+void probeEffects(int slotPtr, int creature) {
+    CreatureRec* cr = nullptr;
+    for (auto& c : g_cr) if (c.creature == creature) { cr = &c; break; }
+    if (!cr) for (auto& c : g_cr) if (c.creature == 0) { cr = &c; c.creature = creature; break; }
+    if (!cr) return;
+    unsigned now = GetTickCount();
+    if (cr->lastTick == now) return;            // the mirror slot repeats slot 0's creature
+    cr->lastTick = now;
+    int arr = 0, count = 0;
+    if (!readAt(creature, Creature_EffectArrayOffset, &arr) || !readAt(creature, Creature_EffectCountOffset, &count)) return;
+    if (arr == 0 || count < 0 || count > MaxEffects) return;
+    for (int i = 0; i < cr->n; ++i) cr->e[i].seen = false;
+    for (int i = 0; i < count; ++i) {
+        int eff;
+        if (!readAt(arr, i * 4, &eff) || eff == 0) continue;
+        EffRec cur = {}; cur.eff = eff;
+        readAt(eff, 0x8, &cur.type); readAt(eff, 0xa, &cur.sub); readAt(eff, 0x1c, &cur.spell);
+        readAt(eff, 0x18, &cur.creator); readAt(eff, 0xc, &cur.dur);
+        for (int k = 0; k < 8; ++k) readAt(eff, 0x34 + 4 * k, &cur.ints[k]);
+        EffRec* old = nullptr;
+        for (int k = 0; k < cr->n; ++k) if (cr->e[k].eff == eff) { old = &cr->e[k]; break; }
+        if (!old) {
+            if (cr->n >= ProbeMaxEff) continue;
+            char dump[1400]; probeDump(eff, dump, sizeof(dump));
+            probeLog("APPLY%s c=%08x slot=%08x e=%08x type=0x%04x sub=0x%04x spell=%d creator=%08x dur=%.2f ints=[%d,%d,%d,%d,%d,%d,%d,%d]%s",
+                     cr->primed ? "" : "(pre)", creature, slotPtr, eff, cur.type, cur.sub, cur.spell, cur.creator, cur.dur,
+                     cur.ints[0], cur.ints[1], cur.ints[2], cur.ints[3], cur.ints[4], cur.ints[5], cur.ints[6], cur.ints[7], dump);
+            cur.seen = true; cr->e[cr->n++] = cur;
+        } else {
+            bool chg = old->type != cur.type || old->sub != cur.sub || memcmp(old->ints, cur.ints, sizeof(cur.ints)) != 0;
+            if (chg)
+                probeLog("CHANGE c=%08x e=%08x spell=%d type 0x%04x->0x%04x sub 0x%04x->0x%04x ints [%d,%d,%d,%d,%d,%d,%d,%d]->[%d,%d,%d,%d,%d,%d,%d,%d]",
+                         creature, eff, cur.spell, old->type, cur.type, old->sub, cur.sub,
+                         old->ints[0], old->ints[1], old->ints[2], old->ints[3], old->ints[4], old->ints[5], old->ints[6], old->ints[7],
+                         cur.ints[0], cur.ints[1], cur.ints[2], cur.ints[3], cur.ints[4], cur.ints[5], cur.ints[6], cur.ints[7]);
+            *old = cur; old->seen = true;
+        }
+    }
+    for (int k = 0; k < cr->n;) {
+        if (!cr->e[k].seen) {
+            probeLog("REMOVE c=%08x e=%08x type=0x%04x sub=0x%04x spell=%d lastints=[%d,%d,%d,%d,%d,%d,%d,%d]", creature, cr->e[k].eff,
+                     cr->e[k].type, cr->e[k].sub, cr->e[k].spell, cr->e[k].ints[0], cr->e[k].ints[1], cr->e[k].ints[2], cr->e[k].ints[3],
+                     cr->e[k].ints[4], cr->e[k].ints[5], cr->e[k].ints[6], cr->e[k].ints[7]);
+            cr->e[k] = cr->e[--cr->n];
+        } else ++k;
+    }
+    cr->primed = true;
+}
+
 } // namespace
 
 extern "C" {
 
 void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
     static int n = 0; if (n < 60) { ++n; logf("snapshot slot=%08x creature=%08x", slotPtr, creaturePtr); }
+    if (g_probe && creaturePtr) probeEffects(slotPtr, creaturePtr);
     for (auto& e : g_slots) if (e.slotPtr == slotPtr) { e.creaturePtr = creaturePtr; return; }
     for (auto& e : g_slots) if (e.slotPtr == 0) { e = { slotPtr, creaturePtr }; return; }
 }
@@ -296,11 +380,61 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     flush(flushArg);
 }
 
+// Probe draw site: FUN_00745770 (per-slot icon-row gate) after its prologue, ECX = slotPtr,
+// [ebp+0x10] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
+// after the panel controls drew and independent of the engine's arrow counts.
+void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
+    if (!g_probe) return;
+    if (g_firstSlot == 0) g_firstSlot = slotPtr;
+    if (slotPtr == g_firstSlot) ++g_frame;
+    int creature = creatureForSlot(slotPtr);
+    int flags = 0, vitVt = 0, forceVt = 0, vit[4] = {}, force[4] = {}, card[4] = {};
+    readAt(slotPtr, 0x590, &flags); readAt(slotPtr, 0x690, &vitVt); readAt(slotPtr, 0x7fc, &forceVt);
+    for (int k = 0; k < 4; ++k) {
+        readAt(slotPtr, 0x694 + 4 * k, &vit[k]); readAt(slotPtr, 0x800 + 4 * k, &force[k]); readAt(slotPtr, 0x54c + 4 * k, &card[k]);
+    }
+    float scale = 1.0f;
+    { float s = reinterpret_cast<float(__cdecl*)()>(HudScaleFn)(); if (s > 0.1f && s < 10.0f) scale = s; }
+    int sig = slotPtr ^ creature ^ flags ^ isLarge ^ (vit[0] * 3) ^ (vit[1] * 5) ^ (vit[2] * 7) ^ (vit[3] * 11) ^ (force[0] * 13) ^ (card[0] * 17) ^ (card[2] * 19) ^ int(scale * 100);
+    static int lastSig[8]; static int sigSlot[8]; static int nSig = 0;
+    int si = -1; for (int k = 0; k < nSig; ++k) if (sigSlot[k] == slotPtr) si = k;
+    if (si < 0 && nSig < 8) { si = nSig++; sigSlot[si] = slotPtr; lastSig[si] = 0; }
+    if (si >= 0 && lastSig[si] != sig) {
+        lastSig[si] = sig;
+        probeLog("SLOT %08x creature=%08x large=%d flags590=%08x vt690=%08x vt7fc=%08x scale=%.3f vit=(%d,%d,%d,%d) force=(%d,%d,%d,%d) card=(%d,%d,%d,%d)",
+                 slotPtr, creature, isLarge, flags, vitVt, forceVt, scale, vit[0], vit[1], vit[2], vit[3], force[0], force[1], force[2], force[3],
+                 card[0], card[1], card[2], card[3]);
+    }
+    if (!creature || vit[2] < 1 || vit[2] > 400 || vit[3] < 1 || vit[3] > 400) return;
+
+    int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
+    int W = int(vit[2] * 0.45f + 0.5f); if (W < 1) W = 1;
+    int H = vit[3];
+    float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
+    auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
+    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
+    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
+    static const float cyan[3] = { 0.298f, 0.675f, 1.0f }, white[3] = { 1.0f, 1.0f, 1.0f };
+    flush(flushArg);
+    int ax = vit[0] - gap - W, ay = vit[1];
+    if (pushClip(ax, ay, W, H, cyan, 0, 0.9f)) popClip();            // test rect A (geometry)
+    const char* texs[2] = { "fx_tex_14", "fx_tex_16" };
+    for (int t = 0; t < 2; ++t) {                                    // test rects B/C (texture, S7)
+        void* image = imageFor(texs[t]);
+        if (!image) continue;
+        int bx = vit[0] - (t + 2) * (gap + W);
+        reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
+            (*reinterpret_cast<void***>(image))[6])(image, bx, ay, W, H, 0, 0, white, 1.0f);
+    }
+    flush(flushArg);
+}
+
 } // extern "C"
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         g_debugLog = GetFileAttributesA("buffhud_debug.txt") != INVALID_FILE_ATTRIBUTES;
+        g_probe = GetFileAttributesA("shieldprobe.txt") != INVALID_FILE_ATTRIBUTES;
         logf("buffhud loaded");
     }
     return TRUE;

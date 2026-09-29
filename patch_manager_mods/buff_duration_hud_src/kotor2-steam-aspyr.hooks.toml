@@ -98,3 +98,22 @@ type = "int"
 [[hooks.parameters]]
 source = "[ebp-0x4]"
 type = "int"
+
+
+# PROBE (1.1.0-probe): FUN_00745770 per-slot icon-row gate, after prologue (55 8b ec 51 done).
+# ECX = slotPtr (this), [ebp+0x10] = isFirst (leader). Runs every frame per slot, before the
+# arrow-count test. Window 89 4d fc / 8b 45 fc (2 whole instructions, 6 bytes, no jumps).
+[[hooks]]
+address = 0x00745774
+type = "detour"
+function = "ShieldProbeSlot"
+original_bytes = [0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0x10]"
+type = "int"

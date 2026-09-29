@@ -275,3 +275,11 @@ Shares Mod 2's creature/effect snapshot. Mod 2 is done, so build it now,
 as a feature of the same DLL/patch (`buff-duration-hud`) (one
 effect walk per frame, one set of portrait hooks) rather than a second
 patch hooking the same functions.
+
+## Phase A0 result (2026-09-29): draw site chosen
+
+`FUN_00745770` is `thiscall(slotPtr, float dt, int idx, int isFirst)`, `RET 8`... args at
+`[ebp+8]/[ebp+0xc]/[ebp+0x10]`. Called from `Draw` at `0x74c2dd` (3 slots) and `0x74c2f9`
+(4th/mirror slot, `isFirst=0`) after the panel-control loop and outside its clip viewport, so it
+is full-HUD coordinates. Splice `0x00745774`, bytes `89 4D FC 8B 45 FC`, params `ecx`, `[ebp+0x10]`.
+Probe build `1.1.0-probe` (`ShieldProbeSlot`) uses it; flag file `shieldprobe.txt`.
