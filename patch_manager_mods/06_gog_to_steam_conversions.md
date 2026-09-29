@@ -458,33 +458,46 @@ positive verdict:
   other hook ported in this project. Full trail in the `ghidra_knowledge`
   DB's `lessons` table (id 9) and `hooks_ported` table
   (`additional-console-commands-hook1`).
-- **Not yet done**: writing the actual `kotor2_steam_aspyr.hooks.toml`
-  entry, building the `.kpatch`, isolated `patch_config.toml`
-  verification, and the byte-diff-cluster proximity check — this is now
-  a mechanical finish, not open research, but none of those steps have
-  run yet.
+**Both hooks now fully built and isolated-verified (2026-09-29,
+follow-on session) — RESOLVED, not yet live-installed.** Written into
+`kotor2_steam_aspyr.hooks.toml` (both pristine and LAA hashes),
+`.kpatch` built via `create-patch.py` (real MinGW cross-compile of
+`ConsoleCommands.cpp`), isolated `patch_config.toml` verified byte-exact
+for both hooks (address/original_bytes/replacement_bytes/dll all match),
+byte-diff-cluster proximity check clear for both (nearest cluster
+~429KB from hook1, >5.1MB from hook2). No more Ghidra research needed —
+remaining work is purely the live install (see `Post-Combat Movement
+Fix`'s entry above for the same "batch or install alone" choice).
 
 **hook2 (console-history-save flag, GOG `0x00867248`, simple, 7 bytes
-`0F B6 15 D0 98 A2 00` = `movzx edx, byte ptr [0x00A298D0]`) — attempted
-this session, NOT resolved, genuinely open.** No GOG copy exists on this
-machine, so GOG-side cross-referencing isn't an option here. Two
-independent approaches both came up empty:
-- Defined Strings containing "hist" (case-insensitive): **zero hits**
-  anywhere in the binary — no filename/label anchor to trace forward
-  from, ruling out the Defined-Strings method that worked for hook1's
-  siblings and `K2AspyrLoadingScreenLineFix`.
-- Structural search for the opcode `movzx edx, byte ptr [imm32]`
-  (`0F B6 15`) across all of `.text`: **311 raw hits across ~190 distinct
-  functions** — far too generic to narrow by pattern alone (unlike
-  hook1's much rarer 5-byte anchor, which had only 3 hits total).
+`0F B6 15 D0 98 A2 00` = `movzx edx, byte ptr [0x00A298D0]`) — RESOLVED.**
+No GOG copy exists on this machine, so GOG-side cross-referencing wasn't
+an option. The two methods tried in the prior session (Defined Strings
+for "hist": zero hits; raw structural search for `0F B6 15`: 311 hits
+across ~190 functions, too generic) were refined rather than abandoned:
+1. Decoded each of the 311 hits' actual `imm32` operand and kept only
+   ones targeting `.data` (a mutable flag almost never lives in
+   `.rdata`/`.text`) — narrowed to 65.
+2. Filtered those 65 to addresses referenced from **exactly one**
+   function (a single boolean guard, unlike globals checked pervasively
+   from many unrelated places) — narrowed to 9.
+3. Decompiling those 9 immediately surfaced the answer: `FUN_004752a0`
+   is the console command parser itself (trims input, has a
+   duplicate-check history-append block, looks up the command by name,
+   prints `"Function %s not found"` on miss, dispatches to the handler)
+   — and it reads `DAT_00a30828` right before that history-append block
+   via `movzx edx, byte ptr [0x00a30828]; test edx,edx; jz <skip>`,
+   textbook match for GOG's own "Set Console History to save" comment.
 
-Needs a genuinely different approach next session, not a retry of either
-method: e.g. locate the console input/command-dispatch function (not yet
-found) and look for a small cluster of boolean/byte config globals it
-references nearby, or filter the 311 structural hits down to only those
-whose containing function also calls something console-adjacent (a
-call-graph proximity filter) rather than reading all 190 by hand. Full
-detail in the `lessons` table (id 8, updated).
+Raw bytes at `0x004752d8` confirmed byte-for-byte opcode-identical to
+GOG (`0F B6 15` prefix), only the embedded address differs (Steam
+`0x00a30828` vs GOG `0x00A298D0`) — same situation as
+`K2AspyrLoadingScreenLineFix`'s framebuffer-height global, not a real
+codegen divergence. This 3-step refinement (decode+filter-by-section,
+then filter-by-reference-uniqueness, then decompile the short survivor
+list) is now logged as a reusable general technique in the
+`ghidra_knowledge` DB's `lessons` table (`general Ghidra methodology`
+scope) for any future overly-broad structural search.
 
 ### 6. `Movie Patch` — newly found, moderate-to-hard, higher payoff
 - **Found 2026-09-28 (later session)**, same manifest-grep correction —
