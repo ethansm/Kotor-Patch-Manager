@@ -62,3 +62,24 @@ Two things about this build make Patch Manager both *more* attractive and
 
 **Status: research phase only.** No `.kpatch` has been written or installed.
 Nothing in this directory has touched the live game.
+
+## Tooling notes
+
+- **`pykotor` is available in this worktree's `.venv`** (`source
+  .venv/bin/activate`) and is the right tool for parsing this build's 2DA
+  files, which are the binary `V2.b` format, not plain text — a raw
+  `head`/`grep` on e.g. `spells.2da` shows garbled binary, not rows. Use
+  `from pykotor.resource.formats.twoda import read_2da` +
+  `t.get_row(i).get_string(col)`. Always read the **live install's own**
+  `override/*.2da` (`~/.local/share/Steam/steamapps/common/Knights of the
+  Old Republic II/override/`), not a vanilla/TSLRCM reference copy —
+  confirm via MD5 that it actually differs from both, since this build has
+  ~150 mods that add/change rows.
+- **No `sqlite3` CLI on this machine** — see
+  `ghidra_knowledge/README.md`'s Querying section for the `python3`-based
+  workaround, which applies to any SQLite file in this project, not just
+  the Ghidra knowledge DB.
+- Ghidra-specific methodology (RTTI lookup, byte-search API gotchas, vtable
+  diffing technique, etc.) lives in the `ghidra_knowledge` DB's `lessons`
+  table and its `README.md` — read those before any headless Ghidra work,
+  not just this file.

@@ -47,9 +47,22 @@ stays uncommitted until a mod is ready to contribute upstream.
 
 ## Querying
 
+**No `sqlite3` CLI is installed on this machine** (confirmed 2026-09-29,
+cost real time to discover) — the `sqlite3` shell command below will fail
+with "command not found". Use `python3 -c "import sqlite3; ..."` or a
+heredoc script instead, e.g.:
+
 ```bash
-sqlite3 patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db
+python3 -c "
+import sqlite3
+db = sqlite3.connect('patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db')
+for row in db.execute('SELECT scope, topic, note FROM lessons ORDER BY date'):
+    print(row)
+"
 ```
+
+If a real `sqlite3` CLI is ever installed, the queries below still apply
+verbatim inside `sqlite3 patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db`.
 
 Useful starting queries:
 
@@ -59,6 +72,9 @@ SELECT scope, topic, note FROM lessons ORDER BY date;
 
 -- has this class already been mapped?
 SELECT * FROM classes WHERE class_name LIKE '%Map%';
+
+-- has this class's vtable already been dumped/decoded (slot-by-slot)?
+SELECT * FROM class_methods WHERE class_name = 'CSWGuiUpgrade' ORDER BY vtable_index;
 
 -- has this function address already been looked at?
 SELECT * FROM functions WHERE address = '00523870';
