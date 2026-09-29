@@ -625,6 +625,130 @@ flagged, in case the `CSWGuiBorder::FillCenter` approach above proves
 insufficient. `CSWGuiImage`'s own slots 3/4 (`0x004168b0`/`0x00416720`)
 are also still undecompiled (candidates `GetImageExtent`/`Draw`/`Load`).
 
+## UX redesign findings continued (2026-09-29, render-primitive resolution session)
+
+Executing the "Render-Primitive Resolution + Layout/Texture Assignment"
+plan that followed the section above. Static research only — no hooks,
+no `.kpatch`, no live-game changes. Full decompile evidence in the
+`ghidra_knowledge` DB (`lessons` ids 39-42 — id 39 is U4 from last
+round, 40-42 are new this round — `functions`/`classes`/
+`strings_of_interest` rows for every address below) — summarized here.
+
+**U1(a) vs (b) RESOLVED: (a) — reuse the existing labels, by
+repurposing their visual, wins.** Decompiled `CSWGuiLabel::Draw`
+(`0x00419880`, 67 bytes) — it is a 2-line forwarder:
+
+```c
+void __thiscall FUN_00419880(int param_1,undefined4 param_2)
+{
+  (**(code **)(*(int *)(param_1 + 0x60) + 0xc))(param_2);
+  (**(code **)(*(int *)(param_1 + 0xd8) + 0xc))(param_2);
+  return;
+}
+```
+
+Each call dispatches through vtable slot 3 (`+0xc`) of an embedded
+sub-object — the exact same slot `CSWGuiBorder::Draw` (`0x00415300`)
+itself occupies. Also decompiled `CSWGuiProgressBar::Draw`
+(`0x0041bb20`) for comparison — identical 2-line shape, just shifted
+offsets (`self+0x6c`/`self+0xe4`, same 0x78-byte spacing). Conclusion:
+**both the arrow-tally label and the vitality/force progress bars are
+thin wrappers around two embedded `CSWGuiBorder`-shaped sub-widgets
+apiece** — the existing arrow icon is *already* rendered entirely
+through the fully-understood `CSWGuiBorder` Draw/Load/CORNER/EDGE/FILL
+tag-resource mechanism from last round. This makes reuse (U1a) concrete
+and low-effort: retarget one embedded border's FILL-tag resource to a
+specific power's icon resref (same setter mechanism as U5 below),
+instead of constructing new `CSWGuiBorder`/`CSWGuiImage` objects from
+scratch (option b — still documented/feasible from last round, no
+longer necessary). **Repurpose-vs-add sub-question, resolved: this
+REPURPOSES/REPLACES the tally's own visual per-instance** (the border
+currently showing a generic arrow gets its FILL image redirected to a
+specific power icon) — it does not draw a new element alongside the
+arrow. This directly matches the user's original ask (show *which*
+power is active, not an abstract count). Not yet decided: which of the
+two embedded borders (`self+0x60` vs `self+0xd8`) is background/frame
+vs. fill/icon, and whether the second one doubles as the wipe-overlay
+surface (U4's rect-shrink approach) without needing new widgets — next
+step if/when development starts.
+
+**U5 steps 1-2 DONE, step 3 CONCLUDED.** String dump confirmed the two
+previously-unresolved `CSWGuiBorder::Load` tag literals: `0098762c` =
+`"EDGE"`, `00987624` = `"FILL"` (alongside the already-known
+`"CORNER"`). All 3 setters `Load` calls right after each tag lookup
+were decompiled — `0x00414680` (CORNER), `0x00414760` (EDGE),
+`0x00414840` (FILL) — identical shape: release the old resource at
+`[self+0x54]+{0x6c,0x70,0x74}` (a vtable-slot-1 call on it, a
+refcount-decrement/release idiom) if one is bound, then if the tag
+re-resolved, acquire a new one via `FUN_0047eb60` and store it. This is
+a **generic release-old/acquire-new resource-swap pattern**, not a
+`CSWGuiBorderParams` struct as the framework header models. Also
+decompiled both remaining `CSWGuiImage` vtable slots: slot 3
+(`0x004168b0`) is `CSWGuiImage::Draw` — confirms vtable slot 3 = Draw
+is the universal `CSWGuiObject`-family entry point (matches
+`CSWGuiBorder::Draw` at the same slot); slot 4 (`0x00416720`) is
+`CSWGuiImage::Load` — reads GFF keys `IMAGE`/`DRAWSTYLE`/`FLIPSTYLE`/
+`ALIGNMENT`/`ROTATE(STYLE)` via the same `FUN_00718xxx` helper family
+`CSWGuiBorder::Load` uses, and passes the resolved `"IMAGE"` tag result
+to `FUN_00416090` (not yet decompiled) — **the single most direct
+candidate for "bind a literal resref to an image," the natural next
+decompile for a development-phase session.** U5 step 3 conclusion:
+**`CSWGuiImageParams`/`CSWGuiBorderParams` as separate framework
+classes do not correspond to anything in this decompile** — fields
+(`ROTATE`, flip/draw-style bits, etc.) are stored directly on the
+widget object itself, and the real mechanism is uniform tag/GFF-key
+resource binding across both `CSWGuiBorder` and `CSWGuiImage`.
+
+**Architectural pattern, now clean across the whole widget family**:
+`CSWGuiObject`-derived leaf primitives (`CSWGuiBorder`, `CSWGuiImage` —
+5-slot vtables) draw via vtable slot 3. `CSWGuiControl`-derived widgets
+(`CSWGuiControl`/`Label`/`ProgressBar` — 38-40 slot vtables) draw via
+vtable slot 14 (the per-frame dt-based entry point the rest of the
+engine calls), and the two leaf `Control`-family widgets examined so
+far (`Label`, `ProgressBar`) implement their own slot-14 Draw as
+nothing more than 1-2 forwarding calls into embedded `CSWGuiObject`-
+family sub-widgets' slot-3 Draw.
+
+**U3 partially resolved.** The `Adjust` candidate
+(`0x00745560`, 519 bytes, GOG-named lead) is CONFIRMED a real
+sub-control layout-adjustment function — it iterates 8 sub-controls
+total: 5 at `this+0x28/0x2c + i*0x148` (i=0..4), 2 more at
+`this+0x690/0x694 + i*0x16c` (i=0..1), and 1 more at `this+0xbf8..`,
+reading each one's CURRENT `(x,y,w,h)` as plain ints and calling
+`SetRect` (`CSWGuiControl` vtable slot 1, `0x00414b70`) with an added
+viewport offset. **This is a concrete, decompile-confirmed location to
+read every one of this panel's 8 laid-out sub-controls' on-screen
+rects** — the actual U3 answer, modulo matching each array index to
+its GUI tag name (next step: trace `FUN_007450e0`'s tag-assignment
+order, or a live memory read). The `DrawEffects_2` candidate
+(`0x00745cc0`) was RULED OUT — it's a visibility/state-toggle setter
+(flips a bit, sets a global color/timestamp on activation), not a
+layout function; don't retry this lead.
+
+**R3/R5: RTTI-first shortcut tried, negative result, standing next step
+unchanged.** Per the carried-forward note, tried the RTTI-first
+shortcut before falling back to positional clustering: dumped full
+vtables for `CSWSEffectListHandler` (4 slots, all already known:
+dtor/Init/Apply/Remove), `CGameEffectApplierRemover` (4 slots, an
+abstract base — dtor + 3 pure virtuals), and `CSWSObject` (56 slots
+dumped, mostly boilerplate). Neither `UpdateEffectList` nor
+`HasSpellEffectApplied` appears in any of these — both are apparently
+ordinary (non-virtual) member functions, same pattern as `CGameEffect`'s
+own accessors, not reachable via a vtable dump. R3/R5 remain
+unresolved; the standing recommended next step (find a Steam address
+inside GOG's tight `ApplyEffect`–`RemoveEffectTarget` 8-function/
+4272-byte cluster) is unchanged and still the correct path.
+
+**Not yet done**: `FUN_0047eb60` (the resource-acquire call all 3
+`CSWGuiBorder::Load` setters use) and `FUN_00416090` (the `CSWGuiImage`
+`"IMAGE"`-tag binder) — both are the concrete next-decompile targets
+once development starts, for actually writing a resref into one of
+these widgets. Which of `CSWGuiLabel`'s two embedded borders
+(`self+0x60` vs `self+0xd8`) is which (frame vs. fill) is also not yet
+determined — likely needs either a decompile of whatever calls
+`CSWGuiLabel::Load` to see construction order, or a live memory dump
+of a real instance.
+
 ## Goal
 
 A per-frame HUD overlay showing remaining duration on active buffs (Force
