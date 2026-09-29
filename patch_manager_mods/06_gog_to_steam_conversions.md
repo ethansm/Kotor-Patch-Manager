@@ -348,6 +348,101 @@ ratio and is fine filling the ultrawide width at that ratio.
   there's no C++ to (re)compile, and it fixes an actual gameplay bug
   rather than a visual polish item.
 
+**Progress (2026-09-28, batch-3 session) — CONFIRMED, ready to install,
+NOT YET LIVE.** Steam address `0x007AF198` found via exact 30-byte
+pattern search — **a single unique hit in the entire 6.5MB binary**, the
+highest-confidence match of any hook found in this project so far (no
+ambiguity to resolve via context, unlike every other hook ported to
+date). `kotor2_steam_aspyr.hooks.toml` written (both pristine and LAA
+hashes from the start) and `manifest.toml` updated in
+`Patches/Post-Combat Movement Fix/`. Built cleanly via `create-patch.py`
+(type `SIMPLE`, no C++/DLL — `dll = ""` confirmed in the isolated
+`patch_config.toml`). Isolated pre-live check passed: address, all 30
+original bytes, and all 16 replacement bytes match exactly. Proximity
+check: `0x007AF198` is in `.text`, ~1.85MB from the nearest mystery
+cluster by direct VA comparison — safely clear. **Remaining work is
+purely operational, no more Ghidra needed**: live-install this patch
+(likely bundled with `AdditionalConsoleCommands` once that one's hook1 is
+resolved — see its entry below — per the user's 2026-09-28 preference to
+batch simple ports together), then in-game spot-check that post-combat
+movement no longer locks up.
+
+### 3a. `AdditionalConsoleCommands` — reclassified: NOT simple, real codegen divergence found
+
+**Correction (2026-09-28, batch-3 session)**: originally ranked
+"moderate" based on hook *count* (2) and confirmed based on an
+address-database check (every named function/global-pointer this
+patch's C++ calls already exists in `kotor2_steam_aspyr_laa.db` — see
+below). **That DB check is necessary but not sufficient** — it only
+proves the compiled DLL's own logic would resolve correctly at runtime;
+it says nothing about how hard the *hook site itself* is to locate. For
+this patch, unlike every hook ported so far this project
+(`K2AspyrLoadingScreenLineFix`, `K2AspyrMapAspectFix`'s 3 hooks,
+`Post-Combat Movement Fix`), **the hook site is NOT byte-identical
+between GOG and Steam** — this is the first genuine codegen-divergence
+case found.
+
+**Address-database check (still valid, not the blocker)**: every symbol
+`ConsoleCommands.cpp` needs — `ConsoleFunc`'s 3 constructors + destructor,
+all 7 `RENDER_*` global pointers, `CServerExoApp`/`CVirtualMachine`/
+`CClientExoApp`/`CClientOptions`/`CSWSCreatureStats` methods, and the
+`CSWSObject`/`CSWSCreatureStats` struct offsets used by inline accessors
+— is already present in `kotor2_steam_aspyr_laa.db` (confirmed function
+by function, not just class by class). No new `AddressDatabases` work
+needed for the DLL side of this port, same conclusion as
+`K2AspyrMapAspectFix`.
+
+**hook1 (`InitializeAdditionalCommands`, GOG `0x00925133`, detour, 5
+bytes `68 00 00 40 00` = `push 0x00400000`) — investigated, NOT resolved,
+real work remains.** Exact-byte search found only 3 hits in the whole
+Steam binary, and disassembly/decompile analysis proved **all 3 are false
+positives**: 2 are inside `__IsNonwritableInCurrentImage` (an unrelated
+CRT/DEP helper), and the 3rd is inside `___tmainCRTStartup` but is
+provably just `WinMain`'s `hInstance` argument (`FUN_00407920` is
+`WinMain`, confirmed via a full decompile — Ghidra library-matched this
+function to Visual Studio 2008 Release CRT source). The decompile also
+revealed the real likely location of static `ConsoleFunc` construction:
+`__cinit(1)`, the standard MSVC static-initializer dispatcher, called
+just before `WinMain` — `__cinit` itself is a library function, not
+inlined, so its internals (and the actual static-init array bounds in
+this binary) are still unexamined. A side investigation found 35 tiny
+(~0x30-byte) functions at `0x983ea0`-`0x984500`, each calling exactly one
+of the 3 `ConsoleFunc` constructors — very likely the game's own
+built-in console commands' static initializers — but the follow-on
+hypothesis of an 87-entry function-pointer table at `0x9866fc`-`0x986854`
+that something loops over is **unconfirmed and possibly a false lead**:
+zero references to the table's start address were found anywhere in the
+program, via both Ghidra's reference graph and a raw memory byte-scan.
+Full evidence trail, including exact addresses and the specific
+disassembly/decompile findings, is in the `ghidra_knowledge` DB's
+`lessons` table (scope `AdditionalConsoleCommands`) — read that before
+resuming, don't re-derive.
+
+**hook1 next steps (not done)**: (a) check the binary's Memory Map for
+named `.CRT$XC*`-style sections, which is where MSVC actually places the
+static-initializer function-pointer array `__cinit` walks — this is a
+more targeted way to find the real array than the ad-hoc range-heuristic
+already tried; (b) decompile 1-2 of the 35 wrapper functions directly to
+read their embedded command-name string literals, confirming they really
+are `ConsoleFunc` static initializers (not yet done, would be strong
+independent confirmation); (c) once the real array bounds are confirmed,
+the hook insertion point is almost certainly "right after the last
+static initializer in that array runs, before `WinMain`" — find the exact
+Steam-side bytes at that point (they will NOT match GOG's literal 5
+bytes — this is a confirmed-divergent site, don't re-trust
+`68 00 00 40 00` as a search anchor, it's proven wrong).
+
+**hook2 (console-history-save flag, GOG `0x00867248`, simple, 7 bytes
+`0F B6 15 D0 98 A2 00` = `movzx edx, byte ptr [0x00A298D0]`) — NOT
+INVESTIGATED AT ALL this session.** The 0-hit result on Steam for this
+exact pattern is *expected*, not a problem — the embedded global address
+`0x00A298D0` is GOG-specific, exactly like `K2AspyrLoadingScreenLineFix`'s
+framebuffer-height global differed between builds. Needs its own
+from-scratch search on Steam: likely via the Defined-Strings
+cross-reference fallback (same method that found
+`K2AspyrLoadingScreenLineFix`'s hook), since no byte-pattern anchor
+carries over.
+
 ### 6. `Movie Patch` — newly found, moderate-to-hard, higher payoff
 - **Found 2026-09-28 (later session)**, same manifest-grep correction —
   missed because its GOG hook file is `kotor2_hooks.toml` (a third naming
