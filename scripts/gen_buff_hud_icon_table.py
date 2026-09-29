@@ -14,13 +14,30 @@ spells, texlist, out = sys.argv[1:4]
 tex = set(open(texlist).read().split())
 t = read_2da(open(spells, "rb").read())
 EXCLUDE = {0, 1, 2, 3, 6, 10, 14, 21, 28, 134}  # master passives, jump, mind-affecting, instant heals
+# item-ability rows: inventory icons (ii_<itemclass>_<modelvariation>), NOT the i_* model UV sheets
 ITEM_PICKS = {
-    69: "i_inject_adrenal", 70: "i_inject_adrala", 71: "i_inject_adrsta",
-    72: "i_inject_hastr", 73: "i_inject_haala", 74: "i_inject_hasta",
-    75: "i_inject_bat", 76: "i_inject_bat", 77: "i_inject_hbat", 129: "i_inject_bat",
-    99: "ip_shield", 100: "ip_shield", 101: "ip_shield", 102: "ip_shield", 103: "ip_shield",
-    104: "ip_shield", 105: "ip_shield", 106: "ip_shield", 107: "ip_shield", 132: "ip_shield",
-    257: "ip_shield", 108: "i_belt_cloak",
+    69: "ii_adrnaline_001",
+    70: "ii_adrnaline_002",
+    71: "ii_adrnaline_003",
+    72: "ii_adrnaline_004",
+    73: "ii_adrnaline_005",
+    74: "ii_adrnaline_006",
+    75: "ii_cmbtshot_001",
+    76: "ii_cmbtshot_002",
+    77: "ii_cmbtshot_003",
+    129: "ii_medeqpmnt_005",
+    99: "ii_frarmbnds_001",
+    100: "ii_frarmbnds_002",
+    101: "ii_frarmbnds_003",
+    102: "ii_frarmbnds_004",
+    103: "ii_frarmbnds_005",
+    104: "ii_frarmbnds_006",
+    105: "ii_frarmbnds_007",
+    106: "ii_frarmbnds_008",
+    107: "ii_frarmbnds_009",
+    132: "ii_frarmbnds_001",
+    108: "ip_shield",
+    257: "ip_shield",
 }
 rows, missing = {}, []
 for i in range(t.get_height()):

@@ -47,8 +47,9 @@ constexpr int FlushGuiBatch = 0x0047ea60;     // cdecl(float), flushes batched G
 constexpr int PushClipRect = 0x00479460;      // cdecl(x,y,w,h,color*,flag,float alpha) -> nonzero if pushed
 constexpr int PopClipRect = 0x004799c0;
 const void* const ClipNoFillColor = reinterpret_cast<const void*>(0x00a1ba3c); // what the row itself passes
-constexpr float ColumnWidthFraction = 0.25f;  // icon size as a fraction of card width (tuned live)
-constexpr float MinIconSize = 12.0f, MaxIconSize = 36.0f;
+constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferred icon size / card width
+constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
+constexpr int MaxColumns = 3;
 constexpr float DimAlpha = 0.35f;
 
 // ---- diagnostics: buffhud_log.txt in the game dir, capped, off the hot path when full ----
@@ -211,12 +212,24 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
 
     float scale = 1.0f;
     { float s = reinterpret_cast<float(__cdecl*)()>(HudScaleFn)(); if (s > 0.1f && s < 10.0f) scale = s; }
-    int size = int(cardW * ColumnWidthFraction);
-    int minSize = int(MinIconSize * scale), maxSize = int(MaxIconSize * scale);
-    if (size < minSize) size = minSize;
-    if (size > maxSize) size = maxSize;
     int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
-    int fit = (cardH - gap) / (size + gap); if (fit < 1) fit = 1;
+    // preferred size (smaller on the little companion cards so the face stays visible), then
+    // shrink so all n fit down the column; below MinIconSize add another column instead.
+    int size = int(cardW * (isLarge ? LargeCardFraction : SmallCardFraction));
+    int maxSize = int(MaxIconSize * scale), minSize = int(MinIconSize * scale);
+    if (size > maxSize) size = maxSize;
+    if (size < minSize) size = minSize;
+    int cols = 1;
+    for (;; ++cols) {
+        int perCol = (n + cols - 1) / cols; if (perCol < 1) perCol = 1;
+        int fitSize = (cardH - gap) / perCol - gap;
+        if (fitSize < size) size = fitSize > 0 ? fitSize : 1;
+        if (size >= minSize || cols >= MaxColumns) break;
+        size = int(cardW * (isLarge ? LargeCardFraction : SmallCardFraction));
+        if (size > maxSize) size = maxSize;
+    }
+    int perCol = (cardH - gap) / (size + gap); if (perCol < 1) perCol = 1;
+    int fit = perCol * cols;
     int drawN = n < fit ? n : fit;
 
     static int lastSig[8]; static int sigSlot[8]; static int nSig = 0;
@@ -225,8 +238,8 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     int sig = (n << 16) ^ (size << 8) ^ (cardW << 20) ^ cardH ^ isLarge;
     bool logIt = callNo <= 30 || (si >= 0 && lastSig[si] != sig);
     if (si >= 0) lastSig[si] = sig;
-    if (logIt) logf("COLUMN#%d slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d fit=%d draw=%d size=%d gap=%d",
-                    callNo, slotPtr, isLarge, cardW, cardH, scale, n, fit, drawN, size, gap);
+    if (logIt) logf("COLUMN#%d slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d cols=%d fit=%d draw=%d size=%d gap=%d",
+                    callNo, slotPtr, isLarge, cardW, cardH, scale, n, cols, fit, drawN, size, gap);
     if (drawN <= 0) return;
 
     int border = iconWidget + Label_TextBorderOffset;
@@ -244,7 +257,7 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
         if (!image) { if (logIt) logf("  icon[%d] %s: no image", i, buffs[i].resref); continue; }
         auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
             (*reinterpret_cast<void***>(image))[6]);
-        int ix = gap, iy = gap + i * (size + gap);
+        int ix = gap + (i / perCol) * (size + gap), iy = gap + (i % perCol) * (size + gap);
         float ratio = buffs[i].ratio;
         int bright = int(size * ratio + 0.5f);
         if (bright > size) bright = size;
