@@ -79,19 +79,63 @@ specifically:
   `baseitems.2da`-driven model resolution Branch A needs, but not yet
   matched to one specific GOG-named method with confidence.
 
-**Not yet resolved (concrete next steps for whoever resumes)**:
-- Exact Steam addresses for `CSWGuiUpgrade::Update3DView`,
-  `GetArmorModelAndTextureResRef`, `OnSlotSelected`, `OnUpgradeSelected` —
-  not yet matched from GOG's named list to specific Steam addresses.
-  Recommended next move: string-anchor search for the literal 2DA column
-  names found in `FUN_008cbde0` (`"DoubleMdlVar"` etc.) and for
-  `"UpgradeType"`/`"Template"`, following each into its containing
-  function, same technique that has worked repeatedly on this binary —
-  likely faster than continuing to guess from vtable slot position.
-- `CSWGuiScene::AddModel`'s Steam address — needs a direct search (it's
-  non-virtual), not a vtable dump.
-- Full detail, addresses, and evidence trail: `ghidra_knowledge` DB's
-  `classes`/`functions`/`stack_offsets`/`lessons` tables.
+**RESOLVED (continuation session, 2026-09-29) — the render call, the armor
+data path, and the Branch A/B merge are all now decompile-confirmed.**
+Per the resume plan's Step 1 ("decompile the vtable slot's own unexamined
+helper calls"), decompiling the 4 functions `FUN_008cbde0` (slot 18) calls
+— `FUN_008cb2f0`, `FUN_008cb230`, `FUN_008cd2c0`, `FUN_008cd8e0` — resolved
+nearly everything in one batch:
+
+- **`CSWGuiScene::AddModel` — Steam address `0x00418360`, CONFIRMED.**
+  `__thiscall(this=Scene, modelResrefString, insertIndex)`: resolves the
+  model reference via a registry/factory lookup, then calls
+  `FUN_004183b0` (a Gob-array insert helper: null-checks the Gob,
+  bounds-checks `insertIndex` against `this+0x20` — the scene's Gob
+  count — appends or inserts, then calls a `SetScene`-shaped virtual on
+  the new Gob at `vtbl+0x4c`), returning the created `Gob*` or null.
+- **The 3D-preview resolve+render function — Steam address `0x008cd2c0`**
+  (called from `CSWGuiUpgrade::Update`, vtbl[13], when the `+0x3d2c`
+  flag/category byte is set). **This one function contains the entire
+  Branch A/B split, decompile-confirmed**: it reads `+0x3d2c` (item
+  category 1-4); category `4` (armor) branches into
+  `GetArmorModelAndTextureResRef`; every other category uses a direct
+  sprintf-based model-resref builder (`FUN_006d5000`, `"%s_%03d"` /
+  `"%s_%c_%03d"`). **Both paths converge on the same single call** to
+  `AddModel(modelResref, insertIndex=-1)` — i.e. **the Branch A/B
+  shared-render-call hypothesis is CONFIRMED, not just plausible.** Both
+  paths finish by setting an animation-state string on the Gob
+  (`"rotate"`/`"powered"`/`"neutral"` via `vtbl+0x18`).
+- **`GetArmorModelAndTextureResRef` — Steam address `0x008cd060`,
+  CONFIRMED.** Resolves **both** a model resref and a texture resref:
+  clamps the `bodyvar` index (param) to 1-14 and adds `'@'` to produce a
+  letter A-N, referencing the string literal `"CModelA"` — this is
+  exactly `appearance.2da`'s `modelA..modelN`/`texA..texN` column
+  convention, independently confirming the doc's "PC-own-appearance-row
+  lookup" mechanism for armor. Texture name built via `"%s%02d"` from a
+  race/variant-derived index, with 2 fallback texture-existence checks
+  before settling on a final index.
+- **`FUN_008cbde0` (slot 18) reclassified again**: it is neither
+  `HandleInputEvent` (ruled out previously) nor the render call itself —
+  it's an item-category-driven **UI-slot visibility toggler** (shows/hides
+  upgrade-slot controls based on the `+0xf4b` category byte) that calls
+  the 4 functions above as siblings, not as its own body. Two of those
+  siblings are now named: `FUN_008cb230` = `GetSlotCountForCategory`
+  (returns 6/3/3/2 slots for categories 1-4 via a jump table, reading the
+  same `+0x3d2c` byte); `FUN_008cd8e0` = upgrade-slot **icon** refresh
+  (2D UI, unrelated to the 3D render path, ruled out).
+
+Full addresses, decompiled bodies, and evidence trail:
+`ghidra_knowledge` DB's `classes`/`functions`/`lessons` tables (scope
+`Inventory 3D Viewport`, topic "Step 1 SUCCEEDED").
+
+**Still open, low priority**: `OnSlotSelected`/`OnUpgradeSelected`'s exact
+Steam addresses are not individually pinned down (the UI-visibility and
+icon-refresh functions found above are closely related but not confirmed
+1:1 name matches to those two specific GOG names) — not blocking, since
+the render pipeline itself (data resolution → `AddModel` → animate) is
+now fully mapped end-to-end, which is what Phase 3's hook needs. The two
+`CSWCItem` RTTI hits' relationship (Step 4 in the resume plan) also
+remains open and low-priority.
 
 ## Goal
 

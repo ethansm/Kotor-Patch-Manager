@@ -36,15 +36,29 @@ still open.**
   elements, each effect object carrying a `ushort` type/subtype tag at
   `+0x8` and further integer parameters read through an accessor call
   `FUN_005e4e60(index)` rather than raw struct offsets.
-- **Not yet resolved, and flagged as the concrete next step**: whether the
-  `+0x58` `CSWSEffectListHandler` and the `+0x24→+0x148` array are the same
-  subsystem viewed two ways, or two different things. The `DurationRemaining`
-  float itself has not been isolated — `FUN_005e4e60` (the per-effect field
-  accessor) hasn't been decompiled yet, and the actual expiration/removal
-  function (which must read a duration and compare/decrement it, per the
-  spec's "follow the existing read" guidance) hasn't been located. Full
-  detail, addresses, and the exact next action are in the `ghidra_knowledge`
-  DB's `lessons` table (scope `Buff Duration HUD`, topic "Target 1 partial").
+- **Continuation session (2026-09-29): Apply/Remove dispatch architecture
+  fully mapped, `DurationRemaining` still not isolated.** Dumped both
+  `CSWSEffectListHandler::vftable` and `CGameEffectApplierRemover::vftable`.
+  The base class declares 3 pure virtuals (Init, Apply, Remove);
+  `CSWSEffectListHandler` overrides them with: an Init routine
+  (`FUN_00593a30`) that builds two 118-entry (`0x76`, matching this engine's
+  `SWEFFECTTYPE` count) per-effect-type function-pointer tables at `this+4`
+  (Apply) and `this+8` (Remove); a generic `Apply(effectPtr)` dispatcher
+  (`FUN_00594740`) that reads `effectPtr+8` (ushort type tag — independently
+  reconfirms the `+8` offset from the AC-bonus work) and calls the matching
+  per-type handler; and the matching `Remove(effectPtr)` dispatcher
+  (`FUN_005947a0`). **These are generic type-dispatch only — neither reads
+  a duration field itself**; the real duration check happens somewhere
+  upstream of whatever decides *when* to call `Remove()`. Decompiled
+  `FUN_005e4e60` (the per-effect field accessor): it's a trivial
+  `*(this+0x34)[index]` generic accessor used from **525 call sites across
+  154 functions** — too broad to hand-scan for which index means duration.
+  Confirmed `Remove()` has zero direct callers anywhere except its own
+  vtable-slot data reference — it's virtual-dispatch-only, so an xref search
+  can't find its call site. **Still not resolved.** Full detail, all
+  addresses, and 3 concrete untried next-step options are in the
+  `ghidra_knowledge` DB's `lessons` table (scope `Buff Duration HUD`, topic
+  "Target 1 continued").
 
 **Target 2 (render layer) — strong candidate functions found, not yet
 disambiguated Update-vs-Render.**
@@ -74,12 +88,38 @@ disambiguated Update-vs-Render.**
 - Vtable slot [15], `FUN_007469f0`, was checked and **ruled out** — it's an
   on-demand GUI-event dispatcher (radial menu / quick-menu actions), not a
   per-frame tick.
-- **Not yet resolved**: whether slot [13] or [14] (or a further slot not
-  yet examined) is closer to "the" per-frame draw entry point the spec
-  wants to hook *after*, versus being upstream numeric bookkeeping that
-  some separate, not-yet-found `Draw()`/`Render()` virtual actually
-  consumes. Full addresses and vtable dump in the `ghidra_knowledge` DB's
-  `functions`/`classes` tables.
+- **Continuation session (2026-09-29): all 7 divergent slots ruled out,
+  `Draw` confirmed non-virtual, exact hook point still open.** The 4
+  previously-undecompiled slots (16/18/19/27) were read: none is
+  D3D-shaped (slot 16 = a lookup dispatcher, slot 18 = a focus/selection
+  transfer routine shared with `CSWGuiInGameMap`, slot 19 = sub-object
+  teardown, slot 27 = a small wrapper) — **none of `CSWGuiMainInterface`'s
+  7 divergent vtable slots is a plausible `Draw()`.** Cross-checking
+  against the framework's GOG address database confirms why: GOG names
+  `Draw` as a function **separate from** `Update` — almost certainly
+  **non-virtual**, the same pattern already confirmed for
+  `CSWGuiScene::AddModel` (see `01_inventory_3d_viewport.md`). GOG also
+  names 3 sub-widget classes not yet located on Steam:
+  `CSWGuiMainInterfaceChar` (has `DrawEffects`/`DrawEffects_2` — a
+  per-portrait effect-icon draw call, a strong lead for this mod
+  specifically), `CSWGuiMainInterfaceAction` (the action-bar per-slot
+  widget, `Draw`/`Update`/`SetIcon`/`SetQueuedFlash`), and
+  `CSWGuiMainInterfaceStatus`. An RTTI keyword search for all 3 found
+  **zero hits** — they're almost certainly non-polymorphic embedded
+  structs (matching the stride-`0x750` slot arrays already found), so
+  RTTI/vtable-diffing cannot locate them. Tried the technique that found
+  `AddModel` (decompile a confirmed-relevant function's own helper calls)
+  against slot [14] itself — its ~20 helper calls are all bookkeeping, not
+  Draw-shaped, though it does contain a genuine fill-ratio computation
+  (`this+0x7334`, dt-decremented, normalized into `this+0x706c`) that
+  partially confirms the "action bar already computes a cooldown-wipe
+  ratio" hypothesis. **Not yet resolved** — concrete next steps (find the
+  reader of `this+0x706c`; re-examine slot 16 against GOG's
+  `HitCheckMouse`-then-`Draw` positional adjacency; string-anchor search
+  for `DrawEffects`' icon-resref strings) are in the `ghidra_knowledge`
+  DB's `lessons` table (scope `Buff Duration HUD`, topic "Target 2
+  pivot"). Full addresses and vtable dump in the `ghidra_knowledge` DB's
+  `functions`/`classes`/`class_methods` tables.
 
 **Effect ID table (data lookup, not Ghidra) — DONE.** Pulled directly from
 this install's live `override/spells.2da` (binary V2.b format, parsed via
