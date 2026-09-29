@@ -1,0 +1,562 @@
+{
+ "p_atton.utc": {
+  "attrs": {
+   "STR": 12,
+   "DEX": 16,
+   "CON": 12,
+   "INT": 10,
+   "WIS": 10,
+   "CHA": 15
+  },
+  "classes": [
+   {
+    "class": "Scoundrel",
+    "level": 3,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "5:Armor Proficiency: Light",
+   "6:Armor Proficiency: Medium",
+   "8:Critical Strike",
+   "31:Sniper Shot",
+   "32:Weapon Focus: Blaster Pistol",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "60:Sneak Attack I",
+   "61:Sneak Attack II",
+   "104:Scoundrel's Luck",
+   "199:Survival",
+   "204:Spirit"
+  ],
+  "skills": {
+   "computer_use": 3,
+   "demolitions": 4,
+   "stealth": 4,
+   "awareness": 5,
+   "persuade": 0,
+   "repair": 0,
+   "security": 5,
+   "treat_injury": 0
+  },
+  "hp_base": 18,
+  "fp_base": 0
+ },
+ "p_baodur.utc": {
+  "attrs": {
+   "STR": 14,
+   "DEX": 10,
+   "CON": 14,
+   "INT": 15,
+   "WIS": 14,
+   "CHA": 10
+  },
+  "classes": [
+   {
+    "class": "Tech Specialist",
+    "level": 6,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "5:Armor Proficiency: Light",
+   "6:Armor Proficiency: Medium",
+   "12:Gear Head",
+   "12:Gear Head",
+   "12:Gear Head",
+   "12:Gear Head",
+   "13:Conditioning",
+   "28:Power Attack",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "207:Complex Unarmed Animations",
+   "212:Unarmed Specialist I",
+   "213:Unarmed Specialist II",
+   "220:Shield Breaker"
+  ],
+  "skills": {
+   "computer_use": 9,
+   "demolitions": 9,
+   "stealth": 1,
+   "awareness": 8,
+   "persuade": 0,
+   "repair": 9,
+   "security": 9,
+   "treat_injury": 4
+  },
+  "hp_base": 36,
+  "fp_base": 48
+ },
+ "p_disciple.utc": {
+  "attrs": {
+   "STR": 12,
+   "DEX": 14,
+   "CON": 14,
+   "INT": 15,
+   "WIS": 15,
+   "CHA": 8
+  },
+  "classes": [
+   {
+    "class": "Soldier",
+    "level": 6,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "3:Two-Weapon Fighting",
+   "4:Armor Proficiency: Heavy",
+   "4:Armor Proficiency: Heavy",
+   "5:Armor Proficiency: Light",
+   "6:Armor Proficiency: Medium",
+   "9:Improved Two-Weapon Fighting",
+   "10:Empathy",
+   "11:Flurry",
+   "13:Conditioning",
+   "28:Power Attack",
+   "29:Power Blast",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "84:Toughness",
+   "139:Close Combat",
+   "157:Superior Weapon Focus: Lightsaber II"
+  ],
+  "skills": {
+   "computer_use": 3,
+   "demolitions": 0,
+   "stealth": 5,
+   "awareness": 8,
+   "persuade": 0,
+   "repair": 0,
+   "security": 0,
+   "treat_injury": 3
+  },
+  "hp_base": 60,
+  "fp_base": 24
+ },
+ "p_g0t0.utc": {
+  "attrs": {
+   "STR": 8,
+   "DEX": 18,
+   "CON": 16,
+   "INT": 16,
+   "WIS": 10,
+   "CHA": 10
+  },
+  "classes": [
+   {
+    "class": "Expert Droid",
+    "level": 6,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "3:Two-Weapon Fighting",
+   "7:Caution",
+   "12:Gear Head",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "78:Droid Upgrade Class 1",
+   "96:Blaster Integration",
+   "110:Logic Upgrade",
+   "119:Improved Gear Head",
+   "139:Close Combat",
+   "201:Personal Cloaking Shield",
+   "238:Mine Immunity"
+  ],
+  "skills": {
+   "computer_use": 9,
+   "demolitions": 0,
+   "stealth": 4,
+   "awareness": 5,
+   "persuade": 0,
+   "repair": 5,
+   "security": 9,
+   "treat_injury": 0
+  },
+  "hp_base": 48,
+  "fp_base": 0
+ },
+ "p_handmaiden.utc": {
+  "attrs": {
+   "STR": 14,
+   "DEX": 16,
+   "CON": 14,
+   "INT": 10,
+   "WIS": 10,
+   "CHA": 13
+  },
+  "classes": [
+   {
+    "class": "Soldier",
+    "level": 6,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "3:Two-Weapon Fighting",
+   "4:Armor Proficiency: Heavy",
+   "5:Armor Proficiency: Light",
+   "6:Armor Proficiency: Medium",
+   "9:Improved Two-Weapon Fighting",
+   "13:Conditioning",
+   "17:Improved Power Attack",
+   "28:Power Attack",
+   "29:Power Blast",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "84:Toughness",
+   "123:Improved Toughness",
+   "207:Complex Unarmed Animations",
+   "209:Echani Strike I",
+   "212:Unarmed Specialist I",
+   "213:Unarmed Specialist II"
+  ],
+  "skills": {
+   "computer_use": 0,
+   "demolitions": 0,
+   "stealth": 2,
+   "awareness": 3,
+   "persuade": 0,
+   "repair": 0,
+   "security": 0,
+   "treat_injury": 2
+  },
+  "hp_base": 60,
+  "fp_base": 24
+ },
+ "p_hanharr.utc": {
+  "attrs": {
+   "STR": 18,
+   "DEX": 13,
+   "CON": 18,
+   "INT": 10,
+   "WIS": 12,
+   "CHA": 8
+  },
+  "classes": [
+   {
+    "class": "Scout",
+    "level": 4,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "5:Armor Proficiency: Light",
+   "5:Armor Proficiency: Light",
+   "5:Armor Proficiency: Light",
+   "11:Flurry",
+   "17:Improved Power Attack",
+   "28:Power Attack",
+   "30:Rapid Shot",
+   "37:Weapon Focus: Melee Weapons",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "56:Uncanny Dodge I",
+   "84:Toughness",
+   "95:Wookiee Toughness I",
+   "126:Targeting I",
+   "231:Wookiee Rage",
+   "240:Precise Shot I"
+  ],
+  "skills": {
+   "computer_use": 0,
+   "demolitions": 6,
+   "stealth": 3,
+   "awareness": 4,
+   "persuade": 0,
+   "repair": 0,
+   "security": 0,
+   "treat_injury": 5
+  },
+  "hp_base": 32,
+  "fp_base": 0
+ },
+ "p_hk47.utc": {
+  "attrs": {
+   "STR": 16,
+   "DEX": 14,
+   "CON": 11,
+   "INT": 14,
+   "WIS": 12,
+   "CHA": 14
+  },
+  "classes": [
+   {
+    "class": "Combat Droid",
+    "level": 6,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "20:Improved Sniper Shot",
+   "31:Sniper Shot",
+   "33:Weapon Focus: Blaster Rifle",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "78:Droid Upgrade Class 1",
+   "84:Toughness",
+   "110:Logic Upgrade",
+   "111:Logic Upgrade: Tactician",
+   "228:Assassin Protocols"
+  ],
+  "skills": {
+   "computer_use": 3,
+   "demolitions": 7,
+   "stealth": 0,
+   "awareness": 6,
+   "persuade": 0,
+   "repair": 8,
+   "security": 3,
+   "treat_injury": 0
+  },
+  "hp_base": 60,
+  "fp_base": 0
+ },
+ "p_kreia.utc": {
+  "attrs": {
+   "STR": 10,
+   "DEX": 12,
+   "CON": 14,
+   "INT": 14,
+   "WIS": 16,
+   "CHA": 12
+  },
+  "classes": [
+   {
+    "class": "Jedi Consular",
+    "level": 3,
+    "powers": [
+     "8:Burst of Speed",
+     "42:Energy Resistance",
+     "16:Fear",
+     "156:Force Camouflage",
+     "23:Force Push",
+     "156:Force Camouflage",
+     "176:Force Sight",
+     "176:Force Sight"
+    ]
+   }
+  ],
+  "feats": [
+   "39:Weapon Proficiency: Blaster Pistol",
+   "43:Weapon Proficiency: Lightsaber",
+   "44:Weapon Proficiency: Melee Weapons",
+   "55:Jedi Defense",
+   "88:Force Focus",
+   "107:Jedi Sense",
+   "113:Dueling",
+   "116:Force Sensitive",
+   "188:Class Skill: Stealth",
+   "194:Finesse: Melee Weapons",
+   "202:Mentor",
+   "205:Force Chain"
+  ],
+  "skills": {
+   "computer_use": 0,
+   "demolitions": 0,
+   "stealth": 6,
+   "awareness": 6,
+   "persuade": 5,
+   "repair": 0,
+   "security": 3,
+   "treat_injury": 6
+  },
+  "hp_base": 18,
+  "fp_base": 24
+ },
+ "p_mand.utc": {
+  "attrs": {
+   "STR": 15,
+   "DEX": 12,
+   "CON": 14,
+   "INT": 12,
+   "WIS": 14,
+   "CHA": 12
+  },
+  "classes": [
+   {
+    "class": "Soldier",
+    "level": 5,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "4:Armor Proficiency: Heavy",
+   "4:Armor Proficiency: Heavy",
+   "4:Armor Proficiency: Heavy",
+   "5:Armor Proficiency: Light",
+   "6:Armor Proficiency: Medium",
+   "18:Improved Power Blast",
+   "28:Power Attack",
+   "29:Power Blast",
+   "30:Rapid Shot",
+   "31:Sniper Shot",
+   "33:Weapon Focus: Blaster Rifle",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "139:Close Combat",
+   "200:Mandalorian Courage",
+   "203:Implant Switching"
+  ],
+  "skills": {
+   "computer_use": 0,
+   "demolitions": 2,
+   "stealth": 2,
+   "awareness": 5,
+   "persuade": 2,
+   "repair": 0,
+   "security": 0,
+   "treat_injury": 5
+  },
+  "hp_base": 50,
+  "fp_base": 0
+ },
+ "p_mira.utc": {
+  "attrs": {
+   "STR": 14,
+   "DEX": 16,
+   "CON": 13,
+   "INT": 12,
+   "WIS": 12,
+   "CHA": 10
+  },
+  "classes": [
+   {
+    "class": "Scout",
+    "level": 6,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "5:Armor Proficiency: Light",
+   "7:Caution",
+   "8:Critical Strike",
+   "30:Rapid Shot",
+   "31:Sniper Shot",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "40:Weapon Proficiency: Blaster Rifle",
+   "44:Weapon Proficiency: Melee Weapons",
+   "56:Uncanny Dodge I",
+   "113:Dueling",
+   "125:Evasion",
+   "126:Targeting I",
+   "127:Targeting II",
+   "139:Close Combat",
+   "208:Weapon Proficiency: Wrist Mounted Rockets",
+   "239:Point Guard",
+   "240:Precise Shot I"
+  ],
+  "skills": {
+   "computer_use": 6,
+   "demolitions": 6,
+   "stealth": 2,
+   "awareness": 6,
+   "persuade": 0,
+   "repair": 5,
+   "security": 2,
+   "treat_injury": 5
+  },
+  "hp_base": 48,
+  "fp_base": 0
+ },
+ "p_t3m4.utc": {
+  "attrs": {
+   "STR": 10,
+   "DEX": 15,
+   "CON": 14,
+   "INT": 16,
+   "WIS": 10,
+   "CHA": 10
+  },
+  "classes": [
+   {
+    "class": "Expert Droid",
+    "level": 3,
+    "powers": []
+   }
+  ],
+  "feats": [
+   "7:Caution",
+   "12:Gear Head",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "78:Droid Upgrade Class 1",
+   "96:Blaster Integration",
+   "110:Logic Upgrade"
+  ],
+  "skills": {
+   "computer_use": 5,
+   "demolitions": 2,
+   "stealth": 0,
+   "awareness": 2,
+   "persuade": 0,
+   "repair": 5,
+   "security": 4,
+   "treat_injury": 0
+  },
+  "hp_base": 24,
+  "fp_base": 0
+ },
+ "p_visas.utc": {
+  "attrs": {
+   "STR": 12,
+   "DEX": 16,
+   "CON": 10,
+   "INT": 10,
+   "WIS": 12,
+   "CHA": 16
+  },
+  "classes": [
+   {
+    "class": "Jedi Sentinel",
+    "level": 6,
+    "powers": [
+     "42:Energy Resistance",
+     "16:Fear",
+     "23:Force Push",
+     "30:Horror",
+     "43:Shock",
+     "50:Wound",
+     "45:Slow",
+     "176:Force Sight",
+     "284:Improved Force Sight",
+     "176:Force Sight",
+     "284:Improved Force Sight"
+    ]
+   }
+  ],
+  "feats": [
+   "11:Flurry",
+   "36:Weapon Focus: Lightsaber",
+   "39:Weapon Proficiency: Blaster Pistol",
+   "43:Weapon Proficiency: Lightsaber",
+   "43:Weapon Proficiency: Lightsaber",
+   "43:Weapon Proficiency: Lightsaber",
+   "44:Weapon Proficiency: Melee Weapons",
+   "55:Jedi Defense",
+   "91:Improved Flurry",
+   "98:Force Immunity: Fear",
+   "99:Force Immunity: Stun",
+   "107:Jedi Sense",
+   "212:Unarmed Specialist I",
+   "213:Unarmed Specialist II"
+  ],
+  "skills": {
+   "computer_use": 0,
+   "demolitions": 0,
+   "stealth": 9,
+   "awareness": 9,
+   "persuade": 0,
+   "repair": 0,
+   "security": 0,
+   "treat_injury": 9
+  },
+  "hp_base": 48,
+  "fp_base": 36
+ }
+}

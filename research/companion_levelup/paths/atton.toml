@@ -1,0 +1,172 @@
+# Atton: pre-conversion Scoundrel 4-19, convert at char 20 (Sentinel 1-9). Feats follow elkripper; skill points are a PROPOSAL (greedy by priority).
+# Jedi-conversion levels can only be live-tested once story progress allows.
+[meta]
+tag = "atton"
+name = "Atton Rand"
+utc = "p_atton.utc"
+
+[[level]]
+char_level = 4
+class = 2   # Scoundrel
+attrs = {DEX = 17}
+feats = []
+skills = {awareness = 2, stealth = 2}
+
+[[level]]
+char_level = 5
+class = 2   # Scoundrel
+feats = [20]   # 20:Improved Sniper Shot
+skills = {awareness = 1, stealth = 2, security = 1}
+
+[[level]]
+char_level = 6
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 2}
+
+[[level]]
+char_level = 7
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 2}
+
+[[level]]
+char_level = 8
+class = 2   # Scoundrel
+attrs = {DEX = 18}
+feats = [77]   # 77:Master Sniper Shot
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 9
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 10
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 11
+class = 2   # Scoundrel
+feats = [3]   # 3:Two-Weapon Fighting
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 12
+class = 2   # Scoundrel
+attrs = {DEX = 19}
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 13
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 14
+class = 2   # Scoundrel
+feats = [9]   # 9:Improved Two-Weapon Fighting
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 15
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 16
+class = 2   # Scoundrel
+attrs = {DEX = 20}
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 17
+class = 2   # Scoundrel
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 18
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 19
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, stealth = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+attrs = {DEX = 21}
+feats = [139]   # 139:Close Combat
+powers = [8, 10]   # 8:Burst of Speed, 10:Heal
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = [140]   # 140:Improved Close Combat
+powers = [37]   # 37:Master Speed
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [28]   # 28:Improved Heal
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+attrs = {DEX = 22}
+feats = []
+powers = [134]   # 134:Master Heal
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [240]   # 240:Precise Shot I
+powers = [162]   # 162:Force Deflection
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = [241]   # 241:Precise Shot II
+powers = [163]   # 163:Force Redirection
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = []
+powers = [46]   # 46:Stun
+skills = {awareness = 1, stealth = 1, security = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+attrs = {DEX = 23}
+feats = [242]   # 242:Precise Shot III
+powers = [29]   # 29:Stasis
+skills = {awareness = 1, stealth = 1, security = 1}
