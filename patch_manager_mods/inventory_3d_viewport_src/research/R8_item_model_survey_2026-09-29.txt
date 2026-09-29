@@ -1,0 +1,111 @@
+# R8 item model survey (2026-09-29): per baseitems row: itemtype, itemclass, existing <itemclass>_NNN variations, _001 bbox (x,y,z extents), longest axis, radius
+# upgitem_light hooks exist for itemtypes: camera 0,0a,1,2,3,4,4a,5,31-36,39,40,41 ; rotate 0a,3,4,4a,5 (engine forces 36/37/38->31; stun baton id1->0a; carbine id20->4a)
+  0 Quarter_Staff            itype=0   mt=0 cls=w_qtrstaff     vars=[1, 2, 3, 9, 10] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  1 Stun_Baton               itype=0   mt=0 cls=w_stunbaton    vars=[1, 2, 3, 4, 5] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  2 Long_Sword               itype=2   mt=0 cls=w_lngswrd      vars=[1, 2, 3, 4, 5] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  3 Vibro_Sword              itype=2   mt=0 cls=w_vbroswrd     vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  4 Short_Sword              itype=1   mt=0 cls=w_shortswrd    vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  5 Vibro_Blade              itype=1   mt=0 cls=w_vbroshort    vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  6 Double_Bladed_Sword      itype=0   mt=0 cls=w_dblswrd      vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  7 Vibro_Double_Blade       itype=0   mt=0 cls=w_vbrdblswd    vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  8 Lightsaber               itype=41  mt=0 cls=w_lghtsbr      vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] n=11 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+  9 Double_Bladed_Lightsaber itype=39  mt=0 cls=w_dblsbr       vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] n=10 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 10 Short_Lightsaber         itype=40  mt=0 cls=w_shortsbr     vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] n=10 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 11 Lightsaber_Crystals      itype=46  mt=0 cls=w_sbrcrstl     vars=[] n=0 
+ 12 Blaster_Pistol           itype=3   mt=0 cls=w_blstrpstl    vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]... n=15 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 13 Heavy_Blaster            itype=3   mt=0 cls=w_hvyblstr     vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 14 Hold_Out_Blaster         itype=3   mt=0 cls=w_hldoblst     vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 15 Ion_Blaster              itype=3   mt=0 cls=w_ionblstr     vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 16 Disrupter_Pistol         itype=3   mt=0 cls=w_dsrptpstl    vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 17 Sonic_Pistol             itype=3   mt=0 cls=w_sonicpstl    vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 18 Ion_Rifle                itype=4   mt=0 cls=w_ionrfl       vars=[1, 2, 3, 4, 5] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 19 Bowcaster                itype=4   mt=0 cls=w_bowcstr      vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 20 Blaster_Carbine          itype=4   mt=0 cls=w_blstrcrbn    vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 21 Disrupter_Rifle          itype=4   mt=0 cls=w_dsrptrfl     vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 22 Sonic_Rifle              itype=4   mt=0 cls=w_sonicrfl     vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 23 Repeating_Blaster        itype=5   mt=0 cls=w_rptnblstr    vars=[1, 2, 3, 4, 5] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 24 Heavy_Repeating_Blaster  itype=5   mt=0 cls=w_hvrptbltr    vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 25 Fragmentation_Grenades   itype=6   mt=0 cls=w_fraggren     vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 26 Stun_Grenades            itype=6   mt=0 cls=w_stungren     vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 27 Thermal_Detonator        itype=6   mt=0 cls=w_thermdet     vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 28 Poison_Grenade           itype=6   mt=0 cls=w_poisngren    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 29 Flash_Grenade            itype=6   mt=0 cls=w_flashgren    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 30 Sonic_Grenade            itype=6   mt=0 cls=w_sonicgren    vars=[1, 2] n=2 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 31 Adhesive_Grenade         itype=6   mt=0 cls=w_adhsvgren    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 32 Cryoban_Grenade          itype=6   mt=0 cls=w_cryobgren    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 33 Fire_Grenade             itype=6   mt=0 cls=w_firegren     vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 34 Ion_Grenade              itype=6   mt=0 cls=w_iongren      vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 35 Jedi_Robe                itype=38  mt=1 cls=a_jedirobe     vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 36 Jedi_Knight_Robe         itype=38  mt=1 cls=a_mstrrobe     vars=[] n=0 
+ 37 Jedi_Master_Robe         itype=38  mt=1 cls=a_mstrrobe     vars=[] n=0 
+ 38 Armor_Class_4            itype=31  mt=1 cls=a_class4       vars=[] n=0 
+ 39 Armor_Class_5            itype=32  mt=1 cls=a_class5       vars=[] n=0 
+ 40 Armor_Class_6            itype=33  mt=1 cls=a_class6       vars=[] n=0 
+ 41 Armor_Class_7            itype=34  mt=1 cls=a_class7       vars=[] n=0 
+ 42 Armor_Class_8            itype=35  mt=1 cls=a_class8       vars=[] n=0 
+ 43 Armor_Class_9            itype=36  mt=1 cls=a_class9       vars=[] n=0 
+ 44 Mask                     itype=18  mt=0 cls=i_mask         vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]... n=19 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 45 Gauntlets                itype=19  mt=0 cls=i_gauntlet     vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 46 Forearm_Bands            itype=20  mt=0 cls=i_frarmbnds    vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] n=10 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 47 Belt                     itype=21  mt=0 cls=i_belt         vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]... n=14 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 48 Implant_1                itype=22  mt=0 cls=i_implant1     vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 49 Implant_2                itype=22  mt=0 cls=i_implant2     vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 50 Implant_3                itype=22  mt=0 cls=i_implant3     vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 51                          itype=    mt= cls=               vars=[] n=0 
+ 52 Data_Pad                 itype=24  mt=0 cls=i_datapad      vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 53 Adrenaline               itype=25  mt=0 cls=i_adrnaline    vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 54 Combat_Shots             itype=25  mt=0 cls=i_cmbtshot     vars=[1, 2] n=2 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 55 Medical_Equipment        itype=45  mt=0 cls=i_medeqpmnt    vars=[1, 2, 3, 4, 5] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 56 Droid_Repair_Equipment   itype=26  mt=0 cls=i_drdrepeqp    vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 57 Credits                  itype=23  mt=0 cls=i_credits      vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 58 Trap_Kit                 itype=28  mt=0 cls=i_trapkit      vars=[1, 2, 3, 4] n=4 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 59 Security_Spikes          itype=27  mt=0 cls=i_secspike     vars=[1, 2] n=2 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 60 Programming_Spikes       itype=27  mt=0 cls=i_progspike    vars=[1, 2] n=2 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 61 Glow_Rod                 itype=29  mt=0 cls=i_glowrod      vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 62 Collar_Light             itype=29  mt=0 cls=i_collarlgt    vars=[] n=0 
+ 63 Torch                    itype=29  mt=0 cls=i_torch        vars=[] n=0 
+ 64 Plot_Useable_Items       itype=30  mt=0 cls=p_pltuseitm    vars=[] n=0 
+ 65 Aesthetic_Item           itype=30  mt=0 cls=p_pltuseitm    vars=[] n=0 
+ 66 Droid_Light_Plating      itype=15  mt=0 cls=i_drdltplat    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 67 Droid_Medium_Plating     itype=15  mt=0 cls=i_drdmdplat    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 68 Droid_Heavy_Plating      itype=15  mt=0 cls=i_drdhvplat    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 69 Droid_Search_Scope_x     itype=16  mt=0 cls=i_drdsrcscp    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 70 Droid_Motion_Sensors_x   itype=16  mt=0 cls=i_drdmtnsen    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 71 Droid_Sonic_Sensors_x    itype=16  mt=0 cls=i_drdsncsen    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 72 Droid_Targeting_Computer itype=16  mt=0 cls=i_drdtrgcom    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 73 Droid_Computer_Spike_Mou itype=14  mt=0 cls=i_drdcomspk    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 74 Droid_Security_Spike_Mou itype=14  mt=0 cls=i_drdsecspk    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 75 Droid_Shield             itype=13  mt=0 cls=i_drdshld      vars=[1, 4, 5] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 76 Droid_Utility_Device     itype=12  mt=0 cls=i_drdutldev    vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] n=11 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 77 Blaster_Rifle            itype=4   mt=0 cls=w_blstrrfl     vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 78 Ghaffi_Stick             itype=0   mt=0 cls=w_gaffi        vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 79 Wookie_Warblade          itype=0   mt=0 cls=w_warblade     vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 80 Gammorean_Battleaxe      itype=1   mt=0 cls=w_waraxe       vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 81 Creature_Item_Slash      itype=    mt=0 cls=w_crslash      vars=[] n=0 
+ 82 Creature_Item_Pierce     itype=    mt=0 cls=w_crpierce     vars=[] n=0 
+ 83 Creature_Weapon_Sl_Prc   itype=    mt=0 cls=w_crbite       vars=[] n=0 
+ 84 Creature_Hide_Item       itype=    mt=0 cls=w_crhide       vars=[] n=0 
+ 85 Basic_Clothing           itype=37  mt=1 cls=a_cloths       vars=[] n=0 
+ 86 Pazaak_Card              itype=42  mt=0 cls=i_pazcard      vars=[] n=0 
+ 87 Pazaak_Sideboard         itype=43  mt=0 cls=p_pltuseitm    vars=[] n=0 
+ 88 Stealth_Unit             itype=44  mt=0 cls=i_belt         vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]... n=14 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 89 Revan_Armor              itype=38  mt=1 cls=a_revan        vars=[] n=0 
+ 90 Disguise_Item            itype=37  mt=0 cls=a_disguise     vars=[] n=0 
+ 91 Wrist_Launcher           itype=48  mt=0 cls=i_frarmbnds    vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] n=10 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 92 Rocket                   itype=49  mt=0 cls=w_rocket       vars=[] n=0 
+ 93 Force_Pike               itype=0   mt=0 cls=w_forcepike    vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=40.0 bmin=[-5.0, -5.0, -1.0]
+ 94 Squad_Recovery_kit       itype=47  mt=0 cls=i_medeqpmnt    vars=[1, 2, 3, 4, 5] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 95 Chemicals                itype=50  mt=0 cls=i_credits      vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 96 Components               itype=51  mt=0 cls=i_credits      vars=[1] n=1 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 97 Sonic_Grenade_Type2      itype=6   mt=0 cls=w_sonicgren    vars=[1, 2] n=2 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+ 98 Armor_Armd_Flight_Suit   itype=32  mt=1 cls=a_classflt     vars=[] n=0 
+ 99 Restrictive_Jedi_Robe    itype=38  mt=1 cls=a_jedirobe     vars=[1, 2, 3] n=3 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+100 Slave_Outfit             itype=37  mt=1 cls=a_slave        vars=[] n=0 
+101 Upgrade_Items            itype=30  mt=0 cls=i_upgrade      vars=[] n=0 
+102 Armor_Zeison_Sha         itype=38  mt=1 cls=a_classzs      vars=[] n=0 
+103 Miner_Uniform            itype=37  mt=1 cls=a_class4       vars=[] n=0 
+104 Mining_Laser             itype=3   mt=0 cls=w_blstrpstl    vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]... n=15 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+105 Adv_Mining_Laser         itype=4   mt=0 cls=w_blstrrfl     vars=[1, 2, 3, 4, 5, 6] n=6 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+106 Lightsaber_No_Sound      itype=41  mt=0 cls=w_lghtsbr      vars=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] n=11 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+107 DM_ElectroStaff          itype=0   mt=0 cls=w_qtrstaff     vars=[1, 2, 3, 9, 10] n=5 ext=[10.0, 10.0, 11.0] longest=z radius=7.0 bmin=[-5.0, -5.0, -1.0]
+108 OTGM_Forearm_Bands       itype=20  mt=0 cls=i_otgmbnds     vars=[] n=0 

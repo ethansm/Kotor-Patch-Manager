@@ -1,0 +1,108 @@
+inv3d loaded
+H1 BindInventoryView panel=048420e8 controls=21 gate=1 stack=00dbeed0
+H1: block=0478e888 control id=21 (expect 21) extent=[3096,357,556,800] controls now 22 (expect 22)
+  dump view +000: 009a3d34 00000c18 00000165 0000022c 00000320 00000000 00000000 00000000
+  dump view +020: 00000000 00000000 00000000 00000000 00000000 00000000 048420e8 00000000
+  dump view +040: 00000000 00000000 0000000a 00000000 00000000 00000015 00000100 00000000
+  dump view +060: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 00000000
+  dump view +080: 00000000 00000000 bf800000 bf800000 bf800000 00000000
+H1: scene 046ddce8 initialised (gui3D_room)
+H1: light model=045a1da8, scene model count=1
+H1: slot 0 ready (panel=048420e8 seq=1)
+H2: rendered item 047578a8 base=72 var=0004 cat=2, models 1 -> 1
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000001 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H3 tick #1 panel=048420e8 slot=usable
+H3 tick #2 panel=048420e8 slot=usable
+H3 tick #3 panel=048420e8 slot=usable
+H3 tick #4 panel=048420e8 slot=usable
+H3 tick #5 panel=048420e8 slot=usable
+H3 tick #6 panel=048420e8 slot=usable
+H3 tick #7 panel=048420e8 slot=usable
+H3 tick #8 panel=048420e8 slot=usable
+H3 tick #9 panel=048420e8 slot=usable
+H3 tick #10 panel=048420e8 slot=usable
+H3 tick #11 panel=048420e8 slot=usable
+H3 tick #12 panel=048420e8 slot=usable
+H3 tick #13 panel=048420e8 slot=usable
+H3 tick #14 panel=048420e8 slot=usable
+H3 tick #15 panel=048420e8 slot=usable
+H3 tick #16 panel=048420e8 slot=usable
+H3 tick #17 panel=048420e8 slot=usable
+H3 tick #18 panel=048420e8 slot=usable
+H3 tick #19 panel=048420e8 slot=usable
+H3 tick #20 panel=048420e8 slot=usable
+H2: rendered item 04757bc8 base=66 var=0001 cat=2, models 1 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04757ee8 base=104 var=0001 cat=2, models 2 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04757bc8 base=66 var=0001 cat=2, models 2 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 047578a8 base=72 var=0004 cat=2, models 2 -> 1
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000001 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04757ee8 base=104 var=0001 cat=2, models 1 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04758208 base=76 var=0009 cat=2, models 2 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04758528 base=76 var=000a cat=2, models 2 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04758b68 base=0 var=0009 cat=2, models 2 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 04758e88 base=1 var=0005 cat=2, models 2 -> 2
+  dump scene +000: 0098771c 00000c18 00000165 0000022c 00000320 046ddce8 04699a88 0478e568
+  dump scene +020: 00000002 00000010 bf800000 bf800000 bf800000 00000000 00000000 00000000
+H2: rendered item 047591a8 base=2 var=0001 cat=2, models 2 -> 2
+H2: rendered item 047594c8 base=4 var=0001 cat=2, models 2 -> 2
+H2: rendered item 047597e8 base=5 var=0002 cat=2, models 2 -> 2
+H2: rendered item 04759b08 base=12 var=0001 cat=2, models 2 -> 2
+H2: rendered item 04759e28 base=14 var=0001 cat=2, models 2 -> 2
+H2: rendered item 0475a148 base=17 var=0002 cat=2, models 2 -> 2
+H2: rendered item 0475a468 base=18 var=0002 cat=2, models 2 -> 2
+H2: rendered item 0475a788 base=20 var=0001 cat=2, models 2 -> 2
+H2: rendered item 047597e8 base=5 var=0002 cat=2, models 2 -> 2
+H2: rendered item 04758b68 base=0 var=0009 cat=2, models 2 -> 2
+H2: rendered item 046d3a50 base=44 var=0006 cat=2, models 2 -> 2
+H2: rendered item 046d3d70 base=44 var=000b cat=2, models 2 -> 2
+H2: rendered item 046d3a50 base=44 var=0006 cat=2, models 2 -> 2
+H2: rendered item 046d3d70 base=44 var=000b cat=2, models 2 -> 2
+H2: rendered item 046d4090 base=45 var=0009 cat=2, models 2 -> 1
+H2: rendered item 046d43b0 base=46 var=0003 cat=2, models 1 -> 2
+H2: rendered item 046d46d0 base=46 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d49f0 base=46 var=0005 cat=2, models 2 -> 2
+H2: rendered item 046d4d10 base=46 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d5350 base=52 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d5030 base=50 var=0004 cat=2, models 2 -> 2
+H2: rendered item 046d5670 base=52 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d5350 base=52 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d5030 base=50 var=0004 cat=2, models 2 -> 2
+H2: rendered item 046d5350 base=52 var=0001 cat=2, models 2 -> 2
+H2: rendered item 047578a8 base=72 var=0004 cat=2, models 2 -> 1
+H2: same item 047578a8 base=72 var=0004, skip
+H2: same item 047578a8 base=72 var=0004, skip
+H2: same item 047578a8 base=72 var=0004, skip
+H2: rendered item 046d43b0 base=46 var=0003 cat=2, models 1 -> 2
+H2: rendered item 046d6610 base=53 var=0002 cat=2, models 2 -> 2
+H2: rendered item 046d6930 base=53 var=0003 cat=2, models 2 -> 2
+H2: rendered item 046d6f70 base=54 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d7f10 base=59 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d8230 base=60 var=0001 cat=2, models 2 -> 2
+H2: rendered item 046d8550 base=60 var=0002 cat=2, models 2 -> 2
+H2: item 046d9b48 base=64 var=007a cat=0 (no preview), models 2 -> 1
+H2: item 046d94f0 base=64 var=00a5 cat=0 (no preview), models 1 -> 1
+H2: rendered item 046dbda8 base=75 var=0001 cat=2, models 1 -> 2
+H2: rendered item 047578a8 base=72 var=0004 cat=2, models 2 -> 1
+H2: same item 047578a8 base=72 var=0004, skip
+H2: same item 047578a8 base=72 var=0004, skip
+H2: rendered item 04751dc8 base=44 var=0007 cat=2, models 1 -> 2
+H2: same item 04751dc8 base=44 var=0007, skip
+H2: same item 04751dc8 base=44 var=0007, skip
+H2: rendered item 047528b8 base=103 var=0901 cat=4, models 2 -> 2
+inv3d loaded

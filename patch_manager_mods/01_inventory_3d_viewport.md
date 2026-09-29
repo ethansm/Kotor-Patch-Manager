@@ -1,9 +1,82 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status:** ACTIVE — research (Phases 0-1) DONE and GUI control (Phase 2) DEPLOYED as of 2026-09-29. **NEXT: Phase 3 build** (model table + `Inventory3DViewport` patch), then live test. User paused execution here on 2026-09-29; the full self-contained plan is the approved plan file for the next phase.
-Render pipeline resolved (see Phase 2 findings); the planning session
-(Opus, 2026-09-29) changed the design — see "Planning session findings".
-No hooks written yet, no `.kpatch` built.
+**Status (2026-09-29 evening):** **v1 (0.1.0-dev) is LIVE and WORKS**: the model renders in the inventory's right margin and there are no crashes. Source commit `33299ef`. Round-2 research into orientation, fit, mouse drag and layout is DONE; see "v1 live test + round-2 research — READ THIS FIRST" below. **NEXT:** the v2 R&D plan (the approved plan file). Verbose logging stays ON.
+
+## v1 live test + round-2 research — READ THIS FIRST (2026-09-29)
+
+### What is live
+- Built from `patch_manager_mods/inventory_3d_viewport_src/` (mirror of `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Inventory3DViewport/`). Hooks:
+  - H1 `BindInventoryView` @`0x008A69AD`, original bytes `8B 8D 08 FD FF FF`, param `[ebp-0x2f8]`.
+  - H2 `ShowItem` @`0x008A8172`, original bytes `89 45 D4 8D 55 CC`, params `eax`, `[ebp-0x68]`.
+  - H3 `InventoryTick` @`0x008A7350`, original bytes `55 8B EC 83 EC 0C`, param `ecx`.
+- Model table: `scripts/gen_inventory_3dview_table.py <game dir> <out.inc>` writes `ItemModelTable.inc`, taking about 30 s. Result: 17 rows category 4 (armour), 77 rows category 2, and 15 rows category 0 (11, 51, 62–65, 81–84, 86, 87, 92, 101, 108). This matches the reviewer's expected result exactly. Compile-time kill switch: `INV3D_ONLY_WEAPONS_ARMOR`.
+- Static checks passed: the original bytes match the live exe, no hook is within 8 bytes of any other live hook, and the DLL exports exactly the 3 functions.
+- **Live install (2026-09-29 19:08), 16 patch ids.** The CLI uninstalls everything first, so ANY later reinstall by any session must pass ALL of these:
+  ```
+  cd ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/bin/Debug && DISPLAY=:1 ./KPatchLauncher \
+    "/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/swkotor2.exe" \
+    --patches ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/inv3d_live_patches \
+    k2-visible-console good-alignment-heads k2-aspyr-normal-map-fix k2-aspyr-saber-hilt-texture-fix \
+    k2-finesse-melee-fix k2_grass_fog_fix max-lights semi-transparent-letterbox k2-mp3-playback-fix \
+    loading_screen_line_fix_k2 k2-aspyr-map-aspect-fix post-combat-movement-fix-v1 \
+    additional-console-commands buff-duration-hud force-power-hotbar inventory-3d-viewport
+  ```
+  - **Staging:** `inv3d_live_patches/` holds the 13 kpatches from `batch3_live_patches/` plus `Inventory3DViewport.kpatch`. `BuffDurationHUD.kpatch` and `ForcePowerHotbar.kpatch` there were **repacked with the DLLs that were live at install time** (the user's choice): Buff HUD `391dbad5…` and Hotbar `c3c8f6d6…`. The kpatches in `Patches/` had newer rebuilds (`8479a3e8…`, `b8c89605…`).
+  - **Backup:** `~/Games/KOTOR2_Mod_Workspace/backups/patch_manager_inv3d_pre_install_20260929_190850/` (with `SHA256SUMS.txt`).
+  - **Rollback:** rerun the command without `inventory-3d-viewport`.
+- **Launch checks:** the Steam log shows `Applied DETOUR hook` at all 3 addresses and `SUCCESS: Patcher initialized`. The `AR_ERROR.LOG` sha is unchanged (`962039…`).
+
+### Live test results (user, 2026-09-29; screenshots in `~/Documents/Screenshot_2026-09-29_19-2*.png`)
+From `inv3d_log.txt`, H1 runs once: control id 21, controls 21→22, gate=1, light model OK. The on-screen extent is `[3096,357,556,800]` px (L,T,W,H), which is a **tall** viewport (aspect about 0.70). No crash occurred.
+
+| Class | What the user saw | Root cause (verified, see below) |
+|---|---|---|
+| Blasters (itemtype 3/4/5) | Large and spinning | `upgitem_light` has `camerahook3/4/5` and `rotatehook3/4/5` under animated `Driverhook*` nodes, so the item is attached and spins. They look large because the camera hooks were tuned for the Workbench's **wide** 254×154 view. |
+| Melee (itemtype 0/1/2) | Lying horizontal, not moving | `camerahook0/1/2` exist but **`rotatehook0/1/2` do NOT** (only `rotatehook0a`, which the engine uses for stun baton base 1). So the item is not attached to a spinning driver and sits at the scene origin. The Workbench spins such items itself in its Update `008cce70`; the inventory has no such code. The camera hook is rolled so the long z axis reads horizontal, which suits the Workbench's wide viewport. |
+| Masks/visors (itemtype 18) and other non-weapon classes | Tiny, sideways/odd view | `camerahook18` does not exist, and the fallback `"camerahook"` does not exist either (only numbered hooks). So the camera attach fails, the camera keeps a default or previous pose, and the item is not attached. The same applies to every itemtype without hooks: 6, 12–30, 42–51. |
+| Armour (itemtype 31–38) | An animated body (idle "neutral") showing only the armour mesh, not fitting | Category 4 attaches `P_MAL_A_MED_01`-style body row 137 through `008cd060`. The engine forces itemtypes 36/37/38 to `camerahook31`. That hook was framed for the Workbench's wide view, so the tall view crops it. Showing only the armour part is expected: it is the armour body model with no head. |
+| Some items: droid targeting computer (base 72, var 4) and gauntlets (base 45, var 9) | No model | Log line `models 1 -> 1`, or `2 -> 1`. `<itemclass>_<var>` does not exist: for example `i_drdtrgcom` has only `_001`, and `i_drdshld` has `_001/_004/_005`. The table only checks `_001`. Upgrade items (base 101, `i_upgrade`), plot items (64/65), crystals (11) and pazaak have NO models at all, so they are category 0 by design. |
+
+### Verified engine facts (round 2; raw output in `inventory_3d_viewport_src/research/`)
+- **Base-item byte `+0xac` = baseitems.2da `ItemType`.** Raw disasm of loader `006d5240` shows `PUSH 0x99a678 "ItemType"` → `0071bcf0` (2DA get int) → `MOV [row*0xc8 + table + 0xac], CL` at `006d67a7` (file `R10_disasm_006d5240_itemtype.txt`). So `008cd2c0`'s `camerahook%d`/`rotatehook%d` = the item's itemtype.
+- **Hook names in `008cd2c0`:**
+  - itemtype 0 with base id 1, and itemtype 4 with base id 20 (0x14): the engine appends a suffix, giving `…0a` and `…4a`. The constant `DAT_00986b34` is the suffix, very likely "a"; confirm if needed.
+  - itemtypes 36/37/38: forced to `camerahook31`/`rotatehook31`.
+  - The camera attaches through `camera->vt[0x74](model0, hookName)`. FOV is set by `camera->vt[0x44](*(float*)0x0099f38c)` = **22.726°**.
+  - Then `AddModel(itemResref)`. If `model0->vt[0x10c](rotatehookName)` finds the node, it calls `item->vt[0x50](model0, rotatehook)` (attach) and plays `model0->vt[0x18]("rotate", 1.0, 0, 0)`, which is the spin.
+  - Otherwise the item stays unattached at the origin.
+  - `powered` animation if `baseitem+0x90`; `neutral` animation if category 4.
+- **`upgitem_light` node list** (the live copy is in `override/upgitem_light.mdl` + `.mdx`; also in BIF). Dump: `research/R11_upgitem_light_nodes_2026-09-29.txt`.
+  - Camera hooks: `camerahook0, 0a, 1, 2, 3, 4, 4a, 5, 31–36, 39, 40, 41`.
+  - `Driverhook0a/3/4/4a/5`, each with child `rotatehook*`, plus `Plane01` and 2 lights.
+  - One animation, `rotate` (5.17 s), which rotates each `Driverhook` a full turn: about z for 3/4/4a/5, and about x for 0a.
+  - Camera hooks 1/2 sit at (1.56, −0.025, ~0.4) with quat (0, .707, 0, .707). 3/4/5 sit at about (1.0, 0.1–0.27, 0.05) with quat (.5, .5, .5, .5). 31–36 sit at (1.336, −0.088, 1.309).
+- **`gui3D_room`** = one node `Box01`. It is only the backdrop.
+- **Workbench spin, `008cce70`** (Update, `thiscall(this, float dt)`):
+  - `m = GetModel(1)` (`004184b0`, ECX = scene).
+  - If `m->vt[0x108](-1) == 0`: `q = 00515620(out, -dt*70.0, 0, 0)` (`_DAT_009a8948` = 70.0 double, in degrees). Then `cur = m->vt[0x68](tmp)` (GetOrientation → quat*), `new = q ⊗ cur`, and `m->vt[0x60](tmp, x, y, z, w)` (SetOrientation, 5 args = GOG `Gob::SetOrientation` param size 20).
+  - The meaning of `vt[0x108](-1)` is still unknown: probably "is attached / has parent / animation playing". The spin applies only when it returns 0, i.e. the unattached items.
+- **`00515620(float* out, a, b, c)`**: an Euler-degrees → quaternion builder. It multiplies each angle by `_DAT_0098be40` = 0.0174533 (deg→rad) and combines three axis quaternions `FUN_005195a0(axis globals 00a7d870/00a7d864/00a7d858, angle)`. Arg a = the first axis (yaw in the Workbench spin). The mapping of a/b/c to x/y/z is not yet confirmed.
+- **Gob vtable (from `008cd2c0`/`008cce70` usage plus GOG param sizes):** 0x18 PlayAnimation(name, speed, 0, 0); 0x34 set texture(?) (`&DAT_00986925`, texResref); 0x50 AttachToPart/Object(parent, nodeName); 0x60 SetOrientation(tmp, x, y, z, w); 0x68 GetOrientation(out) → float[4]; 0x108 (?) (−1); 0x10c FindPart(name) → nonzero if found. Camera (scene+0x18 = view+0x78): 0x74 AttachToPart(model, nodeName[, flag]); 0x44 SetViewAngle(float deg).
+- **MDL header bbox/radius is a constant placeholder in every item model:** (−5,−5,−1)..(5,5,10), r=7. It is useless for fitting (`R8_item_model_survey_2026-09-29.txt`).
+  - Per-mesh `bb_min`/`bb_max` are real (`R9_mesh_bbox_samples_2026-09-29.txt`; node rotations ignored, so treat it as approximate).
+  - Sizes range from about 0.1 (grenade) through about 1.25 (long sword) to 2.15 (force pike), which is more than 20×. No fixed camera distance fits them all, so v2 needs a per-item fit.
+  - The long axis is z for melee, sabers, staffs and gauntlets; y for the war-axe, belts, bands and adrenals; x for datapads and droid parts.
+- **Existing model variations per itemclass** are listed in R8, e.g. `w_blstrpstl` has 15, `i_mask` 19, and `i_drdtrgcom` only 1. So `ShowItem` must fall back when `<class>_<var>` is missing.
+- **Character screen (future equipment-page view reference), `CSWGuiInGameCharacter`, Steam ctor `0084c3a0`:**
+  - `LBL_3DCHAR` is a `CSWGui3DSceneView` at `this+0x3c24` (`param_1[0xf09]`, vftable 0x9a3d34), bound with `InitControl`. `BTN_3DCHAR` is at `this+0x3cb8`.
+  - Scene init: `gui3D_room` plus **`charrec_light`**, then `camera->vt[0x74](light, "camerahook", 1)` and `vt[0x44](22.726)`.
+  - It creates a 0x470-byte client creature object `FUN_007645f0` at `this+0x4b6c`.
+  - In SetStats `0084e6f0` (GOG `CSWGuiInGameCharacter::SetStats` 0x597ff0; Steam = GOG + **0x2B6700** for this class), when the creature or its appearance changes (cache `this+0x4b70`/`+0x4b74`), it does:
+    - `obj->vt[0xec](serverCreature->vt[0x148](…))`, `FUN_0076d200(appearanceCopy, 3, 1, 0)`, `FUN_0085d430(…)`, `obj->vt[0x94](scene@this+0x3c98)`;
+    - SetPosition `vt[0x8c]`(0,0,0), SetFacing `vt[0x88]`(1,0,0);
+    - `FUN_0077ec20(view, creature, 0, 1)`.
+  - Rotation: RotateCharacter `008500f0(this, dir)` (left `00850330`, right `00850550`, bound to input events `0x16256`/`0x16257` through `FUN_00418af0`; HandleInputEvent `0084f900` maps events 0x3b/0x3c). It rotates the facing vector at `obj+0x30` by the quat from `00515620(step,0,0)` and sets it with `obj->vt[0x88]`.
+  - **So the character screen rotates by fixed key steps; there is no mouse-drag code to copy.** Drag in v2 = poll Win32 (`GetAsyncKeyState(VK_LBUTTON)`, `GetCursorPos`/`ScreenToClient`) in H3 against the view's pixel extent (view+4..+0x10).
+- GOG address DB (`tools/kotor-patch-manager/AddressDatabases/kotor2_gog_aspyr.db`) has named `Gob`/`Camera` functions (e.g. `Gob::SetOrientation` 00853a70 p20, `Gob::GetBoundingBox` 0084c590 p8, `Camera::SetViewAngle` 008c0300, `Camera::SetPosition` 008c21f0 p16). There are no Steam addresses for those yet. The Steam DB (`kotor2_steam_aspyr.db`) has only 48 rows.
+
+### Inventory layout facts (`override/inventory_p.gui`, 800×600 GUI units)
+LB_ITEMS `[161,134,236,329]`, LB_DESCRIPTION `[407,134,232,300]`, LBL_CREDITS `[407,442,223,28]`, BTN_USEITEM `[161,470,227,28]`, bars LBL_BAR1/2 at y 105/125 across 34..766, and 3D_MODEL `[645,134,116,300]`. Workbench `upgrade_p.gui`: 3D_MODEL `[164,117,254,154]`, 3D_MODEL_LS `[228,115,125,228]`. Character `character_p.gui`: LBL_3DCHAR/BTN_3DCHAR `[166,134,230,360]`. The ultrawide generator (`scripts/generate_ultrawide_gui_overrides.py`) rewrites these files. `scripts/add_inventory_3dview_control.py` (`--replace --rect L,T,W,H`, `--rollback`) owns the 3D_MODEL control.
 
 ## Planning session findings (2026-09-29, Opus)
 
