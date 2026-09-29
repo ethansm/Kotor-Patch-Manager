@@ -1,35 +1,43 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**Status (2026-09-29, updated with Mod 1 & Mod 2 lessons; scope expanded
-same day to include items):** Pre-Ghidra research and architectural
-specification. Informed by the completed Phase 2/3 static analysis of
-[[02_buff_duration_hud.md]] and the render-pipeline resolution of
-[[01_inventory_3d_viewport.md]]. Key framework addresses have already been
-mined from the shipped `AddressDatabases/*.db` (including
+**Status (2026-09-29, updated with Mod 1 & Mod 2 lessons; UX redesigned
+same day to a 3-edge/30-generic-slot layout):** Pre-Ghidra research and
+architectural specification. Informed by the completed Phase 2/3 static
+analysis of [[02_buff_duration_hud.md]] and the render-pipeline resolution
+of [[01_inventory_3d_viewport.md]]. Key framework addresses have already
+been mined from the shipped `AddressDatabases/*.db` (including
 `CSWSCreatureStats::HasSpell` at Steam `0x006BD9C0`), the persistence model has
 been settled (external config, not savegames), and the input context-gating
-hazard has been identified and designed. **Scope expansion (user-directed,
-2026-09-29, same session as Buff Duration HUD's item-ability discovery):
-add a SECOND row of 10 slots, bound to Ctrl+1 through Ctrl+0, for ITEMS**
-(stims, antidotes, health packs, repair items) — parity goal is "everything
-in the vanilla quick-actions system should be configurable into a hotbar
-button," not just force powers. See "Item row (2nd row, Ctrl+1-0)" section
-below — this shares its icon-resolution problem directly with
+hazard has been identified and designed. **UX redesign (user-directed,
+2026-09-29, same session as Buff Duration HUD's item-ability discovery,
+superseding the earlier "2nd row for items" framing): 30 total GENERIC
+slots across three screen edges** — bottom (bare `1`-`0`), left
+(`Ctrl+1`-`Ctrl+0`), right (`Alt+1`-`Alt+0`) — every slot independently
+assignable to ANY single vanilla quick-action (a power OR an item OR
+anything else the native quickbar itself can hold), not pre-restricted by
+which edge/row it's on. See "Slot layout (3 edges, 30 generic slots)"
+section below — this shares its icon-resolution problem directly with
 [[02_buff_duration_hud.md]]'s open "Item 5" research item (both need to
 know how the engine's own quickbar picks an icon for an item-ability
-quick-slot, since `spells.2da` has no icon for item-ability rows). Phase 1
-(Ghidra mapping of invocation & input hooks), Phase 2 (scaffold C++), and
-Phase 3 (live install) will proceed once Mod 2 finishes development or when
-this mod is prioritized.
+quick-slot, since `spells.2da` has no icon for item-ability rows). **Update
+(2026-09-29, Buff Duration HUD's 9th session ran this shared research):
+the premise was corrected, not resolved as hoped** -- the vanilla
+action-bar's 6 categories never include "item," so item-slot invocation
+and icon resolution both remain genuinely open, not just "reuse the
+quickbar's mechanism." See "Slot layout" section's icon-resolution note
+below for the full finding. Phase 1 (Ghidra mapping of invocation & input
+hooks), Phase 2 (scaffold C++), and Phase 3 (live install) will proceed
+once Mod 2 finishes development or when this mod is prioritized.
 
 ## Goal
 
-A row of hotbar buttons across the bottom of the screen, one per available
-Force power, bound to keys **1-0** (10 slots) and **customizable** (the
-player assigns which power sits in which slot). This replaces the
-friction of the game's existing single quickbar item + scroll-wheel power
-selection with direct one-key access — no scrolling to cycle to the power
-you want mid-fight.
+30 generic hotbar slots across three screen edges — bottom (keys **1-0**),
+left (**Ctrl+1**-**Ctrl+0**), right (**Alt+1**-**Alt+0**) — each
+independently **customizable** to hold any single vanilla quick-action
+(a Force power, an item ability, or anything else the native quickbar
+itself can hold). This replaces the friction of the game's existing
+single quickbar item + scroll-wheel power selection with direct one-key
+access — no scrolling to cycle to the power or item you want mid-fight.
 
 ## Why this is a Patch Manager task
 
@@ -191,87 +199,115 @@ yielded several concrete architectural lessons that directly reshape this mod:
 - **Storage Strategy**: Flat JSON or INI file:
   `~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/kotor_hotbar.ini`.
 - **Keying**: Key slot mappings by the player character's unique name or tag
-  (read from `CSWSCreatureStats`), e.g.:
+  (read from `CSWSCreatureStats`), with one generic key per slot across all
+  three edges, each holding a generic `type:id` value (revised 2026-09-29
+  for the 3-edge/30-generic-slot layout — supersedes the earlier
+  `Slot`/`ItemSlot`-section sketch below it replaced):
   ```ini
   [Revan_Exile_Player]
-  Slot1=8     ; FORCE_POWER_SPEED_BURST
-  Slot2=22    ; FORCE_POWER_FORCE_VALOR
-  Slot3=17    ; FORCE_POWER_FORCE_ARMOR
-  Slot4=42    ; FORCE_POWER_LIGHTNING
+  Bottom1=spell:8      ; FORCE_POWER_SPEED_BURST
+  Bottom2=spell:22     ; FORCE_POWER_FORCE_VALOR
+  Bottom3=spell:17     ; FORCE_POWER_FORCE_ARMOR
   ...
-  Slot10=135  ; FORCE_POWER_FORCE_BARRIER
+  Bottom0=spell:135    ; FORCE_POWER_FORCE_BARRIER
+  Left1=item:<tag>     ; e.g. a stim's inventory tag
+  Left2=item:<tag>
+  ...
+  Left0=item:<tag>
+  Right1=spell:24      ; any type may occupy any edge -- fully generic
+  ...
+  Right0=item:<tag>
   ```
 - **Customization UX**:
   - v1: Edit config file or simple console command via `AdditionalConsoleCommands`
     (e.g., `sethotbar <slot> <spell_id>`).
   - v2: Drag-and-drop or right-click assignment menu directly from the Spells GUI.
 
-## Item row (2nd row, Ctrl+1-0) -- NEW SCOPE, 2026-09-29, not yet researched
+## Slot layout (3 edges, 30 generic slots) -- REVISED SCOPE, 2026-09-29, not yet researched
 
-**User's direction, verbatim intent**: "similar expansion on the hot bar
-buttons, maybe we add another row and use ctrl+# for hot keys so we can
-configure items into the hot bar buttons as well. Stims, antidotes,
-health packs, repair items, etc. Everything in the vanilla quick actions
-should be configureable into the hot bar buttons." I.e. the native
-quickbar already lets a player assign EITHER a spell/feat OR an item
-(stim, shield, grenade, repair kit, etc.) to its single slot -- this mod
-should reach the same parity across 10 dedicated item slots, not just
-mirror the spell side.
+**User's revised direction, verbatim intent (supersedes the earlier
+"2nd row for items, possible 3rd row undecided" framing)**: instead of
+category-based rows (a "powers row," an "items row," a speculative 3rd
+row), use a **positional layout across three screen edges**, and make
+**every slot generic** -- any single "quick action" the vanilla game's own
+quickbar can hold (a power OR an item OR anything else in that system)
+should be assignable to **any** slot, not pre-restricted by which
+edge/row it's on:
+- **Bottom of screen**: bare `1`-`0`, 10 slots (unchanged from the
+  original design).
+- **Left side of screen**: `Ctrl+1`-`Ctrl+0`, 10 slots.
+- **Right side of screen**: `Alt+1`-`Alt+0`, 10 slots.
+- **30 total generic slots**, each independently configurable to
+  whatever the player wants -- no hardcoded "this row is for items."
 
-**Design sketch (not yet Ghidra-verified, follows the existing row's
-shape)**:
-- **Input**: a second key-gate layer, `Ctrl+1` through `Ctrl+0`, same
-  context-gating discipline as Lesson 4 above (must not fire during
-  dialogue/menus/console -- `Ctrl` as a modifier likely makes accidental
+**Design implication**: this reframes the mod's data model from "two
+typed tables (spellId-keyed powers, item-tag-keyed items)" to **one
+generic slot type carrying whatever discriminated reference the vanilla
+quickbar itself uses internally** (almost certainly a type tag + ID pair,
+e.g. "spell, id=8" vs. "item, tag=..."). Concretely, the open research
+question is no longer just "how does the quickbar resolve an ITEM icon"
+(Buff Duration HUD's Item 5) but **also** "what is the vanilla quickbar's
+own internal representation of *any* assignable slot's contents" --
+likely the same decompile target (`CSWGuiMainInterfaceAction`'s
+slot-assignment fields/`SetIcon`'s parameter shape) answers both
+questions at once; whoever runs Buff Duration HUD's Phase A.5 research
+should explicitly check for this and record it here too if found.
+
+**Design sketch (not yet Ghidra-verified)**:
+- **Input**: two additional key-gate layers beyond the existing bare-digit
+  one -- `Ctrl+1`-`Ctrl+0` (left edge) and `Alt+1`-`Alt+0` (right edge),
+  same context-gating discipline as Lesson 4 above (must not fire during
+  dialogue/menus/console -- a modifier key likely makes accidental
   collision with dialogue's bare `1`/`2`/`3` bindings less likely, but
-  this still needs verifying against any existing `Ctrl+<digit>` bindings
-  before claiming the combo is free).
-- **Data layer**: instead of `spells.2da` + `CSWSCreatureStats::HasSpell`,
-  this row needs the party's live INVENTORY (which items exist, are
-  usable, are not on cooldown/depleted) -- likely `CItemRepository`/
-  `CSWItem` (real RTTI classes already in the `ghidra_knowledge` DB's
-  `classes` table from the Inventory 3D Viewport research) rather than
-  `CSWSCreatureStats`.
+  this still needs verifying against any existing `Ctrl+<digit>`/
+  `Alt+<digit>` bindings before claiming either combo is free).
+- **Data layer**: a slot can hold EITHER a power (`spells.2da` row +
+  `CSWSCreatureStats::HasSpell`) OR an item (party's live inventory --
+  likely `CItemRepository`/`CSWItem`, real RTTI classes already in the
+  `ghidra_knowledge` DB's `classes` table from the Inventory 3D Viewport
+  research) rather than `CSWSCreatureStats` alone. Whatever generic
+  type-tag+ID shape the vanilla quickbar itself uses (see "Design
+  implication" above) should be reused directly instead of inventing a
+  parallel one.
 - **Action invocation**: using an item (stim, repair kit) is a different
   native call path than casting a power -- likely something in the
   `CSWSItem`/`CItemRepository` family rather than
   `CSWGuiInterfaceAction_UseForcePower`'s spell-casting path. Not yet
   traced.
 - **Icon resolution: SHARED BLOCKER with [[02_buff_duration_hud.md]]'s
-  "Item 5"** -- both mods need the same answer to "how does the engine
-  resolve an icon for an item (not a spell) assigned to a quick-slot,"
-  since `spells.2da`'s `iconresref` column is empty for item-ability rows
-  (confirmed empirically this session -- see Buff Duration HUD's item-3/
-  item-5 findings). The `CSWGuiMainInterfaceAction::SetIcon` lead found
-  there (GOG `0x512ea0`, Steam counterpart not yet located) is exactly the
-  function to decompile for this mod too -- **resolve it once, in
-  whichever mod gets there first, and reuse the finding in the other.**
-- **Persistence**: extend the same `kotor_hotbar.ini`-style config with a
-  second keyed section (e.g. `ItemSlot1`..`ItemSlot10`), keyed by item
-  tag/resref rather than spell ID (items don't have a stable numeric ID
-  the way `spells.2da` rows do -- items are identified by `BaseItems.2da`
-  row + a unique instance tag/UUID in the player's inventory, which is a
-  different identity problem than the spell row's simple integer key;
-  not yet researched how to make a persisted item-slot assignment survive
-  the item being consumed/restocked).
+  "Item 5" -- premise CORRECTED 2026-09-29 (Buff Duration HUD's 9th
+  session ran Phase A.5)**: the vanilla action-bar (`CSWGuiMainInterfaceAction`,
+  `hudThis+0x733c`/`+0x750c`/`+0x76dc`/`+0x78ac`, one 6-category array per
+  party portrait) does **NOT** let a player assign an item to any of its
+  categories -- decompile of all 6 category populators (`FUN_00779510`,
+  `FUN_0077c510` x3, `FUN_0077a9e0`, `FUN_0077aeb0`) shows they cover
+  attack-mode/3 feat+power tabs/combat-AI-behavior-toggles/generic only,
+  never inventory items. **This mod's own "use an inventory item" action
+  invocation is therefore confirmed to need a genuinely separate native
+  call path from `UseForcePower`/this action-bar's own invoke dispatcher
+  (`FUN_00751750`, which calls each entry's own `+0xc` function pointer --
+  directly reusable for THIS mod's Force-power/feat slots, since those DO
+  live in this system) -- not a shared one.** The icon-resolution question
+  for item slots is still open; `CGameEffect`/`CSWItem` (the latter has
+  real RTTI on Steam, confirmed this session) may still be a cleaner lead
+  than the quickbar ever was. Full finding: `02_buff_duration_hud.md`'s
+  "Item 5" section and `ghidra_knowledge` DB `lessons` ids 54-56.
+- **Persistence**: `kotor_hotbar.ini`-style config keyed by a generic slot
+  identifier (`Bottom1`..`Bottom0`, `Left1`..`Left0`, `Right1`..`Right0`),
+  each holding a generic `type:id` value (e.g. `spell:8`, `item:<tag>`)
+  rather than separate `Slot`/`ItemSlot` sections. Items don't have a
+  stable numeric ID the way `spells.2da` rows do -- items are identified
+  by `BaseItems.2da` row + a unique instance tag/UUID in the player's
+  inventory, a different identity problem than a spell row's simple
+  integer key; not yet researched how to make a persisted item-slot
+  assignment survive the item being consumed/restocked.
 - **Not yet researched at all**: the exact native function(s) for
   "use this inventory item" (separate from "cast this force power"),
   how the vanilla quickbar itself distinguishes a spell-slot from an
   item-slot internally (probably a type tag alongside whatever ID it
-  stores), and whether stims/shields/repair-kits share one invocation
-  path or three separate ones.
-
-**Possible 3rd row (user-floated, open, not committed to)**: `Alt+1`
-through `Alt+0` as a further 10 slots alongside the bare-digit (powers)
-and `Ctrl+digit` (items) rows -- what category of action would occupy it
-is not yet decided (could split "items" into two rows by type, e.g.
-consumables vs. equipment-triggered abilities/grenades, or serve some
-other purpose entirely). Whoever resumes this mod should ask the user to
-firm up the 3rd row's purpose before designing its data/invocation layer
--- the input-gating and persistence-file design from the Ctrl+digit row
-above generalize directly to a 3rd modifier key, so there's no
-architectural blocker to adding one later, just an undecided "what goes
-in it."
+  stores -- see "Design implication" above, this is now an explicit open
+  question, not just an assumption), and whether stims/shields/repair-kits
+  share one invocation path or three separate ones.
 
 ## Open Questions for Whoever Resumes
 
@@ -285,6 +321,12 @@ in it."
 3. **Dialogue Context Flag**:
    Confirm the exact Steam memory offset or global pointer for "in conversation"
    to reliably gate the 1-3 keys.
+4. **Vanilla quickbar's generic slot-content representation**:
+   Confirm the native quickbar's own internal representation of *any*
+   assignable slot's contents (type tag + ID shape, e.g. "spell vs. item")
+   via the same decompile target as Buff Duration HUD's Item 5/Phase A.5
+   (`CSWGuiMainInterfaceAction`'s slot-assignment fields / `SetIcon`'s
+   parameter shape) — reuse that finding, don't re-derive it here.
 
 ## Revised Effort Estimate
 

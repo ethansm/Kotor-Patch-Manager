@@ -1,23 +1,32 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status (2026-09-29, 8th session, current):** Item 3 is now **CONFIRMED
-empirically** (was "partially resolved" as of the 7th session) --
-`CGameEffect+0x1c` really is a literal `spells.2da` row index, verified
-in-game via a throwaway diagnostic hook (see "Item 3 empirical
-verification" section, right after the item 1-4 findings section below).
-**Scope was expanded this session, at the user's explicit direction,
-after seeing the empirical test's own log data**: item-granted buffs
-(energy shields, stims/adrenals) must ALSO get duration timers, not just
-force powers. This is now a real, not-yet-closed research item -- see
-"Item 5 (item-ability icon resolution)" below. **Development phase (real
-hook C++ + `hooks.toml` + `.kpatch`) has NOT started** -- item 5's icon
-resolution for item-ability buffs is now the one open blocker for hook
-2's icon-lookup logic (hooks 1a/1b, the snapshot writers, do not depend
-on it and could be written first). See "Item 1-4 findings (R3 residual +
-multi-slot creature resolution + R4)" (bottom of the UX sections, right
-before "## Goal") for the items 1/2/4 detail; it supersedes everything
-below it for anything it re-addresses. The 7th session's original status
-text is kept below, superseded only on item 3/scope.
+**Status (2026-09-29, 9th session, current):** Phase A.5 (item-ability
+icon resolution research) executed -- **premise CORRECTED, not resolved
+as hoped**: the vanilla "quickbar" turned out to be a per-party-member
+6-category cycling action-selector (Attack-mode/3 feat+power tabs/Combat
+AI toggles/generic), and **none of its categories is "assign an item to
+a slot"** -- the shared assumption behind Item 5 and Force Power
+Hotbar's item-row research does not match this system. See "Item 5"
+below for the full finding and the resulting decision point (continue
+chasing a `CGameEffect`/`CSWItem` item-back-reference lead, or accept the
+"track item-ability durations, skip their icon retarget" fallback and
+proceed to Phase B). **Development phase (real hook C++ + `hooks.toml` +
+`.kpatch`) has NOT started yet**, pending that decision.
+
+**Status as of the previous (8th) session, superseded above on Item 5's
+premise, otherwise still accurate:** Item 3 is **CONFIRMED empirically**
+(was "partially resolved" as of the 7th session) -- `CGameEffect+0x1c`
+really is a literal `spells.2da` row index, verified in-game via a
+throwaway diagnostic hook (see "Item 3 empirical verification" section,
+right after the item 1-4 findings section below). Scope was expanded that
+session, at the user's explicit direction, after seeing the empirical
+test's own log data: item-granted buffs (energy shields, stims/adrenals)
+must ALSO get duration timers, not just force powers. See "Item 1-4
+findings (R3 residual + multi-slot creature resolution + R4)" (bottom of
+the UX sections, right before "## Goal") for the items 1/2/4 detail; it
+supersedes everything below it for anything it re-addresses. The 7th
+session's original status text is kept below, superseded only on item
+3/scope.
 
 **Status as of the previous (7th) session, superseded above on item 3 and
 scope, otherwise accurate:** Phase 2 and Phase 3 research were
@@ -1179,6 +1188,72 @@ holds an item ability. This is the one remaining blocker for hook 2's
 icon-lookup logic to correctly handle item-ability buffs (energy shields,
 stims) and not just force powers. Full evidence:
 `ghidra_knowledge` DB `lessons` ids 52-53.
+
+**Phase A.5 executed (2026-09-29, 9th session) -- premise CORRECTED, not
+resolved as hoped.** RTTI search confirmed `CSWGuiMainInterfaceAction`
+has **0 hits on Steam** (`FindMainInterfaceActionRtti.java`) -- panel-
+embedded, no RTTI, as expected. Same search also found `CSWGuiQuickPanel`
+(7 hits, real RTTI, but confirmed the known false-positive -- it's the
+new-game character-creation panel) and, notably, **`CSWItem` has real
+RTTI** (7 hits) while `CItemRepository` does not (0 hits) -- a possibly
+useful lead if this research resumes (see below).
+
+Fell back to positional clustering on the known slot-array offset
+(`hudThis+0x733c`, stride `0x750`, from `07_force_power_hotbar.md`'s
+Lesson 1). `FindActionSlotArrayRefs.java` found the touching functions;
+decompiling them (`FUN_0074cfe0`, `FUN_0077e650`, `FUN_0077c510`,
+`FUN_0077a9e0`, `FUN_0077aeb0`, `FUN_00779510`, `FUN_00751750`,
+`FUN_007469a0` -- full detail in `ghidra_knowledge` DB `functions` table
+and `lessons` ids 54-56) revealed the actual structure: **there are FOUR
+parallel 7-category action-bar arrays, one per party-portrait slot**
+(`hudThis+0x733c/0x750c/0x76dc/0x78ac`, each spaced `0x1d0` apart --
+matches Buff Duration HUD's own 4-portrait-slot finding), each with
+**exactly 6 populated categories** (`FUN_0077e650`'s dispatch table has
+no case for indices 6+): category 0 = an attack/default-mode-ish set
+(`FUN_00779510`), categories 1/2/3 = feat+power tabs (`FUN_0077c510`,
+mixing BOTH feats and spells into one list per stat-group tag 1/2/4 --
+likely Combat/Force/Skill groupings), category 4 = combat AI-behavior
+toggles (`FUN_0077a9e0`, hardcoded icon tag strings `ib_aggressive`/
+`ib_ranged`/`ib_stationary`/`ib_grenadier`/`ib_jedisupport`), category 5 =
+a generic simple-entry set (`FUN_0077aeb0`, purpose not fully traced).
+
+**None of these 6 categories is "assign an item to a slot."** The shared
+premise this Item and Force Power Hotbar's "Item row" section both
+started from -- "the vanilla quickbar lets a player assign EITHER a
+spell OR an item ability to any quick-slot, and `SetIcon` must resolve
+both" -- **does not match what this system actually does**. Item use
+(stims, shields, etc.) routes through a genuinely separate mechanism
+(most likely the inventory screen's own direct-use path), not this
+per-portrait cycling action-bar. `CSWGuiMainInterfaceAction::SetIcon`
+itself was not pinned to one exact Steam address this session (likely
+inlined into one of the per-entry invoke function pointers --
+`FUN_0077bcf0`/`FUN_0077d890`/`FUN_0077d120`/`FUN_007791a0` -- not chased
+further) but its purpose, wherever it lives, only ever needs to resolve a
+`spells.2da`/`feat.2da` icon for these categories -- never an item icon.
+
+**One more check before concluding this branch**: whether `CGameEffect`
+retains an item back-reference (via its generic String `+0x48` or
+ObjectID `+0x78` param arrays) that an item-property-triggered effect
+might set -- this would be a cleaner path than the quickbar entirely
+(resolve the granting item directly via its own real-RTTI `CSWItem`
+class, which likely carries its own icon field). `SetString`
+(`0x005e4f60`) has only 6 call sites; `SetObjectID` (`0x005e4f00`) has 26,
+spread across ~20 functions in the `0x52c000`-`0x6e2000` range, almost
+certainly the broad NWScript `ExecuteCommandApplyEffect*`-style
+per-`SWEFFECTTYPE` constructor family (matching the 118-entry dispatch
+tables from Phase 2), not item-specific. **Not decompiled individually
+this session** (budget) -- `FUN_0065a170` and `FUN_00671e20` (both call
+`SetString` multiple times each) are the next things to check if this
+resumes.
+
+**This is now a genuine decision point per the plan's own step-6
+branching**, not a silent scope-downgrade: continue chasing the
+`CGameEffect`-string/`CSWItem` lead for a real item-icon source, or
+accept the documented fallback (track item-ability effect durations in
+the side-table same as force powers, but skip icon retargeting for them
+-- the native arrow glyph renders as-is for that slot) and proceed to
+Phase B now. Presented to the user as a choice; see the session's own
+resolution for which branch was taken.
 
 ## Goal
 
