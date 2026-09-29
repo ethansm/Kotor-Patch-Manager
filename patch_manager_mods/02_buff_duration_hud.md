@@ -1,22 +1,48 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status (2026-09-29, 9th session, current):** Phase A.5 (item-ability
-icon resolution research) executed -- **premise CORRECTED, not resolved
-as hoped**: the vanilla "quickbar" turned out to be a per-party-member
-6-category cycling action-selector (Attack-mode/3 feat+power tabs/Combat
-AI toggles/generic), and **none of its categories is "assign an item to
-a slot"** -- the shared assumption behind Item 5 and Force Power
-Hotbar's item-row research does not match this system. **User chose to
-keep researching** (not accept the fallback yet); two follow-up leads
-(`CGameEffect::SetString` callers, `CSWItem`'s vtable) were both
-**inconclusive** -- see "Item 5" below for full detail and the one
-concrete next step identified (a GFF `"ICON"`-tag search, not yet done,
-budget-limited this session) for whoever resumes. **Development phase
-(real hook C++ + `hooks.toml` + `.kpatch`) has NOT started yet.** This
-status header, the "Item 5" section, and the `ghidra_knowledge` DB
-(`lessons` 54-58 + new `functions` rows) are the complete, currently
-up-to-date record of this session's item-5 research -- nothing beyond
-what's written here happened.
+**Status (2026-09-29, 10th session, current): Item 5 RESOLVED, POSITIVE
+finding -- item-ability icon resolution needs NO special-casing.**
+Phase A.6's two sub-questions (CSWItem icon field; CGameEffect item
+back-reference) were superseded by a better, single answer found via the
+recommended GFF `"ICON"`-tag search (broadened to a substring match since
+the exact tag turned out to be `"IconResRef"`, not `"ICON"`): a generic
+per-effect icon-cache resolver, `FUN_005a43c0`, keys its lookup on
+`CGameEffect::GetInteger(0)` and resolves through the SAME `spells.2da`
+`IconResRef` column real force-power casts use (loaded once at startup by
+`FUN_006c1490`). Decompiling the actual item-property-Apply handlers
+(`FUN_005a9520`/`FUN_005a7610`/`FUN_005a8860`, found by cross-referencing
+`CGameEffect::SetObjectID`/`SetExpiryTime` callers against the
+item-property-handler address range) confirmed they call
+`SetInteger(0, <spells.2da-row-shaped constant>)` when building the
+`CGameEffect` an item property applies -- i.e. **item-ability-granted
+buffs are represented internally as spell-shaped effects with a real
+`spells.2da` icon**, exactly like force powers. There is no CSWItem icon
+field to find and no item back-reference to chase (confirmed independently
+dead-end by 3 separate leads: `SetString` callers, `CSWItem`'s
+near-empty vtable, and ObjectID-param usage in the item-property Apply
+handlers, which tracks target/caster creature identity, not items). This
+means the plan's original Effect-ID-table design (spell-id -> `IconResRef`)
+is **already correct and sufficient** for item-ability rows -- Phase B
+just needs the real spells.2da row ids the specific item properties in
+this build use, a data lookup not further Ghidra research. One residual,
+flagged for light verification during Phase B (not a new research lead):
+confirm `FUN_005a43c0` (or an adjacent function) is actually reachable
+from the render hook's (`FUN_007457e0`) own call chain. Full evidence:
+"Item 5" section below + `ghidra_knowledge` DB `lessons` ids 59-61 +
+new `functions`/`classes`/`strings_of_interest` rows. **Development phase
+(real hook C++ + `hooks.toml` + `.kpatch`) has NOT started yet** --
+that's Phase B, next.
+
+**Status as of the previous (9th) session, superseded above on Item 5:**
+Phase A.5 (item-ability icon resolution research) executed -- premise
+CORRECTED, not resolved as hoped: the vanilla "quickbar" turned out to be
+a per-party-member 6-category cycling action-selector (Attack-mode/3
+feat+power tabs/Combat AI toggles/generic), and none of its categories is
+"assign an item to a slot" -- the shared assumption behind Item 5 and
+Force Power Hotbar's item-row research does not match this system. User
+chose to keep researching (not accept the fallback yet); two follow-up
+leads (`CGameEffect::SetString` callers, `CSWItem`'s vtable) were both
+inconclusive.
 
 **Status as of the previous (8th) session, superseded above on Item 5's
 premise, otherwise still accurate:** Item 3 is **CONFIRMED empirically**
@@ -1153,7 +1179,123 @@ tracking logic), **but their `spells.2da` row has NO icon** (`iconresref`
 is empty for both). The existing Effect ID table's "read icon from
 `spells.2da`" plan does not work for item-ability rows.
 
-## Item 5 (item-ability icon resolution) -- OPEN, blocks hook 2's icon-lookup logic for item-granted buffs
+## Item 5 (item-ability icon resolution) -- RESOLVED, POSITIVE (2026-09-29, 10th session, Phase A.6)
+
+**Bottom line: item-ability buffs need no special icon-resolution logic
+in hook 2 at all.** The engine represents an item-property-triggered
+buff internally as a spell-shaped `CGameEffect` carrying a real
+`spells.2da` row id, resolved through the exact same generic icon-cache
+function real force-power casts use. The plan's original Effect-ID-table
+design (spell id -> `spells.2da` `IconResRef`) already covers this case.
+
+**How this was found.** Phase A.6 set out to answer two sub-questions
+(CSWItem's icon field offset via a GFF `"ICON"`-tag search; whether a
+`CGameEffect` retains an item back-reference via a targeted decompile of
+the item-property-application machinery). Both were superseded by a
+single, better answer:
+
+1. **CItemPropertyApplierRemover/CSWSItemPropertyHandler vtables
+   confirmed.** `FUN_0051d2f0` (the owning-object constructor already on
+   record as embedding `CSWSEffectListHandler` at `+0x58`) was decompiled
+   in full (pretty-print + raw disasm) and confirmed the parallel pair at
+   `+0x5c`: base `CItemPropertyApplierRemover::vftable` = `0x99247c`
+   (written first), derived/final `CSWSItemPropertyHandler::vftable` =
+   `0x992468`. Dumping `0x992468`'s slots found `Init` (`FUN_005aa490`,
+   slot 1) and `Apply` (`FUN_005aaa10`, slot 2). `Init` builds a
+   **70-entry (`0x46`) item-property-TYPE-keyed dispatch table** -- a
+   distinct, smaller id space from `CSWSEffectListHandler`'s 118-entry
+   `SWEFFECTTYPE` table. `Apply` is a thin bounds-checked dispatcher with
+   5 args (`this,param2,ushort* propertyType,param4,param5,param6`),
+   richer than `CGameEffect`'s own 2-arg `Apply`.
+
+2. **Item back-reference question: three independent negative results.**
+   Cross-referencing all 26 callers of `CGameEffect::SetObjectID`
+   (`0x005e4f00`) and all 6 callers of `::SetExpiryTime` (`0x005e4f80`)
+   against the item-property-handler address neighborhood
+   (`[0x5a0000,0x5c0000)`) found 5 real handler functions
+   (`FUN_005a9520`, `FUN_005a7610`, `FUN_005a8860`, `FUN_005a4bb0`,
+   `FUN_005a4d70`), all decompiled in full. Every `SetObjectID` call in
+   these functions stores a **resolved CREATURE handle** (target and/or
+   source/caster identity for an on-hit-style effect, via the same
+   handle-resolution pattern as R1's `RosterHandleToCreature`) -- never
+   an item handle. `FUN_005a4bb0`/`FUN_005a4d70` are generic
+   duration-initialization/refresh helpers (compute current time via the
+   confirmed `WorldTimer` chain, set `CGameEffect+0xC`/expiry) reused
+   across many item-property types, with no item-specific data at all.
+   Combined with the prior session's two inconclusive leads
+   (`SetString` callers, `CSWItem`'s near-empty vtable), this is now
+   **three independent lines of evidence** against an item
+   back-reference existing anywhere in this path.
+
+3. **The actual answer: a generic per-effect icon cache keyed by
+   `CGameEffect::GetInteger(0)`.** The recommended GFF-tag search (same
+   technique that found `CSWGuiImage_Load`'s `"IMAGE"` tag and
+   `CSWGuiBorder`'s `"CORNER"`/`"EDGE"`/`"FILL"` tags) was run for the
+   literal string `"ICON"` first -- **0 hits** (the real tag isn't
+   spelled that way) -- then broadened to a case-insensitive substring
+   match, which found `"IconResRef"` at `0x9963d0` with exactly 2 xrefs:
+   - `FUN_006c1490` (10753 bytes): the **startup `spells.2da` bulk
+     loader** -- opens `"SPELLS"`, allocates a `0x1a8`-byte-stride array
+     sized to the row count, reads every column (including
+     `IconResRef`) into it once at load time.
+   - `FUN_005a43c0` (1259 bytes): a **generic per-effect icon-cache
+     resolver**. Reads `local_18 = CGameEffect::GetInteger(0)` (via
+     `FUN_005e4e60(0)`) as its lookup key; early-outs if the effect's
+     `+0x10` flags field matches an "icon-skip" bit pattern
+     (`PTR_009967ac`, also seen written by several item-property
+     handlers on their background/mechanical effects, as opposed to
+     `DAT_009967b4`, an "icon-shown" pattern); checks a cache array
+     (owned by its caller, at `+0xffc`/`+0x1000`) for an existing entry
+     keyed by that value; if absent, reads a 2DA/GFF row by field name
+     (`"IconResRef"`, `"Priority"`, `"NameStrRef"`, one more
+     unidentified field) and inserts a new cache entry sorted by
+     priority.
+
+   **The cross-confirmation**: the item-property Apply handlers found in
+   point 2 above (`FUN_005a9520`, `FUN_005a7610`, `FUN_005a8860`) all
+   call `CGameEffect::SetInteger(0, <value>)` with `spells.2da`-row-shaped
+   constants (`0xfc5`=4037, `0x3ea`=1002, `0x1771`=6001, `0x27a1`=10145)
+   when building the effect an item property applies -- **exactly the
+   field `FUN_005a43c0` keys its icon lookup on.** Item-ability effects
+   populate the same integer slot real spell casts do, so they resolve
+   through the identical `spells.2da`-backed icon cache. No item-specific
+   code path exists to find, because item properties re-enter the
+   ordinary spell-effect-with-icon machinery rather than inventing their
+   own.
+
+**What this changes for Phase B**: nothing structural. Rows 70/99
+(`ITEM_ABILITY_ADRENAL_SHOT_ALACRITY`/`ITEM_ABILITY_ENERGY_SHIELD`) in
+the Effect ID table just need the real `spells.2da` row ids the specific
+item properties in this build's `iprp_*.2da`/item templates actually use
+-- a data lookup for Phase B step 1's `spells.2da` sweep, not further
+Ghidra research. The `ITEM_ABILITY_*` fallback (track duration, skip icon
+retargeting, native arrow glyph renders as-is) documented in earlier
+sessions is **no longer needed** -- treat item-ability rows the same as
+force-power rows in the Effect ID table.
+
+**One residual, deliberately not chased further this session** (would be
+a new research lead, out of scope per this phase's own time-box): whether
+`FUN_005a43c0` itself (or a thin wrapper around it) is the function
+`FUN_007457e0`'s render call chain actually calls, or whether the render
+path reads a pre-resolved `IconResRef` string some other way. Recommended
+first check when Phase B's hook 2 implementation starts: search
+`FUN_007457e0`'s neighborhood / its own decompile (already on record from
+Phase 3) for a call to `FUN_005a43c0` or for a read of the cache array
+shape it produces (`0x24`-byte entries, containing an `IconResRef`
+string). If it's not a direct call, replicating `FUN_005a43c0`'s own
+lookup-by-`GetInteger(0)` logic in the hook is a safe fallback -- the
+mechanism itself (2DA row lookup keyed by `GetInteger(0)`) is now fully
+understood regardless of exactly which function the render path calls.
+
+Full decompile-level evidence: `ghidra_knowledge` DB `lessons` ids 59-61,
+`functions` rows for `0051d2f0`/`005aa490`/`005aaa10`/`005a9520`/
+`005a7610`/`005a8860`/`005a4bb0`/`005a4d70`/`005a43c0`/`006c1490`,
+`classes` rows for `CItemPropertyApplierRemover`/`CSWSItemPropertyHandler`,
+`strings_of_interest` row for `IconResRef`.
+
+---
+
+## Item 5 history (superseded by the resolution above) -- OPEN, blocked hook 2's icon-lookup logic for item-granted buffs
 
 **User's direction (explicit choice via `AskUserQuestion`, chosen over a
 "ship force-powers-only for v1" or "hardcode a few icons by hand"
