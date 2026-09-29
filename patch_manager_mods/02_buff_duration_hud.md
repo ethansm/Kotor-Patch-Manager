@@ -1,4 +1,4 @@
-**STATUS 2026-09-29: ESSENTIALLY COMPLETE.** User finished live testing and called the mod essentially complete (final display: own icon layout, debuff column on the right edge, remaining/elapsed boundary line, droid shield icons; see commits 9fec8de, 91a8f46). It is part of the live patch set (14 patches). Leftover cleanup, not yet done: the live build is still the verbose diagnostic build. It opens `buffhud_log.txt` once per line, capped at 6000 lines. Trim that or put it behind a flag before calling the mod final.
+**STATUS 2026-09-29: FINAL (v1.0.0), installed live as the 14th patch.** Read "## FINAL IMPLEMENTATION (v1.0.0)" at the bottom of this file first; everything else is the research trail. Diagnostic logging is off by default (create an empty `buffhud_debug.txt` in the game dir to re-enable `buffhud_log.txt`). Open items: see "Known limits" in the final section.
 
 # Mod Idea 2: Visual Buff Duration HUD
 
@@ -1608,7 +1608,7 @@ estimate's core claim.
 
 ---
 
-## 10th session end-of-session record (2026-09-29) -- READ THIS FIRST when resuming
+## 10th session end-of-session record (2026-09-29) -- (research record; superseded by FINAL IMPLEMENTATION at the bottom)
 
 **State**: Phase A.6 executed; Phase B research partly advanced; NO hook C++/hooks.toml/exports.def/.kpatch written yet; no live-game changes. Commits `ee5e40c` (later partly retracted) and `57f41c6` (correction).
 
@@ -1641,7 +1641,7 @@ Source snapshot: `patch_manager_mods/buff_duration_hud_src/` (framework clone `P
 
 First live test: hooks all applied, hook 2 ran and found the right buffs (spell 8/70 tracked, times read fine), but no icon changed. Verbose logging (`buffhud_log.txt`, memory dumps) showed the icon widget's `+0xd8` child is a **CSWGuiText** (vt `009876b4`, font string), not the "TEXT border" the doc assumed; the arrow glyph is the **`+0x60` CSWGuiBorder** (vt `009875bc`), whose fill image is the direct field `border+0x74` (as `CSWGuiBorder::Draw` reads it), size `+0xc/+0x10` = 0x2f x 0x30. `FUN_00414840`'s `*(this+0x54)+0x74` describes a different struct. Code changed to `widget+0x60` / `border+0x74`; logging left verbose on purpose until the swap works (user request). DB lesson added. **The earlier "U1(a): retarget +0xd8" conclusion in this doc is superseded.**
 
-## 10th session, Phase 3 live test 2 (2026-09-29): SWAP WORKS -- display mechanism needs redesign  **<-- READ THIS FIRST when resuming**
+## 10th session, Phase 3 live test 2 (2026-09-29): SWAP WORKS -- display mechanism needs redesign  **<-- (research record; superseded by FINAL IMPLEMENTATION at the bottom)**
 
 **Result (user screenshots `Documents/Screenshot_2026-09-29_17-36-09/17-36-40.png`)**: with the corrected layout (border `widget+0x60`, fill image `border+0x74`) the buff icons DO replace the native arrows on all three portraits (Force Speed / Force Valor / Resist Energy / Force Shield / adrenal icons all drawn from the mod-owned table). Steam log: 4x `Applied DETOUR`, `SUCCESS: Patcher initialized`, no exceptions, `AR_ERROR.LOG` unchanged. Wipe timing works (`ratio` fell 1.000 -> 0.560 for `ip_resistenergy1` over the session; time chain + `remaining/(duration*1000)` is right, day length assumption never mattered).
 
@@ -1662,3 +1662,42 @@ First live test: hooks all applied, hook 2 ran and found the right buffs (spell 
 **Corrections to earlier sections**: every "retarget `+0xd8` / `*(border+0x54)+0x74`" statement above (U1(a), R4, hook-2 body, "Wipe mechanism RESOLVED" text) is superseded by the `+0x60` / `+0x74` layout. The `FUN_00414840` setter's `this+0x54` block is a different struct.
 
 **State at end of session**: LIVE INSTALL = 14 patches (13 + `buff-duration-hud`, verbose-logging diagnostic build, writes `buffhud_log.txt` in the game dir, up to 6000 lines). NOT reverted; user has not accepted permanence. Sources: `patch_manager_mods/buff_duration_hud_src/` (+ `logs/buffhud_log.live_test2.txt`, a 770-line real log). Framework clone `Patches/BuffDurationHUD/` is the build location (uncommitted). Staging dir for the launcher was `<scratchpad>/live14/` (13 `.kpatch` from `batch3_live_patches/` + the new one); rebuild it from `batch3_live_patches` if the scratchpad is gone.
+
+
+## FINAL IMPLEMENTATION (v1.0.0, 2026-09-29) -- READ THIS FIRST when resuming
+
+**What the player sees.** On every party portrait card the engine's plain buff/debuff *arrow chevrons* are replaced by the effect's own icons. Buffs run in a column down the card's LEFT edge, debuffs down the RIGHT edge (both columns share one icon size). Item-sourced effects (stims, combat shots, forearm/droid shields, droid devices) sit on a round translucent teal disc; force powers are the bare icon. Each icon "drains" top-down: the elapsed part (top) is drawn dim (35% alpha, disc + icon), the remaining part (bottom-anchored) at full alpha, with a 1 px dark-teal line at the boundary. Untracked engine effects (spell id -1, grenades/rockets/darts/monster abilities) keep their native arrows.
+
+**Hooks** (`kotor2-steam-aspyr.hooks.toml`, all detours, `original_bytes` verified vs the live exe; target hashes: Steam `6A522E71...` and its LAA build `4AB72FC1...`):
+| # | Address | Export | Job |
+|---|---|---|---|
+| 1a/1b | `0x0074f25a` / `0x0074f8ab` | `SnapshotPortraitSlot(slotPtr, creaturePtr)` | UpdatePortraits: remember slot -> creature (4-entry table) |
+| 2 | `0x00745a84` | `RetargetBuffIcon(slot, idx, widget, whichRow)` | per native arrow: zero the arrow border's w/h (`CSWGuiBorder::Draw` returns at once) for the first `tracked` arrows of each row |
+| 3 | `0x00745a97` | `RestoreBuffIcon()` | buff row only: un-hide (debuff row has no such site; `DrawBuffColumn` restores and the row-exit SetRect resets the rect anyway) |
+| 5 | `0x00745aec` | `DrawBuffColumn(slot, widget, isLarge, whichRow, cardW, cardH)` | row exit, once per row call, still inside the card's viewport (origin = card top-left; pop is `0x004799c0` after): draws the icon column |
+
+**Draw mechanics (verified live, decompiled this session)**
+- Icon draw = `CAurGUIImageInternal` vtable slot 6 (`FUN_0047d210`, thiscall, 8 stack args): `(x, y, w, h, byteFlags=0, float rotation(border+0x20), float* rgb tint (border+0x28), float alpha)`; coordinates are pixels of the CURRENT viewport; full-texture UVs, no source rect. Final alpha = `alpha * FUN_00479270()` (product of the viewport alpha stack).
+- Partial (bottom slice) drawing = the engine's nested clip: `FUN_00479460(x,y,w,h, float* color, byte flag, float alpha)` pushes a child viewport (relative to the current one; `glViewport` + the 0..1 ortho means geometry outside is frustum-clipped) and returns 0 if refused; `FUN_004799c0` pops. Passing the row's own "no fill" colour `&DAT_00a1ba3c` gives a pure clip; passing any other colour + alpha>0 FILLS the rect at push time (used for the 1 px boundary line). The `FUN_00479ab0` HUD scale float is 2.0 on this setup; cards are 191x192 (large/leader) and 85x85 (small/companions) in viewport units.
+- `FUN_0047ea60(float)` flushes the GUI quad batch; called before and after our draws exactly as the border draw does. `CSWGuiBorder::Draw` (`0x415300`) fill style is `border+0x34 & 3` (0 tile, 1 centre unscaled, 2 stretch) -- the arrow border is already stretch (2); the border alpha is `+0x24`, tint `+0x28..0x30`.
+- Order: the main HUD draw (`FUN_0074b3f0`) draws all panel controls (incl. `LBL_LEVELUP`) first, THEN the icon rows (`FUN_00745770`) -> our icons are on top of the level-up arrow. `FUN_00745770` only calls the row draw when the engine's own arrow count (`slot+0xddc` buff / `+0xddd` debuff) is non-zero (limit: a card with no engine arrows never triggers our hook).
+- Layout: size = card width x 0.19 (small) / 0.22 (large), clamped 5..24 x HUD scale; shrinks to fit all icons of the LONGER of the two lists, then adds columns (max 3) below the minimum; gap = HUD scale. Constants at the top of `BuffDurationHUD.cpp` (`SmallCardFraction`, `LargeCardFraction`, `MinIconSize`, `MaxIconSize`, `DimAlpha` 0.35, `BgAlpha` 0.80, `BgColor` (0.035,0.415,0.34) = the HUD border teal sampled from a screenshot, `RightInset`, `LineColor/Alpha`).
+
+**Data**
+- Effect -> spell: `CGameEffect+0x1c` = spells.2da row. Time chain and ratio unchanged (`remaining / (duration*1000)`; permanent effects ratio 1). Distinct spell ids per creature, application order.
+- `EffectIconTable.inc` (buffs, generated by `scripts/gen_buff_hud_icon_table.py`): non-hostile spells.2da rows with an `iconresref`, plus hand-picked ITEM rows. **Item-ability icons must be the inventory icons `ii_<itemclass>_<modelvariation:03d>`** (adrenals 69-74 -> `ii_adrnaline_001..006`, combat shots 75-77 -> `ii_cmbtshot_001..003`, 129 -> `ii_medeqpmnt_005`, forearm shields 99-107/132 -> `ii_frarmbnds_00N`, droid shields 110-115 -> `ii_drdshld_001/004/005/006/007/005`, cloak 108 / 257 -> `ip_shield`). The earlier `i_inject_*`/`i_belt_cloak` picks were the 3D-model UV sheets (the red/white patchwork) -- lesson recorded in the DB.
+- `DebuffIconTable.inc` (debuffs, `scripts/gen_debuff_icon_table.py <game dir> <out.inc>`): hostile rows (forcehostile set or hostilesetting 1). 45 force-power rows use their `ip_*` icon; 19 DROID_ITEM rows use `ii_drdutldev_001..013` (found via the granting UTI's model variation) and get the disc. ~50 hostile rows (grenades, rockets, darts, monster abilities, plot grenades, `BAT_MED_ENEMY`, droid shield-disruptor 2 / carbonite 4) have no derivable icon and stay as native arrows. UTI item-property subtype == spells.2da row in this build (labels line up: e.g. subtype 110 = `DROID_ITEM_ENERGY_SHIELD_1` on `d_shield_01`); the game's `iprp_spells.2da` copy is NOT that mapping.
+- Round backing disc = `override/buffhud_circle.tga` (128x128 white disc with soft edge, source copy in `buff_duration_hud_src/buffhud_circle.tga`), loaded like any other image resref through `FUN_0047eb60` and tinted. It is a plain file in the game's `override/` folder -- remove it if the patch is uninstalled.
+- Image pool: one engine image per resref (`FUN_0047eb60`, cdecl, 16 chars + NUL), created lazily, never freed.
+
+**Logging.** Off by default. If a file named `buffhud_debug.txt` exists in the game dir when the DLL loads, `buffhud_log.txt` is written (open/append/close per line, cap 6000): hook-2 arrow decisions (first 40), `COLUMN#` lines (card size, scale, counts, columns, size; first 30 and on change per slot) and per-icon rect/ratio/bright lines. To disable: delete `buffhud_debug.txt` (or never create it).
+
+**Install / test**: build in the framework clone (`Patches/BuffDurationHUD`, `python3 ../create-patch.py`), stage the 13 baseline `.kpatch` + `BuffDurationHUD.kpatch`, run `KPatchLauncher "<game>/swkotor2.exe" --patches <dir> <all 14 ids>` with the game CLOSED. Verify in `~/steam-208580.log`: 5x `Applied DETOUR` for our addresses + `SUCCESS: Patcher initialized`; `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9` unchanged. Sources of record: `patch_manager_mods/buff_duration_hud_src/` (framework clone stays uncommitted).
+
+**Known limits / open items**
+- The debuff column and the boundary line were built last; visual confirmation was still pending when this section was written (buff column, discs, teal, dim/bright drain, droid shields all confirmed by screenshot).
+- The debuff column may cover the vitality/force bars on the card's right edge (`RightInset` constant, currently 0).
+- Untracked effects keep native arrows, which then sit where the arrow row always was (they can overlap our columns).
+- Spells 100/106 (forearm shield variations 2/8) and 114/115 (droid shield variations) use best-guess icons; grenades/rockets/darts have no icons.
+- Load-time hangs: ~3 in ~10 launches with the patch installed (see `CRASH_INVESTIGATION.md`); our hooks had never drawn before any of them and the signature (no exception, `RNsl` spin on `NtGetContextThread`) matches the pre-existing baseline hangs. Not attributed; a 5+ vs 5+ launch comparison would settle it.
+- Portrait overlays besides ours: `LBL_LEVELUP`, `LBL_DEBILITATED`(sic), `LBL_DISABLED`, `LBL_BACK`, `PB_VIT`/`PB_FORCE`, `BTN_CHAR`, `LBL_CMBTEFCTINC/RED` (see U3 above). Only the vit/force bars are near our columns; the disabled/debilitated overlays were not investigated.

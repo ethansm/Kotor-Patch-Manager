@@ -1,6 +1,7 @@
 // Buff Duration HUD (Steam Aspyr build 6A522E71...). Replaces the engine's plain
-// "buff arrow" glyph over each party portrait with the buff's own icon and shrinks it
-// as the effect runs out. Research trail and every address below:
+// buff/debuff arrow glyphs over each party portrait with the effect's own icons: buffs in a
+// column down the card's left edge, debuffs down the right edge, item abilities on a round
+// teal disc, each draining top-down (dim = elapsed, full = remaining) as the effect runs out. Research trail and every address below:
 // patch_manager_mods/02_buff_duration_hud.md (local-setup/KOTOR-II worktree).
 //
 // Hooks (all inside CSWGuiMainInterface, cdecl detours, original bytes still run):
@@ -64,30 +65,18 @@ bool isItemAbility(int spell) {
     return (spell >= 69 && spell <= 77) || (spell >= 99 && spell <= 108) || (spell >= 110 && spell <= 115) || spell == 129 || spell == 132 || spell == 257;
 }
 
-// ---- diagnostics: buffhud_log.txt in the game dir, capped, off the hot path when full ----
+// ---- diagnostics: OFF by default. Create an empty "buffhud_debug.txt" in the game dir to turn
+// on buffhud_log.txt (capped, first-N + change-detected lines from the hooks below). ----
+bool g_debugLog = false;
 int g_logLines = 0;
 constexpr int MaxLogLines = 6000;
 void logf(const char* fmt, ...) {
-    if (g_logLines >= MaxLogLines) return;
+    if (!g_debugLog || g_logLines >= MaxLogLines) return;
     FILE* f = fopen("buffhud_log.txt", "a");
     if (!f) return;
     ++g_logLines;
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
-}
-
-// hex dump of `words` 32-bit words at addr (readable-checked), 8 words per line
-void dumpMem(const char* tag, int addr, int words) {
-    if (addr == 0) { logf("  dump %s @0: null", tag); return; }
-    for (int i = 0; i < words; i += 8) {
-        char line[200]; int p = 0;
-        for (int j = i; j < i + 8 && j < words; ++j) {
-            int v;
-            if (IsBadReadPtr(reinterpret_cast<const void*>(addr + j * 4), 4)) { p += snprintf(line + p, sizeof(line) - p, " ????????"); }
-            else { v = *reinterpret_cast<const int*>(addr + j * 4); p += snprintf(line + p, sizeof(line) - p, " %08x", v); }
-        }
-        logf("  dump %s +%03x:%s", tag, i * 4, line);
-    }
 }
 
 // ---- hook 1: slot -> creature side table -------------------------------------------
@@ -310,6 +299,9 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
 } // extern "C"
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_ATTACH) logf("buffhud loaded");
+    if (reason == DLL_PROCESS_ATTACH) {
+        g_debugLog = GetFileAttributesA("buffhud_debug.txt") != INVALID_FILE_ATTRIBUTES;
+        logf("buffhud loaded");
+    }
     return TRUE;
 }

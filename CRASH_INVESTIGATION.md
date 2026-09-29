@@ -806,3 +806,10 @@ than intermittently, that would be the trigger to escalate.
 **Symptom**: after installing the Buff Duration HUD diagnostic build as a 14th patch, two consecutive launches hung during load (`swkotor2.exe` `RNsl`, 90-116% CPU, black/frozen; the known `NtGetContextThread` spin class from 2026-09-28). Killed with the PID-targeted `kill -TERM` (skill Step 4), relaunched; the third and every later launch (about 4 more) loaded and played normally.
 **Evidence**: Proton log has no `Unhandled exception`/`err:` beyond the usual winebth/service lines; `AR_ERROR.LOG` unchanged; mod log `buffhud_log.txt` showed only `buffhud loaded` + `snapshot` lines (UpdatePortraits hook ran) and NO `row`/`CALL` lines -> `RetargetBuffIcon` had not run when the hang happened, so the hang is not in the render hook. Verbose file logging (fopen per call) in `DllMain` and hooks existed in those builds; not ruled out as a factor.
 **Not done**: no baseline comparison (13 patches, no buffhud) of hang rate. Rate with the patch: 2 of ~6 launches. Escalation trigger: if it keeps happening at this rate, run 5+ launches on the 13-patch baseline and 5+ with the patch (logging off) before attributing.
+
+
+## 2026-09-29 (later) -- another load-time hang with `buff-duration-hud` installed (unattributed)
+
+**Symptom**: hang while loading a save after installing the redesign build (visible: partial 3D model render, a cloaked-looking ghost of the character animating over the loading screen; Esc hid it with the menu sound). `swkotor2.exe` `RNsl` ~72% CPU at 2:23 elapsed.
+**Evidence**: no `Unhandled exception`/`err:` in `~/steam-208580.log`, `AR_ERROR.LOG` md5 unchanged; `buffhud_log.txt` had only `snapshot` lines and ZERO `COLUMN#` lines, i.e. `DrawBuffColumn` had never run. Saved as `buffhud_log.hang4.txt` (scratchpad).
+**Action**: killed with `kill -TERM` (clean exit), relaunched via the launcher; next launch loaded fine. Tally with the patch installed: 3 hangs in ~10 launches; baseline comparison (13 patches, 5+ launches) still not done. Not attributed.

@@ -1,9 +1,9 @@
 [patch]
 id = "buff-duration-hud"
 name = "Buff Duration HUD"
-version = "0.1.0-dev"
+version = "1.0.0"
 author = "local"
-description = "Cooldown-wipe duration overlay for active Force-power buffs on the party HUD portraits."
+description = "Party HUD buff/debuff icon columns with a top-down duration drain (dim = elapsed) replacing the engine's plain arrows."
 
 requires = []
 conflicts = []
