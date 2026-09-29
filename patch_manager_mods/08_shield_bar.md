@@ -59,21 +59,64 @@ pips = coverage**.
   Overlap in practice is small (an item shield + Fury temp HP), so cap at 3 segments; merge extras. Segment order =
   engine absorption order (open item S4). Bar full-scale = sum of the
   active shields' max `amount`, so the bar drains in true proportion.
-- **Segment color by shield family** (derived from `damageflags`, not per
-  damage type — nearly every shield covers several):
+- **Segment color = the shield's own in-world VFX color** (user's idea,
+  2026-09-29; supersedes the earlier family palette). Each segment matches
+  the glow the player sees on the character, so bar and model are
+  visibly the same shield. Table below.
 
-  | Family | Rule | Color |
-  |---|---|---|
-  | Energy | blaster/elec, no physical | **cyan** `#4FE3FF` |
-  | Kinetic | physical only (Mando melee) | **amber** `#F2B640` |
-  | Hybrid | energy + physical (Mando power, Drexl) | cyan/amber diagonal stripe |
-  | Generic pool | temp HP (Fury / Wookiee Rage) / any resistance with `nLimit` | **white** `#E8ECEF` |
+### Shield → VFX → color (traced through data + exe, 2026-09-29)
 
-  Must stay distinguishable from the existing **red vitality** and
-  **blue Force** bars — hence cyan (lighter, greener) rather than plain
-  blue. Verify side-by-side in a live screenshot before committing.
-  This follows the widely-read Overwatch/Destiny convention
-  (health / amber armor / blue shields).
+Chain: `forceshields.visualeffectdef` → `visualeffects.2da` row 2040–2048
+(`VFX_DUR_SHIELD_*`) → `progfx_duration` 1413–1421 → exe
+`ProgFxTextureShell` (`0x00878f10`), a switch that picks texture
+`fx_tex_(progfx−1400)`, **skipping 13**. The shell is an animated
+flipbook texture laid over the creature mesh. The row labels are
+misleading: both "CHROME" rows are purple. The live textures come from
+**mod #35 Animated Energy Shields** (same hues as vanilla, lighter). Hue
+= brightness-weighted mean over all frames, normalized to its max channel.
+
+| forceshields row(s) | VFX | texture | vanilla hue | **live hue (bar color)** |
+|---|---|---|---|---|
+| 3-5 droid enviro, 6 Energy | BLUE_01 | fx_tex_14 | `#0000FF` | **`#4CACFF`** sky blue |
+| 7 Sith | GREEN_01 | fx_tex_15 | `#16FF72` | **`#7CFFC7`** mint |
+| 0-2 droid energy, 8 Arkanian, 16-18 plot, 19 Heat | RED_01 | fx_tex_16 | `#FF0000` | **`#FF0A0A`** red |
+| 9 Echani | BLUE_02 | fx_tex_17 | `#000AFF` | **`#385EFF`** royal blue |
+| 10 Mando melee | CHROME_01 | fx_tex_18 | `#8C00FF` | **`#DD92FF`** lavender |
+| 11 Mando power | CHROME_02 | fx_tex_19 | `#DB00FF` | **`#CE63FF`** violet |
+| 12 Dueling Echani | BLUE_03 | fx_tex_20 | `#0009FF` | **`#6473FF`** periwinkle |
+| 13 Dueling Yusanis | BLUE_04 | fx_tex_21 | `#0C00FF` | **`#0D0CFF`** deep blue |
+| 14 Verpine, 20 Drexl | RED_02 | fx_tex_22 | `#FF7A01` | **`#FF9B24`** amber |
+| 15 Antique droid | SPIDER_OLD (model) | fx_tex_12 | `#FF5D00` | **`#FF450B`** orange |
+
+Visual reference: `shield_bar_src/shield_vfx_textures.png` (top = vanilla frame 0, bottom = live mod #35).
+
+Droids get a sphere model instead of the shell (`appearance_0N` →
+`visualeffect_0N`, e.g. `v_fieldmrk1_dur`). Its color is the mesh's
+self-illumination controller (id 100) over the grey `fx_tex_13`: the red
+field marks are `#F83500`/`#F53A00`/`#F01C00`, the blue ones
+`#0066FF`/`#0072FF`/`#005AFF`. These are the same hue family as the humanoid
+shell for the same row (energy = red, enviro = blue), so one color per
+row works for both.
+
+**Best version: use the texture itself as the segment fill**, not just its
+average color. Mod 2 already swaps a `CSWGuiBorder` fill image to an
+arbitrary resref (`FUN_0047eb60`), so the bar can show the literal
+`fx_tex_NN` pattern. Open question (**S7**): does a GUI border draw
+advance a `proceduretype cycle` flipbook? If it does, the bar animates in
+sync with the shield. If not, it shows one frame (or a squashed 16-frame
+strip, for mod 35's 256x4096 TGAs); then crop via UVs or fall back to the
+flat hue above.
+
+**Conflict to check live (S6):** red shields sit next to the **red
+vitality** bar, and the blue ones next to the **blue Force** bar. The
+textured fill, a bright 1-unit rim and the bar's own column should
+separate them. If not, lift lightness only and keep the hue so the tie
+to the VFX survives.
+
+Fury temp HP (no shield VFX): the exe's `fx_Fury01-03` textures are dark
+red (`#950000`), and their only xref is `FUN_00442090` (a GL overlay,
+unconfirmed). Use white `#E8ECEF` unless live testing says otherwise;
+Fury-red would collide with vitality.
 - **Coverage pips** (tiny squares under/beside the bar, only for the
   elemental extras a family color doesn't imply): fire orange `#FF7A2E`,
   cold ice `#BDEBFF`, sonic purple `#C77DFF`, ion yellow `#FFE14F`,
@@ -142,6 +185,9 @@ pips = coverage**.
   binds fixed tags by name), so the bar itself still needs the draw hook.
   The GUI edit only reserves the space.
 - **S6** Actual vitality/Force bar colors, from a live screenshot.
+- **S7** Whether a GUI `CSWGuiBorder` fill animates a `proceduretype
+  cycle` texture (decides animated fill vs. flat hue). Cheapest test:
+  live, with Mod 2's existing fill-swap pointed at `fx_tex_14`.
 
 ## Relationship to other mods
 
