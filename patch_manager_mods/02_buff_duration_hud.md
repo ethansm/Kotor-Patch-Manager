@@ -1,8 +1,26 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status (2026-09-29, 6th session, current):** Phase 2 (Ghidra static
-analysis) **RESOLVED**. Phase 3 (render redesign + data-layer research)
-**NEARLY ALL RESOLVED**:
+**Status (2026-09-29, 7th session, current):** Phase 2 and Phase 3
+research are now **effectively COMPLETE**. R3's residual, item 2
+(multi-slot creature resolution, all-party-members scope), and R4 (both
+hook sites, byte patterns, wipe mechanism) are all **RESOLVED**. Item 3
+(spellID <-> spells.2da row-index cross-check) is **PARTIALLY resolved**:
+the field's identity/sentinel behavior is decompile-confirmed, but its
+exact numeric ID space is NOT decompile-confirmed -- flagged for
+empirical (in-game) verification rather than further static tracing, per
+this session's own effort budget. See "Item 1-4 findings (R3 residual +
+multi-slot creature resolution + R4)" (bottom of the UX sections, right
+before "## Goal") for full detail; it supersedes everything below it for
+anything it re-addresses. **Development phase (real hook C++ +
+hooks.toml + `.kpatch`) was NOT started this session** -- item 3's
+open numeric-ID-space assumption is directly load-bearing for the
+render hook's icon lookup, so per this project's gating discipline this
+is a research-handoff stopping point, not a build-it point, absent an
+explicit user decision to accept that one flagged risk.
+
+**Status as of the previous (6th) session, superseded above for R3/R4 but
+otherwise still accurate:** Phase 2 (Ghidra static analysis) **RESOLVED**.
+Phase 3 (render redesign + data-layer research) **NEARLY ALL RESOLVED**:
 
 - R1 (creature-per-slot), R6 (max/total duration field): **RESOLVED**.
 - UX pivot render approach (U1(a)/U2/U4/U5): **RESOLVED** (prior
@@ -910,6 +928,127 @@ iteration's native `Draw(dt)` call, retarget the shared icon widget's
 computing wipe state from `CGameEffect::ExpiryTime` vs. `FUN_0051ad20`'s
 current time.
 
+## Item 1-4 findings (R3 residual + multi-slot creature resolution + R4) (2026-09-29, 7th session)
+
+Executed the "Close R3 Residual, Multi-Slot Creature Resolution, R4 Hook
+Site" plan. Static research only — no hooks, no `.kpatch`, no live-game
+changes. Full decompile/disasm evidence in the `ghidra_knowledge` DB
+(`lessons` 46-49 + `functions` rows for every address below) — summarized
+here.
+
+**Item 1 (R3 residual) RESOLVED — fully global, no per-object context
+needed.** Raw disassembly of `FUN_0051c350` (28 bytes) revealed it's
+`thiscall` and dereferences its OWN `this+0x4` to get
+`FUN_00538e00`'s `this` — the decompiler had hidden BOTH implicit `ECX`
+arguments (same class of issue as the R2-era lesson about hidden
+`this`/ECX args). Tracing backward from the heartbeat's call site
+(`0x00569525`) found the single write feeding `FUN_0051c350`'s own
+`this` is a load from a **fixed global pointer**, not anything
+`CSWSObject`-specific:
+```
+this_for_00538e00 = *( *(int*)0x00a1b4a4 + 0x8 ) + 0x4, dereferenced
+worldTimerObj = FUN_00538e00(this_for_00538e00, 0x7f000000)   // sentinel forces the default/main slot
+```
+Passing the sentinel `0x7f000000` as `FUN_00538e00`'s 2nd param
+unconditionally selects the default world-timer slot
+(`this+0x10048`), skipping its mode/handle check entirely. This is the
+**ideal** case the plan hoped for: the render hook can read game time
+from anywhere in the process, no `CSWSObject`/creature/handle needed at
+all.
+
+**Item 2 (multi-slot creature resolution) RESOLVED — new work, not a
+carried-forward TODO.** Full decompile of `UpdatePortraits`
+(`0x0074ee90`) found the exact raw-position → display-slot swap logic
+(previously only understood at the "gated on `*rosterObj==2`" level):
+`local_1c` (the resolved DISPLAY slot, 0..2) and `local_3c`
+(`creaturePtr`) are both live right before the function computes the
+slot pointer `hudThis + 0x1f34 + local_1c*0xde4` — the exact same
+`slotPtr` value `PortraitIconRowDraw` (`0x007457e0`) receives as its own
+`this` later the same frame (one HUD instance, identical constants on
+both sides). **Design decision: key the side-table by the raw `slotPtr`
+address itself, never by a derived index** — only 4 possible `slotPtr`
+values exist per session (3 loop slots + 1 "extra" slot), so a 4-entry
+linear-scan table needs no reverse index math and no access to `hudThis`
+from `PortraitIconRowDraw`'s own call frame, sidestepping the plan's own
+open sub-question entirely. **Bonus finding**: the 4th "extra" portrait
+slot (`PortraitExtraSlotOffset`, the larger selected-character card the
+user's screenshot confirmed as visually bigger) is **not** an
+independent roster position — decompile shows it's gated on
+`local_1c==0` and simply mirrors whichever creature occupies display
+slot 0. The snapshot hook writes both the normal-slot entry and, only
+when `local_1c==0`, the extra-slot entry, using the same `creaturePtr`.
+
+**Item 3 (spellID ↔ `spells.2da` sanity check) PARTIALLY RESOLVED,
+flagged for empirical verification.** Decompiled `FUN_0059de30`
+(compound-effect decomposition — builds sub-effects via
+`CGameEffect::Constructor_2`/copy-ctor, so `+0x1c` flows through by
+copy, not set fresh here), then `Constructor_2` itself (`0x005e4ac0` —
+confirms `+0x1c` is a real copied field, default/unset sentinel is
+`-1`/`0xFFFFFFFF`, matching `HasSpellEffectApplied`'s own `-1`
+short-circuit exactly), then the primary constructor (`0x005e4920` —
+same sentinel init, no explicit spellId parameter). None of these three
+functions is where a **real** (non-sentinel) spell ID first gets
+written — that happens further upstream (likely the NWScript
+command-execution layer, e.g. the `ExecuteCommandApplyEffect*` family,
+GOG-only addresses, Steam counterparts not searched). Per the plan's own
+effort budget ("don't sink a full session into it"), stopped here.
+**What's confirmed**: `+0x1c` is a real, deliberately-propagated field
+with the right sentinel semantics — strong circumstantial evidence it's
+the spell/feat ID. **What's not confirmed**: whether its numeric value
+space is literally `spells.2da` row indices (vs. some other ID space).
+**Recommended verification**: once a test hook exists, cast one known
+force power, read that effect's live `+0x1c` value, compare to
+`spells.2da`'s row for that power — strictly cheaper and stronger than
+further static tracing.
+
+**Item 4 (R4: both hook sites, byte patterns, wipe mechanism)
+RESOLVED.** Two splice sites found via raw disassembly, both
+byte-verified:
+
+1. **Snapshot hook** (item 2's side-table writer), two sites inside
+   `UpdatePortraits`: `0x0074f25a` (normal slots 0-2, 6 original bytes
+   `89 85 44 ff ff ff`, `EAX`=slotPtr freshly computed, `[EBP-0x38]`=
+   creaturePtr stable all iteration) and `0x0074f8ab` (extra/mirror
+   slot, only reached when `local_1c==0`, 6 original bytes
+   `89 95 a4 fe ff ff`, `EDX`=extraSlotPtr, same `[EBP-0x38]`
+   creaturePtr).
+2. **Icon-retarget + wipe hook**, inside `PortraitIconRowDraw`'s
+   (`0x007457e0`) per-icon loop, immediately before the native per-icon
+   `Draw(dt)` virtual call: splice at `0x00745a84`, a clean 13-byte
+   instruction-boundary window (`8b 4d e0 8b 11 8b 4d e0 8b 42 38 ff
+   d0`) — comfortably enough room for a `JMP rel32` trampoline. Every
+   value the retarget logic needs sits in stable `EBP`-relative stack
+   slots at this point (the function prologue spills `this` to
+   `[EBP-0x4c]` at entry): `slotPtr=[EBP-0x4c]`, loop index (which icon)
+   `=[EBP-0x18]`, icon widget ptr `=[EBP-0x20]`, whichRow
+   `=[EBP+0x10]` (0=debuff/RED, nonzero=buff/INC — only retarget
+   nonzero), `dt=[EBP+0x8]`.
+
+**Wipe mechanism RESOLVED** — decompiling `CSWGuiBorder::Draw`
+(`0x00415300`) showed its very first instruction reads `self+0xc`/
+`self+0x10` (width/height) directly and both gates and drives its
+*entire* layout computation off them — these are **live fields re-read
+every `Draw` call**, not cached or passed in by the caller. This settles
+U4/R4's last open design question in favor of the simplest option: the
+wipe needs no second draw call and no `FillCenter`-parameter
+replication — just overwrite the retargeted `self+0xd8` ("TEXT") fill
+border's own `+0xc`/`+0x10` dimension fields with a shrunk value
+(ratio from `CGameEffect::ExpiryTime` vs. item 1's global time chain,
+over `CGameEffect+0xC` duration) before the native `Draw` executes.
+Because only `self+0xd8` is touched (not `self+0x60`, "BORDER"/frame),
+the decorative frame stays full-size while only the icon image
+shrinks — exactly the intended "cooldown wipe over the icon" look.
+
+**Hand-off**: items 1, 2, and 4 are fully resolved with byte-level
+precision. Item 3 is flagged, not decompile-confirmed — its assumption
+is load-bearing for the render hook's icon lookup, so per this project's
+gating discipline, real hook C++/`hooks.toml`/a `.kpatch` build were
+**not** started this session absent an explicit user call to accept that
+one flagged risk and proceed anyway. Scaffold
+(`Patches/BuffDurationHUD/BuffDurationHUD.cpp`) updated with every new
+confirmed constant from items 1, 2, and 4 (item 3 documented as an open
+TODO in place), recompiles cleanly.
+
 ## Goal
 
 A per-frame HUD overlay showing remaining duration on active buffs (Force
@@ -1010,9 +1149,12 @@ source — not traced this session (see Phase 2 findings above).
   later, this mod becomes strictly better than that workaround and the two
   shouldn't coexist (the long-buff mod would make the timer overlay
   pointless, not simplify it).
-- **Multiplayer/party members**: decide scope up front — player-only buffs
-  (simplest, matches the original ask) vs. also tracking active party
-  members' buffs. Recommend player-only for v1.
+- **Multiplayer/party members**: **DECIDED (2026-09-29, 7th session) —
+  v1 tracks ALL party members shown in the portrait row, not just the
+  player character**, overriding this doc's original player-only
+  recommendation (the user's explicit choice). This is what drove item
+  2's multi-slot creature resolution work — see the findings section
+  above.
 
 ## Effort estimate (rough, pre-Ghidra)
 
