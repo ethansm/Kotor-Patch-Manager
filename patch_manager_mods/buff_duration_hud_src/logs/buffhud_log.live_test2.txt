@@ -1,0 +1,770 @@
+buffhud loaded
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+snapshot slot=048538ac creature=046f09b8
+snapshot slot=04854690 creature=046ff0e0
+snapshot slot=04855474 creature=046fcd98
+CALL#1 slot=048538ac idx=0 widget=04854214 whichRow=1 creature=046f09b8
+  widget vtable=009878bc (CSWGuiLabel=009878bc)
+  dump widget +000: 009878bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +020: 00000000 00000000 00000000 00000000 00000000 00000000 04851978 00000000
+  dump widget +040: 00000000 00000000 0000000a 00000000 00000000 00000048 00000100 00000000
+  dump widget +060: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +080: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump widget +0a0: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump widget +0c0: 6666656d 00003230 04854274 00000000 00000000 04895238 009876b4 0000000e
+  dump widget +0e0: 00000048 0000002f 00000030 04892cb0 00000000 00000000 ffffffff 6c616964
+  dump widget +100: 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000 3f800000 3f800000
+  dump widget +120: 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e 00363178 00000000
+  dump widget +140: 048542ec 00000190 009878bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+  dump widget +180: 04851978 00000000 00000000 00000000 0000000a 00000000 00000000 00000047
+  dump widget +1a0: 00000100 00000000 009875bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +1c0: 00000000 00000000 00000000 3f800000 3f800000 3f800000 3f800000 00000002
+  dump border@+60 +000: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump border@+60 +020: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump border@+60 +040: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump border@+60 +060: 6666656d 00003230 04854274 00000000 00000000 04895238
+  dump border@+d8 +000: 009876b4 0000000e 00000048 0000002f 00000030 04892cb0 00000000 00000000
+  dump border@+d8 +020: ffffffff 6c616964 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000
+  dump border@+d8 +040: 3f800000 3f800000 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e
+  dump border@+d8 +060: 00363178 00000000 048542ec 00000190 009878bc 00000083
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130421) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=1.000
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#1 active=1
+CALL#2 slot=048538ac idx=0 widget=04854214 whichRow=1 creature=046f09b8
+  widget vtable=009878bc (CSWGuiLabel=009878bc)
+  dump widget +000: 009878bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +020: 00000000 00000000 00000000 00000000 00000000 00000000 04851978 00000000
+  dump widget +040: 00000000 00000000 0000000a 00000000 00000000 00000048 00000100 00000000
+  dump widget +060: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +080: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump widget +0a0: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump widget +0c0: 6666656d 00003230 04854274 00000000 00000000 04895238 009876b4 0000000e
+  dump widget +0e0: 00000048 0000002f 00000030 04892cb0 00000000 00000000 ffffffff 6c616964
+  dump widget +100: 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000 3f800000 3f800000
+  dump widget +120: 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e 00363178 00000000
+  dump widget +140: 048542ec 00000190 009878bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+  dump widget +180: 04851978 00000000 00000000 00000000 0000000a 00000000 00000000 00000047
+  dump widget +1a0: 00000100 00000000 009875bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +1c0: 00000000 00000000 00000000 3f800000 3f800000 3f800000 3f800000 00000002
+  dump border@+60 +000: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump border@+60 +020: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump border@+60 +040: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump border@+60 +060: 6666656d 00003230 04854274 00000000 00000000 04895238
+  dump border@+d8 +000: 009876b4 0000000e 00000048 0000002f 00000030 04892cb0 00000000 00000000
+  dump border@+d8 +020: ffffffff 6c616964 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000
+  dump border@+d8 +040: 3f800000 3f800000 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e
+  dump border@+d8 +060: 00363178 00000000 048542ec 00000190 009878bc 00000083
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130445) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.999
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#2 active=1
+CALL#3 slot=048538ac idx=0 widget=04854214 whichRow=1 creature=046f09b8
+  widget vtable=009878bc (CSWGuiLabel=009878bc)
+  dump widget +000: 009878bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +020: 00000000 00000000 00000000 00000000 00000000 00000000 04851978 00000000
+  dump widget +040: 00000000 00000000 0000000a 00000000 00000000 00000048 00000100 00000000
+  dump widget +060: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +080: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump widget +0a0: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump widget +0c0: 6666656d 00003230 04854274 00000000 00000000 04895238 009876b4 0000000e
+  dump widget +0e0: 00000048 0000002f 00000030 04892cb0 00000000 00000000 ffffffff 6c616964
+  dump widget +100: 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000 3f800000 3f800000
+  dump widget +120: 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e 00363178 00000000
+  dump widget +140: 048542ec 00000190 009878bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+  dump widget +180: 04851978 00000000 00000000 00000000 0000000a 00000000 00000000 00000047
+  dump widget +1a0: 00000100 00000000 009875bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +1c0: 00000000 00000000 00000000 3f800000 3f800000 3f800000 3f800000 00000002
+  dump border@+60 +000: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump border@+60 +020: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump border@+60 +040: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump border@+60 +060: 6666656d 00003230 04854274 00000000 00000000 04895238
+  dump border@+d8 +000: 009876b4 0000000e 00000048 0000002f 00000030 04892cb0 00000000 00000000
+  dump border@+d8 +020: ffffffff 6c616964 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000
+  dump border@+d8 +040: 3f800000 3f800000 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e
+  dump border@+d8 +060: 00363178 00000000 048542ec 00000190 009878bc 00000083
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130458) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.999
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#3 active=1
+CALL#4 slot=048538ac idx=0 widget=04854214 whichRow=1 creature=046f09b8
+  widget vtable=009878bc (CSWGuiLabel=009878bc)
+  dump widget +000: 009878bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +020: 00000000 00000000 00000000 00000000 00000000 00000000 04851978 00000000
+  dump widget +040: 00000000 00000000 0000000a 00000000 00000000 00000048 00000100 00000000
+  dump widget +060: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump widget +080: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump widget +0a0: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump widget +0c0: 6666656d 00003230 04854274 00000000 00000000 04895238 009876b4 0000000e
+  dump widget +0e0: 00000048 0000002f 00000030 04892cb0 00000000 00000000 ffffffff 6c616964
+  dump widget +100: 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000 3f800000 3f800000
+  dump widget +120: 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e 00363178 00000000
+  dump widget +140: 048542ec 00000190 009878bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +160: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+  dump widget +180: 04851978 00000000 00000000 00000000 0000000a 00000000 00000000 00000047
+  dump widget +1a0: 00000100 00000000 009875bc 00000083 00000048 0000002f 00000030 00000000
+  dump widget +1c0: 00000000 00000000 00000000 3f800000 3f800000 3f800000 3f800000 00000002
+  dump border@+60 +000: 009875bc 0000000e 00000048 0000002f 00000030 00000000 00000000 00000000
+  dump border@+60 +020: 00000000 3f800000 3f800000 3f800000 3f800000 00000002 00000000 00000000
+  dump border@+60 +040: 00000000 00000000 00000000 00000000 00000000 00000000 5f6c626c 6f63696d
+  dump border@+60 +060: 6666656d 00003230 04854274 00000000 00000000 04895238
+  dump border@+d8 +000: 009876b4 0000000e 00000048 0000002f 00000030 04892cb0 00000000 00000000
+  dump border@+d8 +020: ffffffff 6c616964 6f66676f 3631746e 62363178 3f800000 3f800000 3f800000
+  dump border@+d8 +040: 3f800000 3f800000 3f800000 3f800000 00000009 6c616964 6f66676f 3631746e
+  dump border@+d8 +060: 00363178 00000000 048542ec 00000190 009878bc 00000083
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130477) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.998
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#4 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130493) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.998
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#5 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130506) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.998
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#6 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130522) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.997
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#7 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130539) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.997
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#8 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130556) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.996
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#9 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130572) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.996
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#10 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130590) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.995
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=1.00 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#11 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130606) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.995
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#12 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130624) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.994
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#13 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130639) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.994
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#14 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130657) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.993
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#15 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130672) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.993
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#16 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130689) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.993
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#17 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130705) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.992
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#18 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130722) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.992
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#19 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130739) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.991
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#20 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130755) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.991
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#21 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130775) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.990
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#22 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130789) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.990
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#23 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130808) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.989
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#24 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130825) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.989
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#25 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130840) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.988
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#26 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130856) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.988
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#27 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130872) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.987
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#28 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130889) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.987
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#29 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130905) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.987
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#30 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130924) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.986
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#31 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130939) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.986
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#32 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130958) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.985
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.99 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#33 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130972) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.985
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#34 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2130991) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.984
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#35 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131005) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.984
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#36 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131023) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.983
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#37 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131039) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.983
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#38 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131055) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.982
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#39 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131074) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.982
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+RESTORE#40 active=1
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131089) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.981
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131108) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.981
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131122) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.981
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131142) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.980
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131155) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.980
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131172) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.979
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131189) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.979
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131205) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.978
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131223) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.978
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131239) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.977
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131257) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.977
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131273) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.976
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131290) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.976
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131305) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.975
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.98 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131322) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.975
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.97 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131339) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.975
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.97 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131356) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.974
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.97 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131374) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.974
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.97 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131389) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.973
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.97 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=25 tracked=1 time=1(146,2131407) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 8 8 8 -1 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 -1 
+  buff[0] resref=ip_speedburst ratio=0.973
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_speedburst ratio=0.97 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=1 creature=046f09b8 effects=35 tracked=2 time=1(146,2134981) spellIds: -1 -1 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 -1 
+  buff[0] resref=ip_mind ratio=1.000
+  buff[1] resref=ip_speedburst ratio=0.873
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=1 resref=ip_speedburst ratio=0.87 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=04854690 idx=0 creature=046ff0e0 effects=17 tracked=1 time=1(146,2134981) spellIds: -1 -1 -1 22 22 22 -1 22 22 22 22 22 22 -1 -1 22 -1 
+  buff[0] resref=ip_mind ratio=1.000
+  reads widget=04854ff8 border=04855058 vt=1(009875bc, want 009875bc) fill=1(04895e80) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048948a0 00000000 00000000 00000000 00000000 00100004 80750014
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750015
+  idx=0 resref=ip_mind ratio=1.00 newimage=13ecb8f8 (vtable 0098c1fc) border=04855058 orig=04895e80 w=26 h=26
+row slot=048538ac idx=2 creature=046f09b8 effects=41 tracked=3 time=1(146,2137974) spellIds: -1 -1 42 42 42 42 42 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 -1 
+  buff[0] resref=ip_resistenergy1 ratio=1.000
+  buff[1] resref=ip_mind ratio=0.850
+  buff[2] resref=ip_speedburst ratio=0.790
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=2 resref=ip_speedburst ratio=0.79 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=04854690 idx=0 creature=046f09b8 effects=41 tracked=3 time=1(146,2144229) spellIds: -1 -1 42 42 42 42 42 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 -1 
+  buff[0] resref=ip_resistenergy1 ratio=0.948
+  buff[1] resref=ip_mind ratio=0.538
+  buff[2] resref=ip_speedburst ratio=0.616
+  reads widget=04854ff8 border=04855058 vt=1(009875bc, want 009875bc) fill=1(04895e80) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048948a0 00000000 00000000 00000000 00000000 00100004 80750014
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750015
+  idx=0 resref=ip_resistenergy1 ratio=0.95 newimage=13f1d268 (vtable 0098c1fc) border=04855058 orig=04895e80 w=26 h=26
+row slot=04854690 idx=1 creature=046f09b8 effects=41 tracked=3 time=1(146,2144229) spellIds: -1 -1 42 42 42 42 42 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 -1 
+  buff[0] resref=ip_resistenergy1 ratio=0.948
+  buff[1] resref=ip_mind ratio=0.538
+  buff[2] resref=ip_speedburst ratio=0.616
+  reads widget=04854ff8 border=04855058 vt=1(009875bc, want 009875bc) fill=1(04895e80) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048948a0 00000000 00000000 00000000 00000000 00100004 80750014
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750015
+  idx=1 resref=ip_mind ratio=0.54 newimage=13ecb8f8 (vtable 0098c1fc) border=04855058 orig=04895e80 w=26 h=26
+row slot=04854690 idx=2 creature=046f09b8 effects=41 tracked=3 time=1(146,2144229) spellIds: -1 -1 42 42 42 42 42 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 -1 
+  buff[0] resref=ip_resistenergy1 ratio=0.948
+  buff[1] resref=ip_mind ratio=0.538
+  buff[2] resref=ip_speedburst ratio=0.616
+  reads widget=04854ff8 border=04855058 vt=1(009875bc, want 009875bc) fill=1(04895e80) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048948a0 00000000 00000000 00000000 00000000 00100004 80750014
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750015
+  idx=2 resref=ip_speedburst ratio=0.62 newimage=13ed0a40 (vtable 0098c1fc) border=04855058 orig=04895e80 w=26 h=26
+row slot=04855474 idx=0 creature=046ff0e0 effects=17 tracked=1 time=1(146,2144229) spellIds: -1 -1 -1 22 22 22 -1 22 22 22 22 22 22 -1 -1 22 -1 
+  buff[0] resref=ip_mind ratio=0.538
+  reads widget=04855ddc border=04855e3c vt=1(009875bc, want 009875bc) fill=1(04829ac0) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 04894c60 00000000 00000000 00000000 00000000 00100004 80750016
+  dump orig fill image +020: 00000000 000002a3 000002a4 000002a5 000002a6 000002a7 00100004 80750017
+  idx=0 resref=ip_mind ratio=0.54 newimage=13ecb8f8 (vtable 0098c1fc) border=04855e3c orig=04829ac0 w=26 h=26
+row slot=04784db8 idx=0: NO creature in side table
+row slot=048538ac idx=0 creature=046fcd98 effects=21 tracked=1 time=1(146,2146542) spellIds: -1 -1 -1 -1 -1 -1 -1 22 22 22 -1 22 22 22 22 22 22 -1 -1 22 -1 
+  buff[0] resref=ip_mind ratio=0.422
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_mind ratio=0.42 newimage=13ecb8f8 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=1 creature=046fcd98 effects=25 tracked=2 time=1(146,2148430) spellIds: -1 99 -1 -1 -1 -1 -1 -1 22 22 22 99 -1 22 22 22 22 22 22 -1 -1 22 99 -1 99 
+  buff[0] resref=ip_shield ratio=1.000
+  buff[1] resref=ip_mind ratio=0.328
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=1 resref=ip_mind ratio=0.33 newimage=13ecb8f8 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=0 creature=046f09b8 effects=41 tracked=3 time=1(146,2151933) spellIds: -1 -1 42 42 42 42 42 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 -1 
+  buff[0] resref=ip_resistenergy1 ratio=0.884
+  buff[1] resref=ip_mind ratio=0.152
+  buff[2] resref=ip_speedburst ratio=0.402
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=0 resref=ip_resistenergy1 ratio=0.88 newimage=13f1d268 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=1 creature=046f09b8 effects=41 tracked=3 time=1(146,2151933) spellIds: -1 -1 42 42 42 42 42 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 -1 
+  buff[0] resref=ip_resistenergy1 ratio=0.884
+  buff[1] resref=ip_mind ratio=0.152
+  buff[2] resref=ip_speedburst ratio=0.402
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=1 resref=ip_mind ratio=0.15 newimage=13ecb8f8 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=04854690 idx=0 creature=046ff0e0 effects=17 tracked=1 time=1(146,2151933) spellIds: -1 -1 -1 22 22 22 -1 22 22 22 22 22 22 -1 -1 22 -1 
+  buff[0] resref=ip_mind ratio=0.152
+  reads widget=04854ff8 border=04855058 vt=1(009875bc, want 009875bc) fill=1(04895e80) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048948a0 00000000 00000000 00000000 00000000 00100004 80750014
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750015
+  idx=0 resref=ip_mind ratio=0.15 newimage=13ecb8f8 (vtable 0098c1fc) border=04855058 orig=04895e80 w=26 h=26
+row slot=04855474 idx=0 creature=046fcd98 effects=25 tracked=2 time=1(146,2151933) spellIds: -1 99 -1 -1 -1 -1 -1 -1 22 22 22 99 -1 22 22 22 22 22 22 -1 -1 22 99 -1 99 
+  buff[0] resref=ip_shield ratio=0.983
+  buff[1] resref=ip_mind ratio=0.152
+  reads widget=04855ddc border=04855e3c vt=1(009875bc, want 009875bc) fill=1(04829ac0) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 04894c60 00000000 00000000 00000000 00000000 00100004 80750016
+  dump orig fill image +020: 00000000 000002a3 000002a4 000002a5 000002a6 000002a7 00100004 80750017
+  idx=0 resref=ip_shield ratio=0.98 newimage=13f0d228 (vtable 0098c1fc) border=04855e3c orig=04829ac0 w=26 h=26
+row slot=04855474 idx=1 creature=046fcd98 effects=25 tracked=2 time=1(146,2151933) spellIds: -1 99 -1 -1 -1 -1 -1 -1 22 22 22 99 -1 22 22 22 22 22 22 -1 -1 22 99 -1 99 
+  buff[0] resref=ip_shield ratio=0.983
+  buff[1] resref=ip_mind ratio=0.152
+  reads widget=04855ddc border=04855e3c vt=1(009875bc, want 009875bc) fill=1(04829ac0) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 04894c60 00000000 00000000 00000000 00000000 00100004 80750016
+  dump orig fill image +020: 00000000 000002a3 000002a4 000002a5 000002a6 000002a7 00100004 80750017
+  idx=1 resref=ip_mind ratio=0.15 newimage=13ecb8f8 (vtable 0098c1fc) border=04855e3c orig=04829ac0 w=26 h=26
+row slot=04855474 idx=2 creature=046fcd98 effects=28 tracked=3 time=1(146,2152064) spellIds: -1 99 -1 -1 -1 -1 -1 -1 22 22 22 70 99 -1 22 22 22 22 22 22 70 -1 -1 22 99 70 -1 99 
+  buff[0] resref=ip_shield ratio=0.982
+  buff[1] resref=ip_mind ratio=0.150
+  buff[2] resref=i_inject_adrala ratio=1.000
+  reads widget=04855ddc border=04855e3c vt=1(009875bc, want 009875bc) fill=1(04829ac0) w=1(26) h=1(26)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 04894c60 00000000 00000000 00000000 00000000 00100004 80750016
+  dump orig fill image +020: 00000000 000002a3 000002a4 000002a5 000002a6 000002a7 00100004 80750017
+  idx=2 resref=i_inject_adrala ratio=1.00 newimage=13f50660 (vtable 0098c1fc) border=04855e3c orig=04829ac0 w=26 h=26
+row slot=048538ac idx=3 creature=046f09b8 effects=45 tracked=4 time=1(146,2154219) spellIds: -1 -1 42 42 42 42 42 99 -1 -1 -1 -1 -1 -1 -1 22 22 22 8 8 8 99 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 8 22 42 99 -1 99 
+  buff[0] resref=ip_resistenergy1 ratio=0.865
+  buff[1] resref=ip_shield ratio=1.000
+  buff[2] resref=ip_mind ratio=0.150
+  buff[3] resref=ip_speedburst ratio=0.339
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=3 resref=ip_speedburst ratio=0.34 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=048538ac idx=4 creature=046f09b8 effects=49 tracked=5 time=1(146,2190741) spellIds: -1 -1 42 42 42 42 42 132 -1 75 -1 -1 -1 -1 75 75 -1 -1 22 22 22 8 8 8 132 -1 22 22 22 22 22 22 8 -1 -1 -1 -1 -1 -1 -1 -1 -1 42 8 132 75 22 -1 132 
+  buff[0] resref=ip_resistenergy1 ratio=0.560
+  buff[1] resref=ip_shield ratio=0.864
+  buff[2] resref=i_inject_bat ratio=0.817
+  buff[3] resref=ip_mind ratio=1.000
+  buff[4] resref=ip_speedburst ratio=0.150
+  reads widget=04854214 border=04854274 vt=1(009875bc, want 009875bc) fill=1(04895238) w=1(47) h=1(48)
+  orig fill image vtable=0098c1fc (CAurGUIImageInternal=0098c1fc)
+  dump orig fill image +000: 0098c1fc 048944e0 00000000 00000000 00000000 00000000 00100004 80750011
+  dump orig fill image +020: 00000000 00000000 00000000 00000000 00000000 00000000 00100004 80750012
+  idx=4 resref=ip_speedburst ratio=0.15 newimage=13ed0a40 (vtable 0098c1fc) border=04854274 orig=04895238 w=47 h=48
+row slot=04784db8 idx=0: NO creature in side table
+row slot=04784db8 idx=1: NO creature in side table
+row slot=04784db8 idx=2: NO creature in side table
+row slot=04784db8 idx=3: NO creature in side table
