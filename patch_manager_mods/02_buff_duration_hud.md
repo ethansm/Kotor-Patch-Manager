@@ -1,9 +1,13 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status:** Phase 2 (Ghidra static analysis) IN PROGRESS, started 2026-09-29.
-Real class names and strong candidate functions found for both targets;
-exact `DurationRemaining` offset and exact per-frame hook instruction not
-yet pinned down. No hooks written, no `.kpatch` built.
+**Status:** Phase 2 (Ghidra static analysis) IN PROGRESS, started 2026-09-29,
+**ACTIVE FOCUS as of 2026-09-29** (Mod 1 paused, its render pipeline already
+resolved — see `01_inventory_3d_viewport.md`). Real class names and strong
+candidate functions found for both targets; exact `DurationRemaining` offset
+(Target 1) and exact per-frame draw hook point (Target 2) still not pinned
+down — both have concrete, decompile-verified partial progress and recorded
+next steps (see "Phase 2 findings" below and the `ghidra_knowledge` DB's
+`lessons` table). No hooks written, no `.kpatch` built.
 
 ## Phase 2 findings (2026-09-29)
 

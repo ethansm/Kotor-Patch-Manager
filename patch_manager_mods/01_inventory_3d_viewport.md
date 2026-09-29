@@ -1,9 +1,15 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status:** Phase 2 (Ghidra static analysis) IN PROGRESS, started 2026-09-29.
-Real class names confirmed via RTTI for every class in both branches; exact
-addresses for the trigger/render call functions not yet pinned down. No
-hooks written, no `.kpatch` built.
+**Status:** Phase 2 (Ghidra static analysis) render pipeline RESOLVED
+2026-09-29 (continuation session) — `CSWGuiScene::AddModel` (`0x00418360`),
+`GetArmorModelAndTextureResRef` (`0x008cd060`), and the resolve+render
+function (`0x008cd2c0`) all decompile-confirmed; Branch A/B shared-render-call
+hypothesis confirmed. Two low-priority open items remain (`OnSlotSelected`/
+`OnUpgradeSelected` exact addresses; the two `CSWCItem` RTTI hits'
+relationship), neither blocking Phase 3. **PAUSED as of 2026-09-29** — work
+is focused on Mod 2 (Buff Duration HUD) for now; resume Mod 1 by moving to
+Phase 1 (GUI struct work) or closing the two low-priority items, whichever
+the user prioritizes next. No hooks written, no `.kpatch` built.
 
 ## Phase 2 findings (2026-09-29)
 
