@@ -300,7 +300,7 @@ ratio and is fine filling the ultrawide width at that ratio.
   (including our own, eventually) could register console commands through
   it rather than each hand-rolling console integration.
 
-### 4. `ExpandedKeyboardControl` — hardest, do last if at all
+### 4. `ExpandedKeyboardControl` — EVALUATED AND SKIPPED (2026-09-29)
 - 6 `detour` hooks spanning action-bar input, the movie-window Delete key,
   context-cancel dispatch, HUD update, HUD teardown, and mouse-focus
   cancellation — six separate places to re-locate in Ghidra instead of
@@ -310,6 +310,12 @@ ratio and is fine filling the ultrawide width at that ratio.
   edits and exe hook addresses don't collide), but worth an in-game
   functional check — does keyboard nav still land correctly on our
   ultrawide-repositioned controls — once ported, not assumed clean.
+- **Skipped, user decision 2026-09-29**: this patch adds keyboard
+  accessibility to a HUD that's mouse-and-gamepad-first in this build, and
+  nobody plans to play it without a mouse. Highest hook count (6) of any
+  candidate for a feature with no actual user, so not worth the Ghidra
+  effort. Revisit only if the input setup for this build changes (e.g.
+  controller-less/accessibility need arises).
 
 ### 5. `Post-Combat Movement Fix` — newly found, likely the easiest port in the whole project
 - **Found 2026-09-28 (later session)** via the manifest-grep correction
@@ -509,7 +515,7 @@ list) is now logged as a reusable general technique in the
 `ghidra_knowledge` DB's `lessons` table (`general Ghidra methodology`
 scope) for any future overly-broad structural search.
 
-### 6. `Movie Patch` — newly found, moderate-to-hard, higher payoff
+### 6. `Movie Patch` — EVALUATED AND SKIPPED (2026-09-29)
 - **Found 2026-09-28 (later session)**, same manifest-grep correction —
   missed because its GOG hook file is `kotor2_hooks.toml` (a third naming
   convention, distinct from both `Post-Combat Movement Fix`'s and the
@@ -535,14 +541,27 @@ scope) for any future overly-broad structural search.
   `ExpandedKeyboardControl`** — more complex than either `Post-Combat
   Movement Fix` or `AdditionalConsoleCommands`, but likely less risky
   than `ExpandedKeyboardControl`'s 6-hook HUD/input surface.
+- **Skipped, user decision 2026-09-29**: this patch's payoff is a
+  runtime bicubic movie-blit filter upscaling `.bik` playback to the
+  render resolution. Checked every `.bik` in the live `Movies/` folder via
+  `ffmpeg` probe this session — all are already `3440x1440`, i.e. already
+  exactly the render resolution, because the AI-upscale pipeline
+  ([[kotor2-capsule-replay]]-adjacent movie-upscaling work, see
+  `LEGACY_MOVIES_UPSCALING_PIPELINE.md`) already solved this upstream, at
+  higher quality (a real upscale done once offline beats a real-time
+  bicubic stretch of already-correct-resolution source). Nothing left for
+  this patch to improve in this build. Revisit only if the movie files are
+  ever reverted to a lower source resolution.
 
 **Revised priority order (2026-09-28, later session) for the 4 remaining
 candidates**: `Post-Combat Movement Fix` (5) → `AdditionalConsoleCommands`
-(3) → `Movie Patch` (6) → `ExpandedKeyboardControl` (4). Not yet started
-on any of these three — this is a survey/documentation update only, no
-Ghidra work done, per [[feedback-phase-sequencing]] (current phase,
-`K2AspyrMapAspectFix`, is still mid-flight pending user in-game
-verification; do not overlap a new build/Ghidra phase with it).
+(3) → `Movie Patch` (6) → `ExpandedKeyboardControl` (4).
+**Status 2026-09-29: candidates 5 and 3 are DONE and live (12 hooks
+across 2 patches). Candidates 6 and 4 are evaluated and skipped (see their
+sections above) — this closes the GOG-port backlog entirely, no remaining
+candidates.** Focus has moved to the two original custom mod ideas
+(`01_inventory_3d_viewport.md`, `02_buff_duration_hud.md`) — see
+[[kotor2-patch-manager]] memory.
 
 ## Track B — general engine bug fixes surveyed, not applicable to this K2 Windows install
 
