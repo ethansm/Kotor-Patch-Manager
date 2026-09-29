@@ -372,9 +372,12 @@ log confirmed `Applied REPLACE hook at 0x007AF198 (16 bytes code, 31
 bytes replaced)` + `SUCCESS: Patcher initialized`; `AR_ERROR.LOG`
 unchanged from baseline; process healthy post-install (CPU/elapsed ratio
 declined from 94% toward 60% over ~2.5 minutes, log kept advancing with
-normal input-polling activity — no hang). **In-game confirmation that
-post-combat/Force-power/item-use movement no longer locks at high FPS is
-still pending the user's own spot check.**
+normal input-polling activity — no hang). **User confirmed general
+stability 2026-09-29**: game started successfully, no issues running
+around and going through menus — no regressions to the other patches.
+This is a general playtest, not yet a *targeted* spot check that
+post-combat/Force-power/item-use movement no longer locks at high FPS —
+that remains open.
 
 ### 3a. `AdditionalConsoleCommands` — reclassified: NOT simple, real codegen divergence found
 
@@ -458,16 +461,23 @@ positive verdict:
   other hook ported in this project. Full trail in the `ghidra_knowledge`
   DB's `lessons` table (id 9) and `hooks_ported` table
   (`additional-console-commands-hook1`).
-**Both hooks now fully built and isolated-verified (2026-09-29,
-follow-on session) — RESOLVED, not yet live-installed.** Written into
-`kotor2_steam_aspyr.hooks.toml` (both pristine and LAA hashes),
-`.kpatch` built via `create-patch.py` (real MinGW cross-compile of
-`ConsoleCommands.cpp`), isolated `patch_config.toml` verified byte-exact
-for both hooks (address/original_bytes/replacement_bytes/dll all match),
-byte-diff-cluster proximity check clear for both (nearest cluster
-~429KB from hook1, >5.1MB from hook2). No more Ghidra research needed —
-remaining work is purely the live install (see `Post-Combat Movement
-Fix`'s entry above for the same "batch or install alone" choice).
+**Both hooks built, isolated-verified, and LIVE-INSTALLED (2026-09-29,
+follow-on session) — DONE.** Written into `kotor2_steam_aspyr.hooks.toml`
+(both pristine and LAA hashes), `.kpatch` built via `create-patch.py`
+(real MinGW cross-compile of `ConsoleCommands.cpp`), isolated
+`patch_config.toml` verified byte-exact for both hooks, byte-diff-cluster
+proximity check clear for both (nearest cluster ~429KB from hook1,
+>5.1MB from hook2). Installed live as the 13th patch alongside the
+existing 12 (full patch-ID list). Steam log confirmed both exact
+expected lines (`Applied DETOUR hook at 0x0091D52D ->
+InitializeAdditionalCommands`, `Applied SIMPLE hook at 0x004752D8 (7
+bytes replaced)`) + `SUCCESS: Patcher initialized`; `AR_ERROR.LOG`
+unchanged from baseline; process healthy (no hang). **User confirmed
+general stability 2026-09-29**: game started successfully, no issues
+running around and going through menus — no regressions to the other 12
+live patches. This is a general playtest, not yet a *targeted* test of
+this patch's own commands (`runscript`, `teleport`, `walkmeshrender`,
+etc.) or console-history persistence — those remain open.
 
 **hook2 (console-history-save flag, GOG `0x00867248`, simple, 7 bytes
 `0F B6 15 D0 98 A2 00` = `movzx edx, byte ptr [0x00A298D0]`) — RESOLVED.**
