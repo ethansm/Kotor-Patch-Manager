@@ -1,12 +1,26 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**Status:** Idea captured 2026-09-29, not yet researched. No Ghidra work
-done for this mod — this doc exists so the idea and its open questions
-survive a context clear, same purpose as `01_inventory_3d_viewport.md` and
-`02_buff_duration_hud.md` served before their own Phase 2 work started.
-Phase 1 (GUI/keybind research), Phase 2 (Ghidra), Phase 3 (hook/C++), and
-Phase 4 (install/verification) are all explicitly out of scope until
-someone picks this up.
+**Status (2026-09-29, updated with Mod 1 & Mod 2 lessons; scope expanded
+same day to include items):** Pre-Ghidra research and architectural
+specification. Informed by the completed Phase 2/3 static analysis of
+[[02_buff_duration_hud.md]] and the render-pipeline resolution of
+[[01_inventory_3d_viewport.md]]. Key framework addresses have already been
+mined from the shipped `AddressDatabases/*.db` (including
+`CSWSCreatureStats::HasSpell` at Steam `0x006BD9C0`), the persistence model has
+been settled (external config, not savegames), and the input context-gating
+hazard has been identified and designed. **Scope expansion (user-directed,
+2026-09-29, same session as Buff Duration HUD's item-ability discovery):
+add a SECOND row of 10 slots, bound to Ctrl+1 through Ctrl+0, for ITEMS**
+(stims, antidotes, health packs, repair items) — parity goal is "everything
+in the vanilla quick-actions system should be configurable into a hotbar
+button," not just force powers. See "Item row (2nd row, Ctrl+1-0)" section
+below — this shares its icon-resolution problem directly with
+[[02_buff_duration_hud.md]]'s open "Item 5" research item (both need to
+know how the engine's own quickbar picks an icon for an item-ability
+quick-slot, since `spells.2da` has no icon for item-ability rows). Phase 1
+(Ghidra mapping of invocation & input hooks), Phase 2 (scaffold C++), and
+Phase 3 (live install) will proceed once Mod 2 finishes development or when
+this mod is prioritized.
 
 ## Goal
 
@@ -42,13 +56,13 @@ color* to show its power is still active/on cooldown (reusing exactly the
 active-effect data the Buff Duration HUD mod's Target 1 research already
 resolved — `CGameEffect::GetExpiryTime`, Steam `0x005e4fa0`,
 `CGameEffect+0x10`/`+0x14`, filtered by spell ID per the
-`02_buff_duration_hud.md` effect-ID table). **Decision (user, this
-session): keep the two mods' UX separate for v1.** Don't merge the
+`02_buff_duration_hud.md` effect-ID table).
+
+**Decision (user): keep the two mods' UX separate for v1.** Don't merge the
 cooldown-wipe visual into the hotbar buttons themselves. Instead:
 - The hotbar mod's own hook, when a slot is pressed, invokes the power
   through whatever call the existing quickbar/action-bar system already
-  uses (see "Open questions" below — this needs to be found, not
-  reinvented).
+  uses (see "Action invocation layer" below).
 - The Buff Duration HUD mod's **existing, separately-hooked** render pass
   near the party portraits (Target 2, `FUN_007457e0`, per
   `02_buff_duration_hud.md`) picks up the resulting active effect
@@ -59,91 +73,226 @@ cooldown-wipe visual into the hotbar buttons themselves. Instead:
   combined "color the hotbar button too" UX, it would layer on top of
   this decoupled baseline rather than requiring it.
 
-## Implementation pipeline (rough, pre-Ghidra)
+## Key Lessons Learned from Mods 1 & 2 Applied Directly to Mod 3
 
-### 1. Data layer — the power list
-Likely reuses `02_buff_duration_hud.md`'s already-solved approach: read
-the **installed** `spells.2da` via `pykotor` (`.venv` in this worktree),
-not a hardcoded vanilla table — this build's mods (TSLRCM, Thematic Sith
-Lords/Jedi Masters, mods #8/#102-109/#117-119/#139-142) add/change force
-power rows, so "available Force powers" must be read from the live
-install, and further filtered to whatever powers the *player's own
-character* actually knows (a class/level-gated subset, not every row in
-the 2DA) — that per-character "known powers" list is a new research target
-this mod needs that Buff Duration HUD didn't (Buff Duration HUD only
-needed *active effect* filtering, not *known/learnable* power lists).
+The extensive Ghidra static analysis and debugging across Mod 1 and Mod 2
+yielded several concrete architectural lessons that directly reshape this mod:
 
-### 2. Input layer — 1-0 keybinding
-- Needs a hook into the game's keyboard input dispatch to claim 1-0 (or
-  detect when they're free vs. already bound to something else — KOTOR2's
-  default control scheme should be checked first, this build may already
-  use some of 1-0 for something).
-- The already-evaluated-and-skipped `ExpandedKeyboardControl` GOG-port
-  candidate (see `06_gog_to_steam_conversions.md` — skipped because
-  "nobody plans to use [the HUD] without a mouse") is a plausible
-  **prior-art reference** for how this framework's patches generally
-  claim new keybinds, even though that specific patch itself was never
-  ported — worth reading its hooks.toml/source once this mod starts real
-  research, rather than inventing an input-hook pattern from scratch.
+### Lesson 1: Native Widget Reuse vs. Rolling Custom Primitives
+- **Experience from Mod 2**: Trying to build new geometry or radial shader
+  sweeps stalled; repurposing native `CSWGuiLabel` borders and modifying live
+  dimension fields (`self+0xc`/`self+0x10`) on `CSWGuiBorder::Draw` resolved the
+  entire wipe mechanism with zero new render passes.
+- **Application to Mod 3**: Do **not** attempt to inject 10 custom OpenGL/D3D
+  quads or roll raw button meshes. Reuse the existing native action-bar widget
+  architecture (`CSWGuiMainInterfaceAction` at `hudThis + 0x733c`, stride
+  `0x750`) or native `CSWGuiButton` widgets (`vftable 0x00987974` on Steam),
+  which already handle border frames, icon textures, mouse hover states, and
+  disabled shading.
 
-### 3. Render layer — 10 buttons
-- The existing **action bar** (`CSWGuiMainInterfaceAction`, GOG-named,
-  7-entry array at `CSWGuiMainInterface+0x733c`, stride `0x750` —
-  confirmed real on Steam via `02_buff_duration_hud.md`'s Phase 2 Target 2
-  research, methods `Draw`/`Update`/`SetIcon`/`HitCheckMouse`/`Show`/
-  `SetQueuedFlash`/`Initialize`) is the closest existing native precedent
-  for "a row of icon buttons with click/hotkey handling and per-slot
-  state" — worth decompiling as a reference/reuse target before building
-  a new button widget from scratch, same "don't build a new draw
-  primitive if the engine already has one" principle the Buff Duration
-  HUD mod's own R7 open item follows. Note the action bar is 7 slots, not
-  10 — this mod needs 10, so either extend that structure or build a
-  sibling one modeled on it.
-- Must respect the ultrawide HUD coordinate conventions already
-  established ([[kotor2-ultrawide-gui]], `HUD_DESC_COEFF`) — a new
-  full-width bottom bar is exactly the kind of element likely to need
-  ultrawide-specific placement math, not a raw 800x600 assumption.
+### Lesson 2: Mining Framework Symbol Databases Before Decompiling
+- **Experience from Mods 1 & 2**: Blind cross-reference searching wasted hours
+  on functions that were non-virtual and had stripped symbols. Querying the
+  framework's shipped `AddressDatabases/*.db` provided real class and method
+  names immediately.
+- **Application to Mod 3**: A pre-investigation query has already revealed
+  concrete symbols on Steam and GOG:
+  - `CSWSCreatureStats::HasSpell`: Steam Aspyr address **`0x006BD9C0`** (decimal `7068096`).
+  - `CSWSCreatureStats::AddKnownSpell`: Steam Aspyr address **`0x006B86A0`** (decimal `7046816`).
+  - `Global::CSWGuiInterfaceAction_UseForcePower`: GOG address **`0x004254A0`** (decimal `4347040`).
+  This gives exact entry points for data validation and spell casting on Day 1.
 
-### 4. Customization + persistence
-**Open question, not yet researched at all**: where do per-slot power
-assignments live so they survive a relaunch? Options to evaluate once
-Ghidra research starts:
-- Piggyback on an existing per-character save-compatible field (needs
-  finding an unused/repurposable slot — risky, could collide with a
-  different mod or a future patch).
-- A separate flat config file the DLL reads/writes itself, outside the
-  game's own save system entirely (simpler, no save-compat risk, but
-  "customization" then lives per-install rather than per-save-game — decide
-  if that's acceptable before assuming it away).
-- No persistence (session-only) — simplest, but doesn't meet "customizable"
-  in the sense the user described; listed only as a fallback if the other
-  two prove infeasible.
+### Lesson 3: Live Install 2DA Parsing with pykotor
+- **Experience from Mod 2**: KotOR II 2DA files are in binary `V2.b` format and
+  heavily modified by override mods; hardcoding IDs fails.
+- **Application to Mod 3**: The hotbar setup must read `override/spells.2da` via
+  the worktree's `.venv` `pykotor` parser to extract icon resrefs, localized
+  names, and Force point costs.
 
-## Open questions for whoever picks this up
+### Lesson 4: Input Interception & Context-Gating Discipline
+- **Experience from Hooking & Porting**: Detour hooks with `skip_original_bytes = false`
+  run our code first, followed by original instructions.
+- **Application to Mod 3**: In KotOR II, keys **1, 2, and 3** are default
+  bindings for party member selection and **dialogue option selection**.
+  Unconditionally hijacking keys 1–0 will break conversation menus. The input
+  hook must be context-gated: only swallow keys when in active exploration/combat,
+  and let them pass through when in dialogue, menus, or console input.
 
-1. What function(s) does the existing single-quickbar-item + scroll-wheel
-   mechanic call to actually invoke a power? (Likely somewhere in the
-   `HandleButtonAction`/`QueueActiveAction`/`DoPersonalAction` family
-   already named in the GOG address DB for `CSWGuiMainInterface` — see
-   `02_buff_duration_hud.md`'s Phase 2 findings for the query technique.)
-   This is the fastest way in: reuse the invocation call rather than
-   reversing the power-cast pathway from scratch.
-2. Does this build already bind 1-0 to anything (item quickslots, party
-   selection, etc.)? Check before assuming the keys are free.
-3. What determines a character's *known* powers (class + level-gated
-   list), as opposed to Buff Duration HUD's simpler "is this specific
-   effect currently active" question? New research, not reusable from the
-   other mod as-is.
-4. Persistence mechanism (see above) — genuinely open, no leaning yet.
+### Lesson 5: Externalized Persistence Over Savegame Injection
+- **Experience from Mods 1 & 2**: Keeping mods completely independent of `.sav`
+  structures guarantees zero save corruption risk.
+- **Application to Mod 3**: Slot configuration must live in an external flat
+  file (`kotor_hotbar.json` or `.ini`), never inside saved game structs.
 
-## Effort estimate (rough, pre-Ghidra)
+## Implementation Pipeline (Refined)
 
-Likely **higher** than Buff Duration HUD: needs new input-hook research
-(neither existing custom mod has claimed a new keybind), a new "known
-powers per character" data path (not just "active effects," which Buff
-Duration HUD already solved), and a real customization/persistence
-mechanism (Buff Duration HUD has no analogous problem — it only reads,
-never needs to remember player choices). The render side has a stronger
-head start than Buff Duration HUD's Target 2 did, given the action bar's
-7-slot icon-button widget is already a confirmed-real, closely-analogous
-existing native precedent.
+### 1. Data Layer — Known Powers & Availability
+- **Known Powers**: For the active party leader / controlled creature, query
+  `CSWSCreatureStats::HasSpell` (Steam `0x006BD9C0`, calling convention
+  `__thiscall(statsPtr, spellList, spellId, checkUsable)`).
+  - The creature's stats pointer `statsPtr` is accessible from the controlled
+    creature object (`creaturePtr + 0x...` / `CSWSCreatureStats` from
+    `CSWSCreature`).
+  - Iterating the active self-buff and offensive force power list from
+    `spells.2da` against `HasSpell(0, spellId, 1)` yields the exact subset of
+    powers the player is currently eligible to cast.
+- **2DA Data**: Reuses Mod 2's `pykotor` extraction pattern on `override/spells.2da`:
+  - `label`: internal name.
+  - `name`: StrRef for tooltip display.
+  - `iconresref`: `.tga` icon to pass to widget fill.
+  - `forcecost`: base Force point cost.
+  - `forcepoints`: checks whether character has sufficient current FP.
+
+### 2. Input Layer — Key Interception & Context Gating
+> [!IMPORTANT]
+> Keys 1, 2, and 3 are vital for dialogue choices. The input hook must strictly
+> verify game state before claiming any keystroke.
+
+- **Hook Location**: Detour into the main window message loop or
+  `CSWGuiManager::HandleInputEvent` / keyboard event dispatcher.
+- **Context Gate**:
+  - Gated on HUD visibility (`CSWGuiMainInterface::m_bVisible`).
+  - Gated on conversation state (`CServerExoApp::GetActionConversation` or
+    checking if `dialog.gui` is loaded).
+  - Gated on modal GUI presence (returns early if inventory, journal, or options
+    menu is active).
+  - Gated on cheat console visibility (checks `0x00a30828` or console active flag).
+- **Key Swallowing**: When all gates pass and a mapped slot (1–0) is pressed:
+  - If the slot is populated and usable, invoke the action and swallow the event
+    (`skip_original_bytes = true` or set event handled).
+  - If the slot is unassigned, let original bytes execute normally.
+
+### 3. Action Invocation Layer — Dispatching the Force Power
+- **Target Functions**:
+  - `Global::CSWGuiInterfaceAction_UseForcePower` (GOG `0x004254A0`): Research its
+    Steam equivalent. Decompilation of GOG shows it constructs an action node
+    and queues it onto the controlled creature's action list.
+  - Sibling lead: `CSWSObject::AddActionToFront` (Steam `0x003630A0` / decimal
+    `35508256` in DB) or `ExecuteCommandActionUseTalent`.
+- **Targeting**:
+  - Self-buffs (Force Speed, Valor, Armor, Barrier): pass target = self (`creaturePtr`).
+  - Targeted powers (Force Push, Lightning): pass current combat target from
+    `CSWGuiMainInterface`'s active target pointer, or default to current hostile
+    target.
+
+### 4. Render Layer — 10 Hotbar Buttons
+- **Widget Blueprint**:
+  - Model after `CSWGuiMainInterfaceAction` (the 7 action-bar slots at
+    `CSWGuiMainInterface + 0x733c`, stride `0x750`), which already encapsulates
+    border rendering, icon display, mouse hit-testing, cooldown flash, and click
+    events.
+  - Or instantiate 10 `CSWGuiButton` controls dynamically linked to the main HUD.
+- **Ultrawide Coordinate Alignment**:
+  - Follow `popos/docs/kotor2_ultrawide.md` and `HUD_DESC_COEFF` scaling rules.
+  - Position across the bottom center or aligned next to the existing action bar
+    without colliding with the minimap (right) or party portraits (left).
+
+### 5. Persistence Layer — Slot Customization
+- **Storage Strategy**: Flat JSON or INI file:
+  `~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/kotor_hotbar.ini`.
+- **Keying**: Key slot mappings by the player character's unique name or tag
+  (read from `CSWSCreatureStats`), e.g.:
+  ```ini
+  [Revan_Exile_Player]
+  Slot1=8     ; FORCE_POWER_SPEED_BURST
+  Slot2=22    ; FORCE_POWER_FORCE_VALOR
+  Slot3=17    ; FORCE_POWER_FORCE_ARMOR
+  Slot4=42    ; FORCE_POWER_LIGHTNING
+  ...
+  Slot10=135  ; FORCE_POWER_FORCE_BARRIER
+  ```
+- **Customization UX**:
+  - v1: Edit config file or simple console command via `AdditionalConsoleCommands`
+    (e.g., `sethotbar <slot> <spell_id>`).
+  - v2: Drag-and-drop or right-click assignment menu directly from the Spells GUI.
+
+## Item row (2nd row, Ctrl+1-0) -- NEW SCOPE, 2026-09-29, not yet researched
+
+**User's direction, verbatim intent**: "similar expansion on the hot bar
+buttons, maybe we add another row and use ctrl+# for hot keys so we can
+configure items into the hot bar buttons as well. Stims, antidotes,
+health packs, repair items, etc. Everything in the vanilla quick actions
+should be configureable into the hot bar buttons." I.e. the native
+quickbar already lets a player assign EITHER a spell/feat OR an item
+(stim, shield, grenade, repair kit, etc.) to its single slot -- this mod
+should reach the same parity across 10 dedicated item slots, not just
+mirror the spell side.
+
+**Design sketch (not yet Ghidra-verified, follows the existing row's
+shape)**:
+- **Input**: a second key-gate layer, `Ctrl+1` through `Ctrl+0`, same
+  context-gating discipline as Lesson 4 above (must not fire during
+  dialogue/menus/console -- `Ctrl` as a modifier likely makes accidental
+  collision with dialogue's bare `1`/`2`/`3` bindings less likely, but
+  this still needs verifying against any existing `Ctrl+<digit>` bindings
+  before claiming the combo is free).
+- **Data layer**: instead of `spells.2da` + `CSWSCreatureStats::HasSpell`,
+  this row needs the party's live INVENTORY (which items exist, are
+  usable, are not on cooldown/depleted) -- likely `CItemRepository`/
+  `CSWItem` (real RTTI classes already in the `ghidra_knowledge` DB's
+  `classes` table from the Inventory 3D Viewport research) rather than
+  `CSWSCreatureStats`.
+- **Action invocation**: using an item (stim, repair kit) is a different
+  native call path than casting a power -- likely something in the
+  `CSWSItem`/`CItemRepository` family rather than
+  `CSWGuiInterfaceAction_UseForcePower`'s spell-casting path. Not yet
+  traced.
+- **Icon resolution: SHARED BLOCKER with [[02_buff_duration_hud.md]]'s
+  "Item 5"** -- both mods need the same answer to "how does the engine
+  resolve an icon for an item (not a spell) assigned to a quick-slot,"
+  since `spells.2da`'s `iconresref` column is empty for item-ability rows
+  (confirmed empirically this session -- see Buff Duration HUD's item-3/
+  item-5 findings). The `CSWGuiMainInterfaceAction::SetIcon` lead found
+  there (GOG `0x512ea0`, Steam counterpart not yet located) is exactly the
+  function to decompile for this mod too -- **resolve it once, in
+  whichever mod gets there first, and reuse the finding in the other.**
+- **Persistence**: extend the same `kotor_hotbar.ini`-style config with a
+  second keyed section (e.g. `ItemSlot1`..`ItemSlot10`), keyed by item
+  tag/resref rather than spell ID (items don't have a stable numeric ID
+  the way `spells.2da` rows do -- items are identified by `BaseItems.2da`
+  row + a unique instance tag/UUID in the player's inventory, which is a
+  different identity problem than the spell row's simple integer key;
+  not yet researched how to make a persisted item-slot assignment survive
+  the item being consumed/restocked).
+- **Not yet researched at all**: the exact native function(s) for
+  "use this inventory item" (separate from "cast this force power"),
+  how the vanilla quickbar itself distinguishes a spell-slot from an
+  item-slot internally (probably a type tag alongside whatever ID it
+  stores), and whether stims/shields/repair-kits share one invocation
+  path or three separate ones.
+
+**Possible 3rd row (user-floated, open, not committed to)**: `Alt+1`
+through `Alt+0` as a further 10 slots alongside the bare-digit (powers)
+and `Ctrl+digit` (items) rows -- what category of action would occupy it
+is not yet decided (could split "items" into two rows by type, e.g.
+consumables vs. equipment-triggered abilities/grenades, or serve some
+other purpose entirely). Whoever resumes this mod should ask the user to
+firm up the 3rd row's purpose before designing its data/invocation layer
+-- the input-gating and persistence-file design from the Ctrl+digit row
+above generalize directly to a 3rd modifier key, so there's no
+architectural blocker to adding one later, just an undecided "what goes
+in it."
+
+## Open Questions for Whoever Resumes
+
+1. **Steam Address for `UseForcePower`**:
+   Trace GOG's `0x004254A0` (`CSWGuiInterfaceAction_UseForcePower`) to its Steam
+   Aspyr counterpart via caller xrefs or positional clustering.
+2. **Target Selection for Offensive Powers**:
+   How does the native quickbar acquire the current target when clicking an
+   offensive power? (Inspect `CSWGuiMainInterfaceAction::HitCheckMouse` and
+   action dispatch).
+3. **Dialogue Context Flag**:
+   Confirm the exact Steam memory offset or global pointer for "in conversation"
+   to reliably gate the 1-3 keys.
+
+## Revised Effort Estimate
+
+- **Previously Estimated**: Higher than Buff Duration HUD (due to unknown input
+  and known-powers paths).
+- **Current Assessment**: **Moderate** (comparable to Buff Duration HUD).
+  - The known-powers check is already 80% solved thanks to `CSWSCreatureStats::HasSpell`
+    (`0x006BD9C0`) in the framework DB.
+  - Mod 2 already solved 2DA parsing and effect decoupling.
+  - The primary remaining investigation is the keyboard input context gate and
+    the Steam address for `UseForcePower`.

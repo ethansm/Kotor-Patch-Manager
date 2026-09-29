@@ -759,3 +759,44 @@ correctly once the game got past the load. Not treated as resolved — if
 this pattern recurs on a normal (non-post-install) launch in a later
 session, revisit with the Phase 1b bisection/`WINEDEBUG=+seh,+module`
 escalation above.
+
+## 2026-09-29: 3rd recurrence, same signature, during Buff Duration HUD item-3 empirical testing
+
+**Symptom**: game froze during/after the user's in-game test of the
+throwaway `BuffDurationHUDSpellIdProbe` diagnostic hook (cast Force
+Speed/Force Valor, used some items, quit without saving), then again
+after it was reinstalled as the normal 13-patch set (probe removed) for
+the immediate follow-up relaunch. User reported "game is currently
+froze, kill it".
+
+**Triage**: `ps aux` found the real `swkotor2.exe` process (PID
+3467969, `S<sl` at 91.7% CPU) among the usual Proton/reaper/
+pressure-vessel wrapper chain — matched by full path, per
+[[kotor2-crash-triage]]'s method, not a bare string match. `grep -c
+NtGetContextThread ~/steam-208580.log` returned **13,713 hits**, and the
+log's last ~1,200 lines were a tight repeating `trace:seh:
+NtGetContextThread` / `fixme:ver:GetCurrentPackageFullName (...): stub`
+loop on thread `0138:020c`, ending right at the point the process was
+killed — the **identical signature** to both prior documented incidents
+(2026-09-28 Phase 1b, and the 2026-09-28 save-load recurrence above). No
+`err:`/`Unhandled exception`/`Backtrace:` line anywhere near the end.
+
+**Fix**: `kill -TERM` on the exact PID — process exited cleanly within 3
+seconds, no orphaned `swkotor2.exe` left behind. The 13-patch set was
+already reinstalled (probe removed) before this hang, so no further
+reinstall was needed once the user relaunches.
+
+**Read on cause**: still unattributed to any specific patch — this is now
+**3/3 recurrences** with the exact same spin signature, across three
+different patch-set states (Phase 1b's 9-patch install, the 10/11-patch
+GOG-port session, and today's 13-patch baseline both with and without
+the throwaway probe). The probe hook itself is an extremely unlikely
+cause (a single additive detour that only does a `fopen`/`fprintf`/
+`fclose` per `ApplyEffect` call, and the hang recurred even after it was
+already removed) — this continues to look like a pre-existing,
+loading-screen/save-load-adjacent Proton/Wine timing issue independent
+of Patch Manager, not something to keep re-suspecting each time a new
+hook is tested. Not escalating to the Phase 1b bisection plan this
+session — no new information to narrow it with, and it has never
+reproduced on retry. If it starts happening on *every* launch rather
+than intermittently, that would be the trigger to escalate.

@@ -1,22 +1,34 @@
 # Mod Idea 2: Visual Buff Duration HUD
 
-**Status (2026-09-29, 7th session, current):** Phase 2 and Phase 3
-research are now **effectively COMPLETE**. R3's residual, item 2
-(multi-slot creature resolution, all-party-members scope), and R4 (both
-hook sites, byte patterns, wipe mechanism) are all **RESOLVED**. Item 3
-(spellID <-> spells.2da row-index cross-check) is **PARTIALLY resolved**:
-the field's identity/sentinel behavior is decompile-confirmed, but its
-exact numeric ID space is NOT decompile-confirmed -- flagged for
-empirical (in-game) verification rather than further static tracing, per
-this session's own effort budget. See "Item 1-4 findings (R3 residual +
+**Status (2026-09-29, 8th session, current):** Item 3 is now **CONFIRMED
+empirically** (was "partially resolved" as of the 7th session) --
+`CGameEffect+0x1c` really is a literal `spells.2da` row index, verified
+in-game via a throwaway diagnostic hook (see "Item 3 empirical
+verification" section, right after the item 1-4 findings section below).
+**Scope was expanded this session, at the user's explicit direction,
+after seeing the empirical test's own log data**: item-granted buffs
+(energy shields, stims/adrenals) must ALSO get duration timers, not just
+force powers. This is now a real, not-yet-closed research item -- see
+"Item 5 (item-ability icon resolution)" below. **Development phase (real
+hook C++ + `hooks.toml` + `.kpatch`) has NOT started** -- item 5's icon
+resolution for item-ability buffs is now the one open blocker for hook
+2's icon-lookup logic (hooks 1a/1b, the snapshot writers, do not depend
+on it and could be written first). See "Item 1-4 findings (R3 residual +
 multi-slot creature resolution + R4)" (bottom of the UX sections, right
-before "## Goal") for full detail; it supersedes everything below it for
-anything it re-addresses. **Development phase (real hook C++ +
-hooks.toml + `.kpatch`) was NOT started this session** -- item 3's
-open numeric-ID-space assumption is directly load-bearing for the
-render hook's icon lookup, so per this project's gating discipline this
-is a research-handoff stopping point, not a build-it point, absent an
-explicit user decision to accept that one flagged risk.
+before "## Goal") for the items 1/2/4 detail; it supersedes everything
+below it for anything it re-addresses. The 7th session's original status
+text is kept below, superseded only on item 3/scope.
+
+**Status as of the previous (7th) session, superseded above on item 3 and
+scope, otherwise accurate:** Phase 2 and Phase 3 research were
+**effectively COMPLETE**. R3's residual, item 2 (multi-slot creature
+resolution, all-party-members scope), and R4 (both hook sites, byte
+patterns, wipe mechanism) were all **RESOLVED**. Item 3 (spellID <->
+spells.2da row-index cross-check) was **PARTIALLY resolved**: the
+field's identity/sentinel behavior was decompile-confirmed, but its exact
+numeric ID space was NOT decompile-confirmed -- flagged for empirical
+(in-game) verification rather than further static tracing, per that
+session's own effort budget.
 
 **Status as of the previous (6th) session, superseded above for R3/R4 but
 otherwise still accurate:** Phase 2 (Ghidra static analysis) **RESOLVED**.
@@ -1048,6 +1060,125 @@ one flagged risk and proceed anyway. Scaffold
 (`Patches/BuffDurationHUD/BuffDurationHUD.cpp`) updated with every new
 confirmed constant from items 1, 2, and 4 (item 3 documented as an open
 TODO in place), recompiles cleanly.
+
+## Item 3 empirical verification + item-ability scope expansion (2026-09-29, 8th session)
+
+**Item 3 CONFIRMED.** Built a throwaway diagnostic patch,
+`BuffDurationHUDSpellIdProbe` (never committed, already deleted from the
+`kotor-patch-manager` clone -- this section is its only remaining trace),
+a single additive detour at `CSWSObject::ApplyEffect`'s own entry point
+(Steam `0x00544210`), spliced BEFORE the function's prologue runs so
+`ECX`=`this` and `[esp+4]`=`effectPtr` are still the caller's raw,
+unmodified values (9-byte `original_bytes` window covering
+`PUSH EBP; MOV EBP,ESP; SUB ESP,0x9c`: `55 8b ec 81 ec 9c 00 00 00`).
+The hook logs each effect's `+0x8` type tag and `+0x1c` field
+(`fopen`/`fprintf`/`fclose` to a bare-filename log, standard pattern for
+this framework under Proton) to `buffhud_probe_log.txt`.
+
+**Isolated-copy testing was skipped** (differs from the original plan's
+Phase A step 5): this project's own Phase 0 history already found, twice,
+that launching an out-of-place exe copy via `proton run` directly hits a
+Steamworks DRM/ownership crash before reaching gameplay, independent of
+any patch (a zero-patch control copy crashed identically; a
+`steam_appid.txt` workaround didn't help either -- see `05_build_plan.md`
+Phase 0). Rather than re-attempt a known-broken path, the user chose
+(offered via `AskUserQuestion`, per `[[feedback-deploy-debug-live]]`) to
+install the probe as a 14th patch on the LIVE 13-patch install instead --
+full `KPatchLauncher` automatic backup, purely additive/read-only hook,
+reverted to the original 13-patch set immediately after reading the log.
+Steam log confirmed `Applied DETOUR hook at 0x00544210 -> ProbeApplyEffect`
++ `SUCCESS: Patcher initialized`; `AR_ERROR.LOG` unchanged. **This is also
+the first genuine end-to-end use of the real `python3 create-patch.py`
+packaging pipeline for this mod family** (every prior BuffDurationHUD
+build was a direct `g++ -c` scaffold-compile-only check) -- worked
+cleanly on the first attempt, no friction.
+
+**Result**: cast Force Speed and Force Valor and used some items in-game.
+Log showed `spellId=8` across multiple sub-effects of one compound buff
+(type tags `0x90028`/`0x90043`/`0x9001c`/`0x90030`/`0x9001e`, all sharing
+`+0x1c=8` by copy-propagation) and, later, `spellId=22` across another
+cluster. Row 8 in the installed `spells.2da` is exactly
+`FORCE_POWER_SPEED_BURST`; row 22 is exactly `FORCE_POWER_FORCE_VALOR` --
+both EXACT matches, independently confirming the same claim from two
+different powers. **`CGameEffect+0x1c` is confirmed to be a literal
+`spells.2da` row index** -- item 3's open question is fully closed, zero
+remaining ambiguity for that part of the render hook's icon lookup.
+Probe cleanup: live game reverted to the original 13 patches (steam log
+re-confirmed `SUCCESS: Patcher initialized`), `buffhud_probe_log.txt`
+deleted from the live game directory, the entire
+`Patches/BuffDurationHUDSpellIdProbe/` throwaway directory deleted from
+the `kotor-patch-manager` clone. Full evidence:
+`ghidra_knowledge` DB `lessons` id 51.
+
+**During this same test, the game froze once** (known pre-existing
+signature, 3rd recurrence, still unattributed to any patch -- see
+`CRASH_INVESTIGATION.md`'s "2026-09-29: 3rd recurrence" section. Not
+caused by the probe: identical `NtGetContextThread`/
+`GetCurrentPackageFullName` spin signature as the two prior, differently-
+patched-state occurrences, and it recurred even after the probe was
+already removed for the follow-up relaunch. Not escalated -- no new
+information to narrow it with.
+
+**Scope expansion (user-directed, from the log data itself): item-granted
+buffs also need duration timers, not just force powers.** The probe log
+also contained `spellId=42`, `70`, and `99`, which weren't targeted on
+purpose -- looked up via `pykotor` against the installed `spells.2da`:
+
+| Row | Label | Icon |
+|---|---|---|
+| 42 | `FORCE_POWER_RESIST_ENERGY_1` | `ip_resistenergy1` |
+| 70 | `ITEM_ABILITY_ADRENAL_SHOT_ALACRITY` | *(empty)* |
+| 99 | `ITEM_ABILITY_ENERGY_SHIELD` | *(empty)* |
+
+Row 42 is a normal duration force power (add to the tracked Effect ID
+table above). Rows 70/99 are item-ability-granted effects (a stim, an
+energy shield) -- **confirming item-granted buffs route through the
+exact same `CGameEffect`/`+0x1c`=`spells.2da`-row mechanism as force
+powers** (no separate ID space to handle for the side-table/duration-
+tracking logic), **but their `spells.2da` row has NO icon** (`iconresref`
+is empty for both). The existing Effect ID table's "read icon from
+`spells.2da`" plan does not work for item-ability rows.
+
+## Item 5 (item-ability icon resolution) -- OPEN, blocks hook 2's icon-lookup logic for item-granted buffs
+
+**User's direction (explicit choice via `AskUserQuestion`, chosen over a
+"ship force-powers-only for v1" or "hardcode a few icons by hand"
+stopgap)**: research how the game's own quickbar
+(`CSWGuiMainInterfaceAction`, the 7-slot HUD action bar) resolves an icon
+for a quick-slot, since players can assign EITHER a spell OR an item
+ability to any quick-slot and the engine already must pick the right icon
+source for both cases -- reuse that same mechanism in hook 2, rather than
+inventing a separate one.
+
+**Lead found (GOG address DB only, Steam counterpart NOT yet located)**:
+queried `AddressDatabases/kotor2_gog_aspyr.db`'s `functions` table for
+class names matching `Action`/`Item`/`Quick`/`Icon` (the established
+"check GOG's own runtime DB for real names before fresh RTTI work"
+technique -- see `[[kotor2-ghidra-knowledge-db]]`). Found the real
+`CSWGuiMainInterfaceAction` class (distinct from `CSWGuiQuickPanel`, a
+false-positive name match that's actually the new-game
+character-creation quick-panel) with a full GOG method table including a
+`SetIcon` method at GOG `0x512ea0` (decimal 5320352), signature
+`(this, byte-or-int param2, ptr param3)` per the DB's own generic
+decompile. Full GOG method table (all GOG-only, none cross-referenced to
+Steam yet): `Constructor` `0x512990`, `Draw` `0x512ad0`, `HitCheckMouse`
+`0x512b50`, `Show` `0x512c20`, `SetQueuedFlash` `0x512d00`, `Update`
+`0x512d50`, `SetIcon` `0x512ea0`, `Initialize` `0x512f40`, `Destructor`
+`0x513c50`.
+
+**Concrete next step, not done this session**: RTTI keyword search for
+`CSWGuiMainInterfaceAction` on the Steam binary -- try this FIRST (per
+the UX-redesign session's established shortcut: framework-wide/shared
+classes tend to have real RTTI, unlike panel-embedded structs). If found,
+decompile `SetIcon` to see how it branches for a spell-granted vs.
+item-granted quick-slot's icon source -- most likely it reads the item's
+own icon field (via `CItemRepository`/`CSWItem`, both real RTTI classes
+already in the `ghidra_knowledge` DB's `classes` table from the Inventory
+3D Viewport research) rather than a `spells.2da` lookup when the slot
+holds an item ability. This is the one remaining blocker for hook 2's
+icon-lookup logic to correctly handle item-ability buffs (energy shields,
+stims) and not just force powers. Full evidence:
+`ghidra_knowledge` DB `lessons` ids 52-53.
 
 ## Goal
 
