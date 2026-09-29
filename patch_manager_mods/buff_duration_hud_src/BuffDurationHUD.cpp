@@ -57,7 +57,7 @@ const char* const CircleResref = "buffhud_circle";  // white disc TGA shipped in
 
 // spells.2da rows that are ITEM abilities (stims, shots, shields, cloak); force powers get no backing
 bool isItemAbility(int spell) {
-    return (spell >= 69 && spell <= 77) || (spell >= 99 && spell <= 108) || spell == 129 || spell == 132 || spell == 257;
+    return (spell >= 69 && spell <= 77) || (spell >= 99 && spell <= 108) || (spell >= 110 && spell <= 115) || spell == 129 || spell == 132 || spell == 257;
 }
 
 // ---- diagnostics: buffhud_log.txt in the game dir, capped, off the hot path when full ----

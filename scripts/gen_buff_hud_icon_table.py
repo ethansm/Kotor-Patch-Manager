@@ -38,6 +38,12 @@ ITEM_PICKS = {
     132: "ii_frarmbnds_001",
     108: "ip_shield",
     257: "ip_shield",
+    110: "ii_drdshld_001",
+    111: "ii_drdshld_004",
+    112: "ii_drdshld_005",
+    113: "ii_drdshld_006",
+    114: "ii_drdshld_007",
+    115: "ii_drdshld_005",
 }
 rows, missing = {}, []
 for i in range(t.get_height()):
