@@ -51,8 +51,8 @@ constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferr
 constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
 constexpr int MaxColumns = 3;
 constexpr float DimAlpha = 0.35f;
-constexpr float BgAlpha = 0.65f;              // backing disc, full-strength part
-const float BgColor[3] = { 0.05f, 0.30f, 0.30f };  // tint of the round backing (dark teal)
+constexpr float BgAlpha = 0.80f;              // backing disc, full-strength part
+const float BgColor[3] = { 0.035f, 0.415f, 0.34f };  // the HUD border teal (sampled 9,106,87)
 const char* const CircleResref = "buffhud_circle";  // white disc TGA shipped in override/
 
 // spells.2da rows that are ITEM abilities (stims, shots, shields, cloak); force powers get no backing
