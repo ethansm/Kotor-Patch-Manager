@@ -46,6 +46,12 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   table, log evidence, ranked hypotheses (incl. `taskset -c 0,6` = one physical core),
   capture procedure and an A/B experiment plan.
 
+- [`10_equipment_3d_character.md`](10_equipment_3d_character.md) — live 3D character
+  on the equipment screen (armour/head/hands follow the chosen gear, party switch;
+  flourish animations + drag/zoom code staged). **Status 2026-09-30: 0.1.0-probe live at
+  stage 2 (static creature render confirmed, layout A); next = stage 3 polled refresh,
+  then flourishes/input, weapons research and a mirrored character page.**
+
 ## Why this matters for our specific install
 
 Two things about this build make Patch Manager both *more* attractive and
