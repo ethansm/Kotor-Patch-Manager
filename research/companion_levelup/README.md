@@ -3,6 +3,9 @@
 Scraped 2026-09-29. Goal: per-companion feat / Force power / skill / class-switch plans for the r/kotor Full build
 (TSLRCM + PartySwap + Extended Enclave + Thematic Companions, etc.). Nothing here is committed to git yet.
 
+## Level-up override project (read first)
+`MASTER_PLAN.md` (phases, status, conventions) -> `PROJECT_CONTEXT.md` -> `PHASE1_PLAN.md` (Ghidra research plan). Paths: `paths/*.toml`, validator `check_paths.py`.
+
 ## Layout
 - `raw/elkripper/`   elkripper.com per-companion build pages (vanilla-stat baseline, level-by-level tables). HTML.
 - `raw/strategywiki/` StrategyWiki TSL pages: companions (Atton, Bao-Dur, Disciple, Handmaiden, Mira, Visas) and
