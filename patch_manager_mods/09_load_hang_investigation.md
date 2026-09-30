@@ -206,3 +206,9 @@ Evidence dir: `~/Games/KOTOR2_Mod_Workspace/incidents_10_0118/` (probe log/repor
 | 2026-09-30 01:15 | 1 (with perf-lab 0.1.0) | 1 | incident 10, first full probe capture |
 
 **Suggested next diagnostics (need a code change; ask first):** log `playerId`/`GetPlayerClientCreature` result and the server module state each 250 ms from LOAD_UP to stuck; hook or read the server-side creature-created state; capture `AR_ERROR.LOG`-style engine errors in the window. Also raise `ArmLoadMs` to 10 s (calibration, section 11).
+
+**Incident 11 (01:19, relaunch of the same install, evidence `~/Games/KOTOR2_Mod_Workspace/incidents_11_0119/`):** identical to incident 10: hang at the first load ~59 s after launch, `LOADSCREEN_STUCK`, `playerId 7F000000 -> FFFFFFFD` ~4 s after `load screen UP`, same `internal=04C9E1F0`, same stacks (PlayMovies wait loop 0x798882 alternating with GUI render), live heap **byte-identical** to incident 10 (256,941,452 B / 69,403 blocks) => deterministic content. AR_ERROR.LOG md5 unchanged. Killed with TERM, clean teardown. Tally: with probe only 3 launches / 0 hangs (00:07-00:27); with probe + perf-lab 0.1.0 (alloc census ON) 2 launches / 2 hangs. **A/B in progress:** perf-lab census switched off (`perflab_debug.txt` renamed to `.off`: DLL loaded but inert, no IAT hooks), same load.
+
+| Date | Launches with probe + perf-lab (census on) | Hangs |
+|---|---|---|
+| 2026-09-30 01:15-01:19 | 2 | 2 |
