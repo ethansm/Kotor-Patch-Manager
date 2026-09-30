@@ -132,3 +132,8 @@ is a 0-byte file (appeared 2026-09-30 10:43, not created by this work). Workarou
 **Mod 6 S0 built** (`../inventory_sort_filter_src/`, build copy `Patches/InventorySortFilter/`): own patch id `inventory-sort-filter`, all three hooks, one DLL, INI-staged
 (`sort`/`tint`/`cycle` default 0 = logging only). Host tests `sort_logic_test.cpp` ALL PASS; `-Wall -Wextra` clean; hook `original_bytes` byte-identical to `check_windows_output_2026-09-30.txt`.
 Not installed. Independent Opus review requested before any install offer.
+
+## Session log 2026-09-30 (build phase, part 2) - see `HANDOFF_2026-09-30.md` for the full hand-off
+
+Mod 6 review fixes applied and Stage 0 **installed live 11:07** (not yet user-tested); Mod 7 cancelled by the user; Mod 8 research R-B/R-D/R-E/R-F closed (doc 13) and Stage 0 logging DLL built (`../ranged_ai_src/`, not reviewed/installed);
+`stage_and_verify_install.py` added; `check_windows` table extended with the S-H4 window (`..._2026-09-30b.txt`). A sibling session re-installed at 11:14 (82 hooks) - Mod 6 survived.

@@ -1,0 +1,43 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# Windows validated by patch_manager_mods/mods678_research/check_windows.py (both executables byte-identical).
+# Doc: patch_manager_mods/13_ranged_ai_spacing.md. Both hooks sit in CSWSCreature::AIActionPhysicalAttacks (0x6D7390).
+# The handlers return 0 (run the stolen bytes and continue) unless ranged_ai.ini enables a behaviour, so the
+# installed stage-0 build is logging only.
+
+# E-H1 hold: 0x6D83EA, right after ECX = attacker was reloaded; the stolen bytes read creature+0x52C into a local.
+# Handler returns 1 => jump to 0x6D83FF: end this attack action (EndAttackAction(1)) instead of walking to the target.
+[[hooks]]
+address = 0x006D83EA
+type = "detour"
+function = "RangedAiHold"
+original_bytes = [0x8B, 0x91, 0x2C, 0x05, 0x00, 0x00, 0x89, 0x95, 0x8C, 0xFC, 0xFF, 0xFF]
+consumed_exit_address = 0x006D83FF
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# E-H2 retarget gate: 0x6D7C73, EAX = attacker; the stolen bytes read creature+0x10E8 (IsPC) into a local and the
+# following JZ skips the retarget when it is 0. Handler returns 1 => jump to 0x6D7C8C (behave as IsPC).
+[[hooks]]
+address = 0x006D7C73
+type = "detour"
+function = "RangedAiRetarget"
+original_bytes = [0x8B, 0x88, 0xE8, 0x10, 0x00, 0x00, 0x89, 0x8D, 0x50, 0xFD, 0xFF, 0xFF]
+consumed_exit_address = 0x006D7C8C
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"

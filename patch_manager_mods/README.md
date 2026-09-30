@@ -56,14 +56,14 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
 **Idea backlog (2026-09-30, research COMPLETE, definitive build plans written, no code; addresses come from the full-program
 dump in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71` and are validated by `mods678_research/check_windows.py`):**
 
-- [`11_inventory_sort_filter.md`](11_inventory_sort_filter.md) - Mod 6: inventory sort + hidden filters. Ships as its own patch id `inventory-sort-filter`.
+- [`11_inventory_sort_filter.md`](11_inventory_sort_filter.md) - Mod 6: inventory sort + hidden filters. Ships as its own patch id `inventory-sort-filter`. **Stage 0 (logging) built + installed 2026-09-30, awaiting in-game test**; source `inventory_sort_filter_src/`.
   Re-clicking the active **All** tab cycles All -> New -> Usable-by-me -> Open upgrade slot. Sort = buffer backpack rows at
   `0x8A7E22`, flush sorted at `0x8A7E76`; unusable rows tinted with `SetCanUse(row,2)`. 3 hooks, no data files.
 - [`12_empty_container_indicators.md`](12_empty_container_indicators.md) - Mod 7: **CANCELLED 2026-09-30 (vanilla already shows Empty/Nothing).** KOTOR II is a two-step interface, so the vanilla
   "Empty" label is selection-only (answered statically) and the highlight-everything call has **no live trigger** in this exe.
   Plan: `SetMouseCursor` hook (plain pointer over empty containers), grey tint in `HiliteAreaObjects` case 9, and our own
   hotkey that calls the engine's `on=1` path. 3 hooks, INI only.
-- [`13_ranged_ai_spacing.md`](13_ranged_ai_spacing.md) (+ [`13a`](13a_ai_community_research.md) community survey) - Mod 8:
+- [`13_ranged_ai_spacing.md`](13_ranged_ai_spacing.md) (+ [`13a`](13a_ai_community_research.md) community survey) - Mod 8: **Stage 0 logging DLL built 2026-09-30 (`ranged_ai_src/`), not installed.** Resume from `mods678_research/HANDOFF_2026-09-30.md`.
   `creature+0x11AC` = party flag, `+0x10E8` = IsPC. Engine DLL holds blocked ranged party members instead of walking in
   (`0x6D83EA`) and extends the vanilla LOS retarget (`0x6D7C73`); new stance 16 needs 3 engine hooks + `aiscripts.2da` row +
   2 TLK strings; script `k_inc_generic` adds `GN_RunKiteAIRoutine` with the fixed `HasLineOfSight`. Party first, enemies later.
