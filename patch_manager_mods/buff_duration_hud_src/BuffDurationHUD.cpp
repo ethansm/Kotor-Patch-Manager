@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <math.h>
 
 #include "EffectIconTable.inc"
 #include "DebuffIconTable.inc"
@@ -373,7 +374,16 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
                 if (disc) draw2(disc, 0, -(size - bright), size, size, BgColor, BgAlpha);
                 draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
                 popClip();
-                if (bright < size && pushClip(ix, y0, size, 1, LineColor, 0, LineAlpha)) popClip();  // 1px boundary line
+                if (bright < size) {                                                             // 1px boundary line
+                    int lx = ix, lw = size;
+                    if (disc) {                                     // item icons: only inside the round backing
+                        float r = size * 0.5f - 0.5f, dy = (y0 + 0.5f) - (iy + size * 0.5f);
+                        float chord2 = r * r - dy * dy;
+                        lw = chord2 > 0.0f ? int(2.0f * sqrtf(chord2) + 0.5f) : 0;
+                        lx = ix + (size - lw) / 2;
+                    }
+                    if (lw > 0 && pushClip(lx, y0, lw, 1, LineColor, 0, LineAlpha)) popClip();
+                }
             } else if (logIt) logf("  icon[%d] clip push refused", i);
         }
     }
