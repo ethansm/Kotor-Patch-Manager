@@ -92,3 +92,9 @@ Source of record `$TOOL_DIR/Patches/EquipCharPreview/` (`EquipCharPreview.cpp`, 
 - User: weapons = drawn with combat-ready stance, with a toggle; also wants a holstered option; dual wielding must use the dual stance; animations must keep playing with weapons on.
 - User confirmed live: armour swap live, visor visible, buttons work, weapons render in hands (saber, pistols, dual wield attach both hands).
 - Flourish frequency raised in the INI (first 2 s, then 4-9 s, quiet 2 s after an equip).
+
+## Agy review round 2026-09-30 (10_equipment_3d_character_feedback.md) - verdicts
+- Bug 1 (scene/Gob accumulation on party switch): NOT reproduced by code reading; the panel rebuilds the same creature in place like the engine's `SetStats` (lesson 127) and the review's snippet uses names absent from the code (`charIdx`, `forceRebuild`). Added a log guard: `build: scene models=N (baseline B) WARNING ... GREW` - check it after the next party-switch test.
+- Bug 2 (unparented weapon Gobs after failed rebuild): wrong premise; `detachWeapons` detaches AND frees (vt[0x50](0), vt[0x4c](0), vt[0](1)) and clears the pointers before `0076d200`; refresh re-attaches after a successful build (`weaponNodes` does not exist).
+- Bug 3 (animation length fallback): rejected; `animLen` false only skips that flourish (idle keeps looping, no freeze); a blind 2 s fallback would play non-existent animations. Unmapped rows already get the humanoid table.
+- Bug 4 (unsubclass safety): valid, fixed in `668dc3d` (restore only if our proc is still current).

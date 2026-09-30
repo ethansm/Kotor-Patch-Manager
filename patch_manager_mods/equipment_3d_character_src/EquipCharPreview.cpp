@@ -259,7 +259,7 @@ struct Slot {
     unsigned char app[AppCopyBytes] = {};
     short align = -1;
     DWORD lastPoll = 0, lastBuild = 0;
-    int builds = 0;
+    int builds = 0; int baseModels = -1;   // scene model count after the first build (growth check)
     bool built = false;
     // input
     float yaw = 0, zoom = 1;
@@ -515,7 +515,7 @@ void destroyCreature(Slot* s, const char* why) {
     logf("creature: destroy %p (%s) vtable=%08x", s->creature, why, vt0);
     if (vt0 == CreatureVftable && vt && !IsBadReadPtr(vt, 4)) reinterpret_cast<CrDtorFn>(vt[0])(s->creature, 1);
     else logf("creature: vtable mismatch, NOT calling dtor (leak instead of crash)");
-    s->creature = nullptr; s->built = false; s->real = 0; s->flourishActive = false;
+    s->creature = nullptr; s->built = false; s->real = 0; s->flourishActive = false; s->baseModels = -1;
 }
 
 bool allocCreature(Slot* s) {
@@ -690,7 +690,8 @@ bool buildPreview(Slot* s, int real, const char* why) {
     reinterpret_cast<CrPtrFn>(vt[CrSetPos / 4])(pv, pos);
     reinterpret_cast<CrPtrFn>(vt[CrSetFacing / 4])(pv, face);
     reinterpret_cast<SetupSceneFn>(FnSetupScene)(pv, s->block, reinterpret_cast<void*>(real), 0, 1);
-    logf("build: scene models=%d body=%p head=%p", modelCount(s->block), partGob(s, 0xff), partGob(s, 0xfe));
+    { int mc = modelCount(s->block); if (s->baseModels < 0) s->baseModels = mc;
+      logf("build: scene models=%d (baseline %d)%s body=%p head=%p", mc, s->baseModels, mc > s->baseModels ? " WARNING: scene models GREW across rebuilds" : "", partGob(s, 0xff), partGob(s, 0xfe)); }
     memcpy(s->app, raw, AppCopyBytes); s->align = al; s->real = real; s->built = true; ++s->builds; s->lastBuild = GetTickCount();
     s->flourishActive = false;
     chooseIdle(s);
