@@ -46,6 +46,7 @@ constexpr int MsPerDay = 86400000;
 constexpr int MaxEffects = 512;
 constexpr int MaxPoolImages = 128;
 constexpr float MinWipeRatio = 0.0f;
+constexpr int CExoStringSprintf = 0x00734270;  // cdecl (CExoString* dst, const char* fmt, ...)
 constexpr int HudScaleFn = 0x00479ab0;        // cdecl, returns float in st0
 constexpr int FlushGuiBatch = 0x0047ea60;     // cdecl(float), flushes batched GUI quads
 constexpr int PushClipRect = 0x00479460;      // cdecl(x,y,w,h,color*,flag,float alpha) -> nonzero if pushed
@@ -312,6 +313,19 @@ int collectPools(int creature, Pool* out, int maxOut) {
 }
 
 
+// "Shield: 32/40" (several pools: "Shield: 32/40 + 10/25") for the portrait hover tooltip; returns the pool count, out = "" when none
+int describePools(int creature, char* out, int cap) {
+    if (cap <= 0) return 0;
+    out[0] = 0;
+    Pool pools[8];
+    int n = collectPools(creature, pools, 8);
+    if (n <= 0) return 0;
+    int len = snprintf(out, cap, "Shield: ");
+    for (int i = 0; i < n && len > 0 && len < cap; ++i)
+        len += snprintf(out + len, cap - len, "%s%d/%d", i ? " + " : "", pools[i].remaining, pools[i].max);
+    return n;
+}
+
 // While a creature has a shield, the health bar's two borders (track + fill) draw a squared-left texture so the shield
 // bar and the health bar read as one bar. Swapped just before the engine draws (UpdatePortraits snapshot), restored
 // right after (our slot hook), so the engine never keeps our image pointer.
@@ -560,6 +574,22 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
         lastDraw[di] = dsig;
         probeLog("DRAW slot=%08x creature=%08x large=%d pools=%d effects=%d", slotPtr, creature, isLarge, n, effCount);
     }
+}
+
+// Portrait hover tooltip (FUN_00744c20 builds the text into the CExoString at charButton+0x1d4, once per hover / refresh flag).
+// Hooked at its RET path 0x00744EEC; [ebp-0x48] = charButton, *(charButton+0x1d0) = the portrait slot pointer. The engine's
+// cdecl "sprintf into CExoString" (FUN_00734270) formats into a scratch buffer before touching the destination, so the old
+// text can be passed back in as an argument. The tooltip panel sizes itself from the text (FUN_0075ff50).
+void __cdecl AppendShieldToTooltip(int charButton) {
+    int slot = 0, oldText = 0;
+    if (!readAt(charButton, 0x1d0, &slot) || !slot || !readAt(charButton, 0x1d4, &oldText) || !oldText) return;
+    int creature = creatureForSlot(slot);
+    char line[96];
+    int n = creature ? describePools(creature, line, sizeof(line)) : 0;
+    probeLog("TIP btn=%08x slot=%08x creature=%08x pools=%d line='%s'", charButton, slot, creature, n, line);
+    if (n <= 0) return;
+    using CExoSprintf = void(__cdecl*)(void*, const char*, ...);
+    reinterpret_cast<CExoSprintf>(CExoStringSprintf)(reinterpret_cast<void*>(charButton + 0x1d4), "%s\n%s", reinterpret_cast<const char*>(oldText), line);
 }
 
 } // extern "C"
