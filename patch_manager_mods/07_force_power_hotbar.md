@@ -1,33 +1,21 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**Status (2026-09-29, updated with Mod 1 & Mod 2 lessons; UX redesigned
-same day to a 3-edge/30-generic-slot layout):** Pre-Ghidra research and
-architectural specification. Informed by the completed Phase 2/3 static
-analysis of [[02_buff_duration_hud.md]] and the render-pipeline resolution
-of [[01_inventory_3d_viewport.md]]. Key framework addresses have already
-been mined from the shipped `AddressDatabases/*.db` (including
-`CSWSCreatureStats::HasSpell` at Steam `0x006BD9C0`), the persistence model has
-been settled (external config, not savegames), and the input context-gating
-hazard has been identified and designed. **UX redesign (user-directed,
-2026-09-29, same session as Buff Duration HUD's item-ability discovery,
-superseding the earlier "2nd row for items" framing): 30 total GENERIC
-slots across three screen edges** — bottom (bare `1`-`0`), left
-(`Ctrl+1`-`Ctrl+0`), right (`Alt+1`-`Alt+0`) — every slot independently
-assignable to ANY single vanilla quick-action (a power OR an item OR
-anything else the native quickbar itself can hold), not pre-restricted by
-which edge/row it's on. See "Slot layout (3 edges, 30 generic slots)"
-section below — this shares its icon-resolution problem directly with
-[[02_buff_duration_hud.md]]'s open "Item 5" research item (both need to
-know how the engine's own quickbar picks an icon for an item-ability
-quick-slot, since `spells.2da` has no icon for item-ability rows). **Update
-(2026-09-29, Buff Duration HUD's 9th session ran this shared research):
-the premise was corrected, not resolved as hoped** -- the vanilla
-action-bar's 6 categories never include "item," so item-slot invocation
-and icon resolution both remain genuinely open, not just "reuse the
-quickbar's mechanism." See "Slot layout" section's icon-resolution note
-below for the full finding. Phase 1 (Ghidra mapping of invocation & input
-hooks), Phase 2 (scaffold C++), and Phase 3 (live install) will proceed
-once Mod 2 finishes development or when this mod is prioritized.
+**STATUS (2026-09-29, end of session 2) -- READ THIS FIRST.**
+- **Scope changed (user decision):** focus is now the **UX: ten on-screen buttons along the bottom of the screen, bound to `1`-`0`**, like
+  the original plan. The Ctrl (left) and Alt (right) rows and 30 total slots are a **future iteration** -- do not build them yet.
+  (Alt+digit does not reach the game under Proton anyway, see "Live results".)
+- **Done and working live (prototype `ForcePowerHotbar` 0.1.0-dev, installed as the 16th patch, `Invoke=0` = log only):** key capture + swallow
+  of bound digits (press and release), HUD gating, INI config + hot reload, per-character profile plumbing, resolver from an `ActionRef` to
+  the HUD's own action entries, and exhaustive probe logging. The **invoke path (`Invoke=1`) has never been run live.**
+- **NEXT PHASE (not started): investigate and build the on-screen button bar** -- adding brand-new UI elements to the HUD is new territory
+  for this project (Buff HUD only reused existing labels). See "Next phase: bottom-bar UX" at the end of this file.
+- Sources: `force_power_hotbar_src/` (committed). Framework clone (uncommitted, source of truth for builds):
+  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/`. Live evidence excerpts: `force_power_hotbar_src/live_evidence/`.
+- Sections below: original spec (partly SUPERSEDED, kept for history), then "Next-phase findings" (Ghidra), "Live results", "Environment and workflow
+  gotchas", "Next phase: bottom-bar UX".
+
+> Everything from here to "## Next-phase findings" is the original pre-Ghidra spec. Where it conflicts with the later sections, the later sections win
+> (notably: items ARE in the HUD action bar; the four 0x1D0 arrays are sub-controls, not per-portrait bars; the 3-edge/30-slot layout is deferred).
 
 ## Goal
 
@@ -387,3 +375,50 @@ Key bindings, bar layout and per-save profiles are data tables in code (`kRows`,
 - Target-menu slots not supported this phase (`menu = hud+0xCC` confirmed via 0x751710, selection storage unverified).
 - Item/creature identity fields, keyboard device constant, gate behaviour: verify from the first live probe log.
 - Render phase candidate hook: end of `FUN_0074b3f0` after the action-bar draw loop (`FUN_007417d0` x7); `GetActionIcon` candidate `0x0074E0B0` -- not researched further.
+
+## Live results (2026-09-29, builds 1-3 on the Steam/Proton install)
+
+All evidence is in `force_power_hotbar_src/live_evidence/` (catalog, a full probe dump, key/gate events) and was gathered by the always-on probe.
+
+**Verified live**
+- Both detours apply (`Applied DETOUR hook at 0x0072CB63 / 0x0074B3F0`), no `AR_ERROR.LOG` change (md5 `a2d887896b53eae113758dc8c3729db9`).
+- **Keyboard device index = 0** (constant at `0x0099C884` = 0). Every keyboard record arrives with `dev=0`; digits are DIK `0x02..0x0B`. No non-keyboard record was ever seen by the hook (mouse untouched by this patch; a "stuck right mouse button" the user saw was the game's own *mouse look* setting, not this mod).
+- **Capture + swallow works**: bound digit press -> `SWALLOW`, release -> `swallow-up`, unbound digits pass through (`pass(unbound)`), Ctrl+digit works (`Left` row), Ctrl/Alt/Shift state tracked from the same stream.
+- **Gate works**: `ACTIVE (hud on top)` in exploration; `inactive (modal open)` when a menu modal opens (modal vtable `0x0099E6A4`, fade panel `0x009A044C` also in the panel list, HUD `0x0099DCC4`, manager at `hud+0x1C`, panel flags `+0x48`). Digits inside dialogue/inventory/pause were **not yet tested** -- test before enabling invoke.
+- **Alt+digit never arrives** under Proton (an Alt press is seen, no release, no digit) -- window-manager interception. Irrelevant now (only the bottom row is in scope); if the Alt row returns, use Shift or Ctrl+Shift instead.
+- **Resolver**: `spell:8` resolved to `group 0 index 1 key=20000008`. `item:Medpac` resolves in build 2+ (build 1 could not read names).
+
+**Entry layout (live-confirmed, 0x3C stride, `hud+0x78+g*0xC` {ptr,count,cap}, `hud+0x1C7C+g*4` selected key)**
+```
++0x00 char*  display name (CExoString ptr)      +0x04 int name length INCLUDING the trailing NUL
++0x08 int    key (0x20000000|spellRow, 0x40000000|itemObjId, raw for AI modes)
++0x0C ptr    callback (0x007791A0 powers, 0x0077C780/0x0077CC80 items, 0x0077D890 AI modes)
++0x1C int    owner object id (0xFFFFFFFD for the Exile)   +0x20..0x2F  16-byte inline ICON RESREF (e.g. "ip_speedburst", "ii_medeqpmnt_002")
++0x30 int    flags: bit0 usable, bits1-4 why-not code     (higher bits vary, ignore)
+```
+Live groups for the Exile: g0 powers (Heal 10 `ip_cure`, Burst of Speed 8 `ip_speedburst`, Force Valor 22 `ip_mind`, Energy Resistance 42 `ip_resistenergy1`); g1 items (Adrenal Alacrity/Stamina/Strength, Battle Stimulant, Antidote Kit, Medpac, Repair Kit); g2 shields (Energy Shield, Peragus Mining Shield); g3 mines; g4 AI modes (`other:410..414`, icons `ib_*`); g5/g6 empty. Icons are 16-char resrefs -> exactly what a button image needs.
+Companions appear as `obj80000249` / `obj80000240`; the Exile as `objfffffffd` (object id; `CreatureTagOffset` was never found: heuristic string scan found nothing in the first 0x800 bytes of the creature object even after the NUL-length fix -- a real tag read still needs research).
+
+**Bugs found by live logging and fixed:** CExoString length includes NUL (names were empty); nothing else. Log helper caps at 60000 lines, frame-stamped, with heartbeat every 1800 frames and a warning for any HUD tick gap > 1.5 s.
+
+## Environment and workflow gotchas (read before installing anything)
+
+- Several Claude sessions develop patches at once (Buff Duration HUD, Inventory 3D viewport, this one). **Any session's install replaces the whole patch set**; a stale staging dir silently downgrades or drops another session's patch (this happened twice: my install dropped `inventory-3d-viewport`, then another session's install reverted my hotbar DLL). Always: read `kpm_install_state.json` -> `InstalledPatches` right before installing, include every installed id, and copy the **newest** `.kpatch` of each from its own `Patches/<Name>/` dir. Verify afterwards: `md5sum $G/patches/force-power-hotbar.dll` equals the DLL inside the staged kpatch (`unzip -p X.kpatch 'binaries/*.dll' | md5sum`).
+- My stage dir: `.../kotor-patch-manager/hotbar_stage/` (16 kpatches). Install command (game must be CLOSED; the launcher also relaunches the game): `cd .../kotor-patch-manager/bin/Debug && ./KPatchLauncher "$G/swkotor2.exe" --patches <stage> <all ids>`. Current 16 ids: the 13 baseline + `buff-duration-hud` + `force-power-hotbar` + `inventory-3d-viewport`.
+- Logs (game dir `$G`): `force_power_hotbar_log.txt` (appends across launches; older ones renamed `.buildN*.txt`), `force_power_hotbar_available.txt` (catalog), `force_power_hotbar.ini` (config, hot-reloaded). Steam/Proton log `~/steam-208580.log`.
+- "Is the game running": `pgrep -f '^S:.*swkotor2\.exe'`. Commit only by explicit path (other sessions edit other files in the worktree).
+
+## Next phase: bottom-bar UX (to be planned next; NOT started)
+
+**Goal:** ten on-screen buttons along the bottom of the screen mapped `1`-`0` (bare digits), each showing the icon of its bound action, clicking or pressing the key invokes it (the existing capture/invoke path). Bindings come from the same INI (`Bottom1..Bottom0` in `Profile.Default` / per-character profiles). Extra rows: future.
+
+**Why it is new work:** everything so far reused existing widgets. Creating NEW HUD elements means learning how the engine builds, positions, draws and hit-tests GUI controls at runtime. Investigate before designing:
+1. **Where the vanilla action bar is drawn and how** -- the existing 6+3 action-button groups (`hud+0x733C + g*0x750`, `hud+0x120 + i*0x750`, 4 sub-controls at `{0,0x1D0,0x3A0,0x570}`); `FUN_007417d0` (per-group draw, called x7 in `FUN_0074b3f0`), `FUN_00741780` (called by the invoke for feedback), `GetActionIcon` candidate `0x0074E0B0`. Can we clone/reuse whole `CSWGuiMainInterfaceAction` widgets (constructor, `SetIcon`, border, hit test) instead of building from raw controls? Their constructor/init lives in the HUD ctor `FUN_00747210` (huge).
+2. **Buff HUD's proven technique for runtime-drawn widgets:** a `CSWGuiLabel` (vtable `0x009878bc`; `+0x60` embedded `CSWGuiBorder` vt `0x009875bc`, fill image at border+0x74, size at +0xc/+0x10; `+0xd8` CSWGuiText) placed with `vtable[1]` SetRect and drawn with `vtable[14]` Draw(dt); icon by swapping the FILL image (`FUN_0047eb60` cdecl(resref buf)-> image, see `buff_duration_hud_src/BuffDurationHUD.cpp`). Question: can that pool of labels be extended to 10 icon buttons drawn at the end of `FUN_0074b3f0` (after the action-bar loop), without registering them as GUI controls?
+3. **Render hook site:** a clean instruction boundary near the end of `FUN_0074b3f0` (HUD Draw) so the buttons draw with the HUD (correct z-order, clip, HUD scale `FUN_00479ab0`, ultrawide -- see `kotor2-ultrawide-gui` memory and the `HUD_DESC_COEFF` rules).
+4. **Mouse input for clicks:** the hotbar needs hit-testing for its own rects (the HUD's `HitCheckMouse` `0x0074B3A0` only knows native controls). Options: own rect test in the tick using the game's mouse position, or make the widgets real controls. Also hover/pressed visuals and disabled-state shading (`entry+0x30` flags give usable/why-not).
+5. **Layout:** bottom-centre strip, above/below the native action bar? avoid the minimap (right) and party portraits (left); scale with `FUN_00479ab0`; check 16:9 and the user's ultrawide setup.
+6. **State display:** usable flag, item stack count in the entry name ("Medpac (7)"), and later cooldown/active-buff reuse of the Buff HUD wipe (kept separate for v1 by user decision).
+7. **Config UX (later):** in-game assignment (drag/right-click) writes through `hb::Config::Save`; not part of the button-bar phase but the button widgets must expose slot identity.
+
+**Open items carried over:** run digit tests in dialogue/inventory/pause; first `Invoke=1` test (self-buff power, medpac, stim, shield); target-menu powers (`menu=hud+0xCC`, selection storage unverified); item identity is the display name (resref/tag not found); character key is the object id until a tag read is found; Phase F independent review not yet done.

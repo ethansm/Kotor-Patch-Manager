@@ -1,0 +1,118 @@
+[2601457031] gate: ACTIVE (hud on top)
+[2601481117] cap: dev=0 dik=1e down mods=--- -> pass
+[2601481382] cap: dev=0 dik=1e up mods=--- -> pass
+[2601482325] cap: dev=0 dik=1e down mods=--- -> pass
+[2601482588] cap: dev=0 dik=1e up mods=--- -> pass
+[2601482588] cap: dev=0 dik=1f down mods=--- -> pass
+[2601482588] cap: dev=0 dik=1f down mods=--- -> pass
+[2601482721] cap: dev=0 dik=20 down mods=--- -> pass
+[2601482738] cap: dev=0 dik=1f up mods=--- -> pass
+[2601482821] cap: dev=0 dik=20 up mods=--- -> pass
+[2601503554] cap: dev=0 dik=1e down mods=--- -> pass
+[2601503702] cap: dev=0 dik=11 down mods=--- -> pass
+[2601503989] cap: dev=0 dik=1e up mods=--- -> pass
+[2601504472] cap: dev=0 dik=1e down mods=--- -> pass
+[2601505004] cap: dev=0 dik=1e up mods=--- -> pass
+[2601505068] cap: dev=0 dik=11 up mods=--- -> pass
+[2601505229] cap: dev=0 dik=20 down mods=--- -> pass
+[2601505406] cap: dev=0 dik=20 up mods=--- -> pass
+[2601529027] cap: dev=0 dik=c8 down mods=--- -> pass
+[2601529144] cap: dev=0 dik=c8 up mods=--- -> pass
+[2601529212] cap: dev=0 dik=1c down mods=--- -> pass
+[2601529294] cap: dev=0 dik=1c up mods=--- -> pass
+[2601532117] cap: dev=0 dik=c8 down mods=--- -> pass
+[2601532200] cap: dev=0 dik=c8 up mods=--- -> pass
+[2601532684] cap: dev=0 dik=1c down mods=--- -> pass
+[2601532771] cap: dev=0 dik=1c up mods=--- -> pass
+[2601533271] cap: dev=0 dik=c8 down mods=--- -> pass
+[2601533355] cap: dev=0 dik=c8 up mods=--- -> pass
+[2601533505] cap: dev=0 dik=1c down mods=--- -> pass
+[2601533621] cap: dev=0 dik=1c up mods=--- -> pass
+[2601536292] cap: dev=0 dik=1c down mods=--- -> pass
+[2601536409] cap: dev=0 dik=1c up mods=--- -> pass
+[2601539593] cap: dev=0 dik=c8 down mods=--- -> pass
+[2601539642] cap: dev=0 dik=c8 up mods=--- -> pass
+[2601540459] cap: dev=0 dik=c8 down mods=--- -> pass
+[2601540559] cap: dev=0 dik=c8 up mods=--- -> pass
+[2601540709] cap: dev=0 dik=1c down mods=--- -> pass
+[2601540792] cap: dev=0 dik=1c up mods=--- -> pass
+[2601541459] cap: dev=0 dik=1c down mods=--- -> pass
+[2601541575] cap: dev=0 dik=1c up mods=--- -> pass
+[2601542426] cap: dev=0 dik=d0 down mods=--- -> pass
+[2601542525] cap: dev=0 dik=d0 up mods=--- -> pass
+[2601542626] cap: dev=0 dik=d0 down mods=--- -> pass
+[2601542725] cap: dev=0 dik=d0 up mods=--- -> pass
+[2601543009] cap: dev=0 dik=1c down mods=--- -> pass
+[2601543109] cap: dev=0 dik=1c up mods=--- -> pass
+[2601546789] cap: dev=0 dik=1e down mods=--- -> pass
+[2601546988] cap: dev=0 dik=11 down mods=--- -> pass
+[2601548255] cap: dev=0 dik=1e up mods=--- -> pass
+[2601548255] cap: dev=0 dik=20 down mods=--- -> pass
+[2601548255] cap: dev=0 dik=20 down mods=--- -> pass
+[2601548288] cap: dev=0 dik=11 up mods=--- -> pass
+[2601549105] cap: dev=0 dik=20 up mods=--- -> pass
+[2601549455] cap: dev=0 dik=20 down mods=--- -> pass
+[2601549705] cap: dev=0 dik=20 up mods=--- -> pass
+[2601549972] cap: dev=0 dik=1f down mods=--- -> pass
+[2601551122] cap: dev=0 dik=1f up mods=--- -> pass
+[2601551522] cap: dev=0 dik=11 down mods=--- -> pass
+[2601552507] cap: dev=0 dik=11 up mods=--- -> pass
+[2601553158] cap: dev=0 dik=11 down mods=--- -> pass
+[2601554257] cap: dev=0 dik=11 up mods=--- -> pass
+[2601554608] cap: dev=0 dik=1f down mods=--- -> pass
+[2601555591] cap: dev=0 dik=1f up mods=--- -> pass
+[2601570240] cap: dev=0 dik=1e down mods=--- -> pass
+[2601570363] cap: dev=0 dik=11 down mods=--- -> pass
+[2601570749] cap: dev=0 dik=1e up mods=--- -> pass
+[2601571463] cap: dev=0 dik=20 down mods=--- -> pass
+[2601571697] cap: dev=0 dik=11 up mods=--- -> pass
+[2601571713] cap: dev=0 dik=20 up mods=--- -> pass
+[2601582461] gate: inactive (modal open)
+[2601582461]   panels: hud=049028f0 hudvt=0099dcc4 mgr=027c0fb8 modals=1 panels=3
+[2601582462]     modal[0]=04539f98 vt=0099e6a4 flags=20045
+[2601582462]     panel[0]=049028f0 vt=0099dcc4 flags=45
+[2601582462]     panel[1]=047db938 vt=009a044c flags=9bc45
+[2601582462]     panel[2]=04539f98 vt=0099e6a4 flags=20045
+[2601583593] gate: ACTIVE (hud on top)
+[2601592396] cap: dev=0 dik=1e down mods=--- -> pass
+[2601592596] cap: dev=0 dik=11 down mods=--- -> pass
+[2601592713] cap: dev=0 dik=1e up mods=--- -> pass
+[2601592996] cap: dev=0 dik=11 up mods=--- -> pass
+[2601594668] cap: dev=0 dik=39 down mods=--- -> pass
+[2601594801] cap: dev=0 dik=39 up mods=--- -> pass
+[2601595167] cap: dev=0 dik=11 down mods=--- -> pass
+[2601596118] cap: dev=0 dik=11 up mods=--- -> pass
+[2601597501] cap: dev=0 dik=02 down mods=--- -> SWALLOW
+[2601597508] slot Bottom1: spell:8 -> group 0 index 1 key=20000008 flags=bcf92181 usable=1 (Invoke=0: would invoke)
+[2601597601] cap: dev=0 dik=02 up mods=--- -> swallow-up
+[2601600707] cap: dev=0 dik=02 down mods=--- -> SWALLOW
+[2601600712] slot Bottom1: spell:8 -> group 0 index 1 key=20000008 flags=bcf92181 usable=1 (Invoke=0: would invoke)
+[2601600806] cap: dev=0 dik=02 up mods=--- -> swallow-up
+[2601602406] cap: dev=0 dik=03 down mods=--- -> pass(unbound)
+[2601602490] cap: dev=0 dik=03 up mods=--- -> pass
+[2601604040] cap: dev=0 dik=04 down mods=--- -> pass(unbound)
+[2601604123] cap: dev=0 dik=04 up mods=--- -> pass
+[2601606474] cap: dev=0 dik=1d down mods=C-- -> pass
+[2601607224] cap: dev=0 dik=02 down mods=C-- -> pass(unbound)
+[2601607344] cap: dev=0 dik=02 up mods=C-- -> pass
+[2601607758] cap: dev=0 dik=1d up mods=--- -> pass
+[2601608358] cap: dev=0 dik=1d down mods=C-- -> pass
+[2601608741] cap: dev=0 dik=03 down mods=C-- -> SWALLOW
+[2601608748] slot Left2: item:Medpac -> entry not available for 'objfffffffd'
+[2601608908] cap: dev=0 dik=03 up mods=C-- -> swallow-up
+[2601609008] cap: dev=0 dik=1d up mods=--- -> pass
+[2601609808] cap: dev=0 dik=1d down mods=C-- -> pass
+[2601610442] cap: dev=0 dik=04 down mods=C-- -> pass(unbound)
+[2601610608] cap: dev=0 dik=04 up mods=C-- -> pass
+[2601610692] cap: dev=0 dik=1d up mods=--- -> pass
+[2601613975] cap: dev=0 dik=38 down mods=-A- -> pass
+[2601618826] cap: dev=0 dik=1d down mods=CA- -> pass
+[2601619892] cap: dev=0 dik=1d up mods=-A- -> pass
+[2601779143] cap: dev=0 dik=11 down mods=-A- -> pass
+[2601780793] cap: dev=0 dik=11 up mods=-A- -> pass
+[2601782410] cap: dev=0 dik=1e down mods=-A- -> pass
+[2601782526] cap: dev=0 dik=11 down mods=-A- -> pass
+[2601782759] cap: dev=0 dik=1e up mods=-A- -> pass
+[2601783142] cap: dev=0 dik=1e down mods=-A- -> pass
+[2601783442] cap: dev=0 dik=1e up mods=-A- -> pass
+[2601785447] cap: dev=0 dik=11 up mods=-A- -> pass

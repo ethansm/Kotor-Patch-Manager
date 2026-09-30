@@ -1,0 +1,32 @@
+obj80000240 | item:Adrenal Alacrity | group 1 | Adrenal Alacrity (2)
+obj80000240 | item:Adrenal Stamina | group 1 | Adrenal Stamina (2)
+obj80000240 | item:Adrenal Strength | group 1 | Adrenal Strength (2)
+obj80000240 | item:Antidote Kit | group 1 | Antidote Kit 
+obj80000240 | item:Battle Stimulant | group 1 | Battle Stimulant (4)
+obj80000240 | item:Deadly Sonic Mine | group 3 | Deadly Sonic Mine (2)
+obj80000240 | item:Medpac | group 1 | Medpac (7)
+obj80000240 | item:Repair Kit | group 1 | Repair Kit (19)
+obj80000240 | other:410 | group 4 | Aggressive
+obj80000240 | other:412 | group 4 | Ranged
+obj80000240 | other:413 | group 4 | Stationary
+obj80000240 | other:414 | group 4 | Grenadier
+objfffffffd | item:Adrenal Alacrity | group 1 | Adrenal Alacrity (2)
+objfffffffd | item:Adrenal Alacrity | group 1 | Adrenal Alacrity (3)
+objfffffffd | item:Adrenal Stamina | group 1 | Adrenal Stamina (2)
+objfffffffd | item:Adrenal Strength | group 1 | Adrenal Strength (2)
+objfffffffd | item:Antidote Kit | group 1 | Antidote Kit 
+objfffffffd | item:Battle Stimulant | group 1 | Battle Stimulant (4)
+objfffffffd | item:Deadly Sonic Mine | group 3 | Deadly Sonic Mine (2)
+objfffffffd | item:Energy Shield | group 2 | Energy Shield (self)
+objfffffffd | item:Medpac | group 1 | Medpac (7)
+objfffffffd | item:Peragus Mining Shield | group 2 | Peragus Mining Shield (self)
+objfffffffd | item:Repair Kit | group 1 | Repair Kit (19)
+objfffffffd | other:410 | group 4 | Aggressive
+objfffffffd | other:412 | group 4 | Ranged
+objfffffffd | other:413 | group 4 | Stationary
+objfffffffd | other:414 | group 4 | Grenadier
+objfffffffd | other:414 | group 4 | Jedi Support
+objfffffffd | spell:10 | group 0 | Heal
+objfffffffd | spell:22 | group 0 | Force Valor
+objfffffffd | spell:42 | group 0 | Energy Resistance
+objfffffffd | spell:8 | group 0 | Burst of Speed
