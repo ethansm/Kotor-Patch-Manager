@@ -58,8 +58,24 @@ SHIFT_S = {
     "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (476, 442, 63, 28)},
     "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (287, 476, 260, 32)},
 }
-LAYOUT_3D = {"S": (557, 134, 209, 364), "R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
-LAYOUT_CTRLS = {"S": SHIFT_S, "R": DESC_R, "T": {}, "L": {}, "K": {}}
+# U: S refined after the first live look: list 4 units further from the gold border (gap = list->description gap),
+# LBL_BAR5 back at its vanilla rect (its notch lines up with the party portraits), 3D view ends above it (y 470).
+# "alt" = the S value, accepted as a current state so U can be applied over a live S.
+SHIFT_U = {
+    "LB_ITEMS": {"orig": (161, 134, 236, 329), "new": (45, 134, 236, 329), "alt": (41, 134, 236, 329),
+                 "PROTOITEM": ((173, 150, 200, 50), (57, 150, 200, 50), (53, 150, 200, 50)),
+                 "SCROLLBAR": ((381, 134, 16, 329), (265, 134, 16, 329), (261, 134, 16, 329))},
+    "BTN_USEITEM": {"orig": (161, 470, 227, 28), "new": (45, 470, 227, 28), "alt": (41, 470, 227, 28)},
+    "BTN_EXIT": {"orig": (159, 516, 89, 28), "new": (45, 516, 89, 28), "alt": (39, 516, 89, 28)},
+    "LB_DESCRIPTION": {"orig": (407, 134, 232, 300), "new": (291, 134, 256, 300), "alt": (287, 134, 260, 300),
+                       "PROTOITEM": ((419, 150, 197, 42), (303, 150, 221, 42), (299, 150, 225, 42)),
+                       "SCROLLBAR": ((623, 134, 16, 300), (531, 134, 16, 300), (531, 134, 16, 300))},
+    "LBL_CREDITS": {"orig": (407, 442, 223, 28), "new": (291, 442, 256, 28), "alt": (287, 442, 260, 28)},
+    "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (476, 442, 63, 28), "alt": (476, 442, 63, 28)},
+    "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (407, 476, 227, 32), "alt": (287, 476, 260, 32)},
+}
+LAYOUT_3D = {"U": (557, 134, 209, 336), "S": (557, 134, 209, 364), "R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
+LAYOUT_CTRLS = {"U": SHIFT_U, "S": SHIFT_S, "R": DESC_R, "T": {}, "L": {}, "K": {}}
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
 
 
@@ -79,14 +95,14 @@ def resize_controls(cs, layout: str) -> list[str]:
         c = next((c for c in cs if c.get_string("TAG") == tag), None)
         if c is None:
             raise SystemExit(f"control {tag} not found")
-        todo = [(None, spec["orig"], spec["new"])] + [
-            (k, *spec[k]) for k in ("PROTOITEM", "SCROLLBAR") if k in spec]
-        for sub, orig, new in todo:
+        todo = [(None, spec["orig"], spec["new"], spec.get("alt"))] + [
+            (k, *spec[k], *([None] if len(spec[k]) == 2 else [])) for k in ("PROTOITEM", "SCROLLBAR") if k in spec]
+        for sub, orig, new, alt in todo:
             holder = c if sub is None else c.get_struct(sub)
             e = holder.get_struct("EXTENT")
             cur = get_rect(e)
             name = tag if sub is None else f"{tag}.{sub}"
-            if cur not in (orig, new):
+            if cur not in (orig, new, alt):
                 raise SystemExit(f"refusing: {name} rect {cur} is neither expected original {orig} nor target {new}")
             if cur != new:
                 set_rect(e, new)
@@ -125,7 +141,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--rollback", action="store_true")
     ap.add_argument("--replace", action="store_true")
-    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="S|R|T|L|K layout (see docstring)")
+    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="U|S|R|T|L|K layout (see docstring)")
     a = ap.parse_args()
     if a.layout:
         a.replace = True

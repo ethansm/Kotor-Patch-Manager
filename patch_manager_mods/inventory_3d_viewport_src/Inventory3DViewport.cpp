@@ -117,7 +117,7 @@ bool readAt(int base, int off, T* out) {
 }
 
 // ---- configuration: $GAME/inv3d.ini (missing/garbage = defaults; every key and rejected line logged) ----
-struct Ov { bool set; float v[4]; };
+struct Ov { bool set; float v[5]; };  // rx,ry,rz,pitch[,zoom]
 struct Cfg {
     int enabled = 1; char rig[64] = "inv3d_light"; int onlyWeaponsArmor = 0;
     float spin = 70, dragDegPx = 0.5f, pitchClamp = 80, idleResume = 1.5f;
@@ -126,6 +126,8 @@ struct Cfg {
     float camPos[3], camFwd[3], camUp[3];
     float armorBox[6] = {0, 0, 0.95f, 0.6f, 0.4f, 1.9f}; int armorSpin = 1; int hitFlipY = 0;
     float screenW = 3840, screenH = 1600;
+    int wheelZoom = 1; float wheelStep = 0.9f, zoomDrag = 0.004f, rollDegPx = 0.5f, zoomMin = 0.3f, zoomMax = 3.0f;
+    float fillRef = 0.6f, fillExp = 0.35f, fillMin = 0.4f;  // small items fill less of the view: fill=clamp((diag/ref)^exp, min, 1)
     Ov itype[256], row[256];
 };
 Cfg g_cfg;
@@ -193,18 +195,32 @@ void loadIni() {
         else if (!strcmp(k, "armor_box")) { good = parseFloats(v, a, 6); if (good) memcpy(c.armorBox, a, 24); }
         else if (!strcmp(k, "armor_spin")) { good = parseFloats(v, a, 1); if (good) c.armorSpin = (int)a[0]; }
         else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
+        else if (!strcmp(k, "wheel_zoom")) { good = parseFloats(v, a, 1); if (good) c.wheelZoom = (int)a[0]; }
+        else if (!strcmp(k, "wheel_step")) { good = parseFloats(v, a, 1); if (good) c.wheelStep = a[0]; }
+        else if (!strcmp(k, "zoom_drag")) { good = parseFloats(v, a, 1); if (good) c.zoomDrag = a[0]; }
+        else if (!strcmp(k, "roll_deg_per_px")) { good = parseFloats(v, a, 1); if (good) c.rollDegPx = a[0]; }
+        else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
+        else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
+        else if (!strcmp(k, "fill_ref")) { good = parseFloats(v, a, 1); if (good) c.fillRef = a[0]; }
+        else if (!strcmp(k, "fill_exp")) { good = parseFloats(v, a, 1); if (good) c.fillExp = a[0]; }
+        else if (!strcmp(k, "fill_min")) { good = parseFloats(v, a, 1); if (good) c.fillMin = a[0]; }
         else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) c.screenW = a[0]; }
         else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) c.screenH = a[0]; }
         else if (!strncmp(k, "itype.", 6) || !strncmp(k, "row.", 4)) {
             bool isT = k[0] == 'i'; const char* num = k + (isT ? 6 : 4); char* e; long n = strtol(num, &e, 10);
-            good = *num && !*e && n >= 0 && n < 256 && parseFloats(v, a, 4);
-            if (good) { Ov& o = isT ? c.itype[n] : c.row[n]; o.set = true; memcpy(o.v, a, 16); }
+            good = *num && !*e && n >= 0 && n < 256 && (parseFloats(v, a, 5) || (a[4] = 1.0f, parseFloats(v, a, 4)));
+            if (good) { Ov& o = isT ? c.itype[n] : c.row[n]; o.set = true; memcpy(o.v, a, 20); }
         } else { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
         if (!good) { logf("INI line %d rejected (bad value for '%s': '%s')", ln, k, v); ++bad; }
         else { logf("INI %s = %s", k, v); ++ok; }
     }
     fclose(f);
     if (c.margin < 1.0f || c.margin > 3) { logf("INI fit_margin out of range, reset 1.15"); c.margin = 1.15f; }
+    if (c.zoomMin < 0.05f) c.zoomMin = 0.05f;
+    if (c.zoomMax < c.zoomMin) c.zoomMax = c.zoomMin;
+    if (c.wheelStep < 0.5f || c.wheelStep > 0.99f) { logf("INI wheel_step out of range, reset 0.9"); c.wheelStep = 0.9f; }
+    if (c.fillRef < 0.05f) c.fillRef = 0.05f;
+    if (c.fillMin < 0.1f || c.fillMin > 1) c.fillMin = 0.4f;
     if (c.pitchClamp < 0) c.pitchClamp = 0;
     if (c.idleResume < 0) c.idleResume = 0;
     if (c.screenW < 100 || c.screenH < 100) { logf("INI screen_w/h invalid, reset 3840x1600"); c.screenW = 3840; c.screenH = 1600; }
@@ -238,8 +254,8 @@ const FitEntry* fitLookup(int row, int var) {
 
 struct Pres {
     bool valid; int row, var, cat; Q base; float c[3], e[3]; float defPitch;
-    float yaw, pitch, lastYaw, lastPitch; float D, s; bool dirty;
-    bool dragging; float lastX, lastY; DWORD idleUntil; unsigned cfgGen;
+    float yaw, pitch, roll, zoom, zoom0, lastYaw, lastPitch; float D, s, fill; bool dirty;
+    int dragMode; bool dragging; float lastX, lastY; DWORD idleUntil; unsigned cfgGen;
     const FitEntry* fit;
 };
 struct Slot {
@@ -319,6 +335,10 @@ void computeFit(Pres* p, float aspect) {
     float t = tanf(g_cfg.fov * 3.14159265f / 360.0f);
     float tanV = g_cfg.fovAxis == 'v' ? t : t / aspect;
     float need = g_cfg.margin * fmaxf(vs / (2 * tanV), hs / (2 * tanV * aspect));
+    float diag = sqrtf(ex * ex + ey * ey + ez * ez);
+    p->fill = 1;
+    if (p->cat != 4) p->fill = fminf(1.0f, fmaxf(g_cfg.fillMin, powf(diag / g_cfg.fillRef, g_cfg.fillExp)));
+    need /= p->fill;
     float d0 = -(g_cfg.camPos[0] * g_cfg.camFwd[0] + g_cfg.camPos[1] * g_cfg.camFwd[1] + g_cfg.camPos[2] * g_cfg.camFwd[2]);
     p->s = 1;
     if (g_cfg.fitScale) {
@@ -330,8 +350,8 @@ void computeFit(Pres* p, float aspect) {
         if (p->D < g_cfg.distMin) p->D = g_cfg.distMin;
         if (p->D > g_cfg.distMax) { p->s = g_cfg.distMax / need; p->D = g_cfg.distMax; }
     }
-    logf("  fit: ext'=[%.3f %.3f %.3f] h=%.3f v=%.3f aspect=%.3f tanV=%.4f need=%.3f -> D=%.3f s=%.3f (d0=%.3f mode=%s)",
-         ex, ey, ez, hs, vs, aspect, tanV, need, p->D, p->s, d0, g_cfg.fitScale ? "scale" : "distance");
+    logf("  fit: ext'=[%.3f %.3f %.3f] h=%.3f v=%.3f aspect=%.3f tanV=%.4f fill=%.2f need=%.3f -> D=%.3f s=%.3f (d0=%.3f mode=%s)",
+         ex, ey, ez, hs, vs, aspect, tanV, p->fill, need, p->D, p->s, d0, g_cfg.fitScale ? "scale" : "distance");
 }
 
 void applyTransform(Slot* s, const char* why) {
@@ -346,11 +366,13 @@ void applyTransform(Slot* s, const char* why) {
     void** vt = *reinterpret_cast<void***>(gob);
     float right[3]; camBasis(right);
     Q qy = qaxis(g_cfg.camUp, p.yaw), qp = qaxis(right, p.pitch);
-    Q q = qnormalize(qmul(qp, qmul(qy, p.base)));
+    Q qr = qaxis(g_cfg.camFwd, p.roll);
+    Q q = qnormalize(qmul(qr, qmul(qp, qmul(qy, p.base))));
+    float Deff = fmaxf(0.1f, p.D * p.zoom);
     float sc[3] = {p.c[0] * p.s, p.c[1] * p.s, p.c[2] * p.s}, rc[3];
     qrotate(q, sc, rc);
     float pos[3];
-    for (int k = 0; k < 3; ++k) pos[k] = g_cfg.camPos[k] + g_cfg.camFwd[k] * p.D - rc[k];
+    for (int k = 0; k < 3; ++k) pos[k] = g_cfg.camPos[k] + g_cfg.camFwd[k] * Deff - rc[k];
     float cur = 0;
     if (readAt<float>(reinterpret_cast<int>(gob), GobScaleOff, &cur) && cur > 0.01f && cur < 100 && fabsf(cur - p.s) > 1e-6f &&
         !IsBadWritePtr(reinterpret_cast<char*>(gob) + GobScaleOff, 4)) {
@@ -363,7 +385,7 @@ void applyTransform(Slot* s, const char* why) {
     p.lastYaw = p.yaw; p.lastPitch = p.pitch; p.dirty = false;
     static DWORD lastSpinLog = 0; DWORD nowT = GetTickCount();
     if (strcmp(why, "spin") || nowT - lastSpinLog >= 1000) { if (!strcmp(why, "spin")) lastSpinLog = nowT;
-    dlogf("apply(%s): gob=%p yaw=%.1f pitch=%.1f q=(%.3f %.3f %.3f %.3f) pos=(%.3f %.3f %.3f)", why, gob, p.yaw, p.pitch, q.w, q.x, q.y, q.z, pos[0], pos[1], pos[2]); }
+    dlogf("apply(%s): gob=%p yaw=%.1f pitch=%.1f roll=%.1f zoom=%.2f D=%.3f q=(%.3f %.3f %.3f %.3f) pos=(%.3f %.3f %.3f)", why, gob, p.yaw, p.pitch, p.roll, p.zoom, Deff, q.w, q.x, q.y, q.z, pos[0], pos[1], pos[2]); }
 #endif
 }
 
@@ -400,17 +422,17 @@ void setupPresentation(Slot* s, int row, int var, int cat, const FitEntry* fe) {
         p.c[0] = p.c[1] = p.c[2] = 0; p.e[0] = p.e[1] = p.e[2] = 0.3f;
         logf("  no usable fit entry (%s), default box 0.3", fe ? "EMPTY" : "missing");
     }
-    float o[4] = {0, 0, 0, 15}; const char* src = "fallback";
-    if (row >= 0 && row < kItemRows) { memcpy(o, kDefaultOrient[row], 16); src = "table"; }
+    float o[5] = {0, 0, 0, 15, 1}; const char* src = "fallback";
+    if (row >= 0 && row < kItemRows) { memcpy(o, kDefaultOrient[row], 16); o[4] = 1; src = "table"; }
     int it = (row >= 0 && row < kItemRows) ? kItemType[row] : -1;
-    if (it >= 0 && it < 256 && g_cfg.itype[it].set) { memcpy(o, g_cfg.itype[it].v, 16); src = "ini itype"; }
-    if (row >= 0 && row < 256 && g_cfg.row[row].set) { memcpy(o, g_cfg.row[row].v, 16); src = "ini row"; }
+    if (it >= 0 && it < 256 && g_cfg.itype[it].set) { memcpy(o, g_cfg.itype[it].v, 20); src = "ini itype"; }
+    if (row >= 0 && row < 256 && g_cfg.row[row].set) { memcpy(o, g_cfg.row[row].v, 20); src = "ini row"; }
     p.base = qbase(o[0], o[1], o[2]); p.defPitch = o[3];
-    logf("  orient rx=%.0f ry=%.0f rz=%.0f pitch=%.0f (%s, itype=%d)", o[0], o[1], o[2], o[3], src, it);
+    logf("  orient rx=%.0f ry=%.0f rz=%.0f pitch=%.0f zoom=%.2f (%s, itype=%d)", o[0], o[1], o[2], o[3], o[4], src, it);
     int ext[4] = {0}; for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(view), 4 + 4 * i, &ext[i]);
     float aspect = ext[3] > 0 ? (float)ext[2] / (float)ext[3] : 1.0f;
     computeFit(&p, aspect);
-    p.yaw = 0; p.pitch = p.defPitch; p.valid = true; p.dirty = true;
+    p.yaw = 0; p.pitch = p.defPitch; p.roll = 0; p.zoom0 = fminf(fmaxf(o[4], g_cfg.zoomMin), g_cfg.zoomMax); p.zoom = p.zoom0; p.valid = true; p.dirty = true;
     static int dumps = 0;
     if (dumps < 10) { ++dumps; dumpMem("gob", reinterpret_cast<int>(gob), 24); }
     applyTransform(s, "setup");
@@ -430,6 +452,26 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     if (a > c->area) { c->area = a; c->best = h; }
     return TRUE;
 }
+// ---- mouse wheel: subclass the game window (only consumes wheel events over the 3D view while the inventory ticks) ----
+WNDPROC g_oldProc = nullptr;
+volatile LONG g_wheelAccum = 0;          // sum of WHEEL_DELTA units seen over the view since the last tick
+volatile DWORD g_lastTickMs = 0;         // GetTickCount() of the last InventoryTick
+volatile LONG g_viewRect[4] = {0, 0, 0, 0};  // engine px [L, top(after flip), W, H]
+int g_wheelLogs = 0;
+LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    if (m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
+        POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
+        bool inside = false;
+        if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
+            float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
+            inside = x >= g_viewRect[0] && x < g_viewRect[0] + g_viewRect[2] && y >= g_viewRect[1] && y < g_viewRect[1] + g_viewRect[3];
+        }
+        if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
+        if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
+    }
+    return CallWindowProcA(g_oldProc, h, m, w, l);
+}
+
 HWND gameWindow() {
     if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
     static DWORD lastTry = 0; DWORD nowT = GetTickCount();
@@ -440,6 +482,10 @@ HWND gameWindow() {
     g_hwnd = c.best;
     RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
     logf("DRAG: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
+    if (g_hwnd && g_cfg.wheelZoom && !g_oldProc) {
+        g_oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(wheelProc)));
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, g_oldProc, g_oldProc ? 0UL : GetLastError());
+    }
     return g_hwnd;
 }
 bool cursorEngine(float* x, float* y) {
@@ -454,38 +500,54 @@ bool cursorEngine(float* x, float* y) {
 LARGE_INTEGER g_qpcFreq, g_qpcLast;
 
 void tickDrag(Slot* s, float dt) {
+    (void)dt;
 #if INV3D_DRAG
     Pres& p = s->p;
-    static bool wasDown = false; static int presses = 0;
-    bool down = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+    static bool wasL = false, wasR = false, wasM = false; static int presses = 0;
+    bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, r = (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0, mb = (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
+    bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     int ext[4] = {0}; for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(s->block), 4 + 4 * i, &ext[i]);
     float top = g_cfg.hitFlipY ? g_cfg.screenH - ext[1] - ext[3] : (float)ext[1];
+    g_viewRect[0] = ext[0]; g_viewRect[1] = (LONG)top; g_viewRect[2] = ext[2]; g_viewRect[3] = ext[3];
     bool inside = haveCur && cx >= ext[0] && cx < ext[0] + ext[2] && cy >= top && cy < top + ext[3];
     bool fg = gameWindow() && GetForegroundWindow() == g_hwnd;
-    if (down && !wasDown) {
-        if (presses < 30) { ++presses; logf("DRAG: LMB press #%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f flip=%d inside=%d fg=%d", presses, cx, cy, ext[0], ext[1], ext[2], ext[3], top, g_cfg.hitFlipY, inside, fg); }
-        if (inside && fg && p.valid) {
-            p.dragging = true; p.lastX = cx; p.lastY = cy;
-            logf("DRAG: start at (%.0f,%.0f) yaw=%.1f pitch=%.1f", cx, cy, p.yaw, p.pitch);
-        }
+    bool anyEdge = (l && !wasL) || (r && !wasR) || (mb && !wasM);
+    if (anyEdge && presses < 30) { ++presses; logf("DRAG: press #%d L=%d R=%d M=%d shift=%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f flip=%d inside=%d fg=%d", presses, l, r, mb, shift, cx, cy, ext[0], ext[1], ext[2], ext[3], top, g_cfg.hitFlipY, inside, fg); }
+    if (inside && fg && p.valid && !p.dragMode) {
+        if (mb && !wasM) {  // reset view
+            p.yaw = 0; p.pitch = p.defPitch; p.roll = 0; p.zoom = p.zoom0; p.dirty = true; p.idleUntil = 0;
+            logf("DRAG: view reset (MMB) pitch=%.0f zoom=%.2f", p.pitch, p.zoom);
+        } else if (l && !wasL) p.dragMode = shift ? 2 : 1;
+        else if (r && !wasR) p.dragMode = 3;
+        if (p.dragMode) { p.dragging = true; p.lastX = cx; p.lastY = cy; logf("DRAG: start mode=%d (1=rotate 2=roll 3=zoom) at (%.0f,%.0f) yaw=%.1f pitch=%.1f roll=%.1f zoom=%.2f", p.dragMode, cx, cy, p.yaw, p.pitch, p.roll, p.zoom); }
     }
-    if (p.dragging) {
-        if (!down) {
-            p.dragging = false; p.idleUntil = GetTickCount() + (DWORD)(g_cfg.idleResume * 1000);
-            logf("DRAG: end yaw=%.1f pitch=%.1f, spin resumes in %.1fs", p.yaw, p.pitch, g_cfg.idleResume);
+    if (p.dragMode) {
+        bool held = p.dragMode == 3 ? r : l;
+        if (!held) {
+            logf("DRAG: end mode=%d yaw=%.1f pitch=%.1f roll=%.1f zoom=%.2f", p.dragMode, p.yaw, p.pitch, p.roll, p.zoom);
+            if (p.dragMode != 3) p.idleUntil = GetTickCount() + (DWORD)(g_cfg.idleResume * 1000);
+            p.dragMode = 0; p.dragging = false;
         } else if (haveCur) {
             float dx = cx - p.lastX, dy = cy - p.lastY;
             if (dx != 0 || dy != 0) {
-                p.yaw += dx * g_cfg.dragDegPx; p.pitch += dy * g_cfg.dragDegPx;
-                if (p.pitch > g_cfg.pitchClamp) p.pitch = g_cfg.pitchClamp;
-                if (p.pitch < -g_cfg.pitchClamp) p.pitch = -g_cfg.pitchClamp;
+                if (p.dragMode == 1) {
+                    p.yaw += dx * g_cfg.dragDegPx; p.pitch += dy * g_cfg.dragDegPx;
+                    if (p.pitch > g_cfg.pitchClamp) p.pitch = g_cfg.pitchClamp;
+                    if (p.pitch < -g_cfg.pitchClamp) p.pitch = -g_cfg.pitchClamp;
+                } else if (p.dragMode == 2) p.roll += dx * g_cfg.rollDegPx;
+                else { p.zoom *= expf(dy * g_cfg.zoomDrag); p.zoom = fminf(fmaxf(p.zoom, g_cfg.zoomMin), g_cfg.zoomMax); }
                 p.lastX = cx; p.lastY = cy; p.dirty = true;
-                dlogf("DRAG: move d=(%.0f,%.0f) yaw=%.1f pitch=%.1f", dx, dy, p.yaw, p.pitch);
+                dlogf("DRAG: move d=(%.0f,%.0f) yaw=%.1f pitch=%.1f roll=%.1f zoom=%.2f", dx, dy, p.yaw, p.pitch, p.roll, p.zoom);
             }
         }
     }
-    wasDown = down;
+    LONG wheel = InterlockedExchange(&g_wheelAccum, 0);
+    if (wheel && p.valid) {
+        p.zoom *= powf(g_cfg.wheelStep, wheel / 120.0f); p.zoom = fminf(fmaxf(p.zoom, g_cfg.zoomMin), g_cfg.zoomMax); p.dirty = true;
+        logf("WHEEL: applied %ld -> zoom=%.2f", wheel, p.zoom);
+    }
+    wasL = l; wasR = r; wasM = mb;
 #endif
 }
 
@@ -630,6 +692,7 @@ extern "C" void __cdecl InventoryTick(int panel) {
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
     float dt = (float)((double)(now.QuadPart - g_qpcLast.QuadPart) / (double)g_qpcFreq.QuadPart);
     g_qpcLast = now;
+    g_lastTickMs = GetTickCount();
     if (dt > 0.5f) logf("H3: tick gap %.2fs (inventory reopened or stalled)", dt);
     if (dt > 0.1f) dt = 0.1f;
     if (calls < 5) { ++calls; Slot* s0 = findSlot(panel); logf("H3 tick #%d panel=%08x slot=%s", calls, panel, s0 ? (s0->usable ? "usable" : "unusable") : "none"); }
