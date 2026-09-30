@@ -565,3 +565,6 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
 
 ### Wrench art revision (2026-09-30 ~03:05, committed, NOT yet deployed)
 - Jaw is a U (parallel-sided slot, rounded bottom). Added native-icon cues: soft teal outer glow, dark outline, lower-right shading, specular streak along the handle + glint on the jaw, hanging hole in the handle end. Texture-only (`add_hotbar_buttons_gui.py --replace` rewrites `hotbar_edit*.tga`); no DLL change.
+
+### Wrench art revision 3 (2026-09-30 ~03:30)
+- Reworked from a reference photo of a real spanner: recessed handle channel (raised rim, darker inset, inner shadow top-left / light lip bottom-right), round beveled hanging ring drawn separately from the directional shading (the old hole looked triangular because rim/shade were computed on a mask with the hole cut out), rim streak on the raised edge. Texture-only.
