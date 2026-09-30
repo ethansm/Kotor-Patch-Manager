@@ -137,3 +137,7 @@ Not installed. Independent Opus review requested before any install offer.
 
 Mod 6 review fixes applied and Stage 0 **installed live 11:07** (not yet user-tested); Mod 7 cancelled by the user; Mod 8 research R-B/R-D/R-E/R-F closed (doc 13) and Stage 0 logging DLL built (`../ranged_ai_src/`, not reviewed/installed);
 `stage_and_verify_install.py` added; `check_windows` table extended with the S-H4 window (`..._2026-09-30b.txt`). A sibling session re-installed at 11:14 (82 hooks) - Mod 6 survived.
+
+## Session log 2026-09-30 (build phase, part 3)
+
+Opus review of the Mod 8 Stage 0 DLL found a **BLOCKER**: with `consumed_exit_address` the framework runs the stolen bytes after the handler with EAX = handler result, so E-H2's stolen `MOV ECX,[EAX+0x10E8]` at `0x6D7C73` would fault on first hit. E-H2 moved to `0x6D7C79` (6 bytes `89 8D 50 FD FF FF`, same consumed exit `0x6D7C8C`); S-H2 and S-H3 (Stage 3) have the same flaw and must be re-sited. Also fixed: throttle slots (party-only claim), log truncated per session + cap marker, `approach` renamed `backoff`, `0.1f`, non-null area. Rebuilt `RangedAI.kpatch` (md5 94642e19...). Collision snapshot refreshed to the live 82 hooks (`live_hooks_2026-09-30b.tsv`); `check_windows_output_2026-09-30d.txt` ALL OK, `verify_windows_both_exes.py` ALL MATCH. DB lesson via `persist_batch4_db.py`. The 0-byte `kotor1_steam.db` was already moved aside (`.empty_moved_0930`); `create-patch.py` works without the override again.

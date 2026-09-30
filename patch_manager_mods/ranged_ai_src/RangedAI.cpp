@@ -5,7 +5,8 @@
 // Hooks (cdecl detours, stolen bytes run first; a non-zero return jumps to consumed_exit_address):
 //   E-H1 0x006d83ea RangedAiHold(attacker=ECX, ebp)   inside CSWSCreature::AIActionPhysicalAttacks 0x6d7390,
 //                                                     return 1 => end the attack action (0x6d83ff)
-//   E-H2 0x006d7c73 RangedAiRetarget(attacker=EAX, ebp) return 1 => behave as IsPC (0x6d7c8c)
+//   E-H2 0x006d7c79 RangedAiRetarget(attacker=EAX, ebp) return 1 => behave as IsPC (0x6d7c8c)
+//        (not 0x6d7c73: stolen bytes run AFTER the handler with EAX = its return value, so they must not use EAX)
 //
 // Stage 0 (hold=0, retarget=0 in ranged_ai.ini) only logs, so vanilla behaviour is unchanged. Behaviour is switched
 // on from the INI (re-read once a second), no restart needed.
@@ -32,17 +33,17 @@ constexpr int ObjType = 0x08, ObjTypeCreature = 5;
 
 // AIActionPhysicalAttacks 0x6d7390 frame (EBP-relative), from the asm (dump_excerpts/006d7390.asm)
 constexpr int F_Attacker = -0x49C, F_Los = -0xD0, F_Dist2 = -0xBC, F_Max = -0x2C, F_Desired = -0x4C,
-              F_Desired2 = -0xB0, F_TargetArea = -0x38, F_Target = -0x50, F_ApproachFlag = -0x168,
+              F_Desired2 = -0xB0, F_TargetArea = -0x38, F_Target = -0x50, F_BackoffFlag = -0x168,
               F_RangedFlag = -0x164, F_ActionObj = -0x14;
 
 // ---- log ----
 int g_logLines = 0;
 constexpr int MaxLogLines = 6000;
 void logf(const char* fmt, ...) {
-    if (g_logLines >= MaxLogLines) return;
+    if (g_logLines > MaxLogLines) return;
     FILE* f = fopen("ranged_ai_log.txt", "a");
     if (!f) return;
-    ++g_logLines;
+    if (++g_logLines > MaxLogLines) { fputs("-- log cap reached, further lines dropped --\n", f); fclose(f); return; }
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
 }
@@ -126,11 +127,12 @@ extern "C" int __cdecl RangedAiHold(int attacker, int ebp) {
     if (!attacker) return 0;
     int party = rd<int>(attacker, CrIsParty), isPC = rd<int>(attacker, CrIsPC);
     int id = rd<int>(attacker, CrId);
-    Track* t = trackFor(id);
-    ++t->calls;
 
     bool party1 = party != 0;
     if (!party1 && !g_cfg.logAll) { return 0; }
+    Track* t = trackFor(id);
+    if (t->id != id) { *t = Track{}; t->id = id; }   // slot shared by a colliding id: reset its throttle state
+    ++t->calls;
 
     int stance = stanceOf(attacker);
     int ranged = haveRanged(attacker) ? 1 : 0;
@@ -141,21 +143,21 @@ extern "C" int __cdecl RangedAiHold(int attacker, int ebp) {
     int ttype = target ? rd<unsigned char>(target, ObjType, 0xFF) : -1;
     int endFlag = rd<int>(attacker, CrEndAttack);
 
-    float lim = static_cast<float>(static_cast<double>(maxR) + 0.1); lim *= lim;
-    bool inRange = dist2 <= lim;
+    float lim = maxR + 0.1f; lim *= lim;
+    bool inRange = maxR > 1.0f && dist2 <= lim;   // a zero/garbage weapon range never counts as in range
     bool hold = g_cfg.hold && party1 && !isPC && stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1) &&
-                ranged && los == 0 && inRange && myArea == tgtArea && ttype == ObjTypeCreature;
+                ranged && los == 0 && inRange && myArea && myArea == tgtArea && ttype == ObjTypeCreature;
 
     if (g_cfg.log) {
         DWORD now = GetTickCount();
         unsigned sig = (los != 0) | (ranged << 1) | ((myArea == tgtArea) << 2) | (hold << 3) | (inRange << 4) | ((endFlag != 0) << 5) |
-                       ((rd<int>(ebp, F_ApproachFlag) != 0) << 6);
+                       ((rd<int>(ebp, F_BackoffFlag) != 0) << 6);
         if (t->logged < 16 || sig != t->sig || now - t->lastLog > 2000) {
             V3 me = pos(attacker, CrPos), tp = target ? pos(target, CrPos) : V3{0, 0, 0}, lb = pos(attacker, CrLastBlocked);
             logf("H1 t=%lu cr=%08x party=%d pc=%d stance=%d ranged=%d los=%d dist2=%.2f max=%.2f desired=%.2f inRange=%d area=%08x/%08x "
-                 "tgt=%08x ttype=%d approach=%d rangedLocal=%d end52c=%08x me=(%.2f,%.2f,%.2f) tgtpos=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> hold=%d",
+                 "tgt=%08x ttype=%d backoff=%d rangedLocal=%d end52c=%08x me=(%.2f,%.2f,%.2f) tgtpos=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> hold=%d",
                  now, id, party, isPC, stance, ranged, los, dist2, maxR, desired, inRange, myArea, tgtArea, target, ttype,
-                 rd<int>(ebp, F_ApproachFlag), rd<int>(ebp, F_RangedFlag), endFlag, me.x, me.y, me.z, tp.x, tp.y, tp.z, lb.x, lb.y, lb.z, hold);
+                 rd<int>(ebp, F_BackoffFlag), rd<int>(ebp, F_RangedFlag), endFlag, me.x, me.y, me.z, tp.x, tp.y, tp.z, lb.x, lb.y, lb.z, hold);
             t->sig = sig; t->lastLog = now; ++t->logged;
         }
         summary();
@@ -183,6 +185,7 @@ extern "C" int __cdecl RangedAiRetarget(int attacker, int ebp) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
+        if (FILE* f = fopen("ranged_ai_log.txt", "w")) fclose(f);   // one session per file (cwd = game folder)
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         logf("ranged-ai 0.1.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\ranged_ai.ini", cwd);

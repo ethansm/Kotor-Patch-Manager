@@ -7,7 +7,7 @@ For each window (name, start, length, function entry) it checks, from the dump's
   * no relative branch/call (E8/E9/EB/7x/0F 8x) INSIDE the window (a re-executed copy would land wrong),
     unless the window is a skip_original_bytes=true window (bytes never re-run) -> reported as 'skip-only'
   * no branch from OUTSIDE the window targets an address strictly inside it (start is fine, it lands on our jump)
-  * no overlap with any live hook window (live_hooks_2026-09-30.tsv) or Mod 1's inventory hooks
+  * no overlap with any live hook window (live_hooks_2026-09-30b.tsv) or Mod 1's inventory hooks
 Prints the original bytes as a TOML-ready list.
 
 Usage: check_windows.py            (runs the built-in table of proposed windows)
@@ -16,7 +16,7 @@ import re, sys, os
 
 DUMP = os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp")
 HERE = os.path.dirname(os.path.abspath(__file__))
-LIVE = os.path.join(HERE, "live_hooks_2026-09-30.tsv")
+LIVE = os.path.join(HERE, "live_hooks_2026-09-30b.tsv")
 
 # (name, start, length, function entry, skip_original)
 WINDOWS = [
@@ -30,7 +30,7 @@ WINDOWS = [
     ("M7 client update tick",      0x7AC470, 5,  0x7AC470, False),
     # Mod 8 engine
     ("M8 hold-on-blocked-LOS",     0x6D83EA, 12, 0x6D7390, False),
-    ("M8 retarget gate (IsPC)",    0x6D7C73, 12, 0x6D7390, False),
+    ("M8 retarget gate (IsPC)",    0x6D7C79, 6,  0x6D7390, False),   # moved from 0x6D7C73 (stolen MOV ECX,[EAX+..] ran with EAX=handler result)
     ("M8 stance clamp",            0x77AA5E, 7,  0x77A9E0, False),
     ("M8 stance row fill",         0x77ACBC, 15, 0x77A9E0, False),
     ("M8 stance click",            0x77D8D4, 14, 0x77D890, False),
@@ -96,8 +96,15 @@ def main():
                 if start < tg < end and not (start <= a < end):
                     problems.append(f"external branch {a:#x} -> {tg:#x} lands inside window")
         for la, ln, lname in live:
+            if name.startswith("M6") and "inventory-sort-filter" in lname:
+                continue  # Mod 6's own installed hooks (window == hook)
             if la < end and start < la + ln:
                 problems.append(f"overlaps live hook {la:#x}+{ln} ({lname})")
+        if name.startswith("M8") and not skip:
+            eaxuse = [f"{a:#x} {t}" for a, b, t in inside if re.search(r"\b(EAX|AX|AL|AH)\b", t)]
+            if eaxuse:
+                print(f"[WARN] {name}: stolen bytes touch EAX (framework runs them after the handler with EAX = handler result; "
+                      f"unsafe for consumed_exit_address hooks): " + "; ".join(eaxuse))
         blob = b"".join(b for _, b, _ in inside)
         status = "OK  " if not problems else "FAIL"
         if problems:

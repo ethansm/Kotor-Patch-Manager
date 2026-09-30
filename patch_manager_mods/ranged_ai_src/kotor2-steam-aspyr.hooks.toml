@@ -24,13 +24,15 @@ type = "int"
 source = "ebp"
 type = "int"
 
-# E-H2 retarget gate: 0x6D7C73, EAX = attacker; the stolen bytes read creature+0x10E8 (IsPC) into a local and the
-# following JZ skips the retarget when it is 0. Handler returns 1 => jump to 0x6D7C8C (behave as IsPC).
+# E-H2 retarget gate: 0x6D7C79 (NOT 0x6D7C73: the framework runs the stolen bytes AFTER the handler with EAX =
+# handler return value, so stolen `MOV ECX,[EAX+0x10E8]` would fault; review 2026-09-30). At 0x6D7C79 the game has
+# already loaded ECX = IsPC (creature+0x10E8) and EAX is still the attacker; the stolen bytes only store ECX to a
+# local, and the CMP/JZ after them test that local. Handler returns 1 => jump to 0x6D7C8C (behave as IsPC).
 [[hooks]]
-address = 0x006D7C73
+address = 0x006D7C79
 type = "detour"
 function = "RangedAiRetarget"
-original_bytes = [0x8B, 0x88, 0xE8, 0x10, 0x00, 0x00, 0x89, 0x8D, 0x50, 0xFD, 0xFF, 0xFF]
+original_bytes = [0x89, 0x8D, 0x50, 0xFD, 0xFF, 0xFF]
 consumed_exit_address = 0x006D7C8C
 exclude_from_restore = ["eax"]
 
