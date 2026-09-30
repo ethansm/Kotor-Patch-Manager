@@ -1,0 +1,236 @@
+=== FUN_00461670 @ 00461670 size=549 (GhidraScript)  
+undefined4 __thiscall FUN_00461670(int *param_1,int *param_2,undefined4 param_3,undefined4 param_4)
+{
+  int iVar1;
+  undefined4 local_54;
+  undefined4 local_50;
+  undefined4 local_4c;
+  undefined4 local_48;
+  int *local_18;
+  undefined4 local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0094a0ac;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  local_18 = (int *)0x0;
+  local_14 = 0;
+  if (param_2 != (int *)0x0) {
+    local_18 = (int *)(**(code **)(*param_2 + 0x10c))(param_3,DAT_00a11f20 ^ (uint)&stack0xfffffffc)
+    ;
+  }
+  if (local_18 == (int *)0x0) {
+    (**(code **)(*param_1 + 0x58))(0);
+  }
+  else {
+    (**(code **)(*local_18 + 0xc))(param_1 + 0x29,param_1 + 0x2c);
+    switch(param_4) {
+    case 0:
+      iVar1 = FUN_00919723(0x3c);
+      local_8 = 0;
+      if (iVar1 == 0) {
+        local_48 = 0;
+      }
+      else {
+        local_48 = FUN_00504810(param_1,param_2,local_18);
+      }
+      local_8 = 0xffffffff;
+      local_14 = local_48;
+      break;
+    case 1:
+      iVar1 = FUN_00919723(0x4c);
+      local_8 = 1;
+      if (iVar1 == 0) {
+        local_4c = 0;
+      }
+      else {
+        local_4c = FUN_00504f60(param_1,param_2,local_18);
+      }
+      local_8 = 0xffffffff;
+      local_14 = local_4c;
+      break;
+    case 2:
+      iVar1 = FUN_00919723(0x48);
+      local_8 = 2;
+      if (iVar1 == 0) {
+        local_50 = 0;
+      }
+      else {
+        local_50 = FUN_005053c0(param_1,param_2,local_18);
+      }
+      local_8 = 0xffffffff;
+      local_14 = local_50;
+      break;
+    case 3:
+      iVar1 = FUN_00919723(0x3c);
+      local_8 = 3;
+      if (iVar1 == 0) {
+        local_54 = 0;
+      }
+      else {
+        local_54 = FUN_00505650(param_1,param_2,local_18);
+      }
+      local_8 = 0xffffffff;
+      local_14 = local_54;
+    }
+    (**(code **)(*param_1 + 0x58))(local_14);
+    FUN_00461aa0(param_2[0x25]);
+  }
+  ExceptionList = local_10;
+  return local_14;
+}
+ (GhidraScript)  
+=== FUN_0046d440 @ 0046d440 size=38 (GhidraScript)  
+undefined4 FUN_0046d440(undefined4 param_1)
+{
+  FUN_00461aa0(param_1);
+  return 1;
+}
+ (GhidraScript)  
+=== FUN_00462320 @ 00462320 size=944 (GhidraScript)  
+void FUN_00462320(char *param_1,char *param_2,int param_3,undefined4 param_4)
+{
+  int iVar1;
+  int *local_7c;
+  undefined1 local_70 [68];
+  uint local_2c;
+  size_t local_28;
+  int local_24;
+  int *local_20;
+  int local_1c;
+  int local_18;
+  undefined1 local_11;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0094a15b;
+  local_10 = ExceptionList;
+  local_2c = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_11 = DAT_00a30828;
+  DAT_00a30828 = 0;
+  local_18 = 0;
+  local_1c = 0;
+  if (param_3 == 0) {
+    local_24 = FUN_0048e160(param_1);
+    if (DAT_00a7374c != 0) {
+      FUN_0091cff0(local_70,param_1);
+      local_28 = _strlen(param_1);
+      local_70[local_28] = 0x5f;
+      local_70[local_28 + 1] = 0x78;
+      local_70[local_28 + 2] = 0;
+      local_18 = FUN_0048e160(local_70);
+      FUN_0091cff0(local_70,param_1);
+      local_28 = _strlen(param_1);
+      local_70[local_28] = 0x5f;
+      local_70[local_28 + 1] = 0x7a;
+      local_70[local_28 + 2] = 0;
+      local_1c = FUN_0048e160(local_70);
+    }
+  }
+  else {
+    local_24 = FUN_0048e2a0(param_3,param_4,local_2c);
+  }
+  if (local_24 == 0) {
+    DAT_00a30828 = local_11;
+  }
+  else {
+    if ((param_2 == (char *)0x0) || ((param_2 != (char *)0x0 && (*param_2 == '\0')))) {
+      param_2 = (char *)(local_24 + 8);
+    }
+    iVar1 = FUN_00919723(0x200);
+    local_8 = 0;
+    if (iVar1 == 0) {
+      local_7c = (int *)0x0;
+    }
+    else {
+      local_7c = (int *)FUN_00458b70(param_2);
+    }
+    local_8 = 0xffffffff;
+    local_20 = local_7c;
+    local_7c[0x21] = local_24;
+    FUN_00452d40(local_7c);
+    local_20[0x22] = local_18;
+    if (local_20[0x22] != 0) {
+      FUN_00452d40(local_20);
+    }
+    local_20[0x23] = local_1c;
+    if (local_20[0x23] != 0) {
+      FUN_00452d40(local_20);
+    }
+    iVar1 = FUN_00456cd0(*(undefined4 *)(local_24 + 0x28),local_20);
+    local_20[0x26] = iVar1;
+    FUN_00449750();
+    *(int **)(local_20[0x26] + 0x40) = local_20;
+    if (local_18 != 0) {
+      iVar1 = FUN_00456cd0(*(undefined4 *)(local_18 + 0x28),local_20);
+      local_20[0x27] = iVar1;
+      *(int **)(local_20[0x27] + 0x40) = local_20;
+    }
+    if (local_1c != 0) {
+      iVar1 = FUN_00456cd0(*(undefined4 *)(local_1c + 0x28),local_20);
+      local_20[0x28] = iVar1;
+      *(int **)(local_20[0x28] + 0x40) = local_20;
+    }
+    FUN_00461ef0(local_20,local_20[0x26]);
+    if (local_20[0x27] != 0) {
+      FUN_00461ef0(local_20,local_20[0x27]);
+    }
+    if (local_20[0x28] != 0) {
+      FUN_00461ef0(local_20,local_20[0x28]);
+    }
+    (**(code **)(*local_20 + 0x1b4))("_EmitterTarget",0);
+    FUN_0045fde0(local_20,local_20[0x26],&DAT_00986925);
+    if (local_20[0x27] != 0) {
+      FUN_0045fde0(local_20,local_20[0x27],&DAT_00986925);
+    }
+    if (local_20[0x28] != 0) {
+      FUN_0045fde0(local_20,local_20[0x28],&DAT_00986925);
+    }
+    DAT_00a30828 = local_11;
+    (**(code **)(*local_20 + 0x1cc))();
+    FUN_00461ed0();
+    (**(code **)(*local_20 + 0x14))(0);
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_2c ^ (uint)&stack0xfffffffc);
+  return;
+}
+ (GhidraScript)  
+=== FUN_00734010 @ 00734010 size=31 (GhidraScript)  
+undefined * __fastcall FUN_00734010(int *param_1)
+{
+  undefined *puVar1;
+  
+  if (*param_1 == 0) {
+    puVar1 = &DAT_00a7ea7c;
+  }
+  else {
+    puVar1 = (undefined *)*param_1;
+  }
+  return puVar1;
+}
+ (GhidraScript)  
+=== FUN_006d5000 @ 006d5000 size=138 (GhidraScript)  
+void __thiscall FUN_006d5000(int param_1,undefined4 param_2,short param_3,char param_4)
+{
+  char local_1c [20];
+  uint local_8;
+  
+  local_8 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  if ((*(int *)(param_1 + 0x74) == 0) || (param_4 == '\0')) {
+    _sprintf(local_1c,"%s_%03d",param_1 + 0x3c,(int)param_3);
+  }
+  else {
+    _sprintf(local_1c,"%s_%c_%03d",param_1 + 0x3c,(int)param_4,(int)param_3);
+  }
+  FUN_00710840(local_1c);
+  __security_check_cookie(local_8 ^ (uint)&stack0xfffffffc);
+  return;
+}
+ (GhidraScript)  

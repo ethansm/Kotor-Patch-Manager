@@ -1,0 +1,150 @@
+# instructions with immediates 0xfb/0xf7 (part ids of hand weapons)
+IMM 00576517 MOV dword ptr [EBP + -0xc],0xf7 in 00576430 FUN_00576430  
+IMM 0057653b MOV dword ptr [EBP + -0xc],0xfb in 00576430 FUN_00576430  
+IMM 005f5ca8 MOV byte ptr [EBP + -0x1],0xfb in 005f5c40 FUN_005f5c40  
+IMM 005f5d60 MOV byte ptr [EBP + -0x1],0xfb in 005f5c40 FUN_005f5c40  
+IMM 0061cdb8 MOV byte ptr [EBP + -0x1],0xfb in 0061cd50 FUN_0061cd50  
+IMM 0061ce72 MOV byte ptr [EBP + -0x1],0xfb in 0061cd50 FUN_0061cd50  
+IMM 00749251 MOV dword ptr [EDX + 0x28],0xf7 in 00747210 FUN_00747210  
+IMM 00763bc3 PUSH 0xf7 in 007637e0 FUN_007637e0  
+IMM 00763ef0 PUSH 0xfb in 007637e0 FUN_007637e0  
+IMM 0076d8b9 MOV dword ptr [EBP + -0x8],0xf7 in 0076d890 FUN_0076d890  
+IMM 0076d8c2 MOV dword ptr [EBP + -0x8],0xfb in 0076d890 FUN_0076d890  
+IMM 0078e45e CMP EDX,0xfb in 0078e350 FUN_0078e350  
+IMM 0078e4d2 CMP ECX,0xfb in 0078e350 FUN_0078e350  
+IMM 0078e553 CMP EDX,0xfb in 0078e520 FUN_0078e520  
+IMM 00794d1d MOV byte ptr [EBP + -0x4],0xf7 in 0078f160 FUN_0078f160  
+IMM 00794efd MOV byte ptr [EBP + -0x4],0xfb in 0078f160 FUN_0078f160  
+IMM 0080620b PUSH 0xfb in 00804f10 FUN_00804f10  
+IMM 00806261 PUSH 0xf7 in 00804f10 FUN_00804f10  
+IMM 008063b9 PUSH 0xfb in 00804f10 FUN_00804f10  
+IMM 0080640f PUSH 0xf7 in 00804f10 FUN_00804f10  
+IMM 0081c983 MOV byte ptr [EBP + -0x4],0xf7 in ?  
+IMM 0081ca3f MOV byte ptr [EBP + -0x4],0xfb in ?  
+IMM 0081ca7f MOV byte ptr [EBP + -0x4],0xf7 in ?  
+IMM 00823aac MOV byte ptr [EBP + -0x4],0xf7 in ?  
+IMM 00823bab MOV byte ptr [EBP + -0x4],0xfb in ?  
+IMM 0085bb06 PUSH 0xfb in 0085b940 FUN_0085b940  
+IMM 0085bb54 PUSH 0xf7 in 0085b940 FUN_0085b940  
+IMM 0093741b MOV byte ptr [EBP + -0x26],0xfb in 009373bc $I10_OUTPUT  
+# ready-idle animation rows 0x5c 0x85 0xae 0xd7 0xdf 0xed 0xf5 0xf9 0x217 -> FUN_00863650 maps anim id 0x2711 + wield style (appearance+0xc5) to a row
+0042150b CMP dword ptr [EBP + 0x8],0x5c in 004213d0 FUN_004213d0  
+004510c0 PUSH 0x5c in 00450e10 FUN_00450e10  
+0046c5cf MOV dword ptr [EBP + -0x4],0x5c in 0046c5c0 FUN_0046c5c0  
+0046dc1e PUSH 0x5c in 0046db40 FUN_0046db40  
+0046dcdf PUSH 0x5c in 0046db40 FUN_0046db40  
+0046dfe8 PUSH 0x5c in 0046db40 FUN_0046db40  
+0049ceaf MOV dword ptr [EBP + 0x10],0x5c in 0049cc50 FUN_0049cc50  
+0050ad9f MOV dword ptr [EBP + -0x38],0x5c in 0050ad90 FUN_0050ad90  
+0050b7fb MOV dword ptr [EBP + -0x38],0x5c in 0050b7e0 FUN_0050b7e0  
+00576529 MOV dword ptr [EBP + -0xc],0xf9 in 00576430 FUN_00576430  
+0059067e CMP ECX,0x5c in 005905f0 FUN_005905f0  
+0060d827 MOV byte ptr [EBP + -0x4],0x5c in 0060b6b0 FUN_0060b6b0  
+00613253 MOV byte ptr [EBP + -0x4],0x5c in 00610fc0 FUN_00610fc0  
+00613369 MOV byte ptr [EBP + -0x4],0x5c in 00610fc0 FUN_00610fc0  
+00613eeb MOV byte ptr [EBP + -0x4],0x85 in 00610fc0 FUN_00610fc0  
+00613f2d MOV byte ptr [EBP + -0x4],0x85 in 00610fc0 FUN_00610fc0  
+0062f005 PUSH 0x5c in 0062ef80 FUN_0062ef80  
+0062fd11 PUSH 0x5c in 0062fce0 FUN_0062fce0  
+0067c50f CMP dword ptr [EBP + -0x30],0xed in 0067c430 FUN_0067c430  
+00688132 CMP dword ptr [EBP + 0x8],0xf5 in 006880f0 FUN_006880f0  
+0068a076 CMP dword ptr [EBP + 0x8],0x217 in 006898e0 FUN_006898e0  
+0068c3b5 CMP dword ptr [EBP + -0x24],0xdf in 0068c380 FUN_0068c380  
+006a85e4 PUSH 0xae in 006a8370 FUN_006a8370  
+006a8a06 PUSH 0x85 in 006a8670 FUN_006a8670  
+006aac83 PUSH 0x85 in 006a93a0 FUN_006a93a0  
+006aac97 MOV dword ptr [EBP + -0x44],0x85 in 006a93a0 FUN_006a93a0  
+006acb5b PUSH 0xae in 006abf70 FUN_006abf70  
+006acdf5 PUSH 0xd7 in 006abf70 FUN_006abf70  
+006acf1a CMP dword ptr [EBP + -0x60],0x5c in 006acec0 FUN_006acec0  
+006b608d PUSH 0xd7 in 006b5ee0 FUN_006b5ee0  
+006b6353 PUSH 0xae in 006b5ee0 FUN_006b5ee0  
+006bc74f CMP dword ptr [EBP + -0xc],0x5c in 006bc730 FUN_006bc730  
+006bcaed MOV dword ptr [EBP + -0x20],0x85 in 006bc9a0 FUN_006bc9a0  
+006dbb95 CMP dword ptr [EBP + 0xfffffea0],0x5c in 006db4a0 FUN_006db4a0  
+006df374 PUSH 0xdf in 006df2a0 FUN_006df2a0  
+00737689 CMP EDX,0x5c in 00737540 FUN_00737540  
+00737e64 CMP ECX,0x5c in 00737d60 FUN_00737d60  
+0073913c MOV byte ptr [EBP + -0x4],0x5c in 007380b0 FUN_007380b0  
+00739178 MOV byte ptr [EBP + -0x4],0x5c in 007380b0 FUN_007380b0  
+0073d923 CMP EAX,0x5c in 0073d890 FUN_0073d890  
+0073e28b PUSH 0x5c in 0073e1c0 FUN_0073e1c0  
+00741f17 MOV dword ptr [EAX + 0x34],0xf9 in 00741940 FUN_00741940  
+007490fe MOV dword ptr [EAX + 0x34],0xd7 in 00747210 FUN_00747210  
+0074912a MOV dword ptr [EAX + 0x34],0xd7 in 00747210 FUN_00747210  
+0074928a MOV dword ptr [EAX + 0x34],0xf5 in 00747210 FUN_00747210  
+007492b6 MOV dword ptr [EAX + 0x34],0xf5 in 00747210 FUN_00747210  
+007496be MOV byte ptr [EBP + -0x4],0x5c in 00747210 FUN_00747210  
+0075620e MOV dword ptr [EDX + 0x34],0xd7 in 00754ed0 FUN_00754ed0  
+0076f9cf PUSH 0x5c in 0076f940 FUN_0076f940  
+0077dd23 PUSH 0x5c in 0077dba0 FUN_0077dba0  
+00791309 MOV byte ptr [EBP + -0x4],0x5c in 0078f160 FUN_0078f160  
+00791f90 MOV byte ptr [EBP + -0x4],0x85 in 0078f160 FUN_0078f160  
+00792784 MOV dword ptr [EBP + 0xffffff5c],0xd7 in 0078f160 FUN_0078f160  
+007930ef MOV byte ptr [EBP + -0x4],0xae in 0078f160 FUN_0078f160  
+0079408c MOV byte ptr [EBP + -0x4],0xd7 in 0078f160 FUN_0078f160  
+0079431a MOV byte ptr [EBP + -0x4],0xdf in 0078f160 FUN_0078f160  
+00794870 MOV byte ptr [EBP + -0x4],0xed in 0078f160 FUN_0078f160  
+00794c2d MOV byte ptr [EBP + -0x4],0xf5 in 0078f160 FUN_0078f160  
+00794e0d MOV byte ptr [EBP + -0x4],0xf9 in 0078f160 FUN_0078f160  
+007accb9 CMP dword ptr [EBP + 0xffffff78],0xdf in 007ac470 FUN_007ac470  
+007b747a MOV byte ptr [EBP + -0x4],0x5c in 007b5f50 FUN_007b5f50  
+007b7dcc MOV byte ptr [EBP + -0x4],0x85 in 007b5f50 FUN_007b5f50  
+007b7e05 MOV byte ptr [EBP + -0x4],0x85 in 007b5f50 FUN_007b5f50  
+007b869f MOV byte ptr [EBP + -0x4],0xae in 007b5f50 FUN_007b5f50  
+007ba297 MOV byte ptr [EBP + -0x4],0x5c in 007b88b0 FUN_007b88b0  
+007ba2f9 MOV byte ptr [EBP + -0x4],0x5c in 007b88b0 FUN_007b88b0  
+007bad69 MOV byte ptr [EBP + -0x4],0x85 in 007b88b0 FUN_007b88b0  
+007bb7fb PUSH 0x5c in 007bb760 FUN_007bb760  
+0080b75d PUSH 0x5c in 008079b0 FUN_008079b0  
+00813de1 PUSH 0x5c in 00813200 FUN_00813200  
+0081882d MOV byte ptr [EBP + -0x4],0x5c in ?  
+00819971 MOV byte ptr [EBP + -0x4],0x85 in ?  
+0081aacf MOV byte ptr [EBP + -0x4],0xae in ?  
+0081bbdc MOV byte ptr [EBP + -0x4],0xd7 in ?  
+0081bf20 MOV byte ptr [EBP + -0x4],0xdf in ?  
+0081c621 MOV byte ptr [EBP + -0x4],0xed in ?  
+0081c92a MOV byte ptr [EBP + -0x4],0xf5 in ?  
+0081c9e1 MOV byte ptr [EBP + -0x4],0xf9 in ?  
+0081ca61 MOV byte ptr [EBP + -0x4],0xf9 in ?  
+0081ca9d MOV byte ptr [EBP + -0x4],0xf5 in ?  
+0081fc2a MOV byte ptr [EBP + -0x4],0x5c in ?  
+008221be MOV byte ptr [EBP + -0x4],0xae in ?  
+008231cd MOV byte ptr [EBP + -0x4],0xd7 in ?  
+0082343a MOV byte ptr [EBP + -0x4],0xdf in ?  
+0082347c MOV byte ptr [EBP + -0x4],0xdf in ?  
+0082385d MOV byte ptr [EBP + -0x4],0xed in ?  
+008238da MOV byte ptr [EBP + -0x4],0xed in ?  
+00823a51 MOV byte ptr [EBP + -0x4],0xf5 in ?  
+00823ace MOV byte ptr [EBP + -0x4],0xf5 in ?  
+00823b50 MOV byte ptr [EBP + -0x4],0xf9 in ?  
+00823bcd MOV byte ptr [EBP + -0x4],0xf9 in ?  
+00825ec1 MOV byte ptr [EBP + -0x4],0x5c in ?  
+00826c5d MOV byte ptr [EBP + -0x4],0x85 in ?  
+00826d22 MOV byte ptr [EBP + -0x4],0x85 in ?  
+0082774c MOV byte ptr [EBP + -0x4],0xae in ?  
+0082fd8e MOV byte ptr [EBP + -0x4],0x5c in 0082d950 FUN_0082d950  
+0082fdd3 MOV byte ptr [EBP + -0x4],0x5c in 0082d950 FUN_0082d950  
+0084d312 MOV byte ptr [EBP + -0x4],0x5c in 0084c3a0 FUN_0084c3a0  
+00863cc0 MOV EDX,0x5c in 00863650 FUN_00863650  
+00863ccb MOV EAX,0x85 in 00863650 FUN_00863650  
+00863cd6 MOV ECX,0xae in 00863650 FUN_00863650  
+00863ce1 MOV EDX,0xd7 in 00863650 FUN_00863650  
+00863cec MOV EAX,0xdf in 00863650 FUN_00863650  
+00863cf7 MOV ECX,0xed in 00863650 FUN_00863650  
+00863d02 MOV EDX,0xf5 in 00863650 FUN_00863650  
+00863d13 MOV EAX,0x217 in 00863650 FUN_00863650  
+00863d20 MOV ECX,0xf9 in 00863650 FUN_00863650  
+00863d2b MOV EDX,0xf5 in 00863650 FUN_00863650  
+00910e33 MOV dword ptr [ECX + 0x4834],0xdf in 00910490 FUN_00910490  
+00920dec CMP AL,0x5c in 00920ddc _IsRootUNCName  
+00920df7 CMP AL,0x5c in 00920ddc _IsRootUNCName  
+00920e02 CMP AL,0x5c in 00920ddc _IsRootUNCName  
+00920e15 CMP CL,0x5c in 00920ddc _IsRootUNCName  
+00920e35 CMP CL,0x5c in 00920ddc _IsRootUNCName  
+0092a653 MOV dword ptr [ESI + 0x64],0x85 in 0092a54d __XcptFilter  
+0092adcf CMP byte ptr [ESI],0x5c in 0092acfb parse_cmdline  
+0092ae08 MOV byte ptr [EDX],0x5c in 0092acfb parse_cmdline  
+00931cf3 CMP DL,0x5c in 00931cd8 ___dtoxmode  
+00936b0e MOV byte ptr [EBP + 0xa],0x5c in 00936af0 __validdrive  
+00943de1 PUSH 0x5c in 00943cd0 FUN_00943cd0  

@@ -832,3 +832,8 @@ than intermittently, that would be the trigger to escalate.
 - Hotbar's own log ends at `H3 build: panel=04c957e8 ... controls=111 (previous bar panel=00000000 built=0)` / `H3: projection flag 00a1b9f0 = 1`, and the same panel pointer 04c957e8 is on the crash stack. The crash is inside the hotbar's HotbarBuildButtons (hook 0x00748502) path, at the first build after a load.
 - The live `patches/force-power-hotbar.dll` was replaced at 01:51:36 by another session (0.3.0-dev, commit d79ad34), after the earlier healthy 1.2.0 launch; AR_ERROR.LOG md5 unchanged (a2d88789...).
 - Not a load hang, so it does not count toward the census A/B or the healthy-baseline tally. Owner: hotbar session (source read-only here). Fix belongs there: guard the NULL object at hotbar +0x8BCE.
+
+## 2026-09-30 - black screen when opening Settings (Mod 5 session)
+- Symptom: black screen on Settings; game process alive at ~82% CPU (state R), Proton log has no Unhandled exception.
+- Evidence: equip3d_log.txt had no activity after the equipment panel was left (its hooks only fire on that panel; no weapon code was involved yet). shieldprobe_log showed SCENE dark=1 samples with GL viewport 0x0 and clip stack 0xFFFF exactly in menu frames while the shield-bar hook still ran (other session's finding).
+- Conclusion: not equipment-3d-character; shield-bar draw guard (skip when clip stack != 0) built by the other session. Retest after it is installed. No fix applied by this session.

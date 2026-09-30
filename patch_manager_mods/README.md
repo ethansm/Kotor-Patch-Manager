@@ -47,10 +47,10 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   capture procedure and an A/B experiment plan.
 
 - [`10_equipment_3d_character.md`](10_equipment_3d_character.md) — live 3D character
-  on the equipment screen (armour/head/hands follow the chosen gear, party switch;
-  flourish animations + drag/zoom code staged). **Status 2026-09-30: 0.1.0-probe live at
-  stage 2 (static creature render confirmed, layout A); next = stage 3 polled refresh,
-  then flourishes/input, weapons research and a mirrored character page.**
+  on the equipment screen (armour/helmet/gloves follow the chosen gear, party switch, idle + flourishes,
+  drag/wheel, toolbar with tooltips, weapons prototype). **Status 2026-09-30 (session 2): 0.1.0-probe live at
+  stage 5 (layout A), user-tested; weapons render in hands behind the Weapons toggle; open: dual-wield stance
+  rule (decoded, R7f), animations with weapons, conditional Reset, holstered toggle, character-page mirror, final review.**
 
 ## Why this matters for our specific install
 
