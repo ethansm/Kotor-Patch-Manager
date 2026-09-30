@@ -47,7 +47,7 @@ constexpr int CrRightItemOff = 0x238, CrLeftItemOff = 0x23c, ItemBaseIdxOff = 0x
 constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
 constexpr int NumButtons = 5;   // LBL_E3D_ANIM / SPIN / WEAP / RESET / EMOTE (ids ExpectedControlId+3..+7)
 constexpr int MaxMenu = 20;     // LBL_E3D_M00..M19 (ids +8..+27): Emotes pop-up items; then LBL_E3D_TIPBG / LBL_E3D_TIP (+28,+29)
-constexpr int MenuRows = 7;     // items per pop-up column
+constexpr int MenuRows = 8;     // items per pop-up column
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
 constexpr int SceneOffset = 0x60;
@@ -279,7 +279,7 @@ struct Slot {
     unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1, -1, -1}; bool btnWasL = false;
     // Emotes pop-up (items are engine labels; itemState = fill state + 1, 0 = not yet set)
     unsigned char* item[MaxMenu] = {}; char itemText[MaxMenu][20] = {}; int itemState[MaxMenu] = {};
-    bool menuOpen = false; int menuCount = 0, menuLaid = -1, menuReal = 0; char menuAnim[MaxMenu][12] = {}; char menuLabel[MaxMenu][16] = {}; bool menuAttack[MaxMenu] = {};
+    bool menuOpen = false; int menuPage = 0; int menuCount = 0, menuLaid = -1, menuReal = 0; char menuAnim[MaxMenu][12] = {}; char menuLabel[MaxMenu][16] = {}; bool menuAttack[MaxMenu] = {};
     unsigned char* tipBg = nullptr; unsigned char* tip = nullptr; char tipText[200] = ""; int tipFor = -1, overBtn = -1; DWORD overSince = 0;
 };
 constexpr int MaxSlots = 4;
@@ -448,17 +448,18 @@ void setCtlRect(unsigned char* c, int x, int y, int w, int h) {
 }
 bool playFlourish(Slot* s, const char* name, const char* why, float forceLen = 0.0f);
 void menuBuild(Slot* s);
+bool resetEnabled(Slot* s);
 const char* const kTips[NumButtons] = {
     "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
-    "Spin\nSlowly turns the character.\nDrag to rotate, wheel to zoom,\nmiddle click to reset the view.",
+    "Spin\nSlowly turns the character.\nDrag to rotate, wheel to zoom.\nBecomes Reset while spinning.",
     "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle.",
-    "Reset\nRestores the default view\n(also middle click).",
+    "Reset\nRestores the default view and\nstops spinning (also middle click).",
     "Emotes\nPick a gesture (or, with\nWeapons on, an attack) to play."};
 constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipDelayMs = 350;   // px estimates (same font/metrics as Mod 3's tooltip)
 void hideTip(Slot* s) { if (s->tipFor < 0) return; setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false); s->tipFor = -1; }
 void showTip(Slot* s, int i, const float* br) {
     if (!s->tip || !s->tipBg) return;
-    const char* text = kTips[i];
+    const char* text = kTips[(i == 1 && resetEnabled(s)) ? 3 : i];
     setLabelText(s->tip, s->tipText, sizeof s->tipText, text, "tip");
     int lines = 1, maxLen = 0, cur = 0;
     for (const char* q = text; *q; ++q) { if (*q == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
@@ -500,7 +501,7 @@ void menuLayout(Slot* s) {   // items stack downwards from the Emotes button, co
 void tickButtons(Slot* s) {
     bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
     if (!any || !g_cfg.buttons) return;
-    btnSetText(s, 0, "Animate"); btnSetText(s, 1, "Spin"); btnSetText(s, 2, "Weapons"); btnSetText(s, 3, "Reset"); btnSetText(s, 4, "Emotes");   // state = fill colour (teal on, grey off, beige hover)
+    btnSetText(s, 0, "Animate"); btnSetText(s, 1, resetEnabled(s) ? "Reset" : "Spin"); btnSetText(s, 2, "Weapons"); btnSetText(s, 4, "Emotes");   // btn 3 (Reset) is hidden: button 1 doubles as Reset   // state = fill colour (teal on, grey off, beige hover)
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     bool edge = l && !s->btnWasL;
@@ -510,9 +511,10 @@ void tickButtons(Slot* s) {
     bool menuAvail = s->menuCount > 0;
     int overIdx = -1; float overRect[4] = {0, 0, 0, 0}; bool overEmote = false;
     for (int i = 0; i < NumButtons; ++i) {
+        if (i == 3) continue;
         float r[4]; int over = haveCur && fg && btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
-        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinOn : (i == 2 ? g_weaponsOn : (i == 3 ? resetEnabled(s) : menuAvail)));
-        bool inert = (i == 3 && !on) || (i == 4 && !on);   // greyed: no hover, no click
+        bool on = i == 0 ? g_animOn : (i == 1 ? resetEnabled(s) : (i == 2 ? g_weaponsOn : menuAvail));
+        bool inert = i == 4 && !on;   // greyed: no hover, no click
         if (over) { overIdx = i; memcpy(overRect, r, sizeof r); }
         if (i == 4 && over) overEmote = true;
         int st = (over && !inert) ? 2 : (on ? 1 : 0);   // hover / on / off
@@ -522,10 +524,9 @@ void tickButtons(Slot* s) {
             if (inert) continue;
             s->btnHover[i] = -1;
             if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
-            else if (i == 1) { g_spinOn = !g_spinOn; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
+            else if (i == 1) { if (resetEnabled(s)) { logf("btn: view reset (yaw=%.1f zoom=%.2f spin=%d)", s->yaw, s->zoom, g_spinOn); s->yaw = 0; s->zoom = 1; g_spinOn = false; applyView(s); } else { g_spinOn = true; logf("btn: auto-spin ON"); } }
             else if (i == 2) { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
-            else if (i == 3) { logf("btn: view reset (yaw=%.1f zoom=%.2f spin=%d)", s->yaw, s->zoom, g_spinOn); s->yaw = 0; s->zoom = 1; g_spinOn = false; applyView(s); }
-            else { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
+            else { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuPage = 0; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
         }
     }
     bool overItem = false;
@@ -539,8 +540,8 @@ void tickButtons(Slot* s) {
                 logf("menu: item[%d] '%s' (%s) click", i, s->menuAnim[i], s->menuAttack[i] ? "attack" : "emote");
                 char nm[12]; strncpy(nm, s->menuAnim[i], sizeof nm - 1); nm[sizeof nm - 1] = 0;
                 bool atk = s->menuAttack[i];
-                menuClose(s, "item chosen");
-                if (!playFlourish(s, nm, "menu", atk ? 1.5f : 0.0f)) logf("menu: '%s' could not be played", nm);
+                if (!strcmp(nm, "@page")) { s->menuPage ^= 1; menuBuild(s); menuLayout(s); logf("menu: page %d", s->menuPage); break; }
+                if (!playFlourish(s, nm, "menu", atk ? 1.5f : 0.0f)) logf("menu: '%s' could not be played", nm);   // the menu stays open for the next pick
                 break;
             }
         }
@@ -663,16 +664,21 @@ const char* labelFor(const char* n) {
     return n;
 }
 // Attack clips per wield style (R5 chains: melee g<N>a<k>, ranged b<N>a<k>; all ~1.5 s). Shown only while Weapons is on and a stance exists.
-void menuBuild(Slot* s) {
+void menuBuild(Slot* s) {   // page 0 = gestures (+ "Attacks >" when a weapon stance exists), page 1 = attacks (+ "< Emotes")
     int n = 0, en = 0; const FlLen* t = animTable(appRow(s), &en);
     auto add = [&](const char* a, const char* label, bool atk) { if (n < MaxMenu) { strncpy(s->menuAnim[n], a, 11); s->menuAnim[n][11] = 0; strncpy(s->menuLabel[n], label, 15); s->menuLabel[n][15] = 0; s->menuAttack[n] = atk; ++n; } };
-    for (int i = 0; i < en; ++i) add(t[i].name, labelFor(t[i].name), false);
-    if (g_weaponsOn && s->stanceOn && s->stanceName[0] == 'g' && s->stanceName[1] >= '1' && s->stanceName[1] <= '8') {
-        int N = s->stanceName[1] - '0'; bool droid = isDroidRow(appRow(s));
-        if (!(droid && !(N == 5 || N == 6 || N == 8))) {
-            int cnt = N == 1 || N == 8 ? 2 : (N <= 4 ? 5 : 4); char nm[12], lb[16];
-            for (int k = 1; k <= cnt; ++k) { snprintf(nm, sizeof nm, "%c%da%d", (N >= 5 && N <= 7) ? 'b' : 'g', N, k); snprintf(lb, sizeof lb, "Attack %d", k); add(nm, lb, true); }
-        }
+    int N = (g_weaponsOn && s->stanceOn && s->stanceName[0] == 'g' && s->stanceName[1] >= '1' && s->stanceName[1] <= '8') ? s->stanceName[1] - '0' : 0;
+    bool droid = isDroidRow(appRow(s));
+    int cnt = 0;
+    if (N && !(droid && !(N == 5 || N == 6 || N == 8))) cnt = N == 1 || N == 8 ? 2 : (N <= 4 ? 5 : 4);
+    if (!cnt) s->menuPage = 0;
+    if (s->menuPage == 0) {
+        for (int i = 0; i < en; ++i) add(t[i].name, labelFor(t[i].name), false);
+        if (cnt) add("@page", "Attacks >", false);
+    } else {
+        char nm[12], lb[16];
+        for (int k = 1; k <= cnt; ++k) { snprintf(nm, sizeof nm, "%c%da%d", (N >= 5 && N <= 7) ? 'b' : 'g', N, k); snprintf(lb, sizeof lb, "Attack %d", k); add(nm, lb, true); }
+        add("@page", "< Emotes", false);
     }
     s->menuCount = n;
 }
@@ -927,6 +933,7 @@ extern "C" void __cdecl BindEquipView(int panel) {
             s->item[i] = bindCover(panel, tg, ExpectedControlId + 3 + NumButtons + i); if (!s->item[i]) logf("H1: menu label %s not bound (GUI not patched?)", tg);
             setCtlVisible(s->item[i], false);
         }
+        { float r3[4]; if (ctlRect(s->btn[3], r3) && s->btn[4]) { setCtlRect(s->btn[4], (int)r3[0], (int)r3[1], (int)r3[2], (int)r3[3]); setCtlVisible(s->btn[3], false); } }   // Emotes takes the Reset slot
         s->tipBg = bindCover(panel, "LBL_E3D_TIPBG", TipBgId); s->tip = bindCover(panel, "LBL_E3D_TIP", TipId);
         setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false);   // shown only while a button is hovered
     }
@@ -987,7 +994,7 @@ extern "C" void __cdecl EquipTick(int panel) {
         if (!s->nextFlourish) s->nextFlourish = t + (DWORD)(g_cfg.flFirst * 1000.0f);
         if (s->flourishActive && t >= s->flourishEnd) endFlourish(s);
         else if (!s->flourishActive && t >= s->nextFlourish) {
-            if (s->dragging || t - s->lastEquipMs < (DWORD)(g_cfg.flQuiet * 1000.0f)) s->nextFlourish = t + 1000;
+            if (s->dragging || s->menuOpen || t - s->lastEquipMs < (DWORD)(g_cfg.flQuiet * 1000.0f)) s->nextFlourish = t + 1000;
             else pickFlourish(s);
         }
     }
