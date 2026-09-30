@@ -1,7 +1,7 @@
 [patch]
 id = "perf-lab"
 name = "Perf Lab"
-version = "0.1.0"
+version = "0.1.1"
 author = "local"
 description = "Diagnostics only (no gameplay change, inert unless perflab_debug.txt exists): allocation census via IAT hooks on the exe's HeapAlloc/HeapReAlloc/HeapFree (per-site live bytes, snapshots at load-screen edges); writes perflab_*.txt. Research program: patch_manager_mods/10_engine_optimization_research.md."
 

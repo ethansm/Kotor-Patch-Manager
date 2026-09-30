@@ -1,4 +1,4 @@
-// PerfLab 0.1.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only, no behaviour change.
+// PerfLab 0.1.1 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only, no behaviour change.
 // Research program: patch_manager_mods/10_engine_optimization_research.md.
 //
 // Inert unless "perflab_debug.txt" exists in the game dir (key=value lines, all optional):
@@ -375,8 +375,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exe);
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
-        g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0xA00000;
-        logf("perf-lab 0.1.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d", (unsigned)g_exeLo, (unsigned)g_exeHi, g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan);
+        g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
+        logf("perf-lab 0.1.1 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d", (unsigned)g_exeLo, (unsigned)g_exeHi, g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan);
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
             g_pk = static_cast<uint32_t*>(VirtualAlloc(nullptr, PtrCap * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
