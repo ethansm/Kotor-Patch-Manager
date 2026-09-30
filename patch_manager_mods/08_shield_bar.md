@@ -283,3 +283,20 @@ patch hooking the same functions.
 (4th/mirror slot, `isFirst=0`) after the panel-control loop and outside its clip viewport, so it
 is full-HUD coordinates. Splice `0x00745774`, bytes `89 4D FC 8B 45 FC`, params `ecx`, `[ebp+0x10]`.
 Probe build `1.1.0-probe` (`ShieldProbeSlot`) uses it; flag file `shieldprobe.txt`.
+
+## Phase A results, probe 1 (2026-09-29, log `shield_bar_src/logs/shieldprobe_live1.txt`)
+
+- **R-D**: works. Hook `0x00745774` runs every frame per slot in full-HUD pixels (3840x1600). Rects: leader
+  vit `(3511,1386,103,208)`, force `(3762,1386,103,208)`, card `(3591,1394,191,192)`; small cards vit `(3671,1285,47,96)`,
+  card `(3711,..,85,85)`. `isLarge` is `[ebp+0xc]` (not 0x10). The 4th slot has creature 0 and zero rects (skip it).
+- **Geometry**: the bar art has ~47% transparent padding on the rect's left; the visible capsule spans
+  `x+0.47w .. x+0.77w` (about 31 px on the leader, 14 px on small cards). Rect A at `x-gap-W` landed 48 px too far left.
+  Anchor the shield bar at `x + 0.47w - gap - W`, `W ~ 0.30w`. The leader toggle buttons (`TB_PAUSE` ends ~3545) then
+  collide: shift them left (user confirmed, Phase D).
+- **S7 = NO**: GUI-drawing `fx_tex_14/16` gave garbled flicker AND coincided with the scene going black during shield
+  activation (cleared when the shield ended; menus and mouse-look were also odd). Flat colors only. Probe 2 has the textured
+  draws removed to confirm the black screen goes away.
+- **S2 (partial)**: shield activation = 4 effects sharing spell id (99 Energy, 132 Heat): types `0x02/sub 9`, `0x1e`, `0x43`, `0x6b`, dur 224 s.
+- **S1 (open)**: `+0x34`=count(8), `+0x38`=pointer to the int array (params are not inline). Probe 2 logs the array. No drain was seen yet
+  because only the pointer was compared.
+- **S4/S6**: S6: health bar is red (`~#C0300F`-ish rim), Force bar cyan (`#00D0E8`-ish), portrait frame teal. S4 not observed.

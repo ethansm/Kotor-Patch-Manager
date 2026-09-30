@@ -181,7 +181,7 @@ void probeLog(const char* fmt, ...) {
     fputc('\n', f); fclose(f);
 }
 
-struct EffRec { int eff; unsigned short type, sub; int spell, creator; float dur; int ints[8]; bool seen; };
+struct EffRec { int n34; int eff; unsigned short type, sub; int spell, creator; float dur; int ints[8]; bool seen; };
 constexpr int ProbeMaxEff = 128, ProbeMaxCreatures = 8;
 struct CreatureRec { int creature; unsigned lastTick; bool primed; int n; EffRec e[ProbeMaxEff]; };
 CreatureRec g_cr[ProbeMaxCreatures];
@@ -216,14 +216,16 @@ void probeEffects(int slotPtr, int creature) {
         EffRec cur = {}; cur.eff = eff;
         readAt(eff, 0x8, &cur.type); readAt(eff, 0xa, &cur.sub); readAt(eff, 0x1c, &cur.spell);
         readAt(eff, 0x18, &cur.creator); readAt(eff, 0xc, &cur.dur);
-        for (int k = 0; k < 8; ++k) readAt(eff, 0x34 + 4 * k, &cur.ints[k]);
+        readAt(eff, 0x34, &cur.n34);                // +0x34 = count, +0x38 = int* array (log 1 showed a heap pointer there)
+        { int ip = 0; if (readAt(eff, 0x38, &ip) && ip) for (int k = 0; k < 8 && k < (cur.n34 > 0 ? cur.n34 : 8); ++k) readAt(ip, 4 * k, &cur.ints[k]); }
         EffRec* old = nullptr;
         for (int k = 0; k < cr->n; ++k) if (cr->e[k].eff == eff) { old = &cr->e[k]; break; }
         if (!old) {
             if (cr->n >= ProbeMaxEff) continue;
             char dump[1400]; probeDump(eff, dump, sizeof(dump));
-            probeLog("APPLY%s c=%08x slot=%08x e=%08x type=0x%04x sub=0x%04x spell=%d creator=%08x dur=%.2f ints=[%d,%d,%d,%d,%d,%d,%d,%d]%s",
-                     cr->primed ? "" : "(pre)", creature, slotPtr, eff, cur.type, cur.sub, cur.spell, cur.creator, cur.dur,
+            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, 0x38, &ip) && ip) { len += snprintf(dump + len, sizeof(dump) - len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len += snprintf(dump + len, sizeof(dump) - len, " %d", v); } } }
+            probeLog("APPLY%s n34=%d c=%08x slot=%08x e=%08x type=0x%04x sub=0x%04x spell=%d creator=%08x dur=%.2f ints=[%d,%d,%d,%d,%d,%d,%d,%d]%s",
+                     cr->primed ? "" : "(pre)", cur.n34, creature, slotPtr, eff, cur.type, cur.sub, cur.spell, cur.creator, cur.dur,
                      cur.ints[0], cur.ints[1], cur.ints[2], cur.ints[3], cur.ints[4], cur.ints[5], cur.ints[6], cur.ints[7], dump);
             cur.seen = true; cr->e[cr->n++] = cur;
         } else {
@@ -391,7 +393,7 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
 }
 
 // Probe draw site: FUN_00745770 (per-slot icon-row gate) after its prologue, ECX = slotPtr,
-// [ebp+0x10] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
+// [ebp+0xc] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
 // after the panel controls drew and independent of the engine's arrow counts.
 void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     if (!g_probe) return;
@@ -418,24 +420,16 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     if (!creature || vit[2] < 1 || vit[2] > 400 || vit[3] < 1 || vit[3] > 400) return;
 
     int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
-    int W = int(vit[2] * 0.45f + 0.5f); if (W < 1) W = 1;
+    int W = int(vit[2] * 0.30f + 0.5f); if (W < 1) W = 1;      // the visible vitality bar is ~30% of its rect
     int H = vit[3];
+    int visLeft = vit[0] + int(vit[2] * 0.47f + 0.5f);          // bar art has ~47% transparent padding on the left
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
     auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
     auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
     auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
-    static const float cyan[3] = { 0.298f, 0.675f, 1.0f }, white[3] = { 1.0f, 1.0f, 1.0f };
+    static const float cyan[3] = { 0.298f, 0.675f, 1.0f };
     flush(flushArg);
-    int ax = vit[0] - gap - W, ay = vit[1];
-    if (pushClip(ax, ay, W, H, cyan, 0, 0.9f)) popClip();            // test rect A (geometry)
-    const char* texs[2] = { "fx_tex_14", "fx_tex_16" };
-    for (int t = 0; t < 2; ++t) {                                    // test rects B/C (texture, S7)
-        void* image = imageFor(texs[t]);
-        if (!image) continue;
-        int bx = vit[0] - (t + 2) * (gap + W);
-        reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
-            (*reinterpret_cast<void***>(image))[6])(image, bx, ay, W, H, 0, 0, white, 1.0f);
-    }
+    if (pushClip(visLeft - gap - W, vit[1], W, H, cyan, 0, 0.9f)) popClip();   // test rect A (geometry); textured rects dropped (probe 1: garbled + black screen)
     flush(flushArg);
 }
 

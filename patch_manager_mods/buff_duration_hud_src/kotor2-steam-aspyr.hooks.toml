@@ -101,7 +101,7 @@ type = "int"
 
 
 # PROBE (1.1.0-probe): FUN_00745770 per-slot icon-row gate, after prologue (55 8b ec 51 done).
-# ECX = slotPtr (this), [ebp+0x10] = isFirst (leader). Runs every frame per slot, before the
+# ECX = slotPtr (this), [ebp+0xc] = isFirst (leader; RET 8 = dt + isFirst). Runs every frame per slot, before the
 # arrow-count test. Window 89 4d fc / 8b 45 fc (2 whole instructions, 6 bytes, no jumps).
 [[hooks]]
 address = 0x00745774
@@ -115,5 +115,5 @@ source = "ecx"
 type = "int"
 
 [[hooks.parameters]]
-source = "[ebp+0x10]"
+source = "[ebp+0xc]"
 type = "int"
