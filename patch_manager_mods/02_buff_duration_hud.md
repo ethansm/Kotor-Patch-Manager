@@ -1701,3 +1701,10 @@ First live test: hooks all applied, hook 2 ran and found the right buffs (spell 
 - Spells 100/106 (forearm shield variations 2/8) and 114/115 (droid shield variations) use best-guess icons; grenades/rockets/darts have no icons.
 - Load-time hangs: ~3 in ~10 launches with the patch installed (see `CRASH_INVESTIGATION.md`); our hooks had never drawn before any of them and the signature (no exception, `RNsl` spin on `NtGetContextThread`) matches the pre-existing baseline hangs. Not attributed; a 5+ vs 5+ launch comparison would settle it.
 - Portrait overlays besides ours: `LBL_LEVELUP`, `LBL_DEBILITATED`(sic), `LBL_DISABLED`, `LBL_BACK`, `PB_VIT`/`PB_FORCE`, `BTN_CHAR`, `LBL_CMBTEFCTINC/RED` (see U3 above). Only the vit/force bars are near our columns; the disabled/debilitated overlays were not investigated.
+
+
+---
+**Correction note (2026-09-29, Mod 3 session):** earlier claims here that the action bar has "no item category" and "one 7-slot bar per party portrait"
+are wrong. The four `0x1D0`-spaced arrays at `hud+0x733c/0x750c/0x76dc/0x78ac` are the 4 sub-controls of each action-button group; groups 1-3 of the
+per-creature action lists ARE inventory items (key = objectId|0x40000000). Live-confirmed entry layout, icon resrefs and details:
+[[07_force_power_hotbar.md]] ("Next-phase findings" and "Live results"); DB lesson "CORRECTION to lesson 55".
