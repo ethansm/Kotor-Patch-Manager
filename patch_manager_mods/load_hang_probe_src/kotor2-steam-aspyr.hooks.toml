@@ -39,3 +39,62 @@ type = "pointer"
 [[hooks.parameters]]
 source = "[esp+4]"
 type = "int"
+
+# 1.3.0: WndProc 0x0040A750 (stdcall hwnd, msg, wparam, lparam). Prologue 55 8B EC 81 EC 34 02 00 00 (PUSH EBP / MOV EBP,ESP / SUB ESP,0x234; 9 bytes, whole instructions).
+[[hooks]]
+address = 0x0040A750
+type = "detour"
+function = "HangProbeWndProc"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x34, 0x02, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+12]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+16]"
+type = "pointer"
+
+# 1.3.0: AppActivated 0x0040BCF0 (sets DAT_00A1B4E0 = 1). Prologue 55 8B EC 83 EC 14 (6 bytes).
+[[hooks]]
+address = 0x0040BCF0
+type = "detour"
+function = "HangProbeActivated"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# 1.3.0: AppDeactivated 0x0040BC40 (clears DAT_00A1B4E0). Prologue 55 8B EC 83 EC 18 (6 bytes).
+[[hooks]]
+address = 0x0040BC40
+type = "detour"
+function = "HangProbeDeactivated"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x18]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"

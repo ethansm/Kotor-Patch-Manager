@@ -1,4 +1,10 @@
-// Load Hang Probe (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only, no behaviour change.
+// Load Hang Probe 1.3.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only unless "fix=auto" is set.
+// 1.3.0 (doc 09 s15): the load screen is dismissed only while the engine's app-active flag DAT_00A1B4E0 is set (WndProc
+// 0x40A750 WM_ACTIVATEAPP -> AppActivated 0x40BCF0 / AppDeactivated 0x40BC40). New: WINEV/WIN log lines (window messages,
+// activation calls with callers, foreground window vs game window, the activation-gate globals), report section, and an
+// optional guarded fix: if the load screen has been up >= fixdelay ms with a1b4e0==0, area ready and the OS foreground window
+// IS the game window, call the engine's own AppActivated once (max 5x per load, >= 2 s apart). hangprobe_debug.txt keys:
+//   fix=auto (default: off)   fixdelay=6000 (ms)   io=0. Manual causality test: touch hangprobe_activate.txt in the game dir.
 // Investigation: patch_manager_mods/09_load_hang_investigation.md sections 9-10 (local-setup/KOTOR-II worktree).
 //
 // Does nothing unless "hangprobe_debug.txt" exists in the game dir. Then:
@@ -19,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "../_shared/SafeRead.h"
 
 namespace {
@@ -35,6 +42,10 @@ constexpr int In_Flag18 = 0x18, In_PlayerId = 0x20, In_Sub48 = 0x48, In_Movie = 
 constexpr int Sub48_Flag = 0x268;
 constexpr int App_ModuleState = 0x14;                // *(app+0x14) -> [0]==1, [1] in {1,3} sets +0x288
 constexpr int Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
+// activation machinery (Ghidra, doc 09 s15)
+constexpr uintptr_t GameHwndG = 0x00A1B484, GateD4 = 0x00A1B4D4, GateBC = 0x00A1B4BC, GateC0 = 0x00A1B4C0, GateTick = 0x00A1B6F4,
+                    Gate768 = 0x00A1B768, Gate76C = 0x00A1B76C, Gate42A0 = 0x009F42A0, InitFlag = 0x00A1B48C;
+constexpr uintptr_t FnAppActivated = 0x0040BCF0;   // void __cdecl (void): sets a1b4e0=1 when it was 0
 
 // ---- config -------------------------------------------------------------------------------------------
 constexpr DWORD SampleMs = 250;           // poll + (when armed) sample interval
@@ -185,6 +196,50 @@ volatile LONG g_opens = 0, g_openFnf = 0, g_openFail = 0, g_reads = 0, g_readFai
 volatile LONG64 g_readBytes = 0;
 volatile DWORD g_lastIoTick = 0; char g_lastIoName[40]; volatile char g_ioOn = 0;
 
+// ---- 1.3.0 window / activation events (hooks write ring slots only; the watchdog flushes them to the log) ----
+struct WinEv { DWORD tick; LONG frames; unsigned kind; uintptr_t a, b, c, d, ret; HWND fg; int flag; };   // kind: 0 WNDMSG, 1 ACTIVATED, 2 DEACTIVATED
+constexpr int WinRing = 256;
+WinEv g_win[WinRing]; volatile LONG g_winHead = 0; LONG g_winFlushed = 0;
+char g_fixMsg[32][200]; volatile LONG g_fixHead = 0; LONG g_fixFlushed = 0;   // main-thread notes about the fix, flushed by the watchdog
+bool g_fixAuto = false; DWORD g_fixDelayMs = 6000;
+volatile LONG g_reqActivate = 0;       // set by the watchdog when hangprobe_activate.txt appears; consumed on the main thread
+DWORD g_fixSince = 0, g_fixLastTry = 0; int g_fixTries = 0; bool g_fixNoted = false;   // main thread only
+inline int gflag() { return *reinterpret_cast<volatile int*>(FlagA1B4E0); }
+void fixNote(const char* fmt, ...) {
+    LONG i = InterlockedIncrement(&g_fixHead) - 1;
+    va_list ap; va_start(ap, fmt); vsnprintf(g_fixMsg[i & 31], 200, fmt, ap); va_end(ap);
+}
+const char* msgName(unsigned m) {
+    switch (m) { case 0x05: return "WM_SIZE"; case 0x06: return "WM_ACTIVATE"; case 0x07: return "WM_SETFOCUS"; case 0x08: return "WM_KILLFOCUS";
+        case 0x18: return "WM_SHOWWINDOW"; case 0x1c: return "WM_ACTIVATEAPP"; case 0x21: return "WM_MOUSEACTIVATE"; case 0x46: return "WM_WINDOWPOSCHANGING";
+        case 0x47: return "WM_WINDOWPOSCHANGED"; case 0x7e: return "WM_DISPLAYCHANGE"; case 0x86: return "WM_NCACTIVATE"; case 0x112: return "WM_SYSCOMMAND";
+        case 0x10: return "WM_CLOSE"; default: return "WM_?"; }
+}
+bool interestingMsg(unsigned m) { return m == 0x05 || m == 0x06 || m == 0x07 || m == 0x08 || m == 0x10 || m == 0x18 || m == 0x1c || m == 0x21 || m == 0x46 || m == 0x47 || m == 0x7e || m == 0x86 || m == 0x112; }
+inline WinEv* winSlot() { LONG i = InterlockedIncrement(&g_winHead) - 1; return &g_win[i & (WinRing - 1)]; }
+
+struct WinState { uintptr_t hwnd; unsigned fgIsGame, iconic, visible; int a1b4e0, d4, bc, c0, f768, f76c, f42a0, init; DWORD gateTick; DWORD fgPid; };
+bool operator!=(const WinState& a, const WinState& b) { return memcmp(&a, &b, sizeof(a)) != 0; }
+WinState readWinState(HWND* fgOut) {
+    WinState w; memset(&w, 0, sizeof(w));
+    HWND h = *reinterpret_cast<HWND volatile*>(GameHwndG); HWND fg = GetForegroundWindow();
+    w.hwnd = reinterpret_cast<uintptr_t>(h); w.fgIsGame = h && fg == h; w.iconic = h && IsIconic(h); w.visible = h && IsWindowVisible(h);
+    w.a1b4e0 = gflag(); w.d4 = *reinterpret_cast<volatile int*>(GateD4); w.bc = *reinterpret_cast<volatile int*>(GateBC); w.c0 = *reinterpret_cast<volatile int*>(GateC0);
+    w.f768 = *reinterpret_cast<volatile int*>(Gate768); w.f76c = *reinterpret_cast<volatile int*>(Gate76C); w.f42a0 = *reinterpret_cast<volatile int*>(Gate42A0);
+    w.init = *reinterpret_cast<volatile int*>(InitFlag); w.gateTick = *reinterpret_cast<volatile DWORD*>(GateTick);
+    if (fg) GetWindowThreadProcessId(fg, &w.fgPid);
+    if (fgOut) *fgOut = fg;
+    return w;
+}
+void fgDesc(HWND fg, char* b, int cap) {
+    char t[80] = ""; DWORD pid = 0;
+    if (fg) {   // GetWindowText on a window of THIS process sends WM_GETTEXT and would block the watchdog while the main thread is stuck: title only for other processes
+        GetWindowThreadProcessId(fg, &pid);
+        if (pid != GetCurrentProcessId()) GetWindowTextA(fg, t, sizeof(t)); else strcpy(t, "(this process)");
+    }
+    snprintf(b, cap, "%p pid=%lu '%s'", fg, pid, t);
+}
+
 typedef HANDLE(WINAPI* CreateFileA_t)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
 typedef HANDLE(WINAPI* CreateFileW_t)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
 typedef BOOL(WINAPI* ReadFile_t)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
@@ -308,6 +363,17 @@ void dumpIo(FILE* f, DWORD now, int n) {
     for (LONG i = fh - fc; i < fh; ++i) { const IoEv& e = g_ioFail[i & 63]; fprintf(f, "    -%6ld t%-4lu %c a=%lu b=%lu err=%lu %s\n", static_cast<LONG>(now - e.tick), e.tid, e.kind, e.a, e.b, e.err, e.name); }
 }
 
+void dumpWin(FILE* f, DWORD now) {
+    HWND fg = nullptr; WinState w = readWinState(&fg); char d[160]; fgDesc(fg, d, sizeof(d));
+    fprintf(f, "\nwindow / activation (1.3.0): game hwnd=%08x fgIsGame=%u iconic=%u visible=%u a1b4e0(active)=%d gate d4=%d bc=%d c0=%d 768=%d 76c=%d 42a0=%d init=%d lastDeactTick=%lu; foreground=%s; fix=%s delay=%lums tries=%d\n",
+        (unsigned)w.hwnd, w.fgIsGame, w.iconic, w.visible, w.a1b4e0, w.d4, w.bc, w.c0, w.f768, w.f76c, w.f42a0, w.init, w.gateTick, d, g_fixAuto ? "auto" : "off", g_fixDelayMs, g_fixTries);
+    LONG head = g_winHead; LONG cnt = head < WinRing ? head : WinRing; if (cnt > 80) cnt = 80;
+    fprintf(f, "  last %ld window events, oldest first (age ms, frames):\n", cnt);
+    for (LONG i = head - cnt; i < head; ++i) { const WinEv& e = g_win[i & (WinRing - 1)];
+        if (e.kind == 0) fprintf(f, "    -%6ld f%ld %s(%02x) hwnd=%08x wp=%08x lp=%08x fg=%p a1b4e0=%d\n", static_cast<LONG>(now - e.tick), e.frames, msgName((unsigned)e.b), (unsigned)e.b, (unsigned)e.a, (unsigned)e.c, (unsigned)e.d, e.fg, e.flag);
+        else fprintf(f, "    -%6ld f%ld %s ret=%08x arg=%08x before=%d fg=%p\n", static_cast<LONG>(now - e.tick), e.frames, e.kind == 1 ? "APP-ACTIVATED" : "APP-DEACTIVATED", (unsigned)e.ret, (unsigned)e.a, e.flag, e.fg); }
+}
+
 void dumpSetPlayer(FILE* f, DWORD now) {
     LONG head = g_spHead; LONG cnt = head < SpRing ? head : SpRing;
     fprintf(f, "\nSetPlayerId (0x00798660) calls, %ld total, last %ld (age ms, frames, tid, caller ret, old -> new; caller is one of 78237C/785453/79EE47/7B3107/73F926 if the hook parameters are right):\n", head, cnt);
@@ -409,6 +475,7 @@ void writeReport(const char* reason, DWORD now, const LoadState& st) {
     }
     static char ring[8192]; saferead::dump(ring, sizeof(ring));
     fprintf(f, "\nprobe's own %s", ring);
+    dumpWin(f, now);
     dumpSetPlayer(f, now);
     dumpIo(f, now, 150);
     fprintf(f, "\nmodules:\n");
@@ -428,6 +495,7 @@ DWORD WINAPI watchdog(LPVOID) {
     LONG lsFrames = 0;
     struct { LONG opens, reads; LONG64 bytes; LONG fails; } lsIoMark = { 0, 0, 0, 0 };
     DWORD nextTl = 0;
+    WinState lastWin; memset(&lastWin, 0, sizeof(lastWin)); bool firstWin = true;
     bool firstState = true, armed = false;
     DWORD manualUntil = 0, armedSince = 0;
     int armedSamples = 0;
@@ -445,6 +513,24 @@ DWORD WINAPI watchdog(LPVOID) {
             last = st; firstState = false;
         }
         bool lsUp = st.ls && st.lsVt == LoadScreenVtable && st.lsModal;
+        {   // 1.3.0: window / activation state and events
+            HWND fg = nullptr; WinState ws = readWinState(&fg);
+            if (firstWin || ws != lastWin) {
+                char d[160]; fgDesc(fg, d, sizeof(d));
+                logf("WIN game=%08x fgIsGame=%u iconic=%u visible=%u | a1b4e0(active)=%d | gate d4=%d bc=%d c0=%d 768=%d 76c=%d 42a0=%d init=%d lastDeact=%lu | fg=%s",
+                     (unsigned)ws.hwnd, ws.fgIsGame, ws.iconic, ws.visible, ws.a1b4e0, ws.d4, ws.bc, ws.c0, ws.f768, ws.f76c, ws.f42a0, ws.init, ws.gateTick, d);
+                lastWin = ws; firstWin = false;
+            }
+            while (g_winFlushed < g_winHead) {
+                LONG i = g_winFlushed++;
+                if (g_winHead - i > WinRing) continue;
+                const WinEv& e = g_win[i & (WinRing - 1)];
+                if (e.kind == 0) logf("WINEV f%ld %s(%02x) hwnd=%08x wp=%08x lp=%08x fg=%p a1b4e0=%d", e.frames, msgName((unsigned)e.b), (unsigned)e.b, (unsigned)e.a, (unsigned)e.c, (unsigned)e.d, e.fg, e.flag);
+                else logf("WINEV f%ld %s ret=%08x arg=%08x a1b4e0(before)=%d fg=%p", e.frames, e.kind == 1 ? "APP-ACTIVATED(0x40BCF0)" : "APP-DEACTIVATED(0x40BC40)", (unsigned)e.ret, (unsigned)e.a, e.flag, e.fg);
+            }
+            while (g_fixFlushed < g_fixHead) { LONG i = g_fixFlushed++; if (g_fixHead - i > 32) continue; logf("FIX %s", g_fixMsg[i & 31]); }
+            if (GetFileAttributesA("hangprobe_activate.txt") != INVALID_FILE_ATTRIBUTES) { DeleteFileA("hangprobe_activate.txt"); logf("manual activate requested (a1b4e0=%d, fgIsGame=%u)", ws.a1b4e0, ws.fgIsGame); InterlockedExchange(&g_reqActivate, 1); }
+        }
         while (g_spFlushed < g_spHead) {   // SetPlayerId events written by the hook since the last tick
             LONG i = g_spFlushed++;
             if (g_spHead - i > SpRing) continue;
@@ -456,10 +542,10 @@ DWORD WINAPI watchdog(LPVOID) {
             logf("load screen UP (io so far: opens=%ld reads=%ld last='%s')", g_opens, g_reads, g_lastIoName); }
         if (lsUp && lsSince && static_cast<LONG>(now - nextTl) >= 0) {   // load timeline every 2 s while the load screen is up
             nextTl = now + 2000;
-            logf("LOADTL +%lums f+%ld io: opens+%ld reads+%ld bytes+%lld fails+%ld lastIO=%ldms ago '%s' | gstate=%d playerId=%08x +28c=%08x areaReady=%d",
+            logf("LOADTL +%lums f+%ld io: opens+%ld reads+%ld bytes+%lld fails+%ld lastIO=%ldms ago '%s' | gstate=%d playerId=%08x +28c=%08x areaReady=%d active(a1b4e0)=%d fgIsGame=%d",
                 now - lsSince, g_frames - lsFrames, g_opens - lsIoMark.opens, g_reads - lsIoMark.reads, (long long)(g_readBytes - lsIoMark.bytes),
                 (g_readFail + g_shortReads) - lsIoMark.fails, g_lastIoTick ? static_cast<LONG>(now - g_lastIoTick) : -1, g_lastIoName,
-                st.gstate, (unsigned)st.playerId, (unsigned)st.lastPlayerSrv, st.areaReady);
+                st.gstate, (unsigned)st.playerId, (unsigned)st.lastPlayerSrv, st.areaReady, st.a1b4e0, lastWin.fgIsGame);
         }
         if (!lsUp && lsSince) { logf("load screen DOWN after %lu ms, %ld frames (io: opens+%ld reads+%ld bytes+%lld fails+%ld)", now - lsSince, g_frames - lsFrames,
             g_opens - lsIoMark.opens, g_reads - lsIoMark.reads, (long long)(g_readBytes - lsIoMark.bytes), (g_readFail + g_shortReads) - lsIoMark.fails); lsSince = 0; }
@@ -516,6 +602,46 @@ void __cdecl HangProbeMainLoop(void* internal) {
     }
     g_lastFrameTick = GetTickCount();
     InterlockedIncrement(&g_frames);
+    // ---- 1.3.0 guarded activation fix (main thread, frame boundary; only when the engine thinks the window is inactive) ----
+    if (gflag() != 0) { g_fixSince = 0; g_fixTries = 0; g_fixNoted = false; if (!g_reqActivate) return; }
+    uintptr_t in = reinterpret_cast<uintptr_t>(internal), ls = *reinterpret_cast<uintptr_t*>(in + In_LoadScreen);
+    bool lsUp = ls && *reinterpret_cast<uintptr_t*>(ls) == LoadScreenVtable;
+    DWORD now = g_lastFrameTick;
+    if (g_reqActivate) {   // manual test (touch hangprobe_activate.txt): one direct call, logs the effect
+        InterlockedExchange(&g_reqActivate, 0);
+        if (gflag() == 0) { fixNote("MANUAL: calling AppActivated 0x40BCF0 (lsUp=%d areaReady=%d)", lsUp, *reinterpret_cast<int*>(in + In_AreaReady)); reinterpret_cast<void(__cdecl*)()>(FnAppActivated)(); fixNote("MANUAL: a1b4e0 now %d", gflag()); }
+        else fixNote("MANUAL: a1b4e0 already 1, nothing to do");
+        return;
+    }
+    if (!lsUp) { g_fixSince = 0; return; }
+    if (!g_fixSince) g_fixSince = now;
+    if (!g_fixAuto || now - g_fixSince < g_fixDelayMs) return;
+    HWND game = *reinterpret_cast<HWND volatile*>(GameHwndG); bool fgIsGame = game && GetForegroundWindow() == game;
+    int ready = *reinterpret_cast<int*>(in + In_AreaReady);
+    if (!ready || !fgIsGame || g_fixTries >= 5 || (g_fixLastTry && now - g_fixLastTry < 2000)) {
+        if (!g_fixNoted) { g_fixNoted = true; fixNote("AUTO: load screen up %lu ms, active=0 but NOT acting: areaReady=%d fgIsGame=%d tries=%d", now - g_fixSince, ready, fgIsGame, g_fixTries); }
+        return;
+    }
+    ++g_fixTries; g_fixLastTry = now;
+    fixNote("AUTO: load screen up %lu ms with active=0, window IS foreground, area ready -> calling AppActivated (try %d)", now - g_fixSince, g_fixTries);
+    reinterpret_cast<void(__cdecl*)()>(FnAppActivated)();
+    fixNote("AUTO: a1b4e0 now %d", gflag());
+}
+
+// Hook: WndProc 0x0040A750 entry (stdcall hwnd, msg, wparam, lparam; args at [esp+4..16]). Logs only activation-related messages.
+void __cdecl HangProbeWndProc(void* hwnd, unsigned msg, void* wp, void* lp) {
+    if (!g_on || !interestingMsg(msg)) return;
+    WinEv* e = winSlot(); e->tick = GetTickCount(); e->frames = g_frames; e->kind = 0; e->a = reinterpret_cast<uintptr_t>(hwnd); e->b = msg;
+    e->c = reinterpret_cast<uintptr_t>(wp); e->d = reinterpret_cast<uintptr_t>(lp); e->ret = 0; e->fg = GetForegroundWindow(); e->flag = gflag();
+}
+// Hook: AppActivated 0x0040BCF0 / AppDeactivated 0x0040BC40 entry. [esp+0] = caller, [esp+4] = first stack arg (deactivate: a value from the message).
+void __cdecl HangProbeActivated(void* ret, int arg) {
+    if (!g_on) return;
+    WinEv* e = winSlot(); e->tick = GetTickCount(); e->frames = g_frames; e->kind = 1; e->a = static_cast<uintptr_t>(arg); e->b = e->c = e->d = 0; e->ret = reinterpret_cast<uintptr_t>(ret); e->fg = GetForegroundWindow(); e->flag = gflag();
+}
+void __cdecl HangProbeDeactivated(void* ret, int arg) {
+    if (!g_on) return;
+    WinEv* e = winSlot(); e->tick = GetTickCount(); e->frames = g_frames; e->kind = 2; e->a = static_cast<uintptr_t>(arg); e->b = e->c = e->d = 0; e->ret = reinterpret_cast<uintptr_t>(ret); e->fg = GetForegroundWindow(); e->flag = gflag();
 }
 
 // Hook: CClientExoAppInternal::SetPlayerCreatureId (0x00798660) entry, thiscall: ECX = internal, [esp+0] = caller,
@@ -544,7 +670,8 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exe);
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
-        logf("load-hang-probe 1.2.0 loaded: attach tid=%lu exe=%08x-%08x", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi);
+        if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) { if (!strncmp(l, "fix=auto", 8)) g_fixAuto = true; if (!strncmp(l, "fixdelay=", 9)) { long v = atol(l + 9); if (v >= 1000 && v <= 60000) g_fixDelayMs = (DWORD)v; } } fclose(cf); }
+        logf("load-hang-probe 1.3.0 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
         {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
             bool ioWanted = true;
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }

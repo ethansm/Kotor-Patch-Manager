@@ -3,3 +3,6 @@ EXPORTS
     HangProbeMainLoop
     HangProbeDumpDiag
     HangProbeSetPlayerId
+    HangProbeWndProc
+    HangProbeActivated
+    HangProbeDeactivated
