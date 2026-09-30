@@ -344,3 +344,14 @@ Proton, independent of our DLL. Decisive test (not yet done): stock 16 patches, 
 (ini backup `~/Games/KOTOR2_Mod_Workspace/backups/ini_pre_sensitivity_restore_20260929_202924/`).
 
 **v2 ideas (not v1):** coverage pips, hit/break/ion flashes, "-N per hit" badges for Force Barrier/Resist (type 12 with no limit), per-hit floating numbers.
+
+## Session 3 live results (2026-09-29, probe2 = `1.1.0-probe2`, log `shield_bar_src/logs/shieldprobe_live3.txt`)
+
+- **Bar look: works.** The curved textured bar (`uibit_bar_vp_p`, teal track + tinted clipped fill) sits left of the vitality bar on the leader card, blue for row-2040 shields, red for row-2045 shields.
+  User asked for a smoother join into the curved health bar (gap set to 0 in probe3; the square right edge vs the rounded health corner leaves corner wedges).
+- **Blackout is NOT the shield bar and NOT the fx_tex_* shell textures per se.** With the probe DLL: human shields (spell 99, vfx 2040) on the leader and on a companion never blacked out.
+  The scene went black only while the **droid's** shield (spell 110, `d_shield`, vfx 2045) was active; it cleared when that shield ran out. The Peragus mining shield (spell 132, also vfx 2045) on the human leader did **not**
+  cause it (user correction: it was still active when the black cleared). So it is tied to the droid shield path (droid sphere model / appearance-driven VFX), not to visualeffects row 2045. Stock-set droid test still pending.
+- **S1 still unverified**: no hits were taken, no CHANGE/`POOL` remaining changes in the log.
+- **Companion cards inconsistent**: small-card shield bars and Buff HUD icons appear/disappear together (same slot->creature table) -> probe3 adds `DRAW slot= creature= pools= effects=` lines to explain it.
+- **Fury/temp HP type id** not yet observed. Shield hover tooltip (user request): needs research of the portrait hover-text builder (v2).
