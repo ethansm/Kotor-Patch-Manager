@@ -61,6 +61,8 @@ constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int ButtonCount = 10, FirstButtonId = 111;   // frames 111..120, icon labels 121..130 (FIRST_ID in scripts/add_hotbar_buttons_gui.py)
 constexpr int IconIdOffset = 10;
 constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;
+constexpr uintptr_t FnScreenInfo = 0x0073FEA0;     // cdecl() -> obj with short width @+0x6C, height @+0x6E (what InitControl scales by)
+constexpr uintptr_t GuiRefW = 0x009F4390, GuiRefH = 0x009F4394;   // ints (800, 600): the 800x600 layout space
 constexpr int TipBgId = FirstButtonId + 2 * ButtonCount, TipId = TipBgId + 1;   // hover tooltip frame + text
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
 constexpr uintptr_t TextVtable = 0x009876B4;
@@ -404,7 +406,7 @@ struct Widget {
     std::string why;                // last logged reason for hidden/shown
 };
 struct Button { Widget bg, ic; bool avail = false; bool hover = false; Entry entry; };
-struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; };
+struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; std::string tipText; };
 Bar g_bar;
 long g_barSeq = 0;
 
@@ -525,7 +527,7 @@ std::string shortDesc(const std::string& d) {
 }
 
 // Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
-std::string buildTipText(int s, const Entry& e) {
+std::string buildTipText(int s, const Entry& e, bool verboseLog = true) {
     std::string title = e.name; size_t par = title.rfind(" ("); if (par != std::string::npos && par > 0 && title.back() == ')') title.resize(par);
     std::string qty = e.name.size() > title.size() + 3 ? e.name.substr(title.size() + 2, e.name.size() - title.size() - 3) : "";
     std::string out = title + "\n";
@@ -539,7 +541,7 @@ std::string buildTipText(int s, const Entry& e) {
         if (range == "P") out += "Range: Personal\n"; else if (range == "T") out += "Range: Target\n";
         std::string dsc = nullish(g_spells.Get(row, "spelldesc"));
         if (!dsc.empty()) { std::string d = shortDesc(g_tlk.Get((uint32_t)atoi(dsc.c_str()))); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
-        logf("tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, fp.c_str(), range.c_str(), dsc.c_str());
+        if (verboseLog) logf("tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, fp.c_str(), range.c_str(), dsc.c_str());
     } else if (e.key & 0x40000000) {
         if (!qty.empty()) out += "Quantity: " + qty + "\n";
     }
@@ -575,6 +577,7 @@ void showTip(int s) {
     Button& b = g_bar.b[s];
     if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
     std::string text = buildTipText(s, b.entry);
+    g_bar.tipText = text;
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
     if (rdInt(tx, 0) != (int)TextVtable || rdInt(tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(tx, 0), (unsigned)rdInt(tx, Text_Renderer)); g_bar.tipSlot = s; return; }
     char exo[16] = {0};
@@ -653,6 +656,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         else if (!resolve(hud, want, &e)) state = "entry not available";
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
         b.avail = have; if (have) b.entry = e;
+        if (have && g_bar.tipSlot == s && buildTipText(s, e, false) != g_bar.tipText) { logf("tip: slot %d entry changed while hovered, refreshing", s); showTip(s); }
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
         setFill(b, b.ic, s, have ? e.icon : std::string());
@@ -670,7 +674,27 @@ void dumpMem(const char* tag, uintptr_t base, int dwords) {
 }
 
 // Allocates, constructs and binds one label by tag (see hook 3 below).
-unsigned char* bindLabel(uintptr_t panel, const char* tagName, int expectId, Widget* w, bool dump) {
+// With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8). The HUD is drawn at
+// a uniform H/600 px per unit, so squeeze x/width by (H/600)/(W/800). Returns the factor (1 = unknown, leave alone).
+double aspectFix() {
+    int obj = reinterpret_cast<int(__cdecl*)()>(FnScreenInfo)();
+    short w = 0, h = 0; int rw = rdInt(GuiRefW, 0), rh = rdInt(GuiRefH, 0);
+    if (obj) { readAt(obj, 0x6C, &w); readAt(obj, 0x6E, &h); }
+    double c = (w > 0 && h > 0 && rw > 0 && rh > 0) ? ((double)h / rh) / ((double)w / rw) : 1.0;
+    logf("H3: screen info obj=%08x size=%dx%d ref=%dx%d -> x correction %.4f", obj, (int)w, (int)h, rw, rh, c);
+    return c;
+}
+void fixRect(unsigned char* ctl, const char* tag, double c) {
+    if (c == 1.0) return;
+    uintptr_t cc = reinterpret_cast<uintptr_t>(ctl);
+    int r[4]; for (int i = 0; i < 4; ++i) r[i] = rdInt(cc, 4 + 4 * i);
+    int n[4] = { (int)(r[0] * c + 0.5), r[1], (int)(r[2] * c + 0.5), r[3] };
+    void** vt = *reinterpret_cast<void***>(ctl);
+    if (IsBadReadPtr(vt + 1, 4)) { logf("H3 %s: vtable unreadable, no aspect fix", tag); return; }
+    reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(ctl, n);
+    logf("H3 %s: aspect fix rect [%d,%d,%d,%d] -> [%d,%d,%d,%d]", tag, r[0], r[1], r[2], r[3], n[0], n[1], n[2], n[3]);
+}
+unsigned char* bindLabel(uintptr_t panel, const char* tagName, int expectId, Widget* w, bool dump, double aspect) {
     unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
     if (!ctl) { logf("H3 %s: allocation failed", tagName); return nullptr; }
     memset(ctl, 0, LabelSize);
@@ -681,6 +705,7 @@ unsigned char* bindLabel(uintptr_t panel, const char* tagName, int expectId, Wid
     reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, tagName);
     reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
     reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+    if (rdInt(reinterpret_cast<uintptr_t>(ctl), Ctl_Id, -999) == expectId) fixRect(ctl, tagName, aspect);
     uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
     int id = rdInt(c, Ctl_Id, -999), fl = rdInt(c, Ctl_Flags);
     int ext[4]; for (int i = 0; i < 4; ++i) ext[i] = rdInt(c, 4 + 4 * i);
@@ -750,15 +775,16 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     int savedFlag = IsBadReadPtr(projFlag, 4) ? 0 : *projFlag;
     logf("H3: projection flag %08x = %d (cleared for the binds, restored after)", (unsigned)ProjectionFlag, savedFlag);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = 0;
+    double aspect = aspectFix();
     int built = 0;
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s]; char tag[32];
-        snprintf(tag, sizeof tag, "LBL_HOTBARBG%c", slotDigit(s)); bool okBg = bindLabel(panel, tag, FirstButtonId + s, &b.bg, s == 0) != nullptr;
-        snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0) != nullptr;
+        snprintf(tag, sizeof tag, "LBL_HOTBARBG%c", slotDigit(s)); bool okBg = bindLabel(panel, tag, FirstButtonId + s, &b.bg, s == 0, aspect) != nullptr;
+        snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0, aspect) != nullptr;
         if (okBg || okIc) ++built;
     }
-    bindLabel(panel, "LBL_HOTBARTIPBG", TipBgId, &g_bar.tipBg, false);
-    bindLabel(panel, "LBL_HOTBARTIP", TipId, &g_bar.tip, true);
+    bindLabel(panel, "LBL_HOTBARTIPBG", TipBgId, &g_bar.tipBg, false, aspect);
+    bindLabel(panel, "LBL_HOTBARTIP", TipId, &g_bar.tip, true, aspect);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = savedFlag;
     g_bar.built = built;
     int after = rdInt(panel, Panel_CtlCount, -1);
