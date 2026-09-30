@@ -42,7 +42,9 @@ TEMPLATE_TAG = "LBL_QUEUE1"
 DIGITS = "1234567890"
 BG_TAGS = [f"LBL_HOTBARBG{d}" for d in DIGITS]  # slot 0..9 <-> key 1..9,0; IDs FIRST_ID..FIRST_ID+9
 TAGS = [f"LBL_HOTBAR{d}" for d in DIGITS]       # icon labels, IDs FIRST_ID+10..
-ALL_TAGS = BG_TAGS + TAGS
+TIP_BG_TAG, TIP_TAG = "LBL_HOTBARTIPBG", "LBL_HOTBARTIP"  # hover tooltip: frame (IDs FIRST_ID+20) + text (FIRST_ID+21)
+TIP_TEMPLATE_TAG = "LBL_MOULDING3"  # the HUD's own dark teal framed panel
+ALL_TAGS = BG_TAGS + TAGS + [TIP_BG_TAG, TIP_TAG]
 TEX = ("hotbar_slot", "hotbar_slot_hi")
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
 DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 12, 484, 42, 5, 46
@@ -136,12 +138,15 @@ def main() -> int:
     first_id = len(cs)
     assert ids == list(range(first_id)), f"{GUI} IDs are not 0..N-1: {ids}"
     if first_id != FIRST_ID:  # the DLL hard-codes these IDs; a mismatch would misbind (InitControl can overwrite a native slot)
-        print(f"refusing: {GUI} has {first_id} controls, the DLL expects the buttons at IDs {FIRST_ID}..{FIRST_ID + 19}", file=sys.stderr)
+        print(f"refusing: {GUI} has {first_id} controls, the DLL expects the buttons at IDs {FIRST_ID}..{FIRST_ID + 21}", file=sys.stderr)
         return 1
     assert tmpl[0].get_int32("CONTROLTYPE") == 4, "template is not a type-4 label"
 
-    def make(cid, tag, rect, digit=None, fill=None):
-        ctl = copy.deepcopy(tmpl[0])  # GFFStruct deep copy keeps struct_id
+    tip_t = [c for c in cs if c.get_string("TAG") == TIP_TEMPLATE_TAG]
+    assert len(tip_t) == 1, f"expected exactly one {TIP_TEMPLATE_TAG} in {GUI}"
+
+    def make(cid, tag, rect, digit=None, fill=None, src=None, text=None, align=None):
+        ctl = copy.deepcopy(src if src is not None else tmpl[0])  # GFFStruct deep copy keeps struct_id
         ctl.set_int32("ID", cid)
         ctl.set_string("TAG", tag)
         ext = ctl.get_struct("EXTENT")  # get_struct returns a COPY: edit then set_struct
@@ -152,6 +157,11 @@ def main() -> int:
             txt = ctl.get_struct("TEXT")
             txt.set_string("TEXT", digit)
             txt.set_int32("ALIGNMENT", TEXT_ALIGN_TOP_LEFT)
+            ctl.set_struct("TEXT", txt)
+        if text is not None:
+            txt = ctl.get_struct("TEXT")
+            txt.set_string("TEXT", text)
+            txt.set_int32("ALIGNMENT", align)
             ctl.set_struct("TEXT", txt)
         if fill:
             b = ctl.get_struct("BORDER")
@@ -167,6 +177,9 @@ def main() -> int:
     for slot, digit in enumerate(DIGITS):
         fx = a.x + slot * a.spacing
         make(first_id + 10 + slot, TAGS[slot], [fx + a.inset, a.y + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset], digit=digit)
+    # tooltip (DLL positions/sizes/fills them at runtime; placeholder rects here): frame first, text on top
+    make(first_id + 20, TIP_BG_TAG, [12, 380, 300, 90], src=tip_t[0])
+    make(first_id + 21, TIP_TAG, [12, 380, 300, 90], text="", align=18)
     g.root.set_list("CONTROLS", cs)  # get_list may hand back a detached copy
 
     for tag, cid, rect in plan:

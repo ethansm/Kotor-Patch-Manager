@@ -18,6 +18,8 @@
 #include <stdarg.h>
 #include <set>
 #include "HotbarConfig.h"
+#include "TwoDA.h"
+#include "Tlk.h"
 
 namespace {
 
@@ -58,6 +60,14 @@ constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill 
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int ButtonCount = 10, FirstButtonId = 111;   // frames 111..120, icon labels 121..130 (FIRST_ID in scripts/add_hotbar_buttons_gui.py)
 constexpr int IconIdOffset = 10;
+constexpr int TipBgId = FirstButtonId + 2 * ButtonCount, TipId = TipBgId + 1;   // hover tooltip frame + text
+constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
+constexpr uintptr_t TextVtable = 0x009876B4;
+constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
+constexpr DWORD TipDelayMs = 450;
+constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 5;   // px estimates for dialogfont16x16 at 2.667 px/unit; calibrate live
+const char* const Spells2daPath = "override/spells.2da";
+const char* const TlkPath = "dialog.tlk";
 const char* const FrameResref = "hotbar_slot";       // TGAs written by the GUI script into override/
 const char* const FrameHiResref = "hotbar_slot_hi";
 constexpr float EmptyFrameAlpha = 0.45f;
@@ -361,8 +371,8 @@ struct Widget {
     std::string icon;               // last applied fill resref ("" = none)
     std::string why;                // last logged reason for hidden/shown
 };
-struct Button { Widget bg, ic; bool avail = false; bool hover = false; };
-struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; };
+struct Button { Widget bg, ic; bool avail = false; bool hover = false; Entry entry; };
+struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; };
 Bar g_bar;
 long g_barSeq = 0;
 
@@ -436,6 +446,115 @@ bool cursorInGame(POINT* out) {
     *out = pt; return true;
 }
 
+// ---- hover tooltip ---------------------------------------------------------------------------------------
+hb::TwoDA g_spells; bool g_spellsTried = false;
+hb::Tlk g_tlk; bool g_tlkTried = false;
+
+void ensureLookups() {
+    if (!g_spellsTried) {
+        g_spellsTried = true;
+        bool ok = g_spells.Load(Spells2daPath);
+        logf("tip: %s -> %s (cols=%d rows=%d%s%s)", Spells2daPath, ok ? "ok" : "FAILED", (int)g_spells.cols.size(), (int)g_spells.rows.size(), ok ? "" : " err=", ok ? "" : g_spells.error.c_str());
+    }
+    if (!g_tlkTried) {
+        g_tlkTried = true;
+        bool ok = g_tlk.Open(TlkPath);
+        logf("tip: %s -> %s (strings=%u%s%s)", TlkPath, ok ? "ok" : "FAILED", (unsigned)g_tlk.count, ok ? "" : " err=", ok ? "" : g_tlk.error.c_str());
+    }
+}
+
+std::string nullish(const std::string& s) { return s == "****" ? std::string() : s; }
+
+// greedy word wrap into '\n'-joined lines (at most maxLines, "..." when cut)
+std::string wrapText(const std::string& in, int width, int maxLines) {
+    std::string out, line; int lines = 0; size_t i = 0;
+    while (i < in.size()) {
+        size_t e = in.find(' ', i); if (e == std::string::npos) e = in.size();
+        std::string w = in.substr(i, e - i); i = e + 1;
+        if (!line.empty() && (int)(line.size() + 1 + w.size()) > width) {
+            if (++lines >= maxLines) { line += "..."; break; }
+            out += line + "\n"; line.clear();
+        }
+        line += (line.empty() ? "" : " ") + w;
+    }
+    out += line;
+    return out;
+}
+
+// Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
+std::string buildTipText(int s, const Entry& e) {
+    std::string title = e.name; size_t par = title.rfind(" ("); if (par != std::string::npos && par > 0 && title.back() == ')') title.resize(par);
+    std::string qty = e.name.size() > title.size() + 3 ? e.name.substr(title.size() + 2, e.name.size() - title.size() - 3) : "";
+    std::string out = title + "\n";
+    const char* kind = (e.key & 0x40000000) ? "Item" : ((e.key & 0x20000000) ? "Force Power" : "Mode");
+    out += std::string("Key: ") + slotDigit(s) + "   " + kind + "\n";
+    if ((e.key & 0x20000000) && !(e.key & 0x40000000)) {
+        ensureLookups();
+        int row = e.key & 0x1FFFFFFF;
+        std::string fp = nullish(g_spells.Get(row, "forcepoints")), range = g_spells.Get(row, "range");
+        if (!fp.empty() && fp != "0") out += "Force Points: " + fp + "\n";
+        if (range == "P") out += "Range: Personal\n"; else if (range == "T") out += "Range: Target\n";
+        std::string dsc = nullish(g_spells.Get(row, "spelldesc"));
+        if (!dsc.empty()) { std::string d = g_tlk.Get((uint32_t)atoi(dsc.c_str())); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
+        logf("tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, fp.c_str(), range.c_str(), dsc.c_str());
+    } else if (e.key & 0x40000000) {
+        if (!qty.empty()) out += "Quantity: " + qty + "\n";
+    }
+    if (!(e.flags & 1)) out += "Not usable right now\n";
+    while (!out.empty() && out.back() == '\n') out.pop_back();
+    return out;
+}
+
+void setRect(Widget& w, const char* nm, int x, int y, int ww, int hh) {
+    if (!w.ctl) return;
+    void** vt = *reinterpret_cast<void***>(w.ctl);
+    if (IsBadReadPtr(vt + 1, 4)) { logf("tip: %s vtable unreadable", nm); return; }
+    int r[4] = { x, y, ww, hh };
+    reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(w.ctl, r);
+}
+
+void setWidgetVisible(Widget& w, const char* nm, bool vis) {
+    int fl = 0; if (!w.ctl || !readAt(reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) return;
+    int nf = vis ? (fl | 2) : (fl & ~2);
+    if (nf != fl) *reinterpret_cast<int*>(w.ctl + Ctl_Flags) = nf;
+    w.visible = vis ? 1 : 0;
+    (void)nm;
+}
+
+void hideTip(const char* why) {
+    if (g_bar.tipSlot < 0) return;
+    logf("tip: hide slot %d (%s)", g_bar.tipSlot, why);
+    setWidgetVisible(g_bar.tipBg, "tipbg", false); setWidgetVisible(g_bar.tip, "tip", false);
+    g_bar.tipSlot = -1;
+}
+
+void showTip(int s) {
+    Button& b = g_bar.b[s];
+    if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
+    std::string text = buildTipText(s, b.entry);
+    uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
+    if (rdInt(tx, 0) != (int)TextVtable || rdInt(tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(tx, 0), (unsigned)rdInt(tx, Text_Renderer)); g_bar.tipSlot = s; return; }
+    char exo[16] = {0};
+    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, text.c_str());
+    reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + Text_StringSub), exo);
+    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+    int lines = 1, maxLen = 0, cur = 0;
+    for (char c : text) { if (c == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
+    int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
+    RECT cr = {0, 0, 3840, 1600}; if (g_gameWnd) GetClientRect(g_gameWnd, &cr);
+    uintptr_t fc = reinterpret_cast<uintptr_t>(b.bg.ctl); int fx = rdInt(fc, 4), fy = rdInt(fc, 8);
+    int x = fx, y = fy - h - 12;
+    if (x + w > cr.right - 8) x = cr.right - 8 - w;
+    if (x < 8) x = 8;
+    if (y < 8) y = 8;
+    setRect(g_bar.tipBg, "tipbg", x, y, w, h);
+    setRect(g_bar.tip, "tip", x + TipPad / 2, y + TipPad / 2, w - TipPad, h - TipPad);
+    setWidgetVisible(g_bar.tipBg, "tipbg", true); setWidgetVisible(g_bar.tip, "tip", true);
+    g_bar.tipSlot = s;
+    int th = 0; { void** tvt = *reinterpret_cast<void***>(tx); if (!IsBadReadPtr(tvt + 2, 4)) th = reinterpret_cast<int(__fastcall*)(void*)>(tvt[2])(reinterpret_cast<void*>(tx)); }
+    logf("tip: show slot %d lines=%d maxLen=%d rect=[%d,%d,%d,%d] client=%ldx%ld textHeight(engine)=%d text=\"%s\"", s, lines, maxLen, x, y, w, h, (long)cr.right, (long)cr.bottom, th, text.c_str());
+}
+
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "hotbar_slot_hi").
 void updateHover(bool gate) {
     static int lastHover = -2; static POINT lastPt = {-1, -1}; static long lastLog = -1000;
@@ -447,13 +566,16 @@ void updateHover(bool gate) {
             if (pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh) over = s;
         }
     }
-    if (over != lastHover) { logf("hover: slot %d -> %d cursor=(%ld,%ld)", lastHover, over, (long)pt.x, (long)pt.y); lastHover = over; }
+    static DWORD hoverStart = 0;
+    if (over != lastHover) { logf("hover: slot %d -> %d cursor=(%ld,%ld)", lastHover, over, (long)pt.x, (long)pt.y); lastHover = over; hoverStart = GetTickCount(); hideTip("hover changed"); }
     else if (g_cfg.general.verbose && (pt.x != lastPt.x || pt.y != lastPt.y) && pt.y > 1100 && g_frame - lastLog > 120) { lastLog = g_frame; logf("hover: cursor=(%ld,%ld) over=%d", (long)pt.x, (long)pt.y, over); }
     lastPt = pt;
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s]; bool hov = (s == over) && b.avail; b.hover = hov;
         if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, hov ? FrameHiResref : FrameResref);
     }
+    if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - hoverStart >= TipDelayMs) showTip(over);
+    if (over < 0 || !g_bar.b[over].avail) hideTip("no hover");
 }
 
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
@@ -477,7 +599,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         if (want.empty()) state = "unbound";
         else if (!resolve(hud, want, &e)) state = "entry not available";
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
-        b.avail = have;
+        b.avail = have; if (have) b.entry = e;
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
         setFill(b, b.ic, s, have ? e.icon : std::string());
@@ -576,11 +698,13 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
         snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0) != nullptr;
         if (okBg || okIc) ++built;
     }
+    bindLabel(panel, "LBL_HOTBARTIPBG", TipBgId, &g_bar.tipBg, false);
+    bindLabel(panel, "LBL_HOTBARTIP", TipId, &g_bar.tip, true);
     g_bar.built = built;
     int after = rdInt(panel, Panel_CtlCount, -1);
-    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + 2 * ButtonCount);
+    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + 2 * ButtonCount + 2);
     int arr = rdInt(panel, Panel_CtlArray);
-    for (int s = 0; s < ButtonCount; ++s) for (const Widget* w : { &g_bar.b[s].bg, &g_bar.b[s].ic }) if (w->ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", w->id, (unsigned)rdInt((uintptr_t)arr, w->id * 4), w->ctl);
+    for (int s = 0; s < ButtonCount; ++s) for (const Widget* w : { &g_bar.b[s].bg, &g_bar.b[s].ic, &g_bar.tipBg, &g_bar.tip }) if (w->ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", w->id, (unsigned)rdInt((uintptr_t)arr, w->id * 4), w->ctl);
 }
 
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
