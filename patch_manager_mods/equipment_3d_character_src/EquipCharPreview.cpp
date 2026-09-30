@@ -142,6 +142,7 @@ struct Cfg {
     float dragDegPx = 0.5f; int wheelZoom = 1; float wheelStep = 0.9f, zoomMin = 0.6f, zoomMax = 2.5f;
     int hitFlipY = 0; float screenW = 3840, screenH = 1600;
     int flourish = 1; float flMin = 12, flMax = 25, flFirst = 6, flQuiet = 3; int flOnEquip = 1;
+    char flStance[512] = "";   // optional flourish list used while a weapon stance is on (empty = same list)
     char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
     char equipAnim[64] = "itemequip";
     int pollMs = 100, rebuildMinMs = 250, keepObj10 = 1, buttons = 1; float spinToggleDegS = 20;
@@ -206,6 +207,7 @@ void loadIni() {
         else if (!strcmp(k, "flourish_first_s")) { good = parseFloats(v, a, 1); if (good) c.flFirst = a[0]; }
         else if (!strcmp(k, "flourish_quiet_s")) { good = parseFloats(v, a, 1); if (good) c.flQuiet = a[0]; }
         else if (!strcmp(k, "flourish_on_equip")) { good = parseFloats(v, a, 1); if (good) c.flOnEquip = (int)a[0]; }
+        else if (!strcmp(k, "flourish_stance_list")) { if (strlen(v) < sizeof(c.flStance)) strcpy(c.flStance, v); else good = false; }
         else if (!strcmp(k, "flourish_list")) { if (strlen(v) < sizeof(c.flList)) strcpy(c.flList, v); else good = false; }
         else if (!strcmp(k, "equip_anim")) { if (v[0] && strlen(v) < sizeof(c.equipAnim)) strcpy(c.equipAnim, v); else good = false; }
         else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = (int)a[0]; }
@@ -265,7 +267,8 @@ struct Slot {
     // flourish scheduler
     DWORD nextFlourish = 0, flourishEnd = 0, lastEquipMs = 0;
     bool flourishActive = false;
-    char idleName[16] = "";
+    char idleName[16] = "";      // the CURRENT looping idle (stance while stanceOn, else the alignment idle)
+    char baseIdle[16] = "";      // alignment idle
     char activeName[32] = "";
     // weapons
     void* wpn[2] = {}; int wpnIds[2] = {0, 0}; bool wpnApplied = false, stanceOn = false; char stanceName[12] = "", wpnNames[2][28] = {};
@@ -583,14 +586,21 @@ void chooseIdle(Slot* s) {
     void* body = partGob(s, 0xff);
     short al = s->align; int row = appRow(s);
     const char* want = isDroidRow(row) ? "pause1" : (al < 40 ? "evil" : (al < 60 ? "neutral" : "good"));
-    strcpy(s->idleName, want);
+    strcpy(s->baseIdle, want); strcpy(s->idleName, want);
     logf("anim: idle for align=%d row=%d -> '%s' body=%p", al, row, s->idleName, body);
+}
+// Engine wield-style rule (R7f 0076d590 / R7h 00863650). Only the weapons we actually attached count.
+const char* const kStyleAnim[10] = {"", "g1r1", "g2r1", "g3r1", "g4r1", "g5r1", "g6r1", "g7r1", "g8r1", "g7r1"};
+int styleFor(int rWield, int lWield, bool rHas, bool lHas) {
+    if (rHas && lHas) return lWield == 2 ? 4 : (lWield == 4 ? 6 : 0);
+    if (rHas) { static const int map[7] = {0, 1, 2, 3, 5, 7, 9}; return (rWield >= 1 && rWield <= 6) ? map[rWield] : 0; }
+    return 0;   // left only, or nothing (unarmed style 8 deliberately not applied: keep the normal idle)
 }
 void attachWeapons(Slot* s, int real, const char* why) {
     s->stanceName[0] = 0;
     void* body = partGob(s, 0xff);
     if (!body) { logf("weapons: no body part, cannot attach (%s)", why); return; }
-    int bestWield = 0;
+    int wield[2] = {0, 0}, baseOf[2] = {-1, -1}; bool has[2] = {false, false};
     for (int i = 0; i < 2; ++i) {
         int id = NoItemId; readAt<int>(real, i ? CrLeftItemOff : CrRightItemOff, &id); s->wpnIds[i] = id;
         const char* hook = i ? "lhand" : "rhand";
@@ -608,10 +618,12 @@ void attachWeapons(Slot* s, int real, const char* why) {
         void** vt = vtOf(g);
         reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, body, hook, 0);
         s->wpn[i] = g; strncpy(s->wpnNames[i], name, sizeof(s->wpnNames[i]) - 1);
-        if (!bestWield || !i) bestWield = kWeapon[base].wield;   // right hand decides the stance, left only when the right is empty
+        has[i] = true; wield[i] = kWeapon[base].wield; baseOf[i] = base;
         logf("weapons: attached %p to body %p node %s", g, body, hook);
     }
-    if (bestWield > 0) snprintf(s->stanceName, sizeof s->stanceName, "g%dr1", bestWield);
+    int style = styleFor(wield[0], wield[1], has[0], has[1]);
+    if (style > 0) snprintf(s->stanceName, sizeof s->stanceName, "%s", kStyleAnim[style]);
+    logf("weapons: style=%d anim=%s R(w=%d,base=%d) L(w=%d,base=%d)", style, s->stanceName[0] ? s->stanceName : "-", wield[0], baseOf[0], wield[1], baseOf[1]);
     logf("weapons: (%s) stance='%s' L/R ids %08x/%08x", why, s->stanceName, s->wpnIds[1], s->wpnIds[0]);
 }
 void refreshWeapons(Slot* s, int real, const char* why) {
@@ -623,9 +635,10 @@ void refreshWeapons(Slot* s, int real, const char* why) {
     s->wpnApplied = g_weaponsOn;
     readAt<int>(real, CrRightItemOff, &s->wpnIds[0]); readAt<int>(real, CrLeftItemOff, &s->wpnIds[1]);
     s->stanceOn = g_weaponsOn && s->stanceName[0];
-    const char* anim = s->stanceOn ? s->stanceName : (wasStance ? s->idleName : nullptr);
-    if (s->stanceOn) s->flourishActive = false;
+    strcpy(s->idleName, s->stanceOn ? s->stanceName : s->baseIdle);
+    const char* anim = (s->stanceOn || wasStance) ? s->idleName : nullptr;
     if (anim && anim[0]) {
+        s->flourishActive = false;
         if (body) playPart(body, anim, 1.0f, 2);
         if (head) playPart(head, anim, 1.0f, 2);
         logf("weapons: idle -> '%s' (stance=%d) body=%p head=%p", anim, s->stanceOn, body, head);
@@ -709,7 +722,7 @@ void endFlourish(Slot* s) {
     s->nextFlourish = GetTickCount() + (DWORD)(rndRange(g_cfg.flMin, g_cfg.flMax) * 1000.0f);
 }
 void pickFlourish(Slot* s) {
-    char list[512]; strncpy(list, g_cfg.flList, sizeof(list) - 1); list[sizeof(list) - 1] = 0;
+    char list[512]; strncpy(list, (s->stanceOn && g_cfg.flStance[0]) ? g_cfg.flStance : g_cfg.flList, sizeof(list) - 1); list[sizeof(list) - 1] = 0;
     char* names[32]; int n = 0;
     for (char* p = strtok(list, ","); p && n < 32; p = strtok(nullptr, ",")) { trim(p); if (p[0]) names[n++] = p; }
     if (!n) { s->nextFlourish = GetTickCount() + 10000; return; }
@@ -866,7 +879,7 @@ extern "C" void __cdecl EquipTick(int panel) {
             refreshWeapons(s, real, "toggle/items");
         }
     }
-    if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn && !s->stanceOn) {
+    if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn) {
         if (!s->nextFlourish) s->nextFlourish = t + (DWORD)(g_cfg.flFirst * 1000.0f);
         if (s->flourishActive && t >= s->flourishEnd) endFlourish(s);
         else if (!s->flourishActive && t >= s->nextFlourish) {
