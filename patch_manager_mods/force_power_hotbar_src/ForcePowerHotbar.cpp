@@ -859,7 +859,11 @@ void updateEditor(uintptr_t hud, bool gate) {
     // ---- visibility of the always-present toggle and the mode-dependent parts
     bool showTitle = gate && ed.mode != M_Normal, showPick = gate && ed.mode == M_Pick;
     wVisible(g_bar.edit, "toggle", gate, true);
-    wFill(g_bar.edit, "toggle", ed.mode == M_Normal ? EditResref : EditHiResref);
+    {   // hover highlight: beige frame while hovered; in edit mode the beige frame is the "active" look, dimmed until hovered
+        bool hov = haveCur && wHit(g_bar.edit, pt);
+        wFill(g_bar.edit, "toggle", (ed.mode != M_Normal || hov) ? EditHiResref : EditResref);
+        wAlpha(g_bar.edit, "toggle", (ed.mode != M_Normal && !hov) ? 0.8f : 1.0f);
+    }
     wVisible(g_bar.pbg, "pbg", showTitle, true);
     wVisible(g_bar.title, "title", showTitle, true);
     for (int i = 0; i < TabCount; ++i) wVisible(g_bar.tab[i], "tab", showPick, true);
