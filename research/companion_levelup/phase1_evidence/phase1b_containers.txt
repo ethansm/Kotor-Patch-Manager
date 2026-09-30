@@ -1,0 +1,147 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1148 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2276 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_0083ea60 @ 0083ea60 size=102
+
+void __thiscall FUN_0083ea60(int *param_1,undefined4 param_2)
+
+{
+  int local_c;
+  
+  if (param_1[1] == param_1[2]) {
+    if (param_1[2] == 0) {
+      local_c = 0x10;
+    }
+    else {
+      local_c = param_1[2] << 1;
+    }
+    FUN_0084a680(local_c);
+  }
+  *(undefined4 *)(*param_1 + param_1[1] * 4) = param_2;
+  param_1[1] = param_1[1] + 1;
+  return;
+}
+
+
+=== FUN_00593450 @ 00593450 size=104
+
+void __thiscall FUN_00593450(int *param_1,undefined2 param_2)
+
+{
+  int local_c;
+  
+  if (param_1[1] == param_1[2]) {
+    if (param_1[2] == 0) {
+      local_c = 0x10;
+    }
+    else {
+      local_c = param_1[2] << 1;
+    }
+    FUN_00593760(local_c);
+  }
+  *(undefined2 *)(*param_1 + param_1[1] * 2) = param_2;
+  param_1[1] = param_1[1] + 1;
+  return;
+}
+
+
+=== FUN_006f5b40 @ 006f5b40 size=49
+
+void FUN_006f5b40(undefined2 param_1)
+
+{
+  int iVar1;
+  
+  iVar1 = FUN_0064dc30(param_1);
+  if (iVar1 == 0) {
+    FUN_00593450(param_1);
+  }
+  return;
+}
+
+
+=== FUN_006a20f0 @ 006a20f0 size=79
+
+int __thiscall FUN_006a20f0(int param_1,ushort param_2)
+
+{
+  int iVar1;
+  
+  if ((param_2 < *(ushort *)(param_1 + 0x11c)) &&
+     ((*(uint *)(*(int *)(param_1 + 0x108) + 0x28 + (uint)param_2 * 0x50) >> 4 & 1) != 0)) {
+    iVar1 = (uint)param_2 * 0x50 + *(int *)(param_1 + 0x108);
+  }
+  else {
+    iVar1 = 0;
+  }
+  return iVar1;
+}
+
+
+=== FUN_006c0aa0 @ 006c0aa0 size=85
+
+undefined4 __thiscall FUN_006c0aa0(int *param_1,short param_2)
+
+{
+  int local_c;
+  
+  local_c = 0;
+  while( true ) {
+    if (param_1[1] <= local_c) {
+      return 0;
+    }
+    if (*(short *)(*param_1 + local_c * 2) == param_2) break;
+    local_c = local_c + 1;
+  }
+  return 1;
+}
+
+
+=== FUN_006c1450 @ 006c1450 size=57
+
+int __thiscall FUN_006c1450(int *param_1,int param_2)
+
+{
+  int iVar1;
+  
+  if (((param_1[1] == 0) || (param_2 < 0)) || (*param_1 <= param_2)) {
+    iVar1 = 0;
+  }
+  else {
+    iVar1 = param_2 * 0x1a8 + param_1[1];
+  }
+  return iVar1;
+}
+
+

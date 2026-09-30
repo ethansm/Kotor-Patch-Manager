@@ -6,7 +6,8 @@ live exe 4AB72FC1... is the patched one - bytes at every shortlisted site are id
 offset of a .text VA = VA - 0x400C00. All Steam functions below were read in a decompile (2026-09-30), not just address-matched.
 
 ## Status
-2026-09-30: Phase 1 static investigation COMPLETE. No game change, no install, no probe run. Q1-Q8 answered below (Q4 feats-panel
+2026-09-30: Phase 1 + Phase 1b static investigation COMPLETE (see 'Phase 1b results'; O1-O7 closed statically, live confirmation pending user consent for a log-only probe).
+2026-09-30 (earlier): Phase 1 static investigation COMPLETE. No game change, no install, no probe run. Q1-Q8 answered below (Q4 feats-panel
 gating and the client-refresh behaviour after a server-side rewrite are the only residual doubts -> Phase 2 spike).
 
 ## One-paragraph answer
@@ -149,12 +150,44 @@ new slot, log `LevelUp` entry (tag, class, level, pending dump) for (a) manual G
 rewrite one feat and confirm (1) the creature gets it, (2) what the client GUI/character sheet shows afterwards (client copy refresh is
 the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-Q8, so no dynamic probe was run in Phase 1.
 
+## Phase 1b results (2026-09-30, static, evidence `research/companion_levelup/phase1_evidence/phase1b_*.txt`)
+- **O1 client refresh.** The level-up GUI (ctor 0x8F4AF0) builds a TEMP `CSWCCreature` (0x7645F0, with its own `CSWCLevelUpStats` 0x845AC0) and
+  fills it from the live client creature via `CopyCreatureStats` 0x8F6FE0; accept sends the DIFF (0x87A770) and the temp copy is discarded.
+  So the GUI can never overwrite a server-side rewrite, and the character sheet reads the real client creature, which the server updates
+  through the normal object-update path (same path as script-granted feats). Residual: confirm live that the sheet shows rewritten picks (Step 4).
+- **O2 gating.** Feats accept 0x90B430 and Powers accept 0x908B50 only show a popup when picks remain (no hard block for feats; powers popup has
+  no proceed callback in the manual flow). Server never checks. So under a rewrite the player can be forced to click through the vanilla picker
+  (any legal picks), then the DLL replaces them. Option B UX = "picker is decorative"; making the panels skip needs an extra hook (later, optional).
+- **O3 grants vs picks.** `LevelUp` applies EVERY pending feat/power blindly. GUI seeding adds class grants into the pending lists
+  (`AddGrantedPowers` 0x847A70: forms/prestige powers 0x90-0xAB, 0x102-0x109 by class+Jedi level; feat grants via the class cls_feat tables),
+  `AutoLevelup` adds grants directly (AddFeat 0x6B8280) and only picks go through pending. Rewrite rule: pending feats := (orig entries that are
+  in the level's granted set) U path feats; pending powers := (orig entries in the hard-coded engine grant set {0x90-0x94,0x9C-0x9E,0xA4-0xAB,0x102-0x104,0x109})
+  U path powers. Granted feat ids per (class, class level) come from feat.2da `<cls>_granted` (emitted by `gen_runtime_table.py`).
+- **O4 counts/recommend.** Slot counts: `CalcNumberFeats` 0x847E50 = class row +0x1A9/+0x177 [level-1] (regular, bonus); powers left =
+  `ComputeNumberKnownSpellsLeft` 0x847F90 (Jedi class ids only, via 0x6F09D0). Skill purchase 0x846690: class skill 1 pt/rank, cross-class 2 pts per rank,
+  max rank (level+3, halved for cross-class). Recommend buttons use `AddDefaultPackage*` 0x8489F0/0x848870/0x848AE0 over the class-row lists (Option A
+  dead end unchanged). Rewriting at the sink leaves these GUI counts irrelevant to the final result.
+- **O5 layouts.** Pending arrays are `{ptr,count,cap}` (12 bytes each): spells add +0x00/+4/+8, spells remove +0x0C/+0x10/+0x14, feats +0x18/+0x1C/+0x20
+  (ushort ids; the "ushort count at +0x1C" reads only the low half - the field is a dword). Push helpers: 0x83EA60 (uint32) / 0x593450 (uint16), ECX = array
+  (grow 16 then x2). `PendingLevelUp::AddFeat` = 0x6F5B40 thiscall (ECX=pending, ushort, ret 4; dedups then pushes). GetSkillDelta 0x6F5AC0 ret 4,
+  SetSkillDelta 0x6F5B00 ret 8. Spell ids = spells.2da rows (uint32), applied with the class position `local_6`; removal list applied first (0x6B8760).
+  Skill bytes are DELTAS; +0x28 is the ABSOLUTE unspent count written to stats+0x170; `addToList != 0` stores the pending POINTER into the stats+0x28 array
+  (so never free it; rewrite in place and keep it idempotent - SetExperience later re-applies stored structs via LevelUp(p,0)).
+- **O6 callers.** 0x5FD480 = XP award tail (XP >= next threshold and CanLevelUp -> AutoLevelup(1)); 0x74EE90 = party-portrait refresh (companions not under
+  player control -> AutoLevelup(1), otherwise shows the level-up indicator). Both funnel into the same sink. LevelUpHenchman opcode id and the class-row list
+  filler remain unresolved (not needed for Option B).
+- **O7 path semantics -> runtime table.** `research/companion_levelup/gen_runtime_table.py` emits `runtime/levelup_paths.ini`
+  (`L<char_level>=class|ability|feats|powers|skill:ranks|granted feats`, plus `cs<class>` class-skill masks). Key at LevelUp time = lowercase tag +
+  (total level before LevelUp)+1; class at that level comes from pending +0x2C and must equal the record's class, else do nothing (vanilla). Skill pending
+  bytes = record ranks; unspent = orig_unspent + cost(orig deltas) - cost(record ranks) with the class-skill masks (cost 1/2). "Hold until level N" =
+  a record with empty lists (feat/power slots simply lapse; only skill points carry over); a missing record or class mismatch = vanilla. Multi-class
+  (Atton Scoundrel 19 -> Sentinel 1 at char 20) works because the record carries its class id.
+
 ## Open items
-- Feats panel accept gating (`CSWGuiFeatsCharGen::OnAcceptButton` 0x90B430) not read.
-- Whether the client character sheet updates after the server applies rewritten picks (single-process, likely via Confirmation msg / object update).
-- LevelUpHenchman NWScript opcode id; callers 0x5FD480 and 0x74EE90 of AutoLevelup.
-- Who fills class-row recommended lists from packages.2da (only matters if Option A is revisited).
-- Stored per-level pending structs (`this+0x28`, "LvlStatList") are an existing engine mechanism that SetExperience consumes - a possible alternative to a hook (Phase 2 idea).
+- Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
+  hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
+- Unresolved, not needed for Option B: LevelUpHenchman NWScript opcode id; who fills class-row recommended lists; exact hidden ECX of `AddGrantedPowers` param_2.
+- Alternative kept as fallback: stored per-level structs (`stats+0x28` "LvlStatList", consumed by SetExperience) - data-only route, unverified for companions.
 
 ## Commands run
 - `python3 patch_manager_mods/ghidra_knowledge/gog_cluster_delta_map.py --selftest` (PASS 10/10); then per class regex `^CLASS$` with `--out` for
