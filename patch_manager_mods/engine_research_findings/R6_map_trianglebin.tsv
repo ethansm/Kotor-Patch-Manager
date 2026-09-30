@@ -1,0 +1,11 @@
+0x0050c5a0	0x89b3f0	CAurGrassInfo::Constructor	vote	retn=0
+0x0050c660	0x89b4b0	CAurTriangleBin::Constructor	vote	retn=0
+0x0050c7a0	0x89b5f0	CAurTriangleBin::Destructor	vote	retn=0
+0x0050c8a0	0x89b6f0	CAurTriangleBin::AddTriangle	vote	retn=12
+0x0050d960	0x89c7b0	CAurTriangleBin::BuildGrassPolys	vote	retn=0
+0x0050da00	0x89c850	CAurTriangleBin::DestroyGrassPolys	vote	retn=0
+0x0050e6e0	0x89d530	CAurTriangleBin::FinishGeometry	vote	retn=0
+0x0050e7b0	0x89d600	CAurTriangleBin::SetMinDistanceSquared	vote	retn=4
+0x0050e910	0x89d760	CAurTriangleBin::SortTriangles	vote	retn=0
+0x0050ebc0	0x89da10	CAurTriangleBin::CreateArrays	vote	retn=0
+0x00510f70	0x89fdc0	CAurTriangleBin::UpdateGrassForWind	vote	retn=4

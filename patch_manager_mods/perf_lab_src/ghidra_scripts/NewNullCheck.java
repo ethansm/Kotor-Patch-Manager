@@ -1,6 +1,6 @@
 // Lists every call to the CRT allocators with the constant size (if any) and whether the result is NULL-tested:
 // <outdir>/alloc_sites.tsv (allocator, site, fn, fn_name, size, checked, after). Allocators (Steam 6a522e71):
-// operator new 0x919723, _malloc 0x9215E6, _realloc 0x934311, __calloc_impl 0x931AB0 (override: args after outdir,
+// operator new 0x919723, new[] thunk 0x91D288, _malloc 0x9215E6, _realloc 0x934311, __calloc_impl 0x931AB0 (override: args after outdir,
 // name=hexaddr:argIndexOfSize(0-based push order from the call backwards)).
 // size: the immediate of the N-th PUSH before the call (walking back <= 8 insns), "var:<operand>" otherwise.
 // checked: TEST/CMP/OR on EAX (or on the register EAX was just copied into) within 3 insns after the call.
@@ -28,6 +28,7 @@ public class NewNullCheck extends GhidraScript {
             }
         } else {
             allocs.put("operator_new", new long[] { 0x919723, 0 });
+            allocs.put("operator_new_arr", new long[] { 0x91D288, 0 }); // new[] thunk -> 0x919723
             allocs.put("malloc", new long[] { 0x9215E6, 0 });
             allocs.put("realloc", new long[] { 0x934311, 1 });
             allocs.put("calloc", new long[] { 0x931AB0, -1 }); // n*m: report both pushes
