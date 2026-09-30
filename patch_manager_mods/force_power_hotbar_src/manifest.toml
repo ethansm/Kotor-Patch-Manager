@@ -1,9 +1,9 @@
 [patch]
 id = "force-power-hotbar"
 name = "Force Power Hotbar"
-version = "0.2.0-dev"
+version = "0.3.0-dev"
 author = "local"
-description = "30-slot keybound hotbar (1-0, Ctrl+1-0, Alt+1-0) that invokes powers/items through the HUD action bar. 0.2.0: ten on-screen buttons (LBL_HOTBAR*, bound in the HUD constructor) above the action bar."
+description = "30-slot keybound hotbar (1-0, Ctrl+1-0, Alt+1-0) that invokes powers/items through the HUD action bar. 0.2.0: ten on-screen buttons (LBL_HOTBAR*, bound in the HUD constructor) above the action bar. 0.3.0: in-game edit toggle + picker (assign powers/items/modes to the buttons, saved to the INI)."
 
 requires = []
 conflicts = []

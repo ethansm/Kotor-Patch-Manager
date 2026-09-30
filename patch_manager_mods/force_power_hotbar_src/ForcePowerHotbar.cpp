@@ -17,6 +17,7 @@
 #include <windows.h>
 #include <stdarg.h>
 #include <set>
+#include <algorithm>
 #include "HotbarConfig.h"
 #include "TwoDA.h"
 #include "Tlk.h"
@@ -63,7 +64,14 @@ constexpr int IconIdOffset = 10;
 constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;
 constexpr uintptr_t FnScreenInfo = 0x0073FEA0;     // cdecl() -> obj with short width @+0x6C, height @+0x6E (what InitControl scales by)
 constexpr uintptr_t GuiRefW = 0x009F4390, GuiRefH = 0x009F4394;   // ints (800, 600): the 800x600 layout space
-constexpr int TipBgId = FirstButtonId + 2 * ButtonCount, TipId = TipBgId + 1;   // hover tooltip frame + text
+// config UI (0.3.0), IDs continue after the 20 hotbar labels; MUST match ALL_TAGS order in scripts/add_hotbar_buttons_gui.py.
+// The tooltip pair is last so it draws above the picker (panel Draw is ascending by ID).
+constexpr int EditId = FirstButtonId + 2 * ButtonCount, TitleId = EditId + 1, TabId0 = EditId + 2, TabCount = 3;
+constexpr int PrevId = EditId + 5, NextId = EditId + 6, ClearId = EditId + 7;
+constexpr int CellCount = 8, CellBgId0 = EditId + 8, CellIcId0 = CellBgId0 + CellCount;
+constexpr int TipBgId = CellIcId0 + CellCount, TipId = TipBgId + 1;   // hover tooltip frame + text
+constexpr int TotalNewControls = TipId - FirstButtonId + 1;
+constexpr int CellTipBase = 100;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
 constexpr uintptr_t TextVtable = 0x009876B4;
 constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
@@ -415,9 +423,25 @@ struct Widget {
     float alpha = -1.0f;            // last applied border alpha
     std::string icon;               // last applied fill resref ("" = none)
     std::string why;                // last logged reason for hidden/shown
+    std::string text;               // last applied runtime text (picker widgets)
 };
 struct Button { Widget bg, ic; bool avail = false; bool hover = false; Entry entry; };
-struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; std::string tipText; };
+// ---- in-game editor state (all of it lives in Bar so a HUD rebuild resets it) ----
+enum EditMode { M_Normal = 0, M_Edit = 1, M_Pick = 2 };
+const char* const ModeName[] = { "Normal", "Edit", "Pick" };
+struct Cell { Widget bg, ic; bool avail = false; Entry entry; };
+struct Editor {
+    int mode = M_Normal, slot = -1, tab = 0, page = 0;
+    std::vector<Entry> list; unsigned sig = 0; long lastRefresh = -1000;
+    int over = -1; DWORD overStart = 0;
+    std::string msg;                  // transient message shown in the title (e.g. a refused save)
+};
+struct Bar {
+    uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; std::string tipText;
+    Widget edit, title, tab[TabCount], prev, next, clear; Cell cell[CellCount]; int editBound = 0; Editor ed;
+};
+volatile bool g_editOpen = false;    // Edit or Pick mode active (read by the input hook: digits pass through, Esc is swallowed)
+volatile bool g_escHit = false;      // set by the input hook when it swallowed an Esc key-down
 Bar g_bar;
 long g_barSeq = 0;
 
@@ -538,12 +562,12 @@ std::string shortDesc(const std::string& d) {
 }
 
 // Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
-std::string buildTipText(int s, const Entry& e, bool verboseLog = true) {
+std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
     std::string title = e.name; size_t par = title.rfind(" ("); if (par != std::string::npos && par > 0 && title.back() == ')') title.resize(par);
     std::string qty = e.name.size() > title.size() + 3 ? e.name.substr(title.size() + 2, e.name.size() - title.size() - 3) : "";
     std::string out = title + "\n";
     const char* kind = (e.key & 0x40000000) ? "Item" : ((e.key & 0x20000000) ? "Force Power" : "Mode");
-    out += std::string("Key: ") + slotDigit(s) + "   " + kind + "\n";
+    if (digit) out += std::string("Key: ") + digit + "   " + kind + "\n"; else out += std::string(kind) + "\n";
     if ((e.key & 0x20000000) && !(e.key & 0x40000000)) {
         ensureLookups();
         int row = e.key & 0x1FFFFFFF;
@@ -584,10 +608,9 @@ void hideTip(const char* why) {
     g_bar.tipSlot = -1;
 }
 
-void showTip(int s) {
-    Button& b = g_bar.b[s];
+void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) {
     if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
-    std::string text = buildTipText(s, b.entry);
+    std::string text = buildTipText(digit, entry);
     g_bar.tipText = text;
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
     if (rdInt(tx, 0) != (int)TextVtable || rdInt(tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(tx, 0), (unsigned)rdInt(tx, Text_Renderer)); g_bar.tipSlot = s; return; }
@@ -599,7 +622,7 @@ void showTip(int s) {
     for (char c : text) { if (c == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
     int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
     RECT cr = {0, 0, 3840, 1600}; if (g_gameWnd) GetClientRect(g_gameWnd, &cr);
-    uintptr_t fc = reinterpret_cast<uintptr_t>(b.bg.ctl); int fx = rdInt(fc, 4), fy = rdInt(fc, 8);
+    uintptr_t fc = reinterpret_cast<uintptr_t>(anchor.ctl); int fx = rdInt(fc, 4), fy = rdInt(fc, 8);
     int x = fx, y = fy - h - 12;
     if (x + w > cr.right - 8) x = cr.right - 8 - w;
     if (x < 8) x = 8;
@@ -628,21 +651,23 @@ void updateHover(bool gate) {
     else if (g_cfg.general.verbose && (pt.x != lastPt.x || pt.y != lastPt.y) && pt.y > 1100 && g_frame - lastLog > 120) { lastLog = g_frame; logf("hover: cursor=(%ld,%ld) over=%d", (long)pt.x, (long)pt.y, over); }
     lastPt = pt;
     for (int s = 0; s < ButtonCount; ++s) {
-        Button& b = g_bar.b[s]; bool hov = (s == over) && b.avail; b.hover = hov;
-        if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, hov ? FrameHiResref : FrameResref);
+        Button& b = g_bar.b[s]; bool hov = (s == over) && (b.avail || g_bar.ed.mode != M_Normal); b.hover = hov;
+        bool selected = g_bar.ed.mode == M_Pick && g_bar.ed.slot == s;   // slot being edited stays highlighted
+        if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, (hov || selected) ? FrameHiResref : FrameResref);
     }
     {   // left click on an available slot = same request as its digit key
         static bool prevDown = false;
         bool down = gate && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
-        if (down && !prevDown && over >= 0) {
+        if (down && !prevDown && over >= 0 && g_bar.ed.mode != M_Normal) logf("click: slot %d in %s mode -> handled by the editor, not invoked", over, ModeName[g_bar.ed.mode]);
+        else if (down && !prevDown && over >= 0) {
             bool ok = g_bar.b[over].avail;
             logf("click: slot %d %s", over, ok ? "queued" : "ignored (no action)");
             if (ok) { int next = (g_ringHead + 1) % 16; if (next == g_ringTail) logf("click: ring full, dropped"); else { g_ring[g_ringHead] = { 0, over }; g_ringHead = next; } }
         }
         prevDown = down;
     }
-    if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - hoverStart >= TipDelayMs) showTip(over);
-    if (over < 0 || !g_bar.b[over].avail) hideTip("no hover");
+    if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - hoverStart >= TipDelayMs) showTipAt(g_bar.b[over].bg, g_bar.b[over].entry, slotDigit(over), over);
+    if ((over < 0 || !g_bar.b[over].avail) && g_bar.tipSlot < CellTipBase) hideTip("no hover");
 }
 
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
@@ -667,12 +692,187 @@ void updateButtons(uintptr_t hud, bool gate) {
         else if (!resolve(hud, want, &e)) state = "entry not available";
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
         b.avail = have; if (have) b.entry = e;
-        if (have && g_bar.tipSlot == s && buildTipText(s, e, false) != g_bar.tipText) { logf("tip: slot %d entry changed while hovered, refreshing", s); showTip(s); }
+        if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { logf("tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
         setFill(b, b.ic, s, have ? e.icon : std::string());
         setAlpha(b, b.ic, s, (have && !(e.flags & 1)) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
     }
+}
+
+
+// ---- generic widget helpers for the editor controls (log every change) -------------------------------------
+bool textObjOk(Widget& w) { uintptr_t tx = reinterpret_cast<uintptr_t>(w.ctl) + Label_Text; return rdInt(tx, 0) == (int)TextVtable && rdInt(tx, Text_Renderer) != 0; }
+void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
+    if (!w.ctl) return;
+    int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) { logf("edit: %s flags unreadable", nm); return; }
+    int nf = vis ? (fl | 2) : (fl & ~2);
+    nf = (vis && hit) ? (nf & ~0x20) : (nf | 0x20);   // hit-testable only while shown, so hidden controls never swallow clicks
+    int v = vis ? 1 : 0;
+    if (w.visible == v && nf == fl) return;
+    *reinterpret_cast<int*>(w.ctl + Ctl_Flags) = nf;
+    logf("edit: %s %s -> %s flags %08x->%08x", nm, w.visible < 0 ? "?" : (w.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", (unsigned)fl, (unsigned)nf);
+    w.visible = v;
+}
+void wFill(Widget& w, const char* nm, const std::string& icon) {
+    if (!w.ctl || w.icon == icon) return;
+    uintptr_t border = reinterpret_cast<uintptr_t>(w.ctl) + Label_Border;
+    if (rdInt(border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
+    void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
+    *reinterpret_cast<void**>(border + Border_Fill) = image;
+    logf("edit: %s fill '%s' -> '%s' image=%p", nm, w.icon.c_str(), icon.c_str(), image);
+    w.icon = icon;
+}
+void wAlpha(Widget& w, const char* nm, float a) {
+    if (!w.ctl || w.alpha == a) return;
+    uintptr_t border = reinterpret_cast<uintptr_t>(w.ctl) + Label_Border;
+    if (rdInt(border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting alpha", nm); return; }
+    *reinterpret_cast<float*>(border + Border_Alpha) = a;
+    logf("edit: %s alpha %.2f -> %.2f", nm, w.alpha, a);
+    w.alpha = a;
+}
+void wText(Widget& w, const char* nm, const std::string& text) {
+    if (!w.ctl || w.text == text) return;
+    if (!textObjOk(w)) { logf("edit: %s text object bad, cannot set \"%s\"", nm, text.c_str()); return; }
+    uintptr_t tx = reinterpret_cast<uintptr_t>(w.ctl) + Label_Text;
+    char exo[16] = {0};
+    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, text.c_str());
+    reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + Text_StringSub), exo);
+    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+    logf("edit: %s text \"%s\" -> \"%s\"", nm, w.text.c_str(), text.c_str());
+    w.text = text;
+}
+bool wHit(const Widget& w, const POINT& pt) {
+    if (!w.ctl || w.visible != 1) return false;
+    uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(c, 4), y = rdInt(c, 8), ww = rdInt(c, 0xC), hh = rdInt(c, 0x10);
+    return pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh;
+}
+
+// ---- in-game editor: Normal -> (toggle) Edit -> (slot click) Pick -> (cell / Clear) assign+save -> Edit; Esc backs out one level ----
+void setMode(int m, int slot, const char* why) {
+    Editor& ed = g_bar.ed;
+    logf("edit: mode %s -> %s slot %d -> %d (%s) char='%s'", ModeName[ed.mode], ModeName[m], ed.slot, slot, why, g_charKey.c_str());
+    if (m == M_Pick && ed.mode != M_Pick) { ed.page = 0; ed.sig = 0; ed.lastRefresh = -1000; }
+    if (m != M_Pick) { ed.over = -1; if (g_bar.tipSlot >= CellTipBase) hideTip("picker closed"); }
+    ed.mode = m; ed.slot = slot; ed.msg.clear();
+    g_editOpen = (m != M_Normal);
+}
+
+int tabOf(const Entry& e) { return (e.key & 0x40000000) ? 1 : ((e.key & 0x20000000) ? 0 : 2); }
+const char* const TabName[TabCount] = { "power", "item", "mode" };
+
+// Writes (or, with e == nullptr, clears) hotbar slot `slot` of the Default profile and saves the INI. Character profiles are not used yet:
+// the character key is not stable (Exile flips objfffffffd <-> objffffffff across a load), so edits apply to every party member.
+bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
+    Editor& ed = g_bar.ed;
+    checkConfig(true);   // pick up a hand edit made since the last poll before we overwrite the file
+    if (!g_cfg.warnings.empty()) {
+        logf("edit: assign REFUSED: config has %d warning(s); saving would drop the lines they concern", (int)g_cfg.warnings.size());
+        ed.msg = "Config file has warnings - not saving (see log)"; return false;
+    }
+    hb::Profile& d = g_cfg.profile("Default");
+    int frozen = 0;
+    for (int i = 0; i < hb::Slots; ++i) if (d.slots[0][i].empty() && !d.slots[0][i].blank && !g_eff[i].empty()) { d.slots[0][i] = g_eff[i]; d.slots[0][i].blank = false; ++frozen; }
+    hb::ActionRef a; if (e) a = e->ref; else a.blank = true;
+    if (e && a.empty()) { logf("edit: assign REFUSED: entry '%s' has no stable ref", e->name.c_str()); ed.msg = "That entry cannot be bound"; return false; }
+    g_cfg.SetSlot("Default", 0, slot, a, e ? e->name : "cleared");
+    static bool backedUp = false;
+    if (!backedUp) { backedUp = true; BOOL ok = CopyFileA(IniPath, "force_power_hotbar.ini.bak", FALSE); logf("edit: backup %s -> force_power_hotbar.ini.bak: %s", IniPath, ok ? "ok" : "FAILED (no ini yet?)"); }
+    bool ok = g_cfg.Save(IniPath);
+    long long mt = hb::Config::mtimeOf(IniPath); if (ok) g_cfgMtime = mt;
+    logf("edit: assign slot %d (%s) := %s; froze %d autofilled slot(s) into Default; character '%s'; Save %s (mtime %lld)", slot, hb::SlotKeyName(0, slot).c_str(),
+         e ? hb::Format(a).c_str() : "none", frozen, g_charKey.c_str(), ok ? "ok" : "FAILED", mt);
+    if (!ok) { ed.msg = "Saving the config failed (see log)"; return false; }
+    recomputeBound(); refreshEffective(hud);
+    return true;
+}
+
+void updateEditor(uintptr_t hud, bool gate) {
+    Editor& ed = g_bar.ed;
+    if (g_bar.panel != hud || g_bar.built == 0 || !g_bar.editBound) return;
+    static std::string lastChar = "\x01"; static bool prevDown = false; static bool lastFgOk = true;
+    if (lastChar != g_charKey) { if (lastChar != "\x01" && ed.mode != M_Normal) setMode(M_Normal, -1, "character changed"); lastChar = g_charKey; }
+    if (!gate && ed.mode != M_Normal) setMode(M_Normal, -1, "gate closed");
+    if (g_escHit) { g_escHit = false; if (ed.mode == M_Pick) setMode(M_Edit, -1, "Esc"); else if (ed.mode == M_Edit) setMode(M_Normal, -1, "Esc"); else logf("edit: Esc flag set in Normal mode (ignored)"); }
+
+    POINT pt = {0, 0}; bool haveCur = gate && cursorInGame(&pt);
+    HWND fg = GetForegroundWindow(); DWORD fgPid = 0; if (fg) GetWindowThreadProcessId(fg, &fgPid);
+    bool fgOk = fg && fgPid == GetCurrentProcessId();
+    if (fgOk != lastFgOk) { logf("edit: foreground window %p pid=%lu ours=%d", (void*)fg, (unsigned long)fgPid, (int)fgOk); lastFgOk = fgOk; }
+    bool down = gate && fgOk && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+    bool click = down && !prevDown; prevDown = down;
+
+    // ---- visibility of the always-present toggle and the mode-dependent parts
+    bool showTitle = gate && ed.mode != M_Normal, showPick = gate && ed.mode == M_Pick;
+    wVisible(g_bar.edit, "toggle", gate, true);
+    wText(g_bar.edit, "toggle", ed.mode == M_Normal ? "Edit" : "Done");
+    wFill(g_bar.edit, "toggle", ed.mode == M_Normal ? FrameResref : FrameHiResref);
+    wVisible(g_bar.title, "title", showTitle, true);
+    for (int i = 0; i < TabCount; ++i) wVisible(g_bar.tab[i], "tab", showPick, true);
+    wVisible(g_bar.prev, "prev", showPick, true); wVisible(g_bar.next, "next", showPick, true); wVisible(g_bar.clear, "clear", showPick, true);
+    for (int i = 0; i < CellCount; ++i) { wVisible(g_bar.cell[i].bg, "cell.bg", showPick, true); wVisible(g_bar.cell[i].ic, "cell.ic", showPick, false); }
+
+    // ---- picker contents (rebuilt from the HUD's group lists when stale)
+    int pages = 1;
+    if (ed.mode == M_Pick) {
+        std::vector<Entry> all; unsigned h = 2166136261u;
+        for (int g = 0; g < 6; ++g) {
+            std::vector<Entry> es; readGroup(hud, g, &es);
+            for (auto& x : es) {
+                if (tabOf(x) != ed.tab || x.ref.empty()) continue;
+                bool dup = false; for (auto& y : all) if (hb::Same(y.ref, x.ref)) dup = true;
+                if (dup) continue;
+                all.push_back(x); h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u;
+            }
+        }
+        h = (h ^ (unsigned)ed.tab ^ ((unsigned)ed.page << 4)) * 16777619u;
+        if (h != ed.sig || g_frame - ed.lastRefresh >= 60) {
+            if (h != ed.sig) logf("edit: picker list tab=%s page=%d entries=%d (was %d) slot=%d", TabName[ed.tab], ed.page, (int)all.size(), (int)ed.list.size(), ed.slot);
+            ed.sig = h; ed.lastRefresh = g_frame; ed.list = all;
+        }
+        pages = std::max(1, ((int)ed.list.size() + CellCount - 1) / CellCount);
+        if (ed.page >= pages) { logf("edit: page %d clamped to %d (pages=%d)", ed.page, pages - 1, pages); ed.page = pages - 1; }
+        char t[96]; snprintf(t, sizeof t, "Slot %c: pick a %s  (%d/%d)  Esc = back", slotDigit(ed.slot), TabName[ed.tab], ed.page + 1, pages);
+        wText(g_bar.title, "title", ed.msg.empty() ? std::string(t) : ed.msg);
+        for (int i = 0; i < TabCount; ++i) wFill(g_bar.tab[i], "tab", i == ed.tab ? FrameHiResref : FrameResref);
+        wAlpha(g_bar.prev, "prev", ed.page > 0 ? 1.0f : 0.4f); wAlpha(g_bar.next, "next", ed.page + 1 < pages ? 1.0f : 0.4f);
+        for (int i = 0; i < CellCount; ++i) {
+            Cell& c = g_bar.cell[i]; size_t idx = (size_t)ed.page * CellCount + i;
+            c.avail = idx < ed.list.size(); if (c.avail) c.entry = ed.list[idx];
+            bool hov = ed.over == i && c.avail;
+            wFill(c.bg, "cell.bg", hov ? FrameHiResref : FrameResref);
+            wAlpha(c.bg, "cell.bg", c.avail ? 1.0f : EmptyFrameAlpha);
+            wFill(c.ic, "cell.ic", c.avail ? c.entry.icon : std::string());
+            wAlpha(c.ic, "cell.ic", (c.avail && !(c.entry.flags & 1)) ? DimAlpha : 1.0f);
+        }
+    } else if (ed.mode == M_Edit) {
+        wText(g_bar.title, "title", ed.msg.empty() ? std::string("Edit: click a hotbar slot to change it  (Esc = done)") : ed.msg);
+    }
+
+    // ---- picker hover (cells) + tooltip
+    int over = -1;
+    if (ed.mode == M_Pick && haveCur) for (int i = 0; i < CellCount && over < 0; ++i) if (g_bar.cell[i].avail && wHit(g_bar.cell[i].bg, pt)) over = i;
+    if (over != ed.over) { logf("edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); }
+    if (over >= 0 && g_bar.tipSlot != CellTipBase + over && GetTickCount() - ed.overStart >= TipDelayMs) showTipAt(g_bar.cell[over].bg, g_bar.cell[over].entry, 0, CellTipBase + over);
+
+    // ---- clicks
+    if (!click || !haveCur) return;
+    if (wHit(g_bar.edit, pt)) { setMode(ed.mode == M_Normal ? M_Edit : M_Normal, -1, "toggle click"); return; }
+    if (ed.mode == M_Normal) return;
+    for (int s = 0; s < ButtonCount; ++s) if (wHit(g_bar.b[s].bg, pt)) { setMode(M_Pick, s, "slot click"); return; }
+    if (ed.mode != M_Pick) return;
+    for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], pt)) { logf("edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.page = 0; ed.sig = 0; ed.msg.clear(); return; }
+    if (wHit(g_bar.prev, pt)) { if (ed.page > 0) { --ed.page; ed.sig = 0; logf("edit: page -> %d/%d", ed.page + 1, pages); } else logf("edit: prev click ignored (first page)"); return; }
+    if (wHit(g_bar.next, pt)) { if (ed.page + 1 < pages) { ++ed.page; ed.sig = 0; logf("edit: page -> %d/%d", ed.page + 1, pages); } else logf("edit: next click ignored (last page)"); return; }
+    if (wHit(g_bar.clear, pt)) { logf("edit: Clear click slot %d", ed.slot); if (assignSlot(hud, ed.slot, nullptr)) setMode(M_Edit, -1, "cleared"); return; }
+    for (int i = 0; i < CellCount; ++i) if (wHit(g_bar.cell[i].bg, pt)) {
+        if (!g_bar.cell[i].avail) { logf("edit: click on empty cell %d ignored", i); return; }
+        Entry chosen = g_bar.cell[i].entry;
+        logf("edit: cell %d click -> slot %d := group %d key=%08x %s \"%s\"", i, ed.slot, chosen.group, (unsigned)chosen.key, hb::Format(chosen.ref).c_str(), chosen.name.c_str());
+        if (assignSlot(hud, ed.slot, &chosen)) setMode(M_Edit, -1, "assigned");
+        return;
+    }
+    logf("edit: click at (%ld,%ld) in Pick mode hit nothing", (long)pt.x, (long)pt.y);
 }
 
 void dumpMem(const char* tag, uintptr_t base, int dwords) {
@@ -756,8 +956,13 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     case 0x2A: case 0x36: g_shift = down; break;
     default: isMod = false;
     }
-    bool isDigit = dik >= 0x02 && dik <= 0x0B;
+    bool isDigit = dik >= 0x02 && dik <= 0x0B, isEsc = dik == 0x01;
     const char* decision = "pass";
+    if (isEsc) {   // while the editor is open Esc backs out of it instead of opening the game menu
+        if (!down) { if (g_downSwallowed[dik]) { g_downSwallowed[dik] = false; rec->dwOfs = 0; rec->dwData = 0; decision = "swallow-up (edit)"; } }
+        else if (g_editOpen && g_hudGateOk && (GetTickCount() - g_hudTick) < 250) { g_downSwallowed[dik] = true; g_escHit = true; rec->dwOfs = 0; rec->dwData = 0; decision = "SWALLOW (edit Esc)"; }
+        else decision = "pass(edit closed)";
+    }
     if (isDigit) {
         if (!down) {
             if (g_downSwallowed[dik]) { g_downSwallowed[dik] = false; rec->dwOfs = 0; rec->dwData = 0; decision = "swallow-up"; }
@@ -765,6 +970,7 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
             int row = g_alt ? 2 : (g_ctrl ? 1 : 0), slot = (int)dik - hb::kFirstDik;
             bool active = g_hudGateOk && (GetTickCount() - g_hudTick) < 250;
             if (!active) decision = "pass(hud inactive)";
+            else if (g_editOpen) decision = "pass(edit mode: never invoke)";
             else if (!g_slotBound[row][slot]) decision = "pass(unbound)";
             else {
                 int next = (g_ringHead + 1) % 16;
@@ -773,7 +979,7 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
             }
         } else decision = "pass(shift)";
     }
-    if (logIt || isDigit || isMod) { ++g_capLogged; logf("cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
+    if (logIt || isDigit || isMod || isEsc) { ++g_capLogged; logf("cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
 }
 
 // ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
@@ -800,14 +1006,31 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
         snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0, aspect) != nullptr;
         if (okBg || okIc) ++built;
     }
+    g_editOpen = false; g_escHit = false;   // editor state is per HUD instance
+    {   // editor controls: bound individually; the editor is only enabled when every one of them exists (partial UI would be confusing)
+        int eb = 0; char tag[40];
+        eb += bindLabel(panel, "LBL_HOTBAREDIT", EditId, &g_bar.edit, false, aspect) != nullptr;
+        eb += bindLabel(panel, "LBL_HOTBARPTITLE", TitleId, &g_bar.title, false, aspect) != nullptr;
+        for (int i = 0; i < TabCount; ++i) { snprintf(tag, sizeof tag, "LBL_HOTBARTAB%d", i); eb += bindLabel(panel, tag, TabId0 + i, &g_bar.tab[i], false, aspect) != nullptr; }
+        eb += bindLabel(panel, "LBL_HOTBARPREV", PrevId, &g_bar.prev, false, aspect) != nullptr;
+        eb += bindLabel(panel, "LBL_HOTBARNEXT", NextId, &g_bar.next, false, aspect) != nullptr;
+        eb += bindLabel(panel, "LBL_HOTBARCLEAR", ClearId, &g_bar.clear, false, aspect) != nullptr;
+        for (int i = 0; i < CellCount; ++i) {
+            snprintf(tag, sizeof tag, "LBL_HOTBARCELLBG%d", i); eb += bindLabel(panel, tag, CellBgId0 + i, &g_bar.cell[i].bg, false, aspect) != nullptr;
+            snprintf(tag, sizeof tag, "LBL_HOTBARCELL%d", i); eb += bindLabel(panel, tag, CellIcId0 + i, &g_bar.cell[i].ic, false, aspect) != nullptr;
+        }
+        const int want = 1 + 1 + TabCount + 3 + 2 * CellCount;
+        g_bar.editBound = (eb == want) ? 1 : 0;
+        logf("H3: editor controls bound %d/%d -> editor %s", eb, want, g_bar.editBound ? "ENABLED" : "DISABLED (run scripts/add_hotbar_buttons_gui.py --replace)");
+    }
     bindLabel(panel, "LBL_HOTBARTIPBG", TipBgId, &g_bar.tipBg, false, aspect);
     bindLabel(panel, "LBL_HOTBARTIP", TipId, &g_bar.tip, true, aspect);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = savedFlag;
     g_bar.built = built;
     int after = rdInt(panel, Panel_CtlCount, -1);
-    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + 2 * ButtonCount + 2);
+    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + TotalNewControls);
     int arr = rdInt(panel, Panel_CtlArray);
-    for (int s = 0; s < ButtonCount; ++s) for (const Widget* w : { &g_bar.b[s].bg, &g_bar.b[s].ic, &g_bar.tipBg, &g_bar.tip }) if (w->ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", w->id, (unsigned)rdInt((uintptr_t)arr, w->id * 4), w->ctl);
+    for (int s = 0; s < ButtonCount; ++s) for (const Widget* w : { &g_bar.b[s].bg, &g_bar.b[s].ic, &g_bar.tipBg, &g_bar.tip, &g_bar.edit }) if (w->ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", w->id, (unsigned)rdInt((uintptr_t)arr, w->id * 4), w->ctl);
 }
 
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
@@ -837,6 +1060,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     probe(hud, g_frame == 60);
     updateButtons(hud, gate);
     updateHover(gate);
+    updateEditor(hud, gate);
     if (gate) drainRing(hud);
     else if (g_ringTail != g_ringHead) { logf("tick: gate closed, discarding %d queued request(s)", (g_ringHead - g_ringTail + 16) % 16); g_ringTail = g_ringHead; }   // never invoke while the HUD is not the active panel
 }
@@ -844,7 +1068,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("force-power-hotbar 0.2.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
+        logf("force-power-hotbar 0.3.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
         logf("addresses: invoke=%08x kbdevGlobal=%08x app=%08x getCreature=%08x hudVt=%08x whitelist=%08x,%08x,%08x,%08x", (unsigned)HudInvokeGroup, (unsigned)KeyboardDeviceGlobal, (unsigned)AppGlobal, (unsigned)GetControlledCreature, (unsigned)HudVtable, (unsigned)PanelWhitelist[0], (unsigned)PanelWhitelist[1], (unsigned)PanelWhitelist[2], (unsigned)PanelWhitelist[3]);
     }
     return TRUE;

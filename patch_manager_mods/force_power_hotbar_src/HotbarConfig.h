@@ -30,6 +30,7 @@ struct ActionRef {
     Kind kind = K_None;
     int id = 0;            // Spell: spells.2da row, Feat: feat.2da row, Other: raw key minus flag bits
     std::string name;      // Item: display name (fallback identity) -- resref/tag once proven stable
+    bool blank = false;    // explicit "none" (kind stays K_None so empty() is true): blocks the Default fallback and AutoFill
     bool empty() const { return kind == K_None; }
 };
 
@@ -56,7 +57,7 @@ inline std::string Format(const ActionRef& r) {
     case K_Feat:  snprintf(b, sizeof b, "feat:%d", r.id); return b;
     case K_Item:  return "item:" + r.name;
     case K_Other: snprintf(b, sizeof b, "other:%x", (unsigned)r.id); return b;
-    default: return "";
+    default: return r.blank ? "none" : "";
     }
 }
 
@@ -65,6 +66,7 @@ inline bool Parse(const std::string& text, ActionRef* out) {
     *out = ActionRef();
     std::string t = trim(text);
     if (t.empty()) return true;
+    if (lower(t) == "none") { out->blank = true; return true; }
     size_t c = t.find(':');
     if (c == std::string::npos) return false;
     std::string k = lower(trim(t.substr(0, c))), v = trim(t.substr(c + 1));
@@ -137,10 +139,16 @@ struct Config {
     ActionRef slotFor(const std::string& characterKey, int row, int slot) const {
         if (!characterKey.empty()) {
             const Profile* p = find(characterKey);
-            if (p && !p->slots[row][slot].empty()) return p->slots[row][slot];
+            if (p && (!p->slots[row][slot].empty() || p->slots[row][slot].blank)) return p->slots[row][slot];
         }
         const Profile* d = find("Default");
         return d ? d->slots[row][slot] : ActionRef();
+    }
+
+    // Editor API: sets (or, with a blank ref, clears) one slot of a profile. note = trailing comment.
+    void SetSlot(const std::string& profileName, int row, int slot, const ActionRef& a, const std::string& note) {
+        Profile& p = profile(profileName);
+        p.slots[row][slot] = a; p.notes[row][slot] = note;
     }
 
     static bool readFile(const std::string& path, std::string* out) {
@@ -210,7 +218,7 @@ struct Config {
     // Canonical text: General, Default first, then the other profiles in name order.
     std::string Serialize() const {
         std::string o = "; Force Power Hotbar. Slots: Bottom = 1..0, Left = Ctrl+1..0, Right = Alt+1..0.\n"
-                        "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  (empty = unbound)\n";
+                        "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n";
         char b[64];
         o += "[General]\n";
         snprintf(b, sizeof b, "SchemaVersion=%d\n", SchemaVersion); o += b;
@@ -223,7 +231,7 @@ struct Config {
         auto emit = [&](const Profile& p) {
             o += "\n[Profile." + p.name + "]\n";
             for (int r = 0; r < Rows; ++r) for (int s = 0; s < Slots; ++s) {
-                if (p.slots[r][s].empty()) continue;
+                if (p.slots[r][s].empty() && !p.slots[r][s].blank) continue;
                 o += SlotKeyName(r, s) + "=" + Format(p.slots[r][s]);
                 if (!p.notes[r][s].empty()) o += "   ; " + p.notes[r][s];
                 o += "\n";

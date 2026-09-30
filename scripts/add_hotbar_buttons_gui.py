@@ -42,12 +42,22 @@ TEMPLATE_TAG = "LBL_QUEUE1"
 DIGITS = "1234567890"
 BG_TAGS = [f"LBL_HOTBARBG{d}" for d in DIGITS]  # slot 0..9 <-> key 1..9,0; IDs FIRST_ID..FIRST_ID+9
 TAGS = [f"LBL_HOTBAR{d}" for d in DIGITS]       # icon labels, IDs FIRST_ID+10..
-TIP_BG_TAG, TIP_TAG = "LBL_HOTBARTIPBG", "LBL_HOTBARTIP"  # hover tooltip: frame (IDs FIRST_ID+20) + text (FIRST_ID+21)
+TIP_BG_TAG, TIP_TAG = "LBL_HOTBARTIPBG", "LBL_HOTBARTIP"  # hover tooltip: frame + text; LAST two IDs so they draw above everything (panel Draw is ascending by ID)
 TIP_TEMPLATE_TAG = "LBL_MOULDING3"  # the HUD's own dark teal framed panel
-ALL_TAGS = BG_TAGS + TAGS + [TIP_BG_TAG, TIP_TAG]
+# ---- in-game configuration UI (0.3.0): edit toggle + picker (title, 3 category tabs, prev/next, Clear, 8 cells = frame+icon each)
+EDIT_TAG = "LBL_HOTBAREDIT"                                   # ID FIRST_ID+20
+TITLE_TAG = "LBL_HOTBARPTITLE"                                # +21
+TAB_TAGS = [f"LBL_HOTBARTAB{i}" for i in range(3)]            # +22..24
+TAB_TEXT = ["Powers", "Items", "Modes"]
+PREV_TAG, NEXT_TAG, CLEAR_TAG = "LBL_HOTBARPREV", "LBL_HOTBARNEXT", "LBL_HOTBARCLEAR"   # +25..27
+CELLS = 8
+CELL_BG_TAGS = [f"LBL_HOTBARCELLBG{i}" for i in range(CELLS)]  # +28..35
+CELL_TAGS = [f"LBL_HOTBARCELL{i}" for i in range(CELLS)]       # +36..43
+ALL_TAGS = (BG_TAGS + TAGS + [EDIT_TAG, TITLE_TAG] + TAB_TAGS + [PREV_TAG, NEXT_TAG, CLEAR_TAG] + CELL_BG_TAGS + CELL_TAGS
+            + [TIP_BG_TAG, TIP_TAG])   # ID order == this order
 TEX = ("hotbar_slot", "hotbar_slot_hi")
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
-DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 12, 484, 42, 5, 46
+DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 58, 484, 42, 5, 46   # x leaves room for the edit toggle at x=12
 FIRST_ID = 111  # frames; icons at FIRST_ID+10. Must equal FirstButtonId in ForcePowerHotbar.cpp
 TEXT_ALIGN_TOP_LEFT = 9
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
@@ -138,7 +148,7 @@ def main() -> int:
     first_id = len(cs)
     assert ids == list(range(first_id)), f"{GUI} IDs are not 0..N-1: {ids}"
     if first_id != FIRST_ID:  # the DLL hard-codes these IDs; a mismatch would misbind (InitControl can overwrite a native slot)
-        print(f"refusing: {GUI} has {first_id} controls, the DLL expects the buttons at IDs {FIRST_ID}..{FIRST_ID + 21}", file=sys.stderr)
+        print(f"refusing: {GUI} has {first_id} controls, the DLL expects the buttons at IDs {FIRST_ID}..{FIRST_ID + len(ALL_TAGS) - 1}", file=sys.stderr)
         return 1
     assert tmpl[0].get_int32("CONTROLTYPE") == 4, "template is not a type-4 label"
 
@@ -178,8 +188,24 @@ def main() -> int:
         fx = a.x + slot * a.spacing
         make(first_id + 10 + slot, TAGS[slot], [fx + a.inset, a.y + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset], digit=digit)
     # tooltip (DLL positions/sizes/fills them at runtime; placeholder rects here): frame first, text on top
-    make(first_id + 20, TIP_BG_TAG, [12, 380, 300, 90], src=tip_t[0])
-    make(first_id + 21, TIP_TAG, [12, 380, 300, 90], text="", align=18)
+    # edit toggle (left of slot 1) and picker (above the bar): frame texture + static text on one label; the DLL shows/hides/swaps them
+    n = first_id + 20
+    make(n, EDIT_TAG, [12, a.y, a.frame, a.frame], fill=TEX[0], text="Edit", align=18); n += 1
+    py = a.y - 132   # picker block: title / tabs / cell row
+    make(n, TITLE_TAG, [a.x, py, 330, 28], fill=TEX[0], text="", align=17); n += 1
+    for i, t in enumerate(TAB_TEXT):
+        make(n, TAB_TAGS[i], [a.x + i * 88, py + 36, 84, 28], fill=TEX[0], text=t, align=18); n += 1
+    cx0 = a.x + 32   # cells start right of the prev arrow
+    make(n, PREV_TAG, [a.x, py + 84, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
+    make(n, NEXT_TAG, [cx0 + CELLS * a.spacing - 4, py + 84, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
+    make(n, CLEAR_TAG, [a.x + 3 * 88, py + 36, 70, 28], fill=TEX[0], text="Clear", align=18); n += 1
+    for i in range(CELLS):
+        make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 84, a.frame, a.frame], fill=TEX[0]); n += 1
+    for i in range(CELLS):
+        make(n, CELL_TAGS[i], [cx0 + i * a.spacing + a.inset, py + 84 + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset]); n += 1
+    assert n == first_id + len(ALL_TAGS) - 2, n
+    make(n, TIP_BG_TAG, [12, 380, 300, 90], src=tip_t[0]); n += 1
+    make(n, TIP_TAG, [12, 380, 300, 90], text="", align=18)
     g.root.set_list("CONTROLS", cs)  # get_list may hand back a detached copy
 
     for tag, cid, rect in plan:
