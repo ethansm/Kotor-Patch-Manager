@@ -540,3 +540,8 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
 
 ### Build 9 (2026-09-30 ~02:00): crash fix -- LESSON: FUN_0073FEA0 is a THISCALL
 - Build 8 crashed ~1 s after a load screen: null read at 0x73FEAF, return address = our DLL. `aspectFix()` called `FnScreenInfo` (0x0073FEA0) as cdecl; the function reads `[this+0x274]` with an implicit ECX we never set (the decompiler hid it). It "worked" in builds 6-7 only because ECX happened to be a harmless value (log `obj=00000000`). Fix: removed the call entirely; the aspect factor comes only from the game window client size. General rule (again): confirm the calling convention in raw disassembly before calling any engine function from a hook.
+
+### Build 10 (2026-09-30 ~02:30): polish from the first live look at the picker (built, NOT yet installed)
+- Toggle is now a thin wrench button (24x42 units, generated `hotbar_edit.tga` / `hotbar_edit_hi.tga`, 72x128); bar shifted to x=42. Group background `LBL_HOTBARPBG` (copy of the native quick-command panel `LBL_MOULDING3`) behind title/tabs/cells; compact (title only) in Edit mode, full in Pick mode (DLL `placePanel`, sizes in units must match the script). Small font `dialogfont10x10` for title/tabs; shorter title strings ("Click a slot to change it", "Slot 8 - Item 1/2 - Esc: back").
+- Mouse wheel over the picker pages the list (window subclass like Mod 1, chains to the old proc, only consumes the wheel inside the picker rect while the editor is open). Log: `wheel: ...`, `edit: wheel acc=...`.
+- IDs now: edit 131, pbg 132, title 133, tabs 134-136, prev/next/clear 137-139, cell frames 140-147, cell icons 148-155, tooltip 156/157. GUI + DLL must be deployed together (old DLL + new .gui: editor disabled, harmless).

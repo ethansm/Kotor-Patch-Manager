@@ -45,19 +45,23 @@ TAGS = [f"LBL_HOTBAR{d}" for d in DIGITS]       # icon labels, IDs FIRST_ID+10..
 TIP_BG_TAG, TIP_TAG = "LBL_HOTBARTIPBG", "LBL_HOTBARTIP"  # hover tooltip: frame + text; LAST two IDs so they draw above everything (panel Draw is ascending by ID)
 TIP_TEMPLATE_TAG = "LBL_MOULDING3"  # the HUD's own dark teal framed panel
 # ---- in-game configuration UI (0.3.0): edit toggle + picker (title, 3 category tabs, prev/next, Clear, 8 cells = frame+icon each)
-EDIT_TAG = "LBL_HOTBAREDIT"                                   # ID FIRST_ID+20
-TITLE_TAG = "LBL_HOTBARPTITLE"                                # +21
-TAB_TAGS = [f"LBL_HOTBARTAB{i}" for i in range(3)]            # +22..24
+EDIT_TAG = "LBL_HOTBAREDIT"                                   # ID FIRST_ID+20 (thin wrench button)
+PBG_TAG = "LBL_HOTBARPBG"                                     # +21 group background (copy of the native quick-command panel LBL_MOULDING3)
+TITLE_TAG = "LBL_HOTBARPTITLE"                                # +22
+TAB_TAGS = [f"LBL_HOTBARTAB{i}" for i in range(3)]            # +23..25
 TAB_TEXT = ["Powers", "Items", "Modes"]
-PREV_TAG, NEXT_TAG, CLEAR_TAG = "LBL_HOTBARPREV", "LBL_HOTBARNEXT", "LBL_HOTBARCLEAR"   # +25..27
+PREV_TAG, NEXT_TAG, CLEAR_TAG = "LBL_HOTBARPREV", "LBL_HOTBARNEXT", "LBL_HOTBARCLEAR"   # +26..28
 CELLS = 8
-CELL_BG_TAGS = [f"LBL_HOTBARCELLBG{i}" for i in range(CELLS)]  # +28..35
-CELL_TAGS = [f"LBL_HOTBARCELL{i}" for i in range(CELLS)]       # +36..43
-ALL_TAGS = (BG_TAGS + TAGS + [EDIT_TAG, TITLE_TAG] + TAB_TAGS + [PREV_TAG, NEXT_TAG, CLEAR_TAG] + CELL_BG_TAGS + CELL_TAGS
+CELL_BG_TAGS = [f"LBL_HOTBARCELLBG{i}" for i in range(CELLS)]  # +29..36
+CELL_TAGS = [f"LBL_HOTBARCELL{i}" for i in range(CELLS)]       # +37..44
+ALL_TAGS = (BG_TAGS + TAGS + [EDIT_TAG, PBG_TAG, TITLE_TAG] + TAB_TAGS + [PREV_TAG, NEXT_TAG, CLEAR_TAG] + CELL_BG_TAGS + CELL_TAGS
             + [TIP_BG_TAG, TIP_TAG])   # ID order == this order
 TEX = ("hotbar_slot", "hotbar_slot_hi")
+EDIT_TEX = ("hotbar_edit", "hotbar_edit_hi")   # thin (72x128) frame with a wrench, normal / active
+SMALL_FONT = "dialogfont10x10"
+EDIT_W = 24
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
-DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 58, 484, 42, 5, 46   # x leaves room for the edit toggle at x=12
+DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 42, 484, 42, 5, 46   # x leaves room for the thin edit toggle at x=12 (24 wide)
 FIRST_ID = 111  # frames; icons at FIRST_ID+10. Must equal FirstButtonId in ForcePowerHotbar.cpp
 TEXT_ALIGN_TOP_LEFT = 9
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
@@ -74,6 +78,34 @@ def make_textures(out: Path) -> list[Path]:
         d.rounded_rectangle([0, 0, 128 * S - 1, 128 * S - 1], radius=22 * S, fill=col + (255,))
         d.rounded_rectangle([9 * S, 9 * S, 119 * S, 119 * S], radius=14 * S, fill=(0, 0, 0, 175))
         im = im.resize((128, 128), Image.LANCZOS)
+        p = out / f"{name}.tga"
+        im.save(p, format="TGA")
+        made.append(p)
+    return made
+
+
+def make_edit_textures(out: Path) -> list[Path]:
+    """Thin rounded frame (72x128) with a wrench, normal and active (beige frame) variants."""
+    from PIL import Image, ImageDraw
+    import math
+    made = []
+    for name, col in ((EDIT_TEX[0], (18, 110, 85)), (EDIT_TEX[1], (208, 204, 170))):
+        S = 4
+        W, H = 72, 128
+        im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=22 * S, fill=col + (255,))
+        d.rounded_rectangle([9 * S, 9 * S, (W - 9) * S, (H - 9) * S], radius=14 * S, fill=(0, 0, 0, 175))
+        ic = (140, 232, 205, 255)
+        # wrench: handle from lower right to the head at upper left, open-jaw head
+        hx, hy, tx, ty = 26, 44, 47, 96   # head centre, tail end
+        d.line([(hx * S, hy * S), (tx * S, ty * S)], fill=ic, width=11 * S)
+        d.ellipse([(tx - 6) * S, (ty - 6) * S, (tx + 6) * S, (ty + 6) * S], fill=ic)
+        d.ellipse([(hx - 15) * S, (hy - 15) * S, (hx + 15) * S, (hy + 15) * S], fill=ic)
+        ang = math.atan2(ty - hy, tx - hx) + math.pi   # jaw opens away from the handle
+        def pt(r, a): return ((hx + r * math.cos(a)) * S, (hy + r * math.sin(a)) * S)
+        d.polygon([pt(0, ang), pt(22, ang - 0.42), pt(22, ang + 0.42)], fill=(0, 0, 0, 175))
+        im = im.resize((W, H), Image.LANCZOS)
         p = out / f"{name}.tga"
         im.save(p, format="TGA")
         made.append(p)
@@ -124,11 +156,11 @@ def main() -> int:
             return 1
         src = b / GUI
         print(f"restore {src} -> {hud}")
-        for t in TEX:
+        for t in TEX + EDIT_TEX:
             print(f"delete {OVERRIDE / (t + '.tga')}")
         if not a.dry_run:
             shutil.copy2(src, hud)
-            for t in TEX:
+            for t in TEX + EDIT_TEX:
                 (OVERRIDE / f"{t}.tga").unlink(missing_ok=True)
         return 0
 
@@ -155,7 +187,7 @@ def main() -> int:
     tip_t = [c for c in cs if c.get_string("TAG") == TIP_TEMPLATE_TAG]
     assert len(tip_t) == 1, f"expected exactly one {TIP_TEMPLATE_TAG} in {GUI}"
 
-    def make(cid, tag, rect, digit=None, fill=None, src=None, text=None, align=None):
+    def make(cid, tag, rect, digit=None, fill=None, src=None, text=None, align=None, font=None):
         ctl = copy.deepcopy(src if src is not None else tmpl[0])  # GFFStruct deep copy keeps struct_id
         ctl.set_int32("ID", cid)
         ctl.set_string("TAG", tag)
@@ -172,6 +204,8 @@ def main() -> int:
             txt = ctl.get_struct("TEXT")
             txt.set_string("TEXT", text)
             txt.set_int32("ALIGNMENT", align)
+            if font:
+                txt.set_resref("FONT", type(txt.get_resref("FONT"))(font))
             ctl.set_struct("TEXT", txt)
         if fill:
             b = ctl.get_struct("BORDER")
@@ -188,21 +222,24 @@ def main() -> int:
         fx = a.x + slot * a.spacing
         make(first_id + 10 + slot, TAGS[slot], [fx + a.inset, a.y + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset], digit=digit)
     # tooltip (DLL positions/sizes/fills them at runtime; placeholder rects here): frame first, text on top
-    # edit toggle (left of slot 1) and picker (above the bar): frame texture + static text on one label; the DLL shows/hides/swaps them
+    # edit toggle (thin wrench button left of slot 1) and picker (above the bar): frame texture + static text on one label; the DLL
+    # shows/hides/swaps them. Picker rows (units): title 22 / tabs 24 / cells 42, 4 apart, 8 padding inside the group background.
     n = first_id + 20
-    make(n, EDIT_TAG, [12, a.y, a.frame, a.frame], fill=TEX[0], text="Edit", align=18); n += 1
-    py = a.y - 132   # picker block: title / tabs / cell row
-    make(n, TITLE_TAG, [a.x, py, 330, 28], fill=TEX[0], text="", align=17); n += 1
+    make(n, EDIT_TAG, [12, a.y, EDIT_W, a.frame], fill=EDIT_TEX[0]); n += 1
+    py = a.y - 10 - 96 - 4   # content top; content is 96 tall, box adds 8 padding each side
+    bw = 424
+    make(n, PBG_TAG, [a.x - 8, py - 8, bw + 16, 96 + 16], src=tip_t[0]); n += 1   # native panel look (fill uibit_fill_2bt + teal edge/corner)
+    make(n, TITLE_TAG, [a.x, py, bw, 22], text="", align=17, font=SMALL_FONT); n += 1   # no fill: text sits on the group background
     for i, t in enumerate(TAB_TEXT):
-        make(n, TAB_TAGS[i], [a.x + i * 88, py + 36, 84, 28], fill=TEX[0], text=t, align=18); n += 1
+        make(n, TAB_TAGS[i], [a.x + i * 88, py + 26, 84, 24], fill=TEX[0], text=t, align=18, font=SMALL_FONT); n += 1
     cx0 = a.x + 32   # cells start right of the prev arrow
-    make(n, PREV_TAG, [a.x, py + 84, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
-    make(n, NEXT_TAG, [cx0 + CELLS * a.spacing - 4, py + 84, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
-    make(n, CLEAR_TAG, [a.x + 3 * 88, py + 36, 70, 28], fill=TEX[0], text="Clear", align=18); n += 1
+    make(n, PREV_TAG, [a.x, py + 54, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
+    make(n, NEXT_TAG, [a.x + bw - 28, py + 54, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
+    make(n, CLEAR_TAG, [a.x + bw - 70, py + 26, 70, 24], fill=TEX[0], text="Clear", align=18, font=SMALL_FONT); n += 1
     for i in range(CELLS):
-        make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 84, a.frame, a.frame], fill=TEX[0]); n += 1
+        make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 54, a.frame, a.frame], fill=TEX[0]); n += 1
     for i in range(CELLS):
-        make(n, CELL_TAGS[i], [cx0 + i * a.spacing + a.inset, py + 84 + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset]); n += 1
+        make(n, CELL_TAGS[i], [cx0 + i * a.spacing + a.inset, py + 54 + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset]); n += 1
     assert n == first_id + len(ALL_TAGS) - 2, n
     make(n, TIP_BG_TAG, [12, 380, 300, 90], src=tip_t[0]); n += 1
     make(n, TIP_TAG, [12, 380, 300, 90], text="", align=18)
@@ -220,7 +257,7 @@ def main() -> int:
     bdir.mkdir(parents=True)
     shutil.copy2(hud, bdir / GUI)
     (bdir / f"{GUI}.sha256").write_text(sha(hud) + "\n")
-    made = make_textures(OVERRIDE)
+    made = make_textures(OVERRIDE) + make_edit_textures(OVERRIDE)
     print("wrote textures: " + ", ".join(str(m) for m in made))
     tmp = hud.with_suffix(".gui.tmp")
     write_gff(g, str(tmp))
