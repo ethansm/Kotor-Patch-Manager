@@ -260,7 +260,6 @@ constexpr float ShieldWidthFraction = 0.55f;          // of the health bar rect 
 // Fill = the shield's VFX hue with its saturation cut (HSV, hue and value kept): red -> salmon, blue -> pale blue. Saturation is
 // scaled by ShieldSatScale but never below ShieldMinSat (so already-pale hues do not wash out to white) and never raised.
 constexpr float ShieldSatScale = 0.50f, ShieldMinSat = 0.30f;
-constexpr float TrackDarken = 0.22f, TrackTealMix = 0.30f;   // empty part = dark desaturated copy of the shield hue (+ a little card teal)
 constexpr float RimBrightness = 0.75f;                        // rim line = fill colour mixed this far toward white
 const float DividerTint[3] = { 0.93f, 0.97f, 1.0f };   // bright seam between shield and health
 const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left, outline-free right edge (scripts/gen_shield_bar_art.py)
@@ -365,9 +364,6 @@ void lightenFill(const float* rgb, float* out) {
     float k = sat > 0.0001f ? target / sat : 1.0f;            // saturation scale; value (max channel) unchanged
     for (int c = 0; c < 3; ++c) out[c] = mx - (mx - rgb[c]) * k;
 }
-void dimTrack(const float* rgb, float* out) {
-    for (int c = 0; c < 3; ++c) out[c] = rgb[c] * TrackDarken + TrackTint[c] * TrackTealMix;
-}
 
 int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, int slotPtr = 0) {
     Pool pools[8];
@@ -394,16 +390,13 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
         (*reinterpret_cast<void***>(image))[6]);
     flush(flushArg);
+    draw(image, x, y, W, H, 0, 0, TrackTint, 1.0f);            // empty track: the engine's neutral teal, like the health bar's
     int rimH = vw / 60 < 1 ? 1 : vw / 60;                      // rim line at the top of a partly drained fill
     int baseUp = 0;                                            // px of bar height already used, from the bottom
     for (int i = 0; i < n; ++i) {
         int segH = int(double(H) * pools[i].max / total + 0.5);
         int fillH = int(double(H) * pools[i].remaining / total + 0.5);
         if (fillH > segH) fillH = segH;
-        { int t0 = y + H - baseUp - segH, t1 = y + H - baseUp;   // this segment's empty track: dark copy of its own hue
-          if (i == n - 1) t0 = y;
-          float dark[3]; dimTrack(pools[i].rgb, dark);
-          if (pushClip(x, t0, W, t1 - t0, ClipNoFillColor, 0, 1.0f)) { draw(image, 0, -(t0 - y), W, H, 0, 0, dark, 1.0f); popClip(); } }
         if (fillH > 0) {
             int y0 = y + H - baseUp - fillH;
             int pushed = pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f);
