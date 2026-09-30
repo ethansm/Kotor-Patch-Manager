@@ -1,0 +1,172 @@
+[
+ {
+  "index": 6,
+  "anchor": "tslrcm-tweak-pack",
+  "name": "TSLRCM Tweak Pack",
+  "url": "http://deadlystream.com/files/file/296-unofficial-tslrcm-tweak-pack/",
+  "author": "Pavijan (update by Fair Strides)",
+  "category": "Patch / 1 - Essential",
+  "method": "Multi-Run TSLPatcher",
+  "notes": "Installation Instructions Don't use the complete installer, instead selecting the individual component installer\u2014this is critical for compatibility, not just to choose specific options. The installer for this mod will need to be run 6 times, once to install each of the options we'll be using: Kaevee Removal Parts 1 & 2, Saedhe's Head, Kreia-Atris Dialogue Tweak, Trayus Mandalore Conversation, and Trayus Sith Lord Masks. Most of the other options for this mod are untested with the mod builds, but will likely function--I still recommend against using them, since compatibility isn't 100% guaranteed, but you can try. The one exception is Atton at the End , which is completely incompatible with one of the most important mods in this build, which is a much more comprehensive implementation of Atton's dialogue at endgame."
+ },
+ {
+  "index": 8,
+  "anchor": "thematic-kotor-2-companions",
+  "name": "Thematic KOTOR 2 Companions",
+  "url": "https://deadlystream.com/files/file/2662-thematic-kotor-2-companions/",
+  "author": "Sniggles & JCarter426",
+  "category": "Mechanics Change / 2 - Recommended",
+  "method": "TSLPatcher",
+  "notes": "Installation Instructions If you would like to have Visas's class as Sith Assassin, install the \"Standard + Sith Assassin Visas\" option. Otherwise, simply install \"Standard.\""
+ },
+ {
+  "index": 9,
+  "anchor": "saving-throw-fixes",
+  "name": "Prestige Class Saving Throw Fixes",
+  "url": "http://deadlystream.com/files/file/828-tsl-prestige-class-saving-throw-fixes/",
+  "author": "Rovan",
+  "category": "Mechanics Change / 2 - Recommended",
+  "method": "Loose-File Mod",
+  "notes": "Installation Instructions I advise users to only install the Jedi Master/Sith Lord fixes."
+ },
+ {
+  "index": 10,
+  "anchor": "classic-class-attack",
+  "name": "Classic Class Attack Bonus",
+  "url": "https://deadlystream.com/files/file/2812-classic-class-attack-bonus/",
+  "author": "Crimson Knight",
+  "category": "Mechanics Change / 1 - Essential",
+  "method": "TSLPatcher Mod",
+  "notes": "Installation Instructions Strongly recommend downloading the standard option. Weaker Consulars can be extremely punishing, so if you choose this option be aware that you're in for a rough time at some places!"
+ },
+ {
+  "index": 68,
+  "anchor": "canonical-jedi-exile",
+  "name": "Canonical Jedi Exile",
+  "url": "http://deadlystream.com/files/file/170-canonical-jedi-exile/",
+  "author": "michaelfung2000",
+  "category": "Appearance Change / 4 - Optional",
+  "method": "Loose-File Mod",
+  "notes": ""
+ },
+ {
+  "index": 95,
+  "anchor": "mira-or-hanharr",
+  "name": "Choose Mira or Hanharr",
+  "url": "http://deadlystream.com/files/file/108-choose-mira-or-hanharr/",
+  "author": "Hassat Hunter",
+  "category": "Immersion & Mechanics Change / 1 - Essential",
+  "method": "Loose-File Mod",
+  "notes": ""
+ },
+ {
+  "index": 97,
+  "anchor": "partyswap",
+  "name": "PartySwap",
+  "url": "https://deadlystream.com/files/file/544-partyswap/",
+  "author": "DarthTyren & Leilukin",
+  "category": "Immersion & Mechanics Change / 1 - Essential",
+  "method": "HoloPatcher Mod",
+  "notes": "Installation Instructions Run the HoloPatcher executable. Select the default install, not M4-78, then re-run the installer, select the \"ADD-ON: PartySwap Item\" install option from the drop-down, and install that as well (without it, you won't be able to actually switch between the companions). When the install is completed, go into the \"Compatibility Patches\" folder, enter the one for Kreia's Fall Ingame Cutscene, and install that patch as well if you've chosen to use the above mod."
+ },
+ {
+  "index": 98,
+  "anchor": "extended-enclave",
+  "name": "Extended Enclave",
+  "url": "http://deadlystream.com/files/file/428-extended-enclave-tslrcm-add-on/",
+  "author": "danil-ch & Darth Hayze",
+  "category": "Restored Content / 1 - Essential",
+  "method": "TSLPatcher Mod",
+  "notes": "Steam Notes This mod disables the ability to unlock certain achievements! Other mods might do the same, but this one has been confirmed incompatible with at least one achievement. I recommend it regardless, but if you care about achievements over story this mod won't be for you."
+ },
+ {
+  "index": 99,
+  "anchor": "partyswap-ee-compatch",
+  "name": "PartySwap/Extended Enclave Compatch",
+  "url": "https://deadlystream.com/files/file/1304-partyswap-and-extended-enclave-compatibility-patch/",
+  "author": "Leilukin",
+  "category": "Patch / 1 - Essential",
+  "method": "TSLPatcher Mod",
+  "notes": "Installation Instructions Use the 'No M4-78EP Installed' option. The 'Extended Enclave Tweaks' is a separate mod we don't use in this build."
+ },
+ {
+  "index": 102,
+  "anchor": "balance-tweak-pack",
+  "name": "Balance Tweak Pack",
+  "url": "https://deadlystream.com/files/file/1790-balance-tweak-pack/",
+  "author": "Pavijan",
+  "category": "Mechanics Change & Patch / 2 - Recommended",
+  "method": "TSLPatcher Mod",
+  "notes": "Installation Instructions Run the installers for Force Crush Balance and Disable Droid Interface Feat. The other mod options are untested with the builds and I don't personally recommend them."
+ },
+ {
+  "index": 105,
+  "anchor": "thematic-sith-lords",
+  "name": "Thematic Sith Lords",
+  "url": "https://deadlystream.com/files/file/1535-thematic-sith-lords/",
+  "author": "Sniggles & JCarter426",
+  "category": "Mechanics Change / 2 - Recommended",
+  "method": "TSLPatcher Mod",
+  "notes": "Installation Instructions First choose your base install option, either Standard or No Force Rating (the latter removes the inherent DS alignment bonus to saves in some modules, which also gives an equivalent malus to LS characters in those modules). After this is installed, if you would like for Visas to ambush you as a Sith Assassin (which is a very difficult fight \u2014remember, she will have Sneak Attack, and that fight forcibly stuns you), re-run the patcher and also install that option."
+ },
+ {
+  "index": 106,
+  "anchor": "thematic-jedi-masters",
+  "name": "Thematic Jedi Masters",
+  "url": "https://deadlystream.com/files/file/2633-thematic-jedi-masters/",
+  "author": "Sniggles & JCarter426",
+  "category": "Mechanics Change / 2 - Recommended",
+  "method": "TSLPatcher Mod",
+  "notes": ""
+ },
+ {
+  "index": 108,
+  "anchor": "bao-dur-heavy-armor",
+  "name": "Bao-Dur Can Wear Heavy Armor",
+  "url": "https://deadlystream.com/files/file/2189-bao-dur-can-wear-heavy-armor/",
+  "author": "Effix",
+  "category": "Bugfix & Immersion / 2 - Recommended",
+  "method": "TSLPatcher Mod",
+  "notes": ""
+ },
+ {
+  "index": 109,
+  "anchor": "jcs-crystal-attunement",
+  "name": "JC's Crystal Attunement",
+  "url": "https://deadlystream.com/files/file/2269-jcs-crystal-attunement-for-k2/",
+  "author": "JCarter426",
+  "category": "Mechanics Change, Bugfix & Immersion / 2 - Recommended",
+  "method": "TSLPatcher",
+  "notes": "Installation Instructions Practically speaking there are only two relevant install options: \"Class-Based Properties + Workbench Attunement\", which is the full package, or \"Bug Fixes Only\". If you don't like the mod's changes but would like to have its bugfixes, install the latter; otherwise, install the former."
+ },
+ {
+  "index": 138,
+  "anchor": "companion-clothes",
+  "name": "Companion Starting Armors",
+  "url": "https://deadlystream.com/files/file/2145-k2-companion-starting-armors/",
+  "author": "Ol' Cappy",
+  "category": "Immersion / 3 - Suggested",
+  "method": "TSLPatcher Mod",
+  "notes": ""
+ },
+ {
+  "index": 139,
+  "anchor": "improved-enlightenmentcorruption",
+  "name": "Improved LS Enlightenment & DS Corruption Feats",
+  "url": "https://deadlystream.com/files/file/2577-improved-ls-enlightenment-ds-corruption-feats/",
+  "author": "offthegridmorty",
+  "category": "Mechanics Change / 2 - Recommended",
+  "method": "Loose-File Mod",
+  "notes": ""
+ },
+ {
+  "index": 142,
+  "anchor": "alignment-affects-force-powers",
+  "name": "Alignment Affects Force Powers",
+  "url": "https://deadlystream.com/files/file/2815-alignment-affects-force-powers-tsl/",
+  "author": "offthegridmorty",
+  "category": "Mechanics Change & Immersion / 1 - Essential",
+  "method": "TSLPatcher",
+  "notes": "Installation Instructions I strongly recommend the combined install of \"Alignment Affects Force Powers + Treat Injury Affects Force Healing.\""
+ }
+]

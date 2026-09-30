@@ -1,0 +1,17 @@
+0x0073b4d0	0x595eb0	CSWGuiInGameCharacter::Constructor	vote	retn=4
+0x0073ef30	0x599910	CSWGuiInGameCharacter::DoAutoLevelup	vote	retn=0
+0x0073f250	0x599c30	CSWGuiInGameCharacter::RotateCharacterLeft	vote	retn=0
+0x0073f470	0x599e50	CSWGuiInGameCharacter::RotateCharacterRight	vote	retn=0
+0x0084de70	0x597770	CSWGuiInGameCharacter::Destructor	vote	retn=4
+0x0084df70	0x597870	CSWGuiInGameCharacter::Destructor_2	vote	retn=0
+0x0084e6c0	0x597fc0	CSWGuiInGameCharacter::OnPanelAdded	vote	retn=0
+0x0084e6f0	0x597ff0	CSWGuiInGameCharacter::SetStats	vote	retn=0
+0x0084f770	0x599070	CSWGuiInGameCharacter::SetModText	vote	retn=8
+0x0084f8e0	0x5991e0	CSWGuiInGameCharacter::OnPanelRemoved	vote	retn=0
+0x0084f900	0x599200	CSWGuiInGameCharacter::HandleInputEvent	vote	retn=8
+0x0084fbb0	0x5994b0	CSWGuiInGameCharacter::Draw	vote	retn=4
+0x0084fc00	0x599500	CSWGuiInGameCharacter::AttachModel	vote	retn=0
+0x0084fcd0	0x5995d0	CSWGuiInGameCharacter::ShowLevelUpGUI	vote	retn=4
+0x0084fe20	0x599720	CSWGuiInGameCharacter::StartAutoLevelup	vote	retn=0
+0x00850090	0x599990	CSWGuiInGameCharacter::SetLabelBonusPenaltyColour	vote	retn=8
+0x008500f0	0x5999f0	CSWGuiInGameCharacter::RotateCharacter	vote	retn=4

@@ -1,0 +1,2155 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Force powers — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Force powers
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Prerequisites
+2 Cost
+3 Regeneration
+4 Light side powers
+4.1 Force Aura
+4.2 Force Barrier
+4.3 Force Valor
+4.4 Heal
+4.5 Revitalize
+4.6 Stun
+4.7 Stun Droid
+4.8 Battle Precognition
+4.9 Force Enlightenment
+4.10 Inspire Followers
+5 Universal powers
+5.1 Affect Mind
+5.2 Battle Meditation
+5.3 Burst of Speed
+5.4 Energy Resistance
+5.5 Force Body
+5.6 Force Deflection
+5.7 Force Push
+5.8 Force Resistance
+5.9 Force Suppression
+5.10 Mind Trick
+5.11 Throw Lightsaber
+5.12 Beast Trick
+5.13 Breath Control
+5.14 Force Camouflage
+5.15 Force Sight
+5.16 Precognition
+6 Dark side powers
+6.1 Drain Force
+6.2 Drain Life
+6.3 Fear
+6.4 Force Scream
+6.5 Shock
+6.6 Slow
+6.7 Wound
+6.8 Crush Opposition
+6.9 Force Crush
+6.10 Fury
+ | This page lists your Force Powers. Using a Force Power requires Force Points. Your light/dark side rating affects the Force point cost of some powers. The further you stray to the dark side, the more expensive light side powers become, and the less expensive dark side powers become and vice versa.
+Force powers cannot be selected at character generation, but Jedi must always select at least one Force power upon level up, depending on class and level:
+ | Jedi class
+ | Jedi level
+ | 1
+ | 2
+ | 3
+ | 4
+ | 5
+ | 6
+ | 7
+ | 8
+ | 9
+ | 10
+ | 11
+ | 12
+ | 13
+ | 14
+ | 15
+ | Jedi Guardian
+ | 2
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | Jedi Sentinel
+ | 2
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | Jedi Consular
+ | 2
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+Jedi Consulars are granted an extra Force power every third level. Your main character can select a Prestige class by speaking to Kreia once level 15 and sufficiently aligned to the light side (75-100) or dark side (0-25) of the Force:
+ | Prestige class
+ | Prestige level
+ | Jedi
+ | Sith
+ | 1
+ | 2
+ | 3
+ | 4
+ | 5
+ | 6
+ | 7
+ | 8
+ | 9
+ | 10
+ | 11
+ | 12
+ | Weapon Master
+ | Marauder
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | Watchman
+ | Assassin
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | Master
+ | Lord
+ | 2
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+A Jedi Master or Sith Lord is granted an extra Force power upon first level, and every fourth level.
+Prerequisites[edit | edit source]
+Although Force powers are only available to Jedi classes, character level, not Jedi level, can be a prerequisite for selecting and then improving or mastering a Force power:
+ | Powers
+ | Character level
+ | Total
+ | 1
+ | 6
+ | 9
+ | 12
+ | 15
+ | 18
+ | Light side
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 11
+ | Universal
+ | 
+ | 
+ | 
+ | 
+ | 
+ | (17)
+ | 16
+ | Dark side
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 11
+ | Total
+ | 12
+ | 7
+ | 8
+ | 5
+ | 4
+ | 2
+ | 38
+Some Force powers have further restrictions:
+Beast Trick, Breath Control, Force Sight (character level 3) and Precognition are only granted to your main character.
+Force Confusion can only be selected by a Prestige class that has selected Mind Trick.
+Force Camouflage is only granted to Kreia and a Jedi Watchman or Sith Assassin.
+Fury is a dark side power only granted to a Sith Marauder.
+Some Force powers are restricted by armor, but not Jedi armor (with the sole exception of Battle Precognition):
+ | Powers
+ | Character level
+ | Total
+ | 1
+ | 6
+ | 9
+ | 12
+ | 15
+ | 18
+ | Light side
+ | 
+ | 
+ | 
+ | 
+ | 
+ | (21)
+ | 10
+ | Universal
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 10
+ | Dark side
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 9
+ | Total
+ | 5
+ | 2
+ | 8
+ | 3
+ | 7
+ | 4
+ | 29
+Some Force powers have further restrictions: 
+Battle Precognition is a light side power that can only be gained by a male main character.
+Force Enlightenment is a light side power only granted to a neutral or light side main character.
+Force Crush is a dark side power only granted to a dark side main character.
+Inspire Followers is a light side power only granted to a Jedi Master, which cannot be used if alignment < 60.
+Crush Opposition is a dark side power only granted to a Sith Lord, which cannot be used if alignment > 40.
+Cost[edit | edit source]
+Using Force powers normally costs Force points, and they cannot be used without sufficient Force. Jedi and Prestige class affect how many Force points are granted per Jedi or Prestige level up:
+ | Jedi class
+ | Force per level up
+ | Prestige class
+ | Force per level up
+ | Jedi Guardian
+ | +4
+ | Jedi Weapon Master
+ | Sith Marauder
+ | +6
+ | Jedi Sentinel
+ | +6
+ | Jedi Watchman
+ | Sith Assassin
+ | +8
+ | Jedi Consular
+ | +8
+ | Jedi Master
+ | Sith Lord
+ | +10
+Wisdom modifier (WIS) is added to Force points per level, and the Force Sensitive feat grants 40 Force points. Dark Mastery also grants 50 Force points if the main character is a Jedi Consular or a Sith Lord.
+Cost per use of universal powers isn't affected by user alignment:
+ | 0
+ | 15
+ | 20
+ | 25
+ | 30
+ | 35
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+Cost per use of light side powers and dark side powers is subject to adjustment depending on user alignment:
+ | Power
+ | Alignment
+ | 0-9
+ | 10-19
+ | 20-29
+ | 30-39
+ | 40-49
+ | 50-59
+ | 60-69
+ | 70-79
+ | 80-89
+ | 90-99
+ | 100
+ | Light side
+ | +75%
+ | +50%
+ | +25%
+ | 100%
+ | -10%
+ | -15%
+ | -20%
+ | -30%
+ | -50%
+ | Dark side
+ | -50%
+ | -30%
+ | -20%
+ | -15%
+ | -10%
+ | 100%
+ | +25%
+ | +50%
+ | +75%
+Cost per use of light side powers increases the further to the dark side a character is (and vice versa): 
+ | Force powers
+ | Alignment
+ | 0-9
+ | 10-19
+ | 20-29
+ | 30-39
+ | 40-49
+ | 50-59
+ | 60-69
+ | 70-79
+ | 80-89
+ | 90-99
+ | 100
+ | 
+ | 26
+ | 22
+ | 18
+ | 15
+ | 13
+ | 12
+ | 12
+ | 10
+ | 7
+ | 
+ | 35
+ | 30
+ | 25
+ | 20
+ | 17
+ | 17
+ | 16
+ | 13
+ | 10
+ | 
+ | 43
+ | 37
+ | 31
+ | 25
+ | 22
+ | 21
+ | 20
+ | 17
+ | 12
+ | 
+ | 52
+ | 45
+ | 37
+ | 30
+ | 26
+ | 25
+ | 24
+ | 20
+ | 15
+ | 
+ | 87
+ | 75
+ | 62
+ | 50
+ | 44
+ | 42
+ | 40
+ | 34
+ | 25
+ | 
+ | 2
+ | 3
+ | 4
+ | 4
+ | 4
+ | 5
+ | 6
+ | 7
+ | 8
+ | 
+ | 7
+ | 10
+ | 12
+ | 12
+ | 13
+ | 15
+ | 18
+ | 22
+ | 26
+ | 
+ | 10
+ | 13
+ | 16
+ | 17
+ | 17
+ | 20
+ | 25
+ | 30
+ | 35
+ | 
+ | 12
+ | 17
+ | 20
+ | 21
+ | 22
+ | 25
+ | 31
+ | 37
+ | 43
+ | 
+ | 15
+ | 20
+ | 24
+ | 25
+ | 26
+ | 30
+ | 37
+ | 45
+ | 52
+ | 
+ | 30
+ | 41
+ | 48
+ | 51
+ | 53
+ | 60
+ | 75
+ | 90
+ | 105
+However, a character's Charisma modifier (CHA) can decrease the cost of Force powers of opposing alignment, as each CHA +1 reduces the adjustment by 5%:
+ | Alignment
+ | Charisma
+ | Light
+ | Dark
+ | < 12
+ | 12
+ | 14
+ | 16
+ | 18
+ | 20
+ | 22
+ | 24
+ | 26
+ | 28
+ | 30
+ | 32
+ | 34
+ | 36
+ | 38
+ | 40
+ | 100
+ | 0-9
+ | 75%
+ | 70%
+ | 65%
+ | 60%
+ | 55%
+ | 50%
+ | 45%
+ | 40%
+ | 35%
+ | 30%
+ | 25%
+ | 20%
+ | 15%
+ | 10%
+ | 5%
+ | 0%
+ | 80-99
+ | 10-29
+ | 50%
+ | 45%
+ | 40%
+ | 35%
+ | 30%
+ | 25%
+ | 20%
+ | 15%
+ | 10%
+ | 5%
+ | 0%
+ | 60-79
+ | 30-49
+ | 25%
+ | 20%
+ | 15%
+ | 10%
+ | 5%
+ | 0%
+For example, Heal is a light side power that normally costs 52 Force points for a dark side character with no Charisma modifier who has achieved mastery, since its base cost (30) is subject to an adjustment increasing it by 75% (+22). However, if that character has 20 Charisma (CHA +5), the adjustment is reduced by 25% (5*5%) to 50%, resulting in 45 (30+15) cost per use.
+ | Force powers
+ | Adjustment percentage
+ | 75
+ | 70
+ | 65
+ | 60
+ | 55
+ | 50
+ | 45
+ | 40
+ | 35
+ | 30
+ | 25
+ | 20
+ | 15
+ | 10
+ | 5
+ | 0
+ | 
+ | 8
+ | 8
+ | 8
+ | 8
+ | 7
+ | 7
+ | 7
+ | 6
+ | 6
+ | 6
+ | 6
+ | 6
+ | 5
+ | 5
+ | 5
+ | 5
+ | 
+ | 26
+ | 25
+ | 24
+ | 24
+ | 23
+ | 22
+ | 21
+ | 20
+ | 20
+ | 19
+ | 18
+ | 18
+ | 17
+ | 16
+ | 15
+ | 15
+ | 
+ | 35
+ | 34
+ | 32
+ | 32
+ | 30
+ | 30
+ | 29
+ | 27
+ | 27
+ | 25
+ | 25
+ | 24
+ | 22
+ | 22
+ | 20
+ | 20
+ | 
+ | 43
+ | 42
+ | 41
+ | 40
+ | 38
+ | 37
+ | 36
+ | 34
+ | 33
+ | 32
+ | 31
+ | 30
+ | 28
+ | 27
+ | 26
+ | 25
+ | 
+ | 52
+ | 51
+ | 49
+ | 48
+ | 46
+ | 45
+ | 43
+ | 41
+ | 40
+ | 38
+ | 37
+ | 36
+ | 34
+ | 33
+ | 31
+ | 30
+ | 
+ | 87
+ | 85
+ | 82
+ | 80
+ | 77
+ | 75
+ | 72
+ | 69
+ | 67
+ | 64
+ | 62
+ | 60
+ | 57
+ | 55
+ | 52
+ | 50
+ | 
+ | 105
+ | 102
+ | 98
+ | 96
+ | 92
+ | 90
+ | 87
+ | 83
+ | 81
+ | 77
+ | 75
+ | 72
+ | 68
+ | 66
+ | 62
+ | 60
+Force Potency and Force Mastery can then further adjust cost, increasing it by 20% when one of these Force forms is active.
+Regeneration[edit | edit source]
+Force points normally regenerate from 0 to maximum in 90 seconds when not engaged in combat, and 900 seconds (15 minutes) in combat. Increasing maximum Force and Wisdom modifier have no effect on this regeneration rate, only the amount regenerated per unit time: for example, while a Jedi with 180 maximum Force and one with 360 maximum Force both regenerate from 0 to maximum in 90 seconds when not in combat, the former only regenerates 2 points per second while the latter regenerates 4 points per second (double due to double maximum Force).
+Regeneration rate can be increased by a percentage:
+ | Combat
+ | Feat
+ | Force form
+ | Combined
+ | Regenerate Force Points
+ | Force Channel
+ | Force Affinity
+ | No
+ | +25% (* 1.25)
+ | +50% (* 1.5)
+ | +0%
+ | +75% (* 1.75)
+ | Yes
+ | +250% (* 3.5)
+ | +500% (* 6)
+ | +750% (* 8.5)
+Regenerate Force Points can be selected by any Jedi class, but it's granted to a Jedi Master or Sith Lord upon first level; Force Channel is granted to any Jedi class by level 14.
+Thus time to regenerate from 0 to maximum Force is as follows:
+ | Combat
+ | Base
+ | Regenerate Force Points
+ | Force Channel
+ | Combined
+ | No
+ | 90 seconds
+ | 72 seconds
+ | 60 seconds
+ | 52 s
+ | Yes
+ | 900 seconds
+ | 258 seconds
+ | 150 seconds
+ | 106 s
+Regenerate Force Points bonuses from items simply increase Force points every six seconds by the sum of their values whenever at less than maximum Force:
+ | Source
+ | Description
+ | Bonus
+ | Head
+ | Sith Mask 
+ | 1
+ | Force Focusing Visor
+ | 2
+ | Power crystals
+ | Crystal, Qixoni 
+ | 1
+ | Source
+ | Description
+ | Bonus
+ | Robes
+ | (Dark or Gray) Jedi Robe
+ | 1
+ | (Dark) Jedi Knight Robe
+ | (Dark) Jedi Master Robe
+ | Aleema Keto's Robe 
+ | Jolee's Robe 
+ | Arca Jeth's Robe 
+ | 3
+ | Nomi's Robe 
+Light side powers[edit | edit source]
+I Am A Jedi
+Acquired all Light Side Powers
+21 Light side powers can be selected by any Jedi (Master Revitalize requires character level 21):
+ | Heal
+ | Improved Heal
+ | Master Heal
+ | Force Aura
+ | Force Shield
+ | Force Armor
+ | Force Valor
+ | Knight Valor
+ | Master Valor
+ | Force Barrier
+ | Improved Force Barrier
+ | Master Force Barrier
+ | Revitalize
+ | Improved Revitalize
+ | Master Revitalize
+ | Stun
+ | Stasis
+ | Stasis Field
+ | Stun Droid
+ | Disable Droid
+ | Destroy Droid
+Force Aura[edit | edit source]
+ | Light side power
+ | Force Aura
+ | Force Shield
+ | Force Armor
+ | Prerequisites
+ | Jedi
+ | Character Level 6
+ | Character Level 12
+ | Defense and saving throws
+ | +2
+ | +4
+ | +6
+ | Base Cost
+ | 25
+Restricted by Armor
+When this power is activated, the Jedi is temporarily granted a bonus to Defense and all saving throws. The effect lasts for 20 seconds.
+Force Barrier[edit | edit source]
+ | Light side power
+ | Force Barrier
+ | Improved
+ | Master
+ | Prerequisites
+ | Character Level 6
+ | Character Level 9
+ | Character Level 15
+ | Damage (physical)
+ | -4
+ | -8
+ | -15
+ | Duration
+ | 30 seconds
+ | 45 seconds
+ | 60 seconds
+ | Base cost
+ | 20
+This power shields the Jedi in the Force, absorbing the first points of damage from slashing, bludgeoning and piercing attacks. Damage over and above the first points is suffered as normal.
+This doesn't sum with Damage Resistance from other sources: only the highest value has any effect, and Master Force Barrier has the highest value of any source.
+Force Valor[edit | edit source]
+ | Light side power
+ | Force Valor
+ | Knight Valor
+ | Master Valor
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Attributes and saving throws
+ | +2
+ | +3
+ | +5
+ | Immunity: Poison
+ | No
+ | Yes
+ | Base Cost
+ | 25
+Restricted by Armor
+This power affects the Jedi and all party members. The effect lasts for 20 seconds.
+Heal[edit | edit source]
+ | Light side power
+ | Heal
+ | Improved
+ | Master
+ | Prerequisites
+ | Character Level 6
+ | Character Level 12
+ | Character Level 18
+ | Vitality healed
+ | 5 + CHA + WIS + level
+ | 15 + CHA + WIS + level
+ | 15 + CHA + WIS + (2*level)
+ | Neutralized
+ | 
+ | Poison
+ | Poison and Stun
+ | Base Cost
+ | 30
+ | 25
+This power heals all party members within a 15 meter radius. This power does not affect droids.
+Revitalize[edit | edit source]
+ | Light side power
+ | Revitalize
+ | Improved
+ | Master
+ | Prerequisites
+ | Character Level 9
+ | Character Level 15
+ | Character Level 21
+ | Consciousness regained
+ | Closest ally
+ | All allies
+ | Total vitality points regained
+ | 5%
+ | 10%
+ | Base Cost
+ | 50
+Restricted by Armor
+This power allows the Jedi to rekindle the life energies of any non-droid fallen ally.
+Stun[edit | edit source]
+ | Light side power
+ | Stun
+ | Stasis
+ | Stasis Field
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Restricted by Armor
+ | No
+ | Yes
+ | Target
+ | Enemy
+ | Enemies within 10 m of target
+ | Effect on enemy
+ | Stun
+ | Paralyze
+ | Duration
+ | 9 seconds
+ | 12 seconds
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 25
+A successful Fortitude save means the target is slowed for the duration instead of stunned. This power does not affect droids.
+Being slowed reduces movement speed and inflicts -4 Defense: these effects stack (although duration does not), which can even result in negative Defense for the target(s).
+All effects of Stun can also be negated by Force Immunity: Stun, or Immunity: Stun, Fear, Horror, while all effects of Stasis (Field) can also be negated by (Force) Immunity: Paralysis.
+Stun Droid[edit | edit source]
+ | Light side power
+ | Stun Droid
+ | Disable Droid
+ | Destroy Droid
+ | Prerequisites
+ | Jedi
+ | Character Level 6
+ | Character Level 12
+ | Target
+ | Droids
+ | Droids within 5 m of target
+ | Droids within 6 m of target
+ | Damage
+ | attacker level
+ | 1-6 for each attacker level
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 15
+ | Mines triggered
+ | Minor
+ | + Average
+ | + Strong
+This power renders droids immobile for 12 seconds. The droid also takes damage. A successful Fortitude save by the target negates the stun and reduces damage by half.
+These powers can also be used to trigger some mines instead of disabling or recovering them with Demolitions.
+Battle Precognition[edit | edit source]
+Restricted by Armor
+This power allows the Jedi to sense the flows of the Force and increases the Jedi's reaction time in combat. The Jedi adds their Wisdom modifier to their Defense.
+Only a male main character can gain this power from the Handmaiden in the cargo hold of the Ebon Hawk, after asking her to teach you some fighting moves and winning your first duel, asking her to teach you some more and then observing that she seems to be anticipating your attacks.
+Although Jedi armor does not restrict use of Force powers normally, it still restricts this power, preventing Wisdom modifier from being added to Defense. Robes, Clothing or nothing must be worn on the body to be granted this passive bonus.
+Force Enlightenment[edit | edit source]
+Restricted by Armor
+This power allows the Jedi to use the light side of the Force to enhance the Jedi's powers. The best of the Jedi's Speed, Armor and Valor powers are instantly activated at a reduced cost (30). This power is useful to quickly become ready for difficult battles.
+This power is granted to a neutral or light side main character after finding all four Lost Jedi.
+Inspire Followers[edit | edit source]
+ | Inspire Followers
+ | I
+ | II
+ | III
+ | IV
+ | V
+ | Granted
+ | Jedi Master
+ | Level 5 JM
+ | Level 9 JM
+ | Level 13 JM
+ | Level 17 JM
+ | Party attack + damage
+ | +1
+ | +2
+ | +3
+ | +4
+ | +5
+ | Party Will saves
+ | Base Cost
+ | 20
+Restricted by Armor
+This power increases the morale and effectiveness of the Jedi Master's allies in battle. This effect lasts for 45 seconds and does not affect droids (it does affect the Jedi Master, though).
+If the player chooses to walk the path of the dark side (Alignment < 60), this power will no longer function.
+Misc. effect damage added by this power is not multiplied by a Critical Hit.
+Universal powers[edit | edit source]
+26 Universal powers can be selected by any Jedi (Force Confusion can only be selected by a Prestige class):
+ | Burst of Speed
+ | Knight Speed
+ | Master Speed
+ | Force Resistance
+ | Force Immunity
+ | 
+ | Energy Resistance
+ | Improved Energy Resistance
+ | Master Energy Resistance
+ | Battle Meditation
+ | Improved Battle Meditation
+ | Master Battle Meditation
+ | Force Body
+ | Improved Force Body
+ | Master Force Body
+ | Affect Mind
+ | Dominate Mind
+ | 
+ | Force Deflection
+ | Force Redirection
+ | 
+ | Force Push
+ | Force Whirlwind
+ | Force Wave
+ | Force Suppression
+ | Force Breach
+ | 
+ | Throw Lightsaber
+ | Advanced Throw Lightsaber
+ | 
+ | Mind Trick
+ | Force Confusion
+ | 
+Affect Mind[edit | edit source]
+ | Universal power
+ | Affect Mind
+ | Dominate Mind
+ | Prerequisites
+ | Jedi
+ | Character Level 6
+Affect and Dominate Mind enable persuasive use of the Force. Once a Jedi has this power, extra options will appear in conversations as appropriate. Success is not guaranteed for extreme commands or if the target is strong willed. Dominate Mind is more powerful than Affect Mind, and very few beings can resist its effects. This power does not affect droids. Only the main character can select this power during level-up.
+Battle Meditation[edit | edit source]
+ | Universal power
+ | Battle Meditation
+ | Improved
+ | Master
+ | Prerequisites
+ | Character Level 6
+ | Character Level 12
+ | Character Level 18
+ | Party attack and damage
+ | +2
+ | +4
+ | Party Will saves
+ | Enemy attack and damage
+ | 
+ | -2
+ | -4
+ | Enemy Will saves
+ | Radius of effect
+ | 10 meters
+ | 15 meters
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 35
+Restricted by Armor
+This power also increases the vitality point regeneration rate of the party (doubling it, although this doesn't include Regeneration item bonuses, which are simply added afterward). This effect lasts for 20 seconds and will not affect any droids in the party.
+Misc. effect damage added by this power is not multiplied by a Critical Hit.
+Burst of Speed[edit | edit source]
+ | Universal power
+ | Burst of Speed
+ | Knight Speed
+ | Master Speed
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Defense
+ | +2
+ | +4
+ | Attacks per round
+ | 
+ | +1
+ | +2
+ | Base Cost
+ | 25
+Restricted by Armor
+For the duration of the effect (36 seconds), movement speed is doubled.
+Attacks are added to the main hand. Attacks aren't normally added when using Power Blasts or Sniper Shots, although the latter gains one (and only one) with a (heavy) repeating blaster (the same is true when using standard Attack with a single blaster pistol).
+Energy Resistance[edit | edit source]
+ | Universal power
+ | Energy Resistance
+ | Improved
+ | Master
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 17
+ | Target
+ | Jedi
+ | Party
+ | Damage
+ | -6
+ | -12
+ | -20
+ | Base Cost
+ | 20
+ | 15
+This power absorbs the first points of damage from energy, sonic, fire, cold and electrical attacks. Damage over and above the first points is suffered as normal. This effect lasts for 120 seconds.
+This doesn't sum with Damage Resistance from other sources: only the highest value has any effect.
+Force Body[edit | edit source]
+ | Universal power
+ | Force Body
+ | Improved
+ | Master
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Vitality points spent
+ | 50%
+ | 40%
+ | 30%
+ | Force points spent
+ | Base Cost
+ | 0
+This power enables the character to use their own health to fuel Force powers. The total Force point cost for powers is actually less using this effect. This effect lasts for 30 seconds.
+Cost Per Use displayed in the Powers section of the Abilities screen, a value already adjusted by alignment and then any Force forms, is adjusted by the percentage, rounding down, to determine Force and Vitality points spent.
+Minimum Force points to use a power is normally Cost Per Use, but while Force Body is active it becomes Cost Per Use - Force points spent. Since Force points spent are reduced to the percentage and minimum Force points are reduced by that percentage, the latter actually increases upon improving or mastering this power (although obviously it's still less than it is without Force Body). For example:
+Force Storm (Base Cost 20) with 20 Charisma (CHA +5, -25% alignment adjustment)
+ | Alignment
+ | Force form
+ | Adjustment
+ | Cost Per Use
+ | Force (and Vitality) points spent
+ | Minimum Force points
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 0
+ | 
+ | -10
+ | 10
+ | 5
+ | 4
+ | 3
+ | 5
+ | 6
+ | 7
+ | 
+ | -8
+ | 12
+ | 6
+ | 4
+ | 3
+ | 6
+ | 8
+ | 9
+ | 100
+ | 
+ | +10
+ | 30
+ | 15
+ | 12
+ | 9
+ | 15
+ | 18
+ | 21
+ | 
+ | +16
+ | 36
+ | 18
+ | 14
+ | 10
+ | 18
+ | 22
+ | 26
+Master Valor (Base Cost 25) with 20 Charisma (CHA +5, -25% alignment adjustment)
+ | Alignment
+ | Force form
+ | Adjustment
+ | Cost Per Use
+ | Force (and Vitality) points spent
+ | Minimum Force points
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 0
+ | 
+ | +12
+ | 37
+ | 18
+ | 14
+ | 11
+ | 19
+ | 23
+ | 26
+ | 
+ | +19
+ | 44
+ | 22
+ | 17
+ | 13
+ | 22
+ | 27
+ | 31
+ | 100
+ | 
+ | -13
+ | 12
+ | 6
+ | 4
+ | 3
+ | 6
+ | 8
+ | 9
+ | 
+ | -11
+ | 14
+ | 7
+ | 5
+ | 4
+ | 7
+ | 9
+ | 10
+Force Deflection[edit | edit source]
+ | Universal power
+ | Force Deflection
+ | Force Redirection
+ | Prerequisites
+ | Character Level 6
+ | Character Level 12
+ | Blaster Bolt Deflection
+ | 
+ | +3
+ | Action
+ | Deflect only
+ | Deflect or reflect
+This power gives the Jedi the ability to deflect any ranged attacks without a lightsaber. This power is always in effect (even with a lightsaber for Force Redirection, or while using Throw Lightsaber).
+Any Jedi Defense bonus is still added to deflection rolls without a lightsaber, as is any Precise Shot penalty. All other bonuses and penalties are restricted to lightsabers.
+Force Push[edit | edit source]
+ | Universal power
+ | Force Push
+ | Force Whirlwind
+ | Force Wave
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Damage (bludgeoning)
+ | Attacker level
+ | 1/3 Attacker level every 2 s
+ | 1.5 * Attacker level
+ | Duration
+ | 3 seconds
+ | 12 seconds
+ | 6 seconds
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 20
+ | 25
+An opponent targeted by Force Push is pushed back 5 meters, thrown to the ground stunned, and suffers damage. A successful Reflex save means the target is not pushed back or stunned, but still suffers half damage. Unlike the first game, most droids are affected by Force Push, but can't be stunned by it, only pushed back and damaged.
+Force Whirlwind encircles the target victim in a small maelstrom of air and dust, inflicting damage and rendering them unable to take any action. A successful Reflex save negates the damage and immobilizing effects altogether. This power does not affect droids equipped with energy shield hardware.
+Force Wave creates a telekinetic explosion around the Jedi. All enemies within 15 meters are thrown 5 meters, fall to the ground and are incapacitated, and take damage. A successful Reflex save means an enemy is not thrown or stunned, but still suffers half damage.
+Force Resistance[edit | edit source]
+ | Universal power
+ | Force Resistance
+ | Force Immunity
+ | Prerequisites
+ | Character Level 9
+ | Character Level 15
+ | Opposed roll
+ | d20 + attacker level
+ | Difficulty class
+ | 10 + defender level
+ | 15 + defender level
+ | Base Cost
+ | 25
+Restricted by Armor
+This power offers some protection from direct Force power attacks of Jedi opponents, possibly negating their effects. The attacking Jedi makes an opposed roll versus the defender. If the attacker's result is greater (or equal), the attack succeeds. If the defender's total is greater, the attack has no effect. This effect lasts for 60 seconds.
+Due to the way enemy level is normally calculated based on your main character level, as you level up this power can grant 100% immunity to all Force powers you can save against, resulting in them having no effect whatsoever (saving often just reduces damage and debuffs):
+ | Main level
+ | 9 - 12
+ | 13 - 16
+ | 17 - 20
+ | 21 - 24
+ | 25 - 28
+ | 29 - 32
+ | 33 - 36
+ | 37 - 40
+ | 41 - 50
+ | Enemy level
+ | 6 - 9
+ | 9 - 12
+ | 12 - 15
+ | 15 - 18
+ | 18 - 21
+ | 21 - 24
+ | 24 - 27
+ | 27 - 30
+ | 30 - 37
+ | Force Resistance
+ | 60%
+ | 65%
+ | 70%
+ | 75%
+ | 80%
+ | 85%
+ | 90%
+ | 95%
+ | 100%
+ | Force Immunity
+ | 
+ | 90%
+ | 95%
+ | 100%
+So Immunity can normally never be breached from level 21 onward (maximum roll 20 + level 15 (35 total) vs Force Resistance 36 (21 + 15)), and for Resistance it's level 41 onward (maximum roll 20 + level 30 (50 total) vs Force Resistance 51 (41 + 10)). However, enemies can still take it away with Force Suppression.
+Jedi in your party are normally lower level than your main character, so they don't receive the same Resistance or Immunity for a few more levels (5% less, or four more levels, for each level of difference).
+Force Suppression[edit | edit source]
+ | Universal power
+ | Force Suppression
+ | Force Breach
+ | Prerequisites
+ | Character Level 9
+ | Character Level 15
+ | Force powers cancelled
+ | Force Aura and Force Shield
+Force Valor and Knight Valor
+Burst of Speed and Knight Speed
+(Improved) Energy Resistance
+Force Resistance and Force Immunity
+(Improved) Battle Meditation
+(Improved) Force Barrier
+(Improved) Force Body
+(Improved) Fury
+Inspire Followers I-III
+ | + Force Armor
++ Master Valor
++ Master Speed
++ Master Energy Resistance
++ Master Battle Meditation
++ Master Force Barrier
++ Master Force Body
++ Master Fury
++ Inspire Followers IV-V
+ | Base Cost
+ | 30
+Restricted by Armor
+This ability will cancel Force powers active on the target. These powers are instantly cancelled, but the target can reactivate them if Force points are available.
+Mind Trick[edit | edit source]
+ | Universal power
+ | Mind Trick
+ | Force Confusion
+ | Prerequisites
+ | Jedi
+ | Any Prestige class
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 20
+ | 30
+Mind Trick distracts a non-droid target making it easier to sneak by them. If the target fails a Will save, then they are distracted for 30 seconds. Distracted targets won't notice the player unless the player gets too close or interacts with them.
+Force Confusion is a more powerful version of Mind Trick that can actually cause an opponent to fight for you. If the target fails a Will save, then they will fight your opponents for 30 seconds. Only one opponent can be affected by Force Confusion at a time. This power only works on sentients; beasts and droids are immune.
+Throw Lightsaber[edit | edit source]
+ | Universal power
+ | Throw Lightsaber
+ | Advanced
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Targets
+ | One
+ | Up to three
+ | Damage
+ | 1-6 for every two attacker levels
+ | Base Cost
+ | 20
+Requires lightsaber
+The target must be at least 5 meters away, and any additional targets must be within 5 meters of the previous. This attack always hits. Once the lightsaber is thrown, it will automatically return to the Jedi's hand at the end of the round.
+Deflection rolls aren't made during use, even if a lightsaber remains in the off hand, unless Force Deflection has been selected (in which case all bonuses and penalties are still added, even those restricted to lightsabers).
+Beast Trick[edit | edit source]
+Beast Trick distracts a creature or beast making it easier to sneak by them. If the target fails a Will save of DC 5 + the attacking character's level, Wisdom and Charisma modifiers then they are distracted for 30 seconds. Distracted targets won't notice the player unless the player gets too close or interacts with them.
+This power is granted to the main character by Kreia in the Jungle of Dxun, and costs 20 Force points.
+Breath Control[edit | edit source]
+Some Jedi are able to slow their metabolism in such a way that they can actually stop breathing for a much longer period of time than they would otherwise. This power provides immunity from Poison for 240 seconds.
+This power is granted to the main character by Kreia upon entering the Jekk'Jekk Tarr on Nar Shaddaa, and costs 20 Force points.
+Force Camouflage[edit | edit source]
+ | Universal power
+ | Force Camouflage
+ | Improved
+ | Master
+ | Granted
+ | Kreia or
+Jedi Watchman or Sith Assassin
+ | Level 7
+Jedi Watchman or Sith Assassin
+ | Level 13
+Jedi Watchman or Sith Assassin
+ | Stealth bonus
+ | 
+ | +4
+ | +8
+These powers enable the Jedi character to use their Stealth skill without a Stealth Field Generator. The power lasts until the character deactivates it.
+Force Sight[edit | edit source]
+Prerequisites:
+Character Level 3
+This power allows a Jedi to see using the Force. Some obstacles can be seen through and sentients glow with an inner light. This effect lasts for 20 seconds (and costs 15 Force points).
+This power is granted to the main character by Visas after speaking and gaining (or losing) influence with her. It doesn't let you see cloaked characters.
+Precognition[edit | edit source]
+Precognition warns the Jedi whenever they are about to enter extreme danger. These warnings are quite rare.
+This power is granted to the main character by Kreia on Peragus II.
+Dark side powers[edit | edit source]
+Unlimited Power
+Acquired all Dark Side Powers
+20 Dark side powers can be selected by any Jedi (both Force Storm and Death Field require character level 18):
+ | Wound
+ | Choke
+ | Kill
+ | Slow
+ | Affliction
+ | Plague
+ | Fear
+ | Horror
+ | Insanity
+ | Shock
+ | Force Lightning
+ | Force Storm
+ | Drain Life
+ | Death Field
+ | 
+ | Drain Force
+ | Improved Drain Force
+ | Master Drain Force
+ | Force Scream
+ | Improved Force Scream
+ | Master Force Scream
+Drain Force[edit | edit source]
+ | Dark side power
+ | Drain Force
+ | Improved
+ | Master
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Target
+ | Enemy
+ | Enemies within 10 m of target
+ | Force points
+ | 10
+ | 20
+ | 30
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 5
+Restricted by Armor
+This power allows the Jedi to draw raw Force energy from opponents to him or herself. The targeted opponent loses half that amount if they make a Will save. A Jedi can't draw more Force Points from an opponent than they have total.
+Cost per use is always regained, in addition to any Force energy drawn from opponents.
+Drain Life[edit | edit source]
+ | Dark side power
+ | Drain Life
+ | Death Field
+ | Prerequisites
+ | Character Level 9
+ | Character Level 18
+ | Target
+ | Enemy
+ | Enemies within 10 m of target
+ | Vitality drained and healed
+ | 1-4 for each attacker level, to a maximum of 10 levels (10-40 points)
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 25
+Restricted by Armor
+This power allows the Jedi to drain the life of others to heal him or herself. A successful Fortitude save reduces damage by half. This power does not affect droids.
+The restriction on maximum Vitality drained and healed hasn't actually been removed, so from level 10 onward it's restricted to 10-40 (25 average) points.
+A single damage roll is actually made and then inflicted on all enemies within radius, then the character is healed the equivalent of the total damage after saving throws. For example, if 25 damage is rolled and then inflicted on four enemies who fail to save, the character is healed for 100 (25*4); if two of those enemies save, the character is healed for 74 (25*2 + [25/2]*2). Damage is dark side.
+Fear[edit | edit source]
+ | Dark side power
+ | Fear
+ | Horror
+ | Insanity
+ | Prerequisites
+ | Jedi
+ | Character Level 6
+ | Character Level 12
+ | Target
+ | Enemy
+ | Enemies within 5 m of target
+ | Enemies within 10 m of target
+ | Duration
+ | 6 seconds
+ | 12 seconds
+ | 18 seconds
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 15
+This power causes enemies to cower in fear of the attacking Jedi unless they make a Will save. It does not affect droids.
+Force Scream[edit | edit source]
+ | Dark side power
+ | Force Scream
+ | Improved
+ | Master
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 15
+ | Damage (sonic)
+ | 3-18
+ | 5-30
+ | 7-42
+ | Attributes
+ | -2
+ | -4
+ | -6
+ | Target
+ | Enemies up to 10 meters in front
+ | Enemies within 10 meters
+ | Difficulty Class
+ | 10 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 25
+This power creates a wave of sound that does sonic damage and reduces attributes for 30 seconds. A successful Will save reduces damage by half and negates the attribute penalties. It does not work against droids.
+Shock[edit | edit source]
+ | Dark side power
+ | Shock
+ | Force Lightning
+ | Force Storm
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 18
+ | Target
+ | Single enemy
+ | Enemies up to 16 m in front
+ | Enemies within 10 m of target
+ | Damage (electrical)
+ | 1-6 for each attacker level
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 20
+Restricted by Armor
+This power unleashes an electrical attack. Force Storm also inflicts the same damage on Force points. A successful Will save by the target reduces damage by half.
+Slow[edit | edit source]
+ | Dark side power
+ | Slow
+ | Affliction
+ | Plague
+ | Prerequisites
+ | Jedi
+ | Character Level 6
+ | Character Level 12
+ | Restricted by Armor
+ | No
+ | Yes
+ | Effect on enemy
+ | -2 Defense, Reflex saves, attack
+ | -1 Attributes every 3 6 seconds
+ | -1 attributes every (6) second(s)
+ | Duration
+ | 30 seconds
+ | 21 seconds
+ | 12 seconds
+ | Difficulty Class
+ | 5 + level + WIS + CHA
+ | 20
+ | 100
+ | Save
+ | Will
+ | Fortitude
+ | Base Cost
+ | 20
+Slow clouds the mind, making a target's actions unusually sluggish. Affliction causes a target to suffer as though poisoned. Plague causes a target to suffer as though deathly ill from poison. The target is also slowed for the duration. A successful save negates these effects. This power does not affect droids.
+The effects in the descriptions for Affliction and Plague are inaccurate: both inflict -1 attributes every 6 seconds after use. Neither apply if the target has Immunity: Poison, and both can be neutralized by Heal or an Antidote Kit.
+Wound[edit | edit source]
+ | Dark side power
+ | Wound
+ | Choke
+ | Kill
+ | Prerequisites
+ | Jedi
+ | Character Level 9
+ | Character Level 12
+ | Difficulty Class
+ | 5 + attacker level + attacker Wisdom and Charisma modifiers
+ | Base Cost
+ | 20
+Wound triggers spasms in the victim's lungs, causing great pain and inflicting 2/3 attacker level in damage every 2 seconds for the duration (6 seconds). A successful Fortitude save results in no effect.
+Choke constricts the throat of a target at range, stunning and inflicting 2/3 attacker level in damage every 2 seconds for the duration (6 seconds). The target also suffers a temporary (24 second) -4 penalty to Constitution, Dexterity and Strength. A successful Fortitude save results in no effect.
+Kill causes the target to choke for 6 seconds and inflicts damage close to half the target's maximum Vitality points. If the target makes a Fortitude save they are not choked, but instead suffer damage equal to attacker level.
+This power does not affect droids.
+Crush Opposition[edit | edit source]
+ | Crush Opposition
+ | I
+ | II
+ | III
+ | IV
+ | V
+ | Granted
+ | Sith Lord
+ | Level 5 Sith Lord
+ | Level 9 Sith Lord
+ | Level 13 Sith Lord
+ | Level 17 Sith Lord
+ | Enemy attack
+ | -1
+ | -2
+ | -3
+ | -4
+ | -5
+ | Enemy Will saves
+ | Base Cost
+ | 20
+Restricted by Armor
+This power saps the will of every enemy within a 15-meter radius of a target enemy. Enemies can resist this effect with a Will save against a DC of 5 + the attacking character's level + attacking character's Wisdom and Charisma modifiers. This effect lasts for 45 seconds.
+If the player chooses to walk the path of the light side (Alignment > 40), this power will no longer function.
+Force Crush[edit | edit source]
+Restricted by Armor
+The Jedi uses the dark side of the Force to telekinetically crush an opponent. The victim suffers 1-10 points of damage to Vitality per each of the attacking character's levels. This damage bypasses most defenses. A successful Fortitude save by the target at a DC of 5 + the attacking character's level + attacking character's Wisdom and Charisma modifiers reduces damage by half.
+This power is granted to a dark side main character after finding all four Lost Jedi, and costs 60 Force points.
+Fury[edit | edit source]
+ | Dark side power
+ | Fury
+ | Improved
+ | Master
+ | Granted
+ | Sith Marauder
+ | Level 5 Sith Marauder
+ | Level 9 Sith Marauder
+ | Strength bonus
+ | +2
+ | +4
+ | +6
+ | Vitality points per level
+ | +1
+ | +2
+ | +3
+ | Fortitude and Will saves
+ | Attacks per round
+ | 
+ | +1
+ | +2
+ | Defense
+ | -2
+ | -4
+ | -6
+ | Seconds active
+ | 30
+ | 45
+ | 60
+ | Base Cost
+ | 30
+This power allows the Sith Marauder to enter a furious rage. In this state they are Immune to Paralysis and Stasis effects. Every creature they kill fuels their Fury more, adding to the damage they do in combat up to maximum bonus of +6.
+Extra attacks per round do not stack with those of Knight Speed and Master Speed, although the increased movement speed and defense bonuses of those powers still apply.
+Go to top
+Alignment
+Force powers
+Influence
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Force_powers&oldid=1171623"
+Hidden category: 
+Sub-pages
+ This page was last edited on 13 March 2026, at 17:55.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

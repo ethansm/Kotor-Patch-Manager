@@ -1,0 +1,234 @@
+
+ KOTOR 2 - Caster Disciple
+KOTOR 2 - Caster Disciple
+Disciple progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Soldier 6
+ | STR: 14 (+2)
+WIS: 10 (+0)
+CHA: 14 (+2)
+INT: 10 (+0)
+CON: 14 (+2)
+DEX: 16 (+3)
+ | 21 points
+Persuade +0 (0)
+Computer use +0 (0)
+Stealth +5 (5)
+Awareness +8 (8)
+Repair +0 (0)
+Security +0 (0)
+Treat Injury +8 (8)
+Demolitions +0 (0)
+ | Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+Two Weapon Fighting (g)
+Improved Two Weapon Fighting (g)
+Flurry (g)
+Conditioning (g)
+Power Attack (g)
+Power Blast (g)
+Rapid Shot (g)
+Close Combat (g)
+Toughness (g)
+Improved Toughness (g)
+ | 
+ | 7
+ | Consular 1
+ | 
+ | 2 points
+?
+ | Proficiency: Lightsaber (g)
+Jedi Sense (g)
+Force Focus (g)
+Jedi Defense (g)
+Regenerate Force Points (s)
+ | Heal
+Stun
+ | 8
+ | Consular 2
+ | WIS +1, 11 (+0)
+ | 2 points
+?
+ | Unarmed Specialist I (g)
+Force Sensitive (g)
+ | Stun Droid
+ | 9
+ | Consular 3
+ | 
+ | 2 points
+?
+ | Master Two Weapon Fighting (s)
+ | Stasis
+Disable Droid
+ | 10
+ | Consular 4
+ | 
+ | 2 points
+?
+ | 
+ | Force Push
+ | 11
+ | Consular 5
+ | 
+ | 2 points
+?
+ | 
+ | Force Whirlwind
+ | 12
+ | Consular 6
+ | WIS +1, 12 (+1)
+ | 2 points
+?
+ | Unarmed Specialist II (g)
+Improved Force Focus (g)
+Master Toughness (s)
+ | Improved Heal
+Destroy Droid
+ | 13
+ | Consular 7
+ | 
+ | 2 points
+?
+ | 
+ | Force Suppression
+ | 14
+ | Consular 8
+ | 
+ | 2 points
+?
+ | 
+ | Burst of Speed
+ | 15
+ | Consular 9
+ | 
+ | 2 points
+?
+ | Improved Conditioning (s)
+ | Stasis Field
+Force Wave
+ | 16
+ | Consular 10
+ | WIS +1, 13 (+1)
+ | 2 points
+?
+ | Unarmed Specialist III (g)
+ | Knight Speed
+ | 17
+ | Consular 11
+ | 
+ | 2 points
+?
+ | 
+ | Master Speed
+ | 18
+ | Consular 12
+ | 
+ | 2 points
+?
+ | Master Force Focus (g)
+Master Conditioning (s)
+ | Master Heal
+Force Breach
+ | 19
+ | Consular 13
+ | 
+ | 2 points
+?
+ | 
+ | Force Deflection
+ | 20
+ | Consular 14
+ | WIS +1, 14 (+2)
+ | 2 points
+?
+ | Unarmed Specialist IV (g)
+ | Force Redirection
+ | 21
+ | Consular 15
+ | 
+ | 2 points
+?
+ | Advanced Jedi Defense (s)
+ | Force Body
+Improved Force Body
+ | 22
+ | Consular 16
+ | 
+ | 2 points
+?
+ | 
+ | Master Force Body
+ | 23
+ | Consular 17
+ | 
+ | 2 points
+?
+ | 
+ | Revitalize
+ | 24
+ | Consular 18
+ | WIS +5, 15 (+2)
+ | 2 points
+?
+ | Unarmed Specialist V (s)
+Master Jedi Defense (s)
+ | Improved Revitalize
+Master Revitalize
+ | 25
+ | Consular 19
+ | 
+ | 2 points
+?
+ | 
+ | ?
+ | 26
+ | Consular 20
+ | 
+ | 2 points
+?
+ | 
+ | ?
+ | 27
+ | Consular 21
+ | 
+ | 2 points
+?
+ | ? (s)
+ | ?
+?
+ | 28
+ | Consular 22
+ | WIS +1, 16 (+3)
+ | 2 points
+?
+ | Unarmed Specialist VI (g)
+ | ?
+ | 29
+ | Consular 23
+ | 
+ | 2 points
+?
+ | 
+ | ?
+ | 30
+ | Consular 24
+ | 
+ | 2 points
+?
+ | ? (s)
+ | ?
+?
+This build assumes you will change Mical to a Force user immediately. It focuses on Universal/Light Side offensive Force Powers, plus a few standard utility powers (such as Heal) that are beneficial for all Jedi party members to have.
+It takes Master Two Weapon Fighting because Disciple may benefit from wielding two lightsabers, to maximize attribute-boosting crystals. And if he's carrying them around anyway, he may as well be decent with them.
+Because of his low starting Wisdom, Mical will benefit from any Wisdom-boosting items.
+If he reaches high enough level, he'll start running out of useful powers to take. He can either take a few Dark Side offensive powers, or a few buffs, depending on preference.

@@ -1,0 +1,353 @@
+
+ KOTOR 2 - Mira Builds
+KOTOR 2 - Mira Builds
+This file details some considerations to make for a Mira build, and may eventually contain a few Mira builds from different playthroughs. We'll see how far I take it.
+The playthrough I originally wrote this for used a blaster-Jedi main character with pretty severe Force Power restrictions. So some of the notes are thoughts were done with that in mind and might not apply to other playthroughs.
+Good Mira build guide. Basically, build her the same way as I do the main character, delay turning her into a Jedi. She gets some relevant stuff for free as a Scout. Now there's two of them!
+When to switch Mira from Scout to Sentinel? There are a few good choices, assuming a final level of 29. Important: this table shows what I actually get to pick for her, not what I would get to pick for a Scout starting at level 1. She is level 6 when I get her, and already has a bunch of stuff picked.
+ | First Sentinel Level
+ | Targeting
+ | Precise Shot
+ | Sentinel Immunities
+ | Scout Feats
+ | Sentinel Feats
+ | Overall Feats
+ | Force Powers
+ | 13
+ | III
+ | III
+ | Fear, Stun, Paralysis
+ | 3
+ | 8
+ | 11
+ | 18
+ | 14
+ | IV
+ | III
+ | Fear, Stun, Paralysis
+ | 4
+ | 8
+ | 12
+ | 17
+ | 17
+ | IV
+ | IV
+ | Fear, Stun, Paralysis
+ | 5
+ | 7
+ | 12
+ | 14
+ | 18
+ | V
+ | IV
+ | Fear, Stun, Paralysis
+ | 6
+ | 6
+ | 12
+ | 13
+ | 21
+ | V
+ | V
+ | Fear, Stun
+ | 7
+ | 5
+ | 12
+ | 10
+ | 22
+ | VI
+ | V
+ | Fear, Stun
+ | 8
+ | 5
+ | 13
+ | 9
+The longer I wait, the more feats she gets, but not by much. Switching later gives me more ranks of Targeting and Precise Shot from Scout, so that I don't have to use any of my selected feats on them. Waiting until 21 means I give up Paralysis immunity. Not sure how often that would actually matter. Switching early gives extra Force Powers.
+Summary of how to build Mira for the playthrough I created this build for:
+Push either DEX (for obvious reasons) or CON (for health and better implants
+CON 14 allows Retinal Combat Implant, which prevents stun. She'll eventually get this as a Jedi Sentinel, but this implant could be really useful until then.
+CON 16 allows Advanced Combat System, which gives Weapon Specialization: Blaster Pistol
+Prioritize take the following feats:
+The rest of the Precise Shot line
+Master Two Weapon Fighting (although she gets Dueling for free ?!!?
+Master Rapid Shot
+Prioritize the following Force Powers:
+Master Speed
+Master Valor
+Master Heal
+Force Deflection
+ That is 10 ranks of Force Powers, and Sentinel gets 2 powers at level 1, so she needs 9 levels of Sentinel minimum. Switching at 21 makes that iffy - if she gets it, it'll be right at the end when there's not much time to use it. Switching to Sentinel at level 17/18 means she'd make it with a little room to spare.
+ Overall, starting Sentinel at level 17/18 seems to give the strongest late-game performance. But it means she goes longer without getting any Force Powers. Which means the mid-game performance depends on how having a few Force Powers balances against having a bit more Targeting and Precise Shot. Neither choice is bad, so I should probably play her to level 12 and see how I feel. I'm building the table as if 17 is my first Sentinel level, but I can always switch if I change my mind beforehand.
+Relevant adjusted skill caps (gameplay/crafting):
+Computer Use: (?/32)
+Demolitions: (25/30)
+Awareness: (15/28)
+Repair: (?/32)
+Treat Injury: (?/29)
+Scout Class Skills: Computer Use, Demolitions, Repair, Treat Injury
+Sentinel Class Skills: Computer Use, Stealth, Awareness, Security, Treat Injury
+======================
+Notes:
+Dialog tree
+Obtained on Nar Shaada
+Available only to Light Side or Neutral main characters
+Can make grenades for you
+When Mira is party leader, your group will not set off mines
+Has a unique wrist rocket launcher weapon that sounds cool but which I never seem to use
+Influence gained/lost via dialog and actions when she is in your party (mostly dialog)
+To turn her to a Jedi, once you have enough influence
+get your Awareness to at least 11
+ask her why she doesn't kill
+follow the Awareness dialog line
+offer to show her the thing on Nar Shaddaa that Kreia showed you
+take her to Nar Shaada, in the main square, on the cantina side
+Note: you must have already had the conversation where Kreia takes you to that spot on Nar Shaddaa and has you feel the Force. If you haven't had it yet, run over there with Kreia first.
+Influence locations:
+Ebon Hawk
+Generally be nice and understanding. Several gains possible.
+Even with TSLRCM, you can get enough influence here to turn her into a Jedi just through dialog.
+Save before you start talking to her, in case you accidentally say the wrong thing and lose influence.
+At one point, she'll get mad. End the conversation, then start it again and apologize.
+Most of the gains are pretty obvious, but there's one that's easy to miss:
+Start the dialog tree where you mention she seems restless
+Keep saying generally nice/encouraging things
+When you see the set of choices where you have the option to talk about showing her the thing Kreia showed you, don't take it (yet). You'll use that option later, once you have enough influence, but not yet.
+Instead, look down for an option complementary of Nar Shaddaa. It'll be something like "Interesting way of putting it. That's true."
+Choose that, and you'll get an influence gain.
+Nar Shaddaa
+Heal sick refugee (although you've probably already done this before getting Mira)
+Pretty sure you can get a gain from the thugs accosting the guy by the central pit, but you'd have to be very careful to avoid triggering this before Mira becomes a companion.
+Dantooine
+Show compassion on Akkerre about the hydrospanner you find
+Duxn
+Tell that crash landed bounty hunters that Mira is a real Bounty Hunter. She'll be a little fussy, but you'll still gain influence
+Onderon
+Cantina: Twi'lek bounty hunter attacks you and trash talks Mira. Say "I won't let you harm my friend"
+Side with rabble rouser, support him in calling for an end to the monarchy.
+After that, talk to Anda, agree to remove the guard captains, talk to Mira, tell her credits are hard to ignore
+When riot starts, stand around and watch NPCs kill each other
+======================
+Mira progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Scout 6
+ | STR: 10 (0)
+WIS: 11 (0)
+CHA: 10 (0)
+INT: 14 (+2)
+CON: 12 (+1)
+DEX: 16 (+3)
+ | 39 points
+Persuade +0 (0)
+Computer use +8 (8)
+Stealth +0 (0)
+Awareness +8 (8)
+Repair +8 (8)
+Security +2 (2)
+Treat Injury +5 (5)
+Demolitions +8 (8)
+ | Caution (g)
+Critical Strike (g)
+Rapid Shot (g)
+Sniper Shot (g)
+Uncanny Dodge I (g)
+Dueling (g)
+Evasion (g)
+Target I (g)
+Targeting II (g)
+Close Combat (g)
+Precise Shot I (g)
+Point Guard (g)
+Proficiency: Light Armor
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+Proficiency: Wrist Mounted Rockets (g)
+ | 
+ | 7
+ | Scout 7
+ | 
+ | 5 points
+?
+ | Uncanny Dodge II (g)
+Improved Rapid Shot (s)
+ | 
+ | 8
+ | Scout 8
+ | DEX +1, 17 (+3)
+ | 5 points
+ | Precise Shot II (g)
+ | 
+ | 9
+ | Scout 9
+ | 
+ | 5 points
+ | Targeting III (g)
+Improved Close Combat (s)
+ | 
+ | 10
+ | Scout 10
+ | 
+ | 5 points
+?
+ | 
+ | 
+ | 11
+ | Scout 11
+ | 
+ | 5 points
+?
+ | Master Rapid Shot (s)
+ | 
+ | 12
+ | Scout 12
+ | DEX +1, 18 (+4)
+ | 5 points
+?
+ | Precise Shot III (g)
+ | 
+ | 13
+ | Scout 13
+ | 
+ | 5 points
+?
+ | Targeting IV (g)
+Weapon Focus: Blaster Pistol (s)
+ | 
+ | 14
+ | Scout 14
+ | 
+ | 5 points
+?
+ | 
+ | 
+ | 15
+ | Scout 15
+ | 
+ | 5 points
+?
+ | Two Weapon Fighting (s)
+ | 
+ | 16
+ | Scout 16
+ | DEX +1, 19 (+4)
+ | 5 points
+?
+ | Precise Shot IV (g)
+ | 
+ | 17
+ | Sentinel 1
+ | 
+ | 5 points
+?
+ | Proficiency: Lightsaber (g)
+Jedi Defense (g)
+Jedi Sense (g)
+Force Immunity: Fear (g)
+Improved Two Weapon Fighting (s)
+ | Burst of Speed
+Heal
+ | 18
+ | Sentinel 2
+ | 
+ | 5 points
+?
+ | Unarmed Specialist I (g)
+Force Sensitive (g)
+ | Knight Speed
+ | 19
+ | Sentinel 3
+ | 
+ | 5 points
+?
+ | Master Two Weapon Fighting (s)
+ | Master Speed
+ | 20
+ | Sentinel 4
+ | DEX +1, 20 (+5)
+ | 5 points
+?
+ | 
+ | Improved Heal
+ | 21
+ | Sentinel 5
+ | 
+ | 5 points
+?
+ | 
+ | Master Heal
+ | 22
+ | Sentinel 6
+ | 
+ | 5 points
+?
+ | Force Immunity: Stun
+Unarmed Specialist II
+? (s)
+ | Force Deflection
+ | 23
+ | Sentinel 7
+ | 
+ | 5 points
+?
+ | Precise Shot V (s)
+ | Force Redirection
+ | 24
+ | Sentinel 8
+ | CON +1, 13 (+1)
+ | 5 points
+?
+ | 
+ | ?
+ | 25
+ | Sentinel 9
+ | 
+ | 5 points
+?
+ | ? (s)
+ | ?
+ | 26
+ | Sentinel 10
+ | 
+ | 5 points
+?
+ | Unarmed Specialist III (g)
+ | ?
+ | 27
+ | Sentinel 11
+ | 
+ | 5 points
+?
+ | 
+ | ?
+ | 28
+ | Sentinel 12
+ | CON +1, 14 (+2)
+ | 5 points
+?
+ | Force Immunity: Paralysis (g)
+? (s)
+ | ?
+ | 29
+ | Sentinel 13
+ | 
+ | 5 points
+?
+ | ? (s)
+ | ?
+ | 30
+ | Sentinel 14
+ | 
+ | 5 points
+?
+ | Unarmed Specialist IV (g)
+ | ?
+My main character usually takes the Valor line, which affects party members. So not much point in Mira taking it. But if the main character is not, Mira might consider it.
+The Heal line also affects party members, but that one seems useful for everyone to take. It tends to get used a lot in long fights, when characters may be running out of Force Power.
+Mira's additional Force Powers and Feats can be taken situationally.
+I added a couple of bumps to CON at the end for better implants, but that could be DEX if preferred.
+Depending on the planned companion mix, it might make sense to take "Class Skill: Security" very early on, and bump other feats accordingly.

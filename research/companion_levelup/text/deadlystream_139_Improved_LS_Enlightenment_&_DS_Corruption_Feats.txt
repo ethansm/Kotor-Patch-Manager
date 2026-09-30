@@ -1,0 +1,181 @@
+
+ Improved LS Enlightenment & DS Corruption Feats - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Improved LS Enlightenment & DS Corruption Feats
+ Improved LS Enlightenment & DS Corruption Feats 1.0.0
+ feats
+ enlightenment
+ corruption
+ influence
+ prestige
+ jedi master
+ sith lord
+   (1 review)
+ By 
+offthegridmorty
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2577-improved-ls-enlightenment-ds-corruption-feats/
+ More sharing options...
+ Followers
+ 7
+1 Screenshot
+About This File
+ Changes the Jedi Master/Sith Lord unique feats to also increase influence changes.
+ SUMMARY:
+ The unique feats Light Side Enlightenment and Dark Side Corruption granted to Jedi Masters and Sith Lords cause your influence to have a greater effect on party members' alignment. Unfortunately, party members don't get stat bonuses from LS or DS mastery, making these feats have little practical use. This is one of the factors that make JM/SL cool for role-playing but without much extra to offer in functionality.
+ This mod aims to make the feats a little more useful by having them also amplify changes to companion influence. Now, Jedi Masters and Sith Lords will gain 50% more influence with party members. However, influence lost will also be increased by 50%. Low influence is the same as high influence in terms of unlocking dialogue so I don't want to bias one strategy over the other. Still you will be able to gain or lose influence faster. For example, with these feats, 3 influence gains and 1 loss will net the equivalent to 3 regular gains.
+ INSTALLATION:
+ Copy the contents of "to override" to your game's override folder.
+ UNINSTALLATION:
+ Remove the following files from override:
+ - a_influence_dec.ncs
+ - a_influence_inc.ncs
+ COMPATIBILITY:
+ Not compatible with Modified Influence System by Hassat Hunter.
+ CREDITS:
+ offthegridmorty
+ KOTOR Tool - Fred Tetra
+ TSLPatcher, TalkEd - stoffe, Fair Strides
+ Holocron Toolset - Cortisol
+ Download this file
+ Get Support
+File Information
+ Views
+ 9,393
+ Downloads
+ 3,956
+ Submitted
+ November 4, 2024
+ Published
+ November 4, 2024
+ File Size
+ 8.6 kB
+ TSLRCM Compatible
+ Yes
+ 1
+  Share
+ https://deadlystream.com/files/file/2577-improved-ls-enlightenment-ds-corruption-feats/
+ More sharing options...
+ Followers
+ 7
+ Previous File
+ Ebon Hawk Armband
+ Next File
+ KotOR1 items for KotOR2
+User Feedback
+ 1 Review
+ 0 Comments
+You may only provide a review once you have downloaded the file.
+ Most Helpful
+ Newest
+darth revan
+ 1
+ February 16, 2025
+ Makes sith lord/jedi master a little bit more viable
+ Great mod 
+ 1
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Improved LS Enlightenment & DS Corruption Feats
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

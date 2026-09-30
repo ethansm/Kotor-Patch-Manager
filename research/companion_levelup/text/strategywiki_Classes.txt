@@ -1,0 +1,3106 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Classes — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Classes
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Jedi
+1.1 Jedi Guardian
+1.2 Jedi Sentinel
+1.3 Jedi Consular
+2 Soldier
+3 Scout
+4 Scoundrel
+5 Tech Specialist
+6 Droid
+6.1 Combat Droid
+6.2 Expert Droid
+7 Minion
+Jedi[edit | edit source]
+Jedi Guardian[edit | edit source]
+Jedi Guardians focus on combat training and lightsaber mastery.
+Jedi Guardians are the only Jedi class who can select Weapon Specialization: Lightsaber; Prestige classes can also select this feat.
+ | Vitality
+per level
+ | Force
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 10
+ | 4
+ | 2 + (2 * [Lvl/6] )
+ | Fast
+ | Fast
+ | Average
+ | (1+INT) * 4
+ | 1 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | No
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | No
+ | No
+ | Yes
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | No
+ | No
+ | No
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | 
+Progression
+ | Level
+ | Vitality
+ | Force
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Powers
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 10
+ | 4
+ | 2
+ | 2
+ | 2
+ | 1
+ | 
+ | Yes
+ | 2
+ | 2
+ | 20
+ | 8
+ | 3
+ | 3
+ | 2
+ | 
+ | Yes
+ | 1
+ | 3
+ | 30
+ | 12
+ | 3
+ | 3
+ | 2
+ | 
+ | Yes
+ | 1
+ | 4
+ | 40
+ | 16
+ | 4
+ | 4
+ | 2
+ | 
+ | No
+ | 1
+ | 5
+ | 50
+ | 20
+ | 4
+ | 4
+ | 3
+ | 
+ | Yes
+ | 1
+ | 6
+ | 60
+ | 24
+ | 4
+ | 5
+ | 5
+ | 3
+ | 
+ | No
+ | 1
+ | 7
+ | 70
+ | 28
+ | 5
+ | 5
+ | 4
+ | 
+ | Yes
+ | 1
+ | 8
+ | 80
+ | 32
+ | 6
+ | 6
+ | 4
+ | 
+ | No
+ | 1
+ | 9
+ | 90
+ | 36
+ | 6
+ | 6
+ | 4
+ | 
+ | Yes
+ | 1
+ | 10
+ | 100
+ | 40
+ | 7
+ | 7
+ | 5
+ | 
+ | No
+ | 1
+ | 11
+ | 110
+ | 44
+ | 7
+ | 7
+ | 5
+ | 
+ | Yes
+ | 1
+ | 12
+ | 120
+ | 48
+ | 6
+ | 8
+ | 8
+ | 6
+ | 
+ | No
+ | 1
+ | 13
+ | 130
+ | 52
+ | 8
+ | 8
+ | 6
+ | 
+ | Yes
+ | 1
+ | 14
+ | 140
+ | 56
+ | 9
+ | 9
+ | 6
+ | 
+ | No
+ | 1
+ | 15
+ | 150
+ | 60
+ | 9
+ | 9
+ | 7
+ | 
+ | Yes
+ | 1
+ | 16
+ | 160
+ | 64
+ | 10
+ | 10
+ | 7
+ | 
+ | No
+ | 1
+ | 17
+ | 170
+ | 68
+ | 10
+ | 10
+ | 8
+ | 
+ | Yes
+ | 1
+ | 18
+ | 180
+ | 72
+ | 8
+ | 11
+ | 11
+ | 8
+ | 
+ | No
+ | 1
+ | 19
+ | 190
+ | 76
+ | 11
+ | 11
+ | 8
+ | 
+ | Yes
+ | 1
+ | 20
+ | 200
+ | 80
+ | 12
+ | 12
+ | 9
+ | 
+ | No
+ | 1
+ | 21
+ | 210
+ | 84
+ | 12
+ | 12
+ | 9
+ | 
+ | Yes
+ | 1
+ | 22
+ | 220
+ | 88
+ | 13
+ | 13
+ | 10
+ | 
+ | No
+ | 1
+ | 23
+ | 230
+ | 92
+ | 13
+ | 13
+ | 10
+ | 
+ | Yes
+ | 1
+ | 24
+ | 240
+ | 96
+ | 10
+ | 14
+ | 14
+ | 10
+ | 
+ | No
+ | 1
+ | 25
+ | 250
+ | 100
+ | 14
+ | 14
+ | 11
+ | 
+ | Yes
+ | 1
+ | 26
+ | 260
+ | 104
+ | 15
+ | 15
+ | 11
+ | 
+ | No
+ | 1
+ | 27
+ | 270
+ | 108
+ | 15
+ | 15
+ | 12
+ | 
+ | Yes
+ | 1
+ | 28
+ | 280
+ | 112
+ | 16
+ | 16
+ | 12
+ | 
+ | No
+ | 1
+ | 29
+ | 290
+ | 116
+ | 16
+ | 16
+ | 12
+ | 
+ | Yes
+ | 1
+ | 30
+ | 300
+ | 120
+ | 12
+ | 17
+ | 17
+ | 13
+ | 
+ | No
+ | 1
+Jedi Sentinel[edit | edit source]
+Jedi Sentinels are well-balanced and possess many skills.
+ | Vitality
+per level
+ | Force
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 8
+ | 6
+ | 2 + (2 * [Lvl/6] )
+ | Fast
+ | Fast
+ | Average
+ | (3+INT) * 4
+ | 3 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | Yes
+ | Yes
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | No
+ | No
+ | No
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | 
+Progression
+ | Level
+ | Vitality
+ | Force
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Powers
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 8
+ | 6
+ | 2
+ | 2
+ | 2
+ | 1
+ | 
+ | Yes
+ | 2
+ | 2
+ | 16
+ | 12
+ | 3
+ | 3
+ | 2
+ | 
+ | No
+ | 1
+ | 3
+ | 24
+ | 18
+ | 3
+ | 3
+ | 2
+ | 
+ | Yes
+ | 1
+ | 4
+ | 32
+ | 24
+ | 4
+ | 4
+ | 2
+ | 
+ | No
+ | 1
+ | 5
+ | 40
+ | 30
+ | 4
+ | 4
+ | 3
+ | 
+ | No
+ | 1
+ | 6
+ | 48
+ | 36
+ | 4
+ | 5
+ | 5
+ | 3
+ | 
+ | Yes
+ | 1
+ | 7
+ | 56
+ | 42
+ | 5
+ | 5
+ | 4
+ | 
+ | Yes
+ | 1
+ | 8
+ | 64
+ | 48
+ | 6
+ | 6
+ | 4
+ | 
+ | No
+ | 1
+ | 9
+ | 72
+ | 54
+ | 6
+ | 6
+ | 4
+ | 
+ | Yes
+ | 1
+ | 10
+ | 80
+ | 60
+ | 7
+ | 7
+ | 5
+ | 
+ | No
+ | 1
+ | 11
+ | 88
+ | 66
+ | 7
+ | 7
+ | 5
+ | 
+ | No
+ | 1
+ | 12
+ | 96
+ | 72
+ | 6
+ | 8
+ | 8
+ | 6
+ | 
+ | Yes
+ | 1
+ | 13
+ | 104
+ | 78
+ | 8
+ | 8
+ | 6
+ | 
+ | Yes
+ | 1
+ | 14
+ | 112
+ | 84
+ | 9
+ | 9
+ | 6
+ | 
+ | No
+ | 1
+ | 15
+ | 120
+ | 90
+ | 9
+ | 9
+ | 7
+ | 
+ | Yes
+ | 1
+ | 16
+ | 128
+ | 96
+ | 10
+ | 10
+ | 7
+ | 
+ | No
+ | 1
+ | 17
+ | 136
+ | 102
+ | 10
+ | 10
+ | 8
+ | 
+ | No
+ | 1
+ | 18
+ | 144
+ | 108
+ | 8
+ | 11
+ | 11
+ | 8
+ | 
+ | Yes
+ | 1
+ | 19
+ | 152
+ | 114
+ | 11
+ | 11
+ | 8
+ | 
+ | Yes
+ | 1
+ | 20
+ | 160
+ | 120
+ | 12
+ | 12
+ | 9
+ | 
+ | No
+ | 1
+ | 21
+ | 168
+ | 126
+ | 12
+ | 12
+ | 9
+ | 
+ | Yes
+ | 1
+ | 22
+ | 176
+ | 132
+ | 13
+ | 13
+ | 10
+ | 
+ | No
+ | 1
+ | 23
+ | 184
+ | 138
+ | 13
+ | 13
+ | 10
+ | 
+ | No
+ | 1
+ | 24
+ | 192
+ | 144
+ | 10
+ | 14
+ | 14
+ | 10
+ | 
+ | Yes
+ | 1
+ | 25
+ | 200
+ | 150
+ | 14
+ | 14
+ | 11
+ | 
+ | Yes
+ | 1
+ | 26
+ | 208
+ | 156
+ | 15
+ | 15
+ | 11
+ | 
+ | No
+ | 1
+ | 27
+ | 216
+ | 162
+ | 15
+ | 15
+ | 12
+ | 
+ | Yes
+ | 1
+ | 28
+ | 224
+ | 168
+ | 16
+ | 16
+ | 12
+ | 
+ | No
+ | 1
+ | 29
+ | 232
+ | 174
+ | 16
+ | 16
+ | 12
+ | 
+ | No
+ | 1
+ | 30
+ | 240
+ | 180
+ | 12
+ | 17
+ | 17
+ | 13
+ | 
+ | Yes
+ | 1
+Jedi Consular[edit | edit source]
+Jedi Consulars are masters of the Force and spend less time on combat training (recommended for advanced players only).
+ | Vitality
+per level
+ | Force
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 6
+ | 8
+ | 2 + (2 * [Lvl/6] )
+ | Fast
+ | Average
+ | Fast
+ | (2+INT) * 4
+ | 2 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | No
+ | No
+ | No
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | Yes
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | No
+ | No
+ | No
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | 
+Progression
+ | Level
+ | Vitality
+ | Force
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Powers
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 6
+ | 8
+ | 2
+ | 2
+ | 1
+ | 2
+ | 
+ | Yes
+ | 2
+ | 2
+ | 12
+ | 16
+ | 3
+ | 2
+ | 3
+ | 
+ | No
+ | 1
+ | 3
+ | 18
+ | 24
+ | 3
+ | 2
+ | 3
+ | 
+ | Yes
+ | 2
+ | 4
+ | 24
+ | 32
+ | 4
+ | 2
+ | 4
+ | 
+ | No
+ | 1
+ | 5
+ | 30
+ | 40
+ | 4
+ | 3
+ | 4
+ | 
+ | No
+ | 1
+ | 6
+ | 36
+ | 48
+ | 4
+ | 5
+ | 3
+ | 5
+ | 
+ | Yes
+ | 2
+ | 7
+ | 42
+ | 56
+ | 5
+ | 4
+ | 5
+ | 
+ | No
+ | 1
+ | 8
+ | 48
+ | 64
+ | 6
+ | 4
+ | 6
+ | 
+ | No
+ | 1
+ | 9
+ | 54
+ | 72
+ | 6
+ | 4
+ | 6
+ | 
+ | Yes
+ | 2
+ | 10
+ | 60
+ | 80
+ | 7
+ | 5
+ | 7
+ | 
+ | No
+ | 1
+ | 11
+ | 66
+ | 88
+ | 7
+ | 5
+ | 7
+ | 
+ | No
+ | 1
+ | 12
+ | 72
+ | 96
+ | 6
+ | 8
+ | 6
+ | 8
+ | 
+ | Yes
+ | 2
+ | 13
+ | 78
+ | 104
+ | 8
+ | 6
+ | 8
+ | 
+ | No
+ | 1
+ | 14
+ | 84
+ | 112
+ | 9
+ | 6
+ | 9
+ | 
+ | No
+ | 1
+ | 15
+ | 90
+ | 120
+ | 9
+ | 7
+ | 9
+ | 
+ | Yes
+ | 2
+ | 16
+ | 96
+ | 128
+ | 10
+ | 7
+ | 10
+ | 
+ | No
+ | 1
+ | 17
+ | 102
+ | 136
+ | 10
+ | 8
+ | 10
+ | 
+ | No
+ | 1
+ | 18
+ | 108
+ | 144
+ | 8
+ | 11
+ | 8
+ | 11
+ | 
+ | Yes
+ | 2
+ | 19
+ | 114
+ | 152
+ | 11
+ | 8
+ | 11
+ | 
+ | No
+ | 1
+ | 20
+ | 120
+ | 160
+ | 12
+ | 9
+ | 12
+ | 
+ | No
+ | 1
+ | 21
+ | 126
+ | 168
+ | 12
+ | 9
+ | 12
+ | 
+ | Yes
+ | 2
+ | 22
+ | 132
+ | 176
+ | 13
+ | 10
+ | 13
+ | 
+ | No
+ | 1
+ | 23
+ | 138
+ | 184
+ | 13
+ | 10
+ | 13
+ | 
+ | No
+ | 1
+ | 24
+ | 144
+ | 192
+ | 10
+ | 14
+ | 10
+ | 14
+ | 
+ | Yes
+ | 2
+ | 25
+ | 150
+ | 200
+ | 14
+ | 11
+ | 14
+ | 
+ | No
+ | 1
+ | 26
+ | 156
+ | 208
+ | 15
+ | 11
+ | 15
+ | 
+ | No
+ | 1
+ | 27
+ | 162
+ | 216
+ | 15
+ | 12
+ | 15
+ | 
+ | Yes
+ | 2
+ | 28
+ | 168
+ | 224
+ | 16
+ | 12
+ | 16
+ | 
+ | No
+ | 1
+ | 29
+ | 174
+ | 232
+ | 16
+ | 12
+ | 16
+ | 
+ | No
+ | 1
+ | 30
+ | 180
+ | 240
+ | 12
+ | 17
+ | 13
+ | 17
+ | 
+ | Yes
+ | 2
+Soldier[edit | edit source]
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 10
+ | 2 * [ (Level+1) /6]
+ | Fast
+ | Slow
+ | Slow
+ | (1+INT) * 4
+ | 1 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | No
+ | Yes
+ | No
+ | Yes
+ | No
+ | No
+ | No
+ | Yes
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 10
+ | 0
+ | 2
+ | 0
+ | 0
+ | 
+ | Yes
+ | 2
+ | 20
+ | 3
+ | 0
+ | 0
+ | Yes
+ | 3
+ | 30
+ | 3
+ | 1
+ | 1
+ | Yes
+ | 4
+ | 40
+ | 4
+ | 1
+ | 1
+ | Yes
+ | 5
+ | 50
+ | 2
+ | 4
+ | 1
+ | 1
+ | Yes
+ | 6
+ | 60
+ | 5
+ | 2
+ | 2
+ | Yes
+ | 7
+ | 70
+ | 5
+ | 2
+ | 2
+ | Yes
+ | 8
+ | 80
+ | 6
+ | 2
+ | 2
+ | Yes
+ | 9
+ | 90
+ | 6
+ | 3
+ | 3
+ | Yes
+ | 10
+ | 100
+ | 7
+ | 3
+ | 3
+ | Yes
+ | 11
+ | 110
+ | 4
+ | 7
+ | 3
+ | 3
+ | Yes
+ | 12
+ | 120
+ | 8
+ | 4
+ | 4
+ | Yes
+ | 13
+ | 130
+ | 8
+ | 4
+ | 4
+ | Yes
+ | 14
+ | 140
+ | 9
+ | 4
+ | 4
+ | Yes
+ | 15
+ | 150
+ | 9
+ | 5
+ | 5
+ | Yes
+ | 16
+ | 160
+ | 10
+ | 5
+ | 5
+ | Yes
+ | 17
+ | 170
+ | 6
+ | 10
+ | 5
+ | 5
+ | No
+ | 18
+ | 180
+ | 11
+ | 6
+ | 6
+ | Yes
+ | 19
+ | 190
+ | 11
+ | 6
+ | 6
+ | No
+ | 20
+ | 200
+ | 12
+ | 6
+ | 6
+ | Yes
+Scout[edit | edit source]
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 8
+ | 
+ | Fast
+ | Fast
+ | Fast
+ | (3+INT) * 4
+ | 3 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | Yes
+ | Yes
+ | No
+ | Yes
+ | No
+ | Yes
+ | No
+ | Yes
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Yes
+ | No
+ | No
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 8
+ | 
+ | 2
+ | 2
+ | 2
+ | 
+ | Yes
+ | 2
+ | 16
+ | 3
+ | 3
+ | 3
+ | 
+ | Yes
+ | 3
+ | 24
+ | 3
+ | 3
+ | 3
+ | 
+ | Yes
+ | 4
+ | 32
+ | 4
+ | 4
+ | 4
+ | 
+ | No
+ | 5
+ | 40
+ | 4
+ | 4
+ | 4
+ | 
+ | Yes
+ | 6
+ | 48
+ | 5
+ | 5
+ | 5
+ | 
+ | No
+ | 7
+ | 56
+ | 5
+ | 5
+ | 5
+ | 
+ | Yes
+ | 8
+ | 64
+ | 6
+ | 6
+ | 6
+ | 
+ | No
+ | 9
+ | 72
+ | 6
+ | 6
+ | 6
+ | 
+ | Yes
+ | 10
+ | 80
+ | 7
+ | 7
+ | 7
+ | 
+ | No
+ | 11
+ | 88
+ | 7
+ | 7
+ | 7
+ | 
+ | Yes
+ | 12
+ | 96
+ | 8
+ | 8
+ | 8
+ | 
+ | No
+ | 13
+ | 104
+ | 8
+ | 8
+ | 8
+ | 
+ | Yes
+ | 14
+ | 112
+ | 9
+ | 9
+ | 9
+ | 
+ | No
+ | 15
+ | 120
+ | 9
+ | 9
+ | 9
+ | 
+ | Yes
+ | 16
+ | 128
+ | 10
+ | 10
+ | 10
+ | 
+ | No
+ | 17
+ | 136
+ | 10
+ | 10
+ | 10
+ | 
+ | Yes
+ | 18
+ | 144
+ | 11
+ | 11
+ | 11
+ | 
+ | No
+ | 19
+ | 152
+ | 11
+ | 11
+ | 11
+ | 
+ | Yes
+ | 20
+ | 160
+ | 12
+ | 12
+ | 12
+ | 
+ | No
+ | 21
+ | 168
+ | 12
+ | 12
+ | 12
+ | 
+ | Yes
+ | 22
+ | 176
+ | 13
+ | 13
+ | 13
+ | 
+ | No
+ | 23
+ | 184
+ | 13
+ | 13
+ | 13
+ | 
+ | Yes
+ | 24
+ | 192
+ | 14
+ | 14
+ | 14
+ | 
+ | No
+ | 25
+ | 200
+ | 14
+ | 14
+ | 14
+ | 
+ | Yes
+ | 26
+ | 208
+ | 15
+ | 15
+ | 15
+ | 
+ | No
+ | 27
+ | 216
+ | 15
+ | 15
+ | 15
+ | 
+ | Yes
+ | 28
+ | 224
+ | 16
+ | 16
+ | 16
+ | 
+ | No
+ | 29
+ | 232
+ | 16
+ | 16
+ | 16
+ | 
+ | Yes
+ | 30
+ | 240
+ | 17
+ | 17
+ | 17
+ | 
+ | No
+Scoundrel[edit | edit source]
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 6
+ | 2 + (2 * [ (Level+1) /6] )
+ | Slow
+ | Fast
+ | Slow
+ | (4+INT) * 4
+ | 4 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | No
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | Yes
+ | No
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Yes
+ | No
+ | No
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 6
+ | 2
+ | 0
+ | 2
+ | 0
+ | 
+ | Yes
+ | 2
+ | 12
+ | 0
+ | 3
+ | 0
+ | 
+ | Yes
+ | 3
+ | 18
+ | 1
+ | 3
+ | 1
+ | 
+ | No
+ | 4
+ | 24
+ | 1
+ | 4
+ | 1
+ | 
+ | No
+ | 5
+ | 30
+ | 4
+ | 1
+ | 4
+ | 1
+ | 
+ | Yes
+ | 6
+ | 36
+ | 2
+ | 5
+ | 2
+ | 
+ | No
+ | 7
+ | 42
+ | 2
+ | 5
+ | 2
+ | 
+ | No
+ | 8
+ | 48
+ | 2
+ | 6
+ | 2
+ | 
+ | Yes
+ | 9
+ | 54
+ | 3
+ | 6
+ | 3
+ | 
+ | No
+ | 10
+ | 60
+ | 3
+ | 7
+ | 3
+ | 
+ | No
+ | 11
+ | 66
+ | 6
+ | 3
+ | 7
+ | 3
+ | 
+ | Yes
+ | 12
+ | 72
+ | 4
+ | 8
+ | 4
+ | 
+ | No
+ | 13
+ | 78
+ | 4
+ | 8
+ | 4
+ | 
+ | No
+ | 14
+ | 84
+ | 4
+ | 9
+ | 4
+ | 
+ | Yes
+ | 15
+ | 90
+ | 5
+ | 9
+ | 5
+ | 
+ | No
+ | 16
+ | 96
+ | 5
+ | 10
+ | 5
+ | 
+ | No
+ | 17
+ | 102
+ | 8
+ | 5
+ | 10
+ | 5
+ | 
+ | Yes
+ | 18
+ | 108
+ | 6
+ | 11
+ | 6
+ | 
+ | No
+ | 19
+ | 114
+ | 6
+ | 11
+ | 6
+ | 
+ | No
+ | 20
+ | 120
+ | 6
+ | 12
+ | 6
+ | 
+ | Yes
+Tech Specialist[edit | edit source]
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 6
+ | 
+ | Fast
+ | Average
+ | Average
+ | (4+INT) * 4
+ | 4 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | Yes
+ | Yes
+ | No
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | No
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Yes
+ | Yes
+ | No
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 6
+ | 
+ | 0
+ | 1
+ | 1
+ | 
+ | Yes
+ | 2
+ | 12
+ | 0
+ | 1
+ | 1
+ | Yes
+ | 3
+ | 18
+ | 0
+ | 1
+ | 2
+ | No
+ | 4
+ | 24
+ | 1
+ | 2
+ | 2
+ | No
+ | 5
+ | 30
+ | 1
+ | 2
+ | 2
+ | Yes
+ | 6
+ | 36
+ | 2
+ | 3
+ | 3
+ | No
+ | 7
+ | 42
+ | 2
+ | 3
+ | 3
+ | No
+ | 8
+ | 48
+ | 3
+ | 3
+ | 4
+ | Yes
+ | 9
+ | 54
+ | 3
+ | 4
+ | 4
+ | No
+ | 10
+ | 60
+ | 4
+ | 4
+ | 4
+ | No
+ | 11
+ | 66
+ | 4
+ | 5
+ | 5
+ | Yes
+ | 12
+ | 72
+ | 5
+ | 5
+ | 5
+ | No
+ | 13
+ | 78
+ | 5
+ | 5
+ | 6
+ | No
+ | 14
+ | 84
+ | 6
+ | 6
+ | 6
+ | Yes
+ | 15
+ | 90
+ | 6
+ | 6
+ | 6
+ | No
+ | 16
+ | 96
+ | 7
+ | 7
+ | 7
+ | No
+ | 17
+ | 102
+ | 7
+ | 7
+ | 7
+ | Yes
+ | 18
+ | 108
+ | 8
+ | 7
+ | 8
+ | No
+ | 19
+ | 114
+ | 8
+ | 8
+ | 8
+ | No
+ | 20
+ | 120
+ | 9
+ | 8
+ | 8
+ | Yes
+Droid[edit | edit source]
+Combat Droid[edit | edit source]
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 12
+ | 2 + (2 * [ (Level+1) /6] )
+ | Fast
+ | Slow
+ | Slow
+ | (1+INT) * 4
+ | 1 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | Yes
+ | Yes
+ | 
+ | Yes
+ | 
+ | Yes
+ | Yes
+ | 
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | No
+ | No
+ | No
+ | Yes
+ | Yes
+ | No
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 12
+ | 2
+ | 2
+ | 0
+ | 0
+ | 
+ | Yes
+ | 2
+ | 24
+ | 3
+ | 0
+ | 0
+ | 
+ | No
+ | 3
+ | 36
+ | 3
+ | 1
+ | 1
+ | 
+ | Yes
+ | 4
+ | 48
+ | 4
+ | 1
+ | 1
+ | 
+ | No
+ | 5
+ | 60
+ | 4
+ | 4
+ | 1
+ | 1
+ | 
+ | No
+ | 6
+ | 72
+ | 5
+ | 2
+ | 2
+ | 
+ | Yes
+ | 7
+ | 84
+ | 5
+ | 2
+ | 2
+ | 
+ | No
+ | 8
+ | 96
+ | 6
+ | 2
+ | 2
+ | 
+ | No
+ | 9
+ | 108
+ | 6
+ | 3
+ | 3
+ | 
+ | Yes
+ | 10
+ | 120
+ | 7
+ | 3
+ | 3
+ | 
+ | No
+ | 11
+ | 132
+ | 6
+ | 7
+ | 3
+ | 3
+ | 
+ | No
+ | 12
+ | 144
+ | 8
+ | 4
+ | 4
+ | 
+ | Yes
+ | 13
+ | 156
+ | 8
+ | 4
+ | 4
+ | 
+ | No
+ | 14
+ | 168
+ | 9
+ | 4
+ | 4
+ | 
+ | No
+ | 15
+ | 180
+ | 9
+ | 5
+ | 5
+ | Yes
+ | 16
+ | 192
+ | 10
+ | 5
+ | 5
+ | No
+ | 17
+ | 204
+ | 8
+ | 10
+ | 5
+ | 5
+ | No
+ | 18
+ | 216
+ | 11
+ | 6
+ | 6
+ | Yes
+ | 19
+ | 228
+ | 11
+ | 6
+ | 6
+ | No
+ | 20
+ | 240
+ | 12
+ | 6
+ | 6
+ | No
+Expert Droid[edit | edit source]
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 8
+ | 2 + (2 * [ (Level+1) /6] )
+ | Slow
+ | Fast
+ | Slow
+ | (1+INT) * 4
+ | 1 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | Yes
+ | No
+ | 
+ | Yes
+ | 
+ | Yes
+ | Yes
+ | 
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | No
+ | No
+ | No
+ | Yes
+ | No
+ | No
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 8
+ | 2
+ | 0
+ | 2
+ | 0
+ | 
+ | Yes
+ | 2
+ | 16
+ | 0
+ | 3
+ | 0
+ | 
+ | No
+ | 3
+ | 24
+ | 1
+ | 3
+ | 1
+ | 
+ | Yes
+ | 4
+ | 32
+ | 1
+ | 4
+ | 1
+ | 
+ | No
+ | 5
+ | 40
+ | 4
+ | 1
+ | 4
+ | 1
+ | 
+ | Yes
+ | 6
+ | 48
+ | 2
+ | 5
+ | 2
+ | 
+ | Yes
+ | 7
+ | 56
+ | 2
+ | 5
+ | 2
+ | 
+ | No
+ | 8
+ | 64
+ | 2
+ | 6
+ | 2
+ | 
+ | No
+ | 9
+ | 72
+ | 3
+ | 6
+ | 3
+ | 
+ | Yes
+ | 10
+ | 80
+ | 3
+ | 7
+ | 3
+ | 
+ | No
+ | 11
+ | 88
+ | 6
+ | 3
+ | 7
+ | 3
+ | 
+ | Yes
+ | 12
+ | 96
+ | 4
+ | 8
+ | 4
+ | 
+ | Yes
+ | 13
+ | 104
+ | 4
+ | 8
+ | 4
+ | 
+ | No
+ | 14
+ | 112
+ | 4
+ | 9
+ | 4
+ | 
+ | No
+ | 15
+ | 120
+ | 5
+ | 9
+ | 5
+ | Yes
+ | 16
+ | 128
+ | 5
+ | 10
+ | 5
+ | No
+ | 17
+ | 136
+ | 8
+ | 5
+ | 10
+ | 5
+ | Yes
+ | 18
+ | 144
+ | 6
+ | 11
+ | 6
+ | Yes
+ | 19
+ | 152
+ | 6
+ | 11
+ | 6
+ | No
+ | 20
+ | 160
+ | 6
+ | 12
+ | 6
+ | No
+Minion[edit | edit source]
+Minion is a non-player character class.
+ | Vitality
+per level
+ | Defense
+bonus
+ | Saves
+ | Skill points
+ | Fortitude
+ | Reflex
+ | Will
+ | Level 1
+ | Level up
+ | 10
+ | 2 * [ (Level+1) /6]
+ | Average
+ | Average
+ | Average
+ | (1+INT) * 4
+ | 1 + INT
+Class skills
+ | Computer Use
+ | Demolitions
+ | Stealth
+ | Awareness
+ | Persuade
+ | Repair
+ | Security
+ | Treat Injury
+ | No
+ | Yes
+ | No
+ | Yes
+ | No
+ | No
+ | No
+ | Yes
+Feats
+ | Armor Proficiency
+ | Weapon Proficiency
+ | Action
+ | Class
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | Yes
+ | No
+ | 
+ | 
+Progression
+ | Level
+ | Vitality
+ | Defense
+bonus
+ | Saves
+ | Feats
+ | Fortitude
+ | Reflex
+ | Will
+ | Granted
+ | Selected
+ | 1
+ | 10
+ | 0
+ | 1
+ | 1
+ | 1
+ | 
+ | Yes
+ | 2
+ | 20
+ | 1
+ | 1
+ | 1
+ | Yes
+ | 3
+ | 30
+ | 1
+ | 1
+ | 1
+ | Yes
+ | 4
+ | 40
+ | 1
+ | 1
+ | 1
+ | Yes
+ | 5
+ | 50
+ | 2
+ | 2
+ | 2
+ | 2
+ | Yes
+ | 6
+ | 60
+ | 2
+ | 2
+ | 2
+ | Yes
+ | 7
+ | 70
+ | 2
+ | 2
+ | 2
+ | Yes
+ | 8
+ | 80
+ | 3
+ | 3
+ | 3
+ | Yes
+ | 9
+ | 90
+ | 3
+ | 3
+ | 3
+ | Yes
+ | 10
+ | 100
+ | 4
+ | 4
+ | 4
+ | Yes
+ | 11
+ | 110
+ | 4
+ | 4
+ | 4
+ | 4
+ | Yes
+ | 12
+ | 120
+ | 5
+ | 5
+ | 5
+ | Yes
+ | 13
+ | 130
+ | 5
+ | 5
+ | 5
+ | Yes
+ | 14
+ | 140
+ | 6
+ | 6
+ | 6
+ | Yes
+ | 15
+ | 150
+ | 6
+ | 6
+ | 6
+ | Yes
+ | 16
+ | 160
+ | 7
+ | 7
+ | 7
+ | Yes
+ | 17
+ | 170
+ | 6
+ | 7
+ | 7
+ | 7
+ | No
+ | 18
+ | 180
+ | 8
+ | 8
+ | 8
+ | Yes
+ | 19
+ | 190
+ | 8
+ | 8
+ | 8
+ | No
+ | 20
+ | 200
+ | 9
+ | 9
+ | 9
+ | Yes
+Go to top
+Character generation
+Classes
+Attributes
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Classes&oldid=1058787"
+Hidden category: 
+Sub-pages
+ This page was last edited on 28 January 2024, at 11:38.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

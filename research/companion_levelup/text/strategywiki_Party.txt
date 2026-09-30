@@ -1,0 +1,1810 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Party — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Party
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Atton
+2 Bao-Dur
+3 Disciple
+4 G0-T0
+5 Handmaiden
+6 Hanharr
+7 HK-47
+8 Kreia
+9 Mandalore
+10 Mira
+11 T3-M4
+12 Visas
+Atton[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Atton Rand
+ | Location
+ | Communications Blister
+ | Map
+ | Administration Level
+ | World
+ | Peragus
+ | Inclusion
+ | Mandatory
+ | Class
+ | Scoundrel
+ | Level
+ | 3
+ | 
+ | Attribute
+ | Strength
+ | 12
+ | +1
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 14
+ | +2
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 10
+ | 0
+ | Charisma
+ | 12
+ | +1
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 18
+ | 24
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 3
+ | 7
+ | Defense
+ | 10
+ | 19
+ | Fortitude
+ | 1
+ | 5
+ | Reflex
+ | 3
+ | 8
+ | Will
+ | 1
+ | 3
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 3
+ | 3
+ | Demolitions
+ | 4
+ | 4
+ | Stealth
+ | 4
+ | 7
+ | Awareness
+ | 5
+ | 5
+ | Repair
+ | 0
+ | 0
+ | Security
+ | 5
+ | 5
+ | Treat Injury
+ | 0
+ | 0
+ | Points per level
+ | 4
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+4
+3
+ | 
+None
+Atton can be trained in the ways of the Jedi Sentinel.
+Bao-Dur[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Bao-Dur
+ | Location
+ | Shuttle Crash Site
+ | Map
+ | Restoration Zone
+ | World
+ | Telos
+ | Inclusion
+ | Mandatory
+ | Class
+ | Tech Specialist
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 14
+ | +2
+ | Dexterity
+ | 10
+ | 0
+ | Constitution
+ | 14
+ | +2
+ | Intelligence
+ | 15
+ | +2
+ | Wisdom
+ | 14
+ | +2
+ | Charisma
+ | 10
+ | 0
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 36
+ | 48
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 6
+ | 8
+ | Defense
+ | 10
+ | 10
+ | Fortitude
+ | 2
+ | 5
+ | Reflex
+ | 3
+ | 4
+ | Will
+ | 3
+ | 6
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 9
+ | 13
+ | Demolitions
+ | 9
+ | 11
+ | Stealth
+ | 1
+ | 1
+ | Awareness
+ | 8
+ | 10
+ | Repair
+ | 9
+ | 13
+ | Security
+ | 9
+ | 13
+ | Treat Injury
+ | 4
+ | 6
+ | Points per level
+ | 6
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+None
+ | 
+8
+10
+ | 
+None
+Bao-Dur can be trained in the ways of the Jedi Guardian.
+Disciple[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Disciple
+ | Location
+ | Jedi Archive
+ | Map
+ | Enclave Sublevel
+ | World
+ | Dantooine
+ | Inclusion
+ | Mandatory if female
+ | Class
+ | Soldier
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 14
+ | +2
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 14
+ | +2
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 10
+ | 0
+ | Charisma
+ | 14
+ | +2
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 60
+ | 78
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 6
+ | 8
+ | Defense
+ | 10
+ | 15
+ | Fortitude
+ | 5
+ | 8
+ | Reflex
+ | 2
+ | 6
+ | Will
+ | 2
+ | 3
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 0
+ | Demolitions
+ | 0
+ | 0
+ | Stealth
+ | 5
+ | 8
+ | Awareness
+ | 8
+ | 8
+ | Repair
+ | 0
+ | 0
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | 8
+ | 8
+ | Points per level
+ | 1
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+10
+12
+ | 
+None
+Disciple can be trained in the ways of the Jedi Consular.
+G0-T0[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | G0-T0
+ | Location
+ | Main Hold
+ | Map
+ | Ebon Hawk
+ | World
+ | Nar Shaddaa
+ | Inclusion
+ | Mandatory
+ | Class
+ | Expert Droid
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 10
+ | 0
+ | Dexterity
+ | 18
+ | +4
+ | Constitution
+ | 16
+ | +3
+ | Intelligence
+ | 16
+ | +3
+ | Wisdom
+ | 10
+ | 0
+ | Charisma
+ | 10
+ | 0
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 48
+ | 66
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 6
+ | 10
+ | Defense
+ | 10
+ | 20
+ | Fortitude
+ | 2
+ | 5
+ | Reflex
+ | 5
+ | 9
+ | Will
+ | 2
+ | 2
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 9
+ | 14
+ | Demolitions
+ | 0
+ | 0
+ | Stealth
+ | 4
+ | 9
+ | Awareness
+ | 5
+ | 5
+ | Repair
+ | 5
+ | 10
+ | Security
+ | 9
+ | 14
+ | Treat Injury
+ | No
+ | 
+ | Points per level
+ | 4
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+14
+9
+ | 
+None
+Handmaiden[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Handmaiden
+ | Location
+ | Cargo Hold
+ | Map
+ | Ebon Hawk
+ | World
+ | Telos
+ | Inclusion
+ | Mandatory if male
+ | Class
+ | Soldier
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 14
+ | +2
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 14
+ | +2
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 10
+ | 0
+ | Charisma
+ | 14
+ | +2
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 60
+ | 78
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 6
+ | 8/6
+ | Defense
+ | 10
+ | 16
+ | Fortitude
+ | 5
+ | 8
+ | Reflex
+ | 2
+ | 6
+ | Will
+ | 2
+ | 3
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 0
+ | Demolitions
+ | 0
+ | 0
+ | Stealth
+ | 5
+ | 8
+ | Awareness
+ | 8
+ | 8
+ | Repair
+ | 0
+ | 0
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | 8
+ | 8
+ | Points per level
+ | 1
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+10
+12
+21
+ | 
+None
+Handmaiden can be trained in the ways of the Jedi Guardian.
+Hanharr[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Hanharr
+ | Location
+ | Combat Pit
+ | Map
+ | Jekk'Jekk Tarr Tunnels
+ | World
+ | Nar Shaddaa
+ | Inclusion
+ | Mandatory if dark side
+ | Class
+ | Scout
+ | Level
+ | 4
+ | 
+ | Attribute
+ | Strength
+ | 20
+ | +5
+ | Dexterity
+ | 13
+ | +1
+ | Constitution
+ | 20
+ | +5
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 12
+ | +1
+ | Charisma
+ | 8
+ | -1
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 32
+ | 60
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 4
+ | 8/6
+ | Defense
+ | 10
+ | 11
+ | Fortitude
+ | 4
+ | 9
+ | Reflex
+ | 4
+ | 5
+ | Will
+ | 4
+ | 5
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 0
+ | Demolitions
+ | 6
+ | 6
+ | Stealth
+ | 0
+ | 0
+ | Awareness
+ | 6
+ | 7
+ | Repair
+ | 4
+ | 4
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | 5
+ | 6
+ | Points per level
+ | 3
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+(2)
+ | 
+14
+ | 
+None
+HK-47[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | HK-47
+ | Location
+ | Storage Compartment
+ | Map
+ | Interior
+ | World
+ | Ebon Hawk
+ | Inclusion
+ | Optional
+ | Class
+ | Combat Droid
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 16
+ | +3
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 10
+ | 0
+ | Intelligence
+ | 14
+ | +2
+ | Wisdom
+ | 12
+ | +1
+ | Charisma
+ | 10
+ | 0
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 66
+ | 72
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 6
+ | 10
+ | Defense
+ | 10
+ | 19
+ | Fortitude
+ | 5
+ | 5
+ | Reflex
+ | 2
+ | 5
+ | Will
+ | 2
+ | 3
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 2
+ | Demolitions
+ | 5
+ | 7
+ | Stealth
+ | No
+ | 
+ | Awareness
+ | 5
+ | 6
+ | Repair
+ | 6
+ | 8
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | No
+ | 
+ | Points per level
+ | 3
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+12
+16
+ | 
+None
+Kreia[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Kreia
+ | Location
+ | Turbo Lift to Dormitories
+ | Map
+ | Administration Level
+ | World
+ | Peragus
+ | Inclusion
+ | Mandatory
+ | Class
+ | Jedi Consular
+ | Level
+ | 3
+ | 
+ | Attribute
+ | Strength
+ | 10
+ | 0
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 16
+ | +3
+ | Intelligence
+ | 14
+ | +2
+ | Wisdom
+ | 16
+ | +3
+ | Charisma
+ | 12
+ | +1
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 27
+ | 36
+ | Force
+ | 0
+ | 49
+ | Attack
+ | 3
+ | 4
+ | Defense
+ | 10
+ | 16
+ | Fortitude
+ | 3
+ | 6
+ | Reflex
+ | 2
+ | 5
+ | Will
+ | 3
+ | 6
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 2
+ | Demolitions
+ | 0
+ | 0
+ | Stealth
+ | 5
+ | 8
+ | Awareness
+ | 6
+ | 9
+ | Repair
+ | 0
+ | 2
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | 6
+ | 9
+ | Points per level
+ | 4
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+3
+ | 
+ 13
+Mandalore[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Mandalore
+ | Location
+ | Command Center
+ | Map
+ | Mandalorian Ruins
+ | World
+ | Dxun
+ | Inclusion
+ | Mandatory
+ | Class
+ | Soldier
+ | Level
+ | 5
+ | 
+ | Attribute
+ | Strength
+ | 15
+ | +2
+ | Dexterity
+ | 12
+ | +1
+ | Constitution
+ | 15
+ | +2
+ | Intelligence
+ | 12
+ | +1
+ | Wisdom
+ | 12
+ | +1
+ | Charisma
+ | 12
+ | +1
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 50
+ | 65
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 5
+ | 7
+ | Defense
+ | 10
+ | 23
+ | Fortitude
+ | 4
+ | 6
+ | Reflex
+ | 1
+ | 2
+ | Will
+ | 1
+ | 2
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 1
+ | Demolitions
+ | 0
+ | 0
+ | Stealth
+ | 2
+ | 3
+ | Awareness
+ | 5
+ | 6
+ | Repair
+ | 0
+ | 1
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | 9
+ | 10
+ | Points per level
+ | 2
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+9
+7
+6
+ | 
+None
+Mira[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Mira
+ | Location
+ | Entrance
+ | Map
+ | Jekk'Jekk Tarr
+ | World
+ | Nar Shaddaa
+ | Inclusion
+ | Mandatory if not dark side
+ | Class
+ | Scout
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 10
+ | 0
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 12
+ | +1
+ | Intelligence
+ | 14
+ | +2
+ | Wisdom
+ | 11
+ | 0
+ | Charisma
+ | 10
+ | 0
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 48
+ | 54
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 6
+ | 7
+ | Defense
+ | 10
+ | 19
+ | Fortitude
+ | 5
+ | 6
+ | Reflex
+ | 5
+ | 8
+ | Will
+ | 5
+ | 5
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 8
+ | 10
+ | Demolitions
+ | 8
+ | 11
+ | Stealth
+ | 0
+ | 0
+ | Awareness
+ | 8
+ | 8
+ | Repair
+ | 8
+ | 10
+ | Security
+ | 2
+ | 4
+ | Treat Injury
+ | 5
+ | 5
+ | Points per level
+ | 5
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+6
+8
+ | 
+None
+Mira can be trained in the ways of the Jedi Sentinel.
+T3-M4[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | T3-M4
+ | Location
+ | Cockpit
+ | Map
+ | Interior
+ | World
+ | Ebon Hawk
+ | Inclusion
+ | Mandatory
+ | Class
+ | Expert Droid
+ | Level
+ | 3
+ | 
+ | Attribute
+ | Strength
+ | 10
+ | 0
+ | Dexterity
+ | 15
+ | +2
+ | Constitution
+ | 14
+ | +2
+ | Intelligence
+ | 16
+ | +3
+ | Wisdom
+ | 10
+ | 0
+ | Charisma
+ | 10
+ | 0
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 24
+ | 30
+ | Force
+ | 0
+ | 0
+ | Attack
+ | 3
+ | 5
+ | Defense
+ | 10
+ | 14
+ | Fortitude
+ | 1
+ | 3
+ | Reflex
+ | 3
+ | 5
+ | Will
+ | 1
+ | 1
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 6
+ | 10
+ | Demolitions
+ | 2
+ | 6
+ | Stealth
+ | No
+ | 
+ | Awareness
+ | 2
+ | 2
+ | Repair
+ | 6
+ | 10
+ | Security
+ | 6
+ | 10
+ | Treat Injury
+ | No
+ | 
+ | Points per level
+ | 4
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+ | 
+None
+Visas[edit | edit source]
+ | 
+ | 
+ | 
+ | Name
+ | Visas Marr
+ | Location
+ | Starboard Dormitory
+ | Map
+ | Ebon Hawk
+ | World
+ | Any after Telos
+ | Inclusion
+ | Mandatory
+ | Class
+ | Jedi Sentinel
+ | Level
+ | 6
+ | 
+ | Attribute
+ | Strength
+ | 12
+ | +1
+ | Dexterity
+ | 18
+ | +4
+ | Constitution
+ | 12
+ | +1
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 12
+ | +1
+ | Charisma
+ | 15
+ | +2
+ | 
+ | Attribute
+ | Base
+ | Total
+ | Vitality
+ | 24
+ | 30
+ | Force
+ | 18
+ | 24
+ | Attack
+ | 6
+ | 7
+ | Defense
+ | 10
+ | 18
+ | Fortitude
+ | 5
+ | 6
+ | Reflex
+ | 5
+ | 9
+ | Will
+ | 3
+ | 4
+ | 
+ | Skill
+ | Base
+ | Total
+ | Computer Use
+ | 0
+ | 0
+ | Demolitions
+ | 0
+ | 0
+ | Stealth
+ | 9
+ | 13
+ | Awareness
+ | 9
+ | 10
+ | Repair
+ | 0
+ | 0
+ | Security
+ | 0
+ | 0
+ | Treat Injury
+ | 9
+ | 10
+ | Points per level
+ | 3
+ | Equipment
+ | Feats
+ | 
+ | 
+ | Force powers
+ | 
+ | 
+ | 
+ | 
+7
+6
+ | 
+ 14
+Go to top
+Experience
+Party
+Combat
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Party&oldid=1125351"
+Hidden category: 
+Sub-pages
+ This page was last edited on 6 June 2025, at 08:20.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

@@ -1,0 +1,304 @@
+
+ KOTOR 2 - Atton Builds
+KOTOR 2 - Atton Builds
+This file details some considerations to make for an Atton build, and may eventually contain a few Atton builds from different playthroughs. We'll see how far I take it.
+======================
+The main consideration for when to turn Atton into a Jedi is generally how much Sneak Attack to take as a Scoundrel. Taking more is great if it will be used, but if Sneak Attack isn't going to be important for that playthrough, earlier may be better.
+Atton gets more Sneak Attack at every odd level though level 19. So character level 20 is probably the latest it makes sense to change him over. That would give him 19 levels as Scoundrel, and (assuming a max level of 29) 10 levels as a Sentinel.
+The only exception is that taking Scoundrel to 20 gives one more selected feat as a Scoundrel. If for some reason that's really important to a build, it might be worth it. But that seems like it would be rare. 
+Scoundrel Class Skills: Demolitions, Stealth, Awareness, Security
+Sentinel Class Skills: Computer Use, Stealth, Awareness, Security, Treat Injury
+======================
+Notes:
+Dialog tree
+Obtained on Peragus near the beginning of the game
+Auto-revives in combat if any other party member is still alive
+To make him a Jedi, learn his secret from the NPCs in the Nar Shaada refugee sector, then talk to him about it
+Can get Will +1 from him via the dialog about reading his thoughts
+Influence gained/lost via both direct dialog and your actions when he is in your party
+Has trust issues, so you tend to gain influence by saying you trust him
+Influence locations:
+Almost anywhere
+Kill an innocent person and tell Atton it was the right thing to do (Dark Side, obviously)
+Ebon Hawk
+Do the 2nd "listening to thoughts" upgrade with Kreia. Hear Atton counting cards in his head
+Talk to Atton about this
+Apologize
+Peragus
+Support Atton over Kreia after boarding the Harbinger
+When he has a bad feeling, say you'll be careful but have to keep moving
+Telos (hidden base)
+Ask any handmaiden about your companions BEFORE getting them out of jail
+They will mention Atton's Echani training
+Talk to Atton about this ONCE then quit the conversation
+Ask Atton about it again, and say it is an asset. Do NOT use the Persuade line
+Note: you can ask Atton on the Ebon Hawk after leaving the hidden base
+Dantooine
+When you turn in the atmospheric sensors for 3000 credits, and comment on the hidden intelligence.
+Mechanic conversation:
+Talk to mechanic near the Ebon Hawk
+Ask why he is so busy
+Do the Awareness line
+Do the Persuade line
+Show compassion on Akkerre about the hydrospanner you find (confirmed. Someone else said Atton also gains influence if you kill Akkerre, haven't tried that.)
+Nar Shaada
+Have Atton repair the airspeeder (this means Bao-Dur can't get airspeeder influence). Have to do before meeting the Exchange.
+Lootra quest:
+Advanced the Lootra (husband/wife) quest such that they can reunite
+Take Kreia and one of Atton/Bao-Dur/Disciple/Handmaiden
+Complete the quest with Lootra the Light Side way
+Kreia gets mad but you don't lose influence
+Defend you actions. Say "if it meant your life, there is nothing I would not do" line
+You gain influence with the other companion (but still don't lose it with Kreia)
+First time in center area, a citizen is being hassled by thugs. You gain influence with Atton almost no matter how you handle this.
+Heal sick man in Refugee Sector with Treat Injury (only works for one of Atton/Bao-Dur/Handmaiden)
+Onderon
+starport visa
+port guard captain
+======================
+Atton progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 3
+ | Scoundrel 3
+ | STR: 12 (+1)
+WIS: 10 (0)
+CHA: 12 (+1)
+INT: 10 (+0)
+CON: 14 (+2)
+DEX: 16 (+3)
+ | 21 points
+Persuade +0 (0)
+Computer use +3 (3)
+Stealth +4 (4)
+Awareness +5 (5)
+Repair +0 (0)
+Security +5 (5)
+Treat Injury +0 (0)
+Demolitions +4 (4)
+ | Critical Strike (g)
+Sniper Shot (g)
+Sneak Attack I (g)
+Sneak Attack II (g)
+Scoundrel's Luck (g)
+Survival (g)
+Spirit (g)
+Weapon Focus: Blaster Pistol (g)
+Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+ | 
+ | 4
+ | Scoundrel 4
+ | DEX +1, 17 (+3)
+ | 4 points
+?
+ | 
+ | 
+ | 5
+ | Scoundrel 5
+ | 
+ | 4 points
+?
+ | Sneak Attack III (g)
+Improved Sniper Shot (s)
+ | 
+ | 6
+ | Scoundrel 6
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 7
+ | Scoundrel 7
+ | 
+ | 4 points
+?
+ | Sneak Attack IV (g)
+ | 
+ | 8
+ | Scoundrel 8
+ | DEX +1, 18 (+4)
+ | 4 points
+?
+ | Fighting Spirit (g)
+Master Sniper Shot (s)
+ | 
+ | 9
+ | Scoundrel 9
+ | 
+ | 4 points
+?
+ | Sneak Attack V (g)
+ | 
+ | 10
+ | Scoundrel 10
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 11
+ | Scoundrel 11
+ | 
+ | 4 points
+?
+ | Sneak Attack VI (g)
+Two-Weapon Fighting (s)
+ | 
+ | 12
+ | Scoundrel 12
+ | DEX +1, 19 (+4)
+ | 4 points
+?
+ | 
+ | 
+ | 13
+ | Scoundrel 13
+ | 
+ | 4 points
+?
+ | Sneak Attack VII (g)
+ | 
+ | 14
+ | Scoundrel 14
+ | 
+ | 4 points
+?
+ | Improved Two-Weapon Fighting (s)
+ | 
+ | 15
+ | Scoundrel 15
+ | 
+ | 4 points
+?
+ | Sneak Attack VIII (g)
+Heroic Resolve (g)
+ | 
+ | 16
+ | Scoundrel 16
+ | DEX +1, 20 (+5)
+ | 4 points
+?
+ | 
+ | 
+ | 17
+ | Scoundrel 17
+ | 
+ | 4 points
+?
+ | Sneak Attack IX (g)
+Master Two-Weapon Fighting (s)
+ | 
+ | 18
+ | Scoundrel 18
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 19
+ | Scoundrel 19
+ | 
+ | 4 points
+?
+ | Sneak Attack X (g)
+ | 
+ | 20
+ | Sentinel 1
+ | DEX +1, 21 (+5)
+ | 3 points
+?
+ | Proficiency: Lightsaber (g)
+Jedi Defense (g)
+Jedi Sense (g)
+Force Immunity: Fear (g)
+Close Combat (s)
+ | Burst of Speed
+Heal
+ | 21
+ | Sentinel 2
+ | 
+ | 3 points
+?
+ | Unarmed Specialist I (g)
+Force Sensitive (g)
+ | Knight Speed
+ | 22
+ | Sentinel 3
+ | 
+ | 3 points
+?
+ | Improved Close Combat (s)
+ | Master Speed
+ | 23
+ | Sentinel 4
+ | 
+ | 3 points
+?
+ | 
+ | Improved Heal
+ | 24
+ | Sentinel 5
+ | DEX +1, 22 (+6)
+ | 3 points
+?
+ | 
+ | Master Heal
+ | 25
+ | Sentinel 6
+ | 
+ | 3 points
+?
+ | Force Immunity: Stun (g)
+Unarmed Specialist II (g)
+? (s)
+ | Force Deflection
+ | 26
+ | Sentinel 7
+ | 
+ | 3 points
+?
+ | ? (s)
+ | Force Redirection
+ | 27
+ | Sentinel 8
+ | 
+ | 3 points
+?
+ | 
+ | Stun
+ | 28
+ | Sentinel 9
+ | DEX +1, 23 (+6)
+ | 3 points
+?
+ | ? (s)
+ | Stasis
+ | 29
+ | Sentinel 10
+ | 
+ | 3 points
+?
+ | Unarmed Specialist III (g)
+ | Stasis Field
+ | 30
+ | Sentinel 11
+ | 
+ | 3 points
+?
+ | 
+ | ?
+This build maximizes Sneak Attack and focuses on dual blaster damage. Basic build, nothing special.
+If you prefer, you could take the Two-Weapon Fighting line before the Sniper Shot line. You end up in the same place, it's just a matter of which you'd rather get first.
+I took the Sniper Shot line, which is a little gimmicky, but makes for some really nice spike damage numbers when it lands. Replace with the Rapid Shot line if desired, but keep in mind that he doesn't get the first feat in that line for free.
+I took Precise Shot I-III as Atton's last three Feats, but these could be adjusted situationally.
+This build would synergize well with a caster specializing in stuns. This Atton eventually takes stunning powers, but so late that most of the game is already over.
+This can easily be turned into a melee build just by swapping out ranged feats for melee ones. I gave that I try in my 2024 playthrough, and took Sion down toe-to-toe by burning a few Life Support Packs (and a mid-fight saved levelup full healthbar cheese).

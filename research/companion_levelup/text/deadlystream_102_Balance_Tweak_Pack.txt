@@ -1,0 +1,221 @@
+
+ Balance Tweak Pack - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Balance Tweak Pack
+ Balance Tweak Pack 1.1.0
+   (1 review)
+ By 
+Pavijan357
+Find their other files
+  Share
+ https://deadlystream.com/files/file/1790-balance-tweak-pack/
+ More sharing options...
+ Followers
+ 9
+2 Screenshots
+About This File
+ BALANCE TWEAK PACK    
+ version 1.1
+ Author: Pavijan357
+ 1. Description:
+ ---------------------
+ This is just a small compilation of minor fixes to some "Knights Of The Old Republic 2" game balance issues and oversights.
+ I originally made this for my personal use, but I decided to share it anyway at the end.
+ All these tweaks/fixes are made to be used with TSLRCM and assume that you have TSLRCM 1.8.6 (or eventual later version) installed.
+ Usage of these components without TSLRCM is not tested.
+ 2. Component list:
+ ---------------------
+ This pack consists of four main components and one small extra:
+ Component 1 - Discple and Handmaiden Grant Both Bonuses
+ Bonus feat that Handmaiden grants to Exile after their sparring match on Ebon Hawk ("Battle Precognition" - adds Wisdom bonus to defense) is much better reward than Disciple’s measly increase of 10 force points to the Exile's maximum amount after their first meditation session, and is just one of the points why some people prefer having first one as a companion that the second.
+ This mod remedies that by having both of them grant both Battle Precognition and Maximum Force Points increase at those respective dialogue points (I even added a few lines for justifying it, sorry if you don't like them ).
+ I have also fixed an oversight where if you take the DS path in dialog about meditation with Disciple you don’t get a FP bonus even though in-dialogue info said that you did.
+ Until someone restores Disciple’s cut Holocron quest (which is highly unlikely) this will serve to bridge that only slight advantage male Exile had in combat over than the female one (not that it really matters because of extremely low general difficulty of the game, but here it is anyway...).
+ Component 2 - Force Crush Balance
+ As many of you already know, KOTOR 2 in not a challenging game, but even taking that in account, there is one Force Power that really breaks its every potential for real boss fights for the Dark Side player...
+ Of course I’m speaking of Force Crush, the ultimate cheese tool.
+ There were many mods that tried to improve KOTOR 2 boss fights, and for Light Side player they might succeed to increase the challenge, but for Dark Side one, if the boss fights you solo (Nihilus and Sion for example),  it ultimately doesn’t doesn’t matter how much you buff the stats of the bosses when you have the power that, as long as you have enough Force Points and FP regeneration, makes you able to get them to helplessly jump and down and take damage without hitting you even once!
+ What is the root of a problem here?
+ It is the fact that when opponent fails the save against the power he/she suffers the full damage amount and gets lifted and dropped down on the ground helplessly, which is cool, but even if opponent succeeds on save, he/she suffers the half of damage, but STILL gets lifted and dropped, after which you can simply cast the power again and proceed to repeat the process until the opponent is dead.
+ If the opponent has more Hit Points fight will only last longer and be more tedious, but not really harder in any way.
+ My solution for this is simple: keep the effect the same if the save fails, but in the case that save succeeds opponent still suffer the half of the full damage BUT they do not get lifted and dropped, and can therefore continue to attack you, in that round at least, and actually pose some real danger.
+ Component 3 - Sith Lords Improvements
+ Yes, I know that there are already several mods that make the Sith lord bosses tougher to beat, but some of them did not hit the right spot for me, and some of them do not even work properly for all bosses, or can create the game breaking bugs when used with TSLRCM or some other mods.
+ So I created this component to both get them to the challenge level worthy of the true boss status, and make it as compatible with as many other mods that I can.
+ I play-tested this mod with:
+ a) unoptimized LS melee character made by fist-time novice player from the save I found on the net – on the "Normal" game difficulty,
+ b) optimized DS force-focused character of mine – on the "Difficult" game difficulty.
+ In both cases fights were winnable but were hard and lengthy enough, and required a fair amount of usable items to be spent (stims, medipacks and shields).
+ Be warned, with this mod installed, you should save those consumables for these boss fights, ESPECIALLY your best shields, since you can easily get one-shotted on higher difficulty without these, but that should not be any problem to accomplish anyway since, because of the general low difficulty of the regular fights, you don't really need to use those at any non-boss fight in the game, so you should always have enough by the time you get to the final 3 bosses.
+ Component 4 - Disable "Droid Interface" Feat
+ Combat droid class (only HK-47 of all party members belongs to that class) is able to take "Droid Interface" feat on level-up, which, in both vanilla TSL and TSLRCM, does absolutely nothing.
+ That was most likely to be used in some cut content out of many that were planned to be at the game but were never completed by the game developers.
+ All you can do with this feat now is to completely waste one HK-47's feat point by taking this if you are a new player and you do not know what each feat does (or in this case - doesn't).
+ Because of that, this mod serves to disable this feat, so you will not be offered to take it in on HK-47's level-up screen.
+ M4-78EP mod, which restores the droid planet to the game, actually uses "Droid Interface" feat at some points, so you should not install this component with along with that mod if you intend to use this feat.
+ Extra component - Maximum Level Sith AC Bonus Fix
+ This is just one small bug fix for the oversight in acbonus.2da file where a lvl 50 Sith Lord and lvl 50 Sith Marauder had swapped AC values.
+ While it is true that no player or non-player character should reach those levels in the unmodded game without cheating, this can happen when some difficulty or experience mods are used. So I'm supplying that fix here.
+ 3. Installation:
+ ---------------------
+ Install components from this patch AFTER TSLRM is installed.
+ Use TSL Patcher to install each component individually.
+ 4. Uninstallation
+ ---------------------
+ Copy appropriate files from the "backup" folder to their original places.
+ 5. Mod Compatibility:
+ ---------------------
+ Detailed individual compatibility notes are listed in each component's "tslpatchdata/info.rtf" file.
+ Apart from that, any mod that is compatible with TSLRCM should be compatible with this Tweak Pack.
+ ---------------------
+ THIS MODIFICATION IS PROVIDED AS-IS AND IS NOT SUPPORTED BY BIOWARE/OBSIDIAN ENTERTAINMENT OR LUCASARTS OR ANY LICENSERS/SPONSORS OF THE MENTIONED COMPANIES. USE OF THIS FILE IS AT YOUR OWN RISK AND THE ABOVE-MENTIONED COMPANIES OR THE AUTHOR IS NOT RESPONSIBLE FOR ANY DAMAGE CAUSED TO YOUR COMPUTER FOR THE USAGE OF THIS FILE.
+What's New in Version 1.1.0   See changelog 
+Released November 22, 2021
+ -  Updated the Component 1 - "Discple and Handmaiden Grant Both Bonuses" to the TSLRM 1.8.6 version (the rest of components did not need updating).
+ -  Moved the Darth Sion's utc file for the Component 3 -" Sith Lords Improvement" to the correct module.
+1.1.0
+ 1.0.0
+ November 29, 2020
+ 1.0.0
+ November 29, 2020
+ Download this file
+ Get Support
+File Information
+ Views
+ 44,911
+ Downloads
+ 17,906
+ Submitted
+ November 29, 2020
+ Published
+ November 22, 2021
+ Updated
+ November 22, 2021
+ File Size
+ 1.38 MB
+ TSLRCM Compatible
+ Yes
+ 2
+  Share
+ https://deadlystream.com/files/file/1790-balance-tweak-pack/
+ More sharing options...
+ Followers
+ 9
+ Previous File
+ TSL 221tel Recut
+ Next File
+ Unofficial TSLRCM Tweak Pack
+User Feedback
+ 1 Review
+ 9 Comments
+You may only provide a review once you have downloaded the file.
+ Most Helpful
+ Newest
+Paladin44
+ 12
+ July 26, 2022
+ Thanks for the mod!
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Balance Tweak Pack
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

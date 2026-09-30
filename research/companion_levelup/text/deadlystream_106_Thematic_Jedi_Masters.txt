@@ -1,0 +1,183 @@
+
+ Thematic Jedi Masters - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Thematic Jedi Masters
+ Thematic Jedi Masters 1.0.1
+   (0 reviews)
+ By 
+Snigaroo
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2633-thematic-jedi-masters/
+ More sharing options...
+ Followers
+ 16
+1 Screenshot
+About This File
+ Thematic Jedi Masters
+ Premise
+ A little while after I released Thematic Sith Lords, this mod’s companion, I was approached by the user Starwarsnerd with a request for the same treatment for the Jedi Masters. I told him I would consider it but I believed the Masters were well-balanced and, at the time, didn’t think it necessary.
+ When I started working on the 2.0 release of Thematic Sith Lords I decided to check on the Masters just to confirm everything was well, and I was instead floored by what I saw. All the Masters were the same class; their attributes were wildly out of proportion to their natures; their feats and powers seemed ill-thought-out—hell, in Zez-Kai Ell’s fight he doesn’t even have Force points at all! I expected a garden and found a desert, and so here we are.
+ Just like its elder sibling Thematic Sith Lords, Thematic Jedi Masters is not a conventional difficulty mod. The objective isn’t to make each fight difficult, but unique; to, as best as I’m able, reflect each Master’s personality, philosophy and capability in the stats they’re given. Because of this, unlike Thematic Sith Lords this mod does not have any elements of a “rock-paper-scissors” fight design; unlike the Sith, none of the Jedi Masters are so abhorrently one-dimensional that they could be only capable of one thing and vulnerable to all others, such as Sion is. Rather, this mod takes the approach that each Master’s obvious specialty should be highlighted, and their other abilities treated as realistically as possible given their age, temperament, class and so on. This is where Thematic Jedi Masters focuses: differentiation.
+ Unlike the basegame fights against the Sith Lords, which can at least be said to have enemies designed around certain archetypes, all the Jedi Masters (except Atris) are set up as Guardians with very little differentiation. Thematic Jedi Masters starts by making Zez-Kai Ell a Sentinel and Vrook a Consular—both, I think, with justification—to ensure the Masters themselves represent the Jedi well. From there their stats are designed both around these new classes and their behaviors as Jedi: whether they take risks like Kavar or are furtive like Zez-Kai Ell. In the end, what results are Masters that all feel very different, and much more true to who they are as people.
+ For those who’d like to see exactly what was done and an explanation of the rationale for why, a full list of changes made is available in the download.
+ Why Use Thematic Jedi Masters?
+ As noted, Thematic Jedi Masters isn’t a difficulty mod, as most mods that touch on the Masters would be. The goal is to make each Master a realistic reflection of their natures; to make them fight how they would actually fight. If you want pure difficulty, other mods might be for you. If you want to experience differentiated fights that are harder on average than what TSLRCM has to offer, however, Thematic Jedi Masters is likely for you.
+ Thematic Jedi Masters also has several features which other difficulty mods often lack: it consistently adjusts both the Master’s first encounter on their planet of choice (including Vrook’s initial fight in the Dantooine crystal cave) and their appearance in the Restored Enclave; it includes changes to Atris; and it uses the TSLPatcher to inject .utc edit data directly into module files for maximum compatibility.
+ Difficulty, Balance & Testing Methodology
+ Users who have tried other mods which make serious alterations to boss enemies may justifiably be concerned about difficulty and balance. I’d like to disclose how these fights were tested to hopefully put some of those concerns to rest.
+ This mod was tested with two DS characters, one Sentinel/Marauder and one Sentinel/Lord (although only DS characters were used in the test, none of the fights were won with unique powers or abilities which would make them viable on DS but not on LS builds). Both test characters were built well but not min-maxed, and for each battle the use of items (consumables or shield charges) was forbidden: I had to be able to beat each opponent with only melee and Force abilities. Some of the fights were still very difficult, but each could be won without needing to resort to cheesy tactics. For any player with an average or above grasp of D20 mechanics, I believe you can use this mod without concern. Beginners to d20 systems may need to turn the difficulty down for these encounters in some cases, but should still be able to beat them even with sub-par builds with a bit of clever positioning and pre-buffing.
+ Compatibility
+ This mod should be compatible with anything and everything else that doesn’t edit the Masters’ .utc files. Even mods that do so shouldn’t break this, they might just edit some of the same data. The only exception is if another mod drops a relevant .utc file directly to the override, which will fully overwrite Thematic Jedi Masters’s module-based edits.
+ Installation
+ 1. Download the file and unzip it to any folder of your choice (except for the game directory) using a program like 7zip or Winrar.
+ 2. Run the TSLPatcher.exe, click “install mod” and, when prompted, choose your install folder and confirm. Done!
+ Permissions & Thanks
+ As with any mod I have made or will make in the future, this mod has completely open permissions: modify it, redistribute it, reupload it, do whatever. So long as you give myself credit for the idea and the balance settings (if you choose to retain most of these edits) & JCarter426 credit for the mod’s development, go for it. You don’t even need to ask me.
+ Premier thanks goes as usual to @JCarter426, who built this entire mod at my request, and tirelessly put up with literally dozens of revisions of the mod as we fine-tuned the balancing. This mod is much more his than my own and I am tremendously grateful for his help.
+ Thanks also to @doctoramanda from the KOTOR Discord for her help making the "preview" image.
+What's New in Version 1.0.1   See changelog 
+Released September 16
+ Fixes TSLPatcher error which prevented an undroppable item from being properly equipped to Kavar during the situational fight at the Restored Enclave. Net change is +2 STR to him in that engagement.
+1.0.1
+ 1.0.0
+ September 16
+ 1.0.0
+ January 4, 2025
+ Download this file
+ Get Support
+File Information
+ Views
+ 14,333
+ Downloads
+ 5,738
+ Submitted
+ January 3, 2025
+ Published
+ September 16
+ Updated
+ September 16
+ File Size
+ 390.43 kB
+ TSLRCM Compatible
+ Yes
+ 5
+ 1
+  Share
+ https://deadlystream.com/files/file/2633-thematic-jedi-masters/
+ More sharing options...
+ Followers
+ 16
+ Previous File
+ [TSL] Exchange Gamorrean Fix
+ Next File
+ [TSL] Curvier Handmaiden-Style Underwear for Female Player, Handmaiden, Mira, and Visas
+User Feedback
+ 0 Reviews
+ 2 Comments
+You may only provide a review once you have downloaded the file.
+There are no reviews to display.
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Thematic Jedi Masters
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

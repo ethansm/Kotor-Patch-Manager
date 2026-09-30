@@ -1,0 +1,1468 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Handmaiden — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Handmaiden
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Atris
+2 Sisters
+3 Handmaidens
+4 Name
+5 Academy
+6 Fighting moves
+6.1 First duel
+6.2 Second duel
+6.3 Third duel
+7 Jedi Guardian
+8 Visas
+If your character is male then the Handmaiden stows away aboard the Ebon Hawk, appearing once you've left the Secret Academy on Telos and your party has gathered in the main hold to view the holo-recording of your trial by the Jedi Council:
+ | ♂ Handmaiden: Those are Atris' records you have stolen.
+ | Atton: What the hell are you doing on our ship?
+ | Handmaiden: I have come to join you. I can help you against this threat.
+ | Dialog
+ | 
+ | Atton: Well, we don't want your help. Or any of your sisters.
+ | Handmaiden: It is just me. And I am doing this because Atris believes you will need help.
+ | 1. Do you think we need help?
+ | Handmaiden: I think the strength of the enemy is unknown, but it is greater than five can hope to defeat without aid.
+ | 2. I don't care - you're going back.
+ | Influence Lost: Handmaiden (-8)
+ | Handmaiden: We cannot go back. The defense screens around the Telos Academy may have allowed your shuttle through once, but they will not let another vessel through again. I possess the codes for deactivating them, but I will not give them to you.
+ | 3. I will take whatever help I can get.
+ | 1. When you put it like that, then welcome aboard.
+ | Influence Gained: Handmaiden (+8)
+ | Dialog
+ | 
+ | Kreia: Indeed? But of course - what does one more matter to our journey? I have had enough of this - I will be in my chambers.
+ | Atton: Yeah, me, too. I'll be in my chambers. But since I don't have any, I guess I'll just go to the cockpit like I always do. If she's coming with us, she gets the cargo hold. Might remind her how fun it is to get locked up.
+ | T3-M4: Dwooooooo.
+ | Bao-Dur: General.
+ | Handmaiden: The cargo hold is enough. I assure you, there is little I need. I will attend to myself.
+ | 1. Look, forget Atton. Take the regular quarters, we have enough room.
+ | 2. Don't let them bother you - we've just been through a lot.
+ | Influence Gained: Handmaiden (+8)
+ | Handmaiden: It is no matter. I am used to worse conditions. But... thank you for your kindness.
+Otherwise:
+ | 3. Fine. Just stay out of our way.
+ | 4. I know you're here to spy for Atris. So watch yourself.
+ | 5. Not only are those going to be your quarters, but they'll be where you'll stay for the duration of our journey. Consider yourself under guard.
+ | Influence Lost: Handmaiden (-8)
+ | Handmaiden: I will. If you need me, I shall be in the cargo hold.
+Orphan White
+Recruited the Handmaiden
+ | 1. [The Handmaiden has joined your party. She has Echani defense, which protects her against melee attacks, and is an excellent unarmed fighter.]
+When you first speak to her there, or after adding her to your party, with Alignment 80 or more, or 20 or less:
+ | Handmaiden: Oh... welcome, exile. Is there something you need?
+ | Handmaiden: Yes?
+ | Handmaiden: Yes?
+ | Dialog
+ | 
+ | 1. Are you all right?
+ | 1. Something wrong?
+ | 2. Do my features frighten you?
+ | Handmaiden: Yes, your features, your stance - there is a calm about you that I did not notice on Telos.
+ | Handmaiden: Yes, your features, your stance - Atris spoke of such Jedi who followed Revan, how their bodies came to mirror the dark side within them.
+ | 1. What do you mean?
+ | 1. Then why don't you strike me down?
+ | Handmaiden: There is an energy about you, a lightness in your movements. It is something I have seen in only the most disciplined and revered of the Echani weaponmasters, yet it comes to you with ease.
+ | Handmaiden: Because there is a chance of redemption within all of us. And there is no point at which the dark side completely claims one, no matter what their choices.
+ | 1. I do feel better... I feel more in touch with my surroundings... and others.
+ | 1. Is that what Atris taught? How touching.
+ | 2. Keep your pity to yourself.
+ | Handmaiden: It shows in your features. It is beautiful to see.
+ | Handmaiden: No, it is what I believe. Atris did not believe such things.
+ | Handmaiden: It is not pity. It is what I believe. But if you do not believe it, then you are farther gone than I had thought.
+ | 3. Never mind. I'll be going.
+Otherwise:
+ | 2. I just wanted to ask some questions.
+ | 2. Can I ask you some questions?
+ | 1. Enough. I had questions for you.
+ | Handmaiden: You may ask.
+Atris[edit | edit source]
+ | 1. Did Atris ever mention me?
+ | Dialog
+ | 
+ | Handmaiden: She said you betrayed the Jedi by going to war when it was forbidden to you. You turned on your masters, your teachings, and yourself.
+ | 1. Oh?
+ | ♀ 2. She's just teasing you. I'm more like a sister to her.
+ | ♂ 2. She's just teasing you. I'm really not a bad guy.
+ | 3. She's... exaggerating.
+ | 4. Going to war was necessary.
+ | 5. I don't want to talk about it.
+ | Handmaiden: That is not all she says. She says you know nothing of loyalty to any cause except your own animal instincts, and she told us why you fell to the dark side.
+ | 1. And why was that?
+ | 2. What? dark side?
+ | 3. I do not walk the path of the dark side.
+ | 3. I haven't completely fallen to the dark side - yet.
+ | 4. Falling to the dark side came after.
+ | Handmaiden: Atris says that you fell to the dark side in the Mandalorian Wars when you gave in to your lust for battle. Once you tasted war, you could not give it up.
+ | 1. So why didn't I keep fighting in the Jedi Civil War?
+ | 2. That doesn't explain why I stopped fighting after the Mandalorian War.
+ | 3. If that were the case, I would have fought in the Jedi Civil War.
+ | Handmaiden: Atris says when the dark lord Revan returned to the Republic, you did not march with them because you had fallen so far you could no longer feel the Force.
+ | 3. The Force aside, I was tempted to attack the Jedi, but I didn't.
+ | 4. I did not march with Revan because it was my choice.
+ | Handmaiden: So it was a matter of choice, then. If Atris has erred in her evaluation of your motivations, it might be best to inform her.
+ | 1. Anything else?
+ | 2. That is untrue, but Atris is entitled to her opinion.
+ | 1. Did Atris say anything else?
+ | 2. I'd rather jab myself with a Bothan stunner. What else did she accuse me of?
+ | Handmaiden: I believe that is the extent of her expressed feelings toward you. There are variations at times, but all rise from the same foundation.
+ | 1. Expressed feelings?
+ | Handmaiden: Yes. It is difficult sometimes for others to truly speak their heart or listen to it. The words often prove difficult, or they do not come at all.
+ | 1. What do you think Atris' heart says?
+ | 2. So Atris does not know her own heart?
+ | 3. Are you saying Atris could be wrong about me?
+ | Handmaiden: Without having seen you and Atris fight, I cannot say. Battle is a pure form of expression. It is heart and discipline, reduced to movement and motion.
+ | 1. Well, I have no wish to fight Atris.
+ | Handmaiden: Then her expressed feelings will have to suffice.
+ | 2. If I fought Atris, then that might make the truth come out?
+ | 3. So if I crushed Atris' skull into the floor, that might get to the heart of the matter?
+ | Points Gained: -1
+ | Handmaiden: Perhaps it may prove truer than conversing with words.
+ | Handmaiden: I do not think the battle would go as you describe, but in essence, yes.
+ | Handmaiden: In battle, the words are swept away, giving way to actions - mercy, sacrifice, anger, fear. These are pure moments of expression.
+ | 6. Forget it. I had some other questions.
+If you wanted to ask her about Atris, you can move closer to the light or dark side of the Force, and gain Influence with her:
+ | 2. I wanted to ask you about Atris.
+ | < 31 Influence > 69
+ | > 30 Influence < 70
+ | Handmaiden: She speaks of you often, in anger. But her movements, the motion of her hand, her eyes, do not share the anger of her words. There are only the signs of loss. It has been almost the count of ten years, yet the thought of you burns within her still.
+ | Handmaiden: [Influence: Failure] I do not wish to speak of her to you. Her actions are her own, and to reveal to you if she sees fit.
+ | Dialog
+ | 
+ | 1. Well, we didn't part on the best of terms.
+ | 2. She made her feelings clear at my trial.
+ | Handmaiden: I believe that your leaving the Jedi Order may have hurt her more than she will ever admit. It is a difficult thing to speak of, to see Atris unable to confront such strong emotion within herself. You... you did not care for her, did you? Atris is beautiful. And wise.
+ | 1. A beautiful schutta, maybe.
+ | 2. I always thought she hated me.
+ | 3. No, Atris was a Jedi, I did not feel for her that way.
+ | 4. If she had told me what she felt, perhaps the future would have been different.
+ | 5. I cared for her, but such things were never spoken.
+ | 6. It is difficult to feel anything for one so cold.
+ | Handmaiden: I have heard that Jedi sometimes renounce the code by loving another, and fall from the Order. And there are others who keep such unions secret.
+ | 4. Part of the failing of the Jedi is denial of love. It is not something that can be denied without losing part of yourself - or your connection to those you are sworn to protect.
+ | Handmaiden: I see. So there are such unions?
+ | 3. I think the term is, "pulling a Bindo."
+ | Handmaiden: Pulling a... Bindo?
+ | 1. Bad joke, bald guy, long story.
+ | Handmaiden: Very... well. Are there such unions?
+ | 1. Sometimes, yes. It happens.
+ | 2. You've been watching too many bad holovids.
+ | Handmaiden: That is what I have heard. I was not sure if it was something you had seen - or experienced.
+ | 1. No, not personally.
+ | 2. I think all Jedi are tempted at one time or another.
+ | Handmaiden: I see. I have asked you many questions - I did not mean to. They are questions that have gathered over years, and I did not wish to ask Atris.
+ | 1. If you have any others, you are always welcome to ask.
+ | 2. Only fools fear questions - and their answers.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Handmaiden: Thank you, then. I hope this creates some measure of trust between us.
+ | Influence Gained: Handmaiden (+8)
+ | 1. It does, and I thank you. I wanted to ask you something else.
+Sisters[edit | edit source]
+ | 3. Why do you look different than your sisters?
+ | Handmaiden: I honor the face of my mother. It is not something usually spoken of in the company of others.
+ | 2. I apologize. I meant no offense.
+ | Points Gained: +1
+ | Handmaiden: There is no need to apologize. You were merely remarking on something that you saw - there is no wrong in that.
+ | 2. Is it a sensitive subject?
+ | Handmaiden: It is not a sensitive subject, but a subject that requires trust. There is no such trust between you and I, and such trust takes time.
+Otherwise:
+ | 1. So you have a different mother... but the same father?
+ | > 35 Influence < 65
+ | < 36 Influence > 64
+ | Handmaiden: I do not wish to discuss it. If there is something else you wished to ask, you may do so.
+ | Handmaiden: Yes, that is correct. I feel that I may trust you with such things, so I shall speak of it, if you wish to hear it.
+ | Dialog
+ | 
+ | 1. Yes, I would hear it.
+ | 2. If it'll loosen you up a little, sure.
+ | 3. It beats watching the dust settle.
+ | Handmaiden: Though my father's blood I share with my sisters, I wear the face of my mother. My father was Yusanis, an Echani general.
+ | 1. Yusanis was a hero of the Mandalorian Wars, one of the greatest.
+ | 2. I didn't realize Yusanis had any children.
+ | 3. Go on.
+ | Handmaiden: He left our family to serve in the Mandalorian Wars. But his choice was not because of battle. He went to join my mother, one whose movements and spirit matched his. His only desire was that they fight together, side by side, for as long as there were enemies amassed against them.
+ | 1. If your face is any indication, she must have been beautiful.
+ | 2. So this woman was not the mother of your other sisters?
+ | 3. Who was she?
+ | Handmaiden: I never saw her face, and she did not return from the final battle of the war. She died in the battle that shattered Malachor V, and her body was never recovered. My father returned from the Mandalorian Wars and did not enter battle again. He entered politics, a caste where one's battles are fought through words rather than action.
+ | 1. What happened to him?
+ | Handmaiden: He was slain by Revan in the Jedi Civil War when Revan sought to destabilize the Echani worlds. Revan succeeded. The fact that our father chose battle is not shameful, but that is not the reason he went to war. He went to war to be with the one he loved, but not the one he had pledged himself to. He was disloyal. I am the mark of that disloyalty. It is said that such things run in the blood, and I have fought long to prove that this is not so. That is why I am different from my sisters. Yet I am pledged to them and Atris, and I would die before betraying them. I tell you this in trust, and ask that you not speak of it to others. I only wish you to know.
+ | 1. Why tell me?
+ | Handmaiden: Because when my father returned from the Mandalorian Wars, he walked as you do now. There was something wounded inside him. He did not speak of what had happened there. And with us, he was silent. Changed. When I look upon you, I see in you an answer to a question I have searched for all my life. And that is why I tell you this now. I do not believe you to be the monster Atris made you out to be. I believe your choice was my father's choice, and it was just as difficult.
+ | 1. I appreciate your trust - thank you for telling me.
+ | 2. Your father's choice and my choice have nothing to do with each other.
+ | 3. Do you blame me for Malachor V?
+ | 5. You know nothing of my choice - and do not presume to.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Handmaiden: You have earned my trust. I wished to honor the trust you have shown me, and I wished to explain what you meant to me.
+ | Handmaiden: Perhaps not. But I do not think the reasons are so far removed. And you yourself may not realize the truth of what you represent.
+ | Handmaiden: Malachor V is the place where I lost my mother and my father. But it was their choice to fight the Mandalorians - and to die there, if Malachor was to be their grave.
+ | Handmaiden: I do not claim to understand you. There are times when your actions are a mystery to me - but I do not wish my actions to be a mystery to you.
+ | Handmaiden: I know it is difficult for others to see why I am here, but it was important that you know one of the reasons, and know that it is not simply duty that I am here, but because I want to be here. I want to fight with you side by side, for as long as there are enemies that threaten you. You are a leader - your stance, your every action proves it.
+ | Influence Gained: Handmaiden (+8)
+ | 1. I am grateful for your words, and for your assistance.
+ | 2. I will accept your pledge. Let us stand together then.
+ | 3. Then serve me - and serve me well, or you shall stand with me no longer.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Handmaiden: You honor me, exile. Together, then.
+ | 1. I had other questions.
+Handmaidens[edit | edit source]
+ | 4. Why are you called the Handmaidens?
+ | 4. Is there a reason you are called the "last" of the Handmaidens?
+ | Handmaiden: We attend Atris. It is the duty of all of us, from the first of my sisters to me, the last of the Handmaidens.
+ | 1. You are the last of them?
+ | Handmaiden: I am the last of the Handmaidens, this is correct. I train so that one day that will no longer be true.
+ | 1. The others said you were easily distracted from your training.
+ | 2. Your skill is impressive, as is your devotion to your training.
+ | 3. If you are distracted and lack discipline, then you deserve your rank.
+ | Points Gained: +1
+ | Handmaiden: It dishonors me that they would say such a thing to an outsider. But I cannot deny the truth in what they say. My thoughts are not always focused on training.
+ | Handmaiden: That is not entirely correct. There are times I am... distracted.
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Handmaiden: Perhaps once having known the ways of the Jedi, you may understand what occupies my thoughts.
+ | 1. What do you mean?
+ | 2. I'm not sure I understand.
+ | Handmaiden: There is much knowledge on Telos, and only one of the Jedi remain. There is so much about their ways of battle, their forms, their stances, that may be lost forever if the last of the Jedi is taken from the galaxy.
+ | 6. And you would preserve it?
+ | Handmaiden: Atris has already preserved it. What I wonder is if the Jedi teachings should not simply be stored, but brought to others. There is much in their approach to battle that is worthy to be shared.
+ | 1. Battle is not the truth of the Jedi teachings - I believe it is the farthest thing from it.
+ | 2. Combat is not the Jedi way - and it is not my way.
+ | 4. To lose those combat techniques would be tragic, indeed.
+ | 5. When the methods to inflict violence on others is limited, it weakens us all.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Handmaiden: I know your meaning, but I have not been clear on mine.
+Otherwise:
+ | 3. Is this what occupies your thoughts?
+ | Handmaiden: To the Echani, battle is a means of communication - it is an art, in the truest sense of the word.
+In both cases:
+ | Handmaiden: Stance, form, discipline are a means of expression and communication. They speak one's heart and one's devotion to their cause.
+ | 1. Devotion to their cause?
+ | Handmaiden: Yes, the methods you use to meet your opponents speak truer than any words can express. When you risk pain or death, there is no truer sacrifice or strength.
+ | 5. Devotion? I prefer obedience. To a cause... and a master.
+ | 4. Nor a greater show of fealty.
+ | Points Gained: -1
+ | Handmaiden: If that is where one's devotion lies. When you risk pain or death for another, there is no truer test of your beliefs and strength.
+Otherwise, you only move closer to the light side of the Force if you haven't already said combat is not the Jedi way:
+ | 2. Combat is not the best way to communicate with others.
+ | 3. So you'd consider slaughter a means of expression?
+ | 4. I agree. It shows how far you are willing to go for your goals.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Handmaiden: It was to the Jedi traitor Malak. It was to the Jedi traitor Revan. When Taris was destroyed, it showed Malak's heart through its execution and intent. It was brutal, without finesse... but showed his commitment to defeat the Jedi. Yet with Revan, there was the same commitment, but it was a subtle thing, like weaving threads in a tapestry, or strokes upon a canvas.
+ | ♀ Handmaiden: She spoke through battles and tactics, in a way one could never do in words. She showed her heart at Malachor V... and finally, at the end of the Jedi Civil War. I believe she was speaking to Malak in that final battle, though few knew it.
+ | ♂ Handmaiden: He spoke through battle and tactics, in a way one could never do in words. He showed his heart at Malachor V... and finally, at the end of the Jedi Civil War. I believe he was speaking to Malak in that final battle, though few knew it.
+ | 1. Revan turned on Malak, once a friend, and killed him.
+ | 2. Malak was slain, and that is all that was said.
+ | 5. What do you think Revan was saying?
+ | 6. I would not ascribe too much poetry to their hate and violence.
+ | Handmaiden: Through battle, Revan was meeting betrayal with betrayal - and showing Malak the pain he had inflicted on his master.
+ | Handmaiden: Poetry is wordplay that cloaks feelings in riddles. Battle speaks, and its feeling is true. Revan knew this when facing Malak... and slaying him.
+ | Handmaiden: What stronger display than death for conveying one's sense of being betrayed by one's own student? Revan's anger must have been great indeed. I would have wished to have been there for that final exchange and seen the truth of their conflict with each other.
+ | 3. Revan and Malak were driven only by the dark side.
+ | 4. The Force drove Revan to do what needed to be done, and that is all.
+ | Handmaiden: But to say that seems an untruth, based on what I know of the Jedi. The Force can drive others, but there is still choice, is there not? If there is no choice in the Force, then our teachings and our actions are for nothing. And I refuse to believe that is true.
+Name[edit | edit source]
+ | 5. Do you have a name?
+ | Dialog
+ | 
+ | Handmaiden: Before entering Atris' service, yes, I carried a name, as all the children of the Echani do.
+ | 1. What was it?
+ | Handmaiden: It is not important. My title and rank is of consequence, not my name. I take value in Atris' service, not in myself.
+ | 1. You should take value in yourself as well.
+ | 2. As do all slaves. If you have no value to anyone but Atris, you have no value to me.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Handmaiden: We all have value in our oaths to others, and the promises we make. When we make that pledge, we are pledging ourselves to something greater. When importance is placed on the self, then by such acts the galaxy is unmade.
+ | 1. There is some truth in what you say. Is that your judgment of me?
+ | 2. Are you making some comment about me turning from the Jedi Code?
+ | Points Gained: +1
+ | Handmaiden: If reasons of the self is why you turned away, then yes, perhaps there was a judgment there, but it was not intended as an attack.
+ | Handmaiden: Nothing except that which you have interpreted.
+ | 3. Do you think that I lost myself when I disobeyed the Jedi?
+ | Handmaiden: I do not know. That is a question you must ask yourself.
+ | 1. Right now the only question I'm asking myself is why I'm letting you stay.
+ | 2. Keep your opinions to yourself, or I will make you regret them.
+ | Points Gained: -1
+ | Handmaiden: I meant no offense, but the question remains. If the question angers you, oftentimes there is a reason for such anger.
+ | 1. I had some other questions.
+Academy[edit | edit source]
+ | 6. I would like to return to the academy on Telos.
+ | Handmaiden: It is not possible to dock at the Academy without the proper codes.
+ | 1. Do you have them?
+ | Handmaiden: Yes, but I could not give them to you.
+Fighting moves[edit | edit source]
+The Handmaiden spars in the Cargo Hold of the Ebon Hawk, and you can ask her if she can teach you some fighting moves to start a duel there:
+ | 7. What are you doing?
+ | Dialog
+ | 
+ | Handmaiden: I am training. So that if danger should strike, my body and my reflexes will be prepared. That, and I had forgotten how long hyperspace travel can be. If I do not have something to focus my attention on, I fear my sanity will erode as well.
+ | 2. You could always play pazaak with Atton.
+ | 3. It seems like you might have a little more practice against a live opponent.
+ | Atton: What do you mean, pazaak? What, again?
+ | T3-M4: Dee-reet, deet! Deet!
+ | Handmaiden: No, I do not trust him.
+ | 1. At cards?
+ | Handmaiden: That, too.
+ | 2. Look, I don't think anyone here trusts each other.
+ | 2. This is going to be a short journey if everyone's watching each other for betrayal.
+ | Handmaiden: That is untrue. You and the Iridonian trust each other... or at least, the Iridonian trusts you. We heard much of the Iridonian when we served Atris. Atris believed that the Iridonian held the knowledge to restoring Telos.
+ | 2. Is that why Atris was siphoning power to the Telos Academy?
+ | 4. Maybe you'd like to explain why Atris is siphoning power to the Telos Academy.
+ | Handmaiden: The reasons for such siphoning of power are complicated, and I do not know all the answers. But there is something greater being achieved. The teachings at the academy must be preserved, even if it draws strength from Telos.
+ | 1. Who? Bao-Dur?
+ | 1. Atris thought Bao-Dur was the key to saving Telos?
+ | Handmaiden: Yes. His skill with machines is something beyond which most can aspire to. His shield technology surpasses the designs of even the most skilled of Echani power architects.
+ | 1. I don't want to talk about it - and I don't want you asking him about it, either.
+ | 2. It's not your concern.
+ | 3. You'd never understand, hidden away in your academy, listening to some schutta who never fought in the wars.
+ | Handmaiden: I will respect your wishes. And his. Forgive me.
+ | Handmaiden: Very well. I did not mean to bring up painful memories, forgive me.
+ | Handmaiden: I see. Forgive my words. They were poorly chosen.
+ | 1. Don't apologize - it was a long time ago.
+ | 2. It's just... difficult to describe to someone who wasn't there.
+ | 3. Don't mention it again. It's not something I want to talk about.
+ | Handmaiden: It does not sound like it is in the past. But I shall respect your wishes.
+ | Handmaiden: The Mandalorian Wars were like that for many. Many returned who could not tell of their experiences in a way that could bring meaning to them.
+ | Handmaiden: Very well. But if you choose to speak of it, I am here to listen to whatever you wish to say.
+ | 8. Can you teach me some fighting moves?
+ | Handmaiden: Training is something reserved for certain caste members of the Echani... but I do not see the harm in instructing you in some basic principles. I do not understand how you and Atris fight, but I will instruct you on how Echani children are raised on warfare.
+ | Dialog
+ | 
+ | 1. I am not a child.
+ | 2. Was that a stab at me?
+ | 3. That seems as good a place as any to begin.
+ | Handmaiden: All Echani fighting principles rely on foundations. If one does not understand the most basic of fighting moves, it is not possible to understand the higher tiers. It is similar to learning the alphabet of a language before being able to use words, then sentences.
+ | 1. I understand. I am ready.
+ | 2. Can we dispense with the lecture and get on with this?
+ | Handmaiden: You are correct. Words are merely words, and they fail to communicate what I intend to teach you.
+ | Handmaiden: As a foundation, I will instruct you in our elementary movements. The body itself is the first weapon you must master. It is not something that can be described - let us duel, you and I, and that shall teach you more than my words can. Use only your hands and feet to strike at me - nothing else, or our combat shall be over. Do not resort to using any items, or any Force techniques you may possess - such things will obstruct learning.
+ | 2. Does that include no armor? Or clothes?
+ | Handmaiden: Duels among the Echani are rituals, and do not allow for armor or anything that restricts movement.
+ | Handmaiden: I am making an exception in this case, as you requested.
+ | Dialog
+ | 
+ | 1. Well, to duel without clothes seems a little – exposed.
+ | 3. That explains it, then. Just wasn't expecting it.
+ | 2. Just checking. It's a little cold on this ship.
+ | Handmaiden: Your modesty has no place in combat. Even the youngest of the Echani understand this - you should as well.
+ | Handmaiden: Now - are you ready?
+ | 5. Let me prepare myself, and I will return.
+ | Handmaiden: Very well. I shall be here.
+First duel[edit | edit source]
+ | 1. All right - no Force powers, weapons, or items. Got it.
+ | 3. Prepare yourself, then.
+ | 4. Hope you're ready to hit the floor.
+ | 6. This contest shall be quick.
+ | 1. Yes, no Force powers, weapons or items, got it.
+ | Handmaiden: Very well. I shall match my movements to resist your efforts. And do not hold back, or I will hurt you.
+Any active buffs are cancelled and any clothing, robes or body armor and weapons are removed. Any mines set before a duel remain, and unlike her sisters she doesn't have Mine Immunity. However, setting mines shouldn't be necessary, particularly if she hasn't been levelled up or equipped since joining your party:
+ | Handmaiden
+ | 
+ | 
+ | 
+ | Set
+ | None
+ | Level
+ | 6
+ | Class
+ | Soldier
+ | Alignment
+ | 62 (light)
+ | Skills
+ | Awareness
+ | 8
+ | 
+ | 
+ | 
+ | Attributes
+ | Strength
+ | 14
+ | +2
+ | Dexterity
+ | 16
+ | +3
+ | Constitution
+ | 14
+ | +2
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 10
+ | 0
+ | Charisma
+ | 14
+ | +2
+ | 
+ | Vitality
+ | 78
+ | Force
+ | -
+ | Defense
+ | 15
+ | Saves
+ | Fortitude
+ | 8
+ | Reflex
+ | 6
+ | Will
+ | 3
+ | 
+ | Ranged
+ | Main
+ | Off hand
+ | Attack
+ | -
+ | -
+ | Damage
+ | - | -
+ | Threat
+ | - | -
+ | Melee
+ | Attack
+ | 8
+ | -
+ | Bludgeoning
+ | 6-18 | -
+ | Threat
+ | 20-20,x2 | -
+ | Items and abilities
+ | Feats
+ | Force powers
+ | 
+None
+ | 
+10
+21
+ | 
+None
+The cargo hold's Low Security Door is locked for the duration of the duel. If you lose:
+ | Dialog
+ | 
+ | Handmaiden: You fought well, but you announce your motions before attacking, sometimes quite loudly. Take as long as you need to recover, and if you wish, we shall fight again.
+ | 1. It's difficult to hurt you.
+ | Handmaiden: Of course. I do not wish to be hurt. If you wish to hurt me, then you must try harder. It is not a contest of raw strength, but of action and reaction.
+ | 2. I'd like to try again.
+ | Handmaiden: Very well. Let us duel again.
+However, since she's joined your party, you can control the level of challenge: the easiest way to win all three duels is simply not to level up or equip her until you've done so. Regardless of the outcome, you're restored to maximum Vitality after each duel, and the next time you return to the Ebon Hawk, Atton walks in on the Handmaiden as she spars:
+ | Atton: Don't you ever give it a rest?
+ | Dialog
+ | 
+ | Atton: Fine, don't mind me, I just need to get some stuff from the cargo hold.
+ | Handmaiden: You know the first tier of styles, but you hold back because I am unarmed. Tell me where you were trained.
+ | Atton: What can I say; I'm a quick study.
+ | Handmaiden: You lie. Few know the Echani styles by reflex.
+ | Atton: Oh, yeah? Guess you saw a lot of the world while you were freezing your cargo hold off in the ice academy, didn't you, sister?
+ | Atton: Next time I walk in here, I'm carrying a blaster.
+ | Atton: Oh, yeah, one other thing - don't think I haven't noticed the way you've been sparring with our ex-Jedi friend. This isn't some pleasure yacht, so if I did know all the Echani movements, I might know more than just the first tier, including the etiquette rituals. So keep your hands where I can see them.
+ | Handmaiden: Fool.
+ | Atton: Schutta.
+Also regardless of the outcome of any duel, the next time you return to speak to her, you can ask the following:
+ | 3. Do you think you could put some clothes on?
+ | Dialog
+ | 
+ | Handmaiden: It does not seem to bother you.
+ | 1. Yeah, well, I can walk around like this if I want to. This is my ship.
+This ends the dialog if you're still not wearing clothing, robes or body armor. If you are: 
+ | Handmaiden: I fail to understand the problem. I had heard the coreward systems had customs concerning... modesty, but when training, such customs are not practical or efficient.
+ | 1. I disagree. In fact, if you don't train while encumbered, you are crippling yourself.
+ | Handmaiden: I can see no fault in your reasoning. I do have bulkier clothes. Will this do?
+ | Handmaiden
+Handmaiden's Robe
+However, the Handmaiden still removes her robe whenever you duel, and doesn't replace it afterwards: although it is placed in Inventory, it won't be displayed there and it cannot be equipped by her again until you leave the Ebon Hawk with her added to your party. You can ask the Handmaiden if she could put on some clothes again after a duel, but each time another Handmaiden's Robe is generated rather than taken from inventory: although only she can actually use it, this can still be exploited to generate multiple robes to break down into components, or sell for credits (and if you want to avoid this, then don't ask her if she could put on some clothes again until you've won all three duels).
+ | 1. Those look like Jedi robes.
+ | 3. Those look like Jedi robes you're wearing.
+ | Handmaiden: They suffice for training purposes. They belonged to my mother.
+ | Handmaiden: They are. These robes belonged to my mother.
+ | 1. They belonged to your mother? Who was she?
+ | > 40 Influence < 60
+ | Handmaiden: [Influence: Failure] That is not something I wish to discuss. Is there something else you needed?
+ | 1. Why don't you want to talk about it?
+ | Handmaiden: It is a matter personal to me, and I do not feel comfortable discussing it with others. I have donned the robes to test my skills, that is all.
+ | < 41 Influence > 59
+ | Handmaiden: [Influence: Success] She was the one my father followed to war - she was a Jedi.
+ | Handmaiden: These are her robes. I have not worn them since they came into my possession. They are the only thing of her that I possess.
+ | 1. I am sorry for your loss.
+ | 4. Whatever your feelings are concerning her, suppress them. She is gone.
+ | 2. Do you miss her?
+ | 3. Sometimes the best part of the Jedi is the robes... at least they serve a purpose.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Handmaiden: I think you misunderstand - I have no feelings concerning her at all. There is only curiosity.
+ | Points Gained: -1
+ | Handmaiden: I never knew her. There is no absence of presence when there was nothing there to begin with. I miss only that I never knew her at all. And what it was about her that caused my father to follow her to war.
+The success of this influence allows you to gain more after you've violated the etiquette of your duel in any way:
+ | Dialog
+ | 
+ | Handmaiden: You have violated the etiquette of our duel. We will leave the instruction for another time when you are willing to listen.
+ | 1. Forgive me. I'd like to try again.
+ | 3. Forget it. I had some questions.
+ | 4. I didn't need this anyway. Just leave me alone.
+ | Handmaiden: Very well. Let us duel again.
+Otherwise:
+ | 2. I think you are the one who fails to listen to what I was teaching you.
+ | Handmaiden: I have heard enough - your stance was unable to be read, because you chose to defy our rules.
+ | 1. And that is why you do not understand. Battle is not won through ritual or convention, but through whatever one has at their disposal.
+ | Handmaiden: That is not something I believe. Without ritual and oath, without etiquette, there is no truth in battle or combat.
+ | 1. Using whatever power at your disposal is the truth. And victory is the objective.
+ | 2. You are wrong. By adhering to a ritual established by others, you corrupt your own fighting skills.
+ | Points Gained: -1
+ | Handmaiden: Such lack of discipline is a weakness. It is another form of not knowing yourself, of not knowing your limits and strengths. If we defy such conventions, then no Echani would ever know another.
+ | 1. Just like you never knew what lead your father to follow your mother to war?
+ | 2. It seems your father broke conventions in going to war. Was he ignorant?
+ | Handmaiden: You will take back that challenge, exile. If you do not, then I shall teach you not to make such accusations lightly.
+ | 1. Deny that I am wrong, and I will take back those words.
+ | 2. If this is how you react to truth, then I have nothing more to say to you.
+ | Influence Gained: Handmaiden (+8)
+ | Handmaiden: There is truth in what you say. But the manner in which it was delivered is not welcome.
+Otherwise:
+ | 3. [Persuade (8)] Convention and ritual have their place, but in the end, it is intent that matters.
+ | Handmaiden: [Success] There is truth in what you say. But the manner in which it was delivered is not welcome.
+ | 4. [Wisdom (13)] Perhaps rigid adherence to those conventions prevents you from knowing yourself.
+ | 4. [Intelligence (16)] Perhaps rigid adherence to those conventions prevents you from knowing yourself.
+ | 1. Through battle? Then you are wrong there as well.
+ | 2. The hardest truths are ones that leave their scars.
+ | Dialog
+ | 
+ | Handmaiden: I have heard what you have said, through pain and word, and I understand. You have taught me something, about myself and yourself, and we are both greater through the experience.
+ | 1. Then that is all I ask.
+ | Handmaiden: If there is nothing more, then I wish to be left alone to consider this.
+ | 1. I did it to teach you - not to humiliate you, that was simply an added bonus.
+ | 2. Life is filled with such truths - better you are taught by me than another.
+ | Points Gained: -1
+ | Handmaiden: I understand what you meant by the lesson. Please leave me.
+ | 2. I'll be going, then.
+After winning your first duel:
+ | Handmaiden: [Success] You fought well indeed, you have caught the principles of the style by watching and anticipating my movements.
+ | Influence Gained: Handmaiden (+8)
+ | Dialog
+ | 
+ | Handmaiden: I now have a favor to ask you.
+ | 1. A favor?
+ | Handmaiden: The weapon the Jedi use, the Force... I would like to know more about it.
+ | 1. What do you want to know?
+ | Handmaiden: It is not something you can see, or fight, yet the Jedi use it... and struggle with it their entire lives.
+ | 1. It is a difficult thing to describe.
+ | 3. I don't want to talk about it.
+ | Handmaiden: Please, I wish to know.
+ | 1. Imagine awakening, and hearing the heartbeat of the galaxy for the first time.
+ | 2. It is like a current that passes through you, and carries you with it to all the places it touches.
+ | 3. The warmth of the sun without the glare - you can feel its light and its heat, but there is no harshness to it.
+ | 4. It is so many things, yet you know when you feel it, without question.
+Otherwise:
+ | 2. I only know what its loss feels like.
+ | Handmaiden: Then tell me of its absence.
+ | 1. Imagine awakening and finding all your senses blinded.
+ | 2. It is like feeling warmth on the skin, then being buried alive.
+ | 3. An echo, forever traveling inside you until the end of your days.
+ | 4. It is something you struggle to recall, yet forever forgotten.
+ | Handmaiden: I see. Thank you, exile. I appreciate you sharing your knowledge with me.
+ | 1. It was my pleasure.
+ | 2. If you have any further questions in the future, seek me out and ask them.
+ | 3. I had some other questions I wanted to ask you.
+ | 4. I'll be going now.
+ | Handmaiden: As it was mine to hear your words. I thank you.
+ | Handmaiden: I will do this. Thank you.
+Otherwise:
+ | 5. You'll know when you die. So unless you wish to die, leave me be.
+ | 6. Maybe I'll speak of it some other time, not now.
+ | Handmaiden: Very well - forgive me, exile, I did not mean to speak of things painful to you.
+ | 1. Perhaps we shall discuss it another time.
+ | 2. It is forgotten. I will be going now.
+ | 3. Just leave me be.
+Second duel[edit | edit source]
+If you cannot level up to 14 (< 91000 XP) after winning your first duel, or 18 (< 153000 XP) after winning your second:
+ | 2. Can you teach me some more fighting moves?
+ | Handmaiden: I do not think you are ready for further instruction. Each movement of our arts demands some time to use the art in battle, or to examine how it may be best used in battle.
+ | 2. You seem to be anticipating my attacks.
+ | 1. Any reason why I have to fight without clothes?
+ | Dialog
+ | 
+ | Handmaiden: It is the way of the Echani to be able to read their opponents - to know where an opponent is going to strike before it connects, anticipate it, and then strike against them. Echani battles are fought several minutes in advance - in many ways, it is much like the game of dejarik played in the core systems. The most advanced among the Echani are able to predict the course of battles by months, and the most revered are said to be able to predict the path of wars.
+ | ♀ Handmaiden: Only Revan ever demonstrated such skill in war. And even as she slaughtered us, the Echani still respected her.
+ | ♂ Handmaiden: Only Revan ever demonstrated such skill in war. And even as he slaughtered us, the Echani still respected him.
+ | 1. Can you teach me to do this?
+ | Handmaiden: You are already doing it.
+ | 1. What do you mean?
+ | Handmaiden: If you do not know you are doing it, then training will make you a dangerous opponent indeed. Come - as we fight more, I will teach you. Do not think about predicting my movements - react instinctively. You are doing better. At first, I was afraid that your awareness of your own ability might ruin it, but that is not the case. You learn quickly. Perhaps it is your connection to the Force that allows such things, but I do not think so. Now you fight as an Echani warrior fights - always in the future.
+ | 1. [You have gained Battle Precognition. It allows you to add your Wisdom bonus to your Defense in combat.]
+Once you can level up to 14 (91000 XP or more):
+ | Handmaiden: Very well. I think you are ready for the next tier of instruction. For this, we will keep the etiquette of the last duel, but we shall add any melee weapon you choose to the ritual, with the exception of the Jedi weapon, the saber. Vibroblade, Bothan stun stick, force pike - whatever you wish. But no items, no Force techniques.
+ | 1. All right, any melee weapon, but no lightsaber, no items, and no Force powers. Got it.
+ | 3. I am ready - hope you are.
+ | 4. Prepare yourself, then.
+ | 5. Whatever you use, it won't matter - you're still going down.
+ | Handmaiden: Then let us begin - and again, do not hold back. I will not.
+Although replacing any clothing, robes or body armor before any attack is made still violates the etiquette of your duel, any weapons other than lightsabers can now be used, not just melee weapons. After winning your second duel:
+ | Handmaiden: [Success] You fought well indeed, you have caught the principles of the style by watching and anticipating my movements.
+ | Influence Gained: Handmaiden (+8)
+ | Handmaiden: Before you go, there is something I must know. Why did you go back, face trial?
+ | 1. Because I felt they deserved an explanation. Maybe I had to hear me defend myself, just to be certain.
+ | 2. I guess I thought maybe they could help me.
+ | Points Gained: +1
+ | Influence Gained: Handmaiden (+8)
+ | Handmaiden: I see. It was always something I was curious about - to walk to one's own sentence willingly. It is a brave thing.
+Otherwise:
+ | 3. I'm not exactly sure.
+ | 4. To let them look upon me and see what war was - and how much hatred I had for them.
+ | 5. Only to show them their own weakness and cowardice.
+ | Handmaiden: I do not understand it myself. It was always something I was curious about - to walk to one's own sentence willingly. It is a brave thing.
+ | Handmaiden: I... see. But I feel I understand what you felt. To go to war... and then return to be judged by those who had not.
+ | Influence Gained: Handmaiden (+8)
+Third duel[edit | edit source]
+Once you've won your second duel and you can level up to 18 (153000 XP or more): 
+ | 2. Can you teach me some more fighting moves?
+ | Handmaiden: I think you are ready for the final tier I wish to teach. You have made much progress. For this, you may use any melee weapon and any shields you possess. But nothing else, no Jedi saber and no other items.
+ | 1. All right, so shields and melee weapons, but no lightsaber, no Force powers, and no other items.
+ | 2. Let's get on with it.
+ | Handmaiden: We shall begin this final lesson, then.
+After winning your third and final duel:
+ | Handmaiden: Atris was correct about you. You know war, its motions and currents.
+ | 2. Can you teach me some more fighting moves?
+ | Influence Gained: Handmaiden (+8)
+ | Handmaiden: There is nothing more I can teach you.
+ | 1. Then maybe I can teach you some things.
+ | Dialog
+ | 
+ | Handmaiden: I have already learned much of your styles and combat. There is no need to know more.
+ | 1. What's the problem?
+ | Handmaiden: Combat among the Echani is... a personal thing. Repeated duels are not what they are in other cultures, and I would rather that this not become more than it is. And I have taken an oath to Atris against studying from a Jedi, or anything of the Jedi teachings.
+ | 1. Why?
+ | 2. But do you want to learn?
+ | Handmaiden: What I desire is of no importance.
+ | > 25 Influence < 75
+ | < 26 Influence > 74
+ | Handmaiden: [Influence: Failure] Other Echani have broken oaths in the past, and I will not. This is not something I wish to discuss.
+ | Handmaiden: [Influence: Success] My father broke his oaths. He shamed us all. I do not wish to follow his path... I swore not to follow his path. If I were to follow a Jedi against Atris' wishes, then I would be betraying her. For you.
+ | Dialog
+ | 
+ | 1. If I am lost, then all I know, all I can teach will be lost. I wish someone to know what I have learned.
+ | 2. There is no betrayal in learning. And it is important to me that you know the Jedi, that you know who I was... who I am.
+ | 3. And if you do not do what you want, then you betray yourself.
+ | 4. I have fought beside you. You know me, as well as you know Atris. What do you want?
+ | Handmaiden: This is a difficult thing for me to say, but I ask that you be silent as I tell you this. It is my desire to learn from you what you can teach me of battle. I have already learned much in our duels, but with every battle, I wish to know more of you. Your stance, your movements, I can sense shades of meaning, and an echo of something I have yet to experience. Atris said that you were the only Jedi to have survived the Mandalorian Wars. That you had stared into the heart of war, and only turned away because you were forced to. I do not believe her. I believe that you made a choice... as my father did. And that is important to me, more than you know. And you are important to me, more than you know. I will accept whatever you wish to teach me, though it breaks my oath to Atris.
+ | Influence Gained: Handmaiden (+8)
+If Kreia hasn't remarked on how you are spending time with the servant of Atris:
+ | Dialog
+ | 
+ | 1. Then when the time is right, I will teach you more of battle.
+ | 2. You are doing the right thing - and time shall prove it.
+ | 3. You have chosen your new master well. I will have further instruction for you as we travel together.
+ | Handmaiden: I shall await that time. But until then, I will need time to reflect on this - it is different to voice something you feel, and I must grow accustomed to the weight.
+ | 1. I will leave you to it, then.
+ | 2. We will speak more later.
+ | 3. I'll be going now.
+Once she has, and you've already talked to the Handmaiden about her mother:
+ | < 26 Influence > 74
+ | 1. Have you thought about your heritage?
+ | Handmaiden: I have thought about what you have said, of my mother, of my bloodline. There is something I would ask of you.
+Jedi Guardian[edit | edit source]
+Before you can talk to the Handmaiden about her mother, you need to speak to Kreia in the Port Dormitory of the Ebon Hawk, or after adding her to your party, after successfully influencing Handmaiden in one of two ways:
+During or after your first duel, put on some clothes, ask her to do likewise, disagree, say they look like Jedi robes and then ask who her mother was (< 41 Influence > 59).
+Ask her why she looks different than her sisters, query her having a different mother but the same father (< 36 Influence > 64), then say you would hear it (or words to that effect) if she should speak of it.
+ | Kreia: You are spending time with the servant of Atris.
+ | Dialog
+ | 
+ | 1. So what?
+ | 2. I'm surprised you know so much when you never leave this room.
+ | 3. That is none of your concern.
+ | 4. It's five seconds into this conversation, and I've already had enough. I'm going now.
+ | Kreia: I knew her mother. She was a Jedi Knight - a master, named Arren Kae. Jedi are forbidden to have children, and when the crime finally came to light almost a decade later, Kae was exiled. She joined the Mandalorian Wars after the shame of her birth was revealed.
+ | 1. How do you know that? The Handmaiden told me not to speak of it.
+ | 2. She served under Revan?
+ | 3. I don't remember her - are you sure?
+ | Kreia: Revan welcomed her. And she was... said to be... a skilled warrior. Beautiful. And strong in the Force. The Force flows strongly in the blood of those born from Force Sensitives. I doubt that Arren was any different. If the servant of Atris is of her blood, then the potential lies within her. If you train her, if you teach her the ways of the Jedi, you will be asking her to break her oath to Atris. It would be best not to train her, and let the bloodline die with Telos.
+ | 1. But shouldn't she know her heritage?
+ | Kreia: Should she? By whose judgment should such truths be revealed? I do not have such arrogant presumptions. The Jedi separate children from their parents - as they did you. It is because family exerts a powerful influence on one's development. I am merely saying that revealing such things can have profound consequences... nothing more.
+ | 2. [Awareness (13)] You said teach her the ways of the Jedi. Curious choice of words.
+ | 2. [Wisdom (13)] You said teach her the ways of the Jedi. Curious choice of words.
+ | Dialog
+ | 
+ | Kreia: Ah, that was an interesting choice of words, indeed. She has sworn not to follow the path of the Jedi, by her oath... but even that oath is limited. One does not need to be Jedi to learn the ways of the Force. I suspect it cares little for our codes and philosophies.
+ | 1. But there is only Jedi and Sith, so what you are proposing seems a greater evil.
+ | 2. Are you proposing teaching her the ways of the Sith?
+ | Kreia: Once there were only Jedi. I wonder what "evil" was in such days. And to think, once there were no Jedi at all. Perhaps the Force defies such rigid classification of its followers.
+ | Kreia: I propose nothing except what you choose to read into my words. But no, I would not advocate such teachings, either. I am only saying that she has sworn not to follow the teachings of the Jedi... and that is a curious distinction in her oath.
+ | Kreia: But we were speaking of the servant of Atris - I would caution you to be careful of your interaction with her. She is not as... tempered as you.
+ | 3. I do not wish to train anyone.
+ | Kreia: As you will. But there may be a point where you have no choice... you have a curious influence on those around you.
+ | 4. How could I train her?
+ | Kreia: You must train yourself first. The time will reveal itself. Yet if you persist as you have, building her trust, then you will be training her, whether you know it or not, until the choice is hers - not yours.
+ | 4. Enough of this. I had questions for you.
+ | 5. Never mind. I'll be going now.
+ | Kreia: Before you continue questioning me, I hope your thoughts in the matter concerning this servant of Atris are clear.
+ | Kreia: Before you go - a word of caution.
+ | Kreia: Spend time with her if you must - but recognize where your true loyalties lie - to the galaxy and yourself.
+ | 1. My feelings for her are none of your concern.
+ | 4. Jedi have no such attachments.
+ | 2. My loyalties lie to my friends and allies.
+ | 3. I don't need a lecture from you.
+ | Kreia: Ah, so then perhaps I was mistaken in my judgment.
+ | Kreia: Ah, so it is loyalty you claim when you squander away your time with her.
+ | Kreia: Lectures? No, merely an observation, and obviously, I was mistaken.
+ | Kreia: Never have you wondered what it would mean in the Echani rituals if the two of you sparred and fought - and you won, completely and utterly? If perhaps she would give in, surrender herself to you? Few are the thoughts that can hide in the shadows of your mind, exile... and such passions are not strength, but erosion.
+ | 1. I never felt anything like that.
+ | 3. My feelings for her are nothing like that, and you know it.
+ | 4. If you think you know me, you are wrong.
+ | 2. Maybe you should keep your thoughts to yourself.
+ | 5. Perhaps - and perhaps not. We shall see.
+ | Kreia: No? Then perhaps I was simply mistaken. Very well - I shall keep such judgments to myself.
+ | Kreia: I cannot help but hear you at times - and such curious thoughts they are, not at all like a Jedi. But I shall keep such thoughts to myself, I think. And you should as well.
+This unlocks the following when you next ask the Handmaiden some questions, or when you gain influence after telling her maybe you could teach her some things after winning your third duel:
+ | 1. I wanted to talk to you about your mother.
+ | Handmaiden: What of her? As I said, I knew little about her.
+ | 1. Did you know that she was a Jedi Knight?
+ | 2. She was a Jedi, her name was Arren Kae.
+ | 3. The Mandalorian Wars - she was one of the Jedi who served and died there, and good riddance.
+ | > 40 Influence < 60
+ | < 41 Influence > 59
+ | Handmaiden: [Influence: Failure] This is not something I wish to discuss. If there is something else you wish to ask, you may do so.
+ | Handmaiden: [Influence: Success] This is already known to me. Why are you telling me this?
+ | 1. Because the Force runs strong in bloodlines, and you could learn to use it to help others.
+ | 2. It means you may be able to feel the Force as well.
+ | 3. You can use that same power, but take a stronger, darker path.
+If you haven't gained that influence after winning your third duel:
+ | > 25 Influence < 75
+ | < 26 Influence > 74
+ | Handmaiden: [Influence: Failure] Even if I believed you, to even discuss this is a betrayal of my oath to Atris. We have spoken long enough - now I wish to be left alone.
+ | Handmaiden: [Failure] I... I do not know enough of you yet to speak of such things. I do not know your stance, your heart. Perhaps if we were to train together in battle, my thoughts on this would be clearer. But not now.
+Once you have:
+ | < 26 Influence > 74
+ | Handmaiden: [Influence: Success] I... think I have always known this. It has always been on my thoughts.
+ | Points Gained: +1
+ | 
+ | Points Gained: -1
+ | Handmaiden: As I followed Atris, perhaps what I wished to follow was the call of my bloodline, of my mother. I have felt incomplete, hollow, since her loss at Malachor V... and with your help, perhaps this wound might be healed.
+ | Kreia: And so it ends.
+If your alignment is dark (< 40):
+ | Handmaiden: I want you to teach me to wield the Force as my mother did, to fight those that would threaten us - and end them.
+ | Dialog
+ | 
+ | 1. I will not train you.
+ | 5. I need to consider this. It is not something to be entered into lightly.
+ | Handmaiden: I ask you to reconsider - I will not fail you.
+ | 1. You have already failed me. Now leave me.
+ | Handmaiden: Very well. But know that I am ready and certain, more than I have been in my entire life. This is my purpose, what I was meant to do.
+ | Handmaiden: Very well. But I will be ready if you change your mind.
+When you next return to ask her questions:
+ | 1. I have decided to instruct you in the ways of the Force - are you certain you wish to be trained?
+Otherwise:
+ | 2. I will never train you to be a Jedi.
+ | 3. If you do this, you will break your vow to Atris.
+ | 4. Only if you renounce Atris, and swear your loyalty to me.
+ | Handmaiden: I did not ask you to train me in the ways of the Jedi. I have seen that path - in Atris, and that is not the path I wish.
+ | Handmaiden: I wish to follow you, not Atris.
+ | Handmaiden: It is you I wish to serve. Teach me. I shall not fail you.
+ | 1. Then hear and obey - you have the makings of a Dark Jedi Guardian within you, and it is time I showed you that path.
+If your alignment is neutral or light (> 39):
+ | Handmaiden: I want you to teach me the ways of the Force. To become a Jedi Knight like my mother.
+ | 1. If I were to train you, then I might harm you - and I would not wish that.
+ | 2. I... am not a Jedi Knight. Ask it of Atris.
+ | 5. The Jedi are dead - there is only me, and the truth I bring.
+ | Points Gained: +2
+ | Handmaiden: Listen to me. I am already committed.
+ | Points Gained: -2
+ | Dialog
+ | 
+ | Handmaiden: There is no one else I would want to train me. I have seen you in battle, I have seen your heart, and you are what I want to be. It is like a hollow place inside me, but when I am with you, the echo dies.
+ | 4. I will not train you. Do not ask of this of me.
+ | 5. I need to consider this. It is not something to be entered into lightly.
+ | Handmaiden: Then that is your choice. But I had to ask before the moment escaped me forever.
+ | Handmaiden: Very well. But know that I am ready and certain, more than I have been in my entire life. This is my purpose, what I was meant to do.
+In both cases, when you next return to ask her questions you can tell her you've decided to instruct her and then do so, but after saying you need to consider this, the screen may later remain black after fading out: saving then loading the game may fix this, or you can simply avoid this option. Otherwise:
+ | 3. If you do this, you will break your vow to Atris.
+ | 1. So be it. But it will be breaking your vow to Atris.
+ | Handmaiden: There is the betrayal of Atris, and there is the betrayal of my mother and father. After seeing you in battle, I know you more than I have ever known Atris. And I am not convinced that serving her is the greater good.
+Otherwise:
+ | 4. I will not train you as a Jedi, but only in the ways of the Force.
+ | 2. Then I will teach you what I know of the Jedi. Is that what you want?
+ | 3. If you seek training, I shall train you - not as a Jedi, but only in the ways of the Force.
+ | 6. Let me teach you to harness the hollow places inside yourself - and use it for your own power.
+ | Points Gained: +2
+ | Points Gained: -2
+ | Handmaiden: That is all I wish.
+In every case: 
+ | Handmaiden: I want to feel what my mother felt for my father, what ran through my mother's veins when she was one with the Force. I wish to hear what my mother heard as she fought the Mandalorians... until the moment she died on Malachor V.
+ | 1. Then know this - you have the makings of a Jedi Guardian within you, and it is time I showed you that path.
+Regardless of your alignment:
+Breaking the Oath
+Taught the Handmaiden the ways of the Force
+ | Handmaiden: I will not let you down, exile. I will honor you, as I honor the face of my mother.
+ | 1. [The Handmaiden has been seduced along the path of a Dark Jedi Guardian. She will grow in power as she travels with you.]
+ | 1. [The Handmaiden has taken her first steps on the path of the Jedi Guardian. She will grow in ability as she travels with you.]
+ | Kreia: :: Betrayal. ::
+Meanwhile, Atris is walking up the stairs exiting the meeting chamber of the secret academy on Telos, returning to her meditation chamber, when she stops and turns as if she's just heard something:
+ | Atris: Betrayal.
+ | Dialog
+ | 
+ | Handmaiden Sister: Mistress?
+ | Atris: She has betrayed me... the last of your sisters has betrayed me. Betrayed us. She is your sister no more. She does not travel with the exile - instead, she has chosen to walk the path of the Jedi.
+ | Handmaiden Sister: Mistress... forgive us, but are you certain? She would not forsake her oath so lightly...
+ | Atris: It is the truth. And it is done. Do you doubt me?
+ | Handmaiden Sister: No, mistress. It is you who saved the Jedi upon Dantooine... who have collected their knowledge, and hid it here to protect it.
+ | Handmaiden Sister: But... why? How did she fall?
+ | Atris: It is a sign of his corruption. And perhaps hers as well. He will train her, and she will be flawed.
+When you next exit the Ebon Hawk and add the Handmaiden to your party, you can now level her up as a Jedi Guardian!
+Visas[edit | edit source]
+Once Visas has joined your party and you have at least 15 more Influence with her than the Handmaiden, when you board the Ebon Hawk the latter confronts the former in the starboard dormitory:
+ | Visas: That is how flesh and blood fights. Let me show you how one fights when one's life is the Force.
+ | Handmaiden: I won't let you harm him. I have heard of your kind... you worship strength, when all it does is rot you from within.
+ | Dialog
+ | 
+ | Visas: You echo another's words, and as an echo, it lacks strength. Who is it who has taught you of the Sith?
+ | Handmaiden: I will not reveal my mistress... and I will not allow you to harm the one I travel with.
+ | Visas: I cannot harm him. His wound lies deeper than any blade could reach, and that is why I follow him and protect him.
+ | Handmaiden: Protect him? I do not believe you.
+ | Visas: You do not believe that I would follow him to death? Certainly you have read as much in my movements... as I have in yours. There is no shame in your feelings, sister of the Echani.
+ | Handmaiden: Be silent! You know nothing of what you speak.
+ | Visas: You are alone and wounded in your own way. I can feel its pulse, like a heartbeat from the past. But if you will not believe that I mean him no harm, then believe this - I wish to learn from him. I wish to learn how it is he still walks when his spirit is nothing more than a shell... when you feel as though the Force, as if life itself, has abandoned you. I had a question for you, sister of the Echani. The exile... what does he look like?
+ | Handmaiden: Like a man. But it is more than that, and I do not have the words.
+ | Alignment < 40
+ | Alignment 40-60
+ | Alignment > 60
+ | Handmaiden: He is selfish, at times lacking discipline.... my mistress was right about him, the galaxy has poisoned his heart. But... I have hope that he can be redeemed. It is a faint hope... And I find that I cannot help but follow him.
+ | Handmaiden: His path is difficult to detect, sometimes he chooses the shadowed path - but at other times, he demonstrates a strange kindness.
+ | Handmaiden: He shows kindnesses, both small and great, to strangers. He does this without hesitation. He has accepted me, even though he and my mistress are not allies.
+ | Handmaiden: All I know is he makes me doubt the words of my mistress, one whom I have pledged to serve.
+ | Visas: Such feelings... are not unknown to me.
+ | Handmaiden: And I fear such doubts. Could it be my mistress was wrong about him? That perhaps he did not seek to betray the Order. That perhaps my mistress felt as I did, and when he left the Order, she found that she doubted as well.
+ | Handmaiden: There is a feeling that emanates from him, like... like a sound, from far away, that has traveled a vast distance to reach here.
+ | Visas: Like an echo. Your words are well-chosen, sister of the Echani. I will not harm him. But it is not me you should fear. There are darker things in the galaxy than a blind one such as I.
+You can now ask HK-47 if he knows what love is for the Cupid's Rifle Steam achievement. Once Mira joins your party, she walks and talks with the Handmaiden afterwards:
+ | Mira: I don't know what the two of you are arguing about. I caught him, he's mine.
+ | Dialog
+ | 
+ | Mira: But it's obvious you two need some advice, so let me lay out the attack pattern for you. It's simple - when you want a man, you jab him with a Bothan Stunner, then while he's screaming in pain, slap some stun cuffs on him. Then starve him for two or three days until he becomes open to suggestion, then double-check his bounty and see if he's worth anything.
+ | Handmaiden: That sounds more like hunting.
+ | Mira: Call it what you want. Me, I love my targets.
+However, once you have at least 30 more Influence with Visas, your relationship with the Handmaiden is damaged beyond repair. The simplest way to unlock HK-47's dialog while avoiding this is to gain > 70 Influence < 85 with the Handmaiden (normally 3-4 net influence gains), before gaining and maximizing influence with Visas. Otherwise, when aboard the Ebon Hawk, Kreia speaks to her in the cargo hold:
+ | Kreia: Something troubles you, servant of Atris.
+ | Handmaiden: Leave me be.
+ | Dialog
+ | 
+ | Kreia: I have seen what you have seen - the slow seduction of the Sith. Perhaps we are more allies than you know. I fear the exile has let his feelings for the Miraluka affect his judgment - and it will doom him.
+ | Handmaiden: There is still hope.
+ | Kreia: I do not believe so. And neither do you - you have seen his stance, his movements. They mirror hers, not yours. But do not mistake my intent, we are together in this. And if we stand together, we may yet prevent a greater tragedy.
+ | Handmaiden: I do not believe you. And I do not trust you.
+ | Kreia: What you think is of no concern - what the exile thinks is what should concern us.
+The next time you speak to her:
+ | Handmaiden: Why are you here?
+ | Dialog
+ | 
+ | 1. What's wrong?
+ | 2. Are you angry?
+ | 3. I came to speak to you.
+ | Handmaiden: If you have come to ask me questions, try to find out more of Atris or the academy, then I have nothing to say to you. I see where your loyalty lies. And if you stand with her, then you cannot stand with me. She is of the Sith. She has faced battle, and been found wanting.
+ | 1. Visas? She can be trusted.
+ | 2. She is no concern of yours.
+ | 3. Keep your opinions to yourself.
+ | 4. She serves a difficult master - as do you.
+ | Handmaiden: Why is it you trust her and not I? I would follow you wherever you led. I believe in what you seek. Yet you listen to her counsel - she who would lead you to the Sith Lords themselves, she who would sacrifice you to darkness.
+ | 1. Because I believe she can be saved.
+ | 2. It is because... her wound is similar to mine. It is difficult to express.
+ | Points Gained: +2
+ | Influence Gained: Visas (+8)
+ | 3. And you would not sacrifice me to Atris if Atris ordered it?
+ | Handmaiden: Is that something that she told you? If that is what you believe, then what I say does not matter.
+ | Handmaiden: Stay with her, then.
+Otherwise:
+ | 4. I do not trust her more than you - you must believe me.
+ | Influence Lost: Visas (-8)
+ | Handmaiden: I do not believe you. Every action you have taken with her runs counter to your words.
+ | 5. She can lead me to those who seek to destroy me. Then I can confront them, and hopefully, stop them.
+ | 6. And when she leads me to those who hunt me, I shall butcher her and her masters.
+ | Points Gained: -4
+ | Influence Lost: Visas (-8)
+ | Handmaiden: You answer her deception with deception of your own?
+ | Handmaiden: This is the end between us.
+In every case:
+ | Influence Lost: Handmaiden (-8)
+ | Handmaiden: I will aid you against the enemies we face, but when it is settled, you shall not see me again.
+ | Handmaiden: There is nothing for us to discuss. Leave me alone.
+She says that whenever you try to speak to her again. When questioning Atton, you can comment on this:
+ | 1. The Handmaiden lost her temper with me.
+ | Atton: Oh, there's a surprise. Trust me, she's a handful - all warriors are. They're not used to dealing with things they can't punch, kick, or break.
+ | Dialog
+ | 
+ | Atton: Look, I know how it is. Me, there's no denying that I'm a good-looking guy. You have it worse, because even though you might not be as good-looking as me, you have that whole tortured past, that command presence. Women want to save you. They think they can help you.
+ | 1. What are we talking about?
+ | 2. Help me?
+ | 3. Why do I need to be saved?
+ | Atton: They think that everyone can be redeemed, and that they're the only ones who can do it. And you don't know if it's you, or the idea of you that they love.
+ | 1. [Awareness (8)] Are we talking about me or you?
+ | 2. I suppose love in any form is a gift.
+ | Atton: We're just talking. Like I said, I've never understood women.
+ | 3. Sounds too much like mercy to me.
+ | 4. As long as I can manipulate it for my purposes, it is enough.
+ | Atton: It's possible they don't love you at all. That they just want to help you... help you hear yourself if you've gone deaf to your own voice. We all lose our way sometimes, and we need someone to pull us back.
+ | 1. Is that what that Jedi who died for you did?
+ | 2. [Awareness (8)] Sounds like you've had that experience before.
+ | 3. Did anyone ever do that for you?
+ | Atton: Yeah... she woke me up, inside. I'm still trying to sort it out.
+ | Atton: Don't remember. Truth is, I still don't listen to my conscience even when it's shouting. I think there's times I'd rather be completely deaf than hear it.
+ | Atton: But all this talk doesn't matter. I'm not qualified to give advice. Besides, when I open my mouth, I'm usually lying anyway.
+Go to top
+G0-T0
+Handmaiden
+Hanharr
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Handmaiden&oldid=1031371"
+Hidden category: 
+Sub-pages
+ This page was last edited on 15 June 2023, at 22:27.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

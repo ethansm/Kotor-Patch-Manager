@@ -1,0 +1,211 @@
+
+ Bao-Dur Can Wear Heavy Armor - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Bao-Dur Can Wear Heavy Armor
+ Bao-Dur Can Wear Heavy Armor 1.0.0
+ heavy armor
+ bao-dur
+   (0 reviews)
+ By 
+Effix
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2189-bao-dur-can-wear-heavy-armor/
+ More sharing options...
+ Followers
+ 10
+1 Screenshot
+About This File
+ ------------------------------------------------------------------------
+ Knights of the Old Republic - The Sith Lords
+ ------------------------------------------------------------------------
+ TITLE: Bao-Dur Can Wear Heavy Armor
+ AUTHOR: Effix(ian)
+ CONTACT: PM me on the forums or find me on Steam
+ -------------------------
+ INSTALLATION
+ -------------------------
+ Unzip, run "Bao-Dur_Can_Wear_Heavy_Armor.exe" from the subfolder.
+ ------------------------
+ DESCRIPTION
+ ------------------------
+ Normally "Armor proficiency: Heavy" is not available to Bao-Dur's base class (Tech Specialist) when you level him up. This mod changes that and it adds the needed models to actually make wearing heavy armor work for him.
+ This mod is made possible by models created by DarthParametric, see the credits below for links to these resources.
+ Things should work with existing savegames.
+ ----------
+ BUGS
+ ----------
+ None known.
+ -------------------------
+ UNINSTALLING
+ -------------------------
+ 1. Remove the following files from your override folder:
+ - DP_BaoDurBG.mdl
+ - DP_BaoDurBG.mdx
+ - DP_BaoDurBH.mdl
+ - DP_BaoDurBH.mdx
+ - P_BaoDurH.mdl
+ - P_BaoDurH.mdx
+ 2. If you haven't installed any mods after this mod then you can get appearance.2da and feat.2da from the mod's backup folder and put them back in your override folder.
+ Doing this when you did add another mod might break the later mod.
+ -------------------------------------
+ DISTRIBUTION NOTES
+ -------------------------------------
+ - You can use DarthParametric's models if you credit him, they are all Modder's Resources.
+ - You can use my small part of this mod in your own mod if you simply credit me.
+ ---------------
+ THANKS
+ ---------------
+ Many thanks to DarthParametric for his work and for sharing it.
+ - Bao-Dur Head Model Neck Fix: http://deadlystream.com/forum/files/file/1100-bao-dur-head-model-neck-fix
+ - Bao-Dur Armour and Robes: https://deadlystream.com/topic/8484-bao-durs-armor-fix-idea/?tab=comments#comment-80850
+ Thanks to Stoffe and Fred Tetra for the needed tools and tutorials.
+ -----------------
+ Donations
+ -----------------
+ My mods are free. If you would like to show your support then you can buy me a coffee at ko-fi.com/effix
+ -----------------
+ THIS MODIFICATION IS NOT MADE, DISTRIBUTED, OR SUPPORTED BY BIOWARE, OBSIDIAN, OR LUCASARTS ENTERTAINMENT COMPANY LLC. ELEMENTS TM & © LUCASARTS ENTERTAINMENT COMPANY LLC AND/OR ITS LICENSORS.
+What's New in Version 1.0.0   See changelog 
+Released November 1, 2022
+No changelog available for this version.
+1.0.0
+ 1.0.0
+ November 1, 2022
+ Download this file
+ Get Support
+File Information
+ Views
+ 28,252
+ Downloads
+ 15,230
+ Submitted
+ October 31, 2022
+ Published
+ November 1, 2022
+ Updated
+ November 1, 2022
+ File Size
+ 1008.27 kB
+ TSLRCM Compatible
+ Yes
+ 3
+ 1
+  Share
+ https://deadlystream.com/files/file/2189-bao-dur-can-wear-heavy-armor/
+ More sharing options...
+ Followers
+ 10
+ Previous File
+ Effixian's Zabrak Player Characters
+ Next File
+ Effixian's "Son of Vaklu" Player Character
+User Feedback
+ 0 Reviews
+ 6 Comments
+You may only provide a review once you have downloaded the file.
+There are no reviews to display.
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Bao-Dur Can Wear Heavy Armor
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

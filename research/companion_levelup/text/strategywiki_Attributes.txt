@@ -1,0 +1,998 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Attributes — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Attributes
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Strength
+2 Dexterity
+3 Constitution
+4 Intelligence
+5 Wisdom
+6 Charisma
+ | The attributes of your character apply bonuses or penalties to everything from combat to skill checks to Force powers. Check each attribute to see what aspects of game play it can affect.
+Attribute points are allocated by selecting an attribute and using the arrows to scroll sideways and add or subtract points.
+At character generation each of the six physical attributes is at 8, with 30 points to allocate between them. Any attribute can be increased to a maximum of 18 at this time, but beyond 14 there are increased point costs:
+ | Attribute
+ | 9
+ | 10
+ | 11
+ | 12
+ | 13
+ | 14
+ | 15
+ | 16
+ | 17
+ | 18
+ | Points
+ | +1
+ | +1
+ | +1
+ | +1
+ | +1
+ | +1
+ | +2
+ | +2
+ | +3
+ | +3
+ | Total
+ | 1
+ | 2
+ | 3
+ | 4
+ | 5
+ | 6
+ | 8
+ | 10
+ | 13
+ | 16
+Characters are awarded an additional attribute point every fourth level (4, 8, 12 and so on). These are not subject to the increased point costs which apply at character generation.
+However, it is not the attribute itself which is important but its modifier, which equals (attribute - 10) / 2, rounded down:
+ | Attribute
+ | 8
+ | 10
+ | 12
+ | 14
+ | 16
+ | 18
+ | Modifier
+ | -1
+ | 0
+ | +1
+ | +2
+ | +3
+ | +4
+Consequently it is normally a waste if an attribute is an odd number after all points and bonuses from equipment, stimulants, Force powers and any light or dark side mastery is taken into account.
+Strength[edit | edit source]
+ | Strength measures physical power. A high Strength adds modifiers to melee damage and chance to hit, which is important for characters that use close-combat weapons (vibroblades, lightsabers).
+Strength modifier (STR) adds to the following:
+Damage with melee weapons and lightsabers, and off hand blaster pistols
+Attack with melee weapons unless less than Dexterity modifier with Finesse: Melee Weapons
+Attack with lightsabers unless less than Dexterity modifier with Finesse: Lightsabers or Melee Weapons
+Critical Strike and Power Attack Difficulty Classes
+The damage bonus granted by a character's Strength modifier varies depending on the melee weapon(s) or lightsaber(s) equipped:
+ | Weapon(s)
+ | Unarmed or
+Stun baton
+ | One
+ | Two
+ | Double-Bladed
+ | Main hand
+ | Off hand
+ | Main hand
+ | Off hand
+ | Damage bonus
+ | STR
+ | 1.5 STR
+ | STR
+ | 0.5 STR
+ | 1.5 STR
+ | 0.5 STR
+For example, a character with 20 Strength (STR +5) would be granted the following damage bonuses:
++5 when unarmed or equipping a stun baton
++7 (1.5 * 5) when equipping one melee weapon or lightsaber
++5 main hand and +2 (0.5 * 5) off hand when equipping two melee weapons or lightsabers
++7 main hand and +2 off hand when equipping a double-bladed melee weapon or lightsaber
+For some reason, 0.5 STR is also added to off hand damage when using blaster pistols: although not added to damage displayed on the Equip screen, it is listed in the Combat log's 
+Damage Breakdown, which sums correctly and matches both floating numbers and actual damage inflicted.
+Attribute modifiers are limited to maximum +127, which normally isn't an issue since attributes themselves are limited to maximum 255 (+122). However, when STR is added to Critical Hit damage, the critical multiplier can result in it exceeding maximum +127, at which point it rolls over negative:
+ | Strength mod
+ | +127
+ | +128
+ | +129
+ | +130
+ | +131
+ | +255
+ | +256
+ | Damage
+ | +127
+ | -128
+ | -127
+ | -126
+ | -125
+ | -1
+ | 0
+If damage from other sources doesn't exceed this, then only 1 damage is inflicted. The Strength required isn't normally possible, sometimes even with Cheats:
+ | Critical multiplier
+ | x2
+ | x3
+ | x4
+ | 0.5 STR
+ | 266 Strength (+128)
+ | 182 Strength (+86)
+ | 138 Strength (+64)
+ | 1.0 STR
+ | 138 Strength (+64)
+ | 96 Strength (+43)
+ | 74 Strength (+32)
+ | 1.5 STR
+ | 96 Strength (+43)
+ | 68 Strength (+29)
+ | 54 Strength (+22)
+However, it is just about possible without cheating for a single Lightsaber or the main hand of a Double-Bladed Lightsaber (1.5 STR) when using Power Attack with Perseverance (Shien) lightsaber form (Critical Multiplier: +1 each).
+Dexterity[edit | edit source]
+ | Dexterity measures agility and reflexes. A high Dexterity adds modifiers to ranged attack rolls (blasters) and increases a character's Defense, making them harder to hit.
+Dexterity modifier (DEX) adds to the following:
+Defense
+Attack with ranged weapons (blaster pistols and blaster rifles)
+Attack with melee weapons (including lightsabers) with Finesse: Melee Weapons when greater than Strength modifier
+Attack with lightsabers with Finesse: Lightsabers when greater than Strength modifier
+Reflex save
+Stealth bonus
+Power Blast Difficulty Class
+Constitution[edit | edit source]
+ | Constitution represents health and resiliency. A high Constitution adds modifiers to the vitality points gained at each level-up. Constitution also determines what types of implants the character can equip. This attribute is important for all classes.
+Constitution modifier (CON) adds to the following:
+Vitality points per level
+Regeneration
+Fortitude save
+Vitality can regenerate every 6 seconds, but how much also depends on whether or not the character is engaged in combat:
+ | Constitution
+ | 8
+ | 10
+ | 12
+ | 14
+ | 16
+ | 18
+ | 20
+ | Modifier
+ | -1
+ | 0
+ | 1
+ | 2
+ | 3
+ | 4
+ | 5
+ | Combat
+ | -0.3
+ | 0
+ | 0.3
+ | 0.6
+ | 0.9
+ | 1.2
+ | 1.5
+ | No Combat
+ | 0.7
+ | 1
+ | 1.3
+ | 1.6
+ | 1.9
+ | 2.2
+ | 2.5
+Which implants a character can equip are also determined by that character's minimum Constitution (not including bonuses from other equipment, stimulants, Force powers and mastery):
+ | Minimum Constitution
+ | 12
+ | 14
+ | 16
+ | 18
+ | 
+Packages
+Reflex Package
+Pheromone Package
+Cardio Package
+Strength Package
+Response Package
+Fitness Package
+Skills Package
+Health Package
+Physical Boost Package
+Mental Boost Package
+ | 
+Implants
+Retinal Combat Implant
+Lornan Implant
+Biotech Implant
+Power Implant
+Alacrity Implant
+Insight Implant
+Skills Implant
+Durability Implant
+Physical Boost Implant
+Mental Boost Implant
+ | 
+Systems
+Nerve Enhancement System
+Bio-Antidote System
+Reaction System
+Advanced Combat System
+Bavakar Strength System
+Cardio Power System
+Skills System
+Numbness System
+Physical Boost System
+Mental Boost System
+ | 
+D-Packages
+Strength D-Package
+Immunity D-Package
+Perception D-Package
+Enhancement D-Package
+Immortality D-Package
+Quickness D-Package
+Skills D-Package
+Universal D-Package
+Physical Boost D-Package
+Mental Boost D-Package
+Implants listed above the line can be created using a Lab Station with sufficient Treat Injury rank and Chemicals; those listed below can only be bought or found.
+However, if an implant is selected for a reward, merchant or container inventory then the chance of each subtype being selected is determined by your character's maximum Constitution (including bonuses):
+ | Constitution
+ | Modifier
+ | Package
+ | Implant
+ | System
+ | D-Package
+ | < 12
+ | < 1
+ | Yes
+ | No
+ | No
+ | No
+ | 12-13
+ | 1
+ | 2/3
+ | 1/3
+ | No
+ | No
+ | 14-15
+ | 2
+ | 2/5
+ | 2/5
+ | 1/5
+ | No
+ | 16-17
+ | 3
+ | 2/7
+ | 2/7
+ | 2/7
+ | 1/7
+ | > 17
+ | > 3
+ | 1/4
+ | 1/4
+ | 1/4
+ | 1/4
+So only Packages can be selected with less than 12 Constitution, but all four subtypes have equal chance of being selected with 18 Constitution or more.
+Intelligence[edit | edit source]
+ | Intelligence represents knowledge and reasoning. A high Intelligence adds modifiers to the number of points a character has to spend on essential skills.
+Intelligence modifier (INT) adds to the following:
+Skill points on character generation
+Skill points granted per level up
+Computer Use, Demolitions, Repair and Security bonus
+Sniper Shot Difficulty Class
+Droid vitality repaired by repair kits
+Skill points granted upon level up are determined by a character's permanent Intelligence modifier (bonuses from other equipment and Force powers not included). It is recommended to only allocate points to Intelligence upon character generation to maximize skill points granted at that time, and upon level up:
+Character generation
+ | Class
+ | Jedi Guardian
+ | Jedi Sentinel
+ | Jedi Consular
+ | Skill points
+ | (1+INT) * 4
+ | (3+INT) * 4
+ | (2+INT) * 4
+Level up
+ | Skill points
+ | 1 + INT
+ | 2 + INT
+ | 3 + INT
+ | 4 + INT
+ | 
+Jedi Guardian
+Soldier
+Combat Droid
+ | 
+Expert Droid
+Jedi Weapon Master
+Sith Marauder
+ | 
+Jedi Consular
+Jedi Master
+Sith Lord
+ | 
+Jedi Sentinel
+Scout
+Jedi Watchman
+Sith Assassin
+ | 
+Scoundrel
+Tech Specialist
+Characters are always granted at least four skill points at character generation, and at least one on level up:
+ | Minimum
+Intelligence
+ | Skill points
+ | 1 + INT
+ | 2 + INT
+ | 3 + INT
+ | 4 + INT
+ | 8
+ | 1
+ | 1
+ | 2
+ | 3
+ | 10
+ | 1
+ | 2
+ | 3
+ | 4
+ | 12
+ | 2
+ | 3
+ | 4
+ | 5
+ | 14
+ | 3
+ | 4
+ | 5
+ | 6
+ | 16
+ | 4
+ | 5
+ | 6
+ | 7
+ | 18
+ | 5
+ | 6
+ | 7
+ | 8
+Wisdom[edit | edit source]
+ | Wisdom represents willpower and perception. A high Wisdom adds modifiers to Jedi Force Points and Force Power saving throws. The Force Powers of a Jedi with high Wisdom are also much harder to resist.
+Wisdom modifier (WIS) adds to the following:
+Force power Difficulty Class
+Force points per Jedi level
+Will save
+Awareness and Treat Injury bonus
+Vitality healed by medpacs and Heal
+Defense with Battle Precognition (male main player character only)
+Charisma[edit | edit source]
+ | A high Charisma increasing the potency of a character's Force Powers. It also reduces the penalty when using Force Powers of an opposing alignment (a light side character with a high Charisma can use dark side powers with less of a penalty), and a high Charisma also improves your companions' chance to hit. Finally, Charisma influences a character's Persuade skill.
+Charisma modifier (CHA) adds to the following:
+Force power Difficulty Class
+Persuade bonus
+Party attack rolls
+Vitality healed by Heal
+Player Charisma Modifier is normally added to the attack rolls of party members, but a negative modifier results in a penalty. The Attack Breakdown in the Combat section of the Journal's Messages Log displays this accumulating with each attack in a combat round:
+ | Attack in round
+ | 1
+ | 2
+ | 3
+ | 4
+ | 5
+ | Player Charisma Modifier
+ | 1 * CHA
+ | 2 * CHA
+ | 3 * CHA
+ | 4 * CHA
+ | 5 * CHA
+However, according to the total it's correctly added just once to each attack.
+Charisma modifier can also reduce the Force point cost of Force powers of opposing alignment, as each CHA +1 reduces the adjustment by 5%:
+ | Alignment
+ | Charisma
+ | Light side
+ | Dark side
+ | < 12
+ | 12
+ | 14
+ | 16
+ | 18
+ | 20
+ | 22
+ | 24
+ | 26
+ | 28
+ | 30
+ | 32
+ | 34
+ | 36
+ | 38
+ | 40
+ | 100
+ | 0-9
+ | 75%
+ | 70%
+ | 65%
+ | 60%
+ | 55%
+ | 50%
+ | 45%
+ | 40%
+ | 35%
+ | 30%
+ | 25%
+ | 20%
+ | 15%
+ | 10%
+ | 5%
+ | 0%
+ | 80-99
+ | 10-29
+ | 50%
+ | 45%
+ | 40%
+ | 35%
+ | 30%
+ | 25%
+ | 20%
+ | 15%
+ | 10%
+ | 5%
+ | 0%
+ | 60-79
+ | 30-49
+ | 25%
+ | 20%
+ | 15%
+ | 10%
+ | 5%
+ | 0%
+For example, Heal is a light side power that normally costs 52 Force points for a dark side character with no positive Charisma modifier who has achieved mastery, since its base cost (30) is subject to an adjustment increasing it by 75% (+22). However, if that character has 20 Charisma (CHA +5), the adjustment is reduced by 25% (5*5%) to 50%, resulting in 45 (30+15) cost per use.
+Go to top
+Classes
+Attributes
+Skills
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Attributes&oldid=1077380"
+Hidden category: 
+Sub-pages
+ This page was last edited on 29 June 2024, at 13:26.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

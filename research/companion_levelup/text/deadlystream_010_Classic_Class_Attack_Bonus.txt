@@ -1,0 +1,164 @@
+
+ Classic Class Attack Bonus - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Classic Class Attack Bonus
+ Classic Class Attack Bonus 1.0.0
+ k2
+ balancing
+ classes
+   (0 reviews)
+ By 
+Crimson Knight
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2812-classic-class-attack-bonus/
+ More sharing options...
+ Followers
+ 5
+1 Screenshot
+About This File
+ For KotOR1, Bioware designed three separate attack bonuses that classes have, with the best being 1 and the worst being 3. No class actually used 3, but only Guardians and Soldiers have 1. In KotOR2, all classes use 1, meaning they're all equal. This mod restores the class variety that Bioware implemented, with Jedi Weapon Master and Sith Marauder retaining the best attack bonus. This does nerf the non-combat classes, but does make each class stand out a little bit more.
+ Alternatively, you can download a version that gives Consulars, Jedi Masters, and Sith Lords the unused worse attack bonus.
+ For a rough explanation:
+ Guardians: Attack is 1:1 with level. So at level 20 it will be 20.
+ Sentinels: Attack is 0.75:1 with level, rounded down. So at level 20 it will be 15.
+ Consulars: Attack is 0.5:1 with level, rounded down. So at level 20 it will be 10.
+ To install either, just download, extract, and run the TSLPatcher.
+ Thanks to Fred Tetra for creating the Kotor Tool, which was used to extract and edit the relevant .2da file.
+ Download this file
+ Get Support
+File Information
+ Views
+ 10,347
+ Downloads
+ 4,162
+ Submitted
+ August 31, 2025
+ Published
+ September 25, 2025
+ Updated
+ September 25, 2025
+ File Size
+ 652.27 kB
+ TSLRCM Compatible
+ Yes
+ 2
+ 1
+  Share
+ https://deadlystream.com/files/file/2812-classic-class-attack-bonus/
+ More sharing options...
+ Followers
+ 5
+ Previous File
+ Unique Jedi Master Robes
+ Next File
+ JC's Korriban: The Works for K2
+User Feedback
+ 0 Reviews
+ 1 Comment
+You may only provide a review once you have downloaded the file.
+There are no reviews to display.
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Classic Class Attack Bonus
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

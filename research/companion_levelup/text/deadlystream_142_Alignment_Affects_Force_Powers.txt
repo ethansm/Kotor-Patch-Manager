@@ -1,0 +1,201 @@
+
+ Alignment Affects Force Powers [TSL] - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Alignment Affects Force Powers [TSL]
+ Alignment Affects Force Powers [TSL] 1.0.1
+ difficulty
+ force powers
+ alignment
+ dark side
+ light side
+ jedi
+ balance
+   (0 reviews)
+ By 
+offthegridmorty
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2815-alignment-affects-force-powers-tsl/
+ More sharing options...
+ Followers
+ 8
+1 Screenshot
+About This File
+ Makes it so your alignment affects the potency of Light and Dark Side Force powers.
+ This is the version for KOTOR 2. The KOTOR 1 version can be found here.
+ SUMMARY
+ The main effect of alignment on gameplay in vanilla is to modify the FP cost of using powers. For how central LS/DS side choices and alignment are in the game, it isn’t really that much. And while I guess it makes enough sense for a Jedi’s alignment to affect the energy or whatever it takes to use the powers, it seems more appropriate that your alignment actually affects how potent these powers are. I mean, it’s a little odd that a full-on Light Side paragon can go from meditating on peace and serenity one minute, to summoning the full power of the Dark Side to vaporize their enemies with lightning the next, dealing the same damage as a Sith Lord.
+ With this mod you’re no longer the Avatar Master of All Two Alignments. I know it’s fun to be and part of why people love KOTOR and its main character, but if you’re looking for a new challenge and a new angle to the combat and role-playing mechanics, try this mod.
+ All Light and Dark side powers will have their effects modified according to the user’s alignment. The closer your alignment is to that of the power, the stronger its effects become (damage, healing amounts, stat bonuses or debuffs, etc.) up to 25%. On the other hand, the further your alignment is from that of the power, the weaker it becomes, down to -50%. The powers are the same as vanilla for neutral characters, adding some advantage to playing a gray Jedi if you want to use both LS and DS powers. 
+ For example, with full LS alignment you’ll heal 25% more, stuns will last an extra round, and you’ll get an extra bonus point in your stats from Armor and Valor. However, fear powers will last less time, lightning/choke will deal half damage, plague will be less potent, and death field will heal you less. On the other hand, fully DS characters will deal 25% more damage with DS powers, but will only get half of the bonuses from LS buffing powers.
+ The penalty to powers of opposite alignment can be reduced through your Charisma attribute. Every point in your CHA modifier will reduce the penalty by 5%. This means with Charisma = 20, the penalty will go from -50% to only -25%. With Charisma = 30, there will be no penalty for using powers of opposite alignment.
+ To balance the penalty to power effects, the existing penalty to FP cost has been reduced from +75% at maximum to +50%.
+ INSTALLATION
+ Please read compatibility notes below before installing.
+ To install, run TSLPatcher.exe. Select one of the two options. One applies the base version of the mod, and the other installs the base version plus the mod Treat Injury Affects Force Healing. This option is required if you want to use both of these mods together.
+ Unaltered copies of any modified files will be placed inside the "backup" folder in the location of TSLPatcher.exe.
+ UNINSTALLATION
+ 1. Remove the following files from override:
+ Spoiler
+ - spells.2da
+ - forceadjust.2da
+ - m_imp_fpaligned.ncs
+ If you installed the Treat Injury version, also remove:
+ - k_fp_heal1ti.ncs
+ - k_fp_heal2ti.ncs
+ - k_fp_heal3ti.ncs
+ 2. If a dialog.tlk was created in the backup folder, move it to the main game folder (outside override).
+ 4. If any other files were created inside the backup folder, move them to override.
+ COMPATIBILITY
+ This mod is not compatible with any other mods that change the effects of vanilla LS or DS Force powers. It will overwrite any other changes. Mods affecting only universal powers (Push, Throw Lightsaber, etc.) are fine.
+ Mods that change FP cost, visuals, icons, etc or add new Force powers are probably compatible. You can install this mod after them to be safest.
+ Repair Affects Stun Droid is fully compatible as this mod doesn’t affect Stun Droid powers. I know they are LS but it didn’t really make sense for immersion and anyway I can avoid the incompatibility.
+ Treat Injury Affects Force Healing is only compatible by using the combined install option. It will not work with this mod if installed separately. If you already have it installed, it is OK to install the combined option over it.
+ PERMISSIONS
+ Do not reupload this mod or any contained files without my expressed permission.
+ CREDITS
+ offthegridmorty
+ KOTOR Tool - Fred Tetra
+ TSLPatcher, TLKed - stoffe, Fair Strides
+What's New in Version 1.0.1   See changelog 
+Released February 7
+ Fixed Heal not working if installed with the default option
+1.0.1
+ 1.0.0
+ September 7, 2025
+ Download this file
+ Get Support
+File Information
+ Views
+ 10,783
+ Downloads
+ 3,872
+ Submitted
+ September 7, 2025
+ Published
+ February 7
+ Updated
+ February 7
+ File Size
+ 561.59 kB
+ TSLRCM Compatible
+ Yes
+ 3
+  Share
+ https://deadlystream.com/files/file/2815-alignment-affects-force-powers-tsl/
+ More sharing options...
+ Followers
+ 8
+ Previous File
+ Fog Fix & More - 3C-FD Patcher
+ Next File
+ Onderonian Air Force
+User Feedback
+ 0 Reviews
+ 0 Comments
+You may only provide a review once you have downloaded the file.
+There are no reviews to display.
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Alignment Affects Force Powers [TSL]
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

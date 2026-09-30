@@ -1,0 +1,64 @@
+
+ KOTOR 2 - Handmaiden Builds
+KOTOR 2 - Handmaiden Builds
+This file details some considerations to make for a Handmaiden build, and may eventually contain a few Handmaiden builds from different playthroughs. We'll see how far I take it.
+======================
+Notes:
+Dialog tree
+Only available as a party member for male main characters
+Starts as a Soldier. Can optionally become a Guardian.
+Obtained on Telos just before you leave the planet for the first time
+Class Skills: Awareness, Demolitions, Treat Injury
+Spar with her on the Hawk at your levels 10, 14, and 18
+Can get the Battle Precognition feat, which adds your WIS bonus to your Defense
+Influence gained/lost via both dialog and actions when she is in your party (but mostly dialog)
+Influence locations:
+Ebon Hawk
+Welcome her to the group. Apologize for Atton being rude.
+Being accepting/supportive of Visas in conversation with Handmaiden loses influence
+Can gain influence twice in conversation after the first duel
+After dueling, ask her to dress herself, mention her clothes look like Jedi robes, then ask about her mother
+During second duel, break rules by using a Force power, then keep telling her she's wrong and you're right, using her father as an example.
+Win second duel (fairly)
+Dantooine
+After finding Vrook in cave and leaving cave, listen to then decline Azkul's offer
+Nar Shaada
+Get rid of thugs hassling Rutum without shedding blood, let Rutum go free (two gains possible)
+Heal sick man in Refugee Sector with Treat Injury (only works for one of Atton/Bao-Dur/Handmaiden)
+Lootra quest:
+Advanced the (husband/wife) quest such that they can reunite
+Take Kreia and one of Atton/Bao-Dur/Disciple/Handmaiden
+Complete the quest with Lootra the Light Side way
+Kreia gets mad but you don't lose influence
+Defend you actions. Say "if it meant you life, there is nothing I would not do" line
+You gain influence with the other companion (but still don't lose it with Kreia)
+Duxn
+Mandalorian with detonator - tell him war is over. Only works if neither Atton nor Bao-Dur are present
+Onderon
+Cantina - give open starport visa to Republic spy
+Give open starport visa to mother near the entrance
+When meeting with Kavar is raided, Handmaiden says don't hurt anyone. Agree with her.
+Use Force Persuade to quell Ponlar's riot (requires that power, obviously)
+A few notes on unarmed combat, especially as it applies to Handmaiden:
+Sadly, her Unarmed Specialist feat progression is based on current class level and not character level (granted at class level 2, 6, 10, 14, 18, 22, 26, and 30). So if you switch her to Guardian at a middle level, it'll be a long time (if ever) before she gets any more ranks. For purposes of this feat line, it is best to switch her early or late. FWIW, Bao-Dur works the same way.
+Dueling helps unarmed combat
+STR boosts unarmed attack/damage. There is no Finesse for unarmed, so DEX helps only with Defense.
+As with most characters, CON allows using better implants. There are good ones that CON 16 allows.
+The only ways to get extra attacks are Flurry and Speed. So if she becomes a Jedi, consider switching to robes/clothes and using Knight/Master Speed.
+Handmaiden is woefully low on skills, and bumping INT would detract from more important attributes. Just have to deal with it. I tend to push Awareness to the max useful value, as she's a melee specialist and therefore likely to be in front. Then I tend to push Treat Injury. This assumes someone else will handle Demolitions. If that were not the case for a particular playthrough, she could alternate Awareness and Demolitions, but that would make her not so great at either.
+On becoming a Guardian (and when): as mentioned above, if you are planning to use Handmaiden for unarmed combat, it is better to switch her to a Guardian either immediately (take no additional Soldier levels) or late (take Soldier to at least level 18, and maybe further). The Unarmed Specialist feat line is absolutely critical to being an effective unarmed combatant, so gimping it would make for a weak Handmaiden.
+There's a complication: you can only switch her to Guardian after defeating her in three duels. And the duels are gated by the main character's class level. You can do the first immediately, but you have to be level 14 for the second and level 18 for the third. (You also need sufficient influence, but you can pretty easily do that by level 18.)
+This means that if you want to switch her early in her level progression, so that she gets lots of Jedi levels, then you have to keep her as a level 6 Soldier until pretty far into the game, thereby making her a lot less useful as a companion for a long time. The payoff is that when you do finally switch her, she gains a ton of Jedi levels all at once. Oh, another benefit is that the duels are a lot easier because, relative to the main character, she's underleveled. But it means either going a long time without using her, or using her as a very weak Soldier.
+Alternatively, you can level her as a Soldier normally, gaining levels as the main character does, and switch late. But then you don't get as many Jedi levels. And the duels are harder, which may matter for some main character builds.
+All of that is just to progress sufficient far into the Unarmed Specialist feat line. If you're planning for her to use melee weapons (as a Soldier) or a lightsaber (as a Guardian) then none of that matters. Switch her whenever you like.
+Regarding attributes, I tend to bump CON to 16. It could be pushed to 18 for better implants, at the expense of some STR. A few good implants for this build that are usable at CON 16:
+Nerve Enhancement System (immunity to Stun, Fear, and Horror)
+Bavakar Strength System (STR +3)
+Cardio Power System (CON +4)
+Numbness System (CON +2, Damage Resistance: Resist 5/-vs. Bludgeoning, Piercing, Slashing)
+Physical Boost System (CON +2, DEX +3, STR +2)
+Pushing CON to 18 would allow using the Physical Boost D-Package, which has STR +3, CON +3, and DEX +3. So you'd give up two points of STR, but compared to the Physical Boost System you'd get one back via the implant, plus an extra point of CON. Whether you like that tradeoff (or think any of the other D-Packages are worth it) is up to you.
+===================
+Handmaiden Builds:
+Unarmed Soldier Handmaiden
+Unarmed Jedi Handmaiden

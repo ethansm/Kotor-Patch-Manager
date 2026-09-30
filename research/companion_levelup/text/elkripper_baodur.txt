@@ -1,0 +1,399 @@
+
+ KOTOR 2 - Bao-Dur Builds
+KOTOR 2 - Bao-Dur Builds
+This file details some considerations to make for a Bao-Dur build, and may eventually contain a few Bao-Dur builds from different playthroughs. We'll see how far I take it.
+======================
+Bao-Dur begins as a Tech Specialist and can switch to a Jedi Guardian
+Bao-Dur can't wear robes, which hampers him as a traditional Jedi. He is often put in armor and used in melee (he works okay as either unarmed or weapon-based). These builds therefore tend to prioritize Force Powers that are not restricted by armor.
+Or just crank his INT way up, focus on crafting, and use him as little as possible otherwise.
+His remote, once upgraded, will heal droid companions.
+Some Bao-Dur thoughts here.
+======================
+Notes:
+Dialog tree
+Obtained on Telos after leaving the orbital station for the first time
+Has a unique ability for destroying shields and force fields
+Can create shields for you, until you get a lightsaber
+Influence gained/lost only via actions when he is in your party
+Influence locations:
+If Bao-Dur is in the party and you become sufficiently Light-Sided that Kreia berates you (the conversation starting with "What do you think you have accomplished..."), and you choose Light-Side lines about protecting Kreia and your allies, then end with saying you'll consider Kreia's point of view, then you'll gain Bao-Drui influence but not lose any Kreia influence.
+Almost anywhere
+Kill an innocent person to lose Influence. Unless Kreia is there, in which case if you justify yourself to Kreia her influence will balance out and Bao-Dur won't lose any.
+Telos
+Without Atton in the party, escort the Czerka Scavenger in the Telos underground base back to the entrance.
+Hidden base, after you free Bao-Dur, tell him it wasn't his fault, ask if he's okay, ask if he's well enough to travel, ask him to come with you because you could use his help. I think multiple gains are possible here, but not sure.
+Dantooine
+Atmospheric Sensors
+Have him look at the sensors while in the cave (requires Awareness 4) or look at them yourself (requires Repair 15)
+Give the sensors back to the militia man for $3000 AFTER talking to him about what either you or Bao-Dur find in the sensors.
+Bao-Dur will say that it was a noble act. Choose lightside options in that conversation.
+After he says "And that's why I follow you, General - Lead on!", talk to him AGAIN.
+Tell him he's lucky to have found you and talk to him about fixing the Universe and how he should tell you where the circuits are.
+Talk to him AGAIN after that, and he should say "Your presence has an effect on me, General". (not sure this line is required for influence or not)
+Show compassion on Akkerre about the hydrospanner you find
+Nar Shaada
+Repair the airspeeder and have Bao-Dur check your work (this means Atton can't get airspeeder influence). Have to do before meeting the Exchange.
+Help Rutum (the guy accosted by Exchange thugs), ask for nothing in return. I think either sending them on their way, or making them jump in the pit works, possible there are two gain opportunities here and killing the thugs loses one. Need to test.
+Lootra quest:
+Advanced the Lootra (husband/wife) quest such that they can reunite
+Take Kreia and one of Atton/Bao-Dur/Disciple/Handmaiden
+Complete the quest with Lootra the Light Side way
+Kreia gets mad but you don't lose influence
+Defend you actions. Say "if it meant you life, there is nothing I would not do" line
+You gain influence with the other companion (but still don't lose it with Kreia)
+Heal sick man in Refugee Sector with Treat Injury (only works for one of Atton/Bao-Dur/Handmaiden)
+Duxn
+Mandalorian with detonator - help him down, promise to not turn him in
+Onderon
+Cantina - give open starport visa to Republic spy
+Use Force Persuade to quell Ponlar's riot (requires that power, obviously)
+======================
+Bao-Dur progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Tech Specialist 6
+ | STR: 14 (+2)
+WIS: 14 (+2)
+CHA: 10 (0)
+INT: 15 (+2)
+CON: 14 (+2)
+DEX: 10 (0)
+ | 49 points
+Persuade +0 (0)
+Computer use +9 (9)
+Stealth +1 (1)
+Awareness +8 (8)
+Repair +9 (9)
+Security +9 (9)
+Treat Injury +4 (4)
+Demolitions +9 (9)
+ | Proficiency: Light Armor
+Proficiency: Medium Armor
+Proficiency: Blaster Pistol
+Proficiency: Blaster Rifle
+Proficiency: Melee Weapons
+Critical Strike (g)
+Flurry (g)
+Conditioning (g)
+Power Attack (g)
+>Unarmed Specialist I
+Unarmed Specialist II
+Gear Head (g)
+Improved Gear Head (g)
+Shield Breaker
+ | 
+ | 7
+ | Tech Specialist 7
+ | 
+ | 6 points
+Computer Use +1 (10)
+Awareness +2 (10)
+Repair +1 (10)
+Security +1 (10)
+Demolitions +1 (10)
+ | Repulsor Strike (g)
+ | 
+ | 8
+ | Tech Specialist 8
+ | INT +1, 16 (+3)
+ | 7 points
+Computer Use +1 (11)
+Awareness +1 (11)
+Repair +1 (11)
+Security +1 (11)
+Demolitions +1 (11)
+bank 2 point
+ | Class Skill: Treat Injury (s)
+ | 
+ | 9
+ | Tech Specialist 9
+ | 
+ | 7 points
+Computer Use +1 (12)
+Awareness +1 (12)
+Repair +1 (12)
+Security +1 (12)
+Treat Injury +4 (8)
+Demolitions +1 (12)
+ | 
+ | 
+ | 10
+ | Tech Specialist 10
+ | 
+ | 7 points
+Computer Use +1 (13)
+Awareness +1 (13)
+Repair +1 (13)
+Security +1 (13)
+Treat Injury +2 (10)
+Demolitions +1 (13)
+ | Unarmed Specialist III (g)
+ | 
+ | 11
+ | Tech Specialist 11
+ | 
+ | 7 points
+Computer Use +1 (14)
+Awareness +1 (14)
+Repair +1 (14)
+Security +1 (14)
+Treat Injury +2 (12)
+Demolitions +1 (14)
+ | Class Skill: Stealth (s)
+ | 
+ | 12
+ | Tech Specialist 12
+ | INT +1, 17 (+3)
+ | 7 points
+Computer Use +1 (15)
+Awareness +1 (15)
+Repair +1 (15)
+Security +1 (15)
+Treat Injury +2 (14)
+Demolitions +1 (15)
+ | 
+ | 
+ | 13
+ | Tech Specialist 13
+ | 
+ | 7 points
+Computer Use +1 (16)
+Awareness +1 (16)
+Repair +1 (16)
+Security +1 (16)
+Treat Injury +2 (16)
+Demolitions +1 (16)
+ | Electrical Strike (g)
+ | 
+ | 14
+ | Tech Specialist 14
+ | 
+ | 7 points
+Computer Use +1 (17)
+Stealth +1 (2)
+Awareness +1 (17)
+Repair +1 (17)
+Security +1 (17)
+Treat Injury +1 (17)
+Demolitions +1 (17)
+ | Unarmed Specialist IV (g)
+Master Gear Head (s)
+ | 
+ | 15
+ | Tech Specialist 15
+ | 
+ | 7 points
+Computer Use +1 (18)
+Stealth +1 (3)
+Awareness +1 (18)
+Repair +1 (18)
+Security +1 (18)
+Treat Injury +1 (18)
+Demolitions +1 (18)
+ | 
+ | 
+ | 16
+ | Tech Specialist 16
+ | INT +1, 18 (+4)
+ | 8 points
+Computer Use +1 (19)
+Stealth +2 (5)
+Awareness +1 (19)
+Repair +1 (19)
+Security +1 (19)
+Treat Injury +1 (19)
+Demolitions +1 (19)
+ | 
+ | 
+ | 17
+ | Tech Specialist 17
+ | 
+ | 8 points
+Computer Use +1 (20)
+Stealth +2 (7)
+Awareness +1 (20)
+Repair +1 (20)
+Security +1 (20)
+Treat Injury +1 (20)
+Demolitions +1 (20)
+ | Caution (s)
+ | 
+ | 18
+ | Tech Specialist 18
+ | 
+ | 7 points
+Computer Use +1 (21)
+Stealth +2 (9)
+Awareness +1 (21)
+Repair +1 (21)
+Security +1 (21)
+Treat Injury +1 (21)
+Demolitions +1 (21)
+ | Unarmed Specialist V (g)
+ | 
+ | 19
+ | Tech Specialist 19
+ | 
+ | 8 points
+Computer Use +1 (22)
+Stealth +2 (11)
+Awareness +1 (22)
+Repair +1 (22)
+Security +1 (22)
+Treat Injury +1 (22)
+Demolitions +1 (22)
+ | Gravitronic Strike (g)
+ | 
+ | 20
+ | Tech Specialist 20
+ | INT +1, 19 (+4)
+ | 8 points
+Computer Use +1 (23)
+Stealth +2 (13)
+Awareness +1 (23)
+Repair +1 (23)
+Security +1 (23)
+Treat Injury +1 (23)
+Demolitions +1 (23)
+ | Improved Caution (s)
+ | 
+ | 21
+ | Tech Specialist 21
+ | 
+ | 8 points
+Computer Use +1 (24)
+Stealth +2 (15)
+Awareness +1 (24)
+Repair +1 (24)
+Security +1 (24)
+Treat Injury +1 (24)
+Demolitions +1 (24)
+ | 
+ | 
+ | 22
+ | Tech Specialist 22
+ | 
+ | 8 points
+Computer Use +1 (25)
+Stealth +2 (17)
+Awareness +1 (25)
+Repair +1 (25)
+Security +1 (25)
+Treat Injury +1 (25)
+Demolitions +1 (25)
+ | Unarmed Specialist VI (g)
+ | 
+ | 23
+ | Tech Specialist 23
+ | 
+ | 8 points
+Computer Use +1 (26)
+Stealth +2 (19)
+Awareness +1 (26)
+Repair +1 (26)
+Security +1 (26)
+Treat Injury +1 (26)
+Demolitions +1 (26)
+ | Master Caution (s)
+ | 
+ | 24
+ | Tech Specialist 24
+ | INT +1, 20 (+5)
+ | 9 points
+Computer Use +1 (27)
+Stealth +3 (22)
+Awareness +1 (27)
+Repair +1 (27)
+Security +1 (27)
+Treat Injury +1 (27)
+Demolitions +1 (27)
+ | 
+ | 
+ | 25
+ | Tech Specialist 25
+ | 
+ | 9 points
+Computer Use +1 (28)
+Stealth +3 (25)
+Awareness +1 (28)
+Repair +1 (28)
+Security +1 (28)
+Treat Injury +1 (28)
+Demolitions +1 (28)
+ | 
+ | 
+ | 26
+ | Tech Specialist 26
+ | 
+ | 9 points
+Computer Use +1 (29)
+Stealth +3 (28)
+Awareness +1 (29)
+Repair +1 (29)
+Security +1 (29)
+Treat Injury +1 (29)
+Demolitions +1 (29)
+ | Unarmed Specialist VII (g)
+? (s)
+ | 
+ | 27
+ | Tech Specialist 27
+ | 
+ | 9 points
+Computer Use +1 (30)
+Stealth +2 (30)
+Awareness +1 (30)
+Repair +1 (30)
+Security +1 (30)
+Treat Injury +1 (30)
+Demolitions +1 (30)
+bank +1 (1)
+ | 
+ | 
+ | 28
+ | Tech Specialist 28
+ | INT +1, 21 (+5)
+ | 9 points
+Computer Use +1 (31)
+Stealth +1 (31)
+Awareness +1 (31)
+Repair +1 (31)
+Security +1 (31)
+Treat Injury +1 (31)
+Demolitions +1 (31)
+bank +1 (2)
+ | 
+ | 
+ | 29
+ | Tech Specialist 29
+ | 
+ | 9 points
+Computer Use +1 (32)
+Stealth +1 (32)
+Awareness +1 (32)
+Repair +1 (32)
+Security +1 (32)
+Treat Injury +1 (32)
+Demolitions +1 (32)
+bank +1 (3)
+ | 
+ | 
+ | 30
+ | Jedi Guardian 1
+ | 
+ | 7 points
+?
+ | LOL
+ | LOL
+This Bao-Dur is crafting-focused. He probably never leaves the ship, except to run directly to a workbench or lab station.
+When his INT bumps to a new even number, he gets the extra skill point on that level up (I confirmed this in-game).
+The skill bumps from skil-related feats (like Gear Head) do not count against the cap, but are bonuses on top of it
+This build is really overkill. With gear boosts to skills and attributes, plus Master Valor from a party member, he can craft the best items without taking skills nearly as high as the final values shown here. In fact, by the end he's banking points because he doesn't have anywhere to put them. So he could become a Jedi earlier. That'd just be for story purposes, as he'll probably rarely leave the ship except to craft stuff. Converting him would require him to join the party for a bit, just for influence opportunities so that he can be converted.
+I confirmed this build during a playthrough, but I did not check at what level he was actually able to craft the best stuff using just Master Valor (so that he doesn't depend on random gear drops). I should do that sometime, to see how early I can make him a Jedi without sacrificing anything.
+With Master Valor and a fairly ordinary set of skill-boosting gear, I was able to craft even the best upgrades by level 22.
+Without any gear or buffs, it can craft the best upgrades by level 28. So there's absolutely no point at all in taking Tech Specialist past 28, and probably no point in taking it past early 20s.

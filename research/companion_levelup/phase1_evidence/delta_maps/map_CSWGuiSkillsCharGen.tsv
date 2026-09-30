@@ -1,0 +1,15 @@
+0x009098d0	0x5f8c80	CSWGuiSkillsCharGen::OnRecommendButtonPushed	drift-0x4c0	retn=0
+0x0090c6a0	0x5fb590	CSWGuiSkillsCharGen::Constructor	vote	retn=12
+0x0090e410	0x5fd300	CSWGuiSkillsCharGen::Destructor	vote	retn=4
+0x0090e440	0x5fd330	CSWGuiSkillsCharGen::Destructor_2	vote	retn=0
+0x0090e810	0x5fd700	CSWGuiSkillsCharGen::OnPanelAdded	vote	retn=0
+0x0090e850	0x5fd740	CSWGuiSkillsCharGen::HandleInputEvent	vote	retn=8
+0x0090e990	0x5fd880	CSWGuiSkillsCharGen::HandleCancelButton	vote	retn=0
+0x0090eac0	0x5fd9b0	CSWGuiSkillsCharGen::OnMinusButton	vote	retn=0
+0x0090ede0	0x5fdcd0	CSWGuiSkillsCharGen::OnPlusButton	vote	retn=0
+0x0090f610	0x5fe500	CSWGuiSkillsCharGen::OnEnterPointsButton	vote	retn=4
+0x0090f9f0	0x5fe8e0	CSWGuiSkillsCharGen::OnExitPointsButton	vote	retn=4
+0x0090fa70	0x5fe960	CSWGuiSkillsCharGen::OnAcceptButton	vote	retn=0
+0x0090fb50	0x5fea40	CSWGuiSkillsCharGen::CompletePanel	vote	retn=0
+0x0090fbd0	0x5feac0	CSWGuiSkillsCharGen::OnRecommendButton	vote	retn=0
+0x009102a0	0x5ff190	CSWGuiSkillsCharGen::SetDescription	vote	retn=4

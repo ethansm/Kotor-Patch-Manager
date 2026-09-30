@@ -1,0 +1,302 @@
+
+ KOTOR 2 - Kreia Builds
+KOTOR 2 - Kreia Builds
+This file details some considerations to make for a Kreia build, and may eventually contain a few Kreia builds from different playthroughs. We'll see how far I take it.
+======================
+Kreia begins as and remains a Jedi Consular.
+Because of Kreia's special Force Chain ability, many beneficial powers she activates affect the main character as well. Here is a full list:
+All ranks of Force Speed
+Energy Resistance
+All ranks of Force Aura
+All ranks of Heal
+Both ranks of Force Resistance
+All ranks of Force Barrier
+This naturally leads to Kreia being a buff bot in the early to mid parts of the game.
+Consular Class Skills: Awareness, Repair, Treat Injury
+======================
+Notes:
+Dialog tree
+Obtained on Peragus at the very beginning of the game
+You gain a extra XP when Kreia is in your party
+After getting your special lightsaber crystal, talk to her often to see if she can upgrade it
+Influence gained/lost via both direct dialog and your actions when she is in your party
+High influence gets you more Revan stories and a bit of XP
+Kreia generally cares that you do things intentionally, considering the consequences, not whether those things are Light or Dark. She also likes her teaching to be respected and followed, although she doesn't really care what you think of her personally.
+Influence locations:
+Ebon Hawk
+After getting Handmaiden, tell Kreia you're using her as a tie back to Atris
+After getting Visas, tell Kreia you'll kill Visas if she turns on you
+After getting Visas, talk about Visas' homeworld and offer insight into why it was attacked. Requires decent INT
+If you get too Light Side, Kreia tells you to cut the charity act, leading to a line where you can tell Kreia you will consider her as disposable. This gains you influence with her (which is pretty telling about Kreia's personality)
+Several other gains possible by just talking to her often.
+Peragus
+Support Kreia over Atton after boarding the Harbinger
+Dantooine
+Mechanic conversation:
+Talk to mechanic near the Ebon Hawk
+Ask why he is so busy
+Do the Awareness line
+Do the Persuade line
+In the Enclave Sublevel, tell Jorran there are no more Laigreks when there really are. You can either let them kill him, or kill him yourself
+In crystal cave, tell the mercs holding the Jedi to ship him to Nar Shaada
+Nar Shaada
+Talk to sick man, don't heal him, talk to Exchange leader in area, tell him that he needs to kill the sick man
+Beggar (not info for credits guy, other guy): don't give him credits, follow Kreia's dialog, say you understand and charity is for suckers. This works even if she isn't in the party.
+Tell Lootra his wife is dead (a lie), he can trust you, and he should work for Czerka forever.
+Onderon
+Side with rabble rouser, talk to Anda, agree to remove the guard captains, talk to Kreia and tell her you will see where this leads
+Use the Force Persuade power to get into the city, then follow with "A valid point, Kreia"
+Onderon Palace
+If you side with the Queen, after Vaklu is defeated either say he should be killed, or let the Queen decide his fate
+Korriban
+If you said back on Peragus that Revan is Light Side, at tomb of Ajunta Pall then, with Awareness of at least 11, tell her "no one is beyond redemption". Or tell her that Ajunta Pall was an idiot for letting Revan trick him into becoming nothingness.
+======================
+Kreia progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 3
+ | Consular 3
+ | STR: 10 (+0)
+WIS: 16 (+3)
+CHA: 12 (+1)
+INT: 14 (+2)
+CON: 16 (+3)
+DEX: 16 (+3)
+ | 17 points
+Persuade +5 (5)
+Computer use +0 (0)
+Stealth +5 (5)
+Awareness +6 (6)
+Repair +0 (0)
+Security +0 (0)
+Treat Injury +6 (6)
+Demolitions +0 (0)
+ | Dueling (g)
+Finesse: Melee Weapons (g)
+Class Skill: Stealth (g)
+Mentor (g)
+Force Chain (g)
+Jedi Defense (g)
+Jedi Sense (g)
+Force Sensitive (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Lightsaber (g)
+Proficiency: Melee Weapons (g)
+ | Burst of Speed
+Energy Resistance
+Force Camouflage
+Fear
+Force Push
+ | 4
+ | Consular 4
+ | WIS +1, 17 (+3)
+ | 4 points
+?
+ | 
+ | Force Valor
+ | 5
+ | Consular 5
+ | 
+ | 4 points
+?
+ | 
+ | Force Aura
+ | 6
+ | Consular 6
+ | 
+ | 4 points
+?
+ | Unarmed Specialist II (g)
+Improved Force Focus (g)
+Regenerate Force Points (s)
+ | Heal
+Force Shield
+ | 7
+ | Consular 7
+ | 
+ | 4 points
+?
+ | 
+ | Battle Meditation
+ | 8
+ | Consular 8
+ | WIS +1, 18 (+4)
+ | 4 points
+?
+ | 
+ | Force Barrier
+ | 9
+ | Consular 9
+ | 
+ | 4 points
+?
+ | Toughness (s)
+ | Knight Speed
+Improved Energy Resistance
+ | 10
+ | Consular 10
+ | 
+ | 4 points
+?
+ | Unarmed Specialist III (g)
+ | Knight Valor
+ | 11
+ | Consular 11
+ | 
+ | 4 points
+?
+ | 
+ | Determination (Shii-Cho Form) (g)
+Improved Force Barrier (s)
+ | 12
+ | Consular 12
+ | WIS +1, 19 (+4)
+ | 4 points
+?
+ | Master Force Focus (g)
+Improved Toughness (s)
+ | Force Channel (g)
+Improved Heal
+Improved Battle Meditation
+ | 13
+ | Consular 13
+ | 
+ | 4 points
+?
+ | 
+ | Contention (Makashi Form) (g)
+Force Armor
+ | 14
+ | Consular 14
+ | 
+ | 4 points
+?
+ | Unarmed Specialist IV (g)
+ | Resilence (Soresu Form) (g)
+Horror
+ | 15
+ | Consular 15
+ | 
+ | 4 points
+?
+ | Master Toughness (s)
+ | Master Speed
+Force Resistance
+ | 16
+ | Consular 16
+ | WIS +1, 20 (+5)
+ | 4 points
+?
+ | 
+ | Force Immunity
+ | 17
+ | Consular 17
+ | 
+ | 4 points
+?
+ | 
+ | Master Energy Resistance
+ | 18
+ | Consular 18
+ | 
+ | 4 points
+?
+ | Unarmed Specialist V (g)
+Improved Dueling (s)
+ | Master Heal
+Master Battle Meditation
+ | 19
+ | Consular 19
+ | 
+ | 4 points
+?
+ | 
+ | Master Force Barrier
+ | 20
+ | Consular 20
+ | WIS +1, 21 (+5)
+ | 4 points
+?
+ | 
+ | Master Valor
+ | 21
+ | Consular 21
+ | 
+ | 4 points
+?
+ | Master Dueling (s)
+ | Insanity
+Wound
+ | 22
+ | Consular 22
+ | 
+ | 4 points
+?
+ | Unarmed Specialist VI (g)
+ | Choke
+ | 23
+ | Consular 23
+ | 
+ | 4 points
+?
+ | 
+ | Kill
+ | 24
+ | Consular 24
+ | WIS +1, 22 (+6)
+ | 4 points
+?
+ | Conditioning (s)
+ | Slow
+Drain Life
+ | 25
+ | Consular 25
+ | 
+ | 4 points
+?
+ | 
+ | Death Field
+ | 26
+ | Consular 26
+ | 
+ | 4 points
+?
+ | Unarmed Specialist VII (g)
+ | Affliction
+ | 27
+ | Consular 27
+ | 
+ | 4 points
+?
+ | Improved Conditioning (s)
+ | Plague
+Drain Force
+ | 28
+ | Consular 28
+ | WIS +1, 23 (+6)
+ | 4 points
+?
+ | 
+ | Improved Drain Force
+ | 29
+ | Consular 29
+ | 
+ | 4 points
+?
+ | 
+ | Force Whirlwind
+ | 30
+ | Consular 30
+ | 
+ | 4 points
+?
+ | Unarmed Specialist VIII (g)
+Master Conditioning
+ | Master Drain Force
+Force Wave
+This Kreia is a caster, with a mix of powers. Early in the build, she prioritizes Light or Neutral powers that will help the main character, either via Force Chain, or because they affect the whole party. Later in the build, she picks up various Dark Side powers that affect opponents. Feats emphasize survivability, and assume she will rarely use a weapon. Or at least, not expect to do much with it, giving her a blaster so she tends to stay out of melee range be a good idea.
+Taking this many buffs is a little silly, and this build would probably be more useful by instead taking some of the more attack-oriented powers earlier. But for role-playing purposes, in the early and mid game, Kreia seems more inclined to have the main character take the lead than to do things herself, while in the late game she acts more directly. This build fits that pattern.

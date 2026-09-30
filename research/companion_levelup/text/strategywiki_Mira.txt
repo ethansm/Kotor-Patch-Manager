@@ -1,0 +1,1097 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Mira — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Mira
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Grenades
+2 Questions
+2.1 Nar Shaddaa
+2.2 Hanharr
+2.3 Targets
+2.4 Jedi
+3 Talk
+If your character is neutral or light side (Alignment 40 or more) when you next travel through the docks on Nar Shaddaa after getting a message from Visquis of the Exchange, then Mira becomes your temporary character in the Jekk'Jekk Tarr and its tunnels on Nar Shaddaa, but the first time you can speak to her as follows is if you add her to your party to board Goto's yacht.
+Lost Girl
+Recruited Mira
+However, a few more options are available once you're both aboard the Ebon Hawk, where she can be found in the Storage Compartment in the northeast wall of the main hold.
+When you first speak to Mira with Alignment 20 or less:
+ | Mira: Oh... hey.
+ | Dialog
+ | 
+ | 1. Something wrong?
+ | Mira: I was going to ask you that... it's just that your face, it's like you haven't been getting much sleep. What's wrong with you?
+ | 1. Power can affect those who wield it - and so does the Force.
+ | 2. Does it frighten you?
+ | Mira: I never saw a Jedi who had that look before. It's not natural.
+ | 1. Is that concern I hear?
+ | Mira: No, it's just business. Look, forget I said anything.
+When you first speak to her with Alignment 80 or more:
+ | Mira: Oh, hey. Uh... heh... can I ask you something?
+ | Dialog
+ | 
+ | 1. Something wrong?
+ | 2. Why are you looking at me like that?
+ | Mira: Your face... you, well, you have this glow. I mean, not a real glow, but... It's like you're calm, at peace? But it's more than that. You haven't been chewing on spice, have you?
+ | 2. I don't poison my body with spice.
+ | Mira: Okay, maybe not spice. Maybe someone just jammed a power coupling up your ion engine and switched it on full.
+Otherwise:
+ | 1. When one is in touch with the Force, others can feel it.
+ | Mira: Oh. Well, it shows. It's like you're hooked up to a power coupling, it's weird. I mean, not bad weird, just weird.
+ | ♀ Mira: Heh... for a minute there, I thought you and the Disciple... but it's just the Force.
+ | ♀ Mira: Heh... for a minute there, I thought you and Atton... but it's just the Force.
+ | ♂ Mira: Heh... for a minute there, I thought you and Visas... but it's just the Force.
+ | ♂ Mira: Heh... for a minute there, I thought you and the Handmaiden... but it's just the Force.
+ | 2. It's not that kind of glow... it's just the Force.
+Otherwise:
+ | ♀ 1. Me and the Disciple what?
+ | ♀ 1. Me and Atton what?
+ | ♂ 1. Me and Visas what?
+ | ♂ 1. Me and the Handmaiden what?
+ | Mira: You know. Hooked up a power coupling, you know?
+ | 1. What are you talking about?
+ | Mira: Did you get out much as a Jedi? I was asking if you two had been... you know, intimate.
+ | 2. We don't have that kind of relationship.
+ | 6. I think we have bigger things to worry about than power couplings.
+ | ♀ 3. I would sooner stab myself with a lightsaber - after I stabbed him.
+ | ♂ 3. I would sooner stab myself with a lightsaber - after I stabbed her.
+ | ♀ 4. He's more like a brother. An idiot brother.
+ | ♂ 4. She's more like a sister to me.
+ | ♀ 5. I care about him, but I can't allow myself to form attachments now.
+ | ♂ 5. I care about her, but I can't allow myself to form attachments now.
+ | Mira: Got it. Just checking.
+ | 4. Nothing, never mind.
+Otherwise, or upon returning:
+ | Mira: Yeah? Something wrong?
+Grenades[edit | edit source]
+You can get some grenades from her aboard the Ebon Hawk:
+ | 1. Can I get some grenades from you?
+ | Dialog
+ | 
+ | Mira: Grenades? I didn't think Jedi used grenades.
+ | 4. Forget it. I had some questions for you.
+Otherwise:
+ | 1. When you're fighting for your life, you use what's at hand.
+ | 2. Look, can you make grenades or not?
+ | 3. If you're going to keep hounding me, then make yourself useful.
+ | Mira: Well, I don't like to use them unless they're C-5 concussion spheres or the Merr-Sonn cryoban pellets. Sonic screamers aren't too bad either, just don't use them on a Bith.
+ | 1. Why not?
+ | Mira: Makes their head explode like a melon. And don't do it to a Sullustan, either, makes their ears bleed and they gibber twice as fast.
+ | 1. I'll keep that in mind. Can I get some from you?
+Otherwise:
+ | 2. I was hoping for something more lethal.
+ | Dialog
+ | 
+ | Mira: Well, keep hoping, because that's not my specialty. Trust me, mass slaughter weapons just cause trouble.
+ | HK-47: Interjection: Master, I must disagree. Merely the threat of mass sl-
+ | Mira: Would you please shut him down? He's been like that ever since he arrived. 'Here's how to kill this, here's how to kill that...'
+ | HK-47: Correction: Assassination theory and execution of said theories is my primary function. I also possess excellent hearing.
+ | Mira: Great.
+ | 1. [Persuade (11)] Mira, we're being stalked by assassins. We need all the weapons you can make.
+ | 2. [Persuade (11)] The Sith that hunt us have no such reservations.
+ | 3. [Demolitions (6)] Explosives aren't always used for killing - shaped charges, or even a fragmentation grenade at the right moment is great for diversions.
+ | Mira: [Success] Well... all right, you've got a good point. But look, be careful with them. All it takes is one blaster bolt to your bandoleer strap and suddenly you're Peragus. Get it?
+ | Mira: [Failure] Well, look somewhere else, because I'm not in the habit of arming others with anything that could kill me, got it?
+ | Received:
+250 Persuaded Mira to make some more lethal grenades
+ | 1. Just make me some non-lethal grenades, then.
+Otherwise:
+ | 3. Just make me some grenades.
+ | Mira: All right, all right. Keep your robes on. Here you go.
+When you first ask, she doesn't actually make any. When you next ask, she always makes one, but subsequently she only does so if you have less than 11 of the following in your inventory:
+ | Mira: More grenades? All right.
+ | Mira: Not right now - you've got enough. I don't want you to go off like a thermal detonator if you trip around me.
+ | Mira
+Adhesive Grenade
+ | Mira
+Concussion Grenade
+ | Mira
+CryoBan Grenade
+ | Mira
+Ion Grenade
+Once you've persuaded her to make something more lethal, she makes one of the following instead:
+ | Mira
+Frag Grenade
+ | Mira
+Plasma Grenade
+Questions[edit | edit source]
+ | 2. There were some questions I wanted to ask.
+ | Mira: Go ahead and ask.
+If you speak on the Ebon Hawk:
+ | 1. You seem restless.
+ | Dialog
+ | 
+ | Mira: It's all this traveling. Being trapped in this ship. Everything's... everything's just too quiet.
+ | 1. Well, savor it while it lasts.
+ | 2. Too quiet?
+ | 3. This is no smuggler's moon.
+ | Mira: I'd rather be doing something. Somewhere with people, activity... some life.
+ | 1. Like Nar Shaddaa?
+ | Mira: Yeah. It's been a while since I've been off-planet, I guess I got used to it.
+ | 1. How so?
+ | 2. Used to Nar Shaddaa? Is that possible?
+If you speak on Nar Shaddaa:
+ | 1. You seem more comfortable here than on the Ebon Hawk.
+ | Mira: Feels better to be back here, not cooped up on that ship.
+ | 1. Why?
+In both cases:
+ | Mira: Well... Nar Shaddaa may be one of the biggest cesspits in the galaxy, but... It's got a life to it, activity. Aliens, people, refugees... it's like noise, but relaxing. Like the hum of a hyperdrive.
+ | Influence Gained: Mira (+8)
+ | Dialog
+ | 
+ | 2. Or the tortured groaning of a trash compactor.
+ | 3. More like a screaming, broken hyperdrive that carries a vibroblade and hits you up for credits.
+ | 6. Nar Shaddaa is a cesspit - there's far better places in the galaxy.
+ | Mira: No arguments here. Still, as long as you accept it, the place isn't so bad. Better than sitting here... in silence.
+ | Mira: No arguments here. Still, once you get used to it, the place isn't so bad.
+Otherwise:
+ | 4. That's not really how I saw Nar Shaddaa.
+ | Mira: Well, it's not how most people see it. You kind of have to let the place grow on you... like a fungus.
+ | 5. An interesting way of putting it. It's true.
+ | 1. I suppose it could be comforting, in a way.
+ | Influence Gained: Mira (+8)
+ | Dialog
+ | 
+ | Mira: Yeah? Hm. Didn't think I'd hear a Jedi ever refer to Nar Shaddaa like that.
+ | 1. Life has a certain energy about it. Especially on Nar Shaddaa.
+ | Mira: Yeah, right. Save the philosophy for some Padawan.
+ | ♀ Mira: Yeah, right. Save the philosophy for the Disciple - he'd eat that stuff up.
+ | 1. Kreia showed me how to "listen" to Nar Shaddaa once... how all life there is connected, is bound to each other.
+ | Mira: Yeah, well, I wouldn't go that far. I'll believe it when I see it.
+ | 1. Maybe one day I'll be able to show you.
+ | 1. I could try to show you while you're here, if you want.
+Nar Shaddaa[edit | edit source]
+ | 2. Were you raised on Nar Shaddaa?
+ | < 40 Influence > 60
+ | 40-60 Influence
+ | Mira: Yeah, more or less. I wasn't born there, just ended up there.
+ | Mira: [Influence: Failure] Look, before we get into a game of guess-the-pazaak-card, pull back on the throttle. I don't know you that well to start sharing our life stories.
+ | Dialog
+ | 
+ | 1. What happened to your family?
+ | Mira: Well, the war happened, the first one, against the Mandalorians. Had family right up until the end. It's not really a new story - you hear it all over the galaxy. It's what happens after the wars are over that you don't hear much about.
+ | 1. They died in the final battle?
+ | Mira: I think so. After Revan crushed the Mandalorians, planets throughout the Republic were flooded with refugees. I was just one of the others. Me, I got passage to Nar Shaddaa. From there... not much you can do, so I became a bounty hunter.
+ | 1. How could you have lost family at Malachor V? There were no colonies - it was a taboo world to the Mandalorians.
+ | Dialog
+ | 
+ | Mira: Take a guess, "Jedi." Only two groups of people would have lost family at Malachor - and Jedi don't have families.
+ | 2. So you became a bounty hunter?
+Otherwise:
+ | 1. You're a Mandalorian?
+ | Mira: As much as any slave becomes a Mandalorian. They took prisoners on every world they conquered to bolster their ranks - and they took a lot of worlds.
+ | 2. So what is your homeworld?
+ | Mira: I don't know, it didn't matter. I was too young to remember, really. Besides, Nar Shaddaa's kind of grown on me. It's as much my home as any place else.
+ | 1. You were a slave?
+ | Mira: When I was young, yeah. They mostly used me to carry ammo packs and munitions. Toward the end of the war, they needed everyone they could get. They taught me to fight, to hunt, to survive. I was part of their squad, even when I was young. Everyone served as part of the unit, and I felt like I had a place there. After Malachor, it didn't really matter any more - the Mandalorians lost. Bad. But you know that.
+ | 1. I regret the loss of life at Malachor. But there was no choice left.
+ | 3. They had to be stopped.
+ | Points Gained: +1
+ | Mira: Yeah, I know. I saw the worlds they left behind them during the war. That kind of stays with you - I haven't forgotten it. What happened at Malachor - they, they probably deserved it.
+ | 2. You don't sound too happy about it.
+ | 4. The Mandalorians deserved to be crushed at Malachor - you should be pleased.
+ | Points Gained: -1
+ | Mira: Should I be? Maybe I should ask you if you're happy about all the Jedi who died on Malachor V. Maybe it felt like you lost family there. But I doubt it.
+Otherwise:
+ | 2. Well, there's a lot you can do. Bounty hunting isn't easy work.
+ | 3. An odd decision for an orphan.
+ | 4. Became a bounty hunter? Why, did you want to die?
+ | Mira: I'm good at finding people. So I used it to make credits.
+ | 1. Finding people on Nar Shaddaa seems difficult.
+ | Dialog
+ | 
+ | Mira: Not if you know your target. Usually you get a holo or rough description, and then you just sort of listen to it, get a feel for him or her. Then start walking.
+ | 1. Walking?
+ | Mira: This is a little hard to explain, but Nar Shaddaa's got a flow, a life to it. You see all kinds of aliens and life there, and it's got currents.
+ | 1. No, I understand.
+ | 2. Like sewer pipes?
+ | Mira: If you know your target, you can feel them, know where they're going to go. And sometimes, you know where they're going to be before they do. I'm good at finding people. Because when they're lost or out-of-place... it's like something's wrong, inside them. And that's why I hunt.
+ | 1. [Awareness (11)] Maybe you hunt because you haven't stopped searching for the family you lost at Malachor - or a new family.
+ | 2. [Wisdom (15)] It could be because you lost your family, you understand what it means to be lost.
+ | 3. [Intelligence (15)] It is not uncommon for orphans to feel lost or disassociated - perhaps you feel an affinity for others who are lost.
+ | Influence < 30
+ | Influence > 70
+ | 4. [Influence] Perhaps because you are lost and weak, you take it out on others.
+ | 4. [Influence] Perhaps you do it because you lost your family, and you understand what it means to be lost.
+ | Points Gained: -1
+ | Points Gained: +1
+Otherwise:
+ | 2. But you won't kill your targets.
+ | Mira: Not unless I have to. And bounty hunters... the good ones... don't ever need to kill a target.
+ | 1. [Awareness (11)] Because all life is connected, and Malachor proved it - you know what the loss of family means, even to your targets.
+ | 2. [Wisdom (15)] It could be because your family was killed, you know what it feels like for others.
+ | 3. [Intelligence (15)] As an orphan, maybe you know life is precious - especially after Malachor.
+ | Points Gained: +1
+ | Influence < 30
+ | Influence > 70
+ | 4. [Influence] Perhaps because you are lost and weak, you cannot take your rage out on others.
+ | 4. [Influence] Perhaps because your family was killed, and you know what it would feel like for others.
+ | Points Gained: -1
+ | Points Gained: +1
+In every case:
+ | Mira: Oh, really, is that it? How you could ever possibly hope to understand is beyond me. Jedi don't have family. I know what happened at Malachor V, and I know the Jedi didn't care about life there.
+ | 1. I have never stopped trying to protect others - even at Malachor.
+ | 2. We did what had to be done, and I carry that decision still.
+ | 3. If that's what you believe, then you are wrong.
+ | Points Gained: +2
+ | 4. You're right. And I would gladly slaughter the Mandalorians again.
+ | Points Gained: -2
+ | Mira: Get away from me. The next time you come and ask me a question, I swear I'll shoot you in the head and dump you out the airlock.
+If you speak to Atton before speaking to her again:
+ | Atton: I heard you making friends with the bounty hunter. I don't blame you. She's a scrapper. You don't survive on Nar Shaddaa for very long if you aren't.
+ | 1. Did you know Mira, Atton?
+ | Atton: I've known people like her. Maybe without the rocket launchers, but sort of the same. Maybe without the plunging neckline and the boots. I wouldn't let anything she says bother you - it's a wonder you cracked her attitude at all. She's cold as the ship's hull.
+The next time you speak to Mira:
+ | Mira: What do you want now?
+ | 1. I wanted to apologize.
+ | Points Gained: +1
+ | Influence Gained: Mira (+8)
+ | Mira: Whatever, don't worry about it - it's just a sore subject with me.
+ | 1. Still, I'm sorry you lost your family at Malachor.
+ | 2. Then it doesn't sound like you've dealt with it.
+ | Points Gained: +1
+ | Influence Gained: Mira (+8)
+Otherwise:
+ | 2. Back off on the attitude - I don't need it right now.
+ | 3. I want you to watch your temper.
+ | 4. Your anger is welcome - but direct that hate at our enemies, or I'll show you what hate is.
+ | Points Gained: -1
+ | Influence Lost: Mira (-8)
+ | Mira: Whatever - but you were the one asking all the questions. You deserved it.
+ | 1. I deserve an explanation at least.
+In every case:
+ | Mira: Yeah, well, they're dead. That's how that story ends.
+ | Influence Gained: Mira (+8)
+ | Dialog
+ | 
+ | Mira: But not everybody's story has to end with losing their family or their loved ones. And not all the bounty hunting I do is for criminals or killers.
+ | 1. What do you mean?
+ | Mira: There's a lot of lost people out there, scattered ever since the Mandalorian Wars. Sometimes... it's like you can almost hear them, like an echo, calling out for each other. And maybe, just maybe, by finding them, I can start putting the galaxy back together.
+ | 2. The galaxy doesn't care for us, and it cannot be healed.
+ | 3. There is only survival and pain. But they can give strength, as they did for you.
+ | Points Gained: -1
+ | Influence Lost: Mira (-8)
+ | Dialog
+ | 
+ | Mira: That's what I think sometimes. It all seems so hopeless - there's too much damage, inside and out. It's all you can do just to survive.
+ | Mira: That's what I had wondered. Maybe surviving was what was important. Maybe I would have been someone different... someone weaker.
+ | Mira: Hanharr kept calling me prey. Maybe surviving isn't enough... you need to be strong, or you become one of those people who lose themselves.
+ | 1. All things are connected through the Force. From such acts of kindness, great things may come.
+ | 1. If you shut the world out, there is no strength in that.
+ | 2. There is truth in strength and hatred - and little else.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Mira (+8)
+ | Points Gained: +1
+ | Influence Lost: Mira (-8)
+ | Mira: Maybe. We'll see. I don't even know why I'm telling you this. But you're not getting anything else out of me.
+ | 1. Fair enough. I had some questions for you.
+ | 3. Let's leave it, then.
+Hanharr[edit | edit source]
+ | 3. Tell me a little about Hanharr.
+ | Mira: Hanharr's only a bounty hunter because that's the closest word for what he does - he's not out for credits. It's more vicious than that, and it runs a lot deeper. It's like he's out to make the whole galaxy suffer - every living thing in it. He wants to break them, ruin them, and when they can't suffer any more, he wants them dead.
+ | 1. What happened between you and Hanharr?
+ | Mira: I didn't kill him once. Biggest mistake ever.
+ | 1. What do you mean?
+ | 2. I think that deserves an explanation.
+ | < 30 Influence > 70
+ | 30-70 Influence
+ | Mira: [Influence: Success] Do you really want to hear this?
+ | Mira: Are you sure you what [sic] to hear this again?
+ | Mira: [Influence: Failure] It's a long story, and I don't want to get into it. Maybe some other time.
+ | Dialog
+ | 
+ | 1. Yes, I'd like to know what happened.
+ | Mira: Well, Hanharr and me go way back - in the worst possible way. He's from some forest planet on the Outer Rim where Czerka had set up one of their slaving operations.
+ | 1. Do you know the name of his homeworld?
+ | Mira: I don't remember the name - something with too many 'k's and 'y's. Sounds like you're gargling ronto spit when you say it.
+ | 2. Do you know what species he is?
+ | Mira: No idea - he's just 'Hanharr.' I hope there aren't any more like him. I get the impression he's not a good representative of his people, though - he's like a mad kath hound among rontos. Some of Vogga the Hutt's men said Hanharr killed his own tribe, but those two-cred thugs lie every time they open their mouths, so who knows.
+ | 3. So he was a slave?
+ | Mira: Well, not for long. Once off-planet, Hanharr escaped from the Czerka slavers, then killed them all.
+ | 1. [Awareness (11)] Why was he wearing those cuffs?
+ | Mira: I don't know. I always thought he just liked using them as weapons.
+ | 2. It's good he broke free. Nothing deserves to be caged.
+ | 4. If they weren't strong enough to hold him, then they deserved to die.
+ | 3. Sounds like Czerka deserved it.
+ | 2. I remember this part, go on.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Mira: Well, before you get too proud of him, Hanharr figured Czerka had the right idea.
+ | Mira: Well, before you get too teary-eyed, Hanharr figured Czerka had the right idea.
+ | Mira: I don't think he understood the concept of slavery before, at least on the scale that Czerka practiced it. But now he did. You ever hear of Dersonn III? Or the Iti Cluster colonies?
+ | 1. [Intelligence (13)] Weren't they destroyed?
+ | 2. No, I don't think so.
+ | 3. I've never heard of them.
+ | Mira: Right, that's because Hanharr happened. He makes what happened to his homeworld look like an exercise in community building. He's not a bounty hunter. He's a slaver... a predator. It's like he's out to enslave or kill every human in the galaxy, like he's trying to settle some huge score or debt. I don't get it. But he's dangerous.
+ | 1. Who did he work with?
+ | Mira: Anyone who paid credits - and sometimes he just hunted humans for sport. The ones who survived he sold to the Exchange, to the Hutts, to anyone who'd buy bodies... living or dead. He and Vogga used to do big credit transactions - that Hutt really liked the look of unwrinkled humans for some reason. Didn't make him too popular with the other Hutts, let me tell you.
+ | 2. So how do you factor in?
+ | Mira: I was prey. And not only did I escape, but I saved his life while doing it. He's been hunting me ever since.
+ | 1. So he wants to capture you?
+ | 2. That seems strange.
+ | Mira: I don't pretend to understand it, but among his people, they have these codes of honor. But somewhere along the line, Hanharr's got twisted. His people form these things called 'life debts.' If you save the life of one of them, they pledge themselves to you.
+ | 1. That doesn't sound too bad.
+ | 2. A foolish code. His species would die from such debts.
+ | Mira: Well, with Hanharr... he can't escape that life debt, it's bred into him. But he hates every other living thing in the galaxy... so pledging himself to someone else, especially a human, was unbearable. So when I saved his life, it was the worst thing I could do - it was like slavery all over again, but it was in his head. It was like it pushed him over the edge.
+ | 1. What do you mean?
+ | Mira: A life debt to Hanharr is a death sentence; he'll hunt you until you're dead. When I saved his life, it meant he had to kill me. And so he kept chasing me in hopes I would die. I think the fact I showed him mercy after hating humans for so long, that was something he couldn't stand.
+ | 1. That life debt makes no sense.
+ | Mira: Tell me about it. Like I said, I get the impression a life debt's supposed to be a gift, but to Hanharr it's more like a curse, to both people involved.
+ | 2. What if someone else saved his life? Would he try to kill them?
+ | Mira: Probably. But if he had multiple life debts, especially to humans, Hanharr would probably go mad. He was angry before, sure, but he'd be ten times worse if that happened.
+ | 1. Worse?
+ | 2. He didn't seem much of a problem to me.
+ | Mira: Hanharr's tough. Really tough. And when he loses it, it's like nothing can stop him. I've seen him shrug off blaster bolts, Bothan stunners, and even survive a freighter crash on Dersonn III. He keeps coming.
+ | 3. Any regrets that he's gone?
+ | Mira: Oh, I'm glad he's gone... it's like a weight off my shoulders. I don't have to keep watching my back every minute, wondering when he's going to show up. And he always did. It's like he always knew where I was.
+ | 1. Any chance he's still alive?
+ | Mira: Trust me, if he was still alive, he'd be chasing us even now, waiting to ambush us when we least expect it. And he always shows up at the worst possible time - he was one of the best bounty hunters on Nar Shaddaa. Hanharr never gives up on his prey... or his life debts. He's a hunter, he's a natural predator.
+ | 1. So how did you save his life?
+ | < 20 Influence > 80
+ | 20-80 Influence
+ | Mira: [Influence: Success] Well, as happens on Nar Shaddaa, I made someone mad. Mad enough for them to send Hanharr after me.
+ | Mira: [Influence: Failure] You know, it's a long story, and I'm kind of tired of talking about it right now - maybe some other time. It's not much to hear anyway.
+ | Dialog
+ | 
+ | Mira: Turns out, they were even able to get him cheap - he'd heard about me, and wanted to hunt me down. For sport. He didn't think I'd be much of a challenge.
+ | 1. And you proved him wrong?
+ | 2. What happened?
+ | Mira: Well, he tried to box me down in vents beneath the Nar Shaddaa docks, and he'd set one too many proximity mines to cover the escape routes.
+ | 1. Why use mines?
+ | 2. So he was trying to hem you in with a minefield?
+ | Mira: I think he'd hoped to drive me into the mines and let them do the work - or that I'd be too scared to try and walk through them. Thing is, I knew Hanharr's supplier - and the trigger signatures for the mines. It was pretty easy to broadcast a signal to blind their sensor receptors for a minute or two. I figured that would buy me enough time to move through them and get away.
+ | 1. [Demolitions (7)] Sending out a jamming signal for proximity mines isn't a simple trick.
+ | Mira: No, it isn't. I spent most of my childhood hauling mines and munitions. I got to know my way around them; if I hadn't, I wouldn't be here right now.
+ | Dialog
+ | 
+ | 1. But it didn't happen that way.
+ | 1. What happened with Hanharr and the mines?
+ | 2. So what occurred next?
+ | Mira: Like I said, I disarmed the trigger fuses for enough of the mines to get by - temporarily. Hanharr was pretty fast on my trail. I'd just made it to safety when he hit the first one. The blast leveled the entire ventilation section... and Hanharr was caught right in the middle. And he survived. Barely.
+ | 1. Barely?
+ | Mira: He was crawling around, blinded from the flash and the plasma burns - it had happened so fast, all the blood had been scabbed and crusted from the flash. I had the drop on him, and even blind, he knew it. He could still hear me. My ears were ringing from the blast, but I could hear him... I think he was begging me to let him live. His voice... it- it wasn't a roar, more like an echo of it. I suppose I should have killed him, but I couldn't do it... he was in pain, and he was helpless. So I dragged him out of there... enough to get him to safety. And he kept hunting me ever since. He said he'd pursue me to the edge of the galaxy, no matter where I ran, he would find me - and break me. That I would always be prey.
+ | 1. Sometimes it is stronger to spare a life than take it.
+ | 2. You paid the price for your weakness. When the time comes for a similar choice, do not hesitate to kill again.
+ | Points Gained: +2
+ | Points Gained: -2
+ | Influence Gained: Mira (+8)
+ | Influence Lost: Mira (-8)
+ | Mira: Maybe... I've thought about that moment. A lot. And wondered if I would do things differently if I had another chance.
+Targets[edit | edit source]
+ | 4. Why don't you kill your targets?
+ | Mira: I've killed people before. But not if I don't have to.
+ | 1. [Awareness (11)] Because all life is connected, and Malachor proved it - you know what the loss of family means, even to your targets.
+ | Points Gained: +1
+Otherwise:
+ | Dialog
+ | 
+ | 2. But you don't seem to hold back when you're with me.
+ | Mira: I know. It's different... I don't know why.
+ | 1. Are you okay?
+ | Influence < 51
+ | Influence > 50
+ | Mira: No, I'm fine. Look, I don't really want to talk about it, okay? The sooner this trip is over, the better.
+ | Mira: I don't know. I... I haven't killed anyone for a long time. But when I'm around you, suddenly it's like I've always been doing it. It's like a reflex. I don't like it. And I don't know when - or why - it became so easy.
+Jedi[edit | edit source]
+Speak to Mira and tell her there were some questions you wanted to ask. When you observe that she seems restless aboard the Ebon Hawk, or more comfortable here on Nar Shaddaa, continue until you can tell her that Kreia showed you how to "listen" to Nar Shaddaa once, then say the following:
+ | 1. Maybe one day I'll be able to show you.
+ | 1. I could try to show you while you're here, if you want.
+ | < 10 Influence > 90
+ | 10-90 Influence
+ | Mira: [Influence: Success] Maybe one day I'll let you.
+ | Mira: [Influence: Success] All right, prove it. You can show me now, if you want.
+ | Mira: [Influence: Failure] No thanks... you can keep your Jedi training to yourself. I already know Nar Shaddaa better than you ever will.
+ | 1. Come with me - and let me show you what Kreia showed me.
+ | 1. All right, I'll take you to the same place Kreia showed me. Follow me.
+ | Mira: All right. But I doubt you're going to show me anything I don't already know. And when you show me, don't act like a tourist. It attracts predators.
+Take her to the Refugee Landing Pad on Nar Shaddaa, back to the east side of the pit by the entrance to the Entertainment Promenade:
+ | Mira: What's wrong? Why are you stopping?
+ | Dialog
+ | 
+ | 1. I wanted you to stand here - and listen.
+ | 2. This is the place that Kreia showed me, where you can feel Nar Shaddaa around you - where you can feel the Force.
+ | Mira: I've been by here hundreds of times. There's nothing special about it.
+ | 1. No, there is - you can feel the Force here.
+ | Mira: I don't believe in the Force. It's Jedi tricks, sleight-of-hand.
+ | 1. No, it's what you do. And I can prove it.
+ | 2. The Force is who you are. It's everything around us.
+ | 3. If so, then there is nothing to fear.
+ | Mira: This I'd like to see. It's not going to hurt, is it?
+ | Mira: All right. It's not going to hurt, is it?
+ | 3. Close your eyes - I want you to hear Nar Shaddaa.
+ | 4. Just stand here, shut up, and close your eyes.
+ | 1. No, but it may help you put life, and all its hopes, in perspective.
+ | 3. Nothing is achieved without pain - either yours or someone else's.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Mira: ::Mira closes her eyes::
+ | Dialog
+ | 
+ | 1. Feel the currents of Nar Shaddaa, the ebb and flow of life. Where one creature feels pain, it lashes out...
+ | 1. Feel the currents here on Nar Shaddaa, the ebb of life. A simple kindness can be given to another.
+ | Kreia: ::Feel the currents of Nar Shaddaa, the ebb and flow of life. Where one creature feels pain, it lashes out...::
+ | Kreia: :: Feel the currents here on Nar Shaddaa, the ebb of life. A simple kindness can be given to another. ::
+ | 1. This is the Force. And all our choices, from the greatest to the smallest, affect each other. And the echoes travel.
+ | Kreia: :: This is the Force. And all our choices, from the greatest to the smallest, affect each other. And the echoes travel. ::
+ | 1. Awaken, Mira.
+ | 2. Do not turn away - face it.
+ | 3. Feel these people, this planet all around you.
+ | Points Gained: +1
+ | Mira: I can feel this... planet... I can't shut it out. It's louder now... it hurts. All these people...
+ | 2. I can train you, Mira. To become something greater - and to protect others.
+ | Mira: That's what I want. I'm sure of it, more than anything.
+ | Points Gained: +1
+Otherwise:
+ | 1. You can learn to shut it out. There are Jedi techniques for calming the mind.
+ | 3. This is the potential all Jedi possess.
+ | Points Gained: +1
+ | Dialog
+ | 
+ | Mira: But if... if I become a Jedi, I'll have to turn myself in for the credits.
+ | 1. If you become a Jedi, Mira, such things will concern you no longer.
+ | 2. Just another reason to begin training as soon as possible. Got to let that bounty build up.
+ | 3. Well, as a Jedi, trust me, you'll always be short of credits.
+ | 4. Not a Jedi, but something else. We'll see.
+ | Mira: Are you going to train me?
+Otherwise:
+ | 4. Don't shut it out - endure it, in all its pain, all its misery - and become stronger for it.
+ | Points Gained: -1
+ | Mira: I've endured worse. I can deal with this. Can you train me to do what you do, with the Force?
+In all remaining cases:
+ | 1. Only if you want me to, Mira. I have shown you the way, I cannot force you down that path.
+ | 2. That is a question for you, not I.
+ | 3. Yes, you have no choice. You must learn power - and control.
+ | Points Gained: +1
+ | Points Gained: -1
+If you have Alignment < 40:
+ | Mira: I want to become like you. I want to be strong, and I don't want to be afraid or alone any more. I don't want to keep running, and looking, and never feel like I'm finding what I'm looking for. I'm tired of being hunted.
+ | Mira: I don't want to be lost any more. When the galaxy or anyone takes something from me, I want the power to take it back... and hurt them.
+ | Points Gained: -6
+ | Dialog
+ | 
+ | 1. Vengeance is strong. But I will teach you how to achieve it.
+ | 2. Then let your training begin... apprentice.
+ | 3. Obey me in all things, and I shall show you that power.
+ | Mira: I am ready. I shall not fail you.
+ | 1. [Mira has taken her first steps on the path of a Dark Jedi Sentinel. She will grow in ability as she travels and learns from you.]
+When you next speak:
+ | Dialog
+ | 
+ | Mira: I have to tell you - what you showed me on Nar Shaddaa... it's changed my view of things, on the galaxy. For the first time, I feel in control. I feel... powerful.
+ | 1. It was not my doing, Mira. I merely showed you what you could do.
+ | 2. You've taken the first step into a larger world.
+ | 3. That power will grow in time, and so will your control.
+ | 4. Your obedience is all I need.
+ | Mira: It's strange, but it feels right somehow, like a piece inside me just clicked into place.
+Otherwise, if you have at least Alignment 40:
+ | Mira: I want to become like you. I want to be strong! I don't want to be afraid or alone any more. I... I... I don't want to keep running, and looking, and never feel like I'm finding what I'm looking for. I'm tired of being hunted.
+ | Mira: When the galaxy takes something from me, I want the power to let go... and I want the power to heal the echo when it's gone.
+ | Points Gained: +6
+ | Dialog
+ | 
+ | 1. One can live their whole life with such echoes, Mira. But I can teach you to accept them.
+ | 2. I cannot promise that, Mira, I can only teach you what I know.
+ | 3. Nothing is certain, but all one can do is try.
+ | 4. Sometimes it is difficult to let go of such things.
+ | Mira: That sounds all right from where I'm standing.
+ | Mira: All right - I think I'm ready to try, then.
+ | 1. [Mira has taken her first steps on the path of a Jedi Sentinel. She will grow in ability as she travels and learns from you.]
+When you next speak:
+ | Dialog
+ | 
+ | Mira: I... wanted to say thanks. For what you showed me on Nar Shaddaa. It's going to take some time to let it sink in, but... But thanks. I feel... alive.
+ | 1. It was not my doing, Mira. I merely showed you what you could do.
+ | 2. You've taken the first step into a larger world.
+ | 3. That is power you feel - and that hunger will grow in time.
+ | 4. Do not thank me, merely obey me.
+ | Mira: It's strange, but it feels right somehow, like a piece inside me just clicked into place.
+Talk[edit | edit source]
+ | 3. I was hoping we could talk.
+ | Mira: Talk? About what?
+For a female character:
+ | ♀ 1. Do you understand men?
+ | Dialog
+ | 
+ | Mira: Sure, they're easy. That's why I dress like this. When they're looking down to check you out, you can usually smash them on the base of the skull, or deliver an uppercut that knocks them flat.
+ | 1. You make it sound... easy.
+ | 2. That could work. I guess.
+ | Mira: It's simple - when you want a man, you jab him with a Bothan Stunner, then while he's screaming in pain, slap some stun cuffs on him. Then starve him for two or three days until he becomes open to suggestion, then double-check his bounty and see if he's worth anything.
+ | 1. That sounds more like hunting.
+ | Mira: Call it what you want. Me, I love my targets.
+For both sexes:
+ | 1. Just wanted to get to know you a little better, is all.
+ | Dialog
+ | 
+ | ♀ Mira: Why, you trying to be my mother? No thanks, already had one. Somewhere.
+ | 1. Just thought you might need a friend.
+ | Mira: No thanks - I didn't need friends on Nar Shaddaa, and I don't need them now.
+For a male character:
+ | ♂ Mira: Why, you trying to be my father? No thanks, already had one. Somewhere.
+ | 1. Come on, I can't be that bad. Give me a chance.
+ | 2. No, actually, I was trying to be something a little more intimate.
+ | Mira: Are you sure you're a Jedi? That exile of yours must have gone on longer than I thought. Look, you're way too old for me. Even if I were interested, you couldn't handle me anyway. I mean, you're really good in a fight. And you've got those intense eyes, and it's obvious you take care of your body, but I really don't have the luxury of getting attached to you.
+ | Mira: Besides, you already have your little admirer. I don't want to be number two, you know?
+ | Mira: Besides, you already have your little entourage. I don't want to be a part of the pack, you know?
+ | 1. No, I don't.
+ | 2. What are you talking about?
+ | Mira: Look, if we start sharing a bunk, the Handmaiden would get upset, and then I'd have to kick the hell out of her just to show her who the pack leader is around here. No thanks.
+ | Mira: Look, if we start sharing a bunk, the other girls would get upset, and then I'd have to kick the hell out of them to show them who's the pack leader around here. No thanks.
+ | Mira: You're sweet, old guy. But let's keep it professional.
+ | 1. I'm not that old!
+ | Mira: It's more than age. I thought I'd seen a lot, but you look like you're a hundred inside.
+ | 2. Fine. Didn't think you'd run away from a challenge.
+ | Mira: Run away? You're the one who couldn't handle me - I'd kill you.
+Go to top
+Mandalore
+Mira
+T3-M4
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Mira&oldid=1089297"
+Hidden category: 
+Sub-pages
+ This page was last edited on 5 September 2024, at 07:31.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

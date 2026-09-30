@@ -164,3 +164,12 @@ the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-
   (5 batches, ~60 functions), `Callers.java` (2 batches), `DisasmRanges.java 6bedf0-6c0330`.
 - PE VA->file-offset read of `.unpatched_vanilla` and live exe for `original_bytes`; regex scan of all `kotor2-steam-aspyr*.hooks.toml`.
 - Knowledge DB: ~40 `name_map` rows (source `level-up-P1-decompile-confirmed`) and 5 `lessons` rows added.
+
+## Session notes / tooling (so a context clear loses nothing)
+- Helper scripts: `research/companion_levelup/tools/` (ghidra_run.sh, kdb_add.py, pebytes.py). Raw decompiles/asm/xrefs/delta maps:
+  `research/companion_levelup/phase1_evidence/`. Ghidra runs take ~7 s each when no other session holds the project.
+- Gotchas hit: (1) `DecompileArgs.java` takes Steam VAs, not GOG addresses - passing a GOG address decompiles an unrelated function;
+  (2) Ghidra's decompiler mis-names locals in AutoLevelup (class row is really `[EBP-0x44]`; the package row `[EBP-0x4C]` is written once, never read);
+  (3) `steam_functions.tsv` columns are addr,size,retn,name; (4) the repo `.venv` python is the one with pykotor; system python3 was enough here;
+  (5) `git commit -- <paths>` is required because another session's staged file (`11_inventory_sort_filter.md`) sits in the index.
+- The game install dir is `~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/`; `swkotor2.exe.unpatched_vanilla` == Ghidra program (sha 6A522E71...).

@@ -1,0 +1,186 @@
+
+ Thematic KOTOR 2 Companions - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Thematic KOTOR 2 Companions
+ Thematic KOTOR 2 Companions 1.0.3
+   (0 reviews)
+ By 
+JCarter426
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2662-thematic-kotor-2-companions/
+ More sharing options...
+ Followers
+ 13
+13 Screenshots
+About This File
+ This mod adjusts the statistics and starting equipment of the companions in Star Wars: Knights of the Old Republic II - The Sith Lords, addressing some issues with game balance and consistency in theme. See the attached document or view online for a full list of changes and the rationale for each change.
+ Installation
+ You must start a new game to experience the full effects of this mod.
+ Extract files from the downloaded archive.
+ Run INSTALL.exe.
+ Select which option you want to install.
+ Click "Install Mod" and select your game directory (default name SWKotOR2).
+ Uninstallation
+ During installation, TSLPatcher generates a backup folder and a log recording which files were affected.
+ Restore or delete all .utc files affected by this mod. Copy each .utc file from the backup folder to replace the one in your game's Override folder if a backup was created, otherwise delete the .utc file from your game's Override folder.
+ Compatibility
+ This mod requires TSLRCM.
+ Credits
+ Design—Sniggles
+ Implementation—JCarter426
+ KOTOR Tool—Fred Tetra
+ TSLPatcher—stoffe & Fair Strides
+ ERFEdit—stoffe & Fair Strides
+ K-GFF—tk102
+ xoreos tools—xoreos team https://xoreos.org/
+ License
+ This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.
+What's New in Version 1.0.3   See changelog 
+Released August 31
+No changelog available for this version.
+1.0.3
+ 1.0.3
+ August 30
+ 1.0.2
+ March 26, 2025
+ 1.0.1
+ February 14, 2025
+ 1.0.0
+ February 12, 2025
+ Download this file
+ Get Support
+File Information
+ Views
+ 20,105
+ Downloads
+ 7,585
+ Submitted
+ February 12, 2025
+ Published
+ August 31
+ Updated
+ August 31
+ File Size
+ 367.14 kB
+ TSLRCM Compatible
+ Yes
+ 1
+  Share
+ https://deadlystream.com/files/file/2662-thematic-kotor-2-companions/
+ More sharing options...
+ Followers
+ 13
+ Previous File
+ ROR Addon Pack
+ Next File
+ Vanilla Planets HD
+User Feedback
+ 0 Reviews
+ 2 Comments
+You may only provide a review once you have downloaded the file.
+There are no reviews to display.
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ Thematic KOTOR 2 Companions
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

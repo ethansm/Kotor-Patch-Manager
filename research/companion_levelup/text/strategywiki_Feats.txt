@@ -1,0 +1,2079 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Feats — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Feats
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Active
+1.1 Critical Strike
+1.2 Flurry
+1.3 Power Attack
+1.4 Power Blast
+1.5 Rapid Shot
+1.6 Sniper Shot
+2 Passive
+2.1 Armor Proficiency
+2.2 Caution
+2.3 Class Skill
+2.4 Close Combat
+2.5 Conditioning
+2.6 Dual Strike
+2.7 Dueling
+2.8 Empathy
+2.9 Finesse
+2.10 Gear Head
+2.11 Precise Shot
+2.12 Regenerate
+2.13 Stealth Run
+2.14 Toughness
+2.15 Two-Weapon Fighting
+2.16 Weapon Proficiency
+2.17 Weapon Focus
+3 Jedi
+3.1 Dark Side Corruption
+3.2 Deflect
+3.3 Force Focus
+3.4 Force Immunity
+3.5 Force Jump
+3.6 Force Sensitive
+3.7 Ignore Pain
+3.8 Increase Combat Damage
+3.9 Increase Melee Damage
+3.10 Inner Strength
+3.11 Jedi Defense
+3.12 Light Side Enlightenment
+3.13 Sense
+3.14 Superior Two-Weapon Fighting
+3.15 Superior Weapon Focus
+3.16 Unarmed Specialist
+4 Class
+4.1 Blaster Integration
+4.2 Droid Interface
+4.3 Droid Upgrade
+4.4 Evasion
+4.5 Logic Upgrade
+4.6 Scoundrel's Luck
+4.7 Sneak Attack
+4.8 Targeting
+4.9 Uncanny Dodge
+4.10 Weapon Specialization
+5 Unique
+5.1 Assassin Protocols
+5.2 Droid Trick
+5.3 Echani Strike
+5.4 Force Chain
+5.5 Implant Switching
+5.6 Mandalorian Courage
+5.7 Mentor
+5.8 Personal Cloaking Shield
+5.9 Point Guard
+5.10 Shield Breaker
+5.11 Spirit
+5.12 Strike
+5.13 Survival
+5.14 War Veteran
+5.15 Wookiee Rage
+5.16 Wookiee Toughness
+ | This page lists your feats. Some feats allow you to use special items like heavy armor or implants. Other feats modify saving throws and skill checks during the game. And some feats (POWER ATTACK) are used during combat. Check the description for details on a specific feat.
+Active[edit | edit source]
+These feats need to be activated to take effect.
+Critical Strike[edit | edit source]
+ | Feat
+ | Critical Strike
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Defense penalty
+ | -5
+ | Critical threat range
+ | x2
+ | x3
+ | x4
+ | Granted
+ | Scoundrel
+Main player character
+ | 
+ | 
+These feats increase the critical threat range of melee attacks.
+ | Critical Threat
+ | 20-20 (5%)
+ | 19-20 (10%)
+ | Keen
+ | 19-20 (10%)
+ | 17-20 (20%)
+ | Weapons
+ | Stun batons
+Short swords
+Gamorrean battleaxes
+Long swords
+ | Double-Bladed Lightsaber
+Quarterstaffs and Force pikes
+Double-Bladed Sword
+Vibro double-blades
+Freyyr's Warblade
+ | Lightsaber
+Short Lightsaber
+Vibroblades
+Vibroswords
+Any Keen bonus is additive with Critical Strike bonuses, resulting in the following:
+ | Feat
+ | Critical Threat
+ | Keen
+ | 20-20 (5%)
+ | 19-20 (10%)
+ | 19-20 (10%)
+ | 17-20 (20%)
+ | Critical Strike
+ | 19-20 (10%)
+ | 17-20 (20%)
+ | 18-20 (15%)
+ | 15-20 (30%)
+ | Improved
+ | 18-20 (15%)
+ | 15-20 (30%)
+ | 17-20 (20%)
+ | 13-20 (40%)
+ | Master
+ | 17-20 (20%)
+ | 13-20 (40%)
+ | 16-20 (25%)
+ | 11-20 (50%)
+If the first main hand attack hits, the target is stunned for 6 seconds unless they make a Fortitude save at a DC of the attacking character's level + attacking character's Strength modifier. Any off hand attack, or added main hand attacks, cannot trigger this stun. The target is not stunned until the end of the character's attack round.
+Stun can also be prevented by Immunity: Stun, Fear, Horror or Force Immunity: Stun, and neutralized by Master Heal.
+These feats cannot be selected by Droids.
+Flurry[edit | edit source]
+ | Feat
+ | Flurry
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Attacks per round
+ | +1
+ | Defense penalty
+ | -2
+ | -1
+ | 0
+ | Attack penalty
+ | -4
+ | -2
+ | 0
+ | Granted
+ | Main player character
+ | 
+ | 
+These feats allow a character to make an extra melee attack during the round. This is made with the main hand when wielding a double-bladed weapon or two weapons.
+Character suffers defense penalty while using these feats and for 3 seconds afterwards (i.e. an enemy's attack). 
+Attack penalty applies to every attack in a combat round.
+These feats cannot be selected by Droids.
+Power Attack[edit | edit source]
+ | Feat
+ | Power Attack
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Attack penalty
+ | -3
+ | Damage bonus
+ | +3
+ | +7
+ | +12
+ | Granted
+ | Soldier
+Main player character
+ | 
+ | 
+Additionally, the critical multiplier is increased by 1 (e.g. if a critical hit would normally double damage, it would triple damage when Power Attack was used). Finally, if the first main hand attack is a critical hit, the target is knocked back unless they make a Fortitude save at a DC of the attacking character's level + twice the attacking character's Strength modifier. Any off hand attack, or added main hand attacks, cannot trigger this knocking back. Used to quickly dispatch groups of easy-to-hit opponents.
+Attack penalty and damage bonus affect every attack in a combat round. Critical hit multiplies bonus damage.
+These feats cannot be selected by Droids.
+Power Blast[edit | edit source]
+ | Feat
+ | Power Blast
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Attack penalty
+ | -3
+ | Damage bonus
+ | +3
+ | +7
+ | +12
+ | Granted
+ | Soldier
+Main player character
+ | 
+ | 
+Additionally, the critical multiplier is increased by 1 (e.g. if a critical hit would normally double damage, it would triple damage when Power Blast was used). Finally, if the first main hand attack is a critical hit, the target is knocked back unless they make a Fortitude save at a DC of the attacking character's level + twice the attacking character's Dexterity modifier.Any off hand attack cannot trigger this knocking back. Used to quickly dispatch groups of easy-to-hit opponents. 
+Attack penalty and damage bonus affect every attack in a combat round. Critical hit multiplies bonus damage.
+These feats cannot be selected by an Expert Droid.
+Rapid Shot[edit | edit source]
+ | Feat
+ | Rapid Shot
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Attacks per round
+ | +1
+ | Attack and defense penalty
+ | -4
+ | -2
+ | 0 -1
+ | Granted
+ | Scout
+Main player character
+ | 
+ | 
+These feats allow a character to make an extra ranged weapon attack during the round. This is made with the main hand when wielding two blaster pistols.
+Character suffers defense penalty while using this feat and for 3 seconds afterwards (i.e. an enemy's attack). 
+Attack penalty affects every attack in a combat round.
+These feats cannot be selected by an Expert Droid.
+Sniper Shot[edit | edit source]
+ | Feat
+ | Sniper Shot
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Defense penalty
+ | -5
+ | Critical threat range
+ | x2
+ | x3
+ | x4
+ | Granted
+ | Scoundrel
+Main player character
+ | 
+ | 
+These feats increase the critical threat range of ranged attacks.
+ | Critical Threat
+ | 20-20 (5%)
+ | 19-20 (10%)
+ | 18-20 (15%)
+ | Keen
+ | 19-20 (10%)
+ | 17-20 (20%)
+ | 15-20 (30%)
+ | Weapons
+ | Blaster pistols
+Heavy blasters
+Ion blasters (x3)
+Sonic pistols
+ | Ion rifles (x3)
+Blaster carbines
+Sonic rifles
+(Heavy) repeaters
+ | Hold out blasters
+Bowcasters (x3)
+Blaster rifles
+ | Disruptor pistols
+Disruptor rifles
+Any Keen bonus is additive with Sniper Shot bonuses, resulting in the following:
+ | Feat
+ | Critical Threat
+ | Keen
+ | 20-20 (5%)
+ | 19-20 (10%)
+ | 18-20 (15%)
+ | 19-20 (10%)
+ | 17-20 (20%)
+ | 15-20 (30%)
+ | Sniper Shot
+ | 19-20 (10%)
+ | 17-20 (20%)
+ | 15-20 (30%)
+ | 18-20 (15%)
+ | 15-20 (30%)
+ | 12-20 (45%)
+ | Improved
+ | 18-20 (15%)
+ | 15-20 (30%)
+ | 12-20 (45%)
+ | 17-20 (20%)
+ | 13-20 (40%)
+ | 9-20 (60%)
+ | Master
+ | 17-20 (20%)
+ | 13-20 (40%)
+ | 9-20 (60%)
+ | 16-20 (25%)
+ | 11-20 (50%)
+ | 6-20 (75%)
+If the first main hand attack hits, the target is stunned for 6 seconds unless they make a Fortitude save at a DC of the attacking character's level + attacking character's Intelligence modifier. Any off hand attack, or added main hand attack, cannot trigger this stun. The target is not stunned until the end of the character's attack round.
+Stun can also be prevented by Immunity: Stun, Fear, Horror or Force Immunity: Stun, and neutralized by Master Heal.
+These feats cannot be selected by an Expert Droid.
+Passive[edit | edit source]
+These feats don't need to be activated to take effect, although other conditions may need to be met before they can do so.
+Armor Proficiency[edit | edit source]
+ | Armor Proficiency
+ | Light
+ | Medium
+ | Heavy
+ | Allowed armor
+ | Light
+ | Light and Medium
+ | Light, Medium and Heavy
+ | Prerequisites
+ | None
+ | 
+ | 
+ | Granted
+ | Soldier
+Scout
+Scoundrel
+Tech Specialist
+Main player character (PC)
+ | Soldier
+Tech Specialist
+Main PC Jedi Guardian
+ | Soldier
+Armor is normally equipped on the body, but it can also be equipped on head and hands. 
+Droids cannot select these feats. Although Wookiees cannot equip anything on body or head, Hanharr already has all Armor Proficiencies and can equip gloves that require them.
+Bao-Dur cannot equip Heavy Armor, Jedi Robes, Flight Suits or Light Jedi Armor. Even if the Heavy Armor Feat is added via mods/cheats, it will crash the game if you try to equip him with it, as there is no in-game models of Bao-Dur wearing said armors.
+Caution[edit | edit source]
+ | Feat
+ | Caution
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Skill bonus
+ | +1
+ | +2
+ | +3
+ | Skills
+ | Demolitions and Stealth
+The only Prestige classes that can select these feats are a Jedi Watchman or Sith Assassin.
+Class Skill[edit | edit source]
+ | Class skill
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Prerequisites
+ | Cross-class skill
+These feats give a character advanced training. The skill is no longer considered cross-class and can be purchased for one skill point per skill level.
+Expert Droids can only select Class Skill: Demolitions.
+Close Combat[edit | edit source]
+ | Feat
+ | Close Combat
+ | Improved
+ | Equipped weapon(s)
+ | Blaster pistol(s) or blaster rifle
+ | Prerequisites
+ | Level 4
+ | Level 8
+ | Short range attack bonus
+ | +1
+ | +2
+ | Enemy attack bonus
+ | +4
+ | +2
+ | Granted
+ | Level 4 Scout
+ | 
+These feats train ranged weapon characters to fight effectively in close combat. When the character's target is at short range, they receive an attack bonus. Additionally, when these characters are engaged in melee combat their attackers receive a reduced attack bonus instead of the usual +6.
+These feats cannot be selected by an Expert Droid or prestige classes.
+Conditioning[edit | edit source]
+ | Feat
+ | Conditioning
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Saves: All
+ | +1
+ | +2
+ | +3
+These feats cannot be selected by Droids, a Jedi Weapon Master or Sith Marauder.
+Dual Strike[edit | edit source]
+ | Feat
+ | Dual Strike
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Attack bonus
+ | +2
+ | +4
+ | +6
+The character has advanced training using teamwork to defeat enemies. When attacking an enemy that another party member is also attacking, the character gets a bonus to hit.
+These feats cannot be selected by a Jedi Watchman or Sith Assassin.
+Dueling[edit | edit source]
+ | Feat
+ | Dueling
+ | Improved
+ | Master
+ | Equipped weapon
+ | Unarmed or single blaster pistol, melee weapon or lightsaber
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Attack and Defense bonus
+ | +1
+ | +2
+ | +3
+These feats cannot be selected by an Expert Droid.
+Empathy[edit | edit source]
+ | Feat
+ | Empathy
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Skill bonus
+ | +1
+ | +2
+ | +3
+ | Skills
+ | Persuade, Awareness and Treat Injury
+These feats cannot be selected by Droids, a Jedi Weapon Master or Sith Marauder.
+Finesse[edit | edit source]
+ | Finesse
+ | Melee Weapons
+ | Lightsabers
+ | Equipped weapon(s)
+ | Melee weapon(s) and lightsaber(s)
+ | Lightsaber(s)
+ | Prerequisites
+ | 
+ | Jedi
+The character has mastered using grace and speed instead of raw power. The character can add either their Dexterity or Strength bonus to their chance to hit, whichever is higher.
+Finesse: Melee Weapons doesn't affect unarmed combat, but it does affect both melee weapons and lightsabers, so Finesse: Lightsabers can be redundant (do not select it for Kreia, since she already has Finesse: Melee Weapons).
+These feats cannot be selected by Droids.
+Gear Head[edit | edit source]
+ | Feat
+ | Gear Head
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Skill bonus
+ | +1
+ | +2
+ | +3
+ | Skills
+ | Repair, Security and Computer Use
+The only Prestige classes that can select these feats are a Jedi Watchman or Sith Assassin.
+Precise Shot[edit | edit source]
+ | Precise Shot
+ | I
+ | II
+ | III
+ | IV
+ | V
+ | Equipped weapon(s)
+ | Blaster pistol(s) or blaster rifle
+ | Prerequisites
+ | Level 4
+ | Level 8
+ | Level 12
+ | Level 16
+ | Level 20
+ | Damage
+ | +1
+ | +2
+ | +4
+ | +6
+ | +8
+ | Enemy BBD
+ | -2
+ | -4
+ | -6
+ | -8
+ | -10
+ | Granted
+ | Level 4 Scout
+ | Level 8 Scout
+ | Level 12 Scout
+ | Level 16 Scout
+ | Level 20 Scout
+These feats cannot be selected by an Expert Droid.
+Regenerate[edit | edit source]
+ | Regenerate
+ | Force Points
+ | Vitality Points
+ | Prerequisites
+ | Level 4 Jedi
+ | Level 4
+ | Regenerate
+ | Force points +25% (+250% in combat)
+ | 0.5 Vitality point every 6 seconds
+ | Granted
+ | Jedi Master or Sith Lord
+ | 
+By itself, Regenerate Force Points makes Force regeneration 3.5 times higher in combat. These percentages sum with Force Channel percentages (+50% out of combat and +500% in combat, or +75% (* 1.75) and +750% (* 8.5) in total respectively). 
+Vitality regenerates both in and out of combat, and this is doubled to 1 point every 6 seconds while Battle Meditation is active.
+Regenerate Vitality Points cannot be selected by Droids, a Jedi Watchman or Sith Assassin.
+Stealth Run[edit | edit source]
+A level 4 character can train so extensively in Stealth that they can move swiftly and still remain hidden. The character can now run instead of walk in Stealth mode.
+Droids cannot select this feat, and the only Prestige classes that can do so are a Jedi Watchman or Sith Assassin.
+Toughness[edit | edit source]
+ | Feat
+ | Toughness
+ | Improved
+ | Master
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Vitality points per level
+ | +1
+ | 
+ | +2
+ | < 20 Damage
+ | 
+ | -2
+ | 
+ | > 19 Damage
+ | -10%
+Vitality bonus is retroactive for levels previously gained, but Master Toughness bonus overrides Toughness bonus (+2, not +3 in total).
+Damage is reduced after Damage Immunity, Shields and Ignore Pain or Inner Strength, but before Wookiee Toughness and Damage Resistance.
+Two-Weapon Fighting[edit | edit source]
+ | Feat
+ | Two-Weapon Fighting
+ | Improved
+ | Master
+ | Equipped weapon(s)
+ | Two blaster pistols, melee weapons or lightsabers, or a double-bladed melee weapon or lightsaber
+ | Prerequisites
+ | None
+ | Level 4
+ | Level 8
+ | Dual Wield Penalty
+ | -6 (main hand) / -6 (off hand)
+ | -4 (main hand) / -4 (off hand)
+ | -2 (main hand) / -2 (off hand)
+These feats reduce the attack penalty of a character wielding a double-bladed weapon or two weapons (one in each hand). The normal penalties of -6 (main hand) / -10 (off hand) are reduced.
+Use of a "balanced" weapon in the off hand can further reduce the attack penalty by 2 (main hand) / 0 (off hand), resulting in 0 main hand and -2 off hand penalty when mastered.
+These feats cannot be selected by Kreia.
+Weapon Proficiency[edit | edit source]
+ | Weapon Proficiency
+ | Blaster Pistol
+ | Blaster Rifle
+ | Melee Weapons
+ | Lightsaber
+ | Allowed weapons
+ | Blaster pistols
+ | Blaster rifles
+ | Melee weapons
+ | Lightsabers
+ | Prerequisites
+ | None
+ | None
+ | None
+ | Jedi
+ | Granted
+ | All classes
+ | Soldier
+Scout
+Scoundrel
+Tech Specialist
+Combat Droid
+Main player character
+ | Soldier
+Scout
+Scoundrel
+Tech Specialist
+Jedi
+ | Jedi
+These feats give a character basic training in the use each weapon type. Otherwise, a character cannot equip them.
+Droids cannot equip melee weapons or lightsabers, while an Expert Droid can only equip blaster pistols.
+Weapon Focus[edit | edit source]
+ | Weapon Focus
+ | Blaster Pistol
+ | Blaster Rifle
+ | Melee Weapons
+ | Lightsaber
+ | Equipped weapon(s)
+ | Blaster pistol(s)
+ | Blaster rifle
+ | Melee weapon(s)
+ | Lightsaber(s)
+ | Prerequisites
+ | 
+ | 
+ | 
+ | 
+ | Attack bonus
+ | +1
+ | +1
+ | +1
+ | +1
+ | Granted
+ | 
+ | 
+ | 
+ | Prestige classes
+Although lightsabers are used in melee combat, Weapon Focus: Melee Weapons does not affect them (they have their own Weapon Focus).
+Jedi[edit | edit source]
+These feats can normally only be granted to, or selected by, particular playable Jedi or Prestige classes.
+Dark Side Corruption[edit | edit source]
+A Sith Lord's command of the dark side is so great that it influences his companions. Some are weak and will grow more corrupt. Others find new resolve from a Sith Lord's influence and become even more aligned with the light. A Sith Lord's corruption grows in strength as they grow in power.
+Deflect[edit | edit source]
+A Jedi Weapon Master with a lightsaber has incredible skill deflecting blaster bolts. This feat grants a [(class level + 1) / 2] Blaster Bolt Deflection bonus.
+ | Level
+ | 1
+ | 3
+ | 5
+ | 7
+ | 9
+ | 11
+ | 13
+ | 15
+ | 17
+ | 19
+ | 21
+ | 23
+ | 25
+ | 27
+ | 29
+ | 31
+ | 33
+ | 35
+ | BBD
+ | +1
+ | +2
+ | +3
+ | +4
+ | +5
+ | +6
+ | +7
+ | +8
+ | +9
+ | +10
+ | +11
+ | +12
+ | +13
+ | +14
+ | +15
+ | +16
+ | +17
+ | +18
+This bonus is only added to deflection rolls when using a lightsaber in the main hand.
+Force Focus[edit | edit source]
+ | Feat
+ | Force Focus
+ | Improved
+ | Master
+ | Prerequisites
+ | Jedi Consular
+ | Level 6 Jedi Consular
+ | Level 12 Jedi Consular
+ | Force power Difficulty Class
+ | +2
+ | +3
+ | +4
+ | Granted
+ | Jedi Consular
+ | Level 6 Jedi Consular
+ | Level 12 Jedi Consular
+These feats add to the Difficulty Class for all saving throws against the character's Force powers. These feats are always active.
+Force Immunity[edit | edit source]
+ | Force Immunity
+ | Fear
+ | Stun
+ | Paralysis
+ | Prerequisites
+ | Jedi Sentinel
+ | Level 6 Jedi Sentinel
+ | Level 12 Jedi Sentinel
+ | Immunity to debilitating effect
+ | Fear
+Horror
+Insanity
+Plasma Grenades
+On Hit: Horror
+ | Force Push
+Force Wave
+Stun
+Critical Strike and Sniper Shot
+Concussion Grenades
+Flash mines
+On Hit: Stun
+ | Stasis (Field)
+CryoBan Grenades
+On Hit: Paralyze
+ | Granted
+ | Jedi Sentinel
+ | Level 6 Jedi Sentinel
+ | Level 12 Jedi Sentinel
+These feats are always active, so a level > 11 Jedi Sentinel can only be debilitated by 
+Force Whirlwind and Wound, Choke or Kill. None of these feats counters the effect of Adhesive Grenades because they aren't actually debilitating.
+Force Jump[edit | edit source]
+ | Feat
+ | Force Jump
+ | Improved
+ | Master
+ | Equipped weapon(s)
+ | Lightsaber(s)
+ | Prerequisites
+ | Jedi Guardian
+ | Level 6 Jedi Guardian
+ | Level 12 Jedi Guardian
+ | Attack and damage bonus
+ | 
+ | +2
+ | +4
+ | Granted
+ | Jedi Guardian
+ | Level 6 Jedi Guardian
+ | Level 12 Jedi Guardian
+The Jedi knows that if diplomacy fails, combat must be swift and decisive. When an opponent at range is targeted with a standard lightsaber melee attack, this feat allows Guardians to make a quick series of jumps and rolls to close distance almost instantly. This feat is automatic when wielding a lightsaber and targeting opponents with a standard melee attack from more than 10 meters away. The Jedi must have a clear line of sight to the opponent.
+NOTE: Using a feat or special attack negates this ability.
+This feat counts as a Sneak Attack when opponents are attacked from beyond their own combat range since they have not yet engaged. However, once engaged in combat this no longer counts as a Sneak Attack. Normally, this combination is only possible for a main character Jedi Guardian (Force Jump) who becomes a Jedi Watchman or Sith Assassin (Sneak Attack).
+Thon's Robe can grant Force Jump to any light Jedi, but this may only be acquired using Giveitem cheats unless the Restored Content Mod is installed.
+Attack and damage bonus is added to every attack in a combat round. Critical hit multiplies bonus damage.
+Force Sensitive[edit | edit source]
+Jedi training affects each Padawan uniquely, allowing them to grow in ability while addressing personal flaws. On rare occasions, however, exceptional individuals open doors to strengths they did not know they had. This feat represents a heightened connection to the Force previously unseen in a newly trained Jedi. This feat grants 40 additional Force points to the character's base total.
+This feat is granted to the main player character and all newly trained Jedi at level 2, with the exception of Visas.
+Ignore Pain[edit | edit source]
+ | Ignore Pain
+ | I
+ | II
+ | III
+ | Prerequisites
+ | Level 3 Sith Marauder
+ | Level 7 Sith Marauder
+ | Level 11 Sith Marauder
+ | Damage
+ | -5%
+ | -10%
+ | -15%
+ | Granted
+ | Level 3 Sith Marauder
+ | Level 7 Sith Marauder
+ | Level 11 Sith Marauder
+Prolonged channeling of dark side energy has accustomed Sith Marauders to pain.
+Damage is reduced after Damage Immunity and Shields, but before Toughness and Damage Resistance.
+Increase Combat Damage[edit | edit source]
+ | Increase Combat Damage
+ | I
+ | II
+ | III
+ | Prerequisites
+ | Sith Marauder
+ | Level 8 Sith Marauder
+ | Level 15 Sith Marauder
+ | Damage bonus
+ | +2
+ | +4
+ | +6
+ | Granted
+ | Sith Marauder
+ | Level 8 Sith Marauder
+ | Level 15 Sith Marauder
+Sith Marauders call upon their hatred and strength to deliver powerful blows.
+Bonus damage is added to any unarmed, melee or ranged weapon damage. Critical hit multiplies this bonus damage.
+Increase Melee Damage[edit | edit source]
+ | Increase Melee Damage
+ | I
+ | II
+ | III
+ | Equipped weapon(s)
+ | Unarmed, melee weapon(s) or lightsaber(s)
+ | Prerequisites
+ | Jedi Weapon Master
+ | Level 8 Jedi Weapon Master
+ | Level 15 Jedi Weapon Master
+ | Damage bonus
+ | +2
+ | +4
+ | +6
+ | Granted
+ | Jedi Weapon Master
+ | Level 8 Jedi Weapon Master
+ | Level 15 Jedi Weapon Master
+Weapon Masters can focus their strength to deliver powerful strikes.
+Critical hit multiplies bonus damage.
+Inner Strength[edit | edit source]
+ | Inner Strength
+ | I
+ | II
+ | III
+ | Prerequisites
+ | Level 3 Jedi Weapon Master
+ | Level 7 Jedi Weapon Master
+ | Level 11 Jedi Weapon Master
+ | Damage
+ | -5%
+ | -10%
+ | -15%
+ | Granted
+ | Level 3 Jedi Weapon Master
+ | Level 7 Jedi Weapon Master
+ | Level 11 Jedi Weapon Master
+Weapon Masters use the light side of the Force to shield themselves from pain.
+Damage is reduced after Damage Immunity and Shields, but before Toughness and Damage Resistance.
+Jedi Defense[edit | edit source]
+ | Feat
+ | Jedi Defense
+ | Advanced
+ | Master
+ | Equipped weapon(s)
+ | Lightsaber(s), or any or none with Force Deflection
+ | Prerequisites
+ | Jedi
+ | Level 4 Jedi
+ | Level 8 Jedi
+ | Blaster Bolt Deflection
+ | 
+ | +3
+ | +6
+ | Granted
+ | Jedi
+ | 
+ | 
+These feats allow a character with an equipped lightsaber to deflect blaster bolts at any time. When a character is fired upon, an opposed roll is made against the attack. If the result is greater than (or equal to) the attack roll, the blaster bolt is deflected. If the attack is beaten by 10 6 or more, the bolt is deflected back at the enemy.
+The opposed roll is only made if fired upon from within the 180° arc in front of a character that isn't debilitated. A lightsaber must also be equipped in the main or off hand unless Force Deflection has been selected, which also allows deflection when using Throw Lightsaber (otherwise a roll isn't made, even if a lightsaber remains in the off hand during use).
+According to the Combat log, the Attack Breakdown is always shown before the Deflection Breakdown (the opposed roll), which is only shown if a bolt is deflected or returned: any opposed roll is made regardless of the outcome of the attack roll, so it's made even on a miss. The opposed roll is simply the sum of a d20 roll, any Jedi Defense bonus, any bonuses and penalties from feats, Force power and lightsaber forms, the Jedi's base attack bonus and any item bonuses.
+The Deflect feat grants a Jedi Weapon Master a [(class level + 1) / 2] bonus which is only added when using a lightsaber in the main hand. Enemy Precise Shot feats inflict penalties:
+ | I
+ | II
+ | III
+ | IV
+ | V
+ | -2
+ | -4
+ | -6
+ | -8
+ | -10
+Force Redirection adds 3 to any deflection roll, regardless of any weapon(s) used. Lightsaber forms can grant a bonus or inflict a penalty:
+ | Contention (Makashi)
+ | Resilience (Soresu)
+ | Aggression (Ataru)
+ | Perseverance (Shien)
+ | Moderation (Niman)
+ | -5
+ | +4
+ | -4
+ | +2
+ | +1
+Blaster Bolt Deflection item bonuses are only granted by lightsaber upgrades:
+ | Emitter
+ | BBD
+ | Deflection Emitter
+ | +1
+ | Improved Deflection Emitter
+ | +2
+ | Expert Deflection Emitter
+ | +4
+ | (Improved) Fencing Emitter
+ | -2
+ | Power crystals
+ | BBD
+ | Crystal, Jenruax
+ | +5
+ | Lorrdian Gemstone
+ | +3
+ | Lens
+ | BBD
+ | Synthesized Kunda Lens
+ | +1
+ | Pure Kunda Lens
+ | +2
+ | Ossus Dueling Lens
+ | +3
+ | Synthesized Byrothsis Lens
+ | -2
+ | Pure Byrothsis Lens
+ | -3
+ | Enhanced Byrothsis Lens
+ | -4
+Since two power crystals can be used in each lightsaber, maximum total item bonus is thus +30 when using two lightsabers. Any On Hit properties, including Sniper Shot stuns, can still affect the deflecting character (but never the attacker) if the attack roll succeeds before the bolt can be deflected or returned.
+Damage inflicted by returned bolts is based on the damage that would have been inflicted on the character, after Damage Immunity, Shields, Ignore Pain or Inner Strength, Toughness and Damage Resistance (Combat Difficulty doesn't affect damage inflicted by bolts returned by you and your party, but it does affect those returned against you and your party: the latter isn't displayed in the Combat log and isn't what's displayed by floating numbers, but it is what's displayed by actual Vitality loss).
+Consequently, blaster bolt deflection isn't of much defensive use if the character (or party) can reliably debilitate opponents, or that character has high defense or damage reduction. Although high defense won't affect its offensive use, even with little or no damage reduction it should take far longer to kill enemies with returned bolts than to attack them directly.
+Light Side Enlightenment[edit | edit source]
+Jedi Masters are greatly attuned to the light side of the Force. Their mere presence serves as an inspiration to many. Close companions will grow more in touch with the light side by a Jedi Master's example. Other companions might rebel against their example and fall further from the light. A Jedi Master's attunement matures as they learn more about the Force.
+Sense[edit | edit source]
+ | Sense
+ | Jedi
+ | Prestige
+ | Greater Prestige
+ | Prerequisites
+ | Jedi
+ | Jedi Master or Sith Lord
+ | Other Prestige classes
+ | Defense bonus
+ | 2 + (2 * [Level/6] )
+ | 2 + (2 * [Level/8] )
+ | 2 + (2 * [Level/5] )
+ | Granted
+ | Jedi
+ | Jedi Master or Sith Lord
+ | Other Prestige classes
+These feats are always active and grant defense bonuses dependent upon the Jedi or Prestige class level.
+While the Jedi Sense description is correct about its defense bonus increasing every subsequent six levels, each increase occurs one level earlier.
+ | Class level
+ | 1
+ | 5
+ | 6
+ | 8
+ | 10
+ | 12
+ | 15
+ | 16
+ | 18
+ | 20
+ | 24
+ | 25
+ | 30
+ | 32
+ | 35
+ | 36
+ | 42
+ | 48
+ | Jedi Sense
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+ | +12
+ | +14
+ | +16
+ | +18
+ | Prestige
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+ | 
+ | Greater
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+ | +12
+ | +14
+ | +16
+ | 
+Main player characters retain the defense bonuses granted by their Jedi class levels upon becoming a Prestige class, but henceforth they are only granted additional defense bonuses dependent on their Prestige class:
+A level 30 Jedi is granted +12 Defense
+A level 15 Jedi (+6) and level 15 Jedi Master or Sith Lord (+4) is granted +10 Defense
+A level 15 Jedi (+6) and level 15 other Prestige class (+8) is granted +14 Defense
+Superior Two-Weapon Fighting[edit | edit source]
+ | Superior Two-Weapon Fighting
+ | I
+ | II
+ | III
+ | Equipped weapon(s)
+ | Two blaster pistols, melee weapons or lightsabers, or a double-bladed melee weapon or lightsaber
+ | Prerequisites
+ | 
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Jedi Weapon Master or
+Sith Marauder
+ | Dual Wield Penalty
+ | -1 (main hand) / -2 (off hand)
+ | 0 (main hand) / -2 (off hand)
+ | 0 (main hand) / -1 (off hand)
+These feats reduces the attack penalty of a character wielding a double-bladed weapon or two weapons (one in each hand). The normal penalties of -6 (main hand) / -10 (off hand) are reduced.
+Use of a "balanced" weapon in the off hand can further reduce the attack penalty by 2 (main hand) / 0 (off hand) resulting in +2 main hand and -1 off hand penalty when mastered.
+Superior Weapon Focus[edit | edit source]
+ | Superior Weapon Focus
+ | Lightsaber I
+ | Lightsaber II
+ | Lightsaber III
+ | Equipped weapon(s)
+ | Lightsaber(s)
+ | Prerequisites
+ | 
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Jedi Weapon Master or
+Sith Marauder
+ | Attack bonus
+ | +1
+ | +2
+ | +3
+The character's skill with lightsabers is almost unmatched.
+Unarmed Specialist[edit | edit source]
+ | Unarmed Specialist
+ | I
+ | II
+ | III
+ | IV
+ | V
+ | VI
+ | VII
+ | VIII
+ | Prerequisites
+ | Jedi (or Special Training)
+ | Granted at level
+ | 2
+ | 6
+ | 10
+ | 14
+ | 18
+ | 22
+ | 26
+ | 30
+ | Unarmed damage
+ | 1-4
+ | 2-8
+ | 3-12
+ | 4-16
+ | 5-20
+ | 6-24
+ | 7-28
+ | 8-32
+ | Average bonus
+ | 2.5
+ | 5
+ | 7.5
+ | 10
+ | 12.5
+ | 15
+ | 17.5
+ | 20
+The character has gained extra experience in hand-to-hand combat and is able to strike much harder than other combatants. This feat is gained automatically at prerequisite levels.
+Bao-Dur and Handmaiden have Special Training. If they become Jedi, they retain the Unarmed Specialist feats already granted but future feats are granted at Jedi level, not character level. For example, at level 6 they both have Unarmed Specialist II and they would be granted Unarmed Specialist III at level 10; however, if they become Jedi at level 6 then they will not be granted it until level 16 (Jedi level 10).
+The player character continues to receive these feats even after taking levels in a prestige class up to character level 30.
+Class[edit | edit source]
+These feats can normally only be granted to, or selected by, particular playable classes.
+Blaster Integration[edit | edit source]
+This feat grants Expert Droids the ability to integrate blasters into their frames to act as self-contained weapons systems. Special universal ports allow internal placement of most models of blaster pistol, tapping the energy pack and emitters as though factory installed.
+Droid Interface[edit | edit source]
+This feat gives the Droid the ability to speak with other droids who don't speak a sentient language. Granted to Expert Droids.
+This feat can also be selected by a Combat Droid.
+Droid Upgrade[edit | edit source]
+ | Droid Upgrade
+ | Class 1
+ | Class 2
+ | Class 3
+ | Allowed ugrades
+ | Level 1
+ | Levels 1-2
+ | Levels 1-3
+ | Prerequisites
+ | Droid
+ | Level 7 Droid
+ | Level 13 Droid
+ | Granted
+ | Droid
+ | Level 7 Droid
+ | Level 13 Droid
+As a droid gains experience, its programming becomes more adaptable to new situations. This allows it to accommodate more sophisticated upgrades.
+Evasion[edit | edit source]
+Characters sometimes make saving throws in order to take half damage from some powers and abilities. In these situations level 6 Scouts take no damage at all if they save successfully.
+Logic Upgrade[edit | edit source]
+ | Feat
+ | Logic Upgrade
+ | Logic Upgrade: Tactician
+ | Prerequisites
+ | Droid
+ | Level 6 (Combat) Droid
+ | Defense bonus
+ | 2 + (2 * [ (Level+1) /6] )
+ | +4
+ | Granted
+ | Droid
+ | Level 6 (Combat) Droid
+Having witnessed the effects and actions of combat first hand, the droid is able to self-upgrade its defensive algorithms.
+While the Logic Upgrade description is correct about defense bonus increasing every subsequent six levels, each increase occurs one level earlier.
+ | Level
+ | 1
+ | 5
+ | 11
+ | 17
+ | 23
+ | 29
+ | 35
+ | 41
+ | 47
+ | Defense
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+ | +12
+ | +14
+ | +16
+ | +18
+Contrary to its description, Logic Upgrade: Tactician does not replace Logic Upgrade, nor does it actually grant any Defense bonus. However, HK-47 is granted natural bonus 2 by his character template (according to the Combat section of the Journal's Messages Log, at level 6 Defense Breakdown: 19 = base 10 + dex mod 3 + class 4 + natural 2).
+Scoundrel's Luck[edit | edit source]
+Scoundrels have a knack for getting in trouble, but to compensate, they also possess an incredible instinct for survival. This feat is always active and grants Defense bonus of 2 + (2 * [ (Level+1) /6] ) in combat.
+While the description is correct about its defense bonus increasing every subsequent six levels, each increase occurs one level earlier.
+ | Level
+ | 1
+ | 5
+ | 11
+ | 17
+ | 23
+ | 29
+ | 35
+ | 41
+ | 47
+ | Defense
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+ | +12
+ | +14
+ | +16
+ | +18
+Sneak Attack[edit | edit source]
+These feats are only granted to a Scoundrel and Sith Assassin, or Jedi Watchman.
+ | Sneak Attack
+ | 
+I
+ | 
+II
+ | 
+III
+ | 
+IV
+ | 
+V
+ | 
+VI
+ | 
+VII
+ | 
+VIII
+ | 
+IX
+ | 
+X
+ | Granted at level
+ | 1
+ | 3
+ | 5
+ | 7
+ | 9
+ | 11
+ | 13
+ | 15
+ | 17
+ | 19
+ | Granted at level
+ | 1
+ | 4
+ | 7
+ | 10
+ | 13
+ | 16
+ | 19
+ | 
+ | Damage
+ | 1-6
+ | 2-12
+ | 3-18
+ | 4-24
+ | 5-30
+ | 6-36
+ | 7-42
+ | 8-48
+ | 9-54
+ | 10-60
+ | Average
+ | 3.5
+ | 7
+ | 10.5
+ | 14
+ | 17.5
+ | 21
+ | 24.5
+ | 28
+ | 31.5
+ | 35
+These feats add points of extra damage to attacks when the target can't respond to the attacker. The extra damage is applied to attacks made from behind the target, attacks against stunned or otherwise immobilized targets, and any attacks made while in Stealth Mode (combat cancels Stealth Mode, but the first attack receives the bonus).
+Sneak Attack only works if the target is within 10 meters. The extra damage is not multiplied in the case of a critical hit.
+The 10 meter restriction only affects flanking and Stealth attacks: attacks against debilitated targets count as Sneak Attacks from any range.
+Targeting[edit | edit source]
+ | Targeting
+ | I
+ | II
+ | III
+ | IV
+ | V
+ | VI
+ | VII
+ | VIII
+ | Equipped weapon(s)
+ | Blaster pistol(s) or blaster rifle
+ | Prerequisites
+ | Scout
+ | Granted at level
+ | 1
+ | 5
+ | 9
+ | 13
+ | 17
+ | 21
+ | 25
+ | 29
+ | Attack bonus
+ | +1
+ | +2
+ | +3
+ | +4
+ | +5
+ | +6
+ | +7
+ | +8
+Scouts are very effective with blaster pistols and blaster rifles.
+Uncanny Dodge[edit | edit source]
+ | Uncanny Dodge
+ | I
+ | II
+ | Prerequisites
+ | Level 4 Scout
+ | Level 7 Scout
+ | Grenade Difficulty Class
+ | -2
+ | -4
+ | Granted
+ | Level 4 Scout
+ | Level 7 Scout
+A character with these feats retains the Dexterity bonus to defense even when surprised by camouflaged opponents.
+Weapon Specialization[edit | edit source]
+ | Weapon Specialization
+ | Blaster Pistol
+ | Blaster Rifle
+ | Melee Weapons
+ | Lightsaber
+ | Equipped weapon(s)
+ | Blaster pistol(s)
+ | Blaster rifle
+ | Melee weapon(s)
+ | Lightsaber(s)
+ | Prerequisites
+ | 
+Level 4
+Soldier or
+Combat Droid or
+Jedi Guardian or
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Level 4
+Soldier or
+Combat Droid or
+Jedi Guardian or
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Level 4
+Soldier or
+Jedi Guardian or
+Jedi Weapon Master or
+Sith Marauder
+ | 
+Jedi Guardian or
+Prestige classes
+ | Damage bonus
+ | +2
+ | +2
+ | +2
+ | +2
+The descriptions for Weapon Specializations: Blaster Pistol, Blaster Rifle and Melee Weapons may only list Soldier under their prerequisites, but a Jedi Guardian and any main player character who becomes a Jedi Weapon Master or Sith Marauder can also select these feats.
+Although lightsabers are used in melee combat, Weapon Specialization: Melee Weapons does not affect them (they have their own Weapon Specialization). The description for Weapon Specialization: Lightsaber may only list Jedi Guardian under its prerequisites, but any main player character who becomes a Prestige class can also select this feat. 
+Critical hit multiplies damage.
+Unique[edit | edit source]
+Unique feats are only granted to a particular character.
+Assassin Protocols[edit | edit source]
+ | Feat
+ | Assassin Protocols
+ | Modified
+ | Integrated
+ | Granted
+ | HK-47
+ | Level 11 HK-47
+ | Level 17 HK-47
+ | Unstoppable damage
+ | 1/4 remaining life
+ | 1/3 remaining life
+ | 1/2 remaining life
+When a critical hit is achieved, there is a 20% chance that extra damage to the target’s remaining life (applied after normal damage is dealt) will be dealt. A successful Fortitude save of DC = 10 + Attacker’s level by the target can avoid this extra damage.
+For example, a critical hit inflicting 25 damage reduces 100 Vitality to 75: if the protocols trigger and the target's Fortitude save fails, 37 (75/2) unstoppable damage is then inflicted, reducing 75 Vitality to 38.
+However, even with maximum Critical Threat: 6-20 (75%) when using a disruptor pistol or rifle with a Keen bonus and Master Sniper Shot, the protocols only trigger on 15% (3 in 20, or 1 in 6 2/3) of attacks at most, and successful Fortitude saves reduce this frequency even more.
+Droid Trick[edit | edit source]
+ | Feat
+ | Droid Trick
+ | Scramble Droid
+ | Granted
+ | Level 10 G0-T0
+ | Level 15 G0-T0
+ | Difficulty Class
+ | 5 + G0-T0's level + Wisdom modifier + Charisma modifier
+ | Action
+ | Distracts droid
+ | Droid fights for you
+ | Active
+ | 30 seconds
+Droid Trick distracts a droid target, making it easier to sneak by them. If the target fails a Will save, then they are distracted. Distracted targets won’t notice the player unless the player gets too close or interacts with them.
+Scramble Droid can actually cause a hostile droid to fight for you. If the target fails a Will save, then they will fight your opponents. Only one droid can be affected by Scramble Droid at a time. This power only works on droids; sentients and beasts are immune.
+Echani Strike[edit | edit source]
+ | Echani Strike
+ | I
+ | II
+ | III
+ | Granted
+ | Level 5 Handmaiden
+ | Level 11 Handmaiden
+ | Level 17 Handmaiden
+ | Unarmed damage
+ | 1-4
+ | 2-8
+ | 3-12
+ | Average
+ | 2.5
+ | 5
+ | 7.5
+ | Chance of knock down
+ | 10%
+ | 15%
+ | 20%
+When using unarmed attacks against any opponent, she deals extra damage and has a chance of knocking down the opponent if they fail a Fortitude save of DC = 15 + Handmaiden’s level. This damage stacks with any Unarmed Specialist bonus damage.
+Force Chain[edit | edit source]
+You and Kreia have a special bond. Most beneficial Force powers used on one of you automatically affect the other. For example, if Kreia activates Force Resistance then you will also receive its benefits.
+This affects the following Force powers:
+All ranks of Speed
+Energy Resistance
+All ranks of Force Aura
+All ranks of Heal
+Both ranks of Force Resistance
+All ranks of Force Barrier
+Implant Switching[edit | edit source]
+Mandalore has a series of implant modifications installed on him. He can switch between these as often as he likes. He can choose between regeneration, endurance (+4 Constitution), strength (+4 Strength), or agility (+4 Dexterity) implants.
+Mandalorian Courage[edit | edit source]
+Mandalore has fought in countless battles and is a fearless adversary. This experience allows him to shrug off Fear and Horror effects. He also receives (2 * [ (Level+1) /6] ) Defense bonus.
+While the description is correct about its Defense bonus increasing every six levels, each increase occurs one level earlier. However, this bonus is actually that granted to Mandalore's class (Soldier), and not granted by the feat itself.
+ | Level
+ | 1
+ | 5
+ | 11
+ | 17
+ | 23
+ | 29
+ | 35
+ | 41
+ | 47
+ | Defense
+ | 0
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+ | +12
+ | +14
+ | +16
+Mentor[edit | edit source]
+Whenever Kreia is in the party, she provides a bonus to earned experience points.
+ | Kreia character level
+ | 1
+ | 7
+ | 13
+ | Experience
+ | +3%
+ | +5%
+ | +7%
+This feat has no effect when Kreia and all other party members are aboard the Ebon Hawk, so to maximize experience gained from party dialog, you should speak to party members outside the Ebon Hawk with Kreia also added to your party.
+Personal Cloaking Shield[edit | edit source]
+G0-T0 has a personal cloaking shield built into his frame. This allows him to use his Stealth skill without a Stealth Field Generator.
+Point Guard[edit | edit source]
+When Mira takes lead, she is able to navigate around traps and warn others of their presence. This is reflected by the fact that when she is the active party member (the character currently being controlled by the player), she and all other party members do not set off mines. However, as soon as someone else takes over, the entire party will lose this ability and be able to set off mines normally.
+Shield Breaker[edit | edit source]
+During combat, Bao-Dur can use his cybernetic arm to disrupt the energy output of an opponent’s shields, causing them to collapse altogether.
+Spirit[edit | edit source]
+ | Feat
+ | Spirit
+ | Fighting Spirit
+ | Heroic Resolve
+ | Granted
+ | Atton
+ | Level 8 Atton
+ | Level 15 Atton
+ | Vitality restored
+ | 10%
+ | 20%
+ | 30%
+Whether it’s a survival instinct or sheer resolve, Atton won’t give up. When knocked unconscious there’s a chance he will get back up, ready for more action provided someone else in the party is still standing. If he returns to the fight he will come back with a percentage of his vitality restored.
+Strike[edit | edit source]
+ | Feat
+ | Repulsor Strike
+ | Electrical Strike
+ | Gravitonic Strike
+ | Granted
+ | Level 7 Bao-Dur
+ | Level 13 Bao-Dur
+ | Level 19 Bao-Dur
+ | Electricity damage
+ | 1-6
+ | 2-12
+ | 3-18
+ | Average
+ | 3.5
+ | 7
+ | 10.5
+ | Chance of causing Slow
+ | 10%
+ | 15%
+ | 20%
+Bao-Dur can release energy stored in capacitors in his arm during combat, causing extra electricity damage with a chance of causing Slow for 2 rounds if they fail a Fortitude save of DC = 15 + Bao-Dur’s level when using an unarmed attack. This damage stacks with unarmed attacks.
+Survival[edit | edit source]
+The tougher the situation, the more Atton’s survival instinct kicks in. Whenever Atton is knocked below 50% of his Vitality points he gets bonuses to all saving throws. These bonuses increase as he approaches 0 vitality.
+ | Maximum Vitality
+ | Below 50%
+ | Below 40%
+ | Below 30%
+ | Below 20%
+ | Below 10%
+ | Saves: All
+ | +2
+ | +4
+ | +6
+ | +8
+ | +10
+War Veteran[edit | edit source]
+You are a veteran of the Mandalorian Wars. Your battle scars and experience give you an extra +25 Vitality points at the start of the game.
+Wookiee Rage[edit | edit source]
+ | Wookiee
+ | Rage
+ | Fury
+ | Frenzy
+ | Granted
+ | Hanharr
+ | Level 11 Hanharr
+ | Level 17 Hanharr
+ | Strength bonus
+ | +2
+ | +4
+ | +6
+ | Vitality points per level
+ | +1
+ | +2
+ | +3
+ | Fortitude and Will saves
+ | +1
+ | +2
+ | +3
+ | Defense
+ | -2
+ | -4
+ | -6
+ | Attacks per round
+ | 
+ | +1
+ | +2
+ | Seconds active
+ | 30
+ | 45
+ | 60
+In this state he is also immune to Paralysis and Stasis effects. Every creature he kills fuels him even more, adding to the damage he does in combat (to a maximum of +6).
+Wookiee Toughness[edit | edit source]
+ | Wookiee Toughness
+ | I
+ | II
+ | III
+ | Granted
+ | Hanharr
+ | Level 9 Hanharr
+ | Level 17 Hanharr
+ | Damage suffered
+ | -2
+ | -5, then -5%
+ | -8, then -10%
+ | Vitality points per level
+ | +2
+ | +3
+ | +4
+This feat represents the innate toughness that Wookiees have developed as a result of their heritage and the hard life they have lived.
+Damage is reduced after Damage Immunity, Shields, Ignore Pain or Inner Strength, and Toughness, but before Damage Resistance.
+Go to top
+Skills
+Feats
+Items
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Feats&oldid=1143355"
+Hidden category: 
+Sub-pages
+ This page was last edited on 12 November 2025, at 13:41.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

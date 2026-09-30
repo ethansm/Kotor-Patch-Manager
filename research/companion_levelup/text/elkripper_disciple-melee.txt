@@ -1,0 +1,233 @@
+
+ KOTOR 2 - Melee Disciple
+KOTOR 2 - Melee Disciple
+Disciple progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Soldier 6
+ | STR: 14 (+2)
+WIS: 10 (+0)
+CHA: 14 (+2)
+INT: 10 (+0)
+CON: 14 (+2)
+DEX: 16 (+3)
+ | 21 points
+Persuade +0 (0)
+Computer use +0 (0)
+Stealth +5 (5)
+Awareness +8 (8)
+Repair +0 (0)
+Security +0 (0)
+Treat Injury +8 (8)
+Demolitions +0 (0)
+ | Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+Two Weapon Fighting (g)
+Improved Two Weapon Fighting (g)
+Flurry (g)
+Conditioning (g)
+Power Attack (g)
+Power Blast (g)
+Rapid Shot (g)
+Close Combat (g)
+Toughness (g)
+Improved Toughness (g)
+ | 
+ | 7
+ | Soldier 7
+ | 
+ | 1 point
+?
+ | Improved Flurry (s)
+ | 
+ | 8
+ | Soldier 8
+ | DEX +1, 17 (+3)
+ | 1 point
+?
+ | Master Two-Weapon Fighting (s)
+ | 
+ | 9
+ | Soldier 9
+ | 
+ | 1 point
+?
+ | Master Toughness (s)
+ | 
+ | 10
+ | Soldier 10
+ | 
+ | 1 point
+?
+ | Master Flurry (s)
+ | 
+ | 11
+ | Soldier 11
+ | 
+ | 1 point
+?
+ | Finesse: Melee Weapons (s)
+ | 
+ | 12
+ | Soldier 12
+ | DEX +1, 18 (+4)
+ | 1 point
+?
+ | Regenerate Vitality Points (s)
+ | 
+ | 13
+ | Soldier 13
+ | 
+ | 1 point
+?
+ | Improved Conditioning (s)
+ | 
+ | 14
+ | Soldier 14
+ | 
+ | 1 point
+?
+ | Master Conditioning (s)
+ | 
+ | 15
+ | Soldier 15
+ | 
+ | 1 point
+?
+ | Dual Strike (s)
+ | 
+ | 16
+ | Consular 1
+ | DEX +1, 19 (+4)
+ | 2 points
+?
+ | Proficiency: Lightsaber (g)
+Jedi Sense (g)
+Force Focus (g)
+Jedi Defense (g)
+Regenerate Force Points (s)
+ | Heal
+Burst of Speed
+ | 17
+ | Consular 2
+ | 
+ | 2 points
+?
+ | Unarmed Specialist I (g)
+Force Sensitive (g)
+ | Knight Speed
+ | 18
+ | Consular 3
+ | 
+ | 2 points
+?
+ | Weapon Focus: Lightsaber (s)
+ | Improved Heal
+Master Speed
+ | 19
+ | Consular 4
+ | 
+ | 2 points
+?
+ | 
+ | Master Heal
+ | 20
+ | Consular 5
+ | DEX +1, 20 (+5)
+ | 2 points
+?
+ | 
+ | Force Barrier
+ | 21
+ | Consular 6
+ | 
+ | 2 points
+?
+ | Unarmed Specialist II (g)
+Improved Force Focus (g)
+Dual Strike (s)
+ | Improved Force Barrier
+Force Deflection
+ | 22
+ | Consular 7
+ | 
+ | 2 points
+?
+ | 
+ | Master Force Barrier
+ | 23
+ | Consular 8
+ | 
+ | 2 points
+?
+ | 
+ | Force Redirection
+ | 24
+ | Consular 9
+ | 
+ | 2 points
+?
+ | Improved Dual Strike (s)
+ | Force Resistance
+Force Suppression
+ | 25
+ | Consular 10
+ | 
+ | 2 points
+?
+ | Unarmed Specialist III (g)
+ | Force Immunity
+ | 26
+ | Consular 11
+ | 
+ | 2 points
+?
+ | 
+ | Force Breach
+ | 27
+ | Consular 12
+ | 
+ | 2 points
+?
+ | Master Force Focus (g)
+Master Dual Strike (s)
+ | Throw Lightsaber
+Revitalize
+ | 28
+ | Consular 13
+ | 
+ | 2 points
+?
+ | 
+ | Advanced Throw Lightsaber
+ | 29
+ | Consular 14
+ | 
+ | 2 points
+?
+ | Unarmed Specialist IV (g)
+ | Improved Revitalize
+ | 30
+ | Consular 15
+ | 
+ | 2 points
+?
+ | ? (s)
+ | Master Revitalize
+?
+Mical's stats are very mixed. Given that his DEX is higher than his STR, and given that he eventually switches to a Jedi Consular where armor would interfere with Force Powers, DEX-based melee makes more sense than STR-based.
+There's no obvious ideal time to switch to Jedi Consular. Unlike Scout or Scoundrel, Soldier doesn't get granted feats at certain levels. I picked a spot where it seemed like Mical had all the feats necessary to be effective in melee. Soldier could always be taken further, but at a certain point Force Powers (like Burst of Speed) are more worthwhile.
+One reasonable switchover point would be after level 12. This completes the basic set of feats needed for melee. However, Soldier gets 10 vitality per level, vs only 6 as a Consular. So I extended Soldier a few more levels to get in the Conditioning line, and pick up a little more vitality. This puts Mical switching after level 15, which feels right for KOTOR 2 - a little like the Exile taking a prestige class. And because Mical is obsessed with the Exile, this feels like an "imitation is the most sincere form of flattery" situation.
+I went with Flurry as the special attack of choice, mostly because it seems to fit and my other solider, Mandalore, uses Power Attack. So the variety is nice. Mical could just as easily use either of the other special attacks.
+I did not take Weapon Specialization: Melee Weapons, because I expect Mical to use a lightsaber after switching to Consular. And neither Consular nor Soldier qualify for Weapon Specialization: Lightsaber.
+Force powers prioritize self-buffs and things useful to the party out of combat (Heal), so that Mical can spend most of his combat time hacking people into pieces with his lightsaber. By the end, I add in a few other powers that the Exile this build was created to accompany won't be taking. I didn't take a single offensive Force power, but that could easily be switched up.
+Force Deflection is useless, given that Mical should always be hold a lightsaber. I took it because it is a prerequisite to Force Redirection, which is useful for a melee fighter at the front who is likely to be targeted by enemies.

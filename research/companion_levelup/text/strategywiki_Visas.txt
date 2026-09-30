@@ -1,0 +1,956 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Visas — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Visas
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Ebon Hawk
+1.1 Medical
+2 Dialog
+3 Questions
+3.1 Homeworld
+3.2 Force Sight
+Once your alignment has shifted significantly to the light side (75 or more) or dark side (25 or less) of the Force, or you have made at least 50 alignment shifts in total, you cut to a scene of Visas Marr meditating in her room on the command deck of the Ravager, before she gets up and walks to the bridge to speak to her master, Darth Nihilus:
+ | Visas: I have felt it, too, my lord... a disturbance in the Force.
+ | Dialog
+ | 
+ | Visas: It was difficult to make out, my lord. At first it was such a quiet thing, I did not notice it. But now I wonder if it has always been there, I merely could not hear it before. The sound built so slowly, yet when you listen for it, you can make out the strains, even over the background life of the universe.
+ | Visas: Do you feel it is a thr-
+She gets choked off as Nihilus crushes her windpipe with the Force:
+ | Visas: You... you are the darkness in which all life dies, milord. All life... exists to feed your power, and my life... my life is yours.
+Nihilus releases her, and she collapses:
+ | Visas: I beg you... please... let me die.
+ | Visas: Yes... this disturbance... echoes through the Force. I can follow it to its source... and bring it to you.
+ | Visas: I will leave at once, my lord.
+Ebon Hawk[edit | edit source]
+The next time you board the Ebon Hawk after traveling anywhere other than Telos: Citadel Station, you look to either side before going to the starboard dormitory, where you'll now find Visas meditating with her back to you:
+ | 1. Who are you?
+ | 2. What have you done to the crew?
+ | 3. Prepare to defend yourself, assassin.
+ | 4. I don't know who you are, but you won't be alive much longer.
+Her only response is to get to her feet, ignite her lightsaber and attack you:
+ | Visas (main character level 12)
+ | 
+ | 
+ | 
+ | Set
+ | 3
+ | Level
+ | 14
+ | Class
+ | Jedi Sentinel
+ | Alignment
+ | 70 (light)
+ | Skills
+ | Awareness
+ | 7
+ | 
+ | 
+ | 
+ | Attributes
+ | Strength
+ | 12
+ | +1
+ | Dexterity
+ | 18
+ | +4
+ | Constitution
+ | 12
+ | +1
+ | Intelligence
+ | 10
+ | 0
+ | Wisdom
+ | 12
+ | +1
+ | Charisma
+ | 15
+ | +2
+ | 
+ | Vitality
+ | 182
+ | Force
+ | -
+ | Defense
+ | 27
+ | Saves
+ | Fortitude
+ | 18
+ | Reflex
+ | 21
+ | Will
+ | 16
+ | 
+ | Ranged
+ | Main
+ | Off hand
+ | Attack
+ | -
+ | -
+ | Damage
+ | - | -
+ | Threat
+ | - | -
+ | Melee
+ | Attack
+ | 18
+ | -
+ | Energy
+ | 5-41 | -
+ | Threat
+ | 19-20,x2 | -
+ | Items and abilities
+ | Feats
+ | Force powers
+ | 
+ | 
+ | 
+None
+She uses no Force powers, but if you still find yourself struggling then you can run away and other crew members can engage her in combat when they become aware of her. Once she's reduced to 50% Vitality:
+ | Visas: My lightsaber... you have destroyed it. I yield... master. It is as I heard through the Force. My life... for yours.
+The following gives you another chance to move closer to the light (or dark) side of the Force:
+ | 1. I will not kill you.
+ | Points Gained: +1
+ | Visas: You *must.* The alternative is only another death... and I would rather die by your hands.
+ | 4. You may still die at my hands if you don't answer my questions.
+ | Points Gained: -1
+ | Influence Lost: Visas (-8)
+ | Visas: I will do as you ask... but I fear the answers you seek of me... would be useless.
+She collapses. Otherwise:
+ | 2. Arise - but do not attack me again.
+ | 3. Yeah? I don't really care what you want, since you tried to jam a lightsaber into my skull.
+ | Points Gained: +1
+ | Visas: *Kill* me, I beg you. I... it was not my wish to challenge you... and I *must* pay the price.
+Otherwise:
+ | 3. And what have you to offer more than your life?
+ | 4. You pledge yourself to me?
+ | 5. I am in need of servants, not corpses.
+ | Points Gained: -1
+ | 1. I do not kill a helpless opponent.
+ | 2. Look, you're wounded. Stand, let me get you to the medbay.
+ | 1. I will not kill you.
+ | Points Gained: +1
+In all remaining cases:
+ | Influence Gained: Visas (+8)
+ | Visas: I... have nothing to offer you. Your strength is superior... it is as I felt.
+Medical[edit | edit source]
+After Visas collapses, you and Atton tend to her in medical:
+ | Atton: Now I've seen everything. This woman... she's a Miraluka. I didn't think any were left in this part of the galaxy.
+ | Dialog
+ | 
+ | 1. What's a Miraluka?
+ | Atton: Yeah, they're a pretty secretive race. I heard that some of their kind become Jedi, but a Sith? That's... well, that's a new one. I'm not sure how you'd go about killing one. It'd be tricky.
+ | 1. Killing one?
+ | Atton: Just mentioning it - she looks like she's suffered enough wounds already... even after the beating you gave her.
+ | 2. Is her kind rare?
+ | Atton: I heard they had a colony on the Mid Rim, almost halfway between Onderon and Dantooine. Then... it wasn't there anymore. The whole planet was wiped out, nothing left alive, no one knows why.
+ | 1. Maybe she knows.
+ | Atton: Well, it *was* a planet of her people. If they see through the Force, who knows? If they're all Force Sensitive, maybe they all saw something through the Force that we can't see, and they left before it happened... or maybe it killed them.
+ | 1. See through the Force?
+ | 2. That's a cheerful thought.
+ | 3. I'm more inclined to think plague.
+ | Atton: They claim to see on a higher plane than we do, you know, the whole Force thing. Makes me nervous.
+ | 1. Is she going to be all right?
+ | 2. Will she recover? I have uses for her.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Atton: Well, some of her wounds are pretty bad - looks like she was already carrying her share of scars, though. I think she'll recover, yeah.
+ | 1. If her condition changes, let me know - I didn't want to hurt her.
+ | 2. Let me know when she awakens. I have questions for her.
+ | 3. I only want her to live long enough for the interrogation.
+ | Points Gained: +1
+ | Points Gained: -1
+As you leave, a male character is confronted by the Handmaiden:
+ | Handmaiden: She is a threat to us.
+ | 1. I won't harm her, if that's what you're asking.
+ | 3. She is useful, and I do not mean to kill her yet.
+ | 2. I trust her more than I trust you.
+ | Points Gained: -1
+ | Points Gained: +1
+ | Influence Lost: Handmaiden (-8)
+ | Handmaiden: I am not asking that she be harmed or interrogated, but she is of the Sith. And she has attacked us once.
+ | Handmaiden: *I* have not attacked you - *she* has.
+ | Handmaiden: She should not be allowed to walk freely on the ship.
+A female character may be confronted by the Disciple:
+ | Disciple: You spared her.
+ | 1. I don't believe in killing prisoners - or the wounded.
+ | 2. I trust her more than I trust you.
+ | 3. She is useful, and I do not mean to kill her yet.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Disciple (+8)
+ | Influence Lost: Disciple (-8)
+ | Dialog
+ | 
+ | Disciple: I did not believe you would. I am more concerned about what she will do when she recovers.
+ | Disciple: That is not what I asked - although I thought perhaps we had *some* measure of trust between us.
+ | Disciple: I am not advocating harming her at all. I think she may be a means by which we can track down the Sith - in time.
+ | Disciple: Just... be careful. I am concerned that you may feel a certain kinship for her, and that she may exploit that weakness.
+ | Disciple: Just... be careful. Not everyone can be saved.
+ | Visas: [You have scavenged a part from Visas Marr's lightsaber.]
+ | Visas
+Lightsaber (Fixture)
+Atton returns to the cockpit and Visas has now joined your party.
+Dialog[edit | edit source]
+When Visas isn't added to your party, she meditates in the Ebon Hawk's starboard dormitory. You can maximize your influence simply by speaking to her, although only by moving closer to the light side of the Force:
+ | Dialog
+ | Influence
+ | And what have you to offer
+ | You pledge yourself to me?
+ | I am in need of servants
+ | 58
+ | I do not kill a helpless opponent.
+ | Look, you're wounded.
+ | I will not kill you.
+ | Are you all right?
+ | 66
+ | I didn't mean to hurt you.
+ | In medbay, I... we... noticed you have scars. Who hurt you?
+ | 74
+ | My life is unimportant - your Master threatens more than just me.
+ | 82
+ | If he is behind what has befallen the Jedi, then he must be stopped.
+ | 90
+ | < 30 Influence > 70
+ | Because I believe you can be saved.
+ | 98
+ | < 20 Influence > 80
+ | When one endures, it gives hope to others - and themselves.
+ | 100
+You cannot minimize influence simply by speaking to her, and doing so moves you closer to the dark side of the Force:
+ | Dialog
+ | Influence
+ | I will not kill you. You may still die at my hands if you don't answer my questions.
+ | 42
+ | I order you to take me to him.
+ | I will decide when I am ready, and I command you to bring me before him.
+ | 34
+ | < 30 Influence > 70
+ | Why? It is only that a weak servant is no use at all.
+ | 18
+ | < 20 Influence > 80
+ | There is no gift in pain - except the gift of strength.
+ | 2
+< 10 Influence > 90 is required for her to give you maximum Force points increased by 10, Force Sight and 500 XP.
+ | Visas: My life for yours.
+ | 1. Are you all right?
+ | Points Gained: +1
+ | Influence Gained: Visas (+8)
+ | Visas: I am able to serve. If we enter battle, I will fight and die alongside you.
+ | 1. That's not what I asked. I asked if you were all right.
+ | Visas: I... I have not heard that question in some time. My flesh is... healed, if that's the answer you seek.
+ | 1. I didn't mean to hurt you.
+ | 2. In medbay, I... we... noticed you have scars. Who hurt you?
+ | Points Gained: +1
+ | Influence Gained: Visas (+8)
+ | Visas: I know. And I fear that others will see the mercy in your actions... and in my survival... and use it as a weapon to do you greater harm.
+ | Visas: The scars are many, and the causes equally so. It is of no importance.
+ | 2. How did you find me?
+ | Visas: I... felt you, heard you, through the Force. It was like a sound, at the edge of hearing. And when I heard it, I found I could not ignore it.
+ | 3. Who sent you?
+ | Dialog
+ | 
+ | Visas: I serve my Master. I am an emissary, a scout. My Master was aware of a disturbance in the Force, but was unaware of its nature, of you. The disturbance is not something one feels from a living thing. There is little my Master does not know, and that you eluded his sight for so long... is significant, but I do not know why.
+ | 1. I need to know where I can find your Master.
+ | Visas: You cannot. His vessel roams the borders of known space, and even I do not know where he travels.... until he... calls for me. Even if I could lead you to my Master, I cannot permit you to find him... until you are ready.
+ | 1. Ready?
+ | 2. You are in no position to "permit" anything.
+ | Visas: If I bring you before my Master, untested, without your potential realized, then you will be lost to me. And I cannot allow that to happen. It would be as if one brought fire to a paradise valley, shattered a cavern of rare crystal... or blinded a painter.
+ | 1. My life is unimportant - your Master threatens more than just me.
+ | Points Gained: +1
+ | Influence Gained: Visas (+8)
+ | Visas: I cannot - I will not. I would die first, and gladly, to preserve you, untouched, unharmed. Now that I have found you, I cannot sacrifice what I have found.
+ | 1. If he is behind what has befallen the Jedi, then he must be stopped.
+ | 2. I need to find him and kill him before he is a threat to my power.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Visas (+8)
+ | Influence Lost: Visas (-8)
+Otherwise:
+ | 2. I will decide when I am ready, and I command you to bring me before him.
+ | 3. I order you to take me to him.
+ | Points Gained: -1
+ | Influence Lost: Visas (-8)
+ | Visas: It is a choice that can be made by neither one of us. Do not be so quick to meet that which you do not understand. Use the time you have now, to grow, to train, and to strengthen yourself.
+ | 1. I am ready to confront him now.
+ | Dialog
+ | 
+ | Visas: You will meet my master. It is inevitable, I have... seen it. And when you stand before him, and realize what you face, you must be prepared. Until then, I must protect you, help you, until you are ready.
+ | 1. Why are you doing this for me?
+ | Visas: There is a... a greatness in you, a greatness that does not stem from the Force. It stems from who you are. And if my Master does not understand you, cannot see you, then perhaps there is hope for us all. But if you seek to survive, then you must understand why this is so.
+ | 1. If your master has trouble detecting me, how are you able to do it?
+ | Visas: There is much I see my Master cannot. I fear it is because of my nature, the nature of my race. My people spend their lives seeing the galaxy, the energy streaming off stars, the growth of life - all things touched by the Force.
+ | 1. Where are your people, your world, now?
+ | > 30 Influence < 70
+ | Visas: They are... gone. There's nothing more that I can say.
+ | 5. Never mind. I'll be going now.
+ | < 30 Influence > 70
+ | Visas: Forgive me, but before you go, I must ask. Why do you do this? Why do you seek to help me, teach me?
+ | 1. Because I believe you can be saved.
+ | 2. I don't really know why. I try not to think about it.
+ | 3. Why? It is only that a weak servant is no use at all. Surely the Sith has taught you that.
+ | Points Gained: +2
+ | Points Gained: -2
+ | Influence Gained: Visas (+8)
+ | Influence Lost: Visas (-8)
+ | Visas: You must not do this. I cannot allow you to weaken yourself for me.
+ | Visas: I must warn you... if you weaken yourself for me, then it will kill you.
+ | 1. To help another is not weakness - it is strength to them both.
+ | 2. You have curious views for a Sith.
+ | 3. I do not understand where your power over the dark side comes from... you are too even-tempered and submissive for my tastes.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Visas: So you say, but it is not something I have observed - or seen.
+ | Visas: There is more to the Sith than simply rage or slaughter. There are many kinds of hate, and all of them have the call of the dark side in them. The galaxy is filled with many such evils - and rarely have I seen anything else.
+ | 1. What do you mean?
+ | Visas: I remember little of my homeworld before I entered my Master's service. It is not as it was, there is little left of such memories - or the planet itself.
+ | 1. Tell me about your homeworld.
+ | 2. We have spoken enough. I must go.
+ | 3. Enough - leave me.
+ | Visas: Very well. Perhaps we shall speak more of this at another time - but know this - I cannot allow you to weaken yourself for me.
+Questions[edit | edit source]
+ | 4. I had questions for you.
+ | Visas: I will answer what I can, but my answers may prove useless to you.
+ | Visas: I will answer what I can.
+You can ask her to tell you about her homeworld, and how she is able to see. You can also ask if her Master was the one sent to Peragus, or behind its destruction:
+ | 2. Was your Master the one sent to Peragus?
+ | Visas: I am not familiar with the place you speak of - my Master has not entered Republic space for some time. But there are others, who may move more freely, who may have been responsible for such an act of destruction.
+ | 3. Was your Master behind the destruction of Peragus?
+ | 1. What do you mean?
+ | Visas: My Master did not cause the end of the planet you speak of.
+ | Visas: There are many factions within the Sith, all seeking to take what little remains in the wake of the Jedi Civil War.
+Homeworld[edit | edit source]
+ | 1. Tell me about your homeworld.
+ | < 31 Influence > 69
+ | > 30 Influence < 70
+ | Visas: [Influence: Success] It is not a subject which I have spoken of - since its destruction.
+ | Visas: [Influence: Failure] It is not something I speak of. The homeworld is no longer, and that is all.
+ | 1. Forget it. I had some other questions for you.
+ | 4. I have seen similar acts of destruction... at Malachor.
+ | Visas: I have heard tales of Malachor. It is said that many of my people felt the end of the Mandalorian Wars from across the galaxy. But do not mistake me, I did not mean to draw comparisons between Katarr and Malachor... my homeworld still exists. It is... intact.
+ | 3. How was it destroyed?
+ | Dialog
+ | 
+ | Visas: The planet was not destroyed, it remains... it orbits, dead in space, but nothing lives on its surface. It echoes, but there is no one left to hear it.
+ | 1. If your homeworld was destroyed, how did you survive?
+ | Visas: I am not certain I did. I was there when the planet died. To see everything around you extinguished... it... was as if I was blinded. It was as if the Force had... been bled from the world.
+ | 1. ...as if everything suddenly went silent.
+ | Visas: I imagine there are worse deaths, worse pain. But if there are, I do not know them. I was the only living thing remaining on the planet of Katarr... and my life, my agony, was a flicker in the darkness that was the planet. All that I had been connected to had been severed.
+ | 1. You were the only survivor?
+ | Visas: I still wonder what would have happened if I had died with the others... if perhaps there would have been some way to hide my presence from the galaxy. If only I had not... felt that pain, that loss, as strongly as I did. But it could not be done. When the life was bled from the planet, and yet somehow, I remained, my Master came for me. He walked upon the surface of my dead world, and there, lying in the bodies of my race, he took me for his own. And he made me *see.* And for the first time, I saw the galaxy. And I wished to die.
+ | 1. He made you see?
+ | Visas: To this galaxy, my world, absent the currents and spectrums of the Force, was nothing but crude matter, rock, flesh, emptiness. He showed the flickering of life on other planets, the mass of beings that swarm through the empty places of the galaxy. To see such creatures, disconnected from themselves, their world, their place in it, unable to see the currents and how they affected everything around them.
+ | 1. And why did your Master show you this?
+ | Visas: He showed me to make me believe in his cause. He convinced me the galaxy, all life must die. He fed upon its ugliness, its screaming, and in its place, he left silence... and where there was chaos, he brought stillness... and order.
+ | 1. How did your master destroy your homeworld? To kill on such a scale... it's impossible.
+ | 1. I don't understand - it would have taken several Republic cruisers to destroy the surface of Katarr.
+ | Dialog
+ | 
+ | Visas: It was not a thing done with machines or weapons. The Force is far more terrible, and it touches more lives than any machine can hope to slay. For every one that feels the Force, strongly, deeply, each one feels and perceives it in their own way. You have strengths, whether you know it or not. And my master has his. His power is great, and it comes from hunger. He is a wound in the Force, more presence than flesh, and in his wake, life dies... sacrificing itself to his hunger. And those who feel the Force strongly are beacons to his hunger. My people, my planet, would have been attacked in time, it was inevitable, yet we could do nothing about it.
+ | 2. Why did your Master destroy Katarr?
+ | Dialog
+ | 
+ | Visas: The Jedi, the last Council of the Jedi, came to our world to meet in secret. They hoped that perhaps among our people they could achieve the clarity to *see* what was striking them from the darkness of the galaxy. They succeeded... but only in bringing him from the Outer Regions. And Katarr, with my kind, with the Jedi upon its surface, could no longer be ignored. And my people died. And the Jedi died. And there was no one left. Only me.
+ | 1. Why did the Jedi meet on Katarr?
+ | Visas: They hoped to see the threat that had been stalking them. And they did. But they were unprepared for the magnitude of the threat.
+ | 2. He attacked it because the Jedi had gone there?
+ | Visas: He cannot deny his hunger for long - and any gathering of Jedi is something he cannot long resist. And now that the Jedi are vanishing, I do not know what will happen - perhaps he will grow strong enough to eradicate all life, merely with his presence.
+ | 1. [Wisdom (16)] Or it may starve him... make him more desperate.
+ | 1. [Intelligence (19)] Or it may starve him... and make him more desperate.
+ | Visas: I do not understand what you mean.
+ | 1. Just thinking out loud. Why did the Jedi meet on Katarr?
+Force Sight[edit | edit source]
+ | 4. I have heard your species is blind. How are you able to see?
+ | Dialog
+ | 
+ | Visas: My people once had the power to perceive events, to *see* through the Force. That sight may manifest itself in many ways, and at times, I may affect the abilities of others to see as well.
+ | 2. I understand.
+ | Visas: Is there something else you wished?
+Do not say the following unless < 20 Influence > 80, since you cannot repeat it: 
+ | 1. You sound as if that sight is lost to you.
+ | Dialog
+ | 
+ | Visas: My sight has been... damaged. What I have taught you - it is not the full extent of the perceptions of my people.
+ | 1. [Visas has a limited ability to see the Force. She has Force Sight in first-person mode and can also use it as a Force power by spending Force points.]
+Although she has Force Sight in first-person mode, she cannot actually use it as a Force power, even after teaching it to you.
+ | 20-80 Influence
+ | Visas: [Influence: Failure] My master - he has crippled me. I have seen the galaxy as it truly is, and it has left its mark. It is not something I can explain, for the words are difficult. I only ask that you understand.
+ | < 20 Influence > 80
+ | Visas: [Influence: Success] My master - when he showed me my world, showed it to me as it is, it... hurt. And since that moment, it has been... difficult to perceive the Force as I once did. But after traveling with you, I feel that perhaps there was a gift in it, hidden beneath the pain.
+ | 1. When one endures, it gives hope to others - and themselves.
+ | 2. There is no gift in pain - except the gift of strength.
+ | Points Gained: +2
+ | Points Gained: -2
+ | Influence Gained: Visas (+8)
+ | Influence Lost: Visas (-8)
+ | Visas: Only when one suffers do certain truths become evident - both of the galaxy, and of the self. And I feel you are an example of this.
+Now you only get one chance to ask the following:
+ | 4. How do you see through the Force?
+ | < 10 Influence > 90
+ | 10-90 Influence
+ | Visas: [Influence: Success] If you wish to know, perhaps it is possible to show another what my people see... what I see.
+ | Visas: [Influence: Failure] It is difficult to explain, it is something that must be experienced to be understood.
+ | Dialog
+ | 
+ | Visas: First, you must close your eyes... the surface of this ship, its sights will only be a distraction. Now, in your mind, reach out, listen for my breathing. Do not focus on the sound, but the life behind it. Imagine its energy, its texture, in tandem with the breathing - and then, in your mind, step back from the image, and see what remains.
+ | Visas: There... it is not as difficult as I thought - you learn quickly.
+ | 1. [You have gained bonus Force points and Force sight. This allows you to perceive the alignment of others and see through some obstacles to the threats beyond.]
+ | Visas: It will take effort to maintain such sight, but you now have that power. And with it, you can use it to see life around you in a different way... as I used to see it.
+Your Eyes Can Deceive You
+Learned Force Sight
+ | Received:
+500 Gained bonus Force points and Force Sight
+Maximum Force points increased by 10.
+Go to top
+T3-M4
+Visas
+Implants
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Visas&oldid=1032792"
+Hidden category: 
+Sub-pages
+ This page was last edited on 4 July 2023, at 22:52.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

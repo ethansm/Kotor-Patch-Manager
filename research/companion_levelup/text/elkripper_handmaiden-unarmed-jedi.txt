@@ -1,0 +1,226 @@
+
+ KOTOR 2 - Handmaiden Unarmed Jedi
+KOTOR 2 - Handmaiden Unarmed Jedi
+This version of Handmaiden is an unarmed specialist who becomes a Jedi without taking any additional Soldier levels. This means she can advance both Force Powers and the Unarmed Specialist feat line, at the expense of not being able to start her Jedi journey until the main character is level 18 (because that's a requirement for switching her). This means she remains a Solider through much of the game, even though she eventually ends up as a pretty decent unarmed melee Jedi.
+Handmaiden's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Soldier 6
+ | STR: 14 (+2)
+WIS: 10 (+0)
+CHA: 14 (+2)
+INT: 10 (+0)
+CON: 14 (+2)
+DEX: 16 (+3)
+ | 21 points
+Awareness +8 (8)
+Computer use +0 (0)
+Demolitions +0 (0)
+Persuade +0 (0)
+Repair +0 (0)
+Security +0 (0)
+Stealth +5 (5)
+Treat Injury +8 (8)
+ | Power Attack (g)
+Improved Power Attack
+Power Blast (g)
+Two-Weapon Fighting (g)
+Improved Two-Weapon Fighting (g)
+Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Conditioning (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+Toughness (g)
+Improved Toughness (g)
+Echani Strike I (g)
+Unarmed Specialist I (g)
+Unarmed Specialist II (g)
+ | 
+ | 7
+ | Guardian 1
+ | 
+ | 1 point
+Awareness +1 (9)
+ | Weapon Proficiency: Lightsaber (g)
+Jedi Sense (g)
+Force Jump (g)
+Jedi Defense (g)
+Improved Conditioning (s)
+ | Burst of Speed
+Heal
+ | 8
+ | Guardian 2
+ | STR +1, 15 (+2)
+ | 1 point
+Awareness +1 (10)
+ | Force Sensitive (g)
+Master Toughness (s)
+ | Force Barrier
+ | 9
+ | Guardian 3
+ | 
+ | 1 point
+Awareness +1 (11)
+ | Master Conditioning (s)
+ | Knight Speed
+ | 10
+ | Guardian 4
+ | 
+ | 1 point
+Awareness +1 (12)
+ | 
+ | Improved Force Barrier
+ | 11
+ | Guardian 5
+ | 
+ | 1 point
+Awareness +1 (13)
+ | Echani Strike II (g)
+Regenerate Vitality Points (s)
+ | Force Deflection
+ | 12
+ | Guardian 6
+ | STR +1, 16 (+3)
+ | 1 point
+Awareness +1 (14)
+ | Improved Force Jump (g)
+Unarmed Specialist II (g)
+ | Improved Heal
+ | 13
+ | Guardian 7
+ | 
+ | 1 point
+Awareness +1 (15)
+ | Dueling (s)
+ | Force Redirection
+ | 14
+ | Guardian 8
+ | 
+ | 1 point
+Awareness +1 (16)
+ | 
+ | Force Resistance
+ | 15
+ | Guardian 9
+ | 
+ | 1 point
+Awareness +1 (17)
+ | Improved Dueling (s)
+ | Master Speed
+ | 16
+ | Guardian 10
+ | CON +1, 15 (+2)
+ | 1 point
+Awareness +1 (18)
+ | Unarmed Specialist III (g)
+ | Master Force Barrier
+ | 17
+ | Guardian 11
+ | 
+ | 1 point
+Awareness +1 (19)
+ | Echani Strike III (g)
+Master Dueling (s)
+ | Force Immunity
+ | 18
+ | Guardian 12
+ | 
+ | 1 point
+Awareness +1 (20)
+ | Master Force Jump (g)
+ | Master Heal
+ | 19
+ | Guardian 13
+ | 
+ | 1 point
+Treat Injury +1 (9)
+ | Master Power Attack (s)
+ | Force Aura
+ | 20
+ | Guardian 14
+ | CON +1, 16 (+3)
+ | 1 point
+Treat Injury +1 (10)
+ | Unarmed Specialist IV (g)
+ | Force Shield
+ | 21
+ | Guardian 15
+ | 
+ | 1 point
+Treat Injury +1 (11)
+ | Flurry (s)
+ | Force Armor
+ | 22
+ | Guardian 16
+ | 
+ | 1 point
+Treat Injury +1 (12)
+ | 
+ | Energy Resistance
+ | 23
+ | Guardian 17
+ | 
+ | 1 point
+Treat Injury +1 (13)
+ | Improved Flurry (s)
+ | Improved Energy Resistance
+ | 24
+ | Guardian 18
+ | STR +1, 17 (+3)
+ | 1 point
+Treat Injury +1 (14)
+ | Unarmed Specialist V (g)
+ | Master Energy Resistance
+ | 25
+ | Guardian 19
+ | 
+ | 1 point
+Treat Injury +1 (15)
+ | Master Flurry (s)
+ | Drain Life
+ | 26
+ | Guardian 20
+ | 
+ | 1 point
+Treat Injury +1 (16)
+ | 
+ | Death Field
+ | 27
+ | Guardian 21
+ | 
+ | 1 point
+Treat Injury +1 (17)
+ | Dual Strike (s)
+ | Force Valor
+ | 28
+ | Guardian 22
+ | STR +1, 18 (+4)
+ | 1 point
+Treat Injury +2 (18)
+ | Unarmed Specialist VI (g)
+ | Knight Valor
+ | 29
+ | Guardian 23
+ | 
+ | 1 point
+Treat Injury +2 (19)
+ | Improved Dual Strike (s)
+ | Master Valor
+ | 30
+ | Guardian 24
+ | 
+ | 1 point
+Treat Injury +2 (20)
+ | 
+ | Drain Force
+I focused on survivability early, which pushed the Flurry line late. Those feats could easily be reversed.
+It seemed in character for Handmaiden to take no stunning or damaging powers. I made an exception for Drain Life/Death Field, because that line heals the caster. It'd almost certainly be more powerful to at least take some stuns.
+Compared to reamining a Soldier and not becoming a Guardian, this build gets one fewer ranks of the Unarmed Specialist feat line, and slower feat progression. However, it gets Force Powers, which make up for a lot.

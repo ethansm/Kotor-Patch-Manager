@@ -1,0 +1,38 @@
+
+ KOTOR 2 - Visas Builds
+KOTOR 2 - Visas Builds
+This file details some considerations to make for a Visas build, and may eventually contain a few Visas builds from different playthroughs. We'll see how far I take it.
+Visas starts and remains a Sentinel. With her starting stats, she can reasonably be built as either a DEX-based melee combatant, or as a CHA-based caster.
+Sentinel Class Skills: Computer Use, Stealth, Awareness, Security, Treat Injury
+======================
+Notes:
+Dialog tree
+Obtained on the Hawk. She appears after you get 1/4 way to either Dark or Light
+Can give you Force Sight, which lets you see aura (alignment) of NPCs
+For male main characters, if her influence is higher than Handmaiden's, then Handmaiden gets mad at you. So if you want to convert/romance Handmaiden, do not talk to Visas until after you do
+Influence gained/lost via dialog and actions when she is in your party (but mostly dialog)
+Influence locations:
+Almost Anywhere
+Kill innocents
+Ebon Hawk
+After initial fight, say you're not going to kill her
+After leaving infirmary, say you didn't want to hurt her (I think this gets a Visas gain even though she's unconscious. Unconfirmed.)
+When talking later, generally say nice Light-Sidey stuff. Several gains possible.
+Dantooine
+When you turn in the atmospheric sensors for 3000 credits, and comment on the hidden intelligence.
+In cave, tell mercs that Vrook belongs in his cage (also gets Dark Side points)
+Nar Shaada
+Help out guy being harrassed by thugs. Let him go afterward.
+Heal sick refugee
+After you return TT-31 to TT-32, extort TT-32 for the plans and get a discount (requires high INT)
+Onderon
+Side with rabble rouser, support him in calling for an end to the monarchy.
+After that, talk to Anda, agree to remove the guard captains, oppose the Queen when Visas asks you about it
+When guys arguing politics in Merchant Quarter talk to you, side with Vaklu
+Give open starport visa to mother near the entrance, then say "The darkness clouds your mind..." line 
+When meeting with Kavar is raided, tell her to kill people. Or say you forbid it for LSP and influence loss.
+===================
+Visas Builds:
+Melee Visas
+Caster Visas (stunner)
+Caster Visas (buffer)

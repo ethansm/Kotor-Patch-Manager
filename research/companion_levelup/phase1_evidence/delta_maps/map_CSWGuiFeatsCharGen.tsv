@@ -1,0 +1,14 @@
+0x00909e00	0x5f8c90	CSWGuiFeatsCharGen::Constructor	vote	retn=16
+0x0090a970	0x5f9800	CSWGuiFeatsCharGen::scalar	vote	retn=4
+0x0090a9a0	0x5f9830	CSWGuiFeatsCharGen::Destructor	vote	retn=0
+0x0090ad90	0x5f9c20	CSWGuiFeatsCharGen::OnPanelAdded	vote	retn=0
+0x0090aea0	0x5f9d30	CSWGuiFeatsCharGen::InitiateFeats	vote	retn=0
+0x0090b200	0x5fa090	CSWGuiFeatsCharGen::HandleInputEvent	vote	retn=8
+0x0090b360	0x5fa1f0	CSWGuiFeatsCharGen::HandleCancelButton	vote	retn=0
+0x0090b430	0x5fa2c0	CSWGuiFeatsCharGen::OnAcceptButton	vote	retn=0
+0x0090b6b0	0x5fa540	CSWGuiFeatsCharGen::OnRecommendButton	vote	retn=0
+0x0090bbb0	0x5faa40	CSWGuiFeatsCharGen::Draw	vote	retn=4
+0x0090bcb0	0x5fab40	CSWGuiFeatsCharGen::DetermineFeat	vote	retn=8
+0x0090bd50	0x5fabe0	CSWGuiFeatsCharGen::BuildButtons	vote	retn=0
+0x0090c230	0x5fb0c0	CSWGuiFeatsCharGen::BuildAvailableList	vote	retn=0
+0x0090c390	0x5fb220	CSWGuiFeatsCharGen::SetDescription	vote	retn=4

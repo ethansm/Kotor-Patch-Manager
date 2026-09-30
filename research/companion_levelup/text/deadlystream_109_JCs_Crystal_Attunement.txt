@@ -1,0 +1,226 @@
+
+ JC's Crystal Attunement for K2 - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ JC's Crystal Attunement for K2
+ JC's Crystal Attunement for K2 2.0.5
+   (1 review)
+ By 
+JCarter426
+Find their other files
+  Share
+ https://deadlystream.com/files/file/2269-jcs-crystal-attunement-for-k2/
+ More sharing options...
+ Followers
+ 14
+10 Screenshots
+About This File
+ This mod is focused on the so-called Quest Crystal, a powerful lightsaber crystal only the player character can utilize. There are three parts to this mod, which may be installed together or individually.
+ Class-Based Properties
+ The Quest Crystal in the original game has differing properties depending on your character's level and alignment only. This option gives the Quest Crystal differing properties based on your character's class in addition to their level and alignment. Each combination of class and alignment has access to a unique set of item properties.
+ Note: A crystal with Class-Based Properties is saved differently from the original crystal. Save game files containing the original crystal will not function correctly with Class-Based Properties installed. Likewise, save game files containing a Class-Based Properties crystal will no longer function correctly if that part of the mod is uninstalled.
+ Workbench Attunement
+ In the original game, only Kreia is able to attune your Quest Crystal to keep it up to date with your character's stats. This option allows you to attune the crystal without Kreia's help. The player will be able to attune the crystal in the final act of the game, or earlier by passing a Wisdom check after crafting a lightsaber and observing Kreia attune the crystal.
+ This option also removes the "[Learn about using the workbench.]" dialogue from any workbenches you can access after the game's prologue.
+ Bug Fixes
+ In the original game, you are not always given a Quest Crystal that properly reflects your player character. This mod includes bug fixes to correct that problem. While all of the installation options include these bug fixes, they can also be installed alone without the rest of the mod.
+ Installation
+ Extract files from the downloaded archive.
+ Run INSTALL.exe.
+ Select which option you want to install:
+ a) Class-Based Properties + Workbench Attunement
+ b) Class-Based Properties
+ c) Workbench Attunement
+ d) Bug Fixes Only
+ Click "Install Mod" and select your game directory.
+ This Workbench Attunement part of this mod only supports the English language version of the game at this time.
+ Uninstallation
+ During installation, TSLPatcher generates a backup folder and a log recording which files were affected.
+ Restore or delete all module files affected by this mod. For each module, copy the corresponding .mod file from the backup folder to replace the one in your game's Modules folder if a backup was created, otherwise delete the .mod file from your game's Modules folder.
+ Restore or delete all .2da files affected by this mod. For each, copy the corresponding .2da file from the backup folder to replace the one in your game's Override folder if a backup was created, otherwise delete the .2da file from your game's Override folder.
+ Delete workbnch.dlg from your Override folder only if you have not installed other mods which edit this file. Otherwise, leave it; you will still have the tutorial removed but all other changes to the workbench dialogue will be inaccessible without the rest of the mod installed.
+ Delete all other files installed by this mod from your game's Override folder.
+ Note that depending on which option you installed, some of the above might not be necessary.
+ Compatibility
+ This mod is compatible with my Saber Workshop mod. The order of installation does not matter.
+ This mod makes minimal changes to the global workbench dialogue (workbnch.dlg) but it is installed by overwriting the file. This is an unfortunate necessity because TSLPatcher is not so good at patching dialogue files, especially when different mods do very similar things. I thought long and hard, and this seemed the most compatible option to me despite its inherent problems, because it simplifies the installation for mods which are designed to be compatible with this mod while minimizing amount of changes needed to make a compatibility patch.
+ In any case, other mods which edit the global workbench dialogue will only be compatible with this mod if one of the following is true:
+ The other mod is installed after this mod and patches (i.e. does not overwrite) the workbench dialogue
+ The other mod is installed after this mod, overwrites the workbench dialogue, and includes this mod's changes to the workbench dialogue
+ The other mod has a compatibility patch which is installed after this mod, overwrites the workbench dialogue, and includes this mod's changes to the workbench dialogue
+ Credits
+ KOTOR Tool – Fred Tetra
+ 2DA Editor – VarsityPuppet
+ TSLPatcher – stoffe & Fair Strides
+ DeNCS – JdNoa & Dashus
+ DLGEditor – tk102
+ ERFEdit – stoffe & Fair Strides
+ K-GFF – tk102
+ NWNSSCOMP – Torlack, stoffe, & tk102
+ xoreos tools – xoreos team https://xoreos.org/
+ with thanks to @Snigaroo for help deciding the class-based item properties
+ License
+ This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.
+ Donations
+ If you enjoy my mods and would like to show your support in a monetary manner, you may do so via PayPal at https://www.paypal.me/carterunited.
+What's New in Version 2.0.5   See changelog 
+Released July 22
+ Fixed
+ Correct some item prperties for Class-Based Properties which were miscalculated and did not have the intended effect.
+2.0.5
+ 2.0.4
+ July 22
+ 2.0.3
+ July 11
+ 2.0.2
+ July 9
+ 2.0.1
+ July 5
+ 2.0.0
+ July 4
+ 1.1
+ June 22
+ 1.0
+ March 13, 2023
+ Download this file
+ Get Support
+File Information
+ Views
+ 25,087
+ Downloads
+ 8,699
+ Submitted
+ March 13, 2023
+ Published
+ July 22
+ Updated
+ July 22
+ File Size
+ 958.72 kB
+ TSLRCM Compatible
+ Yes
+ 4
+ 1
+  Share
+ https://deadlystream.com/files/file/2269-jcs-crystal-attunement-for-k2/
+ More sharing options...
+ Followers
+ 14
+ Previous File
+ Atton Rand and Male Exile Romance
+ Next File
+ JC's Handmaiden Sisters
+User Feedback
+ 1 Review
+ 6 Comments
+You may only provide a review once you have downloaded the file.
+ Most Helpful
+ Newest
+Lyssomanes
+ 1
+ March 3
+ Anyone looking to spice up their next playthrough should give this mod a shot. It provides an in-depth expansion of the vanilla Player crystal that returning players should definitely consider adding to their build(s). The quality-of-life improvements in-and-of themselves are worth the download.
+ 1
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ JC's Crystal Attunement for K2
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

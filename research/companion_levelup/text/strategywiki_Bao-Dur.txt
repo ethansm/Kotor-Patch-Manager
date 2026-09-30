@@ -1,0 +1,784 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Bao-Dur — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Bao-Dur
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Bao-Dur joins your party when you first enter the Restoration Zone on Telos, and must be a member of your party until you arrive on the Polar Plateau. Once aboard the Ebon Hawk, he can be found in the garage in its bottom right quadrant.
+When you first speak to him with Alignment 75 or more:
+ | Bao-Dur: Hey, General. Are you all right?
+ | Dialog
+ | 
+ | 1. What are you talking about?
+ | 2. You lost me.
+ | Bao-Dur: You look like you've been standing to close to one of my shield generators.
+These responses end the dialog unless Mira has also been added to your party:
+ | 1. You're one to talk.
+ | 2. I was inspired by your arm.
+ | 3. Are you sure you haven't been chewing on power cables?
+ | Bao-Dur: Whoa, claws out today, aren't they?
+Otherwise:
+ | Bao-Dur: Claws out today, aren't they? You've been spending too much time with Mira.
+ | 1. Now whose claws are out?
+ | Bao-Dur: Seriously, you don't look that way from spending extra time in the 'fresher. I've seen other Jedi - not many, but a few - who looked like that. And I feel a little... strange... around you. A little more in control - calm, like I usually only get when I'm repairing something.
+ | 4. When one is in touch with the Force, it can manifest itself visibly.
+ | 2. It's a Jedi thing.
+ | 3. Don't know what you're talking about.
+ | Bao-Dur: All right, if you don't want to talk about it, I won't press you.
+ | Bao-Dur: Was there something you wanted me for?
+When you first speak to him with Alignment 10 or less:
+ | Bao-Dur: Hey, General. I want to talk to you.
+ | Dialog
+ | 
+ | 1. What is it?
+ | 3. And I don't.
+ | 4. I brought you on board to attend to the ship and droids, not to waste my time.
+ | 2. Make it quick.
+ | Bao-Dur: No, you're not leaving until we've talked about this.
+ | Bao-Dur: Oh, is that how it is?
+ | Bao-Dur: Maybe the others don't know what's happening, but I can see what's going on - and the others have felt it, too.
+ | 1. What are you talking about?
+ | 2. And what makes you think I care?
+ | 3. I don't have time for this.
+ | Bao-Dur: You can't hide it, General. Just look at your face. I saw other Jedi who looked like you - during and after the war. It's that woman. You have to get away from her. She'll destroy you.
+ | 1. I don't know what you mean.
+ | 2. You think I can't take care of myself?
+ | 3. You don't have to worry about Kreia. She doesn't have any hold over me.
+ | Bao-Dur: She's manipulating you, maybe all of us.
+ | Bao-Dur: I'm not saying you're not strong enough, General, but I'm not discounting her either.
+ | 4. You're wrong about Kreia. I control Kreia, she does not control me.
+ | 5. Worry about yourself, Bao-Dur.
+ | Bao-Dur: Just be careful, General. You don't know what she wants, and she's got some goal. I'm sure of it.
+ | Bao-Dur: Was there something you wanted me for?
+Otherwise, or when you next speak to him:
+ | Bao-Dur: General. Need something?
+ | Dialog
+ | 
+ | 1. Really, you don't have to call me "General."
+ | 2. I need you to stop calling me "General."
+ | Bao-Dur: Sorry, guess I can't get my head out of the past.
+ | 2. How'd you end up on Telos?
+ | 3. You going to stick around here?
+ | 1. I was just wondering what you've been doing since the war ended.
+ | Bao-Dur: As long as you don't mind having me around. It's a nice change from drifting.
+ | Bao-Dur: I moved around for a couple years. Working as a starship mechanic got me from place to place. I wasn't ready to settle down after the war.
+ | 1. During my exile, I did the same thing.
+ | 2. Why did you move around so much?
+ | 3. I'm sure you weren't the only soldier to feel that way.
+ | Bao-Dur: Then you understand my restlessness. Though the war had ended, I couldn't find peace in anything.
+ | Bao-Dur: And I don't think I'll be the last.
+ | Bao-Dur: As long as I kept moving, I didn't have to think about what happened. Know what I mean?
+ | 1. Only too well.
+ | 2. Sounds like you were just running away.
+ | 3. Couldn't handle the truth, huh?
+ | 4. We must face our fears to become stronger.
+ | Bao-Dur: I'm sure you do.
+ | Bao-Dur: I was, no doubt. It's hard to face up to yourself sometimes, and for a few years, I couldn't.
+ | Bao-Dur: Maybe if I had the Force to lean on, I could have worked it out. But then the Force didn't seem to be of much help to others.
+ | Bao-Dur: Mostly, I was angry. Angry about what I had done, about why I had done it.
+ | Bao-Dur: I decided I'd do something constructive. I wanted to make up for the things I'd done in the war. I wanted to design planetary shields, but there weren't many systems with the credits to spare - there was more that needed to be rebuilt than protected. I found out that Telos was going to be the flagship project for the Republic, and it sounded like something good. I saw Telos before the Sith razed it. It deserved a better fate. But Czerka ruined everything. I thought I could force Czerka out on my own, but I guess I can't fix everything myself.
+ | 1. I think taking on Czerka single-handedly might be a little out of your league.
+ | 2. It's good to have you around again.
+ | 3. I'll leave you to your repairs.
+ | Bao-Dur: All I wanted to do was send a message, but I couldn't even do that right. That's the past, though. It's good to be working with you again, General.
+ | Bao-Dur: It's good to be working with you again, General.
+ | Bao-Dur: Talking to you is better than talking to a machine all day.
+ | Bao-Dur: Something else I can help you with?
+Otherwise:
+ | 4. I just wanted to talk to you.
+ | 5. Never mind.
+ | Bao-Dur: Yes, General?
+He also makes that response if you return after asking what he's been doing since the war ended. In every case, you can now ask once about his remote, his opinion about the Telos situation, how he lost his arm, and what he's doing (when aboard the Ebon Hawk):
+ | Dialog
+ | 
+ | 1. Where did you pick up that remote, anyways?
+ | Bao-Dur: That old thing? I built him when I was a kid. Been following me around for years now, despite what I've done to try and chase him off.
+ | Remote: Dwoooooo.
+ | Bao-Dur: Hey, just kidding. I'm happy to have you around.
+ | 3. Can you build me one?
+ | Bao-Dur: I would, but then I wouldn't be the only one with a floating sphere following him around, and I kind of like that.
+ | 1. What does it do, other than follow you around?
+ | 2. That's got to be annoying.
+ | Bao-Dur: It's not that bad. I guess you'd know - you've always got someone following you around.
+ | Bao-Dur: He helps me out with repairs. I outfitted him with a cutting laser and some other tools for delicate modifications. He's also good for singeing the pants of annoying techs.
+ | Remote: Deet deet deet.
+ | Bao-Dur: I've been thinking about doing some other work on him, but I barely have time. Too busy fixing up the ship.
+ | 2. What's your opinion about the Telos situation?
+ | Bao-Dur: If the Republic would just rein Czerka in, there'd be no problem. But as long as Czerka is allowed to undermine the Ithorians' efforts, Telos will remain dead. I can't take seeing my work being used by those bloodsuckers. But there's nothing I can do about it, so let's talk about something else.
+ | 3. How'd you lose your arm, anyway?
+ | Bao-Dur: I got tired of it - kept dropping my hydrospanner. Figured I'd get a new one.
+ | 1. Yeah? I'll bet that was fun.
+ | 2. That seems a bit... rash.
+ | 3. I was being serious.
+ | Bao-Dur: I was only kidding. Actually, it was a souvenir from Malachor. I was lucky it was all I lost.
+ | Bao-Dur: If you were me, you'd probably want to joke about it, too. Actually, it was a souvenir from Malachor. I was lucky I didn't lose more.
+ | Bao-Dur: But at least it gave me something to do, right? Everyone always said I was probably half machine, anyway.
+Aboard the Ebon Hawk:
+ | 4. What are you doing?
+ | Bao-Dur: Just working on the ship. I'm not sure who got her up and running, but I'm amazed she's even spaceworthy. Whoever made these repairs doesn't think like most mechanics. But don't worry, I'll get everything in shape.
+ | 4. What was it you wanted to talk about?
+That response is only available if you haven't already asked what he's been doing since the war ended, but you shouldn't select it because he'll ask you again why you decided to fight before further dialog can be unlocked. Once you have already asked, then if < 40 Influence > 60 when you next speak to him:
+ | Bao-Dur: I didn't want to talk about the war, but can I ask you something?
+ | Dialog
+ | 
+ | 2. Oh, now you want to talk about it?
+ | Bao-Dur: Just drop it then. It's not important.
+ | 2. Obviously it is.
+ | Bao-Dur: The Force lets you look right through me, huh? But if you don't want to talk about it, that's okay.
+ | 3. Maybe another time.
+ | 3. Good, I wasn't really interested anyways.
+ | Bao-Dur: Sure, it's nothing important, General.
+Otherwise:
+ | 1. What is it?
+ | Bao-Dur: Why did you decide to fight?
+ | Dialog
+ | 
+ | 4. I was eager to join the great battle.
+ | 1. The Mandalorians had to be stopped.
+ | 2. The Jedi served no one with inaction.
+ | 3. It was a mistake, I should have respected the Council's wishes.
+ | Bao-Dur: I felt the same way. I remembered when word of the Mandalorian attacks arrived on Iridonia.
+ | Bao-Dur: The war went poorly before Revan and the Jedi lent aid to the Republic. Many of us believed the Jedi to be cowards who were afraid to face the Mandalorian threat. I remembered when word of the Mandalorian attacks arrived on Iridonia.
+ | Bao-Dur: My people had colonies across the Outer Rim. Many of them were among the first systems to fall.
+ | 1. As good a reason as any for joining.
+ | 2. So you wanted revenge?
+ | 3. Unlike many of the Jedi, I could not stand by and watch.
+ | Bao-Dur: Revenge, and to crush the Mandalorians - to send them back to wherever it was they came from.
+ | Bao-Dur: I did not join because I wanted to protect, though. I hated them. I wanted to destroy them - to give them the mercy they gave the people they conquered. I remember the thrill I felt when we fought them in battle. Victories were rare, but we celebrated every Mandalorian's death. Do you know how it felt?
+ | 3. I detached myself from the frenzy of battle. It was impersonal.
+ | 1. Jedi are trained to resist such strong emotions.
+ | 2. Yes, I felt it too - the rush of life as the Mandalorians were cut down.
+ | Bao-Dur: I couldn't do that. It was almost as though the battle took control of me, drove me forward.
+ | Bao-Dur: It's always on my mind, now. That loss of control blinded me, turned me into a weapon. I... just needed to get that off my chest.
+Once that dialog is completed, and you return with < 25 Influence > 75:
+ | Bao-Dur: You know, I'm glad I found you again, General.
+ | Dialog
+ | 
+ | 1. What are you talking about?
+ | 3. You were lucky to find me again.
+ | 2. Now what is it?
+ | Bao-Dur: You're right about that.
+ | Bao-Dur: We were together at Malachor. I don't know if anyone else could understand.
+ | 1. So, why are you here?
+ | Bao-Dur: Getting philosophical on me? I'm here because you found me on Telos and I decided to come along for the ride - not that I had much choice after we got going.
+ | 1. I mean, why are you still here?
+ | 3. I'm pretty sure you invited yourself along.
+ | 2. We could let you off wherever we stop next.
+ | Bao-Dur: Your recollection of the incident must be clouded. But as to why I'm here, it's simple.
+ | Bao-Dur: Tired of me already?
+ | Bao-Dur: I was frustrated. Watching the Ithorians getting pushed around by Czerka - I thought I could make a difference, but it was taken away from me. Guess if one planet was good enough for me, why not the galaxy?
+ | 1. Maybe I'm not looking to fix the galaxy.
+ | Bao-Dur: You might not be looking, but maybe it'll happen along the way.
+That response ends this dialog. Otherwise:
+ | 2. Sometimes there are things that can't be fixed.
+ | 3. Even if you knew what was wrong with it, how would you know where to start?
+ | Bao-Dur: You just have to know what the circuits look like.
+ | 2. Is that a hint you need to get back to work?
+ | 3. If you see them, let me know.
+ | Bao-Dur: Only if you don't have any more questions, General.
+ | Bao-Dur: I'll be sure to do that, General.
+Those responses conclude this dialog. Otherwise:
+ | 1. It's all wires and switches to you, huh?
+ | Bao-Dur: That's the way I see things. Traveling with you, I know there's something else in the universe, but I can't do anything about it anyways. So I'll leave it to you to take care of.
+ | 1. I told you, I'm not a Jedi.
+ | 2. I'll do my best.
+ | Bao-Dur: They might not call you a Jedi anymore, but believe me, you are. It's not the sort of thing that you just stop being. You're stuck with it, just like you're stuck being the General.
+ | 3. Just make sure you keep the ship running.
+Once that dialog is completed, and you don't want him to gain any more levels as a Tech Specialist, then if you return with < 11 Influence > 89 and your alignment < 50:
+ | Bao-Dur: Having you here has an effect on me, General. I never noticed it years ago. I think my mind was too occupied then.
+ | Dialog
+ | 
+ | 1. What do you mean?
+ | 2. This effect, it is a familiar feeling?
+ | 3. Your mind is weak, this is to be expected.
+ | Bao-Dur: Yes, it is the feeling of hatred, of anger.
+ | Bao-Dur: I feel the anger boiling to the surface, as I once felt towards the Mandalorians, but now it is towards myself alone. I cannot let go of it. It is too raw, too consuming. The last years of my life have been defined by it. The Mandalorians, Czerka and Revan. And above all else, myself, for what I did at Malachor.
+ | 1. Give in to your anger. Your emotions are truth.
+ | 2. You must harness these emotions. They will give you strength.
+ | 3. Your anger is truth, your guilt a weakness.
+ | Bao-Dur: Anger is the only constant in my life - perhaps it is the truth. Drawing from it, I was able to crush the Mandalorians. Once, I built shields to defend planets from their attackers. The Mandalorians crushed them. When I built weapons to destroy them, the Mandalorians were destroyed.
+ | 1. You see, in anger lies your strength. With it, I can train you to gain mastery over the Force.
+ | 2. I would train you to be a Jedi, but you must draw upon your anger or you will fail.
+ | Bao-Dur: Yes, teach me the ways of the Force, General. Together, our enemies will fall.
+ | 1. Then we have no time to waste.
+Otherwise:
+ | Dialog
+ | 
+ | 1. What do you mean?
+ | 2. It's good to hear I'm having a positive effect on you.
+ | 3. Your mind is weak, that's why.
+ | Bao-Dur: We can't all be Jedi like you, General.
+ | Bao-Dur: I feel... calm. More in control. The anger is still there, but I can feel it drifting away. The last years of my life have been defined by it - the Mandalorians, Czerka and Revan. And above all else, myself, for Malachor.
+ | 1. What about me, for giving the order?
+ | Bao-Dur: Never, General. It had to be done. My hands destroyed the Mandalorians. I cannot be forgiven for that.
+ | 1. But you can - what you did was necessary, as was what I did.
+ | 2. Had you not, millions of innocents in the Republic would have been killed. You saved them.
+ | 3. If Ulic Qel-Droma could be forgiven for waging war against the Republic, you can be forgiven for saving it.
+ | Bao-Dur: Even if I did it out of hatred of the Mandalorians?
+ | 1. You did it to save us, to protect us from death.
+ | 2. The Mandalorians were defeated, and the Republic saved.
+ | 3. Anger will lead you to the dark side.
+ | Bao-Dur: That might be the truth, but I don't want to see it that way. I can't just ignore the blood on my hands.
+ | Bao-Dur: My feelings are bad enough without having to worry about Jedi problems. My anger is nothing compared to the blood on my hands.
+ | 3. You have dwelled in the past for too long. You cannot undo history, but you can change the future.
+ | 1. You're too stubborn. There is no blood on your hands, just the blood your guilt forces you to imagine.
+ | 2. Guilt is just something you use to hide from your true responsibility.
+ | Bao-Dur: Even if there isn't, I still feel like I need to do something, to make up for it.
+ | Bao-Dur: Maybe that's just the shield that I need to stay sane.
+ | 1. Learn the ways of the Force. I could teach you. But you must let go of your anger, or else it will destroy you, and you will fall.
+ | 2. If you will let me teach you, the Force can become your shield. I believe you could learn to become a Jedi.
+ | Bao-Dur: Under your guidance, I feel like I could overcome my anger.
+ | 1. Then we have no time to waste.
+In either case, if your alignment < 40 then he has now become a Dark Jedi Guardian.
+ | 1. [Bao-Dur has now become a Dark Jedi Guardian.]
+ | 1. [Bao-Dur has now become a Jedi Guardian.]
+Go to top
+Atton
+Bao-Dur
+Disciple
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Bao-Dur&oldid=1077326"
+Hidden category: 
+Sub-pages
+ This page was last edited on 28 June 2024, at 17:59.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

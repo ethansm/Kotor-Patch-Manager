@@ -1,0 +1,52 @@
+
+ KOTOR 2 - Disciple Builds
+KOTOR 2 - Disciple Builds
+This file details some considerations to make for a Disciple build, and may eventually contain a few Disciple builds from different playthroughs. We'll see how far I take it.
+Okay, let's be honest. He's so freaking boring that I'll probably never do a build for him. Or take him off the ship. I might be able to use him for crafting, but I'm not sure I can stand him that long. He's basically just Jedi Wikipedia, except that Wikipedia is interesting. I'm not even sure why I spent this long typing all this. I'm gonna go do something more fun now, like see if my toenails need trimming.
+My daughter played KOTOR 2 and told me that Mical was a good guy and I was being harsh. So I worked up a build to give him a chance. Maybe she's right.
+The big question with Disciple is what role you want him to play in your group. He starts as a Soldier and can become a Consular. So he can be a lot of things, including:
+Heavy armoring wearing melee combatant
+Robe wearing Force power specialist
+Various sorts of hybrids
+Making him a dedicated melee combatant is easy. Just never change him to a Jedi. Making him a Force power specialist is also easy. You can gain sufficient influence to turn him to a Jedi through conversation, immediately. Making him a hybrid is where things get tricky. Maybe you want a melee combatant who can cast Force powers that aren't restricted by armor. That's great, but once you turn him to a Jedi you can't advance as a Soldier anymore. So you're left trying to cram in all your Force powers near the end of the game, and you don't get to use him the way you'd really like for very long. Maybe you want a Force powerhouse who's also good with a lightsaber. Solider helps with the necessary feats, but that delays getting your Force powers, again only allowing you to see your fully realized plan later in the game. Ultimately, you just have to decide what you want from him, and play accordingly.
+Solider Class Skills: Demolitions, Awareness, Treat Injury
+Consular Class Skills: Awareness, Repair, Treat Injury
+======================
+Notes:
+Dialog tree
+Obtained on Dantooine
+Available to female characters only
+Can make medpacks for you
+Is a portable lab station
+Influence gained/lost via your actions when he is in the party and via dialog
+Enough influence can be gained via dialog immediately upon meeting him to make him a Jedi if you like
+He really likes the Republic and Jedi, even if you shift his alignment to Dark, so anything supporting them is likely to gain influence
+Influence locations:
+Dantooine
+In initial conversation, be very nice and empathetic. There are something like eight influence gain opportunities here, so much so that you can turn him into a Jedi immediately if you like.
+Help Akkere
+Ebon Hawk
+If he is on the Hawk when you encounter Visas, after defeating Visas and treating her in the infirmary, tell Disciple that you don't kill prisoners or the wounded.
+Get him to teach you to meditate (unconfirmed)
+Nar Shaada
+Save Rutum without shedding blood, then be nice to Rutum afterward (two gains)
+Heal the sick refugee
+Convince the refugee leader to give up to the Exchange. Requires convincing Nadaa to sell herself into slavery and killing Geriel. So maybe good for Dark Side run. To gain the influence, tell Disciple "I share your regret".
+Lootra quest:
+Advanced the Lootra (husband/wife) quest such that they can reunite
+Take Kreia and one of Atton/Bao-Dur/Disciple/Handmaiden
+Complete the quest with Lootra the Light Side way
+Kreia gets mad but you don't lose influence
+Defend you actions. Say "if it meant you life, there is nothing I would not do" line
+You gain influence with the other companion (but still don't lose it with Kreia)
+Duxn
+Mandalorian with detonator - help him down, promise to not turn him in
+Onderon
+Cantina - give open starport visa to Republic spy
+Give open starport visa to mother near the entrance
+Spare civilians during the Tobin attack
+Use Force Persuade to quell Ponlar's riot (requires that power, obviously)
+===================
+Disciple Builds:
+Melee Disciple
+Caster Disciple

@@ -1,0 +1,1045 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Atton — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Atton
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Pazaak
+2 Questions
+2.1 Nar Shaddaa
+2.2 Mandalorian War
+2.3 Jedi Civil War
+2.4 Jedi
+Atton may join your party on Peragus II when you return to the administration level from the dormitories, and you may speak to him briefly then, or in the cockpit of the Ebon Hawk before traveling to Telos: Citadel Station, but what follows is only unlocked after arrival.
+When you speak to Atton with Alignment 40 or less:
+ | Atton: Look, I know we've been through some rough times so far, but you need to stop letting it get to you.
+ | Dialog
+ | 
+ | 1. I'm fine.
+ | 2. Do my features trouble you?
+ | 3. Your concern is touching - and insulting.
+ | 4. If my appearance bothers you, then leave.
+ | Atton: Well, the signs are starting to show. You don't look like you've slept in weeks. Or a year.
+ | Atton: Easy - I'm just pointing it out. And if I notice, others are going to - if you think Jedi are unpopular, think of the reception a fallen Jedi will get.
+When you speak to him with Alignment 25 or less:
+ | Atton: Look, I didn't want to say anything, but you've forced my hand. I've heard about the Force, and what it does to people who can't control it... or themselves. And it shows in everything you do - and in your face.
+ | Dialog
+ | 
+ | 1. I am in control, more than ever.
+ | 2. If you fear the face of power, then I have no use for you.
+ | 3. Keep your concerns to yourself.
+ | Atton: That's what you think - trust me, there's a reason you're changing. It's because it's corrupting you.
+ | Atton: Look, all I'm saying is that there's a reason you're changing. That power is corrupting you.
+ | Atton: I can't help but feel it - all of us can. Whatever that witch is doing to you, she's dragging you down into whatever hole she crawled out of.
+ | 1. She has no influence over me - she is my creature, not the other way around.
+ | 2. Are you implying I cannot control her?
+ | ♀ Atton: Well... you're starting to get creases - almost thought you were that old witch for a second.
+ | ♂ Atton: Well... you're starting to get creases - you could pass for the old witch's son.
+When you speak to him with Alignment 10 or less:
+ | Atton: I don't know what that witch did to you, but she's dragging you down into whatever hole she came out of. I'm only saying this because there's still a chance for you to stop this before whatever darkness she brought on you eats you alive.
+ | Dialog
+ | 
+ | 1. I am stronger than I have ever been.
+ | 2. Question me again, and I'll show you what power is.
+ | 3. Spoken like a true coward... like a Jedi.
+ | Atton: That's what you think, but it's gonna rot you - the signs are already in your face.
+ | Atton: All right... I tried. But whatever's consuming you... it's affecting everyone else. You may be strong enough to handle it, but the others may not.
+When you speak to Atton with Alignment 60 or more: 
+ | Atton: You seem pretty calm - it's almost streaming off of you. A lot calmer than you were on Peragus when I first met you.
+ | Dialog
+ | 
+ | 2. What do you mean?
+ | Atton: On Peragus, you seemed... well, a little less at peace with yourself. Now, you're different. It's hard to explain.
+ | 1. I'm fine. In fact, I haven't felt this good in a long time.
+ | Atton: Well, it's good to see. You're a nice counterbalance to that old witch back there.
+ | Alignment 75 or more
+ | Alignment 90 or more
+ | Atton: I don't know what it is, but you look different. It's hard to explain - but it's, uh, it's good to see.
+ | Atton: You know, I noticed a glow before, but now... now it's bright around you. You've come a long way since Peragus... and despite all we've been through, you seem a lot better for it.
+ | Dialog
+ | 
+ | 3. What do you mean?
+ | 3. What do you mean?
+ | Atton: It's like you've got this glow, but only when I see you out of the corner of my eye.
+ | Atton: It's like... well, it's like you've found this center, and nothing's going to budge you from it. Even with all the crazy stuff that's been happening, you seem at peace.
+ | 1. I feel as if I'm more in touch with the Force than I ever have been.
+ | 2. It's hard to explain, but even with everything that's happening, I feel at peace.
+ | Atton: It shows... it's kind of inspiring, to be honest. Anyway, just wanted to mention it - I think the others have noticed it, too.
+If Hanharr joins your party:
+ | Atton: Care to explain why we have that psychotic Wookiee with us?
+ | 1. Because Hanharr is loyal, and I need a loyal ally. Understand?
+ | 2. Kreia thinks he will prove useful. I believe her.
+ | 3. We can always use that animal to draw more blaster fire.
+ | 4. Because I needed one more slave.
+ | 5. Don't question me, Atton.
+ | Atton: All right. But this won't end well - trust me.
+Otherwise, or upon returning, you can play Pazaak or say the following:
+ | Atton: Something up?
+ | 3. I had some questions for you.
+ | 4. Nothing, never mind.
+Pazaak[edit | edit source]
+ | 1. Can you teach me to play pazaak?
+ | 2. Let's play pazaak.
+ | Dialog
+ | 
+ | Atton: All right, but I'm out of credits, so it's Republic Senate rules.
+ | 3. Forget it. I had some other questions.
+Otherwise:
+ | 1. Republic Senate rules?
+ | Atton: That's where we waste a lot of time trading cards and trying to beat each other, but in the end nobody wins, everybody loses, and nobody accomplishes anything. It's like stalemate, except the goal is to pass time until the audience gets bored and leaves.
+ | 2. Can you go over the rules first?
+ | Atton: Sure, shouldn't be a problem. It's basically a numbers game, but I can give you the ground rules.
+ | 1. [Note: The rules for pazaak will show up in your "completed quests" section of your journal screen whenever you need to access it.]
+ | 3. Let's just play for practice, then.
+ | 2. How about a game of pazaak, Republic Senate rules?
+ | 2. Uh... let's play a practice match, then.
+ | Atton: Sounds good to me. I'll deal.
+ | 1. [Play Pazaak]
+Once Visas has joined your party, and you've continued the lesson Kreia can teach you afterward:
+ | 1. Playing pazaak in your head again?
+ | 2. Atton, why do you play pazaak in your head?
+ | Atton: Passes the time. It's better than listing off engine sequencers, memorizing hyperspace routes, or counting ticks in the power couplings.
+ | 3. [Repair (4)] There are no ticks in the power coupling - it's fixed.
+ | Dialog
+ | 
+ | Atton: Of course it's fixed. And that's why you should count the ticking in the power coupling, too.
+ | 1. That doesn't answer my question.
+ | 2. But you do all those things.
+ | 1. You're not making any sense.
+ | Atton: ::Silent, looks at player, frowns. ::
+ | Atton: Why do I play pazaak? All right, I'll show you.
+ | 1. I don't want to play pazaak.
+ | 2. Look, I don't have the credits.
+ | Atton: We're not playing for credits. We're playing for something else. Are you going to play or not?
+ | 1. This better not be using Nar Shaddaa rules.
+ | ♀ Atton: Nope, our clothes are gonna stay on. Do you want to deal, or should I?
+ | ♂ Atton: No, blasters stay in their holsters. Do you want to deal, or should I?
+ | 3. If it's a friendly game, sure.
+ | 4. Let's play.
+ | Atton: Good match... now, what are you thinking about right now?
+ | 3. Thinking about why I was playing this stupid game.
+ | 4. Wondering if you had a skifter up your sleeve.
+ | Atton: Fair enough. But that's why I play pazaak in my head.
+Otherwise:
+ | 1. Well, pazaak, of course. The game.
+ | 2. I was trying to compute the totals to twenty.
+ | Atton: Right. And that's why I play pazaak in my head. Because if you don't, you've left the door open. And anyone could walk right in.
+Influence is gained every time the following response is given:
+ | 1. Atton, before, I felt your mind. With Kreia's help. I'm sorry.
+ | Influence Gained: Atton (+8)
+ | Dialog
+ | 
+ | Atton: Of course you did. You see, Jedi... light or dark... do it, more often than you'd think. But I never heard one say they were sorry before... that's a new house rule.
+ | 2. You play pazaak to shield your thoughts.
+ | 3. What do you have to hide?
+ | Atton: No, I play pazaak in my head.
+ | Atton: Nothing, I'm just someone who plays pazaak in his head.
+ | Atton: But while I'm doing that, it's a lot harder for someone to walk in.
+ | 1. Can you teach me to shield my thoughts?
+ | 2. Is that something you can train me to do?
+ | Atton: No. I can only teach you to play pazaak. Do you understand what I'm saying?
+ | 1. No - I want to learn to shield my mind.
+ | Atton: That's not something I can teach you - you've come to the wrong guy.
+ | 2. Then I want to learn to play pazaak.
+ | Atton: Good. Now you understand. All right, I'll deal, then.
+ | Atton: If you're ever fighting someone who has the power over your mind... whether light or dark... play pazaak. Start listing hyperspace routes. Recite engine sequencers. And when they try to use their powers on you, suddenly it's not as easy as they thought.
+ | ♀ Atton: Because you'll be right here with me, playing pazaak, where they can't reach you.
+ | ♂ Atton: Jedi do it all the time, and when they walk in the dark places of your mind, they'll use it to hold you by the throat.
+ | 1. [Atton has taught you to play pazaak in your head as a way of resisting mental domination. You have gained a permanent +1 to your Willpower saves.]
+Questions[edit | edit source]
+ | Atton: All right - what did you want to know?
+Before leaving Telos, you can only ask about Pazaak. After leaving Telos, if you told a Handmaiden Sister in the secret academy you were searching for your friends there before freeing them, and she told you about Atton's Echani training, then you can ask about it now if you didn't already completely exhaust the subject with Atton back at the academy:
+ | 1. Care to explain where you got your Echani training?
+ | Dialog
+ | 
+ | Atton: Huh? What are you talking about?
+ | 1. When we entered the Telos Academy, you dropped into an Echani combat stance.
+ | Atton: Oh - that. Don't tell anyone, but you wouldn't believe how many fights you can prevent just by pretending to know that stuff. I mean, it doesn't compare to wearing a lightsaber, but then again, that doesn't seem to help you much.
+ | 1. [Force Persuade] Tell me the truth. Now.
+ | Atton: Enhhhh... wh... Y... you damn Jedi are all the same... give you a little power, and it rots you all the way to the core. Stay out of my head - I mean it.
+ | Points Gained: -2
+ | Influence Lost: Atton (-8)
+ | 2. Very well. But I'll be watching you.
+Otherwise:
+ | 2. [Persuade (4)] Don't change the subject.
+ | 3. I think you're lying to me.
+ | Influence Lost: Atton (-8)
+ | Atton: Yeah? So what? I don't ask any dumb questions about your past, despite the fact that it keeps throwing us into life-threatening situations. Want to know why? I figure if you ever want to tell me something, you will. So give me the same respect, all right?
+ | 4. I was just asking - no harm meant. I just thought it could be an asset.
+ | 1. [Persuade (4)] I'm not accusing you, I just want to know if you've got any other useful skills. You could be a real asset with combat training.
+ | Points Gained: +1
+ | Influence Gained: Atton (+8)
+ | Atton: Huh? Well... hey, thanks. But you've got the wrong guy. I'm good at shooting people, cracking wise, and pretending to know how to fight with my hands.
+If you return after trying to use the Force to persuade him:
+ | Atton: What, you ready to continue interrogating me? I think I've got some childhood details you haven't tried to rip out of me yet.
+ | 3. Forget it. Let's go.
+Otherwise:
+ | 1. [Persuade (4)] I wasn't interrogating you, I just wanted to know if you had any other useful skills. You're a real asset.
+ | Influence Gained: Atton (+8)
+ | Atton: Huh? Well... hey, thanks. But you've got the wrong guy. I'm good at shooting people, cracking wise, and pretending to know how to fight with my hands.
+ | 2. Got it. Just wanted to check on you.
+Nar Shaddaa[edit | edit source]
+While travelling through the southeast quarter of Refugee Commons in the Refugee Quad on Nar Shaddaa, two Twi'leks approach you with something you might like to know. Once you've been warned not to trust Atton, you can confront him about this:
+ | 1. I met someone on Nar Shaddaa who says he knows you.
+ | Dialog
+ | 
+ | Atton: Yeah? That's a surprise. Did he say I owed him credits, too?
+ | 1. He says you're not "Atton" at all. That you showed up on Nar Shaddaa during the Jedi Civil War.
+ | Atton: I'm as Atton as Atton will ever be, and whoever your trusted informant is, he's right, I did show up on Nar Shaddaa during the Jedi Civil War... along with a lot of other refugees.
+ | 2. Is there anything you want to tell me?
+ | Atton: No, because you're asking about it - if I wanted to tell you anything, I would have come and told you. Anything else?
+ | 1. Calm down, I just wanted to know. No harm meant.
+ | 2. I think I have a right to know about your past.
+ | Influence Gained: Atton (+8)
+ | Atton: Is this an interrogation? If so, you're terrible at it, especially for an ex-Jedi... or whatever you are. Why don't you just crawl in my head and try to dig out whatever you're looking for rather than asking about it?
+ | 1. Maybe I will if you won't tell me.
+ | 2. I wouldn't do that – again.
+ | 3. If you've got a problem, let's settle it right now.
+ | 4. Perhaps pain will bring the truth out of you.
+ | Influence Lost: Atton (-8)
+ | Atton: You know what? I helped you get off Peragus. If I hadn't been there, you wouldn't have even gotten off the administration level. I'm trying to help you. I don't know why I'm bothering.
+ | 1. [Intelligence (15)] Actually, if I had been trapped on the administration level on Peragus, the Sith still would have arrived through the airlock and tried to capture me.
+ | 2. Why are you trying to protect me?
+ | Dialog
+ | 
+ | Atton: Yeah, well... I - I still helped you. Sort of. Maybe you shouldn't look a free ronto in the mouth before you buy it.
+ | Atton: I don't know. I'm not sure I understand it half the time.
+ | 1. You should if a Hutt is giving it to you.
+ | 1. I want to know where you were before you arrived on Nar Shaddaa.
+ | Atton: You know what? Not once have I asked you about the Mandalorian Wars. Not once. I heard about Dxun. Everyone has. I heard about Serroco, and I sure as hell know about Malachor V. What makes you think you've got the right to interrogate me on anything? You've got plenty of lives to answer for - all you Jedi do.
+ | 1. If you've got a question, then ask.
+ | 2. I did a lot I wasn't proud of - and I am sorry for the lives that were lost, on both sides.
+ | 3. My power gives me the right.
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Atton: How did you even live with yourself after Malachor? Is that why you went back to the Jedi Council? Hoping they'd kill you?
+ | 1. It wasn't like that.
+ | 2. Go on, let's hear it all.
+ | Atton: Wasn't it? Maybe you thought they'd forgive you - sure, you might have thought they'd execute you.
+ | Atton: But Jedi don't kill do they? At least not their prisoners. Maybe you were counting on it when you went back in chains. So you got off easy - you were exiled, brushed under the cargo ramp, another dirty little Jedi secret. I'll tell you - all those Jedi at Malachor? They deserved it. Every last one of them.
+ | 4. If you wish to die, keep talking.
+ | Points Gained: -1
+ | Atton: Go ahead and try. I might be a little more than you can handle... but I expect that kind of arrogance from a Jedi.
+Otherwise:
+ | 3. You weren't there. You have no idea what happened.
+ | Atton: Oh yeah? Shows how much you know. Maybe you're wrong about a lot of other things, too.
+ | 1. They did not deserve it. Why would you even say that?
+ | 1. No one deserved what happened at Malachor. How can you say those Jedi deserved to die?
+ | 2. There must be some reason you believe as you do – why?
+ | Points Gained: +1
+ | Atton: Because Jedi lie. And they manipulate. And every act of charity or kindness they do, you can drag it out squirming into the light and see it for what it is. The galaxy doesn't need Jedi arrogance or Jedi hypocrisy anymore.
+ | 1. The Jedi are guardians of the peace. They are not as you describe.
+ | 3. And that is why the Sith were right.
+ | 4. That is why I am no longer a Jedi.
+ | 2. What do you mean?
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Atton: The Jedi... the Sith... you don't get it, do you? To the galaxy, they're the same thing; just men and women with too much power, squabbling over religion, while the rest of us burn.
+ | 
+ | Atton: At least the Sith are honest about what they're killing for. The Jedi are pacifists... except in times of war. They're teachers... except when it comes to telling their students the truth. And when they save you, it's only so you can suffer more.
+ | 1. You are wrong, Atton. That is not the way of the Jedi.
+ | 3. I've heard enough.
+ | Atton: Whatever - just leave me alone. I don't know why I'm wasting time with you anyway.
+Even if you've gained or lost sufficient influence to continue, you can now stop and return to this point when you next speak.
+Mandalorian War[edit | edit source]
+ | 1. I'd like to know about your past, especially if we're travelling together.
+ | < 40 Influence > 60
+ | 40-60 Influence
+ | Atton: [Influence: Success] Well, don't get too attached to me - I don't like it.
+ | Atton: [Influence: Failure] Yeah, well, maybe it's better that way. I'm not a sharing kind of guy.
+ | Dialog
+ | 
+ | 1. Why not?
+ | 2. Are you all right?
+ | 3. I don't think we've done one thing you have liked since we left Peragus.
+ | Atton: It's because I'm a deserter. It's what I do.
+ | Atton: It depends on your perspective. I... have this habit... I'm a deserter. It's what I do.
+ | Atton: Well, you haven't seen anything yet. I have this habit... I'm a deserter. It's what I do.
+ | 1. You served in the war?
+ | 2. Which war are you talking about?
+ | 3. Did you turn away from the Jedi Civil War or the Mandalorian Wars?
+ | Atton: Served in both of them. Against the Mandalorians, before and after Revan, and again... when Revan declared war on the Jedi.
+ | 1. But why?
+ | 3. You were Sith?
+ | 2. I didn't know you served with the Republic.
+ | Atton: Because I followed orders.
+ | Atton: That's just a name - it's what we did that was important.
+ | Atton: I did. Up until the Republic officers began to "betray" their oaths to the Republic and side with Revan - Admiral Karath, Mon Halan, General Derred, and all the rest.
+ | Atton: But it was more than that - you were there, you knew how easy it was to hate the Jedi who sat back in the Republic "evaluating" the threat... and watched us die against the Mandalorians.
+ | 1. Why did you desert?
+ | Atton: Because you can't believe in the Republic anymore after the Mandalorian Wars. After Revan, nothing was the same.
+ | Atton: Right after that final battle at Malachor, I was right there with the rest of the defectors, because it was the right thing to do.
+ | 1. You took an oath - what you did was a betrayal.
+ | 2. That was wrong - you answered war with war.
+ | 3. I agree. The Republic did not deserve your loyalty, not any longer.
+ | 4. The Republic was weak. You were right to turn from them - and the Jedi.
+ | Points Gained: +1
+ | Atton: No, it wasn't. We needed the Jedi during the Mandalorian Wars, more than anything.
+ | Points Gained: -1
+ | Atton: The Mandalorians were slaughtering us by the millions. The millions. You were at Serroco, when they turned the Stereb cities into glass craters. At Duro, when basilisk war droids rained like meteors onto the orbiting cities, and when the Mandalorians set fire to the Xoxin plains on Eres III - the fires that still burn. Without the Jedi who turned on the Council - without you, the Republic would have lost the war, and we would all be Mandalorian slaves or corpses.
+ | 1. Instead, you all became Sith.
+ | 2. That is no reason to start another war against the Republic and end more lives.
+ | 3. You betrayed your oath.
+ | 4. The Republic deserved to be betrayed - and you knew where your true loyalties lay.
+ | Atton: If that's what you want to call knowing when to fight and when to kill, then yes, but you can't really break down people into Sith and Jedi and expect everything to make sense.
+ | Atton: Well, that puts us on the same level, doesn't it? Doesn't make your decision any more right than mine if you want to start sentencing me.
+ | Points Gained: +1
+ | Points Gained: -1
+ | ♂ Atton: We were loyal to Revan. That was enough. He saved us.
+ | ♀ Atton: We were loyal to Revan. That was enough. She saved us.
+If you've gained or lost sufficient influence then you have to continue, otherwise you have to stop and return to this point when you have.
+Jedi Civil War[edit | edit source]
+ | 1. What happened then?
+ | 2. So you followed Revan - like I had.
+ | 3. Do you want to talk about it?
+ | 1. I'd like to hear more about what happened after the Mandalorian Wars.
+ | < 30 Influence > 70
+ | 30-70 Influence
+ | Atton: [Influence: Success] After Malachor, after the Mandalorian Wars, that's when the Sith teachings started spreading through the ranks.
+ | Atton: [Influence: Failure] It's another story, and it's nothing I feel like talking about. I did a lot of things I'm not proud of... and I couldn't do it anymore.
+ | Dialog
+ | 
+ | Atton: We knew where our loyalties lay - to the Jedi who came to help us, not the ones who sat back on Dantooine and Coruscant, watching us die. So when those same Jedi who watched us die decided to start fighting us during the Jedi Civil War, we fought back. I fought back.
+ | 1. The idea of you fighting a Jedi is ridiculous.
+ | 2. How?
+ | 3. You fought Jedi?
+ | Atton: Yeah, it sure is. And that's why I was so good at it. And that's why I wasn't fighting Jedi. I was killing them.
+ | Atton: I started killing Jedi. A lot of them.
+ | Atton: I didn't fight Jedi, I killed them. A lot of them.
+ | Atton: People say killing Jedi is hard. It's not, you just have to be smart about it. No blasters, no getting close to them, no attacking them directly when you can gun down their allies instead. There's ways of gassing them, drugging them, making them lose control, torturing them. I was really good at it. What's worse, is that killing them wasn't the best thing. Making them fall... making them see our side of it, that was the best.
+ | 3. This is a little hard to believe.
+ | Atton: Yeah, maybe you'll believe this - that when fighting a Jedi, you wound the Padawan first, then let the rest take care of itself. Not only will the master move to protect the student, but the Force bond between the two will mess up the master's head better than any stab wound. Anything else? That's only a sample of my arsenal.
+ | 1. Could be handy if I need to murder any Jedi - go on.
+ | 2. Tell me, I need to know how to protect myself, and others around me.
+ | Points Gained: -2
+ | Points Gained: +2
+ | Dialog
+ | 
+ | Atton: If there's no whiny little Padawan, start shooting innocents - not to kill, just enough so that they're gonna die unless the Jedi does something to save them. And if any Jedi is stupid enough to use their Makashi lightsaber form against you, start shooting as fast as you can and drop them while they're exposed. Set mines. Set a lot of them. Fire gas grenades, but make sure they have magnetic lock targetters so Jedi can't force push them back.
+ | 1. How could you have killed Jedi?
+ | 2. You make it sound easy.
+ | 3. How did you learn how to do this?
+ | Atton: I taught myself... techniques. It's hard for Jedi to sense what you're really thinking if you throw up walls of strong emotions and feelings. Lust, impatience, cowardice... most Jedi awareness doesn't cruise beyond the surface feelings, to see what's deeper. And I was good at that, throwing up walls, and my superiors knew it. Sometimes the Jedi on our side wouldn't even realize I was there.
+ | 1. Is that why you act the way you do?
+ | 2. That seems unusual.
+ | 3. So you force emotions? To block someone reading your mind?
+ | Atton: Part of it. Maybe it was always me. It's hard to tell sometimes. I haven't known who I am for years.
+ | Atton: Yeah, I had a talent for it. More like instinct.
+ | Atton: I wasn't the only one. I know you left at the Mandalorian Wars, so you don't know much about what went on behind the scenes in the Jedi Civil War. But Revan understood one thing - the real battle was going to be fought between the Jedi on both sides. That was the only battle that mattered.
+ | 1. What do you mean?
+ | 2. So this all came down to the Jedi - and the Force.
+ | ♂ 3. He was right. And he proved it.
+ | ♀ 3. She was right. And she proved it.
+ | Atton: Whoever had the most, the strongest Jedi were going to win the Civil War. If Revan couldn't convert Jedi, then Revan would kill them. So Revan trained elite Sith units into assassination squads, whose duty was to go out and capture enemy Jedi. I was in one of the special units trained to do this.
+ | 1. Capture Jedi? Not kill them?
+ | 2. So what happened?
+ | 3. I still don't believe this.
+ | Atton: Well, it doesn't really matter what you believe.
+ | ♂ Atton: Revan had plans for all Jedi. I think it was important that the Jedi see his side of things, the Sith teachings. Revan wanted to break them. And then have them join him.
+ | ♀ Atton: Revan had plans for all Jedi. I think it was important that the Jedi see her side of things, the Sith teachings. Revan wanted to break them. And then have them join her.
+ | 1. But you're here now. Why?
+ | 2. So how did you break away?
+ | 3. That doesn't sound like something one can walk away from.
+ | Atton: One day I decided not to do it anymore, so I left. Ended up on Nar Shaddaa, became someone else.
+ | 1. Why are you telling me this? You're telling a Jedi you killed Jedi.
+ | 2. You took a risk, thinking I would care that you killed Jedi - I don't.
+ | Points Gained: +2
+ | Points Gained: -2
+ | Dialog
+ | 
+ | Atton: Because you've killed Jedi, too. Different circumstances, but you have a bigger body count than I ever did.
+ | Atton: I didn't think you would, after Malachor. But it was a chance. I guess I was just tired of keeping it in.
+ | Atton: And I've been with you only a short time, enough to know that as soon as someone signs on with you, they haven't got long to live. You got history, and anyone who travels with you doesn't. And maybe I want somebody to know who I was in case a story needs to be set straight. Maybe you understand.
+ | 2. I need some time to think about this.
+ | Atton: Take your time - I have.
+Even if you have gained or lost sufficient influence to continue, you can now stop and return to this point when you next speak.
+Jedi[edit | edit source]
+ | 1. But why did you leave the Sith?
+ | 1. What made you leave the Sith?
+ | < 20 Influence > 80
+ | 20-80 Influence
+ | Atton: [Influence: Success] Well, there was a woman. A Jedi. She... she gave her life for mine.
+ | Atton: [Influence: Failure] I think there's been enough lies and truth for today. Let's just leave it for now.
+ | Atton: [Influence: Failure] No, I don't think we're ready for that conversation yet.
+ | Dialog
+ | 
+ | 1. Who?
+ | 2. Were you assigned to kill her?
+ | 3. Was this the last mission?
+ | Atton: I never knew her name. She sought me out. She said she had come to save me.
+ | Atton: It wasn't a mission. She sought me out. She said she had come to save me.
+ | Atton: She was lying, of course - or I think she was. It doesn't matter - she told enough truth to get my attention.
+ | 1. Like what?
+ | 2. Truth about what?
+ | 3. Are you sure she was lying? Maybe she did want to save you.
+ | Atton: Maybe. It doesn't matter. She knew the right things to say.
+ | Atton: She said that Revan was doing something terrible to Jedi within the Unknown Regions. That when we captured Jedi, they were sent to a place designed to... break them.
+ | ♂ Atton: And that anyone in his service who showed any ability with the Force was sent there, too, to turn them, to break them into Dark Jedi... or assassins trained to kill Jedi.
+ | ♀ Atton: And that anyone in her service who showed any ability with the Force was sent there, too, to turn them, to break them into Dark Jedi... or assassins trained to kill Jedi.
+ | Atton: She said that's what would happen to me - that I had the Force inside me, that's why I was so good at killing Jedi. And that when the Sith learned of it, there would be no escape, no turning back. I would become an instrument of the dark side, forever. I had heard talk in the ranks, troops vanishing. I knew what she meant, but I didn't believe her - or want to believe her.
+ | 1. So what did you do?
+ | 2. If you didn't believe her, then what happened to her?
+ | 3. Did you kill her?
+ | Atton: I did what I did with all Jedi. I hurt her. I hurt her a lot. And then, right when I thought she couldn't take any more - she showed me the Force. In my head. And I felt everything she felt, and I heard just an echo of what the Force was. And how what I was doing... I think I loved her, but it wasn't that kind of love. It was the kind of love where you're willing to give up everything for someone you don't even know.
+ | 1. That is what it means to be a Jedi.
+ | 2. Perhaps she felt a greater good would be served with your salvation.
+ | 3. Jedi lies.
+ | Points Gained: +1
+ | Atton: Maybe. It doesn't matter.
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Atton: I killed her for crawling in my head, for showing me that. But before she opened her mind to mine, my only thought was that I would love to kill her. And at the end, I killed her because I loved her.
+ | 1. That is a lot to bear - and it is a lot for me to forgive.
+ | 2. So what happened to her?
+ | 3. You were right to kill her.
+ | Atton: In the end, she sacrificed herself to keep my secret, to prevent the Sith from knowing about that touch of the Force inside me. She wasted her life to save me. Me. And I felt her die, when she opened her mind. I've killed Jedi like I said, but I was never there to feel it, to be on the receiving end. And after that, I couldn't stop feeling things - before, guilt, lust, impatience, it had been orchestrated to get close - now, it all just kept tumbling out - and I couldn't keep doing what I was doing. So I left. I fled with the displaced war veterans to Nar Shaddaa and I lost myself there, until the war came to an end. I wanted no more of Jedi, or Dark Jedi, or the Force. I just wanted to be left alone. And then I met you on Peragus. And I thought, maybe, maybe she had saved me so that I could help you. And if I can't, then I have to try.
+ | 1. Then I welcome your help.
+ | 2. I can't forgive you for what you've done, Atton.
+ | Atton: I didn't want to tell you any of this. But... I had to. Because if something happens, I can't let you think I was doing it for something other than the past.
+ | Atton: I don't want you to forgive me. That would only make it worse. All I want is to try and help, try and make a difference - pay her back. I feel I owe her that much.
+Any of the following sets a darker tone, but otherwise has no effect on the alignment of either of you:
+ | 3. Then she lied to you, Atton. That is what Jedi do.
+ | 4. You owe her nothing - she filled your head with Jedi lies.
+ | 5. Pay her for what? Using the Force on your mind?
+ | Dialog
+ | 
+ | Atton: It didn't feel that way, though - it was different.
+ | 1. Yet she caused you to turn from the Sith.
+ | 2. There was a chance you could have been trained to be something stronger, and you weren't.
+ | 3. She saw a threat, and she dealt with it. That is all. There was no concern in her actions for you, only for the Jedi.
+ | Atton: Yes, but that was my choice.
+ | 1. Was it? She crawled inside your head, changed you. Made you doubt.
+ | 2. Is that what you believe? Then she truly succeeded.
+ | 3. Then you are lying to yourself.
+ | Atton: But what she said... if I had remained, they would have turned me into something else.
+ | 1. The Jedi let Republic soldiers and innocents die against the Mandalorians, refused to help, because of the vaunted "Jedi Code," which claims to respect life.
+ | 2. You were already a killer, Atton, and you could have been so much more.
+ | 3. She manipulated you, made you turn away from your calling.
+ | 4. She already turned you into something else! Look at you!
+ | Atton: {:: Frowns, silent, thinking ::}
+ | 1. Atton, you could feel the Force. You were a threat to the Jedi. You had killed members of their Order - why would they forgive you?
+ | 2. She made you turn away from Revan to convert you - to fight back against Revan.
+ | 3. Maybe "saving" you was intended to punish you.
+ | 4. You admit she crawled in your head. That Jedi have the power to change someone's personality... she changed you from a killer, to a fool.
+ | Atton: But why would she die for me? And the feeling... that love...
+ | 1. She didn't die for you. She died to help defeat Revan, and to help Jedi.
+ | 2. Love? You throw up walls of emotion all the time - and Jedi are far more skilled at it than you are.
+ | 3. Emotions can be faked. Or inflicted on others.
+ | Atton: You're right... I didn't think of it like that... but she tricked me. Another Jedi trick, more Jedi hypocrisy, like the others. I'm tired of Jedi crawling in my head. I'm tired of not knowing who I am any more.
+ | 1. Your name is meaningless. Your instinct, your strength is all that matters.
+ | 2. I can train you, Atton. You can feel the Force again.
+ | 3. Then follow me, and together, we can kill the Jedi and all who oppose us.
+ | 4. If you wish control, then I can teach you to learn to kill again - with the Force as your ally.
+ | Atton: I will follow you, to hell and back. I will do whatever you ask, and your enemies shall be mine.
+ | 1, That is all I ask.
+ | 2. Then let us find Jedi, and Sith, and kill them.
+ | 3. Your obedience will be rewarded... and failure shall be punished.
+ | Atton: Once, I was shown the Force - I heard it, I felt it. And it was used to weaken me. I know that turning away from it was her plan for me, and I will not walk that path any longer. I want to learn how to use the Force, as I was meant to. And there will be no place in the galaxy where Jedi or Sith can hide from me.
+ | 2. I cannot train you, Atton.
+ | Atton: Do not discount me - I can do whatever task you ask, kill anyone you want to prove myself. You have only to name it.
+ | 1. You feel too much emotion - such emotions are dangerous.
+ | 4. You could never prove yourself. You are a fool, not a killer, and nothing will convince me otherwise.
+ | 2. I cannot take you as a student.
+ | 3. I will consider it. But now is not the time.
+ | Atton: You are wrong, and I will try to show you why. Until then, I only ask that you not abandon me. To be honest, it's kind of a relief. I already know how to kill Jedi... I'd always be second-guessing myself when entering a fight.
+ | Atton: Then that is the decision I will accept. But I will still serve you, aid you against the Jedi, if that is your wish.
+ | Atton: Then I will await your decision. You have heard my request, and that is enough.
+Otherwise, or upon returning:
+ | 1. That is all I ask.
+ | 2. Then let us stand together against the Sith.
+ | 3. I welcome your help - and your honesty.
+ | 1. I want to teach you to feel the Force.
+ | Dialog
+ | 
+ | Atton: Once, a Jedi showed me the Force - I heard it, I felt it. At the time, there was too much pain to confront it - because if I did, it meant I would be changed into something else. Now, I'm not afraid of it any more. And I think that by learning how to use it - I can help protect you. Or at least buy you some time when disaster comes screaming in. I want to learn how to use the Force. I want to learn how to use the Force to help you.
+ | 2. I cannot train you, Atton.
+ | Atton: But... I can do it. Whatever it is, name it.
+ | 1. Because you feel too much emotion - such emotions are dangerous.
+ | 2. I cannot take you as a student.
+ | 3. I will consider it. But now is not the time.
+ | 4. I have lost other Jedi - and I cannot lose another.
+ | Atton: I understand. If there's any chance you will change your mind... let me know. To be honest, it's kind of a relief. I already know how to kill Jedi... I'd always be second-guessing myself when entering a fight.
+In either case, only say you'll train him once you don't want him to gain any more levels as a Scoundrel:
+ | Dialog
+ | 
+ | 1. Then I will train you, Atton.
+ | Atton: What must I do? Is there someone you need me to kill to prove myself?
+ | Atton: What must I do? Is there some... some ritual, or...?
+ | 1. That will come later. For now, close your eyes.
+ | 1. Just close your eyes. And open your mind.
+ | Atton: :: Silence ::
+ | 1. Imagine the slaughter of the war, the death - and the energy it filled you with.
+ | 1. You must learn to feel it around you, feel its currents, its eddies.
+ | 1. Hear the echo of the rage you felt during the war - the hate, the betrayal.
+ | 1. Listen to the echo of your thoughts, your heart - seperated from war, seperated from hate.
+ | 1. Feel the fires as Republic ships burn, as Jedi fall before you.
+ | 1. Think of what you felt when you felt the need to help me, to protect me.
+ | 1. And at last, Atton... awaken.
+ | 1. [Atton has taken his first steps on the path of a Dark Jedi Sentinel. His power will grow as he travels with you and masters what you know of the Force.]
+ | 1. [Atton has taken his first steps on the path of a Jedi Sentinel. He will grow in ability as he travels with you and learns what you know of the Force.]
+Only your alignment affects these responses, but in practice Atton's alignment is also affected by your influence with him:
+ | Alignment
+ | Dark
+ | Light
+ | Influence
+ | Low
+ | Jedi Sentinel
+ | Dark Jedi Sentinel
+ | High
+ | Dark Jedi Sentinel
+ | Jedi Sentinel
+Go to top
+Swoop racing
+Atton
+Bao-Dur
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Atton&oldid=1089298"
+Hidden category: 
+Sub-pages
+ This page was last edited on 5 September 2024, at 08:33.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

@@ -1,0 +1,1380 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Skills — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Skills
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Computer Use
+2 Demolitions
+3 Stealth
+4 Awareness
+5 Persuade
+6 Repair
+7 Security
+8 Treat Injury
+ | Each of your character's skills has a number associated with it. This is the skill 'rank' and determines how good the character is with that skill. When using a skill to perform an action, the rank is compared against a Difficulty Check (DC) number. For example, to open a lock with a DC of 15, take your skill rank in Security + Wisdom Intelligence modifier + d20 roll. If the total is 15 or greater, the lock is opened.
+Intelligence modifier (INT) resulting from points allocated at character generation and on level up determines how many skill points a class is granted at those times:
+Character generation
+ | Class
+ | Jedi Guardian
+ | Jedi Sentinel
+ | Jedi Consular
+ | Skill points
+ | (1+INT) * 4
+ | (3+INT) * 4
+ | (2+INT) * 4
+Level up
+ | Skill points
+ | 1 + INT
+ | 2 + INT
+ | 3 + INT
+ | 4 + INT
+ | 
+Jedi Guardian
+Soldier
+Combat Droid
+ | 
+Expert Droid
+Jedi Weapon Master
+Sith Marauder
+ | 
+Jedi Consular
+Jedi Master
+Sith Lord
+ | 
+Jedi Sentinel
+Scout
+Jedi Watchman
+Sith Assassin
+ | 
+Scoundrel
+Tech Specialist
+Characters are always granted at least four skill points at character generation, and at least one on level up:
+ | Minimum
+Intelligence
+ | Skill points
+ | 1 + INT
+ | 2 + INT
+ | 3 + INT
+ | 4 + INT
+ | 8
+ | 1
+ | 1
+ | 2
+ | 3
+ | 10
+ | 1
+ | 2
+ | 3
+ | 4
+ | 12
+ | 2
+ | 3
+ | 4
+ | 5
+ | 14
+ | 3
+ | 4
+ | 5
+ | 6
+ | 16
+ | 4
+ | 5
+ | 6
+ | 7
+ | 18
+ | 5
+ | 6
+ | 7
+ | 8
+All points do not have to be invested at character generation or level up, so they can be saved for a future level up. After becoming a different class, a character’s skill points on level up are determined by the new class, but the class skills of the earlier class are retained and those of the new class are gained. Class skills cost one point to raise one rank, while cross-class skills cost two points to raise one rank:
+ | Skill
+ | Computer
+ | Demo
+ | Stealth
+ | Aware
+ | Persuade
+ | Repair
+ | Security
+ | Treat
+ | Attribute modifier
+ | Intel
+ | Intel
+ | Dexterity
+ | Wisdom
+ | Charisma
+ | Intel
+ | Intel
+ | Wisdom
+ | Jedi Guardian
+ | 2
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | 2
+ | 1
+ | Jedi Sentinel
+ | 1
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | Jedi Consular
+ | 2
+ | 2
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | Soldier
+ | 2
+ | 1
+ | 2
+ | 1
+ | 2
+ | 2
+ | 2
+ | 1
+ | Scout
+ | 1
+ | 1
+ | 2
+ | 1
+ | 2
+ | 1
+ | 2
+ | 1
+ | Scoundrel
+ | 2
+ | 1
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | 2
+ | Tech Specialist
+ | 1
+ | 1
+ | 2
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | Combat Droid
+ | 1
+ | 1
+ | 
+ | 1
+ | 
+ | 1
+ | 1
+ | 
+ | Expert Droid
+ | 1
+ | 2
+ | 
+ | 1
+ | 
+ | 1
+ | 1
+ | 
+ | Weapon Master
+ | 2
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | 2
+ | 1
+ | Jedi Watchman
+ | 1
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | 1
+ | Jedi Master
+ | 2
+ | 2
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | Sith Marauder
+ | 2
+ | 1
+ | 2
+ | 1
+ | 1
+ | 2
+ | 2
+ | 1
+ | Sith Assassin
+ | 1
+ | 1
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+ | 2
+ | Sith Lord
+ | 2
+ | 2
+ | 2
+ | 1
+ | 1
+ | 1
+ | 2
+ | 1
+Class Skill feats can change a cross-class skill to a class skill. Points can be invested in class skills to maximum rank equal to level + 3, while they can only be invested in cross-class skills to maximum rank equal to [ (level + 3) / 2].
+If you select Auto Level Up or Recommended, skills are given the following priority when investing points:
+ | Jedi Guardian
+ | Jedi Sentinel
+ | Jedi Consular
+ | Soldier
+ | Scout
+ | Scoundrel
+ | Tech Specialist
+ | Combat Droid
+ | Expert Droid
+ | Treat Injury
+ | Stealth
+ | Persuade
+ | Treat Injury
+ | Computer
+ | Stealth
+ | Repair
+ | Repair
+ | Repair
+ | Demolitions
+ | Computer
+ | Treat Injury
+ | Awareness
+ | Demolitions
+ | Demolitions
+ | Treat Injury
+ | Awareness
+ | Computer
+ | Awareness
+ | Persuade
+ | Repair
+ | Demolitions
+ | Repair
+ | Security
+ | Awareness
+ | Computer
+ | Security
+ | Persuade
+ | Awareness
+ | Awareness
+ | Repair
+ | Awareness
+ | Awareness
+ | Computer
+ | Security
+ | Demolitions
+ | Stealth
+ | Security
+ | Computer
+ | Security
+ | Treat Injury
+ | Treat Injury
+ | Demolitions
+ | Demolitions
+ | Awareness
+ | Repair
+ | Treat Injury
+ | Stealth
+ | Computer
+ | Security
+ | Repair
+ | Stealth
+ | 
+ | 
+ | Security
+ | Demolitions
+ | Security
+ | Stealth
+ | Stealth
+ | Computer
+ | Security
+ | Computer
+ | Repair
+ | Demolitions
+ | Persuade
+ | Persuade
+ | Persuade
+ | 
+However, unlike at character generation, class skills take priority over cross-class skills: for example, for an Expert Droid like T3-M4, Awareness is prioritized over Demolitions until he has the Class Skill: Demolitions feat.
+ | Weapon Master
+ | Jedi Watchman
+ | Jedi Master
+ | Sith Marauder
+ | Sith Assassin
+ | Sith Lord
+ | 
+ | Stealth
+ | Persuade
+ | Treat Injury
+ | Stealth
+ | Persuade
+ | Demolitions
+ | Computer Use
+ | Repair
+ | Demolitions
+ | Demolitions
+ | Repair
+ | Persuade
+ | Persuade
+ | Treat Injury
+ | Persuade
+ | Persuade
+ | Treat Injury
+ | Awareness
+ | Awareness
+ | Awareness
+ | Awareness
+ | Awareness
+ | Awareness
+ | Stealth
+ | Security
+ | Computer Use
+ | Stealth
+ | Security
+ | Computer Use
+ | Repair
+ | Treat Injury
+ | Stealth
+ | Repair
+ | Computer Use
+ | Stealth
+ | Security
+ | Demolitions
+ | Security
+ | Security
+ | Treat Injury
+ | Security
+ | Computer Use
+ | Repair
+ | Demolitions
+ | Computer Use
+ | Repair
+ | Demolitions
+Computer Use[edit | edit source]
+ | 
+Related Attribute:
+Intelligence
+Computer Use allows a character to slice computer programs using disposable logic rams called computer spikes. A character might disable gun turrets or flood a patrol area, with more complicated tasks requiring more spikes. A high rank in this skill reduces the number of spikes required by 1 (to a minimum of 1) for every 4 points total, including attribute score modifiers.
+Computer Use is a class skill for the following:
+Jedi Sentinel
+Scout
+Tech Specialist
+Droids
+Jedi Watchman
+Sith Assassin
+Minimum rank 15 is needed for your main character to fully upgrade T3-M4.
+Demolitions[edit | edit source]
+ | 
+Related Attribute:
+Intelligence
+Demolitions can be used to set, recover or disarm mines. Such devices range in difficulty from minor (DC10 to set) to devastating (DC30 to set). Attempting to disarm the mine adds +5 to the DC. Attempting to recover the mine adds +10 to the DC. This skill cannot be used untrained.
+Demolitions is a class skill for the following:
+Jedi Guardian
+Soldier
+Scout
+Scoundrel
+Tech Specialist
+Combat Droid
+Jedi Weapon Master
+Sith Marauder
+Sith Assassin
+Difficulty Classes for setting, disabling or recovering mines are reduced by 5 on Easy but increased by 5 on Difficult. According to Feedback, DC increases to disable and recover mines are cumulative rather than separate:
+ | Mine
+ | Easy
+ | Normal
+ | Difficult
+ | Set
+ | Disable
+ | Recover
+ | Set
+ | Disable
+ | Recover
+ | Set
+ | Disable
+ | Recover
+ | Minor
+ | 5 (-15)
+ | 10 (-10)
+ | 20 (0)
+ | 10 (-10)
+ | 15 (-5)
+ | 25 (5)
+ | 15 (-5)
+ | 20 (0)
+ | 30 (10)
+ | Average
+ | 10 (-10)
+ | 15 (-5)
+ | 25 (5)
+ | 15 (-5)
+ | 20 (0)
+ | 30 (10)
+ | 20 (0)
+ | 25 (5)
+ | 35 (15)
+ | Strong
+ | 15 (-5)
+ | 20 (0)
+ | 30 (10)
+ | 20 (0)
+ | 25 (5)
+ | 35 (15)
+ | 25 (5)
+ | 30 (10)
+ | 40 (20)
+ | Deadly
+ | 20 (0)
+ | 25 (5)
+ | 35 (15)
+ | 25 (5)
+ | 30 (10)
+ | 40 (20)
+ | 30 (10)
+ | 35 (15)
+ | 45 (25)
+ | Devastate
+ | 25 (5)
+ | 30 (10)
+ | 40 (20)
+ | 30 (10)
+ | 35 (15)
+ | 45 (25)
+ | 35 (15)
+ | 40 (20)
+ | 50 (30)
+Successfully setting, disabling or recovering mines requires that the sum of Demolitions skill rank and a d20 roll is equal to or greater than the DC. When not in combat 20 is always rolled, so minimum skill rank (in brackets) is DC - 20.
+A maximum of 15 mines can be set in any map. While friendly mines can normally be recovered without a DC check, after leaving a map and returning to it any mines left behind can only be recovered after a successful DC check (although they remain friendly).
+Hostile mines must be detected by passing an Awareness check before they can be disabled or recovered. The only hostile Devastating mines are actually Deadly mines in all but name so, unless you want to recover your own Devastating mines after leaving then returning to an area, your party only needs to be able to disable or recover Deadly mines. Your main character only soloes some areas containing Average mines, which can also be triggered using a Stun Droid power.
+Experience (XP) received for disabling or recovering mines depends on Combat Difficulty, user level and mine type.
+Disable Mine can grant (15 * user level) XP up to the following user levels, beyond which only (10 * user level) XP is received:
+ | Combat
+Difficulty
+ | Maximum user level
+ | Minor
+ | Average
+ | Strong
+ | Deadly
+ | Devastating
+ | Easy
+ | 
+ | 
+ | 
+ | 5
+ | 10
+ | Normal
+ | 
+ | 
+ | 5
+ | 10
+ | 15
+ | Difficult
+ | 
+ | 5
+ | 10
+ | 15
+ | 20
+Recover Mine can grant (15 * user level) XP up to the following user levels, beyond which only (10 * user level) XP is received:
+ | Combat
+Difficulty
+ | Maximum user level
+ | Minor
+ | Average
+ | Strong
+ | Deadly
+ | Devastating
+ | Easy
+ | 
+ | 5
+ | 10
+ | 15
+ | 20
+ | Normal
+ | 5
+ | 10
+ | 15
+ | 20
+ | 25
+ | Difficult
+ | 10
+ | 15
+ | 20
+ | 25
+ | 30
+Frag, Plasma and Sonic mines can also be used to blast locks instead of bashing or Security: unlike bashing this doesn't result in broken items (although it seems broken items may sometimes only be added to inventory rather than replacing items in it), but unlike Security it doesn't grant any experience. However, according to Feedback attempts only succeed if 20 + (Demolitions rank / 2) + mine strength equals or exceeds lock DC:
+ | Mine
+ | Minor
+ | Average
+ | Strong
+ | Deadly
+ | Devastating
+ | Strength
+ | 0
+ | 3
+ | 9
+ | 9
+ | 12
+ | Rank
+ | (DC * 2) – 40
+ | (DC * 2) – 46
+ | (DC * 2) – 58
+ | (DC * 2) – 58
+ | (DC * 2) – 64
+Strong and Deadly mines have the same strength. Lock DC decreases by 5 on Easy and increases by 5 on Difficult, so minimum rank for success decreases or increases by 10.
+Stealth[edit | edit source]
+ | 
+Related Attribute:
+Dexterity
+Stealth governs the use of camouflage devices to enter Stealth Mode. If a character equips such a device and activates Stealth Mode, opponents must make an Awareness check versus the character's Stealth skill or be unable to detect them, even if the character is in a direct line of sight. A character in Stealth Mode can set, disable and recover mines. Party members will not automatically enter combat while in this mode. Combat cancels Stealth Mode. Stealth Mode will not work without a camouflage unit. Units of higher quality grant a bonus to the skill. This skill cannot be used untrained.
+Stealth is a class skill for the following:
+Jedi Sentinel
+Scoundrel
+Jedi Watchman
+Sith Assassin
+The Force Camouflage power granted to a Jedi Watchman or Sith Assassin enables the use of Stealth without a Stealth Field Generator. 
+To use Stealth while in a party, Solo Mode must be turned on as well. Movement speed in Stealth Mode is normally even slower than walking, and cannot be increased with any Adrenal Alacrity or Hyper-adrenal Alacrity stimulant, or any Burst of Speed power. However, movement speed is unaffected by Stealth Mode once the Stealth Run feat is selected.
+An Awareness check is made on first entering enemy awareness range, and every 20 seconds thereafter unless Stealth skill rank decreases (due to removing equipment with Stealth or Dexterity bonuses, a buff expiring or a debuff taking effect): however, if undetected then the next check is still 20 seconds after the previous one. The details of these checks are only recorded in Feedback when the party leader is successfully detected, which requires Awareness Breakdown > Stealth Breakdown:
+ | Awareness Breakdown
+ | Value
+ | roll
+ | 1-20 (1d20)
+ | awareness skill rank
+ | #
+ | standing still modifier
+ | 5
+ | distance modifier
+ | -(1-4)
+ | run modifier
+ | -5
+ | rear arc modifier
+ | -10
+ | combat modifier
+ | -10
+ | Stealth Breakdown
+ | Value
+ | roll
+ | 11-20 (1d10 + 10)
+ | stealth skill rank
+ | #
+ | standing still modifier
+ | 5
+When multiple enemies are in range, each makes a separate Awareness roll against a single Stealth roll.
+Standing still modifier 5 is added to both Breakdowns even while moving (even with Stealth Run), but if an enemy is running then it's replaced with run modifier -5 in the Awareness Breakdown.
+Enemies are less likely to detect you the greater the distance between you, if you are behind them in their rear arc, or they are engaged in combat. However, to guarantee you remain undetected normally requires Stealth skill rank ≥ Awareness skill rank + 9. Otherwise, the maximum chance of being detected is normally as follows:
+ | Stealth = Awareness
+ | - 20
+ | - 19
+ | - 18
+ | - 17
+ | - 16
+ | - 15
+ | - 14
+ | - 13
+ | - 12
+ | - 11
+ | Detection chance
+ | 100%
+ | 99.5%
+ | 98.5%
+ | 97%
+ | 95%
+ | 92.5%
+ | 89.5%
+ | 86%
+ | 82%
+ | 77.5%
+ | Stealth = Awareness
+ | - 10
+ | - 9
+ | - 8
+ | - 7
+ | - 6
+ | - 5
+ | - 4
+ | - 3
+ | - 2
+ | - 1
+ | Detection chance
+ | 72.5%
+ | 67.5%
+ | 62.5%
+ | 57.5%
+ | 52.5%
+ | 47.5%
+ | 42.5%
+ | 37.5%
+ | 32.5%
+ | 27.5%
+ | Stealth = Awareness
+ | + 0
+ | + 1
+ | + 2
+ | + 3
+ | + 4
+ | + 5
+ | + 6
+ | + 7
+ | + 8
+ | + 9
+ | Detection chance
+ | 22.5%
+ | 18%
+ | 14%
+ | 10.5%
+ | 7.5%
+ | 5%
+ | 3%
+ | 1.5%
+ | 0.5%
+ | 0%
+For example, if Stealth = Awareness then the chance of detection when face-to-face is 22.5% (45/200), but with distance modifier -4 (effectively Stealth = Awareness + 4) it's only 7.5% (15/200). The table below should help illustrate how the probabilities above were derived:
+ | Stealth roll
+ | Awareness roll
+ | 1
+ | 2
+ | 3
+ | 4
+ | 5
+ | 6
+ | 7
+ | 8
+ | 9
+ | 10
+ | 11
+ | 12
+ | 13
+ | 14
+ | 15
+ | 16
+ | 17
+ | 18
+ | 19
+ | 20
+ | 11
+ | 
+ | 
+ | 
+ | 12
+ | 
+ | 
+ | Detected if Stealth = Awareness
+ | 13
+ | 
+ | 
+ | 
+ | 14
+ | 
+ | 
+ | 
+ | 15
+ | 
+ | Not detected if Stealth = Awareness
+ | 
+ | 16
+ | 
+ | 
+ | 
+ | 17
+ | 
+ | 
+ | 
+ | 18
+ | Not detected if Stealth = Awareness - 10
+ | 
+ | 
+ | 19
+ | 
+ | 
+ | 
+ | 20
+ | 
+ | 
+However, sometimes detection can still succeed when Awareness Breakdown is less than Stealth Breakdown, even though the values in each Breakdown all sum as expected. It can happen sometimes when a distance modifier is added, although its magnitude doesn't correspond to the discrepancy. The reason for this is unknown.
+Although Stealth Mode doesn't prevent computer use or droid repair, doing so cancels it in the same way as entering dialog.
+Awareness[edit | edit source]
+ | 
+Related Attribute:
+Wisdom
+Awareness governs the ability of a character to spot objects or enemies hidden by Stealth. If a successful check of this skill is made against the Stealth skill of an enemy or the DC of a mine, the enemy or object is noticed and becomes visible. Awareness is always active, but results are best while a character is moving slowly. Running imparts a -5 penalty to any checks of the skill.
+Awareness is a class skill for all classes.
+According to Feedback, Difficulty Classes for detecting mines are reduced by 5 on Easy but increased by 5 on Difficult. 
+ | Mine
+ | Easy
+ | Normal
+ | Difficult
+ | Minor
+ | 5 (-15)
+ | 10 (-10)
+ | 15 (-5)
+ | Average
+ | 10 (-10)
+ | 15 (-5)
+ | 20 (0)
+ | Strong
+ | 15 (-5)
+ | 20 (0)
+ | 25 (5)
+ | Deadly
+ | 20 (0)
+ | 25 (5)
+ | 30 (10)
+ | Devastating
+ | 25 (5)
+ | 30 (10)
+ | 35 (15)
+Successfully detecting hostile mines requires that the sum of Awareness skill rank and a d20 roll is equal to or greater than the DC. When not in combat 20 is always rolled, so minimum skill rank (in brackets) is DC - 20.
+Although running imparts a -5 penalty (maximum roll 15), this isn't an issue if you stop briefly every 30 meters or so: for example, pause upon turning a corner, reaching a junction or entering a room (if opening a door hasn't already obliged you to do so).
+The only Devastating mines that need to be detected are actually Deadly mines in all but name, so your party only needs to be able to detect those. Your main character only soloes some areas containing Average mines.
+Awareness can also be used in dialogue checks to reveal information, like character and motives.
+Persuade[edit | edit source]
+ | 
+Related Attribute:
+Charisma
+Only the main player character can select this skill during level-up. Persuade options appear in dialogue when interesting or sensitive information is available that a character might otherwise be reluctant to reveal. When selected, rank in this skill is compared with how extreme the request is (Difficulty Class low, medium, or high, relative to player level). A guard might easily agree to increase a bounty, but convincing him to leave his post would be much harder.
+Persuade is a class skill for the following:
+Jedi
+Scoundrel
+Prestige classes
+Minimum rank 27 is required to pass every persuade check in the game.
+Repair[edit | edit source]
+ | 
+Related Attribute:
+Intelligence
+Repair allows a character to fix disabled mechanical devices like droids using disposable packages of parts. The number of part kits required increases with the difficulty of the repair. This skill reduces the number of parts required by 1 (to a minimum of 1) for every 4 points total, including attribute score modifiers. This skill also modifies the amount of vitality points recovered when party member droids use repair kits, advanced repair kits, and construction kits on themselves to repair combat damage.
+Repair is a class skill for the following:
+Jedi Consular
+Scout
+Tech Specialist
+Droids
+Jedi Master
+Sith Lord
+Minimum rank 21 is needed for your main character to fully upgrade T3-M4.
+Minimum rank 20 is needed for your main character to receive 100% of an item's component value when it's broken down by any character using a Workbench.
+Security[edit | edit source]
+ | 
+Related Attribute:
+Intelligence
+Security is used to access electronic locking devices. Once a character invests points in this skill, it becomes one of the default options on targeted doors and containers. Security spikes can grant a bonus to the skill, and any in inventory will also appear as a default option on targeted doors and containers. Characters with no points invested cannot attempt to use this skill.
+Security is a class skill for the following:
+Jedi Sentinel
+Scoundrel
+Tech Specialist
+Droids
+Jedi Watchman
+Sith Assassin
+According to Feedback, Difficulty Classes for locks are reduced by 5 on Easy but increased by 5 on Difficult. Successfully opening a lock requires that the sum of Security skill rank and a d20 roll is equal to or greater than the DC. When not in combat 20 is always rolled, so minimum skill rank (in brackets) is DC - 20.
+Successful use of Security to open a lock grants experience. That received for locks with set DCs is based on Combat Difficulty and user level:
+ | User level
+ | Easy
+ | Normal
+ | Difficult
+ | 1
+ | 5 * user level
+ | 10 * user level
+ | 10 * user level
+ | 2-6
+ | 5 * user level
+ | 5 * user level
+ | 10 * user level
+ | 7-50
+ | 5 * user level
+ | 5 * user level
+ | 5 * user level
+Thus from user level 7 onward, (5 * user level) experience is always received, regardless of Combat Difficulty.
+However, more difficult locks have DCs based on main character experience level when spawned (normally on first entering an area), and successfully opening these always grants (10 * user level) experience:
+ | Combat Difficulty
+ | Easy
+ | Normal
+ | Difficult
+ | Difficulty Class
+ | 23 (3) + main level
+ | 28 (8) + main level
+ | 33 (13) + main level
+Treat Injury[edit | edit source]
+ | 
+Related Attribute:
+Wisdom
+Treat Injury improves the amount of damage healed when a medpac is used, adding the modified rank to the number of vitality points healed. Advanced medpacs and life support packs apply multipliers to the user's skill, increasing the amount healed again.
+Treat Injury is a class skill for the following:
+Jedi
+Soldier
+Scout
+Jedi Prestige classes
+Sith Marauder
+Sith Lord
+Minimum rank 20 is needed for any character to receive 100% of an item's chemical value when it's broken down by that character using a Lab Station.
+Go to top
+Attributes
+Skills
+Feats
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Skills&oldid=1167405"
+Hidden category: 
+Sub-pages
+ This page was last edited on 27 February 2026, at 18:30.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

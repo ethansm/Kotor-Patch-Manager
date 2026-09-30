@@ -1,0 +1,220 @@
+
+ KOTOR 2 - Handmaiden Unarmed Soldier
+KOTOR 2 - Handmaiden Unarmed Soldier
+This version of Handmaiden is an unarmed specialist who remains a Solider and never becomes a Jedi. In practice, you may want to switch at some point. But you probably want to take Soldier to either 18 or 22 first, to not lose too much from the Unarmed Specialist feat line. Or just keep her a Solider - she's pretty effective even with no Jedi levels.
+Handmaiden's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Soldier 6
+ | STR: 14 (+2)
+WIS: 10 (+0)
+CHA: 14 (+2)
+INT: 10 (+0)
+CON: 14 (+2)
+DEX: 16 (+3)
+ | 21 points
+Awareness +8 (8)
+Computer use +0 (0)
+Demolitions +0 (0)
+Persuade +0 (0)
+Repair +0 (0)
+Security +0 (0)
+Stealth +5 (5)
+Treat Injury +8 (8)
+ | Power Attack (g)
+Improved Power Attack
+Power Blast (g)
+Two-Weapon Fighting (g)
+Improved Two-Weapon Fighting (g)
+Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Conditioning (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+Toughness (g)
+Improved Toughness (g)
+Echani Strike I (g)
+Unarmed Specialist I (g)
+Unarmed Specialist II (g)
+ | 
+ | 7
+ | Soldier 7
+ | 
+ | 1 point
+Awareness +1 (9)
+ | Improved Conditioning (s)
+ | 
+ | 8
+ | Soldier 8
+ | STR +1, 15 (+2)
+ | 1 point
+Awareness +1 (10)
+ | Master Toughness (s)
+ | 
+ | 9
+ | Soldier 9
+ | 
+ | 1 point
+Awareness +1 (11)
+ | Master Conditioning (s)
+ | 
+ | 10
+ | Soldier 10
+ | 
+ | 1 point
+Awareness +1 (12)
+ | Unarmed Specialist III (g)
+Regenerate Vitality Points (s)
+ | 
+ | 11
+ | Soldier 11
+ | 
+ | 1 point
+Awareness +1 (13)
+ | Echani Strike II (g)
+Dueling (s)
+ | 
+ | 12
+ | Soldier 12
+ | STR +1, 16 (+2)
+ | 1 point
+Awareness +1 (14)
+ | Improved Dueling (s)
+ | 
+ | 13
+ | Soldier 13
+ | 
+ | 1 point
+Awareness +1 (15)
+ | Master Dueling (s)
+ | 
+ | 14
+ | Soldier 14
+ | 
+ | 1 point
+Awareness +1 (16)
+ | Unarmed Specialist IV (g)
+Master Power Attack (s)
+ | 
+ | 15
+ | Soldier 15
+ | 
+ | 1 point
+Awareness +1 (17)
+ | Flurry (s)
+ | 
+ | 16
+ | Soldier 16
+ | CON +1, 15 (+2)
+ | 1 point
+Awareness +1 (18)
+ | Improved Flurry (s)
+ | 
+ | 17
+ | Soldier 17
+ | 
+ | 1 point
+Awareness +1 (19)
+ | Echani Strike II (g)
+ | 
+ | 18
+ | Soldier 18
+ | 
+ | 1 point
+Awareness +1 (20)
+ | Unarmed Specialist V (g)
+Master Flurry (s)
+ | 
+ | 19
+ | Soldier 19
+ | 
+ | 1 point
+Treat Injury +1 (9)
+ | 
+ | 
+ | 20
+ | Soldier 20
+ | CON +1, 16 (+3)
+ | 1 point
+Treat Injury +1 (10)
+ | Dual Strike (s)
+ | 
+ | 21
+ | Soldier 21
+ | 
+ | 1 point
+Treat Injury +1 (11)
+ | 
+ | 
+ | 22
+ | Soldier 22
+ | 
+ | 1 point
+Treat Injury +1 (12)
+ | Unarmed Specialist VI (g)
+ | 
+ | 23
+ | Soldier 23
+ | 
+ | 1 point
+Treat Injury +1 (13)
+ | 
+ | 
+ | 24
+ | Soldier 24
+ | STR +1, 17 (+3)
+ | 1 point
+Treat Injury +1 (14)
+ | 
+ | 
+ | 25
+ | Soldier 25
+ | 
+ | 1 point
+Treat Injury +1 (15)
+ | 
+ | 
+ | 26
+ | Soldier 26
+ | 
+ | 1 point
+Treat Injury +1 (16)
+ | Unarmed Specialist VII (g)
+ | 
+ | 27
+ | Soldier 27
+ | 
+ | 1 point
+Treat Injury +1 (17)
+ | 
+ | 
+ | 28
+ | Soldier 28
+ | STR +1, 18 (+4)
+ | 1 point
+Treat Injury +2 (18)
+ | 
+ | 
+ | 29
+ | Soldier 29
+ | 
+ | 1 point
+Treat Injury +2 (19)
+ | 
+ | 
+ | 30
+ | Soldier 30
+ | 
+ | 1 point
+Treat Injury +2 (20)
+ | Unarmed Specialist VIII (g)
+ | 
+I focused on survivability early, which pushed the Flurry line late. Those feats could easily be reversed.
+The strategy wiki table for Soldier only goes up to level 20, so I dont' know what levels selected feats are available at after that (if any). I should fill that out during the playthrough.

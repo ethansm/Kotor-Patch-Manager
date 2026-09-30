@@ -1,0 +1,208 @@
+
+ TSL Prestige Class Saving Throw fixes - Mods - Deadly Stream
+ Jump to content
+ Mods
+ Browse
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+ More 
+ Activity
+ All Activity
+ Search
+ Our Picks
+ More 
+ Downloads
+ Gallery
+ Blogs
+ Rules
+ /r/Kotor
+ Store
+ Subscriptions
+ More 
+ More 
+Everywhere
+This Category
+This File
+Status Updates
+Topics
+Blog Entries
+Pages
+Files
+Images
+Albums
+Products
+Events
+Members
+ Existing user? Sign In  
+Sign In
+ Remember me
+ Not recommended on shared computers
+ Sign In
+ Forgot your password?
+ Sign Up
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ TSL Prestige Class Saving Throw fixes
+ TSL Prestige Class Saving Throw fixes 1.0
+ the sith lords
+ kotor 2
+ jedi master
+ sith lord
+ jedi weapon master
+ sith marauder
+ saving throws
+ fixes
+   (7 reviews)
+ By 
+Rovan
+Find their other files
+  Share
+ https://deadlystream.com/files/file/828-tsl-prestige-class-saving-throw-fixes/
+ More sharing options...
+ Followers
+ 16
+5 Screenshots
+About This File
+TSL Prestige Class Saving Throw fixes - version 1.0
+By Rovan
+NOTE: 
+I’d like to suggest to any potential users to keep track of the mods you’ve installed, exactly in the order you’ve installed them in. 
+Description: 
+Prestige classes are, quite frankly, pretty fun. However, one glaring error in the game is how both the Jedi Master and the Sith Lord have terrible, terrible saving throws, especially when compared to their predecessor, the Consular. This mod aims to fix this grievous error, part of the many injustices rendered unto the Force-wielding prestige classes. 
+Installation: 
+There are two folders in this mod: one contains fixed saving throws for the Jedi Master and Sith Lord prestige classes, changing them so they at least equal the Jedi Consular’s saving throws. Drag both “cls_st_jmaster.2da” and “cls_st_sithlord.2da” into the Override folder of KoTOR 2.
+The other folder contains “standardizations” for the Jedi Weapon Master and Sith Marauder prestige class saving throws, to match those of the Jedi Guardian. This portion is wholly optional, but if you wish to install this portion, drag both “cls_st_jweapmas.2da” and “cls_st_sithmar.2da” into the Override folder of KoTOR 2.
+NOTE: I did not edit the Jedi Watchman or the Sith Assassin saving throws, mostly because they seemed just about right; the Watchman is more defense oriented with the best saving throws in the game, while the Assassin is more offense oriented, but with weaker saving throws than the base class, the Sentinel. 
+Uninstallation: 
+Remove “cls_st_jmaster.2da” and “cls_st_sithlord.2da” from the Override folder, and/or “cls_st_jweapmas.2da” and “cls_st_sithmar.2da” as well. 
+Permissions: 
+Do NOT reupload this to anywhere without my permission, especially the Steam Workshop.
+Do NOT make any edits to this mod and re-upload it, claiming it as your own.
+If you want to use this mod as part of your own mod, send me a message via any of my contact info listed below.
+Credits: 
+Fred Tetra for making the ever so wonderful KOTOR Tool… and Rece on DeadlyStream for providing a tutorial on how to install KOTOR Tool via Wineskin! 
+Also, cheers to VarsityPuppet for being encouraging and Fair Strides for providing a ReadMe template. :v
+Contact Information:
+Add me on Steam at steamcommunity.com/id/rovan if you have any questions, comments, or concerns (NO PRIVATE PROFILES WILL BE ADDED). I can also be contacted here on DeadlyStream.com, where I uploaded this mod.
+There should be no compatibility problems with TSLRCM whatsoever.
+A note about the screenshots: I was using NiuHaka's DarkHarbinger PMHC04 Reskin at the time when I took them. That mod is not part of the mod in any shape or form.
+What's New in Version 1.0
+Released February 25, 2016
+version 1.0 - Initial release. 
+Jedi Master and Sith Lord saving throws changed to mirror Jedi Consular saving throws. 
+Jedi Weapon Master and Sith Marauder saving throws changed to mirror Jedi Guardian saving throws.
+1.0
+ Download this file
+ Get Support
+File Information
+ Views
+ 102,258
+ Downloads
+ 50,910
+ Submitted
+ February 25, 2016
+ Published
+ February 25, 2016
+ File Size
+ 5.81 kB
+ 1
+ 2
+  Share
+ https://deadlystream.com/files/file/828-tsl-prestige-class-saving-throw-fixes/
+ More sharing options...
+ Followers
+ 16
+ Previous File
+ JC's Saber Workshop
+ Next File
+ High-Level Force Powers
+User Feedback
+ 7 Reviews
+ 2 Comments
+You may only provide a review once you have downloaded the file.
+ Most Helpful
+ Newest
+rybrentmannftw
+ 5
+ May 23, 2018
+Voxdog
+ 11
+ May 23, 2018
+TheSarcasticCanadian
+ 14
+ May 23, 2018
+LordMerek
+ 52
+ May 23, 2018
+noodles
+ 1
+ May 23, 2018
+SalaciousCrumb
+ 23
+ May 23, 2018
+wasabi4lunch
+ 6
+ May 23, 2018
+ All Activity
+ Home 
+ Downloads 
+ The Sith Lords 
+ Mods 
+ TSL Prestige Class Saving Throw fixes
+ Theme 
+ Default 
+ Deadlystream 4.7 (Default)
+Privacy Policy
+Contact Us
+Cookies
+ Copyright 2026. Deadly Stream
+ Powered by Invision Community
+ ×
+ Existing user? Sign In
+ Sign Up
+Browse
+Back
+ Pages
+ Clubs
+ Online Users
+ Leaderboard
+ Forums
+ Deadly Stream
+ Events
+ Guidelines
+ Staff
+Activity
+Back
+ All Activity
+ Search
+ Our Picks
+Downloads
+Gallery
+Blogs
+Rules
+/r/Kotor
+Store
+Back
+Store
+ Subscriptions
+ ×
+Create New...
+Important Information
+By using this site, you agree to our Guidelines.
+   I accept
+ Forums
+ Unread
+ Sign In
+ Sign Up
+ More
+ Change theme

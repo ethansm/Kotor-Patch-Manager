@@ -1,0 +1,1119 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Disciple — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Disciple
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Exile
+2 Ebon Hawk
+2.1 Meditation
+2.2 Atton
+2.3 Kreia
+3 Questions
+3.1 Medical
+3.2 Republic
+3.3 Mission
+3.4 Familiarity
+3.5 Jedi
+3.6 Training
+If your character is female then the Disciple joins your party on Dantooine when you encounter him in the Jedi Archive on the right side of the Enclave sublevel.
+Ancient History
+Recruited the Disciple
+When you first speak to the Disciple with Alignment 25 or less:
+ | Disciple: There is something we must discuss. Surely you have noticed that you have been changing - as your powers return, your body suffers. It is a sign of the dark side - all your choices, they affect the flesh, rotting it, as the dark side rots you from within.
+ | Influence Lost: Disciple (-8)
+ | 3. I am here for answers, not to listen to your counsel.
+ | Disciple: Very well - but heed my words. Unless you turn back, the dark side will claim you completely, utterly.
+ | 1. Do you fear me?
+ | 2. I do not need your counsel, only your obedience.
+ | Disciple: Fear you? No - but I am concerned for you, yes.
+ | Points Gained: -1
+ | Disciple: It is never too late to choose your path - be mindful of that. There is always hope for you - and redemption.
+ | 4. Never mind. I'll be going now.
+ | 1. Enough - I have questions.
+When you first speak to him with Alignment 75 or more:
+ | Disciple: There is something I have observed, and now I feel I must say it. I have found your presence to be... inspiring. With your growth in the Force, you seem to have found your center, and throughout the dangers we face, you remain calm and focused.
+ | 5. Save your compliments - I had questions.
+ | 6. I don't have time for this. I'll be going now.
+ | 1. You're right - I have never felt better.
+ | 2. Trust me, it's all an act. I'm shaking inside.
+ | 3. Well, I hope our enemies think so.
+ | Influence Gained: Disciple (+8)
+ | Disciple: I understand now why others followed you to war. Perhaps that is what leadership is - and it is something I have seen in only a few during my travels. In any event, it has been some time since I traveled with a Jedi, nor one so firmly upon the path. I wanted to thank you. I fear the stories that were spoken of you have misrepresented you. And if I have the opportunity, I shall reverse them whenever they arise.
+ | 1. I thank you for your kind words, but they are not necessary.
+ | Points Gained: +1
+ | Influence Gained: Disciple (+8)
+ | Disciple: Very well - then I shall keep my favorable opinions to myself.
+Otherwise:
+ | 4. I really don't have time for this.
+ | 2. Do not bother - I do not need your help.
+ | 3. I have no time for your condescension. Leave me.
+ | Points Gained: -1
+ | Influence Lost: Disciple (-8)
+ | Disciple: Very well - my apologies if I have offended you. I shall remain silent.
+ | 1. I had other questions.
+ | 2. Nothing, never mind.
+Otherwise, or upon returning:
+ | Disciple: Yes? Is something wrong?
+Exile[edit | edit source]
+When you first finish speaking to him:
+ | Disciple: Forgive me, but there is something I must ask. In my study of the Jedi histories and the more... contemporary records, I have heard tales of a Jedi who was exiled. You are that Jedi, but the records are somewhat evasive on why this was done. I wanted to discuss why you chose to leave the Jedi Order and accept exile.
+ | 1. And why do you want to discuss it?
+ | Disciple: Perspective, nothing more.
+ | 1. I left to protect the innocents on the Outer Rim.
+ | 2. Battle called, and I answered.
+ | 3. The Jedi held no truth for me - only war did.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Disciple: I see. And because you went to war they cast you out?
+ | 1. Yes, that is what they told me at the trial.
+ | 2. At first, I thought that was the sole reason. Now I am not so sure.
+ | 3. That was my belief, but recent discoveries seem to indicate there may have been other causes.
+ | Disciple: Do you have a record of this trial?
+ | 2. Yes, the droid has a holo-recording of it.
+ | 3. T3-M4 has a copy of it.
+ | Disciple: Perhaps I shall examine it when I get the chance - with your permission.
+Otherwise you can lie, or subsequently deny the records to him:
+ | 1. [Lie] No, those records are lost, along with the others.
+ | 4. No, the records are not for you.
+ | Disciple: That is a shame - I feel nuances are often found when one pays careful attention to historical records.
+ | 1. Why do you want to know?
+ | Disciple: Well, it is not solely professional interest - I confess I have a passion for Jedi records and lore. And I rarely have seen them pass judgment on anyone.
+Otherwise:
+ | 3. The record is personal. I would appreciate it if you would refrain from seeing it.
+ | 2. Perhaps, but not today.
+ | 3. I doubt such things will be illuminating.
+ | Disciple: I shall respect your wishes. My apologies if I caused any offense.
+ | Disciple: Perhaps not. But one never knows.
+ | 5. I don't want to talk about it.
+ | 1. I still do not want you looking at them.
+ | 4. You waste your time on such things - such Jedi knowledge will only weaken you.
+ | Points Gained: -1
+ | Disciple: Very well. Forgive my question, I meant no offense.
+You gain more influence after telling him the droid T3-M4 has a holo-recording of your trial, rather than lying to deny it at first:
+ | 1. You are free to do so.
+ | 2. I trust you - go ahead.
+ | 1. Then the records exist, and you may see them.
+ | 2. In that case, feel free to examine them.
+ | Influence Gained: Disciple (+8)
+ | Disciple: I appreciate your trust - thank you.
+ | Influence Gained: Disciple (+8)
+ | 1. Very well. I'll be going now.
+If you didn't lie, and T3-M4 is in your party:
+ | Disciple: The record of the exile's trial - I wish to see it.
+ | T3-M4: Dee-deet.
+Regardless of what came before, the next time you speak to the Disciple:
+ | Disciple: I have studied the holorecord of your trial. I am unsure what to make of it. I must confess that I was searching for some meaning beyond the records - a reason for why one would leave the order.
+ | Dialog
+ | 
+ | 1. I did not leave the order - I was exiled.
+ | 2. Why?
+ | 3. I don't want to discuss this.
+ | Disciple: Yes, but exile is rare, and I have found it is not really something that the order can enforce. Believe it or not, it was really your choice.
+ | Disciple: Did you know that exile is a rare sentence? It is not really something that the order can enforce. Believe it or not, it was really your choice.
+ | 1. You saw the record. There was no choice - it was a sentence.
+ | 3. You weren't there - they would have executed me if Jedi did not kill their prisoners.
+ | 2. And why would I choose such a thing?
+ | Disciple: I don't think so - perhaps some of them felt strongly about your sentence, but I think something else concerned them. Again, the choice to turn away was yours, not theirs.
+ | Disciple: I do not know - that is a question best answered by yourself. But it is you who made the choice to turn away, not them.
+ | 1. Are you sure I don't know you? You look familiar - more so than before.
+ | 1. Why does this interest you?
+ | Disciple: Because I, too, turned away from the Order. Under less extreme circumstances, perhaps, but stemming from the same reasons.
+ | 1. I still don't believe exile was my choice.
+ | 2. I still don't believe it.
+ | 3. If that is your theory, clutch to it all you want.
+ | Disciple: I am not certain I do, either. But it is something worth considering.
+ | Disciple: I am not certain of it, but I believe it to be worth considering.
+ | 4. We have spoken enough about this.
+ | Disciple: Then I shall speak no more of it.
+Ebon Hawk[edit | edit source]
+Once aboard the Ebon Hawk, the Disciple can be found in Medical in the southwest quadrant, off the central corridor between the main hold and the south corridor and engine room. The next time you speak after asking about his medical training:
+ | 1. I wanted to make use of your medical skills.
+ | Disciple: Very well. Let us see what we can make from the materials at hand.
+You can now use him as a mobile Lab Station and say you're in need of healing anywhere, and ask if he can make some medpacs when aboard the Ebon Hawk:
+ | 2. Can you make me some medpacs?
+ | Disciple: Certainly. Let me see how many I can make.
+ | Disciple: Not at the moment. I think we have enough to heal an army - hopefully, we won't need that many.
+ | Disciple
+Life Support Pack
+Meditation[edit | edit source]
+ | 4. What are you doing?
+ | Disciple: At times, I meditate, simply close my eyes, and listen. It is quite calming.
+ | Disciple: I try to treasure these moments before the next crisis begins.
+ | 4. Can you teach me to meditate?
+ | 2. I order you to tell me how to do the same.
+ | Received:
+500 Disciple teaches you to meditate
+ | Points Gained: -1
+ | Influence Gained: Disciple (+8)
+ | Influence Lost: Disciple (-8)
+ | Disciple: Of course. It would be my pleasure.
+ | 1. [You have recovered Force Points and a one-time bonus to your FP through meditation. You can meditate with the Disciple at any time if no enemies are nearby.]
+Maximum Force points increased by 10. From now on, whenever you speak to him elsewhere out of combat:
+ | 1. Do you have time to meditate with me?
+ | Disciple: Of course. It would be my pleasure.
+ | 1. [You have recovered Force Points fully through meditation. You can do this at any time with the Disciple if no enemies are nearby.]
+Atton[edit | edit source]
+Once you have at least 15 more Influence with the Disciple than Atton, then when you board the Ebon Hawk the former approaches the latter in the cockpit (appropriately enough): 
+ | Disciple: Do you need a hand?
+ | Atton: No, I don't. Go back to your training, I'll call you if I need someone useless.
+ | Dialog
+ | 
+ | Disciple: Is there some problem? I was only offering to help.
+ | Atton: Problem? No, no problem. Just wondering how long you're planning to stick around.
+ | Disciple: For as long as she needs me, of course.
+ | Atton: How heroic of you. Well, she doesn't need you. In fact, we were doing just fine until you showed up.
+ | Disciple: Actually, there are times when it seems you could use some h-
+ | Atton: Always with the details, aren't you? You can't fool me. You have some agenda, spying on her, always keeping your eye on her.
+ | Disciple: No, no, I don't. I simply admire her. She has many qualities worthy of respect, and a strength that matches her beauty. Surely you've noticed.
+ | Atton: Yeah, and I noticed first. Get it? So cut it out.
+ | Atton: And another thing - stop being all noble around her, in your big hero way. She sees right through your little act. She likes honest guys, not guys who run around being unselfish and heroic all the time.
+ | Disciple: I thought she was the hero.
+You can now ask HK-47 if he knows what love is for the Cupid's Rifle Steam achievement. Once you have at least 30 more Influence with the Disciple, then when you board the Ebon Hawk the two have a second encounter:
+ | Atton: Oh, great, what do you want now? To give me a hand? I told you, I don't need any help, especially from you.
+ | Disciple: Atton... I feel that perhaps there has been some miscommunication between us concerning the exile.
+ | Dialog
+ | 
+ | Atton: No, I understand you just fine. Look, I know what's going on in your want-to-be Jedi mind. Thought you Jedi or ex-Jedi or whatever you are were supposed to be above all that.
+ | Disciple: Atton, perhaps I should explain - I see relationships with others in a different light, not as possessive, or carnal. Relationships are something shared between two people and give both strength, whether through struggle or whether through affection. I admire her, perhaps even feel for her. It is difficult to be around her and not have such feelings.
+ | Atton: Well...yeah. Okay.
+ | Disciple: But she walks a far more difficult path than the rest of us. I care what happens to her, and if I can help her, I will. Perhaps if there is anything we can agree on, it is that we will be there for her when no one else is. And perhaps save her so that she may continue down the road that she must walk.
+Kreia[edit | edit source]
+At some point after boarding the Ebon Hawk, you approach the Disciple in the main hold as he studies a series of holographic worlds:
+ | 1. Are you all right?
+ | 2. What are you studying?
+ | 3. Something wrong?
+ | Disciple: The more worlds we travel to, the more questions I have. It is not just the hardships of the people, but something more.
+ | Dialog
+ | 
+ | 1. It is difficult to turn away from the suffering of others - that is why one must help when they can.
+ | 2. People suffer all the time. You can't save everyone, and often, you weaken them if you try.
+ | 3. I couldn't care less for the hardships of others. They either endure, or they die.
+ | Disciple: You are right... but there is something more at work here.
+ | Disciple: Sometimes I wonder if you are right... but at other times, I feel there is something more at work here.
+ | 1. I have felt nothing - are you sure?
+ | 2. What do you mean?
+ | 3. Enough with the cryptic speech - speak plainly, or be silent.
+ | Disciple: The attacks on Katarr, Telos itself, the decay on Dantooine - something is wrong, but I cannot pinpoint what. It's like their connections have become sickened... damaged. Sometimes I feel like I almost understand, and then it just slips away.
+Otherwise:
+ | 1. [Awareness (13)] There's something about the worlds themselves, isn't there?
+ | Disciple: Yes... these dead worlds, well, they have a pattern to them. They were all touched by the Mandalorian Wars and the Jedi Civil War... but sometimes, well, I feel as if they are all connected in some other way. The attacks on Katarr, Telos itself, the decay on Dantooine - something is wrong with life. The connections have been damaged, sickened. Sometimes I feel like I almost understand, and then it just slips away.
+ | Dialog
+ | 
+ | Kreia: :: So close. ::
+ | 1. Are you sure you have no idea?
+ | 2. Do you know what it is?
+ | Disciple: No, I do not. But I do think there is some greater plan at work here.
+ | 3. Perhaps if we visited all these worlds, more would become clear.
+ | 4. I would let it rest - thinking too hard about it will not make the answers come any easier.
+ | Disciple: Perhaps... Dantooine is only one of the worlds, and it was only the start of the journey. I would like to study the other locations. It is curious that the Jedi Masters chose those worlds to travel to - I wonder if the two are linked. But I know not how.
+When you board again later, the Disciple is studying the medical bay computers while Kreia studies him unseen from the corridor. He stops and starts, walking to the doorway and looking directly at Kreia but still not seeing her:
+ | Disciple: Is there... ? Must be hearing things. But for a moment...
+He turns away, pauses and then turns again, but she's disappeared. However, when you board again later she's back at it, the sound of her running past the medical bay prompting him to turn and step out into the now empty corridor, and then the main hold:
+ | Kreia: :: Jedi. ::
+He runs down the corridor to the port dormitory, which he finds empty... but Kreia enters behind him, and whispers:
+ | Kreia: Jedi.
+He turns to face the sound, but she's no longer there... she's back behind him:
+ | Kreia: :: Betrayer. All thoughts of me will slide from your vision, from your mind, like water. You know who I am. But you will be unable to voice it, to remember it. What does a Jedi see? Only what I allow them to see. ::
+When you board again later, he's returned to the main hold to study the series of holographic worlds. While he's realizing what's happening, guess where Kreia appears? Creepy b... witch.
+ | Kreia: At last you understand, tiny Jedi.
+ | Disciple: You - who are you? What are you doing on this sh-?
+ | Dialog
+ | 
+ | Kreia: Enough. What did you see in the web of worlds that have died? What did you see when you saw it through the Force?
+ | Disciple: I see the death of the galaxy. Of life. At first... I thought it was just conquest, but it's more terrible than that. It's an echo, spreading outwards, killing everything. It's not possible.
+ | Kreia: You are a wasted pawn of the Republic, young one. You could have been so much more, even with your wide-eyed innocence, your naive love for others. Now you understand the magnitude of what is being done.
+ | Disciple: I know you - not even the markings of the dark side can hide it. Why have you done this?
+ | Kreia: I? Do you think I seek the death of all living things? There is no victory in such things. I do not want to win our war like this, little Jedi. When I win, I wish it to be because I was right, my teachings true.
+ | Disciple: How long have you been here, among us?
+ | Kreia: You know the truth. I have always been here, watching and listening to the echo you have found. You know its source and what must be done.
+ | Disciple: I will not let you hurt her.
+ | Kreia: Little Jedi, you cannot stop me. But you will forget this. Your mind is worse than the others, so open, so trusting. Your feelings for her are your weakness. Yet I will gift you with this - you will remember what you have you discovered... when the time is correct. Know that you have seen what formerly only I knew - now we shall see if you have the strength to stop what comes.
+Questions[edit | edit source]
+ | Disciple: Very well. What is it you wished to know?
+ | Disciple: Of course. What did you wish to know?
+ | Disciple: That is hardly surprising. What do you wish to know?
+Asking him what he was doing on Dantooine or what he knows about Force bonding may be informative, but it isn't necessary:
+ | 5. Can you tell me what you were doing on Dantooine again?
+ | Disciple: Like you, I was looking for some trace of the Jedi. I had heard mention that one of the Jedi Masters had gone there, but I found no trace of them.
+ | 1. [Awareness (12)] That's not the only reason.
+ | Dialog
+ | 
+ | Disciple: The other reason was the ruins of the Jedi Enclave... and once I arrived, I felt it was necessary to stay, to protect what was left.
+ | 1. Left?
+ | 2. Protect? Protect what?
+ | Disciple: Much had been taken from the Enclave, both by raiders... and others. I wished to preserve what I could.
+ | 1. What others?
+ | Disciple: Many artifacts were taken from the Enclave, but these thefts... they had to have been done by someone who knew the Enclave well. I suspect the Jedi themselves took the holocrons and records, but I do not know why.
+ | 1. You mentioned holocrons?
+ | Disciple: Someone has been taking holocrons from sites across the galaxy. It is almost as if someone does not want their knowledge used to find the Jedi. The situation on Dantooine is echoed in other places in the galaxy. Raiders, smugglers, all seek to plunder what remains of the Jedi... and even the Sith. More so than the Jedi themselves, I fear the loss of their history.
+ | 1. Why is that?
+ | Disciple: Much has been forgotten in recent wars, and I fear that greater troubles shall stem from that loss of knowledge in the future. The destruction of the Academy on Ossus near the Cron Drift in the Sith War. ...the teachings of Master Arca, the adventures of Jolee Bindo on the Rimward Missions. All of these things are in danger of being lost, forever.
+ | 7. What do you know about Force bonding?
+ | Dialog
+ | 
+ | Disciple: A force bond? What do you mean?
+ | 1. I have a connection with another that could be lethal to us both.
+ | Disciple: I'm not sure I understand.
+ | 1. I have a bond with another that transmits pain across distances - if she suffers, I suffer. If she dies, there's a chance I'll die, too.
+ | Disciple: :: Thinks for a moment. ::
+ | 1. What?
+ | 2. You were thinking of something. Tell me.
+ | Disciple: No, I thought I had heard mention of such connections in some of the holocrons - but I do not possess them, they are part of the holocrons that were taken from the Enclave.
+ | 1. Where would the holocrons be?
+ | Disciple: I do not know - I do not know who has taken them. If we were to find them, perhaps I could help you find the answers you need.
+ | 2. What do you remember about the bonds?
+ | Disciple: I know some of what you speak. It is said that when a Jedi and Padawan establish a close connection, that they can feel each other across distances and coordinate their movements in battle. The intensity of the connection varies... that bonding is said to also be something that manifests itself in such techniques as Bastilla's battle meditation, the ability to touch the minds of others, to demoralize or inspire them. It is also said that moments of death, or near-death, may also cause such bonds - the stronger one is in the Force, the stronger the connection is.
+ | 1. Is such a bond ever lethal?
+ | Disciple: I have never heard of a bond being lethal. I suppose such a thing is possible - I had not truly believed Bastilla's battle meditation until I had seen it in action.
+ | 2. You said feel each other across distances - what about each other's thoughts?
+ | Disciple: Thoughts - images, perhaps, but not actual communication and words. A bond often causes a sensation to be passed along it, such as extreme fear and pain. Still, I have seen Jedi who have the ability to communicate with aliens and beasts - it is a rare thing, perhaps telepathy is one such talent.
+Medical[edit | edit source]
+ | 2. What do you do again?
+ | Disciple: I am an historian and scientist working for the Republic, although I am certain my contemporaries would judge me more a historian than scientist. I have some training in the medical arts, if you are ever need in healing as well. But my chief passion is history. I came to Dantooine in the hopes of finding some trace of the Jedi, but you know how my explorations turned out - instead, it seems a Jedi came to me, and just in time.
+ | 3. You said you had medical training?
+ | Disciple: Yes, I have been trained by some of the best researchers in the Republic - which is a humbling experience, let me tell you. But if you ever need some medical items broken down or constructed, let me know.
+ | 1. I'd like to make use of your skills.
+You can now use him as a mobile Lab Station and, the next time you speak aboard the Ebon Hawk, you can ask if he can make some medpacs. You can also say you're in need of healing anywhere:
+ | 3. I am in need of healing.
+ | Dialog
+ | 
+ | Disciple: Very well. Let me see if I can treat your wounds. There - that should do it. Do you need anything else?
+ | 1. Are you sure that healed everything?
+With Alignment 40 or more:
+ | Disciple: Are you sure you need healing? You look good to me.
+ | 1. Is that so?
+ | 2. Oh? Are you certain?
+ | Disciple: Yes, your muscle tone looks good, you response time seems excellent, and I see nothing that would otherwise impair your health. You have the same vitality about you that you seem to possess, no matter what the circumstances.
+ | 1. Thanks - that's good to hear. Your words are appreciated.
+ | 2. That's an... extensive assessment.
+ | 3. I think you can keep your appraisals to yourself in the future.
+ | 4. Your flattery means nothing to me - nor does your worthless opinion.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Disciple (+8)
+ | Disciple: It is the truth. You are more fortunate than you know.
+ | Influence Lost: Disciple (-8)
+ | Disciple: I am surprised no one has told you the same before. It is the truth, and evident to anyone with eyes.
+ | Disciple: Very well - I hope I did not offend you in some way.
+Otherwise, with Alignment < 40:
+ | Disciple: You have no wounds that I can see - although the matter of your spirit is something you should address.
+ | 1. I have never felt stronger.
+ | 2. Save your counseling for the weak - I feel powerful, strong.
+ | Points Gained: -1
+ | Influence Lost: Disciple (-8)
+ | Disciple: It is illusionary, the strength you feel. But I will not debate it with you - your choices are your own.
+Republic[edit | edit source]
+ | 4. Tell me about the Republic.
+ | Dialog
+ | 
+ | Disciple: I do not know if you are aware of how fragile the Republic is at the moment. Its influence is stretched thin, and it grows weaker with time. Still, there is hope - and I must remind myself of it, even when times grow dark. As long as we hold Onderon and Telos, then perhaps we have a chance.
+ | 1. What would need to be done to save the Republic?
+ | Disciple: There are many factors - aside from protecting Telos and Onderon, we need a rallying force. We need the Jedi, even if they are just figureheads. That is why I traveled to Dantooine - to find some trace of them.
+ | 1. Why is the Jedi Order important?
+ | Disciple: The Jedi are a symbol. As much damage as their reputation took during the Sith War and the Jedi Civil War, there are still many who they serve as an example. Plus... there have been times in the past where a single Jedi has been enough to change the face of a world... or a galaxy. I suppose I still believe that might be possible. Despite the betrayal of many of the Jedi against the Republic, I must concede that as figureheads, they do serve a vital role.
+ | 1. Why is Dantooine important?
+ | Disciple: Dantooine was one of the few Republic worlds on the Outer Rim - it is why the Republic is attempting to get the settlement up and running. But now that you have protected the settlement on Dantooine, it will serve to stabilize the Republic presence on the Rim.
+ | 2. Why Telos and Onderon?
+ | Disciple: The Republic is fragile right now - Telos is important because its success will determine whether or not the other dead worlds receive the same reconstruction efforts. If Telos is rebuilt and made habitable again, it will affect a string of worlds along the Rim.
+ | 1. And Onderon?
+ | Disciple: Onderon, strangely enough, was unaffected by the Jedi Civil War. It's almost as if Revan didn't want to attack it. Its resources and position on the Rim make it a vital supply line and a guard post against Outer Rim attacks. Also, it's the only world in the Republic still capable of seeding ecosystems into other dead worlds - Onderon's wildlife is some of the most aggressive in the known galaxy. Merely placing some of those beasts on target worlds will guarantee their habitation for years to come.
+ | 3. How did this happen?
+ | Disciple: The Jedi Civil War brought much suffering to the galaxy, and the forces that Malak and Revan amassed against us seemed limitless. Many worlds were destroyed, trade routes disrupted, and the Republic fleet was almost decimated.
+ | Disciple: It was almost the end. But at that last year, the year before Revan vanished, Revan's assault on the Republic stopped. No one knows why, but it was all that saved the Republic. The fleet the Sith had amassed was no more, and the remaining Sith turned on each other, destroying the academy on Korriban. It did not matter - Revan had already won.
+ | Disciple: While it is said that Revan and several Republic heroes and Jedi defeated Malak, in many ways Malak had already won.
+ | 1. What do you mean?
+ | Disciple: The war was costly, and it shattered the Republic. In time, the Republic might recover. But if a threat strikes now, if certain key worlds are not held, then the Republic will collapse.
+ | 1. What worlds must be held?
+ | Disciple: Telos, Onderon, Dantooine... without them, the Republic will either die slowly... or quickly, by fire.
+ | 1. Then we must do what we can to defend the Republic.
+ | Points Gained: +1
+ | Influence Gained: Disciple (+8)
+ | Disciple: That is my thought. The Republic is not without its flaws, but it is preferable to anarchy. Without supply lines and a standing military, the chaos that would result would be greater than the Mandalorian Wars.
+Otherwise:
+ | 2. So what? Does the Republic deserve to be saved?
+ | 3. Let the Republic burn for all I care.
+ | Points Gained: -1
+ | Disciple: It is strange that someone who went to war against the Mandalorians would disregard the damage the fall of the Republic could cause. Of course, if you sought battle for its own sake, then perhaps I could understand your disregard.
+ | 1. No, I simply believe the Republic doesn't deserve to survive.
+ | Disciple: Does that mean that all who would die if the Republic collapsed also would not deserve to survive?
+ | 3. The galaxy belongs to those who can hold it. Perhaps the Sith are a better choice.
+ | Points Gained: -1
+ | Influence Lost: Disciple (-8)
+ | Disciple: Yes, to some, perhaps. Yet the Sith have already experienced their own collapse, and I suspect their new tactics are proof of that. There was no Sith leader since Revan who has survived long enough to rule. Even Malak turned on Revan, and caused his own downfall. The Sith respect order and control, that is true. But few of them seem ever able to hold that power for long - to see their philosophy at work is like watching a continual collapse, just like watching their academy fall in on itself.
+Otherwise:
+ | 2. I think the worlds the Republic control deserve their freedom.
+ | Disciple: It would not be freedom for many. There would be economic collapse, followed by starvation and war. Perhaps it would eventually stabilize after many years, but many would suffer and die unnecessarily.
+ | 1. I did not consider that - perhaps you are right.
+ | Points Gained: +1
+ | Influence Gained: Disciple (+8)
+ | Disciple: I do not claim that I am correct, only that I do not wish to see others suffer needlessly when the freedoms could be achieved another way. The Republic is in need of change, I do not deny it. But I do not believe it deserves death... or worse.
+Otherwise:
+ | 1. If they are that dependent on the Republic, then yes.
+ | Points Gained: -1
+ | Disciple: I see. Have you ever been in a situation where you are dependent on another? You could not have won the Mandalorian Wars alone. In fact, I doubt you would have survived if you had not others to stand with you. Where are they now, now that you stand here, and they are gone? Did they deserve to die? Did you deserve to live, dependent on them as you were?
+ | 2. The eventual independence would be worth it.
+ | 3. Then let them die.
+ | 4. I don't really care.
+ | Points Gained: -1
+ | Disciple: Then it only becomes a question of how much blood is worth the price, how many dead are worth such an ideal. And if that same independence could be achieved without battle.
+ | Disciple: I see the Mandalorian Wars left their mark. Perhaps the Mandalorians won after all... just as they defeated Revan with their philosophy of slaughter.
+ | Disciple: Of course you do not. But perhaps one day, you will, and I hope for that day.
+In all four cases:
+ | Influence Lost: Disciple (-8)
+ | Disciple: I think we are done speaking for the time being - this discussion has been too enlightening, I feel.
+Mission[edit | edit source]
+ | 3. What are you doing for the Republic?
+ | Disciple: Not much remains of the Jedi - I am trying to find what little does remain. There are so many histories, relics, holocrons that speak of their teachings and their code - I fear that unless someone makes an effort to find and keep them, they will be lost forever.
+ | 1. Why do you feel that is necessary?
+ | < 31 Influence > 59
+ | 31-59 Influence
+ | Disciple: [Influence: Success] Because I fear that unless the Jedi teachings are preserved, we will lose the galaxy.
+ | Disciple: [Influence: Failure] It is a private reason, but it is important. I do not like to see knowledge lost - and unless steps are taken, the Jedi teachings will suffer this fate.
+ | Dialog
+ | 
+ | Disciple: And because, whatever my feelings for the Order, they do not extend to preserving their knowledge.
+ | 1. Do you have a problem with the Jedi?
+ | Disciple: No, not their lore, their histories - but their masters, their teachers, perhaps. I have tried to keep an open mind about their practices, but I have seen the Republic scarred too many times by their students.
+ | 1. The Republic has also been saved countless times by these same Jedi, often through acts of sacrifice.
+ | 2. It is the truth - the foolishness and arrogance of the Jedi has brought much harm to the galaxy.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Disciple (+8)
+ | Influence Lost: Disciple (-8)
+ | Dialog
+ | 
+ | Disciple: That is a truth I cannot deny - it is sometimes difficult to see that side as I walked upon Dantooine. But I will consider what you have said. There is another side to their efforts and their teaching that I sometimes forget.
+ | Disciple: That is my feeling as well - and one can see it when one walks on Dantooine. Thank you - it is good to hear a perspective of one who has walked in their halls, and spoken to their masters. I thought I was the only one who held such doubts.
+ | 3. But why does finding the Jedi matter to you?
+ | Disciple: I'm trying to save the Republic - Dantooine and the Jedi Order are instrumental to that effort. Despite the troubles of the Jedi Civil War, there are those among the Republic who still favor the Jedi and wish them to return. And there are Admirals within the fleet, who recognize that the Jedi must be found if the Republic is to hold together. Yet as long as Onderon remains within the Republic, and the efforts on Telos succeed, that is all that matters.
+Familiarity[edit | edit source]
+ | 1. You look familiar to me.
+ | < 31 Influence > 69
+ | 31-69 Influence
+ | Disciple: [Influence: Success] You are correct. I am afraid I have not been entirely open with you concerning my past.
+ | Disciple: [Influence: Failure] I imagine in your travels of the galaxy, you have seen many people. Faces tend to blur together after a time.
+ | Dialog
+ | 
+ | Disciple: If I look familiar, it is because we have met before, at the Enclave on Dantooine, many years ago. As on Coruscant, Force Sensitive children are taken to Dantooine as well, though it is done rarely, and only with those they believe are destined to become Jedi Knights - it is the secret nature of the place. If you are not chosen by a master when you have come of age, however... then the path of the Jedi is denied you. I met you on Dantooine, long ago, briefly.
+ | Jedi Guardian
+ | Jedi Sentinel
+ | Jedi Consular
+ | Disciple: You taught us the ways of combat, how to hear music within the movements of a lightsaber blade.
+ | Disciple: You taught us how to move within the Force, and see it flow within others. How to see it in the behaviors of others, and use that sight to achieve truth.
+ | Disciple: You taught us the ways of the Force, how to hear it sing within others, within the life around Dantooine.
+ | Disciple: It is difficult to explain the difference between you and Master Vrook, but I think it is because he was knowledgeable, but not a leader, not a mentor. You were different - we could all feel it. And I knew that if I were to have a Master, I would want it to be you. And then you went to war. Many Jedi went to war, and the Jedi Masters proclaimed that you were Jedi no longer. Atris, the mistress of the archives, was first among them. I knew at that moment, that if you would no longer be a Jedi, then you must be correct. I realized I did not want to be a Jedi - instead, I wished to follow your path. And in any event, there was no one to train me, even if I wished it. They all went to war, as I grew past the age of acceptance.
+ | 1. But the Force... the path of the Jedi? You abandoned it?
+ | 2. So you turned away from the Jedi - the Force. Because of me?
+ | Disciple: It is possible to forget the Force, you know - if you not have felt it strongly enough, then there is little to miss. But I never felt the Force as strongly as I did when I was with you. And so I decided to serve the Republic, study the Jedi teachings, gather them, perhaps. It was important to me to understand the Jedi now that they were gone. I felt some part of you should be preserved, so that your lessons would not be lost.
+ | 1. I am sorry that my leaving for war had such... consequences on your future.
+ | 2. It was not my intention to leave, but I had to.
+ | 3. It is good you turned from the weakness and hypocrisy of the Jedi - as I did.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Disciple (+8)
+ | Influence Lost: Disciple (-8)
+ | Disciple: There is nothing to be done - and the past is the past.
+ | Disciple: Perhaps. I still harbor doubts about the path I walked.
+ | Received:
+500 Influenced the Disciple to open up about his past
+ | 4. There is something else I wanted to ask.
+You can now ask him to tell you about his training on Dantooine:
+ | 2. Tell me about your training on Dantooine.
+ | Dialog
+ | 
+ | Disciple: Many Jedi went to go fight in the Mandalorian Wars, and few returned. To their disciples left behind on Dantooine on Coruscant, there were few masters to train them. I was one such student. Perhaps not as strong in the Force as the others, but it really did not matter. The teachers left behind were few - only a few students were accepted as the Mandalorian Wars raged on. And when I came of age, there were no masters left to train me. So I was forced to leave the Order, to seek my path elsewhere. It was for the best, I think. I had begun to have... doubts. And I think the masters were aware of them.
+ | 1. Do you blame the Jedi who left? Do you blame me?
+ | Disciple: Never. I have seen you, traveled with you. My life was mine, not chained to yours.
+ | 2. I am sorry if my leaving ruined your chances of becoming a Jedi Knight.
+ | 3. Well, I doubt you could have completed the training anyway.
+ | 4. I really could care less.
+ | 4. I don't care enough to hear any more of this.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: Disciple (+8)
+ | Influence Lost: Disciple (-8)
+ | Disciple: Your apologies are not needed, or warranted. I chose not to follow the Jedi, and the choice was my own.
+ | Disciple: That may be so. I had already failed the first test. But enough of the past - it is the present that should concern us.
+ | Disciple: Then I shall speak no more of it.
+Otherwise:
+ | 1. I could train you to feel the Force again.
+ | 10-90 Influence
+ | Disciple: [Influence: Failure] It is not time, if there ever is a time.
+ | 2. If you were once a Jedi, what are you doing for the Republic then?
+ | 3. So are you some sort of spy for the Senate?
+ | Disciple: I am on a diplomatic mission - I am one of several tasked with attempting to contact any remaining Jedi and convince them to return to the Republic.
+ | Dialog
+ | 
+ | 1. Why did they choose you?
+ | Disciple: I know something of the Jedi. I have studied them for a good portion of my life... and now that they are gone, such studies are even more important.
+ | 2. Have you had any luck?
+ | Disciple: I do not think it is a matter of luck, or chance - only my own inability to find them. While the Enclave trained me for many things, I am afraid that the life of a bounty hunter was not among them.
+ | Mira: You can say that again.
+ | Disciple: I suspect my turning away from the Force is also a hindrance in such cases. I imagine the Jedi would be easier to find if I still maintained my connections to the Force.
+If you've found one or more Lost Jedi:
+ | 4. I have found one of the Lost Jedi.
+ | 4. I have found some of the Lost Jedi.
+ | Disciple: You have? Where have they gone - and why?
+ | Dialog
+ | 
+ | 1. They seem to have scattered over the past few years, across various planets. It is as if they went into exile.
+ | Disciple: Like you? Curious. It is unlike the Jedi to vanish when the Republic is in need of them - and the Republic is more in need of them now than ever.
+ | 4. It is of no consequence. I had other questions.
+Otherwise:
+ | 1. I think they've gone in search of what made the rest of the Lost Jedi vanish.
+ | 2. Who knows what their motives are?
+ | Disciple: And what was that - do you know?
+ | Disciple: Discerning the reasons for why the Jedi do as they do is indeed... confusing. But there must be some reason.
+ | 3. I believe Sith assassins have been stalking the Jedi, murdering them one by one.
+ | 1. I think they are being hunted - and they are hunting me as well.
+Otherwise:
+ | 2. I didn't say the Jedi lives.
+ | Disciple: What happened? Was the Jedi killed?
+ | 1. Killed? No, executed might be a better word, perhaps.
+ | 2. Yes - the Jedi was killed by an experienced assassin, trained in the Force.
+In every case:
+ | Disciple: Perhaps the Sith have learned from Malak's defeat and have chosen a different tactic. It is like them to strike from the shadows.
+ | Disciple: This has Revan's mark in things. Though gone from the galaxy, perhaps something of Revan's teachings remain.
+ | 2. What, did Revan abandon the Republic?
+Otherwise:
+ | 1. Left the galaxy?
+ | Disciple: Yes. I do not know if you heard of the civil war on Korriban, but it was caused by Revan's absence. From what I have been able to determine, a year after the battle with the Republic fleet that almost wiped the Republic out, Revan simply... left. When Revan did not return, the factions among the Sith turned on each other. As all those that follow the Sith do, in time.
+ | 1. Why would Revan leave, on the brink of defeating the Republic?
+ | 2. That makes no sense. Revan would not turn from battle.
+ | Disciple: That is a question I have found no answer to.
+ | ♂ Disciple: But it must have been important for Revan to leave as he did. He did nothing lightly, and his plans often could not been felt for months, or even years after she did them.
+ | ♀ Disciple: But it must have been important for Revan to leave as she did. She did nothing lightly, and her plans often could not been felt for months, or even years after she did them.
+Otherwise:
+ | Disciple: This has Revan's mark in things.
+ | ♂ 1. But I thought Revan had redeemed himself by defeating Malak.
+ | ♀ 1. But I thought Revan had redeemed herself defeating Malak.
+ | Disciple: Yes, but there is much of Revan's legacy that was not undone in the Jedi Civil War. I suspect these assassins are one of them. Master Vandar spoke of these assassins in the council chambers. They were used before large assaults on planets and Jedi, to weaken them.
+Otherwise:
+ | 3. They have decided to abandon the galaxy, as you assumed.
+ | Dialog
+ | 
+ | Disciple: It was as I feared... they have given up the galaxy. Without them...
+ | 1. Without them, there must be a new strength.
+ | Disciple: New strength?
+ | 1. Yes... the Jedi were weak. Now they have retreated, fled, leaving the Republic undefended, just like during the Mandalorian Wars.
+ | < 21 Influence > 79
+ | 21-79 Influence
+ | Disciple: [Influence: Success] I fear you are right. Their hesitation almost destroyed the Republic - and there is some evidence to suggest that it gave birth to the Jedi Civil War.
+ | Disciple: [Influence: Failure] I refuse to believe it - there must be some other reason, something else that we cannot see.
+ | Influence Lost: Disciple (-8)
+ | 1. Then reflect upon their failure and cowardice - I will leave you to your thoughts.
+Jedi[edit | edit source]
+ | 6. Do you know what happened to the Jedi?
+ | Dialog
+ | 
+ | Disciple: No. It is something of a mystery why they would exile themselves as they have. It is not the way of the Jedi to vanish in such a way... especially when the Republic is in need of them. I fear that there is something else at work, something that we cannot see. Then again, perhaps the Jedi are hiding simply because so many people hate them these days.
+ | 1. Why do you think people hate the Jedi?
+ | 2. The Jedi never knew the common people - especially when the common people were dying at the hands of Mandalorians.
+ | Disciple: It is difficult sometimes for the Jedi to see such things, since much of it is rooted in human nature, and the Jedi are often removed from events of daily life, insulated. But the reason the Jedi Civil War was named such was because few in the galaxy can recognize the difference between the Sith and the Jedi. To them, they are both Jedi - with different philosophies.
+ | 1. But Jedi have protected the galaxy for centuries, they seek peace, often through sacrifice.
+ | Points Gained: +1
+ | Dialog
+ | 
+ | Disciple: Not always. Jedi often fall. They caused much harm on Onderon, for example, in the name of peace and protection. Ulic Qel-Droma and Exar Kun, the two dark lords during the Sith War many decades ago, were once Jedi Knights, as were Revan and Malak. It is perhaps more amazing that some still trust Jedi after many have fallen and endangered the galaxy. It is also proof that a single Force wielder can change the face of the galaxy, and that is a frightening thing indeed.
+ | 2. Do you hate the Jedi?
+ | 3. You are right to hate Jedi weakness and hypocrisy.
+ | Points Gained: -1
+ | Dialog
+ | 
+ | Disciple: Hate? No, I do not hate them. They only raise questions without answers. Jedi are not supposed to be like the rest of us. They are supposed to see a higher purpose in all things. And they are supposed to train students responsibly and well, so mistakes of the past are not repeated. Yet all I saw was ignorance and arrogance, and what those seeds created in the Republic. It is difficult to follow the Jedi Code, when so few others have. But you know this.
+ | 1. What do you mean?
+ | 2. What are your problems with the Jedi?
+ | Disciple: [Influence: Failure] The problems with the Jedi are my own - I do not wish to burden you with my troubles.
+Training[edit | edit source]
+Once you've influenced the Disciple to open up about his past, and you don't want him to gain any more levels as a Soldier, you can ask the following:
+ | 1. I could train you to feel the Force again.
+ | < 10 Influence > 90
+ | Disciple: [Influence: Success] I think you are right. It is time.
+ | Dialog
+ | 
+ | Disciple: I have watched you. You have become strong in the Force again - but that is not all. You have achieved a center in the chaos around us, and I have felt it. My master - the one intended for me - left to fight in the Mandalorian Wars. Now she has returned, and I ask her now if she will train me in the ways of the Force.
+ | 1. I will train you.
+ | 2. Do not bow to me - that will be your first lesson as a Jedi.
+ | 3. Are your feelings on this matter clear? To become a Jedi is no easy path.
+ | Disciple: They are.
+ | Disciple: The one who was to be my Master was lost at Malachor V.
+ | Kreia: So it ends.
+ | Disciple: I want you to teach me the ways of the Force. To become a Jedi Knight, what I meant to be.
+Kreia only speaks if she's in your party, or you're aboard the Ebon Hawk. There are two more alternatives if you have Alignment < 40:
+ | 4. Only if you are willing to embrace the Sith.
+ | 5. If you do this, then you shall not be trained as a Jedi - but as some stronger, more vicious.
+ | Disciple: I have thought about what you have said about the Jedi Order. You were correct - it was a truth I did not want to face.
+ | 1. The Jedi Order is stagnant and weak. Their teachings failed you, and they have failed me.
+ | 2. What kind of galaxy is it where the Jedi hide and wait for their enemies to come to them?
+ | 3. Strength comes from facing such truths - and then fighting their source.
+ | Disciple: While I do not believe the Jedi to be evil, I feel perhaps that they are misguided - it is hard to protect the galaxy when you are removed from it and its people. The Mandalorian Wars - I understand why the Jedi hesitated, but at the same time, I wonder if they had joined Revan, united, if perhaps the Jedi Civil War would never have happened. It is very easy to blame Revan and Malak - yet the Jedi Council was equally to blame. I believe that there is very little truth that can be found within the conference room on Coruscant.
+ | 1. In that, you and I agree.
+ | Disciple: The galaxy needs strength now. If the Jedi will not come forth and fight this threat, then we must. And if that strength comes from the dark side, then that is what we must accept. I ask that you train me in the ways of the Force, to teach me the ways of power so that a greater stability may be achieved. I do not believe in the Jedi and the Sith. I believe in strength, and that is what the galaxy needs now.
+In every case:
+ | 1. Then sit, listen, and obey my commands.
+ | 1. Then let us meditate - and open ourselves to the Force.
+ | Disciple: :: Silence ::
+ | 1. Imagine the day you learned the Jedi had left for the Wars - the sense of abandonment.
+ | 1. Imagine the initial teachings of the Jedi, your first steps within the Enclave.
+ | 1. Remember how empty the Enclave seemed, the hollow words of the Council.
+ | 1. Remember the wind among the plains of Dantooine, the feel of life around you.
+ | 1. Think of what you felt as you watched Jedi student turn on teacher, then turn on the Republic itself.
+ | 1. Think of what you felt when our paths crossed again.
+ | 1. And at last - feel the death of the galaxy through the Force.
+ | 1. And at last... see the galaxy through the Force.
+ | 1. [The Disciple has taken his first steps on the path of a Dark Jedi Consular. His power will grow as he travels with you and masters what you know of the Force.]
+ | 1. [The Disciple has taken his first steps on the path of a Jedi Consular He will grow in ability as he travels with you and learns what you know of the Force.]
+Go to top
+Bao-Dur
+Disciple
+G0-T0
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Disciple&oldid=1037271"
+Hidden category: 
+Sub-pages
+ This page was last edited on 5 August 2023, at 23:37.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

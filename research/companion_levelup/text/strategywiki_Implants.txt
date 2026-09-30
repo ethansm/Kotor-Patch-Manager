@@ -1,0 +1,2645 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Implants — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Implants
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Packages
+1.1 Reflex Package
+1.2 Pheromone Package
+1.3 Cardio Package
+1.4 Strength Package
+1.5 Response Package
+1.6 Fitness Package
+1.7 Skills Package
+1.8 Health Package
+1.9 Physical Boost Package
+1.10 Mental Boost Package
+2 Implants
+2.1 Retinal Combat Implant
+2.2 Lornan Implant
+2.3 Biotech Implant
+2.4 Power Implant
+2.5 Alacrity Implant
+2.6 Insight Implant
+2.7 Skills Implant
+2.8 Durability Implant
+2.9 Physical Boost Implant
+2.10 Mental Boost Implant
+3 Systems
+3.1 Bio-Antidote System
+3.2 Nerve Enhancement System
+3.3 Reaction System
+3.4 Advanced Combat System
+3.5 Bavakar Strength System
+3.6 Cardio Power System
+3.7 Skills System
+3.8 Numbness System
+3.9 Physical Boost System
+3.10 Mental Boost System
+4 D-Packages
+4.1 Strength D-Package
+4.2 Immunity D-Package
+4.3 Perception D-Package
+4.4 Enhancement D-Package
+4.5 Immortality D-Package
+4.6 Quickness D-Package
+4.7 Skills D-Package
+4.8 Universal D-Package
+4.9 Physical Boost D-Package
+4.10 Mental Boost D-Package
+5 Summary
+An implant requires minimum Constitution for an organic character to equip: this is the permanent value (bonuses from other Equipment, Stimulants, Force powers and Mastery not included).
+However, if an implant is selected for a reward, merchant or container inventory then the chance of each subtype being selected is determined by your character's maximum Constitution (including bonuses):
+ | Max Con
+ | Packages
+ | Implants
+ | Systems
+ | D-Packages
+ | < 12
+ | Yes
+ | No
+ | No
+ | No
+ | 12-13
+ | 2/3
+ | 1/3
+ | No
+ | No
+ | 14-15
+ | 2/5
+ | 2/5
+ | 1/5
+ | No
+ | 16-17
+ | 2/7
+ | 2/7
+ | 2/7
+ | 1/7
+ | > 17
+ | 1/4
+ | 1/4
+ | 1/4
+ | 1/4
+So only Packages can be selected with less than 12 Constitution, but all four subtypes have equal chance of being selected with 18 Constitution or more.
+The first four Packages, Implants, Systems and D-Packages can be created using a Lab Station with sufficient Treat Injury rank and Chemicals:
+ | Implant
+ | Minimum
+Constitution
+ | Treat
+Injury
+ | Chemical
+Cost
+ | Reflex Package
+ | 12
+ | 8
+ | 37
+ | Pheromone Package
+ | 17
+ | 150
+ | Cardio Package
+ | 26
+ | 450
+ | Strength Package
+ | 35
+ | 850
+ | Retinal Combat Implant
+ | 14
+ | 5
+ | 37
+ | Lornan Implant
+ | 18
+ | 150
+ | Biotech Implant
+ | 27
+ | 450
+ | Power Implant
+ | 36
+ | 850
+ | Bio-Antidote System
+ | 16
+ | 10
+ | 37
+ | Nerve Enhancement System
+ | 19
+ | 150
+ | Reaction System
+ | 28
+ | 450
+ | Advanced Combat System
+ | 37
+ | 850
+ | Strength D-Package
+ | 18
+ | 11
+ | 37
+ | Immunity D-Package
+ | 20
+ | 150
+ | Perception D-Package
+ | 29
+ | 450
+ | Enhancement D-Package
+ | 38
+ | 850
+An implant is normally received from the following:
+ | World
+ | Area
+ | Source
+ | Telos: Citadel Station
+ | Bumani Exchange Corp.
+ | Luxa
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (Code (Level + 5) / 3)
+Summary at end of page.
+Packages[edit | edit source]
+Packages require minimum Constitution 12 to equip.
+Reflex Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (8) (Chemical Cost: 37)
+Attributes Required: Minimum Constitution: 12
+Saves: Reflex +1
+ | This implant boosts the regular energy impulses of the nervous system, sharpening the performance of dexterous action. Inactive users may suffer the odd lingering twitch.
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Peragus II
+ | Fuel Depot
+ | Plasteel Cylinder
+ | 75
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Geeda
+ | 78
+ | 1
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 75
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 75
+ | 1
+ | Docks
+ | Fassa (levels 1-3)
+ | 75
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 75
+ | 1
+ | Onderon
+ | Merchant Quarter
+ | Gegorran
+ | 75
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 75
+ | 1
+Pheromone Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (17) (Chemical Cost: 150)
+Attributes Required: Minimum Constitution: 12
+Skills: Persuade +1
+Charisma: +1
+ | This implant allows the user to subtly secrete synthetic pheromones that generally stimulate a pleasant behavior response in a wide range of species.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 300
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 300
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 1-3) 
+ | 300
+ | 1
+ | Docks
+ | Fassa (levels 4-6)
+ | 300
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 300
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 360
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 300
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 300
+ | 1
+Cardio Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (26) (Chemical Cost: 450)
+Attributes Required: Minimum Constitution: 12
+Constitution: +1
+ | This implant micromanages the cardiovascular system, effectively increasing the user's constitution faster and further than hard work and exercise might.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 900
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 900
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 4-6) 
+ | 900
+ | 1
+ | Docks
+ | Fassa (levels 7-9)
+ | 900
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 900
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 1080
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 900
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 900
+ | 1
+Strength Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (35) (Chemical Cost: 850)
+Attributes Required: Minimum Constitution: 12
+Strength: +1
+ | This implant effectively increases the user's strength without the need for additional muscle mass through a combination of autonomic regulatory center management and small doses of adrenal stimulants.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 1700
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 1700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 7-9) 
+ | 1700
+ | 1
+ | Docks
+ | Fassa (levels 10-12)
+ | 1700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 1700
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 2040
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 1700
+ | 1
+Response Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 12
+Skills: Stealth + 1
+Dexterity: +1
+ | This implant boosts the regular energy impulses of the nervous system, sharpening the performance of dexterous action. Inactive users may suffer the odd lingering twitch.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 3700
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 3700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 10-12) 
+ | 3700
+ | 1
+ | Docks
+ | Fassa (levels 13-15)
+ | 3700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 3700
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 3700
+ | 1
+Fitness Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 12
+Constitution: +1
+Strength: +1
+ | This simple but advanced implant combines the functionality of the more common Strength and Cardio Packages.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 7600
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 13-15) 
+ | 7600
+ | 1
+ | Docks
+ | Fassa (levels 16-18)
+ | 7600
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 7600
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 7600
+ | 1
+Skills Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 12
+Skills: Awareness +1, Computer Use +1, Demolitions +1, Persuade +1, Repair +1, Security +1, Stealth +1, Treat Injury +1
+ | This ingenious device modifies brain chemistry to improve general problem solving and data processing abilities.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 12800
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 16-18) 
+ | 12800
+ | 1
+ | Docks
+ | Fassa (levels 19-21)
+ | 12800
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 12800
+ | 1
+Health Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 12
+Constitution: +1
+Regeneration: 1
+ | This advanced implant package employs nano-technology to speed healing.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 18200
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 19-21) 
+ | 18200
+ | 1
+ | Docks
+ | Fassa (levels 22-24)
+ | 18200
+ | 1
+Physical Boost Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 12
+Constitution: +1
+Dexterity: +1
+Strength: +1
+ | This device improves all physical attributes, making it one of the most valuable of implants of its type.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 22-24) 
+ | 23600
+ | 1
+ | Docks
+ | Fassa (levels 25-27)
+ | 23600
+ | 1
+Mental Boost Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 12
+Charisma: +1
+Intelligence: +1
+Wisdom: +1
+ | This device improves all mental attributes, making it one of the most valuable of implants of its type.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 25-27) 
+ | 29000
+ | 1
+ | Docks
+ | Fassa (levels 28-30)
+ | 29000
+ | 1
+Implants[edit | edit source]
+Implants require minimum Constitution 14 to equip.
+Retinal Combat Implant[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (5) (Chemical Cost: 37)
+Attributes Required: Minimum Constitution: 14
+Immunity: Critical Hits
+Skills: Awareness +1
+ | This ocular implant greatly increases visual acuity, allowing the user to better track enemy movement in combat. General awareness will improve as well.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 75
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 75
+ | 1
+ | Docks
+ | Fassa (levels 1-3)
+ | 75
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 75
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 90
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 75
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 75
+ | 1
+Lornan Implant[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (18) (Chemical Cost: 150)
+Attributes Required: Minimum Constitution: 14
+Damage Immunity: 10% vs. Electrical
+Damage Immunity: 5% vs. Energy
+ | This implant regulates electrical current, protecting the user's brain from energy surges.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 300
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 300
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 1-3) 
+ | 300
+ | 1
+ | Docks
+ | Fassa (levels 4-6)
+ | 300
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 300
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 360
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 300
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 300
+ | 1
+Biotech Implant[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (27) (Chemical Cost: 450)
+Attributes Required: Minimum Constitution: 14
+Regeneration: 1
+ | This implant does use relatively experimental nano-technology to speed healing, but relies more on coagulants and solid doses of pain relievers. If you feel better, you are better.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 900
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 900
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 4-6) 
+ | 900
+ | 1
+ | Docks
+ | Fassa (levels 7-9)
+ | 900
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 900
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 1080
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 900
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 900
+ | 1
+Power Implant[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (36) (Chemical Cost: 850)
+Attributes Required: Minimum Constitution: 14
+Saves: Fortitude +1
+Strength: +2
+ | This improved variant of the Strength Package employs substantially higher doses of stimulants.
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Geeda
+ | 1785
+ | 1
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 1700
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 1700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 7-9) 
+ | 1700
+ | 1
+ | Docks
+ | Fassa (levels 10-12)
+ | 1700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 1700
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 2040
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 1700
+ | 1
+Alacrity Implant[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 14
+Saves: Reflex +1
+Dexterity: +2
+ | The Alacrity Implant enhances the user's nervous system, significantly improving reaction times.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 3700
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 3700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 10-12) 
+ | 3700
+ | 1
+ | Docks
+ | Fassa (levels 13-15)
+ | 3700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 3700
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 3700
+ | 1
+Insight Implant[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 14
+Saves: Will +1
+Wisdom: +2
+ | By stimulating less used neural networks in the brain, this implant allows the user to see solutions they may not have otherwise considered.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 7600
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 13-15) 
+ | 7600
+ | 1
+ | Docks
+ | Fassa (levels 16-18)
+ | 7600
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 7600
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 7600
+ | 1
+Skills Implant[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 14
+Skills: Awareness +2, Computer Use +2, Demolitions +2, Persuade +2, Repair +2, Security +2, Stealth +2, Treat Injury +2
+ | This ingenious device modifies brain chemistry to improve general problem solving and data processing abilities.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 12800
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 16-18) 
+ | 12800
+ | 1
+ | Docks
+ | Fassa (levels 19-21)
+ | 12800
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 12800
+ | 1
+Durability Implant[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 14
+Damage Resistance: Resist 5/- vs. Electrical
+Damage Resistance: Resist 5/- vs. Energy
+Constitution: +1
+ | This implant regulates current through the body, both improving stamina and providing resistance to energy-related attacks.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 18200
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 19-21) 
+ | 18200
+ | 1
+ | Docks
+ | Fassa (levels 22-24)
+ | 18200
+ | 1
+Physical Boost Implant[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 14
+Constitution: +1
+Dexterity: +2
+Strength: +2
+ | This device improves all physical attributes, making it one of the most valuable of implants of its type.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 22-24) 
+ | 23600
+ | 1
+ | Docks
+ | Fassa (levels 25-27)
+ | 23600
+ | 1
+Mental Boost Implant[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 14
+Charisma: +2
+Intelligence: +1
+Wisdom: +2
+ | This device improves all mental attributes, making it one of the most valuable of implants of its type.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 25-27) 
+ | 29000
+ | 1
+ | Docks
+ | Fassa (levels 28-30)
+ | 29000
+ | 1
+Systems[edit | edit source]
+Systems require minimum Constitution 16 to equip.
+Bio-Antidote System[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (10) (Chemical Cost: 37)
+Attributes Required: Minimum Constitution: 16
+Immunity: Poison
+Constitution: +1
+ | This implant maintains an ever-circulating stream of antitoxins in the user, increasing relevant antidotes for specific poisons introduced. Side effects include dry mouth.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 75
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 75
+ | 1
+ | Docks
+ | Fassa (levels 1-3)
+ | 75
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 75
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 90
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 75
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 75
+ | 1
+Nerve Enhancement System[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (19) (Chemical Cost: 150)
+Attributes Required: Minimum Constitution: 16
+Immunity: Stun, Fear, Horror
+ | This implant regulates the nervous system, preventing loss of consciousness due to sudden impact or sensory overload.
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Geeda
+ | 315
+ | 1
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 300
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 300
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 1-3) 
+ | 300
+ | 1
+ | Docks
+ | Fassa (levels 4-6)
+ | 300
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 300
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 360
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 300
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 300
+ | 1
+Reaction System[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (28) (Chemical Cost: 450)
+Attributes Required: Minimum Constitution: 16
+Dexterity: +3
+ | This system supplants the user's normal nervous system, enhancing it artificially. It allows the impluses to travel faster and farther along the system, improving reaction time, while also improving fine motor control, increasing accuracy.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 900
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 900
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 4-6) 
+ | 900
+ | 1
+ | Docks
+ | Fassa (levels 7-9)
+ | 900
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 900
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 1080
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 900
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 900
+ | 1
+Advanced Combat System[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (37) (Chemical Cost: 850)
+Attributes Required: Minimum Constitution: 16
+Attack Modifier +1
+Bonus Feat: Weapon Focus: Blaster Pistol, Blaster Rifle
+Bonus Feat: Weapon Specialization: Blaster Pistol, Blaster Rifle
+ | This system supplants the user's normal nervous system, enhancing it artificially. It allows the impluses to travel faster and farther along the system, improving reaction time, while also improving fine motor control, increasing accuracy.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 1700
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 1700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 7-9) 
+ | 1700
+ | 1
+ | Docks
+ | Fassa (levels 10-12)
+ | 1700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 1700
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 2040
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 1700
+ | 1
+Bavakar Strength System[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 16
+Strength: +3
+ | This implant stimulates physical performance well beyond the user's norm. The Bavakar Medical Research Labs are at the forefront of developmental cybernetics.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Telos: Citadel Station
+ | Entertainment
+ | Samhan Dobo
+ | 3700
+ | 1
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 3700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 10-12) 
+ | 3700
+ | 1
+ | Docks
+ | Fassa (levels 13-15)
+ | 3700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 3700
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 3700
+ | 1
+Cardio Power System[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 16
+Constitution: +4
+ | This implant increases the cardio-vascular recovery rate and pain tolerance of the wearer, giving them almost supernatural stamina.
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Onderon
+ | Royal Palace
+ | Master Kavar
+ | 7600
+ | 1
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 7600
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 13-15) 
+ | 7600
+ | 1
+ | Docks
+ | Fassa (levels 16-18)
+ | 7600
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 7600
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 7600
+ | 1
+Skills System[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 16
+Skills: Awareness +4, Computer Use +4, Demolitions +4, Persuade +4, Repair +4, Security +4, Stealth +4, Treat Injury +4
+ | This ingenious device modifies brain chemistry to improve general problem solving and data processing abilities.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 12800
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 16-18) 
+ | 12800
+ | 1
+ | Docks
+ | Fassa (levels 19-21)
+ | 12800
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 12800
+ | 1
+Numbness System[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 16
+Damage Resistance: Resist 5/-vs. Bludgeoning, Piercing, Slashing
+Constitution: +2
+ | By converting all pain into benign brain signals, this implant system greatly increases one's durability. It has no direct negative side effects, as its user is still fully aware of his body's current state of health.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 18200
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 19-21) 
+ | 18200
+ | 1
+ | Docks
+ | Fassa (levels 22-24)
+ | 18200
+ | 1
+Physical Boost System[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 16
+Constitution: +2
+Dexterity: +3
+Strength: +2
+ | This device improves all physical attributes, making it one of the most valuable of implants of its type.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 22-24) 
+ | 23600
+ | 1
+ | Docks
+ | Fassa (levels 25-27)
+ | 23600
+ | 1
+Mental Boost System[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 16
+Charisma: +2
+Intelligence: +2
+Wisdom: +3
+ | This device improves all mental attributes, making it one of the most valuable of implants of its type.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 25-27) 
+ | 29000
+ | 1
+ | Docks
+ | Fassa (levels 28-30)
+ | 29000
+ | 1
+D-Packages[edit | edit source]
+D-Packages require minimum Constitution 18 to equip.
+Strength D-Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (11) (Chemical Cost: 37)
+Attributes Required: Minimum Constitution: 18
+Constitution: +1
+Strength: +1
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Geeda
+ | 78
+ | 1
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 75
+ | 1
+ | Docks
+ | Fassa (levels 1-3)
+ | 75
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 75
+ | 1
+ | Onderon
+ | Merchant Quarter
+ | Gegorran
+ | 75
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 75
+ | 1
+Immunity D-Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (20) (Chemical Cost: 150)
+Attributes Required: Minimum Constitution: 18
+Immunity: Critical Hits, Poison, Stun, Fear, Horror
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 300
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 1-3) 
+ | 300
+ | 1
+ | Docks
+ | Fassa (levels 4-6)
+ | 300
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 300
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 360
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 300
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 300
+ | 1
+Perception D-Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (29) (Chemical Cost: 450)
+Attributes Required: Minimum Constitution: 18
+Charisma: +1
+Wisdom: +2
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 900
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 4-6) 
+ | 900
+ | 1
+ | Docks
+ | Fassa (levels 7-9)
+ | 900
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 900
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 1080
+ | 1
+ | Merchant Quarter
+ | Gegorran
+ | 900
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 900
+ | 1
+Enhancement D-Package[edit | edit source]
+ | 
+ | 
+Skill Required to Create: Treat Injury (38) (Chemical Cost: 850)
+Attributes Required: Minimum Constitution: 18
+Bonus Feat: Dueling, Improved Dueling, Master Dueling
+Bonus Feat: Two-Weapon Fighting, Improved Two-Weapon Fighting, Master Two-Weapon Fighting
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's also a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 1700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 7-9) 
+ | 1700
+ | 1
+ | Docks
+ | Fassa (levels 10-12)
+ | 1700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 1700
+ | 1
+ | Onderon
+ | Iziz Spaceport
+ | Margar
+ | 2040
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 1700
+ | 1
+Immortality D-Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 18
+Constitution: +3
+Bonus Feat: Toughness, Improved Toughness, Master Toughness
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 3700
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 10-12) 
+ | 3700
+ | 1
+ | Docks
+ | Fassa (levels 13-15)
+ | 3700
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 3700
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 3700
+ | 1
+Quickness D-Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 18
+Defense Bonus: 1
+Dexterity: +4
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 7600
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 13-15) 
+ | 7600
+ | 1
+ | Docks
+ | Fassa (levels 16-18)
+ | 7600
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 7600
+ | 1
+ | Dantooine
+ | Khoonda
+ | Adum Larp
+ | 7600
+ | 1
+Skills D-Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 18
+Skills: Awareness +6, Computer Use +6, Demolitions +6, Persuade +6, Repair +6, Security +6, Stealth +6, Treat Injury +6
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 12800
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 16-18) 
+ | 12800
+ | 1
+ | Docks
+ | Fassa (levels 19-21)
+ | 12800
+ | 1
+ | Dxun
+ | Mandalorian Ruins
+ | Kex
+ | 12800
+ | 1
+Universal D-Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 18
+Charisma: +2
+Constitution: +2
+Dexterity: +2
+Intelligence: +2
+Strength: +2
+Wisdom: +2
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Oondar
+ | 18200
+ | 1
+ | Refugee Quad
+ | Saquesh (levels 19-21) 
+ | 18200
+ | 1
+ | Docks
+ | Fassa (levels 22-24)
+ | 18200
+ | 1
+Physical Boost D-Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 18
+Constitution: +3
+Dexterity: +3
+Strength: +3
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 22-24) 
+ | 23600
+ | 1
+ | Docks
+ | Fassa (levels 25-27)
+ | 23600
+ | 1
+Mental Boost D-Package[edit | edit source]
+ | 
+ | 
+Attributes Required: Minimum Constitution: 18
+Charisma: +3
+Intelligence: +3
+Wisdom: +3
+ | D-Package implants are larger and more intrusive than other types. They tend to have more impressive effects, but can only be used by very healthy individuals.
+There's a chance to receive from the following:
+ | World
+ | Area
+ | Source
+ | Cost
+ | Amount
+ | Nar Shaddaa
+ | Refugee Quad
+ | Saquesh (levels 25-27) 
+ | 29000
+ | 1
+ | Docks
+ | Fassa (levels 28-30)
+ | 29000
+ | 1
+Summary[edit | edit source]
+ | Code
+ | Implant
+ | Min Con
+ | Attributes
+ | Other bonus(es)
+ | S
+ | D
+ | C
+ | I
+ | W
+ | C
+ | 01
+ | Reflex Package
+ | 12
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Saves: Reflex +1
+ | 02
+ | Pheromone Package
+ | 12
+ | 
+ | 
+ | 
+ | 
+ | 
+ | +1
+ | Skills: Persuade +1
+ | 03
+ | Cardio Package
+ | 12
+ | 
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 04
+ | Strength Package
+ | 12
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 05
+ | Response Package
+ | 12
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | Skills: Stealth +1
+ | 06
+ | Fitness Package
+ | 12
+ | +1
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 07
+ | Skills Package
+ | 12
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Skills: All +1
+ | 08
+ | Health Package
+ | 12
+ | 
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | Regeneration: 1
+ | 09
+ | Physical Boost Package
+ | 12
+ | +1
+ | +1
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 10
+ | Mental Boost Package
+ | 12
+ | 
+ | 
+ | 
+ | +1
+ | +1
+ | +1
+ | 
+ | 01
+ | Retinal Combat Implant
+ | 14
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Skills: Awareness +1
+ | 02
+ | Lornan Implant
+ | 14
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 10% 5%
+ | 03
+ | Biotech Implant
+ | 14
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Regeneration: 1
+ | 04
+ | Power Implant
+ | 14
+ | +2
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Saves: Fortitude +1
+ | 05
+ | Alacrity Implant
+ | 14
+ | 
+ | +2
+ | 
+ | 
+ | 
+ | 
+ | Saves: Reflex +1
+ | 06
+ | Insight Implant
+ | 14
+ | 
+ | 
+ | 
+ | 
+ | +2
+ | 
+ | Saves: Will +1
+ | 07
+ | Skills Implant
+ | 14
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Skills: All +2
+ | 08
+ | Durability Implant
+ | 14
+ | 
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | 5/-
+ | 09
+ | Physical Boost Implant
+ | 14
+ | +2
+ | +2
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 10
+ | Mental Boost Implant
+ | 14
+ | 
+ | 
+ | 
+ | +1
+ | +2
+ | +2
+ | 
+ | 01
+ | Bio-Antidote System
+ | 16
+ | 
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 02
+ | Nerve Enhancement System
+ | 16
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 03
+ | Reaction System
+ | 16
+ | 
+ | +3
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 04
+ | Advanced Combat System
+ | 16
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Attack: +1 Feat: 
+ | 05
+ | Bavakar Strength System
+ | 16
+ | +3
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 06
+ | Cardio Power System
+ | 16
+ | 
+ | 
+ | +4
+ | 
+ | 
+ | 
+ | 
+ | 07
+ | Skills System
+ | 16
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Skills: All +4
+ | 08
+ | Numbness System
+ | 16
+ | 
+ | 
+ | +2
+ | 
+ | 
+ | 
+ | 5/-
+ | 09
+ | Physical Boost System
+ | 16
+ | +2
+ | +3
+ | +2
+ | 
+ | 
+ | 
+ | 
+ | 10
+ | Mental Boost System
+ | 16
+ | 
+ | 
+ | 
+ | +2
+ | +3
+ | +2
+ | 
+ | 01
+ | Strength D-Package
+ | 18
+ | +1
+ | 
+ | +1
+ | 
+ | 
+ | 
+ | 
+ | 02
+ | Immunity D-Package
+ | 18
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 03
+ | Perception D-Package
+ | 18
+ | 
+ | 
+ | 
+ | 
+ | +2
+ | +1
+ | 
+ | 04
+ | Enhancement D-Package
+ | 18
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Feat: 
+ | 05
+ | Immortality D-Package
+ | 18
+ | 
+ | 
+ | +3
+ | 
+ | 
+ | 
+ | Feat: 
+ | 06
+ | Quickness D-Package
+ | 18
+ | 
+ | +4
+ | 
+ | 
+ | 
+ | 
+ | Defense Bonus: 1
+ | 07
+ | Skills D-Package
+ | 18
+ | 
+ | 
+ | 
+ | 
+ | 
+ | 
+ | Skills: All +6
+ | 08
+ | Universal D-Package
+ | 18
+ | +2
+ | +2
+ | +2
+ | +2
+ | +2
+ | +2
+ | 
+ | 09
+ | Physical Boost D-Package
+ | 18
+ | +3
+ | +3
+ | +3
+ | 
+ | 
+ | 
+ | 
+ | 10
+ | Mental Boost D-Package
+ | 18
+ | 
+ | 
+ | 
+ | +3
+ | +3
+ | +3
+ | 
+Go to top
+Swoop racing
+Implants
+Head
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Implants&oldid=1042950"
+Hidden category: 
+Sub-pages
+ This page was last edited on 29 August 2023, at 19:35.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
