@@ -1,6 +1,8 @@
 # Mod Idea 4: Shield Bar (party portrait HUD)
 
-**Status (2026-09-29, end of research session 1): research-only, no code,
+**STATUS (2026-09-29, end of session 2): data layer FULLY DECODED (pool = `ints[2]` of the type-0x02 effect, see "Session 2 decode" at the bottom); draw site chosen + verified live (`0x00745774`); probe build 1.1.0-probe in `buff_duration_hud_src/` (source of record; the STOCK 16-patch set is what is installed live right now); style plan = re-use the vitality bar's own texture. OPEN: a blackout of the 3D scene while any item shield is active (see bottom); temp-HP (Fury) type id; leader toggle-button `.gui` shift. Older session-1 status follows.**
+
+**Session-1 status: research-only, no code,
 no live changes.** The Buff HUD (the prerequisite, Mod 2) is complete and
 live. Resolved: data layer (`forceshields.2da`), S3 (which effects have a
 pool), S5 (layout is GUI data, and a collision was found), and the
@@ -233,8 +235,8 @@ Fury-red would collide with vitality.
 - `CGameEffect`: `+0x8` ushort type, `+0xa` ushort subtype/flags (the Mod 2
   probe logged `+0x8` as an int, e.g. `0x90028`), `+0xc` float duration (s),
   `+0x10`/`+0x14` expiry day/ms, `+0x18` creator id, `+0x1c` spells.2da row,
-  `+0x34` int params (`GetInteger(i)` = `*(int*)(e+0x34+4i)`, `0x005e4e60`),
-  float params `GetFloat` = `e+0x38+4i` (sic, as decompiled), object ids
+  int params: count `+0x30`, POINTER `+0x34` (`GetInteger(i)` = `((int*)*(int*)(e+0x34))[i]`, `0x005e4e60`; the earlier text here was wrong),
+  float params `GetFloat` = likely the same pointer scheme (unverified), object ids
   `+0x78`, strings `+0x48` (stride 8).
 - Creature active effects: `creature+0x148` (`CGameEffect**`), `+0x14c` count.
 - Slot → creature: Buff HUD hooks 1a/1b (`SnapshotPortraitSlot`, in
@@ -300,3 +302,45 @@ Probe build `1.1.0-probe` (`ShieldProbeSlot`) uses it; flag file `shieldprobe.tx
 - **S1 (open)**: `+0x34`=count(8), `+0x38`=pointer to the int array (params are not inline). Probe 2 logs the array. No drain was seen yet
   because only the pointer was compared.
 - **S4/S6**: S6: health bar is red (`~#C0300F`-ish rim), Force bar cyan (`#00D0E8`-ish), portrait frame teal. S4 not observed.
+
+## Session 2 decode (2026-09-29): everything the implementation needs about the data
+
+**Force shield mechanics (all decompiled; DB lessons 94-98, functions `00594810`, `00541fd0`, `00593a30`).**
+- Effect **type `0x6b`** = `EffectForceShield`. Its apply handler `FUN_00594810` reads the `forceshields.2da` row and applies two
+  child effects that share the shield's spell id (`+0x1c`): **type `0x1e` sub 1** (`ints[0]` = `VisualEffectDef`, the visualeffects.2da
+  row 2040..2048/2060, i.e. the color key!) and **type `0x02` sub 9** (`ints[0]=DamageFlags, [1]=Resistance(300), [2]=Amount = THE POOL,
+  [3]=VulnerFlags(2048 ion), [4]=1`). Activation also leaves a type `0x43` sub 1 icon effect and the `0x6b` wrapper (dur 224 s in the log).
+- Absorb code `FUN_00541fd0` (type 2): `pool=GetInteger(2)`; each hit `SetInteger(2, pool - damage*mult)` in place (mult 2 vs ion, +1 for
+  some attacker classes); if `pool - absorbed < 1` the effect is removed (shield breaks). **So remaining = `ints[2]`; max = table `Amount`
+  (look up by (`0x1e.ints[0]`, `0x02.ints[0]`) or use the largest value seen), and the pool never refills.** `FUN_00541430` is the
+  sibling for type 12 (EffectDamageResistance with a limit: `[1]`=per-hit, `[2]`=limit pool, 0 = unlimited), same in-place decrement.
+- Effect ints live behind a pointer: `+0x30`=count, `+0x34`=`int*`. Probe 1 (`ints` read inline) only ever saw the pointer, which is why
+  no drain showed. Probe 3 (built, staged, NOT yet run) reads `+0x30/+0x34` and logs `arr@` dumps. **Still unverified live: that
+  `ints[2]` actually decrements on hits (expected from the decompile).**
+- Temp HP (Fury/Wookiee Rage): engine effect-type id still unknown (nwscript `EFFECT_TYPE_TEMPORARY_HITPOINTS`); find it by logging APPLY
+  while casting Fury (probe 3 does this) or from the apply table in `FUN_00593a30`. Ignore for v1 if not found.
+
+**Draw site (verified live, probe 1).** `FUN_00745770` (thiscall slot; args `dt`, `isFirst`, RET 8), splice `0x00745774`
+`89 4D FC 8B 45 FC`, params `ecx`=slotPtr, `[ebp+0xc]`=isFirst(leader). In full-HUD pixels (3840x1600 here, scale 2.0). 4th slot = creature 0,
+rect 0 (skip). Slot rects (`slot+0x694..`, `+0x800..`, `+0x54c..`): leader vit `(3511,1386,103,208)`, card `(3591,1394,191,192)`; small
+vit `(3671,1285|1181,47,96)`.
+
+**Bar art / natural style (this is the "curved, looks like part of the health bar" answer).** The HUD `.gui` draws each bar twice with the
+SAME stretched 128x256 white+alpha TGA (`uibit_bar_vp_p` vitality, `uibit_bar_fp_p` Force = mirror): BORDER = teal track `(0.051,0.349,0.271)`,
+PROGRESS = red `(1,0,0)` / cyan `(0,0.8,0.898)`. The texture is a curved-left capsule: outline alpha ~1, interior alpha ~0.34, opaque
+x-fraction `0.445..0.773` (w = 0.328), y `0.016..0.988`. Pictures: `shield_bar_src/uibit_bar_vp_p_on_bg.png`, `probe1_hud_crop.png`,
+`probe2_hud.png`. Plan: draw `uibit_bar_vp_p` (vtable-6 image draw, tint = color, like Buff HUD icons; plain TGAs are safe) at rect
+`(vit.x - round(0.328*vit.w) - gap, vit.y, vit.w, vit.h)`: first tinted teal `(0.051,0.349,0.271)` alpha 1 (empty track), then tinted with the shield
+VFX color, clipped bottom-anchored to `remaining/total` of the height (PushClipRect/PopClipRect with the no-fill color `0x00a1ba3c`, same as
+`DrawBuffColumn`). The curved side faces left = outer side, consistent with the vitality bar. For a second segment stack them the same way
+(or clip a taller region). Leader toggle buttons (`TB_STEALTH/TB_SOLO/BTN_SWAPWEAPONS/TB_PAUSE`, x 548/584/620/656, y 562, 36x36 gui units)
+must move left by about `0.328*39 + 1.5` = 14.3 -> use 16 gui units (the user asked for this); `TB_PAUSE` currently ends ~x 3545 px.
+
+**Blackout during shield (OPEN, probably not ours).** Both probe runs: scene 3D goes black while an item shield is active, HUD still draws,
+mouse-look/menus odd, clears when the shield ends. Probe 2 had no textured draws, so not the fx_tex GUI draws. Live `override/fx_tex_14.tga` (mod #35) is a
+256x4096x32 uncompressed 4 MB TGA (no txi). Suspect the creature texture-shell path (`ProgFxTextureShell` 0x00878f10 -> the mod35 TGA) under
+Proton, independent of our DLL. Decisive test (not yet done): stock 16 patches, activate a shield, watch. Also possible: `shieldprobe.txt`-gated per-frame
+`fopen` in the probe (unlikely, the logs are small). Mouse settings: nothing of ours touches them; `Mouse Sensitivity` was found 4 vs 44 in backups and restored to 44
+(ini backup `~/Games/KOTOR2_Mod_Workspace/backups/ini_pre_sensitivity_restore_20260929_202924/`).
+
+**v2 ideas (not v1):** coverage pips, hit/break/ion flashes, "-N per hit" badges for Force Barrier/Resist (type 12 with no limit), per-hit floating numbers.

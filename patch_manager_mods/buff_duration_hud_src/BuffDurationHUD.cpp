@@ -216,14 +216,14 @@ void probeEffects(int slotPtr, int creature) {
         EffRec cur = {}; cur.eff = eff;
         readAt(eff, 0x8, &cur.type); readAt(eff, 0xa, &cur.sub); readAt(eff, 0x1c, &cur.spell);
         readAt(eff, 0x18, &cur.creator); readAt(eff, 0xc, &cur.dur);
-        readAt(eff, 0x34, &cur.n34);                // +0x34 = count, +0x38 = int* array (log 1 showed a heap pointer there)
-        { int ip = 0; if (readAt(eff, 0x38, &ip) && ip) for (int k = 0; k < 8 && k < (cur.n34 > 0 ? cur.n34 : 8); ++k) readAt(ip, 4 * k, &cur.ints[k]); }
+        readAt(eff, 0x30, &cur.n34);                // +0x30 = count, +0x34 = int* array (probe 2 log: dump shows 08 00 00 00 | ptr)
+        { int ip = 0; if (readAt(eff, 0x34, &ip) && ip) for (int k = 0; k < 8 && k < (cur.n34 > 0 ? cur.n34 : 8); ++k) readAt(ip, 4 * k, &cur.ints[k]); }
         EffRec* old = nullptr;
         for (int k = 0; k < cr->n; ++k) if (cr->e[k].eff == eff) { old = &cr->e[k]; break; }
         if (!old) {
             if (cr->n >= ProbeMaxEff) continue;
             char dump[1400]; probeDump(eff, dump, sizeof(dump));
-            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, 0x38, &ip) && ip) { len += snprintf(dump + len, sizeof(dump) - len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len += snprintf(dump + len, sizeof(dump) - len, " %d", v); } } }
+            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, 0x34, &ip) && ip) { len += snprintf(dump + len, sizeof(dump) - len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len += snprintf(dump + len, sizeof(dump) - len, " %d", v); } } }
             probeLog("APPLY%s n34=%d c=%08x slot=%08x e=%08x type=0x%04x sub=0x%04x spell=%d creator=%08x dur=%.2f ints=[%d,%d,%d,%d,%d,%d,%d,%d]%s",
                      cr->primed ? "" : "(pre)", cur.n34, creature, slotPtr, eff, cur.type, cur.sub, cur.spell, cur.creator, cur.dur,
                      cur.ints[0], cur.ints[1], cur.ints[2], cur.ints[3], cur.ints[4], cur.ints[5], cur.ints[6], cur.ints[7], dump);
@@ -427,9 +427,14 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
     auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
     auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
-    static const float cyan[3] = { 0.298f, 0.675f, 1.0f };
+    static const float cyan[3] = { 0.298f, 0.675f, 1.0f }, lighter[3] = { 0.66f, 0.82f, 1.0f };
     flush(flushArg);
-    if (pushClip(visLeft - gap - W, vit[1], W, H, cyan, 0, 0.9f)) popClip();   // test rect A (geometry); textured rects dropped (probe 1: garbled + black screen)
+    int bx = visLeft - gap - W, by = vit[1];
+    int th = W / 6; if (th < 2) th = 2;                                  // thick outline like the vitality/Force bars
+    auto fill = [&](int x, int y, int w, int h, const float* c, float a) { if (w > 0 && h > 0 && pushClip(x, y, w, h, c, 0, a)) popClip(); };
+    fill(bx, by, W, H, cyan, 1.0f);                                      // outline (full color)
+    fill(bx + th, by + th, W - 2 * th, H - 2 * th, lighter, 0.55f);      // lighter inner fill
+    { static int once = 0; if (once++ == 0) probeLog("STYLE W=%d H=%d th=%d bx=%d by=%d", W, H, th, bx, by); }
     flush(flushArg);
 }
 
