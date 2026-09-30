@@ -98,3 +98,6 @@ Source of record `$TOOL_DIR/Patches/EquipCharPreview/` (`EquipCharPreview.cpp`, 
 - Bug 2 (unparented weapon Gobs after failed rebuild): wrong premise; `detachWeapons` detaches AND frees (vt[0x50](0), vt[0x4c](0), vt[0](1)) and clears the pointers before `0076d200`; refresh re-attaches after a successful build (`weaponNodes` does not exist).
 - Bug 3 (animation length fallback): rejected; `animLen` false only skips that flourish (idle keeps looping, no freeze); a blind 2 s fallback would play non-existent animations. Unmapped rows already get the humanoid table.
 - Bug 4 (unsubclass safety): valid, fixed in `668dc3d` (restore only if our proc is still current).
+
+## Animation smoothing (2026-09-30, user: "jumps when the animation triggers/finishes")
+Root cause (R8a/R8b, DB lesson): flourishes were played with speed -1 = REVERSE playback (the earlier "once = speed<0" reading was wrong) and the idle was re-issued with flags 2 (= no cross-fade, weight 1). Fix: flourish `speed +1, flags 0` (engine cross-fades from the current pose over the anim's header transition 0.25-1.0 s), end our timer 60 ms before the wrap and re-issue the idle/stance with flags 0 (blends back); stance changes also flags 0. Backup DLL `equipment-3d-character.dll.bak_pre_blend`.

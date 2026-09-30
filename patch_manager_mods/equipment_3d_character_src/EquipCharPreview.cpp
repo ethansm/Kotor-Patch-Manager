@@ -645,8 +645,8 @@ void refreshWeapons(Slot* s, int real, const char* why) {
     const char* anim = (s->stanceOn || wasStance) ? s->idleName : nullptr;
     if (anim && anim[0]) {
         s->flourishActive = false;
-        if (body) playPart(body, anim, 1.0f, 2);
-        if (head) playPart(head, anim, 1.0f, 2);
+        if (body) playPart(body, anim, 1.0f, 0);   // flags 0 = cross-fade in over the anim header transition (flags&2 would snap: R8a/R8b)
+        if (head) playPart(head, anim, 1.0f, 0);
         logf("weapons: idle -> '%s' (stance=%d) body=%p head=%p", anim, s->stanceOn, body, head);
     }
 }
@@ -712,17 +712,20 @@ bool playFlourish(Slot* s, const char* name, const char* why) {
     if (!animLen(s, name, &len)) { dlogf("flourish: '%s' not in table for row %d", name, appRow(s)); return false; }
     if (len > 12.0f) { logf("flourish: '%s' length %.2f too long, skipped", name, len); return false; }
     logf("flourish: play '%s' (%s) len=%.2fs body=%p head=%p idle='%s'", name, why, len, body, head, s->idleName);
-    playPart(body, name, -1.0f, 0);
-    if (head) playPart(head, name, -1.0f, 0);
-    s->flourishActive = true; s->flourishEnd = GetTickCount() + (DWORD)(len * 1000.0f) + 40;
+    // R8a/R8b: speed<0 starts at the END and plays BACKWARDS (Gob update: time += dt*speed); the engine's "once" is flag bit 1, and a
+    // one-shot fades to nothing. So play forward with flags 0 (weight ramps 0->1 over the header transition, blending from the current pose)
+    // and hand back to the idle ourselves just before the loop would wrap.
+    playPart(body, name, 1.0f, 0);
+    if (head) playPart(head, name, 1.0f, 0);
+    s->flourishActive = true; s->flourishEnd = GetTickCount() + (DWORD)((len > 0.4f ? len - 0.06f : len) * 1000.0f);
     strncpy(s->activeName, name, sizeof(s->activeName) - 1);
     return true;
 }
 void endFlourish(Slot* s) {
     void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
     if (s->idleName[0]) {
-        if (body) playPart(body, s->idleName, 1.0f, 2);
-        if (head) playPart(head, s->idleName, 1.0f, 2);
+        if (body) playPart(body, s->idleName, 1.0f, 0);   // blend back from the flourish pose
+        if (head) playPart(head, s->idleName, 1.0f, 0);
     }
     logf("flourish: '%s' ended, idle '%s' re-issued (body=%p head=%p)", s->activeName, s->idleName, body, head);
     s->flourishActive = false;
