@@ -13,6 +13,9 @@ The Inventory3DViewport patch binds it by tag in the CSWGuiInGameInventory const
   --dry-run   print the plan, write nothing
   --rollback  restore the OLDEST backup taken by this script (the pre-3D_MODEL file)
   --replace   replace an existing 3D_MODEL (e.g. to change --rect)
+  --layout X  R|T|L|K (to leave R, --rollback first): also resize neighbouring controls (see LAYOUTS) and set the 3D_MODEL
+              rect; implies --replace. Every change prints old -> new; refuses if a control's
+              current rect is neither its expected original nor the layout target.
 """
 import argparse
 import copy
@@ -29,6 +32,55 @@ OVERRIDE = GAME / "override"
 BACKUP_ROOT = Path.home() / "Games/KOTOR2_Mod_Workspace/backups"
 TAG = "3D_MODEL"
 DEFAULT_RECT = (645, 134, 116, 300)  # L,T,W,H in 800x600 GUI units; right of LB_DESCRIPTION
+
+
+# Layouts: TAG -> {"orig": rect, "new": rect, "PROTOITEM"/"SCROLLBAR": (orig, new)} (L,T,W,H).
+# 3D_MODEL is handled separately (added/replaced with LAYOUT_3D[name]).
+DESC_R = {
+    "LB_DESCRIPTION": {"orig": (407, 134, 232, 300), "new": (407, 134, 180, 300),
+                       "PROTOITEM": ((419, 150, 197, 42), (419, 150, 145, 42)),
+                       "SCROLLBAR": ((623, 134, 16, 300), (571, 134, 16, 300))},
+    "LBL_CREDITS": {"orig": (407, 442, 223, 28), "new": (407, 442, 180, 28)},
+    "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (524, 442, 63, 28)},
+    "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (407, 476, 180, 32)},
+}
+LAYOUT_3D = {"R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
+LAYOUT_CTRLS = {"R": DESC_R, "T": {}, "L": {}, "K": {}}
+EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
+
+
+def get_rect(e):
+    return tuple(e.get_int32(k) for k in EXT_KEYS)
+
+
+def set_rect(e, r):
+    for k, v in zip(EXT_KEYS, r):
+        e.set_int32(k, v)
+
+
+def resize_controls(cs, layout: str) -> list[str]:
+    """Apply LAYOUT_CTRLS[layout] in place (idempotent); returns change lines. Raises on foreign rects."""
+    lines = []
+    for tag, spec in LAYOUT_CTRLS[layout].items():
+        c = next((c for c in cs if c.get_string("TAG") == tag), None)
+        if c is None:
+            raise SystemExit(f"control {tag} not found")
+        todo = [(None, spec["orig"], spec["new"])] + [
+            (k, *spec[k]) for k in ("PROTOITEM", "SCROLLBAR") if k in spec]
+        for sub, orig, new in todo:
+            holder = c if sub is None else c.get_struct(sub)
+            e = holder.get_struct("EXTENT")
+            cur = get_rect(e)
+            name = tag if sub is None else f"{tag}.{sub}"
+            if cur not in (orig, new):
+                raise SystemExit(f"refusing: {name} rect {cur} is neither expected original {orig} nor target {new}")
+            if cur != new:
+                set_rect(e, new)
+                holder.set_struct("EXTENT", e)
+                if sub is not None:
+                    c.set_struct(sub, holder)
+                lines.append(f"  {name}: {list(cur)} -> {list(new)}")
+    return lines
 
 
 def sha(p: Path) -> str:
@@ -59,7 +111,11 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--rollback", action="store_true")
     ap.add_argument("--replace", action="store_true")
+    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="R|T|L|K layout (see docstring)")
     a = ap.parse_args()
+    if a.layout:
+        a.replace = True
+        a.rect = ",".join(map(str, LAYOUT_3D[a.layout]))
 
     inv = find_ci(OVERRIDE, "inventory_p.gui")
 
@@ -87,9 +143,11 @@ def main() -> int:
     if existing and not a.replace:
         print(f"{TAG} already present in inventory_p.gui (idx {existing}); use --replace to redo")
         return 0
+    old3d = get_rect(cs[existing[0]].get_struct("EXTENT")) if existing else None
     for i in reversed(existing):
         del cs[i]
 
+    changes = resize_controls(cs, a.layout) if a.layout else []
     ids = sorted(c.get_int32("ID") for c in cs)
     new_id = len(cs)
     assert ids == list(range(new_id)), f"inventory IDs are not 0..N-1: {ids}"
@@ -108,6 +166,14 @@ def main() -> int:
         ctl.set_struct("BORDER", b)
     cs.append(ctl)
     g.root.set_list("CONTROLS", cs)  # get_list may hand back a detached copy
+    if a.layout:
+        print(f"layout {a.layout}: {len(changes)} sub-control change(s)")
+        print("\n".join(changes))
+    if a.layout and old3d == tuple(rect) and not changes:
+        print(f"layout {a.layout} already applied; nothing to do")
+        return 0
+    if old3d:
+        print(f"  {TAG}: {list(old3d)} -> {rect}")
     print(f"plan: append {TAG} ID={new_id} EXTENT={rect} to {inv} (had {len(cs) - 1} controls)")
     if a.dry_run:
         return 0
