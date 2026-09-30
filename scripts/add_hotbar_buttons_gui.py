@@ -17,7 +17,7 @@ Generator interaction: scripts/generate_ultrawide_gui_overrides.py records mipc2
     --rollback  ->  re-run the generator  ->  re-apply this script.
 
   --dry-run     print the plan, write nothing
-  --rollback    restore the OLDEST backup taken by this script (the pre-hotbar file)
+  --rollback    restore the newest backup without LBL_HOTBAR* controls (the pre-hotbar file)
   --replace     replace existing LBL_HOTBAR* controls (e.g. to change the layout)
 """
 import argparse
@@ -39,6 +39,7 @@ TAGS = [f"LBL_HOTBAR{d}" for d in "1234567890"]  # slot 0..9 <-> key 1..9,0
 DIGITS = "1234567890"
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
 DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE, DEFAULT_SPACING = 12, 498, 28, 30
+FIRST_ID = 111  # must equal FirstButtonId in ForcePowerHotbar.cpp
 TEXT_ALIGN_TOP_LEFT = 9
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
 
@@ -55,9 +56,15 @@ def find_ci(d: Path, name: str) -> Path:
 
 
 def pristine_backup() -> Path | None:
-    """Oldest backup = the file as it was before this script first touched it."""
-    dirs = sorted(BACKUP_ROOT.glob("hotbar_gui_*"))
-    return dirs[0] if dirs else None
+    """Newest backup that does not itself contain LBL_HOTBAR* = the last file state before this script touched it."""
+    for d in sorted(BACKUP_ROOT.glob("hotbar_gui_*"), reverse=True):  # newest first (a generator run may have moved the base)
+        try:
+            tags = {c.get_string("TAG") for c in read_gff(str(d / GUI)).root.get_list("CONTROLS")}
+        except Exception:
+            continue
+        if not tags & set(TAGS):
+            return d
+    return None
 
 
 def main() -> int:
@@ -102,6 +109,9 @@ def main() -> int:
     ids = sorted(c.get_int32("ID") for c in cs)
     first_id = len(cs)
     assert ids == list(range(first_id)), f"{GUI} IDs are not 0..N-1: {ids}"
+    if first_id != FIRST_ID:  # the DLL hard-codes IDs 111..120; a mismatch would misbind (InitControl can overwrite a native slot)
+        print(f"refusing: {GUI} has {first_id} controls, the DLL expects the buttons at IDs {FIRST_ID}..{FIRST_ID + 9}", file=sys.stderr)
+        return 1
     assert tmpl[0].get_int32("CONTROLTYPE") == 4, "template is not a type-4 label"
 
     plan = []

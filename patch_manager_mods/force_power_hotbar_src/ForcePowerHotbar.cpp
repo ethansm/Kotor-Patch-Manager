@@ -359,7 +359,10 @@ struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCo
 Bar g_bar;
 long g_barSeq = 0;
 
-// one engine image object per icon resref, created lazily and never released (the border only borrows the pointer)
+// one engine image object per icon resref, created lazily and never released (the border only borrows the pointer).
+// INVARIANT: the border owns its fill at +0x74 (border dtor 0x00414C60 / fill setter 0x00414840 delete it), and pooled images are shared
+// between buttons and HUD instances. Safe only because our labels are never destroyed and the fill setter is never called on them;
+// any future cleanup must null border+0x74 before freeing a label.
 struct PoolEntry { char resref[17]; void* image; };
 constexpr int MaxPoolImages = 256;
 PoolEntry g_pool[MaxPoolImages]; int g_poolCount = 0;
@@ -410,8 +413,8 @@ void setAlpha(Button& b, int slot, float a) {
 // the cached view is stale (config/character/gate change), never per frame.
 void updateButtons(uintptr_t hud, bool gate) {
     static uintptr_t lastMissingHud = 0; static long lastRefresh = -1000; static bool lastGateSeen = false; static std::string lastChar = "\x01";
-    if (g_bar.panel != hud || g_bar.built != ButtonCount) {
-        if (lastMissingHud != hud) { lastMissingHud = hud; logf("buttons: no built bar for hud %08x (bar panel=%08x built=%d) -- HUD ctor hook did not run for it", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built); }
+    if (g_bar.panel != hud || g_bar.built == 0) {
+        if (lastMissingHud != hud) { lastMissingHud = hud; logf("buttons: no usable bar for hud %08x (bar panel=%08x built=%d/%d) -- HUD ctor hook did not run for it, or no button bound", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built, ButtonCount); }
         return;
     }
     bool stale = g_frame - lastRefresh >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar;
@@ -508,9 +511,11 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
         logf("H3 btn[%d] %s: ctl=%p id=%d (expect %d) rect=[%d,%d,%d,%d] flags=%08x border vt=%08x w=%d h=%d fill=%08x alpha=%.2f",
              s, tagName, ctl, id, FirstButtonId + s, ext[0], ext[1], ext[2], ext[3], (unsigned)fl, (unsigned)rdInt(border, 0), rdInt(border, Border_W), rdInt(border, Border_H), (unsigned)rdInt(border, Border_Fill), ba);
         if (s == 0) dumpMem("ctl0", c, LabelSize / 4);
-        if (id != FirstButtonId + s) { logf("H3 btn[%d]: GUI control %s missing or wrong id (%d) -- run scripts/add_hotbar_buttons_gui.py; slot unusable", s, tagName, id); continue; }
-        // hidden until the tick decides; a stray icon from the GFF (there is none) must not show
-        *reinterpret_cast<int*>(ctl + Ctl_Flags) = fl & ~2;
+        // hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so the row never
+        // swallows clicks (review finding 2). Done BEFORE the id check: InitControl already put the label in the panel list, so a
+        // wrong/missing id must still leave it invisible and click-through (review finding 1).
+        *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
+        if (id != FirstButtonId + s) { logf("H3 btn[%d]: GUI control %s missing or wrong id (%d) -- run scripts/add_hotbar_buttons_gui.py; slot unusable, label hidden", s, tagName, id); continue; }
         b.ctl = ctl; b.id = id; b.baseAlpha = ba; b.visible = 0; b.why = "built";
         ++built;
     }

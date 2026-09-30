@@ -443,7 +443,7 @@ the same pattern as Mod 1's 3D view.
    `0x00419740`** (fastcall ECX=this, no args; base `0x00418990`, border ctor `0x00414A50` at +0x60, text ctor `0x004171A0` at +0xD8), verify vtable
    `0x009878BC`, `InitControl(panel, ctl, CExoString("LBL_HOTBARn"), 1, 1)`. `InitControl` -> `0x00418DF0` finds the GFF struct by TAG, calls the
    control's vt+0x48 Load (label Load `0x004198D0`: TEXT, BORDER, then base `0x00418F20` = EXTENT/ID); the control lands at `panel+0x24[ID]`
-   (list padded with `0x0083EA60(0)`). Labels are not hit-tested (ctor clears `+0x48` bit2), so mouse/hover are untouched.
+   (list padded with `0x0083EA60(0)`). **CORRECTED by review:** labels ARE hit-tested (panel hit-test `0x0040EAE0` walks from the highest index; label hit-test `0x00418D20` rejects only if bit1 clear or bit5 set), and ours have the highest indices, so the DLL sets `+0x48` bit5 (0x20) at build to make the row click-through. Verify hover/click-through live.
 3. Drawing is free: `CSWGuiPanel::Draw 0x0040EC90` walks the list and calls vt+0x38 (label Draw `0x00419880` = border Draw `0x00415300` then text Draw)
    for controls with `+0x48` bit1 set (base ctor sets it). Border draws its FILL image (`border+0x74`, FILLSTYLE 2 = stretched) with alpha
    `border+0x24` only if border w/h (+0xC/+0x10) are nonzero. **The tick only** swaps the icon (`FnLoadImage 0x0047EB60` image pooled per resref, stored at
@@ -467,3 +467,5 @@ than the installed one (`b44986b3`) -- confirm with that session before installi
 **Live test checklist (Phase L):** buttons appear bottom-left above the action bar with digits + icons; usable/dim shading; hidden in menus/dialogue; new
 game/load (log `H3 build:` again, no crash); calibrate position from a screenshot (rerun the GUI script with `--replace --x/--y/--size`); then digit
 tests in dialogue/inventory/pause; only then `Invoke=1`.
+
+**Phase F review (Opus, session 3): no crash-class defect.** Hook site, conventions, 0x148 size, lifecycle (HUD destroyed+recreated on load; panel dtor never touches list entries) all verified. Fixed: (1) wrong-ID path left a visible unmanaged label -> now hidden+click-through before the ID check, script refuses unless IDs start at 111; (2) hit-test claim corrected, bit5 set; (3) `--rollback` now picks the newest backup without LBL_HOTBAR*; (5) a partial build no longer disables bound buttons; (4) shared-image ownership invariant documented in code. Left as-is: dim only affects the border alpha (digit stays bright); `resolve()` re-reads groups per button.
