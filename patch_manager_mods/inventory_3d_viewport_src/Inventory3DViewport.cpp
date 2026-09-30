@@ -39,6 +39,11 @@ constexpr int FnNew = 0x00919723;           // cdecl(size)
 constexpr int FnAddModel = 0x00418360;      // thiscall(view+0x60, CExoString*, int)
 constexpr int FnRemoveModel = 0x00418430;   // thiscall(view+0x60, index, deleteIt) RET 8
 constexpr int FnGetModel = 0x004184b0;      // thiscall(view+0x60, int idx) -> Gob*
+constexpr int FnLabelCtor = 0x00419740;     // CSWGuiLabel ctor, fastcall(ECX=this), object size 0x148 (same as the Force Power Hotbar)
+constexpr int LabelSize = 0x148;
+constexpr int LabelVftable = 0x009878BC;
+constexpr int CtlFlagsOff = 0x48;           // bit1 = visible, bit5 (0x20) = hit-test rejects the mouse (click-through)
+constexpr int CtlIdOff = 0x54;
 constexpr int FnRender = 0x008cd2c0;        // fastcall(fakeThis)
 constexpr int SceneOffset = 0x60;
 constexpr int SceneObjOffset = 0x74;        // view+0x60+0x14 = Scene*
@@ -126,7 +131,7 @@ struct Cfg {
     float camPos[3], camFwd[3], camUp[3];
     float armorBox[6] = {0, 0, 0.95f, 0.6f, 0.4f, 1.9f}; int armorSpin = 1; int hitFlipY = 0;
     float screenW = 3840, screenH = 1600;
-    int wheelZoom = 1; float wheelStep = 0.9f, zoomDrag = 0.004f, rollDegPx = 0.5f, zoomMin = 0.3f, zoomMax = 3.0f;
+    int bevels = 1; int wheelZoom = 1; float wheelStep = 0.9f, zoomDrag = 0.004f, rollDegPx = 0.5f, zoomMin = 0.3f, zoomMax = 3.0f;
     float fillRef = 0.6f, fillExp = 0.35f, fillMin = 0.4f;  // small items fill less of the view: fill=clamp((diag/ref)^exp, min, 1)
     Ov itype[256], row[256];
 };
@@ -195,6 +200,7 @@ void loadIni() {
         else if (!strcmp(k, "armor_box")) { good = parseFloats(v, a, 6); if (good) memcpy(c.armorBox, a, 24); }
         else if (!strcmp(k, "armor_spin")) { good = parseFloats(v, a, 1); if (good) c.armorSpin = (int)a[0]; }
         else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
+        else if (!strcmp(k, "bevels")) { good = parseFloats(v, a, 1); if (good) c.bevels = (int)a[0]; }
         else if (!strcmp(k, "wheel_zoom")) { good = parseFloats(v, a, 1); if (good) c.wheelZoom = (int)a[0]; }
         else if (!strcmp(k, "wheel_step")) { good = parseFloats(v, a, 1); if (good) c.wheelStep = a[0]; }
         else if (!strcmp(k, "zoom_drag")) { good = parseFloats(v, a, 1); if (good) c.zoomDrag = a[0]; }
@@ -551,6 +557,28 @@ void tickDrag(Slot* s, float dt) {
 #endif
 }
 
+// Cover labels (character-page style arcs) that frame the 3D view. Only controls the constructor binds by tag get created,
+// so they are built here right after the view (control order = draw order, so they draw on top of it).
+void bindCover(int panel, const char* tagName, int expectId) {
+    using LabelCtorFn = void(__fastcall*)(void*);
+    unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
+    if (!ctl) { logf("H1 cover %s: allocation failed", tagName); return; }
+    memset(ctl, 0, LabelSize);
+    reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
+    int vt = 0; readAt<int>(reinterpret_cast<int>(ctl), 0, &vt);
+    if (vt != LabelVftable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, vt, LabelVftable); return; }
+    char exo[16] = {0};
+    reinterpret_cast<CExoCtor>(FnExoCtor)(exo, tagName);
+    reinterpret_cast<InitCtl>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
+    reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
+    int id = -999, fl = 0, ext[4] = {0};
+    readAt<int>(reinterpret_cast<int>(ctl), CtlIdOff, &id); readAt<int>(reinterpret_cast<int>(ctl), CtlFlagsOff, &fl);
+    for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(ctl), 4 + 4 * i, &ext[i]);
+    if (id != expectId) fl &= ~2;  // GUI lacks this control (layout without covers): keep it invisible
+    *reinterpret_cast<int*>(ctl + CtlFlagsOff) = fl | 0x20;
+    logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, ctl, id, expectId, ext[0], ext[1], ext[2], ext[3], fl, fl | 0x20);
+}
+
 } // namespace
 
 extern "C" void __cdecl BindInventoryView(int panel) {
@@ -614,6 +642,7 @@ extern "C" void __cdecl BindInventoryView(int panel) {
     if (!light || n < 1) { logf("H1: light model missing, slot unusable"); return; }
     int cam = 0, camv = 0; readAt<int>(reinterpret_cast<int>(view), CameraOffset, &cam); if (cam) readAt<int>(cam, 0, &camv);
     logf("H1: camera=%08x vtable=%08x (expect %08x)", cam, camv, ExpectedCamVtable);
+    if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
     s->usable = true;
     logf("H1: slot %d ready (panel=%08x seq=%u rigFallback=%d)", static_cast<int>(s - g_slots), panel, s->seq, s->rigFallback);
 }
