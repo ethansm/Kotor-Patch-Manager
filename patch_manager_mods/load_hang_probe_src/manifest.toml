@@ -1,9 +1,9 @@
 [patch]
 id = "load-hang-probe"
 name = "Load Hang Probe"
-version = "1.0.0"
+version = "1.1.0"
 author = "local"
-description = "Diagnostics only (no gameplay change, inert unless hangprobe_debug.txt exists): frame heartbeat on CClientExoAppInternal::MainLoop, watchdog thread that samples the main thread's stack and logs the load-screen state; writes hangprobe_log.txt / hangprobe_report.txt."
+description = "Diagnostics only (no gameplay change, inert unless hangprobe_debug.txt exists): frame heartbeat on CClientExoAppInternal::MainLoop, watchdog that polls the load-screen state and samples the main thread's stack only when a hang looks likely and logs the load-screen state; writes hangprobe_log.txt / hangprobe_report.txt."
 
 requires = []
 conflicts = []

@@ -4,7 +4,9 @@
 // Does nothing unless "hangprobe_debug.txt" exists in the game dir. Then:
 //   * hook 0x00781BE0 (CClientExoAppInternal::MainLoop entry, ECX = client internal): frame heartbeat,
 //     remembers the main thread id, the internal pointer and the main thread's stack base;
-//   * a watchdog thread samples the main thread every 250 ms (Suspend / GetThreadContext / stack walk
+//   * a watchdog thread polls the load-screen state every 250 ms (plain reads, no suspend) and only when
+//     something already looks wrong (load screen up > 5 s while frames run, no frame for 5 s, or a manual
+//     trigger) samples the main thread every 250 ms (Suspend / GetThreadContext / stack walk
 //     that touches only [ESP, StackBase) / Resume) and reads the load-screen state fields every tick;
 //   * hangprobe_log.txt: load-state CHANGES (one line each) + a heartbeat line every 60 s;
 //   * hangprobe_report.txt (rewritten every 5 s while a condition holds): stack histogram with
@@ -35,7 +37,11 @@ constexpr int App_ModuleState = 0x14;                // *(app+0x14) -> [0]==1, [
 constexpr int Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
 
 // ---- config -------------------------------------------------------------------------------------------
-constexpr DWORD SampleMs = 250;
+constexpr DWORD SampleMs = 250;           // poll + (when armed) sample interval
+constexpr DWORD ArmLoadMs = 5000;         // arm sampling: load screen up this long ...
+constexpr LONG ArmLoadFrames = 120;       // ... with at least this many frames rendered under it
+constexpr DWORD ArmStallMs = 5000;        // arm sampling: no MainLoop call this long
+constexpr DWORD ManualSampleMs = 2500;    // manual trigger: sample this long, then report
 constexpr int Window = 240;                // samples kept (60 s)
 constexpr int MaxFrames = 20;              // EBP-chain depth
 constexpr int ScanHits = 12;               // extra return-address candidates from a raw stack scan
@@ -266,7 +272,9 @@ DWORD WINAPI watchdog(LPVOID) {
     LoadState last; memset(&last, 0, sizeof(last));
     DWORD lsSince = 0, lastReport = 0, lastBeat = GetTickCount();
     LONG lsFrames = 0;
-    bool firstState = true;
+    bool firstState = true, armed = false;
+    DWORD manualUntil = 0, armedSince = 0;
+    int armedSamples = 0;
     for (;;) {
         Sleep(SampleMs);
         DWORD now = GetTickCount();
@@ -274,14 +282,6 @@ DWORD WINAPI watchdog(LPVOID) {
             th = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, g_mainTid);
             logf("main thread %lu %s, internal=%08x stackBase=%08x stackAlloc=%08x", g_mainTid, th ? "opened" : "OPEN FAILED", (unsigned)g_internal, (unsigned)g_stackBase, (unsigned)g_stackAlloc);
         }
-        if (th) {
-            Sample& s = g_s[g_sHead];
-            if (sampleMain(th, &s)) {
-                s.tick = now; s.frames = g_frames;
-                g_sHead = (g_sHead + 1) % Window; if (g_sCount < Window) ++g_sCount;
-            }
-        }
-
         LoadState st = readLoadState();
         if (firstState || st != last) {
             char line[1024]; fmtState(line, sizeof(line), st);
@@ -292,8 +292,25 @@ DWORD WINAPI watchdog(LPVOID) {
         if (lsUp && !lsSince) { lsSince = now; lsFrames = g_frames; logf("load screen UP"); }
         if (!lsUp && lsSince) { logf("load screen DOWN after %lu ms, %ld frames", now - lsSince, g_frames - lsFrames); lsSince = 0; }
 
+        if (GetFileAttributesA("hangprobe_dump.txt") != INVALID_FILE_ATTRIBUTES) {
+            DeleteFileA("hangprobe_dump.txt"); manualUntil = now + ManualSampleMs; logf("manual dump requested");
+        }
+        // Sampling (the only part that pauses the game thread) runs only while armed.
+        const char* armWhy = manualUntil ? "manual"
+            : (lsSince && now - lsSince > ArmLoadMs && g_frames - lsFrames > ArmLoadFrames) ? "load screen up while frames run"
+            : msSinceFrame(now) > static_cast<LONG>(ArmStallMs) ? "no MainLoop frame" : nullptr;
+        if (armWhy && !armed) { armed = true; armedSince = now; armedSamples = 0; logf("sampling ARMED (%s)", armWhy); }
+        if (!armWhy && armed) { armed = false; logf("sampling disarmed after %lu ms, %d samples", now - armedSince, armedSamples); }
+        if (armed && th) {
+            Sample& s = g_s[g_sHead];
+            if (sampleMain(th, &s)) {
+                s.tick = now; s.frames = g_frames; ++armedSamples;
+                g_sHead = (g_sHead + 1) % Window; if (g_sCount < Window) ++g_sCount;
+            }
+        }
+
         const char* reason = nullptr;
-        if (GetFileAttributesA("hangprobe_dump.txt") != INVALID_FILE_ATTRIBUTES) { DeleteFileA("hangprobe_dump.txt"); reason = "MANUAL"; lastReport = 0; }
+        if (manualUntil && static_cast<LONG>(now - manualUntil) >= 0) { reason = "MANUAL"; lastReport = 0; manualUntil = 0; }
         else if (lsSince && now - lsSince > LoadStuckMs && g_frames - lsFrames > LoadStuckFrames) reason = "LOADSCREEN_STUCK";
         else if (msSinceFrame(now) > static_cast<LONG>(StallMs) && dominance(now, 10000) >= StallDominance) reason = "MAIN_STALL";
         if (reason && (!lastReport || now - lastReport >= ReportEveryMs)) {
@@ -305,7 +322,7 @@ DWORD WINAPI watchdog(LPVOID) {
 
         if (now - lastBeat >= 60000) {
             lastBeat = now;
-            logf("heartbeat: frames=%ld samples=%d lsUp=%d dominance10s=%d%% failedProbes=%ld", g_frames, g_sCount, lsUp ? 1 : 0, dominance(now, 10000), saferead::g_ringCount);
+            logf("heartbeat: frames=%ld armed=%d samples=%d lsUp=%d dominance10s=%d%% failedProbes=%ld", g_frames, armed ? 1 : 0, g_sCount, lsUp ? 1 : 0, dominance(now, 10000), saferead::g_ringCount);
         }
     }
 }
@@ -345,7 +362,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exe);
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
-        logf("load-hang-probe 1.0.0 loaded: attach tid=%lu exe=%08x-%08x", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi);
+        logf("load-hang-probe 1.1.0 loaded: attach tid=%lu exe=%08x-%08x", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi);
         HANDLE t = CreateThread(nullptr, 0, watchdog, nullptr, 0, nullptr);
         if (t) CloseHandle(t); else logf("watchdog thread creation FAILED (%lu)", GetLastError());
     }
