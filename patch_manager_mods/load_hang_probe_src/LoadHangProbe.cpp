@@ -38,7 +38,7 @@ constexpr int Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
 
 // ---- config -------------------------------------------------------------------------------------------
 constexpr DWORD SampleMs = 250;           // poll + (when armed) sample interval
-constexpr DWORD ArmLoadMs = 5000;         // arm sampling: load screen up this long ...
+constexpr DWORD ArmLoadMs = 10000;        // arm sampling: load screen up this long ...
 constexpr LONG ArmLoadFrames = 120;       // ... with at least this many frames rendered under it
 constexpr DWORD ArmStallMs = 5000;        // arm sampling: no MainLoop call this long
 constexpr DWORD ManualSampleMs = 2500;    // manual trigger: sample this long, then report
@@ -120,6 +120,7 @@ bool sampleMain(HANDLE th, Sample* s) {
 struct LoadState {
     uintptr_t internal, ls, lsVt, mgr; int lsModal, modalCount;
     int flag18, playerId, areaReady, pendingSwap, cacheId, cachePtr, sub48Flag, movie, a1b4e0, modA, modB, modMode;
+    int gstate, lastPlayerSrv, p18, p14, f324;   // 1.2.0: client state machine (+9c), +28c, +18/+14 pointers, +324
 };
 
 bool operator!=(const LoadState& a, const LoadState& b) { return memcmp(&a, &b, sizeof(a)) != 0; }
@@ -149,6 +150,9 @@ LoadState readLoadState() {
     { uintptr_t sub = 0; if (readAt(26, internal, In_Sub48, &sub) && sub) readAt(27, sub, Sub48_Flag, &st.sub48Flag); else st.sub48Flag = -1; }
     { uintptr_t mv = 0; readAt(28, internal, In_Movie, &mv); st.movie = mv != 0; }
     readAt(29, FlagA1B4E0, 0, &st.a1b4e0);
+    readAt(40, internal, 0x9C, &st.gstate); readAt(41, internal, 0x28C, &st.lastPlayerSrv);
+    { uintptr_t v = 0; readAt(42, internal, 0x18, &v); st.p18 = (int)v; v = 0; readAt(43, internal, 0x14, &v); st.p14 = (int)v; }
+    readAt(44, internal, 0x324, &st.f324);
     { uintptr_t m = 0; if (readAt(30, app, App_ModuleState, &m) && m) { readAt(31, m, 0, &st.modA); readAt(32, m, 4, &st.modB); readAt(33, m, 0x38, &st.modMode); } }
     return st;
 }
@@ -156,10 +160,158 @@ LoadState readLoadState() {
 int fmtState(char* b, int cap, const LoadState& s) {
     return snprintf(b, cap,
         "internal=%08x ls=%08x lsVt=%08x%s lsModal=%d modals=%d | +18=%d playerId=%08x areaReady(+288)=%d pendingSwap(+338)=%08x "
-        "cache(+3bc/+3c0)=%08x/%08x sub48flag=%d movie=%d a1b4e0=%d | module state [0]=%d [1]=%d [0x38]=%d",
+        "cache(+3bc/+3c0)=%08x/%08x sub48flag=%d movie=%d a1b4e0=%d | module state [0]=%d [1]=%d [0x38]=%d | gstate(+9c)=%d +28c=%08x +18=%08x +14=%08x +324=%d",
         (unsigned)s.internal, (unsigned)s.ls, (unsigned)s.lsVt, s.ls && s.lsVt != LoadScreenVtable ? "(!)" : "", s.lsModal,
         s.modalCount, s.flag18, (unsigned)s.playerId, s.areaReady, (unsigned)s.pendingSwap, (unsigned)s.cacheId,
-        (unsigned)s.cachePtr, s.sub48Flag, s.movie, s.a1b4e0, s.modA, s.modB, s.modMode);
+        (unsigned)s.cachePtr, s.sub48Flag, s.movie, s.a1b4e0, s.modA, s.modB, s.modMode,
+        s.gstate, (unsigned)s.lastPlayerSrv, (unsigned)s.p18, (unsigned)s.p14, s.f324);
+}
+
+
+// ---- 1.2.0 event rings: SetPlayerId calls + file I/O (hooks write ring slots only; the watchdog flushes) ----
+constexpr uintptr_t SetPlayerRets[] = { 0x0078237C, 0x00785453, 0x0079EE47, 0x007B3107, 0x0073F926 };   // expected callers (doc 09 s12)
+struct SetPlayerEv { DWORD tick; LONG frames; DWORD tid; uintptr_t ret; unsigned oldId, newId; };
+constexpr int SpRing = 64;
+SetPlayerEv g_sp[SpRing]; volatile LONG g_spHead = 0; LONG g_spFlushed = 0;
+
+struct IoEv { DWORD tick, tid; char kind; char ok; unsigned short pad; HANDLE h; DWORD a, b, err; char name[40]; };
+constexpr int IoRing = 2048;
+IoEv g_io[IoRing]; volatile LONG g_ioHead = 0;
+struct HSlot { HANDLE volatile h; char name[40]; };
+constexpr int HSlots = 1024;
+HSlot g_hs[HSlots];
+IoEv g_ioFail[64]; volatile LONG g_ioFailHead = 0;
+volatile LONG g_opens = 0, g_openFnf = 0, g_openFail = 0, g_reads = 0, g_readFail = 0, g_shortReads = 0, g_seeks = 0;
+volatile LONG64 g_readBytes = 0;
+volatile DWORD g_lastIoTick = 0; char g_lastIoName[40]; volatile char g_ioOn = 0;
+
+typedef HANDLE(WINAPI* CreateFileA_t)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+typedef HANDLE(WINAPI* CreateFileW_t)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+typedef BOOL(WINAPI* ReadFile_t)(HANDLE, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
+typedef DWORD(WINAPI* SetFilePointer_t)(HANDLE, LONG, PLONG, DWORD);
+typedef BOOL(WINAPI* CloseHandle_t)(HANDLE);
+CreateFileA_t rCreateFileA; CreateFileW_t rCreateFileW; ReadFile_t rReadFile; SetFilePointer_t rSetFilePointer; CloseHandle_t rCloseHandle;
+
+inline unsigned hslot(HANDLE h) { return (reinterpret_cast<uintptr_t>(h) >> 2) & (HSlots - 1); }
+HSlot* hfind(HANDLE h) {
+    for (unsigned i = 0, k = hslot(h); i < 8; ++i, k = (k + 1) & (HSlots - 1)) if (g_hs[k].h == h) return &g_hs[k];
+    return nullptr;
+}
+void hset(HANDLE h, const char* name) {
+    unsigned k = hslot(h);
+    for (unsigned i = 0; i < 8; ++i, k = (k + 1) & (HSlots - 1)) if (g_hs[k].h == h || !g_hs[k].h) break;
+    HSlot& s = g_hs[k]; s.h = nullptr;
+    size_t n = strlen(name); const char* t = n > 39 ? name + n - 39 : name;   // keep the tail (file name)
+    strncpy(s.name, t, 39); s.name[39] = 0; s.h = h;
+}
+inline IoEv* ioSlot() { LONG i = InterlockedIncrement(&g_ioHead) - 1; return &g_io[i & (IoRing - 1)]; }
+void ioNote(IoEv* e, const char* name) { g_lastIoTick = e->tick; strncpy(g_lastIoName, name, 39); g_lastIoName[39] = 0; }
+void ioFail(const IoEv& e) { LONG i = InterlockedIncrement(&g_ioFailHead) - 1; g_ioFail[i & 63] = e; }
+
+void recordOpen(const char* name, HANDLE h, DWORD access, DWORD disp, DWORD err) {
+    InterlockedIncrement(&g_opens);
+    bool ok = h != INVALID_HANDLE_VALUE;
+    if (!ok && (err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND)) { InterlockedIncrement(&g_openFnf); return; }   // engine probes many absent paths
+    IoEv* e = ioSlot(); e->tick = GetTickCount(); e->tid = GetCurrentThreadId(); e->kind = ok ? 'O' : 'o'; e->ok = ok; e->h = ok ? h : nullptr;
+    e->a = access; e->b = disp; e->err = err;
+    size_t n = strlen(name); const char* t = n > 39 ? name + n - 39 : name; strncpy(e->name, t, 39); e->name[39] = 0;
+    if (ok) hset(h, name); else { InterlockedIncrement(&g_openFail); ioFail(*e); }
+    ioNote(e, e->name);
+}
+HANDLE WINAPI hkCreateFileA(LPCSTR n, DWORD a, DWORD sh, LPSECURITY_ATTRIBUTES sa, DWORD d, DWORD f, HANDLE t) {
+    HANDLE h = rCreateFileA(n, a, sh, sa, d, f, t); DWORD err = GetLastError();
+    if (n && g_ioOn) recordOpen(n, h, a, d, err);
+    SetLastError(err); return h;
+}
+HANDLE WINAPI hkCreateFileW(LPCWSTR n, DWORD a, DWORD sh, LPSECURITY_ATTRIBUTES sa, DWORD d, DWORD f, HANDLE t) {
+    HANDLE h = rCreateFileW(n, a, sh, sa, d, f, t); DWORD err = GetLastError();
+    if (n && g_ioOn) {
+        char nm[260]; int i = 0; for (; n[i] && i < 259; ++i) nm[i] = n[i] < 128 ? static_cast<char>(n[i]) : '?'; nm[i] = 0;
+        recordOpen(nm, h, a, d, err);
+    }
+    SetLastError(err); return h;
+}
+BOOL WINAPI hkReadFile(HANDLE h, LPVOID buf, DWORD n, LPDWORD got, LPOVERLAPPED ov) {
+    BOOL ok = rReadFile(h, buf, n, got, ov); DWORD err = ok ? 0 : GetLastError();
+    if (g_ioOn) {
+        InterlockedIncrement(&g_reads);
+        HSlot* s = hfind(h);
+        if (s) {
+            DWORD g = (ok && got && !ov) ? *got : 0;
+            InterlockedExchangeAdd64(&g_readBytes, g);
+            IoEv* e = ioSlot(); e->tick = GetTickCount(); e->tid = GetCurrentThreadId(); e->kind = 'R'; e->ok = ok != 0; e->h = h; e->a = n; e->b = g; e->err = err;
+            memcpy(e->name, s->name, 40);
+            if (!ok) { InterlockedIncrement(&g_readFail); ioFail(*e); }
+            else if (!ov && g < n && n) { InterlockedIncrement(&g_shortReads); e->kind = 'r'; ioFail(*e); }
+            ioNote(e, e->name);
+        }
+    }
+    if (!ok) SetLastError(err);
+    return ok;
+}
+DWORD WINAPI hkSetFilePointer(HANDLE h, LONG lo, PLONG hi, DWORD m) {
+    DWORD r = rSetFilePointer(h, lo, hi, m); DWORD err = GetLastError();
+    if (g_ioOn) {
+        InterlockedIncrement(&g_seeks);
+        HSlot* s = hfind(h);
+        if (s) { IoEv* e = ioSlot(); e->tick = GetTickCount(); e->tid = GetCurrentThreadId(); e->kind = 'S'; e->ok = r != INVALID_SET_FILE_POINTER; e->h = h; e->a = lo; e->b = m; e->err = err; memcpy(e->name, s->name, 40); ioNote(e, e->name); }
+    }
+    SetLastError(err); return r;
+}
+BOOL WINAPI hkCloseHandle(HANDLE h) {
+    if (g_ioOn) {
+        HSlot* s = hfind(h);
+        if (s) { IoEv* e = ioSlot(); e->tick = GetTickCount(); e->tid = GetCurrentThreadId(); e->kind = 'C'; e->ok = 1; e->h = h; e->a = e->b = e->err = 0; memcpy(e->name, s->name, 40); s->h = nullptr; }
+    }
+    return rCloseHandle(h);
+}
+
+bool patchIat(HMODULE mod, const char* dll, const char* fn, void* hook, void** orig) {
+    auto base = reinterpret_cast<uint8_t*>(mod);
+    auto dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
+    auto nt = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
+    auto& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+    if (!dir.VirtualAddress) return false;
+    for (auto d = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress); d->Name; ++d) {
+        if (_stricmp(reinterpret_cast<const char*>(base + d->Name), dll) != 0) continue;
+        auto oft = reinterpret_cast<IMAGE_THUNK_DATA32*>(base + (d->OriginalFirstThunk ? d->OriginalFirstThunk : d->FirstThunk));
+        auto ft = reinterpret_cast<IMAGE_THUNK_DATA32*>(base + d->FirstThunk);
+        for (; oft->u1.AddressOfData; ++oft, ++ft) {
+            if (oft->u1.Ordinal & IMAGE_ORDINAL_FLAG32) continue;
+            auto ibn = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(base + oft->u1.AddressOfData);
+            if (strcmp(reinterpret_cast<const char*>(ibn->Name), fn) != 0) continue;
+            DWORD old;
+            if (!VirtualProtect(&ft->u1.Function, 4, PAGE_READWRITE, &old)) return false;
+            *orig = reinterpret_cast<void*>(ft->u1.Function);
+            ft->u1.Function = reinterpret_cast<DWORD>(hook);
+            VirtualProtect(&ft->u1.Function, 4, old, &old);
+            return true;
+        }
+    }
+    return false;
+}
+
+const char* funcName(uintptr_t a) { return ""; }   // names are resolved offline (steam_functions.tsv)
+
+void dumpIo(FILE* f, DWORD now, int n) {
+    fprintf(f, "\nfile I/O (1.2.0; IAT hooks): opens=%ld (absent-file probes %ld, other open failures %ld) reads=%ld bytes=%lld read-fail=%ld short-reads=%ld seeks=%ld\n",
+        g_opens, g_openFnf, g_openFail, g_reads, (long long)g_readBytes, g_readFail, g_shortReads, g_seeks);
+    fprintf(f, "  last I/O %ld ms ago on '%s'\n", g_lastIoTick ? static_cast<LONG>(now - g_lastIoTick) : -1, g_lastIoName);
+    LONG head = g_ioHead; LONG cnt = head < IoRing ? head : IoRing; LONG from = head - (cnt < n ? cnt : n);
+    fprintf(f, "  last %ld events, oldest first (age ms, tid, kind O=open o=open-fail R=read r=short-read S=seek C=close; a,b = size,got | access,disp | pos,method; err):\n", head - from);
+    for (LONG i = from; i < head; ++i) {
+        const IoEv& e = g_io[i & (IoRing - 1)];
+        fprintf(f, "    -%6ld t%-4lu %c%s h=%p a=%lu b=%lu err=%lu %s\n", static_cast<LONG>(now - e.tick), e.tid, e.kind, e.ok ? " " : "!", e.h, e.a, e.b, e.err, e.name);
+    }
+    LONG fh = g_ioFailHead; LONG fc = fh < 64 ? fh : 64;
+    fprintf(f, "  failures / short reads / non-FNF open failures, last %ld:\n", fc);
+    for (LONG i = fh - fc; i < fh; ++i) { const IoEv& e = g_ioFail[i & 63]; fprintf(f, "    -%6ld t%-4lu %c a=%lu b=%lu err=%lu %s\n", static_cast<LONG>(now - e.tick), e.tid, e.kind, e.a, e.b, e.err, e.name); }
+}
+
+void dumpSetPlayer(FILE* f, DWORD now) {
+    LONG head = g_spHead; LONG cnt = head < SpRing ? head : SpRing;
+    fprintf(f, "\nSetPlayerId (0x00798660) calls, %ld total, last %ld (age ms, frames, tid, caller ret, old -> new; caller is one of 78237C/785453/79EE47/7B3107/73F926 if the hook parameters are right):\n", head, cnt);
+    for (LONG i = head - cnt; i < head; ++i) { const SetPlayerEv& e = g_sp[i % SpRing]; fprintf(f, "    -%6ld f%ld t%lu ret=%08x  %08x -> %08x\n", static_cast<LONG>(now - e.tick), e.frames, e.tid, (unsigned)e.ret, e.oldId, e.newId); }
 }
 
 // ---- report ---------------------------------------------------------------------------------------------
@@ -257,6 +409,8 @@ void writeReport(const char* reason, DWORD now, const LoadState& st) {
     }
     static char ring[8192]; saferead::dump(ring, sizeof(ring));
     fprintf(f, "\nprobe's own %s", ring);
+    dumpSetPlayer(f, now);
+    dumpIo(f, now, 150);
     fprintf(f, "\nmodules:\n");
     for (int i = 0; i < g_modCount; ++i) fprintf(f, "  %08x-%08x %s\n", (unsigned)g_mods[i].lo, (unsigned)g_mods[i].hi, g_mods[i].name);
     fprintf(f, "\nother mods' logs:\n");
@@ -272,6 +426,8 @@ DWORD WINAPI watchdog(LPVOID) {
     LoadState last; memset(&last, 0, sizeof(last));
     DWORD lsSince = 0, lastReport = 0, lastBeat = GetTickCount();
     LONG lsFrames = 0;
+    struct { LONG opens, reads; LONG64 bytes; LONG fails; } lsIoMark = { 0, 0, 0, 0 };
+    DWORD nextTl = 0;
     bool firstState = true, armed = false;
     DWORD manualUntil = 0, armedSince = 0;
     int armedSamples = 0;
@@ -289,8 +445,24 @@ DWORD WINAPI watchdog(LPVOID) {
             last = st; firstState = false;
         }
         bool lsUp = st.ls && st.lsVt == LoadScreenVtable && st.lsModal;
-        if (lsUp && !lsSince) { lsSince = now; lsFrames = g_frames; logf("load screen UP"); }
-        if (!lsUp && lsSince) { logf("load screen DOWN after %lu ms, %ld frames", now - lsSince, g_frames - lsFrames); lsSince = 0; }
+        while (g_spFlushed < g_spHead) {   // SetPlayerId events written by the hook since the last tick
+            LONG i = g_spFlushed++;
+            if (g_spHead - i > SpRing) continue;
+            const SetPlayerEv& e = g_sp[i % SpRing];
+            bool known = false; for (uintptr_t r : SetPlayerRets) known |= r == e.ret;
+            logf("SETPLAYER f%ld t%lu ret=%08x%s %08x -> %08x", e.frames, e.tid, (unsigned)e.ret, known ? "" : "(?)", e.oldId, e.newId);
+        }
+        if (lsUp && !lsSince) { lsSince = now; lsFrames = g_frames; lsIoMark = { g_opens, g_reads, g_readBytes, g_readFail + g_shortReads }; nextTl = now + 2000;
+            logf("load screen UP (io so far: opens=%ld reads=%ld last='%s')", g_opens, g_reads, g_lastIoName); }
+        if (lsUp && lsSince && static_cast<LONG>(now - nextTl) >= 0) {   // load timeline every 2 s while the load screen is up
+            nextTl = now + 2000;
+            logf("LOADTL +%lums f+%ld io: opens+%ld reads+%ld bytes+%lld fails+%ld lastIO=%ldms ago '%s' | gstate=%d playerId=%08x +28c=%08x areaReady=%d",
+                now - lsSince, g_frames - lsFrames, g_opens - lsIoMark.opens, g_reads - lsIoMark.reads, (long long)(g_readBytes - lsIoMark.bytes),
+                (g_readFail + g_shortReads) - lsIoMark.fails, g_lastIoTick ? static_cast<LONG>(now - g_lastIoTick) : -1, g_lastIoName,
+                st.gstate, (unsigned)st.playerId, (unsigned)st.lastPlayerSrv, st.areaReady);
+        }
+        if (!lsUp && lsSince) { logf("load screen DOWN after %lu ms, %ld frames (io: opens+%ld reads+%ld bytes+%lld fails+%ld)", now - lsSince, g_frames - lsFrames,
+            g_opens - lsIoMark.opens, g_reads - lsIoMark.reads, (long long)(g_readBytes - lsIoMark.bytes), (g_readFail + g_shortReads) - lsIoMark.fails); lsSince = 0; }
 
         if (GetFileAttributesA("hangprobe_dump.txt") != INVALID_FILE_ATTRIBUTES) {
             DeleteFileA("hangprobe_dump.txt"); manualUntil = now + ManualSampleMs; logf("manual dump requested");
@@ -346,6 +518,16 @@ void __cdecl HangProbeMainLoop(void* internal) {
     InterlockedIncrement(&g_frames);
 }
 
+// Hook: CClientExoAppInternal::SetPlayerCreatureId (0x00798660) entry, thiscall: ECX = internal, [esp+0] = caller,
+// [esp+4] = new id. Only writes one ring slot (no I/O); the watchdog logs it as SETPLAYER.
+void __cdecl HangProbeSetPlayerId(void* internal, void* ret, int newId) {
+    if (!g_on || !internal) return;
+    LONG i = InterlockedIncrement(&g_spHead) - 1;
+    SetPlayerEv& e = g_sp[i % SpRing];
+    e.tick = GetTickCount(); e.frames = g_frames; e.tid = GetCurrentThreadId(); e.ret = reinterpret_cast<uintptr_t>(ret);
+    e.oldId = *reinterpret_cast<unsigned*>(reinterpret_cast<uintptr_t>(internal) + 0x20); e.newId = static_cast<unsigned>(newId);
+}
+
 // For other diagnostics: the probe's failed-read ring as text.
 int __cdecl HangProbeDumpDiag(char* buf, int cap) { return buf && cap > 0 ? saferead::dump(buf, cap) : 0; }
 
@@ -362,7 +544,21 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exe);
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
-        logf("load-hang-probe 1.1.0 loaded: attach tid=%lu exe=%08x-%08x", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi);
+        logf("load-hang-probe 1.2.0 loaded: attach tid=%lu exe=%08x-%08x", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi);
+        {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
+            bool ioWanted = true;
+            if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }
+            if (ioWanted) {
+                void *o1 = 0, *o2 = 0, *o3 = 0, *o4 = 0, *o5 = 0;
+                bool a = patchIat(exe, "KERNEL32.dll", "CreateFileA", reinterpret_cast<void*>(hkCreateFileA), &o1); if (a) rCreateFileA = reinterpret_cast<CreateFileA_t>(o1);
+                bool w = patchIat(exe, "KERNEL32.dll", "CreateFileW", reinterpret_cast<void*>(hkCreateFileW), &o2); if (w) rCreateFileW = reinterpret_cast<CreateFileW_t>(o2);
+                bool r = patchIat(exe, "KERNEL32.dll", "ReadFile", reinterpret_cast<void*>(hkReadFile), &o3); if (r) rReadFile = reinterpret_cast<ReadFile_t>(o3);
+                bool s = patchIat(exe, "KERNEL32.dll", "SetFilePointer", reinterpret_cast<void*>(hkSetFilePointer), &o4); if (s) rSetFilePointer = reinterpret_cast<SetFilePointer_t>(o4);
+                bool c = patchIat(exe, "KERNEL32.dll", "CloseHandle", reinterpret_cast<void*>(hkCloseHandle), &o5); if (c) rCloseHandle = reinterpret_cast<CloseHandle_t>(o5);
+                g_ioOn = (a || w) && r && s && c;
+                logf("IAT file I/O hooks: CreateFileA=%d CreateFileW=%d ReadFile=%d SetFilePointer=%d CloseHandle=%d -> capture %s", a, w, r, s, c, g_ioOn ? "ON" : "OFF (ReadFile/SetFilePointer/CloseHandle or both CreateFile variants missing)");
+            } else logf("file I/O capture disabled (io=0)");
+        }
         HANDLE t = CreateThread(nullptr, 0, watchdog, nullptr, 0, nullptr);
         if (t) CloseHandle(t); else logf("watchdog thread creation FAILED (%lu)", GetLastError());
     }

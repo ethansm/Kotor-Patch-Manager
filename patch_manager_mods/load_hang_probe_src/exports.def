@@ -2,3 +2,4 @@ LIBRARY LoadHangProbe
 EXPORTS
     HangProbeMainLoop
     HangProbeDumpDiag
+    HangProbeSetPlayerId

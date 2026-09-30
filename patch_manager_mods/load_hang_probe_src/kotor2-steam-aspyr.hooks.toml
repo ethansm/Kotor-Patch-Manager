@@ -15,3 +15,27 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "ecx"
 type = "pointer"
+
+# 1.2.0: CClientExoAppInternal::SetPlayerCreatureId (0x00798660), thiscall(internal, newId). Sets internal+0x20 (the client's
+# player object id). Callers: MainLoop 0x782377 (reset to 0x7F000000), ResetGame 0x78544E, 0x79EE42, 0x7B3102, wrapper 0x73F921.
+# Prologue 55 8B EC 51 89 4D FC = PUSH EBP / MOV EBP,ESP / PUSH ECX / MOV [EBP-4],ECX (7 bytes, whole instructions).
+# Parameters: ECX, caller return address ([esp+0] at entry), new id ([esp+4]). The hook only writes a ring slot.
+[[hooks]]
+address = 0x00798660
+type = "detour"
+function = "HangProbeSetPlayerId"
+original_bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
