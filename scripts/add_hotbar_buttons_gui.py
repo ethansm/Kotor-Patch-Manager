@@ -61,7 +61,7 @@ EDIT_TEX = ("hotbar_edit", "hotbar_edit_hi")   # thin (72x128) frame with a wren
 SMALL_FONT = "dialogfont10x10"
 EDIT_W = 24
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
-DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 42, 450, 42, 5, 46   # y=450: bottom edge (492) clears the native quick-action description label (y 496-528); x leaves room for the thin edit toggle at x=12 (24 wide)
+DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 42, 452, 40, 5, 44   # y=450: bottom edge (492) clears the native quick-action description label (y 496-528); x leaves room for the thin edit toggle at x=12 (24 wide)
 FIRST_ID = 111  # frames; icons at FIRST_ID+10. Must equal FirstButtonId in ForcePowerHotbar.cpp
 TEXT_ALIGN_TOP_LEFT = 9
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
@@ -71,12 +71,12 @@ def make_textures(out: Path) -> list[Path]:
     """Rounded-square slot frames, 128x128 RGBA TGA (no TXI: plain alpha blending)."""
     from PIL import Image, ImageDraw
     made = []
-    for name, col in ((TEX[0], (18, 110, 85)), (TEX[1], (208, 204, 170))):
+    for name, col in ((TEX[0], (0, 44, 26)), (TEX[1], (208, 204, 170))):
         S = 4  # supersample
         im = Image.new("RGBA", (128 * S, 128 * S), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
         d.rounded_rectangle([0, 0, 128 * S - 1, 128 * S - 1], radius=22 * S, fill=col + (255,))
-        d.rounded_rectangle([9 * S, 9 * S, 119 * S, 119 * S], radius=14 * S, fill=(0, 0, 0, 175))
+        d.rounded_rectangle([6 * S, 6 * S, 122 * S, 122 * S], radius=16 * S, fill=(0, 0, 0, 175))
         im = im.resize((128, 128), Image.LANCZOS)
         p = out / f"{name}.tga"
         im.save(p, format="TGA")
@@ -89,13 +89,13 @@ def make_edit_textures(out: Path) -> list[Path]:
     from PIL import Image, ImageDraw, ImageFilter, ImageChops
     import math
     made = []
-    for name, col in ((EDIT_TEX[0], (18, 110, 85)), (EDIT_TEX[1], (208, 204, 170))):
+    for name, col in ((EDIT_TEX[0], (0, 44, 26)), (EDIT_TEX[1], (208, 204, 170))):
         S = 4
         W, H = 72, 128
         im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
         d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=22 * S, fill=col + (255,))
-        d.rounded_rectangle([9 * S, 9 * S, (W - 9) * S, (H - 9) * S], radius=14 * S, fill=(0, 0, 0, 175))
+        d.rounded_rectangle([6 * S, 6 * S, (W - 6) * S, (H - 6) * S], radius=16 * S, fill=(0, 0, 0, 175))
         # Wrench, shaded like the native force-power icons: mint->teal gradient body, dark outline, soft glow, upper-left rim light and
         # lower-right shade, a RECESSED channel down the handle (raised rim around a darker inset), a U jaw, and a round beveled hanging
         # ring. The hole is drawn last and separately so the directional shading never distorts it.
