@@ -594,3 +594,9 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
   digits pass through in Edit/Pick (DONE); a few function-level statics (`lastOth`, `lastChar`, hover timers) still survive a HUD rebuild (only cause stale log lines). (8) control count: ONE row of 8 cells + 3
   tabs (DONE, 25 editor labels); a runtime-positioned generic cell pool was not needed. Arrow art: text `<` `>` for now. (9) toggle placement collision solved by moving it left and the bar up. (10) InitControl id-check logged.
 - **Not done from the plan:** Phase R (R1 item resref identity, R2 companion key research, R5 pause), Phase F review, DB `functions` rows for new addresses (none were needed; lessons added), host tests for the DLL logic.
+
+## Agy review follow-up (2026-09-30, build 13, built not installed)
+- FIXED: stuck Ctrl/Alt/Shift now resynced from `GetAsyncKeyState` on each digit press (only clears stale flags, logs `cap: stuck modifier cleared`).
+- FIXED: a bound key is always swallowed even when the 16-entry ring is full (request dropped and logged) so keys 1-3 never fall through to party switching.
+- FIXED: DLL detach restores the WndProc only if `wheelProc` is still on top (same guard as Mods 1/5); otherwise it is left chained.
+- OPEN (needs research, not guessed): companion profile keys `obj8000024x` are runtime ids. Agy suggests keying by CSWPartyTable roster index (0=Atton ... 11=G0-T0); the accessor/offsets are unverified. Fallback is HUD portrait resref. Ties to Phase R2; verify live by checking `character:` log lines across two saves first.

@@ -1030,6 +1030,10 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     default: isMod = false;
     }
     bool isDigit = dik >= 0x02 && dik <= 0x0B, isEsc = dik == 0x01;
+    if (isDigit && down) {   // resync modifiers that missed their key-up (Alt-Tab, modal): only ever CLEAR a stuck flag
+        bool c = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0, a = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0, sh = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+        if ((g_ctrl && !c) || (g_alt && !a) || (g_shift && !sh)) { logf("cap: stuck modifier cleared (ctrl %d->%d alt %d->%d shift %d->%d)", (int)g_ctrl, (int)(g_ctrl && c), (int)g_alt, (int)(g_alt && a), (int)g_shift, (int)(g_shift && sh)); g_ctrl = g_ctrl && c; g_alt = g_alt && a; g_shift = g_shift && sh; }
+    }
     const char* decision = "pass";
     if (isEsc) {   // while the editor is open Esc backs out of it instead of opening the game menu
         if (!down) { if (g_downSwallowed[dik]) { g_downSwallowed[dik] = false; rec->dwOfs = 0; rec->dwData = 0; decision = "swallow-up (edit)"; } }
@@ -1046,9 +1050,10 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
             else if (g_editOpen) decision = "pass(edit mode: never invoke)";
             else if (!g_slotBound[row][slot]) decision = "pass(unbound)";
             else {
-                int next = (g_ringHead + 1) % 16;
-                if (next == g_ringTail) decision = "pass(ring full)";
-                else { g_ring[g_ringHead] = { row, slot }; g_ringHead = next; g_downSwallowed[dik] = true; rec->dwOfs = 0; rec->dwData = 0; decision = "SWALLOW"; }
+                int next = (g_ringHead + 1) % 16;   // a bound key is ALWAYS swallowed: passing it on would switch party members (keys 1-3)
+                g_downSwallowed[dik] = true; rec->dwOfs = 0; rec->dwData = 0;
+                if (next == g_ringTail) decision = "SWALLOW(ring full, request dropped)";
+                else { g_ring[g_ringHead] = { row, slot }; g_ringHead = next; decision = "SWALLOW"; }
             }
         } else decision = "pass(shift)";
     }
@@ -1142,6 +1147,10 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
+    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_gameWnd && IsWindow(g_gameWnd) &&
+        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC)) == wheelProc) {
+        SetWindowLongPtrA(g_gameWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // only if we are still on top (Mod 1/5 do the same)
+    }
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         logf("force-power-hotbar 0.3.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
