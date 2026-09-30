@@ -1,7 +1,7 @@
 [patch]
 id = "inventory-3d-viewport"
 name = "Inventory 3D Viewport"
-version = "0.1.0-dev"
+version = "0.2.0-dev"
 author = "local"
 description = "Shows a live 3D model of the inventory item under the cursor in the ultrawide margin of the inventory screen."
 
