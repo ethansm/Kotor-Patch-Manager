@@ -413,18 +413,18 @@ void endFlourish(Slot* s);
 void tickButtons(Slot* s) {
     bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
     if (!any || !g_cfg.buttons) return;
-    btnSetText(s, 0, g_animOn ? "Anim: On" : "Anim: Off");
-    btnSetText(s, 1, g_spinOn ? "Spin: On" : "Spin: Off");
-    btnSetText(s, 2, "Reset");
+    btnSetText(s, 0, "Anim"); btnSetText(s, 1, "Spin"); btnSetText(s, 2, "Reset");   // state = fill colour (teal on, grey off, beige hover)
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     for (int i = 0; i < NumButtons; ++i) {
         float r[4]; int over = haveCur && fg && btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
-        if (over != s->btnHover[i]) { s->btnHover[i] = over; btnSetFill(s, i, over ? "e3d_btn_hi" : "e3d_btn"); dlogf("btn[%d]: hover=%d", i, over); }
+        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinOn : true);
+        int st = over ? 2 : (on ? 1 : 0);   // hover / on / off
+        if (st != s->btnHover[i]) { s->btnHover[i] = st; btnSetFill(s, i, st == 2 ? "e3d_btn_hi" : (st ? "e3d_btn" : "e3d_btn_off")); dlogf("btn[%d]: state=%d", i, st); }
         if (over && l && !s->btnWasL) {
             logf("btn[%d]: click at (%.0f,%.0f)", i, cx, cy);
-            if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
-            else if (i == 1) { g_spinOn = !g_spinOn; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
+            if (i == 0) { g_animOn = !g_animOn; s->btnHover[0] = -1; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
+            else if (i == 1) { g_spinOn = !g_spinOn; s->btnHover[1] = -1; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
             else { s->yaw = 0; s->zoom = 1; if (s->built) applyView(s); logf("btn: view reset"); }
         }
     }

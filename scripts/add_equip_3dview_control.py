@@ -56,8 +56,8 @@ BEVEL_TAGS = ("LBL_BEVEL", "LBL_BEVEL2")
 # Control-toolbar buttons (Mod 5): text labels the DLL binds by tag; it toggles text/fill and polls the cursor for clicks.
 # IDs follow the covers (3D_MODEL=N, covers N+1,N+2, buttons N+3..). Rects are relative to the 3D view rect (x offset, y offset, w, h).
 BTN_TAGS = ("LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_RESET")
-BTN_TEXT = ("Anim: On", "Spin: Off", "Reset")
-BTN_TEX = ("e3d_btn", "e3d_btn_hi")
+BTN_TEXT = ("Anim", "Spin", "Reset")
+BTN_TEX = ("e3d_btn", "e3d_btn_hi", "e3d_btn_off")   # on/normal, hover, off
 BTN_TEMPLATE = ("mipc28x6_p.gui", "LBL_QUEUE1")
 BTN_FONT = "dialogfont10x10"
 KNOWN_DX = {0} | {v[0] for v in LAYOUTS.values()} | {v[1] for v in LAYOUTS.values()}
@@ -183,12 +183,12 @@ def main() -> int:
     if covers:   # toolbar under the view's bottom arc: 3 buttons across the view width
         tsrc = [c for c in controls(read_gff(str(find_ci(OVERRIDE, BTN_TEMPLATE[0])))) if c.get_string("TAG") == BTN_TEMPLATE[1]]
         assert len(tsrc) == 1, f"expected one {BTN_TEMPLATE[1]} in {BTN_TEMPLATE[0]}"
-        bw, gap = (rect[2] - 2 * 6) // 3, 6
+        bw, bh, gap = 46, 22, 4   # compact column at the view's top-right corner (empty backdrop, clear of the character)
         for i, (btag, btxt) in enumerate(zip(BTN_TAGS, BTN_TEXT)):
             bc = copy.deepcopy(tsrc[0])
             bc.set_int32("ID", new_id + 3 + i)
             bc.set_string("TAG", btag)
-            brect = (rect[0] + i * (bw + gap), rect[1] + rect[3] - 30, bw, 24)
+            brect = (rect[0] + rect[2] - bw - 6, rect[1] + 10 + i * (bh + gap), bw, bh)
             be = bc.get_struct("EXTENT"); set_rect(be, brect); bc.set_struct("EXTENT", be)
             tx = bc.get_struct("TEXT"); tx.set_string("TEXT", btxt); tx.set_int32("ALIGNMENT", 18)
             tx.set_resref("FONT", type(tx.get_resref("FONT"))(BTN_FONT)); bc.set_struct("TEXT", tx)
@@ -209,7 +209,7 @@ def main() -> int:
     (bdir / "equip_p.gui.sha256").write_text(sha(eq) + "\n")
     if covers:
         from PIL import Image, ImageDraw
-        for name, col in zip(BTN_TEX, ((18, 110, 85), (208, 204, 170))):
+        for name, col in zip(BTN_TEX, ((18, 110, 85), (208, 204, 170), (70, 78, 78))):
             S = 4; im = Image.new("RGBA", (128 * S, 48 * S), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
             d.rounded_rectangle([0, 0, 128 * S - 1, 48 * S - 1], radius=16 * S, fill=col + (255,))
             d.rounded_rectangle([6 * S, 6 * S, 122 * S, 42 * S], radius=11 * S, fill=(0, 0, 0, 175))
