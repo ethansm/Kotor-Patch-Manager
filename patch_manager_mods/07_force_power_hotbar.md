@@ -1,21 +1,30 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**STATUS (2026-09-29, end of session 2) -- READ THIS FIRST.**
-- **Scope changed (user decision):** focus is now the **UX: ten on-screen buttons along the bottom of the screen, bound to `1`-`0`**, like
-  the original plan. The Ctrl (left) and Alt (right) rows and 30 total slots are a **future iteration** -- do not build them yet.
-  (Alt+digit does not reach the game under Proton anyway, see "Live results".)
-- **Done and working live (prototype `ForcePowerHotbar` 0.1.0-dev, installed as the 16th patch, `Invoke=0` = log only):** key capture + swallow
-  of bound digits (press and release), HUD gating, INI config + hot reload, per-character profile plumbing, resolver from an `ActionRef` to
-  the HUD's own action entries, and exhaustive probe logging. The **invoke path (`Invoke=1`) has never been run live.**
-- **UPDATE (session 3, same day): bottom-bar UX researched, GUI deployed, DLL 0.2.0-dev BUILT but NOT yet installed/tested live** (the game was
-  running for another session's test). See the last section "Bottom-bar UX: design, build (session 3)". Install = stage `hotbar_stage2/`
-  (see that section), then Phase L test.
-- ~~**NEXT PHASE (not started): investigate and build the on-screen button bar**~~ (done, see above) -- adding brand-new UI elements to the HUD is new territory
-  for this project (Buff HUD only reused existing labels). See "Next phase: bottom-bar UX" at the end of this file.
-- Sources: `force_power_hotbar_src/` (committed). Framework clone (uncommitted, source of truth for builds):
-  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/`. Live evidence excerpts: `force_power_hotbar_src/live_evidence/`.
-- Sections below: original spec (partly SUPERSEDED, kept for history), then "Next-phase findings" (Ghidra), "Live results", "Environment and workflow
-  gotchas", "Next phase: bottom-bar UX".
+**STATUS (2026-09-30 ~00:30, end of session 3) -- READ THIS FIRST.**
+- **Proof of concept is functionally working live** (`force-power-hotbar` **0.2.0-dev**): ten framed on-screen buttons bottom-left above the native
+  action bar, mapped to keys `1`-`0`. Verified live: HUD button controls built in the HUD constructor (hook `0x00748502`), icons + key digit, dimming,
+  hover highlight (frame swap), delayed hover tooltip (name, key, kind, Force Points, range, short description from `spells.2da` + `dialog.tlk`),
+  **click and key both invoke** the power through the HUD's own path (`Invoke=1`), auto-fill of unbound slots with the character's known powers,
+  per-character behaviour (companions without the power show an empty frame), no crash across character switching.
+- **Built but NOT yet installed / not yet seen live (build 6, in `hotbar_stage2/`):** aspect correction (frames were ~1.8x too wide on 3840x1600),
+  live tooltip refresh when the hovered entry changes usability. Installed live is build 5 (or whatever a sibling session last installed -- always re-check).
+- **Next phase (planned, not started): an in-game GUI to configure which power/item each button holds** (see the plan and "Next phase: in-game
+  configuration GUI" at the end of this file). Also open: digits inside dialogue/inventory/pause untested, save/load HUD rebuild untested, item
+  icons/quantity/description, Ctrl/Alt rows (Alt+digit never reaches the game under Proton), target-menu powers.
+- Sources: `force_power_hotbar_src/` (committed: `ForcePowerHotbar.cpp`, `HotbarConfig.h`, `TwoDA.h`, `Tlk.h`, hooks/manifest/exports, host tests
+  `config_roundtrip_test.cpp`, `twoda_test.cpp`). GUI + textures: `scripts/add_hotbar_buttons_gui.py` (deploys 22 labels into `override/mipc28x6_p.gui`
+  + `override/hotbar_slot*.tga`; `--rollback`). Framework clone (uncommitted, source of truth for builds):
+  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/`. Live evidence: `force_power_hotbar_src/live_evidence/`.
+- **Sections below, in order:** original spec (partly SUPERSEDED), "Next-phase findings" (Ghidra), "Live results" (0.1), "Environment and workflow
+  gotchas" (READ before installing), "Bottom-bar UX: design, build", then dated build logs (builds 1-6), and finally the config-GUI plan.
+- **Install workflow (updated):** the launcher always relaunches the game, so installs use a small helper (`/tmp/claude-1000/inst/` -- recreate it if
+  gone: a net8 console app referencing `bin/Debug/KPatchCore.dll` + `KPatchLauncher.dll` that calls `AppSettings.Load()`, sets
+  `DeploymentPolicy.PreferLibraryProxy` / `GameDetector.IdentifyUnrecognisedBuilds`, then `PatchRemover.RemoveAllPatches(exe, removeManagedState:false)` and
+  `PatchOrchestrator(stage).InstallPatches(exe, ids, patcherDirectory: bin/Debug/)`; it must be run from inside `bin/Debug/` with the launcher's
+  `deps.json`/`runtimeconfig.json` copied to `inst.*` or the sqlite native lib is not found and it fails with "No address database found").
+  Stage dir `hotbar_stage2/` holds the 17 kpatches. **Other Claude sessions replace the whole patch set when they install** (happened again at
+  00:05): before any install, re-read `kpm_install_state.json`, include every installed id (currently 17 incl. `load-hang-probe` from another
+  session), take the newest kpatch of each from its own `Patches/<Name>/` dir, verify DLL md5s afterwards, and never install while the game runs.
 
 > Everything from here to "## Next-phase findings" is the original pre-Ghidra spec. Where it conflicts with the later sections, the later sections win
 > (notably: items ARE in the HUD action bar; the four 0x1D0 arrays are sub-controls, not per-portrait bars; the 3-edge/30-slot layout is deferred).
@@ -500,3 +509,17 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
 ## Build 6 (2026-09-30 00:20): aspect fix + live tooltip refresh (built + staged, NOT installed -- game running)
 - **Live (build 5):** click works, auto-fill works (slots 1-4 filled with the 4 powers), slots 8/0 no longer wild -- but every frame came out ~1.8x too wide (frame ~200x110 px instead of 111x111). Cause: with the projection flag `0x00A1B9F0` cleared, `InitControl` scales x by W/800 and y by H/600 (= the 1.8 ultrawide stretch); the projection path (flag set) normally undoes that, except it misbehaved for slots 8/0. Fix: keep the flag cleared and correct after binding: `x' = x*c, w' = w*c` with `c = (H/600)/(W/800)` from the engine's own screen info (`FnScreenInfo 0x0073FEA0` -> shorts at +0x6C/+0x6E, ref size ints at `0x009F4390/94`), applied through the label's SetRect (vt slot 1). Logged: `H3: screen info ...` and `H3 <tag>: aspect fix rect [..] -> [..]` per control (expect x 31->17, w 111->62 before/after... i.e. new rect ~= 2.667 px/unit).
 - **Tooltip live refresh:** while a tooltip is shown, each 8-frame refresh rebuilds its text (`buildTipText(..., false)`) and calls `showTip` again if it differs (e.g. `Not usable right now` disappears when the power becomes usable); log `tip: slot N entry changed while hovered, refreshing`.
+
+
+## Live results 2026-09-30 (builds 3-5) and lessons
+
+- Screenshots confirmed: hover highlight (frame swaps to beige `hotbar_slot_hi`), tooltip (title, `Key: 1   Force Power`, Force Points, Range, wrapped
+  description; engine text height 288 px for 9 lines -> 32 px/line), auto-fill slots 1-4 = Heal, Burst of Speed... in the game's group-0 order, click and key
+  both invoke (`invoke: returned group=0 key=2000000a ...`; the game's own selection state may be left changed, invoke only restores it if unchanged).
+- **Lesson (InitControl projection):** while the global `0x00A1B9F0` is nonzero (set for the whole HUD ctor) `InitControl` runs a non-linear aspect
+  projection that gave slots 8 and 0 a ~360-unit width. Clearing it gives linear scaling W/800 x H/600, i.e. x stretched 1.8x on 3840x1600; fix = correct
+  x/width by `(H/600)/(W/800)` after each bind (build 6). If the correction looks off, read the `H3: screen info` and `aspect fix rect` log lines.
+- **Lesson (hit-testing):** labels are hit-tested by the panel (bit5 of `+0x48` disables it); bg frames are made hit-testable while shown so clicks on the
+  bar do not walk the character; everything else (icon, tooltip) is click-through.
+- **Lesson (Invoke was 0):** "hotkey does nothing" was the INI's `Invoke=0`; the INI is hot-reloaded, `Invoke=1` is now set.
+- **Lesson (multi-session installs):** see the install workflow in the STATUS block.

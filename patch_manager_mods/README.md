@@ -33,9 +33,10 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   already-working GOG-only patches to add Steam Aspyr support, since the
   behavior is already proven and only the hook addresses need finding.
 - [`07_force_power_hotbar.md`](07_force_power_hotbar.md) — architectural
-  spec & pre-Ghidra design: customizable 1-0-keybound hotbar of Force power
-  buttons, incorporating lessons from Mods 1 & 2, framework DB symbol
-  discoveries, and context-gated input design.
+  spec + full build log: **working proof of concept** (0.2.0-dev) of ten
+  on-screen HUD buttons keybound 1-0 with hover tooltip, click/key invoke,
+  auto-fill; next phase = in-game configuration GUI. STATUS block at the top
+  of that file is the entry point.
 - [`08_shield_bar.md`](08_shield_bar.md) — shield-absorption bar beside each
   party portrait's vitality/Force bars (stacked segments, colored by shield
   family). **Status 2026-09-29: idea + verified `forceshields.2da` data, no Ghidra yet.**
