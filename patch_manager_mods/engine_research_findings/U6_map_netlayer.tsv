@@ -1,0 +1,14 @@
+0x00703bf0	0x63f790	CNetLayerPlayerInfo::Constructor	vote	retn=0
+0x00703c50	0x63f7f0	CNetLayer::ShutDown	vote	retn=0
+0x00703ca0	0x63f840	CNetLayer::Constructor	vote	retn=0
+0x00703d70	0x63f910	CNetLayer::Initialize	vote	retn=0
+0x00703e40	0x63f9e0	CNetLayer::NonWindowMessages	vote	retn=4
+0x00703f30	0x63fad0	CNetLayer::ProcessReceivedFrames	vote	retn=4
+0x00704480	0x640020	CNetLayer::EndServerMode	vote	retn=0
+0x00704580	0x640120	CNetLayer::EndServerMode_2	vote	retn=0
+0x00704750	0x6402f0	CNetLayer::SetUpPlayBackConnection	vote	retn=0
+0x007047b0	0x640350	CNetLayer::UpdateStatusLoop	vote	retn=4
+0x00704820	0x6403c0	CNetLayer::SetDestNetLayer	vote	retn=4
+0x00704840	0x6403e0	CNetLayer::ConnectToSessionLoop	vote	retn=0
+0x00704880	0x640420	CNetLayer::NonWindowMessages_2	vote	retn=12
+0x00704d30	0x640510	CNetLayer::HandleBNCSMessage	drift+0x3c0	retn=0
