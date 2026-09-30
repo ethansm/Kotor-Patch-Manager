@@ -71,7 +71,7 @@ constexpr int PrevId = EditId + 6, NextId = EditId + 7, ClearId = EditId + 8;
 constexpr int CellCount = 8, CellBgId0 = EditId + 9, CellIcId0 = CellBgId0 + CellCount;
 constexpr int TipBgId = CellIcId0 + CellCount, TipId = TipBgId + 1;   // hover tooltip frame + text
 constexpr int TotalNewControls = TipId - FirstButtonId + 1;
-constexpr int CellTipBase = 100, ToggleTipId = 200;                  // tooltip owner ids >= this are picker cells
+constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
 constexpr uintptr_t TextVtable = 0x009876B4;
 constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
@@ -243,7 +243,9 @@ std::string computeCharacterKey() {
         std::string k; for (char ch : t) k += (isalnum((unsigned char)ch) || ch == '_') ? ch : '_';
         if (!k.empty()) return k;
     }
-    char b[24]; snprintf(b, sizeof b, "obj%08x", rdInt(c, 4)); 
+    unsigned oid = (unsigned)rdInt(c, 4);
+    if (oid == 0xFFFFFFFFu || oid == 0) return "";   // invalid object id: transient during loads, never a real character
+    char b[24]; snprintf(b, sizeof b, "obj%08x", oid); 
     if (!g_scannedCreatures.count(rdInt(c, 4))) { g_scannedCreatures.insert(rdInt(c, 4)); scanObjectStrings("controlled", c); }
     return b;
 }
@@ -298,7 +300,7 @@ void refreshEffective(uintptr_t hud) {
     size_t next = 0; unsigned h = 2166136261u; int nAuto = 0;
     for (int s = 0; s < hb::Slots; ++s) {
         hb::ActionRef a = g_cfg.slotFor(g_charKey, 0, s); bool isAuto = false;
-        if (a.empty() && next < autos.size()) { a = autos[next++]; isAuto = true; ++nAuto; }
+        if (a.empty() && !a.blank && next < autos.size()) { a = autos[next++]; isAuto = true; ++nAuto; }   // explicit "none" stays empty
         g_eff[s] = a; g_effAuto[s] = isAuto; g_slotBound[0][s] = !a.empty();
         h = (h ^ (unsigned)hb::Format(a).size() ^ ((unsigned)a.id << 8) ^ (isAuto ? 0x5000000u : 0)) * 16777619u;
         for (char c : hb::Format(a)) h = (h ^ (unsigned char)c) * 16777619u;
@@ -612,7 +614,7 @@ void hideTip(const char* why) {
     g_bar.tipSlot = -1;
 }
 
-void showTipText(Widget& anchor, const std::string& text, int s) {
+void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor = -1) {
     if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
     g_bar.tipText = text;
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
@@ -627,6 +629,7 @@ void showTipText(Widget& anchor, const std::string& text, int s) {
     RECT cr = {0, 0, 3840, 1600}; if (g_gameWnd) GetClientRect(g_gameWnd, &cr);
     uintptr_t fc = reinterpret_cast<uintptr_t>(anchor.ctl); int fx = rdInt(fc, 4), fy = rdInt(fc, 8);
     int x = fx, y = fy - h - 12;
+    if (topAnchor >= 0) y = topAnchor - h - 10;   // picker tooltips sit above the whole picker so they never cover it
     if (x + w > cr.right - 8) x = cr.right - 8 - w;
     if (x < 8) x = 8;
     if (y < 8) y = 8;
@@ -678,20 +681,23 @@ void updateHover(bool gate) {
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
 // the cached view is stale (config/character/gate change), never per frame.
 void updateButtons(uintptr_t hud, bool gate) {
-    static uintptr_t lastMissingHud = 0; static long lastRefresh = -1000; static bool lastGateSeen = false; static std::string lastChar = "\x01";
+    static uintptr_t lastMissingHud = 0; static long lastRefresh = -1000; static bool lastGateSeen = false; static std::string lastChar = "\x01"; static int lastMode = -1;
     if (g_bar.panel != hud || g_bar.built == 0) {
         if (lastMissingHud != hud) { lastMissingHud = hud; logf("buttons: no usable bar for hud %08x (bar panel=%08x built=%d/%d) -- HUD ctor hook did not run for it, or no button bound", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built, ButtonCount); }
         return;
     }
-    bool stale = g_frame - lastRefresh >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar;
+    bool stale = g_frame - lastRefresh >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar || g_bar.ed.mode != lastMode;
     if (!stale) return;
-    lastRefresh = g_frame; lastGateSeen = gate; lastChar = g_charKey;
+    lastRefresh = g_frame; lastGateSeen = gate; lastChar = g_charKey; lastMode = g_bar.ed.mode;
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
         if (!b.bg.ctl && !b.ic.ctl) continue;
         if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); continue; }
         // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
         hb::ActionRef want = g_eff[s];
+        if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
+            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); continue;
+        }
         Entry e; const char* state; bool have = false;
         if (want.empty()) state = "unbound";
         else if (!resolve(hud, want, &e)) state = "entry not available";
@@ -801,8 +807,8 @@ void setMode(int m, int slot, const char* why) {
 int tabOf(const Entry& e) { return (e.key & 0x40000000) ? 1 : ((e.key & 0x20000000) ? 0 : 2); }
 const char* const TabName[TabCount] = { "Power", "Item", "Mode" };
 
-// Writes (or, with e == nullptr, clears) hotbar slot `slot` of the Default profile and saves the INI. Character profiles are not used yet:
-// the character key is not stable (Exile flips objfffffffd <-> objffffffff across a load), so edits apply to every party member.
+// Writes (or, with e == nullptr, clears) hotbar slot `slot` of the controlled character's profile ([Profile.obj<id>]) and saves the INI.
+// The key is the creature object id (Exile objfffffffd is stable; the invalid id objffffffff seen during loads is treated as 'unknown').
 bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     Editor& ed = g_bar.ed;
     checkConfig(true);   // pick up a hand edit made since the last poll before we overwrite the file
@@ -810,17 +816,18 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
         logf("edit: assign REFUSED: config has %d warning(s); saving would drop the lines they concern", (int)g_cfg.warnings.size());
         ed.msg = "Config file has warnings - not saving (see log)"; return false;
     }
-    hb::Profile& d = g_cfg.profile("Default");
+    if (g_charKey.empty()) { logf("edit: assign REFUSED: character key unknown (load in progress?)"); ed.msg = "Character not identified yet - try again"; return false; }
+    hb::Profile& d = g_cfg.profile(g_charKey);   // per-character profile; slotFor falls back to Default for slots it leaves unset
     int frozen = 0;
     for (int i = 0; i < hb::Slots; ++i) if (d.slots[0][i].empty() && !d.slots[0][i].blank && !g_eff[i].empty()) { d.slots[0][i] = g_eff[i]; d.slots[0][i].blank = false; ++frozen; }
     hb::ActionRef a; if (e) a = e->ref; else a.blank = true;
     if (e && a.empty()) { logf("edit: assign REFUSED: entry '%s' has no stable ref", e->name.c_str()); ed.msg = "That entry cannot be bound"; return false; }
-    g_cfg.SetSlot("Default", 0, slot, a, e ? e->name : "cleared");
+    g_cfg.SetSlot(g_charKey, 0, slot, a, e ? e->name : "cleared");
     static bool backedUp = false;
     if (!backedUp) { backedUp = true; BOOL ok = CopyFileA(IniPath, "force_power_hotbar.ini.bak", FALSE); logf("edit: backup %s -> force_power_hotbar.ini.bak: %s", IniPath, ok ? "ok" : "FAILED (no ini yet?)"); }
     bool ok = g_cfg.Save(IniPath);
     long long mt = hb::Config::mtimeOf(IniPath); if (ok) g_cfgMtime = mt;
-    logf("edit: assign slot %d (%s) := %s; froze %d autofilled slot(s) into Default; character '%s'; Save %s (mtime %lld)", slot, hb::SlotKeyName(0, slot).c_str(),
+    logf("edit: assign slot %d (%s) := %s; froze %d autofilled slot(s) into the profile; character '%s'; Save %s (mtime %lld)", slot, hb::SlotKeyName(0, slot).c_str(),
          e ? hb::Format(a).c_str() : "none", frozen, g_charKey.c_str(), ok ? "ok" : "FAILED", mt);
     if (!ok) { ed.msg = "Saving the config failed (see log)"; return false; }
     recomputeBound(); refreshEffective(hud);
@@ -853,6 +860,17 @@ void updateEditor(uintptr_t hud, bool gate) {
     wVisible(g_bar.prev, "prev", showPick, true); wVisible(g_bar.next, "next", showPick, true); wVisible(g_bar.clear, "clear", showPick, true);
     for (int i = 0; i < CellCount; ++i) { wVisible(g_bar.cell[i].bg, "cell.bg", showPick, true); wVisible(g_bar.cell[i].ic, "cell.ic", showPick, false); }
 
+    // ---- hover over the tabs / arrows / Clear (highlight + short tooltip)
+    Widget* ow[6] = { &g_bar.tab[0], &g_bar.tab[1], &g_bar.tab[2], &g_bar.prev, &g_bar.next, &g_bar.clear };
+    static const char* const otip[6] = { "Force powers", "Items: medpacs, stims, shields, mines", "Modes and stances", "Previous page (mouse wheel up)", "Next page (mouse wheel down)", "Empty this slot" };
+    int oth = -1;
+    if (ed.mode == M_Pick && haveCur) for (int i = 0; i < 6 && oth < 0; ++i) if (wHit(*ow[i], pt)) oth = i;
+    {
+        static int lastOth = -1; static DWORD othSince = 0;
+        if (oth != lastOth) { logf("edit: control hover %d -> %d", lastOth, oth); if (g_bar.tipSlot >= OtherTipBase) hideTip("control hover changed"); lastOth = oth; othSince = GetTickCount(); }
+        if (oth >= 0 && g_bar.tipSlot != OtherTipBase + oth && GetTickCount() - othSince >= TipDelayMs) showTipText(*ow[oth], otip[oth], OtherTipBase + oth, g_pickRect[1]);
+    }
+
     // ---- picker contents (rebuilt from the HUD's group lists when stale)
     int pages = 1;
     if (ed.mode == M_Pick) {
@@ -883,7 +901,8 @@ void updateEditor(uintptr_t hud, bool gate) {
         }
         char t[96]; snprintf(t, sizeof t, "Slot %c - %s %d/%d - Esc: back", slotDigit(ed.slot), TabName[ed.tab], ed.page + 1, pages);
         wText(g_bar.title, "title", ed.msg.empty() ? std::string(t) : ed.msg);
-        for (int i = 0; i < TabCount; ++i) wFill(g_bar.tab[i], "tab", i == ed.tab ? FrameHiResref : FrameResref);
+        for (int i = 0; i < TabCount; ++i) wFill(g_bar.tab[i], "tab", (i == ed.tab || oth == i) ? FrameHiResref : FrameResref);
+        wFill(g_bar.prev, "prev", oth == 3 ? FrameHiResref : FrameResref); wFill(g_bar.next, "next", oth == 4 ? FrameHiResref : FrameResref); wFill(g_bar.clear, "clear", oth == 5 ? FrameHiResref : FrameResref);
         wAlpha(g_bar.prev, "prev", ed.page > 0 ? 1.0f : 0.4f); wAlpha(g_bar.next, "next", ed.page + 1 < pages ? 1.0f : 0.4f);
         for (int i = 0; i < CellCount; ++i) {
             Cell& c = g_bar.cell[i]; size_t idx = (size_t)ed.page * CellCount + i;
@@ -902,7 +921,7 @@ void updateEditor(uintptr_t hud, bool gate) {
     int over = -1;
     if (ed.mode == M_Pick && haveCur) for (int i = 0; i < CellCount && over < 0; ++i) if (g_bar.cell[i].avail && wHit(g_bar.cell[i].bg, pt)) over = i;
     if (over != ed.over) { logf("edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase && g_bar.tipSlot < ToggleTipId) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); }
-    if (over >= 0 && g_bar.tipSlot != CellTipBase + over && GetTickCount() - ed.overStart >= TipDelayMs) showTipAt(g_bar.cell[over].bg, g_bar.cell[over].entry, 0, CellTipBase + over);
+    if (over >= 0 && g_bar.tipSlot != CellTipBase + over && GetTickCount() - ed.overStart >= TipDelayMs) showTipText(g_bar.cell[over].bg, buildTipText(0, g_bar.cell[over].entry), CellTipBase + over, g_pickRect[1]);
 
     // ---- toggle hover tooltip
     {

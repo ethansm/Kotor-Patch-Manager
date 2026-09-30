@@ -115,7 +115,7 @@ struct Profile {
 struct General {
     int invoke = 0;               // 0 = log only, 1 = really invoke
     int verbose = 1;
-    int autoFill = 1;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order
+    int autoFill = 0;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order (default off: start empty)
     int keyboardDevice = -1;      // -1 = read the engine's constant (0x0099C884)
     int creatureTagOffset = 0;    // 0 = unknown -> characterKey falls back to the object id
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
