@@ -1,0 +1,9 @@
+BATCH R5: error handling near the 4 GB ceiling.
+Seeds: alloc_sites.tsv rows with checked=no (404 operator new + malloc rows; confirm each shortlisted one in the .asm, the heuristic has false negatives such as `CMP EAX,ESI` with ESI=0), imports.tsv for _set_new_handler, IsBadWritePtr/IsBadReadPtr (0x555D00 = 8 KB per-object table user), ReadFile, fread/_fread, CreateFileA, GetLastError; the 2DA reader (grep name_map.tsv for C2DA) and GUI loader (CGuiInGame / CSWGui*::Init / LoadGui) index handling; operator new 0x919723 and _malloc 0x9215E6 themselves (does new throw bad_alloc, return NULL, or call a new-handler?).
+Questions:
+1. What happens on allocation failure: decompile 0x919723 and 0x9215E6 (+__callnewh): throws, returns NULL, or loops? So which unchecked sites crash with a NULL write vs an exception.
+2. Rank the unchecked sites by reachability: hot paths (resman, texture, model, GFF, CExoString, per-frame) first, rare paths (debug, editor, one-shot init) last; large constant sizes first. Give the top 25 with owner function and consequence.
+3. Unchecked file reads: ReadFile/fread results ignored (short read -> uninitialised data used), sizes taken from file headers without bounds (GFF/ERF/BIF/2DA/TPC headers) -> huge allocation or out-of-bounds index.
+4. 2DA and GUI index bounds: row/column lookups with a runtime index not checked against the row count.
+5. The IsBadWritePtr user 0x555D00 (8 KB table): confirm the latent reuse-after-free; any other IsBad*Ptr users.
+Each finding: severity (crash / corruption / benign), trigger, reachability.

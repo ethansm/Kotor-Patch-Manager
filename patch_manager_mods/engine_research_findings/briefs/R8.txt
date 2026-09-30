@@ -1,0 +1,8 @@
+BATCH R8: containers and strings.
+Seeds: CExoString family 0x733540, 0x733570, 0x733780, 0x7337C0 (and neighbours in name_map.tsv: grep CExoString), CExoArrayList / CExoLinkedList / CExoPtrList candidates (CExoPtrList Add 0x4491C0, SetAllocated 0x449320 is doubling, lesson 157: do not redo it), callers_count.tsv top 60 by fan-in, alloc_sites.tsv unchecked CExoString allocs (0x733970, 0x73386A, 0x7343A9 region).
+Questions:
+1. Growth policy of each container class (array list, linked list, CExoString concat/append): +1, +k, or x2? Quote the capacity computation.
+2. CExoString cost: allocations per copy/assign/concat; hot callers (high fan-in, per-frame paths, GUI text formatting, script VM string ops) that copy strings in loops.
+3. O(n^2) patterns: insert-at-front of arrays (memmove per insert), linear find in hot loops (e.g. object lookup by id through a list, resref linear search), repeated strlen/strcmp in loops.
+4. The top 30 fan-in functions: name each (CRT, CExoString, list, math, GL wrappers...), with confidence.
+Give DB-ready rows for every function you name with high/med confidence.

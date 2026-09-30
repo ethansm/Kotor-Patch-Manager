@@ -1,0 +1,8 @@
+BATCH R3: texture / model / GL memory lifetime.
+Seeds: imports.tsv rows for opengl32 gl* and glu32 glu* (glGenTextures, glDeleteTextures, glTexImage2D, glGenLists, glDeleteLists, glNewList, glFinish, glFlush, gluBuild2DMipmaps, wgl*), texture creation 0x4265E0 (candidate G1: glFinish per texture when GL flag [0x9F6100] set; gate = GL extension mask test at 0x4845A0/0x4843C0), the gluBuild2DMipmaps callers 0x432CE0, 0x432FA0, 0x433CD0, 0x436250 (candidate M1), texture lookup 0x427520 / lookup 0x4269F0, AurTextureGetMaxTexID 0x427A60 ([0xA1BB84]); TPC/TGA/MDL/MDX loaders (grep strings.tsv for ".tpc", ".tga", ".mdl", ".mdx", "tpc", "Texture", "txi").
+Questions:
+1. Texture lifetime: where GL texture names are created and deleted; is every texture/display list/VBO deleted on module change (find the module-unload path and whether it walks the texture table); anything that grows monotonically across module loads (e.g. [0xA1BB84] max tex id never reused?).
+2. M1: what temp buffers gluBuild2DMipmaps callers allocate/free per texture; CPU cost order; can the engine use pre-baked mips from TPC instead (is the TPC mip chain used or discarded)?
+3. G1: exact path to glFinish in 0x4265E0: condition, how often per load (static), the global/flag values that enable it; what a skip would affect.
+4. Texture id vs array capacity: any array indexed by GL texture name or by the engine texture id (the K2 equivalent of the K1 5000-entry bucket); capacity and bounds check.
+5. Model (MDL/MDX) data: who owns the parsed model memory vs the CExoResMan data buffer; is the resman buffer kept referenced after the model is parsed (would explain big referenced resman blocks)?

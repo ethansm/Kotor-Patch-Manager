@@ -1,0 +1,10 @@
+BATCH R2: allocation hot sites.
+Seeds: inputs/census_by_a2.tsv (all rows; ignore a2=00000000 which is an unresolved frame), inputs/perflab_alloc.txt sections "top 40 sites by total bytes" and "top 40 sites by alloc count", and alloc_sites.tsv.
+Remember a2 is a RETURN address: the call is the instruction ending right before a2 (find it in the .asm of the function containing a2; use inputs/steam_functions.tsv to bisect addr -> function). a1 is the return address inside the direct allocator caller (may be stale for the CExoResMan::Malloc site, lesson 155).
+Known: 0x712FB7/0x713DA4/0x712F7F/0x712FD4 are CExoResMan::Malloc-related (batch R1 owns them; just name them). 0x449357 = CExoPtrList SetAllocated (doubling, lesson 157). 0x429FA2 = 11 MB live in 1147 blocks. 0x58444D and 0x51206E = 12.9 MB / 6.6 MB via 0x5122E0 (big blob). 0x4275C1: 23757 allocs of 24 bytes (texture/model instance lookup 0x427520 creates new 0x18/0xF4 objects on a miss).
+Questions:
+1. For the top 40 by live bytes, top 40 by total bytes and top 40 by alloc count (keyed by a2): name the owning function and object type, what is allocated (size, struct), who frees it and when.
+2. Per-frame alloc/free pairs: sites whose alloc count is high relative to frames (67610 frames in the census) with low live blocks, i.e. transient per-frame garbage. Quote the loop.
+3. 0x427520 lookup-miss path: exactly what is allocated per miss, is the lookup ever cached/freed, could it grow unbounded across module loads.
+4. Re-allocation of identical data per load (the same file parsed repeatedly), oversized fixed buffers (constant sizes in alloc_sites.tsv >= 64 KB: list them with owners).
+5. For the top 10 live-bytes and top 10 alloc-count a2 sites give a DB-ready row: addr of the containing function | proposed name | purpose (one line).

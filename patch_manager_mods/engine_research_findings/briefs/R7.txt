@@ -1,0 +1,8 @@
+BATCH R7: per-frame costs.
+Seeds: main loop 0x407920 (contains the dormant F2 frame limiter: busy-wait on QueryPerformanceCounter when float [0xA1B710] > 0; [0xA1B710] only set at 0x55A650 from [0xA7EB9C], which has no writer), MainLoop 0x781BE0 and its callees (callgraph.tsv, recurse 2-3 levels), 0x478A20 (calls GlobalMemoryStatus every iteration?), imports.tsv callers of Sleep, timeGetTime, QueryPerformanceCounter, QueryPerformanceFrequency, GetTickCount, GlobalMemoryStatus, PeekMessageA, GetAsyncKeyState, SwapBuffers, wglMakeCurrent; PlayMovies 0x798820 (candidate F1: while(IsMoviePlaying()) busy-wait); window-active flag [0xA1B4E0] (candidate H1).
+Questions:
+1. Build the per-frame call tree from 0x407920 / 0x781BE0 (client update, server update, render, GUI, sound, input) to depth 3 with names where known.
+2. Anything O(n) per frame over all objects / all resources / all textures (linear scans, list walks, sorting every frame, string compares in loops); quote the loop and what n is.
+3. Syscalls per frame: GlobalMemoryStatus, GetAsyncKeyState loops, timer calls, file-system checks (GetFileAttributes, FindFirstFile) reached per frame.
+4. F2 verify points: the exact globals to read once at runtime to prove the limiter state, and the loop addresses. F1: exact busy-wait loop in 0x798820 and whether it yields.
+5. For each cost: estimated per-frame count (static), hook site to count it at runtime (addr, >=5 bytes, original_bytes).

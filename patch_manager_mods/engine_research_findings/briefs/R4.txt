@@ -1,0 +1,9 @@
+BATCH R4: save/load path and GFF.
+Seeds: CERFFile::WriteResource_2 0x721BB0 (candidate SL: operator new(size) at 0x721D35, memcpy, write via 0x7225E0, never freed; the file-based overload 0x7216C0 is clean) and its callers 0x55CB50, 0x529DD0, 0x55DB00; the rest of CERFFile (grep name_map.tsv for CERFFile, CResGFF, CResGFFField, CExoFile); the GFF writer/reader; 0x5122E0 (makes 12.9 MB + 6.6 MB live blobs, census a2 0x58444D, 0x51206E, 0x449357, 0x45D0DB); the save screenshot path (strings.tsv: "Screen", ".tga", "savenfo", "SAVEGAME", "QUICKSAVE", "sav").
+Reference: the K1 KOTOR Patch Manager fix SaveGameMemoryLeak frees the equivalent copy with a hook right after the write (K1 0x5dde32).
+Questions:
+1. Confirm or refute SL precisely: quote the alloc, the memcpy, the write, and every path to RET; is the buffer possibly handed to the CERFFile (ownership transfer) so it is freed later (look in 0x7225E0 and the CERFFile destructor / Finish writes)?
+2. Which resources go through WriteResource_2 on a save (the caller sites: savegame.sav contents, module GFFs per area (IFO/ARE/GIT), party table, globals, PIFO, screenshot) and hence the bytes leaked per save: give a formula and a static estimate (e.g. module .sav size per visited area).
+3. Other save-path leaks: other operator new with no free in the save functions; CResGFF objects not destroyed; the K1 SaveGameMemoryLeak pattern elsewhere.
+4. What is 0x5122E0 and the 12.9 MB blob (5 blocks, live, a2 0x58444D): owner, lifetime, freed on module change?
+5. The exact SL fix hook site: address after the write where [EBP-0x10] (the buffer) is still available, >=5 stolen bytes with no relative branches, original_bytes, and the free call to use (operator delete = ? find it: the counterpart of 0x919723, likely 0x9196FD).

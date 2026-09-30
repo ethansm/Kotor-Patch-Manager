@@ -1,0 +1,11 @@
+BATCH R6: grass and render buckets (K1 crash-fix equivalents in K2).
+Seeds: strings.tsv entries containing "Grass", "grass", "TriangleBin", "bucket"; RenderGrassPolys 0x4664E0; K2GrassFogFix hook 0x4665D8; SortTriangles 0x467330; AurTextureGetMaxTexID 0x427A60 (returns [0xA1BB84], sole caller 0x495760); globals.tsv (texture/bucket globals if present).
+Background (K1 KOTOR Patch Manager fixes to port or rule out):
+- GrassMemorySafety (K1): CAurTriangleBin destructor / DestroyGrassPolys double-frees because two pointer fields can alias ([this+0x3C]==[this+0x38]) so both get deleted; the fix skips the second delete when equal. In K2 (Steam) the class layout differs; DestroyGrassPolys was NOT found by name transfer.
+- TextureBucketSafety (K1): per-texture render bucket arrays of 5000 entries indexed by GL texture ids; ids > 5000 overflow. In K2 no 0x1388 compare and no 5000-entry clear loop were found (K1 form judged absent). Still open: the K2 "mesh-bucket insert" (where meshes are appended to per-texture/per-material render lists) and whether its index is range-checked.
+Tip: the GOG->Steam mapper in CONTRACT.md can map CAurTriangleBin / CAurGrass* / Gob / render classes directly (lesson 160 said constant-delta failed for CAurTriangleBin; the cluster mapper uses per-run voting + drift, try it first).
+Questions:
+1. Locate the grass object (CAurTriangleBin or equivalent): constructor, destructor, the function that frees its polygon arrays (DestroyGrassPolys equivalent). Use strings (grass texture names, "Grass_" 2DA/ini keys), callers/callees of 0x4664E0 and 0x467330, and operator delete calls on fields of the same object.
+2. Judge the K1 double free: does the K2 destructor free two fields that can alias? Quote both deletes and the assignments that set the fields. Verdict present/absent with evidence.
+3. Locate the mesh/texture render-bucket insert: the list/array that per-frame render code appends meshes into keyed by texture/material; is the key/index bounded? What is the capacity and growth? Verdict present/absent with evidence.
+4. Any other fixed-size render arrays indexed by a runtime id (GL names, material ids, light ids): list with capacity and bounds check status.
