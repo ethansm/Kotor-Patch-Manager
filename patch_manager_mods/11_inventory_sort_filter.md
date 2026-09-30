@@ -137,3 +137,8 @@ open-slot predicate, INI parsing) is in `SortLogic.h` with host tests. Implement
 - **Pending fixes applied:** `itemHasOpenSlot` failed reads default `-1` (fail-open); game-folder log truncated in `DllMain` + cap marker; `log_items` default 0.
 - **Shipped INI:** `sort=1 tint=1 cycle=1 cycle_states=new,usable,upgrade log=1 log_items=0`. Rollback: a flag to 0 (hot reload) or remove the id.
 - Build: host tests ALL PASS, mingw `-Wall -Wextra` clean, kpatch md5 `9b3d5520` (DLL `17f6874e`), exports == 4 hook functions. Opus review: see below.
+
+### 0.2.0 Opus review (2026-09-30 night)
+- **BLOCKER fixed:** `0x8A83D0` is also the equipment screen's row handler (`0x8B01B0` registers it), and inventory rows freed on close (`0x8A7520`) can be reallocated there; a stale re-tint would set `row+0x3B0=2`, which the equipment click handler `0x8AF2D0` treats as "cannot use". H6d now acts only when the handler's panel (`[ebp-0x18]`) is the panel we tinted and the row is still in its live `+0x24B0` array. Rebuilt kpatch md5 `8fdf18cb`.
+- NITs: set-2 weapon bits are tested as `0x40000/0x80000` (engine list ORs the set-1 bit; same result in practice); item level requirement is not checked (same as the equipment list); **the install must overwrite the Stage 0 INI in the game folder** (code defaults are 0).
+- Verified: canEquip ABI/creature/pure query, state machine, H6d window + wrapper RET, log hygiene, build contents.

@@ -51,7 +51,7 @@ constexpr int NoSelection = 0x7F000000;
 constexpr int F_Panel = -0x84, F_Item = -0x18, F_Cobj = -0x38, F_Counter = -0x3C, F_List = -0x2C,
               F_Loop = -0x14, F_SelRow = -0x20, F_Creature = -0x40;
 // row-select handler 0x8a83d0 frame: [ebp+8] = row
-constexpr int F_SelectRowArg = 8;
+constexpr int F_SelectRowArg = 8, F_SelectPanel = -0x18;   // [ebp-0x18] = handler ECX (0x8a83d6)
 
 using CExoCtor = void*(__thiscall*)(void*, const char*);
 using CExoDtor = void(__thiscall*)(void*);
@@ -205,6 +205,7 @@ bool canEquip(int creature, int item, bool* equippable) {
 constexpr int TintCap = 1024;
 int g_tinted[TintCap];
 int g_nTinted = 0;
+int g_tintPanel = 0;   // panel whose rows g_tinted refers to
 bool isTinted(int row) {
     for (int i = 0; i < g_nTinted; ++i) if (g_tinted[i] == row) return true;
     return false;
@@ -223,6 +224,7 @@ void createRow(int panel, int cobj, int ebp, int item, bool tint) {
         if (row) {
             reinterpret_cast<SetCanUseFn>(FnSetCanUse)(row, 2);
             if (g_nTinted < TintCap) g_tinted[g_nTinted++] = row;
+            g_tintPanel = panel;
         } else logf("row: tint skipped, no row at index %d (arr=%08x cnt=%d)", before, arr, cnt);
     }
 }
@@ -276,7 +278,7 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
     if (g_cfg.cycle) {
         isf::State next;
         if (isf::onTabClick(clicked, mode, g_extra, g_cfg.mask, &next)) {
-            g_extra = isf::extraOf(next);   // set before SetNextFilter: it may repopulate at once
+            g_extra = isf::extraOf(next);   // SetNextFilter only stores the mode and flags a deferred repopulate
             reinterpret_cast<SetNextFilterFn>(FnSetNextFilter)(panel, isf::engineModeOf(next));
             captionTo(panel, isf::captionOf(next));
             if (g_cfg.log) logf("tab click: cycle -> state %d (engine mode %d, extra=%d)", static_cast<int>(next), isf::engineModeOf(next), g_extra);
@@ -380,6 +382,14 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
     if (!g_cfg.tint || !g_nTinted) return;
     int row = rd<int>(ebp, F_SelectRowArg);
     if (!row || !isTinted(row)) return;
+    // 0x8a83d0 is also the equipment screen's row handler, and rows freed on inventory close (0x8a7520 deletes them
+    // and zeroes the +0x24B0 entries) can be reallocated there. Act only for our panel with the row still live in it.
+    int panel = rd<int>(ebp, F_SelectPanel);
+    if (panel != g_tintPanel) return;
+    int arr = rd<int>(panel, PanelRowArrayOff), cnt = rd<int>(panel, PanelRowCountOff);
+    bool live = false;
+    for (int i = 0; arr && i < cnt && i < 4096 && !live; ++i) live = rd<int>(arr, 4 * i) == row;
+    if (!live) return;
     reinterpret_cast<SetCanUseFn>(FnSetCanUse)(row, 2);
     if (g_cfg.log && g_cfg.logItems) logf("row select: re-tint row=%08x item id=%08x", row, rd<int>(row, 0x1D0));
 }
