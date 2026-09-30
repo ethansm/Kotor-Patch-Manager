@@ -37,6 +37,10 @@ constexpr int FnGetModel = 0x004184b0;      // thiscall(view+0x60, int idx) -> G
 constexpr int FnLabelCtor = 0x00419740;     // CSWGuiLabel ctor, fastcall
 constexpr int LabelSize = 0x148;
 constexpr int LabelVftable = 0x009878BC;
+// toolbar button labels (ported from Mod 3): border fill swap for hover, text set for state
+constexpr int FnLoadImage = 0x0047EB60, FnTextSet = 0x00416E30, BorderVtable = 0x009875BC, TextVtable = 0x009876B4;
+constexpr int LabelBorderOff = 0x60, BorderFillOff = 0x74, LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x18;
+constexpr int NumButtons = 3;   // LBL_E3D_ANIM / SPIN / RESET, ids ExpectedControlId+3..+5
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
 constexpr int SceneOffset = 0x60;
@@ -135,7 +139,7 @@ struct Cfg {
     int flourish = 1; float flMin = 12, flMax = 25, flFirst = 6, flQuiet = 3; int flOnEquip = 1;
     char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
     char equipAnim[64] = "itemequip";
-    int pollMs = 100, rebuildMinMs = 250;
+    int pollMs = 100, rebuildMinMs = 250, keepObj10 = 1, buttons = 1; float spinToggleDegS = 20;
     float spinDegS = 0;
 };
 Cfg g_cfg;
@@ -200,6 +204,9 @@ void loadIni() {
         else if (!strcmp(k, "flourish_list")) { if (strlen(v) < sizeof(c.flList)) strcpy(c.flList, v); else good = false; }
         else if (!strcmp(k, "equip_anim")) { if (v[0] && strlen(v) < sizeof(c.equipAnim)) strcpy(c.equipAnim, v); else good = false; }
         else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = (int)a[0]; }
+        else if (!strcmp(k, "buttons")) { good = parseFloats(v, a, 1); if (good) c.buttons = (int)a[0]; }
+        else if (!strcmp(k, "spin_toggle_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinToggleDegS = a[0]; }
+        else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = (int)a[0]; }
         else if (!strcmp(k, "rebuild_min_ms")) { good = parseFloats(v, a, 1); if (good) c.rebuildMinMs = (int)a[0]; }
         else if (!strcmp(k, "spin_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinDegS = a[0]; }
         else { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
@@ -255,6 +262,8 @@ struct Slot {
     bool flourishActive = false;
     char idleName[16] = "";
     char activeName[32] = "";
+    // toolbar
+    unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1}; bool btnWasL = false;
 };
 constexpr int MaxSlots = 4;
 Slot g_slots[MaxSlots];
@@ -335,14 +344,14 @@ bool cursorEngine(float* x, float* y) {
 LARGE_INTEGER g_qpcFreq, g_qpcLast;
 
 // ---- cover labels (character-page arcs); built here because only constructor-bound controls get created ----
-void bindCover(int panel, const char* tagName, int expectId) {
+unsigned char* bindCover(int panel, const char* tagName, int expectId) {
     using LabelCtorFn = void(__fastcall*)(void*);
     unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
-    if (!ctl) { logf("H1 cover %s: allocation failed", tagName); return; }
+    if (!ctl) { logf("H1 cover %s: allocation failed", tagName); return nullptr; }
     memset(ctl, 0, LabelSize);
     reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
     int vt = 0; readAt<int>(reinterpret_cast<int>(ctl), 0, &vt);
-    if (vt != LabelVftable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, vt, LabelVftable); return; }
+    if (vt != LabelVftable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, vt, LabelVftable); return nullptr; }
     char exo[16] = {0};
     reinterpret_cast<CExoCtor>(FnExoCtor)(exo, tagName);
     reinterpret_cast<InitCtl>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
@@ -353,6 +362,73 @@ void bindCover(int panel, const char* tagName, int expectId) {
     if (id != expectId) fl &= ~2;
     *reinterpret_cast<int*>(ctl + CtlFlagsOff) = fl | 0x20;
     logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, ctl, id, expectId, ext[0], ext[1], ext[2], ext[3], fl, fl | 0x20);
+    return id == expectId ? ctl : nullptr;
+}
+
+// ---- toolbar (Anim / Spin / Reset): labels bound by tag; state text + hover fill set at runtime, clicks polled (labels are click-through) ----
+bool g_animOn = true, g_spinOn = false;   // session toggles (initialised from the INI at load / first bind)
+struct ImgPoolEntry { char resref[17]; void* image; };
+ImgPoolEntry g_imgPool[8]; int g_imgCount = 0;
+void* btnImage(const char* resref) {
+    for (int i = 0; i < g_imgCount; ++i) if (!strcmp(g_imgPool[i].resref, resref)) return g_imgPool[i].image;
+    if (g_imgCount >= 8) return nullptr;
+    char buf[20] = {}; strncpy(buf, resref, 16);
+    void* im = reinterpret_cast<void*(__cdecl*)(const char*)>(FnLoadImage)(buf);
+    ImgPoolEntry& e = g_imgPool[g_imgCount++]; memset(&e, 0, sizeof e); strncpy(e.resref, resref, 16); e.image = im;
+    logf("btn: image '%s' -> %p", resref, im);
+    return im;
+}
+void btnSetText(Slot* s, int i, const char* text) {
+    unsigned char* c = s->btn[i]; if (!c || !strcmp(s->btnText[i], text)) return;
+    uintptr_t tx = reinterpret_cast<uintptr_t>(c) + LabelTextOff;
+    int tvt = 0, rend = 0; readAt<int>(static_cast<int>(tx), 0, &tvt); readAt<int>(static_cast<int>(tx), TextRendererOff, &rend);
+    if (tvt != TextVtable || !rend) { logf("btn[%d]: text object bad (vt=%08x renderer=%08x), cannot set \"%s\"", i, tvt, rend, text); return; }
+    char exo[16] = {0};
+    reinterpret_cast<CExoCtor>(FnExoCtor)(exo, text);
+    reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + TextStringSubOff), exo);
+    reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
+    logf("btn[%d]: text \"%s\" -> \"%s\"", i, s->btnText[i], text);
+    strncpy(s->btnText[i], text, sizeof(s->btnText[i]) - 1);
+}
+void btnSetFill(Slot* s, int i, const char* resref) {
+    unsigned char* c = s->btn[i]; if (!c) return;
+    uintptr_t border = reinterpret_cast<uintptr_t>(c) + LabelBorderOff;
+    int bvt = 0; readAt<int>(static_cast<int>(border), 0, &bvt);
+    if (bvt != BorderVtable) { logf("btn[%d]: border vtable %08x != %08x, no fill change", i, bvt, BorderVtable); return; }
+    void* im = btnImage(resref); if (!im) return;
+    *reinterpret_cast<void**>(border + BorderFillOff) = im;
+}
+bool btnRect(Slot* s, int i, float* r) {   // engine-space rect from the label's extent (+4..+0x10, top-left origin)
+    unsigned char* c = s->btn[i]; if (!c) return false;
+    int e[4]; for (int k = 0; k < 4; ++k) if (!readAt<int>(reinterpret_cast<int>(c), 4 + 4 * k, &e[k])) return false;
+    for (int k = 0; k < 4; ++k) r[k] = (float)e[k];
+    return e[2] > 0 && e[3] > 0;
+}
+bool overAnyButton(Slot* s, float cx, float cy) {
+    for (int i = 0; i < NumButtons; ++i) { float r[4]; if (btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3]) return true; }
+    return false;
+}
+void applyView(Slot* s);
+void endFlourish(Slot* s);
+void tickButtons(Slot* s) {
+    bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
+    if (!any || !g_cfg.buttons) return;
+    btnSetText(s, 0, g_animOn ? "Anim: On" : "Anim: Off");
+    btnSetText(s, 1, g_spinOn ? "Spin: On" : "Spin: Off");
+    btnSetText(s, 2, "Reset");
+    float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
+    bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
+    for (int i = 0; i < NumButtons; ++i) {
+        float r[4]; int over = haveCur && fg && btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
+        if (over != s->btnHover[i]) { s->btnHover[i] = over; btnSetFill(s, i, over ? "e3d_btn_hi" : "e3d_btn"); dlogf("btn[%d]: hover=%d", i, over); }
+        if (over && l && !s->btnWasL) {
+            logf("btn[%d]: click at (%.0f,%.0f)", i, cx, cy);
+            if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
+            else if (i == 1) { g_spinOn = !g_spinOn; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
+            else { s->yaw = 0; s->zoom = 1; if (s->built) applyView(s); logf("btn: view reset"); }
+        }
+    }
+    s->btnWasL = l;
 }
 
 // ---- preview creature ----
@@ -419,15 +495,31 @@ void playPart(void* part, const char* name, float speed, unsigned flags) {
     if (!pv || IsBadReadPtr(pv + PartPlaySlot / 4, 4)) return;
     reinterpret_cast<PartPlayFn>(pv[PartPlaySlot / 4])(part, name, speed, flags, 0.0f);
 }
+// Static animation knowledge (R5 inventory): the vt[0x1c] length probe cannot see supermodel-inherited anims, so it is NOT used.
+struct FlLen { const char* name; float len; };
+const FlLen kHumanoid[] = {{"pausesh",2.0f},{"scanning",5.1f},{"salute",1.7f},{"victory",1.3f},{"bow",2.5f},{"greeting",1.5f},
+    {"taunt",1.4f},{"touchheart",2.8f},{"rolleyes",2.3f},{"shrug",1.6f},{"nodyes",1.5f},{"point",2.0f},{"itemequip",1.3f},{"equip",1.0f}};
+const FlLen kDroidT3[] = {{"victory",1.0f},{"greeting",1.0f},{"taunt",1.0f},{"equip",1.3f}};
+const FlLen kDroidG0[] = {{"victory",2.0f},{"greeting",1.3f},{"taunt",1.3f},{"equip",1.3f}};
+int appRow(Slot* s) { return (int)*reinterpret_cast<unsigned short*>(s->app + 0x18); }
+bool isDroidRow(int r) { return r == 2 || r == 57 || r == 231 || r == 232 || r == 453 || r == 3 || r == 538 || r == 539; }
+const FlLen* animTable(int row, int* n) {
+    if (row == 2 || row == 57 || row == 231 || row == 232) { *n = 4; return kDroidT3; }
+    if (row == 453) { *n = 4; return kDroidG0; }
+    if (row == 3 || row == 538 || row == 539) { *n = 0; return nullptr; }
+    *n = (int)(sizeof(kHumanoid) / sizeof(kHumanoid[0])); return kHumanoid;
+}
+bool animLen(Slot* s, const char* name, float* len) {
+    int n; const FlLen* t = animTable(appRow(s), &n);
+    for (int i = 0; i < n; ++i) if (!strcmp(t[i].name, name)) { *len = t[i].len; return true; }
+    return false;
+}
 void chooseIdle(Slot* s) {
     void* body = partGob(s, 0xff);
-    short al = s->align;
-    const char* want = al < 40 ? "evil" : (al < 60 ? "neutral" : "good");
-    float len = 0;
-    if (body && partLen(body, want, &len)) strcpy(s->idleName, want);
-    else if (body && partLen(body, "pause1", &len)) strcpy(s->idleName, "pause1");
-    else strcpy(s->idleName, "");
-    logf("anim: idle for align=%d -> '%s' (wanted '%s') body=%p", al, s->idleName, want, body);
+    short al = s->align; int row = appRow(s);
+    const char* want = isDroidRow(row) ? "pause1" : (al < 40 ? "evil" : (al < 60 ? "neutral" : "good"));
+    strcpy(s->idleName, want);
+    logf("anim: idle for align=%d row=%d -> '%s' body=%p", al, row, s->idleName, body);
 }
 void applyView(Slot* s) {
     // zoom = FOV scale on the scene camera; the facing yaw is re-applied after every rebuild
@@ -448,7 +540,9 @@ bool buildPreview(Slot* s, int real, const char* why) {
     if (!allocCreature(s)) return false;
     unsigned char copy[AppCopyBytes]; short al = 0;
     if (!readApp(real, copy, &al)) { logf("build: real %08x appearance unreadable", real); return false; }
-    *reinterpret_cast<int*>(copy + 0x10) = 0x7f000000;
+    unsigned char raw[AppCopyBytes]; memcpy(raw, copy, AppCopyBytes);  // snapshot BEFORE the +0x10 override (else compare never matches)
+    logf("build: raw +0x10=%08x", *reinterpret_cast<int*>(copy + 0x10));
+    if (!g_cfg.keepObj10) *reinterpret_cast<int*>(copy + 0x10) = 0x7f000000;  // SetStats forces this (probably 'no item object' -> no helmet); keep_obj10=1 tests helmet display
     int gate = 0; readAt<int>(GateGlobal, 0, &gate);
     if (!gate) { logf("build: gate 009f42b4 is zero, skipping"); return false; }
     void* pv = s->creature; void** vt = vtOf(pv);
@@ -466,7 +560,7 @@ bool buildPreview(Slot* s, int real, const char* why) {
     reinterpret_cast<CrPtrFn>(vt[CrSetFacing / 4])(pv, face);
     reinterpret_cast<SetupSceneFn>(FnSetupScene)(pv, s->block, reinterpret_cast<void*>(real), 0, 1);
     logf("build: scene models=%d body=%p head=%p", modelCount(s->block), partGob(s, 0xff), partGob(s, 0xfe));
-    memcpy(s->app, copy, AppCopyBytes); s->align = al; s->real = real; s->built = true; ++s->builds; s->lastBuild = GetTickCount();
+    memcpy(s->app, raw, AppCopyBytes); s->align = al; s->real = real; s->built = true; ++s->builds; s->lastBuild = GetTickCount();
     s->flourishActive = false;
     chooseIdle(s);
     applyView(s);
@@ -482,7 +576,7 @@ bool playFlourish(Slot* s, const char* name, const char* why) {
     void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
     float len = 0;
     if (!body) { logf("flourish: no body part"); return false; }
-    if (!partLen(body, name, &len)) { dlogf("flourish: '%s' missing on body (len=%.2f)", name, len); return false; }
+    if (!animLen(s, name, &len)) { dlogf("flourish: '%s' not in table for row %d", name, appRow(s)); return false; }
     if (len > 12.0f) { logf("flourish: '%s' length %.2f too long, skipped", name, len); return false; }
     logf("flourish: play '%s' (%s) len=%.2fs body=%p head=%p idle='%s'", name, why, len, body, head, s->idleName);
     playPart(body, name, -1.0f, 0);
@@ -508,7 +602,7 @@ void pickFlourish(Slot* s) {
     if (!n) { s->nextFlourish = GetTickCount() + 10000; return; }
     int start = rnd() % n;
     for (int i = 0; i < n; ++i) if (playFlourish(s, names[(start + i) % n], "scheduled")) return;
-    logf("flourish: none of %d listed names exist on this body, retry in 30 s", n);
+    logf("flourish: none of %d listed names apply to this appearance, retry in 30 s", n);
     s->nextFlourish = GetTickCount() + 30000;
 }
 
@@ -525,7 +619,7 @@ void tickInput(Slot* s) {
     if (((l && !wasL) || (mb && !wasM)) && presses < 30) { ++presses; logf("INPUT: press #%d L=%d M=%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f inside=%d fg=%d", presses, l, mb, cx, cy, ext[0], ext[1], ext[2], ext[3], top, inside, fg); }
     bool changed = false;
     if (inside && fg && mb && !wasM) { s->yaw = 0; s->zoom = 1; changed = true; logf("INPUT: view reset (MMB)"); }
-    if (inside && fg && l && !wasL) { s->dragging = true; s->lastX = cx; logf("INPUT: drag start at (%.0f,%.0f) yaw=%.1f", cx, cy, s->yaw); }
+    if (inside && fg && l && !wasL && !overAnyButton(s, cx, cy)) { s->dragging = true; s->lastX = cx; logf("INPUT: drag start at (%.0f,%.0f) yaw=%.1f", cx, cy, s->yaw); }
     if (s->dragging) {
         if (!l) { s->dragging = false; logf("INPUT: drag end yaw=%.1f", s->yaw); }
         else if (haveCur && cx != s->lastX) { s->yaw += (cx - s->lastX) * g_cfg.dragDegPx; s->lastX = cx; changed = true; dlogf("INPUT: yaw=%.1f", s->yaw); }
@@ -600,6 +694,10 @@ extern "C" void __cdecl BindEquipView(int panel) {
         logf("H1: camera attached to 'camerahook', fov=%.3f", g_cfg.fov);
     } else logf("H1: camera vtable mismatch, camera left as is");
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
+    if (g_cfg.buttons) {
+        static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_RESET"};
+        for (int i = 0; i < NumButtons; ++i) { s->btn[i] = bindCover(panel, tags[i], ExpectedControlId + 3 + i); if (!s->btn[i]) logf("H1: toolbar button %s not bound (GUI not patched?)", tags[i]); }
+    }
     s->usable = true;
     logf("H1: slot %d ready (panel=%08x seq=%u)", static_cast<int>(s - g_slots), panel, s->seq);
 }
@@ -637,7 +735,7 @@ extern "C" void __cdecl EquipTick(int panel) {
         bool wasBuilt = s->built;
         if (buildPreview(s, real, why) && wasBuilt && !strcmp(why, "appearance changed")) {
             s->lastEquipMs = t;
-            if (g_cfg.stage >= 4 && g_cfg.flourish && g_cfg.flOnEquip) {  // short "item equipped" gesture shortly after the swap
+            if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn && g_cfg.flOnEquip) {  // short "item equipped" gesture shortly after the swap
                 if (!playFlourish(s, g_cfg.equipAnim, "after equip")) dlogf("flourish: equip anim '%s' unavailable", g_cfg.equipAnim);
             }
         }
@@ -645,7 +743,8 @@ extern "C" void __cdecl EquipTick(int panel) {
     }
     if (!s->built) return;
 
-    if (g_cfg.stage >= 4 && g_cfg.flourish) {
+    if (g_cfg.stage >= 4) tickButtons(s);
+    if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn) {
         if (!s->nextFlourish) s->nextFlourish = t + (DWORD)(g_cfg.flFirst * 1000.0f);
         if (s->flourishActive && t >= s->flourishEnd) endFlourish(s);
         else if (!s->flourishActive && t >= s->nextFlourish) {
@@ -654,7 +753,8 @@ extern "C" void __cdecl EquipTick(int panel) {
         }
     }
     if (g_cfg.stage >= 5) tickInput(s);
-    if (g_cfg.spinDegS != 0 && !s->dragging) { s->yaw += g_cfg.spinDegS * (dt > 0.1f ? 0.1f : dt); applyView(s); }
+    float spin = g_spinOn ? (g_cfg.spinDegS != 0 ? g_cfg.spinDegS : g_cfg.spinToggleDegS) : g_cfg.spinDegS;
+    if (spin != 0 && !s->dragging) { s->yaw += spin * (dt > 0.1f ? 0.1f : dt); applyView(s); }
     if (t - s->bindTick < 90000 && t - s->lastBeat >= 2000) {
         s->lastBeat = t;
         logf("H3 beat: builds=%d built=%d real=%08x yaw=%.1f zoom=%.2f flourish=%d idle='%s' models=%d", s->builds, s->built, s->real, s->yaw, s->zoom, s->flourishActive, s->idleName, modelCount(s->block));
