@@ -106,7 +106,17 @@ def make_edit_textures(out: Path) -> list[Path]:
         md.ellipse([(hx - 12) * S, (hy - 12) * S, (hx + 12) * S, (hy + 12) * S], fill=255)
         ang = math.atan2(ty - hy, tx - hx) + math.pi   # jaw opens away from the handle
         def pt(r, a): return ((hx + r * math.cos(a)) * S, (hy + r * math.sin(a)) * S)
-        md.polygon([pt(0, ang), pt(18, ang - 0.42), pt(18, ang + 0.42)], fill=0)
+        # U-shaped jaw: parallel-sided slot with a rounded bottom, opening away from the handle
+        hw, bot_r = 4.6, 3.0   # slot half-width; distance of the slot bottom from the head centre
+        cxs, cys = hx + bot_r * math.cos(ang), hy + bot_r * math.sin(ang)
+        px, py = -math.sin(ang), math.cos(ang)   # perpendicular
+        ex, ey = hx + 20 * math.cos(ang), hy + 20 * math.sin(ang)
+        md.polygon([((cxs + px * hw) * S, (cys + py * hw) * S), ((ex + px * hw) * S, (ey + py * hw) * S),
+                    ((ex - px * hw) * S, (ey - py * hw) * S), ((cxs - px * hw) * S, (cys - py * hw) * S)], fill=0)
+        md.ellipse([(cxs - hw) * S, (cys - hw) * S, (cxs + hw) * S, (cys + hw) * S], fill=0)
+        # hanging hole in the handle end (like a real spanner)
+        hxo, hyo = tx - 0.0, ty - 0.0
+        md.ellipse([(hxo - 2.6) * S, (hyo - 2.6) * S, (hxo + 2.6) * S, (hyo + 2.6) * S], fill=0)
         grad = Image.new("RGBA", (W * S, H * S))
         gp = grad.load()
         top, bot = (175, 252, 228), (28, 150, 122)
@@ -116,10 +126,27 @@ def make_edit_textures(out: Path) -> list[Path]:
             c = tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)) + (255,)
             for x in range(W * S): gp[x, y] = c
         outline = m.filter(ImageFilter.MaxFilter(2 * S + 1))
-        d.bitmap((0, 0), outline, fill=(6, 60, 50, 255))
         shifted = ImageChops.offset(m, int(2.2 * S), int(2.2 * S))
         rim = ImageChops.subtract(m, shifted)                         # edges facing the upper-left light
+        # soft outer glow (native icons have a faint halo), drawn under the outline
+        glow = m.filter(ImageFilter.MaxFilter(4 * S + 1)).filter(ImageFilter.GaussianBlur(S * 2.2)).point(lambda v: int(v * 0.55))
+        im.paste(Image.new("RGBA", (W * S, H * S), (60, 210, 175, 255)), (0, 0), glow)
+        d.bitmap((0, 0), outline, fill=(6, 60, 50, 255))
         im.paste(grad, (0, 0), m)
+        # shade the lower-right edges (opposite the rim light)
+        shade = ImageChops.subtract(m, ImageChops.offset(m, -int(2.4 * S), -int(2.4 * S)))
+        im.paste(Image.new("RGBA", (W * S, H * S), (10, 90, 74, 255)), (0, 0), shade.filter(ImageFilter.GaussianBlur(S * 0.7)))
+        # specular streak along the handle and a glint on the jaw
+        hl = Image.new("L", (W * S, H * S), 0)
+        hd = ImageDraw.Draw(hl)
+        ux, uy = (tx - hx), (ty - hy); ln = math.hypot(ux, uy); ux, uy = ux / ln, uy / ln
+        nx, ny = -uy, ux
+        a0 = (hx + ux * 16 - nx * 2.2, hy + uy * 16 - ny * 2.2); a1 = (tx - ux * 8 - nx * 2.2, ty - uy * 8 - ny * 2.2)
+        hd.line([(a0[0] * S, a0[1] * S), (a1[0] * S, a1[1] * S)], fill=200, width=int(1.6 * S))
+        gx, gy = hx - 6.5, hy - 5.5
+        hd.ellipse([(gx - 2.2) * S, (gy - 2.2) * S, (gx + 2.2) * S, (gy + 2.2) * S], fill=230)
+        hl = ImageChops.multiply(hl, m)
+        im.paste(Image.new("RGBA", (W * S, H * S), (245, 255, 250, 255)), (0, 0), hl.filter(ImageFilter.GaussianBlur(S * 0.5)))
         im.paste(Image.new("RGBA", (W * S, H * S), (235, 255, 246, 255)), (0, 0), rim.filter(ImageFilter.GaussianBlur(S * 0.6)))
         im = im.resize((W, H), Image.LANCZOS)
         p = out / f"{name}.tga"

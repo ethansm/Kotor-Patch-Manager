@@ -562,3 +562,6 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
 
 ### Layout fix (2026-09-30 ~02:35)
 - Bar + toggle + picker moved up 34 units (`DEFAULT_Y` 484 -> 450 in `add_hotbar_buttons_gui.py`): the bar (y 484-526) overlapped the native quick-action description label ("Energy Shield (Self)", y ~496-528). New bar span y 450-492. GUI-only change (deploy with `--replace`); the DLL derives everything from the bound rects.
+
+### Wrench art revision (2026-09-30 ~03:05, committed, NOT yet deployed)
+- Jaw is a U (parallel-sided slot, rounded bottom). Added native-icon cues: soft teal outer glow, dark outline, lower-right shading, specular streak along the handle + glint on the jaw, hanging hole in the handle end. Texture-only (`add_hotbar_buttons_gui.py --replace` rewrites `hotbar_edit*.tga`); no DLL change.
