@@ -423,6 +423,8 @@ struct GlFns {
     void (WINAPI* getBooleanv)(unsigned, unsigned char*);
     unsigned char (WINAPI* isEnabled)(unsigned);
     void (WINAPI* readPixels)(int, int, int, int, unsigned, unsigned, void*);
+    void (WINAPI* enable)(unsigned);
+    void (WINAPI* disable)(unsigned);
 } g_gl;
 void glInit() {
     if (g_gl.tried) return;
@@ -434,8 +436,10 @@ void glInit() {
     g_gl.getBooleanv = reinterpret_cast<decltype(g_gl.getBooleanv)>(GetProcAddress(m, "glGetBooleanv"));
     g_gl.isEnabled = reinterpret_cast<decltype(g_gl.isEnabled)>(GetProcAddress(m, "glIsEnabled"));
     g_gl.readPixels = reinterpret_cast<decltype(g_gl.readPixels)>(GetProcAddress(m, "glReadPixels"));
+    g_gl.enable = reinterpret_cast<decltype(g_gl.enable)>(GetProcAddress(m, "glEnable"));
+    g_gl.disable = reinterpret_cast<decltype(g_gl.disable)>(GetProcAddress(m, "glDisable"));
     g_gl.ok = g_gl.getError && g_gl.getIntegerv && g_gl.getBooleanv && g_gl.isEnabled;
-    probeLog("GLINIT ok=%d readPixels=%d", g_gl.ok, g_gl.readPixels != nullptr);
+    probeLog("GLINIT ok=%d readPixels=%d enable/disable=%d", g_gl.ok, g_gl.readPixels != nullptr, g_gl.enable && g_gl.disable);
 }
 void glDump(const char* tag) {
     if (!g_probe) return;
@@ -471,6 +475,31 @@ int sceneBrightness() {
     while (g_gl.getError()) {}
     return int(sum / (3 * cnt));
 }
+
+// Our GUI draws leave GL_LIGHTING enabled (probe 02:34: PRE light=0 -> POST light=1; the engine's colour-fill clip / batch flush
+// toggle it). Snapshot the on/off capabilities before our draws and put them back afterwards, every frame, probe flag or not.
+struct CapGuard {
+    static constexpr unsigned Caps[9] = { 0x0C11, 0x0B90, 0x0B71, 0x0B50, 0x0BE2, 0x0B60, 0x0DE1, 0x0B44, 0x0BC0 };
+    unsigned char before[9] = {}; bool armed = false;
+    CapGuard() {
+        glInit();
+        if (!g_gl.ok || !g_gl.enable || !g_gl.disable) return;
+        for (int i = 0; i < 9; ++i) before[i] = g_gl.isEnabled(Caps[i]);
+        armed = true;
+    }
+    ~CapGuard() {
+        if (!armed) return;
+        for (int i = 0; i < 9; ++i) {
+            unsigned char now = g_gl.isEnabled(Caps[i]);
+            if (now != before[i]) {
+                static int logged = 0;
+                if (logged < 20) { ++logged; probeLog("CAPFIX cap=%x was=%d now=%d -> restored", Caps[i], before[i], now); }
+                (before[i] ? g_gl.enable : g_gl.disable)(Caps[i]);
+            }
+        }
+    }
+};
+constexpr unsigned CapGuard::Caps[9];
 } // namespace
 
 extern "C" {
@@ -669,6 +698,7 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
       if (menu != lastMenu) { lastMenu = menu; probeLog("MENUSTATE skip=%d clipDepth=%x", menu, cd); }
       if (menu) return; }
     if (g_noDraw) return;
+    CapGuard capGuard;
     static bool prevAny = false; static int dumpFrames = 0;
     bool any = false;
     for (auto& e : g_slots) { Pool t[8]; if (e.slotPtr && e.creaturePtr && collectPools(e.creaturePtr, t, 8) > 0) any = true; }
