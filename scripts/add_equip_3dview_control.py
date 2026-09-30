@@ -55,9 +55,10 @@ LAYOUTS = {
 BEVEL_TAGS = ("LBL_BEVEL", "LBL_BEVEL2")
 # Control-toolbar buttons (Mod 5): text labels the DLL binds by tag; it toggles text/fill and polls the cursor for clicks.
 # IDs follow the covers (3D_MODEL=N, covers N+1,N+2, buttons N+3..). Rects are relative to the 3D view rect (x offset, y offset, w, h).
-BTN_TAGS = ("LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP")
+BTN_TAGS = ("LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE")
+MENU_TAGS = tuple(f"LBL_E3D_M{i:02d}" for i in range(20))   # Emotes pop-up items (cloned from the button template; the DLL lays them out)
 TIP_TAGS = ("LBL_E3D_TIPBG", "LBL_E3D_TIP")   # hover tooltip frame + text; the DLL sizes/positions/shows them
-BTN_TEXT = ("Animate", "Spin", "Weapons")
+BTN_TEXT = ("Animate", "Spin", "Weapons", "Reset", "Emotes")
 BTN_TEX = ("e3d_btn", "e3d_btn_hi", "e3d_btn_off")   # on/normal, hover, off
 BTN_TEMPLATE = ("mipc28x6_p.gui", "LBL_QUEUE1")
 BTN_FONT = "dialogfont10x10"
@@ -127,7 +128,7 @@ def main() -> int:
     ref = {c.get_string("TAG"): c for c in ref_cs}
 
     # rebuild from vanilla: drop previous additions, set every moved control to vanilla+dx
-    for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in (TAG,) + BEVEL_TAGS + BTN_TAGS + TIP_TAGS + ("LBL_E3D_RESET",)]):
+    for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in (TAG,) + BEVEL_TAGS + BTN_TAGS + MENU_TAGS + TIP_TAGS]):
         del cs[i]
     changes = []
     for tags, dx in ((LIST, ldx), (BLOCK, bdx)):
@@ -196,20 +197,31 @@ def main() -> int:
             bb = bc.get_struct("BORDER"); bb.set_resref("FILL", type(bb.get_resref("FILL"))(BTN_TEX[0])); bc.set_struct("BORDER", bb)
             cs.append(bc)
             print(f"  add {btag} ID={new_id + 3 + i} {list(brect)} '{btxt}'")
+    if covers:   # Emotes menu items: same look as the buttons, placeholder rect + empty text (the DLL positions/hides them at bind)
+        for i, mtag in enumerate(MENU_TAGS):
+            mc = copy.deepcopy(tsrc[0])
+            mc.set_int32("ID", new_id + 3 + len(BTN_TAGS) + i)
+            mc.set_string("TAG", mtag)
+            me = mc.get_struct("EXTENT"); set_rect(me, (10, 10, 60, 22)); mc.set_struct("EXTENT", me)
+            tx = mc.get_struct("TEXT"); tx.set_string("TEXT", ""); tx.set_int32("ALIGNMENT", 18)
+            tx.set_resref("FONT", type(tx.get_resref("FONT"))(BTN_FONT)); mc.set_struct("TEXT", tx)
+            mb = mc.get_struct("BORDER"); mb.set_resref("FILL", type(mb.get_resref("FILL"))(BTN_TEX[0])); mc.set_struct("BORDER", mb)
+            cs.append(mc)
+        print(f"  add {len(MENU_TAGS)} menu labels ID={new_id + 3 + len(BTN_TAGS)}..{new_id + 2 + len(BTN_TAGS) + len(MENU_TAGS)}")
     if covers:   # tooltip: dark framed panel (the HUD's LBL_MOULDING3) + text label, placeholder rects
         hud = read_gff(str(find_ci(OVERRIDE, BTN_TEMPLATE[0])))
         bgs = [c for c in controls(hud) if c.get_string("TAG") == "LBL_MOULDING3"]
         assert len(bgs) == 1, "LBL_MOULDING3 not found in mipc28x6_p.gui"
         for j, (ttag, tsrc0) in enumerate(zip(TIP_TAGS, (bgs[0], tsrc[0]))):
             tc = copy.deepcopy(tsrc0)
-            tc.set_int32("ID", new_id + 3 + len(BTN_TAGS) + j)
+            tc.set_int32("ID", new_id + 3 + len(BTN_TAGS) + len(MENU_TAGS) + j)
             tc.set_string("TAG", ttag)
             te = tc.get_struct("EXTENT"); set_rect(te, (10, 10, 100, 40)); tc.set_struct("EXTENT", te)
             if j == 1:
                 tx = tc.get_struct("TEXT"); tx.set_string("TEXT", ""); tx.set_int32("ALIGNMENT", 18); tc.set_struct("TEXT", tx)
                 tb = tc.get_struct("BORDER"); tb.set_resref("FILL", type(tb.get_resref("FILL"))("")); tc.set_struct("BORDER", tb)
             cs.append(tc)
-            print(f"  add {ttag} ID={new_id + 3 + len(BTN_TAGS) + j}")
+            print(f"  add {ttag} ID={new_id + 3 + len(BTN_TAGS) + len(MENU_TAGS) + j}")
     g.root.set_list("CONTROLS", cs)
     print(f"layout {a.layout}: {len(changes)} control rect change(s)")
     print("\n".join(changes))

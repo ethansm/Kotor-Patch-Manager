@@ -45,7 +45,9 @@ constexpr int LabelBorderOff = 0x60, BorderFillOff = 0x74, LabelTextOff = 0xD8, 
 constexpr int FnGetItemObj = 0x0073f530, ItemMgrGlobal = 0x00a1b4a4, FnCreateModel = 0x00462320;   // thiscall(mgr=[[a1b4a4]+4], id) -> client item*; cdecl(name, inst, 0, 0) -> Gob*
 constexpr int CrRightItemOff = 0x238, CrLeftItemOff = 0x23c, ItemBaseIdxOff = 0xc, ItemVariationOff = 0x11c, NoItemId = 0x7f000000;
 constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
-constexpr int NumButtons = 3;   // LBL_E3D_ANIM / SPIN / WEAP (ids ExpectedControlId+3..+5), then LBL_E3D_TIPBG / LBL_E3D_TIP (+6,+7)
+constexpr int NumButtons = 5;   // LBL_E3D_ANIM / SPIN / WEAP / RESET / EMOTE (ids ExpectedControlId+3..+7)
+constexpr int MaxMenu = 20;     // LBL_E3D_M00..M19 (ids +8..+27): Emotes pop-up items; then LBL_E3D_TIPBG / LBL_E3D_TIP (+28,+29)
+constexpr int MenuRows = 7;     // items per pop-up column
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
 constexpr int SceneOffset = 0x60;
@@ -54,6 +56,7 @@ constexpr int CameraOffset = 0x78;
 constexpr int ModelCountOffset = 0x80;
 constexpr int BlockSize = 0x400;
 constexpr int ExpectedControlId = 49;       // equip_p.gui has 49 controls (ids 0..48); 3D_MODEL=49, LBL_BEVEL=50, LBL_BEVEL2=51
+constexpr int TipBgId = ExpectedControlId + 3 + NumButtons + MaxMenu, TipId = TipBgId + 1;
 constexpr int ExpectedCamVtable = 0x0098c45c;
 constexpr int ExpectedGobVtable = 0x0098b5cc;
 
@@ -273,7 +276,10 @@ struct Slot {
     // weapons
     void* wpn[2] = {}; int wpnIds[2] = {0, 0}; bool wpnApplied = false, stanceOn = false; char stanceName[12] = "", wpnNames[2][28] = {};
     // toolbar
-    unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1}; bool btnWasL = false;
+    unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1, -1, -1}; bool btnWasL = false;
+    // Emotes pop-up (items are engine labels; itemState = fill state + 1, 0 = not yet set)
+    unsigned char* item[MaxMenu] = {}; char itemText[MaxMenu][20] = {}; int itemState[MaxMenu] = {};
+    bool menuOpen = false; int menuCount = 0, menuLaid = -1, menuReal = 0; char menuAnim[MaxMenu][12] = {}; char menuLabel[MaxMenu][16] = {}; bool menuAttack[MaxMenu] = {};
     unsigned char* tipBg = nullptr; unsigned char* tip = nullptr; char tipText[200] = ""; int tipFor = -1, overBtn = -1; DWORD overSince = 0;
 };
 constexpr int MaxSlots = 4;
@@ -416,14 +422,16 @@ void btnSetFill(Slot* s, int i, const char* resref) {
     void* im = btnImage(resref); if (!im) return;
     *reinterpret_cast<void**>(border + BorderFillOff) = im;
 }
-bool btnRect(Slot* s, int i, float* r) {   // engine-space rect from the label's extent (+4..+0x10, top-left origin)
-    unsigned char* c = s->btn[i]; if (!c) return false;
+bool ctlRect(unsigned char* c, float* r) {   // engine-space rect from a label's extent (+4..+0x10, top-left origin)
+    if (!c) return false;
     int e[4]; for (int k = 0; k < 4; ++k) if (!readAt<int>(reinterpret_cast<int>(c), 4 + 4 * k, &e[k])) return false;
     for (int k = 0; k < 4; ++k) r[k] = (float)e[k];
     return e[2] > 0 && e[3] > 0;
 }
+bool btnRect(Slot* s, int i, float* r) { return ctlRect(s->btn[i], r); }
 bool overAnyButton(Slot* s, float cx, float cy) {
     for (int i = 0; i < NumButtons; ++i) { float r[4]; if (btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3]) return true; }
+    if (s->menuOpen) for (int i = 0; i < s->menuCount; ++i) { float r[4]; if (ctlRect(s->item[i], r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3]) return true; }
     return false;
 }
 void applyView(Slot* s);
@@ -438,10 +446,14 @@ void setCtlRect(unsigned char* c, int x, int y, int w, int h) {
     void** vt = vtOfCtl(c); if (!vt || IsBadReadPtr(vt + 1, 4)) return;
     int r[4] = {x, y, w, h}; reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(c, r);
 }
+bool playFlourish(Slot* s, const char* name, const char* why, float forceLen = 0.0f);
+void menuBuild(Slot* s);
 const char* const kTips[NumButtons] = {
     "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
     "Spin\nSlowly turns the character.\nDrag to rotate, wheel to zoom,\nmiddle click to reset the view.",
-    "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle."};
+    "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle.",
+    "Reset\nRestores the default view\n(also middle click).",
+    "Emotes\nPick a gesture (or, with\nWeapons on, an attack) to play."};
 constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipDelayMs = 350;   // px estimates (same font/metrics as Mod 3's tooltip)
 void hideTip(Slot* s) { if (s->tipFor < 0) return; setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false); s->tipFor = -1; }
 void showTip(Slot* s, int i, const float* br) {
@@ -458,28 +470,84 @@ void showTip(Slot* s, int i, const float* br) {
     if (s->tipFor != i) logf("tip: show %d rect=[%d,%d,%d,%d] lines=%d maxLen=%d", i, x, y, w, h, lines, maxLen);
     s->tipFor = i;
 }
+bool resetEnabled(Slot* s) { return fabsf(fmodf(s->yaw, 360.0f)) > 0.5f || fabsf(s->zoom - 1.0f) > 0.01f || g_spinOn; }
+void menuClose(Slot* s, const char* why) {
+    if (!s->menuOpen) return;
+    s->menuOpen = false; s->menuLaid = -1;
+    for (int i = 0; i < MaxMenu; ++i) setCtlVisible(s->item[i], false);
+    logf("menu: closed (%s)", why);
+}
+void menuLayout(Slot* s) {   // items stack downwards from the Emotes button, columns extend LEFT of the toolbar
+    float e[4], r0[4], r1[4];
+    if (!btnRect(s, 4, e)) return;
+    float w = e[2], h = e[3], pitch = (btnRect(s, 0, r0) && btnRect(s, 1, r1) && r1[1] - r0[1] > 0) ? r1[1] - r0[1] : h * 1.2f, gap = w * 0.12f;
+    int vx = 0, vy = 0, vh = 0; readAt<int>(reinterpret_cast<int>(s->block), 4, &vx); readAt<int>(reinterpret_cast<int>(s->block), 8, &vy); readAt<int>(reinterpret_cast<int>(s->block), 16, &vh);
+    int rows = s->menuCount < MenuRows ? s->menuCount : MenuRows;
+    float top = e[1]; if (vh > 0 && top + rows * pitch > vy + vh) top = vy + vh - rows * pitch; if (top < vy) top = (float)vy;
+    for (int i = 0; i < MaxMenu; ++i) {
+        if (i >= s->menuCount) { setCtlVisible(s->item[i], false); continue; }
+        int col = i / MenuRows, row = i % MenuRows;
+        int x = (int)(e[0] - gap - (col + 1) * w - col * gap), y = (int)(top + row * pitch);
+        if (x < vx) x = vx;
+        setCtlRect(s->item[i], x, y, (int)w, (int)h);
+        setCtlVisible(s->item[i], true);
+        char nm[12]; snprintf(nm, sizeof nm, "item[%d]", i); setLabelText(s->item[i], s->itemText[i], sizeof s->itemText[i], s->menuLabel[i], nm);
+        s->itemState[i] = 0;
+    }
+    s->menuLaid = s->menuCount;
+    logf("menu: layout %d items rows=%d top=%.0f w=%.0f pitch=%.0f", s->menuCount, rows, top, w, pitch);
+}
 void tickButtons(Slot* s) {
     bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
     if (!any || !g_cfg.buttons) return;
-    btnSetText(s, 0, "Animate"); btnSetText(s, 1, "Spin"); btnSetText(s, 2, "Weapons");   // state = fill colour (teal on, grey off, beige hover)
+    btnSetText(s, 0, "Animate"); btnSetText(s, 1, "Spin"); btnSetText(s, 2, "Weapons"); btnSetText(s, 3, "Reset"); btnSetText(s, 4, "Emotes");   // state = fill colour (teal on, grey off, beige hover)
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
-    int overIdx = -1; float overRect[4] = {0, 0, 0, 0};
+    bool edge = l && !s->btnWasL;
+    if (s->menuOpen && s->menuReal != s->real) menuClose(s, "character changed");
+    menuBuild(s);
+    if (s->menuOpen && s->menuCount != s->menuLaid) { if (s->menuCount) menuLayout(s); else menuClose(s, "no items"); }
+    bool menuAvail = s->menuCount > 0;
+    int overIdx = -1; float overRect[4] = {0, 0, 0, 0}; bool overEmote = false;
     for (int i = 0; i < NumButtons; ++i) {
         float r[4]; int over = haveCur && fg && btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
+        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinOn : (i == 2 ? g_weaponsOn : (i == 3 ? resetEnabled(s) : menuAvail)));
+        bool inert = (i == 3 && !on) || (i == 4 && !on);   // greyed: no hover, no click
         if (over) { overIdx = i; memcpy(overRect, r, sizeof r); }
-        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinOn : g_weaponsOn);
-        int st = over ? 2 : (on ? 1 : 0);   // hover / on / off
+        if (i == 4 && over) overEmote = true;
+        int st = (over && !inert) ? 2 : (on ? 1 : 0);   // hover / on / off
         if (st != s->btnHover[i]) { s->btnHover[i] = st; btnSetFill(s, i, st == 2 ? "e3d_btn_hi" : (st ? "e3d_btn" : "e3d_btn_off")); dlogf("btn[%d]: state=%d", i, st); }
-        if (over && l && !s->btnWasL) {
-            logf("btn[%d]: click at (%.0f,%.0f)", i, cx, cy);
+        if (over && edge) {
+            logf("btn[%d]: click at (%.0f,%.0f)%s", i, cx, cy, inert ? " (inert, ignored)" : "");
+            if (inert) continue;
             s->btnHover[i] = -1;
             if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
             else if (i == 1) { g_spinOn = !g_spinOn; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
-            else { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
+            else if (i == 2) { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
+            else if (i == 3) { logf("btn: view reset (yaw=%.1f zoom=%.2f spin=%d)", s->yaw, s->zoom, g_spinOn); s->yaw = 0; s->zoom = 1; g_spinOn = false; applyView(s); }
+            else { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
         }
     }
+    bool overItem = false;
+    if (s->menuOpen) {
+        for (int i = 0; i < s->menuCount; ++i) {
+            float r[4]; int over = haveCur && fg && ctlRect(s->item[i], r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
+            int st = over ? 2 : 1; overItem = overItem || over;
+            if (s->itemState[i] != st + 1) { s->itemState[i] = st + 1; unsigned char* c = s->item[i]; uintptr_t border = reinterpret_cast<uintptr_t>(c) + LabelBorderOff; int bvt = 0; readAt<int>(static_cast<int>(border), 0, &bvt);
+                if (bvt == BorderVtable) if (void* im = btnImage(st == 2 ? "e3d_btn_hi" : "e3d_btn")) *reinterpret_cast<void**>(border + BorderFillOff) = im; }
+            if (over && edge) {
+                logf("menu: item[%d] '%s' (%s) click", i, s->menuAnim[i], s->menuAttack[i] ? "attack" : "emote");
+                char nm[12]; strncpy(nm, s->menuAnim[i], sizeof nm - 1); nm[sizeof nm - 1] = 0;
+                bool atk = s->menuAttack[i];
+                menuClose(s, "item chosen");
+                if (!playFlourish(s, nm, "menu", atk ? 1.5f : 0.0f)) logf("menu: '%s' could not be played", nm);
+                break;
+            }
+        }
+        if (edge && !overItem && !overEmote) { bool onBtn = overIdx >= 0; menuClose(s, onBtn ? "other button" : "click outside"); }
+    }
     DWORD t = GetTickCount();
+    if (overItem || (s->menuOpen && overEmote)) { overIdx = -1; }
     if (overIdx != s->overBtn) { s->overBtn = overIdx; s->overSince = t; hideTip(s); }
     else if (overIdx >= 0 && t - s->overSince >= (DWORD)TipDelayMs) showTip(s, overIdx, overRect);
     s->btnWasL = l;
@@ -587,6 +655,26 @@ bool animLen(Slot* s, const char* name, float* len) {
     int n; const FlLen* t = animTable(appRow(s), &n);
     for (int i = 0; i < n; ++i) if (!strcmp(t[i].name, name)) { *len = t[i].len; return true; }
     return false;
+}
+const char* labelFor(const char* n) {
+    static const char* const m[][2] = {{"pausesh","Pause"},{"scanning","Scan"},{"salute","Salute"},{"victory","Victory"},{"bow","Bow"},{"greeting","Greet"},
+        {"taunt","Taunt"},{"touchheart","Touch heart"},{"rolleyes","Roll eyes"},{"shrug","Shrug"},{"nodyes","Nod"},{"point","Point"},{"itemequip","Equip item"},{"equip","Equip"}};
+    for (auto& e : m) if (!strcmp(n, e[0])) return e[1];
+    return n;
+}
+// Attack clips per wield style (R5 chains: melee g<N>a<k>, ranged b<N>a<k>; all ~1.5 s). Shown only while Weapons is on and a stance exists.
+void menuBuild(Slot* s) {
+    int n = 0, en = 0; const FlLen* t = animTable(appRow(s), &en);
+    auto add = [&](const char* a, const char* label, bool atk) { if (n < MaxMenu) { strncpy(s->menuAnim[n], a, 11); s->menuAnim[n][11] = 0; strncpy(s->menuLabel[n], label, 15); s->menuLabel[n][15] = 0; s->menuAttack[n] = atk; ++n; } };
+    for (int i = 0; i < en; ++i) add(t[i].name, labelFor(t[i].name), false);
+    if (g_weaponsOn && s->stanceOn && s->stanceName[0] == 'g' && s->stanceName[1] >= '1' && s->stanceName[1] <= '8') {
+        int N = s->stanceName[1] - '0'; bool droid = isDroidRow(appRow(s));
+        if (!(droid && !(N == 5 || N == 6 || N == 8))) {
+            int cnt = N == 1 || N == 8 ? 2 : (N <= 4 ? 5 : 4); char nm[12], lb[16];
+            for (int k = 1; k <= cnt; ++k) { snprintf(nm, sizeof nm, "%c%da%d", (N >= 5 && N <= 7) ? 'b' : 'g', N, k); snprintf(lb, sizeof lb, "Attack %d", k); add(nm, lb, true); }
+        }
+    }
+    s->menuCount = n;
 }
 void chooseIdle(Slot* s) {
     void* body = partGob(s, 0xff);
@@ -705,11 +793,12 @@ unsigned g_rng = 0x1234567;
 unsigned rnd() { g_rng = g_rng * 1664525u + 1013904223u; return g_rng >> 8; }
 float rndRange(float a, float b) { return a + (b - a) * ((rnd() & 0xffff) / 65535.0f); }
 
-bool playFlourish(Slot* s, const char* name, const char* why) {
+bool playFlourish(Slot* s, const char* name, const char* why, float forceLen) {
     void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
     float len = 0;
     if (!body) { logf("flourish: no body part"); return false; }
-    if (!animLen(s, name, &len)) { dlogf("flourish: '%s' not in table for row %d", name, appRow(s)); return false; }
+    if (forceLen > 0) len = forceLen;
+    else if (!animLen(s, name, &len)) { dlogf("flourish: '%s' not in table for row %d", name, appRow(s)); return false; }
     if (len > 12.0f) { logf("flourish: '%s' length %.2f too long, skipped", name, len); return false; }
     logf("flourish: play '%s' (%s) len=%.2fs body=%p head=%p idle='%s'", name, why, len, body, head, s->idleName);
     // R8a/R8b: speed<0 starts at the END and plays BACKWARDS (Gob update: time += dt*speed); the engine's "once" is flag bit 1, and a
@@ -831,9 +920,14 @@ extern "C" void __cdecl BindEquipView(int panel) {
     } else logf("H1: camera vtable mismatch, camera left as is");
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
     if (g_cfg.buttons) {
-        static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP"};
+        static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE"};
         for (int i = 0; i < NumButtons; ++i) { s->btn[i] = bindCover(panel, tags[i], ExpectedControlId + 3 + i); if (!s->btn[i]) logf("H1: toolbar button %s not bound (GUI not patched?)", tags[i]); }
-        s->tipBg = bindCover(panel, "LBL_E3D_TIPBG", ExpectedControlId + 6); s->tip = bindCover(panel, "LBL_E3D_TIP", ExpectedControlId + 7);
+        for (int i = 0; i < MaxMenu; ++i) {
+            char tg[16]; snprintf(tg, sizeof tg, "LBL_E3D_M%02d", i);
+            s->item[i] = bindCover(panel, tg, ExpectedControlId + 3 + NumButtons + i); if (!s->item[i]) logf("H1: menu label %s not bound (GUI not patched?)", tg);
+            setCtlVisible(s->item[i], false);
+        }
+        s->tipBg = bindCover(panel, "LBL_E3D_TIPBG", TipBgId); s->tip = bindCover(panel, "LBL_E3D_TIP", TipId);
         setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false);   // shown only while a button is hovered
     }
     s->usable = true;
