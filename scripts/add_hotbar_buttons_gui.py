@@ -61,7 +61,7 @@ EDIT_TEX = ("hotbar_edit", "hotbar_edit_hi")   # thin (72x128) frame with a wren
 SMALL_FONT = "dialogfont10x10"
 EDIT_W = 24
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
-DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 42, 484, 42, 5, 46   # x leaves room for the thin edit toggle at x=12 (24 wide)
+DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 42, 450, 42, 5, 46   # y=450: bottom edge (492) clears the native quick-action description label (y 496-528); x leaves room for the thin edit toggle at x=12 (24 wide)
 FIRST_ID = 111  # frames; icons at FIRST_ID+10. Must equal FirstButtonId in ForcePowerHotbar.cpp
 TEXT_ALIGN_TOP_LEFT = 9
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
