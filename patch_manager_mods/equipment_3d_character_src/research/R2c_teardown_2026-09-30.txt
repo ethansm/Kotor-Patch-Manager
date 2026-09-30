@@ -1,0 +1,635 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Using log config file: jar:file:/home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/ethansm/.config/ghidra/ghidra_12.1.4_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/ethansm/.config/ghidra/ghidra_12.1.4_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1158 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2276 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/b701f191-0b3a-47ec-abb8-cf60fe10474d/scratchpad/gs
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr (HeadlessAnalyzer)  
+INFO  Opening project: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr (HeadlessProject)  
+INFO  REPORT: Processing read-only project file: /swkotor2.exe (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DecompileArgs.java '0084df70' '008aa750' '0077ec20'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/b701f191-0b3a-47ec-abb8-cf60fe10474d/scratchpad/gs/DecompileArgs.java (HeadlessAnalyzer)  
+INFO  DecompileArgs.java> === FUN_0084df70 @ 0084df70 size=1872 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __fastcall FUN_0084df70(undefined4 *param_1)
+
+{
+  uint uVar1;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  puStack_c = &LAB_00971cdc;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  *param_1 = CSWGuiInGameCharacter::vftable;
+  local_8 = 0x34;
+  if ((param_1[0x12db] != 0) && ((undefined4 *)param_1[0x12db] != (undefined4 *)0x0)) {
+    (*(code *)**(undefined4 **)param_1[0x12db])(1,uVar1);
+  }
+  local_8._1_3_ = (uint3)((uint)local_8 >> 8);
+  param_1[0x1288] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x36;
+  FUN_00417290();
+  local_8._0_1_ = 0x35;
+  FUN_00414c60();
+  local_8._0_1_ = 0x33;
+  FUN_00418640();
+  param_1[0x1236] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x38;
+  FUN_00417290();
+  local_8._0_1_ = 0x37;
+  FUN_00414c60();
+  local_8._0_1_ = 0x32;
+  FUN_00418640();
+  param_1[0x11e4] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x3a;
+  FUN_00417290();
+  local_8._0_1_ = 0x39;
+  FUN_00414c60();
+  local_8._0_1_ = 0x31;
+  FUN_00418640();
+  param_1[0x1192] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x3c;
+  FUN_00417290();
+  local_8._0_1_ = 0x3b;
+  FUN_00414c60();
+  local_8._0_1_ = 0x30;
+  FUN_00418640();
+  local_8._0_1_ = 0x2f;
+  _eh_vector_destructor_iterator_
+            (param_1 + 0xfa6,0x148,6,CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton);
+  local_8._0_1_ = 0x2e;
+  FUN_0041a3d0();
+  param_1[0xf09] = CSWGui3DSceneView::vftable;
+  local_8._0_1_ = 0x3d;
+  FUN_00418130();
+  local_8._0_1_ = 0x2d;
+  FUN_00418640();
+  local_8._0_1_ = 0x2c;
+  FUN_0041ac10();
+  local_8._0_1_ = 0x2b;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x2a;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x29;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x28;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xcea));
+  local_8._0_1_ = 0x27;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xc98));
+  param_1[0xc46] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x3f;
+  FUN_00417290();
+  local_8._0_1_ = 0x3e;
+  FUN_00414c60();
+  local_8._0_1_ = 0x26;
+  FUN_00418640();
+  param_1[0xbf4] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x41;
+  FUN_00417290();
+  local_8._0_1_ = 0x40;
+  FUN_00414c60();
+  local_8._0_1_ = 0x25;
+  FUN_00418640();
+  param_1[0xba2] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x43;
+  FUN_00417290();
+  local_8._0_1_ = 0x42;
+  FUN_00414c60();
+  local_8._0_1_ = 0x24;
+  FUN_00418640();
+  param_1[0xb50] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x45;
+  FUN_00417290();
+  local_8._0_1_ = 0x44;
+  FUN_00414c60();
+  local_8._0_1_ = 0x23;
+  FUN_00418640();
+  param_1[0xafe] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x47;
+  FUN_00417290();
+  local_8._0_1_ = 0x46;
+  FUN_00414c60();
+  local_8._0_1_ = 0x22;
+  FUN_00418640();
+  param_1[0xaac] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x49;
+  FUN_00417290();
+  local_8._0_1_ = 0x48;
+  FUN_00414c60();
+  local_8._0_1_ = 0x21;
+  FUN_00418640();
+  param_1[0xa5a] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x4b;
+  FUN_00417290();
+  local_8._0_1_ = 0x4a;
+  FUN_00414c60();
+  local_8._0_1_ = 0x20;
+  FUN_00418640();
+  param_1[0xa08] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x4d;
+  FUN_00417290();
+  local_8._0_1_ = 0x4c;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1f;
+  FUN_00418640();
+  param_1[0x9b6] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x4f;
+  FUN_00417290();
+  local_8._0_1_ = 0x4e;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1e;
+  FUN_00418640();
+  param_1[0x964] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x51;
+  FUN_00417290();
+  local_8._0_1_ = 0x50;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1d;
+  FUN_00418640();
+  local_8._0_1_ = 0x1c;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x912));
+  local_8._0_1_ = 0x1b;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x8c0));
+  local_8._0_1_ = 0x1a;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x86e));
+  local_8._0_1_ = 0x19;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x81c));
+  local_8._0_1_ = 0x18;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x7ca));
+  local_8._0_1_ = 0x17;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x778));
+  local_8._0_1_ = 0x16;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x726));
+  local_8._0_1_ = 0x15;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x6d4));
+  local_8._0_1_ = 0x14;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x682));
+  local_8._0_1_ = 0x13;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x630));
+  local_8._0_1_ = 0x12;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x5de));
+  local_8._0_1_ = 0x11;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x58c));
+  local_8._0_1_ = 0x10;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x53a));
+  local_8._0_1_ = 0xf;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x4e8));
+  local_8._0_1_ = 0xe;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x496));
+  local_8._0_1_ = 0xd;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x444));
+  local_8._0_1_ = 0xc;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x3f2));
+  local_8._0_1_ = 0xb;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x3a0));
+  local_8._0_1_ = 10;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x34e));
+  local_8._0_1_ = 9;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x2fc));
+  local_8._0_1_ = 8;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x2aa));
+  local_8._0_1_ = 7;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 600));
+  local_8._0_1_ = 6;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x206));
+  local_8._0_1_ = 5;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x1b4));
+  local_8._0_1_ = 4;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x162));
+  local_8._0_1_ = 3;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x110));
+  local_8._0_1_ = 2;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xbe));
+  local_8._0_1_ = 1;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x6c));
+  local_8 = (uint)local_8._1_3_ << 8;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x1a));
+  local_8 = 0xffffffff;
+  FUN_0040e860();
+  ExceptionList = local_10;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_008aa750 @ 008aa750 size=1638 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __fastcall FUN_008aa750(undefined4 *param_1)
+
+{
+  undefined4 *puVar1;
+  uint uVar2;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  puStack_c = &LAB_009788bf;
+  local_10 = ExceptionList;
+  uVar2 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  *param_1 = CSWGuiInGameEquip::vftable;
+  local_8 = 0x21;
+  FUN_0041d290(uVar2);
+  FUN_0041d290();
+  for (local_14 = 0; local_14 < (int)param_1[0x8a9]; local_14 = local_14 + 1) {
+    puVar1 = *(undefined4 **)(param_1[0x8a8] + local_14 * 4);
+    if (puVar1 != (undefined4 *)0x0) {
+      (**(code **)*puVar1)(1);
+    }
+    *(undefined4 *)(param_1[0x8a8] + local_14 * 4) = 0;
+  }
+  FUN_006169e0(1);
+  if (param_1[0x1436] != 0) {
+    if ((undefined4 *)param_1[0x1436] != (undefined4 *)0x0) {
+      (*(code *)**(undefined4 **)param_1[0x1436])(1);
+    }
+    param_1[0x1436] = 0;
+  }
+  if (param_1[0x1438] != 0) {
+    if ((undefined4 *)param_1[0x1438] != (undefined4 *)0x0) {
+      (*(code *)**(undefined4 **)param_1[0x1438])(1);
+    }
+    param_1[0x1438] = 0;
+  }
+  local_8._0_1_ = 0x20;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x1f;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x1e;
+  FUN_0041a3d0();
+  param_1[0x135f] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x23;
+  FUN_00417290();
+  local_8._0_1_ = 0x22;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1d;
+  FUN_00418640();
+  param_1[0x130d] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x25;
+  FUN_00417290();
+  local_8._0_1_ = 0x24;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1c;
+  FUN_00418640();
+  param_1[0x12bb] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x27;
+  FUN_00417290();
+  local_8._0_1_ = 0x26;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1b;
+  FUN_00418640();
+  param_1[0x1269] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x29;
+  FUN_00417290();
+  local_8._0_1_ = 0x28;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1a;
+  FUN_00418640();
+  param_1[0x1217] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x2b;
+  FUN_00417290();
+  local_8._0_1_ = 0x2a;
+  FUN_00414c60();
+  local_8._0_1_ = 0x19;
+  FUN_00418640();
+  local_8._0_1_ = 0x18;
+  _eh_vector_destructor_iterator_
+            (param_1 + 0x107d,0x148,5,CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton);
+  param_1[0x102b] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x2d;
+  FUN_00417290();
+  local_8._0_1_ = 0x2c;
+  FUN_00414c60();
+  local_8._0_1_ = 0x17;
+  FUN_00418640();
+  local_8._0_1_ = 0x16;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x15;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x14;
+  FUN_0041d190();
+  local_8._0_1_ = 0x13;
+  FUN_0041d190();
+  param_1[0xd79] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x2f;
+  FUN_00417290();
+  local_8._0_1_ = 0x2e;
+  FUN_00414c60();
+  local_8._0_1_ = 0x12;
+  FUN_00418640();
+  param_1[0xd27] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x31;
+  FUN_00417290();
+  local_8._0_1_ = 0x30;
+  FUN_00414c60();
+  local_8._0_1_ = 0x11;
+  FUN_00418640();
+  param_1[0xcd5] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x33;
+  FUN_00417290();
+  local_8._0_1_ = 0x32;
+  FUN_00414c60();
+  local_8._0_1_ = 0x10;
+  FUN_00418640();
+  param_1[0xc83] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x35;
+  FUN_00417290();
+  local_8._0_1_ = 0x34;
+  FUN_00414c60();
+  local_8._0_1_ = 0xf;
+  FUN_00418640();
+  param_1[0xc31] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x37;
+  FUN_00417290();
+  local_8._0_1_ = 0x36;
+  FUN_00414c60();
+  local_8._0_1_ = 0xe;
+  FUN_00418640();
+  param_1[0xbdf] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x39;
+  FUN_00417290();
+  local_8._0_1_ = 0x38;
+  FUN_00414c60();
+  local_8._0_1_ = 0xd;
+  FUN_00418640();
+  local_8._0_1_ = 0xc;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xb8d));
+  local_8._0_1_ = 0xb;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xb3b));
+  local_8._0_1_ = 10;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xae9));
+  local_8._0_1_ = 9;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xa97));
+  local_8._0_1_ = 8;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xa45));
+  local_8._0_1_ = 7;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x9f3));
+  local_8._0_1_ = 6;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x9a1));
+  local_8._0_1_ = 5;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x94f));
+  local_8._0_1_ = 4;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x8fd));
+  local_8._0_1_ = 3;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x8ab));
+  local_8._0_1_ = 2;
+  Free();
+  local_8._0_1_ = 1;
+  _eh_vector_destructor_iterator_
+            (param_1 + 0x517,0x148,0xb,CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton);
+  local_8 = (uint)local_8._1_3_ << 8;
+  _eh_vector_destructor_iterator_(param_1 + 0x1b,0x1d0,0xb,FUN_0041a3d0);
+  local_8 = 0xffffffff;
+  FUN_0040e860();
+  ExceptionList = local_10;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_0077ec20 @ 0077ec20 size=1333 (GhidraScript)  
+INFO  DecompileArgs.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void __thiscall FUN_0077ec20(int *param_1,int param_2,int param_3,int param_4,int param_5)
+
+{
+  int iVar1;
+  int *piVar2;
+  undefined4 uVar3;
+  float10 fVar4;
+  int local_74;
+  short local_6e;
+  float local_38;
+  int local_34;
+  int local_28;
+  int *local_24;
+  undefined1 local_18 [8];
+  void *local_10;
+  undefined1 *puStack_c;
+  uint local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00965408;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  if (param_3 == 0) {
+    local_6e = *(short *)(param_1[0xc4] + 0x80);
+  }
+  else {
+    local_6e = *(short *)(*(int *)(param_3 + 0x310) + 0x80);
+  }
+  local_28 = (int)local_6e;
+  if (DAT_00a1065c != -1) {
+    local_28 = DAT_00a1065c;
+  }
+  FUN_00733540(DAT_00a11f20 ^ (uint)&stack0xfffffffc);
+  local_8 = 0;
+  FUN_00733540();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  if (local_28 == 0) {
+    FUN_007338d0(&DAT_0099f3d8);
+  }
+  else if (local_28 == 100) {
+    FUN_007338d0(&DAT_0099f3d0);
+  }
+  else {
+    FUN_00734270(local_18,"align%d",local_28 / 5 + 1);
+  }
+  if ((param_4 == 0) && (*(int *)(DAT_00a1b4a4 + 8) != 0)) {
+    if (param_3 == 0) {
+      local_74 = FUN_0077d800();
+    }
+    else {
+      local_74 = FUN_0077d800();
+    }
+    param_4 = local_74;
+  }
+  if ((param_4 == 0) ||
+     (((iVar1 = FUN_00733a60(&DAT_00995130), iVar1 == 0 &&
+       (iVar1 = FUN_00733a60(&DAT_00995140), iVar1 == 0)) &&
+      (iVar1 = FUN_00733a60(&DAT_0099f3c0), iVar1 == 0)))) {
+    if (local_28 < 0x28) {
+      FUN_007338d0(&DAT_0099f3d8);
+    }
+    else if (local_28 < 0x3c) {
+      FUN_007338d0("neutral");
+    }
+    else {
+      FUN_007338d0(&DAT_0099f3d0);
+    }
+  }
+  else {
+    FUN_007338d0("pause1");
+  }
+  piVar2 = (int *)FUN_007ed830();
+  local_24 = (int *)(**(code **)(*piVar2 + 8))(0xff);
+  if ((local_24 != (int *)0x0) && (param_5 != 0)) {
+    uVar3 = FUN_00734010(0x3f800000,2,0);
+    (**(code **)(*local_24 + 0x18))(uVar3);
+  }
+  piVar2 = (int *)FUN_007ed830();
+  local_24 = (int *)(**(code **)(*piVar2 + 8))(0xfe);
+  if ((local_24 != (int *)0x0) && (param_5 != 0)) {
+    uVar3 = FUN_00734010(0x3f800000,2,0);
+    (**(code **)(*local_24 + 0x18))(uVar3);
+  }
+  local_24 = (int *)FUN_004184b0(0);
+  if (local_24 != (int *)0x0) {
+    uVar3 = FUN_00734010(0,&local_38);
+    (**(code **)(*local_24 + 0x1c))(uVar3);
+    if (local_38 == (float)_DAT_00986d98) {
+      iVar1 = FUN_00734f60("pause1");
+      if (iVar1 == 0) {
+        uVar3 = FUN_00734010(0x3f800000,2,0);
+        (**(code **)(*local_24 + 0x18))(uVar3);
+      }
+      else {
+        if (local_28 < 0x28) {
+          FUN_007338d0(&DAT_0099f3d8);
+        }
+        else if (local_28 < 0x3c) {
+          FUN_007338d0("neutral");
+        }
+        else {
+          FUN_007338d0(&DAT_0099f3d0);
+        }
+        uVar3 = FUN_00734010(0x3f800000,2,0);
+        (**(code **)(*local_24 + 0x18))(uVar3);
+      }
+    }
+    else {
+      uVar3 = FUN_00734010(0x3f800000,2,0);
+      (**(code **)(*local_24 + 0x18))(uVar3);
+    }
+    FUN_00733540();
+    local_8 = CONCAT31(local_8._1_3_,2);
+    if (param_4 == 0) {
+      FUN_007338d0("camerahook");
+    }
+    else {
+      iVar1 = FUN_00733a60(&DAT_00995130);
+      if ((iVar1 == 0) && (iVar1 = FUN_00733a60(&DAT_0099f3c0), iVar1 == 0)) {
+        iVar1 = FUN_00733a60(&DAT_00995140);
+        if (iVar1 == 0) {
+          iVar1 = FUN_00733a60("zaalbar");
+          if (iVar1 == 0) {
+            FUN_007338d0("camerahook");
+          }
+          else {
+            FUN_007338d0("camerahookz");
+          }
+        }
+        else {
+          FUN_007338d0("camerahookh");
+        }
+      }
+      else {
+        FUN_007338d0("camerahookt");
+      }
+    }
+    uVar3 = FUN_00734010();
+    iVar1 = (**(code **)(*local_24 + 0x10c))(uVar3);
+    if (iVar1 == 0) {
+      FUN_007338d0("camerahook");
+    }
+    piVar2 = *(int **)(param_2 + 0x78);
+    uVar3 = FUN_00734010(1);
+    (**(code **)(*piVar2 + 0x74))(local_24,uVar3);
+    (**(code **)(**(int **)(param_2 + 0x78) + 0x44))(_DAT_0099f38c);
+    local_34 = (**(code **)(**(int **)(param_2 + 0x78) + 0x80))(0x3ea);
+    if (local_34 != 0) {
+      *(undefined4 *)(local_34 + 0x48) = 1;
+      fVar4 = (float10)(**(code **)(*param_1 + 0xd8))();
+      *(undefined4 *)(local_34 + 0x3c) = 0;
+      *(undefined4 *)(local_34 + 0x40) = 0;
+      *(float *)(local_34 + 0x44) = (float)fVar4;
+    }
+    local_8 = CONCAT31(local_8._1_3_,1);
+    FUN_00733780();
+  }
+  local_8 = local_8 & 0xffffff00;
+  FUN_00733780();
+  local_8 = 0xffffffff;
+  FUN_00733780();
+  ExceptionList = local_10;
+  return;
+}
+
+ (GhidraScript)  

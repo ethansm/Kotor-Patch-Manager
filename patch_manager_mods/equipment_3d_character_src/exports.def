@@ -1,0 +1,5 @@
+LIBRARY EquipCharPreview
+EXPORTS
+    BindEquipView
+    EquipTick
+    EquipDestroy

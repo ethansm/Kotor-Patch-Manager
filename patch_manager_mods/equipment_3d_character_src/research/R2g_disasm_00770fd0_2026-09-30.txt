@@ -1,0 +1,86 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Using log config file: jar:file:/home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/ethansm/.config/ghidra/ghidra_12.1.4_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/ethansm/.config/ghidra/ghidra_12.1.4_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1153 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2248 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/b701f191-0b3a-47ec-abb8-cf60fe10474d/scratchpad/gs
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr (HeadlessAnalyzer)  
+INFO  Opening project: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr (HeadlessProject)  
+INFO  REPORT: Processing read-only project file: /swkotor2.exe (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DisasmArgs.java '00770fd0'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/b701f191-0b3a-47ec-abb8-cf60fe10474d/scratchpad/gs/DisasmArgs.java (HeadlessAnalyzer)  
+INFO  DisasmArgs.java> 00770fd0  55                      PUSH EBP (GhidraScript)  
+INFO  DisasmArgs.java> 00770fd1  8b ec                   MOV EBP,ESP (GhidraScript)  
+INFO  DisasmArgs.java> 00770fd3  83 ec 38                SUB ESP,0x38 (GhidraScript)  
+INFO  DisasmArgs.java> 00770fd6  89 4d c8                MOV dword ptr [EBP + -0x38],ECX (GhidraScript)  
+INFO  DisasmArgs.java> 00770fd9  8b 45 08                MOV EAX,dword ptr [EBP + 0x8] (GhidraScript)  
+INFO  DisasmArgs.java> 00770fdc  50                      PUSH EAX (GhidraScript)  
+INFO  DisasmArgs.java> 00770fdd  6a 00                   PUSH 0x0 (GhidraScript)  
+INFO  DisasmArgs.java> 00770fdf  8d 4d f0                LEA ECX,[EBP + -0x10] (GhidraScript)  
+INFO  DisasmArgs.java> 00770fe2  51                      PUSH ECX (GhidraScript)  
+INFO  DisasmArgs.java> 00770fe3  8b 55 c8                MOV EDX,dword ptr [EBP + -0x38] (GhidraScript)  
+INFO  DisasmArgs.java> 00770fe6  8b 02                   MOV EAX,dword ptr [EDX] (GhidraScript)  
+INFO  DisasmArgs.java> 00770fe8  8b 4d c8                MOV ECX,dword ptr [EBP + -0x38] (GhidraScript)  
+INFO  DisasmArgs.java> 00770feb  8b 90 48 01 00 00       MOV EDX,dword ptr [EAX + 0x148] (GhidraScript)  
+INFO  DisasmArgs.java> 00770ff1  ff d2                   CALL EDX (GhidraScript)  
+INFO  DisasmArgs.java> 00770ff3  8b c8                   MOV ECX,EAX (GhidraScript)  
+INFO  DisasmArgs.java> 00770ff5  e8 76 fa f9 ff          CALL 0x00710a70 (GhidraScript)  
+INFO  DisasmArgs.java> 00770ffa  85 c0                   TEST EAX,EAX (GhidraScript)  
+INFO  DisasmArgs.java> 00770ffc  74 3e                   JZ 0x0077103c (GhidraScript)  
+INFO  DisasmArgs.java> 00770ffe  8b 45 c8                MOV EAX,dword ptr [EBP + -0x38] (GhidraScript)  
+INFO  DisasmArgs.java> 00771001  8b 88 10 03 00 00       MOV ECX,dword ptr [EAX + 0x310] (GhidraScript)  
+INFO  DisasmArgs.java> 00771007  89 4d dc                MOV dword ptr [EBP + -0x24],ECX (GhidraScript)  
+INFO  DisasmArgs.java> 0077100a  8b 55 08                MOV EDX,dword ptr [EBP + 0x8] (GhidraScript)  
+INFO  DisasmArgs.java> 0077100d  52                      PUSH EDX (GhidraScript)  
+INFO  DisasmArgs.java> 0077100e  8d 45 cc                LEA EAX,[EBP + -0x34] (GhidraScript)  
+INFO  DisasmArgs.java> 00771011  50                      PUSH EAX (GhidraScript)  
+INFO  DisasmArgs.java> 00771012  8b 4d dc                MOV ECX,dword ptr [EBP + -0x24] (GhidraScript)  
+INFO  DisasmArgs.java> 00771015  83 c1 70                ADD ECX,0x70 (GhidraScript)  
+INFO  DisasmArgs.java> 00771018  e8 83 fc f9 ff          CALL 0x00710ca0 (GhidraScript)  
+INFO  DisasmArgs.java> 0077101d  6a 01                   PUSH 0x1 (GhidraScript)  
+INFO  DisasmArgs.java> 0077101f  8d 4d e0                LEA ECX,[EBP + -0x20] (GhidraScript)  
+INFO  DisasmArgs.java> 00771022  51                      PUSH ECX (GhidraScript)  
+INFO  DisasmArgs.java> 00771023  8b 55 c8                MOV EDX,dword ptr [EBP + -0x38] (GhidraScript)  
+INFO  DisasmArgs.java> 00771026  8b 02                   MOV EAX,dword ptr [EDX] (GhidraScript)  
+INFO  DisasmArgs.java> 00771028  8b 4d c8                MOV ECX,dword ptr [EBP + -0x38] (GhidraScript)  
+INFO  DisasmArgs.java> 0077102b  8b 90 48 01 00 00       MOV EDX,dword ptr [EAX + 0x148] (GhidraScript)  
+INFO  DisasmArgs.java> 00771031  ff d2                   CALL EDX (GhidraScript)  
+INFO  DisasmArgs.java> 00771033  50                      PUSH EAX (GhidraScript)  
+INFO  DisasmArgs.java> 00771034  8b 4d c8                MOV ECX,dword ptr [EBP + -0x38] (GhidraScript)  
+INFO  DisasmArgs.java> 00771037  e8 34 d7 c9 ff          CALL 0x0040e770 (GhidraScript)  
+INFO  DisasmArgs.java> 0077103c  8b e5                   MOV ESP,EBP (GhidraScript)  
+INFO  DisasmArgs.java> 0077103e  5d                      POP EBP (GhidraScript)  
+INFO  DisasmArgs.java> 0077103f  c2 04 00                RET 0x4 (GhidraScript)  
