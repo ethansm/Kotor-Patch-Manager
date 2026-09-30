@@ -74,8 +74,26 @@ SHIFT_U = {
     "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (476, 442, 63, 28), "alt": (476, 442, 63, 28)},
     "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (407, 476, 227, 32), "alt": (287, 476, 260, 32)},
 }
-LAYOUT_3D = {"U": (557, 134, 209, 336), "S": (557, 134, 209, 364), "R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
-LAYOUT_CTRLS = {"U": SHIFT_U, "S": SHIFT_S, "R": DESC_R, "T": {}, "L": {}, "K": {}}
+# V: U + edge gaps of 14 units on both sides (list at 48, view ends at 752), middle gaps 10, and the character page's
+# curved cover frame (LBL_BEVEL/LBL_BEVEL2 copied from character_p.gui, sized like it: view +-4 wide, top at view top-4,
+# bottom at view bottom-34).  alt = the U values.
+SHIFT_V = {
+    "LB_ITEMS": {"orig": (161, 134, 236, 329), "new": (48, 134, 236, 329), "alt": (45, 134, 236, 329),
+                 "PROTOITEM": ((173, 150, 200, 50), (60, 150, 200, 50), (57, 150, 200, 50)),
+                 "SCROLLBAR": ((381, 134, 16, 329), (268, 134, 16, 329), (265, 134, 16, 329))},
+    "BTN_USEITEM": {"orig": (161, 470, 227, 28), "new": (48, 470, 227, 28), "alt": (45, 470, 227, 28)},
+    "BTN_EXIT": {"orig": (159, 516, 89, 28), "new": (48, 516, 89, 28), "alt": (45, 516, 89, 28)},
+    "LB_DESCRIPTION": {"orig": (407, 134, 232, 300), "new": (294, 134, 246, 300), "alt": (291, 134, 256, 300),
+                       "PROTOITEM": ((419, 150, 197, 42), (306, 150, 211, 42), (303, 150, 221, 42)),
+                       "SCROLLBAR": ((623, 134, 16, 300), (524, 134, 16, 300), (531, 134, 16, 300))},
+    "LBL_CREDITS": {"orig": (407, 442, 223, 28), "new": (294, 442, 246, 28), "alt": (291, 442, 256, 28)},
+    "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (469, 442, 63, 28), "alt": (476, 442, 63, 28)},
+    "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (407, 476, 227, 32), "alt": (407, 476, 227, 32)},
+}
+LAYOUT_BEVELS = {"V": {"LBL_BEVEL": (546, 130, 210, 38), "LBL_BEVEL2": (546, 436, 210, 38)}}
+BEVEL_TAGS = ("LBL_BEVEL", "LBL_BEVEL2")
+LAYOUT_3D = {"V": (550, 134, 202, 336), "U": (557, 134, 209, 336), "S": (557, 134, 209, 364), "R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
+LAYOUT_CTRLS = {"V": SHIFT_V, "U": SHIFT_U, "S": SHIFT_S, "R": DESC_R, "T": {}, "L": {}, "K": {}}
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
 
 
@@ -141,7 +159,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--rollback", action="store_true")
     ap.add_argument("--replace", action="store_true")
-    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="U|S|R|T|L|K layout (see docstring)")
+    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="V|U|S|R|T|L|K layout (see docstring)")
     a = ap.parse_args()
     if a.layout:
         a.replace = True
@@ -178,6 +196,11 @@ def main() -> int:
         del cs[i]
 
     changes = resize_controls(cs, a.layout) if a.layout else []
+    want_bevels = LAYOUT_BEVELS.get(a.layout, {}) if a.layout else {}
+    old_bevels = {c.get_string("TAG"): get_rect(c.get_struct("EXTENT")) for c in cs if c.get_string("TAG") in BEVEL_TAGS}
+    if a.layout:  # bevels are re-added below when the layout wants them
+        for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in BEVEL_TAGS]):
+            del cs[i]
     ids = sorted(c.get_int32("ID") for c in cs)
     new_id = len(cs)
     assert ids == list(range(new_id)), f"inventory IDs are not 0..N-1: {ids}"
@@ -195,11 +218,20 @@ def main() -> int:
             b.set_resref(k, type(b.get_resref(k))(""))
         ctl.set_struct("BORDER", b)
     cs.append(ctl)
+    if want_bevels:
+        chp = read_gff(str(find_ci(OVERRIDE, "character_p.gui")))
+        for i, (btag, brect) in enumerate(want_bevels.items()):
+            bs = [c for c in controls(chp) if c.get_string("TAG") == btag]
+            assert len(bs) == 1, f"expected one {btag} in character_p.gui"
+            bc = copy.deepcopy(bs[0]); bc.set_int32("ID", new_id + 1 + i)
+            be = bc.get_struct("EXTENT"); set_rect(be, brect); bc.set_struct("EXTENT", be)
+            cs.append(bc)
+            print(f"  add {btag} ID={new_id + 1 + i} {list(brect)} (copied from character_p.gui)")
     g.root.set_list("CONTROLS", cs)  # get_list may hand back a detached copy
     if a.layout:
         print(f"layout {a.layout}: {len(changes)} sub-control change(s)")
         print("\n".join(changes))
-    if a.layout and old3d == tuple(rect) and not changes:
+    if a.layout and old3d == tuple(rect) and not changes and old_bevels == want_bevels:
         print(f"layout {a.layout} already applied; nothing to do")
         return 0
     if old3d:

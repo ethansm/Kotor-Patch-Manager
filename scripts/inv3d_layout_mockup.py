@@ -16,6 +16,11 @@ SX, SY = 4.8, 8 / 3
 # tag -> new rect (L,T,W,H)
 LAYOUTS = {
     "K": {},
+    "V": {"LB_ITEMS": (48, 134, 236, 329), "BTN_USEITEM": (48, 470, 227, 28), "BTN_EXIT": (48, 516, 89, 28),
+          "LB_DESCRIPTION": (294, 134, 246, 300), "LBL_CREDITS": (294, 442, 246, 28),
+          "LBL_CREDITS_VALUE": (469, 442, 63, 28), "LBL_BAR5": (407, 476, 227, 32),
+          "LBL_BEVEL": (546, 130, 210, 38), "LBL_BEVEL2": (546, 436, 210, 38),
+          "3D_MODEL": (550, 134, 202, 336)},
     "U": {"LB_ITEMS": (45, 134, 236, 329), "BTN_USEITEM": (45, 470, 227, 28), "BTN_EXIT": (45, 516, 89, 28),
           "LB_DESCRIPTION": (291, 134, 256, 300), "LBL_CREDITS": (291, 442, 256, 28),
           "LBL_CREDITS_VALUE": (476, 442, 63, 28), "LBL_BAR5": (407, 476, 227, 32),
