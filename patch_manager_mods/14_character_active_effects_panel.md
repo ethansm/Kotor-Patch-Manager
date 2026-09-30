@@ -1,0 +1,26 @@
+**STATUS 2026-09-30: RESEARCH STARTED (static only, no Ghidra: it was busy; no game launch). Not scheduled: user wants it AFTER the equip-screen work (Mod 5 phases 1-4) is finished.**
+
+# Mod idea 14: Active effects panel on the character screen
+
+## Question and answer
+Does vanilla KOTOR II show the character's active status effects anywhere? **Yes, in two places, neither on the character screen:**
+1. HUD party portraits: small buff/debuff arrow chevrons (our Buff Duration HUD, doc 02, already replaces them with real icons + drain timers).
+2. **Messages screen, "Effects" tab** (`messages_p.gui`: `BTN_EFFECTS [543,104,89,22]`, `LB_EFFECTS_GOOD [161,169,236,301]`, `LB_EFFECTS_BAD [407,169,232,301]`, `LBL_EFFECTS_GOOD/BAD [161,134,227,28]/[407,134,223,28]`). Web sources agree (Obsidian forum "Guide to status effects": message log -> effects tab).
+3. `character_p.gui` (56 controls) has no effect control. The ultrawide free space on it (and the column freed by the Track M mirror, see doc 10 Phase 4) could host a panel.
+
+## Engine facts found (static disassembly with `scripts/static_disasm.py`, capstone; raw in `active_effects_panel_src/research/R1_*`)
+- Messages panel ctor/LoadGui = `0x00757c40` (binds `LB_MESSAGES`, `LB_DIALOG`, `LB_COMBAT`, `LB_EFFECTS_GOOD` @panel+`0x938`, `LB_EFFECTS_BAD` @panel+`0xc28`, `LBL_EFFECTS_GOOD` @+`0x106c`, tabs `BTN_*`). Vtable of the panel class = `0x0099e5ec` (CSWGuiInGameMessages). Panel dtor clears the same listboxes (`0x758a90`).
+- **Effects populator** = the function ending at `0x0075ae3b` (body `0x75a8xx..0x75ae3b`, refresh of the Effects tab): clears both lists (`0x41d290` ListBox::Clear), takes the **leader only** (`0x7e5da0(partyTable 0x73fb90, 0)`, i.e. party index 0, NOT the character screen's selected member), maps it to the live creature with `0x77d800` (client creature -> `0x7f2540()->vt[0x30]()`), and iterates the **icon list embedded at that creature object `+0xffc`** (`{ptr array @+0, count @+4}`, 4-byte record pointers). Per record: `rec+0x20` = string ref -> name via `GetStringByStrRef 0x71dee0(tlk 0xa1b4b0, out, strref)`; `rec+0x14 != 0` -> GOOD list else BAD list. Each row is a new 0x1c0-byte listbox-item control (`vtable 0x987e2c`, ctor `0x419740` base) with text; added by `ListBox::AddItem 0x41fc30(item,1,1,1)` then `0x41e870(0,0)` (layout). No icon is drawn in the Effects tab: name text only.
+- The list at `+0xffc/+0x1000` is the **effect-icon cache filled by `FUN_005a43c0`** (effect type `0x43` apply handler, see DB `0x593a30` init table): keyed by `CGameEffect::GetInteger(0)` = `spells.2da` row, reads `IconResRef`, `Priority`, `NameStrRef`, sorted by priority, skip flag `PTR_009967ac` (icon hidden) vs show `DAT_009967b4`. So each record already carries the spells.2da name strref and priority; icon resref comes from the row.
+- Real active effects for durations: server object effect array `+0x148/+0x14c` (type ushort `+8`, spell id `+0x1c`, expiry `+0x10/+0x14`, duration `+0xc`), time from the world timer (`0x51ad20`), all already used by `BuffDurationHUD` (`buff_duration_hud_src/`, doc 02).
+- No writer of `+0xffc` other than the populator's `add ecx,0xffc` was found by raw disp32 scanning: the fill goes through the handler with a different base expression. **Open (needs Ghidra when free):** identity of the `vt[0x30]` object, record struct layout (`+0x14` really "beneficial"? `+0x20` strref?), exact writer, and the character-panel class + its per-frame/update entry (hook point) and how it exposes the selected creature (equip panel keeps it at `this+0x68`, doc 10).
+
+## Initial plan (after the equip screen is finished)
+1. Ghidra (read-only): decompile the populator (its start ~`0x75a8c0`), `0x77d800`, `0x7f2540`+`vt[0x30]`, `FUN_005a43c0` (record write), find the character panel (`character_p` LoadGui via string `LBL_3DCHAR`) and its update/draw entry; save `research/R2*`.
+2. Data source: for the SELECTED party member read the effect-icon list (+0xffc) for name/priority/good-bad, and join to the effect array (+0x148) for remaining time (reuse Buff HUD code/constants; icon table `EffectIconTable.inc`/`DebuffIconTable.inc`).
+3. UI: two columns "Beneficial / Harmful" in the free area (character page after the Track M mirror: stat block moves to x 166, view to x 400; ultrawide extra width also usable), rows = icon + name + remaining time, drawn by our DLL like the hotbar/equip toolbars (labels/images bound to new `character_p.gui` controls, texts set per tick) rather than the engine ListBox (the populator is tied to the messages panel and leader only). Alternative cheaper first step: a fresh `LB_EFFECTS_*` pair in `character_p.gui` filled by calling the same listbox-item construction (`0x419740`/`0x987e2c`, `0x41fc30`) from a character-panel hook.
+4. Tooltips (hover a row = spell description strref) optional; empty state text "No active effects".
+5. Risks: item-ability effects lack spells.2da icons (Buff HUD hand-picked table covers them), leader-vs-selected mismatch, Steam vs GOG addresses, character panel update hook needs the launcher (ask the user first).
+
+## Session log
+- 2026-09-30: web search (effects tab exists), GUI inspection (`messages_p.gui`), static disassembly of the Messages panel populator (no Ghidra, game not launched). Nothing installed.

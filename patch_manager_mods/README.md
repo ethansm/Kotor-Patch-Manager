@@ -52,6 +52,21 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   stage 5 (layout A), user-tested; weapons render in hands behind the Weapons toggle; open: dual-wield stance
   rule (decoded, R7f), animations with weapons, conditional Reset, holstered toggle, character-page mirror, final review.**
 
+**Idea backlog (2026-09-30, research rounds 1-2 done, no code; GOG names mapped to Steam with `ghidra_knowledge/gog_cluster_delta_map.py`):**
+
+- [`11_inventory_sort_filter.md`](11_inventory_sort_filter.md) — Mod 6: inventory sort + more filters.
+  `CheckFilter` has 12 modes, but the tabs expose 7. Hidden modes include "new items" and "usable by
+  current character". Plan: cycle hidden modes, sort in `PopulateItemListBox`, tint via
+  `ItemEntry::SetCanUse`. Shares the panel with Mod 1.
+- [`12_empty_container_indicators.md`](12_empty_container_indicators.md) — Mod 7: vanilla already
+  appends "Empty"/"Nothing" to the target label. Loot is generated on heartbeat (UTP survey), so the
+  item count is reliable. Plan: grey highlight tint (`HiliteAreaObjects`) + plain cursor
+  (`HandleMouseOver`). Needs one in-game check (Q1).
+- [`13_ranged_ai_spacing.md`](13_ranged_ai_spacing.md) (+ [`13a`](13a_ai_community_research.md) community
+  survey) — Mod 8: root cause decompiled (`AIActionPhysicalAttacks` walks toward the target whenever
+  LOS fails). Plan: engine hook (hold range / use vanilla LOS retarget) + script `k_ai_master.ncs`
+  (kiting, fixed `HasLineOfSight`).
+
 ## Why this matters for our specific install
 
 Two things about this build make Patch Manager both *more* attractive and
@@ -107,3 +122,4 @@ Nothing in this directory has touched the live game.
 ## Engine optimization research
 
 - [`10_engine_optimization_research.md`](10_engine_optimization_research.md) — performance / memory / error-handling research program (living record, status and next steps at the top).
+- 2026-09-30: Mod idea 14 (character-screen active effects panel): research started, see 14_character_active_effects_panel.md
