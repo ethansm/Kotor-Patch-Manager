@@ -39,7 +39,7 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   of that file is the entry point.
 - [`08_shield_bar.md`](08_shield_bar.md) — shield-absorption bar beside each
   party portrait's vitality/Force bars (stacked segments, colored by shield
-  family). **Status 2026-09-29: idea + verified `forceshields.2da` data, no Ghidra yet.**
+  family). **Status 2026-09-30: WORKING LIVE (bars on all 3 cards, hover tooltip line, no black screen; DLL `81fb7d08`, version string still `1.1.0-probe4`). Read the "Session 4 summary + root cause" section at the bottom of the doc first; next phase = colour/UX polish, then 1.1.0 finalisation.**
 
 - [`09_load_hang_investigation.md`](09_load_hang_investigation.md) — the intermittent
   load-screen hang (`NtGetContextThread` spin, ~7 incidents, unattributed): incident

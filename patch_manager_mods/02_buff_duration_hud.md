@@ -1710,3 +1710,7 @@ per-creature action lists ARE inventory items (key = objectId|0x40000000). Live-
 [[07_force_power_hotbar.md]] ("Next-phase findings" and "Live results"); DB lesson "CORRECTION to lesson 55".
 
 **Session change log (2026-09-29, 11th-12th sessions)**: swap works -> redesign (own column, nested-viewport drain) -> fit-to-height sizing/columns -> `ii_*` inventory icons for items -> green square -> round teal disc (items only) -> HUD-border teal -> droid shields -> debuff column + boundary line -> logging behind `buffhud_debug.txt` -> line clipped to disc. Commits (worktree, branch `KOTOR-II`): `055fcd6`, `75b2746`, `e0c5ada`, `d5638c5`, `5653e34`, `5d2071a` (v1.0.0), `be0fa15`. The load-time hang is tracked separately in `09_load_hang_investigation.md` and is not attributed to this mod.
+
+
+## Shield Bar shares this DLL (2026-09-30)
+`buff-duration-hud.dll` now also carries the Shield Bar (Mod 4): hooks `0x745774` (per-frame slot draw, draws all bars from the leader call), `0x744EEC` (portrait hover tooltip `Shield:` line) and the PB_VIT health-bar texture swap in the `0x74F25A/0x74F8AB` snapshot hooks. Kill switches `buffhud_off.txt` (this mod's icon column), `shield_nodraw.txt`, `shield_noswap.txt`. Lesson learned there: GUI draws from one hook can leave the clip/GL state dirty for the next hook's draws (this mod's `DrawBuffColumn` icon rows broke the following slot's shield bar; GL_LIGHTING was left on). See [[08_shield_bar.md]] "Session 4 summary + root cause".
