@@ -2,3 +2,4 @@ LIBRARY ForcePowerHotbar
 EXPORTS
     CaptureHotbarKey
     HotbarHudTick
+    HotbarBuildButtons

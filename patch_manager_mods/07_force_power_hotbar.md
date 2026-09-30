@@ -7,7 +7,10 @@
 - **Done and working live (prototype `ForcePowerHotbar` 0.1.0-dev, installed as the 16th patch, `Invoke=0` = log only):** key capture + swallow
   of bound digits (press and release), HUD gating, INI config + hot reload, per-character profile plumbing, resolver from an `ActionRef` to
   the HUD's own action entries, and exhaustive probe logging. The **invoke path (`Invoke=1`) has never been run live.**
-- **NEXT PHASE (not started): investigate and build the on-screen button bar** -- adding brand-new UI elements to the HUD is new territory
+- **UPDATE (session 3, same day): bottom-bar UX researched, GUI deployed, DLL 0.2.0-dev BUILT but NOT yet installed/tested live** (the game was
+  running for another session's test). See the last section "Bottom-bar UX: design, build (session 3)". Install = stage `hotbar_stage2/`
+  (see that section), then Phase L test.
+- ~~**NEXT PHASE (not started): investigate and build the on-screen button bar**~~ (done, see above) -- adding brand-new UI elements to the HUD is new territory
   for this project (Buff HUD only reused existing labels). See "Next phase: bottom-bar UX" at the end of this file.
 - Sources: `force_power_hotbar_src/` (committed). Framework clone (uncommitted, source of truth for builds):
   `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/`. Live evidence excerpts: `force_power_hotbar_src/live_evidence/`.
@@ -422,3 +425,45 @@ Companions appear as `obj80000249` / `obj80000240`; the Exile as `objfffffffd` (
 7. **Config UX (later):** in-game assignment (drag/right-click) writes through `hb::Config::Save`; not part of the button-bar phase but the button widgets must expose slot identity.
 
 **Open items carried over:** run digit tests in dialogue/inventory/pause; first `Invoke=1` test (self-buff power, medpac, stim, shield); target-menu powers (`menu=hud+0xCC`, selection storage unverified); item identity is the display name (resref/tag not found); character key is the object id until a tag read is found; Phase F independent review not yet done.
+
+
+## Bottom-bar UX: design, build (session 3, 2026-09-29)
+
+**Design (all Ghidra-verified, addresses in the knowledge DB `functions`/`lessons`/`hooks_ported`):** the ten buttons are real HUD controls,
+the same pattern as Mod 1's 3D view.
+1. `scripts/add_hotbar_buttons_gui.py` appends 10 type-4 labels `LBL_HOTBAR1..9,0` (IDs 111-120, copy of the HUD's `LBL_QUEUE1`, TEXT = the key digit,
+   ALIGNMENT 9 = top-left) to the live `override/mipc28x6_p.gui` (111 -> 121 controls). Defaults `--x 12 --y 498 --size 28 --spacing 30` (800x600 units;
+   row spans x 12..310, just above the native bar's top y=532 and left of `LBL_COMBATBG3` x>=310; the Aspyr HUD is 1:1 and edge-anchored so this is
+   bottom-left of the 3840x1600 screen, 2.667 px/unit -> ~75 px icons). **Row position lives only in this script.** `--dry-run`, `--rollback` (oldest
+   backup, tested: sha restored), idempotent, `--replace`. **DEPLOYED 2026-09-29 21:42**, new sha `6ca8d518508d...` (was `39e04bdc2238...` = generator
+   manifest `deployed_sha256`). Backups `~/Games/KOTOR2_Mod_Workspace/backups/hotbar_gui_*`. **Generator interaction:** the generator owns
+   `mipc28x6_p` (HUD desc fix): run `--rollback` here -> generator -> re-apply.
+2. Hook 3 `HotbarBuildButtons(panel)` at **0x00748502** (HUD ctor `FUN_00747210`, `MOV ECX,[EBP-0x5F4]` before `StopLoadFromLayout` call; bytes
+   `8B 8D 0C FA FF FF` verified in the live exe; nearest other hooks 0x745A97 / 0x74B3F0). Per slot: `FnNew(0x148)`, memset, **`CSWGuiLabel` ctor
+   `0x00419740`** (fastcall ECX=this, no args; base `0x00418990`, border ctor `0x00414A50` at +0x60, text ctor `0x004171A0` at +0xD8), verify vtable
+   `0x009878BC`, `InitControl(panel, ctl, CExoString("LBL_HOTBARn"), 1, 1)`. `InitControl` -> `0x00418DF0` finds the GFF struct by TAG, calls the
+   control's vt+0x48 Load (label Load `0x004198D0`: TEXT, BORDER, then base `0x00418F20` = EXTENT/ID); the control lands at `panel+0x24[ID]`
+   (list padded with `0x0083EA60(0)`). Labels are not hit-tested (ctor clears `+0x48` bit2), so mouse/hover are untouched.
+3. Drawing is free: `CSWGuiPanel::Draw 0x0040EC90` walks the list and calls vt+0x38 (label Draw `0x00419880` = border Draw `0x00415300` then text Draw)
+   for controls with `+0x48` bit1 set (base ctor sets it). Border draws its FILL image (`border+0x74`, FILLSTYLE 2 = stretched) with alpha
+   `border+0x24` only if border w/h (+0xC/+0x10) are nonzero. **The tick only** swaps the icon (`FnLoadImage 0x0047EB60` image pooled per resref, stored at
+   `border+0x74`), sets the alpha (usable 1.0 / unusable x0.35) and toggles visibility (hidden when unbound, entry missing or the HUD gate is closed).
+   The key digit is static GFF text; the item stack count is NOT shown yet (runtime text setter not researched).
+4. Lifecycle: state is one `Bar` keyed by the HUD panel pointer, replaced on every HUD constructor call. Labels are leaked (the panel base dtor
+   does not free list entries; same policy as Mod 1) so there are no dangling frees; the tick refuses to touch a bar whose panel != current hud.
+   **Unverified live:** whether a new game/load makes a new HUD (the log line `H3 build:` per construction answers it).
+5. Logging: `H3` lines for every allocation/ctor/InitControl result, extents, flags, IDs, panel list count before/after, list-slot check, memory dump of
+   button 0; `btn[i]` lines for every visibility/icon/alpha change with reason; `img:` for image loads; heartbeat carries the bar state; `buttons:` line when the tick sees a HUD with no bar.
+
+**Build:** `force-power-hotbar` 0.2.0-dev, warning-free (`-Wall -Wextra`), exports `CaptureHotbarKey HotbarBuildButtons HotbarHudTick` == hooks.toml,
+host test `config_roundtrip_test` OK. Sources snapshot in `force_power_hotbar_src/`.
+
+**Install status:** NOT installed. At 21:44 the game was running (another session's shield-probe test). Prepared stage `.../kotor-patch-manager/hotbar_stage2/`
+(16 kpatches = the sibling's `shield_probe_stage2` + this 0.2.0-dev hotbar). Note that stage carries a newer in-flight `BuffDurationHUD` (dll `753a5778`)
+than the installed one (`b44986b3`) -- confirm with that session before installing. Install with the game closed:
+`cd .../kotor-patch-manager/bin/Debug && ./KPatchLauncher "$G/swkotor2.exe" --patches ../../hotbar_stage2 <16 ids>`; verify steam log
+`Applied DETOUR` x3 for the hotbar (0x0072CB63, 0x0074B3F0, 0x00748502), DLL md5, `AR_ERROR.LOG` md5 unchanged.
+
+**Live test checklist (Phase L):** buttons appear bottom-left above the action bar with digits + icons; usable/dim shading; hidden in menus/dialogue; new
+game/load (log `H3 build:` again, no crash); calibrate position from a screenshot (rerun the GUI script with `--replace --x/--y/--size`); then digit
+tests in dialogue/inventory/pause; only then `Invoke=1`.

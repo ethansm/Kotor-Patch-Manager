@@ -31,3 +31,17 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "ecx"
 type = "pointer"
+
+# CSWGuiMainInterface constructor (FUN_00747210), just before StopLoadFromLayout (0x0040F5A0): [ebp-0x5F4] = panel (the HUD).
+# The layout GFF is still open here, so the button labels bind by tag like the game's own members.
+[[hooks]]
+address = 0x00748502
+type = "detour"
+function = "HotbarBuildButtons"
+original_bytes = [0x8B, 0x8D, 0x0C, 0xFA, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x5F4]"
+type = "int"

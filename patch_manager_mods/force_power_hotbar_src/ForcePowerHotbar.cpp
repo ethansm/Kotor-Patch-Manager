@@ -4,7 +4,10 @@
 //
 // Hooks (cdecl detours, original bytes still run):
 //   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
-//   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, probe, invoke
+//   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, probe, invoke, button state
+//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- construct + bind 10 CSWGuiLabel
+//               controls LBL_HOTBAR1..9,0 (IDs 111..120, added to mipc28x6_p.gui by scripts/add_hotbar_buttons_gui.py). The panel's own
+//               Draw (0x0040EC90) then draws them with the HUD; the tick only swaps icon (border+0x74), alpha (border+0x24) and visibility.
 //
 // Invoke design: the HUD's own per-group action list (hud+0x78+g*0xC, entry stride 0x3C) holds powers
 // (key = spells.2da row | 0x20000000) and items (key = item object id | 0x40000000). We set the group's selection
@@ -39,6 +42,23 @@ constexpr int GroupCount = 7;           // 0..5 personal + 6 (unpopulated)
 constexpr int EntryStride = 0x3C;
 constexpr int Entry_Key = 0x8, Entry_Owner = 0x1C, Entry_Flags = 0x30;
 constexpr int MaxEntries = 256;
+
+// ---- on-screen buttons (0.2.0): CSWGuiLabel widgets, see 07_force_power_hotbar.md "Bottom-bar UX" ---------
+constexpr uintptr_t FnLabelCtor = 0x00419740;     // CSWGuiLabel ctor, thiscall(ECX=this), no stack args; object size 0x148
+constexpr uintptr_t FnInitControl = 0x0040F620;   // thiscall(panel, ctl, CExoString* tag, addToList, scale) RET 16
+constexpr uintptr_t FnExoCtor = 0x00733570, FnExoDtor = 0x00733780;
+constexpr uintptr_t FnNew = 0x00919723;           // cdecl(size)
+constexpr uintptr_t FnLoadImage = 0x0047EB60;     // cdecl(resref char[17]) -> new image wrapper (8 bytes) each call: pooled
+constexpr uintptr_t LabelVtable = 0x009878BC, BorderVtable = 0x009875BC;
+constexpr int LabelSize = 0x148;
+constexpr int Label_Border = 0x60;                // embedded CSWGuiBorder
+constexpr int Ctl_Flags = 0x48;                   // bit1 = visible (panel Draw skips the control otherwise)
+constexpr int Ctl_Id = 0x54;
+constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill = 0x74;
+constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
+constexpr int ButtonCount = 10, FirstButtonId = 111;
+constexpr int ButtonRefreshFrames = 8;            // entry re-resolve interval (usable/dim state changes are slow)
+constexpr float DimAlpha = 0.35f;
 
 // ---- logging: force_power_hotbar_log.txt in the game dir, capped ------------------------------------
 int g_logLines = 0;
@@ -318,6 +338,108 @@ void drainRing(uintptr_t hud) {
     }
 }
 
+// ---- on-screen buttons -----------------------------------------------------------------------------------
+using InitCtlFn = void(__thiscall*)(void*, void*, void*, int, int);
+using CExoCtorFn = void*(__thiscall*)(void*, const char*);
+using CExoDtorFn = void(__thiscall*)(void*);
+using LabelCtorFn = void(__fastcall*)(void*);
+using NewFn = void*(__cdecl*)(unsigned);
+using LoadImageFn = void*(__cdecl*)(const char*);
+
+struct Button {
+    unsigned char* ctl = nullptr;   // 0x148-byte CSWGuiLabel (never freed: the panel dtor does not delete list entries)
+    int id = -1;
+    float baseAlpha = 1.0f;         // border alpha as loaded from the GFF
+    int visible = -1;               // last applied: -1 unknown, 0 hidden, 1 shown
+    float alpha = -1.0f;            // last applied border alpha
+    std::string icon;               // last applied resref ("" = none)
+    std::string why;                // last logged reason for hidden/shown
+};
+struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; };
+Bar g_bar;
+long g_barSeq = 0;
+
+// one engine image object per icon resref, created lazily and never released (the border only borrows the pointer)
+struct PoolEntry { char resref[17]; void* image; };
+constexpr int MaxPoolImages = 256;
+PoolEntry g_pool[MaxPoolImages]; int g_poolCount = 0;
+void* imageFor(const char* resref) {
+    for (int i = 0; i < g_poolCount; ++i) if (strcmp(g_pool[i].resref, resref) == 0) return g_pool[i].image;
+    if (g_poolCount >= MaxPoolImages) { logf("img: pool full (%d), cannot load '%s'", g_poolCount, resref); return nullptr; }
+    char buf[20] = {}; strncpy(buf, resref, 16);
+    void* image = reinterpret_cast<LoadImageFn>(FnLoadImage)(buf);
+    PoolEntry& e = g_pool[g_poolCount++]; memset(&e, 0, sizeof e); strncpy(e.resref, resref, 16); e.image = image;
+    logf("img: loaded '%s' -> %p (pool %d)", resref, image, g_poolCount);
+    return image;
+}
+
+char slotDigit(int slot) { return "1234567890"[slot]; }
+
+// Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
+void setVisible(Button& b, int slot, bool vis, const char* why) {
+    int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d]: flags unreadable, cannot set visible", slot); return; }
+    if (b.visible == (vis ? 1 : 0) && b.why == why) return;
+    int nf = vis ? (fl | 2) : (fl & ~2);
+    if (nf != fl) *reinterpret_cast<int*>(b.ctl + Ctl_Flags) = nf;
+    logf("btn[%d] key %c: %s -> %s (%s) flags %08x->%08x", slot, slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
+    b.visible = vis ? 1 : 0; b.why = why;
+}
+
+void setIcon(Button& b, int slot, const std::string& icon) {
+    if (b.icon == icon) return;
+    uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
+    void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
+    int bvt = rdInt(border, 0);
+    if (bvt != (int)BorderVtable) { logf("btn[%d]: border vtable %08x != %08x, not setting icon '%s'", slot, (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); return; }
+    int old = rdInt(border, Border_Fill);
+    *reinterpret_cast<void**>(border + Border_Fill) = image;
+    logf("btn[%d] key %c: icon '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(border, Border_W), rdInt(border, Border_H));
+    b.icon = icon;
+}
+
+void setAlpha(Button& b, int slot, float a) {
+    if (b.alpha == a) return;
+    uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
+    if (rdInt(border, 0) != (int)BorderVtable) { logf("btn[%d]: border vtable bad, not setting alpha", slot); return; }
+    *reinterpret_cast<float*>(border + Border_Alpha) = a;
+    logf("btn[%d] key %c: alpha %.2f -> %.2f", slot, slotDigit(slot), b.alpha, a);
+    b.alpha = a;
+}
+
+// Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
+// the cached view is stale (config/character/gate change), never per frame.
+void updateButtons(uintptr_t hud, bool gate) {
+    static uintptr_t lastMissingHud = 0; static long lastRefresh = -1000; static bool lastGateSeen = false; static std::string lastChar = "\x01";
+    if (g_bar.panel != hud || g_bar.built != ButtonCount) {
+        if (lastMissingHud != hud) { lastMissingHud = hud; logf("buttons: no built bar for hud %08x (bar panel=%08x built=%d) -- HUD ctor hook did not run for it", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built); }
+        return;
+    }
+    bool stale = g_frame - lastRefresh >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar;
+    if (!stale) return;
+    lastRefresh = g_frame; lastGateSeen = gate; lastChar = g_charKey;
+    for (int s = 0; s < ButtonCount; ++s) {
+        Button& b = g_bar.b[s];
+        if (!b.ctl) continue;
+        if (!gate) { setVisible(b, s, false, "hud not active"); continue; }
+        hb::ActionRef want = g_cfg.slotFor(g_charKey, 0, s);
+        if (want.empty()) { setVisible(b, s, false, "unbound"); continue; }
+        Entry e;
+        if (!resolve(hud, want, &e)) { setVisible(b, s, false, "entry not available"); continue; }
+        setIcon(b, s, e.icon);
+        setAlpha(b, s, (e.flags & 1) ? b.baseAlpha : b.baseAlpha * DimAlpha);
+        setVisible(b, s, true, (e.flags & 1) ? "usable" : "unusable (dimmed)");
+    }
+}
+
+void dumpMem(const char* tag, uintptr_t base, int dwords) {
+    char line[200];
+    for (int i = 0; i < dwords; i += 8) {
+        int p = 0; p += snprintf(line + p, sizeof line - p, "%s+%03x:", tag, i * 4);
+        for (int j = i; j < i + 8 && j < dwords; ++j) p += snprintf(line + p, sizeof line - p, " %08x", (unsigned)rdInt(base, j * 4));
+        logf("%s", line);
+    }
+}
+
 } // namespace
 
 // ---- hook 1: keyboard capture -------------------------------------------------------------------------
@@ -355,6 +477,50 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     if (logIt || isDigit || isMod) { ++g_capLogged; logf("cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
 }
 
+// ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
+// Runs inside CSWGuiMainInterface's constructor between the last InitControl and StopLoadFromLayout, so the layout GFF
+// (panel+0x30) is still open. Each label is allocated, constructed and bound by tag exactly like the game's own members.
+extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
+    uintptr_t panel = static_cast<uintptr_t>(panelArg);
+    int before = rdInt(panel, Panel_CtlCount, -1);
+    logf("H3 build: panel=%08x vtable=%08x controls=%d gff=%08x (previous bar panel=%08x built=%d)", (unsigned)panel, (unsigned)rdInt(panel, 0), before, (unsigned)rdInt(panel, 0x30), (unsigned)g_bar.panel, g_bar.built);
+    if (!panel || IsBadReadPtr(reinterpret_cast<void*>(panel), 0x40)) { logf("H3: panel null/unreadable, abort"); return; }
+    if (g_bar.panel) logf("H3: replacing bar of old HUD %08x (its labels stay leaked, never freed)", (unsigned)g_bar.panel);
+    g_bar = Bar(); g_bar.panel = panel; g_bar.seq = ++g_barSeq;
+    int built = 0;
+    for (int s = 0; s < ButtonCount; ++s) {
+        Button& b = g_bar.b[s];
+        unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
+        if (!ctl) { logf("H3 btn[%d]: allocation failed", s); continue; }
+        memset(ctl, 0, LabelSize);
+        reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
+        int vt = rdInt(reinterpret_cast<uintptr_t>(ctl), 0);
+        if (vt != (int)LabelVtable) { logf("H3 btn[%d]: ctor left vtable %08x (expected %08x), not binding", s, (unsigned)vt, (unsigned)LabelVtable); continue; }
+        char tagName[16]; snprintf(tagName, sizeof tagName, "LBL_HOTBAR%c", slotDigit(s));
+        char exo[16] = {0};
+        reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, tagName);
+        reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
+        reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+        uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
+        int id = rdInt(c, Ctl_Id, -999), fl = rdInt(c, Ctl_Flags);
+        int ext[4]; for (int i = 0; i < 4; ++i) ext[i] = rdInt(c, 4 + 4 * i);
+        uintptr_t border = c + Label_Border; float ba = 1.0f; readAt(border, Border_Alpha, &ba);
+        logf("H3 btn[%d] %s: ctl=%p id=%d (expect %d) rect=[%d,%d,%d,%d] flags=%08x border vt=%08x w=%d h=%d fill=%08x alpha=%.2f",
+             s, tagName, ctl, id, FirstButtonId + s, ext[0], ext[1], ext[2], ext[3], (unsigned)fl, (unsigned)rdInt(border, 0), rdInt(border, Border_W), rdInt(border, Border_H), (unsigned)rdInt(border, Border_Fill), ba);
+        if (s == 0) dumpMem("ctl0", c, LabelSize / 4);
+        if (id != FirstButtonId + s) { logf("H3 btn[%d]: GUI control %s missing or wrong id (%d) -- run scripts/add_hotbar_buttons_gui.py; slot unusable", s, tagName, id); continue; }
+        // hidden until the tick decides; a stray icon from the GFF (there is none) must not show
+        *reinterpret_cast<int*>(ctl + Ctl_Flags) = fl & ~2;
+        b.ctl = ctl; b.id = id; b.baseAlpha = ba; b.visible = 0; b.why = "built";
+        ++built;
+    }
+    g_bar.built = built;
+    int after = rdInt(panel, Panel_CtlCount, -1);
+    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + built);
+    int arr = rdInt(panel, Panel_CtlArray);
+    for (int s = 0; s < ButtonCount; ++s) if (g_bar.b[s].ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", g_bar.b[s].id, (unsigned)rdInt((uintptr_t)arr, g_bar.b[s].id * 4), g_bar.b[s].ctl);
+}
+
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
 extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     uintptr_t hud = reinterpret_cast<uintptr_t>(hudPtr);
@@ -362,7 +528,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     static DWORD lastTickTime = 0; DWORD nowT = GetTickCount();
     if (lastTickTime && nowT - lastTickTime > 1500) logf("tick: gap of %lu ms since previous HUD tick (load/menu/HUD destroyed?)", (unsigned long)(nowT - lastTickTime));
     lastTickTime = nowT;
-    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d capLogged=%d ctrl/alt/shift=%d%d%d", g_frame, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke, g_capLogged, (int)g_ctrl, (int)g_alt, (int)g_shift);
+    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld bar(panel=%08x built=%d vis=%d%d%d%d%d%d%d%d%d%d) gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d capLogged=%d ctrl/alt/shift=%d%d%d", g_frame, (unsigned)g_bar.panel, g_bar.built, g_bar.b[0].visible, g_bar.b[1].visible, g_bar.b[2].visible, g_bar.b[3].visible, g_bar.b[4].visible, g_bar.b[5].visible, g_bar.b[6].visible, g_bar.b[7].visible, g_bar.b[8].visible, g_bar.b[9].visible, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke, g_capLogged, (int)g_ctrl, (int)g_alt, (int)g_shift);
     if (g_frame == 1) logf("tick: first HUD tick hud=%08x kbdev=%d", (unsigned)hud, g_kbDevice);
     if (hud != g_hud) { g_hud = hud; logf("tick: hud pointer now %08x", (unsigned)hud); }
     if (!hud || IsBadReadPtr(hudPtr, 0x1CA0)) { if (g_hudGateOk) logf("tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }
@@ -379,6 +545,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
         if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; recomputeBound(); }
     }
     probe(hud, g_frame == 60);
+    updateButtons(hud, gate);
     if (gate) drainRing(hud);
     else if (g_ringTail != g_ringHead) { logf("tick: gate closed, discarding %d queued request(s)", (g_ringHead - g_ringTail + 16) % 16); g_ringTail = g_ringHead; }   // never invoke while the HUD is not the active panel
 }
@@ -386,7 +553,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("force-power-hotbar 0.1.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
+        logf("force-power-hotbar 0.2.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
         logf("addresses: invoke=%08x kbdevGlobal=%08x app=%08x getCreature=%08x hudVt=%08x whitelist=%08x,%08x,%08x,%08x", (unsigned)HudInvokeGroup, (unsigned)KeyboardDeviceGlobal, (unsigned)AppGlobal, (unsigned)GetControlledCreature, (unsigned)HudVtable, (unsigned)PanelWhitelist[0], (unsigned)PanelWhitelist[1], (unsigned)PanelWhitelist[2], (unsigned)PanelWhitelist[3]);
     }
     return TRUE;
