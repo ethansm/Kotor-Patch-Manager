@@ -25,6 +25,11 @@ LESSONS = [
      "that is a function epilogue (MOV ESP,EBP; POP EBP; RET n) runs its RET and returns to the caller normally; the trailing JMP back is dead code. "
      "Used by Mod 6 H6d 0x8A8478. The consumed-exit test is PUSHFD/TEST EAX,EAX/.../POPFD, so a window ending in CMP before a Jcc keeps its flags on the "
      "resume path (Mod 8 S-H1 0x77AA5E). check_windows.py now rejects a RET that is not the last stolen instruction."),
+    ("combat-ai", "Vanilla Ranged/Stationary companions never approach (0x6D876A/0x6D8A7E)",
+     "AIActionPhysicalAttacks 0x6D7390 copies stats+0x146 to [ebp-0x174] at 0x6D850F (MOV [EBP-0x174],EAX, 6 bytes, EAX-free, only read by the "
+     "CMPs at 0x6D876A/0x6D8773/0x6D8A7E/0x6D8A87). Stance 11 or 12 and attacker != controlled creature => skip the approach move (0x5644B0) and return "
+     "via 0x6D8BE2, for every approach except the too-close/term-5 case. So 'a blocked ranged companion walks into melee' holds only for stances 9/10/13. "
+     "A new stance (16) must be mapped to 11 there to inherit the rule (Mod 8 E-H3 skip-only hook). Found by the Mod 8 0.2.0 Opus review."),
     ("inventory", "Row-select 0x8A83D0 resets row colours only for New items",
      "Event handler thiscall(panel; row). If the row's item has the New bit (item+0x2C8 bit 7) it clears it, clears row+0x3AC bit 2 and calls 0x8B1CC0 "
      "(fastcall(row): SetItem 0x8B1250(row+0x1D0 id, 0x3AC bit1, bit2)), which rewrites the four colour triplets (teal) and drops a SetCanUse tint. "

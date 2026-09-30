@@ -95,6 +95,18 @@ def main():
     print(f"game Override aiscripts.2da: {'EXISTS at ' + str(live_copies[0]) if live_copies else 'does not exist'}"
           + ("  (the .bif copy is NOT what the game uses; re-check before installing)" if live_copies else ""))
 
+    if live_copies:
+        # Another mod may own that table: only proceed if it is still the vanilla rows (or vanilla + our row).
+        live = read_2da(live_copies[0].read_bytes())
+        rows = table_rows(live)
+        ours = list(VANILLA_ROWS) + [tuple(str(x) for x in (NEW_ROW[0], NEW_ROW[1], name_strref, NEW_ROW[3]))]
+        if live.get_headers() != HEADERS or rows not in (list(VANILLA_ROWS), ours):
+            print_rows("live Override aiscripts.2da", live)
+            print("error: the live Override aiscripts.2da is not vanilla (or vanilla + our row); another mod owns it. "
+                  "Merge by hand; refusing to build over it.", file=sys.stderr)
+            return 2
+        print("live Override aiscripts.2da is vanilla" + (" + our row" if rows == ours else "") + "; rebuilding it")
+
     twoda = read_vanilla(GAME_DIR)
     print_rows("vanilla aiscripts.2da (2DA.bif)", twoda)
     if twoda.get_headers() != HEADERS or table_rows(twoda) != list(VANILLA_ROWS):

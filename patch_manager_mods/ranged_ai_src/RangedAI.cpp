@@ -7,6 +7,9 @@
 //                                                     return 1 => end the attack action (0x6d83ff)
 //   E-H2 0x006d7c79 RangedAiRetarget(attacker=EAX, ebp) return 1 => behave as IsPC (0x6d7c8c)
 //        (not 0x6d7c73: stolen bytes run AFTER the handler with EAX = its return value, so they must not use EAX)
+//   E-H3 0x006d850f RangedAiStanceRules(eax, ebp)     skip-only MOV [ebp-0x174],EAX: that local is read only by the
+//        "Ranged/Stationary companion does not approach" tests (0x6d876a, 0x6d8a7e); store 11 for stance 16 so the
+//        kiting stance gets vanilla Ranged's engine rule (review 2026-09-30)
 // Stance 16 "Ranged (Kiting)" in the party stance menu (0.2.0; all four windows EAX-free):
 //   S-H1 0x0077aa5e RangedAiStanceClamp(state=ECX)     AddStanceActions 0x77a9e0: return 1 => keep 16 (skip reset-to-9, 0x77aab4)
 //   S-H2 0x0077acbc RangedAiStanceRow(ebp)             row for aistate 16: id 0x415 + icon; return 1 => 0x77ae77 (next row)
@@ -43,6 +46,8 @@ constexpr int KiteTutorialRow = 0x3F;   // tutorial.2da row StanceActionClicked 
 constexpr int FA_List = 8, FA_State = -0x14, FA_RowIdx = -0x1C;
 // StanceActionClicked 0x77d890 frame: [ebp+8] = action id, [ebp-0x10] = stats, [ebp-8] = message strref, [ebp-4] = tutorial row
 constexpr int FC_Id = 8, FC_Stats = -0x10, FC_MsgStrref = -0x8, FC_Tutorial = -0x4;
+// AIActionPhysicalAttacks: [ebp-0x174] = stance copy compared with 0xB/0xC (Ranged/Stationary) before the approach move
+constexpr int F_StanceRules = -0x174, VanillaRangedStance = 11;
 // HUD refresh 0x74da40 frame: [ebp-0x28] = stance, [ebp-0x1c] = remembered stance action id
 constexpr int FH_Stance = -0x28, FH_ActionId = -0x1C;
 
@@ -78,6 +83,7 @@ template <typename T> bool wr(int addr, T v) {
 struct Config {
     bool hold = true, retarget = true, log = true, logAll = false;
     unsigned holdMask = 1u << KiteStance, retargetMask = 1u << KiteStance;
+    bool rangedRules = true;         // E-H3: stance 16 uses the vanilla Ranged "no approach" rule
     int msgStrref = 123710;          // floaty text on selecting stance 16; fallback = vanilla "Ranged Behavior" message
     char icon[17] = "ib_ranged";     // stance menu / HUD icon ResRef (<= 16 chars)
 };
@@ -102,6 +108,7 @@ void loadIni(bool force) {
     Config c;
     c.hold = GetPrivateProfileIntA("RangedAI", "hold", 1, IniName) != 0;
     c.retarget = GetPrivateProfileIntA("RangedAI", "retarget", 1, IniName) != 0;
+    c.rangedRules = GetPrivateProfileIntA("RangedAI", "ranged_rules", 1, IniName) != 0;
     c.msgStrref = GetPrivateProfileIntA("RangedAI", "kite_strref_msg", 123710, IniName);
     if (c.msgStrref <= 0) c.msgStrref = 123710;
     c.log = GetPrivateProfileIntA("RangedAI", "log", 1, IniName) != 0;
@@ -114,9 +121,9 @@ void loadIni(bool force) {
     c.icon[16] = 0;
     if (!c.icon[0]) strcpy(c.icon, "ib_ranged");
     if (force || c.hold != g_cfg.hold || c.retarget != g_cfg.retarget || c.holdMask != g_cfg.holdMask || c.retargetMask != g_cfg.retargetMask ||
-        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon))
-        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x kite_strref_msg=%d kite_icon=%s log=%d log_all=%d", c.hold, c.retarget,
-             c.holdMask, c.retargetMask, c.msgStrref, c.icon, c.log, c.logAll);
+        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon) || c.rangedRules != g_cfg.rangedRules)
+        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d",
+             c.hold, c.retarget, c.holdMask, c.retargetMask, c.rangedRules, c.msgStrref, c.icon, c.log, c.logAll);
     g_cfg = c;
 }
 
@@ -215,12 +222,16 @@ extern "C" int __cdecl RangedAiRetarget(int attacker, int ebp) {
     return gate ? 1 : 0;
 }
 
+// AddStanceActions runs on every action-bar rebuild (several times a second): log S1/S2 only when what they do changes.
+int g_s1Logged = 0, g_s2LastRow = -1, g_s2Logged = 0;
+constexpr int MenuLogBudget = 20;
+
 // S-H1. ECX = the shown creature's stance, about to be clamped to {9,11,12,13}. Return 1 => keep it (stance 16).
 extern "C" int __cdecl RangedAiStanceClamp(int state) {
     saferead::beginScope();
     if (state != KiteStance) return 0;
     loadIni(false);
-    if (g_cfg.log) logf("S1 t=%lu stance menu build: stance %d kept (vanilla clamp skipped)", GetTickCount(), state);
+    if (g_cfg.log && g_s1Logged < MenuLogBudget) { ++g_s1Logged; logf("S1 t=%lu stance menu build: stance %d kept (vanilla clamp skipped)", GetTickCount(), state); }
     return 1;
 }
 
@@ -237,7 +248,10 @@ extern "C" int __cdecl RangedAiStanceRow(int ebp) {
     char ref[16] = {0};
     for (int i = 0; i < 16 && g_cfg.icon[i]; ++i) ref[i] = g_cfg.icon[i];   // CResRef: 16 bytes, lower case, zero padded (as 0x710eb0)
     for (int i = 0; i < 16; i += 4) { int w; memcpy(&w, ref + i, 4); wr<int>(row + RowIcon + i, w); }
-    if (g_cfg.log) logf("S2 t=%lu stance row %d (%08x): id=0x%x icon=%s", GetTickCount(), idx, row, KiteActionId, g_cfg.icon);
+    if (g_cfg.log && (idx != g_s2LastRow || g_s2Logged < 3) && g_s2Logged < MenuLogBudget) {
+        ++g_s2Logged; g_s2LastRow = idx;
+        logf("S2 t=%lu stance row %d (%08x): id=0x%x icon=%s", GetTickCount(), idx, row, KiteActionId, g_cfg.icon);
+    }
     return 1;
 }
 
@@ -258,6 +272,13 @@ extern "C" int __cdecl RangedAiStanceClick(int ebp) {
     wr<int>(ebp + FC_Tutorial, KiteTutorialRow);
     if (g_cfg.log) logf("S3 t=%lu stance click: id=0x%x stance %d -> %d msg strref=%d", GetTickCount(), id, before, rd<unsigned short>(stats, StatsStance, 0xFFFF), g_cfg.msgStrref);
     return 1;
+}
+
+// E-H3. Replaces MOV [ebp-0x174],EAX (EAX = the attacker's stance) in AIActionPhysicalAttacks.
+extern "C" void __cdecl RangedAiStanceRules(int stance, int ebp) {
+    saferead::beginScope();
+    bool map = stance == KiteStance && g_cfg.rangedRules;
+    wr<int>(ebp + F_StanceRules, map ? VanillaRangedStance : stance);
 }
 
 // S-H4. HUD refresh on character change, default branch of the stance -> action id switch (replaces MOV [ebp-0x1c],-1).

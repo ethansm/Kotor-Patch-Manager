@@ -4,7 +4,7 @@
   stage_and_verify_install.py stage  STAGE_DIR [EXTRA.kpatch ...]   # never writes the game dir
       For every id in the live patch_config.toml, find the kpatch (under the kotor-patch-manager tree) whose DLL md5 equals the
       LIVE DLL (simple patches: newest kpatch), check its LAAEXE hook set is byte-identical to the live config, copy it into STAGE_DIR,
-      add the EXTRA kpatches, and print the id list to pass to KPatchLauncher.
+      add the EXTRA kpatches (an extra whose id is live replaces that live build), and print the id list to pass to KPatchLauncher.
   stage_and_verify_install.py verify STAGE_DIR                        # after the install
       md5 of every live DLL vs the DLL in the staged kpatch of that id; hook counts; consumed_exit_address hooks.
 
@@ -58,8 +58,14 @@ def stage(stage_dir, extras):
     idx = kpatch_index()
     os.makedirs(stage_dir, exist_ok=True)
     ids, bad = [], 0
+    def kid(e):
+        return re.search(r'^id\s*=\s*"([^"]+)"', zipfile.ZipFile(e).read("manifest.toml").decode(), re.M).group(1)
+    extra_ids = {kid(e) for e in extras}
     for p in live["patches"]:
         i = p["id"]
+        if i in extra_ids:   # upgraded by an EXTRA kpatch: the live build is replaced, nothing to match
+            print(f"{i:32s} live -> replaced by extra")
+            continue
         lp = G + "/" + p["dll"] if p.get("dll") else None
         lm = hashlib.md5(open(lp, "rb").read()).hexdigest() if lp and os.path.exists(lp) else None
         cs = sorted(idx.get(i, []), reverse=True)
@@ -74,8 +80,7 @@ def stage(stage_dir, extras):
         shutil.copy2(pick[0][1], os.path.join(stage_dir, os.path.basename(pick[0][1]).replace(" ", "_")))
         ids.append(i)
     for e in extras:
-        z = zipfile.ZipFile(e)
-        i = re.search(r'^id\s*=\s*"([^"]+)"', z.read("manifest.toml").decode(), re.M).group(1)
+        i = kid(e)
         shutil.copy2(e, stage_dir)
         if i not in ids:
             ids.append(i)

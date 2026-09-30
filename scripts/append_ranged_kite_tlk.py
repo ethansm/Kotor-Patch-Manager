@@ -5,8 +5,8 @@ Stance 16 needs a menu name (aiscripts.2da `name_strref`) and a tooltip/message 
 The vanilla ones are 123705 "Ranged" and 123710 "Ranged Behavior\\n...". This script adds
 
   name     Ranged (Kiting)
-  message  Ranged (Kiting) Behavior / Keeps its distance. / Repositions when blocked. /
-           Switch to melee if / opponent closes.
+  message  Ranged (Kiting) Behavior / Keeps its distance, / finds a clear shot. / Melee if cornered.
+           (4 lines, like vanilla 123710, so it fits the stance message box)
 
 as two new entries at the end of the table, so they get strrefs N and N+1 (N = the old
 entry count, 136538 on the modded build as of 2026-09-30). Never hard-code N: read
@@ -26,7 +26,7 @@ existing entries cannot be re-encoded or reordered. The script still proves it o
 --apply: the string-data block of the old file must reappear byte-for-byte in the new one,
 every old entry must compare equal, and the header language id must be unchanged.
 
---apply also copies the TLK to <backup-root>/backups_kitetlk_<HHMM>/dialog.tlk first (md5
+--apply also copies the TLK to <backup-root>/backups_kitetlk_<YYYYmmdd_HHMM>/dialog.tlk first (md5
 verified) and replaces the TLK atomically (temp file in the same dir + os.replace), after
 verifying the temp file. It prints the one-line record for replay/README.md; it does not
 edit the README. Close the game first (it reads dialog.tlk at start-up).
@@ -66,10 +66,9 @@ VANILLA_SPOT_CHECKS = (123705, 123710)  # the strings our new ones are modelled 
 NAME = "Ranged (Kiting)"
 MESSAGE_LINES = [
     "Ranged (Kiting) Behavior",
-    "Keeps its distance.",
-    "Repositions when blocked.",
-    "Switch to melee if",
-    "opponent closes.",
+    "Keeps its distance,",
+    "finds a clear shot.",
+    "Melee if cornered.",
 ]
 HEADER_SIZE, ENTRY_SIZE = 20, 40  # TLK V3.0: header, then one 40-byte record per entry
 RANDOM_SAMPLE = 50
@@ -138,9 +137,9 @@ def verify_written(old_path, new_path, old_tlk, n_old, name, message):
             problems.append("new entries' text differs from the requested strings")
         for i in (n_old, n_old + 1):
             flags = struct.unpack_from("<I", new_raw, HEADER_SIZE + ENTRY_SIZE * i)[0]
-            old_flags = struct.unpack_from("<I", old_raw, HEADER_SIZE + ENTRY_SIZE * (n_old - 1))[0]
+            old_flags = struct.unpack_from("<I", old_raw, HEADER_SIZE + ENTRY_SIZE * VANILLA_RANGED_MESSAGE)[0]
             if flags != old_flags:
-                problems.append(f"entry {i} flags {flags:#x}, the last old entry has {old_flags:#x}")
+                problems.append(f"entry {i} flags {flags:#x}, vanilla {VANILLA_RANGED_MESSAGE} has {old_flags:#x}")
 
         # Sample named in the task: first, last old, the vanilla stance strings, 50 random.
         sample = {0, n_old - 1, *[i for i in VANILLA_SPOT_CHECKS if i < n_old]}
@@ -171,7 +170,7 @@ def main():
     ap.add_argument("--tlk", type=Path, default=GAME_DIR / "dialog.tlk",
                     help="TLK to read/modify (default: the live dialog.tlk)")
     ap.add_argument("--backup-root", type=Path, default=WORKSPACE,
-                    help="where backups_kitetlk_<HHMM>/ goes (default: the mod workspace)")
+                    help="where backups_kitetlk_<YYYYmmdd_HHMM>/ goes (default: the mod workspace)")
     ap.add_argument("--json", type=Path, default=WORKSPACE / "ranged_ai_strrefs.json",
                     help="strref file to write (default: <workspace>/ranged_ai_strrefs.json)")
     args = ap.parse_args()
@@ -213,7 +212,7 @@ def main():
     if args.apply and state == "none":
         if game_running():
             print("warning: swkotor2 appears to be running; it reads dialog.tlk at start-up", file=sys.stderr)
-        backup_dir = args.backup_root.expanduser() / f"backups_kitetlk_{datetime.datetime.now():%H%M}"
+        backup_dir = args.backup_root.expanduser() / f"backups_kitetlk_{datetime.datetime.now():%Y%m%d_%H%M}"
         backup_dir.mkdir(parents=True, exist_ok=True)
         backup_file = backup_dir / "dialog.tlk"
         if backup_file.exists():
@@ -258,6 +257,7 @@ def main():
     if args.apply:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(json.dumps(strrefs, indent=2) + "\n")
+    print(f"\nranged_ai.ini line: kite_strref_msg={msg_ref}")
     if record:
         print("\nLine for ~/Games/KOTOR2_Mod_Workspace/replay/README.md:\n" + record)
     elif not args.apply and state == "none":

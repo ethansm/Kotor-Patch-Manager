@@ -7,18 +7,21 @@
       1. Kite: an enemy that fights in melee (or any enemy while we are below
          60% HP) is within 3.5 m => step to a random walkable spot that is
          at least 2 m further from it, within 10 m of the leader and with a
-         clear shot at our target.
+         clear shot at our target (and forget the "hit in melee" mark).
       2. Cornered (no such spot) => the vanilla Ranged Support weapon rule:
          swap to the melee config if we were hit in melee recently.
       3. Blocked shot (HasLineOfSight with both eye heights and both
          objects, the same test the engine uses) => move to a spot with a
-         clear shot within 15 m of the target and 10 m of the leader.
+         clear shot within 15 m of the target and 10 m of the leader, and
+         outside the kite radius of the nearest enemy.
       4. Otherwise the default attack routine.
     A move is always followed by a queued ActionAttack, so the creature
     never idles after it arrives. The engine half (ranged-ai DLL) keeps a
     blocked creature from walking into melee instead of shooting.
     SW_NUMBER_KITE_COOLDOWN (local number 20, unused by vanilla) keeps a
-    move from being re-planned every round.
+    move from being re-planned at once; it counts GN_DetermineCombatRound
+    calls, not rounds. The engine rule "Ranged companions do not walk to
+    their target" also applies to stance 16 (DLL hook E-H3).
 */
 
 int SW_NUMBER_KITE_COOLDOWN = 20;
@@ -77,7 +80,7 @@ int GN_KiteFindSpot(int nMode, object oThreat, object oTarget, object oLeader)
             {
                 nOk = FALSE;
             }
-            if (nMode == 2 && fThreat < 2.5)
+            if (nMode == 2 && fThreat < KITE_THREAT_RANGE + 0.5)   // never land inside the kite trigger radius
             {
                 nOk = FALSE;
             }
@@ -110,6 +113,9 @@ void GN_KiteMoveThenAttack(object oTarget, int nCooldown)
     ActionMoveToLocation(Location(vKiteSpot, GetFacing(OBJECT_SELF)), TRUE);
     ActionAttack(oTarget);
     SetLocalNumber(OBJECT_SELF, SW_NUMBER_KITE_COOLDOWN, nCooldown);
+    // We got away: forget the "hit in melee" mark (set by k_ai_master on attack, only counted down by
+    // GN_CheckRangedPreferred), or the next round would swap to the melee config and walk back in.
+    SetLocalNumber(OBJECT_SELF, SW_NUMBER_HEALERAI_THRESHOLD, 0);
 }
 
 int GN_RunKiteAIRoutine(object oIntruder)

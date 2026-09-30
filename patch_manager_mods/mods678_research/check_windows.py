@@ -33,6 +33,7 @@ WINDOWS = [
     # Mod 8 engine
     ("M8 hold-on-blocked-LOS",     0x6D83EA, 12, 0x6D7390, False),
     ("M8 retarget gate (IsPC)",    0x6D7C79, 6,  0x6D7390, False),   # moved from 0x6D7C73 (stolen MOV ECX,[EAX+..] ran with EAX=handler result)
+    ("M8 ranged-stance rules local", 0x6D850F, 6, 0x6D7390, True),  # E-H3 0.2.0: MOV [EBP-0x174],EAX (skip-only; handler stores 11 for stance 16)
     ("M8 stance clamp",            0x77AA5E, 7,  0x77A9E0, False),
     ("M8 stance row fill",         0x77ACBC, 9,  0x77A9E0, False),   # re-sited 2026-09-30: was 15 bytes ending in MOV EAX,[EBP-0xF8] (EAX rule)
     ("M8 stance click",            0x77D8D4, 6,  0x77D890, False),   # re-sited 2026-09-30: was 14 bytes incl. MOV EAX,..; SUB EAX,0x410 (EAX rule)

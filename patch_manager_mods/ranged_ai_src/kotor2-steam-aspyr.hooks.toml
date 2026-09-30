@@ -105,3 +105,23 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "ebp"
 type = "int"
+
+# E-H3 ranged-stance rules: AIActionPhysicalAttacks 0x6D7390 at 0x6D850F, MOV [EBP-0x174],EAX (EAX = attacker stance,
+# just loaded from stats+0x146). That local is read only by the four CMPs at 0x6D876A/0x6D8773/0x6D8A7E/0x6D8A87
+# (stance 11 Ranged / 12 Stationary and not the controlled creature => no approach move). Skip-only: the handler
+# stores 11 for stance 16 (INI ranged_rules=1), else the stance unchanged. Resumes at 0x6D8515.
+[[hooks]]
+address = 0x006D850F
+type = "detour"
+function = "RangedAiStanceRules"
+original_bytes = [0x89, 0x85, 0x8C, 0xFE, 0xFF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
