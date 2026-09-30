@@ -1,0 +1,10 @@
+BATCH T2: module-change teardown -- what is freed when an area/module unloads (static half of the S2 leak test).
+Seeds: strings "Unload", "Module", "Area" in strings.tsv; CSWSModule / CSWCModule / CSWCArea / CSWSArea destructors and Unload* functions (grep inputs/name_map.tsv and inputs/gog_functions.tsv: map GOG names with the mapper per CONTRACT.md), CExoResMan RemoveEncapsulatedResourceFile/RemoveResourceImageFile 0x7116B0/0x7116D0 and RemoveKeyTable 0x7131D0, model cache DAT_00A1FFA8/DAT_00A1FFAC (0x48E160, 0x48E2A0), texture table release 0x427810 and list [0xA1BC48], ~CAurTextureBasic 0x423480, scene object / CAurObject destructors (findings/R9_map_Scene_*.tsv, R6.md), LoadBinaryModel 0x5122E0 buffers.
+Questions:
+1. The module change sequence: which function tears down the old module on the client and on the server (quote the calls in order), and where the new module load starts.
+2. Textures: on unload, is each area texture's refcount dropped so ~CAurTextureBasic / FreeImage / glDeleteTextures run, or do textures stay cached in the global texture table (by name) across modules? What is the cache policy (refcount, LRU, never)?
+3. Models: are model cache (DAT_00A1FFA8) entries freed on unload (MDL blob + rebased buffers) or kept forever? Quote the eviction/delete path if any.
+4. Resman: are the module's ERF/RIM capsules removed (0x7116B0/0x7116D0) and what happens to CRes objects of that capsule that are still referenced (refcount > 0) -- freed, orphaned, or dangling (use-after-free)? Do Demand references held by textures/models get Released first?
+5. Anything that only grows across module changes: lists appended per load and never cleared, per-area caches without clear, name tables, GUI panels recreated without delete, sound/Miles handles. Give the container address and the add site.
+6. GL names: are glDeleteTextures / glDeleteBuffers / display lists (glDeleteLists) called for area geometry on unload? (imports.tsv).
+Output the expected S2 signal per item (what the M1 counters / census would show on a round trip if it leaks).

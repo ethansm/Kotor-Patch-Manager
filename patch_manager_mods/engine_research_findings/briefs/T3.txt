@@ -1,0 +1,10 @@
+BATCH T3: remaining save paths + resman speculative bugs.
+Seeds (save): savers 0x55B830, 0x534600, 0x8529E0, 0x7D1940 (not audited by R4; findings/R4.md covers SaveGame 0x53AF20 -> 0x55BB80 -> 0x55DB00/0x55CB50/0x529DD0 -> WriteResource_2 0x721BB0, balanced), screenshot 0x855F30 / 0x52F610 (strings "Screen", ".tga", "screen", "savegame"), DoPCAutosave 0x53AF20 paths not covered by R4 (party table, globals, inventory, PIFO, savenfo.res, partytable, GLOBALVARS, NFO), CERFFile writer 0x7216C0.
+Seeds (resman, from findings/R1.md "speculative" items): CancelRequest 0x711A30 (stale pointer at resman+0x28?), RemoveKeyTable 0x7131D0 (CRes nodes freed while still on the evict list -> dangling list nodes?), failed Service path: ServiceFromDirectory/Encapsulated/ResFile/ImageRaw 0x7133A0 / 0x713BF0 / 0x713FB0 (and siblings in name_map) + Demand 0x711C20: is the Malloc'd buffer freed or left on a CRes with flag 4 clear (FreeChunk skips it)?
+Questions (each: CONFIRMED / REFUTED with quoted lines; not "speculative" unless you cannot decide, then say what runtime counter would):
+1. Each saver: every operator new/_malloc in it and its callees (alloc_sites.tsv) and the matching free; bytes leaked per save if any.
+2. Screenshot path: how the save thumbnail is captured (glReadPixels? size?), buffer lifetime, GL/GDI objects created per save and released or not.
+3. CancelRequest stale pointer: who reads resman+0x28 after CancelRequest, can it deref a freed CRes?
+4. RemoveKeyTable: are CRes on the evict list (flag 0x100) unlinked before delete?
+5. Failed Service: exact error branch lines; what the next Demand does with that CRes (retry -> second Malloc = leak of the first?).
+6. Any crash triggers on these paths (NULL deref on failure, unchecked fwrite/fopen, disk full).

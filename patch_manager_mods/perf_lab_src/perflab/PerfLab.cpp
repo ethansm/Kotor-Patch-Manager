@@ -1,12 +1,20 @@
-// PerfLab 0.1.1 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only, no behaviour change.
-// Research program: patch_manager_mods/10_engine_optimization_research.md.
+// PerfLab 0.2.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics; the only behaviour changes are the
+// flag-gated experiments tx=1 / g1skip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
 //
 // Inert unless "perflab_debug.txt" exists in the game dir (key=value lines, all optional):
 //   alloc=1          1a allocation census (default 1 when the file exists)
 //   heapfilter=1     only track the CRT heap (handle in the exe global 0x00A806C8); 0 = any heap (harness)
-//   flush_ms=30000   perflab_alloc.txt rewrite interval
+//   flush_ms=30000   perflab_alloc.txt rewrite interval (also the perflab_metrics.txt interval)
 //   scan=48          stack dwords scanned per allocation for call-site attribution
 //   snap_min=1024    per-site live bytes needed to appear in a load-screen snapshot
+//   metrics=0        0.2.0 measurement pack M1-M7 (detour counters + SwapBuffers/gluBuild2DMipmaps IAT hooks):
+//                    snapshots appended to perflab_metrics.txt every flush_ms, at load-screen UP/DOWN and on perflab_dump.txt
+//   vq=0             M8 VirtualQuery address-space census (same trigger points), perflab_metrics.txt
+//   tx=0             experiment TX (guarded, batch T1): at the first tick, BuildAndStoreTexture 0x4261CF `0F B6 C8 85 C9 75 10`
+//                    -> JMP to a cave that also frees the CPU image of TPC textures after GL upload, except textures with a
+//                    procedural controller ([tex+0x34] != 0, the only post-upload GetImage readers); TGA unchanged
+//   g1skip=0         experiment G1: at the first tick, 0x4265F3 74 06 -> EB 06 (skip glFinish per texture upload)
+//                    Both verify the original bytes first and refuse on mismatch; the arm is logged in perflab_log.txt.
 //
 // 1a: IAT hooks (installed from DllMain) on the exe's KERNEL32 HeapAlloc/HeapReAlloc/HeapFree. The exe's CRT
 // (VS2008, static) reaches these for every malloc/calloc/realloc/free (doc 10 finding 1), so tracking the
@@ -38,7 +46,10 @@ constexpr uintptr_t LoadScreenVtable = 0x009A5C84;
 constexpr int In_GuiMgr = 0x274, In_LoadScreen = 0x278, Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
 
 // ---- config --------------------------------------------------------------------------------------------
-struct Cfg { bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024; } g_cfg;
+struct Cfg {
+    bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024;
+    bool metrics = false, vq = false, tx = false, g1skip = false;
+} g_cfg;
 bool g_on = false;
 uintptr_t g_exeLo = 0, g_exeHi = 0;
 volatile LONG g_ticks = 0;                            // hook 0x00478A20 calls (frame heartbeat)
@@ -229,6 +240,154 @@ bool patchIat(HMODULE mod, const char* dll, const char* fn, void* hook, void** o
     return false;
 }
 
+// ---- 0.2.0 measurement pack (doc 10 "Runtime measurement pack"; sites verified with perf_lab_src/hookbytes.py) -------
+// Hook bodies only add to counters in one VirtualAlloc'd block or write fixed slots; the helper thread formats them.
+// CRes fields (R1): +4 data refcount (u16), +8 source (>>30), +0xC flags, +0x10 data, +0x14 key entry (restype = u16 at
+// +0x1A), +0x18 size. The CRes pointer is read only after the same NULL test the engine makes and only where the engine
+// itself dereferences it next; the key entry (not dereferenced by those functions) goes through SafeRead.
+constexpr int RtUnknown = 10000, RtSlots = 10001;     // restype ids 0..9999; slot 10000 = no key entry / out of range
+constexpr int EvSlots = 8192, CallerSlots = 64, TopRegions = 10;
+constexpr uintptr_t FreeChunkEvictRet = 0x00712245;   // FreeResourceData call inside FreeChunk (eviction)
+constexpr uintptr_t PatchTx = 0x004261CF, TxFree = 0x004261D6, TxSkip = 0x004261E6, PatchG1 = 0x004265F3;
+// GetImage caller classes (T1): upload routines (only called from glImage, before the free) and the TextureController
+// family (reads [ctrl+4]'s image after upload). [lo, hi) from the dump's function sizes.
+struct Range { uintptr_t lo, hi; };
+constexpr Range UploadRa[] = { { 0x432FA0, 0x432FA0 + 883 }, { 0x433320, 0x433320 + 1167 }, { 0x433CD0, 0x433CD0 + 1493 }, { 0x434350, 0x434350 + 1557 } };
+constexpr Range CtrlRa[] = { { 0x48FF30, 0x48FF30 + 148 }, { 0x490710, 0x490710 + 219 }, { 0x4907F0, 0x4907F0 + 543 }, { 0x491C40, 0x491C40 + 431 },
+                             { 0x492310, 0x492310 + 329 }, { 0x492460, 0x492460 + 871 } };
+template <int N> bool inRanges(const Range (&r)[N], uintptr_t a) { for (auto& x : r) if (a >= x.lo && a < x.hi) return true; return false; }
+constexpr uintptr_t G_FrameLimit = 0x00A1B710, G_SleepGate = 0x00A1B704, G_FrameLimitSrc = 0x00A7EB9C, G_GlFinishFlag = 0x009F6100;
+constexpr uintptr_t G_ResMan = 0x00A1B490;
+
+struct RtStat { volatile LONG64 allocN, allocB, evictN, evictB, freeN, freeB, relN, relZero, demN, redemN; };
+struct CallerStat { volatile LONG key; volatile LONG n; };
+struct EvSlot { volatile LONG cres, tick; };
+struct Metrics {
+    RtStat rt[RtSlots];
+    volatile LONG64 mallocN, mallocOverBudget; volatile LONG budgetMin;              // M1 / J1
+    EvSlot ev[EvSlots]; volatile LONG64 redemAll;
+    CallerStat freeCallers[CallerSlots];
+    volatile LONG64 waitBegin, waitEnd, waitQpc, waitMaxQpc, sleeps; volatile LONG waitHist[16];   // M2 (hist: sleeps per wait, log2)
+    LONG64 waitT0; LONG waitSleeps0;                                                   // main-thread scratch
+    volatile LONG64 getImgN, getImgTpc, getImgTpcRetained, getImgUpload, getImgCtrl, getImgCtrlTpcRetained, getImgOther, getImgOtherTpcRetained;  // M3
+    CallerStat getImgCallers[CallerSlots];                                             // non-upload callers only
+    volatile LONG64 buildN, buildRequeueTpcRetained, buildTpcCtrl;                     // C1/C2 (T1): BuildAndStoreTexture entries
+    volatile LONG64 glImageN, glFinishN, glFinishQpc, glFinishMaxQpc, mipN, mipQpc, mipPixels; LONG64 glT0;  // M4
+    volatile LONG64 frames, bucketCalls, actionBarCalls, frameMaxQpc; volatile LONG frameHist[10], allocHist[16];  // M5
+    LONG64 lastSwap, lastAllocN, lastBucket, lastActionBar; volatile LONG maxBucketPerFrame, maxActionBarPerFrame;
+    volatile LONG64 movieCalls, movieSpins; volatile LONG spinHist[24], cutoffSeen, lastThis254; LONG64 spins0;  // M6
+    volatile LONG64 hookCycles, hookSamples;
+};
+Metrics* g_m = nullptr;
+LONG64 g_qpf = 1;
+volatile LONG g_firstTickDone = 0;
+volatile LONG g_txState = 0, g_g1State = 0;          // 0 not requested, 1 applied, -1 byte mismatch, -2 VirtualProtect failed, -3 cave alloc failed
+
+inline LONG64 qpc() { LARGE_INTEGER v; QueryPerformanceCounter(&v); return v.QuadPart; }
+// Histogram bucket for v with n buckets: 0 = zero, k = [2^(k-1), 2^k), last bucket open-ended.
+inline int lbucket(uint64_t v, int n) { if (!v) return 0; int b = 1; while (v > 1 && b < n - 1) { v >>= 1; ++b; } return b; }
+inline void atomicMax(volatile LONG64* p, LONG64 v) { LONG64 o = *p; while (v > o) { LONG64 r = InterlockedCompareExchange64(p, v, o); if (r == o) break; o = r; } }
+inline void atomicMin(volatile LONG* p, LONG v) { LONG o = *p; while (v < o) { LONG r = InterlockedCompareExchange(p, v, o); if (r == o) break; o = r; } }
+
+struct MTimer {   // samples 1 in 64 metric hook calls
+    uint64_t t0 = 0; bool on;
+    MTimer() { static volatile LONG c; on = (InterlockedIncrement(&c) & 63) == 0; if (on) t0 = __rdtsc(); }
+    ~MTimer() { if (on) { InterlockedExchangeAdd64(&g_m->hookCycles, static_cast<LONG64>(__rdtsc() - t0)); InterlockedIncrement64(&g_m->hookSamples); } }
+};
+
+void countCaller(CallerStat* t, uintptr_t ret) {
+    LONG key = static_cast<LONG>(ret ? ret : 1);
+    uint32_t h = (static_cast<uint32_t>(key) * 2654435761u) >> 26;
+    for (int i = 0; i < CallerSlots; ++i, h = (h + 1) & (CallerSlots - 1)) {
+        LONG k = t[h].key;
+        if (k == 0) { LONG prev = InterlockedCompareExchange(&t[h].key, key, 0); k = prev ? prev : key; }
+        if (k == key) { InterlockedIncrement(&t[h].n); return; }
+    }
+    InterlockedIncrement(&t[0].n);                    // table full: lumped into slot 0
+}
+
+inline int restypeOf(uintptr_t cres) {
+    uintptr_t ke = *reinterpret_cast<const uintptr_t*>(cres + 0x14);
+    uint16_t t = 0;
+    saferead::beginScope();
+    if (!ke || !saferead::readAt(20, ke, 0x1A, &t)) return RtUnknown;
+    return t < RtUnknown ? t : RtUnknown;
+}
+inline uint32_t evHash(uintptr_t p) { return ((static_cast<uint32_t>(p) >> 3) * 2654435761u) >> 19; }   // 13 bits
+
+// IAT hooks (M4 mipmaps, M5 frame time)
+typedef int(WINAPI* GluMip_t)(unsigned, int, int, int, unsigned, unsigned, const void*);
+typedef BOOL(WINAPI* Swap_t)(HDC);
+GluMip_t rGluMip; Swap_t rSwap;
+
+int WINAPI hkGluBuild2DMipmaps(unsigned target, int comps, int w, int h, unsigned fmt, unsigned type, const void* data) {
+    LONG64 t0 = qpc();
+    int r = rGluMip(target, comps, w, h, fmt, type, data);
+    if (g_m) {
+        InterlockedIncrement64(&g_m->mipN); InterlockedExchangeAdd64(&g_m->mipQpc, qpc() - t0);
+        if (w > 0 && h > 0) InterlockedExchangeAdd64(&g_m->mipPixels, static_cast<LONG64>(w) * h);
+    }
+    return r;
+}
+BOOL WINAPI hkSwapBuffers(HDC dc) {
+    if (g_m) {   // called on the render (main) thread only: plain scratch fields
+        Metrics& m = *g_m;
+        LONG64 now = qpc();
+        if (m.lastSwap) {
+            LONG64 d = now - m.lastSwap;
+            InterlockedIncrement(&m.frameHist[lbucket(static_cast<uint64_t>(d * 1000 / g_qpf), 10)]);   // 0 = <1 ms, 1 = 1 ms, 2 = 2-3, ..., 5 = 16-31, 9 = >=256 ms
+            atomicMax(&m.frameMaxQpc, d);
+            LONG64 a = g_allocN, bc = m.bucketCalls, ab = m.actionBarCalls;
+            InterlockedIncrement(&m.allocHist[lbucket(static_cast<uint64_t>(a - m.lastAllocN), 16)]);
+            if (bc - m.lastBucket > m.maxBucketPerFrame) m.maxBucketPerFrame = static_cast<LONG>(bc - m.lastBucket);
+            if (ab - m.lastActionBar > m.maxActionBarPerFrame) m.maxActionBarPerFrame = static_cast<LONG>(ab - m.lastActionBar);
+            m.lastAllocN = a; m.lastBucket = bc; m.lastActionBar = ab;
+        } else { m.lastAllocN = g_allocN; m.lastBucket = m.bucketCalls; m.lastActionBar = m.actionBarCalls; }
+        m.lastSwap = now;
+        InterlockedIncrement64(&m.frames);
+    }
+    return rSwap(dc);
+}
+
+// Experiments, applied from the first tick (main thread: the engine cannot be executing the patched bytes then).
+uint8_t g_txSeen[7], g_g1Seen[2];
+uint8_t* g_txCave = nullptr;
+int writeCode(uintptr_t at, const uint8_t* expect, const uint8_t* repl, int n, uint8_t* seen) {
+    auto p = reinterpret_cast<uint8_t*>(at);
+    memcpy(seen, p, n);
+    if (memcmp(p, expect, n) != 0) return -1;
+    DWORD old;
+    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old)) return -2;
+    memcpy(p, repl, n);
+    VirtualProtect(p, n, old, &old);
+    FlushInstructionCache(GetCurrentProcess(), p, n);
+    return 1;
+}
+inline void putRel32(uint8_t* at, uintptr_t target) { int32_t d = static_cast<int32_t>(target - (reinterpret_cast<uintptr_t>(at) + 4)); memcpy(at, &d, 4); }
+// TX cave (EAX = IsTPCLoaded() result, [EBP-4] = texture; EDX is reloaded at 0x4261D6 and dead at the epilogue 0x4261E6):
+//   movzx ecx,al / test ecx,ecx / jz free        ; not TPC: free as the engine always did
+//   mov edx,[ebp-4] / cmp dword [edx+0x34],0 / jnz skip   ; TPC with a procedural controller: keep the image (engine behaviour)
+//   free: jmp 0x4261D6                           ; TPC without controller: FreeImage (the experiment)
+//   skip: jmp 0x4261E6
+int applyTx() {
+    static const uint8_t orig[7] = { 0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x75, 0x10 };
+    g_txCave = static_cast<uint8_t*>(VirtualAlloc(nullptr, 64, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+    if (!g_txCave) return -3;
+    static const uint8_t body[16] = { 0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x74, 0x09, 0x8B, 0x55, 0xFC, 0x83, 0x7A, 0x34, 0x00, 0x75, 0x05 };
+    memcpy(g_txCave, body, 16);
+    g_txCave[16] = 0xE9; putRel32(g_txCave + 17, TxFree);
+    g_txCave[21] = 0xE9; putRel32(g_txCave + 22, TxSkip);
+    FlushInstructionCache(GetCurrentProcess(), g_txCave, 26);
+    uint8_t jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
+    int32_t d = static_cast<int32_t>(reinterpret_cast<uintptr_t>(g_txCave) - (PatchTx + 5)); memcpy(jmp + 1, &d, 4);
+    return writeCode(PatchTx, orig, jmp, 7, g_txSeen);
+}
+void applyExperiments() {
+    static const uint8_t g1Orig[2] = { 0x74, 0x06 }, g1New[2] = { 0xEB, 0x06 };
+    if (g_cfg.tx) g_txState = applyTx();
+    if (g_cfg.g1skip) g_g1State = writeCode(PatchG1, g1Orig, g1New, 2, g_g1Seen);
+}
+
 // ---- logging / reports (helper thread only) ---------------------------------------------------------------
 void logf(const char* fmt, ...) {
     FILE* f = fopen("perflab_log.txt", "a");
@@ -304,6 +463,99 @@ void writeSnapshot(const char* ev) {
     fclose(f);
 }
 
+// M7: one-shot engine globals (read on every metrics snapshot; cheap).
+void writeGlobals(FILE* f) {
+    using saferead::readAt;
+    saferead::beginScope();
+    float fl = 0; int sleepGate = 0, flSrc = 0, glf = 0; uintptr_t rm = 0; int b4 = 0, b8 = 0;
+    bool ok1 = readAt(30, G_FrameLimit, 0, &fl), ok2 = readAt(31, G_SleepGate, 0, &sleepGate), ok3 = readAt(32, G_FrameLimitSrc, 0, &flSrc);
+    bool ok4 = readAt(33, G_GlFinishFlag, 0, &glf), ok5 = readAt(34, G_ResMan, 0, &rm) && rm && readAt(35, rm, 4, &b4) && readAt(36, rm, 8, &b8);
+    fprintf(f, "G a1b710=%g(%d) a1b704=%d(%d) a7eb9c=%d(%d) 9f6100=%d(%d) resman=%08x budget4=%d budget8=%d(%d)\n",
+        fl, ok1, sleepGate, ok2, flSrc, ok3, glf, ok4, (unsigned)rm, b4, b8, ok5);
+}
+
+// M8: whole 4 GB address space by state/type, largest free block, top regions.
+void writeVq(FILE* f) {
+    struct R { uintptr_t base; SIZE_T size; DWORD state, type, prot; } top[TopRegions] = {};
+    uint64_t by[3][4] = {};   // [commit, reserve, free][image, mapped, private, none]
+    unsigned cnt[3] = {}; SIZE_T largestFree = 0; uintptr_t largestFreeAt = 0;
+    MEMORY_BASIC_INFORMATION mbi;
+    for (uintptr_t a = 0; VirtualQuery(reinterpret_cast<LPCVOID>(a), &mbi, sizeof mbi) == sizeof mbi; ) {
+        int st = mbi.State == MEM_COMMIT ? 0 : mbi.State == MEM_RESERVE ? 1 : 2;
+        int ty = mbi.Type == MEM_IMAGE ? 0 : mbi.Type == MEM_MAPPED ? 1 : mbi.Type == MEM_PRIVATE ? 2 : 3;
+        by[st][ty] += mbi.RegionSize; ++cnt[st];
+        if (st == 2 && mbi.RegionSize > largestFree) { largestFree = mbi.RegionSize; largestFreeAt = reinterpret_cast<uintptr_t>(mbi.BaseAddress); }
+        if (st != 2) {   // keep the TopRegions largest non-free regions
+            int k = TopRegions - 1;
+            if (mbi.RegionSize > top[k].size) {
+                while (k > 0 && top[k - 1].size < mbi.RegionSize) { top[k] = top[k - 1]; --k; }
+                top[k] = { reinterpret_cast<uintptr_t>(mbi.BaseAddress), mbi.RegionSize, mbi.State, mbi.Type, mbi.Protect };
+            }
+        }
+        uintptr_t next = reinterpret_cast<uintptr_t>(mbi.BaseAddress) + mbi.RegionSize;
+        if (next <= a) break;
+        a = next;
+    }
+    const char* sn[3] = { "commit", "reserve", "free" };
+    fprintf(f, "VQ regions commit=%u reserve=%u free=%u largest_free=%uMB@%08x\n", cnt[0], cnt[1], cnt[2], (unsigned)(largestFree >> 20), (unsigned)largestFreeAt);
+    for (int s = 0; s < 3; ++s)
+        fprintf(f, "VQ %s MB image=%u mapped=%u private=%u none=%u\n", sn[s], (unsigned)(by[s][0] >> 20), (unsigned)(by[s][1] >> 20), (unsigned)(by[s][2] >> 20), (unsigned)(by[s][3] >> 20));
+    for (int i = 0; i < TopRegions && top[i].size; ++i)
+        fprintf(f, "VQTOP %08x %uKB state=%lx type=%lx prot=%lx\n", (unsigned)top[i].base, (unsigned)(top[i].size >> 10), top[i].state, top[i].type, top[i].prot);
+}
+
+void writeCallers(FILE* f, const char* tag, const CallerStat* t) {
+    int idx[CallerSlots], m = 0;
+    for (int i = 0; i < CallerSlots; ++i) if (t[i].key) idx[m++] = i;
+    for (int i = 1; i < m; ++i) for (int j = i; j > 0 && t[idx[j]].n > t[idx[j - 1]].n; --j) { int x = idx[j]; idx[j] = idx[j - 1]; idx[j - 1] = x; }
+    for (int i = 0; i < m && i < 16; ++i) fprintf(f, "%s %08x %ld\n", tag, (unsigned)t[idx[i]].key, t[idx[i]].n);
+}
+
+int g_metricsN = 0;
+void writeMetrics(const char* ev) {
+    if (!g_m && !g_cfg.vq) return;
+    FILE* f = fopen("perflab_metrics.txt", "a");
+    if (!f) return;
+    auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
+    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
+        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State);
+    writeGlobals(f);
+    if (g_m) {
+        Metrics& m = *g_m;
+        fprintf(f, "RES malloc=%lld over_budget=%lld budget_min=%ld redemand_60s=%lld\n", (long long)m.mallocN, (long long)m.mallocOverBudget, m.budgetMin, (long long)m.redemAll);
+        fprintf(f, "# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident\n");
+        for (int i = 0; i < RtSlots; ++i) {
+            RtStat& r = m.rt[i];
+            if (!r.allocN && !r.freeN && !r.demN && !r.relN) continue;
+            fprintf(f, "RT %d %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld\n", i == RtUnknown ? -1 : i,
+                (long long)r.allocN, (long long)r.allocB, (long long)r.evictN, (long long)r.evictB, (long long)r.freeN, (long long)r.freeB,
+                (long long)r.relN, (long long)r.relZero, (long long)r.demN, (long long)r.redemN, (long long)(r.allocB - r.freeB));
+        }
+        writeCallers(f, "FREECALLER", m.freeCallers);
+        fprintf(f, "WAIT begin=%lld end=%lld total_ms=%.1f max_ms=%.2f sleeps=%lld hist", (long long)m.waitBegin, (long long)m.waitEnd, ms(m.waitQpc), ms(m.waitMaxQpc), (long long)m.sleeps);
+        for (int i = 0; i < 16; ++i) fprintf(f, " %ld", m.waitHist[i]);
+        fprintf(f, "\nGETIMG calls=%lld tpc=%lld tpc_retained=%lld upload=%lld ctrl=%lld ctrl_tpc_retained=%lld other=%lld other_tpc_retained=%lld\n",
+            (long long)m.getImgN, (long long)m.getImgTpc, (long long)m.getImgTpcRetained, (long long)m.getImgUpload, (long long)m.getImgCtrl,
+            (long long)m.getImgCtrlTpcRetained, (long long)m.getImgOther, (long long)m.getImgOtherTpcRetained);
+        fprintf(f, "BUILD calls=%lld requeue_tpc_retained=%lld tpc_with_ctrl=%lld\n", (long long)m.buildN, (long long)m.buildRequeueTpcRetained, (long long)m.buildTpcCtrl);
+        writeCallers(f, "GETIMGCALLER", m.getImgCallers);
+        fprintf(f, "GL glimage=%lld glfinish=%lld glfinish_ms=%.1f glfinish_max_ms=%.2f mipmaps=%lld mip_ms=%.1f mip_mpix=%.2f\n", (long long)m.glImageN,
+            (long long)m.glFinishN, ms(m.glFinishQpc), ms(m.glFinishMaxQpc), (long long)m.mipN, ms(m.mipQpc), m.mipPixels / 1e6);
+        fprintf(f, "FRAME frames=%lld max_ms=%.1f bucket_calls=%lld max_bucket_per_frame=%ld actionbar_calls=%lld max_actionbar_per_frame=%ld hist_ms",
+            (long long)m.frames, ms(m.frameMaxQpc), (long long)m.bucketCalls, m.maxBucketPerFrame, (long long)m.actionBarCalls, m.maxActionBarPerFrame);
+        for (int i = 0; i < 10; ++i) fprintf(f, " %ld", m.frameHist[i]);
+        fprintf(f, " allocs_per_frame_hist");
+        for (int i = 0; i < 16; ++i) fprintf(f, " %ld", m.allocHist[i]);
+        fprintf(f, "\nMOVIE calls=%lld spins=%lld pump_cutoff_seen=%ld last_this254=%ld spin_hist", (long long)m.movieCalls, (long long)m.movieSpins, m.cutoffSeen, m.lastThis254);
+        for (int i = 0; i < 24; ++i) fprintf(f, " %ld", m.spinHist[i]);
+        double cyc = m.hookSamples ? double(m.hookCycles) / double(m.hookSamples) : 0;
+        fprintf(f, "\nHOOKCOST %.0f cycles/call (sampled 1/64, %lld samples)\n", cyc, (long long)m.hookSamples);
+    }
+    if (g_cfg.vq) writeVq(f);
+    fprintf(f, "#END %d\n", g_metricsN);
+    fclose(f);
+}
+
 bool loadScreenUp() {
     using saferead::readAt;
     saferead::beginScope();
@@ -320,18 +572,30 @@ volatile LONG g_stop = 0;
 volatile LONG g_snapNow = 0;
 bool g_gameProcess = false;
 
+void logExperiments() {
+    auto st = [](LONG v) { return v == 1 ? "ON" : v == 0 ? "OFF" : v == -1 ? "REFUSED(bytes)" : v == -2 ? "REFUSED(protect)" : "REFUSED(cave alloc)"; };
+    logf("experiments at first tick: tx=%s (0x4261CF saw %02x %02x %02x %02x %02x %02x %02x, cave %p) g1skip=%s (0x4265F3 saw %02x %02x)", st(g_txState),
+         g_txSeen[0], g_txSeen[1], g_txSeen[2], g_txSeen[3], g_txSeen[4], g_txSeen[5], g_txSeen[6], (void*)g_txCave, st(g_g1State), g_g1Seen[0], g_g1Seen[1]);
+}
+
 DWORD WINAPI helper(LPVOID) {
-    DWORD lastFlush = GetTickCount(); bool up = false; bool haveState = false;
+    DWORD lastFlush = GetTickCount(); bool up = false; bool haveState = false, loggedExp = false;
     while (!g_stop) {
         Sleep(100);
+        if (!loggedExp && g_firstTickDone) { loggedExp = true; logExperiments(); }
         if (g_gameProcess) {
             bool nowUp = loadScreenUp();
-            if (haveState && nowUp != up) writeSnapshot(nowUp ? "LOAD_UP" : "LOAD_DOWN");
+            if (haveState && nowUp != up) { writeSnapshot(nowUp ? "LOAD_UP" : "LOAD_DOWN"); writeMetrics(nowUp ? "LOAD_UP" : "LOAD_DOWN"); }
             up = nowUp; haveState = true;
         }
-        if (InterlockedExchange(&g_snapNow, 0)) writeSnapshot("MANUAL");
-        if (GetFileAttributesA("perflab_dump.txt") != INVALID_FILE_ATTRIBUTES) { DeleteFileA("perflab_dump.txt"); writeReport(); writeSnapshot("MANUAL_FILE"); }
-        if (GetTickCount() - lastFlush >= g_cfg.flushMs) { lastFlush = GetTickCount(); writeReport(); logf("live=%lldB blocks=%lld sites=%ld dropped=%ld", (long long)g_liveBytes, (long long)g_liveN, g_siteCount, g_dropped); }
+        if (InterlockedExchange(&g_snapNow, 0)) { writeSnapshot("MANUAL"); writeMetrics("MANUAL"); }
+        if (GetFileAttributesA("perflab_dump.txt") != INVALID_FILE_ATTRIBUTES) {
+            DeleteFileA("perflab_dump.txt"); writeReport(); writeSnapshot("MANUAL_FILE"); writeMetrics("MANUAL_FILE");
+        }
+        if (GetTickCount() - lastFlush >= g_cfg.flushMs) {
+            lastFlush = GetTickCount(); writeReport(); writeMetrics("FLUSH");
+            logf("live=%lldB blocks=%lld sites=%ld dropped=%ld", (long long)g_liveBytes, (long long)g_liveN, g_siteCount, g_dropped);
+        }
     }
     writeReport();
     return 0;
@@ -348,6 +612,10 @@ void readCfg() {
         else if (!strcmp(line, "flush_ms") && v > 500) g_cfg.flushMs = v;
         else if (!strcmp(line, "scan") && v >= 4 && v <= 256) g_cfg.scan = v;
         else if (!strcmp(line, "snap_min") && v >= 0) g_cfg.snapMin = v;
+        else if (!strcmp(line, "metrics")) g_cfg.metrics = v != 0;
+        else if (!strcmp(line, "vq")) g_cfg.vq = v != 0;
+        else if (!strcmp(line, "tx")) g_cfg.tx = v != 0;
+        else if (!strcmp(line, "g1skip")) g_cfg.g1skip = v != 0;
     }
     fclose(f);
 }
@@ -355,8 +623,10 @@ void readCfg() {
 } // namespace
 
 extern "C" {
-// Detour on 0x00478A20 (per-frame function called from MainLoop): heartbeat only.
-void __cdecl PerfLabTick() { InterlockedIncrement(&g_ticks); }
+// Detour on 0x00478A20 (per-frame function called from MainLoop): heartbeat; the first call applies the experiments.
+void __cdecl PerfLabTick() {
+    if (InterlockedIncrement(&g_ticks) == 1 && g_on) { applyExperiments(); g_firstTickDone = 1; }
+}
 // For the smoke harness / other diagnostics.
 void __cdecl PerfLabSnapshot() { InterlockedExchange(&g_snapNow, 1); }
 int __cdecl PerfLabStats(long long* out, int n) {   // live_bytes, live_blocks, allocs, frees, untracked, dropped
@@ -364,6 +634,151 @@ int __cdecl PerfLabStats(long long* out, int n) {   // live_bytes, live_blocks, 
     for (int i = 0; i < n && i < 6; ++i) out[i] = v[i];
     return 6;
 }
+
+// ---- M1: CExoResMan (all thiscall/stdcall entries; the hook sees the stack at entry) ----
+// 0x712F30 Malloc(this=ECX, CRes* [esp+4]): allocation of [CRes+0x18] bytes; J1: size > budget [this+8] -> FreeChunk passes.
+void __cdecl PerfLabResMalloc(void* resman, void* cres) {
+    if (!g_m || !cres) return;
+    MTimer t;
+    auto c = reinterpret_cast<uintptr_t>(cres);
+    int size = *reinterpret_cast<const int*>(c + 0x18);
+    RtStat& r = g_m->rt[restypeOf(c)];
+    InterlockedIncrement64(&r.allocN); InterlockedExchangeAdd64(&r.allocB, size);
+    InterlockedIncrement64(&g_m->mallocN);
+    if (resman) {
+        int budget = *reinterpret_cast<const int*>(reinterpret_cast<uintptr_t>(resman) + 8);
+        if (size > budget) InterlockedIncrement64(&g_m->mallocOverBudget);
+        atomicMin(&g_m->budgetMin, budget);
+    }
+}
+// 0x71222D inside FreeChunk, after the evicted CRes's vtbl[3] call and before FreeResourceData: CRes = [EBP-4].
+void __cdecl PerfLabResEvict(void* cres) {
+    if (!g_m || !cres) return;
+    MTimer t;
+    auto c = reinterpret_cast<uintptr_t>(cres);
+    RtStat& r = g_m->rt[restypeOf(c)];
+    InterlockedIncrement64(&r.evictN); InterlockedExchangeAdd64(&r.evictB, *reinterpret_cast<const int*>(c + 0x18));
+    EvSlot& e = g_m->ev[evHash(c)];
+    e.cres = static_cast<LONG>(c); e.tick = static_cast<LONG>(GetTickCount());
+}
+// 0x7120C0 FreeResourceData(this=ECX, CRes* [esp+4]), caller = [esp+0]. Mirrors the engine's own test for a real free.
+void __cdecl PerfLabResFreeData(void* cres, void* ret) {
+    if (!g_m || !cres) return;
+    MTimer t;
+    auto c = reinterpret_cast<uintptr_t>(cres);
+    if (!*reinterpret_cast<const uintptr_t*>(c + 0x10) || (*reinterpret_cast<const uint32_t*>(c + 8) >> 30) == 1) return;
+    RtStat& r = g_m->rt[restypeOf(c)];
+    InterlockedIncrement64(&r.freeN); InterlockedExchangeAdd64(&r.freeB, *reinterpret_cast<const int*>(c + 0x18));
+    countCaller(g_m->freeCallers, reinterpret_cast<uintptr_t>(ret));
+}
+// 0x7130B0 Release(CRes* [esp+4]): refcount 1 -> 0 puts the CRes on the evict list.
+void __cdecl PerfLabResRelease(void* cres) {
+    if (!g_m || !cres) return;
+    MTimer t;
+    auto c = reinterpret_cast<uintptr_t>(cres);
+    RtStat& r = g_m->rt[restypeOf(c)];
+    InterlockedIncrement64(&r.relN);
+    if (*reinterpret_cast<const uint16_t*>(c + 4) == 1) InterlockedIncrement64(&r.relZero);
+}
+// 0x711C20 Demand(this=ECX, CRes* [esp+4]): count by restype; J1 thrash = Demand of a CRes evicted < 60 s ago.
+void __cdecl PerfLabResDemand(void* cres) {
+    if (!g_m || !cres) return;
+    MTimer t;
+    auto c = reinterpret_cast<uintptr_t>(cres);
+    RtStat& r = g_m->rt[restypeOf(c)];
+    InterlockedIncrement64(&r.demN);
+    EvSlot& e = g_m->ev[evHash(c)];
+    if (e.cres == static_cast<LONG>(c)) {
+        if (static_cast<DWORD>(GetTickCount() - static_cast<DWORD>(e.tick)) < 60000) { InterlockedIncrement64(&r.redemN); InterlockedIncrement64(&g_m->redemAll); }
+        e.cres = 0;
+    }
+}
+
+// ---- M2: Demand's wait on an in-flight async CRes (main thread) ----
+// 0x711D04: flag 0x10 branch entered (wait begins if resman+0x2C != 0); 0x711D27: one Sleep(1) poll; 0x711D44: wait ended OK.
+void __cdecl PerfLabWaitBegin() {
+    if (!g_m) return;
+    InterlockedIncrement64(&g_m->waitBegin);
+    g_m->waitT0 = qpc(); g_m->waitSleeps0 = static_cast<LONG>(g_m->sleeps);
+}
+void __cdecl PerfLabWaitSleep() { if (g_m) InterlockedIncrement64(&g_m->sleeps); }
+void __cdecl PerfLabWaitEnd() {
+    if (!g_m || !g_m->waitT0) return;
+    LONG64 d = qpc() - g_m->waitT0; g_m->waitT0 = 0;
+    InterlockedIncrement64(&g_m->waitEnd); InterlockedExchangeAdd64(&g_m->waitQpc, d); atomicMax(&g_m->waitMaxQpc, d);
+    InterlockedIncrement(&g_m->waitHist[lbucket(static_cast<uint64_t>(static_cast<LONG>(g_m->sleeps) - g_m->waitSleeps0), 16)]);
+}
+
+// ---- M3: GetImage 0x422640 at 0x42266F, after it resolved this->vtbl[2]()->vtbl[1]() to the texture ([EBP-4], non-NULL;
+// the engine reads its +0x44 next, so the fields below are read directly). Caller = [EBP+4].
+// "TPC with a retained buffer after upload" (T1 F4): +0xE9 == 1 (TPC) && +0xE4 == 1 (built) && +0x58 != 0 (GL name) && +0x44 != 0.
+// TX gate: other_tpc_retained == 0 (no reader outside the upload routines and the controller family, which the guard exempts).
+void __cdecl PerfLabGetImage(void* tex, void* ret) {
+    if (!g_m || !tex) return;
+    MTimer t;
+    Metrics& m = *g_m;
+    auto x = reinterpret_cast<uintptr_t>(tex); auto ra = reinterpret_cast<uintptr_t>(ret);
+    bool tpc = *reinterpret_cast<const uint8_t*>(x + 0xE9) == 1;
+    bool retained = tpc && *reinterpret_cast<const uint8_t*>(x + 0xE4) == 1 && *reinterpret_cast<const uint32_t*>(x + 0x58) != 0 &&
+                    *reinterpret_cast<const uint32_t*>(x + 0x44) != 0;
+    InterlockedIncrement64(&m.getImgN);
+    if (tpc) InterlockedIncrement64(&m.getImgTpc);
+    if (retained) InterlockedIncrement64(&m.getImgTpcRetained);
+    if (inRanges(UploadRa, ra)) { InterlockedIncrement64(&m.getImgUpload); return; }
+    countCaller(m.getImgCallers, ra);
+    if (inRanges(CtrlRa, ra)) { InterlockedIncrement64(&m.getImgCtrl); if (retained) InterlockedIncrement64(&m.getImgCtrlTpcRetained); }
+    else { InterlockedIncrement64(&m.getImgOther); if (retained) InterlockedIncrement64(&m.getImgOtherTpcRetained); }
+}
+
+// ---- C1/C2 (T1): BuildAndStoreTexture 0x4260E0 entry (ECX = texture). A built TPC texture that still has its buffer and is
+// queued again is re-uploaded today; with tx=1 its buffer is gone and the re-upload is skipped (TX's only behaviour delta).
+void __cdecl PerfLabBuildTex(void* tex) {
+    if (!g_m || !tex) return;
+    Metrics& m = *g_m;
+    auto x = reinterpret_cast<uintptr_t>(tex);
+    InterlockedIncrement64(&m.buildN);
+    if (*reinterpret_cast<const uint8_t*>(x + 0xE9) == 1) {
+        if (*reinterpret_cast<const uint8_t*>(x + 0xE4) == 1 && *reinterpret_cast<const uint32_t*>(x + 0x44) != 0) InterlockedIncrement64(&m.buildRequeueTpcRetained);
+        if (*reinterpret_cast<const uint32_t*>(x + 0x34) != 0) InterlockedIncrement64(&m.buildTpcCtrl);
+    }
+}
+
+// ---- M4: glFinish per texture upload (0x4265F5 call / 0x4265FB after; 0x4265FB also = every glImage call) ----
+void __cdecl PerfLabGlFinishPre() { if (g_m) g_m->glT0 = qpc(); }
+void __cdecl PerfLabGlImagePost() {
+    if (!g_m) return;
+    InterlockedIncrement64(&g_m->glImageN);
+    if (g_m->glT0) {
+        LONG64 d = qpc() - g_m->glT0; g_m->glT0 = 0;
+        InterlockedIncrement64(&g_m->glFinishN); InterlockedExchangeAdd64(&g_m->glFinishQpc, d); atomicMax(&g_m->glFinishMaxQpc, d);
+    }
+}
+
+// ---- M5: per-frame callers (counted; per-frame maxima taken at SwapBuffers) ----
+void __cdecl PerfLabBucketInsert() { if (g_m) InterlockedIncrement64(&g_m->bucketCalls); }   // 0x472630 map find-or-insert
+void __cdecl PerfLabActionBar() { if (g_m) InterlockedIncrement64(&g_m->actionBarCalls); }   // 0x74CFE0 action bar rebuild
+
+// ---- M6: PlayMovies 0x798820 entry / spin 0x798A87 ([EBP-0x20] = pump cut-off latch, [EBP-0x7C] = this) ----
+void __cdecl PerfLabMovieEnter() {
+    if (!g_m) return;
+    Metrics& m = *g_m;
+    if (m.movieCalls) InterlockedIncrement(&m.spinHist[lbucket(static_cast<uint64_t>(m.movieSpins - m.spins0), 24)]);   // previous call's spins
+    m.spins0 = m.movieSpins;
+    InterlockedIncrement64(&m.movieCalls);
+}
+void __cdecl PerfLabMovieSpin(int cutoff, void* self) {
+    if (!g_m) return;
+    InterlockedIncrement64(&g_m->movieSpins);
+    if (cutoff) {
+        g_m->cutoffSeen = 1;
+        saferead::beginScope();
+        int v = 0;
+        if (saferead::readAt(40, reinterpret_cast<uintptr_t>(self), 0x254, &v)) g_m->lastThis254 = v;
+    }
+}
+
+// Harness / manual: force a metrics snapshot on the helper thread.
+void __cdecl PerfLabMetricsNow() { InterlockedExchange(&g_snapNow, 1); }
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
@@ -376,7 +791,9 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
-        logf("perf-lab 0.1.1 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d", (unsigned)g_exeLo, (unsigned)g_exeHi, g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan);
+        { LARGE_INTEGER f; QueryPerformanceFrequency(&f); g_qpf = f.QuadPart ? f.QuadPart : 1; }
+        logf("perf-lab 0.2.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s", (unsigned)g_exeLo, (unsigned)g_exeHi,
+             g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF");
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
             g_pk = static_cast<uint32_t*>(VirtualAlloc(nullptr, PtrCap * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -396,6 +813,20 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
             if (fr) rHeapFree = reinterpret_cast<HeapFree_t>(o3);
             logf("IAT hooks: HeapAlloc=%d HeapReAlloc=%d HeapFree=%d (orig %p %p %p) tables: sites=%uKB ptrs=%uMB", a, r, fr, o1, o2, o3,
                  (unsigned)(sizeof(Site) * SiteCap >> 10), (unsigned)(PtrCap * 8 >> 20));
+        }
+        if (g_cfg.metrics) {
+            auto m = static_cast<Metrics*>(VirtualAlloc(nullptr, sizeof(Metrics), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+            if (!m) logf("metrics block allocation FAILED (%lu); metrics off", GetLastError());
+            else {
+                m->budgetMin = 0x7FFFFFFF;
+                void* o1 = nullptr; void* o2 = nullptr;
+                bool s = patchIat(exe, "GDI32.dll", "SwapBuffers", reinterpret_cast<void*>(hkSwapBuffers), &o1);
+                if (s) rSwap = reinterpret_cast<Swap_t>(o1);
+                bool g = patchIat(exe, "GLU32.dll", "gluBuild2DMipmaps", reinterpret_cast<void*>(hkGluBuild2DMipmaps), &o2);
+                if (g) rGluMip = reinterpret_cast<GluMip_t>(o2);
+                g_m = m;   // publish last: detours see NULL until everything is set
+                logf("metrics on: block=%uKB IAT SwapBuffers=%d gluBuild2DMipmaps=%d (orig %p %p) qpf=%lld", (unsigned)(sizeof(Metrics) >> 10), s, g, o1, o2, (long long)g_qpf);
+            }
         }
         g_on = true;
         HANDLE t = CreateThread(nullptr, 0, helper, nullptr, 0, nullptr);

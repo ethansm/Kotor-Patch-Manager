@@ -64,3 +64,9 @@ texture id. Operator delete is expected at 0x9196FD (verify).
 - Allocators: operator new 0x919723, new[] thunk 0x91D288, delete 0x9196FD (-> _free), delete[] thunk 0x91C6AA.
   `__security_check_cookie` = 0x9196EE. alloc_sites.tsv now includes new[] (operator_new_arr rows).
 - Some census a2 values are stale/mid-instruction (0x58444D, 0x45FFAB, 0x561445, 0x739981): cross-check a1.
+
+## Phase 3 questions (2026-09-30; batches T1-T4)
+- Output file `ROOT/findings/T<n>.md` only. Read `findings/R1..R9.md` for context first (R3 = textures, R1 = resman, R4 = saves, R7 = frame loop/movie) and do not re-derive what they verified.
+- Every verdict must be CONFIRMED / REFUTED / SPECULATIVE with the quoted evidence; an absent writer in a grep is NOT proof of no writer (lesson 168: check indirect writes via `this+off` and asm `[reg + off]`).
+- Indirect (vtable) callers: grep the .c files for `(**(code **)(*<var> + 0x<slot>))(` AND the .asm files for `CALL dword ptr [<reg> + 0x<slot>]`; decide the object's class from where the pointer comes from (quote it).
+- T1 must end with a one-line TX verdict: SAFE / SAFE WITH GUARD <guard> / UNSAFE <path>.

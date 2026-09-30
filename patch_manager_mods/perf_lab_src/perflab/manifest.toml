@@ -1,9 +1,9 @@
 [patch]
 id = "perf-lab"
 name = "Perf Lab"
-version = "0.1.1"
+version = "0.2.0"
 author = "local"
-description = "Diagnostics only (no gameplay change, inert unless perflab_debug.txt exists): allocation census via IAT hooks on the exe's HeapAlloc/HeapReAlloc/HeapFree (per-site live bytes, snapshots at load-screen edges); writes perflab_*.txt. Research program: patch_manager_mods/10_engine_optimization_research.md."
+description = "Diagnostics (inert unless perflab_debug.txt exists): allocation census via IAT hooks on HeapAlloc/HeapReAlloc/HeapFree; metrics=1 adds the measurement pack M1-M7 (resman by restype, async-wait time, GetImage after upload, glFinish/mipmap time, frame-time histogram, movie spin, engine globals) and vq=1 an address-space census, all written to perflab_*.txt. Flag-gated experiments, off by default: tx=1 (free TPC images after GL upload) and g1skip=1 (skip glFinish per texture upload). Research program: patch_manager_mods/10_engine_optimization_research.md."
 
 requires = []
 conflicts = []

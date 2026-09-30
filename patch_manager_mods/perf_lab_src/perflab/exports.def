@@ -3,3 +3,20 @@ EXPORTS
     PerfLabTick
     PerfLabSnapshot
     PerfLabStats
+    PerfLabResMalloc
+    PerfLabResEvict
+    PerfLabResFreeData
+    PerfLabResRelease
+    PerfLabResDemand
+    PerfLabWaitBegin
+    PerfLabWaitSleep
+    PerfLabWaitEnd
+    PerfLabGetImage
+    PerfLabBuildTex
+    PerfLabGlFinishPre
+    PerfLabGlImagePost
+    PerfLabBucketInsert
+    PerfLabActionBar
+    PerfLabMovieEnter
+    PerfLabMovieSpin
+    PerfLabMetricsNow
