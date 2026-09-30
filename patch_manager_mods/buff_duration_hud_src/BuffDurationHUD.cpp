@@ -255,10 +255,13 @@ void probeEffects(int slotPtr, int creature) {
 constexpr float BarShiftFraction = 0.328f;            // opaque x-span of uibit_bar_vp_p (0.445..0.773) = 0.328 of the rect
 const float TrackTint[3] = { 0.051f, 0.349f, 0.271f }; // the engine's empty-track teal
 constexpr int MaxSegments = 3;
+const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left, outline-free right edge (scripts/gen_shield_bar_art.py)
+const char* const HealthSquareTexture = "uibit_bar_vp_sq"; // health bar with a squared, outline-free left edge
+constexpr int Slot_VitBarOffset = 0x690, Bar_Border1Offset = 0x6c, Bar_Border2Offset = 0xe4, BorderVtable = 0x009875bc;
 constexpr int Eff_Pool = 0x02, Eff_Visual = 0x1e;
 #define HEX(r, g, b) { r / 255.0f, g / 255.0f, b / 255.0f }
 struct Pool { int eff; int remaining; int max; const float* rgb; };
-struct MaxRec { int creature, eff, max, stamp, lastLogged; };
+struct MaxRec { int creature, eff, max, stamp, lastLogged, spell, last; };
 MaxRec g_max[64];
 int g_maxStamp = 0;
 
@@ -293,9 +296,12 @@ int collectPools(int creature, Pool* out, int maxOut) {
         }
         MaxRec* m = nullptr; MaxRec* freeSlot = nullptr;
         for (auto& r : g_max) { if (r.creature == creature && r.eff == eff) { m = &r; break; } if (!freeSlot && r.stamp < g_maxStamp - 300) freeSlot = &r; }
-        if (!m && freeSlot) { m = freeSlot; *m = { creature, eff, remaining, 0, -1 }; }
+        if (!m && freeSlot) { m = freeSlot; *m = { creature, eff, remaining, 0, -1, spell, remaining }; }
         int mx = remaining;
-        if (m) { if (remaining > m->max) m->max = remaining; m->stamp = g_maxStamp; mx = m->max; }
+        if (m) {                                               // effect objects get reused: a pool never refills, so a bigger
+            if (m->spell != spell || remaining > m->last) m->max = remaining;   // value or another spell = a NEW shield
+            m->spell = spell; m->last = remaining; m->stamp = g_maxStamp; mx = m->max;
+        }
         out[n++] = { eff, remaining, mx, shieldColor(vfx, flags) };
         if (m && m->lastLogged != remaining) {
             m->lastLogged = remaining;
@@ -305,11 +311,38 @@ int collectPools(int creature, Pool* out, int maxOut) {
     return n;
 }
 
+
+// While a creature has a shield, the health bar's two borders (track + fill) draw a squared-left texture so the shield
+// bar and the health bar read as one bar. Swapped just before the engine draws (UpdatePortraits snapshot), restored
+// right after (our slot hook), so the engine never keeps our image pointer.
+struct SwapRec { int slot; int b[2]; int orig[2]; bool active; };
+SwapRec g_swap[4];
+void swapHealthBar(int slotPtr, bool on) {
+    SwapRec* r = nullptr;
+    for (auto& e : g_swap) if (e.slot == slotPtr) { r = &e; break; }
+    if (!r) { if (!on) return; for (auto& e : g_swap) if (e.slot == 0) { r = &e; e.slot = slotPtr; break; } }
+    if (!r || r->active == on) return;
+    if (on) {
+        void* img = imageFor(HealthSquareTexture);
+        if (!img) return;
+        int bar = slotPtr + Slot_VitBarOffset, bs[2] = { bar + Bar_Border1Offset, bar + Bar_Border2Offset }, vt[2], cur[2];
+        for (int k = 0; k < 2; ++k)
+            if (!readAt(bs[k], 0, &vt[k]) || vt[k] != BorderVtable || !readAt(bs[k], Border_FillImageOffset, &cur[k]) || !cur[k]) return;
+        for (int k = 0; k < 2; ++k) { r->b[k] = bs[k]; r->orig[k] = cur[k]; *reinterpret_cast<void**>(bs[k] + Border_FillImageOffset) = img; }
+        r->active = true;
+        probeLog("SWAP on slot=%08x", slotPtr);
+    } else {
+        for (int k = 0; k < 2; ++k) *reinterpret_cast<int*>(r->b[k] + Border_FillImageOffset) = r->orig[k];
+        r->active = false;
+        probeLog("SWAP off slot=%08x", slotPtr);
+    }
+}
+
 int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
     Pool pools[8];
     int n = collectPools(creature, pools, 8);
     if (n <= 0) return 0;
-    void* image = imageFor("uibit_bar_vp_p");
+    void* image = imageFor(ShieldBarTexture);
     if (!image) return -1;
     if (n > MaxSegments) {                                     // merge extras into the last segment
         for (int i = MaxSegments; i < n; ++i) { pools[MaxSegments - 1].remaining += pools[i].remaining; pools[MaxSegments - 1].max += pools[i].max; }
@@ -353,6 +386,7 @@ extern "C" {
 void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
     static int n = 0; if (n < 60) { ++n; logf("snapshot slot=%08x creature=%08x", slotPtr, creaturePtr); }
     if (g_probe && creaturePtr) probeEffects(slotPtr, creaturePtr);
+    if (creaturePtr) { Pool tmp[8]; swapHealthBar(slotPtr, collectPools(creaturePtr, tmp, 8) > 0); }
     for (auto& e : g_slots) if (e.slotPtr == slotPtr) { e.creaturePtr = creaturePtr; return; }
     for (auto& e : g_slots) if (e.slotPtr == 0) { e = { slotPtr, creaturePtr }; return; }
 }
@@ -493,7 +527,7 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
 // [ebp+0xc] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
 // after the panel controls drew and independent of the engine's arrow counts.
 void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
-    if (!g_probe) return;
+    swapHealthBar(slotPtr, false);              // engine has drawn: put the health bar's own texture back
     if (g_firstSlot == 0) g_firstSlot = slotPtr;
     if (slotPtr == g_firstSlot) ++g_frame;
     int creature = creatureForSlot(slotPtr);
