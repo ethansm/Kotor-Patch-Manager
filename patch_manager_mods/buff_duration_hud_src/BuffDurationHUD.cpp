@@ -249,6 +249,107 @@ void probeEffects(int slotPtr, int creature) {
     cr->primed = true;
 }
 
+
+// ---- Shield bar drawing (probe2): the vitality bar's own curved texture, tinted per pool ----
+constexpr float BarShiftFraction = 0.328f;            // opaque x-span of uibit_bar_vp_p (0.445..0.773) = 0.328 of the rect
+const float TrackTint[3] = { 0.051f, 0.349f, 0.271f }; // the engine's empty-track teal
+constexpr int MaxSegments = 3;
+constexpr int Eff_Pool = 0x02, Eff_Visual = 0x1e;
+struct ShieldColorRow { int vfx; float rgb[3]; };
+#define HEX(r, g, b) { r / 255.0f, g / 255.0f, b / 255.0f }
+const ShieldColorRow kShieldColors[] = {
+    { 2040, HEX(0x4C, 0xAC, 0xFF) }, { 2044, HEX(0x7C, 0xFF, 0xC7) }, { 2045, HEX(0xFF, 0x0A, 0x0A) },
+    { 2041, HEX(0x38, 0x5E, 0xFF) }, { 2047, HEX(0xDD, 0x92, 0xFF) }, { 2048, HEX(0xCE, 0x63, 0xFF) },
+    { 2042, HEX(0x64, 0x73, 0xFF) }, { 2043, HEX(0x0D, 0x0C, 0xFF) }, { 2046, HEX(0xFF, 0x9B, 0x24) },
+    { 2060, HEX(0xFF, 0x45, 0x0B) },
+};
+struct Pool { int eff; int remaining; int max; const float* rgb; };
+struct MaxRec { int creature, eff, max, stamp, lastLogged; };
+MaxRec g_max[64];
+int g_maxStamp = 0;
+
+const float* shieldColor(int vfx, int damageFlags) {
+    for (const auto& r : kShieldColors) if (r.vfx == vfx) return r.rgb;
+    static const float red[3] = HEX(0xFF, 0x0A, 0x0A), blue[3] = HEX(0x4C, 0xAC, 0xFF);
+    return (damageFlags & (2048 | 1024)) ? blue : red;    // ion/sonic coverage = enviro blue, else energy red
+}
+
+// type-0x02 sub&8 effects = shield pools (remaining = ints[2]); colour key = sibling type-0x1e ints[0]
+int collectPools(int creature, Pool* out, int maxOut) {
+    int arr = 0, count = 0;
+    if (!readAt(creature, Creature_EffectArrayOffset, &arr) || !readAt(creature, Creature_EffectCountOffset, &count)) return 0;
+    if (arr == 0 || count <= 0 || count > MaxEffects) return 0;
+    ++g_maxStamp;
+    int n = 0;
+    for (int i = 0; i < count && n < maxOut; ++i) {
+        int eff = 0; unsigned short type = 0, sub = 0;
+        if (!readAt(arr, i * 4, &eff) || !eff || !readAt(eff, 0x8, &type) || !readAt(eff, 0xa, &sub)) continue;
+        if (type != Eff_Pool || !(sub & 8)) continue;
+        int ip = 0, cnt = 0, spell = 0;
+        if (!readAt(eff, 0x30, &cnt) || cnt < 3 || !readAt(eff, 0x34, &ip) || !ip || !readAt(eff, Effect_SpellIdOffset, &spell)) continue;
+        int flags = 0, remaining = 0;
+        if (!readAt(ip, 0, &flags) || !readAt(ip, 8, &remaining) || remaining <= 0) continue;
+        int vfx = 0;
+        for (int k = 0; k < count; ++k) {
+            int e2 = 0; unsigned short t2 = 0; int sp2 = 0, ip2 = 0;
+            if (!readAt(arr, k * 4, &e2) || !e2 || !readAt(e2, 0x8, &t2) || t2 != Eff_Visual) continue;
+            if (!readAt(e2, Effect_SpellIdOffset, &sp2) || sp2 != spell || !readAt(e2, 0x34, &ip2) || !ip2) continue;
+            readAt(ip2, 0, &vfx); break;
+        }
+        MaxRec* m = nullptr; MaxRec* freeSlot = nullptr;
+        for (auto& r : g_max) { if (r.creature == creature && r.eff == eff) { m = &r; break; } if (!freeSlot && r.stamp < g_maxStamp - 300) freeSlot = &r; }
+        if (!m && freeSlot) { m = freeSlot; *m = { creature, eff, remaining, 0, -1 }; }
+        int mx = remaining;
+        if (m) { if (remaining > m->max) m->max = remaining; m->stamp = g_maxStamp; mx = m->max; }
+        out[n++] = { eff, remaining, mx, shieldColor(vfx, flags) };
+        if (m && m->lastLogged != remaining) {
+            m->lastLogged = remaining;
+            probeLog("POOL c=%08x e=%08x spell=%d vfx=%d flags=%d remaining=%d max=%d", creature, eff, spell, vfx, flags, remaining, mx);
+        }
+    }
+    return n;
+}
+
+void DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
+    Pool pools[8];
+    int n = collectPools(creature, pools, 8);
+    if (n <= 0) return;
+    void* image = imageFor("uibit_bar_vp_p");
+    if (!image) return;
+    if (n > MaxSegments) {                                     // merge extras into the last segment
+        for (int i = MaxSegments; i < n; ++i) { pools[MaxSegments - 1].remaining += pools[i].remaining; pools[MaxSegments - 1].max += pools[i].max; }
+        n = MaxSegments;
+    }
+    int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
+    int W = vw, H = vh;
+    int x = vx - int(BarShiftFraction * vw + 0.5f) - gap, y = vy;
+    long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
+    if (total < 1) return;
+    float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
+    auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
+    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
+    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
+    auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
+        (*reinterpret_cast<void***>(image))[6]);
+    flush(flushArg);
+    draw(image, x, y, W, H, 0, 0, TrackTint, 1.0f);            // empty track, full rect
+    int baseUp = 0;                                            // px of bar height already used, from the bottom
+    for (int i = 0; i < n; ++i) {
+        int segH = int(double(H) * pools[i].max / total + 0.5);
+        int fillH = int(double(H) * pools[i].remaining / total + 0.5);
+        if (fillH > segH) fillH = segH;
+        if (fillH > 0) {
+            int y0 = y + H - baseUp - fillH;
+            if (pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f)) {
+                draw(image, 0, -(y0 - y), W, H, 0, 0, pools[i].rgb, 1.0f);
+                popClip();
+            }
+        }
+        baseUp += segH;
+    }
+    flush(flushArg);
+}
+
 } // namespace
 
 extern "C" {
@@ -419,23 +520,7 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     }
     if (!creature || vit[2] < 1 || vit[2] > 400 || vit[3] < 1 || vit[3] > 400) return;
 
-    int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
-    int W = int(vit[2] * 0.30f + 0.5f); if (W < 1) W = 1;      // the visible vitality bar is ~30% of its rect
-    int H = vit[3];
-    int visLeft = vit[0] + int(vit[2] * 0.47f + 0.5f);          // bar art has ~47% transparent padding on the left
-    float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
-    auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
-    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
-    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
-    static const float cyan[3] = { 0.298f, 0.675f, 1.0f }, lighter[3] = { 0.66f, 0.82f, 1.0f };
-    flush(flushArg);
-    int bx = visLeft - gap - W, by = vit[1];
-    int th = W / 6; if (th < 2) th = 2;                                  // thick outline like the vitality/Force bars
-    auto fill = [&](int x, int y, int w, int h, const float* c, float a) { if (w > 0 && h > 0 && pushClip(x, y, w, h, c, 0, a)) popClip(); };
-    fill(bx, by, W, H, cyan, 1.0f);                                      // outline (full color)
-    fill(bx + th, by + th, W - 2 * th, H - 2 * th, lighter, 0.55f);      // lighter inner fill
-    { static int once = 0; if (once++ == 0) probeLog("STYLE W=%d H=%d th=%d bx=%d by=%d", W, H, th, bx, by); }
-    flush(flushArg);
+    DrawShieldPools(creature, vit[0], vit[1], vit[2], vit[3], scale);
 }
 
 } // extern "C"
