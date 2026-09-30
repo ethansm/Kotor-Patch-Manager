@@ -469,3 +469,10 @@ game/load (log `H3 build:` again, no crash); calibrate position from a screensho
 tests in dialogue/inventory/pause; only then `Invoke=1`.
 
 **Phase F review (Opus, session 3): no crash-class defect.** Hook site, conventions, 0x148 size, lifecycle (HUD destroyed+recreated on load; panel dtor never touches list entries) all verified. Fixed: (1) wrong-ID path left a visible unmanaged label -> now hidden+click-through before the ID check, script refuses unless IDs start at 111; (2) hit-test claim corrected, bit5 set; (3) `--rollback` now picks the newest backup without LBL_HOTBAR*; (5) a partial build no longer disables bound buttons; (4) shared-image ownership invariant documented in code. Left as-is: dim only affects the border alpha (digit stays bright); `resolve()` re-reads groups per button.
+
+## Live results, 0.2.0-dev buttons (2026-09-29 ~23:36, first run; installed via helper, game launched by the user)
+- **Works.** Hook 3 fired once (`H3 build: panel=04912538 controls=111`), all 10 labels constructed/bound with IDs 111-120, panel list 111 -> 121, list slots verified. Rects in pixels: `[31+80i, 1328, 74, 74]` (= 12/42/.. units x 2.667, y 498 -> 1328), so the row is 74 px squares at the left edge above the bar, as designed.
+- Screenshot: slot 1 shows the Force Speed icon (`ip_speedburst`, teal chevrons) with the digit `1` top-left, above the native action bar. Only Bottom1 is bound in the INI, other buttons correctly hidden (`unbound`).
+- The button hides ("entry not available") when the controlled character lacks the bound action (companions have no Force Speed) and returns on switching back -- expected from the Default profile.
+- Bound digit `1` was swallowed and resolved (`Invoke=0`). No crash across character switching; no load/new-game HUD rebuild has been exercised yet (only one `H3 build` in the log).
+- Still to test: dialogue/inventory/pause digits, save/load (second `H3 build`), click-through/hover over the row, more bound slots + dimming, then `Invoke=1`.
