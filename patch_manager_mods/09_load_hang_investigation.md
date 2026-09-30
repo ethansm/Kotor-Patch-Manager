@@ -1,6 +1,6 @@
 # 09 -- Intermittent load-time hang (Proton / Patch Manager): investigation brief
 
-**Status (2026-09-29): OPEN, UNATTRIBUTED. Deliberately split out of the Buff Duration HUD work so it gets its own session.** This document is the hand-off: symptom, every incident so far, what the logs do and do not show, what has been ruled out, ranked hypotheses, and a concrete experiment plan with the capture procedure that was missing every time. Companion file: `CRASH_INVESTIGATION.md` (per-incident narratives, dated 2026-09-28 / 09-29). Skill: `kotor2-crash-triage`.
+**Status (2026-09-29 late): OPEN -- REFRAMED by section 9: the "hang" is a `CSWGuiLoadScreen` that is never dismissed while the main thread keeps rendering; the `IsBadReadPtr` burst is attributed (Force Power Hotbar first-tick scan, benign). Earlier status: OPEN, UNATTRIBUTED. Deliberately split out of the Buff Duration HUD work so it gets its own session.** This document is the hand-off: symptom, every incident so far, what the logs do and do not show, what has been ruled out, ranked hypotheses, and a concrete experiment plan with the capture procedure that was missing every time. Companion file: `CRASH_INVESTIGATION.md` (per-incident narratives, dated 2026-09-28 / 09-29). Skill: `kotor2-crash-triage`.
 
 ## 1. Symptom
 
@@ -103,3 +103,29 @@ Remove/relax `taskset` (a 2-thread affinity on one core is a large performance a
 - Blame the newest patch by default (see incidents 1-4).
 - Kill anything but the `^S:.*swkotor2\.exe` PID (see the triage skill), and don't drop the capture step first.
 - Reinstall patches just to restart (`KPatchLauncher` with `--patches` uninstalls all first; plain `KPatchLauncher <exe>` keeps the current install).
+
+## 9. Engine bad-pointer map + what hang #8 really was (2026-09-29, Ghidra + mod logs)
+
+**9a. The engine does not probe pointers.** `ImportCallers.java` over `swkotor2.exe`: no import of `IsBadReadPtr`, `IsBadCodePtr`, `IsBadStringPtr*`, `VirtualQuery` or `AddVectoredExceptionHandler`. `IsBadWritePtr` has one user (`FUN_00555d00`, re-allocates a 0x2000 scratch buffer). SEH frames exist only in the MSVC CRT (66 functions via `__SEH_prolog4`/`_except_handler4`); the `ExceptionList` pushes in game decompiles are C++ destructor unwinding. So the game tolerates no garbage pointers at all, and **every `IsBadReadPtr` fault in a Proton log comes from a loaded DLL**. In the live set only three import it (`objdump -p`): `buff-duration-hud`, `force-power-hotbar`, `inventory-3d-viewport`.
+
+| Engine function | Address | Garbage tolerated | How |
+|---|---|---|---|
+| scratch-buffer reset | `0x00555D00` | stale/unwritable `this+0x274` buffer | `IsBadWritePtr(buf,0x2000)` -> allocate new |
+| server `GetGameObject(id)` | `0x0051C0A0` -> `0x0053DFB0` | stale / invalid object ids (`0x7F000000`) | table lookup by id; returns 0, never dereferences a raw pointer |
+| typed object lookup (`GetItemByObjectId` 0x51C0E0) | `0x00537B00` | wrong-type ids | checks the object's type tag before use |
+| client object by id | `0x0073F550` -> `0x0078BDF0` | stale ids | same pattern, client side (used by `GetPlayerClientCreature` 0x78CEE0) |
+| everything else | -- | nothing | raw derefs |
+
+**Safe resolution API for mods:** cache the **object id** (`obj+4`), not the raw pointer, and re-resolve with `0x0051C0A0(id)` (server) when you need the object, or at least validate a cached pointer by (a) `probeRead` of the vtable slot, (b) vtable equals the expected class vtable (`CSWCCreature` `0x0099EE14`, `CSWSObject` family `0x0099450C`), (c) `*(ptr+4) == cachedId`.
+
+**9b. The burst is attributed and benign.** Wine's `IsBadReadPtr` fault dump has `eax = ptr`, `edx = size` (proof: the `7FFFFFFF` probe faulted at `80000004` = `p[size-1]` with `edx=6`). The eight sizes (5,1,1,2,1,16,1,6) are CExoString lengths: `ForcePowerHotbar.cpp` `readCExoString` (`IsBadReadPtr(p, len)`) scanning the controlled creature for inline strings on the hotbar's **first HUD tick**; the hotbar log line `scan controlled obj=12a889c0 vt=0099ee14` has the same tick (`2602456747` vs Proton `2602456.747`). It runs once per new controlled character, in healthy runs too (the healthy 21:50 run had a newer hotbar build without the fault pattern). **Not the hang.** The stale-pointer hypothesis of section 3b is withdrawn for the burst (the Buff HUD fix below is kept as hardening only).
+
+**9c. What hang #8 was.** The same hotbar log shows `HotbarHudTick` (hook on `CSWGuiMainInterface::Draw` 0x74B3F0) running at ~60 fps for 32 s (frames 1..1860) after the burst, until the kill -- **the main thread was not stuck; it was rendering.** The first tick logged `gate: inactive (modal open)` with `modal[0]=02ca1f40 vt=009a5c84` = **`CSWGuiLoadScreen`** (RTTI). The only other run whose first HUD tick saw that modal is the 19:37 run (`force_power_hotbar_log.build2.txt`, ~60 fps until killed, likely incident 7). Every healthy run's first tick sees `hud on top`. => **The load finished far enough to render the world and HUD (the "ghost" under the load screen), but `HideLoadScreen` was never called.** 50% CPU = normal rendering. Esc works because the main loop is alive.
+
+**9d. Where the load screen is dismissed** (`CClientExoAppInternal`, `internal = *(*(*(0x00A1B4A4)+4)+4)`; load screen at `internal+0x278`, GUI manager `+0x274`):
+- `ShowLoadScreen` `0x00798190`, `HideLoadScreen` `0x007983E0`, `GetLoadScreenVisible` `0x00798540` (GOG->Steam delta +0x353A40).
+- `CClientExoAppInternal::MainLoop` `0x00781BE0` area-finish block: `if (internal+0x288 && internal+0x18 && GetPlayerClientCreature()) { if (!flag(*(internal+0x48)+0x268) && internal+0x338 != 0x7F000000) ProcessPendingPartySwap() else { PlayMovies (busy-wait); Hide...; } }`. `+0x288` is set to 1 when the server module state `*(*(app+0x14)+4)` is 1 or 3. `GetPlayerClientCreature` `0x0078CEE0` resolves the player object id `internal+0x20` (cached at `+0x3BC/+0x3C0`).
+- Other `Hide` callers go through the `CClientExoApp` wrapper `0x0073FF50` (called from `0x00534600`, `0x007D1530`, `0x0068E720`, `0x00857490`, `0x008FA550`).
+- So the stuck condition is one of: `+0x288` never set (server never reports ready), `+0x18` zero, player creature id unresolvable on the client, or a party swap id in `+0x338` that never clears. The watchdog (section 10) logs exactly these fields while a load screen is up.
+
+**9e. Engine-side candidate (write-up only, not implemented):** `PlayMovies` `0x00798820` busy-waits `while (IsMoviePlaying()==1)` with a message pump only every 500 iterations and no sleep -> 100% of a core while a Bink movie plays, and a permanent spin if a movie never reports done. Not matched to hang #8 (frames kept rendering), but a real hang shape; a safe patch would pump + `Sleep(1)` each iteration. Needs the user's go-ahead.
