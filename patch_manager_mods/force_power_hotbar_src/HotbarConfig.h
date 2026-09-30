@@ -113,6 +113,7 @@ struct Profile {
 struct General {
     int invoke = 0;               // 0 = log only, 1 = really invoke
     int verbose = 1;
+    int autoFill = 1;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order
     int keyboardDevice = -1;      // -1 = read the engine's constant (0x0099C884)
     int creatureTagOffset = 0;    // 0 = unknown -> characterKey falls back to the object id
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
@@ -186,6 +187,7 @@ struct Config {
                 if (k == "schemaversion") { /* validated on Save only */ }
                 else if (k == "invoke") general.invoke = atoi(val.c_str());
                 else if (k == "verbose") general.verbose = atoi(val.c_str());
+                else if (k == "autofill") general.autoFill = atoi(val.c_str());
                 else if (k == "keyboarddevice") general.keyboardDevice = atoi(val.c_str());
                 else if (k == "creaturetagoffset") general.creatureTagOffset = (int)strtol(val.c_str(), nullptr, 0);
                 else general.extra[key] = val;
@@ -214,6 +216,7 @@ struct Config {
         snprintf(b, sizeof b, "SchemaVersion=%d\n", SchemaVersion); o += b;
         snprintf(b, sizeof b, "Invoke=%d\n", general.invoke); o += b;
         snprintf(b, sizeof b, "Verbose=%d\n", general.verbose); o += b;
+        snprintf(b, sizeof b, "AutoFill=%d\n", general.autoFill); o += b;
         if (general.keyboardDevice >= 0) { snprintf(b, sizeof b, "KeyboardDevice=%d\n", general.keyboardDevice); o += b; }
         if (general.creatureTagOffset) { snprintf(b, sizeof b, "CreatureTagOffset=0x%x\n", general.creatureTagOffset); o += b; }
         for (auto& kv : general.extra) o += kv.first + "=" + kv.second + "\n";

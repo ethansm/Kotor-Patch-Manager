@@ -242,9 +242,13 @@ void writeTemplateIni() {
     logf("cfg: wrote template %s", IniPath);
 }
 
+// Effective Bottom row (row 0): the configured binding, else (AutoFill=1) the character's next known power not bound elsewhere on the bar.
+hb::ActionRef g_eff[hb::Slots]; bool g_effAuto[hb::Slots]; unsigned g_effHash = 0;
+
 void recomputeBound() {
     int bound = 0;
     for (int r = 0; r < hb::Rows; ++r) for (int s = 0; s < hb::Slots; ++s) {
+        if (r == 0 && g_cfg.general.autoFill) continue;   // owned by refreshEffective
         hb::ActionRef a = g_cfg.slotFor(g_charKey, r, s);
         g_slotBound[r][s] = !a.empty(); if (!a.empty()) ++bound;
     }
@@ -252,6 +256,33 @@ void recomputeBound() {
     if (g_cfg.general.verbose) for (int r = 0; r < hb::Rows; ++r) for (int s = 0; s < hb::Slots; ++s) {
         hb::ActionRef a = g_cfg.slotFor(g_charKey, r, s);
         if (!a.empty()) logf("    %s = %s", hb::SlotKeyName(r, s).c_str(), hb::Format(a).c_str());
+    }
+}
+
+void refreshEffective(uintptr_t hud) {
+    std::vector<hb::ActionRef> explicitRefs;
+    for (int i = 0; i < hb::Slots; ++i) { hb::ActionRef a = g_cfg.slotFor(g_charKey, 0, i); if (!a.empty()) explicitRefs.push_back(a); }
+    std::vector<hb::ActionRef> autos;
+    if (g_cfg.general.autoFill) {
+        std::vector<Entry> es; readGroup(hud, 0, &es);
+        for (auto& e : es) {
+            if ((e.key & 0x40000000) || !(e.key & 0x20000000)) continue;   // known Force powers only (no items, no mode toggles)
+            bool dup = false; for (auto& x : explicitRefs) if (hb::Same(x, e.ref)) dup = true;
+            if (!dup) autos.push_back(e.ref);
+        }
+    }
+    size_t next = 0; unsigned h = 2166136261u; int nAuto = 0;
+    for (int s = 0; s < hb::Slots; ++s) {
+        hb::ActionRef a = g_cfg.slotFor(g_charKey, 0, s); bool isAuto = false;
+        if (a.empty() && next < autos.size()) { a = autos[next++]; isAuto = true; ++nAuto; }
+        g_eff[s] = a; g_effAuto[s] = isAuto; g_slotBound[0][s] = !a.empty();
+        h = (h ^ (unsigned)hb::Format(a).size() ^ ((unsigned)a.id << 8) ^ (isAuto ? 0x5000000u : 0)) * 16777619u;
+        for (char c : hb::Format(a)) h = (h ^ (unsigned char)c) * 16777619u;
+    }
+    if (h != g_effHash) {
+        g_effHash = h;
+        logf("eff: character '%s' autofill=%d explicit=%d auto=%d", g_charKey.c_str(), g_cfg.general.autoFill, (int)explicitRefs.size(), nAuto);
+        for (int s = 0; s < hb::Slots; ++s) if (!g_eff[s].empty()) logf("    Bottom%c = %s%s", "1234567890"[s], hb::Format(g_eff[s]).c_str(), g_effAuto[s] ? " (auto)" : "");
     }
 }
 
@@ -336,7 +367,7 @@ void invokeEntry(uintptr_t hud, const Entry& e) {
 void drainRing(uintptr_t hud) {
     while (g_ringTail != g_ringHead) {
         Req r = g_ring[g_ringTail]; g_ringTail = (g_ringTail + 1) % 16;
-        hb::ActionRef a = g_cfg.slotFor(g_charKey, r.row, r.slot);
+        hb::ActionRef a = r.row == 0 ? g_eff[r.slot] : g_cfg.slotFor(g_charKey, r.row, r.slot);
         std::string sk = hb::SlotKeyName(r.row, r.slot);
         if (a.empty()) { logf("slot %s: unbound now (config changed?)", sk.c_str()); continue; }
         Entry e;
@@ -594,7 +625,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         if (!b.bg.ctl && !b.ic.ctl) continue;
         if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); continue; }
         // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
-        hb::ActionRef want = g_cfg.slotFor(g_charKey, 0, s);
+        hb::ActionRef want = g_eff[s];
         Entry e; const char* state; bool have = false;
         if (want.empty()) state = "unbound";
         else if (!resolve(hud, want, &e)) state = "entry not available";
@@ -730,6 +761,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
         std::string k = computeCharacterKey();
         if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; recomputeBound(); }
     }
+    if (g_frame % ButtonRefreshFrames == 1 || g_frame == 2) refreshEffective(hud);
     probe(hud, g_frame == 60);
     updateButtons(hud, gate);
     updateHover(gate);
