@@ -86,11 +86,13 @@ void logf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
 }
-void dlogf(const char* fmt, ...) {  // debug-only
-    if (!g_debug || g_logLines >= MaxLogLines) return;
+int g_dbgLines = 0;
+constexpr int MaxDebugLines = 6000;
+void dlogf(const char* fmt, ...) {  // debug-only, own cap so it cannot starve the bind/error/drag lines
+    if (!g_debug || g_dbgLines >= MaxDebugLines) return;
     FILE* f = fopen("inv3d_log.txt", "a");
     if (!f) return;
-    ++g_logLines;
+    ++g_dbgLines;
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
 }
@@ -144,7 +146,7 @@ bool parseFloats(const char* v, float* out, int n) {
     const char* p = v;
     for (int i = 0; i < n; ++i) {
         char* e; out[i] = strtof(p, &e);
-        if (e == p) return false;
+        if (e == p || !isfinite(out[i])) return false;
         p = e; while (*p && isspace((unsigned char)*p)) ++p;
         if (i < n - 1) { if (*p != ',') return false; ++p; }
     }
@@ -167,30 +169,32 @@ void loadIni() {
         if (!line[0] || line[0] == '#' || line[0] == ';') continue;
         char* eq = strchr(line, '=');
         if (!eq) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
-        *eq = 0; char* k = line; char* v = eq + 1; trim(k); trim(v);
+        *eq = 0; char* k = line; char* v = eq + 1;
+        for (char* cm = v; *cm; ++cm) if (*cm == ';' || *cm == '#') { *cm = 0; break; }  // inline comment
+        trim(k); trim(v);
         for (char* p = k; *p; ++p) *p = (char)tolower((unsigned char)*p);
         float a[6]; bool good = true;
-        if (!strcmp(k, "enabled")) good = parseFloats(v, a, 1), c.enabled = (int)a[0];
+        if (!strcmp(k, "enabled")) { good = parseFloats(v, a, 1); if (good) c.enabled = (int)a[0]; }
         else if (!strcmp(k, "rig")) { if (v[0] && strlen(v) < sizeof(c.rig)) strcpy(c.rig, v); else good = false; }
-        else if (!strcmp(k, "only_weapons_armor")) good = parseFloats(v, a, 1), c.onlyWeaponsArmor = (int)a[0];
-        else if (!strcmp(k, "spin_deg_s")) good = parseFloats(v, a, 1), c.spin = a[0];
-        else if (!strcmp(k, "drag_deg_per_px")) good = parseFloats(v, a, 1), c.dragDegPx = a[0];
-        else if (!strcmp(k, "pitch_clamp")) good = parseFloats(v, a, 1), c.pitchClamp = a[0];
-        else if (!strcmp(k, "idle_resume_s")) good = parseFloats(v, a, 1), c.idleResume = a[0];
+        else if (!strcmp(k, "only_weapons_armor")) { good = parseFloats(v, a, 1); if (good) c.onlyWeaponsArmor = (int)a[0]; }
+        else if (!strcmp(k, "spin_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spin = a[0]; }
+        else if (!strcmp(k, "drag_deg_per_px")) { good = parseFloats(v, a, 1); if (good) c.dragDegPx = a[0]; }
+        else if (!strcmp(k, "pitch_clamp")) { good = parseFloats(v, a, 1); if (good) c.pitchClamp = a[0]; }
+        else if (!strcmp(k, "idle_resume_s")) { good = parseFloats(v, a, 1); if (good) c.idleResume = a[0]; }
         else if (!strcmp(k, "fit_mode")) { if (!_stricmp(v, "distance")) c.fitScale = 0; else if (!_stricmp(v, "scale")) c.fitScale = 1; else good = false; }
-        else if (!strcmp(k, "fit_margin")) good = parseFloats(v, a, 1), c.margin = a[0];
-        else if (!strcmp(k, "dist_min")) good = parseFloats(v, a, 1), c.distMin = a[0];
-        else if (!strcmp(k, "dist_max")) good = parseFloats(v, a, 1), c.distMax = a[0];
-        else if (!strcmp(k, "fov_deg")) good = parseFloats(v, a, 1), c.fov = a[0];
+        else if (!strcmp(k, "fit_margin")) { good = parseFloats(v, a, 1); if (good) c.margin = a[0]; }
+        else if (!strcmp(k, "dist_min")) { good = parseFloats(v, a, 1); if (good) c.distMin = a[0]; }
+        else if (!strcmp(k, "dist_max")) { good = parseFloats(v, a, 1); if (good) c.distMax = a[0]; }
+        else if (!strcmp(k, "fov_deg")) { good = parseFloats(v, a, 1); if (good) c.fov = a[0]; }
         else if (!strcmp(k, "fov_axis")) { if (!_stricmp(v, "v")) c.fovAxis = 'v'; else if (!_stricmp(v, "h")) c.fovAxis = 'h'; else good = false; }
         else if (!strcmp(k, "cam_pos")) { good = parseFloats(v, a, 3); if (good) memcpy(c.camPos, a, 12); }
         else if (!strcmp(k, "cam_fwd")) { good = parseFloats(v, a, 3); if (good) memcpy(c.camFwd, a, 12); }
         else if (!strcmp(k, "cam_up")) { good = parseFloats(v, a, 3); if (good) memcpy(c.camUp, a, 12); }
         else if (!strcmp(k, "armor_box")) { good = parseFloats(v, a, 6); if (good) memcpy(c.armorBox, a, 24); }
-        else if (!strcmp(k, "armor_spin")) good = parseFloats(v, a, 1), c.armorSpin = (int)a[0];
-        else if (!strcmp(k, "hit_flip_y")) good = parseFloats(v, a, 1), c.hitFlipY = (int)a[0];
-        else if (!strcmp(k, "screen_w")) good = parseFloats(v, a, 1), c.screenW = a[0];
-        else if (!strcmp(k, "screen_h")) good = parseFloats(v, a, 1), c.screenH = a[0];
+        else if (!strcmp(k, "armor_spin")) { good = parseFloats(v, a, 1); if (good) c.armorSpin = (int)a[0]; }
+        else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
+        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) c.screenW = a[0]; }
+        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) c.screenH = a[0]; }
         else if (!strncmp(k, "itype.", 6) || !strncmp(k, "row.", 4)) {
             bool isT = k[0] == 'i'; const char* num = k + (isT ? 6 : 4); char* e; long n = strtol(num, &e, 10);
             good = *num && !*e && n >= 0 && n < 256 && parseFloats(v, a, 4);
@@ -201,6 +205,9 @@ void loadIni() {
     }
     fclose(f);
     if (c.margin < 1.0f || c.margin > 3) { logf("INI fit_margin out of range, reset 1.15"); c.margin = 1.15f; }
+    if (c.pitchClamp < 0) c.pitchClamp = 0;
+    if (c.idleResume < 0) c.idleResume = 0;
+    if (c.screenW < 100 || c.screenH < 100) { logf("INI screen_w/h invalid, reset 3840x1600"); c.screenW = 3840; c.screenH = 1600; }
     if (c.distMin < 0.05f) c.distMin = 0.05f;
     if (c.distMax < c.distMin) c.distMax = c.distMin;
     if (c.fov < 5 || c.fov > 120) { logf("INI fov_deg out of range, reset 22.726"); c.fov = 22.726f; }
@@ -317,7 +324,7 @@ void computeFit(Pres* p, float aspect) {
     if (g_cfg.fitScale) {
         p->D = d0;
         if (need > 1e-4f) p->s = d0 / need;
-        if (p->s < 0.01f) p->s = 0.01f; if (p->s > 100) p->s = 100;
+        p->s = fminf(fmaxf(p->s, 0.01f), 100.0f);
     } else {
         p->D = need;
         if (p->D < g_cfg.distMin) p->D = g_cfg.distMin;
@@ -354,7 +361,9 @@ void applyTransform(Slot* s, const char* why) {
     reinterpret_cast<SetPosFn>(vt[0x5C / 4])(gob, o3, pos[0], pos[1], pos[2]);
     reinterpret_cast<SetOriFn>(vt[0x60 / 4])(gob, o4, q.w, q.x, q.y, q.z);
     p.lastYaw = p.yaw; p.lastPitch = p.pitch; p.dirty = false;
-    dlogf("apply(%s): gob=%p yaw=%.1f pitch=%.1f q=(%.3f %.3f %.3f %.3f) pos=(%.3f %.3f %.3f)", why, gob, p.yaw, p.pitch, q.w, q.x, q.y, q.z, pos[0], pos[1], pos[2]);
+    static DWORD lastSpinLog = 0; DWORD nowT = GetTickCount();
+    if (strcmp(why, "spin") || nowT - lastSpinLog >= 1000) { if (!strcmp(why, "spin")) lastSpinLog = nowT;
+    dlogf("apply(%s): gob=%p yaw=%.1f pitch=%.1f q=(%.3f %.3f %.3f %.3f) pos=(%.3f %.3f %.3f)", why, gob, p.yaw, p.pitch, q.w, q.x, q.y, q.z, pos[0], pos[1], pos[2]); }
 #endif
 }
 
@@ -375,6 +384,7 @@ void setupPresentation(Slot* s, int row, int var, int cat, const FitEntry* fe) {
     float pos[3], q[4]; gobGetPose(gob, pos, q);
     float sc = -1; readAt<float>(reinterpret_cast<int>(gob), GobScaleOff, &sc);
     logf("  parent=%p (expect 0) pos=(%.3f %.3f %.3f) quat=(%.3f %.3f %.3f %.3f) scale=%.3f", par, pos[0], pos[1], pos[2], q[0], q[1], q[2], q[3], sc);
+    if (par) { logf("  item has an attached parent (%p): presentation skipped (rig hooks in play)", par); return; }
     void* g0 = getModel(view, 0);
     if (g0 && gobGuard(g0, "rig")) { float p0[3], q0[4]; gobGetPose(g0, p0, q0); logf("  rig gob=%p pos=(%.3f %.3f %.3f) quat=(%.3f %.3f %.3f %.3f)", g0, p0[0], p0[1], p0[2], q0[0], q0[1], q0[2], q0[3]); }
     int camv = 0, cam = 0; readAt<int>(reinterpret_cast<int>(view), CameraOffset, &cam); if (cam) readAt<int>(cam, 0, &camv);
@@ -422,6 +432,9 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
 }
 HWND gameWindow() {
     if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
+    static DWORD lastTry = 0; DWORD nowT = GetTickCount();
+    if (lastTry && nowT - lastTry < 2000) return nullptr;
+    lastTry = nowT;
     EnumCtx c = {GetCurrentProcessId(), nullptr, 0};
     EnumWindows(enumProc, reinterpret_cast<LPARAM>(&c));
     g_hwnd = c.best;
@@ -584,7 +597,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         logf("H2: substituting var %d -> 1 (%s), item %08x", v0, why, item);
         return true;
     };
-    if (cat == 2 && (!fe || (fe->flags & 1))) subst(fe ? "EMPTY variation" : "no such variation");
+    if (cat == 2 && fe && (fe->flags & 1)) subst("EMPTY variation");  // a variation missing from the table is tried as-is; the retry below covers real misses
 
     auto doRender = [&]() {
         *(view + FakeCategoryBlockOff) = static_cast<unsigned char>(cat);

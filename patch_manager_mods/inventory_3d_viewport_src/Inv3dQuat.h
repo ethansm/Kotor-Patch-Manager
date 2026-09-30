@@ -1,5 +1,5 @@
-// w-first quaternions/vectors for Inventory 3D Viewport v2 (matches the engine: identity = (1,0,0,0),
-// product = Hamilton with index 0 = w, see FUN_008cce70). Host-testable, no windows.h.
+// w-first quaternions/vectors for Inventory 3D Viewport v2 (engine convention: identity = (1,0,0,0), index 0 = w).
+// qmul is standard Hamilton(a,b); NOTE the engine's inline product in FUN_008cce70 is Hamilton(b,a) - we never call it. Host-testable, no windows.h.
 #pragma once
 #include <math.h>
 

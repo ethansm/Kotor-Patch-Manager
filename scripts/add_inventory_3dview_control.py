@@ -44,7 +44,7 @@ DESC_R = {
     "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (524, 442, 63, 28)},
     "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (407, 476, 180, 32)},
 }
-# S: list shifted left 120 units into the empty strip; description 260 wide; 3D view 209x364 (aspect 0.98)
+# S: list shifted left 120 units into the empty strip; description 260 wide; 3D view 209x364 (aspect 1.03)
 SHIFT_S = {
     "LB_ITEMS": {"orig": (161, 134, 236, 329), "new": (41, 134, 236, 329),
                  "PROTOITEM": ((173, 150, 200, 50), (53, 150, 200, 50)),
@@ -125,7 +125,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--rollback", action="store_true")
     ap.add_argument("--replace", action="store_true")
-    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="R|T|L|K layout (see docstring)")
+    ap.add_argument("--layout", choices=sorted(LAYOUT_3D), help="S|R|T|L|K layout (see docstring)")
     a = ap.parse_args()
     if a.layout:
         a.replace = True

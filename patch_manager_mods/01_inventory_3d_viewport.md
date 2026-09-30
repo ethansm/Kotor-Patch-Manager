@@ -1,6 +1,30 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status (2026-09-29 late evening):** v1 (0.1.0-dev) works, live-tested; source commit `33299ef`. **v2 Phase 1 (research) is DONE** (commit `f2493fa`); see "v2 Phase 1 research results — READ THIS FIRST" directly below. **NEXT:** v2 Phases 2–8 (layout, `inv3d_light` rig, C++ build, live test, close-out, review), per the approved plan file. **WARNING:** at 19:45 another session reinstalled only 14 ids, so `inventory-3d-viewport` and `force-power-hotbar` are NOT in the current `patch_config.toml`. Verify before any install. Verbose logging stays ON.
+**Status (2026-09-29 ~22:00):** v1 (0.1.0-dev) works. **v2 (0.2.0-dev) is BUILT and DEPLOYED** (commit `b1b2d0e`; layout S, `inv3d_light` rig, `inv3d.ini`, 16-id install ~21:40), and independently reviewed; **NOT yet live-tested by the user** (the game was closed before the inventory was opened). See "v2 build" below. **NEXT:** user test matrix, INI tuning, then Phase 7 close-out and the review's fix list. Verbose logging stays ON.
+
+## v2 build (0.2.0-dev, commit `b1b2d0e`; deployed 2026-09-29 ~21:40)
+
+**Files.** Source of record `kotor-patch-manager/Patches/Inventory3DViewport/`, mirrored in `inventory_3d_viewport_src/`: `Inventory3DViewport.cpp`, `Inv3dQuat.h` (+ `Inv3dQuat_test.cpp`, host `g++` test, 9 cases pass), `ItemModelTable.inc` (categories, `kItemType[]`, `kDefaultOrient[][4]`), `ItemFitTable.inc` (341 `FitEntry`, sorted by row,var), `RigCamera.inc`. Hooks unchanged from v1 (H1 0x8A69AD, H2 0x8A8172, H3 0x8A7350). Static checks: `scripts/check_inv3d_kpatch.py`.
+
+**Rig `inv3d_light`** (`scripts/make_inv3d_light.py`): byte copy of `upgitem_light.mdl/.mdx` with names rewritten in place (61 bytes differ, all inside name strings/model-name fields): `rotatehook*`→`xotatehook*`, `camerahook3`→`camerahook`, every other `camerahook<N>`→`xamerahook<N>`, `upgitem_light`→`inv3d_light`. Every item therefore uses the fallback `camerahook` (pos 0.984, 0.104, 0.045; fwd −X, up +Z, right +Y) and nothing is attached, so the DLL owns the item transform. `RigCamera.inc` is generated from the renamed node's rest pose.
+
+**Presentation (DLL).** `q = qAxis(right, pitch) ⊗ qAxis(up, yaw) ⊗ qBase`; target `T = camPos + fwd·D`; `pos = T − R(q)·(s·c)`; scale written at Gob+0x1e0. Fit: rotate the 8 bbox corners by qBase; spinning-cylinder sizing (h = √(ex²+ey²), v = ez) when the default pitch is 0, sphere sizing otherwise; `D = margin·max(v/(2·tanV), h/(2·tanV·aspect))`, clamped to [dist_min, dist_max], with scale below 1 when D would exceed dist_max; `fit_mode=scale` keeps the default distance and scales instead. Armour uses the INI `armor_box`. Assumes the camera up axis is world Z.
+Orientation rules (generator, from the `_001` bbox): longest z → upright, pitch 0 (30 rows); weapon longest y → identity, pitch 0 (16); flat non-weapon → pitch 55 (26); otherwise pitch 15 (5); armour fixed box (17); no `_001` bbox → pitch 15 (15). INI `itype.N` / `row.N` = `rx,ry,rz,pitch` override (row wins).
+**Missing/EMPTY variation (category 2):** fit-table lookup; missing or EMPTY → item byte +0x2a4 temporarily set to 1 (all 4 bytes saved and restored on every path); if the model count is still < 2 after render, one retry with var 1; else no preview. (The engine removes the previous item model on each render, so count < 2 after a render means failure.) **EMPTY count:** 6 distinct models, 8 (row,var) entries (the earlier "8 EMPTY variations" counted rows).
+**Mouse drag.** H3 polls `GetAsyncKeyState(VK_LBUTTON)`, `GetCursorPos`/`ScreenToClient` on the game window found via `EnumWindows` (largest visible client rect of the process), scaled to 3840×1600; the press must start inside the view extent (view+4..+0x10) and the game window must be foreground. Yaw = dx·0.5°/px about camera up, pitch = dy·0.5°/px about camera right (clamped ±80°); auto-spin is suspended while dragging and resumes after 1.5 s. Nothing grabs the mouse; only reads.
+**Guards.** Before any Gob vtable call, slots 0x5C/0x60/0x64/0x68/0x108 must equal 0x461490/0x4614e0/0x459710/0x459740/0x461530; otherwise the first 0x44 slots are dumped once and presentation is skipped for that item. All reads use `IsBadReadPtr`, writes `IsBadWritePtr`. Compile switches `INV3D_PRESENTATION`, `INV3D_DRAG`.
+**INI** `$GAME/inv3d.ini` (re-read at most once per second on mtime change; missing/garbage → defaults, every rejected line logged). Keys: enabled, rig, only_weapons_armor, spin_deg_s, drag_deg_per_px, pitch_clamp, idle_resume_s, fit_mode, fit_margin, dist_min, dist_max, fov_deg, fov_axis, cam_pos/fwd/up, armor_box, armor_spin, hit_flip_y, screen_w/h, itype.N, row.N. `$GAME/inv3d_debug.txt` enables per-tick logging.
+**Layout S** (`add_inventory_3dview_control.py --layout S`, user request "shift the list left"): LB_ITEMS/BTN_USEITEM/BTN_EXIT −120 units; LB_DESCRIPTION 260 wide; credits/bar5 to match; `3D_MODEL [557,134,209,364]` = 1003×971 px (aspect 1.03). Other layouts R/T/L/K exist. Rollback: `--rollback` (oldest backup = pristine).
+
+## Future: equipment-page 3D character (documentation only; nothing built)
+- Bind a `CSWGui3DSceneView` into `CSWGuiInGameEquip` (ctor `008a92d0`) with the same H1 technique (block + control ctor + scene ctor + InitControl by tag), and add a `3D_MODEL` control to `equip_p.gui` (it has none).
+- Rig: a `charrec_light`-style rig or `inv3d_light` with a body camera hook (the engine's `0077ec20` picks `camerahook`/`camerahookt`/`h`/`z` per party member; `cam->vt[0x74](rig, hook, 1)`, `cam->vt[0x44](22.726)`).
+- Build the client creature as SetStats `0084e6f0` does (helper `0076d200`) and set up the scene as `0077ec20` does (idle anim by alignment: `align%d`, `neutral`, `pause1`).
+- Rebuild on SetCharacter `008aadc0` (NPC switch) and on creature equip/unequip: hook `FUN_00566130` (equip) / `FUN_00567490` (unequip), called from `EquipItem 008b0320` / `UnequipItem 008b05e0`.
+- Risks: creature lifetime (must be freed with the panel), per-frame cost of an animated creature, party NPC switching mid-frame, and the unknown behaviour-param block (`cam->vt[0x80](0x3ea)`).
+
+## Which assets won't fit, and why (R8/R17)
+The MDL header bbox is a constant placeholder in every item model; pykotor's per-mesh bb/vertices are zero or empty for blasters. The reliable source is the union of MDX vertices with composed node transforms (`inv3d_model_fit.py`). Six models are EMPTY (no mesh, model count still grows): `w_blstrpstl_006` (rows 12, 104), `w_hvyblstr_006`, `w_ionrfl_004`, `w_blstrcrbn_006`, `w_rptnblstr_004`, `w_blstrrfl_006` (rows 77, 105). Missing variations (e.g. base 72 var 4, base 45 var 9) fall back to `_001`. 15 baseitems rows have no model (category 0: 11, 51, 62–65, 81–84, 86, 87, 92, 101, 108). Sabers carry light nodes and hilt reference nodes (expanded in the bbox). Extent > 1.8: double saber, force pike, war blade; < 0.12: grenades, credits.
 
 ## v2 Phase 1 research results — READ THIS FIRST (2026-09-29, commit `f2493fa`)
 
@@ -29,7 +53,7 @@ The raw outputs are in `inventory_3d_viewport_src/research/R12*`–`R17*`. The D
 | 0x14C (83) | 004b3c90 | Render: `glPushMatrix; 0049c930(pos=+0xa4, quat=+0xb0)` (glTranslatef(pos) then glRotatef(2·acos(w)·57.3°, x, y, z)); **`glScalef(s,s,s)` with s = float at Gob+0x1e0 when s≠1.0**; draw parts; glPopMatrix |
 | 0x1CC (115) | 0045d030 | RecomputeBBox: part `vt[0x74](min, max, scale=+0x1e0)` into +0x14c/+0x158 |
 
-- **The quaternion is W-FIRST** `(w, x, y, z)`, identity `(1, 0, 0, 0)`. This corrects the earlier doc text that said x,y,z,w. The product in 008cce70 and 00515620 is the Hamilton product with index 0 = w.
+- **The quaternion is W-FIRST** `(w, x, y, z)`, identity `(1, 0, 0, 0)`. This corrects the earlier doc text that said x,y,z,w. The inline product in 008cce70 (and the one in 00515620) is E(a,b) = Hamilton(b,a) with index 0 = w (its cross-term signs are the opposite of Hamilton(a,b); confirmed by the Opus review, 2026-09-29). Our own `Inv3dQuat.h` uses standard Hamilton and never calls the engine helpers.
 - **Object scale:** no SetObjectScale setter exists in the vtable. The scale lives in the float at **Gob+0x1e0** (1.0 = unscaled), which Render reads every frame. The DLL can write it directly (IsBadWritePtr guard).
 - **Render transform order is translate(pos) · rotate(q) · scale(s).** A model-space point p ends up at `pos + R(q)·(s·p)`. To put the bbox centre c at the origin, set `pos = −R(q)·(s·c)`.
 
@@ -48,9 +72,9 @@ The raw outputs are in `inventory_3d_viewport_src/research/R12*`–`R17*`. The D
   - `00983d60`: `a7d870 = (1, 0, 0)` = X;
   - `00983d80`: `a7d858 = (0, 1, 0)` = Y;
   - `00983da0`: `a7d864 = (0, 0, 1)` = Z (bytes verified: `d9ee`, `d9ee`, `d9e8` = 0, 0, 1).
-- `00515620(out, a, b, c)` is in degrees and ×0.0174533 (`0x98be40`): `qZ = axis(Z, a)`, `qX = axis(X, b)`, `qY = axis(Y, c)`, `out = qY ⊗ (qX ⊗ qZ)`.
+- `00515620(out, a, b, c)` is in degrees and ×0.0174533 (`0x98be40`): `qZ = axis(Z, a)`, `qX = axis(X, b)`, `qY = axis(Y, c)`, `out = qZ ⊗ qX ⊗ qY` in standard Hamilton order (the engine product is Hamilton(b,a)).
 - `005195a0(out, axis, angleRad)` = (cos(θ/2), axis·sin(θ/2)), w-first. `0x987490` = 2.0.
-- **Z is UP.** The Workbench spin is `00515620(-dt·70, 0, 0)`, i.e. about Z, pre-multiplied: `new = qSpin ⊗ cur`. That means the spin is about the **parent/world** Z axis.
+- **Z is UP.** The Workbench spin is `00515620(-dt·70, 0, 0)`, i.e. about Z. Because the engine product is Hamilton(b,a), the stored result is `cur ⊗ qSpin` in standard order, a rotation about the item's own local Z axis (corrected 2026-09-29; the earlier text said world Z, pre-multiplied). For an upright item this looks the same.
 - Constants: `0x9a8948` = 70.0 (double, deg/s); `0x986b50` = 1.0 (double).
 
 ### R16 Equipment page (future feature, document only; nothing built)
