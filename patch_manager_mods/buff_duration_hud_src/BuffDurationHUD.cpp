@@ -408,6 +408,69 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     return n;
 }
 
+
+// ---- blackout diagnostics (flag files, polled every 30 frames; work mid-session, no restart):
+//   shield_nodraw.txt  -> skip the shield bar draws        shield_noswap.txt -> skip the health-bar texture swap
+//   buffhud_off.txt    -> skip the Buff HUD icon column (engine arrows draw natively)
+// F9 = write a MARK line with a full GL state dump + scene brightness sample. While shields turn on/off the GL state is dumped
+// before/after our draws for 4 frames (PRE/POST) and the scene brightness is sampled every 30 frames (SCENE dark=0/1). ----
+bool g_noDraw = false, g_noSwap = false, g_noBuff = false;
+bool fileExists(const char* n) { return GetFileAttributesA(n) != INVALID_FILE_ATTRIBUTES; }
+struct GlFns {
+    bool tried = false, ok = false;
+    int (WINAPI* getError)();
+    void (WINAPI* getIntegerv)(unsigned, int*);
+    void (WINAPI* getBooleanv)(unsigned, unsigned char*);
+    unsigned char (WINAPI* isEnabled)(unsigned);
+    void (WINAPI* readPixels)(int, int, int, int, unsigned, unsigned, void*);
+} g_gl;
+void glInit() {
+    if (g_gl.tried) return;
+    g_gl.tried = true;
+    HMODULE m = GetModuleHandleA("opengl32.dll");
+    if (!m) return;
+    g_gl.getError = reinterpret_cast<decltype(g_gl.getError)>(GetProcAddress(m, "glGetError"));
+    g_gl.getIntegerv = reinterpret_cast<decltype(g_gl.getIntegerv)>(GetProcAddress(m, "glGetIntegerv"));
+    g_gl.getBooleanv = reinterpret_cast<decltype(g_gl.getBooleanv)>(GetProcAddress(m, "glGetBooleanv"));
+    g_gl.isEnabled = reinterpret_cast<decltype(g_gl.isEnabled)>(GetProcAddress(m, "glIsEnabled"));
+    g_gl.readPixels = reinterpret_cast<decltype(g_gl.readPixels)>(GetProcAddress(m, "glReadPixels"));
+    g_gl.ok = g_gl.getError && g_gl.getIntegerv && g_gl.getBooleanv && g_gl.isEnabled;
+    probeLog("GLINIT ok=%d readPixels=%d", g_gl.ok, g_gl.readPixels != nullptr);
+}
+void glDump(const char* tag) {
+    if (!g_probe) return;
+    glInit();
+    if (!g_gl.ok) return;
+    int vp[4] = {}, sc[4] = {}, prog = 0, fbo = 0, tex = 0, mm = 0, mvd = 0, prd = 0, bsrc = 0, bdst = 0, drawbuf = 0;
+    unsigned char dm = 0, cm[4] = {};
+    g_gl.getIntegerv(0x0BA2, vp); g_gl.getIntegerv(0x0C10, sc);
+    g_gl.getIntegerv(0x8B8D, &prog); g_gl.getIntegerv(0x8CA6, &fbo); g_gl.getIntegerv(0x8069, &tex);
+    g_gl.getIntegerv(0x0BA0, &mm); g_gl.getIntegerv(0x0BA3, &mvd); g_gl.getIntegerv(0x0BA4, &prd);
+    g_gl.getIntegerv(0x0BE1, &bsrc); g_gl.getIntegerv(0x0BE0, &bdst); g_gl.getIntegerv(0x0C01, &drawbuf);
+    g_gl.getBooleanv(0x0B72, &dm); g_gl.getBooleanv(0x0C23, cm);
+    int clipDepth = 0; readAt(0x00a309c0, 0, &clipDepth);
+    probeLog("GL %s vp=(%d,%d,%d,%d) scissor=(%d,%d,%d,%d) en[scis=%d sten=%d depth=%d light=%d blend=%d fog=%d tex2d=%d cull=%d alpha=%d vprog=%d fprog=%d] depthmask=%d colormask=%d%d%d%d prog=%d fbo=%d tex=%d drawbuf=%x blend=%x/%x mm=%x mvdepth=%d prdepth=%d clipDepth=%d",
+             tag, vp[0], vp[1], vp[2], vp[3], sc[0], sc[1], sc[2], sc[3],
+             g_gl.isEnabled(0x0C11), g_gl.isEnabled(0x0B90), g_gl.isEnabled(0x0B71), g_gl.isEnabled(0x0B50), g_gl.isEnabled(0x0BE2),
+             g_gl.isEnabled(0x0B60), g_gl.isEnabled(0x0DE1), g_gl.isEnabled(0x0B44), g_gl.isEnabled(0x0BC0), g_gl.isEnabled(0x8620), g_gl.isEnabled(0x8804),
+             dm, cm[0], cm[1], cm[2], cm[3], prog, fbo, tex, drawbuf, bsrc, bdst, mm, mvd, prd, clipDepth);
+    for (int i = 0; i < 4; ++i) { int e = g_gl.getError(); if (!e) break; probeLog("GL %s glGetError=0x%x", tag, e); }
+}
+// average brightness (0..255) of a 5x5 grid over the 3D scene area; -1 when unavailable
+int sceneBrightness() {
+    glInit();
+    if (!g_gl.readPixels) return -1;
+    int w = 0, h = 0; readAt(0x009f42a4, 0, &w); readAt(0x009f42a8, 0, &h);
+    if (w < 100 || h < 100) return -1;
+    long sum = 0; int cnt = 0;
+    for (int iy = 0; iy < 5; ++iy) for (int ix = 0; ix < 5; ++ix) {
+        unsigned char px[16] = {};
+        g_gl.readPixels(w * (15 + 8 * ix) / 100, h * (25 + 9 * iy) / 100, 1, 1, 0x1908, 0x1401, px);
+        sum += px[0] + px[1] + px[2]; ++cnt;
+    }
+    while (g_gl.getError()) {}
+    return int(sum / (3 * cnt));
+}
 } // namespace
 
 extern "C" {
@@ -415,15 +478,17 @@ extern "C" {
 void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
     static int n = 0; if (n < 60) { ++n; logf("snapshot slot=%08x creature=%08x", slotPtr, creaturePtr); }
     if (g_probe && creaturePtr) probeEffects(slotPtr, creaturePtr);
-    if (creaturePtr) { Pool tmp[8]; swapHealthBar(slotPtr, collectPools(creaturePtr, tmp, 8) > 0); }
+    if (creaturePtr) { Pool tmp[8]; swapHealthBar(slotPtr, !g_noSwap && collectPools(creaturePtr, tmp, 8) > 0); }
     for (auto& e : g_slots) if (e.slotPtr == slotPtr) { e.creaturePtr = creaturePtr; return; }
     for (auto& e : g_slots) if (e.slotPtr == 0) { e = { slotPtr, creaturePtr }; return; }
+    static int evict = 0; g_slots[evict++ & 3] = { slotPtr, creaturePtr };   // HUD rebuilt (area load): replace a stale entry
 }
 
 // Hook 2 (per native arrow, buff row): the icon column is drawn by DrawBuffColumn, so hide
 // the first `tracked` native arrows (CSWGuiBorder::Draw returns at once when +0xc/+0x10 == 0).
 void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichRow) {
     g_saved.active = false;
+    if (g_noBuff) return;
     if (iconWidget == 0 || index < 0) return;
     int creature = creatureForSlot(slotPtr);
     static int callNo = 0; ++callNo;
@@ -455,6 +520,7 @@ void __cdecl RestoreBuffIcon() {
 // Hook 5 (once per row call, after the native loop, still inside the card's viewport whose
 // origin is the card's top-left): draw our own icon column down the card's left edge.
 void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
+    if (g_noBuff) return;
     RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook
     if (iconWidget == 0) return;
     const bool debuff = whichRow == 0;
@@ -557,8 +623,23 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
 // after the panel controls drew and independent of the engine's arrow counts.
 void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     swapHealthBar(slotPtr, false);              // engine has drawn: put the health bar's own texture back
-    if (g_firstSlot == 0) g_firstSlot = slotPtr;
-    if (slotPtr == g_firstSlot) ++g_frame;
+    if (isLarge) {
+        ++g_frame;
+        if (g_frame % 30 == 0) {
+            g_noDraw = fileExists("shield_nodraw.txt"); g_noSwap = fileExists("shield_noswap.txt"); g_noBuff = fileExists("buffhud_off.txt");
+            static int lastFlags = -1; int fl = g_noDraw | (g_noSwap << 1) | (g_noBuff << 2);
+            if (fl != lastFlags) { lastFlags = fl; probeLog("FLAGS nodraw=%d noswap=%d nobuff=%d", g_noDraw, g_noSwap, g_noBuff); }
+            if (g_probe) {
+                int b = sceneBrightness();
+                static int lastDark = -1; int dark = (b >= 0 && b < 6) ? 1 : 0;
+                if (b >= 0 && dark != lastDark) { lastDark = dark; probeLog("SCENE avg=%d dark=%d", b, dark); glDump(dark ? "DARK" : "BRIGHT"); }
+                if (g_frame % 600 == 0) probeLog("HB scene=%d", b);
+            }
+        }
+        static bool f9Prev = false; bool f9 = (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
+        if (f9 && !f9Prev) { static int mark = 0; probeLog("MARK %d scene=%d", ++mark, g_probe ? sceneBrightness() : -2); glDump("MARK"); }
+        f9Prev = f9;
+    }
     int creature = creatureForSlot(slotPtr);
     int flags = 0, vitVt = 0, forceVt = 0, vit[4] = {}, force[4] = {}, card[4] = {};
     readAt(slotPtr, 0x590, &flags); readAt(slotPtr, 0x690, &vitVt); readAt(slotPtr, 0x7fc, &forceVt);
@@ -581,6 +662,13 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     // the later slots whenever an earlier slot had already drawn its Buff HUD icon row (leaked GUI clip/batch state): the
     // leader and, at most, one small card showed a bar (session 4c logs). At the leader's call the state is still clean.
     if (!isLarge) return;
+    if (g_noDraw) return;
+    static bool prevAny = false; static int dumpFrames = 0;
+    bool any = false;
+    for (auto& e : g_slots) { Pool t[8]; if (e.slotPtr && e.creaturePtr && collectPools(e.creaturePtr, t, 8) > 0) any = true; }
+    if (any != prevAny) { prevAny = any; dumpFrames = 4; probeLog("SHIELD_ANY %d", any); }
+    if (dumpFrames > 0) glDump("PRE");
+    struct PostDump { int* d; ~PostDump() { if (*d > 0) { glDump("POST"); --*d; } } } postDump{ &dumpFrames };
     for (auto& e : g_slots) {
         if (!e.slotPtr || !e.creaturePtr) continue;
         int v[4] = {};
