@@ -355,3 +355,12 @@ Proton, independent of our DLL. Decisive test (not yet done): stock 16 patches, 
 - **S1 still unverified**: no hits were taken, no CHANGE/`POOL` remaining changes in the log.
 - **Companion cards inconsistent**: small-card shield bars and Buff HUD icons appear/disappear together (same slot->creature table) -> probe3 adds `DRAW slot= creature= pools= effects=` lines to explain it.
 - **Fury/temp HP type id** not yet observed. Shield hover tooltip (user request): needs research of the portrait hover-text builder (v2).
+
+## Session 3b results (log `shield_bar_src/logs/shieldprobe_live3b.txt`, probe3)
+
+- **S1 CONFIRMED live**: `ints[2]` of the type-0x02 sub-9 effect decrements in place (Peragus mining shield spell 132: 20 -> 17 -> 15 on hits). The effect object pointer is reused across shields (spell 99 -> 103 -> 101 seen on one address), so the max cache must reset on a new spell or when `remaining` goes UP (fixed in probe4).
+- Resist Energy (spell 42) = type 0x02 sub 9 with `ints[2]=0` (no pool, correctly excluded); Fury-like temp HP not observed. Force powers (Valor 22, Speed 8, Resist Energy 42) have no absorb pool -> not on the bar. Only Fury/Rage temp HP is a candidate for a later version.
+- **Blackout** attributed to the droid shield only (see above); Peragus (row 2045 on a human) was a false lead.
+- **Seam-free style (user request)**: health bar squared-left + shield right edge open so both read as one track. Art from `scripts/gen_shield_bar_art.py`
+  (`uibit_bar_sh_p`, `uibit_bar_vp_sq` in override/); the DLL swaps the PB_VIT borders' fill images (`slot+0x690+{0x6c,0xe4}`, fill ptr `+0x74`) to the square texture in the UpdatePortraits snapshot and restores them in the slot hook.
+  Leader toggle buttons shifted left 16 units by `scripts/shift_hud_leader_buttons.py` (deployed 2026-09-30, backup `backups/hudshift_20260930_002155_539301`).
