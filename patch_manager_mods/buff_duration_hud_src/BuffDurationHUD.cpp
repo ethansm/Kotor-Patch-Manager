@@ -256,6 +256,9 @@ void probeEffects(int slotPtr, int creature) {
 constexpr float BarShiftFraction = 0.328f;            // opaque x-span of uibit_bar_vp_p (0.445..0.773) = 0.328 of the rect
 const float TrackTint[3] = { 0.051f, 0.349f, 0.271f }; // the engine's empty-track teal
 constexpr int MaxSegments = 3;
+constexpr float ShieldWidthFraction = 0.55f;          // of the health bar rect width
+constexpr float ShieldLighten = 0.40f;                // mix toward white so a red shield reads differently from the red health bar
+const float DividerTint[3] = { 0.93f, 0.97f, 1.0f };   // bright seam between shield and health
 const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left, outline-free right edge (scripts/gen_shield_bar_art.py)
 const char* const HealthSquareTexture = "uibit_bar_vp_sq"; // health bar with a squared, outline-free left edge
 constexpr int Slot_VitBarOffset = 0x690, Bar_Border1Offset = 0x6c, Bar_Border2Offset = 0xe4, BorderVtable = 0x009875bc;
@@ -344,11 +347,9 @@ void swapHealthBar(int slotPtr, bool on) {
             if (!readAt(bs[k], 0, &vt[k]) || vt[k] != BorderVtable || !readAt(bs[k], Border_FillImageOffset, &cur[k]) || !cur[k]) return;
         for (int k = 0; k < 2; ++k) { r->b[k] = bs[k]; r->orig[k] = cur[k]; *reinterpret_cast<void**>(bs[k] + Border_FillImageOffset) = img; }
         r->active = true;
-        probeLog("SWAP on slot=%08x", slotPtr);
     } else {
         for (int k = 0; k < 2; ++k) *reinterpret_cast<int*>(r->b[k] + Border_FillImageOffset) = r->orig[k];
         r->active = false;
-        probeLog("SWAP off slot=%08x", slotPtr);
     }
 }
 
@@ -362,9 +363,12 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
         for (int i = MaxSegments; i < n; ++i) { pools[MaxSegments - 1].remaining += pools[i].remaining; pools[MaxSegments - 1].max += pools[i].max; }
         n = MaxSegments;
     }
-    int gap = 0; (void)scale;                                  // outlines touch: the bar butts straight into the health bar
-    int W = vw, H = vh;
-    int x = vx - int(BarShiftFraction * vw + 0.5f) - gap, y = vy;
+    (void)scale;
+    // Narrower than the health bar (user: "too wide / too far right"): the art is drawn at ShieldWidthFraction of the health
+    // rect's width (curve squashed a little) and placed so its visible right edge sits exactly on the health bar's visible left edge.
+    int W = int(ShieldWidthFraction * vw + 0.5f), H = vh;
+    int seamX = vx + int(0.445f * vw + 0.5f);                  // visible left edge of the (squared) health bar
+    int x = seamX - int(0.773f * W + 0.5f), y = vy;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
     if (total < 1) return 0;
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
@@ -383,12 +387,17 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
         if (fillH > 0) {
             int y0 = y + H - baseUp - fillH;
             if (pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f)) {
-                draw(image, 0, -(y0 - y), W, H, 0, 0, pools[i].rgb, 1.0f);
+                float lit[3];
+                for (int c = 0; c < 3; ++c) lit[c] = pools[i].rgb[c] + (1.0f - pools[i].rgb[c]) * ShieldLighten;
+                draw(image, 0, -(y0 - y), W, H, 0, 0, lit, 1.0f);
                 popClip();
             }
         }
         baseUp += segH;
     }
+    int dw = vw / 30 < 2 ? 2 : vw / 30;                        // divider: 3 px on the leader card, 2 px on small cards
+    int dh = int(H * 0.94f);
+    if (pushClip(seamX - dw / 2, y + (H - dh) / 2, dw, dh, DividerTint, 0, 0.9f)) popClip();
     flush(flushArg);
     return n;
 }
@@ -569,10 +578,11 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
     int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == slotPtr) di = k;
     if (di < 0 && nDraw < 8) { di = nDraw++; drawSlot[di] = slotPtr; lastDraw[di] = -12345; }
-    int dsig = creature ^ (n << 24) ^ (effCount << 16);
+    unsigned char arrowBuff = 0, arrowDebuff = 0; readAt(slotPtr, 0xddc, &arrowBuff); readAt(slotPtr, 0xddd, &arrowDebuff);
+    int dsig = creature ^ (n << 24) ^ (effCount << 16) ^ (arrowBuff << 8) ^ (arrowDebuff << 4);
     if (di >= 0 && lastDraw[di] != dsig) {
         lastDraw[di] = dsig;
-        probeLog("DRAW slot=%08x creature=%08x large=%d pools=%d effects=%d", slotPtr, creature, isLarge, n, effCount);
+        probeLog("DRAW slot=%08x creature=%08x large=%d pools=%d effects=%d engineArrows buff=%d debuff=%d", slotPtr, creature, isLarge, n, effCount, arrowBuff, arrowDebuff);
     }
 }
 

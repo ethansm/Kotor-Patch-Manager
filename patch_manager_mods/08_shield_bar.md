@@ -402,3 +402,9 @@ Plan input: first choice = append shield lines to the native portrait tooltip (f
 - Code: `describePools()` (reuses `collectPools`) + `AppendShieldToTooltip(charButton)` in `buff_duration_hud_src/BuffDurationHUD.cpp`; `exports.def` + `kotor2-steam-aspyr.hooks.toml` updated; logs `TIP btn= slot= creature= pools= line=` (probe flag). Built clean (`create-patch.py`), export present. **Line format**: `Shield: 32/40` (several pools: `Shield: 32/40 + 10/25`); nothing when no pool.
 - Option B (own tooltip on the bar) NOT needed unless Option A fails live.
 - **Status: built, NOT installed.** Phase 0 (probe4 live check) still owed by the user before this install.
+
+### Session 4 live feedback (probe4 + tooltip, log `shieldprobe_log.txt` 01:03)
+- Tooltip hook works live (275 `TIP` lines, `Shield: 40/40` logged for the leader/companions); user says the squared health edge looks better.
+- Complaints: (1) shield bar overlaps / too wide / too far right; (2) no colour separation from the health bar, worst for red shields; (3) Buff HUD icons of the human party members are not shown on the portraits while the droid is the selected leader; (4) black 3D scene for the leader's energy shield when other characters activate theirs (sometimes any switch, sometimes one specific character).
+- Log analysis: slot->creature table is correct for every leader choice (companion slots get the 15/24-effect creatures with pools=1), so (3) is not a mapping bug; Buff HUD depends on the engine arrow counters `slot+0xddc/0xddd` (the `DRAW` line now logs them). `SWAP` lines were 19.5k of the 20k-line cap (removed).
+- Fix built (not installed): shield art drawn at 0.55 of the health width with its visible right edge exactly on the health bar's visible left edge (`vx+0.445w`), fill colours lightened 40% toward white, 3 px (2 px small card) bright divider at the seam.
