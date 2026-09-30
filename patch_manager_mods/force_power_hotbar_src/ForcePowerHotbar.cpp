@@ -273,6 +273,17 @@ void refreshEffective(uintptr_t hud) {
             bool dup = false; for (auto& x : explicitRefs) if (hb::Same(x, e.ref)) dup = true;
             if (!dup) autos.push_back(e.ref);
         }
+        // then the selected entry of each item group (1 medpac/stim, 2 shield, 3 mine), like the native quick bar's current pick
+        for (int g = 1; g <= 3; ++g) {
+            std::vector<Entry> is; readGroup(hud, g, &is);
+            if (is.empty()) continue;
+            unsigned selKey = (unsigned)rdInt(hud, Hud_GroupSel + g * 4);
+            const Entry* pick = &is[0]; for (auto& e : is) if ((unsigned)e.key == selKey) { pick = &e; break; }
+            bool dup = false; for (auto& x : explicitRefs) if (hb::Same(x, pick->ref)) dup = true;
+            for (auto& x : autos) if (hb::Same(x, pick->ref)) dup = true;
+            logf("eff: autofill group %d pick key=%08x '%s' ref=%s%s", g, (unsigned)pick->key, pick->name.c_str(), hb::Format(pick->ref).c_str(), dup ? " (dup, skipped)" : "");
+            if (!dup && !pick->ref.empty()) autos.push_back(pick->ref);
+        }
     }
     size_t next = 0; unsigned h = 2166136261u; int nAuto = 0;
     for (int s = 0; s < hb::Slots; ++s) {
@@ -680,6 +691,12 @@ double aspectFix() {
     int obj = reinterpret_cast<int(__cdecl*)()>(FnScreenInfo)();
     short w = 0, h = 0; int rw = rdInt(GuiRefW, 0), rh = rdInt(GuiRefH, 0);
     if (obj) { readAt(obj, 0x6C, &w); readAt(obj, 0x6E, &h); }
+    if (w <= 0 || h <= 0) {   // screen-info object is still null during the HUD ctor: use the game window's client size instead
+        HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
+        RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
+        logf("H3: screen info null, window %p client=%ldx%ld", (void*)win, (long)cr.right, (long)cr.bottom);
+        w = (short)cr.right; h = (short)cr.bottom;
+    }
     double c = (w > 0 && h > 0 && rw > 0 && rh > 0) ? ((double)h / rh) / ((double)w / rw) : 1.0;
     logf("H3: screen info obj=%08x size=%dx%d ref=%dx%d -> x correction %.4f", obj, (int)w, (int)h, rw, rh, c);
     return c;

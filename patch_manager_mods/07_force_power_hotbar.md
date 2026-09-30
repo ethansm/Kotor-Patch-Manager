@@ -523,3 +523,10 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
   bar do not walk the character; everything else (icon, tooltip) is click-through.
 - **Lesson (Invoke was 0):** "hotkey does nothing" was the INI's `Invoke=0`; the INI is hot-reloaded, `Invoke=1` is now set.
 - **Lesson (multi-session installs):** see the install workflow in the STATUS block.
+
+
+## Build 7 (2026-09-30 ~01:20) -- fixes from the first live look at build 6
+- **Live (build 6):** frames still ~1.8x too wide, icons stretched. Log: `H3: screen info obj=00000000 size=0x0` -- the engine screen-info object (`FnScreenInfo`) is NULL during the HUD ctor, so `aspectFix()` returned 1.0 (no correction). Fix: fall back to the game window's client size (`EnumWindows` + `GetClientRect`, 3840x1600 -> c = 0.5556); logged as `H3: screen info null, window ...`.
+- **Live (build 6):** slots 5-7 empty although stim/shield/mine exist. Cause: AutoFill only used group-0 Force powers. Fix: after the powers, AutoFill appends the *selected* entry (`hud+Hud_GroupSel`, else first) of each item group 1-3 (medpac/stim, shield, mine), de-duplicated; logged as `eff: autofill group N pick ...`.
+- **User design input:** put the edit toggle at the very LEFT of the bar (before slot 1) rather than to the right; bar/frames should better match the native quick-button style (size + border look) -- revisit after the aspect fix is seen live.
+- Installed 18 ids (incl. sibling's `equipment-3d-character`), set rebuilt from installed DLL md5s in `hotbar_stage3/`; backup `backups/pre_hotbar_b7_install/`.
