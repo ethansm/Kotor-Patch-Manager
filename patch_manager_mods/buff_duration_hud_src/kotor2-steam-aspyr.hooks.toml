@@ -118,6 +118,10 @@ type = "int"
 source = "[ebp+0xc]"
 type = "int"
 
+[[hooks.parameters]]
+source = "[ebp]"
+type = "int"
+
 
 # Portrait hover tooltip: RET path of FUN_00744c20 (text builder), 2 whole instructions (10 bytes, no jumps):
 # mov ecx,[ebp-0xc] / mov fs:[0],ecx. [ebp-0x48] = charButton (this). Appends "Shield: cur/max" to the CExoString at this+0x1d4.

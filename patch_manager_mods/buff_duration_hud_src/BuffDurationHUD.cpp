@@ -260,8 +260,7 @@ constexpr float ShieldWidthFraction = 0.55f;          // of the health bar rect 
 // Fill = the shield's VFX hue with its saturation cut (HSV, hue and value kept): red -> salmon, blue -> pale blue. Saturation is
 // scaled by ShieldSatScale but never below ShieldMinSat (so already-pale hues do not wash out to white) and never raised.
 constexpr float ShieldSatScale = 0.50f, ShieldMinSat = 0.30f;
-constexpr float RimBrightness = 0.75f;                        // rim line = fill colour mixed this far toward white
-const float DividerTint[3] = { 0.93f, 0.97f, 1.0f };   // bright seam between shield and health
+const float SeamTint[3] = { 0.0f, 0.16f, 0.14f };           // dark-teal groove between shield and health
 const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left, outline-free right edge (scripts/gen_shield_bar_art.py)
 const char* const HealthSquareTexture = "uibit_bar_vp_sq"; // health bar with a squared, outline-free left edge
 constexpr int Slot_VitBarOffset = 0x690, Bar_Border1Offset = 0x6c, Bar_Border2Offset = 0xe4, BorderVtable = 0x009875bc;
@@ -391,7 +390,6 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
         (*reinterpret_cast<void***>(image))[6]);
     flush(flushArg);
     draw(image, x, y, W, H, 0, 0, TrackTint, 1.0f);            // empty track: the engine's neutral teal, like the health bar's
-    int rimH = vw / 60 < 1 ? 1 : vw / 60;                      // rim line at the top of a partly drained fill
     int baseUp = 0;                                            // px of bar height already used, from the bottom
     for (int i = 0; i < n; ++i) {
         int segH = int(double(H) * pools[i].max / total + 0.5);
@@ -410,19 +408,14 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
                 lightenFill(pools[i].rgb, lit);
                 draw(image, 0, -(y0 - y), W, H, 0, 0, lit, 1.0f);
                 popClip();
-                if (fillH < segH) {                                    // bright rim on the drain edge (not over the art's curved corner)
-                    float rim[3];
-                    for (int c = 0; c < 3; ++c) rim[c] = lit[c] + (1.0f - lit[c]) * RimBrightness;
-                    int rx = x + int(0.35f * W + 0.5f);
-                    if (pushClip(rx, y0, seamX - rx, rimH, rim, 0, 0.95f)) popClip();
-                }
             }
         }
         baseUp += segH;
     }
-    int dw = vw / 30 < 2 ? 2 : vw / 30;                        // divider: 3 px on the leader card, 2 px on small cards
-    int dh = int(H * 0.94f);
-    if (pushClip(seamX - dw / 2, y + (H - dh) / 2, dw, dh, DividerTint, 0, 0.9f)) popClip();
+    // Seam between shield and health: a thin DARK line (the card border's own deep teal), not a bright bar, so the two bars read
+    // as one gauge with a groove between them. 2 px on the leader card, 1 px on small cards, full bar height.
+    int dw = vw / 50 < 1 ? 1 : vw / 50;
+    if (pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
     flush(flushArg);
     return n;
 }
@@ -433,7 +426,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
 //   buffhud_off.txt    -> skip the Buff HUD icon column (engine arrows draw natively)
 // F9 = write a MARK line with a full GL state dump + scene brightness sample. While shields turn on/off the GL state is dumped
 // before/after our draws for 4 frames (PRE/POST) and the scene brightness is sampled every 30 frames (SCENE dark=0/1). ----
-bool g_noDraw = false, g_noSwap = false, g_noBuff = false;
+bool g_noDraw = false, g_noSwap = false, g_noBuff = false, g_menuBar = false;
 bool fileExists(const char* n) { return GetFileAttributesA(n) != INVALID_FILE_ATTRIBUTES; }
 struct GlFns {
     bool tried = false, ok = false;
@@ -534,8 +527,12 @@ void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
 
 // Hook 2 (per native arrow, buff row): the icon column is drawn by DrawBuffColumn, so hide
 // the first `tracked` native arrows (CSWGuiBorder::Draw returns at once when +0xc/+0x10 == 0).
+void __cdecl RestoreBuffIcon();
 void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichRow) {
-    g_saved.active = false;
+    // The debuff row has no per-arrow restore hook and all its arrows share one widget: un-hide the previous arrow's
+    // widget first, so a kept (untracked) arrow after the suppressed ones draws at its real size and the save below
+    // records the real size, not the 0x0 left by the previous suppression.
+    RestoreBuffIcon();
     if (g_noBuff) return;
     if (iconWidget == 0 || index < 0) return;
     int creature = creatureForSlot(slotPtr);
@@ -552,8 +549,7 @@ void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichR
     int border = iconWidget + Label_TextBorderOffset;
     int w = 0, h = 0, bvt = 0;
     if (!readAt(border, 0, &bvt) || bvt != 0x009875bc || !readAt(border, Border_WidthOffset, &w) || !readAt(border, Border_HeightOffset, &h)) return;
-    if (g_saved.active && g_saved.border == border) { w = g_saved.width; h = g_saved.height; }  // debuff row has no restore hook
-    g_saved = { true, border, 0, w, h };
+    g_saved ={ true, border, 0, w, h };
     *reinterpret_cast<int*>(border + Border_WidthOffset) = 0;
     *reinterpret_cast<int*>(border + Border_HeightOffset) = 0;
 }
@@ -568,8 +564,8 @@ void __cdecl RestoreBuffIcon() {
 // Hook 5 (once per row call, after the native loop, still inside the card's viewport whose
 // origin is the card's top-left): draw our own icon column down the card's left edge.
 void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
+    RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook (also when the kill switch flips mid-row)
     if (g_noBuff) return;
-    RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook
     if (iconWidget == 0) return;
     const bool debuff = whichRow == 0;
     static int callNo = 0; ++callNo;
@@ -614,6 +610,7 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
                     callNo, debuff ? "DEBUFF" : "buff", slotPtr, isLarge, cardW, cardH, scale, n, cols, fit, drawN, size, gap);
     if (drawN <= 0) return;
 
+    CapGuard capGuard;                          // same GL_LIGHTING leak as DrawShieldBar: flush/pushClip toggle caps, put them back on exit
     int border = iconWidget + Label_TextBorderOffset;
     int rotBits = 0; readAt(border, 0x20, &rotBits);
     const float* color = reinterpret_cast<const float*>(border + 0x28);
@@ -666,15 +663,98 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     flush(flushArg);
 }
 
+// ---- engine arrow counter bump ----------------------------------------------------------
+// The engine only runs the row draw (FUN_007457e0, where hook 5 draws our column) when its own arrow counter
+// slot+0xddc (buff) / +0xddd (debuff) is non-zero. FUN_00744f00 fills them from a client-side effect-icon cache at
+// creature+0xFFC, NOT from the +0x148 effect list we read, so a creature can hold tracked effects and still be at 0
+// (doc 02 "Engine arrow counter root cause"). FUN_00745770 reads the counters right after hook 6, so raise them
+// here: native code then draws that many identical arrows and hooks 2/3/5 hide/replace them as usual.
+struct ArrowRaw { int slot; unsigned char buff, debuff, nBuff, nDebuff; };
+ArrowRaw g_arrowRaw[8];
+
+ArrowRaw* arrowRawFor(int slotPtr) {
+    for (auto& r : g_arrowRaw) if (r.slot == slotPtr) return &r;
+    for (auto& r : g_arrowRaw) if (r.slot == 0) { r = {}; r.slot = slotPtr; return &r; }
+    return nullptr;
+}
+
+void ForceArrowCounters(int slotPtr) {
+    if (g_noBuff) return;
+    int gate = 0;
+    if (!readAt(slotPtr, 0x590, &gate) || !(gate & 2)) return;              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
+    unsigned char rawBuff = 0, rawDebuff = 0;
+    if (!readAt(slotPtr, 0xddc, &rawBuff) || !readAt(slotPtr, 0xddd, &rawDebuff)) return;
+    int creature = creatureForSlot(slotPtr);
+    if (!creature) return;
+    ArrowRaw* raw = arrowRawFor(slotPtr);
+    int overlay[3] = {};                                                    // FUN_00744f00: mask&2 -> +0x1b8, mask&1 -> +0x300, mask&4 -> +0x448 (bit 1 = shown)
+    readAt(slotPtr, 0x1b8, &overlay[0]); readAt(slotPtr, 0x300, &overlay[1]); readAt(slotPtr, 0x448, &overlay[2]);
+    bool hidden = ((overlay[0] | overlay[1] | overlay[2]) & 2) != 0;        // engine deliberately hid the arrows (dead/disabled): keep that
+    int nBuff = 0, nDebuff = 0;
+    if (!hidden) {
+        int day = 0, ms = 0;
+        bool haveTime = currentTime(&day, &ms);
+        Buff tmp[16];
+        nBuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, false);
+        nDebuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, true);
+    }
+    unsigned char newBuff = rawBuff, newDebuff = rawDebuff;
+    if (nBuff > 0 && rawBuff == 0) newBuff = 1;                             // never lower an engine value
+    if (nDebuff > 0 && rawDebuff == 0) newDebuff = 1;
+    if (newBuff != rawBuff) *reinterpret_cast<unsigned char*>(slotPtr + 0xddc) = newBuff;
+    if (newDebuff != rawDebuff) *reinterpret_cast<unsigned char*>(slotPtr + 0xddd) = newDebuff;
+    if (raw) {
+        unsigned char sig[4] = { rawBuff, rawDebuff, (unsigned char)nBuff, (unsigned char)nDebuff };
+        bool changed = memcmp(sig, &raw->buff, 4) != 0;
+        raw->buff = rawBuff; raw->debuff = rawDebuff; raw->nBuff = (unsigned char)nBuff; raw->nDebuff = (unsigned char)nDebuff;
+        if (changed) {
+            logf("ARROWS slot=%08x creature=%08x raw=(%d,%d) tracked=(%d,%d) -> counters=(%d,%d) overlay=(%08x,%08x,%08x)%s",
+                 slotPtr, creature, rawBuff, rawDebuff, nBuff, nDebuff, newBuff, newDebuff, overlay[0], overlay[1], overlay[2], hidden ? " HIDDEN" : "");
+            probeLog("ARROWS slot=%08x creature=%08x raw=(%d,%d) tracked=(%d,%d) -> counters=(%d,%d) overlay=(%08x,%08x,%08x) gate590=%08x%s",
+                     slotPtr, creature, rawBuff, rawDebuff, nBuff, nDebuff, newBuff, newDebuff, overlay[0], overlay[1], overlay[2], gate, hidden ? " HIDDEN" : "");
+            // Phase 0: the engine's own count comes from the icon cache at creature+0xFFC (data) / +0x1000 (count).
+            int cacheData = 0, cacheCount = 0;
+            readAt(creature, 0xFFC, &cacheData); readAt(creature, 0x1000, &cacheCount);
+            char ent[256]; int len = 0; ent[0] = 0;
+            for (int k = 0; k < 6 && k < cacheCount && cacheData; ++k) {
+                int e = 0; short id = 0; int f14 = 0, f1c = 0;
+                if (!readAt(cacheData, k * 4, &e) || !e) continue;
+                readAt(e, 0, &id); readAt(e, 0x14, &f14); readAt(e, 0x1c, &f1c);
+                len += snprintf(ent + len, sizeof(ent) - len, " [%d id=%d f14=%d f1c=%d]", k, id, f14, f1c);
+            }
+            probeLog("ICONCACHE slot=%08x creature=%08x count=%d%s", slotPtr, creature, cacheCount, ent);
+        }
+    }
+}
+
+// Menu screens (character/inventory/equip/abilities...): CSWGuiInGameMenu's draw (vtable slot 14, 0x756b70) draws its panel, then calls
+// the same 0x745770 with ECX = its portrait slot (menu+0x2350) whose PB_VIT1 rect sits at slot+0x694. The selected creature is the
+// caller's local at [callerEbp-0x28]. OPT-IN for now (shield_menubar.txt in the game dir): draw the bar beside that health bar.
+void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
+    int creature = 0, v[4] = {};
+    readAt(callerEbp, -0x28, &creature);
+    for (int k = 0; k < 4; ++k) readAt(slotPtr, 0x694 + 4 * k, &v[k]);
+    int pools = 0;
+    if (creature && v[2] >= 1 && v[2] <= 2000 && v[3] >= 1 && v[3] <= 2000) { Pool t[8]; pools = collectPools(creature, t, 8); }
+    bool hud = false; for (auto& e : g_slots) if (e.creaturePtr == creature && creature) hud = true;
+    static int lastSig = -1; int sig = slotPtr ^ creature ^ (pools << 28) ^ v[0] ^ (v[1] << 4) ^ (v[2] << 8) ^ (v[3] << 12);
+    if (sig != lastSig) { lastSig = sig; probeLog("MENUSLOT slot=%08x callerEbp=%08x creature=%08x inHudSlots=%d pools=%d vit=(%d,%d,%d,%d)", slotPtr, callerEbp, creature, hud, pools, v[0], v[1], v[2], v[3]); }
+    if (pools <= 0) return;
+    CapGuard capGuard;
+    int n = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr);
+    static int lastN = -1; if (n != lastN) { lastN = n; probeLog("MENUDRAW n=%d", n); }
+}
+
 // Probe draw site: FUN_00745770 (per-slot icon-row gate) after its prologue, ECX = slotPtr,
 // [ebp+0xc] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
 // after the panel controls drew and independent of the engine's arrow counts.
-void __cdecl DrawShieldBar(int slotPtr, int isLarge) {
+void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
+    ForceArrowCounters(slotPtr);                // before FUN_00745770 reads +0xddc/+0xddd; must run for every slot, not just the leader
     swapHealthBar(slotPtr, false);              // engine has drawn: put the health bar's own texture back
     if (isLarge) {
         ++g_frame;
         if (g_frame % 30 == 0) {
-            g_noDraw = fileExists("shield_nodraw.txt"); g_noSwap = fileExists("shield_noswap.txt"); g_noBuff = fileExists("buffhud_off.txt");
+            g_noDraw = fileExists("shield_nodraw.txt"); g_noSwap = fileExists("shield_noswap.txt"); g_noBuff = fileExists("buffhud_off.txt"); g_menuBar = fileExists("shield_menubar.txt");
             static int lastFlags = -1; int fl = g_noDraw | (g_noSwap << 1) | (g_noBuff << 2);
             if (fl != lastFlags) { lastFlags = fl; probeLog("FLAGS nodraw=%d noswap=%d nobuff=%d", g_noDraw, g_noSwap, g_noBuff); }
             if (g_probe) {
@@ -715,7 +795,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge) {
     { int cd = 0; readAt(0x00a309c0, 0, &cd); bool menu = (cd & 0xffff) != 0;
       static bool lastMenu = false;
       if (menu != lastMenu) { lastMenu = menu; probeLog("MENUSTATE skip=%d clipDepth=%x", menu, cd); }
-      if (menu) return; }
+      if (menu) { if (g_menuBar && !g_noDraw) DrawMenuShield(slotPtr, callerEbp, scale); return; } }
     if (g_noDraw) return;
     CapGuard capGuard;
     static bool prevAny = false; static int dumpFrames = 0;
@@ -735,10 +815,12 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge) {
         static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
         int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == e.slotPtr) di = k;
         if (di < 0 && nDraw < 8) { di = nDraw++; drawSlot[di] = e.slotPtr; lastDraw[di] = -12345; }
-        int dsig = e.creaturePtr ^ (n << 24) ^ (effCount << 16) ^ (arrowBuff << 8) ^ (arrowDebuff << 4);
+        ArrowRaw* rw = arrowRawFor(e.slotPtr);
+        int rawB = rw ? rw->buff : 0, rawD = rw ? rw->debuff : 0, trB = rw ? rw->nBuff : 0, trD = rw ? rw->nDebuff : 0;
+        int dsig = e.creaturePtr ^ (n << 24) ^ (effCount << 16) ^ (arrowBuff << 8) ^ (arrowDebuff << 4) ^ (rawB << 2) ^ (rawD << 1) ^ (trB << 12) ^ (trD << 10);
         if (di >= 0 && lastDraw[di] != dsig) {
             lastDraw[di] = dsig;
-            probeLog("DRAW slot=%08x creature=%08x pools=%d effects=%d engineArrows buff=%d debuff=%d (drawn from leader call)", e.slotPtr, e.creaturePtr, n, effCount, arrowBuff, arrowDebuff);
+            probeLog("DRAW slot=%08x creature=%08x pools=%d effects=%d engineArrows buff=%d debuff=%d raw=(%d,%d) tracked=(%d,%d) (drawn from leader call)", e.slotPtr, e.creaturePtr, n, effCount, arrowBuff, arrowDebuff, rawB, rawD, trB, trD);
         }
     }
 }
@@ -750,6 +832,8 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge) {
 void __cdecl AppendShieldToTooltip(int charButton) {
     int slot = 0, oldText = 0;
     if (!readAt(charButton, 0x1d0, &slot) || !slot || !readAt(charButton, 0x1d4, &oldText) || !oldText) return;
+    // Defensive: the builder re-formats the text before this RET path, so the line is normally absent here; never append twice.
+    if (strstr(reinterpret_cast<const char*>(oldText), "Shield:")) return;
     int creature = creatureForSlot(slot);
     char line[96];
     int n = creature ? describePools(creature, line, sizeof(line)) : 0;
