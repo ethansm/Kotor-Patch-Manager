@@ -451,7 +451,7 @@ void menuBuild(Slot* s);
 bool resetEnabled(Slot* s);
 const char* const kTips[NumButtons] = {
     "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
-    "Spin\nSlowly turns the character.\nDrag to rotate, wheel to zoom.\nBecomes Reset while spinning.",
+    "Spin\nSlowly turns the character.\nDrag to rotate, wheel to zoom.\nThen Pause, then Reset.",
     "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle.",
     "Reset\nRestores the default view and\nstops spinning (also middle click).",
     "Emotes\nPick a gesture (or, with\nWeapons on, an attack) to play."};
@@ -459,7 +459,7 @@ constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipDelayMs = 350;   // 
 void hideTip(Slot* s) { if (s->tipFor < 0) return; setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false); s->tipFor = -1; }
 void showTip(Slot* s, int i, const float* br) {
     if (!s->tip || !s->tipBg) return;
-    const char* text = kTips[(i == 1 && resetEnabled(s)) ? 3 : i];
+    const char* text = kTips[(i == 1 && !g_spinOn && resetEnabled(s)) ? 3 : i];
     setLabelText(s->tip, s->tipText, sizeof s->tipText, text, "tip");
     int lines = 1, maxLen = 0, cur = 0;
     for (const char* q = text; *q; ++q) { if (*q == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
@@ -501,7 +501,7 @@ void menuLayout(Slot* s) {   // items stack downwards from the Emotes button, co
 void tickButtons(Slot* s) {
     bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
     if (!any || !g_cfg.buttons) return;
-    btnSetText(s, 0, "Animate"); btnSetText(s, 1, resetEnabled(s) ? "Reset" : "Spin"); btnSetText(s, 2, "Weapons"); btnSetText(s, 4, "Emotes");   // btn 3 (Reset) is hidden: button 1 doubles as Reset   // state = fill colour (teal on, grey off, beige hover)
+    btnSetText(s, 0, "Animate"); btnSetText(s, 1, g_spinOn ? "Pause" : (resetEnabled(s) ? "Reset" : "Spin")); btnSetText(s, 2, "Weapons"); btnSetText(s, 4, "Emotes");   // btn 3 (Reset) is hidden: button 1 doubles as Reset   // state = fill colour (teal on, grey off, beige hover)
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     bool edge = l && !s->btnWasL;
@@ -524,7 +524,7 @@ void tickButtons(Slot* s) {
             if (inert) continue;
             s->btnHover[i] = -1;
             if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
-            else if (i == 1) { if (resetEnabled(s)) { logf("btn: view reset (yaw=%.1f zoom=%.2f spin=%d)", s->yaw, s->zoom, g_spinOn); s->yaw = 0; s->zoom = 1; g_spinOn = false; applyView(s); } else { g_spinOn = true; logf("btn: auto-spin ON"); } }
+            else if (i == 1) { if (g_spinOn) { g_spinOn = false; logf("btn: auto-spin paused at yaw=%.1f", s->yaw); } else if (resetEnabled(s)) { logf("btn: view reset (yaw=%.1f zoom=%.2f spin=%d)", s->yaw, s->zoom, g_spinOn); s->yaw = 0; s->zoom = 1; g_spinOn = false; applyView(s); } else { g_spinOn = true; logf("btn: auto-spin ON"); } }
             else if (i == 2) { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
             else { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuPage = 0; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
         }
