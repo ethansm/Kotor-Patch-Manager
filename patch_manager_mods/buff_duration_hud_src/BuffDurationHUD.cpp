@@ -305,12 +305,12 @@ int collectPools(int creature, Pool* out, int maxOut) {
     return n;
 }
 
-void DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
+int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
     Pool pools[8];
     int n = collectPools(creature, pools, 8);
-    if (n <= 0) return;
+    if (n <= 0) return 0;
     void* image = imageFor("uibit_bar_vp_p");
-    if (!image) return;
+    if (!image) return -1;
     if (n > MaxSegments) {                                     // merge extras into the last segment
         for (int i = MaxSegments; i < n; ++i) { pools[MaxSegments - 1].remaining += pools[i].remaining; pools[MaxSegments - 1].max += pools[i].max; }
         n = MaxSegments;
@@ -319,7 +319,7 @@ void DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) 
     int W = vw, H = vh;
     int x = vx - int(BarShiftFraction * vw + 0.5f) - gap, y = vy;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
-    if (total < 1) return;
+    if (total < 1) return 0;
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
     auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
     auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
@@ -343,6 +343,7 @@ void DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) 
         baseUp += segH;
     }
     flush(flushArg);
+    return n;
 }
 
 } // namespace
@@ -515,7 +516,16 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     }
     if (!creature || vit[2] < 1 || vit[2] > 400 || vit[3] < 1 || vit[3] > 400) return;
 
-    DrawShieldPools(creature, vit[0], vit[1], vit[2], vit[3], scale);
+    int n = DrawShieldPools(creature, vit[0], vit[1], vit[2], vit[3], scale);
+    int effCount = 0; readAt(creature, Creature_EffectCountOffset, &effCount);
+    static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
+    int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == slotPtr) di = k;
+    if (di < 0 && nDraw < 8) { di = nDraw++; drawSlot[di] = slotPtr; lastDraw[di] = -12345; }
+    int dsig = creature ^ (n << 24) ^ (effCount << 16);
+    if (di >= 0 && lastDraw[di] != dsig) {
+        lastDraw[di] = dsig;
+        probeLog("DRAW slot=%08x creature=%08x large=%d pools=%d effects=%d", slotPtr, creature, isLarge, n, effCount);
+    }
 }
 
 } // extern "C"
