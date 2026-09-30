@@ -62,7 +62,7 @@ constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int ButtonCount = 10, FirstButtonId = 111;   // frames 111..120, icon labels 121..130 (FIRST_ID in scripts/add_hotbar_buttons_gui.py)
 constexpr int IconIdOffset = 10;
 constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;
-constexpr uintptr_t FnScreenInfo = 0x0073FEA0;     // cdecl() -> obj with short width @+0x6C, height @+0x6E (what InitControl scales by)
+// (FUN_0073FEA0 screen-info getter is a THISCALL reading [ecx+0x274]: never call it without a valid this)
 constexpr uintptr_t GuiRefW = 0x009F4390, GuiRefH = 0x009F4394;   // ints (800, 600): the 800x600 layout space
 // config UI (0.3.0), IDs continue after the 20 hotbar labels; MUST match ALL_TAGS order in scripts/add_hotbar_buttons_gui.py.
 // The tooltip pair is last so it draws above the picker (panel Draw is ascending by ID).
@@ -888,17 +888,14 @@ void dumpMem(const char* tag, uintptr_t base, int dwords) {
 // With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8). The HUD is drawn at
 // a uniform H/600 px per unit, so squeeze x/width by (H/600)/(W/800). Returns the factor (1 = unknown, leave alone).
 double aspectFix() {
-    int obj = reinterpret_cast<int(__cdecl*)()>(FnScreenInfo)();
+    // NOT FnScreenInfo: FUN_0073FEA0 is a thiscall that reads [this+0x274]; calling it as cdecl passes a garbage/null ECX and crashed on load
+    // (build 8, null read at 0x73FEAF). The window client size is what the engine renders at.
     short w = 0, h = 0; int rw = rdInt(GuiRefW, 0), rh = rdInt(GuiRefH, 0);
-    if (obj) { readAt(obj, 0x6C, &w); readAt(obj, 0x6E, &h); }
-    if (w <= 0 || h <= 0) {   // screen-info object is still null during the HUD ctor: use the game window's client size instead
-        HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
-        RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
-        logf("H3: screen info null, window %p client=%ldx%ld", (void*)win, (long)cr.right, (long)cr.bottom);
-        w = (short)cr.right; h = (short)cr.bottom;
-    }
+    HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
+    RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
+    w = (short)cr.right; h = (short)cr.bottom;
     double c = (w > 0 && h > 0 && rw > 0 && rh > 0) ? ((double)h / rh) / ((double)w / rw) : 1.0;
-    logf("H3: screen info obj=%08x size=%dx%d ref=%dx%d -> x correction %.4f", obj, (int)w, (int)h, rw, rh, c);
+    logf("H3: window %p client=%dx%d ref=%dx%d -> x correction %.4f", (void*)win, (int)w, (int)h, rw, rh, c);
     return c;
 }
 void fixRect(unsigned char* ctl, const char* tag, double c) {
