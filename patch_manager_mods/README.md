@@ -126,3 +126,4 @@ Nothing in this directory has touched the live game.
 
 - [`10_engine_optimization_research.md`](10_engine_optimization_research.md) — performance / memory / error-handling research program (living record, status and next steps at the top).
 - 2026-09-30: Mod idea 14 (character-screen active effects panel): research started, see 14_character_active_effects_panel.md
+- 2026-09-30: Mod 5 session 3 update in 10_equipment_3d_character.md (SESSION 3 UPDATE block)
