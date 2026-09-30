@@ -1,6 +1,88 @@
 # Mod Idea 1: Inventory 3D Viewport
 
-**Status (2026-09-29 evening):** **v1 (0.1.0-dev) is LIVE and WORKS**: the model renders in the inventory's right margin and there are no crashes. Source commit `33299ef`. Round-2 research into orientation, fit, mouse drag and layout is DONE; see "v1 live test + round-2 research — READ THIS FIRST" below. **NEXT:** the v2 R&D plan (the approved plan file). Verbose logging stays ON.
+**Status (2026-09-29 late evening):** v1 (0.1.0-dev) works, live-tested; source commit `33299ef`. **v2 Phase 1 (research) is DONE** (commit `f2493fa`); see "v2 Phase 1 research results — READ THIS FIRST" directly below. **NEXT:** v2 Phases 2–8 (layout, `inv3d_light` rig, C++ build, live test, close-out, review), per the approved plan file. **WARNING:** at 19:45 another session reinstalled only 14 ids, so `inventory-3d-viewport` and `force-power-hotbar` are NOT in the current `patch_config.toml`. Verify before any install. Verbose logging stays ON.
+
+## v2 Phase 1 research results — READ THIS FIRST (2026-09-29, commit `f2493fa`)
+
+The raw outputs are in `inventory_3d_viewport_src/research/R12*`–`R17*`. The DB rows are: `class_methods` class `Gob` and `Camera(0098c45c)`; `functions` 008a92d0, 008aadc0, 008ad930, 008b0320, 008b05e0, 008abb30, 0077ec20, 0076d200, 00983da0 and 00515620; `lessons` 91–93.
+
+### Live-state finding (Phase 0)
+- At 19:45:07 `patch_config.toml`, `kpm_install_state.json` and `patches/` were rewritten with **14 ids**: the 13 baseline ids plus `buff-duration-hud`. `force-power-hotbar` and `inventory-3d-viewport` are gone, and `patches/` holds 6 DLLs.
+- The Inventory 3D session did not do this. It was most likely the load-hang investigation (`09_load_hang_investigation.md`, A/B plan) or the Shield Bar probe session.
+- The game process running at the time (started 19:37:37) still had v1 loaded from the earlier install.
+- **Before any v2 install:** re-read the live id list and ask the user which set is intended, e.g. whether `force-power-hotbar` should come back and whether the load-hang A/B test is still running.
+
+### R12 Gob vtable (Steam `Gob::vftable` = `0x0098b5cc`, RTTI symbol; 121 real slots, then `__purecall`)
+| vt offset (slot) | Address | Meaning (decompile-confirmed unless noted) |
+|---|---|---|
+| 0x18 (6) | 004e3270 | PlayAnimation(name, speed, 0, 0). Confirmed by usage in 008cd2c0; body not read |
+| 0x50 (20) | 00461670 | AttachToPart(parentGob, nodeName, type): `parent->vt[0x10c]` FindPart, builds attach behaviour type 0..3, stores via `vt[0x58]` |
+| **0x5C (23)** | 00461490 | **SetPosition(float out[3], x, y, z)** → Gob+0xa4/+0xa8/+0xac, copied to out. thiscall, RET 0x10 |
+| **0x60 (24)** | 004614e0 | **SetOrientation(float out[4], w, x, y, z)** → Gob+0xb0..+0xbc. thiscall, RET 0x14 |
+| 0x64 (25) | 00459710 | GetPosition(out[3]) |
+| **0x68 (26)** | 00459740 | **GetOrientation(out[4])**, i.e. w,x,y,z from +0xb0. Ghidra mislabels this as `CRichEditView::GetMargins` |
+| 0xEC (59) | 00459fb0 | GetBoundingBox(min3*, max3*): copies the cached +0x14c (min) and +0x158 (max) |
+| 0xF0 (60) | 00460040 | GetMinimumBoundingBox(min3*, max3*): calls `vt[0x1cc]` to recompute, then copies |
+| 0xF4 (61) | 004600a0 | GetMinimumBoundingSphere(centre3*, radius*): `vt[0x1d0]`, then +0x168 and +0x164 |
+| **0x108 (66)** | 00461530 | GetAttachedParent(-1): returns `*(Gob+0x1b4)`, or 0 if unattached. The Workbench spins only when this is 0 |
+| 0x10C (67) | 004587f0 | FindPart(name): "root" → Gob+0x98, else FUN_00456b00(root, name) |
+| 0x14C (83) | 004b3c90 | Render: `glPushMatrix; 0049c930(pos=+0xa4, quat=+0xb0)` (glTranslatef(pos) then glRotatef(2·acos(w)·57.3°, x, y, z)); **`glScalef(s,s,s)` with s = float at Gob+0x1e0 when s≠1.0**; draw parts; glPopMatrix |
+| 0x1CC (115) | 0045d030 | RecomputeBBox: part `vt[0x74](min, max, scale=+0x1e0)` into +0x14c/+0x158 |
+
+- **The quaternion is W-FIRST** `(w, x, y, z)`, identity `(1, 0, 0, 0)`. This corrects the earlier doc text that said x,y,z,w. The product in 008cce70 and 00515620 is the Hamilton product with index 0 = w.
+- **Object scale:** no SetObjectScale setter exists in the vtable. The scale lives in the float at **Gob+0x1e0** (1.0 = unscaled), which Render reads every frame. The DLL can write it directly (IsBadWritePtr guard).
+- **Render transform order is translate(pos) · rotate(q) · scale(s).** A model-space point p ends up at `pos + R(q)·(s·p)`. To put the bbox centre c at the origin, set `pos = −R(q)·(s·c)`.
+
+### R13 Camera (the Scene's camera = `*(void**)(view+0x78)`)
+- RTTI finds three camera vtables: `Camera::vftable` 0x0098c27c (Gob-like base), **`Camera::vftable` 0x0098c45c**, and `CAurCamera` 0x0098c4f4 (pure).
+  - **The vtable at 0x98c45c matches the calls in 008cd2c0 and 0077ec20:** slot 17 (0x44) = 0047f190 SetViewAngle (stores the float at cam+0x204); slot 29 (0x74) = 004819e0, a thunk to 00461670 (AttachToPart); slot 6 (0x18) = 00481080 SetPosition(out, x, y, z) at cam+0xa8..0xb0.
+  - The live log must still confirm `*(int*)cam == 0x0098c45c`.
+- **The camera is attached to the light-rig node `camerahook`**, and its attach behaviour almost certainly drives its pose every frame. Changing the camera position is therefore unreliable. **v2 fits by moving and scaling the item Gob instead (Gob+0xa4 position, +0x1e0 scale), not by moving the camera.**
+- The view angle is 22.726° (`*(float*)0x0099f38c`). Whether it is vertical or horizontal is still unknown; determine it in the live test (see the fit maths in the plan).
+
+### R14 hook suffix
+`DAT_00986b34` = `"a"`, so the special hook names are `camerahook0a` and `camerahook4a`, as assumed.
+
+### R15 quaternion axes
+- The axis globals are zero on disk and set by static initialisers:
+  - `00983d60`: `a7d870 = (1, 0, 0)` = X;
+  - `00983d80`: `a7d858 = (0, 1, 0)` = Y;
+  - `00983da0`: `a7d864 = (0, 0, 1)` = Z (bytes verified: `d9ee`, `d9ee`, `d9e8` = 0, 0, 1).
+- `00515620(out, a, b, c)` is in degrees and ×0.0174533 (`0x98be40`): `qZ = axis(Z, a)`, `qX = axis(X, b)`, `qY = axis(Y, c)`, `out = qY ⊗ (qX ⊗ qZ)`.
+- `005195a0(out, axis, angleRad)` = (cos(θ/2), axis·sin(θ/2)), w-first. `0x987490` = 2.0.
+- **Z is UP.** The Workbench spin is `00515620(-dt·70, 0, 0)`, i.e. about Z, pre-multiplied: `new = qSpin ⊗ cur`. That means the spin is about the **parent/world** Z axis.
+- Constants: `0x9a8948` = 70.0 (double, deg/s); `0x986b50` = 1.0 (double).
+
+### R16 Equipment page (future feature, document only; nothing built)
+- The Steam `CSWGuiInGameEquip` ctor is **`008a92d0`** (the only xref of `BTN_SWAPWEAPONS` and `LBL_CANTEQUIP` in a GUI ctor; the other `BTN_SWAPWEAPONS` xref, 007484bd in 00747210, is the main HUD). GOG ctor = 0x59d120.
+- **SetCharacter** `008aadc0`: `thiscall(this, charHandle)`, compares against this+0x68; on change, loops over the 11 slots, then `FUN_008ab3f0` refreshes. This is the hook point for an NPC switch.
+- **EquipItem** `008b0320`: `thiscall(this, itemHandle, slotMask, flag)`: creature = `FUN_0077d800()`; checks the slot mask against baseitem+4; **`FUN_00566130(...)` = creature-level equip**. **UnequipItem** `008b05e0`: **`FUN_00567490(item, 0x7f000000, 1, 1, 0, 0, 0)`**. Hooking the two creature-level calls catches every equipment change.
+- **OnPanelAdded?** `008abb30`: SetCharacter(`FUN_007e5d80()`), `FUN_008b0890(1)`, `FUN_008ac330(...)`. `008ad930` (4767 B) is probably UpdateInventory; its name is unconfirmed.
+- `equip_p.gui` tags: BTN_INV_{IMPLANT, HEAD, HANDS, ARM_L, BODY?, ARM_R, WEAP_L, WEAP_R, WEAP_L2, WEAP_R2, BELT}, LBL_ATKL/ATKR/DAMAGE/TOHIT…, LB_ITEMS, BTN_SWAPWEAPONS, BTN_PREVNPC/NEXTNPC, LBL_CANTEQUIP, LBL_DEF_TEXT, LBL_BAR2–5, BTN_BACK and BTN_EQUIP. **There is no 3D control**, so one must be added, as in the v1 inventory.
+- **Character-view scene setup `0077ec20`**: `thiscall(this = creature-ish, view, ?, creature, flag)`.
+  - It picks the idle anim by alignment (`align%d`, `neutral`, `pause1`).
+  - Model 0 is the light rig (`GetModel(0)`). The camera hook is chosen by party member: `camerahook` by default, `camerahookt`, `camerahookh`, or `camerahookz` for Zaalbar. It is checked with `vt[0x10c]` and falls back to `camerahook`.
+  - Then: `cam->vt[0x74](rig, hook, 1)`; `cam->vt[0x44](22.726)`; `cam->vt[0x80](0x3ea)` returns a behaviour param block (+0x48 = 1, +0x3c = 0, +0x40 = 0, +0x44 = `this->vt[0xd8]()` height).
+- `0076d200` is the creature builder helper called from SetStats `0084e6f0`; it has not been fully read.
+
+### R17 hierarchical bbox survey (answers "what won't fit")
+- **Tool:** `scripts/inv3d_model_fit.py`.
+  - As a module: `load_model(inst, name)`, `parse_model(mdl, mdx)`, `model_bounds(mdl, mdx, resolver=…)`, `survey_installation(game)`.
+  - As a CLI: `inv3d_model_fit.py <game> [out.txt]`, about 30 s.
+- **How it works:** it parses the binary MDL itself, because pykotor's per-mesh bb and `vertex_positions` are ZERO or EMPTY for blasters (R9's "tiny blaster" numbers were this bug).
+  - Offsets are relative to file+12. Node: type u16 @0, name index u16 @4, pos f3 @16, quat f4 @28 **(w, x, y, z)**, **children (ptr, count) @44/@48**, trimesh header @+80 (MDX stride u32 @+252, vertex offset in the stride @+260, vertex count u16 @+304, render u8 @+313, MDX data offset @+332; **saber meshes (flag 0x800) keep verts in the MDL @+336**). Reference node (flag 0x10) model name @+80, which is how saber hilts are expanded.
+  - It composes parent→child `(q ⊗ q_child, p + R(q)·pos_child)` with the root pose ignored, and unions every rendering mesh's vertices.
+- **Validated:** long sword ext z 1.255 (matches R9), pistol 0.081×0.405×0.220 (long **y**), rifle 0.745 y, force pike 2.117 z, double saber 2.464 z (blades plus hilt), grenade 0.10, mask 0.156 x.
+- **Long axis by class:**
+  - **z:** melee, staffs, sabers, gauntlets;
+  - **y:** blasters (the barrel points +y), bands, adrenals, medpacs, implants;
+  - **x:** belts, datapads, droid parts, masks (width).
+- **Outliers** (the full list is at the end of R17):
+  - **8 EMPTY variations:** the models exist but contain no mesh at all. They are `w_blstrpstl_006` (rows 12, 104), `w_hvyblstr_006`, `w_ionrfl_004`, `w_blstrcrbn_006`, `w_rptnblstr_004` and `w_blstrrfl_006` (rows 77, 105). The model count still grows, so the v1 "model count didn't grow" retry does NOT catch these; v2 must look them up in the fit table and treat EMPTY like missing.
+  - **extent > 1.8:** double saber, force pike, war blade.
+  - **extent < 0.12:** all grenades, credits, `w_blstrpstl_013`.
+  - **emitter, light or dangly:** every lightsaber (lights, and possibly animated blades), `w_sonicgren_002`, `w_forcepike_001`.
+- **Metadata that can make assets fit:** the header bbox is useless (a placeholder); pykotor's mesh bb is unreliable; the real vertex union from the MDX is reliable. Missing variations fall back to `_001`. Empty models count as missing. No-model classes are listed in the v1 section (R8).
 
 ## v1 live test + round-2 research — READ THIS FIRST (2026-09-29)
 
