@@ -40,7 +40,7 @@ constexpr int LabelVftable = 0x009878BC;
 // toolbar button labels (ported from Mod 3): border fill swap for hover, text set for state
 constexpr int FnLoadImage = 0x0047EB60, FnTextSet = 0x00416E30, BorderVtable = 0x009875BC, TextVtable = 0x009876B4;
 constexpr int LabelBorderOff = 0x60, BorderFillOff = 0x74, LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x18;
-constexpr int NumButtons = 3;   // LBL_E3D_ANIM / SPIN / RESET, ids ExpectedControlId+3..+5
+constexpr int NumButtons = 3;   // LBL_E3D_ANIM / SPIN / WEAP (ids ExpectedControlId+3..+5), then LBL_E3D_TIPBG / LBL_E3D_TIP (+6,+7)
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
 constexpr int SceneOffset = 0x60;
@@ -264,6 +264,7 @@ struct Slot {
     char activeName[32] = "";
     // toolbar
     unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1}; bool btnWasL = false;
+    unsigned char* tipBg = nullptr; unsigned char* tip = nullptr; char tipText[200] = ""; int tipFor = -1, overBtn = -1; DWORD overSince = 0;
 };
 constexpr int MaxSlots = 4;
 Slot g_slots[MaxSlots];
@@ -366,7 +367,7 @@ unsigned char* bindCover(int panel, const char* tagName, int expectId) {
 }
 
 // ---- toolbar (Anim / Spin / Reset): labels bound by tag; state text + hover fill set at runtime, clicks polled (labels are click-through) ----
-bool g_animOn = true, g_spinOn = false;   // session toggles (initialised from the INI at load / first bind)
+bool g_animOn = true, g_spinOn = false, g_weaponsOn = false;   // session toggles (initialised from the INI at load / first bind)
 struct ImgPoolEntry { char resref[17]; void* image; };
 ImgPoolEntry g_imgPool[8]; int g_imgCount = 0;
 void* btnImage(const char* resref) {
@@ -378,18 +379,19 @@ void* btnImage(const char* resref) {
     logf("btn: image '%s' -> %p", resref, im);
     return im;
 }
-void btnSetText(Slot* s, int i, const char* text) {
-    unsigned char* c = s->btn[i]; if (!c || !strcmp(s->btnText[i], text)) return;
+void setLabelText(unsigned char* c, char* cache, size_t cacheN, const char* text, const char* nm) {
+    if (!c || !strcmp(cache, text)) return;
     uintptr_t tx = reinterpret_cast<uintptr_t>(c) + LabelTextOff;
     int tvt = 0, rend = 0; readAt<int>(static_cast<int>(tx), 0, &tvt); readAt<int>(static_cast<int>(tx), TextRendererOff, &rend);
-    if (tvt != TextVtable || !rend) { logf("btn[%d]: text object bad (vt=%08x renderer=%08x), cannot set \"%s\"", i, tvt, rend, text); return; }
+    if (tvt != TextVtable || !rend) { logf("%s: text object bad (vt=%08x renderer=%08x), cannot set \"%s\"", nm, tvt, rend, text); return; }
     char exo[16] = {0};
     reinterpret_cast<CExoCtor>(FnExoCtor)(exo, text);
     reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + TextStringSubOff), exo);
     reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
-    logf("btn[%d]: text \"%s\" -> \"%s\"", i, s->btnText[i], text);
-    strncpy(s->btnText[i], text, sizeof(s->btnText[i]) - 1);
+    dlogf("%s: text \"%s\" -> \"%s\"", nm, cache, text);
+    strncpy(cache, text, cacheN - 1); cache[cacheN - 1] = 0;
 }
+void btnSetText(Slot* s, int i, const char* text) { char nm[12]; snprintf(nm, sizeof nm, "btn[%d]", i); setLabelText(s->btn[i], s->btnText[i], sizeof(s->btnText[i]), text, nm); }
 void btnSetFill(Slot* s, int i, const char* resref) {
     unsigned char* c = s->btn[i]; if (!c) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(c) + LabelBorderOff;
@@ -410,24 +412,60 @@ bool overAnyButton(Slot* s, float cx, float cy) {
 }
 void applyView(Slot* s);
 void endFlourish(Slot* s);
+void** vtOfCtl(unsigned char* c) { void** vt = nullptr; readAt<void**>(reinterpret_cast<int>(c), 0, &vt); return vt; }
+void setCtlVisible(unsigned char* c, bool vis) {
+    int fl = 0; if (!c || !readAt<int>(reinterpret_cast<int>(c), CtlFlagsOff, &fl)) return;
+    int nf = vis ? (fl | 2) : (fl & ~2);
+    if (nf != fl) *reinterpret_cast<int*>(c + CtlFlagsOff) = nf;
+}
+void setCtlRect(unsigned char* c, int x, int y, int w, int h) {
+    void** vt = vtOfCtl(c); if (!vt || IsBadReadPtr(vt + 1, 4)) return;
+    int r[4] = {x, y, w, h}; reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(c, r);
+}
+const char* const kTips[NumButtons] = {
+    "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
+    "Spin\nSlowly turns the character.\nDrag to rotate, wheel to zoom,\nmiddle click to reset the view.",
+    "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle."};
+constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipDelayMs = 350;   // px estimates (same font/metrics as Mod 3's tooltip)
+void hideTip(Slot* s) { if (s->tipFor < 0) return; setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false); s->tipFor = -1; }
+void showTip(Slot* s, int i, const float* br) {
+    if (!s->tip || !s->tipBg) return;
+    const char* text = kTips[i];
+    setLabelText(s->tip, s->tipText, sizeof s->tipText, text, "tip");
+    int lines = 1, maxLen = 0, cur = 0;
+    for (const char* q = text; *q; ++q) { if (*q == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
+    int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
+    int x = (int)br[0] - w - 12, y = (int)br[1]; if (x < 8) x = 8;
+    if (y + h > (int)g_cfg.screenH - 8) y = (int)g_cfg.screenH - 8 - h;
+    setCtlRect(s->tipBg, x, y, w, h); setCtlRect(s->tip, x + TipPad / 2, y + TipPad / 2, w - TipPad, h - TipPad);
+    setCtlVisible(s->tipBg, true); setCtlVisible(s->tip, true);
+    if (s->tipFor != i) logf("tip: show %d rect=[%d,%d,%d,%d] lines=%d maxLen=%d", i, x, y, w, h, lines, maxLen);
+    s->tipFor = i;
+}
 void tickButtons(Slot* s) {
     bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
     if (!any || !g_cfg.buttons) return;
-    btnSetText(s, 0, "Anim"); btnSetText(s, 1, "Spin"); btnSetText(s, 2, "Reset");   // state = fill colour (teal on, grey off, beige hover)
+    btnSetText(s, 0, "Animate"); btnSetText(s, 1, "Spin"); btnSetText(s, 2, "Weapons");   // state = fill colour (teal on, grey off, beige hover)
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
+    int overIdx = -1; float overRect[4] = {0, 0, 0, 0};
     for (int i = 0; i < NumButtons; ++i) {
         float r[4]; int over = haveCur && fg && btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
-        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinOn : true);
+        if (over) { overIdx = i; memcpy(overRect, r, sizeof r); }
+        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinOn : g_weaponsOn);
         int st = over ? 2 : (on ? 1 : 0);   // hover / on / off
         if (st != s->btnHover[i]) { s->btnHover[i] = st; btnSetFill(s, i, st == 2 ? "e3d_btn_hi" : (st ? "e3d_btn" : "e3d_btn_off")); dlogf("btn[%d]: state=%d", i, st); }
         if (over && l && !s->btnWasL) {
             logf("btn[%d]: click at (%.0f,%.0f)", i, cx, cy);
-            if (i == 0) { g_animOn = !g_animOn; s->btnHover[0] = -1; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
-            else if (i == 1) { g_spinOn = !g_spinOn; s->btnHover[1] = -1; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
-            else { s->yaw = 0; s->zoom = 1; if (s->built) applyView(s); logf("btn: view reset"); }
+            s->btnHover[i] = -1;
+            if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
+            else if (i == 1) { g_spinOn = !g_spinOn; logf("btn: auto-spin %s", g_spinOn ? "ON" : "OFF"); }
+            else { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
         }
     }
+    DWORD t = GetTickCount();
+    if (overIdx != s->overBtn) { s->overBtn = overIdx; s->overSince = t; hideTip(s); }
+    else if (overIdx >= 0 && t - s->overSince >= (DWORD)TipDelayMs) showTip(s, overIdx, overRect);
     s->btnWasL = l;
 }
 
@@ -695,8 +733,10 @@ extern "C" void __cdecl BindEquipView(int panel) {
     } else logf("H1: camera vtable mismatch, camera left as is");
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
     if (g_cfg.buttons) {
-        static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_RESET"};
+        static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP"};
         for (int i = 0; i < NumButtons; ++i) { s->btn[i] = bindCover(panel, tags[i], ExpectedControlId + 3 + i); if (!s->btn[i]) logf("H1: toolbar button %s not bound (GUI not patched?)", tags[i]); }
+        s->tipBg = bindCover(panel, "LBL_E3D_TIPBG", ExpectedControlId + 6); s->tip = bindCover(panel, "LBL_E3D_TIP", ExpectedControlId + 7);
+        setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false);   // shown only while a button is hovered
     }
     s->usable = true;
     logf("H1: slot %d ready (panel=%08x seq=%u)", static_cast<int>(s - g_slots), panel, s->seq);

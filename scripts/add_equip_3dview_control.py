@@ -55,8 +55,9 @@ LAYOUTS = {
 BEVEL_TAGS = ("LBL_BEVEL", "LBL_BEVEL2")
 # Control-toolbar buttons (Mod 5): text labels the DLL binds by tag; it toggles text/fill and polls the cursor for clicks.
 # IDs follow the covers (3D_MODEL=N, covers N+1,N+2, buttons N+3..). Rects are relative to the 3D view rect (x offset, y offset, w, h).
-BTN_TAGS = ("LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_RESET")
-BTN_TEXT = ("Anim", "Spin", "Reset")
+BTN_TAGS = ("LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP")
+TIP_TAGS = ("LBL_E3D_TIPBG", "LBL_E3D_TIP")   # hover tooltip frame + text; the DLL sizes/positions/shows them
+BTN_TEXT = ("Animate", "Spin", "Weapons")
 BTN_TEX = ("e3d_btn", "e3d_btn_hi", "e3d_btn_off")   # on/normal, hover, off
 BTN_TEMPLATE = ("mipc28x6_p.gui", "LBL_QUEUE1")
 BTN_FONT = "dialogfont10x10"
@@ -126,7 +127,7 @@ def main() -> int:
     ref = {c.get_string("TAG"): c for c in ref_cs}
 
     # rebuild from vanilla: drop previous additions, set every moved control to vanilla+dx
-    for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in (TAG,) + BEVEL_TAGS + BTN_TAGS]):
+    for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in (TAG,) + BEVEL_TAGS + BTN_TAGS + TIP_TAGS + ("LBL_E3D_RESET",)]):
         del cs[i]
     changes = []
     for tags, dx in ((LIST, ldx), (BLOCK, bdx)):
@@ -183,18 +184,32 @@ def main() -> int:
     if covers:   # toolbar under the view's bottom arc: 3 buttons across the view width
         tsrc = [c for c in controls(read_gff(str(find_ci(OVERRIDE, BTN_TEMPLATE[0])))) if c.get_string("TAG") == BTN_TEMPLATE[1]]
         assert len(tsrc) == 1, f"expected one {BTN_TEMPLATE[1]} in {BTN_TEMPLATE[0]}"
-        bw, bh, gap = 46, 22, 4   # compact column at the view's top-right corner (empty backdrop, clear of the character)
+        bw, bh, gap = 62, 22, 4   # compact column at the view's right edge, below the top arc (empty backdrop, clear of the character)
         for i, (btag, btxt) in enumerate(zip(BTN_TAGS, BTN_TEXT)):
             bc = copy.deepcopy(tsrc[0])
             bc.set_int32("ID", new_id + 3 + i)
             bc.set_string("TAG", btag)
-            brect = (rect[0] + rect[2] - bw - 6, rect[1] + 10 + i * (bh + gap), bw, bh)
+            brect = (rect[0] + rect[2] - bw - 6, rect[1] + 40 + i * (bh + gap), bw, bh)
             be = bc.get_struct("EXTENT"); set_rect(be, brect); bc.set_struct("EXTENT", be)
             tx = bc.get_struct("TEXT"); tx.set_string("TEXT", btxt); tx.set_int32("ALIGNMENT", 18)
             tx.set_resref("FONT", type(tx.get_resref("FONT"))(BTN_FONT)); bc.set_struct("TEXT", tx)
             bb = bc.get_struct("BORDER"); bb.set_resref("FILL", type(bb.get_resref("FILL"))(BTN_TEX[0])); bc.set_struct("BORDER", bb)
             cs.append(bc)
             print(f"  add {btag} ID={new_id + 3 + i} {list(brect)} '{btxt}'")
+    if covers:   # tooltip: dark framed panel (the HUD's LBL_MOULDING3) + text label, placeholder rects
+        hud = read_gff(str(find_ci(OVERRIDE, BTN_TEMPLATE[0])))
+        bgs = [c for c in controls(hud) if c.get_string("TAG") == "LBL_MOULDING3"]
+        assert len(bgs) == 1, "LBL_MOULDING3 not found in mipc28x6_p.gui"
+        for j, (ttag, tsrc0) in enumerate(zip(TIP_TAGS, (bgs[0], tsrc[0]))):
+            tc = copy.deepcopy(tsrc0)
+            tc.set_int32("ID", new_id + 3 + len(BTN_TAGS) + j)
+            tc.set_string("TAG", ttag)
+            te = tc.get_struct("EXTENT"); set_rect(te, (10, 10, 100, 40)); tc.set_struct("EXTENT", te)
+            if j == 1:
+                tx = tc.get_struct("TEXT"); tx.set_string("TEXT", ""); tx.set_int32("ALIGNMENT", 18); tc.set_struct("TEXT", tx)
+                tb = tc.get_struct("BORDER"); tb.set_resref("FILL", type(tb.get_resref("FILL"))("")); tc.set_struct("BORDER", tb)
+            cs.append(tc)
+            print(f"  add {ttag} ID={new_id + 3 + len(BTN_TAGS) + j}")
     g.root.set_list("CONTROLS", cs)
     print(f"layout {a.layout}: {len(changes)} control rect change(s)")
     print("\n".join(changes))
