@@ -1,9 +1,9 @@
 [patch]
 id = "buff-duration-hud"
 name = "Buff Duration HUD"
-version = "1.1.0-probe4"
+version = "1.1.0"
 author = "local"
-description = "Party HUD buff/debuff icon columns with a top-down duration drain (dim = elapsed) replacing the engine's plain arrows."
+description = "Party HUD buff/debuff icon columns with duration drain, shield absorb bar beside the portrait health bar, shield value in the portrait tooltip."
 
 requires = []
 conflicts = []

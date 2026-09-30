@@ -4,5 +4,5 @@ EXPORTS
     RetargetBuffIcon
     RestoreBuffIcon
     DrawBuffColumn
-    ShieldProbeSlot
+    DrawShieldBar
     AppendShieldToTooltip

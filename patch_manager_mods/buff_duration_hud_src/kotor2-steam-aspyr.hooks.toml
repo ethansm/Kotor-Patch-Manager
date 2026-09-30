@@ -106,7 +106,7 @@ type = "int"
 [[hooks]]
 address = 0x00745774
 type = "detour"
-function = "ShieldProbeSlot"
+function = "DrawShieldBar"
 original_bytes = [0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC]
 exclude_from_restore = []
 
