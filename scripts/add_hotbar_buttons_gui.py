@@ -86,7 +86,7 @@ def make_textures(out: Path) -> list[Path]:
 
 def make_edit_textures(out: Path) -> list[Path]:
     """Thin rounded frame (72x128) with a wrench, normal and active (beige frame) variants."""
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageDraw, ImageFilter, ImageChops
     import math
     made = []
     for name, col in ((EDIT_TEX[0], (18, 110, 85)), (EDIT_TEX[1], (208, 204, 170))):
@@ -96,15 +96,31 @@ def make_edit_textures(out: Path) -> list[Path]:
         d = ImageDraw.Draw(im)
         d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=22 * S, fill=col + (255,))
         d.rounded_rectangle([9 * S, 9 * S, (W - 9) * S, (H - 9) * S], radius=14 * S, fill=(0, 0, 0, 175))
-        ic = (140, 232, 205, 255)
-        # wrench: handle from lower right to the head at upper left, open-jaw head
-        hx, hy, tx, ty = 26, 44, 47, 96   # head centre, tail end
-        d.line([(hx * S, hy * S), (tx * S, ty * S)], fill=ic, width=11 * S)
-        d.ellipse([(tx - 6) * S, (ty - 6) * S, (tx + 6) * S, (ty + 6) * S], fill=ic)
-        d.ellipse([(hx - 15) * S, (hy - 15) * S, (hx + 15) * S, (hy + 15) * S], fill=ic)
+        # wrench mask (smaller than build 10), then shaded like the native force-power icons: mint->teal vertical gradient,
+        # dark outline, bright upper-left rim light
+        m = Image.new("L", (W * S, H * S), 0)
+        md = ImageDraw.Draw(m)
+        hx, hy, tx, ty = 29, 50, 45, 88   # head centre, tail end
+        md.line([(hx * S, hy * S), (tx * S, ty * S)], fill=255, width=9 * S)
+        md.ellipse([(tx - 4.5) * S, (ty - 4.5) * S, (tx + 4.5) * S, (ty + 4.5) * S], fill=255)
+        md.ellipse([(hx - 12) * S, (hy - 12) * S, (hx + 12) * S, (hy + 12) * S], fill=255)
         ang = math.atan2(ty - hy, tx - hx) + math.pi   # jaw opens away from the handle
         def pt(r, a): return ((hx + r * math.cos(a)) * S, (hy + r * math.sin(a)) * S)
-        d.polygon([pt(0, ang), pt(22, ang - 0.42), pt(22, ang + 0.42)], fill=(0, 0, 0, 175))
+        md.polygon([pt(0, ang), pt(18, ang - 0.42), pt(18, ang + 0.42)], fill=0)
+        grad = Image.new("RGBA", (W * S, H * S))
+        gp = grad.load()
+        top, bot = (175, 252, 228), (28, 150, 122)
+        y0, y1 = (hy - 12) * S, (ty + 5) * S
+        for y in range(H * S):
+            t = min(1.0, max(0.0, (y - y0) / (y1 - y0)))
+            c = tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)) + (255,)
+            for x in range(W * S): gp[x, y] = c
+        outline = m.filter(ImageFilter.MaxFilter(2 * S + 1))
+        d.bitmap((0, 0), outline, fill=(6, 60, 50, 255))
+        shifted = ImageChops.offset(m, int(2.2 * S), int(2.2 * S))
+        rim = ImageChops.subtract(m, shifted)                         # edges facing the upper-left light
+        im.paste(grad, (0, 0), m)
+        im.paste(Image.new("RGBA", (W * S, H * S), (235, 255, 246, 255)), (0, 0), rim.filter(ImageFilter.GaussianBlur(S * 0.6)))
         im = im.resize((W, H), Image.LANCZOS)
         p = out / f"{name}.tga"
         im.save(p, format="TGA")

@@ -71,7 +71,7 @@ constexpr int PrevId = EditId + 6, NextId = EditId + 7, ClearId = EditId + 8;
 constexpr int CellCount = 8, CellBgId0 = EditId + 9, CellIcId0 = CellBgId0 + CellCount;
 constexpr int TipBgId = CellIcId0 + CellCount, TipId = TipBgId + 1;   // hover tooltip frame + text
 constexpr int TotalNewControls = TipId - FirstButtonId + 1;
-constexpr int CellTipBase = 100;                  // tooltip owner ids >= this are picker cells
+constexpr int CellTipBase = 100, ToggleTipId = 200;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
 constexpr uintptr_t TextVtable = 0x009876B4;
 constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
@@ -612,9 +612,8 @@ void hideTip(const char* why) {
     g_bar.tipSlot = -1;
 }
 
-void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) {
+void showTipText(Widget& anchor, const std::string& text, int s) {
     if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
-    std::string text = buildTipText(digit, entry);
     g_bar.tipText = text;
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
     if (rdInt(tx, 0) != (int)TextVtable || rdInt(tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(tx, 0), (unsigned)rdInt(tx, Text_Renderer)); g_bar.tipSlot = s; return; }
@@ -638,6 +637,8 @@ void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) {
     int th = 0; { void** tvt = *reinterpret_cast<void***>(tx); if (!IsBadReadPtr(tvt + 2, 4)) th = reinterpret_cast<int(__fastcall*)(void*)>(tvt[2])(reinterpret_cast<void*>(tx)); }
     logf("tip: show slot %d lines=%d maxLen=%d rect=[%d,%d,%d,%d] client=%ldx%ld textHeight(engine)=%d text=\"%s\"", s, lines, maxLen, x, y, w, h, (long)cr.right, (long)cr.bottom, th, text.c_str());
 }
+
+void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { showTipText(anchor, buildTipText(digit, entry), s); }
 
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "hotbar_slot_hi").
 void updateHover(bool gate) {
@@ -900,8 +901,16 @@ void updateEditor(uintptr_t hud, bool gate) {
     // ---- picker hover (cells) + tooltip
     int over = -1;
     if (ed.mode == M_Pick && haveCur) for (int i = 0; i < CellCount && over < 0; ++i) if (g_bar.cell[i].avail && wHit(g_bar.cell[i].bg, pt)) over = i;
-    if (over != ed.over) { logf("edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); }
+    if (over != ed.over) { logf("edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase && g_bar.tipSlot < ToggleTipId) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); }
     if (over >= 0 && g_bar.tipSlot != CellTipBase + over && GetTickCount() - ed.overStart >= TipDelayMs) showTipAt(g_bar.cell[over].bg, g_bar.cell[over].entry, 0, CellTipBase + over);
+
+    // ---- toggle hover tooltip
+    {
+        static bool wasOver = false; static DWORD since = 0;
+        bool ov = haveCur && wHit(g_bar.edit, pt);
+        if (ov != wasOver) { logf("edit: toggle hover %d -> %d", (int)wasOver, (int)ov); wasOver = ov; since = GetTickCount(); if (!ov && g_bar.tipSlot == ToggleTipId) hideTip("left toggle"); }
+        if (ov && g_bar.tipSlot != ToggleTipId && GetTickCount() - since >= TipDelayMs) showTipText(g_bar.edit, ed.mode == M_Normal ? "Edit hotbar" : "Finish editing", ToggleTipId);
+    }
 
     // ---- clicks
     if (!click || !haveCur) return;
