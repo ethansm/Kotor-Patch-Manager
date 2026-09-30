@@ -97,3 +97,7 @@ Nothing in this directory has touched the live game.
   diffing technique, etc.) lives in the `ghidra_knowledge` DB's `lessons`
   table and its `README.md` — read those before any headless Ghidra work,
   not just this file.
+
+## Engine optimization research
+
+- [`10_engine_optimization_research.md`](10_engine_optimization_research.md) — performance / memory / error-handling research program (living record, status and next steps at the top).
