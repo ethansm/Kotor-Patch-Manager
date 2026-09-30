@@ -1,0 +1,10 @@
+BATCH U3: AI / combat / pathfinding / effects -- server tick cost, per-request allocations, list growth, effect lifetime.
+Seeds: GOG classes CServerAIMaster (21), CSWSCombatRound (53), CPathfindInformation (19), CSWSEffectListHandler (157), CGameEffect (21), CSWSAreaOfEffectObject (22) (mapper per class, --out ROOT/findings/U3_map_<class>.tsv; CSWSEffectListHandler is large: map, then sample); server tick: from MainLoop 0x781BE0 find the server app update (CServerExoApp::MainLoop / DoAIUpdate / UpdateAI; T2_map_srvapp.tsv and T2_map_server.tsv help); CSWSCreature::AIUpdate, pathfinding entry (FindPath / PlotPath / CPathfindInformation ctor/dtor), CSWSObject::ApplyEffect / RemoveEffect, effect expiry.
+Questions:
+1. AI scheduling: does the AI master update every creature every tick, round-robin, or time-sliced? Is there a per-tick time budget (QPC check)? Quote the loop.
+2. Pathfinding allocations: per request, are grid/node/open-list buffers allocated fresh (sizes?) and freed, or pooled? Worst case size (area grid) and failure path (new throws -> crash).
+3. Combat round: action/attack lists -- growth policy, cleared per round? Any list that only grows over a long fight?
+4. Effects: add/remove symmetry: effects removed on expiry, on object destroy, on area change, on save/load? Duplicated effects stacking forever (e.g. re-applied every heartbeat)? Quote the list container and both sites.
+5. O(n^2) scans per tick: object-vs-object loops (perception, AoE object vs all creatures), with the loop quoted and n bounded by what.
+6. Crash paths: NULL target objects after destroy (object id lookup returning NULL, unchecked), array indexes from data (2DA rows).
+7. Hook points (4-axis rule): AI update entry/exit (count + time per tick), pathfind request entry/exit (count + time), live effect count read site.

@@ -1,0 +1,11 @@
+BATCH U4: VFX / particles / lights / GUI per-frame work -- allocation churn and concrete fix designs for RB and AB.
+Seeds: GOG classes PartEmitter (23), CSWCVisualEffectOnObject (61), LightManager (33), CSWGuiMainInterface (66), CAuroraInterface (63) (mapper per class, --out ROOT/findings/U4_map_<class>.tsv); render bucket code 0x465F90 / 0x4662E0 / 0x466700 and map find-or-insert 0x472630, map node alloc 0x473B30, per-frame clear 0x495760 (candidate RB, R2/R6/R8); action bar 0x74CFE0 and +1 growth 0x58C3B0 (candidate AB); CExoString churn sources 0x7337C0/0x7335F0 (CS); census inputs/census_by_a2.tsv for particle/light sites.
+Runtime context (inputs/runA_perflab_metrics.txt FRAME lines): 0x472630 ~225 calls/frame, max 972 per frame; 0x74CFE0 ~1 call/frame (max 2); frame time is V-Sync-capped at ~16.7 ms, <0.2% of frames >= 32 ms.
+Questions:
+1. Particles: per-particle / per-emitter allocation (pooled array vs new per particle per frame?), emitter destruction on effect end and area unload. Quote alloc and free.
+2. Lights: is the active light list rebuilt per frame (allocation?) and how many lights are sorted (max-lights patch exists: note only).
+3. GUI per-frame: which GUI updates rebuild strings/text every frame (CExoString temporaries sources, top 5 callers by construction), and which are gated by a dirty flag.
+4. RB concrete fix: exact code of the per-frame bucket clear + reinsert; design a minimal node-reuse (keep map, clear vectors instead of erasing nodes?) with patch site, original_bytes, and why it is behaviour-preserving (iteration order, stale texids).
+5. AB concrete fix: where 0x74CFE0 rebuilds the action bar list, the +1 growth, and a dirty gate or reserve design with patch site and original_bytes.
+6. Leaks: VFX-on-object records removed when the object is destroyed / area unloads? Growth across module change?
+7. Hook points (4-axis rule): live particle count, emitters live, light list size per frame, GUI string allocations per frame.

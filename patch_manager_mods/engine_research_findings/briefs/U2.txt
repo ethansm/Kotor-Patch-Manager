@@ -1,0 +1,10 @@
+BATCH U2: Miles sound system (MSS32.DLL, MSS32MIDI.DLL) -- handle lifecycle, WAV buffer ownership, per-frame 3D update, leaks and exhaustion.
+Seeds: imports.tsv rows with lib MSS32.DLL (97) and MSS32MIDI.DLL (12): list every AIL_* import with its calling functions; GOG classes CExoSoundInternal (50), CExoSound (30), CExoSoundSourceInternal (23), CExoStreamingSoundSource (20), CSWCSoundObject, CSWCAmbientSound, CSWSSoundObject (run the mapper per class, --out ROOT/findings/U2_map_<class>.tsv); resman restype 4 (WAV) Demand/Release callers; already-named 0x70ECB0, 0x710020, 0x710630 (see inputs/name_map.tsv); k2-mp3-playback-fix patch touches this area (mp3 decoding) -- note but do not analyse the patch.
+Questions:
+1. Handle lifecycle table: AIL_allocate_sample_handle / AIL_release_sample_handle, AIL_open_stream / AIL_close_stream, 3D provider/sample open/close: pair every allocate with its release (caller functions, conditions). Any path that allocates without a release (early returns, error paths, object destroy)?
+2. WAV data: is the resman WAV CRes kept Demanded while the sample plays and Released on stop/end, or copied? Who frees the copy? runA shows WAV evictions of 1-2 per load and ~0 resident: consistent?
+3. Per-frame cost: the sound update called from MainLoop (3D positions, AIL_set_3D_position per source per frame? distance culling?). How many AIL calls per frame by construction; any per-frame allocation?
+4. Area unload / sound-object destroy: are all sources stopped and handles released? Ambient/music streams across module change?
+5. Exhaustion: what happens when AIL_allocate_sample_handle returns NULL (checked? crash?). Max voices constant.
+6. Crash paths: NULL provider (no 3D device under Wine), stream open failure, corrupt WAV header sizes trusted?
+7. Hook points (4-axis rule): live sample-handle count (allocate/release sites), streams open, per-frame sound update entry (count + time).

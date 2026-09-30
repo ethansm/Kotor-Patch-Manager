@@ -1,0 +1,10 @@
+BATCH U1: NWScript virtual machine -- script execution cost, stack growth, delayed/assigned command queues, stored state lifetime.
+Seeds: GOG classes CVirtualMachine (23), CVirtualMachineInternal (37), CSWVirtualMachineCommands (29) -> run the mapper (`'^CVirtualMachine$' '^CVirtualMachineInternal$' '^CSWVirtualMachineCommands$'`, --out ROOT/findings/U1_map_vm.tsv) and confirm rows; script VM global DAT_00a1b4a8; NCS resource CResNCS 0x703950 / 0x701FD0 (restype 2010); strings "DelayCommand", "AssignCommand", "ActionDoCommand", "ExecuteScript", "Script", "RunScript", "stack", "Instruction limit"/"TMI"; server-side action queues (CSWSObject AddAction / ClearAllActions, CSWSScriptVarTable); save/load of script situations (GFF "ScriptSituation"/"EventQueue"/"StoredState" strings).
+Questions:
+1. Script run entry and exit: which function runs one script (RunScript/ExecuteCode), its call chain from the server tick; per-run allocations (stack, CResNCS Demand/Release, CExoString copies). Is the NCS released after each run or cached?
+2. VM stack: initial size, growth policy (doubling? +N?), shrink/free after run; nested ExecuteScript depth limit.
+3. Runaway guards: is there an instruction-count limit (TMI) or recursion limit? Quote the constant and what happens when it trips.
+4. DelayCommand / AssignCommand / stored "script situations": allocation site, list/queue owner, free after execution, on object destroy, on area unload, on save/load (serialised and freed, or kept + reloaded = growth per save?). Quote add and remove sites.
+5. Cost of one ExecuteCommand dispatch (table of engine functions, bounds check on the command index -- data-triggered crash if a mod NCS uses an out-of-range id?).
+6. Per-tick churn: heartbeat/OnUserDefined/perception scripts: how many runs per server tick is typical by construction (all objects' heartbeat every 6 s?).
+7. Hook points (4-axis rule): script run entry/exit (count + QPC time), delay-queue length read site, VM stack size field offset.

@@ -1,0 +1,9 @@
+BATCH U6: window/focus (H1 fix options), net rings, 0x816400, and T2 leftovers.
+Read first: findings/T4.md, T2.md, R7.md (and doc 09 s15-16 summary in inputs/db_functions.tsv rows 0x40A750/0x40BCF0/0x40BC40/0x781BE0).
+Seeds and questions:
+1. H1 fix options beyond probe 1.3.0 `fix=auto`: (a) treat WM_ACTIVATEAPP with lParam==0 (the movie thread's synthetic post at 0x40D69E) specially in WndProc 0x40A750 (0x40B4AD `83 3D 8C B4 A1 00 00` gate); (b) clear [0xA1B76C] so RestoreAfterMovie 0x40BF40 re-activates; (c) make MainLoop 0x781BE0's load-screen hide (0x781E0B `83 3D E0 B4 A1 00 00`) not depend on a1b4e0 when the foreground window is the game. For each: exact patch site, original_bytes, new bytes/cave, side effects (pause-on-alt-tab behaviour, sound mute), risk.
+2. T4 open questions: fullscreen vs windowed under Proton (Aurora vtable of [0xA1B4A0], ctor 0x788D90 @0x789218); what triggers the movie window's deactivate (0x40CC70 ShowWindow/SetCapture, 0x409750 Shell_TrayWnd); writers of [movie+0x20]; 0x7FAE30 (`[this+0x18]->+0x48->+0x268`) alternative load-screen hide path; multi-clip PlayMovies early return.
+3. Net rings: two 128 KB rings (find the allocation sites: alloc_sites.tsv size 0x20000; owners CNetLayer / CNetLayerInternal / CExoNet* via mapper) -- allocated in single player? freed? memory waste only, or per-frame work?
+4. 0x816400 (decompile failed, asm only; caller 0x810CF0): what it does from the asm, any risk.
+5. T2 leftovers: DumpPlayer message delivery timing (0x6375F0 -> 0x647050 -> 0x704060: synchronous or next pump?); CSWCRoom / room array [+0x288] ownership; load-game order 0x853A00 -> 0x73F250; CSWSModule::ClearAreaCache 0x557F80 / 0x537C90; server object arrays +0x10070 / +0x10074 growth; `c_FocusGobDummyModel%d` one model per scene never released (DAT_00A20030) -> leak verdict with bytes per scene.
+6. Hook points (4-axis rule): probe-log points for any new H1 discriminator; focus-dummy count; net ring usage.
