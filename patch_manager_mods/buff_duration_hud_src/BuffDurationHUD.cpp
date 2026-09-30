@@ -662,6 +662,12 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     // the later slots whenever an earlier slot had already drawn its Buff HUD icon row (leaked GUI clip/batch state): the
     // leader and, at most, one small card showed a bar (session 4c logs). At the leader's call the state is still clean.
     if (!isLarge) return;
+    // Menu frames (settings etc.): the engine's GUI clip stack reads 0xFFFF and the 3D viewport is 0x0 (probe 02:34 logs). The HUD
+    // hook still runs there; drawing then produced a black bar. Only draw in the normal HUD state (clip stack empty).
+    { int cd = 0; readAt(0x00a309c0, 0, &cd); bool menu = (cd & 0xffff) != 0;
+      static bool lastMenu = false;
+      if (menu != lastMenu) { lastMenu = menu; probeLog("MENUSTATE skip=%d clipDepth=%x", menu, cd); }
+      if (menu) return; }
     if (g_noDraw) return;
     static bool prevAny = false; static int dumpFrames = 0;
     bool any = false;
