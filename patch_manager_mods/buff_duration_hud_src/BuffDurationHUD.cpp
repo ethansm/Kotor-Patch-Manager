@@ -315,7 +315,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
         for (int i = MaxSegments; i < n; ++i) { pools[MaxSegments - 1].remaining += pools[i].remaining; pools[MaxSegments - 1].max += pools[i].max; }
         n = MaxSegments;
     }
-    int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
+    int gap = 0; (void)scale;                                  // outlines touch: the bar butts straight into the health bar
     int W = vw, H = vh;
     int x = vx - int(BarShiftFraction * vw + 0.5f) - gap, y = vy;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
