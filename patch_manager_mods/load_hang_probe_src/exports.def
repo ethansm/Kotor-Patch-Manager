@@ -1,0 +1,4 @@
+LIBRARY LoadHangProbe
+EXPORTS
+    HangProbeMainLoop
+    HangProbeDumpDiag

@@ -1,0 +1,17 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# CClientExoAppInternal::MainLoop entry (called via CClientExoApp wrapper 0x0073F9C0: MOV ECX,[EAX+4]).
+# ECX = client internal. Prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1 (whole instructions,
+# same shape as force-power-hotbar's working entry hook on 0x0074B3F0).
+[[hooks]]
+address = 0x00781BE0
+type = "detour"
+function = "HangProbeMainLoop"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
