@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
+#include "EquipWeaponTable.inc"   // baseitems row -> itemclass + weaponwield (scripts/gen_equip3d_weapon_table.py)
 
 namespace {
 
@@ -40,6 +41,10 @@ constexpr int LabelVftable = 0x009878BC;
 // toolbar button labels (ported from Mod 3): border fill swap for hover, text set for state
 constexpr int FnLoadImage = 0x0047EB60, FnTextSet = 0x00416E30, BorderVtable = 0x009875BC, TextVtable = 0x009876B4;
 constexpr int LabelBorderOff = 0x60, BorderFillOff = 0x74, LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x18;
+// weapons (research: 0086a430 attaches model instances with Gob vt[0x50](parentGob, "rhand"/"lhand", 0); detach = vt[0x50](0,0,0)+vt[0x4c](0)+delete)
+constexpr int FnGetItemObj = 0x0073f530, ItemMgrGlobal = 0x00a1b4a4, FnCreateModel = 0x00462320;   // thiscall(mgr=[[a1b4a4]+4], id) -> client item*; cdecl(name, inst, 0, 0) -> Gob*
+constexpr int CrRightItemOff = 0x238, CrLeftItemOff = 0x23c, ItemBaseIdxOff = 0xc, ItemVariationOff = 0x11c, NoItemId = 0x7f000000;
+constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
 constexpr int NumButtons = 3;   // LBL_E3D_ANIM / SPIN / WEAP (ids ExpectedControlId+3..+5), then LBL_E3D_TIPBG / LBL_E3D_TIP (+6,+7)
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
@@ -262,6 +267,8 @@ struct Slot {
     bool flourishActive = false;
     char idleName[16] = "";
     char activeName[32] = "";
+    // weapons
+    void* wpn[2] = {}; int wpnIds[2] = {0, 0}; bool wpnApplied = false, stanceOn = false; char stanceName[12] = "", wpnNames[2][28] = {};
     // toolbar
     unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1}; bool btnWasL = false;
     unsigned char* tipBg = nullptr; unsigned char* tip = nullptr; char tipText[200] = ""; int tipFor = -1, overBtn = -1; DWORD overSince = 0;
@@ -472,7 +479,27 @@ void tickButtons(Slot* s) {
 // ---- preview creature ----
 void** vtOf(void* obj) { void** vt = nullptr; readAt<void**>(reinterpret_cast<int>(obj), 0, &vt); return vt; }
 
+// ---- weapons ----
+using AttachFn = void(__thiscall*)(void*, void*, const char*, int);
+void detachWeapons(Slot* s, const char* why) {
+    for (int i = 0; i < 2; ++i) {
+        void* g = s->wpn[i]; if (!g) continue;
+        s->wpn[i] = nullptr;
+        void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
+        if (!vt || vt0 != ExpectedGobVtable || IsBadReadPtr(vt + 0x50 / 4, 4)) { logf("weapon[%d]: detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", i, g, why, vt0); continue; }
+        reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
+        reinterpret_cast<void(__thiscall*)(void*, int)>(vt[GobDetachSlot / 4])(g, 0);
+        reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(g, 1);
+        logf("weapon[%d]: detached+freed %p '%s' (%s)", i, g, s->wpnNames[i], why);
+    }
+    s->wpnNames[0][0] = s->wpnNames[1][0] = 0;
+}
+int getItemObj(int id) {
+    int mgr = 0, tbl = 0; if (!readAt<int>(ItemMgrGlobal, 0, &mgr) || !mgr || !readAt<int>(mgr, 4, &tbl) || !tbl) return 0;
+    return reinterpret_cast<int(__thiscall*)(int, int)>(FnGetItemObj)(tbl, id);
+}
 void destroyCreature(Slot* s, const char* why) {
+    detachWeapons(s, why);
     if (!s->creature) return;
     void** vt = vtOf(s->creature);
     int vt0 = 0; readAt<int>(reinterpret_cast<int>(s->creature), 0, &vt0);
@@ -559,6 +586,51 @@ void chooseIdle(Slot* s) {
     strcpy(s->idleName, want);
     logf("anim: idle for align=%d row=%d -> '%s' body=%p", al, row, s->idleName, body);
 }
+void attachWeapons(Slot* s, int real, const char* why) {
+    s->stanceName[0] = 0;
+    void* body = partGob(s, 0xff);
+    if (!body) { logf("weapons: no body part, cannot attach (%s)", why); return; }
+    int bestWield = 0;
+    for (int i = 0; i < 2; ++i) {
+        int id = NoItemId; readAt<int>(real, i ? CrLeftItemOff : CrRightItemOff, &id); s->wpnIds[i] = id;
+        const char* hook = i ? "lhand" : "rhand";
+        if (id == NoItemId || id == 0) { logf("weapons: %s empty (id=%08x)", hook, id); continue; }
+        int item = getItemObj(id);
+        if (!item) { logf("weapons: %s id=%08x -> no client item object", hook, id); continue; }
+        int base = -1, var = 0; readAt<int>(item, ItemBaseIdxOff, &base); { unsigned char vb = 0; readAt<unsigned char>(item, ItemVariationOff, &vb); var = vb; }
+        if (base < 0 || base >= kWeaponRows || !kWeapon[base].wield) { logf("weapons: %s id=%08x item=%08x base=%d var=%d: not a wieldable weapon (rows=%d), skipped", hook, id, item, base, var, kWeaponRows); continue; }
+        char name[28]; snprintf(name, sizeof name, "%s_%03d", kWeapon[base].cls, var);
+        void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
+        int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
+        logf("weapons: %s id=%08x item=%08x base=%d var=%d wield=%d model='%s' -> gob=%p vtable=%08x (expect %08x)", hook, id, item, base, var, kWeapon[base].wield, name, g, gvt, ExpectedGobVtable);
+        if (!g) continue;
+        if (gvt != ExpectedGobVtable) { logf("weapons: model gob vtable mismatch, not attaching (leak instead of crash)"); continue; }
+        void** vt = vtOf(g);
+        reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, body, hook, 0);
+        s->wpn[i] = g; strncpy(s->wpnNames[i], name, sizeof(s->wpnNames[i]) - 1);
+        if (!bestWield || !i) bestWield = kWeapon[base].wield;   // right hand decides the stance, left only when the right is empty
+        logf("weapons: attached %p to body %p node %s", g, body, hook);
+    }
+    if (bestWield > 0) snprintf(s->stanceName, sizeof s->stanceName, "g%dr1", bestWield);
+    logf("weapons: (%s) stance='%s' L/R ids %08x/%08x", why, s->stanceName, s->wpnIds[1], s->wpnIds[0]);
+}
+void refreshWeapons(Slot* s, int real, const char* why) {
+    void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
+    bool wasStance = s->stanceOn;
+    detachWeapons(s, why);
+    s->stanceName[0] = 0;
+    if (g_weaponsOn) attachWeapons(s, real, why);
+    s->wpnApplied = g_weaponsOn;
+    readAt<int>(real, CrRightItemOff, &s->wpnIds[0]); readAt<int>(real, CrLeftItemOff, &s->wpnIds[1]);
+    s->stanceOn = g_weaponsOn && s->stanceName[0];
+    const char* anim = s->stanceOn ? s->stanceName : (wasStance ? s->idleName : nullptr);
+    if (s->stanceOn) s->flourishActive = false;
+    if (anim && anim[0]) {
+        if (body) playPart(body, anim, 1.0f, 2);
+        if (head) playPart(head, anim, 1.0f, 2);
+        logf("weapons: idle -> '%s' (stance=%d) body=%p head=%p", anim, s->stanceOn, body, head);
+    }
+}
 void applyView(Slot* s) {
     // zoom = FOV scale on the scene camera; the facing yaw is re-applied after every rebuild
     int cam = 0; readAt<int>(reinterpret_cast<int>(s->block), CameraOffset, &cam);
@@ -575,6 +647,8 @@ void applyView(Slot* s) {
 
 // Builds/rebuilds the preview from `real` exactly like SetStats (0084f2c6..0084f482).
 bool buildPreview(Slot* s, int real, const char* why) {
+    detachWeapons(s, "before rebuild");   // our weapon models hang off the old body Gob: free them first
+    s->stanceOn = false; s->wpnApplied = false;
     if (!allocCreature(s)) return false;
     unsigned char copy[AppCopyBytes]; short al = 0;
     if (!readApp(real, copy, &al)) { logf("build: real %08x appearance unreadable", real); return false; }
@@ -602,6 +676,7 @@ bool buildPreview(Slot* s, int real, const char* why) {
     s->flourishActive = false;
     chooseIdle(s);
     applyView(s);
+    if (g_weaponsOn) refreshWeapons(s, real, "after build");
     return true;
 }
 
@@ -784,7 +859,14 @@ extern "C" void __cdecl EquipTick(int panel) {
     if (!s->built) return;
 
     if (g_cfg.stage >= 4) tickButtons(s);
-    if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn) {
+    {   // weapons: toggle or the real creature's hand items changed
+        int ids[2] = {NoItemId, NoItemId}; readAt<int>(real, CrRightItemOff, &ids[0]); readAt<int>(real, CrLeftItemOff, &ids[1]);
+        if (s->wpnApplied != g_weaponsOn || (g_weaponsOn && (ids[0] != s->wpnIds[0] || ids[1] != s->wpnIds[1]))) {
+            logf("weapons: refresh (toggle=%d applied=%d ids %08x/%08x -> %08x/%08x)", g_weaponsOn, s->wpnApplied, s->wpnIds[1], s->wpnIds[0], ids[1], ids[0]);
+            refreshWeapons(s, real, "toggle/items");
+        }
+    }
+    if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn && !s->stanceOn) {
         if (!s->nextFlourish) s->nextFlourish = t + (DWORD)(g_cfg.flFirst * 1000.0f);
         if (s->flourishActive && t >= s->flourishEnd) endFlourish(s);
         else if (!s->flourishActive && t >= s->nextFlourish) {
