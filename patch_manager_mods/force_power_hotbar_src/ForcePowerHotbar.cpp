@@ -60,12 +60,13 @@ constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill 
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int ButtonCount = 10, FirstButtonId = 111;   // frames 111..120, icon labels 121..130 (FIRST_ID in scripts/add_hotbar_buttons_gui.py)
 constexpr int IconIdOffset = 10;
+constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;
 constexpr int TipBgId = FirstButtonId + 2 * ButtonCount, TipId = TipBgId + 1;   // hover tooltip frame + text
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
 constexpr uintptr_t TextVtable = 0x009876B4;
 constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
 constexpr DWORD TipDelayMs = 450;
-constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 5;   // px estimates for dialogfont16x16 at 2.667 px/unit; calibrate live
+constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 3;   // px estimates for dialogfont16x16 at 2.667 px/unit; calibrate live
 const char* const Spells2daPath = "override/spells.2da";
 const char* const TlkPath = "dialog.tlk";
 const char* const FrameResref = "hotbar_slot";       // TGAs written by the GUI script into override/
@@ -433,6 +434,7 @@ void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
     int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d].%s: flags unreadable, cannot set visible", slot, wname(b, bt)); return; }
     if (b.visible == (vis ? 1 : 0) && b.why == why) return;
     int nf = vis ? (fl | 2) : (fl & ~2);
+    if (&b == &bt.bg) nf = vis ? (nf & ~0x20) : (nf | 0x20);   // shown frames are hit-testable so clicks on the bar do not reach the world
     if (nf != fl) *reinterpret_cast<int*>(b.ctl + Ctl_Flags) = nf;
     logf("btn[%d].%s key %c: %s -> %s (%s) flags %08x->%08x", slot, wname(b, bt), slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
     b.visible = vis ? 1 : 0; b.why = why;
@@ -512,6 +514,14 @@ std::string wrapText(const std::string& in, int width, int maxLines) {
     return out;
 }
 
+// Descriptions start with a category/prerequisite header ("Universal Power Restricted By Armor This power ...", "Light Side Power
+// Prerequisites: Character Level 6 This power ..."): drop it and keep the first sentence.
+std::string shortDesc(const std::string& d) {
+    size_t p = d.find(" This "); std::string t = (p != std::string::npos && p < 120) ? d.substr(p + 1) : d;
+    size_t e = t.find(". "); if (e != std::string::npos) t.resize(e + 1);
+    return t;
+}
+
 // Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
 std::string buildTipText(int s, const Entry& e) {
     std::string title = e.name; size_t par = title.rfind(" ("); if (par != std::string::npos && par > 0 && title.back() == ')') title.resize(par);
@@ -526,7 +536,7 @@ std::string buildTipText(int s, const Entry& e) {
         if (!fp.empty() && fp != "0") out += "Force Points: " + fp + "\n";
         if (range == "P") out += "Range: Personal\n"; else if (range == "T") out += "Range: Target\n";
         std::string dsc = nullish(g_spells.Get(row, "spelldesc"));
-        if (!dsc.empty()) { std::string d = g_tlk.Get((uint32_t)atoi(dsc.c_str())); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
+        if (!dsc.empty()) { std::string d = shortDesc(g_tlk.Get((uint32_t)atoi(dsc.c_str()))); if (!d.empty()) out += wrapText(d, TipWrap, TipMaxDescLines) + "\n"; }
         logf("tip: spell row %d fp='%s' range='%s' desc strref='%s'", row, fp.c_str(), range.c_str(), dsc.c_str());
     } else if (e.key & 0x40000000) {
         if (!qty.empty()) out += "Quantity: " + qty + "\n";
@@ -604,6 +614,16 @@ void updateHover(bool gate) {
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s]; bool hov = (s == over) && b.avail; b.hover = hov;
         if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, hov ? FrameHiResref : FrameResref);
+    }
+    {   // left click on an available slot = same request as its digit key
+        static bool prevDown = false;
+        bool down = gate && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+        if (down && !prevDown && over >= 0) {
+            bool ok = g_bar.b[over].avail;
+            logf("click: slot %d %s", over, ok ? "queued" : "ignored (no action)");
+            if (ok) { int next = (g_ringHead + 1) % 16; if (next == g_ringTail) logf("click: ring full, dropped"); else { g_ring[g_ringHead] = { 0, over }; g_ringHead = next; } }
+        }
+        prevDown = down;
     }
     if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - hoverStart >= TipDelayMs) showTip(over);
     if (over < 0 || !g_bar.b[over].avail) hideTip("no hover");
@@ -722,6 +742,12 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     if (!panel || IsBadReadPtr(reinterpret_cast<void*>(panel), 0x40)) { logf("H3: panel null/unreadable, abort"); return; }
     if (g_bar.panel) logf("H3: replacing bar of old HUD %08x (its labels stay leaked, never freed)", (unsigned)g_bar.panel);
     g_bar = Bar(); g_bar.panel = panel; g_bar.seq = ++g_barSeq;
+    // InitControl (0x0040F620) applies a non-linear aspect projection to the extent while the global at 0x00A1B9F0 is nonzero (live build 3:
+    // slots 8 and 0 came out 964 px wide). The ctor clears it right after this hook (0x0074850D), so clear it for our binds and restore.
+    int* projFlag = reinterpret_cast<int*>(ProjectionFlag);
+    int savedFlag = IsBadReadPtr(projFlag, 4) ? 0 : *projFlag;
+    logf("H3: projection flag %08x = %d (cleared for the binds, restored after)", (unsigned)ProjectionFlag, savedFlag);
+    if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = 0;
     int built = 0;
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s]; char tag[32];
@@ -731,6 +757,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     }
     bindLabel(panel, "LBL_HOTBARTIPBG", TipBgId, &g_bar.tipBg, false);
     bindLabel(panel, "LBL_HOTBARTIP", TipId, &g_bar.tip, true);
+    if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = savedFlag;
     g_bar.built = built;
     int after = rdInt(panel, Panel_CtlCount, -1);
     logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + 2 * ButtonCount + 2);
