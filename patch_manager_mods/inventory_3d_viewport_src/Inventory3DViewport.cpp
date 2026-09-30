@@ -130,7 +130,7 @@ struct Cfg {
     float fov = 22.726f; char fovAxis = 'v';
     float camPos[3], camFwd[3], camUp[3];
     float armorBox[6] = {0, 0, 0.95f, 0.6f, 0.4f, 1.9f}; int armorSpin = 1; int hitFlipY = 0;
-    float screenW = 3840, screenH = 1600;
+    float screenW = 3840, screenH = 1600; bool screenExplicit = false;
     int bevels = 1; int wheelZoom = 1; float wheelStep = 0.9f, zoomDrag = 0.004f, rollDegPx = 0.5f, zoomMin = 0.3f, zoomMax = 3.0f;
     float fillRef = 0.6f, fillExp = 0.35f, fillMin = 0.4f;  // small items fill less of the view: fill=clamp((diag/ref)^exp, min, 1)
     Ov itype[256], row[256];
@@ -210,8 +210,8 @@ void loadIni() {
         else if (!strcmp(k, "fill_ref")) { good = parseFloats(v, a, 1); if (good) c.fillRef = a[0]; }
         else if (!strcmp(k, "fill_exp")) { good = parseFloats(v, a, 1); if (good) c.fillExp = a[0]; }
         else if (!strcmp(k, "fill_min")) { good = parseFloats(v, a, 1); if (good) c.fillMin = a[0]; }
-        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) c.screenW = a[0]; }
-        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) c.screenH = a[0]; }
+        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; } }
+        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; } }
         else if (!strncmp(k, "itype.", 6) || !strncmp(k, "row.", 4)) {
             bool isT = k[0] == 'i'; const char* num = k + (isT ? 6 : 4); char* e; long n = strtol(num, &e, 10);
             good = *num && !*e && n >= 0 && n < 256 && (parseFloats(v, a, 5) || (a[4] = 1.0f, parseFloats(v, a, 4)));
@@ -459,6 +459,12 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     return TRUE;
 }
 // ---- mouse wheel: subclass the game window (only consumes wheel events over the 3D view while the inventory ticks) ----
+// Engine framebuffer size (Aspyr globals 0x009F42A4/0x009F42A8, same ones BuffDurationHUD reads): used unless the INI sets screen_w/screen_h explicitly.
+void syncScreen() {
+    if (g_cfg.screenExplicit) return;
+    int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
+    if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+}
 WNDPROC g_oldProc = nullptr;
 volatile LONG g_wheelAccum = 0;          // sum of WHEEL_DELTA units seen over the view since the last tick
 volatile DWORD g_lastTickMs = 0;         // GetTickCount() of the last InventoryTick
@@ -469,7 +475,7 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
-            float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
+            syncScreen(); float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
             inside = x >= g_viewRect[0] && x < g_viewRect[0] + g_viewRect[2] && y >= g_viewRect[1] && y < g_viewRect[1] + g_viewRect[3];
         }
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
@@ -498,7 +504,7 @@ bool cursorEngine(float* x, float* y) {
     HWND h = gameWindow(); if (!h) return false;
     POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(h, &pt)) return false;
     RECT r; if (!GetClientRect(h, &r) || r.right < 1 || r.bottom < 1) return false;
-    *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
+    syncScreen(); *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
     return true;
 }
 #endif
@@ -680,11 +686,15 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
     // Design 4: missing/EMPTY variation -> substitute var 1 (item bytes restored on every path)
     int effVar = v0; bool substituted = false;
     int savedVarWord = 0; bool haveSaved = readAt<int>(item, ItemVarOff, &savedVarWord);
+    struct VarGuard {   // restores the real item's variation word on every exit path (never leave the live CItem mutated)
+        int item; int saved; bool armed;
+        ~VarGuard() { if (armed && !IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4)) *reinterpret_cast<int*>(item + ItemVarOff) = saved; }
+    } guard = {item, savedVarWord, false};
     const FitEntry* fe = (cat == 2) ? fitLookup(id, v0) : nullptr;
     auto subst = [&](const char* why) {
         if (!haveSaved || IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4)) { logf("H2: cannot substitute (%s): item bytes unwritable", why); return false; }
         *reinterpret_cast<unsigned char*>(item + ItemVarOff) = 1;
-        effVar = 1; substituted = true; fe = fitLookup(id, 1);
+        guard.armed = true; effVar = 1; substituted = true; fe = fitLookup(id, 1);
         logf("H2: substituting var %d -> 1 (%s), item %08x", v0, why, item);
         return true;
     };
@@ -702,8 +712,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         logf("H2: model count did not grow (%d), retrying with var 1", n2);
         if (subst("no model after render")) { doRender(); n2 = modelCount(view); }
     }
-    if (haveSaved && substituted && !IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4))
-        *reinterpret_cast<int*>(item + ItemVarOff) = savedVarWord;  // restore all 4 bytes
+    if (guard.armed) { guard.armed = false; if (!IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4)) *reinterpret_cast<int*>(item + ItemVarOff) = savedVarWord; }  // restore all 4 bytes (guard covers early exits)
     if (cat == 2 && n2 < 2) {
         logf("H2: item %08x base=%d var=%04x: still no model after render (count=%d), no preview", item, id, var, n2);
         s->lastItem = item; s->lastBase = id; s->lastVar = var;
@@ -752,6 +761,10 @@ extern "C" void __cdecl InventoryTick(int panel) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
+    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_hwnd && IsWindow(g_hwnd) &&
+        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
+        SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
+    }
     if (reason == DLL_PROCESS_ATTACH) { logf("inv3d v2 loaded"); loadIni(); }
     return TRUE;
 }

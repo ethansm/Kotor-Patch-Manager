@@ -140,7 +140,7 @@ struct Cfg {
     float fov = 22.726f;
     int bevels = 1;
     float dragDegPx = 0.5f; int wheelZoom = 1; float wheelStep = 0.9f, zoomMin = 0.6f, zoomMax = 2.5f;
-    int hitFlipY = 0; float screenW = 3840, screenH = 1600;
+    int hitFlipY = 0; float screenW = 3840, screenH = 1600; bool screenExplicit = false;
     int flourish = 1; float flMin = 12, flMax = 25, flFirst = 6, flQuiet = 3; int flOnEquip = 1;
     char flStance[512] = "";   // optional flourish list used while a weapon stance is on (empty = same list)
     char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
@@ -199,8 +199,8 @@ void loadIni() {
         else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
         else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
         else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
-        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) c.screenW = a[0]; }
-        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) c.screenH = a[0]; }
+        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; } }
+        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; } }
         else if (!strcmp(k, "flourish")) { good = parseFloats(v, a, 1); if (good) c.flourish = (int)a[0]; }
         else if (!strcmp(k, "flourish_min_s")) { good = parseFloats(v, a, 1); if (good) c.flMin = a[0]; }
         else if (!strcmp(k, "flourish_max_s")) { good = parseFloats(v, a, 1); if (good) c.flMax = a[0]; }
@@ -311,6 +311,12 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     if (a > c->area) { c->area = a; c->best = h; }
     return TRUE;
 }
+// Engine framebuffer size (Aspyr globals 0x009F42A4/0x009F42A8, same ones BuffDurationHUD reads): used unless the INI sets screen_w/screen_h explicitly.
+void syncScreen() {
+    if (g_cfg.screenExplicit) return;
+    int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
+    if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+}
 WNDPROC g_oldProc = nullptr;
 volatile LONG g_wheelAccum = 0;
 volatile DWORD g_lastTickMs = 0;
@@ -321,7 +327,7 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
-            float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
+            syncScreen(); float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
             inside = x >= g_viewRect[0] && x < g_viewRect[0] + g_viewRect[2] && y >= g_viewRect[1] && y < g_viewRect[1] + g_viewRect[3];
         }
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
@@ -349,7 +355,7 @@ bool cursorEngine(float* x, float* y) {
     HWND h = gameWindow(); if (!h) return false;
     POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(h, &pt)) return false;
     RECT r; if (!GetClientRect(h, &r) || r.right < 1 || r.bottom < 1) return false;
-    *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
+    syncScreen(); *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
     return true;
 }
 LARGE_INTEGER g_qpcFreq, g_qpcLast;
@@ -905,6 +911,10 @@ extern "C" void __cdecl EquipDestroy(int panel) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
+    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_hwnd && IsWindow(g_hwnd) &&
+        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
+        SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
+    }
     if (reason == DLL_PROCESS_ATTACH) { logf("equip3d 0.1.0-probe loaded"); loadIni(); g_rng ^= GetTickCount(); }
     return TRUE;
 }

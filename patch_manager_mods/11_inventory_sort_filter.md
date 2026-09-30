@@ -113,6 +113,7 @@ open-slot predicate, INI parsing) is in `SortLogic.h` with host tests. Implement
 - Rows always go through the buffer (even at Stage 0), so Stage 0 also proves the splice/flush path; order is unchanged unless `sort=1`.
 - `g_upgrade` (Upgradeable filter) is reset when the panel pointer changes; a reopen at the same address with the flag still set is an open risk (in-game check 6).
 - Stale-buffer guard: a new populate is detected by the loop index (`ebp-0x14`) not increasing.
-- Install status: NOT installed.
+
 - Review (independent Opus, 2026-09-30) applied: INI path made absolute from the cwd (a bare name goes to the Windows dir), `normaliseState()` rebuilds the upgrade flag/caption from the engine mode at every populate (bumper / reopen / `cycle=0` cannot leave stale state), overflow emits the buffer in order, unknown filter mode reads as 0xFF (never "All"), `Entry.id` stored, buffer 1024. No blockers found.
 - Known UX point to confirm in-game: from New/Usable a click on All moves to the next state (3 clicks back to All with the default states).
+- **Install status: Stage 0 INSTALLED 2026-09-30 11:07** (game closed, all 19 live ids re-staged from the newest matching kpatch, md5 of all DLLs verified, 66 hooks = 63 + 3, `AR_ERROR.LOG` unchanged). Backup `/home/ethansm/Games/KOTOR2_Mod_Workspace/backups_mod6s0_1107`; stage dir `/home/ethansm/Games/KOTOR2_Mod_Workspace/stage_mod6s0_1107`. `inventory_sort_filter.ini` (all flags 0) copied to the game folder. Awaiting the user's in-game Stage 0 run: open the inventory, click tabs (All/Weapons/...), switch party member, close/reopen; then review `inventory_sort_filter_log.txt` and the Proton log (`Parsed consumed_exit_address`, `Applied DETOUR hook at 0x8A8CF0/0x8A7E22/0x8A7E76`).
