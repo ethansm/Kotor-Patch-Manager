@@ -1,6 +1,6 @@
 # MASTER PLAN: per-character level-up override (Ghidra mapping + Patch Manager C++ mod)
 
-Status as of 2026-09-30: Phase 0 DONE for Atton + Kreia (commit a4e0b46); Phase 1 (Ghidra) NOT started - see `PHASE1_PLAN.md`.
+Status as of 2026-09-30: Phase 0 DONE for Atton + Kreia (commit a4e0b46); Phase 1 (Ghidra) DONE statically (commit below) - results in `patch_manager_mods/08_level_up_override.md`; next = Phase 2 design gate/spike (Option B, hook `CSWSCreatureStats::LevelUp` 0x006B9870).
 Read order after a context clear: this file -> `PROJECT_CONTEXT.md` (sections 1-9) -> `PHASE1_PLAN.md` -> `README.md`.
 Work tree: `/home/ethansm/orca/workspaces/local-setup/KOTOR-II` (git worktree, branch KOTOR-II). Commit only there; never push, never amend.
 Commit trailer: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.

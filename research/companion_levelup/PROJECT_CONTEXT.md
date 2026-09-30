@@ -108,3 +108,11 @@ Rule facts learned from the 2DAs (these corrected the plan's assumptions):
 - Display names collide (Precise Shot I = ids 136 (unusable XXX) and 240 (real)); always use ids + `<cls>_list` check.
 - Class ids: Soldier 0, Scout 1, Scoundrel 2, JediGuardian 3, JediConsular 4, JediSentinel 5, TechSpecialist 9.
 Skill-point allocations in the two paths are PROPOSALS (greedy by priority), not user-approved builds.
+
+## 10. Phase 1 result (2026-09-30) - Ghidra, static only
+Full record: `patch_manager_mods/08_level_up_override.md`. Headlines: every level-up path ends in `CSWSCreatureStats::LevelUp`
+0x006B9870 (thiscall, ecx=stats, [pending*, int], ret 8) which applies a 0x30-byte pending struct without validating picks
+(ValidateLevelUp 0x006B9640 only checks XP/level cap); server message handler is 0x00661C30; `AutoLevelup` 0x006BEDF0 uses class-row
+recommended lists (rules+0x124+classId*0x238), NOT a per-creature package (creature +0xE0 is unused) so Option A is out; Tag =
+`*(char**)(*(stats+0x24)+0x18)`, compare case-insensitively; no hook conflicts among the 166 installed hook addresses. Steam AddFeat is
+0x006B8280 (the Steam DB's 0x6F5B40 is PendingLevelUp::AddFeat). Recommended: Option B with one hook at LevelUp entry (9-byte splice).
