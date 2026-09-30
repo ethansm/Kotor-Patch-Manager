@@ -56,7 +56,11 @@ constexpr int Ctl_Flags = 0x48;                   // bit1 = visible (panel Draw 
 constexpr int Ctl_Id = 0x54;
 constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill = 0x74;
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
-constexpr int ButtonCount = 10, FirstButtonId = 111;
+constexpr int ButtonCount = 10, FirstButtonId = 111;   // frames 111..120, icon labels 121..130 (FIRST_ID in scripts/add_hotbar_buttons_gui.py)
+constexpr int IconIdOffset = 10;
+const char* const FrameResref = "hotbar_slot";       // TGAs written by the GUI script into override/
+const char* const FrameHiResref = "hotbar_slot_hi";
+constexpr float EmptyFrameAlpha = 0.45f;
 constexpr int ButtonRefreshFrames = 8;            // entry re-resolve interval (usable/dim state changes are slow)
 constexpr float DimAlpha = 0.35f;
 
@@ -339,6 +343,8 @@ void drainRing(uintptr_t hud) {
 }
 
 // ---- on-screen buttons -----------------------------------------------------------------------------------
+// Each slot = two labels: a frame (LBL_HOTBARBG<d>, id 111+s, drawn first) showing "hotbar_slot" / "hotbar_slot_hi" (hover), and
+// the icon+digit label (LBL_HOTBAR<d>, id 121+s) on top. Both are hidden when the HUD gate is closed.
 using InitCtlFn = void(__thiscall*)(void*, void*, void*, int, int);
 using CExoCtorFn = void*(__thiscall*)(void*, const char*);
 using CExoDtorFn = void(__thiscall*)(void*);
@@ -346,15 +352,16 @@ using LabelCtorFn = void(__fastcall*)(void*);
 using NewFn = void*(__cdecl*)(unsigned);
 using LoadImageFn = void*(__cdecl*)(const char*);
 
-struct Button {
+struct Widget {
     unsigned char* ctl = nullptr;   // 0x148-byte CSWGuiLabel (never freed: the panel dtor does not delete list entries)
     int id = -1;
     float baseAlpha = 1.0f;         // border alpha as loaded from the GFF
     int visible = -1;               // last applied: -1 unknown, 0 hidden, 1 shown
     float alpha = -1.0f;            // last applied border alpha
-    std::string icon;               // last applied resref ("" = none)
+    std::string icon;               // last applied fill resref ("" = none)
     std::string why;                // last logged reason for hidden/shown
 };
+struct Button { Widget bg, ic; bool avail = false; bool hover = false; };
 struct Bar { uintptr_t panel = 0; int built = 0; long seq = 0; Button b[ButtonCount]; };
 Bar g_bar;
 long g_barSeq = 0;
@@ -377,36 +384,76 @@ void* imageFor(const char* resref) {
 }
 
 char slotDigit(int slot) { return "1234567890"[slot]; }
+const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : "ic"; }
 
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
-void setVisible(Button& b, int slot, bool vis, const char* why) {
-    int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d]: flags unreadable, cannot set visible", slot); return; }
+void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
+    if (!b.ctl) return;
+    int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d].%s: flags unreadable, cannot set visible", slot, wname(b, bt)); return; }
     if (b.visible == (vis ? 1 : 0) && b.why == why) return;
     int nf = vis ? (fl | 2) : (fl & ~2);
     if (nf != fl) *reinterpret_cast<int*>(b.ctl + Ctl_Flags) = nf;
-    logf("btn[%d] key %c: %s -> %s (%s) flags %08x->%08x", slot, slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
+    logf("btn[%d].%s key %c: %s -> %s (%s) flags %08x->%08x", slot, wname(b, bt), slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
     b.visible = vis ? 1 : 0; b.why = why;
 }
 
-void setIcon(Button& b, int slot, const std::string& icon) {
-    if (b.icon == icon) return;
+void setFill(Button& bt, Widget& b, int slot, const std::string& icon) {
+    if (!b.ctl || b.icon == icon) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
     int bvt = rdInt(border, 0);
-    if (bvt != (int)BorderVtable) { logf("btn[%d]: border vtable %08x != %08x, not setting icon '%s'", slot, (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); return; }
+    if (bvt != (int)BorderVtable) { logf("btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); return; }
     int old = rdInt(border, Border_Fill);
     *reinterpret_cast<void**>(border + Border_Fill) = image;
-    logf("btn[%d] key %c: icon '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(border, Border_W), rdInt(border, Border_H));
+    logf("btn[%d].%s key %c: fill '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, wname(b, bt), slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(border, Border_W), rdInt(border, Border_H));
     b.icon = icon;
 }
 
-void setAlpha(Button& b, int slot, float a) {
-    if (b.alpha == a) return;
+void setAlpha(Button& bt, Widget& b, int slot, float a) {
+    if (!b.ctl || b.alpha == a) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
-    if (rdInt(border, 0) != (int)BorderVtable) { logf("btn[%d]: border vtable bad, not setting alpha", slot); return; }
+    if (rdInt(border, 0) != (int)BorderVtable) { logf("btn[%d].%s: border vtable bad, not setting alpha", slot, wname(b, bt)); return; }
     *reinterpret_cast<float*>(border + Border_Alpha) = a;
-    logf("btn[%d] key %c: alpha %.2f -> %.2f", slot, slotDigit(slot), b.alpha, a);
+    logf("btn[%d].%s key %c: alpha %.2f -> %.2f", slot, wname(b, bt), slotDigit(slot), b.alpha, a);
     b.alpha = a;
+}
+
+// ---- hover: poll the OS cursor against the frame's pixel rect (labels are click-through, so the game never sees the mouse over them)
+HWND g_gameWnd = nullptr;
+BOOL CALLBACK enumWnd(HWND h, LPARAM lp) {
+    DWORD pid = 0; GetWindowThreadProcessId(h, &pid);
+    if (pid == GetCurrentProcessId() && IsWindowVisible(h)) { RECT r; if (GetClientRect(h, &r) && r.right > 320 && r.bottom > 240) { *reinterpret_cast<HWND*>(lp) = h; return FALSE; } }
+    return TRUE;
+}
+bool cursorInGame(POINT* out) {
+    if (!g_gameWnd || !IsWindow(g_gameWnd)) {
+        g_gameWnd = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&g_gameWnd));
+        RECT r = {0, 0, 0, 0}; if (g_gameWnd) GetClientRect(g_gameWnd, &r);
+        logf("hover: game window %p client=%ldx%ld", (void*)g_gameWnd, (long)r.right, (long)r.bottom);
+        if (!g_gameWnd) return false;
+    }
+    POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(g_gameWnd, &pt)) return false;
+    *out = pt; return true;
+}
+
+// Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "hotbar_slot_hi").
+void updateHover(bool gate) {
+    static int lastHover = -2; static POINT lastPt = {-1, -1}; static long lastLog = -1000;
+    int over = -1; POINT pt = {0, 0};
+    if (gate && cursorInGame(&pt)) {
+        for (int s = 0; s < ButtonCount && over < 0; ++s) {
+            const Widget& w = g_bar.b[s].bg; if (!w.ctl || !w.visible) continue;
+            uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(c, 4), y = rdInt(c, 8), ww = rdInt(c, 0xC), hh = rdInt(c, 0x10);
+            if (pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh) over = s;
+        }
+    }
+    if (over != lastHover) { logf("hover: slot %d -> %d cursor=(%ld,%ld)", lastHover, over, (long)pt.x, (long)pt.y); lastHover = over; }
+    else if (g_cfg.general.verbose && (pt.x != lastPt.x || pt.y != lastPt.y) && pt.y > 1100 && g_frame - lastLog > 120) { lastLog = g_frame; logf("hover: cursor=(%ld,%ld) over=%d", (long)pt.x, (long)pt.y, over); }
+    lastPt = pt;
+    for (int s = 0; s < ButtonCount; ++s) {
+        Button& b = g_bar.b[s]; bool hov = (s == over) && b.avail; b.hover = hov;
+        if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, hov ? FrameHiResref : FrameResref);
+    }
 }
 
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
@@ -422,15 +469,19 @@ void updateButtons(uintptr_t hud, bool gate) {
     lastRefresh = g_frame; lastGateSeen = gate; lastChar = g_charKey;
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
-        if (!b.ctl) continue;
-        if (!gate) { setVisible(b, s, false, "hud not active"); continue; }
+        if (!b.bg.ctl && !b.ic.ctl) continue;
+        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); continue; }
+        // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
         hb::ActionRef want = g_cfg.slotFor(g_charKey, 0, s);
-        if (want.empty()) { setVisible(b, s, false, "unbound"); continue; }
-        Entry e;
-        if (!resolve(hud, want, &e)) { setVisible(b, s, false, "entry not available"); continue; }
-        setIcon(b, s, e.icon);
-        setAlpha(b, s, (e.flags & 1) ? b.baseAlpha : b.baseAlpha * DimAlpha);
-        setVisible(b, s, true, (e.flags & 1) ? "usable" : "unusable (dimmed)");
+        Entry e; const char* state; bool have = false;
+        if (want.empty()) state = "unbound";
+        else if (!resolve(hud, want, &e)) state = "entry not available";
+        else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
+        b.avail = have;
+        setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state);
+        setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
+        setFill(b, b.ic, s, have ? e.icon : std::string());
+        setAlpha(b, b.ic, s, (have && !(e.flags & 1)) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
     }
 }
 
@@ -441,6 +492,34 @@ void dumpMem(const char* tag, uintptr_t base, int dwords) {
         for (int j = i; j < i + 8 && j < dwords; ++j) p += snprintf(line + p, sizeof line - p, " %08x", (unsigned)rdInt(base, j * 4));
         logf("%s", line);
     }
+}
+
+// Allocates, constructs and binds one label by tag (see hook 3 below).
+unsigned char* bindLabel(uintptr_t panel, const char* tagName, int expectId, Widget* w, bool dump) {
+    unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
+    if (!ctl) { logf("H3 %s: allocation failed", tagName); return nullptr; }
+    memset(ctl, 0, LabelSize);
+    reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
+    int vt = rdInt(reinterpret_cast<uintptr_t>(ctl), 0);
+    if (vt != (int)LabelVtable) { logf("H3 %s: ctor left vtable %08x (expected %08x), not binding", tagName, (unsigned)vt, (unsigned)LabelVtable); return nullptr; }
+    char exo[16] = {0};
+    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, tagName);
+    reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
+    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+    uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
+    int id = rdInt(c, Ctl_Id, -999), fl = rdInt(c, Ctl_Flags);
+    int ext[4]; for (int i = 0; i < 4; ++i) ext[i] = rdInt(c, 4 + 4 * i);
+    uintptr_t border = c + Label_Border; float ba = 1.0f; readAt(border, Border_Alpha, &ba);
+    logf("H3 %s: ctl=%p id=%d (expect %d) rect=[%d,%d,%d,%d] flags=%08x border vt=%08x w=%d h=%d fill=%08x alpha=%.2f",
+         tagName, ctl, id, expectId, ext[0], ext[1], ext[2], ext[3], (unsigned)fl, (unsigned)rdInt(border, 0), rdInt(border, Border_W), rdInt(border, Border_H), (unsigned)rdInt(border, Border_Fill), ba);
+    if (dump) dumpMem(tagName, c, LabelSize / 4);
+    // hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so the row never
+    // swallows clicks. Done BEFORE the id check: InitControl already put the label in the panel list, so a wrong/missing id must
+    // still leave it invisible and click-through.
+    *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
+    if (id != expectId) { logf("H3 %s: GUI control missing or wrong id (%d) -- run scripts/add_hotbar_buttons_gui.py; label hidden, slot part unusable", tagName, id); return nullptr; }
+    w->ctl = ctl; w->id = id; w->baseAlpha = ba; w->visible = 0; w->why = "built";
+    return ctl;
 }
 
 } // namespace
@@ -492,38 +571,16 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     g_bar = Bar(); g_bar.panel = panel; g_bar.seq = ++g_barSeq;
     int built = 0;
     for (int s = 0; s < ButtonCount; ++s) {
-        Button& b = g_bar.b[s];
-        unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
-        if (!ctl) { logf("H3 btn[%d]: allocation failed", s); continue; }
-        memset(ctl, 0, LabelSize);
-        reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
-        int vt = rdInt(reinterpret_cast<uintptr_t>(ctl), 0);
-        if (vt != (int)LabelVtable) { logf("H3 btn[%d]: ctor left vtable %08x (expected %08x), not binding", s, (unsigned)vt, (unsigned)LabelVtable); continue; }
-        char tagName[16]; snprintf(tagName, sizeof tagName, "LBL_HOTBAR%c", slotDigit(s));
-        char exo[16] = {0};
-        reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, tagName);
-        reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
-        reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
-        uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
-        int id = rdInt(c, Ctl_Id, -999), fl = rdInt(c, Ctl_Flags);
-        int ext[4]; for (int i = 0; i < 4; ++i) ext[i] = rdInt(c, 4 + 4 * i);
-        uintptr_t border = c + Label_Border; float ba = 1.0f; readAt(border, Border_Alpha, &ba);
-        logf("H3 btn[%d] %s: ctl=%p id=%d (expect %d) rect=[%d,%d,%d,%d] flags=%08x border vt=%08x w=%d h=%d fill=%08x alpha=%.2f",
-             s, tagName, ctl, id, FirstButtonId + s, ext[0], ext[1], ext[2], ext[3], (unsigned)fl, (unsigned)rdInt(border, 0), rdInt(border, Border_W), rdInt(border, Border_H), (unsigned)rdInt(border, Border_Fill), ba);
-        if (s == 0) dumpMem("ctl0", c, LabelSize / 4);
-        // hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so the row never
-        // swallows clicks (review finding 2). Done BEFORE the id check: InitControl already put the label in the panel list, so a
-        // wrong/missing id must still leave it invisible and click-through (review finding 1).
-        *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
-        if (id != FirstButtonId + s) { logf("H3 btn[%d]: GUI control %s missing or wrong id (%d) -- run scripts/add_hotbar_buttons_gui.py; slot unusable, label hidden", s, tagName, id); continue; }
-        b.ctl = ctl; b.id = id; b.baseAlpha = ba; b.visible = 0; b.why = "built";
-        ++built;
+        Button& b = g_bar.b[s]; char tag[32];
+        snprintf(tag, sizeof tag, "LBL_HOTBARBG%c", slotDigit(s)); bool okBg = bindLabel(panel, tag, FirstButtonId + s, &b.bg, s == 0) != nullptr;
+        snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0) != nullptr;
+        if (okBg || okIc) ++built;
     }
     g_bar.built = built;
     int after = rdInt(panel, Panel_CtlCount, -1);
-    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + built);
+    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + 2 * ButtonCount);
     int arr = rdInt(panel, Panel_CtlArray);
-    for (int s = 0; s < ButtonCount; ++s) if (g_bar.b[s].ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", g_bar.b[s].id, (unsigned)rdInt((uintptr_t)arr, g_bar.b[s].id * 4), g_bar.b[s].ctl);
+    for (int s = 0; s < ButtonCount; ++s) for (const Widget* w : { &g_bar.b[s].bg, &g_bar.b[s].ic }) if (w->ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", w->id, (unsigned)rdInt((uintptr_t)arr, w->id * 4), w->ctl);
 }
 
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
@@ -533,7 +590,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     static DWORD lastTickTime = 0; DWORD nowT = GetTickCount();
     if (lastTickTime && nowT - lastTickTime > 1500) logf("tick: gap of %lu ms since previous HUD tick (load/menu/HUD destroyed?)", (unsigned long)(nowT - lastTickTime));
     lastTickTime = nowT;
-    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld bar(panel=%08x built=%d vis=%d%d%d%d%d%d%d%d%d%d) gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d capLogged=%d ctrl/alt/shift=%d%d%d", g_frame, (unsigned)g_bar.panel, g_bar.built, g_bar.b[0].visible, g_bar.b[1].visible, g_bar.b[2].visible, g_bar.b[3].visible, g_bar.b[4].visible, g_bar.b[5].visible, g_bar.b[6].visible, g_bar.b[7].visible, g_bar.b[8].visible, g_bar.b[9].visible, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke, g_capLogged, (int)g_ctrl, (int)g_alt, (int)g_shift);
+    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld bar(panel=%08x built=%d vis=%d%d%d%d%d%d%d%d%d%d) gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d capLogged=%d ctrl/alt/shift=%d%d%d", g_frame, (unsigned)g_bar.panel, g_bar.built, g_bar.b[0].ic.visible, g_bar.b[1].ic.visible, g_bar.b[2].ic.visible, g_bar.b[3].ic.visible, g_bar.b[4].ic.visible, g_bar.b[5].ic.visible, g_bar.b[6].ic.visible, g_bar.b[7].ic.visible, g_bar.b[8].ic.visible, g_bar.b[9].ic.visible, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke, g_capLogged, (int)g_ctrl, (int)g_alt, (int)g_shift);
     if (g_frame == 1) logf("tick: first HUD tick hud=%08x kbdev=%d", (unsigned)hud, g_kbDevice);
     if (hud != g_hud) { g_hud = hud; logf("tick: hud pointer now %08x", (unsigned)hud); }
     if (!hud || IsBadReadPtr(hudPtr, 0x1CA0)) { if (g_hudGateOk) logf("tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }
@@ -551,6 +608,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     }
     probe(hud, g_frame == 60);
     updateButtons(hud, gate);
+    updateHover(gate);
     if (gate) drainRing(hud);
     else if (g_ringTail != g_ringHead) { logf("tick: gate closed, discarding %d queued request(s)", (g_ringHead - g_ringTail + 16) % 16); g_ringTail = g_ringHead; }   // never invoke while the HUD is not the active panel
 }
