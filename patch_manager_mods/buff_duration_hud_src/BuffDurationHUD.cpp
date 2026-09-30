@@ -18,6 +18,7 @@
 
 #include "EffectIconTable.inc"
 #include "DebuffIconTable.inc"
+#include "ShieldTable.inc"
 
 namespace {
 
@@ -255,21 +256,15 @@ constexpr float BarShiftFraction = 0.328f;            // opaque x-span of uibit_
 const float TrackTint[3] = { 0.051f, 0.349f, 0.271f }; // the engine's empty-track teal
 constexpr int MaxSegments = 3;
 constexpr int Eff_Pool = 0x02, Eff_Visual = 0x1e;
-struct ShieldColorRow { int vfx; float rgb[3]; };
 #define HEX(r, g, b) { r / 255.0f, g / 255.0f, b / 255.0f }
-const ShieldColorRow kShieldColors[] = {
-    { 2040, HEX(0x4C, 0xAC, 0xFF) }, { 2044, HEX(0x7C, 0xFF, 0xC7) }, { 2045, HEX(0xFF, 0x0A, 0x0A) },
-    { 2041, HEX(0x38, 0x5E, 0xFF) }, { 2047, HEX(0xDD, 0x92, 0xFF) }, { 2048, HEX(0xCE, 0x63, 0xFF) },
-    { 2042, HEX(0x64, 0x73, 0xFF) }, { 2043, HEX(0x0D, 0x0C, 0xFF) }, { 2046, HEX(0xFF, 0x9B, 0x24) },
-    { 2060, HEX(0xFF, 0x45, 0x0B) },
-};
 struct Pool { int eff; int remaining; int max; const float* rgb; };
 struct MaxRec { int creature, eff, max, stamp, lastLogged; };
 MaxRec g_max[64];
 int g_maxStamp = 0;
 
+// colour of the shield's own VFX row (ShieldTable.inc, generated); unknown VFX (droid rows): by coverage
 const float* shieldColor(int vfx, int damageFlags) {
-    for (const auto& r : kShieldColors) if (r.vfx == vfx) return r.rgb;
+    for (const auto& r : kShieldRows) if (r.vfx == vfx) return r.rgb;
     static const float red[3] = HEX(0xFF, 0x0A, 0x0A), blue[3] = HEX(0x4C, 0xAC, 0xFF);
     return (damageFlags & (2048 | 1024)) ? blue : red;    // ion/sonic coverage = enviro blue, else energy red
 }
