@@ -353,7 +353,7 @@ void swapHealthBar(int slotPtr, bool on) {
     }
 }
 
-int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
+int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, int slotPtr = 0) {
     Pool pools[8];
     int n = collectPools(creature, pools, 8);
     if (n <= 0) return 0;
@@ -386,7 +386,13 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale) {
         if (fillH > segH) fillH = segH;
         if (fillH > 0) {
             int y0 = y + H - baseUp - fillH;
-            if (pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f)) {
+            int pushed = pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f);
+            { static int lastPush[8]; static int pushSlot[8]; static int nPush = 0;
+              int pi = -1; for (int k = 0; k < nPush; ++k) if (pushSlot[k] == slotPtr) pi = k;
+              if (pi < 0 && nPush < 8) { pi = nPush++; pushSlot[pi] = slotPtr; lastPush[pi] = -1; }
+              int psig = pushed ? 1 : 0;
+              if (pi >= 0 && lastPush[pi] != psig) { lastPush[pi] = psig; probeLog("FILL slot=%08x seg=%d pushClip=%d rect=(%d,%d,%d,%d) vit=(%d,%d,%d,%d) n=%d", slotPtr, i, pushed, x, y0, W, fillH, vx, vy, vw, vh, n); } }
+            if (pushed) {
                 float lit[3];
                 for (int c = 0; c < 3; ++c) lit[c] = pools[i].rgb[c] + (1.0f - pools[i].rgb[c]) * ShieldLighten;
                 draw(image, 0, -(y0 - y), W, H, 0, 0, lit, 1.0f);
@@ -573,7 +579,7 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
     }
     if (!creature || vit[2] < 1 || vit[2] > 400 || vit[3] < 1 || vit[3] > 400) return;
 
-    int n = DrawShieldPools(creature, vit[0], vit[1], vit[2], vit[3], scale);
+    int n = DrawShieldPools(creature, vit[0], vit[1], vit[2], vit[3], scale, slotPtr);
     int effCount = 0; readAt(creature, Creature_EffectCountOffset, &effCount);
     static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
     int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == slotPtr) di = k;
