@@ -245,7 +245,13 @@ std::string computeCharacterKey() {
     }
     unsigned oid = (unsigned)rdInt(c, 4);
     if (oid == 0xFFFFFFFFu || oid == 0) return "";   // invalid object id: transient during loads, never a real character
-    char b[24]; snprintf(b, sizeof b, "obj%08x", oid); 
+    char b[24]; snprintf(b, sizeof b, "obj%08x", oid);
+    // Companion object ids (obj8000xxxx) are runtime heap ids that change across save loads. CSWCObject::GetPortraitId (0x007ED4B0) is
+    // the ushort at object+0xB8 = the portraits.2da row, fixed per character; use it for everything but the Exile (objfffffffd, stable).
+    unsigned short portrait = 0; bool havePortrait = readAt(c, 0xB8, &portrait);
+    static unsigned s_lastLogged = 0;
+    if (oid != s_lastLogged) { s_lastLogged = oid; logf("character: oid=%08x portraitId(+0xB8)=%u readable=%d -> %s", oid, (unsigned)portrait, (int)havePortrait, (oid != 0xFFFFFFFDu && havePortrait && portrait != 0 && portrait < 0x1000) ? "portrait key" : "object-id key"); }
+    if (oid != 0xFFFFFFFDu && havePortrait && portrait != 0 && portrait < 0x1000) { snprintf(b, sizeof b, "port%u", (unsigned)portrait); return b; }
     if (!g_scannedCreatures.count(rdInt(c, 4))) { g_scannedCreatures.insert(rdInt(c, 4)); scanObjectStrings("controlled", c); }
     return b;
 }
