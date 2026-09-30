@@ -90,3 +90,12 @@ None. INI only: `enabled`, `cursor`, `highlight`, `highlight_key`, `grey=0.35`, 
 ## R-A result (user in-game check 1, 2026-09-30)
 
 User report: "containers already show (empty); broken droids show (nothing)". So the vanilla `UpdateNameLabel 0x742A00` Empty/Nothing label is already visible to the player; a K1-style " (empty)" hover-name hook is **not needed** (dropped as Mod 7 stage 1). Whether the label appears on hover or only after selection was not distinguished by the report; Mod 7 scope stays: S0 logging, S1 cursor change for empty containers, S2 highlight hotkey (`Z`, INI). Re-ask only if S1 shows the cursor hook is redundant.
+
+## R-G result (2026-09-30): hotkey gating rule for the highlight key
+
+`GetAsyncKeyState('Z')` is global (also fires while typing a save name or in a dialogue/menu/console), so the highlight key must be context-gated exactly like Mod 3's proven gate (doc 07 Lesson 4; port in `force_power_hotbar_src/ForcePowerHotbar.cpp:173-196`, `gameplayHudActive(hud)`):
+1. game window is the foreground window of **our process** (`GetForegroundWindow` + `GetWindowThreadProcessId == GetCurrentProcessId`, as at `ForcePowerHotbar.cpp:848`);
+2. every entry of the GUI manager's modal list is `PanelIgnoredByInput` (no modal open; this also covers text-input dialogs such as the save-name box);
+3. the topmost non-ignored panel in the manager's panel list is the gameplay HUD or a whitelisted HUD-sibling panel (vtables `0x0099E5EC, 0x009A044C, 0x009A7BAC, 0x009A8FCC`);
+4. edge-triggered (toggle on key-down transition), no auto-repeat.
+Mod 7 S2 reuses this gate (copy, do not include, the Mod 3 code; `hud` comes from the `0x7AC470` tick hook context or a cached HUD pointer, to be proven at S0 by logging `gateWhy`). Any key failing the gate is left untouched.

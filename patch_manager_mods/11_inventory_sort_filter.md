@@ -1,6 +1,6 @@
 # Mod Idea 6: Inventory Sorting & Sub-Filters
 
-**STATUS (2026-09-30, research complete, no code):** all engine questions are answered; this file ends with the
+**STATUS (2026-09-30, research complete; Stage 0 code built, not installed - see 'Build status' at the end):** all engine questions are answered; this file ends with the
 **definitive build plan**. Evidence: `mods678_research/dump_excerpts/<addr>.{c,asm}` (decompile + disassembly of every cited
 function), `mods678_research/check_windows_output_2026-09-30.txt` (splice validation), knowledge DB rows tagged
 `mods678 batch3` (`functions`, `name_map` source `mods678-batch3-dump`, lessons 171-178).
@@ -88,12 +88,12 @@ H6c, once, before the finalise call: stable-sort by `isNew desc, usable desc, ba
 - Any panel repopulate that changes the mode from elsewhere (controller bumpers use `SetNextFilter`) must also clear the flag: cheap guard in H6b (`if mode byte != 0 → g_upgradeActive=false`).
 
 ### 4. Data / config
-No 2DA/TLK/script changes. Captions are C strings set by the DLL. INI (`inventory_sort.ini`, optional): `sort=1`, `tint=1`, `cycle=1`, `cycle_states=new,usable,upgrade`.
+No 2DA/TLK/script changes. Captions are C strings set by the DLL. INI (`inventory_sort_filter.ini`, optional): `sort=1`, `tint=1`, `cycle=1`, `cycle_states=new,usable,upgrade`.
 
 ### 5. Build, staged test plan, rollback
-- Stage 0 (logging only): H6a/H6b/H6c log mode, clicked mode, buffered count, sort keys; behaviour unchanged (H6b must still call `CreateItemEntry` itself in this stage).
+- Stage 0 (logging only): H6a/H6b/H6c log mode, clicked mode, buffered count, sort keys; behaviour unchanged. **As built, rows always go through the buffer (created at H6c in vanilla order), so Stage 0 deliberately exercises the splice + flush path** rather than creating rows inside H6b.
 - Stage 1 sort only → Stage 2 tint → Stage 3 cycle (New, Usable) → Stage 4 upgrade filter. Log every stage with the memory-dump style used in Mods 2-5.
-- Rollback: delete the hooks from `patch_config.toml` / disable in the INI (`sort=0` makes H6b/H6c pass-through by immediately creating rows in original order). No save-game side effects (no data written to items).
+- Rollback: delete the hooks from `patch_config.toml` / disable in the INI (`sort=0 tint=0 cycle=0` = vanilla order through the buffer; true rollback = remove the patch id). No save-game side effects (no data written to items).
 
 ### 6. Remaining risks and in-game checks
 1. **Whose "usable"?** Confirm the tint follows the character whose equipment is shown when switching party members (check 1).
@@ -102,3 +102,17 @@ No 2DA/TLK/script changes. Captions are C strings set by the DLL. INI (`inventor
 4. **"Usable" is not one predicate:** tint and sort use `IsItemUsable` (what the popup uses); the cycle's Usable state is engine mode 5, which also requires `CanUseItem` and a different ECX (`0x58AE90(creature)`), so an item can be untinted yet hidden by `Filter: Usable`. Decide in Stage 3 whether to call it "Usable" or add `CanUseItem` to the tint. The Upgrade filter drops backpack rows only; equipped rows still show.
 5. H6b's window is large (79 bytes). If the framework rejects that `original_bytes` length, split it at instruction boundaries into two `skip_original_bytes=true` windows (add them to `check_windows.py` and re-validate; the internal `JNZ` at `0x8A7E3A` targets `0x8A7E52`, so split there) with the same handler state.
 6. Alphabetical name sort is not in v1.
+
+
+## Build status (2026-09-30)
+
+Source: `inventory_sort_filter_src/` (id `inventory-sort-filter`, log `inventory_sort_filter_log.txt`, INI `inventory_sort_filter.ini`; build copy
+`~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/InventorySortFilter/`). One DLL carries all stages; the INI selects them
+(`sort`, `tint`, `cycle`, `cycle_states`, all default 0 = Stage 0 logging only, re-read at most once per second). Pure logic (sort comparator, cycle state machine,
+open-slot predicate, INI parsing) is in `SortLogic.h` with host tests. Implementation notes vs the plan above:
+- Rows always go through the buffer (even at Stage 0), so Stage 0 also proves the splice/flush path; order is unchanged unless `sort=1`.
+- `g_upgrade` (Upgradeable filter) is reset when the panel pointer changes; a reopen at the same address with the flag still set is an open risk (in-game check 6).
+- Stale-buffer guard: a new populate is detected by the loop index (`ebp-0x14`) not increasing.
+- Install status: NOT installed.
+- Review (independent Opus, 2026-09-30) applied: INI path made absolute from the cwd (a bare name goes to the Windows dir), `normaliseState()` rebuilds the upgrade flag/caption from the engine mode at every populate (bumper / reopen / `cycle=0` cannot leave stale state), overflow emits the buffer in order, unknown filter mode reads as 0xFF (never "All"), `Entry.id` stored, buffer 1024. No blockers found.
+- Known UX point to confirm in-game: from New/Usable a click on All moves to the next state (3 clicks back to All with the default states).

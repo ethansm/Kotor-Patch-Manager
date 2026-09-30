@@ -124,3 +124,8 @@ Vanilla `k_ai_master.nss` is unchanged; everything lives in `k_inc_generic.nss` 
 5. Text: the two new strrefs (or the fallback) must be settled before the 2DA is built.
 6. **Check A (user, 2 min):** open the stance menu today and confirm **four** rows (Aggressive, Ranged, Stationary, Jedi Support; aistate 10 is skipped before it is appended), so the new row appears as the fifth.
 7. **Check B:** after Stage 3, select the new stance, close and reopen the menu (the clamp must keep it), save, reload (persistence in `stats+0x146`).
+
+## R-E result (2026-09-30): kite cooldown local-number index
+
+Engine range: `CSWVarTable::GetLocalNumber 0x5E9310` accepts index 0..0x1F (bytes at `table+0x14+idx`), values 0..255. Vanilla scripts (all 638 `.nss` from `Scripts.bif`, grep of Get/SetLocalNumber literals + the `SW_NUMBER_*` / `WALKWAYS_*` constants) use 0-6, 8-16, 29 and 99 (99 is another call, out of range). Named constants: COMBO_ROUTINE 3, COMBO_INDEX 4, LAST_COMBO 5, ROUND_COUNTER 6, COMBAT_ZONE 7, HEALERAI_THRESHOLD 8, HEALERAI_PERCENTAGE 9, COOLDOWN 10, COOLDOWN_FIRE 11.
+**Chosen: index 20** (inside the documented 12..28 window, unused by vanilla). Re-grep `Override/*.nss` of installed mods before the script ships (none present at last check).

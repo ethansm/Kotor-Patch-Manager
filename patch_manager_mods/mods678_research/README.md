@@ -113,3 +113,22 @@ new dedicated stance 16 "Ranged (Kiting)"; Mod 7 Q1 answered statically (Empty l
   `panel+0x24d0 |= 4`.
 - Cursor ids: `ActionIconToMouseCursor` maps 0x3e9→0x19, 0x3ea→0xb, 0x3eb→0x33, 0x3f2→0x17, 0x3f4→0x21,
   0x3f5→7, 0x3f7→0x19, 0x402→0x25, -1/default→5; `HandleMouseOver` also uses 1 and 0x2d.
+
+
+## Build phase log (started 2026-09-30, after commit f883104)
+
+**R-C (framework acceptance) - confirmed from source.** Parameter source forms live in `src/KPatchCore/Models/Parameter.cs`: `"ecx"` = register value,
+`"esp+N"` = address of the game's stack slot, `"[reg+-off]"` = dereference (live K2 hooks already use `[ebp-0x38]`), `"const:0x.."`. `Hook.IsValid` has no max
+`original_bytes` length; `consumed_exit_address` needs `"eax"` in `exclude_from_restore` and `wrapper_x86.cpp` runs the stolen bytes (unless
+`skip_original_bytes`) *before* the `PUSHFD/TEST EAX,EAX/JZ/POPFD/JMP consumed` test. No live K2 hook used it before (K1SecuritySpikes is K1-only), so Mod 6 H6a is its
+first K2 use: **Stage 0 install must show `Parsed consumed_exit_address` in the Proton log.** The "negative address-form" worry in doc 11 is dropped.
+
+**R-A (Mod 7)** answered by the user (in-game check 1): containers already show "(empty)", broken droids "(nothing)"; no K1-style hover hook needed (doc 12 tail).
+
+**Build tooling note:** `create-patch.py` fails ("no such table: game_version") while `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/AddressDatabases/kotor1_steam.db`
+is a 0-byte file (appeared 2026-09-30 10:43, not created by this work). Workaround used (does not touch the shared dir):
+`KPATCH_ADDRESS_DATABASES=<dir of symlinks to the kotor2_*.db files> python3 ../create-patch.py`.
+
+**Mod 6 S0 built** (`../inventory_sort_filter_src/`, build copy `Patches/InventorySortFilter/`): own patch id `inventory-sort-filter`, all three hooks, one DLL, INI-staged
+(`sort`/`tint`/`cycle` default 0 = logging only). Host tests `sort_logic_test.cpp` ALL PASS; `-Wall -Wextra` clean; hook `original_bytes` byte-identical to `check_windows_output_2026-09-30.txt`.
+Not installed. Independent Opus review requested before any install offer.
