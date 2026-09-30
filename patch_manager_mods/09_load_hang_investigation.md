@@ -1,6 +1,6 @@
 # 09 -- Intermittent load-time hang (Proton / Patch Manager): investigation brief
 
-**Status (2026-09-29 late): OPEN -- REFRAMED by section 9: the "hang" is a `CSWGuiLoadScreen` that is never dismissed while the main thread keeps rendering; the `IsBadReadPtr` burst is attributed (Force Power Hotbar first-tick scan, benign). Earlier status: OPEN, UNATTRIBUTED. Deliberately split out of the Buff Duration HUD work so it gets its own session.** This document is the hand-off: symptom, every incident so far, what the logs do and do not show, what has been ruled out, ranked hypotheses, and a concrete experiment plan with the capture procedure that was missing every time. Companion file: `CRASH_INVESTIGATION.md` (per-incident narratives, dated 2026-09-28 / 09-29). Skill: `kotor2-crash-triage`.
+**Status (2026-09-30 00:30): OPEN -- probe INSTALLED (section 11), awaiting the next hang. REFRAMED by section 9: the "hang" is a `CSWGuiLoadScreen` that is never dismissed while the main thread keeps rendering; the `IsBadReadPtr` burst is attributed (Force Power Hotbar first-tick scan, benign). Earlier status: OPEN, UNATTRIBUTED. Deliberately split out of the Buff Duration HUD work so it gets its own session.** This document is the hand-off: symptom, every incident so far, what the logs do and do not show, what has been ruled out, ranked hypotheses, and a concrete experiment plan with the capture procedure that was missing every time. Companion file: `CRASH_INVESTIGATION.md` (per-incident narratives, dated 2026-09-28 / 09-29). Skill: `kotor2-crash-triage`.
 
 ## 1. Symptom
 
@@ -20,6 +20,7 @@ During a loading screen (save load or area transition, i.e. before/while the wor
 | 4 | 2026-09-29 | 13 baseline, with and without a throwaway probe hook | after Buff-HUD probe testing | -- | 13,713 `NtGetContextThread` lines, spin thread `0138:020c` |
 | 5-6 | 2026-09-29 | 14 (13 + `buff-duration-hud` first diagnostic build) | load right after install, two launches in a row | ~90-116% CPU | mod log showed `buffhud loaded` + `snapshot` lines only |
 | 8 | 2026-09-29 20:25 | **16** (14 + `force-power-hotbar` + `inventory-3d-viewport`, installed by other sessions; Buff HUD v1.0.0, logging OFF) | load, killed at 50 s | 50 s, `SNsl` 91% | first hang WITH a saved Proton log (`~/hang_20260929_202500.log`); see section 3b |
+| 9 | 2026-09-30 00:05 | 16 (newer Buff HUD/hotbar builds than #8; NO probe) | load, killed at ~45 s | ~45 s, `RNsl` 60% | captured `~/hang_20260930_000500.log` + hotbar log copy BEFORE killing. Same signature as #8: 8-fault hotbar scan burst at the first HUD tick, `modal[0]=CSWGuiLoadScreen`, hotbar HUD frames advancing ~60 fps (f660..f2460) under it. Buff HUD debug was off. |
 | 7 | 2026-09-29 | 14 (redesign build with backing disc) | load after install | 2 m 23 s, `RNsl` 72% CPU | mod log: `snapshot` lines only, **zero `COLUMN#` lines** -> `DrawBuffColumn` never ran |
 
 Counting: incidents 1-4 happened with **no Buff-HUD code loaded at all**. Incidents 5-7 (3 hangs in roughly 10 launches with the patch) happened with it, but in each, the mod's draw hook had not run yet; only the tiny `SnapshotPortraitSlot` store hooks had. **No launch with zero patches has been tested**, so nothing rules Patch Manager itself in or out.
@@ -130,7 +131,7 @@ Remove/relax `taskset` (a 2-thread affinity on one core is a large performance a
 
 **9e. Engine-side candidate (write-up only, not implemented):** `PlayMovies` `0x00798820` busy-waits `while (IsMoviePlaying()==1)` with a message pump only every 500 iterations and no sleep -> 100% of a core while a Bink movie plays, and a permanent spin if a movie never reports done. Not matched to hang #8 (frames kept rendering), but a real hang shape; a safe patch would pump + `Sleep(1)` each iteration. Needs the user's go-ahead.
 
-## 10. Diagnostics: `load-hang-probe` 1.1.0 + `SafeRead.h` (built 2026-09-29, NOT installed yet)
+## 10. Diagnostics: `load-hang-probe` 1.1.0 + `SafeRead.h` (INSTALLED 2026-09-30 00:07; see section 11) 
 
 **What it is.** A diagnostics-only patch (`Patches/LoadHangProbe`, sources of record `patch_manager_mods/load_hang_probe_src/`), inert unless `hangprobe_debug.txt` exists in the game dir. One hook: `0x00781BE0` = `CClientExoAppInternal::MainLoop` entry (`55 8B EC 6A FF`, verified against the live and vanilla exe; no other installed patch hooks near it), ECX = client internal -> frame heartbeat + main thread id + stack bounds. A watchdog thread **polls** every 250 ms (plain memory reads; it never pauses the game thread in a normal session). **Sampling is armed only when something already looks wrong**: load screen up > 5 s with > 120 frames rendered under it, no MainLoop call for 5 s, or a manual `hangprobe_dump.txt` (sampled 2.5 s, then reported). While armed (and only then) it samples the main thread every 250 ms (v1.0.0 sampled always):
 - sampling =  `SuspendThread` / `GetThreadContext` / EBP-chain walk + raw return-address scan, reading **only `[ESP, StackBase)` and only when ESP lies in the stack's own reservation**, with no API call while the thread is suspended; `ResumeThread`;
@@ -160,3 +161,35 @@ Verify: steam log `Applied DETOUR` count = previous count + 1 (`HangProbeMainLoo
 
 | Date | Launches | Hangs | Notes |
 |---|---|---|---|
+
+## 11. Install history, incident 9, calibration, change log (2026-09-30 00:00-00:30)
+
+**Incident 9 (00:05)** -- see the table. Evidence copied first: `~/hang_20260930_000500.log`, `~/hang_hotbar_*.txt`. Killed with `kill -TERM` (exited in 1 s).
+
+**Install sequence (all times 2026-09-30):**
+1. ~00:06 I installed 17 patches (16 ids + `load-hang-probe`) with `KPatchLauncher --patches hangprobe_stage/`, which was staged from `inv3d_live_patches/` (md5-matched to the live DLLs at ~22:20 on 09-29). **That was stale:** another session had reinstalled newer builds at 23:56 (`kpm_install_state.json` UpdatedAt 23:56:32) -- Buff HUD with the `ShieldProbeSlot` hook (`shield_probe_stage3/`, 23:47) and the hotbar with `HotbarBuildButtons` (0x00748502). My install silently dropped those two hooks (hook diff against the 00:05 log: 24 hooks before, 23 after adding the probe's). Detected by diffing the `Loaded DETOUR` lists of the two Proton logs.
+2. Backup taken by me BEFORE that install: `~/Games/KOTOR2_Mod_Workspace/backups/pre_hangprobe_20260930_000546/` (`kpm_install_state.json`, `patch_config.toml`, `patches/` = the 23:56 live DLLs).
+3. Recovery stage `tools/kotor-patch-manager/hangprobe_stage2/` = `hotbar_stage2/` kpatches + `LoadHangProbe.kpatch`, with `ForcePowerHotbar.kpatch` **repacked around the exact backed-up live hotbar DLL** (md5 3ede05bc, 3 hooks); every other DLL md5-verified equal to the backup. Not used in the end.
+4. 00:07:50 an install by another session (or the user) landed: 17 ids incl. `load-hang-probe`, 25 hooks (= the 24 pre-existing + `HangProbeMainLoop @ 0x00781BE0`), hotbar = the 00:07 rebuild (`hotbar_stage2/ForcePowerHotbar.kpatch`, md5 05fbb24f, same 3 hooks), the other 7 DLLs byte-identical to the backup, `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9`. **This is the current live state.**
+
+**Lessons (also in the Ghidra DB `lessons`):** (a) a stage directory's match against the live DLLs is only valid at the moment it was checked -- re-hash `$G/patches/*.dll` against the stage and re-read `kpm_install_state.json` immediately before every install, and take a backup first; (b) after any install diff the `[Config] Loaded DETOUR` lines against the previous session's; (c) another session may install at any time -- check `pgrep` and `UpdatedAt` before assuming the game is closed.
+
+**Calibration data (3 probe launches, 00:00-00:27, 0 hangs):** normal load screens `UP -> DOWN` in 4.77 s (x3, save loads), one 6.04 s load; `sampling ARMED` fired once (the 6.04 s load crossed `ArmLoadMs`=5 s, 1 sample, disarmed 254 ms later, no report); `failedProbes=0`; heartbeats every 60 s (frames up to 12,640) with `armed=0`. **Action:** raise `ArmLoadMs` from 5000 to 10000 in the next probe rebuild (normal loads reach 6 s; a real hang stays > 20 s anyway). Success criterion still open: a report naming the stuck condition, or 0 hangs in 10+ launches (3 so far with the probe).
+
+| Date | Launches with probe | Hangs | Notes |
+|---|---|---|---|
+| 2026-09-30 00:07-00:27 | 3 | 0 | load screens 4.8/4.8/4.8/6.0 s; one benign arming |
+
+**Change log (everything built or changed during the 09-29 evening / 09-30 early session; framework clone = `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`, uncommitted):**
+| Artifact | Location | Status |
+|---|---|---|
+| `LoadHangProbe` patch 1.1.0 (hook 0x00781BE0, poll + armed sampling, `hangprobe_log/report.txt`, `hangprobe_dump.txt` manual trigger) | framework `Patches/LoadHangProbe/`; sources of record `patch_manager_mods/load_hang_probe_src/` | installed |
+| `SafeRead.h` (VirtualQuery-based `probeRead`, failed-read ring) | framework `Patches/_shared/`; copy `patch_manager_mods/_shared_src/` | built into the probe only; NOT yet used by the other mods |
+| Ghidra scripts `ImportCallers.java`, `RangeDecompileArgs.java` | framework `tools/ghidra_scripts/`; copies in `load_hang_probe_src/` | reusable, registered in DB `ghidra_scripts` |
+| Knowledge DB: 14 functions, 3 classes (CSWGuiLoadScreen 009a5c84, CSWGuiMessageBox 0099e6a4, CSWCCreature 0099ee14), 7 lessons | `patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db` | committed |
+| Launcher copy with `KPATCH_NO_LAUNCH=1` (install without launching the game) | framework `bin/NoLaunch/` (source edit reverted; `bin/Debug` untouched) | usable: `KPATCH_NO_LAUNCH=1 bin/NoLaunch/KPatchLauncher "$G/swkotor2.exe" --patches <stage> <ids>` |
+| Stages | `hangprobe_stage/` (STALE, 09-29 22:xx builds, do not use), `hangprobe_stage2/` (= 23:56 live builds + probe, verified) | stage2 is the safe reference |
+| Doc corrections | this file sections 3b/9-11, `CRASH_INVESTIGATION.md` | committed |
+| Deferred | `IsBadReadPtr -> probeRead` swaps + stale-pointer guard in Buff HUD / hotbar / inv3d; PlayMovies busy-wait engine patch (section 9e) | not done, need go-ahead / quiet sources |
+
+**Next steps for the hang:** (1) keep `hangprobe_debug.txt` + `buffhud_debug.txt` in the game dir and play normally; (2) on the next hang copy `~/steam-208580.log`, then `hangprobe_report.txt`, `hangprobe_log.txt`, `force_power_hotbar_log.txt` BEFORE killing; the report's last `STATE` line says which area-finish gate stayed closed (section 9d); (3) rebuild the probe with `ArmLoadMs`=10000 when convenient (keep the stage rule above).
