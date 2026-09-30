@@ -34,7 +34,7 @@ WINDOWS = [
     ("M8 stance clamp",            0x77AA5E, 7,  0x77A9E0, False),
     ("M8 stance row fill",         0x77ACBC, 15, 0x77A9E0, False),
     ("M8 stance click",            0x77D8D4, 14, 0x77D890, False),
-    ("M8 HUD current stance",      0x74DB87, 0,  0x74DA40, False),  # optional, length filled below
+    ("M8 HUD stance default branch", 0x74DBDD, 7, 0x74DA40, True),   # S-H4: MOV [ebp-0x1c],-1 (skip-only; handler writes 0x415 or -1)
 ]
 
 

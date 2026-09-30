@@ -59,7 +59,7 @@ dump in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71` and are valid
 - [`11_inventory_sort_filter.md`](11_inventory_sort_filter.md) - Mod 6: inventory sort + hidden filters. Ships as its own patch id `inventory-sort-filter`.
   Re-clicking the active **All** tab cycles All -> New -> Usable-by-me -> Open upgrade slot. Sort = buffer backpack rows at
   `0x8A7E22`, flush sorted at `0x8A7E76`; unusable rows tinted with `SetCanUse(row,2)`. 3 hooks, no data files.
-- [`12_empty_container_indicators.md`](12_empty_container_indicators.md) - Mod 7: KOTOR II is a two-step interface, so the vanilla
+- [`12_empty_container_indicators.md`](12_empty_container_indicators.md) - Mod 7: **CANCELLED 2026-09-30 (vanilla already shows Empty/Nothing).** KOTOR II is a two-step interface, so the vanilla
   "Empty" label is selection-only (answered statically) and the highlight-everything call has **no live trigger** in this exe.
   Plan: `SetMouseCursor` hook (plain pointer over empty containers), grey tint in `HiliteAreaObjects` case 9, and our own
   hotkey that calls the engine's `on=1` path. 3 hooks, INI only.

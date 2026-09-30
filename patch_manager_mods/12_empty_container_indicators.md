@@ -99,3 +99,8 @@ User report: "containers already show (empty); broken droids show (nothing)". So
 3. the topmost non-ignored panel in the manager's panel list is the gameplay HUD or a whitelisted HUD-sibling panel (vtables `0x0099E5EC, 0x009A044C, 0x009A7BAC, 0x009A8FCC`);
 4. edge-triggered (toggle on key-down transition), no auto-repeat.
 Mod 7 S2 reuses this gate (copy, do not include, the Mod 3 code; `hud` comes from the `0x7AC470` tick hook context or a cached HUD pointer, to be proven at S0 by logging `gateWhy`). Any key failing the gate is left untouched.
+
+
+## DECISION 2026-09-30: Mod 7 CANCELLED
+
+The user confirmed in-game that containers already show "(empty)" and broken droids "(nothing)", so the feature is covered by vanilla and Mod 7 will not be built (no cursor change, no highlight hotkey). Research above is kept for reference only; R-G gating notes remain reusable for any future hotkey mod.
