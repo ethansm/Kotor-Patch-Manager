@@ -1,6 +1,6 @@
 # Mod Idea 5: Equipment screen live 3D character (+ flourish animation)
 
-**Status (2026-09-30): Phase 1 static research DONE (GATE A passed). Phase 2: user picked layout R (view LEFT). Nothing built or installed yet.** Predecessor: `01_inventory_3d_viewport.md` (Mod 1). Source of record will be `kotor-patch-manager/Patches/EquipCharPreview/`, mirrored in `equipment_3d_character_src/`. Raw research: `equipment_3d_character_src/research/R*`. DB: `functions`/`class_methods`/`lessons` 127-130 (scope `mod5-equip3d`).
+**Status (2026-09-30): Phase 1 static research DONE (GATE A passed). Phase 2: user first picked R, then switched to **A (view RIGHT)** after the stage-2 screenshot. 0.1.0-probe installed 2026-09-30 01:00 at stage 2 (static creature render confirmed working).** Predecessor: `01_inventory_3d_viewport.md` (Mod 1). Source of record will be `kotor-patch-manager/Patches/EquipCharPreview/`, mirrored in `equipment_3d_character_src/`. Raw research: `equipment_3d_character_src/research/R*`. DB: `functions`/`class_methods`/`lessons` 127-130 (scope `mod5-equip3d`).
 
 ## User request (2026-09-30)
 Show a live render of the character wearing the currently chosen equipment on the equipment screen, and occasionally mix a flourish animation into the idle. Style reference: Mod 1 (drag rotate, wheel zoom, curved arc covers).
@@ -55,3 +55,4 @@ Constraints kept: 14-unit edge gaps, 10-unit panel gaps, BAR5 vanilla. Generator
 ## Decisions log
 - 2026-09-30 user picked **layout R** (view left `[48,134,216,336]`, list + block +113). The R5 inventory now covers the KOTOR 2 party rows only (appearance.2da keeps K1 leftovers: Bastila/Carth/Cand/Jolee/Juhani/Mission/Zaalbar; the first R5 run listed them by mistake).
 - Idea parked for a later mod (user brainstorm): a persistent companion influence/affinity display. Vanilla has only the `statussummary_p` popup rows `LBL_INFLUENCE_RECV/LOST`; where the engine stores the per-companion value is NOT researched. Candidate homes: Character-page strip, party-select row. No free slot exists on the equip page in layout R.
+- 2026-09-30 01:02 stage-2 live test: the preview creature renders correctly (PC with current gear, alignment mist rig). **Layout R was wrong**: the list moved right and overlapped the vanilla portrait-notch bar `LBL_BAR5 [407,476,227,32]` (list is 364 tall, ends y 498 > 476). Switched to **layout A** (list 48..284 ends left of the notch, block and view end at y 470 above it); same side as the inventory view.
