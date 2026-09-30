@@ -10,43 +10,62 @@ static int g_fail = 0;
 int main() {
     // sort: new first, usable before unusable, base item ascending, stable
     std::vector<Entry> v = {
-        {1, 1, 0, false, true, 50}, {2, 2, 1, false, false, 10}, {3, 3, 2, true, false, 99}, {4, 4, 3, false, true, 50},
-        {5, 5, 4, false, true, 7},  {6, 6, 5, true, true, 3},    {7, 7, 6, false, false, 10},
+        {1, 1, 0, false, true, 50, false}, {2, 2, 1, false, false, 10, true}, {3, 3, 2, true, false, 99, true},
+        {4, 4, 3, false, true, 50, false}, {5, 5, 4, false, true, 7, false},  {6, 6, 5, true, true, 3, false},
+        {7, 7, 6, false, false, 10, false},
     };
     sortEntries(v.data(), (int)v.size());
     int want[] = {6, 3, 5, 1, 4, 2, 7};
     for (size_t i = 0; i < v.size(); ++i) CHECK(v[i].item == want[i]);
 
     // stability / strict weak order: identical keys keep vanilla order
-    std::vector<Entry> w; for (int i = 0; i < 100; ++i) w.push_back({i, i, i, false, true, i % 3});
+    std::vector<Entry> w; for (int i = 0; i < 100; ++i) w.push_back({i, i, i, false, true, i % 3, false});
     sortEntries(w.data(), (int)w.size());
     for (size_t i = 1; i < w.size(); ++i) CHECK(!before(w[i], w[i - 1]));
     int lastBase = -1, lastOrig = -1;
     for (auto& e : w) { if (e.baseItem != lastBase) { lastBase = e.baseItem; lastOrig = -1; } CHECK(e.orig > lastOrig); lastOrig = e.orig; }
 
-    // cycle state machine, all states enabled
+    // cycle state machine, all states enabled: New = engine mode 1, Usable/Upgrade = mode 0 + our extra filter
     unsigned all = (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade);
-    State s = S_All; bool up = false; int mode = 0;
+    State s = S_All; Extra ex = X_None; int mode = 0;
     auto click = [&](int clicked, unsigned mask) {
         State n;
-        if (!onTabClick(clicked, mode, up, mask, &n)) return false;
-        mode = engineModeOf(n); up = (n == S_Upgrade); s = n; return true;
+        if (!onTabClick(clicked, mode, ex, mask, &n)) return false;
+        mode = engineModeOf(n); ex = extraOf(n); s = n; return true;
     };
-    CHECK(click(0, all) && s == S_New && mode == 1 && !up);
-    CHECK(click(0, all) && s == S_Usable && mode == 5 && !up);
-    CHECK(click(0, all) && s == S_Upgrade && mode == 0 && up);
-    CHECK(click(0, all) && s == S_All && mode == 0 && !up);
+    CHECK(click(0, all) && s == S_New && mode == 1 && ex == X_None);
+    CHECK(click(0, all) && s == S_Usable && mode == 0 && ex == X_Usable);
+    CHECK(click(0, all) && s == S_Upgrade && mode == 0 && ex == X_Upgrade);
+    CHECK(click(0, all) && s == S_All && mode == 0 && ex == X_None);
     // another tab is never consumed, even inside the cycle
     mode = 1; CHECK(!click(3, all)); CHECK(!click(1, all));
-    // a mode outside the cycle (weapons tab = 2 etc.) is never consumed, even for clicked==0
-    mode = 2; up = false; CHECK(!click(0, all));
+    // a mode outside the cycle (weapons tab = 7 etc., and engine mode 5 = the old 0.1.0 Usable) is never consumed
+    mode = 2; ex = X_None; CHECK(!click(0, all));
     mode = 7; CHECK(!click(0, all));
+    mode = 5; CHECK(!click(0, all));
     // subset masks skip disabled states
-    mode = 0; up = false; s = S_All;
+    mode = 0; ex = X_None; s = S_All;
     CHECK(click(0, 1u << S_Upgrade) && s == S_Upgrade);
     CHECK(click(0, 1u << S_Upgrade) && s == S_All);
+    CHECK(click(0, (1u << S_New) | (1u << S_Upgrade)) && s == S_New);
+    CHECK(click(0, (1u << S_New) | (1u << S_Upgrade)) && s == S_Upgrade && mode == 0 && ex == X_Upgrade);
     // empty mask: All stays All, click not consumed (vanilla handles it)
-    mode = 0; up = false; CHECK(!click(0, 0));
+    mode = 0; ex = X_None; CHECK(!click(0, 0));
+    // stateOf
+    State st;
+    CHECK(stateOf(0, X_Usable, &st) && st == S_Usable);
+    CHECK(stateOf(1, X_None, &st) && st == S_New);
+    CHECK(!stateOf(5, X_None, &st) && !stateOf(0xFF, X_None, &st) && !stateOf(-1, X_None, &st));
+    // equip predicate helpers
+    std::vector<unsigned> seen;
+    CHECK(anySlotBit(0x30, [&](unsigned b) { seen.push_back(b); return b == 0x20; }) && seen.size() == 2 && seen[0] == 0x10);
+    seen.clear();
+    CHECK(!anySlotBit(0x2 | 0x80000, [&](unsigned b) { seen.push_back(b); return false; }) && seen.size() == 2 && seen[1] == 0x80000);
+    CHECK(!anySlotBit(0, [](unsigned) { return true; }));
+    CHECK(anySlotBit(0x80000000u, [](unsigned b) { return b == 0x80000000u; }));
+    CHECK(genderAllows(0, 7, 1, 2) && genderAllows(1, 1, 1, 2) && !genderAllows(1, 2, 1, 2) && genderAllows(2, 2, 1, 2) && genderAllows(3, 9, 1, 2));
+    CHECK(tintRow(true, false) && !tintRow(true, true) && !tintRow(false, false));
+    CHECK(usableForCycle(true, false) && usableForCycle(false, true) && !usableForCycle(false, false));
     // parse
     CHECK(parseCycleStates("new,usable,upgrade") == all);
     CHECK(parseCycleStates(" NEW , Upgradeable ") == ((1u << S_New) | (1u << S_Upgrade)));

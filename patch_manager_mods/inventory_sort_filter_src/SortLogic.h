@@ -12,8 +12,9 @@ struct Entry {
     int id;         // server object id (item+0x14)
     int orig;       // index in the vanilla order (stable tie-break)
     bool isNew;     // item+0x2C8 bit 7
-    bool usable;    // IsItemUsable result
+    bool usable;    // usableForCycle(): equippable by the shown character, or activatable
     int baseItem;   // item+0xC
+    bool tint;      // tintRow(): equippable type the shown character cannot equip
 };
 
 // New first, then usable, then by base item id (groups identical kinds), then vanilla order.
@@ -27,21 +28,23 @@ inline bool before(const Entry& a, const Entry& b) {
 inline void sortEntries(Entry* e, int n) { std::stable_sort(e, e + n, before); }
 
 // ---- filter cycle (re-clicking the active All tab) ---------------------------------------------------
+// New is the engine's own mode 1. Usable and Upgradeable are our filters on top of engine mode 0 (All), applied
+// to backpack rows in the populate hook; `Extra` says which one is active. (0.1.0 used engine mode 5 for Usable,
+// whose predicate disagreed with the tint; 0.2.0 uses the same equip predicate for both.)
 enum State { S_All = 0, S_New = 1, S_Usable = 2, S_Upgrade = 3, S_Count = 4 };
-constexpr int kEngineModeNew = 1, kEngineModeUsable = 5;
+enum Extra { X_None = 0, X_Usable = 1, X_Upgrade = 2 };
+constexpr int kEngineModeNew = 1;
 
-// Maps the engine filter mode byte (GuiInGame+0xFC1) plus our upgrade flag to a cycle state.
-// Modes that are not part of the cycle (weapon/armor/... tabs) return false.
-inline bool stateOf(int engineMode, bool upgradeFlag, State* s) {
-    if (engineMode == 0) { *s = upgradeFlag ? S_Upgrade : S_All; return true; }
+// Maps the engine filter mode byte (GuiInGame+0xFC1) plus our extra filter to a cycle state.
+// Modes that are not part of the cycle (weapon/armor/... tabs, engine mode 5) return false.
+inline bool stateOf(int engineMode, Extra extra, State* s) {
+    if (engineMode == 0) { *s = extra == X_Usable ? S_Usable : extra == X_Upgrade ? S_Upgrade : S_All; return true; }
     if (engineMode == kEngineModeNew) { *s = S_New; return true; }
-    if (engineMode == kEngineModeUsable) { *s = S_Usable; return true; }
     return false;
 }
 
-inline int engineModeOf(State s) {
-    return s == S_New ? kEngineModeNew : s == S_Usable ? kEngineModeUsable : 0;
-}
+inline int engineModeOf(State s) { return s == S_New ? kEngineModeNew : 0; }
+inline Extra extraOf(State s) { return s == S_Usable ? X_Usable : s == S_Upgrade ? X_Upgrade : X_None; }
 
 inline State nextState(State s, unsigned enabledMask) {   // bit (1<<state); All is always allowed
     for (int i = 1; i <= S_Count; ++i) {
@@ -62,14 +65,29 @@ inline const char* captionOf(State s) {
 
 // Click on a tab whose engine mode is `clicked`. Only a click on the All tab (mode 0) while the panel is in a
 // cycle state advances it. Returns true when the click is consumed and fills *next.
-inline bool onTabClick(int clicked, int engineMode, bool upgradeFlag, unsigned enabledMask, State* next) {
+inline bool onTabClick(int clicked, int engineMode, Extra extra, unsigned enabledMask, State* next) {
     State cur;
-    if (clicked != 0 || !stateOf(engineMode, upgradeFlag, &cur)) return false;
+    if (clicked != 0 || !stateOf(engineMode, extra, &cur)) return false;
     State n = nextState(cur, enabledMask);
     if (n == cur) return false;
     *next = n;
     return true;
 }
+
+// ---- equip predicate (doc 11 "0.2.0 tint predicate") -------------------------------------------------
+// The engine's equip test 0x5BD6A0 takes ONE slot bit (it dispatches on 0x10/0x20, 0x40000/0x80000, other).
+// An item fits the shown character if any bit of its baseitem slot mask passes. Stops at the first pass.
+template <typename F> inline bool anySlotBit(unsigned mask, F pass) {
+    for (unsigned b = 1; b; b <<= 1)
+        if ((mask & b) && pass(b)) return true;
+    return false;
+}
+// baseitem+0xB4: 0 none, 1 / 2 = only for the gender whose stats+0xE0 value equals g1 / g2 (0x8AC330's test).
+inline bool genderAllows(int req, int gender, int g1, int g2) {
+    return req == 1 ? gender == g1 : req == 2 ? gender == g2 : true;
+}
+inline bool tintRow(bool equippable, bool canEquip) { return equippable && !canEquip; }
+inline bool usableForCycle(bool canEquip, bool activatable) { return canEquip || activatable; }
 
 inline bool ieq(const char* a, const char* b) {
     for (; *a && *b; ++a, ++b) {

@@ -141,3 +141,7 @@ Mod 6 review fixes applied and Stage 0 **installed live 11:07** (not yet user-te
 ## Session log 2026-09-30 (build phase, part 3)
 
 Opus review of the Mod 8 Stage 0 DLL found a **BLOCKER**: with `consumed_exit_address` the framework runs the stolen bytes after the handler with EAX = handler result, so E-H2's stolen `MOV ECX,[EAX+0x10E8]` at `0x6D7C73` would fault on first hit. E-H2 moved to `0x6D7C79` (6 bytes `89 8D 50 FD FF FF`, same consumed exit `0x6D7C8C`); S-H2 and S-H3 (Stage 3) have the same flaw and must be re-sited. Also fixed: throttle slots (party-only claim), log truncated per session + cap marker, `approach` renamed `backoff`, `0.1f`, non-null area. Rebuilt `RangedAI.kpatch` (md5 94642e19...). Collision snapshot refreshed to the live 82 hooks (`live_hooks_2026-09-30b.tsv`); `check_windows_output_2026-09-30d.txt` ALL OK, `verify_windows_both_exes.py` ALL MATCH. DB lesson via `persist_batch4_db.py`. The 0-byte `kotor1_steam.db` was already moved aside (`.empty_moved_0930`); `create-patch.py` works without the override again.
+
+## Session log 2026-09-30 (build phase, part 5: 0.2.0 UX builds)
+
+Mod 6 0.2.0 (equip-based tint/usable via `0x5BD6A0`, own Usable filter, H6d re-tint at `0x8A8478`, log hygiene) and Mod 8 0.2.0 (stance 16: S-H1..S-H4 re-sited EAX-free, TLK/2DA tools, kite script with byte-identical toolchain proof) built, not installed. `live_hooks_2026-09-30e.tsv`, `check_windows_output_2026-09-30e.txt` (ALL OK, 13 windows, both exes match), `persist_batch5_db.py`. Details: doc 11/13 tails and `HANDOFF_2026-09-30.md` part 5.

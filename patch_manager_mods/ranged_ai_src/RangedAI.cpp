@@ -7,9 +7,14 @@
 //                                                     return 1 => end the attack action (0x6d83ff)
 //   E-H2 0x006d7c79 RangedAiRetarget(attacker=EAX, ebp) return 1 => behave as IsPC (0x6d7c8c)
 //        (not 0x6d7c73: stolen bytes run AFTER the handler with EAX = its return value, so they must not use EAX)
+// Stance 16 "Ranged (Kiting)" in the party stance menu (0.2.0; all four windows EAX-free):
+//   S-H1 0x0077aa5e RangedAiStanceClamp(state=ECX)     AddStanceActions 0x77a9e0: return 1 => keep 16 (skip reset-to-9, 0x77aab4)
+//   S-H2 0x0077acbc RangedAiStanceRow(ebp)             row for aistate 16: id 0x415 + icon; return 1 => 0x77ae77 (next row)
+//   S-H3 0x0077d8d4 RangedAiStanceClick(ebp)           StanceActionClicked 0x77d890: id 0x415 => stance 16; return 1 => 0x77d9ca
+//   S-H4 0x0074dbdd RangedAiHudStance(ebp)             HUD refresh 0x74da40 default branch (skip-only): marker id for stance 16
 //
-// Stage 0 (hold=0, retarget=0 in ranged_ai.ini) only logs, so vanilla behaviour is unchanged. Behaviour is switched
-// on from the INI (re-read once a second), no restart needed.
+// Behaviour applies only to the stances in hold_stances / retarget_stances (shipped: 16), so the vanilla stances stay
+// vanilla. Everything is re-read from ranged_ai.ini once a second, no restart needed.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string.h>
@@ -30,6 +35,16 @@ constexpr int CrId = 0x04, CrPos = 0x94, CrEndAttack = 0x52C, CrLastBlocked = 0x
               CrStats = 0x1198, CrIsParty = 0x11AC;
 constexpr int StatsStance = 0x146;
 constexpr int ObjType = 0x08, ObjTypeCreature = 5;
+
+constexpr int KiteStance = 16, KiteActionId = 0x415;
+constexpr int RowStride = 0x3C, RowActionId = 0x08, RowIcon = 0x20;
+constexpr int KiteTutorialRow = 0x3F;   // tutorial.2da row StanceActionClicked passes to 0x740a20 for "Ranged" (shown once ever)
+// AddStanceActions 0x77a9e0 frame: [ebp+8] = action list (*list = row array), [ebp-0x14] = row aistate, [ebp-0x1c] = row index
+constexpr int FA_List = 8, FA_State = -0x14, FA_RowIdx = -0x1C;
+// StanceActionClicked 0x77d890 frame: [ebp+8] = action id, [ebp-0x10] = stats, [ebp-8] = message strref, [ebp-4] = tutorial row
+constexpr int FC_Id = 8, FC_Stats = -0x10, FC_MsgStrref = -0x8, FC_Tutorial = -0x4;
+// HUD refresh 0x74da40 frame: [ebp-0x28] = stance, [ebp-0x1c] = remembered stance action id
+constexpr int FH_Stance = -0x28, FH_ActionId = -0x1C;
 
 // AIActionPhysicalAttacks 0x6d7390 frame (EBP-relative), from the asm (dump_excerpts/006d7390.asm)
 constexpr int F_Attacker = -0x49C, F_Los = -0xD0, F_Dist2 = -0xBC, F_Max = -0x2C, F_Desired = -0x4C,
@@ -53,11 +68,18 @@ template <typename T> T rd(int base, int off, T def = T()) {
     saferead::readAt<T>(1, static_cast<uintptr_t>(base), off, &v);
     return v;
 }
+template <typename T> bool wr(int addr, T v) {
+    if (!addr || !saferead::probeRead(2, reinterpret_cast<const void*>(addr), sizeof(T))) return false;
+    *reinterpret_cast<T*>(addr) = v;
+    return true;
+}
 
 // ---- config ----
 struct Config {
-    bool hold = false, retarget = false, log = true, logAll = false;
-    unsigned holdMask = 1u << 11, retargetMask = 1u << 11;
+    bool hold = true, retarget = true, log = true, logAll = false;
+    unsigned holdMask = 1u << KiteStance, retargetMask = 1u << KiteStance;
+    int msgStrref = 123710;          // floaty text on selecting stance 16; fallback = vanilla "Ranged Behavior" message
+    char icon[17] = "ib_ranged";     // stance menu / HUD icon ResRef (<= 16 chars)
 };
 Config g_cfg;
 DWORD g_lastIni = 0;
@@ -78,21 +100,29 @@ void loadIni(bool force) {
     if (!force && g_lastIni && now - g_lastIni < 1000) return;
     g_lastIni = now ? now : 1;
     Config c;
-    c.hold = GetPrivateProfileIntA("RangedAI", "hold", 0, IniName) != 0;
-    c.retarget = GetPrivateProfileIntA("RangedAI", "retarget", 0, IniName) != 0;
+    c.hold = GetPrivateProfileIntA("RangedAI", "hold", 1, IniName) != 0;
+    c.retarget = GetPrivateProfileIntA("RangedAI", "retarget", 1, IniName) != 0;
+    c.msgStrref = GetPrivateProfileIntA("RangedAI", "kite_strref_msg", 123710, IniName);
+    if (c.msgStrref <= 0) c.msgStrref = 123710;
     c.log = GetPrivateProfileIntA("RangedAI", "log", 1, IniName) != 0;
     c.logAll = GetPrivateProfileIntA("RangedAI", "log_all", 0, IniName) != 0;
     char s[128] = {};
-    GetPrivateProfileStringA("RangedAI", "hold_stances", "11", s, sizeof s, IniName); c.holdMask = parseMask(s);
-    GetPrivateProfileStringA("RangedAI", "retarget_stances", "11", s, sizeof s, IniName); c.retargetMask = parseMask(s);
-    if (force || c.hold != g_cfg.hold || c.retarget != g_cfg.retarget || c.holdMask != g_cfg.holdMask || c.retargetMask != g_cfg.retargetMask)
-        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x log=%d log_all=%d", c.hold, c.retarget, c.holdMask, c.retargetMask, c.log, c.logAll);
+    GetPrivateProfileStringA("RangedAI", "hold_stances", "16", s, sizeof s, IniName); c.holdMask = parseMask(s);
+    GetPrivateProfileStringA("RangedAI", "retarget_stances", "16", s, sizeof s, IniName); c.retargetMask = parseMask(s);
+    GetPrivateProfileStringA("RangedAI", "kite_icon", "ib_ranged", s, sizeof s, IniName);
+    for (int i = 0; i < 16; ++i) { char ch = s[i]; c.icon[i] = (ch >= 'A' && ch <= 'Z') ? char(ch + 32) : ch; if (!ch) break; }
+    c.icon[16] = 0;
+    if (!c.icon[0]) strcpy(c.icon, "ib_ranged");
+    if (force || c.hold != g_cfg.hold || c.retarget != g_cfg.retarget || c.holdMask != g_cfg.holdMask || c.retargetMask != g_cfg.retargetMask ||
+        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon))
+        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x kite_strref_msg=%d kite_icon=%s log=%d log_all=%d", c.hold, c.retarget,
+             c.holdMask, c.retargetMask, c.msgStrref, c.icon, c.log, c.logAll);
     g_cfg = c;
 }
 
 // ---- per-creature log throttle ----
 struct Track {
-    int id = 0; unsigned sig = ~0u; int logged = 0; DWORD lastLog = 0; unsigned calls = 0;
+    int id = 0; unsigned sig = ~0u; int logged = 0; DWORD lastLog = 0; unsigned calls = 0, holds = 0;
 };
 Track g_tr[8];
 Track* trackFor(int id) {
@@ -105,7 +135,8 @@ void summary() {
     DWORD now = GetTickCount();
     if (now - g_lastSummary < 10000) return;
     g_lastSummary = now;
-    for (auto& t : g_tr) if (t.id && t.calls) { logf("summary: creature %08x hold-site calls=%u logged=%d", t.id, t.calls, t.logged); t.calls = 0; }
+    for (auto& t : g_tr)
+        if (t.id && t.calls) { logf("summary: creature %08x hold-site calls=%u holds=%u logged=%d", t.id, t.calls, t.holds, t.logged); t.calls = t.holds = 0; }
 }
 
 struct V3 { float x, y, z; };
@@ -147,6 +178,7 @@ extern "C" int __cdecl RangedAiHold(int attacker, int ebp) {
     bool inRange = maxR > 1.0f && dist2 <= lim;   // a zero/garbage weapon range never counts as in range
     bool hold = g_cfg.hold && party1 && !isPC && stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1) &&
                 ranged && los == 0 && inRange && myArea && myArea == tgtArea && ttype == ObjTypeCreature;
+    if (hold) ++t->holds;
 
     if (g_cfg.log) {
         DWORD now = GetTickCount();
@@ -183,11 +215,64 @@ extern "C" int __cdecl RangedAiRetarget(int attacker, int ebp) {
     return gate ? 1 : 0;
 }
 
+// S-H1. ECX = the shown creature's stance, about to be clamped to {9,11,12,13}. Return 1 => keep it (stance 16).
+extern "C" int __cdecl RangedAiStanceClamp(int state) {
+    saferead::beginScope();
+    if (state != KiteStance) return 0;
+    loadIni(false);
+    if (g_cfg.log) logf("S1 t=%lu stance menu build: stance %d kept (vanilla clamp skipped)", GetTickCount(), state);
+    return 1;
+}
+
+// S-H2. Row for the aistate.2da row being added. For aistate 16 fill what the vanilla case bodies fill (action id +
+// icon ResRef; name, callback and flags were set by the common path) and skip the vanilla switch.
+extern "C" int __cdecl RangedAiStanceRow(int ebp) {
+    saferead::beginScope();
+    if (rd<int>(ebp, FA_State, -1) != KiteStance) return 0;
+    loadIni(false);
+    int list = rd<int>(ebp, FA_List), base = list ? rd<int>(list, 0) : 0, idx = rd<int>(ebp, FA_RowIdx, -1);
+    if (!base || idx < 0 || idx > 64) { logf("S2 bad frame: list=%08x base=%08x idx=%d (row left empty)", list, base, idx); return 1; }
+    int row = base + idx * RowStride;
+    if (!wr<int>(row + RowActionId, KiteActionId)) { logf("S2 row %08x not writable", row); return 1; }
+    char ref[16] = {0};
+    for (int i = 0; i < 16 && g_cfg.icon[i]; ++i) ref[i] = g_cfg.icon[i];   // CResRef: 16 bytes, lower case, zero padded (as 0x710eb0)
+    for (int i = 0; i < 16; i += 4) { int w; memcpy(&w, ref + i, 4); wr<int>(row + RowIcon + i, w); }
+    if (g_cfg.log) logf("S2 t=%lu stance row %d (%08x): id=0x%x icon=%s", GetTickCount(), idx, row, KiteActionId, g_cfg.icon);
+    return 1;
+}
+
+// S-H3. Stance menu click. Action id 0x415 => stance 16 + its message; the tail (tutorial, message box) is vanilla.
+extern "C" int __cdecl RangedAiStanceClick(int ebp) {
+    saferead::beginScope();
+    int id = rd<int>(ebp, FC_Id, -1);
+    loadIni(false);
+    int stats = rd<int>(ebp, FC_Stats);
+    if (id != KiteActionId) {
+        if (g_cfg.log) logf("S3 t=%lu stance click: id=0x%x (vanilla) stance before=%d", GetTickCount(), id, stats ? rd<unsigned short>(stats, StatsStance, 0xFFFF) : -1);
+        return 0;
+    }
+    if (!stats) return 0;
+    int before = rd<unsigned short>(stats, StatsStance, 0xFFFF);
+    wr<unsigned short>(stats + StatsStance, KiteStance);
+    wr<int>(ebp + FC_MsgStrref, g_cfg.msgStrref);
+    wr<int>(ebp + FC_Tutorial, KiteTutorialRow);
+    if (g_cfg.log) logf("S3 t=%lu stance click: id=0x%x stance %d -> %d msg strref=%d", GetTickCount(), id, before, rd<unsigned short>(stats, StatsStance, 0xFFFF), g_cfg.msgStrref);
+    return 1;
+}
+
+// S-H4. HUD refresh on character change, default branch of the stance -> action id switch (replaces MOV [ebp-0x1c],-1).
+extern "C" void __cdecl RangedAiHudStance(int ebp) {
+    saferead::beginScope();
+    int stance = rd<int>(ebp, FH_Stance, -1);
+    wr<int>(ebp + FH_ActionId, stance == KiteStance ? KiteActionId : -1);
+    if (stance == KiteStance && g_cfg.log) logf("S4 t=%lu HUD stance marker -> 0x%x", GetTickCount(), KiteActionId);
+}
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         if (FILE* f = fopen("ranged_ai_log.txt", "w")) fclose(f);   // one session per file (cwd = game folder)
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("ranged-ai 0.1.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("ranged-ai 0.2.0 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\ranged_ai.ini", cwd);
         logf("ini path: %s", IniName);
         loadIni(true);

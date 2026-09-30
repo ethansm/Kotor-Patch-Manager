@@ -7,7 +7,8 @@ For each window (name, start, length, function entry) it checks, from the dump's
   * no relative branch/call (E8/E9/EB/7x/0F 8x) INSIDE the window (a re-executed copy would land wrong),
     unless the window is a skip_original_bytes=true window (bytes never re-run) -> reported as 'skip-only'
   * no branch from OUTSIDE the window targets an address strictly inside it (start is fine, it lands on our jump)
-  * no overlap with any live hook window (live_hooks_2026-09-30b.tsv) or Mod 1's inventory hooks
+  * a RET may only be the LAST stolen instruction (the wrapper restores ESP exactly, so a trailing RET returns normally)
+  * no overlap with any live hook window (live_hooks_2026-09-30e.tsv) or Mod 1's inventory hooks
 Prints the original bytes as a TOML-ready list.
 
 Usage: check_windows.py            (runs the built-in table of proposed windows)
@@ -16,7 +17,7 @@ import re, sys, os
 
 DUMP = os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp")
 HERE = os.path.dirname(os.path.abspath(__file__))
-LIVE = os.path.join(HERE, "live_hooks_2026-09-30b.tsv")
+LIVE = os.path.join(HERE, "live_hooks_2026-09-30e.tsv")   # regenerated 2026-09-30 evening from the live patch_config.toml (82 hooks, same set as -b)
 
 # (name, start, length, function entry, skip_original)
 WINDOWS = [
@@ -24,6 +25,7 @@ WINDOWS = [
     ("M6 tab click entry",         0x8A8CF0, 6,  0x8A8CF0, False),
     ("M6 backpack row buffer",     0x8A7E22, 79, 0x8A7BA0, True),
     ("M6 flush before finalise",   0x8A7E76, 22, 0x8A7BA0, False),
+    ("M6 row-select epilogue (re-tint)", 0x8A8478, 6, 0x8A83D0, False),  # H6d 0.2.0: MOV ESP,EBP; POP EBP; RET 4 (RET is the last stolen insn)
     # Mod 7
     ("M7 SetMouseCursor entry",    0x7B3870, 7,  0x7B3870, False),
     ("M7 hilite placeable colour", 0x7AA747, 10, 0x7AA460, False),
@@ -32,8 +34,8 @@ WINDOWS = [
     ("M8 hold-on-blocked-LOS",     0x6D83EA, 12, 0x6D7390, False),
     ("M8 retarget gate (IsPC)",    0x6D7C79, 6,  0x6D7390, False),   # moved from 0x6D7C73 (stolen MOV ECX,[EAX+..] ran with EAX=handler result)
     ("M8 stance clamp",            0x77AA5E, 7,  0x77A9E0, False),
-    ("M8 stance row fill",         0x77ACBC, 15, 0x77A9E0, False),
-    ("M8 stance click",            0x77D8D4, 14, 0x77D890, False),
+    ("M8 stance row fill",         0x77ACBC, 9,  0x77A9E0, False),   # re-sited 2026-09-30: was 15 bytes ending in MOV EAX,[EBP-0xF8] (EAX rule)
+    ("M8 stance click",            0x77D8D4, 6,  0x77D890, False),   # re-sited 2026-09-30: was 14 bytes incl. MOV EAX,..; SUB EAX,0x410 (EAX rule)
     ("M8 HUD stance default branch", 0x74DBDD, 7, 0x74DA40, True),   # S-H4: MOV [ebp-0x1c],-1 (skip-only; handler writes 0x415 or -1)
 ]
 
@@ -85,6 +87,9 @@ def main():
             problems.append(f"length {length} is not on an instruction boundary (whole insns = {total})")
         if length < 5:
             problems.append("window < 5 bytes")
+        rets = [i for i, (a, b, t) in enumerate(inside) if t.startswith("RET")]
+        if rets and rets != [len(inside) - 1]:
+            problems.append("RET inside the window is not the last stolen instruction")
         rel_in = [(a, t) for a, b, t in inside if is_rel(b, t)]
         if rel_in and not skip:
             problems.append("relative branch inside window: " + ", ".join(f"{a:#x} {t}" for a, t in rel_in))

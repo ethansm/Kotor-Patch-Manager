@@ -16,7 +16,10 @@ def rd(t, va, n):
         if sva <= r < sva+vsz: return b[raw+r-sva:raw+r-sva+n]
 exes = {k: load(f"{L}/{k}") for k in ("swkotor2.exe", "swkotor2.exe.unpatched_vanilla")}
 here = os.path.dirname(os.path.abspath(__file__))
-txt = open(os.path.join(here, "check_windows_output_2026-09-30b.txt")).read()
+import glob
+src = sys.argv[1] if len(sys.argv) > 1 else max(glob.glob(os.path.join(here, "check_windows_output_*.txt")), key=os.path.getmtime)
+print("windows from", os.path.basename(src))
+txt = open(src).read()
 ok = True
 for m in re.finditer(r"\] (.+?): 0x([0-9a-f]+) len (\d+).*?bytes = \[(.*?)\]", txt):
     name, addr, ln, bs = m.groups(); want = bytes(int(x, 16) for x in bs.split(", "))

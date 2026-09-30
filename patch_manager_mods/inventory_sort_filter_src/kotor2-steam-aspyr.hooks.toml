@@ -1,7 +1,7 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
 
-# All three windows validated by patch_manager_mods/mods678_research/check_windows.py (both executables byte-identical).
+# All four windows validated by patch_manager_mods/mods678_research/check_windows.py (both executables byte-identical).
 # Doc: patch_manager_mods/11_inventory_sort_filter.md
 
 # H6a: CSWGuiInGameInventory tab-click handler 008a8cf0 prologue. ECX = panel, [esp+4] = tab control.
@@ -51,6 +51,21 @@ address = 0x008A7E76
 type = "detour"
 function = "SortFilterFlush"
 original_bytes = [0x6A, 0x00, 0x6A, 0x01, 0x6A, 0x00, 0x8D, 0x45, 0xD4, 0x50, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0x81, 0xC1, 0x88, 0x05, 0x00, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# H6d (0.2.0): row-select handler 008a83d0 epilogue (MOV ESP,EBP / POP EBP / RET 4; every path of the handler ends
+# here, the three JZs to 008a8478 land on the window start). EBP = its frame, [ebp+8] = row. For a New item the
+# handler has just re-run SetItem (via 008b1cc0), which rewrites the row colours; the hook puts the tint back.
+# The stolen bytes end in RET 4: the wrapper restores ESP exactly, so they return to the caller as vanilla does.
+[[hooks]]
+address = 0x008A8478
+type = "detour"
+function = "SortFilterRowSelect"
+original_bytes = [0x8B, 0xE5, 0x5D, 0xC2, 0x04, 0x00]
 exclude_from_restore = []
 
 [[hooks.parameters]]
