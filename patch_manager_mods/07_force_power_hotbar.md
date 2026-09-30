@@ -1,30 +1,40 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**STATUS (2026-09-30 ~00:30, end of session 3) -- READ THIS FIRST.**
-- **Proof of concept is functionally working live** (`force-power-hotbar` **0.2.0-dev**): ten framed on-screen buttons bottom-left above the native
-  action bar, mapped to keys `1`-`0`. Verified live: HUD button controls built in the HUD constructor (hook `0x00748502`), icons + key digit, dimming,
-  hover highlight (frame swap), delayed hover tooltip (name, key, kind, Force Points, range, short description from `spells.2da` + `dialog.tlk`),
-  **click and key both invoke** the power through the HUD's own path (`Invoke=1`), auto-fill of unbound slots with the character's known powers,
-  per-character behaviour (companions without the power show an empty frame), no crash across character switching.
-- **Build 6 INSTALLED 2026-09-30 00:35 (md5-verified, 17 ids, AR_ERROR.LOG unchanged; sibling sessions' newer BuffDurationHUD/Inventory3DViewport kpatches were restaged first; pre-install backup `backups/pre_hotbar_b6_install/`), awaiting the user's live test. Was:** built but not yet seen live (`hotbar_stage2/`): aspect correction (frames were ~1.8x too wide on 3840x1600),
-  live tooltip refresh when the hovered entry changes usability. Installed live is build 5 (or whatever a sibling session last installed -- always re-check).
-- **Next phase (planned, not started): an in-game GUI to configure which power/item each button holds** (see the plan and "Next phase: in-game
-  configuration GUI" at the end of this file). Also open: digits inside dialogue/inventory/pause untested, save/load HUD rebuild untested, item
-  icons/quantity/description, Ctrl/Alt rows (Alt+digit never reaches the game under Proton), target-menu powers.
-- Sources: `force_power_hotbar_src/` (committed: `ForcePowerHotbar.cpp`, `HotbarConfig.h`, `TwoDA.h`, `Tlk.h`, hooks/manifest/exports, host tests
-  `config_roundtrip_test.cpp`, `twoda_test.cpp`). GUI + textures: `scripts/add_hotbar_buttons_gui.py` (deploys 22 labels into `override/mipc28x6_p.gui`
-  + `override/hotbar_slot*.tga`; `--rollback`). Framework clone (uncommitted, source of truth for builds):
-  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/`. Live evidence: `force_power_hotbar_src/live_evidence/`.
+**STATUS (2026-09-30 ~03:35, end of session 4) -- READ THIS FIRST.**
+- **What is live** (`force-power-hotbar` **0.3.0-dev**, installed = build 12, DLL md5 `307a00af`; sibling sessions own the other 18 ids -- always re-read `kpm_install_state.json`): ten framed HUD buttons for keys `1`-`0`
+  (icons, digit, dimming, hover frame swap, delayed tooltip, click + key invoke through the HUD's own path, `Invoke=1`) **plus the in-game editor**:
+  a thin shaded **wrench toggle** at the far left -> Edit mode -> click a slot -> **picker** (group background copied from the native quick-command
+  panel, title, tabs **Powers / Items / Modes**, `<` `>` paging + **mouse wheel**, **Clear**, 8 cells, hover highlight + short tooltips on every control)
+  -> click a cell to assign; saved per character to `[Profile.obj<id>]` in `force_power_hotbar.ini` (falls back to `Default`; explicit `none` = cleared;
+  AutoFill now defaults OFF so the bar starts empty; unassigned slots are hidden outside Edit mode). Esc backs out one level; digits/clicks never invoke while editing.
+- **Live-verified so far** (builds 6-11): frames square after the window-size aspect fix, item slots (stim/shield/mine icons), picker tabs/paging/wheel, Save ok
+  (INI written), wrench toggle + tooltip. **Not yet seen live (build 12 + newest art):** Clear staying cleared (autofill-refill bug fixed), per-character sets,
+  empty-slot hiding, picker tooltip anchoring above the picker, bar moved up (DEFAULT_Y 450; it overlapped the native quick-action description label),
+  final wrench art (U jaw, recessed handle, round hole). **Next test items:** assign as the Exile, switch to a companion (must start empty, keep own set),
+  save/load + new game (companion object ids `obj8000....` may not persist -> fallback idea: portrait resref), digits in dialogue/inventory/pause.
+- **Crash history:** build 8 crashed after a load: `FUN_0073FEA0` is a thiscall (reads `[ecx+0x274]`); we called it as cdecl. Removed in build 9 (lesson in DB).
+- **Sources:** `force_power_hotbar_src/` (`ForcePowerHotbar.cpp` ~1100 lines, `HotbarConfig.h`, `TwoDA.h`, `Tlk.h`, hooks/manifest/exports, host tests). GUI + textures:
+  `scripts/add_hotbar_buttons_gui.py` (46 labels, IDs 111-157: frames 111-120, icons 121-130, wrench 131, background 132, title 133, tabs 134-136, prev/next/clear
+  137-139, cell frames 140-147, cell icons 148-155, tooltip 156/157 -- DLL constants `EditId..TipId` must match; textures `hotbar_slot*.tga`, `hotbar_edit*.tga`;
+  `--replace` / `--rollback` / `--dry-run`). Framework clone (uncommitted, source of truth for builds):
+  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/` (copy the .cpp/.h/manifest there, `python3 ../create-patch.py`). Live evidence: `force_power_hotbar_src/live_evidence/`.
+- **Open items / not done:** test coverage (see "Open item: test coverage" at the end), independent Opus review (Phase F of the plan), Phase R research (stable
+  companion key, item resref identity, pause behaviour), Ctrl/Alt rows and 30 slots (Alt+digit never reaches the game under Proton), target-menu powers,
+  cooldown display, real arrow art, matching the native button style further, Save robustness (unknown INI sections/keys are refused, not preserved).
 - **Sections below, in order:** original spec (partly SUPERSEDED), "Next-phase findings" (Ghidra), "Live results" (0.1), "Environment and workflow
-  gotchas" (READ before installing), "Bottom-bar UX: design, build", then dated build logs (builds 1-6), and finally the config-GUI plan.
-- **Install workflow (updated):** the launcher always relaunches the game, so installs use a small helper (`/tmp/claude-1000/inst/` -- recreate it if
-  gone: a net8 console app referencing `bin/Debug/KPatchCore.dll` + `KPatchLauncher.dll` that calls `AppSettings.Load()`, sets
-  `DeploymentPolicy.PreferLibraryProxy` / `GameDetector.IdentifyUnrecognisedBuilds`, then `PatchRemover.RemoveAllPatches(exe, removeManagedState:false)` and
-  `PatchOrchestrator(stage).InstallPatches(exe, ids, patcherDirectory: bin/Debug/)`; it must be run from inside `bin/Debug/` with the launcher's
-  `deps.json`/`runtimeconfig.json` copied to `inst.*` or the sqlite native lib is not found and it fails with "No address database found").
-  Stage dir `hotbar_stage2/` holds the 17 kpatches. **Other Claude sessions replace the whole patch set when they install** (happened again at
-  00:05): before any install, re-read `kpm_install_state.json`, include every installed id (currently 17 incl. `load-hang-probe` from another
-  session), take the newest kpatch of each from its own `Patches/<Name>/` dir, verify DLL md5s afterwards, and never install while the game runs.
+  gotchas" (READ before installing), "Bottom-bar UX: design, build", dated build logs (builds 1-12 + layout/wrench revisions), "Next phase: in-game configuration GUI"
+  (plan + decisions), and the test-coverage note.
+- **Install workflow (updated, session 4):** never install while the game runs (`pgrep -f '^S:.*swkotor2\.exe'`); the launcher always relaunches the game, so installs use the
+  helper `/tmp/claude-1000/inst/` (recreate if gone: net8 console app referencing `bin/Debug/KPatchCore.dll` + `KPatchLauncher.dll`; `AppSettings.Load()`, set
+  `DeploymentPolicy.PreferLibraryProxy` / `GameDetector.IdentifyUnrecognisedBuilds`, `PatchRemover.RemoveAllPatches(exe, removeManagedState:false)`, then
+  `PatchOrchestrator(stage).InstallPatches(exe, ids, patcherDirectory: bin/Debug/)`). Run it from inside `bin/Debug/` with **the launcher's**
+  `KPatchLauncher.deps.json`/`.runtimeconfig.json` copied over `inst.deps.json`/`inst.runtimeconfig.json` (otherwise "No address database found" -- and it has ALREADY
+  removed the old patches by then, so just fix and re-run). **Sibling sessions replace/rebuild patches constantly** (new ids like `equipment-3d-character`, `perf-lab`
+  appeared mid-session; their kpatch files change while you work). Procedure that worked: re-read `InstalledPatches`; for each id with a DLL find the kpatch whose DLL md5 equals
+  the INSTALLED `patches/<id>.dll` (search all `**/*.kpatch`, newest mtime among matches) so their state is preserved; non-DLL patches come from the previous stage;
+  put the new hotbar kpatch in; back up `patches/` + `kpm_install_state.json` to `backups/pre_hotbar_bN_install/`; install; verify every DLL md5 vs before (only the hotbar
+  DLL may change), `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9`. Current stage dir: `hotbar_stage4/` (19 ids). GUI/texture-only changes need no reinstall
+  (`--replace`; deploy only with the game closed). Live INI reset for a clean start: back up `force_power_hotbar.ini`, write `[General] AutoFill=0` + empty `[Profile.Default]`.
 
 > Everything from here to "## Next-phase findings" is the original pre-Ghidra spec. Where it conflicts with the later sections, the later sections win
 > (notably: items ARE in the HUD action bar; the four 0x1D0 arrays are sub-controls, not per-portrait bars; the 3-edge/30-slot layout is deferred).
@@ -568,3 +578,19 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
 
 ### Wrench art revision 3 (2026-09-30 ~03:30)
 - Reworked from a reference photo of a real spanner: recessed handle channel (raised rim, darker inset, inner shadow top-left / light lip bottom-right), round beveled hanging ring drawn separately from the directional shading (the old hole looked triangular because rim/shade were computed on a mask with the hole cut out), rim streak on the raised edge. Texture-only.
+
+## Next phase: in-game configuration GUI -- plan, decisions, amendments (written into the doc 2026-09-30 for the record; mostly DONE, see STATUS)
+- **User decisions:** config UX = a small edit toggle beside the bar (now a thin wrench button at the far left); while editing, clicking a slot opens a picker
+  (clicks do not invoke); the picker offers everything the character can use per character (powers, item abilities, modes) from the HUD group lists
+  (`hud+0x78+g*0xC`, stride 0x3C, name +0, key +8, inline icon resref +0x20, flags +0x30 bit0 usable); saved per character profile through `hb::Config::Save`.
+  Look = a slimmed native-style quick-button strip using the same framed-cell widget as the bar. Out of scope: Ctrl/Alt rows and 30 slots, target-menu powers, cooldowns.
+  Later user requests (all done): thin wrench with shaded force-power-style art (U jaw, recessed handle, round hole), grouping background like the quick-command panel,
+  wheel paging over the picker, smaller fonts, hover/tooltips on every control, hide unassigned slots outside Edit mode, per-character sets starting empty, move the bar above the quick-action label.
+- **Independent-review amendments (2026-09-30) and status:** (1) character key not stable even for the Exile -> `objffffffff` treated as unknown, saves refused until a real key (DONE);
+  companion keys still unverified. (2) tooltip pair must be the last IDs (DONE). (3) wheel via window subclass, Esc via the DirectInput hook (DONE). (4) entry+0x34 is not the stack
+  count; modes are 0x410-0x414 (in DB lessons). (5) config model gaps: explicit `none` (DONE, blank flag), refuse Save while `warnings` non-empty (DONE), mtime after Save +
+  `checkConfig(true)` before write (DONE); NOT done: preserving unknown keys/sections and free comments on Save (only refused). (6) AutoFill reshuffle during editing (mitigated:
+  AutoFill off by default; first edit freezes autofilled slots when it is on). (7) state machine: picker state lives in `Bar` (reset on HUD rebuild), closes on gate close / character change,
+  digits pass through in Edit/Pick (DONE); a few function-level statics (`lastOth`, `lastChar`, hover timers) still survive a HUD rebuild (only cause stale log lines). (8) control count: ONE row of 8 cells + 3
+  tabs (DONE, 25 editor labels); a runtime-positioned generic cell pool was not needed. Arrow art: text `<` `>` for now. (9) toggle placement collision solved by moving it left and the bar up. (10) InitControl id-check logged.
+- **Not done from the plan:** Phase R (R1 item resref identity, R2 companion key research, R5 pause), Phase F review, DB `functions` rows for new addresses (none were needed; lessons added), host tests for the DLL logic.
