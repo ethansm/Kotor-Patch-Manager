@@ -13,7 +13,7 @@ The Inventory3DViewport patch binds it by tag in the CSWGuiInGameInventory const
   --dry-run   print the plan, write nothing
   --rollback  restore the OLDEST backup taken by this script (the pre-3D_MODEL file)
   --replace   replace an existing 3D_MODEL (e.g. to change --rect)
-  --layout X  R|T|L|K (to leave R, --rollback first): also resize neighbouring controls (see LAYOUTS) and set the 3D_MODEL
+  --layout X  S|R|T|L|K (to leave a layout, --rollback first): also resize neighbouring controls (see LAYOUTS) and set the 3D_MODEL
               rect; implies --replace. Every change prints old -> new; refuses if a control's
               current rect is neither its expected original nor the layout target.
 """
@@ -44,8 +44,22 @@ DESC_R = {
     "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (524, 442, 63, 28)},
     "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (407, 476, 180, 32)},
 }
-LAYOUT_3D = {"R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
-LAYOUT_CTRLS = {"R": DESC_R, "T": {}, "L": {}, "K": {}}
+# S: list shifted left 120 units into the empty strip; description 260 wide; 3D view 209x364 (aspect 0.98)
+SHIFT_S = {
+    "LB_ITEMS": {"orig": (161, 134, 236, 329), "new": (41, 134, 236, 329),
+                 "PROTOITEM": ((173, 150, 200, 50), (53, 150, 200, 50)),
+                 "SCROLLBAR": ((381, 134, 16, 329), (261, 134, 16, 329))},
+    "BTN_USEITEM": {"orig": (161, 470, 227, 28), "new": (41, 470, 227, 28)},
+    "BTN_EXIT": {"orig": (159, 516, 89, 28), "new": (39, 516, 89, 28)},
+    "LB_DESCRIPTION": {"orig": (407, 134, 232, 300), "new": (287, 134, 260, 300),
+                       "PROTOITEM": ((419, 150, 197, 42), (299, 150, 225, 42)),
+                       "SCROLLBAR": ((623, 134, 16, 300), (531, 134, 16, 300))},
+    "LBL_CREDITS": {"orig": (407, 442, 223, 28), "new": (287, 442, 260, 28)},
+    "LBL_CREDITS_VALUE": {"orig": (559, 442, 63, 28), "new": (476, 442, 63, 28)},
+    "LBL_BAR5": {"orig": (407, 476, 227, 32), "new": (287, 476, 260, 32)},
+}
+LAYOUT_3D = {"S": (557, 134, 209, 364), "R": (593, 134, 173, 364), "T": (645, 134, 121, 364), "L": (38, 139, 108, 360), "K": DEFAULT_RECT}
+LAYOUT_CTRLS = {"S": SHIFT_S, "R": DESC_R, "T": {}, "L": {}, "K": {}}
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
 
 
