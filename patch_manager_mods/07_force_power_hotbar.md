@@ -6,7 +6,7 @@
   hover highlight (frame swap), delayed hover tooltip (name, key, kind, Force Points, range, short description from `spells.2da` + `dialog.tlk`),
   **click and key both invoke** the power through the HUD's own path (`Invoke=1`), auto-fill of unbound slots with the character's known powers,
   per-character behaviour (companions without the power show an empty frame), no crash across character switching.
-- **Built but NOT yet installed / not yet seen live (build 6, in `hotbar_stage2/`):** aspect correction (frames were ~1.8x too wide on 3840x1600),
+- **Build 6 INSTALLED 2026-09-30 00:35 (md5-verified, 17 ids, AR_ERROR.LOG unchanged; sibling sessions' newer BuffDurationHUD/Inventory3DViewport kpatches were restaged first; pre-install backup `backups/pre_hotbar_b6_install/`), awaiting the user's live test. Was:** built but not yet seen live (`hotbar_stage2/`): aspect correction (frames were ~1.8x too wide on 3840x1600),
   live tooltip refresh when the hovered entry changes usability. Installed live is build 5 (or whatever a sibling session last installed -- always re-check).
 - **Next phase (planned, not started): an in-game GUI to configure which power/item each button holds** (see the plan and "Next phase: in-game
   configuration GUI" at the end of this file). Also open: digits inside dialogue/inventory/pause untested, save/load HUD rebuild untested, item
