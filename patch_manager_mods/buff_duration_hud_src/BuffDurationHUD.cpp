@@ -577,18 +577,26 @@ void __cdecl ShieldProbeSlot(int slotPtr, int isLarge) {
                  slotPtr, creature, isLarge, flags, vitVt, forceVt, scale, vit[0], vit[1], vit[2], vit[3], force[0], force[1], force[2], force[3],
                  card[0], card[1], card[2], card[3]);
     }
-    if (!creature || vit[2] < 1 || vit[2] > 400 || vit[3] < 1 || vit[3] > 400) return;
-
-    int n = DrawShieldPools(creature, vit[0], vit[1], vit[2], vit[3], scale, slotPtr);
-    int effCount = 0; readAt(creature, Creature_EffectCountOffset, &effCount);
-    static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
-    int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == slotPtr) di = k;
-    if (di < 0 && nDraw < 8) { di = nDraw++; drawSlot[di] = slotPtr; lastDraw[di] = -12345; }
-    unsigned char arrowBuff = 0, arrowDebuff = 0; readAt(slotPtr, 0xddc, &arrowBuff); readAt(slotPtr, 0xddd, &arrowDebuff);
-    int dsig = creature ^ (n << 24) ^ (effCount << 16) ^ (arrowBuff << 8) ^ (arrowDebuff << 4);
-    if (di >= 0 && lastDraw[di] != dsig) {
-        lastDraw[di] = dsig;
-        probeLog("DRAW slot=%08x creature=%08x large=%d pools=%d effects=%d engineArrows buff=%d debuff=%d", slotPtr, creature, isLarge, n, effCount, arrowBuff, arrowDebuff);
+    // All shield bars are drawn from the LEADER's call (the first slot call of the frame). Drawing them per slot failed on
+    // the later slots whenever an earlier slot had already drawn its Buff HUD icon row (leaked GUI clip/batch state): the
+    // leader and, at most, one small card showed a bar (session 4c logs). At the leader's call the state is still clean.
+    if (!isLarge) return;
+    for (auto& e : g_slots) {
+        if (!e.slotPtr || !e.creaturePtr) continue;
+        int v[4] = {};
+        for (int k = 0; k < 4; ++k) readAt(e.slotPtr, 0x694 + 4 * k, &v[k]);
+        if (v[2] < 1 || v[2] > 400 || v[3] < 1 || v[3] > 400) continue;
+        int n = DrawShieldPools(e.creaturePtr, v[0], v[1], v[2], v[3], scale, e.slotPtr);
+        int effCount = 0; readAt(e.creaturePtr, Creature_EffectCountOffset, &effCount);
+        unsigned char arrowBuff = 0, arrowDebuff = 0; readAt(e.slotPtr, 0xddc, &arrowBuff); readAt(e.slotPtr, 0xddd, &arrowDebuff);
+        static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
+        int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == e.slotPtr) di = k;
+        if (di < 0 && nDraw < 8) { di = nDraw++; drawSlot[di] = e.slotPtr; lastDraw[di] = -12345; }
+        int dsig = e.creaturePtr ^ (n << 24) ^ (effCount << 16) ^ (arrowBuff << 8) ^ (arrowDebuff << 4);
+        if (di >= 0 && lastDraw[di] != dsig) {
+            lastDraw[di] = dsig;
+            probeLog("DRAW slot=%08x creature=%08x pools=%d effects=%d engineArrows buff=%d debuff=%d (drawn from leader call)", e.slotPtr, e.creaturePtr, n, effCount, arrowBuff, arrowDebuff);
+        }
     }
 }
 
