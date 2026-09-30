@@ -1,0 +1,13 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# Per-frame function called from CClientExoAppInternal::MainLoop (0x78262C) and a few init paths
+# (doc 10): frame heartbeat only. Prologue 55 8B EC 83 EC 28 = PUSH EBP / MOV EBP,ESP / SUB ESP,0x28.
+# Deliberately NOT 0x00781BE0, which load-hang-probe owns.
+[[hooks]]
+address = 0x00478A20
+type = "detour"
+function = "PerfLabTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x28]
+skip_original_bytes = false
+exclude_from_restore = []

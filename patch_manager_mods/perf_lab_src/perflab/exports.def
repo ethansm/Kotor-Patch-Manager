@@ -1,0 +1,5 @@
+LIBRARY PerfLab
+EXPORTS
+    PerfLabTick
+    PerfLabSnapshot
+    PerfLabStats
