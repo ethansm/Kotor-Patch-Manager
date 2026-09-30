@@ -470,6 +470,8 @@ BOOL CALLBACK enumWnd(HWND h, LPARAM lp) {
 }
 bool cursorInGame(POINT* out) {
     if (!g_gameWnd || !IsWindow(g_gameWnd)) {
+        static long lastTry = -1000; if (g_frame - lastTry < 120) return false;   // failed lookups retry every 120 frames, not every frame
+        lastTry = g_frame;
         g_gameWnd = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&g_gameWnd));
         RECT r = {0, 0, 0, 0}; if (g_gameWnd) GetClientRect(g_gameWnd, &r);
         logf("hover: game window %p client=%ldx%ld", (void*)g_gameWnd, (long)r.right, (long)r.bottom);
