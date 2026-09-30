@@ -825,3 +825,10 @@ than intermittently, that would be the trigger to escalate.
 ## 2026-09-30 00:05 -- hang #9 (load screen never dismissed), captured; probe installed afterwards
 
 **Symptom**: load hang, `swkotor2.exe` `RNsl` ~60% CPU at ~45 s. **Captured** `~/hang_20260930_000500.log` + hotbar log before `kill -TERM` (exit in 1 s). **Evidence**: identical to #8 -- the hotbar's 8-fault first-tick string scan burst, first HUD tick sees `modal[0]=CSWGuiLoadScreen (vt 009a5c84)`, hotbar HUD frames advance ~60 fps (f660 -> f2460) under it, no crash markers, `AR_ERROR.LOG` unchanged. Conclusion (09 section 9): the game keeps rendering; `HideLoadScreen` is never reached. **Action**: installed `load-hang-probe` 1.1.0 (see 09 sections 10-11; note the stale-stage install slip described there, no data lost). 3 launches since with the probe: 0 hangs.
+
+## 2026-09-30 01:55 - crash on load screen, NOT the census/probe: force-power-hotbar 0.3.0-dev NULL deref
+- Symptom: game crashed ~1 s after load screen UP (launch 2 of the step-1 baseline; census OFF, probe 1.2.0). Evidence: `~/Games/KOTOR2_Mod_Workspace/incidents_12_0156/`.
+- Proton log: `page fault on read access to 0x00000274` at EIP 0x0073FEAF (`FUN_0073fea0`, 31-byte getter `mov edx,[ecx+0x274]`) with ECX=0. `[ebp+4]` = 0x798F8BCE = **force-power-hotbar.dll +0x8BCE** (DLL base 798F0000), so the hotbar DLL called the engine getter directly with a NULL `this`.
+- Hotbar's own log ends at `H3 build: panel=04c957e8 ... controls=111 (previous bar panel=00000000 built=0)` / `H3: projection flag 00a1b9f0 = 1`, and the same panel pointer 04c957e8 is on the crash stack. The crash is inside the hotbar's HotbarBuildButtons (hook 0x00748502) path, at the first build after a load.
+- The live `patches/force-power-hotbar.dll` was replaced at 01:51:36 by another session (0.3.0-dev, commit d79ad34), after the earlier healthy 1.2.0 launch; AR_ERROR.LOG md5 unchanged (a2d88789...).
+- Not a load hang, so it does not count toward the census A/B or the healthy-baseline tally. Owner: hotbar session (source read-only here). Fix belongs there: guard the NULL object at hotbar +0x8BCE.
