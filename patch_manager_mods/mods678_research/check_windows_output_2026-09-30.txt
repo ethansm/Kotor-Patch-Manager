@@ -1,0 +1,71 @@
+[OK  ] M6 tab click entry: 0x008a8cf0 len 6  bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14]
+        008a8cf0  55                     PUSH EBP
+        008a8cf1  8bec                   MOV EBP,ESP
+        008a8cf3  83ec14                 SUB ESP,0x14
+[OK  ] M6 backpack row buffer: 0x008a7e22 len 79 (skip-only)  bytes = [0x8B, 0x55, 0xE8, 0x8B, 0x42, 0x14, 0x89, 0x45, 0x9C, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0x8B, 0x91, 0xC8, 0x24, 0x00, 0x00, 0x3B, 0x55, 0x9C, 0x75, 0x16, 0x8B, 0x45, 0xC4, 0x89, 0x45, 0xE0, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0xC7, 0x81, 0xC8, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F, 0x6A, 0x00, 0x6A, 0x00, 0x8B, 0x55, 0xE8, 0x52, 0x8D, 0x45, 0xD4, 0x50, 0x8D, 0x4D, 0xC4, 0x51, 0x8B, 0x55, 0xC8, 0x52, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0xE8, 0x7F, 0xF7, 0xFF, 0xFF]
+        008a7e22  8b55e8                 MOV EDX,dword ptr [EBP + -0x18]
+        008a7e25  8b4214                 MOV EAX,dword ptr [EDX + 0x14]
+        008a7e28  89459c                 MOV dword ptr [EBP + -0x64],EAX
+        008a7e2b  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e31  8b91c8240000           MOV EDX,dword ptr [ECX + 0x24c8]
+        008a7e37  3b559c                 CMP EDX,dword ptr [EBP + -0x64]
+        008a7e3a  7516                   JNZ 0x008a7e52
+        008a7e3c  8b45c4                 MOV EAX,dword ptr [EBP + -0x3c]
+        008a7e3f  8945e0                 MOV dword ptr [EBP + -0x20],EAX
+        008a7e42  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e48  c781c82400000000007f   MOV dword ptr [ECX + 0x24c8],0x7f000000
+        008a7e52  6a00                   PUSH 0x0
+        008a7e54  6a00                   PUSH 0x0
+        008a7e56  8b55e8                 MOV EDX,dword ptr [EBP + -0x18]
+        008a7e59  52                     PUSH EDX
+        008a7e5a  8d45d4                 LEA EAX,[EBP + -0x2c]
+        008a7e5d  50                     PUSH EAX
+        008a7e5e  8d4dc4                 LEA ECX,[EBP + -0x3c]
+        008a7e61  51                     PUSH ECX
+        008a7e62  8b55c8                 MOV EDX,dword ptr [EBP + -0x38]
+        008a7e65  52                     PUSH EDX
+        008a7e66  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e6c  e87ff7ffff             CALL 0x008a75f0
+[OK  ] M6 flush before finalise: 0x008a7e76 len 22  bytes = [0x6A, 0x00, 0x6A, 0x01, 0x6A, 0x00, 0x8D, 0x45, 0xD4, 0x50, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0x81, 0xC1, 0x88, 0x05, 0x00, 0x00]
+        008a7e76  6a00                   PUSH 0x0
+        008a7e78  6a01                   PUSH 0x1
+        008a7e7a  6a00                   PUSH 0x0
+        008a7e7c  8d45d4                 LEA EAX,[EBP + -0x2c]
+        008a7e7f  50                     PUSH EAX
+        008a7e80  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e86  81c188050000           ADD ECX,0x588
+[OK  ] M7 SetMouseCursor entry: 0x007b3870 len 7  bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+        007b3870  55                     PUSH EBP
+        007b3871  8bec                   MOV EBP,ESP
+        007b3873  51                     PUSH ECX
+        007b3874  894dfc                 MOV dword ptr [EBP + -0x4],ECX
+[OK  ] M7 hilite placeable colour: 0x007aa747 len 10  bytes = [0x6A, 0x01, 0x51, 0xD9, 0xEE, 0xD9, 0x1C, 0x24, 0x6A, 0x02]
+        007aa747  6a01                   PUSH 0x1
+        007aa749  51                     PUSH ECX
+        007aa74a  d9ee                   FLDZ
+        007aa74c  d91c24                 FSTP float ptr [ESP]
+        007aa74f  6a02                   PUSH 0x2
+[OK  ] M7 client update tick: 0x007ac470 len 5  bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+        007ac470  55                     PUSH EBP
+        007ac471  8bec                   MOV EBP,ESP
+        007ac473  6aff                   PUSH -0x1
+[OK  ] M8 hold-on-blocked-LOS: 0x006d83ea len 12  bytes = [0x8B, 0x91, 0x2C, 0x05, 0x00, 0x00, 0x89, 0x95, 0x8C, 0xFC, 0xFF, 0xFF]
+        006d83ea  8b912c050000           MOV EDX,dword ptr [ECX + 0x52c]
+        006d83f0  89958cfcffff           MOV dword ptr [EBP + 0xfffffc8c],EDX
+[OK  ] M8 retarget gate (IsPC): 0x006d7c73 len 12  bytes = [0x8B, 0x88, 0xE8, 0x10, 0x00, 0x00, 0x89, 0x8D, 0x50, 0xFD, 0xFF, 0xFF]
+        006d7c73  8b88e8100000           MOV ECX,dword ptr [EAX + 0x10e8]
+        006d7c79  898d50fdffff           MOV dword ptr [EBP + 0xfffffd50],ECX
+[OK  ] M8 stance clamp: 0x0077aa5e len 7  bytes = [0x89, 0x4D, 0xE8, 0x83, 0x7D, 0xE8, 0x09]
+        0077aa5e  894de8                 MOV dword ptr [EBP + -0x18],ECX
+        0077aa61  837de809               CMP dword ptr [EBP + -0x18],0x9
+[OK  ] M8 stance row fill: 0x0077acbc len 15  bytes = [0x8B, 0x55, 0xEC, 0x89, 0x95, 0x08, 0xFF, 0xFF, 0xFF, 0x8B, 0x85, 0x08, 0xFF, 0xFF, 0xFF]
+        0077acbc  8b55ec                 MOV EDX,dword ptr [EBP + -0x14]
+        0077acbf  899508ffffff           MOV dword ptr [EBP + 0xffffff08],EDX
+        0077acc5  8b8508ffffff           MOV EAX,dword ptr [EBP + 0xffffff08]
+[OK  ] M8 stance click: 0x0077d8d4 len 14  bytes = [0x8B, 0x55, 0x08, 0x89, 0x55, 0xCC, 0x8B, 0x45, 0xCC, 0x2D, 0x10, 0x04, 0x00, 0x00]
+        0077d8d4  8b5508                 MOV EDX,dword ptr [EBP + 0x8]
+        0077d8d7  8955cc                 MOV dword ptr [EBP + -0x34],EDX
+        0077d8da  8b45cc                 MOV EAX,dword ptr [EBP + -0x34]
+        0077d8dd  2d10040000             SUB EAX,0x410
+
+ALL OK

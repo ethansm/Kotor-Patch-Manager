@@ -52,20 +52,22 @@ expressible in NWScript, 2DA edits, or GFF/GUI structs alone.
   stage 5 (layout A), user-tested; weapons render in hands behind the Weapons toggle; open: dual-wield stance
   rule (decoded, R7f), animations with weapons, conditional Reset, holstered toggle, character-page mirror, final review.**
 
-**Idea backlog (2026-09-30, research rounds 1-2 done, no code; GOG names mapped to Steam with `ghidra_knowledge/gog_cluster_delta_map.py`):**
+**Idea backlog (2026-09-30, research COMPLETE, definitive build plans written, no code; addresses come from the full-program
+dump in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71` and are validated by `mods678_research/check_windows.py`):**
 
-- [`11_inventory_sort_filter.md`](11_inventory_sort_filter.md) — Mod 6: inventory sort + more filters.
-  `CheckFilter` has 12 modes, but the tabs expose 7. Hidden modes include "new items" and "usable by
-  current character". Plan: cycle hidden modes, sort in `PopulateItemListBox`, tint via
-  `ItemEntry::SetCanUse`. Shares the panel with Mod 1.
-- [`12_empty_container_indicators.md`](12_empty_container_indicators.md) — Mod 7: vanilla already
-  appends "Empty"/"Nothing" to the target label. Loot is generated on heartbeat (UTP survey), so the
-  item count is reliable. Plan: grey highlight tint (`HiliteAreaObjects`) + plain cursor
-  (`HandleMouseOver`). Needs one in-game check (Q1).
-- [`13_ranged_ai_spacing.md`](13_ranged_ai_spacing.md) (+ [`13a`](13a_ai_community_research.md) community
-  survey) — Mod 8: root cause decompiled (`AIActionPhysicalAttacks` walks toward the target whenever
-  LOS fails). Plan: engine hook (hold range / use vanilla LOS retarget) + script `k_ai_master.ncs`
-  (kiting, fixed `HasLineOfSight`).
+- [`11_inventory_sort_filter.md`](11_inventory_sort_filter.md) - Mod 6: inventory sort + hidden filters. Ships as its own patch id `inventory-sort-filter`.
+  Re-clicking the active **All** tab cycles All -> New -> Usable-by-me -> Open upgrade slot. Sort = buffer backpack rows at
+  `0x8A7E22`, flush sorted at `0x8A7E76`; unusable rows tinted with `SetCanUse(row,2)`. 3 hooks, no data files.
+- [`12_empty_container_indicators.md`](12_empty_container_indicators.md) - Mod 7: KOTOR II is a two-step interface, so the vanilla
+  "Empty" label is selection-only (answered statically) and the highlight-everything call has **no live trigger** in this exe.
+  Plan: `SetMouseCursor` hook (plain pointer over empty containers), grey tint in `HiliteAreaObjects` case 9, and our own
+  hotkey that calls the engine's `on=1` path. 3 hooks, INI only.
+- [`13_ranged_ai_spacing.md`](13_ranged_ai_spacing.md) (+ [`13a`](13a_ai_community_research.md) community survey) - Mod 8:
+  `creature+0x11AC` = party flag, `+0x10E8` = IsPC. Engine DLL holds blocked ranged party members instead of walking in
+  (`0x6D83EA`) and extends the vanilla LOS retarget (`0x6D7C73`); new stance 16 needs 3 engine hooks + `aiscripts.2da` row +
+  2 TLK strings; script `k_inc_generic` adds `GN_RunKiteAIRoutine` with the fixed `HasLineOfSight`. Party first, enemies later.
+- [`mods678_research/`](mods678_research/README.md) - raw evidence (decompile+asm excerpts of every cited function, container
+  survey, live hook table, window checker, DB persist script) and the methods learned. Read its README before the next round.
 
 ## Why this matters for our specific install
 

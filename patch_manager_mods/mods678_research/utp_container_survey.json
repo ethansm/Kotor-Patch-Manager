@@ -1,0 +1,6429 @@
+{
+"301nar/g_tresmilhig007": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"301nar/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"301nar/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"301nar/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"301nar/g_tressndppl004": {
+"OnHeartbeat": "k_plc_tressndppl",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresdrd006": {
+"OnClosed": "a_droidhint14",
+"_items": 4,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresdrd007": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresdrd008": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresgencorp005": {
+"OnClosed": "k_set106drdambus",
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresgencorp006": {
+"OnHeartbeat": "k_plc_treas_disp",
+"OnClosed": "k_set106drdambus",
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresgencorp007": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresmilhig006": {
+"OnClosed": "k_sonichint",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresmilhig007": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresmilhig008": {
+"OnClosed": "a_compdlg",
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresmillow006": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"103per/g_tresmillow007": {
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"103per/lockerlg001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"002ebo/inveb001": {
+"OnHeartbeat": "a_givemine",
+"OnClosed": "a_compdlg",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"002ebo/inveb002": {
+"OnOpen": "a_compdlg",
+"OnUsed": "a_compdlg",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"002ebo/inveb003": {
+"OnClosed": "a_hatchdlg",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"002ebo/inveb004": {
+"OnClosed": "a_compdlg",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"002ebo/inveb005": {
+"OnClosed": "a_compdlg",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"604dan/cont_sensor": {
+"OnOpen": "a_cv_off",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"604dan/cryform_bl": {
+"OnHeartbeat": "k_plc_it_up_l_cr",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"604dan/cryform_bl001": {
+"OnHeartbeat": "k_plc_it_up_l_cr",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"604dan/crystal_cont": {
+"OnHeartbeat": "a_q_cryst_first",
+"OnInvDisturbed": "a_kreia_speak",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"154har/g_trescivil003": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"154har/g_tresmilhig008": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"154har/g_tresmillow007": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"154har/g_tresmillow008": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"904mal/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_trescormid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"904mal/g_tresgencorp005": {
+"OnHeartbeat": "k_plc_trescorhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"710kor/cjar001": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"710kor/corpse_tukata": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"710kor/skullcorpse": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"262tel/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"262tel/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"262tel/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"262tel/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"650dan/g_tresgencorp003": {
+"OnHeartbeat": "k_plc_trescorhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"650dan/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_trescorhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"650dan/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"971cor/cormetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"971cor/cormetalbox2": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"971cor/cormetalbox3": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"971cor/cormetalbox4": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"971cor/cormetalbox5": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"503ond/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"503ond/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 13,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresdrd004": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresdrd005": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresdrd006": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresdrd007": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp005": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp006": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp007": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp008": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp009": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresgencorp010": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 10,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresmillow007": {
+"OnClosed": "a_attspch2",
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"102per/g_tresmillow008": {
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"102per/g_tresmillow009": {
+"OnHeartbeat": "k_plc_treas_disp",
+"OnMeleeAttacked": "a_compdlg",
+"OnUnlock": "k_nosparks",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"601dan/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"601dan/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"601dan/tempquest": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"151har/g_tresmilhig008": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"151har/g_tresmillow007": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"151har/g_tresmillow008": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"151har/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"151har/g_tresmillow011": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"901mal/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_it_up_l_ch",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"901mal/g_tresgencorp005": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"901mal/g_tresgencorp006": {
+"OnHeartbeat": "k_plc_trescormid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"901mal/g_tresgencorp007": {
+"OnHeartbeat": "k_plc_trescorhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"901mal/g_tresgencorp008": {
+"OnHeartbeat": "k_plc_it_up_l_co",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/backpack001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/g_slvgpk": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"OnOpen": "a_ptel_shuttlec",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/g_tresmillow009": {
+"OnMeleeAttacked": "a_compdlg",
+"OnUnlock": "k_nosparks",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"232tel/metalbox001": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/metalbox002": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/metalbox003": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"232tel/metalbox004": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"351nar/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"351nar/g_tresmilhig007": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"351nar/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"351nar/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"351nar/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"304nar/cont_med002": {
+"OnHeartbeat": "k_plc_it_chem",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"304nar/cont_med003": {
+"OnHeartbeat": "k_plc_it_chem",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_trescivil003": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"101per/g_trescivil004": {
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"101per/g_tresgencorp004": {
+"OnClosed": "a_setkrespwn",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresgencorp005": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresgencorp006": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresgencorp008": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow006": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow007": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow008": {
+"OnHeartbeat": "k_plc_it_d_stim",
+"OnClosed": "a_hint13",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow009": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow010": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow011": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/g_tresmillow012": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/lockerlg001": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"101per/lockerlg002": {
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"101per/lockerlg003": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"404dxn/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"404dxn/g_tresmilhig007": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"404dxn/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenbask01": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenbask02": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenbask03": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenjar01": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenjar02": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenjar03": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"910dag/plc_ardenjar04": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"902mal/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"902mal/g_tresgencorp005": {
+"OnHeartbeat": "k_plc_trescormid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"902mal/g_tresgencorp006": {
+"OnHeartbeat": "k_plc_trescorhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"204tel/g_tresmilhig006": {
+"OnInvDisturbed": "a_updatesmggling",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm25ab/kashnrspwn": {
+"OnInvDisturbed": "kashonbldchk",
+"OnClosed": "kashonbldchk",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"610dan/bag_headtech": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"610dan/datapad_contain": {
+"OnClosed": "destroy_self",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"610dan/deadmerc_cont": {
+"OnClosed": "destroy_self",
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"610dan/footlocker_ll": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"610dan/footlocker_llt": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"610dan/footlocker_mlt": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"610dan/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"610dan/g_tresmilhig006": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"610dan/lg_locker_ll": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"003ebo/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"003ebo/inveb001": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresdrd004": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresdrd005": {
+"OnHeartbeat": "k_plc_tresdrdlow",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresmilhig007": {
+"OnHeartbeat": "k_plc_treas_norm",
+"OnOpen": "k_contain_unlock",
+"OnDamaged": "k_contain_bash",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresmilhig008": {
+"OnHeartbeat": "k_plc_treas_norm",
+"OnOpen": "k_contain_unlock",
+"OnDamaged": "k_contain_bash",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresmillow007": {
+"_items": 10,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresmillow008": {
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"106per/g_tresmillow009": {
+"OnHeartbeat": "k_plc_treas_per",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"106per/g_tresmillow010": {
+"OnHeartbeat": "k_plc_treas_per",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"106per/g_tresmillow011": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresmillow012": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"106per/g_tresmillow013": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/g_tresmillow015": {
+"OnHeartbeat": "k_plc_treas_per",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"106per/g_tresmillow016": {
+"OnHeartbeat": "k_plc_treas_per",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"106per/g_tresmillow017": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"106per/llk_proitems": {
+"_items": 24,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"512ond/g_trescivil004": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"512ond/g_tressndppl004": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/bdroid001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/body_invis": {
+"OnClosed": "a_compdlg",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/cont_sensor_drds": {
+"OnHeartbeat": "a_give_grenade",
+"OnClosed": "a_dlg_mv_box",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"001ebo/cont_tunnel": {
+"_items": 4,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"001ebo/fl_flamethrow": {
+"OnClosed": "a_compdlg",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/fl_parts": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/fl_spikes": {
+"OnOpen": "a_fl_bashed",
+"OnClosed": "a_compdlg",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"001ebo/g_tresdrd004": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/g_tresgencorp004": {
+"OnOpen": "a_compdlg",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/g_tresmilhig006": {
+"OnClosed": "a_compdlg",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/g_tresmilhig007": {
+"OnOpen": "a_set_unlocked",
+"OnClosed": "a_compdlg",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"001ebo/g_tresmilhig008": {
+"OnClosed": "a_compdlg",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"001ebo/g_tresmilhig009": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"506ond/box_puzzle": {
+"OnHeartbeat": "k_plc_it_up_l_cr",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"506ond/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"506ond/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_it_weap_l",
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"506ond/locker_armory": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"506ond/locker_armory2": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"950cor/g_tresmilhig006": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"950cor/g_tresmilhig007": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"950cor/g_tresmilhig008": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"950cor/g_tresmilhig009": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"950cor/g_tresmilhig010": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"950cor/g_tresmilhig011": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"602dan/g_tresdrd004": {
+"OnHeartbeat": "k_plc_tresdrdlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"602dan/g_tresdrd005": {
+"OnHeartbeat": "k_plc_tresdrdmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc10": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc11": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc12": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc5": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc6": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc7": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev4/lev4_plc9": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"cor957/cormetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"cor957/cormetalbox2": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"cor957/cormetalbox3": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"cor957/cormetalbox4": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"cor957/cormetalbox5": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/g_tresmillow007": {
+"OnHeartbeat": "k_plc_it_up",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/g_tresmillow008": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/g_tresmillow009": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"152har/g_tresmillow011": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"152har/rsldcrps001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/rsldcrps002": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/rsldcrps003": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/rsldcrps004": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"152har/rsldcrps005": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"203tel/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"OnClosed": "a_civilian_enter",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"410dxn/plstccrt001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/g_tresdrd004": {
+"OnHeartbeat": "k_plc_tresdrdlow",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/g_tresgencorp004": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/g_tresrefuse004": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/g_tresrefuse005": {
+"OnHeartbeat": "k_plc_trescormid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/shpjnklg001": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/tat18aa_cont_01": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/tat18aa_cont_02": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/tatprtsact1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/tatprtsact2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18aa/tatprtsact3": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"603dan/tempquest": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"851nih/locker_nil001": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"851nih/locker_nil002": {
+"OnHeartbeat": "k_plc_treas_less",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"851nih/locker_nil003": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"851nih/locker_nil004": {
+"OnHeartbeat": "k_plc_treas_more",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"105per/g_trescivil004": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"105per/g_trescivil005": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresdrd004": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp005": {
+"OnHeartbeat": "k_plc_treas_disp",
+"OnClosed": "a_hiddenmake",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp006": {
+"OnClosed": "k_journal",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp007": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp008": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp009": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp010": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp011": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp012": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresgencorp013": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmilhig006": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmilhig007": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmilhig008": {
+"OnHeartbeat": "k_plc_treas_disp",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmilhig009": {
+"_items": 10,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmillow007": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmillow009": {
+"OnMeleeAttacked": "a_compdlg",
+"OnUnlock": "k_nosparks",
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"105per/g_tresmillow010": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmillow011": {
+"OnHeartbeat": "k_plc_treas_per",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"105per/g_tresmillow012": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmillow013": {
+"OnHeartbeat": "k_plc_treas_per",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/g_tresmilmid006": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/inveb001": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"105per/inveb002": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hss001": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hss002": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hss003": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hss004": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hss005": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hss006": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/corpse_tr_hssiss": {
+"OnHeartbeat": "k_plc_trescormid",
+"OnClosed": "corpse_tr_hssiss",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"701kor/g_tressklcorp004": {
+"OnHeartbeat": "k_plc_trescormid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"201tel/ith_locker": {
+"OnInvDisturbed": "a_updatesmggling",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"905mal/g_tresgencorp004": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kas_m23ac/kas23ac_cont_01": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"504ond/locker_barrac001": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"504ond/locker_barrack": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc10": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc11": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc15": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc17": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc19": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc20": {
+"_items": 7,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc21": {
+"_items": 8,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc22": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc23": {
+"_items": 17,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc24": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc25": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc26": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc27": {
+"_items": 8,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc38": {
+"_items": 11,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"lev1/lev1_plc49": {
+"_items": 9,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc51": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc6": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/lev1_plc7": {
+"_items": 13,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev1/levsecdesk1": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"402dxn/dead_mandy": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"402dxn/g_tressklcorp004": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"402dxn/g_tressklcorp005": {
+"OnHeartbeat": "k_plc_treas_jedi",
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"302nar/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"302nar/g_trescivil004": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"302nar/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"302nar/g_tresmillow007": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"302nar/g_tresmillow008": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"302nar/g_tresmillow009": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"302nar/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnInvDisturbed": "a_chest_exch02",
+"OnDamaged": "a_chest_exch03",
+"OnUnlock": "a_chest_exch01",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"302nar/bfsbag": {
+"OnClosed": "delbfscont1",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/anc_box_se": {
+"OnHeartbeat": "k_plc_it_up_l",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"411dxn/anc_box_sw": {
+"OnHeartbeat": "k_plc_it_up_l_cr",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"411dxn/corpse": {
+"OnHeartbeat": "k_plc_trescorhig",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/g_tresmilmid006": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/g_tresmilmid007": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/g_tresmilmid008": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/g_tresmilmid009": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/g_tressndppl004": {
+"OnHeartbeat": "k_plc_tresshamid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/nadd_reward1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"411dxn/nadd_reward2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm99/persstorage1": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc2": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc3": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc4": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc5": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc6": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc7": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc8": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc9": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc10": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc11": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc12": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc16": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc17": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc18": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc19": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc20": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc28": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc29": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc31": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc32": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc33": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc34": {
+"_items": 7,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc35": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc36": {
+"_items": 4,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc37": {
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc38": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc39": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc40": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc41": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev2/lev2_plc42": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"003ebo/ebcont001": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"tathideout/persstorage1": {
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/bag005": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp004": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp005": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp006": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp007": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp008": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp009": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp010": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresgencorp011": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"305nar/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"305nar/g_tresmillow009": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"305nar/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"202tel/backpack001": {
+"_items": 11,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"202tel/g_lockertsf": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"202tel/g_lockertsf001": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"202tel/g_lockertsf002": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"711kor/jedi_cont": {
+"OnClosed": "a_jedi_jrnl_fin",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"711kor/sevrdarm001": {
+"OnClosed": "a_jedi_tomb_jrnl",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"711kor/sith_mummy": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis3/belsavis3_plc0": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis3/belsavis3_plc2": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis3/belsavis3_plc3": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis3/belsavis3_plc4": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis3/belsavis3_plc20": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"153har/g_trescivil004": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"153har/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"852nih/locker_nil001": {
+"OnHeartbeat": "k_plc_treas_less",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"852nih/locker_nil002": {
+"OnHeartbeat": "k_plc_treas_less",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"852nih/locker_nil003": {
+"OnHeartbeat": "k_plc_treas_norm",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"852nih/locker_nil004": {
+"OnHeartbeat": "k_plc_treas_more",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/rakatbin002": {
+"_items": 12,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/rakatbin003": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/rakatbn003": {
+"_items": 9,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/rakatbn004": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/unk43_treas0": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/unk43_treas001": {
+"_items": 17,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm43aa/unk43_treas2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm41aa/footlker001": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm41aa/missdrop": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"298tel/g_tresdrd004": {
+"OnHeartbeat": "k_plc_tresdrdlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"298tel/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"298tel/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"298tel/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"298tel/g_tresmillow011": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"298tel/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"298tel/g_tresmilmid007": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"502ond/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"502ond/g_trescivil004": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_01": {
+"OnOpen": "k_plc_trescorlow",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_02": {
+"OnOpen": "k_plc_trescormid",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_03": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_04": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_05": {
+"OnOpen": "k_plc_tresmillow",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_06": {
+"OnOpen": "k_plc_tresdrdlow",
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm22ab/kas22ab_cont_07": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 27,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/g_tressklcorp004": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/g_tressklcorp005": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/g_tressklcorp006": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/millowwreckage": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/pands": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnOpen": "k_ferret_temp",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"401dxn/zhug_chest": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"350nar/g_tresmilhig007": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"350nar/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"350nar/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"350nar/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"350nar/g_tressndppl004": {
+"OnHeartbeat": "k_plc_tressndppl",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"207tel/backpack001": {
+"_items": 11,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/backpack001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/footlker003": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/footlker004": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/footlker005": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/footlker006": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/footlker007": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/lockerlg005": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/lockerlg008": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/metalbox001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/metalbox002": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/metalbox003": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ae/plstccrt001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/backpack001": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/bitharm": {
+"OnInvDisturbed": "a_removebitharm",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"303nar/g_tresmilmid006": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmilmid007": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "a_give_quest_lsc",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"303nar/g_tresmilmid008": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmilmid009": {
+"OnHeartbeat": "k_plc_tresdrdmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmilmid010": {
+"OnHeartbeat": "k_plc_tresdrdhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor2/endor2_plc7": {
+"OnOpen": "k_plc_trescorlow",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor2/endor2_plc8": {
+"OnOpen": "k_plc_trescormid",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor2/endor2_plc9": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor2/endor2_plc10": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor2/endor2_plc11": {
+"OnOpen": "k_plc_tresmillow",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"endor2/endor2_plc12": {
+"OnOpen": "k_plc_tresdrdlow",
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"endor2/endor2_plc13": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sithstation3/sithstation3_plc": {
+"OnClosed": "k_psta_binclear",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"702kor/bag005": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"702kor/bag_datapad2": {
+"OnHeartbeat": "k_plc_it_eq_belt",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"702kor/bast_footlocker": {
+"OnUsed": "a_bastila_holo",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"702kor/footlocker_comp": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"702kor/footlocker_ll": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"702kor/footlocker_llt": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"702kor/footlocker_mlt": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"702kor/mil_locker": {
+"OnDamaged": "a_locker_boom",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"702kor/twilek_body": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"702kor/vash_container": {
+"OnUsed": "a_open_vash_cage",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"231tel/g_trescivil003": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"231tel/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"231tel/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"231tel/metalbox001": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"903mal/g_tresgencorp004": {
+"OnUsed": "a_compdlg",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"903mal/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"903mal/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"903mal/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"903mal/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ai/sley99ai_plc0": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"954cor/footlker001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"954cor/footlker002": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"954cor/plstccrt001": {
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"954cor/plstccrt002": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"954cor/ptar_contbox1": {
+"OnHeartbeat": "k_ptar_conttr1",
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"954cor/tar08_strongbox0": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc10": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc11": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc12": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc13": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc14": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc15": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc16": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc17": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc18": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc19": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc20": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc21": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc22": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc23": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc24": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc25": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc26": {
+"_items": 45,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc27": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc28": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc29": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc30": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc47": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc48": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc6": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc7": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc8": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis1/belsavis1_plc9": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ac/punk_treasm3": {
+"OnHeartbeat": "k_punk_treasm2",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m37aa/backpack001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m37aa/kor37_armdata": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m37aa/kor37_corpse": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m37aa/kor37_medium2": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m37aa/kor37_sithsarc": {
+"OnInvDisturbed": "visholochk1",
+"OnClosed": "visholochk1",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m37aa/kor37_therangen": {
+"OnInvDisturbed": "k_pkor_therangen",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"681dan/681dan_plc2": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"681dan/681dan_plc3": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"681dan/681dan_plc4": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"681dan/681dan_plc5": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"299tel/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"299tel/g_tresmilhig007": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"299tel/g_tresmillow006": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"299tel/g_tresmillow010": {
+"OnHeartbeat": "k_plc_tresmillow",
+"OnDamaged": "k_contain_bash",
+"OnUnlock": "k_contain_unlock",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"299tel/g_tresmilmid006": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38aa/k38a_sith_sarcop": {
+"OnInvDisturbed": "visholochk1",
+"OnClosed": "visholochk1",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"korr_m38aa/kor38a_corpse": {
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38aa/kor38a_corpse2": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"303nar/g_tresmilhig005": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"680dan/680dan_plc4": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"680dan/680dan_plc6": {
+"OnInvDisturbed": "k_pdan_destself",
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"680dan/680dan_plc7": {
+"OnInvDisturbed": "k_pdan_destself",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18ac/tat18ac_cont_004": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18ac/tat18ac_cont_01": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18ac/tat18ac_cont_02": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18ac/tat18ac_cont_03": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18ab/tat18ab_cont_01": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm18ab/tat18ab_cont_02": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/footlker001": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/punk_treas3": {
+"OnHeartbeat": "k_punk_treasm2",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/punk_treasm1": {
+"OnHeartbeat": "k_punk_treasm",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/punk_treasm3": {
+"OnHeartbeat": "k_punk_treasm2",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/rnepillr001": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/unk44_crystal": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/unk44_footlocker": {
+"_items": 9,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44ab/unktmpcont1": {
+"OnHeartbeat": "k_punk_treasm2",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavjungle1/yavbag04": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavjungle1/yavmetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavjungle1/yavrub1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_01": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_02": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_03": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_04": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_05": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_06": {
+"OnOpen": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm22aa/kas22aa_cont_07": {
+"OnOpen": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavbase1/cormetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavbase1/cormetalbox2": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavbase1/cormetalbox3": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavbase1/cormetalbox4": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavbase1/cormetalbox5": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corftlck1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corftlck2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corftlck3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corftlck4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corlckr1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corlckr2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corlckr3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/corlckr4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/cormetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc5": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc6": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc7": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc8": {
+"_items": 9,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc14": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc15": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc16": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc18": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"mansithb1/mansithb1_plc20": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm41ab/footlker001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ah/sley99ah_plc1": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ah/sley99ah_plc2": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corftlck1": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corftlck2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corftlck3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corftlck4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corlckr1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corlckr2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corlckr3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/corlckr4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"959cor/cormetalbox1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_large1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_medium1": {
+"OnInvDisturbed": "visholochk1",
+"OnClosed": "visholochk1",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_medium2": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_medium3": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_urn1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_urn2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m38ab/kor38b_urn3": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kas_m23aa/g_tresrakat003": {
+"OnHeartbeat": "k_plc_tresrakat",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kas_m23aa/g_tresrakat004": {
+"OnHeartbeat": "k_plc_tresrakat",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc0": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc1": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc10": {
+"OnHeartbeat": "k_plc_tresmilmid",
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc11": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc12": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc13": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc14": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc16": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc2": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc3": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc4": {
+"OnHeartbeat": "k_plev_consmall",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc8": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"lev3/lev3_plc9": {
+"OnHeartbeat": "k_plc_tresmillow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"956cor/cormetalbox1": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"956cor/cormetalbox2": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"956cor/cormetalbox3": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"956cor/cormetalbox4": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"956cor/cormetalbox5": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"771kor/tempmon1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"771kor/tempsarc3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"771kor/tempsarc2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"771kor/tempsarc1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc3": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc4": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc5": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc6": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc7": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc8": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc9": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc10": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc11": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc12": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc13": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc14": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc15": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc16": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc17": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc18": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc19": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc20": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc21": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc22": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc23": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc24": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc25": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc26": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc27": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc28": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc29": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc30": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc31": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc32": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc33": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc34": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc35": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc36": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc37": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc38": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/969cor_plc39": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"969cor/corgngbsinv1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor3/endor3_plc2": {
+"OnHeartbeat": "k_plc_tresrakat",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"endor3/endor3_plc3": {
+"OnHeartbeat": "k_plc_tresrakat",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"601dan/g_trescivil001": {
+"OnHeartbeat": "k_plc_tresciv",
+"OnClosed": "a_patobark",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc4": {
+"_items": 11,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"963cor/963cor_plc8": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc9": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc10": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc11": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc12": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc13": {
+"OnHeartbeat": "k_plc_trescormid",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"963cor/963cor_plc16": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"964cor/964cor_plc1": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"964cor/964cor_plc2": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/grarwwaar": {
+"OnInvDisturbed": "k_pkas_morph1",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/kas24_rorwoorcor": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_01": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_02": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_03": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_04": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_05": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_06": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/kas24aa_cont_07": {
+"OnOpen": "k_plc_tresshahig",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kasm24aa/rulan_corpse": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm42aa/metalbox001": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm42aa/plstccrt001": {
+"_items": 10,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm42aa/plstccrt002": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm42aa/unk42_trea001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"kas_m23ab/kas23ab_cont_01": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/footlker001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/footlker002": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/footlker003": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/footlker004": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/metalbox001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/metalbox002": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/metalbox003": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/metalbox004": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/metalbox005": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt002": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt003": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt004": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt005": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt006": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"man_m26ad/plstccrt007": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavtomb2/corpse": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavtomb2/yavrub1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"yavshrine1/yavrub1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"973cor/973cor_plc19": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"973cor/973cor_plc20": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"973cor/973cor_plc21": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"973cor/973cor_plc22": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"748kor/plc_rneoblsk_trs": {
+"OnInvDisturbed": "check_key",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"748kor/plc_rubble_tres": {
+"OnInvDisturbed": "check_key",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"748kor/plc_urn_tres": {
+"OnInvDisturbed": "check_key",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"rhenvar3/rhenvar3_plc8": {
+"OnInvDisturbed": "k_pdan_destself",
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc0": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc1": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc10": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc19": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc2": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc3": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc4": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc5": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"682dan/682dan_plc6": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"682dan/682dan_plc7": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"682dan/682dan_plc8": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/g_tressklcorp004": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/g_tressndppl004": {
+"OnHeartbeat": "k_ptat_tusklock",
+"OnUsed": "k_ptat_tuskcont",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/g_tressndppl005": {
+"OnHeartbeat": "k_ptat_tusklock",
+"OnUsed": "k_ptat_tuskcont",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/g_tressndppl006": {
+"OnHeartbeat": "k_ptat_tusklock",
+"OnUsed": "k_ptat_tuskcont",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/g_tressndppl007": {
+"OnHeartbeat": "k_ptat_tusklock",
+"OnUsed": "k_ptat_tuskcont",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/g_tressndppl008": {
+"OnHeartbeat": "k_ptat_tusklock",
+"OnUsed": "k_ptat_tuskcont",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/rfpilemd001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/rfpilemd002": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/tat20_banfeeder": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/tat20_ragpile001": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"tatm20aa/tat20_ragpile002": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corftlck1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corftlck2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corftlck3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corftlck4": {
+"OnOpen": "corendstryqst1",
+"OnClosed": "a_destroy_self",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corlckr1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corlckr2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corlckr3": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/corlckr4": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"961cor/cormetalbox1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc10": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc11": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc12": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc13": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc14": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc15": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc16": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc17": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc18": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc19": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc20": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc21": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc22": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc23": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc24": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc25": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc26": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc27": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc28": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc29": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc3": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc30": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc31": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc32": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc33": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc34": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc35": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc36": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc37": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc38": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc39": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc4": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc40": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc5": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc6": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc7": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc8": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sley99aj_plc9": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99aj/sleycorpsewithke": {
+"OnHeartbeat": "k_plc_trescorlow",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corftlck1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corftlck2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corftlck3": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corftlck4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corlckr1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corlckr2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corlckr3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/corlckr4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/cormetalbox1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/footlker001": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/footlker002": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/footlker003": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/metalbox001": {
+"_items": 6,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/metalbox002": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/ptar_contbox0": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/ptar_contbox1": {
+"OnHeartbeat": "k_ptar_conttr1",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/ptar_contcyl0": {
+"OnHeartbeat": "k_ptar_conttr0",
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"960cor/ptar_contcyl001": {
+"_items": 3,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc0": {
+"OnOpen": "corendstryqst1",
+"OnClosed": "a_destroy_self",
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc2": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc3": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc4": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc5": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"sley99ag/sley99ag_plc6": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"962cor/962cor_plc0": {
+"_items": 5,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"970cor/cormetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"970cor/cormetalbox2": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"970cor/cormetalbox3": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"970cor/cormetalbox4": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"970cor/cormetalbox5": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/footlker001": {
+"_items": 45,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"unkm44aa/lockerlg001": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/lockerlg002": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/lockerlg003": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"unkm44aa/lockerlg004": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"unkm44aa/lockerlg005": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"unkm44aa/metalbox001": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/metalbox002": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/metalbox003": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"unkm44aa/metalbox004": {
+"_items": 8,
+"_plot": 0,
+"_trap": 0,
+"_locked": 1,
+"_bodybag": 0
+},
+"unkm44aa/metalbox005": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/plstccrt001": {
+"_items": 6,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/rnepillr001": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/rnepillr002": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm44aa/unk44_strong003": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"745kor/plc_locker01": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"745kor/plc_locker_nil": {
+"OnHeartbeat": "k_plc_tresciv",
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"745kor/plc_lockerlg": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"745kor/plc_plstccrt": {
+"_items": 0,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"745kor/plc_torgurn": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/hmnskel001": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/k39_plc_coldpill": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/k39_plc_firepill": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/k39_plc_monument": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/k39_sabersarc": {
+"OnInvDisturbed": "visholochk1",
+"OnClosed": "visholochk1",
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/kor39_large1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/kor39_medium1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/kor39_sithcorpse": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"korr_m39aa/nagakeymon1": {
+"_items": 1,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"manstation1/cormetalbox1": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"manstation1/cormetalbox2": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"manstation1/cormetalbox3": {
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"manstation1/cormetalbox4": {
+"_items": 7,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"manstation1/cormetalbox5": {
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis6/belsavis6_plc35": {
+"OnInvDisturbed": "k_pdan_destself",
+"_items": 3,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"belsavis6/belsavis6_plc37": {
+"_items": 2,
+"_plot": 1,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corftlck1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corftlck2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corftlck3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corftlck4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corgngbdsk1": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corlckr1": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corlckr2": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corlckr3": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/corlckr4": {
+"_items": 0,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"965cor/cormetalbox1": {
+"_items": 2,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"925mal/g_tresmilhig006": {
+"OnHeartbeat": "k_plc_tresmilhig",
+"_items": 4,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"925mal/inveb001": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"unkm41ac/reward": {
+"_items": 19,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe601b": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe605": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe602b": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe501": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe203b": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe601a": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe209": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe203a": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe602c": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe512": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/dead_mandy": {
+"_items": 5,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+},
+"override/jc_wardrobe302": {
+"_items": 1,
+"_plot": 0,
+"_trap": 0,
+"_locked": 0,
+"_bodybag": 0
+}
+}
