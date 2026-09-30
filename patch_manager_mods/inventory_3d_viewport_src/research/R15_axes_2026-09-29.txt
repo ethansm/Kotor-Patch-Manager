@@ -1,0 +1,56 @@
+## refs 00a7d858
+REF 005157aa READ in 00515620 FUN_00515620 (GhidraScript)  
+REF 00983d85 WRITE in 00983d80 FUN_00983d80 (GhidraScript)  
+## refs 00a7d864
+REF 005ec3f6 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ec429 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ec52f READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ec562 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ec668 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ec69b READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ecd01 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ecd34 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ecdb5 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+REF 005ecde8 READ in 005ea8f0 FUN_005ea8f0 (GhidraScript)  
+## refs 00a7d870
+REF 00515656 READ in 00515620 FUN_00515620 (GhidraScript)  
+REF 00515bcf READ in 00515a70 FUN_00515a70 (GhidraScript)  
+REF 00515fed READ in 00515e60 FUN_00515e60 (GhidraScript)  
+REF 00983d65 WRITE in 00983d60 FUN_00983d60 (GhidraScript)  
+=== FUN_005195a0 @ 005195a0 size=248 (GhidraScript)  
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+float * __thiscall
+FUN_005195a0(float *param_1,undefined4 param_2,undefined4 param_3,undefined4 param_4,float param_5)
+{
+  float fVar1;
+  float fVar2;
+  undefined4 *puVar3;
+  float *pfVar4;
+  float10 fVar5;
+  undefined1 local_1c [12];
+  undefined1 local_10 [12];
+  
+  if (param_5 == (float)_DAT_00986b38) {
+    *param_1 = 1.0;
+    param_1[3] = 0.0;
+    param_1[2] = 0.0;
+    param_1[1] = 0.0;
+  }
+  else {
+    puVar3 = (undefined4 *)FUN_005143c0(local_10,&param_2);
+    param_2 = *puVar3;
+    param_3 = puVar3[1];
+    param_4 = puVar3[2];
+    fVar5 = (float10)FUN_0091ea50((double)(param_5 / (float)_DAT_00987490));
+    *param_1 = (float)fVar5;
+    fVar5 = (float10)FUN_0091e770((double)(param_5 / (float)_DAT_00987490));
+    pfVar4 = (float *)FUN_00436200(local_1c,&param_2,(float)fVar5);
+    fVar1 = pfVar4[1];
+    fVar2 = pfVar4[2];
+    param_1[1] = *pfVar4;
+    param_1[2] = fVar1;
+    param_1[3] = fVar2;
+  }
+  return param_1;
+}
+ (GhidraScript)  

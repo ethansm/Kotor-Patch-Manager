@@ -1,0 +1,423 @@
+# R17 hierarchical bbox survey: per (baseitems row, variation): extent xyz, centre xyz, longest axis, nverts, node-type counts
+  0 Quarter_Staff              w_qtrstaff_001 ext=[0.039 0.035 1.026] c=[0.000 -0.000 0.150] long=z v=1330 m=7 em=0 li=0 dg=0 sk=0 sb=0
+  0 Quarter_Staff              w_qtrstaff_002 ext=[0.057 0.057 0.961] c=[-0.000 0.001 0.153] long=z v=1136 m=7 em=0 li=0 dg=0 sk=2 sb=0
+  0 Quarter_Staff              w_qtrstaff_003 ext=[0.040 0.042 0.522] c=[0.000 0.002 0.153] long=z v=1852 m=7 em=0 li=0 dg=0 sk=0 sb=0
+  0 Quarter_Staff              w_qtrstaff_009 ext=[0.043 0.043 0.947] c=[0.000 0.001 0.142] long=z v=877 m=9 em=0 li=0 dg=0 sk=0 sb=0
+  0 Quarter_Staff              w_qtrstaff_010 ext=[0.068 0.068 0.722] c=[-0.000 -0.017 0.144] long=z v=456 m=5 em=0 li=0 dg=0 sk=0 sb=0
+  1 Stun_Baton                 w_stunbaton_001 ext=[0.056 0.053 0.428] c=[0.000 -0.003 0.151] long=z v=122 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  1 Stun_Baton                 w_stunbaton_002 ext=[0.056 0.053 0.428] c=[0.000 -0.003 0.151] long=z v=122 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  1 Stun_Baton                 w_stunbaton_003 ext=[0.056 0.053 0.428] c=[0.000 -0.001 0.151] long=z v=122 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  1 Stun_Baton                 w_stunbaton_004 ext=[0.056 0.053 0.428] c=[0.000 -0.003 0.151] long=z v=122 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  1 Stun_Baton                 w_stunbaton_005 ext=[0.056 0.074 0.394] c=[0.000 0.008 0.134] long=z v=112 m=1 em=2 li=0 dg=0 sk=0 sb=0
+  2 Long_Sword                 w_lngswrd_001 ext=[0.032 0.149 1.255] c=[-0.000 -0.000 0.417] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  2 Long_Sword                 w_lngswrd_002 ext=[0.032 0.149 1.255] c=[-0.000 -0.000 0.417] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  2 Long_Sword                 w_lngswrd_003 ext=[0.032 0.149 1.255] c=[-0.000 -0.000 0.417] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  2 Long_Sword                 w_lngswrd_004 ext=[0.032 0.149 1.255] c=[0.001 -0.003 0.417] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  2 Long_Sword                 w_lngswrd_005 ext=[0.032 0.149 1.255] c=[-0.000 -0.003 0.417] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  3 Vibro_Sword                w_vbroswrd_001 ext=[0.028 0.177 1.289] c=[0.000 0.000 0.406] long=z v=251 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  3 Vibro_Sword                w_vbroswrd_002 ext=[0.028 0.177 1.289] c=[0.000 0.000 0.406] long=z v=251 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  3 Vibro_Sword                w_vbroswrd_003 ext=[0.028 0.177 1.289] c=[0.000 0.000 0.406] long=z v=251 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  3 Vibro_Sword                w_vbroswrd_004 ext=[0.028 0.177 1.289] c=[0.000 0.000 0.406] long=z v=251 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  3 Vibro_Sword                w_vbroswrd_005 ext=[0.028 0.177 1.289] c=[0.000 0.000 0.406] long=z v=251 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  3 Vibro_Sword                w_vbroswrd_006 ext=[0.028 0.177 1.289] c=[0.001 -0.030 0.366] long=z v=231 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  4 Short_Sword                w_shortswrd_001 ext=[0.031 0.135 1.030] c=[0.000 0.000 0.375] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  4 Short_Sword                w_shortswrd_002 ext=[0.031 0.135 1.030] c=[0.000 0.000 0.375] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  4 Short_Sword                w_shortswrd_003 ext=[0.031 0.135 1.030] c=[0.000 0.000 0.375] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  4 Short_Sword                w_shortswrd_004 ext=[0.031 0.135 1.030] c=[0.000 0.000 0.375] long=z v=184 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  5 Vibro_Blade                w_vbroshort_001 ext=[0.027 0.176 1.052] c=[-0.001 0.000 0.358] long=z v=287 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  5 Vibro_Blade                w_vbroshort_002 ext=[0.027 0.176 1.052] c=[-0.001 0.000 0.358] long=z v=287 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  5 Vibro_Blade                w_vbroshort_003 ext=[0.027 0.176 1.052] c=[-0.001 0.000 0.358] long=z v=287 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  5 Vibro_Blade                w_vbroshort_004 ext=[0.027 0.176 1.052] c=[-0.001 0.000 0.358] long=z v=287 m=2 em=0 li=0 dg=0 sk=0 sb=0
+  6 Double_Bladed_Sword        w_dblswrd_001 ext=[0.022 0.120 2.256] c=[0.000 0.002 0.176] long=z v=264 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  6 Double_Bladed_Sword        w_dblswrd_002 ext=[0.022 0.120 2.256] c=[0.000 0.002 0.176] long=z v=264 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  6 Double_Bladed_Sword        w_dblswrd_003 ext=[0.022 0.120 2.256] c=[0.000 0.002 0.176] long=z v=264 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  6 Double_Bladed_Sword        w_dblswrd_004 ext=[0.022 0.120 2.256] c=[0.000 0.002 0.176] long=z v=264 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  7 Vibro_Double_Blade         w_vbrdblswd_001 ext=[0.032 0.084 2.300] c=[-0.000 0.000 0.163] long=z v=356 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  7 Vibro_Double_Blade         w_vbrdblswd_002 ext=[0.032 0.084 2.300] c=[-0.000 0.000 0.163] long=z v=356 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  7 Vibro_Double_Blade         w_vbrdblswd_003 ext=[0.032 0.084 2.300] c=[-0.000 0.000 0.163] long=z v=356 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  7 Vibro_Double_Blade         w_vbrdblswd_004 ext=[0.032 0.084 2.300] c=[-0.000 0.000 0.163] long=z v=356 m=1 em=0 li=0 dg=0 sk=0 sb=0
+  8 Lightsaber                 w_lghtsbr_001 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_blue;
+  8 Lightsaber                 w_lghtsbr_002 ext=[0.203 0.203 1.329] c=[-0.000 0.000 0.455] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_red;
+  8 Lightsaber                 w_lghtsbr_003 ext=[0.203 0.203 1.317] c=[-0.000 0.000 0.461] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_green;
+  8 Lightsaber                 w_lghtsbr_004 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_yellow;
+  8 Lightsaber                 w_lghtsbr_005 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_purple;
+  8 Lightsaber                 w_lghtsbr_006 ext=[0.203 0.203 1.323] c=[-0.000 0.000 0.458] long=z v=1088 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_malak;
+  8 Lightsaber                 w_lghtsbr_007 ext=[0.203 0.203 1.317] c=[-0.000 0.000 0.461] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_gold;
+  8 Lightsaber                 w_lghtsbr_008 ext=[0.203 0.203 1.315] c=[-0.000 0.000 0.462] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_turq;
+  8 Lightsaber                 w_lghtsbr_009 ext=[0.203 0.203 1.319] c=[-0.000 0.000 0.460] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_dgreen;
+  8 Lightsaber                 w_lghtsbr_010 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_silver;
+  8 Lightsaber                 w_lghtsbr_011 ext=[0.203 0.203 1.314] c=[-0.000 0.000 0.462] long=z v=1120 m=12 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_bronze;
+  9 Double_Bladed_Lightsaber   w_dblsbr_001 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1852 m=15 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_blue;
+  9 Double_Bladed_Lightsaber   w_dblsbr_002 ext=[0.203 0.203 2.464] c=[0.000 -0.000 0.206] long=z v=1851 m=15 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_red;
+  9 Double_Bladed_Lightsaber   w_dblsbr_003 ext=[0.203 0.203 2.464] c=[0.000 -0.000 0.206] long=z v=1852 m=15 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_green;
+  9 Double_Bladed_Lightsaber   w_dblsbr_004 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1893 m=16 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_yellow;
+  9 Double_Bladed_Lightsaber   w_dblsbr_005 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1894 m=16 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_purple;
+  9 Double_Bladed_Lightsaber   w_dblsbr_006 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1937 m=17 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_gold;
+  9 Double_Bladed_Lightsaber   w_dblsbr_007 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1893 m=16 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_turq;
+  9 Double_Bladed_Lightsaber   w_dblsbr_008 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1937 m=17 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_dgreen;
+  9 Double_Bladed_Lightsaber   w_dblsbr_009 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=1851 m=15 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_silver;
+  9 Double_Bladed_Lightsaber   w_dblsbr_010 ext=[0.203 0.203 2.464] c=[0.000 0.000 0.206] long=z v=2025 m=19 em=0 li=2 dg=0 sk=0 sb=8 refs=dblsbr_bronze;
+ 10 Short_Lightsaber           w_shortsbr_001 ext=[0.203 0.203 0.965] c=[-0.000 0.000 0.357] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_blue;
+ 10 Short_Lightsaber           w_shortsbr_002 ext=[0.203 0.203 0.977] c=[-0.000 0.000 0.351] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_red;
+ 10 Short_Lightsaber           w_shortsbr_003 ext=[0.203 0.203 0.961] c=[-0.000 0.000 0.359] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_green;
+ 10 Short_Lightsaber           w_shortsbr_004 ext=[0.203 0.203 0.960] c=[-0.000 0.000 0.359] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_yellow;
+ 10 Short_Lightsaber           w_shortsbr_005 ext=[0.203 0.203 0.967] c=[-0.000 0.000 0.356] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_purple;
+ 10 Short_Lightsaber           w_shortsbr_006 ext=[0.203 0.203 0.961] c=[-0.000 0.000 0.359] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_gold;
+ 10 Short_Lightsaber           w_shortsbr_007 ext=[0.203 0.203 0.961] c=[-0.000 0.000 0.359] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_turq;
+ 10 Short_Lightsaber           w_shortsbr_008 ext=[0.203 0.203 0.964] c=[-0.000 0.000 0.358] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_dgreen;
+ 10 Short_Lightsaber           w_shortsbr_009 ext=[0.203 0.203 0.965] c=[-0.000 0.000 0.357] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_silver;
+ 10 Short_Lightsaber           w_shortsbr_010 ext=[0.203 0.203 0.965] c=[-0.000 0.000 0.357] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=shortsbr_bronze;
+ 12 Blaster_Pistol             w_blstrpstl_001 ext=[0.081 0.405 0.220] c=[0.002 0.134 0.044] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_002 ext=[0.083 0.405 0.219] c=[0.003 0.134 0.050] long=y v=380 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_003 ext=[0.086 0.431 0.225] c=[0.004 0.143 0.042] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_004 ext=[0.083 0.405 0.219] c=[0.003 0.134 0.050] long=y v=380 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_005 ext=[0.084 0.442 0.216] c=[0.004 0.144 0.042] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_006 EMPTY 
+ 12 Blaster_Pistol             w_blstrpstl_007 ext=[0.144 0.170 0.963] c=[-0.030 0.044 -0.158] long=z v=163 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_008 ext=[0.109 0.082 0.975] c=[-0.007 0.001 -0.083] long=z v=118 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_009 ext=[0.155 0.162 1.013] c=[0.032 0.024 -0.180] long=z v=136 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_010 ext=[0.477 0.236 0.506] c=[0.122 0.008 0.197] long=z v=209 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_011 ext=[0.094 0.428 0.223] c=[-0.000 0.150 0.048] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_012 ext=[0.083 0.405 0.214] c=[0.003 0.134 0.044] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_013 ext=[0.045 0.049 0.120] c=[0.010 0.002 0.025] long=z v=73 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_014 ext=[0.167 0.169 0.145] c=[0.045 -0.020 0.054] long=y v=32 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 12 Blaster_Pistol             w_blstrpstl_015 ext=[0.103 0.396 0.215] c=[-0.002 0.130 0.048] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 13 Heavy_Blaster              w_hvyblstr_001 ext=[0.038 0.462 0.198] c=[0.000 0.161 0.044] long=y v=471 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 13 Heavy_Blaster              w_hvyblstr_002 ext=[0.038 0.466 0.198] c=[0.000 0.163 0.044] long=y v=471 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 13 Heavy_Blaster              w_hvyblstr_003 ext=[0.038 0.462 0.198] c=[0.000 0.161 0.044] long=y v=471 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 13 Heavy_Blaster              w_hvyblstr_004 ext=[0.038 0.462 0.198] c=[0.000 0.161 0.044] long=y v=471 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 13 Heavy_Blaster              w_hvyblstr_005 ext=[0.038 0.466 0.198] c=[0.000 0.163 0.044] long=y v=471 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 13 Heavy_Blaster              w_hvyblstr_006 EMPTY 
+ 14 Hold_Out_Blaster           w_hldoblst_001 ext=[0.052 0.266 0.147] c=[-0.000 0.085 0.032] long=y v=210 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 14 Hold_Out_Blaster           w_hldoblst_002 ext=[0.052 0.266 0.147] c=[-0.000 0.085 0.032] long=y v=210 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 14 Hold_Out_Blaster           w_hldoblst_003 ext=[0.052 0.266 0.147] c=[-0.000 0.085 0.032] long=y v=210 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 14 Hold_Out_Blaster           w_hldoblst_004 ext=[0.052 0.266 0.147] c=[-0.000 0.085 0.032] long=y v=210 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 15 Ion_Blaster                w_ionblstr_001 ext=[0.073 0.461 0.234] c=[-0.005 0.153 0.046] long=y v=510 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 15 Ion_Blaster                w_ionblstr_002 ext=[0.074 0.461 0.234] c=[-0.004 0.153 0.046] long=y v=510 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 15 Ion_Blaster                w_ionblstr_003 ext=[0.073 0.461 0.234] c=[-0.005 0.153 0.046] long=y v=510 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 16 Disrupter_Pistol           w_dsrptpstl_001 ext=[0.078 0.453 0.229] c=[0.006 0.139 0.045] long=y v=360 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 16 Disrupter_Pistol           w_dsrptpstl_002 ext=[0.061 0.438 0.228] c=[0.003 0.136 0.044] long=y v=360 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 16 Disrupter_Pistol           w_dsrptpstl_003 ext=[0.061 0.438 0.228] c=[0.003 0.136 0.044] long=y v=360 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 16 Disrupter_Pistol           w_dsrptpstl_004 ext=[0.061 0.438 0.228] c=[0.003 0.136 0.044] long=y v=360 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 17 Sonic_Pistol               w_sonicpstl_001 ext=[0.101 0.308 0.182] c=[0.000 0.008 0.034] long=y v=399 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 17 Sonic_Pistol               w_sonicpstl_002 ext=[0.101 0.308 0.182] c=[0.000 0.008 0.034] long=y v=399 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 17 Sonic_Pistol               w_sonicpstl_003 ext=[0.101 0.308 0.182] c=[0.000 0.008 0.034] long=y v=399 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 17 Sonic_Pistol               w_sonicpstl_004 ext=[0.101 0.313 0.192] c=[0.000 0.010 0.039] long=y v=499 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 17 Sonic_Pistol               w_sonicpstl_005 ext=[0.101 0.313 0.192] c=[0.000 0.010 0.039] long=y v=499 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 17 Sonic_Pistol               w_sonicpstl_006 ext=[0.101 0.313 0.192] c=[0.000 0.010 0.039] long=y v=499 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 18 Ion_Rifle                  w_ionrfl_001 ext=[0.122 0.773 0.252] c=[0.000 0.114 0.044] long=y v=689 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 18 Ion_Rifle                  w_ionrfl_002 ext=[0.122 0.879 0.252] c=[0.000 0.167 0.044] long=y v=689 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 18 Ion_Rifle                  w_ionrfl_003 ext=[0.122 0.879 0.252] c=[0.000 0.167 0.044] long=y v=689 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 18 Ion_Rifle                  w_ionrfl_004 EMPTY 
+ 18 Ion_Rifle                  w_ionrfl_005 ext=[0.122 0.879 0.252] c=[0.000 0.167 0.044] long=y v=689 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 19 Bowcaster                  w_bowcstr_001 ext=[0.560 0.839 0.284] c=[0.000 0.203 0.057] long=y v=985 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 19 Bowcaster                  w_bowcstr_002 ext=[0.560 0.839 0.281] c=[0.000 0.203 0.056] long=y v=985 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 19 Bowcaster                  w_bowcstr_003 ext=[0.560 0.839 0.284] c=[0.000 0.203 0.057] long=y v=985 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 20 Blaster_Carbine            w_blstrcrbn_001 ext=[0.154 0.626 0.261] c=[0.000 0.266 0.048] long=y v=771 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 20 Blaster_Carbine            w_blstrcrbn_002 ext=[0.183 0.626 0.267] c=[0.001 0.262 0.030] long=y v=245 m=5 em=0 li=0 dg=0 sk=0 sb=0
+ 20 Blaster_Carbine            w_blstrcrbn_003 ext=[0.154 0.664 0.276] c=[-0.000 0.285 0.055] long=y v=759 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 20 Blaster_Carbine            w_blstrcrbn_004 ext=[0.183 0.626 0.267] c=[0.001 0.262 0.030] long=y v=245 m=5 em=0 li=0 dg=0 sk=0 sb=0
+ 20 Blaster_Carbine            w_blstrcrbn_005 ext=[0.127 0.668 0.280] c=[-0.000 0.286 0.057] long=y v=902 m=4 em=0 li=0 dg=0 sk=0 sb=0
+ 20 Blaster_Carbine            w_blstrcrbn_006 EMPTY 
+ 21 Disrupter_Rifle            w_dsrptrfl_001 ext=[0.068 0.560 0.255] c=[0.000 0.213 0.060] long=y v=448 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 21 Disrupter_Rifle            w_dsrptrfl_002 ext=[0.068 0.660 0.255] c=[0.000 0.263 0.060] long=y v=448 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 21 Disrupter_Rifle            w_dsrptrfl_003 ext=[0.068 0.670 0.255] c=[0.000 0.268 0.060] long=y v=448 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 22 Sonic_Rifle                w_sonicrfl_001 ext=[0.102 0.672 0.218] c=[0.000 0.155 0.057] long=y v=682 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 22 Sonic_Rifle                w_sonicrfl_002 ext=[0.102 0.804 0.218] c=[0.000 0.189 0.057] long=y v=682 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 22 Sonic_Rifle                w_sonicrfl_003 ext=[0.102 0.860 0.212] c=[0.000 0.217 0.055] long=y v=682 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 22 Sonic_Rifle                w_sonicrfl_004 ext=[0.102 0.804 0.218] c=[0.000 0.189 0.057] long=y v=682 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 23 Repeating_Blaster          w_rptnblstr_001 ext=[0.095 0.723 0.250] c=[0.000 0.172 0.047] long=y v=755 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 23 Repeating_Blaster          w_rptnblstr_002 ext=[0.098 0.803 0.252] c=[0.001 0.182 0.048] long=y v=831 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 23 Repeating_Blaster          w_rptnblstr_003 ext=[0.098 0.803 0.252] c=[0.001 0.182 0.048] long=y v=831 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 23 Repeating_Blaster          w_rptnblstr_004 EMPTY 
+ 23 Repeating_Blaster          w_rptnblstr_005 ext=[0.098 0.828 0.252] c=[0.001 0.193 0.049] long=y v=831 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 24 Heavy_Repeating_Blaster    w_hvrptbltr_001 ext=[0.286 0.746 0.350] c=[0.043 0.263 0.096] long=y v=1321 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 24 Heavy_Repeating_Blaster    w_hvrptbltr_002 ext=[0.295 0.846 0.350] c=[0.039 0.313 0.096] long=y v=1397 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 24 Heavy_Repeating_Blaster    w_hvrptbltr_003 ext=[0.295 0.846 0.350] c=[0.039 0.313 0.096] long=y v=1397 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 25 Fragmentation_Grenades     w_fraggren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 26 Stun_Grenades              w_stungren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 27 Thermal_Detonator          w_thermdet_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 28 Poison_Grenade             w_poisngren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 29 Flash_Grenade              w_flashgren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 30 Sonic_Grenade              w_sonicgren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 30 Sonic_Grenade              w_sonicgren_002 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=9 li=0 dg=0 sk=0 sb=0
+ 31 Adhesive_Grenade           w_adhsvgren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 32 Cryoban_Grenade            w_cryobgren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 33 Fire_Grenade               w_firegren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 34 Ion_Grenade                w_iongren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 35 Jedi_Robe                  a_jedirobe_001 ext=[0.119 1.046 0.597] c=[-0.108 -0.185 0.000] long=y v=126 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 35 Jedi_Robe                  a_jedirobe_002 ext=[0.119 1.046 0.597] c=[-0.108 -0.185 0.000] long=y v=126 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 35 Jedi_Robe                  a_jedirobe_003 ext=[0.119 1.046 0.597] c=[-0.108 -0.185 0.000] long=y v=126 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_001 ext=[0.156 0.125 0.061] c=[-0.000 -0.026 0.002] long=x v=209 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_002 ext=[0.166 0.159 0.093] c=[-0.000 -0.043 -0.012] long=x v=198 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_003 ext=[0.196 0.204 0.089] c=[0.000 -0.059 0.013] long=y v=222 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_004 ext=[0.153 0.127 0.086] c=[0.000 -0.029 0.019] long=x v=275 m=3 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_005 ext=[0.181 0.191 0.087] c=[-0.001 -0.072 -0.020] long=y v=228 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_006 ext=[0.141 0.080 0.145] c=[-0.001 0.010 -0.047] long=z v=231 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_007 ext=[0.191 0.150 0.070] c=[-0.000 -0.039 -0.020] long=x v=197 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_008 ext=[0.207 0.142 0.064] c=[0.000 -0.093 0.013] long=x v=250 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_009 ext=[0.207 0.142 0.064] c=[0.000 -0.093 0.013] long=x v=270 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_010 ext=[0.197 0.213 0.193] c=[0.000 -0.066 -0.051] long=y v=282 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_011 ext=[0.184 0.161 0.090] c=[0.000 -0.069 -0.011] long=x v=226 m=4 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_012 ext=[0.197 0.209 0.199] c=[0.000 -0.061 -0.048] long=y v=472 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_013 ext=[0.169 0.109 0.195] c=[0.000 -0.010 -0.050] long=z v=130 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_014 ext=[0.211 0.164 0.140] c=[-0.001 -0.084 -0.058] long=x v=278 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 44 Mask                       i_mask_043 ext=[0.207 0.288 0.158] c=[-0.058 -0.065 -0.073] long=y v=498 m=3 em=0 li=0 dg=0 sk=0 sb=0
+ 45 Gauntlets                  i_gauntlet_001 ext=[0.137 0.127 0.355] c=[0.000 -0.000 0.000] long=z v=128 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 45 Gauntlets                  i_gauntlet_002 ext=[0.137 0.127 0.355] c=[0.000 -0.000 0.000] long=z v=128 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 45 Gauntlets                  i_gauntlet_003 ext=[0.137 0.127 0.355] c=[0.000 -0.000 0.000] long=z v=128 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 45 Gauntlets                  i_gauntlet_004 ext=[0.137 0.127 0.355] c=[0.000 -0.000 0.000] long=z v=128 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 45 Gauntlets                  i_gauntlet_005 ext=[0.137 0.127 0.355] c=[0.000 -0.000 0.000] long=z v=128 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 45 Gauntlets                  i_gauntlet_006 ext=[0.137 0.127 0.355] c=[0.000 -0.000 0.000] long=z v=128 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_001 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_002 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_003 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_004 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_005 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_006 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_007 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_008 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_009 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 46 Forearm_Bands              i_frarmbnds_010 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_001 ext=[0.550 0.365 0.097] c=[0.030 -0.012 0.031] long=x v=231 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_002 ext=[0.550 0.365 0.097] c=[0.030 -0.012 0.031] long=x v=231 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_003 ext=[0.532 0.358 0.097] c=[0.020 0.026 0.029] long=x v=220 m=4 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_004 ext=[0.532 0.358 0.097] c=[0.020 0.026 0.029] long=x v=220 m=4 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_005 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_006 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_007 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_008 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_009 ext=[0.550 0.365 0.097] c=[0.030 -0.007 0.031] long=x v=198 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_010 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_011 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_012 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_013 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 47 Belt                       i_belt_014 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 48 Implant_1                  i_implant1_001 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 48 Implant_1                  i_implant1_002 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 48 Implant_1                  i_implant1_003 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 48 Implant_1                  i_implant1_004 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 49 Implant_2                  i_implant2_001 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 49 Implant_2                  i_implant2_002 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 49 Implant_2                  i_implant2_003 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 49 Implant_2                  i_implant2_004 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 50 Implant_3                  i_implant3_001 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 50 Implant_3                  i_implant3_002 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 50 Implant_3                  i_implant3_003 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 50 Implant_3                  i_implant3_004 ext=[0.168 0.385 0.023] c=[-0.016 -0.013 0.008] long=y v=242 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 52 Data_Pad                   i_datapad_001 ext=[0.286 0.246 0.061] c=[0.000 0.000 0.000] long=x v=150 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 53 Adrenaline                 i_adrnaline_001 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 53 Adrenaline                 i_adrnaline_002 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 53 Adrenaline                 i_adrnaline_003 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 53 Adrenaline                 i_adrnaline_004 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 53 Adrenaline                 i_adrnaline_005 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 53 Adrenaline                 i_adrnaline_006 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 54 Combat_Shots               i_cmbtshot_001 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 54 Combat_Shots               i_cmbtshot_002 ext=[0.156 0.530 0.039] c=[0.025 0.094 0.064] long=y v=200 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 55 Medical_Equipment          i_medeqpmnt_001 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 55 Medical_Equipment          i_medeqpmnt_002 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 55 Medical_Equipment          i_medeqpmnt_003 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 55 Medical_Equipment          i_medeqpmnt_004 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 55 Medical_Equipment          i_medeqpmnt_005 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 56 Droid_Repair_Equipment     i_drdrepeqp_001 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 56 Droid_Repair_Equipment     i_drdrepeqp_002 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 56 Droid_Repair_Equipment     i_drdrepeqp_003 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 57 Credits                    i_credits_001 ext=[0.092 0.117 0.010] c=[-0.003 0.047 0.031] long=y v=108 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 58 Trap_Kit                   i_trapkit_001 ext=[0.376 0.374 0.076] c=[0.000 0.000 0.000] long=x v=126 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 58 Trap_Kit                   i_trapkit_002 ext=[0.376 0.374 0.076] c=[0.000 0.000 0.000] long=x v=126 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 58 Trap_Kit                   i_trapkit_003 ext=[0.376 0.374 0.076] c=[0.000 0.000 0.000] long=x v=126 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 58 Trap_Kit                   i_trapkit_004 ext=[0.376 0.374 0.076] c=[0.000 0.000 0.000] long=x v=126 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 59 Security_Spikes            i_secspike_001 ext=[0.232 1.067 0.084] c=[0.036 0.022 0.016] long=y v=163 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 59 Security_Spikes            i_secspike_002 ext=[0.232 1.067 0.084] c=[0.036 0.022 0.016] long=y v=163 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 60 Programming_Spikes         i_progspike_001 ext=[0.232 1.067 0.084] c=[0.036 0.022 0.016] long=y v=163 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 60 Programming_Spikes         i_progspike_002 ext=[0.232 1.067 0.084] c=[0.036 0.022 0.016] long=y v=163 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 61 Glow_Rod                   i_glowrod_001 ext=[0.062 0.055 0.395] c=[-0.003 -0.000 0.128] long=z v=122 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 66 Droid_Light_Plating        i_drdltplat_001 ext=[1.012 0.739 0.225] c=[0.016 -0.175 0.113] long=x v=214 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 67 Droid_Medium_Plating       i_drdmdplat_001 ext=[1.000 0.704 0.533] c=[0.331 0.045 0.359] long=x v=185 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 68 Droid_Heavy_Plating        i_drdhvplat_001 ext=[1.223 0.930 0.593] c=[-0.203 -0.172 0.297] long=x v=218 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 69 Droid_Search_Scope_x       i_drdsrcscp_001 ext=[0.621 0.600 0.302] c=[-0.059 0.027 0.253] long=x v=169 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 70 Droid_Motion_Sensors_x     i_drdmtnsen_001 ext=[0.235 1.037 0.408] c=[0.054 0.016 0.203] long=y v=164 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 71 Droid_Sonic_Sensors_x      i_drdsncsen_001 ext=[0.479 1.068 0.132] c=[0.086 0.128 0.095] long=y v=163 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 72 Droid_Targeting_Computers  i_drdtrgcom_001 ext=[0.621 0.600 0.302] c=[-0.059 0.027 0.253] long=x v=169 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 73 Droid_Computer_Spike_Mount_x i_drdcomspk_001 ext=[0.819 0.611 0.161] c=[0.111 0.027 0.075] long=x v=192 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 74 Droid_Security_Spike_Mount i_drdsecspk_001 ext=[0.819 0.611 0.161] c=[0.111 0.027 0.075] long=x v=192 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 75 Droid_Shield               i_drdshld_001 ext=[0.942 0.274 0.629] c=[-0.063 0.010 0.314] long=x v=140 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 75 Droid_Shield               i_drdshld_004 ext=[0.942 0.274 0.629] c=[-0.063 0.010 0.314] long=x v=140 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 75 Droid_Shield               i_drdshld_005 ext=[0.942 0.274 0.629] c=[-0.063 0.010 0.314] long=x v=140 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_001 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_002 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_003 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_004 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_005 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_006 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_007 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_008 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_009 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_010 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 76 Droid_Utility_Device       i_drdutldev_011 ext=[0.966 0.359 0.271] c=[0.037 0.031 0.135] long=x v=148 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 77 Blaster_Rifle              w_blstrrfl_001 ext=[0.061 0.745 0.255] c=[-0.002 0.250 0.048] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 77 Blaster_Rifle              w_blstrrfl_002 ext=[0.057 0.698 0.259] c=[0.000 0.226 0.049] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 77 Blaster_Rifle              w_blstrrfl_003 ext=[0.061 0.745 0.255] c=[-0.002 0.250 0.048] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 77 Blaster_Rifle              w_blstrrfl_004 ext=[0.068 0.771 0.256] c=[0.000 0.262 0.047] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 77 Blaster_Rifle              w_blstrrfl_005 ext=[0.061 0.766 0.255] c=[-0.002 0.239 0.048] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 77 Blaster_Rifle              w_blstrrfl_006 EMPTY 
+ 78 Ghaffi_Stick               w_gaffi_001 ext=[0.101 0.187 1.025] c=[-0.001 0.053 0.307] long=z v=214 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 79 Wookie_Warblade            w_warblade_001 ext=[0.023 0.182 2.256] c=[-0.004 -0.009 -0.003] long=z v=248 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 80 Gammorean_Battleaxe        w_waraxe_001 ext=[0.077 0.352 1.029] c=[0.000 0.027 0.297] long=z v=190 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 80 Gammorean_Battleaxe        w_waraxe_002 ext=[0.077 0.352 1.029] c=[0.000 0.027 0.297] long=z v=190 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 80 Gammorean_Battleaxe        w_waraxe_003 ext=[0.077 0.352 1.029] c=[0.000 0.027 0.297] long=z v=190 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_001 ext=[0.550 0.365 0.097] c=[0.030 -0.012 0.031] long=x v=231 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_002 ext=[0.550 0.365 0.097] c=[0.030 -0.012 0.031] long=x v=231 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_003 ext=[0.532 0.358 0.097] c=[0.020 0.026 0.029] long=x v=220 m=4 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_004 ext=[0.532 0.358 0.097] c=[0.020 0.026 0.029] long=x v=220 m=4 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_005 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_006 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_007 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_008 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_009 ext=[0.550 0.365 0.097] c=[0.030 -0.007 0.031] long=x v=198 m=1 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_010 ext=[0.533 0.335 0.105] c=[0.010 0.051 0.029] long=x v=190 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_011 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_012 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_013 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 88 Stealth_Unit               i_belt_014 ext=[0.526 0.330 0.099] c=[0.011 0.034 0.029] long=x v=180 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_001 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_002 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_003 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_004 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_005 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_006 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_007 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_008 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_009 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 91 Wrist_Launcher             i_frarmbnds_010 ext=[0.238 0.589 0.178] c=[0.021 -0.172 0.076] long=y v=115 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 93 Force_Pike                 w_forcepike_001 ext=[0.065 0.062 2.117] c=[-0.000 -0.002 0.272] long=z v=154 m=2 em=1 li=0 dg=0 sk=0 sb=0
+ 94 Squad_Recovery_kit         i_medeqpmnt_001 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 94 Squad_Recovery_kit         i_medeqpmnt_002 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 94 Squad_Recovery_kit         i_medeqpmnt_003 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 94 Squad_Recovery_kit         i_medeqpmnt_004 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 94 Squad_Recovery_kit         i_medeqpmnt_005 ext=[0.090 0.320 0.283] c=[0.006 0.004 0.201] long=y v=132 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 95 Chemicals                  i_credits_001 ext=[0.092 0.117 0.010] c=[-0.003 0.047 0.031] long=y v=108 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 96 Components                 i_credits_001 ext=[0.092 0.117 0.010] c=[-0.003 0.047 0.031] long=y v=108 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 97 Sonic_Grenade_Type2        w_sonicgren_001 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 97 Sonic_Grenade_Type2        w_sonicgren_002 ext=[0.097 0.093 0.100] c=[0.000 0.000 -0.000] long=z v=118 m=2 em=9 li=0 dg=0 sk=0 sb=0
+ 99 Restrictive_Jedi_Robe      a_jedirobe_001 ext=[0.119 1.046 0.597] c=[-0.108 -0.185 0.000] long=y v=126 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 99 Restrictive_Jedi_Robe      a_jedirobe_002 ext=[0.119 1.046 0.597] c=[-0.108 -0.185 0.000] long=y v=126 m=2 em=0 li=0 dg=0 sk=0 sb=0
+ 99 Restrictive_Jedi_Robe      a_jedirobe_003 ext=[0.119 1.046 0.597] c=[-0.108 -0.185 0.000] long=y v=126 m=2 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_001 ext=[0.081 0.405 0.220] c=[0.002 0.134 0.044] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_002 ext=[0.083 0.405 0.219] c=[0.003 0.134 0.050] long=y v=380 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_003 ext=[0.086 0.431 0.225] c=[0.004 0.143 0.042] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_004 ext=[0.083 0.405 0.219] c=[0.003 0.134 0.050] long=y v=380 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_005 ext=[0.084 0.442 0.216] c=[0.004 0.144 0.042] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_006 EMPTY 
+104 Mining_Laser               w_blstrpstl_007 ext=[0.144 0.170 0.963] c=[-0.030 0.044 -0.158] long=z v=163 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_008 ext=[0.109 0.082 0.975] c=[-0.007 0.001 -0.083] long=z v=118 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_009 ext=[0.155 0.162 1.013] c=[0.032 0.024 -0.180] long=z v=136 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_010 ext=[0.477 0.236 0.506] c=[0.122 0.008 0.197] long=z v=209 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_011 ext=[0.094 0.428 0.223] c=[-0.000 0.150 0.048] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_012 ext=[0.083 0.405 0.214] c=[0.003 0.134 0.044] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_013 ext=[0.045 0.049 0.120] c=[0.010 0.002 0.025] long=z v=73 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_014 ext=[0.167 0.169 0.145] c=[0.045 -0.020 0.054] long=y v=32 m=1 em=0 li=0 dg=0 sk=0 sb=0
+104 Mining_Laser               w_blstrpstl_015 ext=[0.103 0.396 0.215] c=[-0.002 0.130 0.048] long=y v=368 m=1 em=0 li=0 dg=0 sk=0 sb=0
+105 Adv_Mining_Laser           w_blstrrfl_001 ext=[0.061 0.745 0.255] c=[-0.002 0.250 0.048] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+105 Adv_Mining_Laser           w_blstrrfl_002 ext=[0.057 0.698 0.259] c=[0.000 0.226 0.049] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+105 Adv_Mining_Laser           w_blstrrfl_003 ext=[0.061 0.745 0.255] c=[-0.002 0.250 0.048] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+105 Adv_Mining_Laser           w_blstrrfl_004 ext=[0.068 0.771 0.256] c=[0.000 0.262 0.047] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+105 Adv_Mining_Laser           w_blstrrfl_005 ext=[0.061 0.766 0.255] c=[-0.002 0.239 0.048] long=y v=674 m=1 em=0 li=0 dg=0 sk=0 sb=0
+105 Adv_Mining_Laser           w_blstrrfl_006 EMPTY 
+106 Lightsaber_No_Sound        w_lghtsbr_001 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_blue;
+106 Lightsaber_No_Sound        w_lghtsbr_002 ext=[0.203 0.203 1.329] c=[-0.000 0.000 0.455] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_red;
+106 Lightsaber_No_Sound        w_lghtsbr_003 ext=[0.203 0.203 1.317] c=[-0.000 0.000 0.461] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_green;
+106 Lightsaber_No_Sound        w_lghtsbr_004 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_yellow;
+106 Lightsaber_No_Sound        w_lghtsbr_005 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_purple;
+106 Lightsaber_No_Sound        w_lghtsbr_006 ext=[0.203 0.203 1.323] c=[-0.000 0.000 0.458] long=z v=1088 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_malak;
+106 Lightsaber_No_Sound        w_lghtsbr_007 ext=[0.203 0.203 1.317] c=[-0.000 0.000 0.461] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_gold;
+106 Lightsaber_No_Sound        w_lghtsbr_008 ext=[0.203 0.203 1.315] c=[-0.000 0.000 0.462] long=z v=1076 m=11 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_turq;
+106 Lightsaber_No_Sound        w_lghtsbr_009 ext=[0.203 0.203 1.319] c=[-0.000 0.000 0.460] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_dgreen;
+106 Lightsaber_No_Sound        w_lghtsbr_010 ext=[0.203 0.203 1.320] c=[-0.000 0.000 0.459] long=z v=1032 m=10 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_silver;
+106 Lightsaber_No_Sound        w_lghtsbr_011 ext=[0.203 0.203 1.314] c=[-0.000 0.000 0.462] long=z v=1120 m=12 em=0 li=1 dg=0 sk=0 sb=4 refs=lghtsbr_bronze;
+107 DM_ElectroStaff            w_qtrstaff_001 ext=[0.039 0.035 1.026] c=[0.000 -0.000 0.150] long=z v=1330 m=7 em=0 li=0 dg=0 sk=0 sb=0
+107 DM_ElectroStaff            w_qtrstaff_002 ext=[0.057 0.057 0.961] c=[-0.000 0.001 0.153] long=z v=1136 m=7 em=0 li=0 dg=0 sk=2 sb=0
+107 DM_ElectroStaff            w_qtrstaff_003 ext=[0.040 0.042 0.522] c=[0.000 0.002 0.153] long=z v=1852 m=7 em=0 li=0 dg=0 sk=0 sb=0
+107 DM_ElectroStaff            w_qtrstaff_009 ext=[0.043 0.043 0.947] c=[0.000 0.001 0.142] long=z v=877 m=9 em=0 li=0 dg=0 sk=0 sb=0
+107 DM_ElectroStaff            w_qtrstaff_010 ext=[0.068 0.068 0.722] c=[-0.000 -0.017 0.144] long=z v=456 m=5 em=0 li=0 dg=0 sk=0 sb=0
+
+# OUTLIERS (79 of 341)
+    1 w_stunbaton_005 emitter/light/dangly
+    6 w_dblswrd_001 extent>1.8
+    6 w_dblswrd_002 extent>1.8
+    6 w_dblswrd_003 extent>1.8
+    6 w_dblswrd_004 extent>1.8
+    7 w_vbrdblswd_001 extent>1.8
+    7 w_vbrdblswd_002 extent>1.8
+    7 w_vbrdblswd_003 extent>1.8
+    7 w_vbrdblswd_004 extent>1.8
+    8 w_lghtsbr_001 emitter/light/dangly
+    8 w_lghtsbr_002 emitter/light/dangly
+    8 w_lghtsbr_003 emitter/light/dangly
+    8 w_lghtsbr_004 emitter/light/dangly
+    8 w_lghtsbr_005 emitter/light/dangly
+    8 w_lghtsbr_006 emitter/light/dangly
+    8 w_lghtsbr_007 emitter/light/dangly
+    8 w_lghtsbr_008 emitter/light/dangly
+    8 w_lghtsbr_009 emitter/light/dangly
+    8 w_lghtsbr_010 emitter/light/dangly
+    8 w_lghtsbr_011 emitter/light/dangly
+    9 w_dblsbr_001 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_002 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_003 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_004 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_005 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_006 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_007 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_008 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_009 extent>1.8,emitter/light/dangly
+    9 w_dblsbr_010 extent>1.8,emitter/light/dangly
+   10 w_shortsbr_001 emitter/light/dangly
+   10 w_shortsbr_002 emitter/light/dangly
+   10 w_shortsbr_003 emitter/light/dangly
+   10 w_shortsbr_004 emitter/light/dangly
+   10 w_shortsbr_005 emitter/light/dangly
+   10 w_shortsbr_006 emitter/light/dangly
+   10 w_shortsbr_007 emitter/light/dangly
+   10 w_shortsbr_008 emitter/light/dangly
+   10 w_shortsbr_009 emitter/light/dangly
+   10 w_shortsbr_010 emitter/light/dangly
+   12 w_blstrpstl_006 empty/no vertices
+   12 w_blstrpstl_013 extent<0.12
+   13 w_hvyblstr_006 empty/no vertices
+   18 w_ionrfl_004 empty/no vertices
+   20 w_blstrcrbn_006 empty/no vertices
+   23 w_rptnblstr_004 empty/no vertices
+   25 w_fraggren_001 extent<0.12
+   26 w_stungren_001 extent<0.12
+   27 w_thermdet_001 extent<0.12
+   28 w_poisngren_001 extent<0.12
+   29 w_flashgren_001 extent<0.12
+   30 w_sonicgren_001 extent<0.12
+   30 w_sonicgren_002 extent<0.12,emitter/light/dangly
+   31 w_adhsvgren_001 extent<0.12
+   32 w_cryobgren_001 extent<0.12
+   33 w_firegren_001 extent<0.12
+   34 w_iongren_001 extent<0.12
+   57 i_credits_001 extent<0.12
+   77 w_blstrrfl_006 empty/no vertices
+   79 w_warblade_001 extent>1.8
+   93 w_forcepike_001 extent>1.8,emitter/light/dangly
+   95 i_credits_001 extent<0.12
+   96 i_credits_001 extent<0.12
+   97 w_sonicgren_001 extent<0.12
+   97 w_sonicgren_002 extent<0.12,emitter/light/dangly
+  104 w_blstrpstl_006 empty/no vertices
+  104 w_blstrpstl_013 extent<0.12
+  105 w_blstrrfl_006 empty/no vertices
+  106 w_lghtsbr_001 emitter/light/dangly
+  106 w_lghtsbr_002 emitter/light/dangly
+  106 w_lghtsbr_003 emitter/light/dangly
+  106 w_lghtsbr_004 emitter/light/dangly
+  106 w_lghtsbr_005 emitter/light/dangly
+  106 w_lghtsbr_006 emitter/light/dangly
+  106 w_lghtsbr_007 emitter/light/dangly
+  106 w_lghtsbr_008 emitter/light/dangly
+  106 w_lghtsbr_009 emitter/light/dangly
+  106 w_lghtsbr_010 emitter/light/dangly
+  106 w_lghtsbr_011 emitter/light/dangly

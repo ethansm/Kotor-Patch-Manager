@@ -1,0 +1,417 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Using log config file: jar:file:/home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/ethansm/.config/ghidra/ghidra_12.1.4_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/ethansm/.config/ghidra/ghidra_12.1.4_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (808 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1878 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr (HeadlessAnalyzer)  
+INFO  Opening project: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr (HeadlessProject)  
+INFO  REPORT: Processing read-only project file: /swkotor2.exe (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DecompileArgs.java '004e3110' '004e3160' '00459e40' '00459970' '00459990' '004b3c90' '0045c490' '004599b0' '004599d0' '00459ab0' '00459af0' '00459bb0' '00459be0' '00459c30' '00459c90' '004dd260' '00460810' '0045d030' '00459d30' '004595b0'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+INFO  DecompileArgs.java> === FUN_004e3110 @ 004e3110 size=67 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_004e3110(int param_1,uint param_2)
+
+{
+  int iVar1;
+  
+  iVar1 = *(int *)(param_1 + 0xe0) + -1;
+  if (-1 < iVar1) {
+    iVar1 = *(int *)(*(int *)(param_1 + 0xdc) + iVar1 * 4);
+    *(uint *)(iVar1 + 8) = *(uint *)(iVar1 + 8) | param_2;
+  }
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_004e3160 @ 004e3160 size=82 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_004e3160(int param_1,int param_2)
+
+{
+  int iVar1;
+  
+  iVar1 = *(int *)(param_1 + 0xe0) + -1;
+  if (((-1 < iVar1) &&
+      (iVar1 = *(int *)(*(int *)(param_1 + 0xdc) + iVar1 * 4), *(int *)(iVar1 + 8) != 0)) &&
+     (param_2 != 0)) {
+    *(int *)(iVar1 + 8) = *(int *)(iVar1 + 8) - param_2;
+  }
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459e40 @ 00459e40 size=154 (GhidraScript)  
+INFO  DecompileArgs.java> 
+undefined4 * __thiscall FUN_00459e40(int param_1,undefined4 *param_2)
+
+{
+  undefined4 local_24;
+  undefined4 local_20;
+  undefined4 local_1c;
+  undefined4 local_18;
+  undefined4 local_14;
+  undefined4 local_10;
+  undefined4 local_c;
+  int *local_8;
+  
+  local_8 = (int *)FUN_00456b00(*(undefined4 *)(param_1 + 0x98),"cutscenedummy");
+  if (local_8 == (int *)0x0) {
+    *param_2 = 0;
+    param_2[1] = 0;
+    param_2[2] = 0;
+  }
+  else {
+    local_24 = 0;
+    local_20 = 0;
+    local_1c = 0;
+    local_c = 0;
+    local_10 = 0;
+    local_14 = 0;
+    local_18 = 0x3f800000;
+    (**(code **)(*local_8 + 0xc))(&local_24,&local_18);
+    *param_2 = local_24;
+    param_2[1] = local_20;
+    param_2[2] = local_1c;
+  }
+  return param_2;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459970 @ 00459970 size=25 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_00459970(int param_1,undefined1 param_2)
+
+{
+  *(undefined1 *)(param_1 + 0x181) = param_2;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459990 @ 00459990 size=20 (GhidraScript)  
+INFO  DecompileArgs.java> 
+undefined1 __fastcall FUN_00459990(int param_1)
+
+{
+  return *(undefined1 *)(param_1 + 0x181);
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_004b3c90 @ 004b3c90 size=231 (GhidraScript)  
+INFO  DecompileArgs.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void __fastcall FUN_004b3c90(int param_1)
+
+{
+  glPushMatrix();
+  FUN_0049c930(param_1 + 0xa4,param_1 + 0xb0,1);
+  if (*(float *)(param_1 + 0x1e0) != (float)_DAT_00986b50) {
+    glScalef(*(undefined4 *)(param_1 + 0x1e0),*(undefined4 *)(param_1 + 0x1e0),
+             *(undefined4 *)(param_1 + 0x1e0));
+  }
+  FUN_004b3d80(*(undefined4 *)(param_1 + 0x98),1);
+  *(undefined4 *)(param_1 + 0xc0) = *(undefined4 *)(param_1 + 0xa4);
+  *(undefined4 *)(param_1 + 0xc4) = *(undefined4 *)(param_1 + 0xa8);
+  *(undefined4 *)(param_1 + 200) = *(undefined4 *)(param_1 + 0xac);
+  *(undefined4 *)(param_1 + 0xcc) = *(undefined4 *)(param_1 + 0xb0);
+  *(undefined4 *)(param_1 + 0xd0) = *(undefined4 *)(param_1 + 0xb4);
+  *(undefined4 *)(param_1 + 0xd4) = *(undefined4 *)(param_1 + 0xb8);
+  *(undefined4 *)(param_1 + 0xd8) = *(undefined4 *)(param_1 + 0xbc);
+  glPopMatrix();
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_0045c490 @ 0045c490 size=234 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __fastcall FUN_0045c490(int *param_1)
+
+{
+  uint uVar1;
+  int local_24;
+  int local_20;
+  int local_1c;
+  undefined4 local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0094d3d8;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  if (*(char *)((int)param_1 + 0x15) != '\0') {
+    *(undefined1 *)((int)param_1 + 0x15) = 0;
+    FUN_00463ed0(0);
+    local_8 = 0;
+    (**(code **)(*param_1 + 0x110))(FUN_0045bf30,&local_20,uVar1);
+    for (local_24 = 0; local_24 < local_1c; local_24 = local_24 + 1) {
+      local_14 = *(undefined4 *)(*(int *)(*(int *)(local_20 + local_24 * 4) + 0x44) + 0xc);
+      FUN_004741e0(0);
+      FUN_004276a0(local_14);
+    }
+    param_1[0x52] = 0;
+    local_8 = 0xffffffff;
+    FUN_00463b20();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_004599b0 @ 004599b0 size=25 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_004599b0(int param_1,undefined4 param_2)
+
+{
+  *(undefined4 *)(param_1 + 0x1ac) = param_2;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_004599d0 @ 004599d0 size=20 (GhidraScript)  
+INFO  DecompileArgs.java> 
+float10 __fastcall FUN_004599d0(int param_1)
+
+{
+  return (float10)*(float *)(param_1 + 0x1ac);
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459ab0 @ 00459ab0 size=49 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall
+FUN_00459ab0(int param_1,undefined4 param_2,undefined4 param_3,undefined4 param_4,undefined4 param_5
+            )
+
+{
+  *(undefined4 *)(param_1 + 0x28) = param_2;
+  *(undefined4 *)(param_1 + 0x2c) = param_3;
+  *(undefined4 *)(param_1 + 0x30) = param_4;
+  *(undefined4 *)(param_1 + 0x34) = param_5;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459af0 @ 00459af0 size=57 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall
+FUN_00459af0(int param_1,undefined4 *param_2,undefined4 *param_3,undefined4 *param_4,
+            undefined4 *param_5)
+
+{
+  *param_2 = *(undefined4 *)(param_1 + 0x28);
+  *param_3 = *(undefined4 *)(param_1 + 0x2c);
+  *param_4 = *(undefined4 *)(param_1 + 0x30);
+  *param_5 = *(undefined4 *)(param_1 + 0x34);
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459bb0 @ 00459bb0 size=36 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_00459bb0(int param_1,undefined1 param_2)
+
+{
+  FUN_004637d0(*(undefined4 *)(param_1 + 0x98),param_2);
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459be0 @ 00459be0 size=36 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_00459be0(int param_1,undefined1 param_2)
+
+{
+  FUN_00463840(*(undefined4 *)(param_1 + 0x98),param_2);
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459c30 @ 00459c30 size=63 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall
+FUN_00459c30(int param_1,undefined1 param_2,undefined4 param_3,undefined4 param_4,undefined4 param_5
+            )
+
+{
+  *(undefined4 *)(param_1 + 0x3c) = param_3;
+  *(undefined4 *)(param_1 + 0x40) = param_4;
+  *(undefined4 *)(param_1 + 0x44) = param_5;
+  FUN_004638a0(*(undefined4 *)(param_1 + 0x98),param_2);
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459c90 @ 00459c90 size=46 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall
+FUN_00459c90(int param_1,undefined4 *param_2,undefined4 *param_3,undefined4 *param_4)
+
+{
+  *param_2 = *(undefined4 *)(param_1 + 0x3c);
+  *param_3 = *(undefined4 *)(param_1 + 0x40);
+  *param_4 = *(undefined4 *)(param_1 + 0x44);
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_004dd260 @ 004dd260 size=285 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_004dd260(int param_1,char *param_2,int param_3)
+
+{
+  char *_Str1;
+  char cVar1;
+  uint uVar2;
+  int iVar3;
+  int local_24;
+  int local_18;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0094c968;
+  local_10 = ExceptionList;
+  uVar2 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = *(int *)(param_1 + 0x1c0);
+  FUN_004e3b50(param_1);
+  local_8 = 0;
+  while ((local_14 = local_14 + -1, local_18 != 0 && (-1 < local_14))) {
+    _Str1 = *(char **)(*(int *)(param_1 + 0x1bc) + local_14 * 4);
+    if ((((*_Str1 == '\0') || (*_Str1 == '*')) || (iVar3 = __stricmp(_Str1,param_2), iVar3 == 0)) &&
+       (cVar1 = FUN_004dd0e0(*(undefined4 *)(_Str1 + 0x28),_Str1[0x2c]), cVar1 != '\0')) {
+      if (param_3 == 0) {
+        local_24 = *(int *)(_Str1 + 0x24);
+      }
+      else {
+        local_24 = param_3;
+      }
+      (**(code **)(_Str1 + 0x20))(param_1,param_2,local_24);
+    }
+  }
+  local_8 = 0xffffffff;
+  FUN_00473e80(uVar2);
+  ExceptionList = local_10;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00460810 @ 00460810 size=253 (GhidraScript)  
+INFO  DecompileArgs.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void __fastcall FUN_00460810(int param_1)
+
+{
+  undefined4 *puVar1;
+  undefined1 local_1c [12];
+  undefined1 local_10 [12];
+  
+  if ((*(int *)(param_1 + 0x98) != 0) && (*(float *)(param_1 + 0x164) == (float)_DAT_00986b50)) {
+    (**(code **)(**(int **)(param_1 + 0x98) + 0x78))(param_1 + 0x168,param_1 + 0x164);
+    puVar1 = (undefined4 *)FUN_0044c8a0(local_10,param_1 + 0x168,*(int *)(param_1 + 0x98) + 8);
+    *(undefined4 *)(param_1 + 0x168) = *puVar1;
+    *(undefined4 *)(param_1 + 0x16c) = puVar1[1];
+    *(undefined4 *)(param_1 + 0x170) = puVar1[2];
+    puVar1 = (undefined4 *)FUN_00436200(local_1c,param_1 + 0x168,*(undefined4 *)(param_1 + 0x1e0));
+    *(undefined4 *)(param_1 + 0x168) = *puVar1;
+    *(undefined4 *)(param_1 + 0x16c) = puVar1[1];
+    *(undefined4 *)(param_1 + 0x170) = puVar1[2];
+    *(float *)(param_1 + 0x164) =
+         *(float *)(param_1 + 0x164) * *(float *)(param_1 + 0x1e0) * _DAT_009f5b34;
+  }
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_0045d030 @ 0045d030 size=175 (GhidraScript)  
+INFO  DecompileArgs.java> 
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void __fastcall FUN_0045d030(int param_1)
+
+{
+  undefined4 uVar1;
+  
+  uVar1 = _DAT_00987700;
+  *(undefined4 *)(param_1 + 0x14c) = _DAT_00987700;
+  *(undefined4 *)(param_1 + 0x150) = uVar1;
+  *(undefined4 *)(param_1 + 0x154) = uVar1;
+  uVar1 = _DAT_0098ba0c;
+  *(undefined4 *)(param_1 + 0x158) = _DAT_0098ba0c;
+  *(undefined4 *)(param_1 + 0x15c) = uVar1;
+  *(undefined4 *)(param_1 + 0x160) = uVar1;
+  (**(code **)(**(int **)(param_1 + 0x98) + 0x74))
+            (param_1 + 0x14c,param_1 + 0x158,*(undefined4 *)(param_1 + 0x1e0));
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_00459d30 @ 00459d30 size=44 (GhidraScript)  
+INFO  DecompileArgs.java> 
+void __thiscall FUN_00459d30(int param_1,undefined4 param_2,undefined4 param_3)
+
+{
+  undefined4 uVar1;
+  
+  *(undefined4 *)(param_1 + 0x60) = param_2;
+  uVar1 = FUN_004356c0(param_2,param_3);
+  *(undefined4 *)(param_1 + 0x5c) = uVar1;
+  return;
+}
+
+ (GhidraScript)  
+INFO  DecompileArgs.java> === FUN_004595b0 @ 004595b0 size=56 (GhidraScript)  
+INFO  DecompileArgs.java> 
+undefined4 * __thiscall FUN_004595b0(undefined4 *param_1,uint param_2)
+
+{
+  *param_1 = CAurObject::vftable;
+  FUN_00463a90();
+  if ((param_2 & 1) != 0) {
+    FUN_009196fd(param_1);
+  }
+  return param_1;
+}
+
+ (GhidraScript)  
