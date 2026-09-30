@@ -1,5 +1,7 @@
 # Mod Idea 4: Shield Bar (party portrait HUD)
 
+**STATUS (2026-09-30, end of session 3): bar WORKS live (curved, per-VFX color, drains on hits: S1 confirmed). Installed = probe4 (`1.1.0-probe4`, seam-free square-health/shield join, NOT yet run), leader toggle buttons shifted (deployed). OPEN: droid-shield blackout attribution (stock-set test), companion small-card bars/icons missing at times, Step 4 promotion to 1.1.0, and the user's request = a shield hover tooltip (see 'Session 3 hand-off + plan input' at the bottom). Older statuses follow.**
+
 **STATUS (2026-09-29, end of session 2): data layer FULLY DECODED (pool = `ints[2]` of the type-0x02 effect, see "Session 2 decode" at the bottom); draw site chosen + verified live (`0x00745774`); probe build 1.1.0-probe in `buff_duration_hud_src/` (source of record; the STOCK 16-patch set is what is installed live right now); style plan = re-use the vitality bar's own texture. OPEN: a blackout of the 3D scene while any item shield is active (see bottom); temp-HP (Fury) type id; leader toggle-button `.gui` shift. Older session-1 status follows.**
 
 **Session-1 status: research-only, no code,
@@ -364,3 +366,27 @@ Proton, independent of our DLL. Decisive test (not yet done): stock 16 patches, 
 - **Seam-free style (user request)**: health bar squared-left + shield right edge open so both read as one track. Art from `scripts/gen_shield_bar_art.py`
   (`uibit_bar_sh_p`, `uibit_bar_vp_sq` in override/); the DLL swaps the PB_VIT borders' fill images (`slot+0x690+{0x6c,0xe4}`, fill ptr `+0x74`) to the square texture in the UpdatePortraits snapshot and restores them in the slot hook.
   Leader toggle buttons shifted left 16 units by `scripts/shift_hud_leader_buttons.py` (deployed 2026-09-30, backup `backups/hudshift_20260930_002155_539301`).
+
+
+## Session 3 hand-off (2026-09-30) -- everything a fresh session needs
+
+**Live state at the end of session 3 (game CLOSED; verify with `pgrep -af "^S:.*swkotor2"`):**
+- Installed by hand (NOT via `KPatchLauncher`, which launches the game): `patches/buff-duration-hud.dll` = probe4 build (md5 `201fd563...`), `patch_config.toml` has the 6th hook (`0x745774` -> `ShieldProbeSlot`, params `ecx`, `[ebp+0xc]`, added by a python edit; a future KPatchLauncher run regenerates it from the `.kpatch`).
+  `shieldprobe.txt` exists in the game dir (probe logging on -> `shieldprobe_log.txt`). New override files: `uibit_bar_sh_p.tga/.txi`, `uibit_bar_vp_sq.tga/.txi` (delete to roll back the art). Rollback backups: `~/Games/KOTOR2_Mod_Workspace/backups/shield_probe2_install_20260929_233138/`, `shield_probe3_install_*`, `shield_probe4_install_*` (previous DLL each), `hudshift_20260930_002155_539301` (`scripts/shift_hud_leader_buttons.py --rollback`).
+  Stock rollback set: `kotor-patch-manager/inv3d_live_patches/` (never modify). Staging dirs: `shield_probe_stage2/3/4`.
+- Invariants: `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9`; `swkotor2.ini` `Mouse Sensitivity=44` (re-check after each session).
+- Commits (branch KOTOR-II): 59369a2 probe2, 97c664b table+scripts, 9f8f99d probe3 DRAW log, zero-gap, session-3 docs, probe4 (seam art + health swap), 3b docs.
+
+**Code map (`buff_duration_hud_src/BuffDurationHUD.cpp`, build copy in `kotor-patch-manager/Patches/BuffDurationHUD/`, build with `python3 ../create-patch.py` there):**
+- `collectPools` (type 0x02 sub&8 effects; remaining=`ints[2]`; color key = sibling type-0x1e `ints[0]`; max cache keyed (creature, effect ptr) + spell, reset when spell changes or remaining rises), `shieldColor` (table `ShieldTable.inc` from `scripts/gen_shield_table.py`, fallback by flags),
+  `DrawShieldPools` (texture `uibit_bar_sh_p`, rect `(vit.x - round(0.328*vit.w), vit.y, vit.w, vit.h)`, teal track then clipped tinted fills, stacked <=3 segments), `swapHealthBar` (swaps the PB_VIT borders' fill image ptr `slot+0x690+{0x6c,0xe4}+0x74` to `uibit_bar_vp_sq` in the UpdatePortraits snapshot hook, restores in the slot hook), `ShieldProbeSlot` (slot hook `0x00745774`; restores swap first, logs SLOT/DRAW lines, draws the bar; no longer gated by the probe flag).
+- Art: `scripts/gen_shield_bar_art.py <vp_p.tga> <out>` -> `shield_bar_src/art/`. HUD: `scripts/shift_hud_leader_buttons.py` (shift 16 units; live `mipc28x6_p.gui` md5 was `a9d9aaed...` before, sha256 after `e0f42931...`).
+
+**Facts learned in session 3:** item shields do NOT stack (a second activation removes the first's effects; seen with spells 99/103/101/132 -> always `pools=1`); Force powers Valor(22)/Speed(8)/Resist Energy(42) have no pool (Resist = type 0x02 sub 9 with `ints[2]=0`, excluded by `remaining>0`); Fury/Rage temp-HP type id NOT yet observed.
+Blackout: only while the DROID's shield (spell 110) was active; human shields incl. Peragus mining (132, vfx 2045) never blacked out. Stock-set droid-shield test still pending. Companion small cards: bars/Buff-HUD icons drop out together (same slot->creature table); probe3 `DRAW slot= creature= pools= effects=` lines exist in `shieldprobe_live3b.txt` but were not yet analysed.
+
+**Remaining work (original plan steps):** (a) verify probe4 live (seam look, swap flicker, companion cards); (b) blackout attribution; (c) Step 4: rename `ShieldProbeSlot` -> `DrawShieldBar`, trim probe-only logging, manifest `1.1.0`, `exports.def`/hooks.toml, `shield_live_patches/` rollback set, final docs (`## FINAL IMPLEMENTATION (v1.1.0)`, pointer in 02, README, memory); (d) hover tooltip (below).
+
+## Hover tooltip request (user, 2026-09-30)
+"On portrait hover it displays data (Meetra Surik / Vitality: 90/95 / Force: 88/88 / Level: 7 / XP Needed to Level: 1578). Could we display the active shield values too?" Fallback the user proposed: build our own hover just for the shield bar, the way the Force Power Hotbar (mod 3, doc 07 "Hover tooltip" sections) does it (label pair `LBL_HOTBARTIPBG` + `LBL_HOTBARTIP` in the `.gui`, DLL polls `GetCursorPos`, shows after 450 ms, sizes/places the panel).
+Plan input: first choice = append shield lines to the native portrait tooltip (find the builder of the "Vitality:/Force:/Level:/XP Needed" text; look for those TLK strings / the GUI tooltip label update in the portrait hover code, hook and append "Shield: cur/max (type)"); second choice = own hotbar-style tooltip anchored to the shield bar rect (rect known: `vit.x-0.328w`..). Research must be Ghidra headless with the game CLOSED; query `patch_manager_mods/ghidra_knowledge/` first.
