@@ -19,6 +19,7 @@ During a loading screen (save load or area transition, i.e. before/while the wor
 | 3 | 2026-09-28 | same 11 | same save, retry #2 | 1 m 22 s | retry #3 loaded fine |
 | 4 | 2026-09-29 | 13 baseline, with and without a throwaway probe hook | after Buff-HUD probe testing | -- | 13,713 `NtGetContextThread` lines, spin thread `0138:020c` |
 | 5-6 | 2026-09-29 | 14 (13 + `buff-duration-hud` first diagnostic build) | load right after install, two launches in a row | ~90-116% CPU | mod log showed `buffhud loaded` + `snapshot` lines only |
+| 8 | 2026-09-29 20:25 | 14 (v1.0.0 build, logging OFF) | load, killed at 50 s | 50 s, `SNsl` 91% | first hang WITH a saved Proton log (`~/hang_20260929_202500.log`); see section 3b |
 | 7 | 2026-09-29 | 14 (redesign build with backing disc) | load after install | 2 m 23 s, `RNsl` 72% CPU | mod log: `snapshot` lines only, **zero `COLUMN#` lines** -> `DrawBuffColumn` never ran |
 
 Counting: incidents 1-4 happened with **no Buff-HUD code loaded at all**. Incidents 5-7 (3 hangs in roughly 10 launches with the patch) happened with it, but in each, the mod's draw hook had not run yet; only the tiny `SnapshotPortraitSlot` store hooks had. **No launch with zero patches has been tested**, so nothing rules Patch Manager itself in or out.
@@ -29,6 +30,13 @@ Counting: incidents 1-4 happened with **no Buff-HUD code loaded at all**. Incide
 - Hang signature: a tight repeating pair `trace:seh:NtGetContextThread 0x<h>: ...` / `fixme:ver:GetCurrentPackageFullName (...): stub` on one thread (`020c`/`0208`/`0218` -- thread ids differ per run), with the main thread `013c` separately looping on `nls:get_dummy_preferred_ui_language` / `RtlGetThreadPreferredUILanguages`. Counts of `NtGetContextThread` in a hung log: 13,713 and 18,510.
 - **A healthy launch also has these calls, but only ~54** (checked on the launch that followed incident 7): 27 from the main thread `013c` (context of other threads, e.g. handle `0x1e8`, eip `7bf1e250` inside Wine's ntdll) and a handful of `0xfffffffe` (= current thread) self-queries per worker thread, plus 4 `GetCurrentPackageFullName` stubs. So the hang is a **runaway version of a normal startup behaviour**: something repeatedly captures thread contexts (often of its own thread) and asks for the package name, ~250x more than normal.
 - Useless for attribution: none of the spin addresses point at a Patch Manager hook, and the enabled trace channels do not cover file I/O, so loading progress is invisible. Every hung Proton log was overwritten by the next launch (Proton rewrites `steam-208580.log` per launch) -- **no hung log from incidents 5-7 survives**; only the prose above and the mod log copy for #7 (`buffhud_log.hang4.txt`, scratchpad, likely gone).
+
+## 3b. Incident 8 (2026-09-29 20:25): first fully captured hang -- CHANGES THE PICTURE
+
+Captured before killing (`~/hang_20260929_202500.log`, 24,472 lines, killed at 50 s): 8,673 `NtGetContextThread`, 3,558 `GetCurrentPackageFullName`, no `Unhandled exception`, no new `err:`, `AR_ERROR.LOG` unchanged. Findings:
+- **The "spin" thread is `wine_dinput_worker`, not a game/loader thread.** Thread `0138:0210` was renamed `wine_dinput_worker` at startup (`threadname` line) and every one of its 13,711 log lines is dinput mouse handling: `dinput_mouse_rawinput_hook` (1,599x, `Unimplemented MOUSE_VIRTUAL_DESKTOP flag`) interleaved with `GetCurrentPackageFullName` + `NtGetContextThread 0xfffffffe` (self) at `eip=7b582038` (inside `win32u.dll`, eax=0x14fa = a win32u syscall). It ran ~240 log-events/s, in proportion to raw mouse events: **the `NtGetContextThread` flood is most plausibly just the dinput worker servicing mouse movement (the user was moving the mouse at the frozen screen), i.e. a symptom-noise, not the hang itself.** Earlier incidents' spin threads (`020c`, `0208`, `0218`) are the same thread-id range and are probably the same dinput worker. `top -H` at the time: game main thread 50%, mangohud threads ~20% each, dinput worker ~10%.
+- **The main game thread (`013c`) is the stuck one**: its last trace line is at t=2602456.747 -- a burst of 8 handled access violations with `IsBadReadPtr` on garbage pointers (`00000001`, `FFFFFFFD`, `7FFFFFFF`, `7F000000`, `0000FFFF`, `00000004`, all within the same millisecond, `c0000005` handled by SEH) -- and then NO further output from the main thread for the remaining 36 s while it stayed at ~50% CPU, i.e. it is inside code that calls no traced API (game code, a driver, or hook code) or is busy in a long legitimate load. `IsBadReadPtr` is used by the Buff HUD's `readAt()` helper (and possibly the game / other patches; not attributed) -- **an open lead worth checking first**: run with `buffhud_debug.txt` present so the mod log shows whether the hooks were mid-run, and compare the `IsBadReadPtr` burst against healthy launches (none captured yet with this trace set).
+- Because the previous incidents' logs were overwritten, we cannot tell whether they also ended in this pattern.
 
 ## 4. Environment facts (relevant to hypotheses)
 
@@ -45,6 +53,11 @@ Counting: incidents 1-4 happened with **no Buff-HUD code loaded at all**. Incide
 4. **Our detour patches (KotorPatcher) -- low but nonzero.** Rate looks slightly higher with the 14th patch installed (3/10) but incidents 1-4 predate it; patched code that runs during loading is only the UpdatePortraits snapshot hooks (two stores) plus other mods' hooks. A baseline of 13 patches also hangs.
 5. Wine/Proton experimental regression or `ntsync` race (Proton-Experimental updates frequently; 2026-09-24 build).
 6. Save/module content (specific save or area). Incidents span different areas/saves, so unlikely.
+
+## 5b. Revised first steps after incident 8
+1. Launch with `buffhud_debug.txt` created (Buff HUD logging on) and ALSO keep the Proton log; on the next hang copy both immediately. Look for: mod log lines right before the freeze (`snapshot`/`arrow`/`COLUMN`), and whether the same `IsBadReadPtr` burst precedes it in the Proton log.
+2. In a healthy launch's Proton log, count `IsBadReadPtr ... caused page fault` (expected 0?). If healthy launches show none, the burst is tied to the hang; then find the caller (module of the `eip` at the faulting `dispatch_exception`, `addr=7BEAD021` is Wine ntdll's `IsBadReadPtr`; the caller frame is in the `backtrace:` lines of the `warn:seh:dispatch_exception backtrace` entries -- read those).
+3. Only then run the A/B matrix below.
 
 ## 6. Experiment plan (do these in order; each is cheap; change ONE variable at a time)
 

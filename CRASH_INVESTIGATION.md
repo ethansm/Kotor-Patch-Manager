@@ -813,3 +813,9 @@ than intermittently, that would be the trigger to escalate.
 **Symptom**: hang while loading a save after installing the redesign build (visible: partial 3D model render, a cloaked-looking ghost of the character animating over the loading screen; Esc hid it with the menu sound). `swkotor2.exe` `RNsl` ~72% CPU at 2:23 elapsed.
 **Evidence**: no `Unhandled exception`/`err:` in `~/steam-208580.log`, `AR_ERROR.LOG` md5 unchanged; `buffhud_log.txt` had only `snapshot` lines and ZERO `COLUMN#` lines, i.e. `DrawBuffColumn` had never run. Saved as `buffhud_log.hang4.txt` (scratchpad).
 **Action**: killed with `kill -TERM` (clean exit), relaunched via the launcher; next launch loaded fine. Tally with the patch installed: 3 hangs in ~10 launches; baseline comparison (13 patches, 5+ launches) still not done. Not attributed.
+
+
+## 2026-09-29 20:25 -- hang #8, first fully captured (see patch_manager_mods/09_load_hang_investigation.md section 3b)
+
+**Symptom**: transient freeze at load, `swkotor2.exe` `SNsl` 91% CPU at 50 s. **Captured** `~/hang_20260929_202500.log` before `kill -TERM` (clean exit, process tree gone). Buff HUD v1.0.0 build (logging off, so no mod log).
+**Key evidence**: the `NtGetContextThread`/`GetCurrentPackageFullName` "spin" is the `wine_dinput_worker` thread handling raw mouse events (not a loader thread); the main thread's last output is a burst of 8 handled `IsBadReadPtr` access violations on garbage pointers, then 36 s of silence at ~50% CPU. Not attributed; next step = rerun with `buffhud_debug.txt` and compare healthy-launch `IsBadReadPtr` counts.
