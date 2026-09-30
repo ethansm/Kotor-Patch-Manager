@@ -1666,7 +1666,7 @@ First live test: hooks all applied, hook 2 ran and found the right buffs (spell 
 
 ## FINAL IMPLEMENTATION (v1.0.0, 2026-09-29) -- READ THIS FIRST when resuming
 
-**What the player sees.** On every party portrait card the engine's plain buff/debuff *arrow chevrons* are replaced by the effect's own icons. Buffs run in a column down the card's LEFT edge, debuffs down the RIGHT edge (both columns share one icon size). Item-sourced effects (stims, combat shots, forearm/droid shields, droid devices) sit on a round translucent teal disc; force powers are the bare icon. Each icon "drains" top-down: the elapsed part (top) is drawn dim (35% alpha, disc + icon), the remaining part (bottom-anchored) at full alpha, with a 1 px dark-teal line at the boundary. Untracked engine effects (spell id -1, grenades/rockets/darts/monster abilities) keep their native arrows.
+**What the player sees.** On every party portrait card the engine's plain buff/debuff *arrow chevrons* are replaced by the effect's own icons. Buffs run in a column down the card's LEFT edge, debuffs down the RIGHT edge (both columns share one icon size). Item-sourced effects (stims, combat shots, forearm/droid shields, droid devices) sit on a round translucent teal disc; force powers are the bare icon. Each icon "drains" top-down: the elapsed part (top) is drawn dim (35% alpha, disc + icon), the remaining part (bottom-anchored) at full alpha, with a 1 px dark-teal line at the boundary (on item icons the line is clipped to the round disc: width = the circle's chord at that height, hidden outside it; force-power icons keep a full-width line). Untracked engine effects (spell id -1, grenades/rockets/darts/monster abilities) keep their native arrows.
 
 **Hooks** (`kotor2-steam-aspyr.hooks.toml`, all detours, `original_bytes` verified vs the live exe; target hashes: Steam `6A522E71...` and its LAA build `4AB72FC1...`):
 | # | Address | Export | Job |
@@ -1695,7 +1695,7 @@ First live test: hooks all applied, hook 2 ran and found the right buffs (spell 
 **Install / test**: build in the framework clone (`Patches/BuffDurationHUD`, `python3 ../create-patch.py`), stage the 13 baseline `.kpatch` + `BuffDurationHUD.kpatch`, run `KPatchLauncher "<game>/swkotor2.exe" --patches <dir> <all 14 ids>` with the game CLOSED. Verify in `~/steam-208580.log`: 5x `Applied DETOUR` for our addresses + `SUCCESS: Patcher initialized`; `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9` unchanged. Sources of record: `patch_manager_mods/buff_duration_hud_src/` (framework clone stays uncommitted).
 
 **Known limits / open items**
-- The debuff column and the boundary line were built last; visual confirmation was still pending when this section was written (buff column, discs, teal, dim/bright drain, droid shields all confirmed by screenshot).
+- Install state at the end of the session: the live install is the v1.0.0 build from before the disc-clipped boundary line (commit `be0fa15` is built but NOT installed; reinstall via the launcher procedure above). The debuff column and the boundary line have not been visually confirmed in game (buff column, discs, teal, dim/bright drain, droid shields were confirmed by screenshot).
 - The debuff column may cover the vitality/force bars on the card's right edge (`RightInset` constant, currently 0).
 - Untracked effects keep native arrows, which then sit where the arrow row always was (they can overlap our columns).
 - Spells 100/106 (forearm shield variations 2/8) and 114/115 (droid shield variations) use best-guess icons; grenades/rockets/darts have no icons.
@@ -1708,3 +1708,5 @@ First live test: hooks all applied, hook 2 ran and found the right buffs (spell 
 are wrong. The four `0x1D0`-spaced arrays at `hud+0x733c/0x750c/0x76dc/0x78ac` are the 4 sub-controls of each action-button group; groups 1-3 of the
 per-creature action lists ARE inventory items (key = objectId|0x40000000). Live-confirmed entry layout, icon resrefs and details:
 [[07_force_power_hotbar.md]] ("Next-phase findings" and "Live results"); DB lesson "CORRECTION to lesson 55".
+
+**Session change log (2026-09-29, 11th-12th sessions)**: swap works -> redesign (own column, nested-viewport drain) -> fit-to-height sizing/columns -> `ii_*` inventory icons for items -> green square -> round teal disc (items only) -> HUD-border teal -> droid shields -> debuff column + boundary line -> logging behind `buffhud_debug.txt` -> line clipped to disc. Commits (worktree, branch `KOTOR-II`): `055fcd6`, `75b2746`, `e0c5ada`, `d5638c5`, `5653e34`, `5d2071a` (v1.0.0), `be0fa15`. The load-time hang is tracked separately in `09_load_hang_investigation.md` and is not attributed to this mod.
