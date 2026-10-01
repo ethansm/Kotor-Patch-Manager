@@ -153,3 +153,7 @@ Opus review Mod 8: BLOCKER manifest TOML (fixed); S1 = vanilla Ranged/Stationary
 ## Session log 2026-09-30 23:57 (combined install, Phase 1 of the next-phase plan)
 
 Mods 6+8 0.2.0 INSTALLED (user go). A sibling changed the live set while the go was pending (level-up-override, perf-lab 0.3.0, load-hang-probe 1.4.0), so the windows were re-checked first: `live_hooks_2026-09-30g.tsv` (120 hooks), `check_windows_output_2026-09-30g.txt` ALL OK / ALL MATCH. Live set: 22 ids, 128 hooks, verify 0 mismatches. Data: TLK strrefs 136538/136539, `override/aiscripts.2da` + `override/k_ai_master.ncs`, both INIs. Details: `HANDOFF_2026-09-30.md` "INSTALLED".
+
+## Session log 2026-10-01 (companion AI review)
+
+The user asked whether the rest of the companion AI is understood and to review it for bugs. Three read-only Opus reviews (decision scripts, event scripts, engine) -> `ai_review_2026-10-01/` (README = triage + logging plan). The lead verified H1, H2, E2 and the A1/A2 timer logic on disk. DB lessons via `persist_ai_review_db.py`. Waiting for the user to choose the scope (Mod 8 fix round vs a separate companion-AI-fixes mod vs AI trace logging).

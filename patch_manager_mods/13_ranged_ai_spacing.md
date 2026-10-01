@@ -186,3 +186,13 @@ Design (all live writes are user-gated, backed up, recorded in `~/Games/KOTOR2_M
 
 ### 0.2.0 installed (2026-09-30 23:57)
 Live with Mod 6 in one combined install (22 ids, kpatch md5 `0b86bcf6`, DLL `d3fe4148`). Data: dialog.tlk strrefs **136538** (`Ranged (Kiting)`) / **136539** (message); `override/aiscripts.2da` (row 5 `RangedKite 136538 16`) md5 49a735c7; `override/k_ai_master.ncs` md5 94db8304; `$G/ranged_ai.ini` `hold=1 retarget=1 ranged_rules=1 hold_stances=16 retarget_stances=16 kite_strref_msg=136539`. Backup/stage/rollback: `mods678_research/HANDOFF_2026-09-30.md` "INSTALLED". Awaiting the play session: E3, idling after an E-H1 hold, far-target idling, tutorial link, message fit.
+
+### Companion AI review (2026-10-01): items for the Mod 8 fix round
+Three Opus reviews of the whole party AI: `mods678_research/ai_review_2026-10-01/` (README = triage). These hit stance 16 directly:
+- **A1:** E-H3 maps 16->11, so a stance-16 companion whose target is out of range loops in the attack action. The prologue `0x6D740F` resets the 3 s fallback timer `+0x570` every entry, so the end-of-round script never runs, and the companion idles until given an order. This is play-test item (b), and the same applies to vanilla Ranged/Stationary.
+- **A2:** an E-H1 hold ends the action, so the fallback re-runs the end-of-round script within 3 s. That closes open item (a) statically.
+- **E2:** the shout-driven first combat action runs the vanilla `GN_DetermineCombatRound` compiled into `k_hen_<name>dlg`.
+- **K1:** the kite target lacks `GetIsEnemy`/`GetIsDead` checks.
+- **K2:** consecutive kites are uncapped.
+- **M1:** a swap to an empty weapon config 2 leaves the companion unarmed.
+- **E12:** the cooldown at local 20 persists between fights.
