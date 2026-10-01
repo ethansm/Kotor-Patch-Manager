@@ -383,11 +383,13 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     (void)scale;
     // Narrower than the health bar (user: "too wide / too far right"): the art is drawn at ShieldWidthFraction of the health
     // rect's width (curve squashed a little) and placed so its visible right edge sits exactly on the health bar's visible left edge.
-    int W = int(ShieldWidthFraction * vw + 0.5f), H = vh;
+    // Small (companion) cards: the bar is 1 px shorter top and bottom, otherwise the pale outline reads taller than the red health bar.
+    int inset = vw < 70 ? 1 : 0;
+    int W = int(ShieldWidthFraction * vw + 0.5f), H = vh - 2 * inset;
     int seamX = vx + int(0.445f * vw + 0.5f);                  // visible left edge of the (squared) health bar
     // The art's visible right edge is at 98/128 = 0.766 of its width; end it 1 px INSIDE the health bar's outline (the shield is drawn
     // over it) so rounding at small widths never leaves a thin dark gap line (visible against the black menu background).
-    int x = seamX + 1 - int(0.766f * W + 0.5f), y = vy;
+    int x = seamX + 1 - int(0.766f * W + 0.5f), y = vy + inset;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
     if (total < 1) return 0;
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
