@@ -1,0 +1,120 @@
+0x004082E0	5	detour	DrawPrintStringHook	k2-visible-console
+0x004083C5	5	detour	DrawPrintStringHook	k2-visible-console
+0x0040A750	9	detour	HangProbeWndProc	load-hang-probe
+0x0040B4AD	7	detour	HangProbeActAppArrive	load-hang-probe
+0x0040BC40	6	detour	HangProbeDeactivated	load-hang-probe
+0x0040BCF0	6	detour	HangProbeActivated	load-hang-probe
+0x0040BF40	6	detour	HangProbeRestoreAfterMovie	load-hang-probe
+0x0040C6B3	8	detour	HangProbeMovieWndDeact	load-hang-probe
+0x0040D637	10	detour	HangProbeMovie76c	load-hang-probe
+0x0040D692	6	detour	HangProbeSynthPost	load-hang-probe
+0x00414870	7	detour	PerfLabBrSetter1	perf-lab
+0x004160BD	7	detour	PerfLabBrSetter2	perf-lab
+0x0042266F	6	detour	PerfLabGetImage	perf-lab
+0x00423480	5	detour	PerfLabTexDtor	perf-lab
+0x00425160	6	detour	PerfLabFreeImage	perf-lab
+0x004260E0	7	detour	PerfLabBuildTex	perf-lab
+0x004265F5	6	detour	PerfLabGlFinishPre	perf-lab
+0x004265FB	7	detour	PerfLabGlImagePost	perf-lab
+0x00427609	5	detour	PerfLabBrTexMiss	perf-lab
+0x004313A2	18	simple		k2-aspyr-saber-hilt-texture-fix
+0x00464789	5	detour	PerfLabFocusDummy	perf-lab
+0x00464D70	5	detour	PerfLabSceneDtor	perf-lab
+0x004665D8	30	simple		k2_grass_fog_fix
+0x004676F7	2	simple		max-lights
+0x00467714	2	simple		max-lights
+0x00468112	2	simple		max-lights
+0x0046812F	2	simple		max-lights
+0x0046818B	2	simple		max-lights
+0x004685BD	2	simple		max-lights
+0x004685DA	2	simple		max-lights
+0x00468636	2	simple		max-lights
+0x0046878F	2	simple		max-lights
+0x00472630	5	detour	PerfLabBucketInsert	perf-lab
+0x00474000	7	detour	PerfLabRequeue	perf-lab
+0x004748BA	5	detour	DrawPrintStringHook	k2-visible-console
+0x004752D8	7	simple		additional-console-commands
+0x00478A20	6	detour	PerfLabTick	perf-lab
+0x004A715E	20	replace		k2-aspyr-normal-map-fix
+0x00506599	10	detour	SetProgramLightCount	max-lights
+0x005067FA	5	simple		max-lights
+0x00508DBC	4	simple		max-lights
+0x0050908C	4	simple		max-lights
+0x0050973E	4	simple		max-lights
+0x0050A601	4	simple		max-lights
+0x0050B0A6	7	detour	RelocateLightBlock	max-lights
+0x0050BAF0	7	detour	RelocateLightBlock	max-lights
+0x0050C251	4	simple		max-lights
+0x0050C353	4	simple		max-lights
+0x0051D790	9	detour	PerfLabAiTick	perf-lab
+0x0051DC70	5	detour	PerfLabAiObjPre	perf-lab
+0x0051DC86	7	detour	PerfLabAiObjPost	perf-lab
+0x005315E0	5	detour	PerfLabUnload	perf-lab
+0x00544210	9	detour	PerfLabEffectApply	perf-lab
+0x00544640	6	detour	PerfLabEffectRemove	perf-lab
+0x0055AB30	6	detour	PerfLabPathEnter	perf-lab
+0x0055AC26	10	detour	PerfLabPathResult	perf-lab
+0x00668FD0	6	detour	PerfLabExecCmd	perf-lab
+0x006699D0	6	detour	PerfLabAdcEnter	perf-lab
+0x00669A32	7	detour	PerfLabAdcHandoff	perf-lab
+0x00670370	6	detour	PerfLabDelayCommand	perf-lab
+0x006B8DF9	2	simple		k2-finesse-melee-fix
+0x006B9870	9	detour	LevelUpOverrideEntry	level-up-override
+0x006FFA76	5	detour	PerfLabInstrLimit	perf-lab
+0x007022A0	6	detour	PerfLabRunScript	perf-lab
+0x00704060	5	detour	PerfLabNetSend	perf-lab
+0x007040E0	9	detour	PerfLabNetOvfTest	perf-lab
+0x0070CDCB	10	detour	K2LooseMp3	k2-mp3-playback-fix
+0x0070CF34	6	detour	K2Mp3RiffOffsetByPath	k2-mp3-playback-fix
+0x00711C20	6	detour	PerfLabResDemand	perf-lab
+0x00711D04	7	detour	PerfLabWaitBegin	perf-lab
+0x00711D27	8	detour	PerfLabWaitSleep	perf-lab
+0x00711D44	7	detour	PerfLabWaitEnd	perf-lab
+0x007120C0	6	detour	PerfLabResFreeData	perf-lab
+0x0071222D	6	detour	PerfLabResEvict	perf-lab
+0x00712F30	6	detour	PerfLabResMalloc	perf-lab
+0x0071306C	7	detour	PerfLabUafWrite	perf-lab
+0x007130B0	6	detour	PerfLabResRelease	perf-lab
+0x0071447A	6	detour	PerfLabAsyncStart	perf-lab
+0x00726350	5	detour	PerfLabDestroyTable	perf-lab
+0x0072650B	6	detour	PerfLabStillInDemand	perf-lab
+0x0072CB63	6	detour	CaptureHotbarKey	force-power-hotbar
+0x00744EEC	10	detour	AppendShieldToTooltip	buff-duration-hud
+0x00745774	6	detour	DrawShieldBar	buff-duration-hud
+0x00745A84	13	detour	RetargetBuffIcon	buff-duration-hud
+0x00745A97	7	detour	RestoreBuffIcon	buff-duration-hud
+0x00745AEC	7	detour	DrawBuffColumn	buff-duration-hud
+0x00748502	6	detour	HotbarBuildButtons	force-power-hotbar
+0x0074B3F0	5	detour	HotbarHudTick	force-power-hotbar
+0x0074CFE0	6	detour	PerfLabActionBar	perf-lab
+0x0074F25A	6	detour	SnapshotPortraitSlot	buff-duration-hud
+0x0074F8AB	6	detour	SnapshotPortraitSlot	buff-duration-hud
+0x007508AA	6	detour	preserveMiniMapAspect	k2-aspyr-map-aspect-fix
+0x00781BE0	5	detour	HangProbeMainLoop	load-hang-probe
+0x00781E0B	7	detour	HangProbeLsDecision	load-hang-probe
+0x00798660	7	detour	HangProbeSetPlayerId	load-hang-probe
+0x00798820	5	detour	PerfLabMovieEnter	perf-lab
+0x00798A77	7	detour	HangProbePumpCutoff	load-hang-probe
+0x00798A87	9	detour	PerfLabMovieSpin	perf-lab
+0x00798B39	6	detour	HangProbeMovieExit	load-hang-probe
+0x007AF198	31	replace		post-combat-movement-fix-v1
+0x0085D719	446	replace		good-alignment-heads
+0x00885197	31	simple		loading_screen_line_fix_k2
+0x00894435	10	detour	preserveAreaMapAspect	k2-aspyr-map-aspect-fix
+0x00895E6D	12	detour	preserveAreaMapProjection	k2-aspyr-map-aspect-fix
+0x008A69AD	6	detour	BindInventoryView	inventory-3d-viewport
+0x008A7350	6	detour	InventoryTick	inventory-3d-viewport
+0x008A7E22	79	detour	SortFilterBufferRow	inventory-sort-filter
+0x008A7E76	22	detour	SortFilterFlush	inventory-sort-filter
+0x008A8172	6	detour	ShowItem	inventory-3d-viewport
+0x008A8CF0	6	detour	SortFilterTabClick	inventory-sort-filter
+0x008AA16A	6	detour	BindEquipView	equipment-3d-character
+0x008AA6F0	7	detour	EquipDestroy	equipment-3d-character
+0x008ABA50	6	detour	EquipTick	equipment-3d-character
+0x008BAA5E	26	replace		semi-transparent-letterbox
+0x008BB043	92	replace		semi-transparent-letterbox
+0x008BB108	94	replace		semi-transparent-letterbox
+0x008BB3C3	9	replace		semi-transparent-letterbox
+0x0091D52D	5	detour	InitializeAdditionalCommands	additional-console-commands
+0x0093BEA6	6	detour	PerfLabTxiTpc	perf-lab
+0x00A0F03C	4	simple		max-lights

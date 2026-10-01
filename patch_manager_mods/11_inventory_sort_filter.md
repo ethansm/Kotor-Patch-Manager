@@ -142,3 +142,6 @@ open-slot predicate, INI parsing) is in `SortLogic.h` with host tests. Implement
 - **BLOCKER fixed:** `0x8A83D0` is also the equipment screen's row handler (`0x8B01B0` registers it), and inventory rows freed on close (`0x8A7520`) can be reallocated there; a stale re-tint would set `row+0x3B0=2`, which the equipment click handler `0x8AF2D0` treats as "cannot use". H6d now acts only when the handler's panel (`[ebp-0x18]`) is the panel we tinted and the row is still in its live `+0x24B0` array. Rebuilt kpatch md5 `8fdf18cb`.
 - NITs: set-2 weapon bits are tested as `0x40000/0x80000` (engine list ORs the set-1 bit; same result in practice); item level requirement is not checked (same as the equipment list); **the install must overwrite the Stage 0 INI in the game folder** (code defaults are 0).
 - Verified: canEquip ABI/creature/pure query, state machine, H6d window + wrapper RET, log hygiene, build contents.
+
+### 0.2.0 installed (2026-09-30 23:57)
+Live with Mod 8 in one combined install (22 ids, kpatch md5 `8fdf18cb`); `$G/inventory_sort_filter.ini` = `sort=1 tint=1 cycle=1 log=1 log_items=0`. Backup/stage/rollback: `mods678_research/HANDOFF_2026-09-30.md` "INSTALLED". Awaiting the user's play session (checklist in the HANDOFF), then the log review.

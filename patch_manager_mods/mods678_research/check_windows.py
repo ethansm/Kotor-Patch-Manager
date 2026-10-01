@@ -8,7 +8,7 @@ For each window (name, start, length, function entry) it checks, from the dump's
     unless the window is a skip_original_bytes=true window (bytes never re-run) -> reported as 'skip-only'
   * no branch from OUTSIDE the window targets an address strictly inside it (start is fine, it lands on our jump)
   * a RET may only be the LAST stolen instruction (the wrapper restores ESP exactly, so a trailing RET returns normally)
-  * no overlap with any live hook window (live_hooks_2026-09-30e.tsv) or Mod 1's inventory hooks
+  * no overlap with any live hook window (live_hooks_2026-09-30g.tsv) or Mod 1's inventory hooks
 Prints the original bytes as a TOML-ready list.
 
 Usage: check_windows.py            (runs the built-in table of proposed windows)
@@ -17,7 +17,7 @@ import re, sys, os
 
 DUMP = os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp")
 HERE = os.path.dirname(os.path.abspath(__file__))
-LIVE = os.path.join(HERE, "live_hooks_2026-09-30e.tsv")   # regenerated 2026-09-30 evening from the live patch_config.toml (82 hooks, same set as -b)
+LIVE = os.path.join(HERE, "live_hooks_2026-09-30g.tsv")   # regenerated 2026-09-30 23:58 from the live patch_config.toml (120 hooks: sibling added level-up-override, perf-lab 0.3.0, load-hang-probe 1.4.0)
 
 # (name, start, length, function entry, skip_original)
 WINDOWS = [
