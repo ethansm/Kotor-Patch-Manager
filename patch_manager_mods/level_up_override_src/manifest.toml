@@ -1,7 +1,7 @@
 [patch]
 id = "level-up-override"
 name = "LevelUpOverride"
-version = "0.1.0-probe"
+version = "0.1.1-probe"
 author = "local"
 description = "Stage 0 (log + dry run only, never writes game memory): hooks CSWSCreatureStats::LevelUp (0x006B9870) and logs every level-up (creature, pending level-up struct, caller flow) plus the per-character path rewrite it WOULD apply from levelup_paths.ini, to levelup_override_log.txt. Config levelup_override.ini (mode=log|rewrite|off, tags=, verbose=, table=)."
 

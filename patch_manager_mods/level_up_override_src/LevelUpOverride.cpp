@@ -1,4 +1,4 @@
-// Level-Up Override 0.1.0-probe (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Stage 0 = LOG + DRY RUN ONLY:
+// Level-Up Override 0.1.1-probe (0.1.1: creature feat lists read from +0x00/+0x18, not the uses list +0x0C) (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Stage 0 = LOG + DRY RUN ONLY:
 // this build never writes game memory. Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree),
 // plan research/companion_levelup/MASTER_PLAN.md.
 //
@@ -30,13 +30,13 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.1.0-probe";
+constexpr const char* Version = "0.1.1-probe";
 constexpr bool ApplyEnabled = false;   // stage 0: the rewrite is never applied
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
 constexpr uintptr_t RulesGlobal = 0x00A1B4D0;      // rules singleton; +0x123 byte skill count
 constexpr int Rules_SkillCount = 0x123;
-constexpr int St_Creature = 0x24, St_FeatList = 0x0C, St_FeatCount = 0x10, St_XP = 0x68, St_ClassCount = 0x8D,
+constexpr int St_Creature = 0x24, St_FeatList = 0x00, St_FeatList2 = 0x18, St_XP = 0x68, St_ClassCount = 0x8D,
               St_ClassId = 0xAB, St_ClassLevel = 0xAC, St_ClassNeg = 0xAD, St_ClassStride = 0x28, St_Unspent = 0x170,
               St_SkillRanks = 0x174;
 constexpr int Cr_Tag = 0x18;                       // CExoString {char*, len}
@@ -574,17 +574,24 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
         else
             r.add("UNREADABLE");
         r.add("]");
-        uintptr_t fl = 0; uint32_t fc = 0;
-        if (readAt(S_FeatList, stats, St_FeatList, &fl) && readAt(S_FeatList, stats, St_FeatCount, &fc)) {
-            r.add(" stats.feats count=%u ids(stride4)=[", fc);
-            uint32_t take = fc > 96 ? 96 : fc;
-            if (take && fl && probeRead(S_FeatList, reinterpret_cast<const void*>(fl), take * 4))
-                for (uint32_t i = 0; i < take; ++i) r.add("%s%u", i ? "," : "", *reinterpret_cast<const uint16_t*>(fl + i * 4));
-            r.add("]");
-        } else {
-            r.add(" stats.feats UNREADABLE");
-        }
         logf("%s", r.s);
+        // feat lists: +0x00 full list, +0x18 second list (both {ushort*, count}; HasFeat 0x6B83F0 checks both)
+        const int lists[2] = {St_FeatList, St_FeatList2};
+        for (int L = 0; L < 2; ++L) {
+            Buf fb;
+            uintptr_t fl = 0; uint32_t fc = 0;
+            fb.add("  stats.feats%s", L ? "2" : "");
+            if (readAt(S_FeatList, stats, lists[L], &fl) && readAt(S_FeatList, stats, lists[L] + 4, &fc)) {
+                uint32_t take = fc > 200 ? 200 : fc;
+                fb.add(" count=%u [", fc);
+                if (take && fl && probeRead(S_FeatList, reinterpret_cast<const void*>(fl), take * 2))
+                    for (uint32_t i = 0; i < take; ++i) fb.add("%s%u", i ? "," : "", reinterpret_cast<const uint16_t*>(fl)[i]);
+                fb.add("]");
+            } else {
+                fb.add(" UNREADABLE");
+            }
+            logf("%s", fb.s);
+        }
     }
 
     // -- dry run for tags that have a table section

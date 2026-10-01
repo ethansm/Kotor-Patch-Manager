@@ -61,7 +61,9 @@ Other AutoLevelup callers (purpose not read): 0x005FD480, 0x0074EE90. GOG-DB mis
 (see finesse patch), `CSWGuiInGameCharacter::DoAutoLevelup` GOG-drift row 0x73EF30 is wrong.
 
 ## Struct offsets (Steam)
-**CSWSCreatureStats** (`this`): +0x0C feat list data (`short**`, each element a 4-byte {ushort id, byte uses}), +0x10 count;
+**CSWSCreatureStats** (`this`): +0x00 FULL feat list (`ushort*` ids, count +0x04; append 0x6C0A70, contains 0x6C0AA0), +0x18 second feat list
+(`ushort*`, count +0x1C; HasFeat 0x6B83F0 checks both) [corrected 2026-10-01 from the live log]; +0x0C uses-per-day records only (`{ushort id, byte uses}*` ptr array,
+count +0x10; only feats whose row +0x33 flag is set);
 +0x24 owner CSWSCreature* (creature: +4 object id, +0x18 CExoString Tag, +0xE4 max HP, +0x1200 is-player flag);
 +0x28/+0x2C stored per-level pending structs (LvlStatList) ptr array / count; +0x68 XP (uint); +0x6C has-client/player flag;
 +0x8D ClassCount (byte); class entry i at `this + i*0x28`: +0xAB class id, +0xAC level, +0xAD negative levels;
@@ -213,6 +215,25 @@ the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-
   from perflab3_stage md5-matched + LevelUpOverride.kpatch), `KPATCH_NO_LAUNCH=1 ... KPatchLauncher` -> "Applied 21 patch(es)"; `verify` 0 mismatches;
   UpdatedAt 21:38:18; live `patches/level-up-override.dll` md5 acd1ce14. Game dir: `levelup_paths.ini` (copy of runtime table), `levelup_override.ini`
   (`mode=log tags=atton verbose=1`). Rollback: reinstall the 20 ids from `$T/levelup_stage` without `level-up-override`, or `mode=off` (inert).
+
+## Phase 2 live results - run 1 (2026-10-01 18:42, `levelup_override_log.txt`, 4 calls, Atton only)
+User: manual GUI level-up Atton 3->4, then Auto button 4->7 (one DoAutoLevelup, 3 LevelUp calls in the same tick). Game stable.
+- **Hook plumbing CONFIRMED:** `ecx` = stats, `[esp+0]` = ret 0x6B9770 (inside ValidateLevelUp) for BOTH flows, `[esp+4]` = pending, `[esp+8]` = addToList = 1
+  in both (so pending pointers go into the stats+0x28 list), `ebp` walk works: manual = `HandleLevelUpMsg 0x661F26 <- 0x65FC91 <- 0x531585 <- 0x51C442`,
+  Auto = `AutoLevelup 0x6C00AF <- DoAutoLevelup 0x850086 <- 0x75BA5A <- 0x75CE6B`. Flow labels manual-gui / auto-button correct.
+- **Key arithmetic CONFIRMED:** classes `2:3` at entry for the 3->4 level-up (class level is pre-increment), key = sum+1 = 4; successive calls saw 2:4, 2:5, 2:6.
+- **Skill deltas CONFIRMED as deltas:** stats ranks before each call = previous ranks + previous pending deltas (e.g. [3,4,4,5,0,0,5,0] + [0,1,3,..] -> [3,5,7,5,..]).
+  Atton spends exactly 4 points/level (class-skill cost 1); `unspent28` = `unspent170` = 0 throughout -> path records cost 4 too, so DRY unspent = 0.
+- **Ability idx:** manual L4 = 1 (DEX, the user's pick; path also 1); auto non-ability levels = 6. 6 = none CONFIRMED.
+- **Feats:** manual L4 pending feats empty (no Scoundrel feat slot at L4). Auto L5 pending feats = [113] (the auto pick) WITHOUT the L5 grant 62 -> O3 confirmed for
+  Auto (grants go straight to the creature). DRY L5 = feats [20] (drop 113, add path feat 20) - correct. Manual-flow grant handling still unobserved (needs a manual
+  level-up at a grant level, e.g. Atton 7 (grant 63) or any Jedi level).
+- **Spells:** empty in every call (Scoundrel). Force-power grant ids still unobserved (Kreia / Sentinel).
+- **Pending raw:** +0x2B HP = 6, +0x2D force = 0, +0x2E/+0x2F garbage (padding). Empty arrays are {0,0,0} - adding to them must go through the engine push helpers.
+- **Bug in the probe's creature dump:** `stats.feats count=0` - it read the uses-per-day list (+0x0C). Fixed layout above (Ghidra: `phase1_evidence/phase2_featlist_*.txt`).
+  Next build logs stats+0x00 and +0x18 lists.
+- Not yet covered: Kreia manual (e), Auto Level Up NPCs (c), natural XP award (d), SetExperience replay, mode=rewrite.
+- 0.1.1-probe built (kpatch md5 121b8a25, NOT installed): creature feat dump fixed (+0x00 and +0x18 lists). Live is still 0.1.0 (acd1ce14).
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
