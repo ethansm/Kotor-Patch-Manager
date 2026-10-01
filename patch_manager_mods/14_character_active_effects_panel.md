@@ -1,4 +1,4 @@
-**STATUS 2026-09-30: RESEARCH STARTED (static only, no Ghidra: it was busy; no game launch). Not scheduled: user wants it AFTER the equip-screen work (Mod 5 phases 1-4) is finished.**
+**STATUS 2026-09-30 21:xx: PHASE 1 MOCK-UP DONE, AWAITING USER FEEDBACK (user gate). Nothing deployed. Next: iterate on feedback -> Phase 2 `scripts/mirror_character_page.py` (thirds layout, GUI only) -> Phase 3 Ghidra R2 -> Phase 4 patch `character-effects-panel`. Plan = Claude plan "Character screen: thirds layout (mirror) + Mod 14".**
 
 # Mod idea 14: Active effects panel on the character screen
 
@@ -24,3 +24,9 @@ Does vanilla KOTOR II show the character's active status effects anywhere? **Yes
 
 ## Session log
 - 2026-09-30: web search (effects tab exists), GUI inspection (`messages_p.gui`), static disassembly of the Messages panel populator (no Ghidra, game not launched). Nothing installed.
+
+## Phase 1 mock-up (2026-09-30, `scripts/character_page_mockup.py OUTDIR [--names-font=dialogfont10x10] [--text-hstretch]`)
+Renders the LIVE `character_p.gui` with the real resources: BORDER fill/edge/corner textures tinted by BORDER COLOR (multiply), root `pnl_pause_pc`, bitmap fonts from the font TXI (`upperleftcoords`/`lowerrightcoords`). **pykotor TPC mip data is bottom-up: flip vertically** (the edge texture then has its line at the top = top edge; the corner texture = top-left corner). Outputs before / after / empty / overflow / tooltip PNGs + a zoom. Live file has **55** controls (not 56), IDs 0..41, 52..61, 65, 66, 68.
+- Layout (proposed, pending approval): stats group dx -353 (every control with 405 <= L < 640 except BAR4/BAR5); 3D group dx +129 with `LBL_3DCHAR/BTN_3DCHAR [295,134,230,336]`, `LBL_BEVEL [293,130,234,38]`, `LBL_BEVEL2 [293,436,234,38]`, `LBL_FORCEMASTERY [294,105,232,21]`. **Shortening the view made `LBL_DARK`/slider run into the bottom arc**, so the slider group is lifted: `LBL_LIGHT [304,170,52,21]`, `SLD_ALIGN [310,177,36,242]`, `LBL_DARK [304,404,52,21]` (vanilla relations kept). BTN_AUTO/LEVELUP `[362,260,94,52]`/`[362,325,94,40]`.
+- Panel: header = BAR6 clone `[536,104,216,24]` "Active Effects" (cream); frame = XP_BACK style (edge `uibit_brdr_16wet`, corner `16wct`, fill `uibit_fill_2wt`) `[536,134,216,336]`; section headers dialogfont16x16 uppercase, Beneficial cream `(0.8,0.8,0.698)`, Harmful orange `(0.949,0.659,0.302)` (the game's own LBL_FORCEMASTERY colour) + thin `uibit_brdr_16we` separator; rows pitch 22: icon **10x18 units** (the GUI is stretched 4.8 x 2.667 px/unit, so a square is 10x18 units, not 18x18), name teal `(0.102,0.698,0.549)` cut with "...", time right-aligned (cream; orange when harmful or < 30 s; "Permanent" in 10x10); item abilities on the Buff HUD teal disc; max 12 rows + "+N more"; empty state "No active effects"; optional tooltip = `mipc28x6_p LBL_MOULDING3` style (fill `uibit_fill_2bt`, edge/corner `uibit_brdr_16bet/16bct`) with spells.2da `spelldesc`.
+- Open assumption: text drawn at a uniform 8/3 px per font texel (engine assumed not to stretch glyphs); a user screenshot of the current character page would confirm.
