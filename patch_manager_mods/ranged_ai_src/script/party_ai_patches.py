@@ -30,7 +30,7 @@ MOD8_PROTOS = (
     "int GN_RunKiteAIRoutine(object oIntruder = OBJECT_INVALID);\n")
 PARTY_PROTOS = (
     "//Party AI script fixes (design_ai_script_fixes.md). Bodies at the end of this file.\n"
-    "int GN_PartyStanceCombatExit(int nNPC_AI);\n"
+    "int GN_PartyStanceCombatExit(int nNPC_AI, object oIntruder);\n"
     "void GN_PartyApproachUnseen(object oIntruder);\n")
 
 KITE_BRANCH = (
@@ -72,8 +72,9 @@ PATCHES = [
     ("MOD8-dispatch", "party", G, DISPATCH_OLD, DISPATCH_NEW),
     ("E1", "party", G,
      "                if(nNPC_AI == NPC_AISTYLE_MELEE_ATTACK)\n",
-     "                //Party AI fix E1 (party only): stances 10-13 and 16 never reach GN_DoPostDCRChecks below.\n"
-     "                if(GN_PartyStanceCombatExit(nNPC_AI) == TRUE)\n"
+     "                //Party AI fix E1 (party only): stances 10-13 and 16 never reach GN_DoPostDCRChecks below; it runs\n"
+     "                //only when the fight is over (S1: no live enemy as intruder, leader target or recent attacker).\n"
+     "                if(GN_PartyStanceCombatExit(nNPC_AI, oIntruder) == TRUE)\n"
      "                {\n"
      "                    return;\n"
      "                }\n"
@@ -134,11 +135,16 @@ PATCHES = [
      "            bHostile = FALSE;\n"),
     ("H2a", "party", G,
      "        if(GetIsObjectValid(oP1)&& GetRacialType(oP0) != RACIAL_TYPE_DROID)\n",
-     "        //Party AI fix H2: race test on the member itself (was oP0 for all three).\n"
-     "        if(GetIsObjectValid(oP1)&& GetRacialType(oP1) != RACIAL_TYPE_DROID)\n"),
+     "        //Party AI fix H2/S2: race test on the member itself (was oP0 for all three), and only members the heal\n"
+     "        //powers reach (Heal and Master Heal act on non-droid party members within 15 m of the caster).\n"
+     "        if(GetIsObjectValid(oP1)&& GetRacialType(oP1) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP1) < 15.0)\n"),
     ("H2b", "party", G,
      "        if(GetIsObjectValid(oP2) && GetRacialType(oP0) != RACIAL_TYPE_DROID)\n",
-     "        if(GetIsObjectValid(oP2) && GetRacialType(oP2) != RACIAL_TYPE_DROID)\n"),
+     "        if(GetIsObjectValid(oP2) && GetRacialType(oP2) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP2) < 15.0)\n"),
+    ("H2e", "party", G,
+     "        if(GetIsObjectValid(oP0) && GetRacialType(oP0) != RACIAL_TYPE_DROID)\n",
+     "        //Party AI fix S2: the leader too counts only within the 15 m reach of the heal powers.\n"
+     "        if(GetIsObjectValid(oP0) && GetRacialType(oP0) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP0) < 15.0)\n"),
     ("H2c", "party", G,
      "        else if(GetIsObjectValid(oP1) && !GetIsDead(oP1) && (fDown00 < 0.5 && fDown00 > 0.0))\n",
      "        //Party AI fix H2: each branch tests its own member's ratio (all three tested fDown00).\n"
@@ -147,9 +153,51 @@ PATCHES = [
      "        else if(GetIsObjectValid(oP2) && !GetIsDead(oP2) && (fDown00 < 0.5 && fDown00 > 0.0))\n",
      "        else if(GetIsObjectValid(oP2) && !GetIsDead(oP2) && (fDown02 < 0.5 && fDown02 > 0.0))\n"),
     ("M5", "party", G,
-     "        for(nCnt; nCnt > 2; nCnt++)\n",
-     "        //Party AI fix M5: the loop never ran (nCnt = 0 is never > 2).\n"
-     "        for(nCnt = 0; nCnt < 3; nCnt++)\n"),
+     "        int nCnt = 0;\n"
+     "        for(nCnt; nCnt > 2; nCnt++)\n"
+     "        {\n"
+     "            ePoison = GetFirstEffect(GetPartyMemberByIndex(nCnt));\n"
+     "            while(GetIsEffectValid(ePoison))\n"
+     "            {\n"
+     "                if(GetEffectType(ePoison) == EFFECT_TYPE_POISON)\n"
+     "                {\n"
+     "                    return GetPartyMemberByIndex(nCnt);\n"
+     "                }\n"
+     "                ePoison = GetNextEffect(GetPartyMemberByIndex(nCnt));\n"
+     "            }\n"
+     "        }\n",
+     "        //Party AI fix M5/B1: the loop never ran (nCnt = 0 is never > 2). It now reports only members a poison\n"
+     "        //cure reaches: Heal and Master Heal remove poison from NON-DROID party members within 15 m of the caster\n"
+     "        //(k_inc_force), and Cure does not remove poison in TSL (see M5b). Anyone else is never reported, so the\n"
+     "        //selection cannot recast a power that leaves the poison in place.\n"
+     "        int nCnt = 0;\n"
+     "        for(nCnt = 0; nCnt < 3; nCnt++)\n"
+     "        {\n"
+     "            object oPM5 = GetPartyMemberByIndex(nCnt);\n"
+     "            if(GetIsObjectValid(oPM5) && !GetIsDead(oPM5) && GetRacialType(oPM5) != RACIAL_TYPE_DROID &&\n"
+     "               GetDistanceBetween(OBJECT_SELF, oPM5) < 15.0)\n"
+     "            {\n"
+     "                ePoison = GetFirstEffect(oPM5);\n"
+     "                while(GetIsEffectValid(ePoison))\n"
+     "                {\n"
+     "                    if(GetEffectType(ePoison) == EFFECT_TYPE_POISON)\n"
+     "                    {\n"
+     "                        return oPM5;\n"
+     "                    }\n"
+     "                    ePoison = GetNextEffect(oPM5);\n"
+     "                }\n"
+     "            }\n"
+     "        }\n"),
+    ("M5b", "party", G,
+     "            tSpe11_03 = TalentSpell(67); //Remove Poison Item\n",
+     "            tSpe11_03 = TalentSpell(67); //Remove Poison Item\n"
+     "            //Party AI fix M5b/B1: Cure heals but never removes poison in TSL (k_inc_force FORCE_POWER_CURE: the poison\n"
+     "            //removal is commented out), so a party member never offers it for poison; it would recast every round\n"
+     "            //with the poison still on. Heal and Master Heal stay (they do remove it).\n"
+     "            if(IsObjectPartyMember(OBJECT_SELF))\n"
+     "            {\n"
+     "                tSpe11_02 = TalentSpell(-1);\n"
+     "            }\n"),
     ("M3", "party", G,
      "            while(!GetIsDebilitated(oTarget) && GetIsObjectValid(oTarget))\n",
      "            //Party AI fix M3 (party only): skip debilitated enemies (the test was inverted, so the nearest\n"
@@ -232,7 +280,7 @@ PATCHES = [
      "            }\n"
      "            //nTalent = 0xff4f;\n",
      "            //Party AI rule ANTIDOTE (user decision 2026-10-01, same as MEDPAC): a party member cures poison with Force\n"
-     "            //powers only (Heal, Cure, Master Heal above), never with the Remove Poison Item talent (an antidote from\n"
+     "            //powers only (Heal and Master Heal above; Cure is off for the party, M5b), never with the Remove Poison Item talent (an antidote from\n"
      "            //the shared inventory). Closed for the party: bValid stays FALSE and the routine returns FALSE (no\n"
      "            //talent-less idle). Future rule: items may be allowed from the party's stock, and only when no Force\n"
      "            //power is available.\n"
@@ -263,6 +311,10 @@ PATCHES = [
      "    if(!IsObjectPartyMember(OBJECT_SELF))\n"
      "    {\n"
      "        nDroid = FALSE;\n"
+     "    }\n"
+     "    else\n"
+     "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party M4: targeted force power, droid flag \" + GN_ITS(nDroid));\n"
      "    }\n"),
     ("M4b", "party", S,
      "    if(GetHasSpell(FORCE_POWER_DROID_DISABLE) && nDroid == TRUE)\n"
@@ -316,8 +368,9 @@ PATCHES = [
      "            if ( nWeaponType == 1 || nWeaponType == 0)\n",
      "            //Party AI fix E6: an attacker with no known weapon in the right hand (creature weapons on\n"
      "            //droids, turrets and beasts; mod base items) counts as melee only when it is close.\n"
-     "            if ( nWeaponType == 1 || (nWeaponType == 0 && GetIsObjectValid(oAttacker) &&\n"
-     "                                      GetDistanceBetween(OBJECT_SELF, oAttacker) <= 5.0) )\n"),
+     "            //Party members only (S3): other creatures with k_hen_* scripts keep the vanilla test.\n"
+     "            if ( nWeaponType == 1 || (nWeaponType == 0 && (!IsObjectPartyMember(OBJECT_SELF) ||\n"
+     "                                      (GetIsObjectValid(oAttacker) && GetDistanceBetween(OBJECT_SELF, oAttacker) <= 5.0))) )\n"),
     ("E13", "hench (leader)", M,
      "                else\n"
      "                {\n"
@@ -342,15 +395,24 @@ PATCHES = [
     ("E11", "hench", M,
      "                                            ActionMoveToLocation(GetLocation(oTarget), TRUE);\n"
      "                                            ActionDoCommand(GN_DetermineCombatRound());\n",
-     "                                            //Party AI fix E11/M6: stand off by weapon as case 1006 does (was a run onto the\n"
-     "                                            //damager's spot); Ranged, Stationary and Kite do not approach at all.\n"
-     "                                            int nStyle2006 = GetNPCAIStyle(OBJECT_SELF);\n"
-     "                                            if(nStyle2006 != NPC_AISTYLE_PARTY_RANGED && nStyle2006 != NPC_AISTYLE_PARTY_STATIONARY &&\n"
-     "                                               nStyle2006 != NPC_AISTYLE_PARTY_KITE)\n"
+     "                                            //Party AI fix E11/M6/S3/S4: party members stand off by weapon as case 1006 does (was a\n"
+     "                                            //run onto the damager's spot); Ranged, Stationary and Kite do not approach at all.\n"
+     "                                            //Other creatures with k_hen_* scripts keep the vanilla run.\n"
+     "                                            if(!IsObjectPartyMember(OBJECT_SELF))\n"
      "                                            {\n"
-     "                                                GN_MyPrintString(\"GENERIC DEBUG *************** Party E11: unseen damager, stand off\");\n"
-     "                                                ActionMoveToObject(oTarget, TRUE, (GN_GetWeaponType(OBJECT_SELF) == 1) ? 4.0 : 15.0);\n"
+     "                                                ActionMoveToLocation(GetLocation(oTarget), TRUE);\n"
      "                                                ActionDoCommand(GN_DetermineCombatRound());\n"
+     "                                            }\n"
+     "                                            else\n"
+     "                                            {\n"
+     "                                                int nStyle2006 = GetNPCAIStyle(OBJECT_SELF);\n"
+     "                                                if(nStyle2006 != NPC_AISTYLE_PARTY_RANGED && nStyle2006 != NPC_AISTYLE_PARTY_STATIONARY &&\n"
+     "                                                   nStyle2006 != NPC_AISTYLE_PARTY_KITE)\n"
+     "                                                {\n"
+     "                                                    GN_MyPrintString(\"GENERIC DEBUG *************** Party E11: unseen damager, stand off\");\n"
+     "                                                    ActionMoveToObject(oTarget, TRUE, (GN_GetWeaponType(OBJECT_SELF) == 1) ? 4.0 : 15.0);\n"
+     "                                                    ActionDoCommand(GN_DetermineCombatRound());\n"
+     "                                                }\n"
      "                                            }\n"),
     ("E10", "party (hench)", M,
      "        case 2009: //KOTOR_HENCH_EVENT_ON_BLOCKED\n"

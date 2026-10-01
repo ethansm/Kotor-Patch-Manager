@@ -32,8 +32,9 @@
     by the stance combat exit (GN_PartyStanceCombatExit, E1). Local 8
     ("hit in melee", set by k_ai_master 2005) is zeroed by the engine at
     combat exit (SetCombatState 0x57A5C1) and by every kite here.
-    The engine rule "Ranged companions do not walk to their target" also
-    applies to stance 16 (DLL hook E-H3).
+    With ranged-ai 0.3.0 (kite_approach=1) the engine walks stance 16 to a target
+    that is out of range or holds a melee weapon; the 15 m spot filter below keeps a
+    kite move inside every ranged base item's attack range, so a kite never triggers it.
 */
 
 int SW_NUMBER_KITE_COOLDOWN = 20;
@@ -128,7 +129,8 @@ int GN_KiteFindSpot(int nMode, object oThreat, object oTarget, object oLeader)
                 nOk = FALSE;
             }
         }
-        // stay in shot range: stance 16 does not walk back to its target (vanilla Ranged engine rule, DLL E-H3)
+        // stay in shot range (15 m; every ranged base item reaches 17 m or more): a kite move must not make the
+        // engine approach the target (ranged-ai 0.3.0 kite_approach)
         if (nOk && GN_KiteDist(v, GetPosition(oTarget)) > KITE_SHOT_RANGE)
         {
             nOk = FALSE;
@@ -177,6 +179,10 @@ int GN_RunKiteAIRoutine(object oIntruder)
     // E12: a new fight starts without the last fight's cooldown or streak.
     if (!GetIsInCombat(OBJECT_SELF))
     {
+        if (GetLocalNumber(OBJECT_SELF, SW_NUMBER_KITE_COOLDOWN) != 0 || GetLocalNumber(OBJECT_SELF, SW_NUMBER_KITE_STREAK) != 0)
+        {
+            GN_MyPrintString("GENERIC DEBUG *************** Kite E12 reset: not in combat, cooldown/streak cleared");
+        }
         SetLocalNumber(OBJECT_SELF, SW_NUMBER_KITE_COOLDOWN, 0);
         SetLocalNumber(OBJECT_SELF, SW_NUMBER_KITE_STREAK, 0);
     }

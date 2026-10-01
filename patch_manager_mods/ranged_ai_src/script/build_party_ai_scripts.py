@@ -34,6 +34,8 @@ G = os.path.expanduser("~/.local/share/Steam/steamapps/common/Knights of the Old
 KIT = os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/script_recompile_20260924/tools/compile.sh")
 KIT_VANILLA = os.path.dirname(KIT) + "/vanilla"
 VENV_PY = os.path.join(REPO, ".venv", "bin", "python")
+COMP = os.environ.get("KOTOR2_NWNNSSCOMP") or os.path.expanduser(
+    "~/Games/KOTOR2_Mod_Workspace/01_extracted/mod127_repair_hk47/tslpatchdata/nwnnsscomp.exe")
 
 LIVE_MD5 = "94db830439f1d33572ba911174e20a04"        # live override/k_ai_master.ncs (Mod 8 0.2.0 build)
 V1_ROUTINE_MD5 = "66645afcf7c959b4a1448224158b0fdb"  # kite_routine.nss v1 (git dad84a5, the last v1 commit)
@@ -226,12 +228,49 @@ def step_baseline(W, write_legacy=False):
 
 
 # ---------------------------------------------------------------------------------------------- step 4
+def lint_patches(patches, fname, pristine):
+    """Anchors checked on the PRISTINE vanilla text (not the progressively patched one): each occurs exactly once, the
+    spans do not overlap, and no anchor occurs inside another patch's replacement text."""
+    mine = []
+    for pid, scope, *rest in patches:
+        if len(rest) == 3:
+            f, old, new = rest
+            if f != fname:
+                continue
+        else:
+            old, new = rest
+        mine.append((pid, crlf(old), crlf(new)))
+    spans = []
+    for pid, old, new in mine:
+        n = pristine.count(old)
+        if n != 1:
+            die(f"{fname}: anchor {pid} occurs {n} times on the pristine text (need 1)")
+        i = pristine.index(old)
+        spans.append((i, i + len(old), pid))
+        for pid2, old2, new2 in mine:
+            if pid2 != pid and old in new2:
+                die(f"{fname}: anchor {pid} occurs inside the replacement of {pid2}")
+    spans.sort()
+    for (a0, a1, p0), (b0, b1, p1) in zip(spans, spans[1:]):
+        if b0 < a1:
+            die(f"{fname}: patches {p0} and {p1} overlap")
+    return len(mine)
+
+
 def step_patch(W):
     sdir = os.path.join(W, "src_party_ai")
     shutil.rmtree(sdir, ignore_errors=True)
     os.makedirs(sdir)
     rep = []
     V = os.path.join(W, "vanilla")
+    linted = 0
+    for fname, base in (("k_inc_generic.nss", V), ("k_inc_gensupport.nss", V), ("k_ai_master.nss", V)):
+        linted += lint_patches(P.PATCHES, fname, open(os.path.join(base, fname), newline="").read())
+    for name in DLG:
+        linted += lint_patches(P.E2_DLG, name + ".nss", open(src_of(W, name), newline="").read())
+    for fname, pl in P.E2_WRAP.items():
+        linted += lint_patches(pl, fname, open(src_of(W, fname[:-4]), newline="").read())
+    print(f"    pristine-text lint: {linted} anchors unique, non-overlapping, none inside another patch's text")
     gen = P.apply(open(os.path.join(V, "k_inc_generic.nss"), newline="").read(), P.PATCHES, "k_inc_generic.nss", rep)
     routine = open(os.path.join(HERE, "kite_routine.nss")).read()
     fixes = open(os.path.join(HERE, "party_ai_fixes.nss")).read()
@@ -315,7 +354,10 @@ def medpac_guard_check(sdir):
     inner = re.search(r"if\(IsObjectPartyMember\(OBJECT_SELF\)\)\s*\{[^{}]*bValid = FALSE;\s*\}\s*else\s*\{[^{}]*"
                       r"tUse = tSpe11_05;\s*\}", text)
     outer = re.search(r"else if\(!IsObjectPartyMember\(OBJECT_SELF\) &&\s*\(GetCreatureHasTalent\(tSpe11_05\) \|\|", text)
-    if outside or len(assigns) != 1 or any_assign or not inner or not outer:
+    # the only things that can bind tSpe11_05 are the four known sources (the medpac / repair-kit talents)
+    stray = [i + 1 for i, l in enumerate(lines) if re.search(r"GetCreatureTalentBest\(0x1408|TalentSpell\((84|127|128)\)", l)
+             and "tSpe11_05" not in l and not l.lstrip().startswith("//")]
+    if outside or len(assigns) != 1 or any_assign or not inner or not outer or stray:
         print("tSpe11_05 lines:", [(i + 1, lines[i]) for i in uses])
         die("medpac guard check failed on the generated k_inc_generic.nss")
     # ANTIDOTE: the poison branch. TalentSpell(67) "Remove Poison Item" is the only item talent there; its use is behind a
@@ -330,9 +372,30 @@ def medpac_guard_check(sdir):
     if not anti:
         print(ptxt)
         die("antidote guard check failed on the generated k_inc_generic.nss")
+    # B1: poison. Cure never offered to the party; the poisoned-member search is non-droid and within 15 m, no recast.
+    cure_off = re.search(r"tSpe11_03 = TalentSpell\(67\);[^\n]*\n(\s*//[^\n]*\n)*\s*if\(IsObjectPartyMember\(OBJECT_SELF\)\)\s*\{\s*"
+                         r"tSpe11_02 = TalentSpell\(-1\);\s*\}", ptxt)
+    def func(sig):   # the definition (not the prototype): from its signature line to the closing brace at column 0
+        i0 = next(i for i, l in enumerate(lines) if l.startswith(sig) and not l.rstrip().endswith(";"))
+        return i0, next(i for i in range(i0, len(lines)) if lines[i] == "}")
+
+    cp0, cp1 = func("object GN_CheckIfPoisoned()")
+    ctxt = "\n".join(lines[cp0:cp1])
+    search_ok = ("for(nCnt = 0; nCnt < 3; nCnt++)" in ctxt and "GetRacialType(oPM5) != RACIAL_TYPE_DROID" in ctxt and
+                 "GetDistanceBetween(OBJECT_SELF, oPM5) < 15.0" in ctxt and "nCnt > 2" not in ctxt)
+    if not cure_off or not search_ok:
+        print(ptxt)
+        die("poison (B1) check failed on the generated k_inc_generic.nss")
+    # S2: the heal-target search only counts non-droid members within 15 m
+    ci0, ci1 = func("object GN_CheckIfInjured()")
+    itxt = "\n".join(lines[ci0:ci1])
+    if len(re.findall(r"GetDistanceBetween\(OBJECT_SELF, oP[012]\) < 15\.0", itxt)) != 3:
+        die("heal-target (S2) check failed on the generated k_inc_generic.nss")
     ai = next(i for i in range(pstart, pend) if "tUse = tSpe11_03;" in lines[i] and "TalentSpell" not in lines[i])
     sel = next(i for i in uses if "GetCreatureHasTalent(tSpe11_05) ||" in lines[i])
-    quote = {"selection branch (closed for the party)": lines[sel - 5:sel + 6],
+    quote = {"B1 poison: Cure never offered to the party": [l for l in lines[pstart:pend] if re.search(r"TalentSpell\(67\)|tSpe11_02 = TalentSpell\(-1\)|IsObjectPartyMember|^\s*[{}]\s*$", l)][:7],
+             "B1 poison search (GN_CheckIfPoisoned, party branch)": [l for l in lines[cp0:cp1] if "oPM5" in l or "nCnt" in l or "M5/B1" in l],
+             "selection branch (closed for the party)": lines[sel - 5:sel + 6],
              "the only tUse = tSpe11_05 (NPC else of a party guard)": lines[assigns[0] - 8:assigns[0] + 3],
              "poison: Remove Poison Item (closed for the party)": lines[ai - 7:ai + 3]}
     return quote, [i + 1 for i in uses], (start + 1, end + 1)
@@ -364,13 +427,14 @@ def step_static(W, sdir, odir, built):
         if t.count('ExecuteScript("k_ai_master", OBJECT_SELF, 3001)') != 1 or "GN_DetermineCombatRound" in t:
             die(f"{name}: routing source check failed")
     raw = open(os.path.join(odir, MASTER + ".ncs"), "rb").read()
-    need = [b"Party E1:", b"Kite K2 cap", b"Kite K1 drop target", b"Party MEDPAC", b"Party H1:", b"Party E8:"]
+    need = [b"Party E1:", b"Party E1: skipped", b"Kite K2 cap", b"Kite K1 drop target", b"Party MEDPAC", b"Party H1:",
+            b"Party E8:", b"Party M4:", b"Kite E12 reset", b"Party E3:", b"Party E11:", b"Party M1:", b"Party M10:"]
     missing = [n for n in need if n not in raw]
     if missing:
         die(f"k_ai_master.ncs misses trace strings {missing}")
     quote, uses, (a, b) = medpac_guard_check(sdir)
     print(f"[6] static: {len(rows)} routers OK (< 8 KB, ExecuteScript, no combat calls); k_ai_master trace strings present; "
-          f"medpac + antidote guards OK (tSpe11_05 used only on k_inc_generic.nss lines {uses}, inside GN_TalentMasterRoutine "
+          f"medpac + antidote + poison (B1) + heal-range (S2) guards OK (tSpe11_05 used only on k_inc_generic.nss lines {uses}, inside GN_TalentMasterRoutine "
           f"{a}-{b})")
     return rows, quote, uses
 
@@ -392,7 +456,9 @@ def step_manifest(W, sdir, odir, built, proofs, rep, argres):
             "name": name + ".ncs", "md5": md5(p), "size": os.path.getsize(p),
             "vanilla_md5": van[name],
             "source": name + ".nss", "source_md5": srcs[name + ".nss"],
-            "patched_with": ([pid for pid, _, f, _ in rep if f == name + ".nss"]),
+            "patched_with": ([pid for pid, _, f, _ in rep if f == name + ".nss"] +
+                             ([pid for pid, _, f, _ in rep if f in ("k_inc_generic.nss", "k_inc_gensupport.nss")] +
+                              ["kite_routine.nss", "party_ai_fixes.nss"] if name == MASTER else [])),
             "includes_md5": ({"k_inc_generic.nss": srcs["k_inc_generic.nss"], "k_inc_gensupport.nss": srcs["k_inc_gensupport.nss"]}
                              if name == MASTER else "vanilla"),
         })
@@ -400,6 +466,7 @@ def step_manifest(W, sdir, odir, built, proofs, rep, argres):
         "built": time.strftime("%Y-%m-%d %H:%M:%S"),
         "tool": "patch_manager_mods/ranged_ai_src/script/build_party_ai_scripts.py",
         "compiler": "nwnnsscomp via " + KIT,
+        "compiler_md5": {"compile.sh": md5(KIT), "nwnnsscomp.exe": md5(COMP)},
         "inputs": {"party_ai_patches.py": md5(os.path.join(HERE, "party_ai_patches.py")),
                    "kite_routine.nss": md5(os.path.join(HERE, "kite_routine.nss")),
                    "party_ai_fixes.nss": md5(os.path.join(HERE, "party_ai_fixes.nss")),
