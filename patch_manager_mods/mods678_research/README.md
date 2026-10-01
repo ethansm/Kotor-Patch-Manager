@@ -145,3 +145,7 @@ Opus review of the Mod 8 Stage 0 DLL found a **BLOCKER**: with `consumed_exit_ad
 ## Session log 2026-09-30 (build phase, part 5: 0.2.0 UX builds)
 
 Mod 6 0.2.0 (equip-based tint/usable via `0x5BD6A0`, own Usable filter, H6d re-tint at `0x8A8478`, log hygiene) and Mod 8 0.2.0 (stance 16: S-H1..S-H4 re-sited EAX-free, TLK/2DA tools, kite script with byte-identical toolchain proof) built, not installed. `live_hooks_2026-09-30e.tsv`, `check_windows_output_2026-09-30e.txt` (ALL OK, 13 windows, both exes match), `persist_batch5_db.py`. Details: doc 11/13 tails and `HANDOFF_2026-09-30.md` part 5.
+
+## Session log 2026-09-30 (build phase, part 5 continued: reviews, READY TO INSTALL)
+
+Opus review Mod 8: BLOCKER manifest TOML (fixed); S1 = vanilla Ranged/Stationary companions never approach (`[ebp-0x174]` CMPs at `0x6D876A/0x6D8A7E`) -> new skip-only hook **E-H3 `0x6D850F`** maps stance 16 -> 11; S2-S6 + nits fixed (`7fe77f1`). Opus review Mod 6: BLOCKER H6d stale row on the equipment screen (shared handler `0x8A83D0`) fixed (`b56a2be`). Focused re-review: no blockers, nits applied (`dad84a5`). `check_windows_output_2026-09-30f.txt` (14 windows) ALL OK / ALL MATCH. New: `apply_mods68_data.py` (install-time data, dry-run default), `stage_and_verify_install.py` handles an extra kpatch that upgrades a live id. Final artifacts and the runbook/checklist: `HANDOFF_2026-09-30.md` "Ready to install".
