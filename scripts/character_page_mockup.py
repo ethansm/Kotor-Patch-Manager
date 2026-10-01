@@ -67,7 +67,7 @@ HEADER = (536, 104, 216, 24)
 PAD_X, PAD_TOP = 8, 6
 ROW_H, SEC_H, SEC_GAP = 22, 20, 6
 ICON_W, ICON_H = 10, 18            # square on screen (48x48 px)
-TIME_W = 46
+TIME_W = 54                        # fits "Permanent" in dialogfont16x16 (52.2 units)
 MAX_ROWS = 14                      # label pool: rows that fit the scroll window at once
 SB_W, SB_ARROW_H, SB_GAP = 10, 18, 3   # scrollbar (shown only when the list overflows): width, arrow height, gap to rows
 SB_THUMB_MIN = 16
@@ -306,6 +306,7 @@ def entries(good, bad):
         if not rows:
             continue
         out.append(("section", sec, col, bool(out)))          # 4th field: preceded by a section gap
+        rows = sorted(rows, key=lambda r: (r[1] is None, r[1] or 0))   # expiring first, permanent last
         out += [("row", spell, secs, item, sec == "Harmful", table.get(spell)) for spell, secs, item in rows]
     return out
 
@@ -448,7 +449,7 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
         elif kind == "time":
             s, harmful, secs = pl
             col = ORANGE if harmful else (CREAM if secs is None or secs >= 30 else ORANGE)
-            fnt = "dialogfont10x10" if secs is None else names_font
+            fnt = names_font
             draw_text(canvas, fnt, s, px(rect), 19, col if not harmful else ORANGE, hscale, vscale)
         elif kind in ("sb_up", "sb_dn"):
             arr = texture("uibit_uparrowg")

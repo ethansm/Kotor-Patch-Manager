@@ -1,4 +1,4 @@
-**STATUS 2026-10-01 00:08: PHASE 2 DEPLOYED (GUI only, no DLL): thirds layout + 68 placeholder effects-panel controls (IDs 69..136) in live `character_p.gui` (sha256 68458cf8...), backup `~/Games/KOTOR2_Mod_Workspace/backups/charmirror_20261001_000736_360244` (pristine). AWAITING USER IN-GAME TEST (stats left, 3D middle + drag/keyboard rotate, slider, Auto/Level Up, no BAR5 overlap, other screens unaffected). Rollback: `.venv/bin/python scripts/mirror_character_page.py --rollback` (game closed). Next: Phase 3 Ghidra R2 (incl. wheel/drag input for the scrollbar), Phase 4 patch `character-effects-panel`.**
+**STATUS 2026-10-01 00:08: PHASE 2 DEPLOYED (GUI only, no DLL): thirds layout + 68 placeholder effects-panel controls (IDs 69..136) in live `character_p.gui` (re-deployed 00:13 with TIME_W 54: sha256 73a87e70...), pristine backup = OLDEST `~/Games/KOTOR2_Mod_Workspace/backups/charmirror_20261001_000736_360244`. AWAITING USER IN-GAME TEST (stats left, 3D middle + drag/keyboard rotate, slider, Auto/Level Up, no BAR5 overlap, other screens unaffected). Rollback: `.venv/bin/python scripts/mirror_character_page.py --rollback` (game closed). Next: Phase 3 Ghidra R2 (incl. wheel/drag input for the scrollbar), Phase 4 patch `character-effects-panel`.**
 
 # Mod idea 14: Active effects panel on the character screen
 
@@ -41,3 +41,20 @@ Renders the LIVE `character_p.gui` with the real resources: BORDER fill/edge/cor
 - New controls in draw order, IDs 69..136: LBL_EFX_BACK, LBL_EFX_HEADER ("Active Effects"), LBL_EFX_SECG/SECB (texts BENEFICIAL cream / HARMFUL orange, fixed in the GUI since the DLL may not be able to recolour), LBL_EFX_D00..13 (item disc), I00..13 (icon), N00..13 (name, teal 16x16, middle-left), T00..13 (time, cream 16x16, middle-right), LBL_EFX_MORE (empty state), SBTRK/SBTHM/SBUP/SBDN, TIPBG (mipc28x6_p LBL_MOULDING3 clone)/TIPT/TIP. Row labels are clones of LBL_STR.
 - **Open for Phase 3/4:** runtime text colour (orange times for harmful / < 30 s) and font switch ("Permanent" in 10x10) need a label text colour/font setter, otherwise fall back to cream + a short permanent marker.
 - Safety: refuses while swkotor2.exe runs; rebuilds from the OLDEST `charmirror_*` backup; refuses a rect that is neither reference nor target, and a control set that differs from the reference; re-reads and asserts rects/IDs before replacing the live file. Generator interplay in the script docstring (rollback, re-run generator, delete old charmirror backups, re-apply).
+
+## Agy review (2026-10-01): verified on disk before acting (raw: `research/R2a_char_panel_update_setstats_capstone_2026-10-01.txt`)
+| Claim | Verdict |
+|---|---|
+| Panel vtable `0x9a3e7c` | **Confirmed** (ctor stores it at `0x84c3ea`). |
+| Update = vt[0x34] = `0x84fbb0`, calls SetStats every tick | **Confirmed.** Prologue `push ebp; mov ebp,esp; sub esp,8` = clean 6-byte splice for H-C3; `ret 4` (float dt). |
+| `this+0x4b70` = shown server creature `CNWSCreature*` | **Partly wrong.** It is SetStats' cache of the shown creature (`cmp @0x84f291`, write `@0x84f490`), and that creature is `0x7e5da0(party,0)` = the **client** creature pointer (DB row 007e5da0, doc 10). |
+| `0x77d800(server)` returns the client creature | **Reversed.** It maps the client creature to the **server** creature (DB row 0077d800; EquipItem calls server methods on its result). |
+| Icon list at `+0xffc` of the `0x77d800` result; `rec+0x20` strref, `rec+0x14` beneficial | Base object **confirmed** (populator `0x75a9eb..0x75aa01`). Record fields match R1's reading, still to be checked in `FUN_005a43c0` (Phase 3). |
+| **New fact (from the same disasm):** | SetStats always shows **party index 0 = the leader**. The page has no member selector of its own; switching members changes the leader. The panel follows slot 0, which removes the "selected member != leader" risk. |
+| Truncation bug in the budget formula | True for the old code, but that code was **already replaced** by scrolling. The concern behind it (harmful effects out of view) is open: see the question to the user. |
+| "Permanent" in 10x10 clashes | **Accepted.** Measured 251 px (not 288) vs TIME_W 220.8 px. Fix: **TIME_W 46 -> 54 units**, "Permanent" stays dialogfont16x16 (names lose ~8 units). GUI re-deployed. |
+| Sort expiring first, permanent last | **Accepted** (renderer `entries()`; remaining time falls uniformly so rows only move when effects are added/removed). |
+| Defer the tooltip | **Agreed**, already an optional Stage 2 (controls exist, the DLL leaves them hidden). |
+| BAR5 notch spans middle+right columns | **True, inherent:** the notch is fixed vanilla art (x 407..634); both columns stop at y 470 above it. Not changed. |
+| Text not stretched (hotbar TipCharW=21) | **Plausible, not proof:** the hotbar is HUD (drawn 1:1). Better evidence: Mod 5's equip-page tooltips use the same 21 px/char estimate in a stretched menu and fit live. |
+| 3D should be RIGHT (doc 10 line 84) | Superseded by the user's 2026-09-30 decision (new content in the right-most third) and the approved mock-up. |

@@ -1,0 +1,151 @@
+# R2a (2026-10-01, capstone scripts/static_disasm.py): verifying Agy review claims. vtable 0x9a3e7c stored by ctor @0x84c3ea; slot 0x34 = 0x84fbb0
+== Update 0x84fbb0 (vt[0x34])
+0084fbb0 push ebp
+0084fbb1 mov ebp, esp
+0084fbb3 sub esp, 8
+0084fbb6 mov dword ptr [ebp - 8], ecx
+0084fbb9 mov ecx, dword ptr [ebp - 8]
+0084fbbc call 0x84e6f0
+0084fbc1 mov eax, dword ptr [ebp - 8]
+0084fbc4 mov ecx, dword ptr [eax + 0x3ad8]
+0084fbca mov dword ptr [ebp - 4], ecx
+0084fbcd mov edx, dword ptr [ebp - 4]
+0084fbd0 push edx
+0084fbd1 mov ecx, dword ptr [ebp - 8]
+0084fbd4 add ecx, 0x3a60
+0084fbda call 0x41b1d0
+0084fbdf push ecx
+0084fbe0 fld dword ptr [ebp + 8]
+0084fbe3 fstp dword ptr [esp]
+0084fbe6 mov ecx, dword ptr [ebp - 8]
+0084fbe9 call 0x40ec90
+0084fbee mov esp, ebp
+0084fbf0 pop ebp
+0084fbf1 ret 4
+== SetStats 0x84e6f0 head (shown creature = 0x7e5da0(party,0) -> [ebp-0x14])
+0084e6f0 push ebp
+0084e6f1 mov ebp, esp
+0084e6f3 push -1
+0084e6f5 push 0x971d8c
+0084e6fa mov eax, dword ptr fs:[0]
+0084e700 push eax
+0084e701 sub esp, 0x284
+0084e707 mov eax, dword ptr [0xa11f20]
+0084e70c xor eax, ebp
+0084e70e mov dword ptr [ebp - 0x50], eax
+0084e711 push esi
+0084e712 push edi
+0084e713 push eax
+0084e714 lea eax, [ebp - 0xc]
+0084e717 mov dword ptr fs:[0], eax
+0084e71d mov dword ptr [ebp - 0x288], ecx
+0084e723 mov dword ptr [ebp - 0x170], 0
+0084e72d mov eax, dword ptr [0xa1b4a4]
+0084e732 mov ecx, dword ptr [eax + 4]
+0084e735 mov dword ptr [ebp - 0x2c], ecx
+0084e738 mov ecx, dword ptr [ebp - 0x2c]
+0084e73b call 0x73fb90
+0084e740 mov dword ptr [ebp - 0x120], eax
+0084e746 mov edx, dword ptr [ebp - 0x120]
+0084e74c mov eax, dword ptr [edx]
+0084e74e mov dword ptr [ebp - 0x124], eax
+0084e754 mov ecx, dword ptr [ebp - 0x288]
+0084e75a mov edx, dword ptr [ebp - 0x124]
+0084e760 mov dword ptr [ecx + 0x4b68], edx
+0084e766 push 0
+0084e768 mov ecx, dword ptr [ebp - 0x2c]
+0084e76b call 0x73fb90
+0084e770 mov ecx, eax
+0084e772 call 0x7e5da0
+0084e777 mov dword ptr [ebp - 0x14], eax
+0084e77a mov eax, dword ptr [ebp - 0x14]
+0084e77d mov ecx, dword ptr [eax + 0x310]
+0084e783 mov dword ptr [ebp - 0x34], ecx
+0084e786 mov ecx, dword ptr [ebp - 0x14]
+0084e789 call 0x77d800
+0084e78e mov dword ptr [ebp - 0x44], eax
+0084e791 mov edx, dword ptr [ebp - 0x44]
+0084e794 mov eax, dword ptr [edx + 0x1198]
+0084e79a mov dword ptr [ebp - 0x28], eax
+0084e79d mov ecx, dword ptr [ebp - 0x34]
+== SetStats tail: +0x4b70 compare/write
+0084f28b mov eax, dword ptr [ebp - 0x288]
+0084f291 mov ecx, dword ptr [eax + 0x4b70]
+0084f297 cmp ecx, dword ptr [ebp - 0x14]
+0084f29a jne 0x84f2c6
+0084f29c mov edx, dword ptr [ebp - 0x28]
+0084f476 mov eax, dword ptr [ebp - 0x288]
+0084f47c mov ecx, dword ptr [eax + 0x4b6c]
+0084f482 call 0x77ec20
+0084f487 mov ecx, dword ptr [ebp - 0x288]
+0084f48d mov edx, dword ptr [ebp - 0x14]
+0084f490 mov dword ptr [ecx + 0x4b70], edx
+== 0x77d800
+0077d800 push ebp
+0077d801 mov ebp, esp
+0077d803 sub esp, 8
+0077d806 mov dword ptr [ebp - 4], ecx
+0077d809 mov ecx, dword ptr [ebp - 4]
+0077d80c call 0x7f2540
+0077d811 test eax, eax
+0077d813 je 0x77d82f
+0077d815 mov ecx, dword ptr [ebp - 4]
+0077d818 call 0x7f2540
+0077d81d mov dword ptr [ebp - 8], eax
+0077d820 mov eax, dword ptr [ebp - 8]
+0077d823 mov edx, dword ptr [eax]
+0077d825 mov ecx, dword ptr [ebp - 8]
+0077d828 mov eax, dword ptr [edx + 0x30]
+0077d82b call eax
+0077d82d jmp 0x77d831
+0077d82f xor eax, eax
+0077d831 mov esp, ebp
+0077d833 pop ebp
+0077d834 ret 
+== 0x7e5da0 GetMember(i)
+007e5da0 push ebp
+007e5da1 mov ebp, esp
+007e5da3 sub esp, 0xc
+007e5da6 mov dword ptr [ebp - 0xc], ecx
+007e5da9 cmp dword ptr [ebp + 8], 0
+007e5dad jl 0x7e5de6
+007e5daf mov eax, dword ptr [ebp - 0xc]
+007e5db2 mov ecx, dword ptr [ebp + 8]
+007e5db5 cmp ecx, dword ptr [eax]
+007e5db7 jge 0x7e5de6
+007e5db9 mov edx, dword ptr [ebp + 8]
+007e5dbc imul edx, edx, 0x88
+007e5dc2 mov eax, dword ptr [ebp - 0xc]
+007e5dc5 mov ecx, dword ptr [eax + edx + 0x24]
+007e5dc9 mov dword ptr [ebp - 4], ecx
+007e5dcc mov edx, dword ptr [0xa1b4a4]
+007e5dd2 mov eax, dword ptr [edx + 4]
+007e5dd5 mov dword ptr [ebp - 8], eax
+007e5dd8 mov ecx, dword ptr [ebp - 4]
+007e5ddb push ecx
+007e5ddc mov ecx, dword ptr [ebp - 8]
+007e5ddf call 0x73f550
+007e5de4 jmp 0x7e5de8
+007e5de6 xor eax, eax
+007e5de8 mov esp, ebp
+007e5dea pop ebp
+007e5deb ret 4
+== messages populator: +0xffc list base = 0x77d800(GetMember(0))
+0075a9c6 push 0
+0075a9c8 mov ecx, dword ptr [ebp - 0x9c]
+0075a9ce call 0x73fb90
+0075a9d3 mov ecx, eax
+0075a9d5 call 0x7e5da0
+0075a9da mov dword ptr [ebp - 0x10], eax
+0075a9dd cmp dword ptr [ebp - 0x10], 0
+0075a9e1 jne 0x75a9e8
+0075a9e3 jmp 0x75ae2c
+0075a9e8 mov ecx, dword ptr [ebp - 0x10]
+0075a9eb call 0x77d800
+0075a9f0 mov dword ptr [ebp - 0x68], eax
+0075a9f3 cmp dword ptr [ebp - 0x68], 0
+0075a9f7 jne 0x75a9fe
+0075a9f9 jmp 0x75ae2c
+0075a9fe mov ecx, dword ptr [ebp - 0x68]
+0075aa01 add ecx, 0xffc
+0075aa07 mov dword ptr [ebp - 0x28], ecx
