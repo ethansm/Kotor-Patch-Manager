@@ -13,6 +13,8 @@
 // effects = server +0x148/+0x14c. EffectIcon effects (type 0x43, ints[0] = effecticon.2da row) carry the engine's own
 // good/bad flag, name and icon; other effects fall back to the Buff HUD spell tables. chareffects.ini `stage`:
 //   0 frame + header + summary text, log-only effect dump      1 full rows, sections, scrolling, scrollbar
+// Build 2 (still 0.1.0-probe, DLL swap): INI fake_rows=N (synthetic entries for overflow/scrollbar tests), one LAYOUT log
+// line per change of (list, first, overflow), INPUT press log (hit part, capped at 40).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string.h>
@@ -102,6 +104,7 @@ void whyLog(int code, const char* fmt, ...) {
 struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 0;
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
+    int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
     float textScale = 1.0f, screenW = 3840, screenH = 1600; bool screenExplicit = false;
     char fallbackIcon[17] = "ip_mind";
 };
@@ -127,7 +130,7 @@ void loadIni() {
         {"show_permanent", &c.showPermanent, nullptr}, {"wheel_scroll", &c.wheelScroll, nullptr}, {"tooltips", &c.tooltips, nullptr},
         {"skip_equipped", &c.skipEquipped, nullptr}, {"icon_source", &c.iconSource, nullptr}, {"color_times", &c.colorTimes, nullptr},
         {"discs", &c.discs, nullptr}, {"soon_s", &c.soonS, nullptr}, {"text_scale", nullptr, &c.textScale},
-        {"screen_w", nullptr, &c.screenW}, {"screen_h", nullptr, &c.screenH}};
+        {"screen_w", nullptr, &c.screenW}, {"screen_h", nullptr, &c.screenH}, {"fake_rows", &c.fakeRows, nullptr}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
         if (!line[0] || line[0] == '#' || line[0] == ';') continue;
@@ -152,10 +155,12 @@ void loadIni() {
     if (c.stage < 0) c.stage = 0;
     if (c.stage > 1) c.stage = 1;
     if (c.pollMs < 16) c.pollMs = 16;
+    if (c.fakeRows < 0) c.fakeRows = 0;
+    if (c.fakeRows > 60) c.fakeRows = 60;
     if (c.textScale < 0.5f || c.textScale > 2.0f) c.textScale = 1.0f;
     if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false; }
     g_cfg = c; ++g_cfgGen;
-    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d", ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs);
+    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d", ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows);
 }
 void maybeReloadIni() {
     DWORD now = GetTickCount();
@@ -304,6 +309,7 @@ struct Slot {
     bool wasL = false, dragging = false; float dragOff = 0; int heldPart = 0; DWORD heldNext = 0;
     // last layout (engine px) for hit tests
     bool over = false; int shownN = 0, lastFirst = 0; float rUp[4] = {}, rDn[4] = {}, rTrk[4] = {}, rThm[4] = {};
+    unsigned layKey = 0;   // LAYOUT log: (list sig, first, over, count, cfg gen) of the last logged layout
 };
 constexpr int MaxSlots = 4;
 Slot g_slots[MaxSlots];
@@ -380,11 +386,29 @@ void fmtTime(const Entry& e, char* out, int n) {
     if (secs >= 3600) snprintf(out, n, "%ld:%02ld:%02ld", secs / 3600, secs / 60 % 60, secs % 60);
     else snprintf(out, n, "%ld:%02ld", secs / 60, secs % 60);
 }
+// fake_rows test aid: alternating harmful/beneficial, growing names, 5 s .. 2 h plus one permanent, every third an item;
+// times are frozen. Entry 4 uses a resref with no texture to show what FnLoadImage returns for a missing image.
+int addFakeRows(Entry* out, int nt, int n) {
+    static const char* const tails[] = {"", " short", " with a long name", " with a much longer name that will not fit"};
+    static const double secs[] = {5, 20, 45, 90, 300, 900, 3600, 7200};
+    int row = 0;
+    for (int i = 0; i < n && nt < MaxEnt - 2; ++i) {
+        Entry e = {};
+        e.key = 0x20000 + i; e.harmful = i % 2 == 0; e.item = i % 3 == 2;
+        snprintf(e.name, sizeof e.name, "Test effect %02d%s", i + 1, tails[i % 4]);
+        e.perm = n > 1 && i == n - 1; e.remMs = e.perm ? -1 : secs[i % 8] * 1000.0 + i * 1000.0;
+        for (int tries = 0; tries < kEffIconRowCount; ++tries) { row = row % (kEffIconRowCount - 1) + 1; if (kEffIconRows[row].icon) break; }
+        snprintf(e.icon, sizeof e.icon, "%s", i == 4 ? "chfx_no_texture" : (kEffIconRows[row].icon ? kEffIconRows[row].icon : ""));
+        out[nt++] = e;
+    }
+    return nt;
+}
 // Collect + classify + dedup + sort; returns a signature of the structure (keys/order) for change logging.
 int collect(Slot* s, int server, Entry* out, bool dump) {
     int arr = 0, count = 0;
     if (!readAt<int>(server, EffArrOff, &arr) || !readAt<int>(server, EffCntOff, &count) || count < 0 || count > MaxEffects) return -1;
-    if (!arr || !count) return 0;
+    if ((!arr || !count) && !g_cfg.fakeRows) return 0;
+    if (!arr) count = 0;
     int day = 0, ms = 0; bool haveTime = currentTime(&day, &ms);
     static Raw raw[MaxEffects]; int nr = 0;
     for (int i = 0; i < count; ++i) {
@@ -451,6 +475,7 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
         }
         if (nt < MaxEnt - 2) tmp[nt++] = e;
     }
+    nt = addFakeRows(tmp, nt, g_cfg.fakeRows);
     // sections: Harmful first, then Beneficial; inside ascending remaining, unknown after timed, permanent last
     auto rank = [](const Entry& e) { return e.perm ? 2 : (e.remMs < 0 ? 1 : 0); };
     auto after = [&](const Entry& a, const Entry& b) {   // true when a sorts after b
@@ -497,6 +522,18 @@ void fitName(Slot* s, const char* name, float maxPx, char* out, int n) {
     snprintf(out, n, "%.*s...", len, name);
 }
 
+// one LAYOUT line per change of (list, first, overflow, INI generation): scroll state, px widths, fitted names and times
+void logLayout(Slot* s, int cnt, int lf, bool over, float rowW, const char* rows) {
+    unsigned key = 2166136261u;
+    const unsigned parts[] = {s->sig, (unsigned)s->first, (unsigned)over, (unsigned)s->nEnt, g_cfgGen};
+    for (unsigned v : parts) key = (key ^ v) * 16777619u;
+    if (key == s->layKey) return;
+    s->layKey = key;
+    logf("LAYOUT: n=%d first=%d cnt=%d lastFirst=%d over=%d rowW=%dpx thumb=[%.0f,%.0f,%.0f,%.0f] track=[%.0f,%.0f,%.0f,%.0f] rows:%s",
+         s->nEnt, s->first, cnt, lf, over, ux(s, X0 + rowW) - ux(s, X0), s->rThm[0], s->rThm[1], s->rThm[2], s->rThm[3],
+         s->rTrk[0], s->rTrk[1], s->rTrk[2], s->rTrk[3], rows[0] ? rows : " (none)");
+}
+
 void hideAll(Slot* s) { for (int t = 0; t < NumTags; ++t) hide(s, t); s->over = false; g_panelRect[2] = 0; }
 
 void layout(Slot* s) {
@@ -522,12 +559,19 @@ void layout(Slot* s) {
     int cnt = fits(e, n, s->first);
     float rowW = InnerW - (over ? SbW + SbGap : 0);
     float y = Top; int r = 0; bool secShown[2] = {false, false};
+    char rows[2048] = ""; int rl = 0;
+    auto addRow = [&](const char* fmt, ...) {
+        if (rl >= (int)sizeof rows - 1) return;
+        va_list ap; va_start(ap, fmt); int w = vsnprintf(rows + rl, sizeof rows - rl, fmt, ap); va_end(ap);
+        if (w > 0) rl += w;
+    };
     for (int k = 0; k < cnt; ++k) {
         const Entry& x = e[s->first + k];
         if (x.section) {
             if (x.gap && k > 0) y += SecGap;
             int t = x.harmful ? T_SECB : T_SECG; secShown[x.harmful] = true;
             place(s, t, X0, y, rowW, SecH);
+            addRow(" |%s%s|", x.harmful ? "HARMFUL" : "BENEFICIAL", (x.gap && k == 0) ? "(gap dropped)" : "");
             y += SecH + 2;
             continue;
         }
@@ -542,6 +586,7 @@ void layout(Slot* s) {
         setText(s, T_N0 + r, nm);
         place(s, T_T0 + r, X0 + rowW - TimeW, y, TimeW, RowH);
         char tm[16]; fmtTime(x, tm, sizeof tm); setText(s, T_T0 + r, tm);
+        addRow(" [%d] \"%s\" %s%s", r, nm, tm, x.item ? " disc" : "");
         bool warn = g_cfg.colorTimes && (x.harmful || (!x.perm && x.remMs >= 0 && x.remMs < g_cfg.soonS * 1000.0));
         setTextColor(s, T_T0 + r, warn ? 2 : 1, warn ? Orange : Cream);
         y += RowH; ++r;
@@ -550,7 +595,13 @@ void layout(Slot* s) {
     if (!secShown[0]) hide(s, T_SECG);
     if (!secShown[1]) hide(s, T_SECB);
     s->over = over; s->shownN = cnt; s->lastFirst = lf;
-    if (!over) { for (int t = T_SBTRK; t <= T_SBDN; ++t) hide(s, t); g_panelRect[2] = 0; return; }
+    if (!over) {
+        for (int t = T_SBTRK; t <= T_SBDN; ++t) hide(s, t);
+        g_panelRect[2] = 0;
+        memset(s->rUp, 0, sizeof s->rUp); memset(s->rDn, 0, sizeof s->rDn); memset(s->rTrk, 0, sizeof s->rTrk); memset(s->rThm, 0, sizeof s->rThm);
+        logLayout(s, cnt, lf, over, rowW, rows);
+        return;
+    }
     float sbx = X0 + InnerW - SbW;
     float trkY = Top + SbArrowH + 2, trkH = Win - 2 * SbArrowH - 4;
     float th = fmaxf(SbThumbMin, roundf(trkH * cnt / n));
@@ -565,9 +616,19 @@ void layout(Slot* s) {
     ctlRect(s->ctl[T_SBUP], s->rUp); ctlRect(s->ctl[T_SBDN], s->rDn); ctlRect(s->ctl[T_SBTRK], s->rTrk); ctlRect(s->ctl[T_SBTHM], s->rThm);
     g_panelRect[0] = ux(s, PanelX); g_panelRect[1] = uy(s, PanelY); g_panelRect[3] = uy(s, PanelY + PanelH) - g_panelRect[1];
     g_panelRect[2] = ux(s, PanelX + PanelW) - g_panelRect[0];
+    logLayout(s, cnt, lf, over, rowW, rows);
 }
 
 bool inRect(const float* r, float x, float y) { return r[2] > 0 && x >= r[0] && x < r[0] + r[2] && y >= r[1] && y < r[1] + r[3]; }
+int g_pressLogs = 0; constexpr int MaxPressLogs = 40;
+// INPUT log: every left press inside the panel with the scrollbar part it hits (same order as the handler below)
+void logPress(Slot* s, float cx, float cy, bool fg) {
+    if (g_pressLogs >= MaxPressLogs) return;
+    float pr[4] = {(float)ux(s, PanelX), (float)uy(s, PanelY), (float)(ux(s, PanelX + PanelW) - ux(s, PanelX)), (float)(uy(s, PanelY + PanelH) - uy(s, PanelY))};
+    if (!inRect(pr, cx, cy)) return;
+    const char* part = !s->over ? "none" : inRect(s->rUp, cx, cy) ? "up" : inRect(s->rDn, cx, cy) ? "down" : inRect(s->rThm, cx, cy) ? "thumb" : inRect(s->rTrk, cx, cy) ? "track" : "none";
+    logf("INPUT: press #%d at (%.0f,%.0f) part=%s over=%d first=%d/%d fg=%d", ++g_pressLogs, cx, cy, part, s->over, s->first, s->lastFirst, fg);
+}
 bool scrollTo(Slot* s, int f, const char* why) {
     if (f > s->lastFirst) f = s->lastFirst;
     if (f < 0) f = 0;
@@ -581,9 +642,14 @@ bool tickInput(Slot* s) {
     LONG wheel = InterlockedExchange(&g_wheelAccum, 0);
     if (wheel && s->over) { int steps = -(int)(wheel / 120); if (!steps) steps = wheel > 0 ? -1 : 1; changed |= scrollTo(s, s->first + steps, "wheel"); }
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
-    if (!s->over) { s->dragging = false; s->heldPart = 0; s->wasL = l; return changed; }
+    if (!s->over) {
+        float px = 0, py = 0;
+        if (l && !s->wasL && g_pressLogs < MaxPressLogs && cursorEngine(&px, &py)) logPress(s, px, py, GetForegroundWindow() == g_hwnd);
+        s->dragging = false; s->heldPart = 0; s->wasL = l; return changed;
+    }
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool fg = gameWindow() && GetForegroundWindow() == g_hwnd;
+    if (l && !s->wasL && haveCur) logPress(s, cx, cy, fg);
     DWORD t = GetTickCount();
     if (l && !s->wasL && haveCur && fg) {
         if (inRect(s->rUp, cx, cy)) { s->heldPart = -1; s->heldNext = t + 400; changed |= scrollTo(s, s->first - 1, "up arrow"); }
