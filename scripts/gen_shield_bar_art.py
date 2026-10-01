@@ -4,6 +4,7 @@
 uibit_bar_vp_p.tga (128x256 white+alpha) is a curved-left capsule: opaque x 57..98, outline
 ~5px, interior alpha ~87. Two variants let the shield bar and the health bar read as ONE bar:
   uibit_bar_vp_sq.tga  health bar with a squared, outline-free LEFT edge (used while a shield is up)
+  uibit_bar_sc_p.tga   corner filler on the health rect (shield edge continues to the health bar's curved corner)
   uibit_bar_sh_p.tga   shield bar: curved outer-left, outline-free RIGHT edge (butts into the health bar)
 Open edges are filled by cycling straight interior columns 76..89 (keeps top/bottom outline + hatch).
 Usage: gen_shield_bar_art.py <src uibit_bar_vp_p.tga> <out dir>
@@ -23,7 +24,16 @@ sq[:, 57:LO] = a[:, [LO + (x - 57) % (HI - LO) for x in range(57, LO)]]   # squa
 sh = a.copy()
 sh[:, HI:128] = a[:, [LO + (x - HI) % (HI - LO) for x in range(HI, 128)]]  # open right (to the edge)
 sh[:, 99:128] = 0                                  # keep the original transparent right margin
-for name, arr in (("uibit_bar_vp_sq", sq), ("uibit_bar_sh_p", sh)):
+# uibit_bar_sc_p: corner filler drawn on the HEALTH rect. For every row it fills the strip between x=57 (the shield's right edge /
+# the health bar's outer-left edge in the middle rows) and the first opaque pixel of the health art, with the straight-interior
+# column of that row. Result: the shield's top/bottom edge continues right up to the health bar's curved corner (no pixel overlap).
+sc = np.zeros_like(a)
+for r in range(a.shape[0]):
+    xs = np.nonzero(a[r, 57:, 3] > 8)[0]
+    hx = 57 + int(xs[0]) if len(xs) else 57
+    for x in range(57, hx):
+        sc[r, x] = a[r, LO + (x - 57) % (HI - LO)]
+for name, arr in (("uibit_bar_vp_sq", sq), ("uibit_bar_sh_p", sh), ("uibit_bar_sc_p", sc)):
     Image.fromarray(arr).save(out / f"{name}.tga")
     (out / f"{name}.txi").write_text("mipmap 0\n")
 print("wrote", out)

@@ -267,6 +267,7 @@ constexpr float ShieldWidthFraction = 0.55f;          // of the health bar rect 
 constexpr float ShieldSatScale = 0.50f, ShieldMinSat = 0.30f;
 const float SeamTint[3] = { 0.0f, 0.16f, 0.14f };           // dark-teal groove between shield and health
 const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left, outline-free right edge (scripts/gen_shield_bar_art.py)
+const char* const CornerTexture = "uibit_bar_sc_p";          // wedge that fills the card-frame corner notch (drawn on the health rect)
 const char* const HealthSquareTexture = "uibit_bar_vp_sq"; // health bar with a squared, outline-free left edge
 constexpr int Slot_VitBarOffset = 0x690, Bar_Border1Offset = 0x6c, Bar_Border2Offset = 0xe4, BorderVtable = 0x009875bc;
 constexpr int Eff_Pool = 0x02, Eff_Visual = 0x1e;
@@ -369,7 +370,7 @@ void lightenFill(const float* rgb, float* out) {
     for (int c = 0; c < 3; ++c) out[c] = mx - (mx - rgb[c]) * k;
 }
 
-int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, int slotPtr = 0) {
+int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, int slotPtr = 0, bool noClip = false) {
     Pool pools[8];
     int n = collectPools(creature, pools, 8);
     if (n <= 0) return 0;
@@ -402,6 +403,10 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
         if (fillH > segH) fillH = segH;
         if (fillH > 0) {
             int y0 = y + H - baseUp - fillH;
+            float lit[3]; lightenFill(pools[i].rgb, lit);
+            if (noClip) {                                          // menu frames: the engine clip stack reads 0xFFFF there and pushClip
+                draw(image, x, y0, W, fillH, 0, 0, lit, 1.0f);     // misbehaves (black menu), so draw the art squashed to the fill height
+            } else {
             int pushed = pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f);
             { static int lastPush[8]; static int pushSlot[8]; static int nPush = 0;
               int pi = -1; for (int k = 0; k < nPush; ++k) if (pushSlot[k] == slotPtr) pi = k;
@@ -409,10 +414,9 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
               int psig = pushed ? 1 : 0;
               if (pi >= 0 && lastPush[pi] != psig) { lastPush[pi] = psig; probeLog("FILL slot=%08x seg=%d pushClip=%d rect=(%d,%d,%d,%d) vit=(%d,%d,%d,%d) n=%d", slotPtr, i, pushed, x, y0, W, fillH, vx, vy, vw, vh, n); } }
             if (pushed) {
-                float lit[3];
-                lightenFill(pools[i].rgb, lit);
                 draw(image, 0, -(y0 - y), W, H, 0, 0, lit, 1.0f);
                 popClip();
+            }
             }
         }
         baseUp += segH;
@@ -421,16 +425,22 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     // as one gauge with a groove between them. 2 px on the leader card, 1 px on small cards, full bar height.
     int dw = vw / 50 < 1 ? 1 : vw / 50;
     // Corner fillers: the card frame's rounded corner leaves a dark notch above/below the health bar's outline, right of the shield's
-    // right edge. Extend the shield's top and bottom edge bands a few px right (clipped to the bands, so nothing covers the health bar).
-    { int ext = vw / 20 < 2 ? 2 : vw / 20, bandH = int(H * 0.045f + 0.5f); if (bandH < 2) bandH = 2;
-      auto band = [&](int by, const float* col) {
-          if (pushClip(seamX, by, ext, bandH, ClipNoFillColor, 0, 1.0f)) { draw(image, x + ext - seamX, -(by - y), W, H, 0, 0, col, 1.0f); popClip(); } };
-      float top[3], bot[3];
-      bool topFull = pools[n - 1].remaining >= pools[n - 1].max, botFull = pools[0].remaining > 0;
-      lightenFill(pools[n - 1].rgb, top); lightenFill(pools[0].rgb, bot);
-      band(y, topFull ? top : TrackTint);
-      band(y + H - bandH, botFull ? bot : TrackTint); }
-    if (DrawSeam && pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
+    // right edge. uibit_bar_sc_p (scripts/gen_shield_bar_art.py) is drawn on the HEALTH rect and holds only the wedge between x=0.445*vw and
+    // the health art's curved outline, so it extends the shield's top/bottom edge into the corner without touching a health pixel.
+    if (void* corner = imageFor(CornerTexture)) {
+        auto cdraw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>((*reinterpret_cast<void***>(corner))[6]);
+        float top[3], bot[3];
+        bool topFull = pools[n - 1].remaining >= pools[n - 1].max, botFull = pools[0].remaining > 0;
+        lightenFill(pools[n - 1].rgb, top); lightenFill(pools[0].rgb, bot);
+        const float* tc = topFull ? top : TrackTint; const float* bc = botFull ? bot : TrackTint;
+        if (noClip) cdraw(corner, vx, vy, vw, vh, 0, 0, bc, 1.0f);
+        else {
+            int half = vh / 2;
+            if (pushClip(vx, vy, vw, half, ClipNoFillColor, 0, 1.0f)) { cdraw(corner, 0, 0, vw, vh, 0, 0, tc, 1.0f); popClip(); }
+            if (pushClip(vx, vy + half, vw, vh - half, ClipNoFillColor, 0, 1.0f)) { cdraw(corner, 0, -half, vw, vh, 0, 0, bc, 1.0f); popClip(); }
+        }
+    }
+    if (DrawSeam && !noClip && pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
     flush(flushArg);
     return n;
 }
@@ -756,7 +766,7 @@ void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
     if (sig != lastSig) { lastSig = sig; probeLog("MENUSLOT slot=%08x callerEbp=%08x creature=%08x inHudSlots=%d pools=%d vit=(%d,%d,%d,%d)", slotPtr, callerEbp, creature, hud, pools, v[0], v[1], v[2], v[3]); }
     if (pools <= 0) return;
     CapGuard capGuard;
-    int n = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr);
+    int n = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, true);
     static int lastN = -1; if (n != lastN) { lastN = n; probeLog("MENUDRAW n=%d", n); }
 }
 
