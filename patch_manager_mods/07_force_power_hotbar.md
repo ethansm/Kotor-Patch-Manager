@@ -610,3 +610,9 @@ Key digits moved to their own labels `LBL_HOTBARNUM1..0` (IDs 156-165, new total
 
 ## Build 17 (2026-10-01): hover sound
 `playHoverSound()` calls the engine GUI sound `FUN_004122A0` (ECX = `*(void**)0x00A1B49C`, idx 1 = native control mouse-enter) on hover-enter of hotbar slots (when assigned or in edit mode), picker cells/controls and the edit toggle. Logged as `sound: hover (...)` (first 40). Built, NOT installed; check live that it is the same sound as the quick bar.
+
+## Live results, build 17 session (2026-10-01)
+- Hover sound: `sound: hover (slot|toggle)` logged, manager pointer valid -> the engine call runs (user to confirm it is the native sound).
+- Portrait-id key FAILED: `portraitId(+0xB8)` = 65535 (0xFFFF) for the Exile, 80000249 and 80000240 -> the `port<id>` path never triggers, keys stay `obj<id>`. `CSWCObject::GetPortraitId` is not populated on client creatures (or +0xB8 is the wrong field for this class). The same ids 80000240/80000249 did appear in earlier game sessions' logs (same save), so they may be stable per save; across different saves/parties still unverified.
+- Next candidates for a stable key: (1) server creature tag via the id -> server object lookup; (2) creature name/template resref strings seen in the object scan are item names, not identity; (3) a live test: save, reload, switch to the same companion and compare `character:` ids.
+- Editor: no `edit: assign` lines this session (no assignment made); the INI holds only the Exile profile (Bottom1=Heal, Bottom2=Burst of Speed, Bottom0=none).
