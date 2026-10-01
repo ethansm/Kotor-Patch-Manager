@@ -1,0 +1,14 @@
+0x00416960	0x914d30	CSWGuiTextParams::Constructor	vote	retn=0
+0x00416aa0	0x914e70	CSWGuiTextParams::Constructor_2	vote	retn=20
+0x00416bd0	0x914fa0	CSWGuiTextParams::operator=	vote	retn=4
+0x00416cc0	0x915090	CSWGuiTextParams::SetFont	vote	retn=4
+0x00416d60	0x915130	CSWGuiTextParams::SetFontRename	vote	retn=0
+0x00416de0	0x9151b0	CSWGuiTextParams::SetBaseFont	vote	retn=4
+0x00416e10	0x9151e0	CSWGuiTextParams::ReSetFont	vote	retn=0
+0x00416e30	0x915200	CSWGuiTextParams::SetText	vote	retn=4
+0x00416ea0	0x915270	CSWGuiTextParams::SetStrRef	vote	retn=4
+0x00416fa0	0x915370	CSWGuiTextParams::SetAlignment	vote	retn=4
+0x00417010	0x9153e0	CSWGuiTextParams::SetColor	vote	retn=4
+0x00417070	0x915440	CSWGuiTextParams::SetTextObject	vote	retn=4
+0x00417140	0x915510	CSWGuiTextParams::SetDefaultColor	vote	retn=4
+0x00417180	0x915550	CSWGuiTextParams::SetDefaultColor_2	vote	retn=0

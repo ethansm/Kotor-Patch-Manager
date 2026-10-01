@@ -67,6 +67,7 @@ dump in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71` and are valid
   `creature+0x11AC` = party flag, `+0x10E8` = IsPC. Engine DLL holds blocked ranged party members instead of walking in
   (`0x6D83EA`) and extends the vanilla LOS retarget (`0x6D7C73`); new stance 16 needs 3 engine hooks + `aiscripts.2da` row +
   2 TLK strings; script `k_inc_generic` adds `GN_RunKiteAIRoutine` with the fixed `HasLineOfSight`. Party first, enemies later.
+- [`15_engine_bug_candidates_research_plan.md`](15_engine_bug_candidates_research_plan.md) (+ [`15a`](15a_research_session_context_2026-10-01.md) session context) - **Research plan (2026-10-01, no code):** 14 leads (KMRP K1 engine bugs incl. dialogue letterbox past 21:9 and listbox row inflation, QPC pacing, Aspyr Linux symbol check, 2DA token overflow, Gemini round-2 items) -> evidence standard -> ranked candidate list. Gemini round 2 was triaged: CPU pinning, save-leak and 2DA-buffer ideas rejected or premise-corrected; none of the K1 bugs had been investigated here.
 - [`mods678_research/`](mods678_research/README.md) - raw evidence (decompile+asm excerpts of every cited function, container
   survey, live hook table, window checker, DB persist script) and the methods learned. Read its README before the next round.
 
