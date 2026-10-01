@@ -1,0 +1,163 @@
+# R2d 2026-10-01: runtime TEXT colour. GUI loader for TEXT = FUN_00417480 (reads FONT, COLOR, TEXT, STRREF, ALIGNMENT, PULSING). Every setter is called with ECX = text object + 0x18 (label+0xD8+0x18 = label+0xF0, the same 'this' Mod 5 passes to TextSet 0x416e30).
+# Colour setter 0x00417140 thiscall(this, float rgb[3]) RET 4: copies to this+0x2c..0x34 then 0x417010 copies to +0x1c..+0x24 and pushes it into the renderer (this+0x50)->+0x14 vt[0xc]. Runtime callers include game panels (Messages populator 0x75a94e, 0x854a00, 0x8a8b30), so per-tick recolouring is a supported engine path.
+# Font setter 0x00416de0 (this, CResRef*) also exists (not used: 'Permanent' stays dialogfont16x16 with TIME_W 54).
+
+// FN 00417480 FUN_00417480 size=666 ret=12 callers= callees=00718c00,00416e30,00734010,00416fa0,00733570,00719520,00718e40,009196ee,00417140,00416ea0,00718c80,00417070,00718960,00718f90,00710980,00710840,00718a00,00416de0,0047ec30,00733780
+
+void __thiscall FUN_00417480(int param_1,undefined4 param_2,undefined4 param_3)
+
+{
+  undefined4 uVar1;
+  int iVar2;
+  uint uVar3;
+  undefined1 local_78 [8];
+  undefined1 local_70 [8];
+  undefined1 local_68 [12];
+  undefined4 local_5c;
+  undefined4 local_58;
+  undefined4 local_54;
+  undefined1 local_50 [16];
+  undefined1 local_40 [16];
+  undefined1 local_30 [20];
+  uint local_1c;
+  undefined1 local_18 [4];
+  undefined1 local_14 [4];
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_009487a0;
+  local_10 = ExceptionList;
+  local_1c = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  uVar1 = FUN_00734010(local_1c);
+  iVar2 = FUN_00718960(local_14,param_3,uVar1);
+  if (iVar2 != 0) {
+    FUN_00710840("dialogfont16x16");
+    uVar1 = FUN_00718e40(local_50,local_14,&DAT_009876d8,local_18,local_40);
+    FUN_00416de0(uVar1);
+    local_5c = 0x3f800000;
+    local_58 = 0x3f800000;
+    local_54 = 0x3f800000;
+    uVar1 = FUN_00719520(local_68,local_14,"COLOR",local_18,&local_5c);
+    FUN_00417140(uVar1);
+    FUN_00733570(&DAT_00986925);
+    local_8 = 0;
+    uVar1 = FUN_00718f90(local_78,local_14,&DAT_009876d0,local_18,local_70);
+    local_8._0_1_ = 1;
+    FUN_00416e30(uVar1);
+    local_8 = (uint)local_8._1_3_ << 8;
+    FUN_00733780();
+    local_8 = 0xffffffff;
+    FUN_00733780();
+    uVar1 = FUN_00718c00(local_14,"STRREF",local_18,0xffffffff);
+    FUN_00416ea0(uVar1);
+    uVar1 = FUN_00718c80(local_14,"ALIGNMENT",local_18,9);
+    FUN_00416fa0(uVar1);
+    uVar3 = FUN_00718a00(local_14,"PULSING",local_18,0);
+    *(uint *)(param_1 + 0x50) = *(uint *)(param_1 + 0x50) & 0xffffffbf | (uVar3 & 1) << 6;
+    if (*(int *)(param_1 + 0x14) != 0) {
+      if (*(int **)(param_1 + 0x14) != (int *)0x0) {
+        (**(code **)(**(int **)(param_1 + 0x14) + 4))(1);
+      }
+      *(undefined4 *)(param_1 + 0x14) = 0;
+    }
+    FUN_00710980(local_30);
+    uVar1 = FUN_00734010(local_30,param_1 + 0x34,0x3f800000);
+    uVar1 = FUN_0047ec30(uVar1);
+    *(undefined4 *)(param_1 + 0x14) = uVar1;
+    FUN_00417070(param_1);
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_1c ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
+40-004174f7  e844193000            CALL 0x00718e40
+41-004174fc  50                    PUSH EAX
+42-004174fd  8b8d78ffffff          MOV ECX,dword ptr [EBP + 0xffffff78]
+43-00417503  83c118                ADD ECX,0x18
+44:00417506  e8d5f8ffff            CALL 0x00416de0
+--
+61-00417532  e8e91f3000            CALL 0x00719520
+62-00417537  50                    PUSH EAX
+63-00417538  8b8d78ffffff          MOV ECX,dword ptr [EBP + 0xffffff78]
+64-0041753e  83c118                ADD ECX,0x18
+65:00417541  e8fafbffff            CALL 0x00417140
+--
+85-0041758d  8b8570ffffff          MOV EAX,dword ptr [EBP + 0xffffff70]
+86-00417593  50                    PUSH EAX
+87-00417594  8b8d78ffffff          MOV ECX,dword ptr [EBP + 0xffffff78]
+88-0041759a  83c118                ADD ECX,0x18
+89:0041759d  e88ef8ffff            CALL 0x00416e30
+
+// FN 00417140 FUN_00417140 size=50 ret=4 callers=008b3b50,0075a630,008d9550,0075bbe0,0090b9b0,00759d20,008a8b30,00760720,007fcdd0,008fe150,008a0860,00854a00,008d45f0,00857090,0089e000,0088a2b0,0074b3f0,00760210,008c7510,008a8cf0,0075a310,00417480,008c7490,007d4620,008d4560,0075a4a0,0090c6a0,008ce930,008a6170,0075a7c0,008b8110 callees=00417010
+
+void __thiscall FUN_00417140(int param_1,undefined4 *param_2)
+
+{
+  *(undefined4 *)(param_1 + 0x2c) = *param_2;
+  *(undefined4 *)(param_1 + 0x30) = param_2[1];
+  *(undefined4 *)(param_1 + 0x34) = param_2[2];
+  FUN_00417010(param_2);
+  return;
+}
+
+; FN 00417140 FUN_00417140
+00417140  55                    PUSH EBP
+00417141  8bec                  MOV EBP,ESP
+00417143  51                    PUSH ECX
+00417144  894dfc                MOV dword ptr [EBP + -0x4],ECX
+00417147  8b4508                MOV EAX,dword ptr [EBP + 0x8]
+0041714a  8b4dfc                MOV ECX,dword ptr [EBP + -0x4]
+0041714d  83c12c                ADD ECX,0x2c
+00417150  8b10                  MOV EDX,dword ptr [EAX]
+00417152  8911                  MOV dword ptr [ECX],EDX
+00417154  8b5004                MOV EDX,dword ptr [EAX + 0x4]
+00417157  895104                MOV dword ptr [ECX + 0x4],EDX
+0041715a  8b4008                MOV EAX,dword ptr [EAX + 0x8]
+0041715d  894108                MOV dword ptr [ECX + 0x8],EAX
+00417160  8b4d08                MOV ECX,dword ptr [EBP + 0x8]
+00417163  51                    PUSH ECX
+00417164  8b4dfc                MOV ECX,dword ptr [EBP + -0x4]
+00417167  e8a4feffff            CALL 0x00417010
+0041716c  8be5                  MOV ESP,EBP
+0041716e  5d                    POP EBP
+0041716f  c20400                RET 0x4
+// FN 00417010 FUN_00417010 size=93 ret=4 callers=0041a290,008b3b50,0074ec10,008e1570,0090f610,00908f70,009016b0,00901b00,00903ba0,008e15d0,00759820,00854a00,00417140,007d6170,007dc050,00885b20,00753040,00419a10,009160d0,008d50e0,0090fbd0,00883ca0,008bba80,00903f40,009150e0,00758e30,008c7510,008b0750,008a7ba0,0089eff0,009145e0,008fb7a0,008a49d0,009159e0,00419be0,008d9ee0,008a5050,008ba5a0,009049b0,00885ca0,008a7350,0075bbe0,0090b9b0,00850090,0090bbb0,008b9f90,0084c1e0,008b9f50,0084e6f0,008fff20,00417070,00421300,008a5850,00417180,008a3c60,008ad930,008b8ae0,008bc620,007dc2a0,00753d60,009091e0,0041a210,008de8f0,00913180,0090c6a0,008de2e0,0075a7c0 callees=
+
+void __thiscall FUN_00417010(int param_1,undefined4 *param_2)
+
+{
+  *(undefined4 *)(param_1 + 0x1c) = *param_2;
+  *(undefined4 *)(param_1 + 0x20) = param_2[1];
+  *(undefined4 *)(param_1 + 0x24) = param_2[2];
+  if ((*(int *)(param_1 + 0x50) != 0) && (*(int *)(*(int *)(param_1 + 0x50) + 0x14) != 0)) {
+    (**(code **)(**(int **)(*(int *)(param_1 + 0x50) + 0x14) + 0xc))(param_1 + 0x1c);
+  }
+  return;
+}
+
+
+## runtime caller example (Messages populator)
+97-0075a932  0bc1                  OR EAX,ECX
+98-0075a934  8b8d68ffffff          MOV ECX,dword ptr [EBP + 0xffffff68]
+99-0075a93a  894148                MOV dword ptr [ECX + 0x48],EAX
+100-0075a93d  6824fea700            PUSH 0xa7fe24
+101-0075a942  8b8d3cffffff          MOV ECX,dword ptr [EBP + 0xffffff3c]
+102-0075a948  81c1f41d0000          ADD ECX,0x1df4
+103:0075a94e  e8edc7cbff            CALL 0x00417140
+104-0075a953  6824fea700            PUSH 0xa7fe24
+105-0075a958  8b8d3cffffff          MOV ECX,dword ptr [EBP + 0xffffff3c]
+106-0075a95e  81c1c41f0000          ADD ECX,0x1fc4
+107:0075a964  e8d7c7cbff            CALL 0x00417140
+108-0075a969  6824fea700            PUSH 0xa7fe24
+109-0075a96e  8b8d3cffffff          MOV ECX,dword ptr [EBP + 0xffffff3c]
+110-0075a974  81c194210000          ADD ECX,0x2194
+111:0075a97a  e8c1c7cbff            CALL 0x00417140
+112-0075a97f  68acfda700            PUSH 0xa7fdac
+113-0075a984  8b8d3cffffff          MOV ECX,dword ptr [EBP + 0xffffff3c]
+114-0075a98a  81c164230000          ADD ECX,0x2364
+115:0075a990  e8abc7cbff            CALL 0x00417140
