@@ -52,3 +52,11 @@ The scripts already contain about 230 `GN_MyPrintString`/`Db_MyPrintString` call
 - **Trace:** ShipBuild `0x692C40` (idx 761; hook `0x692C50` len 10 overrides `[ebp-4]`), PrintString `0x68F260` (idx 1, hook `0x68F301`), AurPostString `0x6F6200` (idx 582, an empty retail stub, hook `0x6F62F2`). VM `[0xA1B4A8]`, VMI `[VM+0x1C]`, depth `[VMI+0x28]`, script name `VMI+0x44+depth*0x28`, OBJECT_SELF `[VMI+0x18C+depth*4]`. The ShipBuild scan of all 4883 loadable script names: it only guards prints. Engine log points E1 `0x6D740F`, E1b `0x6D8BE2`, E2 `0x569A08`, E3 `0x56BDBD`. **Drop E4** (it shares FM1's site; log from the FM1 handler).
 - **Engine fixes:** A1 `0x6D853E` len 10 -> exit `0x6D7D2F` (the retarget tail); P1 `0x56BDE3` + `0x56BDB4`; FM1 `0x586F43`; FM4 mode 1 `0x57451F` + `0x575183`; A4 `0x6D9E2A` len 15; C1 `0x5868B9`/`0x5868F1`/`0x586929`. Framework fact: in a consumed-exit hook, EAX = the handler result on the normal resume path too.
 - Status: designs only, not built. Next: user decisions -> build -> static gates -> Opus review -> ONE combined user-gated install.
+
+## User decisions (2026-10-01)
+- Vanilla Ranged/Stationary: never approach, even with a melee weapon (A1 only ends the stuck action and retargets in range). Stationary also retargets (lead default).
+- **Party first:** every script fix is party-gated; enemy improvements are noted in `ENEMY_AI_NOTES.md` for a future iteration.
+- P1 perception: built, shipped OFF until a stealth/aggro test.
+- H2 healing: Force powers/talents only; no medpacs from the shared inventory.
+- Lead defaults: FM4 mode 1 (save files unchanged); trace E4 dropped (FM1 handler logs); one log file `ai_trace.txt`; E5 skipped; E10 on (no door bashing); E6(c) Remote flag unchanged.
+- **Future medpac rule (user, 2026-10-01):** a later iteration may let companions use medpacs depending on the party's stock (e.g. only above a threshold), and only when no heal power is available. Needs: a count of medpacs in the shared inventory (`GetItemPossessedBy`/item stack size, or a DLL helper), a `GetCreatureHasTalent(tSpe11_05)` guard (design section 4), and an INI/global threshold. This round: an explicit guard so party members never take the medpac/repair-kit branch.
