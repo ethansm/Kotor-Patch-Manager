@@ -68,7 +68,9 @@ PAD_X, PAD_TOP = 8, 6
 ROW_H, SEC_H, SEC_GAP = 22, 20, 6
 ICON_W, ICON_H = 10, 18            # square on screen (48x48 px)
 TIME_W = 46
-MAX_ROWS = 12
+MAX_ROWS = 14                      # label pool: rows that fit the scroll window at once
+SB_W, SB_ARROW_H, SB_GAP = 10, 18, 3   # scrollbar (shown only when the list overflows): width, arrow height, gap to rows
+SB_THUMB_MIN = 16
 
 # sample data: (spell row, remaining seconds or None for permanent, item ability?)
 SAMPLE_GOOD = [(36, 161, False), (34, 47, False), (135, 72, False), (99, 18, True), (69, 295, True),
@@ -87,9 +89,13 @@ def _inst():
 
 @lru_cache(None)
 def texture(name):
-    """RGBA PIL image of a game texture (override first), top row first; None if missing."""
+    """RGBA PIL image of a game texture, top row first; None if missing. Engine order: override .tpc, override .tga,
+    then the texture packs. TPC mip data is stored bottom-up (flip); TGA is decoded by PIL with its own origin."""
     if not name:
         return None
+    ov = {p.name.lower(): p for p in (GAME / "override").iterdir()}
+    if f"{name}.tpc".lower() not in ov and f"{name}.tga".lower() in ov:
+        return Image.open(ov[f"{name}.tga".lower()]).convert("RGBA")
     t = inst().texture(name)
     if t is None:
         return None
@@ -292,42 +298,92 @@ def fmt_time(s):
     return f"{s // 3600}:{s // 60 % 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60}:{s % 60:02d}"
 
 
-def panel_controls(good, bad, names_font, hscale, vscale):
-    """Lay out the panel the way the DLL will: header, frame, Beneficial header + rows, Harmful header + rows."""
+def entries(good, bad):
+    """Virtual list the panel scrolls through: ('section', name, colour) / ('row', spell, secs, item, harmful)."""
     gt, bt = icon_tables()
+    out = []
+    for sec, rows, table, col in (("Beneficial", good, gt, CREAM), ("Harmful", bad, bt, ORANGE)):
+        if not rows:
+            continue
+        out.append(("section", sec, col, bool(out)))          # 4th field: preceded by a section gap
+        out += [("row", spell, secs, item, sec == "Harmful", table.get(spell)) for spell, secs, item in rows]
+    return out
+
+
+def entry_h(e, at_top=False):
+    """Height in units; a section's leading gap is dropped when it is the first visible entry."""
+    if e[0] == "section":
+        return SEC_H + 2 + (SEC_GAP if e[3] and not at_top else 0)
+    return ROW_H
+
+
+def fits(ents, first, win):
+    """Number of entries from `first` that fit the window."""
+    n, acc = 0, 0
+    while first + n < len(ents):
+        h = entry_h(ents[first + n], n == 0)
+        if acc + h > win:
+            break
+        acc += h; n += 1
+    return n
+
+
+def scroll_state(ents, first):
+    """Whole-entry scrolling (engine labels cannot be clipped) -> (first, count, overflow, last_first)."""
+    win = PANEL[3] - 2 * PAD_TOP
+    if fits(ents, 0, win) == len(ents):
+        return 0, len(ents), False, 0
+    last_first = len(ents) - 1
+    while last_first > 0 and fits(ents, last_first - 1, win) == len(ents) - (last_first - 1):
+        last_first -= 1
+    first = max(0, min(first, last_first))
+    return first, fits(ents, first, win), True, last_first
+
+
+def panel_controls(good, bad, names_font, hscale, vscale, first=0):
+    """Lay out the panel the way the DLL will: header, frame, scrolled slice of [Beneficial + rows, Harmful + rows],
+    scrollbar (up arrow, track, thumb, down arrow) only when the list overflows the window."""
     items = []   # (kind, rect, payload)
     items.append(("bar6", HEADER, "Active Effects"))
     items.append(("frame", PANEL, None))
     x0 = PANEL[0] + PAD_X
     inner_w = PANEL[2] - 2 * PAD_X
-    y = PANEL[1] + PAD_TOP
-    y_end = PANEL[1] + PANEL[3] - PAD_TOP
-    if not good and not bad:
+    top = PANEL[1] + PAD_TOP
+    win = PANEL[3] - 2 * PAD_TOP
+    ents = entries(good, bad)
+    if not ents:
         items.append(("empty", (x0, PANEL[1], inner_w, PANEL[3]), "No active effects"))
         return items
-    budget = MAX_ROWS
-    shown_g = good[:max(0, budget - min(len(bad), 1 if bad else 0) - (1 if len(good) + len(bad) > budget else 0))]
-    rest = budget - len(shown_g) - (1 if len(good) + len(bad) > budget else 0)
-    shown_b = bad[:max(0, rest)]
-    hidden = len(good) + len(bad) - len(shown_g) - len(shown_b)
-    for sec, rows, table, col in (("Beneficial", shown_g, gt, CREAM), ("Harmful", shown_b, bt, ORANGE)):
-        if not rows:
-            continue
-        items.append(("section", (x0, y, inner_w, SEC_H), (sec, col)))
-        items.append(("sep", (x0, y + SEC_H - 4, inner_w, 6), None))
-        y += SEC_H + 2
-        for spell, secs, item in rows:
-            items.append(("icon", (x0, y + (ROW_H - ICON_H) // 2, ICON_W, ICON_H), (table.get(spell), item)))
+    st = scroll_state(ents, first)
+    first, n, over = st[0], st[1], st[2]
+    row_w = inner_w - (SB_W + SB_GAP if over else 0)
+    y = top
+    for k, e in enumerate(ents[first:first + n]):
+        if e[0] == "section":
+            if e[3] and k > 0:
+                y += SEC_GAP
+            items.append(("section", (x0, y, row_w, SEC_H), (e[1], e[2])))
+            y += SEC_H + 2
+        else:
+            _, spell, secs, item, harmful, icon = e
+            items.append(("icon", (x0, y + (ROW_H - ICON_H) // 2, ICON_W, ICON_H), (icon, item)))
             nx = x0 + ICON_W + 4
-            name_w = inner_w - (ICON_W + 4) - TIME_W - 2
-            items.append(("name", (nx, y, name_w, ROW_H), spell_text(spell, "name")))
-            items.append(("time", (x0 + inner_w - TIME_W, y, TIME_W, ROW_H), (fmt_time(secs), sec == "Harmful", secs)))
+            items.append(("name", (nx, y, row_w - (ICON_W + 4) - TIME_W - 2, ROW_H), spell_text(spell, "name")))
+            items.append(("time", (x0 + row_w - TIME_W, y, TIME_W, ROW_H), (fmt_time(secs), harmful, secs)))
             y += ROW_H
-        y += SEC_GAP
-    if hidden:
-        items.append(("more", (x0, y, inner_w, ROW_H), f"+{hidden} more"))
-        y += ROW_H
-    assert y <= y_end + SEC_GAP, f"panel overflow: y {y} > {y_end}"
+    assert y <= top + win, f"panel overflow: y {y} > {top + win}"
+    rows_drawn = sum(1 for it in items if it[0] == "name")
+    assert rows_drawn <= MAX_ROWS, f"{rows_drawn} rows > label pool {MAX_ROWS}"
+    if over:
+        last_first = st[3]
+        sx = x0 + inner_w - SB_W
+        items.append(("sb_up", (sx, top, SB_W, SB_ARROW_H), first > 0))
+        track = (sx, top + SB_ARROW_H + 2, SB_W, win - 2 * SB_ARROW_H - 4)
+        items.append(("sb_track", track, None))
+        th = max(SB_THUMB_MIN, round(track[3] * n / len(ents)))
+        ty = track[1] + round((track[3] - th) * first / max(1, last_first))
+        items.append(("sb_thumb", (sx + 2, ty, SB_W - 4, th), None))
+        items.append(("sb_dn", (sx, top + win - SB_ARROW_H, SB_W, SB_ARROW_H), first < last_first))
     return items
 
 
@@ -368,11 +424,14 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
             draw_border(canvas, by_tag["LBL_BAR6"]["BORDER"], rect)
             draw_text(canvas, "dialogfont16x16", pl, px(rect), 18, CREAM, hscale, vscale)
         elif kind == "frame":
-            draw_border(canvas, by_tag["LBL_XP_BACK"]["BORDER"], rect)
+            # black interior (uibit_fill_2bt, the HUD moulding fill) + thin-line frame (LBL_MORE_BACK edge/corner)
+            draw_border(canvas, {"FILL": "uibit_fill_2bt", "COLOR": (0, 0, 0)}, rect)
+            draw_border(canvas, by_tag["LBL_MORE_BACK"]["BORDER"], rect)
         elif kind == "section":
-            draw_text(canvas, "dialogfont16x16", pl[0].upper(), px(rect), 17, pl[1], hscale, vscale)
-        elif kind == "sep":
-            draw_border(canvas, {"FILL": "uibit_brdr_16we", "COLOR": TEAL_FRAME}, rect)
+            # dark teal band (the XP_BACK translucent fill) only under the section header
+            l, t, w, h = rect
+            draw_border(canvas, {"FILL": "uibit_fill_2wt", "COLOR": TEAL_FRAME}, (l - 4, t, w + 8, h))
+            draw_text(canvas, "dialogfont16x16", pl[0].upper(), px((l + 2, t, w - 2, h)), 17, pl[1], hscale, vscale)
         elif kind == "icon":
             resref, item = pl
             box = px(rect)
@@ -391,6 +450,15 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
             col = ORANGE if harmful else (CREAM if secs is None or secs >= 30 else ORANGE)
             fnt = "dialogfont10x10" if secs is None else names_font
             draw_text(canvas, fnt, s, px(rect), 19, col if not harmful else ORANGE, hscale, vscale)
+        elif kind in ("sb_up", "sb_dn"):
+            arr = texture("uibit_uparrowg")
+            if kind == "sb_dn":
+                arr = arr.transpose(Image.FLIP_TOP_BOTTOM)
+            paste_stretched(canvas, arr if pl else tint(arr, (0.35, 0.35, 0.35)), px(rect))
+        elif kind == "sb_track":
+            draw_border(canvas, {"EDGE": "uibit_brdr_16ge", "CORNER": "uibit_brdr_16gc", "DIMENSION": 4, "COLOR": (1, 1, 1)}, rect)
+        elif kind == "sb_thumb":
+            draw_border(canvas, {"FILL": "uibit_fill_16g", "COLOR": (1, 1, 1)}, rect)
         elif kind in ("more", "empty"):
             draw_text(canvas, "dialogfont16x16", pl, px(rect), 18, CREAM, hscale, vscale)
     if tooltip:
@@ -454,7 +522,10 @@ def main():
                                        title="after: empty state"),
         "char_after_overflow.png": render(root, after, panel_controls(good + [(17, 120, False), (24, 33, False), (41, 400, False)],
                                                                       bad + [(9, 3, False), (48, 41, False)], names_font, hscale, vscale),
-                                          names_font, hscale, vscale, title="after: overflow"),
+                                          names_font, hscale, vscale, title="after: overflow, scrolled to the top"),
+        "char_after_overflow_scrolled.png": render(root, after, panel_controls(good + [(17, 120, False), (24, 33, False), (41, 400, False)],
+                                                                      bad + [(9, 3, False), (48, 41, False)], names_font, hscale, vscale, first=99),
+                                          names_font, hscale, vscale, title="after: overflow, scrolled to the bottom"),
         "char_after_tooltip.png": render(root, after, panel_controls(good, bad, names_font, hscale, vscale), names_font, hscale, vscale,
                                          tooltip=True, title="after: hover tooltip (optional polish stage)"),
     }
