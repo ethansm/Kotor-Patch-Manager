@@ -60,3 +60,17 @@ The scripts already contain about 230 `GN_MyPrintString`/`Db_MyPrintString` call
 - H2 healing: Force powers/talents only; no medpacs from the shared inventory.
 - Lead defaults: FM4 mode 1 (save files unchanged); trace E4 dropped (FM1 handler logs); one log file `ai_trace.txt`; E5 skipped; E10 on (no door bashing); E6(c) Remote flag unchanged.
 - **Future medpac rule (user, 2026-10-01):** a later iteration may let companions use medpacs depending on the party's stock (e.g. only above a threshold), and only when no heal power is available. Needs: a count of medpacs in the shared inventory (`GetItemPossessedBy`/item stack size, or a DLL helper), a `GetCreatureHasTalent(tSpe11_05)` guard (design section 4), and an INI/global threshold. This round: an explicit guard so party members never take the medpac/repair-kit branch.
+
+## Build reviews (2026-10-01; `build_reviews/`)
+- **DLLs** (`review_dll_build.md`): no BLOCKER.
+  - SF1: word INI values (`a1=off`) fell back to the built-in default ON. FIXED by the lead: on/off/true/false/yes/no; an unparseable flag means OFF and is logged.
+  - SF2: the check_windows EAX analysis is incomplete (fixing).
+  - SF3: the behaviour decisions are not host-tested (fixing).
+  - FM3 probe dropped from the shipped hooks.
+- **Scripts** (`review_script_build.md`): BLOCKER B1, lead-verified. TSL Cure does NOT remove poison (`k_inc_force.nss` ~937 commented out); Heal/Master Heal remove it only from non-droids within 15 m, so the M5 fix would loop Cure casts.
+  - S1: E1 ends fights while unseen enemies still attack.
+  - S2: heal targets beyond 15 m.
+  - S3: E6/E11 not party-gated (hostile HK-50s etc. use k_hen_*).
+  - S4: E3 still approaches for 11/12.
+  - S5: the installer backup can be overwritten on a re-run.
+  - All being fixed.
