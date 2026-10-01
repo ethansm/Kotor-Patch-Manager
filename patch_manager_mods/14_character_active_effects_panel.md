@@ -58,3 +58,4 @@ Renders the LIVE `character_p.gui` with the real resources: BORDER fill/edge/cor
 | BAR5 notch spans middle+right columns | **True, inherent:** the notch is fixed vanilla art (x 407..634); both columns stop at y 470 above it. Not changed. |
 | Text not stretched (hotbar TipCharW=21) | **Plausible, not proof:** the hotbar is HUD (drawn 1:1). Better evidence: Mod 5's equip-page tooltips use the same 21 px/char estimate in a stretched menu and fit live. |
 | 3D should be RIGHT (doc 10 line 84) | Superseded by the user's 2026-09-30 decision (new content in the right-most third) and the approved mock-up. |
+- **User decision 2026-10-01: Harmful section FIRST**, Beneficial below (debuffs never need a scroll). Renderer `entries()` order changed; the deploy script only swaps the placeholder rects of SECB/SECG (the DLL positions them anyway), no re-deploy needed.

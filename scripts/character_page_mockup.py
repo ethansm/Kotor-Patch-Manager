@@ -302,7 +302,8 @@ def entries(good, bad):
     """Virtual list the panel scrolls through: ('section', name, colour) / ('row', spell, secs, item, harmful)."""
     gt, bt = icon_tables()
     out = []
-    for sec, rows, table, col in (("Beneficial", good, gt, CREAM), ("Harmful", bad, bt, ORANGE)):
+    # Harmful first (user 2026-10-01): debuffs stay visible without scrolling when the buff list is long
+    for sec, rows, table, col in (("Harmful", bad, bt, ORANGE), ("Beneficial", good, gt, CREAM)):
         if not rows:
             continue
         out.append(("section", sec, col, bool(out)))          # 4th field: preceded by a section gap

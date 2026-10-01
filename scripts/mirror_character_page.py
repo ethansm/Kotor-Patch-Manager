@@ -150,8 +150,8 @@ def new_controls(by_tag, hud_tip):
     set_text(c, text="Active Effects", align=18, color=L.CREAM)
     x0 = L.PANEL[0] + L.PAD_X
     inner_w = L.PANEL[2] - 2 * L.PAD_X
-    for tag, txt, col, y in (("LBL_EFX_SECG", "BENEFICIAL", L.CREAM, L.PANEL[1] + L.PAD_TOP),
-                             ("LBL_EFX_SECB", "HARMFUL", L.ORANGE, L.PANEL[1] + L.PAD_TOP + 200)):
+    for tag, txt, col, y in (("LBL_EFX_SECG", "BENEFICIAL", L.CREAM, L.PANEL[1] + L.PAD_TOP + 200),
+                             ("LBL_EFX_SECB", "HARMFUL", L.ORANGE, L.PANEL[1] + L.PAD_TOP)):   # Harmful listed first
         c = add(tag, stat, (x0 - 4, y, inner_w + 8, L.SEC_H))
         set_border(c, fill="uibit_fill_2wt", edge="", corner="", dim=0, color=L.TEAL_FRAME)
         set_text(c, text=txt, align=17, color=col, font="dialogfont16x16")
