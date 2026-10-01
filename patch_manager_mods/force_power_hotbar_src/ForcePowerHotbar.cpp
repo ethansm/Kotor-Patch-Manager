@@ -74,6 +74,7 @@ constexpr int TipBgId = NumId0 + ButtonCount, TipId = TipBgId + 1;   // hover to
 constexpr int TotalNewControls = TipId - FirstButtonId + 1;
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
+constexpr uintptr_t GuiSoundMgrGlobal = 0x00A1B49C, FnPlayGuiSound = 0x004122A0;   // thiscall(ECX = *GuiSoundMgrGlobal, char idx) RET 4; idx 1 = the control mouse-enter sound (FUN_00418750 / FUN_00418FE0)
 constexpr uintptr_t TextVtable = 0x009876B4;
 constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
 constexpr DWORD TipDelayMs = 450;
@@ -650,6 +651,14 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
 
 void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { showTipText(anchor, buildTipText(digit, entry), s); }
 
+// The same short sound the native quick-action buttons play when the mouse enters them.
+void playHoverSound(const char* why) {
+    void* mgr = nullptr; static int logs = 0;
+    if (!readAt(GuiSoundMgrGlobal, 0, &mgr) || !mgr) { if (logs < 20) { ++logs; logf("sound: manager null (%s), skipped", why); } return; }
+    reinterpret_cast<void(__thiscall*)(void*, char)>(FnPlayGuiSound)(mgr, 1);
+    if (logs < 40) { ++logs; logf("sound: hover (%s) mgr=%p", why, mgr); }
+}
+
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "hotbar_slot_hi").
 void updateHover(bool gate) {
     static int lastHover = -2; static POINT lastPt = {-1, -1}; static long lastLog = -1000;
@@ -662,7 +671,7 @@ void updateHover(bool gate) {
         }
     }
     static DWORD hoverStart = 0;
-    if (over != lastHover) { logf("hover: slot %d -> %d cursor=(%ld,%ld)", lastHover, over, (long)pt.x, (long)pt.y); lastHover = over; hoverStart = GetTickCount(); hideTip("hover changed"); }
+    if (over != lastHover) { logf("hover: slot %d -> %d cursor=(%ld,%ld)", lastHover, over, (long)pt.x, (long)pt.y); lastHover = over; hoverStart = GetTickCount(); hideTip("hover changed"); if (over >= 0 && (g_bar.b[over].avail || g_bar.ed.mode != M_Normal)) playHoverSound("slot"); }
     else if (g_cfg.general.verbose && (pt.x != lastPt.x || pt.y != lastPt.y) && pt.y > 1100 && g_frame - lastLog > 120) { lastLog = g_frame; logf("hover: cursor=(%ld,%ld) over=%d", (long)pt.x, (long)pt.y, over); }
     lastPt = pt;
     for (int s = 0; s < ButtonCount; ++s) {
@@ -878,7 +887,7 @@ void updateEditor(uintptr_t hud, bool gate) {
     if (ed.mode == M_Pick && haveCur) for (int i = 0; i < 6 && oth < 0; ++i) if (wHit(*ow[i], pt)) oth = i;
     {
         static int lastOth = -1; static DWORD othSince = 0;
-        if (oth != lastOth) { logf("edit: control hover %d -> %d", lastOth, oth); if (g_bar.tipSlot >= OtherTipBase) hideTip("control hover changed"); lastOth = oth; othSince = GetTickCount(); }
+        if (oth != lastOth) { logf("edit: control hover %d -> %d", lastOth, oth); if (g_bar.tipSlot >= OtherTipBase) hideTip("control hover changed"); lastOth = oth; othSince = GetTickCount(); if (oth >= 0) playHoverSound("picker control"); }
         if (oth >= 0 && g_bar.tipSlot != OtherTipBase + oth && GetTickCount() - othSince >= TipDelayMs) showTipText(*ow[oth], otip[oth], OtherTipBase + oth, g_pickRect[1]);
     }
 
@@ -931,14 +940,14 @@ void updateEditor(uintptr_t hud, bool gate) {
     // ---- picker hover (cells) + tooltip
     int over = -1;
     if (ed.mode == M_Pick && haveCur) for (int i = 0; i < CellCount && over < 0; ++i) if (g_bar.cell[i].avail && wHit(g_bar.cell[i].bg, pt)) over = i;
-    if (over != ed.over) { logf("edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase && g_bar.tipSlot < ToggleTipId) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); }
+    if (over != ed.over) { logf("edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase && g_bar.tipSlot < ToggleTipId) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); if (over >= 0) playHoverSound("picker cell"); }
     if (over >= 0 && g_bar.tipSlot != CellTipBase + over && GetTickCount() - ed.overStart >= TipDelayMs) showTipText(g_bar.cell[over].bg, buildTipText(0, g_bar.cell[over].entry), CellTipBase + over, g_pickRect[1]);
 
     // ---- toggle hover tooltip
     {
         static bool wasOver = false; static DWORD since = 0;
         bool ov = haveCur && wHit(g_bar.edit, pt);
-        if (ov != wasOver) { logf("edit: toggle hover %d -> %d", (int)wasOver, (int)ov); wasOver = ov; since = GetTickCount(); if (!ov && g_bar.tipSlot == ToggleTipId) hideTip("left toggle"); }
+        if (ov != wasOver) { logf("edit: toggle hover %d -> %d", (int)wasOver, (int)ov); wasOver = ov; since = GetTickCount(); if (ov) playHoverSound("toggle"); if (!ov && g_bar.tipSlot == ToggleTipId) hideTip("left toggle"); }
         if (ov && g_bar.tipSlot != ToggleTipId && GetTickCount() - since >= TipDelayMs) showTipText(g_bar.edit, ed.mode == M_Normal ? "Edit hotbar" : "Finish editing", ToggleTipId);
     }
 

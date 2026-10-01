@@ -607,3 +607,6 @@ Measured from the user's screenshot (icon art medpac: native 52 px vs ours 55 px
 
 ## Build 16 (2026-10-01, built + GUI script ready, NOT deployed: GUI and DLL must go in together)
 Key digits moved to their own labels `LBL_HOTBARNUM1..0` (IDs 156-165, new total 168, tip pair now 166/167, `NumId0` in the DLL) so they sit 3 units left / 4 up of the icon corner instead of on the icon label. The installed DLL at this point is still build 12 (md5 307a00af); builds 13 (modifier resync, ring-full swallow, WndProc detach), 14 (companion key `port<id>`), 15 (edit toggle hover highlight) and 16 are staged-by-build only. Deploying the new GUI with an older DLL misbinds the tooltip IDs.
+
+## Build 17 (2026-10-01): hover sound
+`playHoverSound()` calls the engine GUI sound `FUN_004122A0` (ECX = `*(void**)0x00A1B49C`, idx 1 = native control mouse-enter) on hover-enter of hotbar slots (when assigned or in edit mode), picker cells/controls and the edit toggle. Logged as `sound: hover (...)` (first 40). Built, NOT installed; check live that it is the same sound as the quick bar.
