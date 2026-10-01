@@ -69,7 +69,8 @@ constexpr uintptr_t GuiRefW = 0x009F4390, GuiRefH = 0x009F4394;   // ints (800, 
 constexpr int EditId = FirstButtonId + 2 * ButtonCount, PbgId = EditId + 1, TitleId = EditId + 2, TabId0 = EditId + 3, TabCount = 3;
 constexpr int PrevId = EditId + 6, NextId = EditId + 7, ClearId = EditId + 8;
 constexpr int CellCount = 8, CellBgId0 = EditId + 9, CellIcId0 = CellBgId0 + CellCount;
-constexpr int TipBgId = CellIcId0 + CellCount, TipId = TipBgId + 1;   // hover tooltip frame + text
+constexpr int NumId0 = CellIcId0 + CellCount;                                  // key-digit labels (own labels so the digit can sit above-left of the icon)
+constexpr int TipBgId = NumId0 + ButtonCount, TipId = TipBgId + 1;   // hover tooltip frame + text
 constexpr int TotalNewControls = TipId - FirstButtonId + 1;
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
@@ -435,7 +436,7 @@ struct Widget {
     std::string why;                // last logged reason for hidden/shown
     std::string text;               // last applied runtime text (picker widgets)
 };
-struct Button { Widget bg, ic; bool avail = false; bool hover = false; Entry entry; };
+struct Button { Widget bg, ic, num; bool avail = false; bool hover = false; Entry entry; };
 // ---- in-game editor state (all of it lives in Bar so a HUD rebuild resets it) ----
 enum EditMode { M_Normal = 0, M_Edit = 1, M_Pick = 2 };
 const char* const ModeName[] = { "Normal", "Edit", "Pick" };
@@ -698,11 +699,11 @@ void updateButtons(uintptr_t hud, bool gate) {
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
         if (!b.bg.ctl && !b.ic.ctl) continue;
-        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); continue; }
+        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); setVisible(b, b.num, s, false, "hud not active"); continue; }
         // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
         hb::ActionRef want = g_eff[s];
         if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
-            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); continue;
+            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); continue;
         }
         Entry e; const char* state; bool have = false;
         if (want.empty()) state = "unbound";
@@ -710,7 +711,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
         b.avail = have; if (have) b.entry = e;
         if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { logf("tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
-        setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state);
+        setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state); setVisible(b, b.num, s, true, state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
         setFill(b, b.ic, s, have ? e.icon : std::string());
         setAlpha(b, b.ic, s, (have && !(e.flags & 1)) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
@@ -1092,6 +1093,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
         Button& b = g_bar.b[s]; char tag[32];
         snprintf(tag, sizeof tag, "LBL_HOTBARBG%c", slotDigit(s)); bool okBg = bindLabel(panel, tag, FirstButtonId + s, &b.bg, s == 0, aspect) != nullptr;
         snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0, aspect) != nullptr;
+        snprintf(tag, sizeof tag, "LBL_HOTBARNUM%c", slotDigit(s)); bindLabel(panel, tag, NumId0 + s, &b.num, false, aspect);
         if (okBg || okIc) ++built;
     }
     g_editOpen = false; g_escHit = false; g_pickRect[2] = 0; g_wheelAccum = 0;   // editor state is per HUD instance

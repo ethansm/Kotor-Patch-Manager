@@ -54,7 +54,8 @@ PREV_TAG, NEXT_TAG, CLEAR_TAG = "LBL_HOTBARPREV", "LBL_HOTBARNEXT", "LBL_HOTBARC
 CELLS = 8
 CELL_BG_TAGS = [f"LBL_HOTBARCELLBG{i}" for i in range(CELLS)]  # +29..36
 CELL_TAGS = [f"LBL_HOTBARCELL{i}" for i in range(CELLS)]       # +37..44
-ALL_TAGS = (BG_TAGS + TAGS + [EDIT_TAG, PBG_TAG, TITLE_TAG] + TAB_TAGS + [PREV_TAG, NEXT_TAG, CLEAR_TAG] + CELL_BG_TAGS + CELL_TAGS
+NUM_TAGS = [f"LBL_HOTBARNUM{d}" for d in "1234567890"]  # key digits, own labels drawn above the icons (+45..54)
+ALL_TAGS = (BG_TAGS + TAGS + [EDIT_TAG, PBG_TAG, TITLE_TAG] + TAB_TAGS + [PREV_TAG, NEXT_TAG, CLEAR_TAG] + CELL_BG_TAGS + CELL_TAGS + NUM_TAGS
             + [TIP_BG_TAG, TIP_TAG])   # ID order == this order
 TEX = ("hotbar_slot", "hotbar_slot_hi")
 EDIT_TEX = ("hotbar_edit", "hotbar_edit_hi")   # thin (72x128) frame with a wrench, normal / active
@@ -275,7 +276,7 @@ def main() -> int:
         make(first_id + slot, BG_TAGS[slot], [fx, a.y, a.frame, a.frame], fill=TEX[0])
     for slot, digit in enumerate(DIGITS):
         fx = a.x + slot * a.spacing
-        make(first_id + 10 + slot, TAGS[slot], [fx + a.inset, a.y + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset], digit=digit)
+        make(first_id + 10 + slot, TAGS[slot], [fx + a.inset, a.y + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset])
     # tooltip (DLL positions/sizes/fills them at runtime; placeholder rects here): frame first, text on top
     # edit toggle (thin wrench button left of slot 1) and picker (above the bar): frame texture + static text on one label; the DLL
     # shows/hides/swaps them. Picker rows (units): title 22 / tabs 24 / cells 42, 4 apart, 8 padding inside the group background.
@@ -295,6 +296,8 @@ def main() -> int:
         make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 54, a.frame, a.frame], fill=TEX[0]); n += 1
     for i in range(CELLS):
         make(n, CELL_TAGS[i], [cx0 + i * a.spacing + a.inset, py + 54 + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset]); n += 1
+    for slot, digit in enumerate(DIGITS):  # digit labels: top-left of the frame, 3 units up/left of the icon corner; no fill, text only
+        make(n, NUM_TAGS[slot], [a.x + slot * a.spacing + a.inset - 3, a.y + a.inset - 4, 18, 18], digit=digit); n += 1
     assert n == first_id + len(ALL_TAGS) - 2, n
     make(n, TIP_BG_TAG, [12, 380, 300, 90], src=tip_t[0]); n += 1
     make(n, TIP_TAG, [12, 380, 300, 90], text="", align=18)

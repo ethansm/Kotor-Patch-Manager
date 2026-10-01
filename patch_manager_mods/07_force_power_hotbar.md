@@ -604,3 +604,6 @@ tests in dialogue/inventory/pause; only then `Invoke=1`.
 
 ## Design round 2 (2026-09-30, GUI only, deployed, not yet seen live)
 Measured from the user's screenshot (icon art medpac: native 52 px vs ours 55 px; native rim ~5 px and (0,47,27), ours ~8 px and (21,123,103)). Changes in `add_hotbar_buttons_gui.py`: frame 42->40 units (same 5-unit inset, so icon 32->30 = native size), spacing 46->44, DEFAULT_Y 450->452 (bottom stays 492), rim 9/128->6/128, frame colour (18,110,85)->(0,44,26) (renders ~ native). Applies to bar, wrench and picker cells. No DLL change. Revert: `--replace` with old constants (git history).
+
+## Build 16 (2026-10-01, built + GUI script ready, NOT deployed: GUI and DLL must go in together)
+Key digits moved to their own labels `LBL_HOTBARNUM1..0` (IDs 156-165, new total 168, tip pair now 166/167, `NumId0` in the DLL) so they sit 3 units left / 4 up of the icon corner instead of on the icon label. The installed DLL at this point is still build 12 (md5 307a00af); builds 13 (modifier resync, ring-full swallow, WndProc detach), 14 (companion key `port<id>`), 15 (edit toggle hover highlight) and 16 are staged-by-build only. Deploying the new GUI with an older DLL misbinds the tooltip IDs.
