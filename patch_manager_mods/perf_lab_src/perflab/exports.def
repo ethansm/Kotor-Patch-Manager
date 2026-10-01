@@ -20,3 +20,25 @@ EXPORTS
     PerfLabMovieEnter
     PerfLabMovieSpin
     PerfLabMetricsNow
+    PerfLabBrSetter1
+    PerfLabBrSetter2
+    PerfLabBrTexMiss
+    PerfLabAsyncStart
+    PerfLabDestroyTable
+    PerfLabStillInDemand
+    PerfLabUafWrite
+    PerfLabTxiTpc
+    PerfLabRequeue
+    PerfLabFreeImage
+    PerfLabTexDtor
+    PerfLabUnload
+    PerfLabRunScript
+    PerfLabExecCmd
+    PerfLabInstrLimit
+    PerfLabDelayCommand
+    PerfLabAdcEnter
+    PerfLabAdcHandoff
+    PerfLabNetSend
+    PerfLabNetOvfTest
+    PerfLabFocusDummy
+    PerfLabSceneDtor

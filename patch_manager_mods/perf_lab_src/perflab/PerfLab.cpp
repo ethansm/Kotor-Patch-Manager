@@ -1,5 +1,17 @@
-// PerfLab 0.2.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics; the only behaviour changes are the
+// PerfLab 0.3.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics; the only behaviour changes are the
 // flag-gated experiments tx=1 / g1skip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
+// 0.3.0 (Phase 4) adds, all counter-only, all output from the helper thread (keys below, default 1 when metrics=1):
+//   live=1   LIVE line: engine live counters read from globals (textures, GL bytes, models, mesh bytes, gobs, nodes, scenes,
+//            focus dummies, particle emitters); no hooks
+//   br=1     BR: per-name tables (TGA resman loads, BuildAndStoreTexture, GUI image setters 0x414870/0x4160BD, texture-record
+//            miss 0x427609) + a ring of the last 64 events, to name the in-game TGA reload churn (run A)
+//   kt=1     U5/T2: async request starts 0x71447A, DestroyTable 0x726350 + still-in-demand branch 0x72650B, KT use-after-free
+//            write 0x71306C (CRes flag 0x200), TXI-via-TPC 0x93BEA6, texture requeue 0x474000 by caller, FreeImage 0x425160
+//            (C3: TPC/TGA, buffer present), ~CAurTextureBasic 0x423480, server UnloadModule 0x5315E0 (+ metrics snapshot UNLOAD)
+//   vm=1     U1: RunScript 0x7022A0 (count, per-script names), ExecuteCommand 0x668FD0 (count, out-of-range ids), instruction
+//            limit trip 0x6FFA76, DelayCommand 0x670370, ActionDoCommand entry 0x6699D0 / handoff 0x669A32 (leaks = diff)
+//   misc=1   U6: net ring send 0x704060 (count, max len), overflow test site 0x7040E0, focus-dummy creation 0x464789, scene dtor 0x464D70
+//   HOOKCOST is reported per handler.
 //
 // Inert unless "perflab_debug.txt" exists in the game dir (key=value lines, all optional):
 //   alloc=1          1a allocation census (default 1 when the file exists)
@@ -49,6 +61,7 @@ constexpr int In_GuiMgr = 0x274, In_LoadScreen = 0x278, Mgr_Modals = 0x94, Mgr_M
 struct Cfg {
     bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024;
     bool metrics = false, vq = false, tx = false, g1skip = false;
+    int live = -1, br = -1, kt = -1, vm = -1, misc = -1;   // 0.3.0 groups; -1 = follow metrics
 } g_cfg;
 bool g_on = false;
 uintptr_t g_exeLo = 0, g_exeHi = 0;
@@ -259,6 +272,21 @@ template <int N> bool inRanges(const Range (&r)[N], uintptr_t a) { for (auto& x 
 constexpr uintptr_t G_FrameLimit = 0x00A1B710, G_SleepGate = 0x00A1B704, G_FrameLimitSrc = 0x00A7EB9C, G_GlFinishFlag = 0x009F6100;
 constexpr uintptr_t G_ResMan = 0x00A1B490;
 
+// 0.3.0 per-handler cost ids (HOOKCOST lines) and per-name tables (NAME lines).
+enum Hk { HkMalloc, HkEvict, HkFreeData, HkRelease, HkDemand, HkGetImage, HkBuild, HkBucket, HkActionBar,
+          HkBr1, HkBr2, HkBr3, HkAsync, HkDestroyTable, HkStillDemand, HkUafWrite, HkTxiTpc, HkRequeue, HkFreeImage, HkTexDtor,
+          HkUnload, HkRunScript, HkExecCmd, HkTmi, HkDelay, HkAdcEnter, HkAdcHandoff, HkNetSend, HkNetOvf, HkFocus, HkSceneDtor, HkCount };
+const char* const HkName[HkCount] = { "ResMalloc", "ResEvict", "ResFreeData", "ResRelease", "ResDemand", "GetImage", "BuildTex", "Bucket",
+          "ActionBar", "BrSetter1", "BrSetter2", "BrTexMiss", "AsyncStart", "DestroyTable", "StillInDemand", "KtUafWrite", "TxiViaTpc",
+          "TexRequeue", "FreeImage", "TexDtor", "UnloadModule", "RunScript", "ExecCommand", "InstrLimit", "DelayCommand", "AdcEnter",
+          "AdcHandoff", "NetSend", "NetOvfTest", "FocusDummy", "SceneDtor" };
+enum Nt { NtTgaLoad, NtBuild, NtBr1, NtBr2, NtBr3, NtScript, NtTxiTpc, NtCount };
+const char* const NtName[NtCount] = { "tga_load", "build", "gui_setter1", "gui_setter2", "tex_miss", "script", "txi_via_tpc" };
+constexpr int NameSlots = 512, NameLen = 24, RingN = 64, ExecIds = 0x36D;
+struct NameSlot { volatile LONG key, n; volatile LONG ra; char name[NameLen]; };
+struct RingEv { volatile LONG tick, table, ra; char name[NameLen]; };
+struct HookCost { volatile LONG64 cyc, n, calls; };
+
 struct RtStat { volatile LONG64 allocN, allocB, evictN, evictB, freeN, freeB, relN, relZero, demN, redemN; };
 struct CallerStat { volatile LONG key; volatile LONG n; };
 struct EvSlot { volatile LONG cres, tick; };
@@ -277,6 +305,15 @@ struct Metrics {
     LONG64 lastSwap, lastAllocN, lastBucket, lastActionBar; volatile LONG maxBucketPerFrame, maxActionBarPerFrame;
     volatile LONG64 movieCalls, movieSpins; volatile LONG spinHist[24], cutoffSeen, lastThis254; LONG64 spins0;  // M6
     volatile LONG64 hookCycles, hookSamples;
+    // 0.3.0
+    HookCost hk[HkCount];
+    NameSlot nt[NtCount][NameSlots]; volatile LONG ntOverflow[NtCount];
+    RingEv ring[RingN]; volatile LONG ringN;
+    volatile LONG64 asyncStart, asyncBytes, destroyTable, stillDemand, uafWrite, releaseOk, txiTpc;
+    CallerStat requeueCallers[CallerSlots]; volatile LONG64 requeueN, requeueBuilt;
+    volatile LONG64 freeImgN, freeImgTpc, freeImgTpcBuf, freeImgTgaBuf, texDtor, unloadN;
+    volatile LONG64 runScript, execCmd, execBad, tmi, delayCmd, adcEnter, adcHandoff; volatile LONG execHist[ExecIds];
+    volatile LONG64 netSend, netBytes, netOvfTest, netOvfHit, focusDummy, sceneDtor; volatile LONG netMaxLen;
 };
 Metrics* g_m = nullptr;
 LONG64 g_qpf = 1;
@@ -289,10 +326,15 @@ inline int lbucket(uint64_t v, int n) { if (!v) return 0; int b = 1; while (v > 
 inline void atomicMax(volatile LONG64* p, LONG64 v) { LONG64 o = *p; while (v > o) { LONG64 r = InterlockedCompareExchange64(p, v, o); if (r == o) break; o = r; } }
 inline void atomicMin(volatile LONG* p, LONG v) { LONG o = *p; while (v < o) { LONG r = InterlockedCompareExchange(p, v, o); if (r == o) break; o = r; } }
 
-struct MTimer {   // samples 1 in 64 metric hook calls
-    uint64_t t0 = 0; bool on;
-    MTimer() { static volatile LONG c; on = (InterlockedIncrement(&c) & 63) == 0; if (on) t0 = __rdtsc(); }
-    ~MTimer() { if (on) { InterlockedExchangeAdd64(&g_m->hookCycles, static_cast<LONG64>(__rdtsc() - t0)); InterlockedIncrement64(&g_m->hookSamples); } }
+struct MTimer {   // counts calls per handler, samples 1 in 64 of them (handler body only; the KPM wrapper cost is not included)
+    uint64_t t0 = 0; bool on; int id;
+    explicit MTimer(int i) : id(i) { on = (InterlockedIncrement64(&g_m->hk[i].calls) & 63) == 0; if (on) t0 = __rdtsc(); }
+    ~MTimer() {
+        if (!on) return;
+        LONG64 d = static_cast<LONG64>(__rdtsc() - t0);
+        InterlockedExchangeAdd64(&g_m->hookCycles, d); InterlockedIncrement64(&g_m->hookSamples);
+        InterlockedExchangeAdd64(&g_m->hk[id].cyc, d); InterlockedIncrement64(&g_m->hk[id].n);
+    }
 };
 
 void countCaller(CallerStat* t, uintptr_t ret) {
@@ -314,6 +356,45 @@ inline int restypeOf(uintptr_t cres) {
     return t < RtUnknown ? t : RtUnknown;
 }
 inline uint32_t evHash(uintptr_t p) { return ((static_cast<uint32_t>(p) >> 3) * 2654435761u) >> 19; }   // 13 bits
+
+// 0.3.0 per-name counting. Copies up to `max` chars (stops at NUL; 16-byte CResRefs are not NUL-terminated) through
+// SafeRead, lower-cases, and bumps the slot keyed by FNV-1a of the name. The first writer of a slot copies the name;
+// a racing reader may see a partially copied name in that one snapshot (cosmetic).
+bool readName(uintptr_t src, int max, char* out) {
+    if (!src) return false;
+    uint32_t w[NameLen / 4] = {};
+    int words = (max + 3) / 4; if (words > NameLen / 4) words = NameLen / 4;
+    saferead::beginScope();
+    for (int i = 0; i < words; ++i) if (!saferead::readAt(50, src, i * 4, &w[i])) { if (!i) return false; break; }
+    const char* c = reinterpret_cast<const char*>(w);
+    int n = 0;
+    for (; n < max && n < NameLen - 1 && c[n]; ++n) { char ch = c[n]; out[n] = (ch >= 'A' && ch <= 'Z') ? ch + 32 : (ch >= 32 && ch < 127 ? ch : '?'); }
+    out[n] = 0;
+    return n > 0;
+}
+void countName(int table, uintptr_t src, int max, uintptr_t ra) {
+    Metrics& m = *g_m;
+    char nm[NameLen];
+    if (!readName(src, max, nm)) { strcpy(nm, "?"); }
+    uint32_t h = 2166136261u; for (const char* p = nm; *p; ++p) h = (h ^ static_cast<uint8_t>(*p)) * 16777619u;
+    LONG key = static_cast<LONG>(h | 1);
+    NameSlot* t = m.nt[table];
+    for (int i = 0, s = h & (NameSlots - 1); i < NameSlots; ++i, s = (s + 1) & (NameSlots - 1)) {
+        LONG k = t[s].key;
+        if (k == 0) {
+            LONG prev = InterlockedCompareExchange(&t[s].key, key, 0);
+            if (prev == 0) { memcpy(t[s].name, nm, NameLen); k = key; } else k = prev;
+        }
+        if (k == key) { InterlockedIncrement(&t[s].n); t[s].ra = static_cast<LONG>(ra); goto ring; }
+    }
+    InterlockedIncrement(&m.ntOverflow[table]);
+ring:
+    if (table == NtScript || table == NtTxiTpc) return;   // high-rate tables stay out of the event ring
+    LONG i = InterlockedIncrement(&m.ringN) - 1;
+    RingEv& e = m.ring[i % RingN];
+    e.tick = static_cast<LONG>(GetTickCount()); e.table = table; e.ra = static_cast<LONG>(ra); memcpy(e.name, nm, NameLen);
+}
+inline bool grp(int v) { return v < 0 ? g_cfg.metrics : v != 0; }
 
 // IAT hooks (M4 mipmaps, M5 frame time)
 typedef int(WINAPI* GluMip_t)(unsigned, int, int, int, unsigned, unsigned, const void*);
@@ -384,6 +465,8 @@ int applyTx() {
 }
 void applyExperiments() {
     static const uint8_t g1Orig[2] = { 0x74, 0x06 }, g1New[2] = { 0xEB, 0x06 };
+    memcpy(g_txSeen, reinterpret_cast<const void*>(PatchTx), 7);   // logged even when the experiment is off (0.3.0)
+    memcpy(g_g1Seen, reinterpret_cast<const void*>(PatchG1), 2);
     if (g_cfg.tx) g_txState = applyTx();
     if (g_cfg.g1skip) g_g1State = writeCode(PatchG1, g1Orig, g1New, 2, g_g1Seen);
 }
@@ -511,6 +594,68 @@ void writeCallers(FILE* f, const char* tag, const CallerStat* t) {
     for (int i = 0; i < m && i < 16; ++i) fprintf(f, "%s %08x %ld\n", tag, (unsigned)t[idx[i]].key, t[idx[i]].n);
 }
 
+// 0.3.0 output (formats documented in perf_lab_src/README.md "perf-lab 0.3.0").
+void writeLive(FILE* f) {
+    using saferead::readAt;
+    saferead::beginScope();
+    struct G { const char* n; uintptr_t a; } gs[] = { { "textures", 0x00A1BBE0 }, { "gl_bytes_est", 0x00A1BBA0 }, { "models", 0x00A1FFAC },
+        { "mesh_node_bytes", 0x00A1DEE0 }, { "gob_instances", 0x00A1FF68 }, { "node_objects", 0x00A1FF60 }, { "scenes", 0x00A200F4 },
+        { "focus_dummies", 0x00A20030 }, { "emitters", 0x00A7BD28 } };
+    fprintf(f, "LIVE");
+    for (auto& g : gs) { int v = 0; if (readAt(60, g.a, 0, &v)) fprintf(f, " %s=%d", g.n, v); else fprintf(f, " %s=?", g.n); }
+    fputc('\n', f);
+}
+void writeNames(FILE* f, int table) {
+    NameSlot* t = g_m->nt[table];
+    static int idx[NameSlots]; int m = 0;
+    for (int i = 0; i < NameSlots; ++i) if (t[i].key) idx[m++] = i;
+    for (int i = 1; i < m; ++i) for (int j = i; j > 0 && t[idx[j]].n > t[idx[j - 1]].n; --j) { int x = idx[j]; idx[j] = idx[j - 1]; idx[j - 1] = x; }
+    fprintf(f, "NAMES %s distinct=%d overflow=%ld\n", NtName[table], m, g_m->ntOverflow[table]);
+    for (int i = 0; i < m && i < 32; ++i) { char nm[NameLen]; memcpy(nm, t[idx[i]].name, NameLen); nm[NameLen - 1] = 0; fprintf(f, "NAME %s %ld %s ra=%08x\n", NtName[table], t[idx[i]].n, nm, (unsigned)t[idx[i]].ra); }
+}
+void writeMetrics3(FILE* f, Metrics& m) {
+    for (int i = 0; i < HkCount; ++i)
+        if (m.hk[i].calls) fprintf(f, "HOOKCOST_BY %s calls=%lld cycles=%.0f samples=%lld\n", HkName[i], (long long)m.hk[i].calls,
+                                    m.hk[i].n ? double(m.hk[i].cyc) / double(m.hk[i].n) : 0.0, (long long)m.hk[i].n);
+    if (grp(g_cfg.live)) writeLive(f);
+    if (grp(g_cfg.br)) {
+        for (int t = NtTgaLoad; t <= NtBr3; ++t) writeNames(f, t);
+        LONG n = m.ringN; int k = n < RingN ? n : RingN;
+        for (int i = 0; i < k; ++i) {
+            RingEv& e = m.ring[(n - k + i) % RingN]; char nm[NameLen]; memcpy(nm, e.name, NameLen); nm[NameLen - 1] = 0;
+            fprintf(f, "BRRING %lu %s %s ra=%08x\n", (unsigned long)e.tick, NtName[e.table], nm, (unsigned)e.ra);
+        }
+    }
+    if (grp(g_cfg.kt)) {
+        fprintf(f, "KT async_start=%lld async_bytes=%lld destroy_table=%lld still_in_demand=%lld uaf_write=%lld release_ok=%lld txi_via_tpc=%lld unload=%lld\n",
+            (long long)m.asyncStart, (long long)m.asyncBytes, (long long)m.destroyTable, (long long)m.stillDemand, (long long)m.uafWrite,
+            (long long)m.releaseOk, (long long)m.txiTpc, (long long)m.unloadN);
+        fprintf(f, "TEXLIFE requeue=%lld requeue_built=%lld freeimage=%lld freeimage_tpc=%lld freeimage_tpc_buf=%lld freeimage_tga_buf=%lld tex_dtor=%lld\n",
+            (long long)m.requeueN, (long long)m.requeueBuilt, (long long)m.freeImgN, (long long)m.freeImgTpc, (long long)m.freeImgTpcBuf,
+            (long long)m.freeImgTgaBuf, (long long)m.texDtor);
+        writeCallers(f, "REQUEUECALLER", m.requeueCallers);
+        writeNames(f, NtTxiTpc);
+    }
+    if (grp(g_cfg.vm)) {
+        fprintf(f, "VM run_script=%lld exec_cmd=%lld exec_bad_id=%lld instr_limit=%lld delay_cmd=%lld adc_enter=%lld adc_handoff=%lld adc_leak_upper=%lld\n",
+            (long long)m.runScript, (long long)m.execCmd, (long long)m.execBad, (long long)m.tmi, (long long)m.delayCmd, (long long)m.adcEnter,
+            (long long)m.adcHandoff, (long long)(m.adcEnter - m.adcHandoff));
+        int top[16], tn = 0;   // 16 most used command ids, descending
+        for (int i = 0; i < ExecIds; ++i) {
+            LONG v = m.execHist[i];
+            if (!v || (tn == 16 && v <= m.execHist[top[15]])) continue;
+            int k = tn < 16 ? tn++ : 15;
+            while (k > 0 && v > m.execHist[top[k - 1]]) { top[k] = top[k - 1]; --k; }
+            top[k] = i;
+        }
+        fprintf(f, "VMCMD"); for (int i = 0; i < tn; ++i) fprintf(f, " %d:%ld", top[i], m.execHist[top[i]]); fputc('\n', f);
+        writeNames(f, NtScript);
+    }
+    if (grp(g_cfg.misc))
+        fprintf(f, "NET send=%lld bytes=%lld max_len=%ld ovf_test=%lld ovf_hit=%lld | SCENE focus_dummy=%lld scene_dtor=%lld\n", (long long)m.netSend,
+            (long long)m.netBytes, m.netMaxLen, (long long)m.netOvfTest, (long long)m.netOvfHit, (long long)m.focusDummy, (long long)m.sceneDtor);
+}
+
 int g_metricsN = 0;
 void writeMetrics(const char* ev) {
     if (!g_m && !g_cfg.vq) return;
@@ -550,6 +695,7 @@ void writeMetrics(const char* ev) {
         for (int i = 0; i < 24; ++i) fprintf(f, " %ld", m.spinHist[i]);
         double cyc = m.hookSamples ? double(m.hookCycles) / double(m.hookSamples) : 0;
         fprintf(f, "\nHOOKCOST %.0f cycles/call (sampled 1/64, %lld samples)\n", cyc, (long long)m.hookSamples);
+        writeMetrics3(f, m);
     }
     if (g_cfg.vq) writeVq(f);
     fprintf(f, "#END %d\n", g_metricsN);
@@ -569,7 +715,7 @@ bool loadScreenUp() {
 }
 
 volatile LONG g_stop = 0;
-volatile LONG g_snapNow = 0;
+volatile LONG g_snapNow = 0, g_unloadNow = 0;
 bool g_gameProcess = false;
 
 void logExperiments() {
@@ -589,6 +735,7 @@ DWORD WINAPI helper(LPVOID) {
             up = nowUp; haveState = true;
         }
         if (InterlockedExchange(&g_snapNow, 0)) { writeSnapshot("MANUAL"); writeMetrics("MANUAL"); }
+        if (InterlockedExchange(&g_unloadNow, 0)) { writeSnapshot("UNLOAD"); writeMetrics("UNLOAD"); }
         if (GetFileAttributesA("perflab_dump.txt") != INVALID_FILE_ATTRIBUTES) {
             DeleteFileA("perflab_dump.txt"); writeReport(); writeSnapshot("MANUAL_FILE"); writeMetrics("MANUAL_FILE");
         }
@@ -616,6 +763,11 @@ void readCfg() {
         else if (!strcmp(line, "vq")) g_cfg.vq = v != 0;
         else if (!strcmp(line, "tx")) g_cfg.tx = v != 0;
         else if (!strcmp(line, "g1skip")) g_cfg.g1skip = v != 0;
+        else if (!strcmp(line, "live")) g_cfg.live = v != 0;
+        else if (!strcmp(line, "br")) g_cfg.br = v != 0;
+        else if (!strcmp(line, "kt")) g_cfg.kt = v != 0;
+        else if (!strcmp(line, "vm")) g_cfg.vm = v != 0;
+        else if (!strcmp(line, "misc")) g_cfg.misc = v != 0;
     }
     fclose(f);
 }
@@ -639,11 +791,14 @@ int __cdecl PerfLabStats(long long* out, int n) {   // live_bytes, live_blocks, 
 // 0x712F30 Malloc(this=ECX, CRes* [esp+4]): allocation of [CRes+0x18] bytes; J1: size > budget [this+8] -> FreeChunk passes.
 void __cdecl PerfLabResMalloc(void* resman, void* cres) {
     if (!g_m || !cres) return;
-    MTimer t;
+    MTimer t(HkMalloc);
     auto c = reinterpret_cast<uintptr_t>(cres);
     int size = *reinterpret_cast<const int*>(c + 0x18);
-    RtStat& r = g_m->rt[restypeOf(c)];
+    int rt = restypeOf(c);
+    RtStat& r = g_m->rt[rt];
     InterlockedIncrement64(&r.allocN); InterlockedExchangeAdd64(&r.allocB, size);
+    // BR: TGA (restype 3) loads by resref; key entry +0 = 16-byte CResRef (DestroyTable 0x726350 prints it from there)
+    if (rt == 3 && grp(g_cfg.br)) countName(NtTgaLoad, *reinterpret_cast<const uintptr_t*>(c + 0x14), 16, 0);
     InterlockedIncrement64(&g_m->mallocN);
     if (resman) {
         int budget = *reinterpret_cast<const int*>(reinterpret_cast<uintptr_t>(resman) + 8);
@@ -654,7 +809,7 @@ void __cdecl PerfLabResMalloc(void* resman, void* cres) {
 // 0x71222D inside FreeChunk, after the evicted CRes's vtbl[3] call and before FreeResourceData: CRes = [EBP-4].
 void __cdecl PerfLabResEvict(void* cres) {
     if (!g_m || !cres) return;
-    MTimer t;
+    MTimer t(HkEvict);
     auto c = reinterpret_cast<uintptr_t>(cres);
     RtStat& r = g_m->rt[restypeOf(c)];
     InterlockedIncrement64(&r.evictN); InterlockedExchangeAdd64(&r.evictB, *reinterpret_cast<const int*>(c + 0x18));
@@ -664,7 +819,7 @@ void __cdecl PerfLabResEvict(void* cres) {
 // 0x7120C0 FreeResourceData(this=ECX, CRes* [esp+4]), caller = [esp+0]. Mirrors the engine's own test for a real free.
 void __cdecl PerfLabResFreeData(void* cres, void* ret) {
     if (!g_m || !cres) return;
-    MTimer t;
+    MTimer t(HkFreeData);
     auto c = reinterpret_cast<uintptr_t>(cres);
     if (!*reinterpret_cast<const uintptr_t*>(c + 0x10) || (*reinterpret_cast<const uint32_t*>(c + 8) >> 30) == 1) return;
     RtStat& r = g_m->rt[restypeOf(c)];
@@ -674,7 +829,7 @@ void __cdecl PerfLabResFreeData(void* cres, void* ret) {
 // 0x7130B0 Release(CRes* [esp+4]): refcount 1 -> 0 puts the CRes on the evict list.
 void __cdecl PerfLabResRelease(void* cres) {
     if (!g_m || !cres) return;
-    MTimer t;
+    MTimer t(HkRelease);
     auto c = reinterpret_cast<uintptr_t>(cres);
     RtStat& r = g_m->rt[restypeOf(c)];
     InterlockedIncrement64(&r.relN);
@@ -683,7 +838,7 @@ void __cdecl PerfLabResRelease(void* cres) {
 // 0x711C20 Demand(this=ECX, CRes* [esp+4]): count by restype; J1 thrash = Demand of a CRes evicted < 60 s ago.
 void __cdecl PerfLabResDemand(void* cres) {
     if (!g_m || !cres) return;
-    MTimer t;
+    MTimer t(HkDemand);
     auto c = reinterpret_cast<uintptr_t>(cres);
     RtStat& r = g_m->rt[restypeOf(c)];
     InterlockedIncrement64(&r.demN);
@@ -715,7 +870,7 @@ void __cdecl PerfLabWaitEnd() {
 // TX gate: other_tpc_retained == 0 (no reader outside the upload routines and the controller family, which the guard exempts).
 void __cdecl PerfLabGetImage(void* tex, void* ret) {
     if (!g_m || !tex) return;
-    MTimer t;
+    MTimer t(HkGetImage);
     Metrics& m = *g_m;
     auto x = reinterpret_cast<uintptr_t>(tex); auto ra = reinterpret_cast<uintptr_t>(ret);
     bool tpc = *reinterpret_cast<const uint8_t*>(x + 0xE9) == 1;
@@ -734,9 +889,11 @@ void __cdecl PerfLabGetImage(void* tex, void* ret) {
 // queued again is re-uploaded today; with tx=1 its buffer is gone and the re-upload is skipped (TX's only behaviour delta).
 void __cdecl PerfLabBuildTex(void* tex) {
     if (!g_m || !tex) return;
+    MTimer t(HkBuild);
     Metrics& m = *g_m;
     auto x = reinterpret_cast<uintptr_t>(tex);
     InterlockedIncrement64(&m.buildN);
+    if (grp(g_cfg.br)) countName(NtBuild, x + 0x7C, NameLen - 1, 0);   // texture name, inline at +0x7C (FindTextureByName 0x4269F0)
     if (*reinterpret_cast<const uint8_t*>(x + 0xE9) == 1) {
         if (*reinterpret_cast<const uint8_t*>(x + 0xE4) == 1 && *reinterpret_cast<const uint32_t*>(x + 0x44) != 0) InterlockedIncrement64(&m.buildRequeueTpcRetained);
         if (*reinterpret_cast<const uint32_t*>(x + 0x34) != 0) InterlockedIncrement64(&m.buildTpcCtrl);
@@ -755,8 +912,8 @@ void __cdecl PerfLabGlImagePost() {
 }
 
 // ---- M5: per-frame callers (counted; per-frame maxima taken at SwapBuffers) ----
-void __cdecl PerfLabBucketInsert() { if (g_m) InterlockedIncrement64(&g_m->bucketCalls); }   // 0x472630 map find-or-insert
-void __cdecl PerfLabActionBar() { if (g_m) InterlockedIncrement64(&g_m->actionBarCalls); }   // 0x74CFE0 action bar rebuild
+void __cdecl PerfLabBucketInsert() { if (g_m) { MTimer t(HkBucket); InterlockedIncrement64(&g_m->bucketCalls); } }   // 0x472630 map find-or-insert
+void __cdecl PerfLabActionBar() { if (g_m) { MTimer t(HkActionBar); InterlockedIncrement64(&g_m->actionBarCalls); } }   // 0x74CFE0 action bar rebuild
 
 // ---- M6: PlayMovies 0x798820 entry / spin 0x798A87 ([EBP-0x20] = pump cut-off latch, [EBP-0x7C] = this) ----
 void __cdecl PerfLabMovieEnter() {
@@ -779,6 +936,103 @@ void __cdecl PerfLabMovieSpin(int cutoff, void* self) {
 
 // Harness / manual: force a metrics snapshot on the helper thread.
 void __cdecl PerfLabMetricsNow() { InterlockedExchange(&g_snapNow, 1); }
+
+// ---- 0.3.0 BR (U4): GUI image setters, changed-name path (0x414870 / 0x4160BD: [EBP+8] = CResRef*, [EBP+4] = caller);
+// texture-record miss in 0x427520 at 0x427609 ([EBP+8] = char* name, [EBP+4] = caller).
+void __cdecl PerfLabBrSetter1(void* resref, void* ra) { if (g_m && grp(g_cfg.br)) { MTimer t(HkBr1); countName(NtBr1, reinterpret_cast<uintptr_t>(resref), 16, reinterpret_cast<uintptr_t>(ra)); } }
+void __cdecl PerfLabBrSetter2(void* resref, void* ra) { if (g_m && grp(g_cfg.br)) { MTimer t(HkBr2); countName(NtBr2, reinterpret_cast<uintptr_t>(resref), 16, reinterpret_cast<uintptr_t>(ra)); } }
+void __cdecl PerfLabBrTexMiss(void* name, void* ra) { if (g_m && grp(g_cfg.br)) { MTimer t(HkBr3); countName(NtBr3, reinterpret_cast<uintptr_t>(name), NameLen - 1, reinterpret_cast<uintptr_t>(ra)); } }
+
+// ---- 0.3.0 KT / resman / textures (U5, T2) ----
+// 0x71447A in CExoResMan::Update: OR ECX,0x10 = an async request starts; resman = [EBP-8], CRes = [resman+0x28].
+void __cdecl PerfLabAsyncStart(void* resman) {
+    if (!g_m || !grp(g_cfg.kt)) return;
+    MTimer t(HkAsync);
+    InterlockedIncrement64(&g_m->asyncStart);
+    uintptr_t cres = 0; int size = 0;
+    saferead::beginScope();
+    if (saferead::readAt(51, reinterpret_cast<uintptr_t>(resman), 0x28, &cres) && saferead::readAt(52, cres, 0x18, &size)) InterlockedExchangeAdd64(&g_m->asyncBytes, size);
+}
+void __cdecl PerfLabDestroyTable() { if (g_m && grp(g_cfg.kt)) { MTimer t(HkDestroyTable); InterlockedIncrement64(&g_m->destroyTable); } }
+// 0x72650B: DestroyTable's still-in-demand branch (ECX = CRes): CRes+0x14 keeps pointing into the array freed next (KT).
+void __cdecl PerfLabStillInDemand(void* cres) { if (g_m && grp(g_cfg.kt) && cres) { MTimer t(HkStillDemand); InterlockedIncrement64(&g_m->stillDemand); } }
+// 0x71306C in ReleaseResObject: about to write 0 to [[CRes+0x14]+0x10] (EAX = CRes). Flag 0x200 = the table died (KT UAF write).
+void __cdecl PerfLabUafWrite(void* cres) {
+    if (!g_m || !grp(g_cfg.kt) || !cres) return;
+    MTimer t(HkUafWrite);
+    if (*reinterpret_cast<const uint32_t*>(reinterpret_cast<uintptr_t>(cres) + 0xC) & 0x200) InterlockedIncrement64(&g_m->uafWrite);
+    else InterlockedIncrement64(&g_m->releaseOk);   // normal path: key entry still valid
+}
+// 0x93BEA6: TXI provider falls back to Demanding the TPC to read its embedded TXI ([EBP+8] = char* name) (U5, TPC2X).
+void __cdecl PerfLabTxiTpc(void* name) { if (g_m && grp(g_cfg.kt)) { MTimer t(HkTxiTpc); InterlockedIncrement64(&g_m->txiTpc); countName(NtTxiTpc, reinterpret_cast<uintptr_t>(name), NameLen - 1, 0); } }
+// 0x474000 UniquePush entry (ECX = list, [esp+4] = texture, [esp+0] = caller); only the pending-texture list 0xA1BC2C.
+void __cdecl PerfLabRequeue(void* list, void* tex, void* ra) {
+    if (!g_m || !grp(g_cfg.kt) || reinterpret_cast<uintptr_t>(list) != 0x00A1BC2C || !tex) return;
+    MTimer t(HkRequeue);
+    InterlockedIncrement64(&g_m->requeueN);
+    uint8_t e4 = 0; saferead::beginScope();
+    if (saferead::readAt(53, reinterpret_cast<uintptr_t>(tex), 0xE4, &e4) && e4 == 1) InterlockedIncrement64(&g_m->requeueBuilt);
+    countCaller(g_m->requeueCallers, reinterpret_cast<uintptr_t>(ra));
+}
+// C3: FreeImage 0x425160 entry (ECX = texture).
+void __cdecl PerfLabFreeImage(void* tex) {
+    if (!g_m || !grp(g_cfg.kt) || !tex) return;
+    MTimer t(HkFreeImage);
+    auto x = reinterpret_cast<uintptr_t>(tex);
+    InterlockedIncrement64(&g_m->freeImgN);
+    bool buf = *reinterpret_cast<const uint32_t*>(x + 0x44) != 0;   // FreeImage itself tests [this+0x44] first (0x42516C)
+    if (*reinterpret_cast<const uint8_t*>(x + 0xE9) == 1) { InterlockedIncrement64(&g_m->freeImgTpc); if (buf) InterlockedIncrement64(&g_m->freeImgTpcBuf); }
+    else if (buf) InterlockedIncrement64(&g_m->freeImgTgaBuf);
+}
+void __cdecl PerfLabTexDtor() { if (g_m && grp(g_cfg.kt)) { MTimer t(HkTexDtor); InterlockedIncrement64(&g_m->texDtor); } }
+// Server UnloadModule 0x5315E0 entry: count + ask the helper for an UNLOAD metrics snapshot.
+void __cdecl PerfLabUnload() {
+    if (!g_m || !grp(g_cfg.kt)) return;
+    MTimer t(HkUnload);
+    InterlockedIncrement64(&g_m->unloadN); InterlockedExchange(&g_unloadNow, 1);
+}
+
+// ---- 0.3.0 NWScript VM (U1) ----
+// RunScript 0x7022A0 (ECX = VMInternal, [esp+4] = CExoString* script; CExoString = { char* text; int len }).
+void __cdecl PerfLabRunScript(void* str) {
+    if (!g_m || !grp(g_cfg.vm)) return;
+    MTimer t(HkRunScript);
+    InterlockedIncrement64(&g_m->runScript);
+    uintptr_t text = 0; saferead::beginScope();
+    if (saferead::readAt(54, reinterpret_cast<uintptr_t>(str), 0, &text)) countName(NtScript, text, 16, 0);
+}
+// ExecuteCommand 0x668FD0 ([esp+4] = command id, signed; table has 0x36D entries; ids >= 0x8000 arrive negative: VMID).
+void __cdecl PerfLabExecCmd(int id) {
+    if (!g_m || !grp(g_cfg.vm)) return;
+    MTimer t(HkExecCmd);
+    InterlockedIncrement64(&g_m->execCmd);
+    if (id < 0 || id >= ExecIds) InterlockedIncrement64(&g_m->execBad); else InterlockedIncrement(&g_m->execHist[id]);
+}
+void __cdecl PerfLabInstrLimit() { if (g_m && grp(g_cfg.vm)) { MTimer t(HkTmi); InterlockedIncrement64(&g_m->tmi); } }
+void __cdecl PerfLabDelayCommand() { if (g_m && grp(g_cfg.vm)) { MTimer t(HkDelay); InterlockedIncrement64(&g_m->delayCmd); } }
+void __cdecl PerfLabAdcEnter() { if (g_m && grp(g_cfg.vm)) { MTimer t(HkAdcEnter); InterlockedIncrement64(&g_m->adcEnter); } }
+void __cdecl PerfLabAdcHandoff() { if (g_m && grp(g_cfg.vm)) { MTimer t(HkAdcHandoff); InterlockedIncrement64(&g_m->adcHandoff); } }
+
+// ---- 0.3.0 net rings / scenes (U6) ----
+// SendMessageToPlayer 0x704060 entry ([esp+0xC] = length).
+void __cdecl PerfLabNetSend(int len) {
+    if (!g_m || !grp(g_cfg.misc)) return;
+    MTimer t(HkNetSend);
+    InterlockedIncrement64(&g_m->netSend); if (len > 0) InterlockedExchangeAdd64(&g_m->netBytes, len);
+    LONG o = g_m->netMaxLen; while (len > o) { LONG r = InterlockedCompareExchange(&g_m->netMaxLen, len, o); if (r == o) break; o = r; }
+}
+// 0x7040E0: [EBP-0x20] = ring object, [EBP-0x14] = new write index; the engine next tests new > [[obj+0x2000C]+0x20000] + 0x10000
+// (unsigned) and on true logs "Message Buffer Overflow" and copies anyway (NETOVF). Same test here, read-only.
+void __cdecl PerfLabNetOvfTest(void* obj, unsigned newW) {
+    if (!g_m || !grp(g_cfg.misc)) return;
+    MTimer t(HkNetOvf);
+    InterlockedIncrement64(&g_m->netOvfTest);
+    uintptr_t peer = 0; unsigned rd = 0; saferead::beginScope();
+    if (saferead::readAt(55, reinterpret_cast<uintptr_t>(obj), 0x2000C, &peer) && saferead::readAt(56, peer, 0x20000, &rd) && newW > rd + 0x10000u)
+        InterlockedIncrement64(&g_m->netOvfHit);
+}
+void __cdecl PerfLabFocusDummy() { if (g_m && grp(g_cfg.misc)) { MTimer t(HkFocus); InterlockedIncrement64(&g_m->focusDummy); } }
+void __cdecl PerfLabSceneDtor() { if (g_m && grp(g_cfg.misc)) { MTimer t(HkSceneDtor); InterlockedIncrement64(&g_m->sceneDtor); } }
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
@@ -792,7 +1046,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
         { LARGE_INTEGER f; QueryPerformanceFrequency(&f); g_qpf = f.QuadPart ? f.QuadPart : 1; }
-        logf("perf-lab 0.2.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s", (unsigned)g_exeLo, (unsigned)g_exeHi,
+        logf("perf-lab 0.3.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s", (unsigned)g_exeLo, (unsigned)g_exeHi,
              g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF");
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
