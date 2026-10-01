@@ -1,0 +1,4 @@
+LIBRARY ActivationFix
+EXPORTS
+    ActFixTestSetForeground
+    ActFixTestState
