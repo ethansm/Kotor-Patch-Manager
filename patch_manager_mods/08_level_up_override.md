@@ -206,3 +206,11 @@ the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-
   (3) `steam_functions.tsv` columns are addr,size,retn,name; (4) the repo `.venv` python is the one with pykotor; system python3 was enough here;
   (5) `git commit -- <paths>` is required because another session's staged file (`11_inventory_sort_filter.md`) sits in the index.
 - The game install dir is `~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/`; `swkotor2.exe.unpatched_vanilla` == Ghidra program (sha 6A522E71...).
+
+## Session notes - Phase 1b (2026-09-30, so a context clear loses nothing)
+- Commit `19a2af2` holds Phase 1b (docs, DB rows, evidence, generator). Preflight verified: live `swkotor2.exe` (md5 c9a1e3c5...) has identical bytes to `.unpatched_vanilla` at 0x6B9870/0x6B9640/0x6BEDF0/0x661C30; rollback exe backup `swkotor2.exe.backup.20260930_111425` (same size/date as live).
+- Tool usage learned: `tools/pebytes.py [swkotor2.exe] VA...` (the optional first arg must end in `exe`; default = unpatched_vanilla; do NOT pass a full path). `tools/ghidra_run.sh DecompileArgs.java out.txt <hexVAs>`, `DisasmRanges.java out.txt 6f5ac0-6f5b80,...` (ranges `start-end`), ~7 s per run, prints BUSY if another analyzeHeadless runs. Evidence files: `phase1b_gui_gating|grants|containers|client_refresh|callers|disasm|misc.txt`.
+- Runtime table: `cd research/companion_levelup && ../../.venv/bin/python gen_runtime_table.py 2>/dev/null` (refuses paths with check errors). Format documented in the script docstring. Kreia path has 21 warnings (unused slots), Atton 0.
+- Granted-feat sets in the table: e.g. Atton L20 (Sentinel 1) grants 39,43,44,55,98,107,207; L5 Scoundrel grants 62. Engine force-form power grants (0x847A70) are NOT in the table (hard-coded id set, see O3).
+- Not yet verified live (everything below is the ground truth the probe must supply): hook param passing for `ecx`/`[esp+4]`/`[esp+8]`, whether `GetLevel` (0x6A4E00) is pre-increment at LevelUp entry (it is called before LevelUp bumps class level, so key = level+1), what `AddGrantedPowers` param_2/ECX really is, whether feat grants appear in the manual-flow pending list.
+- Untracked-but-modified noise to ignore when committing: `research/companion_levelup/logs/debug_pykotor.log*`, `__pycache__`. Always `git commit -- <explicit paths>`.
