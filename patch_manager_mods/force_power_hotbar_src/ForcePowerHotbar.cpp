@@ -86,6 +86,7 @@ const char* const FrameHiResref = "hotbar_slot_hi";
 const char* const EditResref = "hotbar_edit", *const EditHiResref = "hotbar_edit_hi";   // thin wrench toggle art
 constexpr double EditBoxUnits = 38.0, PickBoxUnits = 112.0, BoxPadUnits = 8.0, TitleUnits = 22.0;   // must match the GUI script layout
 constexpr float EmptyFrameAlpha = 0.45f;
+constexpr DWORD SettleMs = 1500;                  // after a character switch the HUD action lists lag behind: unresolved slots stay hidden, checked every frame
 constexpr int ButtonRefreshFrames = 8;            // entry re-resolve interval (usable/dim state changes are slow)
 constexpr float DimAlpha = 0.35f;
 
@@ -158,6 +159,7 @@ hb::Config g_cfg;
 long long g_cfgMtime = -2;
 DWORD g_lastCfgCheck = 0;
 std::string g_charKey;                 // key of the controlled creature
+DWORD g_charChangeTick = 0;            // GetTickCount() of the last character-key change (0 = none yet)
 std::string g_activeDesc;
 volatile bool g_slotBound[hb::Rows][hb::Slots];
 volatile DWORD g_hudTick = 0;          // last HUD tick time
@@ -702,7 +704,9 @@ void updateButtons(uintptr_t hud, bool gate) {
         if (lastMissingHud != hud) { lastMissingHud = hud; logf("buttons: no usable bar for hud %08x (bar panel=%08x built=%d/%d) -- HUD ctor hook did not run for it, or no button bound", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built, ButtonCount); }
         return;
     }
-    bool stale = g_frame - lastRefresh >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar || g_bar.ed.mode != lastMode;
+    bool settling = g_charChangeTick && GetTickCount() - g_charChangeTick < SettleMs;
+    static bool wasSettling = false; bool settleEdge = settling != wasSettling; wasSettling = settling;
+    bool stale = settling || settleEdge || g_frame - lastRefresh >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar || g_bar.ed.mode != lastMode;
     if (!stale) return;
     lastRefresh = g_frame; lastGateSeen = gate; lastChar = g_charKey; lastMode = g_bar.ed.mode;
     for (int s = 0; s < ButtonCount; ++s) {
@@ -716,7 +720,10 @@ void updateButtons(uintptr_t hud, bool gate) {
         }
         Entry e; const char* state; bool have = false;
         if (want.empty()) state = "unbound";
-        else if (!resolve(hud, want, &e)) state = "entry not available";
+        else if (!resolve(hud, want, &e)) {
+            if (settling && g_bar.ed.mode == M_Normal) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); continue; }
+            state = "entry not available";
+        }
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
         b.avail = have; if (have) b.entry = e;
         if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { logf("tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
@@ -1154,11 +1161,12 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     g_hudGateOk = gate; g_hudTick = GetTickCount();
     if (gate != lastGate || lastWhy != gateWhy) { lastGate = gate; lastWhy = gateWhy; logf("gate: %s (%s)", gate ? "ACTIVE" : "inactive", gateWhy); if (!gate) logPanels(hud); }
 
-    if (g_frame % 15 == 1) {
+    bool charChanged = false;
+    {   // every frame: the bar must follow the controlled character without a visible lag
         std::string k = computeCharacterKey();
-        if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; recomputeBound(); }
+        if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; g_charChangeTick = GetTickCount(); recomputeBound(); charChanged = true; }
     }
-    if (g_frame % ButtonRefreshFrames == 1 || g_frame == 2) refreshEffective(hud);
+    if (charChanged || g_frame % ButtonRefreshFrames == 1 || g_frame == 2) refreshEffective(hud);
     probe(hud, g_frame == 60);
     updateButtons(hud, gate);
     updateHover(gate);
