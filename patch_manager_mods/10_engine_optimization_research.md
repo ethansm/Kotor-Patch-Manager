@@ -2,7 +2,12 @@
 
 Living record. Started 2026-09-30. Research + evidence first: **no engine-behaviour patch is installed without a measured win and the user's go-ahead.** Diagnostics-only patches follow "deploy and debug live, offer the choice".
 
-## HAND-OFF STATE (2026-10-01 18:45; read this first after a context clear)
+## HAND-OFF STATE (2026-10-01 19:15; read this first after a context clear)
+**Phase 5 built, nothing new installed yet** (PHASE 5 SESSION RECORD below). Live unchanged since 18:44 (other sessions): 23 ids / 131 `address =` lines incl. perf-lab 0.3.0 + load-hang-probe 1.4.0. **`$G/hangprobe_debug.txt` = `fix=auto` (stopgap ON since 18:49).**
+Ready to install (needs the user's go + game closed): `k2-activation-fix` 1.0.0 (`Patches/ActivationFix/ActivationFix.kpatch`, DLL `a9820edd2dfa5d9a4c82097aa4cc696a`, DLL-only, +0 address lines), load-hang-probe 1.4.1 (`Patches/LoadHangProbe/LoadHangProbe.kpatch`, DLL `0bb0d44292ee4957d25046b54f59a71a`, same 13 hooks), `k2-equip-icon-fix` 1.0.0 (`Patches/EquipIconFix/EquipIconFix.kpatch`, DLL `2c549327971d82efea0ed81bf62686b0`, DLL-only, +0). Expected after install: 25 ids, 131 `address =` lines (re-count at install time; other sessions change the live set).
+After install: H1 soak with `hangprobe_debug.txt` EMPTY (fix=auto OFF; tell the user first; re-enable if a hang occurs), BR before/after on the equipment screen (doc 09 s19 / section "BR fix" give the checks).
+
+## Earlier HAND-OFF STATE (2026-10-01 18:45; read this first after a context clear)
 **Live (since 2026-09-30 21:17):** perf-lab 0.3.0 (46 hooks, DLL `82b307aff283a1aa9a3212a5c6fc8e3f`) + load-hang-probe 1.4.0 (13 hooks, DLL `77be826fe56d39e7346f2b9e1dfd095d`) + the other sessions' 18 patches, stage `kotor-patch-manager/perflab3_stage/`, backup `backups_perflab3_2117/`, 120 `address =` lines. `$G/perflab_debug.txt` = `alloc=1 metrics=1 vq=1 flush_ms=30000` (0.3.0 groups on by default); `$G/hangprobe_debug.txt` = `fix=auto` since 2026-10-01 18:49 (stopgap ON; turn OFF only for the 5B soak). The game may still be running (user session of 10-01 ~18:00-18:45).
 **2026-10-01 results (Status log 18:24-18:36, PHASE 4 SESSION RECORD part 2):**
 1. **H1 load hang CONFIRMED + causality proven** (incident 16, doc 09 s18): movie thread synthetic WM_ACTIVATEAPP(0,0) received while our window is foreground -> AppDeactivated -> no re-activation -> load screen stuck; manual AppActivated (`touch $G/hangprobe_activate.txt`) released it in the same frame. **Pending user decision:** enable `fix=auto` stopgap now (I recommended it; user had not answered) and build the targeted WndProc gate (0x40B4BA) as a real fix.
@@ -53,6 +58,15 @@ Earlier NEXT STEPS (06:00, Phase 2):
 3. Decide from the pack: **TX first** (prototype only if M3 GetImage-after-upload = 0), then G1/C2/M1 by measured load-time share, J1 by eviction/re-Demand counts.
 4. **Open static items (Phase 3 static wave, before the measurement pack is finalised):** (a) TX readers: every caller of `GetImage` 0x422640 / readers of `tex+0x44` (R3 named 0x48FF30 and a 0x49xxxx family) -- can any run after upload on a TPC texture? (b) module-change teardown: are textures, model cache `DAT_00A1FFA8` blobs and resman entries released when an area unloads (static half of S2)? (c) unaudited save paths: screenshot 0x855F30/0x52F610, savers 0x55B830/0x534600/0x8529E0/0x7D1940; (d) R1 speculative: stale `resman+0x28` after CancelRequest 0x711A30, dangling evict-list nodes after RemoveKeyTable 0x7131D0, leaked buffer on failed Service; (e) F1/H1: what sets PlayMovies `[this+0x254]` (pump cut-off at 0x798A53) and whether it can drop WM_ACTIVATEAPP; (f) uncovered subsystems (low): NWScript VM, Miles sound, AI/combat per-frame, net rings (2 x 128 KB), failed decompile 0x816400 (asm only); TD/GUIID robustness fixes.
 5. Candidate triage (Phase 3 gate below): measured cost, Ghidra-confirmed semantics, smallest behaviour-preserving hook with `original_bytes` verified, A/B >= 5 runs, 10+ launch soak with load-hang-probe (AR_ERROR.LOG md5 `a2d887896b53eae113758dc8c3729db9` unchanged), and the user's go-ahead before any install that changes engine behaviour.
+
+## PHASE 5 SESSION RECORD (2026-10-01 18:48-19:15; everything needed to continue after a context clear)
+- 5-0 DONE: incident 17 captured (`incidents_17_1848/`), released by manual trigger, `fix=auto` ON; hung vs healthy synthetic-deactivate launches explained (doc 09 s18 addendum; lesson 238). Soak baseline: 1.4.0 launches 5, synthetic post 4, hangs 2.
+- 5E DONE: menu choppiness closed, inactive-throttle hypothesis refuted (lesson 239).
+- 5A DONE (built): probe 1.4.1 change-only movie lines, harness 14/14 x3 modes (commit db7a044).
+- 5B DONE (built): `k2-activation-fix` 1.0.0 = sender-side gate at 0x40D69E (movie thread CALL [PostMessageA]); WndProc gate 0x40B4BA rejected because 0x40BDC0 sends WM_ACTIVATEAPP(0,0) deliberately (Alt+Enter fullscreen, msg 0x409). Harness run 10/10, disabled 4/4, refuse 3/3; it caught a rel32 bug + IAT forwarding (doc 09 s19, lessons 241-243, commit 20ee938).
+- 5C DONE (built): `k2-equip-icon-fix` 1.0.0 defer-and-cancel, 8 sites; harness run 11/11 etc.; perf-lab 0.3.1 skipped (CANCEL log = same-control proof) (section "BR fix", lessons 253-254, commit e33f40e).
+- 5D deviation: both fixes + probe 1.4.1 go in ONE install (saves a relaunch cycle; each patch is independently disable-able via its txt file or removable by id).
+- Tools: Wine prefix + harness builds in the session scratchpad (rebuild per README); `KPATCH_ADDRESS_DATABASES` = dir of symlinks to the non-empty `AddressDatabases/*.db`.
 
 ## PHASE 4 SESSION RECORD part 2 (2026-10-01 18:00-18:45)
 - Evidence: `incidents_15_1824/` (perf-lab 0.3.0 first data; `hangprobe_report_1832.txt` = stack sample with the Buff HUD fault storm), `incidents_16_1836/` (load hang: hangprobe_log/report, perflab_*, steam log, `hangprobe_log_after_activate.txt`).
