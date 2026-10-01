@@ -255,6 +255,8 @@ void probeEffects(int slotPtr, int creature) {
 // ---- Shield bar drawing (probe2): the vitality bar's own curved texture, tinted per pool ----
 constexpr float BarShiftFraction = 0.328f;            // opaque x-span of uibit_bar_vp_p (0.445..0.773) = 0.328 of the rect
 const float TrackTint[3] = { 0.051f, 0.349f, 0.271f }; // the engine's empty-track teal
+constexpr bool SquareHealthEdge = false;              // true: swap the health bar to a squared left edge (shield joins it with a seam)
+constexpr bool DrawSeam = false;                      // user (10-01): keep the health bar's own curved left highlight, no seam between
 constexpr int MaxSegments = 3;
 constexpr float ShieldWidthFraction = 0.55f;          // of the health bar rect width
 // Fill = the shield's VFX hue with its saturation cut (HSV, hue and value kept): red -> salmon, blue -> pale blue. Saturation is
@@ -415,7 +417,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     // Seam between shield and health: a thin DARK line (the card border's own deep teal), not a bright bar, so the two bars read
     // as one gauge with a groove between them. 2 px on the leader card, 1 px on small cards, full bar height.
     int dw = vw / 50 < 1 ? 1 : vw / 50;
-    if (pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
+    if (DrawSeam && pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
     flush(flushArg);
     return n;
 }
@@ -519,7 +521,7 @@ extern "C" {
 void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
     static int n = 0; if (n < 60) { ++n; logf("snapshot slot=%08x creature=%08x", slotPtr, creaturePtr); }
     if (g_probe && creaturePtr) probeEffects(slotPtr, creaturePtr);
-    if (creaturePtr) { Pool tmp[8]; swapHealthBar(slotPtr, !g_noSwap && collectPools(creaturePtr, tmp, 8) > 0); }
+    if (creaturePtr) { Pool tmp[8]; swapHealthBar(slotPtr, SquareHealthEdge && !g_noSwap && collectPools(creaturePtr, tmp, 8) > 0); }
     for (auto& e : g_slots) if (e.slotPtr == slotPtr) { e.creaturePtr = creaturePtr; return; }
     for (auto& e : g_slots) if (e.slotPtr == 0) { e = { slotPtr, creaturePtr }; return; }
     static int evict = 0; g_slots[evict++ & 3] = { slotPtr, creaturePtr };   // HUD rebuilt (area load): replace a stale entry
