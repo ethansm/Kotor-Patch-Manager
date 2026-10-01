@@ -2,7 +2,7 @@
 // hold position instead of walking into melee when their line of fire is blocked (E-H1), and lets them retarget
 // like the player does (E-H2). Research trail and every address: patch_manager_mods/13_ranged_ai_spacing.md.
 //
-// Hooks (cdecl detours, stolen bytes run first; a non-zero return jumps to consumed_exit_address):
+// Hooks (cdecl detours; the stolen bytes run after the handler; a non-zero return jumps to consumed_exit_address):
 //   E-H1 0x006d83ea RangedAiHold(attacker=ECX, ebp)   inside CSWSCreature::AIActionPhysicalAttacks 0x6d7390,
 //                                                     return 1 => end the attack action (0x6d83ff)
 //   E-H2 0x006d7c79 RangedAiRetarget(attacker=EAX, ebp) return 1 => behave as IsPC (0x6d7c8c)
@@ -278,7 +278,8 @@ extern "C" int __cdecl RangedAiStanceClick(int ebp) {
 extern "C" void __cdecl RangedAiStanceRules(int stance, int ebp) {
     saferead::beginScope();
     bool map = stance == KiteStance && g_cfg.rangedRules;
-    wr<int>(ebp + F_StanceRules, map ? VanillaRangedStance : stance);
+    // [ebp-0x174] is a slot of the live hooked frame; the replaced instruction is skipped, so always store it.
+    *reinterpret_cast<int*>(ebp + F_StanceRules) = map ? VanillaRangedStance : stance;
 }
 
 // S-H4. HUD refresh on character change, default branch of the stance -> action id switch (replaces MOV [ebp-0x1c],-1).

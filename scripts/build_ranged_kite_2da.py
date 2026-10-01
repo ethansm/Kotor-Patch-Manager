@@ -100,6 +100,11 @@ def main():
         live = read_2da(live_copies[0].read_bytes())
         rows = table_rows(live)
         ours = list(VANILLA_ROWS) + [tuple(str(x) for x in (NEW_ROW[0], NEW_ROW[1], name_strref, NEW_ROW[3]))]
+        if (live.get_headers() == HEADERS and len(rows) == 6 and rows[:5] == list(VANILLA_ROWS)
+                and rows[5][1] == NEW_ROW[1] and rows[5] != ours[5]):
+            print(f"error: the live Override aiscripts.2da has our RangedKite row with a different name strref "
+                  f"({rows[5][2]}, now {name_strref}); delete it and re-run.", file=sys.stderr)
+            return 2
         if live.get_headers() != HEADERS or rows not in (list(VANILLA_ROWS), ours):
             print_rows("live Override aiscripts.2da", live)
             print("error: the live Override aiscripts.2da is not vanilla (or vanilla + our row); another mod owns it. "

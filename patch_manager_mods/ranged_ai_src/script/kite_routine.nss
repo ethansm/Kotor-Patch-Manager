@@ -76,7 +76,8 @@ int GN_KiteFindSpot(int nMode, object oThreat, object oTarget, object oLeader)
         if (nOk && GetIsObjectValid(oThreat))
         {
             fThreat = GN_KiteDist(v, vThreat);
-            if (nMode == 1 && fThreat < fThreatNow + 2.0)
+            // at least 2 m further and outside the kite trigger radius
+            if (nMode == 1 && (fThreat < fThreatNow + 2.0 || fThreat < KITE_THREAT_RANGE + 0.5))
             {
                 nOk = FALSE;
             }
@@ -85,7 +86,8 @@ int GN_KiteFindSpot(int nMode, object oThreat, object oTarget, object oLeader)
                 nOk = FALSE;
             }
         }
-        if (nOk && nMode == 2 && GN_KiteDist(v, GetPosition(oTarget)) > KITE_SHOT_RANGE)
+        // stay in shot range: stance 16 does not walk back to its target (vanilla Ranged engine rule, DLL E-H3)
+        if (nOk && GN_KiteDist(v, GetPosition(oTarget)) > KITE_SHOT_RANGE)
         {
             nOk = FALSE;
         }
