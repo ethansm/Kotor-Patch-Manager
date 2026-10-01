@@ -385,7 +385,9 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     // rect's width (curve squashed a little) and placed so its visible right edge sits exactly on the health bar's visible left edge.
     int W = int(ShieldWidthFraction * vw + 0.5f), H = vh;
     int seamX = vx + int(0.445f * vw + 0.5f);                  // visible left edge of the (squared) health bar
-    int x = seamX - int(0.773f * W + 0.5f), y = vy;
+    // The art's visible right edge is at 98/128 = 0.766 of its width; end it 1 px INSIDE the health bar's outline (the shield is drawn
+    // over it) so rounding at small widths never leaves a thin dark gap line (visible against the black menu background).
+    int x = seamX + 1 - int(0.766f * W + 0.5f), y = vy;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
     if (total < 1) return 0;
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
@@ -670,7 +672,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
                 if (disc) draw2(disc, 0, -(size - bright), size, size, BgColor, BgAlpha);
                 draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
                 popClip();
-                if (bright < size) {                                                             // 1px boundary line
+                if (disc && bright < size) {                                                     // 1px boundary line (round item icons only)
                     int lx = ix, lw = size;
                     if (disc) {                                     // item icons: only inside the round backing
                         float r = size * 0.5f - 0.5f, dy = (y0 + 0.5f) - (iy + size * 0.5f);
