@@ -1,4 +1,6 @@
-// Load Hang Probe 1.4.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only unless "fix=auto" is set.
+// Load Hang Probe 1.4.1 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only unless "fix=auto" is set.
+// 1.4.1 (doc 10 Phase 5A): RESTORE-AFTER-MOVIE / PLAYMOVIES-EXIT are logged only when their tuple changes (they run every frame from
+// MainLoop ret 0x781DFA while the intro-movie state lingers: 1362 lines in incident 16); `calls=` = cumulative calls of that point.
 // 1.4.0 (doc 10 Phase 4, T4/U6 probe-log points; ring slots only, logged as WINEV by the watchdog):
 //   0x40B4AD WM_ACTIVATEAPP arrival in WndProc (hwnd, wParam, lParam, foreground pid == ours): lParam==0 with wParam==0 while the
 //            foreground window is ours = the movie thread's synthetic deactivate (the H1 discriminator)
@@ -203,7 +205,7 @@ volatile LONG64 g_readBytes = 0;
 volatile DWORD g_lastIoTick = 0; char g_lastIoName[40]; volatile char g_ioOn = 0;
 
 // ---- 1.3.0 window / activation events (hooks write ring slots only; the watchdog flushes them to the log) ----
-struct WinEv { DWORD tick; LONG frames; unsigned kind; uintptr_t a, b, c, d, ret; HWND fg; int flag; };   // kind: 0 WNDMSG, 1 ACTIVATED, 2 DEACTIVATED, 3..10 = 1.4.0 points (winKindName)
+struct WinEv { DWORD tick; LONG frames; unsigned kind; uintptr_t a, b, c, d, ret; HWND fg; int flag; LONG calls; };   // kind: 0 WNDMSG, 1 ACTIVATED, 2 DEACTIVATED, 3..10 = 1.4.0 points (winKindName)
 constexpr int WinRing = 256;
 WinEv g_win[WinRing]; volatile LONG g_winHead = 0; LONG g_winFlushed = 0;
 char g_fixMsg[32][200]; volatile LONG g_fixHead = 0; LONG g_fixFlushed = 0;   // main-thread notes about the fix, flushed by the watchdog
@@ -230,6 +232,12 @@ const char* winKindName(unsigned k) {
 }
 inline bool fgIsOurs(HWND fg) { DWORD pid = 0; if (fg) GetWindowThreadProcessId(fg, &pid); return pid == GetCurrentProcessId(); }
 volatile LONG g_lsDecisions = 0; int g_lsLastA = -1, g_lsLastFg = -1;   // 0x781E0B (main thread only)
+// 1.4.1 change-only state for RestoreAfterMovie (a764, a768, a76c, caller, a1b4e0) and PlayMovies exit (v18, v20, a1b4e0); main thread only.
+volatile LONG g_restoreCalls = 0, g_exitCalls = 0; uintptr_t g_restoreLast[5]; uintptr_t g_exitLast[3]; bool g_restoreSeen = false, g_exitSeen = false;
+bool tupleChanged(uintptr_t* last, const uintptr_t* now, int n, bool& seen) {
+    if (seen && memcmp(last, now, n * sizeof(uintptr_t)) == 0) return false;
+    memcpy(last, now, n * sizeof(uintptr_t)); seen = true; return true;
+}
 
 struct WinState { uintptr_t hwnd; unsigned fgIsGame, iconic, visible; int a1b4e0, d4, bc, c0, f768, f76c, f42a0, init; DWORD gateTick; DWORD fgPid; };
 bool operator!=(const WinState& a, const WinState& b) { return memcmp(&a, &b, sizeof(a)) != 0; }
@@ -542,6 +550,8 @@ DWORD WINAPI watchdog(LPVOID) {
                 else if (e.kind <= 2) logf("WINEV f%ld %s ret=%08x arg=%08x a1b4e0(before)=%d fg=%p", e.frames, e.kind == 1 ? "APP-ACTIVATED(0x40BCF0)" : "APP-DEACTIVATED(0x40BC40)", (unsigned)e.ret, (unsigned)e.a, e.flag, e.fg);
                 else if (e.kind == 3) logf("WINEV f%ld tid=%lu %s hwnd=%08x wp=%08x lp=%08x fgOurs=%u a1b4e0=%d fg=%p%s", e.frames, (unsigned long)e.d, winKindName(e.kind),
                           (unsigned)e.a, (unsigned)e.b, (unsigned)e.ret, (unsigned)e.c, e.flag, e.fg, (e.b == 0 && e.ret == 0 && e.c) ? " <- SYNTHETIC DEACTIVATE while foreground is ours" : "");
+                else if (e.calls) logf("WINEV f%ld tid=%lu %s a=%08x b=%08x c=%08x ret=%08x a1b4e0=%d fg=%p calls=%ld", e.frames, (unsigned long)e.d, winKindName(e.kind),
+                          (unsigned)e.a, (unsigned)e.b, (unsigned)e.c, (unsigned)e.ret, e.flag, e.fg, e.calls);
                 else logf("WINEV f%ld tid=%lu %s a=%08x b=%08x c=%08x ret=%08x a1b4e0=%d fg=%p", e.frames, (unsigned long)e.d, winKindName(e.kind),
                           (unsigned)e.a, (unsigned)e.b, (unsigned)e.c, (unsigned)e.ret, e.flag, e.fg);
             }
@@ -663,7 +673,7 @@ void __cdecl HangProbeDeactivated(void* ret, int arg) {
 
 // ---- 1.4.0 probe-log points (ring slots only). d = thread id unless noted. ----
 static WinEv* ev14(unsigned kind) { WinEv* e = winSlot(); e->tick = GetTickCount(); e->frames = g_frames; e->kind = kind; e->a = e->b = e->c = e->ret = 0;
-    e->d = GetCurrentThreadId(); e->fg = GetForegroundWindow(); e->flag = gflag(); return e; }
+    e->d = GetCurrentThreadId(); e->fg = GetForegroundWindow(); e->flag = gflag(); e->calls = 0; return e; }
 // 0x40B4AD: WndProc case WM_ACTIVATEAPP ([EBP+8] hwnd, [EBP+0x10] wParam, [EBP+0x14] lParam). c bit0 = foreground window belongs to us, a = hwnd, b = wParam, ret = lParam.
 void __cdecl HangProbeActAppArrive(void* hwnd, int wp, int lp) {
     if (!g_on) return;
@@ -673,13 +683,23 @@ void __cdecl HangProbeMovieWndDeact() { if (g_on) ev14(4); }
 void __cdecl HangProbeMovie76c() { if (g_on) ev14(5); }
 void __cdecl HangProbeSynthPost() { if (g_on) { WinEv* e = ev14(6); e->a = *reinterpret_cast<volatile uintptr_t*>(GameHwndG); } }
 // 0x40BF40 RestoreAfterMovie entry ([esp+0] = caller): a = [a1b764], b = [a1b768], c = [a1b76c].
+// 1.4.1: one slot per tuple change only.
 void __cdecl HangProbeRestoreAfterMovie(void* ret) {
     if (!g_on) return;
-    WinEv* e = ev14(7); e->ret = reinterpret_cast<uintptr_t>(ret);
-    e->a = *reinterpret_cast<volatile unsigned*>(0x00A1B764); e->b = *reinterpret_cast<volatile unsigned*>(Gate768); e->c = *reinterpret_cast<volatile unsigned*>(Gate76C);
+    LONG n = InterlockedIncrement(&g_restoreCalls);
+    uintptr_t t[5] = { *reinterpret_cast<volatile unsigned*>(0x00A1B764), *reinterpret_cast<volatile unsigned*>(Gate768), *reinterpret_cast<volatile unsigned*>(Gate76C),
+                       reinterpret_cast<uintptr_t>(ret), static_cast<uintptr_t>(gflag()) };
+    if (!tupleChanged(g_restoreLast, t, 5, g_restoreSeen)) return;
+    WinEv* e = ev14(7); e->a = t[0]; e->b = t[1]; e->c = t[2]; e->ret = t[3]; e->calls = n;
 }
-// 0x798B39 PlayMovies exit: a = [EBP-0x18], b = [EBP-0x20] (cut-off latch).
-void __cdecl HangProbeMovieExit(int v18, int v20) { if (g_on) { WinEv* e = ev14(8); e->a = static_cast<uintptr_t>(v18); e->b = static_cast<uintptr_t>(v20); } }
+// 0x798B39 PlayMovies exit: a = [EBP-0x18], b = [EBP-0x20] (cut-off latch). 1.4.1: one slot per tuple change only.
+void __cdecl HangProbeMovieExit(int v18, int v20) {
+    if (!g_on) return;
+    LONG n = InterlockedIncrement(&g_exitCalls);
+    uintptr_t t[3] = { static_cast<uintptr_t>(v18), static_cast<uintptr_t>(v20), static_cast<uintptr_t>(gflag()) };
+    if (!tupleChanged(g_exitLast, t, 3, g_exitSeen)) return;
+    WinEv* e = ev14(8); e->a = t[0]; e->b = t[1]; e->calls = n;
+}
 void __cdecl HangProbePumpCutoff() { if (g_on) ev14(9); }
 // 0x781E0B MainLoop: CMP [a1b4e0],0 deciding whether the load screen may be hidden (main thread, every frame). Logs only changes.
 void __cdecl HangProbeLsDecision() {
@@ -718,7 +738,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) { if (!strncmp(l, "fix=auto", 8)) g_fixAuto = true; if (!strncmp(l, "fixdelay=", 9)) { long v = atol(l + 9); if (v >= 1000 && v <= 60000) g_fixDelayMs = (DWORD)v; } } fclose(cf); }
-        logf("load-hang-probe 1.4.0 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
+        logf("load-hang-probe 1.4.1 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
         {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
             bool ioWanted = true;
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }
