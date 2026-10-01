@@ -1,0 +1,430 @@
+# scan_2da_limits: /home/ethansm/.steam/steam/steamapps/common/Knights of the Old Republic II
+# tables: 424 (override 37)
+# danger_token = token >= 256 chars (stack overflow, V6 F2); WARN = token >= 200 or rows >= 90% of K2 cap; NOTE = informational
+table	src	fmt	rows	cols	k2_cap	headroom	k1_community_cap	longest_col	longest_label	longest_cell	flags
+acbonus	bif	binary V2.b	51	13			21	3	0	2	
+aiscripts	override	binary V2.b	6	3			4294967296	11	0	13	
+aliensound	bif	binary V2.b	299	2				8	0	49	
+alienvo	override	binary V2.b	43	36				23	0	21	
+ambientmusic	override	binary V2.b	89	5			4294967296	11	0	16	
+ambientsound	bif	binary V2.b	73	10			4294967296	15	0	10	
+ammunitiontypes	bif	binary V2.b	6	10			256	12	0	16	
+animations	bif	binary V2.b	571	16			65536	17	0	40	
+appearance	override	binary V2.b	802	94	65536	64734	65536	18	0	36	
+appearancesndset	bif	binary V2.b	16	9			4294967296	9	0	15	
+autobalance	override	binary V2.b	10	8				10	0	15	
+baseitems	override	binary V2.b	109	61			4294967296	15	0	28	
+bindablekeys	bif	binary V2.b	103	3			4294967296	13	0	22	
+bodybag	bif	binary V2.b	10	4			256	10	0	15	
+camerastyle	override	binary V2.b	9	16			4294967296	14	0	8	NOTE size word 0 != actual data 159 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+capart	bif	binary V2.b	18	3				8	0	11	
+chemicalcreate	override	binary V2.b	83	4				10	0	18	
+classes	override	binary V2.b	17	29	255	238	256	16	0	20	
+classpowergain	bif	binary V2.b	50	10			20	5	0	2	
+cls_atk_1	bif	binary V2.b	50	1			60	3	0	2	
+cls_atk_2	bif	binary V2.b	50	1			60	3	0	2	
+cls_atk_3	bif	binary V2.b	60	1			60	3	0	2	
+cls_spgn_jedi	bif	binary V2.b	50	9			20	14	0	2	
+cls_st_cm_drd	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_ex_drd	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_jedi_c	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_jedi_g	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_jedi_s	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_jmaster	override	binary V2.b	50	4				8	0	2	NOTE size word 0 != actual data 141 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+cls_st_jwatch	bif	binary V2.b	50	4				8	0	2	
+cls_st_jweapmas	bif	binary V2.b	50	4				8	0	2	
+cls_st_minion	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_scndrl	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_scout	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_sithass	bif	binary V2.b	50	4				8	0	2	
+cls_st_sithlord	override	binary V2.b	50	4				8	0	2	NOTE size word 0 != actual data 141 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+cls_st_sithmar	bif	binary V2.b	50	4				8	0	2	
+cls_st_soldier	bif	binary V2.b	50	4			60	8	0	2	
+cls_st_techspec	bif	binary V2.b	50	4				8	0	2	
+combatanimations	bif	binary V2.b	107	34			4294967296	8	0	4	
+comptypes	bif	binary V2.b	2	2			256	18	0	11	
+creaturesize	bif	binary V2.b	6	3				11	0	7	
+creaturespeed	bif	binary V2.b	12	5			4294967296	8	0	11	
+credits	bif	binary V2.b	15	2			256	5	0	25	
+crtemplates	bif	binary V2.b	10	2				6	0	11	
+cursors	bif	binary V2.b	11	3			256	8	0	15	
+damagehitvisual	bif	binary V2.b	13	3			13	12	0	11	
+debugvariables	bif	binary V2.b	16	2				16	0	21	
+dialoganimations	bif	binary V2.b	512	6				11	0	17	
+difficultyopt	bif	binary V2.b	4	3			256	10	0	9	
+diffsettings	bif	binary V2.b	6	6			6	9	0	19	
+disease	bif	binary V2.b	17	17			4294967296	15	0	17	
+doortypes	bif	binary V2.b	69	8			256	14	0	15	
+droiddischarge	bif	binary V2.b	23	3			4294967296	3	0	3	
+effecticon	override	binary V2.b	120	6			65536	11	0	41	
+emotion	bif	binary V2.b	35	1				5	0	23	
+encdifficulty	bif	binary V2.b	5	3			4294967296	6	0	10	
+environment	bif	binary V2.b	24	42				16	0	16	
+excitedduration	bif	binary V2.b	3	2			256	8	0	9	
+exptable	bif	binary V2.b	51	2			21	5	0	10	
+facialanim	bif	binary V2.b	17	1				5	0	18	
+feat	override	binary V2.b	245	91			65536	16	0	41	
+featgain	override	binary V2.b	50	31			20	7	0	2	
+feedbacktext	bif	binary V2.b	3	2			4294967296	6	0	8	
+footstepsounds	bif	binary V2.b	11	35			4294967296	13	0	16	
+forceadjust	override	binary V2.b	11	2			256	8	0	4	
+forceshields	bif	binary V2.b	21	20			4294967296	15	0	24	
+formations	bif	binary V2.b	3	21			4294967296	11	0	15	
+fractionalcr	bif	binary V2.b	5	4			5	13	0	6	
+gameeffects	bif	binary V2.b	27	34			4294967296	18	0	25	
+gamespyrooms	bif	binary V2.b	12	3				9	0	11	
+gamma	bif	binary V2.b	3	4				7	0	4	
+gender	bif	binary V2.b	5	4			256	8	0	13	
+genericdoors	override	binary V2.b	126	10			256	12	0	19	NOTE size word 3568 != actual data 3623 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+globalcat	override	binary V2.b	1155	2			1775	4	0	21	
+grenadesnd	bif	binary V2.b	31	2			4294967296	5	0	15	
+guisounds	bif	binary V2.b	19	2			256	11	0	24	
+heads	override	binary V2.b	249	8	254	5	256	11	0	15	WARN rows >= 90% of K2 cap (byte-path head id, 0xFF sentinel, head 0 remapped to 1 (0x85D6AB))
+hen_companion	bif	binary V2.b	8	4				11	0	12	
+hen_familiar	bif	binary V2.b	8	4				11	0	10	
+influence	bif	binary V2.b	13	3				13	0	10	
+inventorysnds	bif	binary V2.b	33	2			256	14	0	23	
+iprp_abilities	bif	binary V2.b	6	2			256	5	0	12	
+iprp_acmodtype	bif	binary V2.b	5	2			65536	5	0	13	
+iprp_aligngrp	bif	binary V2.b	6	2			256	5	0	10	
+iprp_alignment	bif	binary V2.b	9	2			256	5	0	2	
+iprp_ammocost	bif	binary V2.b	16	6			65536	6	0	12	
+iprp_ammotype	bif	binary V2.b	3	3			65536	8	0	6	
+iprp_amount	bif	binary V2.b	5	2			256	5	0	3	
+iprp_attribcost	bif	binary V2.b	25	4				5	0	6	
+iprp_base1	bif	binary V2.b	0	3			0	5	0	0	
+iprp_bladecost	bif	binary V2.b	6	3			65536	5	0	6	
+iprp_bonuscost	bif	binary V2.b	11	4			65536	5	0	6	
+iprp_chargecost	bif	binary V2.b	19	5			65536	10	0	13	
+iprp_color	bif	binary V2.b	7	2			256	5	0	6	
+iprp_combatdam	bif	binary V2.b	3	2			65536	5	0	11	
+iprp_costtable	bif	binary V2.b	27	3			256	10	0	20	
+iprp_damagecost	bif	binary V2.b	15	7			65536	10	0	6	
+iprp_damagetype	bif	binary V2.b	13	3			256	5	0	11	
+iprp_damvulcost	bif	binary V2.b	8	4			65536	5	0	6	
+iprp_feats	bif	binary V2.b	21	4				9	0	19	
+iprp_immuncost	bif	binary V2.b	11	4			65536	5	0	6	
+iprp_immunity	bif	binary V2.b	10	3			65536	5	0	13	
+iprp_lightcost	bif	binary V2.b	5	3			65536	5	0	18	
+iprp_meleecost	bif	binary V2.b	6	4			65536	5	0	6	
+iprp_monstcost	bif	binary V2.b	58	5			65536	7	0	6	
+iprp_monsterdam	bif	binary V2.b	15	2				5	0	11	
+iprp_monsterhit	bif	binary V2.b	9	5			65536	12	0	12	
+iprp_neg10cost	bif	binary V2.b	11	4			65536	5	0	11	
+iprp_neg5cost	bif	binary V2.b	6	4			65536	5	0	10	
+iprp_onhit	bif	binary V2.b	12	4			65536	12	0	13	
+iprp_onhitcost	bif	binary V2.b	7	4			65536	5	0	8	
+iprp_onhitdc	bif	binary V2.b	5	3			65536	5	0	4	
+iprp_onhitdur	bif	binary V2.b	9	5			256	14	0	4	
+iprp_paramtable	bif	binary V2.b	12	3			256	11	0	15	
+iprp_pc	bif	binary V2.b	14	3				11	0	10	
+iprp_poison	bif	binary V2.b	6	2				5	0	9	
+iprp_protection	bif	binary V2.b	5	3			65536	5	0	7	
+iprp_redcost	bif	binary V2.b	6	4			65536	5	0	6	
+iprp_resistcost	bif	binary V2.b	7	4			65536	6	0	11	
+iprp_saveelement	bif	binary V2.b	19	3				10	0	14	
+iprp_savingthrow	bif	binary V2.b	4	2				10	0	9	
+iprp_slotscost	bif	binary V2.b	0	2			65536	5	0	0	
+iprp_soakcost	bif	binary V2.b	7	4			65536	6	0	6	
+iprp_spellcost	bif	binary V2.b	188	4			65536	10	0	30	
+iprp_spelllvcost	bif	binary V2.b	10	3				5	0	6	
+iprp_spelllvlimm	bif	binary V2.b	10	3				5	0	6	
+iprp_spells	bif	binary V2.b	336	10				10	0	30	
+iprp_spellshl	bif	binary V2.b	8	4				6	0	13	
+iprp_srcost	bif	binary V2.b	12	4			65536	5	0	8	
+iprp_staminacost	bif	binary V2.b	0	3				5	0	0	
+iprp_terraintype	bif	binary V2.b	0	2				5	0	0	
+iprp_trapcost	bif	binary V2.b	12	3			65536	5	0	11	
+iprp_traps	bif	binary V2.b	4	3				5	0	7	
+iprp_trapsize	bif	binary V2.b	4	2				5	0	7	
+iprp_walk	bif	binary V2.b	2	2			65536	5	0	10	
+iprp_weightcost	bif	binary V2.b	6	4			65536	5	0	6	
+iprp_weightinc	bif	binary V2.b	6	3			256	5	0	7	
+itemcreate	override	binary V2.b	209	8				11	0	16	NOTE size word 0 != actual data 2647 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+itemcreatemira	override	binary V2.b	214	8				11	0	16	NOTE size word 0 != actual data 2707 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+itempropdef	bif	binary V2.b	70	8			65536	15	0	29	
+itemprops	bif	binary V2.b	70	27			65536	16	0	37	
+itemvalue	bif	binary V2.b	60	4			4294967296	18	0	8	
+itmwizammo	bif	binary V2.b	55	7				10	0	2	
+itmwizarmor	bif	binary V2.b	73	7				10	0	2	
+itmwizhelmet	bif	binary V2.b	72	7				10	0	2	
+itmwizmelee	bif	binary V2.b	48	7				10	0	2	
+itmwizpotion	bif	binary V2.b	39	7				10	0	3	
+itmwizranged	bif	binary V2.b	47	7				10	0	2	
+itmwizrods	bif	binary V2.b	42	7				10	0	3	
+itmwizscroll	bif	binary V2.b	39	7				10	0	3	
+itmwizstaves	bif	binary V2.b	61	7				10	0	3	
+itmwizthrow	bif	binary V2.b	49	7				10	0	2	
+itmwiztrap	bif	binary V2.b	44	7				10	0	2	
+itmwizwands	bif	binary V2.b	39	7				10	0	3	
+keymap	bif	binary V2.b	81	23			90	12	0	18	
+lightcolor	bif	binary V2.b	32	7			4294967296	12	0	14	
+loadhints	bif	binary V2.b	28	3				12	0	7	
+loadscreenhints	bif	binary V2.b	70	2			256	16	0	6	
+loadscreens	override	binary V2.b	93	2			256	11	0	15	NOTE size word 0 != actual data 1470 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+loadstoryhints	override	binary V2.b	108	2				10	0	6	NOTE size word 0 != actual data 739 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+masterfeats	bif	binary V2.b	3	4			256	11	0	20	
+metamagic	bif	binary V2.b	7	4				15	0	8	
+minglobalrim	bif	binary V2.b	3	1				12	0	9	
+modulesave	override	binary V2.b	220	6			4294967296	22	0	12	
+movies	override	binary V2.b	63	4			256	10	0	6	NOTE size word 0 != actual data 624 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+musictable	override	binary V2.b	54	3				12	0	14	NOTE size word 0 != actual data 996 (benign: the engine reads the u16 into a stack local and never uses it, 0x71C8D2)
+namefilter	bif	binary V2.b	44	1			4294967296	4	0	8	
+npc	bif	binary V2.b	15	2			11	9	0	15	
+nwconfig	bif	binary V2.b	7	13				15	0	27	
+nwconfig2	bif	binary V2.b	7	4				8	0	15	
+packages	bif	binary V2.b	8	15				12	0	12	
+packeqbarb1	bif	binary V2.b	6	1				5	0	16	
+packeqbarb3	bif	binary V2.b	8	1				5	0	16	
+packeqbarb4	bif	binary V2.b	5	1				5	0	16	
+packeqbarb5	bif	binary V2.b	6	1				5	0	16	
+packeqbard1	bif	binary V2.b	12	1				5	0	16	
+packeqcler1	bif	binary V2.b	7	1				5	0	16	
+packeqcler2	bif	binary V2.b	7	1				5	0	16	
+packeqcler3	bif	binary V2.b	7	1				5	0	16	
+packeqcler4	bif	binary V2.b	7	1				5	0	16	
+packeqcler5	bif	binary V2.b	7	1				5	0	16	
+packeqcmdrd1	bif	binary V2.b	1	1				5	0	0	
+packeqdruid1	bif	binary V2.b	6	1				5	0	16	
+packeqexdrd1	bif	binary V2.b	1	1				5	0	0	
+packeqfight1	bif	binary V2.b	6	1				5	0	16	
+packeqfight2	bif	binary V2.b	8	1				5	0	16	
+packeqjedic1	bif	binary V2.b	1	1				5	0	0	
+packeqjedig1	bif	binary V2.b	1	1				5	0	0	
+packeqjedis1	bif	binary V2.b	1	1				5	0	0	
+packeqmonk1	bif	binary V2.b	6	1				5	0	16	
+packeqmonk2	bif	binary V2.b	7	1				5	0	16	
+packeqmonk4	bif	binary V2.b	6	1				5	0	16	
+packeqmonk5	bif	binary V2.b	7	1				5	0	16	
+packeqpala1	bif	binary V2.b	7	1				5	0	16	
+packeqpala2	bif	binary V2.b	8	1				5	0	16	
+packeqpala3	bif	binary V2.b	9	1				5	0	16	
+packeqrang1	bif	binary V2.b	9	1				5	0	16	
+packeqrang2	bif	binary V2.b	9	1				5	0	16	
+packeqrang3	bif	binary V2.b	9	1				5	0	16	
+packeqrang4	bif	binary V2.b	9	1				5	0	16	
+packeqrang5	bif	binary V2.b	9	1				5	0	16	
+packeqrog1	bif	binary V2.b	9	1				5	0	16	
+packeqrog2	bif	binary V2.b	9	1				5	0	16	
+packeqrog3	bif	binary V2.b	9	1				5	0	16	
+packeqrog5	bif	binary V2.b	9	1				5	0	16	
+packeqscdrl1	bif	binary V2.b	5	1				5	0	16	
+packeqscout1	bif	binary V2.b	5	1				5	0	16	
+packeqsoldr1	bif	binary V2.b	4	1				5	0	16	
+packeqsor1	bif	binary V2.b	12	1				5	0	16	
+packeqwiz1	bif	binary V2.b	12	1				5	0	16	
+packftbarb1	bif	binary V2.b	177	2				9	0	16	
+packftbarb2	bif	binary V2.b	177	2				9	0	16	
+packftbarb3	bif	binary V2.b	177	2				9	0	16	
+packftbarb4	bif	binary V2.b	177	2				9	0	16	
+packftbarb5	bif	binary V2.b	178	2				9	0	16	
+packftbard1	bif	binary V2.b	113	2				9	0	16	
+packftbard2	bif	binary V2.b	113	2				9	0	16	
+packftbard3	bif	binary V2.b	113	2				9	0	16	
+packftbard4	bif	binary V2.b	113	2				9	0	16	
+packftbard5	bif	binary V2.b	113	2				9	0	16	
+packftcler1	bif	binary V2.b	113	2				9	0	16	
+packftcler2	bif	binary V2.b	113	2				9	0	16	
+packftcler3	bif	binary V2.b	113	2				9	0	16	
+packftcler4	bif	binary V2.b	113	2				9	0	16	
+packftcler5	bif	binary V2.b	113	2				9	0	16	
+packftcmdrd1	bif	binary V2.b	60	2				9	0	10	
+packftdruid1	bif	binary V2.b	113	2				9	0	16	
+packftdruid2	bif	binary V2.b	113	2				9	0	16	
+packftdruid3	bif	binary V2.b	113	2				9	0	16	
+packftdruid4	bif	binary V2.b	113	2				9	0	16	
+packftdruid5	bif	binary V2.b	113	2				9	0	16	
+packftexdrd1	bif	binary V2.b	60	2				9	0	10	
+packftfight1	bif	binary V2.b	177	2				9	0	16	
+packftfight2	bif	binary V2.b	177	2				9	0	16	
+packftfight3	bif	binary V2.b	177	2				9	0	16	
+packftfight4	bif	binary V2.b	178	2				9	0	16	
+packftfight5	bif	binary V2.b	177	2				9	0	16	
+packftjedic1	bif	binary V2.b	60	2				9	0	10	
+packftjedig1	bif	binary V2.b	60	2				9	0	10	
+packftjedis1	bif	binary V2.b	60	2				9	0	10	
+packftmonk1	bif	binary V2.b	176	2				9	0	16	
+packftmonk2	bif	binary V2.b	176	2				9	0	16	
+packftmonk3	bif	binary V2.b	176	2				9	0	16	
+packftmonk4	bif	binary V2.b	176	2				9	0	16	
+packftmonk5	bif	binary V2.b	174	2				9	0	16	
+packftpala1	bif	binary V2.b	177	2				9	0	16	
+packftpala2	bif	binary V2.b	177	2				9	0	16	
+packftpala3	bif	binary V2.b	177	2				9	0	16	
+packftpala4	bif	binary V2.b	177	2				9	0	16	
+packftrang1	bif	binary V2.b	182	2				9	0	16	
+packftrang2	bif	binary V2.b	182	2				9	0	16	
+packftrang3	bif	binary V2.b	182	2				9	0	16	
+packftrang4	bif	binary V2.b	182	2				9	0	16	
+packftrang5	bif	binary V2.b	182	2				9	0	16	
+packftrog1	bif	binary V2.b	181	2				9	0	16	
+packftrog2	bif	binary V2.b	181	2				9	0	16	
+packftrog3	bif	binary V2.b	181	2				9	0	16	
+packftrog5	bif	binary V2.b	181	2				9	0	16	
+packftscdrl1	bif	binary V2.b	60	2				9	0	10	
+packftscout1	bif	binary V2.b	60	2				9	0	10	
+packftsoldr1	bif	binary V2.b	60	2				9	0	10	
+packftwiz1	bif	binary V2.b	113	2				9	0	16	
+packftwiz2	bif	binary V2.b	113	2				9	0	16	
+packftwiz3	bif	binary V2.b	113	2				9	0	16	
+packftwiz4	bif	binary V2.b	113	2				9	0	16	
+packftwiz5	bif	binary V2.b	113	2				9	0	16	
+packftwiz6	bif	binary V2.b	113	2				9	0	16	
+packftwiz7	bif	binary V2.b	113	2				9	0	16	
+packftwiz8	bif	binary V2.b	113	2				9	0	16	
+packftwiz9	bif	binary V2.b	113	2				9	0	16	
+packskbarb1	bif	binary V2.b	8	2				10	0	10	
+packskbarb2	bif	binary V2.b	8	2				10	0	10	
+packskbarb3	bif	binary V2.b	8	2				10	0	10	
+packskbarb4	bif	binary V2.b	8	2				10	0	10	
+packskbarb5	bif	binary V2.b	8	2				10	0	10	
+packskbard1	bif	binary V2.b	18	2				10	0	14	
+packskbard2	bif	binary V2.b	18	2				10	0	14	
+packskbard3	bif	binary V2.b	18	2				10	0	14	
+packskbard4	bif	binary V2.b	18	2				10	0	14	
+packskbard5	bif	binary V2.b	18	2				10	0	14	
+packskcler1	bif	binary V2.b	13	2				10	0	13	
+packskcler2	bif	binary V2.b	13	2				10	0	13	
+packskcler3	bif	binary V2.b	13	2				10	0	13	
+packskcler4	bif	binary V2.b	13	2				10	0	13	
+packskcler5	bif	binary V2.b	13	2				10	0	13	
+packskcmdrd1	bif	binary V2.b	8	2				10	0	7	
+packskdruid1	bif	binary V2.b	13	2				10	0	13	
+packskdruid2	bif	binary V2.b	13	2				10	0	13	
+packskdruid3	bif	binary V2.b	13	2				10	0	13	
+packskdruid4	bif	binary V2.b	13	2				10	0	13	
+packskdruid5	bif	binary V2.b	13	2				10	0	13	
+packskexdrd1	bif	binary V2.b	8	2				10	0	7	
+packskfight1	bif	binary V2.b	9	2				10	0	10	
+packskfight2	bif	binary V2.b	9	2				10	0	10	
+packskfight3	bif	binary V2.b	9	2				10	0	10	
+packskfight5	bif	binary V2.b	9	2				10	0	10	
+packskjedic1	bif	binary V2.b	8	2				10	0	7	
+packskjedig1	bif	binary V2.b	8	2				10	0	7	
+packskjedis1	bif	binary V2.b	8	2				10	0	7	
+packskmonk1	bif	binary V2.b	6	2				10	0	12	
+packskpala1	bif	binary V2.b	5	2				10	0	13	
+packskpala4	bif	binary V2.b	5	2				10	0	13	
+packskrang1	bif	binary V2.b	6	2				10	0	13	
+packskrang2	bif	binary V2.b	6	2				10	0	13	
+packskrang3	bif	binary V2.b	7	2				10	0	13	
+packskrog1	bif	binary V2.b	11	2				10	0	14	
+packskrog2	bif	binary V2.b	11	2				10	0	14	
+packskrog3	bif	binary V2.b	11	2				10	0	14	
+packskrog4	bif	binary V2.b	11	2				10	0	12	
+packskrog5	bif	binary V2.b	11	2				10	0	14	
+packskscdrl1	bif	binary V2.b	8	2				10	0	7	
+packskscout1	bif	binary V2.b	8	2				10	0	7	
+packsksoldr1	bif	binary V2.b	8	2				10	0	7	
+packskwiz1	bif	binary V2.b	9	2				10	0	13	
+packspbar1	bif	binary V2.b	64	2				10	0	30	
+packspwiz1	bif	binary V2.b	134	2				10	0	30	
+packspwiz2	bif	binary V2.b	48	2				10	0	30	
+packspwiz3	bif	binary V2.b	48	2				10	0	22	
+packspwiz4	bif	binary V2.b	50	2				10	0	30	
+packspwiz5	bif	binary V2.b	49	2				10	0	26	
+packspwiz6	bif	binary V2.b	48	2				10	0	27	
+packspwiz7	bif	binary V2.b	48	2				10	0	27	
+packspwiz8	bif	binary V2.b	49	2				10	0	26	
+packspwiz9	bif	binary V2.b	45	2				10	0	26	
+parts_belt	bif	binary V2.b	17	2				12	0	4	
+parts_bicep	bif	binary V2.b	16	2				12	0	4	
+parts_chest	bif	binary V2.b	54	2				12	0	4	
+parts_foot	bif	binary V2.b	13	2				12	0	4	
+parts_forearm	bif	binary V2.b	24	2				12	0	4	
+parts_hand	bif	binary V2.b	9	2				12	0	4	
+parts_legs	bif	binary V2.b	17	2				12	0	4	
+parts_neck	bif	binary V2.b	7	2				12	0	4	
+parts_pelvis	bif	binary V2.b	38	2				12	0	4	
+parts_shin	bif	binary V2.b	18	2				12	0	4	
+parts_shoulder	bif	binary V2.b	26	2				12	0	4	
+pazaakdecks	bif	binary V2.b	15	11			4294967296	8	0	23	
+phenotype	bif	binary V2.b	3	2				5	0	6	
+placeableobjsnds	bif	binary V2.b	88	7			4294967296	9	0	16	
+placeables	override	binary V2.b	402	18			256	20	0	28	
+placeabletypes	bif	binary V2.b	9	2				6	0	15	
+planetary	override	binary V2.b	16	7			16	15	0	21	
+plot	bif	binary V2.b	84	2			4294967296	5	0	24	
+poison	override	binary V2.b	14	14			256	8	0	29	
+polymorph	bif	binary V2.b	1	16				15	0	26	
+portraits	override	binary V2.b	90	14	65534	65444	65536	16	0	16	
+postproc	bif	binary V2.b	13	1				5	0	18	
+pregen	bif	binary V2.b	23	2				8	0	16	
+prioritygroups	bif	binary V2.b	27	12			256	18	0	38	
+pvpsettings	bif	binary V2.b	4	3				6	0	7	
+race_feat_dwarf	bif	binary V2.b	8	2				9	0	17	
+race_feat_elf	bif	binary V2.b	8	2				9	0	20	
+race_feat_gnome	bif	binary V2.b	9	2				9	0	20	
+race_feat_half	bif	binary V2.b	6	2				9	0	19	
+race_feat_hfelf	bif	binary V2.b	6	2				9	0	20	
+race_feat_hforc	bif	binary V2.b	1	2				9	0	10	
+race_feat_human	bif	binary V2.b	1	2				9	0	11	
+racialtypes	bif	binary V2.b	7	22			256	19	0	17	
+ranges	bif	binary V2.b	21	4			4294967296	14	0	16	
+regeneration	override	binary V2.b	10	1			2	5	0	10	
+regeneration_e3	bif	binary V2.b	10	1				5	0	5	
+removefxondeath	bif	binary V2.b	2	2			4294967296	10	0	15	
+repadjust	bif	binary V2.b	4	12				11	0	6	
+replacetexture	bif	binary V2.b	2	1				11	0	8	
+repute	bif	binary V2.b	24	24			4294967296	15	0	15	
+resistancecost	bif	binary V2.b	0	1				4	0	0	
+restduration	bif	binary V2.b	64	2				8	0	7	
+rrf_nss	bif	binary V2.b	15	3				9	0	23	
+rrf_wav	bif	binary V2.b	21	3				9	0	24	
+rumble	bif	binary V2.b	22	32				11	0	15	
+skills	bif	binary V2.b	8	44			256	17	0	18	
+skillvsitemcost	bif	binary V2.b	50	4				14	0	7	
+soundcatfilters	bif	binary V2.b	14	2				6	0	12	
+sounddefaultspos	bif	binary V2.b	3	6				11	0	16	
+sounddefaultstim	bif	binary V2.b	5	8				11	0	17	
+soundeax	bif	binary V2.b	24	2				11	0	16	
+soundgain	bif	binary V2.b	15	4				11	0	15	
+soundprovider	bif	binary V2.b	5	4			256	8	0	30	
+soundset	override	binary V2.b	70	5	65535	65465	65536	6	0	22	
+soundsettype	bif	binary V2.b	5	2				6	0	8	
+soundtypes	bif	binary V2.b	2	2				14	0	16	
+spells	override	binary V2.b	287	60			65536	15	0	47	
+spellschools	bif	binary V2.b	9	5				11	0	13	
+statescripts	bif	binary V2.b	36	2			4	10	0	23	
+stringtokens	bif	binary V2.b	128	8			4294967296	10	0	18	
+subrace	bif	binary V2.b	4	2				5	0	7	
+surfacemat	bif	binary V2.b	31	7			32	11	0	13	
+swingsounds	bif	binary V2.b	9	3				6	0	11	
+swoopupgrade	bif	binary V2.b	13	5				11	0	14	
+tailmodel	bif	binary V2.b	3	2				5	0	18	
+tcn01_edge	bif	binary V2.b	28	5				7	0	12	
+tcn01doors	bif	binary V2.b	1	3				5	0	12	
+tdc01_edge	bif	binary V2.b	13	5				7	0	12	
+tde01_edge	bif	binary V2.b	13	5				7	0	12	
+tdm01_edge	bif	binary V2.b	14	5				7	0	12	
+tds01_edge	bif	binary V2.b	13	5				7	0	12	
+texpacks	bif	binary V2.b	3	6			3	11	0	12	
+tic01_edge	bif	binary V2.b	19	5				7	0	12	
+tilecolor	bif	binary V2.b	16	3				5	0	4	
+tin01_edge	bif	binary V2.b	16	5				7	0	12	
+tin01doors	bif	binary V2.b	1	3				5	0	12	
+tms01_edge	bif	binary V2.b	7	5				7	0	12	
+traps	override	binary V2.b	38	11			256	14	0	35	
+treasurescale	bif	binary V2.b	5	3				6	0	8	
+ttf01_edge	bif	binary V2.b	13	5				7	0	12	
+ttr01_edge	bif	binary V2.b	24	5				7	0	12	
+ttr01doors	bif	binary V2.b	1	3				5	0	12	
+tutitemcreate	bif	binary V2.b	5	8				11	0	16	
+tutorial	bif	binary V2.b	74	8			256	13	0	37	
+upcrystals	bif	binary V2.b	14	5			256	12	0	15	
+upgrade	override	binary V2.b	464	3			32	11	0	20	
+upgradetypes	bif	binary V2.b	12	1				5	0	18	
+vfx_fire_forget	bif	binary V2.b	17	2				5	0	17	
+vfx_persistent	bif	binary V2.b	3	30			4294967296	22	0	28	
+videoeffects	bif	binary V2.b	16	15			4294967296	22	0	30	
+videoquality	bif	binary V2.b	9	5				8	0	24	
+visemes	bif	binary V2.b	16	3				8	0	7	
+visualeffects	override	binary V2.b	167	29			65536	16	0	38	
+waypoint	bif	binary V2.b	5	3				6	0	13	
+weapondischarge	override	binary V2.b	79	16			4294967296	10	0	8	
+weaponsounds	override	binary V2.b	5	29			256	11	0	16	
+wingmodel	bif	binary V2.b	3	2				5	0	9	
+xpbaseconst	bif	binary V2.b	17	3				9	0	4	
+xptable	bif	binary V2.b	50	52			20	5	0	4	
+# tables with flags: 1
+# caps used (K2 verified, V6): appearance=65536 (u16 appearance id (creature+0x194)); classes=255 (byte count at rules+0x121: 256 rows load as 0 (0x69FF93)); heads=254 (byte-path head id, 0xFF sentinel, head 0 remapped to 1 (0x85D6AB)); portraits=65534 (u16 id, ids >= 0xFFFE are sentinels (0x57F360)); soundset=65535 (row count truncated to u16: 65536 rows load as 0 (0x85F0DF))

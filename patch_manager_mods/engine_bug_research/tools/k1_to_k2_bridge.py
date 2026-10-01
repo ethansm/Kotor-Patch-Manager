@@ -7,7 +7,7 @@ Chain: KPM kotor1_0_3.db (K1 class::function, nearest preceding named function) 
        ghidra_knowledge/gog_map_mods678.tsv) or the knowledge DB name_map table.
 
 A bridged address is a HYPOTHESIS: confirm `ret N` and callees in the dump before relying on it.
-Confidence: name-exact (same class::function in K2 and a Steam address resolved), gog-only (name matches in the K2 GOG DB but
+Confidence: conflict (several mapper rows claim that Steam address; decide from the decompile), name-weak, name-exact (same class::function in K2 and a Steam address resolved), gog-only (name matches in the K2 GOG DB but
 no Steam mapping yet: run gog_cluster_delta_map.py for the class), class-only (class exists in K2 but not that method), none.
 
 usage: k1_to_k2_bridge.py [--inventory FILE.md] [--addr 0x41B140 ...] [--out TSV]
@@ -57,11 +57,13 @@ def main():
 
     # gog addr -> (steam addr, method, retn)
     gog2steam = {}
+    steam_claims = {}  # steam addr -> set of names claimed by any mapper row (conflict detector)
     files = glob.glob(os.path.join(PM, 'engine_research_findings', '*_map_*.tsv')) + [
         os.path.join(PM, 'ghidra_knowledge', 'gog_map_mods678.tsv')]
     for f in files:
         for row in csv.reader(open(f), delimiter='\t'):
             if len(row) >= 4 and row[0].startswith('0x') and row[1].startswith('0x'):
+                steam_claims.setdefault(int(row[0], 16), set()).add(row[2])
                 gog2steam.setdefault(int(row[1], 16), []).append((int(row[0], 16), row[3], row[4] if len(row) > 4 else '', os.path.basename(f)))
     nm = ro(KDB)
     steam_by_name = {}
@@ -113,12 +115,16 @@ def main():
                 if nme in steam_by_name:
                     sa, via = steam_by_name[nme][0][0], 'name_map:%s' % steam_by_name[nme][0][1]; break
         sr = steam_ret.get(sa, '') if sa != '' else ''
+        if sa != '' and len(steam_claims.get(sa, ())) > 1:
+            notes.append('MAPPER CONFLICT at steam addr: %s' % ' | '.join(sorted(steam_claims[sa])))
         agree = ''
         if sr != '' and gps is not None:
             agree = 'yes' if str(gps) == sr else 'NO(gog %s vs steam %s)' % (gps, sr)
         conf = 'name-exact' if sa != '' else 'gog-only'
         if any(n.startswith('K1 retn') for n in notes):
             conf = 'name-weak' if sa != '' else 'gog-only'
+        if any(n.startswith('MAPPER CONFLICT') for n in notes):
+            conf = 'conflict'
         out.append([hex(addr), addrs[addr], '%s::%s' % (cl, fn), hex(addr - faddr), ps, conf, hex(gaddr), gps,
                     hex(sa) if sa != '' else '', sr, via, agree, '; '.join(notes)])
     with open(a.out, 'w', newline='') as fh:

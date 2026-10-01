@@ -36,7 +36,7 @@ k1_addr	source	k1_function	k1_offset	k1_retn	confidence	gog_addr	gog_retn	steam_
 0x45a3b7	kmrp-inventory	CAurGUIStringInternal::WrapStrings	0xc7	4	name-exact	0x8d1840	4	0x47af30	4	R9_map_aur.tsv:vote:retn=4	yes	
 0x45a3dc	kmrp-inventory	CAurGUIStringInternal::WrapStrings	0xec	4	name-exact	0x8d1840	4	0x47af30	4	R9_map_aur.tsv:vote:retn=4	yes	
 0x45a5e0	kmrp-inventory	CAurGUIStringInternal::WrapStrings	0x2f0	4	name-exact	0x8d1840	4	0x47af30	4	R9_map_aur.tsv:vote:retn=4	yes	
-0x45a850	kmrp-inventory	CAurGUIStringInternal::Draw	0x0	4	name-exact	0x8d1e10	4	0x47b500	4	R9_map_aur.tsv:vote:retn=4	yes	K1 name Draw matched GOG Draw_2 by param size
+0x45a850	kmrp-inventory	CAurGUIStringInternal::Draw	0x0	4	conflict	0x8d1e10	4	0x47b500	4	R9_map_aur.tsv:vote:retn=4	yes	K1 name Draw matched GOG Draw_2 by param size; MAPPER CONFLICT at steam addr: CAurGUIStringInternal::Draw_2 | Global::BSPNodeEnsureNodeData
 0x4a1770	kmrp-inventory	CAurFont::TextOutA	0x0	8	none							
 0x5f0c65	kmrp-inventory	CClientExoAppInternal::IsValidResolution	0x5	8	class-only							
 0x5f0c6f	kmrp-inventory	CClientExoAppInternal::IsValidResolution	0xf	8	class-only							
