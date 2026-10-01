@@ -1,0 +1,4 @@
+LIBRARY EquipIconFix
+EXPORTS
+    EquipFixTestState
+    EquipFixTestCounters
