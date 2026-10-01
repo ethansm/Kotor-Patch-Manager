@@ -183,6 +183,28 @@ the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-
   a record with empty lists (feat/power slots simply lapse; only skill points carry over); a missing record or class mismatch = vanilla. Multi-class
   (Atton Scoundrel 19 -> Sentinel 1 at char 20) works because the record carries its class id.
 
+## Phase 2 build (2026-09-30, stage 0 = log + dry run; NOT installed)
+- Preflight: live exe bytes at 0x6B9870 = `55 8B EC 81 EC 80 00 00 00` (= vanilla); no hook within +-16 in any `kotor2-steam-aspyr*.hooks.toml`
+  (repo + framework, incl. LevelUpLimit); live set 20 ids (patch_config.toml; now incl. `perf-lab` + `load-hang-probe`), kpm_install_state UpdatedAt
+  2026-09-30T21:17:18-04:00, 12 DLLs in `patches/` (equipment-3d-character dcbdfde3, perf-lab 82b307af, load-hang-probe 77be826f). Game closed.
+- Patch id `level-up-override` (Name `LevelUpOverride`, 0.1.0-probe). Source of record `patch_manager_mods/level_up_override_src/`, build copy
+  `$T/Patches/LevelUpOverride/` -> `LevelUpOverride.kpatch` md5 515a915e..., DLL md5 acd1ce14... (mingw i686, `-Wall -Wextra` clean, export `LevelUpOverrideEntry`).
+- Hook params (framework `wrapper_context.h` confirms `ebp` = game EBP from PUSHAD and `[esp+N]` = original ESP): `ecx` stats, `[esp+0]` return
+  address, `[esp+4]` pending, `[esp+8]` addToList, `ebp` caller frame -> `LevelUpOverrideEntry(stats, ret, pending, addToList, ebp)`.
+- Behaviour: never writes game memory (`ApplyEnabled=false`). Every call (mode log|rewrite): SafeRead-guarded dump to `levelup_override_log.txt`
+  (game dir; rotated to `.old.txt` > 4 MB; 20000 lines/session): flow (direct ret + 4-frame EBP walk mapped to the doc 08 caller functions ->
+  manual-gui / auto-button / auto-npcs / xp-award / distribute-xp / portrait-refresh / levelup-henchman / setexp-stored / auto-other / unknown),
+  tag, classes `id:lvl`, total level, key, XP, stats unspent +0x170, pending fields, skill deltas, feats/spells add/remove with count/cap, raw 0x30 hex,
+  creature skill ranks and feat ids (stride 4). For tags with a table section: `DRY tag= key= status= feats=[] spells=[] deltas=[] unspent= ability=`
+  (status rewrite / already / no-record / class-mismatch / negative-unspent / skipped-unreadable) and `WOULD REWRITE` when mode=rewrite + allow-listed.
+- Config `levelup_override.ini` (hot reload by mtime+size): `mode=log|rewrite|off`, `tags=`, `verbose=`, `table=levelup_paths.ini`; missing = log.
+  The table must be copied to the game dir (`research/companion_levelup/runtime/levelup_paths.ini`); parse error -> `TABLE ERROR`, dry run off.
+- Dry-run rule (twin `research/companion_levelup/simulate_rewrite.py`): feats = orig in granted set + path feats; spells = orig in engine grant set +
+  path powers; deltas = record ranks; unspent = orig + cost(orig deltas) - cost(record) (class-skill masks; no mask = cost 1); <0 -> negative-unspent,
+  no change; ability = record unless 6 (keep pending); identical result -> `already` (SetExperience replay idempotency).
+- Offline checks: `python3 simulate_rewrite.py` (52 records + edge cases, 0 failures); `python3 tools/parity/parity.py` compiles the SAME
+  LevelUpOverride.cpp natively against `tools/parity/stub/windows.h` and diffs the DRY lines vs Python: 263 cases, 0 mismatches.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
