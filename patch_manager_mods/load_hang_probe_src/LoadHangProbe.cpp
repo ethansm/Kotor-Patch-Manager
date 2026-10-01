@@ -1,4 +1,10 @@
-// Load Hang Probe 1.3.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only unless "fix=auto" is set.
+// Load Hang Probe 1.4.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only unless "fix=auto" is set.
+// 1.4.0 (doc 10 Phase 4, T4/U6 probe-log points; ring slots only, logged as WINEV by the watchdog):
+//   0x40B4AD WM_ACTIVATEAPP arrival in WndProc (hwnd, wParam, lParam, foreground pid == ours): lParam==0 with wParam==0 while the
+//            foreground window is ours = the movie thread's synthetic deactivate (the H1 discriminator)
+//   0x40C6B3 movie window saw a deactivate (movie thread)   0x40D637 movie thread sets [0xA1B76C]=1   0x40D692 synthetic PostMessage(main,0x1C,0,0)
+//   0x40BF40 RestoreAfterMovie entry (a1b764/768/76c)        0x798B39 PlayMovies exit ([EBP-0x18], [EBP-0x20])   0x798A77 pump cut-off engaged
+//   0x781E0B MainLoop load-screen keep/hide decision: one event per CHANGE of (a1b4e0, foreground-is-game) plus a per-frame count
 // 1.3.0 (doc 09 s15): the load screen is dismissed only while the engine's app-active flag DAT_00A1B4E0 is set (WndProc
 // 0x40A750 WM_ACTIVATEAPP -> AppActivated 0x40BCF0 / AppDeactivated 0x40BC40). New: WINEV/WIN log lines (window messages,
 // activation calls with callers, foreground window vs game window, the activation-gate globals), report section, and an
@@ -197,7 +203,7 @@ volatile LONG64 g_readBytes = 0;
 volatile DWORD g_lastIoTick = 0; char g_lastIoName[40]; volatile char g_ioOn = 0;
 
 // ---- 1.3.0 window / activation events (hooks write ring slots only; the watchdog flushes them to the log) ----
-struct WinEv { DWORD tick; LONG frames; unsigned kind; uintptr_t a, b, c, d, ret; HWND fg; int flag; };   // kind: 0 WNDMSG, 1 ACTIVATED, 2 DEACTIVATED
+struct WinEv { DWORD tick; LONG frames; unsigned kind; uintptr_t a, b, c, d, ret; HWND fg; int flag; };   // kind: 0 WNDMSG, 1 ACTIVATED, 2 DEACTIVATED, 3..10 = 1.4.0 points (winKindName)
 constexpr int WinRing = 256;
 WinEv g_win[WinRing]; volatile LONG g_winHead = 0; LONG g_winFlushed = 0;
 char g_fixMsg[32][200]; volatile LONG g_fixHead = 0; LONG g_fixFlushed = 0;   // main-thread notes about the fix, flushed by the watchdog
@@ -217,6 +223,13 @@ const char* msgName(unsigned m) {
 }
 bool interestingMsg(unsigned m) { return m == 0x05 || m == 0x06 || m == 0x07 || m == 0x08 || m == 0x10 || m == 0x18 || m == 0x1c || m == 0x21 || m == 0x46 || m == 0x47 || m == 0x7e || m == 0x86 || m == 0x112; }
 inline WinEv* winSlot() { LONG i = InterlockedIncrement(&g_winHead) - 1; return &g_win[i & (WinRing - 1)]; }
+const char* winKindName(unsigned k) {
+    switch (k) { case 3: return "ACTIVATEAPP-ARRIVE(0x40B4AD)"; case 4: return "MOVIEWND-DEACTIVATE(0x40C6B3)"; case 5: return "MOVIE-SETS-76C(0x40D637)";
+        case 6: return "MOVIE-SYNTH-POST-1C(0x40D692)"; case 7: return "RESTORE-AFTER-MOVIE(0x40BF40)"; case 8: return "PLAYMOVIES-EXIT(0x798B39)";
+        case 9: return "PUMP-CUTOFF(0x798A77)"; case 10: return "LS-DECISION-CHANGE(0x781E0B)"; default: return "?"; }
+}
+inline bool fgIsOurs(HWND fg) { DWORD pid = 0; if (fg) GetWindowThreadProcessId(fg, &pid); return pid == GetCurrentProcessId(); }
+volatile LONG g_lsDecisions = 0; int g_lsLastA = -1, g_lsLastFg = -1;   // 0x781E0B (main thread only)
 
 struct WinState { uintptr_t hwnd; unsigned fgIsGame, iconic, visible; int a1b4e0, d4, bc, c0, f768, f76c, f42a0, init; DWORD gateTick; DWORD fgPid; };
 bool operator!=(const WinState& a, const WinState& b) { return memcmp(&a, &b, sizeof(a)) != 0; }
@@ -526,7 +539,11 @@ DWORD WINAPI watchdog(LPVOID) {
                 if (g_winHead - i > WinRing) continue;
                 const WinEv& e = g_win[i & (WinRing - 1)];
                 if (e.kind == 0) logf("WINEV f%ld %s(%02x) hwnd=%08x wp=%08x lp=%08x fg=%p a1b4e0=%d", e.frames, msgName((unsigned)e.b), (unsigned)e.b, (unsigned)e.a, (unsigned)e.c, (unsigned)e.d, e.fg, e.flag);
-                else logf("WINEV f%ld %s ret=%08x arg=%08x a1b4e0(before)=%d fg=%p", e.frames, e.kind == 1 ? "APP-ACTIVATED(0x40BCF0)" : "APP-DEACTIVATED(0x40BC40)", (unsigned)e.ret, (unsigned)e.a, e.flag, e.fg);
+                else if (e.kind <= 2) logf("WINEV f%ld %s ret=%08x arg=%08x a1b4e0(before)=%d fg=%p", e.frames, e.kind == 1 ? "APP-ACTIVATED(0x40BCF0)" : "APP-DEACTIVATED(0x40BC40)", (unsigned)e.ret, (unsigned)e.a, e.flag, e.fg);
+                else if (e.kind == 3) logf("WINEV f%ld tid=%lu %s hwnd=%08x wp=%08x lp=%08x fgOurs=%u a1b4e0=%d fg=%p%s", e.frames, (unsigned long)e.d, winKindName(e.kind),
+                          (unsigned)e.a, (unsigned)e.b, (unsigned)e.ret, (unsigned)e.c, e.flag, e.fg, (e.b == 0 && e.ret == 0 && e.c) ? " <- SYNTHETIC DEACTIVATE while foreground is ours" : "");
+                else logf("WINEV f%ld tid=%lu %s a=%08x b=%08x c=%08x ret=%08x a1b4e0=%d fg=%p", e.frames, (unsigned long)e.d, winKindName(e.kind),
+                          (unsigned)e.a, (unsigned)e.b, (unsigned)e.c, (unsigned)e.ret, e.flag, e.fg);
             }
             while (g_fixFlushed < g_fixHead) { LONG i = g_fixFlushed++; if (g_fixHead - i > 32) continue; logf("FIX %s", g_fixMsg[i & 31]); }
             if (GetFileAttributesA("hangprobe_activate.txt") != INVALID_FILE_ATTRIBUTES) { DeleteFileA("hangprobe_activate.txt"); logf("manual activate requested (a1b4e0=%d, fgIsGame=%u)", ws.a1b4e0, ws.fgIsGame); InterlockedExchange(&g_reqActivate, 1); }
@@ -644,6 +661,36 @@ void __cdecl HangProbeDeactivated(void* ret, int arg) {
     WinEv* e = winSlot(); e->tick = GetTickCount(); e->frames = g_frames; e->kind = 2; e->a = static_cast<uintptr_t>(arg); e->b = e->c = e->d = 0; e->ret = reinterpret_cast<uintptr_t>(ret); e->fg = GetForegroundWindow(); e->flag = gflag();
 }
 
+// ---- 1.4.0 probe-log points (ring slots only). d = thread id unless noted. ----
+static WinEv* ev14(unsigned kind) { WinEv* e = winSlot(); e->tick = GetTickCount(); e->frames = g_frames; e->kind = kind; e->a = e->b = e->c = e->ret = 0;
+    e->d = GetCurrentThreadId(); e->fg = GetForegroundWindow(); e->flag = gflag(); return e; }
+// 0x40B4AD: WndProc case WM_ACTIVATEAPP ([EBP+8] hwnd, [EBP+0x10] wParam, [EBP+0x14] lParam). c bit0 = foreground window belongs to us, a = hwnd, b = wParam, ret = lParam.
+void __cdecl HangProbeActAppArrive(void* hwnd, int wp, int lp) {
+    if (!g_on) return;
+    WinEv* e = ev14(3); e->a = reinterpret_cast<uintptr_t>(hwnd); e->b = static_cast<uintptr_t>(wp); e->ret = static_cast<uintptr_t>(lp); e->c = fgIsOurs(e->fg) ? 1 : 0;
+}
+void __cdecl HangProbeMovieWndDeact() { if (g_on) ev14(4); }
+void __cdecl HangProbeMovie76c() { if (g_on) ev14(5); }
+void __cdecl HangProbeSynthPost() { if (g_on) { WinEv* e = ev14(6); e->a = *reinterpret_cast<volatile uintptr_t*>(GameHwndG); } }
+// 0x40BF40 RestoreAfterMovie entry ([esp+0] = caller): a = [a1b764], b = [a1b768], c = [a1b76c].
+void __cdecl HangProbeRestoreAfterMovie(void* ret) {
+    if (!g_on) return;
+    WinEv* e = ev14(7); e->ret = reinterpret_cast<uintptr_t>(ret);
+    e->a = *reinterpret_cast<volatile unsigned*>(0x00A1B764); e->b = *reinterpret_cast<volatile unsigned*>(Gate768); e->c = *reinterpret_cast<volatile unsigned*>(Gate76C);
+}
+// 0x798B39 PlayMovies exit: a = [EBP-0x18], b = [EBP-0x20] (cut-off latch).
+void __cdecl HangProbeMovieExit(int v18, int v20) { if (g_on) { WinEv* e = ev14(8); e->a = static_cast<uintptr_t>(v18); e->b = static_cast<uintptr_t>(v20); } }
+void __cdecl HangProbePumpCutoff() { if (g_on) ev14(9); }
+// 0x781E0B MainLoop: CMP [a1b4e0],0 deciding whether the load screen may be hidden (main thread, every frame). Logs only changes.
+void __cdecl HangProbeLsDecision() {
+    if (!g_on) return;
+    InterlockedIncrement(&g_lsDecisions);
+    int a = gflag(); HWND fg = GetForegroundWindow(); int f = fgIsOurs(fg) ? 1 : 0;
+    if (a == g_lsLastA && f == g_lsLastFg) return;
+    g_lsLastA = a; g_lsLastFg = f;
+    WinEv* e = ev14(10); e->a = static_cast<uintptr_t>(a); e->b = static_cast<uintptr_t>(f); e->c = static_cast<uintptr_t>(g_lsDecisions);
+}
+
 // Hook: CClientExoAppInternal::SetPlayerCreatureId (0x00798660) entry, thiscall: ECX = internal, [esp+0] = caller,
 // [esp+4] = new id. Only writes one ring slot (no I/O); the watchdog logs it as SETPLAYER.
 void __cdecl HangProbeSetPlayerId(void* internal, void* ret, int newId) {
@@ -671,7 +718,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) { if (!strncmp(l, "fix=auto", 8)) g_fixAuto = true; if (!strncmp(l, "fixdelay=", 9)) { long v = atol(l + 9); if (v >= 1000 && v <= 60000) g_fixDelayMs = (DWORD)v; } } fclose(cf); }
-        logf("load-hang-probe 1.3.0 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
+        logf("load-hang-probe 1.4.0 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
         {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
             bool ioWanted = true;
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }

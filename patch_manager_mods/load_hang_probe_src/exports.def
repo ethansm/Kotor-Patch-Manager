@@ -6,3 +6,11 @@ EXPORTS
     HangProbeWndProc
     HangProbeActivated
     HangProbeDeactivated
+    HangProbeActAppArrive
+    HangProbeMovieWndDeact
+    HangProbeMovie76c
+    HangProbeSynthPost
+    HangProbeRestoreAfterMovie
+    HangProbeMovieExit
+    HangProbePumpCutoff
+    HangProbeLsDecision
