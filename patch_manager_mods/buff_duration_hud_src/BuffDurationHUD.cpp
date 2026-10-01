@@ -420,6 +420,16 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     // Seam between shield and health: a thin DARK line (the card border's own deep teal), not a bright bar, so the two bars read
     // as one gauge with a groove between them. 2 px on the leader card, 1 px on small cards, full bar height.
     int dw = vw / 50 < 1 ? 1 : vw / 50;
+    // Corner fillers: the card frame's rounded corner leaves a dark notch above/below the health bar's outline, right of the shield's
+    // right edge. Extend the shield's top and bottom edge bands a few px right (clipped to the bands, so nothing covers the health bar).
+    { int ext = vw / 20 < 2 ? 2 : vw / 20, bandH = int(H * 0.045f + 0.5f); if (bandH < 2) bandH = 2;
+      auto band = [&](int by, const float* col) {
+          if (pushClip(seamX, by, ext, bandH, ClipNoFillColor, 0, 1.0f)) { draw(image, x + ext - seamX, -(by - y), W, H, 0, 0, col, 1.0f); popClip(); } };
+      float top[3], bot[3];
+      bool topFull = pools[n - 1].remaining >= pools[n - 1].max, botFull = pools[0].remaining > 0;
+      lightenFill(pools[n - 1].rgb, top); lightenFill(pools[0].rgb, bot);
+      band(y, topFull ? top : TrackTint);
+      band(y + H - bandH, botFull ? bot : TrackTint); }
     if (DrawSeam && pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
     flush(flushArg);
     return n;
@@ -734,10 +744,10 @@ void ForceArrowCounters(int slotPtr) {
 
 // Menu screens (character/inventory/equip/abilities...): CSWGuiInGameMenu's draw (vtable slot 14, 0x756b70) draws its panel, then calls
 // the same 0x745770 with ECX = its portrait slot (menu+0x2350) whose PB_VIT1 rect sits at slot+0x694. The selected creature is the
-// caller's local at [callerEbp-0x28]. Draws the bar beside that health bar (shield_nodraw.txt disables it, like the HUD).
+// caller's local at [callerEbp-0x38] (= FUN_0077d800(handle), the object the HUD also uses; [ebp-0x28] is only the handle). Draws the bar beside that health bar (shield_nodraw.txt disables it, like the HUD).
 void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
     int creature = 0, v[4] = {};
-    readAt(callerEbp, -0x28, &creature);
+    readAt(callerEbp, -0x38, &creature);
     for (int k = 0; k < 4; ++k) readAt(slotPtr, 0x694 + 4 * k, &v[k]);
     int pools = 0;
     if (creature && v[2] >= 1 && v[2] <= 2000 && v[3] >= 1 && v[3] <= 2000) { Pool t[8]; pools = collectPools(creature, t, 8); }
@@ -756,7 +766,7 @@ void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
 void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     { int cd = 0; readAt(0x00a309c0, 0, &cd);                       // menu frame: map the menu portrait slot to its creature so the Buff HUD
       if ((cd & 0xffff) != 0 && isLarge) {                             // hooks (which run later in 0x745770) and the arrow-counter bump know it
-          int c = 0; readAt(callerEbp, -0x28, &c);
+          int c = 0; readAt(callerEbp, -0x38, &c);
           int cnt = 0, arr = 0;
           bool ok = c && readAt(c, Creature_EffectCountOffset, &cnt) && readAt(c, Creature_EffectArrayOffset, &arr) && cnt >= 0 && cnt <= MaxEffects;
           g_menuSlot = ok ? SlotEntry{ slotPtr, c } : SlotEntry{ 0, 0 };
