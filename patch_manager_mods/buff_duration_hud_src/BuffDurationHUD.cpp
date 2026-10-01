@@ -428,7 +428,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
 //   buffhud_off.txt    -> skip the Buff HUD icon column (engine arrows draw natively)
 // F9 = write a MARK line with a full GL state dump + scene brightness sample. While shields turn on/off the GL state is dumped
 // before/after our draws for 4 frames (PRE/POST) and the scene brightness is sampled every 30 frames (SCENE dark=0/1). ----
-bool g_noDraw = false, g_noSwap = false, g_noBuff = false, g_menuBar = false;
+bool g_noDraw = false, g_noSwap = false, g_noBuff = false;
 bool fileExists(const char* n) { return GetFileAttributesA(n) != INVALID_FILE_ATTRIBUTES; }
 struct GlFns {
     bool tried = false, ok = false;
@@ -731,7 +731,7 @@ void ForceArrowCounters(int slotPtr) {
 
 // Menu screens (character/inventory/equip/abilities...): CSWGuiInGameMenu's draw (vtable slot 14, 0x756b70) draws its panel, then calls
 // the same 0x745770 with ECX = its portrait slot (menu+0x2350) whose PB_VIT1 rect sits at slot+0x694. The selected creature is the
-// caller's local at [callerEbp-0x28]. OPT-IN for now (shield_menubar.txt in the game dir): draw the bar beside that health bar.
+// caller's local at [callerEbp-0x28]. Draws the bar beside that health bar (shield_nodraw.txt disables it, like the HUD).
 void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
     int creature = 0, v[4] = {};
     readAt(callerEbp, -0x28, &creature);
@@ -756,7 +756,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     if (isLarge) {
         ++g_frame;
         if (g_frame % 30 == 0) {
-            g_noDraw = fileExists("shield_nodraw.txt"); g_noSwap = fileExists("shield_noswap.txt"); g_noBuff = fileExists("buffhud_off.txt"); g_menuBar = fileExists("shield_menubar.txt");
+            g_noDraw = fileExists("shield_nodraw.txt"); g_noSwap = fileExists("shield_noswap.txt"); g_noBuff = fileExists("buffhud_off.txt");
             static int lastFlags = -1; int fl = g_noDraw | (g_noSwap << 1) | (g_noBuff << 2);
             if (fl != lastFlags) { lastFlags = fl; probeLog("FLAGS nodraw=%d noswap=%d nobuff=%d", g_noDraw, g_noSwap, g_noBuff); }
             if (g_probe) {
@@ -797,7 +797,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     { int cd = 0; readAt(0x00a309c0, 0, &cd); bool menu = (cd & 0xffff) != 0;
       static bool lastMenu = false;
       if (menu != lastMenu) { lastMenu = menu; probeLog("MENUSTATE skip=%d clipDepth=%x", menu, cd); }
-      if (menu) { if (g_menuBar && !g_noDraw) DrawMenuShield(slotPtr, callerEbp, scale); return; } }
+      if (menu) { if (!g_noDraw) DrawMenuShield(slotPtr, callerEbp, scale); return; } }
     if (g_noDraw) return;
     CapGuard capGuard;
     static bool prevAny = false; static int dumpFrames = 0;
