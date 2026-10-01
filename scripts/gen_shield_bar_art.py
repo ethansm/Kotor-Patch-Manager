@@ -24,6 +24,30 @@ sq[:, 57:LO] = a[:, [LO + (x - 57) % (HI - LO) for x in range(57, LO)]]   # squa
 sh = a.copy()
 sh[:, HI:128] = a[:, [LO + (x - HI) % (HI - LO) for x in range(HI, 128)]]  # open right (to the edge)
 sh[:, 99:128] = 0                                  # keep the original transparent right margin
+# The shield bar is drawn at ShieldWidthFraction (0.55) of the health bar's width, which also squashed its left outline to 55% of the
+# health bar's stroke. Re-sample the visible span 57..98 non-uniformly (same total width, so the drawing constants stay valid): the
+# outline columns get 1/0.55 weight (they render at native thickness), the interior is compressed to make up the width.
+S_FRAC, U0, U1, RAMP0, RAMP1 = 0.55, 57, 98, 66.0, 78.0
+def weights(w_end):
+    u = np.arange(U0, U1, 0.05) + 0.025
+    w = np.where(u < RAMP0, 1 / S_FRAC, np.where(u < RAMP1, 1 / S_FRAC + (w_end - 1 / S_FRAC) * (u - RAMP0) / (RAMP1 - RAMP0), w_end))
+    return u, w
+lo, hi = 0.05, 1 / S_FRAC
+for _ in range(60):                                # bisect w_end so the total weight == the span (41 columns)
+    mid = (lo + hi) / 2
+    u, w = weights(mid)
+    if np.sum(w) * 0.05 > U1 - U0: hi = mid
+    else: lo = mid
+u, w = weights((lo + hi) / 2)
+cum = np.cumsum(w) * 0.05                          # new-column position of every old position
+src = sh.astype(np.float32)
+dst = sh.copy()
+for j in range(U1 - U0):
+    uj = np.interp(j + 0.5, cum, u)                # old column that lands on new column j
+    i0 = int(np.floor(uj - 0.5)); f = uj - 0.5 - i0
+    i0 = max(i0, U0); i1 = min(i0 + 1, U1 - 1)
+    dst[:, U0 + j] = np.round(src[:, i0] * (1 - f) + src[:, i1] * f).astype(np.uint8)
+sh = dst
 # uibit_bar_sc_p: corner filler drawn on the HEALTH rect. For every row it fills the strip between x=57 (the shield's right edge /
 # the health bar's outer-left edge in the middle rows) and the first opaque pixel of the health art, with the straight-interior
 # column of that row. Result: the shield's top/bottom edge continues right up to the health bar's curved corner (no pixel overlap).
