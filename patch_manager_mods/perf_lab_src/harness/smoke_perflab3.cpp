@@ -243,6 +243,14 @@ int main(int argc, char** argv) {
     *(void**)(ring + 0x2000C) = peer; *(unsigned*)(peer + 0x20000) = 10;
     typedef void (__cdecl* VOvf)(void*, unsigned); VOvf ovf = fn<VOvf>("PerfLabNetOvfTest"); ovf(ring, 0x20000); ovf(ring, 20);
     fn<V0>("PerfLabFocusDummy")(); fn<V0>("PerfLabSceneDtor")();
+    // AI / pathfinding / effects (U3): AI master with level counts 3,0,0,0,2 ; two object updates of ~5 ms each; next tick closes the estimate
+    static char aim[0x60]; *(int*)(aim + 8) = 3; *(int*)(aim + 8 + 64) = 2;
+    V1 aiTick = fn<V1>("PerfLabAiTick"); typedef void (__cdecl* VPI)(void*, int); VPI aiPre = fn<VPI>("PerfLabAiObjPre"); V0 aiPost = fn<V0>("PerfLabAiObjPost");
+    static char obj1[16];
+    aiTick(aim); aiPre(obj1, 0); Sleep(5); aiPost(); aiPre(obj1, 4); Sleep(5); aiPost(); aiPost(); aiTick(aim);
+    V0 pathEnter = fn<V0>("PerfLabPathEnter"); VI pathRes = fn<VI>("PerfLabPathResult");
+    pathEnter(); Sleep(2); pathRes(1); pathEnter(); pathRes(2); pathEnter(); pathRes(3);
+    fn<V0>("PerfLabEffectApply")(); fn<V0>("PerfLabEffectApply")(); fn<V0>("PerfLabEffectRemove")();
     // UNLOAD snapshot
     fn<V0>("PerfLabUnload")();
     for (int i = 0; i < 30 && fileText("perflab_metrics.txt").find(" UNLOAD ") == std::string::npos; ++i) Sleep(100);
@@ -275,6 +283,13 @@ int main(int argc, char** argv) {
     std::string nt = line(b3, "NET ");
     check(field(nt, "send") == 2 && field(nt, "bytes") == 70100 && field(nt, "max_len") == 70000 && field(nt, "ovf_test") == 2 && field(nt, "ovf_hit") == 1 &&
           nt.find("focus_dummy=1 scene_dtor=1") != std::string::npos, "net ring + scene counters (overflow test reproduces the engine compare)");
+    std::string ai = line(b3, "AI ");
+    check(field(ai, "ticks") == 2 && field(ai, "max_n") == 5 && field(ai, "max_n_level") == 3 && field(ai, "obj_updates") == 2 && field(ai, "prepass_iter") == 5 &&
+          field(ai, "obj_ms") >= 9 && field(ai, "tick_ms_est") >= 9 && (ai.find("tick_hist 0 0 0 1 ") != std::string::npos || ai.find("tick_hist 0 0 0 0 1 ") != std::string::npos),
+          "AI ticks, list sizes, per-object time, derived pre-pass iterations, tick estimate + histogram");
+    std::string pa = line(b3, "PATH ");
+    check(field(pa, "calls") == 3 && field(pa, "pending") == 1 && field(pa, "ok") == 1 && field(pa, "fail") == 1 && field(pa, "ms") >= 2 && pa.find("EFFECT apply=2 remove=1") != std::string::npos,
+          "pathfind results/time + effect apply/remove");
     check(line(b3, "HOOKCOST_BY RunScript calls=3").size() && line(b3, "HOOKCOST_BY Bucket calls=").size() && line(b3, "HOOKCOST_BY ResDemand calls=").size(), "per-handler HOOKCOST_BY lines");
 
     // ---- 0.1.1 census regression ----

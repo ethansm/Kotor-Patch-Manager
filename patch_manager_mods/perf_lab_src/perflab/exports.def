@@ -42,3 +42,10 @@ EXPORTS
     PerfLabNetOvfTest
     PerfLabFocusDummy
     PerfLabSceneDtor
+    PerfLabAiTick
+    PerfLabAiObjPre
+    PerfLabAiObjPost
+    PerfLabPathEnter
+    PerfLabPathResult
+    PerfLabEffectApply
+    PerfLabEffectRemove

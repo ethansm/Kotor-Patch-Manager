@@ -10,6 +10,9 @@
 //            (C3: TPC/TGA, buffer present), ~CAurTextureBasic 0x423480, server UnloadModule 0x5315E0 (+ metrics snapshot UNLOAD)
 //   vm=1     U1: RunScript 0x7022A0 (count, per-script names), ExecuteCommand 0x668FD0 (count, out-of-range ids), instruction
 //            limit trip 0x6FFA76, DelayCommand 0x670370, ActionDoCommand entry 0x6699D0 / handoff 0x669A32 (leaks = diff)
+//   ai=1     U3: AIMaster UpdateState 0x51D790 (ticks, list sizes per level), per-object update pre 0x51DC70 / post 0x51DC86 (time,
+//            slow objects, O(n^2) pre-pass iterations derived as sum of the level list size per update), pathfind 0x55AB30 /
+//            result 0x55AC26 (calls, pending/ok/fail, time), ApplyEffect 0x544210 / RemoveEffect 0x544640
 //   misc=1   U6: net ring send 0x704060 (count, max len), overflow test site 0x7040E0, focus-dummy creation 0x464789, scene dtor 0x464D70
 //   HOOKCOST is reported per handler.
 //
@@ -61,7 +64,7 @@ constexpr int In_GuiMgr = 0x274, In_LoadScreen = 0x278, Mgr_Modals = 0x94, Mgr_M
 struct Cfg {
     bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024;
     bool metrics = false, vq = false, tx = false, g1skip = false;
-    int live = -1, br = -1, kt = -1, vm = -1, misc = -1;   // 0.3.0 groups; -1 = follow metrics
+    int live = -1, br = -1, kt = -1, vm = -1, misc = -1, ai = -1;   // 0.3.0 groups; -1 = follow metrics
 } g_cfg;
 bool g_on = false;
 uintptr_t g_exeLo = 0, g_exeHi = 0;
@@ -275,11 +278,13 @@ constexpr uintptr_t G_ResMan = 0x00A1B490;
 // 0.3.0 per-handler cost ids (HOOKCOST lines) and per-name tables (NAME lines).
 enum Hk { HkMalloc, HkEvict, HkFreeData, HkRelease, HkDemand, HkGetImage, HkBuild, HkBucket, HkActionBar,
           HkBr1, HkBr2, HkBr3, HkAsync, HkDestroyTable, HkStillDemand, HkUafWrite, HkTxiTpc, HkRequeue, HkFreeImage, HkTexDtor,
-          HkUnload, HkRunScript, HkExecCmd, HkTmi, HkDelay, HkAdcEnter, HkAdcHandoff, HkNetSend, HkNetOvf, HkFocus, HkSceneDtor, HkCount };
+          HkUnload, HkRunScript, HkExecCmd, HkTmi, HkDelay, HkAdcEnter, HkAdcHandoff, HkNetSend, HkNetOvf, HkFocus, HkSceneDtor,
+          HkAiTick, HkAiPre, HkAiPost, HkPathEnter, HkPathResult, HkEffApply, HkEffRemove, HkCount };
 const char* const HkName[HkCount] = { "ResMalloc", "ResEvict", "ResFreeData", "ResRelease", "ResDemand", "GetImage", "BuildTex", "Bucket",
           "ActionBar", "BrSetter1", "BrSetter2", "BrTexMiss", "AsyncStart", "DestroyTable", "StillInDemand", "KtUafWrite", "TxiViaTpc",
           "TexRequeue", "FreeImage", "TexDtor", "UnloadModule", "RunScript", "ExecCommand", "InstrLimit", "DelayCommand", "AdcEnter",
-          "AdcHandoff", "NetSend", "NetOvfTest", "FocusDummy", "SceneDtor" };
+          "AdcHandoff", "NetSend", "NetOvfTest", "FocusDummy", "SceneDtor", "AiTick", "AiObjPre", "AiObjPost", "PathEnter", "PathResult",
+          "EffectApply", "EffectRemove" };
 enum Nt { NtTgaLoad, NtBuild, NtBr1, NtBr2, NtBr3, NtScript, NtTxiTpc, NtCount };
 const char* const NtName[NtCount] = { "tga_load", "build", "gui_setter1", "gui_setter2", "tex_miss", "script", "txi_via_tpc" };
 constexpr int NameSlots = 512, NameLen = 24, RingN = 64, ExecIds = 0x36D;
@@ -314,6 +319,11 @@ struct Metrics {
     volatile LONG64 freeImgN, freeImgTpc, freeImgTpcBuf, freeImgTgaBuf, texDtor, unloadN;
     volatile LONG64 runScript, execCmd, execBad, tmi, delayCmd, adcEnter, adcHandoff; volatile LONG execHist[ExecIds];
     volatile LONG64 netSend, netBytes, netOvfTest, netOvfHit, focusDummy, sceneDtor; volatile LONG netMaxLen;
+    // U3 (server thread = main thread in single player; scratch fields are plain)
+    volatile LONG64 aiTicks, aiObj, aiObjQpc, aiObjMaxQpc, aiObjSlow, aiPrepass, aiTickQpc; volatile LONG aiMaxN, aiMaxNLevel, aiTickHist[8];
+    uintptr_t aiMaster; LONG64 aiTickT0, aiLastPost, aiObjT0;
+    volatile LONG64 pathN, pathPending, pathOk, pathFail, pathOther, pathQpc, pathMaxQpc; LONG64 pathT0;
+    volatile LONG64 effApply, effRemove;
 };
 Metrics* g_m = nullptr;
 LONG64 g_qpf = 1;
@@ -651,6 +661,14 @@ void writeMetrics3(FILE* f, Metrics& m) {
         fprintf(f, "VMCMD"); for (int i = 0; i < tn; ++i) fprintf(f, " %d:%ld", top[i], m.execHist[top[i]]); fputc('\n', f);
         writeNames(f, NtScript);
     }
+    if (grp(g_cfg.ai)) {
+        auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
+        fprintf(f, "AI ticks=%lld max_n=%ld max_n_level=%ld obj_updates=%lld obj_ms=%.1f obj_max_ms=%.2f obj_slow10ms=%lld prepass_iter=%lld tick_ms_est=%.1f tick_hist",
+            (long long)m.aiTicks, m.aiMaxN, m.aiMaxNLevel, (long long)m.aiObj, ms(m.aiObjQpc), ms(m.aiObjMaxQpc), (long long)m.aiObjSlow, (long long)m.aiPrepass, ms(m.aiTickQpc));
+        for (int i = 0; i < 8; ++i) fprintf(f, " %ld", m.aiTickHist[i]);
+        fprintf(f, "\nPATH calls=%lld pending=%lld ok=%lld fail=%lld other=%lld ms=%.1f max_ms=%.2f | EFFECT apply=%lld remove=%lld\n", (long long)m.pathN,
+            (long long)m.pathPending, (long long)m.pathOk, (long long)m.pathFail, (long long)m.pathOther, ms(m.pathQpc), ms(m.pathMaxQpc), (long long)m.effApply, (long long)m.effRemove);
+    }
     if (grp(g_cfg.misc))
         fprintf(f, "NET send=%lld bytes=%lld max_len=%ld ovf_test=%lld ovf_hit=%lld | SCENE focus_dummy=%lld scene_dtor=%lld\n", (long long)m.netSend,
             (long long)m.netBytes, m.netMaxLen, (long long)m.netOvfTest, (long long)m.netOvfHit, (long long)m.focusDummy, (long long)m.sceneDtor);
@@ -768,6 +786,7 @@ void readCfg() {
         else if (!strcmp(line, "kt")) g_cfg.kt = v != 0;
         else if (!strcmp(line, "vm")) g_cfg.vm = v != 0;
         else if (!strcmp(line, "misc")) g_cfg.misc = v != 0;
+        else if (!strcmp(line, "ai")) g_cfg.ai = v != 0;
     }
     fclose(f);
 }
@@ -1032,6 +1051,57 @@ void __cdecl PerfLabNetOvfTest(void* obj, unsigned newW) {
         InterlockedIncrement64(&g_m->netOvfHit);
 }
 void __cdecl PerfLabFocusDummy() { if (g_m && grp(g_cfg.misc)) { MTimer t(HkFocus); InterlockedIncrement64(&g_m->focusDummy); } }
+// ---- 0.3.0 AI / pathfinding / effects (U3) ----
+// CServerAIMaster::UpdateState 0x51D790 entry (ECX = AI master; 5 priority lists, count of level L at [ecx+8+16*L]). The function's
+// epilogue (0x51DFCD, 4 bytes) cannot be hooked, so the previous tick's time is estimated at the next entry as entry -> last object post.
+void __cdecl PerfLabAiTick(void* aim) {
+    if (!g_m || !grp(g_cfg.ai) || !aim) return;
+    MTimer t(HkAiTick);
+    Metrics& m = *g_m;
+    LONG64 now = qpc();
+    if (m.aiTickT0 && m.aiLastPost > m.aiTickT0) {
+        LONG64 d = m.aiLastPost - m.aiTickT0; m.aiTickQpc += d;
+        LONG us = static_cast<LONG>(d * 1000000 / g_qpf);   // buckets: <1, 1-2, 2-5, 5-10, 10-20, 20-75, 75-200, >=200 ms
+        int b = us < 1000 ? 0 : us < 2000 ? 1 : us < 5000 ? 2 : us < 10000 ? 3 : us < 20000 ? 4 : us < 75000 ? 5 : us < 200000 ? 6 : 7;
+        InterlockedIncrement(&m.aiTickHist[b]);
+    }
+    m.aiTickT0 = now; m.aiLastPost = 0; m.aiMaster = reinterpret_cast<uintptr_t>(aim);
+    InterlockedIncrement64(&m.aiTicks);
+    LONG total = 0; saferead::beginScope();
+    for (int L = 0; L < 5; ++L) { int n = 0; if (saferead::readAt(57, m.aiMaster, 8 + 16 * L, &n) && n > 0 && n < 100000) { total += n; if (n > m.aiMaxNLevel) m.aiMaxNLevel = n; } }
+    if (total > m.aiMaxN) m.aiMaxN = total;
+}
+// 0x51DC70: about to dispatch obj->vtbl[0x70] ([EBP-0x28] = object, [EBP-0x34] = level). Pre-pass work of this iteration = size of the level list.
+void __cdecl PerfLabAiObjPre(void* obj, int level) {
+    if (!g_m || !grp(g_cfg.ai) || !obj) return;
+    MTimer t(HkAiPre);
+    Metrics& m = *g_m;
+    InterlockedIncrement64(&m.aiObj);
+    if (m.aiMaster && level >= 0 && level < 5) { int n = 0; saferead::beginScope(); if (saferead::readAt(58, m.aiMaster, 8 + 16 * level, &n) && n > 0 && n < 100000) m.aiPrepass += n; }
+    m.aiObjT0 = qpc();
+}
+// 0x51DC86: after the dispatch (also reached on the skip path with no object: only a pending pre stamp counts).
+void __cdecl PerfLabAiObjPost() {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    Metrics& m = *g_m;
+    if (!m.aiObjT0) return;
+    MTimer t(HkAiPost);
+    LONG64 now = qpc(), d = now - m.aiObjT0; m.aiObjT0 = 0; m.aiLastPost = now;
+    m.aiObjQpc += d; atomicMax(&m.aiObjMaxQpc, d);
+    if (d * 100 > g_qpf) InterlockedIncrement64(&m.aiObjSlow);   // > 10 ms
+}
+// Pathfind 0x55AB30 entry / result store 0x55AC26 (EAX = result: 1 pending, 2 success, 3 fail).
+void __cdecl PerfLabPathEnter() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkPathEnter); InterlockedIncrement64(&g_m->pathN); g_m->pathT0 = qpc(); } }
+void __cdecl PerfLabPathResult(int r) {
+    if (!g_m || !grp(g_cfg.ai)) return;
+    MTimer t(HkPathResult);
+    Metrics& m = *g_m;
+    if (r == 1) InterlockedIncrement64(&m.pathPending); else if (r == 2) InterlockedIncrement64(&m.pathOk); else if (r == 3) InterlockedIncrement64(&m.pathFail); else InterlockedIncrement64(&m.pathOther);
+    if (m.pathT0) { LONG64 d = qpc() - m.pathT0; m.pathT0 = 0; m.pathQpc += d; atomicMax(&m.pathMaxQpc, d); }
+}
+void __cdecl PerfLabEffectApply() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkEffApply); InterlockedIncrement64(&g_m->effApply); } }
+void __cdecl PerfLabEffectRemove() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkEffRemove); InterlockedIncrement64(&g_m->effRemove); } }
+
 void __cdecl PerfLabSceneDtor() { if (g_m && grp(g_cfg.misc)) { MTimer t(HkSceneDtor); InterlockedIncrement64(&g_m->sceneDtor); } }
 }
 
