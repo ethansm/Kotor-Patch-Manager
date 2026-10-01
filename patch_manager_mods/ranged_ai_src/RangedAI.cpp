@@ -9,7 +9,9 @@
 //        (not 0x6d7c73: stolen bytes run AFTER the handler with EAX = its return value, so they must not use EAX)
 //   E-H3 0x006d850f RangedAiStanceRules(eax, ebp)     skip-only MOV [ebp-0x174],EAX: that local is read only by the
 //        "Ranged/Stationary companion does not approach" tests (0x6d876a, 0x6d8a7e); store 11 for stance 16 so the
-//        kiting stance gets vanilla Ranged's engine rule (review 2026-09-30)
+//        kiting stance gets vanilla Ranged's engine rule (review 2026-09-30). 0.3.0 kite_approach=1: map 16 -> 11 only
+//        with a ranged weapon AND the target in weapon range; otherwise keep 16 = the vanilla Aggressive approach
+//        (ranged: walks until in range; melee: closes in). design_ai_engine_fixes.md section 3, A1 part B
 // Stance 16 "Ranged (Kiting)" in the party stance menu (0.2.0; all four windows EAX-free):
 //   S-H1 0x0077aa5e RangedAiStanceClamp(state=ECX)     AddStanceActions 0x77a9e0: return 1 => keep 16 (skip reset-to-9, 0x77aab4)
 //   S-H2 0x0077acbc RangedAiStanceRow(ebp)             row for aistate 16: id 0x415 + icon; return 1 => 0x77ae77 (next row)
@@ -84,6 +86,7 @@ struct Config {
     bool hold = true, retarget = true, log = true, logAll = false;
     unsigned holdMask = 1u << KiteStance, retargetMask = 1u << KiteStance;
     bool rangedRules = true;         // E-H3: stance 16 uses the vanilla Ranged "no approach" rule
+    bool kiteApproach = true;        // E-H3 0.3.0: ...but only with a ranged weapon and the target in range
     int msgStrref = 123710;          // floaty text on selecting stance 16; fallback = vanilla "Ranged Behavior" message
     char icon[17] = "ib_ranged";     // stance menu / HUD icon ResRef (<= 16 chars)
 };
@@ -109,6 +112,7 @@ void loadIni(bool force) {
     c.hold = GetPrivateProfileIntA("RangedAI", "hold", 1, IniName) != 0;
     c.retarget = GetPrivateProfileIntA("RangedAI", "retarget", 1, IniName) != 0;
     c.rangedRules = GetPrivateProfileIntA("RangedAI", "ranged_rules", 1, IniName) != 0;
+    c.kiteApproach = GetPrivateProfileIntA("RangedAI", "kite_approach", 1, IniName) != 0;
     c.msgStrref = GetPrivateProfileIntA("RangedAI", "kite_strref_msg", 123710, IniName);
     if (c.msgStrref <= 0) c.msgStrref = 123710;
     c.log = GetPrivateProfileIntA("RangedAI", "log", 1, IniName) != 0;
@@ -121,9 +125,9 @@ void loadIni(bool force) {
     c.icon[16] = 0;
     if (!c.icon[0]) strcpy(c.icon, "ib_ranged");
     if (force || c.hold != g_cfg.hold || c.retarget != g_cfg.retarget || c.holdMask != g_cfg.holdMask || c.retargetMask != g_cfg.retargetMask ||
-        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon) || c.rangedRules != g_cfg.rangedRules)
-        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d",
-             c.hold, c.retarget, c.holdMask, c.retargetMask, c.rangedRules, c.msgStrref, c.icon, c.log, c.logAll);
+        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon) || c.rangedRules != g_cfg.rangedRules || c.kiteApproach != g_cfg.kiteApproach)
+        logf("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_approach=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d",
+             c.hold, c.retarget, c.holdMask, c.retargetMask, c.rangedRules, c.kiteApproach, c.msgStrref, c.icon, c.log, c.logAll);
     g_cfg = c;
 }
 
@@ -147,6 +151,12 @@ void summary() {
 }
 
 struct V3 { float x, y, z; };
+// E-H3 range test: same formula as E-H1's inline test (a zero/garbage weapon range never counts as in range)
+bool inWeaponRange(float maxR, float dist2) {
+    float lim = maxR + 0.1f; lim *= lim;
+    return maxR > 1.0f && dist2 <= lim;
+}
+
 V3 pos(int obj, int off) { V3 v = {0, 0, 0}; saferead::readAt<V3>(2, static_cast<uintptr_t>(obj), off, &v); return v; }
 
 int stanceOf(int cr) {
@@ -275,11 +285,41 @@ extern "C" int __cdecl RangedAiStanceClick(int ebp) {
 }
 
 // E-H3. Replaces MOV [ebp-0x174],EAX (EAX = the attacker's stance) in AIActionPhysicalAttacks.
+// 0.3.0 kite_approach: [ebp-0x164] (ranged, 0x6d836b), [ebp-0xbc] (dist^2) and [ebp-0x2c] (max weapon range) are written
+// before this point on every path; with a melee weapon or the target out of range stance 16 keeps the Aggressive
+// approach instead of inheriting Ranged's "never approach" (which re-queued the attack forever, review A1).
+namespace {
+struct H3Log { int id = 0; int last = -1; DWORD t = 0; };
+H3Log g_h3[8];
+int g_h3Logged = 0;
+}
 extern "C" void __cdecl RangedAiStanceRules(int stance, int ebp) {
     saferead::beginScope();
     bool map = stance == KiteStance && g_cfg.rangedRules;
+    int ranged = -1, inRange = -1;
+    if (map && g_cfg.kiteApproach) {
+        // live frame slots of the hooked function: read directly (as the store below)
+        ranged = *reinterpret_cast<const int*>(ebp + F_RangedFlag) != 0;
+        inRange = inWeaponRange(*reinterpret_cast<const float*>(ebp + F_Max), *reinterpret_cast<const float*>(ebp + F_Dist2));
+        if (!ranged || !inRange) map = false;   // melee or out of range: vanilla Aggressive approach (move range = max if ranged)
+    }
+    int eff = map ? VanillaRangedStance : stance;
     // [ebp-0x174] is a slot of the live hooked frame; the replaced instruction is skipped, so always store it.
-    *reinterpret_cast<int*>(ebp + F_StanceRules) = map ? VanillaRangedStance : stance;
+    *reinterpret_cast<int*>(ebp + F_StanceRules) = eff;
+    if (stance == KiteStance && g_cfg.log) {   // first 20 lines, then only when the decision changes for a creature
+        int attacker = *reinterpret_cast<const int*>(ebp + F_Attacker);   // `this` of the hooked function
+        int id = attacker ? *reinterpret_cast<const int*>(attacker + CrId) : 0;
+        H3Log* h = nullptr;
+        for (auto& e : g_h3) if (e.id == id) h = &e;
+        if (!h) { h = &g_h3[id & 7]; h->id = id; h->last = -1; h->t = 0; }
+        int code = eff | (ranged + 1) << 8 | (inRange + 1) << 12;
+        DWORD now = GetTickCount();
+        if (g_h3Logged < 20 || (code != h->last && now - h->t >= 250)) {   // changes at most 4/s per creature
+            ++g_h3Logged; h->last = code; h->t = now;
+            logf("H3 t=%lu cr=%08x stance=16 ranged=%d inRange=%d kite_approach=%d -> %d%s", now, id, ranged, inRange,
+                 g_cfg.kiteApproach, eff, eff == KiteStance ? " (approach)" : " (no approach)");
+        }
+    }
 }
 
 // S-H4. HUD refresh on character change, default branch of the stance -> action id switch (replaces MOV [ebp-0x1c],-1).
@@ -294,7 +334,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         if (FILE* f = fopen("ranged_ai_log.txt", "w")) fclose(f);   // one session per file (cwd = game folder)
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("ranged-ai 0.2.0 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("ranged-ai 0.3.0 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\ranged_ai.ini", cwd);
         logf("ini path: %s", IniName);
         loadIni(true);
