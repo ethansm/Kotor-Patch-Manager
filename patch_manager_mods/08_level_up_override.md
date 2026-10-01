@@ -204,6 +204,10 @@ the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-
   no change; ability = record unless 6 (keep pending); identical result -> `already` (SetExperience replay idempotency).
 - Offline checks: `python3 simulate_rewrite.py` (52 records + edge cases, 0 failures); `python3 tools/parity/parity.py` compiles the SAME
   LevelUpOverride.cpp natively against `tools/parity/stub/windows.h` and diffs the DRY lines vs Python: 263 cases, 0 mismatches.
+- Console cheats for quick tests (EnableCheats=1; evidence `phase1_evidence/phase2_console_cheats.txt`): `addexp N` = handler 0x7AB690 ->
+  `DistributeExperience(N,1)` 0x5FE0C0 (party XP; any resulting companion auto-level logs as flow `distribute-xp`). `addlevel` = 0x7AC1E0 -> XP needed for the
+  PC's next level (`GetExpNeededForLevelUp` 0x6B72E0) -> `DistributeExperience`; no-op at PC level 20, or at 15 when the PC has no Force class (0x6F2A30).
+  Neither calls LevelUp directly: manual/Auto-button level-ups still need the GUI; natural combat/quest XP is the `xp-award` (0x5FD480) flow.
 - **INSTALLED 2026-09-30 21:38 (user consent, Step 3):** backup `~/Games/KOTOR2_Mod_Workspace/backups/pre_levelup_probe_20260930_213810/`
   (kpm_install_state.json, patch_config.toml, patches/; live DLLs == backup re-hashed immediately before), stage `$T/levelup_stage/` (20 live kpatches
   from perflab3_stage md5-matched + LevelUpOverride.kpatch), `KPATCH_NO_LAUNCH=1 ... KPatchLauncher` -> "Applied 21 patch(es)"; `verify` 0 mismatches;
