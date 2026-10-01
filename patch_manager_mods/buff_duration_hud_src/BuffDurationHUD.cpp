@@ -588,14 +588,11 @@ void __cdecl RestoreBuffIcon() {
 
 // Hook 5 (once per row call, after the native loop, still inside the card's viewport whose
 // origin is the card's top-left): draw our own icon column down the card's left edge.
-void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
-    RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook (also when the kill switch flips mid-row)
-    if (g_noBuff) return;
-    if (iconWidget == 0) return;
+// Core icon-column drawer: origin = the card's top-left (the caller is inside a clip/viewport at the card). iconWidget may be 0 (menu
+// companion portraits have no icon widget): then the draw uses the stock defaults (white tint, alpha 1, no rotation).
+static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
     const bool debuff = whichRow == 0;
     static int callNo = 0; ++callNo;
-    int creature = creatureForSlot(slotPtr);
-    if (!creature) return;
     int day = 0, ms = 0;
     bool haveTime = currentTime(&day, &ms);
     Buff buffs[16], other[16];
@@ -636,10 +633,11 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
     if (drawN <= 0) return;
 
     CapGuard capGuard;                          // same GL_LIGHTING leak as DrawShieldBar: flush/pushClip toggle caps, put them back on exit
-    int border = iconWidget + Label_TextBorderOffset;
-    int rotBits = 0; readAt(border, 0x20, &rotBits);
-    const float* color = reinterpret_cast<const float*>(border + 0x28);
-    float baseAlpha = 1.0f; readAt(border, 0x24, &baseAlpha);
+    int border = iconWidget ? iconWidget + Label_TextBorderOffset : 0;
+    static const float whiteTint[3] = { 1.0f, 1.0f, 1.0f };
+    int rotBits = 0; if (border) readAt(border, 0x20, &rotBits);
+    const float* color = border ? reinterpret_cast<const float*>(border + 0x28) : whiteTint;
+    float baseAlpha = 1.0f; if (border) readAt(border, 0x24, &baseAlpha);
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
     auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
     auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
@@ -686,6 +684,15 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
         }
     }
     flush(flushArg);
+}
+
+void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
+    RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook (also when the kill switch flips mid-row)
+    if (g_noBuff) return;
+    if (iconWidget == 0) return;
+    int creature = creatureForSlot(slotPtr);
+    if (!creature) return;
+    drawColumnCore(slotPtr, creature, iconWidget, isLarge, whichRow, cardW, cardH);
 }
 
 // ---- engine arrow counter bump ----------------------------------------------------------
@@ -752,22 +759,68 @@ void ForceArrowCounters(int slotPtr) {
     }
 }
 
-// Menu screens (character/inventory/equip/abilities...): CSWGuiInGameMenu's draw (vtable slot 14, 0x756b70) draws its panel, then calls
-// the same 0x745770 with ECX = its portrait slot (menu+0x2350) whose PB_VIT1 rect sits at slot+0x694. The selected creature is the
-// caller's local at [callerEbp-0x38] (= FUN_0077d800(handle), the object the HUD also uses; [ebp-0x28] is only the handle). Draws the bar beside that health bar (shield_nodraw.txt disables it, like the HUD).
-void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
+// Menu screens (character/inventory/equip/abilities...): CSWGuiInGameMenu's draw (vtable slot 14, 0x756b70) draws its panel (0x40ec90 =
+// BeginGui2D 0x4792c0, push the panel rect as clip/viewport, controls, pop, EndGui2D 0x4793f0), THEN calls 0x745770 with ECX = its portrait
+// slot (menu+0x2350). At that point the 2D batch is closed (clip stack index 0xFFFF, ortho matrix popped, viewport garbage), which is why
+// drawing there showed nothing. So we reopen the batch exactly as the panel does: BeginGui2D, push the panel rect (0x410020), draw in
+// panel-local coordinates (the slot's PB_VIT rect, the LBL_CHAR2/3 companion portraits), pop, EndGui2D.
+// The selected creature = caller's local [callerEbp-0x38] (= FUN_0077d800(handle), the object the HUD also uses; [-0x28] is the handle).
+// Companions = roster positions 1 and 2 (the menu sets LBL_CHAR2/3 portraits from FUN_007e5da0(roster, 1/2)).
+constexpr int Menu_SlotOffset = 0x2350, Menu_Char2Offset = 0x3134, Menu_Char3Offset = 0x36DC;
+constexpr int BeginGui2D = 0x004792c0, EndGui2D = 0x004793f0, PanelRectFn = 0x00410020;
+constexpr int RosterAccessor = 0x0073fb90, RosterMember = 0x007e5da0, MemberCreature = 0x0077d800;
+
+int rosterCreature(int idx) {
+    int app = 0, internal = 0;
+    if (!readAt(0x00a1b4a4, 0, &app) || !readAt(app, 4, &internal) || !internal) return 0;
+    using F0 = int(__thiscall*)(int);
+    using F1 = int(__thiscall*)(int, int);
+    int roster = reinterpret_cast<F0>(RosterAccessor)(internal);
+    if (!roster) return 0;
+    int handle = reinterpret_cast<F1>(RosterMember)(roster, idx);
+    if (!handle) return 0;
+    int c = reinterpret_cast<F0>(MemberCreature)(handle);
+    int cnt = 0, arr = 0;
+    if (!c || !readAt(c, Creature_EffectCountOffset, &cnt) || !readAt(c, Creature_EffectArrayOffset, &arr) || cnt < 0 || cnt > MaxEffects) return 0;
+    return c;
+}
+
+void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
+    int panel = slotPtr - Menu_SlotOffset;
     int creature = 0, v[4] = {};
     readAt(callerEbp, -0x38, &creature);
     for (int k = 0; k < 4; ++k) readAt(slotPtr, 0x694 + 4 * k, &v[k]);
     int pools = 0;
     if (creature && v[2] >= 1 && v[2] <= 2000 && v[3] >= 1 && v[3] <= 2000) { Pool t[8]; pools = collectPools(creature, t, 8); }
-    bool hud = false; for (auto& e : g_slots) if (e.creaturePtr == creature && creature) hud = true;
-    static int lastSig = -1; int sig = slotPtr ^ creature ^ (pools << 28) ^ v[0] ^ (v[1] << 4) ^ (v[2] << 8) ^ (v[3] << 12);
-    if (sig != lastSig) { lastSig = sig; probeLog("MENUSLOT slot=%08x callerEbp=%08x creature=%08x inHudSlots=%d pools=%d vit=(%d,%d,%d,%d)", slotPtr, callerEbp, creature, hud, pools, v[0], v[1], v[2], v[3]); }
-    if (pools <= 0) return;
+    int comp[2] = { rosterCreature(1), rosterCreature(2) };
+    static int lastSig = -1; int sig = slotPtr ^ creature ^ (pools << 28) ^ v[0] ^ (v[1] << 4) ^ (v[2] << 8) ^ (v[3] << 12) ^ comp[0] ^ (comp[1] << 3);
+    if (sig != lastSig) { lastSig = sig; probeLog("MENUSLOT slot=%08x callerEbp=%08x creature=%08x pools=%d vit=(%d,%d,%d,%d) companions=%08x,%08x", slotPtr, callerEbp, creature, pools, v[0], v[1], v[2], v[3], comp[0], comp[1]); }
+    int pr[4] = {};
+    reinterpret_cast<void(__thiscall*)(int, int*)>(PanelRectFn)(panel, pr);
+    if (pr[2] < 1 || pr[3] < 1 || pr[2] > 8192 || pr[3] > 8192) { probeLog("MENUDRAW bad panel rect %d,%d,%d,%d", pr[0], pr[1], pr[2], pr[3]); return; }
     CapGuard capGuard;
-    int n = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, true);
-    static int lastN = -1; if (n != lastN) { lastN = n; probeLog("MENUDRAW n=%d", n); }
+    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
+    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
+    reinterpret_cast<void(__cdecl*)()>(BeginGui2D)();
+    int shown = 0, cols = 0;
+    if (pushClip(pr[0], pr[1], pr[2], pr[3], ClipNoFillColor, 0, 1.0f)) {
+        if (pools > 0) shown = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, false);
+        if (!g_noBuff) for (int k = 0; k < 2; ++k) {
+            int ctrl = panel + (k ? Menu_Char3Offset : Menu_Char2Offset), fl = 0, r[4] = {};
+            if (!comp[k] || !readAt(ctrl, 0x48, &fl) || !(fl & 2)) continue;
+            for (int q = 0; q < 4; ++q) readAt(ctrl, 4 + 4 * q, &r[q]);
+            if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) continue;
+            if (pushClip(r[0], r[1], r[2], r[3], ClipNoFillColor, 0, 1.0f)) {
+                drawColumnCore(ctrl, comp[k], 0, 0, 1, r[2], r[3]);     // buffs: left edge
+                drawColumnCore(ctrl, comp[k], 0, 0, 0, r[2], r[3]);     // debuffs: right edge
+                popClip(); ++cols;
+            }
+        }
+        popClip();
+    }
+    reinterpret_cast<void(__cdecl*)()>(EndGui2D)();
+    static int lastShown = -2, lastCols = -2;
+    if (shown != lastShown || cols != lastCols) { lastShown = shown; lastCols = cols; probeLog("MENUDRAW panel=(%d,%d,%d,%d) bar=%d companionPortraits=%d", pr[0], pr[1], pr[2], pr[3], shown, cols); }
 }
 
 // Probe draw site: FUN_00745770 (per-slot icon-row gate) after its prologue, ECX = slotPtr,
@@ -827,7 +880,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     { int cd = 0; readAt(0x00a309c0, 0, &cd); bool menu = (cd & 0xffff) != 0;
       static bool lastMenu = false;
       if (menu != lastMenu) { lastMenu = menu; probeLog("MENUSTATE skip=%d clipDepth=%x", menu, cd); }
-      if (menu) { if (!g_noDraw) DrawMenuShield(slotPtr, callerEbp, scale); return; } }
+      if (menu) { if (!g_noDraw) DrawMenuOverlay(slotPtr, callerEbp, scale); return; } }
     if (g_noDraw) return;
     CapGuard capGuard;
     static bool prevAny = false; static int dumpFrames = 0;
