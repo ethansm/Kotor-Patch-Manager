@@ -387,9 +387,11 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     int inset = vw < 70 ? 1 : 0;
     int W = int(ShieldWidthFraction * vw + 0.5f), H = vh - 2 * inset;
     int seamX = vx + int(0.445f * vw + 0.5f);                  // visible left edge of the (squared) health bar
-    // The art's visible right edge is at 98/128 = 0.766 of its width; end it 1 px INSIDE the health bar's outline (the shield is drawn
-    // over it) so rounding at small widths never leaves a thin dark gap line (visible against the black menu background).
-    int x = seamX + 1 - int(0.766f * W + 0.5f), y = vy + inset;
+    // The art's visible right edge is at 98/128 = 0.766 of its width. Pick an integer visible width V, then the draw width that puts that
+    // edge on the seam to within half a pixel: no full-pixel gap (the black hairline against the menu's black background) and no
+    // 1 px overlap (which double-blends over the health outline's antialiased edge and over the corner wedge = a bright/dark line).
+    int V = int(0.766f * W + 0.5f); W = int(V / 0.766f + 0.5f);
+    int x = seamX - V, y = vy + inset;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
     if (total < 1) return 0;
     float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
