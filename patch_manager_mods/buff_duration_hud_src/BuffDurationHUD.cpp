@@ -86,7 +86,10 @@ void logf(const char* fmt, ...) {
 struct SlotEntry { int slotPtr; int creaturePtr; };
 SlotEntry g_slots[4];
 
+SlotEntry g_menuSlot;   // the menu top bar's portrait slot (menu+0x2350) -> selected creature, refreshed every menu frame
+
 int creatureForSlot(int slotPtr) {
+    if (g_menuSlot.slotPtr == slotPtr) return g_menuSlot.creaturePtr;
     for (auto& e : g_slots) if (e.slotPtr == slotPtr) return e.creaturePtr;
     return 0;
 }
@@ -751,6 +754,13 @@ void DrawMenuShield(int slotPtr, int callerEbp, float scale) {
 // [ebp+0xc] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
 // after the panel controls drew and independent of the engine's arrow counts.
 void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
+    { int cd = 0; readAt(0x00a309c0, 0, &cd);                       // menu frame: map the menu portrait slot to its creature so the Buff HUD
+      if ((cd & 0xffff) != 0 && isLarge) {                             // hooks (which run later in 0x745770) and the arrow-counter bump know it
+          int c = 0; readAt(callerEbp, -0x28, &c);
+          int cnt = 0, arr = 0;
+          bool ok = c && readAt(c, Creature_EffectCountOffset, &cnt) && readAt(c, Creature_EffectArrayOffset, &arr) && cnt >= 0 && cnt <= MaxEffects;
+          g_menuSlot = ok ? SlotEntry{ slotPtr, c } : SlotEntry{ 0, 0 };
+      } else if (g_menuSlot.slotPtr == slotPtr) g_menuSlot = { 0, 0 }; }
     ForceArrowCounters(slotPtr);                // before FUN_00745770 reads +0xddc/+0xddd; must run for every slot, not just the leader
     swapHealthBar(slotPtr, false);              // engine has drawn: put the health bar's own texture back
     if (isLarge) {
