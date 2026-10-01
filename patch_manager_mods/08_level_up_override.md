@@ -204,6 +204,11 @@ the unverified part), (3) feats-panel gating. Static-only was sufficient for Q1-
   no change; ability = record unless 6 (keep pending); identical result -> `already` (SetExperience replay idempotency).
 - Offline checks: `python3 simulate_rewrite.py` (52 records + edge cases, 0 failures); `python3 tools/parity/parity.py` compiles the SAME
   LevelUpOverride.cpp natively against `tools/parity/stub/windows.h` and diffs the DRY lines vs Python: 263 cases, 0 mismatches.
+- **INSTALLED 2026-09-30 21:38 (user consent, Step 3):** backup `~/Games/KOTOR2_Mod_Workspace/backups/pre_levelup_probe_20260930_213810/`
+  (kpm_install_state.json, patch_config.toml, patches/; live DLLs == backup re-hashed immediately before), stage `$T/levelup_stage/` (20 live kpatches
+  from perflab3_stage md5-matched + LevelUpOverride.kpatch), `KPATCH_NO_LAUNCH=1 ... KPatchLauncher` -> "Applied 21 patch(es)"; `verify` 0 mismatches;
+  UpdatedAt 21:38:18; live `patches/level-up-override.dll` md5 acd1ce14. Game dir: `levelup_paths.ini` (copy of runtime table), `levelup_override.ini`
+  (`mode=log tags=atton verbose=1`). Rollback: reinstall the 20 ids from `$T/levelup_stage` without `level-up-override`, or `mode=off` (inert).
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
