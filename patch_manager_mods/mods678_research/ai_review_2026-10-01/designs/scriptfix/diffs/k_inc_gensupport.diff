@@ -1,0 +1,93 @@
+--- /home/ethansm/Games/KOTOR2_Mod_Workspace/mod8_kite_script/vanilla/k_inc_gensupport.nss	2026-09-30 19:05:06.031271265 -0400
++++ build/src/k_inc_gensupport.nss	2026-10-01 18:51:17.345336896 -0400
+@@ -2242,6 +2242,18 @@
+         }
+     }
+     */
++    //Party AI fix M7 (party context only): see GN_GetWeaponTypeFromBaseItem.
++    if(GetIsObjectValid(oItem) && IsObjectPartyMember(OBJECT_SELF))
++    {
++        if(nBaseType == 104 || nBaseType == 105)
++        {
++            return 2;
++        }
++        if(nBaseType == 106 || nBaseType == 107)
++        {
++            return 1;
++        }
++    }
+     GN_MyPrintString("GENERIC DEBUG *************** Return No Weapon Type");
+     return 0;
+ }
+@@ -2288,6 +2300,16 @@
+         //GN_MyPrintString("GENERIC DEBUG *************** Melee Weapon Equipped");
+         return 1;
+     }
++    //Party AI fix M7 (party context only): TSL base items missing above. baseitems.2da 104 Mining_Laser,
++    //105 Adv_Mining_Laser (ranged); 106 Lightsaber_No_Sound, 107 DM_ElectroStaff (melee).
++    else if(IsObjectPartyMember(OBJECT_SELF) && (nBaseType == 104 || nBaseType == 105))
++    {
++        return 2;
++    }
++    else if(IsObjectPartyMember(OBJECT_SELF) && (nBaseType == 106 || nBaseType == 107))
++    {
++        return 1;
++    }
+     else
+     {
+         return 0;//Return 0 by default.
+@@ -2520,7 +2542,13 @@
+     object oCheck = GetFirstObjectInShape(SHAPE_SPHERE, 30.0, GetLocation(OBJECT_SELF));
+     while(GetIsObjectValid(oCheck))
+     {
+-        nEnemy = GN_CheckEnemyGroupingOnTarget(oCheck,4.0);
++        //Party AI fix M2 (party only): the AoE centre must be a live, seen enemy (no ally, corpse or
++        //unseen creature); skipping the inner scan for the rest also saves instructions (L8).
++        nEnemy = 0;
++        if(!IsObjectPartyMember(OBJECT_SELF) || (GetIsEnemy(oCheck) && !GetIsDead(oCheck) && GetObjectSeen(oCheck)))
++        {
++            nEnemy = GN_CheckEnemyGroupingOnTarget(oCheck,4.0);
++        }
+         if(nEnemy > 2 && nEnemyCnt < nEnemy)
+         {
+             oFinal = oCheck;
+@@ -3366,7 +3394,14 @@
+ talent GN_GetTargetedForcePower(int nDroid = FALSE)
+ {
+     talent tUse;
+-    int nChoke, nAfflict, nPlague, nPush, nWind, nLightning, nKill, nHorror, nWound, nStasis, nDroid, nKnock, nHowl, nCnt;
++    //Party AI fix M4 (party only): the local nDroid shadowed the parameter, so organic-only powers were
++    //picked against droids and Droid Disable never was. The flag is now nDisable; NPCs keep the vanilla
++    //result (nDroid forced FALSE, as the shadow did).
++    int nChoke, nAfflict, nPlague, nPush, nWind, nLightning, nKill, nHorror, nWound, nStasis, nDisable, nKnock, nHowl, nCnt;
++    if(!IsObjectPartyMember(OBJECT_SELF))
++    {
++        nDroid = FALSE;
++    }
+     // DJS-OEI 8/19/2004
+     int nScream1, nScream2, nScream3;
+ 
+@@ -3433,7 +3468,7 @@
+     }
+     if(GetHasSpell(FORCE_POWER_DROID_DISABLE) && nDroid == TRUE)
+     {
+-        nDroid = 1;
++        nDisable = 1;
+         nCnt++;
+     }
+     talent tSlam  = TalentSpell(83);
+@@ -3571,12 +3606,12 @@
+         nRoll--;
+     }
+     //Disable Droid
+-    if(nDroid== 1 && nRoll == 1)
++    if(nDisable == 1 && nRoll == 1)
+     {
+         tUse = TalentSpell(FORCE_POWER_DROID_DISABLE);
+         nRoll--;
+     }
+-    if(nDroid == 1 && nRoll > 1)
++    if(nDisable == 1 && nRoll > 1)
+     {
+         nRoll--;
+     }

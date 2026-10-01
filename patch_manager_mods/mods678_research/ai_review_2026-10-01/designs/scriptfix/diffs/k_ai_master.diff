@@ -1,0 +1,55 @@
+--- /home/ethansm/Games/KOTOR2_Mod_Workspace/mod8_kite_script/vanilla/k_ai_master.nss	2026-09-30 19:05:06.030893714 -0400
++++ build/src/k_ai_master.nss	2026-10-01 18:51:17.345417658 -0400
+@@ -690,7 +690,10 @@
+             {
+                 nWeaponType = GN_GetWeaponTypeFromBaseItem(GetBaseItemType(oWeapon));
+             }
+-            if ( nWeaponType == 1 || nWeaponType == 0)
++            //Party AI fix E6: an attacker with no known weapon in the right hand (creature weapons on
++            //droids, turrets and beasts; mod base items) counts as melee only when it is close.
++            if ( nWeaponType == 1 || (nWeaponType == 0 && GetIsObjectValid(oAttacker) &&
++                                      GetDistanceBetween(OBJECT_SELF, oAttacker) <= 5.0) )
+             {
+                 //Indicate that we are being hit by melee. Use the
+                 //healer AI local number slots since we don't need
+@@ -720,7 +723,9 @@
+                         }
+                     }
+                 }
+-                else
++                //Party AI fix E13: the leader already shouted twice above; only a member held back by
++                //player restrict mode shouts here.
++                else if(GetPartyMemberByIndex(0) != OBJECT_SELF)
+                 {
+                     //Shout that I was attacked
+                     SpeakString("GEN_I_WAS_ATTACKED", TALKVOLUME_SILENT_TALK);
+@@ -761,8 +766,16 @@
+                                         object oTarget = GetLastDamager();
+                                         if(!GetObjectSeen(oTarget) && GetArea(OBJECT_SELF) == GetArea(oTarget))
+                                         {
+-                                            ActionMoveToLocation(GetLocation(oTarget), TRUE);
+-                                            ActionDoCommand(GN_DetermineCombatRound());
++                                            //Party AI fix E11/M6: stand off by weapon as case 1006 does (was a run onto the
++                                            //damager's spot); Ranged, Stationary and Kite do not approach at all.
++                                            int nStyle2006 = GetNPCAIStyle(OBJECT_SELF);
++                                            if(nStyle2006 != NPC_AISTYLE_PARTY_RANGED && nStyle2006 != NPC_AISTYLE_PARTY_STATIONARY &&
++                                               nStyle2006 != NPC_AISTYLE_PARTY_KITE)
++                                            {
++                                                GN_MyPrintString("GENERIC DEBUG *************** Party E11: unseen damager, stand off");
++                                                ActionMoveToObject(oTarget, TRUE, (GN_GetWeaponType(OBJECT_SELF) == 1) ? 4.0 : 15.0);
++                                                ActionDoCommand(GN_DetermineCombatRound());
++                                            }
+                                         }
+                                     }
+                                 }
+@@ -813,7 +826,9 @@
+                     {
+                         DoDoorAction(oDoor, DOOR_ACTION_OPEN);
+                     }
+-                    else if(GetIsDoorActionPossible(oDoor, DOOR_ACTION_BASH))
++                    //Party AI fix E10: party members open doors but never bash them (k_inc_generic post-DCR:
++                    //"Party members won't help with bashing anymore").
++                    else if(!IsObjectPartyMember(OBJECT_SELF) && GetIsDoorActionPossible(oDoor, DOOR_ACTION_BASH))
+                     {
+                         DoDoorAction(oDoor, DOOR_ACTION_BASH);
+                     }

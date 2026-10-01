@@ -6,7 +6,7 @@ DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ghidra_know
 DATE = "2026-10-01"
 LESSONS = [
     ("combat-ai", "In-combat 3 s script fallback (creature+0x570) and why an attack loop never gets it",
-     "AIUpdate 0x569320: at 0x5699CE, if [cre+0x520]==1 and [cre+0x570]<=0 and vt+0x94()==0 (no queued action) it runs script slot 6 "
+     "AIUpdate 0x569320: at 0x5699CE, if [cre+0x520]==1 and [cre+0x570]<=0 and vt+0x94()==0 (0x563460: returns 0 for party members, else GetDead-like 0x5477F0; NOT a queue check) it runs script slot 6 "
      "(end of round, cre+0x270+6*8) via 0x6FD8D0, then sets +0x570=3000 (0x569A72); otherwise it counts +0x570 down. AIActionPhysicalAttacks "
      "prologue 0x6D740F writes +0x570=3000 on every entry, so an attack action that re-queues itself each frame (stance 11/12 skip-approach path, "
      "Mod 8 stance 16 via E-H3) never reaches the fallback: the companion idles until the player gives it an order (review A1, runtime check pending). An "

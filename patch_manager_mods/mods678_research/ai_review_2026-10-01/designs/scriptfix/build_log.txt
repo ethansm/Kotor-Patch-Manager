@@ -1,0 +1,75 @@
+anchor ok  MOD8-proto     party                  k_inc_generic.nss      count=1
+anchor ok  MOD8-dispatch  party                  k_inc_generic.nss      count=1
+anchor ok  E1             party                  k_inc_generic.nss      count=1
+anchor ok  E8             party                  k_inc_generic.nss      count=1
+anchor ok  M10b           party                  k_inc_generic.nss      count=1
+anchor ok  M9             party                  k_inc_generic.nss      count=1
+anchor ok  H1a            party                  k_inc_generic.nss      count=1
+anchor ok  H1b            party                  k_inc_generic.nss      count=1
+anchor ok  H2a            party                  k_inc_generic.nss      count=1
+anchor ok  H2b            party                  k_inc_generic.nss      count=1
+anchor ok  H2c            party                  k_inc_generic.nss      count=1
+anchor ok  H2d            party                  k_inc_generic.nss      count=1
+anchor ok  M5             party                  k_inc_generic.nss      count=1
+anchor ok  M3             party                  k_inc_generic.nss      count=1
+anchor ok  M1             party                  k_inc_generic.nss      count=1
+anchor ok  E3             party                  k_inc_generic.nss      count=1
+anchor ok  L4             party (PC-only trees)  k_inc_generic.nss      count=1
+anchor ok  M2             party                  k_inc_gensupport.nss   count=1
+anchor ok  M4a            party                  k_inc_gensupport.nss   count=1
+anchor ok  M4b            party                  k_inc_gensupport.nss   count=1
+anchor ok  M4c            party                  k_inc_gensupport.nss   count=1
+anchor ok  M4d            party                  k_inc_gensupport.nss   count=1
+anchor ok  M7a            party context          k_inc_gensupport.nss   count=1
+anchor ok  M7b            party context          k_inc_gensupport.nss   count=1
+anchor ok  E6             hench                  k_ai_master.nss        count=1
+anchor ok  E13            hench (leader)         k_ai_master.nss        count=1
+anchor ok  E11            hench                  k_ai_master.nss        count=1
+anchor ok  E10            party (hench)          k_ai_master.nss        count=1
+anchor ok  E2a            party                  k_hen_attondlg.nss     count=1
+anchor ok  E2b            party                  k_hen_attondlg.nss     count=1
+anchor ok  E2a            party                  k_hen_baodurdlg.nss    count=1
+anchor ok  E2b            party                  k_hen_baodurdlg.nss    count=1
+anchor ok  E2a            party                  k_hen_discipdlg.nss    count=1
+anchor ok  E2b            party                  k_hen_discipdlg.nss    count=1
+anchor ok  E2a            party                  k_hen_g0t0dlg.nss      count=1
+anchor ok  E2b            party                  k_hen_g0t0dlg.nss      count=1
+anchor ok  E2a            party                  k_hen_hanharrdlg.nss   count=1
+anchor ok  E2b            party                  k_hen_hanharrdlg.nss   count=1
+anchor ok  E2a            party                  k_hen_hk47dlg.nss      count=1
+anchor ok  E2b            party                  k_hen_hk47dlg.nss      count=1
+anchor ok  E2a            party                  k_hen_hndmaiddlg.nss   count=1
+anchor ok  E2b            party                  k_hen_hndmaiddlg.nss   count=1
+anchor ok  E2a            party                  k_hen_kreiadlg.nss     count=1
+anchor ok  E2b            party                  k_hen_kreiadlg.nss     count=1
+anchor ok  E2a            party                  k_hen_manddlg.nss      count=1
+anchor ok  E2b            party                  k_hen_manddlg.nss      count=1
+anchor ok  E2a            party                  k_hen_miradlg.nss      count=1
+anchor ok  E2b            party                  k_hen_miradlg.nss      count=1
+anchor ok  E2a            party                  k_hen_remotedlg.nss    count=1
+anchor ok  E2b            party                  k_hen_remotedlg.nss    count=1
+anchor ok  E2a            party                  k_hen_t3m4dlg.nss      count=1
+anchor ok  E2b            party                  k_hen_t3m4dlg.nss      count=1
+anchor ok  E2a            party                  k_hen_visasdlg.nss     count=1
+anchor ok  E2b            party                  k_hen_visasdlg.nss     count=1
+anchor ok  E2c            all                    a_force_combat.nss     count=1
+anchor ok  E2d            all                    k_combat_rnd.nss       count=1
+anchor ok  E2e            all                    a_atkonend.nss         count=1
+built k_ai_master.ncs         129812 bytes  md5 a5bdf830b6c0b6d604ca8c9994f901fd
+built k_hen_attondlg.ncs        3806 bytes  md5 4872d909288b58d69a88e322c55afb5a
+built k_hen_baodurdlg.ncs       3432 bytes  md5 ebd2e212ac5280c703d5badabf1e6864
+built k_hen_discipdlg.ncs       3655 bytes  md5 a997ac579a97d5635fd31ec4b85e284a
+built k_hen_g0t0dlg.ncs         3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_hanharrdlg.ncs      3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_hk47dlg.ncs         3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_hndmaiddlg.ncs      3547 bytes  md5 2ad38cff181475a68d19738dd80a1701
+built k_hen_kreiadlg.ncs        3781 bytes  md5 396388910f6f12738a21576e58263814
+built k_hen_manddlg.ncs         3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_miradlg.ncs         3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_remotedlg.ncs       3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_t3m4dlg.ncs         3432 bytes  md5 f24d41ab6669da09c4205c60c04f063b
+built k_hen_visasdlg.ncs        3714 bytes  md5 d13e3f56f5308322ace5cafb04f15ca9
+built a_force_combat.ncs        2711 bytes  md5 d1c46a018bd87acd38ba514bffa5f70b
+built k_combat_rnd.ncs          2711 bytes  md5 d1c46a018bd87acd38ba514bffa5f70b
+built a_atkonend.ncs            2786 bytes  md5 e7cdfed131573daba92b721ea00ebbca
+0 script(s) compiled with swapped engine-call arguments

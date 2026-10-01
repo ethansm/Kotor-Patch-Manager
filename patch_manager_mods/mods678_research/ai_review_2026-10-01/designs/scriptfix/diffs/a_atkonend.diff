@@ -1,0 +1,11 @@
+--- bif/a_atkonend.nss	2026-10-01 18:37:20.830664658 -0400
++++ build/src/a_atkonend.nss	2026-10-01 18:51:29.104306678 -0400
+@@ -14,6 +14,7 @@
+ void main()
+ {
+     DelayCommand(0.2,ChangeToStandardFaction(OBJECT_SELF,STANDARD_FACTION_HOSTILE_1));
+-    DelayCommand(0.3,GN_DetermineCombatRound());
++    //Party AI fix E2: run the live combat AI (k_ai_master case 3001 = GN_DetermineCombatRound()).
++    DelayCommand(0.3, ExecuteScript("k_ai_master", OBJECT_SELF, 3001));
+ }
+ 

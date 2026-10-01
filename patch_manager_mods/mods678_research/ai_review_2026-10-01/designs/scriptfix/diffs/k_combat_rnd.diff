@@ -1,0 +1,10 @@
+--- bif/k_combat_rnd.nss	2026-10-01 18:37:20.831839149 -0400
++++ build/src/k_combat_rnd.nss	2026-10-01 18:51:28.345762448 -0400
+@@ -5,5 +5,6 @@
+ #include "k_inc_generic"
+ 
+ void main() {
+-    GN_DetermineCombatRound();
++    //Party AI fix E2: run the live combat AI (k_ai_master case 3001 = GN_DetermineCombatRound()).
++    ExecuteScript("k_ai_master", OBJECT_SELF, 3001);
+ }

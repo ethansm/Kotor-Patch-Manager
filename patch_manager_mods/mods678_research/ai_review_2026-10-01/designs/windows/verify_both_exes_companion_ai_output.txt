@@ -1,0 +1,16 @@
+windows from check_windows_companion_ai_output.txt
+CA A1 approach gate end/retarget 006d853e  10  LAA:True  base:True
+CA P1 throttle interval          0056bdb4   7  LAA:True  base:True
+CA P1 throttle stamp store       0056bde3   6  LAA:True  base:True
+CA FM1 bump clear replace        00586f43  10  LAA:True  base:True
+CA FM4 snapshot FollowInfo       0057451f   6  LAA:True  base:True
+CA FM4 restore FollowInfo        00575183   7  LAA:True  base:True
+CA FM4 alt: apply=0 (mode 2)     0057452c   6  LAA:True  base:True
+CA A4 NULL spell row             006d9e2a  15  LAA:True  base:True
+CA C1 restart idx (0xC)          005868b9   7  LAA:True  base:True
+CA C1 restart idx (0xF)          005868f1   7  LAA:True  base:True
+CA C1 restart idx (0x2E)         00586929   7  LAA:True  base:True
+CA A3 dead-target exit (opt)     006d78b7   7  LAA:True  base:True
+CA A3 alt consumed (opt)         006d78b7   7  LAA:True  base:True
+CA FM3 sentinel probe (opt)      0051dbe7   6  LAA:True  base:True
+ALL MATCH

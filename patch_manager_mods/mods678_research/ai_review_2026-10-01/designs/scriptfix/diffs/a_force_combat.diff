@@ -1,0 +1,10 @@
+--- bif/a_force_combat.nss	2026-10-01 18:37:20.831046146 -0400
++++ build/src/a_force_combat.nss	2026-10-01 18:51:27.633370187 -0400
+@@ -9,5 +9,6 @@
+ 
+ void main()
+ {
+-    GN_DetermineCombatRound();
++    //Party AI fix E2: run the live combat AI (k_ai_master case 3001 = GN_DetermineCombatRound()).
++    ExecuteScript("k_ai_master", OBJECT_SELF, 3001);
+ }

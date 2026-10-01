@@ -1,0 +1,30 @@
+[OK  ] T1 ShipBuild value: 0x00692c50 len 10  bytes = [0xC7, 0x05, 0x14, 0xE1, 0xA7, 0x00, 0x01, 0x00, 0x00, 0x00]
+        00692c50  c70514e1a70001000000   MOV dword ptr [0x00a7e114],0x1
+[OK  ] T2 PrintString capture: 0x0068f301 len 7  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        0068f301  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+[OK  ] T3 AurPostString capture: 0x006f62f2 len 7  bytes = [0xC7, 0x45, 0xCC, 0x00, 0x00, 0x00, 0x00]
+        006f62f2  c745cc00000000         MOV dword ptr [EBP + -0x34],0x0
+[OK  ] T4 SendMessageToPC (optional): 0x00690bc8 len 7  bytes = [0xC7, 0x45, 0xC8, 0x00, 0x00, 0x00, 0x00]
+        00690bc8  c745c800000000         MOV dword ptr [EBP + -0x38],0x0
+[OK  ] E1 A1 attack entry (+0x570 reset): 0x006d740f len 10  bytes = [0xC7, 0x80, 0x70, 0x05, 0x00, 0x00, 0xB8, 0x0B, 0x00, 0x00]
+        006d740f  c78070050000b80b0000   MOV dword ptr [EAX + 0x570],0xbb8
+[OK  ] E1b A1 approach-branch exit: 0x006d8be2 len 5  bytes = [0xA1, 0xB8, 0x44, 0x99, 0x00]
+        006d8be2  a1b8449900             MOV EAX,[0x009944b8]
+[OK  ] E2 A2 slot-6 fallback fires: 0x00569a08 len 6  bytes = [0x8B, 0x8D, 0x6C, 0xFE, 0xFF, 0xFF]
+        00569a08  8b8d6cfeffff           MOV ECX,dword ptr [EBP + 0xfffffe6c]
+[OK  ] E3 P1 block-2 UpdatePerception(1): 0x0056bdbd len 8  bytes = [0x6A, 0x01, 0x8B, 0x8D, 0x2C, 0xFF, 0xFF, 0xFF]
+        0056bdbd  6a01                   PUSH 0x1
+        0056bdbf  8b8d2cffffff           MOV ECX,dword ptr [EBP + 0xffffff2c]
+[OK  ] E4 FM1 bump ClearAllActions: 0x00586f43 len 5  bytes = [0x6A, 0x01, 0x8B, 0x4D, 0x08]
+        00586f43  6a01                   PUSH 0x1
+        00586f45  8b4d08                 MOV ECX,dword ptr [EBP + 0x8]
+[OK  ] X1 FM1 fix variant (skip-only, incl. CALL): 0x00586f43 len 10 (skip-only)  bytes = [0x6A, 0x01, 0x8B, 0x4D, 0x08, 0xE8, 0x33, 0xA1, 0xFB, 0xFF]
+        00586f43  6a01                   PUSH 0x1
+        00586f45  8b4d08                 MOV ECX,dword ptr [EBP + 0x8]
+        00586f48  e833a1fbff             CALL 0x00541080
+[OK  ] X2 A1 fix (review option 1): 0x006d84fc len 6  bytes = [0x89, 0x8D, 0x7C, 0xFC, 0xFF, 0xFF]
+        006d84fc  898d7cfcffff           MOV dword ptr [EBP + 0xfffffc7c],ECX
+[OK  ] X3 P1 fix (store stamp): 0x0056bde3 len 6  bytes = [0x89, 0x90, 0x9C, 0x03, 0x00, 0x00]
+        0056bde3  89909c030000           MOV dword ptr [EAX + 0x39c],EDX
+
+ALL OK

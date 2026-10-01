@@ -1,0 +1,27 @@
+--- bif/k_hen_miradlg.nss	2026-10-01 18:37:20.827530348 -0400
++++ build/src/k_hen_miradlg.nss	2026-10-01 18:51:24.737464567 -0400
+@@ -53,6 +53,14 @@
+ void main()
+ {
+     int nMatch = GetListenPatternNumber();
++    //Party AI fix E2: a shout goes through k_ai_master case 2004, which is this script's shout path line for
++    //line (AI-off and commandable checks, GN_RespondToShout, user-defined 1004), so it runs the live party
++    //AI (stance 16, the fixes). Conversations (nMatch == -1) stay here for SelectAndRunDLG.
++    if(nMatch != -1)
++    {
++        ExecuteScript("k_ai_master", OBJECT_SELF, 2004); //KOTOR_HENCH_EVENT_ON_DIALOGUE
++        return;
++    }
+     if(!GN_GetSpawnInCondition(SW_FLAG_AI_OFF))
+     {
+         if(GetCommandable())
+@@ -73,7 +81,8 @@
+             }
+             else
+             {
+-                GN_RespondToShout(oShouter, nMatch, GetLastHostileActor(oShouter));
++                //Party AI fix E2: unreachable now (shouts return above); kept empty so this script no longer
++                //embeds its own copy of the vanilla combat AI.
+             }
+         }
+     }

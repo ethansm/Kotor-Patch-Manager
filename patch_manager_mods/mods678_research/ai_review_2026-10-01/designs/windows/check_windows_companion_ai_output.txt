@@ -1,0 +1,43 @@
+        EAX at resume 0x6d8548: dead on all paths
+        EAX at consumed exit 0x6d7d2f: dead on all paths
+[OK  ] CA A1 approach gate end/retarget: 0x006d853e len 10  bytes = [0xC7, 0x85, 0x94, 0xFE, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x7F]
+        006d853e  c78594feffff0000007f   MOV dword ptr [EBP + 0xfffffe94],0x7f000000
+[OK  ] CA P1 throttle interval: 0x0056bdb4 len 7  bytes = [0x81, 0x7D, 0xD8, 0xA0, 0x0F, 0x00, 0x00]
+        0056bdb4  817dd8a00f0000         CMP dword ptr [EBP + -0x28],0xfa0
+[OK  ] CA P1 throttle stamp store: 0x0056bde3 len 6  bytes = [0x89, 0x90, 0x9C, 0x03, 0x00, 0x00]
+        0056bde3  89909c030000           MOV dword ptr [EAX + 0x39c],EDX
+[FAIL] CA FM1 bump clear replace: 0x00586f43 len 10 (skip-only)  bytes = [0x6A, 0x01, 0x8B, 0x4D, 0x08, 0xE8, 0x33, 0xA1, 0xFB, 0xFF]
+        ! overlaps live hook 0x586f43+5 (PLANNED ai-trace:E4)
+        00586f43  6a01                   PUSH 0x1
+        00586f45  8b4d08                 MOV ECX,dword ptr [EBP + 0x8]
+        00586f48  e833a1fbff             CALL 0x00541080
+[OK  ] CA FM4 snapshot FollowInfo: 0x0057451f len 6  bytes = [0x8B, 0x88, 0xAC, 0x11, 0x00, 0x00]
+        0057451f  8b88ac110000           MOV ECX,dword ptr [EAX + 0x11ac]
+[OK  ] CA FM4 restore FollowInfo: 0x00575183 len 7  bytes = [0x8B, 0x45, 0x0C, 0x50, 0x8B, 0x4D, 0x08]
+        00575183  8b450c                 MOV EAX,dword ptr [EBP + 0xc]
+        00575186  50                     PUSH EAX
+        00575187  8b4d08                 MOV ECX,dword ptr [EBP + 0x8]
+[OK  ] CA FM4 alt: apply=0 (mode 2): 0x0057452c len 6  bytes = [0x8B, 0x8D, 0x2C, 0xFE, 0xFF, 0xFF]
+        0057452c  8b8d2cfeffff           MOV ECX,dword ptr [EBP + 0xfffffe2c]
+        EAX at resume 0x6d9e39: dead on all paths
+        EAX at consumed exit 0x6d9ea4: dead on all paths
+[OK  ] CA A4 NULL spell row: 0x006d9e2a len 15 (skip-only)  bytes = [0x8B, 0x55, 0x98, 0x8B, 0x82, 0x54, 0x01, 0x00, 0x00, 0x89, 0x85, 0xA4, 0xFE, 0xFF, 0xFF]
+        006d9e2a  8b5598                 MOV EDX,dword ptr [EBP + -0x68]
+        006d9e2d  8b8254010000           MOV EAX,dword ptr [EDX + 0x154]
+        006d9e33  8985a4feffff           MOV dword ptr [EBP + 0xfffffea4],EAX
+[OK  ] CA C1 restart idx (0xC): 0x005868b9 len 7 (skip-only)  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        005868b9  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+[OK  ] CA C1 restart idx (0xF): 0x005868f1 len 7 (skip-only)  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        005868f1  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+[OK  ] CA C1 restart idx (0x2E): 0x00586929 len 7 (skip-only)  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        00586929  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+[OK  ] CA A3 dead-target exit (opt): 0x006d78b7 len 7  bytes = [0xC7, 0x45, 0xC4, 0x00, 0x00, 0x00, 0x00]
+        006d78b7  c745c400000000         MOV dword ptr [EBP + -0x3c],0x0
+        EAX at resume 0x6d78be: dead on all paths
+        EAX at consumed exit 0x6d77ac: dead on all paths
+[OK  ] CA A3 alt consumed (opt): 0x006d78b7 len 7  bytes = [0xC7, 0x45, 0xC4, 0x00, 0x00, 0x00, 0x00]
+        006d78b7  c745c400000000         MOV dword ptr [EBP + -0x3c],0x0
+[OK  ] CA FM3 sentinel probe (opt): 0x0051dbe7 len 6  bytes = [0x8B, 0x15, 0x88, 0xB4, 0xA1, 0x00]
+        0051dbe7  8b1588b4a100           MOV EDX,dword ptr [0x00a1b488]
+
+PROBLEMS FOUND
