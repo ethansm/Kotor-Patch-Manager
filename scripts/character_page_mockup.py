@@ -64,8 +64,9 @@ OVERRIDES = {
 # ---- effects panel (new controls; Phase 2 adds them to character_p.gui with IDs 69..) ----------------------------
 PANEL = (536, 134, 216, 336)
 HEADER = (536, 104, 216, 24)
-PAD_X, PAD_TOP = 8, 6
-ROW_H, SEC_H, SEC_GAP = 22, 20, 6
+PAD_X, PAD_TOP = 8, 8
+ROW_H, SEC_H, SEC_GAP = 24, 20, 8
+SEC_PAD = 4                        # section band -> first row (DLL build 3, 2026-10-01 spacing polish)
 ICON_W, ICON_H = 10, 18            # square on screen (48x48 px)
 TIME_W = 54                        # fits "Permanent" in dialogfont16x16 (52.2 units)
 MAX_ROWS = 14                      # label pool: rows that fit the scroll window at once
@@ -315,7 +316,7 @@ def entries(good, bad):
 def entry_h(e, at_top=False):
     """Height in units; a section's leading gap is dropped when it is the first visible entry."""
     if e[0] == "section":
-        return SEC_H + 2 + (SEC_GAP if e[3] and not at_top else 0)
+        return SEC_H + SEC_PAD + (SEC_GAP if e[3] and not at_top else 0)
     return ROW_H
 
 
@@ -365,7 +366,7 @@ def panel_controls(good, bad, names_font, hscale, vscale, first=0):
             if e[3] and k > 0:
                 y += SEC_GAP
             items.append(("section", (x0, y, row_w, SEC_H), (e[1], e[2])))
-            y += SEC_H + 2
+            y += SEC_H + SEC_PAD
         else:
             _, spell, secs, item, harmful, icon = e
             items.append(("icon", (x0, y + (ROW_H - ICON_H) // 2, ICON_W, ICON_H), (icon, item)))

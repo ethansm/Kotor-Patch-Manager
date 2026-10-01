@@ -155,7 +155,7 @@ def new_controls(by_tag, hud_tip):
         c = add(tag, stat, (x0 - 4, y, inner_w + 8, L.SEC_H))
         set_border(c, fill="uibit_fill_2wt", edge="", corner="", dim=0, color=L.TEAL_FRAME)
         set_text(c, text=txt, align=17, color=col, font="dialogfont16x16")
-    ry = lambda i: L.PANEL[1] + L.PAD_TOP + L.SEC_H + 2 + i * L.ROW_H
+    ry = lambda i: L.PANEL[1] + L.PAD_TOP + L.SEC_H + L.SEC_PAD + i * L.ROW_H
     for k in "DI":
         for i in range(L.MAX_ROWS):
             c = add(f"LBL_EFX_{k}{i:02d}", stat, (x0, ry(i) + (L.ROW_H - L.ICON_H) // 2, L.ICON_W, L.ICON_H))

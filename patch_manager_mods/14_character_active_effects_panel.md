@@ -1,4 +1,4 @@
-**STATUS 2026-10-01 18:57: Stage 1 build 2 INSTALLED (DLL swap, `character-effects-panel` 0.1.0-probe build 2, md5 f9407b9e, backup `patches/character-effects-panel.dll.bak_1001_1856`), `chareffects.ini` stage=1 fake_rows=0. AWAITING USER: Stage 1 test session (checklist in "Stage 1 build 2" below). Live = 23 ids. Entry point for a fresh context: this STATUS + the sections below, newest last.**
+**STATUS 2026-10-01 19:15: Stage 1 build 3 (spacing polish from the user's first screenshot) BUILT, NOT INSTALLED: game was running; swap when closed (see "build 3 spacing polish"). Build 2 live otherwise.** Previous: **Stage 1 build 2 INSTALLED (DLL swap, `character-effects-panel` 0.1.0-probe build 2, md5 f9407b9e, backup `patches/character-effects-panel.dll.bak_1001_1856`), `chareffects.ini` stage=1 fake_rows=0. AWAITING USER: Stage 1 test session (checklist in "Stage 1 build 2" below). Live = 23 ids. Entry point for a fresh context: this STATUS + the sections below, newest last.**
 
 Previous status line: **(superseded) STATUS 2026-10-01 19:00: Stage 0 LIVE and USER-ACCEPTED ("Preview looked good"): binds 68/68, colour checks ON, data path correct (see "Stage 0 user test"). Live = 23 ids. NEXT = Stage 1 (full list): set `stage=1` in `$GAME/chareffects.ini` (hot reload, no DLL change), user test matrix, then polish / final review per the Claude plan for "Mod 14 Stage 1". Entry point for a fresh context: this STATUS + the sections below, newest last.**
 
@@ -127,3 +127,18 @@ DLL swap only (hooks unchanged), version string still 0.1.0-probe. Changes in `C
 Verification: `-Wall -Wextra` 0 warnings (besides "incompatible function types"), `check_chareffects_kpatch.py` ALL PASS, installed md5 == kpatch DLL (f9407b9e). Other live DLLs vs `chareffects_stage`: all equal except `buff-duration-hud` (installed a8247978, stage eccb52ed: a sibling session's swap, not touched).
 
 User test checklist (Stage 1): (a) real effects: buff power + stim (disc), a debuff if possible; Harmful first with orange times; orange below 30 s; "Permanent" fits. (b) party switch with the page open: list follows, scroll resets. (c) reopen page, level-up screen, load a save. (d) `fake_rows=20` (hot reload): scrollbar, narrower rows, wheel, arrows (held), track page, thumb drag, dim arrows at the ends, gap dropped at the top; then `fake_rows=0`: bar gone, scroll clamped. (e) other mods unaffected (Mod 5 wheel zoom, Buff HUD, hotbar, shield bar, inventory 3D, sort/filter, no new stutter). (f) screenshot.
+
+## Stage 1 first look + build 3 spacing polish (2026-10-01 19:10)
+
+User screenshot 19:09 (Beneficial only: Burst of Speed 0:35, Adrenaline Shot: Alacrity 2:05 disc, Energy Shield 3:34 disc): "spacing around the Beneficial is tight and needs polish, assume the same for debuffs too". Log (copied to the session scratchpad as `log_1910.txt` before any change): party switch follows the leader (3 creatures cycled, scroll reset each time), LAYOUT rowW=960 px, one press outside the scrollbar (`part=none over=0`).
+
+Measured from the screenshot (1:1 with engine px):
+- Text renders at **1.98 px per font texel** for all three names (Burst of Speed 289 px / 146 texels, Adrenaline... 450/227, Energy Shield 257/130). `fitName` assumed `sy` = 2.667 px/texel, so names were cut about 26% early ("Alac..." with ~170 px free). New constant `TextK = 0.75` (rendered = texels x sy x 0.75 x text_scale).
+- Time labels carry GUI alignment 19 (middle-right) but the text is drawn **left-aligned** at the label x (0:35 at x 824 = the label's left edge, column ran to 1082). Section titles (align 17) are drawn flush against the band edge.
+- Vertical: frame -> band 14 px, band -> first icon 18 px, rows 58.7 px apart (22 units).
+
+Build 3 (DLL md5 93ca3014, gate ALL PASS, `-Wall` clean; mock-up `PAD_TOP 8, ROW_H 24, SEC_GAP 8, SEC_PAD 4` kept in sync, scroll math = DLL `fits()`; mirror script placeholder rows use `SEC_PAD`):
+- `PadTop` 6 -> 8, `RowH` 22 -> 24, band -> rows 2 -> 4 (`SecPad`), section gap 6 -> 8. A full window = header + 12 rows.
+- Section band starts 4 units left of the rows (the GUI design's `x0 - 4`), right overhang only without a scrollbar; title text gets a leading space so it lines up over the icon column.
+- Times right-aligned by placement: label = measured text width + 1 unit, ending 2 units inside the row's right edge (works whether the engine honours align 19 or not).
+- Names fill up to 4 units before that row's time.

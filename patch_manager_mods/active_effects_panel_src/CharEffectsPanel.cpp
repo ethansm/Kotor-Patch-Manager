@@ -15,6 +15,9 @@
 //   0 frame + header + summary text, log-only effect dump      1 full rows, sections, scrolling, scrollbar
 // Build 2 (still 0.1.0-probe, DLL swap): INI fake_rows=N (synthetic entries for overflow/scrollbar tests), one LAYOUT log
 // line per change of (list, first, overflow), INPUT press log (hit part, capped at 40).
+// Build 3 (user screenshot 19:09): more vertical room (pad/row/section spacing), section band 4 units wider than the rows
+// on the left with the title inset by a leading space, measured text widths (1.98 px/texel, not sy), times right-aligned by
+// placement (the engine drew the GUI's align 19 left-aligned), names get the room up to the time.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string.h>
@@ -62,7 +65,10 @@ static_assert(NumTags == 68, "tag count must match mirror_character_page.NEW_TAG
 
 // ---- layout (GUI units, 800x600; = scripts/character_page_mockup.py) ----
 constexpr float PanelX = 536, PanelY = 134, PanelW = 216, PanelH = 336;
-constexpr float PadX = 8, PadTop = 6, RowH = 22, SecH = 20, SecGap = 6, IconW = 10, IconH = 18, TimeW = 54;
+constexpr float PadX = 8, PadTop = 8, RowH = 24, SecH = 20, SecPad = 4, SecGap = 8, IconW = 10, IconH = 18;
+constexpr float SecOut = 4, TimePadR = 2, NameGap = 4;   // band overhang left of the rows; time inset from the row's right; name-time gap
+// rendered dialogfont16x16 width = texels * sy * TextK (screenshot 19:09: 1.98 px/texel at sy 2.6667, all three names)
+constexpr float TextK = 0.75f;
 constexpr float SbW = 10, SbArrowH = 18, SbGap = 3, SbThumbMin = 16;
 constexpr float X0 = PanelX + PadX, InnerW = PanelW - 2 * PadX, Top = PanelY + PadTop, Win = PanelH - 2 * PadTop;
 
@@ -498,7 +504,7 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
 }
 
 // ---- whole-entry scrolling (= character_page_mockup.fits / scroll_state) ----
-float entryH(const Entry& e, bool atTop) { return e.section ? SecH + 2 + ((e.gap && !atTop) ? SecGap : 0) : RowH; }
+float entryH(const Entry& e, bool atTop) { return e.section ? SecH + SecPad + ((e.gap && !atTop) ? SecGap : 0) : RowH; }
 int fits(const Entry* e, int n, int first) {
     int k = 0; float acc = 0;
     while (first + k < n) { float h = entryH(e[first + k], k == 0); if (acc + h > Win) break; acc += h; ++k; }
@@ -510,10 +516,11 @@ int lastFirstOf(const Entry* e, int n) {
     return lf < 0 ? 0 : lf;
 }
 
-// fitted name: cut with "..." to the label width (font texels drawn at sy px per texel, see gen_effect_name_table.py)
+// text width in engine px (kFontTexW from gen_effect_name_table.py; TextK measured; text_scale = INI fine-tune)
+float textPx(Slot* s, const char* t, int len) { float w = 0; for (int i = 0; i < len; ++i) w += kFontTexW[(unsigned char)t[i]]; return w * s->sy * TextK * g_cfg.textScale; }
+// fitted name: cut with "..." to the label width
 void fitName(Slot* s, const char* name, float maxPx, char* out, int n) {
-    float k = s->sy * g_cfg.textScale;
-    auto width = [&](const char* t, int len) { float w = 0; for (int i = 0; i < len; ++i) w += kFontTexW[(unsigned char)t[i]]; return w * k; };
+    auto width = [&](const char* t, int len) { return textPx(s, t, len); };
     int len = (int)strlen(name);
     if (width(name, len) <= maxPx) { snprintf(out, n, "%s", name); return; }
     float dots = width("...", 3);
@@ -570,9 +577,10 @@ void layout(Slot* s) {
         if (x.section) {
             if (x.gap && k > 0) y += SecGap;
             int t = x.harmful ? T_SECB : T_SECG; secShown[x.harmful] = true;
-            place(s, t, X0, y, rowW, SecH);
+            place(s, t, X0 - SecOut, y, rowW + SecOut + (over ? 0 : SecOut), SecH);   // no right overhang next to the scrollbar
+            setText(s, t, x.harmful ? " HARMFUL" : " BENEFICIAL");   // leading space = title inset (the label draws flush left)
             addRow(" |%s%s|", x.harmful ? "HARMFUL" : "BENEFICIAL", (x.gap && k == 0) ? "(gap dropped)" : "");
-            y += SecH + 2;
+            y += SecH + SecPad;
             continue;
         }
         if (r >= MaxRows) break;
@@ -580,12 +588,15 @@ void layout(Slot* s) {
         setFill(s, T_I0 + r, x.icon[0] ? x.icon : g_cfg.fallbackIcon, White);
         if (x.item && g_cfg.discs) { place(s, T_D0 + r, X0, y + (RowH - IconH) / 2, IconW, IconH); setFill(s, T_D0 + r, DiscResref, DiscTeal); }
         else hide(s, T_D0 + r);
-        float nw = rowW - (IconW + 4) - TimeW - 2;
-        place(s, T_N0 + r, X0 + IconW + 4, y, nw, RowH);
-        char nm[64]; fitName(s, x.name, (ux(s, X0 + IconW + 4 + nw) - ux(s, X0 + IconW + 4)) * 0.98f, nm, sizeof nm);
+        // time right-aligned by placement: label = text width + 1 unit slack, so left- and right-aligned drawing both end at tr
+        char tm[16]; fmtTime(x, tm, sizeof tm);
+        float tr = X0 + rowW - TimePadR, tx = tr - textPx(s, tm, (int)strlen(tm)) / s->sx - 1;
+        place(s, T_T0 + r, tx, y, tr - tx, RowH);
+        setText(s, T_T0 + r, tm);
+        float nx = X0 + IconW + 4, nw = tx - NameGap - nx;
+        place(s, T_N0 + r, nx, y, nw, RowH);
+        char nm[64]; fitName(s, x.name, (ux(s, nx + nw) - ux(s, nx)) * 0.98f, nm, sizeof nm);
         setText(s, T_N0 + r, nm);
-        place(s, T_T0 + r, X0 + rowW - TimeW, y, TimeW, RowH);
-        char tm[16]; fmtTime(x, tm, sizeof tm); setText(s, T_T0 + r, tm);
         addRow(" [%d] \"%s\" %s%s", r, nm, tm, x.item ? " disc" : "");
         bool warn = g_cfg.colorTimes && (x.harmful || (!x.perm && x.remMs >= 0 && x.remMs < g_cfg.soonS * 1000.0));
         setTextColor(s, T_T0 + r, warn ? 2 : 1, warn ? Orange : Cream);
