@@ -14,10 +14,18 @@ For each window (name, start, length, function entry, skip, consumed exit) it ch
   * consumed-exit hooks (framework fact, KotorPatcher wrapper_x86.cpp): EAX must be excluded from the restore so the
     handler's result reaches the TEST, so EAX = the handler result on BOTH exits: the stolen bytes (which run before
     the test) must not touch EAX, and EAX must be dead at the resume address and at the consumed exit (liveness walk
-    over fall-through + Jcc/JMP targets inside the function; RET counts as a read: EAX is the return value)
+    over fall-through + Jcc/JMP targets inside the function; review SF2 2026-10-01: explicit AND implicit EAX readers
+    (CDQ/CWD/CBW/CWDE, one-operand MUL/IMUL/DIV/IDIV, STOS/LODS/SCAS/CMPXCHG, XCHG/IN/OUT, SAHF, PUSHAD, CMOVcc EAX),
+    RET (EAX = return value) and a direct CALL to a callee that reads EAX before writing it all count as reads; XOR/SUB
+    EAX,EAX are writes; an indirect JMP (switch table) or an unmodelled mnemonic is "unknown" and fails the check)
+  * consumed exits and skip-only resumes keep the stack: the ESP depth (forward walk from the function entry; direct
+    CALL pops = the callee's RET n, an indirect CALL pops its pending arguments unless an ADD ESP follows) at the
+    consumed exit equals the depth at which the wrapper jumps there (window start for skip-only, else window end),
+    and for a skip-only window the depth at its end equals the depth at its start
   * TOML cross-check: every hook in the owning patch's source hooks.toml (ranged_ai_src, companion_ai_src,
-    inventory_sort_filter_src) has a window here with the same address, length, bytes, skip flag and consumed exit,
-    and consumed hooks list "eax" in exclude_from_restore
+    inventory_sort_filter_src) has a window here with the same address, length, bytes, skip flag and consumed exit;
+    consumed hooks list "eax" in exclude_from_restore and non-consumed hooks do not; windows marked not shipped must
+    NOT be in the toml
 Prints the original bytes as a TOML-ready list.
 
 Usage: check_windows.py            (runs the built-in table of windows)
@@ -35,9 +43,10 @@ OWNERS = {"M6": ("inventory-sort-filter", "inventory_sort_filter_src"), "M8": ("
           "CA": ("companion-ai", "companion_ai_src"), "M7": (None, None)}
 
 
-def W(name, start, length, entry, skip=False, cexit=None, eax_ret_ok=False):
-    """eax_ret_ok: the consumed exit is the function epilogue and the handler's result IS the return value (by design)."""
-    return (name, start, length, entry, skip, cexit, eax_ret_ok)
+def W(name, start, length, entry, skip=False, cexit=None, eax_ret_ok=False, shipped=True):
+    """eax_ret_ok: the consumed exit is the function epilogue and the handler's result IS the return value (by design).
+    shipped=False: validated for later use, but deliberately absent from the owner's hooks.toml."""
+    return (name, start, length, entry, skip, cexit, eax_ret_ok, shipped)
 
 
 WINDOWS = [
@@ -78,7 +87,8 @@ WINDOWS = [
     W("CA C1 restart idx (0xF)",    0x5868F1, 7,  0x5867E0, skip=True),
     W("CA C1 restart idx (0x2E)",   0x586929, 7,  0x5867E0, skip=True),
     W("CA A3 dead-target lock clear", 0x6D78B7, 7, 0x6D7390),                  # MOV [EBP-0x3C],0 (lock-clear variant, no consumed exit)
-    W("CA FM3 sentinel probe",      0x51DBE7, 6,  0x51D790),                   # MOV EDX,[0xA1B488] (log-only)
+    W("CA FM3 sentinel probe (NOT SHIPPED)", 0x51DBE7, 6, 0x51D790, shipped=False),  # MOV EDX,[0xA1B488]; log-only probe, dropped
+                                                                               # from 0.1.0 (wrapper cost in the scheduler's hottest loop, review N2)
 ]
 
 
@@ -113,10 +123,84 @@ def live_config_windows():
     return w, f"live patch_config.toml: {len(d.get('patches', []))} ids, {len(w)} hooks"
 
 
-def eax_state(ins, at):
-    """Follow fall-through and Jcc/JMP targets from `at` (within the function): 'dead' only if on EVERY path EAX is
-    fully written (MOV/MOVZX/MOVSX/LEA/POP EAX, XOR EAX,EAX) or clobbered by a CALL before any read. A RET reads EAX
-    (the return value). Returns (verdict, only_ret) where only_ret is True when every live verdict is a RET."""
+# ---- EAX liveness (review SF2) ------------------------------------------------------------------------------------
+EAXRE = r"\b(EAX|AX|AL|AH)\b"
+FULL_WRITE = ("MOV", "MOVZX", "MOVSX", "LEA", "POP")
+# mnemonics whose ONLY EAX contact is through explicit operands (anything else is modelled below or is "unknown")
+EXPLICIT_ONLY = {"MOV", "MOVZX", "MOVSX", "LEA", "PUSH", "POP", "ADD", "ADC", "SUB", "SBB", "AND", "OR", "XOR", "CMP",
+                 "TEST", "INC", "DEC", "NEG", "NOT", "SHL", "SHR", "SAR", "SAL", "ROL", "ROR", "RCL", "RCR", "SHLD", "SHRD",
+                 "BT", "BTS", "BTR", "BTC", "BSF", "BSR", "NOP", "LEAVE", "CLD", "STD", "CLC", "STC", "CMC", "INT3",
+                 "MOVSB", "MOVSW", "MOVSD", "CMPSB", "CMPSW", "CMPSD", "PUSHFD", "POPFD", "PUSHF", "POPF", "WAIT", "FWAIT"}
+IMPLICIT_READ = {"CDQ", "CWD", "CBW", "CWDE", "STOSB", "STOSW", "STOSD", "LODSB", "LODSW", "LODSD", "SCASB", "SCASW",
+                 "SCASD", "CMPXCHG", "XCHG", "IN", "OUT", "SAHF", "PUSHAD", "PUSHA", "XLAT", "XLATB", "AAA", "AAS", "DAA",
+                 "DAS", "AAM", "AAD"}
+PARTIAL_WRITE = {"LAHF"}   # writes AH only: not a kill, not a read
+_fn_cache, _callee_cache = {}, {}
+
+
+def mnemonic(t):
+    m = re.match(r"(\S+)\s*(.*)", t)
+    op = m.group(1).upper().split(".")[0]   # Ghidra writes string-op prefixes as suffixes: MOVSD.REP, STOSD.REPNE
+    return op, m.group(2)
+
+
+def classify(op, args):
+    """-> 'read' | 'write' | 'none' | 'unknown' for EAX, ignoring control flow (handled by the walkers)."""
+    dst, _, src = args.partition(",")
+    dst, src = dst.strip(), src.strip()
+    if op in IMPLICIT_READ:
+        return "read"
+    if op in PARTIAL_WRITE:
+        return "none"
+    if op in ("MUL", "DIV", "IDIV") or (op == "IMUL" and "," not in args):
+        return "read"   # one-operand forms read EDX:EAX / EAX
+    if op == "IMUL":
+        op = "ADD"      # two/three-operand IMUL behaves like an ALU op on its explicit operands
+    if op.startswith("CMOV"):
+        return "read" if re.search(EAXRE, args) else "none"   # conditional: dest kept (read) when not taken
+    if op.startswith("SET"):
+        return "none" if not re.search(EAXRE, dst) or "[" not in dst else "read"
+    if op in ("FNSTSW", "FSTSW"):
+        return "none" if dst in ("AX",) else ("read" if re.search(EAXRE, dst) else "none")   # writes AX only
+    if op.startswith("F"):
+        return "read" if re.search(EAXRE, args) else "none"   # x87: EAX only as an address register
+    if op in ("XOR", "SUB", "SBB") and dst == "EAX" and src == "EAX":
+        return "write" if op != "SBB" else "read"   # XOR/SUB EAX,EAX zero it; SBB EAX,EAX reads CF only, but keep safe
+    if op not in EXPLICIT_ONLY:
+        return "unknown"
+    if re.search(EAXRE, src) or (re.search(EAXRE, dst) and "[" in dst):
+        return "read"
+    if dst == "EAX" and op in FULL_WRITE:
+        return "write"
+    if re.search(EAXRE, dst) and op not in FULL_WRITE and op != "PUSH" or op == "PUSH" and re.search(EAXRE, dst):
+        return "read"   # ALU on EAX/AX/AL reads it; PUSH EAX reads it
+    return "none"
+
+
+def load_fn_cached(entry):
+    if entry not in _fn_cache:
+        try:
+            _fn_cache[entry] = load_fn(entry)
+        except OSError:
+            _fn_cache[entry] = None
+    return _fn_cache[entry]
+
+
+def callee_reads_eax(target):
+    """True when the callee (from the dump) reads EAX before writing it on some path (e.g. __chkstk, _alloca_probe).
+    Its own CALLs count as clobbers and its RETs as 'no read' (a void callee does not consume EAX)."""
+    if target in _callee_cache:
+        return _callee_cache[target]
+    _callee_cache[target] = False
+    ins = load_fn_cached(target)
+    if not ins:
+        return False
+    v, _ = walk_eax(ins, target, callee=True)
+    _callee_cache[target] = v.startswith("LIVE")
+    return _callee_cache[target]
+
+
+def walk_eax(ins, at, callee=False):
     pos = {a: i for i, (a, b, t) in enumerate(ins)}
     seen, verdicts = set(), []
     def walk(addr, depth):
@@ -125,21 +209,29 @@ def eax_state(ins, at):
             if addr in seen: return
             seen.add(addr)
             i = pos[addr]; a, b, t = ins[i]
-            m = re.match(r"(\w+)\s*(.*)", t); op, args = m.group(1), m.group(2)
+            op, args = mnemonic(t)
             if op == "RET":
-                verdicts.append(f"LIVE (returned by {a:#x} {t})"); return
-            if op == "CALL":
-                if re.search(r"\b(EAX|AX|AL|AH)\b", args): verdicts.append(f"LIVE (read by {a:#x} {t})")
+                if not callee: verdicts.append(f"LIVE (returned by {a:#x} {t})")
                 return
-            dst, _, src = args.partition(",")
-            rd_ = re.search(r"\b(EAX|AX|AL|AH)\b", src) or (re.search(r"\b(EAX|AX|AL|AH)\b", dst) and "[" in dst) \
-                  or (op not in ("MOV", "MOVZX", "MOVSX", "LEA", "POP", "XOR") and re.search(r"\b(EAX|AX|AL|AH)\b", dst))
-            if op == "XOR" and dst.strip() == "EAX" and src.strip() != "EAX": rd_ = True
-            if rd_: verdicts.append(f"LIVE (read by {a:#x} {t})"); return
-            if dst.strip() == "EAX" and op in ("MOV", "MOVZX", "MOVSX", "LEA", "POP", "XOR"): return
-            mj = re.match(r"(J\w+)\s+0x([0-9a-f]+)", t)
-            if mj:
-                if depth > 12: verdicts.append("unknown (depth)"); return
+            if op == "CALL":
+                if re.search(EAXRE, args): verdicts.append(f"LIVE (read by {a:#x} {t})"); return
+                mc = re.match(r"0x([0-9a-f]+)$", args.strip())
+                if mc and not callee and callee_reads_eax(int(mc.group(1), 16)):
+                    verdicts.append(f"LIVE (callee of {a:#x} {t} reads EAX)")
+                return   # otherwise a CALL clobbers EAX
+            if op == "JMP" and not re.match(r"0x[0-9a-f]+$", args.strip()):
+                if re.search(EAXRE, args): verdicts.append(f"LIVE (read by {a:#x} {t})")
+                else: verdicts.append(f"unknown (indirect jump {a:#x} {t})")
+                return
+            mj = re.match(r"(J\w+|LOOP\w*)\s+0x([0-9a-f]+)$", t)
+            if not mj:
+                c = classify(op, args)
+                if c == "read": verdicts.append(f"LIVE (read by {a:#x} {t})"); return
+                if c == "write": return
+                if c == "unknown": verdicts.append(f"unknown (unmodelled {a:#x} {t})"); return
+            else:
+                if op.startswith("LOOP") or op == "JECXZ": pass
+                if depth > 40: verdicts.append("unknown (depth)"); return
                 walk(int(mj.group(2), 16), depth + 1)
                 if mj.group(1) == "JMP": return
             if i + 1 >= len(ins): verdicts.append("unknown (end)"); return
@@ -148,6 +240,111 @@ def eax_state(ins, at):
     if not verdicts: return "dead on all paths", False
     only_ret = all(v.startswith("LIVE (returned") for v in verdicts)
     return "; ".join(verdicts), only_ret
+
+
+def eax_state(ins, at):
+    """'dead on all paths' only if on EVERY path EAX is fully written before any (explicit or implicit) read.
+    Returns (verdict, only_ret) where only_ret is True when every live verdict is a RET."""
+    return walk_eax(ins, at)
+
+
+# ---- ESP depth (review SF2: the consumed exit must be reached at the same stack depth) --------------------------------
+# A full-function depth walk cannot attribute arguments around indirect (vtable) calls nested inside an argument push
+# sequence, so the check is local: pending(X) = bytes already pushed at X that a later CALL will consume, found by
+# walking forward from X to the next CALL whose argument size is known (direct: the callee's RET n, or the ADD ESP,n
+# that follows a cdecl call; indirect: only the ADD ESP,n form). Reaching the epilogue (MOV ESP,EBP / LEAVE) first
+# means ESP is re-derived from EBP, so any depth is safe there ("reset"). Every explored path must agree.
+def callee_pops(target):
+    ins = load_fn_cached(target)
+    if not ins:
+        return None
+    pops = set()
+    for a, b, t in ins:
+        op, args = mnemonic(t)
+        if op == "RET":
+            m = re.match(r"0x([0-9a-f]+)", args.strip())
+            pops.add(int(m.group(1), 16) if m else 0)
+    return pops.pop() if len(pops) == 1 else None
+
+
+def call_args(ins, i):
+    """Bytes of arguments the CALL at index i consumes (callee pops or caller's ADD ESP), or None if not determinable."""
+    a, b, t = ins[i]
+    op, args = mnemonic(t)
+    nop, nargs = mnemonic(ins[i + 1][2]) if i + 1 < len(ins) else ("", "")
+    cdecl = None
+    m = re.match(r"ESP,(0x[0-9a-f]+|\d+)$", nargs.replace(" ", "")) if nop == "ADD" else None
+    if m:
+        cdecl = int(m.group(1), 0)
+    mc = re.match(r"0x([0-9a-f]+)$", args.strip())
+    if mc:
+        pops = callee_pops(int(mc.group(1), 16))
+        if pops is not None:
+            return pops + (cdecl or 0)
+    return cdecl
+
+
+def pending_at(ins, x, limit=80):
+    """-> (set of results, notes). Results: int pending bytes, 'reset' (epilogue first), 'ret'."""
+    pos = {a: i for i, (a, b, t) in enumerate(ins)}
+    results, notes, seen = set(), [], set()
+    work = [(x, 0, 0)]
+    while work:
+        addr, pushed, steps = work.pop()
+        while True:
+            if addr not in pos or steps > limit:
+                notes.append(f"path from {x:#x} not resolved at {addr:#x}"); break
+            if (addr, pushed) in seen: break
+            seen.add((addr, pushed))
+            i = pos[addr]; a, b, t = ins[i]
+            op, args = mnemonic(t)
+            dst = args.partition(",")[0].strip()
+            steps += 1
+            if op == "PUSH": pushed += 4
+            elif op == "POP": pushed -= 4
+            elif op in ("PUSHFD", "PUSHF"): pushed += 4
+            elif op in ("POPFD", "POPF"): pushed -= 4
+            elif op in ("SUB", "ADD") and dst == "ESP" and re.match(r"ESP,(0x[0-9a-f]+|\d+)$", args.replace(" ", "")):
+                k = int(args.replace(" ", "").split(",")[1], 0)
+                pushed += k if op == "SUB" else -k   # SUB ESP,n = an argument passed by value (e.g. a Vector)
+            elif (op == "MOV" and dst == "ESP" and args.replace(" ", "") == "ESP,EBP") or op == "LEAVE":
+                results.add("reset"); break
+            elif op == "RET":
+                results.add("ret" if pushed == 0 else f"ret with {pushed} pushed"); break
+            elif re.search(r"\bESP\b", dst) and "[" not in dst:
+                notes.append(f"ESP written at {a:#x} {t}"); break
+            elif op == "CALL":
+                n = call_args(ins, i)
+                if n is None:
+                    notes.append(f"argument size of {a:#x} {t} unknown"); break
+                if pushed <= n:
+                    results.add(n - pushed); break
+                pushed -= n   # extra pushes belong to a later call (nested call inside an argument sequence)
+                if i + 1 < len(ins) and mnemonic(ins[i + 1][2])[0] == "ADD" and ins[i + 1][2].replace(" ", "").startswith("ADDESP,"):
+                    i += 1   # the cdecl cleanup was already counted in n
+            mj = re.match(r"(J\w+|LOOP\w*)\s+0x([0-9a-f]+)$", t)
+            if mj:
+                work.append((int(mj.group(2), 16), pushed, steps))
+                if mj.group(1) == "JMP": break
+            elif op == "JMP":
+                notes.append(f"indirect jump {a:#x}"); break
+            if i + 1 >= len(ins): break
+            addr = ins[i + 1][0]
+    return results, notes
+
+
+def depth_verdict(ins, x):
+    """A single pending value (int) or 'reset'; None when unresolved/inconsistent. Returns (value, text)."""
+    res, notes = pending_at(ins, x)
+    nums = {r for r in res if isinstance(r, int)}
+    txt = f"{sorted(map(str, res))}" + (f" notes={notes[:2]}" if notes else "")
+    if len(nums) > 1 or any(isinstance(r, str) and r.startswith("ret with") for r in res):
+        return None, txt
+    if nums:
+        return nums.pop(), txt
+    if "reset" in res or "ret" in res:
+        return "reset", txt
+    return None, txt
 
 
 def is_rel(b, txt):
@@ -159,7 +356,7 @@ def owner_of(name):
 
 
 def toml_crosscheck(checked):
-    """checked: {addr: (len, bytes, skip, cexit, name)} from the asm walk. Returns list of problem strings."""
+    """checked: {addr: (len, bytes, skip, cexit, name, shipped)} from the asm walk. Returns list of problem strings."""
     problems, lines = [], []
     for prefix, (pid, srcdir) in OWNERS.items():
         if not srcdir:
@@ -168,22 +365,26 @@ def toml_crosscheck(checked):
         if not os.path.exists(path):
             problems.append(f"{pid}: {path} missing"); continue
         hooks = tomllib.load(open(path, "rb")).get("hooks", [])
-        mine = {a: v for a, v in checked.items() if v[4].startswith(prefix + " ")}
+        mine = {a: v for a, v in checked.items() if v[4].startswith(prefix + " ") and v[5]}
+        unshipped = {a: v for a, v in checked.items() if v[4].startswith(prefix + " ") and not v[5]}
         seen = set()
         for h in hooks:
             a = int(h["address"]); ob = bytes(h["original_bytes"])
             skip = bool(h.get("skip_original_bytes", False)); cexit = h.get("consumed_exit_address")
             excl = [x.lower() for x in h.get("exclude_from_restore", [])]
+            if a in unshipped:
+                problems.append(f"{pid}: toml hook {a:#x} ({h.get('function')}) is marked NOT shipped in WINDOWS"); continue
             if a not in mine:
                 problems.append(f"{pid}: toml hook {a:#x} ({h.get('function')}) has no window in WINDOWS"); continue
             seen.add(a)
-            ln, blob, wskip, wexit, wname = mine[a]
+            ln, blob, wskip, wexit, wname, _ = mine[a]
             bad = []
             if ob != blob: bad.append("original_bytes differ from the asm")
             if len(ob) != ln: bad.append(f"length {len(ob)} != window {ln}")
             if skip != wskip: bad.append(f"skip_original_bytes {skip} != window {wskip}")
             if (cexit or None) != wexit: bad.append(f"consumed_exit {cexit} != window {wexit}")
             if cexit and "eax" not in excl: bad.append("consumed hook does not exclude eax from the restore")
+            if not cexit and "eax" in excl: bad.append("non-consumed hook excludes eax (the handler result would leak into the game's EAX)")
             if bad: problems.append(f"{pid}: {a:#x} {h.get('function')}: " + "; ".join(bad))
             else: lines.append(f"  toml {pid} {a:#010x} {h.get('function')}: matches window '{wname}'")
         for a, v in mine.items():
@@ -199,7 +400,10 @@ def main():
     spans = []      # (start, end, name) of every window that resolved
     checked = {}
     print(f"live snapshot: {os.path.basename(LIVE)} ({len(live)} hooks); {cfg_note}")
-    for name, start, length, entry, skip, cexit, eax_ret_ok in WINDOWS:
+    if not cfg:
+        print("NOTE: only the 09-30g TSV is checked; it predates ranged-ai, character-effects-panel and inventory-sort-filter "
+              "0x8A8478 (review N9)")
+    for name, start, length, entry, skip, cexit, eax_ret_ok, shipped in WINDOWS:
         ins = load_fn(entry)
         addrs = [a for a, _, _ in ins]
         if start not in addrs:
@@ -251,8 +455,25 @@ def main():
                 print(f"        EAX at {label} {at:#x}: {v}{note}")
                 if not accepted:
                     problems.append(f"EAX may be live at {label} {at:#x} (EAX = handler result there)")
+        if cexit is not None or skip:
+            v_start, t_start = depth_verdict(ins, start)
+            v_end, t_end = depth_verdict(ins, end)
+            # the wrapper jumps to the consumed exit after the stolen bytes ran (stack = vanilla at the window end),
+            # or, for a skip-only window, with the stack as at the window start
+            v_jump = v_start if skip else v_end
+            def compatible(u, v):
+                return u is not None and v is not None and (u == v or "reset" in (u, v))
+            if cexit is not None:
+                v_exit, t_exit = depth_verdict(ins, cexit)
+                print(f"        stack: pending at the jump ({'start' if skip else 'end'}) {v_jump}, at consumed exit {cexit:#x} {v_exit} {t_exit}")
+                if not compatible(v_jump, v_exit):
+                    problems.append(f"stack depth at the consumed exit {cexit:#x} ({v_exit}) != at the jump ({v_jump})")
+            if skip:
+                print(f"        stack: skip-only pending at start {v_start}, at resume {end:#x} {v_end} {t_end}")
+                if not compatible(v_start, v_end):
+                    problems.append(f"skip-only window: pending at the resume {end:#x} ({v_end}) != at the start ({v_start})")
         blob = b"".join(b for _, b, _ in inside)
-        checked[start] = (total, blob, skip, cexit, name)
+        checked[start] = (total, blob, skip, cexit, name, shipped)
         spans.append((start, end, name))
         status = "OK  " if not problems else "FAIL"
         if problems:

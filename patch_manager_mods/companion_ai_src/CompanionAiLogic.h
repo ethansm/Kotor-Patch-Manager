@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 namespace cai {
 
@@ -104,7 +105,7 @@ struct IniTable {
     bool sectionFound = false;
 
     void parse(const char* text, const char* section) {
-        n = 0; sectionFound = false;
+        n = 0; sectionFound = false; bad[0] = 0;
         bool in = false;
         const char* p = text;
         while (p && *p) {
@@ -154,8 +155,42 @@ struct IniTable {
         return -1;
     }
     const char* get(const char* k) const { int i = find(k, (int)strlen(k)); return i >= 0 ? val[i] : nullptr; }
-    long getInt(const char* k, long def) const { return parseInt(get(k), def); }
-    bool getBool(const char* k, bool def) const { return getInt(k, def ? 1 : 0) != 0; }
+    // Keys whose value could not be parsed (logged by the DLL after each load; reset by parse()).
+    mutable char bad[256] = {};
+    void noteBad(const char* k) const {
+        size_t l = strlen(bad), kl = strlen(k);
+        if (l + kl + 2 < sizeof(bad)) { if (l) bad[l++] = ' '; memcpy(bad + l, k, kl + 1); }
+    }
+    // 1 = on/true/yes, 0 = off/false/no, -1 = not a word
+    static int boolWord(const char* v) {
+        static const char* const on[] = {"on", "true", "yes"}, * const off[] = {"off", "false", "no"};
+        for (int pass = 0; pass < 2; ++pass)
+            for (const char* w : pass ? off : on) {
+                size_t i = 0;
+                while (w[i] && lower(v[i]) == w[i]) ++i;
+                if (!w[i] && !v[i]) return pass ? 0 : 1;
+            }
+        return -1;
+    }
+    long getInt(const char* k, long def) const {
+        const char* v = get(k);
+        if (!v || !*v) return def;
+        int w = boolWord(v);
+        if (w >= 0) return w;
+        long r = parseInt(v, LONG_MIN);
+        if (r == LONG_MIN) { noteBad(k); return def; }
+        return r;
+    }
+    // An unparseable flag value means OFF (vanilla), never the built-in default: "a1=of" must not leave a fix on.
+    bool getBool(const char* k, bool def) const {
+        const char* v = get(k);
+        if (!v || !*v) return def;
+        int w = boolWord(v);
+        if (w >= 0) return w != 0;
+        long r = parseInt(v, LONG_MIN);
+        if (r == LONG_MIN) { noteBad(k); return false; }
+        return r != 0;
+    }
     const char* getStr(const char* k, const char* def) const { const char* v = get(k); return v ? v : def; }
 };
 
@@ -186,7 +221,6 @@ struct Config {
     bool a4 = true;
     bool c1 = true, c1PartyOnly = true;
     bool a3 = false;
-    bool fm3Probe = false;
     bool log = true;            // fix event lines (A1/FM1/FM4/A4/A3) and the summaries
     int fm4Requested = 1;       // raw INI value (for the config line)
 
@@ -233,12 +267,12 @@ inline void parseConfig(const IniTable& t, Config& c) {
     c.fm1 = t.getBool("fm1", c.fm1);
     c.fm1RethinkMs = clampi(t.getInt("fm1_rethink_ms", c.fm1RethinkMs), 0, 3000);
     c.fm4Requested = clampi(t.getInt("fm4", c.fm4), 0, 9);
+    if (strstr(t.bad, "fm4")) c.fm4Requested = 0;   // unparseable = vanilla, like the flags
     c.fm4 = c.fm4Requested == 1 ? 1 : 0;
     c.a4 = t.getBool("a4", c.a4);
     c.c1 = t.getBool("c1", c.c1);
     c.c1PartyOnly = t.getBool("c1_party_only", c.c1PartyOnly);
     c.a3 = t.getBool("a3", c.a3);
-    c.fm3Probe = t.getBool("fm3_probe", c.fm3Probe);
     c.log = t.getBool("log", c.log);
 }
 
@@ -252,7 +286,7 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.a1PartyOnly == b.a1PartyOnly && a.a1Retarget == b.a1Retarget && a.a1RetargetStances == b.a1RetargetStances &&
            a.a1RethinkMs == b.a1RethinkMs && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
            a.fm1RethinkMs == b.fm1RethinkMs && a.fm4 == b.fm4 && a.fm4Requested == b.fm4Requested && a.a4 == b.a4 && a.c1 == b.c1 &&
-           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.fm3Probe == b.fm3Probe && a.log == b.log;
+           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.log == b.log;
 }
 
 // ---------------------------------------------------------------- log gate
@@ -409,19 +443,85 @@ struct RestartCap {
     }
 };
 
-// FM3 probe: one scheduler pass = the objects between two "first object of a level" entries.
-struct Fm3Pass {
-    static constexpr int Slots = 256;
-    int level = -1, sentinel = 0, objects = 0, repeats = 0, distinct = 0;
-    int seen[Slots] = {};
-    bool active = false;
-    // The caller reads the finished pass (objects/repeats) before calling begin() for the next one.
-    void begin(int lvl, int sent) { level = lvl; sentinel = sent; objects = repeats = distinct = 0; active = true; }
-    void object(int obj) {
-        ++objects;
-        for (int i = 0; i < distinct && i < Slots; ++i) if (seen[i] == obj) { ++repeats; return; }
-        if (distinct < Slots) seen[distinct] = obj;
-        ++distinct;
+// ---------------------------------------------------------------- handler decisions (review SF3: the DLL calls these;
+// every behaviour-changing choice of A1/A4/C1/P1/FM1/FM4 and of the INI reload lives here and is host-tested)
+
+// A1 (0x6D853E). Effective stance 11/12 (after ranged-ai E-H3), not backing off, no force jump => a would-spin pass.
+inline bool a1SpinCandidate(int eff, int backoff, int forceJump) { return (eff == 11 || eff == 12) && backoff == 0 && forceJump == 0; }
+// The fix acts on the RAW stance (stats+0x146) mask, party members only by default.
+inline bool a1Applies(const Config& c, int rawStance, int party) {
+    return c.a1 && inMask(c.a1Stances, rawStance) && (!c.a1PartyOnly || party != 0);
+}
+// Retarget first (range = the attack's max weapon range [ebp-0x2C]; review N5: the vanilla PC tail computes its own
+// range with 0x571570(self, 0, 1), this uses the range the approach test just used).
+inline bool a1TryRetarget(const Config& c, int rawStance, float maxRange) {
+    return c.a1Retarget && inMask(c.a1RetargetStances, rawStance) && maxRange > 0.5f;
+}
+inline int a1NewTarget(int found) { return found ? found : Invalid; }   // 0x57C990 may return 0 or INVALID for "none"
+// Shorten the fallback timer after an END (not after a retarget) when a1_rethink_ms < 3000.
+inline bool a1RethinkWanted(const Config& c, int newId) { return newId == Invalid && c.a1RethinkMs < 3000; }
+inline bool a1RethinkWrite(const Config& c, int cur570) { return cur570 > c.a1RethinkMs; }
+
+// A4 (0x6D9E2A, a4=1). Returns the handler result (1 => 0x6D9EA4 = vanilla's JZ target) and the value for [ebp-0x15C].
+struct A4Out { int ret; int local; bool guarded; };
+inline A4Out a4Decide(bool rowReadable, int v) {
+    if (!rowReadable) return {1, 0, true};   // NULL / unreadable row: the "not hostile" path instead of a crash
+    return {v == 0 ? 1 : 0, v, false};       // same branch vanilla's CMP/JZ takes
+}
+inline int a4VanillaResult(int v) { return v == 0 ? 1 : 0; }   // a4=0: identical mapping after the direct (faulting) read
+
+// C1 (0x5868B9/0x5868F1/0x586929): the restart index written to [ebp-0x10].
+inline bool c1Who(const Config& c, int objType, int party) { return !c.c1PartyOnly || (objType == 5 && party != 0); }
+inline int c1Value(bool enabled, bool who, bool capOk) { return (enabled && who && capOk) ? -1 : 0; }
+
+// P1 (0x56BDB4). With p1=0 a stamp can only exist if p1 was on earlier this session: zero it and force the run so the
+// creature is back in the vanilla never-stamped state.
+inline bool p1ParityReset(bool p1, unsigned stampA, unsigned stampB) { return !p1 && (stampA | stampB) != 0; }
+inline unsigned p1Local(bool run) { return run ? 0xFA0u : 0u; }   // [ebp-0x28] for the stolen CMP/JC
+
+// FM1 (0x586F43): fallback cap after a bump clear.
+inline bool fm1RethinkWrite(const Config& c, int party, int combat, int cur570) {
+    return c.fm1 && party && c.fm1RethinkMs > 0 && combat == 1 && cur570 > c.fm1RethinkMs;
+}
+
+// FM4 (0x57451F snapshot / 0x575183 restore): single-slot pairing keyed by creature, cleared on every use.
+struct Fm4Pair {
+    int cr = 0;
+    bool begin(int fm4, bool log) { cr = 0; return fm4 == 1 || log; }   // snapshot hook entry: anything to do?
+    void commit(int creature) { cr = creature; }                          // after a successful copy
+    bool take(int creature) { bool m = cr != 0 && cr == creature; cr = 0; return m; }   // restore hook: same creature?
+};
+inline bool fm4ShouldRestore(int fm4, bool liveFollowInfoOk) { return liveFollowInfoOk && fm4 == 1; }
+
+// INI hot reload (loadIni). Pre: before reading the file; post: after trying to open and parse it.
+inline bool reloadDue(bool force, unsigned now, unsigned lastCheck) { return force || now - lastCheck >= 1000; }
+enum class ReloadPre { Skip, Read, MissingSilent, MissingKeepLog, MissingDefaultsLog };
+inline ReloadPre reloadPre(bool force, bool exists, bool seen, bool unchanged) {
+    if (!exists) return force ? ReloadPre::MissingDefaultsLog : seen ? ReloadPre::MissingKeepLog : ReloadPre::MissingSilent;
+    if (!force && seen && unchanged) return ReloadPre::Skip;
+    return ReloadPre::Read;
+}
+enum class ReloadPost { RetryLater, KeepBadSection, Apply };
+inline ReloadPost reloadPost(bool force, bool opened, bool sectionFound) {
+    if (!opened) return ReloadPost::RetryLater;                          // e.g. an editor holds the file
+    if (!sectionFound && !force) return ReloadPost::KeepBadSection;       // half-written: keep the current config
+    return ReloadPost::Apply;
+}
+
+// Per-subject log throttle table (review N1: FM1/E2/A4 lines), LRU over `Slots` subjects.
+struct SubjectThrottle {
+    static constexpr int Slots = 32;
+    struct E { int kind = -1, id = 0; unsigned seen = 0; LineThrottle t; } e[Slots];
+    bool allow(int kind, int id, unsigned now, unsigned sig, int first, unsigned periodMs) {
+        E* slot = nullptr; E* oldest = &e[0];
+        for (auto& x : e) {
+            if (x.kind == kind && x.id == id) { slot = &x; break; }
+            if (x.kind < 0) { if (oldest->kind >= 0) oldest = &x; }
+            else if (oldest->kind >= 0 && now - x.seen > now - oldest->seen) oldest = &x;
+        }
+        if (!slot) { slot = oldest; *slot = E(); slot->kind = kind; slot->id = id; }
+        slot->seen = now;
+        return slot->t.allow(now, sig, first, periodMs);
     }
 };
 

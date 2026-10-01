@@ -257,15 +257,5 @@ exclude_from_restore = []
 source = "ebp"
 type = "int"
 
-# FM3 probe (log only, fm3_probe=0): AI scheduler 0x51D790, MOV EDX,[0xA1B488] after the sentinel store.
-[[hooks]]
-address = 0x0051DBE7
-type = "detour"
-function = "CompanionAiFm3Probe"
-original_bytes = [0x8B, 0x15, 0x88, 0xB4, 0xA1, 0x00]
-skip_original_bytes = false
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "ebp"
-type = "int"
+# FM3 (scheduler sentinel probe, log only) is NOT shipped: its wrapper would cost time in the scheduler's hottest loop
+# even when off (review N2). Its window 0x51DBE7 stays validated in check_windows.py as "NOT SHIPPED".

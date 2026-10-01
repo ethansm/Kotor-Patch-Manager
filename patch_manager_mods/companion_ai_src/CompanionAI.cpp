@@ -24,9 +24,9 @@
 //   A4  0x6D9E2A CompanionAiA4(ebp) -> int      AIActionCombat NULL spell row (skip-only): 1 => 0x6D9EA4
 //   C1  0x5868B9/0x5868F1/0x586929 CompanionAiC1(ebp)   ClearHostileActionsVersus restart index (skip-only)
 //   A3  0x6D78B7 CompanionAiA3(ebp)             dead/undetected-target exit: clear the orientation lock (opt, a3=0)
-//   FM3 0x51DBE7 CompanionAiFm3Probe(ebp)       scheduler sentinel probe, log only (fm3_probe=0)
+//   (FM3 scheduler sentinel probe 0x51DBE7: designed and validated, not shipped -- wrapper cost in the hottest loop)
 //
-// Hot handlers (E1, E3, P1i/P1s, FM3) read the live frame and the creature the engine is about to dereference
+// Hot handlers (E1, E3, P1i/P1s) read the live frame and the creature the engine is about to dereference
 // directly; every other pointer goes through SafeRead (bad pointer => vanilla).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -177,9 +177,9 @@ void logConfig(DWORD now, const char* why) {
           c.printsAllScripts, c.partyOnly, tags, c.logAll, c.enginePrint, c.logAur, c.dedupeMs, c.maxLinesPerSec, c.maxFileMb, c.flushMs,
           c.a1BurstThreshold, c.a1RateThreshold, c.engineVerbose, c.summarySec, c.p1DetailLines);
     eline(now, "# config fixes a1=%d a1_stances=%x a1_party_only=%d a1_retarget=%d a1_retarget_stances=%x a1_rethink_ms=%d p1=%d p1_interval_ms=%d "
-               "fm1=%d fm1_rethink_ms=%d fm4=%d%s a4=%d c1=%d c1_party_only=%d a3=%d fm3_probe=%d log=%d",
+               "fm1=%d fm1_rethink_ms=%d fm4=%d%s a4=%d c1=%d c1_party_only=%d a3=%d log=%d",
           c.a1, c.a1Stances, c.a1PartyOnly, c.a1Retarget, c.a1RetargetStances, c.a1RethinkMs, c.p1, c.p1IntervalMs, c.fm1, c.fm1RethinkMs,
-          c.fm4, c.fm4Requested > 1 ? " (requested mode not built: vanilla)" : "", c.a4, c.c1, c.c1PartyOnly, c.a3, c.fm3Probe, c.log);
+          c.fm4, c.fm4Requested > 1 ? " (requested mode not built: vanilla)" : "", c.a4, c.c1, c.c1PartyOnly, c.a3, c.log);
 }
 
 void applyGate() {
@@ -188,30 +188,40 @@ void applyGate() {
 }
 
 void loadIni(DWORD now, bool force) {
-    if (!force && now - g_lastIniCheck < 1000) return;
+    if (!cai::reloadDue(force, now, g_lastIniCheck)) return;
     Lock lk;
     g_lastIniCheck = now;
     WIN32_FILE_ATTRIBUTE_DATA fad;
-    if (!GetFileAttributesExA(g_iniPath, GetFileExInfoStandard, &fad)) {
-        if (g_iniSeen || force) {
-            if (force) { g_cfg = cai::Config(); applyGate(); }
-            eline(now, "# config: %s not found; using %s", g_iniPath, force ? "the built-in defaults (= shipped values)" : "the last config");
-            if (force) logConfig(now, "defaults");
-        }
+    bool exists = GetFileAttributesExA(g_iniPath, GetFileExInfoStandard, &fad) != 0;
+    bool unchanged = exists && CompareFileTime(&fad.ftLastWriteTime, &g_iniTime) == 0 && fad.nFileSizeLow == g_iniSize;
+    switch (cai::reloadPre(force, exists, g_iniSeen, unchanged)) {
+    case cai::ReloadPre::Skip: return;
+    case cai::ReloadPre::MissingDefaultsLog:
+        g_cfg = cai::Config(); applyGate();
+        eline(now, "# config: %s not found; using the built-in defaults (= shipped values)", g_iniPath);
+        logConfig(now, "defaults");
         g_iniSeen = false; g_iniSize = ~0u;
         return;
+    case cai::ReloadPre::MissingKeepLog:
+        eline(now, "# config: %s not found; using the last config", g_iniPath);
+        g_iniSeen = false; g_iniSize = ~0u;
+        return;
+    case cai::ReloadPre::MissingSilent:
+        g_iniSeen = false; g_iniSize = ~0u;
+        return;
+    case cai::ReloadPre::Read: break;
     }
-    if (!force && g_iniSeen && CompareFileTime(&fad.ftLastWriteTime, &g_iniTime) == 0 && fad.nFileSizeLow == g_iniSize) return;
     FILE* f = fopen(g_iniPath, "rb");
-    if (!f) { g_iniSeen = false; return; }   // e.g. an editor holding it: keep the current config, retry next second
-    size_t n = fread(g_iniText, 1, sizeof g_iniText - 1, f);
-    fclose(f);
+    size_t n = 0;
+    if (f) { n = fread(g_iniText, 1, sizeof g_iniText - 1, f); fclose(f); }
     g_iniText[n] = 0;
-    g_iniTime = fad.ftLastWriteTime; g_iniSize = fad.nFileSizeLow; g_iniSeen = true;
-    g_ini.parse(g_iniText, "CompanionAI");
-    if (!g_ini.sectionFound && !force) {   // half-written or wrong file: keep the current config until it changes again
+    if (f) { g_iniTime = fad.ftLastWriteTime; g_iniSize = fad.nFileSizeLow; g_iniSeen = true; g_ini.parse(g_iniText, "CompanionAI"); }
+    switch (cai::reloadPost(force, f != nullptr, f && g_ini.sectionFound)) {
+    case cai::ReloadPost::RetryLater: g_iniSeen = false; return;   // e.g. an editor holding it: keep the config, retry next second
+    case cai::ReloadPost::KeepBadSection:                          // half-written or wrong file: keep it until it changes again
         eline(now, "# config: no [CompanionAI] section in %s; keeping the current config", g_iniPath);
         return;
+    case cai::ReloadPost::Apply: break;
     }
     cai::Config c;
     cai::parseConfig(g_ini, c);
@@ -219,6 +229,7 @@ void loadIni(DWORD now, bool force) {
     g_cfg = c;
     applyGate();
     if (!g_ini.sectionFound) eline(now, "# config: no [CompanionAI] section in %s; built-in defaults", g_iniPath);
+    if (g_ini.bad[0]) eline(now, "# config: unparseable value for: %s (flags -> 0/off, numbers -> default)", g_ini.bad);
     if (changed) logConfig(now, force ? "load" : "reload");
 }
 
@@ -296,7 +307,6 @@ struct Stats {
     unsigned flips = 0, prints = 0, aur = 0, e1 = 0, e1spins = 0, e1b = 0, e2 = 0, e3 = 0;
     unsigned a1Would = 0, a1End = 0, a1Retarget = 0, p1Checks = 0, p1Allowed = 0, p1Throttled = 0, p1Runs = 0, p1Resets = 0;
     unsigned fm1Keep = 0, fm1Clear = 0, fm4Snap = 0, fm4Restore = 0, a4 = 0, c1Restart = 0, c1Vanilla = 0, c1Capped = 0, a3 = 0;
-    unsigned fm3Passes = 0, fm3RepeatPasses = 0, fm3MaxRepeats = 0;
 };
 Stats g_st, g_stLast;
 DWORD g_lastSummary = 0;
@@ -311,16 +321,27 @@ struct CrTrack {
     // A1
     unsigned wouldSpin = 0, ends = 0, retargets = 0; DWORD lastA1 = 0; cai::LineThrottle a1Log;
 };
-CrTrack g_tr[16];
+CrTrack g_tr[32];
+// review N6: with tags=/log_all=1 big fights must not evict the party's tracks (A1 throttle, would-spin counts):
+// evict the least recently seen non-party track first
 CrTrack* track(int id, DWORD now) {
-    CrTrack* oldest = &g_tr[0];
-    for (auto& t : g_tr) { if (t.id == id) { t.seen = now; return &t; } if (now - t.seen > now - oldest->seen) oldest = &t; }
-    for (auto& t : g_tr) if (!t.id) { t = CrTrack(); t.id = id; t.seen = now; t.secStart = now; return &t; }
-    *oldest = CrTrack(); oldest->id = id; oldest->seen = now; oldest->secStart = now;
-    return oldest;
+    CrTrack* victim = nullptr;
+    for (auto& t : g_tr) {
+        if (t.id == id) { t.seen = now; return &t; }
+        if (!t.id) { if (!victim || victim->id) victim = &t; continue; }
+        if (victim && !victim->id) continue;
+        if (!victim || (victim->party && !t.party) || (!!victim->party == !!t.party && now - t.seen > now - victim->seen)) victim = &t;
+    }
+    *victim = CrTrack(); victim->id = id; victim->seen = now; victim->secStart = now;
+    return victim;
 }
+cai::SubjectThrottle g_subj;   // per-creature throttle for E2 / FM1 / A4 lines (review N1)
+enum SubjKind { SkE2 = 1, SkFm1 = 2, SkA4 = 3 };
+DWORD g_loadTid = 0;
+bool g_t1TidLogged = false;
 
 // ---- E3 aggregation
+int g_p1iCr = 0; unsigned g_p1iElapsed = 0;   // the engine's elapsed for the creature P1i just rewrote
 cai::RateAgg g_p1Agg;
 DWORD g_p1AggStart = 0, g_lastP1Report = 0;
 int g_p1Details = 0, g_p1DetailIds[64];
@@ -343,11 +364,10 @@ void summary(DWORD now) {
         g_gate.totalDeduped != g_sumDeduped) {
         eline(now, "t=%lu S lines=%llu dropped=%llu deduped=%llu capDropped=%llu | flips=%u prints=%u aur=%u e1=%u e1spins=%u e1b=%u e2=%u e3=%u | "
                    "a1{would=%u end=%u retarget=%u} p1{checks=%u allowed=%u throttled=%u runs=%u resets=%u} fm1{keep=%u clear=%u} "
-                   "fm4{snap=%u restore=%u} a4=%u c1{restart=%u vanilla=%u capped=%u} a3=%u fm3{passes=%u repeatPasses=%u maxRepeats=%u}",
+                   "fm4{snap=%u restore=%u} a4=%u c1{restart=%u vanilla=%u capped=%u} a3=%u",
               now, g_gate.totalLines, g_gate.totalDropped, g_gate.totalDeduped, g_gate.totalCapDropped, s.flips, s.prints, s.aur, s.e1,
               s.e1spins, s.e1b, s.e2, s.e3, s.a1Would, s.a1End, s.a1Retarget, s.p1Checks, s.p1Allowed, s.p1Throttled, s.p1Runs, s.p1Resets,
-              s.fm1Keep, s.fm1Clear, s.fm4Snap, s.fm4Restore, s.a4, s.c1Restart, s.c1Vanilla, s.c1Capped, s.a3, s.fm3Passes,
-              s.fm3RepeatPasses, s.fm3MaxRepeats);
+              s.fm1Keep, s.fm1Clear, s.fm4Snap, s.fm4Restore, s.a4, s.c1Restart, s.c1Vanilla, s.c1Capped, s.a3);
         g_stLast = s;
     }
     for (auto& t : g_tr)
@@ -432,6 +452,10 @@ extern "C" void __cdecl AiTraceShipBuild(int ebp) {
     if (!objPasses(objInfo(c.self, now))) return;
     frw<int>(ebp, -4, 0);   // ShipBuild() = FALSE for this call
     ++g_st.flips;
+    if (!g_t1TidLogged) {   // review N8: the VM, AI and save hooks are assumed to run on the main thread
+        g_t1TidLogged = true;
+        eline(now, "# T1 first ShipBuild flip: tid=%lu (load tid=%lu) script=%s", (unsigned long)GetCurrentThreadId(), (unsigned long)g_loadTid, c.script);
+    }
 }
 
 // T2. ExecuteCommandPrintString 0x68F260 at 0x68F301 (argc < 2 path, every compiled call). Return 1 => 0x68F39F.
@@ -516,7 +540,8 @@ extern "C" void __cdecl AiTraceFallbackFires(int ebp) {
     int id = rd<int>(cr, ObId);
     const CrTrack* t = nullptr;
     for (auto& e : g_tr) if (e.id == id) t = &e;
-    eline(now, "t=%lu E2 FALLBACK cr=%08x %s party=%d combat=%d round=%d script=%s a1spin=%d lastA1=%ldms", now, id, tag, party,
+    if (!g_subj.allow(SkE2, id, now, 0, 20, 10000)) return;   // first 20 per creature, then one per 10 s (S line counts all)
+    tline(now, 0, "t=%lu E2 FALLBACK cr=%08x %s party=%d combat=%d round=%d script=%s a1spin=%d lastA1=%ldms", now, id, tag, party,
           rd<int>(cr, CrCombat), roundActive(cr), script[0] ? script : "-", t ? t->spinning : 0,
           (t && t->lastA1) ? long(now - t->lastA1) : -1L);
 }
@@ -529,6 +554,8 @@ extern "C" void __cdecl AiTracePerceptionMode1(int ebp) {
     if (!c) return;
     ++g_st.e3;
     unsigned elapsed = fr<unsigned>(ebp, -0x28);
+    if (c == g_p1iCr) elapsed = g_p1iElapsed;   // p1=1: P1i replaced [ebp-0x28] with 0xFA0/0 (review N4)
+    g_p1iCr = 0;
     int id = *reinterpret_cast<const int*>(c + ObId);
     if (!g_p1AggStart) g_p1AggStart = now;
     g_p1Agg.add(id, elapsed);
@@ -555,8 +582,7 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     int eff = fr<int>(ebp, F_Stance);
-    if (eff != 11 && eff != 12) return 0;                                         // not a spin: vanilla move follows
-    if (fr<int>(ebp, F_Backoff) != 0 || fr<int>(ebp, F_ForceJump) != 0) return 0; // back-off / force jump: vanilla
+    if (!cai::a1SpinCandidate(eff, fr<int>(ebp, F_Backoff), fr<int>(ebp, F_ForceJump))) return 0;   // vanilla move / back-off / jump
     int attacker = fr<int>(ebp, F_Attacker);
     int id = 0;
     if (!attacker || !saferead::readAt<int>(5, static_cast<uintptr_t>(attacker), ObId, &id)) return 0;
@@ -571,18 +597,14 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
     int los = fr<int>(ebp, F_Los), ranged = fr<int>(ebp, F_Ranged), tgt = fr<int>(ebp, F_ActionTarget);
     CrTrack* t = track(id, now);
     ++t->wouldSpin; ++g_st.a1Would;
-    bool apply = g_cfg.a1 && cai::inMask(g_cfg.a1Stances, raw) && (!g_cfg.a1PartyOnly || party);
+    bool apply = cai::a1Applies(g_cfg, raw, party);
     int newId = Invalid;
     if (apply) {
-        if (g_cfg.a1Retarget && cai::inMask(g_cfg.a1RetargetStances, raw) && mx > 0.5f) {
-            newId = reinterpret_cast<RetargetFn>(FnNearestEnemy)(attacker, mx, tgt, Invalid);
-            if (!newId) newId = Invalid;
-        }
+        if (cai::a1TryRetarget(g_cfg, raw, mx))
+            newId = cai::a1NewTarget(reinterpret_cast<RetargetFn>(FnNearestEnemy)(attacker, mx, tgt, Invalid));
         frw<int>(ebp, F_NewTarget, newId);
-        if (newId == Invalid && g_cfg.a1RethinkMs < 3000) {
-            int cur = rd<int>(attacker, CrFallback);
-            if (cur > g_cfg.a1RethinkMs) wr<int>(attacker + CrFallback, g_cfg.a1RethinkMs);
-        }
+        if (cai::a1RethinkWanted(g_cfg, newId) && cai::a1RethinkWrite(g_cfg, rd<int>(attacker, CrFallback)))
+            wr<int>(attacker + CrFallback, g_cfg.a1RethinkMs);
         if (newId != Invalid) { ++t->retargets; ++g_st.a1Retarget; } else { ++t->ends; ++g_st.a1End; }
         t->lastA1 = now;
     }
@@ -609,14 +631,15 @@ extern "C" void __cdecl CompanionAiP1Interval(int ebp) {
     if (!c) return;
     unsigned* stamp = reinterpret_cast<unsigned*>(c + CrStampA);   // the engine read both words at 0x56BCF9/0x56BD06
     if (!g_cfg.p1) {
-        if (stamp[0] | stamp[1]) {   // stamped while p1 was on: restore the vanilla never-stamped state
-            stamp[0] = stamp[1] = 0; frw<unsigned>(ebp, -0x28, 0xFA0); ++g_st.p1Resets;
+        if (cai::p1ParityReset(g_cfg.p1, stamp[0], stamp[1])) {   // stamped while p1 was on: back to the vanilla never-stamped state
+            stamp[0] = stamp[1] = 0; frw<unsigned>(ebp, -0x28, cai::p1Local(true)); ++g_st.p1Resets;
         }
         return;
     }
+    g_p1iCr = c; g_p1iElapsed = fr<unsigned>(ebp, -0x28);   // for E3 (review N4)
     bool run = cai::p1ShouldRun(fr<unsigned>(ebp, -0x24), fr<unsigned>(ebp, -0x20), stamp[0], stamp[1], fr<unsigned>(ebp, -0x1C),
                                 fr<unsigned>(ebp, -0x28), static_cast<unsigned>(g_cfg.p1IntervalMs));
-    frw<unsigned>(ebp, -0x28, run ? 0xFA0u : 0u);
+    frw<unsigned>(ebp, -0x28, cai::p1Local(run));
     if (run) ++g_st.p1Allowed; else ++g_st.p1Throttled;
 }
 
@@ -662,12 +685,14 @@ extern "C" void __cdecl CompanionAiBumpClear(int ebp) {
     else {
         reinterpret_cast<Fn1>(FnClearAllActions)(bumpee, 1);   // vanilla: same this, same argument
         ++g_st.fm1Clear;
-        if (g_cfg.fm1 && party && g_cfg.fm1RethinkMs > 0 && rd<int>(bumpee, CrCombat) == 1 && rd<int>(bumpee, CrFallback) > g_cfg.fm1RethinkMs)
+        if (g_cfg.fm1 && party && g_cfg.fm1RethinkMs > 0 &&
+            cai::fm1RethinkWrite(g_cfg, party, rd<int>(bumpee, CrCombat), rd<int>(bumpee, CrFallback)))
             wr<int>(bumpee + CrFallback, g_cfg.fm1RethinkMs);
     }
-    if (show) {
+    int bid = show ? rd<int>(bumpee, ObId) : 0;
+    if (show && g_subj.allow(SkFm1, bid, now, keep ? 1u : 0u, 20, 2000)) {   // first 20 per bumpee, then on change / 2 s
         char bt[33], mt[33]; readTag(bumpee, bt, sizeof bt); readTag(mover, mt, sizeof mt);
-        eline(now, "t=%lu FM1 bumpee=%08x %s party=%d mover=%08x %s combat=%d tgt=%08x round=%d queue=[%s]%s -> %s%s", now, rd<int>(bumpee, ObId), bt,
+        tline(now, 0, "t=%lu FM1 bumpee=%08x %s party=%d mover=%08x %s combat=%d tgt=%08x round=%d queue=[%s]%s -> %s%s", now, bid, bt,
               party, rd<int>(mover, ObId), mt, rd<int>(bumpee, CrCombat), rd<int>(bumpee, CrTarget, Invalid), roundActive(bumpee), q,
               listOk ? "" : " (unreadable)", keep ? "keep" : "clear", (!keep && !g_cfg.fm1) ? " (fm1=0)" : "");
     }
@@ -676,38 +701,36 @@ extern "C" void __cdecl CompanionAiBumpClear(int ebp) {
 // FM4 mode 1. SaveCreature 0x574500: snapshot the live FollowInfo before SetPartyMemberFlag(0,1) frees it (0x57451F,
 // EAX = creature), restore it into the re-created one after SaveFollowInfo wrote the defaults (0x575183), so the save
 // bytes stay vanilla and the live follow state survives.
-namespace { unsigned char g_snap[FollowInfoSize]; int g_snapCr = 0; }
+namespace { unsigned char g_snap[FollowInfoSize]; cai::Fm4Pair g_fm4; }
 
 extern "C" void __cdecl CompanionAiFm4Snap(int cr) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
-    g_snapCr = 0;
-    if (g_cfg.fm4 != 1 && !g_cfg.log) return;
+    if (!g_fm4.begin(g_cfg.fm4, g_cfg.log)) return;
     if (!rd<int>(cr, CrParty)) return;
     int fi = rd<int>(cr, CrFollowInfo);
     if (!fi || !saferead::probeRead(7, reinterpret_cast<const void*>(fi), FollowInfoSize)) return;
     memcpy(g_snap, reinterpret_cast<const void*>(fi), FollowInfoSize);
-    g_snapCr = cr; ++g_st.fm4Snap;
+    g_fm4.commit(cr); ++g_st.fm4Snap;
 }
 
 extern "C" void __cdecl CompanionAiFm4Restore(int ebp) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     int cr = fr<int>(ebp, -0x1D4);
-    if (!g_snapCr || g_snapCr != cr) { g_snapCr = 0; return; }
-    g_snapCr = 0;
+    if (!g_fm4.take(cr)) return;
     int fi = rd<int>(cr, CrFollowInfo);
     unsigned char saved[FollowInfoSize];
     bool ok = fi && rd<int>(cr, CrParty) && saferead::probeRead(7, reinterpret_cast<const void*>(fi), FollowInfoSize);
     if (ok) memcpy(saved, reinterpret_cast<const void*>(fi), FollowInfoSize);
     bool restored = false;
-    if (ok && g_cfg.fm4 == 1) { memcpy(reinterpret_cast<void*>(fi), g_snap, FollowInfoSize); restored = true; ++g_st.fm4Restore; }
+    if (cai::fm4ShouldRestore(g_cfg.fm4, ok)) { memcpy(reinterpret_cast<void*>(fi), g_snap, FollowInfoSize); restored = true; ++g_st.fm4Restore; }
     if (g_cfg.log) {
         auto I = [](const unsigned char* b, int o) { int v; memcpy(&v, b + o, 4); return v; };
         auto F = [](const unsigned char* b, int o) { float v; memcpy(&v, b + o, 4); return v; };
         char tag[33]; readTag(cr, tag, sizeof tag);
-        eline(now, "t=%lu FM4 cr=%08x %s fi=%08x live: obj=%08x maxSpeed=%.2f safety=%d | saved: obj=%08x maxSpeed=%.2f safety=%d -> %s", now,
-              rd<int>(cr, ObId), tag, fi, I(g_snap, 0), F(g_snap, 0x28), I(g_snap, 0x38), ok ? I(saved, 0) : -1, ok ? F(saved, 0x28) : 0.f,
+        eline(now, "t=%lu FM4 cr=%08x %s tid=%lu fi=%08x live: obj=%08x maxSpeed=%.2f safety=%d | saved: obj=%08x maxSpeed=%.2f safety=%d -> %s", now,
+              rd<int>(cr, ObId), tag, (unsigned long)GetCurrentThreadId(), fi, I(g_snap, 0), F(g_snap, 0x28), I(g_snap, 0x38), ok ? I(saved, 0) : -1, ok ? F(saved, 0x28) : 0.f,
               ok ? I(saved, 0x38) : -1, restored ? "restored (mode 1)" : ok ? "reset kept (fm4=0)" : "no FollowInfo after save");
     }
 }
@@ -725,18 +748,20 @@ extern "C" int __cdecl CompanionAiA4(int ebp) {
         }
         int v = *reinterpret_cast<volatile const int*>(row + 0x154);
         frw<int>(ebp, -0x15C, v);
-        return v == 0 ? 1 : 0;
+        return cai::a4VanillaResult(v);
     }
     int v = 0;
-    if (!row || !saferead::readAt<int>(8, static_cast<uintptr_t>(row), 0x154, &v)) {
+    bool readable = row && saferead::readAt<int>(8, static_cast<uintptr_t>(row), 0x154, &v);
+    cai::A4Out o = cai::a4Decide(readable, v);
+    frw<int>(ebp, -0x15C, o.local);
+    if (o.guarded) {
         ++g_st.a4;
-        frw<int>(ebp, -0x15C, 0);
-        eline(now, "t=%lu A4 %s spell row %08x: cr=%08x spell=%d -> skip (not-hostile path 0x6D9EA4)", now, row ? "unreadable" : "NULL", row,
-              rd<int>(fr<int>(ebp, -0x1AC), ObId), fr<int>(ebp, -0x58));
-        return 1;
+        int crId = rd<int>(fr<int>(ebp, -0x1AC), ObId);
+        if (g_subj.allow(SkA4, crId, now, 0, 5, 10000))   // first 5 per creature, then one per 10 s
+            eline(now, "t=%lu A4 %s spell row %08x: cr=%08x spell=%d -> skip (not-hostile path 0x6D9EA4)", now, row ? "unreadable" : "NULL", row,
+                  crId, fr<int>(ebp, -0x58));
     }
-    frw<int>(ebp, -0x15C, v);
-    return v == 0 ? 1 : 0;
+    return o.ret;
 }
 
 // C1. ClearHostileActionsVersus 0x5867E0, after each group delete (0x5868B9 / 0x5868F1 / 0x586929, skip-only):
@@ -748,11 +773,12 @@ extern "C" void __cdecl CompanionAiC1(int ebp) {
     int v = 0;
     if (g_cfg.c1) {
         int self = fr<int>(ebp, -0x2C);
-        bool who = !g_cfg.c1PartyOnly || (rd<unsigned char>(self, ObType, 0xFF) == ObjTypeCreature && rd<int>(self, CrParty) != 0);
-        if (who) {
-            if (g_c1Cap.allow(self, ebp, now, 256)) v = -1;
-            else ++g_st.c1Capped;
-        }
+        int type = -1, party = 0;
+        if (g_cfg.c1PartyOnly) { type = rd<unsigned char>(self, ObType, 0xFF); if (type == ObjTypeCreature) party = rd<int>(self, CrParty); }
+        bool who = cai::c1Who(g_cfg, type, party);
+        bool capOk = who && g_c1Cap.allow(self, ebp, now, 256);
+        if (who && !capOk) ++g_st.c1Capped;
+        v = cai::c1Value(g_cfg.c1, who, capOk);
     }
     frw<int>(ebp, -0x10, v);
     if (v) ++g_st.c1Restart; else ++g_st.c1Vanilla;
@@ -777,31 +803,6 @@ extern "C" void __cdecl CompanionAiA3(int ebp) {
         eline(now, "t=%lu A3 cr=%08x dead/undetected target %08x: orientation lock cleared", now, id, fr<int>(ebp, F_ActionTarget));
 }
 
-// FM3 probe (log only, fm3_probe=0). AI scheduler 0x51D790 at 0x51DBE7: object [ebp-0x28], sentinel [ebp-0x3C],
-// level [ebp-0x34], first-of-level flag [ebp-0x38] (1 for the object that just became the sentinel).
-namespace { cai::Fm3Pass g_fm3; int g_fm3Lines = 0; }
-extern "C" void __cdecl CompanionAiFm3Probe(int ebp) {
-    if (!g_cfg.fm3Probe) return;   // hottest loop of the game: nothing else when off
-    DWORD now = GetTickCount(); tick(now);
-    int obj = fr<int>(ebp, -0x28), sentinel = fr<int>(ebp, -0x3C), level = fr<int>(ebp, -0x34), first = fr<int>(ebp, -0x38);
-    if (first == 1) {
-        if (g_fm3.active) {
-            ++g_st.fm3Passes;
-            if (g_fm3.repeats) {
-                ++g_st.fm3RepeatPasses;
-                if (static_cast<unsigned>(g_fm3.repeats) > g_st.fm3MaxRepeats) g_st.fm3MaxRepeats = static_cast<unsigned>(g_fm3.repeats);
-                if (g_fm3Lines < 200) {
-                    ++g_fm3Lines;
-                    eline(now, "t=%lu FM3 pass level=%d sentinel=%08x objects=%d distinct=%d repeats=%d", now, g_fm3.level, g_fm3.sentinel,
-                          g_fm3.objects, g_fm3.distinct, g_fm3.repeats);
-                }
-            }
-        }
-        g_fm3.begin(level, sentinel);
-    }
-    if (g_fm3.active && obj) g_fm3.object(obj);
-}
-
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         InitializeCriticalSection(&g_cs);
@@ -813,10 +814,12 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_log = fopen(g_logPath, "w");   // one session per file
         if (g_log) setvbuf(g_log, nullptr, _IOFBF, 64 * 1024);
         DWORD now = GetTickCount();
+        g_loadTid = GetCurrentThreadId();
         time_t tt = time(nullptr); struct tm* lt = localtime(&tt);
         char when[32] = "?";
         if (lt) strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S", lt);
-        eline(now, "# companion-ai %s session %s t=%lu pid=%lu cwd=%s ini=%s", Version, when, now, (unsigned long)GetCurrentProcessId(), cwd, g_iniPath);
+        eline(now, "# companion-ai %s session %s t=%lu pid=%lu tid=%lu cwd=%s ini=%s", Version, when, now, (unsigned long)GetCurrentProcessId(),
+              (unsigned long)g_loadTid, cwd, g_iniPath);
         loadIni(now, true);
         g_lastSummary = now;
         g_ready = true;

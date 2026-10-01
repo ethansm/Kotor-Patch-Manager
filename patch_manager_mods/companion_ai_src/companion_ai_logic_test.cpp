@@ -63,9 +63,20 @@ static void testIni() {
     // sameConfig
     Config x, y; CHECK(sameConfig(x, y)); y.c1 = false; CHECK(!sameConfig(x, y)); y = x; y.tags.set("a"); CHECK(!sameConfig(x, y));
     // all flags 0 = vanilla
-    g_t.parse("[CompanionAI]\ntrace=0\nscripts=0\nengine_points=0\na1=0\np1=0\nfm1=0\nfm4=0\na4=0\nc1=0\na3=0\nfm3_probe=0\n", "CompanionAI");
+    g_t.parse("[CompanionAI]\ntrace=0\nscripts=0\nengine_points=0\na1=0\np1=0\nfm1=0\nfm4=0\na4=0\nc1=0\na3=0\n", "CompanionAI");
     Config v; parseConfig(g_t, v);
-    CHECK(!v.trace && !v.scripts && !v.enginePoints && !v.a1 && !v.p1 && !v.fm1 && v.fm4 == 0 && !v.a4 && !v.c1 && !v.a3 && !v.fm3Probe);
+    CHECK(!v.trace && !v.scripts && !v.enginePoints && !v.a1 && !v.p1 && !v.fm1 && v.fm4 == 0 && !v.a4 && !v.c1 && !v.a3);
+    // word values (review SF1): off/false/no = 0, on/true/yes = 1, case-insensitive
+    g_t.parse("[CompanionAI]\na1=off\nfm1=FALSE\nc1=No\na4=no\nfm4=off\np1=on\na3=True\ntrace=yes\n", "CompanionAI");
+    Config w; parseConfig(g_t, w);
+    CHECK(!w.a1 && !w.fm1 && !w.c1 && !w.a4 && w.fm4 == 0 && w.p1 && w.a3 && w.trace); CHECK(g_t.bad[0] == 0);
+    // unparseable flag -> OFF (vanilla) and reported; unparseable number -> default and reported
+    g_t.parse("[CompanionAI]\na1=of\nfm4=maybe\np1_interval_ms=fast\nc1=1\n", "CompanionAI");
+    Config u; parseConfig(g_t, u);
+    CHECK(!u.a1 && u.fm4 == 0 && u.p1IntervalMs == 250 && u.c1);
+    CHECK(strstr(g_t.bad, "a1") && strstr(g_t.bad, "fm4") && strstr(g_t.bad, "p1_interval_ms") && !strstr(g_t.bad, "c1"));
+    // empty value = default
+    g_t.parse("[CompanionAI]\na1=\n", "CompanionAI"); Config z; parseConfig(g_t, z); CHECK(z.a1 && g_t.bad[0] == 0);
 }
 
 static void testShippedIni() {
@@ -76,11 +87,13 @@ static void testShippedIni() {
     g_t.parse(buf, "CompanionAI");
     CHECK(g_t.sectionFound);
     Config c; parseConfig(g_t, c);
+    CHECK(g_t.bad[0] == 0);   // every shipped value parses
+    if (g_t.bad[0]) printf("unparseable in companion_ai.ini: %s\n", g_t.bad);
     // shipped defaults (task brief): trace=1 scripts=1 engine_points=1 party_only=1, a1=1 a1_retarget=1 fm1=1 fm4=1 c1=1 a4=1,
     // p1=0 p1_interval_ms=250, a3=0
     CHECK(c.trace && c.scripts && c.enginePoints && c.partyOnly);
     CHECK(c.a1 && c.a1Retarget && c.fm1 && c.fm4 == 1 && c.c1 && c.a4);
-    CHECK(!c.p1 && c.p1IntervalMs == 250 && !c.a3 && !c.fm3Probe);
+    CHECK(!c.p1 && c.p1IntervalMs == 250 && !c.a3);
     CHECK(c.a1Stances == maskOf3(11, 12, 16) && c.a1RetargetStances == maskOf3(11, 12, 16) && c.a1PartyOnly && c.a1RethinkMs == 3000);
     CHECK(c.c1PartyOnly && c.fm1RethinkMs == 0 && c.log && !c.logAll && c.enginePrint && c.logAur && !c.printsAllScripts);
     CHECK(c.shipScope == ScopeAi && c.tags.empty() && c.traceScripts.n == 5);
@@ -91,7 +104,7 @@ static void testShippedIni() {
                            "log_all", "engine_print", "log_aur", "dedupe_ms", "max_lines_per_sec", "max_file_mb", "flush_ms",
                            "a1_burst_threshold", "a1_rate_threshold", "engine_verbose", "summary_sec", "p1_detail_lines", "a1", "a1_stances",
                            "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
-                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "fm3_probe", "log"};
+                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "log"};
     int knownN = int(sizeof known / sizeof known[0]);
     CHECK(g_t.n == knownN);
     for (int i = 0; i < g_t.n; ++i) {
@@ -190,19 +203,111 @@ static void testDecisions() {
     uint16_t q1[] = {0x3D}; uint16_t q2[] = {0x3D, 0x40, 0x46}; uint16_t q3[] = {0x3D, 0x0C}; uint16_t q4[] = {0x13, 0x0C};
     CHECK(onlyFollowTypes(q1, 1)); CHECK(onlyFollowTypes(q2, 3)); CHECK(!onlyFollowTypes(q3, 2)); CHECK(!onlyFollowTypes(q4, 2));
     CHECK(!onlyFollowTypes(q1, 0));
-    // FM3 pass bookkeeping
-    Fm3Pass p; p.begin(4, 0x100);
-    p.object(0x100); p.object(0x200); p.object(0x300); p.object(0x200); p.object(0x300);
-    CHECK(p.objects == 5 && p.distinct == 3 && p.repeats == 2 && p.level == 4);
-    p.begin(2, 0x900); CHECK(p.objects == 0 && p.repeats == 0);
     // line keys
     CHECK(lineKey(1, "a", "b") != lineKey(2, "a", "b")); CHECK(lineKey(1, "a", "b") == lineKey(1, "a", "b"));
     CHECK(lineKey(1, "ab", "") != lineKey(1, "a", "b")); CHECK(lineKey(0, nullptr, nullptr) != 0);
     char s[] = "a\nb\tc"; sanitize(s); CHECK(!strcmp(s, "a b c"));
 }
 
+// Review SF3: the behaviour-changing handler decisions.
+static void testHandlerDecisions() {
+    Config on;                                   // shipped defaults: a1=1 stances/retarget 11,12,16, party only, rethink 3000
+    // ---- A1 gate
+    CHECK(a1SpinCandidate(11, 0, 0)); CHECK(a1SpinCandidate(12, 0, 0));
+    CHECK(!a1SpinCandidate(16, 0, 0));           // stance 16 kept by ranged-ai 0.3.0 (out of range/melee) = Aggressive approach
+    CHECK(!a1SpinCandidate(9, 0, 0)); CHECK(!a1SpinCandidate(11, 1, 0)); CHECK(!a1SpinCandidate(12, 0, 1));
+    CHECK(a1Applies(on, 11, 1)); CHECK(a1Applies(on, 12, 1)); CHECK(a1Applies(on, 16, 1));   // raw 16 mapped to eff 11
+    CHECK(!a1Applies(on, 11, 0));                // enemies / non-party: vanilla (party only)
+    CHECK(!a1Applies(on, 13, 1));                // raw stance not listed
+    Config off = on; off.a1 = false; CHECK(!a1Applies(off, 11, 1));
+    Config any = on; any.a1PartyOnly = false; CHECK(a1Applies(any, 11, 0));
+    Config onlyR = on; onlyR.a1Stances = parseMask("11"); CHECK(a1Applies(onlyR, 11, 1)); CHECK(!a1Applies(onlyR, 12, 1));
+    CHECK(a1TryRetarget(on, 12, 20.f));          // Stationary also retargets (user decision)
+    CHECK(!a1TryRetarget(on, 11, 0.5f)); CHECK(a1TryRetarget(on, 11, 0.6f));
+    Config noRt = on; noRt.a1Retarget = false; CHECK(!a1TryRetarget(noRt, 11, 20.f));
+    Config rtR = on; rtR.a1RetargetStances = parseMask("11"); CHECK(!a1TryRetarget(rtR, 12, 20.f));
+    CHECK(a1NewTarget(0) == Invalid); CHECK(a1NewTarget(Invalid) == Invalid); CHECK(a1NewTarget(0x80000431) == (int)0x80000431);
+    CHECK(!a1RethinkWanted(on, Invalid));        // 3000 = engine value: never written
+    Config rt = on; rt.a1RethinkMs = 1500;
+    CHECK(a1RethinkWanted(rt, Invalid)); CHECK(!a1RethinkWanted(rt, 0x80000431));   // only after an END
+    CHECK(a1RethinkWrite(rt, 3000)); CHECK(!a1RethinkWrite(rt, 1500)); CHECK(!a1RethinkWrite(rt, 200));
+    // ---- A4 result mapping (a4=1) and vanilla mapping (a4=0)
+    A4Out o = a4Decide(false, 0);    CHECK(o.ret == 1 && o.local == 0 && o.guarded);    // NULL/unreadable row
+    o = a4Decide(true, 0);           CHECK(o.ret == 1 && o.local == 0 && !o.guarded);   // row+0x154 == 0: vanilla JZ target
+    o = a4Decide(true, 7);           CHECK(o.ret == 0 && o.local == 7 && !o.guarded);   // non-zero: resume, CMP/JZ falls through
+    CHECK(a4VanillaResult(0) == 1 && a4VanillaResult(-3) == 0);
+    // ---- C1 restart index
+    Config c1on = on;
+    CHECK(c1Who(c1on, 5, 1)); CHECK(!c1Who(c1on, 5, 0)); CHECK(!c1Who(c1on, 9, 1));       // party creatures only
+    Config c1any = on; c1any.c1PartyOnly = false; CHECK(c1Who(c1any, -1, 0));
+    CHECK(c1Value(true, true, true) == -1); CHECK(c1Value(false, true, true) == 0);
+    CHECK(c1Value(true, false, true) == 0); CHECK(c1Value(true, true, false) == 0);       // cap reached: vanilla 0
+    // ---- P1
+    CHECK(p1ParityReset(false, 5, 1000)); CHECK(!p1ParityReset(false, 0, 0)); CHECK(!p1ParityReset(true, 5, 1000));
+    CHECK(p1Local(true) == 0xFA0u && p1Local(false) == 0u);
+    // ---- FM1 fallback cap
+    Config f = on; CHECK(!fm1RethinkWrite(f, 1, 1, 3000));                                   // shipped 0 = never
+    f.fm1RethinkMs = 800; CHECK(fm1RethinkWrite(f, 1, 1, 3000)); CHECK(!fm1RethinkWrite(f, 0, 1, 3000));
+    CHECK(!fm1RethinkWrite(f, 1, 0, 3000)); CHECK(!fm1RethinkWrite(f, 1, 1, 500)); f.fm1 = false; CHECK(!fm1RethinkWrite(f, 1, 1, 3000));
+    // ---- FM4 snapshot/restore pairing
+    Fm4Pair p;
+    CHECK(p.begin(1, false)); p.commit(0x1000); CHECK(p.take(0x1000)); CHECK(!p.take(0x1000));   // used once
+    CHECK(p.begin(0, true));                                     // fm4=0 + log: snapshot for the log only
+    CHECK(!p.begin(0, false));                                   // nothing to do
+    p.begin(1, false); p.commit(0x1000); CHECK(!p.take(0x2000)); CHECK(!p.take(0x1000));   // other creature clears the slot
+    p.begin(1, false); p.commit(0x1000); p.begin(1, false); CHECK(!p.take(0x1000));         // a missed restore is dropped
+    p.begin(1, false); CHECK(!p.take(0x1000));                                                // snapshot failed: no restore
+    CHECK(fm4ShouldRestore(1, true)); CHECK(!fm4ShouldRestore(0, true)); CHECK(!fm4ShouldRestore(1, false));   // hot flip 1->0
+    // ---- INI reload rules
+    CHECK(reloadDue(true, 5, 5)); CHECK(!reloadDue(false, 1500, 600)); CHECK(reloadDue(false, 1600, 600));
+    CHECK(reloadDue(false, 0x10, 0xFFFFFC00u));                  // GetTickCount wrap
+    CHECK(reloadPre(true, false, false, false) == ReloadPre::MissingDefaultsLog);   // load without an INI: shipped defaults
+    CHECK(reloadPre(false, false, true, false) == ReloadPre::MissingKeepLog);       // deleted while running: keep, log once
+    CHECK(reloadPre(false, false, false, false) == ReloadPre::MissingSilent);       // still missing: silent
+    CHECK(reloadPre(false, true, true, true) == ReloadPre::Skip);                   // unchanged time+size
+    CHECK(reloadPre(false, true, true, false) == ReloadPre::Read);
+    CHECK(reloadPre(false, true, false, true) == ReloadPre::Read);                  // reappeared / retry after a failed open
+    CHECK(reloadPre(true, true, true, true) == ReloadPre::Read);
+    CHECK(reloadPost(false, false, false) == ReloadPost::RetryLater); CHECK(reloadPost(true, false, false) == ReloadPost::RetryLater);
+    CHECK(reloadPost(false, true, false) == ReloadPost::KeepBadSection);            // half-written file: keep the config
+    CHECK(reloadPost(true, true, false) == ReloadPost::Apply);                      // at load: built-in defaults
+    CHECK(reloadPost(false, true, true) == ReloadPost::Apply);
+    // ---- per-subject throttle (FM1/E2/A4 lines)
+    SubjectThrottle st;
+    int n = 0; for (unsigned i = 0; i < 50; ++i) if (st.allow(1, 0x100, 1000 + i, 0, 20, 10000)) ++n;
+    CHECK(n == 20);
+    CHECK(st.allow(2, 0x100, 1100, 0, 20, 10000));               // other kind, same creature: own budget
+    CHECK(st.allow(1, 0x200, 1100, 0, 20, 10000));               // other creature: own budget
+    CHECK(!st.allow(1, 0x100, 5000, 0, 20, 10000)); CHECK(st.allow(1, 0x100, 11100, 0, 20, 10000));   // period
+    CHECK(st.allow(1, 0x100, 11101, 1, 20, 10000));              // signature change
+    for (int k = 0; k < 100; ++k) st.allow(3, 0x1000 + k, 20000 + k, 0, 1, 10000);   // LRU eviction never fails
+    CHECK(st.allow(3, 0x1000 + 99, 20200, 0, 1, 10000) == false);   // the newest subject kept its state
+}
+
+// exports.def == the hooks.toml function names (run from the source directory)
+static void testExports() {
+    static char t[65536], d[4096];
+    FILE* f = fopen("kotor2-steam-aspyr.hooks.toml", "rb"); CHECK(f != nullptr); if (!f) return;
+    size_t n = fread(t, 1, sizeof t - 1, f); fclose(f); t[n] = 0;
+    f = fopen("exports.def", "rb"); CHECK(f != nullptr); if (!f) return;
+    n = fread(d, 1, sizeof d - 1, f); fclose(f); d[n] = 0;
+    int funcs = 0, missing = 0;
+    for (const char* p = strstr(t, "function = \""); p; p = strstr(p + 1, "function = \"")) {
+        const char* a = p + 12; const char* e = strchr(a, '"'); if (!e) break;
+        char name[64] = {}; size_t l = size_t(e - a) < sizeof name - 1 ? size_t(e - a) : sizeof name - 1; memcpy(name, a, l);
+        ++funcs;
+        char line[80]; snprintf(line, sizeof line, "    %s\n", name);
+        if (!strstr(d, line)) { printf("exports.def lacks %s\n", name); ++missing; }
+    }
+    CHECK(funcs == 18 && missing == 0);                          // 18 hooks (C1 x3 share one function)
+    int exports = 0; for (const char* p = strstr(d, "EXPORTS\n"); p && (p = strstr(p + 1, "\n    ")); ) ++exports;
+    CHECK(exports == 16);                                        // 16 distinct functions
+    CHECK(!strstr(t, "Fm3") && !strstr(d, "Fm3"));               // FM3 probe not shipped
+}
+
 int main() {
-    testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions();
+    testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
+    testExports();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }
