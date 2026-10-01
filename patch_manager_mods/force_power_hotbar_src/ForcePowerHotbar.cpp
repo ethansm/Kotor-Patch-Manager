@@ -1163,7 +1163,11 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
 
     bool charChanged = false;
     {   // every frame: the bar must follow the controlled character without a visible lag
-        std::string k = computeCharacterKey();
+        static uintptr_t lastCreature = ~0u; static unsigned lastOid = 0xFFFFFFF0u;
+        uintptr_t cr = controlledCreature(); unsigned oid = cr ? (unsigned)rdInt(cr, 4) : 0;
+        bool same = (cr == lastCreature && oid == lastOid);   // unchanged creature: skip the key build (string work) entirely
+        lastCreature = cr; lastOid = oid;
+        std::string k = same ? g_charKey : computeCharacterKey();
         if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; g_charChangeTick = GetTickCount(); recomputeBound(); charChanged = true; }
     }
     if (charChanged || g_frame % ButtonRefreshFrames == 1 || g_frame == 2) refreshEffective(hud);
