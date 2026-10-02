@@ -1,7 +1,7 @@
 // WizardLogic.h - pure (engine-free) state machine of the level-up path wizard.
 // Python twin: research/companion_levelup/wizard_twin.py ; parity: tools/parity/wizard_parity.py
 // Rules: candidates = items matching every recorded answer; exactly 1 -> result; otherwise the page is the first page
-// after the last recorded one with >= 2 distinct values (single-valued pages are skipped, NOT recorded); if none,
+// after the last recorded one (in kOrder) with >= 2 distinct values (single-valued pages are skipped, NOT recorded); if none,
 // a Pick page over the remaining candidates (options = preset ids).
 #pragma once
 #include <stddef.h>
@@ -10,6 +10,9 @@ namespace wiz {
 
 constexpr int MaxItems = 16, MaxOptions = 8, NumQuestions = 5, MaxStack = 6;
 enum Page { Role = 0, Style = 1, Alignment = 2, Convert = 3, Skills = 4, Pick = 5 };
+// Question order (user 2026-10-02: the Jedi question comes first so the conversion choice is always explicit). Item answers stay indexed by Page.
+constexpr int kOrder[NumQuestions] = { Convert, Role, Style, Alignment, Skills };
+inline int orderPos(int page) { for (int i = 0; i < NumQuestions; ++i) if (kOrder[i] == page) return i; return NumQuestions; }
 
 struct Item {
     const char* id;
@@ -87,8 +90,9 @@ inline View view(const State& s) {
     int nc = detail::candidates(s, cand);
     if (nc == 0) return v;
     if (nc == 1) { v.result = true; v.resultItem = cand[0]; return v; }
-    int start = s.depth > 0 ? s.stack[s.depth - 1].page + 1 : 0;
-    for (int p = start; p < NumQuestions; ++p) {
+    int start = s.depth > 0 ? orderPos(s.stack[s.depth - 1].page) + 1 : 0;
+    for (int k = start; k < NumQuestions; ++k) {
+        const int p = kOrder[k];
         const char* vals[MaxItems];
         int nv = 0;
         for (int k = 0; k < nc; ++k) {
@@ -134,7 +138,7 @@ inline const char* pageName(int page) {
 }
 
 inline const char* questionText(int page) {
-    static const char* const q[] = {"Combat role?", "Weapon style?", "Force alignment?", "Become a Jedi when?",
+    static const char* const q[] = {"Combat role?", "Weapon style?", "Force alignment?", "Become a Jedi?",
                                     "Skill focus?", "Choose a build:"};
     return (page >= 0 && page <= Pick) ? q[page] : "";
 }

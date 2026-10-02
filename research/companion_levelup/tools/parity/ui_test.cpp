@@ -287,7 +287,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 3; ++i) tick(pA, atton, 0);
     CHECK(at<int>(pA, Panel_CtlCount) == 70 + C_N && nList == C_N && logCount("UI create panel=") == 1, "no re-append on later ticks");
     { int x, y, w, h; getExtent(ctl(pA, C_CFG), &x, &y, &w, &h); CHECK(x == 724 && y == 744 && w == 188 && h == 52, "cfg rect %d,%d,%d,%d (want 724,744,188,52)", x, y, w, h);
-      getExtent(ctl(pA, C_STATUS), &x, &y, &w, &h); CHECK(x == 108 && y == 952 && w == 952 && h == 36, "status rect %d,%d,%d,%d", x, y, w, h); }
+      getExtent(ctl(pA, C_STATUS), &x, &y, &w, &h); CHECK(x == 108 && y == 948 && w == 700 && h == 40, "status rect %d,%d,%d,%d", x, y, w, h); }
     const int rects = nSetRect;
     tick(pA, atton, 0);
     CHECK(nSetRect == rects, "setRect only when the rect changed");
@@ -356,10 +356,10 @@ int main(int argc, char** argv) {
     CHECK(nSound == sounds + 1, "hover sound once per enter (%d)", nSound - sounds);
     CHECK(rec(pW)->wizOpen && logHas("UI click cfg tag=Atton page=-"), "cfg click opens the wizard:\n%s", readLog().c_str());
     CHECK(vis(pW, C_WBG) && vis(pW, C_WTITLE) && vis(pW, C_WCANCEL) && !vis(pW, C_WBACK) && !vis(pW, C_CFG) && !vis(pW, C_STATUS), "page 1 visibility (back hidden on the first page)");
-    CHECK(txt(pW, C_WTITLE) == "Combat role?" && txt(pW, C_CELL0) == "Melee" && txt(pW, C_CELL0 + 1) == "Ranged" && txt(pW, C_CELL0 + 2) == "Support / healer" && vis(pW, C_CELL0 + 2) && !vis(pW, C_CELL0 + 3),
+    CHECK(txt(pW, C_WTITLE) == "Become a Jedi?" && txt(pW, C_CELL0) == "Early: Jedi Sentinel at level 8" && txt(pW, C_CELL0 + 1) == "Late: Jedi Sentinel at level 20" && txt(pW, C_CELL0 + 2) == "Never: stay Scoundrel" && vis(pW, C_CELL0 + 2) && !vis(pW, C_CELL0 + 3),
           "page 1 texts '%s' '%s' '%s' '%s'", txt(pW, C_WTITLE).c_str(), txt(pW, C_CELL0).c_str(), txt(pW, C_CELL0 + 1).c_str(), txt(pW, C_CELL0 + 2).c_str());
-    // wizard geometry: inside x 150..525 units, never past Mod 14's 536
-    { int x, y, w, h; getExtent(ctl(pW, C_WBG), &x, &y, &w, &h); CHECK(x == 300 && x + w == 1050 && x + w <= 2 * 536, "wizard bg px x %d..%d", x, x + w); }
+    // wizard geometry: stats column x 54..300 units (left of SLD_ALIGN 310 / LBL_LIGHT 304, which draw on top)
+    { int x, y, w, h; getExtent(ctl(pW, C_WBG), &x, &y, &w, &h); CHECK(x == 108 && x + w == 600 && x + w <= 2 * 304, "wizard bg px x %d..%d", x, x + w); }
     // clicks on a hidden cell / on the bg do nothing
     { int x, y, w, h; getExtent(ctl(pW, C_CELL0 + 4), &x, &y, &w, &h); curX = x + 2; curY = y + 2; lmb = false; tick(pW, atton, 0); lmb = true; tick(pW, atton, 0); lmb = false; tick(pW, atton, 0);
       CHECK(rec(pW)->wizOpen && rec(pW)->ws.depth == 0 && logCount("UI click") == 1, "hidden cell click ignored"); }
@@ -373,11 +373,11 @@ int main(int argc, char** argv) {
         wiz::View v = wiz::view(rec(pW)->ws);
         const Preset& Pr = g_presets[rec(pW)->itemPreset[v.resultItem]];
         const bool hc = Pr.holdClass != 0;
-        CHECK(txt(pW, C_WTITLE) == Pr.shortName, "result title '%s' vs '%s'", txt(pW, C_WTITLE).c_str(), Pr.shortName);
-        CHECK(txt(pW, C_CELL0).rfind("Role/style: ", 0) == 0 && txt(pW, C_CELL0).find(", Jedi: ") != std::string::npos, "summary '%s'", txt(pW, C_CELL0).c_str());
-        CHECK(txt(pW, C_CELL0 + 1) == "Instant level-ups: Off", "instant toggle '%s'", txt(pW, C_CELL0 + 1).c_str());
-        CHECK(hc && txt(pW, C_CELL0 + 2).rfind("Hold levels until Jedi", 0) == 0 && txt(pW, C_CELL0 + 2).find(": On") != std::string::npos, "hold toggle '%s'", txt(pW, C_CELL0 + 2).c_str());
-        CHECK(txt(pW, C_CELL0 + 3) == "Apply" && vis(pW, C_CELL0 + 3) && !vis(pW, C_CELL0 + 4) && !vis(pW, C_CELL0 + 5), "Apply row; no 'Use vanilla' while unconfigured");
+        CHECK(txt(pW, C_WTITLE) == "Your build:" && txt(pW, C_CELL0) == Pr.shortName, "result title '%s' vs '%s'", txt(pW, C_WTITLE).c_str(), Pr.shortName);
+        CHECK(txt(pW, C_CELL0 + 1).find("Jedi Sentinel at 8") != std::string::npos, "summary '%s'", txt(pW, C_CELL0 + 1).c_str());
+        CHECK(txt(pW, C_CELL0 + 2) == "Instant level-ups: Off", "instant toggle '%s'", txt(pW, C_CELL0 + 2).c_str());
+        CHECK(hc && txt(pW, C_CELL0 + 3).rfind("Bank levels until Jedi", 0) == 0 && txt(pW, C_CELL0 + 3).find(": On") != std::string::npos, "hold toggle '%s'", txt(pW, C_CELL0 + 3).c_str());
+        CHECK(txt(pW, C_CELL0 + 4) == "Apply" && vis(pW, C_CELL0 + 4) && !vis(pW, C_CELL0 + 5), "Apply row; no 'Use vanilla' while unconfigured");
         CHECK(vis(pW, C_WBACK), "back visible on the result page");
         // Back pops one answer; choosing again reaches the result again
         const int d = rec(pW)->ws.depth;
@@ -385,12 +385,12 @@ int main(int argc, char** argv) {
         CHECK(rec(pW)->ws.depth == d - 1 && !wiz::view(rec(pW)->ws).result, "back pops one answer");
         CHECK(toResult(pW, atton, 0), "result again");
         // toggles
-        clickCtl(pW, atton, 0, C_CELL0 + 1);
-        CHECK(txt(pW, C_CELL0 + 1) == "Instant level-ups: On", "instant toggled on '%s'", txt(pW, C_CELL0 + 1).c_str());
         clickCtl(pW, atton, 0, C_CELL0 + 2);
-        CHECK(txt(pW, C_CELL0 + 2).find(": Off") != std::string::npos, "hold toggled off '%s'", txt(pW, C_CELL0 + 2).c_str());
-        clickCtl(pW, atton, 0, C_CELL0 + 2);
-        CHECK(txt(pW, C_CELL0 + 2).find(": On") != std::string::npos, "hold toggled on");
+        CHECK(txt(pW, C_CELL0 + 2) == "Instant level-ups: On", "instant toggled on '%s'", txt(pW, C_CELL0 + 2).c_str());
+        clickCtl(pW, atton, 0, C_CELL0 + 3);
+        CHECK(txt(pW, C_CELL0 + 3).find(": Off") != std::string::npos, "hold toggled off '%s'", txt(pW, C_CELL0 + 3).c_str());
+        clickCtl(pW, atton, 0, C_CELL0 + 3);
+        CHECK(txt(pW, C_CELL0 + 3).find(": On") != std::string::npos, "hold toggled on");
         // the clicks on info rows do nothing
         clickCtl(pW, atton, 0, C_CELL0);
         CHECK(rec(pW)->wizOpen && wiz::view(rec(pW)->ws).result, "info row click ignored");
@@ -399,7 +399,7 @@ int main(int argc, char** argv) {
         const std::string id = Pr.id;
         CHECK(tagConfig("atton") == nullptr, "unconfigured before Apply");
         clearLog();
-        clickCtl(pW, atton, 0, C_CELL0 + 3);
+        clickCtl(pW, atton, 0, C_CELL0 + 4);
         CHECK(!rec(pW)->wizOpen && !vis(pW, C_WBG), "wizard closed after Apply");
         CHECK(ptGuid() != 0 && logHas("UI apply tag=Atton preset=") && logHas("instant=1 hold=1 ok=1"), "apply log:\n%s", readLog().c_str());
         const std::string ini = fileText("levelup_playthroughs.ini");
@@ -413,14 +413,14 @@ int main(int argc, char** argv) {
         // reconfigure: same preset keeps the config's toggles; "Use vanilla" is offered; clicking it removes the line
         clickCtl(pW, atton, 0, C_CFG);
         CHECK(rec(pW)->wizOpen && toResult(pW, atton, 0), "reopen to the result");
-        CHECK(wiz::view(rec(pW)->ws).resultItem == v.resultItem && txt(pW, C_CELL0 + 1) == "Instant level-ups: On", "toggles start from the current config '%s'", txt(pW, C_CELL0 + 1).c_str());
-        CHECK(txt(pW, C_CELL0 + 4) == "Use vanilla (no path)" && vis(pW, C_CELL0 + 4), "vanilla row '%s'", txt(pW, C_CELL0 + 4).c_str());
+        CHECK(wiz::view(rec(pW)->ws).resultItem == v.resultItem && txt(pW, C_CELL0 + 2) == "Instant level-ups: On", "toggles start from the current config '%s'", txt(pW, C_CELL0 + 2).c_str());
+        CHECK(txt(pW, C_CELL0 + 5) == "Use vanilla (no path)" && vis(pW, C_CELL0 + 5), "vanilla row '%s'", txt(pW, C_CELL0 + 5).c_str());
         clickCtl(pW, atton, 0, C_WCANCEL);
         CHECK(!rec(pW)->wizOpen && !vis(pW, C_WBG) && vis(pW, C_CFG), "cancel closes");
         clickCtl(pW, atton, 0, C_CFG);
         CHECK(toResult(pW, atton, 0), "reopen");
         clearLog();
-        clickCtl(pW, atton, 0, C_CELL0 + 4);
+        clickCtl(pW, atton, 0, C_CELL0 + 5);
         CHECK(!rec(pW)->wizOpen && logHas("UI vanilla tag=Atton ok=1"), "vanilla log:\n%s", readLog().c_str());
         CHECK(fileText("levelup_playthroughs.ini").find("atton=") == std::string::npos && tagConfig("atton") == nullptr, "line removed, tag unconfigured");
         tick(pW, atton, 0);
@@ -435,20 +435,20 @@ int main(int argc, char** argv) {
         CHECK(rec(pW)->wizOpen && !strcmp(rec(pW)->wizTag, "kreia") && rec(pW)->nItems == 7, "kreia wizard has its 7 selectable presets (not the __live one): %d", rec(pW)->nItems);
         tick(pW, pc, 0);
         CHECK(!rec(pW)->wizOpen && !anyVisible(pW), "PC leader hides + resets the wizard");
-        // Kreia: no hold class -> no hold row, Apply is cell 2
+        // Kreia: no hold class -> no hold row, Apply is cell 3
         tick(pW, other, 0);
         clickCtl(pW, other, 0, C_CFG);
         CHECK(toResult(pW, other, 0), "kreia result");
-        CHECK(txt(pW, C_CELL0 + 1).rfind("Instant", 0) == 0 && txt(pW, C_CELL0 + 2) == "Apply" && !vis(pW, C_CELL0 + 3), "no hold row for hold_class 0: '%s'", txt(pW, C_CELL0 + 2).c_str());
+        CHECK(txt(pW, C_CELL0 + 1).find("Jedi") == std::string::npos && txt(pW, C_CELL0 + 2).rfind("Instant", 0) == 0 && txt(pW, C_CELL0 + 3) == "Apply" && !vis(pW, C_CELL0 + 4), "no hold row for hold_class 0: '%s'", txt(pW, C_CELL0 + 3).c_str());
         // Apply failure (no live table) -> title says so and the wizard stays open
         at<uint32_t>(app, 8) = 0;
         const uint32_t g0 = ptGuid();
         remove("levelup_playthroughs.ini");
         LuoGuidNewServer(P(1));   // GUID forgotten: ptApply needs the live table again
-        clickCtl(pW, other, 0, C_CELL0 + 2);
+        clickCtl(pW, other, 0, C_CELL0 + 3);
         CHECK(rec(pW)->wizOpen && txt(pW, C_WTITLE) == "Could not save - see log" && tagConfig("kreia") == nullptr, "save failure keeps the wizard open: '%s'", txt(pW, C_WTITLE).c_str());
         at<uint32_t>(app, 8) = (uint32_t)srv;
-        clickCtl(pW, other, 0, C_CELL0 + 2);
+        clickCtl(pW, other, 0, C_CELL0 + 3);
         CHECK(!rec(pW)->wizOpen && tagConfig("kreia") != nullptr && ptGuid() != 0 && ptGuid() != g0, "second attempt succeeds");
         ptRemove("kreia");
     }

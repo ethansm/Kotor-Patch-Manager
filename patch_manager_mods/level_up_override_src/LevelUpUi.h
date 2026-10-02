@@ -11,7 +11,7 @@
 // "Character screen is the active panel" = this tick runs: SetStats is called from CSWGuiInGameCharacter::Update 0x84FBB0 (the function Mod 14
 // ticks on, CharEffectsPanel.cpp CharEffectsTick ~1162 + its hooks.toml), so a click is only evaluated while the panel is being updated, and
 // guikit::clickEdge adds the foreground-window check (the same two conditions Mod 14's tickInput 969-973 uses: its tick + GetForegroundWindow).
-// Layout units are the 800x600 GUI units of character_p.gui; Mod 14's panel is x 536-752, ours stays within x 54..525.
+// Layout units are the 800x600 GUI units of character_p.gui; Mod 14's panel is x 536-752, ours stays within x 54..456 (wizard 54..300).
 
 // ---- pure text builders (unit-tested) -----------------------------------------------------------------------------------
 // R11 status line. false = hidden (PC / not configurable, or unconfigured). held: "Holding N level(s) for <Jedi class> - <short>"
@@ -39,14 +39,17 @@ enum UiCtl { C_CFG, C_STATUS, C_WBG, C_WTITLE, C_CELL0, C_WBACK = C_CELL0 + NumC
 struct UiSpec { bool framed; int x, y, w, h; };   // layout units (800x600)
 const UiSpec kUiSpec[C_N] = {
     {true, 362, 372, 94, 26},                                                                            // cfgBtn, under BTN_LEVELUP [362,325,94,40]
-    {false, 54, 476, 476, 18},                                                                           // status, between LBL_XP_BACK (bottom 470) and LBL_BAR3 (505)
-    {true, 150, 140, 375, 300}, {false, 162, 148, 350, 22},                                              // wizard bg, title
-    {true, 170, 178, 335, 30}, {true, 170, 214, 335, 30}, {true, 170, 250, 335, 30},                     // cells
-    {true, 170, 286, 335, 30}, {true, 170, 322, 335, 30}, {true, 170, 358, 335, 30},
-    {true, 170, 400, 100, 28}, {true, 405, 400, 100, 28}};                                               // Back, Cancel
+    {false, 54, 474, 350, 20},                                                                           // status, below LBL_XP_BACK (bottom 470), left of LBL_BAR5 (x 407)
+    // Wizard over the stats column only (live 2026-10-02: BTN_AUTO/BTN_LEVELUP, SLD_ALIGN x 310 and LBL_LIGHT/DARK x 304 draw ON TOP of anything
+    // placed in the 3D-character column, whatever the list order) -> x 54..300, y 134..470; opaque black fill (uibit_fill_2bt, as Mod 14's back).
+    {true, 54, 134, 246, 336}, {false, 62, 140, 230, 24},                                                // wizard bg, title
+    {true, 62, 170, 230, 36}, {true, 62, 212, 230, 36}, {true, 62, 254, 230, 36},                        // cells
+    {true, 62, 296, 230, 36}, {true, 62, 338, 230, 36}, {true, 62, 380, 230, 36},
+    {true, 62, 428, 108, 32}, {true, 184, 428, 108, 32}};                                                // Back, Cancel
 const char* const kUiName[C_N] = {"cfg", "status", "wbg", "title", "cell0", "cell1", "cell2", "cell3", "cell4", "cell5", "back", "cancel"};
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
+const char* const kWizBackFill = "uibit_fill_2bt";   // opaque black (Mod 14 LBL_EFX_BACK); LBL_XP_BACK's own fill uibit_fill_2wt is see-through
 constexpr int kPlainRect[4] = {60, 449, 108, 18}, kFramedRect[4] = {54, 431, 223, 39};   // the templates' own unit rects (fallback scale)
 
 enum UiAct { A_NONE, A_CHOOSE, A_INFO, A_INSTANT, A_HOLD, A_APPLY, A_VANILLA };
@@ -120,6 +123,11 @@ void uiAppend(UiPanel* r) {
         if (guikit::appendToPanel(r->panel, r->c[i])) ++ok; else r->c[i] = 0;   // a failed control stays hidden and unused
     }
     r->appended = true;
+    if (r->c[C_WBG]) {   // opaque wizard background: swap the framed template's translucent fill for black, full alpha
+        const bool f = guikit::setFill(r->c[C_WBG], guikit::imageFor(kWizBackFill));
+        const bool a = guikit::setAlpha(r->c[C_WBG], 1.0f);
+        logLine("UI wizard back fill=%s ok=%d alpha ok=%d", kWizBackFill, f, a);
+    }
     for (int i = 0; i < C_N; ++i) {
         if (!r->c[i] || i == C_WBG || i == C_STATUS) continue;
         guikit::setAlign(r->c[i], i == C_WTITLE ? 17 : 18);   // 17 top-centre, 18 centre; the status line keeps the template's left alignment
@@ -219,6 +227,30 @@ void uiOpenWizard(UiPanel* r, const char* tag) {
     r->wizTable = g_tableStamp;
     r->wizOpen = r->nItems > 0;
 }
+// First class of a preset's records (the companion's base class); -1 when none.
+int presetBaseClass(const Preset& p) {
+    for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return p.lv[cl].cls;
+    return -1;
+}
+// Option label. The Jedi question names the class and the level ("Early: Jedi Sentinel at level 8"; lowest convert_at among the presets still
+// offering that answer), "Never: stay Scoundrel"; every other page uses wiz::answerLabel.
+const char* uiOptionLabel(const UiPanel* r, const wiz::View& v, int j, char* buf, size_t cap) {
+    if (v.page == wiz::Pick && v.optionItem[j] >= 0) return r->items[v.optionItem[j]].shortName;
+    const char* base = wiz::answerLabel(v.page, v.options[j]);
+    if (v.page != wiz::Convert) return base;
+    int at = 0, hc = 0, bc = -1;
+    for (int i = 0; i < r->nItems; ++i) {
+        if (!wiz::ieq(r->items[i].ans[wiz::Convert], v.options[j])) continue;
+        const Preset& P = g_presets[r->itemPreset[i]];
+        if (bc < 0) bc = presetBaseClass(P);
+        if (P.holdClass && P.convertAt > 0 && (!at || P.convertAt < at)) { at = P.convertAt; hc = P.holdClass; }
+    }
+    char c1[16], c2[16];
+    if (at) snprintf(buf, cap, "%s: %s at level %d", base, className(hc, c1, sizeof c1), at);
+    else if (wiz::ieq(v.options[j], "never") && bc >= 0) snprintf(buf, cap, "%s: stay %s", base, className(bc, c2, sizeof c2));
+    else return base;
+    return buf;
+}
 const char* uiPageName(const UiPanel* r, const wiz::View& v) {
     if (!r->wizOpen) return "-";
     return v.result ? "Result" : wiz::pageName(v.page);
@@ -234,7 +266,7 @@ void uiRenderWizard(UiPanel* r, const char* tag) {
         uiSetText(r, C_WTITLE, wiz::questionText(v.page));
         for (int j = 0; j < v.nOptions && j < NumCells; ++j) {
             r->act[j] = A_CHOOSE; r->actArg[j] = j;
-            uiSetText(r, C_CELL0 + j, v.page == wiz::Pick && v.optionItem[j] >= 0 ? r->items[v.optionItem[j]].shortName : wiz::answerLabel(v.page, v.options[j]));
+            uiSetText(r, C_CELL0 + j, uiOptionLabel(r, v, j, buf, sizeof buf));
         }
     } else {
         const wiz::Item& it = r->items[v.resultItem];
@@ -247,14 +279,19 @@ void uiRenderWizard(UiPanel* r, const char* tag) {
             r->resSeen = v.resultItem;
             r->failed = false;
         }
-        uiSetText(r, C_WTITLE, r->failed ? "Could not save - see log" : it.shortName);
+        uiSetText(r, C_WTITLE, r->failed ? "Could not save - see log" : "Your build:");
         int row = 0;
-        snprintf(buf, sizeof buf, "Role/style: %s %s, Jedi: %s", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]), wiz::answerLabel(wiz::Style, it.ans[wiz::Style]),
-                 wiz::answerLabel(wiz::Convert, it.ans[wiz::Convert]));
+        r->act[row] = A_INFO; uiSetText(r, C_CELL0 + row++, it.shortName);
+        if (P.holdClass && P.convertAt > 0) snprintf(buf, sizeof buf, "%s %s, %s at %d", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]),
+                                                     wiz::answerLabel(wiz::Style, it.ans[wiz::Style]), className(P.holdClass, cb, sizeof cb), P.convertAt);
+        else if (wiz::ieq(it.ans[wiz::Convert], "never") && presetBaseClass(P) >= 0)
+            snprintf(buf, sizeof buf, "%s %s, stays %s", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]), wiz::answerLabel(wiz::Style, it.ans[wiz::Style]),
+                     className(presetBaseClass(P), cb, sizeof cb));
+        else snprintf(buf, sizeof buf, "%s %s", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]), wiz::answerLabel(wiz::Style, it.ans[wiz::Style]));   // already a Jedi (Kreia, Visas)
         r->act[row] = A_INFO; uiSetText(r, C_CELL0 + row++, buf);
         r->act[row] = A_INSTANT; uiSetText(r, C_CELL0 + row++, r->instant ? "Instant level-ups: On" : "Instant level-ups: Off");
         if (P.holdClass) {
-            snprintf(buf, sizeof buf, "Hold levels until %s: %s", className(P.holdClass, cb, sizeof cb), r->hold ? "On" : "Off");
+            snprintf(buf, sizeof buf, "Bank levels until %s: %s", className(P.holdClass, cb, sizeof cb), r->hold ? "On" : "Off");
             r->act[row] = A_HOLD; uiSetText(r, C_CELL0 + row++, buf);
         }
         r->act[row] = A_APPLY; uiSetText(r, C_CELL0 + row++, "Apply");

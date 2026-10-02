@@ -12,10 +12,12 @@ DEFAULT_INI = os.path.join(HERE, "runtime", "levelup_paths.ini")
 MAX_ITEMS, MAX_OPTIONS, NUM_Q = 16, 8, 5
 ROLE, STYLE, ALIGNMENT, CONVERT, SKILLS, PICK = range(6)
 PAGE_NAMES = ["Role", "Style", "Alignment", "Convert", "Skills", "Pick"]
+# Question order (user 2026-10-02: the Jedi question comes first so the conversion choice is always explicit).
+ORDER = [CONVERT, ROLE, STYLE, ALIGNMENT, SKILLS]
 KEYS = ["role", "style", "alignment", "convert", "skills", "pick"]
 MAX_UI_OPTIONS = 6
 
-QUESTIONS = ["Combat role?", "Weapon style?", "Force alignment?", "Become a Jedi when?", "Skill focus?",
+QUESTIONS = ["Combat role?", "Weapon style?", "Force alignment?", "Become a Jedi?", "Skill focus?",
              "Choose a build:"]
 LABELS = {"melee": "Melee", "ranged": "Ranged", "caster": "Force caster", "support": "Support / healer",
           "tank": "Tank", "single": "One weapon", "dual": "Two weapons", "double": "Double-bladed",
@@ -93,8 +95,8 @@ def view(items, answers):
     if len(cand) == 1:
         v["result"], v["item"] = True, cand[0]
         return v
-    start = answers[-1][0] + 1 if answers else 0
-    for p in range(start, NUM_Q):
+    start = ORDER.index(answers[-1][0]) + 1 if answers else 0
+    for p in ORDER[start:]:
         vals = []
         for c in cand:
             x = items[c].ans[p]
