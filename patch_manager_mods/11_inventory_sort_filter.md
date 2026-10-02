@@ -148,3 +148,8 @@ Live with Mod 8 in one combined install (22 ids, kpatch md5 `8fdf18cb`); `$G/inv
 
 ### Play-session status (2026-10-02)
 The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still open (detours applied, config `sort=1 tint=1 cycle=1` loaded). Live together with the companion AI round since 10-01 23:36.
+
+### v2 research (2026-10-02, static)
+`mods678_research/ai_research_2026-10-02/R4_medpac_mod6v2.md`:
+- **R14 name sort:** the sort works on server items (`0x606100`). Use the server item's loc string `+0x2C0` via `CExoLocString::GetString 0x7356B0` as the tie-break key; this is the same text `SetItem 0x8B1250` shows. `CSWCItem::GetName 0x7FDFA0` (`thiscall(clientItem; CExoString* out, int identified)`, `RET 8`; client item via `0x73F530`) is the fallback. Estimated cost is 0.1-0.3 ms per populate; measure it with a timing log.
+- **Level-requirement tint:** unreachable with the current `0x5BD6A0(...,0,0,0)` call (`0x5BD6AA` gate). It needs `p4=1, p5=0, p6=0`, applies to the PC only, and also needs a module flag `[..+0xD0]` of unknown value. Log that flag before building anything.

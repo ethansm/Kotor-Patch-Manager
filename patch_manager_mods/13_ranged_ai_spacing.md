@@ -202,3 +202,13 @@ Three Opus reviews of the whole party AI: `mods678_research/ai_review_2026-10-01
 - The kite routine v2 (K1-K3, M1, E12) and E2 routing are live in `override/k_ai_master.ncs` b003ea41 with 16 router scripts.
 - The new `companion-ai` patch carries the AI trace (`ai_trace.txt`) and engine fixes A1/FM1/FM4/A4/C1. A1 fixes the stance 11/12/16 out-of-range idle loop (open item (b)).
 - Install record: `mods678_research/HANDOFF_2026-09-30.md` "Companion AI round INSTALLED". Play checklist: given in chat on 10-01. Backlog: "Session close".
+
+### Background research (2026-10-02, static, during the play session)
+Reports in `mods678_research/ai_research_2026-10-02/`:
+- **R1:** FM2 is verified (pathfind failure = success + wait loop). A1 does not let combat lapse before the E2 fallback.
+- **New issue:** the `a1_retarget` metric mismatch. A retarget up to ~2 body radii out of range ends silently; proposed fix `a1_retarget_strict`.
+- **R2:** script designs for E4, M8, L1-L3, E9 (user decision) and the E7 decision (don't).
+- **R3:** enemies already run our `k_ai_master`, so enemy AI = gate flips. The design input for E7 `hold_enemies` is also there.
+- **R4:** the medpac rule design.
+
+Summary: `mods678_research/HANDOFF_2026-09-30.md` "Phase 0 background research DONE".

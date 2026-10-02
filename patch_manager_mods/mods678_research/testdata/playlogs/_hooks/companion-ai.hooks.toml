@@ -1,0 +1,23 @@
+[metadata]
+target_versions = ["00"]
+
+[[hooks]]
+address = 0x00692C50
+type = "detour"
+function = "AiTraceShipBuild"
+exclude_from_restore = []
+
+[[hooks]]
+address = 0x0068F301
+type = "detour"
+function = "AiTracePrintString"
+consumed_exit_address = 0x0068F39F
+exclude_from_restore = []
+
+[[hooks]]
+address = 0x006D853E
+type = "detour"
+function = "CompanionAiA1Gate"
+consumed_exit_address = 0x006D7D2F
+exclude_from_restore = []
+

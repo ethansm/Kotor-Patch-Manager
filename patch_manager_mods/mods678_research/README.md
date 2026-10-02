@@ -161,3 +161,7 @@ The user asked whether the rest of the companion AI is understood and to review 
 ## Session log 2026-10-01/02 (companion AI round)
 
 Three Opus reviews -> three designs -> builds (companion-ai 0.1.0, ranged-ai 0.3.0, party AI scripts) -> two build reviews (scripts B1 Cure-poison loop + S1-S5; DLL SF1-SF3) -> fixes -> focused re-review clean -> **installed 2026-10-01 23:36** (26 ids/149 hooks, 17 override scripts). Everything is in `ai_review_2026-10-01/`; install record and research backlog in `HANDOFF_2026-09-30.md` ("Companion AI round INSTALLED", "Session close"). DB: `persist_ai_review_db.py`, `persist_ai_round_db.py`.
+
+## Session log 2026-10-02 (Phase 0 background research, during the user's play session)
+
+Five static tracks (R1 Opus engine asm; R2-R5 Sonnet) -> `ai_research_2026-10-02/` (R1-R5 reports + `PLAY_CHECKLIST_2026-10-02.md`). New tool `analyze_play_logs.py` (+ tests and fixtures). Lead spot-checks on disk all passed. DB: `persist_ai_research_db.py` (lessons 275-282). Summary and next steps: `HANDOFF_2026-09-30.md` "Phase 0 background research DONE".

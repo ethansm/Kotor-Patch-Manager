@@ -1,0 +1,10 @@
+[metadata]
+target_versions = ["00"]
+
+[[hooks]]
+address = 0x008A8CF0
+type = "detour"
+function = "SortFilterTabClick"
+consumed_exit_address = 0x008A8DE2
+exclude_from_restore = []
+

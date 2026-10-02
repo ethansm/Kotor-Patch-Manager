@@ -1,0 +1,16 @@
+[metadata]
+target_versions = ["00"]
+
+[[hooks]]
+address = 0x006D83EA
+type = "detour"
+function = "RangedAiHold"
+consumed_exit_address = 0x006D83FF
+exclude_from_restore = []
+
+[[hooks]]
+address = 0x0074DBDD
+type = "detour"
+function = "RangedAiHudStance"
+exclude_from_restore = []
+

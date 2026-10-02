@@ -1,0 +1,9 @@
+# companion-ai 0.1.0 session 2026-10-02 01:00:00 t=1000000 pid=1234 tid=100 cwd=Z:\game ini=Z:\game\companion_ai.ini
+# config (load) trace=1 scripts=1 engine_points=1 shipbuild_scope=ai trace_scripts=k_ai_master,k_hen_*dlg party_only=1 tags= log_all=0 engine_print=1 log_aur=1 dedupe_ms=1000 caps=200/s,64MB flush_ms=250 a1_burst/rate=4/400 engine_verbose=0 summary_sec=10 p1_detail_lines=20
+# config fixes a1=1 a1_stances=11800 a1_party_only=1 a1_retarget=1 a1_retarget_stances=11800 a1_rethink_ms=3000 p1=0 p1_interval_ms=250 fm1=1 fm1_rethink_ms=0 fm4=1 a4=1 c1=1 c1_party_only=1 a3=0 log=1
+t=1001000 P 7f0001a4 p_visas k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** Attack Target Mandalorian Soldier_2130707011
+t=1006000 P 7f0001a4 p_visas k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** Party E1: skipped, an unseen enemy is still fighting
+t=1016000 P 7f0001a4 p_visas k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** Party E1: skipped, an unseen enemy is still fighting
+t=1026000 P 7f0001a4 p_visas k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** Party E1: skipped, an unseen enemy is still fighting
+t=1036000 P 7f0001a4 p_visas k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** Party E1: skipped, an unseen enemy is still fighting
+t=1046000 P 7f0001a4 p_visas k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** Party E1: skipped, an unseen enemy is still fighting

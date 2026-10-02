@@ -1,0 +1,9 @@
+# companion-ai 0.1.0 session 2026-10-02 01:00:00 t=1000000 pid=1234 tid=100 cwd=Z:\game ini=Z:\game\companion_ai.ini
+# config (load) trace=1 scripts=1 engine_points=1 shipbuild_scope=ai trace_scripts=k_ai_master,k_hen_*dlg party_only=1 tags= log_all=0 engine_print=1 log_aur=1 dedupe_ms=1000 caps=200/s,64MB flush_ms=250 a1_burst/rate=4/400 engine_verbose=0 summary_sec=10 p1_detail_lines=20
+# config fixes a1=1 a1_stances=11800 a1_party_only=1 a1_retarget=1 a1_retarget_stances=11800 a1_rethink_ms=3000 p1=0 p1_interval_ms=250 fm1=1 fm1_rethink_ms=0 fm4=1 a4=1 c1=1 c1_party_only=1 a3=0 log=1
+t=1010000 A1 cr=7f0001a4 party=1 raw=11 eff=11 reason=range dist=40.0 max=2.2 los=1 ranged=1 area=same tgt=7f000233 -> end new=ffffffff (wouldSpin=1)
+t=1012000 E2 FALLBACK cr=7f0001a4 p_visas party=1 combat=1 round=0 script=k_hen_visasdlg a1spin=0 lastA1=2900ms
+t=1030000 A1 cr=7f0001a4 party=1 raw=11 eff=11 reason=range dist=40.0 max=2.2 los=1 ranged=1 area=same tgt=7f000233 -> end new=ffffffff (wouldSpin=2)
+t=1050000 A1 cr=7f0001a4 party=1 raw=11 eff=11 reason=range dist=40.0 max=2.2 los=1 ranged=1 area=same tgt=7f000233 -> end new=ffffffff (wouldSpin=3)
+t=1055000 E2 FALLBACK cr=7f0001a4 p_visas party=1 combat=1 round=0 script=k_hen_visasdlg a1spin=0 lastA1=5000ms
+t=1060000 S lines=120 dropped=0 deduped=3 capDropped=0 | flips=40 prints=38 aur=4 e1=0 e1spins=0 e1b=0 e2=2 e3=11 | a1{would=2 end=1 retarget=1} p1{checks=0 allowed=0 throttled=0 runs=0 resets=0} fm1{keep=1 clear=1} fm4{snap=1 restore=1} a4=0 c1{restart=0 vanilla=0 capped=0} a3=0

@@ -1,0 +1,20 @@
+inventory-sort-filter 0.2.0 loaded; cwd=Z:\game pid=312
+ini path: Z:\game\inventory_sort_filter.ini
+config: sort=1 tint=1 cycle=1 cycle_mask=e log=1 log_items=0
+populate: panel=0a000001 mode=0 extra=0 creature=7f0001a0 ebp=0019f000 rows-so-far=0
+flush: panel=0a000001 creature=7f0001a0 rows=40 seen=42 dropped=2 direct=0 usable=25 tint-candidates=15 sort=1 tint=1 extra=0 selected=0 counter=40
+populate: panel=0a000001 mode=0 extra=0 creature=7f0001a2 ebp=0019f000 rows-so-far=0
+flush: panel=0a000001 creature=7f0001a2 rows=40 seen=42 dropped=2 direct=0 usable=18 tint-candidates=22 sort=1 tint=1 extra=0 selected=0 counter=40
+tab click: panel=0a000001 ctrl=0b000001 clicked=0 mode=0 extra=0
+tab click: cycle -> state 1 (engine mode 1, extra=0)
+populate: panel=0a000001 mode=1 extra=0 creature=7f0001a2 ebp=0019f000 rows-so-far=0
+flush: panel=0a000001 creature=7f0001a2 rows=5 seen=42 dropped=37 direct=0 usable=3 tint-candidates=2 sort=1 tint=1 extra=0 selected=0 counter=5
+tab click: panel=0a000001 ctrl=0b000001 clicked=0 mode=1 extra=0
+tab click: cycle -> state 2 (engine mode 0, extra=1)
+populate: panel=0a000001 mode=0 extra=1 creature=7f0001a2 ebp=0019f000 rows-so-far=0
+flush: panel=0a000001 creature=7f0001a2 rows=18 seen=42 dropped=24 direct=0 usable=18 tint-candidates=0 sort=1 tint=1 extra=1 selected=0 counter=18
+tab click: cycle -> state 3 (engine mode 0, extra=2)
+populate: panel=0a000001 mode=0 extra=2 creature=7f0001a2 ebp=0019f000 rows-so-far=0
+flush: panel=0a000001 creature=7f0001a2 rows=2 seen=42 dropped=40 direct=0 usable=2 tint-candidates=0 sort=1 tint=1 extra=2 selected=0 counter=2
+tab click: cycle -> state 0 (engine mode 0, extra=0)
+flush: no backpack rows this populate (mode=0 extra=0)
