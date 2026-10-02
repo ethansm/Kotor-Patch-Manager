@@ -69,6 +69,8 @@ ROW_H, SEC_H, SEC_GAP = 24, 20, 8
 SEC_PAD = 4                        # section band -> first row (DLL build 3, 2026-10-01 spacing polish)
 ICON_W, ICON_H = 10, 18            # square on screen (48x48 px)
 TIME_W = 54                        # fits "Permanent" in dialogfont16x16 (52.2 units)
+STAT_FONT = "dialogfont10x10"      # build 4 stat column (2nd from the right): short forms joined with ", ", cut with "..."
+STAT_MAX_W, STAT_GAP = 70, 4       # stat column width cap and stat-time gap (units); width = measured text, right-aligned
 MAX_ROWS = 14                      # label pool: rows that fit the scroll window at once
 SB_W, SB_ARROW_H, SB_GAP = 10, 18, 3   # scrollbar (shown only when the list overflows): width, arrow height, gap to rows
 SB_THUMB_MIN = 16
@@ -77,6 +79,12 @@ SB_THUMB_MIN = 16
 SAMPLE_GOOD = [(36, 161, False), (34, 47, False), (135, 72, False), (99, 18, True), (69, 295, True),
                (262, None, False)]
 SAMPLE_BAD = [(45, 9, False), (7, 22, False), (16, 6, False)]
+# stat column text per spell row (short forms joined with ", "); missing / "" = no stat item
+SAMPLE_STAT = {36: "+5 Str, +5 Dex, +5 Con, Saves +5", 34: "Speed +50%, Def +2", 135: "Def +4, Saves +2",
+               99: "Shield 40 Energy", 69: "+2 Str", 262: "", 45: "Speed -50%, Def -2", 7: "-2 Dex",
+               16: "Stunned", 17: "Def +5", 24: "Def +8", 41: "Resist 4", 9: "Paralyzed", 48: ""}
+# tooltip sample: one long stat line per stat + a description (the generator's desc() trimming: first paragraph, <= 2 sentences)
+SAMPLE_TIP_LINES = ["+5 Strength", "+5 Dexterity", "+5 Constitution", "All saves +5", "Immune to poison"]
 
 
 def inst():
@@ -343,6 +351,11 @@ def scroll_state(ents, first):
     return first, fits(ents, first, win), True, last_first
 
 
+def stat_w(s, hscale):
+    """Measured width in GUI units of s in STAT_FONT (hscale = px per font texel; 1 unit = SX px)."""
+    return text_size(STAT_FONT, s, hscale, 1)[0] / SX
+
+
 def panel_controls(good, bad, names_font, hscale, vscale, first=0):
     """Lay out the panel the way the DLL will: header, frame, scrolled slice of [Beneficial + rows, Harmful + rows],
     scrollbar (up arrow, track, thumb, down arrow) only when the list overflows the window."""
@@ -371,8 +384,18 @@ def panel_controls(good, bad, names_font, hscale, vscale, first=0):
             _, spell, secs, item, harmful, icon = e
             items.append(("icon", (x0, y + (ROW_H - ICON_H) // 2, ICON_W, ICON_H), (icon, item)))
             nx = x0 + ICON_W + 4
-            items.append(("name", (nx, y, row_w - (ICON_W + 4) - TIME_W - 2, ROW_H), spell_text(spell, "name")))
-            items.append(("time", (x0 + row_w - TIME_W, y, TIME_W, ROW_H), (fmt_time(secs), harmful, secs)))
+            time_l = x0 + row_w - TIME_W
+            stat = SAMPLE_STAT.get(spell, "")
+            name_r = time_l - 2                    # no stat: name runs up to the time (previous behaviour)
+            if stat:
+                name_min = 40
+                room = name_r - 4 - STAT_GAP - nx - name_min     # most the stat may take while the name keeps 40 units
+                sw = min(STAT_MAX_W, room, stat_w(stat, hscale) + 1)
+                stat_l = time_l - STAT_GAP - sw
+                items.append(("stat", (stat_l, y, sw, ROW_H), stat))
+                name_r = stat_l - 4
+            items.append(("name", (nx, y, name_r - nx, ROW_H), spell_text(spell, "name")))
+            items.append(("time", (time_l, y, TIME_W, ROW_H), (fmt_time(secs), harmful, secs)))
             y += ROW_H
     assert y <= top + win, f"panel overflow: y {y} > {top + win}"
     rows_drawn = sum(1 for it in items if it[0] == "name")
@@ -448,6 +471,9 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
         elif kind == "name":
             s = fit(names_font, pl, px(rect)[2] - px(rect)[0], hscale, vscale)
             draw_text(canvas, names_font, s, px(rect), 17, TEAL_TEXT, hscale, vscale)
+        elif kind == "stat":
+            s = fit(STAT_FONT, pl, px(rect)[2] - px(rect)[0], hscale, vscale)
+            draw_text(canvas, STAT_FONT, s, px(rect), 19, CREAM, hscale, vscale)
         elif kind == "time":
             s, harmful, secs = pl
             col = ORANGE if harmful else (CREAM if secs is None or secs >= 30 else ORANGE)
@@ -467,26 +493,57 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
     if tooltip:
         name_rows = [r for k, r, p in panel_items if k == "name"]
         if name_rows:
-            r = name_rows[0]
-            tip = (PANEL[0] + 4, r[1] + ROW_H + 2, PANEL[2] - 8, 104)    # below the hovered row, inside the panel
+            spell = SAMPLE_GOOD[0][0]
+            secs = SAMPLE_GOOD[0][1]
+            r = next((r for k, r, p in panel_items if k == "name" and p == spell_text(spell, "name")), name_rows[0])
+            tw_u = PANEL[2] - 8
+            pad = 5                                           # units, inside the tooltip frame
+            lh = 12.5 * vscale                                # 10x10 line pitch: 12.5 texels
+            title_h = 16 * vscale * 1.25
+            body_w = (tw_u - 2 * pad) * SX
+            desc = tooltip_desc(spell)
+            dlines = wrap(desc, "dialogfont10x10", body_w, hscale, vscale)
+            body = SAMPLE_TIP_LINES + [""] + dlines
+            th_px = 2 * pad * SY + title_h + len(body) * lh
+            th_u = th_px / SY
+            ty = r[1] + ROW_H + 2
+            if ty + th_u > PANEL[1] + PANEL[3]:                # would pass the panel bottom: flip above the row
+                ty = r[1] - 2 - th_u
+            tip = (PANEL[0] + 4, ty, tw_u, th_u)
             tx0, ty0, tx1, ty1 = px(tip)
             ImageDraw.Draw(canvas).rounded_rectangle([tx0 + 8, ty0 + 8, tx1 - 8, ty1 - 8], 30, fill=(0, 0, 0, 255))
             draw_border(canvas, {"FILL": "uibit_fill_2bt", "EDGE": "uibit_brdr_16bet", "CORNER": "uibit_brdr_16bct",
-                                 "DIMENSION": 16, "COLOR": TEAL_FRAME}, tip)
-            spell = SAMPLE_GOOD[0][0]
-            desc = " ".join(spell_text(spell, "spelldesc").split())
-            lh = text_size("dialogfont10x10", "A", hscale, vscale)[1] + 8
-            draw_text(canvas, "dialogfont16x16", spell_text(spell, "name"), (tx0 + 40, ty0 + 24, tx1, ty0 + 70), 9, CREAM, hscale, vscale)
-            lines = wrap(desc, "dialogfont10x10", tx1 - tx0 - 80, hscale, vscale)
-            maxl = int((ty1 - ty0 - 100) // lh)
-            if len(lines) > maxl:
-                lines = lines[:maxl]; lines[-1] = lines[-1] + " ..."
-            for i, ln in enumerate(lines):
-                yy = ty0 + 84 + i * lh
-                draw_text(canvas, "dialogfont10x10", ln, (tx0 + 40, yy, tx1, yy + lh), 9, TEAL_TEXT, hscale, vscale)
+                                 "DIMENSION": 4, "COLOR": TEAL_FRAME}, tip)
+            x = tx0 + pad * SX
+            y = ty0 + pad * SY
+            draw_text(canvas, "dialogfont16x16", f"{spell_text(spell, 'name')} - {fmt_time(secs)}",
+                      (x, y, tx1 - pad * SX, y + title_h), 9, CREAM, hscale, vscale)
+            y += title_h
+            for ln in body:
+                if ln:
+                    draw_text(canvas, "dialogfont10x10", ln, (x, y, tx1 - pad * SX, y + lh), 9, TEAL_TEXT, hscale, vscale)
+                y += lh
     if title:
         ImageDraw.Draw(canvas).text((12, H - 24), title, fill=(120, 120, 120, 255))
     return canvas.convert("RGB")
+
+
+def tooltip_desc(spell, mx=220):
+    """Mirror of gen_effect_name_table.desc(): first body paragraph, <= 2 sentences, <= mx chars."""
+    t = spell_text(spell, "spelldesc").replace("\r", "")
+    paras = [p.strip() for p in re.split(r"\n\s*\n", t) if p.strip()]
+    head = re.compile(r"^(Universal|Light Side|Dark Side) Power\b|^Unique Ability:|^Prerequisites:|^Restricted By Armor\s*$", re.I)
+    paras = [" ".join(p.split()) for p in paras if not head.match(p)] or [" ".join(p.split()) for p in paras]
+    if not paras:
+        return ""
+    sents = re.split(r"(?<=[.!?])\s+(?=[A-Z])", paras[0])
+    out = ""
+    for x in sents[:2]:
+        c = (out + " " + x).strip()
+        if len(c) > mx:
+            break
+        out = c
+    return out or sents[0][:mx - 3].rsplit(" ", 1)[0] + "..."
 
 
 def wrap(s, fnt, max_px, hscale, vscale):

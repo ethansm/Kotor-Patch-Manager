@@ -18,6 +18,10 @@
 // Build 3 (user screenshot 19:09): more vertical room (pad/row/section spacing), section band 4 units wider than the rows
 // on the left with the title inset by a leading space, measured text widths (1.98 px/texel, not sy), times right-aligned by
 // placement (the engine drew the GUI's align 19 left-aligned), names get the room up to the time.
+// Build 4 (user requests 2026-10-02): STAT column (LBL_EFX_Sxx, dialogfont10x10) between name and time with what the
+// effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
+// with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
+// the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string.h>
@@ -60,8 +64,8 @@ constexpr int MsPerDay = 86400000, MaxEffects = 512;
 // ---- controls (character_p.gui IDs 69.., order = NEW_TAGS in scripts/mirror_character_page.py) ----
 constexpr int FirstId = 69, MaxRows = 14;
 enum { T_BACK, T_HEADER, T_SECG, T_SECB, T_D0, T_I0 = T_D0 + MaxRows, T_N0 = T_I0 + MaxRows, T_T0 = T_N0 + MaxRows,
-       T_MORE = T_T0 + MaxRows, T_SBTRK, T_SBTHM, T_SBUP, T_SBDN, T_TIPBG, T_TIPT, T_TIP, NumTags };
-static_assert(NumTags == 68, "tag count must match mirror_character_page.NEW_TAGS");
+       T_S0 = T_T0 + MaxRows, T_MORE = T_S0 + MaxRows, T_SBTRK, T_SBTHM, T_SBUP, T_SBDN, T_TIPBG, T_TIPT, T_TIP, NumTags };
+static_assert(NumTags == 82, "tag count must match mirror_character_page.NEW_TAGS");
 
 // ---- layout (GUI units, 800x600; = scripts/character_page_mockup.py) ----
 constexpr float PanelX = 536, PanelY = 134, PanelW = 216, PanelH = 336;
@@ -69,6 +73,11 @@ constexpr float PadX = 8, PadTop = 8, RowH = 24, SecH = 20, SecPad = 4, SecGap =
 constexpr float SecOut = 4, TimePadR = 2, NameGap = 4;   // band overhang left of the rows; time inset from the row's right; name-time gap
 // rendered dialogfont16x16 width = texels * sy * TextK (screenshot 19:09: 1.98 px/texel at sy 2.6667, all three names)
 constexpr float TextK = 0.75f;
+// dialogfont10x10 (stat column, tooltip body): same 0.01 world units per texel as 16x16 (TXI texturewidth 2.56 on a
+// 256 texel sheet, research R3b R-c), so the same factor; line pitch = kFont10LineH texels (calibrate live, tip_line_scale)
+constexpr float TextK10 = 0.75f;
+constexpr float StatGap = 4, NameMinW = 40;   // stat-time gap; the name keeps at least this much when the stat is wide
+constexpr float TipInX = 8, TipTitleY = 6, TipTitleH = 20, TipBodyY = 28, TipPadB = 8;   // tooltip insets (= mirror script)
 constexpr float SbW = 10, SbArrowH = 18, SbGap = 3, SbThumbMin = 16;
 constexpr float X0 = PanelX + PadX, InnerW = PanelW - 2 * PadX, Top = PanelY + PadTop, Win = PanelH - 2 * PadTop;
 
@@ -108,7 +117,10 @@ void whyLog(int code, const char* fmt, ...) {
 
 // ---- configuration: $GAME/chareffects.ini (missing/garbage = defaults; every key and rejected line logged) ----
 struct Cfg {
-    int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 0;
+    int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
+    int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
+    int tooltipDelayMs = 350, tooltipDesc = 1;
+    float statMaxW = 70, tipLineScale = 1.0f;
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
     float textScale = 1.0f, screenW = 3840, screenH = 1600; bool screenExplicit = false;
@@ -136,7 +148,11 @@ void loadIni() {
         {"show_permanent", &c.showPermanent, nullptr}, {"wheel_scroll", &c.wheelScroll, nullptr}, {"tooltips", &c.tooltips, nullptr},
         {"skip_equipped", &c.skipEquipped, nullptr}, {"icon_source", &c.iconSource, nullptr}, {"color_times", &c.colorTimes, nullptr},
         {"discs", &c.discs, nullptr}, {"soon_s", &c.soonS, nullptr}, {"text_scale", nullptr, &c.textScale},
-        {"screen_w", nullptr, &c.screenW}, {"screen_h", nullptr, &c.screenH}, {"fake_rows", &c.fakeRows, nullptr}};
+        {"screen_w", nullptr, &c.screenW}, {"screen_h", nullptr, &c.screenH}, {"fake_rows", &c.fakeRows, nullptr},
+        {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"marquee", &c.marquee, nullptr},
+        {"marquee_delay_ms", &c.marqueeDelayMs, nullptr}, {"marquee_step_ms", &c.marqueeStepMs, nullptr},
+        {"marquee_hold_ms", &c.marqueeHoldMs, nullptr}, {"tooltip_delay_ms", &c.tooltipDelayMs, nullptr},
+        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
         if (!line[0] || line[0] == '#' || line[0] == ';') continue;
@@ -164,9 +180,17 @@ void loadIni() {
     if (c.fakeRows < 0) c.fakeRows = 0;
     if (c.fakeRows > 60) c.fakeRows = 60;
     if (c.textScale < 0.5f || c.textScale > 2.0f) c.textScale = 1.0f;
+    if (c.statMaxW < 10 || c.statMaxW > 150) c.statMaxW = 70;
+    if (c.marqueeDelayMs < 200) c.marqueeDelayMs = 200;
+    if (c.marqueeStepMs < 30) c.marqueeStepMs = 30;
+    if (c.marqueeHoldMs < 0) c.marqueeHoldMs = 0;
+    if (c.tooltipDelayMs < 0) c.tooltipDelayMs = 0;
+    if (c.tipLineScale < 0.5f || c.tipLineScale > 2.0f) c.tipLineScale = 1.0f;
     if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false; }
     g_cfg = c; ++g_cfgGen;
-    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d", ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows);
+    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d)",
+         ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows, c.statColumn, c.statMaxW, c.marquee,
+         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc);
 }
 void maybeReloadIni() {
     DWORD now = GetTickCount();
@@ -296,17 +320,22 @@ bool readVec3(int addr, float* v) { for (int k = 0; k < 3; ++k) if (!readAt<floa
 bool near3(const float* a, const float* b) { for (int k = 0; k < 3; ++k) if (fabsf(a[k] - b[k]) > 0.01f) return false; return true; }
 
 // ---- per-panel slot ----
+constexpr int MaxLines = 8, LineLen = 96;   // long lines are word-wrapped in the tooltip, never cut
 struct Entry {
     bool section, harmful, gap, item, perm;
     int key;              // dedup key: 0x10000 + effecticon row, or spells.2da row
+    int spell;            // spells.2da row of the effect that made the entry (-1 none): stat sibling match + description
     double remMs;         // < 0 = unknown
     char name[64]; char icon[17];
+    char stat[96];        // stat column: short forms joined with ", " (cut with "..." at layout time)
+    char lines[MaxLines][LineLen]; int nLines;   // tooltip: one long form per stat
+    const char* desc;     // tooltip description (kSpellDesc) or a fixed text, nullptr = none
 };
 constexpr int MaxEnt = 96;
 struct Slot {
     int panel = 0; bool bound = false; unsigned seq = 0; DWORD bindTick = 0;
     unsigned char* ctl[NumTags] = {};
-    char text[NumTags][64] = {}; void* fill[NumTags] = {}; int col[NumTags] = {}; int rect[NumTags][4] = {};
+    char text[NumTags][100] = {}; char tipText[1024] = {}; void* fill[NumTags] = {}; int col[NumTags] = {}; int rect[NumTags][4] = {};
     float bx = 0, by = 0, sx = 0, sy = 0;     // unit -> px from the bound LBL_EFX_BACK extent
     bool canTextColor = false, canBorderColor = false;
     int client = 0, server = 0; unsigned sig = 0; DWORD lastPoll = 0, lastBeat = 0;
@@ -316,6 +345,13 @@ struct Slot {
     // last layout (engine px) for hit tests
     bool over = false; int shownN = 0, lastFirst = 0; float rUp[4] = {}, rDn[4] = {}, rTrk[4] = {}, rThm[4] = {};
     unsigned layKey = 0;   // LAYOUT log: (list sig, first, over, count, cfg gen) of the last logged layout
+    // placed rows (units) for the hover hit test: y, entry index; rowW of the last layout
+    int nPlaced = 0; float rowY[MaxRows] = {}; int rowEnt[MaxRows] = {}; float lastRowW = 0;
+    // marquee: input tracking + one shared offset (characters dropped from the front of every cut text)
+    float lastCx = -1, lastCy = -1; DWORD lastInputMs = 0; bool mqActive = false; int mqOff = 0, mqMax = 0, mqPhase = 0;
+    DWORD mqNext = 0; int mqRows = 0;   // mqPhase 0 scrolling, 1 hold at the end, 2 hold at the start; mqMax/mqRows from layout
+    // tooltip
+    int hoverKey = -1, hoverRow = -1; DWORD hoverSince = 0; bool tipShown = false; int tipKey = -1;
 };
 constexpr int MaxSlots = 4;
 Slot g_slots[MaxSlots];
@@ -339,14 +375,15 @@ void place(Slot* s, int t, float x, float y, float w, float h) {
 }
 void hide(Slot* s, int t) { setCtlVisible(s->ctl[t], false); }
 void setText(Slot* s, int t, const char* txt) {
-    unsigned char* c = s->ctl[t]; if (!c || !strcmp(s->text[t], txt)) return;
+    char* cache = t == T_TIP ? s->tipText : s->text[t]; int cap = t == T_TIP ? (int)sizeof s->tipText : (int)sizeof s->text[t];
+    unsigned char* c = s->ctl[t]; if (!c || !strcmp(cache, txt)) return;
     if (!textObjOk(c)) { whyLog(100 + t, "label %d: text object bad, cannot set \"%s\"", t, txt); return; }
     char exo[16] = {0};
     reinterpret_cast<CExoCtor>(FnExoCtor)(exo, txt);
     reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(c + LabelTextOff + TextStringSubOff, exo);
     reinterpret_cast<CExoDtor>(FnExoDtor)(exo);
-    dlogf("label %d: text \"%s\" -> \"%s\"", t, s->text[t], txt);
-    strncpy(s->text[t], txt, sizeof s->text[t] - 1); s->text[t][sizeof s->text[t] - 1] = 0;
+    dlogf("label %d: text \"%.80s\" -> \"%.80s\"", t, cache, txt);
+    strncpy(cache, txt, cap - 1); cache[cap - 1] = 0;
 }
 void setTextColor(Slot* s, int t, int which, const float* rgb) {   // which: cache key (1 cream, 2 orange)
     unsigned char* c = s->ctl[t]; if (!c || !s->canTextColor || s->col[t] == which || !textObjOk(c)) return;
@@ -392,6 +429,208 @@ void fmtTime(const Entry& e, char* out, int n) {
     if (secs >= 3600) snprintf(out, n, "%ld:%02ld:%02ld", secs / 3600, secs / 60 % 60, secs % 60);
     else snprintf(out, n, "%ld:%02ld", secs / 60, secs % 60);
 }
+// ---- stat decoder (research R3 + R3b): effect type + ints[] -> short form (stat column) + long form (tooltip line) ----
+// Decrease types store positive magnitudes; the sign comes from the type. Effects of one entry that differ only in the
+// damage type (e.g. Energy Resistance = 5 DamageResistance effects) merge into one atom with the OR of the type masks.
+enum AtomKind { A_NONE, A_ABIL, A_AC, A_ATT, A_DMG, A_RES, A_DR, A_IMMD, A_SAVE, A_SKILL, A_THP, A_REGEN, A_SPEED, A_IMM,
+                A_FR, A_DEFL, A_FSHIELD, A_STATE, A_TFP, A_CONCEAL, A_DSHIELD, A_POISON, A_INVIS, A_ATTACKS, A_FPREG, A_VPREG };
+struct Atom { int kind, a, b, mask, limit; };
+const char* const kAbilShort[6] = {"Str", "Dex", "Con", "Int", "Wis", "Cha"};
+const char* const kAbilLong[6] = {"Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"};
+const char* const kSkillShort[8] = {"Comp", "Demo", "Stealth", "Aware", "Persuade", "Repair", "Security", "Treat Inj"};
+const char* const kSkillLong[8] = {"Computer Use", "Demolitions", "Stealth", "Awareness", "Persuade", "Repair", "Security", "Treat Injury"};
+// damage flag bit i (nwscript DAMAGE_TYPE_*, = iprp_damagetype row i): 4096 is the in-game "Energy" (blaster)
+const char* const kDmgShort[13] = {"Bludg", "Pierce", "Slash", "Univ", "Acid", "Cold", "LS", "Elec", "Fire", "DS", "Sonic", "Ion", "Energy"};
+const char* const kDmgLong[13] = {"Bludgeoning", "Piercing", "Slashing", "Universal", "Acid", "Cold", "Light Side", "Electrical",
+                                  "Fire", "Dark Side", "Sonic", "Ion", "Energy"};
+const char* const kSaveShort[4] = {"Saves", "Fort", "Ref", "Will"};
+const char* const kSaveLong[4] = {"All saves", "Fortitude", "Reflex", "Will"};
+const char* const kSaveType[19] = {nullptr, "acid", "sneak attack", "cold", "death", "disease", "Light Side", "electrical", "fear",
+                                   "fire", "mind-affecting", "Dark Side", "poison", "sonic", "traps", "Force powers", "ion",
+                                   "blaster", "paralysis"};
+const char* const kImmunity[34] = {"none", "Mind", "Poison", "Disease", "Fear", "Traps", "Paralysis", "Blindness", "Deafness",
+                                   "Slow", "Entangle", "Silence", "Stun", "Sleep", "Charm", "Dominate", "Confusion", "Curse",
+                                   "Daze", "Ability loss", "Attack loss", "Damage loss", "Immunity loss", "Defense loss",
+                                   "Slow", "Save loss", "FR loss", "Skill loss", "Knockdown", "Neg. level", "Sneak attack",
+                                   "Critical hits", "Death", "Droid confusion"};
+const char* const kAcType[5] = {"dodge", "natural", "armour", "shield", "deflection"};
+const char* stateName(int st) {
+    switch (st) {
+    case 1: return "Confused"; case 2: return "Frightened"; case 3: return "Droid stun"; case 4: return "Stunned";
+    case 5: return "Paralyzed"; case 6: return "Asleep"; case 7: return "Choked"; case 8: return "Horrified";
+    case 10: return "Whirlwind"; case 15: return "Crushed"; case 16: return "Droid confused"; case 18: return "Mind trick";
+    case 19: return "Droid scrambled"; default: return nullptr;
+    }
+}
+// damage-type mask: one name, a known group, two names, or "N types"; long = every name
+void maskName(int mask, bool lng, char* out, int n) {
+    mask &= 0x1FFF;
+    int bits = 0; for (int i = 0; i < 13; ++i) bits += (mask >> i) & 1;
+    out[0] = 0;
+    if (!bits) { snprintf(out, n, "%s", lng ? "no" : "?"); return; }
+    if (!lng) {
+        if (mask == 0x1FFF) { snprintf(out, n, "All"); return; }
+        if (mask == 7) { snprintf(out, n, "Phys"); return; }
+        if (mask == (4096 | 128)) { snprintf(out, n, "Energy"); return; }               // blaster + electrical (energy shields)
+        if (mask == (4096 | 128 | 32 | 256 | 1024)) { snprintf(out, n, "Elem"); return; }   // Energy Resistance: + cold, fire, sonic
+        if (bits > 2) { snprintf(out, n, "%d types", bits); return; }   // "<first> +N" read like a bonus
+    } else if (mask == 0x1FFF) { snprintf(out, n, "all"); return; }
+    int k = 0, len = 0;
+    for (int i = 0; i < 13; ++i) {
+        if (!((mask >> i) & 1)) continue;
+        int w = snprintf(out + len, n - len, "%s%s", k ? (lng ? ", " : "/") : "", lng ? kDmgLong[i] : kDmgShort[i]);
+        if (w < 0 || w >= n - len) return;
+        len += w; ++k;
+    }
+}
+bool atomOf(int type, const int* v, int n, Atom* at) {
+    auto I = [&](int i) { return i < n ? v[i] : 0; };
+    Atom x = {A_NONE, 0, 0, 0, 0};
+    int sg = 1;
+    switch (type) {
+    case 0x25: sg = -1; /* fallthrough */
+    case 0x24: if (I(0) < 0 || I(0) > 5) return false; x = {A_ABIL, sg * I(1), I(0), 0, 0}; break;
+    case 0x31: sg = -1; /* fallthrough */
+    case 0x30: x = {A_AC, sg * I(1), I(0), 0, 0}; break;
+    case 0x0b: sg = -1; /* fallthrough */
+    case 0x0a: x = {A_ATT, sg * I(0), I(1), 0, 0}; break;
+    case 0x0e: sg = -1; /* fallthrough */
+    case 0x0d: x = {A_DMG, sg * I(0), 0, I(1), 0}; break;   // a = DAMAGE_BONUS_* enum 1..10
+    case 0x02: x = {A_RES, I(1), 0, I(0), I(2)}; break;
+    case 0x0c: x = {A_DR, I(0), I(1), 0, I(2)}; break;
+    case 0x11: sg = -1; /* fallthrough */
+    case 0x10: x = {A_IMMD, sg * I(1), 0, I(0), 0}; break;
+    case 0x1b: sg = -1; /* fallthrough */
+    case 0x1a: x = {A_SAVE, sg * I(0), I(1), 0, I(2)}; break;   // limit = save type (0 all)
+    case 0x38: sg = -1; /* fallthrough */
+    case 0x37: if (I(0) < 0 || I(0) > 7) return false; x = {A_SKILL, sg * I(1), I(0), 0, 0}; break;
+    case 0x0f: x = {A_THP, I(0), 0, 0, 0}; break;
+    case 0x07: x = {A_REGEN, I(0), I(1), 0, 0}; break;
+    case 0x1d: sg = -1; /* fallthrough */
+    case 0x1c: x = {A_SPEED, sg * I(0), 0, 0, 0}; break;
+    case 0x16: x = {A_IMM, 0, I(0), 0, 0}; break;
+    case 0x22: sg = -1; /* fallthrough */
+    case 0x21: x = {A_FR, sg * I(0), 0, 0, 0}; break;
+    case 0x5d: sg = -1; /* fallthrough */
+    case 0x5c: x = {A_DEFL, sg * I(0), 0, 0, 0}; break;
+    case 0x6b: if (I(0) < 0 || I(0) >= kForceShieldCount) return false; x = {A_FSHIELD, kForceShield[I(0)].amount, I(0), kForceShield[I(0)].flags, 0}; break;
+    case 0x08: if (!stateName(I(0))) return false; x = {A_STATE, 0, I(0), 0, 0}; break;
+    case 0x5b: x = {A_TFP, I(0), 0, 0, 0}; break;
+    case 0x4c: x = {A_CONCEAL, I(0), 0, 0, 0}; break;
+    case 0x3d: x = {A_DSHIELD, I(0), I(1), I(2), 0}; break;
+    case 0x23: x = {A_POISON, 0, I(0), 0, 0}; break;
+    case 0x2f: x = {A_INVIS, 0, I(0), 0, 0}; break;
+    case 0x2c: x = {A_ATTACKS, I(0), 0, 0, 0}; break;
+    case 0x70: x = {A_FPREG, I(0), 0, 0, 0}; break;
+    case 0x71: x = {A_VPREG, I(0), 0, 0, 0}; break;
+    default: return false;   // 0x1e visual, 0x43 icon, 0x44 innate, link, heal/damage instants, ...: nothing to show
+    }
+    *at = x; return true;
+}
+const char* dmgBonus(int e, char* buf, int n) {   // DAMAGE_BONUS_* 1..5 = +1..+5, 6..10 = 1d4 1d6 1d8 1d10 2d6
+    static const char* const dice[5] = {"1d4", "1d6", "1d8", "1d10", "2d6"};
+    int m = e < 0 ? -e : e;
+    if (m >= 6 && m <= 10) snprintf(buf, n, "%c%s", e < 0 ? '-' : '+', dice[m - 6]); else snprintf(buf, n, "%+d", e);
+    return buf;
+}
+void fmtAtom(const Atom& x, char* sh, int shn, char* lg, int lgn) {
+    char m[64], m2[160], d[16];
+    sh[0] = lg[0] = 0;
+    switch (x.kind) {
+    case A_ABIL: snprintf(sh, shn, "%+d %s", x.a, kAbilShort[x.b]); snprintf(lg, lgn, "%+d %s", x.a, kAbilLong[x.b]); break;
+    case A_AC: snprintf(sh, shn, "Def %+d", x.a); snprintf(lg, lgn, "Defense %+d%s%s%s", x.a, x.b > 0 && x.b < 5 ? " (" : "", x.b > 0 && x.b < 5 ? kAcType[x.b] : "", x.b > 0 && x.b < 5 ? ")" : ""); break;
+    case A_ATT: snprintf(sh, shn, "Att %+d", x.a); snprintf(lg, lgn, "Attack %+d%s", x.a, x.b == 1 ? " (main hand)" : x.b == 2 ? " (off hand)" : ""); break;
+    case A_DMG: maskName(x.mask, true, m2, sizeof m2); dmgBonus(x.a, d, sizeof d);
+        snprintf(sh, shn, "Dmg %s", d); snprintf(lg, lgn, "Damage %s %s", d, m2); break;
+    case A_RES: maskName(x.mask, false, m, sizeof m); maskName(x.mask, true, m2, sizeof m2);
+        snprintf(sh, shn, "Res %d %s", x.a, m);
+        if (x.limit > 0) snprintf(lg, lgn, "Resist %d %s (up to %d)", x.a, m2, x.limit); else snprintf(lg, lgn, "Resist %d %s", x.a, m2); break;
+    case A_DR: snprintf(sh, shn, "DR %d", x.a);
+        if (x.limit > 0) snprintf(lg, lgn, "Damage reduction %d (up to %d)", x.a, x.limit); else snprintf(lg, lgn, "Damage reduction %d", x.a); break;
+    case A_IMMD: maskName(x.mask, false, m, sizeof m); maskName(x.mask, true, m2, sizeof m2);
+        snprintf(sh, shn, "Imm %d%% %s", x.a, m); snprintf(lg, lgn, "%+d%% immunity: %s", x.a, m2); break;
+    case A_SAVE: { int w = x.b >= 0 && x.b < 4 ? x.b : 0; const char* vs = x.limit > 0 && x.limit < 19 ? kSaveType[x.limit] : nullptr;
+        snprintf(sh, shn, "%s %+d", kSaveShort[w], x.a);
+        snprintf(lg, lgn, "%s %+d%s%s", kSaveLong[w], x.a, vs ? " vs " : "", vs ? vs : ""); break; }
+    case A_SKILL: snprintf(sh, shn, "%s %+d", kSkillShort[x.b], x.a); snprintf(lg, lgn, "%s %+d", kSkillLong[x.b], x.a); break;
+    case A_THP: snprintf(sh, shn, "+%d VP", x.a); snprintf(lg, lgn, "+%d temporary Vitality", x.a); break;
+    case A_REGEN: { int sec = x.b > 0 ? (x.b + 500) / 1000 : 0;
+        snprintf(sh, shn, "Regen %d/%ds", x.a, sec); snprintf(lg, lgn, "Regenerates %d Vitality every %d s", x.a, sec); break; }
+    case A_SPEED: snprintf(sh, shn, "Speed %+d%%", x.a); snprintf(lg, lgn, "Movement speed %+d%%", x.a); break;
+    case A_IMM: { const char* nm = x.b >= 0 && x.b < 34 ? kImmunity[x.b] : "?";
+        snprintf(sh, shn, "Imm: %s", nm); snprintf(lg, lgn, "Immune: %s", nm); break; }
+    case A_FR: snprintf(sh, shn, "FR %+d", x.a); snprintf(lg, lgn, "Force resistance %+d", x.a); break;
+    case A_DEFL: snprintf(sh, shn, "Defl %+d", x.a); snprintf(lg, lgn, "Blaster deflection %+d", x.a); break;
+    case A_FSHIELD: maskName(x.mask, false, m, sizeof m); maskName(x.mask, true, m2, sizeof m2);
+        snprintf(sh, shn, "Shield %d %s", x.a, m); snprintf(lg, lgn, "Absorbs %d: %s", x.a, m2); break;
+    case A_STATE: snprintf(sh, shn, "%s", stateName(x.b)); snprintf(lg, lgn, "%s", stateName(x.b)); break;
+    case A_TFP: snprintf(sh, shn, "+%d FP", x.a); snprintf(lg, lgn, "+%d temporary Force points", x.a); break;
+    case A_CONCEAL: snprintf(sh, shn, "Conceal %d%%", x.a); snprintf(lg, lgn, "%d%% concealment", x.a); break;
+    case A_DSHIELD: maskName(x.mask, true, m2, sizeof m2);
+        snprintf(sh, shn, "Dmg shield %d", x.a); snprintf(lg, lgn, "Damage shield %d %s", x.a, m2); break;
+    case A_POISON: snprintf(sh, shn, "Poisoned"); snprintf(lg, lgn, "Poisoned"); break;
+    case A_INVIS: snprintf(sh, shn, "Invisible"); snprintf(lg, lgn, "Invisible"); break;
+    case A_ATTACKS: snprintf(sh, shn, "%+d attacks", x.a); snprintf(lg, lgn, "%+d attack(s) per round", x.a); break;
+    case A_FPREG: snprintf(sh, shn, "FP regen %+d%%", x.a); snprintf(lg, lgn, "Force point regeneration %+d%%", x.a); break;
+    case A_VPREG: snprintf(sh, shn, "VP regen %+d%%", x.a); snprintf(lg, lgn, "Vitality regeneration %+d%%", x.a); break;
+    default: break;
+    }
+}
+// per entry: atoms in effect-array order, merged by (kind, a, b, limit) with OR-ed masks; formatted when collect ends
+constexpr int MaxAtoms = 12;
+struct AtomSet { Atom at[MaxAtoms]; int n; };
+void addAtom(AtomSet& set, const Atom& x) {
+    for (int i = 0; i < set.n; ++i) {
+        Atom& y = set.at[i];
+        if (y.kind == x.kind && y.a == x.a && y.b == x.b && y.limit == x.limit) { y.mask |= x.mask; return; }
+    }
+    if (set.n < MaxAtoms) set.at[set.n++] = x;
+}
+void formatStats(Entry& e, const AtomSet& set) {
+    bool shield = false; for (int i = 0; i < set.n; ++i) shield |= set.at[i].kind == A_FSHIELD;
+    e.stat[0] = 0; e.nLines = 0; int len = 0;
+    for (int i = 0; i < set.n; ++i) {
+        const Atom& x = set.at[i];
+        if (shield && x.kind == A_RES && x.limit > 0) continue;   // a force shield's own absorb pieces: the Shield line says it
+        char sh[48], lg[LineLen];
+        fmtAtom(x, sh, sizeof sh, lg, sizeof lg);
+        if (!sh[0]) continue;
+        bool dup = false; for (int k = 0; k < e.nLines; ++k) if (!strcmp(e.lines[k], lg)) { dup = true; break; }
+        if (dup) continue;
+        if (e.nLines < MaxLines) { snprintf(e.lines[e.nLines], LineLen, "%s", lg); ++e.nLines; }
+        int w = snprintf(e.stat + len, sizeof e.stat - len, "%s%s", len ? ", " : "", sh);
+        if (w > 0 && w < (int)sizeof e.stat - len) len += w; else { e.stat[len] = 0; }
+    }
+}
+bool readInts(int eff, int* v, int* n) {   // ints[] = *(eff+0x34), count *(eff+0x30), first 8
+    int cnt = 0, ip = 0; *n = 0;
+    if (!readAt<int>(eff, EffNIntsOff, &cnt) || cnt <= 0 || !readAt<int>(eff, EffIntsOff, &ip) || !ip) return false;
+    if (cnt > 8) cnt = 8;
+    for (int i = 0; i < cnt; ++i) if (!readAt<int>(ip, 4 * i, &v[i])) return false;
+    *n = cnt; return true;
+}
+void fmtInts(const int* v, int n, char* out, int cap) {
+    int len = snprintf(out, cap, "[");
+    for (int i = 0; i < n && len < cap - 1; ++i) { int w = snprintf(out + len, cap - len, "%s%d", i ? "," : "", v[i]); if (w > 0) len += w; }
+    if (len < cap - 1) snprintf(out + len, cap - len, "]");
+}
+// DECODE log: once per (type, ints) signature (+ once per unknown type id), capped per session
+unsigned g_decSeen[256]; int g_decSeenN = 0, g_decLogs = 0; bool g_unkSeen[256];
+void logDecode(int type, const int* v, int n) {
+    if (g_decLogs >= 200) return;
+    char iv[100]; fmtInts(v, n, iv, sizeof iv);
+    Atom a;
+    if (!atomOf(type, v, n, &a)) {
+        if (type >= 0 && type < 256 && !g_unkSeen[type]) { g_unkSeen[type] = true; ++g_decLogs; logf("DECODE: type=0x%02x ints=%s -> (no stat shown)", type, iv); }
+        return;
+    }
+    unsigned h = 2166136261u; h = (h ^ (unsigned)type) * 16777619u;
+    for (int i = 0; i < n; ++i) h = (h ^ (unsigned)v[i]) * 16777619u;
+    for (int i = 0; i < g_decSeenN; ++i) if (g_decSeen[i] == h) return;
+    if (g_decSeenN < 256) g_decSeen[g_decSeenN++] = h;
+    char sh[48], lg[LineLen]; fmtAtom(a, sh, sizeof sh, lg, sizeof lg);
+    ++g_decLogs; logf("DECODE: type=0x%02x ints=%s -> '%s' / '%s'", type, iv, sh, lg);
+}
 // fake_rows test aid: alternating harmful/beneficial, growing names, 5 s .. 2 h plus one permanent, every third an item;
 // times are frozen. Entry 4 uses a resref with no texture to show what FnLoadImage returns for a missing image.
 int addFakeRows(Entry* out, int nt, int n) {
@@ -405,6 +644,13 @@ int addFakeRows(Entry* out, int nt, int n) {
         e.perm = n > 1 && i == n - 1; e.remMs = e.perm ? -1 : secs[i % 8] * 1000.0 + i * 1000.0;
         for (int tries = 0; tries < kEffIconRowCount; ++tries) { row = row % (kEffIconRowCount - 1) + 1; if (kEffIconRows[row].icon) break; }
         snprintf(e.icon, sizeof e.icon, "%s", i == 4 ? "chfx_no_texture" : (kEffIconRows[row].icon ? kEffIconRows[row].icon : ""));
+        // stat column tests: a long joined string (cut / marquee), a short one, none
+        static const int16_t fakeInts[][4] = {{0x24, 1, 2, 0}, {0x02, 4096, 20, 0}, {0x16, 2, 0, 0}, {0x30, 0, 2, 0}, {0x1c, 50, 0, 0}};
+        AtomSet set = {}; e.spell = -1;
+        if (i % 3 == 0) for (auto& fi : fakeInts) { int v[3] = {fi[1], fi[2], fi[3]}; Atom a; if (atomOf(fi[0], v, 3, &a)) addAtom(set, a); }
+        else if (i % 3 == 1) { int v[2] = {2 + i % 4, 0}; Atom a; if (atomOf(0x0a, v, 2, &a)) addAtom(set, a); }
+        formatStats(e, set);
+        e.desc = "Test entry";
         out[nt++] = e;
     }
     return nt;
@@ -432,9 +678,11 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
     // spells that carry an EffectIcon: the icon row is the authoritative entry for them
     static int iconSpells[MaxEffects]; int nis = 0;
     for (int i = 0; i < nr; ++i) if (raw[i].type == EffTypeIcon && raw[i].iconRow > 0 && raw[i].iconRow < kEffIconRowCount && kEffIconRows[raw[i].iconRow].name) iconSpells[nis++] = raw[i].spell;
-    Entry tmp[MaxEnt]; int nt = 0;
+    static Entry tmp[MaxEnt]; int nt = 0;   // ~70 KB: static, not on the engine thread's stack
+    static int rawKey[MaxEffects];
     for (int i = 0; i < nr; ++i) {
         const Raw& r = raw[i];
+        rawKey[i] = -1;
         int dt = r.sub & 7;
         Entry e = {}; bool use = false; const char* why = "";
         if (g_cfg.skipEquipped && dt == 3) why = "equipped";
@@ -445,7 +693,7 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
                 const EffIconRow& row = kEffIconRows[r.iconRow];
                 bool harm = row.good == 0;
                 if (row.good < 0) harm = r.spell >= 0 && r.spell < kDebuffIconTableSize && kDebuffIcons[r.spell].resref;
-                e.key = 0x10000 + r.iconRow; e.harmful = harm; strncpy(e.name, row.name, sizeof e.name - 1);
+                e.key = 0x10000 + r.iconRow; e.spell = r.spell; e.harmful = harm; strncpy(e.name, row.name, sizeof e.name - 1);
                 if (row.icon) strncpy(e.icon, row.icon, 16);
                 e.item = row.icon && (!strncmp(row.icon, "ii_", 3) || !strncmp(row.icon, "iw_", 3));
                 use = g_cfg.iconSource != 0; if (!use) why = "icon_source=0";
@@ -458,7 +706,7 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
             if (g_cfg.iconSource && iconCovered) why = "covered by EffectIcon";
             else if (!bad && !good) why = "untracked spell";
             else {
-                e.key = r.spell; e.harmful = bad != nullptr;
+                e.key = r.spell; e.spell = r.spell; e.harmful = bad != nullptr;
                 const char* nm = kSpellRows[r.spell].name;
                 if (nm) strncpy(e.name, nm, sizeof e.name - 1); else snprintf(e.name, sizeof e.name, "Effect %d", r.spell);
                 strncpy(e.icon, bad ? bad : good, 16);
@@ -467,11 +715,13 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
             }
         }
         if (use && r.perm && !g_cfg.showPermanent) { use = false; why = "permanent hidden"; }
-        if (dump) logf("  eff[%d] %08x type=0x%02x sub=0x%04x spell=%d iconRow=%d dur=%.1f %s rem=%.1fs -> %s%s%s%s",
-                       i, r.eff, r.type, r.sub, r.spell, r.iconRow, r.dur, r.perm ? "PERM" : "temp", r.rem / 1000.0,
+        char iv[100] = "[]"; if (dump) { int v[8], n = 0; if (readInts(r.eff, v, &n)) fmtInts(v, n, iv, sizeof iv); }
+        if (dump) logf("  eff[%d] %08x type=0x%02x sub=0x%04x spell=%d iconRow=%d ints=%s dur=%.1f %s rem=%.1fs -> %s%s%s%s",
+                       i, r.eff, r.type, r.sub, r.spell, r.iconRow, iv, r.dur, r.perm ? "PERM" : "temp", r.rem / 1000.0,
                        use ? (e.harmful ? "HARMFUL '" : "BENEFICIAL '") : "skip: ", use ? e.name : why, use ? "'" : "",
                        (r.type == EffTypeIcon && r.iconRow > 0 && r.iconRow < kEffIconRowCount) ? (kEffIconRows[r.iconRow].good == 1 ? " [icon good=1]" : kEffIconRows[r.iconRow].good == 0 ? " [icon good=0]" : " [icon good=-]") : "");
         if (!use) continue;
+        rawKey[i] = e.key;
         e.perm = r.perm; e.remMs = r.rem;
         int k = 0; for (; k < nt; ++k) if (tmp[k].key == e.key) break;
         if (k < nt) {   // keep the longest remaining (permanent beats everything)
@@ -480,6 +730,28 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
             continue;
         }
         if (nt < MaxEnt - 2) tmp[nt++] = e;
+    }
+    // stats: every non-equipped effect with a spell joins the entry of its spell (icon entries carry the spell of their
+    // EffectIcon effect); a spell merged into another entry by icon row is found through a used raw effect of that spell
+    static AtomSet sets[MaxEnt];
+    for (int k = 0; k < nt; ++k) sets[k].n = 0;
+    for (int j = 0; j < nr; ++j) {
+        const Raw& r = raw[j];
+        if (r.spell < 0 || (g_cfg.skipEquipped && (r.sub & 7) == 3) || r.type == EffTypeIcon) continue;
+        int v[8], n = 0; if (!readInts(r.eff, v, &n)) continue;
+        if (dump) logDecode(r.type, v, n);
+        Atom a; if (!atomOf(r.type, v, n, &a)) continue;
+        int k = 0; for (; k < nt; ++k) if (tmp[k].spell == r.spell) break;
+        if (k == nt) {
+            int key = -1; for (int i = 0; i < nr && key < 0; ++i) if (rawKey[i] >= 0 && raw[i].spell == r.spell) key = rawKey[i];
+            for (k = 0; k < nt; ++k) if (key >= 0 && tmp[k].key == key) break;
+        }
+        if (k < nt) addAtom(sets[k], a);
+    }
+    for (int k = 0; k < nt; ++k) {
+        formatStats(tmp[k], sets[k]);
+        const char* d = tmp[k].spell >= 0 && tmp[k].spell < kSpellRowCount ? kSpellDesc[tmp[k].spell] : nullptr;
+        tmp[k].desc = d && d[0] ? d : nullptr;
     }
     nt = addFakeRows(tmp, nt, g_cfg.fakeRows);
     // sections: Harmful first, then Beneficial; inside ascending remaining, unknown after timed, permanent last
@@ -496,7 +768,10 @@ int collect(Slot* s, int server, Entry* out, bool dump) {
         for (int i = 0; i < nt; ++i) if (tmp[i].harmful == harm) { any = true; break; }
         if (!any) continue;
         Entry sec = {}; sec.section = true; sec.harmful = harm; sec.gap = n > 0; out[n++] = sec;
-        for (int i = 0; i < nt; ++i) if (tmp[i].harmful == harm) { out[n++] = tmp[i]; sig = (sig ^ (unsigned)tmp[i].key) * 16777619u; }
+        for (int i = 0; i < nt; ++i) if (tmp[i].harmful == harm) {
+            out[n++] = tmp[i]; sig = (sig ^ (unsigned)tmp[i].key) * 16777619u;
+            for (const char* p = tmp[i].stat; *p; ++p) sig = (sig ^ (unsigned char)*p) * 16777619u;   // a stat change relogs
+        }
         sig = (sig ^ (harm ? 0xB0u : 0x60u)) * 16777619u;
     }
     s->sig = sig;
@@ -516,17 +791,32 @@ int lastFirstOf(const Entry* e, int n) {
     return lf < 0 ? 0 : lf;
 }
 
-// text width in engine px (kFontTexW from gen_effect_name_table.py; TextK measured; text_scale = INI fine-tune)
-float textPx(Slot* s, const char* t, int len) { float w = 0; for (int i = 0; i < len; ++i) w += kFontTexW[(unsigned char)t[i]]; return w * s->sy * TextK * g_cfg.textScale; }
-// fitted name: cut with "..." to the label width
-void fitName(Slot* s, const char* name, float maxPx, char* out, int n) {
-    auto width = [&](const char* t, int len) { return textPx(s, t, len); };
+// text width in engine px (kFontTexW / kFont10TexW from gen_effect_name_table.py; TextK measured; text_scale = INI fine-tune)
+enum Font { F16, F10 };
+float textPx(Slot* s, const char* t, int len, Font f = F16) {
+    const unsigned char* tw = f == F10 ? kFont10TexW : kFontTexW;
+    float w = 0; for (int i = 0; i < len; ++i) w += tw[(unsigned char)t[i]];
+    return w * s->sy * (f == F10 ? TextK10 : TextK) * g_cfg.textScale;
+}
+// fitted text: cut with "..." to the label width; returns true when it had to cut
+bool fitText(Slot* s, const char* name, float maxPx, char* out, int n, Font f = F16) {
     int len = (int)strlen(name);
-    if (width(name, len) <= maxPx) { snprintf(out, n, "%s", name); return; }
-    float dots = width("...", 3);
-    while (len > 0 && width(name, len) + dots > maxPx) --len;
+    if (textPx(s, name, len, f) <= maxPx) { snprintf(out, n, "%s", name); return false; }
+    float dots = textPx(s, "...", 3, f);
+    while (len > 0 && textPx(s, name, len, f) + dots > maxPx) --len;
     while (len > 0 && name[len - 1] == ' ') --len;
     snprintf(out, n, "%.*s...", len, name);
+    return true;
+}
+// marquee: the cut text with `off` characters dropped from the front (no leading "..."; a trailing one while more
+// remains); *maxOff = the offset at which the rest fits (0 when the whole text fits)
+void marqueeText(Slot* s, const char* full, float maxPx, int off, char* out, int n, int* maxOff, Font f = F16) {
+    int len = (int)strlen(full), m = 0;
+    while (m < len && textPx(s, full + m, len - m, f) > maxPx) ++m;
+    *maxOff = m;
+    if (off > m) off = m;
+    while (off > 0 && off < len && full[off] == ' ') ++off;   // never start on a space
+    fitText(s, full + off, maxPx, out, n, f);
 }
 
 // one LAYOUT line per change of (list, first, overflow, INI generation): scroll state, px widths, fitted names and times
@@ -541,12 +831,13 @@ void logLayout(Slot* s, int cnt, int lf, bool over, float rowW, const char* rows
          s->rTrk[0], s->rTrk[1], s->rTrk[2], s->rTrk[3], rows[0] ? rows : " (none)");
 }
 
-void hideAll(Slot* s) { for (int t = 0; t < NumTags; ++t) hide(s, t); s->over = false; g_panelRect[2] = 0; }
+void hideAll(Slot* s) { for (int t = 0; t < NumTags; ++t) hide(s, t); s->over = false; s->tipShown = false; s->nPlaced = 0; g_panelRect[2] = 0; }
 
 void layout(Slot* s) {
     const Entry* e = s->ent; int n = s->nEnt;
-    for (int t = T_TIPBG; t <= T_TIP; ++t) hide(s, t);   // tooltips deferred
     if (g_cfg.stage < 1 || n == 0) {
+        for (int t = T_TIPBG; t <= T_TIP; ++t) hide(s, t);
+        s->nPlaced = 0; s->tipShown = false; s->mqMax = 0; s->mqRows = 0;
         for (int t = T_SECG; t < T_MORE; ++t) hide(s, t);
         for (int t = T_SBTRK; t <= T_SBDN; ++t) hide(s, t);
         char msg[64];
@@ -565,7 +856,7 @@ void layout(Slot* s) {
     if (s->first < 0) s->first = 0;
     int cnt = fits(e, n, s->first);
     float rowW = InnerW - (over ? SbW + SbGap : 0);
-    float y = Top; int r = 0; bool secShown[2] = {false, false};
+    float y = Top; int r = 0; bool secShown[2] = {false, false}; int mqMax = 0, mqRows = 0;
     char rows[2048] = ""; int rl = 0;
     auto addRow = [&](const char* fmt, ...) {
         if (rl >= (int)sizeof rows - 1) return;
@@ -593,16 +884,36 @@ void layout(Slot* s) {
         float tr = X0 + rowW - TimePadR, tx = tr - textPx(s, tm, (int)strlen(tm)) / s->sx - 1;
         place(s, T_T0 + r, tx, y, tr - tx, RowH);
         setText(s, T_T0 + r, tm);
-        float nx = X0 + IconW + 4, nw = tx - NameGap - nx;
+        float nx = X0 + IconW + 4, nr = tx - NameGap;   // name right edge: the stat's left edge when there is one
+        char st[64] = "";
+        if (g_cfg.statColumn && x.stat[0]) {
+            float cap = fminf(g_cfg.statMaxW, tx - StatGap - NameGap - NameMinW - nx);
+            float sw = fminf(textPx(s, x.stat, (int)strlen(x.stat), F10) / s->sx + 1, cap);
+            if (sw >= 12) {
+                float sxl = tx - StatGap - sw;
+                place(s, T_S0 + r, sxl, y, sw, RowH);
+                int mo = 0; marqueeText(s, x.stat, (ux(s, sxl + sw) - ux(s, sxl)) * 0.98f, s->mqOff, st, sizeof st, &mo, F10);
+                if (mo > mqMax) mqMax = mo;
+                mqRows += mo > 0;
+                setText(s, T_S0 + r, st);
+                nr = sxl - NameGap;
+            } else hide(s, T_S0 + r);
+        } else hide(s, T_S0 + r);
+        float nw = nr - nx;
         place(s, T_N0 + r, nx, y, nw, RowH);
-        char nm[64]; fitName(s, x.name, (ux(s, nx + nw) - ux(s, nx)) * 0.98f, nm, sizeof nm);
+        s->rowY[r] = y; s->rowEnt[r] = s->first + k;
+        char nm[64]; int mo = 0;
+        marqueeText(s, x.name, (ux(s, nx + nw) - ux(s, nx)) * 0.98f, s->mqOff, nm, sizeof nm, &mo);
+        if (mo > mqMax) mqMax = mo;
+        mqRows += mo > 0;
         setText(s, T_N0 + r, nm);
-        addRow(" [%d] \"%s\" %s%s", r, nm, tm, x.item ? " disc" : "");
+        addRow(" [%d] \"%s\" {%s} %s%s", r, nm, st, tm, x.item ? " disc" : "");
         bool warn = g_cfg.colorTimes && (x.harmful || (!x.perm && x.remMs >= 0 && x.remMs < g_cfg.soonS * 1000.0));
         setTextColor(s, T_T0 + r, warn ? 2 : 1, warn ? Orange : Cream);
         y += RowH; ++r;
     }
-    for (; r < MaxRows; ++r) { hide(s, T_D0 + r); hide(s, T_I0 + r); hide(s, T_N0 + r); hide(s, T_T0 + r); }
+    s->nPlaced = r; s->lastRowW = rowW; s->mqMax = mqMax; s->mqRows = mqRows;
+    for (; r < MaxRows; ++r) { hide(s, T_D0 + r); hide(s, T_I0 + r); hide(s, T_N0 + r); hide(s, T_T0 + r); hide(s, T_S0 + r); }
     if (!secShown[0]) hide(s, T_SECG);
     if (!secShown[1]) hide(s, T_SECB);
     s->over = over; s->shownN = cnt; s->lastFirst = lf;
@@ -682,6 +993,120 @@ bool tickInput(Slot* s) {
     return changed;
 }
 
+// ---- idle tracking + marquee (names and stats that were cut scroll after marquee_delay_ms without input) ----
+// input = cursor moved > 2 px, wheel, left button, scroll, list change; any input snaps every row back to the "..." form
+bool trackInput(Slot* s, DWORD t, bool haveCur, float cx, float cy, bool other) {
+    bool input = other || (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+    if (haveCur && (fabsf(cx - s->lastCx) > 2 || fabsf(cy - s->lastCy) > 2)) { input = true; s->lastCx = cx; s->lastCy = cy; }
+    if (!input) return false;
+    s->lastInputMs = t;
+    if (!s->mqActive && !s->mqOff) return false;
+    if (s->mqActive) logf("MARQUEE: reset (input)");
+    s->mqActive = false; s->mqOff = 0; s->mqPhase = 0;
+    return true;   // relayout with offset 0
+}
+// returns true when the offset changed (relayout). Cycle: scroll 1 char per step -> hold at the end -> snap back -> hold.
+bool marqueeStep(Slot* s, DWORD t) {
+    if (!g_cfg.marquee || g_cfg.stage < 1 || s->mqMax <= 0) {
+        bool had = s->mqOff != 0;
+        if (s->mqActive) logf("MARQUEE: stop (%s)", !g_cfg.marquee ? "marquee=0" : "nothing cut");
+        s->mqActive = false; s->mqOff = 0; s->mqPhase = 0;
+        return had;
+    }
+    if (!s->mqActive) {
+        if (t - s->lastInputMs < (DWORD)g_cfg.marqueeDelayMs) return false;
+        s->mqActive = true; s->mqPhase = 0; s->mqOff = 0; s->mqNext = t + g_cfg.marqueeStepMs;
+        logf("MARQUEE: start rows=%d max=%d chars (idle %lu ms)", s->mqRows, s->mqMax, (unsigned long)(t - s->lastInputMs));
+        return false;
+    }
+    if ((LONG)(t - s->mqNext) < 0) return false;
+    switch (s->mqPhase) {
+    case 0:
+        if (s->mqOff < s->mqMax) ++s->mqOff;
+        if (s->mqOff >= s->mqMax) { s->mqPhase = 1; s->mqNext = t + g_cfg.marqueeHoldMs; }
+        else s->mqNext = t + g_cfg.marqueeStepMs;
+        return true;
+    case 1: s->mqOff = 0; s->mqPhase = 2; s->mqNext = t + g_cfg.marqueeHoldMs; return true;
+    default: s->mqPhase = 0; s->mqNext = t + g_cfg.marqueeStepMs; return false;
+    }
+}
+
+// ---- hover tooltip: title = name - time (dialogfont16x16), body = every stat line + the description (10x10, wrapped) ----
+void hideTip(Slot* s, const char* why) {
+    if (s->tipShown) logf("TIP: hide (%s)", why);
+    if (s->tipShown) for (int t = T_TIPBG; t <= T_TIP; ++t) hide(s, t);
+    s->tipShown = false; s->tipKey = -1;
+}
+// greedy word wrap of src into out (appends, '\n' between lines); returns the number of lines added
+int wrapAppend(Slot* s, const char* src, float maxPx, char* out, int* len, int cap) {
+    int lines = 0; char cur[256] = ""; int cl = 0;
+    auto emit = [&]() {
+        int w = snprintf(out + *len, cap - *len, "%s%s", *len ? "\n" : "", cur);
+        if (w > 0 && w < cap - *len) { *len += w; ++lines; } else out[*len] = 0;   // no clipped tail on overflow
+        cur[0] = 0; cl = 0;
+    };
+    const char* p = src;
+    while (*p) {
+        while (*p == ' ') ++p;
+        if (!*p) break;
+        const char* q = p; while (*q && *q != ' ') ++q;
+        int wl = (int)(q - p); if (wl > 120) wl = 120;
+        char cand[256]; snprintf(cand, sizeof cand, "%s%s%.*s", cur, cl ? " " : "", wl, p);
+        if (cl && textPx(s, cand, (int)strlen(cand), F10) > maxPx) { emit(); snprintf(cur, sizeof cur, "%.*s", wl, p); }
+        else snprintf(cur, sizeof cur, "%s", cand);
+        cl = (int)strlen(cur); p = q;
+    }
+    if (cl) emit();
+    return lines;
+}
+void showTip(Slot* s, int row) {
+    if (!s->ctl[T_TIPBG] || !s->ctl[T_TIPT] || !s->ctl[T_TIP] || row < 0 || row >= s->nPlaced) return;
+    const Entry& x = s->ent[s->rowEnt[row]];
+    float tw = PanelW - 8, inner = tw - 2 * TipInX, tx = PanelX + 4;
+    float innerPx = (ux(s, tx + TipInX + inner) - ux(s, tx + TipInX)) * 0.98f;
+    char tm[16], full[96], title[100]; fmtTime(x, tm, sizeof tm);
+    snprintf(full, sizeof full, "%s - %s", x.name, tm);
+    fitText(s, full, innerPx, title, sizeof title);
+    static char body[1024]; int len = 0, lines = 0; body[0] = 0;
+    for (int i = 0; i < x.nLines; ++i) lines += wrapAppend(s, x.lines[i], innerPx, body, &len, sizeof body);
+    if (x.desc && g_cfg.tooltipDesc) {
+        if (len && len < (int)sizeof body - 2) { body[len++] = '\n'; body[len] = 0; ++lines; }   // blank line before the text
+        lines += wrapAppend(s, x.desc, innerPx, body, &len, sizeof body);
+    }
+    if (!len) { snprintf(body, sizeof body, "No details"); lines = 1; }
+    float lineU = kFont10LineH * TextK10 * g_cfg.textScale * g_cfg.tipLineScale;   // texels -> units (px = units * sy)
+    float h = fminf(TipBodyY + lines * lineU + TipPadB, PanelH);
+    float y = s->rowY[row] + RowH;
+    bool flip = y + h > PanelY + PanelH;
+    if (flip) y = s->rowY[row] - h;
+    if (y < PanelY) y = PanelY;
+    place(s, T_TIPBG, tx, y, tw, h);
+    place(s, T_TIPT, tx + TipInX, y + TipTitleY, inner, TipTitleH);
+    place(s, T_TIP, tx + TipInX, y + TipBodyY, inner, h - TipBodyY - TipPadB / 2);
+    setText(s, T_TIPT, title); setText(s, T_TIP, body);
+    if (!s->tipShown || s->tipKey != x.key)
+        logf("TIP: show row=%d '%s' lines=%d stat='%s' flip=%d rect=[%d,%d,%d,%d] lineU=%.2f", row, x.name, lines, x.stat, flip,
+             s->rect[T_TIPBG][0], s->rect[T_TIPBG][1], s->rect[T_TIPBG][2], s->rect[T_TIPBG][3], lineU);
+    s->tipShown = true; s->tipKey = x.key;
+}
+// hover hit test on the placed rows (sections, gaps and the scrollbar do not count); refresh = re-show (time update)
+void tickTooltip(Slot* s, DWORD t, bool haveCur, float cx, float cy, bool refresh) {
+    if (!g_cfg.tooltips || g_cfg.stage < 1 || !s->nPlaced || s->sx <= 0 || s->sy <= 0) { s->hoverRow = -1; s->hoverKey = -1; hideTip(s, "off"); return; }
+    int row = -1;
+    if (haveCur) {
+        float u = PanelX + (cx - s->bx) / s->sx, v = PanelY + (cy - s->by) / s->sy;
+        for (int r = 0; r < s->nPlaced; ++r)
+            if (u >= X0 && u < X0 + s->lastRowW && v >= s->rowY[r] && v < s->rowY[r] + RowH) { row = r; break; }
+    }
+    int key = row >= 0 ? s->ent[s->rowEnt[row]].key : -1;
+    if (key != s->hoverKey || row != s->hoverRow) {
+        if (s->tipShown) hideTip(s, row < 0 ? "leave" : "other row");
+        s->hoverKey = key; s->hoverRow = row; s->hoverSince = t;
+    }
+    if (row < 0) return;
+    if (!s->tipShown ? t - s->hoverSince >= (DWORD)g_cfg.tooltipDelayMs : refresh) showTip(s, row);
+}
+
 LARGE_INTEGER g_qpcFreq, g_qpcLast;
 
 } // namespace
@@ -701,7 +1126,7 @@ extern "C" void __cdecl BindCharEffects(int panel) {
     for (int t = 0; t < NumTags; ++t) {
         char tag[20];
         if (t < T_D0) snprintf(tag, sizeof tag, "%s", fixed[t]);
-        else if (t < T_MORE) snprintf(tag, sizeof tag, "LBL_EFX_%c%02d", "DINT"[(t - T_D0) / MaxRows], (t - T_D0) % MaxRows);
+        else if (t < T_MORE) snprintf(tag, sizeof tag, "LBL_EFX_%c%02d", "DINTS"[(t - T_D0) / MaxRows], (t - T_D0) % MaxRows);
         else snprintf(tag, sizeof tag, "%s", tail[t - T_MORE]);
         s->ctl[t] = bindLabel(panel, tag, FirstId + t);
         bound += s->ctl[t] != nullptr;
@@ -727,6 +1152,7 @@ extern "C" void __cdecl BindCharEffects(int panel) {
         for (int t = 0; t < NumTags; ++t) s->col[t] = 1;   // GUI text colour = the cached "cream" state for times
     }
     for (int t = 0; t < NumTags; ++t) if (t != T_BACK && t != T_HEADER) hide(s, t);
+    s->lastInputMs = GetTickCount();
     setCtlVisible(s->ctl[T_BACK], true); setCtlVisible(s->ctl[T_HEADER], true);
     s->bound = true;
     layout(s);   // empty state until the first tick polls the creature
@@ -748,10 +1174,16 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
     maybeReloadIni();
     if (!g_cfg.enabled) { hideAll(s); whyLog(1, "H3: disabled by INI, panel hidden"); return; }
     setCtlVisible(s->ctl[T_BACK], true); setCtlVisible(s->ctl[T_HEADER], true);
+    bool wheelPending = g_wheelAccum != 0;
     bool scrolled = g_cfg.stage >= 1 && tickInput(s);
     DWORD t = GetTickCount();
+    float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
+    bool relayout = scrolled;
+    if (scrolled) hideTip(s, "scroll");
+    relayout |= trackInput(s, t, haveCur, cx, cy, wheelPending || scrolled || dt > 0.5f);
+    relayout |= marqueeStep(s, t);
     bool poll = t - s->lastPoll >= (DWORD)g_cfg.pollMs || dt > 0.5f;
-    if (!poll) { if (scrolled) layout(s); return; }
+    if (!poll) { if (relayout) layout(s); tickTooltip(s, t, haveCur, cx, cy, false); return; }
     s->lastPoll = t;
     int client = leaderClient();
     if (!client) { whyLog(2, "H3: no party leader (client creature null)"); s->nEnt = 0; layout(s); return; }
@@ -773,9 +1205,12 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
         int arr = 0, cnt = 0; readAt<int>(server, EffArrOff, &arr); readAt<int>(server, EffCntOff, &cnt);
         logf("H3: list changed: %d entries (sig %08x -> %08x), %d raw effects", n, oldSig, s->sig, cnt);
         collect(s, server, s->ent, true);
+        hideTip(s, "list changed");
+        if (trackInput(s, t, false, 0, 0, true)) {}   // a new list restarts the idle clock (marquee back to offset 0)
         for (int i = 0; i < n; ++i) { char tm[16]; fmtTime(s->ent[i], tm, sizeof tm); logf("  entry %d: %s%s%s icon=%s item=%d %s", i, s->ent[i].section ? "[SECTION] " : "", s->ent[i].section ? (s->ent[i].harmful ? "HARMFUL" : "BENEFICIAL") : s->ent[i].name, "", s->ent[i].icon, s->ent[i].item, s->ent[i].section ? "" : tm); }
     }
     layout(s);
+    tickTooltip(s, t, haveCur, cx, cy, true);
     if (t - s->bindTick < 120000 && t - s->lastBeat >= 5000) {
         s->lastBeat = t;
         logf("H3 beat: client=%08x server=%08x entries=%d first=%d over=%d stage=%d", client, server, s->nEnt, s->first, s->over, g_cfg.stage);
@@ -795,6 +1230,6 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
         SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
     }
-    if (reason == DLL_PROCESS_ATTACH) { logf("chareffects 0.1.0-probe loaded"); loadIni(); saferead::enableRing(g_debug); }
+    if (reason == DLL_PROCESS_ATTACH) { logf("chareffects 0.1.0-probe build 4 loaded"); loadIni(); saferead::enableRing(g_debug); }
     return TRUE;
 }

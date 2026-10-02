@@ -52,10 +52,11 @@ OVERRIDE = GAME / "override"
 BACKUP_ROOT = Path.home() / "Games/KOTOR2_Mod_Workspace/backups"
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
 FIRST_NEW_ID = 69
-ROW_TAGS = [f"LBL_EFX_{k}{i:02d}" for k in "DINT" for i in range(L.MAX_ROWS)]
+ROW_TAGS = [f"LBL_EFX_{k}{i:02d}" for k in "DINTS" for i in range(L.MAX_ROWS)]
 NEW_TAGS = (["LBL_EFX_BACK", "LBL_EFX_HEADER", "LBL_EFX_SECG", "LBL_EFX_SECB"]
             + [f"LBL_EFX_D{i:02d}" for i in range(L.MAX_ROWS)] + [f"LBL_EFX_I{i:02d}" for i in range(L.MAX_ROWS)]
             + [f"LBL_EFX_N{i:02d}" for i in range(L.MAX_ROWS)] + [f"LBL_EFX_T{i:02d}" for i in range(L.MAX_ROWS)]
+            + [f"LBL_EFX_S{i:02d}" for i in range(L.MAX_ROWS)]   # build 4 stat column; before MORE so it draws under the tooltip
             + ["LBL_EFX_MORE", "LBL_EFX_SBTRK", "LBL_EFX_SBTHM", "LBL_EFX_SBUP", "LBL_EFX_SBDN",
                "LBL_EFX_TIPBG", "LBL_EFX_TIPT", "LBL_EFX_TIP"])
 DN_ARROW = "efx_dnarrowg"   # vertically flipped uibit_uparrowg (no down-arrow texture exists; the engine rotates DIR)
@@ -169,6 +170,9 @@ def new_controls(by_tag, hud_tip):
     for i in range(L.MAX_ROWS):
         c = add(f"LBL_EFX_T{i:02d}", stat, (x0 + inner_w - L.TIME_W, ry(i), L.TIME_W, L.ROW_H))
         set_text(c, text="", align=19, color=L.CREAM)
+    for i in range(L.MAX_ROWS):   # stat column: the DLL places it left of the time from the measured text width
+        c = add(f"LBL_EFX_S{i:02d}", stat, (x0 + inner_w - L.TIME_W - L.STAT_GAP - L.STAT_MAX_W, ry(i), L.STAT_MAX_W, L.ROW_H))
+        set_text(c, text="", align=17, color=L.CREAM, font=L.STAT_FONT)
     c = add("LBL_EFX_MORE", stat, (x0, L.PANEL[1] + L.PANEL[3] - L.PAD_TOP - L.ROW_H, inner_w, L.ROW_H))
     set_text(c, text="", align=18, color=L.CREAM)
     top, win = L.PANEL[1] + L.PAD_TOP, L.PANEL[3] - 2 * L.PAD_TOP

@@ -10,11 +10,16 @@ Two tables, both resolved against the live dialog.tlk (so compatch edits are inc
                                    engine's own effect-icon cache (creature+0xffc, FUN_005a43c0, research R2b)
   kFontTexW[256]                   dialogfont16x16 glyph widths in font texels (TXI upperleft/lowerright boxes, the
                                    character_page_mockup.font() reading); the DLL cuts names with "..." like its fit()
+  kFont10TexW[256], kFont10LineH   dialogfont10x10 widths (stat column, tooltip body) and its line pitch in texels
+  kSpellDesc[spells.2da row]       trimmed spelldesc (tooltip): first body paragraph without the power/prerequisite/armour
+                                   header paragraphs, at most 2 sentences and 220 chars (research R3b R-d); nullptr = none
+  kForceShield[forceshields row]   {amount, damageflags} for EffectForceShield (type 0x6b, ints[0] = row; R3b R-b)
 Names the bitmap font cannot draw are reduced to ASCII; rows without a name are nullptr.
 """
 import glob
 import logging
 import os
+import re
 import sys
 import unicodedata
 
@@ -50,6 +55,37 @@ def c_str(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+HEAD = re.compile(r"^(Universal|Light Side|Dark Side) Power\b|^Unique Ability:|^Prerequisites:", re.I)
+ABBR = re.compile(r"\b(?:vs|e\.g|i\.e|etc|approx|no|st|dr)\.$", re.I)
+
+
+def desc(strref: str, mx: int = 220) -> str:
+    """Tooltip description: first body paragraph, <= 2 sentences, <= mx chars (R-d rule; stat blocks dropped)."""
+    if not strref.strip().isdigit():
+        return ""
+    t = unicodedata.normalize("NFKD", tlk.string(int(strref)) or "").encode("ascii", "ignore").decode()
+    paras = [p.strip() for p in re.split(r"\n\s*\n", t.replace("\r", "")) if p.strip()]
+    paras = [p for p in paras if not HEAD.match(p) and not re.match(r"^Restricted By Armor\s*$", p, re.I)] or paras
+    if not paras:
+        return ""
+    sents = []
+    for x in re.split(r"(?<=[.!?])\s+(?=[A-Z])", " ".join(paras[0].split())):
+        if sents and ABBR.search(sents[-1]):
+            sents[-1] += " " + x
+        else:
+            sents.append(x)
+    sents = [x for x in sents if not x.rstrip().endswith(":")] or sents
+    out = ""
+    for x in sents[:2]:
+        c = (out + " " + x).strip()
+        if len(c) > mx:
+            break
+        out = c
+    if not out:
+        out = sents[0][:mx - 3].rsplit(" ", 1)[0] + "..."
+    return out
+
+
 def icon(resref: str):
     r = resref.strip().lower()
     return r if r and r in tex else None
@@ -81,15 +117,32 @@ for i in range(ei.get_height()):
     g = r.get_string("good").strip()
     lines.append(f"    /*{i}*/ {{ {c_str(text(r.get_string('namestrref')))}, {c_str(ic)}, {int(g) if g.isdigit() else -1} }},")
 lines.append("};")
+descs = [desc(sp.get_row(i).get_string("spelldesc")) for i in range(sp.get_height())]
+lines += ["// trimmed spells.2da descriptions (tooltip body); nullptr = none", "constexpr const char* kSpellDesc[kSpellRowCount] = {"]
+lines += [f"    /*{i}*/ {c_str(d)}," for i, d in enumerate(descs)]
+lines.append("};")
+fs = read_2da(inst.resource("forceshields", ResourceType.TwoDA).data)
+lines += ["struct ForceShieldRow { int amount; int flags; };   // forceshields.2da amount (absorb pool) + damageflags",
+          f"constexpr int kForceShieldCount = {fs.get_height()};", "constexpr ForceShieldRow kForceShield[kForceShieldCount] = {"]
+for i in range(fs.get_height()):
+    r = fs.get_row(i)
+    am, fl = r.get_string("amount").strip(), r.get_string("damageflags").strip()
+    lines.append(f"    /*{i} {r.get_string('label').strip()}*/ {{ {int(am) if am.isdigit() else 0}, {int(fl) if fl.isdigit() else 0} }},")
+lines.append("};")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import character_page_mockup as L  # noqa: E402  (font reader shared with the mock-up)
-_, boxes = L.font("dialogfont16x16")
-w = [b[2] - b[0] for b in boxes]
-lines += ["// dialogfont16x16 glyph widths in font texels (index = byte); drawn at 8/3 px per texel at 1600 px height",
-          "constexpr unsigned char kFontTexW[256] = {"]
-lines += ["    " + ", ".join(str(max(0, min(255, v))) for v in w[i:i + 16]) + "," for i in range(0, 256, 16)]
-lines.append("};")
+for fname, arr, note in (("dialogfont16x16", "kFontTexW", "drawn at 8/3 px per texel at 1600 px height"),
+                         ("dialogfont10x10", "kFont10TexW", "same texel scale as 16x16 (texturewidth 2.56)")):
+    _, boxes = L.font(fname)
+    w = [b[2] - b[0] for b in boxes]
+    lines += [f"// {fname} glyph widths in font texels (index = byte); {note}", f"constexpr unsigned char {arr}[256] = {{"]
+    lines += ["    " + ", ".join(str(max(0, min(255, v))) for v in w[i:i + 16]) + "," for i in range(0, 256, 16)]
+    lines.append("};")
+    if fname == "dialogfont10x10":
+        h = boxes[ord("A")][3] - boxes[ord("A")][1]
+        lines.append(f"constexpr float kFont10LineH = {h * 1.25:.2f}f;   // line pitch estimate in texels (glyph {h} + 25 %); tip_line_scale tunes it")
 with open(out, "w", newline="\n") as f:
     f.write("\n".join(lines) + "\n")
+print(f"{sum(1 for d in descs if d)} descriptions (max {max(len(d) for d in descs)} chars), {fs.get_height()} forceshields rows")
 print(f"{sp.get_height()} spells rows, {ei.get_height()} effecticon rows -> {out}")
 print("icons not installed (nullptr):", missing)
