@@ -144,3 +144,13 @@ Checklist (in-game console):
 Any crash: restore the backup first, then crash triage.
 
 Independent Haiku pass running over all 434 shipped rows + 40 decoys (`work/haiku/`).
+
+## Save/load/new-game rows (2026-10-02, commit 62a9deb on `addressdb/k2-steam-acc`)
+
++17 functions (462 total): every save, load and new-game entry point plus the CSWGuiSaveLoad constructor, demanded by the per-save
+hotbar (Mod 3 build 25) and the level-up override's playthrough binding. Evidence per row: `savegame_rows.tsv` (function start +
+ret N vs GOG param + callee/string content; `name_map`). `CGuiInGame::DoQuickLoad` was already present at the same address.
+Param sizes that differ from GOG's DB (Steam retn wins): `CServerExoAppInternal::SaveGame` 16 (GOG 12), `CSWGuiMainMenu::OnLoadGamePicked` 4 (GOG 0).
+Lesson: the positional candidate for OnLoadGamePicked (0x8824f0, GOG gap 0x2c0 to OnNewGamePicked) was WRONG -- the real handler
+(0x8827a0) was found from the main-menu handler registrations (CSWGuiControl event binder 0x418af0 calls in the ctor 0x880740) and its
+call to the saveload_p constructor. Equal GOG gaps are a hint, not evidence (same as lessons 347-353).

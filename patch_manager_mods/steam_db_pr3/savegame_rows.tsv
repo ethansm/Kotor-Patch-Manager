@@ -4,3 +4,16 @@ CServerExoApp	LoadGame	0x0051be20	0x64b840	16	verified	forwarder to CServerExoAp
 CServerExoApp	SetLoadFromSaveGame	0x0051ce00	0x64c820	4	verified	writes [[this+4]+0x100c4]; called push 1 by DoQuickLoad and CSWGuiSaveLoad::LoadGame; gap to SaveGame 0xff0 = GOG
 CServerExoApp	GetLoadFromSaveGame	0x0051cde0	0x64c800	0	verified	reads [[this+4]+0x100c4]; pair with setter, gap 0x20 = GOG
 CServerExoAppInternal	SaveGame	0x0052f610	0x7b2990	16	verified	strings SAVES / SAVEGAME / "%s%06d - %s"; fills save request R (*(*(0xA1B4A4)+0x14), folder CExoString R+0x18); Steam retn 0x10 (GOG DB 12)
+CServerExoAppInternal	LoadGame	0x0052fb80	0x7b2f00	16	verified	"SAVES:" + "%06d - %s"; calls AddResourceDirectory 0x711690, party table load 0x5fbf60, globals load 0x656710
+CServerExoAppInternal	StartNewModule	0x0052fda0	0x7b3120	4	verified	calls DoPCAutosave 0x53af20 (@0x530105), string modulesave; gap to LoadGame 0x220 = GOG
+CServerExoAppInternal	DoPCAutosave	0x0053af20	0x7be170	8	verified	strings AUTOSAVE / AUTOSAVEPARAMS / PCAUTOSAVE; retn 8
+CSWGuiSaveLoad	Constructor	0x00850770	0x5cfd00	16	verified	loads saveload_p (LB_GAMES, BTN_SAVELOAD, BTN_DELETE, LBL_SCREENSHOT...); only retn 0x10 function in the cluster; built by OnLoadGamePicked
+CSWGuiSaveLoad	LoadGame	0x00853a00	0x5d33b0	4	verified	calls SendLoadGameRequest 0x73f720, SetLoadFromSaveGame 0x51ce00, LoadPCAutoSave 0x8529e0 (PCAUTOSAVE entries); GOG mapper row 0x455090 was wrong
+CSWGuiSaveLoad	VerifyLoadGame	0x008528b0	0x5d1bf0	4	verified	calls CSWGuiSaveLoad::LoadGame 0x853a00; gap to LoadPCAutoSave 0x130 = GOG
+CSWGuiSaveLoad	LaunchMostRecentSave	0x00859270	0x5d86f0	0	verified	calls CSWGuiSaveLoad::LoadGame 0x853a00 (death screen last save)
+CSWGuiSaveLoad	LoadPCAutoSave	0x008529e0	0x5d1d20	4	verified	strings AUTOSAVE / AUTOSAVEPARAMS / %06d - %s; party + globals load, ExecuteLoadModule 0x51d090; bypasses LoadGame
+CGuiInGame	DoQuickLoad	0x007d0f50	0x4e1650	0	verified	calls UnpackQuickSaveGame 0x7d1530, SetLoadFromSaveGame, SendLoadGameRequest (already in PR3 at same address)
+CGuiInGame	UnpackQuickSaveGame	0x007d1530	0x4e1c30	8	verified	"SAVES:" + "%06d - %s"; gap to DoQuickLoad 0x5e0 = GOG
+CSWGuiMainMenu	OnNewGamePicked	0x00882230	0x53ccd0	4	verified	handler of the main-menu control at +0x40c (registered 0x880b46/0x880c3e); re-creates the server 0x401bc0(0), string 001ebo, opens class selection 0x8f92b0
+CSWGuiMainMenu	OnLoadGamePicked	0x008827a0	0x53cf90	4	verified	handler of the main-menu control at +0x5dc (registered 0x880b7e/0x880c76); new + CSWGuiSaveLoad::Constructor 0x850770 (saveload_p). Positional 0x8824f0 was WRONG (never registered; called from 0x883d70). GOG DB param 0, Steam retn 4
+CSWGuiMainCharGen	BeginPlayGame	0x00907340	0x5eeb30	0	verified	30 bytes: 0x906110 then the chargen commit 0x8faca0 (G_PC_LEVEL, server re-create; per-save hotbar NG hook)
