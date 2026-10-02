@@ -339,6 +339,7 @@ struct CrTrack {
     // A1
     unsigned wouldSpin = 0, ends = 0, retargets = 0; DWORD lastA1 = 0; cai::LineThrottle a1Log;
     DWORD pendingA1 = 0;   // A1X: tick of the last A1 end/retarget with no slot-6 follow-up yet (0 = none)
+    cai::LineThrottle strictLog; unsigned strictN = 0, strictRej = 0;   // A1X STRICT: counts per summary window, throttled line (review SF2)
 };
 CrTrack g_tr[32];
 // review N6: with tags=/log_all=1 big fights must not evict the party's tracks (A1 throttle, would-spin counts):
@@ -391,9 +392,9 @@ void summary(DWORD now) {
     }
     for (auto& t : g_tr)
         if (t.id && (t.wouldSpin || t.ends || t.retargets)) {
-            eline(now, "t=%lu A1 summary: cr=%08x would-spin passes=%u/%ds ends=%u retargets=%u", now, t.id, t.wouldSpin, g_cfg.summarySec,
-                  t.ends, t.retargets);
-            t.wouldSpin = t.ends = t.retargets = 0;
+            eline(now, "t=%lu A1 summary: cr=%08x would-spin passes=%u/%ds ends=%u retargets=%u strict=%u/%u", now, t.id, t.wouldSpin, g_cfg.summarySec,
+                  t.ends, t.retargets, t.strictN, t.strictRej);
+            t.wouldSpin = t.ends = t.retargets = t.strictN = t.strictRej = 0;
         }
     g_sumLines = g_gate.totalLines; g_sumDropped = g_gate.totalDropped; g_sumDeduped = g_gate.totalDeduped;
 }
@@ -406,8 +407,8 @@ constexpr int FnPartyTable = 0x0051C8D0;   // thiscall(serverApp) RET -> *(serve
 constexpr int FnPlayerId = 0x0051C8F0;     // thiscall(serverApp) RET -> id of the controlled leader (player+0x28), 0x7F000000 if none
 constexpr int CrPos = 0x94, CrMoving = 0x11BC, CrCombatExit = 0x524, CrSetState = 0xFF5, CrListenerSpeaker = 0x1A0, CrListenerPattern = 0x1BC;
 
-enum PId { PiFm2c, PiFm2f, PiFm2r, PiFm3, PiRs, PiP2, PiPf, PiRar, PiShx, PiSs1, PiGca, PiParty, PiA1x, PiCount };
-const char* const PNames[PiCount] = {"FM2C", "FM2F", "FM2R", "FM3", "RS", "P2", "PF", "RAR", "SHX", "SS1", "GCA", "PARTY", "A1X"};
+enum PId { PiFm2c, PiFm2f, PiFm2r, PiFm3, PiRs, PiP2, PiPf, PiRar, PiShx, PiSs1, PiGca, PiParty, PiA1x, PiA1xF, PiCount };
+const char* const PNames[PiCount] = {"FM2C", "FM2F", "FM2R", "FM3", "RS", "P2", "PF", "RAR", "SHX", "SS1", "GCA", "PARTY", "A1X", "A1XF"};
 cai::ProbeCap g_pcap[PiCount];
 enum PSubj { PkFm2f = 1 };
 cai::SubjectThrottle g_psubj;      // per-subject throttles of the probe lines (own table: never evicts E2/FM1/A4 state)
@@ -459,7 +460,7 @@ struct RsTrack {
     DWORD sec = 0; unsigned cur12 = 0, max12 = 0;
 };
 RsTrack g_rs[32];
-unsigned g_rsS7Lines = 0;
+unsigned g_rsS7Lines = 0, g_rsS7E9Lines = 0, g_e9 = 0, g_e9Last = ~0u;   // g_e9: pat-15 deliveries from non-party creatures to party listeners (budget-free, PRS E9)
 RsTrack* rsTrack(int id, DWORD now) {
     RsTrack* v = &g_rs[0];
     for (auto& e : g_rs) {
@@ -520,10 +521,15 @@ void rarFormat(const RarTrack& t, char* out, int cap) {
         len += snprintf(out + len, cap - len, "%s%x:%u/%u/%u/%u", k ? " " : "", best, c[1], c[2], c[3], c[4]);
         if (c[0]) len += snprintf(out + len, cap - len, "+o%u", c[0]);
     }
+    if (!used[0] && tot[0] && len < cap - 48) {   // the type-0 bucket (PR-RAR FAIL input) is always printed (review N7)
+        const unsigned* c = &t.cnt[0];
+        len += snprintf(out + len, cap - len, "%s0:%u/%u/%u/%u", len ? " " : "", c[1], c[2], c[3], c[4]);
+        if (c[0]) len += snprintf(out + len, cap - len, "+o%u", c[0]);
+    }
 }
 
 // ---- SHX: shout delivery exits
-struct ShxCnt { unsigned shouts = 0, r35 = 0, partySpk = 0, end = 0, xbreak = 0, noarea = 0, abortStart = 0, abortMid = 0; } g_shx, g_shxLast;
+struct ShxCnt { unsigned shouts = 0, r35 = 0, partySpk = 0, end = 0, xbreak = 0, noarea = 0, abortStartCr = 0, abortStartOther = 0, abortMid = 0; } g_shx, g_shxLast;
 unsigned g_shxLines = 0, g_ss1Lines = 0;
 
 // ---- GCA: GetCurrentAction results per creature
@@ -551,7 +557,7 @@ bool g_partyLoaded = false;
 void partyEmit(DWORD now, const char* why, int ctrl) {
     if (g_partyLines >= 100) return;
     int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
-    if (!server) return;
+    if (!server || !rd<int>(server, 4)) return;   // 0x51C620 (inside both getters) dereferences [server+4] (review N5)
     int tbl = reinterpret_cast<Fn0>(FnPartyTable)(server);
     int pid = reinterpret_cast<Fn0>(FnPlayerId)(server);
     int cobj = ctrl != Invalid ? gameObject(ctrl) : 0, pobj = pid != Invalid ? gameObject(pid) : 0;
@@ -601,7 +607,7 @@ void a1xFollowup(int id, const char* site, DWORD now) {
             if (t.pendingA1) {
                 long after = long(now - t.pendingA1);
                 t.pendingA1 = 0;
-                pev(PiA1x, now, "t=%lu PR A1X FOLLOWUP cr=%08x site=%s after=%ldms", now, id, site, after);
+                pev(PiA1xF, now, "t=%lu PR A1X FOLLOWUP cr=%08x site=%s after=%ldms", now, id, site, after);
             }
             return;
         }
@@ -612,7 +618,7 @@ void orphanTick(DWORD now) {
         if (t.id && t.pendingA1 && cai::a1OrphanDue(now, t.pendingA1, g_cfg.a1RethinkMs)) {
             long since = long(now - t.pendingA1);
             t.pendingA1 = 0;
-            pev(PiA1x, now, "t=%lu PR A1X ORPHAN cr=%08x since=%ldms", now, t.id, since);
+            pev(PiA1xF, now, "t=%lu PR A1X ORPHAN cr=%08x since=%ldms", now, t.id, since);
         }
 }
 
@@ -627,6 +633,10 @@ void probeSummary(DWORD now) {
             eline(now, "t=%lu PRS RS cr=%08x s6a=%u s6b=%u s6c=%u s7=%u s12=%u s1=%u max12ps=%u", now, t.id, t.n[1], t.n[2], t.n[3], t.n[4], t.n[5], t.n[6], t.max12);
             memcpy(t.nLast, t.n, sizeof t.n);
         }
+    if (g_cfg.probeRs && g_e9 != g_e9Last) {   // first summary prints deliveries=0 too: absence of a line then means no data, not zero
+        eline(now, "t=%lu PRS E9 deliveries=%u", now, g_e9);
+        g_e9Last = g_e9;
+    }
     for (auto& t : g_p2)
         if (t.seen && t.runs != t.runsLast) {
             eline(now, "t=%lu PRS P2 cr=%08x runs=%u avg=%u max=%u ctrlRuns=%u", now, t.id, t.runs, t.gaps ? t.sumGap / t.gaps : 0, t.maxGap, t.ctrlRuns);
@@ -643,8 +653,8 @@ void probeSummary(DWORD now) {
             t.nLast = t.n;
         }
     if (memcmp(&g_shx, &g_shxLast, sizeof g_shx)) {
-        eline(now, "t=%lu PRS SHX shouts=%u r35=%u partySpk=%u end=%u xbreak=%u noarea=%u abortStart=%u abortMid=%u", now, g_shx.shouts, g_shx.r35,
-              g_shx.partySpk, g_shx.end, g_shx.xbreak, g_shx.noarea, g_shx.abortStart, g_shx.abortMid);
+        eline(now, "t=%lu PRS SHX shouts=%u r35=%u partySpk=%u end=%u xbreak=%u noarea=%u abortStartCr=%u abortStartOther=%u abortMid=%u", now, g_shx.shouts,
+              g_shx.r35, g_shx.partySpk, g_shx.end, g_shx.xbreak, g_shx.noarea, g_shx.abortStartCr, g_shx.abortStartOther, g_shx.abortMid);
         g_shxLast = g_shx;
     }
     for (auto& t : g_gca)
@@ -898,8 +908,11 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
                     saferead::readAt<float>(9, static_cast<uintptr_t>(cand), CrPos, &tx) &&
                     saferead::readAt<float>(9, static_cast<uintptr_t>(cand), CrPos + 4, &ty)) {
                     float lim = mx + 0.1f;
-                    pev(PiA1x, now, "t=%lu PR A1X STRICT cr=%08x new=%08x d2=%.2f lim2=%.2f -> %s", now, id, newId,
-                        (ax - tx) * (ax - tx) + (ay - ty) * (ay - ty), lim * lim, cai::a1Strict(ax, ay, tx, ty, mx) ? "ok" : "would-reject");
+                    bool ok = cai::a1Strict(ax, ay, tx, ty, mx);
+                    ++t->strictN; if (!ok) ++t->strictRej;   // always counted (A1 summary strict=N/rejected); the line is throttled
+                    if (t->strictLog.allow(now, ok ? 1u : 0u, 10, 5000))   // first 10, then on an ok/would-reject change or every 5 s
+                        pev(PiA1x, now, "t=%lu PR A1X STRICT cr=%08x new=%08x d2=%.2f lim2=%.2f -> %s", now, id, newId,
+                            (ax - tx) * (ax - tx) + (ay - ty) * (ay - ty), lim * lim, ok ? "ok" : "would-reject");
                 }
             }
         }
@@ -1229,6 +1242,7 @@ extern "C" void __cdecl CompanionAiProbeRunScript(int ret, int script, int self)
     if (!site) return;
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
+    if (site <= 3) a1xFollowup(self, cai::rsName(site), now);   // slot-6 sites: the A1 end was followed up (before the filter: review N3)
     ObjInfo o = objInfo(self, now);
     if (!objPasses(o)) return;
     RsTrack* t = rsTrack(self, now);
@@ -1238,15 +1252,23 @@ extern "C" void __cdecl CompanionAiProbeRunScript(int ret, int script, int self)
         if (now - t->sec >= 1000) { t->sec = now; t->cur12 = 0; }
         if (++t->cur12 > t->max12) t->max12 = t->cur12;
     }
-    if (site <= 3) a1xFollowup(self, cai::rsName(site), now);   // slot-6 sites: the A1 end was followed up
-    if (t->logged[site] >= 20 || (site == 4 && g_rsS7Lines >= 50)) return;   // first 20 per (cr, site); S7 first 50 per session
-    ++t->logged[site];
-    char sfx[96] = "";
-    if (site == 4) {
-        ++g_rsS7Lines;
+    char sfx[128] = "";
+    bool e9 = false;
+    if (site == 4) {   // OnShout: the speaker, its shout pattern; E9 = pattern 15 from a non-party creature to a party listener (counted before any line budget)
         int obj = gameObject(self), spk = obj ? rd<int>(obj, CrListenerSpeaker, Invalid) : Invalid;
+        int pat = obj ? rd<int>(obj, CrListenerPattern, -1) : -1;
         ObjInfo so = objInfo(spk, now);
-        snprintf(sfx, sizeof sfx, " spk=%08x spkParty=%d pat=%d", spk, so.party, obj ? rd<int>(obj, CrListenerPattern, -1) : -1);
+        e9 = pat == 15 && so.type == ObjTypeCreature && !so.party && o.party;
+        if (e9) ++g_e9;
+        snprintf(sfx, sizeof sfx, " spk=%08x spkParty=%d pat=%d spkTag=%s", spk, so.party, pat, so.tag);
+    }
+    // lines: first 20 per (cr, site); S7: first 10 per creature (50 per session), plus every E9-case line (300 per session, own budget)
+    if (site == 4) {
+        if (e9) { if (g_rsS7E9Lines >= 300) return; ++g_rsS7E9Lines; }
+        else { if (t->logged[4] >= 10 || g_rsS7Lines >= 50) return; ++t->logged[4]; ++g_rsS7Lines; }
+    } else {
+        if (t->logged[site] >= 20) return;
+        ++t->logged[site];
     }
     int empty = (!script || !rd<int>(script, 0) || rd<int>(script, 4, 0) <= 0) ? 1 : 0;
     pline(PiRs, now, "t=%lu PR RS site=%s cr=%08x %s party=%d empty=%d%s", now, cai::rsName(site), self, o.tag, o.party, empty, sfx);
@@ -1341,7 +1363,8 @@ extern "C" void __cdecl CompanionAiProbeShout(int ebp) {
     bool lastOk = area && idx >= 0 && idx < count && gameObject(last) != 0;
     int kind = cai::shoutExit(area != 0, idx, count, lastOk);
     float r = fr<float>(ebp, 0xC);
-    int party = rd<int>(spk, CrParty, 0);
+    int stype = rd<unsigned char>(spk, ObType, 0xFF);
+    int party = stype == ObjTypeCreature ? rd<int>(spk, CrParty, 0) : 0;   // +0x11AC only exists on creatures (review SF1)
     ++g_shx.shouts;
     if (r >= 34.5f && r <= 35.5f) ++g_shx.r35;
     if (party) ++g_shx.partySpk;
@@ -1349,19 +1372,20 @@ extern "C" void __cdecl CompanionAiProbeShout(int ebp) {
     case cai::ShoutEnd: ++g_shx.end; break;
     case cai::ShoutXBreak: ++g_shx.xbreak; break;
     case cai::ShoutNoArea: ++g_shx.noarea; break;
-    case cai::ShoutAbortStart: ++g_shx.abortStart; break;
+    case cai::ShoutAbortStart: if (stype == ObjTypeCreature) ++g_shx.abortStartCr; else ++g_shx.abortStartOther; break;
     default: ++g_shx.abortMid; break;
     }
     bool isAbort = kind == cai::ShoutAbortStart || kind == cai::ShoutAbortMid;
-    if (!isAbort && g_shxLines >= 30) return;   // every ABORT, the first 30 others
-    if (!isAbort) ++g_shxLines;
+    static unsigned s_abortLines = 0; static cai::LineThrottle s_abortLog;
+    if (isAbort) { if (s_abortLines >= 100 && !s_abortLog.allow(now, static_cast<unsigned>(kind), 0, 1000)) return; ++s_abortLines; }   // first 100 ABORT, then 1/s per kind
+    else { if (g_shxLines >= 30) return; ++g_shxLines; }                                                                              // first 30 others
     int sp = fr<int>(ebp, 8);
     char text[33], tag[33];
     copyStr(rd<int>(sp, 0), rd<int>(sp, 4, -1), text, sizeof text);
     readTag(spk, tag, sizeof tag);
-    const char* fmt = "t=%lu PR SHX %s spk=%08x %s party=%d r=%.0f seen=%d idx=%d count=%d last=%08x text=%s";
-    if (isAbort) eline(now, fmt, now, cai::shoutName(kind), rd<int>(spk, ObId), tag, party, r, fr<int>(ebp, 0x10), idx, count, last, text);   // exempt from the budget
-    else pline(PiShx, now, fmt, now, cai::shoutName(kind), rd<int>(spk, ObId), tag, party, r, fr<int>(ebp, 0x10), idx, count, last, text);
+    const char* fmt = "t=%lu PR SHX %s spk=%08x type=%d %s party=%d r=%.0f seen=%d idx=%d count=%d last=%08x text=%s";
+    if (isAbort) eline(now, fmt, now, cai::shoutName(kind), rd<int>(spk, ObId), stype, tag, party, r, fr<int>(ebp, 0x10), idx, count, last, text);   // own cap, not the budget
+    else pline(PiShx, now, fmt, now, cai::shoutName(kind), rd<int>(spk, ObId), stype, tag, party, r, fr<int>(ebp, 0x10), idx, count, last, text);
 }
 
 // SS1. OnApplySetState 0x59CBA0 at 0x59D966 (stolen MOV [EDX+0xFF5],AL; the wrapper restores EAX): creature [EBP-0x20], new state [EBP-0x1C],

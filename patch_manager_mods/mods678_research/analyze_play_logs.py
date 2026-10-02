@@ -128,7 +128,7 @@ A1_RE = re.compile(r"^t=(\d+) A1 cr=([0-9a-fA-F]{8}) party=(\d+) raw=(-?\d+) eff
 # :544  "t=%lu E2 FALLBACK cr=%08x %s party=%d combat=%d round=%d script=%s a1spin=%d lastA1=%ldms"
 E2_RE = re.compile(r"^t=(\d+) E2 FALLBACK cr=([0-9a-fA-F]{8}) (\S+) party=(\d+) combat=(-?\d+) round=(-?\d+) script=(\S+) a1spin=(\d+) lastA1=(-?\d+)ms")
 # :375  "t=%lu A1 summary: cr=%08x would-spin passes=%u/%ds ends=%u retargets=%u"
-A1SUM_RE = re.compile(r"^t=(\d+) A1 summary: cr=([0-9a-fA-F]{8}) would-spin passes=(\d+)/(\d+)s ends=(\d+) retargets=(\d+)")
+A1SUM_RE = re.compile(r"^t=(\d+) A1 summary: cr=([0-9a-fA-F]{8}) would-spin passes=(\d+)/(\d+)s ends=(\d+) retargets=(\d+)(?: strict=(\d+)/(\d+))?")
 # :420  "t=%lu E1 SPIN cr=%08x %s party=%d stance=%d entries/s=%u ..."
 E1SPIN_RE = re.compile(r"^t=(\d+) E1 SPIN cr=([0-9a-fA-F]{8}) (\S+) party=(\d+) stance=(-?\d+)")
 E1END_RE = re.compile(r"^t=(\d+) E1 END cr=([0-9a-fA-F]{8}) (\S+) spin lasted ([\d.]+) s")
@@ -1089,7 +1089,8 @@ PR_FM2R_RE = re.compile(rf"^t=(\d+) PR FM2R cr={_H8} tgt={_H8} other=(-?\d+) inr
 PR_FM3L_RE = re.compile(rf"^t=(\d+) PR FM3L level=(-?\d+) sentinel={_H8} now=(-?\d+) removed=(\d+) done=(-?\d+) elapsed=(\d+) slice=(\d+)")
 PR_FM3X_RE = re.compile(rf"^t=(\d+) PR FM3X id={_H8} level=(-?\d+) idx=(-?\d+) cursor=(-?\d+) sentinel=(\d+)")
 PRS_FM3_RE = re.compile(r"^t=(\d+) PRS FM3 passes=(\d+) lost=(\d+) removes=(\d+) beforeCursor=(\d+)")
-PR_RS_RE = re.compile(rf"^t=(\d+) PR RS site=(\w+) cr={_H8} (\S+) party=(\d+) empty=(\d+)(?: spk={_H8} spkParty=(-?\d+) pat=(-?\d+))?")
+PR_RS_RE = re.compile(rf"^t=(\d+) PR RS site=(\w+) cr={_H8} (\S+) party=(\d+) empty=(\d+)(?: spk={_H8} spkParty=(-?\d+) pat=(-?\d+)(?: spkTag=(\S+))?)?")
+PRS_E9_RE = re.compile(r"^t=(\d+) PRS E9 deliveries=(\d+)")
 PRS_RS_RE = re.compile(rf"^t=(\d+) PRS RS cr={_H8} s6a=(\d+) s6b=(\d+) s6c=(\d+) s7=(\d+) s12=(\d+) s1=(\d+) max12ps=(\d+)")
 PR_P2_RE = re.compile(rf"^t=(\d+) PR P2 cr={_H8} ctrl=(\d+) elapsed=(\d+) combat=(-?\d+)")
 PRS_P2_RE = re.compile(rf"^t=(\d+) PRS P2 cr={_H8} runs=(\d+) avg=(\d+) max=(\d+) ctrlRuns=(\d+)")
@@ -1098,8 +1099,8 @@ PRS_PF_RE = re.compile(r"^t=(\d+) PRS PF saveA=(\d+) saveB=(\d+) xferA=(\d+) xfe
 PRS_RAR_RE = re.compile(rf"^t=(\d+) PRS RAR cr={_H8} ispc=(-?\d+) n=(\d+)(?: (.*))?$")
 PR_RAR_MOVE_RE = re.compile(rf"^t=(\d+) PR RAR MOVESTATE cr={_H8} type=([0-9a-fA-F]+) res=(-?\d+) state=(-?\d+)")
 PR_RAR_REQ_RE = re.compile(rf"^t=(\d+) PR RAR REQ cr={_H8} type=([0-9a-fA-F]+) n=(\d+)")
-PR_SHX_RE = re.compile(rf"^t=(\d+) PR SHX (\S+) spk={_H8} (\S+) party=(-?\d+) r=(-?[\d.]+) seen=(-?\d+) idx=(-?\d+) count=(-?\d+) last={_H8} text=(.*)$")
-PRS_SHX_RE = re.compile(r"^t=(\d+) PRS SHX shouts=(\d+) r35=(\d+) partySpk=(\d+) end=(\d+) xbreak=(\d+) noarea=(\d+) abortStart=(\d+) abortMid=(\d+)")
+PR_SHX_RE = re.compile(rf"^t=(\d+) PR SHX (\S+) spk={_H8} type=(-?\d+) (\S+) party=(-?\d+) r=(-?[\d.]+) seen=(-?\d+) idx=(-?\d+) count=(-?\d+) last={_H8} text=(.*)$")
+PRS_SHX_RE = re.compile(r"^t=(\d+) PRS SHX shouts=(\d+) r35=(\d+) partySpk=(\d+) end=(\d+) xbreak=(\d+) noarea=(\d+) abortStartCr=(\d+) abortStartOther=(\d+) abortMid=(\d+)")
 PR_SS1_RE = re.compile(rf"^t=(\d+) PR SS1 cr={_H8} (\S+) state (-?\d+)->(-?\d+) combat=(-?\d+)")
 PR_GCA_RE = re.compile(rf"^t=(\d+) PR GCA cr={_H8} res=(-?\d+) lastRun=([0-9a-fA-F]+) moving=(-?\d+)")
 PRS_GCA_RE = re.compile(rf"^t=(\d+) PRS GCA cr={_H8} (.*)$")
@@ -1109,6 +1110,8 @@ PR_A1X_FOLLOW_RE = re.compile(rf"^t=(\d+) PR A1X FOLLOWUP cr={_H8} site=(\w+) af
 PR_A1X_ORPHAN_RE = re.compile(rf"^t=(\d+) PR A1X ORPHAN cr={_H8} since=(-?\d+)ms")
 A1X_SUFFIX_RE = re.compile(r"\(wouldSpin=\d+\) c524=(-?\d+) f570=(-?\d+) combat=(-?\d+)")
 CFG_RETHINK_RE = re.compile(r"\ba1_rethink_ms=(\d+)")
+CFG_SUMMARY_RE = re.compile(r"\bsummary_sec=(\d+)")
+DROP_SPAN_MS = 2000   # a per-second-cap drop marker is written at the next admitted line: the dropped lines lie within the 2 s before it
 BUDGET_RE = re.compile(r"^-- probe (\w+) line budget reached --")
 R_H1_END52C_RE = re.compile(r"^H1 t=(\d+) cr=([0-9a-fA-F]{8}) .*?inRange=(\d+) .*?end52c=([0-9a-fA-F]+)")
 SS_SET_STATES = {1} | set(range(3, 11)) | set(range(0xE, 0x14))     # PR-SS: SetState targets that remove the slot-6 script (S6C)
@@ -1130,6 +1133,12 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
     """The PR-* checks. Each result: id -> (status PASS|FAIL|OBSERVE, summary, evidence). PASS = the data agrees with the atlas (no action),
     FAIL = it contradicts the atlas or shows a bug's reach (act on it), OBSERVE = the case did not occur."""
     R: dict = {"present": trace_path is not None, "checks": {}, "prs_last": {}, "n_pr": 0, "n_prs": 0, "budget": []}
+    budget_ln: dict[str, int] = {}        # probe -> line number of its "line budget reached" marker (later PR lines of that probe are missing)
+    budget_t: dict[str, int] = {}         # probe -> t of the last t= line before the marker (a lower bound of the moment the budget ran out)
+    drop_t: list[int] = []                # t of every "-- ai_trace: N lines dropped" marker (lines were lost in the 2 s before it)
+    summary_ms = 10000
+    a1_strict = [0, 0]                    # A1 summary strict=N/rejected totals (budget-free)
+    prev_t = 0
     name = trace_path.name if trace_path else FILES["trace"]
     L = defaultdict(list)                 # kind -> [dict]
     cfg_rethink = 3000
@@ -1144,16 +1153,27 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
                     mm = CFG_RETHINK_RE.search(line)
                     if mm:
                         cfg_rethink = int(mm.group(1))
+                elif line.startswith("# config (") or line.startswith("# config trace"):
+                    mm = CFG_SUMMARY_RE.search(line)
+                    if mm:
+                        summary_ms = int(mm.group(1)) * 1000
                 continue
             if line[0] == "-":
                 mm = BUDGET_RE.match(line)
                 if mm:
                     R["budget"].append(mm.group(1))
+                    budget_ln.setdefault(mm.group(1), ln)
+                    budget_t.setdefault(mm.group(1), prev_t)
+                else:
+                    mm = DROP_RE.match(line)
+                    if mm:
+                        drop_t.append(int(mm.group(3)))
                 continue
             mt = re.match(r"t=(\d+) (\S+)", line)
             if not mt:
                 continue
             t = int(mt.group(1))
+            prev_t = t
             if win and win.active() and not win.contains(t):
                 continue
             kind = mt.group(2)
@@ -1166,6 +1186,10 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
                     L["A1"].append(dict(t=t, ln=ln, cr=m.group(2).lower(), outcome=("end" if outcome.startswith("end") else
                                                                                         "retarget" if outcome.startswith("retarget") else "spin"),
                                         probe=bool(A1X_SUFFIX_RE.search(line)), line=line))
+                else:
+                    m = A1SUM_RE.match(line)
+                    if m and m.group(7):
+                        a1_strict[0] += int(m.group(7)); a1_strict[1] += int(m.group(8))
                 continue
             if kind not in ("PR", "PRS"):
                 continue
@@ -1182,6 +1206,14 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
     R["prs_last"] = last_prs
     ev = lambda d: f"{name}:{d['ln']}"                                   # noqa: E731
     C: dict[str, tuple[str, str, str]] = {}
+
+    def judgeable(ln: int, t_from: int, t_to: int, probes: tuple[str, ...]) -> bool:
+        """Can the ABSENCE of a line of `probes` in [t_from, t_to] (event at line `ln`) be trusted? No once one of the probes' line budgets
+        ran out before the end of the window (marker line / the last t= before it), and no if a per-second-cap drop marker overlaps it."""
+        for pr in probes:
+            if pr in budget_ln and (ln >= budget_ln[pr] or t_to >= budget_t[pr]):
+                return False
+        return not any(dt >= t_from and dt - DROP_SPAN_MS <= t_to for dt in drop_t)
 
     # ---- PR-FM2B: FM2C partial (2) vs failed (3)
     rows = L["FM2C"]
@@ -1209,16 +1241,23 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
     if not loops:
         C["PR-FM2"] = ("OBSERVE", f"no (creature, target) pair with n >= 3 in the FM2R lines ({len(pair_n)} pair(s) seen)", "")
     else:
-        miss = []
+        miss, unjudged = [], 0
         for (cr, tgt), v in loops.items():
             near = [r for k in ("FM2C", "FM2F") for r in L[k] if r["m"].group(2).lower() == cr and abs(r["t"] - v["t"]) <= 30000]
-            if not near:
+            if near:
+                continue
+            if judgeable(v["ln"], v["t"] - 30000, v["t"] + 30000, ("FM2C", "FM2F")):
                 miss.append((cr, tgt, v))
+            else:
+                unjudged += 1   # the FM2C/FM2F line budget ran out or lines were dropped: the absence proves nothing
         txt = f"{len(loops)} pair(s) with n >= 3 (max n {max(v['n'] for v in loops.values())})"
         if miss:
             cr, tgt, v = miss[0]
             C["PR-FM2"] = ("FAIL", f"{txt}; {len(miss)} without any FM2C/FM2F line for that creature within 30 s (contradicts gate 1.1), first: "
                                   f"{q(v['ln'], v['line'], name)}", f"{name}:{v['ln']}")
+        elif unjudged:
+            C["PR-FM2"] = ("OBSERVE", f"{txt}; {unjudged} without an FM2C/FM2F line but not judged (probe line budget reached or lines dropped by the "
+                                      "per-second cap in that window)", "")
         else:
             first = next(iter(loops.values()))
             C["PR-FM2"] = ("PASS", txt + ", each with FM2C or FM2F lines for the creature in the same 30 s", f"{name}:{first['ln']}")
@@ -1257,13 +1296,23 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
         C["PR-FM5"] = ("PASS" if mx < 5 else "FAIL",
                        f"max OnBlocked runs/s = {mx} for {top['m'].group(2).lower()} over {len(with12)} creature(s) with S12 runs "
                        + ("(< 5/s: kill the FM5 throttle)" if mx < 5 else "(>= 5/s: promote the FM5 throttle)"), ev(top))
-    s7 = [r for r in rs if r["m"].group(2) == "S7" and r["m"].group(7) is not None]
-    deliveries = [r for r in s7 if r["m"].group(9) == "15" and r["m"].group(8) == "0" and r["m"].group(5) == "1"]
-    nonparty35 = [r for r in L["SHX"] if r["m"].group(5) == "0" and abs(float(r["m"].group(6)) - 35.0) < 0.5]
-    if deliveries:
-        C["PR-E9"] = ("PASS", f"{len(deliveries)} S7 pat=15 delivery(ies) from non-party speakers to party listeners", ev(deliveries[0]))
+    # PR-E9: PRS E9 = the budget-free count of pat-15 OnShout deliveries from non-party creatures to party listeners (printed at the first summary
+    # even when 0, then on change); the S7 lines only name the speakers. Allied or hostile is not knowable from the log: the tags are reported.
+    e9_prs = L["PRS_E9"]
+    e9_n = int(e9_prs[-1]["m"].group(2)) if e9_prs else None
+    s7 = [r for r in rs if r["m"].group(2) == "S7" and r["m"].group(7) is not None and r["m"].group(9) == "15" and r["m"].group(8) == "0" and r["m"].group(5) == "1"]
+    tags = Counter((r["m"].group(10) or "?") for r in s7)
+    nonparty35 = [r for r in L["SHX"] if r["m"].group(4) == "5" and r["m"].group(6) == "0" and abs(float(r["m"].group(7)) - 35.0) < 0.5]
+    if e9_n:
+        C["PR-E9"] = ("PASS", f"{e9_n} pat-15 shout delivery(ies) from non-party creatures to party listeners (PRS E9); S7 speaker tag(s): "
+                              + (", ".join(f"{k} x{v}" for k, v in sorted(tags.items())) if tags else "none logged")
+                              + " (mark which are allies, enemy shouts count here too)", ev(e9_prs[-1]))
+    elif e9_n == 0 and nonparty35:
+        C["PR-E9"] = ("FAIL", f"SHX shows {len(nonparty35)} r=35 non-party creature shout(s) but PRS E9 deliveries=0", ev(nonparty35[0]))
+    elif e9_n == 0:
+        C["PR-E9"] = ("OBSERVE", "PRS E9 deliveries=0 and no non-party r=35 creature shout seen: the allied case did not occur", "")
     elif nonparty35:
-        C["PR-E9"] = ("FAIL", f"SHX shows {len(nonparty35)} r=35 non-party shout(s) but 0 such S7 deliveries to a party listener", ev(nonparty35[0]))
+        C["PR-E9"] = ("OBSERVE", f"{len(nonparty35)} non-party r=35 creature shout(s) but no PRS E9 line (probe_rs off or the session ended before the first summary)", "")
     else:
         C["PR-E9"] = ("OBSERVE", "no allied (non-party, r=35) shouts seen", "")
 
@@ -1321,21 +1370,29 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
         else:
             C["PR-RAR"] = ("PASS", txt, ev(rar[-1]))
 
-    # ---- PR-SHOUT
+    # ---- PR-SHOUT: the bug's reach = a creature speaker's ABORT-START (stale id in the area list) or any ABORT-MID. A non-creature speaker
+    # outside the list (abortStartOther) is the vanilla no-listener case: INFO only.
     shl, shs = L["SHX"], L["PRS_SHX"]
-    aborts = [r for r in shl if r["m"].group(2).startswith("ABORT")]
+    aborts = [r for r in shl if r["m"].group(2) == "ABORT-MID" or (r["m"].group(2) == "ABORT-START" and r["m"].group(4) == "5")]
+    other_lines = sum(1 for r in shl if r["m"].group(2) == "ABORT-START" and r["m"].group(4) != "5")
     m = shs[-1]["m"] if shs else None
-    ab_counts = (int(m.group(8)) + int(m.group(9))) if m else 0
+    ab_counts = (int(m.group(8)) + int(m.group(10))) if m else 0
+    other = int(m.group(9)) if m else other_lines
+    if other:
+        an.add("INFO", name, f"SHX: {other} ABORT-START with a non-creature speaker outside the area list (vanilla no-listener case, not the AI-SHOUTABORT bug)")
     if aborts or ab_counts:
-        txt = (f"abortStart={m.group(8)} abortMid={m.group(9)} of {m.group(2)} shouts" if m else f"{len(aborts)} ABORT line(s)")
+        txt = (f"abortStartCr={m.group(8)} abortMid={m.group(10)} (abortStartOther={m.group(9)}) of {m.group(2)} shouts" if m else f"{len(aborts)} creature ABORT line(s)")
         C["PR-SHOUT"] = ("FAIL", f"{txt} (AI-SHOUTABORT reach: promote the 0x547203 fix)" + (f", first: {q(aborts[0]['ln'], aborts[0]['line'], name)}" if aborts else ""),
                          ev(aborts[0]) if aborts else ev(shs[-1]))
     elif m and int(m.group(2)) > 0:
-        C["PR-SHOUT"] = ("PASS", f"shouts={m.group(2)} r35={m.group(3)} partySpk={m.group(4)} end={m.group(5)} xbreak={m.group(6)} noarea={m.group(7)}, no ABORT", ev(shs[-1]))
+        C["PR-SHOUT"] = ("PASS", f"shouts={m.group(2)} r35={m.group(3)} partySpk={m.group(4)} end={m.group(5)} xbreak={m.group(6)} noarea={m.group(7)}, "
+                                 f"no creature ABORT (abortStartOther={m.group(9)}: INFO)", ev(shs[-1]))
     else:
         C["PR-SHOUT"] = ("OBSERVE", "no shouts seen", "")
 
-    # ---- PR-SS: a party SetState to a slot-6-removing state needs an S6C run for that creature within 60 s
+    # ---- PR-SS: a party SetState to a slot-6-removing state needs an S6C run for that creature within 60 s. Judged from the budget-free
+    # PRS RS s6c counters when the log has any (a rise in a PRS line within the window); the PR S6C lines are evidence, and the only source
+    # (judged under the budget / drop rules) when no PRS RS line exists.
     ss = [r for r in L["SS1"] if int(r["m"].group(5)) in SS_SET_STATES]
     if not ss:
         C["PR-SS"] = ("OBSERVE", f"no SS1 line to a state in {{1,3..10,0xE..0x13}} ({len(L['SS1'])} SS1 line(s))", "")
@@ -1344,21 +1401,37 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
         for r in rs:
             if r["m"].group(2) == "S6C":
                 s6c[r["m"].group(3).lower()].append(r["t"])
-        missing, judged = [], 0
+        rises: dict[str, list[int]] = defaultdict(list)       # cr -> t of every PRS RS line whose s6c count rose (or restarted after an eviction)
+        prev_s6c: dict[str, int] = {}
+        for r in L["PRS_RS"]:
+            cr, n = r["m"].group(2).lower(), int(r["m"].group(5))
+            if n > prev_s6c.get(cr, 0) or (n < prev_s6c.get(cr, 0) and n > 0):
+                rises[cr].append(r["t"])
+            prev_s6c[cr] = n
+        prs_mode = bool(L["PRS_RS"])
+        missing, judged, unjudged = [], 0, 0
         for r in ss:
             cr, t0 = r["m"].group(2).lower(), r["t"]
-            if len(s6c.get(cr, ())) >= 20 or (t_max is not None and t0 + PR_SS_WINDOW_MS > t_max):
-                continue   # S6C line budget (20 per creature) used up, or the log ends inside the window: inconclusive
-            judged += 1
-            if not any(t0 <= x <= t0 + PR_SS_WINDOW_MS for x in s6c.get(cr, ())):
-                missing.append(r)
+            end_prs = t0 + PR_SS_WINDOW_MS + summary_ms
+            if not prs_mode and len(s6c.get(cr, ())) >= 20:       # no PRS to count with and the per-creature S6C line cap (20) is used up
+                unjudged += 1
+                continue
+            if any(t0 <= x <= t0 + PR_SS_WINDOW_MS for x in s6c.get(cr, ())) or any(t0 < x <= end_prs for x in rises.get(cr, ())):
+                judged += 1                                       # an S6C run is on record (PR line or PRS counter)
+                continue
+            if t_max is not None and (end_prs if prs_mode else t0 + PR_SS_WINDOW_MS) > t_max:
+                unjudged += 1                                     # the log ends inside the window
+            elif prs_mode or judgeable(r["ln"], t0, t0 + PR_SS_WINDOW_MS, ("RS",)):
+                judged += 1; missing.append(r)
+            else:
+                unjudged += 1                                     # RS line budget reached / lines dropped: the missing PR S6C line proves nothing
         if missing:
             C["PR-SS"] = ("FAIL", f"{len(missing)}/{judged} judged SS1 line(s) without an S6C run for that creature within 60 s, first: "
                                   f"{q(missing[0]['ln'], missing[0]['line'], name)}", ev(missing[0]))
         elif judged:
-            C["PR-SS"] = ("PASS", f"all {judged} judged SS1 line(s) were followed by an S6C run within 60 s", ev(ss[0]))
+            C["PR-SS"] = ("PASS", f"all {judged} judged SS1 line(s) were followed by an S6C run within 60 s" + (f" ({unjudged} not judged)" if unjudged else ""), ev(ss[0]))
         else:
-            C["PR-SS"] = ("OBSERVE", f"{len(ss)} SS1 line(s) but none judgeable (S6C budget used or log ends inside the 60 s window)", "")
+            C["PR-SS"] = ("OBSERVE", f"{len(ss)} SS1 line(s) but none judgeable (RS line budget reached, lines dropped, or the log ends inside the 60 s window)", "")
 
     # ---- PR-E4: GetCurrentAction vs the last RunActions type
     gca = L["GCA"]
@@ -1372,7 +1445,7 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
     else:
         C["PR-E4"] = ("OBSERVE", f"no GCA line with res 3/39 after an engine approach action ({len(gca)} GCA line(s))", "")
 
-    # ---- PR-PARTY (why=pf lines are mid-save by construction: not judged)
+    # ---- PR-PARTY (why=pf lines come from the ADDMEMBER/SWITCHPC/SELECT/CMD sites, whose member flags are in transition: not judged)
     pl = L["PARTY"]
     if not pl:
         C["PR-PARTY"] = ("OBSERVE", "no PARTY lines", "")
@@ -1415,11 +1488,15 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
                 retarget_orph += 1
             else:
                 bad_orph.append(o)
-        ends = [r for r in a1 if r["outcome"] == "end" and not (t_max is not None and r["t"] + win_ms > t_max)]
+        ends_all = [r for r in a1 if r["outcome"] == "end" and not (t_max is not None and r["t"] + win_ms > t_max)]
+        ends = [r for r in ends_all if judgeable(r["ln"], r["t"], r["t"] + win_ms, ("A1XF",))]   # not once the FOLLOWUP/ORPHAN budget ran out or lines were dropped
         no_follow = [r for r in ends if not any(r["t"] <= x <= r["t"] + win_ms for x in follow.get(r["cr"], ()))]
         wr = sum(1 for r in L["A1X_STRICT"] if r["m"].group(6) == "would-reject")
-        txt = (f"{len(a1)} A1 end/retarget line(s), {len(ends)} judged end(s), FOLLOWUP x{len(L['A1X_FOLLOW'])}, ORPHAN x{len(orphans)} "
-               f"({retarget_orph} after a retarget), STRICT would-reject {wr}/{len(L['A1X_STRICT'])}")
+        strict_txt = (f"STRICT would-reject {a1_strict[1]}/{a1_strict[0]} (A1 summaries)" if a1_strict[0]
+                      else f"STRICT would-reject {wr}/{len(L['A1X_STRICT'])}")
+        skipped = len(ends_all) - len(ends)
+        txt = (f"{len(a1)} A1 end/retarget line(s), {len(ends)} judged end(s)" + (f" ({skipped} not judged: line budget reached / lines dropped)" if skipped else "")
+               + f", FOLLOWUP x{len(L['A1X_FOLLOW'])}, ORPHAN x{len(orphans)} ({retarget_orph} after a retarget), {strict_txt}")
         if bad_orph or no_follow:
             first = bad_orph[0] if bad_orph else no_follow[0]
             C["PR-A1X"] = ("FAIL", f"{txt}; {len(bad_orph)} ORPHAN after an end, {len(no_follow)} end(s) without a FOLLOWUP within {win_ms} ms, "
@@ -1463,7 +1540,7 @@ def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Windo
 
 
 _PR_PARSERS = [("FM2C", PR_FM2C_RE), ("FM2F", PR_FM2F_RE), ("FM2R", PR_FM2R_RE), ("FM3L", PR_FM3L_RE), ("FM3X", PR_FM3X_RE), ("PRS_FM3", PRS_FM3_RE),
-               ("RS", PR_RS_RE), ("PRS_RS", PRS_RS_RE), ("P2", PR_P2_RE), ("PRS_P2", PRS_P2_RE), ("PF", PR_PF_RE), ("PRS_PF", PRS_PF_RE),
+               ("RS", PR_RS_RE), ("PRS_RS", PRS_RS_RE), ("PRS_E9", PRS_E9_RE), ("P2", PR_P2_RE), ("PRS_P2", PRS_P2_RE), ("PF", PR_PF_RE), ("PRS_PF", PRS_PF_RE),
                ("PRS_RAR", PRS_RAR_RE), ("RAR_MOVE", PR_RAR_MOVE_RE), ("RAR_REQ", PR_RAR_REQ_RE), ("SHX", PR_SHX_RE), ("PRS_SHX", PRS_SHX_RE),
                ("SS1", PR_SS1_RE), ("GCA", PR_GCA_RE), ("PRS_GCA", PRS_GCA_RE), ("PARTY", PR_PARTY_RE), ("A1X_STRICT", PR_A1X_STRICT_RE),
                ("A1X_FOLLOW", PR_A1X_FOLLOW_RE), ("A1X_ORPHAN", PR_A1X_ORPHAN_RE)]
