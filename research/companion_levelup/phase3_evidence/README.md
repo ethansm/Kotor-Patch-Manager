@@ -28,3 +28,13 @@ One line per evidence file (raw Ghidra/tool output; conclusions live in doc 08 "
 - `C1_dec_levelup_gui.txt`: decompile of client CSWCLevelUpStats class accessors 0x844E40/0x844E80, 0x844860, SendPlayerToServer_LevelUp 0x87A770 (class = last class of working copy), 0x844BA0
 - `C1_scripts_addmulticlass.txt`: vanilla scripts a_makejedi.nss / a_pc_jedi.nss (only AddMultiClass callers) + class ids
 - `C1_hold_rule.txt`: proposed hold-mode rule function
+- `D1_xp_table.txt`: live-install exptable.2da (51 rows: level 1..50 thresholds, row 50 = 0xFFFFFFFF sentinel; 1225000 XP for level 50)
+- `D1_dec_51bd40.txt`: decompile 0x51BD40 (returns *(*(app+4)+0x10004) = server-info object; cap lives at +0x94, min at +0x90) and 0x5FEDD0
+- `D1_writes_10004.txt`: FindFieldWrites +0x10004 stores (0x52ECD8, 0x536676 = set from ctor 0x7EB5C0, 0x536E67)
+- `D1_dec_7eb5c0.txt`: ctor 0x7EB5C0 of server-info object: +0x90=1 (MinLevel), +0x94=0x32 (MaxLevel default 50) + option-table entries "JoiningRestrictions/MinLevel,MaxLevel"
+- `D1_dec_exptable_loader.txt`: CSWRules ctor 0x69DEA0 loads 2DA "EXPTABLE" rows 0..0x32 (51) into rules+0x38+4*i
+- `D1_disasm_xp_gates.txt`: raw disasm (bytes) of XP tail 0x5FD480, DistributeExperience 0x5FE0C0, AddMultiClass 0x66C7A0, AutoLevelUpNPCs 0x5FEDD0, DoAutoLevelup 0x850010: gate call sites (0x72FB00, +8 bit0 test, CanLevelUp, AutoLevelup)
+- `D1_dec_doautolevelup.txt`: DoAutoLevelup 0x850010 + StartAutoLevelup 0x84FE20 (copy of dec_b2) + notes (one AutoLevelup(0) call per press; it loops itself)
+- `D1_tagxrefs_lvlstatlist.txt`: xrefs+decompile of "LvlStatList" users 0x76AED0 (writer), 0x6AFED0 (loader, only stats+0x6C!=0), 0x6B4EA0
+- `D1_setexperience_replay_notes.txt`: SetExperience stored-pending replay analysis, key sequencing, AutoLevelup infinite-loop hazard if CanLevelUp is vetoed inside the loop
+- `D1_hook_overlap_scan.txt`: +-16B overlap scan of the 15 gate sites vs all 77 kotor2-steam-aspyr*.hooks.toml (431 hooks): 0 overlaps; live == vanilla bytes at all sites

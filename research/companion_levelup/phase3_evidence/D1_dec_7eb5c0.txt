@@ -1,0 +1,328 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (718 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1988 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_007eb5c0 @ 007eb5c0 size=6265
+
+undefined4 * __fastcall FUN_007eb5c0(undefined4 *param_1)
+
+{
+  undefined *puVar1;
+  int local_340;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0096b908;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_00733540(DAT_00a11f20 ^ (uint)&stack0xfffffffc);
+  local_8 = 0;
+  FUN_00733540();
+  local_8._0_1_ = 1;
+  FUN_00733540();
+  local_8._0_1_ = 2;
+  FUN_00733540();
+  local_8 = CONCAT31(local_8._1_3_,3);
+  param_1[0x3e] = 0;
+  param_1[0x3f] = 1;
+  param_1[0x40] = 0;
+  FUN_00733540();
+  local_340 = 0x32;
+  do {
+    local_340 = local_340 + -1;
+  } while (-1 < local_340);
+  *param_1 = 0;
+  *(undefined2 *)(param_1 + 1) = 0;
+  param_1[0x24] = 1;
+  param_1[0x25] = 0x32;
+  param_1[0x31] = 1;
+  param_1[0x26] = 1;
+  param_1[0x44] = 2;
+  param_1[0x43] = param_1[0x43] & 0xfffffffd;
+  param_1[0x43] = param_1[0x43] & 0xfffffffb;
+  param_1[0x43] = param_1[0x43] & 0xfffffffe;
+  param_1[0x45] = "Undefined";
+  param_1[0x46] = "UndefinedOption";
+  param_1[0x47] = 0;
+  param_1[0x48] = 0;
+  puVar1 = PTR_s_AllowLocal_00a10a20;
+  param_1[0x49] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x4a] = puVar1;
+  param_1[0x4b] = param_1 + 10;
+  param_1[0x4c] = 1;
+  puVar1 = PTR_s_AllowServer_00a10a24;
+  param_1[0x4d] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x4e] = puVar1;
+  param_1[0x4f] = param_1 + 0xb;
+  param_1[0x50] = 1;
+  puVar1 = PTR_s_AllowVault_00a10a28;
+  param_1[0x51] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x52] = puVar1;
+  param_1[0x53] = param_1 + 0xc;
+  param_1[0x54] = 1;
+  puVar1 = PTR_s_FixedParties_00a10a2c;
+  param_1[0x55] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x56] = puVar1;
+  param_1[0x57] = param_1 + 0xd;
+  param_1[0x58] = 1;
+  puVar1 = PTR_s_AllowFighter_00a10a30;
+  param_1[0x59] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x5a] = puVar1;
+  param_1[0x5b] = param_1 + 0xe;
+  param_1[0x5c] = 1;
+  puVar1 = PTR_s_AllowBarbarian_00a10a34;
+  param_1[0x5d] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x5e] = puVar1;
+  param_1[0x5f] = param_1 + 0xf;
+  param_1[0x60] = 1;
+  puVar1 = PTR_s_AllowRanger_00a10a38;
+  param_1[0x61] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x62] = puVar1;
+  param_1[99] = param_1 + 0x10;
+  param_1[100] = 1;
+  puVar1 = PTR_s_AllowPaladin_00a10a3c;
+  param_1[0x65] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x66] = puVar1;
+  param_1[0x67] = param_1 + 0x11;
+  param_1[0x68] = 1;
+  puVar1 = PTR_s_AllowWizard_00a10a40;
+  param_1[0x69] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x6a] = puVar1;
+  param_1[0x6b] = param_1 + 0x12;
+  param_1[0x6c] = 1;
+  puVar1 = PTR_s_AllowSorcerer_00a10a44;
+  param_1[0x6d] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x6e] = puVar1;
+  param_1[0x6f] = param_1 + 0x13;
+  param_1[0x70] = 1;
+  puVar1 = PTR_s_AllowCleric_00a10a48;
+  param_1[0x71] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x72] = puVar1;
+  param_1[0x73] = param_1 + 0x14;
+  param_1[0x74] = 1;
+  puVar1 = PTR_s_AllowDruid_00a10a4c;
+  param_1[0x75] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x76] = puVar1;
+  param_1[0x77] = param_1 + 0x15;
+  param_1[0x78] = 1;
+  puVar1 = PTR_s_AllowRogue_00a10a50;
+  param_1[0x79] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x7a] = puVar1;
+  param_1[0x7b] = param_1 + 0x16;
+  param_1[0x7c] = 1;
+  puVar1 = PTR_s_AllowBard_00a10a54;
+  param_1[0x7d] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x7e] = puVar1;
+  param_1[0x7f] = param_1 + 0x17;
+  param_1[0x80] = 1;
+  puVar1 = PTR_s_AllowMonk_00a10a58;
+  param_1[0x81] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x82] = puVar1;
+  param_1[0x83] = param_1 + 0x18;
+  param_1[0x84] = 1;
+  puVar1 = PTR_s_AllowHuman_00a10a5c;
+  param_1[0x85] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x86] = puVar1;
+  param_1[0x87] = param_1 + 0x19;
+  param_1[0x88] = 1;
+  puVar1 = PTR_s_AllowElf_00a10a60;
+  param_1[0x89] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x8a] = puVar1;
+  param_1[0x8b] = param_1 + 0x1a;
+  param_1[0x8c] = 1;
+  puVar1 = PTR_s_AllowDwarf_00a10a64;
+  param_1[0x8d] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x8e] = puVar1;
+  param_1[0x8f] = param_1 + 0x1b;
+  param_1[0x90] = 1;
+  puVar1 = PTR_s_AllowGnome_00a10a68;
+  param_1[0x91] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x92] = puVar1;
+  param_1[0x93] = param_1 + 0x1c;
+  param_1[0x94] = 1;
+  puVar1 = PTR_s_AllowHalfling_00a10a6c;
+  param_1[0x95] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x96] = puVar1;
+  param_1[0x97] = param_1 + 0x1d;
+  param_1[0x98] = 1;
+  puVar1 = PTR_s_AllowHalfOrc_00a10a70;
+  param_1[0x99] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x9a] = puVar1;
+  param_1[0x9b] = param_1 + 0x1e;
+  param_1[0x9c] = 1;
+  puVar1 = PTR_s_AllowHalfElf_00a10a74;
+  param_1[0x9d] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0x9e] = puVar1;
+  param_1[0x9f] = param_1 + 0x1f;
+  param_1[0xa0] = 1;
+  puVar1 = PTR_s_MaxPlayers_00a10a78;
+  param_1[0xa1] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0xa2] = puVar1;
+  param_1[0xa3] = param_1 + 0x20;
+  param_1[0xa4] = 2;
+  puVar1 = PTR_s_MaxParties_00a10a7c;
+  param_1[0xa5] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0xa6] = puVar1;
+  param_1[0xa7] = param_1 + 0x21;
+  param_1[0xa8] = 2;
+  puVar1 = PTR_s_MaxItemPoints_00a10a80;
+  param_1[0xa9] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0xaa] = puVar1;
+  param_1[0xab] = param_1 + 0x22;
+  param_1[0xac] = 2;
+  puVar1 = PTR_s_MaxStatTotal_00a10a84;
+  param_1[0xad] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0xae] = puVar1;
+  param_1[0xaf] = param_1 + 0x23;
+  param_1[0xb0] = 2;
+  puVar1 = PTR_s_MinLevel_00a10a88;
+  param_1[0xb1] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0xb2] = puVar1;
+  param_1[0xb3] = param_1 + 0x24;
+  param_1[0xb4] = 2;
+  puVar1 = PTR_s_MaxLevel_00a10a8c;
+  param_1[0xb5] = PTR_s_JoiningRestrictions_00a10a1c;
+  param_1[0xb6] = puVar1;
+  param_1[0xb7] = param_1 + 0x25;
+  param_1[0xb8] = 2;
+  puVar1 = PTR_s_AllKillable_00a10a94;
+  param_1[0xb9] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xba] = puVar1;
+  param_1[0xbb] = param_1 + 0x27;
+  param_1[0xbc] = 1;
+  puVar1 = PTR_s_NonPartyKillable_00a10a98;
+  param_1[0xbd] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xbe] = puVar1;
+  param_1[0xbf] = param_1 + 0x28;
+  param_1[0xc0] = 1;
+  puVar1 = PTR_s_RequireResurrection_00a10a9c;
+  param_1[0xc1] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xc2] = puVar1;
+  param_1[0xc3] = param_1 + 0x29;
+  param_1[0xc4] = 1;
+  puVar1 = PTR_s_LoseStolenItems_00a10aa0;
+  param_1[0xc5] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xc6] = puVar1;
+  param_1[199] = param_1 + 0x2a;
+  param_1[200] = 1;
+  puVar1 = PTR_s_LoseItems_00a10aa4;
+  param_1[0xc9] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xca] = puVar1;
+  param_1[0xcb] = param_1 + 0x2b;
+  param_1[0xcc] = 1;
+  puVar1 = PTR_s_LoseExp_00a10aa8;
+  param_1[0xcd] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xce] = puVar1;
+  param_1[0xcf] = param_1 + 0x2c;
+  param_1[0xd0] = 1;
+  puVar1 = PTR_s_LoseGold_00a10aac;
+  param_1[0xd1] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xd2] = puVar1;
+  param_1[0xd3] = param_1 + 0x2d;
+  param_1[0xd4] = 1;
+  puVar1 = PTR_s_LoseGoldNum_00a10ab0;
+  param_1[0xd5] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xd6] = puVar1;
+  param_1[0xd7] = param_1 + 0x2e;
+  param_1[0xd8] = 2;
+  puVar1 = PTR_s_LoseExpNum_00a10ab4;
+  param_1[0xd9] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xda] = puVar1;
+  param_1[0xdb] = param_1 + 0x2f;
+  param_1[0xdc] = 2;
+  puVar1 = PTR_s_LoseItemsNum_00a10ab8;
+  param_1[0xdd] = PTR_s_PlayOptions_00a10a90;
+  param_1[0xde] = puVar1;
+  param_1[0xdf] = param_1 + 0x30;
+  param_1[0xe0] = 2;
+  puVar1 = PTR_s_OnVacant_00a10ad8;
+  param_1[0xe1] = PTR_s_ResetOption_00a10ad4;
+  param_1[0xe2] = puVar1;
+  param_1[0xe3] = param_1 + 0x35;
+  param_1[0xe4] = 1;
+  puVar1 = PTR_s_OnVictory_00a10adc;
+  param_1[0xe5] = PTR_s_ResetOption_00a10ad4;
+  param_1[0xe6] = puVar1;
+  param_1[0xe7] = param_1 + 0x36;
+  param_1[0xe8] = 1;
+  puVar1 = PTR_s_OnFailure_00a10ae0;
+  param_1[0xe9] = PTR_s_ResetOption_00a10ad4;
+  param_1[0xea] = puVar1;
+  param_1[0xeb] = param_1 + 0x37;
+  param_1[0xec] = 1;
+  puVar1 = PTR_s_OnDeath_00a10ae4;
+  param_1[0xed] = PTR_s_ResetOption_00a10ad4;
+  param_1[0xee] = puVar1;
+  param_1[0xef] = param_1 + 0x38;
+  param_1[0xf0] = 1;
+  puVar1 = PTR_s_OnPartyDeath_00a10ae8;
+  param_1[0xf1] = PTR_s_ResetOption_00a10ad4;
+  param_1[0xf2] = puVar1;
+  param_1[0xf3] = param_1 + 0x39;
+  param_1[0xf4] = 1;
+  puVar1 = PTR_s_AtIntervals_00a10af0;
+  param_1[0xf5] = PTR_s_AutoSave_00a10aec;
+  param_1[0xf6] = puVar1;
+  param_1[0xf7] = param_1 + 0x3a;
+  param_1[0xf8] = 1;
+  puVar1 = PTR_s_AtSavePoints_00a10af4;
+  param_1[0xf9] = PTR_s_AutoSave_00a10aec;
+  param_1[0xfa] = puVar1;
+  param_1[0xfb] = param_1 + 0x3b;
+  param_1[0xfc] = 1;
+  puVar1 = PTR_s_OnPlayerChange_00a10af8;
+  param_1[0xfd] = PTR_s_AutoSave_00a10aec;
+  param_1[0xfe] = puVar1;
+  param_1[0xff] = param_1 + 0x3c;
+  param_1[0x100] = 1;
+  puVar1 = PTR_s_Interval_00a10afc;
+  param_1[0x101] = PTR_s_AutoSave_00a10aec;
+  param_1[0x102] = puVar1;
+  param_1[0x103] = param_1 + 0x3d;
+  param_1[0x104] = 2;
+  param_1[0x105] = "Undefined";
+  param_1[0x106] = "UndefinedOption";
+  param_1[0x107] = 0;
+  param_1[0x108] = 0;
+  puVar1 = PTR_s_PauseAndPlay_00a10ad0;
+  param_1[0x109] = PTR_s_PlayOptions_00a10a90;
+  param_1[0x10a] = puVar1;
+  param_1[0x10b] = param_1 + 0x31;
+  param_1[0x10c] = 1;
+  ExceptionList = local_10;
+  return param_1;
+}
+
+

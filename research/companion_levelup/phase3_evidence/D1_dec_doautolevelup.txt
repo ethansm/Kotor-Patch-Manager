@@ -1,0 +1,131 @@
+# D1(c): DoAutoLevelup 0x850010 + StartAutoLevelup 0x84FE20 (button path). Decompile copied from phase1_evidence/dec_b2.txt:295-422 (no new Ghidra run); disasm of 0x850010 in D1_disasm_xp_gates.txt (850010-85008c).
+# NOTES: DoAutoLevelup = message-box OK callback registered by StartAutoLevelup (0x84FE20: FUN_0075ca30(local_68, FUN_00850010, 0)). Gate: GUI box obj(+0xa0)+0x68 bit0 (OK pressed), creature = 0x77d800(0x7e5d80(0x73fb90())) -> stats +0x1198 -> ONE call AutoLevelup(0) at 0x850081 (PUSH 0 @0x85007c). No CanLevelUp and no option(+8 bit0) test. AutoLevelup itself loops (top 0x6BEED7: XP >= rules+0x38[total level]; body end JMP 0x6C0114->0x6BEED7 regardless of 0x6B9640 result). StartAutoLevelup does NOT loop: it only precomputes the target level for the box text: local_15 = StatsClassLevelHelper(0x844860)+1, while (table[local_15] <= XP) local_15++ (the PC-client working-copy stats). param_2=0 => no tail notify (0x7408C0 with total level, only when param_2!=0).
+
+=== FUN_00850010 @ 00850010 size=124
+
+void __fastcall FUN_00850010(undefined4 param_1)
+
+{
+  int iVar1;
+  
+  iVar1 = FUN_0073f750(param_1);
+  if ((*(uint *)(*(int *)(iVar1 + 0xa0) + 0x68) & 1) != 0) {
+    FUN_0073fb90();
+    FUN_007e5d80();
+    iVar1 = FUN_0077d800();
+    if (iVar1 != 0) {
+      FUN_006bedf0(0);
+    }
+  }
+  return;
+}
+
+
+=== FUN_0084fe20 @ 0084fe20 size=490
+
+void FUN_0084fe20(void)
+
+{
+  undefined1 *puStack_80;
+  undefined1 *puStack_7c;
+  uint uStack_78;
+  undefined4 local_74;
+  undefined4 local_70;
+  undefined4 local_6c;
+  int local_68;
+  undefined4 local_64;
+  int local_60;
+  undefined4 local_5c;
+  uint local_58;
+  undefined4 local_54;
+  int local_50;
+  undefined4 local_4c;
+  undefined1 *local_48;
+  undefined1 local_44 [8];
+  undefined1 local_3c [8];
+  undefined1 local_34 [11];
+  byte local_29;
+  uint local_28;
+  int local_24;
+  undefined1 local_20 [11];
+  byte local_15;
+  int *local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00971e60;
+  local_10 = ExceptionList;
+  uStack_78 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_4c = *(undefined4 *)(DAT_00a1b4a4 + 4);
+  puStack_7c = (undefined1 *)0x84fe5b;
+  FUN_0073fb90();
+  puStack_7c = (undefined1 *)0x84fe62;
+  local_24 = FUN_007e5d80();
+  local_50 = *(int *)(local_24 + 0x310);
+  local_28 = *(uint *)(local_50 + 0x58);
+  local_54 = *(undefined4 *)(local_24 + 0x310);
+  puStack_7c = (undefined1 *)0x84fe8e;
+  local_29 = FUN_00844860();
+  local_15 = local_29 + 1;
+  puStack_7c = (undefined1 *)0x84fea3;
+  FUN_00733540();
+  local_8 = 0;
+  while (local_58 = *(uint *)(DAT_00a1b4d0 + 0x38 + (uint)local_15 * 4), local_58 <= local_28) {
+    local_15 = local_15 + 1;
+  }
+  puStack_7c = (undefined1 *)(uint)local_29;
+  puStack_80 = (undefined1 *)0x84fedb;
+  FUN_00733700();
+  local_8._0_1_ = 1;
+  puStack_7c = local_34;
+  puStack_80 = (undefined1 *)0x0;
+  FUN_0071e910();
+  local_8._0_1_ = 0;
+  puStack_7c = (undefined1 *)0x84fefc;
+  FUN_00733780();
+  puStack_7c = (undefined1 *)(uint)local_15;
+  puStack_80 = (undefined1 *)0x84ff09;
+  FUN_00733700();
+  local_8._0_1_ = 2;
+  puStack_7c = local_3c;
+  puStack_80 = (undefined1 *)0x1;
+  FUN_0071e910();
+  local_8._0_1_ = 0;
+  puStack_7c = (undefined1 *)0x84ff2a;
+  FUN_00733780();
+  puStack_7c = (undefined1 *)0x8fcb;
+  puStack_80 = local_44;
+  puStack_7c = (undefined1 *)FUN_0071dee0();
+  local_8._0_1_ = 3;
+  puStack_80 = (undefined1 *)0x84ff57;
+  local_70 = puStack_7c;
+  local_6c = puStack_7c;
+  FUN_007337c0();
+  local_8 = (uint)local_8._1_3_ << 8;
+  puStack_7c = (undefined1 *)0x84ff63;
+  FUN_00733780();
+  puStack_7c = local_20;
+  puStack_80 = (undefined1 *)0x84ff72;
+  FUN_0071ebd0();
+  local_5c = *(undefined4 *)(DAT_00a1b4a4 + 4);
+  puStack_7c = (undefined1 *)0x84ff86;
+  local_60 = FUN_0073f750();
+  local_14 = *(int **)(local_60 + 0xa0);
+  puStack_7c = (undefined1 *)0x1;
+  puStack_80 = (undefined1 *)0x84ff9f;
+  FUN_0075bb00();
+  local_48 = (undefined1 *)&puStack_80;
+  local_74 = FUN_007335f0(local_20);
+  (**(code **)(*local_14 + 0x74))();
+  FUN_0075ca30(local_68,FUN_00850010,0);
+  local_64 = *(undefined4 *)(local_68 + 0x1c);
+  FUN_00410530(local_14,1,1);
+  local_8 = 0xffffffff;
+  FUN_00733780();
+  ExceptionList = local_10;
+  return;
+}
+

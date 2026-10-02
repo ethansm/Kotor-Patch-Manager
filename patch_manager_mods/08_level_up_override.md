@@ -366,7 +366,7 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
 - **R5 hook candidates** (live == vanilla, no toml hook within +-16; nearest = LevelUpOverride 0x6B9870, 14 bytes past CanLevelUp's end):
   | VA | bytes | use |
   |---|---|---|
-  | 0x6B9790 | 55 8B EC 83 EC 20 | **preferred**: CanLevelUp entry; return 0 for held tags only for portrait / char-screen / auto-path return addresses; keep ValidateLevelUp 0x6B9672 + msg handler 0x661C30 |
+  | 0x6B9790 | 55 8B EC 83 EC 20 | **REJECTED (Step 4): HANG HAZARD** - AutoLevelup's loop (`asm_auto.txt:1127-1150`) jumps back to 0x6BEED7 when ValidateLevelUp->CanLevelUp fails; loop condition is only XP>=table -> infinite loop. Never veto inside CanLevelUp/ValidateLevelUp/LevelUp |
   | 0x74F3C7 | E8 C4 A3 F6 FF | UpdatePortraits-only veto |
   | 0x84F221 | E8 6A A5 E6 FF | char-screen button visibility only (also the R9 hook point: show a Configure button when CanLevelUp && unconfigured) |
   | 0x74F481 | 0F B6 55 CF 83 CA 04 | clear only the indicator bit (7-byte hook) |
@@ -398,6 +398,37 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
   ```
   Anything else = hold (XP banks). Prestige needs no special case. Preset constraints: after conversion every record is the Jedi class; max 2 classes.
 - Residual: classes.2da ids for 0xB-0x10 (read the 2DA); AddMultiClass routine id (routine table entry for 0x66C7A0); which .dlg calls a_makejedi at what level.
+
+### Item 4 - banking, level cap, XP-award gates (Step 4, agent D; hang hazard spot-checked)
+- **HANG HAZARD (CONFIRMED, `phase1_evidence/asm_auto.txt:1127-1150`):** inside AutoLevelup 0x6BEDF0, `0x6C00AA call ValidateLevelUp; jnz 0x6C0114`, failure frees
+  the record and falls to `0x6C0114 jmp 0x6BEED7` (loop head); the loop test is only `XP >= rules+0x38[level]` (0x6BEF15/0x6BEF1B). A veto inside CanLevelUp
+  / ValidateLevelUp / LevelUp leaves the level unchanged -> infinite loop (game freeze). **The hold veto must sit at CALLER gates only**, before AutoLevelup.
+- **Level cap:** CanLevelUp reads `*(*(app+4)+0x10004)+0x94` via 0x51BD40 (`D1_dec_51bd40.txt:20`); server-info ctor 0x7EB5C0 sets +0x90 MinLevel=1, +0x94
+  MaxLevel=0x32 (50) (`D1_dec_7eb5c0.txt:68-69,210-218`). Global, no PC/companion difference. Residual: overwrite from save/ini not checked.
+- **XP table:** CSWRules ctor 0x69DEA0 loads 2DA EXPTABLE, 51 rows, into rules(0xA1B4D0)+0x38+4*i (`D1_dec_exptable_loader.txt`). Live values: row 1 = 1000,
+  row 14 = 105000, row 15 = 120000, row 49 = 1225000, row 50 = 0xFFFFFFFF (`D1_xp_table.txt`).
+- **XP-award gates** (`D1_disasm_xp_gates.txt`), all: call 0x72FB00 -> +8 bit0 test -> CanLevelUp -> push 1 -> AutoLevelup; none tests player/PlayerCreated:
+  | path | 0x72FB00 call | jz | CanLevelUp call | AutoLevelup call | creature |
+  |---|---|---|---|---|---|
+  | XP tail 0x5FD480 | 0x5FD7A0 | 0x5FD7B7 | 0x5FD7CE | 0x5FD7EE | [ebp-0x14] |
+  | DistributeExperience 0x5FE0C0 | 0x5FE281 | 0x5FE292 | 0x5FE2A3 | 0x5FE2BD | [ebp-0x18] |
+  | AddMultiClass 0x66C7A0 (non-PC branch, +0x1200==0) | 0x66C93A | 0x66C94B | 0x66C95C | 0x66C976 | [ebp-8] |
+  | AutoLevelUpNPCs 0x5FEDD0 (no option test) | - | - | 0x5FEE32 | 0x5FEE4C | |
+  | char-screen DoAutoLevelup 0x850010 (OK callback; AutoLevelup(0), no CanLevelUp/option test) | - | - | - | 0x850081 | |
+  All 5-byte `E8 rel32`; live == vanilla; +-16 overlap scan vs 77 hook files / 431 hooks clean (`D1_hook_overlap_scan.txt`). CanLevelUp caller sites take ECX =
+  stats (creature = stats+0x24) -> **safe per-creature hold veto = detour each caller-site CanLevelUp call** (0x74F3C7, 0x84F221, 0x5FD7CE, 0x5FE2A3,
+  0x66C95C, 0x5FEE32) + guard 0x850081 (button path) and the hotkey path (Step 6). **Per-creature R4 force = detour the 0x72FB00 calls** (0x74F3E9, 0x5FD7A0,
+  0x5FE281, 0x66C93A).
+- **Banking:** one AutoLevelup call applies ALL banked levels (loop); keys are sequential level+1 per LevelUp (class index fixed at loop start, level rises
+  each iteration) - no skipped or doubled key (CONFIRMED). DoAutoLevelup / StartAutoLevelup do not loop themselves (StartAutoLevelup only precomputes the target
+  level for the box text) (`D1_dec_doautolevelup.txt`). SetExperience replays `list[+0x28][totalLevel]` via LevelUp(rec,0) without re-appending; ValidateLevelUp
+  appends applied records; a companion's list count = its level, so replay does not fire in normal flows (inferred) (`D1_setexperience_replay_notes.txt`).
+- **Live-test expectation:** Atton held 8 -> XP ~105000 (row 14), then a_makejedi adds Sentinel. Option ON (or R4 force for atton): the 0x66C976 gate fires in
+  the same frame as AddMultiClass -> one AutoLevelup, 7 LevelUp calls, keys 9..15, all class Sentinel (5), stops at 15 (XP < 120000). Option OFF / not
+  forced: XP stays banked until the toggle (0x5FEDD0), the char-screen Auto button (0x850081), a portrait-tick AutoLevelup (if forced) or manual level-ups.
+  Note: with hold mode the path's records for keys 9..15 must be Sentinel records; Scoundrel records for those keys would be skipped as class mismatch.
+- Residual: the PC exclusion in 0x5FD480/0x5FE0C0 (decompile 0x58A9F0/0x6B7060); AddMultiClass XP-penalty arithmetic with banked XP (`table-XP` negative ->
+  "Cannot reduce XP", likely harmless; log XP at 0x66C95C live); MaxLevel overwrite (FindFieldWrites 94 on the server-info object).
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
