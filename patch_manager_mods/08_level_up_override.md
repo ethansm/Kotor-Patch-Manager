@@ -287,7 +287,7 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
 - **INSTALLED 0.2.1 2026-10-02 00:58 (user consent):** backup `backups/pre_levelup_021_20261002_005828/`, stage `$T/levelup_stage3/` (26 ids, PROBLEMS 0), "Applied 26",
   verify 0 mismatches, live dll 693053d9, UpdatedAt 00:58:35. Config unchanged (`mode=rewrite tags=atton apply=1 verbose=1`).
 
-## Phase 2 live results - run 3 (rewrite spike, 2026-10-02 ~01:02, 0.2.1, `mode=rewrite tags=atton`; log copy (gitignored, local) `research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt`)
+## Phase 2 live results - run 3 (rewrite spike, 2026-10-02 ~01:02, 0.2.1, `mode=rewrite tags=atton`; log copy (local, untracked) `research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt`)
 User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flow auto-button, chain via AutoLevelup 0x6C00AF). Game stable.
 - **All 4 calls `APPLIED ok=1`** (re-read == computeRewrite out). No ABORTED / SKIP. Engine helpers called live without fault (thiscall plumbing CONFIRMED).
 - **Skill deltas took effect:** creature ranks before each next call = previous ranks + REWRITTEN deltas: [3,4,4,5,0,0,5,0] +[0,0,2,2,..] -> [3,4,6,7,0,0,5,0]
