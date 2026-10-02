@@ -60,9 +60,10 @@ ALL_TAGS = (BG_TAGS + TAGS + [EDIT_TAG, PBG_TAG, TITLE_TAG] + TAB_TAGS + [PREV_T
 TEX = ("hotbar_slot", "hotbar_slot_hi")
 EDIT_TEX = ("hotbar_edit", "hotbar_edit_hi")   # thin (72x128) frame with a wrench, normal / active
 SMALL_FONT = "dialogfont10x10"
-EDIT_W = 24
+EDIT_W = 20
+EDIT_X = 4   # wrench left edge = the native quick-action panel border (x ~ 10 px at 3840x1600)
 # Defaults in 800x600 GUI units: a row above the native action bar (top y=532), bottom-left.
-DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 42, 452, 40, 5, 44   # y=450: bottom edge (492) clears the native quick-action description label (y 496-528); x leaves room for the thin edit toggle at x=12 (24 wide)
+DEFAULT_X, DEFAULT_Y, DEFAULT_FRAME, DEFAULT_INSET, DEFAULT_SPACING = 29, 478, 35, 2, 40   # y=450: bottom edge (492) clears the native quick-action description label (y 496-528); x leaves room for the thin edit toggle at x=12 (24 wide)
 FIRST_ID = 111  # frames; icons at FIRST_ID+10. Must equal FirstButtonId in ForcePowerHotbar.cpp
 TEXT_ALIGN_TOP_LEFT = 9
 EXT_KEYS = ("LEFT", "TOP", "WIDTH", "HEIGHT")
@@ -90,7 +91,7 @@ def make_edit_textures(out: Path) -> list[Path]:
     from PIL import Image, ImageDraw, ImageFilter, ImageChops
     import math
     made = []
-    for name, col in ((EDIT_TEX[0], (0, 44, 26)), (EDIT_TEX[1], (208, 204, 170))):
+    for name, col in ((EDIT_TEX[0], (10, 96, 80)), (EDIT_TEX[1], (208, 204, 170))):
         S = 4
         W, H = 72, 128
         im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
@@ -281,7 +282,7 @@ def main() -> int:
     # edit toggle (thin wrench button left of slot 1) and picker (above the bar): frame texture + static text on one label; the DLL
     # shows/hides/swaps them. Picker rows (units): title 22 / tabs 24 / cells 42, 4 apart, 8 padding inside the group background.
     n = first_id + 20
-    make(n, EDIT_TAG, [12, a.y, EDIT_W, a.frame], fill=EDIT_TEX[0]); n += 1
+    make(n, EDIT_TAG, [EDIT_X, a.y, EDIT_W, a.frame], fill=EDIT_TEX[0]); n += 1
     py = a.y - 10 - 96 - 4   # content top; content is 96 tall, box adds 8 padding each side
     bw = 424
     make(n, PBG_TAG, [a.x - 8, py - 8, bw + 16, 96 + 16], src=tip_t[0]); n += 1   # native panel look (fill uibit_fill_2bt + teal edge/corner)
@@ -289,15 +290,15 @@ def main() -> int:
     for i, t in enumerate(TAB_TEXT):
         make(n, TAB_TAGS[i], [a.x + i * 88, py + 26, 84, 24], fill=TEX[0], text=t, align=18, font=SMALL_FONT); n += 1
     cx0 = a.x + 32   # cells start right of the prev arrow
-    make(n, PREV_TAG, [a.x, py + 54, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
-    make(n, NEXT_TAG, [a.x + bw - 28, py + 54, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
+    make(n, PREV_TAG, [a.x, py + 58, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
+    make(n, NEXT_TAG, [a.x + bw - 28, py + 58, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
     make(n, CLEAR_TAG, [a.x + bw - 70, py + 26, 70, 24], fill=TEX[0], text="Clear", align=18, font=SMALL_FONT); n += 1
     for i in range(CELLS):
-        make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 54, a.frame, a.frame], fill=TEX[0]); n += 1
+        make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 58, a.frame, a.frame], fill=TEX[0]); n += 1
     for i in range(CELLS):
-        make(n, CELL_TAGS[i], [cx0 + i * a.spacing + a.inset, py + 54 + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset]); n += 1
+        make(n, CELL_TAGS[i], [cx0 + i * a.spacing + a.inset, py + 58 + a.inset, a.frame - 2 * a.inset, a.frame - 2 * a.inset]); n += 1
     for slot, digit in enumerate(DIGITS):  # digit labels: top-left of the frame, 3 units up/left of the icon corner; no fill, text only
-        make(n, NUM_TAGS[slot], [a.x + slot * a.spacing + a.inset - 3, a.y + a.inset - 4, 18, 18], digit=digit); n += 1
+        make(n, NUM_TAGS[slot], [a.x + slot * a.spacing + 4, a.y + 1, 18, 18], digit=digit); n += 1
     assert n == first_id + len(ALL_TAGS) - 2, n
     make(n, TIP_BG_TAG, [12, 380, 300, 90], src=tip_t[0]); n += 1
     make(n, TIP_TAG, [12, 380, 300, 90], text="", align=18)
