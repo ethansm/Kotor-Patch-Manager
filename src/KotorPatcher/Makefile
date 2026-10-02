@@ -84,7 +84,9 @@ MAC_WRAPPER_i386   := src/core/wrapper_x86.cpp
 # generator: exactly one of those is linked, chosen by the instruction set, since
 # the x86 one is built on opcodes that do not exist in long mode.
 CORE_SRCS := src/core/config_reader.cpp \
+             src/core/log_service.cpp \
              src/core/patcher.cpp \
+             src/core/registry.cpp \
              src/core/trampoline.cpp
 
 WIN_SRCS   := $(CORE_SRCS) src/core/wrapper_x86.cpp src/platform_win32.cpp src/dllmain.cpp
