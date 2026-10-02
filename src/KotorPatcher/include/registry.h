@@ -8,7 +8,7 @@
 // and the patch modules publish to each other, plus the optional per-patch
 // `KPatchInit` export through which a patch gets the registry.
 //
-// The core is just another provider: a service it publishes goes through the same
+// The core is just another provider: it publishes "kpatch.log" through the same
 // Provide() path a patch uses, attributed to "patcher".
 //
 // Threading: every call is safe from any thread. KPatchInit may run under the
@@ -63,7 +63,7 @@ namespace Registry {
     const KPatchApi* GetApi();
 
     // Append one line per provided interface, "  <name> v<ver> by <provider>\n",
-    // sorted by name then version. For diagnostics.
+    // sorted by name then version. For the session log header and diagnostics.
     void DumpProvided(std::string& out);
 
 } // namespace Registry

@@ -19,14 +19,14 @@
  * and, if present, calls it once per distinct module handle. A patch without
  * the export is untouched. Through `api` a patch can `provide` a named
  * interface (a table of function pointers) for other patches, and `require` an
- * interface another patch (or the core) provided.
+ * interface another patch (or the core, e.g. "kpatch.log") provided.
  *
  * KPatchInit contract
  * -------------------
  * - It is DllMain-class code. On Windows it runs under the loader lock, and it
  *   may run on a worker thread (the SteamStub deferred-apply path). It may store
  *   the api pointer and call api->provide, api->require and the cheap
- *   registration calls of an interface it requires.
+ *   registration calls of an interface (e.g. KPatchLogApi::Register/Channel).
  *   It must NOT load libraries, wait on other threads, or do file I/O.
  * - Init order between patches is config order and is not a contract. A patch
  *   that needs another patch's interface should `require` it lazily at first
@@ -73,6 +73,17 @@
 
 #define KPATCH_ABI_VERSION 1u
 
+/* Log levels (plain defines so no enum crosses the boundary). */
+#define KPLOG_ERR   0
+#define KPLOG_WARN  1
+#define KPLOG_INFO  2
+#define KPLOG_DEBUG 3
+#define KPLOG_TRACE 4
+
+/* The logging service the core provides through the registry. */
+#define KPATCH_LOG_IFACE   "kpatch.log"
+#define KPATCH_LOG_VERSION 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -94,6 +105,39 @@ typedef struct KPatchApi {
      * normally cache the result. */
     const void* (KPATCH_CALL *require)(const char* name, uint32_t version);
 } KPatchApi;
+
+/* The "kpatch.log" v1 interface. Fields are only ever appended. */
+typedef struct KPatchLogApi {
+    uint32_t struct_size;
+
+    /* Idempotent. Returns a patch handle, or -1 on bad input. */
+    int32_t (KPATCH_CALL *Register)(const char* patchId);
+
+    /* Returns a channel handle for (patch, name), or -1 (bad input or the
+     * 256-channel limit). */
+    int32_t (KPATCH_CALL *Channel)(int32_t patch, const char* name);
+
+    /* Nonzero if (channel, level) would be recorded. Cheap; call before
+     * formatting. */
+    int32_t (KPATCH_CALL *Enabled)(int32_t channel, int32_t level);
+
+    /* Queue one line (`len` bytes, no trailing newline needed). Non-blocking;
+     * the line is copied. */
+    void (KPATCH_CALL *Submit)(int32_t channel, int32_t level, const char* line, uint32_t len);
+
+    /* Write a marker line to every open log file. */
+    void (KPATCH_CALL *Mark)(const char* label);
+
+    /* Advance the frame counter. The first patch to call it owns the counter;
+     * calls from other patches are ignored. */
+    void (KPATCH_CALL *FrameTick)(int32_t patch);
+
+    /* Current frame number. */
+    uint32_t (KPATCH_CALL *Frame)(void);
+
+    /* Monotonic microseconds since the service started. */
+    uint64_t (KPATCH_CALL *NowUs)(void);
+} KPatchLogApi;
 
 #pragma pack(pop)
 
@@ -117,6 +161,10 @@ typedef void (KPATCH_CALL *KPatchInitFn)(const KPatchApi* api);
 KPATCH_STATIC_ASSERT(offsetof(KPatchApi, provide) == 8, "KPatchApi.provide offset");
 KPATCH_STATIC_ASSERT(offsetof(KPatchApi, require) == 8 + sizeof(void*), "KPatchApi.require offset");
 KPATCH_STATIC_ASSERT(sizeof(KPatchApi) == 8 + 2 * sizeof(void*), "KPatchApi size");
+
+KPATCH_STATIC_ASSERT(offsetof(KPatchLogApi, Register) == sizeof(void*), "KPatchLogApi.Register offset");
+KPATCH_STATIC_ASSERT(offsetof(KPatchLogApi, NowUs) == 8 * sizeof(void*), "KPatchLogApi.NowUs offset");
+KPATCH_STATIC_ASSERT(sizeof(KPatchLogApi) == 9 * sizeof(void*), "KPatchLogApi size");
 #undef KPATCH_STATIC_ASSERT
 #endif
 
