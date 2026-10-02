@@ -40,3 +40,9 @@
   `0055b1c7 MOV ECX,dword ptr [0x009944bc]` (=3, FAIL). Lines CONFIRMED.
 - Bump abort: `005cbc18 MOV dword ptr [EAX + 0x268],ECX`, `005cbc1e CMP dword ptr [EBP + 0xffffff1c],0x5`,
   `005cbcb5 PUSH 0x9965f8` = "aborted walking, Maximum number of bumps happened" (strings.tsv, fn 0x5CB430). CONFIRMED.
+
+### GATE_wave1 top 3 (CONFIRMED by the lead)
+- 0x11 LOS block dead: `005bc4b8 XOR EDX,EDX` / `005bc4ba JZ 0x005bc5de` (always taken).
+- FM2b fallback: approach move `005bc6a4 PUSH 0x0` ... `005bc6d1 CALL 0x005644b0`; probes skipped on -1:
+  `0055b4fb CMP dword ptr [EBP + -0x20],-0x1` / `0055b4ff JZ 0x0055b61c`.
+- Spot sign constants: doubles at 0x98B968 = 3.0, 0x987490 = 2.0 (PE section mapping on the vanilla exe).
