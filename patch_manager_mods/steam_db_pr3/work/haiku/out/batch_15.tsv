@@ -1,0 +1,27 @@
+rid	verdict	confidence	reason
+R405	match	high	ret=0 matches void return; initializes GFF writing state
+R406	match	high	ret=0 matches void return; stops global fade effect
+R407	match	high	ret=20 matches 5-param typedef; converts time fields correctly
+R408	match	high	ret=0 matches void return; loops and resets font
+R409	match	high	ret=0 matches void return; thin forwarding wrapper
+R410	mismatch	high	ret=0 but typedef expects param_bytes=4 with shouldFree byte
+R411	mismatch	high	Decompile takes void (no params), but needs __thiscall with this
+R412	match	high	param_1[0x17]=index 0x17*4=0x5C confirmed; ctor zeros it
+R413	match	high	param_1[2]=index 2*4=0x8 confirmed; stores param_10
+R414	match	high	ret=0 matches void return; shows status summary GUI
+R415	match	high	ret=4 matches 1-param typedef; stores leader value
+R416	match	high	ret=4 matches 1-param typedef; loads dialog track
+R417	mismatch	high	ret=4 but typedef expects param_bytes=0; decompile has 2 params
+R418	mismatch	high	ret=8 but typedef expects param_bytes=4; mismatched stack bytes
+R419	match	high	ret=0 matches; returns byte from param_1+0x10
+R420	mismatch	high	ret=4 but GOG param_bytes=2; stack byte mismatch
+R421	mismatch	high	Decompile __fastcall(param_1 only) lacks float alpha parameter on stack
+R422	mismatch	high	ret=16 but typedef expects param_bytes=8; ret exceeds expected
+R423	match	high	controls=[this+0x24]+idx*4; count=[this+0x28] confirmed
+R424	match	high	fog_color stores Vector at param_1+0x74; glFogfv uses it
+R425	match	high	ret=8 matches 2-param typedef; SetEdgeImage signature correct
+R426	match	high	parent_control: param_1[6]=0x18=index6*4; Load_3 confirms
+R427	match	high	ret=0 matches void return; hides solo mode panel
+R428	match	high	ret=20 matches 5-param typedef; reads ResRef from GFF
+R429	match	high	ret=4 matches 1-param typedef; copies resref from offset
+R430	mismatch	high	Decompile labeled as CPaneContainerManager::NotifyPaneDivider (library misidentification)

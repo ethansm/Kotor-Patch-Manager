@@ -90,3 +90,23 @@ both the static check and the play test go into the PR. Restore = copy the backu
 - Haiku via subagents vs a direct API script (cheaper, but needs an API key and runs outside
   the session's tooling).
 - Offsets: is a Haiku pass needed at all, or are struct_fields + accessor reads enough?
+
+## Pilot result (2026-10-02): ACC scope, 434 real rows + 40 decoys, single Haiku pass
+
+Cards: `work/haiku/cards/` (self-name annotation removed, Sonnet verdicts hidden), key `work/haiku/answer_key.json`,
+verdicts `work/haiku/out/`. Six Haiku agents, ~580k subagent tokens total.
+
+- Decoys: Haiku said `match` on 13 of 40 (33% false accept). It mostly checks "ret_N fits the typedef", which
+  neighbouring thunks often satisfy. **A single Haiku pass on these cards cannot promote rows.**
+- Real rows: 82 flagged `mismatch`. Triage found 0 database errors:
+  30 narrow-argument widths (x86 pushes 4-byte slots; GOG records 1/2/5/13/14), 15 known upstream typedef bugs,
+  12 thiscall thunks that Ghidra prints without `__thiscall`, 7 spurious Ghidra library-signature labels,
+  4 return-type-only, 12 other (same thunk/cdecl misreadings), 1 offset (read decimal `+ 100` as hex).
+  All 54 flagged functions with a GOG-comparable size agree on ret_N; the 26 others differ only by widening,
+  except ShowUpgradeScreen (pops 24) and ActionMenuSecurity (pops 8), whose GameAPI typedefs push 4: an
+  upstream wrapper bug on GOG too (the address rows are right; calling either wrapper would corrupt the stack).
+
+Changes for the next wave: put the ABI facts in the prompt (4-byte stack slots, Ghidra omits `__thiscall` on thunks,
+library labels are unreliable, decompile offsets are decimal); require a content-specific reason (string, field,
+callee) for `match`; keep decoys in every wave; use Haiku as a flagger feeding Sonnet, not as a confirmer, until a
+re-run shows decoy false accepts near 0.

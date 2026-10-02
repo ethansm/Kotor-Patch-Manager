@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R324	match	high	ret_N=0 matches typedef; simple setter at offset 0x10
+R325	mismatch	high	ret_N=20 exceeds typedef param_bytes=12; 5 params vs 3 expected
+R326	match	high	ret_N=0 matches; sets flag at 0x25c, simple setter
+R327	match	high	ret_N=0 matches; getter returns bool, name fits
+R328	match	high	ret_N=4 matches; takes scene param, operates on 0x68
+R329	match	high	ret_N=4 matches; simple setter storing param_2 at 0xd8
+R330	unsure	low	thin thunk to FUN_00713310; typedef says returns int but decompile shows void
+R331	match	high	ret_N=24 matches; 6-param signature fits FillTile
+R332	match	high	ret_N=0 matches; getter comparing dead HP threshold
+R333	match	high	ret_N=0 matches; void setter manipulating animation state
+R334	mismatch	high	ret_N=4 but typedef param_bytes=8; function takes 1 param, expects 2
+R335	unsure	medium	ret_N=0 matches but decompile shows return value; unclear intent
+R336	match	high	ret_N=4 matches Steam version; ushort param promoted to 4-byte stack
+R337	mismatch	high	function outputs via pointer (param_2) but typedef shows direct DWORD return
+R338	match	high	ret_N=0 matches; void setter modifying UI state
+R339	mismatch	high	not __thiscall; plain function forwarding with wrong annotation
+R340	mismatch	high	ret_N=16 matches GOG but not wrapper param_bytes=12; param count mismatch
+R341	match	high	ret_N=0 matches; void setter removing panel
+R342	mismatch	high	ret_N=16 but wrapper param_bytes=12; extra param in GOG
+R343	match	high	ret_N=4 matches; float parameter for draw intensity
+R344	match	high	ret_N=8 matches; 2-param signature fits control activation
+R345	mismatch	high	typedef says void but decompile returns undefined4 value
+R346	match	high	ret_N=0 matches; simple getter reading 0x11c
+R347	mismatch	high	ret_N=8 but typedef param_bytes=0; function has 2 params, wrong calling convention
+R348	match	high	ret_N=4 matches Steam; bool param promoted to 4 bytes on stack
+R349	match	high	ret_N=4 matches; copies timer data via pointer param
+R350	mismatch	high	typedef says void but decompile returns int from offset arithmetic

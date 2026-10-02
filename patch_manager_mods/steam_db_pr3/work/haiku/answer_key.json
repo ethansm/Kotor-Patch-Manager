@@ -1,0 +1,3794 @@
+{
+"R000": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "StopCreditSequence",
+"addr": "0x741050",
+"sonnet": "verified"
+},
+"R001": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetPortraitId",
+"addr": "0x540b40",
+"sonnet": "verified"
+},
+"R002": {
+"type": "decoy",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideLoadModuleDebugMenu",
+"addr": "0x7cb540",
+"sonnet": "verified"
+},
+"R003": {
+"type": "real",
+"kind": "F",
+"class": "CSWCPlaceable",
+"name": "SetAppearance",
+"addr": "0x843960",
+"sonnet": "verified"
+},
+"R004": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideSubItemCreateMenu",
+"addr": "0x7cab60",
+"sonnet": "verified"
+},
+"R005": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldCExoString",
+"addr": "0x718f90",
+"sonnet": "verified"
+},
+"R006": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddDataLayoutList",
+"addr": "0x718580",
+"sonnet": "verified"
+},
+"R007": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldCHAR",
+"addr": "0x718a80",
+"sonnet": "verified"
+},
+"R008": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetPortraitId",
+"addr": "0x53f000",
+"sonnet": "likely"
+},
+"R009": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetCurrentHitPoints",
+"addr": "0x54a610",
+"sonnet": "verified"
+},
+"R010": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableAlwaysRender",
+"addr": "0x459de0",
+"sonnet": "verified"
+},
+"R011": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetFieldCount",
+"addr": "0x7186c0",
+"sonnet": "verified"
+},
+"R012": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "GetObjectScale",
+"addr": "0x472610",
+"sonnet": "likely"
+},
+"R013": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "FadeObject",
+"addr": "0x7f12d0",
+"sonnet": "verified"
+},
+"R014": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetDataField",
+"addr": "0x717820",
+"sonnet": "verified"
+},
+"R015": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HidePowersFeatsSkillsDebugMenu",
+"addr": "0x7cb540",
+"sonnet": "verified"
+},
+"R016": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetPosition",
+"addr": "0x459710",
+"sonnet": "verified"
+},
+"R017": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "border",
+"addr": "0x54",
+"sonnet": "verified"
+},
+"R018": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetKeepCorpse",
+"addr": "0x54a840",
+"sonnet": "verified"
+},
+"R019": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "Constructor",
+"addr": "0x418990",
+"sonnet": "verified"
+},
+"R020": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShowPartySelection",
+"addr": "0x7cb920",
+"sonnet": "verified"
+},
+"R021": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "GetEffectSpellId",
+"addr": "0x5ef160",
+"sonnet": "likely"
+},
+"R022": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "IsGeomFadeEnabled",
+"addr": "0x464cd0",
+"sonnet": "likely"
+},
+"R023": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableDistortion",
+"addr": "0x459a10",
+"sonnet": "likely"
+},
+"R024": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorderParams",
+"name": "SetCornerImage",
+"addr": "0x414680",
+"sonnet": "verified"
+},
+"R025": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetGameOver",
+"addr": "0x7403e0",
+"sonnet": "verified"
+},
+"R026": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "SetBackground",
+"addr": "0x40f390",
+"sonnet": "verified"
+},
+"R027": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetInFreeLook",
+"addr": "0x741290",
+"sonnet": "verified"
+},
+"R028": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "SetVisible",
+"addr": "0x40fe60",
+"sonnet": "verified"
+},
+"R029": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableInViewVolume",
+"addr": "0x45a000",
+"sonnet": "verified"
+},
+"R030": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "GetInnerExtent",
+"addr": "0x414d80",
+"sonnet": "verified"
+},
+"R031": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetCanOrientInDialog",
+"addr": "0x7cf710",
+"sonnet": "verified"
+},
+"R032": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "GetServerObject",
+"addr": "0x7f2540",
+"sonnet": "verified"
+},
+"R033": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationAttack",
+"addr": "0x7ef880",
+"sonnet": "verified"
+},
+"R034": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiManager",
+"name": "PlayGuiSound",
+"addr": "0x4122a0",
+"sonnet": "verified"
+},
+"R035": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldSHORT",
+"addr": "0x718b80",
+"sonnet": "verified"
+},
+"R036": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetMotionBlurred",
+"addr": "0x459970",
+"sonnet": "verified"
+},
+"R037": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "GetLightIsOn",
+"addr": "0x5f6570",
+"sonnet": "verified"
+},
+"R038": {
+"type": "real",
+"kind": "O",
+"class": "CResGFF",
+"name": "labels",
+"addr": "0x54",
+"sonnet": "verified"
+},
+"R039": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorderParams",
+"name": "SetFillImage",
+"addr": "0x414840",
+"sonnet": "verified"
+},
+"R040": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShowSoloModeQuery",
+"addr": "0x7cd510",
+"sonnet": "verified"
+},
+"R041": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetInGameGui",
+"addr": "0x73f750",
+"sonnet": "likely"
+},
+"R042": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetCreditSequenceInProgress",
+"addr": "0x741070",
+"sonnet": "verified"
+},
+"R043": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "FadeAndStopDialogAmbientTrack",
+"addr": "0x7d0ec0",
+"sonnet": "verified"
+},
+"R044": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "AddAttachment",
+"addr": "0x4632c0",
+"sonnet": "verified"
+},
+"R045": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "IsSoundPlayingInDialog",
+"addr": "0x740290",
+"sonnet": "likely"
+},
+"R046": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetNearestObjectByName",
+"addr": "0x546bd0",
+"sonnet": "verified"
+},
+"R047": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldINT",
+"addr": "0x718c80",
+"sonnet": "verified"
+},
+"R048": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "RemoveAttachment",
+"addr": "0x463300",
+"sonnet": "verified"
+},
+"R049": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "GetTargetArea",
+"addr": "0x61e360",
+"sonnet": "verified"
+},
+"R050": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetFogRange",
+"addr": "0x464c80",
+"sonnet": "verified"
+},
+"R051": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldQuaternion",
+"addr": "0x71a260",
+"sonnet": "verified"
+},
+"R052": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "ClearAllQueuedCombatActions",
+"addr": "0x7f2500",
+"sonnet": "verified"
+},
+"R053": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "RemoveFromSceneManager_2",
+"addr": "0x472460",
+"sonnet": "likely"
+},
+"R054": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetActivePauseState",
+"addr": "0x73fe00",
+"sonnet": "verified"
+},
+"R055": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SpawnRoom",
+"addr": "0x470290",
+"sonnet": "verified"
+},
+"R056": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "ChangeCharacter",
+"addr": "0x740380",
+"sonnet": "verified"
+},
+"R057": {
+"type": "real",
+"kind": "O",
+"class": "Scene",
+"name": "fog_end",
+"addr": "0x68",
+"sonnet": "verified"
+},
+"R058": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "AddChildControl",
+"addr": "0x419350",
+"sonnet": "verified"
+},
+"R059": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EndLookAtAnimate",
+"addr": "0x4dcce0",
+"sonnet": "likely"
+},
+"R060": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetLightPriority",
+"addr": "0x45c580",
+"sonnet": "verified"
+},
+"R061": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldFLOAT",
+"addr": "0x719ce0",
+"sonnet": "verified"
+},
+"R062": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideStoreGui",
+"addr": "0x7ccf30",
+"sonnet": "verified"
+},
+"R063": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "UpdateMessageGUI",
+"addr": "0x7cd040",
+"sonnet": "likely"
+},
+"R064": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "UpdateAreaTransitionGUI",
+"addr": "0x7ce780",
+"sonnet": "verified"
+},
+"R065": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "LoadStuntModelsForDialog",
+"addr": "0x7c8390",
+"sonnet": "likely"
+},
+"R066": {
+"type": "decoy",
+"kind": "F",
+"class": "Gob",
+"name": "EndLookAtAnimate",
+"addr": "0x4dcd10",
+"sonnet": "likely"
+},
+"R067": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "dimension",
+"addr": "0x0",
+"sonnet": "verified"
+},
+"R068": {
+"type": "decoy",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldVector",
+"addr": "0x71a3d0",
+"sonnet": "verified"
+},
+"R069": {
+"type": "real",
+"kind": "O",
+"class": "CClientExoApp",
+"name": "internal",
+"addr": "0x4",
+"sonnet": "verified"
+},
+"R070": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiControl",
+"name": "id",
+"addr": "0x54",
+"sonnet": "verified"
+},
+"R071": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableDistortion",
+"addr": "0x4599f0",
+"sonnet": "likely"
+},
+"R072": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldCExoLocString",
+"addr": "0x719f30",
+"sonnet": "verified"
+},
+"R073": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetPazaakResults",
+"addr": "0x740730",
+"sonnet": "verified"
+},
+"R074": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "Initialize",
+"addr": "0x414c20",
+"sonnet": "verified"
+},
+"R075": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "SetId",
+"addr": "0x764f60",
+"sonnet": "verified"
+},
+"R076": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ResetTalkAnimations",
+"addr": "0x7c9560",
+"sonnet": "verified"
+},
+"R077": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldWORD",
+"addr": "0x718b00",
+"sonnet": "verified"
+},
+"R078": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "UpdateDialog",
+"addr": "0x7cd0f0",
+"sonnet": "verified"
+},
+"R079": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "EnableInput",
+"addr": "0x7402f0",
+"sonnet": "verified"
+},
+"R080": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "SwitchToSWInGameGui",
+"addr": "0x7ca550",
+"sonnet": "verified"
+},
+"R081": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "EnableAnimations",
+"addr": "0x4651b0",
+"sonnet": "verified"
+},
+"R082": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiPanel",
+"name": "alpha",
+"addr": "0x50",
+"sonnet": "verified"
+},
+"R083": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "SetEffectSpellId",
+"addr": "0x5ef160",
+"sonnet": "likely"
+},
+"R084": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorderParams",
+"name": "operator=",
+"addr": "0x4144f0",
+"sonnet": "verified"
+},
+"R085": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldVector",
+"addr": "0x71a320",
+"sonnet": "verified"
+},
+"R086": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldINT",
+"addr": "0x719bf0",
+"sonnet": "verified"
+},
+"R087": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetMinimumBoundingBox_2",
+"addr": "0x460040",
+"sonnet": "verified"
+},
+"R088": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "Load",
+"addr": "0x415080",
+"sonnet": "verified"
+},
+"R089": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideLoadModuleDebugMenu",
+"addr": "0x7cb4a0",
+"sonnet": "verified"
+},
+"R090": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetGameObject",
+"addr": "0x73f4d0",
+"sonnet": "verified"
+},
+"R091": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldCResRef",
+"addr": "0x719d40",
+"sonnet": "verified"
+},
+"R092": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "SetEffectSpellId",
+"addr": "0x5ef180",
+"sonnet": "likely"
+},
+"R093": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetField_2",
+"addr": "0x717a00",
+"sonnet": "verified"
+},
+"R094": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "Load",
+"addr": "0x414d80",
+"sonnet": "verified"
+},
+"R095": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetMaxBlurLength",
+"addr": "0x4599d0",
+"sonnet": "verified"
+},
+"R096": {
+"type": "real",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "GetGlobalVariableTable",
+"addr": "0x51c890",
+"sonnet": "likely"
+},
+"R097": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetInputClass",
+"addr": "0x73ff00",
+"sonnet": "verified"
+},
+"R098": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "DisableInput",
+"addr": "0x7402d0",
+"sonnet": "verified"
+},
+"R099": {
+"type": "decoy",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "GetActiveTimer",
+"addr": "0x51c370",
+"sonnet": "verified"
+},
+"R100": {
+"type": "real",
+"kind": "O",
+"class": "CResGFF",
+"name": "field_type",
+"addr": "0x8d",
+"sonnet": "verified"
+},
+"R101": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetInputClass",
+"addr": "0x73fec0",
+"sonnet": "verified"
+},
+"R102": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableRenderGobBBox",
+"addr": "0x45bf10",
+"sonnet": "verified"
+},
+"R103": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetPlayerCreature",
+"addr": "0x73f450",
+"sonnet": "verified"
+},
+"R104": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableInViewVolume",
+"addr": "0x4598b0",
+"sonnet": "verified"
+},
+"R105": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetPlayerCreature",
+"addr": "0x73f930",
+"sonnet": "verified"
+},
+"R106": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "DisplayMainMenu",
+"addr": "0x73f230",
+"sonnet": "likely"
+},
+"R107": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "GetWorldTimeMinute",
+"addr": "0x51b140",
+"sonnet": "verified"
+},
+"R108": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SendLoadGameRequest",
+"addr": "0x73f720",
+"sonnet": "verified"
+},
+"R109": {
+"type": "real",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "MoveToNextOpenState",
+"addr": "0x61d7b0",
+"sonnet": "verified"
+},
+"R110": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetObjectName",
+"addr": "0x73f0b0",
+"sonnet": "verified"
+},
+"R111": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "fill_image_resref",
+"addr": "0x44",
+"sonnet": "verified"
+},
+"R112": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "HandleInputEvent",
+"addr": "0x40eaa0",
+"sonnet": "verified"
+},
+"R113": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "Pack",
+"addr": "0x71a8b0",
+"sonnet": "verified"
+},
+"R114": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "AddWorldTimes",
+"addr": "0x51aef0",
+"sonnet": "verified"
+},
+"R115": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldVOID",
+"addr": "0x71a1b0",
+"sonnet": "verified"
+},
+"R116": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetCanClick",
+"addr": "0x7d0b90",
+"sonnet": "verified"
+},
+"R117": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteGFFData",
+"addr": "0x71a670",
+"sonnet": "verified"
+},
+"R118": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetScriptLocation",
+"addr": "0x547600",
+"sonnet": "verified"
+},
+"R119": {
+"type": "real",
+"kind": "O",
+"class": "CResGFF",
+"name": "header",
+"addr": "0x40",
+"sonnet": "verified"
+},
+"R120": {
+"type": "real",
+"kind": "F",
+"class": "CSWCPlaceable",
+"name": "ActionMenuSecurity",
+"addr": "0x842750",
+"sonnet": "likely"
+},
+"R121": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShutDown",
+"addr": "0x7c7030",
+"sonnet": "verified"
+},
+"R122": {
+"type": "decoy",
+"kind": "F",
+"class": "Gob",
+"name": "DisableInCutscene",
+"addr": "0x459e20",
+"sonnet": "verified"
+},
+"R123": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetCombatMode",
+"addr": "0x740880",
+"sonnet": "verified"
+},
+"R124": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetMouseMode",
+"addr": "0x740f40",
+"sonnet": "likely"
+},
+"R125": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationPause",
+"addr": "0x7ef350",
+"sonnet": "verified"
+},
+"R126": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "GetObjectA",
+"addr": "0x465290",
+"sonnet": "verified"
+},
+"R127": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetGameObject",
+"addr": "0x73f510",
+"sonnet": "verified"
+},
+"R128": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "GetResRef",
+"addr": "0x711270",
+"sonnet": "verified"
+},
+"R129": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddLabel",
+"addr": "0x7181f0",
+"sonnet": "verified"
+},
+"R130": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "StopLoadFromLayout",
+"addr": "0x40f5a0",
+"sonnet": "verified"
+},
+"R131": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetCameraAnimationName",
+"addr": "0x7c0ec0",
+"sonnet": "verified"
+},
+"R132": {
+"type": "real",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "RemoveFromArea",
+"addr": "0x622670",
+"sonnet": "verified"
+},
+"R133": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetFieldByLabel",
+"addr": "0x7178e0",
+"sonnet": "verified"
+},
+"R134": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "Demand",
+"addr": "0x7111e0",
+"sonnet": "verified"
+},
+"R135": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetLastTarget",
+"addr": "0x740660",
+"sonnet": "verified"
+},
+"R136": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "TurnOnShadows",
+"addr": "0x459870",
+"sonnet": "likely"
+},
+"R137": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "color",
+"addr": "0x14",
+"sonnet": "verified"
+},
+"R138": {
+"type": "real",
+"kind": "O",
+"class": "CRes",
+"name": "vtable",
+"addr": "0x0",
+"sonnet": "verified"
+},
+"R139": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetAcceptableAction",
+"addr": "0x5d7190",
+"sonnet": "likely"
+},
+"R140": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "LoadVisibility",
+"addr": "0x46fbd0",
+"sonnet": "verified"
+},
+"R141": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorder",
+"name": "border_params",
+"addr": "0x14",
+"sonnet": "verified"
+},
+"R142": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetCanSendDialog",
+"addr": "0x740420",
+"sonnet": "verified"
+},
+"R143": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldBYTE",
+"addr": "0x7199d0",
+"sonnet": "verified"
+},
+"R144": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetVideoMode",
+"addr": "0x73fbb0",
+"sonnet": "verified"
+},
+"R145": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "LoadAddInAnimations",
+"addr": "0x45a030",
+"sonnet": "verified"
+},
+"R146": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiPanel",
+"name": "bit_flags",
+"addr": "0x48",
+"sonnet": "verified"
+},
+"R147": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddField",
+"addr": "0x718030",
+"sonnet": "verified"
+},
+"R148": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "AddControl",
+"addr": "0x40fd80",
+"sonnet": "verified"
+},
+"R149": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetGUIString",
+"addr": "0x7408f0",
+"sonnet": "verified"
+},
+"R150": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "PrevSWInGameGui",
+"addr": "0x7ca3c0",
+"sonnet": "verified"
+},
+"R151": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "RemoveAnimationFlag",
+"addr": "0x4e3160",
+"sonnet": "verified"
+},
+"R152": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "SetOrientation",
+"addr": "0x5f6990",
+"sonnet": "verified"
+},
+"R153": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "EnableVisibilityGraph",
+"addr": "0x46fb10",
+"sonnet": "verified"
+},
+"R154": {
+"type": "decoy",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddStruct",
+"addr": "0x717aa0",
+"sonnet": "verified"
+},
+"R155": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "GetNumRooms",
+"addr": "0x46ff70",
+"sonnet": "likely"
+},
+"R156": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "UnpauseWorldTimer",
+"addr": "0x51b0a0",
+"sonnet": "verified"
+},
+"R157": {
+"type": "real",
+"kind": "O",
+"class": "CRes",
+"name": "data",
+"addr": "0x10",
+"sonnet": "verified"
+},
+"R158": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "IsInCutscene",
+"addr": "0x459e20",
+"sonnet": "verified"
+},
+"R159": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "SetEnabled",
+"addr": "0x4193f0",
+"sonnet": "likely"
+},
+"R160": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableForceAnimations",
+"addr": "0x459d80",
+"sonnet": "verified"
+},
+"R161": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationWalking",
+"addr": "0x7ef3e0",
+"sonnet": "verified"
+},
+"R162": {
+"type": "real",
+"kind": "F",
+"class": "CSWCDoor",
+"name": "SetState",
+"addr": "0x87ba40",
+"sonnet": "verified"
+},
+"R163": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "SetMinutesPerHour",
+"addr": "0x51a800",
+"sonnet": "verified"
+},
+"R164": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "GetIsSelectable",
+"addr": "0x4190a0",
+"sonnet": "verified"
+},
+"R165": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "Constructor",
+"addr": "0x414a50",
+"sonnet": "verified"
+},
+"R166": {
+"type": "real",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "ClientToServerObjectId",
+"addr": "0x51c8b0",
+"sonnet": "verified"
+},
+"R167": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "GetWorldTimeHour",
+"addr": "0x51b100",
+"sonnet": "verified"
+},
+"R168": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiObject",
+"name": "extent",
+"addr": "0x4",
+"sonnet": "verified"
+},
+"R169": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetStructFromStruct",
+"addr": "0x718960",
+"sonnet": "verified"
+},
+"R170": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "HasSpellEffectApplied",
+"addr": "0x5476c0",
+"sonnet": "verified"
+},
+"R171": {
+"type": "real",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "RemoveFromArea",
+"addr": "0x61d040",
+"sonnet": "verified"
+},
+"R172": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldCHAR",
+"addr": "0x719a40",
+"sonnet": "verified"
+},
+"R173": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "GetName",
+"addr": "0x7ed420",
+"sonnet": "likely"
+},
+"R174": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddStruct",
+"addr": "0x717f30",
+"sonnet": "verified"
+},
+"R175": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetCreatureByGameObjectID",
+"addr": "0x73f550",
+"sonnet": "verified"
+},
+"R176": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "RemoveFromArea",
+"addr": "0x5f2f50",
+"sonnet": "verified"
+},
+"R177": {
+"type": "real",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "SetCreator",
+"addr": "0x622c10",
+"sonnet": "verified"
+},
+"R178": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "Constructor",
+"addr": "0x716e60",
+"sonnet": "verified"
+},
+"R179": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "IsInViewVolume",
+"addr": "0x4598d0",
+"sonnet": "verified"
+},
+"R180": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetObjectName",
+"addr": "0x73f0e0",
+"sonnet": "verified"
+},
+"R181": {
+"type": "real",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "GetIsLinked",
+"addr": "0x61d000",
+"sonnet": "verified"
+},
+"R182": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiPanel",
+"name": "color",
+"addr": "0x54",
+"sonnet": "verified"
+},
+"R183": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetVideoMode",
+"addr": "0x73fbd0",
+"sonnet": "verified"
+},
+"R184": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetPendingStatusSummary",
+"addr": "0x7cf210",
+"sonnet": "likely"
+},
+"R185": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableRenderGobBBox",
+"addr": "0x45bed0",
+"sonnet": "verified"
+},
+"R186": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "CompareWorldTimes",
+"addr": "0x51afe0",
+"sonnet": "verified"
+},
+"R187": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetFog",
+"addr": "0x464c30",
+"sonnet": "verified"
+},
+"R188": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetField",
+"addr": "0x717770",
+"sonnet": "likely"
+},
+"R189": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetCurrentRoom_2",
+"addr": "0x46ffb0",
+"sonnet": "verified"
+},
+"R190": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetGeomFadeProperties",
+"addr": "0x4725e0",
+"sonnet": "likely"
+},
+"R191": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorderParams",
+"name": "SetBorder",
+"addr": "0x414920",
+"sonnet": "verified"
+},
+"R192": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "TurnOffShadows",
+"addr": "0x459850",
+"sonnet": "likely"
+},
+"R193": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiManager",
+"name": "AddPanel",
+"addr": "0x410530",
+"sonnet": "verified"
+},
+"R194": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "ChildRemove",
+"addr": "0x465c20",
+"sonnet": "verified"
+},
+"R195": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiPanel",
+"name": "active_control",
+"addr": "0x20",
+"sonnet": "verified"
+},
+"R196": {
+"type": "decoy",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "GetWorldTimer",
+"addr": "0x51c390",
+"sonnet": "verified"
+},
+"R197": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "GetWorldTimeMillisecond",
+"addr": "0x51b1c0",
+"sonnet": "verified"
+},
+"R198": {
+"type": "decoy",
+"kind": "F",
+"class": "Gob",
+"name": "DisableForceAnimations",
+"addr": "0x459da0",
+"sonnet": "verified"
+},
+"R199": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetDataLayoutList",
+"addr": "0x717880",
+"sonnet": "verified"
+},
+"R200": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetAsCharacter",
+"addr": "0x4598f0",
+"sonnet": "likely"
+},
+"R201": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "Append",
+"addr": "0x462020",
+"sonnet": "verified"
+},
+"R202": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiManager",
+"name": "viewport_height",
+"addr": "0x6e",
+"sonnet": "verified"
+},
+"R203": {
+"type": "real",
+"kind": "F",
+"class": "CSWCPlaceable",
+"name": "GetServerPlaceable",
+"addr": "0x842d00",
+"sonnet": "likely"
+},
+"R204": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "AddMovieToMovieQueue",
+"addr": "0x7411c0",
+"sonnet": "verified"
+},
+"R205": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldCExoString",
+"addr": "0x719e50",
+"sonnet": "verified"
+},
+"R206": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableInCutscene",
+"addr": "0x459e00",
+"sonnet": "verified"
+},
+"R207": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableAlwaysRender",
+"addr": "0x459dc0",
+"sonnet": "verified"
+},
+"R208": {
+"type": "real",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "OnEnterMine",
+"addr": "0x622930",
+"sonnet": "verified"
+},
+"R209": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "CreatureAcquireItem",
+"addr": "0x73f9e0",
+"sonnet": "verified"
+},
+"R210": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetListElement",
+"addr": "0x718890",
+"sonnet": "verified"
+},
+"R211": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetPartLocalPosition",
+"addr": "0x462cd0",
+"sonnet": "verified"
+},
+"R212": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SendSaveGameRequest",
+"addr": "0x73f6f0",
+"sonnet": "verified"
+},
+"R213": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "OnResourceServiced",
+"addr": "0x717300",
+"sonnet": "verified"
+},
+"R214": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "GetIsChild",
+"addr": "0x419350",
+"sonnet": "verified"
+},
+"R215": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "CenterPanel",
+"addr": "0x40ea00",
+"sonnet": "verified"
+},
+"R216": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "ClearAllActions",
+"addr": "0x541080",
+"sonnet": "verified"
+},
+"R217": {
+"type": "decoy",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddStructToStruct",
+"addr": "0x719800",
+"sonnet": "verified"
+},
+"R218": {
+"type": "real",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "GetWorldTimer",
+"addr": "0x51c370",
+"sonnet": "verified"
+},
+"R219": {
+"type": "real",
+"kind": "F",
+"class": "CSWCPlaceable",
+"name": "IsHostile",
+"addr": "0x841180",
+"sonnet": "likely"
+},
+"R220": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldVOID",
+"addr": "0x719640",
+"sonnet": "verified"
+},
+"R221": {
+"type": "real",
+"kind": "F",
+"class": "CSWCDoor",
+"name": "GetServerDoor",
+"addr": "0x87be80",
+"sonnet": "likely"
+},
+"R222": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "CreateGFFFile",
+"addr": "0x71a3d0",
+"sonnet": "verified"
+},
+"R223": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "fill_angle",
+"addr": "0xc",
+"sonnet": "verified"
+},
+"R224": {
+"type": "real",
+"kind": "O",
+"class": "CRes",
+"name": "size",
+"addr": "0x18",
+"sonnet": "verified"
+},
+"R225": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetClientLanguage",
+"addr": "0x73f350",
+"sonnet": "likely"
+},
+"R226": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWCObject",
+"name": "ShowShadowBlob",
+"addr": "0x764fb0",
+"sonnet": "likely"
+},
+"R227": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "FillCenter",
+"addr": "0x415d20",
+"sonnet": "verified"
+},
+"R228": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddDataLayoutField",
+"addr": "0x718470",
+"sonnet": "verified"
+},
+"R229": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldCExoLocString",
+"addr": "0x7190e0",
+"sonnet": "verified"
+},
+"R230": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SendLoadGameRequest",
+"addr": "0x73f6f0",
+"sonnet": "verified"
+},
+"R231": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "ChildAdd",
+"addr": "0x465bb0",
+"sonnet": "verified"
+},
+"R232": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldVector",
+"addr": "0x719520",
+"sonnet": "verified"
+},
+"R233": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "GetPortraitId",
+"addr": "0x7ed4b0",
+"sonnet": "verified"
+},
+"R234": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "GetBodyBagAppearance",
+"addr": "0x5f6630",
+"sonnet": "verified"
+},
+"R235": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetList",
+"addr": "0x718760",
+"sonnet": "verified"
+},
+"R236": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetAIStateReputation",
+"addr": "0x5e1680",
+"sonnet": "verified"
+},
+"R237": {
+"type": "real",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "GetCanFireMineOnObject",
+"addr": "0x622750",
+"sonnet": "verified"
+},
+"R238": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "UpdateEmitters",
+"addr": "0x46c190",
+"sonnet": "likely"
+},
+"R239": {
+"type": "real",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "GetFirstName",
+"addr": "0x616f40",
+"sonnet": "verified"
+},
+"R240": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "DoQuickLoad",
+"addr": "0x7d0f50",
+"sonnet": "verified"
+},
+"R241": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SpawnBodyBag",
+"addr": "0x549780",
+"sonnet": "verified"
+},
+"R242": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "Destructor",
+"addr": "0x414bf0",
+"sonnet": "verified"
+},
+"R243": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "ShutDownToMainMenu",
+"addr": "0x73fb40",
+"sonnet": "verified"
+},
+"R244": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "AddEvent",
+"addr": "0x418af0",
+"sonnet": "verified"
+},
+"R245": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWCObject",
+"name": "ClearAllActions",
+"addr": "0x7f2500",
+"sonnet": "verified"
+},
+"R246": {
+"type": "decoy",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideUpgradeScreen",
+"addr": "0x7cdaa0",
+"sonnet": "verified"
+},
+"R247": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "GetControl",
+"addr": "0x40fea0",
+"sonnet": "verified"
+},
+"R248": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "GetCurrentAnimation",
+"addr": "0x7ed7d0",
+"sonnet": "verified"
+},
+"R249": {
+"type": "real",
+"kind": "O",
+"class": "CResGFF",
+"name": "structs",
+"addr": "0x44",
+"sonnet": "verified"
+},
+"R250": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetPosition",
+"addr": "0x461490",
+"sonnet": "verified"
+},
+"R251": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldWORD",
+"addr": "0x719ab0",
+"sonnet": "verified"
+},
+"R252": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableFog",
+"addr": "0x459f90",
+"sonnet": "likely"
+},
+"R253": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "bit_flags",
+"addr": "0x20",
+"sonnet": "verified"
+},
+"R254": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "IsAnimating",
+"addr": "0x4651f0",
+"sonnet": "verified"
+},
+"R255": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "DismissInGameGUI",
+"addr": "0x740310",
+"sonnet": "likely"
+},
+"R256": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "EnableVideoEffect",
+"addr": "0x7409a0",
+"sonnet": "verified"
+},
+"R257": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideItemCreateMenu",
+"addr": "0x7caa60",
+"sonnet": "verified"
+},
+"R258": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "NextSWInGameGui",
+"addr": "0x7ca230",
+"sonnet": "verified"
+},
+"R259": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationParry",
+"addr": "0x7ef7f0",
+"sonnet": "verified"
+},
+"R260": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "IsAlwaysRendering",
+"addr": "0x459ee0",
+"sonnet": "verified"
+},
+"R261": {
+"type": "real",
+"kind": "O",
+"class": "CResGFF",
+"name": "fields",
+"addr": "0x4c",
+"sonnet": "verified"
+},
+"R262": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetOrientation",
+"addr": "0x459740",
+"sonnet": "verified"
+},
+"R263": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetMaxBlurLength",
+"addr": "0x4599b0",
+"sonnet": "verified"
+},
+"R264": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "alpha",
+"addr": "0x10",
+"sonnet": "verified"
+},
+"R265": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideContainerGui",
+"addr": "0x7cad30",
+"sonnet": "verified"
+},
+"R266": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShowItemCreateMenu",
+"addr": "0x7caa10",
+"sonnet": "verified"
+},
+"R267": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "RePopulateMainInterface",
+"addr": "0x7ceb50",
+"sonnet": "likely"
+},
+"R268": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "GetClientPlaceable",
+"addr": "0x5f6a70",
+"sonnet": "verified"
+},
+"R269": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiPanel",
+"name": "border",
+"addr": "0x60",
+"sonnet": "verified"
+},
+"R270": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "Destructor",
+"addr": "0x40e860",
+"sonnet": "verified"
+},
+"R271": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "SetPortraitId",
+"addr": "0x7f1fb0",
+"sonnet": "verified"
+},
+"R272": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetInputClass",
+"addr": "0x73fee0",
+"sonnet": "verified"
+},
+"R273": {
+"type": "real",
+"kind": "F",
+"class": "CSWCDoor",
+"name": "SetIsAreaTransition",
+"addr": "0x87b980",
+"sonnet": "verified"
+},
+"R274": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "AddChildControl",
+"addr": "0x419330",
+"sonnet": "verified"
+},
+"R275": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShowUpgradeScreen",
+"addr": "0x7cd7e0",
+"sonnet": "verified"
+},
+"R276": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "HitCheckMouse",
+"addr": "0x40eae0",
+"sonnet": "verified"
+},
+"R277": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "GetWorldTimeSecond",
+"addr": "0x51b180",
+"sonnet": "verified"
+},
+"R278": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "SetFeedbackInfo",
+"addr": "0x7f2200",
+"sonnet": "likely"
+},
+"R279": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetFadeOverridePanelVisible",
+"addr": "0x7d0d90",
+"sonnet": "verified"
+},
+"R280": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetMinimumBoundingSphere",
+"addr": "0x4600a0",
+"sonnet": "verified"
+},
+"R281": {
+"type": "real",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "GetGameObject",
+"addr": "0x51c0a0",
+"sonnet": "verified"
+},
+"R282": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetBoundingBox",
+"addr": "0x459fb0",
+"sonnet": "likely"
+},
+"R283": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetObjectScale",
+"addr": "0x463340",
+"sonnet": "verified"
+},
+"R284": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetMotionBlurred",
+"addr": "0x459990",
+"sonnet": "verified"
+},
+"R285": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "Release",
+"addr": "0x7112b0",
+"sonnet": "verified"
+},
+"R286": {
+"type": "real",
+"kind": "F",
+"class": "CSWCDoor",
+"name": "UpdateAreaTransitionDisplay",
+"addr": "0x87c9f0",
+"sonnet": "verified"
+},
+"R287": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "Constructor",
+"addr": "0x7110d0",
+"sonnet": "verified"
+},
+"R288": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "GetExtentAccountingForPanelOffset",
+"addr": "0x410020",
+"sonnet": "verified"
+},
+"R289": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetRenderPersonalSpace",
+"addr": "0x459950",
+"sonnet": "likely"
+},
+"R290": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "corner_image_resref",
+"addr": "0x24",
+"sonnet": "verified"
+},
+"R291": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddListElement",
+"addr": "0x719800",
+"sonnet": "verified"
+},
+"R292": {
+"type": "real",
+"kind": "O",
+"class": "Scene",
+"name": "objects",
+"addr": "0x54",
+"sonnet": "verified"
+},
+"R293": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetBlindLights",
+"addr": "0x465210",
+"sonnet": "likely"
+},
+"R294": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationOverlay",
+"addr": "0x7ef6a0",
+"sonnet": "verified"
+},
+"R295": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetTargetChanging",
+"addr": "0x740e50",
+"sonnet": "verified"
+},
+"R296": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationHideEquippedItems",
+"addr": "0x7ef910",
+"sonnet": "verified"
+},
+"R297": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "SubtractWorldTimes",
+"addr": "0x51af60",
+"sonnet": "verified"
+},
+"R298": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetTopLevelStruct",
+"addr": "0x7189d0",
+"sonnet": "verified"
+},
+"R299": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "GetFullScreenBG",
+"addr": "0x40fc50",
+"sonnet": "verified"
+},
+"R300": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldDWORD",
+"addr": "0x718c00",
+"sonnet": "verified"
+},
+"R301": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "GetWorldTime",
+"addr": "0x51ad20",
+"sonnet": "verified"
+},
+"R302": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetCharacterChangeInProgress",
+"addr": "0x740fc0",
+"sonnet": "verified"
+},
+"R303": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "BehaviorMessage",
+"addr": "0x4636d0",
+"sonnet": "likely"
+},
+"R304": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetPlayerCreature",
+"addr": "0x73f470",
+"sonnet": "verified"
+},
+"R305": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableFog",
+"addr": "0x459f70",
+"sonnet": "likely"
+},
+"R306": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "Destructor",
+"addr": "0x711170",
+"sonnet": "likely"
+},
+"R307": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "Constructor_2",
+"addr": "0x716fd0",
+"sonnet": "verified"
+},
+"R308": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "GetFogRange",
+"addr": "0x464c50",
+"sonnet": "verified"
+},
+"R309": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetElementType",
+"addr": "0x718690",
+"sonnet": "verified"
+},
+"R310": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "CancelRequest",
+"addr": "0x7111c0",
+"sonnet": "verified"
+},
+"R311": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetObjectScale",
+"addr": "0x4725b0",
+"sonnet": "likely"
+},
+"R312": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteGFFFile",
+"addr": "0x71a5a0",
+"sonnet": "verified"
+},
+"R313": {
+"type": "real",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "GetLinkedObject",
+"addr": "0x61d620",
+"sonnet": "verified"
+},
+"R314": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "StopDialog",
+"addr": "0x546900",
+"sonnet": "verified"
+},
+"R315": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetDialogDelay",
+"addr": "0x545470",
+"sonnet": "verified"
+},
+"R316": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddStructToStruct",
+"addr": "0x719940",
+"sonnet": "verified"
+},
+"R317": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationRunning",
+"addr": "0x7ef470",
+"sonnet": "verified"
+},
+"R318": {
+"type": "real",
+"kind": "O",
+"class": "Scene",
+"name": "fog_start",
+"addr": "0x64",
+"sonnet": "verified"
+},
+"R319": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "ClearAllActions",
+"addr": "0x7f24c0",
+"sonnet": "verified"
+},
+"R320": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetHasFeatEffectApplied",
+"addr": "0x549ed0",
+"sonnet": "verified"
+},
+"R321": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetTotalSize",
+"addr": "0x71acb0",
+"sonnet": "verified"
+},
+"R322": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetPlayerCreature",
+"addr": "0x73f910",
+"sonnet": "verified"
+},
+"R323": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReleaseResource",
+"addr": "0x717630",
+"sonnet": "verified"
+},
+"R324": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableForceAnimations",
+"addr": "0x459d60",
+"sonnet": "verified"
+},
+"R325": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetColorShifting",
+"addr": "0x45c750",
+"sonnet": "verified"
+},
+"R326": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "StopSoundPlayingInDialog",
+"addr": "0x546a70",
+"sonnet": "likely"
+},
+"R327": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "IsFadingInDialog",
+"addr": "0x7cb720",
+"sonnet": "likely"
+},
+"R328": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AttachToScene",
+"addr": "0x7ed7f0",
+"sonnet": "likely"
+},
+"R329": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetAnimation",
+"addr": "0x541390",
+"sonnet": "verified"
+},
+"R330": {
+"type": "real",
+"kind": "F",
+"class": "CRes",
+"name": "Request",
+"addr": "0x7112d0",
+"sonnet": "verified"
+},
+"R331": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "FillTile",
+"addr": "0x415d20",
+"sonnet": "verified"
+},
+"R332": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetDead",
+"addr": "0x5477f0",
+"sonnet": "verified"
+},
+"R333": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ResetDialogAnimations",
+"addr": "0x7c93e0",
+"sonnet": "verified"
+},
+"R334": {
+"type": "decoy",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetField",
+"addr": "0x717720",
+"sonnet": "likely"
+},
+"R335": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "OnResourceFreed",
+"addr": "0x7175b0",
+"sonnet": "verified"
+},
+"R336": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationFireAndForget",
+"addr": "0x7ef5d0",
+"sonnet": "verified"
+},
+"R337": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "GetEffectSpellId",
+"addr": "0x5ef120",
+"sonnet": "likely"
+},
+"R338": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideUpgradeScreen",
+"addr": "0x7cdbe0",
+"sonnet": "verified"
+},
+"R339": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetGameOver",
+"addr": "0x7403c0",
+"sonnet": "verified"
+},
+"R340": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldDWORD64",
+"addr": "0x719c50",
+"sonnet": "verified"
+},
+"R341": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "OnPanelRemoved",
+"addr": "0x40f4c0",
+"sonnet": "verified"
+},
+"R342": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "InitControl",
+"addr": "0x40f620",
+"sonnet": "verified"
+},
+"R343": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "Draw",
+"addr": "0x40ec90",
+"sonnet": "verified"
+},
+"R344": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "SetActiveControl",
+"addr": "0x40ec00",
+"sonnet": "verified"
+},
+"R345": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "RemoveFromArea",
+"addr": "0x61d000",
+"sonnet": "verified"
+},
+"R346": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetMessageBufferSize",
+"addr": "0x7c7d40",
+"sonnet": "likely"
+},
+"R347": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetInputClass",
+"addr": "0x73fee0",
+"sonnet": "verified"
+},
+"R348": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetIgnoreHitCheck",
+"addr": "0x459830",
+"sonnet": "likely"
+},
+"R349": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "ResetTimer",
+"addr": "0x51ae30",
+"sonnet": "verified"
+},
+"R350": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "RemoveMoveToModuleMovies",
+"addr": "0x7401a0",
+"sonnet": "verified"
+},
+"R351": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetListCount",
+"addr": "0x718810",
+"sonnet": "verified"
+},
+"R352": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetFogColor",
+"addr": "0x464470",
+"sonnet": "verified"
+},
+"R353": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "IsGlobalFading",
+"addr": "0x7cbc40",
+"sonnet": "verified"
+},
+"R354": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "GetLoopingAnimation",
+"addr": "0x7ed980",
+"sonnet": "verified"
+},
+"R355": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetWorldTimer",
+"addr": "0x73f390",
+"sonnet": "likely"
+},
+"R356": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "DisableAnimations",
+"addr": "0x4651d0",
+"sonnet": "verified"
+},
+"R357": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "RunDeathSequence",
+"addr": "0x7403a0",
+"sonnet": "verified"
+},
+"R358": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetAutoPaused",
+"addr": "0x740960",
+"sonnet": "verified"
+},
+"R359": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "Amputate",
+"addr": "0x462170",
+"sonnet": "verified"
+},
+"R360": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AttachmentFromServerObject",
+"addr": "0x7f2610",
+"sonnet": "verified"
+},
+"R361": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "AddFloatyText",
+"addr": "0x7cee80",
+"sonnet": "verified"
+},
+"R362": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetKeepCorpse",
+"addr": "0x54a7a0",
+"sonnet": "verified"
+},
+"R363": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "edge_image_resref",
+"addr": "0x34",
+"sonnet": "verified"
+},
+"R364": {
+"type": "real",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "InTrigger",
+"addr": "0x61fc60",
+"sonnet": "verified"
+},
+"R365": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "AddMoveToModuleMovie",
+"addr": "0x740180",
+"sonnet": "verified"
+},
+"R366": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "AppendToMsgBuffer",
+"addr": "0x7be090",
+"sonnet": "verified"
+},
+"R367": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetPausedByCombat",
+"addr": "0x740330",
+"sonnet": "likely"
+},
+"R368": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "PauseWorldTimer",
+"addr": "0x51b050",
+"sonnet": "verified"
+},
+"R369": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationDialog",
+"addr": "0x7ef780",
+"sonnet": "verified"
+},
+"R370": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetBarkBubbleVisible",
+"addr": "0x7cea90",
+"sonnet": "verified"
+},
+"R371": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ResetInterfaceForSize",
+"addr": "0x7cfca0",
+"sonnet": "verified"
+},
+"R372": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "Destructor",
+"addr": "0x418640",
+"sonnet": "verified"
+},
+"R373": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddDataField",
+"addr": "0x718370",
+"sonnet": "verified"
+},
+"R374": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "QueryExitProgram",
+"addr": "0x73fe20",
+"sonnet": "verified"
+},
+"R375": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "UpdateDialogLipSync",
+"addr": "0x7d0c70",
+"sonnet": "likely"
+},
+"R376": {
+"type": "decoy",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "AddWorldTimes",
+"addr": "0x51af60",
+"sonnet": "verified"
+},
+"R377": {
+"type": "decoy",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldSHORT",
+"addr": "0x718b00",
+"sonnet": "verified"
+},
+"R378": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "DisableRenderBumpedOut",
+"addr": "0x45c490",
+"sonnet": "verified"
+},
+"R379": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "OnPanelAdded",
+"addr": "0x40f3c0",
+"sonnet": "verified"
+},
+"R380": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ChangeCharacter",
+"addr": "0x7d02b0",
+"sonnet": "likely"
+},
+"R381": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "SetPortrait",
+"addr": "0x7f1b30",
+"sonnet": "verified"
+},
+"R382": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "TurnOffShadows",
+"addr": "0x7ed500",
+"sonnet": "likely"
+},
+"R383": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWCObject",
+"name": "SetPortraitId",
+"addr": "0x7f1f10",
+"sonnet": "verified"
+},
+"R384": {
+"type": "decoy",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "LoadAmbientTrackForDialog",
+"addr": "0x7c41f0",
+"sonnet": "verified"
+},
+"R385": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "SetLightIsOn",
+"addr": "0x5f6470",
+"sonnet": "verified"
+},
+"R386": {
+"type": "decoy",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetPendingStatusSummary",
+"addr": "0x7cf270",
+"sonnet": "likely"
+},
+"R387": {
+"type": "decoy",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SpawnBodyBag",
+"addr": "0x548db0",
+"sonnet": "verified"
+},
+"R388": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetPazaakIsRunning",
+"addr": "0x740f20",
+"sonnet": "verified"
+},
+"R389": {
+"type": "decoy",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetLastTarget",
+"addr": "0x740640",
+"sonnet": "verified"
+},
+"R390": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetPreviousPosition",
+"addr": "0x459780",
+"sonnet": "verified"
+},
+"R391": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetCutsceneDummyPosition",
+"addr": "0x459e40",
+"sonnet": "verified"
+},
+"R392": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "AttachToScene",
+"addr": "0x46d440",
+"sonnet": "likely"
+},
+"R393": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "GetClientObject",
+"addr": "0x54a840",
+"sonnet": "verified"
+},
+"R394": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "RemoveAddInAnimations",
+"addr": "0x45a150",
+"sonnet": "verified"
+},
+"R395": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideAreaTransition",
+"addr": "0x7ce970",
+"sonnet": "verified"
+},
+"R396": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldSHORT",
+"addr": "0x719b20",
+"sonnet": "verified"
+},
+"R397": {
+"type": "real",
+"kind": "F",
+"class": "CSWSTrigger",
+"name": "GetTargetArea",
+"addr": "0x61e540",
+"sonnet": "verified"
+},
+"R398": {
+"type": "decoy",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddField",
+"addr": "0x7181f0",
+"sonnet": "verified"
+},
+"R399": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "DetachFromServerObject",
+"addr": "0x7f2630",
+"sonnet": "verified"
+},
+"R400": {
+"type": "real",
+"kind": "F",
+"class": "CSWSObject",
+"name": "SetDialogOwner",
+"addr": "0x546db0",
+"sonnet": "verified"
+},
+"R401": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "FillTile",
+"addr": "0x415a60",
+"sonnet": "verified"
+},
+"R402": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "IsCameraDialog",
+"addr": "0x7cb750",
+"sonnet": "likely"
+},
+"R403": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "CancelMovie",
+"addr": "0x740f60",
+"sonnet": "likely"
+},
+"R404": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldDWORD64",
+"addr": "0x718d80",
+"sonnet": "verified"
+},
+"R405": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "InitializeForWriting",
+"addr": "0x717aa0",
+"sonnet": "verified"
+},
+"R406": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "StopGlobalFade",
+"addr": "0x7cbbf0",
+"sonnet": "verified"
+},
+"R407": {
+"type": "real",
+"kind": "F",
+"class": "CWorldTimer",
+"name": "ConvertFromTimeOfDay",
+"addr": "0x51ab40",
+"sonnet": "verified"
+},
+"R408": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "ResetFont",
+"addr": "0x40ffb0",
+"sonnet": "verified"
+},
+"R409": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "DisableVideoEffect",
+"addr": "0x7409c0",
+"sonnet": "verified"
+},
+"R410": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "Destructor_2",
+"addr": "0x7171b0",
+"sonnet": "verified"
+},
+"R411": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetMaximumLightRadius",
+"addr": "0x45c690",
+"sonnet": "verified"
+},
+"R412": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiControl",
+"name": "custom_value",
+"addr": "0x5c",
+"sonnet": "likely"
+},
+"R413": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiBorderParams",
+"name": "inner_offset",
+"addr": "0x8",
+"sonnet": "verified"
+},
+"R414": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShowStatusSummary",
+"addr": "0x7cf270",
+"sonnet": "verified"
+},
+"R415": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetFutureLeader",
+"addr": "0x740770",
+"sonnet": "verified"
+},
+"R416": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "LoadAmbientTrackForDialog",
+"addr": "0x7c40c0",
+"sonnet": "verified"
+},
+"R417": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "Destructor",
+"addr": "0x716fa0",
+"sonnet": "likely"
+},
+"R418": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "GetPortrait",
+"addr": "0x7ed480",
+"sonnet": "verified"
+},
+"R419": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "IsForceAnimated",
+"addr": "0x459da0",
+"sonnet": "verified"
+},
+"R420": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationStationary",
+"addr": "0x7ef2c0",
+"sonnet": "verified"
+},
+"R421": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorder",
+"name": "Draw",
+"addr": "0x415300",
+"sonnet": "verified"
+},
+"R422": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetIllumination",
+"addr": "0x45c7b0",
+"sonnet": "verified"
+},
+"R423": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiPanel",
+"name": "controls",
+"addr": "0x24",
+"sonnet": "verified"
+},
+"R424": {
+"type": "real",
+"kind": "O",
+"class": "Scene",
+"name": "fog_color",
+"addr": "0x74",
+"sonnet": "verified"
+},
+"R425": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiBorderParams",
+"name": "SetEdgeImage",
+"addr": "0x414760",
+"sonnet": "verified"
+},
+"R426": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiControl",
+"name": "parent_control",
+"addr": "0x18",
+"sonnet": "verified"
+},
+"R427": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideSoloMode",
+"addr": "0x7cd760",
+"sonnet": "verified"
+},
+"R428": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldCResRef",
+"addr": "0x718e40",
+"sonnet": "verified"
+},
+"R429": {
+"type": "real",
+"kind": "F",
+"class": "CSWSPlaceable",
+"name": "GetDialogResref",
+"addr": "0x5ef120",
+"sonnet": "verified"
+},
+"R430": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "TurnOnShadows",
+"addr": "0x7ed4d0",
+"sonnet": "likely"
+},
+"R431": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "Load_2",
+"addr": "0x418df0",
+"sonnet": "verified"
+},
+"R432": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "SetLevelUpMode",
+"addr": "0x7bfa20",
+"sonnet": "likely"
+},
+"R433": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetEventDescriptions",
+"addr": "0x73fb00",
+"sonnet": "verified"
+},
+"R434": {
+"type": "real",
+"kind": "F",
+"class": "CSWSDoor",
+"name": "GetDialogResref",
+"addr": "0x616f00",
+"sonnet": "verified"
+},
+"R435": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "SetLoopingAnimation",
+"addr": "0x7ed950",
+"sonnet": "verified"
+},
+"R436": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "ShowShadowBlob",
+"addr": "0x764f80",
+"sonnet": "likely"
+},
+"R437": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "GetFieldType",
+"addr": "0x718710",
+"sonnet": "verified"
+},
+"R438": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "GetIgnoreVisibilityGraph",
+"addr": "0x46fb60",
+"sonnet": "verified"
+},
+"R439": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "HideGalaxyMapGui",
+"addr": "0x7ca920",
+"sonnet": "verified"
+},
+"R440": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldQuaternion",
+"addr": "0x7193d0",
+"sonnet": "verified"
+},
+"R441": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "SetSceneFocus",
+"addr": "0x464ca0",
+"sonnet": "likely"
+},
+"R442": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "AddList",
+"addr": "0x719740",
+"sonnet": "verified"
+},
+"R443": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetTargetChanging",
+"addr": "0x740e80",
+"sonnet": "verified"
+},
+"R444": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "StartLoadFromLayout",
+"addr": "0x40ee40",
+"sonnet": "verified"
+},
+"R445": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "GetCanHeadFollowInDialog",
+"addr": "0x7cf8f0",
+"sonnet": "verified"
+},
+"R446": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "AddAnimationFlag",
+"addr": "0x4e3110",
+"sonnet": "verified"
+},
+"R447": {
+"type": "real",
+"kind": "F",
+"class": "CGuiInGame",
+"name": "ShowGalaxyMapGui",
+"addr": "0x7ca730",
+"sonnet": "verified"
+},
+"R448": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationPlayOutOfPlace",
+"addr": "0x7ef730",
+"sonnet": "likely"
+},
+"R449": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "Constructor",
+"addr": "0x40e5a0",
+"sonnet": "verified"
+},
+"R450": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "ExitProgram",
+"addr": "0x73f290",
+"sonnet": "verified"
+},
+"R451": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "AnimationLooping",
+"addr": "0x7ef500",
+"sonnet": "verified"
+},
+"R452": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetName",
+"addr": "0x4596f0",
+"sonnet": "verified"
+},
+"R453": {
+"type": "real",
+"kind": "F",
+"class": "CSWCObject",
+"name": "HideShadowBlob",
+"addr": "0x764fb0",
+"sonnet": "likely"
+},
+"R454": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetOrientation",
+"addr": "0x4614e0",
+"sonnet": "verified"
+},
+"R455": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldFLOAT",
+"addr": "0x718d00",
+"sonnet": "verified"
+},
+"R456": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiControl",
+"name": "GetSelectableParent",
+"addr": "0x4193a0",
+"sonnet": "verified"
+},
+"R457": {
+"type": "real",
+"kind": "O",
+"class": "CSWGuiManager",
+"name": "panels",
+"addr": "0x88",
+"sonnet": "verified"
+},
+"R458": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "IsAnimating",
+"addr": "0x459890",
+"sonnet": "likely"
+},
+"R459": {
+"type": "real",
+"kind": "F",
+"class": "CServerExoApp",
+"name": "GetActiveTimer",
+"addr": "0x51c350",
+"sonnet": "verified"
+},
+"R460": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "EnableRenderBumpedOut",
+"addr": "0x45bf50",
+"sonnet": "verified"
+},
+"R461": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "WriteFieldDWORD",
+"addr": "0x719b90",
+"sonnet": "verified"
+},
+"R462": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "SetEnvironmentMap",
+"addr": "0x461300",
+"sonnet": "verified"
+},
+"R463": {
+"type": "real",
+"kind": "F",
+"class": "Scene",
+"name": "DisableVisibilityGraph",
+"addr": "0x46fb40",
+"sonnet": "verified"
+},
+"R464": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "GetWorldTimer",
+"addr": "0x73f3b0",
+"sonnet": "likely"
+},
+"R465": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "PlayerFlourishWeapons",
+"addr": "0x7408a0",
+"sonnet": "likely"
+},
+"R466": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "GetModelName",
+"addr": "0x4615d0",
+"sonnet": "verified"
+},
+"R467": {
+"type": "real",
+"kind": "F",
+"class": "Gob",
+"name": "RestoreTexture",
+"addr": "0x460ae0",
+"sonnet": "likely"
+},
+"R468": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiPanel",
+"name": "GetLocalMouseCoords",
+"addr": "0x40fed0",
+"sonnet": "verified"
+},
+"R469": {
+"type": "real",
+"kind": "F",
+"class": "CResGFF",
+"name": "ReadFieldBYTE",
+"addr": "0x718a00",
+"sonnet": "verified"
+},
+"R470": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "SetTexturePack",
+"addr": "0x73fbf0",
+"sonnet": "verified"
+},
+"R471": {
+"type": "real",
+"kind": "O",
+"class": "Scene",
+"name": "fog_density",
+"addr": "0x70",
+"sonnet": "verified"
+},
+"R472": {
+"type": "real",
+"kind": "F",
+"class": "CClientExoApp",
+"name": "RemoveMoveToModuleMovies",
+"addr": "0x7401c0",
+"sonnet": "verified"
+},
+"R473": {
+"type": "real",
+"kind": "F",
+"class": "CSWGuiManager",
+"name": "PopModalPanel",
+"addr": "0x4109c0",
+"sonnet": "verified"
+}
+}

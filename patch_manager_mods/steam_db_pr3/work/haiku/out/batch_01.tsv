@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R027	match	medium	ret=0 correct but decompile missing explicit this param
+R028	match	high	ret=4 matches, modifies visibility flag at this+0x48
+R029	match	high	ret=0 correct, sets view-in-volume flag byte to 1
+R030	match	high	ret=4 matches, complex extent calculation (758 bytes)
+R031	match	high	ret=4 matches, clientId param in loop iteration
+R032	match	high	ret=0 correct, returns cached server object
+R033	mismatch	high	GOG param_bytes=2 but ret=4; WORD param padded to 4
+R034	mismatch	high	GOG param_bytes=1 but ret=4; byte soundId padded to 4
+R035	mismatch	high	GOG param_bytes=14 but ret=16; WORD default padded
+R036	mismatch	high	GOG param_bytes=1 but ret=4; bool param padded to 4
+R037	match	medium	ret=0 correct for getter, complex decompile structure
+R038	match	high	Uses this+0x54 base with 0x10 stride for label indexing
+R039	match	high	ret=8 matches 2 stack params (image, forceUpdate)
+R040	match	high	ret=4 matches doStealth param, shows mode query
+R041	match	high	ret=0 correct, simple getter via *(*(this+4)+0x40)
+R042	match	high	ret=0 correct, getter returns credit sequence flag
+R043	match	high	ret=0 correct, no params for fade/stop
+R044	match	high	ret=4 matches, thin forwarder for attachment add
+R045	match	high	ret=0 correct, thin forwarder to sound check
+R046	match	high	ret=8 matches 2 params (name, radius), nearest object search
+R047	match	high	ret=16 matches 4 stack params, reads INT field from GFF
+R048	match	high	ret=4 matches, thin forwarder for attachment remove
+R049	mismatch	high	Typedef DWORD return but code void (no return)
+R050	match	high	ret=8 matches 2 float params (fogStart, fogEnd)
+R051	match	high	ret=12 matches 3 stack params, quaternion field write
+R052	match	high	ret=0 correct, clears combat queue
+R053	mismatch	high	__cdecl with 2 params should ret=8 but ret=0

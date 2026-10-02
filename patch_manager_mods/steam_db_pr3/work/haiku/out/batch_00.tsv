@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R000	match	high	ret=0 matches void thiscall, thin forwarder
+R001	match	high	ret=4 matches WORD param, stores to +0xc as ushort
+R002	match	high	ret=0 correct for no stack params, fastcall thiscall pattern
+R003	mismatch	high	typedef says BYTE but code stores dword at [this+0x43]
+R004	match	high	ret=0 matches, similar hide pattern to R002
+R005	match	high	ret=20 matches 5 params, returns CExoString reference
+R006	match	high	ret=12 matches 3 stack params, calculates buffer layout
+R007	mismatch	high	GOG param_bytes=13 but ret=16; typedef says param_bytes=16
+R008	match	high	ret=0 correct, simple getter returns *(this+0x30) as WORD
+R009	match	high	ret=4 matches, stores int param at this+0xe0
+R010	match	high	ret=0 correct, sets byte flag at +0x12 to 0
+R011	match	high	ret=4 matches, returns field count from struct
+R012	match	high	ret=4 stdcall correct, float param at +0x1e0
+R013	match	medium	ret=0 correct, 896-byte function complex but returns int properly
+R014	match	high	ret=8 matches 2 stack params, returns data field pointer
+R015	match	high	ret=0 matches, identical to R002 (same address tested twice)
+R016	match	high	ret=4 matches, outputs 3-component vector via pointer
+R017	match	high	Stores params+0x54 and reads from same offset for border
+R018	mismatch	high	Typedef void but code returns dword via ret=0 pattern
+R019	match	high	ret=0 correct, constructor returns this pointer
+R020	mismatch	high	ret=20 but typedef param_bytes=16; code takes 5 stack params
+R021	match	high	ret=0 correct, simple getter returns *(this+0x3e0)
+R022	match	high	ret=0 stdcall correct, returns boolean value
+R023	match	high	ret=0 correct, sets distortion flag byte to 0
+R024	match	high	ret=8 matches 2 stack params (image, forceUpdate)
+R025	match	high	ret=0 correct, simple getter via *(*(this+4)+0x2c0)
+R026	match	high	ret=4 matches, image param forwarded to setter

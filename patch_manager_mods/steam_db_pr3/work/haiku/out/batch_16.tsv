@@ -1,0 +1,29 @@
+rid	verdict	confidence	reason
+R431	match	high	ret=16 matches 4-param typedef; loads control from GFF
+R432	match	high	ret=4 matches 1-param typedef; sets level-up mode
+R433	match	high	ret=0 matches void return; thin forwarding
+R434	match	high	ret=4 matches 1-param typedef; copies door dialog resref
+R435	mismatch	high	ret=4 but GOG param_bytes=2; stack bytes mismatch
+R436	match	high	ret=0 matches void return; shows shadow blob
+R437	match	high	ret=12 matches 3-param typedef; gets GFF field type
+R438	match	high	ret=0 matches void return; getter for visibility flag
+R439	match	high	ret=0 matches void return; hides galaxy map GUI
+R440	match	high	ret=20 matches 5-param typedef; reads quaternion from GFF
+R441	mismatch	high	ret=12 but typedef expects param_bytes=4; stores 3 Vector components
+R442	match	high	ret=12 matches 3-param typedef; adds list to GFF struct
+R443	match	high	ret=0 matches void return; getter returns bool
+R444	mismatch	high	ret=12 but typedef expects param_bytes=4; GOG shows 3 params but typedef shows 1
+R445	match	high	ret=4 matches 1-param typedef; checks head follow in dialog
+R446	match	high	ret=4 matches 1-param typedef; adds animation flag to array
+R447	match	high	ret=4 matches 1-param typedef; shows galaxy map with planet
+R448	mismatch	high	Decompile not __thiscall; bare ushort param without this pointer
+R449	match	high	ret=4 matches 1-param typedef; constructor allocates border
+R450	mismatch	high	GOG __stdcall(no params) but decompile is __fastcall(param_1); calling convention mismatch
+R451	mismatch	high	ret=4 but GOG param_bytes=2; animation row index param bytes exceed expected
+R452	match	high	ret=0 matches void return; returns name resref pointer
+R453	mismatch	high	Decompile labeled as CPaneContainerManager::NotifyPaneDivider (wrong function)
+R454	mismatch	high	ret=20 but typedef expects param_bytes=8; stores 4-component quaternion
+R455	match	high	ret=16 matches 4-param typedef; reads float field from GFF
+R456	match	high	ret=0 matches void return; traverses parent chain
+R457	match	high	panels=[this+0x88] with count=[this+0x8c] confirmed in FindPanelIndex
+R458	match	high	ret=0 matches void return; returns animation status byte

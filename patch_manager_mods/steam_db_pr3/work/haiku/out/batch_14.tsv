@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R378	match	high	ret_N=0 matches; void setter with exception handling
+R379	match	high	ret_N=0 matches; void setter adding panel to hierarchy
+R380	match	high	ret_N=0 matches; thin wrapper to FUN_00750e60
+R381	match	high	ret_N=4 matches; takes portrait resref string param
+R382	mismatch	high	decompile is library CPaneContainerManager code, not CSWCObject method
+R383	match	high	ret_N=4 matches Steam; WORD ID promoted to 4 bytes
+R384	mismatch	high	ret_N=24 but typedef param_bytes=4; 6 params vs 1 expected
+R385	match	high	ret_N=4 matches; sets light on/off state with special handling
+R386	match	high	ret_N=0 matches; void getter for pending status summary
+R387	mismatch	high	ret_N=12 but function takes 1 param; should be ret_N=0
+R388	match	high	ret_N=0 matches; getter returns Pazaak running flag
+R389	mismatch	high	ret_N=8 but typedef param_bytes=0; forwarding with wrong annotation
+R390	match	high	ret_N=4 matches; fills Vector output parameter
+R391	match	high	ret_N=4 matches; gets cutscene dummy position vector
+R392	mismatch	high	not __thiscall; plain function with wrong calling convention annotation
+R393	match	high	ret_N=0 matches; complex getter creating client object
+R394	match	high	ret_N=0 matches; setter clearing add-in animations
+R395	match	high	ret_N=0 matches; void setter hiding area transition screen
+R396	match	high	ret_N=12 matches; 3-param short field write
+R397	match	high	ret_N=0 matches; getter returns target area ID
+R398	unsure	medium	decompile shows 2 params but GOG expects 3; actual signature unclear
+R399	match	high	ret_N=0 matches; simple setter clearing attachment pointer
+R400	match	high	ret_N=4 matches; sets dialog owner pointer
+R401	match	high	ret_N=24 matches; 6-param complex tile filling
+R402	match	high	ret_N=0 matches wrapper despite GOG mismatch; simple getter
+R403	match	high	ret_N=0 matches; thin wrapper to FUN_007a0500
+R404	mismatch	high	ret_N=20 matches GOG but not wrapper param_bytes=16; 5 vs 4 params

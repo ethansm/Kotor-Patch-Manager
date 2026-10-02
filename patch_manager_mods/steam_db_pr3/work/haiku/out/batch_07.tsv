@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R189	match	high	ret_N=4 correct; sets room index at +0xe0 from array lookup
+R190	match	high	ret_N=4 correct for __stdcall (not __thiscall); sets global, validates property range
+R191	match	high	ret_N=4 correct; stores border pointer, calls image setters
+R192	match	high	ret_N=0 correct; zeros shadow flag at +0xee
+R193	match	high	ret_N=12 correct; complex panel add logic with multiple calls
+R194	match	high	ret_N=4 correct; removes child, calls vtable destructor method
+R195	match	high	Decompile reads/writes *(int*)(param_1+0x20); SetActiveControl manages active_control
+R196	match	high	ret_N=0 correct; returns *(int*)(*(int*)(this+4)+0x1004c), timer pointer
+R197	match	high	ret_N=0 correct; calls conversion, returns millisecond value
+R198	mismatch	high	Typedef says void but decompile returns undefined1; function body returns *(undefined1*)(param_1+0x10)
+R199	match	high	ret_N=8 correct; returns data layout pointer from parameter checks
+R200	match	high	ret_N=0 correct; sets character flag at offset within vtable
+R201	match	high	ret_N=8 correct; returns 0/1 success; appends model part
+R202	match	high	SetSize stores shorts at +0x6c, +0x6e; Draw reads viewport height at mgr+0x6e for bounds check
+R203	mismatch	high	Function signature FUN_00842d00(void) takes NO parameters; contradicts __thiscall expecting this in ECX
+R204	match	high	ret_N=8 correct; adds movie to queue with skippable flag
+R205	match	high	ret_N=12 correct; writes CExoString field with length and data
+R206	match	high	ret_N=0 correct; clears cutscene flag at +0x14
+R207	match	high	ret_N=0 correct; sets always-render flag at +0x12 to 1
+R208	match	high	ret_N=4 correct; complex mine trigger logic, returns void
+R209	match	high	ret_N=8 correct for __stdcall (2 params); acquires item for creature
+R210	match	high	ret_N=12 correct; extracts list element index and value
+R211	mismatch	high	ret_N=12 but wrapper param_bytes=8; for __thiscall these should match (GOG shows param_bytes=12 agrees with ret_N)
+R212	mismatch	high	Ghidra library signature: Concurrency::details::SchedulerResourceManagement::Statistics, not SendSaveGameRequest
+R213	match	high	ret_N=0 correct; complex resource cleanup and layout initialization
+R214	match	high	ret_N=4 correct; loops through children, returns 0/1 found
+R215	match	high	ret_N=0 correct; centers panel using viewport width/height from manager

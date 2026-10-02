@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R054	match	high	ret=0 correct, thin forwarder for pause state BYTE
+R055	match	high	ret=12 matches 3 params (model, position, orientation)
+R056	match	high	ret=8 matches 2 params (leader, playSound), thin forwarder
+R057	match	high	Accesses this+0x68 and passes to glFogf for fog end
+R058	mismatch	high	Typedef void but code returns int (checks for existing child)
+R059	match	high	ret=0 correct, ends look-at animate
+R060	match	high	ret=4 matches priority param, sets all lights
+R061	match	high	ret=12 matches 3 stack params (struct, value, label)
+R062	match	high	ret=0 correct, hides store GUI (258 bytes)
+R063	mismatch	high	Typedef param_bytes=0 but code takes param_2 with ret=4
+R064	match	high	ret=0 correct, updates area transition visibility
+R065	mismatch	high	Typedef returns int but code returns void
+R066	mismatch	high	Takes 2 params (param_1, param_2) but ret=0
+R067	match	high	Ctor *param_1 = param_6; GetBorderDim returns *param_1
+R068	match	high	ret=12 matches 3 params (struct, value, label)
+R069	match	high	Dereferences this+4 then offsets +0x148 for language
+R070	match	high	param_1[0x15] maps to +0x54 bytes for control ID
+R071	match	high	ret=0 correct, sets distortion flag byte to 1
+R072	match	high	ret=12 matches 3 stack params (struct, value, label)
+R073	match	high	ret=8 matches 2 pointer params (won, wager)
+R074	match	high	ret=8 matches 2 params (extent, borderParams)
+R075	match	high	ret=4 matches id param, stores at this+4
+R076	match	high	ret=0 correct, resets all talk animations (750 bytes)
+R077	mismatch	high	GOG param_bytes=14 but ret=16; WORD default padded
+R078	match	high	ret=0 correct, updates dialog replies/responses
+R079	match	high	ret=0 correct, thin forwarder to input enable
+R080	match	high	ret=4 matches guiId param, switches UI panel

@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R351	match	high	ret_N=4 matches; takes CResList* param, counts fields
+R352	match	high	ret_N=4 matches; takes Vector* color param, stores components
+R353	match	high	ret_N=0 matches; getter returns 0 or 1 for fading state
+R354	match	high	ret_N=0 matches; getter returns WORD from 0x58
+R355	match	high	ret_N=0 matches; getter returns void* from 0xe0 offset
+R356	match	high	ret_N=0 matches; setter disables animations flag
+R357	match	high	ret_N=0 matches; thin wrapper calling FUN_0079c0e0
+R358	match	high	ret_N=0 matches; getter returns uint bit flag
+R359	match	high	ret_N=4 matches; complex amputate with exception handling
+R360	match	high	ret_N=4 matches; simple setter for attachment
+R361	match	high	ret_N=16 matches; 4-param floaty text with color and duration
+R362	match	high	ret_N=4 matches; setter for corpse retention flag
+R363	match	high	SetEdgeImage accesses param+0x34 for EDGE resref load
+R364	match	high	ret_N=4 matches; point-in-polygon containment test
+R365	match	high	ret_N=4 matches; thin wrapper to FUN_00798b70
+R366	match	high	ret_N=12 matches Steam; 3 params (string, type, color) promoted to 12 bytes
+R367	unsure	medium	__fastcall vs __stdcall calling convention mismatch; thin wrapper
+R368	match	high	ret_N=0 matches; setter pauses world timer
+R369	match	high	ret_N=4 matches Steam; WORD anim promoted to DWORD on stack
+R370	match	high	ret_N=4 matches; takes output int pointer for Y coordinate
+R371	match	high	ret_N=0 matches; void setter rebuilding GUI interface
+R372	match	high	ret_N=0 matches; destructor chain with vftable manipulation
+R373	match	high	ret_N=12 matches; 3-param data field allocation
+R374	match	high	ret_N=0 matches; thin wrapper to FUN_00796ba0
+R375	match	high	ret_N=0 matches; void setter updating dialog lip sync
+R376	match	high	ret_N=24 matches; 6-param world time addition
+R377	match	high	ret_N=16 matches wrapper; SHORT field read with success flag

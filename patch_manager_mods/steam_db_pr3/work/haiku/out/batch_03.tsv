@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R081	match	high	ret_N=0 matches param_bytes=0; simple setter to offset 0xe6
+R082	match	high	offset 0x50 confirmed in ctor (sets 1.0) and Draw (passes as alpha)
+R083	mismatch	high	Function at 0x005ef160 is a getter (returns value), not a setter
+R084	match	high	ret_N=4 matches param_bytes=4; returns this, copy-assignment pattern
+R085	match	high	ret_N=12 matches param_bytes=12; writes 3-float vector to GFF
+R086	match	high	ret_N=12 matches param_bytes=12; writes INT field with param_3
+R087	match	high	ret_N=8 matches param_bytes=8; fills two Vector output parameters
+R088	match	high	ret_N=12 matches param_bytes=12; loads border from GFF struct
+R089	match	high	ret_N=0 matches param_bytes=0; debug menu cleanup
+R090	unsure	medium	Thin wrapper pattern; calling convention not explicitly marked but logic consistent
+R091	match	high	ret_N=12 matches param_bytes=12; writes CResRef field with 5-char string
+R092	match	high	ret_N=4 matches param_bytes=4; actual setter writes param_2 to offset 0x3e0
+R093	match	high	ret_N=8 matches param_bytes=8; returns field pointer by index
+R094	mismatch	high	ret_N=4 but param_bytes=12; function only takes 1 extra param, not 3
+R095	match	high	ret_N=0 matches param_bytes=0; returns float from offset 0x1ac
+R096	match	high	ret_N=0 matches param_bytes=0; returns offset table address
+R097	match	high	ret_N=0 matches param_bytes=0; getter returns input class field
+R098	match	high	ret_N=0 matches param_bytes=0; thin wrapper forward
+R099	mismatch	high	ret_N=0 but param_bytes=4; no stack params popped but 1 expected
+R100	match	high	ctor _strncpy at this+0x8d confirmed in code line 761
+R101	mismatch	high	ret_N=4 but param_bytes=8; only 1 stack param popped, 2 expected
+R102	match	high	ret_N=0 matches param_bytes=0; simple setter to offset 0xf4
+R103	match	high	ret_N=0 matches param_bytes=0; thin wrapper forward
+R104	match	high	ret_N=0 matches param_bytes=0; simple setter to offset 0x11
+R105	mismatch	high	Function at 0x0073f930 is Concurrency::SchedulerProxy library function, not game function
+R106	mismatch	high	ret_N=4 but param_bytes=0 in typedef; GOG shows param_bytes=4
+R107	match	high	ret_N=0 matches param_bytes=0; returns computed world timer minute

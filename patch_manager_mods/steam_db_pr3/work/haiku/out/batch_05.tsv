@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R135	match	high	ret_N=0 matches param_bytes=0; getter returns last target DWORD
+R136	match	high	ret_N=0 matches param_bytes=0; simple setter enables shadows
+R137	unsure	low	OFFSET claim only; no decompile evidence provided
+R138	match	high	ctor 0x7110d0 stores CRes::vftable at *param_1, offset 0x0
+R139	unsure	medium	Function takes 1 param, switch statement on param_1; no __thiscall marking
+R140	unsure	medium	Parses file format; ret_N=4 matches param_bytes=4; complex logic
+R141	match	high	Load stores fields at border+0x14 (DIMENSION), +0x18 (INNEROFFSET), +0x28 (COLOR)
+R142	match	high	ret_N=4 matches param_bytes=4; thin wrapper SetCanSendDialog
+R143	match	high	ret_N=12 matches param_bytes=12; writes BYTE field to GFF struct
+R144	unsure	medium	Function is getter (returns modeNum), but typedef names it setter; return type matches
+R145	unsure	medium	ret_N=4 matches param_bytes=4; loads animation table from external file
+R146	match	high	SetVisible clears/sets bit 2 at offset 0x48; Draw tests bit 6; CenterPanel sets bit 0
+R147	match	high	ret_N=12 matches param_bytes=12; adds field with type; flexible return semantics
+R148	match	high	ret_N=4 matches param_bytes=4; adds control to panel's array
+R149	match	high	ret_N=8 matches param_bytes=8; thin wrapper GetGUIString returns param_1
+R150	match	high	ret_N=0 matches param_bytes=0; cycles through SWInGameGui panels
+R151	match	high	ret_N=4 matches param_bytes=4; subtracts flag value from animation
+R152	match	high	ret_N=4 matches param_bytes=4; stores 4-component orientation quaternion
+R153	match	high	ret_N=0 matches param_bytes=0; enables visibility graph in scene
+R154	match	high	ret_N=0 matches param_bytes=0; allocates and initializes GFF struct table
+R155	match	high	ret_N=0 matches param_bytes=0; getter returns scene room count
+R156	match	high	ret_N=0 matches param_bytes=0; resumes world timer if paused
+R157	match	high	CRes.data at 0x10 confirmed: Demand returns [res+0x10]; ctor tests [4] after load
+R158	unsure	low	Return type undefined1, same issue as R122; IsInCutscene getter pattern
+R159	match	high	ret_N=4 matches param_bytes=4; sets enabled flag bit 3 at offset 0x48
+R160	match	high	ret_N=0 matches param_bytes=0; simple setter clears force animation bit
+R161	match	high	ret_N=4 matches param_bytes=4; similar to R125 but different animation row property

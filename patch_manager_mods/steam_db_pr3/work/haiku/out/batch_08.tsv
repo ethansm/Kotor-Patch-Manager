@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R216	match	high	ret_N=4 correct; complex action clearing with multiple edge cases
+R217	mismatch	high	ret_N=12 but wrapper param_bytes=16; for __thiscall should match (4 params = 16 bytes, ret_N should be 16 not 12)
+R218	match	high	ret_N=0 correct; returns timer pointer from *(int*)(this+4)+0x10048
+R219	mismatch	high	Function signature FUN_00841180(void) takes NO parameters; contradicts __thiscall expecting ECX this
+R220	match	high	ret_N=24 correct for 6-parameter __thiscall; complex buffer read with validation
+R221	mismatch	high	Function signature FUN_0087be80(void) takes NO parameters; contradicts __thiscall expecting ECX
+R222	mismatch	high	GOG param_bytes=8 (2 params) but wrapper param_bytes=12 (3 params); disagreement in signature
+R223	match	high	operator= decompile shows param_1[3]=source+0xc, offset 0xc stores fill_angle value
+R224	match	high	Loaders store size at param_2[6] (+0x18); decompiles confirm this offset for resource size
+R225	match	high	ret_N=0 correct; returns *(int*)(*(int*)(this+4)+0x148), language setting
+R226	mismatch	high	Ghidra library signature: CPaneContainerManager::NotifyPaneDivider, not ShowShadowBlob
+R227	match	high	ret_N=24 correct; fills rectangle with height/width/position/alpha/color args
+R228	match	high	ret_N=12 correct; complex data layout field allocation with buffer management
+R229	match	high	ret_N=20 correct; reads localized string with language list parsing
+R230	mismatch	high	Ghidra library signature: Concurrency::details::SchedulerResourceManagement::Statistics, not SendLoadGameRequest
+R231	match	high	ret_N=4 correct; adds child with spatial hierarchy setup
+R232	match	high	ret_N=20 correct; reads Vector (3x float) from GFF field data
+R233	match	high	ret_N=0 correct; returns uint16 portrait ID at +0xb8
+R234	mismatch	high	Function signature FUN_005f6630(void) takes NO parameters; contradicts __thiscall expecting ECX
+R235	match	high	ret_N=12 correct; fills CResList with field label and index
+R236	match	high	ret_N=4 correct; returns reputation enum (0/1/2) from faction/disposition lookup
+R237	match	high	ret_N=8 correct; checks mine trigger conditions, returns 0/1 allowed
+R238	match	high	ret_N=0 correct; iterates rooms and emitters, updates particle systems
+R239	match	high	ret_N=0 correct; returns pointer: param_1+0x3ec (first name string data offset)
+R240	match	high	ret_N=0 correct; complex quick-load state machine with file/GFF parsing
+R241	match	high	ret_N=0 correct; creates body bag creature with inventory and effects
+R242	mismatch	high	Wrapper param_bytes=0 but decompile shows FUN_00414bf0(undefined4 param_1, uint param_2); missing delete flag parameter

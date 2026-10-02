@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R270	match	high	Destructor signature matches; accesses offsets consistently; ret_N=0
+R271	mismatch	high	GOG param_bytes=2 (WORD) but typedef says param_bytes=4
+R272	mismatch	high	Not __thiscall; plain function FUN_0073fee0(undefined4 param_1, undefined4 param_2)
+R273	match	high	Signature matches; stores param_2 at offset 0x4c; ret_N=4
+R274	mismatch	high	Not __thiscall; FUN_00419330(undefined4) has no implicit this
+R275	mismatch	high	Typedef param_bytes=4 but GOG param_bytes=20; decompile has 5 params
+R276	match	high	Takes thisPtr and two ints; accesses offsets 0x4, 0x8, 0xc, 0x10
+R277	match	high	Returns int from calculations; ret_N=0 matches param_bytes=0
+R278	match	high	Takes this and one pointer; sets offset 0xf0; ret_N=4
+R279	match	high	Complex return checking multiple offset conditions; ret_N=0
+R280	match	high	Takes thisPtr and two pointer outputs; copies 3 dwords each
+R281	mismatch	high	Not __thiscall; FUN_0051c0a0(undefined4) has no implicit this
+R282	match	high	Takes this and two pointer outputs; copies 3 dwords each
+R283	mismatch	high	GOG param_bytes=5 but typedef says 8; takes float(4)+char(1)
+R284	match	high	Returns byte from offset 0x181; ret_N=0 matches param_bytes=0
+R285	match	high	Thin thunk; ret_N=0 matches param_bytes=0
+R286	match	high	Large void function; extensive offset accesses; ret_N=0
+R287	match	high	Constructor sets vftable and zeroes fields; ret_N=0
+R288	match	high	Takes this and pointer; modifies extent structure; ret_N=4
+R289	mismatch	high	GOG param_bytes=1 but typedef says 4; stores char at offset 0x180
+R290	match	high	Reads and uses param_1+0x24; operation on resref confirmed
+R291	match	high	Takes this and 3 params; manipulates GFF data structures
+R292	match	high	Loop accesses offset 0x54 with count at 0x58; strcmp at offset 0x64
+R293	mismatch	high	Not __thiscall; plain function FUN_00465210(undefined4 param_1)
+R294	mismatch	high	GOG param_bytes=2 (WORD) but typedef says param_bytes=4
+R295	mismatch	high	Decompile has param_2 but typedef says param_bytes=0; ret_N=4 vs 0
+R296	mismatch	high	GOG param_bytes=2 (WORD) but typedef says param_bytes=4

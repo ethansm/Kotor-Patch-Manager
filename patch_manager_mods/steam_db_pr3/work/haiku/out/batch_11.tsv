@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R297	match	high	Takes this + 6 params = 24 bytes; operations match typedef semantics
+R298	mismatch	high	Not __thiscall; FUN_007189d0(undefined4 *param_1) lacks implicit this
+R299	match	high	Takes this and one pointer output; string construction logic
+R300	mismatch	high	Not __thiscall; only 4 params instead of 5; decompile lacks this
+R301	match	high	Takes this and two pointer outputs; timer calculations use offsets
+R302	match	high	Returns int from offset 0x4ac; ret_N=0 matches param_bytes=0
+R303	mismatch	high	Decompile labeled "CBaseTabbedPane::SerializeTabWindow", not game function
+R304	match	high	Thin thunk; ret_N=0 matches param_bytes=0
+R305	match	high	Thin thunk calling FUN_00459f00; ret_N=0 matches param_bytes=0
+R306	mismatch	high	Typedef says param_bytes=0 but GOG 4; decompile has param_2 (uint)
+R307	match	high	Takes this, WORD, char*, undefined4; constructors/resource mgmt
+R308	match	high	Takes this and two pointer outputs; reads 2 floats each
+R309	mismatch	high	Not __thiscall; FUN_00718690(undefined4) only 1 param
+R310	match	high	Thin thunk; ret_N=0 matches param_bytes=0
+R311	match	high	Takes this and two params (object ptr and float); calls vfunc
+R312	mismatch	high	Only 2 params in decompile but typedef expects 3 (name, type)
+R313	mismatch	high	Not __thiscall; FUN_0061d620(void) takes zero parameters
+R314	match	high	Takes thisPtr; complex dialog state management; ret_N=0
+R315	match	high	Takes this and float; timer arithmetic and offset storage
+R316	match	high	Takes this and 4 params; GFF struct operations; ret_N=16
+R317	mismatch	high	GOG param_bytes=2 (WORD) but typedef says param_bytes=4
+R318	mismatch	high	Both GetFogRange and SetFogRange use offset 0x68, not 0x64
+R319	match	high	Takes thisPtr; calls ClientToServerObjectId; ret_N=0
+R320	mismatch	high	GOG param_bytes=2 (WORD) but typedef says param_bytes=4
+R321	match	high	Returns int from complex offset calculations; ret_N=0
+R322	mismatch	high	Not __thiscall; plain function FUN_0073f910(undefined4 param_1)
+R323	match	high	Takes thisPtr; clears multiple offsets; ret_N=0

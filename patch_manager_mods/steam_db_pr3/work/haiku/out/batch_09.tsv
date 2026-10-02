@@ -1,0 +1,28 @@
+rid	verdict	confidence	reason
+R243	match	high	Thin thunk forwarding call; ret_N=0 matches param_bytes=0
+R244	match	high	Signature matches; ret_N=12 equals param_bytes=12; all params used
+R245	match	high	Void thunk; ret_N=0 matches param_bytes=0
+R246	mismatch	high	ret_N=4 but typedef param_bytes=0; decompile has extra param_2
+R247	match	high	Returns pointer; ret_N=4 matches param_bytes=4; boundary check logic fits
+R248	match	high	Returns WORD from offset 0x48; ret_N=0 matches param_bytes=0
+R249	match	high	Decompile shows id*0xc + *(param_1+0x44) exactly as claimed
+R250	mismatch	high	Typedef param_bytes=8 contradicts GOG 16; decompile has 5 params
+R251	match	high	Signature matches; stores WORD at offset 8 relative to struct
+R252	match	high	Thin thunk calling FUN_00459f00; ret_N=0 matches param_bytes=0
+R253	match	high	Sets bits 2-4 at offset 0x20 with exact bit operations shown
+R254	match	high	Returns byte from offset 0xe6; no params, ret_N=0
+R255	match	high	Thin thunk; ret_N=0 matches param_bytes=0
+R256	mismatch	high	Not __thiscall; decompile is void FUN_007409a0(undefined4), no this
+R257	match	high	Void function with void params; checks offset 0x128
+R258	match	high	Complex void function; all offsets accessed consistently
+R259	mismatch	high	GOG param_bytes=2 but typedef says 4; takes one WORD param
+R260	match	high	Returns byte from offset 0x12; ret_N=0 matches param_bytes=0
+R261	match	high	Decompile shows idx*0xc + *(param_1+0x4c) in multiple branches
+R262	mismatch	high	Decompile labeled "CRichEditView::GetMargins", not game function
+R263	match	high	Stores float at offset 0x1ac; ret_N=4 matches param_bytes=4
+R264	match	high	Constructor sets param_1[4]=param_7; dword array indexing = offset 0x10
+R265	match	high	Void function accessing offsets 0x128, 0x38, 0x54, 0x58
+R266	match	high	Void function; calls CSWGuiManager::AddPanel with offset 0x58
+R267	match	high	Void function; checks and calls offset 0x98
+R268	mismatch	high	Function FUN_005f6a70 takes no parameters, not __thiscall
+R269	match	high	Ctor stores border at [0x18]=offset 0x60; dtor/draw confirm offset

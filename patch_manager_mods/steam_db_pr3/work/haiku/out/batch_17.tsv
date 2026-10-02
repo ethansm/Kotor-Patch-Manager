@@ -1,0 +1,16 @@
+rid	verdict	confidence	reason
+R459	mismatch	high	Decompile not __thiscall structure; bare function(undefined4) lacks this pointer
+R460	mismatch	high	ret=8 but typedef expects param_bytes=0; GOG shows 2 extra params
+R461	match	high	ret=12 matches 3-param typedef; writes DWORD field to GFF
+R462	match	high	ret=4 matches 1-param typedef; sets environment map on object
+R463	match	high	ret=0 matches void return; disables visibility graph
+R464	match	high	ret=0 matches void return; getter returns world timer
+R465	match	high	ret=0 matches void return; thin forwarding to weapon flourish
+R466	match	high	ret=0 matches void return; returns model name resref
+R467	mismatch	high	Decompile takes void (no params), but needs __thiscall with this
+R468	match	high	ret=8 matches 2-param typedef; gets local mouse coordinates
+R469	mismatch	high	ret=16 but only 3 params on stack visible (12 bytes); typedef expects 4 params
+R470	mismatch	high	ret=4 but GOG param_bytes=1; decompile not __thiscall structure
+R471	match	high	fog_density offset 0x70 confirmed; glFogf(GL_FOG_DENSITY, this+0x70)
+R472	mismatch	high	GOG __stdcall(no params) but typedef __thiscall; decompile takes void
+R473	match	high	ret=0 matches; PopModalPanel returns panel or zero; int return fits
