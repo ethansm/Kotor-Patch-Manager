@@ -6,6 +6,14 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "dark"
 summary = "Dark-side caster (Affliction/Plague/Lightning/Storm/Drain/Scream/Kill/Death Field). CONFLICTS with mod #142 unless Visas' alignment is dark (DS powers up to -50% when light)."
+convert_at = 0   # never converts (already Sentinel)
+
+[meta.wizard]
+role = "caster"
+style = "none"
+alignment = "dark"
+convert = "n/a"
+skills = "stealth"
 
 [[level]]
 char_level = 7

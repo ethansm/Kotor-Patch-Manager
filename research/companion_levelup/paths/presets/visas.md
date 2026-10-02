@@ -1,6 +1,6 @@
 # Visas Marr presets (Jedi Sentinel 7-30)
 
-Files: `visas__duelist.toml`, `visas__force_support.toml`, `visas__dark.toml`. All pass `check_paths.py` with 0 errors and 0 warnings (every feat/power slot and all 3 skill points per level are used).
+Files (8 presets): `visas__duelist.toml`, `visas__force_support.toml`, `visas__dark.toml` (original three, wizard block added) and `visas__melee_dual_light.toml`, `visas__melee_double_neutral.toml`, `visas__caster_none_light.toml`, `visas__melee_single_neutral.toml`, `visas__tank_single_light.toml`. All pass `check_paths.py` with 0 errors and 0 warnings (every feat/power slot and all 3 skill points per level are used).
 Runtime tag is `VisasMarr` (utc Tag, live_utc/p_visas.utc); the engine compares case-insensitively. Starting state: live template Sentinel 6, level 6, STR12 DEX16 CON10 INT10 WIS12 CHA16, template alignment 35 (lean dark).
 
 ## Progression facts
@@ -34,3 +34,17 @@ Runtime tag is `VisasMarr` (utc Tag, live_utc/p_visas.utc); the engine compares 
 - Attack-bonus prereqs unchecked (no feats here needed it, no warnings emitted). Max rank assumed level+3 and cross-class cost 2 (not verified in game).
 - No alignment or LS/DS awareness: dark-vs-mod-#142 conflict cannot be flagged automatically.
 - Dueling-style conditions (single weapon equipped) and equipment are not modelled.
+
+## Wizard answers -> preset -> rationale (convert = n/a for all; `convert_at = 0`)
+| preset (file) | role | style | alignment | skills | rationale |
+|---|---|---|---|---|---|
+| duelist (`visas__duelist`) | melee | single | light | combat | Matches her live template/Thematic design (no TWF); Dueling + Finesse, LS buffs |
+| force_support (`visas__force_support`) | support | single | light | combat | Heal/Revitalize/Barrier/Battle Meditation healer-controller, Treat Injury at cap (#142) |
+| dark (`visas__dark`) | caster | none | dark | stealth | DS caster (Lightning, Drain, Scream, Storm, Kill); needs dark alignment for #142 |
+| dual_light (`visas__melee_dual_light`) | melee | dual | light | combat | TWF/Improved/Master TWF (she lost TWF to Thematic; re-taken), Critical Strike line, Master Flurry, LS buffs/Heal, Push line |
+| double_neutral (`visas__melee_double_neutral`) | melee | double | neutral | combat | Double-bladed (TWF line applies to double blades), Finesse + Critical Strike; ONLY universal powers (#142 neutral) |
+| caster_light (`visas__caster_none_light`) | caster | none | light | social | Offensive Force without DS: Stun/Stasis/Field, Affect/Dominate/Mind Trick, Whirlwind/Wave/Breach; Regenerate FP first; Persuade-weighted skills |
+| stealth_neutral (`visas__melee_single_neutral`) | melee | single | neutral | stealth | Scout style: Stealth Run, Caution line, Critical Strike, Dueling line, Mind Trick, Speed; Stealth/Awareness/Security |
+| tank_light (`visas__tank_single_light`) | tank | single | light | combat | Toughness/Conditioning/Jedi Defense lines, Aura/Shield/Armor, Barrier, resistances, Deflection |
+
+Notes: `support` role keys on Heal/Revitalize; `tank` and `support` both use `single`/`light`, so role disambiguates. Not covered (illogical or no data): `unarmed` (live has only Unarmed Specialist I/II, no unarmed power feats beyond that), `tech` skill focus (new presets spend points on Stealth/Awareness/Treat Injury/Persuade/Security; Computer Use only in `dark`), light/dark `ranged` (no ranged feats for her). `neutral` presets still keep her already-known dark powers (Fear, Horror, Shock, Wound, Slow) since the template has them. Dual Strike (190-192) is NOT dual wield (teamwork attack bonus), so it is not used for the dual presets; TWF (3/9/85) is. Universal vs light vs dark power groups follow `text/strategywiki_Force_powers.txt:905-1560`; Whirlwind/Wave are Force Push line (universal), Stasis/Stun lines are light.

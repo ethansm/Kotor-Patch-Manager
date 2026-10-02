@@ -1,0 +1,185 @@
+# Mira preset 'ranged_rifle_light_late': Rifle sniper: Scout 7-12 (Weapon Focus: Blaster Rifle, Improved Sniper Shot, Critical Strike), Sentinel from 13 (Master Sniper/Critical Strike, Conditioning, Jedi Defense) with Speed/Heal/Deflection/Valor kit; Stealth/Security/Awareness skills
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). Attribute bumps follow elkripper (DEX at 8/12/16/20, CON +1 at 24/28 from live CON13).
+[meta]
+tag = "mira"
+name = "Mira"
+utc = "p_mira.utc"
+variant = "ranged_rifle_light_late"
+summary = "Rifle sniper: Scout 7-12 (Weapon Focus: Blaster Rifle, Improved Sniper Shot, Critical Strike), Sentinel from 13 (Master Sniper/Critical Strike, Conditioning, Jedi Defense) with Speed/Heal/Deflection/Valor kit; Stealth/Security/Awareness skills"
+convert_at = 13   # first Jedi (Sentinel) char level; 0 = never converts
+hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
+
+[meta.wizard]
+role = "ranged"
+style = "rifle"
+alignment = "light"
+convert = "late"
+skills = "stealth"
+
+[[level]]
+char_level = 7
+class = 1   # Scout
+feats = [33]   # 33:Weapon Focus: Blaster Rifle
+skills = {awareness = 4}
+
+[[level]]
+char_level = 8
+class = 1   # Scout
+attrs = {DEX = 17}
+feats = []
+skills = {awareness = 1, computer_use = 3}
+
+[[level]]
+char_level = 9
+class = 1   # Scout
+feats = [20]   # 20:Improved Sniper Shot
+skills = {awareness = 1, computer_use = 3}
+
+[[level]]
+char_level = 10
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, computer_use = 1, treat_injury = 2}
+
+[[level]]
+char_level = 11
+class = 1   # Scout
+feats = [19]   # 19:Improved Critical Strike
+skills = {awareness = 1, computer_use = 1, treat_injury = 2}
+
+[[level]]
+char_level = 12
+class = 1   # Scout
+attrs = {DEX = 18}
+feats = []
+skills = {awareness = 1, computer_use = 1, treat_injury = 2}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [77]   # 77:Master Sniper Shot
+powers = [8, 10]   # 8:Burst of Speed, 10:Heal
+skills = {stealth = 4}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {stealth = 4}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = [81]   # 81:Master Critical Strike
+powers = [34]   # 34:Knight Speed
+skills = {stealth = 4}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+attrs = {DEX = 19}
+feats = []
+powers = [22]   # 22:Force Valor
+skills = {stealth = 4}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [28]   # 28:Improved Heal
+skills = {stealth = 2, security = 2}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = [29]   # 29:Power Blast
+powers = [135]   # 135:Force Barrier
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [13]   # 13:Conditioning
+powers = [163]   # 163:Force Redirection
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+attrs = {DEX = 20}
+feats = []
+powers = [33]   # 33:Knight Valor
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [37]   # 37:Master Speed
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = []
+powers = [18]   # 18:Force Aura
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [24]   # 24:Force Shield
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+attrs = {CON = 14}
+feats = [84]   # 84:Toughness
+powers = [134]   # 134:Master Heal
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [21]   # 21:Improved Conditioning
+powers = [138]   # 138:Battle Meditation
+skills = {stealth = 1, security = 3}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = []
+powers = [46]   # 46:Stun
+skills = {stealth = 1, security = 1, awareness = 2}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = [24]   # 24:Master Jedi Defense
+powers = [136]   # 136:Improved Force Barrier
+skills = {stealth = 1, security = 1, awareness = 2}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+attrs = {CON = 15}
+feats = []
+powers = [139]   # 139:Improved Battle Meditation
+skills = {stealth = 1, security = 1, awareness = 2}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [29]   # 29:Stasis
+skills = {stealth = 1, security = 1, awareness = 2}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = [196]   # 196:Regenerate Vitality Points
+powers = [36]   # 36:Master Valor
+skills = {stealth = 1, security = 1, awareness = 2}

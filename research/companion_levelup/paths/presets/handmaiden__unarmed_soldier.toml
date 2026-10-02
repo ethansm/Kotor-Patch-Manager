@@ -8,6 +8,13 @@ variant = "unarmed_soldier"
 summary = "Soldier 7-30, never converts (elkripper unarmed Soldier); no Force powers."
 convert_at = 0   # never converts; no hold needed
 
+[meta.wizard]
+role = "melee"
+style = "unarmed"
+alignment = "none"
+convert = "never"
+skills = "combat"
+
 [[level]]
 char_level = 7
 class = 0   # Soldier

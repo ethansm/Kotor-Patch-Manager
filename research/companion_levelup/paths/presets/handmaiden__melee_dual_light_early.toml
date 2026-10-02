@@ -1,0 +1,191 @@
+# Handmaiden (tag handmaiden): Soldier 6 held, then Jedi Guardian 1-24 dual-wielding lightsabers (Master Two-Weapon Fighting, Dual Strike line, Critical Strike); light-side buffs.
+# Attribute lines document the fixed auto-increases (elkripper); skill points are a PROPOSAL.
+[meta]
+tag = "handmaiden"
+name = "Handmaiden"
+utc = "p_handmaiden.utc"
+variant = "melee_dual_light_early"
+summary = "Soldier 6 held, then Jedi Guardian 1-24 dual-wielding lightsabers (Master Two-Weapon Fighting, Dual Strike line, Critical Strike); light-side buffs."
+convert_at = 7   # first char level taken as Guardian; real conversion happens when story allows (see handmaiden.md)
+hold_until_class = 3   # bank levels until the Jedi Guardian class exists; picks are identical whatever char level conversion happens at
+
+[meta.wizard]
+role = "melee"
+style = "dual"
+alignment = "light"
+convert = "early"
+skills = "combat"
+
+[[level]]
+char_level = 7
+class = 3   # JediGuardian
+feats = [36]   # 36:Weapon Focus: Lightsaber
+powers = [8, 10]   # 8:Burst of Speed, 10:Heal
+skills = {awareness = 1}
+
+[[level]]
+char_level = 8
+class = 3   # JediGuardian
+attrs = {STR = 15}
+feats = [50]   # 50:Weapon Specialization: Lightsaber
+powers = [22]   # 22:Force Valor
+skills = {awareness = 1}
+
+[[level]]
+char_level = 9
+class = 3   # JediGuardian
+feats = [85]   # 85:Master Two-Weapon Fighting
+powers = [34]   # 34:Knight Speed
+skills = {awareness = 1}
+
+[[level]]
+char_level = 10
+class = 3   # JediGuardian
+feats = []
+powers = [135]   # 135:Force Barrier
+skills = {awareness = 1}
+
+[[level]]
+char_level = 11
+class = 3   # JediGuardian
+feats = [8]   # 8:Critical Strike
+powers = [33]   # 33:Knight Valor
+skills = {awareness = 1}
+
+[[level]]
+char_level = 12
+class = 3   # JediGuardian
+attrs = {STR = 16}
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {awareness = 1}
+
+[[level]]
+char_level = 13
+class = 3   # JediGuardian
+feats = [190]   # 190:Dual Strike
+powers = [136]   # 136:Improved Force Barrier
+skills = {awareness = 1}
+
+[[level]]
+char_level = 14
+class = 3   # JediGuardian
+feats = []
+powers = [28]   # 28:Improved Heal
+skills = {awareness = 1}
+
+[[level]]
+char_level = 15
+class = 3   # JediGuardian
+feats = [191]   # 191:Improved Dual Strike
+powers = [37]   # 37:Master Speed
+skills = {awareness = 1}
+
+[[level]]
+char_level = 16
+class = 3   # JediGuardian
+attrs = {CON = 15}
+feats = []
+powers = [36]   # 36:Master Valor
+skills = {awareness = 1}
+
+[[level]]
+char_level = 17
+class = 3   # JediGuardian
+feats = [192]   # 192:Master Dual Strike
+powers = [163]   # 163:Force Redirection
+skills = {awareness = 1}
+
+[[level]]
+char_level = 18
+class = 3   # JediGuardian
+feats = []
+powers = [41]   # 41:Force Resistance
+skills = {awareness = 1}
+
+[[level]]
+char_level = 19
+class = 3   # JediGuardian
+feats = [21]   # 21:Improved Conditioning
+powers = [20]   # 20:Force Immunity
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 20
+class = 3   # JediGuardian
+attrs = {CON = 16}
+feats = []
+powers = [137]   # 137:Master Force Barrier
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 21
+class = 3   # JediGuardian
+feats = [22]   # 22:Master Conditioning
+powers = [134]   # 134:Master Heal
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 22
+class = 3   # JediGuardian
+feats = []
+powers = [18]   # 18:Force Aura
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 23
+class = 3   # JediGuardian
+feats = [124]   # 124:Master Toughness
+powers = [24]   # 24:Force Shield
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 24
+class = 3   # JediGuardian
+attrs = {STR = 17}
+feats = []
+powers = [17]   # 17:Force Armor
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 25
+class = 3   # JediGuardian
+feats = [19]   # 19:Improved Critical Strike
+powers = [42]   # 42:Energy Resistance
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 26
+class = 3   # JediGuardian
+feats = []
+powers = [40]   # 40:Improved Energy Resistance
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 27
+class = 3   # JediGuardian
+feats = [81]   # 81:Master Critical Strike
+powers = [133]   # 133:Master Energy Resistance
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 28
+class = 3   # JediGuardian
+attrs = {STR = 18}
+feats = []
+powers = [138]   # 138:Battle Meditation
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 29
+class = 3   # JediGuardian
+feats = [83]   # 83:Master Power Attack
+powers = [139]   # 139:Improved Battle Meditation
+skills = {treat_injury = 1}
+
+[[level]]
+char_level = 30
+class = 3   # JediGuardian
+feats = []
+powers = [140]   # 140:Master Battle Meditation
+skills = {treat_injury = 1}

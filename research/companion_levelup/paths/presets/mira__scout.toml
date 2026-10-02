@@ -8,6 +8,13 @@ variant = "scout"
 summary = "Never converts: Scout 7-30, pistol/rapid-shot/sniper/dual-wield, grenade+rocket+medic utility"
 convert_at = 0   # first Jedi (Sentinel) char level; 0 = never converts
 
+[meta.wizard]
+role = "ranged"
+style = "pistols"
+alignment = "none"
+convert = "never"
+skills = "tech"
+
 [[level]]
 char_level = 7
 class = 1   # Scout

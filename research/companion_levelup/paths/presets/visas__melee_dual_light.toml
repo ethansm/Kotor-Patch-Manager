@@ -1,0 +1,184 @@
+# Visas Marr: Jedi Sentinel 7-30, preset 'dual_light'. Light-side dual-wield Sentinel: Two-Weapon Fighting line, Critical Strike line, Master Flurry, light buffs/heal and Force Push line.
+# Skill points are a PROPOSAL (3/level: INT 10 -> 3+0; max rank = level+3, greedy by weight). Attribute increases NOT listed (no source table for Visas).
+[meta]
+tag = "VisasMarr"
+name = "Visas Marr"
+utc = "p_visas.utc"
+variant = "dual_light"
+summary = "Light-side dual-wield Sentinel: Two-Weapon Fighting line, Critical Strike line, Master Flurry, light buffs/heal and Force Push line."
+convert_at = 0   # never converts (already Sentinel)
+
+[meta.wizard]
+role = "melee"
+style = "dual"
+alignment = "light"
+convert = "n/a"
+skills = "combat"
+
+[[level]]
+char_level = 7
+class = 5   # JediSentinel
+feats = [3]   # 3:Two-Weapon Fighting
+powers = [22]   # 22:Force Valor
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 8
+class = 5   # JediSentinel
+feats = []
+powers = [18]   # 18:Force Aura
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 9
+class = 5   # JediSentinel
+feats = [9]   # 9:Improved Two-Weapon Fighting
+powers = [8]   # 8:Burst of Speed
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 10
+class = 5   # JediSentinel
+feats = []
+powers = [33]   # 33:Knight Valor
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 11
+class = 5   # JediSentinel
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 12
+class = 5   # JediSentinel
+feats = [85]   # 85:Master Two-Weapon Fighting
+powers = [24]   # 24:Force Shield
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [10]   # 10:Heal
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = []
+powers = [40]   # 40:Improved Energy Resistance
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = [8]   # 8:Critical Strike
+powers = [36]   # 36:Master Valor
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+feats = []
+powers = [37]   # 37:Master Speed
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [28]   # 28:Improved Heal
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = [53]   # 53:Master Flurry
+powers = [17]   # 17:Force Armor
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [19]   # 19:Improved Critical Strike
+powers = [133]   # 133:Master Energy Resistance
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+feats = []
+powers = [27]   # 27:Force Whirlwind
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = [24]   # 24:Master Jedi Defense
+powers = [48]   # 48:Force Suppression
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = []
+powers = [26]   # 26:Force Wave
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [46]   # 46:Stun
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+feats = [84]   # 84:Toughness
+powers = [29]   # 29:Stasis
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [81]   # 81:Master Critical Strike
+powers = [150]   # 150:Force Body
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = []
+powers = [151]   # 151:Improved Force Body
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = [13]   # 13:Conditioning
+powers = [152]   # 152:Master Force Body
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [163]   # 163:Force Redirection
+skills = {treat_injury = 1, awareness = 1, stealth = 1}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = [123]   # 123:Improved Toughness
+powers = [134]   # 134:Master Heal
+skills = {treat_injury = 1, awareness = 1, stealth = 1}

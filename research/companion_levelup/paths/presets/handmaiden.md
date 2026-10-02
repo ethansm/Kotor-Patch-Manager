@@ -44,6 +44,24 @@ Unarmed Specialist timing shift). `convert_at = 7` records "first char level tak
    char 20 limit (22-30) are my fill (Improved/Master Dual Strike, Close Combat, Improved Close Combat, Mobility). Hold is not needed.
 All skill allocations are proposals: Awareness to rank 15 by char 18, then Treat Injury to 14 (Treat Injury also scales Force Healing per mod #142).
 
+## Wizard presets (8)
+Questions: role / style / alignment / convert / skills (WIZARD_SCHEMA.md). All files char 7-30, check_paths 0 errors, 0 warnings. Skill focus is `combat`
+(Awareness then Treat Injury) except support (`social`, Persuade is a Guardian class skill; stealth is cross-class for Guardian, so no stealth preset).
+| Preset file | role | style | alignment | convert | skills | Rationale |
+|---|---|---|---|---|---|---|
+| `unarmed_jedi` | melee | unarmed | light | early | combat | elkripper Unarmed Jedi; Echani unarmed identity |
+| `saber_guardian` | melee | single | light | early | combat | classic Guardian: Weapon Focus/Spec, Dueling line |
+| `unarmed_soldier` | melee | unarmed | none | never | combat | elkripper Unarmed Soldier, no Force |
+| `melee_dual_light_early` | melee | dual | light | early | combat | Master TWF, Dual Strike line, Critical Strike line; she starts with TWF/Improved TWF |
+| `tank_single_light_early` | tank | single | light | early | combat | Toughness/Conditioning/Jedi Defense line, Barrier/Deflection/Armor first |
+| `melee_single_dark_early` | melee | single | dark | early | combat | DARK: Lightning, Drain Life/Force, Choke, Scream, Death Field (#142 needs a dark Exile) |
+| `melee_unarmed_light_late` | melee | unarmed | light | late | combat | Soldier 7-12 (unarmed Soldier feats), Guardian from char 13 (Guardian 1-18); convert_at = 13 |
+| `support_single_light_early` | support | single | light | early | social | Heal line, Revitalize, Battle Meditation, Valor; minimal weapon feats, Persuade |
+
+Not covered (no logical/valid build): ranged/pistols/rifle (feasible via Soldier feats only, no source), caster (Guardian lacks the power depth), `convert = never`
+for anything but unarmed (would need an invented Soldier feat path), dual + dark, tank + dark. `skills = tech/stealth` impossible (cross-class, 1 point/level).
+Note on `late`: Soldier levels 7-12 happen BEFORE the duels' level gates are known to matter; leveling her as Soldier before the duels makes them harder (see Conversion facts).
+
 ## Validation notes
 - check_paths: 0 errors, 0 warnings on all three files (every feat/power slot filled; attack-bonus prereqs are not verified by the checker).
 - Attribute lines (STR +1 at 8/12/24/28, CON +1 at 16/20) are copied from elkripper (auto-increases); not verified against engine/live.
@@ -62,3 +80,5 @@ All skill allocations are proposals: Awareness to rank 15 by char 18, then Treat
 - live feat.2da grants Soldier no Unarmed Specialist/Echani Strike at class levels (sol_granted = -1): Soldier's progression (elkripper's Echani Strike II at
   Soldier 11/17, US III at 10 ...) comes from script or another mechanism, not in the 2DA; the Guardian side is 2DA-granted. Cannot be checked statically.
 - Elkripper's Jedi table assumes Guardian 1 at char 7; reality is char level at conversion (hold design above).
+- `late` preset: the semantics of `hold_until_class` there (banking only from convert_at, not from level 7) are my assumption; the mod must replay Soldier levels 7-12 at once and bank 13+.
+- Dark preset: which of these powers #142 treats as dark (Drain Force/Improved, Scream, Choke) was not re-verified from the mod data; Barrier line added as neutral filler.

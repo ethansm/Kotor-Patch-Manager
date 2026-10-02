@@ -1,0 +1,191 @@
+# Mira preset 'caster_none_light_early': Light-side offensive-Force Sentinel: convert at once, Push/Whirlwind/Wave/Breach/Suppression/Throw Lightsaber control kit plus Stasis/Stun and late heal, defensive feats (Conditioning, Toughness, Mobility), no weapon-style feats
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). Attribute bumps follow elkripper (DEX at 8/12/16/20, CON +1 at 24/28 from live CON13).
+[meta]
+tag = "mira"
+name = "Mira"
+utc = "p_mira.utc"
+variant = "caster_none_light_early"
+summary = "Light-side offensive-Force Sentinel: convert at once, Push/Whirlwind/Wave/Breach/Suppression/Throw Lightsaber control kit plus Stasis/Stun and late heal, defensive feats (Conditioning, Toughness, Mobility), no weapon-style feats"
+convert_at = 7   # first Jedi (Sentinel) char level; 0 = never converts
+hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
+
+[meta.wizard]
+role = "caster"
+style = "none"
+alignment = "light"
+convert = "early"
+skills = "combat"
+
+[[level]]
+char_level = 7
+class = 5   # JediSentinel
+feats = [143]   # 143:Regenerate Force Points
+powers = [23, 8]   # 23:Force Push, 8:Burst of Speed
+skills = {treat_injury = 4}
+
+[[level]]
+char_level = 8
+class = 5   # JediSentinel
+attrs = {DEX = 17}
+feats = []
+powers = [46]   # 46:Stun
+skills = {treat_injury = 2, awareness = 2}
+
+[[level]]
+char_level = 9
+class = 5   # JediSentinel
+feats = [13]   # 13:Conditioning
+powers = [27]   # 27:Force Whirlwind
+skills = {treat_injury = 1, awareness = 3}
+
+[[level]]
+char_level = 10
+class = 5   # JediSentinel
+feats = []
+powers = [49]   # 49:Throw Lightsaber
+skills = {treat_injury = 1, awareness = 2, computer_use = 1}
+
+[[level]]
+char_level = 11
+class = 5   # JediSentinel
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {treat_injury = 1, awareness = 1, computer_use = 2}
+
+[[level]]
+char_level = 12
+class = 5   # JediSentinel
+attrs = {DEX = 18}
+feats = [84]   # 84:Toughness
+powers = [48]   # 48:Force Suppression
+skills = {treat_injury = 1, awareness = 1, computer_use = 2}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [4]   # 4:Advanced Throw Lightsaber
+skills = {treat_injury = 1, awareness = 1, computer_use = 2}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = []
+powers = [29]   # 29:Stasis
+skills = {treat_injury = 1, awareness = 1, computer_use = 2}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = [21]   # 21:Improved Conditioning
+powers = [26]   # 26:Force Wave
+skills = {treat_injury = 1, awareness = 1, computer_use = 2}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+attrs = {DEX = 19}
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {treat_injury = 1, awareness = 1, computer_use = 2}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [19]   # 19:Force Breach
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = [195]   # 195:Mobility
+powers = [37]   # 37:Master Speed
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [24]   # 24:Master Jedi Defense
+powers = [44]   # 44:Stasis Field
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+attrs = {DEX = 20}
+feats = []
+powers = [163]   # 163:Force Redirection
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = [22]   # 22:Master Conditioning
+powers = [47]   # 47:Stun Droid
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = []
+powers = [12]   # 12:Disable Droid
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [13]   # 13:Destroy Droid
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+attrs = {CON = 14}
+feats = [123]   # 123:Improved Toughness
+powers = [41]   # 41:Force Resistance
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [117]   # 117:Improved Caution
+powers = [20]   # 20:Force Immunity
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = []
+powers = [10]   # 10:Heal
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = [118]   # 118:Master Caution
+powers = [22]   # 22:Force Valor
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+attrs = {CON = 15}
+feats = []
+powers = [28]   # 28:Improved Heal
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [138]   # 138:Battle Meditation
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = [196]   # 196:Regenerate Vitality Points
+powers = [33]   # 33:Knight Valor
+skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}

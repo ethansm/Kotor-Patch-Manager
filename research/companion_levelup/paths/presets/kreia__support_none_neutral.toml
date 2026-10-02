@@ -1,0 +1,212 @@
+# Kreia: Jedi Consular 4-30, preset 'support_neutral'. Gray buffer: universal powers first (Force Body, Battle Meditation, Speed, Deflection, Energy/Force Resistance, Mind control line, Push line), light-side buffs only as filler once the universal pool (about 25) runs out. Persuade focus.
+# Skill points are a PROPOSAL (4/level: base 2 + INT14 mod 2; max rank = level+3). WIS +1 every 4th level is the engine's fixed increase (elkripper table).
+[meta]
+tag = "kreia"
+name = "Kreia"
+utc = "p_kreia.utc"
+variant = "support_neutral"
+summary = "Gray buffer: universal powers first (Force Body, Battle Meditation, Speed, Deflection, Energy/Force Resistance, Mind control line, Push line), light-side buffs only as filler once the universal pool (about 25) runs out. Persuade focus."
+convert_at = 0
+
+[meta.wizard]
+role = "support"
+style = "none"
+alignment = "neutral"
+convert = "n/a"
+skills = "social"
+
+[[level]]
+char_level = 4
+class = 4   # JediConsular
+attrs = {WIS = 17}
+feats = []
+powers = [150]   # 150:Force Body
+skills = {persuade = 2}
+
+[[level]]
+char_level = 5
+class = 4   # JediConsular
+feats = []
+powers = [6]   # 6:Affect Mind
+skills = {persuade = 1, treat_injury = 2}
+
+[[level]]
+char_level = 6
+class = 4   # JediConsular
+feats = [143]   # 143:Regenerate Force Points
+powers = [138, 162]   # 138:Battle Meditation, 162:Force Deflection
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 7
+class = 4   # JediConsular
+feats = []
+powers = [14]   # 14:Dominate Mind
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 8
+class = 4   # JediConsular
+attrs = {WIS = 18}
+feats = []
+powers = [181]   # 181:Mind Trick
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 9
+class = 4   # JediConsular
+feats = [84]   # 84:Toughness
+powers = [34, 40]   # 34:Knight Speed, 40:Improved Energy Resistance
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 10
+class = 4   # JediConsular
+feats = []
+powers = [151]   # 151:Improved Force Body
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 11
+class = 4   # JediConsular
+feats = []
+powers = [41]   # 41:Force Resistance
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 12
+class = 4   # JediConsular
+attrs = {WIS = 19}
+feats = [13]   # 13:Conditioning
+powers = [139, 48]   # 139:Improved Battle Meditation, 48:Force Suppression
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 13
+class = 4   # JediConsular
+feats = []
+powers = [163]   # 163:Force Redirection
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 14
+class = 4   # JediConsular
+feats = []
+powers = [27]   # 27:Force Whirlwind
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 15
+class = 4   # JediConsular
+feats = [123]   # 123:Improved Toughness
+powers = [37, 152]   # 37:Master Speed, 152:Master Force Body
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 16
+class = 4   # JediConsular
+attrs = {WIS = 20}
+feats = []
+powers = [19]   # 19:Force Breach
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 17
+class = 4   # JediConsular
+feats = []
+powers = [133]   # 133:Master Energy Resistance
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 4   # JediConsular
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [140, 20]   # 140:Master Battle Meditation, 20:Force Immunity
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 19
+class = 4   # JediConsular
+feats = []
+powers = [26]   # 26:Force Wave
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 20
+class = 4   # JediConsular
+attrs = {WIS = 21}
+feats = []
+powers = [49]   # 49:Throw Lightsaber
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 21
+class = 4   # JediConsular
+feats = [21]   # 21:Improved Conditioning
+powers = [4, 284]   # 4:Advanced Throw Lightsaber, 284:Improved Force Sight
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 22
+class = 4   # JediConsular
+feats = []
+powers = [22]   # 22:Force Valor
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 23
+class = 4   # JediConsular
+feats = []
+powers = [10]   # 10:Heal
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 24
+class = 4   # JediConsular
+attrs = {WIS = 22}
+feats = [124]   # 124:Master Toughness
+powers = [18, 135]   # 18:Force Aura, 135:Force Barrier
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 25
+class = 4   # JediConsular
+feats = []
+powers = [24]   # 24:Force Shield
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 4   # JediConsular
+feats = []
+powers = [33]   # 33:Knight Valor
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 27
+class = 4   # JediConsular
+feats = [196]   # 196:Regenerate Vitality Points
+powers = [28, 136]   # 28:Improved Heal, 136:Improved Force Barrier
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 28
+class = 4   # JediConsular
+attrs = {WIS = 23}
+feats = []
+powers = [17]   # 17:Force Armor
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 29
+class = 4   # JediConsular
+feats = []
+powers = [36]   # 36:Master Valor
+skills = {persuade = 1, treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 30
+class = 4   # JediConsular
+feats = [22]   # 22:Master Conditioning
+powers = [134, 137]   # 134:Master Heal, 137:Master Force Barrier
+skills = {persuade = 1, treat_injury = 1, awareness = 1}

@@ -6,6 +6,14 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "duelist"
 summary = "Melee Sentinel, single lightsaber (Dueling line), light-side buffs/utility. Matches Thematic Companions design: she has no Two-Weapon Fighting in the live template."
+convert_at = 0   # never converts (already Sentinel)
+
+[meta.wizard]
+role = "melee"
+style = "single"
+alignment = "light"
+convert = "n/a"
+skills = "combat"
 
 [[level]]
 char_level = 7

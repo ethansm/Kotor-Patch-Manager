@@ -9,6 +9,13 @@ summary = "Soldier 6 held, then Jedi Guardian 1-24 (elkripper unarmed Guardian);
 convert_at = 7   # first char level taken as Guardian; real conversion happens when story allows (see handmaiden.md)
 hold_until_class = 3   # bank levels 7+ until the Jedi Guardian class exists; picks are identical whatever char level conversion happens at
 
+[meta.wizard]
+role = "melee"
+style = "unarmed"
+alignment = "light"
+convert = "early"
+skills = "combat"
+
 [[level]]
 char_level = 7
 class = 3   # JediGuardian

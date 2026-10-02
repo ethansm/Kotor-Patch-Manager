@@ -2,7 +2,7 @@
 
 Start state (live): Scout 6, STR14 DEX16 CON13 INT12 WIS12 CHA10 (`live_companions.json` p_mira.utc). First level-up is char level 7. INT 12 gives 4 skill points/level (Scout and Sentinel skillpointbase 3 + INT mod 1). Light/neutral Mira only (see Conversion).
 
-Files: `mira__ranged_sentinel.toml`, `mira__early_sentinel.toml`, `mira__scout.toml`. All three: 0 errors, 0 warnings in `check_paths.py`. Each [meta] carries `variant`, `summary`, `convert_at` (first Jedi char level, 0 = none).
+Files: the 8 presets in the wizard table below (3 original + 5 added 2026-10-02). All 8: 0 errors, 0 warnings in `check_paths.py`. Each [meta] carries `variant`, `summary`, `convert_at` (first Jedi char level, 0 = none).
 
 ## Conversion facts
 - Engine side (coordinator, Ghidra): the Jedi class is added only by script (`a_makejedi.nss`, AddMultiClass), never via the level-up GUI; AddMultiClass itself grants XP for one extra level; auto level-up always levels the newest class, so after conversion every level is Sentinel (all presets obey this: Scout levels, then Sentinel only); max 2 classes (Scout+Sentinel only).
@@ -16,6 +16,20 @@ Files: `mira__ranged_sentinel.toml`, `mira__early_sentinel.toml`, `mira__scout.t
 3. `scout` (convert_at 0): weakest sourcing. elkripper_mira.txt:3-4 only says to delay conversion, not to skip it. Included for a player who never converts (Hanharr route, dark Exile, or conversion missed). Scout feat slots at 7,9,...,29: pistols/rapid shot/TWF line, Improved Close Combat, sniper and critical chains, Toughness. No Force powers. Demolitions/Repair/Treat Injury/Computer Use all class skills.
 
 Attributes (all variants, `attrs` key): DEX 17/18/19/20 at levels 8/12/16/20 (elkripper), CON 14 at 24, 15 at 28 (elkripper's CON +1 at 24/28 applied to live CON13; the `attrs` values are what the validator uses, the engine applies companion attributes automatically; unverified live).
+
+## Wizard answers -> preset (v1, 8 presets; each file has `[meta.wizard]`, `hold_until_class = 5` on converting presets)
+| preset file (`mira__...`) | role | style | alignment | convert | skills | rationale |
+|---|---|---|---|---|---|---|
+| `early_sentinel` | melee | dual | light | early (7) | combat | dual-saber light Sentinel, 25 powers, Valor/Heal/Barrier kit (elkripper "early switch = more powers") |
+| `ranged_sentinel` | ranged | pistols | light | late (17) | combat | elkripper pistol/rapid-shot Scout then Sentinel at 17 (his "strongest late game" timing) |
+| `scout` | ranged | pistols | none | never (0) | tech | no Force; Demolitions/Repair/Computer Use/Treat Injury are all Scout class skills (cheap), grenade+rocket+medic utility |
+| `melee_dual_dark_early` | melee | dual | dark | early (7) | combat | dark Sentinel (strategywiki 649-668, needs Exile Alignment < 40): Speed/Deflection + Wound/Shock/Choke/Lightning/Drain Life/Fear line/Kill/Plague/Storm/Death Field + Push line; no light powers (#142) |
+| `support_single_light_early` | support | single | light | early (7) | social | Heal/Improved/Master Heal, Revitalize I-III, Valor, Barrier, Battle Meditation, Stasis; Dueling line (single saber); Persuade is a Sentinel class skill so it costs 1 per rank |
+| `caster_none_light_early` | caster | none | light | early (7) | combat | offensive Force: Push/Whirlwind/Wave/Breach/Suppression/Throw Lightsaber, Stun/Stasis/Stasis Field/Disable/Destroy Droid, Heal late; defensive feats only (Conditioning, Toughness, Mobility, Jedi Defense) |
+| `ranged_rifle_none_never` | ranged | rifle | none | never (0) | combat | Scout 7-30 with rifle: WF Blaster Rifle, Sniper/Critical Strike/Power Blast lines, Awareness/Treat Injury |
+| `ranged_rifle_light_late` | ranged | rifle | light | late (13) | stealth | sniper Scout to 12 (WF rifle, Improved Sniper, Improved Critical), Sentinel from 13 for Master Sniper/Critical, Speed/Heal/Deflection/Valor; Stealth/Security (Sentinel class skills) + Awareness |
+
+Not covered on purpose: tank, double-bladed, unarmed, pistols+early (Sentinel feat slots come too late to keep the pistol chain), social Scout (Persuade is cross-class for Scout), dark+late/ranged (dark Mira is a story branch, one preset is enough for v1). Notes: Critical Strike (8) is already granted to Mira, Dueling (113) too; conversion level 13 for `ranged_rifle_light_late` is a proposal (no source), the Kreia scene + influence gate in the Conversion section must be met by then or the mod holds levels.
 
 ## Open questions for the user
 1. Convert early (early_sentinel), at 17 (ranged_sentinel) or never? Early melee Sentinel vs late pistol/Scout hybrid is the main choice.

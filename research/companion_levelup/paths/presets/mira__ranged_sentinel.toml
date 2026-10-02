@@ -7,6 +7,14 @@ utc = "p_mira.utc"
 variant = "ranged_sentinel"
 summary = "Scout to 16 (pistol/rapid-shot/TWF + Targeting/Precise Shot from Scout), Sentinel from 17 (elkripper timing): speed + heal + deflection + party buffs"
 convert_at = 17   # first Jedi (Sentinel) char level; 0 = never converts
+hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
+
+[meta.wizard]
+role = "ranged"
+style = "pistols"
+alignment = "light"
+convert = "late"
+skills = "combat"
 
 [[level]]
 char_level = 7
