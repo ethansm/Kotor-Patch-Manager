@@ -1,0 +1,136 @@
+windows from check_atlas_windows_output_2026-10-02.txt
+M6 tab click entry               008a8cf0   6  LAA:True  base:True
+M6 backpack row buffer           008a7e22  79  LAA:True  base:True
+M6 flush before finalise         008a7e76  22  LAA:True  base:True
+M6 row-select epilogue (re-tint) 008a8478   6  LAA:True  base:True
+M7 SetMouseCursor entry          007b3870   7  LAA:True  base:True
+M7 hilite placeable colour       007aa747  10  LAA:True  base:True
+M7 client update tick            007ac470   5  LAA:True  base:True
+M8 hold-on-blocked-LOS           006d83ea  12  LAA:True  base:True
+M8 retarget gate (IsPC)          006d7c79   6  LAA:True  base:True
+M8 ranged-stance rules local     006d850f   6  LAA:True  base:True
+M8 stance clamp                  0077aa5e   7  LAA:True  base:True
+M8 stance row fill               0077acbc   9  LAA:True  base:True
+M8 stance click                  0077d8d4   6  LAA:True  base:True
+M8 HUD stance default branch     0074dbdd   7  LAA:True  base:True
+CA T1 ShipBuild value            00692c50  10  LAA:True  base:True
+CA T2 PrintString capture        0068f301   7  LAA:True  base:True
+CA T3 AurPostString capture      006f62f2   7  LAA:True  base:True
+CA E1 attack entry (+0x570 reset) 006d740f  10  LAA:True  base:True
+CA E1b approach-branch exit      006d8be2   5  LAA:True  base:True
+CA E2 slot-6 fallback fires      00569a08   6  LAA:True  base:True
+CA E3 P1 block-2 UpdatePerception(1) 0056bdbd   8  LAA:True  base:True
+CA A1 approach gate end/retarget 006d853e  10  LAA:True  base:True
+CA P1 throttle interval          0056bdb4   7  LAA:True  base:True
+CA P1 throttle stamp store       0056bde3   6  LAA:True  base:True
+CA FM1 bump clear replace        00586f43  10  LAA:True  base:True
+CA FM4 snapshot FollowInfo       0057451f   6  LAA:True  base:True
+CA FM4 restore FollowInfo        00575183   7  LAA:True  base:True
+CA A4 NULL spell row             006d9e2a  15  LAA:True  base:True
+CA C1 restart idx (0xC)          005868b9   7  LAA:True  base:True
+CA C1 restart idx (0xF)          005868f1   7  LAA:True  base:True
+CA C1 restart idx (0x2E)         00586929   7  LAA:True  base:True
+CA A3 dead-target lock clear     006d78b7   7  LAA:True  base:True
+CA FM3 sentinel probe (NOT SHIPPED) 0051dbe7   6  LAA:True  base:True
+AT FM2                           005c2438   9  LAA:True  base:True
+AT FM2b                          005bc5f4   9  LAA:True  base:True
+AT FM2c                          0055b69a   6  LAA:True  base:True
+AT FM2d                          0055b625  13  LAA:True  base:True
+AT FM3s                          0051dbe1   6  LAA:True  base:True
+AT FM3e                          0051dd33   6  LAA:True  base:True
+AT FM3r                          0051e0c9   6  LAA:True  base:True
+AT FM5a                          005c8bc2   6  LAA:True  base:True
+AT FM5b                          005c9f9d   5  LAA:True  base:True
+AT FM5c                          005c3d8b   5  LAA:True  base:True
+AT FM5d                          005c124e   6  LAA:True  base:True
+AT FM5e                          005c5a76   5  LAA:True  base:True
+AT FM5f                          005ccbc2   6  LAA:True  base:True
+AT P2                            0056be79   6  LAA:True  base:True
+AT RA-D                          005d5c22   6  LAA:True  base:True
+AT RA-R                          005d6a60   9  LAA:True  base:True
+AT PF                            0058a35e   6  LAA:True  base:True
+AT SHOUT-RX                      0057074f   9  LAA:True  base:True
+AT SHOUT-TX                      00547100  10  LAA:True  base:True
+AT EV                            0056eff9   6  LAA:True  base:True
+AT GCA                           0067b204  10  LAA:True  base:True
+AT SS1                           0059d966   6  LAA:True  base:True
+AT SS2                           0059e8f4  10  LAA:True  base:True
+AT HSE                           0067e70c  10  LAA:True  base:True
+AT FM6                           007e6546  10  LAA:True  base:True
+AT AI1-H3b                       0055b110  13  LAA:True  base:True
+AT AI1-H4                        0055b3dd   9  LAA:True  base:True
+AT AI1-H5                        0055b1c7   6  LAA:True  base:True
+AT AI1-H6                        005cbc1e   7  LAA:True  base:True
+AT AI1-H7                        00586b70   5  LAA:True  base:True
+AT AI1-H8                        00586940   6  LAA:True  base:True
+AT AI1-H10                       005c1d4a   7  LAA:True  base:True
+AT AI1-H11                       005c0156   7  LAA:True  base:True
+AT AI2-SR                        0058e730   6  LAA:True  base:True
+AT AI2-ER                        0058e990   5  LAA:True  base:True
+AT AI2-S6                        0058f48c  12  LAA:True  base:True
+AT AI2-S6c                       0058f4ad  12  LAA:True  base:True
+AT AI2-F2                        0058f3a1   7  LAA:True  base:True
+AT AI2-RA                        006dacf0   6  LAA:True  base:True
+AT AI2-ROLL-M                    006dec05   6  LAA:True  base:True
+AT AI2-ROLL-R                    006db122   7  LAA:True  base:True
+AT AI2-RNG                       006d8283   6  LAA:True  base:True
+AT AI2-RT                        0057c990   9  LAA:True  base:True
+AT AI2-TICK                      00571030   9  LAA:True  base:True
+AT AI2-SD                        006dcbe0   5  LAA:True  base:True
+AT AI2-DRL                       0058fd50   6  LAA:True  base:True
+AT AI2-PZa                       0058fc60   6  LAA:True  base:True
+AT AI2-PZb                       0058fcd0   6  LAA:True  base:True
+AT AI2-SS                        0059e860   6  LAA:True  base:True
+AT AI2-ENGa                      00590ff0   9  LAA:True  base:True
+AT AI2-ENGb                      005912b0   6  LAA:True  base:True
+AT AI3-H2                        005771d5   7  LAA:True  base:True
+AT AI3-H3                        00579021   7  LAA:True  base:True
+AT AI3-H4                        0057883f   7  LAA:True  base:True
+AT AI3-H5                        005d0f30   9  LAA:True  base:True
+AT AI3-H6                        00576dc0   5  LAA:True  base:True
+AT AI3-H7                        0058b140   5  LAA:True  base:True
+AT AI4-H04                       0051d842   7  LAA:True  base:True
+AT AI4-H05                       0051d815   5  LAA:True  base:True
+AT AI4-H06                       0051dda1   7  LAA:True  base:True
+AT AI4-H07                       0051e151   7  LAA:True  base:True
+AT AI4-H10                       005d6d07   6  LAA:True  base:True
+AT AI4-H11                       005d6d87  12  LAA:True  base:True
+AT AI4-H12                       005694ca   8  LAA:True  base:True
+AT AI4-H13                       005699ce   7  LAA:True  base:True
+AT AI4-H14                       00569a72  10  LAA:True  base:True
+AT AI4-H15                       0056a0a9   8  LAA:True  base:True
+AT AI5-H3                        005ca7c3   6  LAA:True  base:True
+AT AI5-H4a                       007e7838   7  LAA:True  base:True
+AT AI5-H4b                       007e78ae   7  LAA:True  base:True
+AT AI5-H5                        005bf925  10  LAA:True  base:True
+AT AI5-H6                        005c6340   9  LAA:True  base:True
+AT AI5-H7                        005c6cd4   7  LAA:True  base:True
+AT AI5-H8                        005bd09e   7  LAA:True  base:True
+AT AI5-H9                        007e5df0  10  LAA:True  base:True
+AT AI5-H10                       007e8350   9  LAA:True  base:True
+AT AI5-H11                       005c6ace   7  LAA:True  base:True
+AT AI6-F1                        005e13c0   6  LAA:True  base:True
+AT AI6-F2                        005e1671   6  LAA:True  base:True
+AT AI6-F3                        0067c430   6  LAA:True  base:True
+AT AI6-F6                        006d3330   6  LAA:True  base:True
+AT AI6-F7                        005e1680   6  LAA:True  base:True
+AT AI6-F8                        00693860  10  LAA:True  base:True
+AT AI6-F9                        0063a5b0  10  LAA:True  base:True
+AT AI6-F10                       005d51a0   6  LAA:True  base:True
+AT AI6-F11                       005951a0   6  LAA:True  base:True
+AT AI6-F12                       0066f0a0   6  LAA:True  base:True
+AT AI7-RS                        006fd8d0   6  LAA:True  base:True
+AT AI7-CMD-OUT                   0066900a   6  LAA:True  base:True
+AT AI7-GNC                       0068433c   6  LAA:True  base:True
+AT AI7-GNC-IN                    00683d40  10  LAA:True  base:True
+AT AI7-TB                        006b8bb0   6  LAA:True  base:True
+AT AI7-HAS                       006b8840   6  LAA:True  base:True
+AT AI7-INV                       006c0330   9  LAA:True  base:True
+AT AI8-H2                        0059dea0  10  LAA:True  base:True
+AT AI8-H4                        0056bb5b  10  LAA:True  base:True
+AT AI8-H5                        0062c47b  13  LAA:True  base:True
+AT AI8-H6                        0062c6d9  13  LAA:True  base:True
+AT AI8-H7                        0062c750  13  LAA:True  base:True
+AT AI8-H8                        006d77ac   8  LAA:True  base:True
+AT AI8-H11                       005e5936  10  LAA:True  base:True
+ALL MATCH
