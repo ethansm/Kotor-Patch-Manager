@@ -1,0 +1,54 @@
+E: entry-point research notes (static, 2026-10-02). Raw notes; paths relative to repo root (PM = patch_manager_mods).
+
+(a) HOTBAR / GUI FRAMEWORK
+- Controls are only created if the panel ctor binds them by tag. Placeholder controls are added to the .gui (scripts/add_hotbar_buttons_gui.py, ALL_TAGS order == DLL id consts), DLL binds them.
+  PM/07_force_power_hotbar.md:448-456 (Hook 3 HotbarBuildButtons at 0x00748502, HUD ctor 0x747210, before StopLoadFromLayout call): FnNew(0x148), memset, CSWGuiLabel ctor 0x00419740 (fastcall ECX=this,
+  vtable 0x009878BC; base 0x418990, border 0x414A50 @+0x60, text 0x4171A0 @+0xD8), InitControl 0x00418DF0 / CSWGuiPanel::InitControl 0x0040F620 (panel, ctl, CExoString tag, 1, 1); control lands at panel+0x24[ID].
+  Label Load 0x4198D0 -> base 0x418F20 (EXTENT/ID). Panel Draw 0x0040EC90 walks ascending ID calling vt+0x38 (label Draw 0x419880) => z-order == ID order (tooltip pair must be last IDs).
+  Panel hit-test 0x0040EAE0 walks from highest index; label hit-test 0x418D20 rejects if bit1 clear or bit5 set; flags at ctl+0x48 (bit1 visible, bit5 0x20 click-through) (07 md:453; lesson "Hit-testable label trick").
+- Same pattern in character panel: PM/14_character_active_effects_panel.md + active_effects_panel_src/kotor2-steam-aspyr.hooks.toml:
+    H-C1 0x0084D871 (CSWGuiInGameCharacter ctor 0x84C3A0, just before StopLoadFromLayout call 0x40F5A0 at 0x84D877; [ebp-0x254]=panel; orig 8B 8D AC FD FF FF) -> BindCharEffects(panel)
+    H-C3 0x0084FBB0 (panel Update, vtable 0x9A3E7C slot 0x34; ECX=panel; prologue 55 8B EC 83 EC 08; calls SetStats 0x84E6F0 every tick; shown creature = 0x7E5DA0(party,0) = LEADER, doc14 line 59-62)
+    H-C4 0x0084DEF0 (scalar deleting dtor, slot 0) -> CharEffectsDestroy
+  Live character_p.gui already has 136 controls (ids 0-61,65,66,68, 69-136 = LBL_EFX_*); free ids 62-64,67 and >=137.
+- Click handling for DLL-made labels = polling, NOT engine events: GetAsyncKeyState(VK_LBUTTON) edge + cursor (ScreenToClient/GetClientRect, foreground-pid check) vs label extent in runtime PIXELS
+  (CharEffectsPanel.cpp:208,235,655; hotbar lesson "Mod 5 toolbar: how to add clickable text buttons to a GUI without a handler"). Wheel via WndProc accumulation. Hover sound FUN_004122A0 (ECX=*(void**)0x00A1B49C, idx 1).
+- Text: CSWGuiText::Set 0x00416E30 thiscall ECX=label+0xF0 (07 md:494). Fill swap: border+0x74 via LoadImage 0x0047EB60 (pooled). SetRect = label vtable slot 1 (0x4199A0, int[4] px).
+- Input hook: DirectInput capture 0x0072CB63 (swallow keys); HUD gate by whitelist vtables (07 md:358).
+- Aspect: InitControl non-linear projection while global 0x00A1B9F0 != 0; hotbar clears it around binds and corrects with c=(H/600)/(W/800) (07 md:503-508). Never call 0x73FEA0 without ECX (crash build 8, md:540).
+- Reusable shared: bindLabel(panel,tag) helper, label text/fill/rect setters, edge-click poller + hit test, tooltip pair, hover sound, aspect correction, saferead (PM/_shared_src/SafeRead.h is the only shared source today; everything else is copy-pasted per mod).
+  Hotbar editor/picker (tabs, prev/next, cells) = ForcePowerHotbar.cpp (1216 lines) ids 131-167: panel bg, title, tabs, arrows, cells => template for a wizard panel.
+
+(b) CHARACTER SCREEN (character_p.gui, class CSWGuiInGameCharacter, vtable 0x9A3E7C)
+- Live override/character_p.gui (read with pykotor): BTN_AUTO id65 [362,260,94,52]; BTN_LEVELUP id66 [362,325,94,40]; BTN_EXIT id61 [159,516,89,28]; BTN_3DCHAR id5 + LBL_3DCHAR id4 [295,134,230,336]
+  (CSWGui3DSceneView at this+0x3C24, BTN_3DCHAR at this+0x3CB8, rotate events 0x16256/0x16257 -> 0x850330/0x850550 bound via 0x418AF0 AddEvent; HandleInputEvent 0x84F900 vt slot 0x3C); LBL_FORCEMASTERY id68 [294,105,232,21];
+  right third (536..752) used by Mod 14 efx panel. BTN_AUTO/BTN_LEVELUP sit INSIDE the 3D-group (x+129 mirrored layout, scripts/mirror_character_page.py GROUP_3D, scripts/character_page_mockup.py).
+  Free spots: under BTN_LEVELUP (362,370..) or beside BTN_EXIT (BTN_EXIT [159,516]; x 256..344 free, optgameplay uses BTN_DEFAULT at [256,516,88,28]).
+- Engine-native buttons (BTN_AUTO/BTN_LEVELUP) have real handlers: ShowLevelUpGUI 0x84FCD0 (this,int) ; StartAutoLevelup 0x84FE20 (no args, uses party/leader) -> DoAutoLevelup 0x850010 (callback). The registration of the click -> handler (AddEvent 0x418AF0 calls in ctor 0x84C3A0..0x84D9xx)
+  is NOT in the DB: only BTN_3DCHAR AddEvent sites 0x84D8CA..0x84D909 are known. GOG DB drift rows for DoAutoLevelup are wrong (lesson).
+- GUI units 800x600; engine scales (screen px = units*(W/800, H/600), 4.8 x 2.667 at 3840x1600). Ultrawide overrides: scripts/generate_ultrawide_gui_overrides.py (character_p edited by scripts/mirror_character_page.py + add_*_gui scripts; GUI-only changes of existing tagged controls need no DLL).
+  New controls need DLL bind (invisible otherwise, doc14 line ~80). Multi-resolution: positions in units are resolution independent; runtime extents (px) must be used for click tests.
+- Level-up visibility: indicator logic in portrait refresh 0x74EE90 (calls AutoLevelup(1) for non-controlled companions else shows indicator); where BTN_LEVELUP/BTN_AUTO visibility is toggled (SetStats 0x84E6F0 likely) = UNKNOWN.
+
+(c) R9 PIECES KNOWN
+- StartAutoLevelup 0x84FE20 decompile (research/companion_levelup/phase1_evidence/dec_b2.txt:315-415) builds a CSWGuiMessageBox confirm:
+    box = *(0x73F750()+0xA0) [local_14]; FUN_0075BB00(?,1); text via box vtbl+0x74 (SetMessage) ; FUN_0075CA30(box, callback=0x850010, 0) registers result callback; FUN_00410530(box,1,1) shows it.
+  Strings via FUN_00733540/00733700/0071e910/00733780 (CExoString build; strrefs for "level N -> M"?).
+- CSWGuiMessageBox: class vftable 0x0099E6A4; ctor 0x75AE40 (confirm_p: BTN_OK, BTN_CANCEL, LB_MESSAGE), ctor_2 0x75B370 (datapad_p when param_3!=0), SetMessage 0x75BD50 (vtbl+0x74), SetMessage strref 0x75BDE0 (vtbl+0x70),
+  FixMessageLabel 0x75C080 auto-fit (caps 440*fs x 280*fs), ExecuteCommandDisplayMessageBox 0x69BEA0 (single-button via SetAllowCancel(0)). (PM/engine_research_findings/V4.md:30-38,166). confirm_p is in override? (not found in override dir listing; vanilla).
+  OK/Cancel result is a bitmask passed to callback (QuitConfirmed 0x796DA0: "panel result bit0").
+- Needs-Ghidra: callback signature of 0x75CA30 (result mask, user ptr?), how to give 3 choices (confirm_p has only OK/Cancel => "Configure?" yes/no is the practical form), text-only way to add a line to the StartAutoLevelup message.
+
+(d) PERSISTENCE TODAY
+- All mods use sidecar INI in game dir, decoupled from save: force_power_hotbar.ini [Profile.<key>] (HotbarConfig.h, .bak backup; PM/07_force_power_hotbar_feedback.md:18, md:127 Lesson 5 "Externalized persistence over savegame injection"),
+  levelup_override.ini (re-read on mtime change) + levelup_paths.ini (LevelUpOverride.cpp:121-194), chareffects.ini, inventory_sort_filter.ini etc.
+- Character key problem: obj<hexid> companion ids dynamic (feedback md:33-34: lost on reload; later claim identical across sessions of one save, unverified across saves, 07 md:11); GetPortraitId +0xB8 reads 65535 on client creatures (dead). Level-up mod keys on creature TAG (GetTag 0x6B6B30 stable, case-insens.).
+- No playthrough/save id exists in repo. No use of GFF/global-var save injection (rejected, Lesson 5). NWScript globals via save are possible only with a script-side hook (unknown).
+- Ini: swkotor2.ini has 'Auto Level Up NPCs=0' (engine option, CClientOptions::SetAutoLevelUpNPCs GOG 0x462C60; ini reader FUN_007b88b0) -> this option exists in optgameplay_p CB_LEVELUP.
+
+(e) OPTIONS / MAIN MENU
+- Live override GUIs exist: optgameplay_p (CB_LEVELUP id2 [175,182,207,36] = "Auto Level Up NPCs", BTN_DIFFICULTY, CB_AUTOSAVE, CB_REVERSE.., BTN_KEYMAP [161,470], BTN_MOUSE [161,435], BTN_BACK, BTN_DEFAULT, LB_DESC [407,134,232,364]),
+  optionsingame_p (BTN_SAVEGAME/LOADGAME/GAMEPLAY/FEEDBACK/AUTOPAUSE/GRAPHICS/SOUND/QUIT, BTN_EXIT), optionsmain_p, mainmenu8x6_p (BTN_NEWGAME.. BTN_WARP [367,478], BTN_TSLRCM [602,409]).
+- Known engine addresses only: DisplayMainMenu 0x73F230, CClientExoAppInternal::DisplayMainMenu 0x781810 (low), ShutDownToMainMenu 0x78E0F0, Get/Save/LoadOptions 0x73F830/0x740B40/0x740B60 (internal 0x796E00,0x79F6C0,0x79F6F0),
+  SetResolutionMode 0x78DDA7 area, CGuiInGame::SwitchToSWInGameGui 0x7CA550 / ShowSWInGameGui 0x7C9DF0 / SetSWGuiStatus 0x7C9C40, in-game options panel creation (0x8C0CB0 debug_p is a different panel). CSWGuiInGameOptKeyMappings vftable 0x9A9EA4.
+  No GuiOptions/GuiMainMenu class in classes table; handlers for BTN_GAMEPLAY etc. unknown. A new sub-page = new GUI file + new panel class instance (no known panel ctor/AddPanel/manager push, only SwitchToSWInGameGui).
