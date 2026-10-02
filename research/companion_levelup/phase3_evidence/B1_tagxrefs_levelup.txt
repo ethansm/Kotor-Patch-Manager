@@ -1,0 +1,588 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (846 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1969 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/FindTagXrefsDecompile.java (HeadlessAnalyzer)  
+STRING 'BTN_LEVELUP' @ 009a3a14
+   ref from 0084d4a4 in FUN_0084c3a0@0084c3a0 size=6331
+STRING 'BTN_AUTO' @ 009a3a20
+   ref from 0084d45e in FUN_0084c3a0@0084c3a0 size=6331
+=== DECOMP FUN_0084c3a0 @ 0084c3a0
+
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+undefined4 * __thiscall FUN_0084c3a0(undefined4 *param_1,undefined4 param_2)
+
+{
+  uint uVar1;
+  int iVar2;
+  undefined4 local_25c;
+  undefined1 local_218 [8];
+  undefined4 local_210;
+  undefined4 local_20c;
+  undefined4 local_208;
+  undefined4 local_204;
+  undefined4 local_200;
+  undefined4 local_1fc;
+  undefined4 local_1f8;
+  undefined1 local_1f4 [8];
+  undefined1 local_1ec [8];
+  undefined1 local_1e4 [8];
+  undefined1 local_1dc [8];
+  undefined1 local_1d4 [8];
+  undefined1 local_1cc [8];
+  undefined1 local_1c4 [8];
+  undefined1 local_1bc [8];
+  undefined1 local_1b4 [8];
+  undefined1 local_1ac [8];
+  undefined1 local_1a4 [8];
+  undefined1 local_19c [8];
+  undefined1 local_194 [8];
+  undefined1 local_18c [8];
+  undefined1 local_184 [8];
+  undefined1 local_17c [8];
+  undefined1 local_174 [8];
+  undefined1 local_16c [8];
+  undefined1 local_164 [8];
+  undefined1 local_15c [8];
+  undefined1 local_154 [8];
+  undefined1 local_14c [8];
+  undefined1 local_144 [8];
+  undefined1 local_13c [8];
+  undefined1 local_134 [8];
+  undefined1 local_12c [8];
+  undefined1 local_124 [8];
+  undefined1 local_11c [8];
+  undefined1 local_114 [8];
+  undefined1 local_10c [8];
+  undefined1 local_104 [8];
+  undefined1 local_fc [8];
+  undefined1 local_f4 [8];
+  undefined1 local_ec [8];
+  undefined1 local_e4 [8];
+  undefined1 local_dc [8];
+  undefined1 local_d4 [8];
+  undefined1 local_cc [8];
+  undefined1 local_c4 [8];
+  undefined1 local_bc [8];
+  undefined1 local_b4 [8];
+  undefined1 local_ac [8];
+  undefined1 local_a4 [8];
+  undefined1 local_9c [8];
+  undefined1 local_94 [8];
+  undefined1 local_8c [8];
+  undefined1 local_84 [8];
+  undefined1 local_7c [8];
+  undefined1 local_74 [8];
+  undefined1 local_6c [8];
+  undefined1 local_64 [8];
+  undefined1 local_5c [8];
+  undefined1 local_54 [8];
+  undefined1 local_4c [8];
+  undefined1 local_44 [8];
+  undefined1 local_3c [8];
+  undefined1 local_34 [8];
+  undefined1 local_2c [16];
+  int local_1c;
+  int *local_18;
+  int *local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0097188f;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  FUN_0040e5a0(param_2);
+  local_8 = 0;
+  *param_1 = CSWGuiInGameCharacter::vftable;
+  FUN_00419740(uVar1);
+  local_8._0_1_ = 1;
+  FUN_00419740();
+  local_8._0_1_ = 2;
+  FUN_00419740();
+  local_8._0_1_ = 3;
+  FUN_00419740();
+  local_8._0_1_ = 4;
+  FUN_00419740();
+  local_8._0_1_ = 5;
+  FUN_00419740();
+  local_8._0_1_ = 6;
+  FUN_00419740();
+  local_8._0_1_ = 7;
+  FUN_00419740();
+  local_8._0_1_ = 8;
+  FUN_00419740();
+  local_8._0_1_ = 9;
+  FUN_00419740();
+  local_8._0_1_ = 10;
+  FUN_00419740();
+  local_8._0_1_ = 0xb;
+  FUN_00419740();
+  local_8._0_1_ = 0xc;
+  FUN_00419740();
+  local_8._0_1_ = 0xd;
+  FUN_00419740();
+  local_8._0_1_ = 0xe;
+  FUN_00419740();
+  local_8._0_1_ = 0xf;
+  FUN_00419740();
+  local_8._0_1_ = 0x10;
+  FUN_00419740();
+  local_8._0_1_ = 0x11;
+  FUN_00419740();
+  local_8._0_1_ = 0x12;
+  FUN_00419740();
+  local_8._0_1_ = 0x13;
+  FUN_00419740();
+  local_8._0_1_ = 0x14;
+  FUN_00419740();
+  local_8._0_1_ = 0x15;
+  FUN_00419740();
+  local_8._0_1_ = 0x16;
+  FUN_00419740();
+  local_8._0_1_ = 0x17;
+  FUN_00419740();
+  local_8._0_1_ = 0x18;
+  FUN_00419740();
+  local_8._0_1_ = 0x19;
+  FUN_00419740();
+  local_8._0_1_ = 0x1a;
+  FUN_00419740();
+  local_8._0_1_ = 0x1b;
+  FUN_00419740();
+  local_8._0_1_ = 0x1c;
+  FUN_00419740();
+  local_8._0_1_ = 0x1d;
+  FUN_00419740();
+  local_8._0_1_ = 0x1e;
+  FUN_00419740();
+  local_8._0_1_ = 0x1f;
+  FUN_00419740();
+  local_8._0_1_ = 0x20;
+  FUN_00419740();
+  local_8._0_1_ = 0x21;
+  FUN_00419740();
+  local_8._0_1_ = 0x22;
+  FUN_00419740();
+  local_8._0_1_ = 0x23;
+  FUN_00419740();
+  local_8._0_1_ = 0x24;
+  FUN_00419740();
+  local_8._0_1_ = 0x25;
+  FUN_00419740();
+  local_8._0_1_ = 0x26;
+  FUN_00419740();
+  local_8._0_1_ = 0x27;
+  FUN_00419740();
+  param_1[0xc98] = CSWGuiBlackenedLabel::vftable;
+  local_8._0_1_ = 0x28;
+  FUN_00419740();
+  param_1[0xcea] = CSWGuiBlackenedLabel::vftable;
+  local_8._0_1_ = 0x29;
+  FUN_0041a510();
+  local_8._0_1_ = 0x2a;
+  FUN_0041a510();
+  local_8._0_1_ = 0x2b;
+  FUN_0041a510();
+  local_8._0_1_ = 0x2c;
+  FUN_0041ab60();
+  param_1[0xe98] = CSWGuiSliderReadOnly::vftable;
+  local_8._0_1_ = 0x2d;
+  FUN_00418990();
+  local_8._0_1_ = 0x2e;
+  param_1[0xf09] = CSWGui3DSceneView::vftable;
+  FUN_00417f40();
+  local_8._0_1_ = 0x2f;
+  FUN_0041a510();
+  param_1[0xf2e] = CSWGuiSpeedButton::vftable;
+  param_1[0xfa2] = _DAT_00995174;
+  param_1[0xfa3] = _DAT_0098c014;
+  local_8._0_1_ = 0x30;
+  _eh_vector_constructor_iterator_
+            (param_1 + 0xfa6,0x148,6,FUN_00419740,
+             CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton);
+  local_8._0_1_ = 0x31;
+  FUN_00419740();
+  local_8._0_1_ = 0x32;
+  FUN_00419740();
+  local_8._0_1_ = 0x33;
+  FUN_00419740();
+  local_8._0_1_ = 0x34;
+  FUN_00419740();
+  local_8._0_1_ = 0x35;
+  FUN_00710840("character_p");
+  FUN_0040ee40(local_2c,1,1);
+  FUN_00733570("LBL_FORCEMASTERY");
+  local_8._0_1_ = 0x36;
+  FUN_0040f620(param_1 + 0x1a,local_34,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_FORTITUDE");
+  local_8._0_1_ = 0x37;
+  FUN_0040f620(param_1 + 0x6c,local_3c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_REFLEX");
+  local_8._0_1_ = 0x38;
+  FUN_0040f620(param_1 + 0xbe,local_44,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_WILL");
+  local_8._0_1_ = 0x39;
+  FUN_0040f620(param_1 + 0x110,local_4c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_FORTITUDE_STAT");
+  local_8._0_1_ = 0x3a;
+  FUN_0040f620(param_1 + 0x162,local_54,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_REFLEX_STAT");
+  local_8._0_1_ = 0x3b;
+  FUN_0040f620(param_1 + 0x1b4,local_5c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_WILL_STAT");
+  local_8._0_1_ = 0x3c;
+  FUN_0040f620(param_1 + 0x206,local_64,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_EXPERIENCE");
+  local_8._0_1_ = 0x3d;
+  FUN_0040f620(param_1 + 600,local_6c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_EXPERIENCE_STAT");
+  local_8._0_1_ = 0x3e;
+  FUN_0040f620(param_1 + 0x2aa,local_74,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_NEXT_LEVEL");
+  local_8._0_1_ = 0x3f;
+  FUN_0040f620(param_1 + 0x2fc,local_7c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_NEEDED_XP");
+  local_8._0_1_ = 0x40;
+  FUN_0040f620(param_1 + 0x34e,local_84,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_DEFENSE_STAT");
+  local_8._0_1_ = 0x41;
+  FUN_0040f620(param_1 + 0x3a0,local_8c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_FORCE_STAT");
+  local_8._0_1_ = 0x42;
+  FUN_0040f620(param_1 + 0x3f2,local_94,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_VITALITY_STAT");
+  local_8._0_1_ = 0x43;
+  FUN_0040f620(param_1 + 0x444,local_9c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_DEFENSE");
+  local_8._0_1_ = 0x44;
+  FUN_0040f620(param_1 + 0x496,local_a4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_FORCE");
+  local_8._0_1_ = 0x45;
+  FUN_0040f620(param_1 + 0x4e8,local_ac,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_VITALITY");
+  local_8._0_1_ = 0x46;
+  FUN_0040f620(param_1 + 0x53a,local_b4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_STR");
+  local_8._0_1_ = 0x47;
+  FUN_0040f620(param_1 + 0x58c,local_bc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_STRENGTH");
+  local_8._0_1_ = 0x48;
+  FUN_0040f620(param_1 + 0x5de,local_c4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_STR_MOD");
+  local_8._0_1_ = 0x49;
+  FUN_0040f620(param_1 + 0x630,local_cc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_WIS");
+  local_8._0_1_ = 0x4a;
+  FUN_0040f620(param_1 + 0x682,local_d4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_WISDOM");
+  local_8._0_1_ = 0x4b;
+  FUN_0040f620(param_1 + 0x6d4,local_dc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_WIS_MOD");
+  local_8._0_1_ = 0x4c;
+  FUN_0040f620(param_1 + 0x726,local_e4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_CHA");
+  local_8._0_1_ = 0x4d;
+  FUN_0040f620(param_1 + 0x778,local_ec,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_CHARISMA");
+  local_8._0_1_ = 0x4e;
+  FUN_0040f620(param_1 + 0x7ca,local_f4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_CHA_MOD");
+  local_8._0_1_ = 0x4f;
+  FUN_0040f620(param_1 + 0x81c,local_fc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_INT");
+  local_8._0_1_ = 0x50;
+  FUN_0040f620(param_1 + 0x86e,local_104,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_INTELLIGENCE");
+  local_8._0_1_ = 0x51;
+  FUN_0040f620(param_1 + 0x8c0,local_10c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_INT_MOD");
+  local_8._0_1_ = 0x52;
+  FUN_0040f620(param_1 + 0x912,local_114,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_CON");
+  local_8._0_1_ = 0x53;
+  FUN_0040f620(param_1 + 0x964,local_11c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_CONSTITUTION");
+  local_8._0_1_ = 0x54;
+  FUN_0040f620(param_1 + 0x9b6,local_124,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_CON_MOD");
+  local_8._0_1_ = 0x55;
+  FUN_0040f620(param_1 + 0xa08,local_12c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_DEX");
+  local_8._0_1_ = 0x56;
+  FUN_0040f620(param_1 + 0xa5a,local_134,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_DEXTERITY");
+  local_8._0_1_ = 0x57;
+  FUN_0040f620(param_1 + 0xaac,local_13c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_DEX_MOD");
+  local_8._0_1_ = 0x58;
+  FUN_0040f620(param_1 + 0xafe,local_144,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_3DCHAR");
+  local_8._0_1_ = 0x59;
+  FUN_0040f620(param_1 + 0xf09,local_14c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BEVEL");
+  local_8._0_1_ = 0x5a;
+  FUN_0040f620(param_1 + 0xb50,local_154,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BEVEL2");
+  local_8._0_1_ = 0x5b;
+  FUN_0040f620(param_1 + 0xba2,local_15c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("SLD_ALIGN");
+  local_8._0_1_ = 0x5c;
+  FUN_0040f620(param_1 + 0xe98,local_164,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_ADORN");
+  local_8._0_1_ = 0x5d;
+  FUN_0040f620(param_1 + 0xc46,local_16c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_MORE");
+  local_8._0_1_ = 0x5e;
+  FUN_0040f620(param_1 + 0xbf4,local_174,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_LIGHT");
+  local_8._0_1_ = 0x5f;
+  FUN_0040f620(param_1 + 0xc98,local_17c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_DARK");
+  local_8._0_1_ = 0x60;
+  FUN_0040f620(param_1 + 0xcea,local_184,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("BTN_AUTO");
+  local_8._0_1_ = 0x61;
+  FUN_0040f620(param_1 + 0xd3c,local_18c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("BTN_LEVELUP");
+  local_8._0_1_ = 0x62;
+  FUN_0040f620(param_1 + 0xdb0,local_194,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("BTN_EXIT");
+  local_8._0_1_ = 99;
+  FUN_0040f620(param_1 + 0xe24,local_19c,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00760ea0(param_1 + 0xd3c,0x78);
+  FUN_00760ea0(param_1 + 0xdb0,0x61);
+  FUN_00760ea0(param_1 + 0xe24,0x62);
+  FUN_00733570("BTN_3DCHAR");
+  local_8._0_1_ = 100;
+  FUN_0040f620(param_1 + 0xf2e,local_1a4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR1");
+  local_8._0_1_ = 0x65;
+  FUN_0040f620(param_1 + 0xfa6,local_1ac,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR2");
+  local_8._0_1_ = 0x66;
+  FUN_0040f620(param_1 + 0xff8,local_1b4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR3");
+  local_8._0_1_ = 0x67;
+  FUN_0040f620(param_1 + 0x104a,local_1bc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR4");
+  local_8._0_1_ = 0x68;
+  FUN_0040f620(param_1 + 0x109c,local_1c4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR5");
+  local_8._0_1_ = 0x69;
+  FUN_0040f620(param_1 + 0x10ee,local_1cc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR6");
+  local_8._0_1_ = 0x6a;
+  FUN_0040f620(param_1 + 0x1140,local_1d4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_XP_BACK");
+  local_8._0_1_ = 0x6b;
+  FUN_0040f620(param_1 + 0x1192,local_1dc,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_MORE_BACK");
+  local_8._0_1_ = 0x6c;
+  FUN_0040f620(param_1 + 0x11e4,local_1e4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_TITLE");
+  local_8._0_1_ = 0x6d;
+  FUN_0040f620(param_1 + 0x1236,local_1ec,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_00733570("LBL_STATSBORDER");
+  local_8._0_1_ = 0x6e;
+  FUN_0040f620(param_1 + 0x1288,local_1f4,1,1);
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  FUN_0040f5a0();
+  param_1[0xc06] = param_1[0xc06] & 0xfffffffd;
+  local_14 = (int *)param_1[0xf27];
+  local_18 = (int *)param_1[0xf26];
+  FUN_00418af0(0x16256,param_1,FUN_00850330);
+  FUN_00418af0(0x16257,param_1,FUN_00850550);
+  param_1[0xfa2] = _DAT_009876fc;
+  param_1[0xfa3] = _DAT_009876fc;
+  if (DAT_009f42b4 != 0) {
+    local_204 = 0;
+    local_200 = 0;
+    local_1fc = 0;
+    local_1f8 = 0x3f800000;
+    local_210 = 0;
+    local_20c = 0;
+    local_208 = 0;
+    (**(code **)(*local_18 + 0x70))("gui3D_room",&local_210,&local_204);
+    FUN_00733570("charrec_light");
+    local_8._0_1_ = 0x6f;
+    local_1c = FUN_00418360(local_218,0xffffffff);
+    local_8._0_1_ = 0x35;
+    FUN_00733780();
+    if (local_1c != 0) {
+      (**(code **)(*local_14 + 0x74))(local_1c,"camerahook",1);
+      (**(code **)(*local_14 + 0x44))(_DAT_0099f38c);
+    }
+  }
+  iVar2 = FUN_00919723(0x470);
+  local_8._0_1_ = 0x70;
+  if (iVar2 == 0) {
+    local_25c = 0;
+  }
+  else {
+    local_25c = FUN_007645f0();
+  }
+  local_8 = CONCAT31(local_8._1_3_,0x35);
+  param_1[0x12db] = local_25c;
+  param_1[0x12dc] = 0;
+  param_1[0x12dd] = 0xffffffff;
+  param_1[0x2c] = param_1[0x2c] & 0xfffffffd;
+  param_1[0xe1c] = param_1[0xe1c] & 0xffffffbf | 0x40;
+  param_1[0xda8] = param_1[0xda8] & 0xffffffbf | 0x40;
+  param_1[0xd4e] = param_1[0xd4e] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,&LAB_007fcf80);
+  param_1[0xdc2] = param_1[0xdc2] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,&LAB_00762e80);
+  param_1[0xe36] = param_1[0xe36] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,&LAB_00762e90);
+  param_1[0xeaa] = param_1[0xeaa] & 0xfffffffb;
+  ExceptionList = local_10;
+  return param_1;
+}
+
+

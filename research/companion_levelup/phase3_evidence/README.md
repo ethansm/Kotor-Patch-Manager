@@ -14,3 +14,11 @@ One line per evidence file (raw Ghidra/tool output; conclusions live in doc 08 "
 - `A2_tagxrefs_autolevel.txt`: xrefs+decompiles for strings "Auto Level Up NPCs" and CB_LEVELUP (large; 0x7B88B0, 0x7B5F50 writer, 0x8DF930 GUI panel)
 - `A2_fieldwrites_1200.txt`, `A2_offset_users_1200.txt`: writers of creature +0x1200 (PlayerCreated)
 - `A2_dec_574180_6afed0_561f30.txt`, `A2_disasm_1200_writers.txt`: creature GFF loader 0x574180 context for +0x1200
+- `B1_dec_hud.txt`: decompile of HUD draw 0x74B3F0 and buff-icon row gate 0x745770 (counter gate +0xddc/+0xddd; not otherwise analyzed)
+- `B1_callers_canlevelup.txt`: all 21 call sites of CanLevelUp 0x6B9790 (15 distinct callers)
+- `B1_dec_canlevelup_callers.txt`: decompile of previously undecompiled CanLevelUp callers 0x63EDC0, 0x63F550, 0x6415E0, 0x75FC30, 0x7C9DF0, 0x752050, 0x756B70
+- `B1_tagxrefs_levelup.txt`: xrefs+decompile for BTN_LEVELUP/BTN_AUTO (only ctor 0x84C3A0, control offsets, event-0x27 AddEvent thunks); LBL_LEVELUP exact string not found (tags are LBL_LEVELUP%d format)
+- `B1_dec_charscreen.txt`: decompile of ShowLevelUpGUI 0x84FCD0, SetStats 0x84E6F0 (BTN visibility from CanLevelUp at 0x84F221), HandleInputEvent 0x84F900, Update 0x84FBB0
+- `B1_disasm_charscreen.txt`: disasm of SetStats button-visibility sites (0x84F1F0-0x84F270), ctor tail AddEvent registrations (0x84D8C0-0x84DD00), thunks 0x7FCF80/0x762E80/0x762E90, rotate handler head 0x850330
+- `B1_disasm_panel_slots.txt`: disasm of panel vtable slot targets 0x40E7E0 (->HandleInputEvent 0x27), 0x40E800 (->0x29), 0x8878D0 (->0x28)
+- `B1_disasm_744f00_counters.txt`: disasm of FUN_00744F00 0x744F00-0x7450C0 (overlay bits, counter zeroing at 0x74507F/0x7450A3)

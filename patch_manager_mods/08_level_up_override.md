@@ -341,6 +341,42 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
   per-frame hook was rejected: duplicates the gate (CanLevelUp, player, PlayerCreated) and risks double-levelling in the same tick.
 - Residual: class name of the 0x72FB00 object (decompile 0x796E00 if needed); whether 0x5FD480/0x5FE0C0 also test PlayerCreated (Step 4).
 
+### Item 2 - level-up indicator, buff-icon bug, CanLevelUp callers, character-screen buttons (Step 2, agent B, spot-checked)
+- **Indicator = mask bit 4** in `FUN_00744f00(slot, visible, mask, buffCnt, debuffCnt)`: sets bit1 (visible) of the control flags at +0x448 (LBL_LEVELUP)
+  when `visible && mask&4` (`B1_disasm_744f00_counters.txt:125-130`).
+- **R5 buff-icon bug mechanism (CONFIRMED):** `0x745061 movzx edx,[ebp+0xc]; test; jz` -> if the WHOLE mask byte is nonzero, both counters are stored as 0:
+  `0x74507F mov [ecx+0xddc],dl` (buffs), `0x7450A3 mov [edx+0xddd],al` (debuffs) (`B1_disasm_744f00_counters.txt:148-167`). Any overlay (levelup 4,
+  debilitated 2, bit 1) hides the buff/debuff rows. Clearing ONLY bit 4 restores the icons when no other bit is set.
+- **CanLevelUp 0x6B9790 callers (21 sites, `B1_callers_canlevelup.txt`):** UpdatePortraits 0x74F3C7 (indicator / AutoLevelup / debilitated branch);
+  secondary portrait updater 0x756B70 (4 sites, buff counting + same overlay logic; partly inferred); character screen SetStats 0x84F221 (button
+  visibility); 0x752050 (HUD flags, inferred); 0x7C9DF0 (opens GUI on tab 2, inferred); 0x75FC30 (one-shot "k_level_dlg" for PlayerCreated,
+  `B1_dec_canlevelup_callers.txt:1507-1569`); XP tail 0x5FD480, DistributeExperience 0x5FE0C0, 0x66C7A0 (auto-level when option on); AutoLevelUpNPCs 0x5FEDD0
+  (unconditional, no option test); SetExperience 0x6B6BD0 (writes XP +0x68 first, then applies stored pending levels + FeedbackMessage(0xb)); message
+  handler 0x661C30 and ValidateLevelUp 0x6B9640 (real manual level-up paths); 0x63EDC0/0x63F550/0x6415E0 (client/server stats sync caches CanLevelUp).
+- **Veto effect (CanLevelUp -> 0 for a held creature):** removes the portrait indicator and both character-screen buttons and stops every auto path; XP keeps
+  accruing (SetExperience writes +0x68 before the check). Side effects: no FeedbackMessage(0xb), no k_level_dlg, stored pending levels not replayed in
+  SetExperience, the sync message carries 0. No saved state found (runtime caches only). Debilitated branch `0x74F4E3..0x74F4F8` (CanLevelUp==0 &&
+  IsDebilitated(0) -> mask|=2) is the correct vanilla overlay; a held + debilitated creature shows the debilitated overlay (vanilla-consistent).
+- **Character screen (CSWGuiInGameCharacter):** ctor 0x84C3A0 binds BTN_AUTO (panel+0x34F0) and BTN_LEVELUP (panel+0x36C0) (`B1_tagxrefs_levelup.txt:462-467`).
+  SetStats 0x84E6F0 (every tick via Update 0x84FBB0) calls CanLevelUp at `0x84F221` (`e8 6a a5 e6 ff`) and writes bit1 into both buttons' +0x48 flags
+  (`B1_disasm_charscreen.txt:35-60`). Clicks: `AddEvent(0x27, panel, thunk)` - BTN_AUTO at 0x84DB6A -> thunk 0x7FCF80 -> vslot+0x5C 0x40E800 ->
+  HandleInputEvent 0x84F900 (0x29) -> StartAutoLevelup 0x84FE20; BTN_LEVELUP at 0x84DBB9 -> thunk 0x762E80 -> vslot+0x54 0x40E7E0 -> HandleInputEvent(0x27)
+  -> ShowLevelUpGUI 0x84FCD0. **HandleInputEvent does NOT test CanLevelUp** - hotkeys (0x61/0x78) reach ShowLevelUpGUI even with hidden buttons: a hold veto
+  must also guard ShowLevelUpGUI/StartAutoLevelup (or rely on ShowLevelUpGUI's own checks - verify in Step 6).
+- **R5 hook candidates** (live == vanilla, no toml hook within +-16; nearest = LevelUpOverride 0x6B9870, 14 bytes past CanLevelUp's end):
+  | VA | bytes | use |
+  |---|---|---|
+  | 0x6B9790 | 55 8B EC 83 EC 20 | **preferred**: CanLevelUp entry; return 0 for held tags only for portrait / char-screen / auto-path return addresses; keep ValidateLevelUp 0x6B9672 + msg handler 0x661C30 |
+  | 0x74F3C7 | E8 C4 A3 F6 FF | UpdatePortraits-only veto |
+  | 0x84F221 | E8 6A A5 E6 FF | char-screen button visibility only (also the R9 hook point: show a Configure button when CanLevelUp && unconfigured) |
+  | 0x74F481 | 0F B6 55 CF 83 CA 04 | clear only the indicator bit (7-byte hook) |
+- **Design note:** a return-address allowlist is fragile; alternative = veto for held tags at every caller EXCEPT the manual-apply paths (0x6B9640/0x661C30)
+  and SetExperience replay (decide in Phase 3 design; Step 4 checks banking/replay).
+- **Buff HUD note:** the level-up indicator (and any overlay bit) zeroes buff counters at 0x74507F/0x7450A3 - the Buff HUD session owns that area; this doc is
+  the pointer, no Buff HUD code changed.
+- Residual: ECX at 0x84F221 = stats ptr (likely; read the `[ebp-0x28]` assignment); 0x7CEEF0 one-shot at 0x74F4B4 (short decompile); 0x7C9DF0 / 0x752050
+  effects (live log-only probe with a held creature).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.

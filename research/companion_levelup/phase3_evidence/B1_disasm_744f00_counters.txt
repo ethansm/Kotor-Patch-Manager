@@ -1,0 +1,174 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1182 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2323 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DisasmRanges.java (HeadlessAnalyzer)  
+--- 744f00..7450c0
+00744f00  55                      PUSH EBP
+00744f01  8b ec                   MOV EBP,ESP
+00744f03  83 ec 38                SUB ESP,0x38
+00744f06  89 4d d0                MOV dword ptr [EBP + -0x30],ECX
+00744f09  8b 45 d0                MOV EAX,dword ptr [EBP + -0x30]
+00744f0c  05 48 05 00 00          ADD EAX,0x548
+00744f11  89 45 fc                MOV dword ptr [EBP + -0x4],EAX
+00744f14  8b 4d 08                MOV ECX,dword ptr [EBP + 0x8]
+00744f17  83 e1 01                AND ECX,0x1
+00744f1a  d1 e1                   SHL ECX,0x1
+00744f1c  8b 55 fc                MOV EDX,dword ptr [EBP + -0x4]
+00744f1f  8b 42 48                MOV EAX,dword ptr [EDX + 0x48]
+00744f22  83 e0 fd                AND EAX,0xfffffffd
+00744f25  0b c1                   OR EAX,ECX
+00744f27  8b 4d fc                MOV ECX,dword ptr [EBP + -0x4]
+00744f2a  89 41 48                MOV dword ptr [ECX + 0x48],EAX
+00744f2d  8b 55 d0                MOV EDX,dword ptr [EBP + -0x30]
+00744f30  83 c2 28                ADD EDX,0x28
+00744f33  89 55 f8                MOV dword ptr [EBP + -0x8],EDX
+00744f36  8b 45 08                MOV EAX,dword ptr [EBP + 0x8]
+00744f39  83 e0 01                AND EAX,0x1
+00744f3c  d1 e0                   SHL EAX,0x1
+00744f3e  8b 4d f8                MOV ECX,dword ptr [EBP + -0x8]
+00744f41  8b 51 48                MOV EDX,dword ptr [ECX + 0x48]
+00744f44  83 e2 fd                AND EDX,0xfffffffd
+00744f47  0b d0                   OR EDX,EAX
+00744f49  8b 45 f8                MOV EAX,dword ptr [EBP + -0x8]
+00744f4c  89 50 48                MOV dword ptr [EAX + 0x48],EDX
+00744f4f  8b 4d d0                MOV ECX,dword ptr [EBP + -0x30]
+00744f52  81 c1 90 06 00 00       ADD ECX,0x690
+00744f58  89 4d f4                MOV dword ptr [EBP + -0xc],ECX
+00744f5b  8b 55 08                MOV EDX,dword ptr [EBP + 0x8]
+00744f5e  83 e2 01                AND EDX,0x1
+00744f61  d1 e2                   SHL EDX,0x1
+00744f63  8b 45 f4                MOV EAX,dword ptr [EBP + -0xc]
+00744f66  8b 48 48                MOV ECX,dword ptr [EAX + 0x48]
+00744f69  83 e1 fd                AND ECX,0xfffffffd
+00744f6c  0b ca                   OR ECX,EDX
+00744f6e  8b 55 f4                MOV EDX,dword ptr [EBP + -0xc]
+00744f71  89 4a 48                MOV dword ptr [EDX + 0x48],ECX
+00744f74  8b 45 d0                MOV EAX,dword ptr [EBP + -0x30]
+00744f77  05 fc 07 00 00          ADD EAX,0x7fc
+00744f7c  89 45 f0                MOV dword ptr [EBP + -0x10],EAX
+00744f7f  8b 4d 08                MOV ECX,dword ptr [EBP + 0x8]
+00744f82  83 e1 01                AND ECX,0x1
+00744f85  d1 e1                   SHL ECX,0x1
+00744f87  8b 55 f0                MOV EDX,dword ptr [EBP + -0x10]
+00744f8a  8b 42 48                MOV EAX,dword ptr [EDX + 0x48]
+00744f8d  83 e0 fd                AND EAX,0xfffffffd
+00744f90  0b c1                   OR EAX,ECX
+00744f92  8b 4d f0                MOV ECX,dword ptr [EBP + -0x10]
+00744f95  89 41 48                MOV dword ptr [ECX + 0x48],EAX
+00744f98  83 7d 08 00             CMP dword ptr [EBP + 0x8],0x0
+00744f9c  74 12                   JZ 0x00744fb0
+00744f9e  0f b6 55 0c             MOVZX EDX,byte ptr [EBP + 0xc]
+00744fa2  83 e2 02                AND EDX,0x2
+00744fa5  74 09                   JZ 0x00744fb0
+00744fa7  c7 45 e8 01 00 00 00    MOV dword ptr [EBP + -0x18],0x1
+00744fae  eb 07                   JMP 0x00744fb7
+00744fb0  c7 45 e8 00 00 00 00    MOV dword ptr [EBP + -0x18],0x0
+00744fb7  8b 45 d0                MOV EAX,dword ptr [EBP + -0x30]
+00744fba  05 70 01 00 00          ADD EAX,0x170
+00744fbf  89 45 ec                MOV dword ptr [EBP + -0x14],EAX
+00744fc2  8b 4d e8                MOV ECX,dword ptr [EBP + -0x18]
+00744fc5  83 e1 01                AND ECX,0x1
+00744fc8  d1 e1                   SHL ECX,0x1
+00744fca  8b 55 ec                MOV EDX,dword ptr [EBP + -0x14]
+00744fcd  8b 42 48                MOV EAX,dword ptr [EDX + 0x48]
+00744fd0  83 e0 fd                AND EAX,0xfffffffd
+00744fd3  0b c1                   OR EAX,ECX
+00744fd5  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+00744fd8  89 41 48                MOV dword ptr [ECX + 0x48],EAX
+00744fdb  83 7d 08 00             CMP dword ptr [EBP + 0x8],0x0
+00744fdf  74 12                   JZ 0x00744ff3
+00744fe1  0f b6 55 0c             MOVZX EDX,byte ptr [EBP + 0xc]
+00744fe5  83 e2 01                AND EDX,0x1
+00744fe8  74 09                   JZ 0x00744ff3
+00744fea  c7 45 e0 01 00 00 00    MOV dword ptr [EBP + -0x20],0x1
+00744ff1  eb 07                   JMP 0x00744ffa
+00744ff3  c7 45 e0 00 00 00 00    MOV dword ptr [EBP + -0x20],0x0
+00744ffa  8b 45 d0                MOV EAX,dword ptr [EBP + -0x30]
+00744ffd  05 b8 02 00 00          ADD EAX,0x2b8
+00745002  89 45 e4                MOV dword ptr [EBP + -0x1c],EAX
+00745005  8b 4d e0                MOV ECX,dword ptr [EBP + -0x20]
+00745008  83 e1 01                AND ECX,0x1
+0074500b  d1 e1                   SHL ECX,0x1
+0074500d  8b 55 e4                MOV EDX,dword ptr [EBP + -0x1c]
+00745010  8b 42 48                MOV EAX,dword ptr [EDX + 0x48]
+00745013  83 e0 fd                AND EAX,0xfffffffd
+00745016  0b c1                   OR EAX,ECX
+00745018  8b 4d e4                MOV ECX,dword ptr [EBP + -0x1c]
+0074501b  89 41 48                MOV dword ptr [ECX + 0x48],EAX
+0074501e  83 7d 08 00             CMP dword ptr [EBP + 0x8],0x0
+00745022  74 12                   JZ 0x00745036
+00745024  0f b6 55 0c             MOVZX EDX,byte ptr [EBP + 0xc]
+00745028  83 e2 04                AND EDX,0x4
+0074502b  74 09                   JZ 0x00745036
+0074502d  c7 45 d8 01 00 00 00    MOV dword ptr [EBP + -0x28],0x1
+00745034  eb 07                   JMP 0x0074503d
+00745036  c7 45 d8 00 00 00 00    MOV dword ptr [EBP + -0x28],0x0
+0074503d  8b 45 d0                MOV EAX,dword ptr [EBP + -0x30]
+00745040  05 00 04 00 00          ADD EAX,0x400
+00745045  89 45 dc                MOV dword ptr [EBP + -0x24],EAX
+00745048  8b 4d d8                MOV ECX,dword ptr [EBP + -0x28]
+0074504b  83 e1 01                AND ECX,0x1
+0074504e  d1 e1                   SHL ECX,0x1
+00745050  8b 55 dc                MOV EDX,dword ptr [EBP + -0x24]
+00745053  8b 42 48                MOV EAX,dword ptr [EDX + 0x48]
+00745056  83 e0 fd                AND EAX,0xfffffffd
+00745059  0b c1                   OR EAX,ECX
+0074505b  8b 4d dc                MOV ECX,dword ptr [EBP + -0x24]
+0074505e  89 41 48                MOV dword ptr [ECX + 0x48],EAX
+00745061  0f b6 55 0c             MOVZX EDX,byte ptr [EBP + 0xc]
+00745065  85 d2                   TEST EDX,EDX
+00745067  74 09                   JZ 0x00745072
+00745069  c7 45 cc 00 00 00 00    MOV dword ptr [EBP + -0x34],0x0
+00745070  eb 07                   JMP 0x00745079
+00745072  0f b6 45 10             MOVZX EAX,byte ptr [EBP + 0x10]
+00745076  89 45 cc                MOV dword ptr [EBP + -0x34],EAX
+00745079  8b 4d d0                MOV ECX,dword ptr [EBP + -0x30]
+0074507c  8a 55 cc                MOV DL,byte ptr [EBP + -0x34]
+0074507f  88 91 dc 0d 00 00       MOV byte ptr [ECX + 0xddc],DL
+00745085  0f b6 45 0c             MOVZX EAX,byte ptr [EBP + 0xc]
+00745089  85 c0                   TEST EAX,EAX
+0074508b  74 09                   JZ 0x00745096
+0074508d  c7 45 c8 00 00 00 00    MOV dword ptr [EBP + -0x38],0x0
+00745094  eb 07                   JMP 0x0074509d
+00745096  0f b6 4d 14             MOVZX ECX,byte ptr [EBP + 0x14]
+0074509a  89 4d c8                MOV dword ptr [EBP + -0x38],ECX
+0074509d  8b 55 d0                MOV EDX,dword ptr [EBP + -0x30]
+007450a0  8a 45 c8                MOV AL,byte ptr [EBP + -0x38]
+007450a3  88 82 dd 0d 00 00       MOV byte ptr [EDX + 0xddd],AL
+007450a9  8b 4d d0                MOV ECX,dword ptr [EBP + -0x30]
+007450ac  81 c1 f8 0b 00 00       ADD ECX,0xbf8
+007450b2  89 4d d4                MOV dword ptr [EBP + -0x2c],ECX
+007450b5  8b 55 08                MOV EDX,dword ptr [EBP + 0x8]
+007450b8  83 e2 01                AND EDX,0x1
+007450bb  d1 e2                   SHL EDX,0x1
+007450bd  8b 45 d4                MOV EAX,dword ptr [EBP + -0x2c]
