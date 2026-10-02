@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "dark"
 summary = "Dark-side caster (Affliction/Plague/Lightning/Storm/Drain/Scream/Kill/Death Field). CONFLICTS with mod #142 unless Visas' alignment is dark (DS powers up to -50% when light)."
+short = "Dark Force caster (conflicts with mod 142)"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

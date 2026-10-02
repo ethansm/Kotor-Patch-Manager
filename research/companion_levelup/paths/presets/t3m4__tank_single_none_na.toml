@@ -6,6 +6,7 @@ name = "T3-M4"
 utc = "p_t3m4.utc"
 variant = "tank_single_none_na"
 summary = "Single-pistol damage sponge that keeps the party's tech skills: Toughness line, Gear Head line (skill bonus for the upgrade gates), Caution line, Weapon Focus late"
+short = "Single-pistol damage sponge, keeps tech"
 convert_at = 0   # droid: never converts
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "tank_light"
 summary = "Light-side durable tank: Toughness/Conditioning/Jedi Defense/Dueling lines, Force Aura/Shield/Armor, Barrier chain, Energy and Force Resistance, Deflection, Heal chain, Battle Meditation, Force Body."
+short = "Durable light-side tank"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

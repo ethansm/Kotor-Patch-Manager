@@ -6,6 +6,7 @@ name = "Mira"
 utc = "p_mira.utc"
 variant = "scout"
 summary = "Never converts: Scout 7-30, pistol/rapid-shot/sniper/dual-wield, grenade+rocket+medic utility"
+short = "Pistol Scout with utility, never a Jedi"
 convert_at = 0   # first Jedi (Sentinel) char level; 0 = never converts
 
 [meta.wizard]

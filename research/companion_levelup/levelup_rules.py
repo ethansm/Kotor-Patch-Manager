@@ -84,6 +84,21 @@ class Rules:
     def skill_is_class(self, skill_idx, cls):
         return self.cell(self.skills, skill_idx, CLASS_ABBR[cls] + "_class") == "1"
 
+    def class_skill_feats(self):
+        """{feat_id: skill_idx} for the "Class Skill: X" feats (make skill X a class skill, 1 pt/rank, for the creature).
+        Identified from feat.2da: label starts CLASS_SKILL_ and the remainder equals a skills.2da label (case/underscore
+        insensitive, e.g. CLASS_SKILL_TREAT_INJURY -> TreatInjury); cross-checked by name 'Class Skill: X' / icon if_clsskillNN.
+        KOTOR II has 7 (rows 183-189, no Persuade). Skill idx = skills.2da row (== SKILLS index)."""
+        if not hasattr(self, "_csf"):
+            norm = lambda x: x.replace("_", "").lower()
+            sk = {norm(self.cell(self.skills, i, "label")): i for i in range(self.skills.get_height())}
+            self._csf = {}
+            for f in range(self.feat.get_height()):
+                lab = self.cell(self.feat, f, "label")
+                if lab.upper().startswith("CLASS_SKILL_") and norm(lab[12:]) in sk:
+                    self._csf[f] = sk[norm(lab[12:])]
+        return self._csf
+
     def skill_points(self, cls, int_score):
         base = _int(self.cell(self.classes, cls, "skillpointbase"), 1)
         return max(1, base + (int_score - 10) // 2)

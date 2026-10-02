@@ -6,6 +6,7 @@ name = "Mira"
 utc = "p_mira.utc"
 variant = "ranged_rifle_light_late"
 summary = "Rifle sniper: Scout 7-12 (Weapon Focus: Blaster Rifle, Improved Sniper Shot, Critical Strike), Sentinel from 13 (Master Sniper/Critical Strike, Conditioning, Jedi Defense) with Speed/Heal/Deflection/Valor kit; Stealth/Security/Awareness skills"
+short = "Rifle sniper, light, Sentinel at 13"
 convert_at = 13   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
 

@@ -6,6 +6,7 @@ name = "T3-M4"
 utc = "p_t3m4.utc"
 variant = "tank_pistols_none_na"
 summary = "elkripper's basic survivability pistol build: Toughness / Improved / Master first, then Two-Weapon Fighting line and Dual Strike line; rush in and draw fire"
+short = "Survivability dual-pistol droid"
 convert_at = 0   # droid: never converts
 
 [meta.wizard]

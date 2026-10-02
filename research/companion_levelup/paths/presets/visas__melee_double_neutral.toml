@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "double_neutral"
 summary = "Neutral (universal powers only) double-bladed Sentinel: TWF line + Finesse + Critical Strike line, Speed/Resistance/Battle Meditation/Body/Deflection/Push-line powers; no light or dark powers picked."
+short = "Double blade Sentinel, neutral powers"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

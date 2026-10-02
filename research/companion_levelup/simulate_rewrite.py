@@ -10,7 +10,8 @@ import sys
 from collections import namedtuple
 
 NSKILL = 8
-Rec = namedtuple("Rec", "cls ability feats powers skills granted")
+Rec = namedtuple("Rec", "cls ability feats powers skills granted clvl", defaults=(None,))
+Preset = namedtuple("Preset", "role style alignment convert skills convert_at hold_class short")
 ENGINE_GRANT_POWERS = (set(range(0x90, 0x95)) | set(range(0x9C, 0x9F)) |
                        set(range(0xA4, 0xAC)) | set(range(0x102, 0x105)) | {0x109})
 INI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runtime", "levelup_paths.ini")
@@ -22,7 +23,12 @@ def _ids(s, ln):
 
 
 def parse_table(text):
-    cs, recs, sect = {}, {}, None
+    cs, _presets, recs = parse_table_v2(text)
+    return cs, recs
+
+
+def parse_table_v2(text):
+    cs, recs, presets, sect = {}, {}, {}, None
     for n, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith(";"):
@@ -30,7 +36,7 @@ def parse_table(text):
         try:
             if line.startswith("[") and line.endswith("]"):
                 sect = line[1:-1].strip().lower()
-                if sect != "classskills":
+                if sect not in ("classskills", "presets"):
                     recs.setdefault(sect, {})
                 continue
             if sect is None or "=" not in line:
@@ -41,12 +47,17 @@ def parse_table(text):
                 if not k.startswith("cs") or len(v) != NSKILL or any(c not in "01" for c in v):
                     raise ValueError("bad cs line")
                 cs[int(k[2:])] = [int(c) for c in v]
+            elif sect == "presets":
+                f = v.split("|")
+                if len(f) != 8:
+                    raise ValueError("need 8 preset fields")
+                presets[k] = Preset(f[0], f[1], f[2], f[3], f[4], int(f[5]), int(f[6]), f[7])
             elif k == "name":
                 pass
             elif k.startswith("l"):
                 f = v.split("|")
-                if len(f) != 6:
-                    raise ValueError("need 6 fields")
+                if len(f) not in (6, 7):
+                    raise ValueError("need 6 or 7 fields")
                 ab = int(f[1])
                 if not 0 <= ab <= 6:
                     raise ValueError("ability range")
@@ -56,12 +67,13 @@ def parse_table(text):
                     if not 0 <= int(i) < NSKILL:
                         raise ValueError("skill idx")
                     sk.append((int(i), int(r)))
-                recs[sect][int(k[1:])] = Rec(int(f[0]), ab, _ids(f[2], n), _ids(f[3], n), sk, _ids(f[5], n))
+                recs[sect][int(k[1:])] = Rec(int(f[0]), ab, _ids(f[2], n), _ids(f[3], n), sk, _ids(f[5], n),
+                                            int(f[6]) if len(f) == 7 else None)
             else:
                 raise ValueError("unknown key")
         except ValueError as e:
             raise ValueError("line %d: %s: %r" % (n, e, raw))
-    return cs, recs
+    return cs, presets, recs
 
 
 def lookup_record(recs, tag, key_level):
@@ -105,8 +117,82 @@ def format_dry(tag, key_level, res):
                j(res["deltas"]), res["unspent"], res["ability"]))
 
 
+def level_now(classes, preset, key, hold, hold_class):
+    """Hold rule v2. Returns (decision, char_level_or_None, rec)."""
+    if preset is None or not classes:
+        return ("VANILLA", None, None)
+    cls, lvl = classes[-1]
+    for cl in sorted(preset):
+        r = preset[cl]
+        if (r.cls, r.clvl) == (cls, lvl + 1):
+            return ("PATH" if cl == key else "REBASE", cl, r)
+    # HOLD only once the preset's records for the current (base) class are used up; below the path start -> vanilla
+    top = max((r.clvl for r in preset.values() if r.cls == cls and r.clvl is not None), default=None)
+    if hold and hold_class and hold_class not in [c for c, _ in classes] and top is not None and lvl >= top:
+        return ("HOLD", None, None)
+    return ("VANILLA", None, None)
+
+
+def simulate_auto_levelup(classes, xp, xp_table, preset, hold, hold_class):
+    """Engine loop twin. xp_table[total_level] = xp needed to leave that level."""
+    classes = [list(c) for c in classes]
+    out, first = [], True
+    while sum(l for _, l in classes) < 50 and xp >= xp_table[sum(l for _, l in classes)]:
+        key = sum(l for _, l in classes) + 1
+        d, cl, rec = level_now([tuple(c) for c in classes], preset, key, hold, hold_class)
+        if d == "HOLD":
+            if first:
+                return []
+            d = "HOLD_MIDLOOP"   # the LevelUp hook can never veto (AutoLevelup would spin): engine picks apply
+        first = False
+        out.append((key, d, cl))
+        classes[-1][1] += 1
+    return out
+
+
+def _syn_preset():
+    R = lambda c, cl: Rec(c, 6, [], [], [], [], cl)
+    p = {L: R(2, L) for L in range(4, 8)}
+    p.update({L: R(5, L - 7) for L in range(8, 16)})
+    return p
+
+
+def level_now_tests(check):
+    p = _syn_preset()
+    ln = lambda c, k, hold=True, hc=5, pr=p: level_now(c, pr, k, hold, hc)[:2]
+    check("ln on track", ln([(2, 5)], 6) == ("PATH", 6))
+    check("ln early conv", ln([(2, 6), (5, 0)], 7) == ("REBASE", 8))
+    check("ln early conv 2 (no re-apply)", ln([(2, 6), (5, 1)], 8) == ("REBASE", 9))
+    check("ln late hold on", ln([(2, 7)], 8) == ("HOLD", None))
+    check("ln late hold off", ln([(2, 7)], 8, hold=False) == ("VANILLA", None))
+    droid = {L: Rec(6, 6, [], [], [], [], L) for L in range(1, 5)}
+    check("ln droid on track", ln([(6, 2)], 3, hc=0, pr=droid) == ("PATH", 3))
+    check("ln droid past end", ln([(6, 4)], 5, hc=0, pr=droid) == ("VANILLA", None))
+    check("ln unconfigured", ln([(2, 5)], 6, pr=None) == ("VANILLA", None))
+    xt = [0] * 50
+    for i in range(50):
+        xt[i] = 1000 * i
+    xt[14], xt[15] = 105000, 120000
+    check("atton banked vetoed", simulate_auto_levelup([(2, 7)], 110000, xt, p, True, 5) == [])
+    sim = simulate_auto_levelup([(2, 7), (5, 0)], 110000, xt, p, True, 5)
+    check("atton banked after Sentinel", [k for k, _, _ in sim] == list(range(8, 16))
+          and all(d == "PATH" for _, d, _ in sim) and [c for _, _, c in sim] == list(range(8, 16)))
+    mid = simulate_auto_levelup([(2, 6)], 10 ** 6, xt, p, True, 5)
+    check("mid-loop HOLD -> vanilla levels", mid[0][1] == "PATH" and all(d == "HOLD_MIDLOOP" for _, d, _ in mid[1:]))
+    check("ln below path start -> vanilla", ln([(2, 2)], 3) == ("VANILLA", None))
+    v1 = "[classskills]\ncs2=11111111\n[t]\nL1=2|1|3||0:1|\n"
+    cs, rc = parse_table(v1)
+    check("v1 parses clvl None", rc["t"][1].clvl is None and cs[2] == [1] * 8)
+    v2 = ("[classskills]\ncs2=11111111\n[presets]\na__b=r|s|al|c|sk|8|5|sh\n"
+          "[a__b]\nname=X\nL4=2|1|3||0:1||4\n")
+    cs, pi, rc = parse_table_v2(v2)
+    check("v2 parses", rc["a__b"][4].clvl == 4 and pi["a__b"].convert_at == 8
+          and pi["a__b"].hold_class == 5 and pi["a__b"].short == "sh" and parse_table(v2)[1] == rc)
+
+
 def main():
-    cs, recs = parse_table(open(INI).read())
+    text = open(INI).read()
+    cs, recs = parse_table(text)
     fails = []
 
     def check(name, cond):
@@ -143,6 +229,11 @@ def main():
         counts[tag] = len(lv)
         check("all records %s (%d)" % (tag, len(lv)), ok)
 
+    level_now_tests(check)
+    if "atton" not in recs:
+        print("records checked: " + ", ".join("%s=%d" % kv for kv in counts.items()))
+        print("SUMMARY: %d failure(s)" % len(fails))
+        sys.exit(1 if fails else 0)
     base = dict(cls=2, feats=[11, 62], spells=[], deltas=[0, 0, 2, 2, 0, 0, 0, 0], unspent=0, ability=3)
     check("missing tag", compute_rewrite(lookup_record(recs, "bao-dur", 5), base, cs)["status"] == "no-record")
     check("missing level", compute_rewrite(lookup_record(recs, "atton", 99), base, cs)["status"] == "no-record")

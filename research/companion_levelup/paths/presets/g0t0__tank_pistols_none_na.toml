@@ -6,6 +6,7 @@ name = "G0-T0"
 utc = "p_g0t0.utc"
 variant = "tank_pistols_none_na"
 summary = "Durable droid: Toughness line first (+vitality per level, retroactive), then Two-Weapon Fighting line, Weapon Focus and Dual Strike; Awareness and Repair"
+short = "Durable droid with dual blasters"
 convert_at = 0   # droid: never changes class
 
 [meta.wizard]

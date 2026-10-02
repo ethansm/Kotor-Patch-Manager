@@ -554,6 +554,27 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   else if the preset has a Jedi class (a record class different from the base class) that the creature lacks and `hold=1` -> `HOLD`; else `VANILLA`
   (`NOREC`). On-track it equals the char-level lookup. The table records carry an explicit class level (7th field) from M1 on.
 
+## Phase 4 M1 results (data + tooling, 2026-10-02)
+- **Runtime table v2** (`gen_runtime_table.py`, `runtime/levelup_paths.ini`): `[classskills]`, `[presets]` index
+  `<tag>__<variant>=role|style|alignment|convert|skills|convert_at|hold_class|short`, one section per path, `L<n>=` records with a 7th field
+  `class_level` (creature level in that class after the record). 82 paths (dev `atton__live`/`kreia__live` + 80 presets), 2047 records, max 27 per preset,
+  max char level 30, max per record: 1 feat / 2 powers / 7 granted / 7 skill entries, max line 120 chars, 70830 bytes -> C++ caps for M2.
+  `hold_class` = first record class differing from the utc's newest class (Atton/Mira 5, Bao-Dur/Handmaiden 3, Disciple 4, all others 0); matches
+  `meta.hold_until_class` everywhere. Every preset has `[meta] short` (<= 60 chars, wizard display).
+- **Tags** (`phase4_evidence/M1_tags.txt`): all 12 preset tags match the utc Tags case-insensitively; saves store them lowercase (atton, kreia, t3m4 seen)
+  -> case-insensitive match required. Save slot `availnpc7` (Mira) holds a placeholder tag `3cfd` before recruitment - never match on it.
+- **Class Skill feats** (`levelup_rules.class_skill_feats()`, check_paths): 183 Awareness, 184 Computer Use, 185 Demolitions, 186 Repair, 187 Security,
+  188 Stealth, 189 Treat Injury (no Persuade feat). Kreia's utc has 188 (Stealth class-cost from the start); presets taking 185: g0t0 ranged stealth (L15),
+  g0t0 support (L12), t3m4 support single (L12). **M2 requirement:** the DLL's unspent recomputation must OR the per-class skill mask with the creature's
+  feats 183-189 (plus feats in the record being applied) - else it charges 2 per rank and loses points. 82/82 paths 0 errors; warnings 199 -> 277: five
+  presets planned with the old cost now leave a point unspent per level (open: re-plan them; harmless, points stay unspent).
+- **Python twin** (`simulate_rewrite.py`): `parse_table_v2`, `level_now(classes, preset, key, hold, hold_class)` = hold rule v2 (class-level keyed; HOLD
+  only when the preset's records for the current base class are used up, the hold class is missing and hold=1 - below the path start = VANILLA),
+  `simulate_auto_levelup` (engine loop twin; a HOLD inside the loop becomes `HOLD_MIDLOOP` = engine picks, because the LevelUp hook can never veto).
+  Self-test cases: on track, early conversion (no re-apply regression), late conversion hold on/off, droid, unconfigured, below path start, Atton banked
+  7 -> Sentinel added -> keys 8..15 PATH, mid-loop. `python3 simulate_rewrite.py` 0 failures. `tools/parity/parity.py` is EXPECTED to fail until M2
+  (the 0.2.1 C++ parser rejects 7-field records).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -652,5 +673,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Plan: `research/companion_levelup/PHASE4_PLAN.md` (authoritative; the ~/.claude plan file is reused per phase). Evidence: `research/companion_levelup/phase4_evidence/`.
 - Step 0 (preflight) done (746aaf3). M0 done: "Phase 4 M0 facts" above (+ hold rule v2 by class level), DB name_map source
   `level-up-P4-static-confirmed` + 2 lessons. Next: M1 (Python agents: gen_runtime_table v2 + `[presets]` + class-level field, check_paths Class Skill feats,
-  tag verification, simulate_rewrite level_now twin).
+  tag verification, simulate_rewrite level_now twin). M1 DONE: "Phase 4 M1 results". Next: M2 C++ (0.3.0-a hold + instant, ini config).
 

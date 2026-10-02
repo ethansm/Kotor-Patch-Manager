@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "dual_light"
 summary = "Light-side dual-wield Sentinel: Two-Weapon Fighting line, Critical Strike line, Master Flurry, light buffs/heal and Force Push line."
+short = "Dual sabers, light side"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

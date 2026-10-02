@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "force_support"
 summary = "Light-side healer/buffer/controller: Heal, Revitalize, Barrier, Valor, Battle Meditation, Stun/Stasis. Treat Injury kept at cap (mod #142 scales Heal with it)."
+short = "Light healer, buffer and controller"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

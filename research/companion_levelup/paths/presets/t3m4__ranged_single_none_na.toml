@@ -6,6 +6,7 @@ name = "T3-M4"
 utc = "p_t3m4.utc"
 variant = "ranged_single_none_na"
 summary = "Single-pistol Expert Droid (keeps the shock-arm/utility slot): Weapon Focus Blaster Pistol, Toughness line, Dual Strike line, Gear Head late; Awareness plus upgrade-gate skills"
+short = "Single-pistol Expert droid"
 convert_at = 0   # droid: never converts
 
 [meta.wizard]

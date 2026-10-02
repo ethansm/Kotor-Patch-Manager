@@ -6,6 +6,7 @@ name = "T3-M4"
 utc = "p_t3m4.utc"
 variant = "support_single_none_na"
 summary = "Utility droid (workbench, spikes, repair): Gear Head line first, Class Skill: Demolitions, then Toughness line; Computer Use 15 / Repair 21 / Security / Demolitions"
+short = "Utility droid: workbench, spikes, repair"
 convert_at = 0   # droid: never converts
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "Mandalore"
 utc = "p_mand.utc"
 variant = "tank_single_none_na"
 summary = "Soldier 6-30 heavy-armor tank (elkripper basic survivability build): Toughness and Conditioning lines, Regenerate Vitality Points, Dueling line, Power Attack line, Weapon Focus/Specialization Melee; CON first, high Treat Injury"
+short = "Heavy-armor tank Soldier"
 convert_at = 0   # never becomes a Jedi (Soldier only)
 
 [meta.wizard]

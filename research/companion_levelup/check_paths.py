@@ -6,7 +6,7 @@ Starting state comes from live_utc/<meta.utc> (the companion's template in the l
 Checks per level: sequential char_level, class change legality, feat selectable for the class + slot count
 (featgain.2da), feat prereqs (feats/or-feats/min char level/attrs), duplicate feats, power min class level
 (spells.2da), power prereq spell known, power slot count (classpowergain.2da), skill points (base + INT mod;
-cross-class 2 per rank) and max rank (char_level + 3). Attack-bonus prereqs are NOT checked (needs class tables + mods).
+cross-class 2 per rank unless a Class Skill feat was taken/owned) and max rank (char_level + 3). Attack-bonus prereqs are NOT checked (needs class tables + mods).
 Exit status 1 if any path has errors."""
 import sys, glob, os, tomllib
 from levelup_rules import Rules, SKILLS, JEDI, CLASS_ID
@@ -27,6 +27,8 @@ def check(path, R):
     skills = {s: getattr(u, s) for s in SKILLS}
     attrs = dict(STR=u.strength, DEX=u.dexterity, CON=u.constitution, INT=u.intelligence, WIS=u.wisdom, CHA=u.charisma)
     cl = sum(clv.values())
+    csf = R.class_skill_feats()
+    cs_skills = {csf[f] for f in feats if f in csf}  # skills made class skills by "Class Skill: X" feats (utc + taken so far)
     for lv in spec["level"]:
         tag = f"{meta['tag']} L{lv['char_level']}"
         e = lambda m: errs.append(f"{tag}: {m}")
@@ -77,6 +79,7 @@ def check(path, R):
                 warns.append(f"{tag}: feat {lab} needs base attack {pr['minattack']} (not verified)")
             feats.add(f)
         feats |= newly
+        cs_skills |= {csf[f] for f in feats if f in csf}  # active from this level's skill allocation
         # --- powers ---
         pw = lv.get("powers", [])
         if cls in JEDI:
@@ -107,7 +110,7 @@ def check(path, R):
             if name not in SKILLS:
                 e(f"unknown skill {name}"); continue
             idx = SKILLS.index(name)
-            cost += n * (1 if R.skill_is_class(idx, cls) else 2)
+            cost += n * (1 if idx in cs_skills or R.skill_is_class(idx, cls) else 2)
             skills[name] += n
             if skills[name] > lv["char_level"] + 3:
                 e(f"skill {name} rank {skills[name]} exceeds max {lv['char_level'] + 3}")

@@ -6,6 +6,7 @@ name = "Hanharr"
 utc = "p_hanharr.utc"
 variant = "ranged_rifle"
 summary = "Scout 5-30 blaster rifle sniper: Rapid Shot line, WF Rifle, Sniper Shot and Critical Strike chains, Conditioning"
+short = "Blaster rifle sniper Scout"
 convert_at = 0   # never a Jedi
 
 [meta.wizard]

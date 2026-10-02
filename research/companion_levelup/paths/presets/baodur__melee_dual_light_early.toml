@@ -5,6 +5,7 @@ name = "Bao-Dur"
 utc = "p_baodur.utc"
 variant = "melee_dual_light_early"
 summary = "Dual-wield lightsaber Guardian: Two-Weapon Fighting from the Tech levels, Dual Strike line, Weapon Focus/Specialization Lightsaber; light-side buffs; DEX stays 10 so this is the weakest to-hit build"
+short = "Dual sabers, light side, Jedi at 12"
 convert_at = 12
 hold_until_class = 3   # bank levels 12+ until the Jedi Guardian class exists
 

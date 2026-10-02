@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "caster_light"
 summary = "Light-side Force controller: Stun/Stasis/Field, Affect/Dominate Mind, Mind Trick, Whirlwind/Wave/Suppression/Breach, with Valor, Heal and Barrier chains; Regenerate Force Points first (no Force Sensitive feat)."
+short = "Light Force controller (stun, stasis, mind)"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

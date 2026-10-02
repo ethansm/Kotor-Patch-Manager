@@ -6,6 +6,7 @@ name = "Handmaiden"
 utc = "p_handmaiden.utc"
 variant = "melee_unarmed_light_late"
 summary = "Soldier 7-12 (unarmed Soldier feats), converts to Jedi Guardian at char 13 and takes Guardian 1-18; light-side powers."
+short = "Unarmed Soldier, light Guardian at 13"
 convert_at = 13   # first char level taken as Guardian; real conversion happens when story allows (see handmaiden.md)
 hold_until_class = 3   # bank levels until the Jedi Guardian class exists; Soldier levels 7-12 replay at once, Guardian levels wait for the class
 

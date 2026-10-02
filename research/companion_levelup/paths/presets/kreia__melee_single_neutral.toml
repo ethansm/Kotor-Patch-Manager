@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "duelist_neutral"
 summary = "Single-saber duelist (she has Dueling + Finesse: Melee Weapons): Dueling line, Weapon Focus: Lightsaber, Critical Strike line, Jedi Defense; universal powers (Speed, Deflection/Redirection, Resistance, Force Body, Throw Lightsaber). Light buffs as filler."
+short = "Single-saber duelist, neutral powers"
 convert_at = 0
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "Atton Rand"
 utc = "p_atton.utc"
 variant = "pistols_light_late"
 summary = "Elkripper plan: Scoundrel to 19 for all Sneak Attack, Sentinel from 20: Sniper Shot + TWF dual blasters, Precise Shot, Speed/Heal/Deflection"
+short = "Dual blasters, Sneak Attack first, Jedi at 20"
 convert_at = 20   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # bank levels 20+ until the Jedi Sentinel class exists; Sentinel picks are identical whatever char level conversion happens at
 

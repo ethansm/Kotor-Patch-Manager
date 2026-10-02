@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "control_light"
 summary = "Light-side controller: Stun/Stasis/Stasis Field, Disable/Destroy Droid and Stun Droid (mod 'Repair Affects Stun Droid'), Whirlwind/Wave, Breach/Suppression, Affect/Dominate Mind, plus Valor and Heal. Repair/Computer Use focus."
+short = "Light Force controller (stun, stasis, droids)"
 convert_at = 0
 
 [meta.wizard]

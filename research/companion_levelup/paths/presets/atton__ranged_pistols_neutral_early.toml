@@ -6,6 +6,7 @@ name = "Atton Rand"
 utc = "p_atton.utc"
 variant = "pistols_neutral_early"
 summary = "Convert early but universal powers only (no light/dark pushes): Speed line, Deflection/Redirection, Energy/Force Resistance, Force Body, Battle Meditation, Push/Whirlwind/Wave/Breach; Rapid Shot gunner, tech skills"
+short = "Dual blasters, neutral powers, Jedi at 8 (tech)"
 convert_at = 8   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # bank levels 8+ until the Jedi Sentinel class exists; Sentinel picks are identical whatever char level conversion happens at
 

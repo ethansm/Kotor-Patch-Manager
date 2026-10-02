@@ -5,6 +5,7 @@ name = "Bao-Dur"
 utc = "p_baodur.utc"
 variant = "melee_unarmed_light_early"
 summary = "Unarmed Guardian without armor feats: Close Combat/Power Attack/Critical Strike lines on top of the Unarmed Specialist ranks Guardian levels grant; light-side buffs (Valor/Speed/Force Body); convert as soon as influence allows"
+short = "Unarmed fighter, light side, Jedi at 12"
 convert_at = 12
 hold_until_class = 3   # bank levels 12+ until the Jedi Guardian class exists
 

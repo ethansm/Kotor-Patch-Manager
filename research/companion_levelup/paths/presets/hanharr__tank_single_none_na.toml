@@ -6,6 +6,7 @@ name = "Hanharr"
 utc = "p_hanharr.utc"
 variant = "tank_single"
 summary = "Scout 5-30 unarmored tank: Toughness/Conditioning lines first, Regenerate, Caution, Master Power Attack"
+short = "Unarmored tank Scout"
 convert_at = 0   # never a Jedi
 
 [meta.wizard]

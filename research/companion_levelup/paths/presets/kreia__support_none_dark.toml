@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "elkripper_hybrid"
 summary = "Elkripper caster build: light buffs/Heal/Barrier early and mid (Force Chain shares them with the Exile), dark debuffs (Plague, Affliction, Kill, Drain Force) from level 21. Copy of paths/kreia.toml."
+short = "Buffs and healing early, dark powers later"
 convert_at = 0
 
 [meta.wizard]

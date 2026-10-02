@@ -6,6 +6,7 @@ name = "G0-T0"
 utc = "p_g0t0.utc"
 variant = "ranged_pistols_none_na_stealth"
 summary = "Sneaky anti-droid operative using the built-in Personal Cloaking Shield: Improved/Master Caution (+skill bonus to Stealth/Demolitions), Class Skill: Demolitions, Two-Weapon Fighting line; Stealth/Awareness/Security"
+short = "Stealth cloak anti-droid gunner"
 convert_at = 0   # droid: never changes class
 
 [meta.wizard]

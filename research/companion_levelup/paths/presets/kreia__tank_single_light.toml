@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "tank_light"
 summary = "Light-side durable duelist: Toughness line, Jedi Defense, Dueling defense bonuses, self-buffs (Shield/Armor/Barrier/Valor/Energy and Force Resistance/Immunity) and Heal; she soaks, Exile deals damage."
+short = "Durable light-side duelist with self-buffs"
 convert_at = 0
 
 [meta.wizard]

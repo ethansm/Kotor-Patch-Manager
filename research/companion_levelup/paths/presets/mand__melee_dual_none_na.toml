@@ -6,6 +6,7 @@ name = "Mandalore"
 utc = "p_mand.utc"
 variant = "melee_dual_none_na"
 summary = "Soldier 6-30 dual-wield melee: Two-Weapon Fighting line + Dual Strike line (elkripper), Weapon Focus/Specialization Melee, Power Attack line, Toughness/Conditioning; STR first"
+short = "Dual-wield melee Soldier"
 convert_at = 0   # never becomes a Jedi (Soldier only)
 
 [meta.wizard]

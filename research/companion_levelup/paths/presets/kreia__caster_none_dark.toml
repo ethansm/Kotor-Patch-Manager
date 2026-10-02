@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "caster_dark"
 summary = "Dark-side offensive caster (flagged DARK, needs mod #142 dark alignment): Shock/Lightning/Storm, Wound/Choke/Kill, Slow/Affliction/Plague, Drain Life/Death Field, Drain Force and Force Scream lines, Horror/Insanity, universal Speed/Resistance for survival."
+short = "Dark Force offense caster"
 convert_at = 0
 
 [meta.wizard]

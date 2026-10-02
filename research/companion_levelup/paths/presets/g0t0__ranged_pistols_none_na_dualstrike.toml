@@ -6,6 +6,7 @@ name = "G0-T0"
 utc = "p_g0t0.utc"
 variant = "ranged_pistols_none_na_dualstrike"
 summary = "Party-focus-fire DPS: Two-Weapon Fighting line and Weapon Focus first, then Dual Strike/Improved/Master Dual Strike (+to hit on shared targets), Toughness; Awareness/Repair"
+short = "Dual blasters, Dual Strike focus fire"
 convert_at = 0   # droid: never changes class
 
 [meta.wizard]

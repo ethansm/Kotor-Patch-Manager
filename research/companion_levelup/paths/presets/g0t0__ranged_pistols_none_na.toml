@@ -6,6 +6,7 @@ name = "G0-T0"
 utc = "p_g0t0.utc"
 variant = "ranged_pistols_none_na"
 summary = "Dual-blaster glass cannon: Improved/Master Two-Weapon Fighting, Weapon Focus: Blaster Pistol, then the Toughness line and Dual Strike; Awareness/Repair/Computer Use/Security"
+short = "Dual-blaster glass cannon droid"
 convert_at = 0   # droid: never changes class
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "support_light"
 summary = "Light-side healer/buffer: Heal line, Valor, Aura/Shield/Armor, Barrier, Battle Meditation, Revitalize, Speed/Energy Resistance (shared with the Exile via Force Chain). Treat Injury high (mod #142 scales Heal with it)."
+short = "Light healer and buffer"
 convert_at = 0
 
 [meta.wizard]

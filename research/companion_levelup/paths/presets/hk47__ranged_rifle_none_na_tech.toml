@@ -6,6 +6,7 @@ name = "HK-47"
 utc = "p_hk47.utc"
 variant = "ranged_rifle_none_na_tech"
 summary = "Combat Droid 7-30 sniper/heavy-hitter with a blaster rifle: Master Sniper Shot, Power Blast line, Gear Head line, Security/Repair/Computer Use focus"
+short = "Rifle sniper droid, Power Blast, tech skills"
 convert_at = 0   # droid, never converts
 
 [meta.wizard]

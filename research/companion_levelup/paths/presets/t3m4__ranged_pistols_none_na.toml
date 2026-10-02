@@ -6,6 +6,7 @@ name = "T3-M4"
 utc = "p_t3m4.utc"
 variant = "ranged_pistols_none_na"
 summary = "Dual-pistol Expert Droid: Weapon Focus Blaster Pistol, Two-Weapon Fighting line, Toughness x2, Dual Strike line; Awareness first, then the Computer Use 15 / Repair 21 upgrade gates"
+short = "Dual-pistol Expert droid"
 convert_at = 0   # droid: never converts
 
 [meta.wizard]

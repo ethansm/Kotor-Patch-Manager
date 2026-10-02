@@ -6,6 +6,7 @@ name = "Hanharr"
 utc = "p_hanharr.utc"
 variant = "ranged_pistols"
 summary = "Scout 5-30 dual blaster pistols: TWF line, Rapid Shot line, WF Pistol, Conditioning, Critical Strike"
+short = "Dual blaster pistol Scout"
 convert_at = 0   # never a Jedi
 
 [meta.wizard]

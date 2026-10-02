@@ -6,6 +6,7 @@ name = "Visas Marr"
 utc = "p_visas.utc"
 variant = "stealth_neutral"
 summary = "Neutral stealth/scout Sentinel: Stealth Run, Caution line, Critical Strike line, Dueling line, Mind Trick/Affect Mind, Speed and universal defensive powers; Stealth/Awareness/Security skills."
+short = "Stealth single saber, neutral powers"
 convert_at = 0   # never converts (already Sentinel)
 
 [meta.wizard]

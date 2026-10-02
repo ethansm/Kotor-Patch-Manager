@@ -6,6 +6,7 @@ name = "Mira"
 utc = "p_mira.utc"
 variant = "early_sentinel"
 summary = "Convert as early as possible (first Sentinel level 7): dual-wield lightsaber (TWF line, Dual Strike, Weapon Focus: Lightsaber), Valor/Speed/Heal/Force Shield kit"
+short = "Dual sabers, light side, Jedi at 7"
 convert_at = 7   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
 

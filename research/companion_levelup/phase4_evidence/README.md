@@ -9,3 +9,4 @@ Only Ghidra/static agents write here; one Ghidra headless run at a time across a
 - S1_template_gui.txt: live character_p.gui controls, BTN extents, template tag recommendation (LBL_EXPERIENCE_STAT plain, LBL_XP_BACK framed).
 - S1_control_lifetime.txt: panel dtor chain 0x84DEF0 -> 0x84DF70 -> 0x40E860 never frees panel+0x24 entries; ownership rule (append once, never free, key on panel pointer).
 - S1_raw_*: raw outputs (disasm ranges, callers/refs, overlap scan + script, live-vs-vanilla bytes, character_p dump, dtor decomp).
+- M1_tags.txt: companion Tag verification (utc vs saves, case-insensitive; no preset changes needed)

@@ -6,6 +6,7 @@ name = "HK-47"
 utc = "p_hk47.utc"
 variant = "ranged_rifle_none_na"
 summary = "Combat Droid 7-30 with a blaster rifle: Rapid Shot line, Weapon Specialization, Precise Shot I-V, Toughness; Awareness-heavy"
+short = "Blaster rifle combat droid"
 convert_at = 0   # droid, never converts
 
 [meta.wizard]

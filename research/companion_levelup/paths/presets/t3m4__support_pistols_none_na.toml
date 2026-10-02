@@ -6,6 +6,7 @@ name = "T3-M4"
 utc = "p_t3m4.utc"
 variant = "support_pistols_none_na"
 summary = "Support droid with team-fire bonus: Gear Head line for the skill gates, Two-Weapon Fighting line, Dual Strike line (needs allies attacking the same target), Toughness last"
+short = "Team-fire support droid, dual pistols"
 convert_at = 0   # droid: never converts
 
 [meta.wizard]

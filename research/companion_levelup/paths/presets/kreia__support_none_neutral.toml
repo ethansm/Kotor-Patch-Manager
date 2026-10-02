@@ -6,6 +6,7 @@ name = "Kreia"
 utc = "p_kreia.utc"
 variant = "support_neutral"
 summary = "Gray buffer: universal powers first (Force Body, Battle Meditation, Speed, Deflection, Energy/Force Resistance, Mind control line, Push line), light-side buffs only as filler once the universal pool (about 25) runs out. Persuade focus."
+short = "Neutral buffer, universal powers only"
 convert_at = 0
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "Handmaiden"
 utc = "p_handmaiden.utc"
 variant = "unarmed_soldier"
 summary = "Soldier 7-30, never converts (elkripper unarmed Soldier); no Force powers."
+short = "Unarmed Soldier, never a Jedi"
 convert_at = 0   # never converts; no hold needed
 
 [meta.wizard]

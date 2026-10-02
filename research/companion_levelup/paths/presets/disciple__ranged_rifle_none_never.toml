@@ -6,6 +6,7 @@ name = "Disciple (Mical)"
 utc = "p_disciple.utc"
 variant = "ranged_rifle_none_never"
 summary = "Soldier 7-30, never converts: Rapid Shot, Sniper Shot, Power Blast, Precise Shot chains, Weapon Focus/Specialization: Blaster Rifle, Toughness and Conditioning chains."
+short = "Rifle Soldier, never a Consular"
 convert_at = 0   # 0 = never converts; no hold needed
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "Mira"
 utc = "p_mira.utc"
 variant = "support_single_light_early"
 summary = "Light support Sentinel: convert at once, single lightsaber (Dueling line, Advanced/Master Jedi Defense, Regenerate FP), heal/Revitalize/Valor/Barrier/Battle Meditation kit, Persuade for dialogue"
+short = "Single-saber support, light, Jedi at 7"
 convert_at = 7   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
 

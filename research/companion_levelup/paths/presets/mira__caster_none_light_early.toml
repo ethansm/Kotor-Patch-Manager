@@ -6,6 +6,7 @@ name = "Mira"
 utc = "p_mira.utc"
 variant = "caster_none_light_early"
 summary = "Light-side offensive-Force Sentinel: convert at once, Push/Whirlwind/Wave/Breach/Suppression/Throw Lightsaber control kit plus Stasis/Stun and late heal, defensive feats (Conditioning, Toughness, Mobility), no weapon-style feats"
+short = "Light offense Force Sentinel, Jedi at 7"
 convert_at = 7   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # JediSentinel: mod holds level-ups until the story script adds the Jedi class
 

@@ -6,6 +6,7 @@ name = "Mandalore"
 utc = "p_mand.utc"
 variant = "ranged_pistols_none_na"
 summary = "Soldier 6-30 dual blaster pistols (Mandalorian gunslinger): Two-Weapon Fighting line, WF/WS Blaster Pistol, Rapid Shot line, Precise Shot I-V, Critical Strike line, Toughness/Conditioning; Demolitions (grenades/mines) + Treat Injury"
+short = "Dual blaster pistol Soldier"
 convert_at = 0   # never becomes a Jedi (Soldier only)
 
 [meta.wizard]

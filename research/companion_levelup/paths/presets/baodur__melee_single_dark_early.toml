@@ -5,6 +5,7 @@ name = "Bao-Dur"
 utc = "p_baodur.utc"
 variant = "melee_single_dark_early"
 summary = "DARK-SIDE Dark Jedi Guardian (needs alignment < 40 at the conversion talk): Drain/Scream/Drain Life/Death Field, no Valor/Heal; heavy armor, single lightsaber with Power Attack/Critical/Dueling"
+short = "Single saber, dark side, Jedi at 12"
 convert_at = 12
 hold_until_class = 3   # bank levels 12+ until the Jedi Guardian class exists
 

@@ -5,6 +5,7 @@ name = "Bao-Dur"
 utc = "p_baodur.utc"
 variant = "tank_single_none_never"
 summary = "Never converts: Tech Specialist 7-30, heavy armor tank (Toughness line, Improved/Master Power Attack, Conditioning, Dueling) with tech skills; no Force powers"
+short = "Heavy-armor tank, never a Jedi"
 convert_at = 0
 
 [meta.wizard]

@@ -6,6 +6,7 @@ name = "HK-47"
 utc = "p_hk47.utc"
 variant = "ranged_single_none_na"
 summary = "Combat Droid 7-30 one blaster pistol: Dueling line (+atk/+def with a single one-handed ranged weapon), Rapid Shot line, WF/Spec Blaster Pistol"
+short = "Single pistol Dueling combat droid"
 convert_at = 0   # droid, never converts
 
 [meta.wizard]

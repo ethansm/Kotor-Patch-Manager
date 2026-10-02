@@ -6,6 +6,7 @@ name = "Atton Rand"
 utc = "p_atton.utc"
 variant = "melee_dual_light_early"
 summary = "Convert early (first Sentinel level 8): dual lightsabers (TWF line, Dual Strike line, Weapon Focus: Lightsaber, Advanced/Master Jedi Defense), Speed/Valor/Heal light-side kit"
+short = "Dual sabers, light side, Jedi at 8"
 convert_at = 8   # first Jedi (Sentinel) char level; 0 = never converts
 hold_until_class = 5   # bank levels 8+ until the Jedi Sentinel class exists; Sentinel picks are identical whatever char level conversion happens at
 

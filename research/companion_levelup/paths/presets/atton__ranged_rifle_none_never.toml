@@ -6,6 +6,7 @@ name = "Atton Rand"
 utc = "p_atton.utc"
 variant = "rifle_none_never"
 summary = "Never converts: Scoundrel 4-30, sniper-rifle scoundrel (Sniper Shot line, Weapon Focus: Rifle, Rapid Shot line, Critical Strike line, Precise Shot), no Force powers"
+short = "Sniper rifle scoundrel, never a Jedi"
 convert_at = 0   # first Jedi (Sentinel) char level; 0 = never converts
 
 [meta.wizard]
