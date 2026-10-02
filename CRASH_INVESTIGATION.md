@@ -837,3 +837,20 @@ than intermittently, that would be the trigger to escalate.
 - Symptom: black screen on Settings; game process alive at ~82% CPU (state R), Proton log has no Unhandled exception.
 - Evidence: equip3d_log.txt had no activity after the equipment panel was left (its hooks only fire on that panel; no weapon code was involved yet). shieldprobe_log showed SCENE dark=1 samples with GL viewport 0x0 and clip stack 0xFFFF exactly in menu frames while the shield-bar hook still ran (other session's finding).
 - Conclusion: not equipment-3d-character; shield-bar draw guard (skip when clip stack != 0) built by the other session. Retest after it is installed. No fix applied by this session.
+
+## 2026-10-02 15:00 - crash opening the character screen with companions (Buff HUD menu companion bars)
+- Symptom: game crashed the moment the in-game menu / character screen opened with Atton in the party (first session after the
+  level-up-override 0.3.0 install, 12:45).
+- Proton log (`~/steam-208580.log:49014`): `page fault on write access to 0x799d6377` at **buff-duration-hud+0x4983** (`mov %eax,(%ecx)`),
+  EBX = creature 07b146b0, ECX = 0x799d6377 = a buff-duration-hud return address read from the stack as an out-pointer -> ESP was 8 bytes off
+  after an engine call.
+- Source: `BuffDurationHUD.cpp:814 readVitals` (menu companion bars, commit 2eaf7ec 02:35): calls creature vtable+0x98 / +0x9c as
+  `thiscall(creature, a, b)` (compiler assumes RET 8); the fault is the `*hp = ...` store right after the +0x9c call -> that callee's real
+  stack cleanup differs from the assumed one (calling convention / arity wrong).
+- Proof it is Buff HUD, not level-up-override: `shieldprobe_log.txt` last line `MENUSLOT ... companions=07b146b0,07b2cd78` at t=2842226608 =
+  the crash ms; `MENUCOMP` (logged after a successful readVitals) has NEVER appeared in any log -> the companion-bar path never completed once.
+  Buff HUD d7bbcc5a has been live since 02:48 but every later menu open had no companions (prev21: 0 with companions). level-up-override's own
+  log at the same ms: `UI create ... appended=12 textobj=fff`, `UI colour readback ok=1` (its UI code ran fine; no fault in its DLL).
+- Workaround (hot, file only): `shield_nodraw.txt` in the game dir makes Buff HUD skip DrawMenuOverlay (and the HUD shield draw) - line 926/967.
+  Fix belongs to the Shield Bar / Buff HUD session: correct the vtable+0x98/+0x9c signatures (check UpdatePortraits 0x74ee90 call sites for
+  pushed-arg count / RET n) or read HP via the fields 0x74ee90 uses.
