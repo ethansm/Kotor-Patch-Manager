@@ -125,3 +125,22 @@ signature, not position; (4) `name_map` in the knowledge DB now carries 386 rows
 64 medium); 13 stale mapper rows were deleted and 14 corrected; `struct_fields` got 37 rows (source `steam-db-pr3-phase3`);
 backup of the pre-edit DB: `work/kdb_backup_before_pr3_phase2.db`; (5) packaging (phase 4) should take only rows from `verified.tsv`
 with verdict `verified`, copying `evidence` into `notes`, and fix `ShowUpgradeScreen` param size to Steam's 24.
+
+## Live test (2026-10-02)
+
+PR3 database (branch `addressdb/k2-steam-acc` 4bb2736: 445 functions / 58 offsets / 14 globals, sha 1117ecb5)
+copied over the game folder's `addresses.db`. Backup of the 48-function original:
+`addresses.db.pre_pr3_20261002` in the game folder (sha 364d29c4). KPM's install state doesn't track this file.
+Restore: `cp addresses.db.pre_pr3_20261002 addresses.db` in the game folder.
+Only live patch that reads the DB: AdditionalConsoleCommands. Note: a KPM re-apply re-stages the
+upstream 48-function DB and undoes the swap.
+
+Checklist (in-game console):
+- control: `walkmeshrender`, `wireframerender`, `guirender` toggle (RENDER_* globals were already in the Steam DB)
+- `addfeat <feat row>`: feat appears on the character sheet (CServerExoApp, CSWSCreature(Stats))
+- `freecam`: camera mode changes (CClientExoApp -> CClientOptions)
+- `runscript <resref>`: script runs on the player (CVirtualMachine, CServerExoApp)
+- `teleport <x> <y>`: player moves (CSWSCreature position/orientation/AddActionToFront); use a save you don't mind
+Any crash: restore the backup first, then crash triage.
+
+Independent Haiku pass running over all 434 shipped rows + 40 decoys (`work/haiku/`).
