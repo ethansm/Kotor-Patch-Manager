@@ -489,6 +489,15 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   nudge); (c) default for unconfigured characters = vanilla (R6, assumed); (d) PC included? (e) per-character preset choices + the per-character questions in
   `paths/presets/<char>.md`; (f) R2 playthrough id (save-folder name vs profile selector); (g) droid/non-Jedi companions in scope?
 
+### User decisions (2026-10-02, after Phase 3 research)
+- (a) **Presets AND wizard** - both. (b) **Configure button on the character screen: yes** (+ R9 nudge). (c) **Unconfigured characters stay vanilla: yes.**
+- (d) **Player character: NO** for this mod. Future idea (R10, separate mod): a PC level-up **filter** that hides skill/feat/power options not aligned with the
+  chosen PC path, to reduce clutter while keeping real choice (not a forced path).
+- (e) **Presets:** generate MULTIPLE logical presets per character from the build research, organised by the **wizard questions** (the wizard maps answers ->
+  preset; dynamic per-answer values can be integrated later). Schema: `research/companion_levelup/paths/presets/WIZARD_SCHEMA.md`.
+- (f) **Playthrough identity: tied to the save file** (R2) - static research item "save binding" (evidence `phase3_evidence/G1_*`).
+- (g) Droids / non-Jedi companions (HK-47, T3-M4, G0-T0, Mandalore, Hanharr): not yet answered.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
