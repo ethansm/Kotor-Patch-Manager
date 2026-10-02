@@ -24,6 +24,9 @@ cw.OWNERS = {k: v for k, v in cw.OWNERS.items()
 cw.WINDOWS = [
     # L1: CSWGuiManager::SetScreenSize 0x411A80, after both W/H shorts and CALL 0x413DD0 (V7): MOV EDX,[EBP-0xC]; CMP [EDX+0x7C],0
     cw.W("L1 SetScreenSize post-store", 0x411AC1, 7, 0x411A80),
+    # L1 log-only: last store of CSWGuiDialogLetterbox::SetTop / SetBottom (V1 (c)), ECX = this: MOV [ECX+0x88],1 / ,2
+    cw.W("L1 SetTop rect log", 0x8BAD7C, 10, 0x8BACA0),
+    cw.W("L1 SetBottom rect log", 0x8BAF01, 10, 0x8BADA0),
     # L4: CAurGUIStringInternal::WrapStrings 0x47AF30: FADD double ptr [0x0098c1d8] (0.25) -> [0x00987F08] (0.5)
     cw.W("L4 WrapStrings glyph FADD", 0x47B232, 6, 0x47AF30),
 ]

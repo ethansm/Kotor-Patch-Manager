@@ -1,0 +1,28 @@
+live snapshot: live_hooks_2026-09-30g.tsv (120 hooks); live patch_config.toml: 26 ids, 149 hooks
+[OK  ] L1 SetScreenSize post-store: 0x00411ac1 len 7  bytes = [0x8B, 0x55, 0xF4, 0x83, 0x7A, 0x7C, 0x00]
+        00411ac1  8b55f4                 MOV EDX,dword ptr [EBP + -0xc]
+        00411ac4  837a7c00               CMP dword ptr [EDX + 0x7c],0x0
+[OK  ] L1 SetTop rect log: 0x008bad7c len 10  bytes = [0xC7, 0x81, 0x88, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00]
+        008bad7c  c7818800000001000000   MOV dword ptr [ECX + 0x88],0x1
+[OK  ] L1 SetBottom rect log: 0x008baf01 len 10  bytes = [0xC7, 0x81, 0x88, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00]
+        008baf01  c7818800000002000000   MOV dword ptr [ECX + 0x88],0x2
+[OK  ] L4 WrapStrings glyph FADD: 0x0047b232 len 6  bytes = [0xDC, 0x05, 0xD8, 0xC1, 0x98, 0x00]
+        0047b232  dc05d8c19800           FADD double ptr [0x0098c1d8]
+
+Pairwise overlap among 4 windows: none
+
+TOML cross-check (source hooks.toml vs these windows): all hooks match
+  toml k2-dialogue-letterbox-fix 0x00411ac1 dlbOnScreenSize: matches window 'L1 SetScreenSize post-store'
+  toml k2-dialogue-letterbox-fix 0x008bad7c dlbLogSetTop: matches window 'L1 SetTop rect log'
+  toml k2-dialogue-letterbox-fix 0x008baf01 dlbLogSetBottom: matches window 'L1 SetBottom rect log'
+  toml k2-wrap-measure-fix 0x0047b232 None: matches window 'L4 WrapStrings glyph FADD'
+
+ALL OK
+
++-8 byte proximity vs 269 live hooks (snapshot + live config):
+  L1 SetScreenSize post-store: 0x411ac1+7: none
+  L1 SetTop rect log: 0x8bad7c+10: none
+  L1 SetBottom rect log: 0x8baf01+10: none
+  L4 WrapStrings glyph FADD: 0x47b232+6: none
+
+PROXIMITY OK

@@ -1,0 +1,44 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# CSWGuiManager::SetScreenSize (0x411A80), right after both W/H shorts (+0x6C/+0x6E) are stored and after CALL 0x413DD0.
+# Instructions: MOV EDX,[EBP-0xC] ; CMP dword ptr [EDX+0x7C],0 (7 bytes, no branch inside, no branch target inside).
+# Why: this is the only place the GUI-manager W/H change (startup, options Apply, credits 640x480 force + restore), so the
+# handler rewrites the letterbox aspect double at 0x009A7D30 to follow every size change. The manager is [ebp-0xC].
+[[hooks]]
+address = 0x00411AC1
+type = "detour"
+function = "dlbOnScreenSize"
+original_bytes = [0x8B, 0x55, 0xF4, 0x83, 0x7A, 0x7C, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# CSWGuiDialogLetterbox::SetTop (0x8BACA0), the last store: MOV dword ptr [ECX+0x88],1 (10 bytes, one instruction).
+# Why: log-only; records the top bar's start/target rects (ECX = letterbox this) and gives a late fallback if the
+# SetScreenSize hook was never seen.
+[[hooks]]
+address = 0x008BAD7C
+type = "detour"
+function = "dlbLogSetTop"
+original_bytes = [0xC7, 0x81, 0x88, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# CSWGuiDialogLetterbox::SetBottom (0x8BADA0), the last store: MOV dword ptr [ECX+0x88],2 (10 bytes, one instruction).
+# Why: log-only; records the bottom bar's start/target rects (ECX = letterbox this).
+[[hooks]]
+address = 0x008BAF01
+type = "detour"
+function = "dlbLogSetBottom"
+original_bytes = [0xC7, 0x81, 0x88, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
