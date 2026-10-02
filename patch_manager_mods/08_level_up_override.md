@@ -597,6 +597,13 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - check_paths: Class Skill feats now count from the NEXT level (skills are picked before feats in the level-up GUI; matches the DLL). 82/82 0 errors,
   275 warnings.
 
+### M2 install (2026-10-02 10:32, user-consented)
+- LIVE: `level-up-override` 0.3.0-a, dll md5 9e8cbbff, 28 ids, kpm UpdatedAt 2026-10-02T10:32:03, stage `$T/levelup_stage4/`, verify 0 mismatches.
+  Backup (= 0.2.1 set + old ini/table): `~/Games/KOTOR2_Mod_Workspace/backups/pre_levelup_030a_20261002_103155/`.
+- Game dir: `levelup_paths.ini` = table v2 (repo `runtime/levelup_paths.ini`), `levelup_override.ini` = `mode=rewrite apply=1 verbose=1
+  preset.atton=atton__live hold.atton=1 instant.atton=0`. Log `levelup_override_log.txt` had 175 lines before the M2 live test.
+- Rollback: `mode=off` (hot) or reinstall the backup set.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -696,5 +703,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Step 0 (preflight) done (746aaf3). M0 done: "Phase 4 M0 facts" above (+ hold rule v2 by class level), DB name_map source
   `level-up-P4-static-confirmed` + 2 lessons. Next: M1 (Python agents: gen_runtime_table v2 + `[presets]` + class-level field, check_paths Class Skill feats,
   tag verification, simulate_rewrite level_now twin). M1 DONE: "Phase 4 M1 results". Next: M2 C++ (0.3.0-a hold + instant, ini config).
-- M2 BUILT (offline green, "Phase 4 M2 build"); next = user-consented install to stage `$T/levelup_stage4/` + dev config `preset.atton=atton__live hold.atton=1 instant.atton=0`, then live checklist (PHASE4_PLAN M2).
+- M2 BUILT + INSTALLED 10:32 (dll 9e8cbbff, see "M2 install"); next = user plays the M2 live checklist (PHASE4_PLAN M2), Opus reads the log from line 176.
 
