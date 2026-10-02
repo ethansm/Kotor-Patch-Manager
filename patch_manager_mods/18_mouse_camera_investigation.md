@@ -159,3 +159,8 @@ Decision tree: A5 clean + A1 clean => our patches and ReShade ruled out => envir
 - Cheap tests to add to the A/B matrix: (1) when broken in-game, press PrtSc (or open/close the COSMIC screenshot UI) and see if it recovers instantly; (2) alt-tab out and back; (3) Super key/workspace switch; (4) note exactly which COSMIC/Proton/Steam update dates correlate with the reappearance (check apt history `/var/log/apt/history.log`, Proton version change 09-26 23:30); (5) F12 Steam screenshot vs PrtSc: does only the compositor one fix it?
 - Workaround idea if confirmed: a launch wrapper/gamescope with its own pointer grab, or a script that triggers the focus reset (e.g. `xdotool`/wlr tooling) after load. Not tried.
 - Open: when exactly did it reappear (date / what changed: system update, new patch, ReShade)?
+
+## Addendum 2 (2026-10-02): focus/grab reset tests, NEGATIVE
+- User ran the quick reset tests (PrtSc / screenshot UI, alt-tab and the other focus resets listed above) while the camera was broken: **none of them fixed it** (user's words: "none of them seem to fix it").
+- Consequence: the "stuck pointer grab that a compositor screenshot resets" idea is weakened (the original one-time fix may have been coincidence, or a different state). Remaining leads: Wine/XWayland DirectInput absolute-vs-relative motion (`MOUSE_VIRTUAL_DESKTOP` fixme), ReShade 6.8.0 input hooks, Proton version, mouse driver (ckb-next/M65), refresh-rate/vsync/taskset interplay.
+- Next cheapest tests (not run yet): ReShade disabled (rename its dxgi/d3d9/opengl32 + ini); windowed mode; another Proton version; stock patch set (all our DLLs off) to prove it's not ours; different mouse / ckb-next stopped.
