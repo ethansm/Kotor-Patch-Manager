@@ -157,3 +157,7 @@ Mods 6+8 0.2.0 INSTALLED (user go). A sibling changed the live set while the go 
 ## Session log 2026-10-01 (companion AI review)
 
 The user asked whether the rest of the companion AI is understood and to review it for bugs. Three read-only Opus reviews (decision scripts, event scripts, engine) -> `ai_review_2026-10-01/` (README = triage + logging plan). The lead verified H1, H2, E2 and the A1/A2 timer logic on disk. DB lessons via `persist_ai_review_db.py`. Waiting for the user to choose the scope (Mod 8 fix round vs a separate companion-AI-fixes mod vs AI trace logging).
+
+## Session log 2026-10-01/02 (companion AI round)
+
+Three Opus reviews -> three designs -> builds (companion-ai 0.1.0, ranged-ai 0.3.0, party AI scripts) -> two build reviews (scripts B1 Cure-poison loop + S1-S5; DLL SF1-SF3) -> fixes -> focused re-review clean -> **installed 2026-10-01 23:36** (26 ids/149 hooks, 17 override scripts). Everything is in `ai_review_2026-10-01/`; install record and research backlog in `HANDOFF_2026-09-30.md` ("Companion AI round INSTALLED", "Session close"). DB: `persist_ai_review_db.py`, `persist_ai_round_db.py`.
