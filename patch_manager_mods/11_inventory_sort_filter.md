@@ -145,3 +145,6 @@ open-slot predicate, INI parsing) is in `SortLogic.h` with host tests. Implement
 
 ### 0.2.0 installed (2026-09-30 23:57)
 Live with Mod 8 in one combined install (22 ids, kpatch md5 `8fdf18cb`); `$G/inventory_sort_filter.ini` = `sort=1 tint=1 cycle=1 log=1 log_items=0`. Backup/stage/rollback: `mods678_research/HANDOFF_2026-09-30.md` "INSTALLED". Awaiting the user's play session (checklist in the HANDOFF), then the log review.
+
+### Play-session status (2026-10-02)
+The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still open (detours applied, config `sort=1 tint=1 cycle=1` loaded). Live together with the companion AI round since 10-01 23:36.

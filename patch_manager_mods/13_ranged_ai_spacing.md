@@ -196,3 +196,9 @@ Three Opus reviews of the whole party AI: `mods678_research/ai_review_2026-10-01
 - **K2:** consecutive kites are uncapped.
 - **M1:** a swap to an empty weapon config 2 leaves the companion unarmed.
 - **E12:** the cooldown at local 20 persists between fights.
+
+### 0.3.0 + companion AI installed (2026-10-01 23:36)
+- `ranged-ai` 0.3.0 is live (`RangedAI.kpatch` a7c902ef, DLL d41a9123, `kite_approach=1`: stance 16 maps to 11 only with a ranged weapon and the target in range).
+- The kite routine v2 (K1-K3, M1, E12) and E2 routing are live in `override/k_ai_master.ncs` b003ea41 with 16 router scripts.
+- The new `companion-ai` patch carries the AI trace (`ai_trace.txt`) and engine fixes A1/FM1/FM4/A4/C1. A1 fixes the stance 11/12/16 out-of-range idle loop (open item (b)).
+- Install record: `mods678_research/HANDOFF_2026-09-30.md` "Companion AI round INSTALLED". Play checklist: given in chat on 10-01. Backlog: "Session close".
