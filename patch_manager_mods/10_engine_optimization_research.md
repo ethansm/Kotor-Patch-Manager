@@ -282,6 +282,22 @@ Source: `engine_research_findings/U1..U6.md` (+ `U*_map_*.tsv`), briefs `briefs/
 **Harness** `perf_lab_src/harness/smoke_equipiconfix.cpp`: real CALL bytes at all 8 sites (+RET), fake setter at 0x414840, fake 0x8AD930 replaying the engine call order for a 15-frame scenario (equip/unequip slot 0, two-handed in slot 1 -> greyed control 0, two-handed in slot 10 removed while slot 1 empty (control 9 restored only by the top reset), both weapon slots equipped); runs original bytes first (reference) then patched. Results above.
 **Live validation plan (user go):** same save, equipment screen open 60 s with the vibroblade: expect `NAME tga_load iw_vbroshort_001` ~0 growth (perf-lab 0.3.0 stays installed), BUILD/glfinish flat, `CANCEL ... superseded by 'iw_vbroshort_001'` in equipiconfix_log; user visual checks: weapon icons, empty-slot placeholders, swapping weapons, two-handed/dual-wield greying, weapon set 2 (slots 9/10). Soak 10+ launches using the screen, AR_ERROR unchanged.
 
+## Robustness set (Phase 6E; decisions 2026-10-02 after W4-W7 + Opus verification)
+Patch `k2-robustness-fixes` (DLL-only, `robustnessfixes.txt` one key per fix, per-fix site groups verified + refused independently, counters via helper thread). Reports: `engine_research_findings/W4.md`-`W7.md`.
+| Id | Decision | Site(s) / bytes (verified) | Key | Counter |
+|---|---|---|---|---|
+| KT | FIX | 0x726505 and 0x726C83: `81 E2 FF FD FF FF 81 CA 00 02 00 00` -> `80 CE 02 C7 41 14 <&g_ktDummy> 90 90` (imm32 = zeroed 0x24-byte DLL static, NOT 0: GetResRef 0x711270 + 0x713FB0 read +0x14 unguarded) | `kt` | perf-lab `KT still_in_demand` counts the branch; helper thread checks the dummy stays all-zero (a nonzero byte = unexpected writer, logged) |
+| VMID | FIX | 0x668FE0 `7D 30` -> `73 30` | `vmid` | none in-patch (1 byte); rejected ids visible as script abort -2002 |
+| SNDRI | FIX if the user's 6A repro shows dead sound (else DOCUMENT) | 0x7054CE..0x7054D9 `C7 82 D4 00 00 00 00 00 00 00 EB 52` -> `FF 15 7C 65 98 00 66 0F 1F 44 00 00` | `sndri` | - |
+| NETOVF | FIX (hardening) | A 0x704406..0x704414 -> `8D 4D E4 E8 72 F3 02 00 33 C0 E9 58 00 00 00`; B 0x7040EF `05 00 00 01 00` -> `B8 00 00 02 00` (A and B together only) | `netovf` | - |
+| GUIID | FIX | 0x40F972 `83 7D B0 00 7C 6C` -> `C1 E9 0C 75 6D 90` (vanilla max id 143) | `guiid` | - |
+| AB-A | FIX (robustness) | cave 0x58C61A stolen `8B 55 EC 3B 51 04 7D 1C` (copy bound min(old,new); rel8 JGE re-encoded in the cave) | `abbound` | cave counts clamps (shrink fired) |
+| AB-B | DEFER (perf churn below the 5% gate; would need A/B) | cave 0x58C406 | - | - |
+| FS | DOCUMENT (W7 cave unsafe: 0x7120C0 zeroes +0x18; corrected save/restore design possible; trigger = corrupt archives only) | - | - | - |
+| CR | DOCUMENT (texpacks refuted, async_start=0) | - | - | - |
+| SS | DOCUMENT for now (SS-a fopen NULL, SS-b camera NULL 0x428B31, SS-c dims 0x428AE8; triggers unobserved, W6 designs not Opus-verified) | - | - | - |
+| TD | DOCUMENT latent (no text 2DAs installed; stack cookie present -> clean abort, not code exec) | - | - | - |
+
 ## Candidate ledger
 Candidate classes A-L are defined in the program plan; the `candidates` table in the knowledge DB holds status/evidence/decision. Gate: (1) measured cost (>= 5% frame/load time, >= 50 MB, or proven leak/crash), (2) Ghidra-confirmed semantics, (3) smallest behaviour-preserving hook with `original_bytes` verified, (4) A/B >= 5 runs per arm, (5) 10+ launch soak with load-hang-probe, `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9` unchanged, (6) rollback = remove the patch id, (7) user go-ahead before any behaviour-changing install.
 
