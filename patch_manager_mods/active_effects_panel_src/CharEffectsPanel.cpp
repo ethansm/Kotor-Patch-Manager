@@ -75,8 +75,8 @@ constexpr float SecOut = 4, TimePadR = 2, NameGap = 4;   // band overhang left o
 constexpr float TextK = 0.75f;
 // dialogfont10x10 (stat column, tooltip body): same 0.01 world units per texel as 16x16 (TXI texturewidth 2.56 on a
 // 256 texel sheet, research R3b R-c), so the same factor; line pitch = kFont10LineH texels (calibrate live, tip_line_scale)
-constexpr float TextK10 = 0.75f;
-constexpr float StatGap = 4, NameMinW = 40;   // stat-time gap; the name keeps at least this much when the stat is wide
+// build 4 screenshot 15:09: "Shield 20 3" = 82 texels drew 224 px (2.73 px/texel, 16x16 names 1.99) -> ~1.03; INI text_k10
+constexpr float StatGap = 6, ColGap = 8;   // stat-time gap; name-stat gap (name-time gap without a stat = NameGap)
 constexpr float TipInX = 8, TipTitleY = 6, TipTitleH = 20, TipBodyY = 28, TipPadB = 8;   // tooltip insets (= mirror script)
 constexpr float SbW = 10, SbArrowH = 18, SbGap = 3, SbThumbMin = 16;
 constexpr float X0 = PanelX + PadX, InnerW = PanelW - 2 * PadX, Top = PanelY + PadTop, Win = PanelH - 2 * PadTop;
@@ -120,7 +120,7 @@ struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
     int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
     int tooltipDelayMs = 350, tooltipDesc = 1;
-    float statMaxW = 70, tipLineScale = 1.0f;
+    float statMaxW = 0, statMinFrac = 0.4f, textK10 = 1.03f, tipLineScale = 1.0f;   // stat_max_w 0 = no cap
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
     float textScale = 1.0f, screenW = 3840, screenH = 1600; bool screenExplicit = false;
@@ -149,7 +149,7 @@ void loadIni() {
         {"skip_equipped", &c.skipEquipped, nullptr}, {"icon_source", &c.iconSource, nullptr}, {"color_times", &c.colorTimes, nullptr},
         {"discs", &c.discs, nullptr}, {"soon_s", &c.soonS, nullptr}, {"text_scale", nullptr, &c.textScale},
         {"screen_w", nullptr, &c.screenW}, {"screen_h", nullptr, &c.screenH}, {"fake_rows", &c.fakeRows, nullptr},
-        {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"marquee", &c.marquee, nullptr},
+        {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"stat_min_frac", nullptr, &c.statMinFrac}, {"text_k10", nullptr, &c.textK10}, {"marquee", &c.marquee, nullptr},
         {"marquee_delay_ms", &c.marqueeDelayMs, nullptr}, {"marquee_step_ms", &c.marqueeStepMs, nullptr},
         {"marquee_hold_ms", &c.marqueeHoldMs, nullptr}, {"tooltip_delay_ms", &c.tooltipDelayMs, nullptr},
         {"tooltip_desc", &c.tooltipDesc, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
@@ -180,7 +180,9 @@ void loadIni() {
     if (c.fakeRows < 0) c.fakeRows = 0;
     if (c.fakeRows > 60) c.fakeRows = 60;
     if (c.textScale < 0.5f || c.textScale > 2.0f) c.textScale = 1.0f;
-    if (c.statMaxW < 10 || c.statMaxW > 150) c.statMaxW = 70;
+    if (c.statMaxW < 0 || c.statMaxW > 200) c.statMaxW = 0;
+    if (c.statMinFrac < 0.1f || c.statMinFrac > 0.9f) c.statMinFrac = 0.4f;
+    if (c.textK10 < 0.4f || c.textK10 > 2.0f) c.textK10 = 1.03f;
     if (c.marqueeDelayMs < 200) c.marqueeDelayMs = 200;
     if (c.marqueeStepMs < 30) c.marqueeStepMs = 30;
     if (c.marqueeHoldMs < 0) c.marqueeHoldMs = 0;
@@ -462,7 +464,7 @@ const char* stateName(int st) {
     case 19: return "Droid scrambled"; default: return nullptr;
     }
 }
-// damage-type mask: one name, a known group, two names, or "N types"; long = every name
+// damage-type mask: one name, a known group, up to three names "Fire/Ion/Energy", or "N types"; long = every name
 void maskName(int mask, bool lng, char* out, int n) {
     mask &= 0x1FFF;
     int bits = 0; for (int i = 0; i < 13; ++i) bits += (mask >> i) & 1;
@@ -473,7 +475,7 @@ void maskName(int mask, bool lng, char* out, int n) {
         if (mask == 7) { snprintf(out, n, "Phys"); return; }
         if (mask == (4096 | 128)) { snprintf(out, n, "Energy"); return; }               // blaster + electrical (energy shields)
         if (mask == (4096 | 128 | 32 | 256 | 1024)) { snprintf(out, n, "Elem"); return; }   // Energy Resistance: + cold, fire, sonic
-        if (bits > 2) { snprintf(out, n, "%d types", bits); return; }   // "<first> +N" read like a bonus
+        if (bits > 3) { snprintf(out, n, "%d types", bits); return; }   // "<first> +N" read like a bonus
     } else if (mask == 0x1FFF) { snprintf(out, n, "all"); return; }
     int k = 0, len = 0;
     for (int i = 0; i < 13; ++i) {
@@ -796,7 +798,7 @@ enum Font { F16, F10 };
 float textPx(Slot* s, const char* t, int len, Font f = F16) {
     const unsigned char* tw = f == F10 ? kFont10TexW : kFontTexW;
     float w = 0; for (int i = 0; i < len; ++i) w += tw[(unsigned char)t[i]];
-    return w * s->sy * (f == F10 ? TextK10 : TextK) * g_cfg.textScale;
+    return w * s->sy * (f == F10 ? g_cfg.textK10 : TextK) * g_cfg.textScale;
 }
 // fitted text: cut with "..." to the label width; returns true when it had to cut
 bool fitText(Slot* s, const char* name, float maxPx, char* out, int n, Font f = F16) {
@@ -863,6 +865,28 @@ void layout(Slot* s) {
         va_list ap; va_start(ap, fmt); int w = vsnprintf(rows + rl, sizeof rows - rl, fmt, ap); va_end(ap);
         if (w > 0) rl += w;
     };
+    // columns sized from the content of the visible rows (build 4b): time column = widest time; stat and name want their
+    // widest text; when both do not fit, the stat column keeps at least stat_min_frac of the room and the name the rest.
+    // The stat column is shared (left-aligned at one x); a row without a stat lets its name run up to the time column.
+    float timeCol = 0, statNeed = 0, nameNeed = 0;
+    for (int k = 0, rr = 0; k < cnt && rr < MaxRows; ++k) {
+        const Entry& x = e[s->first + k];
+        if (x.section) continue;
+        ++rr;
+        char tm[16]; fmtTime(x, tm, sizeof tm);
+        timeCol = fmaxf(timeCol, textPx(s, tm, (int)strlen(tm)) / s->sx + 1);
+        if (g_cfg.statColumn && x.stat[0]) statNeed = fmaxf(statNeed, textPx(s, x.stat, (int)strlen(x.stat), F10) / s->sx + 2);
+        nameNeed = fmaxf(nameNeed, textPx(s, x.name, (int)strlen(x.name)) / s->sx + 2);
+    }
+    const float nx = X0 + IconW + 4, tr = X0 + rowW - TimePadR;
+    float room = tr - timeCol - nx - (statNeed > 0 ? StatGap + ColGap : NameGap), statCol = 0;
+    if (statNeed > 0) {
+        statCol = fminf(statNeed, fmaxf(room - nameNeed, fminf(statNeed, room * g_cfg.statMinFrac)));
+        if (g_cfg.statMaxW > 0) statCol = fminf(statCol, g_cfg.statMaxW);
+        if (statCol < 12) statCol = 0;
+    }
+    const float statX = tr - timeCol - StatGap - statCol;
+    addRow(" cols[name %.0f/%.0f stat %.0f/%.0f time %.0f]", (statCol > 0 ? statX - ColGap : tr - timeCol - NameGap) - nx, nameNeed, statCol, statNeed, timeCol);
     for (int k = 0; k < cnt; ++k) {
         const Entry& x = e[s->first + k];
         if (x.section) {
@@ -881,29 +905,25 @@ void layout(Slot* s) {
         else hide(s, T_D0 + r);
         // time right-aligned by placement: label = text width + 1 unit slack, so left- and right-aligned drawing both end at tr
         char tm[16]; fmtTime(x, tm, sizeof tm);
-        float tr = X0 + rowW - TimePadR, tx = tr - textPx(s, tm, (int)strlen(tm)) / s->sx - 1;
+        float tx = tr - textPx(s, tm, (int)strlen(tm)) / s->sx - 1;
         place(s, T_T0 + r, tx, y, tr - tx, RowH);
         setText(s, T_T0 + r, tm);
-        float nx = X0 + IconW + 4, nr = tx - NameGap;   // name right edge: the stat's left edge when there is one
+        float nr = tr - timeCol - NameGap;   // name right edge: the stat column when this row has a stat
         char st[64] = "";
-        if (g_cfg.statColumn && x.stat[0]) {
-            float cap = fminf(g_cfg.statMaxW, tx - StatGap - NameGap - NameMinW - nx);
-            float sw = fminf(textPx(s, x.stat, (int)strlen(x.stat), F10) / s->sx + 1, cap);
-            if (sw >= 12) {
-                float sxl = tx - StatGap - sw;
-                place(s, T_S0 + r, sxl, y, sw, RowH);
-                int mo = 0; marqueeText(s, x.stat, (ux(s, sxl + sw) - ux(s, sxl)) * 0.98f, s->mqOff, st, sizeof st, &mo, F10);
-                if (mo > mqMax) mqMax = mo;
-                mqRows += mo > 0;
-                setText(s, T_S0 + r, st);
-                nr = sxl - NameGap;
-            } else hide(s, T_S0 + r);
+        if (statCol > 0 && x.stat[0]) {
+            place(s, T_S0 + r, statX, y, statCol, RowH);
+            // fit 2 units inside the label: a text wider than its label is word-wrapped by the engine (15:09 screenshot)
+            int mo = 0; marqueeText(s, x.stat, (float)(ux(s, statX + statCol) - ux(s, statX)) - 2 * s->sx, s->mqOff, st, sizeof st, &mo, F10);
+            if (mo > mqMax) mqMax = mo;
+            mqRows += mo > 0;
+            setText(s, T_S0 + r, st);
+            nr = statX - ColGap;
         } else hide(s, T_S0 + r);
         float nw = nr - nx;
         place(s, T_N0 + r, nx, y, nw, RowH);
         s->rowY[r] = y; s->rowEnt[r] = s->first + k;
         char nm[64]; int mo = 0;
-        marqueeText(s, x.name, (ux(s, nx + nw) - ux(s, nx)) * 0.98f, s->mqOff, nm, sizeof nm, &mo);
+        marqueeText(s, x.name, (float)(ux(s, nx + nw) - ux(s, nx)) - 2 * s->sx, s->mqOff, nm, sizeof nm, &mo);
         if (mo > mqMax) mqMax = mo;
         mqRows += mo > 0;
         setText(s, T_N0 + r, nm);
@@ -1074,7 +1094,7 @@ void showTip(Slot* s, int row) {
         lines += wrapAppend(s, x.desc, innerPx, body, &len, sizeof body);
     }
     if (!len) { snprintf(body, sizeof body, "No details"); lines = 1; }
-    float lineU = kFont10LineH * TextK10 * g_cfg.textScale * g_cfg.tipLineScale;   // texels -> units (px = units * sy)
+    float lineU = kFont10LineH * g_cfg.textK10 * g_cfg.textScale * g_cfg.tipLineScale;   // texels -> units (px = units * sy)
     float h = fminf(TipBodyY + lines * lineU + TipPadB, PanelH);
     float y = s->rowY[row] + RowH;
     bool flip = y + h > PanelY + PanelH;

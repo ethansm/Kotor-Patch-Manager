@@ -60,7 +60,7 @@ def mask_name(mask, lng, n):
         if mask == 7: return trunc("Phys", n)
         if mask == (4096 | 128): return trunc("Energy", n)
         if mask == (4096 | 128 | 32 | 256 | 1024): return trunc("Elem", n)
-        if bits > 2: return trunc("%d types" % bits, n)
+        if bits > 3: return trunc("%d types" % bits, n)
     elif mask == 0x1FFF:
         return trunc("all", n)
     out, k = "", 0
@@ -288,7 +288,7 @@ TESTS = [
     ("dmg decrease plain", [(0x0e, [3, 128])], "Dmg -3", ["Damage -3 Electrical"]),
     ("dmg decrease dice", [(0x0e, [8, 128])], "Dmg -1d8", ["Damage -1d8 Electrical"]),
     ("dmg 11 not dice", [(0x0d, [11, 128])], "Dmg +11", ["Damage +11 Electrical"]),
-    ("mask 3 bits", [(0x10, [1 | 32 | 256, 50])], "Imm 50% 3 types", ["+50% immunity: Bludgeoning, Cold, Fire"]),
+    ("mask 3 bits", [(0x10, [1 | 32 | 256, 50])], "Imm 50% Bludg/Cold/Fire", ["+50% immunity: Bludgeoning, Cold, Fire"]),
     ("mask Phys", [(0x10, [7, 50])], "Imm 50% Phys", ["+50% immunity: Bludgeoning, Piercing, Slashing"]),
     ("mask 2 bits", [(0x10, [3, 50])], "Imm 50% Bludg/Pierce", ["+50% immunity: Bludgeoning, Piercing"]),
     ("mask all", [(0x10, [0x1FFF, 10])], "Imm 10% All", ["+10% immunity: all"]),
