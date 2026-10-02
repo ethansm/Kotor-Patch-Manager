@@ -657,6 +657,20 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   banked = `while L < MaxLevel && table[L] <= XP: L++, b++`.
 - DB: name_map source `level-up-P5-static-confirmed` (7 rows) + 3 lessons.
 
+## Phase 5 C - offline gates + review (2026-10-02, 0.3.0 built, NOT installed)
+- Gates (82dede7): parity.py DRY 18426 / levelNow 25366 0 mismatches, apply_test 0 failures, gate_test 110, playthrough_test 244, ui_test 122 (5 injected
+  mutations killed by the M4 agent), wizard parity 264 lines 0 mismatches (3/3 mutations killed), guikit_test 49, simulate_rewrite 0 failures, check_paths
+  0 errors (199 warnings), mingw -Wall -Wextra clean.
+- Independent Sonnet review: **no blocker** (hook bytes live == vanilla at 0x84D82C/0x84F221/0x656640/0x65675B/0x401C52, +-16 clean, wrapper restores
+  EBP/ESP before the relocated `push imm32` / `mov [ebp-4],-1`, 0x401C52 returns 0x51C450's EAX, prologue checks match, 0x7BE090 copies the string).
+  Fixed (82dede7): banked de-dup state set before the engine call; GUID accepted only with all 32 bits; playthrough cap checked before the GUID
+  live-write; hover-before-click (guards clicks meant for a GUI on top); status suffix "(inactive: mode=log)"; MOVEFILE_WRITE_THROUGH. Open (live
+  checks): clicks while another GUI covers the character screen; framed LBL_XP_BACK text object (`textobj=` mask); NITs accepted (Doc in .data ~0.7 MB,
+  Pick shows 6 of 8 options - max needed 2, wizard state survives Esc for the same companion).
+- Build: `$T/Patches/LevelUpOverride/LevelUpOverride.kpatch` md5 503d1160, dll md5 40993526 (4099352668f3...), 25 hooks / 25 exports, manifest 0.3.0.
+  Note: `$T/Patches/_shared/{GuiKit,SafeRead}.h` are now forwarding headers to `Patches/Common/` (KPM commit aad0a14, another session, 12:28);
+  Common copies are byte-identical to `patch_manager_mods/_shared_src/`.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -784,4 +798,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   scale from BTN_LEVELUP = list index 66, fallback = ctor-time template extent), R11 banked message via 0x7BE090 from the hold gates (once per GUID/tag/N,
   5 s gap), SetStats site 0x84F221 now passes `ecx, ebp`. Tests: ui_test 122, gate_test 110, playthrough_test 244, wizard parity 264, guikit 49; mingw
   clean. Live doubts: framed LBL_XP_BACK text object (`UI create ... textobj=` mask), clicks while another GUI covers the character screen.
+- C gates + review DONE (82dede7), 0.3.0 built (dll 40993526); NEXT = user consent -> install (stage `$T/levelup_stage5`) -> combined checklist.
 - Live state unchanged: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
