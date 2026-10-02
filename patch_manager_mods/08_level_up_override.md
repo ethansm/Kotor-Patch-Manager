@@ -601,7 +601,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - LIVE: `level-up-override` 0.3.0-a, dll md5 9e8cbbff, 28 ids, kpm UpdatedAt 2026-10-02T10:32:03, stage `$T/levelup_stage4/`, verify 0 mismatches.
   Backup (= 0.2.1 set + old ini/table): `~/Games/KOTOR2_Mod_Workspace/backups/pre_levelup_030a_20261002_103155/`.
 - Game dir: `levelup_paths.ini` = table v2 (repo `runtime/levelup_paths.ini`), `levelup_override.ini` = `mode=rewrite apply=1 verbose=1
-  preset.atton=atton__live hold.atton=1 instant.atton=0`. Log `levelup_override_log.txt` had 175 lines before the M2 live test.
+  preset.atton=atton__melee_dual_light_early hold.atton=1 instant.atton=0` (switched from atton__live, which stays Scoundrel to char 19 and would
+  not hold a level-7 Atton). Log `levelup_override_log.txt` had 175 lines before the M2 live test.
 - Rollback: `mode=off` (hot) or reinstall the backup set.
 
 ## Open items
