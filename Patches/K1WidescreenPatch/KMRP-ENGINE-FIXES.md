@@ -464,3 +464,26 @@ them, not this one.
   last two digits, long journal quest names and Feedback options wrap in one-line rows, and
   message-box buttons stay 22px tall while their labels double. At the automatic scale none of
   this occurs.
+
+---
+
+## KOTOR II status (checked 2026-10-02)
+
+Does each bug also exist in KOTOR II? Checked statically on K2 Steam Aspyr `swkotor2.exe`
+(sha256 `6A522E71...FFEF`, same code in its LAA variant); the K2 code was located independently, not by name.
+K1 addresses do not transfer: the K2 addresses below are Steam Aspyr.
+
+| Fix | In K2? | K2 detail |
+| --- | --- | --- |
+| K1 word-wrap hang | **No hang** | Same bad progress compare in `WrapStrings` `0x47AF30` (`0x47B321`), but a 100-line cap (`0x47B0E8`) ends the loop; worst case a label narrower than two glyphs loses its text. No fix needed. |
+| K2 listbox row growth | **No** | `ClearItems` `0x41D290` restores each row's saved rect (flag bit 2), so the inflated height never feeds back. No fix needed. |
+| K3 leading newline | not checked | `CSWGuiText::SetText` is `0x416E30`. |
+| K4 video mode | n/a | macOS only. |
+| K5 last line vanishes | **Yes, latent** | Same drop loops in `Draw` `0x47B500` (`0x47B6CB`, `0x47B7CB`); vanilla labels are safe up to 3840x1600, likely triggered only at >= 5120 wide. Not fixed. |
+| K6 wrap margin | **Yes** | `FADD double [0x98C1D8]` (0.25) at `0x47B232`; fix = re-point the operand to the 0.5 double at `0x987F08` (one simple hook). |
+| K7 dialogue letterbox | **Yes** | Double 2.3333330154 at `0x9A7D30`, read by 7 FDIVs (`0x8BACE9` .. `0x8BC467`); bars negative past 7:3 (3840x1600: -22 px). K2 already clamps the reply panel to `H - max(bar, 100*fs)`, so only the bars are lost. Fix = write `1.5*W/H` over the double from `CSWGuiManager::SetScreenSize` (`0x411AC1`). |
+| K8 minimap zoom | **No (as shipped)** | Radar and map rects come from the GUI files; vanilla HUD keeps 120x120 / 512x256. Only a mod that enlarges the radar alone would hit it. |
+| K9 Retina modes | n/a | macOS only. |
+
+Message popup cap (KMRP `message-popup.md`): not present in K2. Caps are `440*fs` x `280*fs` and the start width already
+exceeds them, so the widening branch is dead.

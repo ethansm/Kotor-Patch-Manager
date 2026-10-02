@@ -53,3 +53,19 @@ These fixes resolve fundamental engine bugs present in the vanilla game that ben
 - **Supported Binary**: Aspyr macOS 64-bit AMD64 (`C1FCB8D37C702849882A17751C63EE0AF7C2B9CBBC3B31B98A5F0EDBC27C6D71`)
 - **Integration**: The Widescreen Patch declares `requires = ["k1-stray-bug-fixes-patch"]` in its `manifest.toml`. KotOR Patch Manager (KPM) automatically verifies and installs this patch prior to installing the Widescreen Patch.
 ```
+
+---
+
+## KOTOR II status (checked 2026-10-02)
+
+Does each bug also exist in KOTOR II? Checked statically on K2 Steam Aspyr `swkotor2.exe`
+(sha256 `6A522E71...FFEF`, same code in its LAA variant); the K2 code was located independently, not by name.
+K1 addresses do not transfer: the K2 addresses below are Steam Aspyr.
+
+| Fix | In K2? | K2 detail |
+| --- | --- | --- |
+| K1 word-wrap hang | **No hang** | Same bad progress compare in `WrapStrings` `0x47AF30` (`0x47B321`), but a 100-line cap (`0x47B0E8`) ends the loop; worst case a label narrower than two glyphs loses its text. No fix needed. |
+| K2 listbox row growth | **No** | `ClearItems` `0x41D290` restores each row's saved rect (flag bit 2), so the inflated height never feeds back. No fix needed. |
+| K3 leading newline | not checked | `CSWGuiText::SetText` is `0x416E30`. |
+| K5 last line vanishes | **Yes, latent** | Same drop loops in `Draw` `0x47B500` (`0x47B6CB`, `0x47B7CB`); vanilla labels are safe up to 3840x1600, likely triggered only at >= 5120 wide. Not fixed. |
+| K6 wrap margin | **Yes** | `FADD double [0x98C1D8]` (0.25) at `0x47B232`; fix = re-point the operand to the 0.5 double at `0x987F08` (one simple hook). |
