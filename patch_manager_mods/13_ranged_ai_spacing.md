@@ -212,3 +212,15 @@ Reports in `mods678_research/ai_research_2026-10-02/`:
 - **R4:** the medpac rule design.
 
 Summary: `mods678_research/HANDOFF_2026-09-30.md` "Phase 0 background research DONE".
+
+### Kiting vs vanilla Ranged (summary for the user, 2026-10-02)
+| | vanilla Ranged (11) | Ranged (Kiting) (16) |
+|---|---|---|
+| melee enemy within 3.5 m | holds position and shoots; may swap to melee after melee hits (M1 rule) | steps to a spot at least 2 m further away (any close enemy when HP < 60%), within 10 m of the leader and 15 m of the target |
+| kite limit | - | at most 2 in a row, then a shooting round (K2) |
+| cornered | - | the vanilla melee-swap rule |
+| blocked shot | the engine never walks it (frozen; companion-ai A1 now retargets or rethinks within ~3 s) | moves to a clear-shot spot (step 3); the engine holds instead of walking into melee (E-H1) and retargets on the 2nd block (E-H2) |
+| target out of range | never approaches (A1 retarget/rethink) | walks in until in range (0.3.0 `kite_approach=1`; also with a melee weapon) |
+| after a move | - | always queues an attack |
+
+Shared by both: A1 freeze fix (11/12/16), E1 follow after the fight, H2 heal any party member, FM1 bump. `hold`/`retarget` are scoped to stance 16 in `ranged_ai.ini`, so vanilla Ranged stays vanilla. None of this is play-tested yet.
