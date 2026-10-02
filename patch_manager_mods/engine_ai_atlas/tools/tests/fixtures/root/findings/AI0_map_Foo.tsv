@@ -1,0 +1,4 @@
+0x00401000	0x500000	Foo::Alpha	vote	retn=0
+0x00401100	0x500100	Foo::Beta	vote	retn=4
+0x00401300	0x500300	Foo::Gamma	drift+0x20	retn=0
+0x00402000	0x500400	Bar::Delta	vote	retn=0
