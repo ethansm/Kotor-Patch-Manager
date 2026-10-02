@@ -16,6 +16,12 @@ no Auto button). (R5) **Hold mode:** if the plan is to bank levels until a class
 and hides the character's level-up indicator, which otherwise persists and stops buff icons rendering. Static leads: O6 - portrait refresh 0x74EE90 already
 calls AutoLevelup(1) for companions not under player control and otherwise shows the level-up indicator (find that branch); XP-award tail 0x5FD480 ->
 AutoLevelup(1); CanLevelUp 0x6B9790 / ValidateLevelUp 0x6B9640 are veto points. No vanilla "auto level everyone" option is confirmed (none in swkotor2.ini).
+(R6, user 2026-10-02) **Character-screen entry point:** a "Configure auto level-up" button on the character screen; a character the player has not
+configured keeps vanilla behaviour. (R7) Instant level-ups (R4) are **opt-in per character**, not the default. (R8) Builds come from **shipped preset paths**
+per character and/or a guided **"wizard"** level-up UX where the player plans the build. (R9, user 2026-10-02) **Configure nudge:** when the mod is installed
+and a character is NOT configured, the level-up UX (level-up / Auto level-up buttons and their prompt) should be interwoven with a reminder/option to configure
+the mod for that character when it is ready to level up (encourage, never block vanilla levelling).
+Phase 3 research plan: `~/.claude/plans/dazzling-brewing-quasar.md` (static only; evidence `research/companion_levelup/phase3_evidence/`).
 2026-09-30: Phase 1 + Phase 1b static investigation COMPLETE (see 'Phase 1b results'; O1-O7 closed statically, live confirmation pending user consent for a log-only probe).
 2026-09-30 (earlier): Phase 1 static investigation COMPLETE. No game change, no install, no probe run. Q1-Q8 answered below (Q4 feats-panel
 gating and the client-refresh behaviour after a server-side rewrite are the only residual doubts -> Phase 2 spike).
@@ -370,6 +376,7 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
   `research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt`, untracked).
 - Next phase (user-requested): static Ghidra research for R4/R5 items 1-4 (auto-vs-indicator branch in 0x74EE90 + "not under player control"; where the level-up
   indicator is drawn and what it reads; class-selectable test (Jedi); multi-level banking + XP cap). Plan file: see MASTER_PLAN status line.
+- Phase 3 research plan: `~/.claude/plans/dazzling-brewing-quasar.md` (items 1-6 = R4/R5 + R6/R8/R9 scouting; static only).
 - Tooling gotchas this session: (1) the host apply test cannot use `g++ -m32` (no 32-bit libstdc++) and wine is absent -> fakes live in an `mmap(MAP_32BIT)` arena
   and engine pointers are read as uint32_t; (2) mutation builds of a copied .cpp failed to resolve `../_shared/SafeRead.h` from the scratchpad (/tmp) - run such
   copies inside the repo tree (e.g. `tools/parity/_mut/`, delete afterwards); (3) `tools/kdb_add.py add_lesson` hard-codes date 2026-09-30 - insert with python
