@@ -77,51 +77,51 @@ skills = {computer_use = 1, repair = 1, demolitions = 1}
 char_level = 13
 class = 7   # ExpertDroid
 feats = []
-skills = {repair = 1, demolitions = 1, awareness = 1}
+skills = {repair = 1, demolitions = 2, awareness = 1}
 
 [[level]]
 char_level = 14
 class = 7   # ExpertDroid
 feats = []
-skills = {repair = 1, demolitions = 1, awareness = 1}
+skills = {repair = 1, demolitions = 2, awareness = 1}
 
 [[level]]
 char_level = 15
 class = 7   # ExpertDroid
 feats = [84]   # 84:Toughness
-skills = {repair = 1, demolitions = 1, awareness = 1}
+skills = {repair = 1, demolitions = 2, awareness = 1}
 
 [[level]]
 char_level = 16
 class = 7   # ExpertDroid
 attrs = {DEX = 19}
 feats = []
-skills = {repair = 1, demolitions = 1, awareness = 1}
+skills = {repair = 1, demolitions = 2, awareness = 1}
 
 [[level]]
 char_level = 17
 class = 7   # ExpertDroid
 feats = []
-skills = {repair = 1, demolitions = 1, computer_use = 1}
+skills = {repair = 1, demolitions = 2, computer_use = 1}
 
 [[level]]
 char_level = 18
 class = 7   # ExpertDroid
 feats = [123]   # 123:Improved Toughness
-skills = {repair = 1, demolitions = 1, computer_use = 1}
+skills = {repair = 1, demolitions = 2, computer_use = 1}
 
 [[level]]
 char_level = 19
 class = 7   # ExpertDroid
 feats = []
-skills = {demolitions = 2}
+skills = {demolitions = 4}
 
 [[level]]
 char_level = 20
 class = 7   # ExpertDroid
 attrs = {DEX = 20}
 feats = []
-skills = {demolitions = 1, computer_use = 2}
+skills = {demolitions = 2, computer_use = 2}
 
 [[level]]
 char_level = 21
