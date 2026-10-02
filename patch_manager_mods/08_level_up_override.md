@@ -377,6 +377,28 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
 - Residual: ECX at 0x84F221 = stats ptr (likely; read the `[ebp-0x28]` assignment); 0x7CEEF0 one-shot at 0x74F4B4 (short decompile); 0x7C9DF0 / 0x752050
   effects (live log-only probe with a held creature).
 
+### Item 3 - class availability (Jedi) and the AutoLevelup class choice (Step 3, agent C, spot-checked)
+- **Jedi/prestige classes are added ONLY by script** (AddMultiClass): vanilla callers are just `a_makejedi.nss` (Atton/Mira -> Sentinel 5, Bao-Dur/Handmaiden ->
+  Guardian 3, Disciple -> Consular 4) and `a_pc_jedi.nss` (PC prestige 0xB-0x10), no level/XP handling in the scripts (`C1_scripts_addmulticlass.txt:1-113`).
+  The level-up GUI has no class picker: the client copy levels its LAST class (`C1_dec_levelup_gui.txt:190-199`); server LevelUp would append a pending class
+  that is absent, with no prestige test (`dec_3ab.txt:~440-456`) - so never inject a class via the pending struct.
+- **Handler 0x66C7A0** (DB name "LevelUpHenchman", inferred = ExecuteCommandAddMultiClass: pops (int class, object); sole caller of AddClass) (`C1_addmulticlass.txt`).
+  **AddClass 0x6BDCD0:** class count `stats+0x8D` increments only while < 2, else the LAST slot is overwritten; new class level 0 (`C1_dec_addclass.txt:35-47`).
+  Class entry i: `stats + i*0x28 + 0xAB` id, `+0xAC` level. After AddClass the handler raises a companion's XP to `XPTable[total level]` if below (banks
+  exactly ONE level; SetExperience never lowers XP), then - only if the vanilla option is ON and CanLevelUp - calls AutoLevelup(1) once.
+- **AutoLevelup picks the class once, before its loop: `idx = count-1` (newest class)**, then loops `while XP >= table[total level]`, setting pending +0x2C
+  (`dec_3ab.txt:~818-843`). So ALL banked levels go to the newest class in one call.
+- **"Class available" test:** 0.2.1's `record.class == pending class` is correct; "class in list" is necessary but not sufficient (only the last class levels).
+- **Hold-mode rule** (`C1_hold_rule.txt`):
+  ```python
+  def autolevel_class(classes):      # [(class_id, level)] in stats order
+      return classes[-1][0] if classes else None
+  def level_now(classes, record):    # record = next path record for key level+1, or None
+      return record is not None and autolevel_class(classes) == record["class"]
+  ```
+  Anything else = hold (XP banks). Prestige needs no special case. Preset constraints: after conversion every record is the Jedi class; max 2 classes.
+- Residual: classes.2da ids for 0xB-0x10 (read the 2DA); AddMultiClass routine id (routine table entry for 0x66C7A0); which .dlg calls a_makejedi at what level.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.

@@ -1,0 +1,70 @@
+# C1: AddMultiClass NWScript handler = FUN_0066c7a0 (DB name 'LevelUpHenchman' is a mislabel candidate: pops (int class, object), 2 args; sole caller of AddClass 0x6BDCD0).
+# Source: phase1_evidence/dec_b2.txt:1090-1148 (copied), plus AddClass/AddExperience decompiles in C1_dec_addclass.txt
+=== FUN_0066c7a0 @ 0066c7a0 size=483
+
+undefined4 FUN_0066c7a0(void)
+
+{
+  int iVar1;
+  undefined4 uVar2;
+  int iVar3;
+  undefined4 extraout_var;
+  undefined4 local_18;
+  undefined1 local_14 [4];
+  undefined4 local_10;
+  int local_c;
+  undefined4 local_8;
+  
+  iVar1 = FUN_006fd9a0(local_14);
+  if (iVar1 == 0) {
+    uVar2 = 0xfffff82f;
+  }
+  else {
+    uVar2 = extraout_var;
+    iVar1 = FUN_006fdaf0(&local_18);
+    if (iVar1 == 0) {
+      uVar2 = 0xfffff82f;
+    }
+    else {
+      local_8 = *(undefined4 *)(DAT_00a1b4a4 + 8);
+      local_c = FUN_0051c100(local_18);
+      local_10 = 0;
+      if (*(int *)(local_c + 0x1200) == 0) {
+        iVar1 = *(int *)(*(int *)(local_c + 0x1198) + 0x68);
+        iVar3 = FUN_006b72e0(uVar2);
+        iVar3 = iVar3 - iVar1;
+        FUN_006bdcd0(local_14[0],0);
+        FUN_006b7060(iVar3);
+        *(int *)(local_c + 0x26c) = *(int *)(local_c + 0x26c) + iVar3;
+        iVar1 = FUN_0072fb00();
+        if (((*(uint *)(iVar1 + 8) & 1) != 0) && (iVar1 = FUN_006b9790(), iVar1 != 0)) {
+          FUN_006bedf0(1);
+        }
+      }
+      else {
+        iVar1 = *(int *)(*(int *)(local_c + 0x1198) + 0x68);
+        iVar3 = FUN_006b72e0(uVar2);
+        iVar3 = iVar3 - iVar1;
+        FUN_006bdcd0(local_14[0],0);
+        iVar1 = FUN_0051c8d0();
+        if (iVar1 != 0) {
+          uVar2 = 1;
+          FUN_0051c8d0(iVar3,1);
+          FUN_005fe0c0(iVar3,uVar2);
+        }
+      }
+      uVar2 = 0;
+    }
+  }
+  return uVar2;
+}
+
+# Annotated flow (non-PlayerCreated creature, +0x1200==0, i.e. companions):
+#  cls=pop int; obj=pop object; stats=creature+0x1198
+#  delta = XPTable[sum of class levels] - stats.xp(+0x68)          (FUN_006b72e0 = rules+0x38[FUN_006a4e00(0)])
+#  AddClass(cls, level 0)   -> classCount (+0x8D) +1 if <2 (CAP 2: else OVERWRITES last slot), class[count-1].id=cls, level=0
+#  FUN_006b7060(delta)      -> XP += delta with multiclass penalty (none when new class lvl 0) -> SetExperience 0x6B6BD0
+#                              SetExperience refuses to LOWER xp ("Cannot reduce XP"), so already-banked XP above the threshold is kept
+#  creature+0x26c += delta
+#  if options(+8 bit0 'Auto Level Up NPCs') && CanLevelUp: AutoLevelup(1)
+# PlayerCreated/PC branch: AddClass(cls,0); then FUN_0051c8d0 (ptr, always nonzero) -> FUN_005fe0c0(delta,1) DistributeExperience; NO AutoLevelup

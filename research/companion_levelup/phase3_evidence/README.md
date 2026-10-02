@@ -22,3 +22,9 @@ One line per evidence file (raw Ghidra/tool output; conclusions live in doc 08 "
 - `B1_disasm_charscreen.txt`: disasm of SetStats button-visibility sites (0x84F1F0-0x84F270), ctor tail AddEvent registrations (0x84D8C0-0x84DD00), thunks 0x7FCF80/0x762E80/0x762E90, rotate handler head 0x850330
 - `B1_disasm_panel_slots.txt`: disasm of panel vtable slot targets 0x40E7E0 (->HandleInputEvent 0x27), 0x40E800 (->0x29), 0x8878D0 (->0x28)
 - `B1_disasm_744f00_counters.txt`: disasm of FUN_00744F00 0x744F00-0x7450C0 (overlay bits, counter zeroing at 0x74507F/0x7450A3)
+- `C1_callers_addclass.txt`: callers of AddClass 0x6BDCD0 (only FUN_0066c7a0 x2)
+- `C1_dec_addclass.txt`: decompile of AddClass 0x6BDCD0 (count cap 2, level arg), AddExperience-with-penalty 0x6B7060, 0x51C8D0
+- `C1_addmulticlass.txt`: AddMultiClass handler 0x66C7A0 (copy of dec_b2 decompile) + annotated flow
+- `C1_dec_levelup_gui.txt`: decompile of client CSWCLevelUpStats class accessors 0x844E40/0x844E80, 0x844860, SendPlayerToServer_LevelUp 0x87A770 (class = last class of working copy), 0x844BA0
+- `C1_scripts_addmulticlass.txt`: vanilla scripts a_makejedi.nss / a_pc_jedi.nss (only AddMultiClass callers) + class ids
+- `C1_hold_rule.txt`: proposed hold-mode rule function

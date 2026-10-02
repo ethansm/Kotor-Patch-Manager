@@ -1,0 +1,8 @@
+# Proposed hold-mode rule (pure python); see report. Class entry layout: stats+0x8D count (byte, max 2), entry i at stats+i*0x28: +0xAB id, +0xAC level.
+def autolevel_class(classes):            # classes: list[(class_id, level)] in stats order
+    return classes[-1][0] if classes else None      # AutoLevelup 0x6BEDF0 uses idx = count-1
+def level_now(classes, record):          # record: next path record {"class": id, ...} or None
+    if record is None: return False      # path exhausted -> engine default / vanilla
+    return autolevel_class(classes) == record["class"]
+# Anything else (record class absent: prestige/Jedi not yet added by AddMultiClass; or present but not last) -> HOLD:
+# engine would put the level in the LAST class, which is not the planned one. Never add a class ourselves.
