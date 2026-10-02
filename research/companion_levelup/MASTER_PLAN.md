@@ -1,6 +1,6 @@
 # MASTER PLAN: per-character level-up override (Ghidra mapping + Patch Manager C++ mod)
 
-Status as of 2026-10-02 12:40 (Phase 5): 0.3.0 BUILT + offline-verified (dll 40993526; M3 save binding, M4 Configure UI + wizard, R11 status line + banked message; review no blocker, fixes 82dede7), NOT installed; live = 0.3.0-a dll 9e8cbbff (untested). NEXT = user consent -> install via `$T/levelup_stage5` -> ONE combined live checklist (PHASE5_PLAN step C). Doc 08 'Phase 5 C'.
+Status as of 2026-10-02 12:46 (Phase 5): 0.3.0 INSTALLED (dll 40993526, 31 ids / 206 hooks, stage `$T/levelup_stage5`, backup `backups/pre_levelup_030_20261002_124457`; ini mode=rewrite, no dev tags). NEXT = user plays the ONE combined live checklist (PHASE5_PLAN step C items 1-8); Opus reads `levelup_override_log.txt` from line 176 + `levelup_playthroughs.ini` + save GLOBALVARS (LUO_G*). Doc 08 '0.3.0 install'.
 
 Requirements update 2026-10-02 (user): rewrite only the AUTO level-up, never manual picks (0.2.1 does this); builds are player-chosen per playthrough; configuration via an in-game GUI (settings page or new main-menu page) - Phase 3 research item. Details: doc 08 Status.
 Read order after a context clear: this file -> `PROJECT_CONTEXT.md` (sections 1-9) -> `PHASE1_PLAN.md` -> `README.md`.

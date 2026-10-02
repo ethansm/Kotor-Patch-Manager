@@ -671,6 +671,18 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   Note: `$T/Patches/_shared/{GuiKit,SafeRead}.h` are now forwarding headers to `Patches/Common/` (KPM commit aad0a14, another session, 12:28);
   Common copies are byte-identical to `patch_manager_mods/_shared_src/`.
 
+### 0.3.0 install (2026-10-02 12:45, user-consented)
+- LIVE: `level-up-override` 0.3.0, dll md5 40993526, 25 hooks; whole set 31 ids / 206 hooks, kpm UpdatedAt 2026-10-02T12:45:52, exe hash unchanged
+  7751F7D8 (= vanilla 6A522E71 + 4gb-patch since the other session's vanilla migration 12:02-12:14, `vanilla_migration/README.md`). Stage
+  `$T/levelup_stage5/` = copy of `~/Games/KOTOR2_Mod_Workspace/stage_vanilla_1002_1214/` (verify 0 mismatches vs live before the install) with only
+  LevelUpOverride.kpatch replaced; ids passed in live patch_config order; `verify` 0 mismatches. Hook sites re-checked vs the 12:14 live config: only
+  self-overlaps. (`stage_and_verify_install.py stage` alone cannot find 4gb-patch / k2_aspyr_shader_fixes kpatches - they live in the vanilla stage.)
+- Backup: `~/Games/KOTOR2_Mod_Workspace/backups/pre_levelup_030_20261002_124457/` (kpm_install_state.json, patch_config.toml, patches/, levelup_*.ini
+  = 0.3.0-a set incl. the old dev ini).
+- Game dir: `levelup_override.ini` = `mode=rewrite apply=1 verbose=1 table=levelup_paths.ini` (NO dev tag keys); `levelup_paths.ini` = repo table
+  (61aa066 presets); no `levelup_playthroughs.ini` yet. Log `levelup_override_log.txt` had **175 lines** before the combined test.
+- Rollback: `mode=off` (hot) or reinstall the backup set via `stage_vanilla_1002_1214` (= 0.3.0-a + current set).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -799,4 +811,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   5 s gap), SetStats site 0x84F221 now passes `ecx, ebp`. Tests: ui_test 122, gate_test 110, playthrough_test 244, wizard parity 264, guikit 49; mingw
   clean. Live doubts: framed LBL_XP_BACK text object (`UI create ... textobj=` mask), clicks while another GUI covers the character screen.
 - C gates + review DONE (82dede7), 0.3.0 built (dll 40993526); NEXT = user consent -> install (stage `$T/levelup_stage5`) -> combined checklist.
-- Live state unchanged: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
+- 0.3.0 INSTALLED 12:45 (see '0.3.0 install'); NEXT = user plays the combined checklist (PHASE5_PLAN step C 1-8), Opus reads the log from line 176.
+- (superseded) Live state: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
