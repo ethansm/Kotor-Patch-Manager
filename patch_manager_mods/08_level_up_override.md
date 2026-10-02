@@ -11,6 +11,11 @@ offset of a .text VA = VA - 0x400C00. All Steam functions below were read in a d
 per playthrough (not one fixed path); (R3) configuration through an in-game GUI - a page in the game settings or a new main-menu page (to be researched:
 CSWGuiMainMenu / options panels; no Ghidra work on them yet; DB has only DisplayMainMenu 0x73F230 / ShutDownToMainMenu 0x78E0F0 address matches).
 0.2.1 implements R1 (rewrite only when AutoLevelup 0x6BEDF0 is on the call chain; manual GUI -> `SKIP manual ... player's picks kept`).
+(R4, user 2026-10-02) **Full auto mode:** with the whole path mapped, a configured character should level with NO player interaction (no level-up screen,
+no Auto button). (R5) **Hold mode:** if the plan is to bank levels until a class becomes available (e.g. Jedi), the mod holds the level-up (XP keeps accruing)
+and hides the character's level-up indicator, which otherwise persists and stops buff icons rendering. Static leads: O6 - portrait refresh 0x74EE90 already
+calls AutoLevelup(1) for companions not under player control and otherwise shows the level-up indicator (find that branch); XP-award tail 0x5FD480 ->
+AutoLevelup(1); CanLevelUp 0x6B9790 / ValidateLevelUp 0x6B9640 are veto points. No vanilla "auto level everyone" option is confirmed (none in swkotor2.ini).
 2026-09-30: Phase 1 + Phase 1b static investigation COMPLETE (see 'Phase 1b results'; O1-O7 closed statically, live confirmation pending user consent for a log-only probe).
 2026-09-30 (earlier): Phase 1 static investigation COMPLETE. No game change, no install, no probe run. Q1-Q8 answered below (Q4 feats-panel
 gating and the client-refresh behaviour after a server-side rewrite are the only residual doubts -> Phase 2 spike).
