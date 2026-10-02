@@ -28,7 +28,7 @@ Standardize logging for the **Kotor Patch Manager framework** so mods are compat
 - **Fork:** `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`, branch `ethansm/local-mods`, remotes `origin` = ethansm/Kotor-Patch-Manager and `upstream` = LaneDibello/Kotor-Patch-Manager (push disabled).
 - **Core:** `src/KotorPatcher/`, with the platform seam `include/platform.h` (Log, AllocExec, LoadModule, GetSymbol, SetEnv, ...), backends `platform_win32.cpp`/`platform_posix.cpp`, and entries `dllmain.cpp`/`soentry.cpp`/`dylibentry.cpp`.
 - **Patcher behaviour:**
-  - The patcher currently **exports nothing**.
+  - The patcher has **no intentional exports**. Correction 10-02: with no `.def` and no `dllexport`, MinGW auto-exports every symbol (upstream's DLL already exports 706 internal ones), and the Linux `.so` uses default visibility. Patches must not rely on any of them.
   - It already publishes `KOTOR_VERSION_SHA` through `Platform::SetEnv` (patcher.cpp:122).
   - It may defer the apply to a worker thread under SteamStub (patcher.cpp:137).
 - **Patch loading (`ApplyPatch`, patcher.cpp:223-300):**

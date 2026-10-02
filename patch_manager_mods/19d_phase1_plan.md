@@ -263,8 +263,17 @@ After each chunk, Opus re-runs the acceptance checks, reviews the diff and commi
   - It is detached and never joined, with a session generation guard. Lock order: poll -> flush -> ring -> table, with wake as a leaf lock.
   - Measured: WARN wake reaches disk in 10 ms, periodic INFO in 503 ms, hot reload in about 1005 ms. Shutdown with the ring lock held returns in about 202 ms.
   - The stale-thread churn row was mutation-checked: with the generation check removed, 92-99 of 100 cycles leaked. 172 checks; TSan clean, 3 runs.
-- **E, committed 700e6c7:** patcher wiring.
+- **E, committed 700e6c7, reworded to 7138548:** patcher wiring.
   - Review addition: a config parse failure now also leaves a WARN in `patcher_log.txt` and publishes session info.
-  - DLL exports and imports are unchanged against baseline (no export table; KERNEL32 + msvcrt).
+  - DLL imports are unchanged (KERNEL32 + msvcrt). **Correction:** my first export check was void (the `sed` range matched nothing on either side). A real diff against a baseline DLL built from 55725f7: MinGW auto-exports every symbol when there is no `.def`/`dllexport`. Upstream already exports 706; the branch exports 742. The additions are the internal `Registry::`/`LogService::` functions plus a few std template instances. There is no intended ABI export; patches use `KPatchInit` only. Commit E's message was reworded to say this.
   - The 64-bit host smoke ran from a scratchpad driver. The `logger-fixture` file gets the header, the interface list (kpatch.log by patcher, test.counter by provider-fixture) and the WARN and INFO lines. Without the ini, only WARN is written and the previous session is kept in `.1`. A broken DLL gives "Apply aborted: 1 module(s) initialised" in `patcher_log.txt`. A garbage config gives the parse WARN.
   - Pre-existing, not a regression: `dlclose` of patch modules from the `.so` destructor during `exit()` segfaults in a dlopen'd harness. It reproduces at upstream HEAD too. In the game the `.so` is DT_NEEDED, so this is untested there. Also, `dlclose` of the patcher does not unmap it; static libstdc++ unique symbols are a likely cause.
+
+### Chunk F + final (10-02 14:45)
+- **F, committed 4fd1d12:** `docs/PatchRegistry.md` (author guide), `src/KotorPatcher/README.md` (registry/KPatchInit contract + kpatch.log sections) and `tests/README.md`, plus a root README pointer. Local-setup docs 19/19a/19c updated to as-built.
+- **create-patch export scan:**
+  - The scan uses regex `extern.*__cdecl` and takes the 5th token split on space and `(`. So `KPatchInit` must be written as `extern "C" void __cdecl KPatchInit(const KPatchApi* api)` on one line, with a literal `__cdecl` (not `KPATCH_CALL`), no `__declspec`, and a one-token return type.
+  - A committed `exports.def` skips the scan entirely.
+  - Linux and macOS patch builds get no `-I Patches/Common`, so they use `#include "../Common/kpatch_api.h"` and `#define __cdecl` off Windows.
+- **Final gate (14:44):** GATE PASS. `make dll` builds and 14/14 x86_64 rows pass. The i386 rows and the Linux `.so` are still unbuildable here (no multilib).
+- **Branch:** `feat/patch-registry-logging` = e36afa4, b27b93d, f766bca, 7e4b25f, 7138548, 4fd1d12, on top of upstream 55725f7. It is not pushed, not merged into `ethansm/local-mods`, and not installed live.
