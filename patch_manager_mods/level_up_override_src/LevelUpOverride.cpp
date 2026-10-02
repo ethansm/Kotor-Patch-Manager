@@ -1,6 +1,8 @@
-// Level-Up Override 0.2.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Rewrites the pending level-up struct for allow-listed tags
-// when mode=rewrite (and apply=1); the default mode=log only logs + dry-runs and never writes game memory.
-// History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump.
+// Level-Up Override 0.2.1 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Makes the engine's AUTO level-up follow a per-character build:
+// rewrites the pending level-up struct for allow-listed tags when mode=rewrite (and apply=1) and the call comes through AutoLevelup
+// (Auto button, Auto Level Up NPCs, XP-award auto levels). Manual GUI picks are never changed. Default mode=log only logs + dry-runs.
+// History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump;
+// 0.2.1 rewrite only under AutoLevelup (user requirement: pre-determine the auto level-up, never override manual picks).
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/MASTER_PLAN.md.
 //
 // One detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
@@ -14,7 +16,7 @@
 // prints the identical line for the same inputs (computeRewrite == compute_rewrite).
 //
 // Config levelup_override.ini (game dir, re-read when its mtime changes; missing = defaults):
-//   mode=log (default) | rewrite (apply the DRY result for allow-listed tags) | off
+//   mode=log (default) | rewrite (apply the DRY result for allow-listed tags, auto level-ups only) | off
 //   tags=atton,kreia   rewrite allow-list          verbose=1 (0 = one summary line per call)
 //   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run with WOULD REWRITE lines (0.1.x behaviour)
 //   table=levelup_paths.ini
@@ -32,7 +34,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.2.0";
+constexpr const char* Version = "0.2.1";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -595,6 +597,18 @@ void rotateIfLarge() {
     }
 }
 
+// True when CSWSCreatureStats::AutoLevelup (0x6BEDF0) is on the call chain: the engine chose the picks (Auto button, Auto Level Up
+// NPCs, XP-award auto levels). Only those level-ups are rewritten; a player's manual GUI picks (and SetExperience replays of them) are kept.
+bool viaAutoLevelup(uintptr_t ret, const uintptr_t* frames, int nFrames) {
+    const Fn* d = findFn(ret);
+    if (d && d->lo == 0x006BEDF0) return true;
+    for (int i = 0; i < nFrames; ++i) {
+        const Fn* f = findFn(frames[i]);
+        if (f && f->lo == 0x006BEDF0) return true;
+    }
+    return false;
+}
+
 // Returns the flow name from the direct return address and the EBP chain (nearest frame that names a flow wins).
 const char* classify(uintptr_t ret, const uintptr_t* frames, int nFrames) {
     const Fn* d = findFn(ret);
@@ -633,6 +647,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
         e = next;
     }
     const char* flow = classify(ret, frames, nFrames);
+    const bool viaAuto = viaAutoLevelup(ret, frames, nFrames);
     Buf chain;
     const Fn* rf = findFn(ret);
     chain.add("ret=%08x(%s)", (unsigned)ret, rf ? rf->name : "?");
@@ -727,7 +742,9 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
             formatDry(d, lt, key, res);
             logf("  %s", d.s);
             if (rewriteTag) {
-                if (!strcmp(res.status, "already")) {
+                if (!viaAuto) {
+                    logf("  SKIP manual %s key=%d flow=%s - player's picks kept (rewrite only under AutoLevelup)", lt, key, flow);
+                } else if (!strcmp(res.status, "already")) {
                     logf("  ALREADY (replay) %s key=%d - no write", lt, key);
                 } else if (strcmp(res.status, "rewrite")) {
                     logf("  SKIP %s %s key=%d - vanilla", res.status, lt, key);

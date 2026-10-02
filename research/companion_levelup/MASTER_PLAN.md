@@ -1,6 +1,8 @@
 # MASTER PLAN: per-character level-up override (Ghidra mapping + Patch Manager C++ mod)
 
 Status as of 2026-10-02: Phases 0/1/1b DONE (static). Phase 2 stage 0 DONE: probe `level-up-override` 0.1.0 (log + dry run) INSTALLED 09-30 21:38, live runs 1+2 read (doc 08 'Phase 2 live results' run 1/run 2: hook params, flow map, key=level+1, deltas, ability 6=none, Auto grants bypass pending, powers in spells-add all CONFIRMED; stats feat list is +0x00/+0x18). 0.1.1-probe built (feat dump fix), not installed. NEXT = Step 4 apply code (rewrite in place, default mode=log) then Step 5 user-gated Atton spike - see the plan file referenced in doc 08 'Session notes - Phase 2'.
+
+Requirements update 2026-10-02 (user): rewrite only the AUTO level-up, never manual picks (0.2.1 does this); builds are player-chosen per playthrough; configuration via an in-game GUI (settings page or new main-menu page) - Phase 3 research item. Details: doc 08 Status.
 Read order after a context clear: this file -> `PROJECT_CONTEXT.md` (sections 1-9) -> `PHASE1_PLAN.md` -> `README.md`.
 Work tree: `/home/ethansm/orca/workspaces/local-setup/KOTOR-II` (git worktree, branch KOTOR-II). Commit only there; never push, never amend.
 Commit trailer: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.

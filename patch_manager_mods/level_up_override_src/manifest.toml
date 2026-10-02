@@ -1,9 +1,9 @@
 [patch]
 id = "level-up-override"
 name = "LevelUpOverride"
-version = "0.2.0"
+version = "0.2.1"
 author = "local"
-description = "Hooks CSWSCreatureStats::LevelUp (0x006B9870): logs every level-up (creature, pending level-up struct, caller flow) and the per-character path rewrite from levelup_paths.ini to levelup_override_log.txt; rewrites the pending level-up for allow-listed tags when mode=rewrite (default mode=log is log-only, never writes). Config levelup_override.ini (mode=log|rewrite|off, tags=, apply=, verbose=, table=)."
+description = "Hooks CSWSCreatureStats::LevelUp (0x006B9870): logs every level-up (creature, pending level-up struct, caller flow) and the per-character path rewrite from levelup_paths.ini to levelup_override_log.txt; makes AUTO level-ups (Auto button / Auto Level Up NPCs) follow the per-character build for allow-listed tags when mode=rewrite; manual picks are never changed (default mode=log is log-only, never writes). Config levelup_override.ini (mode=log|rewrite|off, tags=, apply=, verbose=, table=)."
 
 requires = []
 conflicts = []

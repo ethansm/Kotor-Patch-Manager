@@ -6,6 +6,11 @@ live exe 4AB72FC1... is the patched one - bytes at every shortlisted site are id
 offset of a .text VA = VA - 0x400C00. All Steam functions below were read in a decompile (2026-09-30), not just address-matched.
 
 ## Status
+**Product requirements (user, 2026-10-02):** (R1) the mod must NOT override a player's manual level-up picks - it pre-determines the
+**Auto level-up** (Auto button / Auto Level Up NPCs) so players can use auto-level and still get their desired build; (R2) builds are the player's choice
+per playthrough (not one fixed path); (R3) configuration through an in-game GUI - a page in the game settings or a new main-menu page (to be researched:
+CSWGuiMainMenu / options panels; no Ghidra work on them yet; DB has only DisplayMainMenu 0x73F230 / ShutDownToMainMenu 0x78E0F0 address matches).
+0.2.1 implements R1 (rewrite only when AutoLevelup 0x6BEDF0 is on the call chain; manual GUI -> `SKIP manual ... player's picks kept`).
 2026-09-30: Phase 1 + Phase 1b static investigation COMPLETE (see 'Phase 1b results'; O1-O7 closed statically, live confirmation pending user consent for a log-only probe).
 2026-09-30 (earlier): Phase 1 static investigation COMPLETE. No game change, no install, no probe run. Q1-Q8 answered below (Q4 feats-panel
 gating and the client-refresh behaviour after a server-side rewrite are the only residual doubts -> Phase 2 spike).
@@ -272,6 +277,13 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
   re-checked unchanged right before; prior UpdatedAt 00:42:15 by a sibling), stage `$T/levelup_stage2/` (25 live ids from hotbar_stage8 md5-matched + 0.2.0,
   PROBLEMS 0), "Applied 26 patch(es)", `verify` 0 mismatches, UpdatedAt 00:53:50, live dll bcdc9862. Game dir `levelup_override.ini` = `mode=rewrite tags=atton
   apply=1 verbose=1`; `levelup_paths.ini` == runtime table. Log was 46 lines before the spike. Rollback: `mode=off` (instant) or reinstall the backup's set.
+
+## Phase 2 Step 4b (0.2.1, 2026-10-02): auto-only gate (R1)
+- `viaAutoLevelup(ret, frames)`: true when the direct return or any of the 4 EBP frames lies in AutoLevelup 0x6BEDF0 (run 1 chains: Auto = `0x6C00AF` in frame 0,
+  manual = HandleLevelUpMsg chain without it). Allowed tag + mode=rewrite + not via AutoLevelup -> `SKIP manual <tag> key= flow= - player's picks kept`, no write.
+  SetExperience replays of manual structs are therefore never rewritten; replays of rewritten auto structs report ALREADY.
+- apply_test.cpp also asserts the gate on the run 1 chains. parity 263/0, apply_test 0 failures, -Wall clean. kpatch c03922f2, dll 693053d9. 0.2.0 (bcdc9862) is
+  live from 00:53 and still rewrites manual picks - replace before the spike.
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the

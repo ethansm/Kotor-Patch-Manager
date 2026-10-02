@@ -92,6 +92,14 @@ int main(int argc, char** argv) {
     g_arena = static_cast<uint8_t*>(m);
     g_stubVirtualQueryAll = true;
     g_eng = {reinterpret_cast<uintptr_t>(&fakeAddFeat), reinterpret_cast<uintptr_t>(&fakeSetSkillDelta), reinterpret_cast<uintptr_t>(&fakePushU32), false};
+    // 0.2.1 auto-only gate, on the live run 1 call chains (doc 08): Auto button passes AutoLevelup, manual GUI does not.
+    {
+        const char* tag = "gate"; int key = 0;
+        const uintptr_t autoFr[4] = {0x006C00AF, 0x00850086, 0x0075BA5A, 0x0075CE6B}, manFr[4] = {0x00661F26, 0x0065FC91, 0x00531585, 0x0051C442};
+        CHECK(viaAutoLevelup(0x006B9770, autoFr, 4), "auto-button chain not seen as AutoLevelup");
+        CHECK(!viaAutoLevelup(0x006B9770, manFr, 4), "manual-gui chain seen as AutoLevelup");
+        CHECK(!viaAutoLevelup(0x006B9770, autoFr, 0), "empty chain seen as AutoLevelup");
+    }
     if (argc < 2 || !parseTable(argv[1])) { fprintf(stderr, "table: %s\n", g_tableErr); return 2; }
     g_tableOk = true;
     int applied = 0, replays = 0, aborts = 0, skipped = 0;
