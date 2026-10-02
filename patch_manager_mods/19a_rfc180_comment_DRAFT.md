@@ -17,6 +17,13 @@ Picking up open question 2: **yes, and we think logging is the best first servic
 
 **What the PR contains**
 - `KPatchApi` exactly as sketched above (`struct_size`, `abi_version`, `provide`, `require`), pushed through an optional `KPatchInit` export after `LoadModule`. Patches without `KPatchInit` are untouched.
+- The full patch-to-patch registry, not only patcher services: any patch can `provide` an interface and any other can `require` it. The patcher's own services go through the same `provide` path, so they get no special case. Rules the PR defines and tests:
+  - `KPatchInit` runs once per module. Today `LoadModule` runs once per hook entry, so a 20-hook DLL is loaded 20 times with the same handle.
+  - Interfaces stay valid until shutdown. Modules already stay loaded until `CleanupPatcher`.
+  - A duplicate `provide` of the same name and major version is rejected and logged.
+  - `require` returns null when no patch provides the interface, and callers must handle that.
+  - The session log lists every interface and which patch provides it.
+  - Tests use a provider and a consumer test patch.
 - `"kpatch.log"` v1: a plain-C table (`struct_size`, `Register`, `Enabled`, `Submit`, `FrameTick`, `Mark`, ...), append-only.
 - `Patches/Common/KpLog.h`: macros (`KP_LOG(channel, fmt, ...)`, `KP_LOG_EVERY`, `KP_WARN`, `KP_ENABLED`) that `require` the interface in `KPatchInit`, plus a fallback to `debugLog()` when the patcher doesn't provide it (older patcher, or a patch tested on its own).
 - Line format: `T=<ms since patcher init> f=<frame#|-> <patch>/<channel> <message>`. The message is the patch's own text, unchanged.

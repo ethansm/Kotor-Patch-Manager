@@ -32,6 +32,14 @@ Upstream issue **LaneDibello/Kotor-Patch-Manager#180 "RFC: how should patches ta
 - **Its open question 2 asks exactly our question:** "Should the patcher expose its own services through the same table (logging, `GameVersion`)?"
 No other upstream issue or PR covers logging (searched log/logging/debugLog/trace/verbose/export/shared, issues + PRs, all states). Related only loosely: #12 (Feedback scrollback), #28/#42 (debug features).
 
+**Scope: the registry is general, patch-to-patch first-class (user 10-02).** #180's original purpose is patch-to-patch communication (a patch `provide`s a named plain-C interface, another `require`s it and calls it directly). Our PR implements the full registry for that purpose; the core is simply one more provider (`"kpatch.log"`, later e.g. `"kpatch.gameversion"`), using the same `provide` path patches use, with no special casing. Registry rules the PR must define and test:
+- `KPatchInit` is called **once per module** (dedupe by handle): `ApplyPatch` calls `LoadModule` once per DETOUR hook entry (patcher.cpp:252), so a 20-hook DLL is `LoadLibrary`'d 20 times, same handle.
+- **Lifetime**: an interface stays valid until shutdown. Holds today (modules stay in `g_loadedPatches` until `CleanupPatcher`, even when a hook fails); state it as a guarantee so later changes keep it.
+- **Duplicates**: a second `provide` of the same name+major is rejected (returns error, logged); first wins.
+- **Absent provider**: `require` returns null; callers must handle it (patch may not be installed). Callers `require` lazily at first use; `KPatchInit` order is config order, not a contract.
+- **Introspection**: the session log header lists every provided interface and its provider, so missing-dependency reports are diagnosable.
+- Tests: two test patches (provider + consumer) for provide/require across modules, version mismatch, duplicate provide, missing provider, `KPatchInit` called once for a multi-hook DLL, and a patch with no `KPatchInit`.
+
 **Consequence for this design:** logging should be the first patcher-provided service on the #180 registry (interface `"kpatch.log"`, version 1), not a separate `KpLog_GetApi` export. That gives #180 a concrete first consumer and gives us an ABI the maintainers already proposed. Section 3 is written that way; the standalone export is kept only as the fallback if #180 is not adopted.
 
 ## 3. Architecture
@@ -107,7 +115,7 @@ level=1
 | 2 | Header: `Patches/Common/KpLog.h` + `debugLog()` reroute + fallback path; test a patch against (a) new core, (b) old core (fallback) | fork | main |
 | 3 | Migrate `mouse-probe` (reference) then the `buff-duration-hud` probe lines (exact tags kept); perf-lab A/B vs per-line fopen under Wine | fork, live install | user play test |
 | 4 | Merged sink mode + `kplog_parse.py` + merged timeline viewer; `F9` MARK across patches | fork | after 3 |
-| 5 | Upstream PR = #180 registry implementation + `kpatch.log` as its first service + `KpLog.h` + migrated examples + `docs/Logging.md`, posted together with the 0b comment, once 3 is proven | upstream | user go + maintainer |
+| 5 | Upstream PR = #180 registry implementation (full patch-to-patch provide/require, rules + tests in 2a) + `kpatch.log` as its first service + `KpLog.h` + migrated examples + `docs/Logging.md`, posted together with the 0b comment, once 3 is proven | upstream | user go + maintainer |
 | 6 | Sibling-owned patches migrate on their owners' schedule (hotbar, inv3d, equip3d, chareffects, levelup, ai, perf-lab) | fork | owners |
 | 7 | Contributor doc: `docs/Logging.md` upstream + example patch | upstream | with 5 |
 
