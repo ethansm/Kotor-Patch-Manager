@@ -267,7 +267,11 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
   equivalent mutant: AddFeat re-adds the entry).
 - asm check (`-O2 -S`): AddFeat call = `mov ecx,pending; [esp]=id; call 0x6F5B40; push` (callee cleanup), PushU32 ecx=pending (+0x00), SetSkillDelta ecx=pending,
   [esp]=idx [esp+4]=value. Export `LevelUpOverrideEntry`; imports KERNEL32 + msvcrt only; hooks.toml original_bytes `55 8B EC 81 EC 80 00 00 00` == live exe.
-- Build: `LevelUpOverride.kpatch` md5 c58520e7..., DLL (`binaries/windows_x86.dll`) md5 bcdc9862.... Live is still 0.1.0 (acd1ce14).
+- Build: `LevelUpOverride.kpatch` md5 c58520e7..., DLL (`binaries/windows_x86.dll`) md5 bcdc9862....
+- **INSTALLED 2026-10-02 00:53 (user consent):** backup `~/Games/KOTOR2_Mod_Workspace/backups/pre_levelup_020_20261002_005342/` (live DLL md5s + state
+  re-checked unchanged right before; prior UpdatedAt 00:42:15 by a sibling), stage `$T/levelup_stage2/` (25 live ids from hotbar_stage8 md5-matched + 0.2.0,
+  PROBLEMS 0), "Applied 26 patch(es)", `verify` 0 mismatches, UpdatedAt 00:53:50, live dll bcdc9862. Game dir `levelup_override.ini` = `mode=rewrite tags=atton
+  apply=1 verbose=1`; `levelup_paths.ini` == runtime table. Log was 46 lines before the spike. Rollback: `mode=off` (instant) or reinstall the backup's set.
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
