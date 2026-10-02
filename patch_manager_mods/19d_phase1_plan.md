@@ -235,7 +235,7 @@ After each chunk, Opus re-runs the acceptance checks, reviews the diff and commi
 - Worktree `~/Games/KOTOR2_Mod_Workspace/tools/kpm-registry`, branch `feat/patch-registry-logging` from upstream/master 55725f7.
 - Toolchain: `i686-w64-mingw32-g{cc,++}-posix` present. **`g++-multilib` is NOT installed** (no `/usr/lib/gcc/x86_64-linux-gnu/13/32`, sudo needs a password), so `-m32` fails on `bits/c++config.h`: the Linux `.so` and every i386 test row fail to compile **at baseline**. This is the environment, not the code.
 - Baseline: `make dll` OK. `make test`: all 11 x86_64 rows pass; the i386 rows fail to compile (multilib).
-- Gate until multilib is installed (scratchpad `gate.sh`): `make dll` green, every x86_64 row "all pass", and the only compile errors allowed are the multilib header ones. With multilib present the gate is full `make all test`. The header C check uses 64-bit gcc + i686 MinGW instead of `gcc -m32`.
+- Gate until multilib is installed (`scripts/kpm_registry_gate.sh`): `make dll` green, every x86_64 row "all pass", and the only compile errors allowed are the multilib header ones. With multilib present the gate is full `make all test`. The header C check uses 64-bit gcc + i686 MinGW instead of `gcc -m32`.
 
 ### Chunks A + B (10-02 ~14:05)
 - A committed KPM e36afa4: `kpatch_api.h` (canonical + forwarder), `Registry`, `any_registry` (56 checks, x86_64 PASS, 20x loop clean, TSan clean under `setarch -R`). Review fix: `Provide`'s closed check moved under the mutex, so a Provide racing Close() can't insert afterwards.
