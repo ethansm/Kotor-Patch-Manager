@@ -779,4 +779,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   new server 0x401C52 (skip, calls 0x51C450); `levelup_playthroughs.ini` (`[g<hex>]`, `<tag>=<preset>|instant=|hold=`; .tmp + MoveFileExA; lossy-parse
   refuses writes); tagConfig: GUID section wins outright, else dev keys; `ptApply` creates the GUID + live-writes it (read back) on first use, `ptRemove`
   keeps an empty section. Tests: gate_test 110, playthrough_test 244. Next: M4 LevelUpUi.h (Sonnet draft running) -> Opus review -> C gates.
+- M4 DONE 29c56a2 (0.3.0): `LevelUpUi.h` (Configure label [362,372,94,26] with R9 nudge text/colour, status line [54,476,476,18], wizard bg
+  [150,140,375,300] + title + 6 cells + Back/Cancel; created at ctor hook 0x84D82C (`[ebp-0x254]`, addToList=0), appended on the first SetStats tick;
+  scale from BTN_LEVELUP = list index 66, fallback = ctor-time template extent), R11 banked message via 0x7BE090 from the hold gates (once per GUID/tag/N,
+  5 s gap), SetStats site 0x84F221 now passes `ecx, ebp`. Tests: ui_test 122, gate_test 110, playthrough_test 244, wizard parity 264, guikit 49; mingw
+  clean. Live doubts: framed LBL_XP_BACK text object (`UI create ... textobj=` mask), clicks while another GUI covers the character screen.
 - Live state unchanged: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
