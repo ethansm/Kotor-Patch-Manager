@@ -1,0 +1,48 @@
+# S1 task 4: global-variable table API, hook entries, table pointer chain, server-recreation detection. Static, 2026-10-02. C = confirmed disasm/decompile, I = inferred.
+# Raw: S1_raw_misc_disasm.txt (654210.., 654430.., 654740.., 654860.., 654bb0.., 654cc0.., 6545B0.., 401BC0..), S1_raw_globals_disasm2.txt (67DBF0 getter caller, 691800 setter caller, 51C890, 51BD40),
+#      S1_raw_misc_disasm2.txt (51C450..), phase3_evidence/G1_dec_globalvar_store.txt, G1_dec_globalnum_cmds.txt, G1_disasm_globals_wrappers.txt, G1_dec_globalvar_load_save_cat.txt.
+All functions are `__thiscall`, ECX = table (CSWGlobalVariableTable*), name = `CExoString*` (pointer to {char* str, int len}; hash 0x654210 derefs `[param]` as char*, RET 4), callee cleans (RET N):
+ | VA | role | signature | RET | evidence |
+ | 0x654430 | AddBoolean | int (table, CExoString* name) -> catalogue index or -1 (when count >= 900) | 4 | 654430..654485; NO duplicate check (adds again if called twice) |
+ | 0x654490 | AddNumber (cap 1000) | same | 4 | G1_dec_globalvar_catalog_limits.txt |
+ | 0x6545B0 | Find (exists test) | int (table, CExoString*) -> index, -1 = absent | 4 | 6545B0..65466B; use as "already added?" guard before AddBoolean |
+ | 0x654BB0 | SetBoolean | void (table, CExoString*, uint value 0/1) | 8 | disasm 654BB0..654CBB (RET 8); error log "Script var BOOLEAN '%s' not in catalogue!" if absent |
+ | 0x654740 | GetBoolean | void (table, CExoString*, int* out) ; writes *out=0 if absent | 8 | 654740..654855; caller 0x67DC0D..0x67DC14 |
+ | 0x654CC0 | SetNumber | void (table, CExoString*, uint8 value (pushed as dword)) | 8 | 654CC0..654DC0; caller 0x691853 |
+ | 0x654860 | GetNumber | void (table, CExoString*, uint8* out) | 8 | 654860..654968; caller 0x67DC45 |
+ Script wrappers for reference: 0x67DB70 (Get Boolean 0x242 / Number 0x244), 0x691750 (Set Boolean 0x243 / Number 0x245); they obtain the table with `0x51C890(ecx = serverApp)`.
+ Catalogue: names are case-folded by the hash; slot = 0x18 bytes (name up to 21 chars), 0x93D hash slots.
+
+## Saver / post-load entries
+- Globals saver 0x656640: `thiscall(table, CExoString* saveFolderPath)`, RET 4 (0x656709). Bytes `55 8B EC 6A FF 68 90 90 95 00` (C, live==vanilla). Hook at entry = 5 bytes `55 8B EC 6A FF` (whole instructions: push ebp / mov ebp,esp / push -1). ECX = table at entry, [esp+4] = CExoString*.
+  Names added at the entry ARE saved: the writer 0x655010 (called at 0x6566E7 with (table, name, 1)) loops `for i in 0..0x93D` over the LIVE hash array and writes every non-empty slot with its type (Cat/Val lists) (G1_dec_globalvar_load_save_cat.txt, loop `local_4c < 0x93d`). C.
+  Callers: SaveGameInProgress 0x5348F5 (`ECX=internal+0x100FC`), DoPCAutosave 0x53B219. Both pass the table in ECX.
+- Post-load 0x656758 is inside LoadFromSave 0x656710 (`thiscall(table)`, RET 4): `0x656735 mov [ebp-0x1C],ecx` stores the TABLE; `0x656750 mov ecx,[ebp-0x1C]; 0x656753 call 0x6564C0` (the actual loader);
+  0x656758 = `89 45 F0 C7 45 FC FF FF FF FF` (mov [ebp-0x10],eax ; mov dword [ebp-4],-1) (10 bytes, 2 whole instructions, live==vanilla, no hook within +-16).
+  At 0x656758: **table = [ebp-0x1C]**, EAX = result of 0x6564C0 (load success, stored to [ebp-0x10] and returned). Hook params: `[ebp-0x1c]` (pointer) and `eax`. skip_original_bytes=false is easiest (our code runs first, then the 10 original bytes), or true + re-execute.
+  Other caller of LoadFromSave: 0x52FD0A (server load 0x52FB80, `ECX = internal+0x100FC`), 0x8529E0 autosave restore (doc 08 Item 7).
+
+## Pointer chain to the table without a hook (C: 0x51C890, 0x51BD40, 0x401C3A)
+ app  = *(uint32_t*)0xA1B4A4                  (global; same object whose +4 is the CClientExoApp (clientApp) and +8 the server app)
+ srv  = *(uint32_t*)(app + 8)                 (CServerExoApp; 0 on the main menu: 0x401C70 clears it, 0x401C3A sets it in 0x401BC0)
+ intl = *(uint32_t*)(srv + 4)                 (CServerExoAppInternal; 0x51C890 does exactly `*(ecx+4)+0x100FC`)
+ table = intl + 0x100FC                       (an ADDRESS inside the object, not another deref)
+ Cross-check: 0x51BD40(ecx=srv) returns `*(*(srv+4)+0x10004)` = server-info (MinLevel +0x90, MaxLevel +0x94) which CanLevelUp already uses with `[0xA1B4A4]+8`.
+ Always SafeRead each hop (srv == 0 on the main menu / during teardown).
+
+## Detecting "server object recreated" (new game, load, quit to menu)
+- Server creation funnel: 0x401BC0 `thiscall(ECX = app, int arg)`, RET 4 (callers: load screen 0x853D5F/0x85405F in 0x853A00, main-menu new game 0x88229A, 0x8835C9, 0x8FADE1). It frees the old one via 0x401C70 if `[app+8] != 0`,
+  allocates 8 bytes, constructs via 0x51BC20, stores `[app+8]`, then `0x51C5C0(arg)` and finally **0x401C52 `call 0x51C450`** (ECX = new server app, NO stack args, callee plain RET (0x51C465)) which runs 0x5315A0 -> 0x653E40 = load globalcat.2da into the fresh (zeroed) table.
+- Cheap polling: compare `srv = *(app+8)` (and `intl`) with the last seen values; a change = recreated; `srv == 0` = torn down (main menu). Weakness (I): the 8-byte block / internal block can be re-allocated at the SAME address, so equal pointers do not prove "same server".
+- Robust: hook **0x401C52** (`E8 F9 A7 11 00`, live==vanilla, nearest hook 0x4016E0 DeSteamify -1394): handler `uint h(ecx)`: `r = real 0x51C450(ecx); ++g_serverEpoch; g_guidKnown = false; return r;`. Post-call code only restores SEH (`mov ecx,[ebp-0xC]`, EAX unused) so ECX/EDX are safe.
+  Every playthrough boundary passes here: new game, load (0x853A00 -> 0x401BC0 then 0x52FB80 -> 656758 hook reads the saved GUID), quit-to-menu + new load. Combined rule: epoch changed -> invalidate cached GUID; 656758 fires -> read GUID globals from the table; if no 656758 happened before first use (new game) -> GUID globals read 0 = new playthrough.
+- Note: ShutDownToMainMenu 0x78E0F0 calls 0x401C70 (srv -> 0) without 0x401BC0; epoch need not change, `srv == 0` covers it.
+
+## Add-before-save recipe (I, needs the one log-only live probe in doc 08 Item 7)
+ At 0x656640 entry (ECX = table): for each name `LUO_GUIDn`: `CExoString nm = ctor(name)`; `if (Find(table,&nm) < 0) AddBoolean(table,&nm)` (or AddNumber); `SetBoolean/SetNumber(table,&nm,v)`; dtor. Names <= 21 chars; capacity left: Boolean 724 free (900-176), Number 27 free (1000-973) (G1_globalcat_live_counts.txt).
+ Prefer Booleans (plenty of room). On load the engine itself re-adds unknown saved names (0x655B00 -> 0x654430), so the GUID round-trips without a globalcat.2da row (G1_dec_globalvar_load_named.txt:114-120).
+ Number getter: 0x654860 (above). Boolean getter 0x654740.
+
+## Unresolved
+ - Whether CExoString needs a real engine-built object (ctor 0x733570 / dtor 0x733780, used by the engine at 0x6564xx) - build it with the engine ctor to be safe (it points at an engine-heap buffer; the hash only reads [ptr]).
+ - 0x656758 param capture and "name added at 0x656640 entry is written" remain live-probe items (writer loop is static-confirmed).

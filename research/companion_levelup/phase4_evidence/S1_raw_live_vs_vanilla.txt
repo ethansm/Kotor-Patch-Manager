@@ -1,0 +1,25 @@
+# live (swkotor2.exe) vs vanilla (swkotor2.exe.unpatched_vanilla) bytes at every candidate site, pebytes.py; both columns identical on every row
+74F3C7 e8 c4 a3 f6 ff 85 c0 0f 84 0f  == vanilla
+84F221 e8 6a a5 e6 ff 89 45 e8 8b 95  == vanilla
+5FD7CE e8 bd bf 0b 00 85 c0 74 1c 8b  == vanilla
+5FE2A3 e8 e8 b4 0b 00 85 c0 74 16 8b  == vanilla
+66C95C e8 2f ce 04 00 85 c0 74 16 8b  == vanilla
+5FEE32 e8 59 a9 0b 00 85 c0 74 16 8b  == vanilla
+756DD4 e8 b7 29 f6 ff 85 c0 74 0b 8b  == vanilla
+7575B5 e8 d6 21 f6 ff 85 c0 74 35 8b  == vanilla
+757808 e8 83 1f f6 ff 85 c0 74 35 8b  == vanilla
+75798C e8 ff 1d f6 ff 85 c0 74 35 8b  == vanilla
+75218B e8 00 76 f6 ff 85 c0 74 20 8b  == vanilla
+7C9F3B e8 50 f8 ee ff 85 c0 74 0a 8b  == vanilla
+75FCB8 e8 d3 9a f5 ff 85 c0 0f 84 cb  == vanilla
+74F3E9 e8 12 07 fe ff 89 85 10 ff ff  == vanilla
+5FD7A0 e8 5b 23 13 00 89 85 68 ff ff  == vanilla
+5FE281 e8 7a 18 13 00 89 45 b0 8b 55  == vanilla
+66C93A e8 c1 31 0c 00 89 45 a0 8b 55  == vanilla
+84FD2F e8 8c 12 ef ff 85 c0 74 07 33  == vanilla
+84F9A2 e8 19 16 ef ff 85 c0 75 17 6a  == vanilla
+84F9FE e8 bd 15 ef ff 85 c0 75 15 6a  == vanilla
+850062 e8 99 d7 f2 ff 89 45 fc 83 7d  == vanilla
+656640 55 8b ec 6a ff 68 90 90 95 00  == vanilla
+656758 89 45 f0 c7 45 fc ff ff ff ff  == vanilla
+401C52 e8 f9 a7 11 00 8b 4d f4 64 89  == vanilla

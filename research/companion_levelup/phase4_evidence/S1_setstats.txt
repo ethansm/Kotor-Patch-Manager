@@ -1,0 +1,13 @@
+# S1 task 3: SetStats 0x84E6F0 at the CanLevelUp call 0x84F221. Static, 2026-10-02. C = confirmed.
+# Raw: S1_raw_misc_disasm.txt (84E77D..84E830), S1_raw_gui_disasm.txt (84E6C0..84E780, 84FBB0..84FBF8, 84F1B0..84F1F1), S1_raw_sites_disasm.txt (84F1F1..84F259), phase3_evidence/B1_disasm_charscreen.txt:35-60.
+- SetStats = `__fastcall/thiscall(ECX = panel)`; prologue stores the panel: `0x84E71D mov [ebp-0x288],ecx` (disp 0xFFFFFD78). PANEL `this` = [ebp-0x288] at 0x84F221 (re-read at 0x84F229 `mov edx,[ebp+0xFFFFFD78]` and 0x84F25A).
+- ECX of the call: `0x84F21E mov ecx,[ebp-0x28]` = STATS pointer. [ebp-0x28] is assigned at 0x84E79A from `[creature+0x1198]` where creature (0x84E78E, [ebp-0x44]) =
+  0x77D800(0x7E5DA0(party = 0x73FB90(clientApp), idx 0))  (0x84E73B..0x84E789) = the party LEADER's client creature. Same creature as StartAutoLevelup/DoAutoLevelup (S1_gui_guards.txt).
+  So creature = *(stats+0x24) (pointer, see S1_sites.txt) and the hold test can use ecx only; a frame slot for the creature is [ebp-0x44] (at that point it is dead but still in the frame; rely on ecx).
+- Result: `0x84F226 mov [ebp-0x18],eax`; bit1 of BTN_LEVELUP (panel+0x36C0)+0x48 = result&1 (0x84F22F..0x84F257) and, from the same [ebp-0x18], bit1 of BTN_AUTO (panel+0x34F0)+0x48 (0x84F25A..). One veto hides both.
+  The earlier block (0x84F1D5..0x84F21B) drives a control at panel+0xBF0 from `0x6B72E0(stats) != -1` (not CanLevelUp).
+- SetStats callers (Ghidra refs, S1_raw_refsto.txt): (1) Update 0x84FBB0 at 0x84FBBC (every tick; vtable 0x9A3E7C slot 0x34; Mod 14 hooks 0x84FBB0 entry), (2) 0x84E6CA inside FUN_0084E6C0 (SetStats + 0x623320 + 0x40F3C0;
+  referenced only from vtable data 0x9A3EC4 = slot 0x12 of the panel vtable - an on-show/refresh method, I), (3) 0x84FD42 inside ShowLevelUpGUI (once, before the level-up panel is created, after the 0x740FC0 guard at 0x84FD2F).
+  So SetStats is NOT only per-tick: also on panel refresh and on every ShowLevelUpGUI attempt that passes the guards.
+- Hook 0x84F221: `E8 6A A5 E6 FF`, live==vanilla, nearest hook 0x84FBB0 Mod 14 (+2447 bytes) -> no overlap. Handler: params `ecx` (stats) and `ebp` (panel = *(ebp-0x288), if the R9 Configure-button logic wants the panel here).
+  Handler body: real = CanLevelUp(ecx); show the Configure control when real && tag unconfigured; return held ? 0 : real. Post-call code uses only EAX (stores to [ebp-0x18]); ECX/EDX reloaded.

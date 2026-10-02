@@ -1,0 +1,64 @@
+# S1 task 1: hook sites for hold-veto (CanLevelUp callers) and instant-level (options accessor 0x72FB00 callers). Static, 2026-10-02.
+# Raw: S1_raw_sites_disasm.txt (disasm +-0x30..0x38 of every site + CanLevelUp 0x6B9790 + accessor 0x72FB00), S1_raw_live_vs_vanilla.txt, S1_raw_overlap_scan.txt/.py.
+# C = confirmed from disasm, I = inferred.
+
+## Callee facts (C)
+- CanLevelUp 0x6B9790: thiscall(ECX = stats), NO stack args, plain `RET` (c3) (S1_raw_sites_disasm.txt, 6B9790..6B9863; prologue 55 8B EC 83 EC 20 56). Returns EAX 0/1.
+  It reads stats+0x24 (creature POINTER: `mov edx,[ecx+0x24]` at 0x6B97F4, then calls vtable [creature]+0x94 and reads creature+0x11AC at 0x6B981D).
+  => stats+0x24 is a POINTER to the creature (NOT an embedded offset). Reverse link: creature+0x1198 holds the stats pointer (every site below loads ECX from `[creature+0x1198]`).
+  Tag: *(char**)(*(stats+0x24) + 0x18) with len at +0x1C (CExoString) - exactly LevelUpOverride.cpp readTag (St_Creature=0x24, Cr_Tag=0x18). Proven there for server creatures (LevelUp hook);
+  for the CLIENT creatures used at 0x74F3C7 / 0x84F221 / 0x756B70 / 0x752050 the same stats+0x24 -> creature link is used by CanLevelUp itself, but the +0x18 tag layout on the client class is I (SafeRead + log-only check first).
+- Options accessor 0x72FB00: `__fastcall`/thiscall ECX = [0xA1B4A4]+4 (client app), body: mov ecx,[ecx+4]; mov edx,[ecx+4] ... returns EAX = options object; NO stack args (all 4 sites push nothing before the call). RET form: ends after 0x72FB10 (c3, DB/doc: `return *(*(this+4)+4)`), I: plain RET (disasm shows no `ret N` fragment in the 0x72FB00..0x72FB10 window; prior evidence calls it __fastcall with ~264 callers).
+
+## A. CanLevelUp call sites (13). All: `E8 rel32`, no stack args pushed for the call, live == vanilla (S1_raw_live_vs_vanilla.txt), ECX = stats loaded from [creature+0x1198] then spilled/reloaded, after the call only EAX is consumed.
+ (b) no push before any of them; callee RET plain. (c) post-call register use: EAX only (`test eax,eax`/`mov [..],eax`); every later ECX/EDX is reloaded from the frame -> no compiler-bug dependence on ECX/EDX. (e) no toml hook within +-16 bytes anywhere (S1_raw_overlap_scan.txt; 413 unique hooks from 77 files = repo *_src tomls + Patches/*/; nearest owner listed per site).
+ Handler contract for ALL veto sites: `uint veto(stats /*ecx*/)`: r = real CanLevelUp(stats) [call 0x6B9790 via typed thiscall ptr]; if r && held(tag(*(stats+0x24))) return 0; return r. Capture only `ecx`.
+ | VA | bytes (live==vanilla) | ECX loaded from (frame spill) | creature frame slot (cross-check) | after call | nearest hook (owner, distance) |
+ | 0x74F3C7 UpdatePortraits 0x74EE90 | e8 c4 a3 f6 ff | [ebp-0xE8] <- [creature+0x1198] | [ebp-0x38] | test eax; jz 0x74F4E3 (debilitated branch) | 0x74F25A BuffDurationHUD, -365 |
+ | 0x84F221 SetStats 0x84E6F0 | e8 6a a5 e6 ff | `mov ecx,[ebp-0x28]` (0x84F21E) = leader creature+0x1198 (set at 0x84E79A) | creature not in frame; = *(stats+0x24) | `mov [ebp-0x18],eax` -> bit1 of BTN_LEVELUP(+0x36C0)+0x48 | 0x84FBB0 Mod14 CharEffectsTick, +2447 |
+ | 0x5FD7CE XP tail 0x5FD480 | e8 bd bf 0b 00 | [ebp-0x9C] | [ebp-0x14] | test; jz 0x5FD7F3 else push 1 + AutoLevelup | PerfLab 0x668FD0, +440322 |
+ | 0x5FE2A3 DistributeExperience 0x5FE0C0 | e8 e8 b4 0b 00 | [ebp-0x54] | [ebp-0x18] | test; jz 0x5FE2C2 else AutoLevelup | PerfLab, +437549 |
+ | 0x66C95C AddMultiClass 0x66C7A0 | e8 2f ce 04 00 | [ebp-0x64] | [ebp-8] | test; jz 0x66C97B else AutoLevelup | PerfLab 0x669A32, -12074 |
+ | 0x5FEE32 AutoLevelUpNPCs 0x5FEDD0 | e8 59 a9 0b 00 | [ebp-0x10] | [ebp-8] | test; jz 0x5FEE51 else AutoLevelup | PerfLab, +434590 |
+ | 0x756DD4 portrait updater 0x756B70 #1 | e8 b7 29 f6 ff | [ebp-0xE4] | [ebp-0x38] | nonzero -> mask|=4 (indicator) ; zero -> IsDebilitated overlay | MapAspectFix 0x7508AA, -25898 |
+ | 0x7575B5 0x756B70 #2 | e8 d6 21 f6 ff | [ebp-0x158] | [ebp-0x38] | nonzero -> sets bit1 of control (panel+0x327C)+0x48 (level-up label of the slot) | same, -27915 |
+ | 0x757808 0x756B70 #3 | e8 83 1f f6 ff | [ebp-0x188] | [ebp-0x38] | same (control panel+0x327C) | -28510 |
+ | 0x75798C 0x756B70 #4 | e8 ff 1d f6 ff | [ebp-0x1A8] | [ebp-0x38] | nonzero -> control panel+0x3824 bit1 | -28898 |
+ | 0x752050 -> call at 0x75218B | e8 00 76 f6 ff | [ebp-0x3C] | [ebp-8] | nonzero: [this+0xBE3C]=1 + 0x751580(this+0xBDEC); zero: [this+0xBA9C]=1 + 0x751580(this+0xBA4C) | -6369 |
+ | 0x7C9DF0 -> call at 0x7C9F3B | e8 50 f8 ee ff | [ebp-0x44] | [ebp-0x40] (= 0x77D800(0x7E5D80(0x73FB90(app+4)))) | nonzero: [panel+0x2C]=2 (open in-game menu on the Character tab) | 0x7D5997 ShaderFixes, +47708 |
+ | 0x75FC30 -> call at 0x75FCB8 | e8 d3 9a f5 ff | [ebp-0x40] | [ebp-0x14] | nonzero: sets global "000_Level_Dlg_Fired" and runs script "k_level_dlg" (one shot; only when creature+0x1200 PlayerCreated != 0); jz target 0x75FD90 not disassembled (I: epilogue) | -62478 |
+ Note on 756B70 slots #2-#4: the three controls are other portrait-panel level-up labels (same overlay logic as UpdatePortraits, buff counting around them) (I - roles not resolved, same code shape).
+
+### What a "returns 0 for this creature" veto changes, and recommendation
+ | site | effect of veto (0 for held creature) | rec |
+ | 0x74F3C7 | no portrait level-up indicator (mask bit4 stays clear -> buff/debuff icon rows are NOT hidden, doc 08 Item 2); no auto AutoLevelup(1) from the portrait tick; falls to the debilitated check (0x74F4E3). | VETO |
+ | 0x84F221 | the single result [ebp-0x18] sets bit1 of BOTH BTN_LEVELUP (panel+0x36C0, 0x84F22F) and BTN_AUTO (panel+0x34F0, 0x84F260): one veto hides both buttons (a control at panel+0xBF0 is driven by a different test, 0x6B72E0 != -1, unrelated) | VETO (R9 Configure nudge reads the REAL value in the same handler) |
+ | 0x5FD7CE / 0x5FE2A3 / 0x66C95C | XP-award / party-XP / AddMultiClass auto-level gates (reached only when the vanilla option bit0 = 1, or when R4 accessor detour forced it): no AutoLevelup, XP keeps banking | VETO (hold must beat the R4 force; the veto is AFTER the option test so order is: accessor forces bit0, veto kills CanLevelUp) |
+ | 0x5FEE32 | option-toggle catch-up (0x5FEDD0) would level a held companion unconditionally (no option test) | VETO (mandatory) |
+ | 0x756DD4 | second portrait updater: indicator/overlay for the other portrait slots | VETO |
+ | 0x7575B5 / 0x757808 / 0x75798C | slot level-up labels (control bit1) | VETO |
+ | 0x75218B | HUD main-interface flag: shows the level-up variant of a HUD element (0x751580 on this+0xBDEC) instead of the normal variant (this+0xBA4C) | VETO (cosmetic; HUD would otherwise keep the "level up" highlight, I: highlight) |
+ | 0x7C9F3B | in-game menu opens on the Character tab (tab 2) when the leader can level and the caller passed a tab id outside 0..7; veto = opens the last/default tab | VETO (nudge only, harmless either way) |
+ | 0x75FCB8 | one-shot k_level_dlg dialogue for PlayerCreated creatures | VETO (veto does NOT consume the one-shot global; it fires after the hold releases - desirable) |
+ | LEAVE: 0x6B9672 (ValidateLevelUp 0x6B9640) and 0x661FA6 (message handler 0x661C30) | real manual/auto apply paths; ValidateLevelUp is inside AutoLevelup's loop -> a veto there = infinite loop (hang hazard, doc 08 Item 4). Manual apply must stay possible. | LEAVE |
+ | LEAVE: 0x6B6E33, 0x6B6EB6 (SetExperience 0x6B6BD0) | XP is written first; the check then only replays stored pending levels (count==level in normal flows -> inert) + FeedbackMessage. A veto could drop a legitimate replay of stored LvlStatList records on load. Residual (I): FeedbackMessage(0xb) "level up" text would still show for a held creature (not seen in sites above; check live). | LEAVE |
+ | LEAVE: 0x63F003 (0x63EDC0), 0x63F68A/0x63F6E2 (0x63F550), 0x64166E (0x6415E0) | client/server stats sync: compare CanLevelUp with the client cache to set the "stats changed" flag; vetoing server-side or client-side only would desync the cache; consumers (UI) are vetoed at the sites above instead. | LEAVE |
+
+## B. Options accessor 0x72FB00 call sites (R4 instant levelling). All `E8 rel32`, ECX = [A1B4A4]+4 spilled, no stack args, live == vanilla, no toml hook within +-16.
+ Handler contract: `void* acc(ecx)`: real = 0x72FB00(ecx); if the creature in the frame slot is opted-in -> return pointer to a fake 12-byte block {?, ?, +8 = real[+8] | 1} (copy the real object's first 0x10 bytes or make a stable static whose +8 = 1) else return real.
+ Reads of the returned pointer: ONLY `[ptr+8] & 1` (S1_raw_sites_disasm.txt; for 0x74F3E9 the spilled slot [ebp-0xF0] is read once at 0x74F3F4->0x74F3FA; the other three slots ([ebp-0x98] 0x5FD7A5, [ebp-0x50] 0x5FE286, [ebp-0x60] 0x66C93F) are read once immediately - grep of the whole functions in D1_disasm_xp_gates.txt shows no later read of those slots (the 0xFFFFFF10-family slot at 0x74F3EE is read only at 0x74F3F4)). EAX dies right after the `mov [slot],eax`.
+ | VA | bytes | creature frame slot (written before the call: C) | captured params | nearest hook |
+ | 0x74F3E9 | e8 12 07 fe ff | [ebp-0x38] (used at 0x74F3B2 before CanLevelUp) | ebp | 0x74F25A BuffDurationHUD, -399 |
+ | 0x5FD7A0 | e8 5b 23 13 00 | [ebp-0x14] (used at 0x5FD784 `mov ecx,[ebp-0x14]; call 0x58A9F0`) | ebp | PerfLab far |
+ | 0x5FE281 | e8 7a 18 13 00 | [ebp-0x18] (used at 0x5FE25C) | ebp | PerfLab far |
+ | 0x66C93A | e8 c1 31 0c 00 | [ebp-0x08] (used at 0x66C911) | ebp | PerfLab 0x669A32, -12040 |
+ Capture `ebp` and read creature = *(uintptr_t*)(ebp - slot); tag = *(char**)(creature+0x18) (len at +0x1C), same readTag path as LevelUpOverride (creature+0x18 is where CanLevelUp's stats+0x24 pointer leads).
+ Note: 0x74F3E9 sits after the 0x74F3C7 CanLevelUp; if both are hooked the veto result (0) skips the accessor entirely (jz 0x74F4E3), so a held+opted-in creature is consistent.
+
+## C. Other sites referenced by later sections (same checks: E8 rel32, live==vanilla, no overlap) - see S1_gui_guards.txt / S1_globals.txt
+ 0x84FD2F, 0x84F9A2, 0x84F9FE, 0x850062, 0x656640 (entry), 0x656758 (10 bytes), 0x401C52: all "live == vanilla" and no hook within +-16 (nearest: 0x84FBB0 Mod14 +-383..2447, 0x4016E0 DeSteamify -1394, PerfLab +75896 for the globals sites).
+
+## D. Unresolved / flagged
+ - 0x72FB00 RET form not directly seen (window ends at 0x72FB10) - treat as fastcall no-arg; handler never calls it with stack args so it does not matter for our typed call (ecx only).
+ - Client creature tag offset (+0x18) unverified on client objects (server proven by LevelUpOverride); use SafeRead and log tag per site in the first live probe.
+ - 0x75FD90 (k_level_dlg jz target) and the roles of the 0x756B70 slot controls #2-#4 not disassembled.

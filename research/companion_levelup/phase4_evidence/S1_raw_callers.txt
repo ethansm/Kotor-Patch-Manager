@@ -1,0 +1,245 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1135 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2320 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/Callers.java (HeadlessAnalyzer)  
+== refs to 84FCD0
+  from 007cb8e6 in FUN_007cb7c0@007cb7c0 sz=349
+  from 0084f9bd in FUN_0084f900@0084f900 sz=465
+== refs to 84FE20
+  from 0084fa17 in FUN_0084f900@0084f900 sz=465
+== refs to 850010
+  from 0084ffc2 in FUN_0084fe20@0084fe20 sz=490
+== refs to 84F900
+  from 009a3eb8 in ?
+== refs to 84E6F0
+  from 0084fd42 in FUN_0084fcd0@0084fcd0 sz=323
+  from 0084e6ca in FUN_0084e6c0@0084e6c0 sz=35
+  from 0084fbbc in FUN_0084fbb0@0084fbb0 sz=68
+== refs to 84FBB0
+  from 009a3eb0 in ?
+== refs to 84DEF0
+  from 009a3e7c in ?
+== refs to 40E800
+  from 009873f8 in ?
+  from 0099dd20 in ?
+  from 0099dca8 in ?
+  from 0099dc30 in ?
+  from 0099dd98 in ?
+  from 0099e4b0 in ?
+  from 0099e648 in ?
+  from 0099e700 in ?
+  from 0099e9c8 in ?
+  from 0099ea88 in ?
+  from 0099eb40 in ?
+  from 009a04a8 in ?
+  from 009a0538 in ?
+  from 009a1898 in ?
+  from 009a1938 in ?
+  from 009a1af8 in ?
+  from 009a1c50 in ?
+  from 009a1d18 in ?
+  from 009a1de8 in ?
+  from 009a1ea8 in ?
+  from 009a1f58 in ?
+  from 009a2538 in ?
+  from 009a3ed8 in ?
+  from 009a4018 in ?
+  from 009a4320 in ?
+  from 009a5810 in ?
+  from 009a58a0 in ?
+  from 009a59d8 in ?
+  from 009a5ce0 in ?
+  from 009a5fa8 in ?
+  from 009a6090 in ?
+  from 009a61a8 in ?
+  from 009a6460 in ?
+  from 009a6620 in ?
+  from 009a6848 in ?
+  from 009a6a10 in ?
+  from 009a6ab8 in ?
+  from 009a6cd0 in ?
+  from 009a6f40 in ?
+  from 009a7078 in ?
+  from 009a71a8 in ?
+  from 009a7308 in ?
+  from 009a7680 in ?
+  from 009a7840 in ?
+  from 009a7a10 in ?
+  from 009a7ad0 in ?
+  from 009a7b48 in ?
+  from 009a7c08 in ?
+  from 009a7c80 in ?
+  from 009a7d18 in ?
+  from 009a7d98 in ?
+  from 009a7e28 in ?
+  from 009a7f98 in ?
+  from 009a8098 in ?
+  from 009a8148 in ?
+  from 009a81c0 in ?
+  from 009a8268 in ?
+  from 009a82f8 in ?
+  from 009a8398 in ?
+  from 009a8420 in ?
+  from 009a8728 in ?
+  from 009a87c8 in ?
+  from 009a8900 in ?
+  from 009a8ba8 in ?
+  from 009a8d18 in ?
+  from 009a8e00 in ?
+  from 009a8f40 in ?
+  from 009a9028 in ?
+  from 009a9718 in ?
+  from 009a9bc8 in ?
+  from 009a9c90 in ?
+  from 009a9dc8 in ?
+  from 009a9f00 in ?
+  from 009aa208 in ?
+  from 009aa280 in ?
+  from 009aa3a8 in ?
+  from 009aa490 in ?
+  from 009aa770 in ?
+  from 009aa980 in ?
+  from 009aaa00 in ?
+  from 009aaa80 in ?
+  from 009aab20 in ?
+  from 009aac00 in ?
+  from 009aaca8 in ?
+== refs to 40E7E0
+  from 009873f0 in ?
+  from 0099dd18 in ?
+  from 0099dca0 in ?
+  from 0099dc28 in ?
+  from 0099dd90 in ?
+  from 0099e4a8 in ?
+  from 0099e640 in ?
+  from 0099e6f8 in ?
+  from 0099e9c0 in ?
+  from 0099ea80 in ?
+  from 0099eb38 in ?
+  from 009a04a0 in ?
+  from 009a0530 in ?
+  from 009a1890 in ?
+  from 009a1930 in ?
+  from 009a1af0 in ?
+  from 009a1c48 in ?
+  from 009a1d10 in ?
+  from 009a1de0 in ?
+  from 009a1ea0 in ?
+  from 009a1f50 in ?
+  from 009a2530 in ?
+  from 009a3ed0 in ?
+  from 009a4010 in ?
+  from 009a4318 in ?
+  from 009a5808 in ?
+  from 009a5898 in ?
+  from 009a59d0 in ?
+  from 009a5cd8 in ?
+  from 009a5fa0 in ?
+  from 009a6088 in ?
+  from 009a61a0 in ?
+  from 009a6458 in ?
+  from 009a6618 in ?
+  from 009a6840 in ?
+  from 009a6a08 in ?
+  from 009a6ab0 in ?
+  from 009a6cc8 in ?
+  from 009a6f38 in ?
+  from 009a7070 in ?
+  from 009a71a0 in ?
+  from 009a7300 in ?
+  from 009a7678 in ?
+  from 009a7838 in ?
+  from 009a7a08 in ?
+  from 009a7ac8 in ?
+  from 009a7b40 in ?
+  from 009a7c00 in ?
+  from 009a7c78 in ?
+  from 009a7d10 in ?
+  from 009a7d90 in ?
+  from 009a7e20 in ?
+  from 009a7f90 in ?
+  from 009a8090 in ?
+  from 009a8140 in ?
+  from 009a81b8 in ?
+  from 009a8260 in ?
+  from 009a82f0 in ?
+  from 009a8390 in ?
+  from 009a8418 in ?
+  from 009a8720 in ?
+  from 009a87c0 in ?
+  from 009a88f8 in ?
+  from 009a8ba0 in ?
+  from 009a8d10 in ?
+  from 009a8df8 in ?
+  from 009a8f38 in ?
+  from 009a9020 in ?
+  from 009a9710 in ?
+  from 009a9bc0 in ?
+  from 009a9c88 in ?
+  from 009a9dc0 in ?
+  from 009a9ef8 in ?
+  from 009aa200 in ?
+  from 009aa278 in ?
+  from 009aa3a0 in ?
+  from 009aa488 in ?
+  from 009aa768 in ?
+  from 009aa978 in ?
+  from 009aa9f8 in ?
+  from 009aaa78 in ?
+  from 009aab18 in ?
+  from 009aabf8 in ?
+  from 009aaca0 in ?
+== refs to 7FCF80
+  from 007fb85e in FUN_007fae60@007fae60 sz=3126
+  from 0090a8bc in FUN_00909e00@00909e00 sz=2914
+  from 008aa5b7 in FUN_008a92d0@008a92d0 sz=5143
+  from 0084db50 in FUN_0084c3a0@0084c3a0 sz=6331
+  from 008b251f in FUN_008b1ea0@008b1ea0 sz=1863
+  from 0085103f in FUN_00850770@00850770 sz=3051
+  from 00907ef3 in FUN_009074e0@009074e0 sz=2903
+== refs to 762E80
+  from 007fb66c in FUN_007fae60@007fae60 sz=3126
+  from 0090a7cf in FUN_00909e00@00909e00 sz=2914
+  from 008b940f in FUN_008b91f0@008b91f0 sz=632
+  from 0075d763 in FUN_0075cec0@0075cec0 sz=2343
+  from 0084db9f in FUN_0084c3a0@0084c3a0 sz=6331
+  from 0089c870 in FUN_0089c5f0@0089c5f0 sz=726
+  from 0090e24d in FUN_0090c6a0@0090c6a0 sz=7526
+  from 008923b1 in FUN_00892090@00892090 sz=1319
+  from 008b24cf in FUN_008b1ea0@008b1ea0 sz=1863
+  from 00911f28 in FUN_00910490@00910490 sz=7519
+  from 00850fa1 in FUN_00850770@00850770 sz=3051
+  from 0089798f in FUN_008973d0@008973d0 sz=2670
+  from 00907f42 in FUN_009074e0@009074e0 sz=2903
+  from 009178d2 in FUN_00916ef0@00916ef0 sz=2821
+  from 008a6fc8 in FUN_008a6170@008a6170 sz=3770

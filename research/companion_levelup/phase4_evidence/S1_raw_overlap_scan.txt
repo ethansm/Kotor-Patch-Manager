@@ -1,0 +1,25 @@
+toml files 77 unique hooks 413
+0x74F3C7 len5: overlap(+-16)=[]  nearest=0x74F25A (SnapshotPortraitSlot, d=-365) in ./patch_manager_mods/buff_duration_hud_src/kotor2-steam-aspyr.hooks.toml
+0x84F221 len5: overlap(+-16)=[]  nearest=0x84FBB0 (CharEffectsTick, d=+2447) in ./patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml
+0x5FD7CE len5: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+440322) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x5FE2A3 len5: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+437549) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x66C95C len5: overlap(+-16)=[]  nearest=0x669A32 (PerfLabAdcHandoff, d=-12074) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x5FEE32 len5: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+434590) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x756DD4 len5: overlap(+-16)=[]  nearest=0x7508AA (preserveMiniMapAspect, d=-25898) in K2AspyrMapAspectFix/kotor2-steam-aspyr.hooks.toml
+0x7575B5 len5: overlap(+-16)=[]  nearest=0x7508AA (preserveMiniMapAspect, d=-27915) in K2AspyrMapAspectFix/kotor2-steam-aspyr.hooks.toml
+0x757808 len5: overlap(+-16)=[]  nearest=0x7508AA (preserveMiniMapAspect, d=-28510) in K2AspyrMapAspectFix/kotor2-steam-aspyr.hooks.toml
+0x75798C len5: overlap(+-16)=[]  nearest=0x7508AA (preserveMiniMapAspect, d=-28898) in K2AspyrMapAspectFix/kotor2-steam-aspyr.hooks.toml
+0x75218B len5: overlap(+-16)=[]  nearest=0x7508AA (preserveMiniMapAspect, d=-6369) in K2AspyrMapAspectFix/kotor2-steam-aspyr.hooks.toml
+0x7C9F3B len5: overlap(+-16)=[]  nearest=0x7D5997 (None, d=+47708) in K2AspyrShaderFixes/kotor2-steam-aspyr.hooks.toml
+0x75FCB8 len5: overlap(+-16)=[]  nearest=0x7508AA (preserveMiniMapAspect, d=-62478) in K2AspyrMapAspectFix/kotor2-steam-aspyr.hooks.toml
+0x74F3E9 len5: overlap(+-16)=[]  nearest=0x74F25A (SnapshotPortraitSlot, d=-399) in ./patch_manager_mods/buff_duration_hud_src/kotor2-steam-aspyr.hooks.toml
+0x5FD7A0 len5: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+440368) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x5FE281 len5: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+437583) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x66C93A len5: overlap(+-16)=[]  nearest=0x669A32 (PerfLabAdcHandoff, d=-12040) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x84FD2F len5: overlap(+-16)=[]  nearest=0x84FBB0 (CharEffectsTick, d=-383) in ./patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml
+0x84F9A2 len5: overlap(+-16)=[]  nearest=0x84FBB0 (CharEffectsTick, d=+526) in ./patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml
+0x84F9FE len5: overlap(+-16)=[]  nearest=0x84FBB0 (CharEffectsTick, d=+434) in ./patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml
+0x850062 len5: overlap(+-16)=[]  nearest=0x84FBB0 (CharEffectsTick, d=-1202) in ./patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml
+0x656640 len5: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+76176) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x656758 len10: overlap(+-16)=[]  nearest=0x668FD0 (PerfLabExecCmd, d=+75896) in ./patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml
+0x401C52 len5: overlap(+-16)=[]  nearest=0x4016E0 (None, d=-1394) in DeSteamify/kotor2-steam-aspyr.hooks.toml

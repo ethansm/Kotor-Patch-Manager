@@ -524,6 +524,36 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **Preset design gap (from Atton presets):** if the story converts a character EARLIER than a preset's `convert_at`, the remaining base-class records never
   match the newest (Jedi) class -> held forever. 0.3.0 needs a re-base rule (Jedi present -> continue from the preset's Jedi records). Converting later is fine (banked).
 
+## Phase 4 M0 facts (static, 2026-10-02, agent S1 spot-checked; evidence `research/companion_levelup/phase4_evidence/S1_*.txt`)
+- **Hold-veto sites** (CanLevelUp `E8` calls, no stack args, CanLevelUp plain RET, only EAX used after, live == vanilla, +-16 clean; param `ecx` = stats;
+  `stats+0x24` is a creature POINTER (0x6B97F4), tag = `*(*(stats+0x24)+0x18)` (server creature confirmed; client side inferred)): 0x74F3C7, 0x84F221, 0x5FD7CE,
+  0x5FE2A3, 0x66C95C, 0x5FEE32, 0x756DD4, 0x7575B5, 0x757808, 0x75798C (0x756B70), 0x75218B (0x752050), 0x7C9F3B (0x7C9DF0), 0x75FCB8 (0x75FC30 k_level_dlg).
+  LEAVE: 0x6B6E33/0x6B6EB6 (SetExperience), 0x6B9672 (ValidateLevelUp), 0x661FA6 (msg handler), sync callers 0x63F003/0x63F68A/0x63F6E2/0x64166E (`S1_sites.txt`).
+- **Instant sites** (0x72FB00 calls, only `[ret+8]&1` read, creature slot written before the call): 0x74F3E9 [ebp-0x38], 0x5FD7A0 [ebp-0x14], 0x5FE281 [ebp-0x18],
+  0x66C93A [ebp-8]; param `ecx` + `ebp`.
+- **GUI guards** (`S1_gui_guards.txt`): ShowLevelUpGUI 0x84FCD0 and AutoLevelup take a pushed arg + RET 4 -> never skip their call sites. Guard instead
+  the GetCharacterChangeInProgress 0x740FC0 call: **0x84FD2F** `e8 8c 12 ef ff` (inside ShowLevelUpGUI; button, hotkey AND script 0x7CB8E6; return nonzero =
+  vanilla early-out) and **0x84F9FE** `e8 bd 15 ef ff` (HandleInputEvent case 0x29 -> confirm box never built); backstop **0x850062** `e8 99 d7 f2 ff`
+  (DoAutoLevelup: 0x77D800 call returns the creature; return 0 -> jz skips AutoLevelup). Creature at the guards = leader via
+  `0x77D800(0x7E5DA0(0x73FB90([A1B4A4]+4), 0))`, stats `+0x1198` (same chain as Mod 14 `leaderClient()`). Hotkey->event mapping not located (only path is
+  HandleInputEvent, so covered).
+- **SetStats** 0x84E6F0 (`S1_setstats.txt`): at 0x84F221 panel = `[ebp-0x288]`, ECX = `[ebp-0x28]` = leader stats; one CanLevelUp result drives BOTH
+  buttons; also reached from vtable slot 0x84E6C0 and from ShowLevelUpGUI (not only per tick).
+- **Globals** (`S1_globals.txt`): AddBoolean 0x654430 (no dup check -> Find 0x6545B0 first), SetBoolean 0x654BB0 `(table,name,v)` RET 8, GetBoolean 0x654740
+  `(table,name,int*)` RET 8, SetNumber 0x654CC0, GetNumber 0x654860 `(table,name,byte*)`; all thiscall, name = CExoString*. Saver 0x656640 prologue confirmed,
+  writer loops the live table. Post-load 0x656758: table = `[ebp-0x1C]`. Chain: table = `*(*(*(0xA1B4A4)+8)+4) + 0x100FC` (address). Server recreate signal:
+  hook **0x401C52** `e8 f9 a7 11 00` (call 0x51C450 in 0x401BC0); pointer polling is unreliable (same address reuse).
+- **UI** (`S1_template_gui.txt`, `S1_control_lifetime.txt`): template label `LBL_EXPERIENCE_STAT` (plain text; green text) / `LBL_XP_BACK` (framed);
+  BTN_AUTO [362,260,94,52], BTN_LEVELUP [362,325,94,40], BTN_EXIT [159,516,89,28]. Panel dtor 0x84DEF0 -> 0x84DF70 -> 0x40E860 never frees panel+0x24
+  entries -> append once per panel, never free, key state on the panel pointer.
+- **Unresolved -> M2/M3 live logs:** client creature tag offset at the guards (log tag; unreadable tag = pass through); save writer accepting names added at
+  the 0x656640 entry + the 0x656758 capture (M3 probe); 0x756B70 slot controls #2-#4 roles; 0x75FD90 target.
+- **Hold rule correction (Opus, supersedes the plan's char-level-first rule):** char-level-first lookup re-applies the first Jedi record after an early
+  conversion (creature rebased onto the Jedi L1 record at char 7; at char 8 the char-8 record is again Jedi L1 and matches the newest class). Rule v2,
+  keyed by CLASS level: `rec = preset[(newest class, its class level + 1)]`; found -> LEVEL (tag `PATH` if `rec.char_level == key` else `REBASE`);
+  else if the preset has a Jedi class (a record class different from the base class) that the creature lacks and `hold=1` -> `HOLD`; else `VANILLA`
+  (`NOREC`). On-track it equals the char-level lookup. The table records carry an explicit class level (7th field) from M1 on.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -620,5 +650,7 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 
 ## Session notes - Phase 4 (0.3.0 build, started 2026-10-02, so a context clear loses nothing)
 - Plan: `research/companion_levelup/PHASE4_PLAN.md` (authoritative; the ~/.claude plan file is reused per phase). Evidence: `research/companion_levelup/phase4_evidence/`.
-- Step 0 (preflight) done. Next: M0 (Sonnet Ghidra agent S1: hook sites, GUI guards, SetStats frame, globals setter, template tag, dtor control ownership).
+- Step 0 (preflight) done (746aaf3). M0 done: "Phase 4 M0 facts" above (+ hold rule v2 by class level), DB name_map source
+  `level-up-P4-static-confirmed` + 2 lessons. Next: M1 (Python agents: gen_runtime_table v2 + `[presets]` + class-level field, check_paths Class Skill feats,
+  tag verification, simulate_rewrite level_now twin).
 

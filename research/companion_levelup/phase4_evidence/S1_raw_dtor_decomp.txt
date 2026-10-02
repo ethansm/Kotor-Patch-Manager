@@ -1,0 +1,408 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1183 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2405 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_0084df70 @ 0084df70 size=1872
+
+void __fastcall FUN_0084df70(undefined4 *param_1)
+
+{
+  uint uVar1;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  puStack_c = &LAB_00971cdc;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  *param_1 = CSWGuiInGameCharacter::vftable;
+  local_8 = 0x34;
+  if ((param_1[0x12db] != 0) && ((undefined4 *)param_1[0x12db] != (undefined4 *)0x0)) {
+    (*(code *)**(undefined4 **)param_1[0x12db])(1,uVar1);
+  }
+  local_8._1_3_ = (uint3)((uint)local_8 >> 8);
+  param_1[0x1288] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x36;
+  FUN_00417290();
+  local_8._0_1_ = 0x35;
+  FUN_00414c60();
+  local_8._0_1_ = 0x33;
+  FUN_00418640();
+  param_1[0x1236] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x38;
+  FUN_00417290();
+  local_8._0_1_ = 0x37;
+  FUN_00414c60();
+  local_8._0_1_ = 0x32;
+  FUN_00418640();
+  param_1[0x11e4] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x3a;
+  FUN_00417290();
+  local_8._0_1_ = 0x39;
+  FUN_00414c60();
+  local_8._0_1_ = 0x31;
+  FUN_00418640();
+  param_1[0x1192] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x3c;
+  FUN_00417290();
+  local_8._0_1_ = 0x3b;
+  FUN_00414c60();
+  local_8._0_1_ = 0x30;
+  FUN_00418640();
+  local_8._0_1_ = 0x2f;
+  _eh_vector_destructor_iterator_
+            (param_1 + 0xfa6,0x148,6,CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton);
+  local_8._0_1_ = 0x2e;
+  FUN_0041a3d0();
+  param_1[0xf09] = CSWGui3DSceneView::vftable;
+  local_8._0_1_ = 0x3d;
+  FUN_00418130();
+  local_8._0_1_ = 0x2d;
+  FUN_00418640();
+  local_8._0_1_ = 0x2c;
+  FUN_0041ac10();
+  local_8._0_1_ = 0x2b;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x2a;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x29;
+  FUN_0041a3d0();
+  local_8._0_1_ = 0x28;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xcea));
+  local_8._0_1_ = 0x27;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xc98));
+  param_1[0xc46] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x3f;
+  FUN_00417290();
+  local_8._0_1_ = 0x3e;
+  FUN_00414c60();
+  local_8._0_1_ = 0x26;
+  FUN_00418640();
+  param_1[0xbf4] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x41;
+  FUN_00417290();
+  local_8._0_1_ = 0x40;
+  FUN_00414c60();
+  local_8._0_1_ = 0x25;
+  FUN_00418640();
+  param_1[0xba2] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x43;
+  FUN_00417290();
+  local_8._0_1_ = 0x42;
+  FUN_00414c60();
+  local_8._0_1_ = 0x24;
+  FUN_00418640();
+  param_1[0xb50] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x45;
+  FUN_00417290();
+  local_8._0_1_ = 0x44;
+  FUN_00414c60();
+  local_8._0_1_ = 0x23;
+  FUN_00418640();
+  param_1[0xafe] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x47;
+  FUN_00417290();
+  local_8._0_1_ = 0x46;
+  FUN_00414c60();
+  local_8._0_1_ = 0x22;
+  FUN_00418640();
+  param_1[0xaac] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x49;
+  FUN_00417290();
+  local_8._0_1_ = 0x48;
+  FUN_00414c60();
+  local_8._0_1_ = 0x21;
+  FUN_00418640();
+  param_1[0xa5a] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x4b;
+  FUN_00417290();
+  local_8._0_1_ = 0x4a;
+  FUN_00414c60();
+  local_8._0_1_ = 0x20;
+  FUN_00418640();
+  param_1[0xa08] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x4d;
+  FUN_00417290();
+  local_8._0_1_ = 0x4c;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1f;
+  FUN_00418640();
+  param_1[0x9b6] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x4f;
+  FUN_00417290();
+  local_8._0_1_ = 0x4e;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1e;
+  FUN_00418640();
+  param_1[0x964] = CSWGuiLabel::vftable;
+  local_8._0_1_ = 0x51;
+  FUN_00417290();
+  local_8._0_1_ = 0x50;
+  FUN_00414c60();
+  local_8._0_1_ = 0x1d;
+  FUN_00418640();
+  local_8._0_1_ = 0x1c;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x912));
+  local_8._0_1_ = 0x1b;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x8c0));
+  local_8._0_1_ = 0x1a;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x86e));
+  local_8._0_1_ = 0x19;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x81c));
+  local_8._0_1_ = 0x18;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x7ca));
+  local_8._0_1_ = 0x17;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x778));
+  local_8._0_1_ = 0x16;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x726));
+  local_8._0_1_ = 0x15;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x6d4));
+  local_8._0_1_ = 0x14;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x682));
+  local_8._0_1_ = 0x13;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x630));
+  local_8._0_1_ = 0x12;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x5de));
+  local_8._0_1_ = 0x11;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x58c));
+  local_8._0_1_ = 0x10;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x53a));
+  local_8._0_1_ = 0xf;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x4e8));
+  local_8._0_1_ = 0xe;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x496));
+  local_8._0_1_ = 0xd;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x444));
+  local_8._0_1_ = 0xc;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x3f2));
+  local_8._0_1_ = 0xb;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x3a0));
+  local_8._0_1_ = 10;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x34e));
+  local_8._0_1_ = 9;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x2fc));
+  local_8._0_1_ = 8;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x2aa));
+  local_8._0_1_ = 7;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 600));
+  local_8._0_1_ = 6;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x206));
+  local_8._0_1_ = 5;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x1b4));
+  local_8._0_1_ = 4;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x162));
+  local_8._0_1_ = 3;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x110));
+  local_8._0_1_ = 2;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0xbe));
+  local_8._0_1_ = 1;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x6c));
+  local_8 = (uint)local_8._1_3_ << 8;
+  CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton
+            ((CMFCToolBarButtonsListButton *)(param_1 + 0x1a));
+  local_8 = 0xffffffff;
+  FUN_0040e860();
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_0040e860 @ 0040e860 size=276
+
+void __fastcall FUN_0040e860(CSize *param_1)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined4 uVar3;
+  int iVar4;
+  void *local_10;
+  undefined1 *puStack_c;
+  uint local_8;
+  
+  puStack_c = &LAB_009482e3;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  *(undefined ***)param_1 = CSWGuiPanel::vftable;
+  local_8 = 1;
+  if (*(undefined4 **)(param_1 + 0x60) == (undefined4 *)0x0) {
+    uVar2 = 0;
+  }
+  else {
+    uVar2 = (**(code **)**(undefined4 **)(param_1 + 0x60))(1,uVar1);
+  }
+  *(undefined4 *)(param_1 + 0x60) = 0;
+  FUN_0040f5a0();
+  if (*(undefined4 **)(param_1 + 0x30) == (undefined4 *)0x0) {
+    uVar3 = 0;
+  }
+  else {
+    uVar3 = (**(code **)**(undefined4 **)(param_1 + 0x30))(1);
+  }
+  *(undefined4 *)(param_1 + 0x30) = 0;
+  if (*(int *)(param_1 + 0x1c) != 0) {
+    iVar4 = CMFCVisualManagerBitmapCache::IsCached
+                      (*(CMFCVisualManagerBitmapCache **)(param_1 + 0x1c),param_1);
+    if (iVar4 != 0) {
+      FUN_00410670(param_1);
+    }
+  }
+  local_8 = local_8 & 0xffffff00;
+  Free(uVar1,uVar3,uVar2);
+  *(undefined ***)param_1 = CSWGuiObject::vftable;
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_0040f5a0 @ 0040f5a0 size=117
+
+void __fastcall FUN_0040f5a0(int param_1)
+
+{
+  undefined4 uVar1;
+  
+  if ((*(uint *)(param_1 + 0x48) >> 1 & 1) != 0) {
+    FUN_007112b0();
+    if (*(undefined4 **)(param_1 + 0x30) == (undefined4 *)0x0) {
+      uVar1 = 0;
+    }
+    else {
+      uVar1 = (**(code **)**(undefined4 **)(param_1 + 0x30))(1);
+    }
+    *(undefined4 *)(param_1 + 0x30) = 0;
+    *(uint *)(param_1 + 0x48) = *(uint *)(param_1 + 0x48) & 0xfffffffd;
+    FUN_0040fb70(uVar1);
+  }
+  return;
+}
+
+
+=== FUN_00410670 @ 00410670 size=266
+
+undefined4 __thiscall FUN_00410670(undefined4 *param_1,int *param_2)
+
+{
+  undefined4 uVar1;
+  int iVar2;
+  
+  if (param_2 == (int *)0x0) {
+    uVar1 = 0;
+  }
+  else {
+    iVar2 = FUN_00410890(param_2);
+    if (iVar2 == -1) {
+      uVar1 = 0;
+    }
+    else {
+      iVar2 = FUN_00410830(param_2);
+      if (iVar2 != -1) {
+        if (iVar2 == param_1[0x26] + -1) {
+          FUN_004109c0();
+        }
+        else {
+          FUN_0049b840(iVar2);
+        }
+      }
+      (**(code **)(*param_2 + 0x4c))();
+      iVar2 = FUN_00410890(param_2);
+      if (iVar2 == -1) {
+        uVar1 = 0;
+      }
+      else {
+        FUN_0049b840(iVar2);
+        if (((uint)param_2[0x12] >> 3 & 1) != 0) {
+          *(char *)(param_1 + 0x1c) = *(char *)(param_1 + 0x1c) + -1;
+        }
+        FUN_00411170();
+        param_1[2] = 0;
+        FUN_00412c00(*param_1,param_1[1]);
+        param_1[4] = 0;
+        uVar1 = 1;
+      }
+    }
+  }
+  return uVar1;
+}
+
+
+=== IsCached @ 00410800 size=35
+
+/* Library Function - Single Match
+    public: int __thiscall CMFCVisualManagerBitmapCache::IsCached(class CSize const &)const 
+   
+   Library: Visual Studio 2010 Debug */
+
+int __thiscall
+CMFCVisualManagerBitmapCache::IsCached(CMFCVisualManagerBitmapCache *this,CSize *param_1)
+
+{
+  int iVar1;
+  
+  iVar1 = FUN_00410890(param_1);
+  return (uint)(iVar1 != -1);
+}
+
+

@@ -1,0 +1,37 @@
+# S1 task 2: GUI guards - a held creature must not open the level-up GUI or the Auto confirm box. Static, 2026-10-02. C = confirmed disasm, I = inferred.
+# Raw: S1_raw_gui_disasm.txt (7CB7C0, 84F900, 84FCD0, 84FE20, 84FFA0..850010, 84E6C0, 84FBB0), S1_raw_callers.txt / S1_raw_refsto.txt (all refs), S1_raw_misc_disasm.txt (740FC0, 73FB90, 7E5D80/7E5DA0, 77D800, 850060).
+
+## Call-site census (C: Ghidra refs, code AND data)
+- ShowLevelUpGUI 0x84FCD0 `thiscall(ECX = panel, int arg)` RET 4 (0x84FE10). Callers: 0x84F9BD (HandleInputEvent 0x84F900, case 0x27) and 0x7CB8E6 (FUN_007CB7C0, which is
+  called only from 0x692CA7 in FUN_00692C80 = a script-command wrapper that pushes the result; I: ShowLevelUpGUI/"open character screen with level-up" script command). No other refs.
+- StartAutoLevelup 0x84FE20 `thiscall(ECX = panel)`, no stack args. ONE caller: 0x84FA17 (HandleInputEvent case 0x29).
+- DoAutoLevelup 0x850010 = OK callback: referenced only as data `PUSH 0x850010` at 0x84FFC2 inside StartAutoLevelup (registered via 0x75CA30(box, cb, 0)). Callback is `__fastcall(ECX)` RET 4;
+  OK test = box(+0xA0 of 0x73F750)+0x68 bit0; creature = 0x77D800(0x7E5D80(0x73FB90(app+4))); the AutoLevelup call is at 0x850081 (`push 0; mov ecx,[ebp-0x18]; call 0x6BEDF0`).
+- HandleInputEvent 0x84F900 is referenced only from vtable 0x9A3EB8 (= vtable 0x9A3E7C + 0x3C, the panel's input-event slot). Events 0x27 (BTN_LEVELUP click, also the hotkey route) and 0x29 (BTN_AUTO click, hotkey route):
+  both entered via AddEvent thunks from the button handlers (doc 08 Item 2). Hotkeys 0x61/0x78: no direct reference found - they can only reach the code through HandleInputEvent (the sole caller of both
+  functions besides 0x7CB7C0), so guarding the sites below covers them (I for the key->event mapping, C for "no other caller").
+- HandleInputEvent does NOT test CanLevelUp: guards are `[0x73F750()+0x12C] != 0` and `0x740FC0() == 0` (GetCharacterChangeInProgress).
+
+## How the panel finds its creature (C)
+- SetStats 0x84E6F0: `party = 0x73FB90(ECX=[A1B4A4]+4)` (= *(*(clientApp+4)+0x270), 0x73FB90 disasm), `entry = 0x7E5DA0(party, idx=0)` (push 0; 0x7E5D80 is the same with idx 0), `creature = 0x77D800(entry)`,
+  `stats = *(creature+0x1198)`. Index 0 = party LEADER (the screen shows whoever leads; doc 14 confirms). StartAutoLevelup (0x84FE62) and DoAutoLevelup (0x850054..0x850062) use the identical chain; the
+  panel stores nothing for it. ShowLevelUpGUI itself builds CSWGuiLevelUpCharGen for the leader via 0x8F4AF0(panel+0x1C, 0x73F450()+4, panel+0x4B6C) (I: creature = the preview at panel+0x4B6C).
+- A handler therefore gets the creature either by calling the same three engine functions (typed pointers: 0x73FB90 thiscall(ecx), 0x7E5DA0 thiscall(ecx,int) RET 4, 0x77D800 thiscall(ecx)), or - at
+  0x850062 - as the return value of 0x77D800 itself.
+
+## Recommended hook sites (one per path; all `E8 rel32`, no stack args pushed for the call, callee `RET` plain (0x740FC0 -> c3), EAX consumed by `test eax,eax`, nothing reads ECX/EDX after, live==vanilla, no hook within +-16)
+ | path | VA | bytes | context | skipping is safe because |
+ | Level-up GUI (ALL callers: button, hotkey, script 0x7CB8E6) | **0x84FD2F** | e8 8c 12 ef ff | inside ShowLevelUpGUI: `call 0x740FC0 (GetCharacterChangeInProgress); test eax,eax; jz 0x84FD3F; (fallthrough) 0x84FD38 xor eax,eax; jmp 0x84FE02` ; ECX = [A1B4A4]+4 | returning non-zero takes the function's own early-out: SEH unlinked, `RET 4`, return 0, nothing created, stack balanced. Hook params: `ecx` (clientApp), `ebp` (panel = [ebp-0x40]). |
+ | Auto button / hotkey (confirm box) | **0x84F9FE** | e8 bd 15 ef ff | HandleInputEvent case 0x29: `call 0x740FC0; test eax,eax; jnz 0x84FA1C(break)`; then `push 0; ecx=[panel+0x1C]; call 0x4122A0 (hover/click sound); mov ecx,[ebp-0x38]; call 0x84FE20` | non-zero jumps over 0x4122A0 and StartAutoLevelup -> the confirm box (`confirm_p`) is never built. Panel = [ebp-0x38]; ecx = clientApp. |
+ | Level-up GUI via HandleInputEvent only (alternative to 0x84FD2F) | 0x84F9A2 | e8 19 16 ef ff | case 0x27 same shape (panel [ebp-0x38]); jnz 0x84F9C2 skips 0x4122A0 + ShowLevelUpGUI | same; does NOT cover the 0x7CB8E6 script path -> prefer 0x84FD2F |
+ | Auto backstop (OK pressed, box already shown, e.g. creature changed while the box was open) | **0x850062** | e8 99 d7 f2 ff | DoAutoLevelup: `call 0x77D800; mov [ebp-4],eax; cmp [ebp-4],0; jz 0x850086` ; ECX = 0x7E5D80() result | handler = real 0x77D800(ecx); if held(creature) return 0 -> `jz` skips AutoLevelup; stack balanced (callback `RET 4` already normal). Do NOT hook 0x850081 itself (AutoLevelup has a pushed arg and `RET 4`; skipping the call would leak the push). |
+ Handler for the first two: `uint guard(ecx /*clientApp*/, ebp)`: r = real 0x740FC0(ecx); if (!r && held(leaderCreature)) return 1; return r;  leaderCreature via the 3-call chain above.
+ Why not hook the entry calls themselves (0x84F9BD / 0x84FA17 / 0x7CB8E6): ShowLevelUpGUI has a pushed arg + `RET 4`, so skipping the call at 0x84F9BD or 0x7CB8E6 would leave the argument on the stack (imbalance); 0x84FA17 has no args but is the only Auto entry and 0x84F9FE
+ covers it earlier. The 0x740FC0 guard calls are exactly the engine's own "refuse" gates, so the veto looks like a vanilla refusal.
+ Side effects (C): with a 0x84F9A2/0x84F9FE veto the click sound call 0x4122A0 is skipped too; with only the 0x84FD2F guard the sound plays and nothing opens (harmless).
+ With 0x84FD2F, 0x7CB7C0 (script path) still runs `0x73FEE0(2,1)` after ShowLevelUpGUI returns 0 (opens the character screen) - acceptable.
+
+## Flagged / unresolved
+ - FUN_00692C80's script command id/name not resolved (RET 8, pushes result of 0x7CB7C0 to the script engine).
+ - Key -> event mapping for hotkeys 0x61 / 0x78 not located (not needed: single choke points above).
+ - panel+0x4B6C semantic (level-up preview creature) inferred.
