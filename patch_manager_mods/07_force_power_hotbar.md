@@ -1,40 +1,28 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**STATUS (2026-09-30 ~03:35, end of session 4) -- READ THIS FIRST.**
-- **What is live** (`force-power-hotbar` **0.3.0-dev**, installed = build 12, DLL md5 `307a00af`; sibling sessions own the other 18 ids -- always re-read `kpm_install_state.json`): ten framed HUD buttons for keys `1`-`0`
-  (icons, digit, dimming, hover frame swap, delayed tooltip, click + key invoke through the HUD's own path, `Invoke=1`) **plus the in-game editor**:
-  a thin shaded **wrench toggle** at the far left -> Edit mode -> click a slot -> **picker** (group background copied from the native quick-command
-  panel, title, tabs **Powers / Items / Modes**, `<` `>` paging + **mouse wheel**, **Clear**, 8 cells, hover highlight + short tooltips on every control)
-  -> click a cell to assign; saved per character to `[Profile.obj<id>]` in `force_power_hotbar.ini` (falls back to `Default`; explicit `none` = cleared;
-  AutoFill now defaults OFF so the bar starts empty; unassigned slots are hidden outside Edit mode). Esc backs out one level; digits/clicks never invoke while editing.
-- **Live-verified so far** (builds 6-11): frames square after the window-size aspect fix, item slots (stim/shield/mine icons), picker tabs/paging/wheel, Save ok
-  (INI written), wrench toggle + tooltip. **Not yet seen live (build 12 + newest art):** Clear staying cleared (autofill-refill bug fixed), per-character sets,
-  empty-slot hiding, picker tooltip anchoring above the picker, bar moved up (DEFAULT_Y 450; it overlapped the native quick-action description label),
-  final wrench art (U jaw, recessed handle, round hole). **Next test items:** assign as the Exile, switch to a companion (must start empty, keep own set),
-  save/load + new game (companion object ids `obj8000....` may not persist -> fallback idea: portrait resref), digits in dialogue/inventory/pause.
-- **Crash history:** build 8 crashed after a load: `FUN_0073FEA0` is a thiscall (reads `[ecx+0x274]`); we called it as cdecl. Removed in build 9 (lesson in DB).
-- **Sources:** `force_power_hotbar_src/` (`ForcePowerHotbar.cpp` ~1100 lines, `HotbarConfig.h`, `TwoDA.h`, `Tlk.h`, hooks/manifest/exports, host tests). GUI + textures:
-  `scripts/add_hotbar_buttons_gui.py` (46 labels, IDs 111-157: frames 111-120, icons 121-130, wrench 131, background 132, title 133, tabs 134-136, prev/next/clear
-  137-139, cell frames 140-147, cell icons 148-155, tooltip 156/157 -- DLL constants `EditId..TipId` must match; textures `hotbar_slot*.tga`, `hotbar_edit*.tga`;
-  `--replace` / `--rollback` / `--dry-run`). Framework clone (uncommitted, source of truth for builds):
-  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/` (copy the .cpp/.h/manifest there, `python3 ../create-patch.py`). Live evidence: `force_power_hotbar_src/live_evidence/`.
-- **Open items / not done:** test coverage (see "Open item: test coverage" at the end), independent Opus review (Phase F of the plan), Phase R research (stable
-  companion key, item resref identity, pause behaviour), Ctrl/Alt rows and 30 slots (Alt+digit never reaches the game under Proton), target-menu powers,
-  cooldown display, real arrow art, matching the native button style further, Save robustness (unknown INI sections/keys are refused, not preserved).
-- **Sections below, in order:** original spec (partly SUPERSEDED), "Next-phase findings" (Ghidra), "Live results" (0.1), "Environment and workflow
-  gotchas" (READ before installing), "Bottom-bar UX: design, build", dated build logs (builds 1-12 + layout/wrench revisions), "Next phase: in-game configuration GUI"
-  (plan + decisions), and the test-coverage note.
-- **Install workflow (updated, session 4):** never install while the game runs (`pgrep -f '^S:.*swkotor2\.exe'`); the launcher always relaunches the game, so installs use the
-  helper `/tmp/claude-1000/inst/` (recreate if gone: net8 console app referencing `bin/Debug/KPatchCore.dll` + `KPatchLauncher.dll`; `AppSettings.Load()`, set
-  `DeploymentPolicy.PreferLibraryProxy` / `GameDetector.IdentifyUnrecognisedBuilds`, `PatchRemover.RemoveAllPatches(exe, removeManagedState:false)`, then
-  `PatchOrchestrator(stage).InstallPatches(exe, ids, patcherDirectory: bin/Debug/)`). Run it from inside `bin/Debug/` with **the launcher's**
-  `KPatchLauncher.deps.json`/`.runtimeconfig.json` copied over `inst.deps.json`/`inst.runtimeconfig.json` (otherwise "No address database found" -- and it has ALREADY
-  removed the old patches by then, so just fix and re-run). **Sibling sessions replace/rebuild patches constantly** (new ids like `equipment-3d-character`, `perf-lab`
-  appeared mid-session; their kpatch files change while you work). Procedure that worked: re-read `InstalledPatches`; for each id with a DLL find the kpatch whose DLL md5 equals
-  the INSTALLED `patches/<id>.dll` (search all `**/*.kpatch`, newest mtime among matches) so their state is preserved; non-DLL patches come from the previous stage;
-  put the new hotbar kpatch in; back up `patches/` + `kpm_install_state.json` to `backups/pre_hotbar_bN_install/`; install; verify every DLL md5 vs before (only the hotbar
-  DLL may change), `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9`. Current stage dir: `hotbar_stage4/` (19 ids). GUI/texture-only changes need no reinstall
-  (`--replace`; deploy only with the game closed). Live INI reset for a clean start: back up `force_power_hotbar.ini`, write `[General] AutoFill=0` + empty `[Profile.Default]`.
+**STATUS (2026-10-02 ~00:45, end of session 5) -- READ THIS FIRST. User verdict on the live build: "looks excellent!" -- the mod is FEATURE-COMPLETE; the remaining work is the final review/polish/documentation phase (see `~/.claude/plans/` plan "Mod 3 final review and finalization", summarised in the last section of this doc).**
+- **Installed:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
+  GUI deployed = **168 controls** (`override/mipc28x6_p.gui`), textures `override/hotbar_slot*.tga`, `override/hotbar_edit*.tga`. Game closed at the end of the session.
+- **Features (all live-verified unless noted):** ten native-width (35 u) square HUD buttons for keys `1`-`0` (icons at native quick-bar size, digit label up/left of the icon, dimming, hover frame swap + the native GUI hover sound,
+  delayed tooltip, click + key invoke through the HUD's own path, `Invoke=1`); thin wrench toggle at the far left (x=4, aligned with the quick-action panel border, lighter native panel-border colour, thin 2 px rim, beige hover/active frame, tooltip);
+  Edit mode -> click a slot -> picker box spanning wrench..slot 0 (title with range `Powers 2-9 of 12`, tabs Powers/Items/Modes, `<` `>` per-entry scroll with hold-repeat, mouse wheel scrolls one entry per notch, Clear, 8 cells, hover + tooltips)
+  -> click a cell to assign; saved per character in `[Profile.<key>]` of `force_power_hotbar.ini` (Default fallback; explicit `none` = cleared; AutoFill default OFF; unassigned slots hidden outside Edit mode); Esc backs out one level;
+  digits/clicks never invoke while editing; the bar follows character switches every frame and hides unresolved slots for 1.5 s while the HUD lists settle.
+- **Character key:** `obj<hexid>` of the controlled creature; Exile = `objfffffffd`. Invalid id `0xFFFFFFFF`/0 = unknown (saves refused) EXCEPT a one-member party with `0xFFFFFFFF` -> `objfffffffd` (seen for a whole session on the Ebon Hawk).
+  Companion ids `obj80000240`/`obj80000249` were identical across game sessions of one save (stability across DIFFERENT saves still unverified). `CSWCObject::GetPortraitId` (`+0xB8`) reads 65535 on client creatures -> NOT usable (the `port<id>` path in `computeCharacterKey` is dead code that never triggers).
+- **Agy review (2026-09-30) handled:** stuck modifiers resynced via `GetAsyncKeyState` (build 13), bound keys always swallowed when the ring is full (13), WndProc restored on detach only if still on top (13); roster-index idea rejected (`PartyTable::GetMember` indexes party positions, not the 12-NPC roster).
+- **Layout (800x600 GUI units, 2.667 px/unit at 3840x1600):** wrench [4,478,20,35]; slots x=29+40*i, y=478, 35x35, icon label inset 2 (31 u); digit labels [x+4,y+1,18,18]; picker box [4,py-8,420,112] with py=y-110; bar bottom (513 u) sits 9 px above the native description band like the native panel-border gap.
+  GUI IDs (script `ALL_TAGS` order == DLL constants `EditId..TipId`): 111-120 frames, 121-130 icons, 131 wrench, 132 picker bg, 133 title, 134-136 tabs, 137-139 prev/next/clear, 140-147 cell frames, 148-155 cell icons, 156-165 digit labels (`LBL_HOTBARNUM<d>`), 166/167 tooltip (MUST stay the last two IDs: panel Draw is ascending by ID).
+- **Crash history:** build 8 (`FUN_0073FEA0` is a thiscall, removed in 9). No crashes since.
+- **Sources:** `force_power_hotbar_src/` (`ForcePowerHotbar.cpp` ~1200 lines, `HotbarConfig.h`, `TwoDA.h`, `Tlk.h`, hooks.toml/manifest/exports, host tests `config_roundtrip_test.cpp`, `twoda_test.cpp`; mirrored from the uncommitted framework clone
+  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/` -- build with `python3 ../create-patch.py`, copy the .cpp there first). GUI + textures: `scripts/add_hotbar_buttons_gui.py` (57 labels; `--replace` / `--rollback` / `--dry-run`).
+- **Known gaps / open items:** (1) hover-sound index 1 assumed to be the native one (user did not object); (2) companion key stability across different saves; (3) unknown INI sections/keys are refused on Save, not preserved; (4) a few function-level statics survive a HUD rebuild (stale log lines only);
+  (5) arrow art is `<` `>` text; (6) no unit-test coverage of the editor/DLL logic (host tests cover only config + 2DA); (7) dead code (`port<id>` key, `scanObjectStrings`, probe/catalog dumps) and heavy debug logging still in; (8) the doc is a long chronological log -> needs consolidation. All of these are inputs to the finalization plan.
+- **Sections below, in order:** original spec (partly SUPERSEDED), "Next-phase findings" (Ghidra), "Live results" (0.1), "Environment and workflow gotchas" (READ before installing), "Bottom-bar UX: design, build", dated build logs (builds 1-20, design rounds 1-3), "Next phase: in-game configuration GUI" (plan + decisions), test-coverage note, session-5 logs.
+- **Install workflow (session 5, proven 4 times):** never install while the game runs (`pgrep -f '^S:.*swkotor2\.exe'`). Helper `/tmp/claude-1000/inst/` (recreate if gone: net8 console app referencing `bin/Debug/KPatchCore.dll` + `KPatchLauncher.dll`; `AppSettings.Load()`, set `DeploymentPolicy.PreferLibraryProxy` / `GameDetector.IdentifyUnrecognisedBuilds`,
+  `PatchOrchestrator(stage).GetAvailablePatches()` (aborts with "missing <id>" BEFORE removing anything), `PatchRemover.RemoveAllPatches(exe, removeManagedState:false)`, `InstallPatches(exe, ids, patcherDirectory: bin/Debug/)`); run `dotnet /tmp/claude-1000/inst/out/inst.dll <gameDir> <stageDir> <ids...>` from inside `bin/Debug/` with the launcher's `KPatchLauncher.deps.json`/`.runtimeconfig.json` copied to `inst.deps.json`/`inst.runtimeconfig.json`.
+  Staging script: for every id in `InstalledPatches` pick the kpatch whose DLL md5 equals the INSTALLED `patches/<id>.dll` (search `**/*.kpatch` in the framework dir); non-DLL patches from the previous stage dir; hotbar from `Patches/ForcePowerHotbar/`. If a sibling hot-copied a DLL that matches no kpatch (e.g. `buff-duration-hud`), install the usual kpatch and copy their DLL back afterwards.
+  Back up `patches/` + `kpm_install_state.json` to `backups/instN_*`, install, diff the DLL md5 list before/after (only the hotbar DLL may change), `AR_ERROR.LOG` md5 `a2d887896b53eae113758dc8c3729db9`. Stage dirs used: `hotbar_stage5..8` (latest = `hotbar_stage8/`, 26 ids). GUI/texture-only changes need no reinstall (`--replace`, game closed). INI reset: back up `force_power_hotbar.ini`, write `[General] AutoFill=0` + empty `[Profile.Default]`.
 
 > Everything from here to "## Next-phase findings" is the original pre-Ghidra spec. Where it conflicts with the later sections, the later sections win
 > (notably: items ARE in the HUD action bar; the four 0x1D0 arrays are sub-controls, not per-portrait bars; the 3-edge/30-slot layout is deferred).
