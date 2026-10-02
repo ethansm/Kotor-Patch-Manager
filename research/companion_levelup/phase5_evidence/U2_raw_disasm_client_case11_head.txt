@@ -1,0 +1,88 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (947 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2123 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DisasmRanges.java (HeadlessAnalyzer)  
+--- 81e622..81e720
+0081e622  6a 10                   PUSH 0x10
+0081e624  8b 8d d8 e1 ff ff       MOV ECX,dword ptr [EBP + 0xffffe1d8]
+0081e62a  e8 01 52 dc ff          CALL 0x005e3830
+0081e62f  0f b7 c8                MOVZX ECX,AX
+0081e632  89 8d d8 fb ff ff       MOV dword ptr [EBP + 0xfffffbd8],ECX
+0081e638  6a 01                   PUSH 0x1
+0081e63a  8b 8d d8 e1 ff ff       MOV ECX,dword ptr [EBP + 0xffffe1d8]
+0081e640  e8 9b 57 dc ff          CALL 0x005e3de0
+0081e645  85 c0                   TEST EAX,EAX
+0081e647  74 3c                   JZ 0x0081e685
+0081e649  c7 85 54 ee ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffee54],0x0
+0081e653  c6 45 fc 02             MOV byte ptr [EBP + -0x4],0x2
+0081e657  8d 4d ec                LEA ECX,[EBP + -0x14]
+0081e65a  e8 21 51 f1 ff          CALL 0x00733780
+0081e65f  c6 45 fc 00             MOV byte ptr [EBP + -0x4],0x0
+0081e663  8d 4d c0                LEA ECX,[EBP + -0x40]
+0081e666  e8 05 6d ea ff          CALL 0x006c5370
+0081e66b  c7 45 fc ff ff ff ff    MOV dword ptr [EBP + -0x4],0xffffffff
+0081e672  8d 4d e0                LEA ECX,[EBP + -0x20]
+0081e675  e8 06 51 f1 ff          CALL 0x00733780
+0081e67a  8b 85 54 ee ff ff       MOV EAX,dword ptr [EBP + 0xffffee54]
+0081e680  e9 7a 9f 00 00          JMP 0x008285ff
+0081e685  8b 95 d8 fb ff ff       MOV EDX,dword ptr [EBP + 0xfffffbd8]
+0081e68b  89 95 a4 da ff ff       MOV dword ptr [EBP + 0xffffdaa4],EDX
+0081e691  8b 85 a4 da ff ff       MOV EAX,dword ptr [EBP + 0xffffdaa4]
+0081e697  83 e8 01                SUB EAX,0x1
+0081e69a  89 85 a4 da ff ff       MOV dword ptr [EBP + 0xffffdaa4],EAX
+0081e6a0  81 bd a4 da ff ff e9 00 00 00 CMP dword ptr [EBP + 0xffffdaa4],0xe9
+0081e6aa  0f 87 73 2d 00 00       JA 0x00821423
+0081e6b0  8b 8d a4 da ff ff       MOV ECX,dword ptr [EBP + 0xffffdaa4]
+0081e6b6  0f b6 91 30 87 82 00    MOVZX EDX,byte ptr [ECX + 0x828730]
+0081e6bd  ff 24 95 b4 86 82 00    JMP dword ptr [EDX*0x4 + 0x8286b4]
+0081e6c4  6a 20                   PUSH 0x20
+0081e6c6  8b 8d d8 e1 ff ff       MOV ECX,dword ptr [EBP + 0xffffe1d8]
+0081e6cc  e8 ff 52 dc ff          CALL 0x005e39d0
+0081e6d1  89 85 d4 fb ff ff       MOV dword ptr [EBP + 0xfffffbd4],EAX
+0081e6d7  6a 01                   PUSH 0x1
+0081e6d9  8b 8d d8 e1 ff ff       MOV ECX,dword ptr [EBP + 0xffffe1d8]
+0081e6df  e8 fc 56 dc ff          CALL 0x005e3de0
+0081e6e4  85 c0                   TEST EAX,EAX
+0081e6e6  74 3c                   JZ 0x0081e724
+0081e6e8  c7 85 50 ee ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffee50],0x0
+0081e6f2  c6 45 fc 02             MOV byte ptr [EBP + -0x4],0x2
+0081e6f6  8d 4d ec                LEA ECX,[EBP + -0x14]
+0081e6f9  e8 82 50 f1 ff          CALL 0x00733780
+0081e6fe  c6 45 fc 00             MOV byte ptr [EBP + -0x4],0x0
+0081e702  8d 4d c0                LEA ECX,[EBP + -0x40]
+0081e705  e8 66 6c ea ff          CALL 0x006c5370
+0081e70a  c7 45 fc ff ff ff ff    MOV dword ptr [EBP + -0x4],0xffffffff
+0081e711  8d 4d e0                LEA ECX,[EBP + -0x20]
+0081e714  e8 67 50 f1 ff          CALL 0x00733780
+0081e719  8b 85 50 ee ff ff       MOV EAX,dword ptr [EBP + 0xffffee50]
+0081e71f  e9 db 9e 00 00          JMP 0x008285ff

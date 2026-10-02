@@ -634,6 +634,29 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - R11 = a **character-screen status line** ("Holding N level(s) for <Jedi class> - <short>" / "Auto path: <short>") **plus a one-time message when a
   level is banked**. NO portrait badge, NO tinted vanilla level-up icon (the indicator would suppress Buff HUD's icons). Portrait badge = open-later idea.
 
+## Phase 5 U facts (static, 2026-10-02, Sonnet agent, Opus spot-checked; evidence `research/companion_levelup/phase5_evidence/U1-U4_findings.txt`)
+- **U1 ctor-time creation site = 0x84D82C** `68 DC 39 9A 00` (push imm32 of "LBL_STATSBORDER" for the last InitControl 0x84D85D; plain relocatable
+  instruction, statement boundary, nothing pending on the stack). Panel = `[ebp-0x254]` for the whole ctor; layout open (StopLoad call 0x84D877); 69 bytes
+  before Mod 14's 0x84D871 (`8B 8D AC FD FF FF`, captures `[ebp-0x254]`, binds `LBL_EFX_*` with InitControl addToList=1 and EXPECTS ids 69..150).
+  InitControl with addToList=1 writes `list[id]` (pads / OVERWRITES) -> **we create with addToList=0 at 0x84D82C and append to panel+0x24 on the first
+  SetStats tick** (after the ctor, so after Mod 14). Alternatives 0x84D83C / 0x84D84B (6 B). Re-opening the layout (StartLoad 0x40EE40 from SetStats)
+  rejected (re-parses + re-scales the panel); template-less label recipe recorded in U1_findings as fallback. Live == vanilla, +-16 clean.
+- **U2 banked message:** vanilla FeedbackMessage(0xB) = server 0x584DA0 `thiscall(creature, u16 id, payload*)` RET 8, delivered ONLY to the controlled
+  creature (companions never see it). Client list append **0x7BE090** `thiscall(GuiInGame = *(clientInternal+0x40), CExoString* text, int 0x80, byte 0)`
+  RET 0xC (clientInternal = `*(*(*(0xA1B4A4)+4)+4)`); the engine's id-0xCC path (= SendMessageToPC) is 0x73F100(clientApp, 0xCC, payload, CExoString*)
+  -> 0x78F160 -> 0x7BE090. **Chosen: call 0x7BE090 directly** (no payload ownership), guarded on the non-null chain; no engine rate limit (list cap 0x3F)
+  -> the mod de-dups per (GUID, tag, banked count). Single game thread (server + client) -> calling it from the server XP gates is safe.
+- **U3 save binding:** saver 0x656640 entry `55 8B EC 6A FF` (5 B, 3 instr) ECX = table, [esp+4] = save path, RET 4. CExoString ctor from char* 0x733570
+  `thiscall(buf8, const char*)` RET 4, dtor 0x733780, empty ctor 0x733540. Post-load: hook **0x65675B** `C7 45 FC FF FF FF FF` (one 7-byte instruction)
+  with params `[ebp-0x1c]` (table) + `eax` (load result) - simpler than 0x656758 (3+7 B). 0x656710 has exactly two callers (0x52FD0A server load,
+  0x852F77 autosave-restore 0x8529E0) -> covers all loads. **0x401C52** `E8 F9 A7 11 00` call 0x51C450 (thiscall, no args, plain RET), ECX = new server
+  app, EAX unused by 0x401BC0 and its 5 callers. All live == vanilla, +-16 clean (`U3_site_check.txt`). Still live-unproven: framework capture at
+  0x65675B, save writer accepting names added at 0x656640.
+- **U4:** class ids 0 Soldier, 1 Scout, 2 Scoundrel, 3 Jedi Guardian, 4 Jedi Consular, 5 Jedi Sentinel, 6 Combat Droid, 7 Expert Droid, 8 Minion, 9 Tech
+  Specialist (live classes.2da + dialog.tlk; 11-16 prestige). XP table `rules(0xA1B4D0)+0x38+4*i` = XP to REACH level i+1 (51 rows, row 50 = 0xFFFFFFFF);
+  banked = `while L < MaxLevel && table[L] <= XP: L++, b++`.
+- DB: name_map source `level-up-P5-static-confirmed` (7 rows) + 3 lessons.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -751,4 +774,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 ## Session notes - Phase 5 (UX + M3 save binding + M4 Configure UI + R11 -> one 0.3.0 build, started 2026-10-02)
 - Plan: `research/companion_levelup/PHASE5_PLAN.md` (authoritative). Evidence: `research/companion_levelup/phase5_evidence/` (README lists U1-U4 prefixes).
 - Step 0 (preflight) done: plan copied, "Phase 5 UX research" + R11 decision written above. Next: U (Ghidra static, one Sonnet agent) || P (preset data fix).
+- Done: wizard logic 9cd0fa5 (WizardLogic.h + twin, 264-line parity), GuiKit.h e11221f (49 host checks), P preset re-plan 61aa066 (warnings 275 -> 199), U facts (above).
 - Live state unchanged: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).

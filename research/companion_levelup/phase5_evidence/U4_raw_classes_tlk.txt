@@ -1,0 +1,21 @@
+override/classes.2da sha256 76886e047f729ff37d0176b0975894bf163146c19e4c9b67f4ab2ca757b16535 mtime 1790266008.2565596
+tlk entries 136540
+0 Soldier name strref 134 -> 'Soldier' | plural  | lower  | playerclass 1 | forcedie 0
+1 Scout name strref 133 -> 'Scout' | plural  | lower  | playerclass 1 | forcedie 0
+2 Scoundrel name strref 135 -> 'Scoundrel' | plural  | lower  | playerclass 1 | forcedie 0
+3 JediGuardian name strref 353 -> 'Jedi Guardian' | plural  | lower  | playerclass 1 | forcedie 4
+4 JediConsular name strref 354 -> 'Jedi Consular' | plural  | lower  | playerclass 1 | forcedie 8
+5 JediSentinel name strref 355 -> 'Jedi Sentinel' | plural  | lower  | playerclass 1 | forcedie 6
+6 CombatDroid name strref 356 -> 'Combat Droid' | plural  | lower  | playerclass 1 | forcedie 0
+7 ExpertDroid name strref 357 -> 'Expert Droid' | plural  | lower  | playerclass 1 | forcedie 0
+8 Minion name strref 41906 -> 'Minion' | plural  | lower  | playerclass 1 | forcedie 0
+9 TechSpecialist name strref 47996 -> 'Tech Specialist' | plural  | lower  | playerclass 1 | forcedie 0
+10 BountyHunter(CUT!!!) name strref  -> - | plural  | lower  | playerclass 1 | forcedie 0
+11 JediWeaponmaster name strref 47998 -> 'Jedi Weapon Master' | plural  | lower  | playerclass 1 | forcedie 6
+12 JediMaster name strref 47999 -> 'Jedi Master' | plural  | lower  | playerclass 1 | forcedie 10
+13 JediWatchman name strref 48000 -> 'Jedi Watchman' | plural  | lower  | playerclass 1 | forcedie 8
+14 SithMarauder name strref 48001 -> 'Sith Marauder' | plural  | lower  | playerclass 1 | forcedie 6
+15 SithLord name strref 48002 -> 'Sith Lord' | plural  | lower  | playerclass 1 | forcedie 10
+16 SithAssassin name strref 48003 -> 'Sith Assassin' | plural  | lower  | playerclass 1 | forcedie 8
+strref 0x59e 1438 'Your character has gained enough experience to advance a level.'
+'Your character has gained enough experience to advance a level.'

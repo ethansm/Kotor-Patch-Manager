@@ -1,6 +1,6 @@
 # MASTER PLAN: per-character level-up override (Ghidra mapping + Patch Manager C++ mod)
 
-Status as of 2026-10-02 (Phase 5 started): 0.3.0-a `level-up-override` INSTALLED (dll 9e8cbbff) but NOT tested by the user (one combined live test after the full 0.3.0 build). Phase 5 plan `PHASE5_PLAN.md`: Step 0 DONE (doc 08 'Phase 5 UX research', 'Session notes - Phase 5'); NEXT = U static research (U1 ctor-time UI site, U2 banked message API, U3 save-binding leftovers, U4 class names) || P preset data fix, then M3 save binding, M4 Configure UI + wizard + R11, C gates + install + combined test.
+Status as of 2026-10-02 (Phase 5): 0.3.0-a INSTALLED (dll 9e8cbbff), untested by the user (one combined live test after the full 0.3.0 build). Phase 5 plan `PHASE5_PLAN.md`: Step 0, U (doc 08 'Phase 5 U facts'), P, WizardLogic, GuiKit DONE; NEXT = M3 save binding (C++), M4 LevelUpUi + R11, C gates + ask user for install + combined test.
 
 Requirements update 2026-10-02 (user): rewrite only the AUTO level-up, never manual picks (0.2.1 does this); builds are player-chosen per playthrough; configuration via an in-game GUI (settings page or new main-menu page) - Phase 3 research item. Details: doc 08 Status.
 Read order after a context clear: this file -> `PROJECT_CONTEXT.md` (sections 1-9) -> `PHASE1_PLAN.md` -> `README.md`.

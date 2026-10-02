@@ -1,0 +1,4 @@
+0x656640:5 vanilla=55 8b ec 6a ff live=55 8b ec 6a ff SAME overlap(+-16)=none
+0x656758:10 vanilla=89 45 f0 c7 45 fc ff ff ff ff live=89 45 f0 c7 45 fc ff ff ff ff SAME overlap(+-16)=none
+0x65675B:7 vanilla=c7 45 fc ff ff ff ff live=c7 45 fc ff ff ff ff SAME overlap(+-16)=none
+0x401C52:5 vanilla=e8 f9 a7 11 00 live=e8 f9 a7 11 00 SAME overlap(+-16)=none

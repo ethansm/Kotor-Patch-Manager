@@ -1,0 +1,112 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (835 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1965 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileList.java (HeadlessAnalyzer)  
+=== FUN_007be090 @ 007be090 size=282
+xrefs: 007966ef(UNCONDITIONAL_CALL) 0082e0a6(UNCONDITIONAL_CALL) 0082e31f(UNCONDITIONAL_CALL) 0082e44e(UNCONDITIONAL_CALL) 0082e72d(UNCONDITIONAL_CALL) 0082e92e(UNCONDITIONAL_CALL) 0082ebf7(UNCONDITIONAL_CALL) 0082ef46(UNCONDITIONAL_CALL) 0082f004(UNCONDITIONAL_CALL) 0082f0cb(UNCONDITIONAL_CALL) 0082f15b(UNCONDITIONAL_CALL) 0082f1eb(UNCONDITIONAL_CALL) 0082f27b(UNCONDITIONAL_CALL) 0082f30b(UNCONDITIONAL_CALL) 0082f39b(UNCONDITIONAL_CALL) 0082f42b(UNCONDITIONAL_CALL) 0082f4be(UNCONDITIONAL_CALL) 0082f551(UNCONDITIONAL_CALL) 0082f5e4(UNCONDITIONAL_CALL) 0082f677(UNCONDITIONAL_CALL) 0082f70a(UNCONDITIONAL_CALL) 0082f79d(UNCONDITIONAL_CALL) 0082f830(UNCONDITIONAL_CALL) 0082f8c3(UNCONDITIONAL_CALL) 0082f97b(UNCONDITIONAL_CALL) 0082fa5a(UNCONDITIONAL_CALL) 0082fa96(UNCONDITIONAL_CALL) 0082fbac(UNCONDITIONAL_CALL) 0082fcdf(UNCONDITIONAL_CALL) 0082fe02(UNCONDITIONAL_CALL) 0082ff92(UNCONDITIONAL_CALL) 008300bb(UNCONDITIONAL_CALL) 008300e5(UNCONDITIONAL_CALL) 008305a1(UNCONDITIONAL_CALL) 00830831(UNCONDITIONAL_CALL) 00830a1b(UNCONDITIONAL_CALL) 00830b59(UNCONDITIONAL_CALL) 00830cc0(UNCONDITIONAL_CALL) 00830d6b(UNCONDITIONAL_CALL) 00830e8b(UNCONDITIONAL_CALL) 00830ec2(UNCONDITIONAL_CALL) 00831314(UNCONDITIONAL_CALL) 00831562(UNCONDITIONAL_CALL) 00831705(UNCONDITIONAL_CALL) 008319fc(UNCONDITIONAL_CALL) 00831b2f(UNCONDITIONAL_CALL) 00831b9e(UNCONDITIONAL_CALL) 00831bd0(UNCONDITIONAL_CALL) 0080440c(UNCONDITIONAL_CALL) 00804492(UNCONDITIONAL_CALL) 008044e4(UNCONDITIONAL_CALL) 00804536(UNCONDITIONAL_CALL) 00804591(UNCONDITIONAL_CALL) 00804617(UNCONDITIONAL_CALL) 00804669(UNCONDITIONAL_CALL) 008046bb(UNCONDITIONAL_CALL) 005fcb87(UNCONDITIONAL_CALL) 006c9283(UNCONDITIONAL_CALL) 0075a0bd(UNCONDITIONAL_CALL) 00618b06(UNCONDITIONAL_CALL) 00816639(UNCONDITIONAL_CALL) 0081d507(UNCONDITIONAL_CALL) 00821ce7(UNCONDITIONAL_CALL) 008224bc(UNCONDITIONAL_CALL) 00822771(UNCONDITIONAL_CALL) 00822a65(UNCONDITIONAL_CALL) 00822bd2(UNCONDITIONAL_CALL)
+
+void __thiscall FUN_007be090(int param_1,undefined4 param_2,undefined4 param_3,undefined1 param_4)
+
+{
+  int iVar1;
+  int iVar2;
+  ushort local_8;
+  
+  iVar1 = FUN_00733b60(&DAT_00986925);
+  if (iVar1 != 0) {
+    if (0x3f < *(uint *)(param_1 + 0x11c)) {
+      *(undefined4 *)(param_1 + 0x11c) = 0x3f;
+      for (local_8 = 0; (uint)local_8 < *(uint *)(param_1 + 0x11c); local_8 = local_8 + 1) {
+        iVar1 = (local_8 + 1) * 0x10 + *(int *)(param_1 + 0x110);
+        iVar2 = (uint)local_8 * 0x10 + *(int *)(param_1 + 0x110);
+        FUN_007337c0(iVar1);
+        *(undefined4 *)(iVar2 + 8) = *(undefined4 *)(iVar1 + 8);
+        *(undefined1 *)(iVar2 + 0xc) = *(undefined1 *)(iVar1 + 0xc);
+      }
+    }
+    FUN_007337c0(param_2);
+    *(undefined4 *)(*(int *)(param_1 + 0x110) + 8 + *(int *)(param_1 + 0x11c) * 0x10) = param_3;
+    *(undefined1 *)(*(int *)(param_1 + 0x110) + 0xc + *(int *)(param_1 + 0x11c) * 0x10) = param_4;
+    *(int *)(param_1 + 0x11c) = *(int *)(param_1 + 0x11c) + 1;
+  }
+  return;
+}
+
+
+=== FUN_007be1b0 @ 007be1b0 size=288
+xrefs: 007966da(UNCONDITIONAL_CALL) 005fce4b(UNCONDITIONAL_CALL) 008175db(UNCONDITIONAL_CALL) 0081875b(UNCONDITIONAL_CALL) 008188fd(UNCONDITIONAL_CALL) 0081b32b(UNCONDITIONAL_CALL) 0081b4c2(UNCONDITIONAL_CALL) 0081b842(UNCONDITIONAL_CALL) 0081bfb7(UNCONDITIONAL_CALL) 0081c35c(UNCONDITIONAL_CALL) 0081cea0(UNCONDITIONAL_CALL) 0081e200(UNCONDITIONAL_CALL) 0081e5cf(UNCONDITIONAL_CALL) 008218e4(UNCONDITIONAL_CALL) 00822ec0(UNCONDITIONAL_CALL) 008241a7(UNCONDITIONAL_CALL) 008258c0(UNCONDITIONAL_CALL) 00825bbc(UNCONDITIONAL_CALL) 00826357(UNCONDITIONAL_CALL) 00827605(UNCONDITIONAL_CALL) 00827a69(UNCONDITIONAL_CALL) 008283f5(UNCONDITIONAL_CALL) 00828588(UNCONDITIONAL_CALL)
+
+void __thiscall FUN_007be1b0(int param_1,undefined4 param_2,undefined4 param_3,undefined1 param_4)
+
+{
+  int iVar1;
+  int iVar2;
+  uint local_8;
+  
+  iVar1 = FUN_00733b60(&DAT_00986925);
+  if (iVar1 != 0) {
+    if (0x3f < *(uint *)(param_1 + 0x124)) {
+      *(undefined4 *)(param_1 + 0x124) = 0x3f;
+      for (local_8 = 0; local_8 < *(uint *)(param_1 + 0x124); local_8 = local_8 + 1) {
+        iVar2 = (local_8 + 1) * 0x10 + *(int *)(param_1 + 0x118);
+        iVar1 = local_8 * 0x10 + *(int *)(param_1 + 0x118);
+        FUN_007337c0(iVar2);
+        *(undefined4 *)(iVar1 + 8) = *(undefined4 *)(iVar2 + 8);
+        *(undefined1 *)(iVar1 + 0xc) = *(undefined1 *)(iVar2 + 0xc);
+      }
+    }
+    FUN_007337c0(param_2);
+    *(undefined4 *)(*(int *)(param_1 + 0x118) + 8 + *(int *)(param_1 + 0x124) * 0x10) = param_3;
+    *(undefined1 *)(*(int *)(param_1 + 0x118) + 0xc + *(int *)(param_1 + 0x124) * 0x10) = param_4;
+    *(int *)(param_1 + 0x124) = *(int *)(param_1 + 0x124) + 1;
+  }
+  return;
+}
+
+
+=== FUN_005e2690 @ 005e2690 size=99
+xrefs: 00522795(UNCONDITIONAL_CALL) 005227ef(UNCONDITIONAL_CALL) 00522865(UNCONDITIONAL_CALL) 00522969(UNCONDITIONAL_CALL) 00648f47(UNCONDITIONAL_CALL) 00649c11(UNCONDITIONAL_CALL) 00649c86(UNCONDITIONAL_CALL) 00649cd0(UNCONDITIONAL_CALL) 00649da1(UNCONDITIONAL_CALL) 00649e2c(UNCONDITIONAL_CALL) 00649eba(UNCONDITIONAL_CALL) 0064a29f(UNCONDITIONAL_CALL) 0078f490(UNCONDITIONAL_CALL) 0078f5c0(UNCONDITIONAL_CALL) 0079012a(UNCONDITIONAL_CALL) 00793f4b(UNCONDITIONAL_CALL) 00793f95(UNCONDITIONAL_CALL) 007940bf(UNCONDITIONAL_CALL) 0079415f(UNCONDITIONAL_CALL) 00795b6f(UNCONDITIONAL_CALL) 00795bb7(UNCONDITIONAL_CALL) 00795d56(UNCONDITIONAL_CALL) 00795f35(UNCONDITIONAL_CALL) 00796149(UNCONDITIONAL_CALL) 00796191(UNCONDITIONAL_CALL) 00618f33(UNCONDITIONAL_CALL) 00618f87(UNCONDITIONAL_CALL) 00619083(UNCONDITIONAL_CALL) 00570792(UNCONDITIONAL_CALL) 005707e9(UNCONDITIONAL_CALL) 005708f1(UNCONDITIONAL_CALL) 005f41de(UNCONDITIONAL_CALL) 005f4232(UNCONDITIONAL_CALL) 005f431f(UNCONDITIONAL_CALL)
+
+undefined4 __thiscall FUN_005e2690(int param_1,undefined4 param_2,int param_3)
+
+{
+  if (param_3 < *(int *)(param_1 + 0x20)) {
+    FUN_007335f0(*(int *)(param_1 + 0x1c) + param_3 * 8);
+  }
+  else {
+    FUN_00733570(&DAT_00986925);
+  }
+  return param_2;
+}
+
+

@@ -1,0 +1,42 @@
+# U1 findings: ctor-time control creation site, CSWGuiInGameCharacter ctor 0x84C3A0 (static, 2026-10-02). C = confirmed in disasm/decompile, I = inferred.
+# Raw: U1_raw_ctor_tail_disasm.txt, U1_raw_ctor_full_disasm.txt (0x84C3A0..0x84D880), U1_raw_decomp_*.txt, U1_site_check.txt (bytes live==vanilla + overlap), U_site_check.py (reusable checker).
+
+## Ctor tail (U1_raw_ctor_tail_disasm.txt:278-299)
+- Last InitControl 0x40F620 call = 0x84D85D (member +0x4A20, tag string pushed at 0x84D82C = 0x9A39DC "LBL_STATSBORDER"; the one before = 0x84D818, member +0x48D8).
+- 0x84D862 mov byte [ebp-4],0x35 ; 0x84D866 lea ecx,[ebp-0x1F0] ; 0x84D86C call 0x733780 (CExoString dtor) ; **0x84D871 mov ecx,[ebp-0x254] (8B 8D AC FD FF FF, 6 bytes) = Mod 14 hook** ; 0x84D877 call 0x40F5A0 StopLoadFromLayout.
+  Panel `this` = [ebp-0x254] (ebp+0xFFFFFDAC) for the whole ctor (stored at ctor start, used by every bind). C
+- StartLoadFromLayout at 0x84C90B (U1_raw_ctor_full_disasm.txt:307): push 1 ; push 1 ; push &CResRef (built by 0x710840 from "character_p", string at 0x9A3C7C) ; ECX=panel ; call 0x40EE40. C
+- NOTE the ctor does NOT end at StopLoad: 0x84D87C.. continues (flag writes, more member binds up to the epilogue). Only the layout-dependent InitControl calls are before 0x84D877.
+
+## Mod 14's hook at 0x84D871 (patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml:4-14, CharEffectsPanel.cpp:1114)
+- type detour, function BindCharEffects, original_bytes 8B 8D AC FD FF FF, ONE parameter source "[ebp-0x254]" (int) = panel; `extern "C" void __cdecl BindCharEffects(int panel)`; no skip (the mov ecx executes after).
+- It calls bindLabel() per tag: new(0x148) + ctor 0x419740 + InitControl(panel, ctl, CExoString(tag), addToList=1, scale=1) (CharEffectsPanel.cpp:266-286) and EXPECTS ctl id == FirstId+t (69..150) else it hides the control (MISMATCH, line 281-285).
+  => proof that template InitControl from a hook at this point works (it already does). Also the hazard below.
+
+## InitControl facts (U1_raw_decomp_load.txt:307-396; DB row 0040f620)
+- 0x40F620 thiscall(panel, ctl, CExoString* tag, addToList, scale) RET 16: 0x418DF0(ctl) stores ctl+0x38 = *(panel+0x30) (the layout GFF), scans panel+0x34 CONTROLS list for the tag and calls ctl vtable[0x48] (label: 0x4198D0). Extent scaled by screen/800x600 (if scale!=0), ctl vt[1] SetRect. ONLY if addToList: `list[id] = ctl` (id = ctl+0x54 from the GFF "ID"); when id >= count it pads with 0x83EA60(0) then appends; when id < count it OVERWRITES list[id].
+  So with addToList=0 InitControl never touches panel+0x24 (C).
+- HAZARD (C from the decompile): if we append our own control to panel+0x24 BEFORE Mod 14's hook runs, count may be < 69 -> our entry sits at an index Mod 14 later overwrites (list[69..150] = its controls) or shifts what "id == expected" means. Therefore: create at ctor time with addToList=0, append later.
+
+## Candidate hook sites (all: bytes live == vanilla, +-16 clean vs repo tomls + $T/Patches tomls + live patch_config.toml; U1_site_check.txt)
+ | VA | bytes | kind | panel | regs / stack | verdict |
+ | **0x84D82C** | 68 DC 39 9A 00 | plain push imm32 (5 B, relocatable) | **[ebp-0x254]** | nothing pending on the stack (statement boundary after dtor call 0x84D827); EAX/ECX/EDX dead (ECX re-set at 0x84D831) | **RECOMMENDED**, 69 bytes before Mod 14, layout open (0x84D877 is after it) |
+ | 0x84D83C | C6 45 FC 6E 6A 01 | 2 whole instructions (6 B) | [ebp-0x254] | statement boundary-ish (before push 1 push 1 args) | OK alternative |
+ | 0x84D84B | 8B 85 AC FD FF FF | mov eax,[ebp-0x254] (6 B) | [ebp-0x254] | 3 words already pushed (1,1,&str) for InitControl at 0x84D85D; EAX dead (reloaded by the instr itself) | OK but mid-arg-push (framework must keep ESP) - less clean; closest legal site to Mod 14 (end+16 = 0x84D861 <= 0x84D871) |
+ | 0x84D818 / 0x84D85D | E8 .. (InitControl calls) | call sites, RET 16 stack cleanup | ECX=panel | args on stack | REJECT: replacing the call returns nothing useful and breaks cleanup |
+ | 0x84D85D+ (0x84D862..0x84D870) | 4/6/5 B pieces | too close: window 0x84D861 overlap rule fails for anything ending after 0x84D861 | - | REJECT |
+ After 0x84D871: 0x84D877 call is Mod 14's +-16 window; 0x84D888+ is AFTER StopLoad (layout freed) -> no templates.
+ Param for any of these: source "[ebp-0x254]", type int. Hook at 0x84D82C: handler `void __cdecl OnPanelCtor(int panel)`; no skip_original_bytes needed.
+
+## Fallback (a): re-open the layout from SetStats 0x84E6F0 / Update tick
+- StartLoadFromLayout 0x40EE40 thiscall(panel, CResRef*, int scaleW, int scaleH) RET 0xC (U1_raw_decomp_load.txt:35-175, disasm U1_raw_ctor_tail_disasm.txt:321-357): returns immediately if (panel+0x48 >> 1)&1 (layout-open flag); else new(0xA0) layout object (ctor 0x716FD0(0x7FF, vtable 0x987478, resref)) -> panel+0x30, parses COLOR/BORDER/BACKGROUND/ALPHA (rewrites panel +0x54..+0x5C and the border object at +0x60) and CONTROLS list -> panel+0x34, sets flag bit1, then SetRect virtuals (panel vt[1], border vt[1]) with the panel extent; with scaleW/scaleH != 0 it multiplies the extent by screen/800x600 (I: decompiler shows _ftol of FPU values) -> re-opening with (1,1) would RESCALE the panel again (compounding); (0,0) should be neutral.
+- Needs: CResRef built via 0x710840(ECX=buf, "character_p"); then InitControl calls, then StopLoadFromLayout 0x40F5A0 (fastcall panel; clears bit1, frees layout via vtable delete, +0x30=0, calls 0x40FB70 which walks panel+0x24 and re-links neighbour pointers of controls whose vt[0x4C] is non-null (listboxes/sliders)).
+- Cost: a resource lookup + GFF parse of character_p.gui each time (do once per panel, cache controls). Risk: panel colour/border/rect rewritten, StopLoad re-link walk over the whole list incl. Mod 14's controls, bit1 state confusion if a tick lands mid-way. VERDICT: feasible but invasive; only if the ctor hook is rejected.
+
+## Fallback (b): template-less label (no InitControl) (U1_raw_decomp_load.txt:235-305, U1_raw_decomp_label.txt)
+- ctor 0x419740 (fastcall ECX; size 0x148): base 0x418990 (vtable CSWGuiControl; +4..+0x10 extent = 0; +0x48 flags: bit0 clear, bit1 SET visible, bit3 set, bit4/5/6 clear; +0x54 id = -1; +0x58 byte 0; +0x59 byte 1; +0x5C = 0; +0x38 (layout ptr) = 0; +0x18,+0x28,+0x34 = 0; CExoString members via 0x733540/0x84A640/0x8A5F70), then vtable 0x9878BC, border object ctor 0x414A50 at +0x60 (CSWGuiBorder, colour 1,1,1; fill +0x74 = 0), text object ctor 0x4171A0 at +0xD8 (CSWGuiText; its string at +0xF0; +0x144 = 400), then flag +0x48 bit2 cleared (not hit-testable).
+- What the template adds (label Load 0x4198D0): text object Load ("TEXT" key: font, colour, alignment, text/strref), border Load ("BORDER": corner/edge/fill, fill style, dimension), base 0x418F20: control extent (vt[1] SetRect), ID -> +0x54, Obj_ParentID. InitControl then scales the extent and calls vt[1].
+- So template-less = ctor + id (+0x54) + vt[1] SetRect (0x4199A0: copies rect to +4..+0x10 and forwards to border vt+4 and text vt+4) + font 0x416DE0 + text 0x416E30 + alignment 0x416FA0 + colour 0x417140 + border fill (+0x60)+0x74 + flags, then append. That is exactly Mod 3's recipe minus InitControl. I (not live-tested): control +0x38 stays 0 (nothing seen deref'ing it in draw/hit-test; unverified), and the default text object font may be null until 0x416DE0 is called.
+
+## RECOMMENDATION
+Hook **0x84D82C** (push imm, panel = [ebp-0x254]) in OUR mod: create the label(s) with new(0x148) + 0x419740 + InitControl(panel, ctl, tag, addToList=0, scale=1) using the existing layout templates (LBL_EXPERIENCE_STAT id 25 plain / LBL_XP_BACK id 3 framed in the live character_p.gui; check the id sentinel ctl+0x54), stash the objects keyed by panel pointer, and DO NOT append yet. Append them to panel+0x24 (0x83EA60, id = count) on the first Update/SetStats tick after the ctor (keyed by panel pointer), so Mod 14's ids 69..150 are never disturbed and the layout was open when the templates were read. Fallback order: (b) template-less if the tag is missing, (a) only as a last resort.

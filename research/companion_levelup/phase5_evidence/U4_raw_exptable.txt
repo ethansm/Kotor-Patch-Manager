@@ -1,0 +1,30 @@
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slct1.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slct1.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slct2.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slct2.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slct2.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slct2.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slct3.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slct3.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slct3.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slct3.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slock.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slock.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_slock.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_slock.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_sprty.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_sprty.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_sprty.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_sprty.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_srch.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_srch.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_srch.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_srch.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_stlh.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_stlh.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_stlh.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_stlh.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_tia.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_tia.wav',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'p_t3-m4_tia.wav' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/Sounds.bif'; preserving remaining segments ('p_t3-m4_tia.wav',).[0m
+[0;36mDEBUG(root): Done loading chitin[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'exptable.2da' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/2DA.bif'; preserving remaining segments ('exptable.2da',).[0m
+[0;36mDEBUG(root): No case-insensitive match for segment 'exptable.2da' under '/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/2DA.bif'; preserving remaining segments ('exptable.2da',).[0m
+source /home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/data/2DA.bif
+['level', 'xp'] 51
+[(0, '0', '0'), (1, '1', '1000'), (2, '2', '3000'), (3, '3', '6000'), (4, '4', '10000'), (5, '5', '15000')] [(48, '48', '1176000'), (49, '49', '1225000'), (50, '50', '0xFFFFFFFF')]
+[0, 1000, 3000, 6000, 10000, 15000, 21000, 28000]
+level 1 XP 0 -> banked 0
+level 1 XP 1000 -> banked 1
+level 1 XP 3000 -> banked 2
+level 3 XP 6000 -> banked 1
+level 3 XP 5999 -> banked 0
+level 8 XP 36000 -> banked 1
+level 8 XP 100000 -> banked 6
+level 50 XP 9999999 -> banked 0

@@ -1,0 +1,7 @@
+0x84D871:6 vanilla=8b 8d ac fd ff ff live=8b 8d ac fd ff ff SAME overlap(+-16)=[('0x84d871', 6, 'BindCharEffects', './patch_manager_mods/active_effects_panel_src/kotor2-steam-aspyr.hooks.toml'), ('0x84d871', 6, 'BindCharEffects', 'CharEffectsPanel/kotor2-steam-aspyr.hooks.toml'), ('0x84d871', 6, 'BindCharEffects', 'LIVE:character-effects-panel')]
+0x84D82C:5 vanilla=68 dc 39 9a 00 live=68 dc 39 9a 00 SAME overlap(+-16)=none
+0x84D84B:6 vanilla=8b 85 ac fd ff ff live=8b 85 ac fd ff ff SAME overlap(+-16)=none
+0x84D837:5 vanilla=e8 34 5d ee ff live=e8 34 5d ee ff SAME overlap(+-16)=none
+0x84D818:5 vanilla=e8 03 1e bc ff live=e8 03 1e bc ff SAME overlap(+-16)=none
+0x84D83C:6 vanilla=c6 45 fc 6e 6a 01 live=c6 45 fc 6e 6a 01 SAME overlap(+-16)=none
+0x84D81D:10 vanilla=c6 45 fc 35 8d 8d 18 fe ff ff live=c6 45 fc 35 8d 8d 18 fe ff ff SAME overlap(+-16)=none
