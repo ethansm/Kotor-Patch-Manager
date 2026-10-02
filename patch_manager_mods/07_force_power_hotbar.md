@@ -4,7 +4,9 @@
 - **1.0.0 finalization in progress (2026-10-02 ~01:40):** Phase R done (Gate R passed statically, section "1.0.0 finalization, Phase R" at the end). Phase B PROTOTYPE
   installed = DLL md5 `4f6d235b` (stage `hotbar_stage9/`, 28 ids, backup `backups/inst9_1002_0138`): the wrench is created at runtime from the LBL_QUEUE1 template
   and its art `fph_edit`/`fph_edit_hi` is served from DLL memory (all 4 `fph_*` textures registered); the other 56 controls still bind from the script `.gui`.
-  AWAITING user live check (wrench looks/behaves as before; log lines `H3 LBL_HOTBAREDIT: created at index 131`, `tex fph_*: created`, `tex ... (frame 120): gl=<nonzero>`).
+  **PROTOTYPE PROVEN LIVE (user 2026-10-02: "The wrench button looks great!")**: log `H3 LBL_HOTBAREDIT: created at index 131 from LBL_QUEUE1 rect=[11,1274,53,93]`,
+  `tex fph_* (frame 120): gl=4166..4169 constructed=1 missing=0 pixels=00000000` (uploaded + buffer freed by the engine). NEXT = Phase B full: all 57 controls + 4 textures
+  at runtime (append, no .gui binds), then `--rollback` the live .gui and delete `override/hotbar_*.tga` (game closed), user test.
   Rollback = reinstall build 20 (`6c8af8c0`, kpatch in `stage_engfix_1002_0121/`).
 - **Previous install:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
   GUI deployed = **168 controls** (`override/mipc28x6_p.gui`), textures `override/hotbar_slot*.tga`, `override/hotbar_edit*.tga`. Game closed at the end of the session.
@@ -644,3 +646,5 @@ Goal: the `.kpatch` alone delivers the mod (no `.gui` edit, no override TGAs). E
   Hazard: Reset (video mode / texture quality / GL init) clears `+0xE4` -> the DLL re-fills from the embedded TGA in its HUD tick (self-heal).
   Rejected: `AddResourceImageFile` (0x007115E0 = RIM from disk), resman key/CRes injection (more writes, rebuild semantics unknown).
 - Embedded resrefs are renamed `fph_slot`, `fph_slot_hi`, `fph_edit`, `fph_edit_hi` (never collide with the old override TGAs).
+- **Prototype live result (2026-10-02 ~01:55):** wrench created at runtime (index 131, padded slot) and all four `fph_*` textures uploaded by the engine's texture tick
+  (gl names 4166-4169 at frame 120, pixel buffers freed by the engine, no missing flag); user: "The wrench button looks great!". Texture self-heal after a GL reset is still untested.
