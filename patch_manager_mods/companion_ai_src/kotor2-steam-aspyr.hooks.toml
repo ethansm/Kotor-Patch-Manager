@@ -1,7 +1,7 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
 
-# companion-ai 0.1.0. Windows validated by patch_manager_mods/mods678_research/check_windows.py (against the live
+# companion-ai 0.2.0-probe. Windows validated by patch_manager_mods/mods678_research/check_windows.py (against the live
 # hooks, ranged-ai, the inventory windows and each other; both executables byte-identical).
 # Designs: patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_trace.md, design_ai_engine_fixes.md.
 # Framework (KotorPatcher wrapper_x86.cpp): the stolen bytes run after the handler; for a consumed-exit hook EAX is
@@ -257,5 +257,183 @@ exclude_from_restore = []
 source = "ebp"
 type = "int"
 
-# FM3 (scheduler sentinel probe, log only) is NOT shipped: its wrapper would cost time in the scheduler's hottest loop
-# even when off (review N2). Its window 0x51DBE7 stays validated in check_windows.py as "NOT SHIPPED".
+# FM3 (scheduler sentinel probe, log only): the hot window 0x51DBE7 stays unshipped (wrapper cost in the scheduler's
+# hottest loop, review N2); the cold FM3S/FM3E/FM3R probes below ship (probe_fm3).
+
+# ---------------------------------------------------------------- Phase-4 probes (log only, plain detours, no consumed exit)
+# Designs: patch_manager_mods/engine_ai_atlas/PROBE_DESIGN.md. Every flag probe_<name> is in companion_ai.ini.
+
+# P FM2C probe (probe_fm2c, log only): PlotPathInArea 0x55AC80 result 2 (partial) vs 3 (fail) at 0x55B69A.
+[[hooks]]
+address = 0x0055B69A
+type = "detour"
+function = "CompanionAiProbeFm2c"
+original_bytes = [0x8B, 0x0D, 0xA0, 0xB5, 0x99, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P FM2F probe (probe_fm2f, log only): MoveToPoint 0x5BFC00 FAIL leg at 0x5C2438 (plain; no consumed exit).
+[[hooks]]
+address = 0x005C2438
+type = "detour"
+function = "CompanionAiProbeFm2Fail"
+original_bytes = [0x8B, 0x95, 0x6C, 0xFA, 0xFF, 0xFF, 0x89, 0x51, 0x70]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P FM2R probe (probe_fm2r, log only): action 0x11 re-approach 0x5BC1D0 at 0x5BC5F4.
+[[hooks]]
+address = 0x005BC5F4
+type = "detour"
+function = "CompanionAiProbeFm2Reapproach"
+original_bytes = [0x8B, 0x4D, 0xE4, 0x8B, 0x91, 0x24, 0x01, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P FM3S probe (probe_fm3, log only): UpdateState 0x51D790 sentinel set at 0x51DBE1 (ends at the unshipped hot 0x51DBE7).
+[[hooks]]
+address = 0x0051DBE1
+type = "detour"
+function = "CompanionAiProbeFm3Sentinel"
+original_bytes = [0x8B, 0x4D, 0xD8, 0x89, 0x4D, 0xC4]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P FM3E probe (probe_fm3, log only): UpdateState level end at 0x51DD33 (the stolen SUB feeds the SBB).
+[[hooks]]
+address = 0x0051DD33
+type = "detour"
+function = "CompanionAiProbeFm3LevelEnd"
+original_bytes = [0x8B, 0x4D, 0xD0, 0x2B, 0x4D, 0xF0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P FM3R probe (probe_fm3, log only): RemoveObject 0x51E0C0 at 0x51E0C9.
+[[hooks]]
+address = 0x0051E0C9
+type = "detour"
+function = "CompanionAiProbeFm3Remove"
+original_bytes = [0x8B, 0x45, 0x08, 0x8B, 0x48, 0x78]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P RS probe (probe_rs, log only): RunScript 0x6FD8D0 entry, slot-6 / OnBlocked / shout sites by return address (hot-ish).
+[[hooks]]
+address = 0x006FD8D0
+type = "detour"
+function = "CompanionAiProbeRunScript"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "int"
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+# P P2 probe (probe_p2, log only, HOT): SpawnInHeartbeatPerception 0x56B8A0 party cadence at 0x56BE79.
+[[hooks]]
+address = 0x0056BE79
+type = "detour"
+function = "CompanionAiProbeP2"
+original_bytes = [0x8B, 0x85, 0x2C, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P PF probe (probe_pf, log only): SetPartyMemberFlag 0x58A330 store of +0x11AC at 0x58A35E.
+[[hooks]]
+address = 0x0058A35E
+type = "detour"
+function = "CompanionAiProbePartyFlag"
+original_bytes = [0x89, 0x88, 0xAC, 0x11, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P RAR probe (probe_rar, log only, HOT): RunActions 0x5D56B0 per-action result at 0x5D6A60.
+[[hooks]]
+address = 0x005D6A60
+type = "detour"
+function = "CompanionAiProbeRunActions"
+original_bytes = [0x8B, 0x55, 0xE4, 0x3B, 0x15, 0xC0, 0x44, 0x99, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P SHX probe (probe_shx, log only): shout delivery 0x547100 single exit at 0x5475E8.
+[[hooks]]
+address = 0x005475E8
+type = "detour"
+function = "CompanionAiProbeShout"
+original_bytes = [0x8B, 0x4D, 0xF4, 0x64, 0x89, 0x0D, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P SS1 probe (probe_ss1, log only): OnApplySetState 0x59CBA0 state commit at 0x59D966.
+[[hooks]]
+address = 0x0059D966
+type = "detour"
+function = "CompanionAiProbeSetState"
+original_bytes = [0x88, 0x82, 0xF5, 0x0F, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# P GCA probe (probe_gca, log only): GetCurrentAction cmd 522 0x67B100 at 0x67B204.
+[[hooks]]
+address = 0x0067B204
+type = "detour"
+function = "CompanionAiProbeGetCurrentAction"
+original_bytes = [0x8B, 0x4D, 0xF8, 0x51, 0x8B, 0x0D, 0xA8, 0xB4, 0xA1, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"

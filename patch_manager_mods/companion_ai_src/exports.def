@@ -16,3 +16,16 @@ EXPORTS
     CompanionAiA4
     CompanionAiC1
     CompanionAiA3
+    CompanionAiProbeFm2c
+    CompanionAiProbeFm2Fail
+    CompanionAiProbeFm2Reapproach
+    CompanionAiProbeFm3Sentinel
+    CompanionAiProbeFm3LevelEnd
+    CompanionAiProbeFm3Remove
+    CompanionAiProbeRunScript
+    CompanionAiProbeP2
+    CompanionAiProbePartyFlag
+    CompanionAiProbeRunActions
+    CompanionAiProbeShout
+    CompanionAiProbeSetState
+    CompanionAiProbeGetCurrentAction

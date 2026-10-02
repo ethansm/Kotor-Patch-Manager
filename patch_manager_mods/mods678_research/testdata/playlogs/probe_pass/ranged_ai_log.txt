@@ -1,0 +1,4 @@
+ranged-ai 0.3.0 loaded; cwd=Z:\game pid=312
+config: hold=1 retarget=1 hold_stances=10800 retarget_stances=10800 ranged_rules=1 kite_approach=1 kite_strref_msg=136539 kite_icon=ib_ranged log=1 log_all=0
+H2 t=2022000 cr=7f0001a4 party=1 pc=0 stance=16 ranged=1 los=0 me=(1.00,2.00,0.00) lastBlocked=(1.00,2.00,0.00) -> retarget=1
+H1 t=2023000 cr=7f0001a4 party=1 pc=0 stance=16 ranged=1 los=1 dist2=9.00 max=15.00 desired=10.00 inRange=1 area=0000aaaa/0000aaaa tgt=7f000233 ttype=5 backoff=0 rangedLocal=1 end52c=00000000 me=(1.00,2.00,0.00) tgtpos=(8.00,2.00,0.00) lastBlocked=(0.00,0.00,0.00) -> hold=0

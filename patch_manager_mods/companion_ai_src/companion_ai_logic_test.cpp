@@ -77,6 +77,24 @@ static void testIni() {
     CHECK(strstr(g_t.bad, "a1") && strstr(g_t.bad, "fm4") && strstr(g_t.bad, "p1_interval_ms") && !strstr(g_t.bad, "c1"));
     // empty value = default
     g_t.parse("[CompanionAI]\na1=\n", "CompanionAI"); Config z; parseConfig(g_t, z); CHECK(z.a1 && g_t.bad[0] == 0);
+    // probes (PROBE_DESIGN.md section 4): default on, per-flag off, number clamp, unparseable number -> 400 + reported
+    Config pd; CHECK(pd.probeFm2c && pd.probeFm2f && pd.probeFm2r && pd.probeFm3 && pd.probeRs && pd.probeP2 && pd.probePf && pd.probeRar &&
+                     pd.probeShx && pd.probeSs1 && pd.probeGca && pd.probeParty && pd.probeA1x && pd.probeLines == 400);
+    g_t.parse("[CompanionAI]\nprobe_rs=0\nprobe_p2=off\nprobe_rar=no\nprobe_lines=0x20\n", "CompanionAI");
+    Config pr; parseConfig(g_t, pr);
+    CHECK(!pr.probeRs && !pr.probeP2 && !pr.probeRar && pr.probeFm2c && pr.probeA1x && pr.probeLines == 32 && g_t.bad[0] == 0);
+    g_t.parse("[CompanionAI]\nprobe_lines=x\nprobe_pf=maybe\n", "CompanionAI"); Config pb; parseConfig(g_t, pb);
+    CHECK(pb.probeLines == 400 && strstr(g_t.bad, "probe_lines")); CHECK(!pb.probePf && strstr(g_t.bad, "probe_pf"));   // flag -> off, number -> default
+    g_t.parse("[CompanionAI]\nprobe_lines=999999999\n", "CompanionAI"); Config pc; parseConfig(g_t, pc); CHECK(pc.probeLines == 100000);
+    g_t.parse("[CompanionAI]\nprobe_lines=-5\n", "CompanionAI"); Config pn; parseConfig(g_t, pn); CHECK(pn.probeLines == 0);
+    // sameConfig sees every probe key
+    {
+        bool Config::*flags[] = {&Config::probeFm2c, &Config::probeFm2f, &Config::probeFm2r, &Config::probeFm3, &Config::probeRs, &Config::probeP2,
+                                 &Config::probePf, &Config::probeRar, &Config::probeShx, &Config::probeSs1, &Config::probeGca, &Config::probeParty,
+                                 &Config::probeA1x};
+        for (auto f : flags) { Config a, b; b.*f = false; CHECK(!sameConfig(a, b)); }
+        Config a, b; b.probeLines = 399; CHECK(!sameConfig(a, b));
+    }
 }
 
 static void testShippedIni() {
@@ -104,15 +122,20 @@ static void testShippedIni() {
                            "log_all", "engine_print", "log_aur", "dedupe_ms", "max_lines_per_sec", "max_file_mb", "flush_ms",
                            "a1_burst_threshold", "a1_rate_threshold", "engine_verbose", "summary_sec", "p1_detail_lines", "a1", "a1_stances",
                            "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
-                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "log"};
+                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "log",
+                           "probe_fm2c", "probe_fm2f", "probe_fm2r", "probe_fm3", "probe_rs", "probe_p2", "probe_pf", "probe_rar", "probe_shx",
+                           "probe_ss1", "probe_gca", "probe_party", "probe_a1x", "probe_lines"};
     int knownN = int(sizeof known / sizeof known[0]);
-    CHECK(g_t.n == knownN);
+    CHECK(g_t.n == knownN); CHECK(knownN == 50);
     for (int i = 0; i < g_t.n; ++i) {
         bool ok = false;
         for (int k = 0; k < knownN; ++k) if (!strcmp(g_t.key[i], known[k])) ok = true;
         if (!ok) printf("unknown key in companion_ai.ini: %s\n", g_t.key[i]);
         CHECK(ok);
     }
+    // the probe build ships every probe on with the 400-line budget
+    CHECK(c.probeFm2c && c.probeFm2f && c.probeFm2r && c.probeFm3 && c.probeRs && c.probeP2 && c.probePf && c.probeRar && c.probeShx &&
+          c.probeSs1 && c.probeGca && c.probeParty && c.probeA1x && c.probeLines == 400);
     // the built-in defaults equal the shipped file
     Config def; CHECK(sameConfig(def, c));
 }
@@ -284,6 +307,75 @@ static void testHandlerDecisions() {
     CHECK(st.allow(3, 0x1000 + 99, 20200, 0, 1, 10000) == false);   // the newest subject kept its state
 }
 
+// Phase-4 probe helpers (PROBE_DESIGN.md section 4)
+static void testProbeHelpers() {
+    // rsSite
+    CHECK(rsSite(0x58F514) == 1 && rsSite(0x569A6C) == 2 && rsSite(0x59E909) == 3 && rsSite(0x5709F5) == 4 && rsSite(0x57074A) == 5);
+    CHECK(rsSite(0x570645) == 6 && rsSite(0x57069F) == 6);
+    CHECK(rsSite(0x58F50F) == 0 && rsSite(0) == 0 && rsSite(0x58F515) == 0 && rsSite(0xFFFFFFFFu) == 0);
+    CHECK(!strcmp(rsName(1), "S6A") && !strcmp(rsName(2), "S6B") && !strcmp(rsName(3), "S6C") && !strcmp(rsName(4), "S7") &&
+          !strcmp(rsName(5), "S12") && !strcmp(rsName(6), "S1") && !strcmp(rsName(0), "-") && !strcmp(rsName(9), "-"));
+    // pfSite: the 15 CALL sites + 5
+    const unsigned pf[PfSites] = {0x574537, 0x575170, 0x599AF4, 0x5F89AA, 0x5F8A13, 0x5F8EB9, 0x5F93B4, 0x5FEAC7, 0x6306A5, 0x630B17,
+                                  0x66CA5A, 0x6900C1, 0x69B901, 0x89FE45, 0x8A050E};
+    for (int i = 0; i < PfSites; ++i) { CHECK(pfSite(pf[i]) == i); CHECK(pfSite(pf[i] - 5) == -1); CHECK(strcmp(pfName(i), "?") != 0); }
+    CHECK(pfSite(0x574532) == -1 && pfSite(0) == -1 && !strcmp(pfName(-1), "?") && !strcmp(pfName(15), "?"));
+    CHECK(!strcmp(pfName(0), "SAVE_A") && !strcmp(pfName(1), "SAVE_B") && !strcmp(pfName(3), "XFER_A") && !strcmp(pfName(4), "XFER_B"));
+    for (int i = -1; i < PfSites; ++i) CHECK(pfTransient(i) == (i == 0 || i == 1 || i == 3 || i == 4));   // SAVE_A/B, XFER_A/B only
+    // p2Runs
+    CHECK(p2Runs(0, 1, 4000)); CHECK(!p2Runs(0, 1, 3999)); CHECK(!p2Runs(1, 1, 9000)); CHECK(!p2Runs(0, 2, 9000)); CHECK(p2Runs(0, 1, 0xFFFFFFFFu));
+    // shoutExit
+    CHECK(shoutExit(false, 0, 0, false) == ShoutNoArea); CHECK(shoutExit(false, 3, 5, true) == ShoutNoArea);
+    CHECK(shoutExit(true, -1, 5, true) == ShoutAbortStart); CHECK(shoutExit(true, 5, 5, true) == ShoutEnd);
+    CHECK(shoutExit(true, 2, 5, true) == ShoutXBreak); CHECK(shoutExit(true, 2, 5, false) == ShoutAbortMid);
+    CHECK(shoutExit(true, 0, 0, false) == ShoutEnd);   // empty list: index 0 >= count 0
+    CHECK(!strcmp(shoutName(ShoutNoArea), "noarea") && !strcmp(shoutName(ShoutAbortStart), "ABORT-START") && !strcmp(shoutName(ShoutEnd), "end") &&
+          !strcmp(shoutName(ShoutXBreak), "xbreak") && !strcmp(shoutName(ShoutAbortMid), "ABORT-MID"));
+    // fm2cReason
+    CHECK(!strcmp(fm2cReason(1, 0, 3), "client")); CHECK(!strcmp(fm2cReason(1, -1, 2), "client"));
+    CHECK(!strcmp(fm2cReason(0, -1, 3), "code-1")); CHECK(!strcmp(fm2cReason(0, 5, 2), "partial")); CHECK(!strcmp(fm2cReason(0, 5, 3), "blocked"));
+    CHECK(!strcmp(fm2cReason(0, 5, 7), "other"));
+    // fm3Lost
+    CHECK(!fm3Lost(4, 4, false)); CHECK(fm3Lost(4, 2, false)); CHECK(fm3Lost(2, 2, true));
+    // a1Strict: on the bound = in, a hair over = out; zero range still has the 0.1 slack
+    float lim = 2.0f + 0.1f;
+    CHECK(a1Strict(0, 0, lim, 0, 2.0f)); CHECK(a1Strict(0, 0, 0, -lim, 2.0f)); CHECK(!a1Strict(0, 0, lim + 0.01f, 0, 2.0f));
+    CHECK(a1Strict(5, 5, 5 + 0.05f, 5, 0.0f)); CHECK(!a1Strict(5, 5, 5 + 0.2f, 5, 0.0f));
+    CHECK(!a1Strict(0, 0, 3.0f, 3.0f, 4.0f)); CHECK(a1Strict(0, 0, 3.0f, 3.0f, 4.2f));   // 2D: sqrt(18) = 4.24 vs 4.3
+    // pairBump
+    PairCount p;
+    CHECK(pairBump(p, 1, 2, 1000, 12000) && p.n == 1);                // first event starts the window
+    CHECK(!pairBump(p, 1, 2, 5000, 12000) && p.n == 2);
+    CHECK(!pairBump(p, 1, 2, 17000, 12000) && p.n == 3);              // 12000 after the last event: still inside
+    p.lastD = 7.f;
+    CHECK(pairBump(p, 1, 3, 17500, 12000) && p.n == 1 && p.lastD == 0.f && p.tgt == 3);   // other target: reset
+    CHECK(pairBump(p, 1, 3, 17500 + 12001, 12000) && p.n == 1);      // gap > window: reset
+    CHECK(pairBump(p, 9, 3, 29502, 12000) && p.cr == 9);              // other creature: reset
+    CHECK(!pairBump(p, 9, 3, 29502 + 12000, 12000) && p.n == 2);
+    PairCount w;                                                      // GetTickCount wraparound
+    CHECK(pairBump(w, 1, 2, 0xFFFFFF00u, 5000) && !pairBump(w, 1, 2, 0x00000100u, 5000) && w.n == 2);   // 512 ms across the wrap
+    CHECK(pairBump(w, 1, 2, 0x00000100u + 5001u, 5000) && w.n == 1);
+    CHECK(w.first == 0x00000100u + 5001u);
+    // a1OrphanDue
+    CHECK(!a1OrphanDue(5000, 0, 3000)); CHECK(!a1OrphanDue(8000, 4000, 3000)); CHECK(!a1OrphanDue(5000 + 4000, 5000, 3000)); CHECK(a1OrphanDue(5000 + 4001, 5000, 3000));
+    CHECK(a1OrphanDue(0x00000010u + 5000u, 0xFFFFFFF0u, 3000));   // wrap: 5024 ms later
+    CHECK(!a1OrphanDue(0x00000010u + 100u, 0xFFFFFFF0u, 3000));
+    CHECK(a1OrphanDue(1002, 1, 0)); CHECK(!a1OrphanDue(1001, 1, 0)); CHECK(!a1OrphanDue(1002, 1, 1000));
+    // rarIndex
+    CHECK(rarIndex(1, 2) == 7); CHECK(rarIndex(0x47, 4) == 359); CHECK(rarIndex(0x48, 1) == 1); CHECK(rarIndex(5, 9) == 25);
+    CHECK(rarIndex(0, 0) == 0 && rarIndex(-3, 4) == 4 && rarIndex(0x47, 0) == 355 && rarIndex(0x47, 5) == 355 && rarIndex(1, -1) == 5);
+    for (int ty = -2; ty < 0x60; ++ty) for (int r = -2; r < 8; ++r) { int i = rarIndex(ty, r); CHECK(i >= 0 && i < RarBuckets); }
+    // ProbeCap: 400 takes, the 401st refused, the marker exactly once
+    ProbeCap cap; int granted = 0;
+    CHECK(!cap.marker());                                             // nothing refused yet
+    for (int i = 0; i < 400; ++i) if (cap.take(400)) ++granted;
+    CHECK(granted == 400); CHECK(!cap.marker());
+    CHECK(!cap.take(400)); CHECK(cap.marker()); CHECK(!cap.marker()); CHECK(!cap.take(400)); CHECK(!cap.marker());
+    ProbeCap zero; CHECK(!zero.take(0)); CHECK(zero.marker()); CHECK(!zero.marker());   // probe_lines=0: summaries only
+    ProbeCap big; for (int i = 0; i < 1000; ++i) CHECK(big.take(100000));   // a raised budget (hot reload) keeps granting
+    ProbeCap grow; for (int i = 0; i < 5; ++i) grow.take(5); CHECK(!grow.take(5)); CHECK(grow.take(6));   // reload with a larger budget resumes
+}
+
 // exports.def == the hooks.toml function names (run from the source directory)
 static void testExports() {
     static char t[65536], d[4096];
@@ -299,15 +391,16 @@ static void testExports() {
         char line[80]; snprintf(line, sizeof line, "    %s\n", name);
         if (!strstr(d, line)) { printf("exports.def lacks %s\n", name); ++missing; }
     }
-    CHECK(funcs == 18 && missing == 0);                          // 18 hooks (C1 x3 share one function)
+    CHECK(funcs == 31 && missing == 0);                          // 31 hooks: 18 + the 13 Phase-4 probes (C1 x3 share one function)
     int exports = 0; for (const char* p = strstr(d, "EXPORTS\n"); p && (p = strstr(p + 1, "\n    ")); ) ++exports;
-    CHECK(exports == 16);                                        // 16 distinct functions
-    CHECK(!strstr(t, "Fm3") && !strstr(d, "Fm3"));               // FM3 probe not shipped
+    CHECK(exports == 29);                                        // 29 distinct functions
+    CHECK(!strstr(t, "0x0051DBE7"));                             // the hot FM3 probe window stays unshipped (the cold FM3S/E/R ship)
+    CHECK(strstr(t, "0x0051DBE1") && strstr(t, "0x0051DD33") && strstr(t, "0x0051E0C9"));
 }
 
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testExports();
+    testProbeHelpers(); testExports();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }

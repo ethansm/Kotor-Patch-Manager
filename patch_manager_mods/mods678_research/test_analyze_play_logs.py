@@ -246,7 +246,7 @@ class RealHookTomls(Base):
         by = {}
         for h in hooks:
             by.setdefault(h["patch"], []).append(h)
-        self.assertEqual(len(by["companion-ai"]), 18)
+        self.assertEqual(len(by["companion-ai"]), 31)
         self.assertEqual(len(by["ranged-ai"]), 7)
         self.assertIn("inventory-sort-filter", by)
         self.assertEqual(len({(h["patch"], h["address"]) for h in hooks}), len(hooks))
@@ -283,7 +283,7 @@ class RealHookTomls(Base):
         (d2 / "steam-208580.log").write_text(self._steam_for(hooks, skip={gate["address"]}))
         r2 = apl.run_full([str(d2), "--no-write"])
         self.assertEqual([x["address"] for x in r2["S"]["rows"] if x["status"] == "MISSING"], [gate["address"]])
-        self.assertTrue(self.fails(r2, "companion-ai: 1/18"))
+        self.assertTrue(self.fails(r2, "companion-ai: 1/31"))
 
     def test_applied_but_consumed_exit_not_parsed(self):
         hooks, _ = apl.load_hooks(None)
@@ -317,6 +317,202 @@ class RealSavedLogs(Base):
         self.assertEqual(r["RG"]["s_counts"]["S2"], 3)       # the saved ranged log has three S2 lines
         self.assertEqual(len(r["checklist"]), len(apl.CHECKLIST))
         self.assertEqual((REAL / "REPORT.md").exists(), existed)   # the original directory is never written
+
+class ProbeChecks(Base):
+    """Phase-4 probe checks (PR-*): PASS / FAIL / OBSERVE per PROBE_DESIGN.md section 2."""
+    HDR = ("# companion-ai 0.2.0-probe session 2026-10-02 02:00:00 t=2000000 pid=1234 tid=100 cwd=Z:\\game ini=Z:\\game\\companion_ai.ini\n"
+           "# config fixes a1=1 a1_stances=11800 a1_party_only=1 a1_retarget=1 a1_retarget_stances=11800 a1_rethink_ms=3000 p1=0 p1_interval_ms=250 "
+           "fm1=1 fm1_rethink_ms=0 fm4=1 a4=1 c1=1 c1_party_only=1 a3=0 log=1\n")
+    END = "t=2300000 S lines=200 dropped=0 deduped=0 capDropped=0 | flips=40 prints=38 aur=4 e1=0 e1spins=0 e1b=0 e2=2 e3=11\n"
+    PR_IDS = ["PR-FM2B", "PR-FM2", "PR-FM3", "PR-SLOT6", "PR-FM5", "PR-E9", "PR-P2", "PR-PF", "PR-RAR", "PR-SHOUT", "PR-SS", "PR-E4",
+              "PR-PARTY", "PR-A1X", "PR-RAH2"]
+
+    def trace(self, *lines, ranged=None) -> dict:
+        d = Path(tempfile.mkdtemp(dir=self.tmp)) / "case"
+        d.mkdir()
+        (d / "ai_trace.txt").write_text(self.HDR + "\n".join(lines) + "\n" + self.END)
+        if ranged is not None:
+            (d / "ranged_ai_log.txt").write_text("\n".join(ranged) + "\n")
+        return apl.run_full([str(d), "--no-write"] + MINI)
+
+    def test_every_check_is_in_the_checklist(self):
+        self.assertEqual([i for i, _ in apl.CHECKLIST if i.startswith("PR-")], self.PR_IDS)
+        self.assertEqual(apl.PR_CHECK_IDS, self.PR_IDS)
+        self.assertEqual(apl.EXPECTED_HOOK_COUNTS["companion-ai"], 31)
+
+    def test_pass_fixture(self):
+        r = self.run_case("probe_pass")
+        for cid in self.PR_IDS:
+            self.assertEqual(self.status(r, cid), "PASS", (cid, [x for x in r["checklist"] if x[0] == cid]))
+        self.assertEqual([m for s, _, m in r["an"].items if s in ("FAIL", "WARN")], [])
+        self.assertEqual((r["P"]["n_pr"], r["P"]["n_prs"]), (25, 8))                  # the fixture has 25 PR and 8 PRS lines
+        self.assertNotIn("t= PR", "".join(r["T"]["other_counts"]))      # probe lines are not 'other/unrecognised'
+        self.assertEqual(r["T"]["n_pa"], 0)                              # and never P/A script lines (PA_RE must not match "PR")
+        self.assertNotIn("unparsed", r["P"])
+
+    def test_fail_fixture(self):
+        d = self.copy_case("probe_fail")
+        r = apl.run_full([str(d)] + MINI)
+        for cid in self.PR_IDS:
+            self.assertEqual(self.status(r, cid), "PASS" if cid == "PR-SLOT6" else "FAIL", (cid, [x for x in r["checklist"] if x[0] == cid]))
+        fails = [m for s, _, m in r["an"].items if s == "FAIL"]
+        self.assertEqual(len(fails), 14)
+        self.assertTrue(all(m for m in fails))
+        text = (d / "REPORT.md").read_text()
+        self.assertIn("## 8. Phase-4 probe summaries", text)
+        self.assertIn("Last PRS line per probe", text)
+        self.assertEqual(apl.run_full([str(self.copy_case("probe_fail")), "--strict"] + MINI)["rc"], 2)
+
+    def test_healthy_session_observes_probe_checks(self):
+        r = self.run_case("healthy")
+        for cid in self.PR_IDS:
+            self.assertEqual(self.status(r, cid), "PASS" if cid == "PR-RAH2" else "OBSERVE", cid)
+
+    def test_no_probe_lines_all_observe(self):
+        r = self.trace("t=2001000 P 7f0001a2 p_atton k_ai_master ev=1003 d=1 | GENERIC DEBUG *************** START DETERMINE COMBAT ROUND p_atton")
+        for cid in self.PR_IDS:
+            self.assertEqual(self.status(r, cid), "OBSERVE", cid)
+
+    def test_p2_thresholds(self):
+        for avg, want in ((3900, "PASS"), (4500, "PASS"), (3499, "FAIL"), (3500, "OBSERVE"), (3899, "OBSERVE"), (4501, "OBSERVE")):
+            r = self.trace(f"t=2100000 PRS P2 cr=7f0001a2 runs=10 avg={avg} max=5000 ctrlRuns=1")
+            self.assertEqual(self.status(r, "PR-P2"), want, avg)
+        r = self.trace("t=2100000 PRS P2 cr=7f0001a2 runs=2 avg=0 max=0 ctrlRuns=0")   # too few runs for an average
+        self.assertEqual(self.status(r, "PR-P2"), "OBSERVE")
+        r = self.trace("t=2100000 PRS P2 cr=7f0001a2 runs=10 avg=4000 max=4100 ctrlRuns=0", "t=2100000 PRS P2 cr=7f0001a4 runs=10 avg=3000 max=4100 ctrlRuns=0")
+        self.assertEqual(self.status(r, "PR-P2"), "FAIL")                                # one fast companion fails the lot
+
+    def test_fm5_threshold(self):
+        for mx, want in ((4, "PASS"), (5, "FAIL")):
+            r = self.trace(f"t=2100000 PRS RS cr=7f0001a2 s6a=0 s6b=0 s6c=0 s7=0 s12=50 s1=0 max12ps={mx}")
+            self.assertEqual(self.status(r, "PR-FM5"), want, mx)
+        r = self.trace("t=2100000 PRS RS cr=7f0001a2 s6a=1 s6b=0 s6c=0 s7=0 s12=0 s1=0 max12ps=0")
+        self.assertEqual(self.status(r, "PR-FM5"), "OBSERVE")
+
+    def test_fm3(self):
+        r = self.trace("t=2100000 PRS FM3 passes=0 lost=0 removes=0 beforeCursor=0")
+        self.assertEqual(self.status(r, "PR-FM3"), "OBSERVE")
+        r = self.trace("t=2100000 PRS FM3 passes=60 lost=6 removes=9 beforeCursor=2")
+        self.assertEqual(self.status(r, "PR-FM3"), "PASS")
+        self.assertIn("lost/min", [x for x in r["checklist"] if x[0] == "PR-FM3"][0][2])
+        r = self.trace("t=2100000 PRS FM3 passes=60 lost=6 removes=9 beforeCursor=2",
+                       "t=2100001 PR FM3L level=4 sentinel=0a1b2c3d now=4 removed=0 done=1 elapsed=1 slice=2")
+        self.assertEqual(self.status(r, "PR-FM3"), "FAIL")
+        r = self.trace("t=2100001 PR FM3L level=4 sentinel=0a1b2c3d now=2 removed=0 done=1 elapsed=1 slice=2",
+                       "t=2100002 PR FM3L level=2 sentinel=0a1b2c3d now=2 removed=1 done=1 elapsed=1 slice=2")
+        self.assertEqual(self.status(r, "PR-FM3"), "OBSERVE")                           # lost lines but no PRS with passes: nothing to rate
+
+    def test_fm2_pairs(self):
+        base = "t=%d PR FM2R cr=7f0001a2 tgt=7f000233 other=0 inr=0 range=2.50 d=12.30 prog=0.00 n=%d"
+        two = [base % (2011000, 1), base % (2011300, 2)]
+        self.assertEqual(self.status(self.trace(*two), "PR-FM2"), "OBSERVE")             # n < 3
+        three = two + [base % (2011600, 3)]
+        self.assertEqual(self.status(self.trace(*three), "PR-FM2"), "FAIL")              # no FM2C/FM2F
+        c = "t=2005000 PR FM2C cr=7f0001a2 tgt=7f000233 res=3 code=-4 cached=-1 cp=0 calls=4 n2=0 n3=1"
+        self.assertEqual(self.status(self.trace(c, *three), "PR-FM2"), "PASS")
+        far = "t=1900000 PR FM2C cr=7f0001a2 tgt=7f000233 res=3 code=-4 cached=-1 cp=0 calls=4 n2=0 n3=1"   # > 30 s away
+        self.assertEqual(self.status(self.trace(far, *three), "PR-FM2"), "FAIL")
+        f = "t=2012000 PR FM2F cr=7f0001a2 tgt=7f000233 grp=1 n=3 span=900ms ctrl=1"
+        self.assertEqual(self.status(self.trace(f, *three), "PR-FM2"), "PASS")
+        # FM2B
+        self.assertEqual(self.status(self.trace(c), "PR-FM2B"), "PASS")
+        self.assertEqual(self.status(self.trace(c.replace("cr=7f0001a2", "cr=00000000")), "PR-FM2B"), "FAIL")
+        self.assertEqual(self.status(self.trace(c.replace("res=3", "res=4")), "PR-FM2B"), "FAIL")
+
+    def test_e9_and_slot6(self):
+        s7 = "t=2020300 PR RS site=S7 cr=7f0001a2 p_atton party=1 empty=0 spk=7f000300 spkParty=%d pat=%d"
+        shx = "t=2030000 PR SHX end spk=7f000300 n_mandsold party=0 r=35 seen=0 idx=3 count=3 last=7f000304 text=help me"
+        self.assertEqual(self.status(self.trace(s7 % (0, 15), shx), "PR-E9"), "PASS")
+        self.assertEqual(self.status(self.trace(s7 % (1, 15), shx), "PR-E9"), "FAIL")     # party speaker: not an allied delivery
+        self.assertEqual(self.status(self.trace(s7 % (0, 3), shx), "PR-E9"), "FAIL")      # wrong pattern
+        self.assertEqual(self.status(self.trace(shx), "PR-E9"), "FAIL")
+        self.assertEqual(self.status(self.trace(shx.replace("r=35", "r=20")), "PR-E9"), "OBSERVE")
+        self.assertEqual(self.status(self.trace(), "PR-E9"), "OBSERVE")
+        s6 = "t=2020000 PR RS site=%s cr=7f0001a2 p_atton party=%d empty=0"
+        self.assertEqual(self.status(self.trace(s6 % ("S6A", 1)), "PR-SLOT6"), "PASS")
+        self.assertEqual(self.status(self.trace(s6 % ("S6C", 1)), "PR-SLOT6"), "OBSERVE")   # S6C alone does not answer the cadence question
+        self.assertEqual(self.status(self.trace(s6 % ("S6B", 0)), "PR-SLOT6"), "OBSERVE")
+
+    def test_pf_rar_shout(self):
+        pf = "t=2001500 PR PF cr=7f0001a2 p_atton old=1 new=0 apply=1 site=%s"
+        prs = "t=2100000 PRS PF saveA=%d saveB=%d xferA=1 xferB=1 other=0"
+        self.assertEqual(self.status(self.trace(pf % "SAVE_A", prs % (2, 2)), "PR-PF"), "PASS")
+        self.assertEqual(self.status(self.trace(pf % "SAVE_A", prs % (2, 1)), "PR-PF"), "FAIL")
+        self.assertEqual(self.status(self.trace(pf % "?", prs % (2, 2)), "PR-PF"), "FAIL")
+        rar = "t=2100000 PRS RAR cr=7f0001a2 ispc=0 n=9 %s"
+        self.assertEqual(self.status(self.trace(rar % "c:1/0/7/1 11:0/0/1/0"), "PR-RAR"), "PASS")
+        self.assertEqual(self.status(self.trace(rar % "c:1/0/7/1 0:0/0/4/0"), "PR-RAR"), "PASS")      # type 0 / > 0x47 with result 3 only
+        self.assertEqual(self.status(self.trace(rar % "c:1/0/7/1 0:0/0/4/1"), "PR-RAR"), "FAIL")
+        self.assertEqual(self.status(self.trace(rar % "0:0/0/0/0+o3"), "PR-RAR"), "FAIL")             # out-of-range type with an "other" result
+        self.assertEqual(apl.parse_rar_hist("c:1/2/3/4+o5 11:0/0/1/0"), {0xC: (1, 2, 3, 4, 5), 0x11: (0, 0, 1, 0, 0)})
+        sh = "t=2100000 PRS SHX shouts=%d r35=1 partySpk=0 end=%d xbreak=0 noarea=0 abortStart=%d abortMid=0"
+        self.assertEqual(self.status(self.trace(sh % (5, 5, 0)), "PR-SHOUT"), "PASS")
+        self.assertEqual(self.status(self.trace(sh % (5, 4, 1)), "PR-SHOUT"), "FAIL")
+        self.assertEqual(self.status(self.trace(sh % (0, 0, 0)), "PR-SHOUT"), "OBSERVE")
+
+    def test_ss_window_and_budget(self):
+        ss = "t=2040000 PR SS1 cr=7f0001a2 p_atton state 0->%d combat=1"
+        s6c = "t=%d PR RS site=S6C cr=7f0001a2 p_atton party=1 empty=0"
+        self.assertEqual(self.status(self.trace(ss % 5, s6c % 2059999), "PR-SS"), "PASS")
+        self.assertEqual(self.status(self.trace(ss % 5, s6c % 2100001), "PR-SS"), "FAIL")           # 60.001 s later
+        self.assertEqual(self.status(self.trace(ss % 5), "PR-SS"), "FAIL")
+        self.assertEqual(self.status(self.trace(ss % 2), "PR-SS"), "OBSERVE")                        # state 2 does not remove the slot-6 script
+        self.assertEqual(self.status(self.trace(ss % 0x14), "PR-SS"), "OBSERVE")
+        self.assertEqual(self.status(self.trace(ss % 0x13), "PR-SS"), "FAIL")
+        late = self.trace("t=2290000 PR SS1 cr=7f0001a2 p_atton state 0->5 combat=1")               # the log ends inside the 60 s window
+        self.assertEqual(self.status(late, "PR-SS"), "OBSERVE")
+        many = [s6c % (2000000 + 10 * i) for i in range(20)]                                          # S6C line budget (20) used up: inconclusive
+        self.assertEqual(self.status(self.trace(ss % 5, *many), "PR-SS"), "OBSERVE")
+        r = self.trace("-- probe RAR line budget reached --", "-- probe RS line budget reached --")
+        self.assertTrue(any(s == "INFO" and "budget" in m and "RAR" in m and "RS" in m for s, _, m in r["an"].items))
+
+    def test_e4_party_a1x(self):
+        g = "t=2050000 PR GCA cr=7f0001a2 res=%d lastRun=%x moving=1"
+        self.assertEqual(self.status(self.trace(g % (3, 0x11)), "PR-E4"), "PASS")
+        self.assertEqual(self.status(self.trace(g % (39, 0x3F)), "PR-E4"), "PASS")
+        self.assertEqual(self.status(self.trace(g % (38, 0x11)), "PR-E4"), "OBSERVE")
+        self.assertEqual(self.status(self.trace(g % (3, 0x1)), "PR-E4"), "OBSERVE")
+        self.assertEqual(self.status(self.trace(g % (0, 0x11)), "PR-E4"), "FAIL")
+        self.assertEqual(self.status(self.trace(g % (0, 0x11), g % (3, 0xC)), "PR-E4"), "FAIL")      # PASS needs no FAIL line
+        pt = "t=2001000 PR PARTY why=%s ctrl=7f0001a0 f=%d/1 pobj=%s f=1/1 pc=7f0001a0 tbl=2 [0:7f0001a0:1:1,1:7f0001a2:%d:0]"
+        self.assertEqual(self.status(self.trace(pt % ("load", 1, "7f0001a0", 1)), "PR-PARTY"), "PASS")
+        self.assertEqual(self.status(self.trace(pt % ("load", 1, "7f0001a0", 0)), "PR-PARTY"), "FAIL")
+        self.assertEqual(self.status(self.trace(pt % ("load", 0, "7f0001a0", 1)), "PR-PARTY"), "FAIL")
+        self.assertEqual(self.status(self.trace(pt % ("pf", 1, "7f0001a0", 0)), "PR-PARTY"), "PASS")     # mid-save lines are not judged
+        r = self.trace(pt % ("leader", 1, "7f0001a2", 1))
+        self.assertEqual(self.status(r, "PR-PARTY"), "PASS")
+        self.assertIn("pobj != ctrl after a leader switch x1", [x for x in r["checklist"] if x[0] == "PR-PARTY"][0][2])
+        a1 = "t=2080000 A1 cr=7f0001a4 party=1 raw=11 eff=11 reason=range dist=40.0 max=2.2 los=1 ranged=1 area=same tgt=7f000233 -> %s new=%s (wouldSpin=1)%s"
+        sfx = " c524=0 f570=3000 combat=1"
+        e2 = "t=2083050 E2 FALLBACK cr=7f0001a4 p_visas party=1 combat=1 round=0 script=k_hen_visasdlg a1spin=0 lastA1=3050ms"
+        end = a1 % ("end", "ffffffff", sfx)
+        f = "t=%d PR A1X FOLLOWUP cr=7f0001a4 site=S6B after=%dms"
+        self.assertEqual(self.status(self.trace(a1 % ("end", "ffffffff", ""), e2), "PR-A1X"), "OBSERVE")   # A1 line without the A1X suffix
+        self.assertEqual(self.status(self.trace(end, e2, f % (2084000, 4000)), "PR-A1X"), "PASS")             # rethink + 1000 = 4000 ms
+        self.assertEqual(self.status(self.trace(end, e2, f % (2084001, 4001)), "PR-A1X"), "FAIL")
+        self.assertEqual(self.status(self.trace(end, e2), "PR-A1X"), "FAIL")
+        orph = "t=2084100 PR A1X ORPHAN cr=7f0001a4 since=4100ms"
+        self.assertEqual(self.status(self.trace(end, e2, f % (2083100, 3100), orph), "PR-A1X"), "FAIL")
+        rt = a1 % ("retarget", "7f000240", sfx)
+        self.assertEqual(self.status(self.trace(rt, orph), "PR-A1X"), "PASS")                                 # a retarget needs no slot-6 run
+        strict = "t=2080010 PR A1X STRICT cr=7f0001a4 new=7f000240 d2=9.00 lim2=5.29 -> %s"
+        r = self.trace(end, e2, f % (2083100, 3100), strict % "would-reject", strict % "ok")
+        self.assertIn("STRICT would-reject 1/2", [x for x in r["checklist"] if x[0] == "PR-A1X"][0][2])
+
+    def test_rah2_window(self):
+        h2 = "H2 t=%d cr=7f0001a4 party=1 pc=0 stance=16 ranged=1 los=0 me=(1.00,2.00,0.00) lastBlocked=(1.00,2.00,0.00) -> retarget=%d"
+        h1 = ("H1 t=%d cr=%s party=1 pc=0 stance=16 ranged=1 los=1 dist2=9.00 max=15.00 desired=10.00 inRange=%d area=0000aaaa/0000aaaa tgt=7f000233 ttype=5 "
+              "backoff=0 rangedLocal=1 end52c=%s me=(1.00,2.00,0.00) tgtpos=(8.00,2.00,0.00) lastBlocked=(0.00,0.00,0.00) -> hold=0")
+        def run(*rl):
+            return self.status(self.trace(ranged=list(rl)), "PR-RAH2")
+        self.assertEqual(run(h2 % (1000, 1), h1 % (3000, "7f0001a4", 0, "7f000240")), "FAIL")      # exactly 2000 ms later
+        self.assertEqual(run(h2 % (1000, 1), h1 % (3001, "7f0001a4", 0, "7f000240")), "PASS")      # 2001 ms: outside
+        self.assertEqual(run(h2 % (1000, 1), h1 % (2000, "7f0001a2", 0, "7f000240"), h1 % (2000, "7f0001a4", 0, "00000000"),
+                             h1 % (2000, "7f0001a4", 1, "7f000240")), "PASS")                      # other creature / end52c 0 / inRange=1
+        self.assertEqual(run(h2 % (1000, 0), h1 % (1500, "7f0001a4", 0, "7f000240")), "OBSERVE")    # retarget=0: the case did not occur
+        self.assertEqual(run(h1 % (1500, "7f0001a4", 0, "7f000240")), "OBSERVE")
+        self.assertEqual(self.status(self.trace(), "PR-RAH2"), "OBSERVE")                           # no ranged log
+
 
 # ---- the regexes against the real printf format strings in the C++ sources --------------------------------------------
 def c_literal_at(src: str, anchor: str) -> str:
@@ -384,11 +580,11 @@ class FormatsMatchSource(unittest.TestCase):
                  groups=["100", "P", "7f0001a2", "p_atton", "k_ai_master", "1003", "1", "hello world"])
         self.chk(c, '"t=%lu A %08x %s %s ev=%d d=%d | %s @(%d,%d) life=%.1f"', [100, 0x7f0001a2, "-", "k_ai_master", 1012, 1, "txt", 0, 15, 2.0],
                  A.PA_RE, groups=["100", "A", "7f0001a2", "-", "k_ai_master", "1012", "1"])
-        self.chk(c, '"t=%lu A1 cr=%08x party=%d raw=%d eff=%d reason=%s dist=%.1f max=%.1f los=%d ranged=%d area=%s tgt=%08x -> %s new=%08x (wouldSpin=%u)"',
-                 [100, 0x7f0001a4, 1, 11, 11, "range", 40.0, 2.2, 1, 1, "same", 0x7f000233, "end", 0xffffffff, 3], A.A1_RE,
+        self.chk(c, '"t=%lu A1 cr=%08x party=%d raw=%d eff=%d reason=%s dist=%.1f max=%.1f los=%d ranged=%d area=%s tgt=%08x -> %s new=%08x (wouldSpin=%u)%s"',
+                 [100, 0x7f0001a4, 1, 11, 11, "range", 40.0, 2.2, 1, 1, "same", 0x7f000233, "end", 0xffffffff, 3, ""], A.A1_RE,
                  groups=["100", "7f0001a4", "1", "11", "11", "range", "end", "ffffffff", "3"])
-        self.chk(c, '"t=%lu A1 cr=%08x party=%d raw=%d eff=%d reason=%s dist=%.1f max=%.1f los=%d ranged=%d area=%s tgt=%08x -> %s new=%08x (wouldSpin=%u)"',
-                 [100, 0x7f0001a4, 1, 11, 11, "range", 40.0, 2.2, 1, 1, "same", 0x7f000233, "spin (not listed)", 0xffffffff, 3], A.A1_RE,
+        self.chk(c, '"t=%lu A1 cr=%08x party=%d raw=%d eff=%d reason=%s dist=%.1f max=%.1f los=%d ranged=%d area=%s tgt=%08x -> %s new=%08x (wouldSpin=%u)%s"',
+                 [100, 0x7f0001a4, 1, 11, 11, "range", 40.0, 2.2, 1, 1, "same", 0x7f000233, "spin (not listed)", 0xffffffff, 3, " c524=0 f570=2900 combat=1"], A.A1_RE,
                  groups=["100", "7f0001a4", "1", "11", "11", "range", "spin (not listed)"])
         self.chk(c, '"t=%lu E2 FALLBACK cr=%08x %s party=%d combat=%d round=%d script=%s a1spin=%d lastA1=%ldms"',
                  [100, 0x7f0001a4, "p_visas", 1, 1, 0, "k_hen_visasdlg", 0, 2900], A.E2_RE, groups=["100", "7f0001a4", "p_visas"])
@@ -420,6 +616,71 @@ class FormatsMatchSource(unittest.TestCase):
         self.chk(c, '"# companion-ai %s session %s t=%lu pid=%lu tid=%lu cwd=%s ini=%s"', ["0.1.0", "2026-10-02 01:00:00", 1000000, 1234, 100, "Z:\\g", "Z:\\g\\i.ini"],
                  A.HEADER_RE, groups=["0.1.0", "2026-10-02 01:00:00", "1000000", "1234", "100"])
         self.chk(c, '"# config: unparseable value for: %s (flags', ["a1_stances,p1"], A.CONFIG_BAD_RE, groups=["a1_stances,p1"])
+
+    def test_probe_lines(self):
+        """Every Phase-4 probe regex against the printf literal of CompanionAI.cpp (the fixtures are hand-written: this ties them to the source)."""
+        c, A = self.cai, apl
+        self.chk(c, '"t=%lu PR FM2C cr=%08x tgt=%08x res=%d code=%d cached=%d cp=%d calls=%d n2=%u n3=%u"',
+                 [100, 0x7f0001a2, 0x7f000233, 2, -4, -1, 0, 3, 1, 0], A.PR_FM2C_RE, groups=["100", "7f0001a2", "7f000233", "2", "-4", "-1", "0", "3", "1", "0"])
+        self.chk(c, '"t=%lu PR FM2F cr=%08x tgt=%08x grp=%u n=%u span=%lums ctrl=%d"', [100, 0x7f0001a2, 0x7f000233, 2, 3, 2100, 1], A.PR_FM2F_RE,
+                 groups=["100", "7f0001a2", "7f000233", "2", "3", "2100", "1"])
+        self.chk(c, '"t=%lu PR FM2R cr=%08x tgt=%08x other=%d inr=%d range=%.2f d=%.2f prog=%.2f n=%u"', [100, 0x7f0001a2, 0x7f000233, 0, 1, 2.5, 12.3, -0.1, 4],
+                 A.PR_FM2R_RE, groups=["100", "7f0001a2", "7f000233", "0", "1", "2.50", "12.30", "-0.10", "4"])
+        self.chk(c, '"t=%lu PR FM3L level=%d sentinel=%08x now=%d removed=%d done=%d elapsed=%llu slice=%llu"', [100, 2, 0xa1b2c3d, 0, 0, 1, 1800, 1500],
+                 A.PR_FM3L_RE, groups=["100", "2", "0a1b2c3d", "0", "0", "1", "1800", "1500"])
+        self.chk(c, '"t=%lu PR FM3X id=%08x level=%d idx=%d cursor=%d sentinel=%d"', [100, 0x7f0001a2, 2, 5, 6, 1], A.PR_FM3X_RE,
+                 groups=["100", "7f0001a2", "2", "5", "6", "1"])
+        self.chk(c, '"t=%lu PRS FM3 passes=%u lost=%u removes=%u beforeCursor=%u"', [100, 9, 3, 4, 1], A.PRS_FM3_RE, groups=["100", "9", "3", "4", "1"])
+        rs = '"t=%lu PR RS site=%s cr=%08x %s party=%d empty=%d%s"'
+        self.chk(c, rs, [100, "S6A", 0x7f0001a2, "p_atton", 1, 0, ""], A.PR_RS_RE, groups=["100", "S6A", "7f0001a2", "p_atton", "1", "0", None, None, None])
+        sfx = c_literal_at(c, '" spk=%08x spkParty=%d pat=%d"')
+        self.chk(c, rs, [100, "S7", 0x7f0001a2, "p_atton", 1, 1, render_c(sfx, [0x7f000300, 0, 15])], A.PR_RS_RE,
+                 groups=["100", "S7", "7f0001a2", "p_atton", "1", "1", "7f000300", "0", "15"])
+        self.chk(c, '"t=%lu PRS RS cr=%08x s6a=%u s6b=%u s6c=%u s7=%u s12=%u s1=%u max12ps=%u"', [100, 0x7f0001a2, 1, 2, 3, 4, 5, 6, 7], A.PRS_RS_RE,
+                 groups=["100", "7f0001a2", "1", "2", "3", "4", "5", "6", "7"])
+        self.chk(c, '"t=%lu PR P2 cr=%08x ctrl=%d elapsed=%u combat=%d"', [100, 0x7f0001a2, 1, 4012, 0], A.PR_P2_RE, groups=["100", "7f0001a2", "1", "4012", "0"])
+        self.chk(c, '"t=%lu PRS P2 cr=%08x runs=%u avg=%u max=%u ctrlRuns=%u"', [100, 0x7f0001a2, 10, 4010, 4200, 2], A.PRS_P2_RE,
+                 groups=["100", "7f0001a2", "10", "4010", "4200", "2"])
+        self.chk(c, '"t=%lu PR PF cr=%08x %s old=%d new=%d apply=%d site=%s"', [100, 0x7f0001a2, "p_atton", 1, 0, 1, "SAVE_A"], A.PR_PF_RE,
+                 groups=["100", "7f0001a2", "p_atton", "1", "0", "1", "SAVE_A"])
+        self.chk(c, '"t=%lu PRS PF saveA=%u saveB=%u xferA=%u xferB=%u other=%u"', [100, 3, 3, 1, 1, 0], A.PRS_PF_RE, groups=["100", "3", "3", "1", "1", "0"])
+        self.chk(c, '"t=%lu PRS RAR cr=%08x ispc=%d n=%u %s"', [100, 0x7f0001a2, 0, 500, "c:5/0/490/5 0:1/0/2/0+o3"], A.PRS_RAR_RE,
+                 groups=["100", "7f0001a2", "0", "500", "c:5/0/490/5 0:1/0/2/0+o3"])
+        self.chk(c, '"t=%lu PR RAR MOVESTATE cr=%08x type=%x res=%d state=%d"', [100, 0x7f0001a2, 0x11, 2, 5], A.PR_RAR_MOVE_RE, groups=["100", "7f0001a2", "11", "2", "5"])
+        self.chk(c, '"t=%lu PR RAR REQ cr=%08x type=%x n=%u"', [100, 0x7f0001a2, 0x3f, 200], A.PR_RAR_REQ_RE, groups=["100", "7f0001a2", "3f", "200"])
+        self.chk(c, '"t=%lu PR SHX %s spk=%08x %s party=%d r=%.0f seen=%d idx=%d count=%d last=%08x text=%s"',
+                 [100, "ABORT-MID", 0x7f000300, "n_mandsold", 0, 35.0, 0, 2, 3, 0x7f000304, "help me"], A.PR_SHX_RE,
+                 groups=["100", "ABORT-MID", "7f000300", "n_mandsold", "0", "35", "0", "2", "3", "7f000304", "help me"])
+        self.chk(c, '"t=%lu PRS SHX shouts=%u r35=%u partySpk=%u end=%u xbreak=%u noarea=%u abortStart=%u abortMid=%u"', [100, 12, 4, 1, 10, 2, 0, 0, 0],
+                 A.PRS_SHX_RE, groups=["100", "12", "4", "1", "10", "2", "0", "0", "0"])
+        self.chk(c, '"t=%lu PR SS1 cr=%08x %s state %d->%d combat=%d"', [100, 0x7f0001a2, "p_atton", 0, 5, 1], A.PR_SS1_RE, groups=["100", "7f0001a2", "p_atton", "0", "5", "1"])
+        self.chk(c, '"t=%lu PR GCA cr=%08x res=%d lastRun=%x moving=%d"', [100, 0x7f0001a2, 3, 0x11, 1], A.PR_GCA_RE, groups=["100", "7f0001a2", "3", "11", "1"])
+        self.chk(c, '"t=%lu PRS GCA cr=%08x %s"', [100, 0x7f0001a2, "r3:12 r38:40"], A.PRS_GCA_RE, groups=["100", "7f0001a2", "r3:12 r38:40"])
+        self.chk(c, '"t=%lu PR PARTY why=%s ctrl=%08x f=%d/%d pobj=%08x f=%d/%d pc=%08x tbl=%d [%s]"',
+                 [100, "load", 0x7f0001a0, 1, 1, 0x7f0001a0, 1, 1, 0x7f0001a0, 3, "0:7f0001a0:1:1,1:7f0001a2:1:0"], A.PR_PARTY_RE,
+                 groups=["100", "load", "7f0001a0", "1", "1", "7f0001a0", "1", "1", "7f0001a0", "3", "0:7f0001a0:1:1,1:7f0001a2:1:0"])
+        self.chk(c, '"t=%lu PR A1X STRICT cr=%08x new=%08x d2=%.2f lim2=%.2f -> %s"', [100, 0x7f0001a4, 0x7f000240, 9.0, 5.29, "would-reject"], A.PR_A1X_STRICT_RE,
+                 groups=["100", "7f0001a4", "7f000240", "9.00", "5.29", "would-reject"])
+        self.chk(c, '"t=%lu PR A1X FOLLOWUP cr=%08x site=%s after=%ldms"', [100, 0x7f0001a4, "S6B", 3100], A.PR_A1X_FOLLOW_RE, groups=["100", "7f0001a4", "S6B", "3100"])
+        self.chk(c, '"t=%lu PR A1X ORPHAN cr=%08x since=%ldms"', [100, 0x7f0001a4, 4100], A.PR_A1X_ORPHAN_RE, groups=["100", "7f0001a4", "4100"])
+        a1 = render_c(c_literal_at(c, '"t=%lu A1 cr=%08x party=%d raw=%d eff=%d reason=%s dist=%.1f'),
+                      [100, 0x7f0001a4, 1, 11, 11, "range", 40.0, 2.2, 1, 1, "same", 0x7f000233, "end", 0xffffffff, 3,
+                       render_c(c_literal_at(c, '" c524=%d f570=%d combat=%d"'), [0, 3000, 1])])
+        self.assertTrue(A.A1_RE.match(a1), a1)
+        self.assertEqual(A.A1X_SUFFIX_RE.search(a1).groups(), ("0", "3000", "1"))
+        m = A.BUDGET_RE.match(render_c(c_literal_at(c, '"-- probe %s line budget reached --"'), ["RAR"]))
+        self.assertEqual(m.group(1), "RAR")
+        probes = render_c(c_literal_at(c, '"# config probes fm2c=%d'), [1] * 14)
+        self.assertTrue(A.CONFIG_RE.match(probes))
+        self.assertEqual(len(apl.kv(probes)), 14)
+        # PR lines are never script lines (the P/A regex needs " P " / " A " as the second token)
+        self.assertIsNone(A.PA_RE.match("t=100 PR RS site=S6A cr=7f0001a2 p_atton party=1 empty=0"))
+
+    def test_every_probe_line_format_has_a_parser(self):
+        import re
+        kinds = set(re.findall(r'"t=%lu (PRS? \w+(?: (?:MOVESTATE|REQ|STRICT|FOLLOWUP|ORPHAN))?)', self.cai))
+        self.assertEqual(len(kinds), 24, sorted(kinds))
+        self.assertEqual(len(apl._PR_PARSERS), len(kinds))
 
     def test_config_fixes_line_carries_the_keys_the_tool_reads(self):
         fmt = c_literal_at(self.cai, '"# config fixes a1=%d')
@@ -483,7 +744,7 @@ class Cli(Base):
         p = subprocess.run([sys.executable, str(HERE / "analyze_play_logs.py"), str(d)] + MINI, capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertTrue((d / "REPORT.md").is_file())
-        self.assertIn("Checklist: 16 PASS", p.stdout)
+        self.assertIn("Checklist: 17 PASS", p.stdout)   # 16 + PR-RAH2 (the fixture H2 retarget has no end52c follow-up)
 
     def test_strict_exit_code(self):
         d = self.copy_case("recast")

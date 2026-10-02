@@ -223,6 +223,10 @@ struct Config {
     bool a3 = false;
     bool log = true;            // fix event lines (A1/FM1/FM4/A4/A3) and the summaries
     int fm4Requested = 1;       // raw INI value (for the config line)
+    // ---- Phase-4 probes (PROBE_DESIGN.md): log only, behaviour stays vanilla; the probe build ships them on
+    bool probeFm2c = true, probeFm2f = true, probeFm2r = true, probeFm3 = true, probeRs = true, probeP2 = true, probePf = true,
+         probeRar = true, probeShx = true, probeSs1 = true, probeGca = true, probeParty = true, probeA1x = true;
+    int probeLines = 400;       // per-probe session budget of PR lines (summaries are exempt)
 
     Config() { traceScripts.set(DefaultTraceScripts); }
 };
@@ -274,6 +278,20 @@ inline void parseConfig(const IniTable& t, Config& c) {
     c.c1PartyOnly = t.getBool("c1_party_only", c.c1PartyOnly);
     c.a3 = t.getBool("a3", c.a3);
     c.log = t.getBool("log", c.log);
+    c.probeFm2c = t.getBool("probe_fm2c", c.probeFm2c);
+    c.probeFm2f = t.getBool("probe_fm2f", c.probeFm2f);
+    c.probeFm2r = t.getBool("probe_fm2r", c.probeFm2r);
+    c.probeFm3 = t.getBool("probe_fm3", c.probeFm3);
+    c.probeRs = t.getBool("probe_rs", c.probeRs);
+    c.probeP2 = t.getBool("probe_p2", c.probeP2);
+    c.probePf = t.getBool("probe_pf", c.probePf);
+    c.probeRar = t.getBool("probe_rar", c.probeRar);
+    c.probeShx = t.getBool("probe_shx", c.probeShx);
+    c.probeSs1 = t.getBool("probe_ss1", c.probeSs1);
+    c.probeGca = t.getBool("probe_gca", c.probeGca);
+    c.probeParty = t.getBool("probe_party", c.probeParty);
+    c.probeA1x = t.getBool("probe_a1x", c.probeA1x);
+    c.probeLines = clampi(t.getInt("probe_lines", c.probeLines), 0, 100000);
 }
 
 inline bool sameConfig(const Config& a, const Config& b) {
@@ -286,7 +304,10 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.a1PartyOnly == b.a1PartyOnly && a.a1Retarget == b.a1Retarget && a.a1RetargetStances == b.a1RetargetStances &&
            a.a1RethinkMs == b.a1RethinkMs && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
            a.fm1RethinkMs == b.fm1RethinkMs && a.fm4 == b.fm4 && a.fm4Requested == b.fm4Requested && a.a4 == b.a4 && a.c1 == b.c1 &&
-           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.log == b.log;
+           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.log == b.log && a.probeFm2c == b.probeFm2c && a.probeFm2f == b.probeFm2f &&
+           a.probeFm2r == b.probeFm2r && a.probeFm3 == b.probeFm3 && a.probeRs == b.probeRs && a.probeP2 == b.probeP2 &&
+           a.probePf == b.probePf && a.probeRar == b.probeRar && a.probeShx == b.probeShx && a.probeSs1 == b.probeSs1 &&
+           a.probeGca == b.probeGca && a.probeParty == b.probeParty && a.probeA1x == b.probeA1x && a.probeLines == b.probeLines;
 }
 
 // ---------------------------------------------------------------- log gate
@@ -523,6 +544,120 @@ struct SubjectThrottle {
         slot->seen = now;
         return slot->t.allow(now, sig, first, periodMs);
     }
+};
+
+// ---------------------------------------------------------------- Phase-4 probe helpers (PROBE_DESIGN.md section 4; log only)
+// RunScript 0x6FD8D0 return address -> which engine site ran the script (return = CALL + 5). 0 = not a probed site.
+// The hot-ish RS handler calls this first: at most 7 compares, then out.
+inline int rsSite(unsigned ret) {
+    switch (ret) {
+    case 0x58F514u: return 1;   // S6A EndCombatRound slot-6 re-run
+    case 0x569A6Cu: return 2;   // S6B AIUpdate fallback
+    case 0x59E909u: return 3;   // S6C SetState removal
+    case 0x5709F5u: return 4;   // S7 shout delivery (listener)
+    case 0x57074Au: return 5;   // S12 OnBlocked
+    case 0x570645u:
+    case 0x57069Fu: return 6;   // S1 event table
+    default: return 0;
+    }
+}
+inline const char* rsName(int site) {
+    static const char* const n[] = {"-", "S6A", "S6B", "S6C", "S7", "S12", "S1"};
+    return (site >= 0 && site <= 6) ? n[site] : "-";
+}
+
+// SetPartyMemberFlag 0x58A330 callers: the 15 CALL sites + 5 (return address at [ebp+4]). -1 = unknown.
+constexpr int PfSites = 15;
+inline int pfSite(unsigned ret) {
+    switch (ret) {
+    case 0x574537u: return 0;    // SAVE_A
+    case 0x575170u: return 1;    // SAVE_B
+    case 0x599AF4u: return 2;    // EFF89
+    case 0x5F89AAu: return 3;    // XFER_A
+    case 0x5F8A13u: return 4;    // XFER_B
+    case 0x5F8EB9u: return 5;    // ADDMEMBER
+    case 0x5F93B4u: return 6;    // CREATEPARTY
+    case 0x5FEAC7u: return 7;    // SWITCHPC
+    case 0x6306A5u: return 8;    // CHARGEN
+    case 0x630B17u: return 9;    // PLAYERLOAD
+    case 0x66CA5Au: return 10;   // CMD574
+    case 0x6900C1u: return 11;   // CMD575
+    case 0x69B901u: return 12;   // CMD846
+    case 0x89FE45u: return 13;   // SELECT_DEL
+    case 0x8A050Eu: return 14;   // SELECT_ADD
+    default: return -1;
+    }
+}
+inline const char* pfName(int site) {
+    static const char* const n[PfSites] = {"SAVE_A", "SAVE_B", "EFF89", "XFER_A", "XFER_B", "ADDMEMBER", "CREATEPARTY", "SWITCHPC",
+                                           "CHARGEN", "PLAYERLOAD", "CMD574", "CMD575", "CMD846", "SELECT_DEL", "SELECT_ADD"};
+    return (site >= 0 && site < PfSites) ? n[site] : "?";
+}
+// The save bounce (SaveCreature clears and re-sets the flag) and the party transfer write the flag twice per creature.
+inline bool pfTransient(int site) { return site == 0 || site == 1 || site == 3 || site == 4; }
+
+// P2 (0x56BE79): the engine runs UpdatePerception(0) iff +0x10E8 == 0 && mode == 1 && elapsed >= 4000 (0x56BE8B..0x56BEA9).
+inline bool p2Runs(int isPC, int mode, unsigned elapsed) { return isPC == 0 && mode == 1 && elapsed >= 4000u; }
+
+// SHX (0x5475E8, the single RET 0xC of the shout delivery): which of the 5 exits was taken, from the frame at the exit.
+enum ShoutExit { ShoutNoArea = 0, ShoutAbortStart, ShoutEnd, ShoutXBreak, ShoutAbortMid };
+inline int shoutExit(bool area, int idx, int count, bool lastOk) {
+    if (!area) return ShoutNoArea;          // 00547180 JZ
+    if (idx < 0) return ShoutAbortStart;    // 005471b5 JL (0x522AF0 found no start)
+    if (idx >= count) return ShoutEnd;      // 005471c4 JGE
+    return lastOk ? ShoutXBreak : ShoutAbortMid;   // 00547203 JNZ with a resolvable / an unresolvable last candidate
+}
+inline const char* shoutName(int k) {
+    static const char* const n[] = {"noarea", "ABORT-START", "end", "xbreak", "ABORT-MID"};
+    return (k >= 0 && k <= 4) ? n[k] : "?";
+}
+
+// FM2C (0x55B69A): the label for why the search failed / was partial (log only).
+inline const char* fm2cReason(int cp, int cached, int res) {
+    if (cp == 1) return "client";
+    if (cached == -1) return "code-1";
+    if (res == 2) return "partial";
+    if (res == 3) return "blocked";
+    return "other";
+}
+
+// FM3 (UpdateState level end): the sentinel object left its level (or was removed) => the level cannot end on it.
+inline bool fm3Lost(int level, int nowLevel, bool removed) { return removed || nowLevel != level; }
+
+// A1X: the strict 2D test the attack itself applies: dist2 <= (maxRange + 0.1)^2 (candidate retargeted by 0x57C990 uses 3D minus radii).
+inline bool a1Strict(float ax, float ay, float tx, float ty, float maxR) {
+    float dx = ax - tx, dy = ay - ty, lim = maxR + 0.1f;
+    return dx * dx + dy * dy <= lim * lim;
+}
+// A1X: an A1 end/retarget must be followed by a slot-6 run (or E2) within the rethink time + 1 s.
+inline bool a1OrphanDue(unsigned now, unsigned endAt, int rethinkMs) {
+    return endAt != 0 && now - endAt > static_cast<unsigned>(rethinkMs) + 1000u;
+}
+
+// Per-(creature, target) event counter inside a sliding window (gap since the last event). Returns true when it (re)started.
+struct PairCount {
+    int cr = 0, tgt = 0; unsigned n = 0, first = 0, last = 0; float lastD = 0;
+};
+inline bool pairBump(PairCount& p, int cr, int tgt, unsigned now, unsigned windowMs) {
+    bool reset = p.n == 0 || p.cr != cr || p.tgt != tgt || now - p.last > windowMs;
+    if (reset) { p.cr = cr; p.tgt = tgt; p.n = 1; p.first = now; p.lastD = 0; } else ++p.n;
+    p.last = now;
+    return reset;
+}
+
+// RAR histogram bucket: (action type 1..0x47, else 0) * 5 + (result 1..4, else 0). 0x48 types x 5 results.
+constexpr int RarTypes = 0x48, RarBuckets = RarTypes * 5;
+inline int rarIndex(int type, int res) { return ((type >= 1 && type <= 0x47) ? type : 0) * 5 + ((res >= 1 && res <= 4) ? res : 0); }
+
+// Per-probe session line budget: `take` is false once `budget` lines were granted; `marker` is true exactly once afterwards.
+struct ProbeCap {
+    unsigned used = 0; bool refused = false, marked = false;
+    bool take(unsigned budget) {
+        if (used < budget) { ++used; return true; }
+        refused = true;
+        return false;
+    }
+    bool marker() { if (refused && !marked) { marked = true; return true; } return false; }
 };
 
 // Copy a C string of at most cap-1 chars, replacing control characters so a log line stays one line.

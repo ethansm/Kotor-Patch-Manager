@@ -1,0 +1,26 @@
+# companion-ai 0.2.0-probe session 2026-10-02 02:00:00 t=2000000 pid=1234 tid=100 cwd=Z:\game ini=Z:\game\companion_ai.ini
+# config (load) trace=1 scripts=1 engine_points=1 shipbuild_scope=ai trace_scripts=k_ai_master party_only=1 tags= log_all=0 engine_print=1 log_aur=1 dedupe_ms=1000 caps=200/s,64MB flush_ms=250 a1_burst/rate=4/400 engine_verbose=0 summary_sec=10 p1_detail_lines=20
+# config fixes a1=1 a1_stances=11800 a1_party_only=1 a1_retarget=1 a1_retarget_stances=11800 a1_rethink_ms=3000 p1=0 p1_interval_ms=250 fm1=1 fm1_rethink_ms=0 fm4=1 a4=1 c1=1 c1_party_only=1 a3=0 log=1
+# config probes fm2c=1 fm2f=1 fm2r=1 fm3=1 rs=1 p2=1 pf=1 rar=1 shx=1 ss1=1 gca=1 party=1 a1x=1 lines=400
+t=2001000 PR PARTY why=area ctrl=7f0001a2 f=1/0 pobj=7f0001a0 f=1/1 pc=7f0001a0 tbl=3 [0:7f0001a0:1:1,1:7f0001a2:1:0,2:7f0001a4:0:0]
+t=2001500 PR PF cr=7f0001a2 p_atton old=1 new=0 apply=1 site=SAVE_A
+t=2001600 PR PF cr=7f0001a4 p_visas old=0 new=1 apply=1 site=?
+t=2010000 PR FM2C cr=7f0001a2 tgt=7f000233 res=1 code=1 cached=-1 cp=0 calls=3 n2=0 n3=0
+t=2011000 PR FM2R cr=7f0001a4 tgt=7f000233 other=0 inr=0 range=2.50 d=12.30 prog=0.00 n=1
+t=2011300 PR FM2R cr=7f0001a4 tgt=7f000233 other=0 inr=0 range=2.50 d=12.20 prog=0.10 n=2
+t=2011600 PR FM2R cr=7f0001a4 tgt=7f000233 other=0 inr=0 range=2.50 d=12.15 prog=0.05 n=3
+t=2020000 PR RS site=S6B cr=7f0001a4 p_visas party=1 empty=0
+t=2030000 PR SHX end spk=7f000300 n_mandsold party=0 r=35 seen=0 idx=3 count=3 last=7f000304 text=help me
+t=2030100 PR SHX ABORT-MID spk=7f000300 n_mandsold party=0 r=35 seen=0 idx=2 count=3 last=7f000304 text=help me
+t=2040000 PR SS1 cr=7f0001a2 p_atton state 0->5 combat=1
+t=2050000 PR GCA cr=7f0001a2 res=0 lastRun=11 moving=0
+t=2070000 PR FM3L level=2 sentinel=0a1b2c3d now=2 removed=0 done=1 elapsed=1800 slice=1500
+t=2080000 A1 cr=7f0001a4 party=1 raw=11 eff=11 reason=range dist=40.0 max=2.2 los=1 ranged=1 area=same tgt=7f000233 -> end new=ffffffff (wouldSpin=1) c524=0 f570=3000 combat=1
+t=2083050 E2 FALLBACK cr=7f0001a4 p_visas party=1 combat=1 round=0 script=k_hen_visasdlg a1spin=0 lastA1=3050ms
+t=2084100 PR A1X ORPHAN cr=7f0001a4 since=4100ms
+t=2100000 PRS RS cr=7f0001a4 s6a=0 s6b=1 s6c=0 s7=0 s12=90 s1=3 max12ps=9
+t=2100000 PRS P2 cr=7f0001a2 runs=10 avg=2010 max=4200 ctrlRuns=2
+t=2100000 PRS PF saveA=3 saveB=2 xferA=0 xferB=0 other=1
+t=2100000 PRS RAR cr=7f0001a2 ispc=0 n=500 c:5/0/490/5 0:1/0/2/0
+t=2100000 PRS SHX shouts=12 r35=4 partySpk=0 end=10 xbreak=0 noarea=0 abortStart=0 abortMid=1
+t=2300000 S lines=200 dropped=0 deduped=0 capDropped=0 | flips=40 prints=38 aur=4 e1=0 e1spins=0 e1b=0 e2=2 e3=11 | a1{would=2 end=1 retarget=0} p1{checks=0 allowed=0 throttled=0 runs=0 resets=0} fm1{keep=1 clear=1} fm4{snap=2 restore=2} a4=0 c1{restart=0 vanilla=0 capped=0}  a3=0

@@ -1,0 +1,239 @@
+live snapshot: live_hooks_2026-09-30g.tsv (120 hooks); live patch_config.toml: 28 ids, 153 hooks
+        EAX at resume 0x8a8cf6: dead on all paths
+        EAX at consumed exit 0x8a8de2: LIVE (returned by 0x8a8de5 RET 0x4)  (accepted: handler result is the return value by design)
+        stack: pending at the jump (end) 0, at consumed exit 0x8a8de2 reset ['reset']
+[OK  ] M6 tab click entry: 0x008a8cf0 len 6 consumed->0x008a8de2  bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14]
+        008a8cf0  55                     PUSH EBP
+        008a8cf1  8bec                   MOV EBP,ESP
+        008a8cf3  83ec14                 SUB ESP,0x14
+        stack: skip-only pending at start 0, at resume 0x8a7e71 0 ['0']
+[OK  ] M6 backpack row buffer: 0x008a7e22 len 79 (skip-only)  bytes = [0x8B, 0x55, 0xE8, 0x8B, 0x42, 0x14, 0x89, 0x45, 0x9C, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0x8B, 0x91, 0xC8, 0x24, 0x00, 0x00, 0x3B, 0x55, 0x9C, 0x75, 0x16, 0x8B, 0x45, 0xC4, 0x89, 0x45, 0xE0, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0xC7, 0x81, 0xC8, 0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7F, 0x6A, 0x00, 0x6A, 0x00, 0x8B, 0x55, 0xE8, 0x52, 0x8D, 0x45, 0xD4, 0x50, 0x8D, 0x4D, 0xC4, 0x51, 0x8B, 0x55, 0xC8, 0x52, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0xE8, 0x7F, 0xF7, 0xFF, 0xFF]
+        008a7e22  8b55e8                 MOV EDX,dword ptr [EBP + -0x18]
+        008a7e25  8b4214                 MOV EAX,dword ptr [EDX + 0x14]
+        008a7e28  89459c                 MOV dword ptr [EBP + -0x64],EAX
+        008a7e2b  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e31  8b91c8240000           MOV EDX,dword ptr [ECX + 0x24c8]
+        008a7e37  3b559c                 CMP EDX,dword ptr [EBP + -0x64]
+        008a7e3a  7516                   JNZ 0x008a7e52
+        008a7e3c  8b45c4                 MOV EAX,dword ptr [EBP + -0x3c]
+        008a7e3f  8945e0                 MOV dword ptr [EBP + -0x20],EAX
+        008a7e42  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e48  c781c82400000000007f   MOV dword ptr [ECX + 0x24c8],0x7f000000
+        008a7e52  6a00                   PUSH 0x0
+        008a7e54  6a00                   PUSH 0x0
+        008a7e56  8b55e8                 MOV EDX,dword ptr [EBP + -0x18]
+        008a7e59  52                     PUSH EDX
+        008a7e5a  8d45d4                 LEA EAX,[EBP + -0x2c]
+        008a7e5d  50                     PUSH EAX
+        008a7e5e  8d4dc4                 LEA ECX,[EBP + -0x3c]
+        008a7e61  51                     PUSH ECX
+        008a7e62  8b55c8                 MOV EDX,dword ptr [EBP + -0x38]
+        008a7e65  52                     PUSH EDX
+        008a7e66  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e6c  e87ff7ffff             CALL 0x008a75f0
+[OK  ] M6 flush before finalise: 0x008a7e76 len 22  bytes = [0x6A, 0x00, 0x6A, 0x01, 0x6A, 0x00, 0x8D, 0x45, 0xD4, 0x50, 0x8B, 0x8D, 0x7C, 0xFF, 0xFF, 0xFF, 0x81, 0xC1, 0x88, 0x05, 0x00, 0x00]
+        008a7e76  6a00                   PUSH 0x0
+        008a7e78  6a01                   PUSH 0x1
+        008a7e7a  6a00                   PUSH 0x0
+        008a7e7c  8d45d4                 LEA EAX,[EBP + -0x2c]
+        008a7e7f  50                     PUSH EAX
+        008a7e80  8b8d7cffffff           MOV ECX,dword ptr [EBP + 0xffffff7c]
+        008a7e86  81c188050000           ADD ECX,0x588
+[OK  ] M6 row-select epilogue (re-tint): 0x008a8478 len 6  bytes = [0x8B, 0xE5, 0x5D, 0xC2, 0x04, 0x00]
+        008a8478  8be5                   MOV ESP,EBP
+        008a847a  5d                     POP EBP
+        008a847b  c20400                 RET 0x4
+[OK  ] M7 SetMouseCursor entry: 0x007b3870 len 7  bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+        007b3870  55                     PUSH EBP
+        007b3871  8bec                   MOV EBP,ESP
+        007b3873  51                     PUSH ECX
+        007b3874  894dfc                 MOV dword ptr [EBP + -0x4],ECX
+[OK  ] M7 hilite placeable colour: 0x007aa747 len 10  bytes = [0x6A, 0x01, 0x51, 0xD9, 0xEE, 0xD9, 0x1C, 0x24, 0x6A, 0x02]
+        007aa747  6a01                   PUSH 0x1
+        007aa749  51                     PUSH ECX
+        007aa74a  d9ee                   FLDZ
+        007aa74c  d91c24                 FSTP float ptr [ESP]
+        007aa74f  6a02                   PUSH 0x2
+[OK  ] M7 client update tick: 0x007ac470 len 5  bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+        007ac470  55                     PUSH EBP
+        007ac471  8bec                   MOV EBP,ESP
+        007ac473  6aff                   PUSH -0x1
+        EAX at resume 0x6d83f6: dead on all paths
+        EAX at consumed exit 0x6d83ff: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x6d83ff 0 ['0']
+[OK  ] M8 hold-on-blocked-LOS: 0x006d83ea len 12 consumed->0x006d83ff  bytes = [0x8B, 0x91, 0x2C, 0x05, 0x00, 0x00, 0x89, 0x95, 0x8C, 0xFC, 0xFF, 0xFF]
+        006d83ea  8b912c050000           MOV EDX,dword ptr [ECX + 0x52c]
+        006d83f0  89958cfcffff           MOV dword ptr [EBP + 0xfffffc8c],EDX
+        EAX at resume 0x6d7c7f: dead on all paths
+        EAX at consumed exit 0x6d7c8c: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x6d7c8c 0 ['0']
+[OK  ] M8 retarget gate (IsPC): 0x006d7c79 len 6 consumed->0x006d7c8c  bytes = [0x89, 0x8D, 0x50, 0xFD, 0xFF, 0xFF]
+        006d7c79  898d50fdffff           MOV dword ptr [EBP + 0xfffffd50],ECX
+        stack: skip-only pending at start 0, at resume 0x6d8515 0 ['0']
+[OK  ] M8 ranged-stance rules local: 0x006d850f len 6 (skip-only)  bytes = [0x89, 0x85, 0x8C, 0xFE, 0xFF, 0xFF]
+        006d850f  89858cfeffff           MOV dword ptr [EBP + 0xfffffe8c],EAX
+        EAX at resume 0x77aa65: dead on all paths
+        EAX at consumed exit 0x77aab4: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x77aab4 0 ['0', 'reset']
+[OK  ] M8 stance clamp: 0x0077aa5e len 7 consumed->0x0077aab4  bytes = [0x89, 0x4D, 0xE8, 0x83, 0x7D, 0xE8, 0x09]
+        0077aa5e  894de8                 MOV dword ptr [EBP + -0x18],ECX
+        0077aa61  837de809               CMP dword ptr [EBP + -0x18],0x9
+        EAX at resume 0x77acc5: dead on all paths
+        EAX at consumed exit 0x77ae77: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x77ae77 0 ['0', 'reset']
+[OK  ] M8 stance row fill: 0x0077acbc len 9 consumed->0x0077ae77  bytes = [0x8B, 0x55, 0xEC, 0x89, 0x95, 0x08, 0xFF, 0xFF, 0xFF]
+        0077acbc  8b55ec                 MOV EDX,dword ptr [EBP + -0x14]
+        0077acbf  899508ffffff           MOV dword ptr [EBP + 0xffffff08],EDX
+        EAX at resume 0x77d8da: dead on all paths
+        EAX at consumed exit 0x77d9ca: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x77d9ca 0 ['0']
+[OK  ] M8 stance click: 0x0077d8d4 len 6 consumed->0x0077d9ca  bytes = [0x8B, 0x55, 0x08, 0x89, 0x55, 0xCC]
+        0077d8d4  8b5508                 MOV EDX,dword ptr [EBP + 0x8]
+        0077d8d7  8955cc                 MOV dword ptr [EBP + -0x34],EDX
+        stack: skip-only pending at start 0, at resume 0x74dbe4 0 ['0']
+[OK  ] M8 HUD stance default branch: 0x0074dbdd len 7 (skip-only)  bytes = [0xC7, 0x45, 0xE4, 0xFF, 0xFF, 0xFF, 0xFF]
+        0074dbdd  c745e4ffffffff         MOV dword ptr [EBP + -0x1c],0xffffffff
+[OK  ] CA T1 ShipBuild value: 0x00692c50 len 10  bytes = [0xC7, 0x05, 0x14, 0xE1, 0xA7, 0x00, 0x01, 0x00, 0x00, 0x00]
+        00692c50  c70514e1a70001000000   MOV dword ptr [0x00a7e114],0x1
+        EAX at resume 0x68f308: dead on all paths
+        EAX at consumed exit 0x68f39f: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x68f39f 0 ['0']
+[OK  ] CA T2 PrintString capture: 0x0068f301 len 7 consumed->0x0068f39f  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        0068f301  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+[OK  ] CA T3 AurPostString capture: 0x006f62f2 len 7  bytes = [0xC7, 0x45, 0xCC, 0x00, 0x00, 0x00, 0x00]
+        006f62f2  c745cc00000000         MOV dword ptr [EBP + -0x34],0x0
+[OK  ] CA E1 attack entry (+0x570 reset): 0x006d740f len 10  bytes = [0xC7, 0x80, 0x70, 0x05, 0x00, 0x00, 0xB8, 0x0B, 0x00, 0x00]
+        006d740f  c78070050000b80b0000   MOV dword ptr [EAX + 0x570],0xbb8
+[OK  ] CA E1b approach-branch exit: 0x006d8be2 len 5  bytes = [0xA1, 0xB8, 0x44, 0x99, 0x00]
+        006d8be2  a1b8449900             MOV EAX,[0x009944b8]
+[OK  ] CA E2 slot-6 fallback fires: 0x00569a08 len 6  bytes = [0x8B, 0x8D, 0x6C, 0xFE, 0xFF, 0xFF]
+        00569a08  8b8d6cfeffff           MOV ECX,dword ptr [EBP + 0xfffffe6c]
+[OK  ] CA E3 P1 block-2 UpdatePerception(1): 0x0056bdbd len 8  bytes = [0x6A, 0x01, 0x8B, 0x8D, 0x2C, 0xFF, 0xFF, 0xFF]
+        0056bdbd  6a01                   PUSH 0x1
+        0056bdbf  8b8d2cffffff           MOV ECX,dword ptr [EBP + 0xffffff2c]
+        EAX at resume 0x6d8548: dead on all paths
+        EAX at consumed exit 0x6d7d2f: dead on all paths
+        stack: pending at the jump (end) 0, at consumed exit 0x6d7d2f 0 ['0']
+[OK  ] CA A1 approach gate end/retarget: 0x006d853e len 10 consumed->0x006d7d2f  bytes = [0xC7, 0x85, 0x94, 0xFE, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x7F]
+        006d853e  c78594feffff0000007f   MOV dword ptr [EBP + 0xfffffe94],0x7f000000
+[OK  ] CA P1 throttle interval: 0x0056bdb4 len 7  bytes = [0x81, 0x7D, 0xD8, 0xA0, 0x0F, 0x00, 0x00]
+        0056bdb4  817dd8a00f0000         CMP dword ptr [EBP + -0x28],0xfa0
+[OK  ] CA P1 throttle stamp store: 0x0056bde3 len 6  bytes = [0x89, 0x90, 0x9C, 0x03, 0x00, 0x00]
+        0056bde3  89909c030000           MOV dword ptr [EAX + 0x39c],EDX
+        stack: skip-only pending at start 0, at resume 0x586f4d 0 ['0']
+[OK  ] CA FM1 bump clear replace: 0x00586f43 len 10 (skip-only)  bytes = [0x6A, 0x01, 0x8B, 0x4D, 0x08, 0xE8, 0x33, 0xA1, 0xFB, 0xFF]
+        00586f43  6a01                   PUSH 0x1
+        00586f45  8b4d08                 MOV ECX,dword ptr [EBP + 0x8]
+        00586f48  e833a1fbff             CALL 0x00541080
+[OK  ] CA FM4 snapshot FollowInfo: 0x0057451f len 6  bytes = [0x8B, 0x88, 0xAC, 0x11, 0x00, 0x00]
+        0057451f  8b88ac110000           MOV ECX,dword ptr [EAX + 0x11ac]
+[OK  ] CA FM4 restore FollowInfo: 0x00575183 len 7  bytes = [0x8B, 0x45, 0x0C, 0x50, 0x8B, 0x4D, 0x08]
+        00575183  8b450c                 MOV EAX,dword ptr [EBP + 0xc]
+        00575186  50                     PUSH EAX
+        00575187  8b4d08                 MOV ECX,dword ptr [EBP + 0x8]
+        EAX at resume 0x6d9e39: dead on all paths
+        EAX at consumed exit 0x6d9ea4: dead on all paths
+        stack: pending at the jump (start) 0, at consumed exit 0x6d9ea4 0 ['0']
+        stack: skip-only pending at start 0, at resume 0x6d9e39 0 ['0']
+[OK  ] CA A4 NULL spell row: 0x006d9e2a len 15 (skip-only) consumed->0x006d9ea4  bytes = [0x8B, 0x55, 0x98, 0x8B, 0x82, 0x54, 0x01, 0x00, 0x00, 0x89, 0x85, 0xA4, 0xFE, 0xFF, 0xFF]
+        006d9e2a  8b5598                 MOV EDX,dword ptr [EBP + -0x68]
+        006d9e2d  8b8254010000           MOV EAX,dword ptr [EDX + 0x154]
+        006d9e33  8985a4feffff           MOV dword ptr [EBP + 0xfffffea4],EAX
+        stack: skip-only pending at start 0, at resume 0x5868c0 0 ['0', 'reset']
+[OK  ] CA C1 restart idx (0xC): 0x005868b9 len 7 (skip-only)  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        005868b9  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+        stack: skip-only pending at start 0, at resume 0x5868f8 0 ['0', 'reset']
+[OK  ] CA C1 restart idx (0xF): 0x005868f1 len 7 (skip-only)  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        005868f1  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+        stack: skip-only pending at start 0, at resume 0x586930 0 ['0', 'reset']
+[OK  ] CA C1 restart idx (0x2E): 0x00586929 len 7 (skip-only)  bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+        00586929  c745f000000000         MOV dword ptr [EBP + -0x10],0x0
+[OK  ] CA A3 dead-target lock clear: 0x006d78b7 len 7  bytes = [0xC7, 0x45, 0xC4, 0x00, 0x00, 0x00, 0x00]
+        006d78b7  c745c400000000         MOV dword ptr [EBP + -0x3c],0x0
+[OK  ] CA FM3 sentinel probe (NOT SHIPPED): 0x0051dbe7 len 6  bytes = [0x8B, 0x15, 0x88, 0xB4, 0xA1, 0x00]
+        0051dbe7  8b1588b4a100           MOV EDX,dword ptr [0x00a1b488]
+[OK  ] CA P FM2C partial-vs-fail: 0x0055b69a len 6  bytes = [0x8B, 0x0D, 0xA0, 0xB5, 0x99, 0x00]
+        0055b69a  8b0da0b59900           MOV ECX,dword ptr [0x0099b5a0]
+[OK  ] CA P FM2F fail leg (log-only): 0x005c2438 len 9  bytes = [0x8B, 0x95, 0x6C, 0xFA, 0xFF, 0xFF, 0x89, 0x51, 0x70]
+        005c2438  8b956cfaffff           MOV EDX,dword ptr [EBP + 0xfffffa6c]
+        005c243e  895170                 MOV dword ptr [ECX + 0x70],EDX
+[OK  ] CA P FM2R 0x11 re-approach: 0x005bc5f4 len 9  bytes = [0x8B, 0x4D, 0xE4, 0x8B, 0x91, 0x24, 0x01, 0x00, 0x00]
+        005bc5f4  8b4de4                 MOV ECX,dword ptr [EBP + -0x1c]
+        005bc5f7  8b9124010000           MOV EDX,dword ptr [ECX + 0x124]
+[OK  ] CA P FM3S sentinel set: 0x0051dbe1 len 6  bytes = [0x8B, 0x4D, 0xD8, 0x89, 0x4D, 0xC4]
+        0051dbe1  8b4dd8                 MOV ECX,dword ptr [EBP + -0x28]
+        0051dbe4  894dc4                 MOV dword ptr [EBP + -0x3c],ECX
+[OK  ] CA P FM3E level end: 0x0051dd33 len 6  bytes = [0x8B, 0x4D, 0xD0, 0x2B, 0x4D, 0xF0]
+        0051dd33  8b4dd0                 MOV ECX,dword ptr [EBP + -0x30]
+        0051dd36  2b4df0                 SUB ECX,dword ptr [EBP + -0x10]
+[OK  ] CA P FM3R RemoveObject: 0x0051e0c9 len 6  bytes = [0x8B, 0x45, 0x08, 0x8B, 0x48, 0x78]
+        0051e0c9  8b4508                 MOV EAX,dword ptr [EBP + 0x8]
+        0051e0cc  8b4878                 MOV ECX,dword ptr [EAX + 0x78]
+[OK  ] CA P RS RunScript entry: 0x006fd8d0 len 6  bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+        006fd8d0  55                     PUSH EBP
+        006fd8d1  8bec                   MOV EBP,ESP
+        006fd8d3  83ec08                 SUB ESP,0x8
+[OK  ] CA P P2 party cadence: 0x0056be79 len 6  bytes = [0x8B, 0x85, 0x2C, 0xFF, 0xFF, 0xFF]
+        0056be79  8b852cffffff           MOV EAX,dword ptr [EBP + 0xffffff2c]
+[OK  ] CA P PF party flag write: 0x0058a35e len 6  bytes = [0x89, 0x88, 0xAC, 0x11, 0x00, 0x00]
+        0058a35e  8988ac110000           MOV dword ptr [EAX + 0x11ac],ECX
+[OK  ] CA P RAR RunActions result: 0x005d6a60 len 9  bytes = [0x8B, 0x55, 0xE4, 0x3B, 0x15, 0xC0, 0x44, 0x99, 0x00]
+        005d6a60  8b55e4                 MOV EDX,dword ptr [EBP + -0x1c]
+        005d6a63  3b15c0449900           CMP EDX,dword ptr [0x009944c0]
+[OK  ] CA P SHX shout loop exit: 0x005475e8 len 10  bytes = [0x8B, 0x4D, 0xF4, 0x64, 0x89, 0x0D, 0x00, 0x00, 0x00, 0x00]
+        005475e8  8b4df4                 MOV ECX,dword ptr [EBP + -0xc]
+        005475eb  64890d00000000         MOV dword ptr FS:[0x0],ECX
+[OK  ] CA P SS1 SetState commit: 0x0059d966 len 6  bytes = [0x88, 0x82, 0xF5, 0x0F, 0x00, 0x00]
+        0059d966  8882f50f0000           MOV byte ptr [EDX + 0xff5],AL
+[OK  ] CA P GCA GetCurrentAction: 0x0067b204 len 10  bytes = [0x8B, 0x4D, 0xF8, 0x51, 0x8B, 0x0D, 0xA8, 0xB4, 0xA1, 0x00]
+        0067b204  8b4df8                 MOV ECX,dword ptr [EBP + -0x8]
+        0067b207  51                     PUSH ECX
+        0067b208  8b0da8b4a100           MOV ECX,dword ptr [0x00a1b4a8]
+
+Pairwise overlap among 46 windows: none
+
+TOML cross-check (source hooks.toml vs these windows): all hooks match
+  toml inventory-sort-filter 0x008a8cf0 SortFilterTabClick: matches window 'M6 tab click entry'
+  toml inventory-sort-filter 0x008a7e22 SortFilterBufferRow: matches window 'M6 backpack row buffer'
+  toml inventory-sort-filter 0x008a7e76 SortFilterFlush: matches window 'M6 flush before finalise'
+  toml inventory-sort-filter 0x008a8478 SortFilterRowSelect: matches window 'M6 row-select epilogue (re-tint)'
+  toml ranged-ai 0x006d83ea RangedAiHold: matches window 'M8 hold-on-blocked-LOS'
+  toml ranged-ai 0x006d7c79 RangedAiRetarget: matches window 'M8 retarget gate (IsPC)'
+  toml ranged-ai 0x0077aa5e RangedAiStanceClamp: matches window 'M8 stance clamp'
+  toml ranged-ai 0x0077acbc RangedAiStanceRow: matches window 'M8 stance row fill'
+  toml ranged-ai 0x0077d8d4 RangedAiStanceClick: matches window 'M8 stance click'
+  toml ranged-ai 0x0074dbdd RangedAiHudStance: matches window 'M8 HUD stance default branch'
+  toml ranged-ai 0x006d850f RangedAiStanceRules: matches window 'M8 ranged-stance rules local'
+  toml companion-ai 0x00692c50 AiTraceShipBuild: matches window 'CA T1 ShipBuild value'
+  toml companion-ai 0x0068f301 AiTracePrintString: matches window 'CA T2 PrintString capture'
+  toml companion-ai 0x006f62f2 AiTraceAurPostString: matches window 'CA T3 AurPostString capture'
+  toml companion-ai 0x006d740f AiTraceAttackEntry: matches window 'CA E1 attack entry (+0x570 reset)'
+  toml companion-ai 0x006d8be2 AiTraceAttackApproachExit: matches window 'CA E1b approach-branch exit'
+  toml companion-ai 0x00569a08 AiTraceFallbackFires: matches window 'CA E2 slot-6 fallback fires'
+  toml companion-ai 0x0056bdbd AiTracePerceptionMode1: matches window 'CA E3 P1 block-2 UpdatePerception(1)'
+  toml companion-ai 0x006d853e CompanionAiA1Gate: matches window 'CA A1 approach gate end/retarget'
+  toml companion-ai 0x0056bdb4 CompanionAiP1Interval: matches window 'CA P1 throttle interval'
+  toml companion-ai 0x0056bde3 CompanionAiP1Stamp: matches window 'CA P1 throttle stamp store'
+  toml companion-ai 0x00586f43 CompanionAiBumpClear: matches window 'CA FM1 bump clear replace'
+  toml companion-ai 0x0057451f CompanionAiFm4Snap: matches window 'CA FM4 snapshot FollowInfo'
+  toml companion-ai 0x00575183 CompanionAiFm4Restore: matches window 'CA FM4 restore FollowInfo'
+  toml companion-ai 0x006d9e2a CompanionAiA4: matches window 'CA A4 NULL spell row'
+  toml companion-ai 0x005868b9 CompanionAiC1: matches window 'CA C1 restart idx (0xC)'
+  toml companion-ai 0x005868f1 CompanionAiC1: matches window 'CA C1 restart idx (0xF)'
+  toml companion-ai 0x00586929 CompanionAiC1: matches window 'CA C1 restart idx (0x2E)'
+  toml companion-ai 0x006d78b7 CompanionAiA3: matches window 'CA A3 dead-target lock clear'
+  toml companion-ai 0x0055b69a CompanionAiProbeFm2c: matches window 'CA P FM2C partial-vs-fail'
+  toml companion-ai 0x005c2438 CompanionAiProbeFm2Fail: matches window 'CA P FM2F fail leg (log-only)'
+  toml companion-ai 0x005bc5f4 CompanionAiProbeFm2Reapproach: matches window 'CA P FM2R 0x11 re-approach'
+  toml companion-ai 0x0051dbe1 CompanionAiProbeFm3Sentinel: matches window 'CA P FM3S sentinel set'
+  toml companion-ai 0x0051dd33 CompanionAiProbeFm3LevelEnd: matches window 'CA P FM3E level end'
+  toml companion-ai 0x0051e0c9 CompanionAiProbeFm3Remove: matches window 'CA P FM3R RemoveObject'
+  toml companion-ai 0x006fd8d0 CompanionAiProbeRunScript: matches window 'CA P RS RunScript entry'
+  toml companion-ai 0x0056be79 CompanionAiProbeP2: matches window 'CA P P2 party cadence'
+  toml companion-ai 0x0058a35e CompanionAiProbePartyFlag: matches window 'CA P PF party flag write'
+  toml companion-ai 0x005d6a60 CompanionAiProbeRunActions: matches window 'CA P RAR RunActions result'
+  toml companion-ai 0x005475e8 CompanionAiProbeShout: matches window 'CA P SHX shout loop exit'
+  toml companion-ai 0x0059d966 CompanionAiProbeSetState: matches window 'CA P SS1 SetState commit'
+  toml companion-ai 0x0067b204 CompanionAiProbeGetCurrentAction: matches window 'CA P GCA GetCurrentAction'
+
+ALL OK

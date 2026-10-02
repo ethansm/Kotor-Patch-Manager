@@ -35,7 +35,7 @@ DEFAULT_TOMLS = [
     MODS_DIR / "ranged_ai_src" / "kotor2-steam-aspyr.hooks.toml",
     MODS_DIR / "inventory_sort_filter_src" / "kotor2-steam-aspyr.hooks.toml",
 ]
-EXPECTED_HOOK_COUNTS = {"companion-ai": 18, "ranged-ai": 7}   # task spec; inventory-sort-filter: no fixed count
+EXPECTED_HOOK_COUNTS = {"companion-ai": 31, "ranged-ai": 7}   # task spec; inventory-sort-filter: no fixed count
 
 # Script trace markers (text inside the P line after "| "). key, regex, where the text comes from.
 #   P-line text = "GENERIC DEBUG *************** <marker text>" (party_ai_fixes.nss, kite_routine.nss, party_ai_patches.py)
@@ -94,6 +94,22 @@ CHECKLIST = [
     ("CAI-7", "FM1: bumped companion steps aside and keeps following"),
     ("CAI-8", "FM4: companions follow after save and load"),
     ("E3", "Stance-11 H1 lines with los=0 (log answer)"),
+    # Phase-4 probe checks (companion-ai 0.2.0-probe, PROBE_DESIGN.md section 2); PASS = data agrees with the atlas, FAIL = contradicts it / shows a bug's reach
+    ("PR-FM2B", "Probe FM2C: failed path search is partial (2) then fail (3); kill FM2b when no line"),
+    ("PR-FM2", "Probe FM2R/FM2F: re-approach loop pairs (n >= 3) come with FM2C/FM2F lines"),
+    ("PR-FM3", "Probe FM3: scheduler sentinel LOST rate"),
+    ("PR-SLOT6", "Probe RS: slot-6 site mix for party members (S6A/S6B/S6C)"),
+    ("PR-FM5", "Probe RS: OnBlocked runs per second (< 5 kills the FM5 throttle)"),
+    ("PR-E9", "Probe RS/SHX: allied shouts (pattern 15) delivered to party listeners"),
+    ("PR-P2", "Probe P2: companion perception cadence ~4 s; controlled-companion runs"),
+    ("PR-PF", "Probe PF: party-flag writers (saveA == saveB, no unknown callers)"),
+    ("PR-RAR", "Probe RAR: action histogram, MOVESTATE / REQ"),
+    ("PR-SHOUT", "Probe SHX: shout delivery without ABORT exits"),
+    ("PR-SS", "Probe SS1/RS: companion SetState followed by an S6C run within 60 s"),
+    ("PR-E4", "Probe GCA: GetCurrentAction 3/39 after engine approach actions"),
+    ("PR-PARTY", "Probe PARTY: every member and the controlled creature has the party flag"),
+    ("PR-A1X", "Probe A1X: every A1 end followed up (slot-6 run), no ORPHAN"),
+    ("PR-RAH2", "ranged-ai H2 retarget=1 never followed by H1 end52c!=0 inRange=0 within 2 s"),
 ]
 
 BENIGN_EXC = {"40010006": "DBG_PRINTEXCEPTION_C (OutputDebugString)", "406d1388": "thread rename",
@@ -702,6 +718,8 @@ def analyze_trace(path: Path | None, win: Window | None, clock: Clock, an: Anoms
             last_s, last_s_line = d, q(ln, line, name)
             last_s["_ln"] = ln
             continue
+        if kind in ("PR", "PRS"):   # Phase-4 probe lines: parsed by analyze_probes
+            continue
         other_counts[f"t= {kind}"] += 1
 
     R.update(n_lines=n_lines, header=header, t1=t1, cfg_lines=cfg_lines, cfg_bad=cfg_bad, cfg_notes=cfg_notes,
@@ -1059,9 +1077,402 @@ def analyze_inv(path: Path | None, an: Anoms) -> dict:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+# Phase-4 probes (companion-ai 0.2.0-probe; engine_ai_atlas/PROBE_DESIGN.md section 2): PR / PRS lines of ai_trace.txt
+# ----------------------------------------------------------------------------------------------------------------------
+PR_CHECK_IDS = ["PR-FM2B", "PR-FM2", "PR-FM3", "PR-SLOT6", "PR-FM5", "PR-E9", "PR-P2", "PR-PF", "PR-RAR", "PR-SHOUT", "PR-SS", "PR-E4",
+                "PR-PARTY", "PR-A1X", "PR-RAH2"]
+_H8 = r"([0-9a-fA-F]{8})"
+# companion_ai_src/CompanionAI.cpp (probe handlers); every regex is checked against the printf literal by test_analyze_play_logs.py
+PR_FM2C_RE = re.compile(rf"^t=(\d+) PR FM2C cr={_H8} tgt={_H8} res=(-?\d+) code=(-?\d+) cached=(-?\d+) cp=(-?\d+) calls=(-?\d+) n2=(\d+) n3=(\d+)")
+PR_FM2F_RE = re.compile(rf"^t=(\d+) PR FM2F cr={_H8} tgt={_H8} grp=(\d+) n=(\d+) span=(\d+)ms ctrl=(\d+)")
+PR_FM2R_RE = re.compile(rf"^t=(\d+) PR FM2R cr={_H8} tgt={_H8} other=(-?\d+) inr=(-?\d+) range=(-?[\d.]+) d=(-?[\d.]+) prog=(-?[\d.]+) n=(\d+)")
+PR_FM3L_RE = re.compile(rf"^t=(\d+) PR FM3L level=(-?\d+) sentinel={_H8} now=(-?\d+) removed=(\d+) done=(-?\d+) elapsed=(\d+) slice=(\d+)")
+PR_FM3X_RE = re.compile(rf"^t=(\d+) PR FM3X id={_H8} level=(-?\d+) idx=(-?\d+) cursor=(-?\d+) sentinel=(\d+)")
+PRS_FM3_RE = re.compile(r"^t=(\d+) PRS FM3 passes=(\d+) lost=(\d+) removes=(\d+) beforeCursor=(\d+)")
+PR_RS_RE = re.compile(rf"^t=(\d+) PR RS site=(\w+) cr={_H8} (\S+) party=(\d+) empty=(\d+)(?: spk={_H8} spkParty=(-?\d+) pat=(-?\d+))?")
+PRS_RS_RE = re.compile(rf"^t=(\d+) PRS RS cr={_H8} s6a=(\d+) s6b=(\d+) s6c=(\d+) s7=(\d+) s12=(\d+) s1=(\d+) max12ps=(\d+)")
+PR_P2_RE = re.compile(rf"^t=(\d+) PR P2 cr={_H8} ctrl=(\d+) elapsed=(\d+) combat=(-?\d+)")
+PRS_P2_RE = re.compile(rf"^t=(\d+) PRS P2 cr={_H8} runs=(\d+) avg=(\d+) max=(\d+) ctrlRuns=(\d+)")
+PR_PF_RE = re.compile(rf"^t=(\d+) PR PF cr={_H8} (\S+) old=(-?\d+) new=(-?\d+) apply=(-?\d+) site=(\S+)")
+PRS_PF_RE = re.compile(r"^t=(\d+) PRS PF saveA=(\d+) saveB=(\d+) xferA=(\d+) xferB=(\d+) other=(\d+)")
+PRS_RAR_RE = re.compile(rf"^t=(\d+) PRS RAR cr={_H8} ispc=(-?\d+) n=(\d+)(?: (.*))?$")
+PR_RAR_MOVE_RE = re.compile(rf"^t=(\d+) PR RAR MOVESTATE cr={_H8} type=([0-9a-fA-F]+) res=(-?\d+) state=(-?\d+)")
+PR_RAR_REQ_RE = re.compile(rf"^t=(\d+) PR RAR REQ cr={_H8} type=([0-9a-fA-F]+) n=(\d+)")
+PR_SHX_RE = re.compile(rf"^t=(\d+) PR SHX (\S+) spk={_H8} (\S+) party=(-?\d+) r=(-?[\d.]+) seen=(-?\d+) idx=(-?\d+) count=(-?\d+) last={_H8} text=(.*)$")
+PRS_SHX_RE = re.compile(r"^t=(\d+) PRS SHX shouts=(\d+) r35=(\d+) partySpk=(\d+) end=(\d+) xbreak=(\d+) noarea=(\d+) abortStart=(\d+) abortMid=(\d+)")
+PR_SS1_RE = re.compile(rf"^t=(\d+) PR SS1 cr={_H8} (\S+) state (-?\d+)->(-?\d+) combat=(-?\d+)")
+PR_GCA_RE = re.compile(rf"^t=(\d+) PR GCA cr={_H8} res=(-?\d+) lastRun=([0-9a-fA-F]+) moving=(-?\d+)")
+PRS_GCA_RE = re.compile(rf"^t=(\d+) PRS GCA cr={_H8} (.*)$")
+PR_PARTY_RE = re.compile(rf"^t=(\d+) PR PARTY why=(\w+) ctrl={_H8} f=(-?\d+)/(-?\d+) pobj={_H8} f=(-?\d+)/(-?\d+) pc={_H8} tbl=(-?\d+) \[(.*)\]$")
+PR_A1X_STRICT_RE = re.compile(rf"^t=(\d+) PR A1X STRICT cr={_H8} new={_H8} d2=(-?[\d.]+) lim2=(-?[\d.]+) -> (ok|would-reject)")
+PR_A1X_FOLLOW_RE = re.compile(rf"^t=(\d+) PR A1X FOLLOWUP cr={_H8} site=(\w+) after=(-?\d+)ms")
+PR_A1X_ORPHAN_RE = re.compile(rf"^t=(\d+) PR A1X ORPHAN cr={_H8} since=(-?\d+)ms")
+A1X_SUFFIX_RE = re.compile(r"\(wouldSpin=\d+\) c524=(-?\d+) f570=(-?\d+) combat=(-?\d+)")
+CFG_RETHINK_RE = re.compile(r"\ba1_rethink_ms=(\d+)")
+BUDGET_RE = re.compile(r"^-- probe (\w+) line budget reached --")
+R_H1_END52C_RE = re.compile(r"^H1 t=(\d+) cr=([0-9a-fA-F]{8}) .*?inRange=(\d+) .*?end52c=([0-9a-fA-F]+)")
+SS_SET_STATES = {1} | set(range(3, 11)) | set(range(0xE, 0x14))     # PR-SS: SetState targets that remove the slot-6 script (S6C)
+E4_RUNS = {0xC, 0x11, 0x13, 0x3F}                                   # PR-E4: engine-driven approach actions
+PR_SS_WINDOW_MS = 60000
+PR_P2_PASS = (3900, 4500)
+PR_P2_FAIL_BELOW = 3500
+
+
+def parse_rar_hist(s: str) -> dict[int, tuple[int, int, int, int, int]]:
+    """'c:1/2/3/4' or 'c:1/2/3/4+o5' tokens -> {type: (r1, r2, r3, r4, other)} (type in hex; 0 = the out-of-range bucket)."""
+    out: dict[int, tuple[int, int, int, int, int]] = {}
+    for m in re.finditer(r"([0-9a-fA-F]+):(\d+)/(\d+)/(\d+)/(\d+)(?:\+o(\d+))?", s or ""):
+        out[int(m.group(1), 16)] = tuple(int(m.group(i)) for i in range(2, 6)) + (int(m.group(6) or 0),)
+    return out
+
+
+def analyze_probes(trace_path: Path | None, ranged_path: Path | None, win: Window | None, an: Anoms) -> dict:
+    """The PR-* checks. Each result: id -> (status PASS|FAIL|OBSERVE, summary, evidence). PASS = the data agrees with the atlas (no action),
+    FAIL = it contradicts the atlas or shows a bug's reach (act on it), OBSERVE = the case did not occur."""
+    R: dict = {"present": trace_path is not None, "checks": {}, "prs_last": {}, "n_pr": 0, "n_prs": 0, "budget": []}
+    name = trace_path.name if trace_path else FILES["trace"]
+    L = defaultdict(list)                 # kind -> [dict]
+    cfg_rethink = 3000
+    t_min = t_max = None
+    last_prs: dict[tuple[str, str], tuple[int, str]] = {}
+    if trace_path:
+        for ln, line in read_lines(trace_path):
+            if not line:
+                continue
+            if line[0] == "#":
+                if line.startswith("# config fixes"):
+                    mm = CFG_RETHINK_RE.search(line)
+                    if mm:
+                        cfg_rethink = int(mm.group(1))
+                continue
+            if line[0] == "-":
+                mm = BUDGET_RE.match(line)
+                if mm:
+                    R["budget"].append(mm.group(1))
+                continue
+            mt = re.match(r"t=(\d+) (\S+)", line)
+            if not mt:
+                continue
+            t = int(mt.group(1))
+            if win and win.active() and not win.contains(t):
+                continue
+            kind = mt.group(2)
+            t_min = t if t_min is None else min(t_min, t)
+            t_max = t if t_max is None else max(t_max, t)
+            if kind == "A1":
+                m = A1_RE.match(line)
+                if m:
+                    outcome = m.group(7).strip()
+                    L["A1"].append(dict(t=t, ln=ln, cr=m.group(2).lower(), outcome=("end" if outcome.startswith("end") else
+                                                                                        "retarget" if outcome.startswith("retarget") else "spin"),
+                                        probe=bool(A1X_SUFFIX_RE.search(line)), line=line))
+                continue
+            if kind not in ("PR", "PRS"):
+                continue
+            R["n_pr" if kind == "PR" else "n_prs"] += 1
+            for key, rx in _PR_PARSERS:
+                m = rx.match(line)
+                if m:
+                    L[key].append(dict(t=t, ln=ln, m=m, line=line))
+                    if key.startswith("PRS_"):
+                        last_prs[(key, (m.group(2).lower() if key in ("PRS_RS", "PRS_P2", "PRS_RAR", "PRS_GCA") else ""))] = (ln, line)
+                    break
+            else:
+                R.setdefault("unparsed", []).append(q(ln, line, name))
+    R["prs_last"] = last_prs
+    ev = lambda d: f"{name}:{d['ln']}"                                   # noqa: E731
+    C: dict[str, tuple[str, str, str]] = {}
+
+    # ---- PR-FM2B: FM2C partial (2) vs failed (3)
+    rows = L["FM2C"]
+    if not rows:
+        C["PR-FM2B"] = ("OBSERVE", "no FM2C lines (no failed path search: the grid closest result succeeds, kill FM2b)", "")
+    else:
+        bad = [r for r in rows if int(r["m"].group(4)) not in (2, 3) or int(r["m"].group(2), 16) == 0]
+        n2 = sum(1 for r in rows if int(r["m"].group(4)) == 2)
+        n3 = sum(1 for r in rows if int(r["m"].group(4)) == 3)
+        cached = sum(1 for r in rows if int(r["m"].group(6)) == -1)
+        txt = f"{len(rows)} FM2C line(s): res=2 x{n2}, res=3 x{n3}, cached=-1 x{cached}"
+        if bad:
+            C["PR-FM2B"] = ("FAIL", f"{txt}; {len(bad)} with res outside {{2,3}} or cr 00000000, first: {q(bad[0]['ln'], bad[0]['line'], name)}", ev(bad[0]))
+        else:
+            C["PR-FM2B"] = ("PASS", txt + (" (only res=2 lines for a looping pair would mean a creeping-partial loop: see PR-FM2)" if n2 and not n3 else ""), ev(rows[0]))
+
+    # ---- PR-FM2: re-approach pairs with n >= 3 (FM2R) need an FM2C/FM2F line for that creature in the same 30 s
+    pair_n: dict[tuple[str, str], dict] = {}
+    for r in L["FM2R"]:
+        key = (r["m"].group(2).lower(), r["m"].group(3).lower())
+        n = int(r["m"].group(9))
+        if key not in pair_n or n > pair_n[key]["n"]:
+            pair_n[key] = dict(n=n, t=r["t"], ln=r["ln"], prog=float(r["m"].group(8)), line=r["line"])
+    loops = {k: v for k, v in pair_n.items() if v["n"] >= 3}
+    if not loops:
+        C["PR-FM2"] = ("OBSERVE", f"no (creature, target) pair with n >= 3 in the FM2R lines ({len(pair_n)} pair(s) seen)", "")
+    else:
+        miss = []
+        for (cr, tgt), v in loops.items():
+            near = [r for k in ("FM2C", "FM2F") for r in L[k] if r["m"].group(2).lower() == cr and abs(r["t"] - v["t"]) <= 30000]
+            if not near:
+                miss.append((cr, tgt, v))
+        txt = f"{len(loops)} pair(s) with n >= 3 (max n {max(v['n'] for v in loops.values())})"
+        if miss:
+            cr, tgt, v = miss[0]
+            C["PR-FM2"] = ("FAIL", f"{txt}; {len(miss)} without any FM2C/FM2F line for that creature within 30 s (contradicts gate 1.1), first: "
+                                  f"{q(v['ln'], v['line'], name)}", f"{name}:{v['ln']}")
+        else:
+            first = next(iter(loops.values()))
+            C["PR-FM2"] = ("PASS", txt + ", each with FM2C or FM2F lines for the creature in the same 30 s", f"{name}:{first['ln']}")
+
+    # ---- PR-FM3
+    bad_l = [r for r in L["FM3L"] if int(r["m"].group(4)) == int(r["m"].group(2)) and int(r["m"].group(5)) == 0]
+    prs = L["PRS_FM3"]
+    if bad_l:
+        C["PR-FM3"] = ("FAIL", f"{len(bad_l)} FM3L line(s) with now == level and removed=0 (not a lost sentinel): {q(bad_l[0]['ln'], bad_l[0]['line'], name)}", ev(bad_l[0]))
+    elif prs and int(prs[-1]["m"].group(2)) > 0:
+        m = prs[-1]["m"]
+        span_min = ((t_max - t_min) / 60000.0) if t_min is not None and t_max is not None and t_max > t_min else 0.0
+        rate = f", {int(m.group(3)) / span_min:.2f} lost/min over {span_min:.1f} min" if span_min else ""
+        C["PR-FM3"] = ("PASS", f"passes={m.group(2)} lost={m.group(3)} removes={m.group(4)} beforeCursor={m.group(5)}{rate} "
+                              "(kill if < 1 LOST/min in crowded fights; >= 1/min goes to the user)", ev(prs[-1]))
+    else:
+        C["PR-FM3"] = ("OBSERVE", "no PRS FM3 line with passes > 0", "")
+
+    # ---- PR-SLOT6 / PR-FM5 / PR-E9 (RS)
+    rs = L["RS"]
+    s6 = [r for r in rs if r["m"].group(2) in ("S6A", "S6B") and r["m"].group(5) == "1"]
+    if s6:
+        mix = Counter(r["m"].group(2) for r in rs if r["m"].group(5) == "1" and r["m"].group(2) in ("S6A", "S6B", "S6C"))
+        C["PR-SLOT6"] = ("PASS", "slot-6 site mix for party members: " + ", ".join(f"{k} x{v}" for k, v in sorted(mix.items())), ev(s6[0]))
+    else:
+        C["PR-SLOT6"] = ("OBSERVE", "no S6A/S6B RS line for a party member", "")
+    last_by_cr: dict[str, dict] = {}
+    for r in L["PRS_RS"]:
+        last_by_cr[r["m"].group(2).lower()] = r
+    with12 = [r for r in last_by_cr.values() if int(r["m"].group(7)) > 0]
+    if not with12:
+        C["PR-FM5"] = ("OBSERVE", "no OnBlocked (S12) runs in any PRS RS line", "")
+    else:
+        top = max(with12, key=lambda r: int(r["m"].group(9)))
+        mx = int(top["m"].group(9))
+        C["PR-FM5"] = ("PASS" if mx < 5 else "FAIL",
+                       f"max OnBlocked runs/s = {mx} for {top['m'].group(2).lower()} over {len(with12)} creature(s) with S12 runs "
+                       + ("(< 5/s: kill the FM5 throttle)" if mx < 5 else "(>= 5/s: promote the FM5 throttle)"), ev(top))
+    s7 = [r for r in rs if r["m"].group(2) == "S7" and r["m"].group(7) is not None]
+    deliveries = [r for r in s7 if r["m"].group(9) == "15" and r["m"].group(8) == "0" and r["m"].group(5) == "1"]
+    nonparty35 = [r for r in L["SHX"] if r["m"].group(5) == "0" and abs(float(r["m"].group(6)) - 35.0) < 0.5]
+    if deliveries:
+        C["PR-E9"] = ("PASS", f"{len(deliveries)} S7 pat=15 delivery(ies) from non-party speakers to party listeners", ev(deliveries[0]))
+    elif nonparty35:
+        C["PR-E9"] = ("FAIL", f"SHX shows {len(nonparty35)} r=35 non-party shout(s) but 0 such S7 deliveries to a party listener", ev(nonparty35[0]))
+    else:
+        C["PR-E9"] = ("OBSERVE", "no allied (non-party, r=35) shouts seen", "")
+
+    # ---- PR-P2
+    last_p2: dict[str, dict] = {}
+    for r in L["PRS_P2"]:
+        last_p2[r["m"].group(2).lower()] = r
+    sized = {cr: r for cr, r in last_p2.items() if int(r["m"].group(3)) >= 3 and int(r["m"].group(4)) > 0}
+    ctrl_runs = sum(int(r["m"].group(6)) for r in last_p2.values())
+    if not sized:
+        C["PR-P2"] = ("OBSERVE", f"no creature with >= 3 P2 runs (ctrlRuns total {ctrl_runs})" if last_p2 else "no PRS P2 lines", "")
+    else:
+        low = [r for r in sized.values() if int(r["m"].group(4)) < PR_P2_FAIL_BELOW]
+        avgs = ", ".join(f"{cr}={r['m'].group(4)}" for cr, r in sorted(sized.items()))
+        if low:
+            C["PR-P2"] = ("FAIL", f"avg gap below {PR_P2_FAIL_BELOW} ms (companion perception faster than 4 s): {avgs}; ctrlRuns {ctrl_runs}", ev(low[0]))
+        elif all(PR_P2_PASS[0] <= int(r["m"].group(4)) <= PR_P2_PASS[1] for r in sized.values()):
+            C["PR-P2"] = ("PASS", f"every companion avg in [{PR_P2_PASS[0]},{PR_P2_PASS[1]}] ms: {avgs}; ctrlRuns {ctrl_runs} "
+                                  "(> 0 supports keying p2 on the controlled id)", ev(next(iter(sized.values()))))
+        else:
+            C["PR-P2"] = ("OBSERVE", f"avg gaps outside [{PR_P2_PASS[0]},{PR_P2_PASS[1]}] but not below {PR_P2_FAIL_BELOW}: {avgs}; ctrlRuns {ctrl_runs}", "")
+
+    # ---- PR-PF
+    pfl, pfs = L["PF"], L["PRS_PF"]
+    if not pfl and not pfs:
+        C["PR-PF"] = ("OBSERVE", "no PF lines", "")
+    else:
+        unk = [r for r in pfl if r["m"].group(7) == "?"]
+        m = pfs[-1]["m"] if pfs else None
+        unbalanced = m is not None and int(m.group(2)) != int(m.group(3))
+        txt = (f"saveA={m.group(2)} saveB={m.group(3)} xferA={m.group(4)} xferB={m.group(5)} other={m.group(6)}" if m else "no PRS PF line") + f", {len(pfl)} PR PF line(s)"
+        if unk or unbalanced:
+            why = (f"{len(unk)} line(s) with site=? (caller not in the 15-site table)" if unk else "saveA != saveB")
+            C["PR-PF"] = ("FAIL", f"{txt}; {why}" + (f", first: {q(unk[0]['ln'], unk[0]['line'], name)}" if unk else ""), ev(unk[0]) if unk else ev(pfs[-1]))
+        else:
+            C["PR-PF"] = ("PASS", txt, ev(pfs[-1]) if pfs else ev(pfl[0]))
+
+    # ---- PR-RAR
+    rar = L["PRS_RAR"]
+    if not rar:
+        C["PR-RAR"] = ("OBSERVE", "no PRS RAR lines", "")
+    else:
+        last_rar: dict[str, dict] = {}
+        for r in rar:
+            last_rar[r["m"].group(2).lower()] = r
+        badr = []
+        for cr, r in last_rar.items():
+            h = parse_rar_hist(r["m"].group(5))
+            if 0 in h and (h[0][0] or h[0][1] or h[0][3] or h[0][4]):
+                badr.append(r)
+        mv, rq = len(L["RAR_MOVE"]), len(L["RAR_REQ"])
+        txt = f"{len(last_rar)} creature histogram(s); MOVESTATE x{mv}, REQ x{rq}"
+        if badr:
+            C["PR-RAR"] = ("FAIL", f"{txt}; type 0 / > 0x47 with a result other than 3: {q(badr[0]['ln'], badr[0]['line'], name)}", ev(badr[0]))
+        else:
+            C["PR-RAR"] = ("PASS", txt, ev(rar[-1]))
+
+    # ---- PR-SHOUT
+    shl, shs = L["SHX"], L["PRS_SHX"]
+    aborts = [r for r in shl if r["m"].group(2).startswith("ABORT")]
+    m = shs[-1]["m"] if shs else None
+    ab_counts = (int(m.group(8)) + int(m.group(9))) if m else 0
+    if aborts or ab_counts:
+        txt = (f"abortStart={m.group(8)} abortMid={m.group(9)} of {m.group(2)} shouts" if m else f"{len(aborts)} ABORT line(s)")
+        C["PR-SHOUT"] = ("FAIL", f"{txt} (AI-SHOUTABORT reach: promote the 0x547203 fix)" + (f", first: {q(aborts[0]['ln'], aborts[0]['line'], name)}" if aborts else ""),
+                         ev(aborts[0]) if aborts else ev(shs[-1]))
+    elif m and int(m.group(2)) > 0:
+        C["PR-SHOUT"] = ("PASS", f"shouts={m.group(2)} r35={m.group(3)} partySpk={m.group(4)} end={m.group(5)} xbreak={m.group(6)} noarea={m.group(7)}, no ABORT", ev(shs[-1]))
+    else:
+        C["PR-SHOUT"] = ("OBSERVE", "no shouts seen", "")
+
+    # ---- PR-SS: a party SetState to a slot-6-removing state needs an S6C run for that creature within 60 s
+    ss = [r for r in L["SS1"] if int(r["m"].group(5)) in SS_SET_STATES]
+    if not ss:
+        C["PR-SS"] = ("OBSERVE", f"no SS1 line to a state in {{1,3..10,0xE..0x13}} ({len(L['SS1'])} SS1 line(s))", "")
+    else:
+        s6c: dict[str, list[int]] = defaultdict(list)
+        for r in rs:
+            if r["m"].group(2) == "S6C":
+                s6c[r["m"].group(3).lower()].append(r["t"])
+        missing, judged = [], 0
+        for r in ss:
+            cr, t0 = r["m"].group(2).lower(), r["t"]
+            if len(s6c.get(cr, ())) >= 20 or (t_max is not None and t0 + PR_SS_WINDOW_MS > t_max):
+                continue   # S6C line budget (20 per creature) used up, or the log ends inside the window: inconclusive
+            judged += 1
+            if not any(t0 <= x <= t0 + PR_SS_WINDOW_MS for x in s6c.get(cr, ())):
+                missing.append(r)
+        if missing:
+            C["PR-SS"] = ("FAIL", f"{len(missing)}/{judged} judged SS1 line(s) without an S6C run for that creature within 60 s, first: "
+                                  f"{q(missing[0]['ln'], missing[0]['line'], name)}", ev(missing[0]))
+        elif judged:
+            C["PR-SS"] = ("PASS", f"all {judged} judged SS1 line(s) were followed by an S6C run within 60 s", ev(ss[0]))
+        else:
+            C["PR-SS"] = ("OBSERVE", f"{len(ss)} SS1 line(s) but none judgeable (S6C budget used or log ends inside the 60 s window)", "")
+
+    # ---- PR-E4: GetCurrentAction vs the last RunActions type
+    gca = L["GCA"]
+    e4_fail = [r for r in gca if int(r["m"].group(3)) == 0 and int(r["m"].group(4), 16) in E4_RUNS]
+    e4_pass = [r for r in gca if int(r["m"].group(3)) in (3, 39) and int(r["m"].group(4), 16) in E4_RUNS]
+    if e4_fail:
+        C["PR-E4"] = ("FAIL", f"{len(e4_fail)} GCA line(s) with res 0 right after an engine approach action (contradicts lesson 325), first: "
+                              f"{q(e4_fail[0]['ln'], e4_fail[0]['line'], name)}", ev(e4_fail[0]))
+    elif e4_pass:
+        C["PR-E4"] = ("PASS", f"{len(e4_pass)} GCA line(s) with res 3/39 after RunActions type in {{0xC,0x11,0x13,0x3F}}", ev(e4_pass[0]))
+    else:
+        C["PR-E4"] = ("OBSERVE", f"no GCA line with res 3/39 after an engine approach action ({len(gca)} GCA line(s))", "")
+
+    # ---- PR-PARTY (why=pf lines are mid-save by construction: not judged)
+    pl = L["PARTY"]
+    if not pl:
+        C["PR-PARTY"] = ("OBSERVE", "no PARTY lines", "")
+    else:
+        badp, judged, pobj_diff = [], 0, 0
+        for r in pl:
+            g = r["m"]
+            if g.group(2) == "leader" and g.group(3).lower() != g.group(6).lower():
+                pobj_diff += 1
+            if g.group(2) == "pf":
+                continue
+            judged += 1
+            flags = [int(g.group(4))] + [int(x.split(":")[2]) for x in g.group(11).split(",") if x.count(":") == 3]
+            if any(f == 0 for f in flags):
+                badp.append(r)
+        txt = f"{len(pl)} PARTY line(s) ({judged} judged); pobj != ctrl after a leader switch x{pobj_diff}"
+        if badp:
+            C["PR-PARTY"] = ("FAIL", f"{txt}; {len(badp)} with a member or the controlled creature at f11ac=0, first: {q(badp[0]['ln'], badp[0]['line'], name)}", ev(badp[0]))
+        else:
+            C["PR-PARTY"] = ("PASS", txt + ", every member and ctrl has f11ac=1", ev(pl[0]))
+
+    # ---- PR-A1X: follow-up after every A1 end (retarget ORPHANs are reported, not failed: a successful retarget needs no slot-6 run)
+    a1 = [r for r in L["A1"] if r["probe"] and r["outcome"] in ("end", "retarget")]
+    if not a1:
+        C["PR-A1X"] = ("OBSERVE", "no A1 end/retarget line with the A1X suffix", "")
+    else:
+        win_ms = cfg_rethink + 1000
+        follow = defaultdict(list)
+        for r in L["A1X_FOLLOW"]:
+            follow[r["m"].group(2).lower()].append(r["t"])
+        orphans = [r for r in L["A1X_ORPHAN"]]
+        a1_by_cr = defaultdict(list)
+        for r in a1:
+            a1_by_cr[r["cr"]].append(r)
+        bad_orph, retarget_orph = [], 0
+        for o in orphans:
+            cr = o["m"].group(2).lower()
+            prev = [r for r in a1_by_cr.get(cr, ()) if r["t"] <= o["t"]]
+            if prev and prev[-1]["outcome"] == "retarget":
+                retarget_orph += 1
+            else:
+                bad_orph.append(o)
+        ends = [r for r in a1 if r["outcome"] == "end" and not (t_max is not None and r["t"] + win_ms > t_max)]
+        no_follow = [r for r in ends if not any(r["t"] <= x <= r["t"] + win_ms for x in follow.get(r["cr"], ()))]
+        wr = sum(1 for r in L["A1X_STRICT"] if r["m"].group(6) == "would-reject")
+        txt = (f"{len(a1)} A1 end/retarget line(s), {len(ends)} judged end(s), FOLLOWUP x{len(L['A1X_FOLLOW'])}, ORPHAN x{len(orphans)} "
+               f"({retarget_orph} after a retarget), STRICT would-reject {wr}/{len(L['A1X_STRICT'])}")
+        if bad_orph or no_follow:
+            first = bad_orph[0] if bad_orph else no_follow[0]
+            C["PR-A1X"] = ("FAIL", f"{txt}; {len(bad_orph)} ORPHAN after an end, {len(no_follow)} end(s) without a FOLLOWUP within {win_ms} ms, "
+                                   f"first: {q(first['ln'], first['line'], name)}", ev(first))
+        else:
+            C["PR-A1X"] = ("PASS", txt, ev(a1[0]))
+
+    # ---- PR-RAH2 (ranged_ai_log.txt): H2 retarget=1, then H1 end52c != 0 inRange=0 for the same creature within 2 s
+    if not ranged_path:
+        C["PR-RAH2"] = ("OBSERVE", "ranged_ai_log.txt not present", "")
+    else:
+        h2, h1, h1_any = [], [], 0
+        for ln, line in read_lines(ranged_path):
+            m = R_H2_RE.match(line)
+            if m and int(m.group(14)) == 1:
+                h2.append(dict(t=int(m.group(1)), cr=m.group(2).lower(), ln=ln, line=line))
+                continue
+            m = R_H1_END52C_RE.match(line)
+            if m:
+                h1_any += 1
+                if int(m.group(3)) == 0 and int(m.group(4), 16) != 0:
+                    h1.append(dict(t=int(m.group(1)), cr=m.group(2).lower(), ln=ln, line=line))
+        rn = ranged_path.name
+        hits = [(a, b) for a in h2 for b in h1 if a["cr"] == b["cr"] and 0 <= b["t"] - a["t"] <= 2000]
+        if not h2 or not h1_any:
+            C["PR-RAH2"] = ("OBSERVE", "no H2 retarget=1 line" if not h2 else "H2 retarget=1 seen but no H1 line carries end52c (older ranged-ai log)", "")
+        elif hits:
+            a, b = hits[0]
+            C["PR-RAH2"] = ("FAIL", f"{len(hits)} H2 retarget=1 followed by H1 end52c!=0 inRange=0 within 2 s for the same creature (the 3D-minus-radii retarget "
+                                    f"ends silently), first: {rn}:{a['ln']} -> {rn}:{b['ln']}", f"{rn}:{a['ln']}")
+        else:
+            C["PR-RAH2"] = ("PASS", f"{len(h2)} H2 retarget=1 line(s), none followed by H1 end52c!=0 inRange=0 within 2 s", f"{rn}:{h2[0]['ln']}")
+
+    R["checks"] = C
+    R["counts"] = {k: len(v) for k, v in L.items()}
+    if R["budget"]:
+        an.add("INFO", name, "probe line budget reached for: " + ", ".join(sorted(set(R["budget"]))) + " (later PR lines of those probes are missing; PRS summaries continue)")
+    if R.get("unparsed"):
+        an.add("WARN", name, f"{len(R['unparsed'])} PR/PRS line(s) not recognised, first: {R['unparsed'][0]}")
+    return R
+
+
+_PR_PARSERS = [("FM2C", PR_FM2C_RE), ("FM2F", PR_FM2F_RE), ("FM2R", PR_FM2R_RE), ("FM3L", PR_FM3L_RE), ("FM3X", PR_FM3X_RE), ("PRS_FM3", PRS_FM3_RE),
+               ("RS", PR_RS_RE), ("PRS_RS", PRS_RS_RE), ("P2", PR_P2_RE), ("PRS_P2", PRS_P2_RE), ("PF", PR_PF_RE), ("PRS_PF", PRS_PF_RE),
+               ("PRS_RAR", PRS_RAR_RE), ("RAR_MOVE", PR_RAR_MOVE_RE), ("RAR_REQ", PR_RAR_REQ_RE), ("SHX", PR_SHX_RE), ("PRS_SHX", PRS_SHX_RE),
+               ("SS1", PR_SS1_RE), ("GCA", PR_GCA_RE), ("PRS_GCA", PRS_GCA_RE), ("PARTY", PR_PARTY_RE), ("A1X_STRICT", PR_A1X_STRICT_RE),
+               ("A1X_FOLLOW", PR_A1X_FOLLOW_RE), ("A1X_ORPHAN", PR_A1X_ORPHAN_RE)]
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 # checklist
 # ----------------------------------------------------------------------------------------------------------------------
-def build_checklist(S: dict, T: dict, RG: dict, I: dict, win: Window | None) -> list[tuple[str, str, str, str]]:
+def build_checklist(S: dict, T: dict, RG: dict, I: dict, win: Window | None, P: dict | None = None) -> list[tuple[str, str, str, str]]:
     """(id, status PASS|FAIL|OBSERVE, summary, evidence refs). OBSERVE = the logs cannot decide (visual) or not exercised."""
     out: list[tuple[str, str, str, str]] = []
 
@@ -1319,6 +1730,13 @@ def build_checklist(S: dict, T: dict, RG: dict, I: dict, win: Window | None) -> 
             add("E3", "OBSERVE", f"stance-11 H1 lines exist x{n11['n']}{wtxt} but none with los=0 (the ally was not on the line of fire)")
         else:
             add("E3", "OBSERVE", f"no stance-11 H1 lines{wtxt}")
+    # ---- Phase-4 probe checks (analyze_probes)
+    pr = (P or {}).get("checks", {})
+    for i in PR_CHECK_IDS:
+        if i in pr:
+            add(i, *pr[i])
+        else:
+            add(i, "OBSERVE", "ai_trace.txt not present" if not tp else "no data")
     order = {i: n for n, (i, _) in enumerate(CHECKLIST)}
     out.sort(key=lambda r: order.get(r[0], 99))
     return out
@@ -1334,7 +1752,7 @@ def md_table(headers: list[str], rows: list[list]) -> list[str]:
     return out
 
 
-def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, an: Anoms, clock: Clock, win: Window | None, opts) -> str:
+def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, an: Anoms, clock: Clock, win: Window | None, opts, P: dict | None = None) -> str:
     L: list[str] = []
     A = L.append
     A("# Play-log report")
@@ -1668,6 +2086,24 @@ def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, a
             L.extend(quotes_block(v, 2))
         L.extend(quotes_block([q(f["ln"], f["line"], I["name"]) for f in I["flushes"]], 3))
     A("")
+
+    # 8. Phase-4 probes
+    A("## 8. Phase-4 probe summaries (PR / PRS lines)")
+    A("")
+    if not P or not P.get("present"):
+        A("No ai_trace.txt: no probe lines.")
+    else:
+        cnt = P.get("counts", {})
+        A(f"{P['n_pr']} PR line(s), {P['n_prs']} PRS summary line(s)" + (f"; line budget reached for: {', '.join(sorted(set(P['budget'])))}" if P["budget"] else "") + ".")
+        A("")
+        rows = [[k, v] for k, v in sorted(cnt.items())]
+        if rows:
+            L.extend(md_table(["line kind", "count"], rows))
+            A("")
+        A("Last PRS line per probe (and creature):")
+        items = [(key, ln_line) for key, ln_line in sorted(P["prs_last"].items())]
+        L.extend(quotes_block([q(ln, line, FILES["trace"]) for _k, (ln, line) in items], 40))
+    A("")
     return "\n".join(L) + "\n"
 
 
@@ -1724,6 +2160,7 @@ def run_full(argv: list[str] | None = None) -> dict:
     T = analyze_trace(found["trace"], win, clock, an, opts) if found["trace"] else {"present": False}
     RG = analyze_ranged(found["ranged"], win, an, T.get("cr_tag", {})) if found["ranged"] else {"present": False}
     I = analyze_inv(found["inv"], an) if found["inv"] else {"present": False}
+    P = analyze_probes(found["trace"], found["ranged"], win, an) if (found["trace"] or found["ranged"]) else None
     if win and not win.active():
         an.add("WARN", "window", f"--window {win.spec} ignored: no clock anchor (no ai_trace header and no steam log); pass --anchor")
     for k, label in (("trace", "ai_trace.txt"), ("ranged", "ranged_ai_log.txt"), ("inv", "inventory_sort_filter_log.txt")):
@@ -1731,7 +2168,7 @@ def run_full(argv: list[str] | None = None) -> dict:
             an.add("INFO", label, "not present")
     if not found["steam"]:
         an.add("INFO", "steam log", "not present")
-    checklist = build_checklist(S, T, RG, I, win)
+    checklist = build_checklist(S, T, RG, I, win, P)
     for i, st, summ, ev in checklist:
         if st == "FAIL":
             an.add("FAIL", f"checklist {i}", summ)
@@ -1742,14 +2179,14 @@ def run_full(argv: list[str] | None = None) -> dict:
         if key not in seen:
             seen.add(key); items.append(it)
     an.items = items
-    report = render(d, found, S, T, RG, I, hooks, hook_notes, checklist, an, clock, win, opts)
+    report = render(d, found, S, T, RG, I, hooks, hook_notes, checklist, an, clock, win, opts, P)
     out = None
     if not opts.no_write:
         out = Path(opts.out) if opts.out else d / "REPORT.md"
         out.write_text(report, encoding="utf-8")
     nfail = sum(1 for s, _, _ in an.items if s == "FAIL")
     rc = 2 if (opts.strict and nfail) else 0
-    return dict(rc=rc, report=report, out=out, S=S, T=T, RG=RG, I=I, checklist=checklist, an=an, hooks=hooks, clock=clock, found=found)
+    return dict(rc=rc, report=report, out=out, S=S, T=T, RG=RG, I=I, P=P, checklist=checklist, an=an, hooks=hooks, clock=clock, found=found)
 
 
 def run(argv: list[str] | None = None) -> tuple[int, str, Path | None]:

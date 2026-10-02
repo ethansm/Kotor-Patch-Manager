@@ -89,6 +89,19 @@ WINDOWS = [
     W("CA A3 dead-target lock clear", 0x6D78B7, 7, 0x6D7390),                  # MOV [EBP-0x3C],0 (lock-clear variant, no consumed exit)
     W("CA FM3 sentinel probe (NOT SHIPPED)", 0x51DBE7, 6, 0x51D790, shipped=False),  # MOV EDX,[0xA1B488]; log-only probe, dropped
                                                                                # from 0.1.0 (wrapper cost in the scheduler's hottest loop, review N2)
+    W("CA P FM2C partial-vs-fail",      0x55B69A, 6,  0x55AC80),   # MOV ECX,[0x99B5A0]; [EBP-0x18] res 2/3
+    W("CA P FM2F fail leg (log-only)",  0x5C2438, 9,  0x5BFC00),   # plain this round (no consumed exit)
+    W("CA P FM2R 0x11 re-approach",     0x5BC5F4, 9,  0x5BC1D0),   # start = JNZ 0x5BC5E2 / JZ 0x5BC5E8 target
+    W("CA P FM3S sentinel set",         0x51DBE1, 6,  0x51D790),   # ends at 0x51DBE7 (the unshipped hot probe)
+    W("CA P FM3E level end",            0x51DD33, 6,  0x51D790),   # stolen SUB feeds the SBB (stolen bytes last)
+    W("CA P FM3R RemoveObject",         0x51E0C9, 6,  0x51E0C0),
+    W("CA P RS RunScript entry",        0x6FD8D0, 6,  0x6FD8D0),   # PUSH EBP; MOV EBP,ESP; SUB ESP,8
+    W("CA P P2 party cadence",          0x56BE79, 6,  0x56B8A0),   # HOT; 144 B from CA P1 stamp 0x56BDE3
+    W("CA P PF party flag write",       0x58A35E, 6,  0x58A330),
+    W("CA P RAR RunActions result",     0x5D6A60, 9,  0x5D56B0),   # HOT; stolen CMP feeds JNZ
+    W("CA P SHX shout loop exit",       0x5475E8, 10, 0x547100),   # SEH unlink, absolute FS store
+    W("CA P SS1 SetState commit",       0x59D966, 6,  0x59CBA0),   # stolen reads AL
+    W("CA P GCA GetCurrentAction",      0x67B204, 10, 0x67B100),   # stolen PUSH ECX
 ]
 
 
