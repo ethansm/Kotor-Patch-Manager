@@ -6,7 +6,9 @@
 // Every row starts a fresh session in a scratch directory next to the test binary
 // (<build>/tests/logsvc_tmp_<width>) with the flush thread off, so the rows drive
 // FlushNow()/PollConfigNow() themselves and use a fake clock: nothing here depends
-// on timing, except the loose "does not block" bound on the 100k-submit row.
+// on timing, except the loose "does not block" bound on the 100k-submit row. The
+// last rows ("real flush thread") are the exception: they run with the real clock
+// and the flush thread on, and poll the disk with generous timeouts.
 //
 // Platform::Log lines (stderr) are only inspected where a row is about them.
 #include "log_service.h"
@@ -161,6 +163,32 @@ namespace {
         LogService::Options opt;
         opt.startThread = false;
         LogService::Init(g_dir, opt);
+    }
+
+    using Clock = std::chrono::steady_clock;
+
+    // Like Begin() but with the real clock and the real flush thread. `ini` may be
+    // nullptr (no ini file).
+    void BeginThreaded(const char* ini) {
+        LogService::Shutdown();
+        Wipe(g_dir);
+        LogService::SetClockForTest(nullptr);
+        if (ini) WriteFile(P("kplog.ini"), ini);
+        LogService::Options opt;
+        opt.startThread = true;
+        LogService::Init(g_dir, opt);
+    }
+
+    // Poll `pred` every 10 ms for up to `timeoutMs`. Returns the elapsed
+    // milliseconds when it became true, or -1 on timeout.
+    long WaitFor(const std::function<bool()>& pred, long timeoutMs) {
+        const auto t0 = Clock::now();
+        for (;;) {
+            const long ms = static_cast<long>(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - t0).count());
+            if (pred()) return ms;
+            if (ms >= timeoutMs) return -1;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
     }
 
     // "[global] enabled=1" plus a patch section with the given extra lines.
@@ -895,6 +923,177 @@ int main(int argc, char** argv) {
         kptest::Check("previous session kept as .1", Contains(ReadFile(P("alpha_log.txt.1")), "pending 1"));
         kptest::Check("new session in the main file",
                       Contains(ReadFile(P("alpha_log.txt")), "second session") && !Contains(ReadFile(P("alpha_log.txt")), "pending 1"));
+    }
+
+    // ---- rows with the real flush thread ------------------------------------------
+
+    Row("real flush thread: WARN reaches disk, INFO via the periodic flush");
+    {
+        // flush_ms=5000 so only the WARN wake can explain a fast arrival.
+        BeginThreaded("[global]\nenabled=1\nflush_ms=5000\n[alpha]\nenabled=1\nlevel=2\n");
+        const int32_t p = LogService::Register("alpha");
+        const int32_t ch = LogService::Channel(p, "x");
+        Submit(ch, KPLOG_WARN, "thread warn");
+        const long warnMs = WaitFor([] { return Contains(ReadFile(P("alpha_log.txt")), "alpha/x WARN thread warn"); }, 1500);
+        char detail[64];
+        std::snprintf(detail, sizeof(detail), "(observed %ld ms, flush_ms=5000)", warnMs);
+        kptest::Check("WARN on disk within 1500 ms (wake)", warnMs >= 0, detail);
+        kptest::Check("WARN wake beat the 5 s period", warnMs >= 0 && warnMs < 1000);
+        LogService::Shutdown();
+
+        BeginThreaded("[global]\nenabled=1\n[alpha]\nenabled=1\nlevel=2\n");
+        const int32_t p2 = LogService::Register("alpha");
+        const int32_t ch2 = LogService::Channel(p2, "x");
+        Submit(ch2, KPLOG_INFO, "thread info");
+        const long infoMs = WaitFor([] { return Contains(ReadFile(P("alpha_log.txt")), "alpha/x thread info"); }, 1500);
+        std::snprintf(detail, sizeof(detail), "(observed %ld ms, flush_ms=500)", infoMs);
+        kptest::Check("INFO on disk within 1500 ms (periodic)", infoMs >= 0, detail);
+        kptest::Check("INFO line has no WARN marker", !Contains(ReadFile(P("alpha_log.txt")), "WARN thread info"));
+        Submit(ch2, KPLOG_ERR, "thread err");
+        const long errMs = WaitFor([] { return Contains(ReadFile(P("alpha_log.txt")), "alpha/x ERR thread err"); }, 1500);
+        std::snprintf(detail, sizeof(detail), "(observed %ld ms)", errMs);
+        kptest::Check("ERR on disk within 1500 ms", errMs >= 0, detail);
+        LogService::Mark("thread mark");
+        const long markMs = WaitFor([] { return Contains(ReadFile(P("alpha_log.txt")), "MARK thread mark"); }, 1500);
+        std::snprintf(detail, sizeof(detail), "(observed %ld ms)", markMs);
+        kptest::Check("Mark on disk within 1500 ms", markMs >= 0, detail);
+        LogService::Shutdown();
+    }
+
+    Row("real flush thread: hot reload via the thread");
+    {
+        BeginThreaded(nullptr);
+        const int32_t ch = LogService::Channel(LogService::Register("alpha"), "x");
+        kptest::Check("INFO off without an ini", !LogService::Enabled(ch, KPLOG_INFO));
+        WriteFile(P("kplog.ini"), "[global]\nenabled=1\n[alpha]\nenabled=1\nlevel=2\n");
+        const long ms = WaitFor([ch] { return LogService::Enabled(ch, KPLOG_INFO) != 0; }, 2500);
+        char detail[64];
+        std::snprintf(detail, sizeof(detail), "(observed %ld ms)", ms);
+        kptest::Check("thread picked up the ini within 2500 ms", ms >= 0, detail);
+        LogService::Shutdown();
+    }
+
+    Row("real flush thread: Shutdown with the ring lock held is bounded");
+    {
+        BeginThreaded(nullptr);
+        LogService::Channel(LogService::Register("alpha"), "x");
+        std::atomic<bool> held{false};
+        // The helper owns the lock: unlocking or try-locking a std::mutex from a
+        // thread that does not hold it (or that already does) is undefined.
+        std::thread helper([&held] {
+            LogService::LockRingForTest();
+            held = true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(900));
+            LogService::UnlockRingForTest();
+        });
+        while (!held.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        const auto t0 = Clock::now();
+        const std::string log = CaptureStderr([] { LogService::Shutdown(); });
+        const long ms = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - t0).count();
+        char detail[64];
+        std::snprintf(detail, sizeof(detail), "(returned after %ld ms)", ms);
+        kptest::Check("Shutdown returned in < 600 ms", ms < 600, detail);
+        kptest::Check("...but waited for the lock first", ms >= 150, detail);
+        kptest::Check("logged 'final flush skipped (lock busy)'", Contains(log, "kplog: final flush skipped (lock busy)"));
+        kptest::Check("service is inert afterwards", LogService::Register("alpha") == -1);
+        helper.join();
+        // A new session must still start cleanly after the abandoned shutdown.
+        BeginThreaded(nullptr);
+        const int32_t c2 = LogService::Channel(LogService::Register("alpha"), "x");
+        Submit(c2, KPLOG_WARN, "after abandoned shutdown");
+        const long arrived = WaitFor([] { return Contains(ReadFile(P("alpha_log.txt")), "after abandoned shutdown"); }, 1500);
+        kptest::Check("next session works", arrived >= 0);
+        LogService::Shutdown();
+    }
+
+    Row("real flush thread: an old session's thread leaves a new session alone");
+    {
+        BeginThreaded("[global]\nenabled=1\nflush_ms=100\n");
+        const int32_t a = LogService::Channel(LogService::Register("alpha"), "x");
+        Submit(a, KPLOG_WARN, "old session");
+        LogService::Shutdown();
+        // Second session: no thread of its own, so nothing but the (stale) first
+        // thread could flush it. flush_ms=100 there too, so a thread that kept
+        // running would have flushed several times during the wait below.
+        LogService::SetClockForTest(nullptr);
+        WriteFile(P("kplog.ini"), "[global]\nenabled=1\nflush_ms=100\n");
+        LogService::Options noThread;
+        noThread.startThread = false;
+        LogService::Init(g_dir, noThread);
+        const int32_t b = LogService::Channel(LogService::Register("alpha"), "x");
+        Submit(b, KPLOG_WARN, "new session");  // this also wakes the old thread
+        std::this_thread::sleep_for(std::chrono::milliseconds(600));
+        // The first session's file is still there (rotation happens on the new
+        // session's first write), so the check is that the new line is not in it
+        // and the file was not rotated yet.
+        kptest::Check("stale thread did not flush the new session",
+                      !Contains(ReadFile(P("alpha_log.txt")), "new session") && !Exists(P("alpha_log.txt.1")));
+        LogService::FlushNow();
+        kptest::Check("owner's FlushNow does", Contains(ReadFile(P("alpha_log.txt")), "alpha/x WARN new session"));
+        kptest::Check("old session survived as .1", CountContaining(Body(P("alpha_log.txt.1")), "old session") == 1);
+        LogService::Shutdown();
+
+        // The same race at its tightest: the old thread has to still be asleep (or
+        // just woken) when the next Init() clears `stopping`, which only happens if
+        // Init follows Shutdown immediately. Repeated so the window is hit.
+        int leaked = 0;
+        for (int i = 0; i < 100; ++i) {
+            Wipe(g_dir);
+            LogService::SetClockForTest(nullptr);
+            LogService::Init(g_dir, LogService::Options());
+            LogService::Shutdown();
+            LogService::Init(g_dir, noThread);
+            const int32_t e = LogService::Channel(LogService::Register("alpha"), "x");
+            Submit(e, KPLOG_WARN, "churn");  // wakes a thread that is still waiting
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            if (Contains(ReadFile(P("alpha_log.txt")), "churn")) ++leaked;
+            LogService::Shutdown();
+        }
+        char churn[64];
+        std::snprintf(churn, sizeof(churn), "(100 Init/Shutdown/Init cycles, %d leaked)", leaked);
+        kptest::Check("no stale thread flush in rapid session churn", leaked == 0, churn);
+        LogService::Shutdown();
+
+        // Back to back thread sessions: right files, one header each, no duplicates.
+        Wipe(g_dir);
+        BeginThreaded(nullptr);
+        const int32_t c = LogService::Channel(LogService::Register("alpha"), "x");
+        Submit(c, KPLOG_WARN, "first");
+        LogService::Shutdown();
+        LogService::Options withThread;
+        LogService::Init(g_dir, withThread);
+        const int32_t d = LogService::Channel(LogService::Register("alpha"), "x");
+        Submit(d, KPLOG_WARN, "second");
+        const long ms = WaitFor([] { return Contains(ReadFile(P("alpha_log.txt")), "WARN second"); }, 1500);
+        char detail[64];
+        std::snprintf(detail, sizeof(detail), "(observed %ld ms)", ms);
+        kptest::Check("second thread session reaches disk", ms >= 0, detail);
+        std::this_thread::sleep_for(std::chrono::milliseconds(700));
+        const std::string cur = ReadFile(P("alpha_log.txt"));
+        int headers = 0;
+        for (size_t at = cur.find("# kplog session"); at != std::string::npos; at = cur.find("# kplog session", at + 1)) ++headers;
+        kptest::Check("current file: one header, only the new line",
+                      headers == 1 && CountContaining(Body(P("alpha_log.txt")), "WARN second") == 1 && !Contains(cur, "WARN first"));
+        kptest::Check("previous file: only the old line",
+                      CountContaining(Body(P("alpha_log.txt.1")), "WARN first") == 1 &&
+                      !Contains(ReadFile(P("alpha_log.txt.1")), "WARN second"));
+        LogService::Shutdown();
+    }
+
+    Row("real flush thread: Submit after Shutdown is a no-op");
+    {
+        BeginThreaded("[global]\nenabled=1\n[alpha]\nenabled=1\nlevel=2\n");
+        const int32_t p = LogService::Register("alpha");
+        const int32_t ch = LogService::Channel(p, "x");
+        Submit(ch, KPLOG_WARN, "before shutdown");
+        LogService::Shutdown();
+        const std::string content = ReadFile(P("alpha_log.txt"));
+        kptest::Check("Shutdown flushed the pending WARN", Contains(content, "WARN before shutdown"));
+        Submit(ch, KPLOG_WARN, "after shutdown");
+        Submit(ch, KPLOG_ERR, "after shutdown err");
+        LogService::Mark("after shutdown");
+        std::this_thread::sleep_for(std::chrono::milliseconds(700));
+        kptest::Check("nothing written after Shutdown", ReadFile(P("alpha_log.txt")) == content);
     }
 
     LogService::Shutdown();
