@@ -471,3 +471,23 @@ Complaint (3) (companion icons missing) is addressed by `ForceArrowCounters` (ca
 **Perf:** Buff HUD `readAt` migrated from `IsBadReadPtr` (Wine page-fault + SEH storm, doc 10) to `_shared/SafeRead.h`; `beginScope()` at every hook; slots stale after 500 ms ignored (`slotFresh`).
 **Shared file hazard:** `BuffDurationHUD.cpp` is also edited by a Buff HUD review session (arrow-counter bump `ForceArrowCounters`, `RestoreBuffIcon` ordering): check `git status`/`git diff` and merge; commit only your own hunks.
 **Open items (research plan = the Claude plan file written at the end of session 6; summary in memory `kotor2-shield-bar`):** (1) install + live-test the staged menu-companion-bars build and tune spacing/placement; (2) green-match check with a half-drained shield (screenshots needed); (3) reported: active character's head gear missing in-game after opening/closing a menu (likely `equipment-3d-character`, unverified); (4) shield bar hover tooltip (item F: type, remaining, time left); (5) tooltip refresh while hovering (B7a); (6) coexistence audit B (hotbar, droid cards, letterbox/cutscene/map/load states, resolution); (7) Buff HUD with robot leader (C) re-verify with the sibling counter bump; (8) Phase 3: rollback set `shield_live_patches/`, doc FINAL, README, memory; (9) Mouse Sensitivity now 17 (was 44; probably user-changed).
+
+## P1 result table (static Ghidra, 2026-10-02): which menu screens run the top-bar Draw 0x756b70
+
+Key finding: CSWGuiInGameMenu (top_p, vtable 0x99e454) is ONE singleton (CGuiInGame ctor 0x7be4c0 stores it at gui+8; the only caller of ctor 0x754ed0 is 0x7bef23; no subclass; no screen embeds or loads its own copy). It is added to the GuiManager panel list only by OpenInGameMenu 0x7c9df0 (AddPanel at 0x7c9f6d) and stays there while tabs are switched (0x7ca550 swaps only the tab panel). So the slot is always menu+0x2350 and the hook 0x745774 fires every frame for whichever tab is showing. The Draw is vtable slot 13 counted 0-based from the vftable (vtable+0x34, the same slot GuiManager::Draw 0x4113a0 calls); older notes' "slot 14" is 1-based.
+
+| Screen (class, ctor) | Own panel / derives top bar? | Draw override | Top-bar hook fires? | Slot | Creature local |
+|---|---|---|---|---|---|
+| equip_p (InGameEquip 0x8a92d0) tab 0 | separate panel; top bar = singleton | slot13 0x8aba50 (own tick, not the menu) | yes | menu+0x2350 | caller(756b70) ebp-0x38 |
+| inventory_p (0x8a6170) tab 1 | separate | slot13 0x8a7350 | yes | same | same |
+| character_p (0x84c3a0) tab 2 | separate | slot13 0x84fbb0 | yes | same | same |
+| abilities_p (0x8a25c0) tab 3 | separate | base 0x40ec90 | yes | same | same |
+| partyselect_p (0x89cf30) tab 4 (factory) | separate | base | yes (as tab) | same | same |
+| journal_p (0x7fae60) tab 5 | separate (embeds messages_p 0x757c40) | slot13 0x7fbce0 | yes | same | same |
+| map_p (0x893950) tab 6 | separate | slot13 0x894cd0 | yes | same | same |
+| optionsingame_p (0x8a1170) tab 7 | separate | base | yes | same | same |
+| leveluppnl_p / pwrlvlup_p (LevelUpCharGen 0x8f4af0, modal layer 3) | no | base | only if the menu is open beneath (Character tab); drawn in list loop 1 UNDER the modal panel (not visible); none if launched by script | same | same |
+| upgrade / upgradeselect (0x8c9e10/0x8c6e90) | no | base | only if opened from the inventory tab, hidden beneath | same | same |
+| store_p (0x8b4270), container_p (0x8b1ea0), standalone partyselect (0x7cb920) | no, modal layer 3, store requires menu closed | base | no | n/a | n/a |
+
+Creature locals in 0x756b70 (real ebp offsets; decompiler local_X = ebp-(X-4)): [ebp-0x28] = client CSWCCreature* (GetMember 0x7e5da0, or 0x73f550 when menu+0x3dd0 != -1), [ebp-0x38] = 0x77d800 result (server creature). Both are set before the call at 0x757304 on every path; Draw returns early (no hook) if the client creature resolves to null. Open doubts: tab 4 factory case builds partyselect_p although the 8th tab button is BTN_MSG (messages_p); not resolved, bar is present either way. Menu object layering: menu draws in GuiManager list loop 1 before the tab panel; modal (layer 3) panels draw on top. DB: lessons 293-297, functions rows 7be4c0/7c9df0/7ca060/7ca550/7d0760/756b70/410530/4113a0/84fcd0/7ccd40/7cb920; new scripts ListGuiVtablesSlots.java, CallSiteContextBefore.java.
