@@ -3,7 +3,7 @@
 
   stage_and_verify_install.py stage  STAGE_DIR [EXTRA.kpatch ...]   # never writes the game dir
       For every id in the live patch_config.toml, find the kpatch (under the kotor-patch-manager tree) whose DLL md5 equals the
-      LIVE DLL (simple patches: newest kpatch), check its LAAEXE hook set is byte-identical to the live config, copy it into STAGE_DIR,
+      LIVE DLL (simple patches: newest kpatch), check its Steam Aspyr hook set is byte-identical to the live config, copy it into STAGE_DIR,
       add the EXTRA kpatches (an extra whose id is live replaces that live build), and print the id list to pass to KPatchLauncher.
   stage_and_verify_install.py verify STAGE_DIR                        # after the install
       md5 of every live DLL vs the DLL in the staged kpatch of that id; hook counts; consumed_exit_address hooks.
@@ -17,7 +17,7 @@ import sys, os, glob, re, zipfile, hashlib, shutil, tomllib, collections
 
 G = os.path.expanduser("~/.local/share/Steam/steamapps/common/Knights of the Old Republic II")
 T = os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager")
-LAA = "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"
+STEAM = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
 
 
 def kpatch_index():
@@ -48,7 +48,7 @@ def kpatch_hooks(z):
         if n.endswith(".toml") and n != "manifest.toml":
             t = tomllib.loads(z.read(n).decode())
             tv = [x.upper() for x in t.get("metadata", {}).get("target_versions", [])]
-            if LAA in tv or not tv:
+            if STEAM in tv or not tv:
                 out += [norm(h) for h in t.get("hooks", [])]
     return sorted(out)
 

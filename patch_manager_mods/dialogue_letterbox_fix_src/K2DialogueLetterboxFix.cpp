@@ -1,4 +1,4 @@
-// k2-dialogue-letterbox-fix 1.0.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Doc 15 Phase 2 S3, finding L1 (doc 17).
+// k2-dialogue-letterbox-fix 1.0.0 (Steam Aspyr build 6A522E71...). Doc 15 Phase 2 S3, finding L1 (doc 17).
 //
 // Problem: the dialogue letterbox bar height is bar = trunc((H - trunc(W / c)) / 2) with c a double at .rdata VA
 // 0x009A7D30 (vanilla 2.3333330154418945, bytes 00 00 00 80 AA AA 02 40), read by exactly 7 FDIV instructions and

@@ -1,4 +1,4 @@
-// Ranged AI (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Engine half of Mod 8: makes ranged party members
+// Ranged AI (Steam Aspyr build 6A522E71...). Engine half of Mod 8: makes ranged party members
 // hold position instead of walking into melee when their line of fire is blocked (E-H1), and lets them retarget
 // like the player does (E-H2). Research trail and every address: patch_manager_mods/13_ranged_ai_spacing.md.
 //

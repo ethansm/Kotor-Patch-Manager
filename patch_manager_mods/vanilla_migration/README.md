@@ -1,6 +1,9 @@
 # Vanilla exe migration (2026-10-02 12:02)
 
-**Status: INSTALLED, awaiting in-game check.** The live `swkotor2.exe` moved from the 3C-FD/LAA build
+**Status: INSTALLED, awaiting in-game check.** 12:14: `colorshift_k2` + `K2_music_fix` added (31 ids / 202 hooks incl. a sibling's
+`mouse-probe`, hand-installed 12:11 and carried over unchanged). LAA aliases removed from all manifests/hooks (KPM
+`b5806b1`, mirrors here). Community note with the 3C-FD hash: KPM `docs/PrePatchedExecutables.md` (branch
+`docs/prepatched-executables`, PR candidate for issues #49/#91). The live `swkotor2.exe` moved from the 3C-FD/LAA build
 (`4AB72F…`) to vanilla Steam Aspyr (`6A522E…`), with 3C-FD's changes supplied by KPM patches instead.
 
 ## What changed
@@ -48,4 +51,5 @@ Swapping the exe requires moving both aside first (done; they are in the backup 
 Fork `ethansm/Kotor-Patch-Manager` = `origin`, `LaneDibello/...` = `upstream` (push disabled). Local work committed on
 `ethansm/local-mods` (dcc1cf6 LAA aliases, 2dcf48a Ghidra scripts, 583ba96 local patches), pushed. `master` tracks
 `upstream/master`. Local excludes in `.git/info/exclude` (`*_live_patches/`, stages, laa.db, `*.kpatch.old`).
-Once the vanilla install is confirmed in game, the `_laa` aliases (dcc1cf6 manifest lines) can be dropped.
+`_laa` aliases dropped in `b5806b1`; `kotor2_steam_aspyr_laa.db` (source + bin copies) moved to the backup's `laa_db/`.
+New stages: build with `mods678_research/stage_and_verify_install.py` (now keys on the vanilla hash).

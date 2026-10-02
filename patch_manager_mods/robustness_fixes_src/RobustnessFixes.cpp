@@ -1,4 +1,4 @@
-// k2-robustness-fixes 1.0.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Engine robustness fixes from the
+// k2-robustness-fixes 1.0.0 (Steam Aspyr build 6A522E71...). Engine robustness fixes from the
 // doc 10 Phase 6E research (batches W4-W7, Opus-verified; section "Robustness set").
 //
 // DLL-only. Each fix is an independent group: DllMain verifies every byte of the group's sites, then writes the group;

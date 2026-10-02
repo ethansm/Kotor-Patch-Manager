@@ -1,4 +1,4 @@
-// PerfLab 0.3.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics; the only behaviour changes are the
+// PerfLab 0.3.0 (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
 // flag-gated experiments tx=1 / g1skip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
 // 0.3.0 (Phase 4) adds, all counter-only, all output from the helper thread (keys below, default 1 when metrics=1):
 //   live=1   LIVE line: engine live counters read from globals (textures, GL bytes, models, mesh bytes, gobs, nodes, scenes,

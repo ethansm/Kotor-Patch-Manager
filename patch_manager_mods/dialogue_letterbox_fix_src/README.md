@@ -1,6 +1,6 @@
 # k2-dialogue-letterbox-fix 1.0.0 (STAGED, not installed)
 
-Doc 15 Phase 2 S3, finding L1 (build doc: `../17_dialogue_letterbox_and_wrap_fixes.md`). Targets KOTOR II Steam Aspyr (sha256 6A522E71...) and its LAA variant (4AB72FC1...).
+Doc 15 Phase 2 S3, finding L1 (build doc: `../17_dialogue_letterbox_and_wrap_fixes.md`). Targets KOTOR II Steam Aspyr (sha256 6A522E71...).
 
 ## What / why
 
