@@ -358,3 +358,20 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
 - Runtime facts to design Step 4 on (all live-confirmed unless noted): pending arrays `{ptr,count,cap}`, empty = {0,0,0} (pushes must use engine helpers so the engine
   allocator owns the memory); Auto pending feats = chosen only (grants added directly); manual-flow grant presence UNOBSERVED; spells-add = uint32 spells.2da rows;
   addToList=1 in manual + Auto (pending pointer stored in stats+0x28 -> rewrite must be idempotent); SetExperience replay UNOBSERVED.
+
+## Session notes - Phase 2 Step 4/5 (2026-10-02 00:40 .. 01:15, so a context clear loses nothing)
+- Commits: 783abf3 (plan pointer), 668a6a0 (0.2.0 apply code + apply_test), ccff838 (0.2.0 install), 361b673 (0.2.1 auto-only gate + R1-R3), f2b2f03 (0.2.1
+  install), 83ecb30/67ff2e8 (run 3), 2dbdb6e (R4/R5). Never push/amend; `git commit -- <paths>`.
+- LIVE NOW: `level-up-override` 0.2.1 (dll 693053d9), 26 ids, UpdatedAt 2026-10-02T00:58:35, stage `$T/levelup_stage3/`, backups
+  `backups/pre_levelup_020_20261002_005342/` (pre-0.2.0 = 0.1.0 set) and `backups/pre_levelup_021_20261002_005828/` (0.2.0 set). Game dir
+  `levelup_override.ini` = `mode=rewrite tags=atton apply=1 verbose=1` (the rewrite is ACTIVE for Atton auto level-ups). `$T` = `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`.
+- Phase 2 status: run 3 proved the Auto-flow rewrite. Still open (user check, no code needed): manual level-up -> `SKIP manual`, sheet after save/reload, L8 feat 77,
+  Kreia powers, Auto NPCs / XP award flows, SetExperience replay -> ALREADY. Log lines before run 3 = 46; run 3 = lines 47-105 (local copy
+  `research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt`, untracked).
+- Next phase (user-requested): static Ghidra research for R4/R5 items 1-4 (auto-vs-indicator branch in 0x74EE90 + "not under player control"; where the level-up
+  indicator is drawn and what it reads; class-selectable test (Jedi); multi-level banking + XP cap). Plan file: see MASTER_PLAN status line.
+- Tooling gotchas this session: (1) the host apply test cannot use `g++ -m32` (no 32-bit libstdc++) and wine is absent -> fakes live in an `mmap(MAP_32BIT)` arena
+  and engine pointers are read as uint32_t; (2) mutation builds of a copied .cpp failed to resolve `../_shared/SafeRead.h` from the scratchpad (/tmp) - run such
+  copies inside the repo tree (e.g. `tools/parity/_mut/`, delete afterwards); (3) `tools/kdb_add.py add_lesson` hard-codes date 2026-09-30 - insert with python
+  sqlite3 and the real date instead; (4) the kpatch DLL is `binaries/windows_x86.dll` inside the zip; (5) check `-O2 -S -masm=intel` asm for thiscall call sites.
+
