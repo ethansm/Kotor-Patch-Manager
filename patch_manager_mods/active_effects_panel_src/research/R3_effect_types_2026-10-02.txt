@@ -62,3 +62,39 @@ Immunity 0..33: none,mind,poison,disease,fear,trap,paralysis,blindness,deafness,
 TLK: 0x71dee0 = thiscall(ecx=[0xa1b4b0] TLK) CExoString* GetStringByStrRef(CExoString* out, int strref), ret 8 (caller 0x75ab53). Offline table preferred.
 Observed (chareffects_log): Energy Shield = 0x02 DamageResistance siblings (spell 99) + 0x43 icon row 45; item effects sub=0x0003 (types 02,0a,0d,10,24,31,37).
 Caveats: some apply-handler addresses approximate; sign convention: Decrease types store positive magnitudes.
+
+==== R3b addendum 2026-10-02 (Mod 14 build 4 research R-a..R-d; Sonnet Explore, key items verified on disk by Opus) ====
+R-a type ids (exe bytes, VERIFIED): 0x995f1c is uint32[0x77]: table[i] == i for i 0..0x54, table[i] == i+1 for i 0x55..0x75
+ (id 0x55 skipped), table[0x76] = 0xffffffff. Each Effect* impl writes (ushort)table[idx] to eff+8 after ctor 005e4920. So
+ R3's ids are right, but "DAT at 0x995f1c+4*type" holds only for types <= 0x54; for >= 0x56 the DAT is at +4*(type-1)
+ (ForceShield 0x6b = DAT_009960c4 = index 0x6a, decomp 674210.c:40 VERIFIED; BlasterDeflectionInc 0x5c = DAT_00996088).
+ EffectIcon: R3's 67bd70 is WRONG (a get-first/next-effect helper). The writer of type 0x43 is 0x698ba0
+ Global::ExecuteCommandSetEffectIcon (DB name_map), i.e. script SetEffectIcon(effect, nIcon): copies the effect
+ (005e4ac0), ints[0] = effecticon row.
+ ints order confirmed from decomp: 0x02 [0]type [1]amount [2]limit (674020:59-61); 0x24 [0]ability [1]amount (671820:53-54);
+ 0x30 [0]modtype [1]amount [5]mask; 0x0d [0]bonus ENUM 1..10 (DAMAGE_BONUS_1..5, 1d4,1d6,1d8,1d10,2d6) [1]mask;
+ 0x1a [0]value [1]save 0..3 [2]save type; 0x37 [0]skill [1]value (invalid skill -> type 0 written); 0x10 [0]mask [1]pct<=100;
+ 0x0a [0]bonus [1]modtype. Unlabelled extra byte from [0xa1b4d0]+0x122 at ints[2]/[3] for 0x30,0x0d,0x37,0x0a,0x1a (ignore).
+R-b forceshields.2da (21 rows, base game, NO name/strref column): columns label, visualeffectdef, defaultradius(-1),
+ damageflags, vulnerflags (2048 ion, all rows), resistance (300, all rows, meaning unknown), amount (absorb pool),
+ permanent(0), appearance/visualeffect/radius_01..04. Damage flag bits = iprp_damagetype row index: 1 Bludg, 2 Pierce,
+ 4 Slash, 8 Universal, 16 Unstoppable/Acid, 32 Cold, 64 LS, 128 Elec, 256 Fire, 512 DS, 1024 Sonic, 2048 Ion, 4096 Energy.
+ Item shields (k_sup_bands.nss): SetEffectIcon(EffectForceShield(row), icon), 200 s + 2 s/Repair rank:
+ 99 Energy Shield row 6 (40, 4224 = Energy+Elec) icon 45; 100 Sith row 7; 101 Arkanian 8; 102 Echani 9; 103 Mando melee 10;
+ 104 Mando power 11; 105 Echani dueling 12; 106 Yusanis 13; 107 Verpine 14; 110-115 droid shields rows 0-5; 132 Heat 19;
+ 257 Drexl 20. Script makes NO EffectDamageResistance: the 0x02 siblings seen live for spell 99 come from the engine's
+ ForceShield apply (unverified) -> the DLL hides 0x02 atoms with limit>0 when the entry has a ForceShield atom.
+ Force Shield (24)/Force Armor (17): EffectACIncrease + EffectSavingThrowIncrease(ALL) (+4 / +6); Force Barrier 135-137:
+ DamageResistance 4 Bludg/Pierce/Slash; Energy Resistance 40/42/133: DamageResistance 6/12/20 vs Cold, Fire, Sonic,
+ Energy, Elec (mask 5536). skills.2da = the 8 R3 names; no damagetypes.2da (iprp_damagetype names used).
+R-c dialogfont10x10: 256x128 TPC with embedded TXI; fontheight 0.10, baselineheight 0.10, texturewidth 2.56, spacing 0,
+ 'A' 10x10 texels, space 7 texels; 16x16: fontheight 0.16, texturewidth 2.56, 'A' 14x16, space 12. Same 0.01 world
+ units per texel in both -> TextK10 = TextK = 0.75 (~2.0 px/texel at sy 2.667). "Res 20 Blaster" = 108 texels (10x10)
+ vs 150 (16x16). Line pitch estimate 12.5 texels (glyph 10 + 25 %) -> 9.4 units; to calibrate live (tip_line_scale).
+R-d descriptions: 114 of 215 named spells rows have spelldesc text (live TLK), all ASCII, no tokens, no backslash/quote;
+ 113 contain \n (98 blank-line paragraphs). Header paragraphs ("Light Side Power", "Prerequisites:\n...", "Restricted By
+ Armor", "Unique Ability: X") precede the body; lightsaber/Force forms end in a "Label: value" stat block after a blank
+ line. Trim rule (generator desc()): drop header paragraphs, first body paragraph, split sentences (abbrev re-join), drop
+ sentences ending ':', <= 2 sentences <= 220 chars (max 219; rows 19/27/48 use the "..." fallback). No description:
+ item shields 99-101/107/257, medpacs 64-66, stims/shots 69-77, 129. effecticon.2da has a `description` column but it is
+ empty (****) in all 120 rows -> icon-only entries get the description of their EffectIcon effect's spell (if any).
