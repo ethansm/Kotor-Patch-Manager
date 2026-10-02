@@ -1,4 +1,5 @@
-// Smoke test for k2-robustness-fixes 1.0.0 (DLL-only; DllMain patches 6 independent groups, doc 10 "Robustness set").
+// Smoke test for k2-robustness-fixes 1.1.0 (DLL-only; DllMain patches 6 independent groups, doc 10 "Robustness set"; 1.1.0 adds
+// fire counters and cave-based sites for vmid (2nd site 0x669012), sndri, guiid and netovf A, all checked here).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_robustness.exe smoke_robustness.cpp
 //        (default base 0x400000; the .bss pad covers 0x40F000-0x990000 so every site, the IAT slot 0x98657C and the stub
 //        targets are ordinary memory of this exe; check `objdump -h`: .bss must start below 0x40F000)
@@ -58,7 +59,7 @@ struct SndRes { unsigned eax; int d4; long shut; };
 static SndRes sndri() { static int obj[0x40]; obj[0xD4 / 4] = 0x1234; g_shutdowns = 0; SndRes r; r.eax = run(0x7054CE, 0, 0, (unsigned)obj, ebpAt()); r.d4 = obj[0xD4 / 4]; r.shut = g_shutdowns; return r; }
 static unsigned netb(unsigned readIdx, unsigned end) { fr(-0x14) = (int)end; return run(0x7040EF, readIdx, 0, 0, ebpAt()); }
 struct NetARes { unsigned eax; long dtors; };
-static NetARes neta() { g_dtors = 0; NetARes r; r.eax = run(0x704406, 0x77, 0, 0, ebpAt()); r.dtors = g_dtors; return r; }
+static NetARes neta() { g_dtors = 0; fr(0x10) = 0x12345; NetARes r; r.eax = run(0x704406, 0x77, 0, 0, ebpAt()); r.dtors = g_dtors; return r; }
 struct KtRes { unsigned flags, p14; int ebpm4; };
 static KtRes kt(unsigned site, unsigned flags) {
     static unsigned cres[0x10]; cres[0xC / 4] = 0; cres[0x14 / 4] = 0xF00DF00D; fr(-4) = 0x55;
@@ -80,7 +81,7 @@ int main(int argc, char** argv) {
     DWORD o; if (!VirtualProtect((void*)0x40F000, 0x98F000 - 0x40F000, PAGE_EXECUTE_READWRITE, &o)) { printf("VirtualProtect failed %lu\n", GetLastError()); return 2; }
     g_frame = (unsigned char*)calloc(1, 0x400); g_abThis = (unsigned*)calloc(4, 4);
     // real site bytes + marker stubs
-    put(0x668FD9, F_VMID, sizeof F_VMID); stubRet(0x668FE2, 1); stubRet(0x669012, -2002);
+    put(0x668FD9, F_VMID, sizeof F_VMID); stubRet(0x668FE2, 1); { static const unsigned char vmRej[] = { 0xB8, 0x2E, 0xF8, 0xFF, 0xFF, 0xC3 }; put(0x669012, vmRej, sizeof vmRej); }   // real B8 -2002 + ret at 0x669017
     put(0x40F96F, F_GUIID, sizeof F_GUIID); stubRet(0x40F978, 1); stubRet(0x40F9E4, 0);
     put(0x7054CE, F_SNDRI, sizeof F_SNDRI); stubRet(0x7054DA, 2); stubRet(0x70552C, 3); *(void**)0x98657C = (void*)&FakeShutdown;
     put(0x7040EF, F_NETB, sizeof F_NETB); stubRet(0x7040FD, 9); stubRet(0x704415, 5);
@@ -99,10 +100,10 @@ int main(int argc, char** argv) {
     KtRes k1 = kt(0x726C9C, 0x201); check(k1.flags == 0x201 && k1.p14 == 0xF00DF00D, "ref kt B: CRes+0x14 left dangling (bug)");
     check(ab(5, 2) == 5 && ab(2, 5) == 2, "ref ab: shrink copies the OLD count (bug)");
 
-    if (!strcmp(mode, "refuse")) { *(unsigned char*)0x726C9E = 0x0D; *(unsigned char*)0x668FE1 = 0x31; }   // kt (2nd site) + vmid wrong bytes
-    unsigned char snap[8][16];
-    const unsigned at[8] = { 0x726527, 0x726C9C, 0x668FE0, 0x7054CE, 0x704406, 0x7040EF, 0x40F972, 0x58C61A };
-    for (int i = 0; i < 8; ++i) memcpy(snap[i], (void*)at[i], 16);
+    if (!strcmp(mode, "refuse")) { *(unsigned char*)0x726C9E = 0x0D; *(unsigned char*)0x669014 = 0xF9; }   // kt (2nd site) + vmid (2nd site only; site 1 intact) wrong bytes
+    unsigned char snap[9][16];
+    const unsigned at[9] = { 0x726527, 0x726C9C, 0x668FE0, 0x7054CE, 0x704406, 0x7040EF, 0x40F972, 0x58C61A, 0x669012 };
+    for (int i = 0; i < 9; ++i) memcpy(snap[i], (void*)at[i], 16);
     DeleteFileA("robustnessfixes_log.txt");
     if (!strcmp(mode, "disabled")) { FILE* f = fopen("robustnessfixes.txt", "w"); fprintf(f, "enabled=0\n"); fclose(f); }
     else if (!strcmp(mode, "keys")) { FILE* f = fopen("robustnessfixes.txt", "w"); fprintf(f, "vmid=0\nguiid = 0\nkt=1\n"); fclose(f); }
@@ -112,11 +113,21 @@ int main(int argc, char** argv) {
     StFn st = (StFn)GetProcAddress(m, "RobFixTestState"); CtFn ct = (CtFn)GetProcAddress(m, "RobFixTestCounters"); DmFn dm = (DmFn)GetProcAddress(m, "RobFixTestDummy");
     check(st && ct && dm, "test exports present"); if (!st || !ct || !dm) return 3;
     readLog();
-    long c[3];
+    long c[11], c0[11], c1[11];
     if (!strcmp(mode, "run")) {
         for (int g = 0; g < 6; ++g) { char w[64]; snprintf(w, sizeof w, "state %s = ON", G[g]); check(st(g) == 1, w); }
         check(vmid(5) == 1 && vmid(0x36C) == 1 && vmid(0x36D) == (unsigned)-2002 && vmid(-1) == (unsigned)-2002 && vmid(0x8000 - 0x10000) == (unsigned)-2002, "vmid: valid ids dispatched, negative ids rejected (-2002)");
+        ct(c0);
+        check(vmid(0x36D) == (unsigned)-2002 && vmid(-1) == (unsigned)-2002, "vmid counters: both rejects return -2002 through the cave");
+        ct(c1); check(c1[4] - c0[4] == 2 && c1[5] - c0[5] == 1 && c1[6] == -1, "vmid counters: vm_reject +2, vm_neg +1, vm_last_id == -1");
+        check(vmid(5) == 1, "vmid counters: valid id 5 takes the accept path");
+        ct(c0); check(c0[4] == c1[4] && c0[5] == c1[5], "vmid counters: accepted id not counted");
         check(guiid(0) == 1 && guiid(143) == 1 && guiid(4095) == 1 && guiid(4096) == 0 && guiid(5000) == 0 && guiid(-1) == 0 && guiid(0x7FFFFFFF) == 0, "guiid: 0..4095 accepted, >=4096 and negative rejected");
+        ct(c0);
+        check(guiid(5000) == 0, "guiid counters: id 5000 -> rejected path (0)");
+        ct(c1); check(c1[7] - c0[7] == 1 && c1[8] == 5000, "guiid counters: gui_reject +1, gui_last_id == 5000");
+        check(guiid(-1) == 0 && guiid(10) == 1, "guiid counters: -1 rejected, 10 accepted");
+        ct(c0); check(c0[7] == c1[7] && c0[8] == c1[8], "guiid counters: negative and valid ids not counted");
         SndRes s1 = sndri(); check(s1.eax == 2 && s1.shut == 1 && s1.d4 == 0x1234, "sndri: shutdown called once, then the startup block runs");
         check(netb(0x8000, 0x100) == 5 && netb(0x8000, 0x1A000) == 5 && netb(0x8000, 0x20000) == 5 && netb(0x8000, 0x20001) == 9, "netovf B: only end > 0x20000 takes the overflow branch (lap case unchanged)");
         NetARes n1 = neta(); check(n1.eax == 0 && n1.dtors == 1, "netovf A: overflow drops the message (string destroyed once, returns 0)");
@@ -126,26 +137,35 @@ int main(int argc, char** argv) {
         long cp1 = ab(5, 2), cp2 = ab(2, 5), cp3 = ab(3, 3), cp4 = ab(0, 4);
         check(cp1 == 2 && cp2 == 2 && cp3 == 3 && cp4 == 0, "ab: copy bounded by min(old,new)");
         ct(c); check(c[0] == 1 && c[1] == 1 && c[2] == 1, "counters kt_destroy=1 kt_update=1 ab_clamp=1");
+        check(c[3] == 1, "counter sndri_restart == 1");
+        check(c[9] == 1 && c[10] == 0x12345, "counters net_drop == 1, net_last_len == 0x12345");
         bool zero = true; for (int i = 0; i < 0x24; ++i) if (((unsigned char*)dummy)[i]) zero = false;
         check(zero, "kt dummy entry still all zero");
         check(strstr(g_log, "6/6 groups patched: kt=ON vmid=ON sndri=ON netovf=ON guiid=ON abbound=ON") != NULL, "log: loaded line");
+        Sleep(5600); readLog();   // helper thread polls every 5 s
+        check(strstr(g_log, "1.1.0 loaded") != NULL, "log: version 1.1.0");
+        check(strstr(g_log, "COUNTERS kt_destroy_orphan=1 kt_update_orphan=1 ab_shrink_clamp=1 sndri_restart=1 vm_reject=") != NULL &&
+              strstr(g_log, "net_drop=1 net_last_len=74565") != NULL, "log: COUNTERS line with all 11 values");
+        check(strstr(g_log, "FIRED sndri restart=1") && strstr(g_log, "FIRED vmid neg=") && strstr(g_log, "FIRED guiid reject=") &&
+              strstr(g_log, "FIRED netovf drop=1 last_len=74565") && strstr(g_log, "FIRED abbound clamp=1") && strstr(g_log, "FIRED kt destroy=1 update=1"), "log: one-shot FIRED lines for every group");
     } else if (!strcmp(mode, "disabled") || !strcmp(mode, "keys")) {
         bool keys = !strcmp(mode, "keys");
         for (int g = 0; g < 6; ++g) {
             bool want = keys && g != 1 && g != 4;
             char w[64]; snprintf(w, sizeof w, "%s: state %s = %s", mode, G[g], want ? "ON" : "off"); check(st(g) == (want ? 1 : 0), w);
         }
-        check(memcmp(snap[2], (void*)at[2], 16) == 0 && memcmp(snap[6], (void*)at[6], 16) == 0, "vmid/guiid sites untouched");
+        check(memcmp(snap[2], (void*)at[2], 16) == 0 && memcmp(snap[6], (void*)at[6], 16) == 0 && memcmp(snap[8], (void*)at[8], 16) == 0, "vmid (both sites)/guiid sites untouched");
         check(vmid(-1) == 1 && guiid(5000) == 1, "vmid/guiid: original behaviour");
-        if (!keys) { bool same = true; for (int i = 0; i < 8; ++i) if (memcmp(snap[i], (void*)at[i], 16)) same = false; check(same, "disabled: every site untouched"); }
+        if (!keys) { bool same = true; for (int i = 0; i < 9; ++i) if (memcmp(snap[i], (void*)at[i], 16)) same = false; check(same, "disabled: every site untouched"); }
         else { check(vmid(-1) == 1 && sndri().eax == 2 && ab(5, 2) == 2, "keys: other groups still patched"); }
         check(strstr(g_log, keys ? "4/6 groups patched" : "0/6 groups patched") != NULL, "log: loaded line");
         DeleteFileA("robustnessfixes.txt");
     } else {
         check(st(0) == -1 && st(1) == -1, "refuse: kt + vmid refused (bytes)");
         check(st(2) == 1 && st(3) == 1 && st(4) == 1 && st(5) == 1, "refuse: other groups still patched");
-        check(memcmp(snap[0], (void*)at[0], 16) == 0 && memcmp(snap[1], (void*)at[1], 16) == 0 && memcmp(snap[2], (void*)at[2], 16) == 0, "refuse: kt sites (both) and vmid site untouched");
-        check(strstr(g_log, "kt REFUSED: bytes at 0x00726c9c are 89 50 0d eb 3c") != NULL && strstr(g_log, "vmid REFUSED: bytes at 0x00668fe0 are 7d 31") != NULL, "log: REFUSED lines with the seen bytes");
+        check(memcmp(snap[0], (void*)at[0], 16) == 0 && memcmp(snap[1], (void*)at[1], 16) == 0 && memcmp(snap[2], (void*)at[2], 16) == 0, "refuse: kt sites (both) and vmid site 1 untouched");
+        check(*(unsigned char*)0x668FE0 == 0x7D && memcmp(snap[8], (void*)at[8], 16) == 0, "refuse: vmid site 1 still 7D, site 2 untouched (group refuses as a whole)");
+        check(strstr(g_log, "kt REFUSED: bytes at 0x00726c9c are 89 50 0d eb 3c") != NULL && strstr(g_log, "vmid REFUSED: bytes at 0x00669012 are b8 2e f9 ff ff") != NULL, "log: REFUSED lines with the seen bytes");
         check(strstr(g_log, "4/6 groups patched: kt=REFUSED(bytes) vmid=REFUSED(bytes)") != NULL, "log: loaded line");
     }
     printf("%s: %d failures\n", mode, g_fail);
