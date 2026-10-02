@@ -280,3 +280,19 @@ Side observations: (a) other deactivates in this launch carry `lp=0x1A8` = the m
 **Patch:** DLL-only (no `[[hooks]]`, KPM DLL_ONLY load, `address =` delta +0). DllMain verifies `FF 15 6C 64 98 00` at **0x40D69E** and writes `E8 <rel32 ActFixMoviePost> 90`; on mismatch `REFUSED(bytes ...)`. `ActFixMoviePost` = stdcall PostMessageA signature (pops 16; result ignored at 0x40D6A4): if msg==0x1C && wp==0 && foreground window's pid == ours -> drop + log `IGNORED`; else forward through the game's IAT slot `[0x98646C]` + log `PASSED`. `$G/activationfix.txt` `enabled=0` disables (site untouched). Log `$G/activationfix_log.txt`. Site checks: hookbytes OK; no branch target in 0x40D69F..0x40D6A3 (only targets nearby: 0x40D692, 0x40D690, 0x40D6A4); live LAA exe bytes equal; only neighbour = load-hang-probe detour 0x40D692 (6 bytes, ends 0x40D697, trampoline returns to 0x40D698), no overlap. Source `patch_manager_mods/activation_fix_src/`, framework `Patches/ActivationFix/ActivationFix.kpatch` DLL md5 `a9820edd2dfa5d9a4c82097aa4cc696a`.
 **Harness** `perf_lab_src/harness/smoke_activationfix.cpp` (real 18-byte fragment at 0x40D692 + RET, fake PostMessageA in IAT slot 0x98646C, ESP-balance measured): `run` 10/10 (site rewritten into the DLL, neighbours untouched, forced-ours dropped, forced-foreign forwarded unchanged (hwnd,0x1C,0,0), real foreground check dropped, log lines), `disabled` 4/4, `refuse` 3/3. It caught two bugs before install: rel32 computed from the staging buffer instead of the site (would have crashed at movie end) and forwarding via the DLL's own import instead of the game IAT slot (lessons 242/243).
 **Live validation plan (needs the user's go):** install with probe 1.4.1; for the soak set `$G/hangprobe_debug.txt` empty (fix=auto OFF) so the soak measures the patch alone. Per launch: `activationfix_log.txt` `loaded: ... patched`, then `IGNORED` whenever the probe logs `MOVIE-SYNTH-POST-1C`; probe shows no `ACTIVATEAPP-ARRIVE wp=0 lp=0` and no `APP-DEACTIVATED ret=0x40B5C2` after it; `load screen DOWN` every time; AR_ERROR md5 unchanged. Baseline: synthetic post in 4/5 launches, hang 2/5. Behaviour checks: alt-tab in gameplay and during the intro movie (pause/minimize as before; `PASSED` if the post happens while away), Alt+Enter in fullscreen unchanged.
+
+**Soak result (2026-10-02 00:04-02:13, probe `fix=off (log only)` every launch, `k2-activation-fix` 1.0.0):**
+
+| Launch | Synthetic post (MOVIE-SYNTH-POST-1C) | a1b4e0 at post | activation fix | First load |
+|---|---|---|---|---|
+| 00:04 | yes | 0 | IGNORED | not reached (user quit at menu) |
+| 00:06 | yes | 1 | IGNORED | 3781 ms |
+| 00:12 | yes | 1 | IGNORED | 3792 ms |
+| 00:30 | yes | 1 | IGNORED | 3782 ms |
+| 00:39 | no | - | idle | 3767 ms |
+| 00:51 | yes | 1 | IGNORED | 3776 ms |
+| 01:01 | yes | 1 | IGNORED | 5052 ms |
+| 01:50 | no | - | idle | 4531 ms |
+| 02:13 | yes | 1 | IGNORED | 5285 ms |
+
+9 launches, 7 synthetic posts all IGNORED (6 with the incident precondition a1b4e0=1, fg ours), 8/8 first loads completed, **0 hangs**; no APP-DEACTIVATED ret 0x40B5C2 / minimize after any ignored post; AR_ERROR md5 unchanged. Pre-fix (probe 1.4.0): 2 hangs in 4 synthetic-post launches, so 0/6 by chance is ~1.6% at that rate. Alt-tab and the Alt+Enter-style deactivate (fg=0, f16825/f17113 on 10-01) behaved as before. **H1 FIXED.** The soak fell one launch short of the planned 10; accepted given 6/6 on the exact precondition. `fix=auto` stays OFF (redundant); the manual trigger `hangprobe_activate.txt` remains available while the probe is installed.
