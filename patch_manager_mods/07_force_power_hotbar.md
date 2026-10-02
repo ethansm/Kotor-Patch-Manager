@@ -1,7 +1,12 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
 **STATUS (2026-10-02 ~00:45, end of session 5) -- READ THIS FIRST. User verdict on the live build: "looks excellent!" -- the mod is FEATURE-COMPLETE; the remaining work is the final review/polish/documentation phase (see `~/.claude/plans/` plan "Mod 3 final review and finalization", summarised in the last section of this doc).**
-- **Installed:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
+- **1.0.0 finalization in progress (2026-10-02 ~01:40):** Phase R done (Gate R passed statically, section "1.0.0 finalization, Phase R" at the end). Phase B PROTOTYPE
+  installed = DLL md5 `4f6d235b` (stage `hotbar_stage9/`, 28 ids, backup `backups/inst9_1002_0138`): the wrench is created at runtime from the LBL_QUEUE1 template
+  and its art `fph_edit`/`fph_edit_hi` is served from DLL memory (all 4 `fph_*` textures registered); the other 56 controls still bind from the script `.gui`.
+  AWAITING user live check (wrench looks/behaves as before; log lines `H3 LBL_HOTBAREDIT: created at index 131`, `tex fph_*: created`, `tex ... (frame 120): gl=<nonzero>`).
+  Rollback = reinstall build 20 (`6c8af8c0`, kpatch in `stage_engfix_1002_0121/`).
+- **Previous install:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
   GUI deployed = **168 controls** (`override/mipc28x6_p.gui`), textures `override/hotbar_slot*.tga`, `override/hotbar_edit*.tga`. Game closed at the end of the session.
 - **Features (all live-verified unless noted):** ten native-width (35 u) square HUD buttons for keys `1`-`0` (icons at native quick-bar size, digit label up/left of the icon, dimming, hover frame swap + the native GUI hover sound,
   delayed tooltip, click + key invoke through the HUD's own path, `Invoke=1`); thin wrench toggle at the far left (x=4, aligned with the quick-action panel border, lighter native panel-border colour, thin 2 px rim, beige hover/active frame, tooltip);
@@ -617,3 +622,25 @@ Measured from the user's screenshot (3840x1600, 2.667 px/unit): native quick-act
 
 ## Build 20 (2026-10-02): smooth scrolling in the picker instead of pages
 `Editor.page` became `Editor.off` (index of the first visible entry). Mouse wheel over the picker scrolls ONE entry per notch (up = toward the start), the `<` / `>` cells scroll one entry per click and keep scrolling while held (first repeat 350 ms, then every 90 ms), arrows dim at the ends, the title reads `Slot 3 - Powers 2-9 of 12 - Esc: back`. Offset resets on tab change / picker open and is clamped when the list shrinks. Log lines: `edit: wheel ... offset a -> b`, `edit: scroll -> n`. Built, not installed, not seen live. No GUI change.
+
+## 1.0.0 finalization, Phase R (2026-10-02): runtime controls + textures from DLL memory -- Gate R PASSED (static)
+Goal: the `.kpatch` alone delivers the mod (no `.gui` edit, no override TGAs). Evidence: decompiles in this session's scratchpad, DB lesson 283 + function rows
+`0040f620 00418df0 0083ea60 00418f20 00416fa0 00416de0 00423000 004260e0 00421c40 00423990 004491c0`.
+- **Label recipe.** `InitControl` (0x0040F620) = `00418df0` (parent `ctl+0x38 = panel`, find TAG in the open layout, `ctl->vt[0x48]` Load) + extent scale
+  (W/800, H/600; projection if 0x00A1B9F0) + `vt[1]` SetRect + **only when `addToList`**: `controls[id] = ctl` (padding via `CExoArrayList::Add` 0x0083EA60).
+  So: new 0x148, ctor 0x00419740, `InitControl(panel, ctl, "LBL_QUEUE1" | "LBL_MOULDING3", addToList=0, scale=1)` (copies a native template, no list slot
+  touched), then `ctl+0x54 = index`, `vt[1]` SetRect with our rect, `0x0083EA60(ECX = panel+0x24, ctl)` to append. Text: `SetFont` 0x00416DE0
+  (ECX = label+0xF0, CResRef char[16]*), `SetText` 0x00416E30, `SetAlignment` 0x00416FA0 (uint, RET 4); fill = pooled `FnLoadImage` at border+0x74.
+  Templates: LBL_QUEUE1 = blank type-4 label (FILLSTYLE 2, white dialogfont16x16, align 9), LBL_MOULDING3 = native framed panel (uibit_fill_2bt + 16bet/16bct).
+  Our 57 controls differ from them only in fill / text / font / alignment. If the template tag is missing, Load is never called (detected via an ID sentinel).
+- **IDs become relative** (`base = panel control count at the hook`, after every native bind): the ID constants were only used in the build function.
+- **Unbound layout entries are inert**: Draw/hit-test walk only the panel list; nothing instantiates a GFF struct unless a ctor asks for its tag.
+  A leftover script-edited `.gui` cannot conflict (we roll our own live one back once anyway).
+- **Texture recipe (T-A2, NormCubeMap-style pre-registration).** new 0xF4 + `CAurTextureBasic` ctor 0x00423000(name, name) self-registers by name
+  (sorted array 0xA1BC60, case-insensitive), so every later `FnLoadImage(name)` reuses it. Fill: `+0x44` = engine-malloc (0x0091D288) RGBA buffer
+  (TGA BGRA -> RGBA, rows as stored, like `CResTGA::OnServiced` 0x009454B0), `+0x68` w, `+0x6C` h, `+0x74 = 4`, `+0x78 = 0`, `+0x5C = 0`, `+0xE7 = 0`
+  (buffer freed with engine `free`), `+0xE9 = 0`, `+0xDF = 0` (cube flag), `+0xE4 = 1` (constructed: no resman load); push on the pending-build list
+  0xA1BC2C (0x004491C0); the texture tick uploads via the normal 2D path and frees the buffer. Never set `+0xE6` (NormCubeMap-only regen).
+  Hazard: Reset (video mode / texture quality / GL init) clears `+0xE4` -> the DLL re-fills from the embedded TGA in its HUD tick (self-heal).
+  Rejected: `AddResourceImageFile` (0x007115E0 = RIM from disk), resman key/CRes injection (more writes, rebuild semantics unknown).
+- Embedded resrefs are renamed `fph_slot`, `fph_slot_hi`, `fph_edit`, `fph_edit_hi` (never collide with the old override TGAs).
