@@ -248,3 +248,23 @@ After each chunk, Opus re-runs the acceptance checks, reviews the diff and commi
 - Id rules: patch ids 1-63 chars `[A-Za-z0-9_.-]`, max 64 patches. Channel names 1-31 chars, max 256 channels total.
 - `level=` takes a number 0-4 or a name; the default when enabled is info. `channels=` absent means all.
 - Truncation marker: `[...]`.
+
+### Chunks C, D, E (10-02 14:15-14:40)
+- **C, committed f766bca:** the log service with 150 deterministic checks.
+  - Review fix: `channels=` with only exclusions now means "all but these". The draft had made it select nothing.
+  - Unspecified choices made by the agent:
+    - An unconditional `_CRT_SECURE_NO_WARNINGS`.
+    - `level=0` is clamped to WARN.
+    - Ini keys are case-insensitive; ids and channel names are case-sensitive.
+    - `Submit` checks `Enabled` itself and strips trailing CR/LF.
+    - The ring is double-buffered and swapped at drain.
+    - A byte-cap rotation needs body > 0.
+- **D, committed 7e4b25f:** the flush thread.
+  - It is detached and never joined, with a session generation guard. Lock order: poll -> flush -> ring -> table, with wake as a leaf lock.
+  - Measured: WARN wake reaches disk in 10 ms, periodic INFO in 503 ms, hot reload in about 1005 ms. Shutdown with the ring lock held returns in about 202 ms.
+  - The stale-thread churn row was mutation-checked: with the generation check removed, 92-99 of 100 cycles leaked. 172 checks; TSan clean, 3 runs.
+- **E, committed 700e6c7:** patcher wiring.
+  - Review addition: a config parse failure now also leaves a WARN in `patcher_log.txt` and publishes session info.
+  - DLL exports and imports are unchanged against baseline (no export table; KERNEL32 + msvcrt).
+  - The 64-bit host smoke ran from a scratchpad driver. The `logger-fixture` file gets the header, the interface list (kpatch.log by patcher, test.counter by provider-fixture) and the WARN and INFO lines. Without the ini, only WARN is written and the previous session is kept in `.1`. A broken DLL gives "Apply aborted: 1 module(s) initialised" in `patcher_log.txt`. A garbage config gives the parse WARN.
+  - Pre-existing, not a regression: `dlclose` of patch modules from the `.so` destructor during `exit()` segfaults in a dlopen'd harness. It reproduces at upstream HEAD too. In the game the `.so` is DT_NEEDED, so this is untested there. Also, `dlclose` of the patcher does not unmap it; static libstdc++ unique symbols are a likely cause.

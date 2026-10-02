@@ -18,23 +18,23 @@ Picking up open question 2: **yes, and we think logging is the best first servic
 **What the PR contains**
 - `KPatchApi` exactly as sketched above (`struct_size`, `abi_version`, `provide`, `require`), pushed through an optional `KPatchInit` export after `LoadModule`. Patches without `KPatchInit` are untouched.
 - The full patch-to-patch registry, not only patcher services: any patch can `provide` an interface and any other can `require` it. The patcher's own services go through the same `provide` path, so they get no special case. Rules the PR defines and tests:
-  - `KPatchInit` runs once per module. Today `LoadModule` runs once per hook entry, so a 20-hook DLL is loaded 20 times with the same handle.
+  - `KPatchInit` runs once per module, at load: right after `LoadModule` and before the hook symbol lookup, and even if a later hook of that patch fails. Today `LoadModule` runs once per hook entry, so a 20-hook DLL is loaded 20 times with the same handle.
   - Interfaces stay valid until shutdown. Modules already stay loaded until `CleanupPatcher`.
   - A duplicate `provide` of the same name and major version is rejected and logged.
   - `require` returns null when no patch provides the interface, and callers must handle that.
   - The session log lists every interface and which patch provides it.
   - Tests use a provider and a consumer test patch.
-- `"kpatch.log"` v1: a plain-C table (`struct_size`, `Register`, `Enabled`, `Submit`, `FrameTick`, `Mark`, ...), append-only.
+- `"kpatch.log"` v1: a plain-C table, append-only: `struct_size`, `Register(patchId)`, `Channel(patch, name)`, `Enabled(channel, level)`, `Submit(channel, level, line, len)`, `Mark(label)`, `FrameTick(patch)` (the first patch to call it owns the frame counter), `Frame()`, `NowUs()`.
 - `Patches/Common/KpLog.h`: macros (`KP_LOG(channel, fmt, ...)`, `KP_LOG_EVERY`, `KP_WARN`, `KP_ENABLED`) that `require` the interface in `KPatchInit`, plus a fallback to `debugLog()` when the patcher doesn't provide it (older patcher, or a patch tested on its own).
 - Line format: `T=<ms since patcher init> f=<frame#|-> <patch>/<channel> <message>`. The message is the patch's own text, unchanged.
-- Tests for the registry (versioning, size growth, missing `KPatchInit`) and for the log service (formatting, byte caps and rotation, rate limits, ring overflow).
+- Host tests for the registry (versioning, size growth, duplicates, re-entrant `provide` from `KPatchInit`, concurrency), for module init against real plain-C test modules (init once per handle, lazy `require` across load order, missing provider, abort midway), and for the log service (formatting, byte caps and rotation, rate limits, ring overflow, hot reload, the flush thread, bounded shutdown).
 - Two migrated patches as worked examples, and `docs/Logging.md` for contributors.
 
 **Our answers to the other open questions, from building this:**
 1. *Naming/versioning:* string name + integer major version, with `struct_size` covering append-only growth within a major. `require(name, v)` returns the provider of major version `v`, or null; a breaking change is a new major, provided side by side.
 3. *Lazy vs eager:* lazy `require` is enough. `KPatchInit` already serves as the eager point. One gap we hit: a patch's `DllMain` (and its static initialisers) run inside `LoadModule`, before `KPatchInit`. `KpLog.h` holds lines logged that early in a small static buffer and hands them over when `KPatchInit` arrives.
-4. *Threading:* we'd rather not promise "everything on the game thread". Several patches log from their own threads, and the patcher already applies hooks on a worker thread when SteamStub defers it. We'd state instead that `provide`/`require` are thread-safe after init, and that each interface documents its own rules (`kpatch.log`'s `Submit` is callable from any thread and never blocks).
+4. *Threading:* we'd rather not promise "everything on the game thread". Several patches log from their own threads, and the patcher already applies hooks on a worker thread when SteamStub defers it. We'd state instead that `provide`/`require` are thread-safe at any time, and that each interface documents its own rules (`kpatch.log`'s `Submit` is callable from any thread and never blocks). `KPatchInit` itself is DllMain-class: on Windows it runs under the loader lock, and it may run on the SteamStub worker. It may store the api pointer and call `provide`/`require` and cheap registration calls, but must not load libraries, wait on threads or do file I/O. The patcher never holds the registry lock while calling it, so `provide` from inside `KPatchInit` is fine.
 - *MSVC vs MinGW:* every function pointer in the tables is explicit `__cdecl`, there are no C++ types across the boundary, and the service copies strings it keeps. That keeps patches built with MSVC and MinGW compatible in the same process.
-- *Linux:* the registry and the log service sit behind the existing `Platform::` seam (clock, files, thread), so they work in `KotorPatcher.so`/`.dylib` too. `KpLog.h`'s fast path uses no Windows APIs.
+- *Linux/macOS:* the registry and the log service use only C++17 std (clock, threads, `FILE*`) plus the existing `Platform::LoadModule`/`GetSymbol`, so they work unchanged in `KotorPatcher.so`/`.dylib`. The patcher still exports no symbols. `KpLog.h`'s fast path uses no Windows APIs.
 
 5 (Mod Options) is yours to shape. If it helps, the Mod Options handler can be the second interface on the same registry.

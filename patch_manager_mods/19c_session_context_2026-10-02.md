@@ -76,4 +76,15 @@ Phase 0 verification:
 - `Patches/MouseProbe/`, untracked in the KPM fork.
 
 ## Next
-**Phase 1 = the registry + `kpatch.log` service in the core, with tests**, on the KPM fork. Plan: `patch_manager_mods/19d_phase1_plan.md` (a copy of the approved plan-mode plan; if missing, the plan-mode plan file is the source). Delegate the mechanical work to Sonnet subagents; Opus reviews, gates and commits.
+**Phase 1 is DONE (10-02).** It is on KPM branch `feat/patch-registry-logging` in worktree `~/Games/KOTOR2_Mod_Workspace/tools/kpm-registry`, from upstream/master. Commits A-F and the gate are in `19d_phase1_plan.md` "Execution log". It is not merged into `ethansm/local-mods` and not installed live.
+
+Open items, in order:
+1. **User:** install `g++-multilib` (`sudo apt install g++-multilib`). Then run the full `make -C src/KotorPatcher all test` in the worktree. That covers the i386 test rows, the 32-bit fixtures and the Linux `.so`, none of which could build here. Also re-run the host smoke as a real 32-bit `.so`.
+2. **Optional live regression smoke (user-gated):**
+   - Back up the live `KotorPatcher.dll` and install the branch DLL.
+   - The user launches the game and plays briefly. Never launch it ourselves.
+   - Expect no new files unless a WARN/ERR occurs or `kplog.ini` exists.
+   - Then roll back or keep it, as the user chooses.
+3. Merge or cherry-pick the branch into `ethansm/local-mods` for local use.
+4. **Phase 2:** `Patches/Common/KpLog.h` (pre-init buffer, `KPatchInit` chaining, macros), the `debugLog()` reroute and `debuglog=` ini key, and migrating mouse-probe first.
+5. **Upstream:** the PR waits for Phase 2 and Phase 3 (perf numbers). The 19a comment is still HELD. Posting needs the user's go.
