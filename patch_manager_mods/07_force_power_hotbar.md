@@ -45,6 +45,13 @@
   Snapshot = copy of the live INI into `cloudsaves/<id>/<NNNNNN - Name>/force_power_hotbar.ini`; restore = live [General] + snapshot profiles (none -> empty).
   User's pre-feature hotbar kept at `<game>/force_power_hotbar.ini.pre_persave`. Awaiting user test (counts; save/edit/reload reverts; quicksave/quickload;
   new game empty; log `persave:` lines). DB lessons 355-357.
+  **Post-1.0.0 plan item (user 2026-10-02): shared save binding.** Scopes differ per mod (hotbar = per-save file in the save folder; level-up override =
+  per-playthrough GUID in DLL-added globals + game-folder INI) but the mechanism should be shared: (1) address rows in the KPM address DBs (SaveGameInProgress,
+  LoadGame, DoPCAutosave, LoadAutosaveSlot, chargen commit 0x8FACA0, globals save/load) so patches resolve them via `GameAPI/GameVersion` instead of hard-coding;
+  (2) `Patches/Common/SaveBinding.h` (header-only like GuiKit.h/SafeRead.h, moved to Common in clone aad0a14): SAVES: alias + folder resolution, snapshot
+  copy/restore, playthrough GUID encode (from LUO Playthrough.h), global-var wrappers; (3) hooks NOT in Common (it is a static lib copied into every DLL, so it
+  cannot own a detour): propose framework-level save events (KotorPatcher owns the 5 hooks once, calls an exported `OnSaveWritten(dir)` / `OnSaveLoading(dir)` /
+  `OnNewGame()` in each patch that exports it) -- coordinate with the doc 19 patch-registry work. Hotbar 1.0.0 stays self-contained; cloud-sync check first.
   **PR workflow (user 2026-10-02):** open the KPM PR, the user drags screenshots into the PR on github.com (user-attachments CDN URLs; `gh` cannot upload
   them), then update `Patches/ForcePowerHotbar/README.md` to reference those URLs. Fold into Phase E/L.
   **Per-save hotbar (user request 2026-10-02 ~15:15, decided: part of 1.0.0, before Phase D):** on every save, snapshot the live profiles into the save
