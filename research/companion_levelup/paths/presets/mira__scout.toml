@@ -1,0 +1,159 @@
+# Mira preset "scout": Never converts: Scout 7-30, pistol/rapid-shot/sniper/dual-wield, grenade+rocket+medic utility
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). Attribute bumps follow elkripper (DEX at 8/12/16/20, CON +1 at 24/28 from live CON13).
+[meta]
+tag = "mira"
+name = "Mira"
+utc = "p_mira.utc"
+variant = "scout"
+summary = "Never converts: Scout 7-30, pistol/rapid-shot/sniper/dual-wield, grenade+rocket+medic utility"
+convert_at = 0   # first Jedi (Sentinel) char level; 0 = never converts
+
+[[level]]
+char_level = 7
+class = 1   # Scout
+feats = [92]   # 92:Improved Rapid Shot
+skills = {treat_injury = 3, demolitions = 1}
+
+[[level]]
+char_level = 8
+class = 1   # Scout
+attrs = {DEX = 17}
+feats = []
+skills = {demolitions = 2, treat_injury = 1, repair = 1}
+
+[[level]]
+char_level = 9
+class = 1   # Scout
+feats = [26]   # 26:Master Rapid Shot
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 10
+class = 1   # Scout
+feats = []
+skills = {treat_injury = 2, demolitions = 2}
+
+[[level]]
+char_level = 11
+class = 1   # Scout
+feats = [32]   # 32:Weapon Focus: Blaster Pistol
+skills = {computer_use = 1, repair = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 12
+class = 1   # Scout
+attrs = {DEX = 18}
+feats = []
+skills = {computer_use = 1, repair = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 13
+class = 1   # Scout
+feats = [3]   # 3:Two-Weapon Fighting
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 14
+class = 1   # Scout
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 15
+class = 1   # Scout
+feats = [9]   # 9:Improved Two-Weapon Fighting
+skills = {treat_injury = 2, demolitions = 2}
+
+[[level]]
+char_level = 16
+class = 1   # Scout
+attrs = {DEX = 19}
+feats = []
+skills = {computer_use = 1, repair = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 17
+class = 1   # Scout
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {computer_use = 1, repair = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 18
+class = 1   # Scout
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 19
+class = 1   # Scout
+feats = [140]   # 140:Improved Close Combat
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 20
+class = 1   # Scout
+attrs = {DEX = 20}
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 21
+class = 1   # Scout
+feats = [20]   # 20:Improved Sniper Shot
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 22
+class = 1   # Scout
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 23
+class = 1   # Scout
+feats = [77]   # 77:Master Sniper Shot
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 24
+class = 1   # Scout
+attrs = {CON = 14}
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 25
+class = 1   # Scout
+feats = [19]   # 19:Improved Critical Strike
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 26
+class = 1   # Scout
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 27
+class = 1   # Scout
+feats = [81]   # 81:Master Critical Strike
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 28
+class = 1   # Scout
+attrs = {CON = 15}
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 29
+class = 1   # Scout
+feats = [84]   # 84:Toughness
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 30
+class = 1   # Scout
+feats = []
+skills = {treat_injury = 1, demolitions = 1, computer_use = 1, repair = 1}

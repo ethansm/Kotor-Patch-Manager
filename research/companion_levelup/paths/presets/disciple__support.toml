@@ -1,0 +1,177 @@
+# Disciple (Mical) PRESET support: Soldier 7-12, convert at char 13 (Consular 1-18). Sturdier healer/buffer; durability feat lines taken on Soldier levels (6 slots), then the caster power list.
+# Skill points are a PROPOSAL. Attribute rows are descriptive/unverified.
+[meta]
+tag = "disciple"
+name = "Disciple (Mical)"
+utc = "p_disciple.utc"
+variant = "support"
+summary = "Soldier 7-12 (Toughness/Conditioning lines, Master TWF, +HP), convert at char 13 (Consular 1-18): same healer/buffer powers as caster, sturdier."
+convert_at = 13
+
+[[level]]
+char_level = 7
+class = 0   # Soldier
+feats = [123]   # 123:Improved Toughness
+skills = {treat_injury = 3}
+
+[[level]]
+char_level = 8
+class = 0   # Soldier
+attrs = {WIS = 16}
+feats = [124]   # 124:Master Toughness
+skills = {awareness = 3}
+
+[[level]]
+char_level = 9
+class = 0   # Soldier
+feats = [21]   # 21:Improved Conditioning
+skills = {treat_injury = 3}
+
+[[level]]
+char_level = 10
+class = 0   # Soldier
+feats = [22]   # 22:Master Conditioning
+skills = {awareness = 2, treat_injury = 1}
+
+[[level]]
+char_level = 11
+class = 0   # Soldier
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {treat_injury = 3}
+
+[[level]]
+char_level = 12
+class = 0   # Soldier
+attrs = {WIS = 17}
+feats = [196]   # 196:Regenerate Vitality Points
+skills = {awareness = 2, treat_injury = 1}
+
+[[level]]
+char_level = 13
+class = 4   # JediConsular
+feats = [143]   # 143:Regenerate Force Points
+powers = [10, 22]   # 10:Heal, 22:Force Valor
+skills = {treat_injury = 2, awareness = 1, repair = 1}
+
+[[level]]
+char_level = 14
+class = 4   # JediConsular
+feats = []
+powers = [135]   # 135:Force Barrier
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 15
+class = 4   # JediConsular
+feats = [36]   # 36:Weapon Focus: Lightsaber
+powers = [33, 46]   # 33:Knight Valor, 46:Stun
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 16
+class = 4   # JediConsular
+attrs = {WIS = 18}
+feats = []
+powers = [23]   # 23:Force Push
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 17
+class = 4   # JediConsular
+feats = []
+powers = [138]   # 138:Battle Meditation
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 18
+class = 4   # JediConsular
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [28, 136]   # 28:Improved Heal, 136:Improved Force Barrier
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 19
+class = 4   # JediConsular
+feats = []
+powers = [8]   # 8:Burst of Speed
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 20
+class = 4   # JediConsular
+attrs = {WIS = 19}
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 21
+class = 4   # JediConsular
+feats = [24]   # 24:Master Jedi Defense
+powers = [36, 37]   # 36:Master Valor, 37:Master Speed
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 22
+class = 4   # JediConsular
+feats = []
+powers = [139]   # 139:Improved Battle Meditation
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 23
+class = 4   # JediConsular
+feats = []
+powers = [173]   # 173:Revitalize
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 24
+class = 4   # JediConsular
+attrs = {WIS = 20}
+feats = [190]   # 190:Dual Strike
+powers = [134, 137]   # 134:Master Heal, 137:Master Force Barrier
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 25
+class = 4   # JediConsular
+feats = []
+powers = [174]   # 174:Improved Revitalize
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 26
+class = 4   # JediConsular
+feats = []
+powers = [140]   # 140:Master Battle Meditation
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 27
+class = 4   # JediConsular
+feats = [191]   # 191:Improved Dual Strike
+powers = [175, 150]   # 175:Master Revitalize, 150:Force Body
+skills = {treat_injury = 1, awareness = 1, repair = 2}
+
+[[level]]
+char_level = 28
+class = 4   # JediConsular
+attrs = {WIS = 21}
+feats = []
+powers = [29]   # 29:Stasis
+skills = {awareness = 1, treat_injury = 1, repair = 2}
+
+[[level]]
+char_level = 29
+class = 4   # JediConsular
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {awareness = 1, repair = 1, computer_use = 1}
+
+[[level]]
+char_level = 30
+class = 4   # JediConsular
+feats = [192]   # 192:Master Dual Strike
+powers = [163, 151]   # 163:Force Redirection, 151:Improved Force Body
+skills = {awareness = 1, treat_injury = 2, repair = 1}

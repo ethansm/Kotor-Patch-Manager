@@ -1,0 +1,176 @@
+# Visas Marr: Jedi Sentinel 7-30, preset 'dark'. Dark-side caster (Affliction/Plague/Lightning/Storm/Drain/Scream/Kill/Death Field). CONFLICTS with mod #142 unless Visas' alignment is dark (DS powers up to -50% when light).
+# Skill points are a PROPOSAL (3/level: INT 10 -> 3+0; max rank = level+3). Attribute increases NOT listed (no source table for Visas).
+[meta]
+tag = "VisasMarr"
+name = "Visas Marr"
+utc = "p_visas.utc"
+variant = "dark"
+summary = "Dark-side caster (Affliction/Plague/Lightning/Storm/Drain/Scream/Kill/Death Field). CONFLICTS with mod #142 unless Visas' alignment is dark (DS powers up to -50% when light)."
+
+[[level]]
+char_level = 7
+class = 5   # JediSentinel
+feats = [143]   # 143:Regenerate Force Points
+powers = [7]   # 7:Affliction
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 8
+class = 5   # JediSentinel
+feats = []
+powers = [153]   # 153:Drain Force
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 9
+class = 5   # JediSentinel
+feats = [13]   # 13:Conditioning
+powers = [35]   # 35:Force Lightning
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 10
+class = 5   # JediSentinel
+feats = []
+powers = [15]   # 15:Drain Life
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 11
+class = 5   # JediSentinel
+feats = []
+powers = [9]   # 9:Choke
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 12
+class = 5   # JediSentinel
+feats = [84]   # 84:Toughness
+powers = [31]   # 31:Insanity
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [196]   # 196:Regenerate Vitality Points
+powers = [38]   # 38:Plague
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = []
+powers = [154]   # 154:Improved Drain Force
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = [21]   # 21:Improved Conditioning
+powers = [32]   # 32:Kill
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+feats = []
+powers = [159]   # 159:Force Scream
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [155]   # 155:Master Drain Force
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = [123]   # 123:Improved Toughness
+powers = [25]   # 25:Force Storm
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [22]   # 22:Master Conditioning
+powers = [11]   # 11:Death Field
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+feats = []
+powers = [160]   # 160:Improved Force Scream
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = [124]   # 124:Master Toughness
+powers = [161]   # 161:Master Force Scream
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = []
+powers = [8]   # 8:Burst of Speed
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [37]   # 37:Master Speed
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [24]   # 24:Master Jedi Defense
+powers = [27]   # 27:Force Whirlwind
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = []
+powers = [26]   # 26:Force Wave
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = [113]   # 113:Dueling
+powers = [48]   # 48:Force Suppression
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+feats = []
+powers = [19]   # 19:Force Breach
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [41]   # 41:Force Resistance
+skills = {awareness = 1, stealth = 1, computer_use = 1}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = [114]   # 114:Improved Dueling
+powers = [138]   # 138:Battle Meditation
+skills = {awareness = 1, stealth = 1, computer_use = 1}

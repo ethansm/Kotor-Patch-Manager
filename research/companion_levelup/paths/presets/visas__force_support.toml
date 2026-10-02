@@ -1,0 +1,176 @@
+# Visas Marr: Jedi Sentinel 7-30, preset 'force_support'. Light-side healer/buffer/controller: Heal, Revitalize, Barrier, Valor, Battle Meditation, Stun/Stasis. Treat Injury kept at cap (mod #142 scales Heal with it).
+# Skill points are a PROPOSAL (3/level: INT 10 -> 3+0; max rank = level+3). Attribute increases NOT listed (no source table for Visas).
+[meta]
+tag = "VisasMarr"
+name = "Visas Marr"
+utc = "p_visas.utc"
+variant = "force_support"
+summary = "Light-side healer/buffer/controller: Heal, Revitalize, Barrier, Valor, Battle Meditation, Stun/Stasis. Treat Injury kept at cap (mod #142 scales Heal with it)."
+
+[[level]]
+char_level = 7
+class = 5   # JediSentinel
+feats = [143]   # 143:Regenerate Force Points
+powers = [10]   # 10:Heal
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 8
+class = 5   # JediSentinel
+feats = []
+powers = [22]   # 22:Force Valor
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 9
+class = 5   # JediSentinel
+feats = [13]   # 13:Conditioning
+powers = [173]   # 173:Revitalize
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 10
+class = 5   # JediSentinel
+feats = []
+powers = [46]   # 46:Stun
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 11
+class = 5   # JediSentinel
+feats = []
+powers = [18]   # 18:Force Aura
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 12
+class = 5   # JediSentinel
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [28]   # 28:Improved Heal
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [84]   # 84:Toughness
+powers = [24]   # 24:Force Shield
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = []
+powers = [33]   # 33:Knight Valor
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = [113]   # 113:Dueling
+powers = [29]   # 29:Stasis
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+feats = []
+powers = [135]   # 135:Force Barrier
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [174]   # 174:Improved Revitalize
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = [21]   # 21:Improved Conditioning
+powers = [134]   # 134:Master Heal
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [114]   # 114:Improved Dueling
+powers = [138]   # 138:Battle Meditation
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+feats = []
+powers = [136]   # 136:Improved Force Barrier
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = [196]   # 196:Regenerate Vitality Points
+powers = [36]   # 36:Master Valor
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = []
+powers = [139]   # 139:Improved Battle Meditation
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [44]   # 44:Stasis Field
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+feats = [24]   # 24:Master Jedi Defense
+powers = [175]   # 175:Master Revitalize
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [123]   # 123:Improved Toughness
+powers = [17]   # 17:Force Armor
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = []
+powers = [137]   # 137:Master Force Barrier
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = [22]   # 22:Master Conditioning
+powers = [140]   # 140:Master Battle Meditation
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+feats = []
+powers = [6]   # 6:Affect Mind
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [14]   # 14:Dominate Mind
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = [115]   # 115:Master Dueling
+powers = [150]   # 150:Force Body
+skills = {treat_injury = 1, awareness = 1, persuade = 1}
