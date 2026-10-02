@@ -598,3 +598,23 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   copies inside the repo tree (e.g. `tools/parity/_mut/`, delete afterwards); (3) `tools/kdb_add.py add_lesson` hard-codes date 2026-09-30 - insert with python
   sqlite3 and the real date instead; (4) the kpatch DLL is `binaries/windows_x86.dll` inside the zip; (5) check `-O2 -S -masm=intel` asm for thiscall call sites.
 
+## Session notes - Phase 3 research + presets (2026-10-02 ~01:20 .. 03:00, so a context clear loses nothing)
+- Commits (level-up only): 7956288 (R6-R9), 7e2f2ed (Step 5 E), f5d12b2/4e0060a (Step 1), 3384514 (Step 2), b214b62 (Step 3), 0705a7f (Step 4, HANG hazard),
+  da09b30 (first 15 presets), f61e2b6 (Steps 6-7 synthesis), dc692a3 (user decisions + WIZARD_SCHEMA.md), 9c91ab2 (save binding G1 + Atton/Bao-Dur
+  presets), 1336746 / ae4c46d (Handmaiden/Kreia/Mira/Visas/Disciple presets), 8b0ab90 (preset summary), 06bd7dc (check_paths accepts classes 6/7),
+  07dea97 (non-Jedi presets), 31c5f8b (decision g). Sibling sessions commit on the same branch (Mod 3/14, shield bar, doc 10/17): never `git add -A`.
+- Live state unchanged by this session: `level-up-override` 0.2.1 still installed (a sibling reinstall at 01:38:59 added k2-wrap-measure-fix; kpm
+  UpdatedAt is now 2026-10-02T01:38:59, later sibling installs may move it again - re-md5 before any install). Game-dir `levelup_override.ini` =
+  mode=rewrite tags=atton apply=1 verbose=1.
+- Outputs: doc 08 "Phase 3 research" Items 1-7 + synthesis + "User decisions" (a-g); evidence `research/companion_levelup/phase3_evidence/` (A1/A2, B1, C1, D1,
+  E, F1, G1 + README); 80 presets `research/companion_levelup/paths/presets/<tag>__*.toml` + `<char>.md` (12 companions, all check_paths 0 errors);
+  `paths/presets/WIZARD_SCHEMA.md`; DB name_map rows source `level-up-P3-decompile-confirmed` + lessons auto-level-up-option, portrait-overlay-hides-buffs,
+  autolevel-class-choice, autolevelup-veto-hang, levelup-gui-live-edit, save-bound-mod-data.
+- Preset tags: atton, kreia, baodur, disciple, handmaiden, mira, VisasMarr, hk47, t3m4, g0t0, mand, hanharr (verify each against the live creature Tag
+  in the 0.3.0 table generator; runtime lookup is case-insensitive). `gen_runtime_table.py` currently reads ONLY `paths/*.toml` (atton, kreia live paths),
+  not `paths/presets/`.
+- Known gaps for 0.3.0: (1) early-conversion re-base rule; (2) `hold_until_class` semantics (presets use it inconsistently: Handmaiden/Mira/Bao-Dur/Disciple
+  set it, Atton converting presets set 5); (3) check_paths ignores "Class Skill: X" feats and attack-bonus prereqs; (4) mod #142 alignment source unverified;
+  (5) StrategyWiki returns 503 intermittently (use archive.org or elkripper).
+- Next: 0.3.0 design/build plan (written after this commit; path referenced from MASTER_PLAN status line).
+
