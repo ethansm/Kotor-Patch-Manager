@@ -287,6 +287,18 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
 - **INSTALLED 0.2.1 2026-10-02 00:58 (user consent):** backup `backups/pre_levelup_021_20261002_005828/`, stage `$T/levelup_stage3/` (26 ids, PROBLEMS 0), "Applied 26",
   verify 0 mismatches, live dll 693053d9, UpdatedAt 00:58:35. Config unchanged (`mode=rewrite tags=atton apply=1 verbose=1`).
 
+## Phase 2 live results - run 3 (rewrite spike, 2026-10-02 ~01:02, 0.2.1, `mode=rewrite tags=atton`; log copy (gitignored, local) `research/companion_levelup/logs/live/levelup_override_log_run3_20261002.txt`)
+User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flow auto-button, chain via AutoLevelup 0x6C00AF). Game stable.
+- **All 4 calls `APPLIED ok=1`** (re-read == computeRewrite out). No ABORTED / SKIP. Engine helpers called live without fault (thiscall plumbing CONFIRMED).
+- **Skill deltas took effect:** creature ranks before each next call = previous ranks + REWRITTEN deltas: [3,4,4,5,0,0,5,0] +[0,0,2,2,..] -> [3,4,6,7,0,0,5,0]
+  +[0,0,2,1,0,0,1,0] -> [3,4,8,8,0,0,6,0] +[0,0,1,1,0,0,2,0] -> [3,4,9,9,0,0,8,0] (vanilla Auto picks were [0,1,3,..], [0,2,2,..], [0,3,1,..]).
+- **Feat replacement took effect:** L5 Auto pick 113 replaced by path feat 20 (`after.feats [20]`); the creature feat list at the next call has 20 and no 113.
+- **Grants unaffected:** Scoundrel grants 62 (L5) / 63 (L7) appear in the creature list directly (already before the LevelUp call of that level - AutoLevelup
+  adds them first, O3), never in pending; the rewrite does not touch them.
+- Ability: L4 record 1 == Auto pick 1; other levels 6 (none) kept. Spells empty (Scoundrel). HP/force/class bytes unchanged in `after.raw`.
+- Not covered by this run: manual GUI level-up (expect `SKIP manual`), save/reload persistence (no LevelUp call on load; user sheet check), path feat 77 at L8,
+  Kreia powers, Auto Level Up NPCs / XP-award flows, SetExperience replay (ALREADY).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
