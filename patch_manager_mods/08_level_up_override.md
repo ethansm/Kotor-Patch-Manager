@@ -775,4 +775,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Plan: `research/companion_levelup/PHASE5_PLAN.md` (authoritative). Evidence: `research/companion_levelup/phase5_evidence/` (README lists U1-U4 prefixes).
 - Step 0 (preflight) done: plan copied, "Phase 5 UX research" + R11 decision written above. Next: U (Ghidra static, one Sonnet agent) || P (preset data fix).
 - Done: wizard logic 9cd0fa5 (WizardLogic.h + twin, 264-line parity), GuiKit.h e11221f (49 host checks), P preset re-plan 61aa066 (warnings 275 -> 199), U facts (above).
+- M3 save binding DONE 29e3763 (0.3.0-b): GUID = 32 Boolean globals LUO_G00..31; hooks pre-save 0x656640 (ecx), post-load 0x65675B ([ebp-0x1c], eax),
+  new server 0x401C52 (skip, calls 0x51C450); `levelup_playthroughs.ini` (`[g<hex>]`, `<tag>=<preset>|instant=|hold=`; .tmp + MoveFileExA; lossy-parse
+  refuses writes); tagConfig: GUID section wins outright, else dev keys; `ptApply` creates the GUID + live-writes it (read back) on first use, `ptRemove`
+  keeps an empty section. Tests: gate_test 110, playthrough_test 244. Next: M4 LevelUpUi.h (Sonnet draft running) -> Opus review -> C gates.
 - Live state unchanged: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
