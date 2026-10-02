@@ -1,0 +1,32 @@
+# K2 Wrap Measure Fix (k2-wrap-measure-fix 1.0.0)
+
+A tiny KPM "simple" byte patch for KOTOR II (Steam Aspyr and Steam Aspyr LAA exes).
+
+## What it does
+
+`CAurGUIStringInternal::WrapStrings` (0x0047AF30) measures glyph advance for
+word wrap with `FADD double ptr [0x0098C1D8]` (= 0.25) at VA 0x0047B232
+(file offset 0x7A632) and truncates each glyph's width to int. Draw uses exact float
+widths, so wrapped lines under-measure by about 0.25 px per character.
+This patch re-points the operand to the existing 0.5 double at 0x00987F08,
+turning the per-glyph truncation into rounding (the 0.25 constant itself is
+not changed: 48 other code references). (KMRP "K6" equivalent; research in
+engine_research_findings/V3.md and doc 16 lead L4.)
+
+## Bytes
+
+    0x0047B232  DC 05 D8 C1 98 00  ->  DC 05 08 7F 98 00
+
+Identical in both target exes. No function, no parameters, no INI.
+
+## Build
+
+    cd <KPM>/Patches/K2WrapMeasureFix && python3 ../create-patch.py
+
+`<KPM>` = `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`.
+The `.toml` files here are byte-identical mirrors of the ones in that folder.
+
+## Status
+
+STAGED, not installed. Rollback = reinstall the KPM patch set without the id
+`k2-wrap-measure-fix`.
