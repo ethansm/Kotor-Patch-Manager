@@ -47,7 +47,7 @@ Never set: SpawnNPC (`0x5FD480`), GetNPCObject (`0x5FAAF0`), cmd 698 SpawnAvaila
 
 **Correct test for our DLLs:**
 - Hot path, creature pointer in hand (companion-ai today): `*(int*)(cr+0x11AC) != 0`. This is the engine's own test, used by 200 functions, AIUpdate promotion and RunActions 0x3D.
-- Only an object id in hand: `0x5FB070` for NPCs, OR'd with "id == PC id (`0x51C8F0`)". Or use client `0x7E5C40` (3 slots, includes the PC).
+- Only an object id in hand: `0x5FB070` for NPCs, OR'd with "id == PC id (`0x51C8F0`)". Or use client `0x7E5C40` (3 slots, includes the PC). **[Superseded, see Correction (REVIEW_synthesis 2026-10-02) at the end of this file: `0x51C8F0` is the controlled leader.]**
 - "Recruited but not selected" is a different predicate: `tbl[7+idx]` object ids plus availability `0x5FA960` (med).
 - Caveat: inside SaveCreature between `0x574532` and `0x57516B`, and inside TransferInventory, the flag is transiently 0. companion-ai's FM4 hooks are safe: the snap at `0x57451F` reads the flag before the clear, and the restore at `0x575183` runs after `0x57516B`. Any new hook reached from those spans (SetAILevel, FollowInfo frees) sees 0.
 - Never use `+0x220` or `+0x10E8` as the party test.
@@ -355,3 +355,9 @@ Overlaps: no window is within 12 B of the sibling list (nearest 1.28 MB) or of `
 - `0x669020` identity; `m_spn_visas` listening setup (module script, not in the corpus).
 - Module-embedded NCS scan for AdjustReputation (cmd 209) and for exclusion args to TalentBest.
 - From AI5/AI6: ranges.2da rows 0xB-0x10, repute.2da orientation dump (AI6 P5), StateScripts.2da rows 1-3.
+
+## Correction (REVIEW_synthesis 2026-10-02)
+Opus review of the synthesis (REVIEW_synthesis.md); the sections above are left as written.
+- **E2 (section 1.1, party-test text, and the 0x5FB070 table row):** `0x51C8F0` is the **controlled leader**, not the PC. `0x51C8F0` (thiscall serverApp) -> `0x539D60` -> player `0x632A20` = `GetGameObject(player+0x28)`; SetLeaderBySlot rewrites player+0x28 (`007e631d CALL 0x632830`, `006328d8 MOV [EDX+0x28],EAX`). `0x5FB070(id) || id == 0x51C8F0()` therefore misses the Exile while the player controls a companion. Correct test with only an id: resolve it (`0x51C0A0`) and test `+0x11AC`; `0x5FB070` covers NPCs only. Confidence med-high; probe PARTY settles it.
+- **E5 (section 1.5, medpac):** "a Jedi-only PC" is understated: the Exile **always** has `GetCreatureHasTalent(tSpe11_05) == FALSE` (every K2 PC class is in {3,4,5,11..16}: chargen offers 3/4/5 and the prestige classes are 11-16), so the AI-driven Exile never uses medpacs through the HasTalent rule. Design: party branch = `GetIsTalentValid(tSpe11_05) && GN_PartyMedpacStock() >= 1`, never HasTalent; keep the `GetCommandable()` guard (`ActionUseTalentOnObject` -> UseItem tests `+0xEC`, `0057d8e3`).
+- **E1 (relevant to lesson P2 in section 6):** `+0x10E8` = IsPC = `stats+0x6C`, written by the ctor `00562d7d`, PostProcess `005768fe`, SwitchPlayerCharacter `005fe604/005fe951/005feae6` and `00628375`; SetLeaderBySlot never writes it. The 200 ms perception cadence therefore goes to the IsPC creature (the Exile, also while AI-driven), not to the controlled one.

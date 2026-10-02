@@ -101,7 +101,7 @@ Pipeline position: server tick -> `CServerExoApp` (`0x533830`, `0053396e CALL 0x
 | 0x45 | 0x5D2EA0 | c | unnamed (216 B, calls `0x57A990`, count `0x5210F0`) | |
 | 0x46 | 0x5BF940 | c + `[creature+0x11FC] != 0` | AIActionFollowOwner (puppet flag, `SetIsPuppet 0x58A47F`) | |
 | 0x47 | 0x5DF920 | any | AIActionType47_ReequipResumeAttack (low): ClearAllActions(1), re-equip slots, re-queue attack at `[round+0xB20]` if `[+0x520]!=0 && [+0x11E8]==1`; returns 2; entry `0x5D682A` | [G] |
-Type > 0x47: no handler. 67 typed slots, 66 distinct handlers, 4 constant stubs.
+Type > 0x47: no handler. 67 typed slots (67 distinct case blocks), **65 distinct handler functions** (`0x5D1990` serves 0x29/0x2B/0x36, `0x5D17D0` 0x2A), 4 constant stubs (REVIEW_synthesis E4: re-decoded all 0x47 entries from the vanilla exe plus the first CALL of each case block).
 
 ## Key behaviours
 1. Budget (CONFIRMED): 10,000 us total (`0051d79f`); levels 4,3,2,1 each get 60% of what is left (`PUSH 0x3C`, `PUSH 0x64`, `_allmul`/`_aulldiv`), level 0 gets all of it (`0051d809..0051d812`). Fully-used worst case L4 6000 / L3 2400 / L2 960 / L1 384 / L0 256 us. Order 4,3,2,1,0 (`0051d7ad`, `0051dd96`).
