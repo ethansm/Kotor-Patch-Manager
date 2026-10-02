@@ -15,7 +15,7 @@ CSWGuiMainMenu / options panels; no Ghidra work on them yet; DB has only Display
 no Auto button). (R5) **Hold mode:** if the plan is to bank levels until a class becomes available (e.g. Jedi), the mod holds the level-up (XP keeps accruing)
 and hides the character's level-up indicator, which otherwise persists and stops buff icons rendering. Static leads: O6 - portrait refresh 0x74EE90 already
 calls AutoLevelup(1) for companions not under player control and otherwise shows the level-up indicator (find that branch); XP-award tail 0x5FD480 ->
-AutoLevelup(1); CanLevelUp 0x6B9790 / ValidateLevelUp 0x6B9640 are veto points. No vanilla "auto level everyone" option is confirmed (none in swkotor2.ini).
+AutoLevelup(1); CanLevelUp 0x6B9790 / ValidateLevelUp 0x6B9640 are veto points. CORRECTION (Phase 3, 2026-10-02): a vanilla option EXISTS - swkotor2.ini `[Game Options] Auto Level Up NPCs` / options GUI checkbox `CB_LEVELUP` (see "Phase 3 research" item 1).
 (R6, user 2026-10-02) **Character-screen entry point:** a "Configure auto level-up" button on the character screen; a character the player has not
 configured keeps vanilla behaviour. (R7) Instant level-ups (R4) are **opt-in per character**, not the default. (R8) Builds come from **shipped preset paths**
 per character and/or a guided **"wizard"** level-up UX where the player plans the build. (R9, user 2026-10-02) **Configure nudge:** when the mod is installed
@@ -309,6 +309,37 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
 - Ability: L4 record 1 == Auto pick 1; other levels 6 (none) kept. Spells empty (Scoundrel). HP/force/class bytes unchanged in `after.raw`.
 - Not covered by this run: manual GUI level-up (expect `SKIP manual`), save/reload persistence (no LevelUp call on load; user sheet check), path feat 77 at L8,
   Kreia powers, Auto Level Up NPCs / XP-award flows, SetExperience replay (ALREADY).
+
+## Phase 3 research (R4-R9, static, 2026-10-02; evidence `research/companion_levelup/phase3_evidence/`)
+### Item 1 - the auto-vs-indicator gate (Step 1, agent A, spot-checked)
+- **Vanilla option exists.** The `0x72FB00`-returned options object (`__fastcall return *(*(this+4)+4)`, called with `[0xA1B4A4]+4`; ~264 callers; class
+  name unconfirmed, probably CClientOptions; differs from DB "GetClientOptions" 0x73F830 which returns `*(this+4)+8`) holds **+8 bit0 = "Auto Level Up NPCs"**.
+  Setter `0x7B5EF0` (`+8 = +8&~1 | v&1`; if set and `[0xA1B4A4]+8` != 0 -> `0x51C8D0` + AutoLevelUpNPCs 0x5FEDD0 = immediate catch-up of the party)
+  (`A1_dec_5fedd0_callers.txt:35-46`). Ini reader `0x7B88B0` (section "Game Options", key "Auto Level Up NPCs" @0x9A038C, push at 0x7B89B1, setter call
+  0x7B8A5C; `A2_disasm_7b88b0_full.txt:102,148`), called from options-load 0x79F6F0; saver 0x7B5F50 via 0x79F6C0. GUI: `CB_LEVELUP` in optgameplay_p, handler
+  `0x8E0C50` toggles via the setter (registered in 0x8DF930; `A2_tagxrefs_autolevel.txt:35-39`). Vanilla ini default `Auto Level Up NPCs=0`.
+  AutoLevelUpNPCs 0x5FEDD0 has ONE caller: the setter (`A1_callers_5fedd0.txt`).
+- **Polarity:** bit0=1 -> UpdatePortraits takes `AutoLevelup(1)`; bit0=0 -> indicator (mask|=4).
+- **UpdatePortraits 0x74EE90 branch** (`A1_disasm_74ee90.txt:342-383`): `0x74F3C7 call CanLevelUp` -> `jz 0x74F4E3`; `0x74F3E9 call 0x72FB00`
+  (`e8 12 07 fe ff`); `0x74F3FA mov edx,[ecx+8]; and edx,1; 0x74F400 jz 0x74F481` (`74 7f`, indicator); player-creature compare `0x74F443`/`0x74F449 jz`;
+  `0x74F44B` creature(`[ebp-0x38]`)+0x1200 test, `0x74F461 jnz 0x74F481` (`75 1e`); `0x74F472 push 1; 0x74F47A call 0x6BEDF0` (`e8 71 f9 f6 ff`); `jmp
+  0x74F4DE`; `0x74F481..0x74F485 or edx,4` (indicator bit into byte [ebp-0x31]).
+- **local_3c = the creature** (`[ebp-0x38]`, stats at +0x1198). **creature+0x1200 = GFF "PlayerCreated"** (loader 0x574180, store 0x57432C; other writers
+  0x6B2BA7 in 0x6AFED0, zero-init 0x5630CD). PlayerCreated creatures and the player creature always get the indicator, never auto-level.
+- **Answer to the user ("is auto level-up an option to enable?"):** yes - Options > Gameplay > "Auto Level Up NPCs" (ini `Auto Level Up NPCs=1`). It is
+  GLOBAL (all companions, not the PC), and the mod's 0.2.1 rewrite already applies to those auto level-ups (AutoLevelup on the chain).
+- **R4 hook candidates** (live == vanilla bytes, no hook within +-16 bytes across 84 Steam hook TOMLs; nearest = BuffDurationHUD 0x74F25A/0x74F8AB):
+  | VA | bytes | use |
+  |---|---|---|
+  | 0x74F3E9 | e8 12 07 fe ff | **preferred**: detour the call; return a fake/real options ptr whose +8 bit0 = 1 for configured+opted-in tags (creature in [ebp-0x38]) |
+  | 0x74F400 | 74 7f | global force (= option ON) - not per creature |
+  | 0x74F461 | 75 1e | let PlayerCreated companions auto-level |
+  | 0x74F47A | e8 71 f9 f6 ff | the AutoLevelup call itself (observation / per-creature veto) |
+- **R4 design choice (Opus):** per-creature detour of the 0x72FB00 call at 0x74F3E9 (and the equivalent gate sites in XP tail 0x5FD480 / DistributeExperience
+  0x5FE0C0 - addresses to collect in Step 4). Reasons: reuses the engine's own auto path (same frame cadence, same AutoLevelup(1) call that 0.2.1 already
+  rewrites), no new per-frame logic, unconfigured characters see the real option value (R6/R7 vanilla default). Calling AutoLevelup ourselves from another
+  per-frame hook was rejected: duplicates the gate (CanLevelUp, player, PlayerCreated) and risks double-levelling in the same tick.
+- Residual: class name of the 0x72FB00 object (decompile 0x796E00 if needed); whether 0x5FD480/0x5FE0C0 also test PlayerCreated (Step 4).
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the

@@ -1,0 +1,105 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (826 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1936 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_00574180 @ 00574180 size=892
+
+undefined4 __thiscall FUN_00574180(int *param_1,undefined4 param_2,undefined4 param_3,int param_4)
+
+{
+  undefined1 uVar1;
+  undefined2 uVar2;
+  int iVar3;
+  undefined4 uVar4;
+  uint uVar5;
+  int local_8;
+  
+  iVar3 = FUN_00718c00(param_3,"AreaId",&local_8,0);
+  param_1[0x24] = iVar3;
+  iVar3 = FUN_006afed0(param_2,param_3,param_1 + 0x45d);
+  if (iVar3 == 0) {
+    FUN_00718a00(param_3,"DetectMode",&local_8,0);
+    FUN_00563da0(2,1,0);
+    uVar1 = FUN_00718a00(param_3,"StealthMode",&local_8,0);
+    FUN_00563da0(1,uVar1,0);
+    iVar3 = FUN_00718c80(param_3,"CreatureSize",&local_8,3);
+    param_1[0x14f] = iVar3;
+    uVar5 = FUN_00718a00(param_3,"IsDestroyable",&local_8,1);
+    param_1[0x3c] = uVar5 & 0xff;
+    uVar5 = FUN_00718a00(param_3,"IsRaiseable",&local_8,1);
+    param_1[0x3d] = uVar5 & 0xff;
+    uVar5 = FUN_00718a00(param_3,"DeadSelectable",&local_8,1);
+    param_1[0x3e] = uVar5 & 0xff;
+    iVar3 = FUN_00718c80(param_3,"BonusForcePoints",&local_8,7);
+    param_1[0x47d] = iVar3;
+    iVar3 = FUN_00718c80(param_3,"AssignedPup",&local_8,0xffffffff);
+    param_1[0x47e] = iVar3;
+    iVar3 = FUN_00718c80(param_3,"PlayerCreated",&local_8,0);
+    param_1[0x480] = iVar3;
+    uVar1 = FUN_00718a00(param_3,"AmbientAnimState",&local_8,0);
+    FUN_0058b780(uVar1);
+    uVar4 = FUN_00718c80(param_3,"Animation",&local_8,10000);
+    (**(code **)(*param_1 + 0x7c))(uVar4);
+    uVar5 = FUN_00718a00(param_3,"CreatnScrptFird",&local_8,0);
+    if (local_8 == 1) {
+      param_1[0xe3] = uVar5 & 0xff;
+    }
+    else if (param_4 == 1) {
+      param_1[0xe3] = 1;
+    }
+    FUN_00572fc0(param_2,param_3);
+    FUN_00573950(param_2,param_3,1,param_4 == 0,0);
+    FUN_006b3b70(param_2,param_3);
+    uVar5 = FUN_00718a00(param_3,"PM_IsDisguised",&local_8,0);
+    param_1[0x45b] = uVar5 & 0xff;
+    if (param_1[0x45b] != 0) {
+      uVar2 = FUN_00718b00(param_3,"PM_Appearance",&local_8,0);
+      *(undefined2 *)(param_1 + 0x45c) = uVar2;
+    }
+    uVar5 = FUN_00718a00(param_3,"Listening",&local_8,0);
+    param_1[0x70] = uVar5 & 0xff;
+    FUN_005409f0(param_2,param_3);
+    uVar5 = FUN_00718a00(param_3,"ForceAlwaysUpdate",&local_8,0);
+    param_1[0x98] = uVar5 & 0xff;
+    FUN_00576750();
+    FUN_00575200(param_2,param_3);
+    FUN_0053fc70(param_2,param_3);
+    uVar4 = 1;
+  }
+  else {
+    uVar4 = 0;
+  }
+  return uVar4;
+}
+
+

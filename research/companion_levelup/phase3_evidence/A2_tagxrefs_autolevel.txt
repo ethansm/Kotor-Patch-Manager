@@ -1,0 +1,2904 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1083 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2257 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/FindTagXrefsDecompile.java (HeadlessAnalyzer)  
+STRING 'Auto Level Up NPCs' @ 009a038c
+   ref from 007b89b1 in FUN_007b88b0@007b88b0 size=11697
+   ref from 007b6500 in FUN_007b5f50@007b5f50 size=10583
+STRING 'CB_LEVELUP' @ 009a8eb0
+   ref from 008dfc09 in FUN_008df930@008df930 size=3659
+=== DECOMP FUN_007b88b0 @ 007b88b0
+
+undefined4 __thiscall FUN_007b88b0(int param_1,int param_2)
+
+{
+  undefined1 uVar1;
+  undefined4 uVar2;
+  double dVar3;
+  undefined1 local_6ec;
+  undefined4 local_6e8;
+  uint local_6e4;
+  float local_6e0;
+  float local_6dc;
+  float local_6d8;
+  undefined4 local_6d4;
+  undefined1 local_6d0;
+  undefined1 local_6cc;
+  undefined1 local_6c8;
+  undefined1 local_6c4;
+  undefined1 local_6c0;
+  undefined4 local_6bc;
+  undefined4 local_6b8;
+  undefined4 local_6b4;
+  undefined4 local_6b0;
+  int local_6a0;
+  undefined4 local_69c;
+  undefined4 local_698;
+  int local_694;
+  undefined4 local_690;
+  undefined1 local_68c;
+  uint local_688;
+  uint local_684;
+  uint local_680;
+  uint local_67c;
+  uint local_678;
+  uint local_674;
+  undefined1 local_670;
+  undefined1 local_66c;
+  undefined2 local_668;
+  undefined1 local_664;
+  undefined1 local_660;
+  undefined1 local_65c;
+  uint local_658;
+  undefined4 local_654;
+  uint local_650;
+  uint local_64c;
+  uint local_648;
+  uint local_644;
+  uint local_640;
+  uint local_63c;
+  undefined4 local_638;
+  undefined1 local_634;
+  uint local_630;
+  uint local_62c;
+  uint local_628;
+  uint local_620;
+  uint local_61c;
+  undefined4 local_618;
+  undefined1 local_614;
+  undefined1 local_60c [8];
+  undefined1 local_604 [8];
+  undefined1 local_5fc [8];
+  int local_5f4;
+  undefined1 local_5f0 [8];
+  undefined1 local_5e8 [8];
+  undefined1 local_5e0 [8];
+  int local_5d8;
+  undefined1 local_5d4 [8];
+  undefined1 local_5cc [8];
+  undefined1 local_5c4 [8];
+  int local_5bc;
+  undefined1 local_5b8 [8];
+  undefined1 local_5b0 [8];
+  undefined1 local_5a8 [8];
+  int local_5a0;
+  undefined1 local_59c [8];
+  undefined1 local_594 [8];
+  undefined1 local_58c [8];
+  int local_584;
+  undefined1 local_580 [8];
+  undefined1 local_578 [8];
+  undefined1 local_570 [8];
+  int local_568;
+  undefined1 local_564 [8];
+  undefined1 local_55c [8];
+  undefined1 local_554 [8];
+  int local_54c;
+  undefined1 local_548 [8];
+  undefined1 local_540 [8];
+  undefined1 local_538 [8];
+  undefined1 local_530 [8];
+  undefined1 local_528 [8];
+  undefined1 local_520 [8];
+  int local_518;
+  undefined1 local_514 [8];
+  undefined1 local_50c [8];
+  undefined1 local_504 [8];
+  int local_4fc;
+  undefined1 local_4f8 [8];
+  undefined1 local_4f0 [8];
+  undefined1 local_4e8 [8];
+  int local_4e0;
+  undefined1 local_4dc [8];
+  undefined1 local_4d4 [8];
+  undefined1 local_4cc [8];
+  int local_4c4;
+  undefined1 local_4c0 [8];
+  undefined1 local_4b8 [8];
+  undefined1 local_4b0 [8];
+  int local_4a8;
+  undefined1 local_4a4 [8];
+  undefined1 local_49c [8];
+  undefined1 local_494 [8];
+  int local_48c;
+  undefined1 local_488 [8];
+  undefined1 local_480 [8];
+  undefined1 local_478 [8];
+  int local_470;
+  undefined1 local_46c [8];
+  undefined1 local_464 [8];
+  undefined1 local_45c [8];
+  int local_454;
+  undefined1 local_450 [8];
+  undefined1 local_448 [8];
+  undefined1 local_440 [8];
+  int local_438;
+  undefined1 local_434 [8];
+  undefined1 local_42c [8];
+  undefined1 local_424 [8];
+  int local_41c;
+  undefined1 local_418 [8];
+  undefined1 local_410 [8];
+  undefined1 local_408 [8];
+  int local_400;
+  undefined1 local_3fc [8];
+  undefined1 local_3f4 [8];
+  undefined1 local_3ec [8];
+  int local_3e4;
+  undefined1 local_3e0 [8];
+  undefined1 local_3d8 [8];
+  undefined1 local_3d0 [8];
+  int local_3c8;
+  undefined1 local_3c4 [8];
+  undefined1 local_3bc [8];
+  undefined1 local_3b4 [8];
+  int local_3ac;
+  undefined1 local_3a8 [8];
+  undefined1 local_3a0 [8];
+  undefined1 local_398 [8];
+  int local_390;
+  undefined1 local_38c [8];
+  undefined1 local_384 [8];
+  undefined1 local_37c [8];
+  int local_374;
+  undefined1 local_370 [8];
+  undefined1 local_368 [8];
+  undefined1 local_360 [8];
+  int local_358;
+  undefined1 local_354 [8];
+  undefined1 local_34c [8];
+  undefined1 local_344 [8];
+  int local_33c;
+  undefined1 local_338 [8];
+  undefined1 local_330 [8];
+  undefined1 local_328 [8];
+  int local_320;
+  undefined1 local_31c [8];
+  undefined1 local_314 [8];
+  undefined1 local_30c [8];
+  int local_304;
+  undefined1 local_300 [8];
+  undefined1 local_2f8 [8];
+  undefined1 local_2f0 [8];
+  int local_2e8;
+  undefined1 local_2e4 [8];
+  undefined1 local_2dc [8];
+  undefined1 local_2d4 [8];
+  int local_2cc;
+  undefined1 local_2c8 [8];
+  undefined1 local_2c0 [8];
+  undefined1 local_2b8 [8];
+  int local_2b0;
+  undefined1 local_2ac [8];
+  undefined1 local_2a4 [8];
+  undefined1 local_29c [8];
+  int local_294;
+  undefined1 local_290 [8];
+  undefined1 local_288 [8];
+  undefined1 local_280 [8];
+  int local_278;
+  undefined1 local_274 [8];
+  undefined1 local_26c [8];
+  undefined1 local_264 [8];
+  int local_25c;
+  undefined1 local_258 [8];
+  undefined1 local_250 [8];
+  undefined1 local_248 [8];
+  int local_240;
+  undefined1 local_23c [8];
+  undefined1 local_234 [8];
+  undefined1 local_22c [8];
+  int local_224;
+  undefined1 local_220 [8];
+  undefined1 local_218 [8];
+  undefined1 local_210 [8];
+  int local_208;
+  undefined1 local_204 [8];
+  undefined1 local_1fc [8];
+  undefined1 local_1f4 [8];
+  int local_1ec;
+  undefined1 local_1e8 [8];
+  undefined1 local_1e0 [8];
+  undefined1 local_1d8 [8];
+  int local_1d0;
+  undefined1 local_1cc [8];
+  undefined1 local_1c4 [8];
+  undefined1 local_1bc [8];
+  int local_1b4;
+  undefined1 local_1b0 [8];
+  undefined1 local_1a8 [8];
+  undefined1 local_1a0 [8];
+  int local_198;
+  undefined1 local_194 [8];
+  undefined1 local_18c [8];
+  undefined1 local_184 [8];
+  int local_17c;
+  undefined1 local_178 [8];
+  undefined1 local_170 [8];
+  undefined1 local_168 [8];
+  int local_160;
+  undefined1 local_15c [8];
+  undefined1 local_154 [8];
+  undefined1 local_14c [8];
+  int local_144;
+  undefined1 local_140 [8];
+  undefined1 local_138 [8];
+  undefined1 local_130 [8];
+  int local_128;
+  undefined1 local_124 [8];
+  undefined1 local_11c [8];
+  undefined1 local_114 [8];
+  int local_10c;
+  undefined1 local_108 [8];
+  undefined1 local_100 [8];
+  undefined1 local_f8 [8];
+  int local_f0;
+  undefined1 local_ec [8];
+  undefined1 local_e4 [8];
+  undefined1 local_dc [8];
+  int local_d4;
+  undefined1 local_d0 [8];
+  undefined1 local_c8 [8];
+  undefined1 local_c0 [8];
+  int local_b8;
+  undefined1 local_b4 [8];
+  undefined1 local_ac [8];
+  undefined1 local_a4 [8];
+  int local_9c;
+  undefined1 local_98 [8];
+  undefined1 local_90 [8];
+  undefined1 local_88 [8];
+  int local_80;
+  undefined1 local_7c [8];
+  undefined1 local_74 [8];
+  undefined1 local_6c [8];
+  int local_64;
+  undefined1 local_60 [8];
+  undefined1 local_58 [8];
+  undefined1 local_50 [8];
+  int local_48;
+  undefined1 local_44 [8];
+  undefined1 local_3c [8];
+  undefined1 local_34 [8];
+  int local_2c;
+  int local_28;
+  undefined1 local_20 [8];
+  char *local_18 [2];
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00969463;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_007bbad0(DAT_00a11f20 ^ (uint)&stack0xfffffffc);
+  FUN_00736240();
+  local_8 = 0;
+  FUN_00733540();
+  local_8._0_1_ = 1;
+  FUN_00733570("Difficulty Level");
+  local_8._0_1_ = 2;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 3;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 4;
+  local_2c = FUN_00736320(local_18,local_44,local_3c,local_34);
+  local_8._0_1_ = 3;
+  FUN_00733780();
+  local_8._0_1_ = 2;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_2c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_614 = 0;
+    }
+    else {
+      local_614 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 4) = local_614;
+  }
+  FUN_00733570("Auto Level Up NPCs");
+  local_8._0_1_ = 5;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 6;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 7;
+  local_48 = FUN_00736320(local_18,local_60,local_58,local_50);
+  local_8._0_1_ = 6;
+  FUN_00733780();
+  local_8._0_1_ = 5;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_48 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_618 = 0;
+    }
+    else {
+      local_618 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007b5ef0(local_618);
+  }
+  FUN_00733570("Mouse Look");
+  local_8._0_1_ = 8;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 9;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 10;
+  local_64 = FUN_00736320(local_18,local_7c,local_74,local_6c);
+  local_8._0_1_ = 9;
+  FUN_00733780();
+  local_8._0_1_ = 8;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_64 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_61c = 0;
+    }
+    else {
+      local_61c = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 8) = *(uint *)(param_1 + 8) & 0xfffffffd | (local_61c & 1) << 1;
+  }
+  FUN_00733570("AutoSave");
+  local_8._0_1_ = 0xb;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0xc;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0xd;
+  local_80 = FUN_00736320(local_18,local_98,local_90,local_88);
+  local_8._0_1_ = 0xc;
+  FUN_00733780();
+  local_8._0_1_ = 0xb;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_80 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_620 = 0;
+    }
+    else {
+      local_620 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 8) = *(uint *)(param_1 + 8) & 0xfffffffb | (local_620 & 1) << 2;
+    *(uint *)(param_1 + 8) =
+         *(uint *)(param_1 + 8) & 0xfffffffb | (*(uint *)(param_1 + 8) >> 2 & 1) << 2;
+  }
+  FUN_00733570("Reverse Minigame YAxis");
+  local_8._0_1_ = 0xe;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0xf;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x10;
+  local_9c = FUN_00736320(local_18,local_b4,local_ac,local_a4);
+  local_8._0_1_ = 0xf;
+  FUN_00733780();
+  local_8._0_1_ = 0xe;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_9c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_628 = 0;
+    }
+    else {
+      local_628 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 8) = *(uint *)(param_1 + 8) & 0xfffffff7 | (local_628 & 1) << 3;
+  }
+  FUN_00733570("Reverse Ingame YAxis");
+  local_8._0_1_ = 0x11;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x12;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x13;
+  local_b8 = FUN_00736320(local_18,local_d0,local_c8,local_c0);
+  local_8._0_1_ = 0x12;
+  FUN_00733780();
+  local_8._0_1_ = 0x11;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_b8 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_62c = 0;
+    }
+    else {
+      local_62c = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 8) = *(uint *)(param_1 + 8) & 0xffffffef | (local_62c & 1) << 4;
+  }
+  FUN_00733570("Combat Movement");
+  local_8._0_1_ = 0x14;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x15;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x16;
+  local_d4 = FUN_00736320(local_18,local_ec,local_e4,local_dc);
+  local_8._0_1_ = 0x15;
+  FUN_00733780();
+  local_8._0_1_ = 0x14;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_d4 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_630 = 0;
+    }
+    else {
+      local_630 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 8) = *(uint *)(param_1 + 8) & 0xffffffdf | (local_630 & 1) << 5;
+  }
+  FUN_00733570("Mouse Sensitivity");
+  local_8._0_1_ = 0x17;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x18;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x19;
+  local_f0 = FUN_00736320(local_18,local_108,local_100,local_f8);
+  local_8._0_1_ = 0x18;
+  FUN_00733780();
+  local_8._0_1_ = 0x17;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_f0 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_634 = 0;
+    }
+    else {
+      local_634 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x58) = local_634;
+  }
+  FUN_00733570("Enable Mouse Teleporting To Buttons");
+  local_8._0_1_ = 0x1a;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x1b;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x1c;
+  local_10c = FUN_00736320(local_18,local_124,local_11c,local_114);
+  local_8._0_1_ = 0x1b;
+  FUN_00733780();
+  local_8._0_1_ = 0x1a;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_10c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_638 = 0;
+    }
+    else {
+      local_638 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined4 *)(param_1 + 0x10) = local_638;
+  }
+  FUN_00733570("Hide Unequippable");
+  local_8._0_1_ = 0x1d;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x1e;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x1f;
+  local_128 = FUN_00736320(local_18,local_140,local_138,local_130);
+  local_8._0_1_ = 0x1e;
+  FUN_00733780();
+  local_8._0_1_ = 0x1d;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_128 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_63c = 0;
+    }
+    else {
+      local_63c = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffffffe | local_63c & 1;
+  }
+  FUN_00733570("Tutorial Popups");
+  local_8._0_1_ = 0x20;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x21;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x22;
+  local_144 = FUN_00736320(local_18,local_15c,local_154,local_14c);
+  local_8._0_1_ = 0x21;
+  FUN_00733780();
+  local_8._0_1_ = 0x20;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_144 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_640 = 0;
+    }
+    else {
+      local_640 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffffffd | (local_640 & 1) << 1;
+  }
+  FUN_00733570("Subtitles");
+  local_8._0_1_ = 0x23;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x24;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x25;
+  local_160 = FUN_00736320(local_18,local_178,local_170,local_168);
+  local_8._0_1_ = 0x24;
+  FUN_00733780();
+  local_8._0_1_ = 0x23;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_160 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_644 = 0;
+    }
+    else {
+      local_644 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffffffb | (local_644 & 1) << 2;
+  }
+  FUN_00733570("Mini Map");
+  local_8._0_1_ = 0x26;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x27;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x28;
+  local_17c = FUN_00736320(local_18,local_194,local_18c,local_184);
+  local_8._0_1_ = 0x27;
+  FUN_00733780();
+  local_8._0_1_ = 0x26;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_17c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_648 = 0;
+    }
+    else {
+      local_648 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffffff7 | (local_648 & 1) << 3;
+  }
+  FUN_00733570("Floating Numbers");
+  local_8._0_1_ = 0x29;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x2a;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x2b;
+  local_198 = FUN_00736320(local_18,local_1b0,local_1a8,local_1a0);
+  local_8._0_1_ = 0x2a;
+  FUN_00733780();
+  local_8._0_1_ = 0x29;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_198 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_64c = 0;
+    }
+    else {
+      local_64c = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xffffffef | (local_64c & 1) << 4;
+  }
+  FUN_00733570("Status Summary");
+  local_8._0_1_ = 0x2c;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x2d;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x2e;
+  local_1b4 = FUN_00736320(local_18,local_1cc,local_1c4,local_1bc);
+  local_8._0_1_ = 0x2d;
+  FUN_00733780();
+  local_8._0_1_ = 0x2c;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_1b4 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_650 = 0;
+    }
+    else {
+      local_650 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xffffffdf | (local_650 & 1) << 5;
+  }
+  FUN_00733570("Use Small Fonts");
+  local_8._0_1_ = 0x2f;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x30;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x31;
+  local_1d0 = FUN_00736320(local_18,local_1e8,local_1e0,local_1d8);
+  local_8._0_1_ = 0x30;
+  FUN_00733780();
+  local_8._0_1_ = 0x2f;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_1d0 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_654 = 0;
+    }
+    else {
+      local_654 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc5a0(local_654);
+  }
+  FUN_00733570("Hide InGame GUI");
+  local_8._0_1_ = 0x32;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x33;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x34;
+  local_1ec = FUN_00736320(local_18,local_204,local_1fc,local_1f4);
+  local_8._0_1_ = 0x33;
+  FUN_00733780();
+  local_8._0_1_ = 0x32;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_1ec != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_658 = 0;
+    }
+    else {
+      local_658 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffffdff | (local_658 & 1) << 9;
+  }
+  FUN_00733570("CurSithLord");
+  local_8._0_1_ = 0x35;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x36;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x37;
+  local_208 = FUN_00736320(local_18,local_220,local_218,local_210);
+  local_8._0_1_ = 0x36;
+  FUN_00733780();
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_208 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_65c = 0;
+    }
+    else {
+      local_65c = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x14) = local_65c;
+  }
+  FUN_00733570("GameCompleted");
+  local_8._0_1_ = 0x38;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x39;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x3a;
+  local_224 = FUN_00736320(local_18,local_23c,local_234,local_22c);
+  local_8._0_1_ = 0x39;
+  FUN_00733780();
+  local_8._0_1_ = 0x38;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_224 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_660 = 0;
+    }
+    else {
+      local_660 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x15) = local_660;
+  }
+  FUN_00733570("PCGender");
+  local_8._0_1_ = 0x3b;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x3c;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x3d;
+  local_240 = FUN_00736320(local_18,local_258,local_250,local_248);
+  local_8._0_1_ = 0x3c;
+  FUN_00733780();
+  local_8._0_1_ = 0x3b;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_240 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_664 = 0;
+    }
+    else {
+      local_664 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x16) = local_664;
+  }
+  FUN_00733570("AppearanceType");
+  local_8._0_1_ = 0x3e;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x3f;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x40;
+  local_25c = FUN_00736320(local_18,local_274,local_26c,local_264);
+  local_8._0_1_ = 0x3f;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_25c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_668 = 0;
+    }
+    else {
+      local_668 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined2 *)(param_1 + 0x18) = local_668;
+  }
+  FUN_00733570("BodyVariation");
+  local_8._0_1_ = 0x41;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x42;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x43;
+  local_278 = FUN_00736320(local_18,local_290,local_288,local_280);
+  local_8._0_1_ = 0x42;
+  FUN_00733780();
+  local_8._0_1_ = 0x41;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_278 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_66c = 0;
+    }
+    else {
+      local_66c = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x1a) = local_66c;
+  }
+  FUN_00733570("TextureVariation");
+  local_8._0_1_ = 0x44;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x45;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x46;
+  local_294 = FUN_00736320(local_18,local_2ac,local_2a4,local_29c);
+  local_8._0_1_ = 0x45;
+  FUN_00733780();
+  local_8._0_1_ = 0x44;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_294 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_670 = 0;
+    }
+    else {
+      local_670 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x1b) = local_670;
+  }
+  FUN_00733570("End Of Combat Round");
+  local_8._0_1_ = 0x47;
+  FUN_00733570("Autopause Options");
+  local_8._0_1_ = 0x48;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x49;
+  local_2b0 = FUN_00736320(local_18,local_2c8,local_2c0,local_2b8);
+  local_8._0_1_ = 0x48;
+  FUN_00733780();
+  local_8._0_1_ = 0x47;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_2b0 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_674 = 0;
+    }
+    else {
+      local_674 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffff7ff | (local_674 & 1) << 0xb;
+  }
+  FUN_00733570("Enemy Sighted");
+  local_8._0_1_ = 0x4a;
+  FUN_00733570("Autopause Options");
+  local_8._0_1_ = 0x4b;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x4c;
+  local_2cc = FUN_00736320(local_18,local_2e4,local_2dc,local_2d4);
+  local_8._0_1_ = 0x4b;
+  FUN_00733780();
+  local_8._0_1_ = 0x4a;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_2cc != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_678 = 0;
+    }
+    else {
+      local_678 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xffffefff | (local_678 & 1) << 0xc;
+  }
+  FUN_00733570("Mine Sighted");
+  local_8._0_1_ = 0x4d;
+  FUN_00733570("Autopause Options");
+  local_8._0_1_ = 0x4e;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x4f;
+  local_2e8 = FUN_00736320(local_18,local_300,local_2f8,local_2f0);
+  local_8._0_1_ = 0x4e;
+  FUN_00733780();
+  local_8._0_1_ = 0x4d;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_2e8 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_67c = 0;
+    }
+    else {
+      local_67c = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xffffdfff | (local_67c & 1) << 0xd;
+  }
+  FUN_00733570("Party Killed");
+  local_8._0_1_ = 0x50;
+  FUN_00733570("Autopause Options");
+  local_8._0_1_ = 0x51;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x52;
+  local_304 = FUN_00736320(local_18,local_31c,local_314,local_30c);
+  local_8._0_1_ = 0x51;
+  FUN_00733780();
+  local_8._0_1_ = 0x50;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_304 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_680 = 0;
+    }
+    else {
+      local_680 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xffffbfff | (local_680 & 1) << 0xe;
+  }
+  FUN_00733570("Action Menu");
+  local_8._0_1_ = 0x53;
+  FUN_00733570("Autopause Options");
+  local_8._0_1_ = 0x54;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x55;
+  local_320 = FUN_00736320(local_18,local_338,local_330,local_328);
+  local_8._0_1_ = 0x54;
+  FUN_00733780();
+  local_8._0_1_ = 0x53;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_320 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_684 = 0;
+    }
+    else {
+      local_684 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xffff7fff | (local_684 & 1) << 0xf;
+  }
+  FUN_00733570("New Target Selected");
+  local_8._0_1_ = 0x56;
+  FUN_00733570("Autopause Options");
+  local_8._0_1_ = 0x57;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x58;
+  local_33c = FUN_00736320(local_18,local_354,local_34c,local_344);
+  local_8._0_1_ = 0x57;
+  FUN_00733780();
+  local_8._0_1_ = 0x56;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_33c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_688 = 0;
+    }
+    else {
+      local_688 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffeffff | (local_688 & 1) << 0x10;
+  }
+  FUN_00733570("Brightness");
+  local_8._0_1_ = 0x59;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x5a;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x5b;
+  local_358 = FUN_00736320(local_18,local_370,local_368,local_360);
+  local_8._0_1_ = 0x5a;
+  FUN_00733780();
+  local_8._0_1_ = 0x59;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_358 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_68c = 0;
+    }
+    else {
+      local_68c = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x20) = local_68c;
+  }
+  FUN_00733570("Shadows");
+  local_8._0_1_ = 0x5c;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x5d;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x5e;
+  local_374 = FUN_00736320(local_18,local_38c,local_384,local_37c);
+  local_8._0_1_ = 0x5d;
+  FUN_00733780();
+  local_8._0_1_ = 0x5c;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_374 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_690 = 0;
+    }
+    else {
+      local_690 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc230(local_690);
+  }
+  FUN_00733570("AllowSoftShadows");
+  local_8._0_1_ = 0x5f;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x60;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x61;
+  local_390 = FUN_00736320(local_18,local_3a8,local_3a0,local_398);
+  local_8._0_1_ = 0x60;
+  FUN_00733780();
+  local_8._0_1_ = 0x5f;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_390 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_694 = 0;
+    }
+    else {
+      local_694 = FUN_0091cf18(local_18[0]);
+    }
+    if (local_694 == 1) {
+      FUN_00479200();
+    }
+  }
+  FUN_00733570("Soft Shadows");
+  local_8._0_1_ = 0x62;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 99;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 100;
+  local_3ac = FUN_00736320(local_18,local_3c4,local_3bc,local_3b4);
+  local_8._0_1_ = 99;
+  FUN_00733780();
+  local_8._0_1_ = 0x62;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_3ac != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_698 = 0;
+    }
+    else {
+      local_698 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc260(local_698);
+  }
+  FUN_00733570("Grass");
+  local_8._0_1_ = 0x65;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x66;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x67;
+  local_3c8 = FUN_00736320(local_18,local_3e0,local_3d8,local_3d0);
+  local_8._0_1_ = 0x66;
+  FUN_00733780();
+  local_8._0_1_ = 0x65;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_3c8 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_69c = 0;
+    }
+    else {
+      local_69c = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc290(local_69c);
+  }
+  FUN_00733570("ForceSpeed");
+  local_8._0_1_ = 0x68;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x69;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x6a;
+  local_3e4 = FUN_00736320(local_18,local_3fc,local_3f4,local_3ec);
+  local_8._0_1_ = 0x69;
+  FUN_00733780();
+  local_8._0_1_ = 0x68;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_3e4 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6a0 = 0;
+    }
+    else {
+      local_6a0 = FUN_0091cf18(local_18[0]);
+    }
+    s___AVCSWGuiControllerLossBox___00a10774[0x1e] = local_6a0 != 0;
+  }
+  FUN_00733570("Texture Quality");
+  local_8._0_1_ = 0x6b;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x6c;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x6d;
+  local_400 = FUN_00736320(local_18,local_418,local_410,local_408);
+  local_8._0_1_ = 0x6c;
+  FUN_00733780();
+  local_8._0_1_ = 0x6b;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_400 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      uVar1 = 0;
+    }
+    else {
+      uVar1 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc2f0(uVar1);
+  }
+  if (param_2 != 0) {
+    FUN_00733570("Anti Aliasing");
+    local_8._0_1_ = 0x6e;
+    FUN_00733570("Graphics Options");
+    local_8._0_1_ = 0x6f;
+    FUN_00733570(".\\swkotor2.ini");
+    local_8._0_1_ = 0x70;
+    local_41c = FUN_00736320(local_18,local_434,local_42c,local_424);
+    local_8._0_1_ = 0x6f;
+    FUN_00733780();
+    local_8._0_1_ = 0x6e;
+    FUN_00733780();
+    local_8 = CONCAT31(local_8._1_3_,1);
+    FUN_00733780();
+    if (local_41c != 0) {
+      if (local_18[0] == (char *)0x0) {
+        uVar1 = 0;
+      }
+      else {
+        uVar1 = FUN_0091cf18(local_18[0]);
+      }
+      FUN_007bc2c0(uVar1);
+    }
+  }
+  FUN_00733570("Anti Aliasing");
+  local_8._0_1_ = 0x71;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x72;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x73;
+  local_438 = FUN_00736320(local_18,local_450,local_448,local_440);
+  local_8._0_1_ = 0x72;
+  FUN_00733780();
+  local_8._0_1_ = 0x71;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_438 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      uVar1 = 0;
+    }
+    else {
+      uVar1 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc2c0(uVar1);
+  }
+  FUN_00733570("Frame Buffer");
+  local_8._0_1_ = 0x74;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x75;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x76;
+  local_454 = FUN_00736320(local_18,local_46c,local_464,local_45c);
+  local_8._0_1_ = 0x75;
+  FUN_00733780();
+  local_8._0_1_ = 0x74;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_454 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6b0 = 0;
+    }
+    else {
+      local_6b0 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc330(local_6b0);
+  }
+  if (param_2 != 0) {
+    FUN_00733570("Anisotropy");
+    local_8._0_1_ = 0x77;
+    FUN_00733570("Graphics Options");
+    local_8._0_1_ = 0x78;
+    FUN_00733570(".\\swkotor2.ini");
+    local_8._0_1_ = 0x79;
+    local_470 = FUN_00736320(local_18,local_488,local_480,local_478);
+    local_8._0_1_ = 0x78;
+    FUN_00733780();
+    local_8._0_1_ = 0x77;
+    FUN_00733780();
+    local_8 = CONCAT31(local_8._1_3_,1);
+    FUN_00733780();
+    if (local_470 != 0) {
+      if (local_18[0] == (char *)0x0) {
+        local_6b4 = 0;
+      }
+      else {
+        local_6b4 = FUN_0091cf18(local_18[0]);
+      }
+      FUN_007bc4f0(local_6b4);
+    }
+  }
+  FUN_00733570("Anisotropy");
+  local_8._0_1_ = 0x7a;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x7b;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x7c;
+  local_48c = FUN_00736320(local_18,local_4a4,local_49c,local_494);
+  local_8._0_1_ = 0x7b;
+  FUN_00733780();
+  local_8._0_1_ = 0x7a;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_48c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6b8 = 0;
+    }
+    else {
+      local_6b8 = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc4f0(local_6b8);
+  }
+  FUN_00733570("V-Sync");
+  local_8._0_1_ = 0x7d;
+  FUN_00733570("Graphics Options");
+  local_8._0_1_ = 0x7e;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x7f;
+  local_4a8 = FUN_00736320(local_18,local_4c0,local_4b8,local_4b0);
+  local_8._0_1_ = 0x7e;
+  FUN_00733780();
+  local_8._0_1_ = 0x7d;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_4a8 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6bc = 0;
+    }
+    else {
+      local_6bc = FUN_0091cf18(local_18[0]);
+    }
+    FUN_007bc520(local_6bc);
+  }
+  FUN_00733570("Music Volume");
+  local_8._0_1_ = 0x80;
+  FUN_00733570("Sound Options");
+  local_8._0_1_ = 0x81;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x82;
+  local_4c4 = FUN_00736320(local_18,local_4dc,local_4d4,local_4cc);
+  local_8._0_1_ = 0x81;
+  FUN_00733780();
+  local_8._0_1_ = 0x80;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_4c4 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6c0 = 0;
+    }
+    else {
+      local_6c0 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x4d) = local_6c0;
+  }
+  FUN_00733570("Voiceover Volume");
+  local_8._0_1_ = 0x83;
+  FUN_00733570("Sound Options");
+  local_8._0_1_ = 0x84;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x85;
+  local_4e0 = FUN_00736320(local_18,local_4f8,local_4f0,local_4e8);
+  local_8._0_1_ = 0x84;
+  FUN_00733780();
+  local_8._0_1_ = 0x83;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_4e0 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6c4 = 0;
+    }
+    else {
+      local_6c4 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x4e) = local_6c4;
+  }
+  FUN_00733570("Sound Effects Volume");
+  local_8._0_1_ = 0x86;
+  FUN_00733570("Sound Options");
+  local_8._0_1_ = 0x87;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x88;
+  local_4fc = FUN_00736320(local_18,local_514,local_50c,local_504);
+  local_8._0_1_ = 0x87;
+  FUN_00733780();
+  local_8._0_1_ = 0x86;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_4fc != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6c8 = 0;
+    }
+    else {
+      local_6c8 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x4f) = local_6c8;
+  }
+  FUN_00733570("Movie Volume");
+  local_8._0_1_ = 0x89;
+  FUN_00733570("Sound Options");
+  local_8._0_1_ = 0x8a;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x8b;
+  local_518 = FUN_00736320(local_18,local_530,local_528,local_520);
+  local_8._0_1_ = 0x8a;
+  FUN_00733780();
+  local_8._0_1_ = 0x89;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_00733780();
+  if (local_518 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6cc = 0;
+    }
+    else {
+      local_6cc = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x50) = local_6cc;
+  }
+  FUN_007bb6d0();
+  FUN_00733540();
+  local_8._0_1_ = 0x8c;
+  for (local_28 = 0; local_28 < 0xb; local_28 = local_28 + 1) {
+    FUN_00734270(local_20,"Movie%2d",local_28);
+    uVar2 = FUN_00734010();
+    FUN_00733570(uVar2);
+    local_8._0_1_ = 0x8d;
+    FUN_00733570("Movies Shown");
+    local_8._0_1_ = 0x8e;
+    FUN_00733570(".\\swkotor2.ini");
+    local_8._0_1_ = 0x8f;
+    FUN_00736320(local_18,local_548,local_540,local_538);
+    local_8._0_1_ = 0x8e;
+    FUN_00733780();
+    local_8._0_1_ = 0x8d;
+    FUN_00733780();
+    local_8._0_1_ = 0x8c;
+    FUN_00733780();
+    if (local_18[0] == (char *)0x0) {
+      local_6d0 = 0;
+    }
+    else {
+      local_6d0 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + local_28 + 0x68) = local_6d0;
+  }
+  *(undefined4 *)(param_1 + 0x98) = 0;
+  FUN_00733570("EnableCheats");
+  local_8._0_1_ = 0x90;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x91;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x92;
+  local_54c = FUN_00736320(local_18,local_564,local_55c,local_554);
+  local_8._0_1_ = 0x91;
+  FUN_00733780();
+  local_8._0_1_ = 0x90;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_54c != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6d4 = 0;
+    }
+    else {
+      local_6d4 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined4 *)(param_1 + 0x98) = local_6d4;
+  }
+  FUN_00733570("Keyboard Camera DPS");
+  local_8._0_1_ = 0x93;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x94;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x95;
+  local_568 = FUN_00736320(local_18,local_580,local_578,local_570);
+  local_8._0_1_ = 0x94;
+  FUN_00733780();
+  local_8._0_1_ = 0x93;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_568 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6d8 = 0.0;
+    }
+    else {
+      dVar3 = _atof(local_18[0]);
+      local_6d8 = (float)dVar3;
+    }
+    FUN_007bc070(local_6d8);
+  }
+  FUN_00733570("Keyboard Camera Acceleration");
+  local_8._0_1_ = 0x96;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x97;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x98;
+  local_584 = FUN_00736320(local_18,local_59c,local_594,local_58c);
+  local_8._0_1_ = 0x97;
+  FUN_00733780();
+  local_8._0_1_ = 0x96;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_584 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6dc = 0.0;
+    }
+    else {
+      dVar3 = _atof(local_18[0]);
+      local_6dc = (float)dVar3;
+    }
+    FUN_007bc0f0(local_6dc);
+  }
+  FUN_00733570("Keyboard Camera Deceleration");
+  local_8._0_1_ = 0x99;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x9a;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x9b;
+  local_5a0 = FUN_00736320(local_18,local_5b8,local_5b0,local_5a8);
+  local_8._0_1_ = 0x9a;
+  FUN_00733780();
+  local_8._0_1_ = 0x99;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_5a0 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6e0 = 0.0;
+    }
+    else {
+      dVar3 = _atof(local_18[0]);
+      local_6e0 = (float)dVar3;
+    }
+    FUN_007bc170(local_6e0);
+  }
+  FUN_00733570("Enable Tooltips");
+  local_8._0_1_ = 0x9c;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0x9d;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0x9e;
+  local_5bc = FUN_00736320(local_18,local_5d4,local_5cc,local_5c4);
+  local_8._0_1_ = 0x9d;
+  FUN_00733780();
+  local_8._0_1_ = 0x9c;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_5bc != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6e4 = 0;
+    }
+    else {
+      local_6e4 = FUN_0091cf18(local_18[0]);
+    }
+    *(uint *)(param_1 + 0x1c) = *(uint *)(param_1 + 0x1c) & 0xfffffbff | (local_6e4 & 1) << 10;
+  }
+  FUN_00733570("Reverse Mouse Buttons");
+  local_8._0_1_ = 0x9f;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0xa0;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0xa1;
+  local_5d8 = FUN_00736320(local_18,local_5f0,local_5e8,local_5e0);
+  local_8._0_1_ = 0xa0;
+  FUN_00733780();
+  local_8._0_1_ = 0x9f;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_5d8 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6e8 = 0;
+    }
+    else {
+      local_6e8 = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined4 *)(param_1 + 0x5c) = local_6e8;
+  }
+  FUN_00733570("EnableScreenShot");
+  local_8._0_1_ = 0xa2;
+  FUN_00733570("Game Options");
+  local_8._0_1_ = 0xa3;
+  FUN_00733570(".\\swkotor2.ini");
+  local_8._0_1_ = 0xa4;
+  local_5f4 = FUN_00736320(local_18,local_60c,local_604,local_5fc);
+  local_8._0_1_ = 0xa3;
+  FUN_00733780();
+  local_8._0_1_ = 0xa2;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,0x8c);
+  FUN_00733780();
+  if (local_5f4 != 0) {
+    if (local_18[0] == (char *)0x0) {
+      local_6ec = 0;
+    }
+    else {
+      local_6ec = FUN_0091cf18(local_18[0]);
+    }
+    *(undefined1 *)(param_1 + 0x60) = local_6ec;
+  }
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  local_8 = (uint)local_8._1_3_ << 8;
+  FUN_00733780();
+  local_8 = 0xffffffff;
+  FUN_007362c0();
+  ExceptionList = local_10;
+  return 1;
+}
+
+
+=== DECOMP FUN_007b5f50 @ 007b5f50
+
+void __fastcall FUN_007b5f50(int param_1)
+
+{
+  int iVar1;
+  undefined4 *puVar2;
+  undefined4 *puVar3;
+  undefined8 uVar4;
+  undefined1 local_608 [8];
+  undefined1 local_600 [8];
+  undefined1 local_5f8 [8];
+  undefined1 local_5f0 [8];
+  undefined1 local_5e8 [8];
+  undefined1 local_5e0 [8];
+  undefined1 local_5d8 [8];
+  undefined1 local_5d0 [8];
+  undefined1 local_5c8 [8];
+  undefined1 local_5c0 [8];
+  undefined1 local_5b8 [8];
+  undefined1 local_5b0 [8];
+  undefined1 local_5a8 [8];
+  undefined1 local_5a0 [8];
+  undefined1 local_598 [8];
+  undefined1 local_590 [8];
+  undefined1 local_588 [8];
+  undefined1 local_580 [8];
+  undefined1 local_578 [8];
+  undefined1 local_570 [8];
+  undefined1 local_568 [8];
+  undefined1 local_560 [8];
+  undefined1 local_558 [8];
+  undefined1 local_550 [8];
+  undefined1 local_548 [8];
+  undefined1 local_540 [8];
+  undefined1 local_538 [8];
+  undefined1 local_530 [8];
+  undefined1 local_528 [8];
+  undefined1 local_520 [8];
+  undefined1 local_518 [8];
+  undefined1 local_510 [8];
+  undefined1 local_508 [8];
+  undefined1 local_500 [8];
+  undefined1 local_4f8 [8];
+  undefined1 local_4f0 [8];
+  undefined1 local_4e8 [8];
+  undefined1 local_4e0 [8];
+  undefined1 local_4d8 [8];
+  undefined1 local_4d0 [8];
+  undefined1 local_4c8 [8];
+  undefined1 local_4c0 [8];
+  undefined1 local_4b8 [8];
+  undefined1 local_4b0 [8];
+  undefined1 local_4a8 [8];
+  undefined1 local_4a0 [8];
+  undefined1 local_498 [8];
+  undefined1 local_490 [8];
+  undefined1 local_488 [8];
+  undefined1 local_480 [8];
+  undefined1 local_478 [8];
+  undefined1 local_470 [8];
+  undefined1 local_468 [8];
+  undefined1 local_460 [8];
+  undefined1 local_458 [8];
+  undefined1 local_450 [8];
+  undefined1 local_448 [8];
+  undefined1 local_440 [8];
+  undefined1 local_438 [8];
+  undefined1 local_430 [8];
+  undefined1 local_428 [8];
+  undefined1 local_420 [8];
+  undefined1 local_418 [8];
+  undefined1 local_410 [8];
+  undefined1 local_408 [8];
+  undefined1 local_400 [8];
+  undefined1 local_3f8 [8];
+  undefined1 local_3f0 [8];
+  undefined1 local_3e8 [8];
+  undefined1 local_3e0 [8];
+  undefined1 local_3d8 [8];
+  undefined1 local_3d0 [8];
+  undefined1 local_3c8 [8];
+  undefined1 local_3c0 [8];
+  undefined1 local_3b8 [8];
+  undefined1 local_3b0 [8];
+  undefined1 local_3a8 [8];
+  undefined1 local_3a0 [8];
+  undefined1 local_398 [8];
+  undefined1 local_390 [8];
+  undefined1 local_388 [8];
+  undefined1 local_380 [8];
+  undefined1 local_378 [8];
+  undefined1 local_370 [8];
+  undefined1 local_368 [8];
+  undefined1 local_360 [8];
+  undefined1 local_358 [8];
+  undefined1 local_350 [8];
+  undefined1 local_348 [8];
+  undefined1 local_340 [8];
+  undefined1 local_338 [8];
+  undefined1 local_330 [8];
+  undefined1 local_328 [8];
+  undefined1 local_320 [8];
+  undefined1 local_318 [8];
+  undefined1 local_310 [8];
+  undefined1 local_308 [8];
+  undefined1 local_300 [8];
+  undefined1 local_2f8 [8];
+  undefined1 local_2f0 [8];
+  undefined1 local_2e8 [8];
+  undefined1 local_2e0 [8];
+  undefined1 local_2d8 [8];
+  undefined1 local_2d0 [8];
+  undefined1 local_2c8 [8];
+  undefined1 local_2c0 [8];
+  undefined1 local_2b8 [8];
+  undefined1 local_2b0 [8];
+  undefined1 local_2a8 [8];
+  undefined1 local_2a0 [8];
+  undefined1 local_298 [8];
+  undefined1 local_290 [8];
+  undefined1 local_288 [8];
+  undefined1 local_280 [8];
+  undefined1 local_278 [8];
+  undefined1 local_270 [8];
+  undefined1 local_268 [8];
+  undefined1 local_260 [8];
+  undefined1 local_258 [8];
+  undefined1 local_250 [8];
+  undefined1 local_248 [8];
+  undefined1 local_240 [8];
+  undefined1 local_238 [8];
+  undefined1 local_230 [8];
+  undefined1 local_228 [8];
+  undefined1 local_220 [8];
+  undefined1 local_218 [8];
+  undefined1 local_210 [8];
+  undefined1 local_208 [8];
+  undefined1 local_200 [8];
+  undefined1 local_1f8 [8];
+  undefined1 local_1f0 [8];
+  undefined1 local_1e8 [8];
+  undefined1 local_1e0 [8];
+  undefined1 local_1d8 [8];
+  undefined1 local_1d0 [8];
+  undefined1 local_1c8 [8];
+  undefined1 local_1c0 [8];
+  undefined1 local_1b8 [8];
+  undefined1 local_1b0 [8];
+  undefined1 local_1a8 [8];
+  undefined1 local_1a0 [8];
+  undefined1 local_198 [8];
+  undefined1 local_190 [8];
+  undefined1 local_188 [8];
+  undefined1 local_180 [8];
+  undefined1 local_178 [8];
+  undefined1 local_170 [8];
+  undefined1 local_168 [8];
+  undefined1 local_160 [8];
+  undefined1 local_158 [8];
+  undefined1 local_150 [8];
+  undefined1 local_148 [8];
+  undefined1 local_140 [8];
+  undefined1 local_138 [8];
+  undefined1 local_130 [8];
+  undefined1 local_128 [8];
+  undefined1 local_120 [8];
+  undefined1 local_118 [8];
+  undefined1 local_110 [8];
+  undefined1 local_108 [8];
+  undefined1 local_100 [8];
+  undefined1 local_f8 [8];
+  undefined1 local_f0 [8];
+  undefined1 local_e8 [8];
+  undefined1 local_e0 [8];
+  undefined1 local_d8 [8];
+  undefined1 local_d0 [8];
+  undefined1 local_c8 [8];
+  undefined1 local_c0 [8];
+  undefined1 local_b8 [8];
+  undefined1 local_b0 [8];
+  undefined1 local_a8 [8];
+  undefined1 local_a0 [8];
+  undefined1 local_98 [8];
+  undefined1 local_90 [8];
+  undefined1 local_88 [8];
+  int local_80;
+  undefined4 local_7c;
+  undefined2 local_64;
+  uint local_40;
+  int local_3c;
+  int local_38;
+  int local_34;
+  undefined1 local_2c [8];
+  undefined1 local_24 [11];
+  char local_19;
+  undefined1 local_18 [8];
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00968d3b;
+  local_10 = ExceptionList;
+  local_40 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  FUN_00736240(local_40);
+  local_8 = 0;
+  FUN_00733540();
+  local_8._0_1_ = 1;
+  FUN_00734270(local_18,&DAT_00986b94,DAT_00a7ea88);
+  FUN_00733570();
+  local_8._0_1_ = 2;
+  FUN_00733570();
+  local_8._0_1_ = 3;
+  FUN_00733570();
+  local_8._0_1_ = 4;
+  FUN_00736350(local_18,local_98,local_90,local_88);
+  local_8._0_1_ = 3;
+  FUN_00733780();
+  local_8._0_1_ = 2;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 8) >> 5 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 5;
+  FUN_00733570();
+  local_8._0_1_ = 6;
+  FUN_00733570();
+  local_8._0_1_ = 7;
+  FUN_00736350(local_18,local_b0,local_a8,local_a0);
+  local_8._0_1_ = 6;
+  FUN_00733780();
+  local_8._0_1_ = 5;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 8) >> 3 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 8;
+  FUN_00733570();
+  local_8._0_1_ = 9;
+  FUN_00733570();
+  local_8._0_1_ = 10;
+  FUN_00736350(local_18,local_c8,local_c0,local_b8);
+  local_8._0_1_ = 9;
+  FUN_00733780();
+  local_8._0_1_ = 8;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0xb;
+  FUN_00733570();
+  local_8._0_1_ = 0xc;
+  FUN_00733570();
+  local_8._0_1_ = 0xd;
+  FUN_00736350(local_18,local_e0,local_d8,local_d0);
+  local_8._0_1_ = 0xc;
+  FUN_00733780();
+  local_8._0_1_ = 0xb;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0xe;
+  FUN_00733570();
+  local_8._0_1_ = 0xf;
+  FUN_00733570();
+  local_8._0_1_ = 0x10;
+  FUN_00736350(local_18,local_f8,local_f0,local_e8);
+  local_8._0_1_ = 0xf;
+  FUN_00733780();
+  local_8._0_1_ = 0xe;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x11;
+  FUN_00733570();
+  local_8._0_1_ = 0x12;
+  FUN_00733570();
+  local_8._0_1_ = 0x13;
+  FUN_00736350(local_18,local_110,local_108,local_100);
+  local_8._0_1_ = 0x12;
+  FUN_00733780();
+  local_8._0_1_ = 0x11;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x14;
+  FUN_00733570();
+  local_8._0_1_ = 0x15;
+  FUN_00733570();
+  local_8._0_1_ = 0x16;
+  FUN_00736350(local_18,local_128,local_120,local_118);
+  local_8._0_1_ = 0x15;
+  FUN_00733780();
+  local_8._0_1_ = 0x14;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x17;
+  FUN_00733570();
+  local_8._0_1_ = 0x18;
+  FUN_00733570();
+  local_8._0_1_ = 0x19;
+  FUN_00736350(local_18,local_140,local_138,local_130);
+  local_8._0_1_ = 0x18;
+  FUN_00733780();
+  local_8._0_1_ = 0x17;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x1a;
+  FUN_00733570();
+  local_8._0_1_ = 0x1b;
+  FUN_00733570();
+  local_8._0_1_ = 0x1c;
+  FUN_00736350(local_18,local_158,local_150,local_148);
+  local_8._0_1_ = 0x1b;
+  FUN_00733780();
+  local_8._0_1_ = 0x1a;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x1d;
+  FUN_00733570();
+  local_8._0_1_ = 0x1e;
+  FUN_00733570();
+  local_8._0_1_ = 0x1f;
+  FUN_00736350(local_18,local_170,local_168,local_160);
+  local_8._0_1_ = 0x1e;
+  FUN_00733780();
+  local_8._0_1_ = 0x1d;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x20;
+  FUN_00733570();
+  local_8._0_1_ = 0x21;
+  FUN_00733570();
+  local_8._0_1_ = 0x22;
+  FUN_00736350(local_18,local_188,local_180,local_178);
+  local_8._0_1_ = 0x21;
+  FUN_00733780();
+  local_8._0_1_ = 0x20;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x23;
+  FUN_00733570();
+  local_8._0_1_ = 0x24;
+  FUN_00733570();
+  local_8._0_1_ = 0x25;
+  FUN_00736350(local_18,local_1a0,local_198,local_190);
+  local_8._0_1_ = 0x24;
+  FUN_00733780();
+  local_8._0_1_ = 0x23;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x26;
+  FUN_00733570();
+  local_8._0_1_ = 0x27;
+  FUN_00733570();
+  local_8._0_1_ = 0x28;
+  FUN_00736350(local_18,local_1b8,local_1b0,local_1a8);
+  local_8._0_1_ = 0x27;
+  FUN_00733780();
+  local_8._0_1_ = 0x26;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x29;
+  FUN_00733570();
+  local_8._0_1_ = 0x2a;
+  FUN_00733570();
+  local_8._0_1_ = 0x2b;
+  FUN_00736350(local_18,local_1d0,local_1c8,local_1c0);
+  local_8._0_1_ = 0x2a;
+  FUN_00733780();
+  local_8._0_1_ = 0x29;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 3 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x2c;
+  FUN_00733570();
+  local_8._0_1_ = 0x2d;
+  FUN_00733570();
+  local_8._0_1_ = 0x2e;
+  FUN_00736350(local_18,local_1e8,local_1e0,local_1d8);
+  local_8._0_1_ = 0x2d;
+  FUN_00733780();
+  local_8._0_1_ = 0x2c;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 2 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x2f;
+  FUN_00733570();
+  local_8._0_1_ = 0x30;
+  FUN_00733570();
+  local_8._0_1_ = 0x31;
+  FUN_00736350(local_18,local_200,local_1f8,local_1f0);
+  local_8._0_1_ = 0x30;
+  FUN_00733780();
+  local_8._0_1_ = 0x2f;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x32;
+  FUN_00733570();
+  local_8._0_1_ = 0x33;
+  FUN_00733570();
+  local_8._0_1_ = 0x34;
+  FUN_00736350(local_18,local_218,local_210,local_208);
+  local_8._0_1_ = 0x33;
+  FUN_00733780();
+  local_8._0_1_ = 0x32;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x35;
+  FUN_00733570();
+  local_8._0_1_ = 0x36;
+  FUN_00733570();
+  local_8._0_1_ = 0x37;
+  FUN_00736350(local_18,local_230,local_228,local_220);
+  local_8._0_1_ = 0x36;
+  FUN_00733780();
+  local_8._0_1_ = 0x35;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 8 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x38;
+  FUN_00733570();
+  local_8._0_1_ = 0x39;
+  FUN_00733570();
+  local_8._0_1_ = 0x3a;
+  FUN_00736350(local_18,local_248,local_240,local_238);
+  local_8._0_1_ = 0x39;
+  FUN_00733780();
+  local_8._0_1_ = 0x38;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 9 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x3b;
+  FUN_00733570();
+  local_8._0_1_ = 0x3c;
+  FUN_00733570();
+  local_8._0_1_ = 0x3d;
+  FUN_00736350(local_18,local_260,local_258,local_250);
+  local_8._0_1_ = 0x3c;
+  FUN_00733780();
+  local_8._0_1_ = 0x3b;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  local_19 = '\0';
+  FUN_00733570();
+  local_8 = CONCAT31(local_8._1_3_,0x3e);
+  if (*(int *)(DAT_00a1b4a4 + 8) == 0) {
+    FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x14));
+  }
+  else {
+    uVar4 = CONCAT44(&local_19,local_2c);
+    FUN_0051c890(local_2c,&local_19);
+    FUN_00654860(uVar4);
+    FUN_00734270(local_18,&DAT_00986b94,(int)local_19);
+  }
+  FUN_00733570();
+  local_8._0_1_ = 0x3f;
+  FUN_00733570();
+  local_8._0_1_ = 0x40;
+  FUN_00733570();
+  local_8._0_1_ = 0x41;
+  FUN_00736350(local_18,local_278,local_270,local_268);
+  local_8._0_1_ = 0x40;
+  FUN_00733780();
+  local_8._0_1_ = 0x3f;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x15));
+  FUN_00733570();
+  local_8._0_1_ = 0x42;
+  FUN_00733570();
+  local_8._0_1_ = 0x43;
+  FUN_00733570();
+  local_8._0_1_ = 0x44;
+  FUN_00736350(local_18,local_290,local_288,local_280);
+  local_8._0_1_ = 0x43;
+  FUN_00733780();
+  local_8._0_1_ = 0x42;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  if (*(int *)(DAT_00a1b4a4 + 8) == 0) {
+    FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x16));
+    FUN_00733570();
+    local_8._0_1_ = 0x45;
+    FUN_00733570();
+    local_8._0_1_ = 0x46;
+    FUN_00733570();
+    local_8._0_1_ = 0x47;
+    FUN_00736350(local_18,local_2a8,local_2a0,local_298);
+    local_8._0_1_ = 0x46;
+    FUN_00733780();
+    local_8._0_1_ = 0x45;
+    FUN_00733780();
+    local_8._0_1_ = 0x3e;
+    FUN_00733780();
+    FUN_00734270(local_18,&DAT_00986b94,*(undefined2 *)(param_1 + 0x18));
+    FUN_00733570();
+    local_8._0_1_ = 0x48;
+    FUN_00733570();
+    local_8._0_1_ = 0x49;
+    FUN_00733570();
+    local_8._0_1_ = 0x4a;
+    FUN_00736350(local_18,local_2c0,local_2b8,local_2b0);
+    local_8._0_1_ = 0x49;
+    FUN_00733780();
+    local_8._0_1_ = 0x48;
+    FUN_00733780();
+    local_8._0_1_ = 0x3e;
+    FUN_00733780();
+    FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x1a));
+    FUN_00733570();
+    local_8._0_1_ = 0x4b;
+    FUN_00733570();
+    local_8._0_1_ = 0x4c;
+    FUN_00733570();
+    local_8._0_1_ = 0x4d;
+    FUN_00736350(local_18,local_2d8,local_2d0,local_2c8);
+    local_8._0_1_ = 0x4c;
+    FUN_00733780();
+    local_8._0_1_ = 0x4b;
+    FUN_00733780();
+    local_8._0_1_ = 0x3e;
+    FUN_00733780();
+    FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x1b));
+    FUN_00733570();
+    local_8._0_1_ = 0x4e;
+    FUN_00733570();
+    local_8._0_1_ = 0x4f;
+    FUN_00733570();
+    local_8._0_1_ = 0x50;
+    FUN_00736350(local_18,local_2f0,local_2e8,local_2e0);
+    local_8._0_1_ = 0x4f;
+    FUN_00733780();
+    local_8._0_1_ = 0x4e;
+    FUN_00733780();
+    local_8 = CONCAT31(local_8._1_3_,0x3e);
+    FUN_00733780();
+  }
+  else {
+    FUN_0073fb90();
+    local_38 = FUN_007e5d80();
+    local_34 = 0;
+    if (local_38 != 0) {
+      local_3c = FUN_0077d800();
+      if ((local_3c != 0) && (*(int *)(local_3c + 0x1200) != 0)) {
+        local_34 = 1;
+      }
+      if (2 < *(byte *)(param_1 + 0x15)) {
+        local_34 = 1;
+      }
+    }
+    if (local_34 == 0) {
+      FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x16));
+      FUN_00733570();
+      local_8._0_1_ = 0x5d;
+      FUN_00733570();
+      local_8._0_1_ = 0x5e;
+      FUN_00733570();
+      local_8._0_1_ = 0x5f;
+      FUN_00736350(local_18,local_368,local_360,local_358);
+      local_8._0_1_ = 0x5e;
+      FUN_00733780();
+      local_8._0_1_ = 0x5d;
+      FUN_00733780();
+      local_8._0_1_ = 0x3e;
+      FUN_00733780();
+      FUN_00734270(local_18,&DAT_00986b94,*(undefined2 *)(param_1 + 0x18));
+      FUN_00733570();
+      local_8._0_1_ = 0x60;
+      FUN_00733570();
+      local_8._0_1_ = 0x61;
+      FUN_00733570();
+      local_8._0_1_ = 0x62;
+      FUN_00736350(local_18,local_380,local_378,local_370);
+      local_8._0_1_ = 0x61;
+      FUN_00733780();
+      local_8._0_1_ = 0x60;
+      FUN_00733780();
+      local_8._0_1_ = 0x3e;
+      FUN_00733780();
+      FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x1a));
+      FUN_00733570();
+      local_8._0_1_ = 99;
+      FUN_00733570();
+      local_8._0_1_ = 100;
+      FUN_00733570();
+      local_8._0_1_ = 0x65;
+      FUN_00736350(local_18,local_398,local_390,local_388);
+      local_8._0_1_ = 100;
+      FUN_00733780();
+      local_8._0_1_ = 99;
+      FUN_00733780();
+      local_8._0_1_ = 0x3e;
+      FUN_00733780();
+      FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x1b));
+      FUN_00733570();
+      local_8._0_1_ = 0x66;
+      FUN_00733570();
+      local_8._0_1_ = 0x67;
+      FUN_00733570();
+      local_8._0_1_ = 0x68;
+      FUN_00736350(local_18,local_3b0,local_3a8,local_3a0);
+      local_8._0_1_ = 0x67;
+      FUN_00733780();
+      local_8._0_1_ = 0x66;
+      FUN_00733780();
+      local_8 = CONCAT31(local_8._1_3_,0x3e);
+      FUN_00733780();
+    }
+    else {
+      FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(*(int *)(local_38 + 0x310) + 0x31));
+      FUN_00733570();
+      local_8._0_1_ = 0x51;
+      FUN_00733570();
+      local_8._0_1_ = 0x52;
+      FUN_00733570();
+      local_8._0_1_ = 0x53;
+      FUN_00736350(local_18,local_308,local_300,local_2f8);
+      local_8._0_1_ = 0x52;
+      FUN_00733780();
+      local_8._0_1_ = 0x51;
+      FUN_00733780();
+      local_8 = CONCAT31(local_8._1_3_,0x3e);
+      FUN_00733780();
+      puVar2 = *(undefined4 **)(local_38 + 0x224);
+      puVar3 = &local_7c;
+      for (iVar1 = 0xf; iVar1 != 0; iVar1 = iVar1 + -1) {
+        *puVar3 = *puVar2;
+        puVar2 = puVar2 + 1;
+        puVar3 = puVar3 + 1;
+      }
+      FUN_00734270(local_18,&DAT_00986b94,local_64);
+      FUN_00733570();
+      local_8._0_1_ = 0x54;
+      FUN_00733570();
+      local_8._0_1_ = 0x55;
+      FUN_00733570();
+      local_8._0_1_ = 0x56;
+      FUN_00736350(local_18,local_320,local_318,local_310);
+      local_8._0_1_ = 0x55;
+      FUN_00733780();
+      local_8._0_1_ = 0x54;
+      FUN_00733780();
+      local_8._0_1_ = 0x3e;
+      FUN_00733780();
+      FUN_00734270(local_18,&DAT_00986b94,(undefined1)local_7c);
+      FUN_00733570();
+      local_8._0_1_ = 0x57;
+      FUN_00733570();
+      local_8._0_1_ = 0x58;
+      FUN_00733570();
+      local_8._0_1_ = 0x59;
+      FUN_00736350(local_18,local_338,local_330,local_328);
+      local_8._0_1_ = 0x58;
+      FUN_00733780();
+      local_8._0_1_ = 0x57;
+      FUN_00733780();
+      local_8._0_1_ = 0x3e;
+      FUN_00733780();
+      FUN_00734270(local_18,&DAT_00986b94,local_7c._1_1_);
+      FUN_00733570();
+      local_8._0_1_ = 0x5a;
+      FUN_00733570();
+      local_8._0_1_ = 0x5b;
+      FUN_00733570();
+      local_8._0_1_ = 0x5c;
+      FUN_00736350(local_18,local_350,local_348,local_340);
+      local_8._0_1_ = 0x5b;
+      FUN_00733780();
+      local_8._0_1_ = 0x5a;
+      FUN_00733780();
+      local_8 = CONCAT31(local_8._1_3_,0x3e);
+      FUN_00733780();
+    }
+  }
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 0x10 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x69;
+  FUN_00733570();
+  local_8._0_1_ = 0x6a;
+  FUN_00733570();
+  local_8._0_1_ = 0x6b;
+  FUN_00736350(local_18,local_3c8,local_3c0,local_3b8);
+  local_8._0_1_ = 0x6a;
+  FUN_00733780();
+  local_8._0_1_ = 0x69;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 0xf & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x6c;
+  FUN_00733570();
+  local_8._0_1_ = 0x6d;
+  FUN_00733570();
+  local_8._0_1_ = 0x6e;
+  FUN_00736350(local_18,local_3e0,local_3d8,local_3d0);
+  local_8._0_1_ = 0x6d;
+  FUN_00733780();
+  local_8._0_1_ = 0x6c;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 0xe & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0x6f;
+  FUN_00733570();
+  local_8._0_1_ = 0x70;
+  FUN_00733570();
+  local_8._0_1_ = 0x71;
+  FUN_00736350(local_18,local_3f8,local_3f0,local_3e8);
+  local_8._0_1_ = 0x70;
+  FUN_00733780();
+  local_8._0_1_ = 0x6f;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x72;
+  FUN_00733570();
+  local_8._0_1_ = 0x73;
+  FUN_00733570();
+  local_8._0_1_ = 0x74;
+  FUN_00736350(local_18,local_410,local_408,local_400);
+  local_8._0_1_ = 0x73;
+  FUN_00733780();
+  local_8._0_1_ = 0x72;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x75;
+  FUN_00733570();
+  local_8._0_1_ = 0x76;
+  FUN_00733570();
+  local_8._0_1_ = 0x77;
+  FUN_00736350(local_18,local_428,local_420,local_418);
+  local_8._0_1_ = 0x76;
+  FUN_00733780();
+  local_8._0_1_ = 0x75;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x78;
+  FUN_00733570();
+  local_8._0_1_ = 0x79;
+  FUN_00733570();
+  local_8._0_1_ = 0x7a;
+  FUN_00736350(local_18,local_440,local_438,local_430);
+  local_8._0_1_ = 0x79;
+  FUN_00733780();
+  local_8._0_1_ = 0x78;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x7b;
+  FUN_00733570();
+  local_8._0_1_ = 0x7c;
+  FUN_00733570();
+  local_8._0_1_ = 0x7d;
+  FUN_00736350(local_18,local_458,local_450,local_448);
+  local_8._0_1_ = 0x7c;
+  FUN_00733780();
+  local_8._0_1_ = 0x7b;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x7e;
+  FUN_00733570();
+  local_8._0_1_ = 0x7f;
+  FUN_00733570();
+  local_8._0_1_ = 0x80;
+  FUN_00736350(local_18,local_470,local_468,local_460);
+  local_8._0_1_ = 0x7f;
+  FUN_00733780();
+  local_8._0_1_ = 0x7e;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x81;
+  FUN_00733570();
+  local_8._0_1_ = 0x82;
+  FUN_00733570();
+  local_8._0_1_ = 0x83;
+  FUN_00736350(local_18,local_488,local_480,local_478);
+  local_8._0_1_ = 0x82;
+  FUN_00733780();
+  local_8._0_1_ = 0x81;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x84;
+  FUN_00733570();
+  local_8._0_1_ = 0x85;
+  FUN_00733570();
+  local_8._0_1_ = 0x86;
+  FUN_00736350(local_18,local_4a0,local_498,local_490);
+  local_8._0_1_ = 0x85;
+  FUN_00733780();
+  local_8._0_1_ = 0x84;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x87;
+  FUN_00733570();
+  local_8._0_1_ = 0x88;
+  FUN_00733570();
+  local_8._0_1_ = 0x89;
+  FUN_00736350(local_18,local_4b8,local_4b0,local_4a8);
+  local_8._0_1_ = 0x88;
+  FUN_00733780();
+  local_8._0_1_ = 0x87;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x8a;
+  FUN_00733570();
+  local_8._0_1_ = 0x8b;
+  FUN_00733570();
+  local_8._0_1_ = 0x8c;
+  FUN_00736350(local_18,local_4d0,local_4c8,local_4c0);
+  local_8._0_1_ = 0x8b;
+  FUN_00733780();
+  local_8._0_1_ = 0x8a;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x8d;
+  FUN_00733570();
+  local_8._0_1_ = 0x8e;
+  FUN_00733570();
+  local_8._0_1_ = 0x8f;
+  FUN_00736350(local_18,local_4e8,local_4e0,local_4d8);
+  local_8._0_1_ = 0x8e;
+  FUN_00733780();
+  local_8._0_1_ = 0x8d;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x90;
+  FUN_00733570();
+  local_8._0_1_ = 0x91;
+  FUN_00733570();
+  local_8._0_1_ = 0x92;
+  FUN_00736350(local_18,local_500,local_4f8,local_4f0);
+  local_8._0_1_ = 0x91;
+  FUN_00733780();
+  local_8._0_1_ = 0x90;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x93;
+  FUN_00733570();
+  local_8._0_1_ = 0x94;
+  FUN_00733570();
+  local_8._0_1_ = 0x95;
+  FUN_00736350(local_18,local_518,local_510,local_508);
+  local_8._0_1_ = 0x94;
+  FUN_00733780();
+  local_8._0_1_ = 0x93;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x96;
+  FUN_00733570();
+  local_8._0_1_ = 0x97;
+  FUN_00733570();
+  local_8._0_1_ = 0x98;
+  FUN_00736350(local_18,local_530,local_528,local_520);
+  local_8._0_1_ = 0x97;
+  FUN_00733780();
+  local_8._0_1_ = 0x96;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x99;
+  FUN_00733570();
+  local_8._0_1_ = 0x9a;
+  FUN_00733570();
+  local_8._0_1_ = 0x9b;
+  FUN_00736350(local_18,local_548,local_540,local_538);
+  local_8._0_1_ = 0x9a;
+  FUN_00733780();
+  local_8._0_1_ = 0x99;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x9c;
+  FUN_00733570();
+  local_8._0_1_ = 0x9d;
+  FUN_00733570();
+  local_8._0_1_ = 0x9e;
+  FUN_00736350(local_18,local_560,local_558,local_550);
+  local_8._0_1_ = 0x9d;
+  FUN_00733780();
+  local_8._0_1_ = 0x9c;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94);
+  FUN_00733570();
+  local_8._0_1_ = 0x9f;
+  FUN_00733570();
+  local_8._0_1_ = 0xa0;
+  FUN_00733570();
+  local_8._0_1_ = 0xa1;
+  FUN_00736350(local_18,local_578,local_570,local_568);
+  local_8._0_1_ = 0xa0;
+  FUN_00733780();
+  local_8._0_1_ = 0x9f;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(undefined1 *)(param_1 + 0x4d));
+  FUN_00733570();
+  local_8._0_1_ = 0xa2;
+  FUN_00733570();
+  local_8._0_1_ = 0xa3;
+  FUN_00733570();
+  local_8._0_1_ = 0xa4;
+  FUN_00736350(local_18,local_590,local_588,local_580);
+  local_8._0_1_ = 0xa3;
+  FUN_00733780();
+  local_8._0_1_ = 0xa2;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  FUN_00733540();
+  local_8._0_1_ = 0xa5;
+  for (local_80 = 0; local_80 < 0xb; local_80 = local_80 + 1) {
+    FUN_00734270(local_24,"Movie%2d",local_80);
+    FUN_00734270(local_18,&DAT_00986b94);
+    FUN_00734010();
+    FUN_00733570();
+    local_8._0_1_ = 0xa6;
+    FUN_00733570();
+    local_8._0_1_ = 0xa7;
+    FUN_00733570();
+    local_8._0_1_ = 0xa8;
+    FUN_00736350(local_18,local_5a8,local_5a0,local_598);
+    local_8._0_1_ = 0xa7;
+    FUN_00733780();
+    local_8._0_1_ = 0xa6;
+    FUN_00733780();
+    local_8._0_1_ = 0xa5;
+    FUN_00733780();
+  }
+  FUN_00734270(local_18,&DAT_0098bd3c,(double)*(float *)(param_1 + 0x9c));
+  FUN_00733570();
+  local_8._0_1_ = 0xa9;
+  FUN_00733570();
+  local_8._0_1_ = 0xaa;
+  FUN_00733570();
+  local_8._0_1_ = 0xab;
+  FUN_00736350(local_18,local_5c0,local_5b8,local_5b0);
+  local_8._0_1_ = 0xaa;
+  FUN_00733780();
+  local_8._0_1_ = 0xa9;
+  FUN_00733780();
+  local_8._0_1_ = 0xa5;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_0098bd3c,(double)*(float *)(param_1 + 0xa0));
+  FUN_00733570();
+  local_8._0_1_ = 0xac;
+  FUN_00733570();
+  local_8._0_1_ = 0xad;
+  FUN_00733570();
+  local_8._0_1_ = 0xae;
+  FUN_00736350(local_18,local_5d8,local_5d0,local_5c8);
+  local_8._0_1_ = 0xad;
+  FUN_00733780();
+  local_8._0_1_ = 0xac;
+  FUN_00733780();
+  local_8._0_1_ = 0xa5;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_0098bd3c,(double)*(float *)(param_1 + 0xa4));
+  FUN_00733570();
+  local_8._0_1_ = 0xaf;
+  FUN_00733570();
+  local_8._0_1_ = 0xb0;
+  FUN_00733570();
+  local_8._0_1_ = 0xb1;
+  FUN_00736350(local_18,local_5f0,local_5e8,local_5e0);
+  local_8._0_1_ = 0xb0;
+  FUN_00733780();
+  local_8._0_1_ = 0xaf;
+  FUN_00733780();
+  local_8._0_1_ = 0xa5;
+  FUN_00733780();
+  FUN_00734270(local_18,&DAT_00986b94,*(uint *)(param_1 + 0x1c) >> 10 & 1);
+  FUN_00733570();
+  local_8._0_1_ = 0xb2;
+  FUN_00733570();
+  local_8._0_1_ = 0xb3;
+  FUN_00733570();
+  local_8._0_1_ = 0xb4;
+  FUN_00736350(local_18,local_608,local_600,local_5f8);
+  local_8._0_1_ = 0xb3;
+  FUN_00733780();
+  local_8._0_1_ = 0xb2;
+  FUN_00733780();
+  local_8._0_1_ = 0xa5;
+  FUN_00733780();
+  local_8._0_1_ = 0x3e;
+  FUN_00733780();
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  local_8 = (uint)local_8._1_3_ << 8;
+  FUN_00733780();
+  local_8 = 0xffffffff;
+  FUN_007362c0();
+  ExceptionList = local_10;
+  __security_check_cookie(local_40 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
+=== DECOMP FUN_008df930 @ 008df930
+
+undefined4 * __thiscall FUN_008df930(undefined4 *param_1,undefined4 param_2)
+
+{
+  uint uVar1;
+  float10 fVar2;
+  undefined1 local_e0 [8];
+  undefined1 local_d8 [8];
+  undefined1 local_d0 [8];
+  undefined1 local_c8 [8];
+  undefined1 local_c0 [8];
+  undefined1 local_b8 [8];
+  undefined1 local_b0 [8];
+  undefined1 local_a8 [8];
+  undefined1 local_a0 [8];
+  undefined1 local_98 [8];
+  undefined1 local_90 [8];
+  undefined1 local_88 [8];
+  undefined1 local_80 [8];
+  undefined1 local_78 [8];
+  undefined1 local_70 [8];
+  undefined1 local_68 [8];
+  undefined1 local_60 [8];
+  undefined1 local_58 [8];
+  undefined1 local_50 [8];
+  undefined1 local_48 [8];
+  undefined1 local_40 [8];
+  undefined1 local_38 [16];
+  int local_28;
+  float local_24;
+  undefined4 local_20;
+  undefined4 local_1c;
+  undefined4 local_18;
+  undefined4 local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0097d894;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  FUN_0040e5a0(param_2);
+  local_8 = 0;
+  *param_1 = CSWGuiInGameGameplay::vftable;
+  FUN_00419740(uVar1);
+  local_8._0_1_ = 1;
+  FUN_00419740();
+  local_8._0_1_ = 2;
+  FUN_0041ce90();
+  local_8._0_1_ = 3;
+  FUN_0041a510();
+  local_8._0_1_ = 4;
+  FUN_0041a510();
+  local_8._0_1_ = 5;
+  FUN_0041a510();
+  local_8._0_1_ = 6;
+  FUN_0041a510();
+  local_8._0_1_ = 7;
+  FUN_0041a510();
+  local_8._0_1_ = 8;
+  FUN_0041a510();
+  local_8._0_1_ = 9;
+  FUN_0041a510();
+  local_8._0_1_ = 10;
+  FUN_0041a330();
+  param_1[0x4a6] = CSWGuiOptionsCheckbox::vftable;
+  local_8._0_1_ = 0xb;
+  FUN_0041a330();
+  param_1[0x558] = CSWGuiOptionsCheckbox::vftable;
+  local_8._0_1_ = 0xc;
+  FUN_0041a330();
+  param_1[0x60a] = CSWGuiOptionsCheckbox::vftable;
+  local_8._0_1_ = 0xd;
+  FUN_0041a330();
+  param_1[0x6bc] = CSWGuiOptionsCheckbox::vftable;
+  local_8._0_1_ = 0xe;
+  FUN_0041a330();
+  param_1[0x76e] = CSWGuiOptionsCheckbox::vftable;
+  local_8._0_1_ = 0xf;
+  FUN_0041a330();
+  param_1[0x820] = CSWGuiOptionsCheckbox::vftable;
+  local_8._0_1_ = 0x10;
+  FUN_0041ab60();
+  local_8._0_1_ = 0x11;
+  FUN_00419740();
+  local_8._0_1_ = 0x12;
+  _eh_vector_constructor_iterator_
+            (param_1 + 0x995,0x148,4,FUN_00419740,
+             CMFCToolBarButtonsListButton::~CMFCToolBarButtonsListButton);
+  local_8._0_1_ = 0x13;
+  FUN_00710840("optgameplay_p");
+  FUN_0040ee40(local_38,1,1);
+  FUN_00733570("BTN_DIFFICULTY");
+  local_8._0_1_ = 0x14;
+  FUN_0040f620(param_1 + 0x34a,local_40,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("CB_LEVELUP");
+  local_8._0_1_ = 0x15;
+  FUN_0040f620(param_1 + 0x4a6,local_48,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("CB_AUTOSAVE");
+  local_8._0_1_ = 0x16;
+  FUN_0040f620(param_1 + 0x60a,local_50,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("CB_REVERSE");
+  local_8._0_1_ = 0x17;
+  FUN_0040f620(param_1 + 0x6bc,local_58,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("CB_REVERSE_INGAME");
+  local_8._0_1_ = 0x18;
+  FUN_0040f620(param_1 + 0x76e,local_60,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("CB_DISABLEMOVE");
+  local_8._0_1_ = 0x19;
+  FUN_0040f620(param_1 + 0x820,local_68,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LBL_TITLE");
+  local_8._0_1_ = 0x1a;
+  FUN_0040f620(param_1 + 0x6c,local_70,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LB_DESC");
+  local_8._0_1_ = 0x1b;
+  FUN_0040f620(param_1 + 0xbe,local_78,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("CB_INVERTCAM");
+  local_8._0_1_ = 0x1c;
+  FUN_0040f620(param_1 + 0x558,local_80,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("BTN_DIFFRIGHT");
+  local_8._0_1_ = 0x1d;
+  FUN_0040f620(param_1 + 0x3be,local_88,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("BTN_DIFFLEFT");
+  local_8._0_1_ = 0x1e;
+  FUN_0040f620(param_1 + 0x432,local_90,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("SLI_MOUSESEN");
+  local_8._0_1_ = 0x1f;
+  FUN_0040f620(param_1 + 0x8d2,local_98,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LBL_MOUSESEN");
+  local_8._0_1_ = 0x20;
+  FUN_0040f620(param_1 + 0x943,local_a0,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("BTN_BACK");
+  local_8._0_1_ = 0x21;
+  FUN_0040f620(param_1 + 0x17a,local_a8,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("BTN_DEFAULT");
+  local_8._0_1_ = 0x22;
+  FUN_0040f620(param_1 + 0x1ee,local_b0,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("BTN_KEYMAP");
+  local_8._0_1_ = 0x23;
+  FUN_0040f620(param_1 + 0x262,local_b8,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("BTN_MOUSE");
+  local_8._0_1_ = 0x24;
+  FUN_0040f620(param_1 + 0x2d6,local_c0,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR1");
+  local_8._0_1_ = 0x25;
+  FUN_0040f620(param_1 + 0x995,local_c8,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR2");
+  local_8._0_1_ = 0x26;
+  FUN_0040f620(param_1 + 0x9e7,local_d0,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR3");
+  local_8._0_1_ = 0x27;
+  FUN_0040f620(param_1 + 0xa39,local_d8,1,1);
+  local_8._0_1_ = 0x13;
+  FUN_00733780();
+  FUN_00733570("LBL_BAR4");
+  local_8._0_1_ = 0x28;
+  FUN_0040f620(param_1 + 0xa8b,local_e0,1,1);
+  local_8 = CONCAT31(local_8._1_3_,0x13);
+  FUN_00733780();
+  *(undefined1 *)((int)param_1 + 0x5c9) = 1;
+  FUN_0040f5a0();
+  FUN_007d2360(param_1 + 0x1ee);
+  local_28 = param_1[0x175];
+  fVar2 = (float10)FUN_00479ab0();
+  local_24 = (float)fVar2;
+  local_20 = *(undefined4 *)(local_28 + 4);
+  local_1c = *(undefined4 *)(local_28 + 8);
+  local_18 = *(undefined4 *)(local_28 + 0xc);
+  local_14 = *(undefined4 *)(local_28 + 0x10);
+  local_14 = FUN_0091c860();
+  (**(code **)(param_1[0x1a] + 0x98))(&local_20,local_28,0x3f800000);
+  FUN_00418af0(0x2f,param_1,FUN_008e1140);
+  FUN_00418af0(0x30,param_1,FUN_008e11c0);
+  FUN_00418af0(0x3f,param_1,FUN_008e1140);
+  FUN_00418af0(0x40,param_1,FUN_008e11c0);
+  FUN_00418af0(0,param_1,FUN_008e1570);
+  FUN_00418af0(1,param_1,FUN_008e15d0);
+  param_1[0x444] = param_1[0x444] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,FUN_008e1140);
+  param_1[0x3d0] = param_1[0x3d0] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,FUN_008e11c0);
+  FUN_00418af0(0x27,param_1,FUN_008e0c50);
+  FUN_00418af0(0x2d,param_1,FUN_008e0c50);
+  FUN_00418af0(0,param_1,FUN_008e0f40);
+  FUN_00418af0(0x27,param_1,FUN_008e0d40);
+  FUN_00418af0(0x2d,param_1,FUN_008e0d40);
+  FUN_00418af0(0,param_1,FUN_008e0f40);
+  FUN_00418af0(0x27,param_1,FUN_008e0cc0);
+  FUN_00418af0(0x2d,param_1,FUN_008e0cc0);
+  FUN_00418af0(0,param_1,FUN_008e0f40);
+  FUN_00418af0(0x27,param_1,FUN_008e0dc0);
+  FUN_00418af0(0x2d,param_1,FUN_008e0dc0);
+  FUN_00418af0(0,param_1,FUN_008e0f40);
+  FUN_00418af0(0x27,param_1,FUN_008e0e40);
+  FUN_00418af0(0x2d,param_1,FUN_008e0e40);
+  FUN_00418af0(0,param_1,FUN_008e0f40);
+  FUN_00418af0(0x27,param_1,FUN_008e0ec0);
+  FUN_00418af0(0x2d,param_1,FUN_008e0ec0);
+  FUN_00418af0(0,param_1,FUN_008e0f40);
+  param_1[0x274] = param_1[0x274] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,FUN_008e0fc0);
+  param_1[0x2e8] = param_1[0x2e8] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,FUN_008e1080);
+  param_1[0x18c] = param_1[0x18c] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,&LAB_00762e90);
+  param_1[0x200] = param_1[0x200] & 0xfffffffb;
+  FUN_00418af0(0x27,param_1,FUN_008e0f70);
+  FUN_00760ea0(param_1 + 0x17a,0x62);
+  FUN_00760ea0(param_1 + 0x1ee,0x79);
+  param_1[0x56f] = 0xbe39;
+  param_1[0x4bd] = 0xa51a;
+  param_1[0x621] = 0x9496;
+  param_1[0x6d3] = 0xbe3b;
+  param_1[0x785] = 0x19ffa;
+  param_1[0x837] = 0xa5f4;
+  param_1[0x2ed] = 0xbe50;
+  param_1[0x279] = 0xbe53;
+  FUN_0040ec00(param_1 + 0x34a,0);
+  FUN_008e1620();
+  ExceptionList = local_10;
+  return param_1;
+}
+
+
