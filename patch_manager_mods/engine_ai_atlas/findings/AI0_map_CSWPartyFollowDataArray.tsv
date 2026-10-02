@@ -1,0 +1,8 @@
+0x007e88a0	0x47b4d0	CSWPartyFollowDataArray::Constructor	vote	retn=0
+0x007e8970	0x47b5a0	CSWPartyFollowDataArray::ResetPath	vote	retn=8
+0x007e89e0	0x47b610	CSWPartyFollowDataArray::GetPathData	vote	retn=4
+0x007e9cc0	0x47c8f0	CSWPartyFollowDataArray::SmoothFollowPath	vote	retn=0
+0x007eab10	0x47d740	CSWPartyFollowDataArray::FindClosestPartyMemeber_Current	vote	retn=0
+0x007eac20	0x47d850	CSWPartyFollowDataArray::FindFurthestPartyMemeber_Current	vote	retn=0
+0x007ead30	0x47d960	CSWPartyFollowDataArray::PointOnLineDistanceFromLeader	vote	retn=8
+0x007eb050	0x47dc80	CSWPartyFollowDataArray::GetPointBackFromStart	vote	retn=16

@@ -1,0 +1,6 @@
+0x0051d100	0x64cb00	CServerAIList::Destructor	vote	retn=0
+0x0051d130	0x64cb20	CServerAIList::Constructor	drift+0x10	retn=0
+0x0051d150	0x64cb50	CServerAIList::AddObject	vote	retn=4
+0x0051d170	0x64cb70	CServerAIList::RemoveObject	vote	retn=4
+0x0051d1c0	0x64cbc0	CServerAIList::GetNextObject	vote	retn=0
+0x0051d270	0x64cc70	CServerAIList::GetObjectAtPosition	vote	retn=4

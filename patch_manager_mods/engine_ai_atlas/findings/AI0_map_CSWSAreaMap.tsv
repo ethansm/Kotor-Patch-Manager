@@ -1,0 +1,14 @@
+0x005f6ab0	0x777df0	CSWSAreaMap::Constructor	vote	retn=0
+0x005f6b50	0x777e90	CSWSAreaMap::Destructor	vote	retn=0
+0x005f6b90	0x777ed0	CSWSAreaMap::Initialize	vote	retn=48
+0x005f6dc0	0x778100	CSWSAreaMap::LoadSavedAreaMapData	vote	retn=16
+0x005f6e20	0x778160	CSWSAreaMap::SetWorldPointExplored	vote	retn=16
+0x005f6f50	0x778290	CSWSAreaMap::SetMapPointExplored	vote	retn=8
+0x005f7010	0x778350	CSWSAreaMap::GetMapData	vote	retn=12
+0x005f71e0	0x778520	CSWSAreaMap::GetGridPixelFromMapPixel	vote	retn=16
+0x005f7280	0x7785c0	CSWSAreaMap::SetPartyMemberWorldLocation	vote	retn=16
+0x005f7300	0x778640	CSWSAreaMap::SetPartyMemberWorldOrientation	vote	retn=16
+0x005f7350	0x778690	CSWSAreaMap::GetPartyMemberMapLocation	vote	retn=12
+0x005f73b0	0x7786f0	CSWSAreaMap::GetPartyMemberMapOrientation	vote	retn=4
+0x005f73f0	0x778730	CSWSAreaMap::IsWorldPointExplored	vote	retn=12
+0x005f74e0	0x778820	CSWSAreaMap::SetEntireMapExplored	vote	retn=0

@@ -1,0 +1,11 @@
+0x006fd6b0	0x640860	CVirtualMachineStack::ClearStack	drift+0x90	retn=0
+0x006fe440	0x641680	CVirtualMachineStack::Destructor	vote	retn=0
+0x006fe460	0x6416a0	CVirtualMachineStack::AddToTopOfStack	vote	retn=4
+0x006fe630	0x641870	CVirtualMachineStack::AssignLocationToLocation	vote	retn=8
+0x006fe890	0x641ad0	CVirtualMachineStack::AddToIntegerLocation	vote	retn=8
+0x006fe8e0	0x641b20	CVirtualMachineStack::CopyFromStack	vote	retn=12
+0x006fed80	0x641fc0	CVirtualMachineStack::SaveStack	vote	retn=8
+0x006fef80	0x6421c0	CVirtualMachineStack::LoadStack	vote	retn=8
+0x006ff2a0	0x6424e0	CVirtualMachineStack::ClearStack_2	vote	retn=0
+0x006ff440	0x642680	CVirtualMachineStack::GetStackPointer	vote	retn=0
+0x006ff450	0x642690	CVirtualMachineStack::SetStackPointer	vote	retn=4

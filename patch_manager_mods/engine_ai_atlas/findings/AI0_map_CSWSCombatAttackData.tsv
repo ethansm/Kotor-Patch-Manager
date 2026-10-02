@@ -1,0 +1,16 @@
+0x0058cb70	0x771220	CSWSCombatAttackData::Constructor	vote	retn=0
+0x0058ccd0	0x771380	CSWSCombatAttackData::Destructor	vote	retn=0
+0x0058cd80	0x771430	CSWSCombatAttackData::ClearAttackData	vote	retn=0
+0x0058d160	0x771810	CSWSCombatAttackData::SetBaseDamage	vote	retn=4
+0x0058d1a0	0x771850	CSWSCombatAttackData::GetBaseDamage	vote	retn=0
+0x0058d1c0	0x771870	CSWSCombatAttackData::SetDamage	vote	retn=8
+0x0058d200	0x7718b0	CSWSCombatAttackData::AddDamage	vote	retn=12
+0x0058d2f0	0x7719a0	CSWSCombatAttackData::SaveData	vote	retn=8
+0x0058d5e0	0x771c90	CSWSCombatAttackData::LoadData	vote	retn=8
+0x0058da20	0x7720d0	CSWSCombatAttackData::ResolveAttackToMeleeSubAttack	vote	retn=8
+0x0058dc10	0x7722c0	CSWSCombatAttackData::ResolveAttackToRangedSubAttack	vote	retn=20
+0x0058de40	0x7724f0	CSWSCombatAttackData::GetTopSubAttack	vote	retn=4
+0x0058df10	0x7725c0	CSWSCombatAttackData::RemoveTopSubAttack	vote	retn=0
+0x0058df40	0x7725f0	CSWSCombatAttackData::ResolveTopSubAttackToAttack	vote	retn=0
+0x0058dfd0	0x772680	CSWSCombatAttackData::ResolveSubAttackToAttack	vote	retn=4
+0x0058e120	0x7727d0	CSWSCombatAttackData::IsSubAttackReady	vote	retn=4

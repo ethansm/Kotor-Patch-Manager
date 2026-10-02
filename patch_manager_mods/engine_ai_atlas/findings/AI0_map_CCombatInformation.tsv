@@ -1,0 +1,6 @@
+0x0069cab0	0x5090f0	CCombatInformation::Constructor	vote	retn=0
+0x0069cbe0	0x509220	CCombatInformation::Destructor	vote	retn=0
+0x0069cdb0	0x5093f0	CCombatInformation::SaveData	vote	retn=8
+0x0069d1e0	0x509820	CCombatInformation::LoadData	vote	retn=8
+0x0069d9e0	0x50a020	CCombatInformation::operator!=	vote	retn=4
+0x0069dc50	0x50a290	CCombatInformation::operator=	vote	retn=4

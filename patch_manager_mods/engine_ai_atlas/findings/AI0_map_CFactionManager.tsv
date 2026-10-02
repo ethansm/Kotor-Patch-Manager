@@ -1,0 +1,15 @@
+0x00664280	0x7eee10	CFactionManager::Constructor	vote	retn=0
+0x00664360	0x7eeef0	CFactionManager::Destructor	vote	retn=0
+0x00664490	0x7ef020	CFactionManager::GetFaction	vote	retn=4
+0x006644d0	0x7ef060	CFactionManager::SetNPCFactionReputation	vote	retn=12
+0x00664580	0x7ef110	CFactionManager::GetNPCFactionReputation	vote	retn=8
+0x00664650	0x7ef1e0	CFactionManager::GetIsNPCFaction	vote	retn=4
+0x00664680	0x7ef210	CFactionManager::LoadFactions	vote	retn=4
+0x00664800	0x7ef390	CFactionManager::LoadFactionsFromSaveGame	vote	retn=8
+0x00664a00	0x7ef590	CFactionManager::ResolveFactionName	vote	retn=8
+0x00664ae0	0x7ef670	CFactionManager::LoadReputations	vote	retn=0
+0x00664cb0	0x7ef840	CFactionManager::LoadReputationsFromSaveGame	vote	retn=8
+0x00664d80	0x7ef910	CFactionManager::SaveFactions	vote	retn=8
+0x00664e40	0x7ef9d0	CFactionManager::SaveReputations	vote	retn=8
+0x00664f30	0x7efac0	CFactionManager::CreateDefaultFactions	vote	retn=0
+0x006651f0	0x7efd80	CFactionManager::DeleteFaction	vote	retn=4

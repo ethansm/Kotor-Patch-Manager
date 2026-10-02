@@ -1,0 +1,5 @@
+0x007a2010	0x44e9d0	CClientAIList::Constructor	vote	retn=0
+0x007a2040	0x44ea00	CClientAIList::Destructor	vote	retn=0
+0x007a2110	0x44ead0	CClientAIList::AddObject	vote	retn=4
+0x007a21d0	0x44eb90	CClientAIList::RemoveObject	vote	retn=4
+0x007a2270	0x44ec30	CClientAIList::GetNextObject	vote	retn=0
