@@ -1,0 +1,6 @@
+class	name	steam	gog	param	verdict	evidence
+CServerExoApp	SaveGame	0x0051bdf0	0x64b810	16	verified	40-byte forwarder to CServerExoAppInternal::SaveGame 0x52f610; gap to LoadGame 0x30 = GOG
+CServerExoApp	LoadGame	0x0051be20	0x64b840	16	verified	forwarder to CServerExoAppInternal::LoadGame 0x52fb80
+CServerExoApp	SetLoadFromSaveGame	0x0051ce00	0x64c820	4	verified	writes [[this+4]+0x100c4]; called push 1 by DoQuickLoad and CSWGuiSaveLoad::LoadGame; gap to SaveGame 0xff0 = GOG
+CServerExoApp	GetLoadFromSaveGame	0x0051cde0	0x64c800	0	verified	reads [[this+4]+0x100c4]; pair with setter, gap 0x20 = GOG
+CServerExoAppInternal	SaveGame	0x0052f610	0x7b2990	16	verified	strings SAVES / SAVEGAME / "%s%06d - %s"; fills save request R (*(*(0xA1B4A4)+0x14), folder CExoString R+0x18); Steam retn 0x10 (GOG DB 12)
