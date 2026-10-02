@@ -147,7 +147,7 @@ all: dll so
 #
 # tests/any_* are built at both widths; tests/t32_* and tests/t64_* pick the
 # wrapper generator that matches their instruction set.
-TEST_ENGINE := src/core/trampoline.cpp src/core/registry.cpp src/platform_posix.cpp
+TEST_ENGINE := src/core/trampoline.cpp src/core/registry.cpp src/core/log_service.cpp src/platform_posix.cpp
 TESTS_ANY   := $(wildcard tests/any_*.cpp)
 TESTS_32    := $(wildcard tests/t32_*.cpp) $(TESTS_ANY)
 TESTS_64    := $(wildcard tests/t64_*.cpp) $(TESTS_ANY)
