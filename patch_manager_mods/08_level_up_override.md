@@ -811,6 +811,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   5 s gap), SetStats site 0x84F221 now passes `ecx, ebp`. Tests: ui_test 122, gate_test 110, playthrough_test 244, wizard parity 264, guikit 49; mingw
   clean. Live doubts: framed LBL_XP_BACK text object (`UI create ... textobj=` mask), clicks while another GUI covers the character screen.
 - C gates + review DONE (82dede7), 0.3.0 built (dll 40993526); NEXT = user consent -> install (stage `$T/levelup_stage5`) -> combined checklist.
+- 15:00 first live run: crash on opening the character screen with companions = **Buff HUD readVitals** (menu companion bars), NOT this mod
+  (CRASH_INVESTIGATION.md 2026-10-02 15:00; our log in the same ms: `UI ctor created=12/12`, `UI create ... appended=12 textobj=fff`, colour readback
+  ok -> the framed-label text doubt is resolved). User: the Buff HUD session fixes it; the combined test waits for that. Log line 194 = end of run 1.
 - 0.3.0 INSTALLED 12:45 (see '0.3.0 install'); NEXT = user plays the combined checklist (PHASE5_PLAN step C 1-8), Opus reads the log from line 176.
 - (superseded) Live state: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
 
