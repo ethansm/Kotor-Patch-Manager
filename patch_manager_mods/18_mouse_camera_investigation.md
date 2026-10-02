@@ -164,3 +164,80 @@ Decision tree: A5 clean + A1 clean => our patches and ReShade ruled out => envir
 - User ran the quick reset tests (PrtSc / screenshot UI, alt-tab and the other focus resets listed above) while the camera was broken: **none of them fixed it** (user's words: "none of them seem to fix it").
 - Consequence: the "stuck pointer grab that a compositor screenshot resets" idea is weakened (the original one-time fix may have been coincidence, or a different state). Remaining leads: Wine/XWayland DirectInput absolute-vs-relative motion (`MOUSE_VIRTUAL_DESKTOP` fixme), ReShade 6.8.0 input hooks, Proton version, mouse driver (ckb-next/M65), refresh-rate/vsync/taskset interplay.
 - Next cheapest tests (not run yet): ReShade disabled (rename its dxgi/d3d9/opengl32 + ini); windowed mode; another Proton version; stock patch set (all our DLLs off) to prove it's not ours; different mouse / ckb-next stopped.
+
+## Engine-side findings (Ghidra, 10-02)
+
+Static analysis of the Steam/Aspyr exe (hash 4AB72FC1...). Game was not running. All facts are in `ghidra_knowledge` (lessons scope `steam / mouse-camera`, functions rows, struct_fields). New helper scripts: `ListImportXrefs`, `DecompileRange`, `HexDump`, `FindBytesRefs`, `ScanFieldRefs` (in kotor-patch-manager/tools/ghidra_scripts). **[V]** = read from decompile/disasm this session; **[S]** = inference.
+
+### E1. How the engine reads the mouse (corrects section 3.2/3.4 assumptions)
+- **Split design [V]:** DirectInput supplies ONLY the per-frame relative motion; buttons, wheel, cursor position and double-click come from Win32 window messages.
+  - `DirectInput8Create` (IAT 0x986000, thunk 0x93B3B0) has one caller, `FUN_00730750` (CDirectInput ctor). Keyboard: `GUID_SysKeyboard` @0x99CB88, `c_dfDIKeyboard` @0x9B932C, coop level 6 (FOREGROUND|NONEXCLUSIVE), buffered (256). Joysticks via EnumDevices, coop 10.
+  - Mouse: `FUN_00731070` (lazy, called from the poll when `this+0x28==0`): `GUID_SysMouse` @0x99CB78, `c_dfDIMouse` @0x9B9534 (size 0x18, DIDF_RELAXIS, 0x10-byte DIMOUSESTATE, 7 objs), **coop level 10 = BACKGROUND|NONEXCLUSIVE**, buffer 256 set but unused, `Acquire` once at creation.
+  - Per-frame poll: `FUN_0072F110` (wrapper 0x72FD90, only caller 0x7AC60B inside `FUN_007AC470` = ProcessInput(dt)) -> `FUN_00732E00` = **`GetDeviceState`** (vtable +0x24, immediate, not GetDeviceData), retry loop: INPUTLOST/NOTACQUIRED -> `Acquire` (+0x1C). Struct: lX @+0, lY @+4, lZ @+8, rgbButtons[4] @+0xC.
+  - Acquire/Unacquire: `FUN_00733090(on)` (via 0x72DF60 <- 0x72FB20, called on app activate/deactivate paths) acquires/unacquires keyboard+mouse+joysticks and flushes buffers (0x7311C0/0x7312A0). Keyboard exclusive toggles 0x732F00/0x732F40.
+  - Win32 side: WndProc `0x40A750` handles WM_L/R/MBUTTON DOWN/UP/DBLCLK (0x201-0x208) and WM_MOUSEWHEEL (0x20A); builds {msg, wParam, lParam with y flipped `H-1-y`} and calls `0x72FBD0` -> `CExoInputInternal::OnMouseMessage 0x72E030`, which stores WM_MOUSEMOVE position at `this+0x3E4/+0x3E8` and pushes button events (device `DAT_0099C888`=1; axes LMB `DAT_0099C89C`, RMB `C8A0`, MMB `C8A4`, wheel `C8B0`; value 1 down / 0 up / **-1 double click**) through `0x72E730` into the queue drained at the end of `GetEvents 0x72C7E0` (the hotbar hook sees only keyboard/joystick DI records, dev 0 and >=2; the mouse has no DI record list there).
+  - Win32 cursor APIs [V]: `GetCursorPos` (0x72E850 in-client test, 0x72E8D0 autohide timer), `SetCursorPos` only in `0x72EB20` (wrapper 0x72FC80; callers 0x78A23B, 0x7AFBFE, 0x7B01E9, 0x4141CC, 0x414261 = free-look/GUI "teleport to button"; **no per-frame recentering in the normal chase camera**), `ShowCursor` in 0x72E8D0 (hide when idle > `DAT_00996630`), `SetCursor` 0x72EA70, `SetCapture` on every button DOWN (0x40A750), **no `ReleaseCapture`, no `ClipCursor`, no `GetDoubleClickTime`, no `GetRawInput*`, no `mouse_event` imports**. Window class style 0xB = CS_HREDRAW|CS_VREDRAW|**CS_DBLCLKS** (0x4087A0).
+  - Consequence for H1/H2: the engine requests a RELATIVE-axis DInput mouse device in background, non-exclusive mode, so under Wine the delta stream is whatever Wine's dinput derives from X11/XInput2/raw input (the `MOUSE_VIRTUAL_DESKTOP` fixme path). ReShade's dinput8 wrapper sits between the two. Nothing in the engine can compensate for absolute-derived deltas.
+
+### E2. Ini keys and the sensitivity path
+- `swkotor2.ini` getters in `FUN_007B88B0` (load) / `FUN_007B5F50` (save): `"Mouse Look"` 0x9A03A0 (read at 0x7B8A61) -> options flags bit1; `"Reverse Ingame YAxis"` 0x9A03D8 (0x7B8D27) -> flags bit3; **`"Mouse Sensitivity"` 0x9A0364 (0x7B8EEB) -> options BYTE +0x58 (atoi, stored as a byte, no clamp)**; `"Reverse Mouse Buttons"` 0x9A03C0 (+0x5C; also 0x7DCF90); `"Enable Mouse Teleporting To Buttons"` 0x9A0340; `"Keyboard Camera DPS"` 0x9A0108; `"EnableHardwareMouse"` 0x99F810 (0x796FE1/0x7970E3). No "Allow Mouse Look" string exists.
+- Delta normalisation `FUN_0072F110` [V]: `this+0x408 = clamp(-lX / 100.0f, -1, 1)`, `this+0x40C = clamp(-lY / 100.0f, -1, 1)` (constant `DAT_00A1023C` = 100.0f, read-only). **No accumulation, no smoothing, no history; a frame with |delta| >= 100 counts as 1.0.** On GetDeviceState failure both are 0.
+- Sensitivity `FUN_007BBFF0` = `(byte/100.0)*45.0 + 10.0` (ini 44 -> 29.8, 17 -> 17.65, 4 -> 11.8). Used in the camera director `FUN_0078C350` (this+0x18 = camera controller): mouse yaw rate = `scale * dxNorm * (+-1 by DAT_00A7EBBC)` -> `FUN_007F3EA0(v, dt)`; pitch rate = `scale * dyNorm / 10 * (+-1)` -> `FUN_007F3C70(v)`. Options flag bit4 (0x10) negates dy (this is the in-camera "invert Y"; Reverse Ingame YAxis ties to the options flags). Mouse-look-active = `DAT_00A7FCBC XOR options bit1 (Mouse Look)`. With it false, a cursor at the screen edge rotates the camera (`FUN_007F4220`/`FUN_007F3DE0`; edge flags from the cursor position vs `DAT_00A1B49C`).
+
+### E3. Right-drag camera state, yaw/pitch, what can stick
+- Hold flag `DAT_00A7FCBC`: written by `HandleInputEvent FUN_007B12C0` cases **0xDB/0xDC** (`= value`, 1 pressed / 0 released; which mouse button is bound is data-driven, not traced). Also cleared by `0x40A460` (app deactivate), `0x530170`, `0x7B3830`, event 0x107, internal 0x7B220F/0x7B25EA; set by 0x7B3810. **A lost release event (WM_RBUTTONUP never delivered, cursor outside window, capture games) leaves it 1 => camera keeps following dx and the cursor stays hidden** [S, mechanism V].
+- Angle storage: controller `ctl = *(director+0x18)`, mode `ctl+0xC` (3/5/7 special cameras, else default chase). `AddYawInput 0x7F3EA0` adds into the camera data struct `(*(ctl+0x40))->vt[0x80](-1)->vt[0x1C]()` field **+0x40** and mirrors it to `ctl+0x98`; `AddPitchInput 0x7F3C70` adds into field **+0x48**, mirror `ctl+0x94`; `AddKeyboardYaw 0x7F44B0` adds field +0x34, mirror `ctl+0x9C`. The chase update `FUN_007F7A30` (via 0x7F4C30) computes `yaw = camobj.vt[0x64]() + ctl[0x98]*dt`, `pitch = camobj.vt[0x68]() + ctl[0x94]*dt` and **clamps pitch to [`DAT_00A10B24`=1.0, `DAT_00A10B28`=50.0]** (distance `vt[0x6C]` to [5.0?, 20.0] via `A10B1C/A10B20`). The mouse term is therefore a RATE multiplied by dt, not a direct angle.
+- Stuck pitch candidates: (a) pitch pinned at the 1.0/50.0 clamp while a drag direction keeps pushing (absolute-derived dx/dy that never returns to 0 does exactly this); (b) NaN: the clamp is a compare chain (`max <= v ? max : v; min <= x ? x : min`) that maps NaN to the MIN bound; (c) hold flag stuck (above). **Open:** the reset site of camdata+0x40/+0x48 (the `+=` in default mode with `+= 0` on idle frames) was NOT found; if they are never reset the camera would drift, so a reset must exist elsewhere; the probe's per-frame log of `ctl+0x94/+0x98` answers it.
+
+### E4. Double-click-to-move
+- Detection is **OS-side**: class has CS_DBLCLKS, so Wine/Windows emits WM_LBUTTONDBLCLK (0x203) from the system double-click time/size; the engine has no timer or `GetDoubleClickTime`. `0x40A750` -> `0x72E030` converts it into LMB-axis event value **-1** (RMB dblclk 0x206 likewise on the RMB axis) and `SetCapture`. The -1 event is mapped by the action table inside GetEvents and ends up in `HandleInputEvent 0x7B12C0` / ProcessInput; the concrete move-to-point action was not traced. Any condition that makes Wine not synthesize 0x203 (pointer moved > SM_CXDOUBLECLK between clicks because of delta/absolute confusion, or button messages split across threads) kills double-click move. The `SetCursorPos` guard `this+0x3EC=1` makes the NEXT WM_MOUSEMOVE position be ignored once (button events still pass).
+
+### E5. Frame timing
+- Per-frame dt for ProcessInput/camera comes from the main loop (`FUN_00407920`: `FUN_00736220` time counter -> `DAT_00A1B728/72C` seconds; frame limiter busy-waits on `DAT_00A1B710`; `timeGetTime` only for the FPS counter). The raw mouse delta is NOT dt-normalised (GetDeviceState returns motion since the previous poll, clamped to +-100 counts), but the camera applies it as `rate*dt`, so uneven frame pacing AND batched deltas both show up as angular-velocity jitter. Mouse look in modes 3/5 additionally multiplies by dt inside `AddYawInput`.
+
+### E6. Recommended probe hook points (read-only; format = existing `*.hooks.toml`, all sites are whole-instruction, no relative operands)
+```toml
+# raw DIMOUSESTATE, only on GetDeviceState success. [ebp-0x14]=lX [ebp-0x10]=lY [ebp-0xC]=lZ [ebp-8]=buttons[4], this=[ebp-0x28]
+[[hooks]]
+address = 0x0072F14E
+type = "detour"
+function = "ProbeMouseRaw"
+original_bytes = [0x8B, 0x45, 0xEC, 0xF7, 0xD8]
+skip_original_bytes = false
+exclude_from_restore = []
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# end of PollMouseDelta (success + failure paths merge): this+0x408/+0x40C = final normalised floats, this=[ebp-0x28]
+[[hooks]]
+address = 0x0072F2EC
+type = "detour"
+function = "ProbeMouseNorm"
+original_bytes = [0x8B, 0x4D, 0xFC, 0x33, 0xCD]
+skip_original_bytes = false
+exclude_from_restore = []
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# camera director per-frame, right after GetMouseDelta: [ebp-0x30]=dx float [ebp-0x50]=dy float [ebp-0x84]=sens scale float [ebp-0x130]=this
+[[hooks]]
+address = 0x0078C452
+type = "detour"
+function = "ProbeCameraFrame"
+original_bytes = [0x8B, 0x0D, 0xA4, 0xB4, 0xA1, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# optional angle-input sinks (entries): ecx=ctl, [esp+4]=float (yaw 0x7F3EA0: [esp+8]=dt)
+# 0x007F3C70 pitch   55 8B EC 83 EC 1C            (6)
+# 0x007F3EA0 yaw     55 8B EC 81 EC 9C 00 00 00   (9)
+# 0x007F4220 edge    55 8B EC 83 EC 48            (6)
+# 0x007F44B0 kbd yaw 55 8B EC 83 EC 0C            (6)
+```
+Per-frame sampler contents (ProbeCameraFrame, via `ebp`): dx/dy/scale floats; `this=*(void**)(ebp-0x130)`, `ctl=*(void**)(this+0x18)`, `camobj=*(void**)(ctl+0x40)`; log `ctl+0xC` (mode), `ctl+0x94/0x98/0x9C`, `DAT_00A7FCBC` (hold), `DAT_00A7FCC0`, `DAT_00A7EBBC`, options flags (`*(CExoInput...)` via `FUN_0072FB00()` +0x8) and call the float getters `camobj->vt[0x64]/[0x68]/[0x6C]` (thiscall, float in ST0; they are the same getters 0x78C350 itself calls at its end). Use QueryPerformanceCounter timestamps; also log the DI raw buttons byte (RMB = rgbButtons[1] bit 7) next to the hold flag to catch release desyncs. The dx/dy hooks run on the game main thread (same as GetEvents).
+Doubts: the camera-object vtable getter slots and `ctl+0x40` layout are inferred from the call pattern in 0x78C350/0x7F7A30 (not RTTI-named); the bound mouse button for events 0xDB/0xDC and the move-to-point action are untraced; `A10B1C..28` pitch/distance globals' writers not traced.
