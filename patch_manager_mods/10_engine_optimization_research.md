@@ -2,10 +2,8 @@
 
 Living record. Started 2026-09-30. Research + evidence first: **no engine-behaviour patch is installed without a measured win and the user's go-ahead.** Diagnostics-only patches follow "deploy and debug live, offer the choice".
 
-## HAND-OFF STATE (2026-10-02 Phase 6 in progress; read this first after a context clear)
-**Phase 6 plan** = 6-0 housekeeping, 6A run A completion, 6B run B (tx=1), 6C TX patch, 6D M1 HW mipmaps, 6E robustness set (section "PHASE 6 SESSION RECORD" once written). Live set unchanged since 2026-10-01 19:14 (25 ids, `phase5_stage1/`).
-- **6-0 DONE:** perf-lab 0.3.0 already gives the probe-free soak criterion: every launch writes `#METRICS 1 LOAD_UP tick=…` / `#METRICS 2 LOAD_DOWN tick=…` to `perflab_metrics.txt` (helper thread, `loadScreenUp()` = `[in+0x278]` vtable 0x9A5C84 in the modal list) -> first-load ms = tick delta; a hang = UP without DOWN. No perf-lab 0.3.1 needed for that. Probe removal = drop id `load-hang-probe` at the first Phase 6 install (-13 top-level hook addresses; loses only `hangprobe_activate.txt`).
-- **Static batches W1-W7** (V1-V7 names are taken by doc 15's batches): briefs `engine_research_findings/briefs/W*.txt`, CONTRACT "Phase 6 questions". Wave 1 = W4 (KT+AB), W5 (SNDRI+NETOVF), W6 (GUIID+SS+TD), W7 (VMID+FS+CR); wave 2 = W1 (TX re-check), W2 (M1).
+## HAND-OFF STATE (2026-10-02 ~03:50 Phase 6; read this first after a context clear)
+Static work + builds DONE; read "PHASE 6 SESSION RECORD" (below NEXT STEPS). Built, NOT installed: `k2-robustness-fixes` 1.0.0 and `k2-texture-memory-release` 1.0.0 (harnesses PASS). Live set unchanged by this session. **Waiting on the user for 6A run A** (then run B tx=1, then one install with the user's go, minus load-hang-probe).
 
 ## Earlier HAND-OFF STATE (2026-10-02 02:20; read this first after a context clear)
 **Phase 5 COMPLETE.** H1 load hang FIXED by `k2-activation-fix` 1.0.0 (soak doc 09 s19) and BR equipment-screen icon reload FIXED by `k2-equip-icon-fix` 1.0.0 (section "BR fix"); both live since 2026-10-01 19:14 (stage `phase5_stage1/`, backup `backups_phase5_1914/`, 25 ids). `$G/hangprobe_debug.txt` empty (fix=auto OFF, redundant now). Diagnostics perf-lab 0.3.0 + load-hang-probe 1.4.1 still installed; removing them (or keeping the probe as a cheap watchdog) is the user's call. Next = deferred list in NEXT STEPS (run A completion -> run B -> TX, M1 mipmaps, robustness set, Buff HUD fault-storm report).
