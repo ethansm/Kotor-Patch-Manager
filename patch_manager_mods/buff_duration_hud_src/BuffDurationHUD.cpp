@@ -405,7 +405,9 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
         (*reinterpret_cast<void***>(image))[6]);
     flush(flushArg);
-    draw(image, x, y, W, H, 0, 0, TrackTint, 1.0f);            // empty track: the engine's neutral teal, like the health bar's
+    // Everything is clipped to [x, seamX): the art's body now extends past its visible edge, so the right edge is pixel-exact on the seam
+    // (a hard clip edge, no texture-filter fringe = no hairline between shield, corner wedge and health bar).
+    if (pushClip(x, y, V, H, ClipNoFillColor, 0, 1.0f)) { draw(image, 0, 0, W, H, 0, 0, TrackTint, 1.0f); popClip(); }   // empty track: the engine's neutral teal
     int baseUp = 0;                                            // px of bar height already used, from the bottom
     for (int i = 0; i < n; ++i) {
         int segH = int(double(H) * pools[i].max / total + 0.5);
@@ -417,7 +419,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
             if (noClip) {                                          // menu frames: the engine clip stack reads 0xFFFF there and pushClip
                 draw(image, x, y0, W, fillH, 0, 0, lit, 1.0f);     // misbehaves (black menu), so draw the art squashed to the fill height
             } else {
-            int pushed = pushClip(x, y0, W, fillH, ClipNoFillColor, 0, 1.0f);
+            int pushed = pushClip(x, y0, V, fillH, ClipNoFillColor, 0, 1.0f);
             { static int lastPush[8]; static int pushSlot[8]; static int nPush = 0;
               int pi = -1; for (int k = 0; k < nPush; ++k) if (pushSlot[k] == slotPtr) pi = k;
               if (pi < 0 && nPush < 8) { pi = nPush++; pushSlot[pi] = slotPtr; lastPush[pi] = -1; }

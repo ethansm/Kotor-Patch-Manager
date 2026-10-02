@@ -23,7 +23,7 @@ sq = a.copy()
 sq[:, 57:LO] = a[:, [LO + (x - 57) % (HI - LO) for x in range(57, LO)]]   # square, open left (x<57 stays transparent)
 sh = a.copy()
 sh[:, HI:128] = a[:, [LO + (x - HI) % (HI - LO) for x in range(HI, 128)]]  # open right (to the edge)
-sh[:, 99:128] = 0                                  # keep the original transparent right margin
+# (the open-right body now runs on to the texture edge; the DLL clips the draw at the seam, so the visible right edge is pixel-exact)
 # The shield bar is drawn at ShieldWidthFraction (0.55) of the health bar's width, which also squashed its left outline to 55% of the
 # health bar's stroke. Re-sample the visible span 57..98 non-uniformly (same total width, so the drawing constants stay valid): the
 # outline columns get 1/0.55 weight (they render at native thickness), the interior is compressed to make up the width.
