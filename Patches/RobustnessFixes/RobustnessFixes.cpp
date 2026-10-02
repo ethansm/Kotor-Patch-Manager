@@ -1,4 +1,4 @@
-// k2-robustness-fixes 1.0.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Engine robustness fixes from the
+// k2-robustness-fixes 1.0.0 (Steam Aspyr build 6A522E71...). Engine robustness fixes from the
 // doc 10 Phase 6E research (batches W4-W7, Opus-verified; section "Robustness set").
 //
 // DLL-only. Each fix is an independent group: DllMain verifies every byte of the group's sites, then writes the group;
@@ -41,7 +41,7 @@ struct Site { uintptr_t at; uint8_t n; uint8_t orig[16]; };
 enum { G_KT, G_VMID, G_SNDRI, G_NETOVF, G_GUIID, G_ABBOUND, G_COUNT };
 const char* const GroupKey[G_COUNT] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound" };
 
-// Sites per group (original bytes from the dump, checked against the live LAA exe).
+// Sites per group (original bytes from the dump, checked against the Steam Aspyr exe).
 const Site KtA   = { 0x00726527, 10, { 0x89, 0x50, 0x0C, 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF } };
 const Site KtB   = { 0x00726C9C, 5,  { 0x89, 0x50, 0x0C, 0xEB, 0x3C } };
 const Site Vmid  = { 0x00668FE0, 2,  { 0x7D, 0x30 } };

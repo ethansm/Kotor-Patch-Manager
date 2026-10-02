@@ -1,4 +1,4 @@
-// Companion AI (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...): party-AI trace layer + engine AI fixes, one DLL,
+// Companion AI (Steam Aspyr build 6A522E71...): party-AI trace layer + engine AI fixes, one DLL,
 // one INI (companion_ai.ini), one log (ai_trace.txt). Designs: patch_manager_mods/mods678_research/ai_review_2026-10-01/
 // designs/design_ai_trace.md and design_ai_engine_fixes.md (user decisions in that folder's README.md).
 //

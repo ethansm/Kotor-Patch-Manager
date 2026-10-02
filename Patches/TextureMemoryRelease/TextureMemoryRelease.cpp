@@ -1,4 +1,4 @@
-// k2-texture-memory-release 1.0.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Candidate TX (doc 10, Phase 6C).
+// k2-texture-memory-release 1.0.0 (Steam Aspyr build 6A522E71...). Candidate TX (doc 10, Phase 6C).
 //
 // Problem: BuildAndStoreTexture 0x4260E0 frees the CPU-side image after the GL upload only for non-TPC textures
 // (`if (!IsTPCLoaded()) FreeImage()`, 0x4261CA-0x4261E4). TPC textures use the CResTPC buffer zero-copy (tex+0x44) and

@@ -1,4 +1,4 @@
-// Load Hang Probe 1.4.1 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Diagnostics only unless "fix=auto" is set.
+// Load Hang Probe 1.4.1 (Steam Aspyr build 6A522E71...). Diagnostics only unless "fix=auto" is set.
 // 1.4.1 (doc 10 Phase 5A): RESTORE-AFTER-MOVIE / PLAYMOVIES-EXIT are logged only when their tuple changes (they run every frame from
 // MainLoop ret 0x781DFA while the intro-movie state lingers: 1362 lines in incident 16); `calls=` = cumulative calls of that point.
 // 1.4.0 (doc 10 Phase 4, T4/U6 probe-log points; ring slots only, logged as WINEV by the watchdog):

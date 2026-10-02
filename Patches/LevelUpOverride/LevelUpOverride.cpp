@@ -1,4 +1,4 @@
-// Level-Up Override 0.3.0-a (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Makes the engine's AUTO level-up follow a per-character build
+// Level-Up Override 0.3.0-a (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
 // preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini only
 // (no UI / save binding yet). Default mode=log only logs + dry-runs.
 // History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump;

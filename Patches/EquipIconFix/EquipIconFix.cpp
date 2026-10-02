@@ -1,4 +1,4 @@
-// k2-equip-icon-fix 1.0.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Fixes candidate BR (doc 10, Phase 5C):
+// k2-equip-icon-fix 1.0.0 (Steam Aspyr build 6A522E71...). Fixes candidate BR (doc 10, Phase 5C):
 // the equipment screen reloads the equipped weapon's icon texture every frame.
 //
 // Mechanism (static, decomp/8a/008ad930.*; run A NAME tables incidents_15_1824): the equipment panel per-frame update

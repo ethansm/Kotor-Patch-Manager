@@ -1,4 +1,4 @@
-// k2-activation-fix 1.0.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Real fix for the first-load hang H1
+// k2-activation-fix 1.0.0 (Steam Aspyr build 6A522E71...). Real fix for the first-load hang H1
 // (doc 09 s18-19, doc 10 Phase 5B).
 //
 // Mechanism (incidents 16/17): at the end of the intro movie the movie thread (0x40D430, after setting [0xA1B76C]=1)

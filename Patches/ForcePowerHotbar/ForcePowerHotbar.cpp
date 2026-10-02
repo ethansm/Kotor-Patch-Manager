@@ -1,4 +1,4 @@
-// Force Power Hotbar (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...): ten on-screen slots bound to keys 1-0 that invoke a vanilla HUD
+// Force Power Hotbar (Steam Aspyr build 6A522E71...): ten on-screen slots bound to keys 1-0 that invoke a vanilla HUD
 // quick-action, plus an in-game editor. Self-contained: controls, art and the INI template are all created by this DLL.
 // Research trail and every address: patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
 //
