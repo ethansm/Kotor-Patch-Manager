@@ -97,7 +97,7 @@ def make_edit_textures(out: Path) -> list[Path]:
         im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
         d = ImageDraw.Draw(im)
         d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=22 * S, fill=col + (255,))
-        d.rounded_rectangle([6 * S, 6 * S, (W - 6) * S, (H - 6) * S], radius=16 * S, fill=(0, 0, 0, 175))
+        d.rounded_rectangle([3 * S, 3 * S, (W - 3) * S, (H - 3) * S], radius=19 * S, fill=(0, 0, 0, 175))
         # Wrench, shaded like the native force-power icons: mint->teal gradient body, dark outline, soft glow, upper-left rim light and
         # lower-right shade, a RECESSED channel down the handle (raised rim around a darker inset), a U jaw, and a round beveled hanging
         # ring. The hole is drawn last and separately so the directional shading never distorts it.
