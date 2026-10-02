@@ -236,3 +236,15 @@ After each chunk, Opus re-runs the acceptance checks, reviews the diff and commi
 - Toolchain: `i686-w64-mingw32-g{cc,++}-posix` present. **`g++-multilib` is NOT installed** (no `/usr/lib/gcc/x86_64-linux-gnu/13/32`, sudo needs a password), so `-m32` fails on `bits/c++config.h`: the Linux `.so` and every i386 test row fail to compile **at baseline**. This is the environment, not the code.
 - Baseline: `make dll` OK. `make test`: all 11 x86_64 rows pass; the i386 rows fail to compile (multilib).
 - Gate until multilib is installed (scratchpad `gate.sh`): `make dll` green, every x86_64 row "all pass", and the only compile errors allowed are the multilib header ones. With multilib present the gate is full `make all test`. The header C check uses 64-bit gcc + i686 MinGW instead of `gcc -m32`.
+
+### Chunks A + B (10-02 ~14:05)
+- A committed KPM e36afa4: `kpatch_api.h` (canonical + forwarder), `Registry`, `any_registry` (56 checks, x86_64 PASS, 20x loop clean, TSan clean under `setarch -R`). Review fix: `Provide`'s closed check moved under the mutex, so a Provide racing Close() can't insert afterwards.
+- B committed KPM b27b93d: C11 fixtures (provider/consumer/noinit) built per width into `build/tests/fixtures/{32,64}`, `any_module_init` (26 checks, all 7 plan rows, x86_64 PASS). Real dlclose verified by init counts.
+- Gate widened: tolerates any missing `bits/*.h` or `gnu/*.h` under -m32 (C fixtures hit `gnu/stubs-32.h`).
+
+### Chunk C decisions (brief, 10-02)
+- Level marker: WARN/ERR lines carry `WARN ` / `ERR ` before the message; INFO and below carry none.
+- Session header lines start with `# `. `SetSessionInfo` writes a `# session info` block to already-open files.
+- Id rules: patch ids 1-63 chars `[A-Za-z0-9_.-]`, max 64 patches. Channel names 1-31 chars, max 256 channels total.
+- `level=` takes a number 0-4 or a name; the default when enabled is info. `channels=` absent means all.
+- Truncation marker: `[...]`.
