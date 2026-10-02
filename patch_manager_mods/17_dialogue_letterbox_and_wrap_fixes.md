@@ -1,6 +1,8 @@
 # Engine Fixes L1 + L4: dialogue letterbox and wrap-measure (doc 15 Phase 2)
 
-**STATUS (2026-10-02, built + staged, NOT installed, awaiting user install + test cards T1/T2):** two engine fixes from the confirmed leads of doc 16.
+**STATUS (2026-10-02 01:33): INSTALLED LIVE (user: "install both"), awaiting test cards T1/T2.** Live = 28 ids / 153 hooks (26 previous + `k2-wrap-measure-fix` + `k2-dialogue-letterbox-fix`); `stage_and_verify_install.py verify`: mismatches 0; `swkotor2.exe` md5 unchanged; no INI in the game dir (defaults enabled=1 mode=h6 log=1). Pre-install backup: `~/Games/KOTOR2_Mod_Workspace/backups/pre_engfix_1002_0133/` (kpm_install_state.json, patch_config.toml, patches/). Run A (without) is no longer available by reinstall-free means except `enabled=0` in the INI for L1; L4 has no switch (rollback = reinstall the 26 ids from the stage dir or restore the backup).
+
+Original build status (2026-10-02, built + staged): two engine fixes from the confirmed leads of doc 16.
 Nothing was launched, nothing was written to the game dir (`swkotor2.exe` md5 `c9a1e3c57fd5491b4256dac1c0ab97cb`; `patch_config.toml`, `kpm_install_state.json`, `patches/` mtimes unchanged).
 - Stage dir: `/home/ethansm/Games/KOTOR2_Mod_Workspace/stage_engfix_1002_0121` (28 kpatches = the 26 live ids, each DLL md5 + hook set identical to live, plus the 2 new ones; PROBLEMS 0).
 - `k2-wrap-measure-fix` 1.0.0 (L4): kpatch md5 `11bfc231e0b10dbfa1706a475453fcda`, no DLL. Source mirror `wrap_measure_fix_src/`.
