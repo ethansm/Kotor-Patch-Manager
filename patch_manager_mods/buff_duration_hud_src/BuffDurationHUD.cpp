@@ -19,6 +19,7 @@
 #include "EffectIconTable.inc"
 #include "DebuffIconTable.inc"
 #include "ShieldTable.inc"
+#include "../_shared/SafeRead.h"   // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
 
 namespace {
 
@@ -83,22 +84,25 @@ void logf(const char* fmt, ...) {
 }
 
 // ---- hook 1: slot -> creature side table -------------------------------------------
-struct SlotEntry { int slotPtr; int creaturePtr; };
+struct SlotEntry { int slotPtr; int creaturePtr; DWORD tick; };   // tick = when SnapshotPortraitSlot last refreshed it
 SlotEntry g_slots[4];
 
 SlotEntry g_menuSlot;   // the menu top bar's portrait slot (menu+0x2350) -> selected creature, refreshed every menu frame
 
+// UpdatePortraits refreshes every live HUD slot each frame, so an entry older than this is stale (area load / HUD rebuilt): its
+// creature pointer may be freed memory.
+constexpr DWORD SlotFreshMs = 500;
+inline bool slotFresh(const SlotEntry& e) { return GetTickCount() - e.tick <= SlotFreshMs; }
+
 int creatureForSlot(int slotPtr) {
     if (g_menuSlot.slotPtr == slotPtr) return g_menuSlot.creaturePtr;
-    for (auto& e : g_slots) if (e.slotPtr == slotPtr) return e.creaturePtr;
+    for (auto& e : g_slots) if (e.slotPtr == slotPtr) return slotFresh(e) ? e.creaturePtr : 0;
     return 0;
 }
 
 // ---- helpers -------------------------------------------------------------------------
 template <typename T> bool readAt(int base, int off, T* out) {
-    if (base == 0 || IsBadReadPtr(reinterpret_cast<const void*>(base + off), sizeof(T))) return false;
-    *out = *reinterpret_cast<const T*>(base + off);
-    return true;
+    return saferead::readAt(1, static_cast<uintptr_t>(base), off, out);
 }
 
 bool currentTime(int* day, int* ms) {
@@ -548,18 +552,21 @@ constexpr unsigned CapGuard::Caps[9];
 extern "C" {
 
 void __cdecl SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
+    saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     static int n = 0; if (n < 60) { ++n; logf("snapshot slot=%08x creature=%08x", slotPtr, creaturePtr); }
     if (g_probe && creaturePtr) probeEffects(slotPtr, creaturePtr);
     if (creaturePtr) { Pool tmp[8]; swapHealthBar(slotPtr, SquareHealthEdge && !g_noSwap && collectPools(creaturePtr, tmp, 8) > 0); }
-    for (auto& e : g_slots) if (e.slotPtr == slotPtr) { e.creaturePtr = creaturePtr; return; }
-    for (auto& e : g_slots) if (e.slotPtr == 0) { e = { slotPtr, creaturePtr }; return; }
-    static int evict = 0; g_slots[evict++ & 3] = { slotPtr, creaturePtr };   // HUD rebuilt (area load): replace a stale entry
+    const DWORD now = GetTickCount();
+    for (auto& e : g_slots) if (e.slotPtr == slotPtr) { e.creaturePtr = creaturePtr; e.tick = now; return; }
+    for (auto& e : g_slots) if (e.slotPtr == 0) { e = { slotPtr, creaturePtr, now }; return; }
+    static int evict = 0; g_slots[evict++ & 3] = { slotPtr, creaturePtr, now };   // HUD rebuilt (area load): replace a stale entry
 }
 
 // Hook 2 (per native arrow, buff row): the icon column is drawn by DrawBuffColumn, so hide
 // the first `tracked` native arrows (CSWGuiBorder::Draw returns at once when +0xc/+0x10 == 0).
 void __cdecl RestoreBuffIcon();
 void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichRow) {
+    saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     // The debuff row has no per-arrow restore hook and all its arrows share one widget: un-hide the previous arrow's
     // widget first, so a kept (untracked) arrow after the suppressed ones draws at its real size and the save below
     // records the real size, not the 0x0 left by the previous suppression.
@@ -693,6 +700,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
 }
 
 void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
+    saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     RestoreBuffIcon();                          // debuff arrows are hidden without a restore hook (also when the kill switch flips mid-row)
     if (g_noBuff) return;
     if (iconWidget == 0) return;
@@ -833,13 +841,14 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
 // [ebp+0xc] = isFirst (leader). Runs once per slot per frame, in full-HUD coordinates,
 // after the panel controls drew and independent of the engine's arrow counts.
 void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
+    saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     { int cd = 0; readAt(0x00a309c0, 0, &cd);                       // menu frame: map the menu portrait slot to its creature so the Buff HUD
       if ((cd & 0xffff) != 0 && isLarge) {                             // hooks (which run later in 0x745770) and the arrow-counter bump know it
           int c = 0; readAt(callerEbp, -0x38, &c);
           int cnt = 0, arr = 0;
           bool ok = c && readAt(c, Creature_EffectCountOffset, &cnt) && readAt(c, Creature_EffectArrayOffset, &arr) && cnt >= 0 && cnt <= MaxEffects;
-          g_menuSlot = ok ? SlotEntry{ slotPtr, c } : SlotEntry{ 0, 0 };
-      } else if (g_menuSlot.slotPtr == slotPtr) g_menuSlot = { 0, 0 }; }
+          g_menuSlot = ok ? SlotEntry{ slotPtr, c, GetTickCount() } : SlotEntry{ 0, 0, 0 };
+      } else if (g_menuSlot.slotPtr == slotPtr) g_menuSlot = { 0, 0, 0 }; }
     ForceArrowCounters(slotPtr);                // before FUN_00745770 reads +0xddc/+0xddd; must run for every slot, not just the leader
     swapHealthBar(slotPtr, false);              // engine has drawn: put the health bar's own texture back
     if (isLarge) {
@@ -856,7 +865,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
             }
         }
         static bool f9Prev = false; bool f9 = g_probe && (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
-        if (f9 && !f9Prev) { static int mark = 0; probeLog("MARK %d scene=%d", ++mark, g_probe ? sceneBrightness() : -2); glDump("MARK"); }
+        if (f9 && !f9Prev) { static int mark = 0; probeLog("MARK %d scene=%d", ++mark, g_probe ? sceneBrightness() : -2); glDump("MARK"); { char rb[3000]; saferead::dump(rb, sizeof(rb)); probeLog("%s", rb); } }
         f9Prev = f9;
     }
     int creature = creatureForSlot(slotPtr);
@@ -891,12 +900,12 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     CapGuard capGuard;
     static bool prevAny = false; static int dumpFrames = 0;
     bool any = false;
-    for (auto& e : g_slots) { Pool t[8]; if (e.slotPtr && e.creaturePtr && collectPools(e.creaturePtr, t, 8) > 0) any = true; }
+    for (auto& e : g_slots) { Pool t[8]; if (e.slotPtr && e.creaturePtr && slotFresh(e) && collectPools(e.creaturePtr, t, 8) > 0) any = true; }
     if (any != prevAny) { prevAny = any; dumpFrames = 4; probeLog("SHIELD_ANY %d", any); }
     if (dumpFrames > 0) glDump("PRE");
     struct PostDump { int* d; ~PostDump() { if (*d > 0) { glDump("POST"); --*d; } } } postDump{ &dumpFrames };
     for (auto& e : g_slots) {
-        if (!e.slotPtr || !e.creaturePtr) continue;
+        if (!e.slotPtr || !e.creaturePtr || !slotFresh(e)) continue;
         int v[4] = {};
         for (int k = 0; k < 4; ++k) readAt(e.slotPtr, 0x694 + 4 * k, &v[k]);
         if (v[2] < 1 || v[2] > 400 || v[3] < 1 || v[3] > 400) continue;
@@ -921,6 +930,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
 // cdecl "sprintf into CExoString" (FUN_00734270) formats into a scratch buffer before touching the destination, so the old
 // text can be passed back in as an argument. The tooltip panel sizes itself from the text (FUN_0075ff50).
 void __cdecl AppendShieldToTooltip(int charButton) {
+    saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     int slot = 0, oldText = 0;
     if (!readAt(charButton, 0x1d0, &slot) || !slot || !readAt(charButton, 0x1d4, &oldText) || !oldText) return;
     // Defensive: the builder re-formats the text before this RET path, so the line is normally absent here; never append twice.
@@ -940,6 +950,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         g_debugLog = GetFileAttributesA("buffhud_debug.txt") != INVALID_FILE_ATTRIBUTES;
         g_probe = GetFileAttributesA("shieldprobe.txt") != INVALID_FILE_ATTRIBUTES;
+        saferead::enableRing(g_probe);
         logf("buffhud loaded");
     }
     return TRUE;
