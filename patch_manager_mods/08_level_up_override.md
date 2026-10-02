@@ -814,6 +814,14 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - 15:00 first live run: crash on opening the character screen with companions = **Buff HUD readVitals** (menu companion bars), NOT this mod
   (CRASH_INVESTIGATION.md 2026-10-02 15:00; our log in the same ms: `UI ctor created=12/12`, `UI create ... appended=12 textobj=fff`, colour readback
   ok -> the framed-label text doubt is resolved). User: the Buff HUD session fixes it; the combined test waits for that. Log line 194 = end of run 1.
+- 15:06 user run 2 (screenshot): Configure button OK; wizard see-through (LBL_XP_BACK fill uibit_fill_2wt is translucent) and BTN_AUTO/BTN_LEVELUP/
+  SLD_ALIGN/LBL_LIGHT draw ON TOP of our controls in the 3D column regardless of list order; user picked Ranged -> Rifle -> result "never a Jedi"
+  without seeing the Jedi question (it was 4th). Portrait level-up icon = expected (nothing applied, Atton unconfigured).
+  UI round 2 (97a09ec, dll 49420ebf): question order Convert first ("Become a Jedi?", labels "Early: Jedi Sentinel at level 8" / "Never: stay
+  Scoundrel"), wizard moved to the stats column [54,134,246,336] with opaque uibit_fill_2bt, result rows name / summary / Instant / Bank until /
+  Apply / Use vanilla; status line [54,474,350,20] (LBL_BAR5 at x 407). **Hand-installed 15:17** (dll swap only; hooks/exports unchanged since
+  12:45; a KPM reinstall would have reverted the Shield Bar session's hand-installed Buff HUD / CEP DLLs of 15:05/15:15). Backup
+  `backups/levelup_030_ui2_20261002_151731/`. Log 211 lines before run 3.
 - 0.3.0 INSTALLED 12:45 (see '0.3.0 install'); NEXT = user plays the combined checklist (PHASE5_PLAN step C 1-8), Opus reads the log from line 176.
 - (superseded) Live state: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
 
