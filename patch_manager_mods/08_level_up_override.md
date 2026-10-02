@@ -575,6 +575,28 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   7 -> Sentinel added -> keys 8..15 PATH, mid-loop. `python3 simulate_rewrite.py` 0 failures. `tools/parity/parity.py` is EXPECTED to fail until M2
   (the 0.2.1 C++ parser rejects 7-field records).
 
+## Phase 4 M2 build - 0.3.0-a (2026-10-02, built + offline-verified, NOT installed)
+- **Code** (`level_up_override_src/LevelUpOverride.cpp`): table v2 parser (MaxPresets 128, 256 KB buffer), per-tag dev config in `levelup_override.ini`
+  (`preset.<tag>=<id>`, `instant.<tag>=0|1` default 0, `hold.<tag>=0|1` default 1; legacy `tags=` -> `<tag>__live`, hold 0, instant 0 = 0.2.1 behaviour;
+  `tagConfig()` carries the M3 TODO), `levelNow` (hold rule v2 twin), LevelUp hook now logs `DECIDE tag preset key decision rec` (HOLD there =
+  `HOLD_MIDLOOP` -> vanilla, never a veto), `skillCost` honours Class Skill feats 183-189 the creature already has (`csExtraMask`). Gates (pass-through on
+  anything unreadable/unconfigured/PC/mode off; mode=log logs `WOULD HOLD` without acting; logs only on change; config/table stat throttled to 1 s):
+  hold gate x13 (`LuoHold_<VA>`, param ecx), instant gate x4 (`LuoInstant_<VA>`, ecx+ebp; returns a 16-byte static copy of the options object with +8 bit0
+  set), GUI guards `LuoGuardGui_84FD2F` / `LuoGuardAuto_84F9FE` (return 1 = refuse; log `GUARD-PROBE` with the tag read via creature and via stats, 300
+  lines max, to settle the client-tag question), Auto OK backstop `LuoAutoOk_850062`. Engine function prologue bytes are checked once; mismatch -> all gates
+  pass through (logged `ENGINE ...`). Toml: 21 hooks (LevelUp entry + 20 call-site detours, `skip_original_bytes=true`, `exclude_from_restore=["eax"]`).
+  manifest 0.3.0.
+- **Gates (all green):** mingw `-Wall -Wextra -fsyntax-only` (with `-I $T/Patches/LevelUpOverride`, the `../_shared/SafeRead.h` include resolves there);
+  `parity.py`: DRY 18426 cases 0 mismatches, levelNow 25366 cases (all 82 presets) 0 mismatches (PATH 7366 / REBASE 14820 / HOLD 160 / VANILLA 3020),
+  apply_test 0 failures, NEW `tools/parity/gate_test.cpp` 72 checks 0 failures (calls the shipped exports with fake engine functions);
+  `simulate_rewrite.py` 0 failures; mutation spot-check 10/10 killed (levelNow key/clvl/top/hold/has conditions, newest-class index, rewrite-vs-log veto,
+  instant hold check, instant bit offset). Independent Sonnet review: no blocker; wrapper_x86.cpp confirms params from the PUSHAD copy, ESP restored from
+  EBX (cdecl safe), EAX kept, jump to site+5; all 21 original_bytes live == vanilla; +-16 overlap clean vs 132 tomls + live patch_config.toml; no hold
+  site reachable from AutoLevelup (direct-call graph depth 6). Review SHOULD-FIX "thread safety" = moot (all logged LevelUp calls tid 316, one thread);
+  NITs (UNHOLD gap for unconfigured, caps untested) accepted.
+- check_paths: Class Skill feats now count from the NEXT level (skills are picked before feats in the level-up GUI; matches the DLL). 82/82 0 errors,
+  275 warnings.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -674,4 +696,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Step 0 (preflight) done (746aaf3). M0 done: "Phase 4 M0 facts" above (+ hold rule v2 by class level), DB name_map source
   `level-up-P4-static-confirmed` + 2 lessons. Next: M1 (Python agents: gen_runtime_table v2 + `[presets]` + class-level field, check_paths Class Skill feats,
   tag verification, simulate_rewrite level_now twin). M1 DONE: "Phase 4 M1 results". Next: M2 C++ (0.3.0-a hold + instant, ini config).
+- M2 BUILT (offline green, "Phase 4 M2 build"); next = user-consented install to stage `$T/levelup_stage4/` + dev config `preset.atton=atton__live hold.atton=1 instant.atton=0`, then live checklist (PHASE4_PLAN M2).
 

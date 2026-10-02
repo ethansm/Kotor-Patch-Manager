@@ -85,7 +85,8 @@ def skill_cost(deltas, mask):
     return sum(deltas[i] * (1 if mask[i] else 2) for i in range(NSKILL))
 
 
-def compute_rewrite(rec, pend, cs):
+def compute_rewrite(rec, pend, cs, cs_extra=0):
+    """cs_extra: bit i = skill i is a class skill through a Class Skill feat the creature already has (C++ csExtraMask)."""
     def res(status, p=pend):
         return dict(status=status, feats=list(p["feats"]), spells=list(p["spells"]),
                     deltas=list(p["deltas"]), unspent=p["unspent"], ability=p["ability"])
@@ -101,6 +102,8 @@ def compute_rewrite(rec, pend, cs):
     for i, r in rec.skills:
         deltas[i] = r
     mask = cs.get(pend["cls"])
+    if mask is not None and cs_extra:
+        mask = [1 if (m or (cs_extra >> i) & 1) else 0 for i, m in enumerate(mask)]
     unspent = pend["unspent"] + skill_cost(pend["deltas"], mask) - skill_cost(deltas, mask)
     if unspent < 0:
         return res("negative-unspent")

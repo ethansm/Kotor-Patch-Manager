@@ -31,7 +31,8 @@ inline SIZE_T VirtualQuery(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T) {
     m->RegionSize = (SIZE_T)1 << 40; m->State = MEM_COMMIT; m->Protect = PAGE_READWRITE; m->Type = 0;
     return sizeof *m;
 }
-inline DWORD GetTickCount() { return 0; }
+inline DWORD g_stubTick = 0;   // tests advance it to step over the 1000 ms reload throttle
+inline DWORD GetTickCount() { return g_stubTick; }
 inline DWORD GetCurrentThreadId() { return 0; }
 inline LONG InterlockedIncrement(volatile LONG* p) { return ++*p; }
 struct FILETIME { DWORD dwLowDateTime, dwHighDateTime; };
@@ -39,7 +40,7 @@ struct WIN32_FILE_ATTRIBUTE_DATA { DWORD dwFileAttributes; FILETIME ftCreationTi
 enum { GetFileExInfoStandard };
 inline BOOL GetFileAttributesExA(const char* p, int, WIN32_FILE_ATTRIBUTE_DATA* d) {
     struct stat st; if (stat(p, &st)) return 0;
-    d->ftLastWriteTime.dwLowDateTime = (DWORD)st.st_mtime; d->ftLastWriteTime.dwHighDateTime = 0;
+    d->ftLastWriteTime.dwLowDateTime = (DWORD)st.st_mtim.tv_nsec; d->ftLastWriteTime.dwHighDateTime = (DWORD)st.st_mtime;
     d->nFileSizeHigh = 0; d->nFileSizeLow = (DWORD)st.st_size; return 1;
 }
 inline BOOL DeleteFileA(const char*) { return 0; }

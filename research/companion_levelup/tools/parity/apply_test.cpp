@@ -107,8 +107,8 @@ int main(int argc, char** argv) {
     while (std::getline(std::cin, line)) {
         std::stringstream ls(line); std::string head, f, s, d;
         std::getline(ls, head, '|'); std::getline(ls, f, '|'); std::getline(ls, s, '|'); std::getline(ls, d, '|');
-        char tag[32]; int key, cls, ab, un;
-        if (sscanf(head.c_str(), "%31s %d %d %d %d", tag, &key, &cls, &ab, &un) != 5) return 3;
+        char tag[48]; int key, cls, ab, un, mask;
+        if (sscanf(head.c_str(), "%47s %d %d %d %d %d", tag, &key, &cls, &ab, &un, &mask) != 6) return 3;
         Pend base{}; base.cls = cls; base.ability = ab; base.unspent = un;
         std::vector<uint32_t> fv, sv, dv; ids(f, fv); ids(s, sv); ids(d, dv);
         for (uint32_t x : fv) base.feats[base.nFeats++] = (uint16_t)x;
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
         const Rec* rec = lookupRecord(tag, key);
         for (int variant = 0; variant < 3; ++variant) {
             const Pend& in = variant == 2 ? empty : base;
-            Result r = computeRewrite(rec, in);
+            Result r = computeRewrite(rec, in, (uint8_t)mask);
             if (strcmp(r.status, "rewrite")) { ++skipped; continue; }
             uintptr_t pd = makePending(in, variant == 1 ? Cap16 : CapExact);
             PendDump before; readPend(pd, NumSkills, &before);
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
             CHECK(!memcmp(raw0 + Pd_HP, raw1 + Pd_HP, Pd_Size - Pd_HP), "hp/class/force/padding changed");
             CHECK(after.nRem == 2 && after.rem[0] == 0x55 && after.rem[1] == 0x66, "spells-remove contents changed");
             ++applied;
-            Result again = computeRewrite(rec, after.pd);
+            Result again = computeRewrite(rec, after.pd, (uint8_t)mask);
             CHECK(!strcmp(again.status, "already"), "replay status %s", again.status);
             ++replays;
             // abort path: count no longer matches what was read -> nothing written

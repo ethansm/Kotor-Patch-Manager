@@ -79,7 +79,8 @@ def check(path, R):
                 warns.append(f"{tag}: feat {lab} needs base attack {pr['minattack']} (not verified)")
             feats.add(f)
         feats |= newly
-        cs_skills |= {csf[f] for f in feats if f in csf}  # active from this level's skill allocation
+        cs_prev = set(cs_skills)  # skills are picked BEFORE feats in the level-up GUI: a feat taken now counts from the next level
+        cs_skills |= {csf[f] for f in feats if f in csf}
         # --- powers ---
         pw = lv.get("powers", [])
         if cls in JEDI:
@@ -110,7 +111,7 @@ def check(path, R):
             if name not in SKILLS:
                 e(f"unknown skill {name}"); continue
             idx = SKILLS.index(name)
-            cost += n * (1 if idx in cs_skills or R.skill_is_class(idx, cls) else 2)
+            cost += n * (1 if idx in cs_prev or R.skill_is_class(idx, cls) else 2)
             skills[name] += n
             if skills[name] > lv["char_level"] + 3:
                 e(f"skill {name} rank {skills[name]} exceeds max {lv['char_level'] + 3}")
