@@ -78,3 +78,16 @@ texture id. Operator delete is expected at 0x9196FD (verify).
 - **Every batch answers the same four axes**, each as its own subsection in (b): (1) leaks / unbounded growth (quote the add site AND the missing remove, or the remove that balances it); (2) per-frame / per-tick allocation and CPU churn (show the call chain from the frame loop 0x407920 -> MainLoop 0x781BE0 or the server tick; say per-frame vs per-event); (3) crash / robustness paths (NULL, unchecked sizes/indexes, data-triggered, resource exhaustion); (4) hook points for runtime counters (instruction boundary, >= 5 stolen bytes, no relative CALL/JMP/Jcc inside and no branch target inside the stolen range, `original_bytes` copied from the .asm, parameter sources as `ecx` / `[esp+N]` at the hook / `[ebp-N]`/`[ebp+N]`).
 - Verdict words: CONFIRMED / REFUTED / SPECULATIVE, as in Phase 3. Rank findings by expected impact (memory MB, ms per frame/load, crash likelihood).
 - Mapped GOG names are hypotheses until the decompile (ret N, callees, strings) matches: say which you confirmed.
+
+## Phase 6 questions (2026-10-02; batches W1-W7; the V1-V7 names belong to another session's doc 15 work)
+- Output file `ROOT/findings/W<n>.md` only. Read the earlier findings your brief names first; do not re-derive verified facts.
+- Goal = **patch-ready fix designs** for robustness items and two perf items. For EVERY proposed patch site give:
+  (1) the exact .asm lines (address, bytes, instruction) from 16 bytes before to 16 bytes after the site;
+  (2) a whole-dump scan for branch/call targets inside the bytes you would overwrite: `grep -rE "(J[A-Z]+|CALL|JMP) +0x0*<addr>" decomp/*/*.asm` for every
+      address inside the stolen range (quote the command and the result, even if empty), plus jump tables if the function has a switch;
+  (3) the new bytes (hand-encoded; show the encoding: opcode, ModRM, rel32 base = address of the NEXT instruction);
+  (4) which registers/flags are live after the site (who reads them next) so the fix does not clobber anything;
+  (5) reachability: the call chain from a real trigger (frame loop 0x407920 / MainLoop 0x781BE0 / server tick / options menu / load) with quoted call sites,
+      and a verdict CONFIRMED reachable / REFUTED / SPECULATIVE;
+  (6) the counter you would add (what the guarded path firing means) and a harness idea (fake objects, which fields).
+- End the file with a per-item verdict line: `FIX <site(s)> <bytes>` / `DOCUMENT <reason>`.

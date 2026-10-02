@@ -1,0 +1,10 @@
+BATCH W7: VMID (NWScript command id sign extension) + FS (failed Service leak) + CR (CancelRequest dangling resman+0x28): patch-ready designs.
+Read first: findings/U1.md (VM), T3.md and R1.md (resman), U5.md (C2: async requests), and the Phase 6 section of CONTRACT.md.
+VMID:
+1. Quote 0x700275 MOVSX and the check 0x668FD9 `CMP [EBP+8],0x36D / JGE` with bytes. Is the JGE short (7D) or near (0F 8D)? Fix = JAE (73 / 0F 83): after MOVSX a negative id becomes >= 0x80000000 unsigned -> rejected. Confirm what the reject branch does (error code back to the VM? abort script?) and that NO legit id is negative. Are there OTHER command dispatchers (e.g. ActionDoCommand stored commands, 0x669A30, the debugger) that index the same table with a signed check? Enumerate readers of the table (alloc 0x665F59 PUSH 0xDB4).
+2. Exact bytes, branch-target scan.
+FS:
+3. Service* functions (0x7133A0 and siblings per restype): quote the failure tail (vtbl+0x10 returns 0, flag 4 cleared, +0x10 kept) and Malloc 0x712F30's unconditional +0x10 store. Fix: on failure free the buffer (which free? the resman's own Free routine; quote it) and zero +0x10, or in Malloc free a stale +0x10 first. Prefer the smallest site. Which restypes can fail (0-byte files, corrupt GFF)? Is the buffer budget counter (+0x?? of resman) also double-charged?
+4. Exact bytes, branch-target scan, reachability (how a mod's corrupt override resource triggers it).
+CR:
+5. CancelRequest 0x711A30 and Update 0x714300: quote resman+0x28 writes/reads and the path that leaves it dangling. U5 measured/derived only 2 async requesters (texpacks 2DA 0x78D800, GUI resource 0x835A20) and runtime async_start=0. Is any cancel reachable for those two? Verdict; most likely DOCUMENT.

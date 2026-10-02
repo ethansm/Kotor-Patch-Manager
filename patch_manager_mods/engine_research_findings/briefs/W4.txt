@@ -1,0 +1,10 @@
+BATCH W4: KT (key-table dangling CRes+0x14) + AB (action-bar CExoString churn / SetSize shrink overflow): patch-ready designs.
+Read first: findings/T2.md, T3.md, U5.md (KT), R7.md, R8.md, U4.md (AB), and the Phase 6 section of CONTRACT.md.
+KT:
+1. DestroyTable 0x726350: quote the still-in-demand branch 0x72650B (OR flag 0x200) and the store at 0x726527 that keeps CRes+0x14. Design a cave (E9 rel32 from 0x726527 or the nearest safe >=5-byte boundary) that additionally writes `mov dword [CRes+0x14],0`; name the register holding CRes at that point (quote the load).
+2. Confirm ReleaseResObject 0x713010's guard 0x713060 `CMP [EDX+0x14],0` then skips the write at 0x71306C. List EVERY other reader of CRes+0x14 (grep asm `+ 0x14]` in functions that take a CRes: Demand 0x711C20, Release 0x7130B0, FreeChunk 0x712160, Service*, RemoveKeyTable 0x7131D0, key-table add/lookup) and say what each does when +0x14 is 0 for a resource that is still demanded (can the resource later be re-found via another key table? does anything deref +0x14 unguarded -> a NEW NULL crash introduced by the fix?). This is the decisive question.
+3. Counter: how often the still-in-demand branch runs (perf-lab 0.3.0 has `KT still_in_demand` and `uaf_write`; give the hook sites it should correspond to).
+AB:
+4. 0x74CFE0 call chain from MainLoop (0x78382E) and why it runs ~98% of frames; the +1 growth path 0x58C3B0 -> SetAllocated/SetSize 0x58C540; quote 0x58C61D (copy bound uses OLD count). Is a SHRINK (new size < old count) reachable from ANY caller of 0x58C540 (enumerate callers in callgraph.tsv; quote the size arg of each)? Verdict CONFIRMED/REFUTED/SPECULATIVE.
+5. Fix A (robustness): bound the copy count by min(old,new) at 0x58C61D: exact bytes, cave design.
+6. Fix B (perf): the "12-byte reuse patch at 0x58C406" from U4: re-derive it, show bytes, prove behaviour preservation (array capacity semantics, which CExoString ctor/dtor runs), and estimate allocs/frame saved.

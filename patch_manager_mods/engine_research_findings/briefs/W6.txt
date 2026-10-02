@@ -1,0 +1,11 @@
+BATCH W6: GUIID (GUI control id pads list) + SS (screenshot/TGA writer) + TD (2DA tokenizer stack overflow): patch-ready designs.
+Read first: findings/R5.md (GUIID, TD), T3.md (SS), R4.md (saves), and the Phase 6 section of CONTRACT.md.
+GUIID:
+1. CSWGuiPanel::InitControl 0x40F620: quote the id read, the negative check, the list grow (which function, element size, how many bytes for id 0x7FFFFFFF -> new throws -> crash?). Where do ids come from (GFF "ID" field of .gui files, overrides/mods)? Max id in vanilla .gui files is unknown: propose a bound (e.g. 4096) and say what rejection does (same path as negative ids: quote it).
+2. Exact patch (cmp + jcc to the negative-id branch), bytes, branch-target scan.
+SS:
+3. WriteTGA 0x482BD0: quote _fopen and the first use of the FILE*; fwrite results. Fix: NULL check -> return failure (what does the caller do on failure? quote). CaptureScreenToTGA 0x4289D0: the camera object NULL deref (quote) and the uninitialised dims when padded width <= height. Callers: save thumbnail 0x855F30/0x52F610, screenshot key. Reachability of each defect (portrait/square window? Is the screenshot key path reachable on Wine/Proton?).
+4. Exact patch per defect, or DOCUMENT if the trigger is not realistic.
+TD:
+5. C2DA::LoadText 0x71C3D0 256-byte stack token local_130 and NextToken 0x71C180: quote the copy loop, which registers hold dst/len, the bound. Are ALL 2DAs binary in the shipped game (V2.b) so LoadText only runs for text-format 2DAs from override (mods)? Fix = clamp to 255 + NUL inside 0x71C180 (does NextToken have other callers with different buffer sizes? enumerate and quote the buffer size passed by each).
+6. Exact patch, bytes, branch-target scan; the stack cookie (__security_check_cookie 0x9196EE) present in 0x71C3D0? (if yes, overflow = clean abort, not code exec; still a crash).

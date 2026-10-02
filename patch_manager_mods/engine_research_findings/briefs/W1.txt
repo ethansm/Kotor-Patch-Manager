@@ -1,0 +1,8 @@
+BATCH W1: TX standalone patch static re-check (free TPC pixels after GL upload; cave at 0x4261CF guarded by [tex+0x34]==0).
+Read first: findings/R3.md, T1.md (TX verdict SAFE WITH GUARD), U5.md (requeue path), and the Phase 6 section of CONTRACT.md.
+Proven design (perf-lab experiment): site 0x4261CF `0F B6 C8 85 C9 75 10` -> `E9 rel32 90 90`; cave = movzx ecx,al / test ecx,ecx / jz free / mov edx,[ebp-4] / cmp dword [edx+0x34],0 / jnz skip / free: jmp 0x4261D6 / skip: jmp 0x4261E6.
+1. Re-quote 0x4261CA-0x4261E8 asm with bytes; confirm [ebp-4] = the texture object at that point and EAX/ECX/EDX liveness after 0x4261D6 and 0x4261E6.
+2. EVERY reader of tex+0x44 (image pointer) and of GetImage 0x422640 that can run AFTER the first upload, including: requeue/re-upload via BuildAndStoreTexture 0x4260E0 (U5: JZ 0x42613D/0x426141 skip a NULL image -- quote and say what happens to the GL texture then: kept? deleted and left empty -> black texture?), quality/anisotropy changes, TXI reload 0x461230, Reset 0x423990.
+3. GL context loss / device reset: alt-tab, Alt+Enter fullscreen toggle (0x40BDC0 / msg 0x409, window re-creation 0x409750): does the engine destroy and re-create the GL context and re-upload textures from tex+0x44? Quote the path. If yes and the image is freed: does it re-Demand from resman (safe) or upload NULL (black/crash)?
+4. Save-game thumbnail, minimap / area map (lbl_map), portraits, GUI image readers that read pixel data CPU-side (glReadPixels is fine; reading tex+0x44 is not).
+5. Verdict line: SAFE / SAFE WITH GUARD <guard> / UNSAFE <path>, plus any extra guard the standalone patch needs.

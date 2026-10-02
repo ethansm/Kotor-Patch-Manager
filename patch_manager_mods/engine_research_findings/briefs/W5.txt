@@ -1,0 +1,11 @@
+BATCH W5: SNDRI (Force Software apply kills sound) + NETOVF (net send ring overflow): patch-ready designs.
+Read first: findings/U2.md (sound), U6.md (net), and the Phase 6 section of CONTRACT.md. GOG names: inputs/gog_functions.tsv (CExoSound*, CNetLayer*).
+SNDRI:
+1. Quote the whole ReInitialize path 0x7051C0: who calls it (Options > Sound apply: find the GUI handler and the call chain, quote), 0x7054CE `MOV [EDX+0xD4],0`, 0x705559 CMP, 0x705562 AIL_quick_shutdown, the return 0. What is +0xD4 (initialised flag? provider handle?) -- list all readers/writers.
+2. What is the INTENDED flow (shutdown then re-init with the new provider)? Is there an init call that is skipped because of the +0xD4 store ordering (a bug) or does the caller re-init on a second apply? Compare with the GOG build function of the same name (inputs/gog_functions.tsv gives the GOG address and param size; GOG decomp is not available, so reason from structure) and with any second caller.
+3. Smallest fix: e.g. reorder / skip the clear / call the init routine after shutdown. Exact bytes per the contract. Risk analysis (double init, leaked Miles handles, 3D provider re-open).
+4. A user will reproduce in game (Force Software on, apply; off, apply). Say what log/counter would show the path ran (hook site + original bytes).
+NETOVF:
+5. 0x704060: quote 0x7040F7 JBE (skips only the log), the sprintf "Message Buffer Overflow", the memcpys 0x704428/0x70444E, the ring layout (2 x 128 KB, which fields hold head/tail/size). Exact max message size that overflows.
+6. Fix: make the overflow branch drop the message (jump to the epilogue with the same return value the caller expects for failure; quote the caller's check of the return value). Exact bytes; branch-target scan.
+7. Reachability: which messages can exceed the limit in single-player (save-game transfer? large party/inventory update? area load object lists)? Max observed at runtime = 14035 B.
