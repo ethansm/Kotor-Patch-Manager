@@ -76,4 +76,4 @@ Phase 0 verification:
 - `Patches/MouseProbe/`, untracked in the KPM fork.
 
 ## Next
-**Phase 1 = the registry + `kpatch.log` service in the core, with tests**, on the KPM fork. Plan: `PHASE1_PLAN` (path recorded in memory `kotor2-shared-logging` and in doc 19 section 8). Delegate the mechanical work to Sonnet subagents; Opus reviews, gates and commits.
+**Phase 1 = the registry + `kpatch.log` service in the core, with tests**, on the KPM fork. Plan: `patch_manager_mods/19d_phase1_plan.md` (a copy of the approved plan-mode plan; if missing, the plan-mode plan file is the source). Delegate the mechanical work to Sonnet subagents; Opus reviews, gates and commits.
