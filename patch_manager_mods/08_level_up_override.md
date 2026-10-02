@@ -235,6 +235,17 @@ User: manual GUI level-up Atton 3->4, then Auto button 4->7 (one DoAutoLevelup, 
 - Not yet covered: Kreia manual (e), Auto Level Up NPCs (c), natural XP award (d), SetExperience replay, mode=rewrite.
 - 0.1.1-probe built (kpatch md5 121b8a25, NOT installed): creature feat dump fixed (+0x00 and +0x18 lists). Live is still 0.1.0 (acd1ce14).
 
+## Phase 2 live results - run 2 (2026-10-02 00:32, new game session, 2 calls, player character)
+Live set is now 26 ids (a sibling session reinstalled 2026-10-01 23:36, adding character-effects-panel, k2-activation-fix, k2-equip-icon-fix, companion-ai,
+ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
+- Both calls = the PC (tag empty -> logged `tag=?`; no table section, no DRY line), Jedi Sentinel (class 5) 7 -> 8, same XP 33272 and same starting ranks, but
+  DIFFERENT stats pointers (0b581280 manual-gui, then 1036e2a8 auto-button 16 s later) - consistent with a reload between the two (not yet confirmed with user).
+- **Force powers CONFIRMED in pending spells-add** as uint32 spells.2da rows: manual pick [0x87], Auto pick [0x2F]; count 1 cap 16. No engine-grant power at
+  Sentinel 8 (none expected). spellsRem empty.
+- +0x2D force points gain = 6, +0x2B HP = 8, ability = 1 in both (Auto also picked DEX at an ability level). Skill deltas manual [1,0,0,1,1,0,1,1] / Auto [0,0,5,..]
+  (5 points each, unspent 0). No feat entries at char level 8.
+- Still uncovered: manual level at a feat-grant level, Kreia (path tag) powers + DRY on spells, Auto NPCs, natural XP award, SetExperience replay.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
