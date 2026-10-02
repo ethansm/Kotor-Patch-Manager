@@ -284,6 +284,8 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
   SetExperience replays of manual structs are therefore never rewritten; replays of rewritten auto structs report ALREADY.
 - apply_test.cpp also asserts the gate on the run 1 chains. parity 263/0, apply_test 0 failures, -Wall clean. kpatch c03922f2, dll 693053d9. 0.2.0 (bcdc9862) is
   live from 00:53 and still rewrites manual picks - replace before the spike.
+- **INSTALLED 0.2.1 2026-10-02 00:58 (user consent):** backup `backups/pre_levelup_021_20261002_005828/`, stage `$T/levelup_stage3/` (26 ids, PROBLEMS 0), "Applied 26",
+  verify 0 mismatches, live dll 693053d9, UpdatedAt 00:58:35. Config unchanged (`mode=rewrite tags=atton apply=1 verbose=1`).
 
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
