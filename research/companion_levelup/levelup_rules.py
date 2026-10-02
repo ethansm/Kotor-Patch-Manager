@@ -10,7 +10,7 @@ SKILLS = ["computer_use", "demolitions", "stealth", "awareness", "persuade", "re
 CLASS_ABBR = {0: "sol", 1: "sct", 2: "scd", 3: "jgd", 4: "jcn", 5: "jsn", 6: "drc", 7: "drx", 9: "tec"}
 JEDI = {3: "jgd", 4: "jcn", 5: "jsn"}
 JEDI_PWR_COL = {3: "guardian", 4: "consular", 5: "sentinel"}  # spells.2da columns
-CLASS_ID = {"Soldier": 0, "Scout": 1, "Scoundrel": 2, "JediGuardian": 3, "JediConsular": 4, "JediSentinel": 5, "TechSpecialist": 9}
+CLASS_ID = {"Soldier": 0, "Scout": 1, "Scoundrel": 2, "JediGuardian": 3, "JediConsular": 4, "JediSentinel": 5, "TechSpecialist": 9, "CombatDroid": 6, "ExpertDroid": 7}
 
 
 def _int(s, d=None):

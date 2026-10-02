@@ -36,7 +36,7 @@ def check(path, R):
         cls = lv["class"]
         if isinstance(cls, str):
             cls = CLASS_ID[cls]
-        if cls not in (0, 1, 2, 3, 4, 5, 9):
+        if cls not in (0, 1, 2, 3, 4, 5, 6, 7, 9):  # 6 CombatDroid, 7 ExpertDroid (HK-47, T3-M4, G0-T0)
             e(f"class {cls} unsupported")
             continue
         attrs.update(lv.get("attrs", {}))
