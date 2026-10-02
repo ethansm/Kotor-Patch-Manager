@@ -38,6 +38,19 @@
   slot when the stack is > 1. 10 new runtime labels `LBL_HOTBARQTY1..0` (67 controls; tooltip pair still last) at frame+4, y 495, 27x17 units, ALIGNMENT 36
   (= right 4 | bottom 32; DB lesson 354 ALIGNMENT bitmask, corrects 265), template font = same as the key digits; text from `hb::StackCount` (engine names
   item entries "Name (N)" only when N > 1). Host test extended. Stage `hotbar_stage13/` (= stage12 + this kpatch); at install re-run the md5 staging check.
+  **Build 25 = `a3303cb3` INSTALLED 2026-10-02 15:22** (stage `hotbar_stage14/` = sibling `levelup_stage6` (0 diffs vs live, 31 ids) + this hotbar; backup
+  `backups/inst14_1002_1522`; only the hotbar DLL changed; AR_ERROR.LOG unchanged). Contains build 24 (stack counts) + PER-SAVE HOTBARS: 5 new detours (all
+  byte-verified with hookbytes.py, no overlap with any staged patch): S1 0x534527 HotbarOnSaved (folder from save request R+0x18), S2 0x53C5AA HotbarOnAutosaved,
+  L1 0x52FD1E HotbarOnLoadRequest([ebp-0x14]), L1b 0x8529E0 HotbarOnAutosaveSlotLoad, NG 0x8FACA0 HotbarOnNewGame (chargen Play commit; only caller 0x907355).
+  Snapshot = copy of the live INI into `cloudsaves/<id>/<NNNNNN - Name>/force_power_hotbar.ini`; restore = live [General] + snapshot profiles (none -> empty).
+  User's pre-feature hotbar kept at `<game>/force_power_hotbar.ini.pre_persave`. Awaiting user test (counts; save/edit/reload reverts; quicksave/quickload;
+  new game empty; log `persave:` lines). DB lessons 355-357.
+  **PR workflow (user 2026-10-02):** open the KPM PR, the user drags screenshots into the PR on github.com (user-attachments CDN URLs; `gh` cannot upload
+  them), then update `Patches/ForcePowerHotbar/README.md` to reference those URLs. Fold into Phase E/L.
+  **Per-save hotbar (user request 2026-10-02 ~15:15, decided: part of 1.0.0, before Phase D):** on every save, snapshot the live profiles into the save
+  folder (`saves/<NNNNNN - name>/force_power_hotbar.ini`); on every load, replace the live INI's profiles with that save's snapshot, or EMPTY them if the
+  save has none (user choice: empty bar; existing saves/new games start empty). `[General]` never touched; `.ini.bak` kept. Static research of the Steam
+  save/load choke points running (background agent, read-only); then design gate (O) -> implement -> install with build 24 when the game is closed.
   **Runtime-GUI technique doc (2026-10-02):** `patch_manager_mods/RuntimeGuiControls.md` (upstream `docs/` style; copied to the KPM clone `docs/`), incl. a
   side-effect audit (DB lesson 336). Plan additions from it: Phase E rewrite the STALE KPM `Patches/ForcePowerHotbar/PULL_REQUEST.md` (still says 30 slots /
   UseForcePower) + add the README; Phase F check `setVisible`/`wVisible` re-assert against the live flag, not only the cache; Phase L checklist add an options-menu

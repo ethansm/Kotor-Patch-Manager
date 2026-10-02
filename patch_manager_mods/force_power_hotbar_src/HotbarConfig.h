@@ -238,7 +238,8 @@ struct Config {
         std::string o = "; Force Power Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
                         "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
                         "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
-                        "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n";
+                        "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
+                        "; Profiles belong to the loaded save: saving copies this file into the save folder, loading a save restores its copy (none = empty bar).\n";
         char b[64];
         o += "[General]\n";
         snprintf(b, sizeof b, "SchemaVersion=%d\n", SchemaVersion); o += b;

@@ -1192,6 +1192,64 @@ void healTextures() {
     }
 }
 
+// ---- per-save hotbars: the live INI's profiles are snapshotted into each save folder and restored on load ------------------
+// Every save (menu, quicksave, autosave) copies force_power_hotbar.ini into the save folder; every load replaces the live INI's
+// profiles with that save's copy, or empties them when the save has none (older saves, new games). [General] is never touched.
+// Engine facts: DB lessons 355-357 (save request R = *(*(0xA1B4A4)+0x14), folder CExoString at R+0x18 = "SAVES:NNNNNN - Name";
+// the SAVES: alias = the CExoString at 0xA7EABC ("cloudsaves/<steam id>/") while the Steam Cloud byte 0xA7EA88 is set, else saves/).
+constexpr uintptr_t SaveRequestHolder = 0x00A1B4A4;   // same global as AppGlobal: *(*(it)+0x14) = server save/load request
+constexpr int SaveReq_Folder = 0x18;
+constexpr uintptr_t CloudSavesFlag = 0x00A7EA88, CloudSavesDir = 0x00A7EABC;
+const char* const SnapshotFile = "force_power_hotbar.ini";
+const char* const AutosaveFolder = "000001 - AUTOSAVE";
+
+// "SAVES:000012 - Game11" / "000012 - Game11" -> "cloudsaves/<id>/000012 - Game11" (relative to the game dir = our cwd). "" if implausible.
+std::string saveDirFor(const char* folder) {
+    if (!folder || IsBadReadPtr(folder, 9)) return "";
+    std::string f; for (int i = 0; i < 260 && !IsBadReadPtr(folder + i, 1) && folder[i]; ++i) f += folder[i];
+    if (f.size() > 6 && _strnicmp(f.c_str(), "SAVES:", 6) == 0) f = f.substr(6);
+    while (!f.empty() && (f[0] == '\\' || f[0] == '/')) f.erase(0, 1);
+    if (f.size() < 10 || f.compare(6, 3, " - ") != 0) return "";
+    for (int i = 0; i < 6; ++i) if (f[i] < '0' || f[i] > '9') return "";
+    unsigned char cloud = 0; readAt(CloudSavesFlag, 0, &cloud);
+    std::string base = cloud ? readCExoString(CloudSavesDir) : std::string("saves/");
+    if (base.empty()) base = "saves/";
+    if (base.back() != '/' && base.back() != '\\') base += '/';
+    return base + f;
+}
+
+void snapshotToSave(const char* folder, const char* why) {
+    std::string dir = saveDirFor(folder);
+    if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), no snapshot", why, folder && !IsBadReadPtr(folder, 1) ? folder : "?"); return; }
+    DWORD at = GetFileAttributesA(dir.c_str());
+    if (at == INVALID_FILE_ATTRIBUTES || !(at & FILE_ATTRIBUTE_DIRECTORY)) { logf("persave: %s: folder '%s' not found, no snapshot", why, dir.c_str()); return; }
+    checkConfig(true);   // a hand edit made in the last second is part of what the player saved
+    std::string dst = dir + "/" + SnapshotFile;
+    BOOL ok = CopyFileA(IniPath, dst.c_str(), FALSE);
+    logf("persave: %s: hotbar -> '%s': %s (profiles=%d)", why, dst.c_str(), ok ? "ok" : "FAILED", (int)g_cfg.profiles.size());
+}
+
+// Replaces the live INI's profiles with `snap`'s (nullptr = none: empty bar), keeping [General]; the previous file goes to .ini.bak.
+void replaceLiveProfiles(const hb::Config* snap, const std::string& source, const char* why) {
+    checkConfig(true);
+    hb::Config n; n.general = g_cfg.general; n.profile("Default");
+    if (snap) for (auto& kv : snap->profiles) n.profiles[kv.first] = kv.second;
+    BOOL bak = CopyFileA(IniPath, "force_power_hotbar.ini.bak", FALSE);
+    bool ok = n.Save(IniPath);
+    if (ok) { g_cfg = n; g_cfgMtime = hb::Config::mtimeOf(IniPath); recomputeBound(); }
+    if (g_bar.ed.mode != M_Normal) setMode(M_Normal, -1, why);
+    logf("persave: %s: %s -> live hotbar %s (%d profile(s), snapshot warnings=%d, backup %s)", why, source.c_str(),
+         ok ? "replaced" : "NOT replaced (save failed)", (int)n.profiles.size(), snap ? (int)snap->warnings.size() : 0, bak ? "ok" : "none");
+}
+
+void restoreFromSave(const char* folder, const char* why) {
+    std::string dir = saveDirFor(folder);
+    if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), live hotbar kept", why, folder && !IsBadReadPtr(folder, 1) ? folder : "?"); return; }
+    std::string src = dir + "/" + SnapshotFile;
+    hb::Config snap; bool have = hb::Config::mtimeOf(src) >= 0 && snap.Load(src);
+    replaceLiveProfiles(have ? &snap : nullptr, "'" + src + "' " + (have ? "found" : "absent (empty bar)"), why);
+}
+
 } // namespace
 
 // ---- hook 1: keyboard capture -------------------------------------------------------------------------
@@ -1239,6 +1297,24 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     }
     if (isDigit || isMod || isEsc) { VLOG("cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
 }
+
+// ---- hooks 4-8: per-save hotbars (see snapshotToSave / restoreFromSave) -------------------------------------------------
+// S1 0x00534527: main loop right after SaveGameInProgress (0x00534600, the only writer of menu saves, quicksaves and timer autosaves).
+extern "C" void __cdecl HotbarOnSaved() {
+    uintptr_t req = 0; int app = 0;
+    if (readAt(SaveRequestHolder, 0, &app) && app) readAt(static_cast<uintptr_t>(app), 0x14, &req);
+    std::string f = req ? readCExoString(req + SaveReq_Folder) : std::string();
+    snapshotToSave(f.c_str(), "save written");
+}
+// S2 0x0053C5AA: end of DoPCAutosave (module-entry autosave; always 000001 - AUTOSAVE, bypasses S1).
+extern "C" void __cdecl HotbarOnAutosaved() { snapshotToSave(AutosaveFolder, "module autosave written"); }
+// L1 0x0052FD1E: CServerExoAppInternal::LoadGame after the save's party table and globals loaded; folder = "SAVES:NNNNNN - Name".
+extern "C" void __cdecl HotbarOnLoadRequest(const char* folder) { restoreFromSave(folder, "save loading"); }
+// L1b 0x008529E0: LoadAutosaveSlot (PCAUTOSAVE entries; bypasses LoadGame).
+extern "C" void __cdecl HotbarOnAutosaveSlotLoad() { restoreFromSave(AutosaveFolder, "autosave loading"); }
+// NG 0x008FACA0: chargen "Play" commit (only caller CSWGuiMainCharGen::BeginPlayGame 0x00907340), before the server is re-created.
+// Backing out of New Game never reaches it, so the previous game's hotbar is only dropped once the new game really starts.
+extern "C" void __cdecl HotbarOnNewGame() { replaceLiveProfiles(nullptr, "new game", "new game started"); }
 
 // ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
 // Runs inside CSWGuiMainInterface's constructor between the last InitControl and StopLoadFromLayout, so the layout GFF
