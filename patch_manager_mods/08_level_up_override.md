@@ -609,6 +609,31 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   not hold a level-7 Atton). Log `levelup_override_log.txt` had 175 lines before the M2 live test.
 - Rollback: `mode=off` (hot) or reinstall the backup set.
 
+## Phase 5 UX research (2026-10-02, two Explore reports over Mod 3 / Mod 14 source; plan `research/companion_levelup/PHASE5_PLAN.md`)
+- **Runtime controls need the layout open.** InitControl 0x40F620 from a template tag needs the panel layout GFF (panel+0x30), which is only open inside
+  the panel ctor before StopLoadFromLayout 0x40F5A0 (DB lessons 67/113/283) -> the per-tick SetStats hook CANNOT create template labels. Mod 14 owns the
+  ctor bind hook 0x84D871 and ships a custom `character_p.gui` (`LBL_EFX_*` ids 69..150, generator `scripts/mirror_character_page.py`) -> we need our own
+  ctor-time hook site (U1).
+- **Label recipe** (Mod 3 `ForcePowerHotbar.cpp` `createLabel` 982-1043): new(0x148) + ctor 0x419740 (vtable 0x9878BC); InitControl(panel, ctl,
+  templateTag, addToList=0), id = control count; rect via vtable slot 1, text 0x416E30 (ECX = label+0xF0), font 0x416DE0, align 0x416FA0, fill
+  border(+0x60)+0x74, tint border+0x28, alpha border+0x24, text colour 0x417140; append via 0x83EA60 on panel+0x24. Flags +0x48: bit1 visible, bit5 0x20
+  click-through (keep 0x20 set while hidden, clear while shown so clicks never reach the world - lesson 192). Draw order = list index (append = on top);
+  hit-test walks from the highest index. DLL-set text draws left-aligned (lesson 265). Runtime extents are engine pixels.
+- **Templates** in the live `character_p.gui`: `LBL_EXPERIENCE_STAT` (id 25, plain, green text), `LBL_XP_BACK` (id 3, framed).
+- **Free area** under BTN_LEVELUP ~ x 362..456, y 370..430 (800x600 units). Mod 14's panel occupies x 536-752 -> keep the wizard in x ~150..530.
+- **Placement:** Mod 14 method (`CharEffectsPanel.cpp` `ux`/`uy` 368-375) = reference label pixel rect + (unit - refX) * scale; handles aspect + ultrawide.
+- **Clicks:** `GetAsyncKeyState(VK_LBUTTON)` edge detection gated on a foreground-PID check (Mod 3 `cursorInGame` 476, `wHit` 729, poll 829-832, hover
+  sound `playHoverSound` 608), hit-test against the control extent (+4/+8/+0xC/+0x10). Esc closes the whole character screen (vanilla); the wizard resets
+  on panel close -> no Esc-swallow hook.
+- **Wizard data** (`runtime/levelup_paths.ini` `[presets]`): 5-8 presets per companion; <= 5 answers on any page (fits 6 cells); auto-skip one-answer pages;
+  jump to the result as soon as one preset remains.
+- **Build:** `create-patch.py` compiles every `*.cpp` in the patch dir + subdirs; shared headers live in `patch_manager_mods/_shared_src/`, copied to
+  `$T/Patches/_shared/` (included as `../_shared/X.h`).
+
+### User decision R11 (2026-10-02): status line + banked message
+- R11 = a **character-screen status line** ("Holding N level(s) for <Jedi class> - <short>" / "Auto path: <short>") **plus a one-time message when a
+  level is banked**. NO portrait badge, NO tinted vanilla level-up icon (the indicator would suppress Buff HUD's icons). Portrait badge = open-later idea.
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
@@ -722,3 +747,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   is untracked and NOT ours (created 03:57 by another session) - leave it; (6) `atton__live` stays Scoundrel to char 19 (Sentinel from 20), so use a
   convert-at-8 preset to see a hold on a level-7 Atton; (7) review finding: all hooks run on one thread (tid 316 in logs) - config/table swap is safe.
 
+
+## Session notes - Phase 5 (UX + M3 save binding + M4 Configure UI + R11 -> one 0.3.0 build, started 2026-10-02)
+- Plan: `research/companion_levelup/PHASE5_PLAN.md` (authoritative). Evidence: `research/companion_levelup/phase5_evidence/` (README lists U1-U4 prefixes).
+- Step 0 (preflight) done: plan copied, "Phase 5 UX research" + R11 decision written above. Next: U (Ghidra static, one Sonnet agent) || P (preset data fix).
+- Live state unchanged: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
