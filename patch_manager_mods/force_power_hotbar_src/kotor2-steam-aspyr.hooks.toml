@@ -33,7 +33,8 @@ source = "ecx"
 type = "pointer"
 
 # CSWGuiMainInterface constructor (FUN_00747210), just before StopLoadFromLayout (0x0040F5A0): [ebp-0x5F4] = panel (the HUD).
-# The layout GFF is still open here, so the button labels bind by tag like the game's own members.
+# All native controls are bound and the layout GFF is still open, so the DLL can copy native template labels for its 57
+# runtime-created controls and append them to the HUD's control list (no .gui edit needed).
 [[hooks]]
 address = 0x00748502
 type = "detour"

@@ -8,6 +8,11 @@
   `tex fph_* (frame 120): gl=4166..4169 constructed=1 missing=0 pixels=00000000` (uploaded + buffer freed by the engine). NEXT = Phase B full: all 57 controls + 4 textures
   at runtime (append, no .gui binds), then `--rollback` the live .gui and delete `override/hotbar_*.tga` (game closed), user test.
   Rollback = reinstall build 20 (`6c8af8c0`, kpatch in `stage_engfix_1002_0121/`).
+  **Phase B full BUILT, NOT installed (2026-10-02 ~02:35, game running):** DLL md5 `dcf030b4` (framework `Patches/ForcePowerHotbar/`): all 57 controls created
+  from one `Layout[]` table (pykotor check vs the script `.gui`: 57/57 extents/fill/text/font/align/order), appended at the panel count, no `.gui` binds
+  (`bindLabel`/`fixRect`/`dumpMem` deleted); frames now `fph_slot`/`fph_slot_hi`. B1 Ghidra (DB lesson 290): `healTextures()` correct for both reset orders
+  (0xA1BC2C = texture work list drained by 0x427810 from TextureMgr::Tick; ResetAll/SetMem re-queue + Reset all; engine-first rebuild sets +0xE5 missing);
+  heal cap now resets after a good upload. NEXT (game closed): stage + install, back up then `scripts/add_hotbar_buttons_gui.py --rollback`, user test, commit.
 - **Previous install:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
   GUI deployed = **168 controls** (`override/mipc28x6_p.gui`), textures `override/hotbar_slot*.tga`, `override/hotbar_edit*.tga`. Game closed at the end of the session.
 - **Features (all live-verified unless noted):** ten native-width (35 u) square HUD buttons for keys `1`-`0` (icons at native quick-bar size, digit label up/left of the icon, dimming, hover frame swap + the native GUI hover sound,

@@ -1,13 +1,14 @@
-// Force Power Hotbar (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Prototype phase: 30 keybound slots
-// (1-0, Ctrl+1-0, Alt+1-0) that invoke a vanilla HUD quick-action; NO on-screen bars yet.
+// Force Power Hotbar (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...): ten on-screen slots bound to keys 1-0 that invoke a vanilla HUD
+// quick-action, plus an in-game editor. Self-contained: controls, art and the INI template are all created by this DLL.
 // Research trail and every address: patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
 //
 // Hooks (cdecl detours, original bytes still run):
 //   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
 //   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, probe, invoke, button state
-//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- construct + bind 10 CSWGuiLabel
-//               controls LBL_HOTBAR1..9,0 (IDs 111..120, added to mipc28x6_p.gui by scripts/add_hotbar_buttons_gui.py). The panel's own
-//               Draw (0x0040EC90) then draws them with the HUD; the tick only swaps icon (border+0x74), alpha (border+0x24) and visibility.
+//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our 57 CSWGuiLabel controls
+//               at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
+//               list. The panel's own Draw (0x0040EC90) then draws them with the HUD; the tick only swaps fill (border+0x74), alpha
+//               (border+0x24), text and visibility. Frame/wrench art is embedded (HotbarTextures.inc) and registered as engine textures.
 //
 // Invoke design: the HUD's own per-group action list (hud+0x78+g*0xC, entry stride 0x3C) holds powers
 // (key = spells.2da row | 0x20000000) and items (key = item object id | 0x40000000). We set the group's selection
@@ -60,19 +61,21 @@ constexpr int Ctl_Flags = 0x48;                   // bit1 = visible (panel Draw 
 constexpr int Ctl_Id = 0x54;
 constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill = 0x74;
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
-constexpr int ButtonCount = 10, FirstButtonId = 111;   // frames 111..120, icon labels 121..130 (FIRST_ID in scripts/add_hotbar_buttons_gui.py)
-constexpr int IconIdOffset = 10;
+constexpr int ButtonCount = 10;
 constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;
 // (FUN_0073FEA0 screen-info getter is a THISCALL reading [ecx+0x274]: never call it without a valid this)
 constexpr uintptr_t GuiRefW = 0x009F4390, GuiRefH = 0x009F4394;   // ints (800, 600): the 800x600 layout space
-// config UI (0.3.0), IDs continue after the 20 hotbar labels; MUST match ALL_TAGS order in scripts/add_hotbar_buttons_gui.py.
-// The tooltip pair is last so it draws above the picker (panel Draw is ascending by ID).
-constexpr int EditId = FirstButtonId + 2 * ButtonCount, PbgId = EditId + 1, TitleId = EditId + 2, TabId0 = EditId + 3, TabCount = 3;
-constexpr int PrevId = EditId + 6, NextId = EditId + 7, ClearId = EditId + 8;
-constexpr int CellCount = 8, CellBgId0 = EditId + 9, CellIcId0 = CellBgId0 + CellCount;
-constexpr int NumId0 = CellIcId0 + CellCount;                                  // key-digit labels (own labels so the digit can sit above-left of the icon)
-constexpr int TipBgId = NumId0 + ButtonCount, TipId = TipBgId + 1;   // hover tooltip frame + text
-constexpr int TotalNewControls = TipId - FirstButtonId + 1;
+// Our controls are created at runtime and appended to the HUD panel's control list (see Layout[] and createLabel). Offsets below are
+// positions in Layout[] (= list index - base, base = native control count). The tooltip pair is last so it draws above the picker
+// (panel Draw walks the list in ascending order).
+constexpr int BgOff0 = 0, IcOff0 = BgOff0 + ButtonCount;                    // slot frames, slot icons
+constexpr int EditOff = IcOff0 + ButtonCount, PbgOff = EditOff + 1, TitleOff = EditOff + 2, TabOff0 = EditOff + 3, TabCount = 3;
+constexpr int PrevOff = TabOff0 + TabCount, NextOff = PrevOff + 1, ClearOff = PrevOff + 2;
+constexpr int CellCount = 8, CellBgOff0 = ClearOff + 1, CellIcOff0 = CellBgOff0 + CellCount;
+constexpr int NumOff0 = CellIcOff0 + CellCount;                              // key-digit labels (own labels so the digit can sit above-left of the icon)
+constexpr int TipBgOff = NumOff0 + ButtonCount, TipOff = TipBgOff + 1;       // hover tooltip frame + text
+constexpr int ControlCount = TipOff + 1;                                     // 57
+constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 25: the editor is enabled only when all of them exist
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
 constexpr uintptr_t GuiSoundMgrGlobal = 0x00A1B49C, FnPlayGuiSound = 0x004122A0;   // thiscall(ECX = *GuiSoundMgrGlobal, char idx) RET 4; idx 1 = the control mouse-enter sound (FUN_00418750 / FUN_00418FE0)
@@ -82,10 +85,10 @@ constexpr DWORD TipDelayMs = 450;
 constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 3;   // px estimates for dialogfont16x16 at 2.667 px/unit; calibrate live
 const char* const Spells2daPath = "override/spells.2da";
 const char* const TlkPath = "dialog.tlk";
-const char* const FrameResref = "hotbar_slot";       // TGAs written by the GUI script into override/
-const char* const FrameHiResref = "hotbar_slot_hi";
-const char* const EditResref = "fph_edit", *const EditHiResref = "fph_edit_hi";   // thin wrench toggle art (embedded, served from DLL memory)
-constexpr double EditBoxUnits = 38.0, PickBoxUnits = 112.0, BoxPadUnits = 8.0, TitleUnits = 22.0;   // must match the GUI script layout
+// Art embedded in the DLL (HotbarTextures.inc) and registered as engine textures under these names (ensureTextures).
+const char* const FrameResref = "fph_slot", *const FrameHiResref = "fph_slot_hi";   // slot / tab / cell frame, normal + hover
+const char* const EditResref = "fph_edit", *const EditHiResref = "fph_edit_hi";     // thin wrench toggle, normal + active
+constexpr double EditBoxUnits = 38.0, PickBoxUnits = 112.0, BoxPadUnits = 8.0, TitleUnits = 22.0;   // must match LBL_HOTBARPBG / PTITLE in Layout[]
 constexpr float EmptyFrameAlpha = 0.45f;
 constexpr DWORD SettleMs = 1500;                  // after a character switch the HUD action lists lag behind: unresolved slots stay hidden, checked every frame
 constexpr int ButtonRefreshFrames = 8;            // entry re-resolve interval (usable/dim state changes are slow)
@@ -430,8 +433,8 @@ void drainRing(uintptr_t hud) {
 }
 
 // ---- on-screen buttons -----------------------------------------------------------------------------------
-// Each slot = two labels: a frame (LBL_HOTBARBG<d>, id 111+s, drawn first) showing "hotbar_slot" / "hotbar_slot_hi" (hover), and
-// the icon+digit label (LBL_HOTBAR<d>, id 121+s) on top. Both are hidden when the HUD gate is closed.
+// Each slot = three labels: a frame (LBL_HOTBARBG<d>, drawn first) showing "fph_slot" / "fph_slot_hi" (hover), the icon label
+// (LBL_HOTBAR<d>) on top and the key digit (LBL_HOTBARNUM<d>). All are hidden when the HUD gate is closed.
 using InitCtlFn = void(__thiscall*)(void*, void*, void*, int, int);
 using CExoCtorFn = void*(__thiscall*)(void*, const char*);
 using CExoDtorFn = void(__thiscall*)(void*);
@@ -671,7 +674,7 @@ void playHoverSound(const char* why) {
     if (logs < 40) { ++logs; logf("sound: hover (%s) mgr=%p", why, mgr); }
 }
 
-// Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "hotbar_slot_hi").
+// Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
 void updateHover(bool gate) {
     static int lastHover = -2; static POINT lastPt = {-1, -1}; static long lastLog = -1000;
     int over = -1; POINT pt = {0, 0};
@@ -1002,21 +1005,11 @@ void updateEditor(uintptr_t hud, bool gate) {
     logf("edit: click at (%ld,%ld) in Pick mode hit nothing", (long)pt.x, (long)pt.y);
 }
 
-void dumpMem(const char* tag, uintptr_t base, int dwords) {
-    char line[200];
-    for (int i = 0; i < dwords; i += 8) {
-        int p = 0; p += snprintf(line + p, sizeof line - p, "%s+%03x:", tag, i * 4);
-        for (int j = i; j < i + 8 && j < dwords; ++j) p += snprintf(line + p, sizeof line - p, " %08x", (unsigned)rdInt(base, j * 4));
-        logf("%s", line);
-    }
-}
-
-// Allocates, constructs and binds one label by tag (see hook 3 below).
-// With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8). The HUD is drawn at
-// a uniform H/600 px per unit, so squeeze x/width by (H/600)/(W/800). Returns the factor (1 = unknown, leave alone).
+// Layout units -> px. With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8).
+// The HUD is drawn at a uniform H/600 px per unit, so x/width are squeezed by c = (H/600)/(W/800) afterwards.
 struct Scale { double sx = 1.0, sy = 1.0, c = 1.0; };   // layout units -> px as InitControl scales (sx, sy), then the x squeeze c
 Scale g_scale;
-double aspectFix() {
+void aspectFix() {
     // NOT FnScreenInfo: FUN_0073FEA0 is a thiscall that reads [this+0x274]; calling it as cdecl passes a garbage/null ECX and crashed on load
     // (build 8, null read at 0x73FEAF). The window client size is what the engine renders at.
     short w = 0, h = 0; int rw = rdInt(GuiRefW, 0), rh = rdInt(GuiRefH, 0);
@@ -1026,46 +1019,7 @@ double aspectFix() {
     double c = (w > 0 && h > 0 && rw > 0 && rh > 0) ? ((double)h / rh) / ((double)w / rw) : 1.0;
     if (c != 1.0) { g_scale.sx = (double)w / rw; g_scale.sy = (double)h / rh; g_scale.c = c; } else g_scale = Scale();
     logf("H3: window %p client=%dx%d ref=%dx%d -> x correction %.4f", (void*)win, (int)w, (int)h, rw, rh, c);
-    return c;
 }
-void fixRect(unsigned char* ctl, const char* tag, double c) {
-    if (c == 1.0) return;
-    uintptr_t cc = reinterpret_cast<uintptr_t>(ctl);
-    int r[4]; for (int i = 0; i < 4; ++i) r[i] = rdInt(cc, 4 + 4 * i);
-    int n[4] = { (int)(r[0] * c + 0.5), r[1], (int)(r[2] * c + 0.5), r[3] };
-    void** vt = *reinterpret_cast<void***>(ctl);
-    if (IsBadReadPtr(vt + 1, 4)) { logf("H3 %s: vtable unreadable, no aspect fix", tag); return; }
-    reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(ctl, n);
-    logf("H3 %s: aspect fix rect [%d,%d,%d,%d] -> [%d,%d,%d,%d]", tag, r[0], r[1], r[2], r[3], n[0], n[1], n[2], n[3]);
-}
-unsigned char* bindLabel(uintptr_t panel, const char* tagName, int expectId, Widget* w, bool dump, double aspect) {
-    unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
-    if (!ctl) { logf("H3 %s: allocation failed", tagName); return nullptr; }
-    memset(ctl, 0, LabelSize);
-    reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
-    int vt = rdInt(reinterpret_cast<uintptr_t>(ctl), 0);
-    if (vt != (int)LabelVtable) { logf("H3 %s: ctor left vtable %08x (expected %08x), not binding", tagName, (unsigned)vt, (unsigned)LabelVtable); return nullptr; }
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, tagName);
-    reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 1, 1);
-    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
-    if (rdInt(reinterpret_cast<uintptr_t>(ctl), Ctl_Id, -999) == expectId) fixRect(ctl, tagName, aspect);
-    uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
-    int id = rdInt(c, Ctl_Id, -999), fl = rdInt(c, Ctl_Flags);
-    int ext[4]; for (int i = 0; i < 4; ++i) ext[i] = rdInt(c, 4 + 4 * i);
-    uintptr_t border = c + Label_Border; float ba = 1.0f; readAt(border, Border_Alpha, &ba);
-    logf("H3 %s: ctl=%p id=%d (expect %d) rect=[%d,%d,%d,%d] flags=%08x border vt=%08x w=%d h=%d fill=%08x alpha=%.2f",
-         tagName, ctl, id, expectId, ext[0], ext[1], ext[2], ext[3], (unsigned)fl, (unsigned)rdInt(border, 0), rdInt(border, Border_W), rdInt(border, Border_H), (unsigned)rdInt(border, Border_Fill), ba);
-    if (dump) dumpMem(tagName, c, LabelSize / 4);
-    // hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so the row never
-    // swallows clicks. Done BEFORE the id check: InitControl already put the label in the panel list, so a wrong/missing id must
-    // still leave it invisible and click-through.
-    *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
-    if (id != expectId) { logf("H3 %s: GUI control missing or wrong id (%d) -- run scripts/add_hotbar_buttons_gui.py; label hidden, slot part unusable", tagName, id); return nullptr; }
-    w->ctl = ctl; w->id = id; w->baseAlpha = ba; w->visible = 0; w->why = "built";
-    return ctl;
-}
-
 // ---- runtime-created controls + textures served from DLL memory (1.0.0; doc 07 "Phase R") ------------------------------------
 // Labels: a native template struct of the open HUD layout initialises our label (InitControl with addToList=0 never touches the
 // panel list), then we set our own id/rect/text/fill and append it to the panel list ourselves (draw order = list index).
@@ -1080,7 +1034,9 @@ using PtrListAddFn = void(__thiscall*)(void*, void*);
 using SetResFn = void(__thiscall*)(void*, const char*);
 using SetUIntFn = void(__thiscall*)(void*, unsigned);
 
-unsigned char* createLabel(uintptr_t panel, int index, const CtlSpec& sp, Widget* w) {
+// Creates one label from its Layout[] spec and appends it to the panel's control list. Returns nullptr (label not in the list) on
+// any failure; the caller then leaves that part of the bar/editor disabled.
+unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
     if (!ctl) { logf("H3 %s: allocation failed", sp.name); return nullptr; }
     memset(ctl, 0, LabelSize);
@@ -1093,6 +1049,8 @@ unsigned char* createLabel(uintptr_t panel, int index, const CtlSpec& sp, Widget
     reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 0, 1);
     reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
     if (rdInt(c, Ctl_Id) == IdSentinel) { logf("H3 %s: template %s not in the HUD layout, control not created", sp.name, TemplateTags[sp.tmpl]); return nullptr; }
+    int index = rdInt(panel, Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
+    if (index < 0) { logf("H3 %s: panel control count unreadable, control not created", sp.name); return nullptr; }
     *reinterpret_cast<int*>(ctl + Ctl_Id) = index;
     const Scale& k = g_scale;
     int r[4] = { (int)((int)(sp.x * k.sx) * k.c + 0.5), (int)(sp.y * k.sy), (int)((int)(sp.w * k.sx) * k.c + 0.5), (int)(sp.h * k.sy) };
@@ -1112,23 +1070,105 @@ unsigned char* createLabel(uintptr_t panel, int index, const CtlSpec& sp, Widget
         else *reinterpret_cast<void**>(border + Border_Fill) = imageFor(sp.fill);
     }
     int fl = rdInt(c, Ctl_Flags);
-    *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;   // hidden + click-through until the tick shows it (see bindLabel)
-    int cnt = rdInt(panel, Panel_CtlCount, -1); uintptr_t arr = static_cast<uintptr_t>(rdInt(panel, Panel_CtlArray));
-    if (index == cnt) reinterpret_cast<PtrListAddFn>(FnPtrListAdd)(reinterpret_cast<void*>(panel + Panel_CtlArray), ctl);
-    else if (index >= 0 && index < cnt && arr && rdInt(arr, index * 4) == 0) *reinterpret_cast<unsigned char**>(arr + index * 4) = ctl;   // free padded slot
-    else { logf("H3 %s: index %d not appendable (panel count %d), control not created", sp.name, index, cnt); return nullptr; }
+    // Hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so a hidden control never
+    // swallows clicks; the tick clears it on shown frames/editor controls so clicks on the bar do not reach the world.
+    *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
+    reinterpret_cast<PtrListAddFn>(FnPtrListAdd)(reinterpret_cast<void*>(panel + Panel_CtlArray), ctl);
+    int cnt = rdInt(panel, Panel_CtlCount, -1);
+    if (cnt != index + 1 || rdInt(static_cast<uintptr_t>(rdInt(panel, Panel_CtlArray)), index * 4) != static_cast<int>(c)) {
+        logf("H3 %s: append to the panel list failed (count %d -> %d), control not used", sp.name, index, cnt); return nullptr;
+    }
     float ba = 1.0f; readAt(border, Border_Alpha, &ba);
-    logf("H3 %s: created at index %d from %s rect=[%d,%d,%d,%d] fill=%s text=%s list count %d -> %d", sp.name, index, TemplateTags[sp.tmpl],
-         rdInt(c, 4), rdInt(c, 8), rdInt(c, 0xC), rdInt(c, 0x10), sp.fill ? sp.fill : "-", sp.text ? sp.text : "-", cnt, rdInt(panel, Panel_CtlCount, -1));
+    logf("H3 %s: created at index %d from %s rect=[%d,%d,%d,%d] fill=%s text=%s", sp.name, index, TemplateTags[sp.tmpl],
+         rdInt(c, 4), rdInt(c, 8), rdInt(c, 0xC), rdInt(c, 0x10), sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
     w->ctl = ctl; w->id = index; w->baseAlpha = ba; w->visible = 0; w->why = "built";
     w->icon = sp.fill ? sp.fill : ""; w->text = sp.text ? sp.text : "";
     return ctl;
 }
 
+// All 57 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
+// keep the template's value (LBL_QUEUE1: white dialogfont16x16, align 9 = top-left; 17 = top-centre, 18 = centre).
+const CtlSpec Layout[] = {
+    { "LBL_HOTBARBG1",       TP_Plain,  29, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG2",       TP_Plain,  69, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG3",       TP_Plain, 109, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG4",       TP_Plain, 149, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG5",       TP_Plain, 189, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG6",       TP_Plain, 229, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG7",       TP_Plain, 269, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG8",       TP_Plain, 309, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG9",       TP_Plain, 349, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARBG0",       TP_Plain, 389, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR1",         TP_Plain,  31, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR2",         TP_Plain,  71, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR3",         TP_Plain, 111, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR4",         TP_Plain, 151, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR5",         TP_Plain, 191, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR6",         TP_Plain, 231, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR7",         TP_Plain, 271, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR8",         TP_Plain, 311, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR9",         TP_Plain, 351, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAR0",         TP_Plain, 391, 480,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBAREDIT",      TP_Plain,   4, 478,  20,  35, "fph_edit", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARPBG",       TP_Panel,   4, 360, 420, 112, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARPTITLE",    TP_Plain,  12, 368, 404,  22, nullptr,    "",       "dialogfont10x10", 17 },
+    { "LBL_HOTBARTAB0",      TP_Plain,  12, 394,  84,  24, "fph_slot", "Powers", "dialogfont10x10", 18 },
+    { "LBL_HOTBARTAB1",      TP_Plain, 100, 394,  84,  24, "fph_slot", "Items",  "dialogfont10x10", 18 },
+    { "LBL_HOTBARTAB2",      TP_Plain, 188, 394,  84,  24, "fph_slot", "Modes",  "dialogfont10x10", 18 },
+    { "LBL_HOTBARPREV",      TP_Plain,  12, 426,  28,  35, "fph_slot", "<",      nullptr,           18 },
+    { "LBL_HOTBARNEXT",      TP_Plain, 388, 426,  28,  35, "fph_slot", ">",      nullptr,           18 },
+    { "LBL_HOTBARCLEAR",     TP_Plain, 346, 394,  70,  24, "fph_slot", "Clear",  "dialogfont10x10", 18 },
+    { "LBL_HOTBARCELLBG0",   TP_Plain,  56, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG1",   TP_Plain,  96, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG2",   TP_Plain, 136, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG3",   TP_Plain, 176, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG4",   TP_Plain, 216, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG5",   TP_Plain, 256, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG6",   TP_Plain, 296, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELLBG7",   TP_Plain, 336, 426,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL0",     TP_Plain,  58, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL1",     TP_Plain,  98, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL2",     TP_Plain, 138, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL3",     TP_Plain, 178, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL4",     TP_Plain, 218, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL5",     TP_Plain, 258, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL6",     TP_Plain, 298, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARCELL7",     TP_Plain, 338, 428,  31,  31, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARNUM1",      TP_Plain,  33, 479,  18,  18, nullptr,    "1",      nullptr,            9 },
+    { "LBL_HOTBARNUM2",      TP_Plain,  73, 479,  18,  18, nullptr,    "2",      nullptr,            9 },
+    { "LBL_HOTBARNUM3",      TP_Plain, 113, 479,  18,  18, nullptr,    "3",      nullptr,            9 },
+    { "LBL_HOTBARNUM4",      TP_Plain, 153, 479,  18,  18, nullptr,    "4",      nullptr,            9 },
+    { "LBL_HOTBARNUM5",      TP_Plain, 193, 479,  18,  18, nullptr,    "5",      nullptr,            9 },
+    { "LBL_HOTBARNUM6",      TP_Plain, 233, 479,  18,  18, nullptr,    "6",      nullptr,            9 },
+    { "LBL_HOTBARNUM7",      TP_Plain, 273, 479,  18,  18, nullptr,    "7",      nullptr,            9 },
+    { "LBL_HOTBARNUM8",      TP_Plain, 313, 479,  18,  18, nullptr,    "8",      nullptr,            9 },
+    { "LBL_HOTBARNUM9",      TP_Plain, 353, 479,  18,  18, nullptr,    "9",      nullptr,            9 },
+    { "LBL_HOTBARNUM0",      TP_Plain, 393, 479,  18,  18, nullptr,    "0",      nullptr,            9 },
+    { "LBL_HOTBARTIPBG",     TP_Panel,  12, 380, 300,  90, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTIP",       TP_Plain,  12, 380, 300,  90, nullptr,    "",       nullptr,           18 },
+};
+static_assert(sizeof Layout / sizeof Layout[0] == ControlCount, "Layout[] must list every control in offset order");
+
+Widget* widgetFor(Bar& bar, int off) {
+    if (off < IcOff0) return &bar.b[off - BgOff0].bg;
+    if (off < EditOff) return &bar.b[off - IcOff0].ic;
+    if (off == EditOff) return &bar.edit;
+    if (off == PbgOff) return &bar.pbg;
+    if (off == TitleOff) return &bar.title;
+    if (off < PrevOff) return &bar.tab[off - TabOff0];
+    if (off == PrevOff) return &bar.prev;
+    if (off == NextOff) return &bar.next;
+    if (off == ClearOff) return &bar.clear;
+    if (off < CellIcOff0) return &bar.cell[off - CellBgOff0].bg;
+    if (off < NumOff0) return &bar.cell[off - CellIcOff0].ic;
+    if (off < TipBgOff) return &bar.b[off - NumOff0].num;
+    return off == TipBgOff ? &bar.tipBg : &bar.tip;
+}
+
 // Textures: a CAurTextureBasic registered under our name (like the engine's own "NormCubeMap") with the decoded pixels already in place
 // and +0xE4 "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
 constexpr uintptr_t FnTexBasicCtor = 0x00423000;    // CAurTextureBasic ctor thiscall(this 0xF4 B, name, name) RET 8; registers the name globally
-constexpr uintptr_t FnEngineMalloc = 0x0091D288;    // engine malloc: FreeImage releases +0x44 with the engine's free (+0xE7 == 0)
+constexpr uintptr_t FnEngineMalloc = 0x0091D288;    // engine operator new[]: FreeImage (0x00421C40) releases +0x44 with delete[] when +0xE7 == 0
 constexpr uintptr_t FnTexListAdd = 0x004491C0, TexPendingList = 0x00A1BC2C;   // pending-build list, consumed by the texture tick
 constexpr uintptr_t FnTexReset = 0x00423990;        // CAurTextureBasic::Reset fastcall(basic)
 constexpr int TexBasicSize = 0xF4;
@@ -1173,12 +1213,16 @@ void logTextures(const char* when) {
         logf("tex %s (%s): gl=%u constructed=%d missing=%d pixels=%p %dx%d", EmbeddedTextures[i].resref, when, (unsigned)rdInt(reinterpret_cast<uintptr_t>(b), 0x58),
              (int)b[Tex_Constructed], (int)b[Tex_Missing], *reinterpret_cast<void**>(b + Tex_Pixels), *reinterpret_cast<int*>(b + Tex_W), *reinterpret_cast<int*>(b + Tex_H));
 }
-// A GL reset (video mode, texture quality) clears +0xE4; the engine would then reload the name from the resource manager and find nothing.
+// A GL reset (ResetAll 0x00427D90 / SetMem 0x00427DE0) Resets every registered texture (+0xE4 = 0, pixels and GL names freed) and
+// re-queues all of them on the work list. If we see it first, refill (the duplicate list entry is a no-op: +0xE4 = 1, +0x44 = NULL after
+// the first build). If the engine rebuilt first, its resource lookup missed our name (+0xE5 = 1): Reset and refill. DB lesson 290.
 void healTextures() {
     for (int i = 0; i < TexCount; ++i) {
         EmbTex& t = g_tex[i]; unsigned char* b = t.basic;
-        if (!b || t.heals >= 20) continue;
+        if (!b) continue;
         bool built = b[Tex_Constructed] != 0; void* px = *reinterpret_cast<void**>(b + Tex_Pixels); int w = *reinterpret_cast<int*>(b + Tex_W);
+        if (built && !px && !b[Tex_Missing] && rdInt(reinterpret_cast<uintptr_t>(b), 0x58)) { t.heals = 0; continue; }   // uploaded: healthy
+        if (t.heals >= 20) continue;   // give up after 20 consecutive failed refills (art missing, labels still work)
         if (!built && !px) { ++t.heals; fillTexture(i, "refilled after a texture reset"); }
         else if (built && !px && (b[Tex_Missing] || w != t.w)) {
             ++t.heals; logf("tex %s: rebuilt without our pixels (missing=%d w=%d), resetting", EmbeddedTextures[i].resref, (int)b[Tex_Missing], w);
@@ -1238,7 +1282,7 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
 
 // ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
 // Runs inside CSWGuiMainInterface's constructor between the last InitControl and StopLoadFromLayout, so the layout GFF
-// (panel+0x30) is still open. Each label is allocated, constructed and bound by tag exactly like the game's own members.
+// (panel+0x30) is still open: createLabel copies native template controls from it. All native controls are bound by now.
 extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     uintptr_t panel = static_cast<uintptr_t>(panelArg);
     int before = rdInt(panel, Panel_CtlCount, -1);
@@ -1252,45 +1296,25 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     int savedFlag = IsBadReadPtr(projFlag, 4) ? 0 : *projFlag;
     logf("H3: projection flag %08x = %d (cleared for the binds, restored after)", (unsigned)ProjectionFlag, savedFlag);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = 0;
-    double aspect = aspectFix();
+    aspectFix();
     ensureTextures();
-    int built = 0;
-    for (int s = 0; s < ButtonCount; ++s) {
-        Button& b = g_bar.b[s]; char tag[32];
-        snprintf(tag, sizeof tag, "LBL_HOTBARBG%c", slotDigit(s)); bool okBg = bindLabel(panel, tag, FirstButtonId + s, &b.bg, s == 0, aspect) != nullptr;
-        snprintf(tag, sizeof tag, "LBL_HOTBAR%c", slotDigit(s)); bool okIc = bindLabel(panel, tag, FirstButtonId + IconIdOffset + s, &b.ic, s == 0, aspect) != nullptr;
-        snprintf(tag, sizeof tag, "LBL_HOTBARNUM%c", slotDigit(s)); bindLabel(panel, tag, NumId0 + s, &b.num, false, aspect);
-        if (okBg || okIc) ++built;
-    }
+    // Every control is created from Layout[] and appended after the native ones (ids base..base+56). A control that fails stays
+    // nullptr: its slot part / the editor / the tooltip is then disabled, everything else still works.
+    int created = 0;
+    for (int i = 0; i < ControlCount; ++i) created += createLabel(panel, Layout[i], widgetFor(g_bar, i)) != nullptr;
+    int built = 0, eb = 0;
+    for (int s = 0; s < ButtonCount; ++s) if (g_bar.b[s].bg.ctl || g_bar.b[s].ic.ctl) ++built;
+    for (int i = EditOff; i < EditOff + EditorControlCount; ++i) eb += widgetFor(g_bar, i)->ctl != nullptr;
     g_editOpen = false; g_escHit = false; g_pickRect[2] = 0; g_wheelAccum = 0;   // editor state is per HUD instance
-    {   // editor controls: bound individually; the editor is only enabled when every one of them exists (partial UI would be confusing)
-        int eb = 0; char tag[40];
-        static const CtlSpec WrenchSpec = { "LBL_HOTBAREDIT", TP_Plain, 4, 478, 20, 35, EditResref, nullptr, nullptr, -1 };   // PROTOTYPE: runtime-created
-        eb += createLabel(panel, EditId, WrenchSpec, &g_bar.edit) != nullptr;
-        eb += bindLabel(panel, "LBL_HOTBARPBG", PbgId, &g_bar.pbg, false, aspect) != nullptr;
-        eb += bindLabel(panel, "LBL_HOTBARPTITLE", TitleId, &g_bar.title, false, aspect) != nullptr;
-        for (int i = 0; i < TabCount; ++i) { snprintf(tag, sizeof tag, "LBL_HOTBARTAB%d", i); eb += bindLabel(panel, tag, TabId0 + i, &g_bar.tab[i], false, aspect) != nullptr; }
-        eb += bindLabel(panel, "LBL_HOTBARPREV", PrevId, &g_bar.prev, false, aspect) != nullptr;
-        eb += bindLabel(panel, "LBL_HOTBARNEXT", NextId, &g_bar.next, false, aspect) != nullptr;
-        eb += bindLabel(panel, "LBL_HOTBARCLEAR", ClearId, &g_bar.clear, false, aspect) != nullptr;
-        for (int i = 0; i < CellCount; ++i) {
-            snprintf(tag, sizeof tag, "LBL_HOTBARCELLBG%d", i); eb += bindLabel(panel, tag, CellBgId0 + i, &g_bar.cell[i].bg, false, aspect) != nullptr;
-            snprintf(tag, sizeof tag, "LBL_HOTBARCELL%d", i); eb += bindLabel(panel, tag, CellIcId0 + i, &g_bar.cell[i].ic, false, aspect) != nullptr;
-        }
-        const int want = 1 + 1 + 1 + TabCount + 3 + 2 * CellCount;
-        g_bar.editBound = (eb == want) ? 1 : 0;
-        if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), 4 + 4 * i);
-        logf("H3: picker background rect [%d,%d,%d,%d]", g_bar.ed.pbgRect[0], g_bar.ed.pbgRect[1], g_bar.ed.pbgRect[2], g_bar.ed.pbgRect[3]);
-        logf("H3: editor controls bound %d/%d -> editor %s", eb, want, g_bar.editBound ? "ENABLED" : "DISABLED (run scripts/add_hotbar_buttons_gui.py --replace)");
-    }
-    bindLabel(panel, "LBL_HOTBARTIPBG", TipBgId, &g_bar.tipBg, false, aspect);
-    bindLabel(panel, "LBL_HOTBARTIP", TipId, &g_bar.tip, true, aspect);
+    g_bar.editBound = (eb == EditorControlCount) ? 1 : 0;   // a partial editor UI would be confusing: all or nothing
+    if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), 4 + 4 * i);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = savedFlag;
     g_bar.built = built;
     int after = rdInt(panel, Panel_CtlCount, -1);
-    logf("H3 done: %d/%d buttons bound, panel controls %d -> %d (expect %d)", built, ButtonCount, before, after, before + TotalNewControls);
-    int arr = rdInt(panel, Panel_CtlArray);
-    for (int s = 0; s < ButtonCount; ++s) for (const Widget* w : { &g_bar.b[s].bg, &g_bar.b[s].ic, &g_bar.tipBg, &g_bar.tip, &g_bar.edit }) if (w->ctl) logf("H3 check: panel list[%d] = %08x (ctl %p)", w->id, (unsigned)rdInt((uintptr_t)arr, w->id * 4), w->ctl);
+    logf("H3: %d controls created at runtime (indices %d..%d), %d/%d buttons, editor controls %d/%d -> editor %s, picker background rect [%d,%d,%d,%d]",
+         created, before, after - 1, built, ButtonCount, eb, EditorControlCount, g_bar.editBound ? "ENABLED" : "DISABLED",
+         g_bar.ed.pbgRect[0], g_bar.ed.pbgRect[1], g_bar.ed.pbgRect[2], g_bar.ed.pbgRect[3]);
+    if (created != ControlCount) logf("H3: WARNING %d of %d controls NOT created (see the lines above)", ControlCount - created, ControlCount);
 }
 
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
