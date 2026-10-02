@@ -616,5 +616,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Known gaps for 0.3.0: (1) early-conversion re-base rule; (2) `hold_until_class` semantics (presets use it inconsistently: Handmaiden/Mira/Bao-Dur/Disciple
   set it, Atton converting presets set 5); (3) check_paths ignores "Class Skill: X" feats and attack-bonus prereqs; (4) mod #142 alignment source unverified;
   (5) StrategyWiki returns 503 intermittently (use archive.org or elkripper).
-- Next: 0.3.0 design/build plan (written after this commit; path referenced from MASTER_PLAN status line).
+- Next: 0.3.0 design/build plan = `research/companion_levelup/PHASE4_PLAN.md` (repo copy of `~/.claude/plans/dazzling-brewing-quasar.md`, Phase 4).
+
+## Session notes - Phase 4 (0.3.0 build, started 2026-10-02, so a context clear loses nothing)
+- Plan: `research/companion_levelup/PHASE4_PLAN.md` (authoritative; the ~/.claude plan file is reused per phase). Evidence: `research/companion_levelup/phase4_evidence/`.
+- Step 0 (preflight) done. Next: M0 (Sonnet Ghidra agent S1: hook sites, GUI guards, SetStats frame, globals setter, template tag, dtor control ownership).
 
