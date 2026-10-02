@@ -147,7 +147,7 @@ all: dll so
 #
 # tests/any_* are built at both widths; tests/t32_* and tests/t64_* pick the
 # wrapper generator that matches their instruction set.
-TEST_ENGINE := src/core/trampoline.cpp src/platform_posix.cpp
+TEST_ENGINE := src/core/trampoline.cpp src/core/registry.cpp src/platform_posix.cpp
 TESTS_ANY   := $(wildcard tests/any_*.cpp)
 TESTS_32    := $(wildcard tests/t32_*.cpp) $(TESTS_ANY)
 TESTS_64    := $(wildcard tests/t64_*.cpp) $(TESTS_ANY)
@@ -175,13 +175,13 @@ test:
 	for t in $(TESTS_32); do \
 	  n=$$(basename $$t .cpp); echo "  [i386]   $$n"; \
 	  $(CXX_LINUX) $(TEST_FLAGS) $(TEST_FLAGS_32) -o $(BUILD)/tests/$$n-32 $$t \
-	      src/core/wrapper_x86.cpp $(TEST_ENGINE) -ldl || { rc=1; continue; }; \
+	      src/core/wrapper_x86.cpp $(TEST_ENGINE) -ldl -pthread || { rc=1; continue; }; \
 	  run $(BUILD)/tests/$$n-32; \
 	done; \
 	for t in $(TESTS_64); do \
 	  n=$$(basename $$t .cpp); echo "  [x86_64] $$n"; \
 	  $(CXX_LINUX) $(TEST_FLAGS) -o $(BUILD)/tests/$$n-64 $$t \
-	      src/core/wrapper_x86_64.cpp $(TEST_ENGINE) -ldl || { rc=1; continue; }; \
+	      src/core/wrapper_x86_64.cpp $(TEST_ENGINE) -ldl -pthread || { rc=1; continue; }; \
 	  run $(BUILD)/tests/$$n-64; \
 	done; \
 	exit $$rc
