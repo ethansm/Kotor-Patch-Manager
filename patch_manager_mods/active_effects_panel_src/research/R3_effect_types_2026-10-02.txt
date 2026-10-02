@@ -1,0 +1,64 @@
+R3 effect types / int layout (2026-10-02, static: dump steam_6a522e71 + nwscript.nss + exe data; Sonnet Explore, key items to be spot-checked by Opus
+before the decoder ships). Purpose: Mod 14 Phase F hover tooltips with stat numbers.
+
+CGameEffect (ctor 005e4920, size 0x8c):
+ +0/+4 id64 | +8 type ushort | +0xA ushort: low 3 bits duration type (0 instant,1 temporary,2 permanent), 0x18 bits subtype (8 magical,16 supernatural,
+ 24 extraordinary) -> script effects 0x0009/0x0001, item-property effects 0x0003 | +0xC duration float s | +0x10/+0x14 expiry day/ms |
+ +0x1c spell id (-1) | +0x28/+0x2c linked children | +0x30 int count (8) / +0x34 int* (GetInteger 005e4e60, SetInteger 005e4e80) |
+ +0x38 float[4] (SetFloat 005e4ec0) | +0x48 CExoString[6] | +0x78 objid[4] (005e4f00).
+Type ids = DAT constants at 0x995f1c+4*type read from the exe; handler table 0x593a30 has 0x76 slots (apply this+4, remove this+8).
+
+type  name                       cmd impl   ints[]
+0x24  AbilityIncrease            671820     [0] ability 0..5, [1] amount
+0x25  AbilityDecrease            671660     same (amount positive; sign from type)
+0x30  ACIncrease                 671c00     [0] AC mod type 0..4 (dodge,natural,armour,shield,deflection), [1] amount, [5] dmg-type mask (8199 script / 0x4007 item = all)
+0x31  ACDecrease                 6719e0     same (items produce it too, via 5b1320)
+0x0a  AttackIncrease             672300     [0] bonus, [1] mod type (0 misc,1 on-hand,2 off-hand)
+0x0b  AttackDecrease             672120     same
+0x0d  DamageIncrease             673c20     [0] bonus, [1] damage-type mask
+0x0e  DamageDecrease             673690     same
+0x02  DamageResistance           674020     [0] damage type, [1] amount, [2] limit
+0x0c  DamageReduction            673e10     [0] amount, [1] power 0..6 (normal,+1..+5,energy), [2] limit
+0x10  DamageImmunityIncrease     673a50     [0] damage-type mask, [1] percent
+0x11  DamageImmunityDecrease     673880     same
+0x1a  SavingThrowIncrease        6761d0     [0] value, [1] save 0 all,1 fort,2 ref,3 will, [2] save type (table below)
+0x1b  SavingThrowDecrease        675fc0     same
+0x37  SkillIncrease              6766c0     [0] skill 0..7, [1] value
+0x38  SkillDecrease              676500     same
+0x0f  TemporaryHitpoints         677010     [0] HP
+0x07  Regenerate                 672930/a4  [0] amount, [1] interval ms
+0x1c  MovementSpeedIncrease      675b70     [0] percent
+0x1d  MovementSpeedDecrease      6759e0     [0] percent
+0x16  Immunity                   675260     [0] immunity type 0..33
+0x21  ForceResistanceIncrease    676d20     [0] value
+0x22  ForceResistanceDecrease    676be0     [0] value
+0x5c  BlasterDeflectionIncrease  677b50     [0] value
+0x5d  BlasterDeflectionDecrease  677c70     [0] value
+0x6b  ForceShield                674210     [0] forceshields.2da row
+0x3d  DamageShield               674350     [0] amount, [1] random, [2] damage type
+0x23  Poison                     675d00     [0] poison type 0..11
+0x5f  DamageForcePoints          677e90     [0] amount
+0x60  HealForcePoints            677fb0     [0] amount
+0x5b  TemporaryForcePoints       6780d0     [0] amount
+0x6e  ForceBody 110              6746a0     [0] level
+0x6f  Fury 111                   674c30     -
+0x70/0x71 FP/VP RegenModifier    674950/674ac0 [0] percent
+0x4c  Concealment/MissChance     673270/675710 [0] percent
+0x2f  Invisibility               675410     [0] 1 normal,2 darkness,4 improved
+0x2c  ModifyAttacks              675880     [0] count
+0x43  EffectIcon                 67bd70     [0] effecticon.2da row
+0x44  innate (log sub=4, not scriptable)
+0x08  SetState                   handler 59cba0  [0] state: 1 confused,2 frightened,3 droid stun,4 stunned,5 paralyze,6 sleep,7 choke,8 horrified,
+                                                 10 whirlwind,15 crush,16 droid confused,18 mind trick,19 droid scramble
+0x1e VisualEffect, 0x01 Haste (no apply handler in table), 0x39 HitPointChangeWhenDying (float f[0]).
+
+Enums: ability Str,Dex,Con,Int,Wis,Cha. Skills: Computer Use, Demolitions, Stealth, Awareness, Persuade, Repair, Security, Treat Injury.
+Damage flags: 1 Bludgeoning,2 Piercing,4 Slashing,8 Universal,16 Acid,32 Cold,64 Light Side,128 Electrical,256 Fire,512 Dark Side,1024 Sonic,2048 Ion,4096 Blaster.
+Save type: 0 all,1 acid,2 sneak,3 cold,4 death,5 disease,6 light side,7 electrical,8 fear,9 fire,10 mind-affecting,11 dark side,12 poison,13 sonic,14 trap,
+ 15 force power,16 ion,17 blaster,18 paralysis.
+Immunity 0..33: none,mind,poison,disease,fear,trap,paralysis,blindness,deafness,slow,entangle,silence,stun,sleep,charm,dominate,confused,cursed,dazed,
+ ability dec,attack dec,damage dec,dmg immunity dec,AC dec,move speed dec,save dec,force resist dec,skill dec,knockdown,negative level,sneak attack,
+ critical hit,death,droid confused.
+TLK: 0x71dee0 = thiscall(ecx=[0xa1b4b0] TLK) CExoString* GetStringByStrRef(CExoString* out, int strref), ret 8 (caller 0x75ab53). Offline table preferred.
+Observed (chareffects_log): Energy Shield = 0x02 DamageResistance siblings (spell 99) + 0x43 icon row 45; item effects sub=0x0003 (types 02,0a,0d,10,24,31,37).
+Caveats: some apply-handler addresses approximate; sign convention: Decrease types store positive magnitudes.

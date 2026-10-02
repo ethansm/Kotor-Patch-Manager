@@ -636,7 +636,7 @@ void attachHelmet(Slot* s, int id, const char* why) {
     if (gvt != ExpectedGobVtable) { logf("helmet: WARNING model '%s' gob=%p vtable %08x (expect %08x), not attaching (leak instead of crash)", name, g, gvt, ExpectedGobVtable); return; }
     void** vt = vtOf(g);
     reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, head, "GoggleHook", 0);   // same node + call as 0085a9e0; missing node = silently unattached (00461670)
-    reinterpret_cast<void(__thiscall*)(void*, const char*, float, int, int)>(vt[0x18 / 4])(g, "default", 1.0f, 0, 0);   // as 0085a9e0 does (animated visors)
+    reinterpret_cast<PartPlayFn>(vt[PartPlaySlot / 4])(g, "default", 1.0f, 0, 0.0f);   // as 0085a9e0 does (animated visors)
     s->helm = g; strncpy(s->helmName, name, sizeof(s->helmName) - 1);
     logf("helmet: item id=%08x obj=%08x base=%d var=%d model='%s' gob=%p head=%p attach ok (%s)", id, item, base, var, name, g, head, why);
 }
@@ -827,6 +827,7 @@ void applyView(Slot* s) {
 bool buildPreview(Slot* s, int real, const char* why) {
     detachWeapons(s, "before rebuild");   // our weapon models hang off the old body Gob: free them first
     detachHelmet(s, "before rebuild");    // likewise the helmet on the old head Gob
+    s->helmApplied = false;               // a failed rebuild below leaves the old head: the tick toggle block re-attaches to it
     s->stanceOn = false; s->wpnApplied = false;
     if (!allocCreature(s)) return false;
     unsigned char copy[AppCopyBytes]; short al = 0;
