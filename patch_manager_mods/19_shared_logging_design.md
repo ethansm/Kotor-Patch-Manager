@@ -101,13 +101,13 @@ level=1
 ## 8. Phased plan
 | Phase | Work | Where | Gate |
 |---|---|---|---|
-| 0 | Move `SafeRead.h` into `Patches/Common`; fix the `_shared` / `_shared_src` split + drift check; hotbar `IsBadReadPtr` -> SafeRead (sibling-owned: ask) | fork | main + user |
-| 0b | Comment on RFC #180: answer its open question 2 ("yes, logging first"), propose `"kpatch.log"` v1 (section 3) + line format (section 4) + answers to its threading question (Submit callable from any thread). **Draft only; posting needs user go.** If #180 needs an implementation first, offer to write the registry in the same PR. | upstream | user |
+| 0 | **DONE 10-02.** `SafeRead.h` + `GuiKit.h` canonical in fork `Patches/Common` (KPM aad0a14); `Patches/_shared/*.h` = forwarding headers so `../_shared/` includes build unchanged (BuffDurationHUD + InventorySortFilter rebuilt OK, GuiKit syntax-checked both include styles). Edit in `_shared_src/`, then `scripts/check_shared_headers.py --sync`; plain run = drift check (exit 1). Hotbar `IsBadReadPtr` -> SafeRead NOT done: sibling-owned, hotbar has uncommitted work; left to its owner. | fork | done |
+| 0b | **Drafted 10-02: `19a_rfc180_comment_DRAFT.md`. Post only together with the Phase 5 PR (user decision).** Comment on RFC #180: answer its open question 2 ("yes, logging first"), propose `"kpatch.log"` v1 (section 3) + line format (section 4) + answers to its threading question (Submit callable from any thread). **Draft only; posting needs user go.** If #180 needs an implementation first, offer to write the registry in the same PR. | upstream | user |
 | 1 | Core: `KpLog_GetApi` + service (ring, flush thread, files, caps/rotation, ini reload, frame counter) in `src/KotorPatcher`, Win32 + POSIX platform pieces; core unit tests (format, caps, rotation, rate limit, ring overflow, ABI version mismatch) in `src/KotorPatcher/tests` | fork `ethansm/local-mods` | Sonnet agent writes, main reviews; existing core tests + mutation gate pass |
 | 2 | Header: `Patches/Common/KpLog.h` + `debugLog()` reroute + fallback path; test a patch against (a) new core, (b) old core (fallback) | fork | main |
 | 3 | Migrate `mouse-probe` (reference) then the `buff-duration-hud` probe lines (exact tags kept); perf-lab A/B vs per-line fopen under Wine | fork, live install | user play test |
 | 4 | Merged sink mode + `kplog_parse.py` + merged timeline viewer; `F9` MARK across patches | fork | after 3 |
-| 5 | Upstream PR (core + header + docs) once 3 is proven; split into core PR and header PR if the maintainer prefers | upstream | user go + maintainer |
+| 5 | Upstream PR = #180 registry implementation + `kpatch.log` as its first service + `KpLog.h` + migrated examples + `docs/Logging.md`, posted together with the 0b comment, once 3 is proven | upstream | user go + maintainer |
 | 6 | Sibling-owned patches migrate on their owners' schedule (hotbar, inv3d, equip3d, chareffects, levelup, ai, perf-lab) | fork | owners |
 | 7 | Contributor doc: `docs/Logging.md` upstream + example patch | upstream | with 5 |
 
@@ -121,7 +121,7 @@ Settled (10-02, user confirmed core direction):
 
 Still open:
 - Maintainer response on RFC #180 (0b): registry adopted (logging rides on it) vs not (fallback `KpLog_GetApi` export) vs core change declined (keep the service on our fork; header fallback stays upstream-compatible).
-- Whether we implement #180's registry ourselves as part of the logging PR.
+- ~~Whether we implement #180's registry ourselves~~: yes (user 10-02), in the same PR as the logging service.
 - Ring implementation: lock-free MPSC vs short CRITICAL_SECTION/mutex (decide with perf-lab numbers in Phase 3).
 
 ## 10. Risks
