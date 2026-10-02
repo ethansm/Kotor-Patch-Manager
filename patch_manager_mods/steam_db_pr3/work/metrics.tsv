@@ -1,0 +1,411 @@
+kind	cls	name	gog	gog_param	gog_cc	gog_gap	steam_cand	cand_src	steam_size	steam_retn	steam_gap	delta	ret_eq_gogparam	td_cc	td_param	ret_eq_td	cc_guess	cc_ok	align_hit	align_tot	mapper_tag	nm_conf	nm_src	conf_cands
+F	CClientExoApp	AddMoveToModuleMovie	0x40d640	4		32	0x00740180	name_map+mapper	28	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740180|0x00740180
+F	CClientExoApp	AddMovieToMovieQueue	0x40e680	8		112	0x007411c0	name_map+mapper	106	8	112	0x332b40	True	__thiscall	8	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007411c0|0x007411c0
+F	CClientExoApp	CancelMovie	0x40e420	0		32	0x00740f60	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00740f60|0x00740f60
+F	CClientExoApp	ChangeCharacter	0x40d840	8		32	0x00740380	name_map+mapper	32	8	32	0x332b40	True	__thiscall	8	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740380|0x00740380
+F	CClientExoApp	CreatureAcquireItem	0x40cec0	8		80	0x0073f9e0	name_map+mapper	68	8	80	0x332b20	True	__stdcall	8	True	thiscall	N	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f9e0|0x0073f9e0
+F	CClientExoApp	DisableInput	0x40d790	0		32	0x007402d0	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007402d0|0x007402d0
+F	CClientExoApp	DisableVideoEffect	0x40de80	0		32	0x007409c0	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007409c0|0x007409c0
+F	CClientExoApp	DismissInGameGUI	0x40d7d0	0		32	0x00740310	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740310|0x00740310
+F	CClientExoApp	DisplayMainMenu	0x40c6f0	4	__thiscall	32	0x0073f230	name_map+mapper	28	4	32	0x332b40	True	__thiscall	0	False	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f230|0x0073f230
+F	CClientExoApp	EnableInput	0x40d7b0	0		32	0x007402f0	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007402f0|0x007402f0
+F	CClientExoApp	EnableVideoEffect	0x40de60	4		32	0x007409a0	name_map+mapper	28	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007409a0|0x007409a0
+F	CClientExoApp	ExitProgram	0x40c750	0		32	0x0073f290	name_map+mapper	22	0	32	0x332b40	True	__stdcall	0	True	thiscall	N	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f290|0x0073f290
+F	CClientExoApp	GetActivePauseState	0x40d2e0	0		32	0x0073fe20	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	1	6	vote	medium	gog_cluster_delta_map.py	0x0073fe20|0x0073fe20
+F	CClientExoApp	GetAutoPaused	0x40de20	0		32	0x00740960	name_map+mapper	26	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00740960|0x00740960
+F	CClientExoApp	GetCharacterChangeInProgress	0x40e480	0		32	0x00740fc0	mapper	31	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	high	level-up-P4-static-confir	|0x00740fc0
+F	CClientExoApp	GetClientLanguage	0x40c810	0		32	0x0073f350	name_map+mapper	31	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f350|0x0073f350
+F	CClientExoApp	GetCreatureByGameObjectID	0x40ca10	4		32	0x0073f550	name_map+mapper	28	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f550|0x0073f550
+F	CClientExoApp	GetCreditSequenceInProgress	0x40e530	0		32	0x00741070	name_map+mapper	31	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00741070|0x00741070
+F	CClientExoApp	GetGUIString	0x40ddb0	8		64	0x007408f0	name_map+mapper	53	8	64	0x332b40	True	__thiscall	8	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007408f0|0x007408f0
+F	CClientExoApp	GetGameObject	0x40c990	4	__thiscall	64	0x0073f4d0	mapper	59	4	64	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	mods678-batch3-dump	|0x0073f4d0
+F	CClientExoApp	GetGameOver	0x40d8a0	0		32	0x007403e0	name_map+mapper	31	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007403e0|0x007403e0
+F	CClientExoApp	GetInFreeLook	0x40e750	0		112	0x00741290	name_map+mapper	108	0	112	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00741290|0x00741290
+F	CClientExoApp	GetInGameGui	0x40cc10	0		32	0x0073f750	mapper	28	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	mods678-batch3-dump	|0x0073f750
+F	CClientExoApp	GetInputClass	0x40d3e0	0		32	0x0073ff00	name_map+mapper	31	0	32	0x332b20	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073ff00|0x0073ff00
+F	CClientExoApp	GetLastTarget	0x40db20	0		32	0x00740660	name_map+mapper	31	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740660|0x00740660
+F	CClientExoApp	GetObjectName	0x40c5a0	8		32	0x0073f0e0	name_map+mapper	32	8	32	0x332b40	True	__thiscall	8	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f0e0|0x0073f0e0
+F	CClientExoApp	GetPausedByCombat	0x40d7f0	0		32	0x00740330	name_map+mapper	22	0	32	0x332b40	True	__stdcall	0	True	thiscall	N	6	6	vote	medium	gog_cluster_delta_map.py	0x00740330|0x00740330
+F	CClientExoApp	GetPazaakIsRunning	0x40e3e0	0		32	0x00740f20	name_map+mapper	28	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00740f20|0x00740f20
+F	CClientExoApp	GetPazaakResults	0x40dbf0	8		64	0x00740730	name_map+mapper	49	8	64	0x332b40	True	__thiscall	8	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740730|0x00740730
+F	CClientExoApp	GetPlayerCreature	0x40c910	0		32	0x0073f450	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f450|0x0073f450
+F	CClientExoApp	GetTargetChanging	0x40e340	0		64	0x00740e80	name_map+mapper	57	0	64	0x332b40	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x00740e80|0x00740e80
+F	CClientExoApp	GetWorldTimer	0x40c870	0		32	0x0073f3b0	name_map+mapper	28	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f3b0|0x0073f3b0
+F	CClientExoApp	IsSoundPlayingInDialog	0x40d750	0		32	0x00740290	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740290|0x00740290
+F	CClientExoApp	PlayerFlourishWeapons	0x40dd60	0		32	0x007408a0	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007408a0|0x007408a0
+F	CClientExoApp	QueryExitProgram	0x40d300	0		32	0x0073fe20	mapper	22	0	32	0x332b20	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	|0x0073fe20
+F	CClientExoApp	RemoveMoveToModuleMovies	0x40d680	0		48	0x007401c0	name_map+mapper	38	0	48	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007401c0|0x007401c0
+F	CClientExoApp	RunDeathSequence	0x40d860	0		32	0x007403a0	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007403a0|0x007403a0
+F	CClientExoApp	SendLoadGameRequest	0x40cbe0	12	__thiscall	48	0x0073f720	name_map+mapper	36	12	48	0x332b40	True	__thiscall	12	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f720|0x0073f720
+F	CClientExoApp	SendSaveGameRequest	0x40cbb0	12	__thiscall	48	0x0073f6f0	name_map+mapper	36	12	48	0x332b40	True	__thiscall	12	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x0073f6f0|0x0073f6f0
+F	CClientExoApp	SetCanSendDialog	0x40d8e0	4		32	0x00740420	name_map+mapper	28	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740420|0x00740420
+F	CClientExoApp	SetCombatMode	0x40dd40	4		32	0x00740880	name_map+mapper	28	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740880|0x00740880
+F	CClientExoApp	SetEventDescriptions	0x40cfe0	0		32	0x0073fb20	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	2	6	vote	medium	gog_cluster_delta_map.py	0x0073fb20|0x0073fb20
+F	CClientExoApp	SetFutureLeader	0x40dc30	4		48	0x00740770	name_map+mapper	36	4	48	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00740770|0x00740770
+F	CClientExoApp	SetGameOver	0x40d880	4		32	0x007403c0	name_map+mapper	28	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007403c0|0x007403c0
+F	CClientExoApp	SetInputClass	0x40d3c0	8		32	0x0073fee0	name_map+mapper	32	8	32	0x332b20	True	__thiscall	8	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073fee0|0x0073fee0
+F	CClientExoApp	SetMouseMode	0x40e400	1		32		none						__thiscall	4									|
+F	CClientExoApp	SetPlayerCreature	0x40cdf0	4		32	0x0073f910	name_map+mapper	28	4	32	0x332b20	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0073f910|0x0073f910
+F	CClientExoApp	SetTexturePack	0x40d0d0	1		32		none						__thiscall	4									|
+F	CClientExoApp	SetVideoMode	0x40d0b0	4		32	0x0073fbf0	name_map+mapper	31	4	32	0x332b40	True	__thiscall	4	True	thiscall	Y	1	6	vote	medium	gog_cluster_delta_map.py	0x0073fbf0|0x0073fbf0
+F	CClientExoApp	ShutDownToMainMenu	0x40d020	0		32	0x0073fb40	mapper	22	0	32	0x332b20	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	|0x0073fb40
+F	CClientExoApp	StopCreditSequence	0x40e510	0		32	0x00741050	name_map+mapper	22	0	32	0x332b40	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00741050|0x00741050
+F	CGuiInGame	AddFloatyText	0x4df580	16		64	0x007cee80	name_map+mapper	58	16	64	0x2ef900	True	__thiscall	16	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007cee80|0x007cee80
+F	CGuiInGame	AppendToMsgBuffer	0x4ce720	9		288		none						__thiscall	12									|
+F	CGuiInGame	ChangeCharacter	0x4e09b0	0		32	0x007d02b0	name_map+mapper	25	0	32	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d02b0|0x007d02b0
+F	CGuiInGame	DoQuickLoad	0x4e1650	0		1504	0x007d0f50	name_map+mapper	1503	0	1504	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d0f50|0x007d0f50
+F	CGuiInGame	FadeAndStopDialogAmbientTrack	0x4e15c0	0		144	0x007d0ec0	name_map+mapper	142	0	144	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d0ec0|0x007d0ec0
+F	CGuiInGame	GetBarkBubbleVisible	0x4df190	4		96	0x007cea90	name_map+mapper	84	4	96	0x2ef900	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cea90|0x007cea90
+F	CGuiInGame	GetCameraAnimationName	0x4d1550	6		12320		none						__stdcall	8									|
+F	CGuiInGame	GetCanClick	0x4e1290	0		160	0x007d0b90	name_map+mapper	153	0	160	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d0b90|0x007d0b90
+F	CGuiInGame	GetCanHeadFollowInDialog	0x4dfff0	4		112	0x007cf8f0	name_map+mapper	112	4	112	0x2ef900	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x007cf8f0|0x007cf8f0
+F	CGuiInGame	GetCanOrientInDialog	0x4df1f0	4		96	0x007ceaf0	name_map+mapper	90	4	96	0x2ef900	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007ceaf0|0x007ceaf0
+F	CGuiInGame	GetFadeOverridePanelVisible	0x4e1490	0		304	0x007d0d90	name_map+mapper	301	0	304	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d0d90|0x007d0d90
+F	CGuiInGame	GetMessageBufferSize	0x4d8430	0		32	0x007c7d40	name_map+mapper	20	0	32	0x2ef910	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007c7d40|0x007c7d40
+F	CGuiInGame	GetMiniMapVisible	0x4e0c60	0		64	0x007d0560	name_map+mapper	49	0	64	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d0560|0x007d0560
+F	CGuiInGame	GetPendingStatusSummary	0x4df910	0		96	0x007cf210	name_map+mapper	84	0	96	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cf210|0x007cf210
+F	CGuiInGame	HideAreaTransition	0x4df070	0		288	0x007ce970	name_map+mapper	281	0	288	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007ce970|0x007ce970
+F	CGuiInGame	HideContainerGui	0x4db430	0		128	0x007cad30	name_map+mapper	126	0	128	0x2ef900	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007cad30|0x007cad30
+F	CGuiInGame	HideGalaxyMapGui	0x4db020	0		224	0x007ca920	name_map+mapper	239	0	240	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007ca920|0x007ca920
+F	CGuiInGame	HideItemCreateMenu	0x4db160	0		160	0x007caa60	name_map+mapper	149	0	160	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007caa60|0x007caa60
+F	CGuiInGame	HideLoadModuleDebugMenu	0x4dbba0	0		160	0x007cb4a0	name_map+mapper	149	0	160	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007cb4a0|0x007cb4a0
+F	CGuiInGame	HidePowersFeatsSkillsDebugMenu	0x4dbc40	0		160	0x007cb540	name_map+mapper	149	0	160	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cb540|0x007cb540
+F	CGuiInGame	HideSoloMode	0x4dde60	0		128	0x007cd760	name_map+mapper	127	0	128	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007cd760|0x007cd760
+F	CGuiInGame	HideStoreGui	0x4dd630	0		272	0x007ccf30	name_map+mapper	258	0	272	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007ccf30|0x007ccf30
+F	CGuiInGame	HideSubItemCreateMenu	0x4db260	0		176	0x007cab60	name_map+mapper	164	0	176	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cab60|0x007cab60
+F	CGuiInGame	HideUpgradeScreen	0x4de2e0	0		224	0x007cdbe0	name_map+mapper	217	0	224	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007cdbe0|0x007cdbe0
+F	CGuiInGame	IsAnimationPlayingInDialog	0x4dbde0	0		64	0x007cb6e0	name_map+mapper	55	0	64	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cb6e0|0x007cb6e0
+F	CGuiInGame	IsCameraDialog	0x4dbda0	16		64	0x007cb6a0	name_map+mapper	55	16	64	0x2ef900	True	__thiscall	0	False	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cb6a0|0x007cb6a0
+F	CGuiInGame	IsFadingInDialog	0x4dbe50	0		48	0x007cb750	name_map+mapper	43	0	48	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cb750|0x007cb750
+F	CGuiInGame	IsGlobalFading	0x4dc340	0		48	0x007cbc40	name_map+mapper	44	0	48	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007cbc40|0x007cbc40
+F	CGuiInGame	LoadAmbientTrackForDialog	0x4d4750	4		304	0x007c4060	mapper	93	4	96	0x2ef910	True	__thiscall	4	True	thiscall	Y	0	6	vote	medium	gog_cluster_delta_map.py	|0x007c4060
+F	CGuiInGame	LoadStuntModelsForDialog	0x4d8a80	0		336	0x007c8390	name_map+mapper	321	0	336	0x2ef910	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007c8390|0x007c8390
+F	CGuiInGame	NextSWInGameGui	0x4da930	0		400	0x007ca230	name_map+mapper	389	0	400	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007ca230|0x007ca230
+F	CGuiInGame	PrevSWInGameGui	0x4daac0	0		400	0x007ca3c0	name_map+mapper	389	0	400	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007ca3c0|0x007ca3c0
+F	CGuiInGame	RePopulateMainInterface	0x4df250	0		48	0x007ceb50	name_map+mapper	39	0	48	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007ceb50|0x007ceb50
+F	CGuiInGame	RemoveGUIPopUps	0x4e0ca0	0		128	0x007d05a0	name_map+mapper	120	0	128	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d05a0|0x007d05a0
+F	CGuiInGame	ResetDialogAnimations	0x4d9ad0	0		384	0x007c93e0	name_map+mapper	373	0	384	0x2ef910	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007c93e0|0x007c93e0
+F	CGuiInGame	ResetInterfaceForSize	0x4e03a0	0		1296	0x007cfca0	name_map+mapper	1287	0	1296	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cfca0|0x007cfca0
+F	CGuiInGame	ResetTalkAnimations	0x4d9c50	0		752	0x007c9560	name_map+mapper	750	0	752	0x2ef910	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007c9560|0x007c9560
+F	CGuiInGame	SetLevelUpMode	0x4d00b0	4		48	0x007bfa20	name_map+mapper	41	4	48	0x2ef970	True	__thiscall	4	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007bfa20|0x007bfa20
+F	CGuiInGame	ShowGalaxyMapGui	0x4dae30	4		496	0x007ca730	name_map+mapper	494	4	496	0x2ef900	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007ca730|0x007ca730
+F	CGuiInGame	ShowItemCreateMenu	0x4db110	0		80	0x007caa10	mapper	71	0	80	0x2ef900	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	|0x007caa10
+F	CGuiInGame	ShowPartySelection	0x4dc020	20		544	0x007cb920	name_map+mapper	538	20	544	0x2ef900	True	__thiscall	16	False	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cb920|0x007cb920
+F	CGuiInGame	ShowSoloModeQuery	0x4ddc10	4		592	0x007cd510	name_map+mapper	578	4	592	0x2ef900	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007cd510|0x007cd510
+F	CGuiInGame	ShowStatusSummary	0x4df970	0		320	0x007cf270	name_map+mapper	318	0	320	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cf270|0x007cf270
+F	CGuiInGame	ShowUpgradeScreen	0x4ddee0	20		704		none						__thiscall	4									|
+F	CGuiInGame	ShutDown	0x4d7720	0		3312	0x007c7030	name_map+mapper	2831	0	2832	0x2ef910	True	__thiscall	0	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x007c7030|0x007c7030
+F	CGuiInGame	ShutDownGlobal	0x4cdda0	4		176	0x0073ffc0	mapper	28	4	32	0x272220	True	__thiscall	0	False	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	|0x0073ffc0
+F	CGuiInGame	StopGlobalFade	0x4dc2f0	0		80	0x007cbbf0	name_map+mapper	69	0	80	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cbbf0|0x007cbbf0
+F	CGuiInGame	SwitchToSWInGameGui	0x4dac50	4		400	0x007ca550	name_map+mapper	389	4	400	0x2ef900	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007ca550|0x007ca550
+F	CGuiInGame	UpdateAreaTransitionGUI	0x4dee80	0		496	0x007ce780	name_map+mapper	489	0	496	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007ce780|0x007ce780
+F	CGuiInGame	UpdateDialog	0x4dd7f0	0		992	0x007cd0f0	name_map+mapper	977	0	992	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cd0f0|0x007cd0f0
+F	CGuiInGame	UpdateDialogLipSync	0x4e1370	0		240	0x007d0c70	name_map+mapper	226	0	240	0x2ef900	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007d0c70|0x007d0c70
+F	CGuiInGame	UpdateMessageGUI	0x4dd740	4		144	0x007cd040	name_map+mapper	103	4	112	0x2ef900	True	__thiscall	0	False	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007cd040|0x007cd040
+F	CRes	CancelRequest	0x61ab20	0		32	0x007111c0	name_map+mapper	26	0	32	0xf66a0	True	__thiscall	0	True	thiscall	Y	5	6	vote	high	R9-Phase2 (GOG delta/size	0x007111c0|0x007111c0
+F	CRes	Constructor	0x61aa20	0		160	0x007110d0	mapper	151	0	160	0xf66b0	True	__thiscall	0	True	thiscall	Y	3	6	drift+0x10	high	R1-static	|0x007110d0
+F	CRes	Demand	0x61ab40	0	__thiscall	32	0x007111e0	name_map+mapper	26	0	32	0xf66a0	True	__thiscall	0	True	thiscall	Y	6	6	vote	high	R1-static	0x007111e0|0x007111e0
+F	CRes	Destructor	0x61aad0	4		48	0x00711170	mapper	44	4	48	0xf66a0	True	__thiscall	0	False	thiscall	Y	3	6	vote			|0x00711170
+F	CRes	GetResRef	0x61abd0	8		64	0x00711270	mapper	50	8	64	0xf66a0	True	__thiscall	8	True	thiscall	Y	5	6	vote	medium	U5-Phase4	|0x00711270
+F	CRes	Release	0x61ac10	0		32	0x007112b0	name_map+mapper	26	0	32	0xf66a0	True	__thiscall	0	True	thiscall	Y	5	6	vote	high	R1-static	0x007112b0|0x007112b0
+F	CRes	Request	0x61ac30	0		32	0x007112d0	name_map+mapper	26	0	32	0xf66a0	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	R9-Phase2 (GOG delta/size	0x007112d0|0x007112d0
+F	CResGFF	AddDataField	0x6244d0	12		256	0x00718370	mapper	248	12	256	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00718370
+F	CResGFF	AddDataLayoutField	0x6245d0	12		272	0x00718470	mapper	263	12	272	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00718470
+F	CResGFF	AddDataLayoutList	0x6246e0	12		272	0x00718580	mapper	263	12	272	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00718580
+F	CResGFF	AddField	0x624190	12		448	0x00718030	mapper	443	12	448	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00718030
+F	CResGFF	AddLabel	0x624350	4		384	0x007181f0	mapper	371	4	384	0xf3ea0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x007181f0
+F	CResGFF	AddList	0x6258a0	12		192	0x00719740	mapper	183	12	192	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719740
+F	CResGFF	AddListElement	0x625960	12		320	0x00719800	mapper	306	12	320	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719800
+F	CResGFF	AddStruct	0x624090	4		256	0x00717f30	mapper	251	4	256	0xf3ea0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00717f30
+F	CResGFF	AddStructToStruct	0x625aa0	16		144	0x00719940	mapper	135	16	144	0xf3ea0	True	__thiscall	16	True	thiscall	Y	6	6	vote			|0x00719940
+F	CResGFF	Constructor	0x622ff0	0		320	0x00716e60	mapper	312	0	320	0xf3e70	True	__thiscall	0	True	thiscall	Y	0	6	drift-0x30			|0x00716e60
+F	CResGFF	Constructor_2	0x623130	12	__thiscall	480	0x00716fd0	mapper	465	12	480	0xf3ea0	True	__thiscall	12	True	thiscall	Y	3	6	vote			|0x00716fd0
+F	CResGFF	CreateGFFFile	0x626530	8		464	0x0071a5a0	mapper	198	8	208	0xf4070	True	__thiscall	12	False	thiscall	Y	0	6	drift+0x1d0			|0x0071a5a0
+F	CResGFF	Destructor	0x561f80	4		288		none						__thiscall	0									|
+F	CResGFF	Destructor_2	0x623310	0		336	0x007171b0	mapper	329	0	336	0xf3ea0	True	__thiscall	4	False	thiscall	Y	4	6	vote			|0x007171b0
+F	CResGFF	GetDataField	0x623980	8		96	0x00717820	mapper	81	8	96	0xf3ea0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00717820
+F	CResGFF	GetDataLayoutList	0x6239e0	8		96	0x00717880	mapper	81	8	96	0xf3ea0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00717880
+F	CResGFF	GetElementType	0x6247f0	4		48	0x00718690	mapper	46	4	48	0xf3ea0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00718690
+F	CResGFF	GetField	0x6238d0	8		176	0x00717770	mapper	171	8	176	0xf3ea0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00717770
+F	CResGFF	GetFieldByLabel	0x623a40	8		288	0x007178e0	mapper	269	8	288	0xf3ea0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x007178e0
+F	CResGFF	GetFieldCount	0x624820	4		32	0x007186c0	mapper	30	4	32	0xf3ea0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x007186c0
+F	CResGFF	GetFieldType	0x624870	12		80	0x00718710	mapper	75	12	80	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00718710
+F	CResGFF	GetField_2	0x623b60	8		160	0x00717a00	mapper	156	8	160	0xf3ea0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00717a00
+F	CResGFF	GetList	0x6248c0	12		176	0x00718760	mapper	164	12	176	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00718760
+F	CResGFF	GetListCount	0x624970	4		128	0x00718810	mapper	124	4	128	0xf3ea0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00718810
+F	CResGFF	GetListElement	0x6249f0	12		208	0x00718890	mapper	197	12	208	0xf3ea0	True	__thiscall	12	True	thiscall	Y	5	6	vote			|0x00718890
+F	CResGFF	GetStructFromStruct	0x624ac0	12	__stdcall	112	0x00718960	mapper	109	12	112	0xf3ea0	True	__thiscall	12	True	thiscall	Y	4	6	vote			|0x00718960
+F	CResGFF	GetTopLevelStruct	0x624b30	4	__thiscall	48	0x007189d0	mapper	37	4	48	0xf3ea0	True	__thiscall	4	True	thiscall	Y	3	6	vote			|0x007189d0
+F	CResGFF	GetTotalSize	0x626e10	0		144	0x0071acb0	name_map+mapper	135	0	144	0xf3ea0	True	__thiscall	0	True	thiscall	Y	2	6	vote	medium	R9-Phase2 (GOG delta/size	0x0071acb0|0x0071acb0
+F	CResGFF	InitializeForWriting	0x623c00	0		1168	0x00717aa0	mapper	1157	0	1168	0xf3ea0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00717aa0
+F	CResGFF	OnResourceFreed	0x623710	0		128	0x007175b0	mapper	124	0	128	0xf3ea0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x007175b0
+F	CResGFF	OnResourceServiced	0x623460	0		688	0x00717300	mapper	680	0	688	0xf3ea0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00717300
+F	CResGFF	Pack	0x626a10	8		1024	0x0071a8b0	name_map+mapper	1010	8	1024	0xf3ea0	True	__thiscall	8	True	thiscall	Y	2	6	vote	medium	R9-Phase2 (GOG delta/size	0x0071a8b0|0x0071a8b0
+F	CResGFF	ReadFieldBYTE	0x624b60	12	__thiscall	128		none						__thiscall	16									|
+F	CResGFF	ReadFieldCExoLocString	0x625240	20		752	0x007190e0	mapper	741	20	752	0xf3ea0	True	__thiscall	20	True	thiscall	Y	6	6	vote			|0x007190e0
+F	CResGFF	ReadFieldCExoString	0x6250f0	20		336	0x00718f90	name_map+mapper	322	20	336	0xf3ea0	True	__thiscall	20	True	thiscall	Y	6	6	vote	medium	R9-Phase2 (GOG delta/size	0x00718f90|0x00718f90
+F	CResGFF	ReadFieldCHAR	0x624be0	13		128		none						__thiscall	16									|
+F	CResGFF	ReadFieldCResRef	0x624fa0	20	__thiscall	336	0x00718e40	mapper	336	20	336	0xf3ea0	True	__thiscall	20	True	thiscall	Y	6	6	vote			|0x00718e40
+F	CResGFF	ReadFieldDWORD	0x624d60	16	__thiscall	128	0x00718c00	mapper	122	16	128	0xf3ea0	True	__thiscall	16	True	thiscall	Y	3	6	vote			|0x00718c00
+F	CResGFF	ReadFieldDWORD64	0x624ee0	20		192	0x00718d80	mapper	181	20	192	0xf3ea0	True	__thiscall	16	False	thiscall	Y	6	6	vote			|0x00718d80
+F	CResGFF	ReadFieldFLOAT	0x624e60	16		128	0x00718d00	mapper	128	16	128	0xf3ea0	True	__thiscall	16	True	thiscall	Y	5	6	vote			|0x00718d00
+F	CResGFF	ReadFieldINT	0x624de0	16		128	0x00718c80	mapper	122	16	128	0xf3ea0	True	__thiscall	16	True	thiscall	Y	4	6	vote			|0x00718c80
+F	CResGFF	ReadFieldQuaternion	0x625530	20		336	0x007193d0	mapper	326	20	336	0xf3ea0	True	__thiscall	20	True	thiscall	Y	6	6	vote			|0x007193d0
+F	CResGFF	ReadFieldSHORT	0x624ce0	14		128		none						__thiscall	16									|
+F	CResGFF	ReadFieldVOID	0x6257a0	24		256	0x00719640	mapper	254	24	256	0xf3ea0	True	__thiscall	24	True	thiscall	Y	6	6	vote			|0x00719640
+F	CResGFF	ReadFieldVector	0x625680	20		288	0x00719520	mapper	288	20	288	0xf3ea0	True	__thiscall	20	True	thiscall	Y	6	6	vote			|0x00719520
+F	CResGFF	ReadFieldWORD	0x624c60	14		128		none						__thiscall	16									|
+F	CResGFF	ReleaseResource	0x623790	0		240	0x00717630	mapper	234	0	240	0xf3ea0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00717630
+F	CResGFF	WriteFieldBYTE	0x625b30	12		112	0x007199d0	mapper	97	12	112	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x007199d0
+F	CResGFF	WriteFieldCExoLocString	0x626090	12		640	0x00719f30	mapper	633	12	640	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719f30
+F	CResGFF	WriteFieldCExoString	0x625fb0	12		224	0x00719e50	mapper	222	12	224	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719e50
+F	CResGFF	WriteFieldCHAR	0x625ba0	12		112	0x00719a40	mapper	97	12	112	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719a40
+F	CResGFF	WriteFieldCResRef	0x625ea0	12		272	0x00719d40	mapper	269	12	272	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719d40
+F	CResGFF	WriteFieldDWORD	0x625cf0	12		96	0x00719b90	mapper	96	12	96	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719b90
+F	CResGFF	WriteFieldDWORD64	0x625db0	16		144	0x00719c50	mapper	143	16	144	0xf3ea0	True	__thiscall	12	False	thiscall	Y	6	6	vote			|0x00719c50
+F	CResGFF	WriteFieldFLOAT	0x625e40	12		96	0x00719ce0	mapper	96	12	96	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719ce0
+F	CResGFF	WriteFieldINT	0x625d50	12		96	0x00719bf0	mapper	96	12	96	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719bf0
+F	CResGFF	WriteFieldQuaternion	0x6263c0	12		192	0x0071a260	mapper	184	12	192	0xf3ea0	True	__thiscall	12	True	thiscall	Y	4	6	vote			|0x0071a260
+F	CResGFF	WriteFieldSHORT	0x625c80	12		112	0x00719b20	mapper	97	12	112	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719b20
+F	CResGFF	WriteFieldVOID	0x626310	16		176	0x0071a1b0	mapper	174	16	176	0xf3ea0	True	__thiscall	16	True	thiscall	Y	5	6	vote			|0x0071a1b0
+F	CResGFF	WriteFieldVector	0x626480	12		176	0x0071a320	mapper	172	12	176	0xf3ea0	True	__thiscall	12	True	thiscall	Y	4	6	vote			|0x0071a320
+F	CResGFF	WriteFieldWORD	0x625c10	12		112	0x00719ab0	mapper	97	12	112	0xf3ea0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00719ab0
+F	CResGFF	WriteGFFData	0x6267d0	8		576	0x0071a670	name_map+mapper	562	8	576	0xf3ea0	True	__thiscall	8	True	thiscall	Y	3	6	vote	medium	R9-Phase2 (GOG delta/size	0x0071a670|0x0071a670
+F	CResGFF	WriteGFFFile	0x626700	6		208		none						__thiscall	8									|
+F	CSWCDoor	GetServerDoor	0x507760	0		64	0x0087be80	mapper	53	0	64	0x374720	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x0087be80
+F	CSWCDoor	SetIsAreaTransition	0x507260	4		96	0x0087b980	mapper	86	4	96	0x374720	True	__thiscall	4	True	thiscall	Y	2	6	vote			|0x0087b980
+F	CSWCDoor	SetState	0x507320	1		144		none						__thiscall	4									|
+F	CSWCDoor	UpdateAreaTransitionDisplay	0x5082d0	0		3328	0x0087c9f0	mapper	3313	0	3328	0x374720	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x0087c9f0
+F	CSWCObject	AnimationAttack	0x4749e0	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationDialog	0x4748e0	2		112		none						__thiscall	4									|
+F	CSWCObject	AnimationFireAndForget	0x474730	2		208		none						__thiscall	4									|
+F	CSWCObject	AnimationHideEquippedItems	0x474540	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationLooping	0x474660	2		208		none						__thiscall	4									|
+F	CSWCObject	AnimationOverlay	0x474800	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationParry	0x474950	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationPause	0x474890	2		80		none						__thiscall	4									|
+F	CSWCObject	AnimationPlayOutOfPlace	0x4744b0	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationRunning	0x474a70	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationStationary	0x474420	2		144		none						__thiscall	4									|
+F	CSWCObject	AnimationWalking	0x4745d0	2		144		none						__thiscall	4									|
+F	CSWCObject	AttachToScene	0x472950	4		64	0x007ed7f0	name_map+mapper	61	4	64	0x37aea0	True	__thiscall	4	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007ed7f0|0x007ed7f0
+F	CSWCObject	AttachmentFromServerObject	0x4777b0	4		32	0x007f2610	name_map+mapper	25	4	32	0x37ae60	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007f2610|0x007f2610
+F	CSWCObject	ClearAllActions	0x477660	0		64	0x007f2500	name_map+mapper	54	0	64	0x37aea0	True	__thiscall	0	True	thiscall	Y	1	6	vote	medium	gog_cluster_delta_map.py	0x007f2500|0x007f2500
+F	CSWCObject	ClearAllQueuedCombatActions	0x4776a0	0		64	0x007f2540	name_map+mapper	208	0	208	0x37aea0	True	__thiscall	0	True	thiscall	Y	1	6	vote	medium	gog_cluster_delta_map.py	0x007f2540|0x007f2540
+F	CSWCObject	DetachFromServerObject	0x4777d0	0		32	0x007f2630	name_map+mapper	24	0	32	0x37ae60	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x007f2630|0x007f2630
+F	CSWCObject	FadeObject	0x476430	0		896	0x007f12d0	name_map+mapper	896	0	896	0x37aea0	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007f12d0|0x007f12d0
+F	CSWCObject	GetCurrentAnimation	0x472930	0		32	0x007ed7d0	name_map+mapper	18	0	32	0x37aea0	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007ed7d0|0x007ed7d0
+F	CSWCObject	GetLoopingAnimation	0x472ae0	0		32	0x007ed980	name_map+mapper	18	0	32	0x37aea0	True	__thiscall	0	True	thiscall	Y	2	6	vote	medium	gog_cluster_delta_map.py	0x007ed980|0x007ed980
+F	CSWCObject	GetName	0x472580	4		48	0x007ed420	name_map+mapper	47	4	48	0x37aea0	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x007ed420|0x007ed420
+F	CSWCObject	GetPortrait	0x4725e0	5		48		none						__thiscall	4									|
+F	CSWCObject	GetPortraitId	0x472610	0		32	0x007ed4b0	name_map+mapper	21	0	32	0x37aea0	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007ed4b0|0x007ed4b0
+F	CSWCObject	GetServerObject	0x4776e0	0		208	0x007f2540	mapper	208	0	208	0x37ae60	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	|0x007f2540
+F	CSWCObject	HideShadowBlob	0x410c80	0	__thiscall	48	0x00764fb0	name_map+mapper	42	0	48	0x354330	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x00764fb0|0x00764fb0
+F	CSWCObject	SetFeedbackInfo	0x477360	4		48	0x007f2200	name_map+mapper	44	4	48	0x37aea0	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x007f2200|0x007f2200
+F	CSWCObject	SetId	0x410c30	4		32	0x00764f60	name_map+mapper	22	4	32	0x354330	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x00764f60|0x00764f60
+F	CSWCObject	SetLoopingAnimation	0x472ab0	2		48		none						__thiscall	4									|
+F	CSWCObject	SetPortrait	0x476c90	4		80	0x007f1b30	name_map+mapper	68	4	80	0x37aea0	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x007f1b30|0x007f1b30
+F	CSWCObject	SetPortraitId	0x477110	2		176		none						__thiscall	4									|
+F	CSWCObject	ShowShadowBlob	0x410c50	0		48	0x00764f80	name_map+mapper	44	0	48	0x354330	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x00764f80|0x00764f80
+F	CSWCObject	TurnOffShadows	0x472660	0	__thiscall	48	0x007ed500	name_map+mapper	42	0	48	0x37aea0	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007ed500|0x007ed500
+F	CSWCObject	TurnOnShadows	0x472630	0	__thiscall	48	0x007ed4d0	name_map+mapper	42	0	48	0x37aea0	True	__thiscall	0	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x007ed4d0|0x007ed4d0
+F	CSWCPlaceable	ActionMenuSecurity	0x535fd0	0		80		none						__thiscall	4									|
+F	CSWCPlaceable	GetServerPlaceable	0x536580	0		64	0x00842d00	name_map+mapper	53	0	64	0x30c780	True	__thiscall	0	True	thiscall	Y	6	6	vote	high	mods678-batch3-dump	0x00842d00|0x00842d00
+F	CSWCPlaceable	IsHostile	0x534a00	0		80	0x00841180	name_map+mapper	66	0	80	0x30c780	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00841180|0x00841180
+F	CSWCPlaceable	SetAppearance	0x5371e0	4		336	0x00843960	name_map+mapper	327	4	336	0x30c780	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00843960|0x00843960
+F	CSWGuiBorder	Constructor	0x912e20	0	__thiscall	288	0x00414a50	mapper	254	0	256	-0x4fe3d0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00414a50
+F	CSWGuiBorder	Destructor	0x912fc0	4	__thiscall	48	0x00414bf0	mapper	44	4	48	-0x4fe3d0	True	__thiscall	0	False	thiscall	Y	6	6	vote			|0x00414bf0
+F	CSWGuiBorder	Draw	0x9136d0	4	__thiscall	1888	0x00415300	mapper	1886	4	1888	-0x4fe3d0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00415300
+F	CSWGuiBorder	FillCenter	0x9140f0	24	__thiscall	384	0x00415d20	mapper	384	24	384	-0x4fe3d0	True	__thiscall	24	True	thiscall	Y	6	6	vote			|0x00415d20
+F	CSWGuiBorder	FillTile	0x913e30	24	__thiscall	704	0x00415a60	mapper	702	24	704	-0x4fe3d0	True	__thiscall	24	True	thiscall	Y	6	6	vote			|0x00415a60
+F	CSWGuiBorder	GetInnerExtent	0x913150	4	__thiscall	768	0x00414d80	mapper	758	4	768	-0x4fe3d0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00414d80
+F	CSWGuiBorder	Initialize	0x912ff0	8	__thiscall	64	0x00414c20	mapper	59	8	64	-0x4fe3d0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00414c20
+F	CSWGuiBorder	Load	0x913450	12	__thiscall	640	0x00415080	mapper	639	12	640	-0x4fe3d0	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00415080
+F	CSWGuiBorderParams	SetBorder	0x912cf0	4	__thiscall	96	0x00414920	mapper	82	4	96	-0x4fe3d0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00414920
+F	CSWGuiBorderParams	SetCornerImage	0x912a50	8	__thiscall	224	0x00414680	mapper	219	8	224	-0x4fe3d0	True	__thiscall	8	True	thiscall	Y	5	6	vote			|0x00414680
+F	CSWGuiBorderParams	SetEdgeImage	0x912b30	8	__thiscall	224	0x00414760	mapper	219	8	224	-0x4fe3d0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00414760
+F	CSWGuiBorderParams	SetFillImage	0x912c10	8	__thiscall	224	0x00414840	mapper	219	8	224	-0x4fe3d0	True	__thiscall	8	True	thiscall	Y	6	6	vote	high	Phase5C-static	|0x00414840
+F	CSWGuiControl	AddChildControl	0x9175d0	4	__thiscall	32	0x00419330	mapper	28	4	32	-0x4fe2a0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00419330
+F	CSWGuiControl	AddEvent	0x916d90	12	__thiscall	192	0x00418af0	name_map+mapper	177	12	192	-0x4fe2a0	True	__thiscall	12	True	thiscall	Y	6	6	vote	medium	R9-Phase2 (GOG delta/size	0x00418af0|0x00418af0
+F	CSWGuiControl	Constructor	0x916c30	0	__thiscall	352	0x00418990	mapper	347	0	352	-0x4fe2a0	True	__thiscall	0	True	thiscall	Y	6	6	vote	low	gog_cluster_delta_map.py	|0x00418990
+F	CSWGuiControl	Destructor	0x4ce500	0	__thiscall	128	0x00418640	name_map	126	0	128	-0xb5ec0	True	__thiscall	0	True	thiscall	Y	0	6		high	R9-Phase2 (GOG delta/size	0x00418640|
+F	CSWGuiControl	GetIsChild	0x9175f0	4	__thiscall	80	0x00419350	mapper	72	4	80	-0x4fe2a0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00419350
+F	CSWGuiControl	GetIsSelectable	0x917340	0	__thiscall	144	0x004190a0	mapper	135	0	144	-0x4fe2a0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x004190a0
+F	CSWGuiControl	GetSelectableParent	0x917640	0	__thiscall	80	0x004193a0	mapper	72	0	80	-0x4fe2a0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x004193a0
+F	CSWGuiControl	Load_2	0x917090	16	__thiscall	304	0x00418df0	mapper	300	16	304	-0x4fe2a0	True	__thiscall	16	True	thiscall	Y	6	6	vote			|0x00418df0
+F	CSWGuiControl	SetActive	0x4ce5d0	4	__thiscall	48		none						__thiscall	4									|
+F	CSWGuiControl	SetEnabled	0x917690	4	__thiscall	48	0x004193f0	mapper	39	4	48	-0x4fe2a0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x004193f0
+F	CSWGuiManager	AddPanel	0x90e9b0	12	__thiscall	320	0x00410530	mapper	317	12	320	-0x4fe480	True	__thiscall	12	True	thiscall	Y	6	6	vote			|0x00410530
+F	CSWGuiManager	PlayGuiSound	0x910720	1		96		none						__thiscall	4									|
+F	CSWGuiManager	PopModalPanel	0x90ee40	0		224	0x004109c0	mapper	217	0	224	-0x4fe480	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x004109c0
+F	CSWGuiPanel	AddControl	0x90e200	4	__thiscall	64	0x0040fd80	mapper	57	4	64	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0040fd80
+F	CSWGuiPanel	CenterPanel	0x90ce80	0	__thiscall	160	0x0040ea00	mapper	149	0	160	-0x4fe480	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0040ea00
+F	CSWGuiPanel	Constructor	0x90cb30	4	__thiscall	432	0x0040e770	mapper	13	4	16	-0x4fe3c0	True	__thiscall	4	True	thiscall	Y	0	6	drift+0xc0			|0x0040e770
+F	CSWGuiPanel	Destructor	0x90cce0	0	__thiscall	288	0x0040e860	mapper	276	0	288	-0x4fe480	True	__thiscall	0	True	thiscall	Y	3	6	vote			|0x0040e860
+F	CSWGuiPanel	Draw	0x90d110	4	__thiscall	432	0x0040ec90	name_map+mapper	432	4	432	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	R9-Phase2 (GOG delta/size	0x0040ec90|0x0040ec90
+F	CSWGuiPanel	GetControl	0x90e320	4	__thiscall	48	0x0040fea0	mapper	48	4	48	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0040fea0
+F	CSWGuiPanel	GetExtentAccountingForPanelOffset	0x90e4a0	4	__thiscall	160	0x00410020	mapper	156	4	160	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00410020
+F	CSWGuiPanel	GetFullScreenBG	0x90e0d0	4	__thiscall	304	0x0040fc50	mapper	290	4	304	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0040fc50
+F	CSWGuiPanel	GetLocalMouseCoords	0x90e350	8	__thiscall	224	0x0040fed0	mapper	215	8	224	-0x4fe480	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x0040fed0
+F	CSWGuiPanel	HandleInputEvent	0x90cf20	8	__thiscall	64	0x0040eaa0	mapper	51	8	64	-0x4fe480	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x0040eaa0
+F	CSWGuiPanel	HitCheckMouse	0x90cf60	8	__thiscall	288	0x0040eae0	mapper	287	8	288	-0x4fe480	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x0040eae0
+F	CSWGuiPanel	InitControl	0x90daa0	16	__thiscall	976	0x0040f620	name_map+mapper	970	16	976	-0x4fe480	True	__thiscall	12	False	thiscall	Y	5	6	vote	medium	R9-Phase2 (GOG delta/size	0x0040f620|0x0040f620
+F	CSWGuiPanel	OnPanelAdded	0x90d840	0	__thiscall	256	0x0040f3c0	mapper	245	0	256	-0x4fe480	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0040f3c0
+F	CSWGuiPanel	OnPanelRemoved	0x90d940	0	__thiscall	224	0x0040f4c0	mapper	212	0	224	-0x4fe480	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0040f4c0
+F	CSWGuiPanel	ResetFont	0x90e430	0	__thiscall	112	0x0040ffb0	mapper	99	0	112	-0x4fe480	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0040ffb0
+F	CSWGuiPanel	SetActiveControl	0x90d080	8	__thiscall	144	0x0040ec00	mapper	143	8	144	-0x4fe480	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x0040ec00
+F	CSWGuiPanel	SetBackground	0x90d810	4	__thiscall	48	0x0040f390	mapper	41	4	48	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0040f390
+F	CSWGuiPanel	SetVisible	0x90e2e0	4	__thiscall	64	0x0040fe60	mapper	59	4	64	-0x4fe480	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0040fe60
+F	CSWGuiPanel	StartLoadFromLayout	0x90d2c0	12	__thiscall	1360	0x0040ee40	mapper	1347	12	1360	-0x4fe480	True	__thiscall	4	False	thiscall	Y	6	6	vote			|0x0040ee40
+F	CSWGuiPanel	StopLoadFromLayout	0x90da20	0	__thiscall	128	0x0040f5a0	mapper	117	0	128	-0x4fe480	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0040f5a0
+F	CSWSDoor	GetDialogResref	0x7623b0	4		64	0x00616f00	mapper	49	4	64	-0x14b4b0	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x00616f00
+F	CSWSDoor	GetFirstName	0x7623f0	0		32	0x00616f40	mapper	19	0	32	-0x14b4b0	True	__thiscall	0	True	thiscall	Y	5	6	vote	low	gog_cluster_delta_map.py	|0x00616f40
+F	CSWSDoor	GetIsLinked	0x768410	0		64	0x0061d000	mapper	50	0	64	-0x14b410	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0061d000
+F	CSWSDoor	GetLinkedObject	0x768a60	0		192	0x0061d620	mapper	179	0	192	-0x14b440	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x0061d620
+F	CSWSDoor	MoveToNextOpenState	0x768bf0	0		176	0x0061d7b0	mapper	167	0	176	-0x14b440	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0061d7b0
+F	CSWSDoor	RemoveFromArea	0x768450	0		208	0x0061d040	mapper	193	0	208	-0x14b410	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x0061d040
+F	CSWSObject	ClearAllActions	0x6a7d60	4		784	0x00541080	name_map+mapper	779	4	784	-0x166ce0	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00541080|0x00541080
+F	CSWSObject	GetAIStateReputation	0x6bd870	4		352	0x005e1680	name_map+mapper	159	4	160	-0xdc1f0	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x005e1680|0x005e1680
+F	CSWSObject	GetAcceptableAction	0x6b3380	4		144	0x005d7190	name_map+mapper	62	4	144	-0xdc1f0	True	__thiscall	4	True	thiscall	Y	4	6	vote	medium	gog_cluster_delta_map.py	0x005d7190|0x005d7190
+F	CSWSObject	GetClientObject	0x6b1520	0		160	0x0054a840	name_map+mapper	153	0	160	-0x166ce0	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0054a840|0x0054a840
+F	CSWSObject	GetDead	0x6ae4d0	0		208	0x005477f0	name_map+mapper	202	0	208	-0x166ce0	True	__thiscall	0	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x005477f0|0x005477f0
+F	CSWSObject	GetDialogResref	0x6637e0	4		32	0x004597d0	name_map+mapper	25	4	32	-0x20a010	True	__thiscall	4	True	thiscall	Y	1	6	vote	medium	gog_cluster_delta_map.py	0x004597d0|0x004597d0
+F	CSWSObject	GetHasFeatEffectApplied	0x6b0bb0	2		160		none						__thiscall	4									|
+F	CSWSObject	GetLastName	0x6a5ce0	0	__thiscall	32	0x0053f000	name_map+mapper	18	0	32	-0x166ce0	True	__thiscall	0	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x0053f000|0x0053f000
+F	CSWSObject	GetNearestObjectByName	0x6ad8b0	8		480	0x00546bd0	name_map+mapper	468	8	480	-0x166ce0	True	__thiscall	8	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00546bd0|0x00546bd0
+F	CSWSObject	GetPortrait	0x663840	4	__thiscall	48	0x00459830	name_map+mapper	25	4	32	-0x20a010	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x00459830|0x00459830
+F	CSWSObject	GetPortraitId	0x6638a0	0		32	0x00459890	name_map+mapper	20	0	32	-0x20a010	True	__thiscall	0	True	thiscall	Y	2	6	vote	medium	gog_cluster_delta_map.py	0x00459890|0x00459890
+F	CSWSObject	GetScriptLocation	0x6ae2e0	4		192	0x00547600	name_map+mapper	188	4	192	-0x166ce0	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00547600|0x00547600
+F	CSWSObject	HasSpellEffectApplied	0x6ae3a0	4		112	0x005476c0	name_map+mapper	101	4	112	-0x166ce0	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x005476c0|0x005476c0
+F	CSWSObject	SetAnimation	0x6a8070	4		48	0x00541390	name_map+mapper	35	4	48	-0x166ce0	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x00541390|0x00541390
+F	CSWSObject	SetCurrentHitPoints	0x6b12f0	4		80	0x0054a610	name_map+mapper	70	4	80	-0x166ce0	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0054a610|0x0054a610
+F	CSWSObject	SetDialogDelay	0x6ac150	4		176	0x00545470	name_map+mapper	162	4	176	-0x166ce0	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00545470|0x00545470
+F	CSWSObject	SetDialogOwner	0x6ada90	4		144	0x00546db0	name_map+mapper	22	4	32	-0x166ce0	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00546db0|0x00546db0
+F	CSWSObject	SetKeepCorpse	0x6b1480	4		160	0x0054a7a0	name_map+mapper	153	4	160	-0x166ce0	True	__thiscall	4	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x0054a7a0|0x0054a7a0
+F	CSWSObject	SetPortrait	0x663870	4		48		none						__thiscall	4									|
+F	CSWSObject	SetPortraitId	0x6a7820	2		352		none						__thiscall	4									|
+F	CSWSObject	SpawnBodyBag	0x6b0460	0		1872	0x00549780	name_map+mapper	1861	0	1872	-0x166ce0	True	__thiscall	0	True	thiscall	Y	2	6	vote	medium	gog_cluster_delta_map.py	0x00549780|0x00549780
+F	CSWSObject	StopDialog	0x6ad5e0	0		336	0x00546900	name_map+mapper	329	0	336	-0x166ce0	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00546900|0x00546900
+F	CSWSObject	StopSoundPlayingInDialog	0x6ad750	0		48	0x00546a70	name_map+mapper	46	0	48	-0x166ce0	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x00546a70|0x00546a70
+F	CSWSPlaceable	GetBodyBagAppearance	0x7709d0	0		384	0x005f6630	name_map+mapper	384	0	384	-0x17a3a0	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	0x005f6630|0x005f6630
+F	CSWSPlaceable	GetClientPlaceable	0x770e40	0		64	0x005f6a70	name_map+mapper	53	0	64	-0x17a3d0	True	__thiscall	0	True	thiscall	Y	1	6	vote	medium	gog_cluster_delta_map.py	0x005f6a70|0x005f6a70
+F	CSWSPlaceable	GetDead	0x770da0	0		48		none						__thiscall	0									|
+F	CSWSPlaceable	GetDialogResref	0x769510	4		64	0x005ef120	name_map+mapper	49	4	64	-0x17a3f0	True	__thiscall	4	True	thiscall	Y	3	6	drift+0x0	low	gog_cluster_delta_map.py	0x005ef120|0x005ef120
+F	CSWSPlaceable	GetEffectSpellId	0x769550	0		32	0x005ef160	name_map+mapper	20	0	32	-0x17a3f0	True	__thiscall	0	True	thiscall	Y	3	6	drift+0x0	low	gog_cluster_delta_map.py	0x005ef160|0x005ef160
+F	CSWSPlaceable	GetLightIsOn	0x770910	0		192	0x005f6570	name_map+mapper	177	0	192	-0x17a3a0	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x005f6570|0x005f6570
+F	CSWSPlaceable	RemoveFromArea	0x76d320	0		144	0x005f2f50	name_map+mapper	143	0	144	-0x17a3d0	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x005f2f50|0x005f2f50
+F	CSWSPlaceable	SetEffectSpellId	0x4213a0	4		32		none						__thiscall	4									|
+F	CSWSPlaceable	SetLightIsOn	0x770810	4		256	0x005f6470	name_map+mapper	251	4	256	-0x17a3a0	True	__thiscall	4	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	0x005f6470|0x005f6470
+F	CSWSPlaceable	SetOrientation	0x770d30	4		112	0x005f6990	name_map+mapper	111	4	112	-0x17a3a0	True	__thiscall	4	True	thiscall	Y	3	6	vote	medium	gog_cluster_delta_map.py	0x005f6990|0x005f6990
+F	CSWSTrigger	GetCanFireMineOnObject	0x7619e0	8		480	0x00622750	mapper	469	8	480	-0x13f290	True	__thiscall	8	True	thiscall	Y	5	6	vote			|0x00622750
+F	CSWSTrigger	GetTargetArea	0x75d7d0	0		176	0x0061e540	mapper	170	0	176	-0x13f290	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0061e540
+F	CSWSTrigger	InTrigger	0x75eef0	4		1216	0x0061fc60	mapper	1209	4	1216	-0x13f290	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0061fc60
+F	CSWSTrigger	OnEnterMine	0x761bc0	4		672	0x00622930	mapper	660	4	672	-0x13f290	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00622930
+F	CSWSTrigger	RemoveFromArea	0x761900	0		224	0x00622670	mapper	213	0	224	-0x13f290	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00622670
+F	CSWSTrigger	SetCreator	0x761ea0	4		128	0x00622c10	mapper	124	4	128	-0x13f290	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x00622c10
+F	CServerExoApp	ClientToServerObjectId	0x64c2d0	4		32	0x0051c8b0	mapper	28	4	32	-0x12fa20	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x0051c8b0
+F	CServerExoApp	GetActiveTimer	0x64bd70	4		32	0x0051c350	mapper	28	4	32	-0x12fa20	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0051c350
+F	CServerExoApp	GetGameObject	0x64bac0	4	__thiscall	64	0x0051c0a0	name_map+mapper	62	4	64	-0x12fa20	True	__thiscall	4	True	thiscall	Y	6	6	vote	high	ai-review-2026-10-01	0x0051c0a0|0x0051c0a0
+F	CServerExoApp	GetGlobalVariableTable	0x64c2b0	0		32	0x0051c890	mapper	22	0	32	-0x12fa20	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051c890
+F	CServerExoApp	GetWorldTimer	0x64bd90	0		32	0x0051c370	mapper	31	0	32	-0x12fa20	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051c370
+F	CWorldTimer	AddWorldTimes	0x80b3d0	24		112	0x0051aef0	mapper	108	24	112	-0x2f04e0	True	__thiscall	24	True	thiscall	Y	6	6	vote			|0x0051aef0
+F	CWorldTimer	CompareWorldTimes	0x80b4c0	16		112	0x0051afe0	mapper	100	16	112	-0x2f04e0	True	__thiscall	16	True	thiscall	Y	6	6	vote			|0x0051afe0
+F	CWorldTimer	ConvertFromTimeOfDay	0x80b020	20		144	0x0051ab40	mapper	129	20	144	-0x2f04e0	True	__thiscall	20	True	thiscall	Y	6	6	vote			|0x0051ab40
+F	CWorldTimer	GetWorldTime	0x80b200	8		272	0x0051ad20	mapper	268	8	272	-0x2f04e0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x0051ad20
+F	CWorldTimer	GetWorldTimeHour	0x80b5e0	0		64	0x0051b100	mapper	49	0	64	-0x2f04e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051b100
+F	CWorldTimer	GetWorldTimeMillisecond	0x80b6a0	0		64	0x0051b1c0	mapper	49	0	64	-0x2f04e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051b1c0
+F	CWorldTimer	GetWorldTimeMinute	0x80b620	0		64	0x0051b140	mapper	49	0	64	-0x2f04e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051b140
+F	CWorldTimer	GetWorldTimeSecond	0x80b660	0		64	0x0051b180	mapper	49	0	64	-0x2f04e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051b180
+F	CWorldTimer	PauseWorldTimer	0x80b530	0		80	0x0051b050	mapper	66	0	80	-0x2f04e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051b050
+F	CWorldTimer	ResetTimer	0x80b310	4		192	0x0051ae30	mapper	177	4	192	-0x2f04e0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0051ae30
+F	CWorldTimer	SetMinutesPerHour	0x80ace0	1		96		none						__thiscall	4									|
+F	CWorldTimer	SubtractWorldTimes	0x80b440	24		128	0x0051af60	mapper	115	24	128	-0x2f04e0	True	__thiscall	24	True	thiscall	Y	6	6	vote			|0x0051af60
+F	CWorldTimer	UnpauseWorldTimer	0x80b580	0		64	0x0051b0a0	mapper	54	0	64	-0x2f04e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0051b0a0
+F	Gob	AddAnimationFlag	0x8fd240	4		80	0x004e3110	mapper	67	4	80	-0x41a130	True	__thiscall	4	True	thiscall	Y	1	6	vote			|0x004e3110
+F	Gob	AddAttachment	0x8557b0	4		64	0x004632c0	mapper	55	4	64	-0x3f24f0	True	__thiscall	4	True	thiscall	Y	3	6	vote			|0x004632c0
+F	Gob	Amputate	0x854700	4		432	0x00462170	mapper	421	4	432	-0x3f2590	True	__thiscall	4	True	thiscall	Y	3	6	vote			|0x00462170
+F	Gob	Append	0x8545b0	8		336	0x00462020	mapper	335	8	336	-0x3f2590	True	__thiscall	8	True	thiscall	Y	2	6	vote			|0x00462020
+F	Gob	AttachToScene	0x85f680	4	__thiscall	208		none						__thiscall	4									|
+F	Gob	BehaviorMessage	0x855bc0	4	__thiscall	64	0x004636d0	mapper	54	4	64	-0x3f24f0	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x004636d0
+F	Gob	DisableAlwaysRender	0x84c3c0	0		32	0x00459de0	mapper	18	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00459de0
+F	Gob	DisableDistortion	0x84bff0	0		32	0x00459a10	mapper	21	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x00459a10
+F	Gob	DisableFog	0x84c550	0		32	0x00459f70	mapper	31	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00459f70
+F	Gob	DisableForceAnimations	0x84c360	0		32	0x00459d80	mapper	18	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00459d80
+F	Gob	DisableInCutscene	0x84c3e0	0		32	0x00459e00	mapper	18	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00459e00
+F	Gob	DisableInViewVolume	0x84be90	0		32	0x004598b0	mapper	18	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote	medium	gog_cluster_delta_map.py	|0x004598b0
+F	Gob	DisableRenderBumpedOut	0x84ea70	0		240	0x0045c490	mapper	234	0	240	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x0045c490
+F	Gob	DisableRenderGobBBox	0x84e4f0	0		32	0x0045bf10	mapper	23	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0045bf10
+F	Gob	EnableAlwaysRender	0x84c3a0	0		32	0x00459dc0	mapper	18	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00459dc0
+F	Gob	EnableDistortion	0x84bfd0	0		32	0x004599f0	mapper	21	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x004599f0
+F	Gob	EnableFog	0x84c570	0		32	0x00459f90	mapper	31	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00459f90
+F	Gob	EnableForceAnimations	0x84c340	0		32	0x00459d60	mapper	18	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00459d60
+F	Gob	EnableInViewVolume	0x84c5e0	0		48	0x0045a000	mapper	41	0	48	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0045a000
+F	Gob	EnableRenderBumpedOut	0x84e530	8		1344	0x0045bf50	mapper	1343	8	1344	-0x3f25e0	True	__thiscall	0	False	thiscall	Y	4	6	vote	low	U5-Phase4	|0x0045bf50
+F	Gob	EnableRenderGobBBox	0x84e4b0	4		64	0x0045bed0	mapper	55	4	64	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x0045bed0
+F	Gob	EndLookAtAnimate	0x8f6e70	0		48	0x004dcce0	mapper	48	0	48	-0x41a190	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x004dcce0
+F	Gob	GetBoundingBox	0x84c590	8		80	0x00459fb0	mapper	68	8	80	-0x3f25e0	True	__thiscall	8	True	thiscall	Y	5	6	vote			|0x00459fb0
+F	Gob	GetCutsceneDummyPosition	0x84c420	4		160	0x00459e40	mapper	154	4	160	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x00459e40
+F	Gob	GetMaxBlurLength	0x84bfb0	0		32	0x004599d0	mapper	20	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x004599d0
+F	Gob	GetMaximumLightRadius	0x84ec70	0		192	0x0045c690	mapper	180	0	192	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0045c690
+F	Gob	GetMinimumBoundingBox_2	0x8525d0	8		96	0x00460040	mapper	85	8	96	-0x3f2590	True	__thiscall	8	True	thiscall	Y	5	6	vote			|0x00460040
+F	Gob	GetMinimumBoundingSphere	0x852630	8		80	0x004600a0	mapper	71	8	80	-0x3f2590	True	__thiscall	8	True	thiscall	Y	5	6	vote			|0x004600a0
+F	Gob	GetModelName	0x853b60	0		48	0x004615d0	mapper	39	0	48	-0x3f2590	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x004615d0
+F	Gob	GetMotionBlurred	0x84bf70	0		32	0x00459990	mapper	20	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x00459990
+F	Gob	GetName	0x84bcd0	0		32	0x004596f0	mapper	17	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x004596f0
+F	Gob	GetOrientation	0x84bd20	4	__thiscall	64	0x00459740	mapper	49	4	64	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00459740
+F	Gob	GetPartLocalPosition	0x855260	12		128	0x00462cd0	mapper	121	12	128	-0x3f2590	True	__thiscall	8	False	thiscall	Y	5	6	vote			|0x00462cd0
+F	Gob	GetPosition	0x84bcf0	4		48	0x00459710	mapper	43	4	48	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x00459710
+F	Gob	GetPreviousPosition	0x84bd60	4		48	0x00459780	mapper	43	4	48	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00459780
+F	Gob	IsAlwaysRendering	0x84c4c0	0		32	0x00459ee0	mapper	17	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00459ee0
+F	Gob	IsAnimating	0x84be70	0		32	0x00459890	mapper	20	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote	medium	gog_cluster_delta_map.py	|0x00459890
+F	Gob	IsForceAnimated	0x84c380	0		32	0x00459da0	mapper	17	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x00459da0
+F	Gob	IsInCutscene	0x84c400	0		32	0x00459e20	mapper	17	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00459e20
+F	Gob	IsInViewVolume	0x84beb0	0		32	0x004598d0	mapper	17	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x004598d0
+F	Gob	LoadAddInAnimations	0x84c610	4		288	0x0045a030	mapper	277	4	288	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0045a030
+F	Gob	RemoveAddInAnimations	0x84c730	0		64	0x0045a150	mapper	54	0	64	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0045a150
+F	Gob	RemoveAnimationFlag	0x8fd290	4		96	0x004e3160	mapper	82	4	96	-0x41a130	True	__thiscall	4	True	thiscall	Y	2	6	vote			|0x004e3160
+F	Gob	RemoveAttachment	0x8557f0	4		64	0x00463300	mapper	53	4	64	-0x3f24f0	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x00463300
+F	Gob	Render	0x89aba0	1	__thiscall	1680		none						__thiscall	4									|
+F	Gob	RenderBlur	0x89a850	0		240		none						__thiscall	0									|
+F	Gob	RestoreTexture	0x853070	0		320	0x00460ae0	mapper	203	0	208	-0x3f2590	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x00460ae0
+F	Gob	SetAsCharacter	0x84bed0	0		64	0x004598f0	mapper	54	0	64	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	4	6	vote			|0x004598f0
+F	Gob	SetColorShifting	0x84ed30	20		96	0x0045c750	mapper	95	20	96	-0x3f25e0	True	__thiscall	12	False	thiscall	Y	5	6	vote			|0x0045c750
+F	Gob	SetEnvironmentMap	0x853890	4		400	0x00461300	mapper	389	4	400	-0x3f2590	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x00461300
+F	Gob	SetIgnoreHitCheck	0x84be10	1		32		none						__thiscall	4									|
+F	Gob	SetIllumination	0x84ed90	16		96	0x0045c7b0	mapper	83	16	96	-0x3f25e0	True	__thiscall	8	False	thiscall	Y	4	6	vote			|0x0045c7b0
+F	Gob	SetLightPriority	0x84eb60	4		160	0x0045c580	mapper	154	4	160	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x0045c580
+F	Gob	SetMaxBlurLength	0x84bf90	4		32	0x004599b0	mapper	25	4	32	-0x3f25e0	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x004599b0
+F	Gob	SetMotionBlurred	0x84bf50	1		32		none						__thiscall	4									|
+F	Gob	SetObjectScale	0x855830	5		224		none						__thiscall	8									|
+F	Gob	SetOrientation	0x853a70	20		80	0x004614e0	mapper	80	20	80	-0x3f2590	True	__thiscall	8	False	thiscall	Y	6	6	vote			|0x004614e0
+F	Gob	SetPosition	0x853a20	16		80	0x00461490	mapper	69	16	80	-0x3f2590	True	__thiscall	8	False	thiscall	Y	6	6	vote			|0x00461490
+F	Gob	SetProcessFlag	0x84bb30	0		80	0x00459560	mapper	31	0	32	-0x3f25d0	True	__thiscall	0	True	thiscall	Y	3	6	drift+0x10			|0x00459560
+F	Gob	SetRenderPersonalSpace	0x84bf30	1		32		none						__thiscall	4									|
+F	Gob	SetScene	0x84b0b0	4		144	0x00458b70	mapper	2452	4	2464	-0x3f2540	True	__thiscall	4	True	thiscall	Y	0	6	drift+0xa0	medium	T2-Phase3	|0x00458b70
+F	Gob	TurnOffShadows	0x84be30	0		32	0x00459850	mapper	23	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00459850
+F	Gob	TurnOnShadows	0x84be50	0		32	0x00459870	mapper	26	0	32	-0x3f25e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x00459870
+F	Scene	ChildAdd	0x857f90	4	__thiscall	112	0x00465bb0	mapper	112	4	112	-0x3f23e0	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x00465bb0
+F	Scene	ChildRemove	0x858000	4		112	0x00465c20	mapper	112	4	112	-0x3f23e0	True	__thiscall	4	True	thiscall	Y	4	6	vote			|0x00465c20
+F	Scene	DisableAnimations	0x8575b0	0		32	0x004651d0	mapper	21	0	32	-0x3f23e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x004651d0
+F	Scene	DisableVisibilityGraph	0x861d80	0		32	0x0046fb40	mapper	26	0	32	-0x3f2240	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0046fb40
+F	Scene	EnableAnimations	0x857590	0		32	0x004651b0	mapper	21	0	32	-0x3f23e0	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x004651b0
+F	Scene	EnableVisibilityGraph	0x861d50	0		48	0x0046fb10	mapper	44	0	48	-0x3f2240	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0046fb10
+F	Scene	GetFogRange	0x857030	8		48	0x00464c50	mapper	35	8	48	-0x3f23e0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00464c50
+F	Scene	GetIgnoreVisibilityGraph	0x861da0	0		32	0x0046fb60	mapper	21	0	32	-0x3f2240	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0046fb60
+F	Scene	GetNumRooms	0x8621b0	0		32	0x0046ff70	mapper	20	0	32	-0x3f2240	True	__thiscall	0	True	thiscall	Y	6	6	vote			|0x0046ff70
+F	Scene	GetObjectA	0x857670	4		624	0x00465290	mapper	102	4	112	-0x3f23e0	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x00465290
+F	Scene	GetObjectScale	0x864850	4		4981	0x00472610	mapper	22	4	32	-0x3f2240	True	__stdcall	4	True	thiscall	N	2	6	vote			|0x00472610
+F	Scene	IsAnimating	0x8575d0	0		32	0x004651f0	mapper	20	0	32	-0x3f23e0	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x004651f0
+F	Scene	IsGeomFadeEnabled	0x8570b0	0		32	0x00464cd0	mapper	25	0	32	-0x3f23e0	True	__stdcall	0	True	thiscall	N	6	6	vote			|0x00464cd0
+F	Scene	LoadVisibility	0x861e10	4		336	0x0046fbd0	mapper	330	4	336	-0x3f2240	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x0046fbd0
+F	Scene	RemoveFromSceneManager_2	0x8646a0	4		80		none						__cdecl	8									|
+F	Scene	SetBlindLights	0x8575f0	4		32	0x00465210	mapper	30	4	32	-0x3f23e0	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x00465210
+F	Scene	SetCurrentRoom_2	0x8621f0	4		80	0x0046ffb0	mapper	72	4	80	-0x3f2240	True	__thiscall	4	True	thiscall	Y	5	6	vote			|0x0046ffb0
+F	Scene	SetFog	0x857010	4		32	0x00464c30	mapper	22	4	32	-0x3f23e0	True	__thiscall	4	True	thiscall	Y	6	6	vote			|0x00464c30
+F	Scene	SetFogColor	0x856850	4		144	0x00464470	mapper	143	4	144	-0x3f23e0	True	__thiscall	4	True	thiscall	Y	3	6	vote			|0x00464470
+F	Scene	SetFogRange	0x857060	8		32	0x00464c80	mapper	31	8	32	-0x3f23e0	True	__thiscall	8	True	thiscall	Y	6	6	vote			|0x00464c80
+F	Scene	SetGeomFadeProperties	0x864820	4		48	0x004725e0	mapper	45	4	48	-0x3f2240	True	__stdcall	4	True	thiscall	N	2	6	vote			|0x004725e0
+F	Scene	SetObjectScale	0x8647f0	8		48	0x004725b0	mapper	46	8	48	-0x3f2240	True	__thiscall	8	True	thiscall	Y	2	6	vote			|0x004725b0
+F	Scene	SetSceneFocus	0x857080	12		48	0x00464ca0	mapper	38	12	48	-0x3f23e0	True	__thiscall	4	False	thiscall	Y	6	6	vote			|0x00464ca0
+F	Scene	SpawnRoom	0x8624d0	12	__thiscall	2608	0x00470290	mapper	2598	12	2608	-0x3f2240	True	__thiscall	12	True	thiscall	Y	4	6	vote			|0x00470290
+F	Scene	UpdateEmitters	0x85e510	0		288	0x0046c190	mapper	281	0	288	-0x3f2380	True	__thiscall	0	True	thiscall	Y	5	6	vote			|0x0046c190

@@ -1,0 +1,69 @@
+class	name	steam_addr	content	cc_ok	reason	alt
+CSWGuiBorder	Constructor	0x00414a50	C3	Y	Sets CSWGuiDrawable then CSWGuiBorder vftable, zeroes extent +4..+0x10, inits params via 0x4143d0, zeroes +0x6c/+0x70/+0x74 image ptrs, calls params SetBorder 0x414920; retn 0	
+CSWGuiBorder	Destructor	0x00414bf0	C3	N	Scalar deleting dtor calls 0x414c60 (sets CSWGuiBorder::vftable, frees +0x6c/70/74) then delete if flag&1. retn=4 (flag arg) but wrapper typedef has 0 args: WRAPPER_ARGS_MISMATCH (stack imbalance, garbage flag)	
+CSWGuiBorder	Initialize	0x00414c20	C3	Y	Copies 4 ints from extent arg to this+4..+0x10 (GOG extent=0x4) then params operator= (0x4144f0) on this+0x14 (GOG border_params=0x14) with borderParams arg; retn 8	
+CSWGuiBorder	GetInnerExtent	0x00414d80	C3	Y	Computes inner rect from this+4/+8/+0xc/+0x10 extent, corner/edge image sizes (+0x6c/+0x70 vcalls) and INNEROFFSET +0x18/+0x1c; writes 4 ints to out arg; retn 4	
+CSWGuiBorder	Load	0x00415080	C3	Y	Strings CORNER/DIMENSION/INNEROFFSET/INNEROFFSETY/FILLSTYLE/COLOR/PULSING; writes this+0x14 dimension, +0x28 color, +0x34 flags (GOG params 0x14 + 0/0x14/0x20); calls Set*Image; retn 12	
+CSWGuiBorder	Draw	0x00415300	C3	Y	Draws corners/edges via +0x6c/+0x70 image vcalls, fill via FillTile 0x415a60 (style 0) / FillCenter 0x415d20 (style 1) keyed on this+0x34&3; alpha at +0x24 (params+0x10); retn 4 (Ghidra shows fastcall)	
+CSWGuiBorder	FillTile	0x00415a60	C3	Y	Tiles fill image (+0x74 vcalls width 0x10/height 0xc, draw 0x18) across (height,width,x,y,alpha,color) with remainder distribution; called from Draw when fillstyle==0; retn 24	
+CSWGuiBorder	FillCenter	0x00415d20	C3	Y	Draws fill image (+0x74) centred when smaller than width/height, else stretched; called from Draw when fillstyle==1; same 6-arg shape retn 24	
+CSWGuiBorderParams	SetCornerImage	0x00414680	C3	Y	Compares/stores CResRef at this+0x24 (GOG corner_image_resref=0x24), border ptr +0x54 (GOG border), writes border+0x6c image (zeroed in Border ctor); Border::Load CORNER feeds it; retn 8	
+CSWGuiBorderParams	SetEdgeImage	0x00414760	C3	Y	Same body keyed on resref this+0x34 (GOG edge_image_resref=0x34) and border+0x70 image slot; Border::Load passes 2nd resref field; retn 8 (image, forceUpdate)	
+CSWGuiBorderParams	SetFillImage	0x00414840	C3	Y	Same body keyed on resref this+0x44 (GOG fill_image_resref=0x44) and border+0x74 image slot (used by FillTile/FillCenter); Panel::SetBackground forwards here; retn 8	
+CSWGuiBorderParams	SetBorder	0x00414920	C3	Y	Stores border at this+0x54 (GOG border=0x54) then calls SetCornerImage/SetEdgeImage/SetFillImage on this+0x24/+0x34/+0x44 with force=1; retn 4	
+CSWGuiControl	Destructor	0x00418640	C3	Y	Sets CSWGuiControl::vftable, frees event list +0x3c, ~CExoString at +0x2c (GOG tooltip_string), frees +0x1c child list, then CSWGuiObject::vftable; retn 0 non-deleting	
+CSWGuiControl	Constructor	0x00418990	C3	Y	Sets CSWGuiObject then CSWGuiControl vftable; inits child list +0x1c, CExoString +0x2c, event list +0x3c, parent +0x18=0, +0x38=0, id +0x54=-1, +0x59 sound=1, flags +0x48; retn 0	
+CSWGuiControl	AddEvent	0x00418af0	C3	Y	Searches event array (+0x3c data/+0x40 size, 12-byte entries) matching entry[2]==eventFlag; stores gui_object [0] / func [1] (GOG CSWGuiControlEvent 0/4/8); removes if func null; retn 12	
+CSWGuiControl	Load_2	0x00418df0	C3	Y	Stores owner at +0x38, loops GetListCount of CONTROLS list, reads TAG string, compares to tag arg, then vcall +0x48 Load(gff,item) on match; retn 16 (owner,gff,controls,tag)	
+CSWGuiControl	GetIsSelectable	0x004190a0	C3	Y	Parent (+0x38) vcall 0x2c, +0x48 bit3 (enabled, same bit SetEnabled writes), then vcall 0x4c (AsNavigable slot 19) nonnull; GetSelectableParent calls slot 0x80 on parents; retn 0	
+CSWGuiControl	AddChildControl	0x00419330	C3	Y	Array Add (0x83ea60) on this+0x1c (GOG child_controls=0x1c) with child arg; retn 4	
+CSWGuiControl	GetIsChild	0x00419350	C3	Y	Linear search of child array data +0x1c / size +0x20 (GOG child_controls=0x1c) for pointer equality, returns 1/0; retn 4	
+CSWGuiControl	GetSelectableParent	0x004193a0	C3	Y	Walks parent_control +0x18 (GOG=0x18) upward until vcall slot 0x80 (GetIsSelectable) true; returns it or null; retn 0	
+CSWGuiControl	SetEnabled	0x004193f0	C2	Y	Sets/clears bit3 of +0x48 from arg&1 (the bit GetIsSelectable gates on, ctor default sets it); trivial setter, control bit_flags not in GOG table; retn 4	
+CSWGuiManager	AddPanel	0x00410530	C3	Y	Args panel,flags,playSound: playSound -> PlayGuiSound(panel+0x64), dup check, flags&2 -> panel bit3 + counter +0x70, array Add, flags&1 -> PushModal, vcall 0x48 OnPanelAdded, DetermineNeedToDraw; retn 12	
+CSWGuiManager	PopModalPanel	0x004109c0	C3	Y	Uses modal stack data +0x94 / size +0x98 (GOG modal_stack=0x94), removes top, DetermineNeedToDraw, re-focuses new top. RETURNS the popped panel ptr (or 0), not new depth as wrapper comment says (WRAPPER doc bug); retn 0	
+CSWGuiManager	PlayGuiSound	0x004122a0	C3	Y	Bounds-checks char id vs byte count at +0xa4 (GOG sound_count=0xa4) and sound array +0xa0 (GOG gui_sounds=0xa0), plays entry; retn 4 matches byte widened to 4	
+CSWGuiPanel	Constructor	0x0040e770	C0	Y	Empty stub: push ebp / save ECX / ret 4 (13 bytes), does nothing. Real ctor sets CSWGuiPanel::vftable, manager +0x1c, alpha +0x50=1.0, color, border new(0x78)+0x414a50, retn 4	0x0040e5a0
+CSWGuiPanel	Destructor	0x0040e860	C3	Y	Sets CSWGuiPanel::vftable, deletes border +0x60 (GOG border) via vcall 0, StopLoadFromLayout 0x40f5a0, deletes gff +0x30 (GOG gff), manager(+0x1c) RemovePanel, CSWGuiObject vftable; retn 0	
+CSWGuiPanel	CenterPanel	0x0040ea00	C3	Y	extent x/y (+4/+8) = (manager viewport +0x6c/+0x6e (GOG) - w +0xc / h +0x10)/2, then vcall slot 1 SetExtent on border +0x60 and sets flag bit0; retn 0	
+CSWGuiPanel	HandleInputEvent	0x0040eaa0	C3	Y	Forwards (event,phase) to active_control (+0x20, GOG) vcall 0x3c (GOG GuiControlMethods.HandleInputEvent=0x3c) if non-null; retn 8	
+CSWGuiPanel	HitCheckMouse	0x0040eae0	C3	Y	Takes mouseX,mouseY, subtracts panel extent (+4/+8, accounting offset), iterates controls +0x24/+0x28 (GOG) in reverse calling control vcall 0x44 HitCheck, returns hit control; retn 8	
+CSWGuiPanel	SetActiveControl	0x0040ec00	C3	Y	Compares/stores active_control +0x20 (GOG); vcall 0x3c(1,1) on old (HoverExit), (0,1) on new (HoverEnter); if playSound plays control+0x59 sound via manager; retn 8	
+CSWGuiPanel	Draw	0x0040ec90	C3	Y	Checks visible bit6 of +0x48, extent in viewport (+0x6c/+0x6e), alpha +0x50 / color +0x54 (GOG), border +0x60 vcall 0xc draw, then draws controls +0x24 via vcall 0x38; retn 4	
+CSWGuiPanel	StartLoadFromLayout	0x0040ee40	C3	N	Strings CONTROLS/ALPHA/BACKGROUND/BORDER/COLOR; stores gff +0x30, color +0x54, sets loaded bit1 of +0x48. RET 0xc = 3 stack args but wrapper typedef passes 1: WRAPPER_ARGS_MISMATCH (stack corruption)	
+CSWGuiPanel	SetBackground	0x0040f390	C3	Y	asm: ECX=[this+0x60]+0x14 (border->params) then SetFillImage 0x414840(image,0); matches Panel BACKGROUND -> SetFillImage in StartLoadFromLayout; retn 4	
+CSWGuiPanel	OnPanelAdded	0x0040f3c0	C2	Y	Calls vcall 0x6c and manager hover update, then sets manager+8 (hovered ctl) to panel control found in controls +0x24/+0x28 and calls vcall 0xc(1); plausible mirror of OnPanelRemoved; retn 0	
+CSWGuiPanel	OnPanelRemoved	0x0040f4c0	C3	Y	Calls RemoveToolTip, releases mouse-capture ctl (DAT_00a1b49c+0x18) if it equals panel GetActiveControl (vcall 0x44), clears manager+8 hover and vcall 0xc(0); retn 0	
+CSWGuiPanel	StopLoadFromLayout	0x0040f5a0	C3	Y	If loaded bit1 of +0x48 set: CRes::Release, deletes gff +0x30, clears bit1, ConnectControlMoves; exact inverse of StartLoadFromLayout flag/field; retn 0	
+CSWGuiPanel	InitControl	0x0040f620	C3	N	Control Load_2 with gff +0x30, res_list +0x34 (GOG control_res_list), tag=label; viewport scaling; adds to controls +0x24 at id +0x54. RET 0x10 = 4 args, wrapper has 3: WRAPPER_ARGS_MISMATCH (4th = scale flag)	
+CSWGuiPanel	GetFullScreenBG	0x0040fc50	C3	Y	Strings 800x600/1024x768/1280x960/1280x1024/1600x1200 chosen by screen height, concatenated with prefix indexed by byte at +0x4c; writes CExoString to out arg; retn 4	
+CSWGuiPanel	AddControl	0x0040fd80	C3	Y	Dup check via 0x4142e0 on this+0x24 array, sets control+0x38 (GOG Control.parent=0x38) = panel, array Add on this+0x24 (GOG controls); retn 4	
+CSWGuiPanel	SetVisible	0x0040fe60	C3	Y	Sets bit2 of +0x48 from arg&1 (bit DetermineNeedToDraw tests as visible), then manager(+0x1c) DetermineNeedToDraw if non-null; retn 4	
+CSWGuiPanel	GetControl	0x0040fea0	C3	Y	Bounds check index < size +0x28, returns data +0x24 [index] else 0 (GOG controls array data/size 0/4); retn 4	
+CSWGuiPanel	GetLocalMouseCoords	0x0040fed0	C3	Y	Reads mouse x,y from manager singleton (DAT_00a1b49c, GOG mouse_x=0), subtracts panel extent offset (+4/+8) into outX/outY; retn 8	
+CSWGuiPanel	ResetFont	0x0040ffb0	C3	Y	Iterates controls +0x24/+0x28 calling control vcall 0x8c (K1 slot 35 ReSetFont) when panel +0x18 set; retn 0	
+CSWGuiPanel	GetExtentAccountingForPanelOffset	0x00410020	C3	Y	Copies extent +4..+0x10 to out, adds (viewport +0x6c/+0x6e - 640/480)/2 offsets per flag bits; same math as GetLocalMouseCoords/HitCheck users; retn 4	
+Scene	SetFogColor	0x00464470	C3	Y	Writes Vector arg to this+0x74..+0x7c (GOG fog_color=0x74), derives luminance into +0x80..+0x88 (alt fog colour read by glFogfv path); retn 4	
+Scene	SetFog	0x00464c30	C3	Y	Writes this+0x60, the flag the render fog setup tests to glEnable/glDisable fog; sits right before fog_start 0x64 (GOG); retn 4	
+Scene	GetFogRange	0x00464c50	C3	Y	Reads this+0x64 (GOG fog_start) to *start and this+0x68 (GOG fog_end) to *end; retn 8	
+Scene	SetFogRange	0x00464c80	C3	Y	Writes arg1 to this+0x64 (fog_start) and arg2 to this+0x68 (fog_end), same fields glFogf start/end read in render; retn 8	
+Scene	SetSceneFocus	0x00464ca0	C2	Y	Writes 3 floats to this+0xb4..0xbc, a 3D focus position read by shadow/stencil render code; retn 12 = Vector by value (wrapper OK); GOG focus=0x118 is a different Gob field	
+Scene	IsGeomFadeEnabled	0x00464cd0	C2	Y	Static no-this: returns (global DAT_009f5d28 == const at 0x98ba8c), the global SetGeomFadeProperties writes; generic compare, mode constant unverified; retn 0 (stdcall ok)	
+Scene	EnableAnimations	0x004651b0	C3	Y	Writes byte 1 to this+0xe6 (GOG animations_enabled=0xe6); retn 0	
+Scene	DisableAnimations	0x004651d0	C3	Y	Writes byte 0 to this+0xe6 (GOG animations_enabled=0xe6); retn 0	
+Scene	IsAnimating	0x004651f0	C3	Y	Returns byte at this+0xe6 (GOG animations_enabled=0xe6); retn 0	
+Scene	SetBlindLights	0x00465210	C2	Y	Static no-this: stores arg into global DAT_00a7be44, read by Scene fog/light render fns (nonzero -> black fog colour); name not verifiable; retn 4, wrapper thiscall works as ECX ignored	
+Scene	GetObjectA	0x00465290	C3	Y	Loops objects array +0x54 data/+0x58 size (GOG objects=0x54), _stricmp(name, obj+100), returns matching Gob else 0; retn 4	
+Scene	ChildAdd	0x00465bb0	C3	Y	push_back child into this+0x54 (GOG objects) and conditional second list +0x10c, plus special-parts listing; exact mirror of ChildRemove; retn 4	
+Scene	ChildRemove	0x00465c20	C3	Y	Removes child from this+0x54 (GOG objects) and +0x10c via find-and-remove 0x449170, special-parts unlist; mirror of ChildAdd; retn 4	
+Scene	UpdateEmitters	0x0046c190	C2	Y	Sets global scene ptr, loops rooms (+0xd4/+0xd8) emitters and scene emitters (+0xa4) x100 calling big 3558B per-emitter animate 0x4ec080; called once from Scene render on frame 0; fits name, unconfirmed; retn 0	
+Scene	EnableVisibilityGraph	0x0046fb10	C3	Y	Writes short 0 to this+0xe4 (GOG ignore_visibility_graph) and returns current_room (+0xe0, GOG) != 0; retn 0	
+Scene	DisableVisibilityGraph	0x0046fb40	C3	Y	Writes short 1 to this+0xe4 (GOG ignore_visibility_graph); retn 0	
+Scene	GetIgnoreVisibilityGraph	0x0046fb60	C3	Y	Returns short at this+0xe4 (GOG ignore_visibility_graph) sign-extended as int; retn 0	
+Scene	LoadVisibility	0x0046fbd0	C3	Y	Opens visibility file by name arg, parses lines with sscanf "%s%d" then N room names, resolves rooms via vcall 0x74 and sets visibility pairs (0x46feb0); retn 4	
+Scene	GetNumRooms	0x0046ff70	C2	Y	Returns this+0xd8, the size of room array +0xd4 also indexed by SetCurrentRoom_2 and SpawnRoom; offset not in GOG table; retn 0	
+Scene	SetCurrentRoom_2	0x0046ffb0	C3	Y	Bounds-checks index against +0xd8 and stores rooms[+0xd4][index] (or 0) into this+0xe0 (GOG current_room=0xe0); retn 4 int index	
+Scene	SpawnRoom	0x00470290	C3	Y	Takes model name, position (3 floats copied +0xa4..) and orientation (4 floats = quaternion), builds room objects (new 0xbc/0x98), appends to this+0xd4 room array, returns new room obj; retn 12	
+Scene	SetObjectScale	0x004725b0	C2	Y	Forwarder: object vcall 0xcc(scale, 1, this); arg shape (object, scale) retn 8 matches; generic thin forwarder	
+Scene	SetGeomFadeProperties	0x004725e0	C2	Y	Static: accepts only 1,2,4, stores to global DAT_009f5d28 (read by IsGeomFadeEnabled), returns 1/0; retn 4 stdcall; thin, no name-specific marker	
+Scene	GetObjectScale	0x00472610	C2	Y	Static stdcall returning float at object+0x1e0 as x87 value (matches wrapper double __stdcall, retn 4); simple getter, offset unverifiable	

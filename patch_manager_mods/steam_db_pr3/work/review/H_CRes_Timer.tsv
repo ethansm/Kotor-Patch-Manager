@@ -1,0 +1,21 @@
+class	name	steam_addr	content	cc_ok	reason	alt
+CRes	Constructor	0x007110d0	C3	Y	Sets CRes::vftable at +0, short +4 (demands, GOG +0x4)=0, +8=-1, short +6=0, zeroes +0x10 data,+0x14 table_entry,+0x18 size up to +0x24 (OBJECT_SIZE 0x28); base ctor of CResTPC/TGA/PLT; fastcall retn 0	
+CRes	Destructor	0x00711170	C2	N	Scalar-deleting dtor: calls 0x7111a0 (reset vftable to CRes, member dtor) then delete(this) if flag(param_2)&1; retn 4. WRAPPER_ARGS_MISMATCH: typedef has 0 args, real takes delete-flag; wrapper then also free()s	
+CRes	CancelRequest	0x007111c0	C3	Y	Thunk: push this; ecx=[0xA1B490] (ExoResMan); call 0x711a30 which decrements request count short at +6 (paired with Request 0x713310 incrementing +6) and unloads at 0; retn 0 matches	
+CRes	Demand	0x007111e0	C3	Y	asm 0x7111e4-1f1: push this; ecx=[0xA1B490]; call 0x711c20 which increments demands short at +4 (GOG CRes.demands 0x4) and returns data ptr +0x10 (loads via type switch); retn 0, int return ok	
+CRes	GetResRef	0x00711270	C3	Y	Reads CRes+0x14 (GOG table_entry/resref 0x14): 0x710ca0 lowercases 16-byte resref into outRef(ECX=[ebp+8]); *outType(word)=entry+0x1a; RET 8 = 2 args, matches (outRef,outType)	
+CRes	Release	0x007112b0	C3	Y	Thunk: push this; ecx=[0xA1B490]; call 0x7130b0 which decrements demands short at +4 (GOG demands 0x4), frees data at 0 (clears +0x10 via 0x711e60); pairs with Demand; retn 0	
+CRes	Request	0x007112d0	C3	Y	Thunk to 0x713310: if !(flags+0xc&4) increments request-count short at +6 (calls 0x54aa30 at 0->1) returns 1/0; exact inverse of CancelRequest 0x711a30 (decrement +6); retn 0	
+CWorldTimer	SetMinutesPerHour	0x0051a800	C3	Y	Stores byte at +0x38 (default 5 if 0), +0x40=mph*0x5a0, +0x3c=mph*0x15f900 (1,440,000 ms/day * mph); +0x38/+0x3c used by ConvertFromTimeOfDay/GetWorldTime; retn 4 (BYTE widened)	
+CWorldTimer	ConvertFromTimeOfDay	0x0051ab40	C3	Y	ms%1000->outMS, (ms/1000)%60->outSeconds, then total minutes %byte[+0x38] -> outMinutes, /byte[+0x38] -> outHours (+0x38=minutes per hour); retn 20 = 5 args matches	
+CWorldTimer	GetWorldTime	0x0051ad20	C3	Y	Known GetCurrentTime (lessons db_functions): paused flag +0x24==1 returns cached +0x28/+0x2c else ticks(+0xc via 0x51a920)/1000 divmod +0x3c plus base +0x30/+0x34 -> outDays,outMS; normalises; retn 8	
+CWorldTimer	ResetTimer	0x0051ae30	C2	Y	Copies fields 0,4,0xc,0x10,0x14,0x18,0x24,0x28..0x34,byte +0x38,+0x3c,+0x40 from arg struct and sets +8=100 (scale); fits CWorldTimer layout and 1 ptr arg (retn 4) but name 'ResetTimer' is not pinned; acts as copy-from	
+CWorldTimer	AddWorldTimes	0x0051aef0	C3	Y	Validates both ms < +0x3c (ms per day) else returns -2; out days=sum, ms=sum with carry (+1 day, -ms/day) returns 0; retn 24 = 6 args (lhsDays,lhsMS,rhsDays,rhsMS,outDays,outMS) matches	
+CWorldTimer	SubtractWorldTimes	0x0051af60	C3	Y	Calls compare 0x51afe0; if lhs<rhs returns -2 else out days=l-r, ms=l-r with borrow (+ms/day at +0x3c, -1 day) returns 0; retn 24 = 6 args matches	
+CWorldTimer	CompareWorldTimes	0x0051afe0	C3	Y	ms args validated < +0x3c else -2; compares days then ms, returns 1/0/-1; retn 16 = 4 args (lhsDay,lhsMS,rhsDay,rhsMS) matches	
+CWorldTimer	PauseWorldTimer	0x0051b050	C3	Y	If +0x24==0: GetWorldTime (0x51ad20) into +0x28/+0x2c then +0x24=1 (the paused flag GetWorldTime tests); fastcall retn 0	
+CWorldTimer	UnpauseWorldTimer	0x0051b0a0	C3	Y	If +0x24==1: SetWorldTime-like 0x51ac30(+0x28,+0x2c,0) rebases +0x30/+0x34, then +0x24=0; exact inverse of Pause; retn 0	
+CWorldTimer	GetWorldTimeHour	0x0051b100	C3	Y	asm: calls 0x51b0e0 (ms-of-day from GetWorldTime), ConvertFromTimeOfDay 0x51ab40 with outs [ebp-10],[-8],[-0xc],[-4] (H,M,S,MS order); returns [ebp-0x10] = first out = hours; retn 0	
+CWorldTimer	GetWorldTimeMinute	0x0051b140	C3	Y	Same pattern as Hour; Convert outs order H,M,S,MS, returns local_c = second out slot = minutes (decompile and 0x51b0e0 ms source consistent); retn 0	
+CWorldTimer	GetWorldTimeSecond	0x0051b180	C3	Y	Same pattern; returns local_10 = third out slot of 0x51ab40 = seconds; retn 0	
+CWorldTimer	GetWorldTimeMillisecond	0x0051b1c0	C3	Y	Same pattern; returns local_8 = fourth out slot of 0x51ab40 = milliseconds; retn 0	

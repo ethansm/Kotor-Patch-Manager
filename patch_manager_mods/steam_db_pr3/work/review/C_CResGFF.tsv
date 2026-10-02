@@ -1,0 +1,62 @@
+class	name	steam_addr	content	cc_ok	reason	alt
+CResGFF	Constructor	0x00716e60	C3	Y	Calls CRes::CRes 0x7110d0, sets CResGFF vftable, zeroes +0x40..+0x78 (header/structs/fields/labels/data ptrs), grow incs 0x6e/0x286/0x62/0x72c/0xfd4, memset field_type +0x8d; retn 0	
+CResGFF	Constructor_2	0x00716fd0	C3	Y	Same init as ctor plus strncpy(param_3 GFFtype,4) to +0x8d; SetResObject(param_4 resref,param_2 type,this) then Demand; retn 12 = type,GFFtype,resref	
+CResGFF	Destructor_2	0x007171b0	C3	N	WRAPPER_ARGS_MISMATCH: Steam retn 0 (GOG param_bytes also 0), wrapper typedef passes byte shouldFree. Body: frees +0x70/64/5c/54/4c/44/40 or ReleaseResource if +0x98, CRes dtor 0x7111a0	
+CResGFF	OnResourceServiced	0x00717300	C3	Y	Header ptr +0x40 = CRes data +0x10; checks file type vs +0x8d and version vs PTR_DAT_00a100c8; sets structs +0x44, fields +0x4c, labels +0x54, field_data +0x5c, idx +0x64/+0x70; retn 0	
+CResGFF	OnResourceFreed	0x007175b0	C3	Y	If flag +0x98 zeroes +0x70,+0x64,+0x5c,+0x54,+0x4c,+0x44,+0x40 (GOG members), clears +0x98 and +0x94, returns 1; retn 0 fastcall	
+CResGFF	ReleaseResource	0x00717630	C3	Y	If +0x98/+0x9c: CRes::Release 0x7112b0 + ReleaseResObject 0x713010; zeroes +0x40..+0x78 table pointers; void, retn 0; also called from Destructor_2	
+CResGFF	GetField	0x00717770	C2	Y	Returns field ptr: fields +0x4c, stride 0xc, field_indices +0x64, header counts +0x14/+0x2c, GetStruct(arg1). Fits but overload vs GetField_2 unresolvable; takes CResStruct* (WRAPPER type looks swapped with GetField_2)	
+CResGFF	GetDataField	0x00717820	C3	Y	field_data +0x5c; bounds vs header +0x24 (field_data_count); returns ptr + field+8 offset, *dataSize = count-offset; matches (field, dataSize*); retn 8	
+CResGFF	GetDataLayoutList	0x00717880	C3	Y	list_indices +0x70; bounds vs header +0x34 (list_indices_count); ptr = +0x70 + field+8, *dataLength = remaining; matches (field, dataLength*); retn 8	
+CResGFF	GetFieldByLabel	0x007178e0	C3	Y	Copies label into 16-byte buffer (strncpy 0x10), scans fields via GetField_2 comparing labels +0x54 stride 0x10 vs header +0x1c; returns index or -1 (asm OR EAX,-1); retn 8	
+CResGFF	GetField_2	0x00717a00	C2	Y	Returns field ptr from struct data ptr (+4 data, +8 field_count): single field uses fields +0x4c, else field_indices +0x64. Overload vs GetField unresolvable; takes CResGFFStruct* not CResStruct* (WRAPPER type swap?)	
+CResGFF	InitializeForWriting	0x00717aa0	C3	Y	Allocs 0x38 header copy, builds writable copies, sets capacities +0x48/50/58/60/68/74 to 0x6e/0x286/0x62/0x72c/0xfd4 (ctor consts), calls ReleaseResource; callers (AddList etc.) test +0x98; retn 0	
+CResGFF	AddStruct	0x00717f30	C3	Y	Grows structs array +0x44 (cap +0x48, inc +0x28, stride 0xc), bumps header +0xc struct_count, inits {id,-1,0}; returns old index or -1; retn 4 = id	
+CResGFF	AddField	0x00718030	C3	Y	GetStruct(struct), grows fields +0x4c (cap +0x50, inc +0x2c, stride 0xc), header +0x14; sets {type,labelIdx via AddLabel,-1}; adds to field_indices via AddDataLayoutField; retn 12 = struct,label,type	
+CResGFF	AddLabel	0x007181f0	C3	Y	Dedups 16-byte label (strncpy 0x10) in labels +0x54 vs header +0x1c, grows cap +0x58/inc +0x30, memcpy 0x10; asm returns index in EAX; retn 4 = text	
+CResGFF	AddDataField	0x00718370	C3	Y	Appends to field_data +0x5c using header +0x24, cap +0x60, inc +0x34; returns ptr; retn 12 = existingBlockOffset,sizeOfExistingBlock,dataLength	
+CResGFF	AddDataLayoutField	0x00718470	C3	Y	Same append pattern on field_indices +0x64 with header +0x2c, cap +0x68, inc +0x38, waste counter +0x6c; retn 12; sole caller AddField	
+CResGFF	AddDataLayoutList	0x00718580	C3	Y	Same append pattern on list_indices +0x70 with header +0x34, cap +0x74, inc +0x3c, waste counter +0x78; retn 12; callers AddList/AddListElement	
+CResGFF	GetElementType	0x00718690	C2	Y	Returns first dword of GetStruct(arg) (GFFStructData.id, offset 0) or -1; retn 4; trivial accessor, offset 0 weak evidence; 14 callers	
+CResGFF	GetFieldCount	0x007186c0	C3	Y	Returns arg+8 (GFFStructData.field_count) or -1 if null; retn 4; used by GetFieldByLabel loop. WRAPPER note: arg is the CResGFFStruct* (GetStruct result) not CResStruct*	
+CResGFF	GetFieldType	0x00718710	C3	Y	If label given idx=GetFieldByLabel(struct,label), then GetField(struct,idx) and returns field+0 (field_type) or -1; retn 12 = struct,label,fieldIndex	
+CResGFF	GetList	0x00718760	C3	Y	GetFieldByLabel+GetField, requires type 0xf (List), GetDataLayoutList size>=4, then *out=struct index, strncpy label 0x10 (CResList layout); retn 12 = out,struct,label	
+CResGFF	GetListCount	0x00718810	C3	Y	Resolves field from list.resStruct/+4 label, requires type 0xf, reads count dword at list_indices offset; retn 4 = CResList*	
+CResGFF	GetListElement	0x00718890	C3	Y	Resolves list field, type 0xf, bounds-checks index vs count and size, checks element < header struct_count +0xc, *out=struct index; retn 12 = outStruct,list,index	
+CResGFF	GetStructFromStruct	0x00718960	C3	Y	GetFieldByLabel+GetField, requires type 0xe (Struct), *out = field data (+8) struct index; returns 1/0; retn 12 = out,in,label	
+CResGFF	GetTopLevelStruct	0x007189d0	C2	Y	Writes 0 to *out (top-level struct index 0), returns out!=null; retn 4; trivial, 31 callers fit common use	
+CResGFF	ReadFieldBYTE	0x00718a00	C3	Y	GetFieldByLabel+GetField, requires field type 0, sets *success 0/1, returns default on miss; retn 16 = struct,label,success,default. Reads low byte of data+8.	
+CResGFF	ReadFieldCHAR	0x00718a80	C3	Y	GetFieldByLabel+GetField, requires field type 1, sets *success 0/1, returns default on miss; retn 16 = struct,label,success,default. Reads low byte of data+8.	
+CResGFF	ReadFieldWORD	0x00718b00	C3	Y	GetFieldByLabel+GetField, requires field type 2, sets *success 0/1, returns default on miss; retn 16 = struct,label,success,default. Reads low word.	
+CResGFF	ReadFieldSHORT	0x00718b80	C3	Y	GetFieldByLabel+GetField, requires field type 3, sets *success 0/1, returns default on miss; retn 16 = struct,label,success,default. Reads low word.	
+CResGFF	ReadFieldDWORD	0x00718c00	C3	Y	GetFieldByLabel+GetField, requires field type 4, sets *success 0/1, returns default on miss; retn 16 = struct,label,success,default.	
+CResGFF	ReadFieldINT	0x00718c80	C3	Y	GetFieldByLabel+GetField, requires field type 5, sets *success 0/1, returns default on miss; retn 16 = struct,label,success,default. WRAPPER_ENUM: wrapper GFF_INT=6/GFF_DWORD64=5 is swapped vs real INT=5.	
+CResGFF	ReadFieldFLOAT	0x00718d00	C3	Y	Requires type 8, returns float10 (x87) of data+8 else default; success out-param; retn 16 = struct,label,success,float default	
+CResGFF	ReadFieldDWORD64	0x00718d80	C3	Y	Requires type 6 (real GFF DWORD64; wrapper enum has 5), GetDataField size>=8, returns 64-bit; retn 20 = 12 + 8-byte default, matches typedef (wrapper param_bytes note of 16 is a miscount)	
+CResGFF	ReadFieldCResRef	0x00718e40	C3	Y	Requires type 0xb, GetDataField, length-prefixed byte then builds CResRef via 0x7108a0; 16-byte default copy to out; retn 20 = out,struct,label,success,default	
+CResGFF	ReadFieldCExoString	0x00718f90	C3	Y	Requires type 10, GetDataField, dword length + chars, constructs CExoString (0x733680) else copies default (0x7335f0); retn 20 = out,struct,label,success,default	
+CResGFF	ReadFieldCExoLocString	0x007190e0	C3	Y	Requires type 0xc, GetDataField, parses strref/count/entries into CExoLocString (0x7352d0 default copy, destructor 0x735360); retn 20 = out,struct,label,success,default	
+CResGFF	ReadFieldQuaternion	0x007193d0	C3	Y	Requires type 0x10, GetDataField size>=0x10, copies 4 floats; default (0,0,0,1) local const 0x3f800000; retn 20 = out,struct,label,success,default	
+CResGFF	ReadFieldVector	0x00719520	C3	Y	Requires type 0x11, GetDataField size>=0xc, copies 3 floats to out; default 3 floats; retn 20 = out,struct,label,success,default	
+CResGFF	ReadFieldVOID	0x00719640	C3	Y	Requires type 0xd, GetDataField, dword len then memcpy min(len,size) into buffer; retn 24 = struct,buffer,size,label,success,default matches wrapper arg order	
+CResGFF	AddList	0x00719740	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,0xf), AddDataLayoutList(...,0,4), zero count, *list=struct index, strncpy label 0x10; retn 12 = list,struct,label	
+CResGFF	AddListElement	0x00719800	C3	Y	Type 0xf field, GetDataLayoutList, grows list via AddDataLayoutList, AddStruct(structId), writes new count and index, *outStruct; retn 12 = outStruct,list,structId	
+CResGFF	AddStructToStruct	0x00719940	C3	Y	AddField(param_3,label,0xe) then AddStruct(id); field data=new index, *param_2=new index. WRAPPER_ARGS_MISMATCH(order): Steam is (out child,parent,label,id), wrapper lists parent first. retn 16 ok	
+CResGFF	WriteFieldBYTE	0x007199d0	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,0) then stores value; retn 12 = struct,value,label. Zero-ext byte into field+8.	
+CResGFF	WriteFieldCHAR	0x00719a40	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,1) then stores value; retn 12 = struct,value,label. Sign-ext char.	
+CResGFF	WriteFieldWORD	0x00719ab0	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,2) then stores value; retn 12 = struct,value,label. Zero-ext word.	
+CResGFF	WriteFieldSHORT	0x00719b20	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,3) then stores value; retn 12 = struct,value,label. Sign-ext short.	
+CResGFF	WriteFieldDWORD	0x00719b90	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,4) then stores value; retn 12 = struct,value,label.	
+CResGFF	WriteFieldINT	0x00719bf0	C3	Y	InitializeForWriting if +0x98, AddField(struct,label,5) then stores value; retn 12 = struct,value,label. WRAPPER_ENUM: real INT=5.	
+CResGFF	WriteFieldDWORD64	0x00719c50	C3	Y	AddField type 6 (real DWORD64), AddDataField 8 bytes, stores low/high dwords, field data = offset from +0x5c; retn 16 = 12 + 8-byte value, matches typedef (wrapper param_bytes 12 is a miscount)	
+CResGFF	WriteFieldFLOAT	0x00719ce0	C3	Y	AddField type 8, stores 32-bit value in field+8; retn 12 = struct,float,label	
+CResGFF	WriteFieldCResRef	0x00719d40	C3	Y	AddField type 0xb, AddDataField(len+1), writes length byte then lowercased chars (A-Z +0x20); retn 12 = struct,resref,label	
+CResGFF	WriteFieldCExoString	0x00719e50	C3	Y	AddField type 10, strlen of CExoString buf, AddDataField(len+4), writes dword len + memcpy of CStr; retn 12 = struct,string,label	
+CResGFF	WriteFieldCExoLocString	0x00719f30	C3	Y	AddField type 0xc, sizes loop over locstring entries (8 bytes + string len each), AddDataField(size+4), serialises; retn 12 = struct,value,label	
+CResGFF	WriteFieldVOID	0x0071a1b0	C3	Y	AddField type 0xd, AddDataField(size+4), writes dword size then memcpy data; retn 16 = struct,data,size,label matches wrapper order	
+CResGFF	WriteFieldQuaternion	0x0071a260	C3	Y	AddField type 0x10, AddDataField(0x10), copies 4 dwords; retn 12 = struct,quat*,label	
+CResGFF	WriteFieldVector	0x0071a320	C3	Y	AddField type 0x11, AddDataField(0xc), copies 3 dwords; retn 12 = struct,vec*,label	
+CResGFF	CreateGFFFile	0x0071a5a0	C0	Y	Wrong function: 0x71a5a0 retn 8 builds file name via 0x7397f0 (name,type), opens file, calls Pack then WriteGFFData = WriteGFFFile (name,ResourceType). Real CreateGFFFile is 0x71a3d0 retn 12	0x0071a3d0
+CResGFF	WriteGFFData	0x0071a670	C3	Y	Writes 0x38-byte header offsets (+8,+0x10,...) accumulating struct*0xc, field*0xc, label*0x10, then fwrite-style 0x739a30 of each table; *totalBytes out; retn 8 = file,totalBytes*	
+CResGFF	Pack	0x0071a8b0	C3	Y	Gated on waste counters +0x6c/+0x78; compacts field_indices +0x64 (structs with >1 field) via memcpy, uses GetTotalSize 0x71acb0 for percent thresholds; retn 8 = (byte,dword)	
+CResGFF	GetTotalSize	0x0071acb0	C3	Y	Returns 0x38 + structs*0xc + fields*0xc + labels*0x10 + field_data + field_idx + list_idx counts from header +0xc..+0x34; 0 if no header; retn 0 fastcall	

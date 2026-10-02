@@ -1,0 +1,1065 @@
+file	class	initfn	pos	kind	lookup_class	name	typedef	cc	ret	param_bytes	args	base_inits
+C2DA	C2DA	InitializeFunctions	1	F	C2DA	Constructor	ConstructorFn	__thiscall	void	8	void* thisPtr, CResRef_struct name, int usually0	
+C2DA	C2DA	InitializeFunctions	2	F	C2DA	Load2DArray	Load2DArrayFn	__thiscall	void	0	void* thisPtr	
+C2DA	C2DA	InitializeFunctions	3	F	C2DA	Unload2DArray	Unload2DArrayFn	__thiscall	void	0	void* thisPtr	
+C2DA	C2DA	InitializeFunctions	4	F	C2DA	GetCExoStringEntry_2	GetCExoStringEntryFn	__thiscall	bool	12	void* thisPtr, int row, void* column, void* output	
+C2DA	C2DA	InitializeFunctions	5	F	C2DA	GetFLOATEntry_2	GetFLOATEntryFn	__thiscall	bool	12	void* thisPtr, int row, void* column, float* output	
+C2DA	C2DA	InitializeFunctions	6	F	C2DA	GetINTEntry_2	GetINTEntryFn	__thiscall	bool	12	void* thisPtr, int row, void* column, int* output	
+CAppManager	CAppManager	InitializeOffsets	1	O	CAppManager	Client						
+CAppManager	CAppManager	InitializeOffsets	2	O	CAppManager	Server						
+CClientExoApp	CClientExoApp	InitializeFunctions	1	F	CClientExoApp	GetClientOptions	GetClientOptionsFn	__thiscall	void*	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	2	F	CClientExoApp	AddMoveToModuleMovie	AddMoveToModuleMovieFn	__thiscall	void	4	void* thisPtr, void* movie	
+CClientExoApp	CClientExoApp	InitializeFunctions	3	F	CClientExoApp	AddMovieToMovieQueue	AddMovieToMovieQueueFn	__thiscall	void	8	void* thisPtr, void* movie, int skippable	
+CClientExoApp	CClientExoApp	InitializeFunctions	4	F	CClientExoApp	CancelMovie	CancelMovieFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	5	F	CClientExoApp	RemoveMoveToModuleMovies	RemoveMoveToModuleMoviesFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	6	F	CClientExoApp	ChangeCharacter	ChangeCharacterFn	__thiscall	void	8	void* thisPtr, DWORD leader, int playSound	
+CClientExoApp	CClientExoApp	InitializeFunctions	7	F	CClientExoApp	CreatureAcquireItem	CreatureAcquireItemFn	__stdcall	void	8	DWORD creatureId, void* item	
+CClientExoApp	CClientExoApp	InitializeFunctions	8	F	CClientExoApp	GetCreatureByGameObjectID	GetCreatureByGameObjectIDFn	__thiscall	void*	4	void* thisPtr, DWORD objectId	
+CClientExoApp	CClientExoApp	InitializeFunctions	9	F	CClientExoApp	GetPlayerCreature	GetPlayerCreatureFn	__thiscall	void*	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	10	F	CClientExoApp	SetPlayerCreature	SetPlayerCreatureFn	__thiscall	void	4	void* thisPtr, DWORD creatureId	
+CClientExoApp	CClientExoApp	InitializeFunctions	11	F	CClientExoApp	SetFutureLeader	SetFutureLeaderFn	__thiscall	void	4	void* thisPtr, DWORD leader	
+CClientExoApp	CClientExoApp	InitializeFunctions	12	F	CClientExoApp	GetCharacterChangeInProgress	GetCharacterChangeInProgressFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	13	F	CClientExoApp	PlayerFlourishWeapons	PlayerFlourishWeaponsFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	14	F	CClientExoApp	RunDeathSequence	RunDeathSequenceFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	15	F	CClientExoApp	DisableInput	DisableInputFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	16	F	CClientExoApp	EnableInput	EnableInputFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	17	F	CClientExoApp	GetInputClass	GetInputClassFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	18	F	CClientExoApp	SetInputClass	SetInputClassFn	__thiscall	void	8	void* thisPtr, int inputClass, int setGuiStatus	
+CClientExoApp	CClientExoApp	InitializeFunctions	19	F	CClientExoApp	GetInFreeLook	GetInFreeLookFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	20	F	CClientExoApp	SetMouseMode	SetMouseModeFn	__thiscall	void	4	void* thisPtr, BYTE mode	
+CClientExoApp	CClientExoApp	InitializeFunctions	21	F	CClientExoApp	DisableVideoEffect	DisableVideoEffectFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	22	F	CClientExoApp	EnableVideoEffect	EnableVideoEffectFn	__thiscall	void	4	void* thisPtr, int effect	
+CClientExoApp	CClientExoApp	InitializeFunctions	23	F	CClientExoApp	IsValidResolution	IsValidResolutionFn	__stdcall	int	8	DWORD width, DWORD height	
+CClientExoApp	CClientExoApp	InitializeFunctions	24	F	CClientExoApp	SetVideoMode	SetVideoModeFn	__thiscall	int	4	void* thisPtr, DWORD modeNum	
+CClientExoApp	CClientExoApp	InitializeFunctions	25	F	CClientExoApp	SetTexturePack	SetTexturePackFn	__thiscall	void	4	void* thisPtr, BYTE pack	
+CClientExoApp	CClientExoApp	InitializeFunctions	26	F	CClientExoApp	DismissInGameGUI	DismissInGameGUIFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	27	F	CClientExoApp	DisplayMainMenu	DisplayMainMenuFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	28	F	CClientExoApp	ShutDownToMainMenu	ShutDownToMainMenuFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	29	F	CClientExoApp	GetGUIString	GetGUIStringFn	__thiscall	void*	8	void* thisPtr, void* outString, DWORD strRef	
+CClientExoApp	CClientExoApp	InitializeFunctions	30	F	CClientExoApp	GetInGameGui	GetInGameGuiFn	__thiscall	void*	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	31	F	CClientExoApp	ExitProgram	ExitProgramFn	__stdcall	void	0		
+CClientExoApp	CClientExoApp	InitializeFunctions	32	F	CClientExoApp	QueryExitProgram	QueryExitProgramFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	33	F	CClientExoApp	GetGameOver	GetGameOverFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	34	F	CClientExoApp	SetGameOver	SetGameOverFn	__thiscall	void	4	void* thisPtr, int gameOver	
+CClientExoApp	CClientExoApp	InitializeFunctions	35	F	CClientExoApp	GetActivePauseState	GetActivePauseStateFn	__thiscall	BYTE	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	36	F	CClientExoApp	GetAutoPaused	GetAutoPausedFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	37	F	CClientExoApp	GetPausedByCombat	GetPausedByCombatFn	__stdcall	int	0		
+CClientExoApp	CClientExoApp	InitializeFunctions	38	F	CClientExoApp	SetCombatMode	SetCombatModeFn	__thiscall	void	4	void* thisPtr, int mode	
+CClientExoApp	CClientExoApp	InitializeFunctions	39	F	CClientExoApp	GetGameObject	GetGameObjectFn	__thiscall	void*	4	void* thisPtr, DWORD clientId	
+CClientExoApp	CClientExoApp	InitializeFunctions	40	F	CClientExoApp	GetObjectName	GetObjectNameFn	__thiscall	int	8	void* thisPtr, DWORD clientId, void* outName	
+CClientExoApp	CClientExoApp	InitializeFunctions	41	F	CClientExoApp	GetLastTarget	GetLastTargetFn	__thiscall	DWORD	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	42	F	CClientExoApp	GetTargetChanging	GetTargetChangingFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	43	F	CClientExoApp	GetLoadingSaveGame	GetLoadingSaveGameFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	44	F	CClientExoApp	SendLoadGameRequest	SendLoadGameRequestFn	__thiscall	int	12	void* thisPtr, DWORD slot, void* saveName, void* module	
+CClientExoApp	CClientExoApp	InitializeFunctions	45	F	CClientExoApp	SendSaveGameRequest	SendSaveGameRequestFn	__thiscall	int	12	void* thisPtr, DWORD slot, void* saveName, void* module	
+CClientExoApp	CClientExoApp	InitializeFunctions	46	F	CClientExoApp	IsSoundPlayingInDialog	IsSoundPlayingInDialogFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	47	F	CClientExoApp	SetCanSendDialog	SetCanSendDialogFn	__thiscall	void	4	void* thisPtr, int canSend	
+CClientExoApp	CClientExoApp	InitializeFunctions	48	F	CClientExoApp	SetRunScript	SetRunScriptFn	__thiscall	void	4	void* thisPtr, void* script	
+CClientExoApp	CClientExoApp	InitializeFunctions	49	F	CClientExoApp	GetPazaakIsRunning	GetPazaakIsRunningFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	50	F	CClientExoApp	GetPazaakResults	GetPazaakResultsFn	__thiscall	void	8	void* thisPtr, int* won, int* wager	
+CClientExoApp	CClientExoApp	InitializeFunctions	51	F	CClientExoApp	GetCreditSequenceInProgress	GetCreditSequenceInProgressFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	52	F	CClientExoApp	StopCreditSequence	StopCreditSequenceFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	53	F	CClientExoApp	GetClientLanguage	GetClientLanguageFn	__thiscall	int	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	54	F	CClientExoApp	GetWorldTimer	GetWorldTimerFn	__thiscall	void*	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeFunctions	55	F	CClientExoApp	SetEventDescriptions	SetEventDescriptionsFn	__thiscall	void	0	void* thisPtr	
+CClientExoApp	CClientExoApp	InitializeOffsets	1	O	CClientExoApp	internal						
+CClientExoApp	CClientExoApp	InitializeOffsets	2	O	CClientExoAppInternal	debug_mode						
+CClientExoApp	CClientExoApp	InitializeOffsets	3	O	CClientExoAppInternal	selected_texture_pack						
+CClientExoApp	CClientExoApp	InitializeOffsets	4	O	CClientExoAppInternal	input_disabled						
+CClientExoApp	CClientExoApp	InitializeOffsets	5	O	CClientExoAppInternal	mouse_x						
+CClientExoApp	CClientExoApp	InitializeOffsets	6	O	CClientExoAppInternal	mouse_y						
+CClientExoApp	CClientExoApp	InitializeOffsets	7	O	CClientExoAppInternal	game_obj_array						
+CClientExoApp	CClientExoApp	InitializeOffsets	8	O	CClientExoAppInternal	animation_timer						
+CClientExoApp	CClientExoApp	InitializeOffsets	9	O	CClientExoAppInternal	gui_manager						
+CClientExoApp	CClientExoApp	InitializeOffsets	10	O	CClientExoAppInternal	cached_creature						
+CClientExoApp	CClientExoApp	InitializeOffsets	11	O	CClientExoAppInternal	run_script						
+CClientExoApp	CClientExoApp	InitializeOffsets	12	O	CClientExoAppInternal	disable_movies						
+CClientOptions	CClientOptions	InitializeOffsets	1	O	CClientOptions	tooltip_delay						
+CExoIni	CExoIni	InitializeFunctions	1	F	CExoIni	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	
+CExoIni	CExoIni	InitializeFunctions	2	F	CExoIni	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	
+CExoIni	CExoIni	InitializeFunctions	3	F	CExoIni	ReadIniEntry	ReadIniEntryFn	__thiscall	int	16	void* thisPtr, void* value, void* filename, void* category, void* key	
+CExoIni	CExoIni	InitializeFunctions	4	F	CExoIni	WriteIniEntry	WriteIniEntryFn	__thiscall	int	16	void* thisPtr, void* value, void* filename, void* category, void* key	
+CExoIni	CExoIni	InitializeOffsets	1	S	CExoIni	<classes-table>						
+CExoLocString	CExoLocString	InitializeOffsets	1	O	CExoLocString	internal						
+CExoString	CExoString	InitializeFunctions	1	F	CExoString	DefaultConstructor	DefaultConstructor	__thiscall	CExoString*	0	CExoString* thisPtr	
+CExoString	CExoString	InitializeFunctions	2	F	CExoString	CStrLenConstructor	CStrLenConstructor	__thiscall	CExoString*	8	CExoString* thisPtr, char* source, int length	
+CExoString	CExoString	InitializeFunctions	3	F	CExoString	CStrConstructor	CStrConstructor	__thiscall	CExoString*	4	CExoString* thisPtr, char* source	
+CExoString	CExoString	InitializeFunctions	4	F	CExoString	Destructor	Destructor	__thiscall	CExoString*	0	CExoString* thisPtr	
+CExoString	CExoString	InitializeOffsets	1	O	CExoString	CStr						
+CExoString	CExoString	InitializeOffsets	2	O	CExoString	Length						
+CExoString	CExoString	InitializeOffsets	3	S	CExoString	<classes-table>						
+CGameObject	CGameObject	InitializeOffsets	1	O	CGameObject	Id						
+CGameObject	CGameObject	InitializeOffsets	2	O	CGameObject	ObjectType						
+CGameObjectArray	CGameObjectArray	InitializeFunctions	1	F	CGameObjectArray	GetGameObject	GetGameObjectFn	__thiscall	int	8	void* thisPtr, DWORD objectId, void** outObject	
+CGuiInGame	CGuiInGame	InitializeFunctions	1	F	CGuiInGame	AddFloatyText	AddFloatyTextFn	__thiscall	void	16	void* thisPtr, DWORD clientId, void* text, Vector* color, float duration	
+CGuiInGame	CGuiInGame	InitializeFunctions	2	F	CGuiInGame	AppendToMsgBuffer	AppendToMsgBufferFn	__thiscall	void	12	void* thisPtr, void* messageString, DWORD messageType, BYTE messageColor	
+CGuiInGame	CGuiInGame	InitializeFunctions	3	F	CGuiInGame	GetMessageBufferSize	GetMessageBufferSizeFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	4	F	CGuiInGame	UpdateMessageGUI	UpdateMessageGUIFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	5	F	CGuiInGame	ChangeCharacter	ChangeCharacterFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	6	F	CGuiInGame	DoQuickLoad	DoQuickLoadFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	7	F	CGuiInGame	GetCurrentEquipScreenNPC	GetCurrentEquipScreenNPCFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	8	F	CGuiInGame	FadeAndStopDialogAmbientTrack	FadeAndStopDialogAmbientTrackFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	9	F	CGuiInGame	GetCanHeadFollowInDialog	GetCanHeadFollowInDialogFn	__thiscall	int	4	void* thisPtr, DWORD objectId	
+CGuiInGame	CGuiInGame	InitializeFunctions	10	F	CGuiInGame	GetCanOrientInDialog	GetCanOrientInDialogFn	__thiscall	int	4	void* thisPtr, DWORD clientId	
+CGuiInGame	CGuiInGame	InitializeFunctions	11	F	CGuiInGame	IsAnimationPlayingInDialog	IsAnimationPlayingInDialogFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	12	F	CGuiInGame	IsCameraDialog	IsCameraDialogFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	13	F	CGuiInGame	IsFadingInDialog	IsFadingInDialogFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	14	F	CGuiInGame	LoadAmbientTrackForDialog	LoadAmbientTrackForDialogFn	__thiscall	void	4	void* thisPtr, void* track	
+CGuiInGame	CGuiInGame	InitializeFunctions	15	F	CGuiInGame	LoadStuntModelsForDialog	LoadStuntModelsForDialogFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	16	F	CGuiInGame	ResetDialogAnimations	ResetDialogAnimationsFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	17	F	CGuiInGame	ResetTalkAnimations	ResetTalkAnimationsFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	18	F	CGuiInGame	UpdateDialog	UpdateDialogFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	19	F	CGuiInGame	UpdateDialogLipSync	UpdateDialogLipSyncFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	20	F	CGuiInGame	GetCameraAnimationName	GetCameraAnimationNameFn	__stdcall	void*	8	void* outName, short animationId	
+CGuiInGame	CGuiInGame	InitializeFunctions	21	F	CGuiInGame	GetAreaTranstionPosition	GetAreaTranstionPositionFn	__thiscall	Vector*	4	void* thisPtr, Vector* out	
+CGuiInGame	CGuiInGame	InitializeFunctions	22	F	CGuiInGame	HideAreaTransition	HideAreaTransitionFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	23	F	CGuiInGame	UpdateAreaTransitionGUI	UpdateAreaTransitionGUIFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	24	F	CGuiInGame	GetFadeOverridePanelVisible	GetFadeOverridePanelVisibleFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	25	F	CGuiInGame	IsGlobalFadeObscuring	IsGlobalFadeObscuringFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	26	F	CGuiInGame	IsGlobalFading	IsGlobalFadingFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	27	F	CGuiInGame	StopGlobalFade	StopGlobalFadeFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	28	F	CGuiInGame	GetBarkBubbleVisible	GetBarkBubbleVisibleFn	__thiscall	int	4	void* thisPtr, int* outBottomY	
+CGuiInGame	CGuiInGame	InitializeFunctions	29	F	CGuiInGame	GetCanClick	GetCanClickFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	30	F	CGuiInGame	GetMiniMapVisible	GetMiniMapVisibleFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	31	F	CGuiInGame	GetPartyAccessPanelUp	GetPartyAccessPanelUpFn	__thiscall	int	4	void* thisPtr, int checkInventory	
+CGuiInGame	CGuiInGame	InitializeFunctions	32	F	CGuiInGame	GetPendingStatusSummary	GetPendingStatusSummaryFn	__thiscall	int	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	33	F	CGuiInGame	ShowPartySelection	ShowPartySelectionFn	__thiscall	void	16	void* thisPtr, void* exitScript, int requireAccept, int forcedNPC1, int forcedNPC2	
+CGuiInGame	CGuiInGame	InitializeFunctions	34	F	CGuiInGame	ShowStatusSummary	ShowStatusSummaryFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	35	F	CGuiInGame	HideContainerGui	HideContainerGuiFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	36	F	CGuiInGame	HideGalaxyMapGui	HideGalaxyMapGuiFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	37	F	CGuiInGame	HideItemCreateMenu	HideItemCreateMenuFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	38	F	CGuiInGame	HideLoadModuleDebugMenu	HideLoadModuleDebugMenuFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	39	F	CGuiInGame	HidePowersFeatsSkillsDebugMenu	HidePowersFeatsSkillsDebugMenuFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	40	F	CGuiInGame	HideSoloMode	HideSoloModeFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	41	F	CGuiInGame	HideStoreGui	HideStoreGuiFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	42	F	CGuiInGame	HideSubItemCreateMenu	HideSubItemCreateMenuFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	43	F	CGuiInGame	HideUpgradeScreen	HideUpgradeScreenFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	44	F	CGuiInGame	SetLevelUpMode	SetLevelUpModeFn	__thiscall	void	4	void* thisPtr, int mode	
+CGuiInGame	CGuiInGame	InitializeFunctions	45	F	CGuiInGame	ShowGalaxyMapGui	ShowGalaxyMapGuiFn	__thiscall	void	4	void* thisPtr, int selectedPlanetId	
+CGuiInGame	CGuiInGame	InitializeFunctions	46	F	CGuiInGame	ShowItemCreateMenu	ShowItemCreateMenuFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	47	F	CGuiInGame	ShowSoloModeQuery	ShowSoloModeQueryFn	__thiscall	void	4	void* thisPtr, int doStealth	
+CGuiInGame	CGuiInGame	InitializeFunctions	48	F	CGuiInGame	ShowUpgradeScreen	ShowUpgradeScreenFn	__thiscall	void	4	void* thisPtr, DWORD itemId	
+CGuiInGame	CGuiInGame	InitializeFunctions	49	F	CGuiInGame	NextSWInGameGui	NextSWInGameGuiFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	50	F	CGuiInGame	PrevSWInGameGui	PrevSWInGameGuiFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	51	F	CGuiInGame	SwitchToSWInGameGui	SwitchToSWInGameGuiFn	__thiscall	void	4	void* thisPtr, int guiId	
+CGuiInGame	CGuiInGame	InitializeFunctions	52	F	CGuiInGame	RemoveGUIPopUps	RemoveGUIPopUpsFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	53	F	CGuiInGame	RePopulateMainInterface	RePopulateMainInterfaceFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	54	F	CGuiInGame	ResetInterfaceForSize	ResetInterfaceForSizeFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	55	F	CGuiInGame	ShutDown	ShutDownFn	__thiscall	void	0	void* thisPtr	
+CGuiInGame	CGuiInGame	InitializeFunctions	56	F	CGuiInGame	ShutDownGlobal	ShutDownGlobalFn	__thiscall	void	0	void* thisPtr	
+CRes	CRes	InitializeFunctions	1	F	CRes	Constructor	ConstructorFn	__thiscall	void	0	void* thisPtr	
+CRes	CRes	InitializeFunctions	2	F	CRes	Destructor	DestructorFn	__thiscall	void	0	void* thisPtr	
+CRes	CRes	InitializeFunctions	3	F	CRes	GetResRef	GetResRefFn	__thiscall	void	8	void* thisPtr, void* outRef, WORD* outType	
+CRes	CRes	InitializeFunctions	4	F	CRes	Request	RequestFn	__thiscall	int	0	void* thisPtr	
+CRes	CRes	InitializeFunctions	5	F	CRes	CancelRequest	CancelRequestFn	__thiscall	void	0	void* thisPtr	
+CRes	CRes	InitializeFunctions	6	F	CRes	Demand	DemandFn	__thiscall	int	0	void* thisPtr	
+CRes	CRes	InitializeFunctions	7	F	CRes	Release	ReleaseFn	__thiscall	void	0	void* thisPtr	
+CRes	CRes	InitializeOffsets	1	O	CRes	vtable						
+CRes	CRes	InitializeOffsets	2	O	CRes	data						
+CRes	CRes	InitializeOffsets	3	O	CRes	size						
+CResGFF	CResGFF	InitializeFunctions	1	F	CResGFF	Constructor	ConstructorFn	__thiscall	void	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	2	F	CResGFF	Constructor_2	Constructor2Fn	__thiscall	void	12	void* thisPtr, ResourceType resourceType, char* GFFtype, void* templateResRef	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	3	F	CResGFF	Destructor	DestructorFn	__thiscall	void	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	4	F	CResGFF	Destructor_2	Destructor2Fn	__thiscall	void	4	void* thisPtr, byte shouldFree	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	5	F	CResGFF	Destructor_3	Destructor3Fn	__thiscall	void	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	6	F	CResGFF	AddDataField	AddDataFieldFn	__thiscall	int	12	void* thisPtr, int existingBlockOffset, DWORD sizeOfExistingBlock, DWORD dataLength	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	7	F	CResGFF	AddDataLayoutField	AddDataLayoutFieldFn	__thiscall	int	12	void* thisPtr, int existingBlockOffset, DWORD sizeOfExistingBlock, DWORD dataLength	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	8	F	CResGFF	AddDataLayoutList	AddDataLayoutListFn	__thiscall	int	12	void* thisPtr, int existingBlockOffset, DWORD sizeOfExistingBlock, DWORD dataLength	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	9	F	CResGFF	GetDataField	GetDataFieldFn	__thiscall	int	8	void* thisPtr, CResGFFField* field, DWORD* dataSize	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	10	F	CResGFF	GetDataLayoutList	GetDataLayoutListFn	__thiscall	int	8	void* thisPtr, CResGFFField* field, DWORD* dataLength	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	11	F	CResGFF	AddStruct	AddStructFn	__thiscall	DWORD	4	void* thisPtr, DWORD id	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	12	F	CResGFF	AddField	AddFieldFn	__thiscall	CResGFFField*	12	void* thisPtr, CResStruct* structPtr, char* labelText, GFFFieldTypes fieldType	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	13	F	CResGFF	AddLabel	AddLabelFn	__thiscall	DWORD	4	void* thisPtr, char* text	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	14	F	CResGFF	AddList	AddListFn	__thiscall	int	12	void* thisPtr, CResList* list, CResStruct* structPtr, char* labelText	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	15	F	CResGFF	AddListElement	AddListElementFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, CResList* list, DWORD structId	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	16	F	CResGFF	AddStructToStruct	AddStructToStructFn	__thiscall	int	16	void* thisPtr, CResStruct* parentStruct, CResStruct* childStruct, char* labelText, DWORD structId	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	17	F	CResGFF	GetField	GetFieldFn	__thiscall	GFFFieldData*	8	void* thisPtr, CResGFFStruct* structData, DWORD index	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	18	F	CResGFF	GetField_2	GetField2Fn	__thiscall	CResGFFField*	8	void* thisPtr, CResStruct* structPtr, DWORD fieldIndex	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	19	F	CResGFF	GetFieldByLabel	GetFieldByLabelFn	__thiscall	DWORD	8	void* thisPtr, CResStruct* structPtr, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	20	F	CResGFF	GetFieldCount	GetFieldCountFn	__thiscall	DWORD	4	void* thisPtr, CResStruct* structPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	21	F	CResGFF	GetFieldType	GetFieldTypeFn	__thiscall	GFFFieldTypes	12	void* thisPtr, CResStruct* structPtr, char* label, DWORD fieldIndex	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	22	F	CResGFF	GetElementType	GetElementTypeFn	__thiscall	int	4	void* thisPtr, CResStruct* structPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	23	F	CResGFF	GetList	GetListFn	__thiscall	int	12	void* thisPtr, CResList* outList, CResStruct* structPtr, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	24	F	CResGFF	GetListCount	GetListCountFn	__thiscall	int	4	void* thisPtr, CResList* list	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	25	F	CResGFF	GetListElement	GetListElementFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, CResList* list, DWORD index	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	26	F	CResGFF	GetStructFromStruct	GetStructFromStructFn	__thiscall	int	12	void* thisPtr, CResStruct* outStruct, CResStruct* inStruct, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	27	F	CResGFF	GetTopLevelStruct	GetTopLevelStructFn	__thiscall	int	4	void* thisPtr, CResStruct* outStruct	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	28	F	CResGFF	ReadFieldBYTE	ReadFieldBYTEFn	__thiscall	BYTE	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, BYTE defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	29	F	CResGFF	ReadFieldCHAR	ReadFieldCHARFn	__thiscall	char	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, char defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	30	F	CResGFF	ReadFieldWORD	ReadFieldWORDFn	__thiscall	WORD	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, WORD defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	31	F	CResGFF	ReadFieldSHORT	ReadFieldSHORTFn	__thiscall	short	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, short defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	32	F	CResGFF	ReadFieldDWORD	ReadFieldDWORDFn	__thiscall	DWORD	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, DWORD defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	33	F	CResGFF	ReadFieldDWORD64	ReadFieldDWORD64Fn	__thiscall	DWORD64	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, DWORD64 defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	34	F	CResGFF	ReadFieldINT	ReadFieldINTFn	__thiscall	int	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, int defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	35	F	CResGFF	ReadFieldFLOAT	ReadFieldFLOATFn	__thiscall	float10	16	void* thisPtr, CResStruct* structPtr, char* label, int* success, float defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	36	F	CResGFF	ReadFieldCExoString	ReadFieldCExoStringFn	__thiscall	CExoString*	20	void* thisPtr, CExoString* out, CResStruct* structPtr, char* label, int* success, CExoString* defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	37	F	CResGFF	ReadFieldCResRef	ReadFieldCResRefFn	__thiscall	CResRef*	20	void* thisPtr, CResRef* out, CResStruct* structPtr, char* label, int* success, CResRef* defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	38	F	CResGFF	ReadFieldCExoLocString	ReadFieldCExoLocStringFn	__thiscall	void*	20	void* thisPtr, void* out, CResStruct* structPtr, char* label, int* success, void* defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	39	F	CResGFF	ReadFieldVOID	ReadFieldVOIDFn	__thiscall	void*	24	void* thisPtr, CResStruct* structPtr, void* buffer, DWORD size, char* label, int* success, void* defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	40	F	CResGFF	ReadFieldVector	ReadFieldVectorFn	__thiscall	Vector*	20	void* thisPtr, Vector* out, CResStruct* structPtr, char* label, int* success, Vector* defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	41	F	CResGFF	ReadFieldQuaternion	ReadFieldQuaternionFn	__thiscall	Quaternion*	20	void* thisPtr, Quaternion* out, CResStruct* structPtr, char* label, int* success, Quaternion* defaultValue	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	42	F	CResGFF	WriteFieldBYTE	WriteFieldBYTEFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, BYTE value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	43	F	CResGFF	WriteFieldCHAR	WriteFieldCHARFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, char value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	44	F	CResGFF	WriteFieldWORD	WriteFieldWORDFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, WORD value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	45	F	CResGFF	WriteFieldSHORT	WriteFieldSHORTFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, short value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	46	F	CResGFF	WriteFieldINT	WriteFieldINTFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, int value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	47	F	CResGFF	WriteFieldDWORD	WriteFieldDWORDFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, DWORD value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	48	F	CResGFF	WriteFieldDWORD64	WriteFieldDWORD64Fn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, DWORD64 value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	49	F	CResGFF	WriteFieldFLOAT	WriteFieldFLOATFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, float value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	50	F	CResGFF	WriteFieldCExoString	WriteFieldCExoStringFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, CExoString* value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	51	F	CResGFF	WriteFieldCResRef	WriteFieldCResRefFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, CResRef* value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	52	F	CResGFF	WriteFieldCExoLocString	WriteFieldCExoLocStringFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, void* value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	53	F	CResGFF	WriteFieldVOID	WriteFieldVOIDFn	__thiscall	int	16	void* thisPtr, CResStruct* structPtr, void* data, DWORD size, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	54	F	CResGFF	WriteFieldVector	WriteFieldVectorFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, Vector* value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	55	F	CResGFF	WriteFieldQuaternion	WriteFieldQuaternionFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, Quaternion* value, char* label	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	56	F	CResGFF	InitializeForWriting	InitializeForWritingFn	__thiscall	void	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	57	F	CResGFF	CreateGFFFile	CreateGFFFileFn	__thiscall	int	12	void* thisPtr, CResStruct* structPtr, CExoString* fileType, CExoString* version	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	58	F	CResGFF	WriteGFFData	WriteGFFDataFn	__thiscall	bool	8	void* thisPtr, CExoFile* file, DWORD* totalBytes	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	59	F	CResGFF	WriteGFFFile	WriteGFFFileFn	__thiscall	bool	8	void* thisPtr, CExoString* name, ResourceType type	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	60	F	CResGFF	Pack	PackFn	__thiscall	void	8	void* thisPtr, byte alwaysZero1, DWORD alwaysZero2	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	61	F	CResGFF	OnResourceFreed	OnResourceFreedFn	__thiscall	int	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	62	F	CResGFF	OnResourceServiced	OnResourceServicedFn	__thiscall	int	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	63	F	CResGFF	ReleaseResource	ReleaseResourceFn	__thiscall	void	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeFunctions	64	F	CResGFF	GetTotalSize	GetTotalSizeFn	__thiscall	int	0	void* thisPtr	CRes::InitializeFunctions
+CResGFF	CResGFF	InitializeOffsets	1	O	CResGFF	header						CRes::InitializeOffsets
+CResGFF	CResGFF	InitializeOffsets	2	O	CResGFF	structs						CRes::InitializeOffsets
+CResGFF	CResGFF	InitializeOffsets	3	O	CResGFF	fields						CRes::InitializeOffsets
+CResGFF	CResGFF	InitializeOffsets	4	O	CResGFF	labels						CRes::InitializeOffsets
+CResGFF	CResGFF	InitializeOffsets	5	O	CResGFF	field_type						CRes::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	1	O	CSWCAreaOfEffectObject	total_actors						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	2	O	CSWCAreaOfEffectObject	radius						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	3	O	CSWCAreaOfEffectObject	width						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	4	O	CSWCAreaOfEffectObject	length						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	5	O	CSWCAreaOfEffectObject	shape						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	6	O	CSWCAreaOfEffectObject	sound_one_shot						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	7	O	CSWCAreaOfEffectObject	sound_one_shot_percentage						CSWCObject::InitializeOffsets
+CSWCAreaOfEffectObject	CSWCAreaOfEffectObject	InitializeOffsets	8	O	CSWCAreaOfEffectObject	orient_with_ground						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	1	O	CSWCCreature	Running						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	2	O	CSWCCreature	Stealth						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	3	O	CSWCCreature	start_waypoint						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	4	O	CSWCCreature	current_waypoint						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	5	O	CSWCCreature	moving_orientation						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	6	O	CSWCCreature	waypoint_count						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	7	O	CSWCCreature	creature_type						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	8	O	CSWCCreature	head_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	9	O	CSWCCreature	torso_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	10	O	CSWCCreature	hands_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	11	O	CSWCCreature	main_hand_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	12	O	CSWCCreature	off_hand_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	13	O	CSWCCreature	left_arm_band_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	14	O	CSWCCreature	right_arm_band_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	15	O	CSWCCreature	implant_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	16	O	CSWCCreature	belt_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	17	O	CSWCCreature	left_claw_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	18	O	CSWCCreature	right_claw_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	19	O	CSWCCreature	bite_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	20	O	CSWCCreature	hide_id						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	21	O	CSWCCreature	head_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	22	O	CSWCCreature	torso_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	23	O	CSWCCreature	hands_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	24	O	CSWCCreature	main_hand_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	25	O	CSWCCreature	off_hand_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	26	O	CSWCCreature	left_arm_band_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	27	O	CSWCCreature	right_arm_band_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	28	O	CSWCCreature	implant_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	29	O	CSWCCreature	belt_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	30	O	CSWCCreature	left_claw_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	31	O	CSWCCreature	right_claw_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	32	O	CSWCCreature	bite_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	33	O	CSWCCreature	hide_last_instant						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	34	O	CSWCCreature	sound_set						CSWCObject::InitializeOffsets
+CSWCCreature	CSWCCreature	InitializeOffsets	35	O	CSWCCreature	thrown_lightsaber						CSWCObject::InitializeOffsets
+CSWCDoor	CSWCDoor	InitializeFunctions	1	F	CSWCDoor	GetIsOpen	GetIsOpenFn	__thiscall	int	0	void* thisPtr	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeFunctions	2	F	CSWCDoor	GetModelName	GetModelNameFn	__thiscall	void*	4	void* thisPtr, void* outName	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeFunctions	3	F	CSWCDoor	GetName	GetNameFn	__thiscall	void*	4	void* thisPtr, void* outName	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeFunctions	4	F	CSWCDoor	GetServerDoor	GetServerDoorFn	__thiscall	void*	0	void* thisPtr	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeFunctions	5	F	CSWCDoor	SetIsAreaTransition	SetIsAreaTransitionFn	__thiscall	void	4	void* thisPtr, int isTransition	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeFunctions	6	F	CSWCDoor	SetState	SetStateFn	__thiscall	void	4	void* thisPtr, BYTE state	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeFunctions	7	F	CSWCDoor	UpdateAreaTransitionDisplay	UpdateAreaTransitionDisplayFn	__thiscall	void	0	void* thisPtr	CSWCObject::InitializeFunctions
+CSWCDoor	CSWCDoor	InitializeOffsets	1	O	CSWCDoor	is_hostile						CSWCObject::InitializeOffsets
+CSWCDoor	CSWCDoor	InitializeOffsets	2	O	CSWCDoor	appearance						CSWCObject::InitializeOffsets
+CSWCDoor	CSWCDoor	InitializeOffsets	3	O	CSWCDoor	door_type						CSWCObject::InitializeOffsets
+CSWCDoor	CSWCDoor	InitializeOffsets	4	O	CSWCDoor	is_transition						CSWCObject::InitializeOffsets
+CSWCObject	CSWCObject	InitializeFunctions	1	F	CSWCObject	AnimationAttack	AnimationAttackFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	2	F	CSWCObject	AnimationFireAndForget	AnimationFireAndForgetFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	3	F	CSWCObject	AnimationHideEquippedItems	AnimationHideEquippedItemsFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	4	F	CSWCObject	AnimationLooping	AnimationLoopingFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	5	F	CSWCObject	AnimationOverlay	AnimationOverlayFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	6	F	CSWCObject	AnimationParry	AnimationParryFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	7	F	CSWCObject	AnimationPause	AnimationPauseFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	8	F	CSWCObject	AnimationPlayOutOfPlace	AnimationPlayOutOfPlaceFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	9	F	CSWCObject	AnimationRunning	AnimationRunningFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	10	F	CSWCObject	AnimationStationary	AnimationStationaryFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	11	F	CSWCObject	AnimationWalking	AnimationWalkingFn	__thiscall	int	4	void* thisPtr, WORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	12	F	CSWCObject	AnimationDialog	AnimationDialogFn	__thiscall	int	4	void* thisPtr, DWORD animationRowIndex	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	13	F	CSWCObject	GetCurrentAnimation	GetCurrentAnimationFn	__thiscall	WORD	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	14	F	CSWCObject	GetLoopingAnimation	GetLoopingAnimationFn	__thiscall	WORD	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	15	F	CSWCObject	SetLoopingAnimation	SetLoopingAnimationFn	__thiscall	void	4	void* thisPtr, WORD animation	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	16	F	CSWCObject	AttachmentFromServerObject	AttachmentFromServerObjectFn	__thiscall	void	4	void* thisPtr, void* serverObject	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	17	F	CSWCObject	DetachFromServerObject	DetachFromServerObjectFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	18	F	CSWCObject	GetServerObject	GetServerObjectFn	__thiscall	void*	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	19	F	CSWCObject	AttachToScene	AttachToSceneFn	__thiscall	void	4	void* thisPtr, void* scene	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	20	F	CSWCObject	FadeObject	FadeObjectFn	__thiscall	int	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	21	F	CSWCObject	ShowShadowBlob	ShowShadowBlobFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	22	F	CSWCObject	HideShadowBlob	HideShadowBlobFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	23	F	CSWCObject	TurnOnShadows	TurnOnShadowsFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	24	F	CSWCObject	TurnOffShadows	TurnOffShadowsFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	25	F	CSWCObject	ClearAllActions	ClearAllActionsFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	26	F	CSWCObject	ClearAllQueuedCombatActions	ClearAllQueuedCombatActionsFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	27	F	CSWCObject	GetName	GetNameFn	__thiscall	void*	4	void* thisPtr, void* outString	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	28	F	CSWCObject	SetId	SetIdFn	__thiscall	void	4	void* thisPtr, DWORD id	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	29	F	CSWCObject	SetFeedbackInfo	SetFeedbackInfoFn	__thiscall	void	4	void* thisPtr, void* info	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	30	F	CSWCObject	GetPortrait	GetPortraitFn	__thiscall	void*	4	void* thisPtr, void* outResRef	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	31	F	CSWCObject	SetPortrait	SetPortraitFn	__thiscall	void	4	void* thisPtr, void* portrait	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	32	F	CSWCObject	GetPortraitId	GetPortraitIdFn	__thiscall	WORD	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeFunctions	33	F	CSWCObject	SetPortraitId	SetPortraitIdFn	__thiscall	void	4	void* thisPtr, WORD id	CGameObject::InitializeFunctions
+CSWCObject	CSWCObject	InitializeOffsets	1	O	CSWCObject	position						CGameObject::InitializeOffsets
+CSWCObject	CSWCObject	InitializeOffsets	2	O	CSWCObject	orientation						CGameObject::InitializeOffsets
+CSWCObject	CSWCObject	InitializeOffsets	3	O	CSWCObject	ground_normal						CGameObject::InitializeOffsets
+CSWCPlaceable	CSWCPlaceable	InitializeFunctions	1	F	CSWCPlaceable	ActionMenuSecurity	ActionMenuSecurityFn	__thiscall	void	4	void* thisPtr, void* creature	CSWCObject::InitializeFunctions
+CSWCPlaceable	CSWCPlaceable	InitializeFunctions	2	F	CSWCPlaceable	IsHostile	IsHostileFn	__thiscall	int	0	void* thisPtr	CSWCObject::InitializeFunctions
+CSWCPlaceable	CSWCPlaceable	InitializeFunctions	3	F	CSWCPlaceable	SetAppearance	SetAppearanceFn	__thiscall	void	4	void* thisPtr, BYTE appearance	CSWCObject::InitializeFunctions
+CSWCPlaceable	CSWCPlaceable	InitializeFunctions	4	F	CSWCPlaceable	GetServerPlaceable	GetServerPlaceableFn	__thiscall	void*	0	void* thisPtr	CSWCObject::InitializeFunctions
+CSWCTrigger	CSWCTrigger	InitializeOffsets	1	O	CSWCTrigger	name						CSWCObject::InitializeOffsets
+CSWCTrigger	CSWCTrigger	InitializeOffsets	2	O	CSWCTrigger	cursor_id						CSWCObject::InitializeOffsets
+CSWCTrigger	CSWCTrigger	InitializeOffsets	3	O	CSWCTrigger	geometry						CSWCObject::InitializeOffsets
+CSWCVisualEffect	CSWCVisualEffect	InitializeOffsets	1	O	CSWCVisualEffect	effect_row						CSWCObject::InitializeOffsets
+CSWGui3DSceneView	CSWGui3DSceneView	InitializeFunctions	1	F	CSWGui3DSceneView	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGui3DSceneView	CSWGui3DSceneView	InitializeOffsets	1	O	CSWGui3DSceneView	scene						CSWGuiControl::InitializeOffsets
+CSWGui3DSceneView	CSWGui3DSceneView	InitializeOffsets	2	S	CSWGui3DSceneView	<classes-table>						CSWGuiControl::InitializeOffsets
+CSWGui3DSceneView	CSWGui3DSceneView	InitializeOffsets	3	V	CSWGui3DSceneView	<classes-table>						CSWGuiControl::InitializeOffsets
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	1	F	CSWGuiBorder	FillCenter	FillCenterFn	__thiscall	void	24	void* thisPtr, int height, int width, int x, int y, float alpha, Vector* color	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	2	F	CSWGuiBorder	FillTile	FillTileFn	__thiscall	void	24	void* thisPtr, int height, int width, int x, int y, float alpha, Vector* color	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	3	F	CSWGuiBorder	Initialize	InitializeFn	__thiscall	void	8	void* thisPtr, void* extent, void* borderParams	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	4	F	CSWGuiBorder	GetInnerExtent	GetInnerExtentFn	__thiscall	void	4	void* thisPtr, void* outExtent	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	5	F	CSWGuiBorder	Draw	DrawFn	__thiscall	void	4	void* thisPtr, float alpha	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	6	F	CSWGuiBorder	Load	LoadFn	__thiscall	void	12	void* thisPtr, void* gff, void* item, void* label	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	7	F	CSWGuiBorder	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeFunctions	8	F	CSWGuiBorder	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiBorder	CSWGuiBorder	InitializeOffsets	1	O	CSWGuiBorder	border_params						CSWGuiObject::InitializeOffsets
+CSWGuiBorder	CSWGuiBorder	InitializeOffsets	2	S	CSWGuiBorder	<classes-table>						CSWGuiObject::InitializeOffsets
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeFunctions	1	F	CSWGuiBorderParams	SetBorder	SetBorderFn	__thiscall	void	4	void* thisPtr, void* border	
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeFunctions	2	F	CSWGuiBorderParams	SetCornerImage	SetCornerImageFn	__thiscall	void	8	void* thisPtr, void* image, int forceUpdate	
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeFunctions	3	F	CSWGuiBorderParams	SetEdgeImage	SetEdgeImageFn	__thiscall	void	8	void* thisPtr, void* image, int forceUpdate	
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeFunctions	4	F	CSWGuiBorderParams	SetFillImage	SetFillImageFn	__thiscall	void	8	void* thisPtr, void* image, int forceUpdate	
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeFunctions	5	F	CSWGuiBorderParams	operator=	AssignFn	__thiscall	void*	4	void* thisPtr, void* rhs	
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	1	O	CSWGuiBorderParams	dimension						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	2	O	CSWGuiBorderParams	inner_offset						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	3	O	CSWGuiBorderParams	fill_angle						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	4	O	CSWGuiBorderParams	alpha						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	5	O	CSWGuiBorderParams	color						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	6	O	CSWGuiBorderParams	bit_flags						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	7	O	CSWGuiBorderParams	corner_image_resref						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	8	O	CSWGuiBorderParams	edge_image_resref						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	9	O	CSWGuiBorderParams	fill_image_resref						
+CSWGuiBorderParams	CSWGuiBorderParams	InitializeOffsets	10	O	CSWGuiBorderParams	border						
+CSWGuiButton	CSWGuiButton	InitializeFunctions	1	F	CSWGuiButton	Draw	DrawFn	__thiscall	void	4	void* thisPtr, float alpha	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	2	F	CSWGuiButton	SetExtent	SetExtentFn	__thiscall	void	4	void* thisPtr, void* extent	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	3	F	CSWGuiButton	ReSetFont	ReSetFontFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	4	F	CSWGuiButton	SetActive	SetActiveFn	__thiscall	void	4	void* thisPtr, UINT active	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	5	F	CSWGuiButton	SetEnabled	SetEnabledFn	__thiscall	void	4	void* thisPtr, UINT enabled	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	6	F	CSWGuiButton	Initialize_2	InitializeButtonFn	__thiscall	void	8	void* thisPtr, void* extent, void* button	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	7	F	CSWGuiButton	Initialize	InitializeParamsFn	__thiscall	void	16	void* thisPtr, void* extent, void* textParams, void* borderParams, void* hilightParams	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	8	F	CSWGuiButton	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeFunctions	9	F	CSWGuiButton	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiButton	CSWGuiButton	InitializeOffsets	1	O	CSWGuiButton	text						CSWGuiNavigable::InitializeOffsets
+CSWGuiButton	CSWGuiButton	InitializeOffsets	2	O	CSWGuiButton	border						CSWGuiNavigable::InitializeOffsets
+CSWGuiButton	CSWGuiButton	InitializeOffsets	3	O	CSWGuiButton	hilight						CSWGuiNavigable::InitializeOffsets
+CSWGuiButton	CSWGuiButton	InitializeOffsets	4	S	CSWGuiButton	<classes-table>						CSWGuiNavigable::InitializeOffsets
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeFunctions	1	F	CSWGuiButtonToggle	SetSelected	SetSelectedFn	__thiscall	void	4	void* thisPtr, UINT selected	CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeFunctions	2	F	CSWGuiButtonToggle	Initialize	InitializeToggleParamsFn	__thiscall	void	24	void* thisPtr, void* extent, void* textParams, void* borderParams, void* hilightParams, void* selectedParams, void* hilightSelectedParams	CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeFunctions	3	F	CSWGuiButtonToggle	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeFunctions	4	F	CSWGuiButtonToggle	Destructor_2	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeOffsets	1	O	CSWGuiButtonToggle	toggle_event						CSWGuiButton::InitializeOffsets
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeOffsets	2	O	CSWGuiButtonToggle	bit_flags						CSWGuiButton::InitializeOffsets
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeOffsets	3	O	CSWGuiButtonToggle	selected						CSWGuiButton::InitializeOffsets
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeOffsets	4	O	CSWGuiButtonToggle	hilight_selected						CSWGuiButton::InitializeOffsets
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeOffsets	5	S	CSWGuiButtonToggle	<classes-table>						CSWGuiButton::InitializeOffsets
+CSWGuiButtonToggle	CSWGuiButtonToggle	InitializeOffsets	6	V	CSWGuiOptionsCheckbox	<classes-table>						CSWGuiButton::InitializeOffsets
+CSWGuiControl	CSWGuiControl	InitializeFunctions	1	F	CSWGuiControl	AddChildControl	AddChildControlFn	__thiscall	void	4	void* thisPtr, void* child	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	2	F	CSWGuiControl	AddEvent	AddEventFn	__thiscall	void	12	void* thisPtr, int eventFlag, void* guiObject, void* menuFunc	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	3	F	CSWGuiControl	Load_2	LoadFromLayoutFn	__thiscall	void	16	void* thisPtr, void* owner, void* gff, void* controls, void* tag	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	4	F	CSWGuiControl	GetIsChild	GetIsChildFn	__thiscall	bool	4	void* thisPtr, void* child	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	5	F	CSWGuiControl	GetIsSelectable	GetIsSelectableFn	__thiscall	bool	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	6	F	CSWGuiControl	GetSelectableParent	GetSelectableParentFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	7	F	CSWGuiControl	SetActive	SetActiveFn	__thiscall	void	4	void* thisPtr, UINT active	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	8	F	CSWGuiControl	SetEnabled	SetEnabledFn	__thiscall	void	4	void* thisPtr, UINT enabled	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	9	F	CSWGuiControl	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeFunctions	10	F	CSWGuiControl	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiControl	CSWGuiControl	InitializeOffsets	1	O	CSWGuiControl	parent_control						CSWGuiObject::InitializeOffsets
+CSWGuiControl	CSWGuiControl	InitializeOffsets	2	O	CSWGuiControl	id						CSWGuiObject::InitializeOffsets
+CSWGuiControl	CSWGuiControl	InitializeOffsets	3	O	CSWGuiControl	custom_value						CSWGuiObject::InitializeOffsets
+CSWGuiControl	CSWGuiControl	InitializeOffsets	4	O	CSWGuiControl	bit_flags						CSWGuiObject::InitializeOffsets
+CSWGuiControl	CSWGuiControl	InitializeOffsets	5	S	CSWGuiControl	<classes-table>						CSWGuiObject::InitializeOffsets
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	1	F	CSWGuiEditbox	GetIsSelectable	GetIsSelectableFn	__thiscall	bool	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	2	F	CSWGuiEditbox	HandleKeyPress	HandleKeyPressFn	__thiscall	void	4	void* thisPtr, int key	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	3	F	CSWGuiEditbox	ReSetFont	ReSetFontFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	4	F	CSWGuiEditbox	Initialize	InitializeFn	__thiscall	void	12	void* thisPtr, void* extent, void* textParams, void* borderParams	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	5	F	CSWGuiEditbox	SetEnabled	SetEnabledFn	__thiscall	void	4	void* thisPtr, UINT enabled	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	6	F	CSWGuiEditbox	SetExtent	SetExtentFn	__thiscall	void	4	void* thisPtr, void* extent	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	7	F	CSWGuiEditbox	SetFocus	SetFocusFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	8	F	CSWGuiEditbox	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeFunctions	9	F	CSWGuiEditbox	Destructor_2	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox	CSWGuiEditBox	InitializeOffsets	1	O	CSWGuiEditbox	border						CSWGuiNavigable::InitializeOffsets
+CSWGuiEditBox	CSWGuiEditBox	InitializeOffsets	2	O	CSWGuiEditbox	edit_text						CSWGuiNavigable::InitializeOffsets
+CSWGuiEditBox	CSWGuiEditBox	InitializeOffsets	3	S	CSWGuiEditbox	<classes-table>						CSWGuiNavigable::InitializeOffsets
+CSWGuiEditText	CSWGuiEditText	InitializeFunctions	1	F	CSWGuiEditText	AddNewChar	AddNewCharFn	__thiscall	void	4	void* thisPtr, char* character	CSWGuiText::InitializeFunctions
+CSWGuiEditText	CSWGuiEditText	InitializeFunctions	2	F	CSWGuiEditText	RemoveLastChar	RemoveLastCharFn	__thiscall	void	0	void* thisPtr	CSWGuiText::InitializeFunctions
+CSWGuiEditText	CSWGuiEditText	InitializeFunctions	3	F	CSWGuiEditText	SetCaretVisible	SetCaretVisibleFn	__thiscall	void	4	void* thisPtr, int visible	CSWGuiText::InitializeFunctions
+CSWGuiEditText	CSWGuiEditText	InitializeFunctions	4	F	CSWGuiEditText	SetText	SetTextFn	__thiscall	void	4	void* thisPtr, void* text	CSWGuiText::InitializeFunctions
+CSWGuiEditText	CSWGuiEditText	InitializeFunctions	5	F	CSWGuiEditText	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiText::InitializeFunctions
+CSWGuiEditText	CSWGuiEditText	InitializeFunctions	6	F	CSWGuiEditText	Destructor_2	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiText::InitializeFunctions
+CSWGuiEditText	CSWGuiEditText	InitializeOffsets	1	O	CSWGuiEditText	max_length						CSWGuiText::InitializeOffsets
+CSWGuiEditText	CSWGuiEditText	InitializeOffsets	2	O	CSWGuiEditText	string						CSWGuiText::InitializeOffsets
+CSWGuiEditText	CSWGuiEditText	InitializeOffsets	3	S	CSWGuiEditText	<classes-table>						CSWGuiText::InitializeOffsets
+CSWGuiImage	CSWGuiImage	InitializeFunctions	1	F	CSWGuiImage	GetImageExtent	GetImageExtentFn	__thiscall	void	4	void* thisPtr, CSWGuiExtent* outExtent	CSWGuiObject::InitializeFunctions
+CSWGuiImage	CSWGuiImage	InitializeFunctions	2	F	CSWGuiImage	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiImage	CSWGuiImage	InitializeFunctions	3	F	CSWGuiImage	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiImage	CSWGuiImage	InitializeOffsets	1	O	CSWGuiImage	params						CSWGuiObject::InitializeOffsets
+CSWGuiImage	CSWGuiImage	InitializeOffsets	2	S	CSWGuiImage	<classes-table>						CSWGuiObject::InitializeOffsets
+CSWGuiImageParams	CSWGuiImageParams	InitializeFunctions	1	F	CSWGuiImageParams	SetImage	SetImageFn	__thiscall	void	8	void* thisPtr, void* image, int forceUpdate	
+CSWGuiImageParams	CSWGuiImageParams	InitializeFunctions	2	F	CSWGuiImageParams	SetImageObject	SetImageObjectFn	__thiscall	void	4	void* thisPtr, void* image	
+CSWGuiImageParams	CSWGuiImageParams	InitializeFunctions	3	F	CSWGuiImageParams	SetAlignment	SetAlignmentFn	__thiscall	void	4	void* thisPtr, int alignment	
+CSWGuiImageParams	CSWGuiImageParams	InitializeFunctions	4	F	CSWGuiImageParams	SetDrawStyle	SetDrawStyleFn	__thiscall	void	4	void* thisPtr, int drawStyle	
+CSWGuiImageParams	CSWGuiImageParams	InitializeOffsets	1	O	CSWGuiImageParams	resref						
+CSWGuiImageParams	CSWGuiImageParams	InitializeOffsets	2	O	CSWGuiImageParams	angle						
+CSWGuiImageParams	CSWGuiImageParams	InitializeOffsets	3	O	CSWGuiImageParams	alpha						
+CSWGuiImageParams	CSWGuiImageParams	InitializeOffsets	4	O	CSWGuiImageParams	color						
+CSWGuiImageParams	CSWGuiImageParams	InitializeOffsets	5	O	CSWGuiImageParams	image_object						
+CSWGuiLabel	CSWGuiLabel	InitializeFunctions	1	F	CSWGuiLabel	ReSetFont	ReSetFontFn	__thiscall	void	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiLabel	CSWGuiLabel	InitializeFunctions	2	F	CSWGuiLabel	SetEnabled	SetEnabledFn	__thiscall	void	4	void* thisPtr, UINT enabled	CSWGuiControl::InitializeFunctions
+CSWGuiLabel	CSWGuiLabel	InitializeFunctions	3	F	CSWGuiLabel	Initialize_2	InitializeLabelFn	__thiscall	void	12	void* thisPtr, void* extent, void* labelPrototype, float pointSize	CSWGuiControl::InitializeFunctions
+CSWGuiLabel	CSWGuiLabel	InitializeFunctions	4	F	CSWGuiLabel	Initialize	InitializeParamsFn	__thiscall	void	16	void* thisPtr, void* extent, void* textParams, void* borderParams, float pointSize	CSWGuiControl::InitializeFunctions
+CSWGuiLabel	CSWGuiLabel	InitializeFunctions	5	F	CSWGuiLabel	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiLabel	CSWGuiLabel	InitializeFunctions	6	F	CSWGuiLabel	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiLabel	CSWGuiLabel	InitializeOffsets	1	O	CSWGuiLabel	text						CSWGuiControl::InitializeOffsets
+CSWGuiLabel	CSWGuiLabel	InitializeOffsets	2	S	CSWGuiLabel	<classes-table>						CSWGuiControl::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	1	F	CSWGuiListBox	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	2	F	CSWGuiListBox	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	3	F	CSWGuiListBox	AddControls	AddControlsFn	__thiscall	void	16	void* thisPtr, void* controls, int suppressCleanUp, int restoreExtents, int varyItemHeights	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	4	F	CSWGuiListBox	AddControls_2	AddControls2Fn	__thiscall	void	20	void* thisPtr, void* controls, int count, int suppressCleanUp, int restoreExtents, int variableItemHeights	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	5	F	CSWGuiListBox	ClearItems	ClearItemsFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	6	F	CSWGuiListBox	DisplayToolTip	DisplayToolTipFn	__thiscall	int	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	7	F	CSWGuiListBox	GetControl	GetControlFn	__thiscall	void*	4	void* thisPtr, int controlId	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	8	F	CSWGuiListBox	GetIsSelectable	GetIsSelectableFn	__thiscall	int	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	9	F	CSWGuiListBox	GetSelectedControl	GetSelectedControlFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	10	F	CSWGuiListBox	HitCheckMouseLocal	HitCheckMouseLocalFn	__thiscall	void*	4	void* thisPtr, int* outIndex	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	11	F	CSWGuiListBox	OrganizeControls	OrganizeControlsFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	12	F	CSWGuiListBox	OrganizeOversized	OrganizeOversizedFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	13	F	CSWGuiListBox	OrganizeUnequal	OrganizeUnequalFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	14	F	CSWGuiListBox	ReSetFont	ReSetFontFn	__thiscall	void	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	15	F	CSWGuiListBox	SetActive	SetActiveFn	__thiscall	void	4	void* thisPtr, int active	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	16	F	CSWGuiListBox	SetActiveControl	SetActiveControlFn	__thiscall	void	8	void* thisPtr, void* control, int playSound	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	17	F	CSWGuiListBox	SetExtent	SetExtentFn	__thiscall	void	4	void* thisPtr, void* extent	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	18	F	CSWGuiListBox	SetPadding	SetPaddingFn	__thiscall	void	4	void* thisPtr, int padding	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	19	F	CSWGuiListBox	SetScrollBarExtent	SetScrollBarExtentFn	__thiscall	void	8	void* thisPtr, int width, int updateListBoxExtent	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	20	F	CSWGuiListBox	SetScrollBarOnLeft	SetScrollBarOnLeftFn	__thiscall	void	4	void* thisPtr, int onLeft	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	21	F	CSWGuiListBox	SetSelectedControl	SetSelectedControlFn	__thiscall	void	8	void* thisPtr, int controlId, int playSound	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	22	F	CSWGuiListBox	SetTopVisible	SetTopVisibleFn	__thiscall	void	4	void* thisPtr, short newTopIndex	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	23	F	CSWGuiListBox	shouldScroll	ShouldScrollFn	__thiscall	int	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeFunctions	24	F	CSWGuiListBox	getPagesToScroll	GetPagesToScrollFn	__thiscall	int	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	1	O	CSWGuiListBox	border						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	2	O	CSWGuiListBox	scrollbar						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	3	O	CSWGuiListBox	controls						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	4	O	CSWGuiListBox	control_extents						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	5	O	CSWGuiListBox	hovered_control						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	6	O	CSWGuiListBox	proto_item						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	7	O	CSWGuiListBox	color						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	8	O	CSWGuiListBox	viewport_x						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	9	O	CSWGuiListBox	viewport_y						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	10	O	CSWGuiListBox	viewport_width						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	11	O	CSWGuiListBox	viewport_height						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	12	O	CSWGuiListBox	padding						CSWGuiNavigable::InitializeOffsets
+CSWGuiListBox	CSWGuiListBox	InitializeOffsets	13	S	CSWGuiListBox	<classes-table>						CSWGuiNavigable::InitializeOffsets
+CSWGuiManager	CSWGuiManager	InitializeFunctions	1	F	CSWGuiManager	AddPanel	AddPanelFn	__thiscall	void	12	void* thisPtr, void* panel, int flags, int playSound	
+CSWGuiManager	CSWGuiManager	InitializeFunctions	2	F	CSWGuiManager	PlayGuiSound	PlayGuiSoundFn	__thiscall	void	4	void* thisPtr, byte soundId	
+CSWGuiManager	CSWGuiManager	InitializeFunctions	3	F	CSWGuiManager	PopModalPanel	PopModalPanelFn	__thiscall	int	0	void* thisPtr	
+CSWGuiManager	CSWGuiManager	InitializeOffsets	1	O	CSWGuiManager	viewport_width						
+CSWGuiManager	CSWGuiManager	InitializeOffsets	2	O	CSWGuiManager	viewport_height						
+CSWGuiManager	CSWGuiManager	InitializeOffsets	3	O	CSWGuiManager	panels						
+CSWGuiManager	CSWGuiManager	InitializeOffsets	4	O	CSWGuiManager	focused_edit_box						
+CSWGuiManager	CSWGuiManager	InitializeOffsets	5	O	CSWGuiManager	tooltip_appear_time						
+CSWGuiNavigable	CSWGuiNavigable	InitializeFunctions	1	F	CSWGuiNavigable	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiNavigable	CSWGuiNavigable	InitializeFunctions	2	F	CSWGuiNavigable	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiNavigable	CSWGuiNavigable	InitializeFunctions	3	F	CSWGuiNavigable	GetMoveToControl	GetMoveToControlFn	__thiscall	int	4	void* thisPtr, int direction	CSWGuiControl::InitializeFunctions
+CSWGuiNavigable	CSWGuiNavigable	InitializeFunctions	4	F	CSWGuiNavigable	SetMoveToControl	SetMoveToControlFn	__thiscall	void	8	void* thisPtr, int direction, int controlIndex	CSWGuiControl::InitializeFunctions
+CSWGuiNavigable	CSWGuiNavigable	InitializeOffsets	1	O	CSWGuiNavigable	up						CSWGuiControl::InitializeOffsets
+CSWGuiNavigable	CSWGuiNavigable	InitializeOffsets	2	O	CSWGuiNavigable	left						CSWGuiControl::InitializeOffsets
+CSWGuiNavigable	CSWGuiNavigable	InitializeOffsets	3	O	CSWGuiNavigable	down						CSWGuiControl::InitializeOffsets
+CSWGuiNavigable	CSWGuiNavigable	InitializeOffsets	4	O	CSWGuiNavigable	right						CSWGuiControl::InitializeOffsets
+CSWGuiNavigable	CSWGuiNavigable	InitializeOffsets	5	S	CSWGuiNavigable	<classes-table>						CSWGuiControl::InitializeOffsets
+CSWGuiObject	CSWGuiObject	InitializeOffsets	1	O	CSWGuiObject	extent						
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	1	F	CSWGuiPanel	AddControl	AddControlFn	__thiscall	void	4	void* thisPtr, void* control	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	2	F	CSWGuiPanel	CenterPanel	CenterPanelFn	__thiscall	void	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	3	F	CSWGuiPanel	HandleInputEvent	HandleInputEventFn	__thiscall	void	8	void* thisPtr, int event, int inputPhase	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	4	F	CSWGuiPanel	Draw	DrawFn	__thiscall	void	4	void* thisPtr, float param1	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	5	F	CSWGuiPanel	OnPanelAdded	OnPanelAddedFn	__thiscall	void	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	6	F	CSWGuiPanel	OnPanelRemoved	OnPanelRemovedFn	__thiscall	void	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	7	F	CSWGuiPanel	GetControl	GetControlFn	__thiscall	void*	4	void* thisPtr, int index	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	8	F	CSWGuiPanel	GetExtentAccountingForPanelOffset	GetExtentAccountingForPanelOffsetFn	__thiscall	void	4	void* thisPtr, CSWGuiExtent* outExtent	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	9	F	CSWGuiPanel	GetFullScreenBG	GetFullScreenBGFn	__thiscall	void	4	void* thisPtr, void* outBGString	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	10	F	CSWGuiPanel	GetLocalMouseCoords	GetLocalMouseCoordsFn	__thiscall	void	8	void* thisPtr, int* outX, int* outY	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	11	F	CSWGuiPanel	HitCheckMouse	HitCheckMouseFn	__thiscall	void*	8	void* thisPtr, int mouseX, int mouseY	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	12	F	CSWGuiPanel	InitControl	InitControlFn	__thiscall	void	12	void* thisPtr, void* controlToInit, void* label, int activate	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	13	F	CSWGuiPanel	ResetFont	ResetFontFn	__thiscall	void	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	14	F	CSWGuiPanel	SetActiveControl	SetActiveControlFn	__thiscall	void	8	void* thisPtr, void* controlToActivate, int playSound	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	15	F	CSWGuiPanel	SetBackground	SetBackgroundFn	__thiscall	void	4	void* thisPtr, void* image	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	16	F	CSWGuiPanel	SetVisible	SetVisibleFn	__thiscall	void	4	void* thisPtr, int isVisible	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	17	F	CSWGuiPanel	StartLoadFromLayout	StartLoadFromLayoutFn	__thiscall	void	4	void* thisPtr, void* guiResref	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	18	F	CSWGuiPanel	StopLoadFromLayout	StopLoadFromLayoutFn	__thiscall	void	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	19	F	CSWGuiPanel	Constructor	ConstructorFn	__thiscall	void*	4	void* thisPtr, void* manager	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeFunctions	20	F	CSWGuiPanel	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	1	O	CSWGuiPanel	active_control						CSWGuiObject::InitializeOffsets
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	2	O	CSWGuiPanel	controls						CSWGuiObject::InitializeOffsets
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	3	O	CSWGuiPanel	alpha						CSWGuiObject::InitializeOffsets
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	4	O	CSWGuiPanel	color						CSWGuiObject::InitializeOffsets
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	5	O	CSWGuiPanel	border						CSWGuiObject::InitializeOffsets
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	6	O	CSWGuiPanel	bit_flags						CSWGuiObject::InitializeOffsets
+CSWGuiPanel	CSWGuiPanel	InitializeOffsets	7	S	CSWGuiPanel	<classes-table>						CSWGuiObject::InitializeOffsets
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeFunctions	1	F	CSWGuiProgressBar	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeFunctions	2	F	CSWGuiProgressBar	Destructor_2	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeFunctions	3	F	CSWGuiProgressBar	SetCurValue	SetCurValueFn	__thiscall	void	4	void* thisPtr, int value	CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeFunctions	4	F	CSWGuiProgressBar	SetMaxValue	SetMaxValueFn	__thiscall	void	4	void* thisPtr, int value	CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeFunctions	5	F	CSWGuiProgressBar	SetStartFromLeft	SetStartFromLeftFn	__thiscall	void	4	void* thisPtr, UINT startFromLeft	CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeOffsets	1	O	CSWGuiProgressBar	max						CSWGuiControl::InitializeOffsets
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeOffsets	2	O	CSWGuiProgressBar	border_1						CSWGuiControl::InitializeOffsets
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeOffsets	3	O	CSWGuiProgressBar	border_2						CSWGuiControl::InitializeOffsets
+CSWGuiProgressBar	CSWGuiProgressBar	InitializeOffsets	4	S	CSWGuiProgressBar	<classes-table>						CSWGuiControl::InitializeOffsets
+CSWGuiScene	CSWGuiScene	InitializeFunctions	1	F	CSWGuiScene	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiScene	CSWGuiScene	InitializeFunctions	2	F	CSWGuiScene	AddModel	AddModelFn	__thiscall	int	12	void* thisPtr, void* model, int insertIndex, int attachToScene	CSWGuiObject::InitializeFunctions
+CSWGuiScene	CSWGuiScene	InitializeFunctions	3	F	CSWGuiScene	AddModel_2	AddModel2Fn	__thiscall	void*	8	void* thisPtr, void* model, int insertIndex	CSWGuiObject::InitializeFunctions
+CSWGuiScene	CSWGuiScene	InitializeFunctions	4	F	CSWGuiScene	GetModel	GetModelFn	__thiscall	void*	4	void* thisPtr, int indx	CSWGuiObject::InitializeFunctions
+CSWGuiScene	CSWGuiScene	InitializeFunctions	5	F	CSWGuiScene	RemoveModel	RemoveModelFn	__thiscall	int	8	void* thisPtr, int index, int freeModel	CSWGuiObject::InitializeFunctions
+CSWGuiScene	CSWGuiScene	InitializeOffsets	1	O	CSWGuiScene	scene						CSWGuiObject::InitializeOffsets
+CSWGuiScene	CSWGuiScene	InitializeOffsets	2	O	CSWGuiScene	camera						CSWGuiObject::InitializeOffsets
+CSWGuiScene	CSWGuiScene	InitializeOffsets	3	O	CSWGuiScene	models						CSWGuiObject::InitializeOffsets
+CSWGuiScene	CSWGuiScene	InitializeOffsets	4	O	CSWGuiScene	background_color						CSWGuiObject::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeFunctions	1	F	CSWGuiScrollBar	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeFunctions	2	F	CSWGuiScrollBar	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeFunctions	3	F	CSWGuiScrollBar	HitCheckScrollbar	HitCheckScrollbarFn	__thiscall	int	8	void* thisPtr, int mouseX, int mouseY	CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeFunctions	4	F	CSWGuiScrollBar	setCurValue	SetCurValueFn	__thiscall	void	4	void* thisPtr, int value	CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeFunctions	5	F	CSWGuiScrollBar	setMaxValue	SetMaxValueFn	__thiscall	void	8	void* thisPtr, int value, BYTE _unknown	CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeFunctions	6	F	CSWGuiScrollBar	setVisibleValue	SetVisibleValueFn	__thiscall	void	4	void* thisPtr, int value	CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	1	O	CSWGuiScrollBar	max_value						CSWGuiControl::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	2	O	CSWGuiScrollBar	current_value						CSWGuiControl::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	3	O	CSWGuiScrollBar	visible_item_count						CSWGuiControl::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	4	O	CSWGuiScrollBar	border						CSWGuiControl::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	5	O	CSWGuiScrollBar	image_1						CSWGuiControl::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	6	O	CSWGuiScrollBar	image_2						CSWGuiControl::InitializeOffsets
+CSWGuiScrollBar	CSWGuiScrollBar	InitializeOffsets	7	S	CSWGuiScrollBar	<classes-table>						CSWGuiControl::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	1	F	CSWGuiSlider	Initialize	InitializeFn	__thiscall	void	16	void* thisPtr, void* extent, void* borderParams, void* borderHilightParams, void* imageResRef	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	2	F	CSWGuiSlider	SetExtent	SetExtentFn	__thiscall	void	4	void* thisPtr, void* extent	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	3	F	CSWGuiSlider	SetMaxValue	SetMaxValueFn	__thiscall	void	4	void* thisPtr, int maxValue	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	4	F	CSWGuiSlider	SetCurValue	SetCurValueFn	__thiscall	void	4	void* thisPtr, int curValue	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	5	F	CSWGuiSlider	Draw	DrawFn	__thiscall	void	4	void* thisPtr, float alpha	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	6	F	CSWGuiSlider	HandleInputEvent	HandleInputEventFn	__thiscall	void	8	void* thisPtr, int event, int inputPhase	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	7	F	CSWGuiSlider	HitCheckSlider	HitCheckSliderFn	__thiscall	int	8	void* thisPtr, int x, int y	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	8	F	CSWGuiSlider	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeFunctions	9	F	CSWGuiSlider	Destructor_2	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	1	O	CSWGuiSlider	max_value						CSWGuiNavigable::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	2	O	CSWGuiSlider	cur_value						CSWGuiNavigable::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	3	O	CSWGuiSlider	gui_sound						CSWGuiNavigable::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	4	O	CSWGuiSlider	border						CSWGuiNavigable::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	5	O	CSWGuiSlider	border_hilight						CSWGuiNavigable::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	6	O	CSWGuiSlider	image						CSWGuiNavigable::InitializeOffsets
+CSWGuiSlider	CSWGuiSlider	InitializeOffsets	7	S	CSWGuiSlider	<classes-table>						CSWGuiNavigable::InitializeOffsets
+CSWGuiText	CSWGuiText	InitializeFunctions	1	F	CSWGuiText	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	2	F	CSWGuiText	Destructor	DestructorFn	__thiscall	void*	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	3	F	CSWGuiText	GetFontHeight	GetFontHeightFn	__thiscall	int	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	4	F	CSWGuiText	GetIdealHeight	GetIdealHeightFn	__thiscall	int	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	5	F	CSWGuiText	wrapText	WrapTextFn	__thiscall	void	0	void* thisPtr	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	6	F	CSWGuiText	Initialize	InitializeFn	__thiscall	void	12	void* thisPtr, void* extent, void* textParams, float scale	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	7	F	CSWGuiText	SetExtent	SetExtentFn	__thiscall	void	4	void* thisPtr, void* extent	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	8	F	CSWGuiText	Draw	DrawFn	__thiscall	void	4	void* thisPtr, float alpha	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeFunctions	9	F	CSWGuiText	Load	LoadFn	__thiscall	void	12	void* thisPtr, void* gff, void* item, void* label	CSWGuiObject::InitializeFunctions
+CSWGuiText	CSWGuiText	InitializeOffsets	1	O	CSWGuiText	text_params						CSWGuiObject::InitializeOffsets
+CSWGuiText	CSWGuiText	InitializeOffsets	2	S	CSWGuiText	<classes-table>						CSWGuiObject::InitializeOffsets
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	1	F	CSWGuiTextParams	RestoreDefaultColor	RestoreDefaultColorFn	__thiscall	void	0	void* thisPtr	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	2	F	CSWGuiTextParams	SetAlignment	SetAlignmentFn	__thiscall	void	4	void* thisPtr, int alignment	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	3	F	CSWGuiTextParams	SetBaseFont	SetBaseFontFn	__thiscall	void	4	void* thisPtr, void* font	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	4	F	CSWGuiTextParams	SetColor	SetColorFn	__thiscall	void	4	void* thisPtr, void* color	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	5	F	CSWGuiTextParams	SetDefaultColor	SetDefaultColorFn	__thiscall	void	4	void* thisPtr, void* color	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	6	F	CSWGuiTextParams	SetFont	SetFontFn	__thiscall	void	4	void* thisPtr, void* font	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	7	F	CSWGuiTextParams	SetFontRename	SetFontRenameFn	__thiscall	void	0	void* thisPtr	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	8	F	CSWGuiTextParams	SetStrRef	SetStrRefFn	__thiscall	void	4	void* thisPtr, unsigned long strRef	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	9	F	CSWGuiTextParams	SetText	SetTextFn	__thiscall	void	4	void* thisPtr, void* text	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	10	F	CSWGuiTextParams	SetTextObject	SetTextObjectFn	__thiscall	void	4	void* thisPtr, void* text	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	11	F	CSWGuiTextParams	operator=	AssignFn	__thiscall	void*	4	void* thisPtr, void* rhs	
+CSWGuiTextParams	CSWGuiTextParams	InitializeFunctions	12	F	CSWGuiTextParams	Constructor	ConstructorFn	__thiscall	void*	0	void* thisPtr	
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	1	O	CSWGuiTextParams	text						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	2	O	CSWGuiTextParams	str_ref						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	3	O	CSWGuiTextParams	font						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	4	O	CSWGuiTextParams	color						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	5	O	CSWGuiTextParams	default_color						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	6	O	CSWGuiTextParams	text_object						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	7	O	CSWGuiTextParams	opacity						
+CSWGuiTextParams	CSWGuiTextParams	InitializeOffsets	8	S	CSWGuiTextParams	<classes-table>						
+CSWInventory	CSWInventory	InitializeFunctions	1	F	CSWInventory	GetItemInSlot	GetItemInSlotFn	__thiscall	void*	4	void* thisPtr, int slot	
+CSWItem	CSWItem	InitializeFunctions	1	F	CSWItem	GetBaseItem	GetBaseItemFn	__thiscall	WORD	0	void* thisPtr	
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	1	O	CSWSAreaOfEffectObject	shape						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	2	O	CSWSAreaOfEffectObject	spell_id						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	3	O	CSWSAreaOfEffectObject	corners						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	4	O	CSWSAreaOfEffectObject	script_on_heartbeat						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	5	O	CSWSAreaOfEffectObject	script_on_user_defined						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	6	O	CSWSAreaOfEffectObject	script_on_enter						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	7	O	CSWSAreaOfEffectObject	script_on_exit						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	8	O	CSWSAreaOfEffectObject	duration_type						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	9	O	CSWSAreaOfEffectObject	last_heartbeat_day						CSWSObject::InitializeOffsets
+CSWSAreaOfEffectObject	CSWSAreaOfEffectObject	InitializeOffsets	10	O	CSWSAreaOfEffectObject	last_heartbeat_time						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeFunctions	1	F	CSWSCreature	GetClientCreature	GetClientCreatureFn	__thiscall	void*	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSCreature	CSWSCreature	InitializeOffsets	1	O	CSWSCreature	CreatureStats						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	2	O	CSWSCreature	Inventory						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	3	O	CSWSCreature	joining_xp						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	4	O	CSWSCreature	script_heartbeat						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	5	O	CSWSCreature	script_on_notice						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	6	O	CSWSCreature	script_spell_at						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	7	O	CSWSCreature	script_attacked						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	8	O	CSWSCreature	script_damaged						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	9	O	CSWSCreature	script_disturbed						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	10	O	CSWSCreature	script_end_round						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	11	O	CSWSCreature	script_dialogue						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	12	O	CSWSCreature	script_spawn						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	13	O	CSWSCreature	script_rested						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	14	O	CSWSCreature	script_death						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	15	O	CSWSCreature	script_user_define						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	16	O	CSWSCreature	script_on_blocked						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	17	O	CSWSCreature	script_end_dialogue						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	18	O	CSWSCreature	area_object_id						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	19	O	CSWSCreature	entry_point						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	20	O	CSWSCreature	blocking_door_id						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	21	O	CSWSCreature	create_on_script_fired						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	22	O	CSWSCreature	ambient_animation_state						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	23	O	CSWSCreature	detect_mode						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	24	O	CSWSCreature	stealth_mode						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	25	O	CSWSCreature	disarmable						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	26	O	CSWSCreature	creature_size						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	27	O	CSWSCreature	effect_spell_id						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	28	O	CSWSCreature	primary_range						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	29	O	CSWSCreature	secondary_range						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	30	O	CSWSCreature	invited_to_party						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	31	O	CSWSCreature	base_class_level						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	32	O	CSWSCreature	sound_set_file						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	33	O	CSWSCreature	body_bag						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	34	O	CSWSCreature	movement_rate_factor						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	35	O	CSWSCreature	is_disguised						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	36	O	CSWSCreature	appearance						CSWSObject::InitializeOffsets
+CSWSCreature	CSWSCreature	InitializeOffsets	37	O	CSWSCreature	heartbeat_ms_remaining						CSWSObject::InitializeOffsets
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	1	F	CSWSCreatureStats	HasFeat	HasFeatFn	__thiscall	bool	4	void* thisPtr, WORD feat	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	2	F	CSWSCreatureStats	AddFeat	AddFeatFn	__thiscall	void	4	void* thisPtr, WORD feat	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	3	F	CSWSCreatureStats	RemoveFeat	RemoveFeatFn	__thiscall	void	4	void* thisPtr, WORD feat	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	4	F	CSWSCreatureStats	HasSpell	HasSpellFn	__thiscall	bool	12	void* thisPtr, BYTE spellList, DWORD spellId, int checkUsable	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	5	F	CSWSCreatureStats	AddKnownSpell	AddKnownSpellFn	__thiscall	void	8	void* thisPtr, BYTE classId, DWORD spellId	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	6	F	CSWSCreatureStats	SetSTRBase	SetSTRBaseFn	__thiscall	void	4	void* thisPtr, BYTE value	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	7	F	CSWSCreatureStats	SetDEXBase	SetDEXBaseFn	__thiscall	void	4	void* thisPtr, BYTE value	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	8	F	CSWSCreatureStats	SetCONBase	SetCONBaseFn	__thiscall	void	8	void* thisPtr, BYTE value, int setHP	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	9	F	CSWSCreatureStats	SetINTBase	SetINTBaseFn	__thiscall	void	4	void* thisPtr, BYTE value	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	10	F	CSWSCreatureStats	SetWISBase	SetWISBaseFn	__thiscall	void	4	void* thisPtr, BYTE value	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	11	F	CSWSCreatureStats	SetCHABase	SetCHABaseFn	__thiscall	void	4	void* thisPtr, BYTE value	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	12	F	CSWSCreatureStats	GetSkillRank	GetSkillRankFn	__thiscall	BYTE	12	void* thisPtr, BYTE skill, void* effectObject, int ignoreBonuses	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	13	F	CSWSCreatureStats	SetSkillRank	SetSkillRankFn	__thiscall	void	8	void* thisPtr, BYTE skill, BYTE rank	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	14	F	CSWSCreatureStats	SetMovementRate	SetMovementRateFn	__thiscall	void	4	void* thisPtr, int movementRate	
+CSWSCreatureStats	CSWSCreatureStats	InitializeFunctions	15	F	CSWSCreatureStats	GetClass	GetClassFn	__thiscall	void*	4	void* thisPtr, BYTE classIndex	
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	1	O	CSWSCreatureStats	STRBase						
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	2	O	CSWSCreatureStats	DEXBase						
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	3	O	CSWSCreatureStats	CONBase						
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	4	O	CSWSCreatureStats	INTBase						
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	5	O	CSWSCreatureStats	WISBase						
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	6	O	CSWSCreatureStats	CHABase						
+CSWSCreatureStats	CSWSCreatureStats	InitializeOffsets	7	O	CSWSCreatureStats	ClassCount						
+CSWSDoor	CSWSDoor	InitializeFunctions	1	F	CSWSDoor	GetDialogResref	GetDialogResrefFn	__thiscall	void*	4	void* thisPtr, void* outResRef	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeFunctions	2	F	CSWSDoor	GetFirstName	GetFirstNameFn	__thiscall	void*	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeFunctions	3	F	CSWSDoor	GetIsLinked	GetIsLinkedFn	__thiscall	int	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeFunctions	4	F	CSWSDoor	GetLinkedObject	GetLinkedObjectFn	__thiscall	void*	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeFunctions	5	F	CSWSDoor	InDoor	InDoorFn	__thiscall	int	4	void* thisPtr, Vector point	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeFunctions	6	F	CSWSDoor	MoveToNextOpenState	MoveToNextOpenStateFn	__thiscall	void	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeFunctions	7	F	CSWSDoor	RemoveFromArea	RemoveFromAreaFn	__thiscall	void	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSDoor	CSWSDoor	InitializeOffsets	1	O	CSWSDoor	script_on_open						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	2	O	CSWSDoor	script_on_closed						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	3	O	CSWSDoor	script_on_damaged						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	4	O	CSWSDoor	script_on_death						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	5	O	CSWSDoor	script_on_disarm						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	6	O	CSWSDoor	script_on_heartbeat						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	7	O	CSWSDoor	script_on_lock						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	8	O	CSWSDoor	script_on_melee_attacked						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	9	O	CSWSDoor	script_on_spell_cast_at						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	10	O	CSWSDoor	script_on_trap_tiggered						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	11	O	CSWSDoor	script_on_unlock						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	12	O	CSWSDoor	script_on_user_defined						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	13	O	CSWSDoor	script_on_click						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	14	O	CSWSDoor	script_on_dialog						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	15	O	CSWSDoor	script_on_fail_to_open						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	16	O	CSWSDoor	appearance						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	17	O	CSWSDoor	generic_type						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	18	O	CSWSDoor	conversation						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	19	O	CSWSDoor	faction						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	20	O	CSWSDoor	fortitude						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	21	O	CSWSDoor	reflex						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	22	O	CSWSDoor	will						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	23	O	CSWSDoor	open_lock_dc						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	24	O	CSWSDoor	close_lock_dc						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	25	O	CSWSDoor	secret_door_dc						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	26	O	CSWSDoor	hardness						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	27	O	CSWSDoor	open_state						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	28	O	CSWSDoor	key_name						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	29	O	CSWSDoor	key_required						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	30	O	CSWSDoor	disarm_dc						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	31	O	CSWSDoor	detect_dc						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	32	O	CSWSDoor	trap_type						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	33	O	CSWSDoor	corners						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	34	O	CSWSDoor	linked_to_flags						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	35	O	CSWSDoor	linked_to						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	36	O	CSWSDoor	linked_to_module						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	37	O	CSWSDoor	loc_name						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	38	O	CSWSDoor	description						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	39	O	CSWSDoor	load_screen_id_lower						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	40	O	CSWSDoor	load_screen_id_upper						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	41	O	CSWSDoor	transition_destination						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	42	O	CSWSDoor	last_heartbeat_day						CSWSObject::InitializeOffsets
+CSWSDoor	CSWSDoor	InitializeOffsets	43	O	CSWSDoor	last_heartbeat_ms						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	1	O	CSWSEncounter	faction						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	2	O	CSWSEncounter	localized_name						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	3	O	CSWSEncounter	active						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	4	O	CSWSEncounter	reset						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	5	O	CSWSEncounter	reset_time						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	6	O	CSWSEncounter	spawn_option						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	7	O	CSWSEncounter	difficulty						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	8	O	CSWSEncounter	difficulty_index						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	9	O	CSWSEncounter	rec_creatures						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	10	O	CSWSEncounter	max_creatures						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	11	O	CSWSEncounter	number_spawned						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	12	O	CSWSEncounter	heartbeat_day						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	13	O	CSWSEncounter	heartbeat_time						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	14	O	CSWSEncounter	last_spawn_day						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	15	O	CSWSEncounter	last_spawn_time						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	16	O	CSWSEncounter	started						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	17	O	CSWSEncounter	exhausted						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	18	O	CSWSEncounter	area_list						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	19	O	CSWSEncounter	area_count						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	20	O	CSWSEncounter	geometry_list						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	21	O	CSWSEncounter	geometry_count						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	22	O	CSWSEncounter	creatures_count						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	23	O	CSWSEncounter	spawn_points_count						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	24	O	CSWSEncounter	max_spawns						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	25	O	CSWSEncounter	current_spawns						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	26	O	CSWSEncounter	area_points						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	27	O	CSWSEncounter	spawn_pool_active						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	28	O	CSWSEncounter	script_on_entered						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	29	O	CSWSEncounter	script_on_exit						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	30	O	CSWSEncounter	script_on_heartbeat						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	31	O	CSWSEncounter	script_on_exhausted						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	32	O	CSWSEncounter	script_on_user_defined						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	33	O	CSWSEncounter	custom_script_id						CSWSObject::InitializeOffsets
+CSWSEncounter	CSWSEncounter	InitializeOffsets	34	O	CSWSEncounter	player_only						CSWSObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeFunctions	1	F	CSWSObject	AddActionToFront	AddActionToFrontFn	__thiscall	void	112	void* thisPtr, DWORD param_1, USHORT param_2, DWORD param_3, void* param_4, DWORD param_5, void* param_6, DWORD param_7, void* param_8, DWORD param_9, void* param_10, DWORD param_11, void* param_12, DWORD param_13, void* param_14, DWORD param_15, void* param_16, DWORD param_17, void* param_18, DWORD param_19, void* param_20, DWORD param_21, void* param_22, DWORD param_23, void* param_24, DWORD param_25, void* param_26, DWORD param_27, void* param_28	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	2	F	CSWSObject	ClearAllActions	ClearAllActionsFn	__thiscall	void	4	void* thisPtr, int includeAttacks	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	3	F	CSWSObject	GetAcceptableAction	GetAcceptableActionFn	__thiscall	int	4	void* thisPtr, DWORD action	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	4	F	CSWSObject	GetAIStateReputation	GetAIStateReputationFn	__thiscall	BYTE	4	void* thisPtr, DWORD objectId	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	5	F	CSWSObject	GetDead	GetDeadFn	__thiscall	int	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	6	F	CSWSObject	GetHasFeatEffectApplied	GetHasFeatEffectAppliedFn	__thiscall	int	4	void* thisPtr, WORD feat	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	7	F	CSWSObject	HasSpellEffectApplied	HasSpellEffectAppliedFn	__thiscall	int	4	void* thisPtr, int spellId	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	8	F	CSWSObject	SetAnimation	SetAnimationFn	__thiscall	void	4	void* thisPtr, int animation	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	9	F	CSWSObject	SetCurrentHitPoints	SetCurrentHitPointsFn	__thiscall	void	4	void* thisPtr, int currentHP	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	10	F	CSWSObject	SetKeepCorpse	SetKeepCorpseFn	__thiscall	void	4	void* thisPtr, int keepCorpse	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	11	F	CSWSObject	SpawnBodyBag	SpawnBodyBagFn	__thiscall	int	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	12	F	CSWSObject	GetLastName	GetLastNameFn	__thiscall	void*	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	13	F	CSWSObject	SetTag	SetTagFn	__thiscall	void	4	void* thisPtr, void* tag	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	14	F	CSWSObject	GetPortrait	GetPortraitFn	__thiscall	void*	4	void* thisPtr, void* outResRef	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	15	F	CSWSObject	SetPortrait	SetPortraitFn	__thiscall	void	4	void* thisPtr, void* portrait	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	16	F	CSWSObject	GetPortraitId	GetPortraitIdFn	__thiscall	WORD	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	17	F	CSWSObject	SetPortraitId	SetPortraitIdFn	__thiscall	void	4	void* thisPtr, WORD id	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	18	F	CSWSObject	GetScriptLocation	GetScriptLocationFn	__thiscall	void*	4	void* thisPtr, void* outLocation	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	19	F	CSWSObject	GetNearestObjectByName	GetNearestObjectByNameFn	__thiscall	DWORD	8	void* thisPtr, void* name, float radius	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	20	F	CSWSObject	GetClientObject	GetClientObjectFn	__thiscall	void*	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	21	F	CSWSObject	GetDialogResref	GetDialogResrefFn	__thiscall	void*	4	void* thisPtr, void* outResRef	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	22	F	CSWSObject	SetDialogDelay	SetDialogDelayFn	__thiscall	void	4	void* thisPtr, float delay	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	23	F	CSWSObject	SetDialogOwner	SetDialogOwnerFn	__thiscall	void	4	void* thisPtr, void* owner	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	24	F	CSWSObject	StopDialog	StopDialogFn	__thiscall	int	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeFunctions	25	F	CSWSObject	StopSoundPlayingInDialog	StopSoundPlayingInDialogFn	__thiscall	void	0	void* thisPtr	CGameObject::InitializeFunctions
+CSWSObject	CSWSObject	InitializeOffsets	1	O	CSWSObject	Position						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	2	O	CSWSObject	Orientation						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	3	O	CSWSObject	AreaId						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	4	O	CSWSObject	tag						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	5	O	CSWSObject	dlg_delay_day						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	6	O	CSWSObject	dlg_delay_ms						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	7	O	CSWSObject	dlg_last_time_day						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	8	O	CSWSObject	dlg_last_time_ms						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	9	O	CSWSObject	dialog_owner						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	10	O	CSWSObject	ai_level						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	11	O	CSWSObject	animation						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	12	O	CSWSObject	hit_points						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	13	O	CSWSObject	is_destroyable						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	14	O	CSWSObject	is_raiseable						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	15	O	CSWSObject	dead_selectable						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	16	O	CSWSObject	plot						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	17	O	CSWSObject	effect_targets						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	18	O	CSWSObject	listening						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	19	O	CSWSObject	matched_expression_strings						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	20	O	CSWSObject	spell_target_position						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	21	O	CSWSObject	min1hp						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	22	O	CSWSObject	party_interact						CGameObject::InitializeOffsets
+CSWSObject	CSWSObject	InitializeOffsets	23	O	CSWSObject	reorienting						CGameObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	1	F	CSWSPlaceable	GetBodyBagAppearance	GetBodyBagAppearanceFn	__thiscall	BYTE	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	2	F	CSWSPlaceable	GetDead	GetDeadFn	__thiscall	int	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	3	F	CSWSPlaceable	GetEffectSpellId	GetEffectSpellIdFn	__thiscall	DWORD	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	4	F	CSWSPlaceable	SetEffectSpellId	SetEffectSpellIdFn	__thiscall	void	4	void* thisPtr, DWORD spellId	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	5	F	CSWSPlaceable	GetLightIsOn	GetLightIsOnFn	__thiscall	int	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	6	F	CSWSPlaceable	SetLightIsOn	SetLightIsOnFn	__thiscall	void	4	void* thisPtr, int lightState	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	7	F	CSWSPlaceable	GetDialogResref	GetDialogResrefFn	__thiscall	void*	4	void* thisPtr, void* outResref	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	8	F	CSWSPlaceable	GetClientPlaceable	GetClientPlaceableFn	__thiscall	void*	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	9	F	CSWSPlaceable	RemoveFromArea	RemoveFromAreaFn	__thiscall	void	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeFunctions	10	F	CSWSPlaceable	SetOrientation	SetOrientationFn	__thiscall	void	4	void* thisPtr, void* orientation	CSWSObject::InitializeFunctions
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	1	O	CSWSPlaceable	loc_name						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	2	O	CSWSPlaceable	appearance						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	3	O	CSWSPlaceable	description						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	4	O	CSWSPlaceable	faction						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	5	O	CSWSPlaceable	conversation						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	6	O	CSWSPlaceable	hardness						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	7	O	CSWSPlaceable	locked						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	8	O	CSWSPlaceable	key_name						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	9	O	CSWSPlaceable	key_required						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	10	O	CSWSPlaceable	auto_remove_key						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	11	O	CSWSPlaceable	open_lock_dc						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	12	O	CSWSPlaceable	trap_detect_dc						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	13	O	CSWSPlaceable	trap_flag						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	14	O	CSWSPlaceable	disarm_dc						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	15	O	CSWSPlaceable	trap_disarmable						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	16	O	CSWSPlaceable	trap_detectable						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	17	O	CSWSPlaceable	trap_one_shot						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	18	O	CSWSPlaceable	trap_type						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	19	O	CSWSPlaceable	script_on_closed						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	20	O	CSWSPlaceable	script_on_damaged						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	21	O	CSWSPlaceable	script_on_death						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	22	O	CSWSPlaceable	script_on_disarm						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	23	O	CSWSPlaceable	script_on_heartbeat						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	24	O	CSWSPlaceable	script_on_inventory_disturbed						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	25	O	CSWSPlaceable	script_on_lock						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	26	O	CSWSPlaceable	script_on_melee_attacked						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	27	O	CSWSPlaceable	script_on_open						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	28	O	CSWSPlaceable	script_on_spell_cast_at						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	29	O	CSWSPlaceable	script_on_trap_triggered						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	30	O	CSWSPlaceable	script_on_unlock						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	31	O	CSWSPlaceable	script_on_used						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	32	O	CSWSPlaceable	script_on_user_defined						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	33	O	CSWSPlaceable	script_on_dialog						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	34	O	CSWSPlaceable	script_on_end_dialog						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	35	O	CSWSPlaceable	fortitude						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	36	O	CSWSPlaceable	will						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	37	O	CSWSPlaceable	reflex						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	38	O	CSWSPlaceable	usable						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	39	O	CSWSPlaceable	lockable						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	40	O	CSWSPlaceable	has_inventory						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	41	O	CSWSPlaceable	open						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	42	O	CSWSPlaceable	template_res_ref						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	43	O	CSWSPlaceable	body_bag						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	44	O	CSWSPlaceable	orientation						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	45	O	CSWSPlaceable	is_body_bag						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	46	O	CSWSPlaceable	is_corpse						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	47	O	CSWSPlaceable	last_heartbeat_day						CSWSObject::InitializeOffsets
+CSWSPlaceable	CSWSPlaceable	InitializeOffsets	48	O	CSWSPlaceable	last_heartbeat_ms						CSWSObject::InitializeOffsets
+CSWSStore	CSWSStore	InitializeOffsets	1	O	CSWSStore	on_open_store						CSWSObject::InitializeOffsets
+CSWSStore	CSWSStore	InitializeOffsets	2	O	CSWSStore	loc_name						CSWSObject::InitializeOffsets
+CSWSStore	CSWSStore	InitializeOffsets	3	O	CSWSStore	mark_down						CSWSObject::InitializeOffsets
+CSWSStore	CSWSStore	InitializeOffsets	4	O	CSWSStore	mark_up						CSWSObject::InitializeOffsets
+CSWSStore	CSWSStore	InitializeOffsets	5	O	CSWSStore	buy_sell_flag						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeFunctions	1	F	CSWSTrigger	GetCanFireMineOnObject	GetCanFireMineOnObjectFn	__thiscall	int	8	void* thisPtr, DWORD objectId, int skipFactionCheck	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeFunctions	2	F	CSWSTrigger	OnEnterMine	OnEnterMineFn	__thiscall	void	4	void* thisPtr, int skipFactionCheck	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeFunctions	3	F	CSWSTrigger	GetFirstName	GetFirstNameFn	__thiscall	void*	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeFunctions	4	F	CSWSTrigger	GetTargetArea	GetTargetAreaFn	__thiscall	DWORD	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeFunctions	5	F	CSWSTrigger	InTrigger	InTriggerFn	__thiscall	int	4	void* thisPtr, Vector* point	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeFunctions	6	F	CSWSTrigger	SetCreator	SetCreatorFn	__thiscall	void	4	void* thisPtr, DWORD creatorId	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeFunctions	7	F	CSWSTrigger	RemoveFromArea	RemoveFromAreaFn	__thiscall	void	0	void* thisPtr	CSWSObject::InitializeFunctions
+CSWSTrigger	CSWSTrigger	InitializeOffsets	1	O	CSWSTrigger	localized_name						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	2	O	CSWSTrigger	linked_to						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	3	O	CSWSTrigger	linked_to_module						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	4	O	CSWSTrigger	script_heartbeat						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	5	O	CSWSTrigger	script_on_enter						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	6	O	CSWSTrigger	script_on_exit						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	7	O	CSWSTrigger	script_user_defined						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	8	O	CSWSTrigger	script_on_trap_triggered						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	9	O	CSWSTrigger	script_on_disarm						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	10	O	CSWSTrigger	script_on_click						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	11	O	CSWSTrigger	key_name						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	12	O	CSWSTrigger	geometry_count						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	13	O	CSWSTrigger	geometry						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	14	O	CSWSTrigger	geometry_indices						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	15	O	CSWSTrigger	faction						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	16	O	CSWSTrigger	trap_detectable						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	17	O	CSWSTrigger	trap_disarmable						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	18	O	CSWSTrigger	trap_type						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	19	O	CSWSTrigger	bbox_min_x						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	20	O	CSWSTrigger	bbox_min_y						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	21	O	CSWSTrigger	bbox_max_x						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	22	O	CSWSTrigger	bbox_max_y						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	23	O	CSWSTrigger	cursor						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	24	O	CSWSTrigger	load_screen_id						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	25	O	CSWSTrigger	transition_destination						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	26	O	CSWSTrigger	last_heartbeat_ms						CSWSObject::InitializeOffsets
+CSWSTrigger	CSWSTrigger	InitializeOffsets	27	O	CSWSTrigger	last_heartbeat_days						CSWSObject::InitializeOffsets
+CSWSWaypoint	CSWSWaypoint	InitializeOffsets	1	O	CSWSWaypoint	has_map_note						CSWSObject::InitializeOffsets
+CSWSWaypoint	CSWSWaypoint	InitializeOffsets	2	O	CSWSWaypoint	map_note_enabled						CSWSObject::InitializeOffsets
+CSWSWaypoint	CSWSWaypoint	InitializeOffsets	3	O	CSWSWaypoint	map_note						CSWSObject::InitializeOffsets
+CSWSWaypoint	CSWSWaypoint	InitializeOffsets	4	O	CSWSWaypoint	localized_name						CSWSObject::InitializeOffsets
+CServerExoApp	CServerExoApp	InitializeFunctions	1	F	CServerExoApp	GetObjectArray	GetObjectArrayFn	__thiscall	void*	0	void* thisPtr	
+CServerExoApp	CServerExoApp	InitializeFunctions	2	F	CServerExoApp	GetPlayerCreatureId	GetPlayerCreatureIdFn	__thiscall	DWORD	0	void* thisPtr	
+CServerExoApp	CServerExoApp	InitializeFunctions	3	F	CServerExoApp	GetCreatureByGameObjectID	GetCreatureByGameObjectIDFn	__thiscall	void*	4	void* thisPtr, DWORD objectId	
+CServerExoApp	CServerExoApp	InitializeFunctions	4	F	CServerExoApp	GetGlobalVariableTable	GetGlobalVariableTableFn	__thiscall	void*	0	void* thisPtr	
+CServerExoApp	CServerExoApp	InitializeFunctions	5	F	CServerExoApp	ClientToServerObjectId	ClientToServerObjectIdFn	__thiscall	DWORD	4	void* thisPtr, DWORD clientId	
+CServerExoApp	CServerExoApp	InitializeFunctions	6	F	CServerExoApp	GetWorldTimer	GetWorldTimerFn	__thiscall	void*	0	void* thisPtr	
+CServerExoApp	CServerExoApp	InitializeFunctions	7	F	CServerExoApp	GetActiveTimer	GetActiveTimerFn	__thiscall	void*	4	void* thisPtr, int objectId	
+CServerExoApp	CServerExoApp	InitializeFunctions	8	F	CServerExoApp	GetGameObject	GetGameObjectFn	__thiscall	void*	4	void* thisPtr, DWORD objectId	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	1	F	CVirtualMachine	StackPopInteger	StackPopIntFn	__thiscall	int	4	void*, int*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	2	F	CVirtualMachine	StackPopFloat	StackPopFloatFn	__thiscall	int	4	void*, float*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	3	F	CVirtualMachine	StackPopVector	StackPopVectorFn	__thiscall	int	4	void*, Vector*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	4	F	CVirtualMachine	StackPopString	StackPopStringFn	__thiscall	int	4	void*, void*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	5	F	CVirtualMachine	StackPopEngineStructure	StackPopEngineStructureFn	__thiscall	int	8	void*, VirtualMachineEngineStructureTypes, void**	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	6	F	CVirtualMachine	StackPopObject	StackPopObjectFn	__thiscall	int	4	void*, DWORD*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	7	F	CVirtualMachine	StackPopCommand	StackPopCommandFn	__thiscall	int	4	void*, void**	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	8	F	CVirtualMachine	StackPushInteger	StackPushIntFn	__thiscall	int	4	void*, int	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	9	F	CVirtualMachine	StackPushFloat	StackPushFloatFn	__thiscall	int	4	void*, float	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	10	F	CVirtualMachine	StackPushVector	StackPushVectorFn	__thiscall	int	4	void*, Vector	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	11	F	CVirtualMachine	StackPushString	StackPushStringFn	__thiscall	int	4	void*, void*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	12	F	CVirtualMachine	StackPushEngineStructure	StackPushEngineStructureFn	__thiscall	int	8	void*, VirtualMachineEngineStructureTypes, void*	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	13	F	CVirtualMachine	StackPushObject	StackPushObjectFn	__thiscall	int	4	void*, DWORD	
+CVirtualMachine	CVirtualMachine	InitializeFunctions	14	F	CVirtualMachine	RunScript	RunScriptFn	__thiscall	int	12	void*, void*, DWORD, int	
+CWorldTimer	CWorldTimer	InitializeFunctions	1	F	CWorldTimer	AddWorldTimes	AddWorldTimesFn	__thiscall	int	24	void* thisPtr, DWORD lhsDays, DWORD lhsMS, DWORD rhsDays, DWORD rhsMS, DWORD* outDays, DWORD* outMS	
+CWorldTimer	CWorldTimer	InitializeFunctions	2	F	CWorldTimer	SubtractWorldTimes	SubtractWorldTimesFn	__thiscall	int	24	void* thisPtr, DWORD lhsDays, DWORD lhsMS, DWORD rhsDays, DWORD rhsMS, DWORD* outDays, DWORD* outMS	
+CWorldTimer	CWorldTimer	InitializeFunctions	3	F	CWorldTimer	CompareWorldTimes	CompareWorldTimesFn	__thiscall	int	16	void* thisPtr, DWORD lhsDay, DWORD lhsMS, DWORD rhsDay, DWORD rhsMS	
+CWorldTimer	CWorldTimer	InitializeFunctions	4	F	CWorldTimer	ConvertFromCalendarDay	ConvertFromCalendarDayFn	__thiscall	void	16	void* thisPtr, DWORD calendarDay, DWORD* yearOut, DWORD* monthOut, DWORD* dayOut	
+CWorldTimer	CWorldTimer	InitializeFunctions	5	F	CWorldTimer	ConvertFromTimeOfDay	ConvertFromTimeOfDayFn	__thiscall	void	20	void* thisPtr, DWORD timeInMS, DWORD* outHours, DWORD* outMinutes, DWORD* outSeconds, DWORD* outMS	
+CWorldTimer	CWorldTimer	InitializeFunctions	6	F	CWorldTimer	ConvertHourMinSecMsToMs	ConvertHourMinSecMsToMsFn	__thiscall	int	16	void* thisPtr, DWORD hours, DWORD minutes, DWORD seconds, DWORD milliseconds	
+CWorldTimer	CWorldTimer	InitializeFunctions	7	F	CWorldTimer	GetCalendarDayFromSeconds	GetCalendarDayFromSecondsFn	__thiscall	int	4	void* thisPtr, float seconds	
+CWorldTimer	CWorldTimer	InitializeFunctions	8	F	CWorldTimer	GetWorldTime	GetWorldTimeFn	__thiscall	void	8	void* thisPtr, DWORD* outDays, DWORD* outMS	
+CWorldTimer	CWorldTimer	InitializeFunctions	9	F	CWorldTimer	GetWorldTimeHour	GetWorldTimeHourFn	__thiscall	int	0	void* thisPtr	
+CWorldTimer	CWorldTimer	InitializeFunctions	10	F	CWorldTimer	GetWorldTimeMinute	GetWorldTimeMinuteFn	__thiscall	int	0	void* thisPtr	
+CWorldTimer	CWorldTimer	InitializeFunctions	11	F	CWorldTimer	GetWorldTimeSecond	GetWorldTimeSecondFn	__thiscall	int	0	void* thisPtr	
+CWorldTimer	CWorldTimer	InitializeFunctions	12	F	CWorldTimer	GetWorldTimeMillisecond	GetWorldTimeMillisecondFn	__thiscall	int	0	void* thisPtr	
+CWorldTimer	CWorldTimer	InitializeFunctions	13	F	CWorldTimer	AdvanceToTime	AdvanceToTimeFn	__thiscall	void	16	void* thisPtr, int hours, int minutes, int seconds, int milliseconds	
+CWorldTimer	CWorldTimer	InitializeFunctions	14	F	CWorldTimer	PauseWorldTimer	PauseWorldTimerFn	__thiscall	void	0	void* thisPtr	
+CWorldTimer	CWorldTimer	InitializeFunctions	15	F	CWorldTimer	UnpauseWorldTimer	UnpauseWorldTimerFn	__thiscall	void	0	void* thisPtr	
+CWorldTimer	CWorldTimer	InitializeFunctions	16	F	CWorldTimer	ResetTimer	ResetTimerFn	__thiscall	void	4	void* thisPtr, void* reset	
+CWorldTimer	CWorldTimer	InitializeFunctions	17	F	CWorldTimer	SetMinutesPerHour	SetMinutesPerHourFn	__thiscall	void	4	void* thisPtr, BYTE minutesPerHour	
+CWorldTimer	CWorldTimer	InitializeFunctions	18	F	CWorldTimer	SetSnapshotScale	SetSnapshotScaleFn	__thiscall	void	4	void* thisPtr, float scale	
+Camera	Camera	InitializeFunctions	1	F	Camera	AsCAurObject	AsCAurObjectFn	__thiscall	Gob*	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	2	F	Camera	AttachToObject	AttachToObjectFn	__thiscall	void	12	void* thisPtr, void* object, char* partName, int _unused	
+Camera	Camera	InitializeFunctions	3	F	Camera	BehaviorMessage	BehaviorMessageFn	__thiscall	void	4	void* thisPtr, char* message	
+Camera	Camera	InitializeFunctions	4	F	Camera	EndViewAngleAnimation	EndViewAngleAnimationFn	__thiscall	void	4	void* thisPtr, bool resetAngle	
+Camera	Camera	InitializeFunctions	5	F	Camera	GetClipDist	GetClipDistFn	__thiscall	void	8	void* thisPtr, float* clipStart, float* clipEnd	
+Camera	Camera	InitializeFunctions	6	F	Camera	GetDist	GetDistFn	__thiscall	double	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	7	F	Camera	GetOrientation	GetOrientationFn	__thiscall	Quaternion*	4	void* thisPtr, Quaternion* outOrientation	
+Camera	Camera	InitializeFunctions	8	F	Camera	GetPitch	GetPitchFn	__thiscall	double	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	9	F	Camera	GetPosition	GetPositionFn	__thiscall	Vector*	4	void* thisPtr, Vector* outPosition	
+Camera	Camera	InitializeFunctions	10	F	Camera	GetViewAngle	GetViewAngleFn	__thiscall	double	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	11	F	Camera	GetViewPortHeight	GetViewPortHeightFn	__thiscall	int	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	12	F	Camera	GetYaw	GetYawFn	__thiscall	double	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	13	F	Camera	RenderScene	RenderSceneFn	__thiscall	void	0	void* thisPtr	
+Camera	Camera	InitializeFunctions	14	F	Camera	SetClipDist	SetClipDistFn	__thiscall	void	8	void* thisPtr, float clipStart, float clipEnd	
+Camera	Camera	InitializeFunctions	15	F	Camera	SetFollow	SetFollowFn	__thiscall	void	4	void* thisPtr, void* object	
+Camera	Camera	InitializeFunctions	16	F	Camera	SetOrientation	SetOrientationFn	__thiscall	void	8	void* thisPtr, Quaternion* outOrientation, Quaternion orientation	
+Camera	Camera	InitializeFunctions	17	F	Camera	SetPosition	SetPositionFn	__thiscall	void	8	void* thisPtr, Vector* outPosition, Vector position	
+Camera	Camera	InitializeFunctions	18	F	Camera	SetViewAngle	SetViewAngleFn	__thiscall	void	4	void* thisPtr, float angle	
+Camera	Camera	InitializeFunctions	19	F	Camera	SetViewPort	SetViewPortFn	__thiscall	void	16	void* thisPtr, int left, int top, int width, int height	
+Camera	Camera	InitializeOffsets	1	O	Camera	object						
+ConsoleFunc	ConsoleFunc	InitializeFunctions	1	F	ConsoleFunc	NoParamConstructor	Constructor	__thiscall	void*	8	void* thisPtr, char* name, void* function	
+ConsoleFunc	ConsoleFunc	InitializeFunctions	2	F	ConsoleFunc	IntConstructor	Constructor	__thiscall	void*	8	void* thisPtr, char* name, void* function	
+ConsoleFunc	ConsoleFunc	InitializeFunctions	3	F	ConsoleFunc	StringConstructor	Constructor	__thiscall	void*	8	void* thisPtr, char* name, void* function	
+ConsoleFunc	ConsoleFunc	InitializeFunctions	4	F	ConsoleFunc	Destructor	Destructor	__thiscall	void*	0	void* thisPtr	
+ConsoleFunc	ConsoleFunc	InitializeOffsets	1	O	ConsoleFunc	name						
+ConsoleFunc	ConsoleFunc	InitializeOffsets	2	O	ConsoleFunc	funcholder						
+Gob	Gob	InitializeFunctions	1	F	Gob	AddAnimationFlag	AddAnimationFlagFn	__thiscall	void	4	void* thisPtr, unsigned long flag	
+Gob	Gob	InitializeFunctions	2	F	Gob	AddAttachment	AddAttachmentFn	__thiscall	void	4	void* thisPtr, void* attachment	
+Gob	Gob	InitializeFunctions	3	F	Gob	Amputate	AmputateFn	__thiscall	int	4	void* thisPtr, char* partName	
+Gob	Gob	InitializeFunctions	4	F	Gob	Append	AppendFn	__thiscall	int	8	void* thisPtr, char* modelName, char* partName	
+Gob	Gob	InitializeFunctions	5	F	Gob	AttachToScene	AttachToSceneFn	__thiscall	int	4	void* thisPtr, void* scene	
+Gob	Gob	InitializeFunctions	6	F	Gob	BehaviorMessage	BehaviorMessageFn	__thiscall	void	4	void* thisPtr, char* message	
+Gob	Gob	InitializeFunctions	7	F	Gob	DisableAlwaysRender	DisableAlwaysRenderFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	8	F	Gob	DisableDistortion	DisableDistortionFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	9	F	Gob	DisableFog	DisableFogFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	10	F	Gob	DisableForceAnimations	DisableForceAnimationsFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	11	F	Gob	DisableInCutscene	DisableInCutsceneFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	12	F	Gob	DisableInViewVolume	DisableInViewVolumeFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	13	F	Gob	DisableRenderBumpedOut	DisableRenderBumpedOutFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	14	F	Gob	DisableRenderGobBBox	DisableRenderGobBBoxFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	15	F	Gob	EnableAlwaysRender	EnableAlwaysRenderFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	16	F	Gob	EnableDistortion	EnableDistortionFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	17	F	Gob	EnableFog	EnableFogFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	18	F	Gob	EnableForceAnimations	EnableForceAnimationsFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	19	F	Gob	EnableInCutscene	EnableInCutsceneFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	20	F	Gob	EnableInViewVolume	EnableInViewVolumeFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	21	F	Gob	EnableRenderBumpedOut	EnableRenderBumpedOutFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	22	F	Gob	EnableRenderGobBBox	EnableRenderGobBBoxFn	__thiscall	void	4	void* thisPtr, Vector* color	
+Gob	Gob	InitializeFunctions	23	F	Gob	EndLookAtAnimate	EndLookAtAnimateFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	24	F	Gob	GetBoundingBox	GetBoundingBoxFn	__thiscall	void	8	void* thisPtr, Vector* min, Vector* max	
+Gob	Gob	InitializeFunctions	25	F	Gob	GetCutsceneDummyPosition	GetCutsceneDummyPositionFn	__thiscall	Vector*	4	void* thisPtr, Vector* outPosition	
+Gob	Gob	InitializeFunctions	26	F	Gob	GetMaxBlurLength	GetMaxBlurLengthFn	__thiscall	double	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	27	F	Gob	GetMaximumLightRadius	GetMaximumLightRadiusFn	__thiscall	double	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	28	F	Gob	GetMinimumBoundingBox_2	GetMinimumBoundingBoxFn	__thiscall	void	8	void* thisPtr, Vector* min, Vector* max	
+Gob	Gob	InitializeFunctions	29	F	Gob	GetMinimumBoundingSphere	GetMinimumBoundingSphereFn	__thiscall	void	8	void* thisPtr, Vector* center, float* radius	
+Gob	Gob	InitializeFunctions	30	F	Gob	GetModelName	GetModelNameFn	__thiscall	CResRef*	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	31	F	Gob	GetMotionBlurred	GetMotionBlurredFn	__thiscall	unsigned char	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	32	F	Gob	GetName	GetNameFn	__thiscall	CResRef*	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	33	F	Gob	GetOrientation	GetOrientationFn	__thiscall	void	4	void* thisPtr, Quaternion* orientation	
+Gob	Gob	InitializeFunctions	34	F	Gob	GetPartLocalPosition	GetPartLocalPositionFn	__thiscall	int	8	void* thisPtr, Vector* outPosition, Quaternion* outOrientation	
+Gob	Gob	InitializeFunctions	35	F	Gob	GetPosition	GetPositionFn	__thiscall	void	4	void* thisPtr, Vector* outPosition	
+Gob	Gob	InitializeFunctions	36	F	Gob	GetPreviousPosition	GetPreviousPositionFn	__thiscall	void	4	void* thisPtr, Vector* outPosition	
+Gob	Gob	InitializeFunctions	37	F	Gob	IsAlwaysRendering	IsAlwaysRenderingFn	__thiscall	unsigned char	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	38	F	Gob	IsAnimating	IsAnimatingFn	__thiscall	unsigned char	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	39	F	Gob	IsForceAnimated	IsForceAnimatedFn	__thiscall	unsigned char	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	40	F	Gob	IsInCutscene	IsInCutsceneFn	__thiscall	unsigned char	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	41	F	Gob	IsInViewVolume	IsInViewVolumeFn	__thiscall	unsigned char	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	42	F	Gob	LoadAddInAnimations	LoadAddInAnimationsFn	__thiscall	int	4	void* thisPtr, char* modelName	
+Gob	Gob	InitializeFunctions	43	F	Gob	RemoveAddInAnimations	RemoveAddInAnimationsFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	44	F	Gob	RemoveAnimationFlag	RemoveAnimationFlagFn	__thiscall	void	4	void* thisPtr, int flag	
+Gob	Gob	InitializeFunctions	45	F	Gob	RemoveAttachment	RemoveAttachmentFn	__thiscall	void	4	void* thisPtr, void* attachment	
+Gob	Gob	InitializeFunctions	46	F	Gob	Render	RenderFn	__thiscall	void	4	void* thisPtr, bool cull	
+Gob	Gob	InitializeFunctions	47	F	Gob	RenderBlur	RenderBlurFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	48	F	Gob	RestoreTexture	RestoreTextureFn	__thiscall	int	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	49	F	Gob	SetAsCharacter	SetAsCharacterFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	50	F	Gob	SetCanDownSample	SetCanDownSampleFn	__thiscall	int	4	void* thisPtr, bool canDownSample	
+Gob	Gob	InitializeFunctions	51	F	Gob	SetColorShifting	SetColorShiftingFn	__thiscall	void	12	void* thisPtr, Vector color, float alpha, int propagate	
+Gob	Gob	InitializeFunctions	52	F	Gob	SetEnvironmentMap	SetEnvironmentMapFn	__thiscall	int	4	void* thisPtr, char* envMapName	
+Gob	Gob	InitializeFunctions	53	F	Gob	SetIgnoreHitCheck	SetIgnoreHitCheckFn	__thiscall	void	4	void* thisPtr, bool ignore	
+Gob	Gob	InitializeFunctions	54	F	Gob	SetIllumination	SetIlluminationFn	__thiscall	void	8	void* thisPtr, Vector color, int propagate	
+Gob	Gob	InitializeFunctions	55	F	Gob	SetLightPriority	SetLightPriorityFn	__thiscall	void	4	void* thisPtr, int priority	
+Gob	Gob	InitializeFunctions	56	F	Gob	SetMaxBlurLength	SetMaxBlurLengthFn	__thiscall	void	4	void* thisPtr, float length	
+Gob	Gob	InitializeFunctions	57	F	Gob	SetMotionBlurred	SetMotionBlurredFn	__thiscall	void	4	void* thisPtr, bool motionBlurred	
+Gob	Gob	InitializeFunctions	58	F	Gob	SetObjectScale	SetObjectScaleFn	__thiscall	int	8	void* thisPtr, float scale, bool inherit	
+Gob	Gob	InitializeFunctions	59	F	Gob	SetOrientation	SetOrientationFn	__thiscall	Quaternion*	8	void* thisPtr, Quaternion* outOrientation, Quaternion orientation	
+Gob	Gob	InitializeFunctions	60	F	Gob	SetPosition	SetPositionFn	__thiscall	void	8	void* thisPtr, Vector* outPosition, Vector position	
+Gob	Gob	InitializeFunctions	61	F	Gob	SetProcessFlag	SetProcessFlagFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	62	F	Gob	SetRenderPersonalSpace	SetRenderPersonalSpaceFn	__thiscall	void	4	void* thisPtr, bool render	
+Gob	Gob	InitializeFunctions	63	F	Gob	SetScene	SetSceneFn	__thiscall	void	4	void* thisPtr, void* scene	
+Gob	Gob	InitializeFunctions	64	F	Gob	TurnOffShadows	TurnOffShadowsFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeFunctions	65	F	Gob	TurnOnShadows	TurnOnShadowsFn	__thiscall	void	0	void* thisPtr	
+Gob	Gob	InitializeOffsets	1	O	Gob	scene						
+Scene	Scene	InitializeFunctions	1	F	Scene	ChildAdd	ChildAddFn	__thiscall	void	4	void* thisPtr, void* child	
+Scene	Scene	InitializeFunctions	2	F	Scene	ChildRemove	ChildRemoveFn	__thiscall	void	4	void* thisPtr, void* child	
+Scene	Scene	InitializeFunctions	3	F	Scene	DisableAnimations	DisableAnimationsFn	__thiscall	void	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	4	F	Scene	DisableVisibilityGraph	DisableVisibilityGraphFn	__thiscall	void	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	5	F	Scene	EnableAnimations	EnableAnimationsFn	__thiscall	void	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	6	F	Scene	EnableVisibilityGraph	EnableVisibilityGraphFn	__thiscall	bool	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	7	F	Scene	FindRoom	FindRoomFn	__thiscall	int	4	void* thisPtr, char* roomName	
+Scene	Scene	InitializeFunctions	8	F	Scene	GetFogRange	GetFogRangeFn	__thiscall	void	8	void* thisPtr, float* start, float* end	
+Scene	Scene	InitializeFunctions	9	F	Scene	GetIgnoreVisibilityGraph	GetIgnoreVisibilityGraphFn	__thiscall	int	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	10	F	Scene	GetNumRooms	GetNumRoomsFn	__thiscall	int	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	11	F	Scene	GetObjectA	GetObjectAFn	__thiscall	Gob*	4	void* thisPtr, char* objectName	
+Scene	Scene	InitializeFunctions	12	F	Scene	GetObjectScale	GetObjectScaleFn	__stdcall	double	4	void* object	
+Scene	Scene	InitializeFunctions	13	F	Scene	IsAnimating	IsAnimatingFn	__thiscall	bool	0	void* thisPtr	
+Scene	Scene	InitializeFunctions	14	F	Scene	IsGeomFadeEnabled	IsGeomFadeEnabledFn	__stdcall	bool	0		
+Scene	Scene	InitializeFunctions	15	F	Scene	LoadVisibility	LoadVisibilityFn	__thiscall	int	4	void* thisPtr, char* visibility	
+Scene	Scene	InitializeFunctions	16	F	Scene	RemoveFromSceneManager_2	RemoveFromSceneManagerFn	__cdecl	void	8	void* thisPtr, void* object	
+Scene	Scene	InitializeFunctions	17	F	Scene	SetBlindLights	SetBlindLightsFn	__thiscall	void	4	void* thisPtr, void* object	
+Scene	Scene	InitializeFunctions	18	F	Scene	SetCurrentRoom_2	SetCurrentRoomFn	__thiscall	void	4	void* thisPtr, int index	
+Scene	Scene	InitializeFunctions	19	F	Scene	SetFog	SetFogFn	__thiscall	void	4	void* thisPtr, int fog	
+Scene	Scene	InitializeFunctions	20	F	Scene	SetFogColor	SetFogColorFn	__thiscall	void	4	void* thisPtr, Vector* color	
+Scene	Scene	InitializeFunctions	21	F	Scene	SetFogRange	SetFogRangeFn	__thiscall	void	8	void* thisPtr, float fogStart, float fogEnd	
+Scene	Scene	InitializeFunctions	22	F	Scene	SetGeomFadeProperties	SetGeomFadePropertiesFn	__stdcall	unsigned char	4	int property	
+Scene	Scene	InitializeFunctions	23	F	Scene	SetObjectScale	SetObjectScaleFn	__thiscall	void	8	void* thisPtr, void* object, float scale	
+Scene	Scene	InitializeFunctions	24	F	Scene	SetSceneFocus	SetSceneFocusFn	__thiscall	void	4	void* thisPtr, Vector focus	
+Scene	Scene	InitializeFunctions	25	F	Scene	SpawnRoom	SpawnRoomFn	__thiscall	Gob*	12	void* thisPtr, char* modelName, Vector* position, Quaternion* orientation	
+Scene	Scene	InitializeFunctions	26	F	Scene	UpdateEmitters	UpdateEmittersFn	__thiscall	void	0	void* thisPtr	
+Scene	Scene	InitializeOffsets	1	O	Scene	objects						
+Scene	Scene	InitializeOffsets	2	O	Scene	fog						
+Scene	Scene	InitializeOffsets	3	O	Scene	fog_start						
+Scene	Scene	InitializeOffsets	4	O	Scene	fog_end						
+Scene	Scene	InitializeOffsets	5	O	Scene	fog_density						
+Scene	Scene	InitializeOffsets	6	O	Scene	fog_color						

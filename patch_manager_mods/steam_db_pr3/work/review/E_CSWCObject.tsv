@@ -1,0 +1,40 @@
+class	name	steam_addr	content	cc_ok	reason	alt
+CSWCDoor	SetIsAreaTransition	0x0087b980	C3	Y	Stores arg at this+0x130 (param_1[0x4c]); UpdateAreaTransitionDisplay 0x87c9f0 gates on same field; clears via vt+0x98 'trans' node when 0; retn 4 thiscall	
+CSWCDoor	GetServerDoor	0x0087be80	C2	Y	GetServerObject(0x7f2540) then server-obj vtable slot 0x18 (placeable twin 0x842d00 uses 0x48); in door cluster, door loader 0x80c6b0 reads server door +0x314/+0x318 from it; retn 0	
+CSWCDoor	UpdateAreaTransitionDisplay	0x0087c9f0	C3	Y	Per-frame: gated on this+0x130 (is_transition) and door state byte +0x120 in {1,2}; computes player-vs-door position delta; size 3313 vs GOG gap 3328; called from door update 0x87b240; retn 0	
+CSWCObject	SetId	0x00764f60	C3	Y	Writes arg to this+4 = GOG CGameObject.Id (0x4 in offsets table); 0x7f2540 passes this+4 to ClientToServerObjectId; retn 4 thiscall	
+CSWCObject	ShowShadowBlob	0x00764f80	C2	Y	Forwarder: if this+0x68 (model) then vt+0xac(0); retn 0 thiscall. Trivial; Show vs Hide vs TurnOn/Off ordering rests only on position (vt 0xac/0xb0/0xb8/0xbc)	
+CSWCObject	HideShadowBlob	0x00764fb0	C2	Y	Forwarder: if this+0x68 (model) then vt+0xb0(); retn 0 thiscall. Trivial; identity vs Show/TurnOn/TurnOff only positional	
+CSWCObject	GetName	0x007ed420	C2	Y	Constructs empty CExoString (ctor 0x733570 on stack arg, src 0x986925) and returns it; ECX unused (matches wrapper note), retn 4; generic base-class stub	
+CSWCObject	GetPortrait	0x007ed480	C3	N	WRAPPER_ARGS_MISMATCH: real is thiscall(out, byte sel) retn 8 (GOG param_bytes=5 agrees); calls 0x85e8c0(this+0xa8, out, sel) which builds 16-byte resref from sel 1..5; SetPortrait writes +0xa8	
+CSWCObject	GetPortraitId	0x007ed4b0	C3	Y	Returns word at this+0xb8; SetPortraitId 0x7f1fb0 writes the same word (param_1[0x2e]); +0xa8 resref + 16 bytes = 0xb8; retn 0	
+CSWCObject	TurnOnShadows	0x007ed4d0	C2	Y	Forwarder: if this+0x68 (model) then vt+0xb8(); retn 0 thiscall. Trivial; identity only positional (pair with 0x7ed500 vt+0xbc)	
+CSWCObject	TurnOffShadows	0x007ed500	C2	Y	Forwarder: if this+0x68 (model) then vt+0xbc(); retn 0 thiscall. Trivial; identity only positional	
+CSWCObject	GetCurrentAnimation	0x007ed7d0	C3	Y	Returns word at this+0x48; PlayAnimation 0x7ed9a0/0x777e30 store/read current anim id at param_1[0x12]=+0x48 and pass it to Animation* checks; retn 0	
+CSWCObject	AttachToScene	0x007ed7f0	C2	Y	If this+0x68 (model, same field as shadow forwarders) then model vt+4(scene); scene==0 calls 0x623320; retn 4 thiscall. Fits name, generic forwarder	
+CSWCObject	SetLoopingAnimation	0x007ed950	C3	Y	Stores word at this+0x58 only if AnimationLooping 0x7ef500 accepts it; GetLoopingAnimation 0x7ed980 reads +0x58; retn 4 thiscall	
+CSWCObject	GetLoopingAnimation	0x007ed980	C3	Y	Returns word at this+0x58, the same field SetLoopingAnimation 0x7ed950 writes; 0x777e30 passes it to vt+0x9c to restart loop; retn 0	
+CSWCObject	AnimationStationary	0x007ef2c0	C3	Y	animations.2da lookup (0x71b8b0) with column global a0fe28 = 'Stationary' (init 0x6eb670); 0x769780 uses it as first stationary check; retn 4. Returns bool via xor/SETNZ so int ok	
+CSWCObject	AnimationPlayOutOfPlace	0x007ef350	C0	Y	Uses column a0fe2c = 'Pause' (init 0x6eb670), not out-of-place; the out-of-place logic (origin pos, flag +0x50, vt+0x68/6c/70) in 0x777e30 is gated by 0x7ef730. GOG label likely permuted	0x007ef730
+CSWCObject	AnimationHideEquippedItems	0x007ef3e0	C0	Y	Uses column a0fe30 = 'Walking'; 0x769780 calls it as walk check (walk rate a0fdfc). Column 'HideEquippedItems' (a0fe50) is used by 0x7ef910, whose caller 0x7eeee0 manages equipment	0x007ef910
+CSWCObject	AnimationWalking	0x007ef470	C0	Y	Uses column a0fe34 = 'Running'; 0x769780 uses it with run rate (a0fdf0, param_1[0x86]). Walking column a0fe30 is at 0x7ef3e0 (walk rate a0fdfc, param_1[0x85])	0x007ef3e0
+CSWCObject	AnimationLooping	0x007ef500	C3	Y	Column a0fe24 = 'Looping' plus type byte +8 ==5 and id ranges 0x578-0x5f7/0x640-0x6bf; SetLoopingAnimation 0x7ed950 validates with it; 12 callers; retn 4	
+CSWCObject	AnimationFireAndForget	0x007ef5d0	C3	Y	Column a0fe1c = 'FireForget' plus type +8 in {5,9} and id ranges 0x3e8-0x467/0x4b0-0x52f; 0x777e30 uses it to time-out and reset to looping anim; retn 4	
+CSWCObject	AnimationOverlay	0x007ef6a0	C3	Y	Column a0fe20 = 'Overlay'; 0x777e30 uses it to choose overlay play (model vt+0x44) vs normal vt+0x54; retn 4	
+CSWCObject	AnimationPause	0x007ef730	C0	Y	No 2da column; pure id range test (0x4b0-0x52f, 0x640-0x6bf); in 0x777e30 it triggers out-of-place placement at origin. 'Pause' column (a0fe2c) is used by 0x7ef350	0x007ef350
+CSWCObject	AnimationDialog	0x007ef780	C3	Y	(FireForget && col a0fe40 'Dialog') or (Looping && 'Dialog') via 0x7cb010/0x7cae60; id only, ushort stdcall-like retn 4 compatible with thiscall; wrapper DWORD vs real WORD harmless	
+CSWCObject	AnimationParry	0x007ef7f0	C3	Y	Column a0fe3c = 'Parry' (init 0x6eb670: PUSH 0x99af74 then store a0fe3c); callers 0x7631d0/0x772020 combat; retn 4	
+CSWCObject	AnimationAttack	0x007ef880	C3	Y	Column a0fe4c = 'Attack'; 0x777e30 calls it on the next queued anim to set up attack timing; retn 4	
+CSWCObject	AnimationRunning	0x007ef910	C0	Y	Uses column a0fe50 = 'HideEquippedItems'; its caller 0x7eeee0 manages equipped-item visibility, not locomotion. Running column a0fe34 is at 0x7ef470 (run rate in 0x769780)	0x007ef470
+CSWCObject	FadeObject	0x007f12d0	C3	Y	Fade state machine: state byte +0x90 vs target +0x91, alpha float +0x98 ramped by world-timer delta, applies alpha via model vt+0x94 (0x7f03b0); size 896 = GOG gap 896; retn 0	
+CSWCObject	SetPortrait	0x007f1b30	C3	Y	Lowercase-copies 16-byte CResRef (0x710ca0) into this+0xa8 (GetPortrait source, +0xb8 portrait id follows), then virtual vt+0xf0; retn 4; gap to SetPortraitId equals GOG 0x480	
+CSWCObject	SetPortraitId	0x007f1fb0	C3	Y	Validates id via 0x85ead0, builds resref via 0x85e8c0 and calls vt+0xec to set portrait, then writes word this+0xb8 (param_1[0x2e]) = GetPortraitId field; retn 4	
+CSWCObject	SetFeedbackInfo	0x007f2200	C2	Y	CExoString assign (0x7337c0) into this+0xe8 and this+0xf0 = 5000; paired getter 0x7f2230 returns +0xe8/+0xf0; fits name but generic; retn 4 thiscall	
+CSWCObject	ClearAllActions	0x007f2500	C0	Y	Shifted one slot: 0x7f2500 calls server 0x51cba0 which only clears combat-round list (creature+0x10dc); fuller reset (0x51cb10, sets 0x7f000000 ids) is 0x7f24c0, which precedes GetServerObject by 2 slots like GOG	0x007f24c0
+CSWCObject	ClearAllQueuedCombatActions	0x007f2540	C0	Y	0x7f2540 is the lazy server-object resolver (+0xf8, vt+0x10, AttachmentFromClientObject), i.e. GetServerObject. Queued-combat clear is 0x7f2500 (ClientToServerObjectId(this+4) then 0x51cba0 combat round clear)	0x007f2500
+CSWCObject	GetServerObject	0x007f2540	C3	Y	Lazy resolver: returns this+0xf8, else ClientToServerObjectId(this+4=Id) -> GetGameObject -> vt+0x10 stores +0xf8; Attachment/Detach 0x7f2610/0x7f2630 touch same field; size 208 = GOG gap 208; retn 0	
+CSWCObject	AttachmentFromServerObject	0x007f2610	C3	Y	Stores arg at this+0xf8, the cache field GetServerObject 0x7f2540 returns; retn 4 thiscall; adjacent before Detach like GOG	
+CSWCObject	DetachFromServerObject	0x007f2630	C3	Y	Zeroes this+0xf8 (server-object field of GetServerObject/Attachment); retn 0 fastcall; adjacent after Attachment like GOG	
+CSWCPlaceable	IsHostile	0x00841180	C2	Y	GetServerPlaceable(0x842d00) then returns server field +0x398, 0 if none; fits getter shape; field offset unverifiable (no table entry); callers=0 so virtual; retn 0	
+CSWCPlaceable	GetServerPlaceable	0x00842d00	C2	Y	GetServerObject(0x7f2540) then server vtable slot 0x48 (door twin uses 0x18); 20 callers; placeable cluster neighbour of IsHostile; retn 0. Generic wrapper, slot identity only inferred	
+CSWCPlaceable	SetAppearance	0x00843960	C3	Y	Stores arg at this+0x10c, reads placeables.2da row via 0x71bcf0 with columns 'HitCheck' and 'NonCull' and applies to model vt+0x90; retn 4 thiscall	

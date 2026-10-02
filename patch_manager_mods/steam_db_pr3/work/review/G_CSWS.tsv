@@ -1,0 +1,43 @@
+class	name	steam_addr	content	cc_ok	reason	alt
+CSWSDoor	GetDialogResref	0x00616f00	C3	Y	Copies 16-byte CResRef from this+0x2e2 to out, retn=4; LoadDoor 0x61a210 stores the "Conversation" string (0x996c7c) into this+0x2e2 via ADD ECX,0x2e2	
+CSWSDoor	GetFirstName	0x00616f40	C3	Y	Returns this+0x3ec (LEA); LoadDoor 0x61a210 assigns the "LocName" CExoLocString into this+0x3ec (ADD ECX,0x3ec). retn=0 fastcall	
+CSWSDoor	GetIsLinked	0x0061d000	C3	Y	Reads byte this+0x3d4 (LinkedToFlags: load 0x61a210 stores it, push 0x99369c) and returns 1 if ==1 or ==2; retn=0; called by GetLinkedObject	
+CSWSDoor	RemoveFromArea	0x0061d040	C3	Y	GetArea, RemoveObjectFromArea, RemoveStaticBoundingBox, SetArea(0); no placeable 0x39c field; callers 0x616f90/0x617190/0x617b40 are door-region fns; retn=0	
+CSWSDoor	GetLinkedObject	0x0061d620	C3	Y	Calls GetIsLinked 0x61d000, resolves linked tag at this+0x3d8 into cached id this+0x3e8 (1000) via module lookup, GetDoorByGameObjectID; returns object ptr; retn=0	
+CSWSDoor	MoveToNextOpenState	0x0061d7b0	C3	Y	this+0x31c = this+0x31d (open state byte, +0x31c read in LoadDoor) and if changed and !=3 calls CSWSArea::BudgeCreatures with door bbox; retn=0	
+CSWSObject	GetDialogResref	0x004597d0	C0	Y	Body is *(this+0x1d8)=arg (setter, no out-param write, no resref copy); sits in a field-accessor cluster near MFC fn 0x459740, not CSWSObject base; wrong region	
+CSWSObject	GetPortrait	0x00459830	C0	Y	Body is byte setter *(this+0x1a9)=arg, no CResRef out-param written or returned; same unrelated accessor cluster (0x4597xx) as other bad CSWSObject candidates	
+CSWSObject	GetPortraitId	0x00459890	C0	Y	Returns BYTE at this+0x1aa; portrait id is a WORD at +0x30 (SetPortraitId 0x540b40 stores ushort at +0x30). Unrelated 0x459xxx cluster	0x0053f000
+CSWSObject	GetLastName	0x0053f000	C0	Y	Returns 16-bit value *(ushort*)(this+0x30), which is the portrait id (SetPortraitId writes +0x30), not a CExoLocString*; wrapper expects pointer. GOG name or wrapper suspect	
+CSWSObject	SetPortraitId	0x00540b40	C3	Y	ushort id arg, retn=4; if id<0xfffe does 2DA lookup (string BaseResRef) then virtual SetPortrait (+0xcc), stores ushort at this+0x30; LoadDoor calls it via vtable +0xd4	
+CSWSObject	ClearAllActions	0x00541080	C3	Y	retn=4; arg gates CSWSCombatRound::ClearAllAttacks (if param_2!=0) matching includeAttacks; iterates action queue, frees nodes, resets pathfinding via ResetRequest	
+CSWSObject	SetAnimation	0x00541390	C3	Y	SetDirtyFlag(0) then this+0xd8 = anim; struct_fields has CSWSObject+0xd8 = current animation id (medium); retn=4	
+CSWSObject	SetDialogDelay	0x00545470	C3	Y	float arg (retn=4) multiplied by const, added to world time via GetWorldTimer/AddWorldTimes; writes this+0x38/0x3c, reads +0x40/+0x44 (dlg delay/last-time day/ms pairs)	
+CSWSObject	StopDialog	0x00546900	C3	Y	Unlocks creature orientation (SetLockOrientationToObject), uses this+0x54 (dialog owner id, 0x7f000000 invalid) and RemoveObjectFromDialog; returns int; retn=0	
+CSWSObject	StopSoundPlayingInDialog	0x00546a70	C2	Y	Sets this+0x25c=1 then calls ClientExoApp stop-sound fn 0x7402b0->0x79be40 with clientApp (DAT_00a1b4a4+4); fits name but small and callee identity only by shape; retn=0	
+CSWSObject	GetNearestObjectByName	0x00546bd0	C3	Y	retn=8 (name ptr, float radius); iterates area objects, CExoString compare, Vector distance vs radius^2, tracks nearest id (init 0x7f000000); uses this+0x94 position (GOG Position 0x94)	
+CSWSObject	SetDialogOwner	0x00546db0	C3	Y	Writes this+0x54, the field StopDialog 0x546900 treats as dialog owner (compared to 0x7f000000/own id, GetGameObject on it). Value is an object ID, wrapper passes pointer: WRAPPER_ARGS_MISMATCH (type)	
+CSWSObject	GetScriptLocation	0x00547600	C3	Y	Copies 6 dwords out: position this+0x94..0x9c (GOG Position 0x94) and orientation +0xa0..0xa8 (GOG Orientation 0xa0) to out-param, returns it; retn=4	
+CSWSObject	HasSpellEffectApplied	0x005476c0	C3	Y	Scans effect list (+0x148 array, +0x14c count per struct_fields) comparing effect+0x1c to spellId (skips -1); returns 1/0; retn=4	
+CSWSObject	GetDead	0x005477f0	C3	Y	Uses virtual +0x9c (current HP) and returns hp<1, or hp<-9 for player-controlled creature (+0x10e8 IsPC); retn=0, returns bool	
+CSWSObject	SpawnBodyBag	0x00549780	C3	Y	Strings Corpse and BODY_BAG; calls CSWSPlaceable::LoadBodyBag 0x5f0f10, AcquireItemsFromObject 0x5f5160, GetBodyBagAppearance, GetGold; retn=0, returns id or 0x7f000000	
+CSWSObject	GetHasFeatEffectApplied	0x00549ed0	C3	Y	ushort feat arg widened, retn=4; looks up feat table entry (0x6a20f0 on DAT_00a1b4d0, 0x50 stride), takes its spell id (+4) and scans effect list +0x148/+0x14c for effect+0x1c match	
+CSWSObject	SetCurrentHitPoints	0x0054a610	C3	Y	this+0xe0 = hp; if this+0x22c (min-1-HP flag) set and hp<1 then hp=1; retn=4; wrapper has hit_points and min1hp offsets	
+CSWSObject	SetKeepCorpse	0x0054a7a0	C3	Y	Sets party-member creature +0x158 or this+0x234; creature death code 0x56efd0 calls it with 1 when FadeDelayOnDeath 2DA missing, 0 after SetFadeOutTime; sibling of 0x54a660/0x54a700; retn=4	
+CSWSObject	GetClientObject	0x0054a840	C3	Y	Cached ptr at this+0x264; else ServerToClientObjectId(this+4), ClientApp::GetClientObject, virtual +0xc creates client obj, AttachmentFromServerObject; returns it; retn=0	
+CSWSObject	GetAcceptableAction	0x005d7190	C2	Y	Stack arg only (ECX unused), retn=4: switch over action type codes returns 1 for a fixed set (1,7,9,0xc,...,0x47) else 0; fits a predicate named GetAcceptableAction but generic	
+CSWSObject	GetAIStateReputation	0x005e1680	C3	Y	thiscall(this, objectId) retn=4: GetGameObject(objectId), GetReputation 0x5e13c0, maps >=0x5a ->1 (friend), <=10 ->2 (enemy), else 0; this+4 own id; returns BYTE-range value	
+CSWSPlaceable	GetDialogResref	0x005ef120	C3	Y	Copies 16-byte CResRef from this+0x280 to out, retn=4; LoadPlaceable 0x5ef570 stores "Conversation" (0x996c7c) at this+0x280 (ADD ECX,0x280)	
+CSWSPlaceable	GetEffectSpellId	0x005ef160	C2	Y	Returns this+0x3e0, initialised to 0xffffffff in ctor 0x5eed40 (none-spell sentinel) next to light flag +0x3e4; setter 0x5ef180 pairs it; getter is trivial; retn=0	
+CSWSPlaceable	RemoveFromArea	0x005f2f50	C3	Y	GetArea, RemoveStaticBoundingBox when this+0x39c>=0 (then =-1), RemoveObjectFromArea, SetArea(0); callers 0x5ef1d0/0x5f2a80/0x5f2fe0 are placeable fns; retn=0	
+CSWSPlaceable	SetLightIsOn	0x005f6470	C3	Y	If this+0x3e4 != arg: 2DA LightColor lookup keyed by this+0x270; on success sets this+0x3e8=1 and this+0x3e4=arg (ctor inits +0x3e4=1); retn=4	
+CSWSPlaceable	GetLightIsOn	0x005f6570	C3	Y	2DA LightColor lookup by this+0x270; returns this+0x3e4 if found else 0; uses ECX (decompile shows no param); retn=0	
+CSWSPlaceable	GetBodyBagAppearance	0x005f6630	C3	Y	Strings Appearance and BodyBag: 2DA lookup using BodyBag byte this+0x3ec (stored from "BodyBag" in LoadPlaceable), returns appearance byte default 3; retn=0	
+CSWSPlaceable	SetOrientation	0x005f6990	C3	Y	Copies 4 floats (Quaternion*) from arg to this+0x480..0x48c, converts to vector and calls CSWSObject::SetOrientation 0x543f10; wrapper takes Quaternion*; retn=4	
+CSWSPlaceable	GetClientPlaceable	0x005f6a70	C3	Y	Calls CSWSObject::GetClientObject 0x54a840, null-checks, then virtual +0x4c cast on result; uses ECX; retn=0	
+CSWSTrigger	GetTargetArea	0x0061e540	C3	Y	Uses LinkedTo tag at this+0x270 (save writes LinkedTo at param_1+0x9c), module object lookup, returns area+0x124 of the linked object's area or 0x7f000000; retn=0	
+CSWSTrigger	InTrigger	0x0061fc60	C3	Y	Point-in-polygon ray cast over geometry: vertices this+0x2c8 (stride 0xc, save uses param_1[0xb2]), index list +0x2d8, count +0x2d4; Vector* arg (floats x,y); retn=4	
+CSWSTrigger	RemoveFromArea	0x00622670	C3	Y	GetArea, RemoveObjectFromArea, RemoveFromList 0x52e4e0 (twice, gated by list count), SetArea(0); no static bbox call unlike door; callers in trigger region 0x61e0e0-0x61f170; retn=0	
+CSWSTrigger	GetCanFireMineOnObject	0x00622750	C3	Y	retn=8 (objectId, skipFactionCheck): skip faction test when arg3!=0; compares creature faction vs this+0x2f8 (Faction), GetReputation>10, creator this+0x328 (CreatorId), feats 0xee/0xef	
+CSWSTrigger	OnEnterMine	0x00622930	C3	Y	retn=4 arg passed through to GetCanFireMineOnObject 0x622750; looks up item by KeyName tag at this+0x2bc, removes it, runs OnTrapTriggered/UserDefined scripts, SendFeedbackMessage	
+CSWSTrigger	SetCreator	0x00622c10	C3	Y	this+0x328 = creator id (save writes CreatorId from param_1[0xca]=+0x328); sets this+0x354 if creator is party/player (GetPartyTable, GetIsNPCObjectMember); retn=4	

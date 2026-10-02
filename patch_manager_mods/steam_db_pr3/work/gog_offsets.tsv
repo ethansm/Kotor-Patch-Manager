@@ -1,0 +1,779 @@
+class	member	offset_dec	offset_hex	notes
+BSPNode	bbox_max	40	0x28	Vector
+BSPNode	bbox_min	28	0x1c	Vector
+BSPNode	left_child	20	0x14	BSPNode *
+BSPNode	right_child	16	0x10	BSPNode *
+CAppManager	Client	4	0x4	None
+CAppManager	Server	8	0x8	None
+CAurFontInfo	baselineheight	8	0x8	float
+CAurFontInfo	fontheight	4	0x4	float
+CAurFontInfo	lowerrightcoords	36	0x24	CExoArrayList<Vector>
+CAurFontInfo	numchars	0	0x0	int
+CAurFontInfo	spacingB	20	0x14	float
+CAurFontInfo	spacingR	16	0x10	float
+CAurFontInfo	texturewidth	12	0xc	float
+CAurFontInfo	upperleftcoords	24	0x18	CExoArrayList<Vector>
+CAurGUIImageInternal	texture	4	0x4	Material *
+CAurGUIImageInternal	vtable	0	0x0	pointer
+CAurGUIStringInternal	alignment	70	0x46	byte
+CAurGUIStringInternal	bounding_rect_max	8	0x8	float
+CAurGUIStringInternal	bounding_rect_min	4	0x4	float
+CAurGUIStringInternal	color	28	0x1c	Vector
+CAurGUIStringInternal	cursor_index	68	0x44	short
+CAurGUIStringInternal	font_texture	24	0x18	SafePointer<CAurTexture> *
+CAurGUIStringInternal	vtable	0	0x0	pointer
+CAurRoom	node	0	0x0	BSPNode
+CAurTexture	referenced_texture	16	0x10	CAurTexture *
+CAurTexture	vtable	0	0x0	CAurTextureMethods *
+CAurTextureBasic	alphamean	32	0x20	float
+CAurTextureBasic	bump_map	216	0xd8	int
+CAurTextureBasic	bumpintensity	28	0x1c	float
+CAurTextureBasic	bumpmapscaling	24	0x18	float
+CAurTextureBasic	clamp	196	0xc4	short
+CAurTextureBasic	cube_map	223	0xdf	bool
+CAurTextureBasic	defaultheight	206	0xce	short
+CAurTextureBasic	defaultwidth	204	0xcc	short
+CAurTextureBasic	diffusebumpintensity	44	0x2c	float
+CAurTextureBasic	downsamplemax	188	0xbc	short
+CAurTextureBasic	downsamplemin	190	0xbe	short
+CAurTextureBasic	envmapalpha	40	0x28	float
+CAurTextureBasic	filerange	202	0xca	short
+CAurTextureBasic	filter	225	0xe1	bool
+CAurTextureBasic	first_gl_texture	88	0x58	ulong
+CAurTextureBasic	font_info	56	0x38	CAurFontInfo *
+CAurTextureBasic	gamma	36	0x24	float
+CAurTextureBasic	gl_textures	64	0x40	ulong *
+CAurTextureBasic	hash_id	212	0xd4	short
+CAurTextureBasic	is_diffuse_bump_map	220	0xdc	bool
+CAurTextureBasic	is_dynamic_mode	215	0xd7	byte
+CAurTextureBasic	is_environment_mapped	222	0xde	bool
+CAurTextureBasic	is_fully_loaded	228	0xe4	bool
+CAurTextureBasic	is_invalid	229	0xe5	bool
+CAurTextureBasic	is_processed	233	0xe9	bool
+CAurTextureBasic	is_specular_bump_map	221	0xdd	bool
+CAurTextureBasic	is_txi_loaded	234	0xea	bool
+CAurTextureBasic	is_using_global_alpha	226	0xe2	bool
+CAurTextureBasic	maptexelstopixels	227	0xe3	bool
+CAurTextureBasic	mipmap	224	0xe0	bool
+CAurTextureBasic	numx	198	0xc6	short
+CAurTextureBasic	numy	200	0xc8	short
+CAurTextureBasic	specularbumpintensity	48	0x30	float
+CAurTextureBasic	specularcolor	76	0x4c	Vector
+CAurTextureBasic	temporary	214	0xd6	bool
+CAurTextureBasic	texture	0	0x0	CAurTexture
+CAurTextureBasic	texture_format	120	0x78	AuroraTextureFormats *
+CAurTextureMethods	AsCAurTextureBasic	4	0x4	AsCAurTextureBasic *
+CAurTextureMethods	Bind	180	0xb4	pointer
+CAurTextureMethods	FreeImage	176	0xb0	pointer
+CAurTextureMethods	GetBPP	80	0x50	pointer
+CAurTextureMethods	GetBumpIntensity	124	0x7c	pointer
+CAurTextureMethods	GetBumpMapScaling	120	0x78	pointer
+CAurTextureMethods	GetClamp	96	0x60	pointer
+CAurTextureMethods	GetCompressedSize	100	0x64	pointer
+CAurTextureMethods	GetCompressionFormat	140	0x8c	pointer
+CAurTextureMethods	GetDiffuseBumpIntensity	132	0x84	pointer
+CAurTextureMethods	GetEnvMapAlpha	104	0x68	pointer
+CAurTextureMethods	GetFileRange	68	0x44	pointer
+CAurTextureMethods	GetFilter	112	0x70	pointer
+CAurTextureMethods	GetFontInfo	56	0x38	GetFontInfo *
+CAurTextureMethods	GetHeight	76	0x4c	pointer
+CAurTextureMethods	GetImage	60	0x3c	pointer
+CAurTextureMethods	GetMapTexelsToPixels	116	0x74	pointer
+CAurTextureMethods	GetMipMap	108	0x6c	pointer
+CAurTextureMethods	GetName	64	0x40	pointer
+CAurTextureMethods	GetNumMipMaps	84	0x54	pointer
+CAurTextureMethods	GetNumX	88	0x58	pointer
+CAurTextureMethods	GetNumY	92	0x5c	pointer
+CAurTextureMethods	GetReferencedTexture	8	0x8	GetReferencedTexture *
+CAurTextureMethods	GetSpecularBumpIntensity	128	0x80	pointer
+CAurTextureMethods	GetSpecularColor	136	0x88	pointer
+CAurTextureMethods	GetTextureFormat	152	0x98	pointer
+CAurTextureMethods	GetTxiData	148	0x94	pointer
+CAurTextureMethods	GetTxiSize	144	0x90	pointer
+CAurTextureMethods	GetWidth	72	0x48	pointer
+CAurTextureMethods	IncrementTIDIndex	168	0xa8	pointer
+CAurTextureMethods	IsBumpMap	28	0x1c	IsBumpMap *
+CAurTextureMethods	IsCubeMap	12	0xc	IsCubeMap *
+CAurTextureMethods	IsDiffuseBumpMap	20	0x14	IsDiffuseBumpMap *
+CAurTextureMethods	IsEnvironmentMapped	44	0x2c	IsEnvironmentMapped *
+CAurTextureMethods	IsFullyLoaded	40	0x28	IsFullyLoaded *
+CAurTextureMethods	IsInvalid	16	0x10	IsInvalid *
+CAurTextureMethods	IsNormalMap	32	0x20	IsNormalMap *
+CAurTextureMethods	IsProcessed	48	0x30	IsProcessed *
+CAurTextureMethods	IsSpecularBumpMap	24	0x18	IsSpecularBumpMap *
+CAurTextureMethods	IsTxiLoaded	52	0x34	IsTxiLoaded *
+CAurTextureMethods	IsUsingGlobalAlpha	36	0x24	IsUsingGlobalAlpha *
+CAurTextureMethods	SetTextureFormat	156	0x9c	pointer
+CAurTextureMethods	SetTxiData	160	0xa0	pointer
+CAurTextureMethods	SetTxiLoaded	164	0xa4	pointer
+CAurTextureMethods	_destructor	0	0x0	pointer
+CAurTextureMethods	glImage	172	0xac	pointer
+CClientExoApp	internal	4	0x4	CClientExoAppInternal *
+CClientExoApp	vtable	0	0x0	pointer
+CExoArrayList	capacity	8	0x8	int
+CExoArrayList	size	4	0x4	int
+CExoArrayList<CSWGuiControl*>	capacity	8	0x8	int
+CExoArrayList<CSWGuiControl*>	data	0	0x0	CSWGuiControl * *
+CExoArrayList<CSWGuiControl*>	size	4	0x4	int
+CExoArrayList<CSWGuiControlEvent*>	capacity	8	0x8	int
+CExoArrayList<CSWGuiControlEvent*>	data	0	0x0	CSWGuiControlEvent *
+CExoArrayList<CSWGuiControlEvent*>	size	4	0x4	int
+CExoArrayList<CSWGuiExtent>	capacity	8	0x8	int
+CExoArrayList<CSWGuiExtent>	data	0	0x0	CSWGuiExtent *
+CExoArrayList<CSWGuiExtent>	size	4	0x4	int
+CExoArrayList<CSWGuiPanel*>	capacity	8	0x8	int
+CExoArrayList<CSWGuiPanel*>	data	0	0x0	CSWGuiPanel * *
+CExoArrayList<CSWGuiPanel*>	size	4	0x4	int
+CExoArrayList<CSWGuiPanel*>.conflict	capacity	8	0x8	int
+CExoArrayList<CSWGuiPanel*>.conflict	data	0	0x0	CSWGuiPanel * *
+CExoArrayList<CSWGuiPanel*>.conflict	size	4	0x4	int
+CExoArrayList<Gob*>	capacity	8	0x8	int
+CExoArrayList<Gob*>	data	0	0x0	Gob * *
+CExoArrayList<Gob*>	size	4	0x4	int
+CExoArrayList<SafePointer<CAurTexture>*>	capcity	8	0x8	int
+CExoArrayList<SafePointer<CAurTexture>*>	data	0	0x0	SafePointer<CAurTexture> *
+CExoArrayList<SafePointer<CAurTexture>*>	size	4	0x4	int
+CExoArrayList<Vector>	capacity	8	0x8	int
+CExoArrayList<Vector>	data	0	0x0	Vector *
+CExoArrayList<Vector>	size	4	0x4	int
+CExoString	CStr	0	0x0	None
+CExoString	Length	4	0x4	None
+CExoString	c_string	0	0x0	char *
+CExoString	length	4	0x4	ulong
+CGameObject	Id	4	0x4	None
+CGameObject	ObjectType	8	0x8	None
+CKeyTableEntry	res	16	0x10	CRes *
+CKeyTableEntry	res_ref	0	0x0	CResRef
+CKeyTableEntry	type	26	0x1a	ResourceType
+CLIENT_ID	UniqueProcess	0	0x0	void *32
+CLIENT_ID	UniqueThread	4	0x4	void *32
+CRes	data	16	0x10	void *
+CRes	demands	4	0x4	short
+CRes	resref	20	0x14	CResRef *
+CRes	size	24	0x18	ulong
+CRes	table_entry	20	0x14	CKeyTableEntry *
+CRes	vtable	0	0x0	void *
+CResGFF	field_data	92	0x5c	void *
+CResGFF	field_indices_data	100	0x64	ulong *
+CResGFF	field_type	141	0x8d	char[4]
+CResGFF	fields	76	0x4c	GFFFieldData *
+CResGFF	header	64	0x40	GFFHeaderInfo *
+CResGFF	labels	84	0x54	char[16] *
+CResGFF	list_indices_data	112	0x70	ulong *
+CResGFF	resource	0	0x0	CRes
+CResGFF	structs	68	0x44	GFFStructData *
+CResRef	internal	0	0x0	resref_internal
+CResStruct	index	0	0x0	ulong
+CSWBaseItem	WeaponWield	8	0x8	None
+CSWCCreature	Running	1016	0x3f8	None
+CSWCRoom	aurora_room	60	0x3c	CAurRoom *
+CSWCRoom	room	0	0x0	CSWRoom
+CSWCRoom	room_gob	64	0x40	Gob *
+CSWGui3DSceneView	control	0	0x0	CSWGuiControl
+CSWGui3DSceneView	scene	96	0x60	CSWGuiScene
+CSWGuiBorder	border_params	20	0x14	CSWGuiBorderParams
+CSWGuiBorder	extent	4	0x4	CSWGuiExtent
+CSWGuiBorderParams	alpha	16	0x10	float
+CSWGuiBorderParams	bit_flags	32	0x20	int
+CSWGuiBorderParams	border	84	0x54	CSWGuiBorder *
+CSWGuiBorderParams	color	20	0x14	Vector
+CSWGuiBorderParams	corner_image_resref	36	0x24	CResRef
+CSWGuiBorderParams	dimension	0	0x0	int
+CSWGuiBorderParams	edge_image_resref	52	0x34	CResRef
+CSWGuiBorderParams	fill_angle	12	0xc	int
+CSWGuiBorderParams	fill_image_resref	68	0x44	CResRef
+CSWGuiBorderParams	inner_offset	8	0x8	int
+CSWGuiButton	border_1	112	0x70	CSWGuiBorder
+CSWGuiButton	border_2	232	0xe8	CSWGuiBorder
+CSWGuiButton	navigable	0	0x0	CSWGuiNavigable
+CSWGuiButton	text	352	0x160	CSWGuiText
+CSWGuiButtonToggle	button	0	0x0	CSWGuiButton
+CSWGuiClassSelChar	button	0	0x0	CSWGuiButton
+CSWGuiClassSelChar	scene_3d	464	0x1d0	CSWGui3DSceneView
+CSWGuiControl	child_controls	28	0x1c	CExoArrayList
+CSWGuiControl	custom_value	92	0x5c	ulong
+CSWGuiControl	event_list	60	0x3c	CExoArrayList
+CSWGuiControl	extent	4	0x4	CSWGuiExtent
+CSWGuiControl	id	84	0x54	int
+CSWGuiControl	parent	56	0x38	CSWGuiObject *
+CSWGuiControl	parent_control	24	0x18	CSWGuiControl *
+CSWGuiControl	tooltip_string	44	0x2c	CExoString
+CSWGuiControl	vtable	0	0x0	GuiControlMethods *
+CSWGuiControlEvent	event_flag	8	0x8	int
+CSWGuiControlEvent	func	4	0x4	CSWGuiObject::GUIEvent *
+CSWGuiControlEvent	gui_object	0	0x0	CSWGuiObject *
+CSWGuiExtent	height	12	0xc	int
+CSWGuiExtent	left	0	0x0	int
+CSWGuiExtent	top	4	0x4	int
+CSWGuiExtent	width	8	0x8	int
+CSWGuiImage	extent	4	0x4	CSWGuiExtent
+CSWGuiImage	gui_image	36	0x24	CAurGUIImageInternal *
+CSWGuiImage	params	40	0x28	CSWGuiImageParams
+CSWGuiImage	vtable	0	0x0	pointer
+CSWGuiImageParams	alpha	20	0x14	float
+CSWGuiImageParams	angle	16	0x10	float
+CSWGuiImageParams	bit_flags	36	0x24	ulong
+CSWGuiImageParams	color	24	0x18	Vector
+CSWGuiImageParams	image_object	40	0x28	CSWGuiImage *
+CSWGuiImageParams	resref	0	0x0	CResRef
+CSWGuiLabel	border	96	0x60	CSWGuiBorder
+CSWGuiLabel	control	0	0x0	CSWGuiControl
+CSWGuiLabel	text	216	0xd8	CSWGuiText
+CSWGuiLabelHilight	border	328	0x148	CSWGuiBorder
+CSWGuiLabelHilight	label	0	0x0	CSWGuiLabel
+CSWGuiListBox	bit_flags	716	0x2cc	int
+CSWGuiListBox	border	148	0x94	CSWGuiBorder
+CSWGuiListBox	bottom_visible_index	730	0x2da	short
+CSWGuiListBox	clicked_index	112	0x70	int
+CSWGuiListBox	color	736	0x2e0	Vector
+CSWGuiListBox	control_extents	696	0x2b8	CExoArrayList<CSWGuiExtent>
+CSWGuiListBox	controls	684	0x2ac	CExoArrayList<CSWGuiControl*>
+CSWGuiListBox	hovered_control	748	0x2ec	CSWGuiControl *
+CSWGuiListBox	items_per_page	724	0x2d4	short
+CSWGuiListBox	navigble	0	0x0	CSWGuiNavigable
+CSWGuiListBox	padding	720	0x2d0	byte
+CSWGuiListBox	proto_item	732	0x2dc	CSWGuiControl *
+CSWGuiListBox	scroll_bar_state	116	0x74	int
+CSWGuiListBox	scroll_mouse_x	120	0x78	int
+CSWGuiListBox	scroll_mouse_y	124	0x7c	int
+CSWGuiListBox	scroll_position	722	0x2d2	short
+CSWGuiListBox	scrollbar	268	0x10c	CSWGuiScrollBar
+CSWGuiListBox	selection_index	726	0x2d6	short
+CSWGuiListBox	top_visible_index	728	0x2d8	short
+CSWGuiListBox	viewport_height	680	0x2a8	int
+CSWGuiListBox	viewport_width	676	0x2a4	int
+CSWGuiListBox	viewport_x	668	0x29c	int
+CSWGuiListBox	viewport_y	672	0x2a0	int
+CSWGuiManager	gui_sounds	160	0xa0	CExoSoundSource *
+CSWGuiManager	modal_stack	148	0x94	GuiManagerModalStack
+CSWGuiManager	mouse_x	0	0x0	uint
+CSWGuiManager	panels	136	0x88	CExoArrayList<CSWGuiPanel*>.conflict
+CSWGuiManager	resolution_string	116	0x74	CExoString
+CSWGuiManager	sound_count	164	0xa4	byte
+CSWGuiManager	stored_mouse_x	88	0x58	int
+CSWGuiManager	stored_mouse_y	92	0x5c	int
+CSWGuiManager	tooltip	60	0x3c	CSWGuiToolTipPanel *
+CSWGuiManager	viewport_height	110	0x6e	short
+CSWGuiManager	viewport_wdith	108	0x6c	short
+CSWGuiNavigable	control	0	0x0	CSWGuiControl
+CSWGuiNavigable	down	100	0x64	int
+CSWGuiNavigable	left	96	0x60	int
+CSWGuiNavigable	right	104	0x68	int
+CSWGuiNavigable	up	92	0x5c	int
+CSWGuiObject	extent	4	0x4	CSWGuiExtent
+CSWGuiObject	vtable	0	0x0	pointer
+CSWGuiPanel	active_control	32	0x20	CSWGuiControl *
+CSWGuiPanel	alpha	80	0x50	float
+CSWGuiPanel	bit_flags	72	0x48	int
+CSWGuiPanel	border	96	0x60	CSWGuiBorder *
+CSWGuiPanel	color	84	0x54	Vector
+CSWGuiPanel	control_res_list	52	0x34	CResList
+CSWGuiPanel	controls	36	0x24	CExoArrayList<CSWGuiControl*>
+CSWGuiPanel	extent	4	0x4	CSWGuiExtent
+CSWGuiPanel	gff	48	0x30	CResGFF *
+CSWGuiPanel	manager	28	0x1c	CSWGuiManager *
+CSWGuiPanel	vtable	0	0x0	GuiPanelMethods *
+CSWGuiScene	background_color	40	0x28	Vector
+CSWGuiScene	camera	24	0x18	Camera *
+CSWGuiScene	extent	4	0x4	CSWGuiExtent
+CSWGuiScene	models	28	0x1c	CExoArrayList
+CSWGuiScene	scene	20	0x14	Scene *
+CSWGuiScene	vtable	0	0x0	void *
+CSWGuiScrollBar	bit_flags	108	0x6c	ulong
+CSWGuiScrollBar	border	112	0x70	CSWGuiBorder
+CSWGuiScrollBar	control	0	0x0	CSWGuiControl
+CSWGuiScrollBar	current_value	100	0x64	int
+CSWGuiScrollBar	image_1	232	0xe8	CSWGuiImage
+CSWGuiScrollBar	image_2	316	0x13c	CSWGuiImage
+CSWGuiScrollBar	max_value	96	0x60	int
+CSWGuiScrollBar	visible_item_count	104	0x68	int
+CSWGuiText	extent	4	0x4	CSWGuiExtent
+CSWGuiText	gui_string	20	0x14	CAurGUIStringInternal *
+CSWGuiText	text_params	24	0x18	CSWGuiTextParams
+CSWGuiText	vtable	0	0x0	CSWGuiTextMethods *
+CSWGuiTextMethods	Draw	12	0xc	CSWGuiText_Draw *32
+CSWGuiTextMethods	GetIdealHeight	8	0x8	CSWGuiText_GetIdealHeight *32
+CSWGuiTextMethods	Load	16	0x10	CSWGuiText_Load *32
+CSWGuiTextMethods	SetExtent	4	0x4	CSWGuiText_SetExtent *32
+CSWGuiTextMethods	~CSWGuiText	0	0x0	CSWGuiText_~CSWGuiText *32
+CSWGuiTextParams	bit_flags	56	0x38	int
+CSWGuiTextParams	color	28	0x1c	Vector
+CSWGuiTextParams	default_color	44	0x2c	Vector
+CSWGuiTextParams	font	12	0xc	CResRef
+CSWGuiTextParams	font_rename	60	0x3c	char[20]
+CSWGuiTextParams	opacity	40	0x28	float
+CSWGuiTextParams	str_ref	8	0x8	int
+CSWGuiTextParams	text	0	0x0	CExoString
+CSWGuiTextParams	text_object	80	0x50	CSWGuiText *
+CSWGuiToolTipPanel	panel	0	0x0	CSWGuiPanel
+CSWGuiToolTipPanel	tooltip	104	0x68	CSWGuiLabel
+CSWRoom	orietnation	16	0x10	Quaternion
+CSWRoom	position	4	0x4	Vector
+CSWRoom	resref	32	0x20	CResRef
+CSWRoom	vtable	0	0x0	pointer
+CSWSArea	area	0	0x0	CSWArea
+CSWSArea	current_weather	560	0x230	byte
+CSWSArea	res_helper	260	0x104	CResHelper<CResARE,2012>
+CSWSArea	var_table	504	0x1f8	CSWVarTable
+CSWSCombatRound	OnHandAttacks	2784	0xae0	None
+CSWSCreature	CreatureStats	4504	0x1198	None
+CSWSCreature	Inventory	4432	0x1150	None
+CSWSCreature	creature_stats	4504	0x1198	CSWSCreatureStats *
+CSWSCreature	object	0	0x0	CSWSObject
+CSWSCreatureStats	CHABase	247	0xf7	None
+CSWSCreatureStats	CONBase	241	0xf1	None
+CSWSCreatureStats	ClassCount	141	0x8d	None
+CSWSCreatureStats	DEXBase	239	0xef	None
+CSWSCreatureStats	INTBase	243	0xf3	None
+CSWSCreatureStats	STRBase	237	0xed	None
+CSWSCreatureStats	WISBase	245	0xf5	None
+CSWSCreatureStats	appearance_head	407	0x197	byte
+CSWSCreatureStats	cha	247	0xf7	byte
+CSWSCreatureStats	color_hair	401	0x191	byte
+CSWSCreatureStats	color_skin	400	0x190	byte
+CSWSCreatureStats	color_tattoo1	402	0x192	byte
+CSWSCreatureStats	color_tattoo2	403	0x193	byte
+CSWSCreatureStats	con	241	0xf1	byte
+CSWSCreatureStats	conversation	68	0x44	CResRef
+CSWSCreatureStats	deity	436	0x1b4	CExoString
+CSWSCreatureStats	description	88	0x58	CExoLocString
+CSWSCreatureStats	dex	239	0xef	byte
+CSWSCreatureStats	first_name	52	0x34	CExoLocString
+CSWSCreatureStats	fury_damage_bonus	288	0x120	byte
+CSWSCreatureStats	gender	100	0x64	byte
+CSWSCreatureStats	int	243	0xf3	byte
+CSWSCreatureStats	last_name	60	0x3c	CExoLocString
+CSWSCreatureStats	natural_ac	249	0xf9	byte
+CSWSCreatureStats	phenotype	406	0x196	byte
+CSWSCreatureStats	starting_package	140	0x8c	byte
+CSWSCreatureStats	str	237	0xed	byte
+CSWSCreatureStats	subrace	228	0xe4	CExoString
+CSWSCreatureStats	subrace_index	236	0xec	byte
+CSWSCreatureStats	wis	245	0xf5	byte
+CSWSObject	AreaId	144	0x90	None
+CSWSObject	Orientation	160	0xa0	None
+CSWSObject	Position	148	0x94	None
+CSWSObject	game_obj	0	0x0	CGameObject
+CSWSRoom	room	0	0x0	CSWRoom
+CSWSRoom	surface_mesh	60	0x3c	CSWRoomSurfaceMesh *
+CScriptLocation	orientation	12	0xc	Vector
+CScriptLocation	position	0	0x0	Vector
+Camera	clip_dist_far	532	0x214	float
+Camera	clip_dist_near	528	0x210	float
+Camera	object	4	0x4	Gob
+Camera	view_angle	516	0x204	float
+Camera	view_volume_set	552	0x228	int
+Camera	viewport_height	548	0x224	int
+Camera	viewport_left	536	0x218	int
+Camera	viewport_top	540	0x21c	int
+Camera	viewport_width	544	0x220	int
+Camera	vtable	0	0x0	pointer
+GFFFieldData	field_type	0	0x0	GFFFieldTypes
+GFFFieldData	label_index	4	0x4	ulong
+GFFHeaderInfo	field_count	20	0x14	ulong
+GFFHeaderInfo	field_data_count	36	0x24	ulong
+GFFHeaderInfo	field_data_offset	32	0x20	ulong
+GFFHeaderInfo	field_indices_count	44	0x2c	ulong
+GFFHeaderInfo	field_indices_offset	40	0x28	ulong
+GFFHeaderInfo	field_offset	16	0x10	ulong
+GFFHeaderInfo	file_type	0	0x0	char[4]
+GFFHeaderInfo	file_version	4	0x4	char[4]
+GFFHeaderInfo	label_count	28	0x1c	ulong
+GFFHeaderInfo	label_offset	24	0x18	ulong
+GFFHeaderInfo	list_indices_count	52	0x34	ulong
+GFFHeaderInfo	list_indices_offset	48	0x30	ulong
+GFFHeaderInfo	struct_count	12	0xc	ulong
+GFFHeaderInfo	struct_offset	8	0x8	ulong
+GFFStructData	field_count	8	0x8	ulong
+GFFStructData	id	0	0x0	ulong
+Gob	model	132	0x84	Model *
+Gob	orientation	176	0xb0	Quaternion
+Gob	position	164	0xa4	Vector
+Gob	previous_orientation	204	0xcc	Quaternion
+Gob	previous_position	192	0xc0	Vector
+Gob	vtable	0	0x0	pointer
+GuiControlMethods	AsButton	88	0x58	AsButton *
+GuiControlMethods	AsButtonToggle	92	0x5c	AsButtonToggle *
+GuiControlMethods	AsLabel	80	0x50	AsLabel *
+GuiControlMethods	AsLabelHighlight	84	0x54	AsLabelHighlight *
+GuiControlMethods	AsNavigable	76	0x4c	void *
+GuiControlMethods	DisplayToolTip	144	0x90	void *
+GuiControlMethods	GetData	52	0x34	void *
+GuiControlMethods	GetHeight	52	0x34	void *
+GuiControlMethods	GetIsSelectable	128	0x80	void *
+GuiControlMethods	HandleFocusChange	124	0x7c	void *
+GuiControlMethods	HandleInputEvent	60	0x3c	CSWGuiControl_HandleInputEvent *
+GuiControlMethods	HandleLMouseDown	24	0x18	void *
+GuiControlMethods	HandleLMouseUp	28	0x1c	void *
+GuiControlMethods	HandleLoseMouseFocus	20	0x14	void *
+GuiControlMethods	HandleMouseOver	12	0xc	void *
+GuiControlMethods	HandleRMouseDown	132	0x84	void *
+GuiControlMethods	HandleRMouseUp	36	0x24	void *
+GuiControlMethods	HandlsRMouseDown	32	0x20	void *
+GuiControlMethods	HitCheckMouse	68	0x44	void *
+GuiControlMethods	Load	72	0x48	void *
+GuiControlMethods	ReSetFont	140	0x8c	void *
+GuiControlMethods	SetActive	64	0x40	void *
+GuiControlMethods	SetActiveControl	8	0x8	void *
+GuiControlMethods	SetEnabled	136	0x88	void *
+GuiControlMethods	SetExtent	4	0x4	SetExtent *
+GuiControlMethods	_destructor	0	0x0	void *
+GuiControlMethods	draw	56	0x38	void *
+GuiManagerModalStack	capacity	8	0x8	int
+GuiManagerModalStack	data	0	0x0	CSWGuiPanel * *
+GuiManagerModalStack	size	4	0x4	int
+GuiPanelMethods	Draw	52	0x34	void *
+GuiPanelMethods	GetActiveControl	68	0x44	void *
+GuiPanelMethods	HandleInputEvent	60	0x3c	void *
+GuiPanelMethods	HandleLMouseUp	28	0x1c	void *
+GuiPanelMethods	HitCheckMouse	64	0x40	void *
+GuiPanelMethods	OnAButtonPressed	84	0x54	void *
+GuiPanelMethods	OnBButtonPressed	88	0x58	void *
+GuiPanelMethods	OnBlackButtonPressed	100	0x64	void *
+GuiPanelMethods	OnPanelAdded	72	0x48	void *
+GuiPanelMethods	OnPanelRemoved	76	0x4c	void *
+GuiPanelMethods	OnXButtonPressed	92	0x5c	void *
+GuiPanelMethods	OnYButtonPressed	96	0x60	void *
+GuiPanelMethods	ResetFont	108	0x6c	void *
+GuiPanelMethods	SetActiveControl	8	0x8	void *
+GuiPanelMethods	SetExtent	4	0x4	SetExtent *
+GuiPanelMethods	ShouldFreeMouseOnAdd	80	0x50	pointer
+GuiPanelMethods	Update	56	0x38	void *
+GuiPanelMethods	_destructor	0	0x0	void *
+HBRUSH__	unused	0	0x0	int
+HDC__	unused	0	0x0	int
+HGLRC__	unused	0	0x0	int
+HICON__	unused	0	0x0	int
+HIMC__	unused	0	0x0	int
+HINSTANCE__	unused	0	0x0	int
+HMENU__	unused	0	0x0	int
+HMONITOR__	unused	0	0x0	int
+HWND__	unused	0	0x0	int
+IMAGE_DATA_DIRECTORY	Size	4	0x4	dword
+IMAGE_DATA_DIRECTORY	VirtualAddress	0	0x0	ImageBaseOffset32
+IMAGE_DOS_HEADER	e_cblp	2	0x2	word
+IMAGE_DOS_HEADER	e_cp	4	0x4	word
+IMAGE_DOS_HEADER	e_cparhdr	8	0x8	word
+IMAGE_DOS_HEADER	e_crlc	6	0x6	word
+IMAGE_DOS_HEADER	e_cs	22	0x16	word
+IMAGE_DOS_HEADER	e_csum	18	0x12	word
+IMAGE_DOS_HEADER	e_ip	20	0x14	word
+IMAGE_DOS_HEADER	e_lfanew	60	0x3c	dword
+IMAGE_DOS_HEADER	e_lfarlc	24	0x18	word
+IMAGE_DOS_HEADER	e_magic	0	0x0	char[2]
+IMAGE_DOS_HEADER	e_maxalloc	12	0xc	word
+IMAGE_DOS_HEADER	e_minalloc	10	0xa	word
+IMAGE_DOS_HEADER	e_oemid	36	0x24	word
+IMAGE_DOS_HEADER	e_oeminfo	38	0x26	word
+IMAGE_DOS_HEADER	e_ovno	26	0x1a	word
+IMAGE_DOS_HEADER	e_program	64	0x40	byte[64]
+IMAGE_DOS_HEADER	e_res2[10]	40	0x28	word[10]
+IMAGE_DOS_HEADER	e_res[4]	28	0x1c	word[4]
+IMAGE_DOS_HEADER	e_sp	16	0x10	word
+IMAGE_DOS_HEADER	e_ss	14	0xe	word
+IMAGE_FILE_HEADER	Characteristics	18	0x12	word
+IMAGE_FILE_HEADER	Machine	0	0x0	word
+IMAGE_FILE_HEADER	NumberOfSections	2	0x2	word
+IMAGE_FILE_HEADER	NumberOfSymbols	12	0xc	dword
+IMAGE_FILE_HEADER	PointerToSymbolTable	8	0x8	dword
+IMAGE_FILE_HEADER	SizeOfOptionalHeader	16	0x10	word
+IMAGE_FILE_HEADER	TimeDateStamp	4	0x4	dword
+IMAGE_NT_HEADERS32	FileHeader	4	0x4	IMAGE_FILE_HEADER
+IMAGE_NT_HEADERS32	OptionalHeader	24	0x18	IMAGE_OPTIONAL_HEADER32
+IMAGE_NT_HEADERS32	Signature	0	0x0	char[4]
+IMAGE_OPTIONAL_HEADER32	AddressOfEntryPoint	16	0x10	ImageBaseOffset32
+IMAGE_OPTIONAL_HEADER32	BaseOfCode	20	0x14	ImageBaseOffset32
+IMAGE_OPTIONAL_HEADER32	BaseOfData	24	0x18	ImageBaseOffset32
+IMAGE_OPTIONAL_HEADER32	CheckSum	64	0x40	dword
+IMAGE_OPTIONAL_HEADER32	DataDirectory	96	0x60	IMAGE_DATA_DIRECTORY[16]
+IMAGE_OPTIONAL_HEADER32	DllCharacteristics	70	0x46	word
+IMAGE_OPTIONAL_HEADER32	FileAlignment	36	0x24	dword
+IMAGE_OPTIONAL_HEADER32	ImageBase	28	0x1c	pointer32
+IMAGE_OPTIONAL_HEADER32	LoaderFlags	88	0x58	dword
+IMAGE_OPTIONAL_HEADER32	Magic	0	0x0	word
+IMAGE_OPTIONAL_HEADER32	MajorImageVersion	44	0x2c	word
+IMAGE_OPTIONAL_HEADER32	MajorLinkerVersion	2	0x2	byte
+IMAGE_OPTIONAL_HEADER32	MajorOperatingSystemVersion	40	0x28	word
+IMAGE_OPTIONAL_HEADER32	MajorSubsystemVersion	48	0x30	word
+IMAGE_OPTIONAL_HEADER32	MinorImageVersion	46	0x2e	word
+IMAGE_OPTIONAL_HEADER32	MinorLinkerVersion	3	0x3	byte
+IMAGE_OPTIONAL_HEADER32	MinorOperatingSystemVersion	42	0x2a	word
+IMAGE_OPTIONAL_HEADER32	MinorSubsystemVersion	50	0x32	word
+IMAGE_OPTIONAL_HEADER32	NumberOfRvaAndSizes	92	0x5c	dword
+IMAGE_OPTIONAL_HEADER32	SectionAlignment	32	0x20	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfCode	4	0x4	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfHeaders	60	0x3c	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfHeapCommit	84	0x54	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfHeapReserve	80	0x50	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfImage	56	0x38	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfInitializedData	8	0x8	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfStackCommit	76	0x4c	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfStackReserve	72	0x48	dword
+IMAGE_OPTIONAL_HEADER32	SizeOfUninitializedData	12	0xc	dword
+IMAGE_OPTIONAL_HEADER32	Subsystem	68	0x44	word
+IMAGE_OPTIONAL_HEADER32	Win32VersionValue	52	0x34	dword
+IMAGE_RESOURCE_DATA_ENTRY	CodePage	8	0x8	dword
+IMAGE_RESOURCE_DATA_ENTRY	OffsetToData	0	0x0	dword
+IMAGE_RESOURCE_DATA_ENTRY	Reserved	12	0xc	dword
+IMAGE_RESOURCE_DATA_ENTRY	Size	4	0x4	dword
+IMAGE_RESOURCE_DIRECTORY	Characteristics	0	0x0	dword
+IMAGE_RESOURCE_DIRECTORY	MajorVersion	8	0x8	word
+IMAGE_RESOURCE_DIRECTORY	MinorVersion	10	0xa	word
+IMAGE_RESOURCE_DIRECTORY	NumberOfIdEntries	14	0xe	word
+IMAGE_RESOURCE_DIRECTORY	NumberOfNamedEntries	12	0xc	word
+IMAGE_RESOURCE_DIRECTORY	TimeDateStamp	4	0x4	dword
+IMAGE_RESOURCE_DIRECTORY_ENTRY_DirectoryStruct	DataIsDirectory	4	0x4	dword
+IMAGE_RESOURCE_DIRECTORY_ENTRY_DirectoryStruct	OffsetToDirectory	0	0x0	dword
+IMAGE_RESOURCE_DIRECTORY_ENTRY_NameStruct	NameIsString	4	0x4	dword
+IMAGE_RESOURCE_DIRECTORY_ENTRY_NameStruct	NameOffset	0	0x0	dword
+IMAGE_SECTION_HEADER	Characteristics	36	0x24	SectionFlags
+IMAGE_SECTION_HEADER	Misc	8	0x8	Misc
+IMAGE_SECTION_HEADER	Name	0	0x0	char[8]
+IMAGE_SECTION_HEADER	NumberOfLinenumbers	34	0x22	word
+IMAGE_SECTION_HEADER	NumberOfRelocations	32	0x20	word
+IMAGE_SECTION_HEADER	PointerToLinenumbers	28	0x1c	dword
+IMAGE_SECTION_HEADER	PointerToRawData	20	0x14	dword
+IMAGE_SECTION_HEADER	PointerToRelocations	24	0x18	dword
+IMAGE_SECTION_HEADER	SizeOfRawData	16	0x10	dword
+IMAGE_SECTION_HEADER	VirtualAddress	12	0xc	ImageBaseOffset32
+Material	aur_texture	0	0x0	CAurTexture *
+Material	bump_map_texture	28	0x1c	char *
+Material	bumpy_shiny_texture	32	0x20	char *
+Material	decal	64	0x40	bool
+Material	env_map_texture	36	0x24	char *
+Material	render_bmlm_type	68	0x44	int
+Material	water_alpha	72	0x48	float
+PMD	mdisp	0	0x0	ptrdiff_t
+PMD	pdisp	4	0x4	ptrdiff_t
+PMD	vdisp	8	0x8	ptrdiff_t
+Part	node	4	0x4	MdlNode *
+Part	vtable	0	0x0	pointer
+PartAABB	trimesh	0	0x0	PartTriMesh
+PartLight	color	76	0x4c	Vector
+PartTriMesh	part	0	0x0	Part
+Quaternion	w	0	0x0	float
+Quaternion	x	4	0x4	float
+Quaternion	y	8	0x8	float
+Quaternion	z	12	0xc	float
+SafePointer<CAurTexture>	value	0	0x0	CAurTexture *
+Scene	ambient	148	0x94	Vector
+Scene	animations_enabled	230	0xe6	bool
+Scene	current_room	224	0xe0	CAurRoom *
+Scene	dirty_texture_1	248	0xf8	CAurTextureBasic *
+Scene	dirty_texture_2	252	0xfc	CAurTextureBasic *
+Scene	dirty_texture_3	256	0x100	CAurTextureBasic *
+Scene	distortion_texture	244	0xf4	CAurTextureBasic *
+Scene	film_noise_texture	240	0xf0	CAurTextureBasic *
+Scene	focus	280	0x118	Gob
+Scene	fog_color	116	0x74	Vector
+Scene	fog_density	112	0x70	float
+Scene	fog_end	104	0x68	float
+Scene	fog_start	100	0x64	float
+Scene	fx_clair01_texture	260	0x104	CAurTextureBasic *
+Scene	holo_texture	264	0x108	CAurTextureBasic *
+Scene	ignore_visibility_graph	228	0xe4	short
+Scene	light_manager	140	0x8c	LightManager *
+Scene	objects	84	0x54	CExoArrayList<Gob*>
+Scene	vtable	0	0x0	pointer
+Scene	wind_manager	144	0x90	WindManager *
+StringFileInfo	wLength	0	0x0	word
+StringFileInfo	wType	4	0x4	word
+StringFileInfo	wValueLength	2	0x2	word
+StringInfo	wLength	0	0x0	word
+StringInfo	wType	4	0x4	word
+StringInfo	wValueLength	2	0x2	word
+StringTable	wLength	0	0x0	word
+StringTable	wType	4	0x4	word
+StringTable	wValueLength	2	0x2	word
+TypeDescriptor	name	8	0x8	char[0]
+TypeDescriptor	pVFTable	0	0x0	void *
+TypeDescriptor	spare	4	0x4	void *
+VS_VERSION_INFO	FileFlags	72	0x48	dword
+VS_VERSION_INFO	FileFlagsMask	64	0x40	dword[2]
+VS_VERSION_INFO	FileOS	76	0x4c	dword
+VS_VERSION_INFO	FileSubtype	84	0x54	dword
+VS_VERSION_INFO	FileTimestamp	88	0x58	dword
+VS_VERSION_INFO	FileType	80	0x50	dword
+VS_VERSION_INFO	FileVersion	48	0x30	word[4]
+VS_VERSION_INFO	Info	6	0x6	unicode
+VS_VERSION_INFO	Padding	38	0x26	byte[2]
+VS_VERSION_INFO	ProductVersion	56	0x38	word[4]
+VS_VERSION_INFO	Signature	40	0x28	dword
+VS_VERSION_INFO	StructLength	0	0x0	word
+VS_VERSION_INFO	StructType	4	0x4	word
+VS_VERSION_INFO	StructVersion	44	0x2c	word[2]
+VS_VERSION_INFO	ValueLength	2	0x2	word
+Var	wLength	0	0x0	word
+Var	wType	4	0x4	word
+Var	wValueLength	2	0x2	word
+VarFileInfo	wLength	0	0x0	word
+VarFileInfo	wType	4	0x4	word
+VarFileInfo	wValueLength	2	0x2	word
+Vector	x	0	0x0	float
+Vector	y	4	0x4	float
+Vector	z	8	0x8	float
+VertexPrimitive	node	4	0x4	MdlNode *
+VertexPrimitive	part	8	0x8	PartTriMesh *
+VertexPrimitive	vtable	0	0x0	pointer
+VertexPrimitiveFlat	primitive	0	0x0	VertexPrimitive
+lconv	_W_currency_symbol	60	0x3c	wchar_t *
+lconv	_W_decimal_point	48	0x30	wchar_t *
+lconv	_W_int_curr_symbol	56	0x38	wchar_t *
+lconv	_W_mon_decimal_point	64	0x40	wchar_t *
+lconv	_W_mon_thousands_sep	68	0x44	wchar_t *
+lconv	_W_negative_sign	76	0x4c	wchar_t *
+lconv	_W_positive_sign	72	0x48	wchar_t *
+lconv	_W_thousands_sep	52	0x34	wchar_t *
+lconv	currency_symbol	16	0x10	char *
+lconv	decimal_point	0	0x0	char *
+lconv	frac_digits	41	0x29	char
+lconv	grouping	8	0x8	char *
+lconv	int_curr_symbol	12	0xc	char *
+lconv	int_frac_digits	40	0x28	char
+lconv	mon_decimal_point	20	0x14	char *
+lconv	mon_grouping	28	0x1c	char *
+lconv	mon_thousands_sep	24	0x18	char *
+lconv	n_cs_precedes	44	0x2c	char
+lconv	n_sep_by_space	45	0x2d	char
+lconv	n_sign_posn	47	0x2f	char
+lconv	negative_sign	36	0x24	char *
+lconv	p_cs_precedes	42	0x2a	char
+lconv	p_sep_by_space	43	0x2b	char
+lconv	p_sign_posn	46	0x2e	char
+lconv	positive_sign	32	0x20	char *
+lconv	thousands_sep	4	0x4	char *
+localeinfo_struct	locinfo	0	0x0	pthreadlocinfo
+localeinfo_struct	mbcinfo	4	0x4	pthreadmbcinfo
+localerefcount	locale	0	0x0	char *
+localerefcount	refcount	8	0x8	int *
+localerefcount	wlocale	4	0x4	wchar_t *
+localerefcount	wrefcount	12	0xc	int *
+nodedata	bins	96	0x60	CExoArrayList
+nodedata	emitters	36	0x24	CExoArrayList
+nodedata	gobs	12	0xc	CExoArrayList
+nodedata	lights	0	0x0	CExoArrayList
+nodedata	others	72	0x48	CExoArrayList
+nodedata	projections	48	0x30	CExoArrayList
+nodedata	room_emitters	140	0x8c	CExoArrayList
+nodedata	room_lights	128	0x80	CExoArrayList
+nodedata	room_objects	116	0x74	CExoArrayList
+nodedata	triggers	84	0x54	CExoArrayList
+nodedata	trimeshes	24	0x18	CExoArrayList
+setloc_struct	_Loc_c	552	0x228	_is_ctype_compatible[5]
+setloc_struct	_cacheLocaleName	592	0x250	wchar_t[85]
+setloc_struct	_cachecp	24	0x18	UINT
+setloc_struct	_cachein	28	0x1c	wchar_t[131]
+setloc_struct	_cacheout	290	0x122	wchar_t[131]
+setloc_struct	bAbbrevCountry	20	0x14	BOOL
+setloc_struct	bAbbrevLanguage	16	0x10	BOOL
+setloc_struct	iLocState	8	0x8	int
+setloc_struct	iPrimaryLen	12	0xc	int
+setloc_struct	pchCountry	4	0x4	wchar_t *
+setloc_struct	pchLanguage	0	0x0	wchar_t *
+tagCANDIDATELIST	dwCount	8	0x8	DWORD
+tagCANDIDATELIST	dwOffset	24	0x18	DWORD[1]
+tagCANDIDATELIST	dwPageSize	20	0x14	DWORD
+tagCANDIDATELIST	dwPageStart	16	0x10	DWORD
+tagCANDIDATELIST	dwSelection	12	0xc	DWORD
+tagCANDIDATELIST	dwSize	0	0x0	DWORD
+tagCANDIDATELIST	dwStyle	4	0x4	DWORD
+tagLC_STRINGS	szCodePage	256	0x100	wchar_t[16]
+tagLC_STRINGS	szCountry	128	0x80	wchar_t[64]
+tagLC_STRINGS	szLanguage	0	0x0	wchar_t[64]
+tagLC_STRINGS	szLocaleName	288	0x120	wchar_t[85]
+tagMONITORINFO	cbSize	0	0x0	DWORD
+tagMONITORINFO	dwFlags	36	0x24	DWORD
+tagMONITORINFO	rcMonitor	4	0x4	RECT
+tagMONITORINFO	rcWork	20	0x14	RECT
+tagMSG	hwnd	0	0x0	HWND
+tagMSG	lParam	12	0xc	LPARAM
+tagMSG	message	4	0x4	UINT
+tagMSG	pt	20	0x14	POINT
+tagMSG	time	16	0x10	DWORD
+tagMSG	wParam	8	0x8	WPARAM
+tagPIXELFORMATDESCRIPTOR	bReserved	27	0x1b	BYTE
+tagPIXELFORMATDESCRIPTOR	cAccumAlphaBits	22	0x16	BYTE
+tagPIXELFORMATDESCRIPTOR	cAccumBits	18	0x12	BYTE
+tagPIXELFORMATDESCRIPTOR	cAccumBlueBits	21	0x15	BYTE
+tagPIXELFORMATDESCRIPTOR	cAccumGreenBits	20	0x14	BYTE
+tagPIXELFORMATDESCRIPTOR	cAccumRedBits	19	0x13	BYTE
+tagPIXELFORMATDESCRIPTOR	cAlphaBits	16	0x10	BYTE
+tagPIXELFORMATDESCRIPTOR	cAlphaShift	17	0x11	BYTE
+tagPIXELFORMATDESCRIPTOR	cAuxBuffers	25	0x19	BYTE
+tagPIXELFORMATDESCRIPTOR	cBlueBits	14	0xe	BYTE
+tagPIXELFORMATDESCRIPTOR	cBlueShift	15	0xf	BYTE
+tagPIXELFORMATDESCRIPTOR	cColorBits	9	0x9	BYTE
+tagPIXELFORMATDESCRIPTOR	cDepthBits	23	0x17	BYTE
+tagPIXELFORMATDESCRIPTOR	cGreenBits	12	0xc	BYTE
+tagPIXELFORMATDESCRIPTOR	cGreenShift	13	0xd	BYTE
+tagPIXELFORMATDESCRIPTOR	cRedBits	10	0xa	BYTE
+tagPIXELFORMATDESCRIPTOR	cRedShift	11	0xb	BYTE
+tagPIXELFORMATDESCRIPTOR	cStencilBits	24	0x18	BYTE
+tagPIXELFORMATDESCRIPTOR	dwDamageMask	36	0x24	DWORD
+tagPIXELFORMATDESCRIPTOR	dwFlags	4	0x4	DWORD
+tagPIXELFORMATDESCRIPTOR	dwLayerMask	28	0x1c	DWORD
+tagPIXELFORMATDESCRIPTOR	dwVisibleMask	32	0x20	DWORD
+tagPIXELFORMATDESCRIPTOR	iLayerType	26	0x1a	BYTE
+tagPIXELFORMATDESCRIPTOR	iPixelType	8	0x8	BYTE
+tagPIXELFORMATDESCRIPTOR	nSize	0	0x0	WORD
+tagPIXELFORMATDESCRIPTOR	nVersion	2	0x2	WORD
+tagPOINT	x	0	0x0	LONG
+tagPOINT	y	4	0x4	LONG
+tagRECT	bottom	12	0xc	LONG
+tagRECT	left	0	0x0	LONG
+tagRECT	right	8	0x8	LONG
+tagRECT	top	4	0x4	LONG
+tagWINDOWINFO	atomWindowType	56	0x38	ATOM
+tagWINDOWINFO	cbSize	0	0x0	DWORD
+tagWINDOWINFO	cxWindowBorders	48	0x30	UINT
+tagWINDOWINFO	cyWindowBorders	52	0x34	UINT
+tagWINDOWINFO	dwExStyle	40	0x28	DWORD
+tagWINDOWINFO	dwStyle	36	0x24	DWORD
+tagWINDOWINFO	dwWindowStatus	44	0x2c	DWORD
+tagWINDOWINFO	rcClient	20	0x14	RECT
+tagWINDOWINFO	rcWindow	4	0x4	RECT
+tagWINDOWINFO	wCreatorVersion	58	0x3a	WORD
+tagWNDCLASSA	cbClsExtra	8	0x8	int
+tagWNDCLASSA	cbWndExtra	12	0xc	int
+tagWNDCLASSA	hCursor	24	0x18	HCURSOR
+tagWNDCLASSA	hIcon	20	0x14	HICON
+tagWNDCLASSA	hInstance	16	0x10	HINSTANCE
+tagWNDCLASSA	hbrBackground	28	0x1c	HBRUSH
+tagWNDCLASSA	lpfnWndProc	4	0x4	WNDPROC
+tagWNDCLASSA	lpszClassName	36	0x24	LPCSTR
+tagWNDCLASSA	lpszMenuName	32	0x20	LPCSTR
+tagWNDCLASSA	style	0	0x0	UINT
+threadlocaleinfostruct	ctype1	140	0x8c	ushort *
+threadlocaleinfostruct	ctype1_refcount	136	0x88	int *
+threadlocaleinfostruct	lc_category	16	0x10	locrefcount[6]
+threadlocaleinfostruct	lc_clike	112	0x70	int
+threadlocaleinfostruct	lc_codepage	4	0x4	uint
+threadlocaleinfostruct	lc_collate_cp	8	0x8	uint
+threadlocaleinfostruct	lc_time_cp	12	0xc	uint
+threadlocaleinfostruct	lc_time_curr	156	0x9c	__lc_time_data *
+threadlocaleinfostruct	lconv	132	0x84	lconv *
+threadlocaleinfostruct	lconv_intl_refcount	120	0x78	int *
+threadlocaleinfostruct	lconv_mon_refcount	128	0x80	int *
+threadlocaleinfostruct	lconv_num_refcount	124	0x7c	int *
+threadlocaleinfostruct	locale_name	160	0xa0	wchar_t *[6]
+threadlocaleinfostruct	mb_cur_max	116	0x74	int
+threadlocaleinfostruct	pclmap	148	0x94	uchar *
+threadlocaleinfostruct	pctype	144	0x90	ushort *
+threadlocaleinfostruct	pcumap	152	0x98	uchar *
+threadlocaleinfostruct	refcount	0	0x0	int
+threadmbcinfostruct	ismbcodepage	8	0x8	int
+threadmbcinfostruct	mbcasemap	281	0x119	uchar[256]
+threadmbcinfostruct	mbcodepage	4	0x4	int
+threadmbcinfostruct	mbctype	24	0x18	uchar[257]
+threadmbcinfostruct	mblocalename	540	0x21c	wchar_t *
+threadmbcinfostruct	mbulinfo	12	0xc	ushort[6]
+threadmbcinfostruct	refcount	0	0x0	int
+tm	tm_hour	8	0x8	int
+tm	tm_isdst	32	0x20	int
+tm	tm_mday	12	0xc	int
+tm	tm_min	4	0x4	int
+tm	tm_mon	16	0x10	int
+tm	tm_sec	0	0x0	int
+tm	tm_wday	24	0x18	int
+tm	tm_yday	28	0x1c	int
+tm	tm_year	20	0x14	int

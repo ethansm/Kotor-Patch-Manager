@@ -1,0 +1,61 @@
+class	name	steam_addr	content	cc_ok	reason	alt
+Gob	SetScene	0x00458b70	C0	N	Gob constructor, not a setter: sets Gob vftable, zeroes dozens of fields, name-registry insert (stricmp at +100); size 2452, one arg (name char*). Not a scene setter	
+Gob	SetProcessFlag	0x00459560	C0	?	Is CAurObject base destructor: writes CAurObject::vftable then calls member dtor FUN_00463a90; callers are SEH unwind funclets (0x949d30/0x949e40) and scalar-deleting dtor 0x4595b0. Not a flag setter	
+Gob	GetName	0x004596f0	C3	Y	Returns this+100; Gob registry FUN_00458a80/00458ae0 binary-searches the global Gob array with stricmp on (obj+100), so +100 is the name; no args, retn 0	
+Gob	GetPosition	0x00459710	C3	Y	Copies this+0xa4..0xac (3 floats) to out-ptr, thiscall retn 4; 0xa4 == GOG Gob.position member	
+Gob	GetOrientation	0x00459740	C3	Y	Copies this+0xb0..0xbc (4 floats) to out-ptr, retn 4; 0xb0 == GOG Gob.orientation (Ghidra mislabels as CRichEditView::GetMargins)	
+Gob	GetPreviousPosition	0x00459780	C3	Y	Copies this+0xc0..0xc8 (3 floats) to out-ptr, retn 4; 0xc0 == GOG Gob.previous_position	
+Gob	SetIgnoreHitCheck	0x00459830	C2	Y	Trivial setter: byte this+0x1a9 = arg (retn 4); ctor FUN_00458b70 zero-inits +0x1a9. No pair or distinctive evidence	
+Gob	TurnOffShadows	0x00459850	C2	Y	Writes word this+0xee = 0, retn 0; pairs with TurnOn (0xee=1) and ctor default 0xee=1 (shadows on); generic flag write	
+Gob	TurnOnShadows	0x00459870	C2	Y	Writes word this+0xee = 1, retn 0; pair of 0x459850 and equals ctor default; generic flag write	
+Gob	IsAnimating	0x00459890	C2	Y	Returns byte this+0x1aa; ctor inits +0x1aa=0. No setter found to pair; generic getter	
+Gob	DisableInViewVolume	0x004598b0	C3	Y	Byte this+0x11 = 0; triple with EnableInViewVolume (0x45a000 sets +0x11=1 plus propagateviewvolume) and IsInViewVolume (0x4598d0 reads +0x11); ctor default 1	
+Gob	IsInViewVolume	0x004598d0	C3	Y	Returns byte this+0x11, same field as Enable (0x45a000, string propagateviewvolume) and Disable (0x4598b0) setters; retn 0	
+Gob	SetAsCharacter	0x004598f0	C2	Y	If model (this+0x84 == GOG Gob.model) non-null, ORs 4 into model+0x50 flags; plausible character flag but generic, no string	
+Gob	SetRenderPersonalSpace	0x00459950	C2	Y	Trivial setter byte this+0x180 = arg, retn 4; no pair or distinctive evidence	
+Gob	SetMotionBlurred	0x00459970	C3	Y	Byte this+0x181 = arg (retn 4); paired with GetMotionBlurred 0x459990 reading same +0x181; ctor zero-inits it	
+Gob	GetMotionBlurred	0x00459990	C3	Y	Returns byte this+0x181, same field as SetMotionBlurred 0x459970; retn 0	
+Gob	SetMaxBlurLength	0x004599b0	C3	Y	Stores 4-byte arg at this+0x1ac, retn 4; paired with GetMaxBlurLength 0x4599d0 reading float +0x1ac	
+Gob	GetMaxBlurLength	0x004599d0	C3	Y	Returns float10 (x87 ST0) of float this+0x1ac, matching wrapper double return; paired with SetMaxBlurLength	
+Gob	EnableDistortion	0x004599f0	C2	Y	Byte this+0x1a8 = 1, retn 0; pairs with Disable 0x459a10 (=0), ctor inits +0x1a8=0; generic flag write, no getter	
+Gob	DisableDistortion	0x00459a10	C2	Y	Byte this+0x1a8 = 0, retn 0; pair of EnableDistortion 0x4599f0; generic flag write	
+Gob	EnableForceAnimations	0x00459d60	C3	Y	Byte this+0x10 = 1; triple with Disable 0x459d80 (=0) and IsForceAnimated 0x459da0 (reads +0x10); ctor default 0	
+Gob	DisableForceAnimations	0x00459d80	C3	Y	Byte this+0x10 = 0; triple with Enable 0x459d60 and IsForceAnimated 0x459da0 (reads +0x10)	
+Gob	IsForceAnimated	0x00459da0	C3	Y	Returns byte this+0x10, same field set by Enable/DisableForceAnimations 0x459d60/0x459d80; retn 0	
+Gob	EnableAlwaysRender	0x00459dc0	C3	Y	Byte this+0x12 = 1; triple with Disable 0x459de0 (=0) and IsAlwaysRendering 0x459ee0 (reads +0x12)	
+Gob	DisableAlwaysRender	0x00459de0	C3	Y	Byte this+0x12 = 0; triple with Enable 0x459dc0 and IsAlwaysRendering 0x459ee0 (reads +0x12)	
+Gob	DisableInCutscene	0x00459e00	C3	Y	Byte this+0x14 = 0; paired with IsInCutscene 0x459e20 reading +0x14 (5 callers); ctor inits +0x14=0	
+Gob	IsInCutscene	0x00459e20	C3	Y	Returns byte this+0x14, same field cleared by DisableInCutscene 0x459e00; retn 0	
+Gob	GetCutsceneDummyPosition	0x00459e40	C3	Y	Looks up node "cutscenedummy" under root this+0x98 via FUN_00456b00; writes xyz to out-ptr (zeros if missing), returns it, retn 4	
+Gob	IsAlwaysRendering	0x00459ee0	C3	Y	Returns byte this+0x12, same field as Enable/DisableAlwaysRender 0x459dc0/0x459de0; retn 0	
+Gob	DisableFog	0x00459f70	C2	Y	Calls recursive FUN_00459f00(root=this+0x98, 0) which sets byte +0x7d on every mesh node; pair with EnableFog (1). Fog meaning of +0x7d unconfirmed	
+Gob	EnableFog	0x00459f90	C2	Y	Calls FUN_00459f00(root=this+0x98, 1), recursive per-node byte +0x7d set; pair of DisableFog 0x459f70. Fog meaning of +0x7d unconfirmed	
+Gob	GetBoundingBox	0x00459fb0	C2	Y	Copies this+0x14c..0x154 to min and +0x158..0x160 to max, retn 8; same fields as GetMinimumBoundingBox_2 reads (ctor zeroes min, ones max) so ambiguous between the two	
+Gob	EnableInViewVolume	0x0045a000	C3	Y	Byte this+0x11 = 1 then vtable+0x1b4 call with string "propagateviewvolume"; same field as Is/DisableInViewVolume; retn 0	
+Gob	LoadAddInAnimations	0x0045a030	C3	Y	FindModel(modelName) stored at this+0x90, else loads <name>.mdl via fopen/LoadModel, AddRefs, returns 1; retn 4. Pairs with RemoveAddInAnimations which clears +0x90	
+Gob	RemoveAddInAnimations	0x0045a150	C3	Y	If this+0x90 != 0 calls Release (0x452cf0, counterpart of AddRef 0x452d40 used in Load), then zeroes +0x90; pairs with LoadAddInAnimations; retn 0	
+Gob	EnableRenderGobBBox	0x0045bed0	C3	Y	Word this+0xf4 = 1 and copies 3-float Vector* color to this+0x174..0x17c, retn 4; pair with DisableRenderGobBBox 0x45bf10 (0xf4=0); ConsoleCommands uses RENDER_GOB_BBS	
+Gob	DisableRenderGobBBox	0x0045bf10	C3	Y	Word this+0xf4 = 0, retn 0; pair of EnableRenderGobBBox 0x45bed0 (sets +0xf4=1), ctor inits +0xf4=0	
+Gob	EnableRenderBumpedOut	0x0045bf50	C3	N	WRAPPER_ARGS_MISMATCH: retn 8 (texture name + int, param_3 stored to this+0x148) vs wrapper 0 args. Sets +0x15=1 and applies bump texture to mesh nodes; mirrors Disable 0x45c490 (+0x15=0,+0x148=0)	
+Gob	DisableRenderBumpedOut	0x0045c490	C3	Y	If this+0x15 set: clears it, releases per-mesh texture proxies (FUN_004276a0), zeroes this+0x148; mirrors EnableRenderBumpedOut 0x45bf50 which sets +0x15 and +0x148; retn 0	
+Gob	SetLightPriority	0x0045c580	C3	Y	Collects light nodes under root this+0x98 (vfunc 0x24 recursion) and writes arg to light+0x74 for each; retn 4 matches (int priority)	
+Gob	GetMaximumLightRadius	0x0045c690	C3	Y	ECX saved then passed to light collector FUN_004631c0 (this+0x98); returns max of light+0x58 as x87 float10, matching wrapper double return; retn 0	
+Gob	SetColorShifting	0x0045c750	C3	Y	Word this+0xf0 = 1, 4 dwords (Vector + alpha) to this+0xf8..0x104, if last arg call vtable+0x1b4 with "propagatecolorshift"; retn 20 = Vector(12)+float+int OK	
+Gob	SetIllumination	0x0045c7b0	C3	Y	Word this+0xf2 = 1, 3 dwords (Vector) to this+0x10c..0x114, if propagate call vtable+0x1b4 "propagateillumination"; retn 16 = Vector(12)+int OK	
+Gob	GetMinimumBoundingBox_2	0x00460040	C3	Y	Calls vtable+0x1cc (recompute) then copies this+0x14c..0x154 to min and +0x158..0x160 to max, retn 8; ctor inits these fields to 0 and 1; same fields as GetBoundingBox	
+Gob	GetMinimumBoundingSphere	0x004600a0	C3	Y	Calls vtable+0x1d0 then writes center from this+0x168..0x170 (3 floats) and radius from this+0x164 (ctor inits 1.0), exactly (Vector* center, float* radius); retn 8	
+Gob	RestoreTexture	0x00460ae0	C2	Y	Collects mesh nodes under root this+0x98 (flags&0x21) and calls texture setter FUN_004db0a0(&mesh+0xa8, 0) per mesh, returns 1; plausible texture reset but meaning unconfirmed; retn 0	
+Gob	SetEnvironmentMap	0x00461300	C3	Y	Takes char* name (default string if null/empty), AurTextureGetReference, stores at this+0x1d4, sets per-mesh texture flag (+0xde = 1) on all mesh nodes under this+0x98; returns 1; retn 4	
+Gob	SetPosition	0x00461490	C3	Y	Writes 3 dwords (Vector by value) to this+0xa4..0xac then copies back into out-ptr and returns it; retn 16 = ptr+12; 0xa4 == GOG Gob.position	
+Gob	SetOrientation	0x004614e0	C3	Y	Writes 4 dwords (Quaternion by value) to this+0xb0..0xbc then copies into out-ptr, returns it; retn 20 = ptr+16; 0xb0 == GOG Gob.orientation	
+Gob	GetModelName	0x004615d0	C3	Y	Returns model+8 where model = this+0x84 (== GOG Gob.model), null if no model; model+8 is the model name field; retn 0	
+Gob	Append	0x00462020	C3	Y	FindNode(root this+0x98, partName) then FindModel(modelName), AddRef, creates attach node with identity quat (+0x14=1.0) and fires vtable+0x1b4 "_EmitterTarget"; retn 8 returns 1/0	
+Gob	Amputate	0x00462170	C3	Y	FindNode(root this+0x98, partName), recursively detaches/deletes child nodes of that part, Release model refs, returns 1 or 0; retn 4 matches (char* partName)	
+Gob	GetPartLocalPosition	0x00462cd0	C3	N	WRAPPER_ARGS_MISMATCH: Steam retn 12, 3 args (node name/id passed to vtable+0x10c, then Vector* at node+8..0x10, quat* at node+0x14..0x20, each null-checked); wrapper omits the leading name arg	
+Gob	AddAttachment	0x004632c0	C3	Y	ECX+0x1e8 container: if !Contains(att) (FUN_00476620) then push_back(att) (FUN_00473f40); retn 4; same array (+0x1e8/+0x1ec) that SetObjectScale iterates as children	
+Gob	RemoveAttachment	0x00463300	C3	Y	ECX+0x1e8 container: if Contains(att) then remove (FUN_00449170); retn 4; mirror of AddAttachment 0x4632c0 on same array	
+Gob	SetObjectScale	0x00463340	C3	Y	Needs model (+0x84); inherit==1 rescales +0x1e0 by +0x1e4 ratio, else +0x1e0=scale*+0x1e4; then calls vtable+0xcc(scale,0) on each child in +0x1e8/+0x1ec; retn 8 (float,char), returns 1/0	
+Gob	BehaviorMessage	0x004636d0	C2	Y	If this+0x1b4 (ctor inits 0) non-null calls (*obj)->vfunc3(arg), retn 4; forwarding of a message arg to behavior object fits name but is generic (Ghidra mislabels as CBaseTabbedPane::SerializeTabWindow)	
+Gob	EndLookAtAnimate	0x004dcce0	C2	Y	If this+0x1a0 (ctor inits 0) non-null calls (*obj)->vfunc2(), retn 0; forwarder to a member animation object, no LookAt string linkage proven	
+Gob	AddAnimationFlag	0x004e3110	C3	Y	Takes last element of array (this+0xdc ptr, +0xe0 count) and ORs arg into its +8 flags; retn 4; matches (unsigned long flag); counterpart RemoveAnimationFlag 0x4e3160 uses same array	
+Gob	RemoveAnimationFlag	0x004e3160	C3	Y	Last element of array (this+0xdc/+0xe0) +8 flags minus arg when both nonzero; retn 4; counterpart of AddAnimationFlag 0x4e3110 on same array	
