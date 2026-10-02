@@ -73,3 +73,9 @@
 - ClearAllActions skipped while non-commandable: `005410e9 CMP dword ptr [EAX + 0xec],0x1` / `005410f0 JNZ 0x00541385`;
   state apply 0x59DE30: `0059dec7 MOV [EAX+0xec],0x1`, `0059ded6 CALL 0x00541080`, `0059def8 MOV [EAX+0xec],0x0`.
 - GetHasSpellEffect scan 0x5476C0: `00547706 MOV EAX,dword ptr [EDX + 0x1c]` / `0054770f CMP ECX,dword ptr [EBP + 0x8]`.
+
+### GATE_wave2 top claims (CONFIRMED by the lead)
+- 0x6F2A30 (decompile): returns 1 for class ids 3, 4, 5, 0xB..0x10 only (Force classes per the gate) -> GetCreatureHasTalent(medpac)
+  skips the item scan for Force-only creatures (`006b89ce CALL 0x006f2a30` / `006b89d8 JZ`): R4 medpac rule broken for Kreia/Visas.
+- Reputation matrix: get 0x664580 `006645ef MOV ECX,[EBP+0xc]` / `006645f2 IMUL ECX,[EAX+0x1c]` (2nd arg x N);
+  set 0x6644D0 `00664531 MOV ECX,[EBP+0x8]` / `00664534 IMUL ECX,[EAX+0x1c]` (1st arg x N). Same caller order -> transposed. BUG (low reach).
