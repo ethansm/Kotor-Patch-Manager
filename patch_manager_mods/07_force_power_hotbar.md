@@ -26,6 +26,18 @@
   DLL changed. Staging check must stop on any non-hotbar DIFF before installing.
   Phase C inputs noted 10-02: `force_power_hotbar_log.txt` is 18 MB (appends across sessions; the 60000-line cap is per process) -> truncate/rotate at load;
   `twoda_test` needs args (`<game>/override/spells.2da <game>/dialog.tlk`) -> run_tests.sh must pass them or skip; `config_roundtrip_test` writes `test_rt.ini` in cwd.
+  **Phase C (cleanup + logging tiers + release defaults) = build 23 `79314b3c` INSTALLED 2026-10-02 02:53** (stage `hotbar_stage12/` = stage11 + this hotbar +
+  the sibling's `CharEffectsPanel.kpatch` `dbb080ae` matching live; backup `backups/inst12_1002_0253`; only the hotbar DLL changed, `buff-duration-hud` 2738ec1b copied back,
+  AR_ERROR.LOG unchanged). C1: `port<id>`/+0xB8 key path, probe/catalog (`force_power_hotbar_available.txt` no longer written), `CreatureTagOffset` (old INIs keep it
+  as a preserved extra key), HudVtable/Entry_Owner/Widget.id/Bar.seq/Button.hover/g_activeDesc, row plumbing (Req = slot, g_slotBound 1-D) deleted; evidence moved to
+  `07_force_power_hotbar_evidence/`, probe.ini/test_rt.ini removed. C2: `VLOG` = Verbose tier (per-widget/hover/tip/sound/wheel/scroll/per-key cap/createLabel lines),
+  log rotates per session (`force_power_hotbar_log.txt` -> `.1.txt` at DLL load), per-HUD hover/refresh/toggle/arrow-repeat timers moved into Bar/Editor.
+  C3: defaults Invoke=1 Verbose=0 (template had Invoke=0 = release blocker), INI header documents the [General] keys. Host tests pass; -Wall -Wextra clean.
+  **USER-ACCEPTED 2026-10-02 ~14:55 ("looks good")**; log rotation verified live (old 18 MB log -> `.1.txt`). Verbose=0 short-log check still open (user INI has Verbose=1). Rollback = stage11 `75bb0a21`.
+  **Runtime-GUI technique doc (2026-10-02):** `patch_manager_mods/RuntimeGuiControls.md` (upstream `docs/` style; copied to the KPM clone `docs/`), incl. a
+  side-effect audit (DB lesson 336). Plan additions from it: Phase E rewrite the STALE KPM `Patches/ForcePowerHotbar/PULL_REQUEST.md` (still says 30 slots /
+  UseForcePower) + add the README; Phase F check `setVisible`/`wVisible` re-assert against the live flag, not only the cache; Phase L checklist add an options-menu
+  resolution change with a save loaded and gamepad UI navigation on the HUD (both untested).
 - **Previous install:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
   GUI deployed = **168 controls** (`override/mipc28x6_p.gui`), textures `override/hotbar_slot*.tga`, `override/hotbar_edit*.tga`. Game closed at the end of the session.
 - **Features (all live-verified unless noted):** ten native-width (35 u) square HUD buttons for keys `1`-`0` (icons at native quick-bar size, digit label up/left of the icon, dimming, hover frame swap + the native GUI hover sound,
@@ -414,7 +426,7 @@ Key bindings, bar layout and per-save profiles are data tables in code (`kRows`,
 
 ## Live results (2026-09-29, builds 1-3 on the Steam/Proton install)
 
-All evidence is in `force_power_hotbar_src/live_evidence/` (catalog, a full probe dump, key/gate events) and was gathered by the always-on probe.
+All evidence is in `07_force_power_hotbar_evidence/` (moved out of the source dir at 1.0.0) (catalog, a full probe dump, key/gate events) and was gathered by the always-on probe.
 
 **Verified live**
 - Both detours apply (`Applied DETOUR hook at 0x0072CB63 / 0x0074B3F0`), no `AR_ERROR.LOG` change (md5 `a2d887896b53eae113758dc8c3729db9`).

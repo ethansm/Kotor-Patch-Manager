@@ -121,11 +121,10 @@ struct Profile {
 };
 
 struct General {
-    int invoke = 0;               // 0 = log only, 1 = really invoke
-    int verbose = 1;
+    int invoke = 1;               // 1 = keys/clicks use the slot's action, 0 = log only (dry run)
+    int verbose = 0;              // 1 = detailed trace log (hover, widgets, every key), 0 = state changes and errors only
     int autoFill = 0;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order (default off: start empty)
     int keyboardDevice = -1;      // -1 = read the engine's constant (0x0099C884)
-    int creatureTagOffset = 0;    // 0 = unknown -> characterKey falls back to the object id
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
 };
 
@@ -205,7 +204,6 @@ struct Config {
                 else if (k == "verbose") general.verbose = atoi(val.c_str());
                 else if (k == "autofill") general.autoFill = atoi(val.c_str());
                 else if (k == "keyboarddevice") general.keyboardDevice = atoi(val.c_str());
-                else if (k == "creaturetagoffset") general.creatureTagOffset = (int)strtol(val.c_str(), nullptr, 0);
                 else general.extra[key] = val;
             } else if (cur) {
                 int r, s;
@@ -227,7 +225,9 @@ struct Config {
     // Canonical text: General, Default first, then the other profiles in name order.
     std::string Serialize() const {
         std::string o = "; Force Power Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
-                        "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n";
+                        "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
+                        "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
+                        "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n";
         char b[64];
         o += "[General]\n";
         snprintf(b, sizeof b, "SchemaVersion=%d\n", SchemaVersion); o += b;
@@ -235,7 +235,6 @@ struct Config {
         snprintf(b, sizeof b, "Verbose=%d\n", general.verbose); o += b;
         snprintf(b, sizeof b, "AutoFill=%d\n", general.autoFill); o += b;
         if (general.keyboardDevice >= 0) { snprintf(b, sizeof b, "KeyboardDevice=%d\n", general.keyboardDevice); o += b; }
-        if (general.creatureTagOffset) { snprintf(b, sizeof b, "CreatureTagOffset=0x%x\n", general.creatureTagOffset); o += b; }
         for (auto& kv : general.extra) o += kv.first + "=" + kv.second + "\n";
         auto emit = [&](const Profile& p) {
             o += "\n[Profile." + p.name + "]\n";
