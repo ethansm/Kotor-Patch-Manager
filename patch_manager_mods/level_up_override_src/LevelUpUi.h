@@ -356,9 +356,10 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     int cx = 0, cy = 0;
     const int hit = guikit::cursorEngine(&cx, &cy) ? uiHit(r, cx, cy) : -1;
     const bool clickable = hit >= 0 && uiClickable(r, hit);
+    const bool hovered = clickable && hit == r->hover;   // the cursor was already over this control on the previous tick (guards clicks meant for a GUI on top)
     if (clickable && hit != r->hover) guikit::playHoverSound();
     r->hover = clickable ? hit : -1;
-    if (click && clickable) uiClick(r, tag, hit);
+    if (click && hovered) uiClick(r, tag, hit);
 
     // draw
     const TagCfg* cfg = tagConfig(tag);
@@ -383,7 +384,8 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
         held = e.ok && e.d == Decision::Hold && g_cfg.mode == Mode::Rewrite;
         if (held) banked = bankedLevels(stats);
     }
-    const bool sv = configured && buildStatus(true, true, held, banked, P->holdClass, P->shortName, cfg->instant, st, sizeof st);
+    bool sv = configured && buildStatus(true, true, held, banked, P->holdClass, P->shortName, cfg->instant, st, sizeof st);
+    if (sv && g_cfg.mode != Mode::Rewrite) { const size_t l = strlen(st); snprintf(st + l, sizeof st - l, " (inactive: mode=log)"); }
     if (sv) uiSetText(r, C_STATUS, st);
     uiShow(r, C_STATUS, sv);
 }

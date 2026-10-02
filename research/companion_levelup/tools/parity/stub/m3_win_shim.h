@@ -7,4 +7,5 @@
 union LARGE_INTEGER { long long QuadPart; };
 inline BOOL QueryPerformanceCounter(LARGE_INTEGER* q) { timespec t; clock_gettime(CLOCK_MONOTONIC, &t); q->QuadPart = (long long)t.tv_sec * 1000000000LL + t.tv_nsec; return 1; }
 #define MOVEFILE_REPLACE_EXISTING 1
+#define MOVEFILE_WRITE_THROUGH 8
 inline BOOL MoveFileExA(const char* a, const char* b, DWORD) { return rename(a, b) == 0; }

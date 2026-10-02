@@ -1058,7 +1058,7 @@ bool ptWrite() {
     if (!f) return false;
     bool ok = fwrite(g_ptText, 1, n, f) == n;
     ok = fclose(f) == 0 && ok;
-    ok = ok && MoveFileExA(PtTmp, PtName, MOVEFILE_REPLACE_EXISTING);
+    ok = ok && MoveFileExA(PtTmp, PtName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
     if (!ok) remove(PtTmp);
     return ok;
 }
@@ -1073,6 +1073,7 @@ bool ptWrite() {
     if (!tag || !*tag || !presetId || !*presetId) return false;
     reloadPlay(true);
     if (!g_guid) {
+        if (g_ptDoc.n >= pt::MaxSections + 1) { logLine("GUID new: levelup_playthroughs.ini already holds %d playthroughs (cap) - not applied", pt::MaxSections); return false; }
         const uintptr_t tb = liveTable();
         if (!tb || !guidEngineOk()) { logLine("GUID new: no live globals table / engine mismatch - not applied"); return false; }
         uint32_t guid;
@@ -1118,7 +1119,7 @@ void guidLoad(void* table, int result) {
     ensureHeader();
     uint32_t g = 0; int found = 0;
     if (table && guidEngineOk()) readGuid(table, &g, &found);
-    g_guid = found ? g : 0;
+    g_guid = found == 32 ? g : 0;   // a partial set (1..31 names) is not a GUID we wrote: treat as none (logged below)
     logLine("GUID load g%08x found=%d/32 result=%d table=%08x", (unsigned)g_guid, found, result, (unsigned)reinterpret_cast<uintptr_t>(table));
     reloadPlay(true);
 }
@@ -1442,10 +1443,10 @@ void maybeBanked(const Eval& e, uintptr_t stats) {
     char cb[16], text[200];
     buildBankedText(text, sizeof text, e.p->name[0] ? e.p->name : e.tag, n, className(e.p->holdClass, cb, sizeof cb));
     uint32_t cs[4] = {0, 0, 0, 0};
+    be->lastN = n; g_bankedLast = now; g_bankedEver = true;   // state first: a re-entrant gate call during the engine call is a no-op
     reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, text);
     reinterpret_cast<BankedAdd_t>(g_eng.bankedAdd)(reinterpret_cast<void*>(gui), cs, 0x80, 0);
     reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
-    be->lastN = n; g_bankedLast = now; g_bankedEver = true;
     logLine("BANKED tag=%s n=%d guid=%08x shown=1", e.tag, n, (unsigned)g_guid);
 }
 
