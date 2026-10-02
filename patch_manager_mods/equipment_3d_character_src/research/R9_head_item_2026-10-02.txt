@@ -1,0 +1,27 @@
+R9 head item on the preview (2026-10-02). Static only (decompile dump steam_6a522e71); key claims verified on disk by Opus.
+
+1. Engine head-item path (0076d200 SetAppearance, flags bit2 -> 0085a6c0 CreateHeadAppearance -> 0085a9e0(3, app)):
+   decomp/85/0085a9e0.c
+   - l.300-304 old item removed: item=0073f530(app+0x10); g=(item+0x10)->vt[0x98](0xff,1); g->vt[0x50](0,0,0); vt[0xcc](1.0,1); vt[0x40](1);
+     if item+0x30: (item+0x10)->vt[0x94](0). Never freed (the item owns it).
+   - l.313-328 new item: item=0073f530(copy+0x10); head=(app+0x3c)->vt[0x98](0xfe,1); g=(item+0x10)->vt[0x98](0xff,1);
+     g->vt[0x50](head,"GoggleHook",0); g->vt[0x18]("default",1.0f,0,0).
+   => the REAL item's own Gob is reparented onto the preview head. No clone. The creature dtor 007651b0 never touches items,
+      so freeing the preview frees/strands the real helmet Gob = headgear-loss bug with keep_obj10=1 (DB lesson 149 class).
+   - "GoggleHook" @009a43e0, used only by 0085a9e0 and 00868610. "HeadHook" (@009a4428) = head on body, not for items.
+   - vt[0x50] = Gob::AttachToPart 00461670 (this, parent, node, type): parent->vt[0x10c](node) FindPart; null parent or missing
+     node -> this->vt[0x58](0) (clear attachment), no crash.
+   - vt[0x18] = PlayAnimation 004e3270 thiscall ret=16 (name, float speed, uint flags, float).
+   - No hair/head hiding for masks in 0085a9e0 (vt[0x94] only on removal) -> nothing to mirror.
+   - 007ed830()->vt[0xec](id): holder-level "head item changed" notify; skipped for the preview (unverified callee, takes only the id).
+2. Model name (client item ctor 00801fa0(baseitem, variation byte, gender char), R7e):
+   - name = 006d5000: itemclass(row+0x3c) "_%03d" variation (or "_%c_%03d" if genderspecific row+0x74 and gender), lowercased (00710ca0),
+     checked as MDL (00711ed0 type 0x7d2), fallback defaultmodel (row+0x5c).
+   - The FINAL ResRef is stored at item+0x128 (00801fa0.asm 00802369 ADD ECX,0x128 -> 00710ca0), char[16]. variation at +0x11c, gender +0x11d.
+   - Head rows (override/baseitems.2da, equipableslots 0x1): 44 Mask I_Mask (helmets, masks, visors, goggles all here; i_mask_001..014 in BIFs,
+     043/127/221/222/255 in override), 69-72 droid sensors (I_Drd*_001, default I_Null).
+3. Fix (Mod 5, 2026-10-02): always pass copy+0x10 = 0x7f000000 to 0076d200; read item+0x128, skip empty/"i_null"; FnCreateModel 00462320(name,
+   0x9a4ab0,0,0); vtable must be 0098b5cc; attach to the preview head partGob(0xfe) (holder vt[2](0xfe) == (app+0x3c)->vt[0x98](0xfe,1), 007ed830
+   returns creature+0x68) at "GoggleHook"; play "default". Free before rebuild/destroy: vt[0x50](0,0,0), vt[0x4c](0), vt[0](1) (as weapons, 0086a430).
+4. Recovery (B3, not built): 0076d200(real, copy, 2, 0, 1) with app+0x40=1 forces 0085a9e0 to re-attach the real item's Gob on a REAL creature.
+   Risky on a live creature; not needed once the preview never touches the real Gob. A re-equip or reload re-attaches it the normal way.

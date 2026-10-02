@@ -1,6 +1,6 @@
 # Mod Idea 5: Equipment screen live 3D character (+ flourish animation)
 
-## OPEN BUG 2026-10-02: headgear missing after the equipment page (READ THIS FIRST) - see "Headgear missing after equip page" at the end
+## 2026-10-02 01:05: headgear-loss FIX INSTALLED, awaiting user test (READ THIS FIRST) - see "Headgear missing after equip page" at the end (root cause, own-model helmet, DLL md5 `7b57ad3b`, rollback)
 
 ## SESSION 4 UPDATE (2026-09-30 evening) - READ THIS FIRST; supersedes SESSION 3 "Next" and the toolbar description below
 - **Installed (game closed at install):** DLL md5 `dcbdfde3a1c8d69225d7163604e73d0a` = commit `8ba37be` (kpatch kept as `$TOOL_DIR/equip3d_live_patches/EquipCharPreview_0930_menu2.kpatch`; older DLL backups `.bak_pre_menu`, `.bak_pre_pages`, `.bak_pre_pause`, `.bak_pre_split`, `.bak_pre_menu2`; previous log saved as `equip3d_log_before_menu2.txt`). `override/equip_p.gui` = **79 controls** (script `scripts/add_equip_3dview_control.py --layout A`; backup `backups/equip3d_20260930_120413_561437`; the OLDEST `equip3d_*` backup stays the pristine one). **Not yet user-tested: the spin row, the left-anchored menu, hide/buffer timing** (user was told to launch and test; read `$GAME/equip3d_log.txt` for `spin row:`, `menu:`, `btn:`, `flourish:` lines).
@@ -100,7 +100,7 @@ Constraints kept: 14-unit edge gaps, 10-unit panel gaps, BAR5 vanilla. Generator
 | H-E4 | `008aa6f0` | `55 8B EC 51 89 4D FC` | `ecx` = panel | `EquipDestroy`: `(*creature->vt[0])(1)` before the panel dies |
 
 ## INI keys (`$GAME/equip3d.ini`, unknown/garbage lines are logged and rejected)
-`enabled`, `stage` (1 view only, 2 static creature, 3 polled refresh, 4 idle+flourish scheduler, 5 drag/wheel/reset), `rig` (charrec_light), `fov_deg` (22.726), `bevels`, `drag_deg_per_px`, `wheel_zoom`, `wheel_step`, `zoom_min`, `zoom_max` (zoom = FOV scale), `hit_flip_y`, `screen_w/h`, `flourish`, `flourish_first_s`, `flourish_min_s`, `flourish_max_s`, `flourish_quiet_s`, `flourish_on_equip`, `equip_anim` (itemequip), `flourish_list` (comma list), `keep_obj10` (1: show helmets), `buttons` (1: toolbar), `spin_toggle_deg_s` (20), `poll_ms` (100), `rebuild_min_ms` (250), `spin_deg_s` (0).
+`enabled`, `stage` (1 view only, 2 static creature, 3 polled refresh, 4 idle+flourish scheduler, 5 drag/wheel/reset), `rig` (charrec_light), `fov_deg` (22.726), `bevels`, `drag_deg_per_px`, `wheel_zoom`, `wheel_step`, `zoom_min`, `zoom_max` (zoom = FOV scale), `hit_flip_y`, `screen_w/h`, `flourish`, `flourish_first_s`, `flourish_min_s`, `flourish_max_s`, `flourish_quiet_s`, `flourish_on_equip`, `equip_anim` (itemequip), `flourish_list` (comma list), `keep_obj10` (DEPRECATED 2026-10-02: ignored, logs a WARNING when 1; it reparented the REAL helmet Gob), `helmet` (1 default: helmet/visor on the preview from our own model), `buttons` (1: toolbar), `spin_toggle_deg_s` (20), `poll_ms` (100), `rebuild_min_ms` (250), `spin_deg_s` (0).
 
 ## Source map
 Source of record `$TOOL_DIR/Patches/EquipCharPreview/` (`EquipCharPreview.cpp`, `manifest.toml`, `kotor2-steam-aspyr.hooks.toml`, `exports.def`), mirrored in `equipment_3d_character_src/`. Scripts: `scripts/add_equip_3dview_control.py` (layouts R/A/G; A live), `scripts/equip3d_layout_mockup.py`, `scripts/list_creature_anims.py` (K2 party rows), `scripts/check_equip3d_kpatch.py`. Research raw files `equipment_3d_character_src/research/R1*-R5*`.
@@ -120,7 +120,7 @@ Source of record `$TOOL_DIR/Patches/EquipCharPreview/` (`EquipCharPreview.cpp`, 
 ## Animation smoothing (2026-09-30, user: "jumps when the animation triggers/finishes")
 Root cause (R8a/R8b, DB lesson): flourishes were played with speed -1 = REVERSE playback (the earlier "once = speed<0" reading was wrong) and the idle was re-issued with flags 2 (= no cross-fade, weight 1). Fix: flourish `speed +1, flags 0` (engine cross-fades from the current pose over the anim's header transition 0.25-1.0 s), end our timer 60 ms before the wrap and re-issue the idle/stance with flags 0 (blends back); stance changes also flags 0. Backup DLL `equipment-3d-character.dll.bak_pre_blend`.
 
-## Headgear missing after equip page (user report 2026-10-02, NOT fixed, nothing changed yet)
+## Headgear missing after equip page (user report 2026-10-02; root cause found; fix installed 01:05, awaiting user test)
 
 User: "headgear was missing after opening equip screen and closing it for a character". Game closed when reported. Not yet answered by the user: (1) missing on the world model or in a 3D preview, (2) still in the equipment slot / does re-equip or reload restore it, (3) which character + helmet/visor.
 
@@ -129,3 +129,20 @@ Log evidence (`$GAME/equip3d_log.txt`, copy in the 10-01/02 session scratchpad; 
 Hypothesis (unproven): appearance copy `+0x10` = head ITEM OBJECT id. Vanilla SetStats forces `0x7f000000` (OBJECT_INVALID) for its preview; `EquipCharPreview.cpp` ~line 792 keeps the real id when `keep_obj10=1` (INI, live = 1) so the preview shows helmets. The preview's head build (0076d200 flag bit2 -> head part 0085a6c0 / 0x7c(0xfe), R2e/R7g) then likely binds the REAL client item's model (or its owner/model pointer) to the preview creature; the preview dtor (`destroyCreature` -> vt[0](1)) frees/detaches it, so the real creature loses the helmet visual. To prove: find who reads appearance `+0x10` in the 0076d200 chain (GetItemObj, item model field, attach to `headhook`), what the client creature dtor does to head items, and what the real creature's head part points at before/after (log the real creature's head Gob/item model pointers around build and destroy).
 
 Options: stopgap `keep_obj10=0` in `$GAME/equip3d.ini` (hot reload; preview shows no helmet); proper fix = build the preview helmet from a CLONED item/model, or detach the head item from the preview before its dtor (restore the real item's model/owner), or rebuild the real creature's head part after destroy. Plan: Claude plan "Mod 5 headgear + Mod 14 Stage 1" (next session).
+
+### User facts (2026-10-02 ~01:00, AskUserQuestion)
+Where: "just double checked, now it's only missing in the 3d preview viewport" (world model fine at that check); item still in the slot, re-equip/reload not tried; happened for both the PC and a companion. Advice given: re-equip or reload a save from before the visit if a world helmet looks wrong (items are saved, not Gobs, so saves are unaffected).
+
+### Stopgap (2026-10-02 01:00)
+Game closed. `$GAME/equip3d.ini` `keep_obj10=1` -> `0` (backup `equip3d.ini.bak_1002_0100`).
+
+### Root cause (static, 2026-10-02) - details `equipment_3d_character_src/research/R9_head_item_2026-10-02.txt`
+`0076d200` SetAppearance (flags bit2) -> `0085a6c0` CreateHeadAppearance -> `0085a9e0(3, app)`: when copy `+0x10` != `0x7f000000` it takes the REAL client item (`0073f530`), gets the item's OWN Gob `(item+0x10)->vt[0x98](0xff,1)` and reparents it onto the preview head with `vt[0x50](head, "GoggleHook", 0)` (no clone). The preview creature dtor `007651b0` never touches items, so closing the page frees the preview head with the real helmet Gob still attached (missing helmet, possible dangling `item+0x10` model). Same failure class as DB lesson 149. Vanilla SetStats blanks `+0x10` for exactly this reason. DB lesson 268.
+
+### Fix build (2026-10-02 01:05, INSTALLED, awaiting user test)
+- `buildPreview` ALWAYS passes `+0x10 = 0x7f000000` (keep_obj10 ignored); the raw snapshot still holds the real id, so a helmet change still rebuilds.
+- New `attachHelmet`: client item `getItemObj(id)`, model ResRef = `item+0x128` (the name the item ctor `00801fa0` chose, incl. its defaultmodel fallback; skip empty / `i_null`), `FnCreateModel 0x462320`, vtable check `0098b5cc`, attach to the preview head `partGob(0xfe)` at `"GoggleHook"`, `vt[0x18]("default",1,0,0)`. `detachHelmet` (vt[0x50](0,0,0), vt[0x4c](0), vt[0](1)) runs before every rebuild and in `destroyCreature` (re-bind, evict, H4). INI `helmet=0/1` hot-toggles it.
+- Logs: `helmet: item id=.. obj=.. model='..' gob=.. head=.. attach ok`, `helmet: detached+freed ..`, `helmet: WARNING ..`.
+- Gate: `-Wall -Wextra` clean; `check_equip3d_kpatch.py` ALL PASS. Installed DLL md5 `7b57ad3b1ecf35400014a71139ea409d` (game closed); backup `$GAME/patches/equipment-3d-character.dll.bak_1002_0105`; kpatch `$TOOL_DIR/equip3d_live_patches/EquipCharPreview_1002_0105.kpatch`. INI `keep_obj10=0`, `helmet=1`. Live set 26 ids, 18 DLLs (md5 list in session scratchpad).
+- **Rollback:** copy `.bak_1002_0105` back (game closed) and/or `helmet=0`.
+- **User test checklist:** helmet/visor char: page open -> helmet in preview; close -> world model still wears it (5x, plus a party switch on the page); equip/unequip a helmet on the page (preview updates, world correct after close); a mask that hides hair; a droid; save/load + module transition. Read `equip3d_log.txt` (copy first, never clear before reading).

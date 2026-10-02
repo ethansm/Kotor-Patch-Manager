@@ -44,6 +44,7 @@ constexpr int LabelBorderOff = 0x60, BorderFillOff = 0x74, LabelTextOff = 0xD8, 
 // weapons (research: 0086a430 attaches model instances with Gob vt[0x50](parentGob, "rhand"/"lhand", 0); detach = vt[0x50](0,0,0)+vt[0x4c](0)+delete)
 constexpr int FnGetItemObj = 0x0073f530, ItemMgrGlobal = 0x00a1b4a4, FnCreateModel = 0x00462320;   // thiscall(mgr=[[a1b4a4]+4], id) -> client item*; cdecl(name, inst, 0, 0) -> Gob*
 constexpr int CrRightItemOff = 0x238, CrLeftItemOff = 0x23c, ItemBaseIdxOff = 0xc, ItemVariationOff = 0x11c, NoItemId = 0x7f000000;
+constexpr int ItemModelResOff = 0x128;   // client item ctor 00801fa0 stores the model ResRef it chose (name formula 006d5000 + defaultmodel fallback), char[16]
 constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
 constexpr int NumButtons = 5;   // LBL_E3D_ANIM / SPIN / WEAP / RESET / EMOTE (ids ExpectedControlId+3..+7)
 constexpr int MaxMenu = 20;     // LBL_E3D_M00..M19 (ids +8..+27): Emotes pop-up items; then LBL_E3D_TIPBG / LBL_E3D_TIP (+28,+29)
@@ -148,7 +149,7 @@ struct Cfg {
     char flStance[512] = "";   // optional flourish list used while a weapon stance is on (empty = same list)
     char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
     char equipAnim[64] = "itemequip";
-    int pollMs = 100, rebuildMinMs = 250, keepObj10 = 1, buttons = 1; float spinToggleDegS = 20;
+    int pollMs = 100, rebuildMinMs = 250, keepObj10 = 0, helmet = 1, buttons = 1; float spinToggleDegS = 20;
     float spinDegS = 0;
 };
 Cfg g_cfg;
@@ -216,7 +217,8 @@ void loadIni() {
         else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = (int)a[0]; }
         else if (!strcmp(k, "buttons")) { good = parseFloats(v, a, 1); if (good) c.buttons = (int)a[0]; }
         else if (!strcmp(k, "spin_toggle_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinToggleDegS = a[0]; }
-        else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = (int)a[0]; }
+        else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = (int)a[0]; if (good && c.keepObj10) logf("WARNING: keep_obj10=1 is DEPRECATED and IGNORED (it reparented the REAL helmet Gob onto the preview: 0085a9e0, doc 10); use helmet=1"); }
+        else if (!strcmp(k, "helmet")) { good = parseFloats(v, a, 1); if (good) c.helmet = (int)a[0]; }
         else if (!strcmp(k, "rebuild_min_ms")) { good = parseFloats(v, a, 1); if (good) c.rebuildMinMs = (int)a[0]; }
         else if (!strcmp(k, "spin_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinDegS = a[0]; }
         else { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
@@ -275,6 +277,8 @@ struct Slot {
     char activeName[32] = "";
     // weapons
     void* wpn[2] = {}; int wpnIds[2] = {0, 0}; bool wpnApplied = false, stanceOn = false; char stanceName[12] = "", wpnNames[2][28] = {};
+    // own-model helmet (never the real item's Gob: DB lesson 149, 0085a9e0)
+    void* helm = nullptr; int helmId = 0; bool helmApplied = false; char helmName[20] = "";
     // toolbar
     unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1, -1, -1}; bool btnWasL = false;
     // Emotes pop-up (items are engine labels; itemState = fill state + 1, 0 = not yet set)
@@ -598,8 +602,47 @@ int getItemObj(int id) {
     int mgr = 0, tbl = 0; if (!readAt<int>(ItemMgrGlobal, 0, &mgr) || !mgr || !readAt<int>(mgr, 4, &tbl) || !tbl) return 0;
     return reinterpret_cast<int(__thiscall*)(int, int)>(FnGetItemObj)(tbl, id);
 }
+void detachHelmet(Slot* s, const char* why) {
+    void* g = s->helm; if (!g) return;
+    s->helm = nullptr;
+    void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
+    if (!vt || vt0 != ExpectedGobVtable || IsBadReadPtr(vt + GobAttachSlot / 4, 4)) { logf("helmet: WARNING detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", g, why, vt0); s->helmName[0] = 0; return; }
+    reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
+    reinterpret_cast<void(__thiscall*)(void*, int)>(vt[GobDetachSlot / 4])(g, 0);
+    reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(g, 1);
+    logf("helmet: detached+freed %p '%s' (%s)", g, s->helmName, why);
+    s->helmName[0] = 0;
+}
+void* partGob(Slot* s, int id);
+// Head item on the preview from OUR OWN model instance. The engine path (0085a9e0, R9) reparents the REAL item's Gob onto the
+// preview head ("GoggleHook") and the preview dtor then frees it with the helmet attached: the real helmet vanishes / dangles.
+void attachHelmet(Slot* s, int id, const char* why) {
+    s->helmApplied = true; s->helmId = id;
+    if (id == NoItemId || id == 0) { dlogf("helmet: none (id=%08x, %s)", id, why); return; }
+    int item = getItemObj(id);
+    if (!item) { logf("helmet: WARNING id=%08x -> no client item object (%s), skipped", id, why); return; }
+    char name[17] = {};
+    if (IsBadReadPtr(reinterpret_cast<void*>(item + ItemModelResOff), 16)) { logf("helmet: WARNING item %08x model ResRef unreadable, skipped", item); return; }
+    memcpy(name, reinterpret_cast<void*>(item + ItemModelResOff), 16); name[16] = 0;
+    bool okName = name[0] != 0;
+    for (char* p = name; *p; ++p) if (!isalnum((unsigned char)*p) && *p != '_') okName = false;
+    int base = -1; readAt<int>(item, ItemBaseIdxOff, &base); unsigned char var = 0; readAt<unsigned char>(item, ItemVariationOff, &var);
+    if (!okName || !_stricmp(name, "i_null")) { logf("helmet: id=%08x item=%08x base=%d var=%d model='%s': no visible model, skipped", id, item, base, var, okName ? name : "?"); return; }
+    void* head = partGob(s, 0xfe);
+    if (!head) { logf("helmet: WARNING no head part on the preview (%s), skipped", why); return; }
+    void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
+    int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
+    if (!g) { logf("helmet: WARNING model '%s' failed to load (id=%08x), skipped", name, id); return; }
+    if (gvt != ExpectedGobVtable) { logf("helmet: WARNING model '%s' gob=%p vtable %08x (expect %08x), not attaching (leak instead of crash)", name, g, gvt, ExpectedGobVtable); return; }
+    void** vt = vtOf(g);
+    reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, head, "GoggleHook", 0);   // same node + call as 0085a9e0; missing node = silently unattached (00461670)
+    reinterpret_cast<void(__thiscall*)(void*, const char*, float, int, int)>(vt[0x18 / 4])(g, "default", 1.0f, 0, 0);   // as 0085a9e0 does (animated visors)
+    s->helm = g; strncpy(s->helmName, name, sizeof(s->helmName) - 1);
+    logf("helmet: item id=%08x obj=%08x base=%d var=%d model='%s' gob=%p head=%p attach ok (%s)", id, item, base, var, name, g, head, why);
+}
 void destroyCreature(Slot* s, const char* why) {
     detachWeapons(s, why);
+    detachHelmet(s, why);
     if (!s->creature) return;
     void** vt = vtOf(s->creature);
     int vt0 = 0; readAt<int>(reinterpret_cast<int>(s->creature), 0, &vt0);
@@ -783,13 +826,17 @@ void applyView(Slot* s) {
 // Builds/rebuilds the preview from `real` exactly like SetStats (0084f2c6..0084f482).
 bool buildPreview(Slot* s, int real, const char* why) {
     detachWeapons(s, "before rebuild");   // our weapon models hang off the old body Gob: free them first
+    detachHelmet(s, "before rebuild");    // likewise the helmet on the old head Gob
     s->stanceOn = false; s->wpnApplied = false;
     if (!allocCreature(s)) return false;
     unsigned char copy[AppCopyBytes]; short al = 0;
     if (!readApp(real, copy, &al)) { logf("build: real %08x appearance unreadable", real); return false; }
     unsigned char raw[AppCopyBytes]; memcpy(raw, copy, AppCopyBytes);  // snapshot BEFORE the +0x10 override (else compare never matches)
     logf("build: raw +0x10=%08x", *reinterpret_cast<int*>(copy + 0x10));
-    if (!g_cfg.keepObj10) *reinterpret_cast<int*>(copy + 0x10) = 0x7f000000;  // SetStats forces this (probably 'no item object' -> no helmet); keep_obj10=1 tests helmet display
+    // ALWAYS blank the head item, as SetStats does: with a real id 0085a9e0 reparents the REAL item's Gob onto our head and our dtor
+    // then takes it down (headgear-loss bug, doc 10). keep_obj10 is ignored; attachHelmet shows the helmet from our own model.
+    int headId = *reinterpret_cast<int*>(copy + 0x10);
+    *reinterpret_cast<int*>(copy + 0x10) = NoItemId;
     int gate = 0; readAt<int>(GateGlobal, 0, &gate);
     if (!gate) { logf("build: gate 009f42b4 is zero, skipping"); return false; }
     void* pv = s->creature; void** vt = vtOf(pv);
@@ -813,6 +860,8 @@ bool buildPreview(Slot* s, int real, const char* why) {
     chooseIdle(s);
     applyView(s);
     if (g_weaponsOn) refreshWeapons(s, real, "after build");
+    s->helmApplied = false;
+    if (g_cfg.helmet) attachHelmet(s, headId, "after build");
     return true;
 }
 
@@ -1013,6 +1062,11 @@ extern "C" void __cdecl EquipTick(int panel) {
             logf("weapons: refresh (toggle=%d applied=%d ids %08x/%08x -> %08x/%08x)", g_weaponsOn, s->wpnApplied, s->wpnIds[1], s->wpnIds[0], ids[1], ids[0]);
             refreshWeapons(s, real, "toggle/items");
         }
+    }
+    if (s->helmApplied != (g_cfg.helmet != 0)) {   // helmet= toggled by INI hot reload (an item change rebuilds via the appearance compare)
+        detachHelmet(s, "ini toggle");
+        int hid = NoItemId; readAt<int>(reinterpret_cast<int>(s->app), 0x10, &hid);
+        if (g_cfg.helmet) attachHelmet(s, hid, "ini toggle"); else s->helmApplied = false;
     }
     if (g_cfg.stage >= 4 && s->flourishActive && t >= s->flourishEnd) endFlourish(s);   // also for menu-triggered gestures while Animate is off
     if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn) {
