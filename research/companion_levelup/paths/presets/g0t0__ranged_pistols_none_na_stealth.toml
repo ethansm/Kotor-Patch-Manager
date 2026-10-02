@@ -1,0 +1,166 @@
+# G0-T0 preset 'ranged_pistols_none_na_stealth': Sneaky anti-droid operative using the built-in Personal Cloaking Shield: Improved/Master Caution (+skill bonus to Stealth/Demolitions), Class Skill: Demolitions, Two-Weapon Fighting line; Stealth/Awareness/Security
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). DEX bumps (8/12/16/20/24/28) follow elkripper G0-T0 page.
+[meta]
+tag = "g0t0"
+name = "G0-T0"
+utc = "p_g0t0.utc"
+variant = "ranged_pistols_none_na_stealth"
+summary = "Sneaky anti-droid operative using the built-in Personal Cloaking Shield: Improved/Master Caution (+skill bonus to Stealth/Demolitions), Class Skill: Demolitions, Two-Weapon Fighting line; Stealth/Awareness/Security"
+convert_at = 0   # droid: never changes class
+
+[meta.wizard]
+role = "ranged"
+style = "pistols"
+alignment = "none"
+convert = "n/a"
+skills = "stealth"
+
+[[level]]
+char_level = 7
+class = 7   # Expert Droid
+feats = []
+skills = {demolitions = 1, stealth = 1}
+
+[[level]]
+char_level = 8
+class = 7   # Expert Droid
+attrs = {DEX = 19}
+feats = []
+skills = {stealth = 2}
+
+[[level]]
+char_level = 9
+class = 7   # Expert Droid
+feats = [117]   # 117:Improved Caution
+skills = {stealth = 1, demolitions = 1}
+
+[[level]]
+char_level = 10
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 2}
+
+[[level]]
+char_level = 11
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 2}
+
+[[level]]
+char_level = 12
+class = 7   # Expert Droid
+attrs = {DEX = 20}
+feats = [118]   # 118:Master Caution
+skills = {awareness = 1, demolitions = 1, security = 1}
+
+[[level]]
+char_level = 13
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 2}
+
+[[level]]
+char_level = 14
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, security = 1, stealth = 1}
+
+[[level]]
+char_level = 15
+class = 7   # Expert Droid
+feats = [185]   # 185:Class Skill: Demolitions
+skills = {stealth = 1, awareness = 1, security = 1}
+
+[[level]]
+char_level = 16
+class = 7   # Expert Droid
+attrs = {DEX = 21}
+feats = []
+skills = {demolitions = 1, stealth = 1}
+
+[[level]]
+char_level = 17
+class = 7   # Expert Droid
+feats = []
+skills = {security = 1, stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 7   # Expert Droid
+feats = [9]   # 9:Improved Two-Weapon Fighting
+skills = {security = 1, stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 19
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 1, security = 1, computer_use = 1}
+
+[[level]]
+char_level = 20
+class = 7   # Expert Droid
+attrs = {DEX = 22}
+feats = []
+skills = {demolitions = 1, stealth = 1}
+
+[[level]]
+char_level = 21
+class = 7   # Expert Droid
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {security = 1, stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 22
+class = 7   # Expert Droid
+feats = []
+skills = {computer_use = 1, security = 1, stealth = 1}
+
+[[level]]
+char_level = 23
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1}
+
+[[level]]
+char_level = 24
+class = 7   # Expert Droid
+attrs = {DEX = 23}
+feats = [32]   # 32:Weapon Focus: Blaster Pistol
+skills = {computer_use = 1, repair = 1, demolitions = 1}
+
+[[level]]
+char_level = 25
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 7   # Expert Droid
+feats = []
+skills = {stealth = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 27
+class = 7   # Expert Droid
+feats = [84]   # 84:Toughness
+skills = {stealth = 2}
+
+[[level]]
+char_level = 28
+class = 7   # Expert Droid
+attrs = {DEX = 24}
+feats = []
+skills = {awareness = 1, security = 1, computer_use = 1, repair = 1}
+
+[[level]]
+char_level = 29
+class = 7   # Expert Droid
+feats = []
+skills = {demolitions = 1, stealth = 1}
+
+[[level]]
+char_level = 30
+class = 7   # Expert Droid
+feats = [123]   # 123:Improved Toughness
+skills = {security = 1, stealth = 1, awareness = 1}

@@ -1,0 +1,172 @@
+# Mandalore preset 'melee_dual_none_na': Soldier 6-30 dual-wield melee: Two-Weapon Fighting line + Dual Strike line (elkripper), Weapon Focus/Specialization Melee, Power Attack line, Toughness/Conditioning; STR first
+# Skill points are a PROPOSAL (cycled priority, max rank = char_level+3, class skills Demolitions/Awareness/Treat Injury). Attribute bumps follow elkripper's cadence (+1 at 8/12/16/20/24/28) applied to live STR15 CON14; unverified live.
+[meta]
+tag = "mand"
+name = "Mandalore"
+utc = "p_mand.utc"
+variant = "melee_dual_none_na"
+summary = "Soldier 6-30 dual-wield melee: Two-Weapon Fighting line + Dual Strike line (elkripper), Weapon Focus/Specialization Melee, Power Attack line, Toughness/Conditioning; STR first"
+convert_at = 0   # never becomes a Jedi (Soldier only)
+
+[meta.wizard]
+role = "melee"
+style = "dual"
+alignment = "none"
+convert = "n/a"
+skills = "combat"
+
+[[level]]
+char_level = 6
+class = 0   # Soldier
+feats = [3]   # 3:Two-Weapon Fighting
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 7
+class = 0   # Soldier
+feats = [37]   # 37:Weapon Focus: Melee Weapons
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 8
+class = 0   # Soldier
+attrs = {STR = 16}
+feats = [9]   # 9:Improved Two-Weapon Fighting
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 9
+class = 0   # Soldier
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 10
+class = 0   # Soldier
+feats = [190]   # 190:Dual Strike
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 11
+class = 0   # Soldier
+feats = [191]   # 191:Improved Dual Strike
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 12
+class = 0   # Soldier
+attrs = {STR = 17}
+feats = [192]   # 192:Master Dual Strike
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 13
+class = 0   # Soldier
+feats = [51]   # 51:Weapon Specialization: Melee Weapons
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 14
+class = 0   # Soldier
+feats = [84]   # 84:Toughness
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 15
+class = 0   # Soldier
+feats = [13]   # 13:Conditioning
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 16
+class = 0   # Soldier
+attrs = {STR = 18}
+feats = [17]   # 17:Improved Power Attack
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 17
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 18
+class = 0   # Soldier
+feats = [83]   # 83:Master Power Attack
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 19
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 20
+class = 0   # Soldier
+attrs = {CON = 15}
+feats = [123]   # 123:Improved Toughness
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 21
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 22
+class = 0   # Soldier
+feats = [21]   # 21:Improved Conditioning
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 23
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 24
+class = 0   # Soldier
+attrs = {CON = 16}
+feats = [196]   # 196:Regenerate Vitality Points
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 25
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 26
+class = 0   # Soldier
+feats = [124]   # 124:Master Toughness
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 27
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 28
+class = 0   # Soldier
+attrs = {CON = 17}
+feats = [22]   # 22:Master Conditioning
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 29
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 30
+class = 0   # Soldier
+feats = [195]   # 195:Mobility
+skills = {awareness = 1, treat_injury = 1}

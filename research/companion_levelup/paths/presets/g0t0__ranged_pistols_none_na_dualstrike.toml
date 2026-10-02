@@ -1,0 +1,166 @@
+# G0-T0 preset 'ranged_pistols_none_na_dualstrike': Party-focus-fire DPS: Two-Weapon Fighting line and Weapon Focus first, then Dual Strike/Improved/Master Dual Strike (+to hit on shared targets), Toughness; Awareness/Repair
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). DEX bumps (8/12/16/20/24/28) follow elkripper G0-T0 page.
+[meta]
+tag = "g0t0"
+name = "G0-T0"
+utc = "p_g0t0.utc"
+variant = "ranged_pistols_none_na_dualstrike"
+summary = "Party-focus-fire DPS: Two-Weapon Fighting line and Weapon Focus first, then Dual Strike/Improved/Master Dual Strike (+to hit on shared targets), Toughness; Awareness/Repair"
+convert_at = 0   # droid: never changes class
+
+[meta.wizard]
+role = "ranged"
+style = "pistols"
+alignment = "none"
+convert = "n/a"
+skills = "combat"
+
+[[level]]
+char_level = 7
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 3, repair = 1}
+
+[[level]]
+char_level = 8
+class = 7   # Expert Droid
+attrs = {DEX = 19}
+feats = []
+skills = {awareness = 2, repair = 2}
+
+[[level]]
+char_level = 9
+class = 7   # Expert Droid
+feats = [9]   # 9:Improved Two-Weapon Fighting
+skills = {awareness = 2, repair = 2}
+
+[[level]]
+char_level = 10
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 3}
+
+[[level]]
+char_level = 11
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 12
+class = 7   # Expert Droid
+attrs = {DEX = 20}
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 13
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 14
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 15
+class = 7   # Expert Droid
+feats = [32]   # 32:Weapon Focus: Blaster Pistol
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 16
+class = 7   # Expert Droid
+attrs = {DEX = 21}
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 17
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 18
+class = 7   # Expert Droid
+feats = [190]   # 190:Dual Strike
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 19
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 20
+class = 7   # Expert Droid
+attrs = {DEX = 22}
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 21
+class = 7   # Expert Droid
+feats = [191]   # 191:Improved Dual Strike
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 22
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 23
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 24
+class = 7   # Expert Droid
+attrs = {DEX = 23}
+feats = [192]   # 192:Master Dual Strike
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 25
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 26
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 27
+class = 7   # Expert Droid
+feats = [84]   # 84:Toughness
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 28
+class = 7   # Expert Droid
+attrs = {DEX = 24}
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 29
+class = 7   # Expert Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 30
+class = 7   # Expert Droid
+feats = [123]   # 123:Improved Toughness
+skills = {awareness = 1, repair = 1, computer_use = 1, security = 1}

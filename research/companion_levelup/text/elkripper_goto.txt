@@ -1,0 +1,269 @@
+
+ KOTOR 2 - GO-TO Builds
+KOTOR 2 - GO-TO Builds
+This file details some considerations to make for a GO-TO build, and may eventually contain a few GO-TO builds from different playthroughs. We'll see how far I take it.
+Like most people, I don't use GO-TO much as a companion. He's just not that effective compared to other options. But he comes with an impressive set of ranged combat feats, and his built-in Stealth ability is interesting, giving him a specialized niche as a sneaky, skilled anti-droid operative. Not a companion I'd use for the majority of the game, but something interesting for a change of pace or as a different way to approach specific challenges.
+======================
+Notes:
+GO-TO comes with some interesting equipment that should be considered in a build:
+Goto Targeting Module: (Improved Power Blast, Improved Rapid Shot, Improved Sniper Shot)
+Droid Repulsor: (Slow, 75%, 10 uses)
+Droid Defense Barrier: (absorbs 60 points energy/sonic/cold/heat/ion, 10 uses)
+Aratech Droid Oxidizer (3-8 ion + 1-10 ion vs droid, attack +1 scope/chamber upgradeable)
+ This isn't a bad set of starter gear, meaning if you just use him for a small segment somewhere, you don't have to invest a lot into him for him to be useful.
+However, he cannot use the very powerful Droid Self-Sustaining Unit, as that is limited to T3-M4
+Dialog tree
+Obtained on Nar Shaddaa (late in the planet)
+Expert Droid class (like T3)
+Class skills: Awareness, Computer Use, Repair, Security
+Has a built-in stealth generator that does not use an equipment slot. He can therefore use Stealth, even though he doesn't have it as a class skill.
+Does not set off mines (he floats over them)
+Can make security tunnelers for you
+Has a very interesting backstory, but you need very high or low influence to hear it all
+Influence gained/lost via dialog and actions when he is in your party (but mostly dialog)
+To open up some influence opportunities, you must do these things on Nar Shaddaa:
+Hack the swoop racing droid (landing pad area)
+Hack the pazaak droid (entertainment area)
+Complete the Bith scientist quest (flophouse/docks area)
+Do NOT talk to Vogga about the fuel until you are done with GO-TO influence
+Influence locations:
+Gains
+Almost Anywhere
+Kill an innocent person
+Ebon Hawk
+Initial conversation, say you'll take his money as a reward
+He gives you a reward and you gain influence with each place you stabilize, but you have to talk to him and take the Dark options to get the reward/influence
+Talk to GO-TO about Vogga, agree not to make the Hutt/Telos fuel deal.
+Dantooine
+Threaten to turn Akkere in over the hydrospanner then kill him. But this is Dark Side and Akkere won't be there if you side with the mercs, which you probably already did if you're Dark Side. So you'll probably never get to gain this influence.
+Duxn
+Blow up trapped Mandalorian
+Onderon
+Sell your starport visa to Sakarie, then say "It's the only way to make a profit"
+Droid merchant: ask about pricing, tell the droid to reset, let GO-TO help
+Use Force Persuade to quell Ponlar's riot (requires that power, obviously), or tell the guard to get backup (does not require Force Persuade)
+Losses (unconfirmed)
+Say you don't want a reward at every opportunity
+Say a Jedi's life is sacrifice when asking about stabilizing worlds
+Tell GO-TO he's useless after asking about his assets
+Tell him "what must be done is what must be" when talking about dealing with the Hutts during the first influence dialogue
+======================
+GO-TO's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Expert Droid 6
+ | STR: 10 (0)
+WIS: 10 (0)
+CHA: 10 (+0)
+INT: 16 (+3)
+CON: 16 (+3)
+DEX: 18 (+4)
+ | 28 points
+Awareness +5 (5)
+Computer use +9 (9)
+Demolitions +0 (0)
+Persuade +0 (0)
+Repair +5 (5)
+Security +9 (9)
+Stealth +4 (4)
+Treat Injury N/A
+ | Two-Weapon Fighting (g)
+Caution (g)
+Gear Head (g)
+Improved Gear Head (g)
+Weapon Proficiency: Blaster Pistol (g)
+Close Combat (g)
+Droid Upgrade Class I (g)
+Logic Upgrade (g)
+Blaster Integration (g)
+Personal Cloaking Shield (g)
+Droid Interface (g)
+ | 
+ | 7
+ | Expert Droid 7
+ | 
+ | 4 points
+?
+ | Droid Upgrade Class 2 (g)
+ | 
+ | 8
+ | Expert Droid 8
+ | DEX +1, 19 (+4)
+ | 4 points
+?
+ | 
+ | 
+ | 9
+ | Expert Droid 9
+ | 
+ | 4 points
+?
+ | Improved Two Weapon Fighting (s)
+ | 
+ | 10
+ | Expert Droid 10
+ | 
+ | 4 points
+?
+ | Droid Trick (g)
+ | 
+ | 11
+ | Expert Droid 11
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 12
+ | Expert Droid 12
+ | DEX +1, 20 (+5)
+ | 4 points
+?
+ | Master Two Weapon Fighting (s)
+ | 
+ | 13
+ | Expert Droid 13
+ | 
+ | 4 points
+?
+ | Droid Upgrade Class 3 (g)
+ | 
+ | 14
+ | Expert Droid 14
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 15
+ | Expert Droid 15
+ | 
+ | 4 points
+?
+ | Scramble Droid (g)
+Class Skill: Demolitions (s)
+ | 
+ | 16
+ | Expert Droid 16
+ | DEX +1, 21 (+5)
+ | 4 points
+?
+ | 
+ | 
+ | 17
+ | Expert Droid 17
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 18
+ | Expert Droid 18
+ | 
+ | 4 points
+?
+ | Weapon Focus: Blaster Pistol (s)
+ | 
+ | 19
+ | Expert Droid 19
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 20
+ | Expert Droid 20
+ | DEX +1, 22 (+6)
+ | 4 points
+?
+ | 
+ | 
+ | 21
+ | Expert Droid 21
+ | 
+ | 4 points
+?
+ | Toughness (s)
+ | 
+ | 22
+ | Expert Droid 22
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 23
+ | Expert Droid 23
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 24
+ | Expert Droid 24
+ | DEX +1, 23 (+6)
+ | 4 points
+?
+ | Improved Toughness (s)
+ | 
+ | 25
+ | Expert Droid 25
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 26
+ | Expert Droid 26
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 27
+ | Expert Droid 27
+ | 
+ | 4 points
+?
+ | Master Toughness (s)
+ | 
+ | 28
+ | Expert Droid 28
+ | DEX +1, 24 (+7)
+ | 4 points
+?
+ | 
+ | 
+ | 29
+ | Expert Droid 29
+ | 
+ | 4 points
+?
+ | 
+ | 
+ | 30
+ | Expert Droid 30
+ | 
+ | 4 points
+?
+ | Dual Strike (s)
+ | 
+T3-M4, who is also an Expert Droid, can surprisingly be turned into one of the best tanks in the game. (Don't believe me, check out the build.) But that depends on having the Droid Self-Sustaining Unit which, as mentioned above, only T3 can use. The other gear from the T3 build would be useful though.
+There are a couple of items that are only useable by GO-TO that, unfortunately, can only be given via cheats (and are therefore unavailable on platforms that don't support cheats):
+Droid Stealth Booster
+Droid Singularity Projector
+He arrives with gear giving the following feats:
+Power Blast
+Improved Power Blast
+Rapid Shot
+Improved Rapid Shot
+Sniper Shot
+Improved Sniper Shot
+That's great, except getting the feat via gear doesn't qualify him for the Master version of any of that. So you either have to burn two of his limited feats on something you already have just to get the prerequisites, or just accept that he won't have the highest level of any attack feat. The build as I presented it just doesn't get Master.
+There are a variety of other feats that would be useful, but can't be taken by an Expert Droid.
+GO-TO's situation with Demolitions is weird. He doesn't trigger mines, but also doesn't get Demolitions as a class skill. Unlike Mira, the rest of the party will still set off mines even if he's the leader. Also, Class Skill: Stealth is unavailable to him, making it even less useful for him to float past mines. Is he supposed to float over them and ... then what? Leave everyone else behind while he gets immediately spotted by the first trash mob? And he has a bunch of skill points, making it seem like his role would be skills. I took Class Skill: Demolitions in the build (and it might not be a bad idea to take it earlier than I did).

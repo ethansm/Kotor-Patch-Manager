@@ -1,0 +1,50 @@
+
+ KOTOR 2 - HK-47 Builds
+KOTOR 2 - HK-47 Builds
+This file details some considerations to make for an HK-47 build, and may eventually contain a few HK-47 builds from different playthroughs. We'll see how far I take it.
+======================
+HK-47 starts as and remains a Combat Droid. He can't equip melee weapons. People seem to use a mix of blasters, blaster rifles, and heavy weapons with him. However, he has a very limited number of selected feats, which makes customization difficult.
+Class skills are: Computer Use, Demolitions, Awareness, Repair, Security
+He comes with decent DEX (16) and STR (16, but it does you no good), but unimpressive CON (10) (which would have been nice, sigh).
+TSLRCM, as of 1.8 - 1.8.1 (see change list), gives HK-47 additional feats compared to the unmodded game (or compared to earlier versions of TSLRCM). I've included builds for both.
+======================
+Notes:
+Dialog tree
+Obtained after you find his missing parts (Repair skill not required)
+Has a big solo section (if using TSLRCM)
+Can give you various bonuses via dialog
+Influence gained/lost via dialog and actions when he is in your party (mostly actions)
+Influence locations (for gaining):
+Almost anywhere
+Kill innocent people
+Ebon Hawk
+The first time you talk to him and end the conversation he stops you. Tell him the next person who stops you from leaving a conversation is going to die.
+Dantooine
+Talk to the mechanic with a lightsaber equipped. He freaks out. Murder him.
+After finding Vrook in cave and leaving cave, listen to then decline Azkul's offer, then say "Die mercenary scum! (this loses influence with Kreia)
+Show compassion on Akkerre about the hydrospanner you find (probably a glitch, his dialog is critical but you get a gain. Wonder if it is fixed in the latest TSLRCM, someone else says killing Akkere gains influence)
+Duxn
+Mandalorian with detonator: blow him up. Two influence gains possible here.
+When Kelborn invites you to hunt the scouts, say "Enough talking. It's time to kill"
+Onderon
+Force Persuade the guard to let you into the city, then say "It's inside a city HK, otherwise..." (requires Force Persuade)
+When meeting with Kavar is raided, tell him he can kill anyone he likes
+The second time you enter the crowd, support Vaklu and the riot
+Telos (late game, when under attack)
+Goad wounded soldier to attack you, then kill him
+Influence locations (for losing, as trying to minimize HK-47 influence is common for Light Siders):
+Dantooine
+When offered 5000 credits for the atomospheric sensors, decline
+Be compassionate to Akkere after finding the hydrospanner
+Nar Shaddaa
+Thugs threatening man in central area. Give thugs credits and tell man he can go. Don't have to give full credits, even the Awareness line that lets you give only 100 credits suffices.
+Healing the sick man in the Refugee Sector
+Reuniting Lootra with his wife works (confirmed) but others can steal HK-47's influence. So best to have him be the only companion when reuniting them.
+I've heard that persuading Saquesh to accept credits (any amount less than 1000) for Adene's release works, but haven't confirmed that
+Onderon
+Force Persuade the guard to let you into the city, then say "Power must be used responsibly. I couldn't risk answering his questions." (requires Force Persuade)
+When meeting with Kavar is raided, tell HK-47 not to throw grenades
+======================
+HK-47 Builds:
+Base Game Build (or older version of TSLRCM)
+TSLRCM Build

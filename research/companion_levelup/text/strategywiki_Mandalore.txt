@@ -1,0 +1,646 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/Mandalore — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/Mandalore
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Mandalore joins your party when you take his shuttle from the Mandalorian ruins on Dxun to Onderon's Iziz spaceport.
+ | Mandalore: Yeah? What do you want?
+ | 7. Never mind.
+Otherwise:
+ | 1. What's your take on the Republic?
+ | Dialog
+ | 
+ | Mandalore: The Republic is a stagnant beast, that had been killing its people for years before the wars began. Were it not for Revan's strength, the Republic would already be dead.
+ | ♂ 1. You seem awfully complimentary of Revan, considering he almost destroyed your people.
+ | ♀ 1. You seem awfully complimentary of Revan, considering she almost destroyed your people.
+ | 2. You're sure of that?
+ | 3. But you were defeated and the Republic is recovering.
+ | Mandalore: Only Revan was worthy of our respect. We swept through the Outer Rim without any opposition - until Revan assumed command of the Republic forces.
+ | Mandalore: Open your eyes. The ease of our attack was as much a testament to the strength of the Mandalorian clans as it was to the weakness of the Republic.
+ | Mandalore: Only then did the battle turn. But as you know, only a handful of Jedi fought, while the others cowered in their halls, afraid to meet us head on.
+ | 1. The Jedi had their reasons for staying out of the war.
+ | 3. It wasn't fear that kept the Jedi from fighting.
+ | 2. Perhaps the Jedi thought the Mandalorians a threat not worthy of their attention.
+ | Mandalore: I'm sure there were good reasons.
+ | Mandalore: Then the Jedi were fools as well as cowards.
+ | Mandalore: I'm not accusing you of being a coward. You commanded the Republic fleet that destroyed ours. You were a worthy opponent.
+ | Mandalore: Now, was there something else you needed?
+ | 2. Can you tell me about the Mandalorians?
+ | Dialog
+ | 
+ | Mandalore: The Republic thinks my people are dead, scattered. They are wrong. You should have destroyed us when you had the chance. As long as one Mandalorian lives, we will survive. Our honor, fortunes, and lives revolve around battle. From our earliest history, this has been our way, as it will be, always.
+ | 3. Can you tell me of Mandalorian history?
+ | Mandalore: Our history and our ways are something we shield from outsiders. Only on the battlefield can you truly learn of someone.
+ | 1. There's more to life than war and battle.
+ | 2. My life has revolved around the same things.
+ | Mandalore: There are, but those are luxuries. Luxuries that were paid for by the blood of our warriors - alive and dead.
+ | Mandalore: Which is one of the reasons I travel with you. It pleases me that you recognize the truth.
+ | Mandalore: The Mandalorian clans will be united. Then we will take back our place in the galaxy. But we live in times of action, and I've said enough for now. We can speak of this again later.
+ | 3. Can you do anything to help out?
+ | Mandalore: I am Mandalore, leader of the Mandalorians. I will help you fight your battles and plan your strategy. But I will not be your errand boy. Find some other lackey to do your bidding.
+ | 4. I was wondering if you could give me some stimulants.
+ | Dialog
+ | 
+ | Mandalore: I thought that the Force would be enough of a weapon for a Jedi like yourself. Need a little something extra to work up your courage in a fight?
+ | 1. It's not for myself.
+ | Mandalore: Right. That makes sense. I'm sure the others are just too embarrassed to ask for themselves, so they sent you in their place.
+ | 2. Yeah, that's right.
+ | 3. Never mind, I don't want it.
+ | Mandalore: We wouldn't want to let them down. Here - and don't get too attached to them, I only have time to make so many.
+ | Mandalore: If you say so.
+Otherwise:
+ | 2. I'll take any advantage I can get.
+ | 3. Can I have the stim or not?
+ | Mandalore: That's a good position for a warrior to take, but even better if he relies completely on his own strength.
+ | Mandalore: Here you go. But don't get too attached to them, I only have time to make so many.
+ | Mandalore: Already gave you my last one. Go easy on them - even a strong warrior can only take so much.
+ | Mandalore
+Adrenal Alacrity
+ | Mandalore
+Adrenal Stamina
+ | Mandalore
+Adrenal Strength
+ | Mandalore
+Battle Stimulant
+ | 5. Do you know anything about this world?
+ | Dialog
+ | 
+ | Mandalore: Like us, the people of Onderon are a warriors. Early in their history they built Iziz to protect them from the beasts that swarmed on their world. No matter how far they've progressed, they're fundamentally still warriors standing watch on their battlements. They don't like outsiders and their inability to take ideas from other cultures gives them a fundamental disadvantage in warfare. They fell quickly during the Mandalorian Wars despite their martial skills. Their technology and doctrine are not in the same league as Mandalorians.
+ | 6. If you're leader of the Mandalorians, I would have thought you'd be tougher than you are.
+ | Mandalore: I've fought countless battles - ones most didn't walk away from. The wounds add up - and even the implants are all that keeps me going sometimes. I may have been stronger in my youth - and stupider - but now I've got to rely more on my armor, my weapons, and my cunning.
+After asking any question:
+ | 2. What was it you wanted to ask me?
+ | Mandalore: You fought with Revan and Malak during the Mandalorian Wars. Why?
+ | Dialog
+ | 
+ | 1. They were the only Jedi who realized that the Republic would fall without the support of the Jedi.
+ | 2. I wanted to test my training in a real fight. They provided an opportunity.
+ | 3. What I thought isn't important.
+ | Mandalore: Hnh. We'd never faced Jedi before - and didn't know the threat they represented. You've always been in the Jedi Order. Things that are common knowledge to you are rumors and stories to the rest of the galaxy. We only knew what we had seen in holovids and from our experience with Exar Kun, and by that time he was completely a Sith. We thought we would triumph easily over such 'noble' and 'compassionate' leaders. Those are weaknesses we easily exploited in the past. What did you think of us?
+ | 1. The Mandalorians were a menace that had to be stopped.
+ | Mandalore: That so? Ever consider what would have happened if we'd won?
+ | 2. Violent butchers without humanity.
+ | 3. Strong warriors and worthy adversaries.
+ | 4. I'll keep my opinions of your kind to myself.
+ | Mandalore: War breeds butchers on both sides of the battle lines, Jedi. You know it better than anyone. It's just that we were better at it than anyone the Jedi ever faced.
+ | Mandalore: And that is how we thought of you. Not of the Jedi in particular, but the men and women who joined Revan and Malak to fight against us. You turned a demoralized, defeated mess into a coordinated army. You brought tactics, backbone, and above all else, victory, to them.
+ | Mandalore: Fair enough. But let me share some of my opinions.
+ | Mandalore: Ever consider what would have happened if we'd won?
+ | Mandalore: The Sith would have been nothing more than a border skirmish against the might of my clans. We would have brought a new age of strength and expansion to the Republic, with the wealth of the Core worlds providing arms and warships to fuel our growth. Instead, the Republic 'won.' Look around you. Look at what your precious victory has brought you. I ask you this - is the galaxy better off for the Republic's victory?
+ | 1. Of course. The Mandalorians couldn't run the Republic.
+ | 2. I don't deal in what ifs.
+ | 3. You're a fool if you think it's not.
+ | Mandalore: I suppose we'll never know.
+ | Mandalore: Just think about it.
+ | Mandalore: I suppose we'll never know.
+Go to top
+Kreia
+Mandalore
+Mira
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/Mandalore&oldid=1037329"
+Hidden category: 
+Sub-pages
+ This page was last edited on 6 August 2023, at 11:14.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

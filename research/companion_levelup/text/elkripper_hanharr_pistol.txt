@@ -1,0 +1,242 @@
+
+ KOTOR 2 - Hanharr Builds - Pistol
+KOTOR 2 - Hanharr Builds - Pistol
+Here is a ranged dual blaster pistol wielding Hanharr build.
+Hanharr is a big, strong Wookiee, so you should give him a big stick and let him hit people with it, right? Probably. But he starts with a lot of ranged-friendly feats, and as a Scout he picks up a bunch more for free along the way. So if you commit to it, he's actually an effective pistol wielder. And his high Constituation and Wookiee feats mean he can take more damage than the average ranged companion, which is kinda nice.
+======================
+Hanharr's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 4
+ | Scout 4
+ | STR: 20 (+5)
+WIS: 12 (+1)
+CHA: 8 (-1)
+INT: 10 (0)
+CON: 20 (+5)
+DEX: 13 (+1)
+ | 21 points
+Awareness +6 (6)
+Computer use +0 (0)
+Demolitions +6 (6)
+Persuade +0 (0)
+Repair +4 (4)
+Security +0 (0)
+Stealth +0 (0)
+Treat Injury +5 (5)
+ | Flurry (g)
+Power Attack (g)
+Improved Power Attack (g)
+Rapid Shot (g)
+Precise Shot I (g)
+Close Combat (g)
+Uncanny Dodge I (g)
+Targeting I (g)
+Wookiee Toughness I (g)
+Wookiee Rage (g)
+Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+ | 
+ | 5
+ | Scout 5
+ | 
+ | 3 points
+?
+ | Targeting II (g)
+Two-Weapon Fighting (s)
+ | 
+ | 6
+ | Scout 6
+ | 
+ | 3 points
+?
+ | Evasion (g)
+ | 
+ | 7
+ | Scout 7
+ | 
+ | 3 points
+?
+ | Uncanny Dodge II (g)
+Improved Two-Weapon Fighting (s)
+ | 
+ | 8
+ | Scout 8
+ | DEX +1, 14 (+2)
+ | 3 points
+ | Precise Shot II (g)
+ | 
+ | 9
+ | Scout 9
+ | 
+ | 3 points
+?
+ | Wookiee Toughness II (g)
+Targeting III (g)
+Master Two-Weapon Fighting (s)
+ | 
+ | 10
+ | Scout 10
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 11
+ | Scout 11
+ | 
+ | 3 points
+?
+ | Wookiee Fury (g)
+Improved Rapid Shot (s)
+ | 
+ | 12
+ | Scout 12
+ | DEX +1, 15 (+2)
+ | 3 points
+?
+ | Precise Shot III (g)
+ | 
+ | 13
+ | Scout 13
+ | 
+ | 3 points
+?
+ | Targeting IV (g)
+Master Rapid Shot (s)
+ | 
+ | 14
+ | Scout 14
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 15
+ | Scout 15
+ | 
+ | 3 points
+?
+ | Improved Close Combat (s)
+ | 
+ | 16
+ | Scout 16
+ | DEX +1, 16 (+3)
+ | 3 points
+?
+ | Precise Shot IV (g)
+ | 
+ | 17
+ | Scout 17
+ | 
+ | 3 points
+?
+ | Wookiee Toughness III (g)
+Wookiee Frenzy (g)
+Targeting V (g)
+Weapon Focus: Blaster Pistol (s)
+ | 
+ | 18
+ | Scout 18
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 19
+ | Scout 19
+ | 
+ | 3 points
+?
+ | Conditioning (s)
+ | 
+ | 20
+ | Scout 20
+ | DEX +1, 17 (+3)
+ | 3 points
+?
+ | Precise Shot V (g)
+ | 
+ | 21
+ | Scout 21
+ | 
+ | 3 points
+?
+ | Targeting IV (g)
+Improved Conditioning (s)
+ | 
+ | 22
+ | Scout 22
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 23
+ | Scout 23
+ | 
+ | 3 points
+?
+ | Master Conditioning (s)
+ | 
+ | 24
+ | Scout 24
+ | DEX +1, 18 (+4)
+ | 3 points
+?
+ | 
+ | 
+ | 25
+ | Scout 25
+ | 
+ | 3 points
+?
+ | Targeting VII (g)
+Toughness (s)
+ | 
+ | 26
+ | Scout 26
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 27
+ | Scout 27
+ | 
+ | 3 points
+?
+ | Improved Toughness (s)
+ | 
+ | 28
+ | Scout 28
+ | DEX +1 19 (+5)
+ | 3 points
+?
+ | 
+ | 
+ | 29
+ | Scout 29
+ | 
+ | 3 points
+?
+ | Targeting VIII (g)
+Master Toughness (s)
+ | 
+ | 30
+ | Scout 30
+ | 
+ | 3 points
+?
+ | 
+ | 
+Even pushing DEX at every opportunity, it never catches up to his STR and CON. But it can be boosted with gear.
+If you have the conversation to "break" Hanharr (which you should, it has great attribute boosts for the main character), then Hanharr gains two points of STR but loses two points of INT. This is not reflected in the build, as there's no way to know at what level it would occur. But it means you'll get less skill points than listed above, because you'll start getting 2 skill points at each levelup instead of 3. You won't retroactively lose any skills you already have, though.

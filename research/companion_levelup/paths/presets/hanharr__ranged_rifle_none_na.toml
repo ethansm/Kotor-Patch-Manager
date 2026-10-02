@@ -1,0 +1,178 @@
+# Hanharr preset ranged_rifle: Scout 5-30 blaster rifle sniper: Rapid Shot line, WF Rifle, Sniper Shot and Critical Strike chains, Conditioning
+# Skill points are a PROPOSAL (round-robin over a priority list, max rank = char_level+3, cross-class cost 2). Attribute bumps every 4 levels from live STR18 DEX13 CON18.
+[meta]
+tag = "hanharr"
+name = "Hanharr"
+utc = "p_hanharr.utc"
+variant = "ranged_rifle"
+summary = "Scout 5-30 blaster rifle sniper: Rapid Shot line, WF Rifle, Sniper Shot and Critical Strike chains, Conditioning"
+convert_at = 0   # never a Jedi
+
+[meta.wizard]
+role = "ranged"
+style = "rifle"
+alignment = "none"
+convert = "n/a"
+skills = "stealth"
+
+[[level]]
+char_level = 5
+class = 1   # Scout
+feats = [92]   # 92:Improved Rapid Shot
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 6
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 7
+class = 1   # Scout
+feats = [33]   # 33:Weapon Focus: Blaster Rifle
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 8
+class = 1   # Scout
+attrs = {DEX = 14}
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 9
+class = 1   # Scout
+feats = [26]   # 26:Master Rapid Shot
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 10
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 11
+class = 1   # Scout
+feats = [13]   # 13:Conditioning
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 12
+class = 1   # Scout
+attrs = {DEX = 15}
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 13
+class = 1   # Scout
+feats = [21]   # 21:Improved Conditioning
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 14
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 15
+class = 1   # Scout
+feats = [31]   # 31:Sniper Shot
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 16
+class = 1   # Scout
+attrs = {DEX = 16}
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 17
+class = 1   # Scout
+feats = [20]   # 20:Improved Sniper Shot
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 19
+class = 1   # Scout
+feats = [22]   # 22:Master Conditioning
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 20
+class = 1   # Scout
+attrs = {DEX = 17}
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 21
+class = 1   # Scout
+feats = [77]   # 77:Master Sniper Shot
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 22
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 23
+class = 1   # Scout
+feats = [8]   # 8:Critical Strike
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 24
+class = 1   # Scout
+attrs = {DEX = 18}
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 25
+class = 1   # Scout
+feats = [19]   # 19:Improved Critical Strike
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 27
+class = 1   # Scout
+feats = [123]   # 123:Improved Toughness
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 28
+class = 1   # Scout
+attrs = {DEX = 19}
+feats = []
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 29
+class = 1   # Scout
+feats = [81]   # 81:Master Critical Strike
+skills = {stealth = 1, awareness = 1}
+
+[[level]]
+char_level = 30
+class = 1   # Scout
+feats = []
+skills = {stealth = 1, awareness = 1}

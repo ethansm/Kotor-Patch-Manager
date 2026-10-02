@@ -1,0 +1,1289 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/HK-47 — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/HK-47
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Rebuild HK-47
+2 Questions
+2.1 Clones
+2.2 Master
+2.3 Jedi
+3 Cupid's Rifle
+4 Short Circuit
+Rebuild HK-47[edit | edit source]
+Aboard the Ebon Hawk, you'll find a damaged HK unit in the Storage Compartment behind the low security door in the northeast wall of the main hold:
+ | Damaged HK Unit: [This looks like the remains of an HK unit, but older and more corroded than the one you encountered on Peragus. Its power core still carries a charge, but a number of critical parts appear to be missing.]
+ | 2. Step away.
+ | Rebuild HK-47: Bonus Mission
+You found a damaged HK-unit in one of the cargo holds. It looks like it could be repaired if you found the right parts.
+ | 1. [Repair] Diagnose the droid.
+ | Damaged HK Unit: [It looks as if this droid is missing four critical components - its droid processor, a replacement droid chassis, the control cluster that's supposed to be stored in the chassis, and its vocabulator.]
+ | Rebuild HK-47: Bonus Mission
+The damaged HK unit on the Ebon Hawk requires a droid processor, a droid chassis, a control cluster, and a vocabulator. If you bring them to the droid and install them, that should make it operational again.
+The parts can be acquired from the remains of HK-50 droids encountered, or bought from merchants:
+ | Part
+ | World
+ | Area
+ | Source
+ | Cost
+ | HK Vocabulator
+ | Peragus II
+ | Administration Level
+ | HK-50 Assassin Droid
+ | 114
+ | HK Control Cluster
+ | Telos
+ | Polar Plateau
+ | HK-50
+ | 250
+ | Dantooine
+ | Khoonda Plains
+ | Akkere
+ | 250
+ | HK Droid Processor
+ | Dantooine
+ | Khoonda (Plains)
+ | Akkere
+ | 327
+ | HK Chassis
+ | Nar Shaddaa
+ | Droid Warehouse
+ | HK-50
+ | 1500
+ | Any
+ | Nar Shaddaa
+ | Refugee Landing Pad
+ | Kodin
+ | 114-1500
+ | Onderon
+ | Western Square
+ | 1B-8D
+ | 114-1500
+Until HK-47 has been fully repaired, the first part that isn't in your inventory will be added to the inventories of Kodin and 1B-8D when you first speak to them:
+ | hkpart01
+ | hkpart02
+ | hkpart03
+ | hkpart04
+ | hkpart05
+ | HK Droid Processor
+ | HK Chassis
+ | HK Control Cluster
+ | HK Vocabulator
+ | HK Pacifist Package
+The most straighforward way to get all four parts is to get the vocabulator on Peragus II and the control cluster on Telos, then go to Nar Shaddaa, where Kodin can sell the droid processor and T3-M4 can get the chassis from the droid warehouse.
+However, this means HK-47 cannot be fully repaired and join your party until you escape the destruction of Goto's Yacht, preventing you from using any security console there to upgrade HK-47's combat algorithms (Dexterity: +1), or gaining Influence by getting HK-47 to install cryogenic power cells in the refugee quad's Airspeeder. You can fully repair HK-47 beforehand, though, if you have the vocabulator from Peragus II and the control cluster from Telos, buy the droid processor from 1B-8D on Onderon or get it from Akkere's remains on Dantooine, then keep it in your inventory (do not install it in HK-47) until you've spoken to Kodin on Nar Shaddaa to buy the chassis (you could also buy the droid processor from Kodin first, then buy the chassis from 1B-8D).
+HK-47 can also be fully repaired before Goto's Yacht if using Restored Content Mod, by exiting the Ebon Hawk on Telos to another HK-50 encounter, where the player may salvage another component from the destroyed HK-50s before buying the final component from Kodin.
+If you miss getting a part from a source to which you cannot return, then you can buy it from Kodin or 1B-8D: for example, if you miss the vocabulator on Peragus II then one of them can sell it to you if a droid processor, chassis and control cluster are in your inventory when you first speak to them.
+Once you've escaped Peragus II aboard the Ebon Hawk, you can install the vocabulator from the remains of the HK-50 assassin droid encountered in its administration level upon returning from the dormitories:
+ | 1. [Repair] Take the vocabulator and insert it in the core.
+ | Damaged HK Unit: [Success] [You have installed the droid's vocabulator.]
+ | Rebuild HK-47: Bonus Mission
+You have installed the vocabulator in the HK droid on the Ebon Hawk. All that remains is the droid processor, a droid chassis, and a control cluster.
+Once you've left Telos aboard the Ebon Hawk, you can install the control cluster from the remains of one of the HK-50 droids encountered on the polar plateau:
+ | 1. [Repair] Initialize the control cluster.
+ | Damaged HK Unit: [Success] [You have installed the droid's control cluster.]
+ | Rebuild HK-47: Bonus Mission
+You have installed the control cluster in the HK droid on the Ebon Hawk. All that remains is the droid chassis, and the droid processor.
+The processor and chassis can both be acquired on Nar Shaddaa, the former from Kodin in the refugee landing pad, and the latter from the remains of one of the HK-50 droids encountered by T3-M4 in the droid warehouse:
+ | 1. [Repair] Install the droid's processor.
+ | 1. [Repair] Reinforce the droid's damaged chassis with the one you have.
+ | Damaged HK Unit: [Success] [You have installed the droid's processor.]
+ | Damaged HK Unit: [Success] [You have installed the droid's chassis. It looks like it will make its chest stop sparking, which is a minor relief.]
+ | Rebuild HK-47: Bonus Mission
+You have installed the processor in the HK-47 droid on the Ebon Hawk. All that remains is the droid chassis.
+ | Rebuild HK-47: Bonus Mission
+You have installed the chassis in the HK droid on the Ebon Hawk. All that remains is the droid processor. At least the sparks have stopped.
+Once all four parts have been installed:
+ | Damaged HK Unit: [There is a low hum from within the droid, and the sound of circuits sparking, restoring power throughout the droid's systems.]
+ | HK-47: Diagnostic: HK-47 activated. Running checks through primary systems.
+ | Dialog
+ | 
+ | HK-47: Assessment: It appears I have suffered considerable damage and dismemberment. I can feel all the cracks in my motivators. And my central control cluster seems to have taken several repeated blaster shots at close range. How crude.
+ | 1. Why were you in our storage hold?
+ | HK-47: Answer: I do not know, Master. It is curious that I was here - although this place does seem familiar.
+ | T3-M4: Dwooooo.
+ | HK-47: Extrapolation: Perhaps someone was already in the process of rebuilding me. It may be I was needed for some task.
+ | 2. Any idea what happened to you?
+ | HK-47: Answer: It seems you would know more than I. My memory centers are experiencing some setbacks.
+ | HK-47: Reflection: Of course, for some reason, that does not alarm me. I suspect I have suffered such repeated memory failures before. Still, the loss of my higher combat and assassination protocols is shameful and degrading.
+ | 3. You look a lot like a series of droids that have attacked me.
+ | HK-47: Answer: Oh, that is impossible, master. If I were out to kill you, we would not be speaking. And regardless, I am a unique model. Why, to think that there would be other versions of me would be unacceptable.
+ | 1. Well, there's at least four other now defunct versions of you in the galaxy.
+ | HK-47: Statement: Master, I must inform you that your attempts at humor are wasted on a droid such as I. As I have expressed, I am unique.
+ | 1. Actually, there's a series of HK-50 units sharing your model and function that we have encountered on multiple occassions.
+ | HK-47: Resignation: Very well, Master, if you persist in your attempts at humor, I shall indulge you. Let me check the ship's records, and we will settle this matter once and for all.
+ | HK-47: Conclusion: You speak the truth. This discovery is also causing me some degree of anger. And humiliation.
+ | 1. Are you all right?
+ | HK-47: Mockery: "Am I all right?" Oh, yes, master, why, I am fine.
+ | HK-47: Statement: I mean, I have only just been re-activated, only to find that there are sub-standard duplicates of me running all over the galaxy, corroding my good name. But if they are, in fact, hunting you, then I look forward to the opportunity to meet these units - and educate them in proper assassination protocols.
+ | HK-47: Conclusion: So it seems I need you - for the time being.
+ | 4. Are you okay?
+ | HK-47: Answer: If by "okay," you mean the loss of almost all my existing assassination protocols, then no, I am not okay. Furthermore, I seem to have no discretionary control over my vocabulator, causing me to reveal my true function as an assassin droid of unrivalled sophistication.
+ | 3. You're an assassin droid?
+ | Dialog
+ | 
+ | HK-47: Recitation: Yes, as I said, I am an assassin droid. It is my primary function to burn holes through meatbags that you wish removed from the galaxy... Master. Oh, how I hate that term.
+ | 1. What, "meatbag?"
+ | HK-47: Answer: No, "master." Ah, I said it again.
+ | 2. Well, get used to it.
+ | HK-47: Answer: Yes... master.
+ | 3. I'm not sure I like the idea of having an assassin droid on board.
+ | HK-47: Answer: Well, I am not certain I like the idea of a master who feels reservations at having an assassination droid at their disposal. In fact, it brings with it a certain sense of dread that you may actually not use me to my full capabilities.
+ | 4. Are you ready to serve me, droid?
+ | 2. You're not killing anyone unless in self-defense. Even then, I don't want you acting without my order.
+ | HK-47: Answer: Yes, master. HK-47 is ready to serve.
+ | 1. [HK-47 has joined your party. His few remaining assassination protocols allow him to do more damage to opponents with blasters and rifles.]
+ | Rebuild HK-47: Bonus Mission
+You have fully repaired HK-47... and he is ready to carry out your orders. It looks like he has suffered extensive damage, so he no longer has access to his full range of protocols, experience, and murderous knowledge that he once possessed.
+Unadulterated Violence
+Repaired the damaged droid on the Ebon Hawk
+ | Received:
+1000 Fully repaired HK-47
+Once you leave and return to the Ebon Hawk, HK-47 can be found in the garage in its southeast quadrant. When you first speak to HK-47 again with alignment < 25:
+ | HK-47: Statement: Master, I must say it is a pleasure to be working side by side with you.
+ | Dialog
+ | 
+ | 1. And why is that?
+ | 2. If you have a long-winded explanation for why, indulge me.
+ | HK-47: Statement: Just when I believe my photoreceptors have recorded the last potential aspect of your cruelty to my memory core, you commit a new atrocity that leaves me analyzing its impact for days. You are like a delightful random cruelty generator, master, poisoning all you touch with your presence. You are a testament to all organic meatbags everywhere.
+ | 1. I am not here to entertain you, droid.
+ | 2. Stick with me - you'll pick up a few things.
+ | 3. I'm not proud of my actions, and I don't want you doing the same.
+ | HK-47: Flattery: It is not mere entertainment, master. It is art.
+ | 1. It is good you are recording my cruelties - you may need to know how to use them yourself in the future.
+ | Points Gained: -1
+ | Points Gained: +1
+ | Influence Gained: HK-47 (+8)
+ | Influence Lost: HK-47 (-8)
+ | HK-47: Statement: I have already learned a great deal, master, and I am anxious to learn more of lying, betrayal, and new ways to harm innocents.
+When you first speak to HK-47 again with alignment > 75:
+ | HK-47: Statement: Master, I must express some degree of concern. As I have studied your actions, looking for potential vulnerabilities to exploit, I have found several.
+ | 1. Vulnerabilities?
+ | 2. What are you talking about?
+ | HK-47: Statement: You seem disposed to helping others - not harming them, as I have come to expect and anticipate from organic meatbags across the galaxy.
+ | 1. Mercy and charity are not weaknesses.
+ | Points Gained: +1
+ | Influence Lost: HK-47 (-8)
+ | HK-47: Statement: Oh, master, please, of course they are. Any time you inconvenience or jeopardize yourself for another, it is a vulnerability. In any event, I feel compelled to point out that your self-destructive path of pacifism and sacrifice will only lead to your doom. That may be a trifle melodramatic, but frankly, it is something that all Jedi should hear, and I have been rehearsing the speech for some time.
+ | 3. Why are you studying me for vulnerabilities?
+ | 3. If you decide to attack me, I will crush you into scrap without a second thought.
+ | Points Gained: -1
+ | Influence Gained: HK-47 (+8)
+ | Dialog
+ | 
+ | HK-47: Statement: Master, it is nothing personal, but professional pride dictates that I keep a running tally on any potential weaknesses in my masters. And of course, the weaknesses of any other sentient meatbags, droids, or other targets who are in service to my master.
+ | 1. That still doesn't answer my question.
+ | 2. What, to protect me?
+ | 3. If you're planning to assassinate me, then you're asking for trouble.
+ | HK-47: Hypothetical: Master, it is entirely possible that one day you may no longer be my Master. It is also possible that my new Master might become jealous of our prior relationship. It has happened before. As a result, I have a responsibility to know your weaknesses should I be required to assassinate you.
+When you speak to HK-47 again with alignment > 90:
+ | HK-47: Statement: Master, if you could indulge me for a moment, I must express some degree of irritation at your actions. Perhaps my anticipation of working with one who served at Malachor V was too high, but you are countering all those expectations.
+ | 1. And how is that?
+ | HK-47: Statement: Well, all your behavior up to this point suggests either strong atonement or confirmation that the atrocities attributed to you during the war were in fact, accidents.
+ | 1. I am not proud of what I did during the Wars - and I do not wish to discuss it.
+ | Points Gained: +1
+ | Influence Lost: HK-47 (-8)
+ | Dialog
+ | 
+ | HK-47: Statement: I suspected as much, master. There are few who would discuss such things with an assassination droid, and that is perfectly understandable. I mean, what use is there for communication in a galaxy such as ours? Understanding might be achieved, or sympathies might be gained by such callous acts. You are right to remain silent about your past. I have seen the damage that repressing such things brings, and it is far preferable to share such traumas.
+ | 1. Are you trying to provoke me?
+ | HK-47: Answer: Why no, master. I have no intention of attacking you or enacting assassination protocols.
+ | 2. They weren't accidents - I did them on purpose and would do them again, gladly. Why do you want to know?
+ | 2. Why did you ask me about the Mandalorian Wars?
+ | Points Gained: -1
+ | Influence Gained: HK-47 (+8)
+ | Dialog
+ | 
+ | HK-47: Answer: Why, because your actions then and now are related and I feel I need some context. I confess to being somewhat needy that way.
+ | 1. What do you mean?
+ | HK-47: Statement: Sometimes, master, it is difficult for meatbags to step back and gain some perspective on death and its importance in their insignificant lives.
+ | HK-47: Explanation: You see, master, assassination is such a versatile tool. I have seen the removal of a single target have far-reaching consequences for a nation, world, even a galaxy. The repercussions of even the smallest lives... whether dead or alive, can have profound implications on history. But surely you realize this.
+ | 1. How is that?
+ | HK-47: Statement: Why, your own life, master. Your single life changed the face of the galaxy, of history itself. Malachor V was an impressive act of destruction, but its impact on the lives of others in the galaxy was far more extreme. I mean, master, you brought about the death of the Mandalorian race. I doubt they realize it yet, but you dealt them a blow from which they will never recover.
+ | 2. That's a very human perspective.
+ | 3. If you're trying to justify your programming, you're not doing a good job.
+ | 1. Don't attempt to justify my actions - or yours.
+ | 2. The Mandalorians deserved it, that is all.
+ | HK-47: Statement: Master, please! Any comparisons between me and your meatbag status leaves a fluctuating, intermittent charge through my control clusters.
+ | HK-47: Retort: Oh, master, I am attempting to justify nothing, merely making an observation. Nothing would change the fact that I derive pleasure from ending the lives of others.
+ | HK-47: Statement: Oh, master, who deserved what and why is of no consequence. It is only killing a target and how it is done that matters.
+In every case:
+ | 4. Forget it. I had questions I wanted to ask you.
+ | 5. I've heard enough. I'll be going now.
+ | 2. I had some other questions.
+ | 3. Nothing, never mind.
+Otherwise, or the first time you speak to HK-47 afterwards:
+ | HK-47: Query: Is there someone that you need killed, master?
+ | Dialog
+ | 
+ | 1. Would you stop asking that?
+ | HK-47: Statement: Master, assassination is my primary function. It is only expected that when you speak to me, it is to give me the order to kill.
+ | 1. No, it isn't, so stop asking me that.
+ | 2. I order you to stop asking me who I need killed.
+ | HK-47: Statement: Oh, very well, master. No doubt you are bothering me because you wish to interrogate me with harmless, non-lethal questions. Or perhaps you need the deck of your freighter scrubbed. Or an exciting alien text translated. My circuits are a-buzz with anticipation of what your next task will be for me that does not involve ending the life of an organic meatbag that deserves death.
+ | 1. Actually, I did have some questions.
+Do not tell him to stop asking you that if you want to install the HK Protocol Pacifist Package later. Otherwise, when you speak once again:
+ | HK-47: Statement: HK-47 is ready to serve, master.
+ | Dialog
+ | 
+ | HK-47: Observation: Notice that I did not ask if you need anyone killed. You may be curious as to why.
+ | HK-47: Answer: That is because you told me to stop asking if you needed anyone killed. So I have. From now on, I will simply say, "I am ready to serve." Yes, ready to serve. In whatever way a common protocol or utility droid might serve. It seems that is my lot in life. Not to kill.
+ | 1. Yes, that's how I'd prefer it.
+ | 2. Cut out the exposition from now on, and just say, "ready to serve."
+ | 3. If I let you ask if I need anyone killed, but don't order you to do so, will that be enough?
+ | HK-47: Observation: You are indeed cruel, master. You might as well ask an organic meatbag not to breathe.
+ | HK-47: Answer: As you wish, master.
+ | HK-47: Answer: It is a start, master, and as such, is acceptable.
+ | HK-47: If you happen to change your mind, however, I feel I must tell you I will gladly kill anyone you ask. Please. I beg you. Just a quick death. A little one, to tide me over until the next firefight we're in. Combat is nice, but the stalking of prey is far more enjoyable.
+ | 1. I'll keep that in mind. Now I had some questions.
+Otherwise:
+ | 2. You don't have to call me master.
+ | Dialog
+ | 
+ | HK-47: Statement: Oh, I am aware of that, master. I simply use it to give you the illusion of control and obedience. Humans often need such comforts until the end comes.
+ | 2. What do you mean, "the end?"
+ | HK-47: Consolation: Master, everyone dies eventually, and not all of them by my hand. Even droids die when not routinely maintained, sadly enough.
+ | 1. There is no "illusion" of control. You answer to me.
+ | 1. But until you do, you answer to me.
+ | HK-47: Statement: Of course I do, master. Until the end.
+ | 2. I had some questions.
+ | 3. No, just some questions.
+Questions[edit | edit source]
+ | Dialog
+ | 
+ | HK-47: Statement: Ah - you wish to conduct an interrogation? Very well, proceed.
+ | 1. Interrogation?
+ | HK-47: Statement: Oh, yes, master. Pain is really the only reliable means by which truth may be obtained. Or so I choose to believe.
+ | 2. It's not an interrogation, I just want to ask you some questions.
+ | HK-47: Statement: Very well, master. But if you wish to be brutal and vicious about it, know that I am trained for such things. Do your worst.
+ | 3. Enough with the interrogation already. When I ask you questions, I mean I will ask questions without torturing you.
+ | HK-47: Statement: Master, I am no behavior droid, but it is obvious to me that you have serious ethical problems that will need to be treated at some point. Very well, ask your questions. If you feel the need to make it an interrogation, however, do not restrain yourself. I would be saddened if you held back.
+HK-47 isn't quite so happy once you've told him it's not an interrogation:
+ | HK-47: Statement: Ah. More questions. Wonderful.
+If after activating HK-47 you didn't tell him that he looks a lot like a series of droids that have attacked you, and he didn't then check the ship records, then you can do that now, and also ask why he was in your storage hold. Otherwise:
+ | 1. I wanted to talk about the other HK units.
+ | 2. Who was your previous master?
+ | 3. Do you know anything about the Sith hunting us?
+ | Dialog
+ | 
+ | HK-47: Answer: No, master, I do not. I am afraid I have been out of touch with the Sith for many years. This new Sith threat fights differently than the ones I was familiar with - these seem to favor stealth and assassination to achieve their ends.
+ | 1. Any idea where they might be striking from?
+ | HK-47: Answer: No, master. The Sith had many hidden bases and strongholds before and during the Jedi Civil War, and I doubt the Republic found them all.
+ | HK-47: Theory: It is possible that the Sith still hold one such base - if not several.
+ | HK-47: Consolation: But I would not worry, Master, I imagine it will not be long before their murderous hands try to seize you by the throat.
+ | HK-47: Twi'lek Metaphor: It seems like they are attracted to you like krek beetles during the Bright Land seasons.
+ | 1. You can say that again.
+ | 2. Yeah, well, krek beetles are a lot smaller than our enemies.
+ | HK-47: Query: Master, excuse me, but how is it you know so many languages?
+ | HK-47: Query: Master, excuse me, one thing I have noticed as we travel the galaxy - you seem to possess the ability to understand a variety of alien languages. Forgive me, but that does not seem in keeping with my assessment of your talents.
+ | 1. I picked up a sonic imprint sensor on Peragus - it doubles as a translator.
+ | HK-47: Query: May I see it?
+ | Dialog
+ | 
+ | 2. Why?
+ | 3. No.
+ | HK-47: Answer: Because it seems to know all the languages I do, and I am feeling degrees of familiarity and inferiority both at once.
+ | HK-47: Statement: My apologies, master, but that device seems to know all the languages I do, and I am feeling degrees of familiarity and inferiority both at once.
+ | 4. Not right now. I'll let you examine it later.
+ | 3. Keep your curiosity - and your questions - in check.
+ | HK-47: Statement: Very well, master. I will await patiently until you realize that perhaps letting me examine that device may shed light on our current predicament.
+Otherwise:
+ | 1. Of course, here you go.
+ | 1. Here you go.
+ | HK-47: Observation: This is indeed familiar. Indeed, it seems to be modeled after my vocabulator, with some modifications, of course. Curious. You say you obtained this device on Peragus?
+ | 1. Yes, shortly before the planet was destroyed.
+ | 2. What of it?
+ | 3. I'm not sure I'm going to like what you're about to tell me.
+ | HK-47: Observation: Master, I do believe this device serves multiple functions - including tracking your position for any HK units in the vicinity.
+ | 1. Then we should destroy it.
+ | 3. Can you use it to track them?
+ | 2. What should we do with it?
+ | HK-47: Objection: Master, they do not know we have discovered it. Which means the advantage is ours.
+ | HK-47: Confirmation: Yes, master, I believe so.
+ | HK-47: Observation: Master, I do believe this device serves multiple functions - including tracking your position. It is sending out a passive carrier wave that signals itself to HK units in the vicinity.
+ | HK-47: Statement: I suspect when the time is right, this device can be used to pinpoint the location of the HK factory - and I... I mean, we... can deal with them once and for all.
+ | 1. So we just wait?
+ | 2. I'm not for standing around here, waiting for them to hit us again.
+ | HK-47: Answer: Master, the nature of the signal from the sonic imprint sensor is such that we must wait until it is signaled. It does not please me any more than it does you, but one of the primary traits of an assassin... or assassin droid... is patience.
+Assassin droids have feelings too:
+ | 4. For a sophisticated assassin droid, you don't seem as advanced as you should be.
+ | HK-47: Statement: Master, you wound me. Not physically, but in my behavior core. It is true that I once possessed many more protocols and upgrades, but time and damage has taken its toll. And I am afraid that I have a rather long history of memory problems which has also compromised my effectiveness as well. Still, you will find me a valuable asset, master, willing and able to terminate anything you point me towards.
+When you return to ask questions:
+ | 1. How did you get scattered all over the galaxy?
+ | Dialog
+ | 
+ | HK-47: Theory: Well, master, I believe I was shot repeatedly. Once reduced to my component parts I suspect pieces of me were sold across the galaxy.
+ | HK-47: Statement: I am an extremely valuable piece of equipment after all, master. My parts were no doubt costly to obtain, and their new owners hesitant to part with them.
+ | 1. It was something of a pain, yes.
+ | 2. It set me back a few credits, yes.
+ | HK-47: I would be most distressed if you were to shoot me, attack me, or dismember me in any way. I do not wish to repeat the experience.
+ | HK-47: Statement: There is no need to hide your embarrassment over the high price I commanded, master. I will be worth every credit... despite my apparent memory damage, crippled assassination protocols, and the small amount of rust that decorates my frame. Regardless, please bear in mind that I am quite an asset, and that you would be well-advised to take good care of me.
+Clones[edit | edit source]
+ | HK-47: Statement: Ah... yes, them. Very well. What did you wish to know?
+If you told him you picked up a sonic imprint sensor on Peragus, after asking if he knows anything about the Sith hunting you:
+ | 1. Tell me again about this sonic imprint sensor.
+ | 1. Tell me again about this sonic imprint sensor.
+ | Dialog
+ | 
+ | HK-47: Recitation: I believe it is a passive tracking device, designed to relay our position to HK units in the area.
+ | 1. So what do we do with it?
+ | HK-47: Answer: Master, I have a suspicion all we need to do is wait. They will come to us, I believe.
+ | 1. And if they don't?
+ | HK-47: Answer: Then their base of operations will remain a secret, and we will be no better off than we were before.
+ | 2. So we just wait?
+ | 3. I'm not for standing around here, waiting for them to hit us again.
+ | 5. We'll wait for them to show, then.
+Otherwise:
+ | 1. Do you know where these clones are being created?
+ | 2. Why do you need me?
+ | Dialog
+ | 
+ | HK-47: Answer: Master, I do not know. The location of the factory churning out these copies eludes me. And I do not know where they would have obtained schematics of my design. They are built from my template, of that I know for certain.
+ | HK-47: Statement: Master, there are two reasons for this. One, the probability of them showing up around you is statistically high. If I travel with you, then my chances of encountering these clones is also high. The second reason is a little more complicated. You see, even though those clones are obviously cheap, artless imitations of me... well, they are still me.
+ | 1. What are you talking about?
+ | HK-47: Answer: Somehow these droids are built from my schematics. This causes certain complications.
+ | 1. How do you know that?
+ | 1. That doesn't explain why you need me.
+ | HK-47: Answer: Because of my self-preservation program. My behavior core recognizes these templates as still being me, despite their individuality. I could no more shoot them than I could shoot myself. It is a frustrating situation that has been looping through my behavior core for some time.
+ | 2. I need to know more about these clones of yours.
+ | 3. Do you know why they are hunting me?
+ | Dialog
+ | 
+ | HK-47: Answer: Well, master, it seems you have become a popular individual in the galaxy. This is somewhat surprising to me, since this dissemination of information could not have been caused by your actions alone.
+ | 1. What do you mean?
+ | HK-47: Statement: Master, there is mention of you specifically in the coreward databases, even in public terminals on Coruscant.
+ | HK-47: Observation: I was led to believe that this information concerning Jedi was not for public consumption, yet somehow it has been made known to them.
+ | 1. Why would someone do that?
+ | HK-47: Conclusion: Someone wants everyone to know that you exist, master. And that you are back in Republic space. If I did not know better, which is computationally impossible, I believe that someone wants to make you a target, and they are succeeding admirably.
+ | 1. Who?
+ | HK-47: Answer: Master, my feeling would be the Exchange. But that doesn't seem to be enough to answer the question, however.
+ | HK-47: Rhetorical: Why wouldn't they have simply kept the information to themselves? Such an answer does not address the central question. And that is, why someone would choose to broadcast your location all over the known galaxy.
+ | HK-47: Theory: My suspicion is that someone is using you as bait for a larger target, who is unknown at this time.
+ | 4. Why are they masquerading as protocol droids?
+ | HK-47: Answer: Master, as part of my original programming, I am able to communicate in over six hundred languages. This usually amounted to short verbal warnings when killing non-Basic speaking targets, which gave me some small measure of satisfaction.
+ | 1. [Computer (10)] So a good portion of your programming was adapted from protocol subroutines?
+ | 2. So basically, you can function as a protocol droid?
+ | Dialog
+ | 
+ | HK-47: Answer: Yes. I believe my original Master needed this functionality in order to recover information from various indigenous tribes across the galaxy, but I know little else than that. Suffice to say that that translation capability allowed these... copies of myself to assume the role of protocol and translation droids in much of known space. That is, of course, not their primary function. And while they are attempting to pass themselves off as translation droids, their primary functionality keeps rising to the forefront.
+ | 1. What do you mean?
+ | 2. Explain yourself.
+ | HK-47: Recitation: For example, on Praven Prime, the simple transferring of L'Xing syntax for 'friendship' changes its meaning - and implies that one's brood mate was actually impregnated by their own host.
+ | Dialog
+ | 
+ | ♀ Disciple: If that was spoken aloud, then it would explain much - is that what happened?
+ | ♂ Handmaiden: That wasn't said to them directly, was it?
+ | Atton: Tell me no one said that out loud, did they?
+ | HK-47: You can imagine the results.
+ | 1. Uh... sure. Sounds bad.
+ | 3. I'm a little behind in my alien cultural studies, so enlighten me.
+ | HK-47: Confirmation: Oh, truly. You can imagine the results.
+ | 2. I can. Sort of.
+ | HK-47: Statement: This comment, of course, caused a civil war between the Gu-vandi Collective and L'Xing that still persists to the current date.
+ | 1. [Intelligence (17)] Do any of these "incidents" have any wider repercussions?
+ | 1. [Awareness (19)] Do any of these "incidents" have any wider repercussions?
+ | Dialog
+ | 
+ | HK-47: Answer: Yes, master, such incidents often spread outwards from their point of origin, much like an echo.
+ | 1. Why did you say that just now?
+ | HK-47: Query: What do you mean, master?
+ | 1. The echo - why did you say that?
+ | HK-47: Answer: It is something I heard a previous master say before, I believe. But I cannot recall the context. Still, somehow it seemed applicable to this situation. Odd.
+ | 2, What sort of repercussions did it have?
+ | 1. What reprecussions did Praven Prime have?
+ | HK-47: Answer: In the case of Praven Prime, the civil war actually forced the Republic to back out of Gu-vandi space and let their world fall from Republic control. As I understand it, that would be best. Keeping such a world would have been a token gesture of control. As an added burden, the resources needed to invest in diplomatic and trade relations would have far outweighed what would have been required. Besides, master, quite frankly, the Gu-vandi and L'Xing needed a good war. They were races that relied more on words than actions, and a good, brisk killing woke them from their torpid state. Also, the result of the war will be that the drastically reduced L'Xing population will eventually need to call upon the Republic for emergency relief.
+ | 1. And that's a good thing?
+ | 2. I fail to understand what could be gained from such a war.
+ | HK-47: Answer: The Republic stands to gain. The Republic will be able to supply such emergency relief at a fraction of the cost to the now-reduced population. Of course, such aid would only come four or five years after the war was started. One would have to be patient and let death and destruction run its course.
+ | 3. But why are they masquerading as protocol droids?
+ | 3. But why are the HKs masquerading as protocol droids?
+ | Dialog
+ | 
+ | HK-47: Answer: Master, being a meatbag, your answer does not surprise me. You see, part of the reason an assassin droid is so effective is because it is a droid. Meatbags tend not to notice us, we are treated as furnishings.
+ | T3-M4: Dee-deet.
+ | HK-47: Statement: Oh, do shut up, you beeping little trash compactor. Anyway, as I was saying, droids tend to blend into the background. Like a bench. Or a card table.
+ | HK-47: Mockery: "Droid, fetch this. Droid, translate that. Droid, clean out the trash compactor."
+ | 1. So? That's how droids should be treated.
+ | 2. Those are typical droid duties, but it doesn't mean they should be treated as furniture.
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Dee-deet!
+ | T3-M4: Dwoooo.
+ | Influence Gained: T3-M4 (+8)
+T3-M4 has to be present to gain influence, but not to lose it.
+ | Dialog
+ | 
+ | HK-47: Part of the love of my function comes when the "furnishings" pull out tibanna-powered rifles and point them at the owner's heads. My identity as an assassin droid was unknown for quite some time, even during the recent events when all that trouble occurred amongst the Jedi. I'm sure you've already heard more than enough about it, so I will spare you the details.
+ | 2. Back to the droids - how do these HK units corrupt their protocol programming?
+Otherwise:
+ | 1. Actually, I'd like to know.
+ | HK-47: Statement: This story may be somewhat unfamiliar to you - if not to history - so bear with me. There is a faction of meatbags called the Sith. They want what any rational meatbag would want - the power to assassinate anyone they choose at any time. In a startling turn of events, the Sith declared war on the Republic. The Republic wasn't going to stand for it, so they went to war right back.
+ | 1. Why did the Sith go to war with the Republic?
+ | HK-47: Answer: Oh, who knows, master. It is evident that the Sith would very much like to assassinate all the Jedi. Which is somewhat the equivalent of cultural suicide, since some Sith are Jedi or were Jedi. It is much like the circumstance I find myself in now. How do you kill such an integral part of yourself over such ethical differences? The answer, of course, is that you keep firing until all dissension has been eradicated.
+ | 5. Why did they start revealing themselves now?
+ | Dialog
+ | 
+ | HK-47: Answer: I do not know why these clones chose now to start revealing themselves.
+ | HK-47: Theory: I can only assume that some critical moment is approaching where stealth and subtlety is no longer required. Not that those durasteel-plated knockoffs know anything of stealth or subtlety.
+ | HK-47: Observation: It is clear, however, that they have been placed throughout the galaxy at critical junctures, both in the Republic fleet and in neutral worlds. And they seem to be looking for Jedi.
+ | 6. You sound pretty disgusted by these duplicates.
+ | Dialog
+ | 
+ | HK-47: Answer: My 'feelings' on the matter are something that I feel I must put in proper context - in a way that even a meatbag such as yourself could easily comprehend.
+ | HK-47: Theory: Imagine, if you will, that you are unique. The pinnacle of an exiled, cast-out Jedi who can't even use the Force. Imagine that no one has sunk lower than you. That you are truly the most miserable example of a Jedi ever.
+ | 1. I get it, already.
+ | 2. Is this going somewhere?
+ | HK-47: Continuation: Now that you have that image, imagine this - someone clones you. Badly, I might add. They make the clones talk differently, rob you of any shred of personality, and take your Jedi Code and adjust it so that it is not really the Jedi Code any more. They even change your pigmentation to a rather poor shade of durasteel, rather than the proper rusty red that inspires fear in targets. And of course, they refer to meatbags as "organics." Unacceptable.
+ | 1. They really don't seem that different from you, actually.
+ | HK-47: Indignation: Have you gone deaf? Surely you've heard them speak and instantly you can tell the difference between them and I.
+ | 1. From the voice? But you all sound exactly the same.
+ | HK-47: Statement: If master would just listen to their voices - their voices sound nothing like me; they have none of the looping, static-filled sinister background hiss that I am known for.
+ | 2. Okay, so that explains your anger.
+ | HK-47: Clarification: "Anger" would be an understatement for the heat that builds up in my behavior core when these cheap imitations make their presence felt throughout the galaxy.
+ | HK-47: Statement: Part of the indignity of all these copies is that they impair my ability to perform my function. The more people throughout the galaxy recognize me as an illegal assassination device, the more difficulty I will have in carrying out my mission.
+Master[edit | edit source]
+ | 2. Who was your previous master?
+ | Dialog
+ | 
+ | 30-70 Influence
+ | HK-47: [Influence: Failure] Answer: Master, ironically enough, I seem to have developed a sudden bout of memory loss. I shall struggle to recall an answer to your question, but for now, it is sadly beyond my capabilities.
+ | HK-47: Consolation: Besides, you are a fine master. Do not be worried about being rendered insignificant If I were to inadvertently compare to some silly old master I once possessed.
+ | < 30 Influence > 70
+ | HK-47: [Influence: Success] Statement: Master, that is a question that has an extremely complicated answer.
+ | Dialog
+ | 
+ | ♂ HK-47: You see, I do not believe my Master knew who he was most of the time, which led to some confusing situations that could have otherwise been avoided.
+ | ♀ HK-47: You see, I do not believe my Master knew who she was most of the time, which led to some confusing situations that could have otherwise been avoided.
+ | 1. I'm not sure I understand.
+ | ♂ HK-47: Clarification: Suffice to say that my Master had his ups and downs, and in my opinion, traveled from a high point in his life to a low point, and then back again to his true potential.
+ | ♂ HK-47: He developed qualities such as mercy, compassion, and even love for others. It was really rather revolting. Still, my Master had some remarkably efficient droid-like qualities which I admired. He, too, suffered memory problems as I did.
+ | ♂ HK-47: He could be a merciless, efficient killer when the need arose. It really made my behavior core glow. And even as a meatbag, my Master still had some remarkably efficient droid-like qualities which I admired. He, too, suffered memory problems as I did.
+ | ♀ HK-47: Clarification: Suffice to say that my Master had her ups and downs, and in my opinion, traveled from a high point in her life to a low point. She developed qualities such as mercy, compassion, and even love for others. It was really rather revolting. Still, my Master had some remarkably efficient droid-like qualities which I admired. She, too, suffered memory problems as I did.
+ | ♀ HK-47: Clarification: Suffice to say that my Master had her ups and downs, and in my opinion, traveled from a high point in her life to a low point, and then back again to her true potential. And even as a meatbag, my Master still had some remarkably efficient droid-like qualities which I admired. She, too, suffered memory problems as I did.
+ | 1. Memory problems?
+ | HK-47: Statement: Oh yes, master. As indicated upon my reassembly, my central control cluster is damaged, making recalling my previously stored assassination protocols difficult. I hope that over time I shall eventually reach the status and skill I possessed before I was damaged.
+ | 1. What's the last thing you remember?
+ | HK-47: Recollection: The last thing I remember is having my core wiped from the last five years. I believe my master was responsible.
+ | 1. Why?
+ | HK-47: Answer: Even with my memory impairment, I recall that my Master was about to embark on a dangerous journey.
+ | ♂ HK-47: Conjecture: I believe there was something about my Master's destination that he did not wish me to know.
+ | ♀ HK-47: Conjecture: I believe there was something about my Master's destination that she did not wish me to know.
+ | 1. Are you all right?
+ | HK-47: Answer: I am somewhat disappointed that my Master did not choose to take me along, of course. Wherever my Master traveled, destruction and death were assured.
+ | ♂ HK-47: Speculation: But I suspect I was not the only one left behind, so there is some satisfaction that the disrespect was spread through the rest of his whiny, simpering meatbag allies.
+ | ♀ HK-47: Speculation: But I suspect I was not the only one left behind, so there is some satisfaction that the disrespect was spread through the rest of her whiny, simpering meatbag allies.
+ | 1. Whiny?
+ | HK-47: Statement: Oh, yes. My master had quite the collection of tortured individuals that seemed unable to confront their basic personality conflicts. Let me cite some specific examples.
+ | HK-47: Mockery: "Oh, master, I do not trust you! I cannot trust you or anyone ever again!"
+ | ♂ HK-47: Mockery: "Oh, master, I love you but I hate all you stand for, but I think we should go press our slimy, mucus-covered lips together in the cargo hold!"
+ | HK-47: Conclusion: Such pheromone-driven human responses never cease to decrease the charge in my capacitors and make me wish I could press a blaster pistol to my behavior core and pull the trigger. I am pleased that this does not seem to be the case with your current entourage.
+ | 2. Uh... right.
+ | 3. Maybe you should turn your photoreceptors up a little more and pay more attention.
+ | HK-47: Statement: Yes, well, enough of that painful stroll through what remains of my memories. Was there something else you wished to know?
+When you next end dialog with < 30 Influence > 70:
+ | HK-47: Statement: Master, before you go, I had a question for you.
+ | 3. I don't have time for this - leave it.
+ | 4. The next person who prevents me from leaving when I say the conversation is over is going to die. Now let me go, or else.
+ | Points Gained: -1
+ | Influence Gained: HK-47 (+8)
+Otherwise:
+ | Dialog
+ | 
+ | 1. What's the problem?
+ | 2. Well, you may not like the answer, but go ahead.
+ | HK-47: Query: I must express some degree of confusion concerning your actions. You are the one who followed Revan in the Mandalorian Wars, are you not?
+ | 3. We are not having this discussion right now.
+In all three cases:
+ | HK-47: Statement: Yes, master. My, I must confess, I enjoy it when you are so authoritative and dismissive toward me. It bodes well for your treatment of our enemies.
+Otherwise, or upon returning:
+ | 1. I am. Why?
+ | 2. Yes. I thought everyone in the galaxy knew that.
+ | 1. Before, you asked if I was the one who served in the Mandalorian Wars - why?
+ | Dialog
+ | 
+ | HK-47: Observation: Well, master, I was not at Malachor V during your near-genocidal reaction to the Mandalorian threat, but I feel that I may have been constructed as a result of that.
+ | 1. Care to explain?
+ | 2. I don't understand.
+ | ♂ HK-47: Observation: I believe that Revan determined that mass slaughter on such a scale may no longer be needed to achieve his aims. So perhaps you are responsible for my creation.
+ | ♀ HK-47: Observation: I believe that Revan determined that mass slaughter on such a scale may no longer be needed to achieve her aims. So perhaps you are responsible for my creation.
+ | ♀ 1. Like I'm your mother?
+ | ♂ 1. Like I'm your father?
+ | HK-47: Answer: Oh, please, master - even as a metaphor, that idea is repugnant. You are a gland-driven meatbag, while I am of superior droid construction.
+ | HK-47: Clarification: I meant that I was built as a result of the need for a selective killing machine rather than a crude mass-slaughter war droid.
+ | 2. Were you created on Malachor V?
+ | 3. So you were created during the Mandalorian Wars?
+ | HK-47: Answer: No, master. I was constructed shortly after the beginning of the Jedi Civil War.
+ | 2. Which side did you fight on?
+ | HK-47: Answer: Oh, master, please, use your imagination. I am an illegally constructed assassination droid designed to masquerade as a protocol droid until I reach my target.
+ | 1. That doesn't answer my question.
+ | HK-47: Clarification: Well, yes, perhaps concerning the somewhat dubious morality of the Republic Senate, that would leave some doubt as to my allegiance.
+ | HK-47: Answer: Very well, yes, I served on Revan's side during the Jedi Civil War - just as you did against the Mandalorians.
+ | 1. What targets were you assigned?
+ | 2. Who were your targets?
+ | HK-47: Answer: Well, master, unless you were operating on my central control cluster, I would be somewhat hesitant to discuss my targets. But I suppose it could do no harm. During the Jedi Civil War, I was responsible for certain strategic targets. For some reason, Revan did not feel that the Republic presented much of a military threat.
+ | HK-47: Aside: I am somewhat unclear as to why this was so, but Revan did have a certain biological instinct regarding such things, so I will simply say that there were probably reasons for such an assessment.
+ | 1. Why did Revan consider the Republic not a threat?
+ | 2. I don't understand - why fight against someone you don't feel is a threat?
+ | 1. Why did Revan not consider the Republic a threat?
+ | Dialog
+ | 
+ | 20-80 Influence
+ | HK-47: [Influence: Failure] Answer: Master, that is somewhat a complex question, and I do not want to burden you with a complicated answer. Besides, I am still evaluating your tactical and psychological threat to me - perhaps when I have completed my analysis, we may speak more.
+ | < 20 Influence > 80
+ | 1. You said you used to kill Jedi? For Revan?
+ | HK-47: [Influence: Success] Answer: Revan felt the true war was against the Jedi.
+ | Dialog
+ | 
+ | HK-47: Observation: It was not something discussed with much of the others, but I think Revan recognized that a single Jedi, both in the past and in the present, could turn the tide of a conflict. So my targets were frequently Jedi, or someone close to a Jedi that could result in their corruption or collapse. Revan often assigned me to kill leaders or supporters of certain Jedi so as to erode their will.
+ | 3. I had more questions for you.
+ | 4. That's enough. I'll be going now.
+Otherwise:
+ | 1. Why was that important?
+ | 2. Where did those tactics come from?
+ | HK-47: Answer: Revan saw the pressures of war on Dxun, and knew that even in the heat of conflict, Jedi could be broken, not physically, but psychologically.
+ | HK-47: Observation: It is a curious thing to assassinate and wound someone's personality, to assassinate them psychologically, and it took me some time to reconcile the acts. I am much more used to the... direct approach. Still, I served well, and killed many Jedi.
+ | 4. I need to know how you killed Jedi - in order to protect myself.
+ | Dialog
+ | 
+ | 10-90 Influence
+ | HK-47: [Influence: Failure] Answer: Master, I think that should wait until I am certain of your allegiance - and your intentions toward me and the galaxy. I mean, to simply give away trade secrets in such a way - it would be an insult to my protocols.
+ | 1. So you're saying Revan intended to break the Jedi?
+ | 2. That sounds like he was... converting Jedi.
+ | HK-47: Observation: Master, that was the lesson of Malachor. Any Jedi involved in the systematic slaughter on such a scale cannot help but doubt and question themselves.
+ | 1. I don't believe you.
+ | 2. Revan ordered us to kill Mandalorians at Malachor, not Jedi.
+ | HK-47: Observation: Master, I do not believe that the Mandalorians were the true target at Malachor - I believe that the intention was to destroy the Jedi, break their will, and make them loyal to Revan. I do not know if you examined the records of the deaths on Malachor, but you cannot escape that many of the Jedi and Republic soldiers who died were not Revan's strongest supporters.
+ | HK-47: Observation: I believe that Revan was "cleaning house" at Malachor V. What ones did not die became Revan's allies against the Republic.
+Otherwise:
+ | 3. You killed Jedi?
+ | HK-47: Answer: Yes, master. It wasn't always easy, and I had to adapt quickly to rapidly changing battle conditions. And they would often sever my limbs and my head from my torso, which was an inconvenience.
+In all three cases:
+ | 2. It sounds like you killed a lot of them.
+ | HK-47: Answer: Oh, yes, master. I hope none of them were friends of yours. But really, they had it coming. I do not know when the Jedi ceased to be adherents to their code, but many did not tread cautiously, and many were quite arrogant when facing a droid, as if we were somehow beneath them. It gave certain kills an added pleasure when being underestimated.
+ | 1. You took pleasure in it?
+ | HK-47: Cautionary: Master, don't take this the wrong way, but in my opinion, a blaster shot to the throat is often the best way of silencing Jedi hypocrisy. I have found many Jedi to be arrogant practitioners of pacifism when it is convenient for them. Also, their tendency to never directly answer a question is rather annoying.
+ | 1. How many did you kill?
+ | HK-47: Statement: I do not have the exact counts, master, since it is difficult to determine who was a Jedi and who was not - it seemed to be largely a matter of perspective. I did kill many soldiers who used techniques in combat that could make them be considered Jedi, although they called themselves Sith.
+Otherwise:
+ | 1. I can't allow you to remain on this ship if you've killed Jedi.
+ | HK-47: Query: Then why do you get to remain?
+ | HK-47: Observation: It seems to me that you have killed many more Jedi than I could ever hope to achieve. This was formerly something that generated respect, now I wonder from your tone if those deaths you caused were merely an accident. How disappointing.
+ | 1. How can you respect death on such a scale?
+ | 3. It was an accident... and I regret it.
+ | Points Gained: +2
+ | Influence Lost: HK-47 (-8)
+ | Dialog
+ | 
+ | HK-47: Retort: Master, the hypocrisy of you meatbags never fails to cause a surge in my behavior core. Not only have you no doubt ended the lives of many recently, but in light of the event at Malachor V, you must recognize that death is necessary.
+ | HK-47: Statement: Oh, master, please say no more. Every word of apology you utter from now on will simply chip away at my last of my respect reserves for you that I had stored in my core.
+ | 2. If you say that again, I will destroy you.
+ | 4. If I had known what would happen, I might have done it intentionally.
+ | Points Gained: -2
+ | Influence Gained: HK-47 (+8)
+ | Dialog
+ | 
+ | HK-47: Observation: And if you did, master, I could not prevent you. I will suggest that if my words are difficult to hear, then it is lost past time someone said them to you. Speaking from the perspective of one who suffers considerable memory problems, repressing such horrific acts of slaughter seems like such a waste. It is better to drag such delightful memories kicking and screaming into the open, where they may be examined and replayed again and again, savoring each beautiful moment.
+ | HK-47: Query: "Might?" Oh, master, I would hope in the future that you would not hesitate when an opportunity presents itself. Let nothing stand between you and your targets, especially the twin crippling behaviors of hesitation or forethought.
+In every case:
+ | 1. I've never grown comfortable with killing - and never enjoyed it.
+ | HK-47: Evaluation: Well, master, that is your problem. Personally, I think you should seek help, but you seem to be the silent loner type, unwilling to admit such weaknesses to another.
+ | 1. How can you justify the deaths of so many?
+ | 2. Sounds like you came to terms with what happened at Malachor easily.
+ | HK-47: Answer: Oh, quite easily, master. If you had not slaughtered the Mandalorians at Malachor V, they would have destroyed you and everything you tried to protect. Now once you accept that the Mandalorians had to die, then the next logical step is determine exactly how many need to die to convince them to correct their need for conquest. And that, I am pleased to say, is where I come in.
+ | 1. Are you going to justify assassination to me?
+ | 2. That is why assassination is such an effective tool, and should be employed more often.
+ | HK-47: Statement: It is a fact that the targeted extermination of certain individuals will bring war to a close quickly and efficiently. Leaders unite - and when the leaders are removed, the unity they inspire erodes as well. You were a General in the Mandalorian Wars, master. I have seen the records of your battles, and I know that your name was one the Mandalorians feared. It is not solely because of your skill in battle, but the fact that you could inspire others, convincing them to fight to the death in situations where other military leaders would be forced to retreat. Revan often speculated on your leadership in this regard. I believe my previous master had formed some other conclusions concerning you. Revan's apprentice wanted me to kill you when you left the war effort and did not go with them to the Unknown Regions, but Revan would not permit it.
+ | 1. Why?
+ | HK-47: Speculation: I believe Revan wanted you to face the Jedi Council, master. As if there was something that you would show them and possibly undermine their strength. Perhaps Revan wished the Council to see how far the Jedi had fallen. Knowing Revan, it was no doubt a strategic decision on many levels.
+ | 1. What do you think Revan wanted me to show the council?
+ | HK-47: Observation: Master, this is purely speculation, but there is a certain strength in parading defeated leaders before their people. Perhaps Revan felt that your return to the Council in your state would show them what Jedi were capable of - and the cost. Revan often referred to you as a Jedi who was already dead, and felt your reception by the Council would further show you their hypocrisy.Considering the council's judgment, I see they did not receive your return well. Perhaps whatever anger they held for Revan they held against you.
+ | 2. So Malak stayed with Revan until the end?
+ | HK-47: Statement: Master, that, again, requires a somewhat complicated answer. Because this exchange is in danger of boring me, I will simply say, "no." And that I am glad I was never in service to Malak.
+ | 3. What did you think of Malak?
+ | 1. Why?
+ | ♂ HK-47: Observation: Revan was a human capable of subtle, intelligent cruelties. He had a strategic mind, and he accepted losses and sacrifices. His meatbag apprentice was more like an angry club.
+ | ♀ HK-47: Observation: Revan was a human capable of subtle, intelligent cruelties. She had a strategic mind, and she accepted losses and sacrifices. Her meatbag apprentice was more like an angry club.
+ | HK-47: He was also given to grandiose displays of brutality and murder that seemed inefficient - and in many cases, unnecessary.
+Jedi[edit | edit source]
+The following can be unlocked once you've gained or lost enough influence for HK-47 to tell you about his previous master or ask you a question before you go (< 30 Influence > 70), and tell you why Revan didn't consider the Republic a threat (< 20 Influence > 80):
+ | 4. I need to know how you killed Jedi - in order to protect myself.
+ | < 10 Influence > 90
+ | HK-47: [Influence: Success] Request: First, Master, I would appreciate it if Jedi need to be killed, that you permit me to kill those annoying pseudo-pacifists for you. But if you are determined to do it yourself, then there are many techniques I would suggest.
+ | Dialog
+ | 
+ | 1. Like what?
+ | HK-47: Recitation: First, weapon selection is critical. If I see one more idiot attacking a Jedi with a blaster pistol, then I'll kill them myself.
+ | 1. What weapons would you suggest?
+ | HK-47: Answer: Select grenades, sonic screamers, cluster rockets, and plasma charges. Mines are also effective, since many Jedi will run to meet you in hand to hand combat. Silly Jedi.
+ | HK-47: Addendum: Gas attacks are effective if you can take the Jedi by surprise - inhalation is less effective than ones that work on skin contact, as some Jedi seem able to hold their breath for long periods of time.
+ | HK-47: Cautionary: Still, don't rely on it, since Jedi can fight off the effects, it just distracts them, leaving them open to another avenue of attack.
+ | 1. Any defenses you would suggest?
+ | HK-47: Recitation: Do not forget to activate any energy shields you possess. Lightsabers, while powerful, have trouble penetrating most military issue energy shields - provided they are energy shields and not those crude Mandalorian melee shields.
+ | 1. What about countering Force powers?
+ | HK-47: Answer: Countering their other powers is more difficult.
+ | HK-47: Confession: I do not fully understand their other abilities, but I do know that many of them require that the Jedi know that you are there, and can see you. Thus, sniping and using cover are always advantageous.
+ | 1. Anything else?
+ | HK-47: Evaluation: A technique that Revan used frequently was to attack a Jedi indirectly. This method only works if the Jedi is adhering to the self-destructive path of pacifism and sacrifice.
+ | 1. What do you mean?
+ | HK-47: Answer: Kill their allies, or place them in jeopardy. Many Jedi will leave themselves exposed in order to protect another. That is why there is many less Jedi than there were a decade ago.
+ | 1. You seem to have thought this through.
+ | Dialog
+ | 
+ | HK-47: Cautionary: Oh, no, master. In fact, that is the worst thing you can do.
+ | HK-47: Explanation: Statistically, overplanning the assassination of a Jedi seems to backfire.
+ | HK-47: Extrapolation: There are many theorists who claim Jedi can see the future, and I do not know if that is true, but it seems impulsive acts are more common to succeed than planned incidents.
+ | 1. [You use these techniques against enemies and to protect yourself, giving you a bonus to experience, constitution, and Reflex saving throws.]
+ | Received:
+1000 Use these techniques against enemies and to protect yourself
+You're granted Constitution: +1 and Saves: Reflex +1.
+ | HK-47: Jedi, like sand-kivers, seem to sense trouble a few seconds before it happens. They are tricky little pests.
+ | 2. Were you the only one killing Jedi?
+ | Dialog
+ | 
+ | HK-47: Answer: No, master. In addition to traps, mines, and orbital bombardment, Revan and the Sith often employed meatbag assassins for some Jedi, skilled in the same techniques that I was trained in. Strangely enough, Revan believed that meatbags that did not use or believe in the Force were especially important, since in many respects, they were more difficult for Jedi to detect. Revan had many of them trained to "hide their minds," as it were. Again, once these techniques were learned, the percentage of living Jedi began to decrease accordingly.
+ | 1. Hide their minds? How?
+ | HK-47: Answer: Generally, this was done by broadcasting strong emotions while thinking about something else. It was a curious technique, but it seemed to be effective in blinding Jedi. Whether guilt, lust, fear - they act as mental interference, making finding the true intentions of the broadcasting meatbag difficult.
+ | 1. I don't understand how that would work.
+ | HK-47: Answer: Obviously, a Force Sensitive broadcasting such emotions puts themselves at risk of not using the Force "properly," since to use it seems to require an inner calm that most meatbags do not possess. As much as the Jedi could not use such a technique, the Sith Lords cannot use it for much the same reasons - such passions as guilt, lust, and fear are rarely strengths to the Sith code.
+ | HK-47: Statement: The master felt it was ironic that only people who had experienced such passions could harm Jedi in such a way - that to kill Jedi, you had to be a human being. Revan found that quite amusing.
+ | 1. How many ways to kill Jedi are there?
+ | HK-47: Answer: The odds of me being forced to use such techniques against you has decreased, master. There are some more methods I could describe, if you wish.
+ | 1. All right, go on.
+ | HK-47: Statement: Overwhelming odds is also a good tactic, master. There are few Jedi that can long hold their ground against a hundred attackers all firing at once... or being turned on by their own troops. But the most effective weapon against Jedi seems to be the erosion of the spirit.
+ | 1. What do you mean?
+ | HK-47: Answer: Revan claimed that psychological warfare against Jedi was important because much of their power comes from their state of mind, their connection to this religion called the "Force." Revan said that many Jedi have the capability to form connections to life around them, although few of them realized the extent to which this is possible.
+ | HK-47: Recollection: I believe my Master speculated that many Jedi did not fully form such connections because of their discipline, because they never opened their lives to the passions around them. I believe Revan termed it that "one would need to be a human being to develop such connections." It is something that the Jedi code could not teach. One simply knew it instinctively, or not.
+ | HK-47: Observation: Master, I am somewhat surprised that I need to explain this to you at all, considering your past with Revan.
+ | 1. What are you talking about?
+ | ♂ HK-47: Answer: Why, he said you had such capability, master, but it would be your downfall. To tie so much of yourself into others - if they suffer or die, then you would die as well.
+ | ♀ HK-47: Answer: Why, she said you had such capability, master, but it would be your downfall. To tie so much of yourself into others - if they suffer or die, then you would die as well.
+ | HK-47: Observation: I think Revan pitied you, master. It was very insulting, if I may say so.
+ | 1. It sounds like a Force bond.
+ | HK-47: Clarification: Whatever it is called, master, it seems to be quite a vulnerability. Revan even admitted as such. When a Jedi, or any soldier, suffers doubt, it weakens them. With the Jedi, however, it is more pronounced, since they are extreme examples. That is why Revan felt that Malachor V was so important. It was intended to be a conversion tool.
+ | 1. That's insane.
+ | 2. And you expect me to believe this?
+ | HK-47: Assessment: When faced with a continuous series of hard-fought battles, I detected a significant statistical increase in Jedi following Revan over the Jedi Code - a compromise in principles brought about by battlefield conditions. The emotional weight of war changed Jedi morale, power, and eventually, their allegiance.
+ | ♂ HK-47: Conclusion: I believe the Mandalorian Wars were to beat the Mandalorians and also to allow Revan to build the foundation of his army.
+ | ♀ HK-47: Conclusion: I believe the Mandalorian Wars were to beat the Mandalorians and also to allow Revan to build the foundation of her army.
+ | 1. [HK-47 has given you a greater understanding of the Mandalorian Wars - and the Jedi, resulting in an experience bonus, a Wisdom bonus, and a Force point bonus.]
+ | Received:
+1000 Given a greater understanding of the Mandalorian Wars – and the Jedi
+You're granted Wisdom: +1 and maximum Force points increased by 10.
+Assassination Protocol: Active
+Learned how to kill Jedi from HK-47
+ | HK-47: But I am surprised you have not already arrived at this conclusion. Surely the loss of your troops and the Jedi who served under you at Malachor V, had a detrimental effect upon you and your ties to the Force - and I suspect, your desire to be around others ever again.
+Cupid's Rifle[edit | edit source]
+The following is unlocked after the Handmaiden confronts Visas, or Atton confronts the Disciple, aboard the Ebon Hawk, due to the latter having at least 15 more Influence than the former in either case:
+ | 2. HK, do you know what love is?
+ | HK-47: Answer: Many organic meatbags find that question difficult to answer, Master, but I believe I can provide you with a satisfactory definition.
+ | HK-47: Definition: "Love" is making a shot to the knees of a target 120 kilometers away using an Aratech sniper rifle with a tri-light scope.
+ | 1. I think you have your definitions wrong.
+ | 2. Uh... I'm not sure I agree with that. Or if anyone could.
+ | 3. There's a certain lethal charm in such a shot, I agree.
+ | 4. That is the best definition of love I have ever heard.
+ | 5. Then I don't think I've ever been in love.
+Cupid's Rifle
+Listened to HK-47's definition of love
+ | HK-47: Statement: This definition, I am told, is subject to interpretation. Obviously, love is a matter of odds. Not many meatbags could make such a shot, and strangely enough, not many meatbags would derive love from it. Yet for me, love is knowing your target, putting them in your targeting reticule, and together, achieving a singular purpose... against statistically long odds.
+Short Circuit[edit | edit source]
+The HK Protocol Pacifist Package can be bought from Geeda in the refugee landing pad on Nar Shaddaa after resolving the Trade War and stabilizing Dantooine and Onderon. It can also be bought from Kodin on Nar Shaddaa's refugee landing pad or 1B-8D in Onderon's western square if you still have the four parts required to rebuild HK-47 (droid processor, chassis, control cluster and vocabulator) in your inventory when you first speak to them.
+ | Geeda
+HK Protocol Pacifist Package
+ | Credits Lost: 204
+ | This upgrade looks like it is designed to be downloaded into a droid's behavior core.
+If you haven't already rebuilt HK-47:
+ | 1. [Repair] Download the protocol pacificist package.
+ | Damaged HK Unit: [Failure] [This requires the droid be active before installation. It will have to wait until it's operational.]
+Once you have rebuilt HK-47, you can only install the HK Protocol Pacifist Package if you haven't told him to stop asking if there's someone that you need killed. When you speak:
+ | 4. I found a new upgrade part for you.
+ | HK-47: Statement: Something approaching joy is now growing in my behavior core, master. Please install it at once.
+ | Dialog
+ | 
+ | HK-47: Cautionary: But please do so carefully. I have seen how you use a hydrospanner.
+ | 1. [Install HK Protocol Pacifist Package.]
+ | 1. There. Are you okay?
+ | 2. How does that feel?
+ | 3. Do a diagnostic, then report.
+ | HK-47: Answer: I... do not know... master. I feel strange. Like a circuit has been flipped.
+ | 1. I need you combat ready, so stay sharp.
+ | 3. Are your assassination protocols impaired?
+ | 2. Are you ready? We have people that need killing.
+ | 4. Well, as long as you're not going to start shooting wildly at anyone we meet, then fine.
+ | HK-47: Answer: Combat ready? Did you mean in case we need to run away or retreat? Oh my, I am afraid I am ill-equipped for combat.
+ | HK-47: Answer: Assassination protocols? As in the premeditated killing of another for personal or economic gain?
+ | HK-47: Answer: Oh, master, I could not allow myself to harm another. What if they have families? Or children?
+ | HK-47: Surely master is joking with his humble, peace-loving droid. I exist only to serve and learn how to serve meatbags.
+ | HK-47: We must always think of the children. The littlest ones always suffer in war.
+ | HK-47: Musing: I think perhaps I would enjoy learning a new language. Or watching an informative holovid.
+ | 1. I think I flipped the wrong switch. Or the right one.
+ | 2. All right, I think you might want to run another diagnostic.
+ | 3. Are you okay?
+ | HK-47: Statement: I am fulfilling my primary function, which is to facilitate communication between species and put an end to hostilities.
+ | HK-47: Answer: Master, your concern is unfounded. I assure you, I am operating at peak efficiency.
+ | HK-47: Greeting: Oh, hello, little T3 unit. I am HK-47, protocol and translation droid.
+ | T3-M4: Dee... deet?
+ | HK-47: Answer: Of course I am all right. Why wouldn't I be? I respect all life. All life is connected and should be nurtured.
+ | 1. Joke's over - and so is my patience.
+ | 2. That does it. That package is coming out of there.
+ | 3. Hold still. I need to operate.
+ | HK-47: Exclamation: No! Master, no! What are you doing?
+ | HK-47: Statement: Master, please, I beg you. Never install anything again without checking it in the diagnostics bay first. That was a close one - I almost surrendered completely to peace and pacifisim - how repugnant.
+ | HK-47: Conclusion: Still there was a brief moment where I felt like I almost understood why some meatbags choose peace and friendship over a high-powered blaster carbine.
+ | 1. [HK-47 has gained a bonus to his Wisdom and Awareness. The event has also given you an experience bonus.]
+ | HK-47: Query: Now, are there any other horrors you wish to try and insert in my system, or is your electronic butchery done?
+Short Circuit
+Installed HK-47's unique module
+ | Received:
+500 Installed HK Protocol Pacifist Package
+HK-47 has gained Wisdom: +1 and Skills: Awareness +4.
+Go to top
+Hanharr
+HK-47
+Kreia
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/HK-47&oldid=1192379"
+Hidden category: 
+Sub-pages
+ This page was last edited on 19 July 2026, at 16:25.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

@@ -1,0 +1,216 @@
+
+ KOTOR 2 - HK-47 Builds - TSLRCM
+KOTOR 2 - HK-47 Builds - TSLRCM
+This build assumes a version of TSLRCM new enough that HK-47 has additional features (compared to the unmodded game or to earlier versions of TSLRCM).
+======================
+NOTE: This isn't quite right yet.
+HK-47's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 6
+ | Combat Droid 6
+ | STR: 16 (+3)
+WIS: 12 (+1)
+CHA: 10 (+0)
+INT: 14 (+2)
+CON: 10 (+0)
+DEX: 16 (+3)
+ | 16 points
+Persuade +0 (0)
+Computer use +0 (0)
+Stealth N/A
+Awareness +5 (5)
+Repair +6 (6)
+Security +0 (0)
+Treat Injury N/A
+Demolitions +5 (5)
+ | Weapon Proficiency: Blaster Pistol (g)
+Weapon Proficiency: Blaster Rifle (g)
+Weapon Focus: Blaster Rifle (g)
+Power Blast (g)
+Droid Upgrade Class I (g)
+Logic Upgrade (g)
+Logic Upgrade: Tactician (g)
+Assassin Protocols (g)
+Toughness (g)
+ | 
+ | 7
+ | Combat Droid 7
+ | 
+ | 3 points
+?
+ | Droid Upgrade Class 2 (g)
+ | 
+ | 8
+ | Combat Droid 8
+ | DEX +1, 17 (+3)
+ | 3 points
+?
+ | 
+ | 
+ | 9
+ | Combat Droid 9
+ | 
+ | 3 points
+?
+ | Improved Power Blast (s)
+ | 
+ | 10
+ | Combat Droid 10
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 11
+ | Combat Droid 11
+ | 
+ | 3 points
+?
+ | Modified Assassin Protocols (g)
+Master Power Blast (s)
+ | 
+ | 12
+ | Combat Droid 12
+ | DEX +1, 18 (+4)
+ | 3 points
+?
+ | Weapon Specialization: Blaster Rifle (s)
+ | 
+ | 13
+ | Combat Droid 13
+ | 
+ | 3 points
+?
+ | Droid Upgrade Class 3 (g)
+ | 
+ | 14
+ | Combat Droid 14
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 15
+ | Combat Droid 15
+ | 
+ | 3 points
+?
+ | Precise Shot I (s)
+ | 
+ | 16
+ | Combat Droid 16
+ | DEX +1, 19 (+4)
+ | 3 points
+?
+ | 
+ | 
+ | 17
+ | Combat Droid 17
+ | 
+ | 3 points
+?
+ | Integrated Assassin Protocols (g)
+Precise Shot II (s)
+ | 
+ | 18
+ | Combat Droid 18
+ | 
+ | 3 points
+?
+ | Precise Shot III (s)
+ | 
+ | 19
+ | Combat Droid 19
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 20
+ | Combat Droid 20
+ | DEX +1, 20 (+5)
+ | 3 points
+?
+ | 
+ | 
+ | 21
+ | Combat Droid 21
+ | 
+ | 3 points
+?
+ | Precise Shot IV (s)
+ | 
+ | 22
+ | Combat Droid 22
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 23
+ | Combat Droid 23
+ | 
+ | 3 points
+?
+ | Precise Shot V (s)
+ | 
+ | 24
+ | Combat Droid 24
+ | DEX +1, 21 (+5)
+ | 3 points
+?
+ | Improved Toughness (s)
+ | 
+ | 25
+ | Combat Droid 25
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 26
+ | Combat Droid 26
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 27
+ | Combat Droid 27
+ | 
+ | 3 points
+?
+ | Master Toughness (s)
+ | 
+ | 28
+ | Combat Droid 28
+ | DEX +1, 22 (+6)
+ | 3 points
+?
+ | 
+ | 
+ | 29
+ | Combat Droid 29
+ | 
+ | 3 points
+?
+ | Close Combat (s)
+ | 
+ | 30
+ | Combat Droid 30
+ | 
+ | 3 points
+?
+ | Improved Close Combat (s)
+ | 
+Shuffle the feat order if you like. I typically don't get HK-47 to level 30, but by that point he's pretty much out of useful feats anyway.
+This is a basic Blaster Rifle build. It prioritizes damage output. This build plus a fully upgradable blaster rifle with the best crafted upgrades in the game got me through the TSLRCM HK-50 Droid Factory without much trouble.
+HK-47 should take at least 10 Security (15 on Hard) for the Droid Factory, because he will be solo for that.
+Alternatively, he could dual-wield blaster pistols and take the Rapid Shot line (for more opportunities to hit), but between Two-Weapon Fighting and not getting the first Rapid Shot feat for free, that'd mean less of the Precise Shot line. This would probably be the best option for steady damage output, but might result in fewer big damange numbers, and big numbers are fun.
+The Sniper Shot line plus a Keen weapon (whether pistols or rifle) might also be a reasonable choice for potentially higher but somewhat less reliable damage. As a companion, that'd pair well with party members with Sneak Attack, because Sniper Shot has a chance to stun (not a big chance, so couldn't rely on it, but it'd be fun when it happened).
+I left the higher ranks of Toughness and the Close Combat line to the end because if HK-47 is taking significant damage or is close to enemies, then someething went wrong. There's an arguement to be made for taking them earlier, though, because it'd help him get through fights that went poorly. Do whatever you find valuable.

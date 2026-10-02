@@ -1,0 +1,255 @@
+
+ KOTOR 2 - Mandalore Builds
+KOTOR 2 - Mandalore Builds
+This file details some considerations to make for a Mandalore build, and may eventually contain a few Mandalore builds from different playthroughs. We'll see how far I take it.
+======================
+Continuing the tradition of KOTOR I, Canderous comes with stats suitable for melee combat and feats mostly for ranged combat. Despite him coming with a ranged weapon, a lot of builds use him as melee.
+He begins as, and remains, a Soldier.
+Soldier Class Skills: Demolitions, Awareness, Treat Injury
+======================
+Notes:
+Dialog tree
+Obtained on Duxn
+Has companion quest to find Mandalorians on different planets
+Can create simulants for you
+Influence gained/lost only by your actions when he is in your party
+Not much point anyway, you don't get anything from him and there aren't many opportunities anyway
+It is mathematically impossible to lose enough influence to fully minimize.
+There are no Light-Side ways to gain influence
+Influence locations:
+Anywhere
+Kill innocents
+Nar Shaddaa
+Support Mandalore in bringing the clans together (unconfirmed)
+Dantooine
+Support Mandalore in bringing the clans together (unconfirmed)
+Kill Akkere
+Onderon
+Side with rabble rouser, support him in calling for an end to the monarchy.
+After that, talk to Anda, agree to remove the guard captains, talk to Madalore and tell him Vaklu is better
+When the riot starts, tell Mandalore that if you want Vaklu's support, you have to help him out
+Onderon Palace
+If you side with the Queen, after Vaklu is defeated agree to kill him (and do it)
+Ravager
+Kill Tobin
+======================
+Candalore's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 5
+ | Soldier 5
+ | STR: 15 (+2)
+WIS: 12 (+1)
+CHA: 12 (+1)
+INT: 12 (+1)
+CON: 15 (+2)
+DEX: 12 (+1)
+ | 18 points
+Persuade +2 (2)
+Computer use +0 (0)
+Stealth +2 (2)
+Awareness +5 (5)
+Repair +0 (0)
+Security +0 (0)
+Treat Injury +9 (9)
+Demolitions +0 (0)
+ | Power Attack (g)
+Power Blast (g)
+Improved Power Blast (g)
+Rapid Shot (g)
+Sniper Shot (g)
+Toughness (g)
+Close Combat (g)
+Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+Weapon Focus: Blaster Rifle (g)
+Weapon Specialization: Blaster Rifle (g)
+Mandalorian Courage (g)
+Implant Switching (g)
+ | 
+ | 6
+ | Soldier 6
+ | 
+ | 2 points
+?
+ | Improved Toughness (s)
+ | 
+ | 7
+ | Soldier 7
+ | 
+ | 2 points
+?
+ | Conditioning (s)
+ | 
+ | 8
+ | Soldier 8
+ | CON +1, 16 (+3)
+ | 2 points
+?
+ | Master Toughness (s)
+ | 
+ | 9
+ | Soldier 9
+ | 
+ | 2 points
+?
+ | Improved Conditioning (s)
+ | 
+ | 10
+ | Soldier 10
+ | 
+ | 2 points
+?
+ | Master Conditioning (s)
+ | 
+ | 11
+ | Soldier 11
+ | 
+ | 2 points
+?
+ | Regenerate Vitality Points (s)
+ | 
+ | 12
+ | Soldier 12
+ | CON +1, 17 (+3)
+ | 2 points
+?
+ | Dueling (s)
+ | 
+ | 13
+ | Soldier 13
+ | 
+ | 2 points
+?
+ | Improved Dueling (s)
+ | 
+ | 14
+ | Soldier 14
+ | 
+ | 2 points
+?
+ | Master Dueling (s)
+ | 
+ | 15
+ | Soldier 15
+ | 
+ | 2 points
+?
+ | Improved Power Attack (s)
+ | 
+ | 16
+ | Soldier 16
+ | CON +1, 18 (+4)
+ | 2 points
+?
+ | Master Power Attack (s)
+ | 
+ | 17
+ | Soldier 17
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 18
+ | Soldier 18
+ | 
+ | 2 points
+?
+ | Weapon Focus: Melee Weapons (s)
+ | 
+ | 19
+ | Soldier 19
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 20
+ | Soldier 20
+ | STR +1, 16 (+3)
+ | 2 points
+?
+ | Weapon Specialization: Melee Weapons (s)
+ | 
+ | 21
+ | Soldier 21
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 22
+ | Soldier 22
+ | 
+ | 2 points
+?
+ | Dual Strike (s)
+ | 
+ | 23
+ | Soldier 23
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 24
+ | Soldier 24
+ | STR +1, 17 (+3)
+ | 2 points
+?
+ | Improved Dual Strike (s)
+ | 
+ | 25
+ | Soldier 25
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 26
+ | Soldier 26
+ | 
+ | 2 points
+?
+ | Master Dual Strike (s)
+ | 
+ | 27
+ | Soldier 27
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 28
+ | Soldier 28
+ | STR +1, 18 (+4)
+ | 2 points
+?
+ | ?
+ | 
+ | 29
+ | Soldier 29
+ | 
+ | 2 points
+?
+ | 
+ | 
+ | 30
+ | Soldier 30
+ | 
+ | 2 points
+?
+ | ?
+ | 
+This is a basic melee-focused build. It prioritizes survivability over damage output.
+A damage-oriented build would probably take most of the same feats, but in a different order (although it'd probably take the Two-Weapon line instead of Dueling). It'd probably also push STR before CON.
+The last two feats can be taken situationally.

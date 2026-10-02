@@ -1,0 +1,1158 @@
+
+Star Wars Knights of the Old Republic II: The Sith Lords/T3-M4 — StrategyWiki | Strategy guide and game reference wiki
+Star Wars Knights of the Old Republic II: The Sith Lords/T3-M4
+ Namespaces
+Page
+Discussion
+ English
+ Views
+Read
+Edit
+Edit source
+View history
+ More
+From StrategyWiki, the video game walkthrough and strategy guide wiki
+< Star Wars Knights of the Old Republic II: The Sith Lords
+ Jump to navigation
+ Jump to search
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Walkthrough
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Contents
+1 Influence
+1.1 Peragus II
+1.2 Ebon Hawk
+1.3 Lost Jedi
+2 Computer Use
+3 Repair
+4 Moving Meditation
+T3-M4 joins your party on Peragus II when you and Atton recover him in the fuel line upon entering the Fuel Depot from the Harbinger engine deck, and he must be a member of your party until you reach the Hangar. Once aboard the Ebon Hawk, T3-M4 does a circuit of the ship, which can make it hard to find him unless he's told to stop moving around:
+ | T3-M4: Dee-deet?
+ | 1. Could you please stop moving around the ship? It's hard to find you.
+ | 1. You can resume your circuit of the ship, if you want.
+ | T3-M4: Bee-reeeet. Deet-deet.
+ | 4. Never mind. I'll be going now.
+Otherwise, T3-M4 can upgrade items if asked:
+ | 2. Can you upgrade an item for me?
+ | T3-M4: Bee-deet, dreet.
+T3-M4 also has the ability to make a limited number of programming spikes on demand:
+ | Dialog
+ | 
+ | 3. I need a programming spike.
+ | 2. Can you make any more?
+ | T3-M4: Bee-reeeet. Deet-deet.
+ | T3-M4: Bee-deet. Deet.
+ | 1. I'll put this to good use. For now, there was something else I needed.
+ | 1. All right, well, maybe later then. I had something else I needed.
+ | T3-M4
+Computer Spike
+Influence[edit | edit source]
+You can maximize Influence with T3-M4 once aboard the Ebon Hawk after leaving Telos if you have Intelligence 15 and Computer Use rank 11, and minimize it if you have Intelligence 15 and Computer Use rank 15:
+ | World
+ | Area
+ | Dialog
+ | Influence
+ | Peragus II
+ | Fuel Depot
+ | Don't blame yourself.
+ | 58
+ | 
+ | We may still have a use for you. Follow me.
+ | 
+ | 42
+ | You look like you've suffered a lot of damage over the years.
+ | Well, I'm sure you'll gain that skill back. I'm glad to have you along.
+ | 66
+ | 
+ | Pray you don't lose any more of your functionality, or I'll sell you for parts.
+ | 
+ | 34
+ | [Intelligence] How did you get here, T3?
+Intelligence 15
+Computer Use 10
+ | [Computer] Let me check your core.
+ | [Computer] That does it.
+ | 74
+ | 42
+ | I want to make sure you're all right. Just let me check, all right?
+ | 82
+ | 
+ | I don't care what damage it could cause - I want to know what you're hiding.
+ | 
+ | 34
+ | Intelligence 15
+Computer Use 15
+ | I'm honored, T3. I will do what I can to stop this threat.
+ | 90
+ | 
+ | When this journey is done, you will pay for what you have done
+ | 
+ | 26
+ | Don't be sorry - maybe you had a good reason
+ | 98
+ | 
+ | Save your apologies for someone who cares.
+ | 
+ | 18
+ | Telos
+ | Secret Academy
+ | It wasn't your fault
+ | Look, I'm just glad I found you.
+ | 100
+ | 
+ | Don't waste my time with excuses.
+ | 
+ | 10
+ | How's the Ebon Hawk?
+ | Good job - glad to hear it.
+ | T3, I really appreciate your help.
+ | 100
+ | 
+ | Keep up the routine maintenance.
+ | Just be sure it stays that way
+ | 
+ | 2
+ | T3, can you give me a list of the Jedi Masters again?
+ | Oh, I'm not angry.
+ | Well, be careful
+ | 100
+ | 
+ | If you do that again
+ | Next time, don't do anything
+ | 
+ | 0
+Sufficient influence gained or lost with T3-M4 allows upgrading his memory core with Computer Use and some routine and advanced maintenance with Repair of sufficient skill ranks, for which he gains attribute bonuses and you receive experience:
+ | Influence
+ | Rank
+ | Computer Use
+ | XP
+ | Repair
+ | XP
+ | < 40
+ | > 60
+ | 9
+ | Intelligence: +1
+ | 250
+ | Constitution: +1
+ | 250
+ | < 30
+ | > 70
+ | 15
+ | Intelligence: +1
+ | 500
+ | Dexterity: +1
+ | 500
+ | 21
+ | 
+ | Dexterity and Constitution: +1
+ | 750
+After completing all this, with < 10 Influence > 90 you can try working on him one last time for you to gain Wisdom: +1, have maximum Force points increased by 10, learn Moving Meditation and receive 1750 XP.
+Peragus II[edit | edit source]
+The following dialog is unlocked from the moment T3-M4 joins your party on Peragus II:
+ | 1. You look like you've suffered a lot of damage over the years.
+ | Dialog
+ | 
+ | T3-M4: Dee... deet.
+ | 1. How much damage?
+ | 2. I had other questions for you.
+ | T3-M4: Dee-reet, deedeet be-reeeep.
+ | 1. So you lost a lot of programs in your behavior core - in addition to the damage to your frame?
+ | T3-M4: Dee... deet.
+ | 1. Well, I'm sure you'll gain that skill back. I'm glad to have you along.
+ | 2. Pray you don't lose any more of your functionality, or I'll sell you for parts.
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Dee-reet, dee-deet!
+ | T3-M4: Dwooooooo.
+Ebon Hawk[edit | edit source]
+The following dialog can be unlocked once aboard the Ebon Hawk after escaping Peragus II:
+ | 2. [Intelligence (15)] How did you get here, T3?
+ | Dialog
+ | 
+ | T3-M4: Dee-reet? Deet?
+ | 1. Were you on the Ebon Hawk with Kreia?
+ | T3-M4: Dee... deet.
+ | 1. But where did the Ebon Hawk come from?
+ | T3-M4: Dee-reet, deet.
+ | 1. Yes, but where did the Ebon Hawk come from?
+ | 2. You're hiding something from me.
+ | 1. Well?
+ | 2. T3?
+ | T3-M4: Dwoooooo. Dwoooooo.
+ | 1. If you don't know, then just say so.
+ | 2. I order you to tell me, or I'll turn you into spare parts.
+ | T3-M4: Bee... reep.
+ | 1. All right, but this isn't over.
+ | 2. If you didn't know, then say so, but don't start seizing up on me.
+ | T3-M4: Dee... deet.
+ | 1. [Computer (11)] You're deliberately avoiding answering - why?
+ | T3-M4: Dwoooooo.
+ | 1. [Computer] Let me check your core. I'll be careful, I promise.
+ | 2. [Computer] That does it. I'm going to rip out your module and get some answers.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: T3-M4 (+8)
+ | 2. I want to try and operate on your behavior core one more time.
+ | T3-M4: Beee-deet, bee-reeeet! Deeet, deet!
+ | 1. I want to make sure you're all right. Just let me check, all right?
+ | 2. I don't care what damage it could cause - I want to know what you're hiding.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | Dialog
+ | 
+ | 2. I'm going to operate on your behavior core again.
+ | T3-M4: Dwooooooo.
+ | Computer Use < 15
+ | T3-M4: [Failure] Deeeeeeeeee-reeeeet!
+ | 1. Damn, that's wedged in there tight.
+ | 2. Looks like I'll need some more skill to crack that open.
+ | T3-M4: Bee... deet. D-d-deet.
+Once you have minimum Computer Use rank 15, you can unlock a message which is followed by more chances to gain or lose influence and move closer to the light and dark sides of the Force:
+ | Computer Use 15
+ | T3-M4: [Success] Dee... reet.
+ | Dialog
+ | 
+ | 1. I'm finished. Are you all right?
+ | 2. I'm done. You're lucky I've left you intact.
+ | T3-M4: Bee... deet.
+ | 3. Then play the message.
+ | 2. Let's hear it, then.
+ | 3. Why was this so important?
+If Revan was male, then the message is from Bastila:
+ | Bastila: T3, you have been with us since Taris. Without you, we would never have escaped that place... and for that, I thank you. I'm leaving this message inside you because I have seen glimpses of the future... and the bond that he and I share does not allow him to hide everything from me. More of his memories have returned - and they trouble him. He has remembered something, something on the edge of the galaxy, and he believes that he must go there to end it. But I'm afraid for him... afraid that he may not return. I need you to be the beacon, T3. If he is lost out there, on the edge of the galaxy, if he finds whatever terrible thing he has seen, then he may not survive. If he doesn't make it back, then I need you to return to the Republic, find help. If you cannot find me, then seek out other Jedi, the Republic... I can't lose him, even if he believes he is protecting me.
+ | Bastila: T3, I have one last order for you. Our master does not know about this, and I order you to keep it a secret. Every day as we build upon Korriban, more of his memories return - and the bond he and I share cannot hide it from me. He believes a threat lurks on the edge of the galaxy. Something that could threaten his power. I... fear he will go there... and I fear he will not return. If he leaves, he will take you with him - but not I. He knows the bond we share may prove a weakness... but he will take you. If something happens, T3, then I need you to return to the Republic and find me. And if you cannot, then I need you to seek whatever help you can elsewhere, whether Jedi or the Sith... or someone in-between. This is my last order to you, T3. Obey it - and do not let me lose my Master... even if he believes he is protecting me.
+If Revan was female, then the message is from Carth:
+ | Carth: T3, there's not much time - I've seen that expression on her face before. Now I don't know where she's planning on going, but it's dangerous. She's going to leave without telling me - I don't know why, but there's a chance that she'll take you. If she does, I need you to watch out for her. She's strong, but she can't face everything alone. Do what you can, T3 - if she doesn't make it back, then I need you to come back, find help. If not me, then other Jedi, the Republic... I can't lose her, even if she wants to be lost.
+ | Carth: T3, there's not much time - Now I've seen her start to turn as we near the end... but there's still a chance to save her. No, if I fail, I need you to do whatever you can to protect her. Now, I'm convinced that whatever the Jedi Council did, there's still some humanity left in her. There has to be. Do what you can, T3 - and if I don't make it back, then I need you to go find help. Other Jedi, the Republic, anyone you think can help... If you don't, we may lose her. And the galaxy.
+ | T3-M4: Dwooooooo.
+ | 1. Friend of yours?
+ | 1. That person in the hologram a friend of yours?
+ | T3-M4: Bee-deet. Dee... deet, dee-reeet, deet. Deet.... deet.
+If Revan was dark side:
+ | 1. What do you mean, "once?"
+ | T3-M4: Bee, reet... Deet-dee-dee-deet, vreee, be-deet. Dee-reet, veee-reet.
+ | 1. That long ago? Sorry to hear it.
+ | 2. Then leave them buried in the past, where they belong.
+ | Points Gained: +1
+ | Points Gained: -1
+ | T3-M4: Dwoooooo.
+ | 2. Is that message what you were trying to hide?
+ | Dialog
+ | 
+ | T3-M4: Dee-deet.
+ | 2. I don't understand why you were concealing that from me.
+ | T3-M4: Dee-reet, veee-reet. Bee, deet. Deet-deee, be-deet.
+ | 1. I understand. I didn't think you kept messages like that.
+ | 2. Don't hide anything like that from me again, I don't care what your programming tells you.
+ | T3-M4: Dee-deet.
+ | 3. Who was the person the hologram was talking about?
+ | Dialog
+ | 
+ | T3-M4: Bee-deet? Deet.
+ | 1. Another missing friend?
+ | 2. A missing friend?
+ | T3-M4: Dee... deet. Deet.
+ | Light Revan
+ | Dark Revan
+ | ♂ 1. What happened to your old friend? Why aren't you with him?
+ | ♀ 1. What happened to your old friend? Why aren't you with her?
+ | ♂ 1. What happened to your old master? Why aren't you with him?
+ | ♀ 1. What happened to your old master? Why aren't you with her?
+ | T3-M4: Dee-deet.
+ | ♂ 1. Because he could not take anyone with him. Even the woman in the hologram.
+ | ♂ 2. He didn't want any vulnerabilities.
+ | ♂ 3. He left all he cared about behind.
+ | ♀ 1. ...and she left you. I'm sorry, T3.
+ | ♀ 2. Because she could not take anyone with her. Even the man in the hologram.
+ | ♀ 3. She didn't want any vulnerabilities.
+ | ♀ 4. She left all she cared about behind.
+ | T3-M4: Dee... dreet.
+ | T3-M4: Dee... dreet.
+ | 2. And if he did not return, he needed to make sure no one followed.
+ | 3. But you decided to go for help anyway.
+ | 4. You couldn't abandon him.
+ | T3-M4: Deet, dreet -dee-deet. Dee-ree-reet, dreet- dwooo. Bee-reep, deet.
+ | 1. But you found us, T3. If we can stop the Sith...
+ | 2. You were able to gather us. And together, we can crush the Sith... and anyone else in our way.
+Otherwise, if Revan was male:
+ | ♂ 1. ...and he left you. I'm sorry, T3.
+ | T3-M4: Deet, dreet -dee-deet. Dee-ree-reet, dreet- dwooo. Bee-reep, deet.
+ | 1. But you did help - you found us, T3. If we can stop the Sith... then there is hope after all.
+ | 2. You were able to gather us. And together, we can crush the Sith... and anyone else in our way.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Dee-deet!
+ | T3-M4: Dee... deet.
+There are still two chances to gain or lose influence and move closer to the light and dark sides of the Force, regardless of who Revan was:
+ | 4. So this help you came in search of - you came in search of me.
+ | Dialog
+ | 
+ | T3-M4: Dee, deet.
+ | 1. But why me? I was powerless... defenseless.
+ | 2. So you found me in my weakened state and placed me in danger. You could have gotten me killed.
+ | T3-M4: Deeee-deeet, dreeee-dee deet vreeeee-deet, dee-deet... deet.
+ | 1. You needed someone strong enough to fight the danger that was coming. Someone who knew war - and battle, and could make the hard choices that had to be made.
+ | 2. You needed the last of the Jedi... the last hero of the Mandalorian Wars. Me.
+ | T3-M4: Dee-deet.
+ | 1. I'm honored, T3. I will do what I can to stop this threat.
+ | 2. When this journey is done, you will pay for what you have done, and for all you have put me through.
+ | Points Gained: +2
+ | Points Gained: -2
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Dee reeeet, deet - deet!
+ | T3-M4: Dwooooooo.
+ | 5. That message doesn't tell me where the Ebon Hawk came from.
+ | Dialog
+ | 
+ | T3-M4: Dee... deet.
+ | 1. But why don't you have that information?
+ | T3-M4: Beee-reeet, dee-deet, deet. Dee-deet.
+ | 1. Deleted? By who?
+ | T3-M4: Dee... deet.
+ | 1. You deleted it? Why?
+ | T3-M4: Dee... dee-deet, deet.
+ | 1. Something's wrong here - there must have been a reason for it.
+ | 2. This is impossible. You deleted it, you don't know why, and all you can show me is this old hologram as an "explanation?"
+ | T3-M4: Deet. Deet.
+ | 1. Don't be sorry - maybe you had a good reason, or were trying to protect someone.
+ | 2. Save your apologies for someone who cares. Just don't delete anything else unless I order you to.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Dee-deet, dreeeeet... deet-deet!
+ | T3-M4: Dwoooooooo.
+Lost Jedi[edit | edit source]
+The following dialog is unlocked once aboard the Ebon Hawk after leaving Telos:
+ | 2. How's the Ebon Hawk?
+ | T3-M4: Bee-reet, deet! Dee-ree-deet.
+ | 1. Good job - glad to hear it.
+ | 2. T3, I really appreciate your help.
+ | 3. Keep up the routine maintenance. If something goes wrong, I'll hold you responsible.
+ | 4. Just be sure it stays that way, or we'll be using you for spare parts.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Dee-dee-deet. Dreet.
+ | T3-M4: Dwooooooo.
+ | 4. T3, can you give me a list of the Jedi Masters again?
+ | Dialog
+ | 
+ | T3-M4: Deee-reet, deet.
+ | Master Vrook: Master Vrook: Dantooine.
+ | Master Vrook: Master Vrook: Dantooine: Deceased.
+ | Master Zez-Kai Ell: Master Zez-Kai Ell: Nar Shaddaa.
+ | Master Zez-Kai Ell: Master Zez-Kai Ell: Nar Shaddaa: Deceased.
+ | Master Kavar: Master Kavar: Onderon.
+ | Master Kavar: Master Kavar: Onderon: Deceased.
+ | Master Vash: Master Vash: Korriban.
+ | Master Vash: Master Vash: Korriban: Deceased.
+ | Atris: Master Atris: Telos.
+ | T3-M4: Dweet?
+ | 2. Was that all that was in Atris' databanks?
+ | T3-M4: Bee-deet.
+ | 1. Why did you download this from Atris' databanks?
+ | T3-M4: Dee.. ree-deet.
+ | 1. Oh, I'm not angry. I wish you'd wiped the database before you left.
+ | 2. Well, be careful about going into unauthorized systems. Don't want you getting hurt.
+ | 3. If you do that again, I'll have you memory wiped. Understand?
+ | 4. Next time, don't do anything without an order from me, or I'll turn you into scrap.
+ | Points Gained: +1
+ | Points Gained: -1
+ | Influence Gained: T3-M4 (+8)
+ | Influence Lost: T3-M4 (-8)
+ | T3-M4: Bee-deet, deet!
+ | T3-M4: Dwooooo.
+Computer Use[edit | edit source]
+Sufficient influence can be gained or lost before escaping Peragus II for T3-M4 to allow you to upgrade his memory core with minimum Computer Use rank 9:
+ | 1. [Computer (1)] I might be able to upgrade your memory core.
+ | Dialog
+ | 
+ | 40-60 Influence
+ | T3-M4: [Influence: Failure] Dee-deet. Deet.
+ | 1. I'll be careful - trust me, you won't feel a thing.
+ | 2. You'll regret it when you can't perform any basic calculations.
+ | T3-M4: Deet. Dee-deet.
+ | 1. Fine. Never mind, then. Let me ask you some questions.
+ | 2. Forget it. Maybe some other time.
+ | < 40 Influence > 60
+ | T3-M4: [Influence: Success] Dee... deet.
+ | Dialog
+ | 
+ | 1. [Computer] All right. Let me take a look.
+ | 2. [Computer] Shut down for a while - this will be over in a second.
+ | T3-M4: Dee... deet?
+ | Computer Use < 9
+ | T3-M4: [Failure] Teed-eeed-teerv...eerv?
+ | 1. Whoops. Must have crossed a circuit.
+ | 2. That's hilarious! You're talking backwards now!
+ | 3. I can't understand a thing you're saying.
+ | T3-M4: Dee... dee... deet.
+ | 1. We'll try again later - for now, I have questions for you.
+ | 2. I'll try again when I've trained in my skills a little more.
+ | Computer Use 9
+ | T3-M4: [Success?] Dreet?
+ | Dialog
+ | 
+ | 1. All done. How do you feel?
+ | 2. That should up your processor speed.
+ | 3. Finally, maybe you'll be a little more useful around here.
+ | T3-M4: Dee, ree, vee... Dee-deet!
+ | 1. [Due to your computer skills, T3 has gained +1 Intelligence.]
+ | T3-M4: Dreet...? Dee-deet?
+ | 1. What do you mean, I faded out there for a second? You were shut down.
+ | 2. Glazed look? What are you talking about?
+ | 3. I was working on you the whole time. There's nothing wrong.
+ | T3-M4: Dee...deet.
+ | Received:
+250 T3 has gained +1 Intelligence
+Sufficient influence can be gained or lost after escaping Peragus II before traveling to Telos: Citadel Station for T3-M4 to allow you to upgrade his memory core again with minimum Computer Use rank 15: 
+ | 1. [Computer] Mind if I try to upgrade your memory core again?
+ | Dialog
+ | 
+ | 30-70 Influence
+ | T3-M4: [Influence: Failure] Dee-deet. Deet.
+ | 1. You weren't complaining last time.
+ | 2. Seems to me that what I did before worked.
+ | T3-M4: Deet. Dee-deet.
+ | 1. Fine. Never mind, then. Let me ask you some questions.
+ | 2. Forget it. Maybe some other time.
+ | < 30 Influence > 70
+ | T3-M4: [Influence: Success] Dee... deet.
+ | Dialog
+ | 
+ | 1. [Computer] All right. Let me take a look.
+ | 2. [Computer] Shut down for a while - this will be over in a second.
+ | T3-M4: Dee... deet?
+ | Computer Use < 15
+ | T3-M4: [Failure] Zzreeee-deeeee-ve-ve-veetz.
+ | 1. Oh... wait. Maybe that was the control cluster wire I cut. I always get those confused.
+ | 2. Must be a problem in the vocabulator connection.
+ | 3. If you'd stop repeating yourself, maybe I could understand you.
+ | T3-M4: Dee... dee... deet.
+ | 1. We'll try again later - for now, I have questions for you.
+ | 2. I'll try again when I've trained in my skills a little more.
+ | Computer Use 15
+ | T3-M4: [Success?] Vee-deet?
+ | Dialog
+ | 
+ | 1. All done. How do you feel?
+ | 2. That should up your processor speed.
+ | 3. Finally, maybe you'll be a little more useful around here.
+ | T3-M4: Dwoooo-rooooo.
+ | 1. [Due to your computer skills, T3 has gained an additional +1 Intelligence.]
+ | T3-M4: Dee, dee-reet? Veet-de-deet.
+ | 1. Blank look? What, me? I was working on you this whole time.
+ | 2. Maybe I just got caught up in what I was doing.
+ | 3. It's relaxing working on you. Maybe I just got caught up in it.
+ | T3-M4: Dee...deet.
+ | Received:
+500 T3 has gained +1 Intelligence
+Repair[edit | edit source]
+Sufficient influence can be gained or lost before escaping Peragus II for T3-M4 to allow some routine maintenance with minimum Repair rank 9:
+ | 2. [Repair (1)] You look like you're in need of some routine maintenance.
+ | Dialog
+ | 
+ | 40-60 Influence
+ | T3-M4: [Influence: Failure] Deeet, dee-veet.
+ | 1. What do you mean, "credentials?" I know what I'm doing.
+ | 2. Fine, go ahead and let corrosion take its course.
+ | T3-M4: Deet. Dee-deet.
+ | 1. Fine. Never mind, then. Let me ask you some questions.
+ | 2. Forget it. Maybe some other time.
+ | < 40 Influence > 60
+ | T3-M4: [Influence: Success] Dee... deet.
+ | Dialog
+ | 
+ | 1. [Repair] Just sit still. This won't take long.
+ | 2. [Repair] Good - let me tackle the main chassis first.
+ | T3-M4: Vee... dee-vreet?
+ | Repair < 9
+ | T3-M4: [Failure] De-REE-eet-d-ddeet!
+ | 1. Whoops. Must have left my hydrospanner in there.
+ | 2. That stutter is new. Did I do that?
+ | 3. Maybe the job was a little tougher than I thought.
+ | T3-M4: Dee... dee... deet.
+ | 1. We'll try again later - for now, I have questions for you.
+ | 2. I'll try again when I've trained in my skills a little more.
+ | Repair 9
+ | T3-M4: [Success?] Dee... reet?
+ | Dialog
+ | 
+ | 1. That should do it. You doing all right?
+ | 2. All right, finally finished - took a little longer than I thought.
+ | 3. That should make you a little tougher.
+ | T3-M4: Deeeeeee-deet. Bee-deet!
+ | 1. [Due to your repair skills, T3 has gained +1 Constitution.]
+ | T3-M4: Dreet...? Dee-deet?
+ | 1. What do you mean, I faded out there for a second? You were shut down.
+ | 2. Glazed look? What are you talking about?
+ | 3. I was working on you the whole time. There's nothing wrong.
+ | T3-M4: Dee...deet.
+ | Received:
+250 T3 has gained +1 Constitution
+Sufficient influence can be gained or lost after escaping Peragus II before traveling to Telos: Citadel Station for T3-M4 to allow some more routine maintenance with minimum Repair rank 15: 
+ | 2. [Repair] Ready for some more routine maintenance?
+ | Dialog
+ | 
+ | 30-70 Influence
+ | T3-M4: [Influence: Failure] Deeet, dee-veet.
+ | 1. I thought I did all right the first time.
+ | 2. Fine. But don't blame me if you break down.
+ | T3-M4: Deet. Dee-deet.
+ | 1. Fine. Never mind, then. Let me ask you some questions.
+ | 2. Forget it. Maybe some other time.
+ | < 30 Influence > 70
+ | T3-M4: [Influence: Success] Drooo-woooo.
+ | Dialog
+ | 
+ | 1. [Repair] I'll try and make this quick.
+ | 2. [Repair] Let me just pry open the front panel and get to work.
+ | T3-M4: Dee-dee, dreeeeet.
+ | Repair < 15
+ | T3-M4: [Failure] DEeeeDEeeeDEeee.
+ | 1. Maybe I should have replaced this part before closing you up.
+ | 2. I was wondering why the front panel wasn't closing all the way.
+ | 3. Is that your pain processor? I thought I shut that off before starting work.
+ | T3-M4: DeeDeeDee... deet... deeeeeee.
+ | 1. We'll try again later - for now, I have questions for you.
+ | 2. I'll try again when I've trained in my skills a little more.
+ | Repair 15
+ | T3-M4: [Success?] Dee-deed-de-dee-dee-de-dee?
+ | Dialog
+ | 
+ | 1. All done with the response package. Give it a spin.
+ | 2. Sounds like you're up to speed again.
+ | 3. That should make you ready for anything - or at least more accurate.
+ | T3-M4: Vrrrreeeeeee-deet-deet!
+ | 1. [Due to your repair skills, T3's response systems have improved, giving him +1 Dexterity.]
+ | T3-M4: Dreet...? Dee-deet?
+ | 1. No, I'm fine. I guess I just caught up in my work.
+ | 2. Well, I need to concentrate on you - which means shutting out the rest of the ship.
+ | 3. As long as you're fixed, don't worry about me suddenly blanking out.
+ | T3-M4: Dee...deet.
+ | Received:
+500 T3 has gained +1 Dexterity
+T3-M4 can now allow some advanced maintenance with minimum Repair rank 21:
+ | 3. [Repair] Maybe some advanced maintenance is in order.
+ | Dialog
+ | 
+ | 30-70 Influence
+ | T3-M4: [Influence: Failure] Deeet, dee-veet.
+ | 1. Are you ever going to trust me? You know my skills by now.
+ | 2. Do you want your motivators to seize up while being chased by a cannok?
+ | T3-M4: Deet. Dee-deet.
+ | 1. Fine. Never mind, then. Let me ask you some questions.
+ | 2. Forget it. Maybe some other time.
+ | < 30 Influence > 70
+ | T3-M4: [Influence: Success] Drooo-woooo.
+ | Dialog
+ | 
+ | 1. [Repair] Lock your motivators and unlock the side panel.
+ | 2. [Repair] Then let's not waste any time, then.
+ | T3-M4: Dee-dee, dreeeeet.
+ | Repair < 21
+ | T3-M4: [Failure] ZREEE-DEE-DEEETTT!
+ | 1. Never heard that sound before.
+ | 2. Look, if you don't stop screaming, you're going to blow out your vocabulator.
+ | 3. Don't be such a remote. Be tough.
+ | T3-M4: DeeDeeDee... deet... deeeeeee.
+ | 1. We'll try again later - for now, I have questions for you.
+ | 2. I'll try again when I've trained in my skills a little more.
+ | Repair 21
+ | T3-M4: [Success?] Dee-deed-de-dee-dee-de-dee?
+ | Dialog
+ | 
+ | 1. Those upgrades should be good to go.
+ | 2. Yes, you'll be tougher and faster.
+ | 3. No, you won't be able to fly, but jets on a T3 unit would only make you look like a mutated swoop bike.
+ | T3-M4: Vrrrreeeeeee-deet-deet!
+ | 1. [Due to your repair skills, T3 has become tougher and faster, gaining +1 Dexterity and +1 Constitution.]
+ | T3-M4: Dreet...? Dee-deet?
+ | 1. No, I'm fine. I guess I just caught up in my work.
+ | 2. Well, I need to concentrate on you - which means shutting out the rest of the ship.
+ | 3. As long as you're fixed, don't worry about me suddenly blanking out.
+ | T3-M4: Dee...deet.
+ | Received:
+750 T3 has gained +1 Dexterity and +1 Constitution
+Moving Meditation[edit | edit source]
+Sufficient influence can be gained or lost after boarding the Ebon Hawk and leaving Telos for T3-M4 to allow you to try working on him one last time, after upgrading his memory core twice with minimum Computer Use rank 15, and some advanced maintenance with minimum Repair rank 21:
+ | 5. [Computer/Repair] Do you mind if I try working on you one last time? I keep feeling like there's something I'm missing.
+ | Dialog
+ | 
+ | 10-90 Influence
+ | T3-M4: [Influence: Failure] Dee-deet. Dee.
+ | 1. What do you mean, you're worried about me?
+ | 2. I won't blank out like last time.
+ | T3-M4: Deet. Dee-deet.
+ | < 10 Influence > 90
+ | T3-M4: [Influence: Success] Dee... deet.
+ | Dialog
+ | 
+ | 1. All right, then. Be still, calm yourself.
+ | T3-M4: Dee-dee, dreeeeet.
+ | 1. [You have gained +1 Wisdom and recovered part of your connection to the Force, learning a moving meditation to calm the mind.]
+ | T3-M4: [Success] Deee-deet.
+ | 1. Yes, I'm fine - I feel calm, collected.
+ | 2. Never felt better. Was I out for a long time?
+ | 3. It's like I was meditating while working on you.
+ | T3-M4: Dee, deet? Deeeeet.
+ | 1. [If T3 is wounded and you both are not in combat, speak to him to "meditate" and recover some of your Force points.]
+ | T3-M4: Dreet...? Dee-deet?
+ | 1. No, I'm fine... really. Let me ask you some questions.
+ | 2. Just a little detached - I'll talk to you later.
+Lost in Your Work
+Learned Moving Meditation
+ | Received:
+1750 Gained +1 Wisdom, maximum Force points increased by 10, and learned Moving Meditation
+When T3-M4 has taken damage, once out of combat you can now practice your moving meditation to restore him to maximum Vitality, and yourself to maximum Force:
+ | 5. I want to practice my moving meditation I learned on you.
+ | T3-M4: Dee-deet?
+ | T3-M4: Dee-deet.
+ | T3-M4: Deee-reet?
+ | 1. If you don't need maintenance, then I had some questions for you.
+ | 2. I'll wait until you're damaged then, then try and fix you.
+ | 1. I'm fine. Now, I wanted to ask you some questions.
+ | 2. That's all I needed - I feel calm, collected. I'll be going now.
+Go to top
+Mira
+T3-M4
+Visas
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber
+Star Wars Knights of the Old Republic II: The Sith Lords logo
+Retrieved from "https://strategywiki.org/w/index.php?title=Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords/T3-M4&oldid=1036943"
+Hidden category: 
+Sub-pages
+ This page was last edited on 4 August 2023, at 17:51.
+Content is available under Creative Commons Attribution-ShareAlike 4.0 unless otherwise noted.
+Privacy policy
+About StrategyWiki
+Disclaimers
+Mobile view
+Navigation menu
+ Personal tools
+Not logged in
+Talk
+Contributions
+Create account
+Log in
+Search
+ Navigation
+Main page
+Games
+Community
+Staff lounge
+Recent changes
+Upload file
+Random page
+Help
+Facebook
+Twitter
+Discord Chat
+ Tools
+What links here
+Related changes
+Special pages
+Printable version
+Permanent link
+Page information
+Guide pages
+Guide files
+ Table of Contents
+Star Wars Knights of the Old Republic II: The Sith Lords
+Table of Contents
+Gameplay
+Controls
+Character generation
+Classes
+Attributes
+Skills
+Feats
+Items
+Experience
+Party
+Combat
+Difficulty Classes
+Saves
+Alignment
+Force powers
+Influence
+Forms
+Prestige classes
+Appendices
+Achievements
+Autobalance
+Cheats
+Versions
+Characters
+Force
+Lightsaber
+Melee
+Ranged
+Restored Content Mod
+Military Base Sub-Level
+HK Manufacturing Plant
+Walkthrough
+Prologue
+Peragus II
+Administration Level
+Rescue
+Mining Tunnels
+Rescue T3-M4
+Asteroid Exterior
+Dormitories
+Command Deck
+Crew Quarters
+Engine Deck
+Fuel Depot
+Hangar Bay
+Telos: Citadel Station
+Residential 082 East
+Entertainment
+Czerka Offices
+Residential 082 West
+Dock Module
+Cantina
+Bumani Exchange Corp.
+Restoration Zone
+Czerka Site
+Underground Base
+Polar Plateau
+Secret Academy
+Mini games
+Turret encounters
+Pazaak
+Swoop racing
+Lost Jedi
+Ebon Hawk
+Nar Shaddaa
+Refugee Landing Pad
+Docks
+Entertainment Promenade
+Refugee Quad
+Landing Rights
+Jekk'Jekk Tarr
+Jekk'Jekk Tarr Tunnels
+Droid Warehouse
+Goto's Yacht
+Onderon
+Jungle Landing
+Jungle
+Mandalorian Ruins
+Battle Circle
+Iziz Spaceport
+Merchant Quarter
+Western Square
+Iziz Cantina
+Dantooine
+Khoonda Plains
+Khoonda
+Enclave Courtyard
+Enclave Sublevel
+Crystal Cave
+Defense of Khoonda
+Master of the Palace
+Jungle Tomb
+Sith Tomb
+Sky Ramp
+Royal Palace
+Korriban
+Valley of Dark Lords
+Sith Academy
+Shyrack Cave
+Secret Tomb
+Dantooine
+Rebuilt Jedi Enclave
+Telos
+Suburban (082 West)
+Suburban (082 East)
+Entertainment Module 081
+Ravager - Command Deck
+Bridge
+Malachor V
+Surface
+Depths
+Trayus Academy
+Trayus Crescent
+Trayus Proving Grounds
+Trayus Academy (Top)
+Trayus Core
+Party
+Atton
+Bao-Dur
+Disciple
+G0-T0
+Handmaiden
+Hanharr
+HK-47
+Kreia
+Mandalore
+Mira
+T3-M4
+Visas
+Items
+Equipment
+Implants
+Head
+Hands
+Arms
+Belts
+Body
+Robes
+Light armor
+Medium armor
+Heavy armor
+Ranged weapons
+Blaster pistols
+Blaster rifles
+Melee weapons
+Lightsabers
+Droid equipment
+Utilities
+Sensors
+Special weapons
+Plating
+Shields
+Inventory
+Useable
+Miscellaneous
+Grenades
+Mines
+Upgrade items
+Upgrade items, armor
+Upgrade items, ranged
+Upgrade items, melee
+Upgrade items, lightsaber

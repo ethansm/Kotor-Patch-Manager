@@ -1,0 +1,185 @@
+# T3-M4 preset 'support_pistols_none_na': Support droid with team-fire bonus: Gear Head line for the skill gates, Two-Weapon Fighting line, Dual Strike line (needs allies attacking the same target), Toughness last
+# Skill points are a PROPOSAL (greedy by priority list, 4 pts/level at INT 16, max rank = char_level+3, cross-class cost 2). DEX +1 every 4th level per elkripper (T3 attribute gains from the player-triggered upgrade dialogs are NOT modelled).
+[meta]
+tag = "t3m4"
+name = "T3-M4"
+utc = "p_t3m4.utc"
+variant = "support_pistols_none_na"
+summary = "Support droid with team-fire bonus: Gear Head line for the skill gates, Two-Weapon Fighting line, Dual Strike line (needs allies attacking the same target), Toughness last"
+convert_at = 0   # droid: never converts
+
+[meta.wizard]
+role = "support"
+style = "pistols"
+alignment = "none"
+convert = "n/a"
+skills = "tech"
+
+[[level]]
+char_level = 4
+class = 7   # ExpertDroid
+attrs = {DEX = 16}
+feats = []
+skills = {computer_use = 2, repair = 2}
+
+[[level]]
+char_level = 5
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 2}
+
+[[level]]
+char_level = 6
+class = 7   # ExpertDroid
+feats = [119]   # 119:Improved Gear Head
+skills = {computer_use = 1, repair = 1, security = 2}
+
+[[level]]
+char_level = 7
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 2}
+
+[[level]]
+char_level = 8
+class = 7   # ExpertDroid
+attrs = {DEX = 17}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 9
+class = 7   # ExpertDroid
+feats = [120]   # 120:Master Gear Head
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 10
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 11
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 12
+class = 7   # ExpertDroid
+attrs = {DEX = 18}
+feats = [3]   # 3:Two-Weapon Fighting
+skills = {computer_use = 1, repair = 1, awareness = 2}
+
+[[level]]
+char_level = 13
+class = 7   # ExpertDroid
+feats = []
+skills = {repair = 1, awareness = 2, computer_use = 1}
+
+[[level]]
+char_level = 14
+class = 7   # ExpertDroid
+feats = []
+skills = {repair = 1, computer_use = 1, security = 2}
+
+[[level]]
+char_level = 15
+class = 7   # ExpertDroid
+feats = [190]   # 190:Dual Strike
+skills = {repair = 1, computer_use = 1, security = 2}
+
+[[level]]
+char_level = 16
+class = 7   # ExpertDroid
+attrs = {DEX = 19}
+feats = []
+skills = {repair = 1, computer_use = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 17
+class = 7   # ExpertDroid
+feats = []
+skills = {repair = 1, computer_use = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 7   # ExpertDroid
+feats = [9]   # 9:Improved Two-Weapon Fighting
+skills = {repair = 1, computer_use = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 19
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 20
+class = 7   # ExpertDroid
+attrs = {DEX = 20}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 21
+class = 7   # ExpertDroid
+feats = [191]   # 191:Improved Dual Strike
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 22
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 23
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 24
+class = 7   # ExpertDroid
+attrs = {DEX = 21}
+feats = [85]   # 85:Master Two-Weapon Fighting
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 25
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 27
+class = 7   # ExpertDroid
+feats = [192]   # 192:Master Dual Strike
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 28
+class = 7   # ExpertDroid
+attrs = {DEX = 22}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 29
+class = 7   # ExpertDroid
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}
+
+[[level]]
+char_level = 30
+class = 7   # ExpertDroid
+feats = [84]   # 84:Toughness
+skills = {computer_use = 1, repair = 1, security = 1, awareness = 1}

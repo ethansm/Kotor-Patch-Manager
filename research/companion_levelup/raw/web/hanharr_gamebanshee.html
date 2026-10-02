@@ -1,0 +1,699 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="https://www.w3.org/1999/xhtml" dir="ltr" lang="en">
+<head>
+<title>GameBanshee</title>
+<script src="/javascript/dropdown.js" type="text/javascript" language="JavaScript1.2"></script>
+<script src="/javascript/showshot.js" type="text/javascript" language="JavaScript1.2"></script>
+<link rel="stylesheet" type="text/css" href="//www.gamebanshee.com/gb_style.css" />
+<link rel="stylesheet" type="text/css" href="//www.gamebanshee.com/css/gbstyle.css" />
+<link rel="stylesheet" type="text/css" href="//www.gamebanshee.com/css/ugonavstyles.css" />
+<link rel="stylesheet" type="text/css" href="//www.gamebanshee.com/gb_mobile.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<!--[if IE]>
+<style type="text/css" media="screen">
+.ie_fix, .float_fix, .curvebox { 
+	height: 1%;
+}
+.menu li {
+	padding: 0px 3px 2px 8px;
+}
+</style>
+<![endif]-->
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-18472770-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-18472770-1');
+</script>
+
+<!-- Matomo -->
+<script>
+  var _paq = window._paq = window._paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//analytics.lexicon.gg/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '13']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
+
+
+<script>
+function submitenter(myfield,e)
+{
+var keycode;
+if (window.event) keycode = window.event.keyCode;
+else if (e) keycode = e.which;
+else return true;
+
+if (keycode == 13)
+   {
+   	//location.href = 'https://www.gamebanshee.com/search.html?searchphrase=all&wlSearch='+myfield+'&field_publisher=all&field_developer=all&field_releasedate=all&field_genre=all&field_platforms=all&field_theme=all&field_perspective=all&field_esrbdescriptors=all&field_esrbrating=all&field_series=all&search.x=0&search.y=0&search=Search';
+	location.href = '//www.gamebanshee.com/component/com_rssearch/?option=com_rssearch&search='+myfield+'&view=results&layout=default&module_id=196';
+   	return false;
+   }
+else
+   return true;
+}
+</script>
+
+<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="//scripts.mediavine.com/tags/game-banshee.js"></script>
+</head>
+<body>
+<div class="standardwidth" style="background: url('//www.gamebanshee.com/images_gb/main_bg.png') no-repeat scroll center -68px transparent; padding-top:17px;">
+<a name="top"></a>
+<div id="wrapper_left">
+<div id="wrapper_right">
+<div id="pagewrap">
+<div id="pagewrap_inner">
+<style>
+#headerwrap {
+    background: url("/images_gb/header_bg.jpg") repeat-x scroll left top rgb(32, 21, 5);
+    height: 250px;}
+	#headerwrap .banner {
+    background: none ;
+    border: none; margin-right: 15px;}
+	
+	
+	</style><div id="headerwrap">
+  <div id="header_starwarskotorii">
+    <!-- logo -->
+    <div class="float_fix">
+      <div class="f_left">
+        <div><a href="/starwarskotorii/"><img src="//www.gamebanshee.com/images_gb/subsites/starwarskotorii_headleft.jpg" border="0" alt="" /></a></div>
+      </div>
+      <div class="loginbox_shadow" style="width:240px !important;">
+        <div class="loginbox">
+          <div class="float_fix">
+            <!-- begin gamebanshee login -->
+                  <!--      <form action="https://www.gamebanshee.com/component/user/" method="post" name="login" id="form-login">
+              <table cellpadding="0" cellspacing="1" border="0">
+                <tr>
+                  <td class="smallfont" align="center"><label style="font-size: 10px;" for="navbar_username">User Name</label></td>
+                  <td class="smallfont" align="center"><label style="font-size: 10px;" for="navbar_password">Password</label></td>
+                  <td class="smallfont"><a style="color:#cab511; font-size:10px;" href="https://www.gamebanshee.com/forums/register" title="register">Register</a></td>
+                </tr>
+                <tr>
+                  <td style="white-space: nowrap;"><input type="text" class="inputbox" style="font-size: 11px; width:73px;height:13px;" name="username" id="username2" size="15" accesskey="u" tabindex="101" value="User Name" onfocus="if (this.value == 'User Name') this.value = '';" />
+                    &nbsp;</td>
+                  <td style="white-space: nowrap;"><input type="password" class="inputbox" style="font-size: 11px; width:73px;height:13px;" name="passwd" id="password2" size="15" tabindex="102" value="" />
+                  </td>
+                  <td style="white-space: nowrap;"><input type="image" class="inlineimg" src="/templates/gamebanshee_template/images/login_login.png" value="Log in" tabindex="104" title="Enter your username and password in the boxes provided to login, or click the 'register' button to create a profile for yourself." accesskey="s" />
+                  </td>
+                </tr>
+              </table>
+              <input type="hidden" name="option" value="com_usera" />
+              <input type="hidden" name="task" value="user.login" />
+              <input type="hidden" name="return" value="aHR0cHM6Ly93d3cuZ2FtZWJhbnNoZWUuY29tL3N0YXJ3YXJza290b3JpaS9ucGNzL2hhbmhhcnIucGhw" />
+              <input type="hidden" name="167d1e78abd15516251579e7c79ef1df" value="1" />            </form> -->
+                                    <!-- end gamebanshee login -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>
+ul#top-nav-content {
+    color: #CCCCCC;
+    height: 14px;
+    line-height: 14px;
+    margin: 0 auto !important;
+    padding: 0 0 0 15px;
+    width: 986px;
+}
+ul#top-nav-content li a, ul#top-nav-content li a:hover, ul#top-nav-content li a:visited {
+    color: #CCCCCC;
+    font-size: 9px;
+    text-decoration: none;
+}
+#text_link_2 {
+    font-family: Verdana;
+    font-size: 11px !important;
+    font-weight: bold !important;
+}
+	ul#top-nav-content li {
+    margin-top: 1px !important;
+}
+ul#top-nav-content li {
+    float: left;
+    font-weight: bold;
+	height:26px;
+	line-height:26px;
+    list-style: none outside none;
+    margin: 2px 0 0;
+    padding: 0 7px 0 0 !important;
+}
+#menu_divider {
+    background: url("../../templates/gamebanshee_template/images/menu_divider.png") no-repeat scroll 0 0 transparent;
+    float: left;
+    height: 31px;
+    margin-top: 0 !important;
+    padding: 0;
+    width: 13px;
+}
+.dropdown {
+	 margin: 0px 0 0 2px;
+	 text-align:center
+}
+.dropdown p {
+	float: none !important;
+}
+	</style>
+          <div style="position:absolute; top:138px; padding-left:0px; width:1060px; clear: both;">
+                <div style="background: url('/../../templates/gamebanshee_template/images/new_top_menu_bg.png') repeat-x; height:32px; ">
+          <div style="float:left; display:inline; color:#FFF; font-size:11px; font-family:Arial, Helvetica, sans-serif; line-height: 32px; padding-left:15px;"> RPG Search
+            <input type="text" style=" width:117px;height:13px; font-size:10px; padding:0;" onkeypress="return submitenter(this.value,event)">
+          </div>
+          <div style="float:left; display:inline; width:500px;">
+            <ul id="top-nav-content" style="line-height:24px;">
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/games.html">Browse All RPGs</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/112777-top-rpgs.html">Top Rated RPGs</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/news/">News Archive</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/reviews/">Reviews</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/previews/">Previews</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/interviews/">Interviews</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+              <li class="text_link"><a id="text_link_2" href="https://www.gamebanshee.com/editorials/">Editorials</a></li>
+              <li id="menu_divider" style="margin-top:0px!important;" />
+          <!--    <li class="text_link" style="padding:1px 16px 0 8px !important"><a id="text_link_2" href="https://www.gamebanshee.com/forums/">Forums</a></li>-->
+            </ul>
+          </div>
+        </div>
+      </div>
+      		
+		  <!--  <div class="float_fix" style="margin-top:-70px; float:right; margin-right: 20px;">
+     <div class="float_fix" style="margin-top:33px;; float:left;">-->
+	 <div class="float_fix" style=" float: left;
+    margin-right: 39px;
+    margin-top: 34px;
+    position: absolute;">
+                    <div class="f_left">
+            <style>
+      #button-like-menu {float:left;margin:0 4px 0 0;}
+      #___plusone_0{width:65px!important;}
+      .twitter-share-button {width:100px!important;}
+	  
+	#facebook_like_button_holder {
+	position:relative;
+	width:105px;
+	height: 20px;
+	color:#fff;
+	float:left;
+	}
+	
+	#facebook_like_button_holder iframe {
+	position:absolute;
+	top: 0px;
+	width: 90px !important;
+	float:left;
+	}
+	
+	#fake_facebook_button {
+	pointer-events: none;
+	position:absolute;
+	width: 100px;
+	height: 20px;
+	left:0;
+	top:0;
+	float:left;
+	background: url('https://www.gamebanshee.com/templates/gamebanshee_template/images/like_us.png');	
+	}
+
+  </style>
+            <div style="margin-top:8px; margin-left:5px">
+              <style>
+						#button-like-nt {float:left;margin: 0;width: 80px !important;}
+                    </style>
+              <div id="button-like-nt">
+                <iframe src="https://www.facebook.com/plugins/like.php?href=https://www.facebook.com/GameBanshee&layout=button_count&show_faces=false&width=100&action=like&font&colorscheme=dark&height=24" scrolling="no" frameborder="0" allowtransparency="true" style="border:none; overflow:hidden;width:80px; height:24px;"></iframe>
+              </div>
+              <div style="float: left; margin: 0;width: 32px !important; overflow:hidden; margin-right: 3px;">
+                <!-- Place this tag in your head or just before your close body tag -->
+                <script type="text/javascript" src="https://apis.google.com/js/plusone.js"></script>
+                <!-- Place this tag where you want the +1 button to render -->
+                <!-- <g:plusone annotation="none" size="medium" href="https://www.gamebanshee.com"></g:plusone> -->
+              </div>
+              <div id="button-like-menu"> <a href="https://www.facebook.com/GameBanshee"><img src="../../templates/gamebanshee_template/images/like_facebook.png"></a> </div>
+              <div id="button-like-menu"> <a href="https://twitter.com/gamebanshee"><img src="../../templates/gamebanshee_template/images/like_tweeter.png"></a> </div>
+              <div id="button-like-menu"> <a href="https://www.youtube.com/GameBansheeDotCom"><img src="../../templates/gamebanshee_template/images/like_youtube.png"></a> </div>
+              <div id="button-like-menu"> <a href="https://www.gamebanshee.com/rssfeed.html"><img src="../../templates/gamebanshee_template/images/like_rss.png"></a> </div>
+            </div>
+            <div class="dropdown">
+              <p style="padding:0; margin:0;">Banshee Network</p>
+              <br class="clear" />
+              <form name="sitelinks" action="">
+                <select name="selectedUrl" onchange="OpenSite()" class="dd">
+                  <option value="javascript:void(0)" selected="selected">Choose a site...</option>
+                  <option value="/">GameBanshee Home</option>
+                  <option value="/alphaprotocol/">Alpha Protocol</option>
+                  <option value="/arcanum/">Arcanum</option>
+                  <option value="/baldursgate/">Baldur's Gate</option>
+                  <option value="/baldursgateii/">Baldur's Gate II</option>
+                  <option value="/baldursgatedarkalliance/">Baldur's Gate: Dark Alliance</option>
+                  <option value="/baldursgatedarkallianceii/">Baldur's Gate: Dark Alliance II</option>
+                  <option value="/beyonddivinity/">Beyond Divinity</option>
+                  <option value="/bioshock/">BioShock</option>
+                  <option value="/championsofnorrath/">Champions of Norrath</option>
+                  <option value="/championsreturntoarms/">Champions: Return to Arms</option>
+                  <option value="/curseoftheazurebonds/">Curse of the Azure Bonds</option>
+                  <option value="/demonstone/">Demon Stone</option>
+                  <option value="/deusex/">Deus Ex</option>
+                  <option value="/deusexinvisiblewar/">Deus Ex: Invisible War</option>
+                  <option value="/deusexhumanrevolution/">Deus Ex: Human Revolution</option>
+                  <option value="/diablo/">Diablo</option>
+                  <option value="/diabloii/">Diablo II</option>
+                  <option value="/diabloiii/">Diablo III</option>
+                  <option value="/discoelysium/">Disco Elysium</option>
+                  <option value="/divinedivinity/">Divine Divinity</option>
+                  <option value="/divinityii/">Divinity II: Ego Draconis</option>
+                  <option value="/divinityoriginalsin/">Divinity: Original Sin</option>
+                  <option value="/dragonageorigins/">Dragon Age: Origins</option>
+                  <option value="/dragonageii/">Dragon Age II</option>
+                  <option value="/drakensangthedarkeye/">Drakensang: The Dark Eye</option>
+                  <option value="/drakensangtheriveroftime/">Drakensang: The River of Time</option>
+                  <option value="/dungeonlords/">Dungeon Lords</option>
+                  <option value="/dungeonsiege/">Dungeon Siege</option>
+                  <option value="/dungeonsiegeii/">Dungeon Siege II</option>
+                  <option value="/dungeonsiegeiii/">Dungeon Siege III</option>
+                  <option value="/dragonshard/">Dungeons &amp; Dragons Dragonshard</option>
+                  <option value="/dndheroes/">Dungeons &amp; Dragons Heroes</option>
+                  <option value="/dndonline/">Dungeons &amp; Dragons Online</option>
+                  <option value="/dndtactics/">Dungeons &amp; Dragons Tactics</option>
+                  <option value="/eschalonbooki/">Eschalon: Book I</option>
+                  <option value="/eschalonbookii/">Eschalon: Book II</option>
+                  <option value="/eschalonbookiii/">Eschalon: Book III</option>
+                  <option value="/eyeofthebeholder/">Eye of the Beholder</option>
+                  <option value="/eyeofthebeholderii/">Eye of the Beholder II</option>
+                  <option value="/eyeofthebeholderiii/">Eye of the Beholder III</option>
+                  <option value="/fable/">Fable: The Lost Chapters</option>
+                  <option value="/fableii/">Fable II</option>
+                  <option value="/fableiii/">Fable III</option>
+                  <option value="/fallout/">Fallout</option>
+                  <option value="/fallout2/">Fallout 2</option>
+                  <option value="/fallout3/">Fallout 3</option>
+                  <option value="/falloutnewvegas/">Fallout: New Vegas</option>
+                  <option value="/falloutbos/">Fallout: BoS</option>
+                  <option value="/fallouttactics/">Fallout Tactics</option>
+                  <option value="/falloutequipment/">Fallout Equipment Database</option>
+                  <option value="/freedomforce/">Freedom Force</option>
+                  <option value="/freedomforcevsthethirdreich/">Freedom Force vs. Third Reich</option>
+                  <option value="/gameofthrones/">Game of Thrones</option>
+                  <option value="/bbs/">GameBanshee BBS</option>
+                  <option value="/hellgateglobal/">Hellgate Global</option>
+                  <option value="/hellgatelondon/">Hellgate: London</option>
+                  <option value="/icewinddale/">Icewind Dale</option>
+                  <option value="/icewinddaleii/">Icewind Dale II</option>
+                  <option value="/jadeempire/">Jade Empire</option>
+                  <option value="/kingsbountythelegend/">King's Bounty: The Legend</option>
+                  <option value="/kingsbountyarmoredprincess/">King's Bounty: Armored Princess</option>
+                  <option value="/legendofgrimrock/">Legend of Grimrock</option>
+                  <option value="/legendofgrimrockii/">Legend of Grimrock II</option>
+                  <option value="/lionheart/">Lionheart</option>
+                  <option value="/masseffect/">Mass Effect</option>
+                  <option value="/masseffect2/">Mass Effect 2</option>
+                  <option value="/masseffect3/">Mass Effect 3</option>
+                  <option value="/neverwinternights/">Neverwinter Nights</option>
+                  <option value="/neverwinternights2/">Neverwinter Nights 2</option>
+                  <option value="/pillarsofeternity/">Pillars of Eternity</option>
+                  <option value="/planescapetorment/">Planescape: Torment</option>
+                  <option value="/poolofradiance/">Pool of Radiance</option>
+                  <option value="/poolofradianceromd/">Pool of Radiance: RoMD</option>
+				          <option value="/poolsofdarkness/">Pools of Darkness</option>
+                  <option value="/risen/">Risen</option>
+                  <option value="/risen2/">Risen 2: Dark Waters</option>
+                  <option value="/secretofthesilverblades/">Secret of the Silver Blades</option>
+                  <option value="/shadowrunreturns/">Shadowrun Returns</option>
+                  <option value="/shadowrundragonfall/">Shadowrun: Dragonfall</option>
+                  <option value="/shadowrunhongkong/">Shadowrun: Hong Kong</option>
+                  <option value="/spacesiege/">Space Siege</option>
+                  <option value="/starwarskotor/">Star Wars: KotOR</option>
+                  <option value="/starwarskotorii/">Star Wars: KotOR II</option>
+                  <option value="/systemshock2/">System Shock 2</option>
+                  <option value="/templeofelementalevil/">Temple of Elemental Evil</option>
+                  <option value="/morrowind/">The Elder Scrolls III: Morrowind</option>
+                  <option value="/oblivion/">The Elder Scrolls IV: Oblivion</option>
+                  <option value="/skyrim/">The Elder Scrolls V: Skyrim</option>
+                  <option value="/vanhelsing/">The Incredible Adv of Van Helsing</option>
+                  <option value="/vanhelsingii/">The Incredible Adv of Van Helsing II</option>
+                  <option value="/thewitcher/">The Witcher</option>
+                  <option value="/thewitcher2/">The Witcher 2</option>
+                  <option value="/thewitcher3/">The Witcher 3</option>
+                  <option value="/titanquest/">Titan Quest</option>
+                  <option value="/torchlight/">Torchlight</option>
+                  <option value="/twoworlds/">Two Worlds</option>
+                  <option value="/vampirebloodlines/">Vampire: tM - Bloodlines</option>
+                  <option value="/vampireredemption/">Vampire: tM - Redemption</option>
+                  <option value="/wizardswarriors/">Wizards &amp; Warriors</option>
+                  <option value="/worldofwarcraft/">World of Warcraft</option>
+                </select>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- /logo -->
+     
+    <!-- // header -->
+      
+<style>
+
+#topbanner {
+    background: none repeat scroll 0 0 rgba(0, 0, 0, 0);
+    border: 3px solid rgb(255, 208, 58);
+    height: auto;
+    margin: 0 4px 6px auto;
+    padding: 0;
+    width: 828px;
+}
+
+</style>
+
+
+<div class="banner" style="float:right; margin-top: 35px; text-align:right; ">
+  <div id="topbanner">
+
+<!-- 728x90 Placement Tag  -->
+
+  </div>
+</div> </div>
+    </div>
+<div style="clear:both;"></div>
+
+<div class="separator2">&nbsp;</div>
+<table border="0" width="100%" cellpadding="0" cellspacing="0" align="center" id="maintable">
+<tr>
+  <!-- // start left column -->
+  <td valign="top" width="160" id="leftcolumn">
+
+<div class="moduletable">
+<div class="module_menu">
+<h3 class="heading">Subsite Navigation</h3>
+<h4 class="titlebar">Game Information</h4>
+<div class="titlebar_b">&nbsp;</div>
+<ul class="menu2">
+<li><a href="/starwarskotorii/">Recent News</a></li>
+<li><a href="/starwarskotorii/walkthrough.php">Walkthrough</a></li>
+<li><a href="/starwarskotorii/strategyguides.php">Strategy Guides</a></li>
+<li><a href="/starwarskotorii/worlds.php">Worlds</a></li>
+<li><a href="/starwarskotorii/chronicles.php">Chronicles</a></li>
+<li><a href="/starwarskotorii/faq.php">Unofficial FAQ</a></li>
+</ul>
+<h4 class="titlebar">Equipment Database</h4>
+<div class="titlebar_b">&nbsp;</div>
+<ul class="menu2">
+<li><a href="/starwarskotorii/equipment.php">Basic Search</a></li>
+<li><a href="/starwarskotorii/saberupgradeguide.php">Saber Upgrade Guide</a></li>
+</ul>
+<h4 class="titlebar">Character Information</h4>
+<div class="titlebar_b">&nbsp;</div>
+<ul class="menu2">
+<li><a href="/starwarskotorii/npcs.php">NPCs</a></li>
+<li><a href="/starwarskotorii/attributes.php">Attributes</a></li>
+<li><a href="/starwarskotorii/skills.php">Skills</a></li>
+<li><a href="/starwarskotorii/feats.php">Feats</a></li>
+<li><a href="/starwarskotorii/forcepowers.php">Force Powers</a></li>
+<li><a href="/starwarskotorii/alignmentcharts.php">Alignment Charts</a></li>
+</ul>
+<h4 class="titlebar">Articles</h4>
+<div class="titlebar_b">&nbsp;</div>
+<ul class="menu2">
+<li><a href="/reviews/29347-star-wars-knights-of-the-old-republic-ii-the-sith-lords-pc-review.html">KotOR II Review</a></li>
+<li><a href="/previews/29164-star-wars-knights-of-the-old-republic-ii-the-sith-lords-preview.html">KotOR II Preview</a></li>
+<li><a href="/editorials/28207-e3-2004-the-rpgs.html">Banshee E3 Preview</a></li>
+</ul>
+<h4 class="titlebar">Media</h4>
+<div class="titlebar_b">&nbsp;</div>
+<ul class="menu2">
+<li><a href="/starwarskotorii/imagegallery.php">Image Gallery</a></li>
+</ul>
+</div>
+</div>
+<div class="separator2">&nbsp;</div>
+<div class="moduletable">	 
+<div class="module_menu">
+<h3 class="heading">Advertisement</h3>
+<div align="center">
+
+<!-- 160x600 Placement Tag -->
+
+
+</div>
+</div>
+</div>
+<div class="separator2">&nbsp;</div>
+<br />
+</td> <!-- // end left column -->
+<td valign="top">
+<!-- open content container -->
+<div align="center">
+<div class="page" style="width:100%; text-align:left">
+<div style="padding:0px 10px 0px 10px" align="left">
+<br />
+
+<div class="curvebox"><div class="curvebox_b"><div class="curvebox_l"><div class="curvebox_r">
+<div class="curvebox_tl"><div class="curvebox_tr"><div class="curvebox_bl"><div class="curvebox_br ie_fix">
+<div class="tcat"><div class="tcat_tr"><div class="tcat_tl">
+Hanharr</div></div></div>
+<div class="tcat_b"><!-- --> </div>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" align="center" class="newstbl">
+<tr>
+<td class="alt1">
+<!-- start :: content here -->
+<div class="gb13">
+<!-- begin page content -->
+
+<table align="right" border="0" cellpadding="8" cellspacing="0" width="303" height="319">
+<tr>
+<td align="center"><img src="/starwarskotorii/npcs/images/hanharr.jpg" style="border: 1px solid #5a4c2a" width="287" height="303" alt="Hanharr"></td>
+</tr>
+</table>
+
+This enraged wookie outcast from Kashyyyk can now be found on Nar Shaddaa working for the Exchange as a Bounty Hunter. Those who are strongly committed to the Dark Side of the force are the only ones likely to gain his loyalty. Hanharr's main rival, Mira, is constantly getting the upper hand, which tends to make his demeanor that much more unpleasant and competitive... almost to a fault.
+<br />
+<br />
+If you can manage to tame him, his built-in toughness, damage resistance and battle rage turns him into a melee powerhouse that does not easily fall in combat and can slice through foes faster than many other companions, Jedi or no.
+<br />
+<br />
+
+<table border="1" bordercolor="#5a4c2a" cellpadding="0" cellspacing="0" width="574">
+
+<tr height="20">
+<td width="30%" bgcolor="#201d17">
+<span class="gb12bold"><center>Class (Level)</center></span>
+</td>
+<td colspan="2" width="70%" bgcolor="#201d17">
+<span class="gb12bold"><center>Location</center></span>
+</td>
+</tr>
+<tr height="30">
+<td width="30%" align="center">
+<span class="gb13">Scout (4)</span>
+</td>
+<td colspan="2" width="70%" align="center">
+<span class="gb13"><center>Nar Shaddaa, Jekk'Jekk Tarr Tunnels</center></span>
+</td>
+</tr>
+
+<tr height="20">
+<td width="30%" bgcolor="#201d17">
+<span class="gb12bold"><center>Attributes</center></span>
+</td>
+<td width="30%" bgcolor="#201d17">
+<span class="gb12bold"><center>Vital Statistics</center></span>
+</td>
+<td width="40%" bgcolor="#201d17">
+<span class="gb12bold"><center>Skills (Includes Bonuses)</center></span>
+</td>
+</tr>
+<tr height="145">
+<td width="30%">
+<span class="gb13">
+<center>
+Strength: 20<br />
+Dexterity: 13<br />
+Constitution: 20<br />
+Intelligence: 10<br />
+Wisdom: 12<br />
+Charisma: 8<br />
+</center>
+</span>
+</td>
+<td width="30%">
+<span class="gb13">
+<center>
+Vitality Points: 60<br />
+Force Points: n/a<br />
+Defense: 11<br />
+<br />
+Fortitude: 9<br />
+Reflex: 5<br />
+Will: 5<br />
+</center>
+</span>
+</td>
+<td width="40%">
+<span class="gb13">
+<center>
+Computer Use: 0<br />
+Demolitions: 6<br />
+Stealth: 0<br />
+Awareness: 7<br />
+Persuade: -1<br />
+Repair: 4<br />
+Security: 0<br />
+Treat Injury: 6<br />
+</center>
+</span>
+</td>
+</tr>
+
+<tr height="20">
+<td colspan="2" width="60%" bgcolor="#201d17">
+<span class="gb12bold"><center>Feats</center></span>
+</td>
+<td width="40%" bgcolor="#201d17">
+<span class="gb12bold"><center>Force Powers</center></span>
+</td>
+</tr>
+<tr>
+<td colspan="2" width="60%">
+<span class="gb13">
+<center>
+<br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/armorproficiencylight.jpg','','940','700','resizable,scrollbars')">Armor Proficiency: Light</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/armorproficiencymedium.jpg','','940','700','resizable,scrollbars')">+ Armor Proficiency: Medium</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/armorproficiencyheavy.jpg','','940','700','resizable,scrollbars')">++ Armor Proficiency: Heavy</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/flurry.jpg','','940','700','resizable,scrollbars')">Flurry</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/powerattack.jpg','','940','700','resizable,scrollbars')">Power Attack</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/improvedpowerattack.jpg','','940','700','resizable,scrollbars')">+ Improved Power Attack</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/rapidshot.jpg','','940','700','resizable,scrollbars')">Rapid Shot</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/weaponproficiencyblasterpistol.jpg','','940','700','resizable,scrollbars')">Weapon Proficiency: Blaster Pistol</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/weaponproficiencyblasterrifle.jpg','','940','700','resizable,scrollbars')">Weapon Proficiency: Blaster Rifle</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/weaponproficiencymeleeweapons.jpg','','940','700','resizable,scrollbars')">Weapon Proficiency: Melee Weapons</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/weaponfocusmeleeweapons.jpg','','940','700','resizable,scrollbars')">+ Weapon Focus: Melee Weapons</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/uncannydodgei.jpg','','940','700','resizable,scrollbars')">Uncanny Dodge I</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/wookieetoughnessi.jpg','','940','700','resizable,scrollbars')">Wookiee Toughness I</a> (Unique to Hanharr)<br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/targetingi.jpg','','940','700','resizable,scrollbars')">Targeting I</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/preciseshoti.jpg','','940','700','resizable,scrollbars')">Precise Shot I</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/closecombat.jpg','','940','700','resizable,scrollbars')">Close Combat</a><br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/feats/images/wookieerage.jpg','','940','700','resizable,scrollbars')">Wookiee Rage</a> (Unique to Hanharr)<br />
+<br />
+</center>
+</span>
+</td>
+<td width="40%">
+<span class="gb13">
+<center>
+N/A
+</center>
+</span>
+</td>
+</tr>
+
+<tr height="20">
+<td colspan="3" width="100%" bgcolor="#201d17">
+<span class="gb12bold"><center>Starting Equipment</center></span>
+</td>
+<tr>
+<td colspan="3" width="100%">
+<span class="gb13">
+<center>
+<br />
+<a href="#null" onClick="newWindow('/showshot.php?/starwarskotorii/equipment/images/ryykblade.jpg','','940','700','resizable,scrollbars')">Ryyk Blade</a> (2)<br />
+<br />
+</center>
+</span>
+</td>
+</tr>
+
+</table>
+
+<!-- end page content -->
+
+</div>
+<!-- end :: content here -->
+</td>
+</tr>
+</table>
+</div></div></div></div>
+</div></div></div></div>
+</div>
+</div>
+</div>
+<!-- / close content container -->
+<br />
+</td>
+<!-- start right column -->
+<td valign="top" width="160" id="rightcolumn">
+<div class="moduletable">
+<div class="module_menu">
+<h3 class="heading">NPCs</h3>
+<div class="titlebar_b">&nbsp;</div>
+<ul class="menu2">
+<li><a href="/starwarskotorii/npcs/attonrand.php">Atton Rand</a></li>
+<li><a href="/starwarskotorii/npcs/bao-dur.php">Bao-Dur</a></li>
+<li><a href="/starwarskotorii/npcs/disciple.php">Disciple</a></li>
+<li><a href="/starwarskotorii/npcs/g0-t0.php">G0-T0</a></li>
+<li><a href="/starwarskotorii/npcs/handmaiden.php">Handmaiden</a></li>
+<li><a href="/starwarskotorii/npcs/hanharr.php">Hanharr</a></li>
+<li><a href="/starwarskotorii/npcs/hk-47.php">HK-47</a></li>
+<li><a href="/starwarskotorii/npcs/kreia.php">Kreia</a></li>
+<li><a href="/starwarskotorii/npcs/mandalore.php">Mandalore</a></li>
+<li><a href="/starwarskotorii/npcs/mira.php">Mira</a></li>
+<li><a href="/starwarskotorii/npcs/t3-m4.php">T3-M4</a></li>
+<li><a href="/starwarskotorii/npcs/visasmarr.php">Visas Marr</a></li>
+</ul>
+</div>
+</div>
+<div class="separator2">&nbsp;</div>
+<br />
+</td> <!-- // end right column -->
+</tr>
+</table>
+<div id="footer" style="width:975px;"><div class="float_fix" style="width:950px;margin-right:25px;">
+<div class="float_fix padding" style="background-color:#1F1605;width:945px;">
+<p class="copyright">Copyright &copy; 2000-2021, <a href="https://www.gamebanshee.com/">GameBanshee.com</a></p>
+<ul class="footerlinks">
+<li><a href="#" onclick="javascript:window.scrollTo(0,0);">Top</a></li>
+<li><a href="https://lexicon.gg">Lexicon Gaming</a></li>
+<li><a href="/">GameBanshee Home</a></li>
+<!--<li><a href="/forums/">Forums</a></li>-->
+<li><a href="/advertisinginfo.html">Advertise</a></li>
+<li><a href="/aboutgb.html">About GB</a></li>
+<li><a href="/privacy-policy.html">Privacy Policy</a></li>
+<li class="last"><a href="https://www.facebook.com/pages/home/gamebanshee/"><img src="/images_gb/facebook.gif" alt="Become a fan of GameBanshee on Facebook!" height="20" width="20" border="0" /></a>
+&nbsp;<a href="https://www.youtube.com/GameBansheeDotCom"><img src="/images_gb/youtube.gif" alt="Check out GameBanshee's YouTube channel!" height="20" width="20" border="0" /></a>
+&nbsp;<a href="https://twitter.com/gamebanshee"><img src="/images_gb/twitter.gif" alt="Tweeting like a banshee!" height="20" width="20" border="0" /></a>
+&nbsp;<a href="https://www.gamebanshee.com/rssfeed.html"><img src="/images_gb/rss.gif" alt="Subscribe to our RSS feed!" height="20" width="20" border="0" /></a></li>
+</ul>
+</div>
+</div>
+</div>
+<!--// end: footer -->
+</div>
+</div>
+<!--// end: pagewrap :: borders -->
+</div>
+</div>
+<!--// end: wrapper_left -->
+</div>
+<!-- // standardwidth -->
+<div id="gb728x90bottom"></div>
+<script src="/gb_includes/headerfiles/meta.js"></script> 
+
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a441b0692a00e21f',t:'MTc5MDkyMjk0OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

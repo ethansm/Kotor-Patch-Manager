@@ -1,0 +1,166 @@
+# HK-47 preset 'tank_rifle_none_na': Combat Droid 7-30 durable rifleman: Toughness line, Close Combat line, then Rapid Shot/Specialization/Master Sniper; Awareness + Security (Droid Factory solo)
+# Skill points are a PROPOSAL (greedy toward target ranks, max rank = char_level+3; all 5 droid class skills cost 1). DEX bumps +1 at 8/12/16/20/24/28 (elkripper_hk47-tslrcm.txt, applied to live DEX14).
+[meta]
+tag = "hk47"
+name = "HK-47"
+utc = "p_hk47.utc"
+variant = "tank_rifle_none_na"
+summary = "Combat Droid 7-30 durable rifleman: Toughness line, Close Combat line, then Rapid Shot/Specialization/Master Sniper; Awareness + Security (Droid Factory solo)"
+convert_at = 0   # droid, never converts
+
+[meta.wizard]
+role = "tank"
+style = "rifle"
+alignment = "none"
+convert = "n/a"
+skills = "combat"
+
+[[level]]
+char_level = 7
+class = 6   # Combat Droid
+feats = []
+skills = {awareness = 3}
+
+[[level]]
+char_level = 8
+class = 6   # Combat Droid
+attrs = {DEX = 15}
+feats = []
+skills = {security = 2, awareness = 1}
+
+[[level]]
+char_level = 9
+class = 6   # Combat Droid
+feats = [123]   # 123:Improved Toughness
+skills = {awareness = 2, security = 1}
+
+[[level]]
+char_level = 10
+class = 6   # Combat Droid
+feats = []
+skills = {security = 2, awareness = 1}
+
+[[level]]
+char_level = 11
+class = 6   # Combat Droid
+feats = [124]   # 124:Master Toughness
+skills = {awareness = 1, security = 2}
+
+[[level]]
+char_level = 12
+class = 6   # Combat Droid
+attrs = {DEX = 16}
+feats = [139]   # 139:Close Combat
+skills = {awareness = 1, security = 1, repair = 1}
+
+[[level]]
+char_level = 13
+class = 6   # Combat Droid
+feats = []
+skills = {awareness = 1, computer_use = 1, security = 1}
+
+[[level]]
+char_level = 14
+class = 6   # Combat Droid
+feats = []
+skills = {awareness = 1, repair = 1, computer_use = 1}
+
+[[level]]
+char_level = 15
+class = 6   # Combat Droid
+feats = [140]   # 140:Improved Close Combat
+skills = {awareness = 1, security = 1, repair = 1}
+
+[[level]]
+char_level = 16
+class = 6   # Combat Droid
+attrs = {DEX = 17}
+feats = []
+skills = {computer_use = 1, awareness = 1, security = 1}
+
+[[level]]
+char_level = 17
+class = 6   # Combat Droid
+feats = [30]   # 30:Rapid Shot
+skills = {repair = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 6   # Combat Droid
+feats = [92]   # 92:Improved Rapid Shot
+skills = {security = 1, repair = 1, computer_use = 1}
+
+[[level]]
+char_level = 19
+class = 6   # Combat Droid
+feats = []
+skills = {awareness = 1, security = 1, repair = 1}
+
+[[level]]
+char_level = 20
+class = 6   # Combat Droid
+attrs = {DEX = 18}
+feats = []
+skills = {demolitions = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 21
+class = 6   # Combat Droid
+feats = [47]   # 47:Weapon Specialization: Blaster Rifle
+skills = {security = 1, repair = 1, demolitions = 1}
+
+[[level]]
+char_level = 22
+class = 6   # Combat Droid
+feats = []
+skills = {computer_use = 1, awareness = 1, security = 1}
+
+[[level]]
+char_level = 23
+class = 6   # Combat Droid
+feats = [26]   # 26:Master Rapid Shot
+skills = {repair = 1, demolitions = 1, computer_use = 1}
+
+[[level]]
+char_level = 24
+class = 6   # Combat Droid
+attrs = {DEX = 19}
+feats = [240]   # 240:Precise Shot I
+skills = {awareness = 1, security = 1, repair = 1}
+
+[[level]]
+char_level = 25
+class = 6   # Combat Droid
+feats = []
+skills = {demolitions = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 6   # Combat Droid
+feats = []
+skills = {security = 1, repair = 1, demolitions = 1}
+
+[[level]]
+char_level = 27
+class = 6   # Combat Droid
+feats = [241]   # 241:Precise Shot II
+skills = {computer_use = 1, awareness = 1, security = 1}
+
+[[level]]
+char_level = 28
+class = 6   # Combat Droid
+attrs = {DEX = 20}
+feats = []
+skills = {repair = 1, demolitions = 1, computer_use = 1}
+
+[[level]]
+char_level = 29
+class = 6   # Combat Droid
+feats = [242]   # 242:Precise Shot III
+skills = {awareness = 1, security = 1, repair = 1}
+
+[[level]]
+char_level = 30
+class = 6   # Combat Droid
+feats = [77]   # 77:Master Sniper Shot
+skills = {demolitions = 1, computer_use = 1, awareness = 1}

@@ -1,0 +1,172 @@
+# Mandalore preset 'ranged_rifle_none_na': Soldier 6-30 with a blaster rifle / Mandalorian heavy repeater: Weapon Specialization restored, Rapid Shot, Sniper Shot and Power Blast masters, Precise Shot I-V, Critical Strike line, Toughness/Conditioning; Awareness + Treat Injury
+# Skill points are a PROPOSAL (cycled priority, max rank = char_level+3, class skills Demolitions/Awareness/Treat Injury). Attribute bumps follow elkripper's cadence (+1 at 8/12/16/20/24/28) applied to live STR15 CON14; unverified live.
+[meta]
+tag = "mand"
+name = "Mandalore"
+utc = "p_mand.utc"
+variant = "ranged_rifle_none_na"
+summary = "Soldier 6-30 with a blaster rifle / Mandalorian heavy repeater: Weapon Specialization restored, Rapid Shot, Sniper Shot and Power Blast masters, Precise Shot I-V, Critical Strike line, Toughness/Conditioning; Awareness + Treat Injury"
+convert_at = 0   # never becomes a Jedi (Soldier only)
+
+[meta.wizard]
+role = "ranged"
+style = "rifle"
+alignment = "none"
+convert = "n/a"
+skills = "combat"
+
+[[level]]
+char_level = 6
+class = 0   # Soldier
+feats = [47]   # 47:Weapon Specialization: Blaster Rifle
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 7
+class = 0   # Soldier
+feats = [92]   # 92:Improved Rapid Shot
+skills = {awareness = 2}
+
+[[level]]
+char_level = 8
+class = 0   # Soldier
+attrs = {DEX = 13}
+feats = [26]   # 26:Master Rapid Shot
+skills = {treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 9
+class = 0   # Soldier
+feats = [20]   # 20:Improved Sniper Shot
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 10
+class = 0   # Soldier
+feats = [77]   # 77:Master Sniper Shot
+skills = {awareness = 2}
+
+[[level]]
+char_level = 11
+class = 0   # Soldier
+feats = [82]   # 82:Master Power Blast
+skills = {treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 12
+class = 0   # Soldier
+attrs = {DEX = 14}
+feats = [240]   # 240:Precise Shot I
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 13
+class = 0   # Soldier
+feats = [241]   # 241:Precise Shot II
+skills = {awareness = 2}
+
+[[level]]
+char_level = 14
+class = 0   # Soldier
+feats = [242]   # 242:Precise Shot III
+skills = {treat_injury = 1, awareness = 1}
+
+[[level]]
+char_level = 15
+class = 0   # Soldier
+feats = [84]   # 84:Toughness
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 16
+class = 0   # Soldier
+attrs = {DEX = 15}
+feats = [13]   # 13:Conditioning
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 17
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 18
+class = 0   # Soldier
+feats = [243]   # 243:Precise Shot IV
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 19
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 20
+class = 0   # Soldier
+attrs = {DEX = 16}
+feats = [244]   # 244:Precise Shot V
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 21
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 22
+class = 0   # Soldier
+feats = [21]   # 21:Improved Conditioning
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 23
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 24
+class = 0   # Soldier
+attrs = {CON = 15}
+feats = [8]   # 8:Critical Strike
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 25
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 26
+class = 0   # Soldier
+feats = [19]   # 19:Improved Critical Strike
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 27
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 28
+class = 0   # Soldier
+attrs = {CON = 16}
+feats = [81]   # 81:Master Critical Strike
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 29
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 30
+class = 0   # Soldier
+feats = [123]   # 123:Improved Toughness
+skills = {awareness = 1, treat_injury = 1}

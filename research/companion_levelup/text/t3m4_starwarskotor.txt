@@ -1,0 +1,88 @@
+
+Star Wars KOTOR T3-M4 Build
+This website uses cookies. By continuing to use this website, you agree to their use. For more information, click here.
+Star Wars Knights of the Old Republic - T3-M4 Build
+Half of the fun of Knights of the Old Republic is developing your party members in your own individual way, and I encourage you to do so. Nonetheless, I am providing development guides for every playable character as I have figured out ways to develop a very powerful party, and if you're the type of person, like me, who enjoys a Dungeons & Dragons/Wizards of the Coast -type battle system; then even if you don't follow the guides, they may hopefully at least provide interesting reading and food for thought...
+If you're finding the game a bit too complicated, you might want to start by looking at my tips and tricks page, which explains some of the game's fundamental concepts.
+T3-M4 is Level 3 when he joins your party.
+Attributes
+At Level 3, T3 has the following Attributes:
+Strength 10
+Dexterity 15
+Constitution 14
+Intelligence 20
+Wisdom 10
+Charisma 10
+At Level 20 I have the following Attributes:
+Strength 10
+Dexterity 18
+Constitution 16
+Intelligence 20
+Wisdom 10
+Charisma 10
+Equipment
+I equip the following at endgame:
+Superior Targeting Computer (this is how T3-M4 has the Feat Weapon Specialization: Blaster Pistol; you can't obtain this Feat simply by leveling up) - Universal Computer Interface - Advanced Computer Tool (these 2 together raise the Computer Use Skill by 10 - list of Droid Upgrades here) - Baragwin Shield Disruptor - (not the most powerful, but has the huge advantage that it can be used an unlimited number of times - Droid Weapons list) - Baragwin Droid Shield (again, conventionally this isn't the most powerful Shield, but it can be used an unlimited number of times - list of Droid Shields here) - Droid Heavy Plating Type 3 (this is the 2nd best Droid Plating available - Droid Armor list) - Mandalorian Heavy Pistol (x2) (I give the best 2 Blaster Pistols to Carth, but these are also rather powerful - Blaster Pistols list)
+Click here for lists of Droid equipment in KOTOR.
+Feats
+At Level 3, T3-M4 has the following Feats:
+Caution
+Gear Head
+Weapon Proficiency: Blaster Pistol
+Droid Upgrade Class 1
+Blaster Integration
+Combat Logic Upgrade
+At Level 20, I have T3-M4 with the following Feats:
+Two-Weapon Fighting - Improved Two-Weapon Fighting
+Caution
+Gear Head - Improved Gear Head
+Weapon Proficiency: Blaster Pistol - Weapon Focus: Blaster Pistol - Weapon Specialization: Blaster Pistol
+Droid Upgrade Class 1 - Droid Upgrade Class 2 - Droid Upgrade Class 3
+Toughness - Improved Toughness - Master Toughness
+Blaster Integration
+Combat Logic Upgrade - Tactician Logic Upgrade - Battle Droid Logic Upgrade
+Skills
+At Level 3, T3-M4 has the following Skills:
+Computer Use
+Skill Rank: 6
+Bonus: +6
+Total Rank: 12
+Demolitions
+Skill Rank: 1
+Bonus: +6
+Total Rank: 7
+Stealth
+Skill Rank: 0
+Bonus: 0
+Total Rank: 0
+Awareness
+Skill Rank: 3
+Bonus: 0
+Total Rank: 3
+Persuade
+Skill Rank: 0
+Bonus: 0
+Total Rank: 0
+Repair
+Skill Rank: 6
+Bonus: +6
+Total Rank: 12
+Security
+Skill Rank: 6
+Bonus: +1
+Total Rank: 7
+Treat Injury
+Skill Rank: 0
+Bonus: 0
+Total Rank: 0
+Character Development Home
+Main Character Guide
+Carth Guide
+Mission Guide
+Zaalbar Guide
+Bastila Guide
+T3-M4 Guide
+Canderous Guide
+Juhani Guide
+HK-47 Guide
+Jolee Guide

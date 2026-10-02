@@ -1,0 +1,251 @@
+
+ KOTOR 2 - Hanharr Builds - Rifle
+KOTOR 2 - Hanharr Builds - Rifle
+Here is a ranged blaster rifle wielding Hanharr build. Just in case you have an urge to not use Hanharr's ridiculous strength in melee.
+I rarely give my companions blaster rifles. And I'm not sure why not. At first, it seems obvious that dual blaster pistols would be better. MOAR ATTACKS, right? But when you look closely, it isn't as clear cut. Some considerations:
+Two attacks vs one is a clear win. But add in Rapid Shot and you're getting three attacks vs. two. Percentage-wise, that's less of a win.
+Until you get at least the second rank of Two-Weapon Fighting, you're probably either just using one pistol, or you're missing a lot. Even with Master Two Weapon Fighting, you still have an attack penalty, so your extra attack doesn't land quite as often as a regular attack. At least until the late game when you probably have enough buffs to overcome that.
+If you happen to get one really good rifle, then all your ranged attacks benefit from it. You have to get two really good pistols to have that same benefit. So depending on drops (and what you're willing to buy), it might take longer to get pistols really going
+Dual pistols take more upgrades than rifles. Which is great, except then you need to find/craft those upgrades, which you might not be able to do immediately. So again, it may take longer for pistols to fully kick in.
+For someone that can buff themselves with Master Speed, the advantage shrinks to five attacks vs. four, which isn't much difference. Hanharr can't do that, of course, but I mention it for completeness.
+Not having to take the Two-Weapon Fighting line means you can take other beneficial feats.
+Even for the feats you do still get to take using pistols, having to take Two-Weapon Fighting means you get them later. For example, my pistol version of Hanharr doesn't get Improved Rapid shot until level 11, but the rifle version gets it at 5.
+Rifles generally have a higher crit chance, increasing their damage (admittedly in an unreliable, bursty way)
+Overall, pistols are still better. But not ridiculously so, and their advantage isn't fully realized until later in the game. Plus, Hanharr just looks good holding a blaster rifle. So if you're willing to give up just a little bit of damage, or if you happen to be using Hanharr only at a point in the game where the advantages of a rifle outweigh those of blasters, then this might be the build for you.
+======================
+Hanharr's progression details per level (g = granted, s = selected)
+ | Character Level
+ | Class Level
+ | Attributes
+ | Skills
+ | Feats
+ | Force Powers
+ | 4
+ | Scout 4
+ | STR: 20 (+5)
+WIS: 12 (+1)
+CHA: 8 (-1)
+INT: 10 (0)
+CON: 20 (+5)
+DEX: 13 (+1)
+ | 21 points
+Awareness +6 (6)
+Computer use +0 (0)
+Demolitions +6 (6)
+Persuade +0 (0)
+Repair +4 (4)
+Security +0 (0)
+Stealth +0 (0)
+Treat Injury +5 (5)
+ | Flurry (g)
+Power Attack (g)
+Improved Power Attack (g)
+Rapid Shot (g)
+Precise Shot I (g)
+Close Combat (g)
+Uncanny Dodge I (g)
+Targeting I (g)
+Wookiee Toughness I (g)
+Wookiee Rage (g)
+Proficiency: Light Armor (g)
+Proficiency: Medium Armor (g)
+Proficiency: Heavy Armor (g)
+Proficiency: Blaster Pistol (g)
+Proficiency: Blaster Rifle (g)
+Proficiency: Melee Weapons (g)
+ | 
+ | 5
+ | Scout 5
+ | 
+ | 3 points
+?
+ | Targeting II (g)
+Improved Rapid Shot (s)
+ | 
+ | 6
+ | Scout 6
+ | 
+ | 3 points
+?
+ | Evasion (g)
+ | 
+ | 7
+ | Scout 7
+ | 
+ | 3 points
+?
+ | Uncanny Dodge II (g)
+Conditioning (s)
+ | 
+ | 8
+ | Scout 8
+ | DEX +1, 14 (+2)
+ | 3 points
+ | Precise Shot II (g)
+ | 
+ | 9
+ | Scout 9
+ | 
+ | 3 points
+?
+ | Wookiee Toughness II (g)
+Targeting III (g)
+Master Rapid Shot (s)
+ | 
+ | 10
+ | Scout 10
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 11
+ | Scout 11
+ | 
+ | 3 points
+?
+ | Wookiee Fury (g)
+Improved Close Combat (s)
+ | 
+ | 12
+ | Scout 12
+ | DEX +1, 15 (+2)
+ | 3 points
+?
+ | Precise Shot III (g)
+ | 
+ | 13
+ | Scout 13
+ | 
+ | 3 points
+?
+ | Targeting IV (g)
+Improved Conditioning (s)
+ | 
+ | 14
+ | Scout 14
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 15
+ | Scout 15
+ | 
+ | 3 points
+?
+ | Master Conditioning (s)
+ | 
+ | 16
+ | Scout 16
+ | DEX +1, 16 (+3)
+ | 3 points
+?
+ | Precise Shot IV (g)
+ | 
+ | 17
+ | Scout 17
+ | 
+ | 3 points
+?
+ | Wookiee Toughness III (g)
+Wookiee Frenzy (g)
+Targeting V (g)
+Weapon Focus: Blaster Rifle (s)
+ | 
+ | 18
+ | Scout 18
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 19
+ | Scout 19
+ | 
+ | 3 points
+?
+ | Regenerate Vitality Points (s)
+ | 
+ | 20
+ | Scout 20
+ | DEX +1, 17 (+3)
+ | 3 points
+?
+ | Precise Shot V (g)
+ | 
+ | 21
+ | Scout 21
+ | 
+ | 3 points
+?
+ | Targeting IV (g)
+Toughness (s)
+ | 
+ | 22
+ | Scout 22
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 23
+ | Scout 23
+ | 
+ | 3 points
+?
+ | Improved Toughness (s)
+ | 
+ | 24
+ | Scout 24
+ | DEX +1, 18 (+4)
+ | 3 points
+?
+ | 
+ | 
+ | 25
+ | Scout 25
+ | 
+ | 3 points
+?
+ | Targeting VII (g)
+Master Toughness (s)
+ | 
+ | 26
+ | Scout 26
+ | 
+ | 3 points
+?
+ | 
+ | 
+ | 27
+ | Scout 27
+ | 
+ | 3 points
+?
+ | Dual Strike (s)
+ | 
+ | 28
+ | Scout 28
+ | DEX +1 19 (+4)
+ | 3 points
+?
+ | 
+ | 
+ | 29
+ | Scout 29
+ | 
+ | 3 points
+?
+ | Targeting VIII (g)
+Improved Dual Strike (s)
+ | 
+ | 30
+ | Scout 30
+ | 
+ | 3 points
+?
+ | 
+ | 
+Even pushing DEX at every opportunity, it never catches up to his STR and CON. But it can be boosted with gear.
+If you have the conversation to "break" Hanharr (which you should, it has great attribute boosts for the main character), then Hanharr gains two points of STR but loses two points of INT. This is not reflected in the build, as there's no way to know at what level it would occur. But it means you'll get less skill points than listed above, because you'll start getting 2 skill points at each levelup instead of 3. You won't retroactively lose any skills you already have, though.

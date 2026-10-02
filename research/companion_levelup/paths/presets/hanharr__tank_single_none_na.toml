@@ -1,0 +1,178 @@
+# Hanharr preset tank_single: Scout 5-30 unarmored tank: Toughness/Conditioning lines first, Regenerate, Caution, Master Power Attack
+# Skill points are a PROPOSAL (round-robin over a priority list, max rank = char_level+3, cross-class cost 2). Attribute bumps every 4 levels from live STR18 DEX13 CON18.
+[meta]
+tag = "hanharr"
+name = "Hanharr"
+utc = "p_hanharr.utc"
+variant = "tank_single"
+summary = "Scout 5-30 unarmored tank: Toughness/Conditioning lines first, Regenerate, Caution, Master Power Attack"
+convert_at = 0   # never a Jedi
+
+[meta.wizard]
+role = "tank"
+style = "single"
+alignment = "none"
+convert = "n/a"
+skills = "combat"
+
+[[level]]
+char_level = 5
+class = 1   # Scout
+feats = [123]   # 123:Improved Toughness
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 6
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 7
+class = 1   # Scout
+feats = [13]   # 13:Conditioning
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 8
+class = 1   # Scout
+attrs = {CON = 19}
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 9
+class = 1   # Scout
+feats = [124]   # 124:Master Toughness
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 10
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 11
+class = 1   # Scout
+feats = [21]   # 21:Improved Conditioning
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 12
+class = 1   # Scout
+attrs = {DEX = 14}
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 13
+class = 1   # Scout
+feats = [196]   # 196:Regenerate Vitality Points
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 14
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 15
+class = 1   # Scout
+feats = [22]   # 22:Master Conditioning
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 16
+class = 1   # Scout
+attrs = {CON = 20}
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 17
+class = 1   # Scout
+feats = [7]   # 7:Caution
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 18
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 19
+class = 1   # Scout
+feats = [117]   # 117:Improved Caution
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 20
+class = 1   # Scout
+attrs = {DEX = 15}
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 21
+class = 1   # Scout
+feats = [83]   # 83:Master Power Attack
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 22
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 23
+class = 1   # Scout
+feats = [91]   # 91:Improved Flurry
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 24
+class = 1   # Scout
+attrs = {CON = 21}
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 25
+class = 1   # Scout
+feats = [53]   # 53:Master Flurry
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 26
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 27
+class = 1   # Scout
+feats = [195]   # 195:Mobility
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 28
+class = 1   # Scout
+attrs = {DEX = 16}
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 29
+class = 1   # Scout
+feats = [118]   # 118:Master Caution
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 30
+class = 1   # Scout
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
