@@ -1,0 +1,38 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# H-E1: CSWGuiInGameEquip ctor (008a92d0), just before StopLoadFromLayout; [ebp-0x1d8] = panel
+[[hooks]]
+address = 0x008AA16A
+type = "detour"
+function = "BindEquipView"
+original_bytes = [0x8B, 0x8D, 0x28, 0xFE, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x1d8]"
+type = "int"
+
+# H-E3: equip panel Update (vtable slot 0x34, 008aba50) prologue: ECX = panel
+[[hooks]]
+address = 0x008ABA50
+type = "detour"
+function = "EquipTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+# H-E4: equip panel scalar deleting dtor (008aa6f0) prologue: ECX = panel; frees the preview creature
+[[hooks]]
+address = 0x008AA6F0
+type = "detour"
+function = "EquipDestroy"
+original_bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"

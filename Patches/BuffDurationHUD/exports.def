@@ -1,0 +1,8 @@
+LIBRARY BuffDurationHUD
+EXPORTS
+    SnapshotPortraitSlot
+    RetargetBuffIcon
+    RestoreBuffIcon
+    DrawBuffColumn
+    DrawShieldBar
+    AppendShieldToTooltip

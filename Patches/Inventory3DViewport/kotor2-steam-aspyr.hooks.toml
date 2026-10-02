@@ -1,0 +1,42 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# H1: CSWGuiInGameInventory ctor (008a6170), just before StopLoadFromLayout; [ebp-0x2f8] = panel
+[[hooks]]
+address = 0x008A69AD
+type = "detour"
+function = "BindInventoryView"
+original_bytes = [0x8B, 0x8D, 0x08, 0xFD, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x2f8]"
+type = "int"
+
+# H2: inventory entry event-0 handler (008a8100) right after GetItemByObjectId: EAX = item, [ebp-0x68] = panel
+[[hooks]]
+address = 0x008A8172
+type = "detour"
+function = "ShowItem"
+original_bytes = [0x89, 0x45, 0xD4, 0x8D, 0x55, 0xCC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x68]"
+type = "int"
+
+# H3: inventory Update (008a7350) prologue: ECX = panel
+[[hooks]]
+address = 0x008A7350
+type = "detour"
+function = "InventoryTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"

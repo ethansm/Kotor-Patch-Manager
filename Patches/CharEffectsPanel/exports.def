@@ -1,0 +1,5 @@
+LIBRARY CharEffectsPanel
+EXPORTS
+    BindCharEffects
+    CharEffectsTick
+    CharEffectsDestroy

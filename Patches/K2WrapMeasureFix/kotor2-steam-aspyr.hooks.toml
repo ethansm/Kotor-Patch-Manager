@@ -1,0 +1,24 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# Word-wrap measurement fix (KMRP "K6" equivalent).
+#
+# CAurGUIStringInternal::WrapStrings (0x0047AF30) measures each glyph as
+#     ftol(((u1-u0)*texW + spacingR) * scale * 100.0 + 0.25)
+# (FADD double ptr [0x0098C1D8] = 0.25 at VA 0x0047B232, file offset 0x7A632;
+# _ftol2_sse at 0x0091C860 truncates) and adds it to the line width.
+# Draw uses the exact float glyph widths, so wrapped lines are under-measured
+# by roughly 0.25 px per character and lines wrap later than they fit.
+#
+# Fix: re-point the operand to the existing 0.5 double at 0x00987F08 so the
+# per-glyph truncation becomes round-to-nearest. The 0.25 constant itself is
+# NOT changed (48 other code references). Only the 4-byte absolute operand changes:
+#     DC 05 D8 C1 98 00  ->  DC 05 08 7F 98 00
+# The bytes are identical in both the Steam Aspyr and Steam Aspyr LAA exes.
+#
+# Source: patch_manager_mods/engine_research_findings/V3.md, doc 16 lead L4.
+[[hooks]]
+address = 0x0047B232
+type = "simple"
+original_bytes = [0xDC, 0x05, 0xD8, 0xC1, 0x98, 0x00]
+replacement_bytes = [0xDC, 0x05, 0x08, 0x7F, 0x98, 0x00]

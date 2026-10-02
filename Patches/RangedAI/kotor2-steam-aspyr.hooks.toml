@@ -1,0 +1,127 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# Windows validated by patch_manager_mods/mods678_research/check_windows.py (both executables byte-identical).
+# Doc: patch_manager_mods/13_ranged_ai_spacing.md. Both hooks sit in CSWSCreature::AIActionPhysicalAttacks (0x6D7390).
+# E-H1/E-H2 act only for the stances in ranged_ai.ini hold_stances/retarget_stances (shipped: 16 = "Ranged (Kiting)");
+# S-H1..S-H4 (0.2.0) add stance 16 to the party stance menu and the HUD. Every consumed-exit window is EAX-free
+# (the framework runs the stolen bytes after the handler with EAX = its return value).
+
+# E-H1 hold: 0x6D83EA, right after ECX = attacker was reloaded; the stolen bytes read creature+0x52C into a local.
+# Handler returns 1 => jump to 0x6D83FF: end this attack action (EndAttackAction(1)) instead of walking to the target.
+[[hooks]]
+address = 0x006D83EA
+type = "detour"
+function = "RangedAiHold"
+original_bytes = [0x8B, 0x91, 0x2C, 0x05, 0x00, 0x00, 0x89, 0x95, 0x8C, 0xFC, 0xFF, 0xFF]
+consumed_exit_address = 0x006D83FF
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# E-H2 retarget gate: 0x6D7C79 (NOT 0x6D7C73: the framework runs the stolen bytes AFTER the handler with EAX =
+# handler return value, so stolen `MOV ECX,[EAX+0x10E8]` would fault; review 2026-09-30). At 0x6D7C79 the game has
+# already loaded ECX = IsPC (creature+0x10E8) and EAX is still the attacker; the stolen bytes only store ECX to a
+# local, and the CMP/JZ after them test that local. Handler returns 1 => jump to 0x6D7C8C (behave as IsPC).
+[[hooks]]
+address = 0x006D7C79
+type = "detour"
+function = "RangedAiRetarget"
+original_bytes = [0x89, 0x8D, 0x50, 0xFD, 0xFF, 0xFF]
+consumed_exit_address = 0x006D7C8C
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# S-H1 stance clamp: AddStanceActions 0x77A9E0. ECX = stance (just loaded); the stolen bytes store it to [ebp-0x18]
+# and CMP it with 9 (the JZ after the window reads those flags: the wrapper's PUSHFD/POPFD around TEST EAX keeps
+# them on the resume path). Handler returns 1 for 16 => jump to 0x77AAB4 (skip the reset-to-9).
+[[hooks]]
+address = 0x0077AA5E
+type = "detour"
+function = "RangedAiStanceClamp"
+original_bytes = [0x89, 0x4D, 0xE8, 0x83, 0x7D, 0xE8, 0x09]
+consumed_exit_address = 0x0077AAB4
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+# S-H2 stance row fill: 0x77ACBC (re-sited 2026-09-30 from the 15-byte window ending in MOV EAX,..). Stolen bytes
+# MOV EDX,[EBP-0x14]; MOV [EBP-0xF8],EDX (EAX-free). Handler returns 1 for aistate 16 after writing the row's action
+# id and icon => jump to 0x77AE77 (row index increment; EDX is reloaded there).
+[[hooks]]
+address = 0x0077ACBC
+type = "detour"
+function = "RangedAiStanceRow"
+original_bytes = [0x8B, 0x55, 0xEC, 0x89, 0x95, 0x08, 0xFF, 0xFF, 0xFF]
+consumed_exit_address = 0x0077AE77
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# S-H3 stance click: StanceActionClicked 0x77D890 at 0x77D8D4 (re-sited 2026-09-30 from the 14-byte window with
+# MOV EAX,..; SUB EAX,0x410). Stolen bytes MOV EDX,[EBP+8]; MOV [EBP-0x34],EDX (EAX-free). Handler returns 1 for
+# action id 0x415 after setting stance 16, the message strref [ebp-8] and tutorial row [ebp-4] => jump to 0x77D9CA
+# (vanilla tail: tutorial check + stance message box; it reloads EAX first).
+[[hooks]]
+address = 0x0077D8D4
+type = "detour"
+function = "RangedAiStanceClick"
+original_bytes = [0x8B, 0x55, 0x08, 0x89, 0x55, 0xCC]
+consumed_exit_address = 0x0077D9CA
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# S-H4 HUD current-stance marker: HUD refresh 0x74DA40, default branch of the stance switch (reached by the JA at
+# 0x74DBA4 for stances outside 9..13). Replaces MOV [EBP-0x1C],-1 (skip-only): the handler writes 0x415 for stance
+# 16, else -1. Resumes at 0x74DBE4.
+[[hooks]]
+address = 0x0074DBDD
+type = "detour"
+function = "RangedAiHudStance"
+original_bytes = [0xC7, 0x45, 0xE4, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# E-H3 ranged-stance rules: AIActionPhysicalAttacks 0x6D7390 at 0x6D850F, MOV [EBP-0x174],EAX (EAX = attacker stance,
+# just loaded from stats+0x146). That local is read only by the four CMPs at 0x6D876A/0x6D8773/0x6D8A7E/0x6D8A87
+# (stance 11 Ranged / 12 Stationary and not the controlled creature => no approach move). Skip-only: the handler
+# stores 11 for stance 16 (INI ranged_rules=1), else the stance unchanged. Resumes at 0x6D8515.
+[[hooks]]
+address = 0x006D850F
+type = "detour"
+function = "RangedAiStanceRules"
+original_bytes = [0x89, 0x85, 0x8C, 0xFE, 0xFF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"

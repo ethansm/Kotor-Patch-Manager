@@ -1,0 +1,14 @@
+[patch]
+id = "load-hang-probe"
+name = "Load Hang Probe"
+version = "1.4.1"
+author = "local"
+description = "v1.4.1 logs RestoreAfterMovie / PlayMovies-exit only when their values change (per-frame flood fix). v1.4.0 adds 8 probe-log points for the load-hang activation path (WM_ACTIVATEAPP arrival with lParam, movie-thread deactivate/a1b76c/synthetic post, RestoreAfterMovie, PlayMovies exit/cut-off, MainLoop load-screen decision changes). v1.3.0 adds window/activation logging (WndProc, AppActivated/Deactivated hooks) and an optional guarded re-activation fix (fix=auto). v1.2.0 adds SetPlayerId (0x00798660) hook + file-I/O ring (IAT) + load timeline. Diagnostics only (no gameplay change, inert unless hangprobe_debug.txt exists): frame heartbeat on CClientExoAppInternal::MainLoop, watchdog that polls the load-screen state and samples the main thread's stack only when a hang looks likely and logs the load-screen state; writes hangprobe_log.txt / hangprobe_report.txt."
+
+requires = []
+conflicts = []
+
+# Steam/LAA only. Investigation: patch_manager_mods/09_load_hang_investigation.md (local-setup/KOTOR-II worktree).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_steam_aspyr_laa = "4ab72fc1ab082f427e008cda32fc5602d27b4e12fef48c4a1a2c6f7b2f36fb5a"

@@ -1,0 +1,14 @@
+[patch]
+id = "level-up-override"
+name = "LevelUpOverride"
+version = "0.3.0"
+author = "local"
+description = "Level-up override: hooks CSWSCreatureStats::LevelUp (0x006B9870) to log every level-up and make AUTO level-ups follow a per-character build preset from levelup_paths.ini (manual picks never changed); 0.3.0-a adds hold mode (CanLevelUp gate at 13 sites + GUI guards + Auto OK backstop keep a creature from levelling until its class change) and opt-in instant level-ups (options accessor gate at 4 sites). Config levelup_override.ini (mode=log|rewrite|off, preset.<tag>=, instant.<tag>=, hold.<tag>=, legacy tags=, apply=, verbose=, table=); default mode=log never writes."
+
+requires = []
+conflicts = []
+
+# Steam/LAA only. Investigation: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_steam_aspyr_laa = "4ab72fc1ab082f427e008cda32fc5602d27b4e12fef48c4a1a2c6f7b2f36fb5a"

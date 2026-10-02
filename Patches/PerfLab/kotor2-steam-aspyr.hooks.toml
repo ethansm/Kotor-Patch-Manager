@@ -1,0 +1,571 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# Per-frame function called from CClientExoAppInternal::MainLoop (0x78262C) and a few init paths
+# (doc 10): frame heartbeat; its first call applies the flag-gated experiments tx/g1skip (0.2.0). Prologue 55 8B EC 83 EC 28 = PUSH EBP / MOV EBP,ESP / SUB ESP,0x28.
+# Deliberately NOT 0x00781BE0, which load-hang-probe owns.
+[[hooks]]
+address = 0x00478A20
+type = "detour"
+function = "PerfLabTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x28]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# ---- 0.2.0 measurement pack (doc 10 "Runtime measurement pack"). Every site checked with perf_lab_src/hookbytes.py against the
+# static dump: instruction boundary, whole instructions, no relative branch in the stolen bytes, no branch target inside them.
+# Handlers return immediately unless perflab_debug.txt has metrics=1.
+
+# M1 CExoResMan::Malloc entry (thiscall resman, CRes*). PUSH EBP / MOV EBP,ESP / SUB ESP,0x10.
+[[hooks]]
+address = 0x00712F30
+type = "detour"
+function = "PerfLabResMalloc"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+# M1 FreeChunk, per evicted CRes: after its vtbl[3] call (0x71222B), before FreeResourceData. MOV EAX,[EBP-0x14] / MOV ECX,[EBP-8]. CRes = [EBP-4].
+[[hooks]]
+address = 0x0071222D
+type = "detour"
+function = "PerfLabResEvict"
+original_bytes = [0x8B, 0x45, 0xEC, 0x8B, 0x4D, 0xF8]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-4]"
+type = "pointer"
+
+# M1 CExoResMan::FreeResourceData entry (thiscall resman, CRes*); [esp+0] = caller (0x712245 = FreeChunk eviction).
+[[hooks]]
+address = 0x007120C0
+type = "detour"
+function = "PerfLabResFreeData"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+# M1 CExoResMan::Release entry (CRes*).
+[[hooks]]
+address = 0x007130B0
+type = "detour"
+function = "PerfLabResRelease"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+# M1 CExoResMan::Demand entry (thiscall resman, CRes*).
+[[hooks]]
+address = 0x00711C20
+type = "detour"
+function = "PerfLabResDemand"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x1C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+# M2 Demand: in-flight (flag 0x10) branch. MOV EDX,[EBP-0x18] / CMP [EDX+0x2C],0.
+[[hooks]]
+address = 0x00711D04
+type = "detour"
+function = "PerfLabWaitBegin"
+original_bytes = [0x8B, 0x55, 0xE8, 0x83, 0x7A, 0x2C, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M2 Demand: one Sleep(1) poll. PUSH 1 / CALL [0x9860D4] (absolute indirect, relocatable).
+[[hooks]]
+address = 0x00711D27
+type = "detour"
+function = "PerfLabWaitSleep"
+original_bytes = [0x6A, 0x01, 0xFF, 0x15, 0xD4, 0x60, 0x98, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M2 Demand: wait finished OK (after 0x715A60 != 0). MOV EDX,[EBP+8] / MOV AX,[EDX+4]. (0x711D31 is not usable: relative CALL in its bytes.)
+[[hooks]]
+address = 0x00711D44
+type = "detour"
+function = "PerfLabWaitEnd"
+original_bytes = [0x8B, 0x55, 0x08, 0x66, 0x8B, 0x42, 0x04]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M3 GetImage 0x422640 after it resolved this->vtbl[2]()->vtbl[1]() to a non-NULL object ([EBP-4]); [EBP+4] = caller. MOV ECX,[EBP-4] / MOV EAX,[ECX+0x44].
+[[hooks]]
+address = 0x0042266F
+type = "detour"
+function = "PerfLabGetImage"
+original_bytes = [0x8B, 0x4D, 0xFC, 0x8B, 0x41, 0x44]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+4]"
+type = "pointer"
+
+# M4 glImage 0x4265E0: CALL [glFinish] (taken when GL ext bit 0x100000 is set).
+[[hooks]]
+address = 0x004265F5
+type = "detour"
+function = "PerfLabGlFinishPre"
+original_bytes = [0xFF, 0x15, 0xC4, 0x62, 0x98, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M4 glImage: after the optional glFinish (reached on every call). MOV ECX,[EBP-0x20] / CMP [ECX+0x44],0.
+[[hooks]]
+address = 0x004265FB
+type = "detour"
+function = "PerfLabGlImagePost"
+original_bytes = [0x8B, 0x4D, 0xE0, 0x83, 0x79, 0x44, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M5 render-bucket std::map find-or-insert entry (calls per frame). PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x00472630
+type = "detour"
+function = "PerfLabBucketInsert"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M5 action bar rebuild entry (calls per frame). PUSH EBP / MOV EBP,ESP / SUB ESP,0x68.
+[[hooks]]
+address = 0x0074CFE0
+type = "detour"
+function = "PerfLabActionBar"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x68]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M6 PlayMovies entry. PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x00798820
+type = "detour"
+function = "PerfLabMovieEnter"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# M6 PlayMovies spin iteration (INC [EBP-0x10]); [EBP-0x20] = pump cut-off latch, [EBP-0x7C] = this. Branch target of 0x798A34/3A/40 (JMP lands on the detour).
+[[hooks]]
+address = 0x00798A87
+type = "detour"
+function = "PerfLabMovieSpin"
+original_bytes = [0x8B, 0x4D, 0xF0, 0x83, 0xC1, 0x01, 0x89, 0x4D, 0xF0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x7c]"
+type = "pointer"
+
+# C1/C2 (batch T1) BuildAndStoreTexture entry (ECX = texture): re-uploads of built TPC textures with a retained buffer (TX's behaviour
+# delta) and TPC textures with a procedural controller. PUSH EBP / MOV EBP,ESP / PUSH ECX / MOV [EBP-4],ECX (7 bytes, whole instructions).
+# The tx=1 cave (0x4261CF..0x4261D5) is written by the DLL at runtime, not by KPM; it does not overlap this or any other hook.
+[[hooks]]
+address = 0x004260E0
+type = "detour"
+function = "PerfLabBuildTex"
+original_bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# ---- 0.3.0 (Phase 4) counters. Every site: perf_lab_src/hookbytes.py OK against the dump, no relative branch in the stolen bytes,
+# no branch target inside them (full-dump scan), bytes equal in the live LAA exe, no other live patch hooks within 12 bytes.
+# Handlers return immediately unless perflab_debug.txt has metrics=1 (groups live/br/kt/vm/misc default to on with metrics).
+
+# BR (U4 H-BR1): GUI image setter 0x414840, changed-name path (branch target of the JNZ at 0x414864). MOV ECX,[EBP+8] / PUSH ECX / LEA EDX,[EBP-0x28]. [EBP+8] = CResRef*, [EBP+4] = caller.
+[[hooks]]
+address = 0x00414870
+type = "detour"
+function = "PerfLabBrSetter1"
+original_bytes = [0x8B, 0x4D, 0x08, 0x51, 0x8D, 0x55, 0xD8]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+4]"
+type = "pointer"
+
+# BR (U4 H-BR2): GUI image setter 0x416090, changed-name path. Same bytes/operands as H-BR1.
+[[hooks]]
+address = 0x004160BD
+type = "detour"
+function = "PerfLabBrSetter2"
+original_bytes = [0x8B, 0x4D, 0x08, 0x51, 0x8D, 0x55, 0xD8]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+4]"
+type = "pointer"
+
+# BR (U4 H-BR3): texture-record miss in 0x427520 (name lookup failed -> new record). PUSH 0xF4 (next insn is a rel CALL, not stolen). [EBP+8] = char* name.
+[[hooks]]
+address = 0x00427609
+type = "detour"
+function = "PerfLabBrTexMiss"
+original_bytes = [0x68, 0xF4, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+4]"
+type = "pointer"
+
+# KT/C2 (U5 H-A1): CExoResMan::Update starts an async request: OR ECX,0x10 / MOV EDX,[EBP-8]. [EBP-8] = resman, CRes = [resman+0x28].
+[[hooks]]
+address = 0x0071447A
+type = "detour"
+function = "PerfLabAsyncStart"
+original_bytes = [0x83, 0xC9, 0x10, 0x8B, 0x55, 0xF8]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-8]"
+type = "pointer"
+
+# KT (U5 H-K1): CExoKeyTable::DestroyTable entry. PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x00726350
+type = "detour"
+function = "PerfLabDestroyTable"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# KT (U5 H-K2): DestroyTable still-in-demand branch: OR EDX,0x200 (ECX = CRes, loaded at 0x7264FE).
+[[hooks]]
+address = 0x0072650B
+type = "detour"
+function = "PerfLabStillInDemand"
+original_bytes = [0x81, 0xCA, 0x00, 0x02, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# KT (U5 H-K4): ReleaseResObject 0x713010 about to write 0 to [[CRes+0x14]+0x10]: MOV [ECX+0x10],0. EAX = CRes (0x713066), ECX = key entry.
+[[hooks]]
+address = 0x0071306C
+type = "detour"
+function = "PerfLabUafWrite"
+original_bytes = [0xC7, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "pointer"
+
+# TPC2X (U5 H-T1): TXI provider 0x93BC00 falls back to the TPC (branch target of 0x93BE80; range start). MOV ECX,[EBP-0x12C]. [EBP+8] = char* name.
+[[hooks]]
+address = 0x0093BEA6
+type = "detour"
+function = "PerfLabTxiTpc"
+original_bytes = [0x8B, 0x8D, 0xD4, 0xFE, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "pointer"
+
+# C1 (U5 H-T3): UniquePush entry (ECX = list; handler filters the pending-texture list 0xA1BC2C), [esp+4] = texture, [esp+0] = caller. PUSH EBP / MOV EBP,ESP / PUSH ECX / MOV [EBP-4],ECX.
+[[hooks]]
+address = 0x00474000
+type = "detour"
+function = "PerfLabRequeue"
+original_bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+# C3 (T1): FreeImage entry (ECX = texture). PUSH EBP / MOV EBP,ESP / SUB ESP,0x1C.
+[[hooks]]
+address = 0x00425160
+type = "detour"
+function = "PerfLabFreeImage"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x1C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# T2: ~CAurTextureBasic entry (pairs with the textures counter 0xA1BBE0). PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x00423480
+type = "detour"
+function = "PerfLabTexDtor"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# T2: server UnloadModule entry: count + metrics snapshot UNLOAD. PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x005315E0
+type = "detour"
+function = "PerfLabUnload"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U1 H1: CVirtualMachineInternal::RunScript entry, [esp+4] = CExoString* script. PUSH EBP / MOV EBP,ESP / SUB ESP,0x10.
+[[hooks]]
+address = 0x007022A0
+type = "detour"
+function = "PerfLabRunScript"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+# U1 H3: ExecuteCommand entry, [esp+4] = command id (signed; VMID). PUSH EBP / MOV EBP,ESP / SUB ESP,8.
+[[hooks]]
+address = 0x00668FD0
+type = "detour"
+function = "PerfLabExecCmd"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# U1 H4: instruction limit (0x20000) tripped: MOV EAX,0xFFFFFFA3 (next insn is a rel JMP, not stolen).
+[[hooks]]
+address = 0x006FFA76
+type = "detour"
+function = "PerfLabInstrLimit"
+original_bytes = [0xB8, 0xA3, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U1 H2b: DelayCommand implementation entry. PUSH EBP / MOV EBP,ESP / SUB ESP,0x28.
+[[hooks]]
+address = 0x00670370
+type = "detour"
+function = "PerfLabDelayCommand"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x28]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U1 H8 (VMLK): ActionDoCommand entry. PUSH EBP / MOV EBP,ESP / SUB ESP,0x14.
+[[hooks]]
+address = 0x006699D0
+type = "detour"
+function = "PerfLabAdcEnter"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U1 H8b (VMLK): ActionDoCommand ownership handoff (target found): MOV EDX,[EBP-0xC] / PUSH EDX / MOV ECX,[EBP-8]; the rel CALL at 0x669A39 is not stolen. enter - handoff = upper bound of leaked situations.
+[[hooks]]
+address = 0x00669A32
+type = "detour"
+function = "PerfLabAdcHandoff"
+original_bytes = [0x8B, 0x55, 0xF4, 0x52, 0x8B, 0x4D, 0xF8]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U6 (NETOVF): CNetLayer SendMessageToPlayer entry, [esp+0xC] = length. PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x00704060
+type = "detour"
+function = "PerfLabNetSend"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0xC]"
+type = "int"
+
+# U6 (NETOVF): just before the overflow test (CMP/JBE at 0x7040F4/0x7040F7, not stolen). MOV ECX,[EBP-0x20] / MOV EDX,[ECX+0x2000C]. [EBP-0x20] = ring object, [EBP-0x14] = new write index.
+[[hooks]]
+address = 0x007040E0
+type = "detour"
+function = "PerfLabNetOvfTest"
+original_bytes = [0x8B, 0x4D, 0xE0, 0x8B, 0x91, 0x0C, 0x00, 0x02, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x14]"
+type = "int"
+
+# U6/T2: c_FocusGobDummyModel creation per scene: PUSH 0xC4 (next insn is a rel CALL, not stolen).
+[[hooks]]
+address = 0x00464789
+type = "detour"
+function = "PerfLabFocusDummy"
+original_bytes = [0x68, 0xC4, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U6/T2: scene destructor entry. PUSH EBP / MOV EBP,ESP / PUSH -1.
+[[hooks]]
+address = 0x00464D70
+type = "detour"
+function = "PerfLabSceneDtor"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# ---- 0.3.0 U3 AI / pathfinding / effects (same checks as above). The pre-pass loop top 0x51D842 is deliberately NOT hooked (n^2 hits per
+# tick would distort the AI time it measures); its iteration count is derived in PerfLabAiObjPre.
+
+# U3 H1b: CServerAIMaster::UpdateState entry (10 ms budget). PUSH EBP / MOV EBP,ESP / SUB ESP,0xF0. ECX = AI master.
+[[hooks]]
+address = 0x0051D790
+type = "detour"
+function = "PerfLabAiTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0xF0, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# U3 H2 pre: before the per-object vtbl+0x70 dispatch (range start = JNZ target). MOV ECX,[EBP-0x28] / MOV EDX,[ECX]. [EBP-0x28] = object, [EBP-0x34] = level.
+[[hooks]]
+address = 0x0051DC70
+type = "detour"
+function = "PerfLabAiObjPre"
+original_bytes = [0x8B, 0x4D, 0xD8, 0x8B, 0x11]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x28]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x34]"
+type = "int"
+
+# U3 H2 post: after the dispatch (range start = branch target of the skip path). MOV [EBP-0x38],0.
+[[hooks]]
+address = 0x0051DC86
+type = "detour"
+function = "PerfLabAiObjPost"
+original_bytes = [0xC7, 0x45, 0xC8, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U3 H5: pathfind entry (1 ms slice). PUSH EBP / MOV EBP,ESP / SUB ESP,0x30.
+[[hooks]]
+address = 0x0055AB30
+type = "detour"
+function = "PerfLabPathEnter"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x30]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U3 H6: pathfind result stored: MOV [EBP-8],EAX / CMP [0xA7E0D4],0 (absolute operand, no relative branch). EAX = 1 pending / 2 ok / 3 fail.
+[[hooks]]
+address = 0x0055AC26
+type = "detour"
+function = "PerfLabPathResult"
+original_bytes = [0x89, 0x45, 0xF8, 0x83, 0x3D, 0xD4, 0xE0, 0xA7, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+# U3 H9: ApplyEffect entry. PUSH EBP / MOV EBP,ESP / SUB ESP,0x9C.
+[[hooks]]
+address = 0x00544210
+type = "detour"
+function = "PerfLabEffectApply"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x9C, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# U3 H9: RemoveEffect entry. PUSH EBP / MOV EBP,ESP / SUB ESP,0x28.
+[[hooks]]
+address = 0x00544640
+type = "detour"
+function = "PerfLabEffectRemove"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x28]
+skip_original_bytes = false
+exclude_from_restore = []

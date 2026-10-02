@@ -1,0 +1,38 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# H-C1: CSWGuiInGameCharacter ctor (0084c3a0), just before StopLoadFromLayout (call 0x40f5a0 at 0x84d877); [ebp-0x254] = panel
+[[hooks]]
+address = 0x0084D871
+type = "detour"
+function = "BindCharEffects"
+original_bytes = [0x8B, 0x8D, 0xAC, 0xFD, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x254]"
+type = "int"
+
+# H-C3: character panel Update (vtable 0x9a3e7c slot 0x34, 0084fbb0) prologue: ECX = panel
+[[hooks]]
+address = 0x0084FBB0
+type = "detour"
+function = "CharEffectsTick"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+# H-C4: character panel scalar deleting dtor (vtable slot 0, 0084def0) prologue: ECX = panel
+[[hooks]]
+address = 0x0084DEF0
+type = "detour"
+function = "CharEffectsDestroy"
+original_bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"

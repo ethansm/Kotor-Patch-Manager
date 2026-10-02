@@ -1,0 +1,137 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# UpdatePortraits, normal slot: EAX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0074F25A
+type = "detour"
+function = "SnapshotPortraitSlot"
+original_bytes = [0x89, 0x85, 0x44, 0xFF, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# UpdatePortraits, extra/mirror slot: EDX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0074F8AB
+type = "detour"
+function = "SnapshotPortraitSlot"
+original_bytes = [0x89, 0x95, 0xA4, 0xFE, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "edx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# PortraitIconRowDraw, just before the icon widget Draw(): swap FILL image + shrink
+[[hooks]]
+address = 0x00745A84
+type = "detour"
+function = "RetargetBuffIcon"
+original_bytes = [0x8B, 0x4D, 0xE0, 0x8B, 0x11, 0x8B, 0x4D, 0xE0, 0x8B, 0x42, 0x38, 0xFF, 0xD0]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x4c]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x18]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0x10]"
+type = "int"
+
+# PortraitIconRowDraw, after Draw() on the buff row: restore image and size
+[[hooks]]
+address = 0x00745A97
+type = "detour"
+function = "RestoreBuffIcon"
+original_bytes = [0x0F, 0xB6, 0x4D, 0xEF, 0x03, 0x4D, 0xC4]
+exclude_from_restore = []
+
+
+# PortraitIconRowDraw, row exit (after the native arrow loop, before the card viewport pops):
+# draw the icon column. cardW/cardH are the viewport locals [ebp-0x8]/[ebp-0x4].
+[[hooks]]
+address = 0x00745AEC
+type = "detour"
+function = "DrawBuffColumn"
+original_bytes = [0x8D, 0x55, 0xD0, 0x52, 0x8B, 0x45, 0xE0]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x4c]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0xc]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0x10]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x4]"
+type = "int"
+
+
+# PROBE (1.1.0-probe): FUN_00745770 per-slot icon-row gate, after prologue (55 8b ec 51 done).
+# ECX = slotPtr (this), [ebp+0xc] = isFirst (leader; RET 8 = dt + isFirst). Runs every frame per slot, before the
+# arrow-count test. Window 89 4d fc / 8b 45 fc (2 whole instructions, 6 bytes, no jumps).
+[[hooks]]
+address = 0x00745774
+type = "detour"
+function = "DrawShieldBar"
+original_bytes = [0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0xc]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp]"
+type = "int"
+
+
+# Portrait hover tooltip: RET path of FUN_00744c20 (text builder), 2 whole instructions (10 bytes, no jumps):
+# mov ecx,[ebp-0xc] / mov fs:[0],ecx. [ebp-0x48] = charButton (this). Appends "Shield: cur/max" to the CExoString at this+0x1d4.
+[[hooks]]
+address = 0x00744EEC
+type = "detour"
+function = "AppendShieldToTooltip"
+original_bytes = [0x8B, 0x4D, 0xF4, 0x64, 0x89, 0x0D, 0x00, 0x00, 0x00, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x48]"
+type = "int"

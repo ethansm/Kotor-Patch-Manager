@@ -1,0 +1,298 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# CSWSCreatureStats::LevelUp entry (doc 08 hook shortlist 1). thiscall(stats, pending*, addToList), ret 8.
+# Prologue 55 8B EC 81 EC 80 00 00 00 = PUSH EBP / MOV EBP,ESP / SUB ESP,0x80 (9 bytes, whole instructions; 5 would cut the SUB).
+# skip_original_bytes=false: our code runs BEFORE the original bytes, so EBP is still the caller's frame (used for the caller chain).
+# Parameters: ECX = stats, [esp+0] = return address (flow id), [esp+4] = pending*, [esp+8] = addToList, EBP = caller frame.
+[[hooks]]
+address = 0x006B9870
+type = "detour"
+function = "LevelUpOverrideEntry"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x80, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# ---- 0.3.0-a gates: 5-byte `E8 rel32` call sites, the call is replaced (skip_original_bytes) and the handler calls the real function itself;
+# its return value is EAX (excluded from restore). All sites: live == vanilla bytes, only EAX used after the call (doc 08 "Phase 4 M0 facts").
+
+# Hold gate: CanLevelUp 0x6B9790 (int __thiscall(stats), plain RET). ecx = stats. Result forced to 0 while the creature is held.
+[[hooks]]
+address = 0x0074F3C7
+type = "detour"
+function = "LuoHold_74F3C7"
+original_bytes = [0xE8, 0xC4, 0xA3, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0084F221
+type = "detour"
+function = "LuoHold_84F221"
+original_bytes = [0xE8, 0x6A, 0xA5, 0xE6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FD7CE
+type = "detour"
+function = "LuoHold_5FD7CE"
+original_bytes = [0xE8, 0xBD, 0xBF, 0x0B, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FE2A3
+type = "detour"
+function = "LuoHold_5FE2A3"
+original_bytes = [0xE8, 0xE8, 0xB4, 0x0B, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0066C95C
+type = "detour"
+function = "LuoHold_66C95C"
+original_bytes = [0xE8, 0x2F, 0xCE, 0x04, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FEE32
+type = "detour"
+function = "LuoHold_5FEE32"
+original_bytes = [0xE8, 0x59, 0xA9, 0x0B, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x00756DD4
+type = "detour"
+function = "LuoHold_756DD4"
+original_bytes = [0xE8, 0xB7, 0x29, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x007575B5
+type = "detour"
+function = "LuoHold_7575B5"
+original_bytes = [0xE8, 0xD6, 0x21, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x00757808
+type = "detour"
+function = "LuoHold_757808"
+original_bytes = [0xE8, 0x83, 0x1F, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0075798C
+type = "detour"
+function = "LuoHold_75798C"
+original_bytes = [0xE8, 0xFF, 0x1D, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0075218B
+type = "detour"
+function = "LuoHold_75218B"
+original_bytes = [0xE8, 0x00, 0x76, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x007C9F3B
+type = "detour"
+function = "LuoHold_7C9F3B"
+original_bytes = [0xE8, 0x50, 0xF8, 0xEE, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0075FCB8
+type = "detour"
+function = "LuoHold_75FCB8"
+original_bytes = [0xE8, 0xD3, 0x9A, 0xF5, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Instant gate: options accessor 0x72FB00 (void* __fastcall(ECX)); only [ret+8]&1 is read afterwards. ecx + ebp (creature = [ebp+off], off per site).
+[[hooks]]
+address = 0x0074F3E9
+type = "detour"
+function = "LuoInstant_74F3E9"
+original_bytes = [0xE8, 0x12, 0x07, 0xFE, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FD7A0
+type = "detour"
+function = "LuoInstant_5FD7A0"
+original_bytes = [0xE8, 0x5B, 0x23, 0x13, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FE281
+type = "detour"
+function = "LuoInstant_5FE281"
+original_bytes = [0xE8, 0x7A, 0x18, 0x13, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x0066C93A
+type = "detour"
+function = "LuoInstant_66C93A"
+original_bytes = [0xE8, 0xC1, 0x31, 0x0C, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# GUI guards: GetCharacterChangeInProgress 0x740FC0 (int __thiscall(ecx), plain RET). 0x84FD2F = ShowLevelUpGUI (button/hotkey/script),
+# 0x84F9FE = HandleInputEvent case 0x29 (Auto confirm box). Nonzero = the engine's vanilla early-out.
+[[hooks]]
+address = 0x0084FD2F
+type = "detour"
+function = "LuoGuardGui_84FD2F"
+original_bytes = [0xE8, 0x8C, 0x12, 0xEF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0084F9FE
+type = "detour"
+function = "LuoGuardAuto_84F9FE"
+original_bytes = [0xE8, 0xBD, 0x15, 0xEF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Auto OK backstop: DoAutoLevelup 0x77D800 call at 0x850062 (void* __thiscall(ecx), creature). Returning 0 makes the engine's `jz` skip AutoLevelup.
+[[hooks]]
+address = 0x00850062
+type = "detour"
+function = "LuoAutoOk_850062"
+original_bytes = [0xE8, 0x99, 0xD7, 0xF2, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

@@ -1,0 +1,13 @@
+[patch]
+id = "ranged-ai"
+name = "Ranged AI (Kiting)"
+version = "0.3.0"
+author = "local"
+description = "Party ranged-AI engine hooks: hold position instead of walking into melee when the line of fire is blocked, and retarget like the player does, for the new party stance 16 Ranged (Kiting) added to the stance menu."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_steam_aspyr_laa = "4ab72fc1ab082f427e008cda32fc5602d27b4e12fef48c4a1a2c6f7b2f36fb5a"

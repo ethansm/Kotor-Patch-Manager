@@ -1,0 +1,8 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# No hooks: DLL-only patch. DllMain verifies 8 CALL rel32 sites (all before writing any) and re-targets them:
+#   0x008ABA8C E8 9F 1E 00 00 (CALL 0x8AD930) -> EquipFixPass
+#   0x008ADA08 E8 33 6E B6 FF, 0x008ADA81 E8 BA 6D B6 FF, 0x008AE793 E8 A8 60 B6 FF (CALL 0x414840, placeholder sets) -> EquipFixDefer
+#   0x008ADFA2 0x008AE02D 0x008AE19A 0x008AE1CD (CALL 0x414840, item / greyed icon) -> EquipFixSet
+# On any byte mismatch it refuses and logs REFUSED(bytes ...). Neighbour: equipment-3d-character detour 0x008ABA50 (6 bytes): 0x3C away.

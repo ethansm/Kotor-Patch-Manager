@@ -1,0 +1,200 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF", "4AB72FC1AB082F427E008CDA32FC5602D27B4E12FEF48C4A1A2C6F7B2F36FB5A"]
+
+# CClientExoAppInternal::MainLoop entry (called via CClientExoApp wrapper 0x0073F9C0: MOV ECX,[EAX+4]).
+# ECX = client internal. Prologue 55 8B EC 6A FF = PUSH EBP / MOV EBP,ESP / PUSH -1 (whole instructions,
+# same shape as force-power-hotbar's working entry hook on 0x0074B3F0).
+[[hooks]]
+address = 0x00781BE0
+type = "detour"
+function = "HangProbeMainLoop"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# 1.2.0: CClientExoAppInternal::SetPlayerCreatureId (0x00798660), thiscall(internal, newId). Sets internal+0x20 (the client's
+# player object id). Callers: MainLoop 0x782377 (reset to 0x7F000000), ResetGame 0x78544E, 0x79EE42, 0x7B3102, wrapper 0x73F921.
+# Prologue 55 8B EC 51 89 4D FC = PUSH EBP / MOV EBP,ESP / PUSH ECX / MOV [EBP-4],ECX (7 bytes, whole instructions).
+# Parameters: ECX, caller return address ([esp+0] at entry), new id ([esp+4]). The hook only writes a ring slot.
+[[hooks]]
+address = 0x00798660
+type = "detour"
+function = "HangProbeSetPlayerId"
+original_bytes = [0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# 1.3.0: WndProc 0x0040A750 (stdcall hwnd, msg, wparam, lparam). Prologue 55 8B EC 81 EC 34 02 00 00 (PUSH EBP / MOV EBP,ESP / SUB ESP,0x234; 9 bytes, whole instructions).
+[[hooks]]
+address = 0x0040A750
+type = "detour"
+function = "HangProbeWndProc"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x34, 0x02, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+12]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+16]"
+type = "pointer"
+
+# 1.3.0: AppActivated 0x0040BCF0 (sets DAT_00A1B4E0 = 1). Prologue 55 8B EC 83 EC 14 (6 bytes).
+[[hooks]]
+address = 0x0040BCF0
+type = "detour"
+function = "HangProbeActivated"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# 1.3.0: AppDeactivated 0x0040BC40 (clears DAT_00A1B4E0). Prologue 55 8B EC 83 EC 18 (6 bytes).
+[[hooks]]
+address = 0x0040BC40
+type = "detour"
+function = "HangProbeDeactivated"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x18]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# ---- 1.4.0 probe-log points (doc 10 Phase 4: T4.md "Probe-log points" + U6). Each site: perf_lab_src/hookbytes.py OK, no relative
+# branch in the stolen bytes, no branch target inside them (full-dump scan), bytes equal in the live LAA exe, no other hook within 12 bytes.
+# 0x40BC40 / 0x40BCF0 / 0x40A750 are already hooked above (1.3.0); 0x798820 belongs to perf-lab. Handlers write ring slots only.
+
+# 1.4.0: WndProc case WM_ACTIVATEAPP arrival: CMP [0xA1B48C],0 (flags for the following JZ are produced by the re-executed CMP). [EBP+8] hwnd, [EBP+0x10] wParam, [EBP+0x14] lParam.
+[[hooks]]
+address = 0x0040B4AD
+type = "detour"
+function = "HangProbeActAppArrive"
+original_bytes = [0x83, 0x3D, 0x8C, 0xB4, 0xA1, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+0x10]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0x14]"
+type = "int"
+
+# 1.4.0: movie window procedure saw a deactivate (movie thread): PUSH 0 / MOV ECX,[0xA1B9E4].
+[[hooks]]
+address = 0x0040C6B3
+type = "detour"
+function = "HangProbeMovieWndDeact"
+original_bytes = [0x6A, 0x00, 0x8B, 0x0D, 0xE4, 0xB9, 0xA1, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# 1.4.0: movie thread sets [0xA1B76C]=1 (RestoreAfterMovie will skip its re-activation): MOV [0xA1B76C],1.
+[[hooks]]
+address = 0x0040D637
+type = "detour"
+function = "HangProbeMovie76c"
+original_bytes = [0xC7, 0x05, 0x6C, 0xB7, 0xA1, 0x00, 0x01, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# 1.4.0: movie thread about to PostMessage(main, WM_ACTIVATEAPP, 0, 0): PUSH 0 / PUSH 0 / PUSH 0x1C.
+[[hooks]]
+address = 0x0040D692
+type = "detour"
+function = "HangProbeSynthPost"
+original_bytes = [0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x1C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# 1.4.0: RestoreAfterMovie entry. PUSH EBP / MOV EBP,ESP / SUB ESP,0x1C. [esp+0] = caller.
+[[hooks]]
+address = 0x0040BF40
+type = "detour"
+function = "HangProbeRestoreAfterMovie"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x1C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+# 1.4.0: PlayMovies exit: MOV EDX,[0xA1B4E0]. [EBP-0x18], [EBP-0x20] = cut-off latch.
+[[hooks]]
+address = 0x00798B39
+type = "detour"
+function = "HangProbeMovieExit"
+original_bytes = [0x8B, 0x15, 0xE0, 0xB4, 0xA1, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x18]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "int"
+
+# 1.4.0: PlayMovies pump cut-off engaged (expected never): MOV [EBP-0x20],1. perf-lab hooks 0x798A87 (no overlap).
+[[hooks]]
+address = 0x00798A77
+type = "detour"
+function = "HangProbePumpCutoff"
+original_bytes = [0xC7, 0x45, 0xE0, 0x01, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# 1.4.0: MainLoop load-screen keep/hide decision: CMP [0xA1B4E0],0 (consumed by the JNZ at 0x781E12; re-executed after the handler). Logged on change only.
+[[hooks]]
+address = 0x00781E0B
+type = "detour"
+function = "HangProbeLsDecision"
+original_bytes = [0x83, 0x3D, 0xE0, 0xB4, 0xA1, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []

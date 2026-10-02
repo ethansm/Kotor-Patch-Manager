@@ -1,0 +1,5 @@
+LIBRARY Inventory3DViewport
+EXPORTS
+    BindInventoryView
+    ShowItem
+    InventoryTick
