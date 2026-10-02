@@ -25,10 +25,11 @@ namespace KotorPatcher {
 namespace LogService {
 
     struct Options {
-        // Whether Init() starts the background flush thread. The thread (flush every
-        // flush_ms, config poll every second, wake on WARN/ERR) is added by a later
-        // change; until then this flag is accepted and has no effect, and the owner
-        // drives FlushNow()/PollConfigNow() itself. Tests always pass false.
+        // Whether Init() starts the background flush thread: it flushes every
+        // flush_ms (kplog.ini, default 500 ms) and sooner when a WARN/ERR or Mark
+        // arrives, and re-reads kplog.ini about once a second. The thread is
+        // detached and never joined; Shutdown() stops it. Without it the owner
+        // drives FlushNow()/PollConfigNow() itself (the deterministic tests do).
         bool startThread = true;
     };
 
@@ -60,7 +61,16 @@ namespace LogService {
     void SetClockForTest(uint64_t (*nowUs)());
 
     // Final flush, close the files, then every call becomes a no-op until the next Init().
+    // Never blocks for long: if the flush or ring lock cannot be taken within about
+    // 200 ms (another thread died or is stuck holding it) the final flush is skipped
+    // with one Platform::Log line. It does not join the flush thread.
     void Shutdown();
+
+    // Test-only: hold / release the ring mutex, to prove Shutdown() stays bounded
+    // when a submitter is stuck. Lock and unlock from the same thread, and do not
+    // call any other service function from that thread while it is held.
+    void LockRingForTest();
+    void UnlockRingForTest();
 
     // The functions behind the KPatchLogApi table (same semantics as the header
     // documents). Exposed so the core and tests can call them without the table.
