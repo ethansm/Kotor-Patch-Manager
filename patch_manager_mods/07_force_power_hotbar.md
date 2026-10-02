@@ -34,6 +34,10 @@
   log rotates per session (`force_power_hotbar_log.txt` -> `.1.txt` at DLL load), per-HUD hover/refresh/toggle/arrow-repeat timers moved into Bar/Editor.
   C3: defaults Invoke=1 Verbose=0 (template had Invoke=0 = release blocker), INI header documents the [General] keys. Host tests pass; -Wall -Wextra clean.
   **USER-ACCEPTED 2026-10-02 ~14:55 ("looks good")**; log rotation verified live (old 18 MB log -> `.1.txt`). Verbose=0 short-log check still open (user INI has Verbose=1). Rollback = stage11 `75bb0a21`.
+  **Build 24 = `8c32433f` BUILT + STAGED, NOT installed (game running, 2026-10-02 ~15:05):** user request -- item stack count in the lower-right of a
+  slot when the stack is > 1. 10 new runtime labels `LBL_HOTBARQTY1..0` (67 controls; tooltip pair still last) at frame+4, y 495, 27x17 units, ALIGNMENT 36
+  (= right 4 | bottom 32; DB lesson 354 ALIGNMENT bitmask, corrects 265), template font = same as the key digits; text from `hb::StackCount` (engine names
+  item entries "Name (N)" only when N > 1). Host test extended. Stage `hotbar_stage13/` (= stage12 + this kpatch); at install re-run the md5 staging check.
   **Runtime-GUI technique doc (2026-10-02):** `patch_manager_mods/RuntimeGuiControls.md` (upstream `docs/` style; copied to the KPM clone `docs/`), incl. a
   side-effect audit (DB lesson 336). Plan additions from it: Phase E rewrite the STALE KPM `Patches/ForcePowerHotbar/PULL_REQUEST.md` (still says 30 slots /
   UseForcePower) + add the README; Phase F check `setVisible`/`wVisible` re-assert against the live flag, not only the cache; Phase L checklist add an options-menu

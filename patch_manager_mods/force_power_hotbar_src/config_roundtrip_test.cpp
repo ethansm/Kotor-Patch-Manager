@@ -20,6 +20,8 @@ int main(){
   assert(c.general.extra.count("Foo"));
   { Config o; o.Parse("[General]\nCreatureTagOffset=0x10\n"); assert(o.warnings.empty() && o.general.extra["CreatureTagOffset"]=="0x10" && o.Serialize().find("CreatureTagOffset=0x10")!=std::string::npos); }
   { Config t; t.profile("Default"); std::string ts = t.Serialize(); assert(t.general.invoke==1 && t.general.verbose==0 && ts.find("Invoke=1\n")!=std::string::npos && ts.find("Verbose=0\n")!=std::string::npos); }   // release template defaults
+  assert(StackCount(0x40000272,"Medpac (7)")==7 && StackCount(0x40000273,"Repair Kit (19)")==19 && StackCount(0x40000272,"Medpac")==0);
+  assert(StackCount(0x20000008,"Burst (3)")==0 && StackCount(0x40000001,"Odd (x)")==0 && StackCount(0x40000001,"()")==0 && StackCount(0x40000001,"A ()")==0);   // stack counts
   remove(path.c_str());
   ActionRef r; assert(!Parse("spell:x",&r) && r.empty()); assert(Parse("",&r)&&r.empty()); assert(Parse("OTHER:FF",&r)&&r.id==255);
   int row,slot; assert(SlotFromKeyName("Bottom0",&row,&slot)&&row==0&&slot==9); assert(!SlotFromKeyName("Right0",&row,&slot)); assert(IsRemovedRowKey("Right0")&&IsRemovedRowKey("left1")&&!IsRemovedRowKey("Left"));

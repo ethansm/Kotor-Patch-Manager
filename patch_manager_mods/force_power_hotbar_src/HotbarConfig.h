@@ -50,6 +50,17 @@ inline std::string normalizeItemName(const std::string& s) {
     return trim(t);
 }
 
+// Item stack count from a HUD entry: the engine formats item names "%s (%d)" only when the stack is > 1 (FUN_0074CF00).
+// Returns 0 for non-items (key bit 0x40000000 clear) and for names without a trailing " (<digits>)".
+inline int StackCount(int key, const std::string& name) {
+    if (!(key & 0x40000000) || name.size() < 4 || name.back() != ')') return 0;
+    size_t p = name.rfind(" (");
+    if (p == std::string::npos || p + 3 > name.size() - 1) return 0;
+    int n = 0;
+    for (size_t i = p + 2; i < name.size() - 1; ++i) { if (name[i] < '0' || name[i] > '9' || n > 100000) return 0; n = n * 10 + (name[i] - '0'); }
+    return n;
+}
+
 inline std::string Format(const ActionRef& r) {
     char b[32];
     switch (r.kind) {

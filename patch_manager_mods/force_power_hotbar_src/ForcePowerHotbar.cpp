@@ -5,7 +5,7 @@
 // Hooks (cdecl detours, original bytes still run):
 //   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
 //   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, invoke, button state
-//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our 57 CSWGuiLabel controls
+//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our 67 CSWGuiLabel controls
 //               at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
 //               list. The panel's own Draw (0x0040EC90) then draws them with the HUD; the tick only swaps fill (border+0x74), alpha
 //               (border+0x24), text and visibility. Frame/wrench art is embedded (HotbarTextures.inc) and registered as engine textures.
@@ -70,8 +70,9 @@ constexpr int EditOff = IcOff0 + ButtonCount, PbgOff = EditOff + 1, TitleOff = E
 constexpr int PrevOff = TabOff0 + TabCount, NextOff = PrevOff + 1, ClearOff = PrevOff + 2;
 constexpr int CellCount = 8, CellBgOff0 = ClearOff + 1, CellIcOff0 = CellBgOff0 + CellCount;
 constexpr int NumOff0 = CellIcOff0 + CellCount;                              // key-digit labels (own labels so the digit can sit above-left of the icon)
-constexpr int TipBgOff = NumOff0 + ButtonCount, TipOff = TipBgOff + 1;       // hover tooltip frame + text
-constexpr int ControlCount = TipOff + 1;                                     // 57
+constexpr int QtyOff0 = NumOff0 + ButtonCount;                               // item stack counts (bottom-right of the slot, above the icon)
+constexpr int TipBgOff = QtyOff0 + ButtonCount, TipOff = TipBgOff + 1;       // hover tooltip frame + text
+constexpr int ControlCount = TipOff + 1;                                     // 67
 constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 25: the editor is enabled only when all of them exist
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
@@ -387,7 +388,7 @@ struct Widget {
     std::string why;                // last logged reason for hidden/shown
     std::string text;               // last applied runtime text (picker widgets)
 };
-struct Button { Widget bg, ic, num; bool avail = false; Entry entry; };
+struct Button { Widget bg, ic, num, qty; bool avail = false; Entry entry; };
 // ---- in-game editor state (the editor and the per-HUD hover/refresh/repeat timers live in Bar, so a HUD rebuild resets them) ----
 enum EditMode { M_Normal = 0, M_Edit = 1, M_Pick = 2 };
 const char* const ModeName[] = { "Normal", "Edit", "Pick" };
@@ -431,7 +432,7 @@ void* imageFor(const char* resref) {
 }
 
 char slotDigit(int slot) { return "1234567890"[slot]; }
-const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : "ic"; }
+const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : &w == &b.ic ? "ic" : &w == &b.num ? "num" : "qty"; }
 
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
 void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
@@ -648,6 +649,7 @@ void updateHover(bool gate) {
 
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
 // the cached view is stale (config/character/gate change), never per frame.
+void wText(Widget& w, const char* nm, const std::string& text);
 void updateButtons(uintptr_t hud, bool gate) {
     static uintptr_t lastMissingHud = 0; static bool lastGateSeen = false; static std::string lastChar = "\x01"; static int lastMode = -1;
     if (g_bar.panel != hud || g_bar.built == 0) {
@@ -662,22 +664,25 @@ void updateButtons(uintptr_t hud, bool gate) {
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
         if (!b.bg.ctl && !b.ic.ctl) continue;
-        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); setVisible(b, b.num, s, false, "hud not active"); continue; }
+        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); setVisible(b, b.num, s, false, "hud not active"); setVisible(b, b.qty, s, false, "hud not active"); continue; }
         // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
         hb::ActionRef want = g_eff[s];
         if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
-            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); continue;
+            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); setVisible(b, b.qty, s, false, "unassigned"); continue;
         }
         Entry e; const char* state; bool have = false;
         if (want.empty()) state = "unbound";
         else if (!resolve(hud, want, &e)) {
-            if (settling && g_bar.ed.mode == M_Normal) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); continue; }
+            if (settling && g_bar.ed.mode == M_Normal) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); setVisible(b, b.qty, s, false, "settling after character switch"); continue; }
             state = "entry not available";
         }
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
         b.avail = have; if (have) b.entry = e;
         if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { VLOG("tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state); setVisible(b, b.num, s, true, state);
+        int qty = have ? hb::StackCount(e.key, e.name) : 0;   // the engine names item entries "Name (N)" only when N > 1
+        if (qty > 1) { wText(b.qty, "qty", std::to_string(qty)); setVisible(b, b.qty, s, true, state); }
+        else setVisible(b, b.qty, s, false, have ? "single item / not an item" : state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
         setFill(b, b.ic, s, have ? e.icon : std::string());
         setAlpha(b, b.ic, s, (have && !(e.flags & 1)) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
@@ -1029,7 +1034,7 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     return ctl;
 }
 
-// All 57 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
+// All 67 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
 // keep the template's value (LBL_QUEUE1: white dialogfont16x16, align 9 = top-left; 17 = top-centre, 18 = centre).
 const CtlSpec Layout[] = {
     { "LBL_HOTBARBG1",       TP_Plain,  29, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
@@ -1087,6 +1092,17 @@ const CtlSpec Layout[] = {
     { "LBL_HOTBARNUM8",      TP_Plain, 313, 479,  18,  18, nullptr,    "8",      nullptr,            9 },
     { "LBL_HOTBARNUM9",      TP_Plain, 353, 479,  18,  18, nullptr,    "9",      nullptr,            9 },
     { "LBL_HOTBARNUM0",      TP_Plain, 393, 479,  18,  18, nullptr,    "0",      nullptr,            9 },
+    // stack count of item slots: mirrors the key digit (frame+4 .. frame+31, 1 unit above the frame bottom); 36 = right (4) | bottom (32)
+    { "LBL_HOTBARQTY1",      TP_Plain,  33, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY2",      TP_Plain,  73, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY3",      TP_Plain, 113, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY4",      TP_Plain, 153, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY5",      TP_Plain, 193, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY6",      TP_Plain, 233, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY7",      TP_Plain, 273, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY8",      TP_Plain, 313, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY9",      TP_Plain, 353, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARQTY0",      TP_Plain, 393, 495,  27,  17, nullptr,    "",       nullptr,           36 },
     { "LBL_HOTBARTIPBG",     TP_Panel,  12, 380, 300,  90, nullptr,    nullptr,  nullptr,           -1 },
     { "LBL_HOTBARTIP",       TP_Plain,  12, 380, 300,  90, nullptr,    "",       nullptr,           18 },
 };
@@ -1104,7 +1120,8 @@ Widget* widgetFor(Bar& bar, int off) {
     if (off == ClearOff) return &bar.clear;
     if (off < CellIcOff0) return &bar.cell[off - CellBgOff0].bg;
     if (off < NumOff0) return &bar.cell[off - CellIcOff0].ic;
-    if (off < TipBgOff) return &bar.b[off - NumOff0].num;
+    if (off < QtyOff0) return &bar.b[off - NumOff0].num;
+    if (off < TipBgOff) return &bar.b[off - QtyOff0].qty;
     return off == TipBgOff ? &bar.tipBg : &bar.tip;
 }
 
