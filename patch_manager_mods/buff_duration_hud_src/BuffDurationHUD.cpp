@@ -801,6 +801,58 @@ int rosterCreature(int idx) {
     return c;
 }
 
+// ---- Menu companion portraits: health / force / shield bars + room for them -----------------------------------------------------
+// The menu's LBL_CHAR2/3 portraits are plain images. We draw the HUD small card's bars around them (same art + tints as PB_VIT/PB_FORCE:
+// uibit_bar_vp_p red over teal, uibit_bar_fp_p cyan over teal; geometry copied from the HUD small card: vit = card.x-40 .. +47 wide, force =
+// card.x+77 .. +47 wide, both 96 tall from card.y-5, on an 85 px card). Values the way UpdatePortraits gets them (0x74ee90): HP = creature
+// vtable+0x9c(0, max) with max = vtable+0x98(1, creature[0x43d]); FP = stats(+0x1198) shorts +0x130 + +0x132, max = FUN_0057eca0(creature).
+constexpr int MenuCharGroup[2][4] = { { 0xc4d, 0xc9f, 0xcf1, 0xd43 }, { 0xdb7, 0xe09, 0xe5b, 0xead } };   // dword index of LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn
+const float HealthFillRed[3] = { 1.0f, 0.0f, 0.0f }, ForceFillCyan[3] = { 0.0f, 0.8f, 0.898f };
+const char* const HealthBarTexture = "uibit_bar_vp_p";
+const char* const ForceBarTexture = "uibit_bar_fp_p";
+
+bool readVitals(int creature, int* hp, int* hpMax, int* fp, int* fpMax) {
+    int vt = 0, d43d = 0, stats = 0;
+    if (!readAt(creature, 0, &vt) || !vt || !readAt(creature, 0x43d * 4, &d43d) || !readAt(creature, 0x1198, &stats) || !stats) return false;
+    int fnMax = 0, fnCur = 0; short s130 = 0, s132 = 0;
+    if (!readAt(vt, 0x98, &fnMax) || !readAt(vt, 0x9c, &fnCur) || !fnMax || !fnCur || !readAt(stats, 0x130, &s130) || !readAt(stats, 0x132, &s132)) return false;
+    *hpMax = reinterpret_cast<short(__thiscall*)(int, int, int)>(fnMax)(creature, 1, d43d);
+    *hp = reinterpret_cast<short(__thiscall*)(int, int, int)>(fnCur)(creature, 0, *hpMax);
+    *fp = int(s130) + int(s132);
+    *fpMax = int(reinterpret_cast<unsigned(__fastcall*)(int)>(0x0057eca0)(creature));
+    return true;
+}
+
+// one vertical gauge: teal track over the whole rect, then the colour fill from the bottom (cur/max of the height), as the stock bars
+void drawGauge(const char* texture, int x, int y, int w, int h, const float* fill, int cur, int mx) {
+    void* img = imageFor(texture);
+    if (!img || mx < 1 || w < 4 || h < 4) return;
+    if (cur < 0) cur = 0; if (cur > mx) cur = mx;
+    auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>((*reinterpret_cast<void***>(img))[6]);
+    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
+    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
+    draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f);
+    int fh = int(double(h) * cur / mx + 0.5), y0 = y + h - fh;
+    if (fh > 0 && pushClip(x, y0, w, fh, ClipNoFillColor, 0, 1.0f)) { draw(img, 0, -(y0 - y), w, h, 0, 0, fill, 1.0f); popClip(); }
+}
+
+// Spread the two companion portrait groups apart (runtime write of the controls' x, so no .gui edit and the hit areas move too).
+// Shifts are remembered per panel; a layout we did not write (menu rebuilt) is adopted as the new original.
+struct ShiftRec { int panel; int orig[2][4], shifted[2][4]; };
+ShiftRec g_shift[8];
+void spreadCompanions(int panel, int w) {
+    ShiftRec* rec = nullptr;
+    for (auto& r : g_shift) if (r.panel == panel) { rec = &r; break; }
+    if (!rec) { static int next = 0; rec = &g_shift[next++ & 7]; *rec = {}; rec->panel = panel; }
+    const int dx[2] = { int(0.30f * w + 0.5f), int(1.00f * w + 0.5f) };
+    for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
+        int addr = panel + MenuCharGroup[g][i] * 4 + 4, cur = 0;
+        if (!readAt(addr, 0, &cur)) continue;
+        if (cur != rec->orig[g][i] && cur != rec->shifted[g][i]) { rec->orig[g][i] = cur; rec->shifted[g][i] = cur + dx[g]; }
+        *reinterpret_cast<int*>(addr) = rec->shifted[g][i];
+    }
+}
+
 void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
     int panel = slotPtr - Menu_SlotOffset;
     int creature = 0, v[4] = {};
@@ -821,11 +873,26 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
     int shown = 0, cols = 0;
     if (pushClip(pr[0], pr[1], pr[2], pr[3], ClipNoFillColor, 0, 1.0f)) {
         if (pools > 0) shown = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, false);
-        if (!g_noBuff) for (int k = 0; k < 2; ++k) {
+        { int w2 = 0; if (readAt(panel + Menu_Char2Offset, 0xc, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2); }
+        for (int k = 0; k < 2; ++k) {
             int ctrl = panel + (k ? Menu_Char3Offset : Menu_Char2Offset), fl = 0, r[4] = {};
             if (!comp[k] || !readAt(ctrl, 0x48, &fl) || !(fl & 2)) continue;
             for (int q = 0; q < 4; ++q) readAt(ctrl, 4 + 4 * q, &r[q]);
             if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) continue;
+            { // bars around the portrait (HUD small-card geometry scaled to this card), shield beside the health bar
+              int hp = 0, hpMax = 0, fp = 0, fpMax = 0;
+              if (readVitals(comp[k], &hp, &hpMax, &fp, &fpMax)) {
+                  float sf = r[2] / 85.0f;
+                  int bw = int(47 * sf + 0.5f), bh = int(96 * sf + 0.5f), by = r[1] - int(5 * sf + 0.5f);
+                  int vx = r[0] - int(40 * sf + 0.5f), fx = r[0] + int(77 * sf + 0.5f);
+                  drawGauge(HealthBarTexture, vx, by, bw, bh, HealthFillRed, hp, hpMax);
+                  if (fpMax > 0) drawGauge(ForceBarTexture, fx, by, bw, bh, ForceFillCyan, fp, fpMax);
+                  DrawShieldPools(comp[k], vx, by, bw, bh, scale, ctrl, false);
+                  static int lastV[2] = { -1, -1 }; int vs = hp * 7 + hpMax * 13 + fp * 17 + fpMax * 19;
+                  if (lastV[k] != vs) { lastV[k] = vs; probeLog("MENUCOMP k=%d creature=%08x hp=%d/%d fp=%d/%d card=(%d,%d,%d,%d) vit=(%d,%d,%d,%d)", k, comp[k], hp, hpMax, fp, fpMax, r[0], r[1], r[2], r[3], vx, by, bw, bh); }
+              }
+            }
+            if (g_noBuff) continue;
             if (pushClip(r[0], r[1], r[2], r[3], ClipNoFillColor, 0, 1.0f)) {
                 drawColumnCore(ctrl, comp[k], 0, 0, 1, r[2], r[3]);     // buffs: left edge
                 drawColumnCore(ctrl, comp[k], 0, 0, 0, r[2], r[3]);     // debuffs: right edge
