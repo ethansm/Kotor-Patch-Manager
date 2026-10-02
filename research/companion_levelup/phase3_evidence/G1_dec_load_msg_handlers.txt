@@ -1,0 +1,688 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1352 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (3400 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== DoHillClimbing @ 0051be20 size=40
+
+/* Library Function - Single Match
+    public: unsigned int __thiscall Concurrency::details::SchedulerProxy::DoHillClimbing(unsigned
+   int,unsigned int,unsigned int,unsigned int)
+   
+   Libraries: Visual Studio 2010 Debug, Visual Studio 2012 Debug, Visual Studio 2015 Debug, Visual
+   Studio 2015 Release */
+
+uint __thiscall
+Concurrency::details::SchedulerProxy::DoHillClimbing
+          (SchedulerProxy *this,uint param_1,uint param_2,uint param_3,uint param_4)
+
+{
+  uint uVar1;
+  
+  uVar1 = FUN_0052fb80(param_1,param_2,param_3,param_4);
+  return uVar1;
+}
+
+
+=== DoHillClimbing @ 0051bdf0 size=40
+
+/* Library Function - Single Match
+    public: unsigned int __thiscall Concurrency::details::SchedulerProxy::DoHillClimbing(unsigned
+   int,unsigned int,unsigned int,unsigned int)
+   
+   Libraries: Visual Studio 2010 Debug, Visual Studio 2012 Debug, Visual Studio 2015 Debug, Visual
+   Studio 2015 Release */
+
+uint __thiscall
+Concurrency::details::SchedulerProxy::DoHillClimbing
+          (SchedulerProxy *this,uint param_1,uint param_2,uint param_3,uint param_4)
+
+{
+  uint uVar1;
+  
+  uVar1 = FUN_0052f610(param_1,param_2,param_3,param_4);
+  return uVar1;
+}
+
+
+=== FUN_00660040 @ 00660040 size=1465
+
+uint FUN_00660040(uint param_1,char param_2)
+
+{
+  short sVar1;
+  int iVar2;
+  uint uVar3;
+  undefined4 uVar4;
+  undefined1 local_64 [8];
+  undefined1 local_5c [8];
+  uint local_54;
+  uint local_50;
+  uint local_4c;
+  undefined1 local_48 [8];
+  undefined1 local_40 [8];
+  uint local_38;
+  uint local_34;
+  undefined1 local_30 [8];
+  undefined1 local_28 [8];
+  uint local_20;
+  uint local_1c;
+  undefined1 local_18 [8];
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00959468;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_00733540(DAT_00a11f20 ^ (uint)&stack0xfffffffc);
+  local_8 = 0;
+  FUN_00733540();
+  local_8._0_1_ = 1;
+  FUN_00733540();
+  local_8._0_1_ = 2;
+  iVar2 = FUN_005e3de0(1);
+  if (iVar2 == 0) {
+    local_20 = 1;
+    if (param_2 == '\x02') {
+      if ((*(char *)(param_1 + 0x24) == '\x01') && (sVar1 = FUN_0051c320(), sVar1 == 2)) {
+        *(undefined4 *)(param_1 + 0x7c) = 1;
+        FUN_0051c650(param_1);
+        uVar3 = FUN_006472b0(DAT_0099b6c4,param_1);
+        local_20 = uVar3 & local_20;
+        uVar3 = FUN_00647640(param_1);
+        local_20 = uVar3 & local_20;
+      }
+      local_38 = local_20;
+      local_8._0_1_ = 1;
+      FUN_00733780();
+      local_8 = (uint)local_8._1_3_ << 8;
+      FUN_00733780();
+      local_8 = 0xffffffff;
+      FUN_00733780();
+      local_34 = local_38;
+    }
+    else if (param_2 == '\x04') {
+      local_1c = FUN_005e3950(0x20);
+      uVar4 = FUN_005e3c90(local_40,0x20);
+      local_8._0_1_ = 3;
+      FUN_007337c0(uVar4);
+      local_8._0_1_ = 2;
+      FUN_00733780();
+      uVar4 = FUN_005e3c90(local_48,0x20);
+      local_8._0_1_ = 4;
+      FUN_007337c0(uVar4);
+      local_8._0_1_ = 2;
+      FUN_00733780();
+      FUN_0051d0b0(local_18);
+      iVar2 = FUN_005e3e40(1);
+      if (iVar2 == 0) {
+        iVar2 = FUN_00630580();
+        if (iVar2 == 0) {
+          local_54 = 0;
+          local_8._0_1_ = 1;
+          FUN_00733780();
+          local_8 = (uint)local_8._1_3_ << 8;
+          FUN_00733780();
+          local_8 = 0xffffffff;
+          FUN_00733780();
+          local_34 = local_54;
+        }
+        else {
+          local_50 = Concurrency::details::SchedulerProxy::DoHillClimbing
+                               (*(SchedulerProxy **)(DAT_00a1b4a4 + 8),local_1c,(uint)local_30,
+                                param_1,0);
+          local_8._0_1_ = 1;
+          FUN_00733780();
+          local_8 = (uint)local_8._1_3_ << 8;
+          FUN_00733780();
+          local_8 = 0xffffffff;
+          FUN_00733780();
+          local_34 = local_50;
+        }
+      }
+      else {
+        local_4c = 0;
+        local_8._0_1_ = 1;
+        FUN_00733780();
+        local_8 = (uint)local_8._1_3_ << 8;
+        FUN_00733780();
+        local_8 = 0xffffffff;
+        FUN_00733780();
+        local_34 = local_4c;
+      }
+    }
+    else if (param_2 == '\x05') {
+      local_1c = FUN_005e3950(0x20);
+      uVar4 = FUN_005e3c90(local_5c,0x20);
+      local_8._0_1_ = 5;
+      FUN_007337c0(uVar4);
+      local_8._0_1_ = 2;
+      FUN_00733780();
+      uVar4 = FUN_005e3c90(local_64,0x20);
+      local_8._0_1_ = 6;
+      FUN_007337c0(uVar4);
+      local_8._0_1_ = 2;
+      FUN_00733780();
+      iVar2 = FUN_005e3e40(1);
+      if ((iVar2 == 0) && (iVar2 = FUN_00630580(), iVar2 != 0)) {
+        iVar2 = FUN_0051bf00();
+        if (iVar2 == 1) {
+          local_8._0_1_ = 1;
+          FUN_00733780();
+          local_8 = (uint)local_8._1_3_ << 8;
+          FUN_00733780();
+          local_8 = 0xffffffff;
+          FUN_00733780();
+          ExceptionList = local_10;
+          return 0;
+        }
+        FUN_0051bf20(1);
+        FUN_006374b0(param_1);
+        uVar3 = Concurrency::details::SchedulerProxy::DoHillClimbing
+                          (*(SchedulerProxy **)(DAT_00a1b4a4 + 8),local_1c,(uint)local_30,
+                           (uint)local_28,param_1);
+        local_8._0_1_ = 1;
+        FUN_00733780();
+        local_8 = (uint)local_8._1_3_ << 8;
+        FUN_00733780();
+        local_8 = 0xffffffff;
+        FUN_00733780();
+        ExceptionList = local_10;
+        return uVar3;
+      }
+      local_8._0_1_ = 1;
+      FUN_00733780();
+      local_8 = (uint)local_8._1_3_ << 8;
+      FUN_00733780();
+      local_8 = 0xffffffff;
+      FUN_00733780();
+      local_34 = 0;
+    }
+    else if (param_2 == '\a') {
+      iVar2 = FUN_005e3e40(1);
+      if (iVar2 == 0) {
+        FUN_0051c540();
+        local_8._0_1_ = 1;
+        FUN_00733780();
+        local_8 = (uint)local_8._1_3_ << 8;
+        FUN_00733780();
+        local_8 = 0xffffffff;
+        FUN_00733780();
+        local_34 = 1;
+      }
+      else {
+        local_8._0_1_ = 1;
+        FUN_00733780();
+        local_8 = (uint)local_8._1_3_ << 8;
+        FUN_00733780();
+        local_8 = 0xffffffff;
+        FUN_00733780();
+        local_34 = 0;
+      }
+    }
+    else {
+      local_8._0_1_ = 1;
+      FUN_00733780();
+      local_8 = (uint)local_8._1_3_ << 8;
+      FUN_00733780();
+      local_8 = 0xffffffff;
+      FUN_00733780();
+      local_34 = 0;
+    }
+  }
+  else {
+    local_34 = 0;
+    local_8._0_1_ = 1;
+    FUN_00733780();
+    local_8 = (uint)local_8._1_3_ << 8;
+    FUN_00733780();
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return local_34;
+}
+
+
+=== FUN_00682dc0 @ 00682dc0 size=65
+
+undefined4 __fastcall FUN_00682dc0(undefined4 param_1)
+
+{
+  undefined4 uVar1;
+  int iVar2;
+  
+  uVar1 = FUN_0051cde0(param_1,*(undefined4 *)(DAT_00a1b4a4 + 8));
+  iVar2 = FUN_006fd9c0(uVar1);
+  if (iVar2 == 0) {
+    uVar1 = 0xfffff830;
+  }
+  else {
+    uVar1 = 0;
+  }
+  return uVar1;
+}
+
+
+=== FUN_005fbf60 @ 005fbf60 size=4318
+
+void __fastcall FUN_005fbf60(uint *param_1)
+
+{
+  undefined1 uVar1;
+  uint uVar2;
+  undefined4 uVar3;
+  uint uVar4;
+  int iVar5;
+  float10 fVar6;
+  undefined1 *puVar7;
+  undefined1 *puVar8;
+  int local_1a4;
+  int local_1a0;
+  int local_19c;
+  undefined4 *local_18c;
+  undefined1 local_120 [8];
+  undefined1 local_118 [8];
+  undefined1 local_110 [8];
+  undefined1 local_108 [8];
+  undefined1 local_100 [8];
+  undefined1 local_f8 [8];
+  undefined1 local_f0 [8];
+  undefined1 local_e8 [8];
+  undefined1 local_e0 [8];
+  undefined4 *local_d8;
+  undefined4 *local_d4;
+  undefined1 local_d0 [16];
+  int local_c0;
+  undefined4 *local_bc;
+  uint local_b8;
+  int local_b4;
+  byte local_ad;
+  undefined1 local_ac [8];
+  undefined1 local_a4 [40];
+  int local_7c;
+  undefined4 *local_78;
+  undefined1 local_74 [4];
+  int local_70;
+  int local_6c;
+  undefined1 local_68 [4];
+  undefined4 local_64;
+  undefined1 local_60 [8];
+  undefined1 local_58 [20];
+  uint local_44;
+  undefined1 local_40 [8];
+  undefined1 local_38 [36];
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00954b6c;
+  local_10 = ExceptionList;
+  uVar2 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = uVar2;
+  local_c0 = FUN_00919723(0xa0,uVar2);
+  local_8 = 0;
+  if (local_c0 == 0) {
+    local_18c = (undefined4 *)0x0;
+  }
+  else {
+    FUN_00710840("PARTYTABLE");
+    local_18c = (undefined4 *)FUN_00716fd0(0,&DAT_00997274,local_d0);
+  }
+  local_bc = local_18c;
+  local_8 = 0xffffffff;
+  local_78 = local_18c;
+  if ((local_18c == (undefined4 *)0x0) || (local_18c[0x25] == 0)) {
+    FUN_008339d0(0xbe76);
+    if (local_78 != (undefined4 *)0x0) {
+      local_d8 = local_78;
+      local_d4 = local_78;
+      if (local_78 != (undefined4 *)0x0) {
+        (**(code **)*local_78)(1);
+      }
+    }
+  }
+  else {
+    FUN_005f76a0();
+    FUN_007189d0(local_68);
+    FUN_00718760(local_58,local_68,"PT_MEMBERS");
+    FUN_00733570(&DAT_00986925);
+    local_8 = 1;
+    uVar3 = FUN_00718f90(local_e0,local_68,"PT_PCNAME",&local_7c,local_40);
+    local_8._0_1_ = 2;
+    FUN_007337c0(uVar3);
+    local_8 = CONCAT31(local_8._1_3_,1);
+    FUN_00733780();
+    uVar4 = FUN_00718c00(local_68,"PT_GOLD",&local_7c,0);
+    param_1[0x5c] = uVar4;
+    uVar4 = FUN_00718c00(local_68,"PT_ITEM_COMPONENT",&local_7c,0);
+    param_1[0x5d] = uVar4;
+    uVar4 = FUN_00718c00(local_68,"PT_ITEM_CHEMICAL",&local_7c,0);
+    param_1[0x5e] = uVar4;
+    uVar4 = FUN_00718c00(local_68,"PT_SWOOP1",&local_7c,0);
+    param_1[0x5f] = uVar4;
+    uVar4 = FUN_00718c00(local_68,"PT_SWOOP2",&local_7c,0);
+    param_1[0x60] = uVar4;
+    uVar4 = FUN_00718c00(local_68,"PT_SWOOP3",&local_7c,0);
+    param_1[0x61] = uVar4;
+    uVar4 = FUN_00718c80(local_68,"PT_XP_POOL",&local_7c,0);
+    param_1[0x5b] = uVar4;
+    local_7c = 1;
+    uVar4 = FUN_00718c00(local_68,"PT_PLAYEDSECONDS",&local_7c,0);
+    param_1[0x6a] = uVar4;
+    if (local_7c == 0) {
+      iVar5 = FUN_00718c00(local_68,"PT_PLAYEDMINUTES",&local_7c,0);
+      param_1[0x6a] = iVar5 * 0x3c;
+    }
+    uVar4 = FUN_00718c80(local_68,"PT_CONTROLLED_NPC",&local_7c,0xffffffff);
+    param_1[0x46] = uVar4;
+    uVar3 = 1;
+    uVar1 = FUN_00718a00(local_68,"PT_SOLOMODE",&local_7c,param_1[0x8e] & 0xff);
+    FUN_005feef0(uVar1,uVar3);
+    uVar4 = FUN_00718a00(local_68,"PT_CHEAT_USED",&local_7c,0);
+    param_1[0x8f] = uVar4 & 0xff;
+    uVar4 = FUN_00718a00(local_68,"PT_NUM_MEMBERS",&local_7c,0);
+    *param_1 = uVar4 & 0xff;
+    if ((int)*param_1 < 0) {
+      *param_1 = 0;
+    }
+    else {
+      uVar4 = FUN_00718810(local_58);
+      if (uVar4 < *param_1) {
+        uVar4 = FUN_00718810(local_58);
+        *param_1 = uVar4;
+      }
+    }
+    for (local_6c = 0; local_6c < (int)*param_1; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718c80(local_74,"PT_MEMBER_ID",&local_7c,0xffffffff);
+      param_1[local_6c + 2] = uVar4;
+      local_44 = FUN_00718a00(local_74,"PT_IS_LEADER",&local_7c,0);
+      local_44 = local_44 & 0xff;
+      if (local_44 != 0) {
+        param_1[0x45] = param_1[local_6c + 2];
+      }
+    }
+    FUN_00718760(local_58,local_68,"PT_PUPPETS");
+    uVar4 = FUN_00718a00(local_68,"PT_NUM_PUPPETS",&local_7c,0);
+    param_1[1] = uVar4 & 0xff;
+    if ((int)param_1[1] < 0) {
+      param_1[1] = 0;
+    }
+    else {
+      uVar4 = FUN_00718810(local_58);
+      if (uVar4 < param_1[1]) {
+        uVar4 = FUN_00718810(local_58);
+        param_1[1] = uVar4;
+      }
+    }
+    for (local_6c = 0; local_6c < (int)param_1[1]; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718c80(local_74,"PT_PUPPET_ID",&local_7c,0xffffffff);
+      param_1[local_6c + 4] = uVar4;
+    }
+    FUN_00718760(local_58,local_68,"PT_AVAIL_PUPS");
+    uVar4 = FUN_00718810(local_58);
+    if (uVar4 < 3) {
+      local_19c = FUN_00718810(local_58);
+    }
+    else {
+      local_19c = 3;
+    }
+    local_70 = local_19c;
+    for (local_6c = 0; local_6c < local_70; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718a00(local_74,"PT_PUP_AVAIL",&local_7c,0);
+      param_1[local_6c + 0x56] = uVar4 & 0xff;
+      uVar1 = FUN_00718a00(local_74,"PT_PUP_SELECT",&local_7c,0);
+      *(undefined1 *)((int)param_1 + local_6c + 0x164) = uVar1;
+    }
+    FUN_00718760(local_58,local_68,"PT_AVAIL_NPCS");
+    uVar4 = FUN_00718810(local_58);
+    if (uVar4 < 0xc) {
+      local_1a0 = FUN_00718810(local_58);
+    }
+    else {
+      local_1a0 = 0xc;
+    }
+    local_70 = local_1a0;
+    for (local_6c = 0; local_6c < local_70; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718a00(local_74,"PT_NPC_AVAIL",&local_7c,0);
+      param_1[local_6c + 0x13] = uVar4 & 0xff;
+      uVar1 = FUN_00718a00(local_74,"PT_NPC_SELECT",&local_7c,0);
+      *(undefined1 *)((int)param_1 + local_6c + 0x7c) = uVar1;
+    }
+    FUN_00718760(local_58,local_68,"PT_INFLUENCE");
+    uVar4 = FUN_00718810(local_58);
+    if (uVar4 < 0xc) {
+      local_1a4 = FUN_00718810(local_58);
+    }
+    else {
+      local_1a4 = 0xc;
+    }
+    local_70 = local_1a4;
+    for (local_6c = 0; local_6c < local_70; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718c80(local_74,"PT_NPC_INFLUENCE",&local_7c,0xffffffff);
+      param_1[local_6c + 0x47] = uVar4;
+    }
+    uVar4 = FUN_00718c80(local_68,"PT_AISTATE",&local_7c,0);
+    param_1[0x43] = uVar4;
+    uVar4 = FUN_00718c80(local_68,"PT_FOLLOWSTATE",&local_7c,0);
+    param_1[0x44] = uVar4;
+    iVar5 = FUN_00718960(local_74,local_68,"GlxyMap");
+    if (iVar5 != 0) {
+      local_b4 = FUN_00718c00(local_74,"GlxyMapNumPnts",&local_7c,0);
+      local_b8 = FUN_00718c00(local_74,"GlxyMapPlntMsk",&local_7c,0);
+      uVar4 = FUN_00718c80(local_74,"GlxyMapSelPnt",&local_7c,0xffffffff);
+      param_1[0x42] = uVar4;
+      if (local_b4 == 0x10) {
+        for (local_6c = 0; local_6c < 0x10; local_6c = local_6c + 1) {
+          if ((1 << ((byte)local_6c & 0x1f) & local_b8) != 0) {
+            param_1[local_6c + 0x22] = 1;
+          }
+          if ((1 << ((byte)local_6c + 0x10 & 0x1f) & local_b8) != 0) {
+            param_1[local_6c + 0x32] = 1;
+          }
+        }
+      }
+    }
+    FUN_00718760(local_58,local_68,"PT_PAZAAKCARDS");
+    for (local_6c = 0; local_6c < 0x17; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718c80(local_74,"PT_PAZAAKCOUNT",&local_7c,0);
+      param_1[local_6c + 0x6d] = uVar4;
+    }
+    FUN_00718760(local_58,local_68,"PT_PAZSIDELIST");
+    for (local_6c = 0; local_6c < 10; local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      uVar4 = FUN_00718c80(local_74,"PT_PAZSIDECARD",&local_7c,0);
+      param_1[local_6c + 0x84] = uVar4;
+    }
+    _memset(local_38,0,0x21);
+    iVar5 = FUN_0073f750();
+    FUN_00719640(local_68,iVar5 + 0xf88,0x21,"PT_TUT_WND_SHOWN",&local_7c,local_38);
+    iVar5 = FUN_0073f750();
+    uVar3 = FUN_00718c80(local_68,"PT_LAST_GUI_PNL",&local_7c,*(undefined4 *)(iVar5 + 0x2c));
+    iVar5 = FUN_0073f750();
+    *(undefined4 *)(iVar5 + 0x2c) = uVar3;
+    uVar4 = FUN_00718c80(local_74,"FORFEITVIOL",&local_7c,0);
+    param_1[0x93] = uVar4;
+    uVar4 = FUN_00718c80(local_74,"FORFEITCONDS",&local_7c,0);
+    param_1[0x94] = uVar4;
+    FUN_00733540();
+    local_8 = CONCAT31(local_8._1_3_,3);
+    FUN_00718760(local_58,local_68,"PT_FB_MSG_LIST");
+    local_6c = 0;
+    while (iVar5 = FUN_00718810(local_58), local_6c < iVar5) {
+      FUN_00718890(local_74,local_58,local_6c);
+      FUN_00733570(&DAT_00986925);
+      local_8._0_1_ = 4;
+      uVar3 = FUN_00718f90(local_f0,local_74,"PT_FB_MSG_MSG",&local_7c,local_e8);
+      local_8._0_1_ = 5;
+      FUN_007337c0(uVar3);
+      local_8._0_1_ = 4;
+      FUN_00733780();
+      local_8 = CONCAT31(local_8._1_3_,3);
+      FUN_00733780();
+      local_64 = FUN_00718c00(local_74,"PT_FB_MSG_TYPE",&local_7c,0x10000000);
+      local_ad = FUN_00718a00(local_74,"PT_FB_MSG_COLOR",&local_7c,0);
+      uVar4 = (uint)local_ad;
+      puVar7 = local_ac;
+      uVar3 = local_64;
+      FUN_0073f750(puVar7,local_64,uVar4);
+      FUN_007be090(puVar7,uVar3,uVar4);
+      local_6c = local_6c + 1;
+    }
+    FUN_00733540();
+    local_8 = CONCAT31(local_8._1_3_,6);
+    FUN_00718760(local_58,local_68,"PT_DLG_MSG_LIST");
+    local_6c = 0;
+    while (iVar5 = FUN_00718810(local_58), local_6c < iVar5) {
+      FUN_00718890(local_74,local_58,local_6c);
+      FUN_00733570(&DAT_00986925);
+      local_8._0_1_ = 7;
+      uVar3 = FUN_00718f90(local_100,local_74,"PT_DLG_MSG_SPKR",&local_7c,local_f8);
+      local_8._0_1_ = 8;
+      FUN_007337c0(uVar3);
+      local_8._0_1_ = 7;
+      FUN_00733780();
+      local_8._0_1_ = 6;
+      FUN_00733780();
+      FUN_00733570(&DAT_00986925);
+      local_8._0_1_ = 9;
+      uVar3 = FUN_00718f90(local_110,local_74,"PT_DLG_MSG_MSG",&local_7c,local_108);
+      local_8._0_1_ = 10;
+      FUN_007337c0(uVar3);
+      local_8._0_1_ = 9;
+      FUN_00733780();
+      local_8 = CONCAT31(local_8._1_3_,6);
+      FUN_00733780();
+      puVar7 = local_60;
+      puVar8 = local_ac;
+      FUN_0073f750(puVar8,puVar7);
+      FUN_007be3c0(puVar8,puVar7);
+      local_6c = local_6c + 1;
+    }
+    FUN_00718760(local_58,local_68,"PT_COM_MSG_LIST");
+    local_6c = 0;
+    while (iVar5 = FUN_00718810(local_58), local_6c < iVar5) {
+      FUN_00718890(local_74,local_58,local_6c);
+      FUN_00733570(&DAT_00986925);
+      local_8._0_1_ = 0xb;
+      uVar3 = FUN_00718f90(local_120,local_74,"PT_COM_MSG_MSG",&local_7c,local_118);
+      local_8._0_1_ = 0xc;
+      FUN_007337c0(uVar3);
+      local_8._0_1_ = 0xb;
+      FUN_00733780();
+      local_8 = CONCAT31(local_8._1_3_,6);
+      FUN_00733780();
+      local_64 = FUN_00718c00(local_74,"PT_COM_MSG_TYPE",&local_7c,0x10000000);
+      local_ad = FUN_00718a00(local_74,"PT_COM_MSG_COOR",&local_7c,0);
+      uVar4 = (uint)local_ad;
+      puVar7 = local_ac;
+      uVar3 = local_64;
+      FUN_0073f750(puVar7,local_64,uVar4);
+      FUN_007be1b0(puVar7,uVar3,uVar4);
+      local_6c = local_6c + 1;
+    }
+    FUN_00718760(local_58,local_68,"PT_COST_MULT_LIST");
+    for (local_6c = 0; local_6c < **(int **)(DAT_00a1b4d0 + 0x34); local_6c = local_6c + 1) {
+      FUN_00718890(local_74,local_58,local_6c);
+      iVar5 = FUN_006d5200(local_6c);
+      fVar6 = (float10)FUN_00718d00(local_74,"PT_COST_MULT_VALUE",&local_7c,0x3f800000);
+      *(float *)(iVar5 + 0xc4) = (float)fVar6;
+    }
+    uVar4 = FUN_00718c80(local_74,"PT_DISABLEMAP",&local_7c,0);
+    param_1[0x96] = uVar4;
+    uVar4 = FUN_00718c80(local_74,"PT_DISABLEREGEN",&local_7c,0);
+    param_1[0x97] = uVar4;
+    FUN_005fd040(local_78,local_74);
+    puVar7 = local_a4;
+    FUN_0073f750(puVar7);
+    FUN_007cf3b0(puVar7);
+    FUN_005f7cc0(local_78,local_68);
+    if (local_78 == (undefined4 *)0x0) {
+      uVar3 = 0;
+    }
+    else {
+      uVar3 = (**(code **)*local_78)(1);
+    }
+    local_8._0_1_ = 3;
+    FUN_00733780(uVar2,uVar3);
+    local_8 = CONCAT31(local_8._1_3_,1);
+    FUN_00733780();
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
+=== FUN_0052f4c0 @ 0052f4c0 size=168
+
+undefined4 __fastcall FUN_0052f4c0(int param_1)
+
+{
+  undefined4 uVar1;
+  int *local_8;
+  
+  if (*(int *)(param_1 + 0x1f324) == *(int *)(param_1 + 0x10060)) {
+    uVar1 = *(undefined4 *)(param_1 + 0x1f328);
+  }
+  else {
+    local_8 = (int *)0x0;
+    uVar1 = *(undefined4 *)(param_1 + 0x1005c);
+    FUN_0053dfb0(*(undefined4 *)(param_1 + 0x10060),&local_8);
+    if (local_8 == (int *)0x0) {
+      *(undefined4 *)(param_1 + 0x1f324) = 0x7f000000;
+      *(undefined4 *)(param_1 + 0x1f328) = 0;
+    }
+    else {
+      *(undefined4 *)(param_1 + 0x1f324) = *(undefined4 *)(param_1 + 0x10060);
+      uVar1 = (**(code **)(*local_8 + 0x20))(param_1,uVar1);
+      *(undefined4 *)(param_1 + 0x1f328) = uVar1;
+    }
+    uVar1 = *(undefined4 *)(param_1 + 0x1f328);
+  }
+  return uVar1;
+}
+
+

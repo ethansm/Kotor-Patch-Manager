@@ -7,6 +7,14 @@ utc = "p_baodur.utc"
 variant = "late_guardian"
 summary = "Craft-focused Tech Specialist through char 21, convert at 22 (crafting done with Master Valor per elkripper), then a short melee/support Guardian stretch"
 convert_at = 22
+hold_until_class = 3   # bank levels 22+ until the Jedi Guardian class exists
+
+[meta.wizard]
+role = "melee"
+style = "single"
+alignment = "light"
+convert = "late"
+skills = "tech"
 
 [[level]]
 char_level = 7

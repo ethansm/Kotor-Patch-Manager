@@ -1,0 +1,267 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (4352 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (9927 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/Callers.java (HeadlessAnalyzer)  
+== refs to 653bc0
+  from 0052ec72 in FUN_0052ebe0@0052ebe0 sz=1041
+== refs to 51cde0
+  from 0052258c in FUN_005221b0@005221b0 sz=2361
+  from 0056926d in FUN_00568bd0@00568bd0 sz=1769
+  from 00522d90 in FUN_00522bf0@00522bf0 sz=516
+  from 005f92a6 in FUN_005f9220@005f9220 sz=2034
+  from 00682dd7 in FUN_00682dc0@00682dc0 sz=65
+== refs to 6fd9c0
+  from 0066c022 in FUN_0066bfa0@0066bfa0 sz=154
+  from 0066c10c in FUN_0066c040@0066c040 sz=282
+  from 0066ca64 in FUN_0066c990@0066c990 sz=236
+  from 0066e791 in FUN_0066df70@0066df70 sz=2159
+  from 00671636 in FUN_006710d0@006710d0 sz=1417
+  from 0067929c in FUN_006791c0@006791c0 sz=322
+  from 00679628 in FUN_006795f0@006795f0 sz=80
+  from 00679ae3 in FUN_006798f0@006798f0 sz=523
+  from 00679c5a in FUN_00679b00@00679b00 sz=370
+  from 00679d94 in FUN_00679c90@00679c90 sz=284
+  from 00679efc in FUN_00679dd0@00679dd0 sz=320
+  from 0067a056 in FUN_00679fe0@00679fe0 sz=142
+  from 0067a229 in FUN_0067a1e0@0067a1e0 sz=97
+  from 0067a504 in FUN_0067a4a0@0067a4a0 sz=124
+  from 0067a58a in FUN_0067a520@0067a520 sz=130
+  from 0067a8ac in FUN_0067a620@0067a620 sz=676
+  from 0067abff in FUN_0067a970@0067a970 sz=679
+  from 0067aca3 in FUN_0067ac20@0067ac20 sz=155
+  from 0067ad68 in FUN_0067acc0@0067acc0 sz=255
+  from 0067ae21 in FUN_0067adc0@0067adc0 sz=121
+  from 0067b20e in FUN_0067b100@0067b100 sz=294
+  from 0067b2f9 in FUN_0067b230@0067b230 sz=225
+  from 0067b38a in FUN_0067b320@0067b320 sz=130
+  from 0067c1f5 in FUN_0067c1b0@0067c1b0 sz=156
+  from 0067c295 in FUN_0067c250@0067c250 sz=156
+  from 0067c335 in FUN_0067c2f0@0067c2f0 sz=156
+  from 0067c3d1 in FUN_0067c390@0067c390 sz=159
+  from 0067c5eb in FUN_0067c430@0067c430 sz=467
+  from 0067c6cf in FUN_0067c610@0067c610 sz=215
+  from 0067cacc in FUN_0067ca10@0067ca10 sz=212
+  from 0067cbac in FUN_0067caf0@0067caf0 sz=212
+  from 0067cca7 in FUN_0067cbd0@0067cbd0 sz=239
+  from 0067cd7c in FUN_0067ccc0@0067ccc0 sz=212
+  from 0067cf51 in FUN_0067ceb0@0067ceb0 sz=185
+  from 0067d02c in FUN_0067cf70@0067cf70 sz=212
+  from 0067d54c in FUN_0067d490@0067d490 sz=212
+  from 0067d9cc in FUN_0067d8a0@0067d8a0 sz=324
+  from 0067da29 in FUN_0067d9f0@0067d9f0 sz=81
+  from 0067dc55 in FUN_0067db70@0067db70 sz=307
+  from 0067df30 in FUN_0067de50@0067de50 sz=248
+  from 0067dfdd in FUN_0067df50@0067df50 sz=165
+  from 0067e0e0 in FUN_0067e000@0067e000 sz=248
+  from 0067e196 in FUN_0067e100@0067e100 sz=174
+  from 0067e2af in FUN_0067e1b0@0067e1b0 sz=279
+  from 0067e377 in FUN_0067e2d0@0067e2d0 sz=191
+  from 0067e480 in FUN_0067e390@0067e390 sz=264
+  from 0067e56b in FUN_0067e4a0@0067e4a0 sz=227
+  from 0067e656 in FUN_0067e590@0067e590 sz=222
+  from 0067e716 in FUN_0067e670@0067e670 sz=190
+  from 0067e7f6 in FUN_0067e730@0067e730 sz=222
+  from 0067e97a in FUN_0067e810@0067e810 sz=386
+  from 0067ea37 in FUN_0067e9a0@0067e9a0 sz=175
+  from 0067eab3 in FUN_0067ea50@0067ea50 sz=123
+  from 0067eb2c in FUN_0067ead0@0067ead0 sz=116
+  from 0067f926 in FUN_0067f8c0@0067f8c0 sz=126
+  from 0067f992 in FUN_0067f940@0067f940 sz=106
+  from 0067fa02 in FUN_0067f9b0@0067f9b0 sz=106
+  from 0067fd86 in FUN_0067fa20@0067fa20 sz=895
+  from 0067fe12 in FUN_0067fdc0@0067fdc0 sz=106
+  from 0067fea1 in FUN_0067fe30@0067fe30 sz=137
+  from 0067ffde in FUN_0067fec0@0067fec0 sz=310
+  from 006800b3 in FUN_00680000@00680000 sz=203
+  from 00680122 in FUN_006800d0@006800d0 sz=106
+  from 00680217 in FUN_00680140@00680140 sz=239
+  from 00680331 in FUN_00680230@00680230 sz=281
+  from 006803db in FUN_00680350@00680350 sz=163
+  from 006804ea in FUN_00680400@00680400 sz=258
+  from 00680595 in FUN_00680510@00680510 sz=157
+  from 00680679 in FUN_006805b0@006805b0 sz=225
+  from 00680814 in FUN_006806a0@006806a0 sz=396
+  from 00681584 in FUN_00681450@00681450 sz=386
+  from 00681810 in FUN_006815e0@006815e0 sz=660
+  from 00681a28 in FUN_006819c0@006819c0 sz=128
+  from 00681b43 in FUN_00681a40@00681a40 sz=283
+  from 00681be8 in FUN_00681b80@00681b80 sz=128
+  from 00681c68 in FUN_00681c00@00681c00 sz=128
+  from 00681d57 in FUN_00681c80@00681c80 sz=239
+  from 00681e98 in FUN_00681e30@00681e30 sz=128
+  from 00682188 in FUN_00682120@00682120 sz=128
+  from 0068264c in FUN_00682610@00682610 sz=84
+  from 006828da in FUN_00682710@00682710 sz=482
+  from 00682de9 in FUN_00682dc0@00682dc0 sz=65
+  from 00682f37 in FUN_00682e10@00682e10 sz=319
+  from 00683184 in FUN_006830c0@006830c0 sz=220
+  from 00683282 in FUN_006831a0@006831a0 sz=972
+  from 0068340b in FUN_006831a0@006831a0 sz=972
+  from 006834a1 in FUN_006831a0@006831a0 sz=972
+  from 00683549 in FUN_006831a0@006831a0 sz=972
+  from 00683723 in FUN_006836c0@006836c0 sz=123
+  from 006837a3 in FUN_00683740@00683740 sz=123
+  from 00683835 in FUN_006837c0@006837c0 sz=141
+  from 00683baf in FUN_00683b30@00683b30 sz=151
+  from 0068545a in FUN_006853f0@006853f0 sz=130
+  from 006854e3 in FUN_00685480@00685480 sz=123
+  from 0068696c in FUN_00686910@00686910 sz=116
+  from 00686aa0 in FUN_00686990@00686990 sz=296
+  from 00686bdc in FUN_00686ac0@00686ac0 sz=308
+  from 00686c36 in FUN_00686c00@00686c00 sz=120
+  from 00686c62 in FUN_00686c00@00686c00 sz=120
+  from 0068729b in FUN_00687230@00687230 sz=693
+  from 00687326 in FUN_00687230@00687230 sz=693
+  from 006875c1 in FUN_00687590@00687590 sz=73
+  from 00687770 in FUN_00687710@00687710 sz=120
+  from 0068781f in FUN_00687790@00687790 sz=167
+  from 006879e2 in FUN_00687930@00687930 sz=202
+  from 00687c88 in FUN_00687a00@00687a00 sz=683
+  from 00687ddc in FUN_00687cb0@00687cb0 sz=324
+  from 00687ea3 in FUN_00687e00@00687e00 sz=187
+  from 00687f91 in FUN_00687ec0@00687ec0 sz=233
+  from 00687fc3 in FUN_00687fb0@00687fb0 sz=43
+  from 006880d7 in FUN_00687fe0@00687fe0 sz=271
+  from 00688294 in FUN_006880f0@006880f0 sz=622
+  from 00688346 in FUN_006880f0@006880f0 sz=622
+  from 0068848f in FUN_006883f0@006883f0 sz=183
+  from 00688600 in FUN_00688590@00688590 sz=136
+  from 00688691 in FUN_00688620@00688620 sz=137
+  from 00688730 in FUN_006886b0@006886b0 sz=152
+  from 00688892 in FUN_00688750@00688750 sz=346
+  from 00688b42 in FUN_00688ac0@00688ac0 sz=154
+  from 00688e76 in FUN_00688de0@00688de0 sz=226
+  from 00689700 in FUN_006896d0@006896d0 sz=72
+  from 00689750 in FUN_00689720@00689720 sz=72
+  from 006897a0 in FUN_00689770@00689770 sz=72
+  from 006897f0 in FUN_006897c0@006897c0 sz=72
+  from 006898c5 in FUN_00689810@00689810 sz=205
+  from 006899fc in FUN_006898e0@006898e0 sz=3495
+  from 00689aca in FUN_006898e0@006898e0 sz=3495
+  from 00689bd6 in FUN_006898e0@006898e0 sz=3495
+  from 00689cd3 in FUN_006898e0@006898e0 sz=3495
+  from 00689ddd in FUN_006898e0@006898e0 sz=3495
+  from 00689ebd in FUN_006898e0@006898e0 sz=3495
+  from 0068a123 in FUN_006898e0@006898e0 sz=3495
+  from 0068a1e8 in FUN_006898e0@006898e0 sz=3495
+  from 0068a339 in FUN_006898e0@006898e0 sz=3495
+  from 0068a705 in FUN_0068a690@0068a690 sz=141
+  from 0068a7f5 in FUN_0068a720@0068a720 sz=237
+  from 0068ab39 in FUN_0068aab0@0068aab0 sz=161
+  from 0068ac8c in FUN_0068ab60@0068ab60 sz=324
+  from 0068ad4f in FUN_0068acb0@0068acb0 sz=183
+  from 0068b5d3 in FUN_0068b4b0@0068b4b0 sz=313
+  from 0068b69a in FUN_0068b5f0@0068b5f0 sz=194
+  from 0068b7b2 in FUN_0068b6c0@0068b6c0 sz=329
+  from 0068b90e in FUN_0068b810@0068b810 sz=278
+  from 0068b965 in FUN_0068b930@0068b930 sz=77
+  from 0068b9ed in FUN_0068b980@0068b980 sz=133
+  from 0068bb1b in FUN_0068baa0@0068baa0 sz=147
+  from 0068bbc7 in FUN_0068bb40@0068bb40 sz=159
+  from 0068bc41 in FUN_0068bbe0@0068bbe0 sz=121
+  from 0068bcd0 in FUN_0068bc60@0068bc60 sz=136
+  from 0068bd52 in FUN_0068bcf0@0068bcf0 sz=122
+  from 0068bde1 in FUN_0068bd70@0068bd70 sz=137
+  from 0068be68 in FUN_0068be00@0068be00 sz=128
+  from 0068bf3f in FUN_0068be80@0068be80 sz=215
+  from 0068c4ec in FUN_0068c4a0@0068c4a0 sz=747
+  from 0068ea58 in FUN_0068ea10@0068ea10 sz=96
+  from 0068f625 in FUN_0068f5d0@0068f5d0 sz=109
+  from 0068f7c6 in FUN_0068f770@0068f770 sz=110
+  from 006900cb in FUN_00690000@00690000 sz=227
+  from 00690770 in FUN_006900f0@006900f0 sz=1699
+  from 00690885 in FUN_006907a0@006907a0 sz=253
+  from 00690a6a in FUN_00690920@00690920 sz=354
+  from 00692c64 in FUN_00692c40@00692c40 sz=60
+  from 00692cb9 in FUN_00692c80@00692c80 sz=81
+  from 0069327a in FUN_00693220@00693220 sz=114
+  from 006941b8 in FUN_00694170@00694170 sz=96
+  from 00694259 in FUN_006941d0@006941d0 sz=286
+  from 0069444f in FUN_00694400@00694400 sz=103
+  from 00695038 in FUN_00694fd0@00694fd0 sz=364
+  from 00695052 in FUN_00694fd0@00694fd0 sz=364
+  from 006950d8 in FUN_00694fd0@00694fd0 sz=364
+  from 006952e6 in FUN_00695210@00695210 sz=340
+  from 006960d7 in FUN_00696010@00696010 sz=293
+  from 00696175 in FUN_00696140@00696140 sz=77
+  from 00696236 in FUN_00696190@00696190 sz=190
+  from 006964f7 in FUN_00696250@00696250 sz=712
+  from 00696702 in FUN_006966b0@006966b0 sz=230
+  from 00696732 in FUN_006966b0@006966b0 sz=230
+  from 0069677e in FUN_006966b0@006966b0 sz=230
+  from 00696912 in FUN_00696890@00696890 sz=154
+  from 00696de9 in FUN_00696d80@00696d80 sz=129
+  from 00697077 in FUN_00697020@00697020 sz=111
+  from 006971d1 in FUN_00697170@00697170 sz=121
+  from 0069756f in FUN_00697520@00697520 sz=103
+  from 0069764f in FUN_00697600@00697600 sz=103
+  from 006976a5 in FUN_00697670@00697670 sz=77
+  from 00697779 in FUN_00697750@00697750 sz=65
+  from 006978a5 in FUN_00697870@00697870 sz=77
+  from 00697922 in FUN_006978c0@006978c0 sz=122
+  from 00697a12 in FUN_006979b0@006979b0 sz=122
+  from 00697b7c in FUN_00697b20@00697b20 sz=116
+  from 00697c9f in FUN_00697c20@00697c20 sz=151
+  from 00697e42 in FUN_00697de0@00697de0 sz=122
+  from 00698965 in FUN_00698930@00698930 sz=77
+  from 00699323 in FUN_00699240@00699240 sz=303
+  from 00699537 in FUN_00699490@00699490 sz=191
+  from 006997e4 in FUN_006997b0@006997b0 sz=76
+  from 00699cf2 in FUN_00699ca0@00699ca0 sz=106
+  from 0069a0a0 in FUN_00699ff0@00699ff0 sz=200
+  from 0069a37f in FUN_0069a300@0069a300 sz=151
+  from 0069a3c9 in FUN_0069a3a0@0069a3a0 sz=65
+  from 0069acdb in FUN_0069ac60@0069ac60 sz=598
+  from 0069ad77 in FUN_0069ac60@0069ac60 sz=598
+  from 0069ae47 in FUN_0069ac60@0069ac60 sz=598
+  from 0069ae9e in FUN_0069ac60@0069ac60 sz=598
+  from 0069b0d9 in FUN_0069b060@0069b060 sz=145
+  from 0069b1cc in FUN_0069b100@0069b100 sz=282
+  from 0069b2a2 in FUN_0069b220@0069b220 sz=154
+  from 0069b334 in FUN_0069b2c0@0069b2c0 sz=140
+  from 0069b515 in FUN_0069b440@0069b440 sz=237
+  from 0069b641 in FUN_0069b5e0@0069b5e0 sz=121
+  from 0069b7a7 in FUN_0069b720@0069b720 sz=159
+  from 0069b91c in FUN_0069b840@0069b840 sz=244
+  from 0069b95a in FUN_0069b940@0069b940 sz=50
+  from 0069c2a1 in FUN_0069c200@0069c200 sz=185
+  from 0069c442 in FUN_0069c3c0@0069c3c0 sz=154
+  from 006f6929 in FUN_006f6840@006f6840 sz=257
+  from 006f6eda in FUN_006f6db0@006f6db0 sz=322
+  from 006f6f62 in FUN_006f6f10@006f6f10 sz=106
+  from 006f7280 in FUN_006f7210@006f7210 sz=136
+  from 006f7455 in FUN_006f7360@006f7360 sz=269
+  from 006f7a9c in FUN_006f79c0@006f79c0 sz=244
+  from 006f8812 in FUN_006f8740@006f8740 sz=234
+  from 006f8a6a in FUN_006f8a10@006f8a10 sz=114
+  from 006868c0 in FUN_006867a0@006867a0 sz=312

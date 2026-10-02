@@ -1,0 +1,185 @@
+# Atton preset "rifle_none_never": Never converts: Scoundrel 4-30, sniper-rifle scoundrel (Sniper Shot line, Weapon Focus: Rifle, Rapid Shot line, Critical Strike line, Precise Shot), no Force powers
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). DEX bumps follow elkripper (live DEX16).
+[meta]
+tag = "atton"
+name = "Atton Rand"
+utc = "p_atton.utc"
+variant = "rifle_none_never"
+summary = "Never converts: Scoundrel 4-30, sniper-rifle scoundrel (Sniper Shot line, Weapon Focus: Rifle, Rapid Shot line, Critical Strike line, Precise Shot), no Force powers"
+convert_at = 0   # first Jedi (Sentinel) char level; 0 = never converts
+
+[meta.wizard]
+role = "ranged"
+style = "rifle"
+alignment = "none"
+convert = "never"
+skills = "stealth"
+
+[[level]]
+char_level = 4
+class = 2   # Scoundrel
+attrs = {DEX = 17}
+feats = []
+skills = {stealth = 3, awareness = 1}
+
+[[level]]
+char_level = 5
+class = 2   # Scoundrel
+feats = [20]   # 20:Improved Sniper Shot
+skills = {awareness = 2, stealth = 1, security = 1}
+
+[[level]]
+char_level = 6
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 2}
+
+[[level]]
+char_level = 7
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 2}
+
+[[level]]
+char_level = 8
+class = 2   # Scoundrel
+attrs = {DEX = 18}
+feats = [77]   # 77:Master Sniper Shot
+skills = {stealth = 1, awareness = 1, demolitions = 1, security = 1}
+
+[[level]]
+char_level = 9
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 10
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 11
+class = 2   # Scoundrel
+feats = [33]   # 33:Weapon Focus: Blaster Rifle
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 12
+class = 2   # Scoundrel
+attrs = {DEX = 19}
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 13
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 14
+class = 2   # Scoundrel
+feats = [240]   # 240:Precise Shot I
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 15
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 16
+class = 2   # Scoundrel
+attrs = {DEX = 20}
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 17
+class = 2   # Scoundrel
+feats = [241]   # 241:Precise Shot II
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 18
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 19
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 20
+class = 2   # Scoundrel
+attrs = {DEX = 21}
+feats = [242]   # 242:Precise Shot III
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 21
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 22
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 23
+class = 2   # Scoundrel
+feats = [243]   # 243:Precise Shot IV
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 24
+class = 2   # Scoundrel
+attrs = {DEX = 22}
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 25
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 26
+class = 2   # Scoundrel
+feats = [244]   # 244:Precise Shot V
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 27
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 28
+class = 2   # Scoundrel
+attrs = {DEX = 23}
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 29
+class = 2   # Scoundrel
+feats = [30]   # 30:Rapid Shot
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}
+
+[[level]]
+char_level = 30
+class = 2   # Scoundrel
+feats = []
+skills = {stealth = 1, awareness = 1, security = 1, demolitions = 1}

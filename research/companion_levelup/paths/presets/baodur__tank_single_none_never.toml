@@ -1,0 +1,165 @@
+# Bao-Dur preset 'tank_single_none_never': Tech Specialist 7-30, Bao-Dur never becomes a Jedi (the story talk is skipped). Skill points are a PROPOSAL (class-skill feats not modelled). See presets/baodur.md.
+[meta]
+tag = "baodur"
+name = "Bao-Dur"
+utc = "p_baodur.utc"
+variant = "tank_single_none_never"
+summary = "Never converts: Tech Specialist 7-30, heavy armor tank (Toughness line, Improved/Master Power Attack, Conditioning, Dueling) with tech skills; no Force powers"
+convert_at = 0
+
+[meta.wizard]
+role = "tank"
+style = "single"
+alignment = "none"
+convert = "never"
+skills = "tech"
+
+[[level]]
+char_level = 7
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 2}
+
+[[level]]
+char_level = 8
+class = 9   # TechSpecialist
+attrs = {INT = 16}
+feats = [4]   # 4:Armor Proficiency: Heavy
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 9
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 10
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 11
+class = 9   # TechSpecialist
+feats = [84]   # 84:Toughness
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 12
+class = 9   # TechSpecialist
+attrs = {INT = 17}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 13
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 14
+class = 9   # TechSpecialist
+feats = [123]   # 123:Improved Toughness
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 15
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 16
+class = 9   # TechSpecialist
+attrs = {INT = 18}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 17
+class = 9   # TechSpecialist
+feats = [124]   # 124:Master Toughness
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 19
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 20
+class = 9   # TechSpecialist
+attrs = {INT = 19}
+feats = [21]   # 21:Improved Conditioning
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 21
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 22
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 23
+class = 9   # TechSpecialist
+feats = [17]   # 17:Improved Power Attack
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 24
+class = 9   # TechSpecialist
+attrs = {INT = 20}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 25
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 9   # TechSpecialist
+feats = [83]   # 83:Master Power Attack
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 27
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 28
+class = 9   # TechSpecialist
+attrs = {INT = 21}
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 29
+class = 9   # TechSpecialist
+feats = [113]   # 113:Dueling
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+
+[[level]]
+char_level = 30
+class = 9   # TechSpecialist
+feats = []
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}

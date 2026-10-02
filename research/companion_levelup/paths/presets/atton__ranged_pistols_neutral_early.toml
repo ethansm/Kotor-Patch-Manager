@@ -1,0 +1,209 @@
+# Atton preset "pistols_neutral_early": Convert early but universal powers only (no light/dark pushes): Speed line, Deflection/Redirection, Energy/Force Resistance, Force Body, Battle Meditation, Push/Whirlwind/Wave/Breach; Rapid Shot gunner, tech skills
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). DEX bumps follow elkripper (live DEX16).
+[meta]
+tag = "atton"
+name = "Atton Rand"
+utc = "p_atton.utc"
+variant = "pistols_neutral_early"
+summary = "Convert early but universal powers only (no light/dark pushes): Speed line, Deflection/Redirection, Energy/Force Resistance, Force Body, Battle Meditation, Push/Whirlwind/Wave/Breach; Rapid Shot gunner, tech skills"
+convert_at = 8   # first Jedi (Sentinel) char level; 0 = never converts
+hold_until_class = 5   # bank levels 8+ until the Jedi Sentinel class exists; Sentinel picks are identical whatever char level conversion happens at
+
+[meta.wizard]
+role = "ranged"
+style = "pistols"
+alignment = "neutral"
+convert = "early"
+skills = "tech"
+
+[[level]]
+char_level = 4
+class = 2   # Scoundrel
+attrs = {DEX = 17}
+feats = []
+skills = {security = 2, demolitions = 2}
+
+[[level]]
+char_level = 5
+class = 2   # Scoundrel
+feats = [30]   # 30:Rapid Shot
+skills = {security = 1, computer_use = 1, demolitions = 1}
+
+[[level]]
+char_level = 6
+class = 2   # Scoundrel
+feats = []
+skills = {security = 1, computer_use = 1, demolitions = 1}
+
+[[level]]
+char_level = 7
+class = 2   # Scoundrel
+feats = []
+skills = {security = 1, computer_use = 1, demolitions = 1}
+
+[[level]]
+char_level = 8
+class = 5   # JediSentinel
+attrs = {DEX = 18}
+feats = [92]   # 92:Improved Rapid Shot
+powers = [8, 162]   # 8:Burst of Speed, 162:Force Deflection
+skills = {computer_use = 3}
+
+[[level]]
+char_level = 9
+class = 5   # JediSentinel
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {computer_use = 2, security = 1}
+
+[[level]]
+char_level = 10
+class = 5   # JediSentinel
+feats = [240]   # 240:Precise Shot I
+powers = [42]   # 42:Energy Resistance
+skills = {security = 2, computer_use = 1}
+
+[[level]]
+char_level = 11
+class = 5   # JediSentinel
+feats = []
+powers = [40]   # 40:Improved Energy Resistance
+skills = {computer_use = 2, security = 1}
+
+[[level]]
+char_level = 12
+class = 5   # JediSentinel
+attrs = {DEX = 19}
+feats = []
+powers = [163]   # 163:Force Redirection
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [26]   # 26:Master Rapid Shot
+powers = [41]   # 41:Force Resistance
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = [241]   # 241:Precise Shot II
+powers = [150]   # 150:Force Body
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = []
+powers = [37]   # 37:Master Speed
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+attrs = {DEX = 20}
+feats = [20]   # 20:Improved Sniper Shot
+powers = [20]   # 20:Force Immunity
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [133]   # 133:Master Energy Resistance
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = []
+powers = [151]   # 151:Improved Force Body
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [77]   # 77:Master Sniper Shot
+powers = [152]   # 152:Master Force Body
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+attrs = {DEX = 21}
+feats = [242]   # 242:Precise Shot III
+powers = [138]   # 138:Battle Meditation
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = []
+powers = [139]   # 139:Improved Battle Meditation
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = [243]   # 243:Precise Shot IV
+powers = [140]   # 140:Master Battle Meditation
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [48]   # 48:Force Suppression
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+attrs = {DEX = 22}
+feats = []
+powers = [23]   # 23:Force Push
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [244]   # 244:Precise Shot V
+powers = [27]   # 27:Force Whirlwind
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = [19]   # 19:Improved Critical Strike
+powers = [26]   # 26:Force Wave
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = []
+powers = [19]   # 19:Force Breach
+skills = {security = 1, computer_use = 1, awareness = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+attrs = {DEX = 23}
+feats = [81]   # 81:Master Critical Strike
+powers = [6]   # 6:Affect Mind
+skills = {demolitions = 1, security = 1}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [14]   # 14:Dominate Mind
+skills = {computer_use = 2, security = 1}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = []
+powers = [181]   # 181:Mind Trick
+skills = {security = 1, computer_use = 1, awareness = 1}

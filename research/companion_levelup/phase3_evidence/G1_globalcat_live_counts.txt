@@ -1,0 +1,5 @@
+source: /home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II/Override/globalcat.2da
+headers ['name', 'type'] rows 1155
+type counts {'NUMBER': 973, 'BOOLEAN': 176, 'LOCATION': 3, 'STRING': 3} (engine caps: BOOLEAN 900, NUMBER 1000, LOCATION 100, STRING 5; name <=21 chars; 2365 hash slots)
+STRING/LOCATION rows: [('K_LAST_LOCATION', 'Location'), ('K_STUNT_MODULE', 'String'), ('K_LAST_MODULE', 'String'), ('403DXN_Duel_Start', 'Location'), ('K2_Temp_Loc', 'Location'), ('LASTMODULE', 'String')]
+max name len 21

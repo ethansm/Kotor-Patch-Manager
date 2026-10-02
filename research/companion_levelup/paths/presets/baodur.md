@@ -1,8 +1,23 @@
 # Bao-Dur presets
 
-Files: `baodur__early_guardian.toml` (convert char 12), `baodur__late_guardian.toml` (convert char 22), `baodur__tech.toml` (convert char 30).
+Files: 8 presets (table below). Original three: `baodur__early_guardian.toml` (convert char 12), `baodur__late_guardian.toml` (22), `baodur__tech.toml` (30); added 2026-10-02: unarmed/dual/dark/support early (12) and a never-converting Tech tank.
 All start from the LIVE template `live_utc/p_baodur.utc`: Tech Specialist 6, STR14 DEX10 CON14 INT15 WIS14 CHA10, so levels run 7-30.
 All pass `check_paths.py` with 0 errors. Warnings are only "1 skill point unspent" (see Skills).
+
+## Wizard answers -> preset (WIZARD_SCHEMA.md v1; `[meta.wizard]` in every file)
+| preset file | role | style | alignment | convert (char) | skills | rationale |
+|---|---|---|---|---|---|---|
+| `baodur__early_guardian` | tank | single | light | early (12) | combat | Heavy armor + Power Attack/Critical/Dueling lines, Valor/Speed/Heal/Barrier/Energy Resistance buffs; the default "Guardian" Bao-Dur |
+| `baodur__late_guardian` | melee | single | light | late (22) | tech | Crafts (Gear Head, Caution lines) to 21 as elkripper advises, then short saber/Valor/Heal stretch |
+| `baodur__tech` | support | single | light | late (30) | tech | elkripper's literal plan: Tech to 29 (crafting/utility, Toughness), one cosmetic Guardian level |
+| `baodur__melee_unarmed_light_early` | melee | unarmed | light | early (12) | combat | Bao-Dur starts with Unarmed Specialist I/II + Complex Unarmed Animations; Guardian levels grant further ranks; no armor feats; Force Body/Valor/Speed buffs |
+| `baodur__melee_dual_light_early` | melee | dual | light | early (12) | combat | TWF line from Tech levels 8/11, Dual Strike line, Weapon Focus/Spec Lightsaber; DEX 10 makes to-hit mediocre (user choice) |
+| `baodur__melee_single_dark_early` | melee | single | dark | early (12) | combat | DARK Jedi Guardian (conversion talk needs alignment < 40, strategywiki_Bao-Dur.txt:411): Drain Force/Force Scream/Drain Life/Death Field lines; heavy armor, single saber; mod #142 penalizes dark powers only via CHA (CHA 10) |
+| `baodur__support_single_light_early` | support | single | light | early (12) | combat | Healer/buffer: Heal line, Valor, Barrier, Revitalize, Battle Meditation, Regenerate Force Points; Treat Injury scales Heal (#142) |
+| `baodur__tank_single_none_never` | tank | single | none | never (0) | tech | Tech Specialist 7-30, no Jedi class: heavy armor, Toughness line, Power Attack line, Dueling; for a dark Exile or players who skip the talk |
+
+Coverage notes: no `caster` (Guardian power list has no offensive Force line worth it for Bao-Dur), no `ranged` (blaster/rifle feats exist; not requested), no `neutral` alignment preset. `hold_until_class = 3` (Jedi Guardian) in every converting preset: the mod banks levels from `convert_at` until the story script adds the class. `late_guardian` and `tech` share light/late answers; `role` separates them (melee vs support); the wizard should treat `tech` as the "convert last" fallback.
+New presets use the same INT 16-21 progression, Tech slots at char 8/11, Guardian feat slots at Guardian levels 1,2,3,5,7,...; skill allocation is generated round-robin on class skills (combat: Awareness/Treat Injury first; tech: Computer Use/Repair/Security/Demolitions).
 
 ## Conversion facts
 - Joins on Telos (Restoration Zone), must stay in party until Polar Plateau: `text/strategywiki_Bao-Dur.txt:150`.

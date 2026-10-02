@@ -498,6 +498,25 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - (f) **Playthrough identity: tied to the save file** (R2) - static research item "save binding" (evidence `phase3_evidence/G1_*`).
 - (g) Droids / non-Jedi companions (HK-47, T3-M4, G0-T0, Mandalore, Hanharr): not yet answered.
 
+### Item 7 - save binding for per-playthrough config (decision (f); agent G, spot-checked; evidence `phase3_evidence/G1_*.txt`)
+- **Server load** 0x52FB80 (`thiscall(app, slot, CExoString* name, a4, a5)`, builds `SAVES:%06d - %s`) -> PARTYTABLE 0x5FBF60 -> **GLOBALVARS load 0x656710**
+  -> LoadModule 0x531C50; thunk 0x51BE20 from msg handler 0x660040 (minor 5 load / 4 save). Autosave-restore 0x8529E0 also calls 0x656710 -> single post-load point.
+  **Save:** StartSave 0x52F610 -> SaveGameInProgress 0x534600 -> globals saver **0x656640** (call 0x5348F5); DoPCAutosave 0x53AF20 also calls it (0x53B219).
+  savenfo (AREANAME, LASTMODULE, TIMEPLAYED, SAVEGAMENAME, TIMESTAMP, PCNAME, ...) has no unique playthrough id (`G1_dec_save_paths.txt`).
+- **Global variable table** at CServerExoAppInternal+0x100FC: Boolean cap 900, Number 1000 (1 byte, 0-255), Location 100, String 5; names <= 21 chars. Saved by
+  name (Cat/Val lists). **On load 0x655B00 looks each saved name up (0x6545B0) and ADDS unknown names (0x654430 bool / 0x654490 number / 0x654550 string)**
+  (`G1_dec_globalvar_load_named.txt:114-120`) -> a DLL-added global round-trips through saves without a globalcat.2da row. Add-var `thiscall(table, name)`;
+  Number setter 0x654CC0, String setter 0x654F00. Live globalcat.2da: 973/1000 Number, 176/900 Boolean, 3/5 String used (`G1_globalcat_live_counts.txt`).
+- **New game:** main-menu handler 0x882230 -> 0x401BC0 recreates CServerExoApp (globals zeroed, globalcat via 0x51C450) -> chargen, module 001ebo. Load screen
+  0x853A00 also goes through 0x401BC0 -> GUID 0 after module entry = new playthrough (or a pre-mod save); no leak from the previous session.
+- **Design (chosen):** playthrough GUID in DLL-added save-persisted globals (e.g. 4-8 Booleans/Numbers named `LUO_GUIDn`, generated on first config use when
+  0), config in a sidecar INI keyed by GUID. Hooks: globals saver entry 0x656640 (add+set before save) and post-load 0x656758 (read after the load call;
+  bytes `89 45 F0 C7 45 FC FF FF FF FF`). Follows the save across slots and Save As; old saves get a GUID on first use; uninstall leaves harmless orphan globals.
+  All candidate sites live == vanilla, +-16 overlap clean (`G1_hook_overlap_scan.txt`).
+- Residual: hook-framework param capture at 0x656758 and save-writer acceptance of a name added at 0x656640 entry -> one log-only live probe.
+- **Preset design gap (from Atton presets):** if the story converts a character EARLIER than a preset's `convert_at`, the remaining base-class records never
+  match the newest (Jedi) class -> held forever. 0.3.0 needs a re-base rule (Jedi present -> continue from the preset's Jedi records). Converting later is fine (banked).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.

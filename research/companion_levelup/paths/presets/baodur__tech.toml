@@ -7,6 +7,14 @@ utc = "p_baodur.utc"
 variant = "tech"
 summary = "elkripper's literal plan: Tech Specialist 7-29 (heavy armor, crafting/utility), single Guardian level at char 30"
 convert_at = 30
+hold_until_class = 3   # bank levels 30+ until the Jedi Guardian class exists
+
+[meta.wizard]
+role = "support"
+style = "single"
+alignment = "light"
+convert = "late"
+skills = "tech"
 
 [[level]]
 char_level = 7

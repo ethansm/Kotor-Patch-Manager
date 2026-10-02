@@ -1,0 +1,209 @@
+# Atton preset "melee_dual_light_early": Convert early (first Sentinel level 8): dual lightsabers (TWF line, Dual Strike line, Weapon Focus: Lightsaber, Advanced/Master Jedi Defense), Speed/Valor/Heal light-side kit
+# Skill points are a PROPOSAL (weighted greedy, max rank = char_level+3, cross-class cost 2). DEX bumps follow elkripper (live DEX16).
+[meta]
+tag = "atton"
+name = "Atton Rand"
+utc = "p_atton.utc"
+variant = "melee_dual_light_early"
+summary = "Convert early (first Sentinel level 8): dual lightsabers (TWF line, Dual Strike line, Weapon Focus: Lightsaber, Advanced/Master Jedi Defense), Speed/Valor/Heal light-side kit"
+convert_at = 8   # first Jedi (Sentinel) char level; 0 = never converts
+hold_until_class = 5   # bank levels 8+ until the Jedi Sentinel class exists; Sentinel picks are identical whatever char level conversion happens at
+
+[meta.wizard]
+role = "melee"
+style = "dual"
+alignment = "light"
+convert = "early"
+skills = "combat"
+
+[[level]]
+char_level = 4
+class = 2   # Scoundrel
+attrs = {DEX = 17}
+feats = []
+skills = {treat_injury = 2}
+
+[[level]]
+char_level = 5
+class = 2   # Scoundrel
+feats = [3]   # 3:Two-Weapon Fighting
+skills = {awareness = 2, treat_injury = 1}
+
+[[level]]
+char_level = 6
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 2, treat_injury = 1}
+
+[[level]]
+char_level = 7
+class = 2   # Scoundrel
+feats = []
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 8
+class = 5   # JediSentinel
+attrs = {DEX = 18}
+feats = [36]   # 36:Weapon Focus: Lightsaber
+powers = [8, 10]   # 8:Burst of Speed, 10:Heal
+skills = {treat_injury = 3}
+
+[[level]]
+char_level = 9
+class = 5   # JediSentinel
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {treat_injury = 2, awareness = 1}
+
+[[level]]
+char_level = 10
+class = 5   # JediSentinel
+feats = [9]   # 9:Improved Two-Weapon Fighting
+powers = [22]   # 22:Force Valor
+skills = {treat_injury = 2, awareness = 1}
+
+[[level]]
+char_level = 11
+class = 5   # JediSentinel
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {awareness = 2, treat_injury = 1}
+
+[[level]]
+char_level = 12
+class = 5   # JediSentinel
+attrs = {DEX = 19}
+feats = []
+powers = [28]   # 28:Improved Heal
+skills = {treat_injury = 2, awareness = 1}
+
+[[level]]
+char_level = 13
+class = 5   # JediSentinel
+feats = [190]   # 190:Dual Strike
+powers = [18]   # 18:Force Aura
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 14
+class = 5   # JediSentinel
+feats = [85]   # 85:Master Two-Weapon Fighting
+powers = [33]   # 33:Knight Valor
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 15
+class = 5   # JediSentinel
+feats = []
+powers = [37]   # 37:Master Speed
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 16
+class = 5   # JediSentinel
+attrs = {DEX = 20}
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [163]   # 163:Force Redirection
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 17
+class = 5   # JediSentinel
+feats = []
+powers = [24]   # 24:Force Shield
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 18
+class = 5   # JediSentinel
+feats = []
+powers = [134]   # 134:Master Heal
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 19
+class = 5   # JediSentinel
+feats = [139]   # 139:Close Combat
+powers = [135]   # 135:Force Barrier
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 20
+class = 5   # JediSentinel
+attrs = {DEX = 21}
+feats = [191]   # 191:Improved Dual Strike
+powers = [138]   # 138:Battle Meditation
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 21
+class = 5   # JediSentinel
+feats = []
+powers = [36]   # 36:Master Valor
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 22
+class = 5   # JediSentinel
+feats = [24]   # 24:Master Jedi Defense
+powers = [17]   # 17:Force Armor
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 23
+class = 5   # JediSentinel
+feats = []
+powers = [136]   # 136:Improved Force Barrier
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 24
+class = 5   # JediSentinel
+attrs = {DEX = 22}
+feats = []
+powers = [139]   # 139:Improved Battle Meditation
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 25
+class = 5   # JediSentinel
+feats = [140]   # 140:Improved Close Combat
+powers = [137]   # 137:Master Force Barrier
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 26
+class = 5   # JediSentinel
+feats = [192]   # 192:Master Dual Strike
+powers = [140]   # 140:Master Battle Meditation
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 27
+class = 5   # JediSentinel
+feats = []
+powers = [46]   # 46:Stun
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 28
+class = 5   # JediSentinel
+attrs = {DEX = 23}
+feats = [13]   # 13:Conditioning
+powers = [29]   # 29:Stasis
+skills = {awareness = 1, treat_injury = 1, security = 1}
+
+[[level]]
+char_level = 29
+class = 5   # JediSentinel
+feats = []
+powers = [44]   # 44:Stasis Field
+skills = {awareness = 1, treat_injury = 1, stealth = 1}
+
+[[level]]
+char_level = 30
+class = 5   # JediSentinel
+feats = []
+powers = [173]   # 173:Revitalize
+skills = {awareness = 1, treat_injury = 1, security = 1}

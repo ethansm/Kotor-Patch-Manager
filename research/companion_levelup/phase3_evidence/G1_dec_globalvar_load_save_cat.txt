@@ -1,0 +1,533 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1274 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2871 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_006564c0 @ 006564c0 size=377
+
+void FUN_006564c0(undefined4 param_1)
+
+{
+  undefined4 *local_68;
+  undefined1 local_4c [16];
+  int local_3c;
+  undefined4 *local_38;
+  undefined4 *local_34;
+  int local_30;
+  undefined1 local_2c [4];
+  undefined1 local_28 [20];
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0095904b;
+  local_10 = ExceptionList;
+  local_14 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_3c = FUN_00919723(0xa0,local_14);
+  local_8 = 0;
+  if (local_3c == 0) {
+    local_68 = (undefined4 *)0x0;
+  }
+  else {
+    FUN_00710810(param_1);
+    local_68 = (undefined4 *)FUN_00716fd0(0,&DAT_00998690,local_4c);
+  }
+  local_38 = local_68;
+  local_8 = 0xffffffff;
+  local_34 = local_68;
+  if ((local_68 == (undefined4 *)0x0) || (local_68[0x25] == 0)) {
+    FUN_008339d0(0xbe76);
+    if ((local_34 != (undefined4 *)0x0) && (local_34 != (undefined4 *)0x0)) {
+      (**(code **)*local_34)(1);
+    }
+  }
+  else {
+    FUN_007189d0(local_2c);
+    local_30 = FUN_00718760(local_28,local_2c,"CatBoolean");
+    if (local_30 == 0) {
+      FUN_00655690(local_34,local_2c);
+    }
+    else {
+      FUN_00655b00(local_34,local_2c);
+    }
+    if (local_34 != (undefined4 *)0x0) {
+      (**(code **)*local_34)(1);
+    }
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
+=== FUN_00655010 @ 00655010 size=1644
+
+void __thiscall FUN_00655010(int param_1,undefined4 param_2,int param_3)
+
+{
+  undefined4 *puVar1;
+  uint uVar2;
+  undefined4 uVar3;
+  int iVar4;
+  undefined4 *local_ee0;
+  undefined1 local_ec8 [8];
+  undefined1 local_ec0 [8];
+  undefined1 local_eb8 [8];
+  int local_eb0;
+  undefined4 *local_eac;
+  undefined1 local_ea8 [8];
+  undefined1 local_ea0 [8];
+  undefined1 local_e98 [124];
+  int local_e1c;
+  undefined1 local_e18 [4];
+  int local_e14;
+  undefined4 local_e10 [600];
+  undefined1 local_4b0 [20];
+  int local_49c;
+  undefined1 local_498 [40];
+  undefined1 local_470 [20];
+  undefined1 *local_45c;
+  undefined1 local_458 [1000];
+  undefined1 local_70 [12];
+  undefined4 *local_64;
+  undefined1 local_60 [20];
+  int local_4c;
+  undefined1 local_48 [4];
+  int local_44;
+  int local_40;
+  undefined1 local_3c [20];
+  undefined1 local_28 [20];
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e99;
+  local_10 = ExceptionList;
+  uVar2 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = uVar2;
+  _eh_vector_constructor_iterator_(local_e10,0x18,100,FUN_0053e060,FUN_00623320);
+  local_8 = 0;
+  _eh_vector_constructor_iterator_(local_498,8,5,FUN_00733540,FUN_00733780);
+  local_8._0_1_ = 1;
+  FUN_00733540(uVar2);
+  local_8._0_1_ = 2;
+  FUN_00733570(&DAT_009975d4);
+  local_8._0_1_ = 3;
+  local_e1c = FUN_00734030(local_ea0,0);
+  local_8._0_1_ = 2;
+  FUN_00733780();
+  if (local_e1c != -1) {
+    uVar3 = FUN_00734500(local_ea8,local_e1c + 1);
+    local_8._0_1_ = 4;
+    FUN_007337c0(uVar3);
+    local_8._0_1_ = 2;
+    FUN_00733780();
+  }
+  local_eb0 = FUN_00919723(0xa0);
+  local_8._0_1_ = 5;
+  if (local_eb0 == 0) {
+    local_ee0 = (undefined4 *)0x0;
+  }
+  else {
+    local_ee0 = (undefined4 *)FUN_00716e60();
+  }
+  local_eac = local_ee0;
+  local_8._0_1_ = 2;
+  local_64 = local_ee0;
+  FUN_00733570(&DAT_009938e4);
+  local_8._0_1_ = 6;
+  FUN_00733570(&DAT_00998690);
+  local_8._0_1_ = 7;
+  FUN_0071a3d0(local_48,local_ec0,local_eb8);
+  local_8._0_1_ = 6;
+  FUN_00733780();
+  local_8 = CONCAT31(local_8._1_3_,2);
+  FUN_00733780();
+  if (param_3 != 0) {
+    FUN_00719740(local_470,local_48,"CatBoolean");
+    FUN_00719740(local_3c,local_48,"CatNumber");
+    FUN_00719740(local_60,local_48,"CatLocation");
+    FUN_00719740(local_4b0,local_48,"CatString");
+  }
+  _memset(local_e98,0,0x71);
+  _memset(local_458,0,1000);
+  local_44 = 0;
+  local_e14 = 0;
+  local_40 = 0;
+  local_49c = 0;
+  for (local_4c = 0; iVar4 = local_40, local_4c < 0x93d; local_4c = local_4c + 1) {
+    if (*(char *)(param_1 + local_4c * 0x18) != '\0') {
+      switch(*(ushort *)(param_1 + 0x16 + local_4c * 0x18) >> 0xe) {
+      case 0:
+        uVar3 = FUN_00654670(param_1 + 0xddb8,*(ushort *)(param_1 + 0x16 + local_4c * 0x18) & 0x3fff
+                            );
+        FUN_006546c0(local_e98,local_44,uVar3);
+        local_45c = local_470;
+        local_44 = local_44 + 1;
+        break;
+      case 1:
+        local_458[local_e14] =
+             *(undefined1 *)
+              (param_1 + 0xde29 + (uint)(*(ushort *)(param_1 + 0x16 + local_4c * 0x18) & 0x3fff));
+        local_45c = local_3c;
+        local_e14 = local_e14 + 1;
+        break;
+      case 2:
+        puVar1 = (undefined4 *)
+                 (param_1 + 0xe214 +
+                 (uint)(*(ushort *)(param_1 + 0x16 + local_4c * 0x18) & 0x3fff) * 0x18);
+        local_e10[local_40 * 6] = *puVar1;
+        local_e10[iVar4 * 6 + 1] = puVar1[1];
+        local_e10[iVar4 * 6 + 2] = puVar1[2];
+        local_e10[iVar4 * 6 + 3] = puVar1[3];
+        local_e10[iVar4 * 6 + 4] = puVar1[4];
+        local_e10[iVar4 * 6 + 5] = puVar1[5];
+        local_45c = local_60;
+        local_40 = local_40 + 1;
+        break;
+      case 3:
+        FUN_007337c0(param_1 + 0xeb74 +
+                     (uint)(*(ushort *)(param_1 + 0x16 + local_4c * 0x18) & 0x3fff) * 8);
+        local_45c = local_4b0;
+        local_49c = local_49c + 1;
+      }
+      if (param_3 != 0) {
+        FUN_00719800(local_70,local_45c,0);
+        FUN_00733570(local_4c * 0x18 + param_1);
+        local_8._0_1_ = 8;
+        FUN_00719e50(local_70,local_ec8,&DAT_0099353c);
+        local_8 = CONCAT31(local_8._1_3_,2);
+        FUN_00733780();
+      }
+    }
+  }
+  FUN_0071a1b0(local_48,local_e98,
+               ((int)(*(int *)(param_1 + 0xeb9c) + (*(int *)(param_1 + 0xeb9c) >> 0x1f & 7U)) >> 3)
+               + 1,"ValBoolean");
+  FUN_0071a1b0(local_48,local_458,*(undefined4 *)(param_1 + 0xeba0),"ValNumber");
+  FUN_0071a1b0(local_48,local_e10,0x960,"ValLocation");
+  FUN_00719740(local_28,local_48,"ValString");
+  for (local_4c = 0; local_4c < local_49c; local_4c = local_4c + 1) {
+    FUN_00719800(local_e18,local_28,0);
+    FUN_00719e50(local_e18,local_498 + local_4c * 8,"String");
+  }
+  FUN_0071a5a0(param_2,0);
+  if (local_64 == (undefined4 *)0x0) {
+    uVar3 = 0;
+  }
+  else {
+    uVar3 = (**(code **)*local_64)(1);
+  }
+  local_64 = (undefined4 *)0x0;
+  iVar4 = FUN_00733a60("REBOOTDATA:");
+  if (iVar4 != 0) {
+    FUN_00716d80(param_2,0,0,0);
+  }
+  local_8._0_1_ = 1;
+  FUN_00733780(uVar2,uVar3);
+  local_8 = (uint)local_8._1_3_ << 8;
+  _eh_vector_destructor_iterator_(local_498,8,5,FUN_00733780);
+  local_8 = 0xffffffff;
+  _eh_vector_destructor_iterator_(local_e10,0x18,100,FUN_00623320);
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
+=== FUN_00653e40 @ 00653e40 size=969
+
+void FUN_00653e40(undefined4 *param_1)
+
+{
+  uint uVar1;
+  int iVar2;
+  undefined4 uVar3;
+  undefined4 extraout_var;
+  size_t local_cc;
+  undefined1 local_c4 [8];
+  undefined1 local_bc [8];
+  undefined1 local_b4 [8];
+  undefined1 local_ac [8];
+  undefined1 local_a4 [8];
+  undefined1 local_9c [8];
+  int local_94;
+  int local_90;
+  int local_8c;
+  CMFCFilterChunkValueImpl local_88 [36];
+  int local_64;
+  uint local_30;
+  undefined1 local_2c [8];
+  char *local_24 [2];
+  int local_1c;
+  int local_18;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958d8d;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_30 = uVar1;
+  FUN_0071ad40(*param_1,param_1[1],param_1[2],param_1[3],1);
+  local_8 = 0;
+  FUN_00733540(uVar1,extraout_var);
+  local_8._0_1_ = 1;
+  FUN_00733540();
+  local_8._0_1_ = 2;
+  iVar2 = FUN_0071c3d0();
+  if (iVar2 != 0) {
+    for (local_8c = 0; local_8c < local_64; local_8c = local_8c + 1) {
+      FUN_00733570(&DAT_0099353c);
+      local_8._0_1_ = 3;
+      local_90 = FUN_0071b1d0(local_8c,local_bc,local_24);
+      local_8._0_1_ = 2;
+      FUN_00733780();
+      if (local_90 != 0) {
+        if (local_24[0] == (char *)0x0) {
+          local_cc = 0;
+        }
+        else {
+          local_cc = _strlen(local_24[0]);
+        }
+        if ((int)local_cc < 0x16) {
+          FUN_00733570(&DAT_00994500);
+          local_8._0_1_ = 4;
+          local_1c = FUN_0071b1d0(local_8c,local_c4,local_2c);
+          local_8._0_1_ = 2;
+          FUN_00733780();
+          if (local_1c != 0) {
+            local_94 = FUN_006545b0(local_24);
+            local_18 = 0;
+            local_14 = -1;
+            if (local_94 < 0) {
+              iVar2 = FUN_00734f60("BOOLEAN");
+              if (iVar2 == 0) {
+                iVar2 = FUN_00734f60("NUMBER");
+                if (iVar2 == 0) {
+                  iVar2 = FUN_00734f60("LOCATION");
+                  if (iVar2 == 0) {
+                    iVar2 = FUN_00734f60("STRING");
+                    if (iVar2 != 0) {
+                      local_14 = FUN_00654550(local_24);
+                      local_18 = 1;
+                    }
+                  }
+                  else {
+                    local_14 = FUN_006544f0(local_24);
+                    local_18 = 1;
+                  }
+                }
+                else {
+                  local_14 = FUN_00654490(local_24);
+                  local_18 = 1;
+                }
+              }
+              else {
+                local_14 = FUN_00654430(local_24);
+                local_18 = 1;
+              }
+              if (local_18 == 0) {
+                FUN_00733540();
+                local_8._0_1_ = 5;
+                uVar3 = FUN_00734010();
+                FUN_00734270(local_9c,"Script var \'%s\' has bad type in catalogue!",uVar3);
+                local_8._0_1_ = 2;
+                FUN_00733780();
+              }
+              else if (local_14 < 0) {
+                FUN_00733540();
+                local_8._0_1_ = 6;
+                uVar3 = FUN_00734010();
+                uVar3 = FUN_00734010(uVar3);
+                FUN_00734270(local_a4,"Script var \'%s\' \'%s\' won\'t fit in table!",uVar3);
+                local_8._0_1_ = 2;
+                FUN_00733780();
+              }
+            }
+            else {
+              FUN_00733540();
+              local_8._0_1_ = 7;
+              uVar3 = FUN_00734010();
+              FUN_00734270(local_ac,"Script var \'%s\' duplicated in catalogue!",uVar3);
+              local_8._0_1_ = 2;
+              FUN_00733780();
+            }
+          }
+        }
+        else {
+          FUN_00733540();
+          local_8._0_1_ = 8;
+          uVar3 = FUN_00734010(0x15);
+          FUN_00734270(local_b4,"Script var \'%s\' longer than %d letters!",uVar3);
+          local_8._0_1_ = 2;
+          FUN_00733780();
+        }
+      }
+    }
+  }
+  local_8._0_1_ = 1;
+  FUN_00733780();
+  local_8 = (uint)local_8._1_3_ << 8;
+  FUN_00733780();
+  local_8 = 0xffffffff;
+  CMFCFilterChunkValueImpl::~CMFCFilterChunkValueImpl(local_88);
+  ExceptionList = local_10;
+  __security_check_cookie(local_30 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
+=== FUN_006545b0 @ 006545b0 size=190
+
+int __thiscall FUN_006545b0(int param_1,undefined4 param_2)
+
+{
+  int iVar1;
+  int local_c;
+  int local_8;
+  
+  local_8 = FUN_00654210(param_2);
+  if ((*(char *)(param_1 + local_8 * 0x18) != '\0') &&
+     (iVar1 = FUN_00734f60(local_8 * 0x18 + param_1), local_c = local_8, iVar1 == 0)) {
+    while (local_c = (local_c + 1) % 0x93d, local_8 != local_c) {
+      if ((*(char *)(param_1 + local_c * 0x18) == '\0') ||
+         (iVar1 = FUN_00734f60(local_c * 0x18 + param_1), iVar1 != 0)) break;
+    }
+    local_8 = local_c;
+  }
+  iVar1 = FUN_00734f60(local_8 * 0x18 + param_1);
+  if (iVar1 == 0) {
+    local_8 = -1;
+  }
+  return local_8;
+}
+
+
+=== FUN_00654aa0 @ 00654aa0 size=268
+
+void __thiscall FUN_00654aa0(int param_1,undefined4 param_2)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined1 local_24 [8];
+  undefined1 local_1c [8];
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e00;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = FUN_006545b0(param_2);
+  if (local_14 < 0) {
+    FUN_00733540(uVar1);
+    local_8 = 0;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_1c,"Script var STRING \'%s\' not in catalogue!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  else if (*(ushort *)(param_1 + 0x16 + local_14 * 0x18) >> 0xe == 3) {
+    FUN_007337c0(param_1 + 0xeb74 +
+                 (uint)(*(ushort *)(param_1 + 0x16 + local_14 * 0x18) & 0x3fff) * 8);
+  }
+  else {
+    FUN_00733540(uVar1);
+    local_8 = 1;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_24,"Script var \'%s\' not a STRING!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_00654f00 @ 00654f00 size=268
+
+void __thiscall FUN_00654f00(int param_1,undefined4 param_2,undefined4 param_3)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined1 local_24 [8];
+  undefined1 local_1c [8];
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e00;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = FUN_006545b0(param_2);
+  if (local_14 < 0) {
+    FUN_00733540(uVar1);
+    local_8 = 0;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_1c,"Script var STRING \'%s\' not in catalogue!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  else if (*(ushort *)(param_1 + 0x16 + local_14 * 0x18) >> 0xe == 3) {
+    FUN_007337c0(param_3);
+  }
+  else {
+    FUN_00733540(uVar1);
+    local_8 = 1;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_24,"Script var \'%s\' not a STRING!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+

@@ -1,0 +1,224 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (1188 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (3138 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_00654cc0 @ 00654cc0 size=259
+
+void __thiscall FUN_00654cc0(int param_1,undefined4 param_2,undefined1 param_3)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined1 local_24 [8];
+  undefined1 local_1c [8];
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e00;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = FUN_006545b0(param_2);
+  if (local_14 < 0) {
+    FUN_00733540(uVar1);
+    local_8 = 0;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_1c,"Script var NUMBER \'%s\' not in catalogue!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  else if (*(ushort *)(param_1 + 0x16 + local_14 * 0x18) >> 0xe == 1) {
+    *(undefined1 *)
+     (param_1 + 0xde29 + (uint)(*(ushort *)(param_1 + 0x16 + local_14 * 0x18) & 0x3fff)) = param_3;
+  }
+  else {
+    FUN_00733540(uVar1);
+    local_8 = 1;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_24,"Script var \'%s\' not a NUMBER!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_00654860 @ 00654860 size=267
+
+void __thiscall FUN_00654860(int param_1,undefined4 param_2,undefined1 *param_3)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined1 local_24 [8];
+  undefined1 local_1c [8];
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e00;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = FUN_006545b0(param_2);
+  *param_3 = 0;
+  if (local_14 < 0) {
+    FUN_00733540(uVar1);
+    local_8 = 0;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_1c,"Script var NUMBER \'%s\' not in catalogue!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  else if (*(ushort *)(param_1 + 0x16 + local_14 * 0x18) >> 0xe == 1) {
+    *param_3 = *(undefined1 *)
+                (param_1 + 0xde29 + (uint)(*(ushort *)(param_1 + 0x16 + local_14 * 0x18) & 0x3fff));
+  }
+  else {
+    FUN_00733540(uVar1);
+    local_8 = 1;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_24,"Script var \'%s\' not a NUMBER!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_00654bb0 @ 00654bb0 size=270
+
+void __thiscall FUN_00654bb0(int param_1,undefined4 param_2,undefined4 param_3)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined1 local_24 [8];
+  undefined1 local_1c [8];
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e00;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = FUN_006545b0(param_2);
+  if (local_14 < 0) {
+    FUN_00733540(uVar1);
+    local_8 = 0;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_1c,"Script var BOOLEAN \'%s\' not in catalogue!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  else if (*(ushort *)(param_1 + 0x16 + local_14 * 0x18) >> 0xe == 0) {
+    FUN_006546c0(param_1 + 0xddb8,*(ushort *)(param_1 + 0x16 + local_14 * 0x18) & 0x3fff,param_3);
+  }
+  else {
+    FUN_00733540(uVar1);
+    local_8 = 1;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_24,"Script var \'%s\' not a BOOLEAN!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_00654740 @ 00654740 size=280
+
+void __thiscall FUN_00654740(int param_1,undefined4 param_2,undefined4 *param_3)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined1 local_24 [8];
+  undefined1 local_1c [8];
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00958e00;
+  local_10 = ExceptionList;
+  uVar1 = DAT_00a11f20 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = FUN_006545b0(param_2);
+  *param_3 = 0;
+  if (local_14 < 0) {
+    FUN_00733540(uVar1);
+    local_8 = 0;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_1c,"Script var BOOLEAN \'%s\' not in catalogue!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  else if (*(ushort *)(param_1 + 0x16 + local_14 * 0x18) >> 0xe == 0) {
+    uVar2 = FUN_00654670(param_1 + 0xddb8,*(ushort *)(param_1 + 0x16 + local_14 * 0x18) & 0x3fff);
+    *param_3 = uVar2;
+  }
+  else {
+    FUN_00733540(uVar1);
+    local_8 = 1;
+    uVar2 = FUN_00734010();
+    FUN_00734270(local_24,"Script var \'%s\' is not BOOLEAN!",uVar2);
+    local_8 = 0xffffffff;
+    FUN_00733780();
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+
+=== FUN_0051c890 @ 0051c890 size=22
+
+int __fastcall FUN_0051c890(int param_1)
+
+{
+  return *(int *)(param_1 + 4) + 0x100fc;
+}
+
+

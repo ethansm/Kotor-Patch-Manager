@@ -7,6 +7,14 @@ utc = "p_baodur.utc"
 variant = "early_guardian"
 summary = "Convert as soon as influence allows (~char 12, after Dantooine/Nar Shaddaa); heavy-armor lightsaber Guardian with Valor/Speed/Heal/Barrier buffs"
 convert_at = 12
+hold_until_class = 3   # bank levels 12+ until the Jedi Guardian class exists
+
+[meta.wizard]
+role = "tank"
+style = "single"
+alignment = "light"
+convert = "early"
+skills = "combat"
 
 [[level]]
 char_level = 7
