@@ -1,6 +1,6 @@
 # Disciple (Mical) presets
 
-Files: `disciple__caster.toml`, `disciple__melee.toml`, `disciple__support.toml` (all 0 errors / 0 warnings in `check_paths.py`).
+Files: 8 presets (table below), all 0 errors in `check_paths.py` (0 warnings except 8 unspent skill points at L23-30 in the dark caster: every class skill is at its cap and cross-class costs 2). All have `[meta.wizard]` (WIZARD_SCHEMA.md v1).
 Live start: Soldier 6, char 6 (`live_companions.json` p_disciple.utc). All variants run char 7-30. Skill points are a PROPOSAL, not user-approved.
 
 ## Conversion facts
@@ -27,9 +27,33 @@ Live start: Soldier 6, char 6 (`live_companions.json` p_disciple.utc). All varia
 ## Close Combat / Finesse discrepancy
 Thematic Companions details.txt:51-52 says Disciple loses Improved Toughness and Close Combat and gains Empathy and Finesse: Melee (194). Live p_disciple.utc: has Empathy (10), no Improved Toughness (matches), but STILL has Close Combat (139) and NO Finesse: Melee; also has Superior Weapon Focus: Lightsaber II (157) and no Rapid Shot. The shipped mod template (`installed_mod_thematic_companions/utc/p_disciple.utc`) differs again (feats incl. 123, INT/WIS 10). Presets treat live data as truth: they never take 139 (already known) and the melee preset TAKES Finesse (194, Soldier 11); if in-game he actually has Finesse the validator would flag a duplicate, so verify. `k2-finesse-melee-fix` interaction not checked.
 
+## Wizard answers -> preset (2026-10-02)
+Disciple offers: role melee/ranged/caster/support/tank, style single/dual/double/pistols/rifle/none, alignment light/dark/neutral/none, convert early/late/never, skills combat/tech/stealth/social. `hold_until_class = 4` on every converting preset.
+
+| preset file | role | style | alignment | convert (convert_at) | skills | rationale |
+|---|---|---|---|---|---|---|
+| `disciple__caster.toml` | support | none | light | early (7) | combat | existing healer/buffer: Heal/Valor/Barrier/Battle Meditation/Revitalize lines; role=support because it is a heal/buff kit, not offence |
+| `disciple__support.toml` | tank | single | light | late (13) | combat | Soldier 7-12 for 6 durability feats (Toughness/Conditioning/Regenerate), then healer powers; tank = HP-first |
+| `disciple__melee.toml` | melee | dual | light | late (16) | combat | elkripper melee: Soldier to 15 for Flurry/TWF/Dual Strike chain, DEX/Finesse, then self-buffs |
+| `disciple__melee_double_light_late.toml` | melee | double | light | late (13) | combat | Soldier 7-12 for Power Attack (STR) / Critical Strike / Flurry / TWF chains (TWF and Flurry apply to double-bladed, strategywiki_Feats.txt:350,756); Valor/Speed/Heal buffs |
+| `disciple__caster_none_dark_early.toml` | caster | none | dark | early (7) | combat | offensive dark kit: Shock/Wound/Slow -> Affliction, Lightning, Drain Force/Scream lines, Choke, Plague, Kill, Death Field, Storm; Speed + Energy Resistance fillers |
+| `disciple__caster_none_neutral_early_stealth.toml` | caster | none | neutral | early (7) | stealth | alignment-independent control kit: Affect Mind/Dominate Mind, Mind Trick, Push/Whirlwind/Wave, Suppression/Breach, Speed, Energy Resistance, Deflection; Caution line + Stealth/Awareness |
+| `disciple__support_none_light_early_tech.toml` | support | none | light | early (7) | tech | healer + Force Armor/droid powers (Disable/Destroy Droid, Stun Droid); Gear Head line (Repair/Security/Computer Use) and tech skill rotation |
+| `disciple__ranged_rifle_none_never.toml` | ranged | rifle | none | never (0) | combat | Soldier 7-30: Rapid/Sniper/Power Blast/Precise Shot chains, Weapon Focus/Specialization: Blaster Rifle, Toughness/Conditioning; no powers |
+
+Not covered (no sensible preset): `pistols` (would be a rifle variant swap: Weapon Focus/Specialization: Pistol + TWF), `social` (Persuade is cross-class for both classes, no feat in this game supports it beyond Empathy), `unarmed`, dark melee.
+
+Design notes for the new presets
+- Dark: needs the dark Training line (PC alignment < 40, strategywiki_Disciple.txt:725-747); under mod #142 dark powers are penalised if the Disciple's own alignment is light. The wizard should only offer `dark` when the PC is dark-aligned (or warn).
+- Neutral: the last 7 Consular slots (char 26-30) run out of truly neutral powers (all `-`-flagged Consular powers are used); they take Stun/Stun Droid/Stasis/Stasis Field/Disable/Destroy Droid/Force Aura, which are light-flagged in spells.2da (goodevil G) but are pure control. Swap or leave for the user's decision.
+- Tech: `Class Skill: ...` feats (184/186/187/188) are not modelled by check_paths (class-skill cost not recomputed), so they are not used; Gear Head line used instead. Skill rotation is repair/computer_use/security, then treat_injury/awareness once capped.
+- Ranged: does not use Finesse or Close Combat; Precise Shot IV/V, Critical Strike and Caution/Empathy lines do not fit in the 24 Soldier feat slots.
+- Generated greedily (feat/power priority queues respecting prereqs and minimum levels), then validated; skill points are proposals.
+
 ## Open user questions
 1. Which variant (caster / support / melee) per playthrough? Melee only works if the mod can hold Disciple at Soldier until char 16.
 2. Is Finesse: Melee (194) wanted in the melee build if he really has Close Combat instead? Verify in game.
 3. Is a spare Consular slot better used for Force Valor/Heal earlier in melee (elkripper delays Valor line)?
 4. Skill priorities (Treat Injury + Awareness first) acceptable, or Computer Use/Repair for crafting?
 5. Confirm influence threshold for the training dialogue in play (wiki `< 10 Influence > 90` is ambiguous) and that TSLRCM/PartySwap do not alter it.
+6. Dark preset: restrict to PC alignment < 40 (training dialogue variant)? 7. Neutral preset tail uses light-flagged control powers - acceptable? 8. Ranged rifle vs pistols; double-bladed saber assumed equippable (stat/weapon choice is outside the level-up mod).

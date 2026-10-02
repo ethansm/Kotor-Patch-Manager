@@ -1,0 +1,191 @@
+# Disciple (Mical) PRESET caster/neutral/early/stealth: convert at char 7 (Consular 1-24), control caster using only universal (alignment-neutral) powers: Affect Mind/Dominate Mind, Mind Trick, Push/Whirlwind/Wave, Force Suppression/Breach, Speed, Energy Resistance, Deflection; no Heal/Valor (light) and no Shock/Lightning (dark). Stealth + Awareness skills. Safe under mod #142.
+# Skill points are a PROPOSAL (round-robin over the focus skills). Attribute rows are descriptive/unverified (companion attrs are auto-set).
+[meta]
+tag = "disciple"
+name = "Disciple (Mical)"
+utc = "p_disciple.utc"
+variant = "caster_none_neutral_early_stealth"
+summary = "Convert at char 7 (Consular 1-24): neutral-only control kit (Mind Trick, Dominate Mind, Push/Whirlwind/Wave, Suppression, Breach, Speed line, Energy Resistance line, Deflection) with Stealth/Awareness skills."
+convert_at = 7   # first char level taken as Jedi Consular; real conversion happens when the story script allows (see disciple.md)
+hold_until_class = 4   # bank levels until the Jedi Consular class exists (Disciple 'Training' dialogue)
+
+[meta.wizard]
+role = "caster"
+style = "none"
+alignment = "neutral"
+convert = "early"
+skills = "stealth"
+
+[[level]]
+char_level = 7
+class = 4   # JediConsular
+feats = [143]   # 143:Regenerate Force Points
+powers = [6, 181]   # 6:Affect Mind, 181:Mind Trick
+skills = {stealth = 2}
+
+[[level]]
+char_level = 8
+class = 4   # JediConsular
+attrs = {WIS = 16}
+feats = []
+powers = [23]   # 23:Force Push
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 9
+class = 4   # JediConsular
+feats = [7]   # 7:Caution
+powers = [8, 14]   # 8:Burst of Speed, 14:Dominate Mind
+skills = {stealth = 2}
+
+[[level]]
+char_level = 10
+class = 4   # JediConsular
+feats = []
+powers = [27]   # 27:Force Whirlwind
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 11
+class = 4   # JediConsular
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {stealth = 2}
+
+[[level]]
+char_level = 12
+class = 4   # JediConsular
+attrs = {WIS = 17}
+feats = [117]   # 117:Improved Caution
+powers = [42, 48]   # 42:Energy Resistance, 48:Force Suppression
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 13
+class = 4   # JediConsular
+feats = []
+powers = [162]   # 162:Force Deflection
+skills = {stealth = 2}
+
+[[level]]
+char_level = 14
+class = 4   # JediConsular
+feats = []
+powers = [40]   # 40:Improved Energy Resistance
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 15
+class = 4   # JediConsular
+feats = [118]   # 118:Master Caution
+powers = [37, 26]   # 37:Master Speed, 26:Force Wave
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 16
+class = 4   # JediConsular
+attrs = {WIS = 18}
+feats = []
+powers = [41]   # 41:Force Resistance
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 17
+class = 4   # JediConsular
+feats = []
+powers = [163]   # 163:Force Redirection
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 18
+class = 4   # JediConsular
+feats = [123]   # 123:Improved Toughness
+powers = [138, 19]   # 138:Battle Meditation, 19:Force Breach
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 19
+class = 4   # JediConsular
+feats = []
+powers = [133]   # 133:Master Energy Resistance
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 20
+class = 4   # JediConsular
+attrs = {WIS = 19}
+feats = []
+powers = [139]   # 139:Improved Battle Meditation
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 21
+class = 4   # JediConsular
+feats = [124]   # 124:Master Toughness
+powers = [20, 49]   # 20:Force Immunity, 49:Throw Lightsaber
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 22
+class = 4   # JediConsular
+feats = []
+powers = [4]   # 4:Advanced Throw Lightsaber
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 23
+class = 4   # JediConsular
+feats = []
+powers = [140]   # 140:Master Battle Meditation
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 24
+class = 4   # JediConsular
+attrs = {WIS = 20}
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [150, 151]   # 150:Force Body, 151:Improved Force Body
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 25
+class = 4   # JediConsular
+feats = []
+powers = [152]   # 152:Master Force Body
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 26
+class = 4   # JediConsular
+feats = []
+powers = [46]   # 46:Stun
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 27
+class = 4   # JediConsular
+feats = [24]   # 24:Master Jedi Defense
+powers = [47, 29]   # 47:Stun Droid, 29:Stasis
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 28
+class = 4   # JediConsular
+attrs = {WIS = 21}
+feats = []
+powers = [44]   # 44:Stasis Field
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 29
+class = 4   # JediConsular
+feats = []
+powers = [12]   # 12:Disable Droid
+skills = {stealth = 1, awareness = 1, treat_injury = 1}
+
+[[level]]
+char_level = 30
+class = 4   # JediConsular
+feats = [21]   # 21:Improved Conditioning
+powers = [13, 18]   # 13:Destroy Droid, 18:Force Aura
+skills = {stealth = 1, awareness = 1, treat_injury = 1}

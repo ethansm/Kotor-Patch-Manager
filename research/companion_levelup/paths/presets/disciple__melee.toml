@@ -6,7 +6,15 @@ name = "Disciple (Mical)"
 utc = "p_disciple.utc"
 variant = "melee"
 summary = "Soldier 7-15 (melee feat chain, HP), Consular 1-15 from char 16: self-buffs/Heal, lightsaber melee. Follows elkripper melee build with live-feat fixes."
-convert_at = 16
+convert_at = 16   # first char level taken as Jedi Consular; real conversion happens when the story script allows (see disciple.md)
+hold_until_class = 4   # bank levels until the Jedi Consular class exists (Disciple "Training" dialogue)
+
+[meta.wizard]
+role = "melee"
+style = "dual"
+alignment = "light"
+convert = "late"
+skills = "combat"
 
 [[level]]
 char_level = 7

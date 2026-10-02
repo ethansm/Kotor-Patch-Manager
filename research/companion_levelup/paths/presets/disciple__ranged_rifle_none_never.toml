@@ -1,0 +1,166 @@
+# Disciple (Mical) PRESET ranged/rifle/never: stays Soldier 7-30 (never takes the Jedi Consular training), blaster-rifle sharpshooter: Rapid Shot, Sniper Shot, Power Blast and Precise Shot chains, Weapon Focus/Specialization: Blaster Rifle. No Force powers.
+# Skill points are a PROPOSAL (round-robin over the focus skills). Attribute rows are descriptive/unverified (companion attrs are auto-set).
+[meta]
+tag = "disciple"
+name = "Disciple (Mical)"
+utc = "p_disciple.utc"
+variant = "ranged_rifle_none_never"
+summary = "Soldier 7-30, never converts: Rapid Shot, Sniper Shot, Power Blast, Precise Shot chains, Weapon Focus/Specialization: Blaster Rifle, Toughness and Conditioning chains."
+convert_at = 0   # 0 = never converts; no hold needed
+
+[meta.wizard]
+role = "ranged"
+style = "rifle"
+alignment = "none"
+convert = "never"
+skills = "combat"
+
+[[level]]
+char_level = 7
+class = 0   # Soldier
+feats = [30]   # 30:Rapid Shot
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 8
+class = 0   # Soldier
+attrs = {DEX = 15}
+feats = [92]   # 92:Improved Rapid Shot
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 9
+class = 0   # Soldier
+feats = [33]   # 33:Weapon Focus: Blaster Rifle
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 10
+class = 0   # Soldier
+feats = [31]   # 31:Sniper Shot
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 11
+class = 0   # Soldier
+feats = [20]   # 20:Improved Sniper Shot
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 12
+class = 0   # Soldier
+attrs = {DEX = 16}
+feats = [240]   # 240:Precise Shot I
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 13
+class = 0   # Soldier
+feats = [26]   # 26:Master Rapid Shot
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 14
+class = 0   # Soldier
+feats = [47]   # 47:Weapon Specialization: Blaster Rifle
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 15
+class = 0   # Soldier
+feats = [77]   # 77:Master Sniper Shot
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 16
+class = 0   # Soldier
+attrs = {DEX = 17}
+feats = [241]   # 241:Precise Shot II
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 17
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 18
+class = 0   # Soldier
+feats = [123]   # 123:Improved Toughness
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 19
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 20
+class = 0   # Soldier
+attrs = {DEX = 18}
+feats = [18]   # 18:Improved Power Blast
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 21
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 22
+class = 0   # Soldier
+feats = [82]   # 82:Master Power Blast
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 23
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 24
+class = 0   # Soldier
+attrs = {DEX = 19}
+feats = [21]   # 21:Improved Conditioning
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 25
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 26
+class = 0   # Soldier
+feats = [242]   # 242:Precise Shot III
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 27
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 28
+class = 0   # Soldier
+attrs = {DEX = 20}
+feats = [124]   # 124:Master Toughness
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 29
+class = 0   # Soldier
+feats = []
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}
+
+[[level]]
+char_level = 30
+class = 0   # Soldier
+feats = [22]   # 22:Master Conditioning
+skills = {awareness = 1, treat_injury = 1, demolitions = 1}

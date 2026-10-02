@@ -1,0 +1,191 @@
+# Disciple (Mical) PRESET support/light/early/tech: convert at char 7 (Consular 1-24), healer/buffer/droid-controller; Gear Head line + Repair/Computer Use/Security for locks, terminals and crafting; light side only.
+# Skill points are a PROPOSAL (round-robin over the focus skills). Attribute rows are descriptive/unverified (companion attrs are auto-set).
+[meta]
+tag = "disciple"
+name = "Disciple (Mical)"
+utc = "p_disciple.utc"
+variant = "support_none_light_early_tech"
+summary = "Convert at char 7 (Consular 1-24): Heal/Valor/Barrier/Battle Meditation/Revitalize, Force Armor line and droid powers; Gear Head feats and Repair/Computer Use/Security skills."
+convert_at = 7   # first char level taken as Jedi Consular; real conversion happens when the story script allows (see disciple.md)
+hold_until_class = 4   # bank levels until the Jedi Consular class exists (Disciple 'Training' dialogue)
+
+[meta.wizard]
+role = "support"
+style = "none"
+alignment = "light"
+convert = "early"
+skills = "tech"
+
+[[level]]
+char_level = 7
+class = 4   # JediConsular
+feats = [143]   # 143:Regenerate Force Points
+powers = [10, 22]   # 10:Heal, 22:Force Valor
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 8
+class = 4   # JediConsular
+attrs = {WIS = 16}
+feats = []
+powers = [135]   # 135:Force Barrier
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 9
+class = 4   # JediConsular
+feats = [12]   # 12:Gear Head
+powers = [47, 138]   # 47:Stun Droid, 138:Battle Meditation
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 10
+class = 4   # JediConsular
+feats = []
+powers = [18]   # 18:Force Aura
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 11
+class = 4   # JediConsular
+feats = []
+powers = [33]   # 33:Knight Valor
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 12
+class = 4   # JediConsular
+attrs = {WIS = 17}
+feats = [119]   # 119:Improved Gear Head
+powers = [46, 28]   # 46:Stun, 28:Improved Heal
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 13
+class = 4   # JediConsular
+feats = []
+powers = [136]   # 136:Improved Force Barrier
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 14
+class = 4   # JediConsular
+feats = []
+powers = [12]   # 12:Disable Droid
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 15
+class = 4   # JediConsular
+feats = [120]   # 120:Master Gear Head
+powers = [24, 139]   # 24:Force Shield, 139:Improved Battle Meditation
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 16
+class = 4   # JediConsular
+attrs = {WIS = 18}
+feats = []
+powers = [173]   # 173:Revitalize
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 17
+class = 4   # JediConsular
+feats = []
+powers = [36]   # 36:Master Valor
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 18
+class = 4   # JediConsular
+feats = [123]   # 123:Improved Toughness
+powers = [134, 137]   # 134:Master Heal, 137:Master Force Barrier
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 19
+class = 4   # JediConsular
+feats = []
+powers = [13]   # 13:Destroy Droid
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 20
+class = 4   # JediConsular
+attrs = {WIS = 19}
+feats = []
+powers = [17]   # 17:Force Armor
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 21
+class = 4   # JediConsular
+feats = [124]   # 124:Master Toughness
+powers = [140, 174]   # 140:Master Battle Meditation, 174:Improved Revitalize
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 22
+class = 4   # JediConsular
+feats = []
+powers = [8]   # 8:Burst of Speed
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 23
+class = 4   # JediConsular
+feats = []
+powers = [34]   # 34:Knight Speed
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 24
+class = 4   # JediConsular
+attrs = {WIS = 20}
+feats = [21]   # 21:Improved Conditioning
+powers = [175, 150]   # 175:Master Revitalize, 150:Force Body
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 25
+class = 4   # JediConsular
+feats = []
+powers = [151]   # 151:Improved Force Body
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 26
+class = 4   # JediConsular
+feats = []
+powers = [152]   # 152:Master Force Body
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 27
+class = 4   # JediConsular
+feats = [22]   # 22:Master Conditioning
+powers = [162, 163]   # 162:Force Deflection, 163:Force Redirection
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 28
+class = 4   # JediConsular
+attrs = {WIS = 21}
+feats = []
+powers = [29]   # 29:Stasis
+skills = {repair = 2, computer_use = 1}
+
+[[level]]
+char_level = 29
+class = 4   # JediConsular
+feats = []
+powers = [44]   # 44:Stasis Field
+skills = {computer_use = 1, security = 1}
+
+[[level]]
+char_level = 30
+class = 4   # JediConsular
+feats = [1]   # 1:Advanced Jedi Defense
+powers = [37, 42]   # 37:Master Speed, 42:Energy Resistance
+skills = {computer_use = 1, security = 1}
