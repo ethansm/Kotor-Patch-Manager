@@ -296,3 +296,50 @@ exclude_from_restore = ["eax"]
 [[hooks.parameters]]
 source = "ecx"
 type = "pointer"
+
+# ---- 0.3.0-b M3 save binding (doc 08 Item 7 / "Phase 5 U facts" U3; live == vanilla bytes, +-16 clean) ----
+# Pre-save: globals saver 0x656640 (thiscall(table, CExoString* saveFolder), RET 4). 5 bytes = push ebp / mov ebp,esp / push -1 (whole instructions).
+# skip_original_bytes=false: our code runs first, then the original bytes. ecx = the globals table. Writes LUO_G00..G31 so the save carries the GUID.
+[[hooks]]
+address = 0x00656640
+type = "detour"
+function = "LuoGuidSave"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Post-load: inside LoadFromSave 0x656710, after `call 0x6564C0` and `mov [ebp-0x10],eax` (0x656758): one 7-byte instruction `mov dword [ebp-4],-1`.
+# [ebp-0x1c] = the table, eax = the load result. Original runs after the handler.
+[[hooks]]
+address = 0x0065675B
+type = "detour"
+function = "LuoGuidLoad"
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x1c]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+# New server: `call 0x51C450` inside 0x401BC0 (thiscall, ecx = the NEW CServerExoApp, no args, plain RET). The call is replaced; the handler calls
+# 0x51C450 itself and returns its EAX (nothing after the site reads EAX; ecx is reloaded from [ebp-0xC]). Every new game / load passes here.
+[[hooks]]
+address = 0x00401C52
+type = "detour"
+function = "LuoGuidNewServer"
+original_bytes = [0xE8, 0xF9, 0xA7, 0x11, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

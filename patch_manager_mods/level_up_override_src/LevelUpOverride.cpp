@@ -1,10 +1,11 @@
-// Level-Up Override 0.3.0-a (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Makes the engine's AUTO level-up follow a per-character build
-// preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini only
-// (no UI / save binding yet). Default mode=log only logs + dry-runs.
+// Level-Up Override 0.3.0-b (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Makes the engine's AUTO level-up follow a per-character build
+// preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini plus a
+// per-playthrough (save-bound) config; no UI yet. Default mode=log only logs + dry-runs.
 // History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump;
 // 0.2.1 rewrite only under AutoLevelup (user requirement: pre-determine the auto level-up, never override manual picks);
 // 0.3.0-a table v2 (presets + class levels), levelNow (hold rule v2), per-tag config (preset./instant./hold.), Class Skill feats in the
-// unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop.
+// unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop;
+// 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API).
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
 // Hook 1: detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
@@ -25,12 +26,21 @@
 //   Auto OK      0x77D800 at 0x850062: returns 0 for a held leader so DoAutoLevelup skips AutoLevelup
 // All handlers pass through to the real function on any unreadable pointer, for the PC (empty tag) and for unconfigured tags.
 //
+// Hooks 6-8 (M3 save binding; handlers never throw and always fall through to vanilla):
+//   pre-save    0x656640 globals saver entry (ecx = table), original bytes still run: writes the GUID bits LUO_G00..G31 into the table
+//   post-load   0x65675B inside LoadFromSave 0x656710 (params [ebp-0x1c] = table, eax = load result), original runs: reads the GUID back
+//   new server  0x401C52 call 0x51C450 in the server-app funnel 0x401BC0 (replaced; the handler calls it and returns EAX): GUID cache cleared
+// The GUID (uint32, 0 = none) lives only in the save's globals; g_guid caches it. ptApply() creates one on first use.
+//
 // Config levelup_override.ini (game dir, re-read when its mtime changes, stat at most once per second from the gates; missing = defaults):
 //   mode=log (default) | rewrite (apply DRY result / hold / instant for configured tags) | off
 //   preset.<tag>=<preset id>   instant.<tag>=0|1 (default 0)   hold.<tag>=0|1 (default 1)      (dev keys; M3 adds a per-playthrough source)
 //   tags=atton,kreia   legacy: each tag without a preset key gets preset <tag>__live, instant 0, hold 0 (0.2.1 behaviour)
 //   verbose=1 (0 = one summary line per call)   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run (WOULD REWRITE)
 //   table=levelup_paths.ini
+// Config levelup_playthroughs.ini (game dir, mtime-reloaded like the above; written by ptApply/ptRemove via .tmp + MoveFileExA; format in
+// Playthrough.h): sections [g<8 hex guid>], lines <tag>=<preset id>|instant=0|1|hold=0|1. Precedence in tagConfig: if the current GUID has a
+// section there, ONLY that section applies (a tag missing from it is unconfigured = vanilla, even if a dev key names it); otherwise the dev keys.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -39,13 +49,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "../_shared/SafeRead.h"
+#include "Playthrough.h"
 
 namespace {
 
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.3.0-a";
+constexpr const char* Version = "0.3.0-b";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -149,6 +160,9 @@ struct Config {
     int nTags = 0;
 };
 Config g_cfg;
+Config g_ptCfg;                // tag entries of the current playthrough's section (valid while g_ptActive)
+bool g_ptActive = false;
+uint32_t g_guid = 0;           // playthrough GUID of the current game (0 = none); set by the save/load hooks and ptApply
 uint64_t g_cfgStamp = ~0ULL;   // forces the first read
 DWORD g_cfgLast = 0, g_tableLast = 0;
 bool g_cfgChecked = false, g_tableChecked = false;
@@ -251,11 +265,17 @@ void reloadConfig(bool force = false) {
 }
 
 // Per-tag configuration lookup (case-insensitive); nullptr = unconfigured -> every gate passes through.
-// TODO(M3): consult the per-playthrough (save-bound) configuration FIRST and only fall back to the ini entries below.
+// Playthrough section of the current GUID wins outright (g_ptActive); else the dev keys of levelup_override.ini.
 const TagCfg* tagConfig(const char* tag) {
     if (!tag || !*tag) return nullptr;
-    for (int i = 0; i < g_cfg.nTags; ++i) if (!_stricmp(g_cfg.tags[i].tag, tag)) return &g_cfg.tags[i];
+    Config& c = g_ptActive ? g_ptCfg : g_cfg;
+    for (int i = 0; i < c.nTags; ++i) if (!_stricmp(c.tags[i].tag, tag)) return &c.tags[i];
     return nullptr;
+}
+// Requested preset id of an entry returned by tagConfig (either source).
+const char* presetIdOf(const TagCfg* t) {
+    if (t >= g_ptCfg.tags && t < g_ptCfg.tags + MaxTagCfg) return g_ptCfg.presetId[t - g_ptCfg.tags];
+    return g_cfg.presetId[t - g_cfg.tags];
 }
 
 // ---- runtime table v2 (levelup_paths.ini; format in gen_runtime_table.py docstring) ----------------------
@@ -485,6 +505,7 @@ const Preset* findPreset(const char* id) {
 }
 void resolvePresets() {
     for (int i = 0; i < g_cfg.nTags; ++i) g_cfg.tags[i].preset = findPresetIdx(g_cfg.presetId[i]);
+    for (int i = 0; i < g_ptCfg.nTags; ++i) g_ptCfg.tags[i].preset = findPresetIdx(g_ptCfg.presetId[i]);
 }
 [[maybe_unused]] const Rec* lookupRecord(const char* id, int keyLevel) {
     const Preset* p = findPreset(id);
@@ -697,11 +718,16 @@ typedef void (__thiscall* PushU32_t)(void* arr, uint32_t value);
 // Gate functions (all thiscall; the originals the hooked call sites used to call): canLevelUp(stats) plain RET; optAccessor(ecx) (__fastcall,
 // ECX only); charChange 0x740FC0 (GetCharacterChangeInProgress) plain RET; getCreature 0x77D800 (-> creature*); partyGet 0x7E5DA0(party, idx) RET 4;
 // tableGet 0x73FB90 (-> party). appGlobal = address of the global holding the app object (+4 = table-get ECX).
+// M3 save binding (all thiscall, name = CExoString* {char*, len+1}): strCtor 0x733570 (buf, const char*) RET 4, strDtor 0x733780 plain RET,
+// guidFind 0x6545B0 (table, name) -> index/-1 RET 4, guidAdd 0x654430 (no dup check!) RET 4, guidSet 0x654BB0 (table, name, 0/1) RET 8,
+// guidGet 0x654740 (table, name, int*) RET 8, serverInit 0x51C450 (ecx = new server app, no args, plain RET).
 struct Engine {
     uintptr_t addFeat, setSkillDelta, pushU32;
     bool checkCode;   // compare the functions' first bytes before calling (off in the host test, which uses fakes)
     uintptr_t canLevelUp = 0x006B9790, optAccessor = 0x0072FB00, charChange = 0x00740FC0, getCreature = 0x0077D800,
               partyGet = 0x007E5DA0, tableGet = 0x0073FB90, appGlobal = 0x00A1B4A4;
+    uintptr_t strCtor = 0x00733570, strDtor = 0x00733780, guidFind = 0x006545B0, guidAdd = 0x00654430, guidSet = 0x00654BB0,
+              guidGet = 0x00654740, serverInit = 0x0051C450;
 };
 Engine g_eng = {0x006F5B40, 0x006F5B00, 0x0083EA60, true};
 const uint8_t kAddFeatCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC};
@@ -714,6 +740,14 @@ const uint8_t kCharChangeCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4
 const uint8_t kGetCreatureCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xFC};
 const uint8_t kPartyGetCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4};
 const uint8_t kTableGetCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
+// M3 (first bytes of the vanilla exe, pebytes.py): Find, AddBoolean, SetBoolean (= GetBoolean's SEH prologue), GetBoolean, CExoString ctor/dtor, 0x51C450.
+const uint8_t kGuidFindCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4, 0x8B, 0x45, 0x08};
+const uint8_t kGuidAddCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF};
+const uint8_t kGuidSetCode[] = {0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x00, 0x8E, 0x95, 0x00, 0x64, 0xA1};
+const uint8_t kGuidGetCode[] = {0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x00, 0x8E, 0x95, 0x00, 0x64, 0xA1};
+const uint8_t kStrCtorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0x83, 0x7D, 0x08, 0x00};
+const uint8_t kStrDtorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0x8B, 0x45, 0xF8};
+const uint8_t kServerInitCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC, 0x8B, 0x48, 0x04};
 
 bool writableProtect(DWORD p) {
     if (p & (PAGE_GUARD | PAGE_NOACCESS)) return false;
@@ -861,12 +895,230 @@ uint8_t classSkillMask(uintptr_t stats) {
     return mask;
 }
 
+// ---- M3 save binding: playthrough GUID in 32 Boolean globals + levelup_playthroughs.ini ------------------------
+// The table (CSWGlobalVariableTable) is saved/loaded by name by the engine and re-adds unknown names on load, so LUO_G00..LUO_G31 round-trip
+// through a save without a globalcat.2da row (doc 08 Item 7). All engine calls are thiscall with CExoString names built by the engine ctor.
+constexpr unsigned S_Glob = 110;
+constexpr uintptr_t TableOffset = 0x100FC;   // CServerExoAppInternal -> globals table (an address inside the object, not a pointer)
+typedef void* (__thiscall* StrCtor_t)(void* buf, const char* s);
+typedef void (__thiscall* StrDtor_t)(void* buf);
+typedef int (__thiscall* GFind_t)(void* table, void* name);
+typedef int (__thiscall* GAdd_t)(void* table, void* name);
+typedef void (__thiscall* GSet_t)(void* table, void* name, uint32_t v);
+typedef void (__thiscall* GGet_t)(void* table, void* name, int* out);
+typedef int (__thiscall* ServerInit_t)(void* app);
+
+int g_guidEngState = 0;   // 0 unchecked, 1 verified, 2 mismatch (save binding disabled; the gates keep working)
+bool guidEngineOk() {
+    if (!g_eng.checkCode) return true;
+    if (!g_guidEngState) {
+        const bool ok = codeMatches(g_eng.guidFind, kGuidFindCode, sizeof kGuidFindCode) && codeMatches(g_eng.guidAdd, kGuidAddCode, sizeof kGuidAddCode) &&
+                        codeMatches(g_eng.guidSet, kGuidSetCode, sizeof kGuidSetCode) && codeMatches(g_eng.guidGet, kGuidGetCode, sizeof kGuidGetCode) &&
+                        codeMatches(g_eng.strCtor, kStrCtorCode, sizeof kStrCtorCode) && codeMatches(g_eng.strDtor, kStrDtorCode, sizeof kStrDtorCode) &&
+                        codeMatches(g_eng.serverInit, kServerInitCode, sizeof kServerInitCode);
+        g_guidEngState = ok ? 1 : 2;
+        if (!ok) logLine("GUID ENGINE mismatch - save binding disabled (gates keep working)");
+    }
+    return g_guidEngState == 1;
+}
+
+// Live globals table: *(*(*[appGlobal]+8)+4) + 0x100FC; 0 on any null / unreadable link (main menu: server app is 0).
+uintptr_t liveTable() {
+    uint32_t app = 0, srv = 0, intl = 0;
+    if (!readAt(S_Glob, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Glob, app, 8, &srv) || !srv || !readAt(S_Glob, srv, 4, &intl) || !intl) return 0;
+    return intl + TableOffset;
+}
+
+// Writes the 32 bits (Find first: AddBoolean has no duplicate check), then reads each back. True when every bit reads back as written.
+bool writeGuid(void* table, uint32_t guid) {
+    uint8_t bits[32];
+    pt::unpackBits(guid, bits);
+    bool ok = true;
+    for (int i = 0; i < 32; ++i) {
+        char nm[8]; uint32_t cs[2] = {0, 0};
+        pt::bitName(i, nm);
+        reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, nm);
+        if (reinterpret_cast<GFind_t>(g_eng.guidFind)(table, cs) < 0 && reinterpret_cast<GAdd_t>(g_eng.guidAdd)(table, cs) < 0) {
+            ok = false;
+        } else {
+            int back = 0;
+            reinterpret_cast<GSet_t>(g_eng.guidSet)(table, cs, bits[i]);
+            reinterpret_cast<GGet_t>(g_eng.guidGet)(table, cs, &back);
+            if (back != bits[i]) ok = false;
+        }
+        reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
+    }
+    return ok;
+}
+// Reads the bits of the names that exist; *found = how many of the 32 names exist (0 = no GUID saved).
+void readGuid(void* table, uint32_t* guid, int* found) {
+    uint8_t bits[32] = {};
+    *found = 0;
+    for (int i = 0; i < 32; ++i) {
+        char nm[8]; uint32_t cs[2] = {0, 0};
+        pt::bitName(i, nm);
+        reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, nm);
+        if (reinterpret_cast<GFind_t>(g_eng.guidFind)(table, cs) >= 0) {
+            int v = 0;
+            reinterpret_cast<GGet_t>(g_eng.guidGet)(table, cs, &v);
+            bits[i] = v != 0;
+            ++*found;
+        }
+        reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
+    }
+    *guid = pt::packBits(bits);
+}
+
+// ---- levelup_playthroughs.ini ---------------------------------------------------------------------------------
+const char* const PtName = "levelup_playthroughs.ini";
+const char* const PtTmp = "levelup_playthroughs.ini.tmp";
+pt::Doc g_ptDoc;
+char g_ptText[pt::MaxText];
+uint64_t g_ptStamp = ~0ULL;
+DWORD g_ptLast = 0;
+bool g_ptChecked = false;
+int g_srcLast = -1;           // last logged config source: 1 dev, 2 playthrough
+uint32_t g_srcGuid = 0;
+
+// Rebuilds g_ptCfg from the current GUID's section (if any) and logs a source change once.
+void rebuildPtCfg() {
+    const pt::Section* s = g_guid ? pt::findGuid(g_ptDoc, g_guid) : nullptr;
+    g_ptActive = s != nullptr;
+    g_ptCfg.nTags = 0;
+    if (s) {
+        for (int i = 0; i < s->n; ++i) {
+            const pt::Line& l = s->lines[i];
+            if (!l.isTag) continue;
+            const int e = cfgEntry(g_ptCfg, l.tag);
+            if (e < 0) continue;
+            snprintf(g_ptCfg.presetId[e], sizeof g_ptCfg.presetId[e], "%s", l.preset);
+            g_ptCfg.tags[e].instant = l.instant;
+            g_ptCfg.tags[e].hold = l.hold;
+        }
+    }
+    resolvePresets();
+    const int src = g_ptActive ? 2 : 1;
+    if (src == g_srcLast && (src == 1 || g_srcGuid == g_guid)) return;
+    g_srcLast = src; g_srcGuid = g_guid;
+    if (src == 1) { logLine("CONFIG source=dev"); return; }
+    Buf b;
+    for (int i = 0; i < g_ptCfg.nTags; ++i)
+        b.add("%s%s:%s/i%d/h%d", i ? "," : "", g_ptCfg.tags[i].tag, g_ptCfg.presetId[i], g_ptCfg.tags[i].instant, g_ptCfg.tags[i].hold);
+    logLine("CONFIG source=playthrough g%08x tags=%s", (unsigned)g_guid, b.s);
+}
+
+// Re-reads levelup_playthroughs.ini when its stamp changed (throttled like the other configs); force = re-read now regardless.
+void reloadPlay(bool force = false) {
+    if (!reloadDue(&g_ptLast, &g_ptChecked, force)) return;
+    const uint64_t st = fileStamp(PtName);
+    if (st == g_ptStamp && !force) return;
+    const bool changed = st != g_ptStamp;
+    g_ptStamp = st;
+    size_t len = 0;
+    bool big = false;
+    if (st) {
+        if (FILE* f = fopen(PtName, "rb")) {
+            len = fread(g_ptText, 1, sizeof g_ptText - 1, f);
+            big = !feof(f);
+            fclose(f);
+        }
+    }
+    pt::parse(g_ptDoc, g_ptText, len);
+    if (big) g_ptDoc.lossy = true;
+    if (changed) logLine("PLAYTHROUGH %s: %d section(s)%s", st ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
+    rebuildPtCfg();
+}
+
+// Serialises g_ptDoc to levelup_playthroughs.ini.tmp and replaces the ini. Refuses when the parse lost data (caps).
+bool ptWrite() {
+    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
+    const size_t n = pt::serialise(g_ptDoc, g_ptText, sizeof g_ptText);
+    if (!n) return false;
+    FILE* f = fopen(PtTmp, "wb");
+    if (!f) return false;
+    bool ok = fwrite(g_ptText, 1, n, f) == n;
+    ok = fclose(f) == 0 && ok;
+    ok = ok && MoveFileExA(PtTmp, PtName, MOVEFILE_REPLACE_EXISTING);
+    if (!ok) remove(PtTmp);
+    return ok;
+}
+
+[[maybe_unused]] uint32_t ptGuid() { return g_guid; }
+
+// API for the UI (M4). Sets tag = preset|instant|hold for the current playthrough; the first call of a playthrough creates its GUID and writes it
+// to the live globals table at once (a save made afterwards carries it). False (nothing changed) when there is no live table / the write failed.
+[[maybe_unused]] bool ptApply(const char* tag, const char* presetId, bool instant, bool hold) {
+    saferead::beginScope();
+    ensureHeader();
+    if (!tag || !*tag || !presetId || !*presetId) return false;
+    reloadPlay(true);
+    if (!g_guid) {
+        const uintptr_t tb = liveTable();
+        if (!tb || !guidEngineOk()) { logLine("GUID new: no live globals table / engine mismatch - not applied"); return false; }
+        uint32_t guid;
+        do {
+            LARGE_INTEGER q;
+            QueryPerformanceCounter(&q);
+            guid = static_cast<uint32_t>(q.QuadPart) ^ static_cast<uint32_t>(GetTickCount()) ^ (static_cast<uint32_t>(rand()) << 16 | static_cast<uint32_t>(rand()));
+        } while (!guid || pt::findGuid(g_ptDoc, guid));
+        const bool wrote = writeGuid(reinterpret_cast<void*>(tb), guid);
+        logLine("GUID new g%08x live-write ok=%d", (unsigned)guid, wrote);
+        if (!wrote) return false;
+        g_guid = guid;
+    }
+    const bool ok = pt::setTag(g_ptDoc, g_guid, tag, presetId, instant, hold) && ptWrite();
+    logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
+    reloadPlay(true);   // on failure this restores the in-memory doc from the file
+    return ok;
+}
+// Removes the tag from the current playthrough's section; the (possibly empty) section stays so the dev keys never apply again to this playthrough.
+[[maybe_unused]] bool ptRemove(const char* tag) {
+    saferead::beginScope();
+    ensureHeader();
+    if (!tag || !*tag || !g_guid) return false;
+    reloadPlay(true);
+    if (!pt::removeTag(g_ptDoc, g_guid, tag)) return false;
+    const bool ok = ptWrite();
+    logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
+    reloadPlay(true);
+    return ok;
+}
+
+// Save/load/new-server hook bodies (mode=off still tracks and logs; every failure falls through to vanilla).
+void guidSave(void* table) {
+    saferead::beginScope();
+    ensureHeader();
+    if (!g_guid) { logLine("GUID save none"); return; }
+    if (!table || !guidEngineOk()) return;
+    const bool ok = writeGuid(table, g_guid);
+    logLine("GUID save g%08x table=%08x ok=%d", (unsigned)g_guid, (unsigned)reinterpret_cast<uintptr_t>(table), ok);
+}
+void guidLoad(void* table, int result) {
+    saferead::beginScope();
+    ensureHeader();
+    uint32_t g = 0; int found = 0;
+    if (table && guidEngineOk()) readGuid(table, &g, &found);
+    g_guid = found ? g : 0;
+    logLine("GUID load g%08x found=%d/32 result=%d table=%08x", (unsigned)g_guid, found, result, (unsigned)reinterpret_cast<uintptr_t>(table));
+    reloadPlay(true);
+}
+int guidNewServer(void* app) {
+    saferead::beginScope();
+    const int r = reinterpret_cast<ServerInit_t>(g_eng.serverInit)(app);   // the replaced call; its EAX is returned
+    ensureHeader();
+    logLine("GUID new-server (cache cleared, was g%08x)", (unsigned)g_guid);
+    g_guid = 0;
+    rebuildPtCfg();
+    return r;
+}
+
 void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList, uintptr_t ebp) {
     LONG call = InterlockedIncrement(&g_calls);
     ensureHeader();
     reloadConfig(true);
     if (g_cfg.mode == Mode::Off) return;
     reloadTable(true);
+    reloadPlay(true);
     if (!logOpen()) return;
     const bool v = g_cfg.verbose;
 
@@ -1006,7 +1258,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
             }
         }
     } else if (cfg) {
-        logf("  tag %s configured but preset %s not in table (table %s)", tag, g_cfg.presetId[cfg - g_cfg.tags], g_tableOk ? "ok" : "ERROR");
+        logf("  tag %s configured but preset %s not in table (table %s)", tag, presetIdOf(cfg), g_tableOk ? "ok" : "ERROR");
     }
     logClose();
 }
@@ -1042,6 +1294,7 @@ bool gateActive() {
     reloadConfig();
     if (g_cfg.mode == Mode::Off) return false;
     reloadTable();
+    reloadPlay();
     return engineOk();
 }
 
@@ -1201,6 +1454,11 @@ int __cdecl LuoGuardGui_84FD2F(void* ecx) { return guiGuard(0x84FD2F, "gui", ecx
 int __cdecl LuoGuardAuto_84F9FE(void* ecx) { return guiGuard(0x84F9FE, "auto", ecx); }
 // DoAutoLevelup 0x77D800 call at 0x850062 (ecx).
 void* __cdecl LuoAutoOk_850062(void* ecx) { return autoOkBackstop(ecx); }
+
+// M3 save binding. Pre-save 0x656640 (ecx = table), post-load 0x65675B (table = [ebp-0x1c], eax = load result), new server 0x401C52 (ecx = app; returns 0x51C450's EAX).
+void __cdecl LuoGuidSave(void* table) { guidSave(table); }
+void __cdecl LuoGuidLoad(void* table, int result) { guidLoad(table, result); }
+int __cdecl LuoGuidNewServer(void* app) { return guidNewServer(app); }
 
 } // extern "C"
 

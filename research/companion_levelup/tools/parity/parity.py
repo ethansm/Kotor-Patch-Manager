@@ -4,7 +4,7 @@
 Builds parity_main.cpp (LevelUpOverride.cpp + stub/windows.h, native g++), generates cases from levelup_paths.ini (per record:
 vanilla-like pend, replay of the result, class mismatch, negative unspent, random picks; plus missing records), runs both twins and
 diffs the DRY lines (cases keyed by preset id, with a Class-Skill-feat csExtraMask); levelNow parity over every preset; then runs apply_test.cpp
-(applyRewrite on fake engine structs) on the same cases and gate_test.cpp (hold/instant/GUI-guard/Auto-OK handlers on fake engine structs). Usage: python3 tools/parity/parity.py   (from research/companion_levelup)
+(applyRewrite on fake engine structs) on the same cases gate_test.cpp (hold/instant/GUI-guard/Auto-OK handlers + M3 save-binding hooks/ptApply on fake engine structs) and playthrough_test.cpp (Playthrough.h). Usage: python3 tools/parity/parity.py   (from research/companion_levelup)
 """
 import os, random, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -16,6 +16,7 @@ INI = os.path.join(ROOT, "runtime", "levelup_paths.ini")
 EXE = os.path.join(HERE, "parity_bin")
 APPLY_EXE = os.path.join(HERE, "apply_test_bin")
 GATE_EXE = os.path.join(HERE, "gate_test_bin")
+PT_EXE = os.path.join(HERE, "playthrough_test_bin")
 
 
 def case(tag, key, p, mask=0):
@@ -24,7 +25,7 @@ def case(tag, key, p, mask=0):
 
 
 def build(exe, src):
-    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "inc"), "-o", exe,
+    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-o", exe,
                         os.path.join(HERE, src)], capture_output=True, text=True)
     if r.returncode:
         sys.exit(r.stderr)
@@ -63,6 +64,7 @@ def main():
     build(EXE, "parity_main.cpp")
     build(APPLY_EXE, "apply_test.cpp")
     build(GATE_EXE, "gate_test.cpp")
+    build(PT_EXE, "playthrough_test.cpp")
     cs, presets, recs = S.parse_table_v2(open(INI).read())
     rnd = random.Random(1)
     cases = []
@@ -115,7 +117,12 @@ def main():
     print(gt.stdout.strip())
     if gt.stderr:
         print(gt.stderr[:4000])
-    sys.exit(1 if bad or lbad or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode else 0)
+    # playthrough model (Playthrough.h: GUID bit packing, levelup_playthroughs.ini parse/serialise/set/remove)
+    pt = subprocess.run([PT_EXE], capture_output=True, text=True)
+    print(pt.stdout.strip())
+    if pt.stderr:
+        print(pt.stderr[:4000])
+    sys.exit(1 if bad or lbad or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode else 0)
 
 
 if __name__ == "__main__":

@@ -21,3 +21,6 @@ EXPORTS
     LuoGuardGui_84FD2F
     LuoGuardAuto_84F9FE
     LuoAutoOk_850062
+    LuoGuidSave
+    LuoGuidLoad
+    LuoGuidNewServer
