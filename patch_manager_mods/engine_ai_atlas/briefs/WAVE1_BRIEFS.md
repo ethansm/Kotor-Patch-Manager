@@ -9,6 +9,14 @@
 - Answer every question below with CONFIRMED / REFUTED / SPECULATIVE plus the quoted asm/decompile line and address.
 - Use `tools/cg.py` and `tools/field_census.py` first (`python3 REPO/patch_manager_mods/engine_ai_atlas/tools/cg.py --help`).
 - If a function you need is missing from `decomp/`, list it in (d); do not run Ghidra.
+- Tool facts (Phase 0 gate): `cg.py` BFS uses direct CALL/TAILJMP only. The scheduler reaches the creature through
+  vtable+0x70 (`0x51DC7B CALL EAX` after `0x51DC78 MOV EAX,[EDX + 0x70]`), so bridge it with
+  `--bridge 0x51D790:0x569320`; `class_methods` has no CSWSCreature/CSWSObject rows, so `--via-vtable` finds nothing.
+  `cg.py indirect --slot 0xNN --in ADDR` recovers slots from `CALL EAX` sites. `field_census.py --all` scans every
+  function in ~0.3 s; provenance is a linear-scan hint. Negative offsets: `--offset=-0x8`.
+- Known name_map errors (fix pending, do not propagate): `0x51D790` is CServerAIMaster::UpdateState (DB says
+  ServerEvents::Update); `0x5644B0` is AddMoveToPointActionToFront (calls AddActionToFront at `0x5645E4`), `0x564770`
+  is AddMoveToPointAction (calls AddAction); the 19-row CSWSCreature outlier cluster in `AI0_mapper_summary.md` is false.
 - Never write anything except your output file (and optional mapper TSVs under `ROOT/findings/`).
 
 ## AI1 Pathfinding and movement
