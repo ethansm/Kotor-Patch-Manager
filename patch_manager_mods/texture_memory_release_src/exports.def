@@ -1,0 +1,4 @@
+LIBRARY TextureMemoryRelease
+EXPORTS
+    TexMemTestState
+    TexMemTestCounters
