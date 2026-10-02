@@ -1,6 +1,6 @@
 # 19. Shared logging / probe library for kotor-patch-manager patches (DESIGN, 2026-10-02)
 
-Status: **PROPOSAL / planning only. Nothing implemented.** Audience: every contributor to patch DLLs (our sibling sessions and outside contributors). Goal: one logging library, one ini schema, one naming workflow, so logs from different patches can be correlated and switched on/off the same way.
+Status: **PROPOSAL / planning only. Nothing implemented.** Revised 10-02 (rev 2): the service lives in the KotorPatcher core, not in a per-patch header or a separate sink DLL (user-confirmed direction). Audience: every contributor to patch DLLs (our sibling sessions and outside contributors). Goal: one logging library, one ini schema, one naming workflow, so logs from different patches can be correlated and switched on/off the same way.
 
 ## 1. Why
 Survey of 16 existing logging DLLs (10-02) found:
@@ -13,74 +13,120 @@ Survey of 16 existing logging DLLs (10-02) found:
 - **Include path mismatch**: sources use `../_shared/SafeRead.h`; repo dir is `_shared_src/`; framework has `Patches/_shared/` (lacks GuiKit.h). Copies can drift. `ForcePowerHotbar.cpp` still calls `IsBadReadPtr`.
 - Framework has no logging API for patches (`Platform::Log` -> OutputDebugString / `KPATCH_LOG`), no CONTRIBUTING file, no cross-DLL import precedent (but patches share one process, so `GetProcAddress` between DLLs is possible; load order not guaranteed).
 
-## 2. Design principles
-1. **Header-only first** (`_shared_src/KpLog.h`), zero runtime dependency between DLLs. Each patch keeps its own hooks and state. Works for outside contributors with only the header.
-2. **Optional shared sink** (phase 2): a tiny `kp-log` DLL that owns ONE merged file and ini. Patches look it up with `GetModuleHandle/GetProcAddress` at first log call; if absent they fall back to their own per-patch file. Never a hard dependency, never a load-order assumption (resolve lazily, retry).
-3. **Backward compatible formats**: tag/line text stays exactly as is; the library only adds a common prefix and sink. Analyzer regexes must keep working (add prefix-stripping in parsers, run `test_analyze_play_logs.py`).
-4. **Hot path never does file I/O**: format into a thread-local/ring buffer, flush on a timer/size, or by the sink thread. Never block a render hook. Never allocate in hooks.
-5. **Safe by default**: logging OFF unless enabled; one kill switch; caps by bytes; read engine memory only through SafeRead.
+## 2. Goal and direction (rev 2, user-confirmed 10-02)
+Goal: a **framework-level logging standard for kotor-patch-manager**, so every mod logs compatibly (one clock, one config, one format) and cheaply (no file I/O on game threads, one writer for the whole process).
 
-## 3. Proposed API (sketch)
+Direction: **the logging service lives in the patcher core (`KotorPatcher.dll` / `.so` / `.dylib`)**; patches reach it through `Patches/Common`. Rev 1's per-patch `_shared_src/KpLog.h` and optional `kp-log` sink DLL are dropped.
+
+Why the core:
+- **It is always there first.** The patcher is loaded before any patch: on Windows it loads every patch DLL itself (`Platform::LoadModule`, patcher.cpp:226/252); on native Linux `KotorPatcher.so` is a `DT_NEEDED` of the game. No load-order question, unlike a sink DLL.
+- **One of everything.** One clock origin, one frame counter, one `kplog.ini` reader, one set of file handles, one flush thread for the whole process (instead of up to 16 per-DLL threads/handles). The expensive part of logging under Wine (file I/O) happens once, off the game threads.
+- **Precedent.** The core already publishes state to patches (`KOTOR_VERSION_SHA` via `Platform::SetEnv`, patcher.cpp:122) and already has a platform seam (`platform_win32.cpp` / `platform_posix.cpp`) for clocks, files and threads.
+- **Existing patches benefit unchanged.** Upstream's `Patches/Common/Common.h` already has `debugLog()` / `debugHexDump()` (OutputDebugString, used by ~29 upstream patches). Routing them through the service gives every upstream patch the common prefix and ini control with no source edits.
+
+## 2a. Upstream context: RFC #180 (checked 10-02)
+Upstream issue **LaneDibello/Kotor-Patch-Manager#180 "RFC: how should patches talk to each other?"** (@ProjectSynchro, 2026-08-26, OPEN, 0 comments, not implemented: no `KPatchInit`/`KPatchApi` in upstream/master) proposes the mechanism this design needs:
+- A plain-C `KPatchApi { struct_size, abi_version, provide(name, version, iface), require(name, version) }` registry in the patcher.
+- **Push, not pull**: after `LoadModule` the patcher calls an optional per-patch export `void KPatchInit(const KPatchApi*)`. No new patcher exports, no platform-specific module lookup; patches without `KPatchInit` are untouched.
+- Constraints: plain C across the boundary (MSVC and MinGW patches share one process), callers `require` lazily at first use.
+- **Its open question 2 asks exactly our question:** "Should the patcher expose its own services through the same table (logging, `GameVersion`)?"
+No other upstream issue or PR covers logging (searched log/logging/debugLog/trace/verbose/export/shared, issues + PRs, all states). Related only loosely: #12 (Feedback scrollback), #28/#42 (debug features).
+
+**Consequence for this design:** logging should be the first patcher-provided service on the #180 registry (interface `"kpatch.log"`, version 1), not a separate `KpLog_GetApi` export. That gives #180 a concrete first consumer and gives us an ABI the maintainers already proposed. Section 3 is written that way; the standalone export is kept only as the fallback if #180 is not adopted.
+
+## 3. Architecture
+```
+ patch DLL                         Patches/Common/KpLog.h (header)         KotorPatcher core
+ KP_LOG(ch,"DRAW x=%d",x) ──► enabled? rate? ──► format into TLS buf ──► Api->Submit(line) ──► ring buffer
+                                  (no lock, no I/O)                            │
+                                                                     flush thread (1 per process)
+                                                                     ├─ <patch>_log.txt (default)
+                                                                     ├─ kp_log.txt (merged, opt-in)
+                                                                     └─ caps, rotation, kplog.ini reload
+```
+- **ABI: a `"kpatch.log"` v1 interface on the RFC #180 registry.** The core `provide`s a plain-C table (`struct_size`, `Register`, `Enabled`, `Submit`, `Frame`, `FrameTick`, `Mark`, ...); new functions are appended only. `Patches/Common/KpLog.h` defines `KPatchInit` for the patch (or chains to the patch's own) and `require`s `"kpatch.log"` there.
+- **Before `KPatchInit` runs** (the patch's `DllMain` / static init, which execute inside `LoadModule`): lines go to a small static pre-init buffer in the patch, drained into the service when `KPatchInit` arrives (or to `debugLog()` if it never does).
+- **Fallback if #180 is not adopted**: the core exports one symbol, `KpLog_GetApi(abiVersion)`, resolved lazily by the header (Windows `GetModuleHandleA("KotorPatcher.dll")` + `GetProcAddress`; Linux/macOS `dlsym(RTLD_DEFAULT, ...)`). Same table either way, so patches do not change.
+- **Fallback when the symbol is absent** (older patcher, patch tested standalone): the header logs to `debugLog()` (today's behaviour) or, if the patch opts in, to its own buffered file. A patch never fails to load because logging is missing.
+- **Hot path**: `Enabled(channel)` is a read of a flags word the service updates on ini reload; format into a thread-local buffer; `Submit` copies into a lock-free/short-CS ring. No allocation, no I/O, never blocks; when the ring is full the line is dropped and counted (`DROPPED n` reported by the flush thread).
+- **Flush thread**: created by the core during init (before patches load), never waited on under the loader lock. On process exit the core flushes synchronously in `CleanupPatcher` / `DLL_PROCESS_DETACH` / the `.so` destructor.
+- **Cross-platform**: clock, file I/O and threads go through the core's `Platform::` seam (Win32 QPC / `clock_gettime(CLOCK_MONOTONIC)`). The header uses no Windows-only calls in its fast path.
+
+## 4. Line format
+`T=<ms since patcher init, 3 dp> f=<frame#|-> <patch>/<channel> <message>`
+- Message text is the patch's existing tag text, unchanged (parsers strip the prefix with one shared regex, see section 7).
+- **Frame counter lives in the core.** A patch that already has a per-frame hook calls `KpLog_FrameTick()` (first caller wins; others' calls are ignored); until one does, lines print `f=-`. Later option: the core installs its own per-frame hook from the AddressDatabases per game build.
+- One session header per file: wall-clock time, `KOTOR_VERSION_SHA`, patcher version, list of registered patches/channels, so logs map onto Proton/Steam log times.
+
+## 5. Patch-facing API (Patches/Common/KpLog.h)
 ```cpp
 #include "KpLog.h"
-KP_LOG_INIT("buff-duration-hud");               // DllMain: names the patch, reads ini
-KP_LOG(ch_draw, "DRAW slot=%d x=%.1f", s, x);    // channel + printf; rate/level checked first
-KP_LOGV(ch_pool, 2, "...");                      // verbose level
-KP_LOG_EVERY(ch_cam, 100 /*ms*/, "...");         // built-in rate limit
-KP_MARK("F9");                                   // marker line in all patches
-KpLog::enabled(ch_draw);                         // cheap check before building expensive args
-KP_LOG_SHUTDOWN();
+KP_LOG_PATCH("buff-duration-hud");               // once per patch (registers name + channels lazily)
+KP_CHANNEL(draw); KP_CHANNEL(pool);              // channel declarations
+KP_LOG(draw, "DRAW slot=%d x=%.1f", s, x);       // enabled/rate checked before formatting
+KP_LOGV(pool, 2, "...");                         // verbose level
+KP_LOG_EVERY(draw, 100 /*ms*/, "...");           // per-call-site rate limit
+KP_WARN("hook failed at %08X", addr);            // WARN/ERR always on (production default)
+KP_MARK("F9");                                   // marker written to every open log
+if (KP_ENABLED(draw)) { /* build expensive args (SafeRead) */ }
 ```
-- Every line: `T=<QPC ms since process start, 3 dp> f=<frame#> tick=<GetTickCount> <patch>/<channel> <message>`. Frame counter is exported by a patch that owns a frame hook (or tick only). One session header with wall-clock + tick so logs map to Proton log time.
-- Channels registered per patch (`KP_CHANNEL(draw)`), toggled individually in the ini.
+`debugLog()` / `debugHexDump()` keep their signatures and route to channel `debug` of the calling patch (default sink: OutputDebugString, as today, unless `kplog.ini` says otherwise).
 
-## 4. Unified ini schema (`kplog.ini` in the game dir, hot-reloaded every 1000 ms by mtime)
+## 6. Config: one `kplog.ini` beside `patch_config.toml`, hot-reloaded (mtime, 1000 ms) by the flush thread
 ```ini
 [global]
-enabled=0              ; master switch (replaces most *_debug.txt flag files)
-sink=perpatch          ; perpatch | merged
+enabled=0              ; master switch; logging off unless enabled
+sink=perpatch          ; perpatch (default) | merged | both
 flush_ms=500
-max_bytes=8000000      ; per file; rotate to .1 (keep 1)
-max_lines_per_sec=2000 ; per patch, drops counted and reported
+max_bytes=8000000      ; per file; on overflow rotate to .1 (keep 1)
+max_lines_per_sec=2000 ; per patch; drops counted and reported
+debuglog=ods           ; ods (today) | file | both  -- where legacy debugLog() goes
 [buff-duration-hud]
 enabled=1
 channels=draw,pool,tip,capfix,menuslot  ; or * ; -swap to exclude
 level=1
-[mouse-probe]
-enabled=1
 ```
-- **Legacy flag files keep working** for one release (map: `shieldprobe.txt` -> buff-duration-hud level 2, `mouseprobe.txt` -> mouse-probe enabled, ...), then deprecate. **Behavioural kill switches that change gameplay/drawing** (`shield_nodraw.txt`, `buffhud_off.txt`, `shield_noswap.txt`) are NOT logging switches: keep them, but name new ones `<patch>_off.txt` per convention.
-- Flag/ini created after launch must work (hot reload), never DllMain-only.
+- Created/edited after launch must take effect (hot reload). Nothing is read only at load.
+- **Legacy flag files** (`shieldprobe.txt`, `mouseprobe.txt`, ...) keep working for one release via a mapping table in each migrated patch, then are deprecated.
+- **Behavioural kill switches** (`shield_nodraw.txt`, `buffhud_off.txt`, ...) change gameplay/drawing, not logging: out of scope; new ones named `<patch>_off.txt`.
 
-## 5. Conventions for contributors (workflow doc, to be published)
-- Log file names: `<patch-id>_log.txt` (perpatch) or `kp_log.txt` (merged); crash/diagnostic dumps `<patch-id>_dump.txt`.
-- Channel names: lowercase `[a-z0-9_]`, <=12 chars; tag text inside lines stays UPPERCASE (`MENUSLOT`) so `grep` works.
-- Every probe-only line must be behind a channel; production default logs only `WARN`/`ERR` (installation, hook failures, CAPFIX-like recoveries).
-- Never write a log line from a hook without the enabled() check; format arguments that need engine reads via SafeRead.
-- Document each patch's channels in its doc under `## Logging` (channel, rate, meaning, parser).
-- Parsers (`scripts/`/`mods678_research`) must strip the common prefix with a single shared regex (`scripts/kplog_parse.py`, to be written) and have a format test.
-- Include path: one canonical `_shared_src/` copied by the build script into each patch build dir (fix the `_shared` vs `_shared_src` split; add a drift check).
+## 7. Conventions for contributors
+- Files: `<patch-id>_log.txt` (perpatch), `kp_log.txt` (merged), dumps `<patch-id>_dump.txt`, all beside the game exe.
+- Channels: lowercase `[a-z0-9_]`, <= 12 chars; tag text inside lines stays UPPERCASE (`MENUSLOT`) for grep.
+- Every probe-only line behind a channel; production default = `WARN`/`ERR` only.
+- Never log from a hook without the enabled check; engine reads for arguments go through SafeRead (moved into `Patches/Common`).
+- Each patch doc gets a `## Logging` section (channel, rate, meaning, parser).
+- Parsers strip the prefix with one shared regex (`scripts/kplog_parse.py` here; a copy in upstream `tools/`), each with a format test.
 
-## 6. Phased plan
-| Phase | Work | Owner/gate |
-|---|---|---|
-| 0 | Fix include-path split + drift check; remove direct `IsBadReadPtr` in hotbar (sibling-owned: ask). Agree this doc with sibling sessions/contributors. | main + user |
-| 1 | Write `KpLog.h` (per-patch sink, ring buffer + flush thread, QPC clock, caps, ini hot reload, legacy flag shim) + unit test host build (Linux g++ test of formatting/caps/rate limiting) | Sonnet agent, main reviews |
-| 2 | Migrate `mouse-probe` (new, no conflicts) as reference implementation; measure cost vs per-line fopen under Wine (perf-lab) | main |
-| 3 | Migrate `buff-duration-hud` probe lines (keep exact tags; document in doc 08/02) | main |
-| 4 | Optional `kp-log` merged-sink DLL + `kplog_parse.py` + merged timeline viewer; `F9` MARK across patches | decide after 1-3 |
-| 5 | Sibling-owned patches migrate on their own schedule (hotbar, inv3d, equip3d, chareffects, levelup, ai, perf-lab); small fix patches share one CS-based helper | owners |
-| 6 | Contributor-facing doc (README section / CONTRIBUTING for upstream), example patch | main |
+## 8. Phased plan
+| Phase | Work | Where | Gate |
+|---|---|---|---|
+| 0 | Move `SafeRead.h` into `Patches/Common`; fix the `_shared` / `_shared_src` split + drift check; hotbar `IsBadReadPtr` -> SafeRead (sibling-owned: ask) | fork | main + user |
+| 0b | Comment on RFC #180: answer its open question 2 ("yes, logging first"), propose `"kpatch.log"` v1 (section 3) + line format (section 4) + answers to its threading question (Submit callable from any thread). **Draft only; posting needs user go.** If #180 needs an implementation first, offer to write the registry in the same PR. | upstream | user |
+| 1 | Core: `KpLog_GetApi` + service (ring, flush thread, files, caps/rotation, ini reload, frame counter) in `src/KotorPatcher`, Win32 + POSIX platform pieces; core unit tests (format, caps, rotation, rate limit, ring overflow, ABI version mismatch) in `src/KotorPatcher/tests` | fork `ethansm/local-mods` | Sonnet agent writes, main reviews; existing core tests + mutation gate pass |
+| 2 | Header: `Patches/Common/KpLog.h` + `debugLog()` reroute + fallback path; test a patch against (a) new core, (b) old core (fallback) | fork | main |
+| 3 | Migrate `mouse-probe` (reference) then the `buff-duration-hud` probe lines (exact tags kept); perf-lab A/B vs per-line fopen under Wine | fork, live install | user play test |
+| 4 | Merged sink mode + `kplog_parse.py` + merged timeline viewer; `F9` MARK across patches | fork | after 3 |
+| 5 | Upstream PR (core + header + docs) once 3 is proven; split into core PR and header PR if the maintainer prefers | upstream | user go + maintainer |
+| 6 | Sibling-owned patches migrate on their owners' schedule (hotbar, inv3d, equip3d, chareffects, levelup, ai, perf-lab) | fork | owners |
+| 7 | Contributor doc: `docs/Logging.md` upstream + example patch | upstream | with 5 |
 
-## 7. Open decisions (for the user)
-1. Merged single file by default, or per-patch files by default with merged as opt-in? (Recommend per-patch default, merged opt-in.)
-2. Byte cap + 1 rotation vs line caps (Recommend bytes + rate limit; fixes cap starvation.)
-3. Upstream: propose `KpLog.h` to the kotor-patch-manager project (needs coordination with its maintainer) vs keeping it in our `_shared_src` first. (Recommend ours first, upstream after Phase 3 proves it.)
-4. Frame counter source: a shared export from one patch, or each patch counts its own hook calls?
-5. Threading: single flush thread per DLL vs sink DLL thread (affects Wine cost).
+## 9. Decisions
+Settled (10-02, user confirmed core direction):
+1. Per-patch files by default, merged opt-in (`sink=`).
+2. Byte caps + 1 rotation + per-patch rate limit; no line caps.
+3. Built for upstream from the start: proven on our fork in upstream's layout, ABI proposed on RFC #180 before Phase 1 code (0b), PR after Phase 3.
+4. Frame counter owned by the core; advanced by `KpLog_FrameTick()` from a patch with a frame hook; `f=-` until then.
+5. One flush thread, in the core.
 
-## 8. Risks
-- Behaviour change in sibling-owned DLLs: migrate only with owner agreement; never edit their sources from another thread.
-- Perf: prove with perf-lab before touching hot paths; default OFF.
-- Parser breakage: keep tag text stable; prefix is strictly additive.
-- Wine: file I/O from a helper thread; CRITICAL_SECTION or lock-free ring; no logging from DllMain loader-lock paths.
+Still open:
+- Maintainer response on RFC #180 (0b): registry adopted (logging rides on it) vs not (fallback `KpLog_GetApi` export) vs core change declined (keep the service on our fork; header fallback stays upstream-compatible).
+- Whether we implement #180's registry ourselves as part of the logging PR.
+- Ring implementation: lock-free MPSC vs short CRITICAL_SECTION/mutex (decide with perf-lab numbers in Phase 3).
+
+## 10. Risks
+- **Core change = every user's patcher.** Default OFF; WARN/ERR only; the flush thread is created only when `enabled=1` or a WARN/ERR is logged. Existing core tests + mutation gate must pass.
+- **ABI lock-in**: one versioned symbol, append-only table, size field checked by the header.
+- **Loader lock**: core never waits on its thread inside `DllMain`; patches may log from `DllMain` (Submit is non-blocking).
+- **Behaviour change in sibling-owned DLLs**: migrate only with owner agreement.
+- **Parser breakage**: tag text unchanged; prefix strictly additive; `test_analyze_play_logs.py` must pass.
