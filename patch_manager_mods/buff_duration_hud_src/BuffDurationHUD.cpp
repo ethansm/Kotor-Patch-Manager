@@ -827,9 +827,10 @@ bool readVitals(int creature, int* hp, int* hpMax, int* fp, int* fpMax) {
 // one vertical gauge: teal track over the whole rect, then the colour fill from the bottom (cur/max of the height), as the stock bars
 void drawGauge(const char* texture, int x, int y, int w, int h, const float* fill, int cur, int mx) {
     void* img = imageFor(texture);
-    if (!img || mx < 1 || w < 4 || h < 4) return;
+    if (!img || w < 4 || h < 4) return;
     if (cur < 0) cur = 0; if (cur > mx) cur = mx;
     auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>((*reinterpret_cast<void***>(img))[6]);
+    if (mx < 1) { draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f); return; }     // no Force (droid): empty teal track, as the active portrait shows
     auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
     auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
     draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f);
@@ -874,6 +875,9 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
     int shown = 0, cols = 0;
     if (pushClip(pr[0], pr[1], pr[2], pr[3], ClipNoFillColor, 0, 1.0f)) {
         if (pools > 0) shown = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, false);
+        if (g_probe) { int q[2][4] = {}; for (int k = 0; k < 2; ++k) for (int i = 0; i < 4; ++i) readAt(panel + (k ? Menu_Char3Offset : Menu_Char2Offset), 4 + 4 * i, &q[k][i]);
+            static int lastQ = -1; int sq = q[0][0] * 3 ^ q[1][0] * 7 ^ q[0][1] ^ q[1][2];
+            static int pc = 0; if (sq != lastQ || (++pc % 120) == 0) { lastQ = sq; probeLog("MENUPRE c2=(%d,%d,%d,%d) c3=(%d,%d,%d,%d) panel=%08x", q[0][0], q[0][1], q[0][2], q[0][3], q[1][0], q[1][1], q[1][2], q[1][3], panel); } }
         { int w2 = 0; if (readAt(panel + Menu_Char2Offset, 0xc, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2); }
         for (int k = 0; k < 2; ++k) {
             int ctrl = panel + (k ? Menu_Char3Offset : Menu_Char2Offset), fl = 0, r[4] = {};
@@ -887,7 +891,7 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
                   int bw = int(47 * sf + 0.5f), bh = int(96 * sf + 0.5f), by = r[1] - int(5 * sf + 0.5f);
                   int vx = r[0] - int(40 * sf + 0.5f), fx = r[0] + int(77 * sf + 0.5f);
                   drawGauge(HealthBarTexture, vx, by, bw, bh, HealthFillRed, hp, hpMax);
-                  if (fpMax > 0) drawGauge(ForceBarTexture, fx, by, bw, bh, ForceFillCyan, fp, fpMax);
+                  drawGauge(ForceBarTexture, fx, by, bw, bh, ForceFillCyan, fp, fpMax);
                   DrawShieldPools(comp[k], vx, by, bw, bh, scale, ctrl, false);
                   static int lastV[2] = { -1, -1 }; int vs = hp * 7 + hpMax * 13 + fp * 17 + fpMax * 19;
                   if (lastV[k] != vs) { lastV[k] = vs; probeLog("MENUCOMP k=%d creature=%08x hp=%d/%d fp=%d/%d card=(%d,%d,%d,%d) vit=(%d,%d,%d,%d)", k, comp[k], hp, hpMax, fp, fpMax, r[0], r[1], r[2], r[3], vx, by, bw, bh); }
