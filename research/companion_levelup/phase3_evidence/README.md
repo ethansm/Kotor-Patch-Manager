@@ -38,3 +38,5 @@ One line per evidence file (raw Ghidra/tool output; conclusions live in doc 08 "
 - `D1_tagxrefs_lvlstatlist.txt`: xrefs+decompile of "LvlStatList" users 0x76AED0 (writer), 0x6AFED0 (loader, only stats+0x6C!=0), 0x6B4EA0
 - `D1_setexperience_replay_notes.txt`: SetExperience stored-pending replay analysis, key sequencing, AutoLevelup infinite-loop hazard if CanLevelUp is vetoed inside the loop
 - `D1_hook_overlap_scan.txt`: +-16B overlap scan of the 15 gate sites vs all 77 kotor2-steam-aspyr*.hooks.toml (431 hooks): 0 overlaps; live == vanilla bytes at all sites
+- `F1_callers_87a770.txt`: callers of SendPlayerToServer_LevelUp 0x87A770 (only BeginPlayGame 0x8F8070), of 0x8F8070 (accept handler 0x9048A0), 0x84FC00, Cancel 0x8F82C0 (page-nav 0x903F40), 0x8F6490, 0x8F65D0 (wizard-GUI plan-mode research; ShowLevelUpGUI decompile already in B1_dec_charscreen.txt:35-70)
+- `F1_dec_accept.txt`: decompile of accept handler 0x9048A0, page-nav/back 0x903F40 (calls Cancel 0x8F82C0), ctor helpers 0x8F6490/0x8F65D0 (edit the REAL client creature in place), 0x84FC00, 0x8F7FE0 (bumps real creature's last-class level by 1), 0x8F6320, 0x9047C0

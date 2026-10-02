@@ -72,6 +72,15 @@ delta). "Conf" = decompile-confirmed unless stated. Convention: `__thiscall`, EC
 | CSWPartyTable::AutoLevelUpNPCs / DistributeExperience | 0x704780 / 0x703A70 | 0x005FEDD0 / 0x005FE0C0 | CanLevelUp -> AutoLevelup | fastcall / thiscall | high |
 | Global::ExecuteCommandLevelUpHenchman (by behaviour) | - | 0x0066C7A0 | 2 args; sets XP, AddClass, AutoLevelup(1) if option | cdecl-like | medium (opcode id not checked) |
 | CExoString::CompareNoCase(char*) | - | 0x00734F60 | `__stricmp` | thiscall | high |
+| Options accessor (P3) | - | 0x0072FB00 | `return *(*(this+4)+4)`; obj +8 bit0 = "Auto Level Up NPCs" | fastcall | high |
+| SetAutoLevelUpNPCs (P3) | - | 0x007B5EF0 | writes +8 bit0; if set -> AutoLevelUpNPCs 0x5FEDD0 | thiscall ret 4 | high |
+| Options ini reader / writer (P3) | - | 0x007B88B0 / 0x007B5F50 | [Game Options] "Auto Level Up NPCs" | - | high / medium |
+| Portrait overlay SetPortraitOverlay (P3) | - | 0x00744F00 | (slot,visible,mask,buffs,debuffs); bit4 = LBL_LEVELUP; any mask zeroes buff counters | - | high |
+| CSWGuiInGameCharacter ctor / SetStats / HandleInputEvent (P3) | - | 0x0084C3A0 / 0x0084E6F0 / 0x0084F900 | buttons +0x34F0 AUTO, +0x36C0 LEVELUP; SetStats CanLevelUp @0x84F221 | thiscall | high / high / medium |
+| AddMultiClass handler (P3, DB "LevelUpHenchman") | - | 0x0066C7A0 | AddClass + 1-level XP bank + option-gated AutoLevelup @0x66C976 | - | medium |
+| CSWSCreatureStats::AddClass (P3) | - | 0x006BDCD0 | count +0x8D capped 2 (overwrites last), level 0 | thiscall ret 8 | high |
+| CSWGuiLevelUpCharGen accept / BeginPlayGame / cancel (P3) | - | 0x009048A0 / 0x008F8070 / 0x008F82C0 | accept -> BeginPlayGame -> SendPlayerToServer_LevelUp 0x87A770; cancel restores live from temp (+0x68) | fastcall | high |
+| CServerInfo ctor (P3) | - | 0x007EB5C0 | MaxLevel +0x94 = 50 (CanLevelUp via 0x51BD40) | - | medium |
 
 Other AutoLevelup callers (purpose not read): 0x005FD480, 0x0074EE90. GOG-DB mislabels found: 0x6B8DA0 is `GetWeaponFinesse`
 (see finesse patch), `CSWGuiInGameCharacter::DoAutoLevelup` GOG-drift row 0x73EF30 is wrong.
@@ -430,10 +439,62 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
 - Residual: the PC exclusion in 0x5FD480/0x5FE0C0 (decompile 0x58A9F0/0x6B7060); AddMultiClass XP-penalty arithmetic with banked XP (`table-XP` negative ->
   "Cannot reduce XP", likely harmless; log XP at 0x66C95C live); MaxLevel overwrite (FindFieldWrites 94 on the server-info object).
 
+### Item 5 - configuration entry point (R3/R6/R9) (Step 5, agent E, `E_entry_point_notes.txt`)
+- Character screen is already hooked by Mod 14 (`active_effects_panel_src`): ctor bind 0x84D871, per-tick Update 0x84FBB0, dtor 0x84DEF0. Live character_p.gui:
+  BTN_AUTO id 65 [362,260,94,52], BTN_LEVELUP id 66 [362,325,94,40]; free space under BTN_LEVELUP (~y 370) or beside BTN_EXIT (x 256-344, y 516); 800x600 units.
+- Hotbar framework (reusable, copy-pasted per mod today; only `_shared_src/SafeRead.h` is shared): label bind `new(0x148)` + CSWGuiLabel ctor 0x419740 + InitControl
+  0x40F620, text 0x416E30, rect via label vtable slot 1, clicks by GetAsyncKeyState polling against pixel extents, hit-test toggled via control +0x48 bit5.
+- StartAutoLevelup 0x84FE20 builds a CSWGuiMessageBox (`confirm_p`, OK/Cancel only) - a 3-way popup is not available without a new panel.
+- Storage: sidecar INI in the game dir keyed by creature tag (case-insensitive; LevelUpOverride.cpp:121-194 already does this). No playthrough/save id exists yet
+  (R2 needs one: save-folder name or a "profile" selector).
+- **Recommendation:** (1) "Configure" label/button on the character screen (3-5 days, Mod 14 hooks + hotbar picker pattern); (2) R9 nudge = show it only when
+  CanLevelUp (the 0x84F221 result) && tag unconfigured, plus a hint line in the Auto confirm box (+1-2 days). Click-intercept popup 3-4 days; options or
+  main-menu page 1-2 weeks each (new panel class, wiring unknown).
+
+### Item 6 - wizard feasibility (R8) (Step 6, agent F, spot-checked)
+- **CORRECTION to Phase 1 wording:** the level-up GUI does NOT edit a throwaway copy. The CSWGuiLevelUpCharGen ctor makes a temp creature (baseline, this+0x68),
+  then mutates the LIVE client creature: 0x8F7FE0 bumps its last-class level (`F1_dec_accept.txt:380-397`), 0x8F65D0 writes HP/FP. Accept (0x9048A0 ->
+  BeginPlayGame 0x8F8070 -> SendPlayerToServer_LevelUp 0x87A770, its only caller chain, `F1_callers_87a770.txt`) sends live-minus-temp. Cancel 0x8F82C0
+  CopyCreatureStats(temp -> live) restores (`dec_b2.txt:1335+`).
+- **ShowLevelUpGUI 0x84FCD0 guards only** `GetGuiInGame()+300 != 0` and `GetCharacterChangeInProgress()==0` (`B1_dec_charscreen.txt:50-51`): no CanLevelUp,
+  no XP. HandleInputEvent event 0x27 has the same guards -> **a held creature can still open the level-up GUI via hotkey** (R5 must guard 0x84FCD0 and
+  StartAutoLevelup/DoAutoLevelup 0x850081 for held tags). The GUI level = total class levels + 1 (0x844860), so it opens repeatedly without XP.
+- **Plan-mode wizard (single level):** hook the BeginPlayGame 0x8F8070 entry, read the diff (live vs this+0x68, the fields 0x87A770 reads), write it as the
+  next path record, then jump to cancel 0x8F82C0 instead. Returning early from 0x87A770 alone is UNSAFE (BeginPlayGame still closes and sets live +0x458
+  bit2 -> client at L+1, server at L). Effort ~3-5 days. Multi-level (reopen without cancel, chained baseline, restore own snapshot via 0x7645F0 + 0x8F6FE0
+  at the end) ~1.5-2 weeks, risk: server updates clobbering the live client creature mid-chain. Custom picker (hotbar framework, re-implements prereq /
+  slot / skill rules) 2-4 weeks. Presets only: days (15 presets now exist: `paths/presets/`).
+- **Verdict:** ship presets first, then the single-level vanilla-GUI wizard; multi-level optional.
+- Residual: 0x8F8070 calling convention (likely fastcall ECX=this), meaning of +0x458 / 0x73F810 (one headless run), server clobber (log-only probe).
+
+### Preset paths (R8, 2026-10-02, `research/companion_levelup/paths/presets/`)
+15 presets, 3 per character, all `check_paths.py` 0 errors, all obey "newest class only / max 2 classes" (Item 3); per-character notes `<char>.md` list sources
+and open questions. Bao-Dur: early_guardian (convert 12) / late_guardian (22) / tech (30). Disciple: caster (7) / melee (16) / support (13). Handmaiden:
+unarmed_jedi / saber_guardian (convert_at 7, `hold_until_class = 3`) / unarmed_soldier. Mira: early_sentinel (7) / ranged_sentinel (17) / scout. Visas (tag
+`VisasMarr`): duelist / force_support / dark (conflicts with mod #142 unless dark). Not covered: HK-47, T3-M4, G0-T0, Mandalore, Hanharr (validator lacks
+classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practical cap of a playthrough ~30).
+
+### Phase 3 synthesis - mechanisms for 0.3.0
+- **R4 instant auto levelling (opt-in per tag, R7):** detour the options-accessor calls (0x74F3E9 portraits, 0x5FD7A0 XP tail, 0x5FE281 DistributeExperience,
+  0x66C93A AddMultiClass) to return "+8 bit0 = 1" for opted-in tags; everyone else sees the real option. The existing 0.2.1 rewrite applies the path.
+  PlayerCreated creatures and the PC still take the indicator branch in 0x74EE90 (0x74F449/0x74F461); PC is out of scope unless the user asks.
+- **R5 hold (per tag, rule = Item 3 `level_now`):** veto at CALLER sites only (never inside CanLevelUp/ValidateLevelUp/LevelUp - hang, Item 4): CanLevelUp
+  calls 0x74F3C7, 0x84F221, 0x5FD7CE, 0x5FE2A3, 0x66C95C, 0x5FEE32 (+ the 4 sites in 0x756B70 and 0x752050 to check) and guard 0x84FCD0 / 0x850081 for held
+  tags. Hiding the indicator restores buff icons (Item 2). When the Jedi class appears, the next AutoLevelup applies all banked levels in one loop.
+- **Unconfigured characters (R6):** untouched - vanilla option, vanilla indicator, vanilla buttons, plus the R9 nudge.
+- **Proposed 0.3.0 build order:** (1) hold mode + indicator fix (caller-site vetoes, held-tag guard on the GUI entry points), offline harness + log-only live
+  check; (2) opt-in instant levelling (accessor detours); (3) per-tag config storage + character-screen "Configure" button + R9 nudge; (4) preset selection
+  UI, then the single-level vanilla-GUI wizard.
+- **Open user decisions:** (a) presets vs wizard vs both (recommend presets now, wizard later); (b) entry point (recommend character-screen button + R9
+  nudge); (c) default for unconfigured characters = vanilla (R6, assumed); (d) PC included? (e) per-character preset choices + the per-character questions in
+  `paths/presets/<char>.md`; (f) R2 playthrough id (save-folder name vs profile selector); (g) droid/non-Jedi companions in scope?
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
-- Unresolved, not needed for Option B: LevelUpHenchman NWScript opcode id; who fills class-row recommended lists; exact hidden ECX of `AddGrantedPowers` param_2.
+- Phase 3 residuals (all cheap): 0x72FB00 object class name; PC exclusion in 0x5FD480/0x5FE0C0; MaxLevel overwrite; AddMultiClass XP-penalty with banked XP;
+  0x756B70/0x752050/0x7C9DF0 effects under a veto; 0x8F8070 convention, +0x458, 0x73F810; server clobber during a plan-mode GUI. Close with one log-only live probe + 1-2 headless runs.
+- Unresolved, not needed for Option B: LevelUpHenchman NWScript opcode id (likely = AddMultiClass, Item 3); who fills class-row recommended lists; exact hidden ECX of `AddGrantedPowers` param_2.
 - Alternative kept as fallback: stored per-level structs (`stats+0x28` "LvlStatList", consumed by SetExperience) - data-only route, unverified for companions.
 
 ## Commands run
