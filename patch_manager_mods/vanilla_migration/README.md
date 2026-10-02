@@ -53,3 +53,9 @@ Fork `ethansm/Kotor-Patch-Manager` = `origin`, `LaneDibello/...` = `upstream` (p
 `upstream/master`. Local excludes in `.git/info/exclude` (`*_live_patches/`, stages, laa.db, `*.kpatch.old`).
 `_laa` aliases dropped in `b5806b1`; `kotor2_steam_aspyr_laa.db` (source + bin copies) moved to the backup's `laa_db/`.
 New stages: build with `mods678_research/stage_and_verify_install.py` (now keys on the vanilla hash).
+
+## 14:58 colorshift_k2 removed
+User: "it's very dark now after the shader changes". Reinstalled the 12:50 live set (31 ids incl. sibling
+k2-robustness-fixes + k2-texture-memory-release) without `colorshift_k2`; stage `stage_nocolor_1002_1457`,
+backup `backups_nocolor_1002_1458`. If still too dark: compare with `k2_aspyr_shader_fixes` off (its +15 brightness
+offset removal / gamma change is the next suspect), then in-game Brightness (swkotor2.ini Brightness=50).
