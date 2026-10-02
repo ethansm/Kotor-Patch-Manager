@@ -502,7 +502,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - (e) **Presets:** generate MULTIPLE logical presets per character from the build research, organised by the **wizard questions** (the wizard maps answers ->
   preset; dynamic per-answer values can be integrated later). Schema: `research/companion_levelup/paths/presets/WIZARD_SCHEMA.md`.
 - (f) **Playthrough identity: tied to the save file** (R2) - static research item "save binding" (evidence `phase3_evidence/G1_*`).
-- (g) Droids / non-Jedi companions (HK-47, T3-M4, G0-T0, Mandalore, Hanharr): not yet answered.
+- (g) Droids / non-Jedi companions: **yes** (user 2026-10-02) - presets for HK-47 5, T3-M4 6, G0-T0 5, Mandalore 5, Hanharr 5 (check_paths now accepts
+  classes 6/7, commit 06bd7dc). **Total: 80 presets / 12 companions**, all 0 errors.
 
 ### Item 7 - save binding for per-playthrough config (decision (f); agent G, spot-checked; evidence `phase3_evidence/G1_*.txt`)
 - **Server load** 0x52FB80 (`thiscall(app, slot, CExoString* name, a4, a5)`, builds `SAVES:%06d - %s`) -> PARTYTABLE 0x5FBF60 -> **GLOBALVARS load 0x656710**
