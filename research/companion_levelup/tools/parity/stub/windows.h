@@ -1,5 +1,5 @@
 // Host stub of the few Win32 symbols LevelUpOverride.cpp uses, so its pure algorithm (parseTable/computeRewrite/formatDry)
-// compiles natively for parity_main.cpp. Nothing here is called by the parity test except the file/str helpers.
+// compiles natively for parity_main.cpp (and apply_test.cpp, which switches VirtualQuery on). Parity calls only the file/str helpers.
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
@@ -9,6 +9,7 @@ typedef unsigned long DWORD; typedef long LONG; typedef int BOOL; typedef void* 
 typedef const void* LPCVOID; typedef uint64_t SIZE_T;
 #define WINAPI
 #define __cdecl
+#define __thiscall
 #define TRUE 1
 #define MAX_PATH 260
 #define DLL_PROCESS_ATTACH 1
@@ -22,7 +23,14 @@ typedef const void* LPCVOID; typedef uint64_t SIZE_T;
 #define PAGE_GUARD 0x100
 #define MEM_COMMIT 0x1000
 struct MEMORY_BASIC_INFORMATION { void* BaseAddress; void* AllocationBase; DWORD AllocationProtect; SIZE_T RegionSize; DWORD State, Protect, Type; };
-inline SIZE_T VirtualQuery(LPCVOID, MEMORY_BASIC_INFORMATION*, SIZE_T) { return 0; }
+// Off (parity): every probe fails. apply_test.cpp turns it on: all memory reads as one committed read-write region.
+inline bool g_stubVirtualQueryAll = false;
+inline SIZE_T VirtualQuery(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T) {
+    if (!g_stubVirtualQueryAll) return 0;
+    m->BaseAddress = const_cast<void*>(a); m->AllocationBase = m->BaseAddress; m->AllocationProtect = PAGE_READWRITE;
+    m->RegionSize = (SIZE_T)1 << 40; m->State = MEM_COMMIT; m->Protect = PAGE_READWRITE; m->Type = 0;
+    return sizeof *m;
+}
 inline DWORD GetTickCount() { return 0; }
 inline DWORD GetCurrentThreadId() { return 0; }
 inline LONG InterlockedIncrement(volatile LONG* p) { return ++*p; }

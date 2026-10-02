@@ -3,7 +3,7 @@
 
 Builds parity_main.cpp (LevelUpOverride.cpp + stub/windows.h, native g++), generates cases from levelup_paths.ini (per record:
 vanilla-like pend, replay of the result, class mismatch, negative unspent, random picks; plus missing records), runs both twins and
-diffs the DRY lines. Usage: python3 tools/parity/parity.py   (from research/companion_levelup)
+diffs the DRY lines; then runs apply_test.cpp (applyRewrite on fake engine structs) on the same cases. Usage: python3 tools/parity/parity.py   (from research/companion_levelup)
 """
 import os, random, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -13,6 +13,7 @@ import simulate_rewrite as S
 
 INI = os.path.join(ROOT, "runtime", "levelup_paths.ini")
 EXE = os.path.join(HERE, "parity_bin")
+APPLY_EXE = os.path.join(HERE, "apply_test_bin")
 
 
 def case(tag, key, p):
@@ -20,11 +21,16 @@ def case(tag, key, p):
     return "%s %d %d %d %d|%s|%s|%s" % (tag, key, p["cls"], p["ability"], p["unspent"], j(p["feats"]), j(p["spells"]), j(p["deltas"]))
 
 
-def main():
-    r = subprocess.run(["g++", "-std=c++17", "-O1", "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "inc"), "-o", EXE, os.path.join(HERE, "parity_main.cpp")],
-                       capture_output=True, text=True)
+def build(exe, src):
+    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "inc"), "-o", exe,
+                        os.path.join(HERE, src)], capture_output=True, text=True)
     if r.returncode:
         sys.exit(r.stderr)
+
+
+def main():
+    build(EXE, "parity_main.cpp")
+    build(APPLY_EXE, "apply_test.cpp")
     cs, recs = S.parse_table(open(INI).read())
     rnd = random.Random(1)
     cases = []
@@ -49,7 +55,12 @@ def main():
     print("cases", len(cases), "cpp lines", len(cpp), "mismatches", len(bad), "statuses", statuses)
     for a, b in bad[:5]:
         print(" C++:", a, "\n  Py:", b)
-    sys.exit(1 if bad or len(cpp) != len(py) else 0)
+    # applyRewrite on fake engine pending structs, same cases (apply_test.cpp)
+    ap = subprocess.run([APPLY_EXE, INI], input=text, capture_output=True, text=True)
+    print(ap.stdout.strip())
+    if ap.stderr:
+        print(ap.stderr[:4000])
+    sys.exit(1 if bad or len(cpp) != len(py) or ap.returncode else 0)
 
 
 if __name__ == "__main__":

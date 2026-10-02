@@ -1,6 +1,7 @@
-// Level-Up Override 0.1.1-probe (0.1.1: creature feat lists read from +0x00/+0x18, not the uses list +0x0C) (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Stage 0 = LOG + DRY RUN ONLY:
-// this build never writes game memory. Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree),
-// plan research/companion_levelup/MASTER_PLAN.md.
+// Level-Up Override 0.2.0 (Steam Aspyr build 6A522E71.../LAA 4AB72FC1...). Rewrites the pending level-up struct for allow-listed tags
+// when mode=rewrite (and apply=1); the default mode=log only logs + dry-runs and never writes game memory.
+// History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump.
+// Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/MASTER_PLAN.md.
 //
 // One detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
 // [esp+0] = return address; EBP = the caller's frame because our code runs BEFORE the original `push ebp`). Every level-up path ends
@@ -13,8 +14,9 @@
 // prints the identical line for the same inputs (computeRewrite == compute_rewrite).
 //
 // Config levelup_override.ini (game dir, re-read when its mtime changes; missing = defaults):
-//   mode=log (default) | rewrite (stage 0: logs that the build is dry-run only) | off
+//   mode=log (default) | rewrite (apply the DRY result for allow-listed tags) | off
 //   tags=atton,kreia   rewrite allow-list          verbose=1 (0 = one summary line per call)
+//   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run with WOULD REWRITE lines (0.1.x behaviour)
 //   table=levelup_paths.ini
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -30,8 +32,8 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.1.1-probe";
-constexpr bool ApplyEnabled = false;   // stage 0: the rewrite is never applied
+constexpr const char* Version = "0.2.0";
+constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
 constexpr uintptr_t RulesGlobal = 0x00A1B4D0;      // rules singleton; +0x123 byte skill count
@@ -120,6 +122,7 @@ constexpr int MaxAllow = 8;
 struct Config {
     Mode mode = Mode::Log;
     bool verbose = true;
+    bool apply = true;
     char table[MAX_PATH] = "levelup_paths.ini";
     char allow[MaxAllow][32] = {};
     int nAllow = 0;
@@ -161,6 +164,8 @@ void reloadConfig() {
                 c.mode = !strcmp(v, "off") ? Mode::Off : !strcmp(v, "rewrite") ? Mode::Rewrite : Mode::Log;
             } else if (!strcmp(k, "verbose")) {
                 c.verbose = atoi(v) != 0;
+            } else if (!strcmp(k, "apply")) {
+                c.apply = atoi(v) != 0;
             } else if (!strcmp(k, "table")) {
                 snprintf(c.table, sizeof c.table, "%s", v);
             } else if (!strcmp(k, "tags")) {
@@ -176,8 +181,8 @@ void reloadConfig() {
     g_cfg = c;
     Buf b;
     for (int i = 0; i < c.nAllow; ++i) b.add("%s%s", i ? "," : "", c.allow[i]);
-    logLine("CONFIG %s mode=%s verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
-            c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.verbose, c.table, b.s);
+    logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
+            c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
 }
 bool allowed(const char* tag) {
     for (int i = 0; i < g_cfg.nAllow; ++i) if (!_stricmp(g_cfg.allow[i], tag)) return true;
@@ -352,7 +357,8 @@ struct Pend {
     uint16_t feats[MaxPend]; uint32_t spells[MaxPend];
     int deltas[NumSkills];
 };
-struct Result { const char* status; Pend p; };
+// nKeptFeats/nKeptSpells: out.feats[0..nKeptFeats) / out.spells[0..nKeptSpells) are entries taken from `in` (in order); the rest are path ids.
+struct Result { const char* status; Pend p; int nKeptFeats = 0, nKeptSpells = 0; };
 
 int skillCost(const int* d, int cls) {
     int c = 0;
@@ -368,9 +374,11 @@ Result computeRewrite(const Rec* r, const Pend& in) {
     Pend& o = res.p;
     o.nFeats = 0;
     for (int i = 0; i < in.nFeats; ++i) if (has(r->granted, r->nGranted, in.feats[i])) o.feats[o.nFeats++] = in.feats[i];
+    res.nKeptFeats = o.nFeats;
     for (int i = 0; i < r->nFeats; ++i) if (!has(o.feats, o.nFeats, r->feats[i]) && o.nFeats < MaxPend) o.feats[o.nFeats++] = r->feats[i];
     o.nSpells = 0;
     for (int i = 0; i < in.nSpells; ++i) if (isEngineGrantPower(in.spells[i])) o.spells[o.nSpells++] = in.spells[i];
+    res.nKeptSpells = o.nSpells;
     for (int i = 0; i < r->nPowers; ++i) if (!has(o.spells, o.nSpells, r->powers[i]) && o.nSpells < MaxPend) o.spells[o.nSpells++] = r->powers[i];
     for (int i = 0; i < NumSkills; ++i) o.deltas[i] = 0;
     for (int i = 0; i < r->nSkills; ++i) o.deltas[r->skIdx[i]] = r->skRank[i];
@@ -409,20 +417,171 @@ bool readTag(uintptr_t stats, char* out, int cap) {
 
 // Reads an engine {ptr,count,cap} array header + up to MaxPend elements of size esz into out (as uint32).
 bool readArr(uintptr_t base, int off, int esz, uint32_t* out, int* n, uint32_t* count, uint32_t* cap) {
-    uintptr_t p = 0;
+    uint32_t p = 0;   // engine pointer (32-bit)
     *n = 0;
     if (!readAt(S_PendArr, base, off, &p) || !readAt(S_PendArr, base, off + 4, count) || !readAt(S_PendArr, base, off + 8, cap)) return false;
     int take = *count > static_cast<uint32_t>(MaxPend) ? MaxPend : static_cast<int>(*count);
     if (take == 0) return true;
-    if (!p || !probeRead(S_PendArr, reinterpret_cast<const void*>(p), static_cast<size_t>(take) * esz)) return false;
+    const uintptr_t a = p;
+    if (!a || !probeRead(S_PendArr, reinterpret_cast<const void*>(a), static_cast<size_t>(take) * esz)) return false;
     for (int i = 0; i < take; ++i)
-        out[i] = esz == 2 ? reinterpret_cast<const uint16_t*>(p)[i] : reinterpret_cast<const uint32_t*>(p)[i];
+        out[i] = esz == 2 ? reinterpret_cast<const uint16_t*>(a)[i] : reinterpret_cast<const uint32_t*>(a)[i];
     *n = take;
     return true;
 }
 
 void listAdd(Buf& b, const uint32_t* v, int n, bool hex = false) {
     for (int i = 0; i < n; ++i) b.add(hex ? "%s0x%x" : "%s%u", i ? "," : "", v[i]);
+}
+
+// ---- pending struct read (entry dump, and the AFTER re-read once applyRewrite has run) ----------------------
+struct PendDump {
+    bool ok = false;                     // the 0x30 bytes were readable
+    uint8_t raw[Pd_Size] = {};
+    Pend pd{};
+    bool featsOk = false, spellsOk = false, remOk = false, deltasOk = false;
+    uint32_t fCnt = 0, fCap = 0, sCnt = 0, sCap = 0, rCnt = 0, rCap = 0;
+    uint32_t rem[MaxPend] = {}; int nRem = 0;
+    uint8_t deltas[32] = {};
+};
+
+bool readPend(uintptr_t pending, int nSkills, PendDump* d) {
+    *d = PendDump{};
+    d->ok = pending && probeRead(S_Pend, reinterpret_cast<const void*>(pending), Pd_Size);
+    if (!d->ok) return false;
+    memcpy(d->raw, reinterpret_cast<const void*>(pending), Pd_Size);
+    Pend& pd = d->pd;
+    pd.cls = d->raw[Pd_Class];
+    pd.ability = d->raw[Pd_Ability];
+    pd.unspent = *reinterpret_cast<const uint16_t*>(d->raw + Pd_Unspent);
+    uint32_t tmp[MaxPend]; int n = 0;
+    d->featsOk = readArr(pending, Pd_Feats, 2, tmp, &n, &d->fCnt, &d->fCap);
+    pd.nFeats = n;
+    for (int i = 0; i < n; ++i) pd.feats[i] = static_cast<uint16_t>(tmp[i]);
+    d->spellsOk = readArr(pending, Pd_SpellsAdd, 4, pd.spells, &n, &d->sCnt, &d->sCap);
+    pd.nSpells = n;
+    d->remOk = readArr(pending, Pd_SpellsRem, 4, d->rem, &d->nRem, &d->rCnt, &d->rCap);
+    const uintptr_t deltasP = *reinterpret_cast<const uint32_t*>(d->raw + Pd_Deltas);
+    d->deltasOk = nSkills && deltasP && probeRead(S_PendArr, reinterpret_cast<const void*>(deltasP), nSkills);
+    if (d->deltasOk) memcpy(d->deltas, reinterpret_cast<const void*>(deltasP), nSkills);
+    for (int i = 0; i < NumSkills; ++i) pd.deltas[i] = d->deltas[i];
+    return true;
+}
+
+void logPend(const char* pfx, const PendDump& d, int nSkills) {
+    Buf b;
+    b.add("  %s: class=%u ability=%u hp=%u force=%u unspent28=%u skills(n=%u)%s=[", pfx, d.raw[Pd_Class], d.raw[Pd_Ability], d.raw[Pd_HP],
+          d.raw[Pd_Force], d.pd.unspent, nSkills, d.deltasOk ? "" : "UNREADABLE");
+    for (int i = 0; i < nSkills; ++i) b.add("%s%u", i ? "," : "", d.deltas[i]);
+    b.add("]");
+    logf("%s", b.s);
+    Buf f;
+    f.add("  %s.feats%s count=%u cap=%u [", pfx, d.featsOk ? "" : " UNREADABLE", d.fCnt, d.fCap);
+    for (int i = 0; i < d.pd.nFeats; ++i) f.add("%s%u", i ? "," : "", d.pd.feats[i]);
+    f.add("]");
+    logf("%s", f.s);
+    Buf s;
+    s.add("  %s.spellsAdd%s count=%u cap=%u [", pfx, d.spellsOk ? "" : " UNREADABLE", d.sCnt, d.sCap);
+    listAdd(s, d.pd.spells, d.pd.nSpells, true);
+    s.add("] spellsRem%s count=%u cap=%u [", d.remOk ? "" : " UNREADABLE", d.rCnt, d.rCap);
+    listAdd(s, d.rem, d.nRem, true);
+    s.add("]");
+    logf("%s", s.s);
+    Buf h;
+    h.add("  %s.raw", pfx);
+    for (int i = 0; i < Pd_Size; ++i) h.add("%s%02x", (i % 4) ? "" : " ", d.raw[i]);
+    logf("%s", h.s);
+}
+
+bool samePend(const Pend& a, const Pend& b) {
+    return a.cls == b.cls && a.ability == b.ability && a.unspent == b.unspent && a.nFeats == b.nFeats && a.nSpells == b.nSpells &&
+           !memcmp(a.feats, b.feats, sizeof(uint16_t) * a.nFeats) && !memcmp(a.spells, b.spells, sizeof(uint32_t) * a.nSpells) &&
+           !memcmp(a.deltas, b.deltas, sizeof a.deltas);
+}
+
+// ---- apply (doc 08 "Phase 1b results" O5; engine helpers verified in phase1b_disasm.txt / phase1b_containers.txt) ----
+// All three are thiscall. AddFeat: ECX = pending (it adds +0x18 itself), dedups against the pending feat list, then pushes; ret 4.
+// SetSkillDelta: ECX = pending, (ushort idx, byte value), ignores idx >= rules+0x123; ret 8. PushU32: ECX = array header
+// {ptr, int count, int cap} (pending+0x00 = spells-add, as AutoLevelup 0x6BFF7E does), grows 16 then x2 via 0x84A680; ret 4.
+typedef void (__thiscall* AddFeat_t)(void* pending, uint16_t feat);
+typedef void (__thiscall* SetSkillDelta_t)(void* pending, uint16_t idx, uint8_t value);
+typedef void (__thiscall* PushU32_t)(void* arr, uint32_t value);
+struct Engine {
+    uintptr_t addFeat, setSkillDelta, pushU32;
+    bool checkCode;   // compare the functions' first bytes before calling (off in the host test, which uses fakes)
+};
+Engine g_eng = {0x006F5B40, 0x006F5B00, 0x0083EA60, true};
+const uint8_t kAddFeatCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC};
+const uint8_t kSetSkillDeltaCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
+const uint8_t kPushU32Code[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xFC};
+
+bool writableProtect(DWORD p) {
+    if (p & (PAGE_GUARD | PAGE_NOACCESS)) return false;
+    return (p & (PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+}
+// [p, p+len) fully inside committed writable memory (walks consecutive regions; never faults).
+bool probeWritable(const void* p, size_t len) {
+    uintptr_t a = reinterpret_cast<uintptr_t>(p), end = a + len;
+    if (a < 0x10000 || end < a) return false;
+    while (a < end) {
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQuery(reinterpret_cast<LPCVOID>(a), &mbi, sizeof mbi) != sizeof mbi) return false;
+        if (mbi.State != MEM_COMMIT || !writableProtect(mbi.Protect)) return false;
+        a = reinterpret_cast<uintptr_t>(mbi.BaseAddress) + mbi.RegionSize;
+    }
+    return true;
+}
+bool codeMatches(uintptr_t fn, const uint8_t* code, size_t n) {
+    return probeRead(S_Pend, reinterpret_cast<const void*>(fn), n) && !memcmp(reinterpret_cast<const void*>(fn), code, n);
+}
+
+// Writes res.p into the pending struct `in` was read from. Every precondition is checked before the first write; on failure logs
+// "APPLY ABORTED <why>" and returns false with the struct untouched. Never allocates: removals compact in place and lower the
+// count, additions go through the engine's own push helpers (its allocator owns the arrays).
+bool applyRewrite(uintptr_t pending, const Pend& in, const Result& res, int nSkills) {
+    const Pend& out = res.p;
+    const char* why = nullptr;
+    uint32_t fPtr = 0, fCnt = 0, sPtr = 0, sCnt = 0, dPtr = 0;
+    if (nSkills != NumSkills) why = "skill count";
+    else if (!probeWritable(reinterpret_cast<const void*>(pending), Pd_Size)) why = "pending not writable";
+    else {
+        fPtr = *reinterpret_cast<const uint32_t*>(pending + Pd_Feats);
+        fCnt = *reinterpret_cast<const uint32_t*>(pending + Pd_Feats + 4);
+        sPtr = *reinterpret_cast<const uint32_t*>(pending + Pd_SpellsAdd);
+        sCnt = *reinterpret_cast<const uint32_t*>(pending + Pd_SpellsAdd + 4);
+        dPtr = *reinterpret_cast<const uint32_t*>(pending + Pd_Deltas);
+        if (fCnt != static_cast<uint32_t>(in.nFeats) || sCnt != static_cast<uint32_t>(in.nSpells)) why = "counts changed since read";
+        else if (res.nKeptFeats > in.nFeats || res.nKeptSpells > in.nSpells || res.nKeptFeats > out.nFeats || res.nKeptSpells > out.nSpells)
+            why = "kept prefix out of range";
+        else if (in.nFeats && !probeWritable(reinterpret_cast<const void*>(static_cast<uintptr_t>(fPtr)), in.nFeats * 2u)) why = "feats not writable";
+        else if (in.nSpells && !probeWritable(reinterpret_cast<const void*>(static_cast<uintptr_t>(sPtr)), in.nSpells * 4u)) why = "spells not writable";
+        else if (!probeWritable(reinterpret_cast<const void*>(static_cast<uintptr_t>(dPtr)), NumSkills)) why = "deltas not writable";
+        else if (!g_eng.addFeat || !g_eng.setSkillDelta || !g_eng.pushU32) why = "engine helper missing";
+        else if (g_eng.checkCode && (!codeMatches(g_eng.addFeat, kAddFeatCode, sizeof kAddFeatCode) ||
+                                     !codeMatches(g_eng.setSkillDelta, kSetSkillDeltaCode, sizeof kSetSkillDeltaCode) ||
+                                     !codeMatches(g_eng.pushU32, kPushU32Code, sizeof kPushU32Code)))
+            why = "engine helper bytes differ";
+    }
+    if (why) { logf("  APPLY ABORTED %s - vanilla (no write)", why); return false; }
+
+    void* pd = reinterpret_cast<void*>(pending);
+    // (1) feats: kept prefix in place, then path feats via AddFeat (ECX = pending)
+    uint16_t* fa = reinterpret_cast<uint16_t*>(static_cast<uintptr_t>(fPtr));
+    for (int i = 0; i < res.nKeptFeats; ++i) fa[i] = out.feats[i];
+    *reinterpret_cast<uint32_t*>(pending + Pd_Feats + 4) = static_cast<uint32_t>(res.nKeptFeats);
+    for (int i = res.nKeptFeats; i < out.nFeats; ++i) reinterpret_cast<AddFeat_t>(g_eng.addFeat)(pd, out.feats[i]);
+    // (2) spells-add: kept prefix in place, then path powers via PushU32 (ECX = pending+0x00 array header); spells-remove untouched
+    uint32_t* sa = reinterpret_cast<uint32_t*>(static_cast<uintptr_t>(sPtr));
+    for (int i = 0; i < res.nKeptSpells; ++i) sa[i] = out.spells[i];
+    *reinterpret_cast<uint32_t*>(pending + Pd_SpellsAdd + 4) = static_cast<uint32_t>(res.nKeptSpells);
+    for (int i = res.nKeptSpells; i < out.nSpells; ++i)
+        reinterpret_cast<PushU32_t>(g_eng.pushU32)(reinterpret_cast<void*>(pending + Pd_SpellsAdd), out.spells[i]);
+    // (3) skill deltas, (4) unspent, (5) ability
+    for (int i = 0; i < NumSkills; ++i)
+        reinterpret_cast<SetSkillDelta_t>(g_eng.setSkillDelta)(pd, static_cast<uint16_t>(i), static_cast<uint8_t>(out.deltas[i]));
+    *reinterpret_cast<uint16_t*>(pending + Pd_Unspent) = static_cast<uint16_t>(out.unspent);
+    *reinterpret_cast<uint8_t*>(pending + Pd_Ability) = static_cast<uint8_t>(out.ability);
+    return true;
 }
 
 volatile LONG g_calls = 0;
@@ -456,7 +615,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
     if (!g_headerDone) {
         g_headerDone = true;
         rotateIfLarge();
-        logLine("== LevelUpOverride %s loaded; first LevelUp call (dry-run build, apply=%d) ==", Version, ApplyEnabled);
+        logLine("== LevelUpOverride %s loaded; first LevelUp call (build apply=%d) ==", Version, ApplyEnabled);
     }
     reloadConfig();
     if (g_cfg.mode == Mode::Off) return;
@@ -511,59 +670,19 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
     if (nSkills > 32) nSkills = 32;
 
     // -- pending
-    uint8_t raw[Pd_Size];
-    bool pendOk = pending && probeRead(S_Pend, reinterpret_cast<const void*>(pending), Pd_Size);
-    if (pendOk) memcpy(raw, reinterpret_cast<const void*>(pending), Pd_Size);
+    PendDump dp;
+    readPend(pending, nSkills, &dp);
     int key = total >= 0 ? total + 1 : -1;
 
     logf("[%lu] #%ld tid=%lu flow=%s %s stats=%08x pending=%08x addToList=%d tag=%s classes=%s total=%d key=%d xp=%u unspent170=%u",
          GetTickCount(), call, GetCurrentThreadId(), flow, chain.s, (unsigned)stats, (unsigned)pending, addToList, tag, cls.s, total, key,
          xp, stUnspent);
 
-    if (!pendOk) { logf("  pending unreadable -> vanilla"); logClose(); return; }
-    Pend pd{};
-    pd.cls = raw[Pd_Class];
-    pd.ability = raw[Pd_Ability];
-    pd.unspent = *reinterpret_cast<uint16_t*>(raw + Pd_Unspent);
-    uint32_t tmp[MaxPend], cnt = 0, cap = 0; int n = 0;
-    bool featsOk = readArr(pending, Pd_Feats, 2, tmp, &n, &cnt, &cap);
-    pd.nFeats = n;
-    for (int i = 0; i < n; ++i) pd.feats[i] = static_cast<uint16_t>(tmp[i]);
-    uint32_t fCnt = cnt, fCap = cap;
-    bool spellsOk = readArr(pending, Pd_SpellsAdd, 4, pd.spells, &n, &cnt, &cap);
-    pd.nSpells = n;
-    uint32_t sCnt = cnt, sCap = cap;
-    uint32_t rem[MaxPend]; int nRem = 0; uint32_t rCnt = 0, rCap = 0;
-    bool remOk = readArr(pending, Pd_SpellsRem, 4, rem, &nRem, &rCnt, &rCap);
-    uintptr_t deltasP = *reinterpret_cast<uint32_t*>(raw + Pd_Deltas);
-    uint8_t deltas[32] = {};
-    bool deltasOk = nSkills && deltasP && probeRead(S_PendArr, reinterpret_cast<const void*>(deltasP), nSkills);
-    if (deltasOk) memcpy(deltas, reinterpret_cast<const void*>(deltasP), nSkills);
-    for (int i = 0; i < NumSkills; ++i) pd.deltas[i] = deltas[i];
+    if (!dp.ok) { logf("  pending unreadable -> vanilla"); logClose(); return; }
+    const Pend& pd = dp.pd;
 
     if (v) {
-        Buf b;
-        b.add("  pend: class=%u ability=%u hp=%u force=%u unspent28=%u skills(n=%u)%s=[", raw[Pd_Class], raw[Pd_Ability], raw[Pd_HP],
-              raw[Pd_Force], pd.unspent, nSkills, deltasOk ? "" : "UNREADABLE");
-        for (int i = 0; i < nSkills; ++i) b.add("%s%u", i ? "," : "", deltas[i]);
-        b.add("]");
-        logf("%s", b.s);
-        Buf f;
-        f.add("  pend.feats%s count=%u cap=%u [", featsOk ? "" : " UNREADABLE", fCnt, fCap);
-        listAdd(f, tmp, pd.nFeats);
-        f.add("]");
-        logf("%s", f.s);
-        Buf s;
-        s.add("  pend.spellsAdd%s count=%u cap=%u [", spellsOk ? "" : " UNREADABLE", sCnt, sCap);
-        listAdd(s, pd.spells, pd.nSpells, true);
-        s.add("] spellsRem%s count=%u cap=%u [", remOk ? "" : " UNREADABLE", rCnt, rCap);
-        listAdd(s, rem, nRem, true);
-        s.add("]");
-        logf("%s", s.s);
-        Buf h;
-        h.add("  pend.raw");
-        for (int i = 0; i < Pd_Size; ++i) h.add("%s%02x", (i % 4) ? "" : " ", raw[i]);
-        logf("%s", h.s);
+        logPend("pend", dp, nSkills);
 
         // creature skill ranks and feat list (before LevelUp applies anything)
         Buf r;
@@ -594,20 +713,37 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
         }
     }
 
-    // -- dry run for tags that have a table section
+    // -- dry run for tags that have a table section; rewrite for allow-listed tags when mode=rewrite
+    const bool rewriteTag = g_cfg.mode == Mode::Rewrite && tagOk && allowed(tag);
     if (tagOk && findTag(tag)) {
-        if (nSkills != NumSkills || !deltasOk || !featsOk || !spellsOk || fCnt > static_cast<uint32_t>(MaxPend) || sCnt > static_cast<uint32_t>(MaxPend)) {
-            logf("  DRY tag=%s key=%d status=skipped-unreadable (skills=%u feats=%u spells=%u)", tag, key, nSkills, fCnt, sCnt);
+        char lt[32]; snprintf(lt, sizeof lt, "%s", tag); lower(lt);
+        if (nSkills != NumSkills || !dp.deltasOk || !dp.featsOk || !dp.spellsOk || dp.fCnt > static_cast<uint32_t>(MaxPend) ||
+            dp.sCnt > static_cast<uint32_t>(MaxPend)) {
+            logf("  DRY tag=%s key=%d status=skipped-unreadable (skills=%u feats=%u spells=%u)", tag, key, nSkills, dp.fCnt, dp.sCnt);
+            if (rewriteTag) logf("  SKIP skipped-unreadable %s key=%d - vanilla", lt, key);
         } else {
-            char lt[32]; snprintf(lt, sizeof lt, "%s", tag); lower(lt);
             Result res = computeRewrite(lookupRecord(tag, key), pd);
             Buf d;
             formatDry(d, lt, key, res);
             logf("  %s", d.s);
-            if (g_cfg.mode == Mode::Rewrite && allowed(tag) && !strcmp(res.status, "rewrite"))
-                logf("  WOULD REWRITE %s key=%d (this build is dry-run only; apply=%d)", lt, key, ApplyEnabled);
+            if (rewriteTag) {
+                if (!strcmp(res.status, "already")) {
+                    logf("  ALREADY (replay) %s key=%d - no write", lt, key);
+                } else if (strcmp(res.status, "rewrite")) {
+                    logf("  SKIP %s %s key=%d - vanilla", res.status, lt, key);
+                } else if (!ApplyEnabled || !g_cfg.apply) {
+                    logf("  WOULD REWRITE %s key=%d (apply=0)", lt, key);
+                } else if (applyRewrite(pending, pd, res, nSkills)) {
+                    saferead::beginScope();   // the engine push helpers may have reallocated the arrays
+                    PendDump after;
+                    readPend(pending, nSkills, &after);
+                    const bool ok = after.ok && after.featsOk && after.spellsOk && after.deltasOk && samePend(after.pd, res.p);
+                    logf("  APPLIED tag=%s key=%d ok=%d", lt, key, ok);
+                    logPend("after", after, nSkills);
+                }
+            }
         }
-    } else if (g_cfg.mode == Mode::Rewrite && tagOk && allowed(tag)) {
+    } else if (rewriteTag) {
         logf("  tag %s allowed but no table section (table %s)", tag, g_tableOk ? "ok" : "ERROR");
     }
     logClose();

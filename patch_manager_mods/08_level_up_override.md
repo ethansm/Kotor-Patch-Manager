@@ -246,6 +246,29 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
   (5 points each, unspent 0). No feat entries at char level 8.
 - Still uncovered: manual level at a feat-grant level, Kreia (path tag) powers + DRY on spells, Auto NPCs, natural XP award, SetExperience replay.
 
+## Phase 2 Step 4 (0.2.0 apply code, 2026-10-02, built + offline-verified, NOT installed)
+- `LevelUpOverride.cpp` 0.2.0 (`ApplyEnabled=true`): `computeRewrite` unchanged except `Result.nKeptFeats/nKeptSpells` (entries of `in` kept, in order, as
+  the prefix of out); DRY string unchanged. New: `readPend`/`logPend` (entry dump and AFTER re-read share one reader; engine pointers read as uint32),
+  `probeWritable` (VirtualQuery, committed + RW/WC/XRW/XWC, no guard), `applyRewrite`, `samePend`, `Engine g_eng = {0x6F5B40, 0x6F5B00, 0x83EA60, checkCode}`.
+- `applyRewrite` preconditions, all before the first write (failure -> `APPLY ABORTED <why> - vanilla (no write)`): skill count 8; pending 0x30 writable;
+  feats/spells counts still == the values read; kept prefix in range; feats/spells arrays writable for the read counts; deltas 8 bytes writable; the three
+  helpers' first bytes match (live exe: AddFeat `55 8B EC 51 89 4D FC`, SetSkillDelta `55 8B EC 83 EC 08 89 4D F8`, push `55 8B EC 83 EC 08 89 4D FC`).
+  Writes: feats kept prefix in place + dword count +0x1C, then `AddFeat(pending, id)`; spells kept prefix + count +0x04, then `PushU32(pending+0x00, id)`;
+  spells-remove untouched; `SetSkillDelta(pending, i, d)` i=0..7; ushort +0x28; byte +0x2A. No allocation of our own.
+- `onLevelUp` for allow-listed tags with mode=rewrite: `already` -> `ALREADY (replay) ... - no write`; class-mismatch / no-record / negative-unspent /
+  skipped-unreadable -> `SKIP <status> ... - vanilla`; `rewrite` + apply=0 -> `WOULD REWRITE ... (apply=0)`; else apply, `saferead::beginScope()`, re-read,
+  `APPLIED tag= key= ok=0|1` (ok = re-read == computeRewrite out) + `after:` dump (same format as `pend:`). Creature feat lists +0x00/+0x18 logged per call (verbose).
+- Config: new `apply=1` (default 1) second kill switch; CONFIG line prints it. Manifest 0.2.0.
+- Offline: mingw `-Wall -Wextra` clean; `parity.py` 263/0 (DRY unchanged); new `tools/parity/apply_test.cpp` (run by parity.py on the same cases): fake engine
+  helpers (AddFeat dedup+push, grow 16/x2; SetSkillDelta idx<8; uint32 push) in an `mmap(MAP_32BIT)` arena (no `g++ -m32` libstdc++, no wine on this box);
+  per rewrite case 3 variants (cap==count -> forced growth, cap 16, empty {0,0,0}): applied 356, AFTER == out, untouched bytes (spells-remove, deltas ptr,
+  HP/class/force/padding) unchanged, engine call count exact, replay -> `already` 356/356, abort path (count changed) writes nothing 194/194, 0 failures.
+  Mutation check: dropping the feat count write, pushing to the wrong array, and removing the count precheck all fail the test (kept-prefix off-by-one is an
+  equivalent mutant: AddFeat re-adds the entry).
+- asm check (`-O2 -S`): AddFeat call = `mov ecx,pending; [esp]=id; call 0x6F5B40; push` (callee cleanup), PushU32 ecx=pending (+0x00), SetSkillDelta ecx=pending,
+  [esp]=idx [esp+4]=value. Export `LevelUpOverrideEntry`; imports KERNEL32 + msvcrt only; hooks.toml original_bytes `55 8B EC 81 EC 80 00 00 00` == live exe.
+- Build: `LevelUpOverride.kpatch` md5 c58520e7..., DLL (`binaries/windows_x86.dll`) md5 bcdc9862.... Live is still 0.1.0 (acd1ce14).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.
