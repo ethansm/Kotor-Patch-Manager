@@ -11,6 +11,7 @@
 #include <atomic>
 #include <chrono>
 #include <cinttypes>
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -18,6 +19,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace KotorPatcher {
@@ -40,6 +42,12 @@ namespace LogService {
         constexpr int kSinkPerPatch = 0;
         constexpr int kSinkMerged   = 1;
         constexpr int kSinkBoth     = 2;
+
+        // How often the flush thread re-reads kplog.ini, regardless of flush_ms.
+        constexpr int64_t kPollIntervalMs   = 1000;
+        // How long Shutdown() waits for each lock before it gives up on the final flush.
+        constexpr int64_t kShutdownBudgetMs = 200;
+        constexpr int64_t kShutdownRetryMs  = 5;
 
         constexpr uint32_t kDefaultFlushMs  = 500;
         constexpr uint64_t kDefaultMaxBytes = 8000000;
@@ -104,6 +112,20 @@ namespace LogService {
             std::atomic<bool> initialized{false};
             std::atomic<bool> stopping{false};
 
+            // Session generation, bumped by every Init() (under pollMutex and
+            // flushMutex). A flush thread remembers the generation it was started
+            // for and acts only while it is still current, so a thread left over
+            // from an earlier session can never flush or poll into a newer one.
+            std::atomic<uint32_t> generation{0};
+
+            // Wakes the flush thread early. A separate small mutex (held only
+            // around the cv's predicate check, never across I/O or the ring) so
+            // that notifying from Submit() can never wait on a flush in progress.
+            // wakePending collapses a burst of WARNs into one notification.
+            std::mutex wakeMutex;
+            std::condition_variable wakeCv;
+            std::atomic<bool> wakePending{false};
+
             // Clock. The test clock replaces steady_clock; baseUs is the steady
             // time at Init so NowUs() counts from the start of the session.
             std::atomic<uint64_t (*)()> clock{nullptr};
@@ -155,6 +177,10 @@ namespace LogService {
 
             // Serialises flushers (the flush thread, FlushNow, Shutdown) and owns
             // the file table.
+            //
+            // Lock order, outermost first: pollMutex -> flushMutex -> ringMutex ->
+            // tableMutex. A thread takes any subset in that order and never the
+            // reverse. wakeMutex is a leaf: nothing is acquired while holding it.
             std::mutex flushMutex;
             std::map<std::string, FileState> files;
         };
@@ -394,8 +420,8 @@ namespace LogService {
             return dir + "/" + file;
         }
 
-        void DoPoll(State& s) {
-            std::lock_guard<std::mutex> pollLock(s.pollMutex);
+        // Caller holds pollMutex.
+        void DoPollLocked(State& s) {
             const std::string content = ReadWholeFile(JoinPath(s.dir, "kplog.ini"));
             if (s.haveContent && content == s.lastContent) return;
             s.haveContent = true;
@@ -417,6 +443,11 @@ namespace LogService {
             s.maxBytes.store(c.maxBytes);
             s.maxLines.store(c.maxLines);
             RecomputeLevels(s);
+        }
+
+        void DoPoll(State& s) {
+            std::lock_guard<std::mutex> pollLock(s.pollMutex);
+            DoPollLocked(s);
         }
 
         // ---- clock ----------------------------------------------------------------
@@ -602,13 +633,35 @@ namespace LogService {
             return buf;
         }
 
-        // Called with flushMutex held.
-        void FlushLocked(State& s) {
+        using TimePoint = std::chrono::steady_clock::time_point;
+
+        // try_lock with a retry every few ms until `deadline`. Used only by
+        // Shutdown(): at process exit another thread may have been killed by
+        // ExitProcess while holding the lock (it would never be released) or a
+        // patch thread may be stuck inside the service, so waiting for the lock
+        // unconditionally could hang the game's exit.
+        bool TryLockUntil(std::mutex& m, TimePoint deadline) {
+            for (;;) {
+                if (m.try_lock()) return true;
+                if (std::chrono::steady_clock::now() >= deadline) return false;
+                std::this_thread::sleep_for(std::chrono::milliseconds(kShutdownRetryMs));
+            }
+        }
+
+        // Called with flushMutex held. With a `deadline` (Shutdown) the ring lock is
+        // taken with TryLockUntil and the function returns false, having flushed
+        // nothing, if it cannot be had; without one it waits as usual.
+        bool FlushLocked(State& s, const TimePoint* deadline = nullptr) {
             // Swap the buffers under the ring lock; everything else happens outside it.
             Record* batch;
             uint32_t count;
             {
-                std::lock_guard<std::mutex> lock(s.ringMutex);
+                if (deadline) {
+                    if (!TryLockUntil(s.ringMutex, *deadline)) return false;
+                } else {
+                    s.ringMutex.lock();
+                }
+                std::lock_guard<std::mutex> lock(s.ringMutex, std::adopt_lock);
                 batch = s.ring;
                 count = s.ringCount;
                 s.ring = s.spare;
@@ -679,6 +732,74 @@ namespace LogService {
                     kv.second.dirty = false;
                 }
             }
+            return true;
+        }
+
+        // ---- flush thread ---------------------------------------------------------
+
+        // Wake the flush thread now. Taking and dropping wakeMutex between the
+        // flag and the notify closes the lost-wakeup window (the thread may be
+        // between its predicate check and its wait); the mutex is never held for
+        // anything but that predicate, so this cannot block on file I/O.
+        void WakeThread(State& s) {
+            { std::lock_guard<std::mutex> lock(s.wakeMutex); }
+            s.wakeCv.notify_all();
+        }
+
+        // Cheap wake from Submit/Mark: a burst of WARNs costs one atomic exchange
+        // each, and only the first one touches the mutex and cv.
+        void RequestFlush(State& s) {
+            if (!s.wakePending.exchange(true)) WakeThread(s);
+        }
+
+        bool ThreadShouldRun(const State& s, uint32_t gen) {
+            return !s.stopping.load(std::memory_order_acquire) &&
+                   s.generation.load(std::memory_order_acquire) == gen;
+        }
+
+        // The thread's flush: the generation is re-checked under flushMutex, and
+        // Init() bumps it while holding that mutex, so a stale thread cannot flush
+        // into a session that started after it last looked.
+        void ThreadFlush(State& s, uint32_t gen) {
+            std::lock_guard<std::mutex> lock(s.flushMutex);
+            if (!ThreadShouldRun(s, gen) || !s.initialized.load(std::memory_order_acquire)) return;
+            FlushLocked(s);
+        }
+
+        // Same idea for the config poll, under pollMutex (which Init() also holds
+        // while it replaces the session's directory and config state).
+        void ThreadPoll(State& s, uint32_t gen) {
+            std::lock_guard<std::mutex> lock(s.pollMutex);
+            if (!ThreadShouldRun(s, gen)) return;
+            DoPollLocked(s);
+        }
+
+        void ThreadMain(uint32_t gen) {
+            State& s = S();
+            auto lastPoll = std::chrono::steady_clock::now();
+            for (;;) {
+                {
+                    // flush_ms is read every iteration so a hot-reloaded value
+                    // takes effect on the next cycle.
+                    const auto period = std::chrono::milliseconds(s.flushMs.load());
+                    std::unique_lock<std::mutex> lock(s.wakeMutex);
+                    s.wakeCv.wait_for(lock, period, [&] {
+                        return s.wakePending.load() || !ThreadShouldRun(s, gen);
+                    });
+                    s.wakePending.store(false);
+                }
+                // Not flushing on the way out: Shutdown() does the final flush, and
+                // a thread of a superseded session must not touch the new one.
+                if (!ThreadShouldRun(s, gen)) return;
+
+                ThreadFlush(s, gen);
+
+                const auto now = std::chrono::steady_clock::now();
+                if (now - lastPoll >= std::chrono::milliseconds(kPollIntervalMs)) {
+                    lastPoll = now;
+                    ThreadPoll(s, gen);
+                }
+            }
         }
 
         // ---- ABI trampolines -------------------------------------------------------
@@ -706,14 +827,20 @@ namespace LogService {
     }
 
     void Init(const std::string& dir, const Options& opt) {
-        // The flush thread is not started here yet; a later change adds it behind
-        // opt.startThread. Until then the owner calls FlushNow()/PollConfigNow().
-        (void)opt;
         State& s = S();
         if (s.initialized.load() && !s.stopping.load()) return;  // a session is already running
 
+        // pollMutex and flushMutex are held for the whole reset, in lock order. The
+        // generation is bumped first inside it: any thread of an earlier session
+        // that is mid-flush or mid-poll has finished by the time the locks are
+        // ours, and when it next checks it sees the new generation and exits.
+        uint32_t gen;
         {
+            std::lock_guard<std::mutex> pollLock(s.pollMutex);
             std::lock_guard<std::mutex> flushLock(s.flushMutex);
+            gen = s.generation.fetch_add(1, std::memory_order_acq_rel) + 1;
+            s.haveContent = false;
+            s.lastContent.clear();
             for (auto& kv : s.files) {
                 if (kv.second.f) std::fclose(kv.second.f);
             }
@@ -760,16 +887,25 @@ namespace LogService {
             s.frame.store(0);
             s.baseUs.store(SteadyUs());
         }
-        {
-            std::lock_guard<std::mutex> pollLock(s.pollMutex);
-            s.haveContent = false;
-            s.lastContent.clear();
-        }
+        // Let a superseded thread (asleep in its wait) notice and exit now.
+        WakeThread(s);
 
         DoPoll(s);  // picks up an existing kplog.ini (and applies the defaults if none)
 
         s.stopping.store(false, std::memory_order_release);
         s.initialized.store(true, std::memory_order_release);
+
+        if (opt.startThread) {
+            // Detached and never joined, with no start handshake. Init() may run
+            // under the Windows loader lock (DllMain), where waiting for another
+            // thread to start deadlocks because that thread's attach notification
+            // needs the same lock; and at process exit ExitProcess may already have
+            // killed the thread, so a join could wait forever. The thread only
+            // touches the never-destroyed service state, so outliving the owner is
+            // safe. `gen` is passed in rather than read at thread start so a thread
+            // that starts late still belongs to the session that created it.
+            std::thread(&ThreadMain, gen).detach();
+        }
     }
 
     void SetSessionInfo(const std::string& versionSha, const std::string& providedDump) {
@@ -803,16 +939,35 @@ namespace LogService {
     void Shutdown() {
         State& s = S();
         if (!s.initialized.load(std::memory_order_acquire)) return;
-        // Stop intake first so the final flush sees a ring that no longer grows.
+        // Stop intake first so the final flush sees a ring that no longer grows,
+        // and tell the flush thread to leave (it is not joined, see Init()).
         s.stopping.store(true, std::memory_order_release);
-        std::lock_guard<std::mutex> lock(s.flushMutex);
-        FlushLocked(s);
+        WakeThread(s);
+
+        // The final flush must never block the process exit: at ExitProcess another
+        // thread may have been killed while holding one of these locks, and a patch
+        // thread may be stuck inside the service. Both locks are therefore taken
+        // with a bounded retry (about kShutdownBudgetMs in total); on failure the
+        // buffered lines are abandoned and the OS closes the files at exit.
+        const TimePoint deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(kShutdownBudgetMs);
+        if (!TryLockUntil(s.flushMutex, deadline)) {
+            Platform::Log("[KotorPatcher] kplog: final flush skipped (lock busy)\n");
+            s.initialized.store(false, std::memory_order_release);
+            return;  // files left open on purpose: another thread may be using them
+        }
+        std::lock_guard<std::mutex> lock(s.flushMutex, std::adopt_lock);
+        if (!FlushLocked(s, &deadline)) {
+            Platform::Log("[KotorPatcher] kplog: final flush skipped (lock busy)\n");
+        }
         for (auto& kv : s.files) {
             if (kv.second.f) std::fclose(kv.second.f);
             kv.second.f = nullptr;
         }
         s.initialized.store(false, std::memory_order_release);
     }
+
+    void LockRingForTest() { S().ringMutex.lock(); }
+    void UnlockRingForTest() { S().ringMutex.unlock(); }
 
     int32_t Register(const char* patchId) {
         State& s = S();
@@ -897,8 +1052,11 @@ namespace LogService {
         r.level = static_cast<uint8_t>(level);
         FillText(r, line, len);
         if (!Push(s, r)) p.ringDrops.fetch_add(1);
-        // A later change wakes the flush thread here for WARN/ERR so they reach the
-        // disk promptly; with no thread the owner flushes.
+        // WARN/ERR are the lines you need after a crash: wake the flush thread so
+        // they reach the disk now instead of up to flush_ms later. This is outside
+        // the ring lock and never waits on I/O. With no thread it is a harmless
+        // flag the owner never reads.
+        if (level <= KPLOG_WARN) RequestFlush(s);
     }
 
     void Mark(const char* label) {
@@ -912,6 +1070,7 @@ namespace LogService {
         r.level = KPLOG_WARN;  // markers use the reserve like WARN/ERR
         FillText(r, label, std::strlen(label));
         Push(s, r);  // a mark has no patch to charge a drop to
+        RequestFlush(s);  // the point of a mark is "this moment is on disk"
     }
 
     void FrameTick(int32_t patch) {
