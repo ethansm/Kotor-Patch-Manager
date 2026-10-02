@@ -1,11 +1,13 @@
-// Level-Up Override 0.3.0-b (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
+// Level-Up Override 0.3.0 (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
 // preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini plus a
-// per-playthrough (save-bound) config; no UI yet. Default mode=log only logs + dry-runs.
+// per-playthrough (save-bound) config, plus a character-screen UI (Configure button, path wizard, status line, banked-level message).
+// Default mode=log only logs + dry-runs.
 // History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump;
 // 0.2.1 rewrite only under AutoLevelup (user requirement: pre-determine the auto level-up, never override manual picks);
 // 0.3.0-a table v2 (presets + class levels), levelNow (hold rule v2), per-tag config (preset./instant./hold.), Class Skill feats in the
 // unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop;
-// 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API).
+// 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API);
+// 0.3.0 M4 character-screen Configure button + wizard + R11 status line / banked message (LevelUpUi.h, WizardLogic.h, _shared/GuiKit.h).
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
 // Hook 1: detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
@@ -32,6 +34,18 @@
 //   new server  0x401C52 call 0x51C450 in the server-app funnel 0x401BC0 (replaced; the handler calls it and returns EAX): GUID cache cleared
 // The GUID (uint32, 0 = none) lives only in the save's globals; g_guid caches it. ptApply() creates one on first use.
 //
+// Hook 9 (M4 UI, creation): detour at 0x0084D82C inside the character panel ctor 0x84C3A0 (`push imm32` of "LBL_STATSBORDER", original bytes
+//   68 DC 39 9A 00, plain relocatable instruction, NOT skipped), param [ebp-0x254] = the panel. The layout GFF is still open here: LuoUiPanelCtor
+//   creates our labels (guikit::createLabelFromTemplate, addToList=0) and does NOT append them (Mod 14's 0x84D871 hook later binds LBL_EFX_* with
+//   InitControl addToList=1 and expects ids 69..150).
+// Hook 4b (M4 UI, tick): the SetStats hold-gate site 0x84F221 now also passes ebp (panel = [ebp-0x288]) to LuoHold_84F221, which keeps the hold
+//   semantics and then runs the UI tick (append once on the first tick, placement, Configure button / status line / wizard, click polling).
+//   SetStats runs every frame from CSWGuiInGameCharacter::Update 0x84FBB0 (the hook Mod 14 ticks on), i.e. only while the character screen is the
+//   updated panel - clicks are polled only inside that tick.
+// R11 banked message: from every hold gate, a configured creature that is HOLD with N>0 banked levels (XP table rules+0x38) shows once per
+//   (GUID, tag, N) and at most every 5 s "<Name>: level banked - waiting for <Jedi class> (level-up path)" through the client list append 0x7BE090
+//   (thiscall(GuiInGame=*(clientInternal+0x40), CExoString*, 0x80, 0) RET 0xC; every link of the chain checked, else retried on the next gate call).
+//
 // Config levelup_override.ini (game dir, re-read when its mtime changes, stat at most once per second from the gates; missing = defaults):
 //   mode=log (default) | rewrite (apply DRY result / hold / instant for configured tags) | off
 //   preset.<tag>=<preset id>   instant.<tag>=0|1 (default 0)   hold.<tag>=0|1 (default 1)      (dev keys; M3 adds a per-playthrough source)
@@ -49,14 +63,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "../_shared/SafeRead.h"
+#include "../_shared/GuiKit.h"
 #include "Playthrough.h"
+#include "WizardLogic.h"
 
 namespace {
 
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.3.0-b";
+constexpr const char* Version = "0.3.0";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -728,6 +744,8 @@ struct Engine {
               partyGet = 0x007E5DA0, tableGet = 0x0073FB90, appGlobal = 0x00A1B4A4;
     uintptr_t strCtor = 0x00733570, strDtor = 0x00733780, guidFind = 0x006545B0, guidAdd = 0x00654430, guidSet = 0x00654BB0,
               guidGet = 0x00654740, serverInit = 0x0051C450;
+    uintptr_t rulesGlobal = 0x00A1B4D0;   // address of the global holding the rules object (XP table at +0x38)
+    uintptr_t bankedAdd = 0x007BE090;     // client message-list append, thiscall(GuiInGame, CExoString*, int 0x80, uint8 0) RET 0xC
 };
 Engine g_eng = {0x006F5B40, 0x006F5B00, 0x0083EA60, true};
 const uint8_t kAddFeatCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC};
@@ -748,6 +766,8 @@ const uint8_t kGuidGetCode[] = {0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x00, 0x8E, 
 const uint8_t kStrCtorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0x83, 0x7D, 0x08, 0x00};
 const uint8_t kStrDtorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0x8B, 0x45, 0xF8};
 const uint8_t kServerInitCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC, 0x8B, 0x48, 0x04};
+// M4 (pebytes.py, vanilla): 0x7BE090 client message-list append (first 14 bytes: prologue + `mov [ebp-0x10],ecx` + `push 0x986925`).
+const uint8_t kBankedAddCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10, 0x89, 0x4D, 0xF0, 0x68, 0x25, 0x69, 0x98, 0x00};
 
 bool writableProtect(DWORD p) {
     if (p & (PAGE_GUARD | PAGE_NOACCESS)) return false;
@@ -1340,14 +1360,106 @@ void noteHold(const char* tag, int key, bool held, unsigned site, bool real) {
     s->held = held; s->key = key;
 }
 
-int holdGate(unsigned site, void* stats) {
+// ---- R11: class names, banked levels, banked message ---------------------------------------------------------
+// Class names (live classes.2da + dialog.tlk, doc 08 "Phase 5 U facts" U4); anything else = "class N".
+const char* className(int id, char* buf, size_t cap) {
+    static const char* const n[] = {"Soldier", "Scout", "Scoundrel", "Jedi Guardian", "Jedi Consular", "Jedi Sentinel", "Combat Droid", "Expert Droid", "Minion", "Tech Specialist"};
+    if (id >= 0 && id < 10) return n[id];
+    snprintf(buf, cap, "class %d", id);
+    return buf;
+}
+
+// Levels a creature could take with its XP: tbl[i] = XP needed to REACH level i+1 (rules+0x38+4*i, 51 rows). While L < MaxLevel && tbl[L] <= xp: L++, n++.
+int bankedFromTable(const uint32_t* tbl, int level, uint32_t xp) {
+    if (!tbl || level < 1) return 0;
+    int n = 0;
+    while (level < MaxLevel && tbl[level] <= xp) { ++level; ++n; }
+    return n;
+}
+
+// Banked levels of the creature `stats` (0 on any unreadable link).
+int bankedLevels(uintptr_t stats) {
+    uint8_t ids[4], lv[4]; int nc, total;
+    uint32_t xp = 0, rules = 0, tbl[MaxLevel + 1];
+    if (!readClasses(stats, ids, lv, &nc, &total) || !readAt(S_Stats, stats, St_XP, &xp)) return 0;
+    if (!readAt(S_Rules, g_eng.rulesGlobal, 0, &rules) || !rules || !probeRead(S_Rules, reinterpret_cast<const void*>(static_cast<uintptr_t>(rules) + 0x38), sizeof tbl)) return 0;
+    memcpy(tbl, reinterpret_cast<const void*>(static_cast<uintptr_t>(rules) + 0x38), sizeof tbl);
+    return bankedFromTable(tbl, total, xp);
+}
+
+// "<Name>: level banked - waiting for <Jedi class> (level-up path)" / "<Name>: N levels banked - ..."
+void buildBankedText(char* out, size_t cap, const char* name, int n, const char* cls) {
+    if (n > 1) snprintf(out, cap, "%s: %d levels banked - waiting for %s (level-up path)", name, n, cls);
+    else snprintf(out, cap, "%s: level banked - waiting for %s (level-up path)", name, cls);
+}
+
+typedef void (__thiscall* BankedAdd_t)(void* gui, void* text, int flags, uint8_t b);
+constexpr DWORD BankedMinGapMs = 5000;
+struct BankedEntry { char tag[32]; int lastN; };
+BankedEntry g_bankedTags[MaxTagCfg];
+int g_nBankedTags = 0;
+uint32_t g_bankedGuid = 0;
+DWORD g_bankedLast = 0;
+bool g_bankedEver = false;
+int g_bankedEngState = 0;   // 0 unchecked, 1 verified, 2 mismatch (message disabled)
+bool bankedEngineOk() {
+    if (!g_eng.checkCode) return true;
+    if (!g_bankedEngState) {
+        const bool ok = codeMatches(g_eng.bankedAdd, kBankedAddCode, sizeof kBankedAddCode) && codeMatches(g_eng.strCtor, kStrCtorCode, sizeof kStrCtorCode) &&
+                        codeMatches(g_eng.strDtor, kStrDtorCode, sizeof kStrDtorCode);
+        g_bankedEngState = ok ? 1 : 2;
+        if (!ok) logLine("BANKED engine function bytes differ - banked message disabled");
+    }
+    return g_bankedEngState == 1;
+}
+// GuiInGame = *(clientInternal+0x40), clientInternal = *(*(*[appGlobal]+4)+4); 0 on any null / unreadable link.
+uintptr_t guiInGame() {
+    uint32_t app = 0, client = 0, ci = 0, gui = 0;
+    if (!readAt(S_Chain, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Chain, app, 4, &client) || !client || !readAt(S_Chain, client, 4, &ci) || !ci ||
+        !readAt(S_Chain, ci, 0x40, &gui) || !gui) return 0;
+    return gui;
+}
+
+// Called from the hold gates for a creature that is HOLD in rewrite mode. Never from inside the LevelUp hook.
+void maybeBanked(const Eval& e, uintptr_t stats) {
+    if (!e.ok || !e.p) return;
+    if (g_guid != g_bankedGuid) { g_nBankedTags = 0; g_bankedGuid = g_guid; }
+    BankedEntry* be = nullptr;
+    for (int i = 0; i < g_nBankedTags; ++i) if (!_stricmp(g_bankedTags[i].tag, e.tag)) be = &g_bankedTags[i];
+    const int n = bankedLevels(stats);
+    if (!be) {
+        if (n <= 0 || g_nBankedTags >= MaxTagCfg) return;
+        be = &g_bankedTags[g_nBankedTags++];
+        snprintf(be->tag, sizeof be->tag, "%s", e.tag);
+        be->lastN = 0;
+    }
+    if (n < be->lastN) be->lastN = n;   // levels were taken: a later increase announces again
+    if (n <= be->lastN) return;
+    const DWORD now = GetTickCount();
+    if (g_bankedEver && now - g_bankedLast < BankedMinGapMs) return;
+    const uintptr_t gui = guiInGame();
+    if (!gui || !bankedEngineOk()) return;   // retried on the next gate call
+    char cb[16], text[200];
+    buildBankedText(text, sizeof text, e.p->name[0] ? e.p->name : e.tag, n, className(e.p->holdClass, cb, sizeof cb));
+    uint32_t cs[4] = {0, 0, 0, 0};
+    reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, text);
+    reinterpret_cast<BankedAdd_t>(g_eng.bankedAdd)(reinterpret_cast<void*>(gui), cs, 0x80, 0);
+    reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
+    be->lastN = n; g_bankedLast = now; g_bankedEver = true;
+    logLine("BANKED tag=%s n=%d guid=%08x shown=1", e.tag, n, (unsigned)g_guid);
+}
+
+// realOut (optional) receives the real CanLevelUp result (before the gate). Returns the gated result.
+int holdGate(unsigned site, void* stats, int* realOut = nullptr) {
     saferead::beginScope();
     const int r = reinterpret_cast<CanLevelUp_t>(g_eng.canLevelUp)(stats);
+    if (realOut) *realOut = r;
     if (!r || !gateActive()) return r;
     Eval e = evalStats(reinterpret_cast<uintptr_t>(stats), 0);
     if (!e.ok) return r;
     const bool held = e.d == Decision::Hold, real = g_cfg.mode == Mode::Rewrite;
     noteHold(e.tag, e.key, held, site, real);
+    if (held && real) maybeBanked(e, reinterpret_cast<uintptr_t>(stats));
     return held && real ? 0 : r;
 }
 
@@ -1431,6 +1543,8 @@ void* autoOkBackstop(void* ecx) {
     return c;
 }
 
+#include "LevelUpUi.h"
+
 } // namespace
 
 extern "C" {
@@ -1445,9 +1559,21 @@ void __cdecl LevelUpOverrideEntry(void* stats, void* ret, void* pending, int add
 // One export per call site so the handler knows its site. Hold gate: param ecx = stats. Instant gate: params ecx, ebp (creature = [ebp+OFF]).
 #define LUO_HOLD(VA) int __cdecl LuoHold_##VA(void* stats) { return holdGate(0x##VA, stats); }
 #define LUO_INSTANT(VA, OFF) void* __cdecl LuoInstant_##VA(void* ecx, void* ebp) { return instantGate(0x##VA, OFF, ecx, reinterpret_cast<uintptr_t>(ebp)); }
-LUO_HOLD(74F3C7) LUO_HOLD(84F221) LUO_HOLD(5FD7CE) LUO_HOLD(5FE2A3) LUO_HOLD(66C95C) LUO_HOLD(5FEE32) LUO_HOLD(756DD4)
+LUO_HOLD(74F3C7) LUO_HOLD(5FD7CE) LUO_HOLD(5FE2A3) LUO_HOLD(66C95C) LUO_HOLD(5FEE32) LUO_HOLD(756DD4)
 LUO_HOLD(7575B5) LUO_HOLD(757808) LUO_HOLD(75798C) LUO_HOLD(75218B) LUO_HOLD(7C9F3B) LUO_HOLD(75FCB8)
 LUO_INSTANT(74F3E9, -0x38) LUO_INSTANT(5FD7A0, -0x14) LUO_INSTANT(5FE281, -0x18) LUO_INSTANT(66C93A, -8)
+
+// SetStats site 0x84F221: params ecx = stats, ebp (panel = [ebp-0x288]). Same hold semantics as the other sites, then the character-screen UI tick.
+int __cdecl LuoHold_84F221(void* stats, void* ebp) {
+    int real = 0;
+    const int r = holdGate(0x84F221, stats, &real);
+    uint32_t panel = 0;
+    saferead::beginScope();
+    if (readAt(S_Frame, reinterpret_cast<uintptr_t>(ebp), -0x288, &panel) && panel) uiTick(panel, reinterpret_cast<uintptr_t>(stats), real, r);
+    return r;
+}
+// CSWGuiInGameCharacter ctor 0x84C3A0, site 0x84D82C (layout still open): param [ebp-0x254] = the panel. Creates (does not append) the UI labels.
+void __cdecl LuoUiPanelCtor(int panel) { uiPanelCtor(static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
 
 // GetCharacterChangeInProgress 0x740FC0 call sites (ecx).
 int __cdecl LuoGuardGui_84FD2F(void* ecx) { return guiGuard(0x84FD2F, "gui", ecx); }

@@ -3,7 +3,7 @@ id = "level-up-override"
 name = "LevelUpOverride"
 version = "0.3.0"
 author = "local"
-description = "Level-up override: hooks CSWSCreatureStats::LevelUp (0x006B9870) to log every level-up and make AUTO level-ups follow a per-character build preset from levelup_paths.ini (manual picks never changed); 0.3.0-a adds hold mode (CanLevelUp gate at 13 sites + GUI guards + Auto OK backstop keep a creature from levelling until its class change) and opt-in instant level-ups (options accessor gate at 4 sites). Config levelup_override.ini (mode=log|rewrite|off, preset.<tag>=, instant.<tag>=, hold.<tag>=, legacy tags=, apply=, verbose=, table=); default mode=log never writes."
+description = "Level-up override: hooks CSWSCreatureStats::LevelUp (0x006B9870) to log every level-up and make AUTO level-ups follow a per-character build preset from levelup_paths.ini (manual picks never changed); 0.3.0-a adds hold mode (CanLevelUp gate at 13 sites + GUI guards + Auto OK backstop keep a creature from levelling until its class change) and opt-in instant level-ups (options accessor gate at 4 sites). 0.3.0 adds a per-playthrough (save-bound) config and a character-screen UI: Configure button + path wizard + status line (hook 0x84D82C panel ctor, SetStats tick 0x84F221) and a one-time banked-level message (client list 0x7BE090). Config levelup_override.ini (mode=log|rewrite|off, preset.<tag>=, instant.<tag>=, hold.<tag>=, legacy tags=, apply=, verbose=, table=); default mode=log never writes."
 
 requires = []
 conflicts = []

@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
     *reinterpret_cast<uint32_t*>(cell) = (uint32_t)app;
     *reinterpret_cast<uint32_t*>(app + 4) = 0x10001234;
     g_eng.appGlobal = cell;
+    g_eng.rulesGlobal = arenaAlloc(16);   // zero cell: the banked-level count reads no rules object (R11 is covered by ui_test.cpp)
     for (auto& sl : g_nameSlots) sl = arenaAlloc(32);
     g_eng.strCtor = reinterpret_cast<uintptr_t>(&fakeStrCtor);
     g_eng.strDtor = reinterpret_cast<uintptr_t>(&fakeStrDtor);
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
     setIni("mode=rewrite", table);
     g_canRet = 1;
     CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 1, "unconfigured must pass through");
-    CHECK(LuoHold_84F221(P(other.stats)) == 1, "unconfigured other tag must pass through");
+    CHECK(LuoHold_84F221(P(other.stats), nullptr) == 1, "unconfigured other tag must pass through");
 
     // 2. held Atton: rewrite -> 0; real 0 stays 0; log mode -> r + WOULD HOLD
     snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=0", PRESET);

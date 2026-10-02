@@ -1,5 +1,6 @@
 // Host shims for the Win32 calls the M3 save-binding code uses that stub/windows.h lacks (force-included by parity.py build() after the stub).
 #pragma once
+#define GUIKIT_HOST 1   // GuiKit.h drops its Win32 platform defaults on the host (tests install fakes)
 #include "windows.h"
 #include <stdio.h>
 #include <time.h>
