@@ -290,7 +290,7 @@ void recomputeBound() {
         hb::ActionRef a = g_cfg.slotFor(g_charKey, r, s);
         g_slotBound[r][s] = !a.empty(); if (!a.empty()) ++bound;
     }
-    logf("cfg: profile for character '%s' -> %d/30 slots bound", g_charKey.c_str(), bound);
+    logf("cfg: profile for character '%s' -> %d/%d slots bound", g_charKey.c_str(), bound, hb::Rows * hb::Slots);
     if (g_cfg.general.verbose) for (int r = 0; r < hb::Rows; ++r) for (int s = 0; s < hb::Slots; ++s) {
         hb::ActionRef a = g_cfg.slotFor(g_charKey, r, s);
         if (!a.empty()) logf("    %s = %s", hb::SlotKeyName(r, s).c_str(), hb::Format(a).c_str());
@@ -870,6 +870,15 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     return true;
 }
 
+// Moves the picker to scroll offset `no` (already clamped); every real step plays the native hover sound, like the quick-action arrows.
+void scrollPicker(int no, const char* why) {
+    Editor& ed = g_bar.ed;
+    if (no == ed.off) return;
+    logf("edit: scroll %d -> %d (%s)", ed.off, no, why);
+    ed.off = no;
+    playHoverSound("picker scroll");
+}
+
 void updateEditor(uintptr_t hud, bool gate) {
     Editor& ed = g_bar.ed;
     if (g_bar.panel != hud || g_bar.built == 0 || !g_bar.editBound) return;
@@ -937,7 +946,7 @@ void updateEditor(uintptr_t hud, bool gate) {
             int steps = acc / 120; if (!steps) steps = acc > 0 ? 1 : -1;
             int no = std::max(0, std::min(maxOff, ed.off - steps));
             logf("edit: wheel acc=%ld steps=%d offset %d -> %d (max %d)", (long)acc, steps, ed.off, no, maxOff);
-            ed.off = no;
+            scrollPicker(no, "wheel");
         }
         int n = (int)ed.list.size(), shown = std::min(n, CellCount);
         char t[112]; if (n == 0) snprintf(t, sizeof t, "Slot %c - %s: none available - Esc: back", slotDigit(ed.slot), TabName[ed.tab]);
@@ -981,7 +990,7 @@ void updateEditor(uintptr_t hud, bool gate) {
         else if (click) { heldArrow = arrow; heldSince = lastRep = GetTickCount(); }
         else if (arrow == heldArrow) {
             DWORD now = GetTickCount();
-            if (now - heldSince >= 350 && now - lastRep >= 90) { int no = std::max(0, std::min(maxOff, ed.off + arrow)); if (no != ed.off) ed.off = no; lastRep = now; }
+            if (now - heldSince >= 350 && now - lastRep >= 90) { scrollPicker(std::max(0, std::min(maxOff, ed.off + arrow)), "arrow held"); lastRep = now; }
         }
     }
 
@@ -992,8 +1001,8 @@ void updateEditor(uintptr_t hud, bool gate) {
     for (int s = 0; s < ButtonCount; ++s) if (wHit(g_bar.b[s].bg, pt)) { setMode(M_Pick, s, "slot click"); return; }
     if (ed.mode != M_Pick) return;
     for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], pt)) { logf("edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.off = 0; ed.sig = 0; ed.msg.clear(); return; }
-    if (wHit(g_bar.prev, pt)) { if (ed.off > 0) { --ed.off; logf("edit: scroll -> %d (max %d)", ed.off, maxOff); } else logf("edit: prev click ignored (at start)"); return; }
-    if (wHit(g_bar.next, pt)) { if (ed.off < maxOff) { ++ed.off; logf("edit: scroll -> %d (max %d)", ed.off, maxOff); } else logf("edit: next click ignored (at end)"); return; }
+    if (wHit(g_bar.prev, pt)) { if (ed.off > 0) scrollPicker(ed.off - 1, "prev click"); else logf("edit: prev click ignored (at start)"); return; }
+    if (wHit(g_bar.next, pt)) { if (ed.off < maxOff) scrollPicker(ed.off + 1, "next click"); else logf("edit: next click ignored (at end)"); return; }
     if (wHit(g_bar.clear, pt)) { logf("edit: Clear click slot %d", ed.slot); if (assignSlot(hud, ed.slot, nullptr)) setMode(M_Edit, -1, "cleared"); return; }
     for (int i = 0; i < CellCount; ++i) if (wHit(g_bar.cell[i].bg, pt)) {
         if (!g_bar.cell[i].avail) { logf("edit: click on empty cell %d ignored", i); return; }
@@ -1264,9 +1273,10 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
         if (!down) {
             if (g_downSwallowed[dik]) { g_downSwallowed[dik] = false; rec->dwOfs = 0; rec->dwData = 0; decision = "swallow-up"; }
         } else if (!g_shift) {
-            int row = g_alt ? 2 : (g_ctrl ? 1 : 0), slot = (int)dik - hb::kFirstDik;
+            int row = 0, slot = (int)dik - hb::kFirstDik;
             bool active = g_hudGateOk && (GetTickCount() - g_hudTick) < 250;
-            if (!active) decision = "pass(hud inactive)";
+            if (g_ctrl || g_alt) decision = "pass(ctrl/alt)";   // only plain digits are ours; Ctrl/Alt+digit stay the game's
+            else if (!active) decision = "pass(hud inactive)";
             else if (g_editOpen) decision = "pass(edit mode: never invoke)";
             else if (!g_slotBound[row][slot]) decision = "pass(unbound)";
             else {
@@ -1363,7 +1373,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     }
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        logf("force-power-hotbar 0.3.0-dev loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
+        logf("force-power-hotbar 1.0.0 loaded; cwd=%s pid=%lu ini=%s", cwd, (unsigned long)GetCurrentProcessId(), IniPath);
         logf("addresses: invoke=%08x kbdevGlobal=%08x app=%08x getCreature=%08x hudVt=%08x whitelist=%08x,%08x,%08x,%08x", (unsigned)HudInvokeGroup, (unsigned)KeyboardDeviceGlobal, (unsigned)AppGlobal, (unsigned)GetControlledCreature, (unsigned)HudVtable, (unsigned)PanelWhitelist[0], (unsigned)PanelWhitelist[1], (unsigned)PanelWhitelist[2], (unsigned)PanelWhitelist[3]);
     }
     return TRUE;

@@ -11,13 +11,12 @@ int main(){
   assert(a.warnings.size()==2);
   std::string s1=a.Serialize(); Config b; b.Parse(s1); std::string s2=b.Serialize();
   assert(s1==s2 && b.warnings.empty());
-  assert(Format(a.find("default")->slots[1][0])=="item:Medpac");
+  assert(s1.find("Left")==std::string::npos && s1.find("Right")==std::string::npos);   // removed Ctrl/Alt rows: dropped silently
   assert(a.slotFor("Atton",0,0).id==22 && a.slotFor("Atton",0,9).id==135 && a.slotFor("Nobody",0,0).id==8);
-  assert(a.slotFor("atton",1,0).kind==K_Item);
   assert(a.general.extra["Foo"]=="bar");
   const char* path="test_rt.ini"; assert(a.Save(path)); Config c; assert(c.Load(path)); assert(c.Serialize()==s1);
   ActionRef r; assert(!Parse("spell:x",&r) && r.empty()); assert(Parse("",&r)&&r.empty()); assert(Parse("OTHER:FF",&r)&&r.id==255);
-  int row,slot; assert(SlotFromKeyName("Right0",&row,&slot)&&row==2&&slot==9); assert(!SlotFromKeyName("Right",&row,&slot));
+  int row,slot; assert(SlotFromKeyName("Bottom0",&row,&slot)&&row==0&&slot==9); assert(!SlotFromKeyName("Right0",&row,&slot)); assert(IsRemovedRowKey("Right0")&&IsRemovedRowKey("left1")&&!IsRemovedRowKey("Left"));
   { Config n; n.Parse("[Profile.Default]\nBottom1=spell:8\nBottom2=NONE ; cleared\n[Profile.Bob]\nBottom1=none\n");
     assert(n.warnings.empty());
     assert(n.slotFor("Bob",0,0).empty() && n.slotFor("Bob",0,0).blank);   // none blocks the Default fallback

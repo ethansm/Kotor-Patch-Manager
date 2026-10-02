@@ -15,13 +15,13 @@
 
 namespace hb {
 
-constexpr int Rows = 3;    // Bottom, Left, Right
+constexpr int Rows = 1;    // Bottom (keys 1..0). The early Ctrl/Alt rows (Left/Right) were removed in 1.0.0: Alt+digit never reaches the game under Proton
 constexpr int Slots = 10;  // digits 1..9, 0
 constexpr int SchemaVersion = 1;
 
-// Key map table (data, not exposed yet): row name + required modifier (0 none, 1 ctrl, 2 alt).
+// Row name used in INI keys ("Bottom1".."Bottom0") + required modifier (0 none).
 struct RowDef { const char* name; int modifier; };
-constexpr RowDef kRows[Rows] = { {"Bottom", 0}, {"Left", 1}, {"Right", 2} };
+constexpr RowDef kRows[Rows] = { {"Bottom", 0} };
 constexpr int kFirstDik = 0x02;  // DIK_1; slot i uses DIK 0x02+i (0x0B = key 0 = slot 10)
 
 enum Kind { K_None = 0, K_Spell, K_Feat, K_Item, K_Other };
@@ -102,6 +102,14 @@ inline bool SlotFromKeyName(const std::string& key, int* row, int* slot) {
         if (lower(key.substr(0, n)) == lower(kRows[r].name) && key.size() == n + 1 && key[n] >= '0' && key[n] <= '9') {
             int d = key[n] - '0'; *row = r; *slot = (d + 9) % 10; return true;
         }
+    }
+    return false;
+}
+// "Left<d>" / "Right<d>" keys written by pre-1.0 builds (Ctrl/Alt rows): silently dropped, never a warning (a warning would refuse every Save).
+inline bool IsRemovedRowKey(const std::string& key) {
+    for (const char* n : { "left", "right" }) {
+        size_t len = strlen(n);
+        if (key.size() == len + 1 && lower(key.substr(0, len)) == n && key[len] >= '0' && key[len] <= '9') return true;
     }
     return false;
 }
@@ -201,6 +209,7 @@ struct Config {
                 else general.extra[key] = val;
             } else if (cur) {
                 int r, s;
+                if (IsRemovedRowKey(key)) continue;
                 if (!SlotFromKeyName(key, &r, &s)) { snprintf(msg, sizeof msg, "line %d: unknown key '%s' in [%s]", lineNo, key.c_str(), section.c_str()); warnings.push_back(msg); continue; }
                 ActionRef ref;
                 if (!hb::Parse(val, &ref)) { snprintf(msg, sizeof msg, "line %d: bad value '%s' for %s (slot left empty)", lineNo, val.c_str(), key.c_str()); warnings.push_back(msg); }
@@ -217,7 +226,7 @@ struct Config {
 
     // Canonical text: General, Default first, then the other profiles in name order.
     std::string Serialize() const {
-        std::string o = "; Force Power Hotbar. Slots: Bottom = 1..0, Left = Ctrl+1..0, Right = Alt+1..0.\n"
+        std::string o = "; Force Power Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
                         "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n";
         char b[64];
         o += "[General]\n";

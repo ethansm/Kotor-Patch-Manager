@@ -12,7 +12,18 @@
   from one `Layout[]` table (pykotor check vs the script `.gui`: 57/57 extents/fill/text/font/align/order), appended at the panel count, no `.gui` binds
   (`bindLabel`/`fixRect`/`dumpMem` deleted); frames now `fph_slot`/`fph_slot_hi`. B1 Ghidra (DB lesson 290): `healTextures()` correct for both reset orders
   (0xA1BC2C = texture work list drained by 0x427810 from TextureMgr::Tick; ResetAll/SetMem re-queue + Reset all; engine-first rebuild sets +0xE5 missing);
-  heal cap now resets after a good upload. NEXT (game closed): stage + install, back up then `scripts/add_hotbar_buttons_gui.py --rollback`, user test, commit.
+  heal cap now resets after a good upload.
+  **INSTALLED 2026-10-02 02:30** (stage `hotbar_stage10/`, 28 ids, backup `backups/inst10_1002_0230`; only the hotbar DLL changed, AR_ERROR.LOG unchanged).
+  Live `.gui`: the script's `--rollback` was NOT used -- it restores the 09-29 pristine copy and would have dropped the Shield Bar's leader-button shift
+  (`scripts/shift_hud_leader_buttons.py`: TB_STEALTH/TB_SOLO/TB_PAUSE/BTN_SWAPWEAPONS x-16). Instead only the 57 `LBL_HOTBAR*` controls were removed (result =
+  pristine + those 4 shifts, verified field-by-field), deployed md5 `51a7275e`; `override/hotbar_*.tga` deleted. Backup of the previous live files:
+  `backups/hotbar_gui_pre_rollback_1002_0230/`. **USER-ACCEPTED 2026-10-02 ("looks great, no issues")**; log: `H3: 57 controls created at runtime (indices 111..167)`,
+  editor 25/25, `tex fph_* gl=4165..4168`, no warnings.
+  **Build 22 = `75bb0a21` INSTALLED 02:41** (stage `hotbar_stage11/`, backup `backups/inst11_1002_0241`): user requests -- (1) Ctrl/Alt rows removed (hb::Rows = 1; Ctrl/Alt+digit
+  always pass to the game; old `Left#`/`Right#` INI keys silently dropped so they never block Save), manifest 1.0.0 ("Ten on-screen hotbar slots...", author ethansm),
+  INI header and banner updated; (2) every picker scroll step (wheel, arrow click, arrow hold-repeat) plays the native hover sound (`scrollPicker`). Awaiting user check.
+  Install lesson: a sibling had hot-copied `buff-duration-hud.dll` `2738ec1b` (no kpatch) after 02:30; the install replaced it, copied back from the backup -> only the hotbar
+  DLL changed. Staging check must stop on any non-hotbar DIFF before installing.
 - **Previous install:** `force-power-hotbar` 0.3.0-dev = **build 20**, DLL md5 `6c8af8c0` (26 patch ids installed, siblings own the other 25 -- always re-read `kpm_install_state.json`);
   GUI deployed = **168 controls** (`override/mipc28x6_p.gui`), textures `override/hotbar_slot*.tga`, `override/hotbar_edit*.tga`. Game closed at the end of the session.
 - **Features (all live-verified unless noted):** ten native-width (35 u) square HUD buttons for keys `1`-`0` (icons at native quick-bar size, digit label up/left of the icon, dimming, hover frame swap + the native GUI hover sound,
@@ -27,7 +38,7 @@
   GUI IDs (script `ALL_TAGS` order == DLL constants `EditId..TipId`): 111-120 frames, 121-130 icons, 131 wrench, 132 picker bg, 133 title, 134-136 tabs, 137-139 prev/next/clear, 140-147 cell frames, 148-155 cell icons, 156-165 digit labels (`LBL_HOTBARNUM<d>`), 166/167 tooltip (MUST stay the last two IDs: panel Draw is ascending by ID).
 - **Crash history:** build 8 (`FUN_0073FEA0` is a thiscall, removed in 9). No crashes since.
 - **Sources:** `force_power_hotbar_src/` (`ForcePowerHotbar.cpp` ~1200 lines, `HotbarConfig.h`, `TwoDA.h`, `Tlk.h`, hooks.toml/manifest/exports, host tests `config_roundtrip_test.cpp`, `twoda_test.cpp`; mirrored from the uncommitted framework clone
-  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/` -- build with `python3 ../create-patch.py`, copy the .cpp there first). GUI + textures: `scripts/add_hotbar_buttons_gui.py` (57 labels; `--replace` / `--rollback` / `--dry-run`).
+  `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/ForcePowerHotbar/` -- build with `python3 ../create-patch.py`, copy the .cpp there first). Art: `scripts/gen_hotbar_textures.py` -> `HotbarTextures.inc`. (The old `.gui`-editing script `scripts/add_hotbar_buttons_gui.py` was removed in 1.0.0; it lives in git history before the Phase B acceptance commit. NEVER use its `--rollback`: it restores a 09-29 copy and drops the Shield Bar's leader-button shift.)
 - **Known gaps / open items:** (1) hover-sound index 1 assumed to be the native one (user did not object); (2) companion key stability across different saves; (3) unknown INI sections/keys are refused on Save, not preserved; (4) a few function-level statics survive a HUD rebuild (stale log lines only);
   (5) arrow art is `<` `>` text; (6) no unit-test coverage of the editor/DLL logic (host tests cover only config + 2DA); (7) dead code (`port<id>` key, `scanObjectStrings`, probe/catalog dumps) and heavy debug logging still in; (8) the doc is a long chronological log -> needs consolidation. All of these are inputs to the finalization plan.
 - **Sections below, in order:** original spec (partly SUPERSEDED), "Next-phase findings" (Ghidra), "Live results" (0.1), "Environment and workflow gotchas" (READ before installing), "Bottom-bar UX: design, build", dated build logs (builds 1-20, design rounds 1-3), "Next phase: in-game configuration GUI" (plan + decisions), test-coverage note, session-5 logs.
