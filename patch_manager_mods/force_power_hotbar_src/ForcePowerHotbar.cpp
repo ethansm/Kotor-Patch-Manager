@@ -454,7 +454,7 @@ enum EditMode { M_Normal = 0, M_Edit = 1, M_Pick = 2 };
 const char* const ModeName[] = { "Normal", "Edit", "Pick" };
 struct Cell { Widget bg, ic; bool avail = false; Entry entry; };
 struct Editor {
-    int mode = M_Normal, slot = -1, tab = 0, page = 0;
+    int mode = M_Normal, slot = -1, tab = 0, off = 0;   // off = index of the first visible picker entry (scroll position)
     std::vector<Entry> list; unsigned sig = 0; long lastRefresh = -1000;
     int over = -1; DWORD overStart = 0;
     std::string msg;                  // transient message shown in the title (e.g. a refused save)
@@ -829,7 +829,7 @@ void placePanel(bool pick) {
 void setMode(int m, int slot, const char* why) {
     Editor& ed = g_bar.ed;
     logf("edit: mode %s -> %s slot %d -> %d (%s) char='%s'", ModeName[ed.mode], ModeName[m], ed.slot, slot, why, g_charKey.c_str());
-    if (m == M_Pick && ed.mode != M_Pick) { ed.page = 0; ed.sig = 0; ed.lastRefresh = -1000; g_wheelAccum = 0; }
+    if (m == M_Pick && ed.mode != M_Pick) { ed.off = 0; ed.sig = 0; ed.lastRefresh = -1000; g_wheelAccum = 0; }
     if (m != M_Pick) { ed.over = -1; if (g_bar.tipSlot >= CellTipBase) hideTip("picker closed"); }
     ed.mode = m; ed.slot = slot; ed.msg.clear();
     g_editOpen = (m != M_Normal);
@@ -898,7 +898,7 @@ void updateEditor(uintptr_t hud, bool gate) {
 
     // ---- hover over the tabs / arrows / Clear (highlight + short tooltip)
     Widget* ow[6] = { &g_bar.tab[0], &g_bar.tab[1], &g_bar.tab[2], &g_bar.prev, &g_bar.next, &g_bar.clear };
-    static const char* const otip[6] = { "Force powers", "Items: medpacs, stims, shields, mines", "Modes and stances", "Previous page (mouse wheel up)", "Next page (mouse wheel down)", "Empty this slot" };
+    static const char* const otip[6] = { "Force powers", "Items: medpacs, stims, shields, mines", "Modes and stances", "Scroll back (mouse wheel up)", "Scroll forward (mouse wheel down)", "Empty this slot" };
     int oth = -1;
     if (ed.mode == M_Pick && haveCur) for (int i = 0; i < 6 && oth < 0; ++i) if (wHit(*ow[i], pt)) oth = i;
     {
@@ -908,7 +908,7 @@ void updateEditor(uintptr_t hud, bool gate) {
     }
 
     // ---- picker contents (rebuilt from the HUD's group lists when stale)
-    int pages = 1;
+    int maxOff = 0;
     if (ed.mode == M_Pick) {
         std::vector<Entry> all; unsigned h = 2166136261u;
         for (int g = 0; g < 6; ++g) {
@@ -920,28 +920,30 @@ void updateEditor(uintptr_t hud, bool gate) {
                 all.push_back(x); h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u;
             }
         }
-        h = (h ^ (unsigned)ed.tab ^ ((unsigned)ed.page << 4)) * 16777619u;
+        h = (h ^ (unsigned)ed.tab) * 16777619u;
         if (h != ed.sig || g_frame - ed.lastRefresh >= 60) {
-            if (h != ed.sig) logf("edit: picker list tab=%s page=%d entries=%d (was %d) slot=%d", TabName[ed.tab], ed.page, (int)all.size(), (int)ed.list.size(), ed.slot);
+            if (h != ed.sig) logf("edit: picker list tab=%s off=%d entries=%d (was %d) slot=%d", TabName[ed.tab], ed.off, (int)all.size(), (int)ed.list.size(), ed.slot);
             ed.sig = h; ed.lastRefresh = g_frame; ed.list = all;
         }
-        pages = std::max(1, ((int)ed.list.size() + CellCount - 1) / CellCount);
-        if (ed.page >= pages) { logf("edit: page %d clamped to %d (pages=%d)", ed.page, pages - 1, pages); ed.page = pages - 1; }
-        // wheel over the picker pages through the list (positive delta = wheel up = previous page)
+        maxOff = std::max(0, (int)ed.list.size() - CellCount);
+        if (ed.off > maxOff) { logf("edit: scroll offset %d clamped to %d (entries=%d)", ed.off, maxOff, (int)ed.list.size()); ed.off = maxOff; }
+        // wheel over the picker scrolls the list one entry per notch like the native quick-action buttons (wheel up = back toward the start)
         LONG acc = InterlockedExchange(&g_wheelAccum, 0);
         if (acc) {
             int steps = acc / 120; if (!steps) steps = acc > 0 ? 1 : -1;
-            int np = std::max(0, std::min(pages - 1, ed.page - steps));
-            logf("edit: wheel acc=%ld steps=%d page %d -> %d (pages=%d)", (long)acc, steps, ed.page, np, pages);
-            ed.page = np;
+            int no = std::max(0, std::min(maxOff, ed.off - steps));
+            logf("edit: wheel acc=%ld steps=%d offset %d -> %d (max %d)", (long)acc, steps, ed.off, no, maxOff);
+            ed.off = no;
         }
-        char t[96]; snprintf(t, sizeof t, "Slot %c - %s %d/%d - Esc: back", slotDigit(ed.slot), TabName[ed.tab], ed.page + 1, pages);
+        int n = (int)ed.list.size(), shown = std::min(n, CellCount);
+        char t[112]; if (n == 0) snprintf(t, sizeof t, "Slot %c - %s: none available - Esc: back", slotDigit(ed.slot), TabName[ed.tab]);
+        else snprintf(t, sizeof t, "Slot %c - %s %d-%d of %d - Esc: back", slotDigit(ed.slot), TabName[ed.tab], ed.off + 1, ed.off + shown, n);
         wText(g_bar.title, "title", ed.msg.empty() ? std::string(t) : ed.msg);
         for (int i = 0; i < TabCount; ++i) wFill(g_bar.tab[i], "tab", (i == ed.tab || oth == i) ? FrameHiResref : FrameResref);
         wFill(g_bar.prev, "prev", oth == 3 ? FrameHiResref : FrameResref); wFill(g_bar.next, "next", oth == 4 ? FrameHiResref : FrameResref); wFill(g_bar.clear, "clear", oth == 5 ? FrameHiResref : FrameResref);
-        wAlpha(g_bar.prev, "prev", ed.page > 0 ? 1.0f : 0.4f); wAlpha(g_bar.next, "next", ed.page + 1 < pages ? 1.0f : 0.4f);
+        wAlpha(g_bar.prev, "prev", ed.off > 0 ? 1.0f : 0.4f); wAlpha(g_bar.next, "next", ed.off < maxOff ? 1.0f : 0.4f);
         for (int i = 0; i < CellCount; ++i) {
-            Cell& c = g_bar.cell[i]; size_t idx = (size_t)ed.page * CellCount + i;
+            Cell& c = g_bar.cell[i]; size_t idx = (size_t)ed.off + i;
             c.avail = idx < ed.list.size(); if (c.avail) c.entry = ed.list[idx];
             bool hov = ed.over == i && c.avail;
             wFill(c.bg, "cell.bg", hov ? FrameHiResref : FrameResref);
@@ -967,15 +969,27 @@ void updateEditor(uintptr_t hud, bool gate) {
         if (ov && g_bar.tipSlot != ToggleTipId && GetTickCount() - since >= TipDelayMs) showTipText(g_bar.edit, ed.mode == M_Normal ? "Edit hotbar" : "Finish editing", ToggleTipId);
     }
 
+    // ---- holding an arrow keeps scrolling (first repeat after 350 ms, then every 90 ms), like the native quick-action arrows
+    if (ed.mode == M_Pick && haveCur) {
+        static DWORD heldSince = 0, lastRep = 0; static int heldArrow = 0;
+        int arrow = wHit(g_bar.prev, pt) ? -1 : (wHit(g_bar.next, pt) ? 1 : 0);
+        if (!down || !arrow) heldArrow = 0;
+        else if (click) { heldArrow = arrow; heldSince = lastRep = GetTickCount(); }
+        else if (arrow == heldArrow) {
+            DWORD now = GetTickCount();
+            if (now - heldSince >= 350 && now - lastRep >= 90) { int no = std::max(0, std::min(maxOff, ed.off + arrow)); if (no != ed.off) ed.off = no; lastRep = now; }
+        }
+    }
+
     // ---- clicks
     if (!click || !haveCur) return;
     if (wHit(g_bar.edit, pt)) { setMode(ed.mode == M_Normal ? M_Edit : M_Normal, -1, "toggle click"); return; }
     if (ed.mode == M_Normal) return;
     for (int s = 0; s < ButtonCount; ++s) if (wHit(g_bar.b[s].bg, pt)) { setMode(M_Pick, s, "slot click"); return; }
     if (ed.mode != M_Pick) return;
-    for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], pt)) { logf("edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.page = 0; ed.sig = 0; ed.msg.clear(); return; }
-    if (wHit(g_bar.prev, pt)) { if (ed.page > 0) { --ed.page; ed.sig = 0; logf("edit: page -> %d/%d", ed.page + 1, pages); } else logf("edit: prev click ignored (first page)"); return; }
-    if (wHit(g_bar.next, pt)) { if (ed.page + 1 < pages) { ++ed.page; ed.sig = 0; logf("edit: page -> %d/%d", ed.page + 1, pages); } else logf("edit: next click ignored (last page)"); return; }
+    for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], pt)) { logf("edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.off = 0; ed.sig = 0; ed.msg.clear(); return; }
+    if (wHit(g_bar.prev, pt)) { if (ed.off > 0) { --ed.off; logf("edit: scroll -> %d (max %d)", ed.off, maxOff); } else logf("edit: prev click ignored (at start)"); return; }
+    if (wHit(g_bar.next, pt)) { if (ed.off < maxOff) { ++ed.off; logf("edit: scroll -> %d (max %d)", ed.off, maxOff); } else logf("edit: next click ignored (at end)"); return; }
     if (wHit(g_bar.clear, pt)) { logf("edit: Clear click slot %d", ed.slot); if (assignSlot(hud, ed.slot, nullptr)) setMode(M_Edit, -1, "cleared"); return; }
     for (int i = 0; i < CellCount; ++i) if (wHit(g_bar.cell[i].bg, pt)) {
         if (!g_bar.cell[i].avail) { logf("edit: click on empty cell %d ignored", i); return; }
