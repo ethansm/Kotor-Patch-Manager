@@ -35,7 +35,7 @@ Earlier state (06:30):
 ## NEXT STEPS (ordered; updated 2026-10-01 19:00; the Phase 5 plan (5A-5E) is the working list)
 1. DONE 2026-10-02: H1 FIXED (k2-activation-fix), BR FIXED (k2-equip-icon-fix), probe 1.4.1 live. Optional: remove diagnostics (perf-lab, probe) with the user's go.
 4. Deferred: run A completion (S2 round trip + S3) -> run B (tx=1) -> TX standalone patch gate; M1 HW mipmaps; robustness set (KT, FS, CR, TD, GUIID, SS, VMID, AB shrink, NETOVF, SNDRI), each with harness + user go.
-5. Report the Buff HUD IsBadReadPtr fault storm to the Buff HUD session (evidence `incidents_15_1824/hangprobe_report_1832.txt`, lesson 234).
+5. (Closed 2026-10-02: Buff HUD fault storm fixed by its session.) Remove load-hang-probe at the next install; keep perf-lab.
 (Menu choppiness: closed 19:00, not reproduced; see Status log.)
 
 ## Earlier NEXT STEPS (2026-09-30 21:20, Phase 4)
@@ -59,6 +59,13 @@ Earlier NEXT STEPS (06:00, Phase 2):
 3. Decide from the pack: **TX first** (prototype only if M3 GetImage-after-upload = 0), then G1/C2/M1 by measured load-time share, J1 by eviction/re-Demand counts.
 4. **Open static items (Phase 3 static wave, before the measurement pack is finalised):** (a) TX readers: every caller of `GetImage` 0x422640 / readers of `tex+0x44` (R3 named 0x48FF30 and a 0x49xxxx family) -- can any run after upload on a TPC texture? (b) module-change teardown: are textures, model cache `DAT_00A1FFA8` blobs and resman entries released when an area unloads (static half of S2)? (c) unaudited save paths: screenshot 0x855F30/0x52F610, savers 0x55B830/0x534600/0x8529E0/0x7D1940; (d) R1 speculative: stale `resman+0x28` after CancelRequest 0x711A30, dangling evict-list nodes after RemoveKeyTable 0x7131D0, leaked buffer on failed Service; (e) F1/H1: what sets PlayMovies `[this+0x254]` (pump cut-off at 0x798A53) and whether it can drop WM_ACTIVATEAPP; (f) uncovered subsystems (low): NWScript VM, Miles sound, AI/combat per-frame, net rings (2 x 128 KB), failed decompile 0x816400 (asm only); TD/GUIID robustness fixes.
 5. Candidate triage (Phase 3 gate below): measured cost, Ghidra-confirmed semantics, smallest behaviour-preserving hook with `original_bytes` verified, A/B >= 5 runs, 10+ launch soak with load-hang-probe (AR_ERROR.LOG md5 `a2d887896b53eae113758dc8c3729db9` unchanged), and the user's go-ahead before any install that changes engine behaviour.
+
+## PHASE 5 SESSION RECORD part 2 (2026-10-01 19:14 - 2026-10-02 02:30)
+- Install 19:14 (phase5_stage1, 25 ids, backup backups_phase5_1914): k2-activation-fix 1.0.0, k2-equip-icon-fix 1.0.0, load-hang-probe 1.4.1; Buff HUD taken from `Patches/BuffDurationHUD/BuffDurationHUD.kpatch` 19:09 (matched the hand-copied live DLL). `grep -c "address = "` = 137 (131 top-level hook addresses + 6 nested); compare like with like.
+- BR FIXED: in-game CANCEL same ctl `iweap_l`->`iw_vbroshort_001` every pass, BUILD flat on the equipment screen; user visual OK 10-02 00:45.
+- H1 FIXED: fix=auto OFF from 19:35 (note: `hangprobe_debug.txt` was rewritten by something between 19:35 and 22:31; always check the probe `loaded:` line per launch); soak 9 launches, 7 posts IGNORED, 0 hangs (doc 09 s19 table).
+- User: Buff HUD fault storm fixed by its session; probe to be removed; perf-lab kept.
+- Remaining work (Phase 6 plan): run A completion (S2 round trip + S3) -> run B (tx=1) -> TX standalone patch; M1 hardware mipmaps; robustness set KT, FS, CR, TD, GUIID, SS, VMID, AB shrink, NETOVF, SNDRI; probe removal install.
 
 ## PHASE 5 SESSION RECORD (2026-10-01 18:48-19:15; everything needed to continue after a context clear)
 - 5-0 DONE: incident 17 captured (`incidents_17_1848/`), released by manual trigger, `fix=auto` ON; hung vs healthy synthetic-deactivate launches explained (doc 09 s18 addendum; lesson 238). Soak baseline: 1.4.0 launches 5, synthetic post 4, hangs 2.
@@ -118,6 +125,7 @@ Earlier NEXT STEPS (06:00, Phase 2):
 - Environment gotchas: 0-byte `kotor-patch-manager/AddressDatabases/kotor1_steam.db` (another session, 10:43) breaks create-patch.py -> `KPATCH_ADDRESS_DATABASES=<dir of symlinks to non-empty .db>`; other sessions reinstall at any time (11:07 happened between pre-check and backup: always re-read `kpm_install_state.json` UpdatedAt right before installing); `pgrep -f 'swkotor2\.exe'` matches your own shell, use `'^S:.*swkotor2\.exe'`.
 
 ## Status log
+- 2026-10-02 02:30 **User decisions:** Buff HUD IsBadReadPtr fault storm already FIXED by its session (user reported it; remove from our list). load-hang-probe no longer needed -> remove at the next install (user go per install); perf-lab KEPT (measurement instrument for run A/B, TX, M1; inert unless `perflab_debug.txt` exists). Next = Phase 6 research plan (remaining deferred items).
 - 2026-10-02 02:20 **H1 FIXED** (doc 09 s19 soak table): 9 fix=off launches, 7 synthetic posts all IGNORED (6 with a1b4e0=1), 8/8 first loads ok, 0 hangs, AR_ERROR unchanged. BR FIXED (00:45). Phase 5 complete. Diagnostics still installed (perf-lab 0.3.0, load-hang-probe 1.4.1): removal is optional, user decision.
 - 2026-10-02 00:45 **Soak launch 5 (00:39, fix=off):** no movie-thread synthetic post this time (fix idle), first load 3767 ms, save load 504 ms. Equipment screen opened: CANCEL same-control `iweap_l` -> `iw_vbroshort_001` every pass (STATS cancelled ~= passes). **User: "Equipment screen looked good" -> BR FIXED** (k2-equip-icon-fix 1.0.0; live proof 2026-10-01 19:20 + visual OK). H1 soak tally (fix=off): 5 launches, 4 synthetic posts all IGNORED, 5/5 first loads ok, 0 hangs. AR_ERROR unchanged.
 - 2026-10-02 00:35 **H1 soak launches 3-4 (00:12, 00:30, fix=off):** both: movie-thread synthetic post with a1b4e0=1, fg ours -> `IGNORED`; first loads 3792 / 3782 ms; launch 4 also 3 save loads (501/246/253 ms). Soak tally (fix=off): **4 launches, 4 synthetic posts IGNORED (all with the hang precondition in 3 of them), 4/4 first loads ok, 0 hangs.** AR_ERROR unchanged; equipment screen not opened in these launches.
