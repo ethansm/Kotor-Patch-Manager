@@ -279,6 +279,7 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
 - Untracked-but-modified noise to ignore when committing: `research/companion_levelup/logs/debug_pykotor.log*`, `__pycache__`. Always `git commit -- <explicit paths>`.
 
 ## Session notes - Phase 2 (2026-09-30 .. 10-02, so a context clear loses nothing)
+- Plan for Step 4/5 (apply code 0.2.0 + Atton rewrite spike): `~/.claude/plans/dazzling-brewing-quasar.md`.
 - Commits: 023f41f (stage 0 DLL + simulate_rewrite.py + parity), 768bfbd (install record), fec34f8 (console cheats), 25513d0 (run 1 + feat-list fix, 0.1.1),
   6c70444 (run 2). Branch KOTOR-II has sibling commits interleaved; never push/amend; `git commit -- <paths>`.
 - Build: edit `patch_manager_mods/level_up_override_src/` (source of record) -> `cp` the 4 files to `$T/Patches/LevelUpOverride/` -> `cd` there,
