@@ -468,6 +468,12 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
 - Residual: 0x8F8070 calling convention (likely fastcall ECX=this), meaning of +0x458 / 0x73F810 (one headless run), server clobber (log-only probe).
 
 ### Preset paths (R8, 2026-10-02, `research/companion_levelup/paths/presets/`)
+**Update (wizard matrix, commits 9c91ab2..ae4c46d):** 54 presets with `[meta.wizard]` answers (schema `paths/presets/WIZARD_SCHEMA.md`): Atton 7, Kreia 7,
+Bao-Dur 8, Disciple 8, Handmaiden 8, Mira 8, Visas 8; all `check_paths.py` 0 errors. Coverage tables + open questions per character in `<char>.md`.
+0.3.0 follow-ups found by the preset agents: (1) `check_paths.py` ignores "Class Skill: X" feats (184/186/187/188 etc.) -> false cross-class costs / unspent
+warnings (Kreia, Bao-Dur); (2) `hold_until_class` semantics + the early-conversion re-base rule (Item 7 note); (3) mod #142 alignment source (companion's own vs
+Exile's) unverified -> wizard should offer `dark` only when it makes sense; (4) neutral caster presets run out of universal powers ~char 25 (filled with light).
+(Original 15-preset summary follows.)
 15 presets, 3 per character, all `check_paths.py` 0 errors, all obey "newest class only / max 2 classes" (Item 3); per-character notes `<char>.md` list sources
 and open questions. Bao-Dur: early_guardian (convert 12) / late_guardian (22) / tech (30). Disciple: caster (7) / melee (16) / support (13). Handmaiden:
 unarmed_jedi / saber_guardian (convert_at 7, `hold_until_class = 3`) / unarmed_soldier. Mira: early_sentinel (7) / ranged_sentinel (17) / scout. Visas (tag
