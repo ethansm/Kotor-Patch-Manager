@@ -21,6 +21,10 @@ configured keeps vanilla behaviour. (R7) Instant level-ups (R4) are **opt-in per
 per character and/or a guided **"wizard"** level-up UX where the player plans the build. (R9, user 2026-10-02) **Configure nudge:** when the mod is installed
 and a character is NOT configured, the level-up UX (level-up / Auto level-up buttons and their prompt) should be interwoven with a reminder/option to configure
 the mod for that character when it is ready to level up (encourage, never block vanilla levelling).
+(R11, user 2026-10-02 after the M2 install) **Held indicator:** while a character is HELD (has the XP to level but the mod is banking levels for the
+configured path), show something telling the player so (e.g. "holding for Jedi" on the portrait / character screen) - the vanilla level-up indicator is
+hidden by the hold gate, so without this the player cannot tell banked XP from no XP. (User 2026-10-02: M2 NOT tested yet; test EVERYTHING TOGETHER -
+build M3 save binding + M4 Configure UI/wizard + R11 offline, then one combined live test.)
 Phase 3 research plan: `~/.claude/plans/dazzling-brewing-quasar.md` (static only; evidence `research/companion_levelup/phase3_evidence/`).
 2026-09-30: Phase 1 + Phase 1b static investigation COMPLETE (see 'Phase 1b results'; O1-O7 closed statically, live confirmation pending user consent for a log-only probe).
 2026-09-30 (earlier): Phase 1 static investigation COMPLETE. No game change, no install, no probe run. Q1-Q8 answered below (Q4 feats-panel
@@ -705,4 +709,16 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   `level-up-P4-static-confirmed` + 2 lessons. Next: M1 (Python agents: gen_runtime_table v2 + `[presets]` + class-level field, check_paths Class Skill feats,
   tag verification, simulate_rewrite level_now twin). M1 DONE: "Phase 4 M1 results". Next: M2 C++ (0.3.0-a hold + instant, ini config).
 - M2 BUILT + INSTALLED 10:32 (dll 9e8cbbff, see "M2 install"); next = user plays the M2 live checklist (PHASE4_PLAN M2), Opus reads the log from line 176.
+- Session end 2026-10-02 (~10:45): commits 746aaf3 (Step 0), 3b684b2 (M0), 6126d99 (M1), 5f47741 (M2 build), c0851ad (M2 install), 8c6e0d5 (dev preset).
+  LIVE: 0.3.0-a dll 9e8cbbff, 28 ids, stage `$T/levelup_stage4/`, backup `backups/pre_levelup_030a_20261002_103155/`; game-dir ini `mode=rewrite apply=1
+  verbose=1 preset.atton=atton__melee_dual_light_early hold.atton=1 instant.atton=0`; table v2 copied to game dir. Log had 175 lines before any 0.3.0 run.
+  **User has NOT tested 0.3.0-a** and wants ONE combined live test after M3 + M4 + R11 (held indicator) are built - so the next phase is offline build of
+  all three (UX research first), then a single install + combined checklist. The M2 checklist items stay in the combined test.
+- New requirement R11 (Status): visible "held" indicator. UX research for R6/R8/R9/R11 continues in the next phase (plan file named in the MASTER_PLAN status).
+- Gotchas this session: (1) the `~/.claude/plans/dazzling-brewing-quasar.md` slug is reused per phase -> repo copy `research/companion_levelup/PHASE4_PLAN.md`
+  (next phase: copy the new plan to `research/companion_levelup/PHASE5_PLAN.md`); (2) new untracked files must be `git add -- <path>` before
+  `git commit -- <paths>`; (3) mingw syntax check needs `-I $T/Patches/LevelUpOverride` (the `../_shared/SafeRead.h` include resolves under $T/Patches);
+  (4) mutation test = in-place mutate + restore from a scratch copy, run `parity.py` (10/10 killed); (5) `patch_manager_mods/level_up_override_src/PULL_REQUEST.md`
+  is untracked and NOT ours (created 03:57 by another session) - leave it; (6) `atton__live` stays Scoundrel to char 19 (Sentinel from 20), so use a
+  convert-at-8 preset to see a hold on a level-7 Atton; (7) review finding: all hooks run on one thread (tid 316 in logs) - config/table swap is safe.
 
