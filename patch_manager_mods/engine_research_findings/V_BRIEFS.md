@@ -9,7 +9,7 @@ Plan: `../15_engine_bug_candidates_research_plan.md`; context: `../15a_research_
 - **Add a section (e) "Verdict"** with one line per question: `BUG` / `NO BUG` / `UNCLEAR`, plus the arithmetic or the quoted code that decides it.
   Add a section (f) **"Unnamed functions"**: list every `FUN_xxxxxxxx` you had to read or guess a role for, with the role you inferred and whether a name would have changed your verdict (feeds the Linux-symbols gate).
 - **K1 reference material is a LEAD, not evidence.** KMRP/KPM describe bugs in K1 (`swkotor.exe`) and the macOS x86_64 build; addresses in those docs are NOT K2 addresses.
-  Local copies (read-only, not in the repo): `/tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/81f33f50-9a14-43ea-ad9a-3c2a58b28ba0/scratchpad/kmrp/`
+  Local copies lived in a session scratchpad that is gone; use `engine_bug_research/kmrp_reference_notes.md` (summary + re-fetch commands)
   (`engine_fixes.txt` = KPM PR #286 KMRP-ENGINE-FIXES.md, `stray_README.txt`, `listbox-geometry.md`, `message-popup.md`, `map*.md`, `text-padding.md`, `font*.md`, `movies.md`, `binary-inventory.md`).
   Read the K1 description of your bug, then find the K2 code **independently** and judge whether the same mechanism exists. A K2 function that merely has the same name proves nothing.
 - **Name bridge (when available):** `patch_manager_mods/engine_bug_research/k1_k2_bridge.tsv` maps K1 addresses to K2 Steam addresses by name with a confidence column. Use only as a starting point; confirm `ret N` + callees in `decomp/`.
