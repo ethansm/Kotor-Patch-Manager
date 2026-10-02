@@ -152,3 +152,10 @@ Decision tree: A5 clean + A1 clean => our patches and ReShade ruled out => envir
 | Date | Row | Change | Fixme count | Observation |
 |---|---|---|---|---|
 | - | A0 | - | - | - |
+
+## Addendum 2026-10-02: user history (verified by user, answers "did it ever work?")
+- It WAS working at one point BEFORE our patching. Sequence: broken initially -> it **fixed itself at random when the user took a screenshot with PrtSc in Pop!_OS (COSMIC)** -> at some point it **reappeared**.
+- Interpretation (hypothesis, unverified): the screenshot tool/compositor grabs and then releases the pointer/keyboard focus, resetting a stuck XWayland pointer grab / focus / relative-motion state (Wine DirectInput exclusive-mouse acquire, `MOUSE_VIRTUAL_DESKTOP` path). Raises hypothesis 1 (XWayland/dinput state) and hypothesis 3 (grab/focus) above ReShade and above our patches. Also means the bug is state-dependent (what fixed/re-broke it may be a compositor/COSMIC update, Proton change, or window focus event) not a fixed config.
+- Cheap tests to add to the A/B matrix: (1) when broken in-game, press PrtSc (or open/close the COSMIC screenshot UI) and see if it recovers instantly; (2) alt-tab out and back; (3) Super key/workspace switch; (4) note exactly which COSMIC/Proton/Steam update dates correlate with the reappearance (check apt history `/var/log/apt/history.log`, Proton version change 09-26 23:30); (5) F12 Steam screenshot vs PrtSc: does only the compositor one fix it?
+- Workaround idea if confirmed: a launch wrapper/gamescope with its own pointer grab, or a script that triggers the focus reset (e.g. `xdotool`/wlr tooling) after load. Not tried.
+- Open: when exactly did it reappear (date / what changed: system update, new patch, ReShade)?
