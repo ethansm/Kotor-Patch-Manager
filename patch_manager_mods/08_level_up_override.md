@@ -277,3 +277,25 @@ ranged-ai); `level-up-override` survived unchanged (dll acd1ce14, 0.1.0).
 - Granted-feat sets in the table: e.g. Atton L20 (Sentinel 1) grants 39,43,44,55,98,107,207; L5 Scoundrel grants 62. Engine force-form power grants (0x847A70) are NOT in the table (hard-coded id set, see O3).
 - Not yet verified live (everything below is the ground truth the probe must supply): hook param passing for `ecx`/`[esp+4]`/`[esp+8]`, whether `GetLevel` (0x6A4E00) is pre-increment at LevelUp entry (it is called before LevelUp bumps class level, so key = level+1), what `AddGrantedPowers` param_2/ECX really is, whether feat grants appear in the manual-flow pending list.
 - Untracked-but-modified noise to ignore when committing: `research/companion_levelup/logs/debug_pykotor.log*`, `__pycache__`. Always `git commit -- <explicit paths>`.
+
+## Session notes - Phase 2 (2026-09-30 .. 10-02, so a context clear loses nothing)
+- Commits: 023f41f (stage 0 DLL + simulate_rewrite.py + parity), 768bfbd (install record), fec34f8 (console cheats), 25513d0 (run 1 + feat-list fix, 0.1.1),
+  6c70444 (run 2). Branch KOTOR-II has sibling commits interleaved; never push/amend; `git commit -- <paths>`.
+- Build: edit `patch_manager_mods/level_up_override_src/` (source of record) -> `cp` the 4 files to `$T/Patches/LevelUpOverride/` -> `cd` there,
+  `python3 ../create-patch.py` (works without KPATCH_ADDRESS_DATABASES now). Warning check: `i686-w64-mingw32-g++-posix -std=c++17 -Wall -Wextra -fsyntax-only
+  -I $T/Patches/LevelUpOverride $T/Patches/LevelUpOverride/LevelUpOverride.cpp`. Parity: `cd research/companion_levelup && python3 tools/parity/parity.py`
+  (compiles the real .cpp natively with `tools/parity/stub/windows.h`; the harness `#include`s the .cpp, so new Win32 calls need stubs there, and any
+  engine-calling apply code must be kept out of the pure functions or stubbed). `python3 simulate_rewrite.py` = Python twin self-test.
+- Install (user-gated): backup `$G/{kpm_install_state.json,patch_config.toml,patches/}` to `~/Games/KOTOR2_Mod_Workspace/backups/<name>_<ts>/`;
+  `python3 patch_manager_mods/mods678_research/stage_and_verify_install.py stage $T/<stage> <LevelUpOverride.kpatch>` (finds every LIVE id's kpatch by DLL md5;
+  live set is 26 ids as of 10-01 23:36 - sibling sessions change it, ALWAYS re-read); re-hash live DLLs vs the backup right before; `KPATCH_NO_LAUNCH=1
+  $T/bin/NoLaunch/KPatchLauncher "$G/swkotor2.exe" --patches $T/<stage> <IDS printed by stage>`; then `... verify $T/<stage>` (0 mismatches).
+  Game-dir runtime files: `levelup_paths.ini` (copy of `research/companion_levelup/runtime/levelup_paths.ini`), `levelup_override.ini`
+  (`mode=log tags=atton verbose=1 table=levelup_paths.ini`), log `levelup_override_log.txt` (new game session appends after a `== ... loaded` header).
+- Console cheats for testing (EnableCheats=1): `addexp N`, `addlevel` (both -> DistributeExperience; level-up then still via GUI/Auto). Player tag is empty -> `tag=?`.
+- Gotchas: `pgrep -f analyzeHeadless` inside a bash -c command matches itself (BUSY false positive) - use `pgrep -f '^java.*analyzeHeadless'` or ignore;
+  `tools/pebytes.py swkotor2.exe <va>` (first arg literally `swkotor2.exe`); `tools/kdb_add.py` has `add_names(rows, src)` / `add_lesson(scope, topic, note)`
+  (import from python, no CLI); sqlite3 CLI is not installed (use python sqlite3).
+- Runtime facts to design Step 4 on (all live-confirmed unless noted): pending arrays `{ptr,count,cap}`, empty = {0,0,0} (pushes must use engine helpers so the engine
+  allocator owns the memory); Auto pending feats = chosen only (grants added directly); manual-flow grant presence UNOBSERVED; spells-add = uint32 spells.2da rows;
+  addToList=1 in manual + Auto (pending pointer stored in stats+0x28 -> rewrite must be idempotent); SetExperience replay UNOBSERVED.
