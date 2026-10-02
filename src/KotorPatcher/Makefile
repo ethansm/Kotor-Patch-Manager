@@ -162,6 +162,15 @@ TEST_FLAGS  := -std=c++17 -O1 $(INCLUDES) -Itests -Isrc \
 # fixed-address executable rather than a PIE.
 TEST_FLAGS_32 := -m32 -msse2 -fno-pie -no-pie
 
+# tests/fixtures/*.c are stand-in patch modules for the registry's module tests.
+# They are plain C compiled the way a patch is (-shared -fPIC, one .so each) and
+# include the canonical Patches/Common header directly, so they also prove that
+# header is valid C. They go in a per-width directory because the test at each
+# width has to load the .so of its own word size; any_module_init is told which
+# through FIXTURE_DIR. Include paths are relative to this Makefile's directory.
+FIXTURES    := $(basename $(notdir $(wildcard tests/fixtures/*.c)))
+FIXTURE_CFLAGS := -std=c11 -Wall -shared -fPIC -I../../Patches/Common
+
 # The engine logs to stderr as it generates, which drowns the results, so each
 # run is captured and only the non-log lines are shown. The status has to come
 # from the test itself: piping it into a filter would report the filter's.
@@ -172,15 +181,24 @@ test:
 	  if "$$1" > "$$1.log" 2>&1; then :; else rc=1; fi; \
 	  grep -vE '^\[' "$$1.log" || true; \
 	}; \
+	for w in 32 64; do \
+	  mkdir -p $(BUILD)/tests/fixtures/$$w; \
+	  m=; [ $$w = 32 ] && m=-m32; \
+	  for f in $(FIXTURES); do \
+	    gcc $$m $(FIXTURE_CFLAGS) -o $(BUILD)/tests/fixtures/$$w/$$f.so tests/fixtures/$$f.c || rc=1; \
+	  done; \
+	done; \
 	for t in $(TESTS_32); do \
 	  n=$$(basename $$t .cpp); echo "  [i386]   $$n"; \
 	  $(CXX_LINUX) $(TEST_FLAGS) $(TEST_FLAGS_32) -o $(BUILD)/tests/$$n-32 $$t \
+	      -DFIXTURE_DIR='"$(CURDIR)/$(BUILD)/tests/fixtures/32"' \
 	      src/core/wrapper_x86.cpp $(TEST_ENGINE) -ldl -pthread || { rc=1; continue; }; \
 	  run $(BUILD)/tests/$$n-32; \
 	done; \
 	for t in $(TESTS_64); do \
 	  n=$$(basename $$t .cpp); echo "  [x86_64] $$n"; \
 	  $(CXX_LINUX) $(TEST_FLAGS) -o $(BUILD)/tests/$$n-64 $$t \
+	      -DFIXTURE_DIR='"$(CURDIR)/$(BUILD)/tests/fixtures/64"' \
 	      src/core/wrapper_x86_64.cpp $(TEST_ENGINE) -ldl -pthread || { rc=1; continue; }; \
 	  run $(BUILD)/tests/$$n-64; \
 	done; \
