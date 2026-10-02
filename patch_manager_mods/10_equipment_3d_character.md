@@ -1,5 +1,7 @@
 # Mod Idea 5: Equipment screen live 3D character (+ flourish animation)
 
+## OPEN BUG 2026-10-02: headgear missing after the equipment page (READ THIS FIRST) - see "Headgear missing after equip page" at the end
+
 ## SESSION 4 UPDATE (2026-09-30 evening) - READ THIS FIRST; supersedes SESSION 3 "Next" and the toolbar description below
 - **Installed (game closed at install):** DLL md5 `dcbdfde3a1c8d69225d7163604e73d0a` = commit `8ba37be` (kpatch kept as `$TOOL_DIR/equip3d_live_patches/EquipCharPreview_0930_menu2.kpatch`; older DLL backups `.bak_pre_menu`, `.bak_pre_pages`, `.bak_pre_pause`, `.bak_pre_split`, `.bak_pre_menu2`; previous log saved as `equip3d_log_before_menu2.txt`). `override/equip_p.gui` = **79 controls** (script `scripts/add_equip_3dview_control.py --layout A`; backup `backups/equip3d_20260930_120413_561437`; the OLDEST `equip3d_*` backup stays the pristine one). **Not yet user-tested: the spin row, the left-anchored menu, hide/buffer timing** (user was told to launch and test; read `$GAME/equip3d_log.txt` for `spin row:`, `menu:`, `btn:`, `flourish:` lines).
 - **Phase 0 result (blend fix):** user tested at ~18:00: log showed flourishes starting/ending normally with weapons off and stances g4r1/g7r1, no GREW; user did not complain about snapping afterwards. Treated as accepted.
@@ -117,3 +119,13 @@ Source of record `$TOOL_DIR/Patches/EquipCharPreview/` (`EquipCharPreview.cpp`, 
 
 ## Animation smoothing (2026-09-30, user: "jumps when the animation triggers/finishes")
 Root cause (R8a/R8b, DB lesson): flourishes were played with speed -1 = REVERSE playback (the earlier "once = speed<0" reading was wrong) and the idle was re-issued with flags 2 (= no cross-fade, weight 1). Fix: flourish `speed +1, flags 0` (engine cross-fades from the current pose over the anim's header transition 0.25-1.0 s), end our timer 60 ms before the wrap and re-issue the idle/stance with flags 0 (blends back); stance changes also flags 0. Backup DLL `equipment-3d-character.dll.bak_pre_blend`.
+
+## Headgear missing after equip page (user report 2026-10-02, NOT fixed, nothing changed yet)
+
+User: "headgear was missing after opening equip screen and closing it for a character". Game closed when reported. Not yet answered by the user: (1) missing on the world model or in a 3D preview, (2) still in the equipment slot / does re-equip or reload restore it, (3) which character + helmet/visor.
+
+Log evidence (`$GAME/equip3d_log.txt`, copy in the 10-01/02 session scratchpad; never clear it): the only equip-page preview build since 19:28 is 20:34:05 `build: raw +0x10=8000019d`, `build #1 real=14312590`, preview creature 145f1418; page closed 20:34:27 `H4 EquipDestroy ... creature=145f1418` -> `creature: destroy 145f1418 (panel destroyed)`. Later sessions (22:13) bound the panel but never built (`creature=00000000` at H4), so 20:34 is the candidate.
+
+Hypothesis (unproven): appearance copy `+0x10` = head ITEM OBJECT id. Vanilla SetStats forces `0x7f000000` (OBJECT_INVALID) for its preview; `EquipCharPreview.cpp` ~line 792 keeps the real id when `keep_obj10=1` (INI, live = 1) so the preview shows helmets. The preview's head build (0076d200 flag bit2 -> head part 0085a6c0 / 0x7c(0xfe), R2e/R7g) then likely binds the REAL client item's model (or its owner/model pointer) to the preview creature; the preview dtor (`destroyCreature` -> vt[0](1)) frees/detaches it, so the real creature loses the helmet visual. To prove: find who reads appearance `+0x10` in the 0076d200 chain (GetItemObj, item model field, attach to `headhook`), what the client creature dtor does to head items, and what the real creature's head part points at before/after (log the real creature's head Gob/item model pointers around build and destroy).
+
+Options: stopgap `keep_obj10=0` in `$GAME/equip3d.ini` (hot reload; preview shows no helmet); proper fix = build the preview helmet from a CLONED item/model, or detach the head item from the preview before its dtor (restore the real item's model/owner), or rebuild the real creature's head part after destroy. Plan: Claude plan "Mod 5 headgear + Mod 14 Stage 1" (next session).
