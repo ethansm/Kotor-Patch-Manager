@@ -165,3 +165,15 @@ Three Opus reviews -> three designs -> builds (companion-ai 0.1.0, ranged-ai 0.3
 ## Session log 2026-10-02 (Phase 0 background research, during the user's play session)
 
 Five static tracks (R1 Opus engine asm; R2-R5 Sonnet) -> `ai_research_2026-10-02/` (R1-R5 reports + `PLAY_CHECKLIST_2026-10-02.md`). New tool `analyze_play_logs.py` (+ tests and fixtures). Lead spot-checks on disk all passed. DB: `persist_ai_research_db.py` (lessons 275-282). Summary and next steps: `HANDOFF_2026-09-30.md` "Phase 0 background research DONE".
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](../19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](../19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **Companion AI, A5 `k2.rangedai` (consumer):** the A1 hook (0x6D853E, `CompanionAI.cpp:870-876`, `CompanionAiLogic.h:471`) relies on ranged AI's E-H3 frame write and on a hard-coded stance 16. Switch it to `require("k2.rangedai")` and use `kite_stance()`, falling back to the ini value.
+- **Companion AI, B3 ini helper:** loadIni (`CompanionAI.cpp:208`); the table-driven `IniTable` stays.
+- **Companion AI, B6 party/leader accessor** (`:63-68`, `:876`); **B7** `rd`/`wr`/`parseMask` (~:78), `copyStr` (~:96).
+- Ranged AI's entries are in [`13_ranged_ai_spacing.md`](../13_ranged_ai_spacing.md).

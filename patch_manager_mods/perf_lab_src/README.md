@@ -41,3 +41,15 @@ Source `perflab/` (46 hooks: the 17 of 0.2.0 + 29 counters from batches U1/U3/U4
 - `AI ticks max_n max_n_level obj_updates obj_ms obj_max_ms obj_slow10ms prepass_iter tick_ms_est tick_hist(<1,1-2,2-5,5-10,10-20,20-75,75-200,>=200 ms)` (tick time = entry -> last object post, estimated at the next entry; the epilogue is too short to hook), `PATH calls pending ok fail other ms max_ms | EFFECT apply remove`.
 - A metrics block with event `UNLOAD` is written at every server UnloadModule (0x5315E0), and `perflab_log.txt` now prints the experiment-site bytes even when tx/g1skip are off.
 Harness `harness/smoke_perflab3.cpp` (modes `off|refuse|run|nogroups`; build/run as for 0.2.0). Large test buffers must not be static (they push the 7 MB `pad` above 0x420000): use VirtualAlloc. The M5 frame-histogram check depends on `Sleep(20)` timing and can flake on the first run in a fresh Wine prefix; rerun.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](../19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](../19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **A3 `k2.enginestate` (consumer):** the load-screen poll (`PerfLab.cpp:59-61`, `:723-753`, every 100 ms from the helper thread) duplicates the load-hang probe's. Use `require("k2.enginestate")` when present.
+- **A4 event source:** the ApplyEffect/RemoveEffect hooks (0x544210/0x544640) could feed `k2.effects`, so the buff HUD stops polling.
+- **B5 code-patch helpers:** `writeCode` (:445), `patchIat` (:234), and the TX cave builder (:460-475) shared with texture-memory-release.
+- **Hand-coordinated sites (keep documented until a registry query replaces them):** robustness skips 0x726505 because of perf-lab's 0x72650B; perf-lab `tx=1` and texture-memory-release both write 0x4261CF (the second writer is refused by byte verification).

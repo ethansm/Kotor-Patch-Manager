@@ -153,3 +153,13 @@ The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still
 `mods678_research/ai_research_2026-10-02/R4_medpac_mod6v2.md`:
 - **R14 name sort:** the sort works on server items (`0x606100`). Use the server item's loc string `+0x2C0` via `CExoLocString::GetString 0x7356B0` as the tie-break key; this is the same text `SetItem 0x8B1250` shows. `CSWCItem::GetName 0x7FDFA0` (`thiscall(clientItem; CExoString* out, int identified)`, `RET 8`; client item via `0x73F530`) is the fallback. Estimated cost is 0.1-0.3 ms per populate; measure it with a timing log.
 - **Level-requirement tint:** unreachable with the current `0x5BD6A0(...,0,0,0)` call (`0x5BD6AA` gate). It needs `p4=1, p5=0, p6=0`, applies to the PC only, and also needs a module flag `[..+0xD0]` of unknown value. Log that flag before building anything.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **B2 GuiKit:** `setLabelText` (:142).
+- **B3 ini helper:** loadIni (:113).

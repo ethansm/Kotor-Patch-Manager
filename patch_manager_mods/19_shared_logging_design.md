@@ -119,6 +119,12 @@ level=1
 | 6 | Sibling-owned patches migrate on their owners' schedule (hotbar, inv3d, equip3d, chareffects, levelup, ai, perf-lab) | fork | owners |
 | 7 | Contributor doc: `docs/Logging.md` upstream + example patch | upstream | with 5 |
 
+## 8a. Shared code and shared state: rollout strategy (user 10-02)
+- **Upstream first, on its own:** the #180 registry + `kpatch.log` (framework infrastructure; every later PR builds on it).
+- **Everything else (doc 19b B-items = Common helpers, A-items = registry interfaces):** consolidate on our fork now, so the code we play-test is the code we submit. Each piece goes upstream **inside the first mod PR that uses it**, and later mod PRs reuse it. Never send a speculative Common PR with no upstream caller.
+- **Mod PR order follows the dependencies** (whoever introduces a shared piece goes first). A registry interface ships as/inside a patch, never in Common.
+- Each mod doc has a "Planned shared state and shared code" section listing what it will hook into (added 10-02).
+
 ## 9. Decisions
 Settled (10-02, user confirmed core direction):
 1. Per-patch files by default, merged opt-in (`sink=`).

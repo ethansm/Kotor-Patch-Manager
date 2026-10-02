@@ -1737,3 +1737,17 @@ per-creature action lists ARE inventory items (key = objectId|0x40000000). Live-
 **Status update (same day, later):** a sibling Shield Bar session committed this change as part of `bc34464` (together with its menu-bar hook at `0x756b70`, so `hooks.toml` now has 4 more lines than the build above) and re-installed `buff-duration-hud.dll` at 18:28 (md5 `9065ff4b75b4fbfbab9a14ca02dffcaa`, contains the `ARROWS`/`ICONCACHE` strings). The counter bump is therefore live in that newer build; the 11:26 md5 above is superseded. Live results still pending.
 
 **Follow-up (Phase 2, NOT done): "Option C".** Draw everything from hook 6: push the card viewport ourselves (`PushClipRect(slot+0x54c..0x558, ClipNoFillColor, 0, 1.0)` preceded by `FUN_004792c0`, followed by `FUN_004799c0`/`FUN_004793f0`, as `FUN_007457e0` does), call the `DrawBuffColumn` body, set the counters to 0 so the engine draws no chevrons at all. Would delete hooks 2/3/5 and the widget-shrink hack at the price of losing native arrows for untracked effects and re-deriving `isLarge`/card sizes. Only worth it if the bump shows problems.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **A4 `k2.effects` (provider candidate, with the effects panel):** `collectBuffs` (:141-168) and `probeEffects` (:205-262) scan the same effect array as the effects panel's `collect`. The perf-lab ApplyEffect/RemoveEffect hooks (0x544210/0x544640) are the event source the probe currently emulates by polling.
+- **A6 image pool:** `imageFor` (:124), low priority.
+- **B1 icon tables:** shared with the effects panel (byte-identical), plus `currentTime` (:108) and `isItemAbility` (:68).
+- **B2 GuiKit:** `setFill`, `imageFor`.
+- **B6 party/leader accessor** (:789). Upstream GameAPI `GetPlayerCreature`/`GetWorldTime` exist but are bypassed.
+- **Logging:** the shield-bar probe lines (`MENUSLOT DRAW POOL CAPFIX SWAP ...`) are doc 19 Phase 3, the second reference migration (byte caps fix the SWAP-line starvation).

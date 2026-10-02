@@ -241,3 +241,12 @@ type = "pointer"
 ```
 Per-frame sampler contents (ProbeCameraFrame, via `ebp`): dx/dy/scale floats; `this=*(void**)(ebp-0x130)`, `ctl=*(void**)(this+0x18)`, `camobj=*(void**)(ctl+0x40)`; log `ctl+0xC` (mode), `ctl+0x94/0x98/0x9C`, `DAT_00A7FCBC` (hold), `DAT_00A7FCC0`, `DAT_00A7EBBC`, options flags (`*(CExoInput...)` via `FUN_0072FB00()` +0x8) and call the float getters `camobj->vt[0x64]/[0x68]/[0x6C]` (thiscall, float in ST0; they are the same getters 0x78C350 itself calls at its end). Use QueryPerformanceCounter timestamps; also log the DI raw buttons byte (RMB = rgbButtons[1] bit 7) next to the hold flag to catch release desyncs. The dx/dy hooks run on the game main thread (same as GetEvents).
 Doubts: the camera-object vtable getter slots and `ctl+0x40` layout are inferred from the call pattern in 0x78C350/0x7F7A30 (not RTTI-named); the bound mouse button for events 0xDB/0xDC and the move-to-point action are untraced; `A10B1C..28` pitch/distance globals' writers not traced.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **Mouse probe:** the doc 19 Phase 2 reference migration to `KpLog.h`. If it ever needs window or cursor state, use A1 `k2.guiinput` rather than another window subclass.

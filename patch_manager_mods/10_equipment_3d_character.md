@@ -148,3 +148,16 @@ Game closed. `$GAME/equip3d.ini` `keep_obj10=1` -> `0` (backup `equip3d.ini.bak_
 - **User test checklist:** helmet/visor char: page open -> helmet in preview; close -> world model still wears it (5x, plus a party switch on the page); equip/unequip a helmet on the page (preview updates, world correct after close); a mask that hides hair; a droid; save/load + module transition. Read `equip3d_log.txt` (copy first, never clear before reading).
 - **Independent Opus review (01:06, read-only):** no crash/leak/double-free; every head-freeing path (rebuild, re-bind, evict, H4) detaches the helmet first; no path hands a real id to `0076d200`; vt[0x18] call ABI-correct (4 stack dwords, matches engine asm `0085b719`). One minor gap fixed: `helmApplied=false` after the pre-rebuild detach so a failed rebuild re-attaches to the old head; PlayAnimation call switched to the `PartPlayFn` typedef. Reinstalled 01:07 (kpatch `EquipCharPreview_1002_0107.kpatch`); other 17 DLL md5s unchanged.
 - **Headgear fix user test (2026-10-02, ~02:40): PASS.** User: world models kept their helmets after closing the equipment page, across party switches and equip/unequip on the page ("All fine"). Log `equip3d_log.txt` (copied to scratch before reading, not cleared) 01:52-02:17: every `attach ok (after build)` is followed by `detached+freed` of the same Gob before the next rebuild (masks `i_mask_007/008`); `i_null` items skipped; the only 2 `WARNING no head part` lines are a droid (head=0, `scanning` flourish), expected. Live DLL still `962f9e22`. Mod 5 headgear item CLOSED.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **A1 `k2.guiinput` (consumer):** the window subclass (install :361, unlink :1099), `gameWindow()` (:350), `cursorEngine`/`syncScreen` (:327/:366) and `GetAsyncKeyState` polling (:525, :914).
+- **B2 GuiKit:** `bindCover` (:376), `setLabelText` (:411), `ctlRect` (:432, identical to effects), `setCtlVisible` (:447, identical to effects).
+- **B3 ini helper:** `trim` (:159), `parseFloats` (:164), `maybeReloadIni` (:242).
+- **B4 3D scene view:** `BindEquipView` (:942-1005) and constexprs (:28-62) shared with inv3d.
+- **B8 panel slot table** (:295-301).

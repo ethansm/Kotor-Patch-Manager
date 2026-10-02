@@ -667,3 +667,18 @@ Goal: the `.kpatch` alone delivers the mod (no `.gui` edit, no override TGAs). E
 - Embedded resrefs are renamed `fph_slot`, `fph_slot_hi`, `fph_edit`, `fph_edit_hi` (never collide with the old override TGAs).
 - **Prototype live result (2026-10-02 ~01:55):** wrench created at runtime (index 131, padded slot) and all four `fph_*` textures uploaded by the engine's texture tick
   (gl names 4166-4169 at frame 120, pixel buffers freed by the engine, no missing flag); user: "The wrench button looks great!". Texture self-heal after a GL reset is still untested.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **A1 `k2.guiinput` (consumer):** `ensureWheelHook` subclass (:738-750), conditional unlink (:1302, the 'only if we are still on top' comment), `enumWnd`/`cursorInGame` (~:477-490) and `GetAsyncKeyState` polling (:636, :832).
+- **A3 `k2.enginestate` (consumer):** the modal-stack walk (:185-200) becomes `modal_top()`.
+- **A6 image pool:** `imageFor` (:423), low priority.
+- **B2 GuiKit:** label creation (:982), `textObjOk` (:689), `setFill`.
+- **B6 party/leader accessor** (:215-228, via 0x7E5D80).
+- **B7:** `readCExoString` (:117).
+- **SafeRead:** the remaining direct `IsBadReadPtr` calls should move to `saferead::probeRead` (doc 19 Phase 0 left this to the owner).

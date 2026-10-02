@@ -813,3 +813,15 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - C gates + review DONE (82dede7), 0.3.0 built (dll 40993526); NEXT = user consent -> install (stage `$T/levelup_stage5`) -> combined checklist.
 - 0.3.0 INSTALLED 12:45 (see '0.3.0 install'); NEXT = user plays the combined checklist (PHASE5_PLAN step C 1-8), Opus reads the log from line 176.
 - (superseded) Live state: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **A2 `k2.charscreen` (co-tenant with the effects panel):** the ctor hook 0x84D82C and the SetStats tick 0x84F221 share the character panel with the effects panel's 0x84D871. Coordination today is the comments and ranges in `LevelUpOverride.cpp:36-45` and `LevelUpUi.h:7-14`. This patch is the natural **provider** (it already hooks both the ctor and the per-frame tick); the interface is `on_bind`/`on_tick`/`on_destroy`, `reserve_ids(n)` and `claim_rect`.
+- **B2 GuiKit:** already the only GuiKit user. GuiKit is now canonical in `Patches/Common` (KPM aad0a14), and `../_shared/GuiKit.h` still builds through a forwarding header. Its PR is likely the one that brings GuiKit upstream.
+- **B3 ini helper:** loadIni (:220).
+- **B6 party/leader accessor** (:735-745, :1494).

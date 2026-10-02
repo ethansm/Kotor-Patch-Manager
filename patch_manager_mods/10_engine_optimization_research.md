@@ -355,3 +355,13 @@ One diagnostic build (extend `perf-lab`, all counters off unless `perflab_debug.
 - **M7 one-shot reads** at the first in-game frame: `[0xA1B710]`, `[0xA1B704]`, `[0xA7EB9C]` (F2), `0x4845A0()` result / `[0x9F6100]` (G1 gate), resman budget `[[0xA1B490]+4]`, `[[0xA1B490]+8]` (J1).
 - **M8 VirtualQuery census** at load-screen UP/DOWN and on demand: region count/size by type/state, largest free block (4 GB headroom).
 - **Procedure (user runs; window kept focused on the first load):** S1 = launch -> main menu -> load save A -> 2 min idle in-game -> dump; S2 = walk to another module -> 2 min -> dump; S3 = 10 quicksaves + 1 quickload -> dump. Leak threshold X for "growth per repeat" is the user's pick (suggested 5 MB per module round trip or 1 MB per quicksave). Decision after the pack: TX prototype only if M3 is zero; G1/C2/M1 only if M2/M4 show >= 5% of load time.
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **Robustness fixes / texture-memory-release / equip-icon-fix, B5 code-patch helpers:** `writeCode` (`RobustnessFixes.cpp:114`, `TextureMemoryRelease.cpp:~98`, `EquipIconFix.cpp:~96`), the TX cave builder (`TextureMemoryRelease.cpp:73-95`, shared with perf-lab) and the `enabled=0` flag parser all move to one Common helper.
+- Site coordination with perf-lab (0x726505/0x72650B, 0x4261CF): see [`perf_lab_src/README.md`](perf_lab_src/README.md).

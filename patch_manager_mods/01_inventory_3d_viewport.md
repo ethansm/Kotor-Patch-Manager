@@ -629,3 +629,16 @@ whether a community GZF database already has these three functions
 labeled. Phase 3-4 (hook + C++): hours once addresses are known, assuming
 the Patch Manager toolchain builds and runs under our Proton setup (open
 question, see `03_framework_research.md`).
+
+
+## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
+**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+- **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
+- **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
+- **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
+- **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
+- **A1 `k2.guiinput` (consumer):** replace the window subclass (`wheelProc`, install :498, conditional unlink :764), the `gameWindow()` EnumWindows scan (:487) and the `cursorEngine`/`syncScreen` transform with `game_hwnd`, `cursor_engine` and `wheel_subscribe`. This removes the detach-only-if-on-top hazard shared with equip3d, effects and hotbar.
+- **B2 GuiKit:** `bindCover` label creation (:568), `cursorEngine` (:463, identical in 3 patches) and `syncScreen` (:503).
+- **B3 ini helper:** `trim` (:147), `parseFloats` (:152), `maybeReloadIni` (:239). It merges with the `kplog.ini` reloader.
+- **B4 3D scene view:** `BindInventoryView` (:590-654) and its constexpr block (:31-60) duplicate equip3d's `BindEquipView`; both become one `scene3d` helper. `modelCount`, `getModel` and `dumpMem` go too.
+- **B8 panel slot table:** `claimSlot`/`findSlot` (:282).
