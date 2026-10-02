@@ -211,6 +211,7 @@ void logPanels(uintptr_t hud) {
 }
 
 // ---- controlled creature + characterKey ---------------------------------------------------------------
+int g_partyCount = 0;   // member count seen by the last controlledCreature() call
 uintptr_t controlledCreature() {
     static const char* lastFail = nullptr;
     auto fail = [&](const char* why) { if (lastFail != why) { lastFail = why; logf("creature: unavailable (%s)", why); } return (uintptr_t)0; };
@@ -218,7 +219,8 @@ uintptr_t controlledCreature() {
     int a; if (!readAt(app, 4, &a) || !a) return fail("app+4 null");
     int b; if (!readAt(a, 4, &b) || !b) return fail("a+4 null");
     int party; if (!readAt(b, 0x270, &party) || !party) return fail("party table null");
-    if (rdInt(party, 0) <= 0) return fail("party count 0");   // member count
+    g_partyCount = rdInt(party, 0);
+    if (g_partyCount <= 0) return fail("party count 0");   // member count
     lastFail = nullptr;
     using Fn = uintptr_t(__thiscall*)(void*);
     return reinterpret_cast<Fn>(GetControlledCreature)(reinterpret_cast<void*>(party));
@@ -248,7 +250,14 @@ std::string computeCharacterKey() {
         if (!k.empty()) return k;
     }
     unsigned oid = (unsigned)rdInt(c, 4);
-    if (oid == 0xFFFFFFFFu || oid == 0) return "";   // invalid object id: transient during loads, never a real character
+    if (oid == 0xFFFFFFFFu || oid == 0) {   // invalid object id: transient during loads, never a real character
+        static unsigned lastBad = 1; static int badLogs = 0;
+        if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) { lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs; logf("character: creature %p has invalid object id %08x (party members=%d)", (void*)c, oid, g_partyCount); }
+        // A one-member party is always the player character (the Exile, whose valid id is fffffffd): the id can read 0xFFFFFFFF for a whole session
+        // (seen on the Ebon Hawk), which would otherwise leave the character unidentified and refuse every assignment.
+        if (oid == 0xFFFFFFFFu && g_partyCount == 1) return "objfffffffd";
+        return "";
+    }
     char b[24]; snprintf(b, sizeof b, "obj%08x", oid);
     // Companion object ids (obj8000xxxx) are runtime heap ids that change across save loads. CSWCObject::GetPortraitId (0x007ED4B0) is
     // the ushort at object+0xB8 = the portraits.2da row, fixed per character; use it for everything but the Exile (objfffffffd, stable).
@@ -1165,7 +1174,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     {   // every frame: the bar must follow the controlled character without a visible lag
         static uintptr_t lastCreature = ~0u; static unsigned lastOid = 0xFFFFFFF0u;
         uintptr_t cr = controlledCreature(); unsigned oid = cr ? (unsigned)rdInt(cr, 4) : 0;
-        bool same = (cr == lastCreature && oid == lastOid);   // unchanged creature: skip the key build (string work) entirely
+        static int lastParty = -1; bool same = (cr == lastCreature && oid == lastOid && g_partyCount == lastParty); lastParty = g_partyCount;   // unchanged creature: skip the key build (string work) entirely
         lastCreature = cr; lastOid = oid;
         std::string k = same ? g_charKey : computeCharacterKey();
         if (k != g_charKey) { logf("character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; g_charChangeTick = GetTickCount(); recomputeBound(); charChanged = true; }

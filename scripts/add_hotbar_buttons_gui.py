@@ -284,15 +284,16 @@ def main() -> int:
     n = first_id + 20
     make(n, EDIT_TAG, [EDIT_X, a.y, EDIT_W, a.frame], fill=EDIT_TEX[0]); n += 1
     py = a.y - 10 - 96 - 4   # content top; content is 96 tall, box adds 8 padding each side
-    bw = 424
-    make(n, PBG_TAG, [a.x - 8, py - 8, bw + 16, 96 + 16], src=tip_t[0]); n += 1   # native panel look (fill uibit_fill_2bt + teal edge/corner)
-    make(n, TITLE_TAG, [a.x, py, bw, 22], text="", align=17, font=SMALL_FONT); n += 1   # no fill: text sits on the group background
+    L = EDIT_X + 8   # picker content left: same left padding as the wrench (box edge = wrench edge)
+    bw = (a.x + 9 * a.spacing + a.frame) - EDIT_X - 16   # box spans wrench-left .. right edge of slot 0 (= width of the 10 buttons)
+    make(n, PBG_TAG, [EDIT_X, py - 8, bw + 16, 96 + 16], src=tip_t[0]); n += 1   # native panel look (fill uibit_fill_2bt + teal edge/corner)
+    make(n, TITLE_TAG, [L, py, bw, 22], text="", align=17, font=SMALL_FONT); n += 1   # no fill: text sits on the group background
     for i, t in enumerate(TAB_TEXT):
-        make(n, TAB_TAGS[i], [a.x + i * 88, py + 26, 84, 24], fill=TEX[0], text=t, align=18, font=SMALL_FONT); n += 1
-    cx0 = a.x + 32   # cells start right of the prev arrow
-    make(n, PREV_TAG, [a.x, py + 58, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
-    make(n, NEXT_TAG, [a.x + bw - 28, py + 58, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
-    make(n, CLEAR_TAG, [a.x + bw - 70, py + 26, 70, 24], fill=TEX[0], text="Clear", align=18, font=SMALL_FONT); n += 1
+        make(n, TAB_TAGS[i], [L + i * 88, py + 26, 84, 24], fill=TEX[0], text=t, align=18, font=SMALL_FONT); n += 1
+    cx0 = L + 28 + (bw - 56 - (CELLS * a.spacing - 5)) // 2   # cells centred between the prev/next arrows
+    make(n, PREV_TAG, [L, py + 58, 28, a.frame], fill=TEX[0], text="<", align=18); n += 1
+    make(n, NEXT_TAG, [L + bw - 28, py + 58, 28, a.frame], fill=TEX[0], text=">", align=18); n += 1
+    make(n, CLEAR_TAG, [L + bw - 70, py + 26, 70, 24], fill=TEX[0], text="Clear", align=18, font=SMALL_FONT); n += 1
     for i in range(CELLS):
         make(n, CELL_BG_TAGS[i], [cx0 + i * a.spacing, py + 58, a.frame, a.frame], fill=TEX[0]); n += 1
     for i in range(CELLS):
