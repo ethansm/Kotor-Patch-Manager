@@ -20,8 +20,14 @@
 ## Not carried over from 3C-FD (yet)
 - J0-o's in-place shader text edits (~5,120 bytes, VA ~0x989DBA..0x9F8B35) are replaced by KPM Shader Fixes, which is a
   different implementation: fog/lighting may look slightly different. Gap analysis: `j0o_gap_analysis.md`.
-- 3-byte NOP at VA 0x70E130 (file 0x30D530; removes `fmul dword [ebp-0x28]`, described as a fog clamp bypass): no KPM
-  equivalent. Port into `k2_aspyr_shader_fixes` if the gap analysis says it matters.
+- 3-byte NOP at VA 0x70E130 (file 0x30D530; removes `fmul dword [ebp-0x28]`): NOT fog. It is in
+  `CExoSoundSourceInternal::SetVolume` and drops the 0.2 dialogue ducking of music/ambient. Byte-identical to KPM's
+  `K2_music_fix` (K2AspyrMusicFix), which is not installed.
+- 0x989DB0 gamma pass colour grade (R/B x0.90, G x0.85) is byte-identical to KPM's `colorshift_k2`
+  (K2AspyrColorCorrection), not installed. Check side by side first: Shader Fixes already removes the +15 brightness offset.
+- J0-o's fog/vertex-program edits = an older `K2AspyrFogReflectionFix`; Shader Fixes supersedes them, nothing to port.
+- Verified 10-02: all 5,124 3C-FD bytes fall inside 4GBPatch + FogReflectionFix + ColorCorrection + MusicFix hook ranges.
+  Full analysis: `j0o_gap_analysis.md`.
 
 ## Gotcha (installer)
 KPM's uninstall restores the newest `swkotor2.exe.backup.*` and keeps `OriginalHash` from `kpm_install_state.json`.
