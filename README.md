@@ -123,6 +123,9 @@ Static hooks are applied directly to the executable file at install-time, before
 - **Applied at install-time**: These patches are written directly to the executable file when patches are installed
 - **Use cases**: PE header modifications (e.g., 4GB patch), import table modifications, or any change that must occur before the executable loads
 
+### Sharing code and logging between patches
+Patches can publish small tables of functions for other patches to use, and log through a shared service, using the patch registry. A patch opts in by exporting a `KPatchInit` function, and patches that do not are unaffected. See [docs/PatchRegistry.md](docs/PatchRegistry.md) for how to provide and require an interface, how `KPatchInit` is declared so the build exports it, and how to log through `kpatch.log` and configure it with `kplog.ini`.
+
 ### Building Patches
 To build a patch, use the `create-patch.bat` batch file from within the patch directory. Usually this will look like:
 ```
