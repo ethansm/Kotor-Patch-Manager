@@ -1,0 +1,770 @@
+kind	class	name	gog	steam_cand	conf	source	n_distinct_cands	patches	mapper_cand	mapper_tag	agree
+F	CClientExoApp	AddMoveToModuleMovie	0x40d640	0x00740180	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740180	vote	yes
+F	CClientExoApp	AddMovieToMovieQueue	0x40e680	0x007411c0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007411c0	vote	yes
+F	CClientExoApp	CancelMovie	0x40e420	0x00740f60	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740f60	vote	yes
+F	CClientExoApp	ChangeCharacter	0x40d840	0x00740380	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740380	vote	yes
+F	CClientExoApp	CreatureAcquireItem	0x40cec0	0x0073f9e0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f9e0	vote	yes
+F	CClientExoApp	DisableInput	0x40d790	0x007402d0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007402d0	vote	yes
+F	CClientExoApp	DisableVideoEffect	0x40de80	0x007409c0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007409c0	vote	yes
+F	CClientExoApp	DismissInGameGUI	0x40d7d0	0x00740310	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740310	vote	yes
+F	CClientExoApp	DisplayMainMenu	0x40c6f0	0x0073f230	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f230	vote	yes
+F	CClientExoApp	EnableInput	0x40d7b0	0x007402f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007402f0	vote	yes
+F	CClientExoApp	EnableVideoEffect	0x40de60	0x007409a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007409a0	vote	yes
+F	CClientExoApp	ExitProgram	0x40c750	0x0073f290	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f290	vote	yes
+F	CClientExoApp	GetActivePauseState	0x40d2e0	0x0073fe20	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073fe20	vote	yes
+F	CClientExoApp	GetAutoPaused	0x40de20	0x00740960	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740960	vote	yes
+F	CClientExoApp	GetCharacterChangeInProgress	0x40e480				0	AdditionalConsoleCommands	0x00740fc0	vote	
+F	CClientExoApp	GetClientLanguage	0x40c810	0x0073f350	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f350	vote	yes
+F	CClientExoApp	GetCreatureByGameObjectID	0x40ca10	0x0073f550	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f550	vote	yes
+F	CClientExoApp	GetCreditSequenceInProgress	0x40e530	0x00741070	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00741070	vote	yes
+F	CClientExoApp	GetGUIString	0x40ddb0	0x007408f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007408f0	vote	yes
+F	CClientExoApp	GetGameObject	0x40c990				0	AdditionalConsoleCommands	0x0073f4d0	vote	
+F	CClientExoApp	GetGameOver	0x40d8a0	0x007403e0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007403e0	vote	yes
+F	CClientExoApp	GetInFreeLook	0x40e750	0x00741290	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00741290	vote	yes
+F	CClientExoApp	GetInGameGui	0x40cc10				0	AdditionalConsoleCommands	0x0073f750	vote	
+F	CClientExoApp	GetInputClass	0x40d3e0	0x0073ff00	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073ff00	vote	yes
+F	CClientExoApp	GetLastTarget	0x40db20	0x00740660	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740660	vote	yes
+F	CClientExoApp	GetLoadingSaveGame					0	AdditionalConsoleCommands			
+F	CClientExoApp	GetObjectName	0x40c5a0	0x0073f0e0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f0e0	vote	yes
+F	CClientExoApp	GetPausedByCombat	0x40d7f0	0x00740330	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740330	vote	yes
+F	CClientExoApp	GetPazaakIsRunning	0x40e3e0	0x00740f20	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740f20	vote	yes
+F	CClientExoApp	GetPazaakResults	0x40dbf0	0x00740730	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740730	vote	yes
+F	CClientExoApp	GetPlayerCreature	0x40c910	0x0073f450	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f450	vote	yes
+F	CClientExoApp	GetTargetChanging	0x40e340	0x00740e80	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740e80	vote	yes
+F	CClientExoApp	GetWorldTimer	0x40c870	0x0073f3b0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f3b0	vote	yes
+F	CClientExoApp	IsSoundPlayingInDialog	0x40d750	0x00740290	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740290	vote	yes
+F	CClientExoApp	IsValidResolution					0	AdditionalConsoleCommands			
+F	CClientExoApp	PlayerFlourishWeapons	0x40dd60	0x007408a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007408a0	vote	yes
+F	CClientExoApp	QueryExitProgram	0x40d300				0	AdditionalConsoleCommands	0x0073fe20	vote	
+F	CClientExoApp	RemoveMoveToModuleMovies	0x40d680	0x007401c0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007401c0	vote	yes
+F	CClientExoApp	RunDeathSequence	0x40d860	0x007403a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007403a0	vote	yes
+F	CClientExoApp	SendLoadGameRequest	0x40cbe0	0x0073f720	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f720	vote	yes
+F	CClientExoApp	SendSaveGameRequest	0x40cbb0	0x0073f6f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f6f0	vote	yes
+F	CClientExoApp	SetCanSendDialog	0x40d8e0	0x00740420	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740420	vote	yes
+F	CClientExoApp	SetCombatMode	0x40dd40	0x00740880	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740880	vote	yes
+F	CClientExoApp	SetEventDescriptions	0x40cfe0	0x0073fb20	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073fb20	vote	yes
+F	CClientExoApp	SetFutureLeader	0x40dc30	0x00740770	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00740770	vote	yes
+F	CClientExoApp	SetGameOver	0x40d880	0x007403c0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007403c0	vote	yes
+F	CClientExoApp	SetInputClass	0x40d3c0	0x0073fee0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073fee0	vote	yes
+F	CClientExoApp	SetMouseMode	0x40e400				0	AdditionalConsoleCommands			
+F	CClientExoApp	SetPlayerCreature	0x40cdf0	0x0073f910	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073f910	vote	yes
+F	CClientExoApp	SetRunScript					0	AdditionalConsoleCommands			
+F	CClientExoApp	SetTexturePack	0x40d0d0				0	AdditionalConsoleCommands			
+F	CClientExoApp	SetVideoMode	0x40d0b0	0x0073fbf0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0073fbf0	vote	yes
+F	CClientExoApp	ShutDownToMainMenu	0x40d020				0	AdditionalConsoleCommands	0x0073fb40	vote	
+F	CClientExoApp	StopCreditSequence	0x40e510	0x00741050	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00741050	vote	yes
+F	CGuiInGame	AddFloatyText	0x4df580	0x007cee80	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cee80	vote	yes
+F	CGuiInGame	AppendToMsgBuffer	0x4ce720				0	AdditionalConsoleCommands			
+F	CGuiInGame	ChangeCharacter	0x4e09b0	0x007d02b0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d02b0	vote	yes
+F	CGuiInGame	DoQuickLoad	0x4e1650	0x007d0f50	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d0f50	vote	yes
+F	CGuiInGame	FadeAndStopDialogAmbientTrack	0x4e15c0	0x007d0ec0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d0ec0	vote	yes
+F	CGuiInGame	GetAreaTranstionPosition					0	AdditionalConsoleCommands			
+F	CGuiInGame	GetBarkBubbleVisible	0x4df190	0x007cea90	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cea90	vote	yes
+F	CGuiInGame	GetCameraAnimationName	0x4d1550				0	AdditionalConsoleCommands			
+F	CGuiInGame	GetCanClick	0x4e1290	0x007d0b90	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d0b90	vote	yes
+F	CGuiInGame	GetCanHeadFollowInDialog	0x4dfff0	0x007cf8f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cf8f0	vote	yes
+F	CGuiInGame	GetCanOrientInDialog	0x4df1f0	0x007ceaf0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ceaf0	vote	yes
+F	CGuiInGame	GetCurrentEquipScreenNPC					0	AdditionalConsoleCommands			
+F	CGuiInGame	GetFadeOverridePanelVisible	0x4e1490	0x007d0d90	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d0d90	vote	yes
+F	CGuiInGame	GetMessageBufferSize	0x4d8430	0x007c7d40	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007c7d40	vote	yes
+F	CGuiInGame	GetMiniMapVisible	0x4e0c60	0x007d0560	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d0560	vote	yes
+F	CGuiInGame	GetPartyAccessPanelUp					0	AdditionalConsoleCommands			
+F	CGuiInGame	GetPendingStatusSummary	0x4df910	0x007cf210	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cf210	vote	yes
+F	CGuiInGame	HideAreaTransition	0x4df070	0x007ce970	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ce970	vote	yes
+F	CGuiInGame	HideContainerGui	0x4db430	0x007cad30	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cad30	vote	yes
+F	CGuiInGame	HideGalaxyMapGui	0x4db020	0x007ca920	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ca920	vote	yes
+F	CGuiInGame	HideItemCreateMenu	0x4db160	0x007caa60	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007caa60	vote	yes
+F	CGuiInGame	HideLoadModuleDebugMenu	0x4dbba0	0x007cb4a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cb4a0	vote	yes
+F	CGuiInGame	HidePowersFeatsSkillsDebugMenu	0x4dbc40	0x007cb540	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cb540	vote	yes
+F	CGuiInGame	HideSoloMode	0x4dde60	0x007cd760	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cd760	vote	yes
+F	CGuiInGame	HideStoreGui	0x4dd630	0x007ccf30	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ccf30	vote	yes
+F	CGuiInGame	HideSubItemCreateMenu	0x4db260	0x007cab60	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cab60	vote	yes
+F	CGuiInGame	HideUpgradeScreen	0x4de2e0	0x007cdbe0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cdbe0	vote	yes
+F	CGuiInGame	IsAnimationPlayingInDialog	0x4dbde0	0x007cb6e0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cb6e0	vote	yes
+F	CGuiInGame	IsCameraDialog	0x4dbda0	0x007cb6a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cb6a0	vote	yes
+F	CGuiInGame	IsFadingInDialog	0x4dbe50	0x007cb750	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cb750	vote	yes
+F	CGuiInGame	IsGlobalFadeObscuring					0	AdditionalConsoleCommands			
+F	CGuiInGame	IsGlobalFading	0x4dc340	0x007cbc40	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cbc40	vote	yes
+F	CGuiInGame	LoadAmbientTrackForDialog	0x4d4750				0	AdditionalConsoleCommands	0x007c4060	vote	
+F	CGuiInGame	LoadStuntModelsForDialog	0x4d8a80	0x007c8390	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007c8390	vote	yes
+F	CGuiInGame	NextSWInGameGui	0x4da930	0x007ca230	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ca230	vote	yes
+F	CGuiInGame	PrevSWInGameGui	0x4daac0	0x007ca3c0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ca3c0	vote	yes
+F	CGuiInGame	RePopulateMainInterface	0x4df250	0x007ceb50	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ceb50	vote	yes
+F	CGuiInGame	RemoveGUIPopUps	0x4e0ca0	0x007d05a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d05a0	vote	yes
+F	CGuiInGame	ResetDialogAnimations	0x4d9ad0	0x007c93e0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007c93e0	vote	yes
+F	CGuiInGame	ResetInterfaceForSize	0x4e03a0	0x007cfca0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cfca0	vote	yes
+F	CGuiInGame	ResetTalkAnimations	0x4d9c50	0x007c9560	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007c9560	vote	yes
+F	CGuiInGame	SetLevelUpMode	0x4d00b0	0x007bfa20	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007bfa20	vote	yes
+F	CGuiInGame	ShowGalaxyMapGui	0x4dae30	0x007ca730	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ca730	vote	yes
+F	CGuiInGame	ShowItemCreateMenu	0x4db110				0	AdditionalConsoleCommands	0x007caa10	vote	
+F	CGuiInGame	ShowPartySelection	0x4dc020	0x007cb920	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cb920	vote	yes
+F	CGuiInGame	ShowSoloModeQuery	0x4ddc10	0x007cd510	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cd510	vote	yes
+F	CGuiInGame	ShowStatusSummary	0x4df970	0x007cf270	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cf270	vote	yes
+F	CGuiInGame	ShowUpgradeScreen	0x4ddee0				0	AdditionalConsoleCommands			
+F	CGuiInGame	ShutDown	0x4d7720	0x007c7030	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007c7030	vote	yes
+F	CGuiInGame	ShutDownGlobal	0x4cdda0				0	AdditionalConsoleCommands	0x0073ffc0	vote	
+F	CGuiInGame	StopGlobalFade	0x4dc2f0	0x007cbbf0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cbbf0	vote	yes
+F	CGuiInGame	SwitchToSWInGameGui	0x4dac50	0x007ca550	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ca550	vote	yes
+F	CGuiInGame	UpdateAreaTransitionGUI	0x4dee80	0x007ce780	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ce780	vote	yes
+F	CGuiInGame	UpdateDialog	0x4dd7f0	0x007cd0f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cd0f0	vote	yes
+F	CGuiInGame	UpdateDialogLipSync	0x4e1370	0x007d0c70	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007d0c70	vote	yes
+F	CGuiInGame	UpdateMessageGUI	0x4dd740	0x007cd040	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007cd040	vote	yes
+F	CRes	CancelRequest	0x61ab20	0x007111c0	high	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x007111c0	vote	yes
+F	CRes	Constructor	0x61aa20				0	AdditionalConsoleCommands	0x007110d0	drift+0x10	
+F	CRes	Demand	0x61ab40	0x007111e0	high	R1-static	1	AdditionalConsoleCommands	0x007111e0	vote	yes
+F	CRes	Destructor	0x61aad0				0	AdditionalConsoleCommands	0x00711170	vote	
+F	CRes	GetResRef	0x61abd0				0	AdditionalConsoleCommands	0x00711270	vote	
+F	CRes	Release	0x61ac10	0x007112b0	high	R1-static	1	AdditionalConsoleCommands	0x007112b0	vote	yes
+F	CRes	Request	0x61ac30	0x007112d0	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x007112d0	vote	yes
+F	CResGFF	AddDataField	0x6244d0				0	AdditionalConsoleCommands	0x00718370	vote	
+F	CResGFF	AddDataLayoutField	0x6245d0				0	AdditionalConsoleCommands	0x00718470	vote	
+F	CResGFF	AddDataLayoutList	0x6246e0				0	AdditionalConsoleCommands	0x00718580	vote	
+F	CResGFF	AddField	0x624190				0	AdditionalConsoleCommands	0x00718030	vote	
+F	CResGFF	AddLabel	0x624350				0	AdditionalConsoleCommands	0x007181f0	vote	
+F	CResGFF	AddList	0x6258a0				0	AdditionalConsoleCommands	0x00719740	vote	
+F	CResGFF	AddListElement	0x625960				0	AdditionalConsoleCommands	0x00719800	vote	
+F	CResGFF	AddStruct	0x624090				0	AdditionalConsoleCommands	0x00717f30	vote	
+F	CResGFF	AddStructToStruct	0x625aa0				0	AdditionalConsoleCommands	0x00719940	vote	
+F	CResGFF	Constructor	0x622ff0				0	AdditionalConsoleCommands	0x00716e60	drift-0x30	
+F	CResGFF	Constructor_2	0x623130				0	AdditionalConsoleCommands	0x00716fd0	vote	
+F	CResGFF	CreateGFFFile	0x626530				0	AdditionalConsoleCommands	0x0071a5a0	drift+0x1d0	
+F	CResGFF	Destructor	0x561f80				0	AdditionalConsoleCommands			
+F	CResGFF	Destructor_2	0x623310				0	AdditionalConsoleCommands	0x007171b0	vote	
+F	CResGFF	Destructor_3					0	AdditionalConsoleCommands			
+F	CResGFF	GetDataField	0x623980				0	AdditionalConsoleCommands	0x00717820	vote	
+F	CResGFF	GetDataLayoutList	0x6239e0				0	AdditionalConsoleCommands	0x00717880	vote	
+F	CResGFF	GetElementType	0x6247f0				0	AdditionalConsoleCommands	0x00718690	vote	
+F	CResGFF	GetField	0x6238d0				0	AdditionalConsoleCommands	0x00717770	vote	
+F	CResGFF	GetFieldByLabel	0x623a40				0	AdditionalConsoleCommands	0x007178e0	vote	
+F	CResGFF	GetFieldCount	0x624820				0	AdditionalConsoleCommands	0x007186c0	vote	
+F	CResGFF	GetFieldType	0x624870				0	AdditionalConsoleCommands	0x00718710	vote	
+F	CResGFF	GetField_2	0x623b60				0	AdditionalConsoleCommands	0x00717a00	vote	
+F	CResGFF	GetList	0x6248c0				0	AdditionalConsoleCommands	0x00718760	vote	
+F	CResGFF	GetListCount	0x624970				0	AdditionalConsoleCommands	0x00718810	vote	
+F	CResGFF	GetListElement	0x6249f0				0	AdditionalConsoleCommands	0x00718890	vote	
+F	CResGFF	GetStructFromStruct	0x624ac0				0	AdditionalConsoleCommands	0x00718960	vote	
+F	CResGFF	GetTopLevelStruct	0x624b30				0	AdditionalConsoleCommands	0x007189d0	vote	
+F	CResGFF	GetTotalSize	0x626e10	0x0071acb0	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x0071acb0	vote	yes
+F	CResGFF	InitializeForWriting	0x623c00				0	AdditionalConsoleCommands	0x00717aa0	vote	
+F	CResGFF	OnResourceFreed	0x623710				0	AdditionalConsoleCommands	0x007175b0	vote	
+F	CResGFF	OnResourceServiced	0x623460				0	AdditionalConsoleCommands	0x00717300	vote	
+F	CResGFF	Pack	0x626a10	0x0071a8b0	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x0071a8b0	vote	yes
+F	CResGFF	ReadFieldBYTE	0x624b60				0	AdditionalConsoleCommands			
+F	CResGFF	ReadFieldCExoLocString	0x625240				0	AdditionalConsoleCommands	0x007190e0	vote	
+F	CResGFF	ReadFieldCExoString	0x6250f0	0x00718f90	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x00718f90	vote	yes
+F	CResGFF	ReadFieldCHAR	0x624be0				0	AdditionalConsoleCommands			
+F	CResGFF	ReadFieldCResRef	0x624fa0				0	AdditionalConsoleCommands	0x00718e40	vote	
+F	CResGFF	ReadFieldDWORD	0x624d60				0	AdditionalConsoleCommands	0x00718c00	vote	
+F	CResGFF	ReadFieldDWORD64	0x624ee0				0	AdditionalConsoleCommands	0x00718d80	vote	
+F	CResGFF	ReadFieldFLOAT	0x624e60				0	AdditionalConsoleCommands	0x00718d00	vote	
+F	CResGFF	ReadFieldINT	0x624de0				0	AdditionalConsoleCommands	0x00718c80	vote	
+F	CResGFF	ReadFieldQuaternion	0x625530				0	AdditionalConsoleCommands	0x007193d0	vote	
+F	CResGFF	ReadFieldSHORT	0x624ce0				0	AdditionalConsoleCommands			
+F	CResGFF	ReadFieldVOID	0x6257a0				0	AdditionalConsoleCommands	0x00719640	vote	
+F	CResGFF	ReadFieldVector	0x625680				0	AdditionalConsoleCommands	0x00719520	vote	
+F	CResGFF	ReadFieldWORD	0x624c60				0	AdditionalConsoleCommands			
+F	CResGFF	ReleaseResource	0x623790				0	AdditionalConsoleCommands	0x00717630	vote	
+F	CResGFF	WriteFieldBYTE	0x625b30				0	AdditionalConsoleCommands	0x007199d0	vote	
+F	CResGFF	WriteFieldCExoLocString	0x626090				0	AdditionalConsoleCommands	0x00719f30	vote	
+F	CResGFF	WriteFieldCExoString	0x625fb0				0	AdditionalConsoleCommands	0x00719e50	vote	
+F	CResGFF	WriteFieldCHAR	0x625ba0				0	AdditionalConsoleCommands	0x00719a40	vote	
+F	CResGFF	WriteFieldCResRef	0x625ea0				0	AdditionalConsoleCommands	0x00719d40	vote	
+F	CResGFF	WriteFieldDWORD	0x625cf0				0	AdditionalConsoleCommands	0x00719b90	vote	
+F	CResGFF	WriteFieldDWORD64	0x625db0				0	AdditionalConsoleCommands	0x00719c50	vote	
+F	CResGFF	WriteFieldFLOAT	0x625e40				0	AdditionalConsoleCommands	0x00719ce0	vote	
+F	CResGFF	WriteFieldINT	0x625d50				0	AdditionalConsoleCommands	0x00719bf0	vote	
+F	CResGFF	WriteFieldQuaternion	0x6263c0				0	AdditionalConsoleCommands	0x0071a260	vote	
+F	CResGFF	WriteFieldSHORT	0x625c80				0	AdditionalConsoleCommands	0x00719b20	vote	
+F	CResGFF	WriteFieldVOID	0x626310				0	AdditionalConsoleCommands	0x0071a1b0	vote	
+F	CResGFF	WriteFieldVector	0x626480				0	AdditionalConsoleCommands	0x0071a320	vote	
+F	CResGFF	WriteFieldWORD	0x625c10				0	AdditionalConsoleCommands	0x00719ab0	vote	
+F	CResGFF	WriteGFFData	0x6267d0	0x0071a670	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x0071a670	vote	yes
+F	CResGFF	WriteGFFFile	0x626700				0	AdditionalConsoleCommands			
+F	CSWCDoor	GetIsOpen					0	AdditionalConsoleCommands			
+F	CSWCDoor	GetModelName					0	AdditionalConsoleCommands			
+F	CSWCDoor	GetName					0	AdditionalConsoleCommands			
+F	CSWCDoor	GetServerDoor	0x507760				0	AdditionalConsoleCommands	0x0087be80	vote	
+F	CSWCDoor	SetIsAreaTransition	0x507260				0	AdditionalConsoleCommands	0x0087b980	vote	
+F	CSWCDoor	SetState	0x507320				0	AdditionalConsoleCommands			
+F	CSWCDoor	UpdateAreaTransitionDisplay	0x5082d0				0	AdditionalConsoleCommands	0x0087c9f0	vote	
+F	CSWCObject	AnimationAttack	0x4749e0				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationDialog	0x4748e0				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationFireAndForget	0x474730				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationHideEquippedItems	0x474540				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationLooping	0x474660				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationOverlay	0x474800				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationParry	0x474950				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationPause	0x474890				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationPlayOutOfPlace	0x4744b0				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationRunning	0x474a70				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationStationary	0x474420				0	AdditionalConsoleCommands			
+F	CSWCObject	AnimationWalking	0x4745d0				0	AdditionalConsoleCommands			
+F	CSWCObject	AttachToScene	0x472950	0x007ed7f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed7f0	vote	yes
+F	CSWCObject	AttachmentFromServerObject	0x4777b0	0x007f2610	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f2610	vote	yes
+F	CSWCObject	ClearAllActions	0x477660	0x007f2500	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f2500	vote	yes
+F	CSWCObject	ClearAllQueuedCombatActions	0x4776a0	0x007f2540	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f2540	vote	yes
+F	CSWCObject	DetachFromServerObject	0x4777d0	0x007f2630	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f2630	vote	yes
+F	CSWCObject	FadeObject	0x476430	0x007f12d0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f12d0	vote	yes
+F	CSWCObject	GetCurrentAnimation	0x472930	0x007ed7d0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed7d0	vote	yes
+F	CSWCObject	GetLoopingAnimation	0x472ae0	0x007ed980	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed980	vote	yes
+F	CSWCObject	GetName	0x472580	0x007ed420	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed420	vote	yes
+F	CSWCObject	GetPortrait	0x4725e0				0	AdditionalConsoleCommands			
+F	CSWCObject	GetPortraitId	0x472610	0x007ed4b0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed4b0	vote	yes
+F	CSWCObject	GetServerObject	0x4776e0				0	AdditionalConsoleCommands	0x007f2540	vote	
+F	CSWCObject	HideShadowBlob	0x410c80	0x00764fb0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00764fb0	vote	yes
+F	CSWCObject	SetFeedbackInfo	0x477360	0x007f2200	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f2200	vote	yes
+F	CSWCObject	SetId	0x410c30	0x00764f60	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00764f60	vote	yes
+F	CSWCObject	SetLoopingAnimation	0x472ab0				0	AdditionalConsoleCommands			
+F	CSWCObject	SetPortrait	0x476c90	0x007f1b30	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007f1b30	vote	yes
+F	CSWCObject	SetPortraitId	0x477110				0	AdditionalConsoleCommands			
+F	CSWCObject	ShowShadowBlob	0x410c50	0x00764f80	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00764f80	vote	yes
+F	CSWCObject	TurnOffShadows	0x472660	0x007ed500	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed500	vote	yes
+F	CSWCObject	TurnOnShadows	0x472630	0x007ed4d0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x007ed4d0	vote	yes
+F	CSWCPlaceable	ActionMenuSecurity	0x535fd0				0	AdditionalConsoleCommands			
+F	CSWCPlaceable	GetServerPlaceable	0x536580	0x00842d00	high	mods678-batch3-dump	1	AdditionalConsoleCommands	0x00842d00	vote	yes
+F	CSWCPlaceable	IsHostile	0x534a00	0x00841180	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00841180	vote	yes
+F	CSWCPlaceable	SetAppearance	0x5371e0	0x00843960	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00843960	vote	yes
+F	CSWGuiBorder	Constructor	0x912e20				0	AdditionalConsoleCommands	0x00414a50	vote	
+F	CSWGuiBorder	Destructor	0x912fc0				0	AdditionalConsoleCommands	0x00414bf0	vote	
+F	CSWGuiBorder	Draw	0x9136d0				0	AdditionalConsoleCommands	0x00415300	vote	
+F	CSWGuiBorder	FillCenter	0x9140f0				0	AdditionalConsoleCommands	0x00415d20	vote	
+F	CSWGuiBorder	FillTile	0x913e30				0	AdditionalConsoleCommands	0x00415a60	vote	
+F	CSWGuiBorder	GetInnerExtent	0x913150				0	AdditionalConsoleCommands	0x00414d80	vote	
+F	CSWGuiBorder	Initialize	0x912ff0				0	AdditionalConsoleCommands	0x00414c20	vote	
+F	CSWGuiBorder	Load	0x913450				0	AdditionalConsoleCommands	0x00415080	vote	
+F	CSWGuiBorderParams	SetBorder	0x912cf0				0	AdditionalConsoleCommands	0x00414920	vote	
+F	CSWGuiBorderParams	SetCornerImage	0x912a50				0	AdditionalConsoleCommands	0x00414680	vote	
+F	CSWGuiBorderParams	SetEdgeImage	0x912b30				0	AdditionalConsoleCommands	0x00414760	vote	
+F	CSWGuiBorderParams	SetFillImage	0x912c10				0	AdditionalConsoleCommands	0x00414840	vote	
+F	CSWGuiControl	AddChildControl	0x9175d0				0	AdditionalConsoleCommands	0x00419330	vote	
+F	CSWGuiControl	AddEvent	0x916d90	0x00418af0	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x00418af0	vote	yes
+F	CSWGuiControl	Constructor	0x916c30				0	AdditionalConsoleCommands	0x00418990	vote	
+F	CSWGuiControl	Destructor	0x4ce500	0x00418640	high	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands			
+F	CSWGuiControl	GetIsChild	0x9175f0				0	AdditionalConsoleCommands	0x00419350	vote	
+F	CSWGuiControl	GetIsSelectable	0x917340				0	AdditionalConsoleCommands	0x004190a0	vote	
+F	CSWGuiControl	GetSelectableParent	0x917640				0	AdditionalConsoleCommands	0x004193a0	vote	
+F	CSWGuiControl	Load_2	0x917090				0	AdditionalConsoleCommands	0x00418df0	vote	
+F	CSWGuiControl	SetActive	0x4ce5d0				0	AdditionalConsoleCommands			
+F	CSWGuiControl	SetEnabled	0x917690				0	AdditionalConsoleCommands	0x004193f0	vote	
+F	CSWGuiManager	AddPanel	0x90e9b0				0	AdditionalConsoleCommands	0x00410530	vote	
+F	CSWGuiManager	PlayGuiSound	0x910720				0	AdditionalConsoleCommands			
+F	CSWGuiManager	PopModalPanel	0x90ee40				0	AdditionalConsoleCommands	0x004109c0	vote	
+F	CSWGuiPanel	AddControl	0x90e200				0	AdditionalConsoleCommands	0x0040fd80	vote	
+F	CSWGuiPanel	CenterPanel	0x90ce80				0	AdditionalConsoleCommands	0x0040ea00	vote	
+F	CSWGuiPanel	Constructor	0x90cb30				0	AdditionalConsoleCommands	0x0040e770	drift+0xc0	
+F	CSWGuiPanel	Destructor	0x90cce0				0	AdditionalConsoleCommands	0x0040e860	vote	
+F	CSWGuiPanel	Draw	0x90d110	0x0040ec90	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x0040ec90	vote	yes
+F	CSWGuiPanel	GetControl	0x90e320				0	AdditionalConsoleCommands	0x0040fea0	vote	
+F	CSWGuiPanel	GetExtentAccountingForPanelOffset	0x90e4a0				0	AdditionalConsoleCommands	0x00410020	vote	
+F	CSWGuiPanel	GetFullScreenBG	0x90e0d0				0	AdditionalConsoleCommands	0x0040fc50	vote	
+F	CSWGuiPanel	GetLocalMouseCoords	0x90e350				0	AdditionalConsoleCommands	0x0040fed0	vote	
+F	CSWGuiPanel	HandleInputEvent	0x90cf20				0	AdditionalConsoleCommands	0x0040eaa0	vote	
+F	CSWGuiPanel	HitCheckMouse	0x90cf60				0	AdditionalConsoleCommands	0x0040eae0	vote	
+F	CSWGuiPanel	InitControl	0x90daa0	0x0040f620	medium	R9-Phase2 (GOG delta/size + mapper, Opus spot-checked)	1	AdditionalConsoleCommands	0x0040f620	vote	yes
+F	CSWGuiPanel	OnPanelAdded	0x90d840				0	AdditionalConsoleCommands	0x0040f3c0	vote	
+F	CSWGuiPanel	OnPanelRemoved	0x90d940				0	AdditionalConsoleCommands	0x0040f4c0	vote	
+F	CSWGuiPanel	ResetFont	0x90e430				0	AdditionalConsoleCommands	0x0040ffb0	vote	
+F	CSWGuiPanel	SetActiveControl	0x90d080				0	AdditionalConsoleCommands	0x0040ec00	vote	
+F	CSWGuiPanel	SetBackground	0x90d810				0	AdditionalConsoleCommands	0x0040f390	vote	
+F	CSWGuiPanel	SetVisible	0x90e2e0				0	AdditionalConsoleCommands	0x0040fe60	vote	
+F	CSWGuiPanel	StartLoadFromLayout	0x90d2c0				0	AdditionalConsoleCommands	0x0040ee40	vote	
+F	CSWGuiPanel	StopLoadFromLayout	0x90da20				0	AdditionalConsoleCommands	0x0040f5a0	vote	
+F	CSWSDoor	GetDialogResref	0x7623b0				0	AdditionalConsoleCommands	0x00616f00	vote	
+F	CSWSDoor	GetFirstName	0x7623f0				0	AdditionalConsoleCommands	0x00616f40	vote	
+F	CSWSDoor	GetIsLinked	0x768410				0	AdditionalConsoleCommands	0x0061d000	vote	
+F	CSWSDoor	GetLinkedObject	0x768a60				0	AdditionalConsoleCommands	0x0061d620	vote	
+F	CSWSDoor	InDoor					0	AdditionalConsoleCommands			
+F	CSWSDoor	MoveToNextOpenState	0x768bf0				0	AdditionalConsoleCommands	0x0061d7b0	vote	
+F	CSWSDoor	RemoveFromArea	0x768450				0	AdditionalConsoleCommands	0x0061d040	vote	
+F	CSWSObject	ClearAllActions	0x6a7d60	0x00541080	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00541080	vote	yes
+F	CSWSObject	GetAIStateReputation	0x6bd870	0x005e1680	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005e1680	vote	yes
+F	CSWSObject	GetAcceptableAction	0x6b3380	0x005d7190	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005d7190	vote	yes
+F	CSWSObject	GetClientObject	0x6b1520	0x0054a840	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0054a840	vote	yes
+F	CSWSObject	GetDead	0x6ae4d0	0x005477f0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005477f0	vote	yes
+F	CSWSObject	GetDialogResref	0x6637e0	0x004597d0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x004597d0	vote	yes
+F	CSWSObject	GetHasFeatEffectApplied	0x6b0bb0				0	AdditionalConsoleCommands			
+F	CSWSObject	GetLastName	0x6a5ce0	0x0053f000	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0053f000	vote	yes
+F	CSWSObject	GetNearestObjectByName	0x6ad8b0	0x00546bd0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00546bd0	vote	yes
+F	CSWSObject	GetPortrait	0x663840	0x00459830	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00459830	vote	yes
+F	CSWSObject	GetPortraitId	0x6638a0	0x00459890	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00459890	vote	yes
+F	CSWSObject	GetScriptLocation	0x6ae2e0	0x00547600	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00547600	vote	yes
+F	CSWSObject	HasSpellEffectApplied	0x6ae3a0	0x005476c0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005476c0	vote	yes
+F	CSWSObject	SetAnimation	0x6a8070	0x00541390	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00541390	vote	yes
+F	CSWSObject	SetCurrentHitPoints	0x6b12f0	0x0054a610	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0054a610	vote	yes
+F	CSWSObject	SetDialogDelay	0x6ac150	0x00545470	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00545470	vote	yes
+F	CSWSObject	SetDialogOwner	0x6ada90	0x00546db0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00546db0	vote	yes
+F	CSWSObject	SetKeepCorpse	0x6b1480	0x0054a7a0	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x0054a7a0	vote	yes
+F	CSWSObject	SetPortrait	0x663870				0	AdditionalConsoleCommands			
+F	CSWSObject	SetPortraitId	0x6a7820				0	AdditionalConsoleCommands			
+F	CSWSObject	SetTag					0	AdditionalConsoleCommands			
+F	CSWSObject	SpawnBodyBag	0x6b0460	0x00549780	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00549780	vote	yes
+F	CSWSObject	StopDialog	0x6ad5e0	0x00546900	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00546900	vote	yes
+F	CSWSObject	StopSoundPlayingInDialog	0x6ad750	0x00546a70	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x00546a70	vote	yes
+F	CSWSPlaceable	GetBodyBagAppearance	0x7709d0	0x005f6630	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005f6630	vote	yes
+F	CSWSPlaceable	GetClientPlaceable	0x770e40	0x005f6a70	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005f6a70	vote	yes
+F	CSWSPlaceable	GetDead	0x770da0				0	AdditionalConsoleCommands			
+F	CSWSPlaceable	GetDialogResref	0x769510	0x005ef120	low	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005ef120	drift+0x0	yes
+F	CSWSPlaceable	GetEffectSpellId	0x769550	0x005ef160	low	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005ef160	drift+0x0	yes
+F	CSWSPlaceable	GetLightIsOn	0x770910	0x005f6570	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005f6570	vote	yes
+F	CSWSPlaceable	RemoveFromArea	0x76d320	0x005f2f50	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005f2f50	vote	yes
+F	CSWSPlaceable	SetEffectSpellId	0x4213a0				0	AdditionalConsoleCommands			
+F	CSWSPlaceable	SetLightIsOn	0x770810	0x005f6470	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005f6470	vote	yes
+F	CSWSPlaceable	SetOrientation	0x770d30	0x005f6990	medium	gog_cluster_delta_map.py	1	AdditionalConsoleCommands	0x005f6990	vote	yes
+F	CSWSTrigger	GetCanFireMineOnObject	0x7619e0				0	AdditionalConsoleCommands	0x00622750	vote	
+F	CSWSTrigger	GetFirstName					0	AdditionalConsoleCommands			
+F	CSWSTrigger	GetTargetArea	0x75d7d0				0	AdditionalConsoleCommands	0x0061e540	vote	
+F	CSWSTrigger	InTrigger	0x75eef0				0	AdditionalConsoleCommands	0x0061fc60	vote	
+F	CSWSTrigger	OnEnterMine	0x761bc0				0	AdditionalConsoleCommands	0x00622930	vote	
+F	CSWSTrigger	RemoveFromArea	0x761900				0	AdditionalConsoleCommands	0x00622670	vote	
+F	CSWSTrigger	SetCreator	0x761ea0				0	AdditionalConsoleCommands	0x00622c10	vote	
+F	CServerExoApp	ClientToServerObjectId	0x64c2d0				0	AdditionalConsoleCommands	0x0051c8b0	vote	
+F	CServerExoApp	GetActiveTimer	0x64bd70				0	AdditionalConsoleCommands	0x0051c350	vote	
+F	CServerExoApp	GetGameObject	0x64bac0	0x0051c0a0	high	ai-review-2026-10-01	1	AdditionalConsoleCommands	0x0051c0a0	vote	yes
+F	CServerExoApp	GetGlobalVariableTable	0x64c2b0				0	AdditionalConsoleCommands	0x0051c890	vote	
+F	CServerExoApp	GetWorldTimer	0x64bd90				0	AdditionalConsoleCommands	0x0051c370	vote	
+F	CWorldTimer	AddWorldTimes	0x80b3d0				0	AdditionalConsoleCommands	0x0051aef0	vote	
+F	CWorldTimer	AdvanceToTime					0	AdditionalConsoleCommands			
+F	CWorldTimer	CompareWorldTimes	0x80b4c0				0	AdditionalConsoleCommands	0x0051afe0	vote	
+F	CWorldTimer	ConvertFromCalendarDay					0	AdditionalConsoleCommands			
+F	CWorldTimer	ConvertFromTimeOfDay	0x80b020				0	AdditionalConsoleCommands	0x0051ab40	vote	
+F	CWorldTimer	ConvertHourMinSecMsToMs					0	AdditionalConsoleCommands			
+F	CWorldTimer	GetCalendarDayFromSeconds					0	AdditionalConsoleCommands			
+F	CWorldTimer	GetWorldTime	0x80b200				0	AdditionalConsoleCommands	0x0051ad20	vote	
+F	CWorldTimer	GetWorldTimeHour	0x80b5e0				0	AdditionalConsoleCommands	0x0051b100	vote	
+F	CWorldTimer	GetWorldTimeMillisecond	0x80b6a0				0	AdditionalConsoleCommands	0x0051b1c0	vote	
+F	CWorldTimer	GetWorldTimeMinute	0x80b620				0	AdditionalConsoleCommands	0x0051b140	vote	
+F	CWorldTimer	GetWorldTimeSecond	0x80b660				0	AdditionalConsoleCommands	0x0051b180	vote	
+F	CWorldTimer	PauseWorldTimer	0x80b530				0	AdditionalConsoleCommands	0x0051b050	vote	
+F	CWorldTimer	ResetTimer	0x80b310				0	AdditionalConsoleCommands	0x0051ae30	vote	
+F	CWorldTimer	SetMinutesPerHour	0x80ace0				0	AdditionalConsoleCommands			
+F	CWorldTimer	SetSnapshotScale					0	AdditionalConsoleCommands			
+F	CWorldTimer	SubtractWorldTimes	0x80b440				0	AdditionalConsoleCommands	0x0051af60	vote	
+F	CWorldTimer	UnpauseWorldTimer	0x80b580				0	AdditionalConsoleCommands	0x0051b0a0	vote	
+F	Gob	AddAnimationFlag	0x8fd240				0	AdditionalConsoleCommands	0x004e3110	vote	
+F	Gob	AddAttachment	0x8557b0				0	AdditionalConsoleCommands	0x004632c0	vote	
+F	Gob	Amputate	0x854700				0	AdditionalConsoleCommands	0x00462170	vote	
+F	Gob	Append	0x8545b0				0	AdditionalConsoleCommands	0x00462020	vote	
+F	Gob	AttachToScene	0x85f680				0	AdditionalConsoleCommands			
+F	Gob	BehaviorMessage	0x855bc0				0	AdditionalConsoleCommands	0x004636d0	vote	
+F	Gob	DisableAlwaysRender	0x84c3c0				0	AdditionalConsoleCommands	0x00459de0	vote	
+F	Gob	DisableDistortion	0x84bff0				0	AdditionalConsoleCommands	0x00459a10	vote	
+F	Gob	DisableFog	0x84c550				0	AdditionalConsoleCommands	0x00459f70	vote	
+F	Gob	DisableForceAnimations	0x84c360				0	AdditionalConsoleCommands	0x00459d80	vote	
+F	Gob	DisableInCutscene	0x84c3e0				0	AdditionalConsoleCommands	0x00459e00	vote	
+F	Gob	DisableInViewVolume	0x84be90				0	AdditionalConsoleCommands	0x004598b0	vote	
+F	Gob	DisableRenderBumpedOut	0x84ea70				0	AdditionalConsoleCommands	0x0045c490	vote	
+F	Gob	DisableRenderGobBBox	0x84e4f0				0	AdditionalConsoleCommands	0x0045bf10	vote	
+F	Gob	EnableAlwaysRender	0x84c3a0				0	AdditionalConsoleCommands	0x00459dc0	vote	
+F	Gob	EnableDistortion	0x84bfd0				0	AdditionalConsoleCommands	0x004599f0	vote	
+F	Gob	EnableFog	0x84c570				0	AdditionalConsoleCommands	0x00459f90	vote	
+F	Gob	EnableForceAnimations	0x84c340				0	AdditionalConsoleCommands	0x00459d60	vote	
+F	Gob	EnableInCutscene					0	AdditionalConsoleCommands			
+F	Gob	EnableInViewVolume	0x84c5e0				0	AdditionalConsoleCommands	0x0045a000	vote	
+F	Gob	EnableRenderBumpedOut	0x84e530				0	AdditionalConsoleCommands	0x0045bf50	vote	
+F	Gob	EnableRenderGobBBox	0x84e4b0				0	AdditionalConsoleCommands	0x0045bed0	vote	
+F	Gob	EndLookAtAnimate	0x8f6e70				0	AdditionalConsoleCommands	0x004dcce0	vote	
+F	Gob	GetBoundingBox	0x84c590				0	AdditionalConsoleCommands	0x00459fb0	vote	
+F	Gob	GetCutsceneDummyPosition	0x84c420				0	AdditionalConsoleCommands	0x00459e40	vote	
+F	Gob	GetMaxBlurLength	0x84bfb0				0	AdditionalConsoleCommands	0x004599d0	vote	
+F	Gob	GetMaximumLightRadius	0x84ec70				0	AdditionalConsoleCommands	0x0045c690	vote	
+F	Gob	GetMinimumBoundingBox_2	0x8525d0				0	AdditionalConsoleCommands	0x00460040	vote	
+F	Gob	GetMinimumBoundingSphere	0x852630				0	AdditionalConsoleCommands	0x004600a0	vote	
+F	Gob	GetModelName	0x853b60				0	AdditionalConsoleCommands	0x004615d0	vote	
+F	Gob	GetMotionBlurred	0x84bf70				0	AdditionalConsoleCommands	0x00459990	vote	
+F	Gob	GetName	0x84bcd0				0	AdditionalConsoleCommands	0x004596f0	vote	
+F	Gob	GetOrientation	0x84bd20				0	AdditionalConsoleCommands	0x00459740	vote	
+F	Gob	GetPartLocalPosition	0x855260				0	AdditionalConsoleCommands	0x00462cd0	vote	
+F	Gob	GetPosition	0x84bcf0				0	AdditionalConsoleCommands	0x00459710	vote	
+F	Gob	GetPreviousPosition	0x84bd60				0	AdditionalConsoleCommands	0x00459780	vote	
+F	Gob	IsAlwaysRendering	0x84c4c0				0	AdditionalConsoleCommands	0x00459ee0	vote	
+F	Gob	IsAnimating	0x84be70				0	AdditionalConsoleCommands	0x00459890	vote	
+F	Gob	IsForceAnimated	0x84c380				0	AdditionalConsoleCommands	0x00459da0	vote	
+F	Gob	IsInCutscene	0x84c400				0	AdditionalConsoleCommands	0x00459e20	vote	
+F	Gob	IsInViewVolume	0x84beb0				0	AdditionalConsoleCommands	0x004598d0	vote	
+F	Gob	LoadAddInAnimations	0x84c610				0	AdditionalConsoleCommands	0x0045a030	vote	
+F	Gob	RemoveAddInAnimations	0x84c730				0	AdditionalConsoleCommands	0x0045a150	vote	
+F	Gob	RemoveAnimationFlag	0x8fd290				0	AdditionalConsoleCommands	0x004e3160	vote	
+F	Gob	RemoveAttachment	0x8557f0				0	AdditionalConsoleCommands	0x00463300	vote	
+F	Gob	Render	0x89aba0				0	AdditionalConsoleCommands			
+F	Gob	RenderBlur	0x89a850				0	AdditionalConsoleCommands			
+F	Gob	RestoreTexture	0x853070				0	AdditionalConsoleCommands	0x00460ae0	vote	
+F	Gob	SetAsCharacter	0x84bed0				0	AdditionalConsoleCommands	0x004598f0	vote	
+F	Gob	SetCanDownSample					0	AdditionalConsoleCommands			
+F	Gob	SetColorShifting	0x84ed30				0	AdditionalConsoleCommands	0x0045c750	vote	
+F	Gob	SetEnvironmentMap	0x853890				0	AdditionalConsoleCommands	0x00461300	vote	
+F	Gob	SetIgnoreHitCheck	0x84be10				0	AdditionalConsoleCommands			
+F	Gob	SetIllumination	0x84ed90				0	AdditionalConsoleCommands	0x0045c7b0	vote	
+F	Gob	SetLightPriority	0x84eb60				0	AdditionalConsoleCommands	0x0045c580	vote	
+F	Gob	SetMaxBlurLength	0x84bf90				0	AdditionalConsoleCommands	0x004599b0	vote	
+F	Gob	SetMotionBlurred	0x84bf50				0	AdditionalConsoleCommands			
+F	Gob	SetObjectScale	0x855830				0	AdditionalConsoleCommands			
+F	Gob	SetOrientation	0x853a70				0	AdditionalConsoleCommands	0x004614e0	vote	
+F	Gob	SetPosition	0x853a20				0	AdditionalConsoleCommands	0x00461490	vote	
+F	Gob	SetProcessFlag	0x84bb30				0	AdditionalConsoleCommands	0x00459560	drift+0x10	
+F	Gob	SetRenderPersonalSpace	0x84bf30				0	AdditionalConsoleCommands			
+F	Gob	SetScene	0x84b0b0				0	AdditionalConsoleCommands	0x00458b70	drift+0xa0	
+F	Gob	TurnOffShadows	0x84be30				0	AdditionalConsoleCommands	0x00459850	vote	
+F	Gob	TurnOnShadows	0x84be50				0	AdditionalConsoleCommands	0x00459870	vote	
+F	Scene	ChildAdd	0x857f90				0	AdditionalConsoleCommands	0x00465bb0	vote	
+F	Scene	ChildRemove	0x858000				0	AdditionalConsoleCommands	0x00465c20	vote	
+F	Scene	DisableAnimations	0x8575b0				0	AdditionalConsoleCommands	0x004651d0	vote	
+F	Scene	DisableVisibilityGraph	0x861d80				0	AdditionalConsoleCommands	0x0046fb40	vote	
+F	Scene	EnableAnimations	0x857590				0	AdditionalConsoleCommands	0x004651b0	vote	
+F	Scene	EnableVisibilityGraph	0x861d50				0	AdditionalConsoleCommands	0x0046fb10	vote	
+F	Scene	FindRoom					0	AdditionalConsoleCommands			
+F	Scene	GetFogRange	0x857030				0	AdditionalConsoleCommands	0x00464c50	vote	
+F	Scene	GetIgnoreVisibilityGraph	0x861da0				0	AdditionalConsoleCommands	0x0046fb60	vote	
+F	Scene	GetNumRooms	0x8621b0				0	AdditionalConsoleCommands	0x0046ff70	vote	
+F	Scene	GetObjectA	0x857670				0	AdditionalConsoleCommands	0x00465290	vote	
+F	Scene	GetObjectScale	0x864850				0	AdditionalConsoleCommands	0x00472610	vote	
+F	Scene	IsAnimating	0x8575d0				0	AdditionalConsoleCommands	0x004651f0	vote	
+F	Scene	IsGeomFadeEnabled	0x8570b0				0	AdditionalConsoleCommands	0x00464cd0	vote	
+F	Scene	LoadVisibility	0x861e10				0	AdditionalConsoleCommands	0x0046fbd0	vote	
+F	Scene	RemoveFromSceneManager_2	0x8646a0				0	AdditionalConsoleCommands			
+F	Scene	SetBlindLights	0x8575f0				0	AdditionalConsoleCommands	0x00465210	vote	
+F	Scene	SetCurrentRoom_2	0x8621f0				0	AdditionalConsoleCommands	0x0046ffb0	vote	
+F	Scene	SetFog	0x857010				0	AdditionalConsoleCommands	0x00464c30	vote	
+F	Scene	SetFogColor	0x856850				0	AdditionalConsoleCommands	0x00464470	vote	
+F	Scene	SetFogRange	0x857060				0	AdditionalConsoleCommands	0x00464c80	vote	
+F	Scene	SetGeomFadeProperties	0x864820				0	AdditionalConsoleCommands	0x004725e0	vote	
+F	Scene	SetObjectScale	0x8647f0				0	AdditionalConsoleCommands	0x004725b0	vote	
+F	Scene	SetSceneFocus	0x857080				0	AdditionalConsoleCommands	0x00464ca0	vote	
+F	Scene	SpawnRoom	0x8624d0				0	AdditionalConsoleCommands	0x00470290	vote	
+F	Scene	UpdateEmitters	0x85e510				0	AdditionalConsoleCommands	0x0046c190	vote	
+O	CClientExoApp	internal	0x4				0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	animation_timer					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	cached_creature					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	debug_mode					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	disable_movies					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	game_obj_array					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	gui_manager					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	input_disabled					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	mouse_x					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	mouse_y					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	run_script					0	AdditionalConsoleCommands			
+O	CClientExoAppInternal	selected_texture_pack					0	AdditionalConsoleCommands			
+O	CClientOptions	tooltip_delay					0	AdditionalConsoleCommands			
+O	CExoLocString	internal					0	AdditionalConsoleCommands			
+O	CRes	data	0x10				0	AdditionalConsoleCommands			
+O	CRes	size	0x18				0	AdditionalConsoleCommands			
+O	CRes	vtable	0x0				0	AdditionalConsoleCommands			
+O	CResGFF	field_type	0x8d				0	AdditionalConsoleCommands			
+O	CResGFF	fields	0x4c				0	AdditionalConsoleCommands			
+O	CResGFF	header	0x40				0	AdditionalConsoleCommands			
+O	CResGFF	labels	0x54				0	AdditionalConsoleCommands			
+O	CResGFF	structs	0x44				0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	length					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	orient_with_ground					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	radius					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	shape					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	sound_one_shot					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	sound_one_shot_percentage					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	total_actors					0	AdditionalConsoleCommands			
+O	CSWCAreaOfEffectObject	width					0	AdditionalConsoleCommands			
+O	CSWCCreature	Stealth					0	AdditionalConsoleCommands			
+O	CSWCCreature	belt_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	belt_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	bite_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	bite_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	creature_type					0	AdditionalConsoleCommands			
+O	CSWCCreature	current_waypoint					0	AdditionalConsoleCommands			
+O	CSWCCreature	hands_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	hands_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	head_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	head_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	hide_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	hide_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	implant_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	implant_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	left_arm_band_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	left_arm_band_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	left_claw_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	left_claw_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	main_hand_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	main_hand_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	moving_orientation					0	AdditionalConsoleCommands			
+O	CSWCCreature	off_hand_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	off_hand_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	right_arm_band_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	right_arm_band_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	right_claw_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	right_claw_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	sound_set					0	AdditionalConsoleCommands			
+O	CSWCCreature	start_waypoint					0	AdditionalConsoleCommands			
+O	CSWCCreature	thrown_lightsaber					0	AdditionalConsoleCommands			
+O	CSWCCreature	torso_id					0	AdditionalConsoleCommands			
+O	CSWCCreature	torso_last_instant					0	AdditionalConsoleCommands			
+O	CSWCCreature	waypoint_count					0	AdditionalConsoleCommands			
+O	CSWCDoor	appearance					0	AdditionalConsoleCommands			
+O	CSWCDoor	door_type					0	AdditionalConsoleCommands			
+O	CSWCDoor	is_hostile					0	AdditionalConsoleCommands			
+O	CSWCDoor	is_transition					0	AdditionalConsoleCommands			
+O	CSWCObject	ground_normal					0	AdditionalConsoleCommands			
+O	CSWCObject	orientation					0	AdditionalConsoleCommands			
+O	CSWCObject	position					0	AdditionalConsoleCommands			
+O	CSWCTrigger	cursor_id					0	AdditionalConsoleCommands			
+O	CSWCTrigger	geometry					0	AdditionalConsoleCommands			
+O	CSWCTrigger	name					0	AdditionalConsoleCommands			
+O	CSWCVisualEffect	effect_row					0	AdditionalConsoleCommands			
+O	CSWGuiBorder	border_params	0x14				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	alpha	0x10				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	bit_flags	0x20				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	border	0x54				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	color	0x14				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	corner_image_resref	0x24				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	dimension	0x0				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	edge_image_resref	0x34				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	fill_angle	0xc				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	fill_image_resref	0x44				0	AdditionalConsoleCommands			
+O	CSWGuiBorderParams	inner_offset	0x8				0	AdditionalConsoleCommands			
+O	CSWGuiControl	bit_flags					0	AdditionalConsoleCommands			
+O	CSWGuiControl	custom_value	0x5c				0	AdditionalConsoleCommands			
+O	CSWGuiControl	id	0x54				0	AdditionalConsoleCommands			
+O	CSWGuiControl	parent_control	0x18				0	AdditionalConsoleCommands			
+O	CSWGuiManager	focused_edit_box					0	AdditionalConsoleCommands			
+O	CSWGuiManager	panels	0x88				0	AdditionalConsoleCommands			
+O	CSWGuiManager	tooltip_appear_time					0	AdditionalConsoleCommands			
+O	CSWGuiManager	viewport_height	0x6e				0	AdditionalConsoleCommands			
+O	CSWGuiManager	viewport_width					0	AdditionalConsoleCommands			
+O	CSWGuiObject	extent	0x4				0	AdditionalConsoleCommands			
+O	CSWGuiPanel	active_control	0x20				0	AdditionalConsoleCommands			
+O	CSWGuiPanel	alpha	0x50				0	AdditionalConsoleCommands			
+O	CSWGuiPanel	bit_flags	0x48				0	AdditionalConsoleCommands			
+O	CSWGuiPanel	border	0x60				0	AdditionalConsoleCommands			
+O	CSWGuiPanel	color	0x54				0	AdditionalConsoleCommands			
+O	CSWGuiPanel	controls	0x24				0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	corners					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	duration_type					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	last_heartbeat_day					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	last_heartbeat_time					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	script_on_enter					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	script_on_exit					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	script_on_heartbeat					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	script_on_user_defined					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	shape					0	AdditionalConsoleCommands			
+O	CSWSAreaOfEffectObject	spell_id					0	AdditionalConsoleCommands			
+O	CSWSCreature	ambient_animation_state					0	AdditionalConsoleCommands			
+O	CSWSCreature	appearance					0	AdditionalConsoleCommands			
+O	CSWSCreature	area_object_id					0	AdditionalConsoleCommands			
+O	CSWSCreature	base_class_level					0	AdditionalConsoleCommands			
+O	CSWSCreature	blocking_door_id					0	AdditionalConsoleCommands			
+O	CSWSCreature	body_bag					0	AdditionalConsoleCommands			
+O	CSWSCreature	create_on_script_fired					0	AdditionalConsoleCommands			
+O	CSWSCreature	creature_size					0	AdditionalConsoleCommands			
+O	CSWSCreature	detect_mode					0	AdditionalConsoleCommands			
+O	CSWSCreature	disarmable					0	AdditionalConsoleCommands			
+O	CSWSCreature	effect_spell_id					0	AdditionalConsoleCommands			
+O	CSWSCreature	entry_point					0	AdditionalConsoleCommands			
+O	CSWSCreature	heartbeat_ms_remaining					0	AdditionalConsoleCommands			
+O	CSWSCreature	invited_to_party					0	AdditionalConsoleCommands			
+O	CSWSCreature	is_disguised					0	AdditionalConsoleCommands			
+O	CSWSCreature	joining_xp					0	AdditionalConsoleCommands			
+O	CSWSCreature	movement_rate_factor					0	AdditionalConsoleCommands			
+O	CSWSCreature	primary_range					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_attacked					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_damaged					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_death					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_dialogue					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_disturbed					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_end_dialogue					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_end_round					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_heartbeat					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_on_blocked					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_on_notice					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_rested					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_spawn					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_spell_at					0	AdditionalConsoleCommands			
+O	CSWSCreature	script_user_define					0	AdditionalConsoleCommands			
+O	CSWSCreature	secondary_range					0	AdditionalConsoleCommands			
+O	CSWSCreature	sound_set_file					0	AdditionalConsoleCommands			
+O	CSWSCreature	stealth_mode					0	AdditionalConsoleCommands			
+O	CSWSDoor	appearance					0	AdditionalConsoleCommands			
+O	CSWSDoor	close_lock_dc					0	AdditionalConsoleCommands			
+O	CSWSDoor	conversation					0	AdditionalConsoleCommands			
+O	CSWSDoor	corners					0	AdditionalConsoleCommands			
+O	CSWSDoor	description					0	AdditionalConsoleCommands			
+O	CSWSDoor	detect_dc					0	AdditionalConsoleCommands			
+O	CSWSDoor	disarm_dc					0	AdditionalConsoleCommands			
+O	CSWSDoor	faction					0	AdditionalConsoleCommands			
+O	CSWSDoor	fortitude					0	AdditionalConsoleCommands			
+O	CSWSDoor	generic_type					0	AdditionalConsoleCommands			
+O	CSWSDoor	hardness					0	AdditionalConsoleCommands			
+O	CSWSDoor	key_name					0	AdditionalConsoleCommands			
+O	CSWSDoor	key_required					0	AdditionalConsoleCommands			
+O	CSWSDoor	last_heartbeat_day					0	AdditionalConsoleCommands			
+O	CSWSDoor	last_heartbeat_ms					0	AdditionalConsoleCommands			
+O	CSWSDoor	linked_to					0	AdditionalConsoleCommands			
+O	CSWSDoor	linked_to_flags					0	AdditionalConsoleCommands			
+O	CSWSDoor	linked_to_module					0	AdditionalConsoleCommands			
+O	CSWSDoor	load_screen_id_lower					0	AdditionalConsoleCommands			
+O	CSWSDoor	load_screen_id_upper					0	AdditionalConsoleCommands			
+O	CSWSDoor	loc_name					0	AdditionalConsoleCommands			
+O	CSWSDoor	open_lock_dc					0	AdditionalConsoleCommands			
+O	CSWSDoor	open_state					0	AdditionalConsoleCommands			
+O	CSWSDoor	reflex					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_click					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_closed					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_damaged					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_death					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_dialog					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_disarm					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_fail_to_open					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_heartbeat					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_lock					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_melee_attacked					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_open					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_spell_cast_at					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_trap_tiggered					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_unlock					0	AdditionalConsoleCommands			
+O	CSWSDoor	script_on_user_defined					0	AdditionalConsoleCommands			
+O	CSWSDoor	secret_door_dc					0	AdditionalConsoleCommands			
+O	CSWSDoor	transition_destination					0	AdditionalConsoleCommands			
+O	CSWSDoor	trap_type					0	AdditionalConsoleCommands			
+O	CSWSDoor	will					0	AdditionalConsoleCommands			
+O	CSWSEncounter	active					0	AdditionalConsoleCommands			
+O	CSWSEncounter	area_count					0	AdditionalConsoleCommands			
+O	CSWSEncounter	area_list					0	AdditionalConsoleCommands			
+O	CSWSEncounter	area_points					0	AdditionalConsoleCommands			
+O	CSWSEncounter	creatures_count					0	AdditionalConsoleCommands			
+O	CSWSEncounter	current_spawns					0	AdditionalConsoleCommands			
+O	CSWSEncounter	custom_script_id					0	AdditionalConsoleCommands			
+O	CSWSEncounter	difficulty					0	AdditionalConsoleCommands			
+O	CSWSEncounter	difficulty_index					0	AdditionalConsoleCommands			
+O	CSWSEncounter	exhausted					0	AdditionalConsoleCommands			
+O	CSWSEncounter	faction					0	AdditionalConsoleCommands			
+O	CSWSEncounter	geometry_count					0	AdditionalConsoleCommands			
+O	CSWSEncounter	geometry_list					0	AdditionalConsoleCommands			
+O	CSWSEncounter	heartbeat_day					0	AdditionalConsoleCommands			
+O	CSWSEncounter	heartbeat_time					0	AdditionalConsoleCommands			
+O	CSWSEncounter	last_spawn_day					0	AdditionalConsoleCommands			
+O	CSWSEncounter	last_spawn_time					0	AdditionalConsoleCommands			
+O	CSWSEncounter	localized_name					0	AdditionalConsoleCommands			
+O	CSWSEncounter	max_creatures					0	AdditionalConsoleCommands			
+O	CSWSEncounter	max_spawns					0	AdditionalConsoleCommands			
+O	CSWSEncounter	number_spawned					0	AdditionalConsoleCommands			
+O	CSWSEncounter	player_only					0	AdditionalConsoleCommands			
+O	CSWSEncounter	rec_creatures					0	AdditionalConsoleCommands			
+O	CSWSEncounter	reset					0	AdditionalConsoleCommands			
+O	CSWSEncounter	reset_time					0	AdditionalConsoleCommands			
+O	CSWSEncounter	script_on_entered					0	AdditionalConsoleCommands			
+O	CSWSEncounter	script_on_exhausted					0	AdditionalConsoleCommands			
+O	CSWSEncounter	script_on_exit					0	AdditionalConsoleCommands			
+O	CSWSEncounter	script_on_heartbeat					0	AdditionalConsoleCommands			
+O	CSWSEncounter	script_on_user_defined					0	AdditionalConsoleCommands			
+O	CSWSEncounter	spawn_option					0	AdditionalConsoleCommands			
+O	CSWSEncounter	spawn_points_count					0	AdditionalConsoleCommands			
+O	CSWSEncounter	spawn_pool_active					0	AdditionalConsoleCommands			
+O	CSWSEncounter	started					0	AdditionalConsoleCommands			
+O	CSWSObject	ai_level					0	AdditionalConsoleCommands			
+O	CSWSObject	animation					0	AdditionalConsoleCommands			
+O	CSWSObject	dead_selectable					0	AdditionalConsoleCommands			
+O	CSWSObject	dialog_owner					0	AdditionalConsoleCommands			
+O	CSWSObject	dlg_delay_day					0	AdditionalConsoleCommands			
+O	CSWSObject	dlg_delay_ms					0	AdditionalConsoleCommands			
+O	CSWSObject	dlg_last_time_day					0	AdditionalConsoleCommands			
+O	CSWSObject	dlg_last_time_ms					0	AdditionalConsoleCommands			
+O	CSWSObject	effect_targets					0	AdditionalConsoleCommands			
+O	CSWSObject	hit_points					0	AdditionalConsoleCommands			
+O	CSWSObject	is_destroyable					0	AdditionalConsoleCommands			
+O	CSWSObject	is_raiseable					0	AdditionalConsoleCommands			
+O	CSWSObject	listening					0	AdditionalConsoleCommands			
+O	CSWSObject	matched_expression_strings					0	AdditionalConsoleCommands			
+O	CSWSObject	min1hp					0	AdditionalConsoleCommands			
+O	CSWSObject	party_interact					0	AdditionalConsoleCommands			
+O	CSWSObject	plot					0	AdditionalConsoleCommands			
+O	CSWSObject	reorienting					0	AdditionalConsoleCommands			
+O	CSWSObject	spell_target_position					0	AdditionalConsoleCommands			
+O	CSWSObject	tag					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	appearance					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	auto_remove_key					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	body_bag					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	conversation					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	description					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	disarm_dc					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	faction					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	fortitude					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	hardness					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	has_inventory					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	is_body_bag					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	is_corpse					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	key_name					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	key_required					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	last_heartbeat_day					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	last_heartbeat_ms					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	loc_name					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	lockable					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	locked					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	open					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	open_lock_dc					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	orientation					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	reflex					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_closed					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_damaged					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_death					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_dialog					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_disarm					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_end_dialog					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_heartbeat					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_inventory_disturbed					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_lock					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_melee_attacked					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_open					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_spell_cast_at					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_trap_triggered					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_unlock					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_used					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	script_on_user_defined					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	template_res_ref					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	trap_detect_dc					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	trap_detectable					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	trap_disarmable					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	trap_flag					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	trap_one_shot					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	trap_type					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	usable					0	AdditionalConsoleCommands			
+O	CSWSPlaceable	will					0	AdditionalConsoleCommands			
+O	CSWSStore	buy_sell_flag					0	AdditionalConsoleCommands			
+O	CSWSStore	loc_name					0	AdditionalConsoleCommands			
+O	CSWSStore	mark_down					0	AdditionalConsoleCommands			
+O	CSWSStore	mark_up					0	AdditionalConsoleCommands			
+O	CSWSStore	on_open_store					0	AdditionalConsoleCommands			
+O	CSWSTrigger	bbox_max_x					0	AdditionalConsoleCommands			
+O	CSWSTrigger	bbox_max_y					0	AdditionalConsoleCommands			
+O	CSWSTrigger	bbox_min_x					0	AdditionalConsoleCommands			
+O	CSWSTrigger	bbox_min_y					0	AdditionalConsoleCommands			
+O	CSWSTrigger	cursor					0	AdditionalConsoleCommands			
+O	CSWSTrigger	faction					0	AdditionalConsoleCommands			
+O	CSWSTrigger	geometry					0	AdditionalConsoleCommands			
+O	CSWSTrigger	geometry_count					0	AdditionalConsoleCommands			
+O	CSWSTrigger	geometry_indices					0	AdditionalConsoleCommands			
+O	CSWSTrigger	key_name					0	AdditionalConsoleCommands			
+O	CSWSTrigger	last_heartbeat_days					0	AdditionalConsoleCommands			
+O	CSWSTrigger	last_heartbeat_ms					0	AdditionalConsoleCommands			
+O	CSWSTrigger	linked_to					0	AdditionalConsoleCommands			
+O	CSWSTrigger	linked_to_module					0	AdditionalConsoleCommands			
+O	CSWSTrigger	load_screen_id					0	AdditionalConsoleCommands			
+O	CSWSTrigger	localized_name					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_heartbeat					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_on_click					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_on_disarm					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_on_enter					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_on_exit					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_on_trap_triggered					0	AdditionalConsoleCommands			
+O	CSWSTrigger	script_user_defined					0	AdditionalConsoleCommands			
+O	CSWSTrigger	transition_destination					0	AdditionalConsoleCommands			
+O	CSWSTrigger	trap_detectable					0	AdditionalConsoleCommands			
+O	CSWSTrigger	trap_disarmable					0	AdditionalConsoleCommands			
+O	CSWSTrigger	trap_type					0	AdditionalConsoleCommands			
+O	CSWSWaypoint	has_map_note					0	AdditionalConsoleCommands			
+O	CSWSWaypoint	localized_name					0	AdditionalConsoleCommands			
+O	CSWSWaypoint	map_note					0	AdditionalConsoleCommands			
+O	CSWSWaypoint	map_note_enabled					0	AdditionalConsoleCommands			
+O	ConsoleFunc	funcholder					0	AdditionalConsoleCommands			
+O	ConsoleFunc	name					0	AdditionalConsoleCommands			
+O	Gob	scene					0	AdditionalConsoleCommands			
+O	Scene	fog					0	AdditionalConsoleCommands			
+O	Scene	fog_color	0x74				0	AdditionalConsoleCommands			
+O	Scene	fog_density	0x70				0	AdditionalConsoleCommands			
+O	Scene	fog_end	0x68				0	AdditionalConsoleCommands			
+O	Scene	fog_start	0x64				0	AdditionalConsoleCommands			
+O	Scene	objects	0x54				0	AdditionalConsoleCommands			
