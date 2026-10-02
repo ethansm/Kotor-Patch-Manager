@@ -812,12 +812,13 @@ const char* const HealthBarTexture = "uibit_bar_vp_p";
 const char* const ForceBarTexture = "uibit_bar_fp_p";
 
 bool readVitals(int creature, int* hp, int* hpMax, int* fp, int* fpMax) {
-    int vt = 0, d43d = 0, stats = 0;
-    if (!readAt(creature, 0, &vt) || !vt || !readAt(creature, 0x43d * 4, &d43d) || !readAt(creature, 0x1198, &stats) || !stats) return false;
+    int vt = 0, stats = 0;
+    if (!readAt(creature, 0, &vt) || !vt || !readAt(creature, 0x1198, &stats) || !stats) return false;
     int fnMax = 0, fnCur = 0; short s130 = 0, s132 = 0;
     if (!readAt(vt, 0x98, &fnMax) || !readAt(vt, 0x9c, &fnCur) || !fnMax || !fnCur || !readAt(stats, 0x130, &s130) || !readAt(stats, 0x132, &s132)) return false;
-    *hpMax = reinterpret_cast<short(__thiscall*)(int, int, int)>(fnMax)(creature, 1, d43d);
-    *hp = reinterpret_cast<short(__thiscall*)(int, int, int)>(fnCur)(creature, 0, *hpMax);
+    // CSWSCreature vtable slots 38/39 (0x57e8c0 / 0x5413c0) each take ONE stack arg (RET 4): a 2-arg call unbalances the stack (crash 10-02)
+    *hpMax = reinterpret_cast<short(__thiscall*)(int, int)>(fnMax)(creature, 1);
+    *hp = reinterpret_cast<short(__thiscall*)(int, int)>(fnCur)(creature, 0);
     *fp = int(s130) + int(s132);
     *fpMax = int(reinterpret_cast<unsigned(__fastcall*)(int)>(0x0057eca0)(creature));
     return true;
