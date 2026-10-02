@@ -79,3 +79,9 @@
   skips the item scan for Force-only creatures (`006b89ce CALL 0x006f2a30` / `006b89d8 JZ`): R4 medpac rule broken for Kreia/Visas.
 - Reputation matrix: get 0x664580 `006645ef MOV ECX,[EBP+0xc]` / `006645f2 IMUL ECX,[EAX+0x1c]` (2nd arg x N);
   set 0x6644D0 `00664531 MOV ECX,[EBP+0x8]` / `00664534 IMUL ECX,[EAX+0x1c]` (1st arg x N). Same caller order -> transposed. BUG (low reach).
+
+### REVIEW_synthesis top 2 (CONFIRMED by the lead)
+- `+0x10E8` (IsPC) writers (field_census --all): ctor `00562d7d`=0, load `005768fe` (from stats), SwitchPlayerCharacter 0x5FE4B0
+  (`005fe604`/`005fe951`=0, `005feae6`=1), `00628375`=0. The UI leader switch SetLeaderBySlot 0x7E5DF0 calls 0x5FE410 at
+  `007e6311`, not 0x5FE4B0, so +0x10E8 stays on the Exile while the player controls a companion. "IsPC" != controlled.
+- Controlled-leader id: SetLeaderBySlot `007e631d CALL 0x00632830`, which stores `006328d8 MOV dword ptr [EDX + 0x28],EAX`.
