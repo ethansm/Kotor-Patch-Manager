@@ -1,0 +1,212 @@
+# Level-up override forced-state scenarios (Phase 6b Track M; doc 21).
+#
+# One scenario id = a save state + a config + expectations. The same id is used by:
+#   - scripts/kotor_save_forge.py      (M1)  forges a NEW save slot "LUO TEST <id>" from [scenario.<id>.save]
+#   - scripts/luo_scenario.py          (M2)  writes the game-dir ini files from [scenario.<id>.config]
+#   - tools/parity/scenario_test.cpp   (M3)  runs the REAL LevelUpOverride.cpp against fake engine memory built from
+#                                            [scenario.<id>.save] + [scenario.<id>.config], then checks [scenario.<id>.expect]
+#   - scripts/luo_log_check.py         (M4)  checks a live log against [scenario.<id>.expect]
+#
+# Format (all tables optional unless noted):
+#   [scenario.<id>]
+#   title        = one line (required)
+#   source       = default source save slot for the forge ("Game2" = slot whose savenfo name / folder suffix matches)
+#   status       = "ready" | "unproven" (engine validity of the edited save not yet shown by one load) | "offline-only"
+#   v_items      = V-checklist items this scenario exercises (doc 08 Phase 6 RESUME HERE)
+#
+#   [scenario.<id>.save]                 edits applied on top of the source save
+#   guid         = "keep" (default) | "none" (remove all LUO_G*) | "partial:<n>" (keep the first n bits of the source GUID,
+#                  remove the rest) | "g<8 hex>" (write this GUID)
+#   [[scenario.<id>.save.creature]]      one per edited party member
+#   tag          = companion tag as in the presets ("atton", "kreia", ...; "pc" = the player)
+#   classes      = [["Scoundrel", 7]] list of [class name from classes.2da label, class level] in class-list order;
+#                  missing = keep. Adding a class adds the class entry only; feats/powers per M0 notes.
+#   xp           = total experience; missing = keep
+#   in_party     = true | false (active party member); missing = keep
+#   leader       = true -> this creature is the party leader
+#
+#   [scenario.<id>.config]               game-dir ini state (M2) / fake ini (M3)
+#   mode, apply, verbose                 levelup_override.ini keys (missing = keep / M3 default rewrite,1,1)
+#   companions   = { atton = "<preset>|instant=0|hold=1|pause=3" }  section for the scenario GUID in levelup_playthroughs.ini
+#   playthrough_guid = "g<8 hex>" | "save" (= the GUID the forged save carries) | "none" (no section)
+#   dev          = { "preset.atton" = "...", "pause.atton" = "3" }   dev keys in levelup_override.ini
+#
+#   [scenario.<id>.expect]
+#   events       = log-event patterns that must appear (regex, matched against the raw log line after the timestamp)
+#   absent       = patterns that must NOT appear
+#   decisions    = M3-only: expected decision strings per action, e.g. { "atton.canLevelUp" = "HOLD" }
+#
+# Class names follow classes.2da labels: Soldier Scout Scoundrel JediGuardian JediConsular JediSentinel CombatDroid
+# ExpertDroid Minion TechSpecialist BountyHunter JediWeaponMaster JediMaster JediWatchman SithMarauder SithLord SithAssassin.
+# XP thresholds: level L needs L*(L-1)/2 * 1000 (level 8 = 28000, level 15 = 105000, level 30 = 435000).
+
+[scenario.S1_atton_hold_default]
+title = "Atton Scoundrel 7 with XP for level 8: default pause -> HOLD 1 level"
+source = "Game2"
+status = "ready"
+v_items = [3]
+[scenario.S1_atton_hold_default.save]
+[[scenario.S1_atton_hold_default.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 7]]
+xp = 28000
+in_party = true
+[scenario.S1_atton_hold_default.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
+[scenario.S1_atton_hold_default.expect]
+events = ['HOLD .*atton', 'BANKED']
+absent = ['APPLIED .*atton', 'APPLY ABORTED']
+
+[scenario.S2_atton_pause3_many]
+title = "Atton Scoundrel 3 with XP for level 15, Pause at level 3 -> HOLD every level, BANKED text"
+source = "Game2"
+status = "ready"
+v_items = [3]
+[scenario.S2_atton_pause3_many.save]
+[[scenario.S2_atton_pause3_many.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 3]]
+xp = 105000
+in_party = true
+[scenario.S2_atton_pause3_many.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
+[scenario.S2_atton_pause3_many.expect]
+events = ['HOLD .*atton', 'BANKED']
+absent = ['APPLIED .*atton']
+
+[scenario.S3_atton_converted_early]
+title = "Atton Scoundrel 3 + JediSentinel 1, XP for level 8: re-base onto the Jedi records, no HOLD"
+source = "Game2"
+status = "unproven"
+v_items = [3]
+[scenario.S3_atton_converted_early.save]
+[[scenario.S3_atton_converted_early.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 3], ["JediSentinel", 1]]
+xp = 28000
+in_party = true
+[scenario.S3_atton_converted_early.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
+[scenario.S3_atton_converted_early.expect]
+events = ['APPLIED .*atton']
+absent = ['HOLD .*atton']
+
+[scenario.S4_atton_cap]
+title = "Atton at level 30 / max XP: no level-up, status text does not crash"
+source = "Game2"
+status = "unproven"
+v_items = [7]
+[scenario.S4_atton_cap.save]
+[[scenario.S4_atton_cap.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 8], ["JediSentinel", 22]]
+xp = 435000
+in_party = true
+[scenario.S4_atton_cap.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
+[scenario.S4_atton_cap.expect]
+absent = ['APPLY ABORTED', 'HOLD .*atton']
+
+[scenario.S5_guid_partial]
+title = "Only 16 of 32 LUO_G globals present: load treats the save as having no GUID (logged)"
+source = "Game2"
+status = "ready"
+v_items = [6]
+[scenario.S5_guid_partial.save]
+guid = "partial:16"
+[scenario.S5_guid_partial.config]
+playthrough_guid = "none"
+[scenario.S5_guid_partial.expect]
+events = ['GUID load g00000000']
+
+[scenario.S6_guid_orphan]
+title = "Valid GUID with no ini section: companions unconfigured (vanilla)"
+source = "Game2"
+status = "ready"
+v_items = [5, 6]
+[scenario.S6_guid_orphan.save]
+guid = "g5eed0006"
+[scenario.S6_guid_orphan.config]
+playthrough_guid = "none"
+[scenario.S6_guid_orphan.expect]
+events = ['GUID load g5eed0006']
+absent = ['APPLIED']
+
+[scenario.S7_guid_cleared]
+title = "All LUO_G globals removed (mod-removal / pre-mod save): loads cleanly, unconfigured until Apply"
+source = "Game2"
+status = "ready"
+v_items = [6]
+[scenario.S7_guid_cleared.save]
+guid = "none"
+[scenario.S7_guid_cleared.config]
+playthrough_guid = "none"
+[scenario.S7_guid_cleared.expect]
+events = ['GUID load g00000000']
+absent = ['GUID save g00000000 ok=1']
+
+[scenario.S8_kreia_levelable]
+title = "Kreia in the party with XP for a level: options page row has no Jedi-conversion row"
+source = "Game2"
+status = "unproven"
+v_items = [1]
+[scenario.S8_kreia_levelable.save]
+[[scenario.S8_kreia_levelable.save.creature]]
+tag = "kreia"
+in_party = true
+xp = 36000
+
+[scenario.S9_g0t0_levelable]
+title = "G0-T0 in the party with XP for a level: options page shows the Variant row"
+source = "Game2"
+status = "unproven"
+v_items = [1]
+[scenario.S9_g0t0_levelable.save]
+[[scenario.S9_g0t0_levelable.save.creature]]
+tag = "g0t0"
+in_party = true
+xp = 36000
+
+[scenario.S10_pc_led_levelable]
+title = "The PC leads and can level: PC untouched (vanilla level-up)"
+source = "Game2"
+status = "ready"
+v_items = [5]
+[scenario.S10_pc_led_levelable.save]
+[[scenario.S10_pc_led_levelable.save.creature]]
+tag = "pc"
+leader = true
+xp = 105000
+[scenario.S10_pc_led_levelable.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
+[scenario.S10_pc_led_levelable.expect]
+absent = ['APPLIED .*\bpc\b', 'DECIDE .*\bpc\b']
+
+[scenario.S11_multi_levelable]
+title = "Three companions with banked XP at once: per-companion status/banked text"
+source = "Game2"
+status = "unproven"
+v_items = [3]
+[scenario.S11_multi_levelable.save]
+[[scenario.S11_multi_levelable.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 3]]
+xp = 105000
+in_party = true
+[[scenario.S11_multi_levelable.save.creature]]
+tag = "kreia"
+xp = 105000
+in_party = true
+[[scenario.S11_multi_levelable.save.creature]]
+tag = "baodur"
+xp = 105000
+[scenario.S11_multi_levelable.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
+[scenario.S11_multi_levelable.expect]
+events = ['HOLD .*atton']

@@ -953,3 +953,7 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 
 ### Session notes - Phase 6b (2026-10-03, plan `research/companion_levelup/PHASE6B_PLAN.md`)
 - Step 0: plan copied to the repo, decisions (1)-(4) recorded in the Phase 6 RESUME HERE block. Live unchanged (0.3.1 dll aaedb93e; log read from 473).
+- Scenario contract `tests/luo_scenarios/saves.toml` (Opus): 11 scenarios S1-S11, one id = save edits + config + expectations, shared by the
+  forge (M1), ini switcher (M2), offline runner (M3) and log checker (M4).
+- C2 DONE: design note `patch_manager_mods/22_pc_levelup_filter.md` (recommend filter source A = PC presets, DIM first via F2/P2, empty-choosable
+  fallback rule, Recommended button left vanilla, skills out of scope, log-only probe spec). C3 = user gate (questions in doc 22 section 10).
