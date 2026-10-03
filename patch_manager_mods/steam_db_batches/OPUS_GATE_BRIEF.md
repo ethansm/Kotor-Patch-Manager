@@ -1,9 +1,11 @@
 # Opus per-batch gate brief (DESIGN 4.6)
 
-The lead fills in BATCH, PART (a line range or section of `B<n>/opus_gate.md`) and OUT.
+The lead fills in BATCH, PART and OUT. PART is a part file from `batch.py opus-parts B<n>`, e.g.
+`B<n>/opus/part_a.md`, never a line range. `B<n>/opus_gate.md` gives the batch-level context: the decision, decoys
+and key errors.
 
 ## Job
-For every row in your PART of `B<n>/opus_gate.md`, decide the final Steam DB row for that GOG function. You are the
+For every row listed in your PART file, decide the final Steam DB row for that GOG function. You are the
 final gate before rows reach the knowledge DB and the KPM branch DB: a wrong address row calls unrelated code.
 
 Per row, read: the row in `B<n>/evidence.tsv` (gate facts and anchors), every reviewer row for that GOG address in
@@ -33,8 +35,7 @@ If you find the GOG name belongs at a DIFFERENT GOG address (label rotation), sa
 ## Output
 OUT (TSV, header): `gog_addr steam_addr final_verdict note` (note <= 200 chars: anchor + reason). One row per gated
 row you decide, even when you agree with the pipeline (write its verdict). Plus `OUT.md`: per-row evidence in short
-form, and at the end `sample_errors: N` = number of SAMPLED reviewer `match` rows (section "Sample of the other
-reviewer matches") you found wrong (0 if your part has no sample rows), and for AUTO meaning checks a pass/fail table.
+form, and at the end `sample_errors: N` = number of SAMPLED reviewer `match` rows (section `sample` in the part file) you found wrong (0 if your part has no sample rows), and for AUTO meaning checks a pass/fail table.
 
 ## Rules
 Read-only except OUT and OUT.md. Never commit, never write any DB, never touch the game folder or any

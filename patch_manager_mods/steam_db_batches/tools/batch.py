@@ -9,6 +9,7 @@ Subcommands (all deterministic; working dir per batch = $BD_ROOT/B<n>/):
                                                        gog_label_suspects.tsv, opus_gate.md/json, validated.tsv
                                                        (B0 also: branch_deletes.tsv, branch_corrections.csv;
                                                        B0's validated.tsv comes from tools/branch_apply.py)
+  opus-parts B<n> [--rows 100]                      -> opus/part_<x>.md + opus/parts.json (opus_gate.json rows split)
   persist    B<n> [--apply]                         -> dry-run plan; --apply (lead only) writes the knowledge DB
                                                        (name_map, lessons, steam_validated)
   check-validated [--branch-db DB] [--out FILE]     -> per branch-DB row: validated (skip) / stale / unvalidated
@@ -1070,15 +1071,40 @@ def same_retn_neighbours(corpus: bd.Corpus, addr: int) -> list[tuple[str, int]]:
     return out
 
 
+PROOF_SOURCES = ("cmdtable", "cmdtable_overwritten", "server", "recheck")
+
+
+def is_proof_source(tag: str) -> bool:
+    """True for a candidate source tag that is evidence the candidate is the real counterpart: the engine command
+    table, a server name, a re-check, or a `name_map:high:<source>` row whose source is audited.  Never `near`,
+    `mapper:*`, `branch`, or a medium / unaudited name_map row."""
+    if tag in PROOF_SOURCES:
+        return True
+    parts = tag.split(":", 2)
+    return len(parts) == 3 and parts[0] == "name_map" and parts[1] == "high" and not bd.is_unaudited_source(parts[2])
+
+
+def proof_candidates(ev: dict) -> set:
+    """Steam addresses that carry at least one proof source in the row's `cand_sources` cell."""
+    out = set()
+    for addr, srcs in parse_candidates(ev.get("cand_sources", "")):
+        if any(is_proof_source(t) for t in srcs):
+            out.add(addr)
+    return out
+
+
 def pick_decoy_cards(corpus: bd.Corpus, hosts: list[dict], need: int, rng: random.Random,
                      taken: set) -> list[tuple[str, dict, int]]:
-    """Decoy cards: prev / next same-retn neighbours of REVIEW rows (hosts), never an address already carried."""
+    """Decoy cards: prev / next same-retn neighbours of REVIEW rows (hosts), never an address already carried and
+    never an address that is a proof-source candidate of the host row itself (it may be the true function)."""
     out = []
     pool = list(hosts)
     rng.shuffle(pool)
     for ev in pool:
         cand = parse_addr(ev["steam_addr"])
-        options = [(k, a) for k, a in same_retn_neighbours(corpus, cand) if (ev["gog"], a) not in taken]
+        proven = proof_candidates(ev)
+        options = [(k, a) for k, a in same_retn_neighbours(corpus, cand)
+                   if (ev["gog"], a) not in taken and a not in proven]
         rng.shuffle(options)
         for kind, a in options:
             if len(out) >= need:
@@ -1298,8 +1324,10 @@ def prior_batches_clean(bdir: Path) -> int:
 
 
 def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], reviews: dict,
-              sample_errors: Optional[int], partial: bool = False) -> dict:
-    """DESIGN 4.6: score the decoy cards, decide the escalation, list what Opus must read.  Writes opus_gate.md/json."""
+              sample_errors: Optional[int], partial: bool = False, overrides: Optional[dict] = None) -> dict:
+    """DESIGN 4.6: score the decoy cards, decide the escalation, list what Opus must read.  Writes opus_gate.md/json.
+    `overrides` (load_overrides): an accepted decoy that equals an Opus-shipped (verified/likely) override pair is a
+    key error (the decoy was the true counterpart), not a decoy accept."""
     ev_by = {parse_addr(e["gog"]): e for e in evs}
     rev_by_pair: dict[tuple[int, int], list[dict]] = {}
     for ga, rows in reviews.items():
@@ -1318,9 +1346,22 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
     reviewed = {k["chunk"] for k in key_rows if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) in rev_by_pair}
     decoys = [k for k in key_rows if k["kind"].startswith("decoy") and k["chunk"] in reviewed]
     per_chunk = Counter(k["chunk"] for k in decoys)
-    accepted = [k for k in decoys if accepted_by_reviewer(k)]
+    shipped_pairs = set()
+    for ga, ov in (overrides or {}).items():
+        if (ov.get("final_verdict") or "").strip() in ("verified", "likely") and (ov.get("steam_addr") or "").strip():
+            try:
+                shipped_pairs.add((ga, parse_addr(ov["steam_addr"])))
+            except ValueError:
+                continue
+
+    def is_key_error(k: dict) -> bool:
+        return (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) in shipped_pairs
+
+    reviewer_accepted = [k for k in decoys if accepted_by_reviewer(k)]
+    key_errors = [k for k in reviewer_accepted if is_key_error(k)]
+    accepted = [k for k in reviewer_accepted if not is_key_error(k)]
     unanswered = [k for k in decoys if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) not in rev_by_pair]
-    gate = bd.decoy_gate(chunks, reviewed, {c: [accepted_by_reviewer(k) for k in decoys if k["chunk"] == c]
+    gate = bd.decoy_gate(chunks, reviewed, {c: [accepted_by_reviewer(k) and not is_key_error(k) for k in decoys if k["chunk"] == c]
                                             for c in reviewed}, MIN_DECOYS, partial)
     short = gate["short"]
     # rows that Opus reads in full
@@ -1374,7 +1415,17 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
     else:
         decision = "OK: Opus reads the 100%% classes plus a %d%% sample (min 5) of the other reviewer matches%s" % (
             int(rate * 100), " (partial: chunks %s unreviewed)" % ", ".join(unreviewed) if unreviewed else "")
+    if key_errors and decision.startswith("OK"):
+        decision += "; %d decoy key error(s) excluded (decoy = Opus-shipped counterpart)" % len(key_errors)
+    rows_full = [{"class": f["class"], "name": f["name"], "gog": f["gog"], "steam_addr": f["steam_addr"], "why": w}
+                 for f, w in full]
+    rows_sample = [{"class": f["class"], "name": f["name"], "gog": f["gog"], "steam_addr": f["steam_addr"],
+                    "content_level": ev_by[parse_addr(f["gog"])].get("content_level")} for f in sample]
+    rows_auto = [{"route": r, "class": e["class"], "name": e["name"], "gog": e["gog"], "steam_addr": e["steam_addr"]}
+                 for r, group in (("sig", sigs[:5]), ("c2", c2s[:3])) for e in group]
     result = {"batch": batch, "decoy_cards": len(decoys), "decoys_accepted": len(accepted),
+              "key_errors": len(key_errors), "key_error_cards": [k["card_id"] for k in key_errors],
+              "rows_full": rows_full, "rows_sample": rows_sample, "rows_auto": rows_auto,
               "decoys_per_chunk": dict(per_chunk), "chunks_short": short, "chunks_unreviewed": unreviewed,
               "unanswered_decoys": len(unanswered),
               "full_read": len(full), "sample_pool": len(plain), "sample_size": len(sample), "sample_rate": rate,
@@ -1387,7 +1438,10 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
          "- Opus-found sample errors: %s (pass `finalize --opus-sample-errors N` after the Opus pass)" % (
              "pending" if sample_errors is None else sample_errors),
          "- consecutive clean batches before this one: %d -> sample rate %d%%" % (clean_streak, int(rate * 100)), "",
-         "## Decoys accepted (0 tolerance)", ""]
+         "## Decoy key errors (decoy = Opus-shipped counterpart)", ""]
+    L += ["- %s %s -> %s (%s): the decoy is the Opus-shipped counterpart, so the reviewer was right; fix the key" % (
+        k["card_id"], k["gog"], k["steam_addr"], k["kind"]) for k in key_errors] or ["None."]
+    L += ["", "## Decoys accepted (0 tolerance)", ""]
     L += ["- %s %s -> %s (%s)" % (k["card_id"], k["gog"], k["steam_addr"], k["kind"]) for k in accepted] or ["None."]
     L += ["", "## Opus reads 100%% (%d rows)" % len(full), ""]
     L += ["- %s::%s gog %s -> %s: %s" % (f["class"], f["name"], f["gog"], f["steam_addr"], w) for f, w in full] or ["None."]
@@ -1467,8 +1521,82 @@ def cmd_finalize(args) -> int:
     cnt = Counter(r["final_verdict"] for r in finals)
     print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d; rechecks=%d" % (
         args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts), len(rechecks)))
-    gate = opus_gate(bdir, args.batch, evs, finals, reviews, args.opus_sample_errors, args.partial)
-    print("opus gate: decoy cards %d (accepted %d); %s" % (gate["decoy_cards"], gate["decoys_accepted"], gate["decision"]))
+    gate = opus_gate(bdir, args.batch, evs, finals, reviews, args.opus_sample_errors, args.partial, overrides)
+    print("opus gate: decoy cards %d (accepted %d, key errors %d); %s" % (
+        gate["decoy_cards"], gate["decoys_accepted"], gate["key_errors"], gate["decision"]))
+    return 0
+
+
+# ================================================================================================ opus-parts
+def part_letters(n: int) -> list[str]:
+    """a, b, ..., z, aa, ab, ... (n names)."""
+    out = []
+    for i in range(n):
+        x, name = i, ""
+        while True:
+            name = chr(97 + x % 26) + name
+            x = x // 26 - 1
+            if x < 0:
+                break
+        out.append(name)
+    return out
+
+
+def opus_rows(gate: dict) -> list[dict]:
+    """opus_gate.json row lists in the order of opus_gate.md: 100% -> sample -> AUTO (sig then c2)."""
+    rows = []
+    for r in gate["rows_full"]:
+        rows.append({"section": "100%", "class": r["class"], "name": r["name"], "gog": r["gog"],
+                     "steam_addr": r["steam_addr"], "note": r.get("why", "")})
+    for r in gate["rows_sample"]:
+        rows.append({"section": "sample", "class": r["class"], "name": r["name"], "gog": r["gog"],
+                     "steam_addr": r["steam_addr"], "note": r.get("content_level") or ""})
+    for r in gate["rows_auto"]:
+        rows.append({"section": "AUTO %s" % r["route"], "class": r["class"], "name": r["name"], "gog": r["gog"],
+                     "steam_addr": r["steam_addr"], "note": ""})
+    return rows
+
+
+def cmd_opus_parts(args) -> int:
+    paths = bd.get_paths()
+    bdir = paths.batches / args.batch
+    jf = bdir / "opus_gate.json"
+    if not jf.exists():
+        die("%s missing: run `finalize %s` first" % (jf, args.batch))
+    try:
+        gate = json.loads(jf.read_text(encoding="utf-8"))
+    except ValueError as e:
+        die("%s unreadable (%s): re-run finalize" % (jf, e))
+    if not all(k in gate for k in ("rows_full", "rows_sample", "rows_auto")):
+        die("%s lacks the row lists (rows_full / rows_sample / rows_auto): re-run finalize" % jf)
+    if args.rows < 1:
+        die("--rows must be >= 1")
+    rows = opus_rows(gate)
+    chunks = [rows[i:i + args.rows] for i in range(0, len(rows), args.rows)]
+    letters = part_letters(len(chunks))
+    out_dir = bdir / "opus"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for old in list(out_dir.glob("part_*.md")):
+        old.unlink()
+    parts, base = [], 1
+    for k, (letter, part) in enumerate(zip(letters, chunks), 1):
+        L = ["# Opus gate %s part %s (%d of %d)" % (args.batch, letter, k, len(chunks)), "",
+             "- batch: %s, part: %s, rows: %d (rows %d-%d of %d in the full -> sample -> AUTO order of opus_gate.md)" % (
+                 args.batch, letter, len(part), base, base + len(part) - 1, len(rows)),
+             "- Decide every row listed here; output per OPUS_GATE_BRIEF.md.", "",
+             "| # | section | Class::Name | GOG addr | Steam addr | why / content level |",
+             "|---|---|---|---|---|---|"]
+        for i, r in enumerate(part, base):
+            L.append("| %d | %s | %s::%s | %s | %s | %s |" % (
+                i, r["section"], r["class"], r["name"], r["gog"], r["steam_addr"], (r["note"] or "").replace("|", "/")))
+        fn = "part_%s.md" % letter
+        (out_dir / fn).write_text("\n".join(L) + "\n", encoding="utf-8")
+        parts.append({"part": letter, "file": "opus/" + fn, "n_rows": len(part), "gog_addrs": [r["gog"] for r in part]})
+        base += len(part)
+    (out_dir / "parts.json").write_text(json.dumps(
+        {"batch": args.batch, "rows_per_part": args.rows, "total_rows": len(rows), "parts": parts},
+        indent=1) + "\n", encoding="utf-8")
+    print("%s opus-parts: %d rows -> %d part(s) of <= %d in %s" % (args.batch, len(rows), len(parts), args.rows, out_dir))
     return 0
 
 
@@ -1861,6 +1989,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--opus-sample-errors", type=int, default=None,
                    help="errors Opus found in its sample of reviewer matches (omit until the Opus pass is done)")
     p.add_argument("--date", default=None, help="date stamped into kdb_upsert.json (default today)")
+    p = sub.add_parser("opus-parts", help="split opus_gate.json rows into B<n>/opus/part_<x>.md files")
+    p.add_argument("batch", type=batch_name)
+    p.add_argument("--rows", type=int, default=100, help="rows per part (default 100)")
     p = sub.add_parser("persist", help="dry-run (default) or --apply the name_map upsert")
     p.add_argument("batch", type=batch_name)
     p.add_argument("--apply", action="store_true")
@@ -1875,7 +2006,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     fn = {"candidates": cmd_candidates, "gates": cmd_gates, "cards": cmd_cards, "finalize": cmd_finalize,
-          "persist": cmd_persist, "check-validated": cmd_check_validated}[args.cmd]
+          "persist": cmd_persist, "opus-parts": cmd_opus_parts,
+          "check-validated": cmd_check_validated}[args.cmd]
     return fn(args)
 
 

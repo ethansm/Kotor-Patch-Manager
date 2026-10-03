@@ -108,6 +108,11 @@ Working dir per batch: `BATCHES/B<n>/` (`B0` = re-audit of the branch DB). Subco
 - For B0, the branch address is the candidate under test (`branch`), other sources are listed as alternatives.
 - Output `B<n>/candidates.tsv`: `class name gog gog_callconv gog_param gog_size gog_retn candidates` where
   candidates = `addr|src1+src2;addr|src...`.
+- `--name-regex RX` keeps only the GOG functions of the classes whose name matches (`re.search`). B15 uses
+  `'^ExecuteCommand'` on `Global,CSWVirtualMachineCommands`.
+- `--extra-candidates FILE` (TSV `gog steam source`) adds each Steam address to its GOG row as a candidate tagged
+  `source`. B15 uses the command-table candidates, `B15/extra_candidates.tsv` (section 4.8). The tags `cmdtable` and
+  `cmdtable_overwritten` have `source_strength` 6 (engine data, label-independent).
 
 ### 4.2 `gates B<n>` -> `B<n>/evidence.tsv` + `B<n>/gate_report.md`
 For every (GOG row, candidate) compute; then pick the row's best candidate (most anchor families, then invariants,
@@ -190,6 +195,16 @@ One card per REVIEW row: the GOG name/metadata and mapper tag; the computed inva
 facts); `re_card_prep.py annotate` (truncated to ~80 lines), `abi`, `anchors`, `prologue` of the candidate (and of
 the best decoy, labelled `decoy`); both GOG-order neighbours with their gate class; any server name; the decoy note
 ("assume a same-ret neighbour"). Calibration chunks mix in decoy cards (key.tsv holds the answer; cards do not).
+- No line may tell a real card from a decoy card. Candidate sources and the mapper tag are withheld on every card:
+  the line reads `Candidate sources: (withheld on every card; judge the body)`. Before 18f0214, decoy cards read
+  `card`, which leaked the answer in B0.
+- `B<n>/card_facts.tsv` (`gog fact`, optional) holds GOG-side facts that are printed on every card of that GOG
+  function, real and decoy alike. Example: the command-table slots of a GOG handler (section 4.8). A fact never
+  names a Steam address.
+- Decoys are never proven counterparts (fix F1, after B15). A same-retn neighbour that is a candidate of the host row
+  with a proof source is skipped. The proof sources are `cmdtable`, `cmdtable_overwritten`, `server`, `recheck`,
+  and `name_map:high:<src>` whose source is not unaudited. In B15 the gate's pick was wrong and its neighbour was the
+  table counterpart (B15-4-38).
 
 ### 4.4 `finalize B<n>`
 Inputs: `evidence.tsv`, reviewer TSVs `B<n>/review/*.tsv` (`gog_addr steam_addr verdict(match|mismatch|unsure)
@@ -256,8 +271,44 @@ Tooling: `finalize` scores the decoy cards from `cards/key*.tsv` against the rev
 (decoys per chunk, accepted decoys, the 100% list, the sample, the AUTO meaning checks, the sample rate from the previous
 batches' `opus_gate.json`) and prints the escalation decision (`OK` / `ESCALATE` / `INSUFFICIENT DECOYS`). After the Opus
 pass, re-run `finalize --opus-sample-errors N`. `tools/score_review.py KEY REVIEW` prints the same decision for one chunk.
+- **Decoy key errors** (fix F1). A decoy card is a key error if the reviewer accepted it and an Opus `overrides.tsv`
+  row ships that same (gog, steam) pair as `verified` or `likely`: the decoy was the true counterpart. Key errors
+  are listed in their own `opus_gate.md` section, `## Decoy key errors`, and counted as `key_errors` in the json.
+  They are not counted in `decoys_accepted` and never escalate. `score_review.py` runs before Opus, cannot know
+  this, and is unchanged.
+- **Opus part files** (fix F2). `batch.py opus-parts B<n> [--rows 100]` reads the row lists in `opus_gate.json`
+  (`rows_full`, `rows_sample`, `rows_auto`). It writes `B<n>/opus/part_a.md`, `part_b.md`, ... with at most N rows
+  each, in the order 100% rows, then the sample, then the AUTO meaning checks. Every row lists its Class::Name, GOG
+  address, Steam address and why it is listed. It also writes `B<n>/opus/parts.json`. Opus briefs name a part file,
+  never a line range of `opus_gate.md`.
 
-## 5. Process rules
+### 4.8 Command-table source (`tools/cmdtable.py`, B15)
+NWScript command handlers (`ExecuteCommand*`) are proven by engine data, not by labels:
+- **Input.** `server/ghidra_scripts/ExportCommandStores.java` is a read-only server export. Its output is archived
+  in `server/cmdstores/` as `SERVER/<program>/cmdstores.tsv` (`fn insn base disp target`).
+- **The table.** `InitCommands` fills a 0x36D-slot (877) handler table with `MOV [reg + stride*i], handler`. Slot i
+  is the i-th function declared in `nwscript.nss`. A second init function stores the 103 SWMG minigame slots.
+  - GOG: 0x77B530 + 0x7F9140.
+  - Steam: 0x665F50 + 0x6F5B80.
+  - Mac x86: 0x324A7C + 0x3579D4.
+- **Stride.** 4 bytes on Windows (MSVC function pointers). 8 bytes on Mac x86 (gcc pointer-to-member `{ptr, adj}`).
+- **Store order.** The init functions are read in order, and within each in instruction order. The last store to a
+  slot wins.
+- **Slot 156 double store.** Both exes store slot 156 twice. The first handler is dead (no callers): GOG 0x78D6B0,
+  Steam 0x6780D0. The second is live: GOG 0x78C440, Steam 0x676E60. The dead pair is matched as
+  `cmdtable_overwritten`.
+- **Counterpart.** A GOG handler's counterpart is the Steam handler with the identical slot set (`match=exact`).
+  All 655 GOG handler sets have exactly one Steam set. Source tag `cmdtable`.
+- **Name checks.** `name_slot` (yes / no / n/a) says whether slot(`<X>`) of `ExecuteCommand<X>` is in the GOG
+  handler's set; `no` = label suspect. `name_mac` says whether the GOG name is the Mac real symbol of that slot set
+  (653/655 yes).
+- **Outputs.**
+  - `B<n>/cmdtable.tsv`, `cmdtable_rows.tsv`, `cmdtable_report.md`;
+  - `extra_candidates.tsv`, for `candidates --extra-candidates`;
+  - `card_facts.tsv`: the GOG slots, which never name a Steam address.
+- **TBL anchor family** (deferred). An exact unique slot-set identity as an anchor family counting toward C2 would
+  change the AUTO rule. It needs an Opus calibration review first (section 4.2), before B10b (dispatch switch
+  tables). B15 has no TBL family: the gate ranked `near` over `cmdtable` in 7 rows, and Opus corrected all 7.
 
 ## 5. Process rules
 - **The PR changes only the Steam DB** (user, 2026-10-03). `kotor2_gog_aspyr.db` in the KPM repo is read-only input:
