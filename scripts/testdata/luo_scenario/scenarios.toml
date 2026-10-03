@@ -1,0 +1,13 @@
+[scenario.T_save]
+title = "t"
+[scenario.T_save.config]
+mode = "log"
+verbose = 1
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
+dev = { "preset.atton" = "x__y", "bogus.key" = "1" }
+[scenario.T_none]
+title = "t"
+[scenario.T_none.config]
+apply = 0
+playthrough_guid = "none"
