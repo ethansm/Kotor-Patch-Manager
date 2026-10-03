@@ -1,0 +1,15 @@
+0x89B6E4:6 start_on_boundary=True end_on_boundary=True inbound_jumps_into_middle=none target_of_jump_at_start=none
+     0089b6e4 89 8d 3c ff ff ff        mov dword ptr [ebp - 0xc4], ecx
+     mentions eax/al in window: False
+0x89AB29:9 start_on_boundary=True end_on_boundary=True inbound_jumps_into_middle=none target_of_jump_at_start=none
+     0089ab29 89 4d b8                 mov dword ptr [ebp - 0x48], ecx
+     0089ab2c 8b 15 d0 b4 a1 00        mov edx, dword ptr [0xa1b4d0]
+     mentions eax/al in window: False
+0x90C2BE:5 start_on_boundary=True end_on_boundary=True inbound_jumps_into_middle=none target_of_jump_at_start=none
+     0090c2be 0f b7 55 e4              movzx edx, word ptr [ebp - 0x1c]
+     0090c2c2 52                       push edx
+     mentions eax/al in window: False
+0x9099A2:5 start_on_boundary=True end_on_boundary=True inbound_jumps_into_middle=none target_of_jump_at_start=none
+     009099a2 0f b7 4d e4              movzx ecx, word ptr [ebp - 0x1c]
+     009099a6 51                       push ecx
+     mentions eax/al in window: False

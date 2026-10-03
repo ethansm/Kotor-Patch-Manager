@@ -1,0 +1,30 @@
+0x90C349:5 vanilla=e8 62 bd f3 ff live=e8 62 bd f3 ff SAME overlap(+-16)=none
+0x90C36A:7 vanilla=c7 45 fc ff ff ff ff live=c7 45 fc ff ff ff ff SAME overlap(+-16)=none
+0x89BE91:5 vanilla=e8 3a 00 00 00 live=e8 3a 00 00 00 SAME overlap(+-16)=none
+0x89B5CD:5 vanilla=e8 fe 08 00 00 live=e8 fe 08 00 00 SAME overlap(+-16)=none
+0x9099DB:5 vanilla=e8 80 ec f3 ff live=e8 80 ec f3 ff SAME overlap(+-16)=none
+0x90C34E:4 vanilla=85 c0 74 13 live=85 c0 74 13 SAME overlap(+-16)=none
+0x90AF6D:5 vanilla=e8 de 84 c8 ff live=e8 de 84 c8 ff SAME overlap(+-16)=none
+0x90C230:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x9098D0:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x89B600:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x90BD50:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x909360:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x90B1D9:5 vanilla=e8 22 04 f9 ff live=e8 22 04 f9 ff SAME overlap(+-16)=none
+0x89B6E4:6 vanilla=89 8d 3c ff ff ff live=89 8d 3c ff ff ff SAME overlap(+-16)=none
+0x89AB29:9 vanilla=89 4d b8 8b 15 d0 b4 a1 00 live=89 4d b8 8b 15 d0 b4 a1 00 SAME overlap(+-16)=none
+0x89ADD4:5 vanilla=e8 57 01 00 00 live=e8 57 01 00 00 SAME overlap(+-16)=none
+0x89AEB3:5 vanilla=e8 78 00 00 00 live=e8 78 00 00 00 SAME overlap(+-16)=none
+0x907DFE:5 vanilla=e8 9d 2c f9 ff live=e8 9d 2c f9 ff SAME overlap(+-16)=none
+0x89BE96:3 vanilla=8b 55 d8 live=8b 55 d8 SAME overlap(+-16)=none
+0x89AEB8:3 vanilla=8b 45 f0 live=8b 45 f0 SAME overlap(+-16)=none
+0x90EDE0:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x90F610:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x90EAC0:6 vanilla=55 8b ec 6a ff 68 live=55 8b ec 6a ff 68 SAME overlap(+-16)=none
+0x8468C0:6 vanilla=55 8b ec 83 ec 20 live=55 8b ec 83 ec 20 SAME overlap(+-16)=none
+0x846690:6 vanilla=55 8b ec 83 ec 28 live=55 8b ec 83 ec 28 SAME overlap(+-16)=none
+0x90F160:5 vanilla=e8 2b 75 f3 ff live=e8 2b 75 f3 ff SAME overlap(+-16)=none
+0x90C2BE:5 vanilla=0f b7 55 e4 52 live=0f b7 55 e4 52 SAME overlap(+-16)=none
+0x90C365:3 vanilla=e9 15 ff live=e9 15 ff SAME overlap(+-16)=none
+0x9099A2:5 vanilla=0f b7 4d e4 51 live=0f b7 4d e4 51 SAME overlap(+-16)=none
+0x909B51:3 vanilla=e9 c8 fd live=e9 c8 fd SAME overlap(+-16)=none

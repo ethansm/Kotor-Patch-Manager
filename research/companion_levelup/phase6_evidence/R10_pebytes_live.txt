@@ -1,0 +1,5 @@
+0x400000 [(b'.text', '0x1000'), (b'.rdata', '0x586000'), (b'.data', '0x5f4000'), (b'.rsrc', '0x682000')]
+0x89B6E4 file_off 0x49aae4 89 8d 3c ff ff ff 8b 95 3c ff ff ff 0f b7 02 50 8b 0d d0 b4 a1 00 e8 f1
+0x89AB29 file_off 0x499f29 89 4d b8 8b 15 d0 b4 a1 00 89 55 bc 8b 45 b8 50 8b 4d bc 8b 89 04 01 00
+0x90C349 file_off 0x50b749 e8 62 bd f3 ff 85 c0 74 13 0f b7 45 e4 50 8b 4d d8 81 c1 c0 1b 00 00 e8
+0x9099DB file_off 0x508ddb e8 80 ec f3 ff 85 c0 0f 84 69 01 00 00 a1 d0 b4 a1 00 89 45 b8 0f b7 4d
