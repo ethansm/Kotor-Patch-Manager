@@ -1,0 +1,6 @@
+[10:16:40.150 1000150] k2-texture-memory-release 1.0.0 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=100
+[10:33:20.150 2000150] k2-texture-memory-release 1.0.0 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=101
+[10:50:00.150 3000150] k2-texture-memory-release 1.0.0 loaded: site 0x004261cf patched (cave 054e0000) pid=102
+[10:50:30.150 3030150] COUNTERS tpc_freed=60 tpc_kept_controller=1
+[10:51:00.150 3060150] COUNTERS tpc_freed=120 tpc_kept_controller=3
+[11:06:40.150 4000150] k2-texture-memory-release 1.0.0 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=103

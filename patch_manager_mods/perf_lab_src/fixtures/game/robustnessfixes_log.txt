@@ -1,0 +1,10 @@
+[10:16:40.143 1000143] k2-robustness-fixes 1.1.0 loaded: 6/6 groups patched: kt=ON vmid=ON sndri=ON netovf=ON guiid=ON abbound=ON cave=054e0000 pid=100
+[10:16:45.143 1005143] COUNTERS kt_destroy_orphan=0 kt_update_orphan=0 ab_shrink_clamp=0 sndri_restart=0 vm_reject=0 vm_neg=0 vm_last_id=0 gui_reject=0 gui_last_id=0 net_drop=0 net_last_len=0
+[10:33:20.143 2000143] k2-robustness-fixes 1.1.0 loaded: 6/6 groups patched: kt=ON vmid=ON sndri=ON netovf=ON guiid=ON abbound=ON cave=054e0000 pid=101
+[10:33:25.143 2005143] COUNTERS kt_destroy_orphan=0 kt_update_orphan=0 ab_shrink_clamp=0 sndri_restart=1 vm_reject=0 vm_neg=1 vm_last_id=77 gui_reject=0 gui_last_id=0 net_drop=0 net_last_len=0
+[10:33:25.144 2005144] FIRED vmid neg=1 last_id=77
+[10:33:25.145 2005145] FIRED sndri restart=1
+[10:50:00.143 3000143] k2-robustness-fixes 1.1.0 loaded: 6/6 groups patched: kt=ON vmid=ON sndri=ON netovf=ON guiid=ON abbound=ON cave=054e0000 pid=102
+[10:50:05.143 3005143] COUNTERS kt_destroy_orphan=0 kt_update_orphan=0 ab_shrink_clamp=0 sndri_restart=0 vm_reject=0 vm_neg=0 vm_last_id=0 gui_reject=0 gui_last_id=0 net_drop=0 net_last_len=0
+[11:06:40.143 4000143] k2-robustness-fixes 1.1.0 loaded: 6/6 groups patched: kt=ON vmid=ON sndri=ON netovf=ON guiid=ON abbound=ON cave=054e0000 pid=103
+[11:06:45.143 4005143] COUNTERS kt_destroy_orphan=0 kt_update_orphan=0 ab_shrink_clamp=0 sndri_restart=0 vm_reject=0 vm_neg=0 vm_last_id=0 gui_reject=0 gui_last_id=0 net_drop=0 net_last_len=0

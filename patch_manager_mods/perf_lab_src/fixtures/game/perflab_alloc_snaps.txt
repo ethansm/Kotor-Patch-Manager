@@ -1,0 +1,18 @@
+#SNAP 2 LOAD_UP tick=1039998 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=7340032 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 3 LOAD_DOWN tick=1044998 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=269484032 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 4 LOAD_UP tick=1189998 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=270532608 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 5 UNLOAD tick=1190498 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=125829120 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 6 LOAD_DOWN tick=1194998 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=262144000 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 7 LOAD_UP tick=1209998 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=262144000 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 8 UNLOAD tick=1210398 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=125829120 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 9 LOAD_DOWN tick=1213998 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=263192576 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2
+#SNAP 1 LOAD_UP tick=3039999 frames(hook)=1 allocs=5 frees=4 reallocs=0 live_bytes=7340032 live_blocks=9000 total_bytes=10
+S 0000a1b2 00000000 100 2

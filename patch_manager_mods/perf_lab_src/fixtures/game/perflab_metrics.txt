@@ -1,0 +1,237 @@
+#METRICS 1 FLUSH tick=1030000 frames(hook)=10300 live_bytes=7340032 allocs=30900 tx=0 g1skip=0
+GL glimage=63 glfinish=63 glfinish_ms=6.3 glfinish_max_ms=2.50 mipmaps=63 mip_ms=524.0 mip_mpix=1.00
+#END 1
+#METRICS 2 LOAD_UP tick=1040000 frames(hook)=10400 live_bytes=7340032 allocs=31200 tx=0 g1skip=0
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00
+#END 2
+#METRICS 3 LOAD_DOWN tick=1045000 frames(hook)=10450 live_bytes=269484032 allocs=31350 tx=0 g1skip=0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=500.0 mip_mpix=1.00
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 3
+#METRICS 4 LOAD_UP tick=1190000 frames(hook)=11900 live_bytes=270532608 allocs=35700 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=500.0 mip_mpix=1.00
+#END 4
+#METRICS 5 UNLOAD tick=1190500 frames(hook)=11905 live_bytes=125829120 allocs=35715 tx=0 g1skip=0
+G a1b710=0(1) a7eb9c=0(1) resman=058142a8 budget4=1 budget8=1(1)
+# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident
+RT 3 10 100 0 0 10 100 10 10 10 0 0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GETIMG calls=127 tpc=78 tpc_retained=78 upload=127 ctrl=1 ctrl_tpc_retained=0 other=2 other_tpc_retained=0
+BUILD calls=103 requeue_tpc_retained=5 tpc_with_ctrl=0
+GL glimage=63 glfinish=63 glfinish_ms=6.3 glfinish_max_ms=2.50 mipmaps=63 mip_ms=524.0 mip_mpix=1.00
+FRAME frames=100 max_ms=120.5 bucket_calls=10 max_bucket_per_frame=7 actionbar_calls=100 max_actionbar_per_frame=3 hist_ms 0 0 1 2 10 80 5 1 1 0 allocs_per_frame_hist 0 1 0 0
+HOOKCOST_BY ResMalloc calls=405 cycles=6450 samples=6
+NAME tga_load 3 screen ra=00000000
+BRRING 1190500 gui_setter1 x ra=0041496c
+KT async_start=0 async_bytes=0 destroy_table=12 still_in_demand=0 uaf_write=2 release_ok=268 txi_via_tpc=57 unload=0
+VM run_script=0 exec_cmd=0 exec_bad_id=0 instr_limit=0 delay_cmd=0
+VMCMD 1:5 2:3
+NET send=0 bytes=0 max_len=14035 ovf_test=0 ovf_hit=0 | SCENE focus_dummy=1 scene_dtor=1
+VQTOP 3006d000 1024KB state=10000 type=20000 prot=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 5
+#METRICS 6 LOAD_DOWN tick=1195000 frames(hook)=11950 live_bytes=262144000 allocs=35850 tx=0 g1skip=0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GL glimage=62 glfinish=62 glfinish_ms=6.2 glfinish_max_ms=2.50 mipmaps=62 mip_ms=520.0 mip_mpix=1.00
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 6
+#METRICS 7 LOAD_UP tick=1210000 frames(hook)=12100 live_bytes=262144000 allocs=36300 tx=0 g1skip=0
+GL glimage=62 glfinish=62 glfinish_ms=6.2 glfinish_max_ms=2.50 mipmaps=62 mip_ms=520.0 mip_mpix=1.00
+#END 7
+#METRICS 8 UNLOAD tick=1210400 frames(hook)=12104 live_bytes=125829120 allocs=36312 tx=0 g1skip=0
+G a1b710=0(1) a7eb9c=0(1) resman=058142a8 budget4=1 budget8=1(1)
+# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident
+RT 3 10 100 0 0 10 100 10 10 10 0 0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GETIMG calls=127 tpc=78 tpc_retained=78 upload=127 ctrl=1 ctrl_tpc_retained=0 other=2 other_tpc_retained=0
+BUILD calls=103 requeue_tpc_retained=5 tpc_with_ctrl=0
+GL glimage=63 glfinish=63 glfinish_ms=6.3 glfinish_max_ms=2.50 mipmaps=63 mip_ms=524.0 mip_mpix=1.00
+FRAME frames=100 max_ms=120.5 bucket_calls=10 max_bucket_per_frame=7 actionbar_calls=100 max_actionbar_per_frame=3 hist_ms 0 0 1 2 10 80 5 1 1 0 allocs_per_frame_hist 0 1 0 0
+HOOKCOST_BY ResMalloc calls=405 cycles=6450 samples=6
+NAME tga_load 3 screen ra=00000000
+BRRING 1210400 gui_setter1 x ra=0041496c
+KT async_start=0 async_bytes=0 destroy_table=12 still_in_demand=0 uaf_write=2 release_ok=268 txi_via_tpc=57 unload=0
+VM run_script=0 exec_cmd=0 exec_bad_id=0 instr_limit=0 delay_cmd=0
+VMCMD 1:5 2:3
+NET send=0 bytes=0 max_len=14035 ovf_test=0 ovf_hit=0 | SCENE focus_dummy=1 scene_dtor=1
+VQTOP 3006d000 1024KB state=10000 type=20000 prot=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 8
+#METRICS 9 LOAD_DOWN tick=1214000 frames(hook)=12140 live_bytes=263192576 allocs=36420 tx=0 g1skip=0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GL glimage=63 glfinish=63 glfinish_ms=6.3 glfinish_max_ms=2.50 mipmaps=63 mip_ms=524.0 mip_mpix=1.00
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 9
+#METRICS 10 FLUSH tick=1225000 frames(hook)=12250 live_bytes=263192576 allocs=36750 tx=0 g1skip=0
+G a1b710=0(1) a7eb9c=0(1) resman=058142a8 budget4=1 budget8=1(1)
+# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident
+RT 3 10 100 0 0 10 100 10 10 10 0 0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GETIMG calls=127 tpc=78 tpc_retained=78 upload=127 ctrl=1 ctrl_tpc_retained=0 other=2 other_tpc_retained=0
+BUILD calls=103 requeue_tpc_retained=5 tpc_with_ctrl=0
+GL glimage=63 glfinish=63 glfinish_ms=6.3 glfinish_max_ms=2.50 mipmaps=63 mip_ms=524.0 mip_mpix=1.00
+FRAME frames=100 max_ms=120.5 bucket_calls=10 max_bucket_per_frame=7 actionbar_calls=100 max_actionbar_per_frame=3 hist_ms 0 0 1 2 10 80 5 1 1 0 allocs_per_frame_hist 0 1 0 0
+HOOKCOST_BY ResMalloc calls=405 cycles=6450 samples=6
+NAME tga_load 3 screen ra=00000000
+BRRING 1225000 gui_setter1 x ra=0041496c
+KT async_start=0 async_bytes=0 destroy_table=12 still_in_demand=0 uaf_write=2 release_ok=268 txi_via_tpc=57 unload=0
+VM run_script=0 exec_cmd=0 exec_bad_id=0 instr_limit=0 delay_cmd=0
+VMCMD 1:5 2:3
+NET send=0 bytes=0 max_len=14035 ovf_test=0 ovf_hit=0 | SCENE focus_dummy=1 scene_dtor=1
+VQTOP 3006d000 1024KB state=10000 type=20000 prot=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 10
+#METRICS 1 FLUSH tick=2030000 frames(hook)=20300 live_bytes=7340032 allocs=60900 tx=0 g1skip=0
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00
+#END 1
+#METRICS 2 LOAD_UP tick=2040000 frames(hook)=20400 live_bytes=7340032 allocs=61200 tx=0 g1skip=0
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00
+#END 2
+#METRICS 3 FLUSH tick=2090000 frames(hook)=20900 live_bytes=7340032 allocs=62700 tx=0 g1skip=0
+G a1b710=0(1) a7eb9c=0(1) resman=058142a8 budget4=1 budget8=1(1)
+# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident
+RT 3 10 100 0 0 10 100 10 10 10 0 0
+RT 3007 100 1048576 0 0 0 0 0 0 0 0 1048576
+GETIMG calls=127 tpc=78 tpc_retained=78 upload=127 ctrl=1 ctrl_tpc_retained=0 other=2 other_tpc_retained=0
+BUILD calls=103 requeue_tpc_retained=5 tpc_with_ctrl=0
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00
+FRAME frames=100 max_ms=120.5 bucket_calls=10 max_bucket_per_frame=7 actionbar_calls=0 max_actionbar_per_frame=0 hist_ms 0 0 1 2 10 80 5 1 1 0 allocs_per_frame_hist 0 1 0 0
+HOOKCOST_BY ResMalloc calls=405 cycles=6450 samples=6
+NAME tga_load 3 screen ra=00000000
+BRRING 2090000 gui_setter1 x ra=0041496c
+KT async_start=0 async_bytes=0 destroy_table=12 still_in_demand=0 uaf_write=0 release_ok=268 txi_via_tpc=57 unload=0
+VM run_script=0 exec_cmd=0 exec_bad_id=0 instr_limit=0 delay_cmd=0
+VMCMD 1:5 2:3
+NET send=0 bytes=0 max_len=0 ovf_test=0 ovf_hit=0 | SCENE focus_dummy=1 scene_dtor=1
+VQTOP 3006d000 1024KB state=10000 type=20000 prot=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 3
+#METRICS 1 LOAD_UP tick=3040000 frames(hook)=200 live_bytes=7340032 allocs=600 tx=0 g1skip=0 hwmip=1
+RT 3007 100 2097152 0 0 0 0 0 0 0 0 2097152
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00 hwmip_calls=0 hwmip_hw=0 hwmip_fallback_npot=0 hwmip_glerror=0 hwmip_cube=0
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 1
+#METRICS 2 LOAD_DOWN tick=3043000 frames(hook)=400 live_bytes=125829120 allocs=1200 tx=0 g1skip=0 hwmip=1
+RT 3007 100 62914560 0 0 0 0 0 0 0 0 62914560
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=100.0 mip_mpix=1.00 hwmip_calls=40 hwmip_hw=38 hwmip_fallback_npot=2 hwmip_glerror=0 hwmip_cube=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 2
+#METRICS 3 FLUSH tick=3073000 frames(hook)=500 live_bytes=126877696 allocs=1500 tx=0 g1skip=0 hwmip=1
+G a1b710=0(1) a7eb9c=0(1) resman=058142a8 budget4=1 budget8=1(1)
+# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident
+RT 3 10 100 0 0 10 100 10 10 10 0 0
+RT 3007 100 63963136 0 0 0 0 0 0 0 0 63963136
+GETIMG calls=127 tpc=78 tpc_retained=78 upload=127 ctrl=1 ctrl_tpc_retained=1 other=2 other_tpc_retained=7
+BUILD calls=103 requeue_tpc_retained=12 tpc_with_ctrl=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=100.0 mip_mpix=1.00 hwmip_calls=40 hwmip_hw=38 hwmip_fallback_npot=2 hwmip_glerror=0 hwmip_cube=1
+FRAME frames=100 max_ms=120.5 bucket_calls=10 max_bucket_per_frame=7 actionbar_calls=0 max_actionbar_per_frame=0 hist_ms 0 0 1 2 10 80 5 1 1 0 allocs_per_frame_hist 0 1 0 0
+HOOKCOST_BY ResMalloc calls=405 cycles=6450 samples=6
+NAME tga_load 3 screen ra=00000000
+BRRING 3073000 gui_setter1 x ra=0041496c
+KT async_start=0 async_bytes=0 destroy_table=12 still_in_demand=1 uaf_write=0 release_ok=268 txi_via_tpc=57 unload=0
+VM run_script=0 exec_cmd=0 exec_bad_id=0 instr_limit=0 delay_cmd=0
+VMCMD 1:5 2:3
+NET send=0 bytes=0 max_len=0 ovf_test=0 ovf_hit=0 | SCENE focus_dummy=1 scene_dtor=1
+VQTOP 3006d000 1024KB state=10000 type=20000 prot=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 3
+#METRICS 1 FLUSH tick=4030000 frames(hook)=100 live_bytes=7340032 allocs=300 tx=0 g1skip=0
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00
+#END 1
+#METRICS 2 LOAD_UP tick=4040000 frames(hook)=200 live_bytes=7340032 allocs=600 tx=0 g1skip=0
+GL glimage=0 glfinish=0 glfinish_ms=0.0 glfinish_max_ms=2.50 mipmaps=0 mip_ms=0.0 mip_mpix=1.00
+#END 2
+#METRICS 3 LOAD_DOWN tick=4046000 frames(hook)=400 live_bytes=262144000 allocs=1200 tx=0 g1skip=0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 3
+#METRICS 4 LOAD_UP tick=4060000 frames(hook)=500 live_bytes=262144000 allocs=1500 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 4
+#METRICS 5 LOAD_DOWN tick=4060500 frames(hook)=505 live_bytes=262144000 allocs=1515 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 5
+#METRICS 6 LOAD_UP tick=4061500 frames(hook)=510 live_bytes=262144000 allocs=1530 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 6
+#METRICS 7 LOAD_DOWN tick=4062000 frames(hook)=515 live_bytes=262144000 allocs=1545 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 7
+#METRICS 8 LOAD_UP tick=4063000 frames(hook)=520 live_bytes=262144000 allocs=1560 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 8
+#METRICS 9 LOAD_DOWN tick=4063500 frames(hook)=525 live_bytes=262144000 allocs=1575 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 9
+#METRICS 10 LOAD_UP tick=4064500 frames(hook)=530 live_bytes=262144000 allocs=1590 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 10
+#METRICS 11 LOAD_DOWN tick=4065000 frames(hook)=535 live_bytes=262144000 allocs=1605 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 11
+#METRICS 12 LOAD_UP tick=4066000 frames(hook)=540 live_bytes=262144000 allocs=1620 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 12
+#METRICS 13 LOAD_DOWN tick=4066500 frames(hook)=545 live_bytes=262144000 allocs=1635 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 13
+#METRICS 14 LOAD_UP tick=4067500 frames(hook)=550 live_bytes=262144000 allocs=1650 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 14
+#METRICS 15 LOAD_DOWN tick=4068000 frames(hook)=555 live_bytes=262144000 allocs=1665 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 15
+#METRICS 16 LOAD_UP tick=4069000 frames(hook)=560 live_bytes=262144000 allocs=1680 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 16
+#METRICS 17 LOAD_DOWN tick=4069500 frames(hook)=565 live_bytes=262144000 allocs=1695 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 17
+#METRICS 18 LOAD_UP tick=4070500 frames(hook)=570 live_bytes=262144000 allocs=1710 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 18
+#METRICS 19 LOAD_DOWN tick=4071000 frames(hook)=575 live_bytes=262144000 allocs=1725 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 19
+#METRICS 20 LOAD_UP tick=4072000 frames(hook)=580 live_bytes=262144000 allocs=1740 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 20
+#METRICS 21 LOAD_DOWN tick=4072500 frames(hook)=585 live_bytes=262144000 allocs=1755 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 21
+#METRICS 22 LOAD_UP tick=4073500 frames(hook)=590 live_bytes=262144000 allocs=1770 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 22
+#METRICS 23 LOAD_DOWN tick=4074000 frames(hook)=595 live_bytes=262144000 allocs=1785 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 23
+#METRICS 24 LOAD_UP tick=4075000 frames(hook)=700 live_bytes=262144000 allocs=2100 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 24
+#METRICS 25 UNLOAD tick=4075200 frames(hook)=701 live_bytes=125829120 allocs=2103 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 25
+#METRICS 26 LOAD_DOWN tick=4075500 frames(hook)=702 live_bytes=262144000 allocs=2106 tx=0 g1skip=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+#END 26
+#METRICS 27 FLUSH tick=4100000 frames(hook)=900 live_bytes=262144000 allocs=2700 tx=0 g1skip=0
+G a1b710=0(1) a7eb9c=0(1) resman=058142a8 budget4=1 budget8=1(1)
+# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident
+RT 3 10 100 0 0 10 100 10 10 10 0 0
+RT 3007 100 199229440 0 0 0 0 0 0 0 0 199229440
+GETIMG calls=127 tpc=78 tpc_retained=78 upload=127 ctrl=1 ctrl_tpc_retained=0 other=2 other_tpc_retained=0
+BUILD calls=103 requeue_tpc_retained=5 tpc_with_ctrl=0
+GL glimage=60 glfinish=60 glfinish_ms=6.0 glfinish_max_ms=2.50 mipmaps=60 mip_ms=600.0 mip_mpix=1.00
+FRAME frames=100 max_ms=120.5 bucket_calls=10 max_bucket_per_frame=7 actionbar_calls=0 max_actionbar_per_frame=0 hist_ms 0 0 1 2 10 80 5 1 1 0 allocs_per_frame_hist 0 1 0 0
+HOOKCOST_BY ResMalloc calls=405 cycles=6450 samples=6
+NAME tga_load 3 screen ra=00000000
+BRRING 4100000 gui_setter1 x ra=0041496c
+KT async_start=0 async_bytes=0 destroy_table=12 still_in_demand=0 uaf_write=0 release_ok=268 txi_via_tpc=57 unload=0
+VM run_script=0 exec_cmd=0 exec_bad_id=0 instr_limit=0 delay_cmd=0
+VMCMD 1:5 2:3
+NET send=0 bytes=0 max_len=0 ovf_test=0 ovf_hit=0 | SCENE focus_dummy=1 scene_dtor=1
+VQTOP 3006d000 1024KB state=10000 type=20000 prot=1
+LIVE textures=300 gl_bytes_est=1 models=0 emitters=0
+#END 27

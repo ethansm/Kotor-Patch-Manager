@@ -1,0 +1,6 @@
+[10:16:40.060 1000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=100
+[10:33:20.060 2000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=101
+[10:33:28.000 2008000] IGNORED synthetic WM_ACTIVATEAPP(0,0) post from movie thread tid=424 hwnd=000100de fg=000100de fgPid=101 (ours) a1b4e0=0 76c=1 n=1
+[10:33:28.010 2008010] IGNORED synthetic WM_ACTIVATEAPP(0,0) post from movie thread tid=424 hwnd=000100de fg=000100de fgPid=101 (ours) a1b4e0=0 76c=1 n=2
+[10:50:00.060 3000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=102
+[11:06:40.060 4000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=103
