@@ -21,6 +21,7 @@
 #include "SafeRead.h"
 #include "Party.h"
 #include "GuiKit.h"
+#include "GameAddr.h"
 #include "HotbarConfig.h"
 #include "TwoDA.h"
 #include "Tlk.h"
@@ -30,9 +31,9 @@ namespace {
 
 // ---- addresses (Steam) -----------------------------------------------------------------------------
 constexpr uintptr_t HudInvokeGroup = 0x00751750;      // thiscall(hud, group 0..6, 0) RET 8
-constexpr uintptr_t KeyboardDeviceGlobal = 0x0099C884; // rdata constant 0 (device-array index); verify live
-constexpr uintptr_t AppGlobal = 0x00A1B4A4;           // *(app)+4 -> A ; FUN_0073fb90(A) = *(*(A+4)+0x270)
-constexpr uintptr_t GetControlledCreature = 0x007E5D80; // thiscall(partyTable) -> creature (party slot 0)
+constexpr uintptr_t KeyboardDeviceGlobal = gameaddr::KeyboardDeviceGlobal; // rdata constant 0 (device-array index); verify live
+constexpr uintptr_t AppGlobal = gameaddr::AppGlobal;           // *(app)+4 -> A ; FUN_0073fb90(A) = *(*(A+4)+0x270)
+constexpr uintptr_t GetControlledCreature = gameaddr::GetControlledCreature; // thiscall(partyTable) -> creature (party slot 0)
 // Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
 constexpr uintptr_t PanelWhitelist[] = { 0x0099E5EC, 0x009A044C, 0x009A7BAC, 0x009A8FCC };
 
@@ -49,12 +50,8 @@ constexpr int Entry_Key = 0x8, Entry_Flags = 0x30;
 constexpr int MaxEntries = 256;
 
 // ---- on-screen buttons: CSWGuiLabel widgets, see 07_force_power_hotbar.md "Bottom-bar UX" ---------
-constexpr uintptr_t FnLabelCtor = 0x00419740;     // CSWGuiLabel ctor, thiscall(ECX=this), no stack args; object size 0x148
-constexpr uintptr_t FnInitControl = 0x0040F620;   // thiscall(panel, ctl, CExoString* tag, addToList, scale) RET 16
-constexpr uintptr_t FnExoCtor = 0x00733570, FnExoDtor = 0x00733780;
-constexpr uintptr_t FnNew = 0x00919723;           // cdecl(size)
-constexpr uintptr_t FnLoadImage = 0x0047EB60;     // cdecl(resref char[17]) -> new image wrapper (8 bytes) each call: pooled
-constexpr uintptr_t LabelVtable = 0x009878BC, BorderVtable = 0x009875BC;
+constexpr uintptr_t FnNew = gameaddr::New;           // cdecl(size)
+constexpr uintptr_t LabelVtable = gameaddr::LabelVtable, BorderVtable = gameaddr::BorderVtable;
 constexpr int LabelSize = 0x148;
 constexpr int Label_Border = 0x60;                // embedded CSWGuiBorder
 constexpr int Ctl_Flags = 0x48;                   // bit1 = visible (panel Draw skips the control otherwise)
@@ -62,9 +59,9 @@ constexpr int Ctl_Id = 0x54;
 constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill = 0x74;
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int ButtonCount = 10;
-constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;
+constexpr uintptr_t ProjectionFlag = gameaddr::ProjectionFlag;
 // (FUN_0073FEA0 screen-info getter is a THISCALL reading [ecx+0x274]: never call it without a valid this)
-constexpr uintptr_t GuiRefW = 0x009F4390, GuiRefH = 0x009F4394;   // ints (800, 600): the 800x600 layout space
+constexpr uintptr_t GuiRefW = gameaddr::GuiRefW, GuiRefH = gameaddr::GuiRefH;   // ints (800, 600): the 800x600 layout space
 // Our controls are created at runtime and appended to the HUD panel's control list (see Layout[] and createLabel). Offsets below are
 // positions in Layout[] (= list index - base, base = native control count). The tooltip pair is last so it draws above the picker
 // (panel Draw walks the list in ascending order).
@@ -79,9 +76,8 @@ constexpr int TipBgOff = CellQtyOff0 + CellCount, TipOff = TipBgOff + 1;     // 
 constexpr int ControlCount = TipOff + 1;                                     // 75
 constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 25: the editor is enabled only when all of them exist
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
-constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
-constexpr uintptr_t GuiSoundMgrGlobal = 0x00A1B49C, FnPlayGuiSound = 0x004122A0;   // thiscall(ECX = *GuiSoundMgrGlobal, char idx) RET 4; idx 1 = the control mouse-enter sound (FUN_00418750 / FUN_00418FE0)
-constexpr uintptr_t TextVtable = 0x009876B4;
+constexpr uintptr_t GuiSoundMgrGlobal = gameaddr::GuiSoundMgr;  // global GUI sound manager pointer (hover sound played through guikit)
+constexpr uintptr_t TextVtable = gameaddr::TextVtable;
 constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
 constexpr DWORD TipDelayMs = 450;
 constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 3;   // px estimates for dialogfont16x16 at 2.667 px/unit
@@ -366,12 +362,7 @@ void drainRing(uintptr_t hud) {
 // ---- on-screen buttons -----------------------------------------------------------------------------------
 // Each slot = three labels: a frame (LBL_HOTBARBG<d>, drawn first) showing "fph_slot" / "fph_slot_hi" (hover), the icon label
 // (LBL_HOTBAR<d>) on top and the key digit (LBL_HOTBARNUM<d>). All are hidden when the HUD gate is closed.
-using InitCtlFn = void(__thiscall*)(void*, void*, void*, int, int);
-using CExoCtorFn = void*(__thiscall*)(void*, const char*);
-using CExoDtorFn = void(__thiscall*)(void*);
-using LabelCtorFn = void(__fastcall*)(void*);
 using NewFn = void*(__cdecl*)(unsigned);
-using LoadImageFn = void*(__cdecl*)(const char*);
 
 struct Widget {
     unsigned char* ctl = nullptr;   // 0x148-byte CSWGuiLabel (never freed: the panel dtor does not delete list entries)
@@ -421,7 +412,7 @@ void* imageFor(const char* resref) {
     return image;
 }
 
-char slotDigit(int slot) { return "1234567890"[slot]; }
+using hb::slotDigit;
 const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : &w == &b.ic ? "ic" : &w == &b.num ? "num" : "qty"; }
 
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
@@ -953,16 +944,10 @@ void aspectFix() {
 // ---- runtime-created controls + textures served from DLL memory (1.0.0; doc 07 "Phase R") ------------------------------------
 // Labels: a native template struct of the open HUD layout initialises our label (InitControl with addToList=0 never touches the
 // panel list), then we set our own id/rect/text/fill and append it to the panel list ourselves (draw order = list index).
-constexpr uintptr_t FnPtrListAdd = 0x0083EA60;      // CExoArrayList<void*>::Add thiscall(list {ptr,count,cap}, value) RET 4
-constexpr uintptr_t FnSetFont = 0x00416DE0;         // CSWGuiText::SetFont thiscall(text+0x18, const char resref[16]) RET 4
-constexpr uintptr_t FnSetAlign = 0x00416FA0;        // CSWGuiText::SetAlignment thiscall(text+0x18, unsigned) RET 4
-constexpr int IdSentinel = -31337;                  // InitControl's Load overwrites ctl+0x54; still the sentinel = template tag not in the layout
 enum { TP_Plain = 0, TP_Panel = 1 };
 const char* const TemplateTags[] = { "LBL_QUEUE1", "LBL_MOULDING3" };   // blank label / native framed panel, in every mipc28x6_p.gui
 struct CtlSpec { const char* name; int tmpl; int x, y, w, h; const char* fill; const char* text; const char* font; int align; };
 using PtrListAddFn = void(__thiscall*)(void*, void*);
-using SetResFn = void(__thiscall*)(void*, const char*);
-using SetUIntFn = void(__thiscall*)(void*, unsigned);
 
 // Creates one label from its Layout[] spec and appends it to the panel's control list. Returns nullptr (label not in the list) on
 // any failure; the caller then leaves that part of the bar/editor disabled.
@@ -1115,7 +1100,7 @@ Widget* widgetFor(Bar& bar, int off) {
 // and +0xE4 "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
 constexpr uintptr_t FnTexBasicCtor = 0x00423000;    // CAurTextureBasic ctor thiscall(this 0xF4 B, name, name) RET 8; registers the name globally
 constexpr uintptr_t FnEngineMalloc = 0x0091D288;    // engine operator new[]: FreeImage (0x00421C40) releases +0x44 with delete[] when +0xE7 == 0
-constexpr uintptr_t FnTexListAdd = 0x004491C0, TexPendingList = 0x00A1BC2C;   // pending-build list, consumed by the texture tick
+constexpr uintptr_t FnTexListAdd = 0x004491C0, TexPendingList = gameaddr::TexPendingList;   // pending-build list, consumed by the texture tick
 constexpr uintptr_t FnTexReset = 0x00423990;        // CAurTextureBasic::Reset fastcall(basic)
 constexpr int TexBasicSize = 0xF4;
 constexpr int Tex_Pixels = 0x44, Tex_MipBytes = 0x5C, Tex_W = 0x68, Tex_H = 0x6C, Tex_Bpp = 0x74, Tex_Format = 0x78;
@@ -1183,7 +1168,7 @@ void healTextures() {
 // profiles with that save's copy, or empties them when the save has none (older saves, new games). [General] is never touched.
 // Engine facts: DB lessons 355-357 (save request R = *(*(0xA1B4A4)+0x14), folder CExoString at R+0x18 = "SAVES:NNNNNN - Name";
 // the SAVES: alias = the CExoString at 0xA7EABC ("cloudsaves/<steam id>/") while the Steam Cloud byte 0xA7EA88 is set, else saves/).
-constexpr uintptr_t SaveRequestHolder = 0x00A1B4A4;   // same global as AppGlobal: *(*(it)+0x14) = server save/load request
+constexpr uintptr_t SaveRequestHolder = gameaddr::AppGlobal;   // same global as AppGlobal: *(*(it)+0x14) = server save/load request
 constexpr int SaveReq_Folder = 0x18;
 constexpr uintptr_t CloudSavesFlag = 0x00A7EA88, CloudSavesDir = 0x00A7EABC;
 const char* const SnapshotFile = "force_power_hotbar.ini";

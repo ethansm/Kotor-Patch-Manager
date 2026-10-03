@@ -19,6 +19,9 @@ constexpr int Rows = 1;    // Bottom (keys 1..0). The early Ctrl/Alt rows (Left/
 constexpr int Slots = 10;  // digits 1..9, 0
 constexpr int SchemaVersion = 1;
 
+// Key digit shown for a slot (0..8 -> '1'..'9', 9 -> '0'); '?' for anything out of range.
+inline char slotDigit(int slot) { return (slot >= 0 && slot < 10) ? "1234567890"[slot] : '?'; }
+
 // Row name used in INI keys ("Bottom1".."Bottom0") + required modifier (0 none).
 struct RowDef { const char* name; int modifier; };
 constexpr RowDef kRows[Rows] = { {"Bottom", 0} };
