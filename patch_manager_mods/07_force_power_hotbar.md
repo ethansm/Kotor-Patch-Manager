@@ -1,5 +1,16 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**BUILD 28 INSTALLED (2026-10-03 11:29): `6dd6d0e2` = Phase X + U1 + U2** (plan "Hotbar U1-U3 ... then the remaining 1.0.0 phases", Phase U-A).
+User chose to SKIP the separate build 27 smoke test and test 28 directly (27's checklist still applies, see "PHASE X INSTALLED" below).
+- U1: the out-of-stock "0" is drawn gray (`QtyOutOfStockRgb` 0.55); the template text colour is read at creation (`guikit::getTextColor`, which also gates writes) and restored when the count is > 1 again (`wTextColor`).
+- U2: `hb::moveDuplicates` (HotbarConfig.h): assigning an action that is already on the bar blanks its old slot (`none ; moved`, blank so the Default fallback can't bring it back).
+  Logged as `edit: '<name>' moved from slot X to Y`. Tests: `hotbar_logic_test.cpp` (31 checks; went red with the blank flag removed).
+- Stage `hotbar_stage17/` (= stage16 + new FPH kpatch, stage check 0 DIFFS), backup `backups/inst17_1003_1129`, only force-power-hotbar.dll changed, AR_ERROR.LOG unchanged.
+  Rollback = reinstall the stage16 FPH kpatch (106be06e) or stage15 (504372b1).
+- **Awaiting user test:** build 27's smoke list + (1) run an item to 0, the "0" is gray; (2) pick one up, the count turns white again; (3) assign an ability already on the bar to another slot:
+  it moves, the old slot is empty; (4) Clear still works; (5) reload the save: the moves persist. Log: `H3: 75 controls created`, rects vs `baseline_h3_build26.txt`, `moved from` lines, no WARNING.
+- Next: Phase U-B (target modes), starting with UB-R RE (static, no build).
+
 **SESSION CONTEXT (2026-10-03 ~02:10, end of Phase X session; read before planning U1-U3):**
 - Plan executed: `~/.claude/plans/` "Hotbar onto shared Common headers" (Phase X). X0-X8 done and committed: 00c9df5 (X0 docs + baseline), 0e5fcbf
   (scripts/kpm_stage_check.py), 8e0da7c (Common headers + colocated tests), 64953dc / e3cbe91 / 446bb8d (hotbar), 11da397 (docs); clone 2c1bba4.

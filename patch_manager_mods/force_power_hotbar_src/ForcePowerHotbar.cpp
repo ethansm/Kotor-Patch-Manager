@@ -91,6 +91,7 @@ constexpr float EmptyFrameAlpha = 0.45f;
 constexpr DWORD SettleMs = 1500;                  // after a character switch the HUD action lists lag behind: unresolved slots stay hidden, checked every frame
 constexpr int ButtonRefreshFrames = 8;            // entry re-resolve interval (usable/dim state changes are slow)
 constexpr float DimAlpha = 0.35f;
+constexpr float QtyOutOfStockRgb[3] = { 0.55f, 0.55f, 0.55f };   // "0" on an out-of-stock slot is drawn gray (user request U1)
 
 // ---- logging: force_power_hotbar_log.txt in the game dir, capped ------------------------------------
 int g_logLines = 0;
@@ -372,6 +373,8 @@ struct Widget {
     std::string icon;               // last applied fill resref ("" = none)
     std::string why;                // last logged reason for hidden/shown
     std::string text;               // last applied runtime text (picker widgets)
+    float textRgb[3] = {1, 1, 1}; bool textRgbSet = false;   // template text colour read at creation; textRgbSet = the readback worked and gates every colour write
+    float curRgb[3] = {-1, -1, -1}; // last applied text colour (cache)
 };
 struct Button { Widget bg, ic, num, qty; bool avail = false; Entry entry; };
 // ---- in-game editor state (the editor and the per-HUD hover/refresh/repeat timers live in Bar, so a HUD rebuild resets them) ----
@@ -624,6 +627,7 @@ void updateHover(bool gate) {
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
 // the cached view is stale (config/character/gate change), never per frame.
 void wText(Widget& w, const char* nm, const std::string& text);
+void wTextColor(Widget& w, const char* nm, const float* rgb);
 void updateButtons(uintptr_t hud, bool gate) {
     static uintptr_t lastMissingHud = 0; static bool lastGateSeen = false; static std::string lastChar = "\x01"; static int lastMode = -1;
     if (g_bar.panel != hud || g_bar.built == 0) {
@@ -660,7 +664,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         std::string icon = have ? e.icon : (outOfStock ? itemIconFor(want.name) : std::string());
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state); setVisible(b, b.num, s, true, state);
         int qty = have ? hb::StackCount(e.key, e.name) : 0;   // the engine names item entries "Name (N)" only when N > 1
-        if (qty > 1 || outOfStock) { wText(b.qty, "qty", std::to_string(qty)); setVisible(b, b.qty, s, true, state); }
+        if (qty > 1 || outOfStock) { wText(b.qty, "qty", std::to_string(qty)); wTextColor(b.qty, "qty", outOfStock ? QtyOutOfStockRgb : b.qty.textRgb); setVisible(b, b.qty, s, true, state); }
         else setVisible(b, b.qty, s, false, have ? "single item / not an item" : state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
         setFill(b, b.ic, s, icon);
@@ -699,6 +703,13 @@ void wText(Widget& w, const char* nm, const std::string& text) {
     if (!guikit::setText(reinterpret_cast<uintptr_t>(w.ctl), text.c_str())) { logf("edit: %s text object bad, cannot set \"%s\"", nm, text.c_str()); return; }
     VLOG("edit: %s text \"%s\" -> \"%s\"", nm, w.text.c_str(), text.c_str());
     w.text = text;
+}
+void wTextColor(Widget& w, const char* nm, const float* rgb) {
+    if (!w.ctl || !w.textRgbSet) return;   // no colour call without a working readback
+    if (w.curRgb[0] == rgb[0] && w.curRgb[1] == rgb[1] && w.curRgb[2] == rgb[2]) return;
+    if (!guikit::setTextColor(reinterpret_cast<uintptr_t>(w.ctl), rgb[0], rgb[1], rgb[2])) { logf("edit: %s text object bad, cannot set colour", nm); return; }
+    VLOG("edit: %s text colour (%.2f,%.2f,%.2f) -> (%.2f,%.2f,%.2f)", nm, w.curRgb[0], w.curRgb[1], w.curRgb[2], rgb[0], rgb[1], rgb[2]);
+    w.curRgb[0] = rgb[0]; w.curRgb[1] = rgb[1]; w.curRgb[2] = rgb[2];
 }
 bool wHit(const Widget& w, const POINT& pt) {
     if (!w.ctl || w.visible != 1) return false;
@@ -755,6 +766,7 @@ int tabOf(const Entry& e) { return (e.key & 0x40000000) ? 1 : ((e.key & 0x200000
 const char* const TabName[TabCount] = { "Power", "Item", "Mode" };
 
 // Writes (or, with e == nullptr, clears) hotbar slot `slot` of the controlled character's profile ([Profile.<key>], key = obj%08x of the creature id) and saves the INI.
+// Assigning an action that is already on the bar moves it: the old slot becomes none (hb::moveDuplicates).
 // The key is the creature object id (the Exile is objfffffffd, stable; the invalid id objffffffff seen during loads is treated as 'unknown').
 bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     Editor& ed = g_bar.ed;
@@ -769,6 +781,7 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     for (int i = 0; i < hb::Slots; ++i) if (d.slots[0][i].empty() && !d.slots[0][i].blank && !g_eff[i].empty()) { d.slots[0][i] = g_eff[i]; d.slots[0][i].blank = false; ++frozen; }
     hb::ActionRef a; if (e) a = e->ref; else a.blank = true;
     if (e && a.empty()) { logf("edit: assign REFUSED: entry '%s' has no stable ref", e->name.c_str()); ed.msg = "That entry cannot be bound"; return false; }
+    if (e) for (int from : hb::moveDuplicates(d, 0, slot, a)) logf("edit: '%s' moved from slot %c to %c", e->name.c_str(), hb::slotDigit(from), hb::slotDigit(slot));   // re-pick of an action already on the bar = move
     g_cfg.SetSlot(g_charKey, 0, slot, a, e ? e->name : "cleared");
     static bool backedUp = false;
     if (!backedUp) { backedUp = true; BOOL ok = CopyFileA(IniPath, "force_power_hotbar.ini.bak", FALSE); logf("edit: backup %s -> force_power_hotbar.ini.bak: %s", IniPath, ok ? "ok" : "FAILED (no ini yet?)"); }
@@ -992,6 +1005,8 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
          ex, ey, ew, eh, sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
     w->ctl = ctl; w->baseAlpha = ba; w->visible = 0; w->why = "built";
     w->icon = sp.fill ? sp.fill : ""; w->text = sp.text ? sp.text : "";
+    w->textRgbSet = guikit::getTextColor(reinterpret_cast<uintptr_t>(ctl), w->textRgb);   // silent: only qty widgets use it
+    if (w->textRgbSet) for (int i = 0; i < 3; ++i) w->curRgb[i] = w->textRgb[i];
     return ctl;
 }
 

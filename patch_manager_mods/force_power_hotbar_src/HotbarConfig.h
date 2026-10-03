@@ -134,6 +134,20 @@ struct Profile {
     std::string notes[Rows][Slots];   // trailing "; comment" per slot, preserved across Save
 };
 
+// Picking an action already on the bar MOVES it: every other slot holding `a` becomes explicit "none" (note "moved"),
+// returned in ascending order. blank, not empty: an empty slot would fall back to Default via slotFor and resurrect the action.
+// The caller sets the target slot itself; an empty/blank ref (the Clear path) matches nothing.
+inline std::vector<int> moveDuplicates(Profile& p, int row, int slot, const ActionRef& a) {
+    std::vector<int> moved;
+    if (a.empty() || row < 0 || row >= Rows) return moved;
+    for (int i = 0; i < Slots; ++i) {
+        if (i == slot || !Same(p.slots[row][i], a)) continue;
+        p.slots[row][i] = ActionRef(); p.slots[row][i].blank = true;
+        p.notes[row][i] = "moved"; moved.push_back(i);
+    }
+    return moved;
+}
+
 struct General {
     int invoke = 1;               // 1 = keys/clicks use the slot's action, 0 = log only (dry run)
     int verbose = 0;              // 1 = detailed trace log (hover, widgets, every key), 0 = state changes and errors only
