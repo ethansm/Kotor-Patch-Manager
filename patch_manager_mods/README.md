@@ -132,4 +132,4 @@ Nothing in this directory has touched the live game.
 - 2026-09-30: Mod idea 14 (character-screen active effects panel): research started, see 14_character_active_effects_panel.md
 - 2026-09-30: Mod 5 session 3 update in 10_equipment_3d_character.md (SESSION 3 UPDATE block)
 - 2026-09-30 (evening): Mod 5 session 4 update in 10_equipment_3d_character.md (SESSION 4 UPDATE block): Reset/Spin row, Emotes + Attacks pop-up menu, hide/buffer timing; DLL md5 dcbdfde3 installed, awaiting user test.
-- 2026-10-01: Mod 14 Phase 3+4: research R2b-R2e done (effect-icon cache = effecticon.2da, runtime text colour 0x417140); DLL `character-effects-panel` 0.1.0-probe built (scripts/check_chareffects_kpatch.py ALL PASS) and INSTALLED 18:44 at stage 0 (23 live ids), see 14_character_active_effects_panel.md
+- 2026-10-01: Mod 14 Phase 3+4: research R2b-R2e done (effect-icon cache = effecticon.2da, runtime text colour 0x417140); DLL `character-effects-panel` 0.1.0-probe built (scripts/retired/check_chareffects_kpatch.py ALL PASS; since 10-03 superseded by scripts/check_hook_bytes.py) and INSTALLED 18:44 at stage 0 (23 live ids), see 14_character_active_effects_panel.md

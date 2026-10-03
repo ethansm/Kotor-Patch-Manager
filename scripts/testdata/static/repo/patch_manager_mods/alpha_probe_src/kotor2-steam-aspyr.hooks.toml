@@ -1,0 +1,15 @@
+[metadata]
+target_versions = ["aaaa", "BBBB"]
+
+[[hooks]]
+address = 0x00401000
+type = "detour"
+function = "AlphaHook"
+original_bytes = [0xE8, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = true
+
+[[hooks]]
+address = 4198432   # 0x401020: decimal addresses and hex-string bytes are accepted
+type = "simple"
+original_bytes = "90 90"
+replacement_bytes = [0xEB, 0x00]

@@ -117,6 +117,13 @@ def expand(s: str) -> str:
     return os.path.expanduser(s)
 
 
+def suite_cwd(cwd) -> Path:
+    """A suite's cwd: repo-relative, or expanded when it starts with $ or ~ (e.g. $KPM_DIR)."""
+    if not cwd:
+        return REPO
+    return Path(expand(cwd)) if cwd[0] in "$~" else REPO / cwd
+
+
 def missing_requirement(requires) -> str:
     for r in requires or []:
         if r.startswith("which:"):
@@ -328,7 +335,7 @@ def discover(sanitize=True):
                 cmd[0] = sys.executable
         cmd = [expand(c) if i else c for i, c in enumerate(cmd)]
         items.append(Item(id=f"suite:{s['name']}", kind="suite", skip=skip,
-                          cwd=(REPO / s["cwd"]) if s.get("cwd") else REPO, cmd=cmd,
+                          cwd=suite_cwd(s.get("cwd")), cmd=cmd,
                           timeout=int(s.get("timeout_s", 300)), env={"PYTHONDONTWRITEBYTECODE": "1"}))
     return items
 

@@ -1,0 +1,19 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema, one [[code_patches]] table per site:
+#   name              group/site name used in the C++ source
+#   address           absolute VA of the first patched byte
+#   original_bytes    the vanilla bytes at address (length = span); check_hook_bytes compares them to the vanilla exe
+#   kind              "code" (default) or "data" (a constant, not an instruction: boundary check skipped)
+#   verifies_original true if the writer memcmp's the site and refuses on a mismatch (cite the line in `source`)
+#   enabled_by        config gate, free text
+#   source            file:line in this mod's C++ (original bytes, verify and write)
+
+[[code_patches]]
+name = "movie_post"
+address = 0x0040D69E
+# CALL dword ptr [0x0098646C] (PostMessageA)
+original_bytes = [0xFF, 0x15, 0x6C, 0x64, 0x98, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "activationfix.txt enabled=0 disables (default on)"
+source = "ActivationFix.cpp:28,32,72-84,124"

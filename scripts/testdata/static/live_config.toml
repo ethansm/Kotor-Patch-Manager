@@ -1,0 +1,12 @@
+target_version_sha = "6A52"
+[[patches]]
+id = "alpha"
+dll = "patches/alpha.dll"
+[[patches.hooks]]
+address = 4198400
+original_bytes = [232, 0, 0, 0, 0]
+type = "detour"
+function = "AlphaHook"
+[[patches]]
+id = "dll-only"
+dll = "patches/dll-only.dll"

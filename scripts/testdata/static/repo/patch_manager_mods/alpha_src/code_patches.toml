@@ -1,0 +1,13 @@
+[[code_patches]]
+name = "site"
+address = 0x00401040
+original_bytes = [0x74, 0x06]
+verifies_original = true
+enabled_by = "alpha.txt site=1"
+source = "Alpha.cpp:10"
+
+[[code_patches]]
+name = "const"
+address = 0x00402000
+original_bytes = [0, 0, 0, 0, 0, 0, 0xF0, 0x3F]
+kind = "data"

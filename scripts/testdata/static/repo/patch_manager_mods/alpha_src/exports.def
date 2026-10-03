@@ -1,0 +1,4 @@
+LIBRARY Alpha
+EXPORTS
+    AlphaHook          ; the detour
+    AlphaTestSeam @2

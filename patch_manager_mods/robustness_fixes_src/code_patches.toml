@@ -1,0 +1,91 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema, one [[code_patches]] table per site:
+#   name              group/site name used in the C++ source
+#   address           absolute VA of the first patched byte
+#   original_bytes    the vanilla bytes at address (length = span); check_hook_bytes compares them to the vanilla exe
+#   kind              "code" (default) or "data" (a constant, not an instruction: boundary check skipped)
+#   verifies_original true if the writer memcmp's the site and refuses on a mismatch (cite the line in `source`)
+#   enabled_by        config gate, free text
+#   source            file:line in this mod's C++ (original bytes, verify and write)
+# Sites are written per group; verifySite() memcmp's every site of a group before any of it is written.
+
+[[code_patches]]
+name = "kt_a"
+address = 0x00726527
+original_bytes = [0x89, 0x50, 0x0C, 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt kt=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:54,152-156"
+
+[[code_patches]]
+name = "kt_b"
+address = 0x00726C9C
+original_bytes = [0x89, 0x50, 0x0C, 0xEB, 0x3C]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt kt=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:55,152-156"
+
+[[code_patches]]
+name = "vmid_a"
+address = 0x00668FE0
+original_bytes = [0x7D, 0x30]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt vmid=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:56,152-156"
+
+[[code_patches]]
+name = "vmid_b"
+address = 0x00669012
+original_bytes = [0xB8, 0x2E, 0xF8, 0xFF, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt vmid=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:57,152-156"
+
+[[code_patches]]
+name = "sndri"
+address = 0x007054CE
+original_bytes = [0xC7, 0x82, 0xD4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEB, 0x52]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt sndri=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:58,152-156"
+
+[[code_patches]]
+name = "netovf_a"
+address = 0x00704406
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0x8D, 0x4D, 0xE4, 0xE8, 0x6B, 0xF3, 0x02, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt netovf=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:59,152-156"
+
+[[code_patches]]
+name = "netovf_b"
+address = 0x007040EF
+original_bytes = [0x05, 0x00, 0x00, 0x01, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt netovf=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:60,152-156"
+
+[[code_patches]]
+name = "guiid"
+address = 0x0040F972
+original_bytes = [0x83, 0x7D, 0xB0, 0x00, 0x7C, 0x6C]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt guiid=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:61,152-156"
+
+[[code_patches]]
+name = "abbound"
+address = 0x0058C61A
+original_bytes = [0x8B, 0x55, 0xEC, 0x3B, 0x51, 0x04, 0x7D, 0x1C]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt abbound=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:62,152-156"

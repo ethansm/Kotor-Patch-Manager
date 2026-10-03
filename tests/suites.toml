@@ -7,7 +7,8 @@
 #   name       item id is `suite:<name>`
 #   cmd        argv list. A leading "python" is replaced by the interpreter (this one,
 #              or .venv/bin/python when python = "venv").
-#   cwd        optional, relative to the repo root (default: repo root)
+#   cwd        optional, relative to the repo root (default: repo root); a value starting
+#              with $ or ~ is expanded like requires (e.g. "${KPM_DIR}")
 #   python     optional, "venv" = repo .venv interpreter
 #   requires   optional list; each entry is a path (~, $VAR and ${VAR:-default} are expanded)
 #              or `which:<tool>`. Anything missing makes the item SKIP (missing X), not FAIL.
@@ -52,36 +53,24 @@ timeout_s = 300
 # ---- static checkers (read the live exe / framework .kpatch files; read-only) ----
 
 [[suite]]
-name = "check-inv3d-kpatch"
-cmd = ["python", "scripts/check_inv3d_kpatch.py"]
+name = "check-hook-bytes"
+# Every mod hook + code_patches.toml site vs the pristine vanilla exe (bytes, section, instruction boundary,
+# relative branches in stolen bytes) and .kpatch packaging (doc 20 Phase 1; replaces scripts/retired/check_*_kpatch.py).
+cmd = ["python", "scripts/check_hook_bytes.py", "--quiet"]
 requires = [
-  "${KPM_DIR}/Patches/Inventory3DViewport/Inventory3DViewport.kpatch",
-  "${KOTOR2_ROOT}/swkotor2.exe",
+  "${KOTOR2_VANILLA_EXE:-~/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe}",
+  "${KPM_DIR}/Patches",
   "${KOTOR2_ROOT}/patch_config.toml",
   "which:i686-w64-mingw32-objdump",
 ]
 timeout_s = 120
 
 [[suite]]
-name = "check-equip3d-kpatch"
-cmd = ["python", "scripts/check_equip3d_kpatch.py"]
-requires = [
-  "${KPM_DIR}/Patches/EquipCharPreview/EquipCharPreview.kpatch",
-  "${KOTOR2_ROOT}/swkotor2.exe",
-  "${KOTOR2_ROOT}/patch_config.toml",
-  "which:i686-w64-mingw32-objdump",
-]
-timeout_s = 120
-
-[[suite]]
-name = "check-chareffects-kpatch"
-cmd = ["python", "scripts/check_chareffects_kpatch.py"]
-requires = [
-  "${KPM_DIR}/Patches/CharEffectsPanel/CharEffectsPanel.kpatch",
-  "${KOTOR2_ROOT}/swkotor2.exe",
-  "${KOTOR2_ROOT}/patch_config.toml",
-  "which:i686-w64-mingw32-objdump",
-]
+name = "check-gui-ids"
+# tests/static/gui_ids.toml vs vanilla .gui originals, the live override/ .gui files and the cited C++ constants.
+cmd = ["python", "scripts/check_gui_ids.py", "--quiet"]
+python = "venv"
+requires = ["~/Games/KOTOR2_Mod_Workspace/ultrawide_gui/originals"]
 timeout_s = 120
 
 [[suite]]

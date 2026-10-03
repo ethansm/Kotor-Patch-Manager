@@ -1,0 +1,117 @@
+# GUI control-id registry (doc 20 section 6). Read by scripts/check_gui_ids.py (run it with .venv/bin/python).
+#
+# Several mods add controls to the same vanilla .gui. Their ids and screen areas are coordinated only by comments in the
+# C++, so this file is the one place where they are written down and cross-checked.
+#
+#   [[gui]]
+#   file = "character_p.gui"          # file name in override/ and in ultrawide_gui/originals/
+#
+#   [[gui.static]]                     # controls the mod's patched .gui carries (ids are in the file)
+#   mod        = "character-effects-panel"   # manifest.toml [patch] id
+#   ids        = [69, 150]            # first, last (inclusive)
+#   tag_prefix = "LBL_EFX_"           # every control in the range must start with it (string or list of strings) ...
+#   tags       = ["3D_MODEL", ...]    # ... or: exact tags, in id order (one per id)
+#   rects      = [[536,134,216,336]]  # nominal footprint(s) [left, top, width, height], 800x600 units
+#   source     = "CharEffectsPanel.cpp:64-66"   # file[:lines] in the mod's dir; where the numbers come from
+#   source_regex = ["FirstId\\s*=\\s*69\\b"]    # optional, string or list: each must match somewhere in the source file,
+#                                               # so the cite cannot rot silently when the constant changes
+#
+#   [[gui.append]]                     # controls the mod creates at runtime and appends (ids are NOT in the .gui)
+#   mod   = "level-up-override"
+#   count = 19                        # how many it appends
+#   after = ["character-effects-panel"]   # mods whose static range is already in the .gui when it appends
+#   rects, source, source_regex       # as above
+#
+# Checks (FAIL unless noted):
+#   - static ranges in one .gui must not overlap, and each must start above the vanilla max id;
+#   - the live override/<file> must hold exactly the registered ids above the vanilla max (no gaps, no strays, no
+#     duplicates) and the right tags (SKIP if the file is absent);
+#   - nominal rects of different mods in one .gui must not intersect (edges may touch);
+#   - source_regex must match its source file;
+#   - append entries are not collision-checked. INFO prints each one's runtime id range.
+#
+# Runtime ids of an append: GuiKit::appendToPanel stamps id = the panel's control-list count (GuiKit.h:141-154), and the
+# engine's count for a panel is "vanilla max id + 1" plus what has been added, not the number of controls in the file
+# (vanilla character_p.gui has 55 controls but ids up to 68, and the panel starts at count 69: chareffects_log "controls
+# now 151 (was 69)"). So base = vanilla next free id + sizes of the static ranges of the mods in `after`.
+
+# ---------------------------------------------------------------------------------------------------------------------
+[[gui]]
+file = "equip_p.gui"    # vanilla ids 0..48
+
+[[gui.static]]
+mod = "equipment-3d-character"
+ids = [49, 78]
+tags = [
+  "3D_MODEL", "LBL_BEVEL", "LBL_BEVEL2",
+  "LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE",
+  "LBL_E3D_M00", "LBL_E3D_M01", "LBL_E3D_M02", "LBL_E3D_M03", "LBL_E3D_M04", "LBL_E3D_M05", "LBL_E3D_M06",
+  "LBL_E3D_M07", "LBL_E3D_M08", "LBL_E3D_M09", "LBL_E3D_M10", "LBL_E3D_M11", "LBL_E3D_M12", "LBL_E3D_M13",
+  "LBL_E3D_M14", "LBL_E3D_M15", "LBL_E3D_M16", "LBL_E3D_M17", "LBL_E3D_M18", "LBL_E3D_M19",
+  "LBL_E3D_TIPBG", "LBL_E3D_TIP",
+]
+# view; the two bevels; the toolbar column (5 buttons, x 684, y 174..300). The pop-up items and tooltip (ids 57..78) are
+# placed at runtime, so they have no fixed rect.
+rects = [[536, 134, 216, 336], [532, 130, 224, 38], [532, 436, 224, 38], [684, 174, 62, 126]]
+source = "EquipCharPreview.cpp:49-50,59-60"
+source_regex = [
+  "constexpr int NumButtons = 5;",
+  "constexpr int MaxMenu = 20;",
+  "constexpr int ExpectedControlId = 49;",
+  "TipBgId = ExpectedControlId \\+ 3 \\+ NumButtons \\+ MaxMenu, TipId = TipBgId \\+ 1;",
+]
+
+# ---------------------------------------------------------------------------------------------------------------------
+[[gui]]
+file = "inventory_p.gui"    # vanilla ids 0..20
+
+[[gui.static]]
+mod = "inventory-3d-viewport"
+ids = [21, 23]
+tags = ["3D_MODEL", "LBL_BEVEL", "LBL_BEVEL2"]
+rects = [[550, 134, 202, 336], [546, 130, 210, 38], [546, 436, 210, 38]]
+source = "Inventory3DViewport.cpp:56,651"
+source_regex = [
+  "constexpr int ExpectedControlId = 21;",
+  "\"LBL_BEVEL\", ExpectedControlId \\+ 1\\)",
+  "\"LBL_BEVEL2\", ExpectedControlId \\+ 2\\)",
+]
+
+# ---------------------------------------------------------------------------------------------------------------------
+[[gui]]
+file = "character_p.gui"    # vanilla: 55 controls, ids up to 68 (next free id 69)
+
+[[gui.static]]
+mod = "character-effects-panel"
+ids = [69, 150]
+tag_prefix = "LBL_EFX_"
+rects = [[536, 134, 216, 336], [536, 104, 216, 24]]    # panel (BACK), header
+source = "CharEffectsPanel.cpp:64-66"
+source_regex = ["constexpr int FirstId = 69, MaxRows = 14;", "static_assert\\(NumTags == 82,"]
+
+[[gui.append]]
+mod = "level-up-override"
+count = 19
+after = ["character-effects-panel"]    # Mod 14 binds its ids 69..150 at panel construction, the level-up UI appends on its first tick
+rects = [[54, 134, 402, 360]]    # union of kUiSpec: x 54..456 (Configure button right edge), y 134..494 (status line bottom)
+source = "LevelUpUi.h:14,41,43-62"
+source_regex = [
+  "enum UiCtl \\{ C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 \\+ NumRows, C_INSTANT, C_BANK, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_N \\};",
+  "NumRows = opt::NumRows \\+ 1,",
+  "const UiSpec kUiSpec\\[C_N\\]",
+]
+
+# ---------------------------------------------------------------------------------------------------------------------
+[[gui]]
+file = "mipc28x6_p.gui"    # vanilla ids 0..110 (HUD)
+
+[[gui.append]]
+mod = "force-power-hotbar"
+count = 75
+after = []
+rects = [[4, 478, 420, 35], [4, 360, 420, 112]]    # slot bar (edit button + 10 slots), picker panel (tooltip lies inside it)
+source = "ForcePowerHotbar.cpp:76,1079"
+source_regex = [
+  "constexpr int ControlCount = TipOff \\+ 1;\\s*// 75",
+  "static_assert\\(sizeof Layout / sizeof Layout\\[0\\] == ControlCount,",
+]
