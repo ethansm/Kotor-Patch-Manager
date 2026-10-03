@@ -66,6 +66,7 @@
 #include "../_shared/GuiKit.h"
 #include "Playthrough.h"
 #include "WizardLogic.h"
+#include "OptionsLogic.h"
 
 namespace {
 
@@ -747,6 +748,7 @@ typedef void (__thiscall* PushU32_t)(void* arr, uint32_t value);
 struct Engine {
     uintptr_t addFeat, setSkillDelta, pushU32;
     bool checkCode;   // compare the functions' first bytes before calling (off in the host test, which uses fakes)
+    uintptr_t controlled = 0x0073F450;   // client GetControlledObject (thiscall ECX, no args, plain RET): +4 = controlled object id (U5)
     uintptr_t canLevelUp = 0x006B9790, optAccessor = 0x0072FB00, charChange = 0x00740FC0, getCreature = 0x0077D800,
               partyGet = 0x007E5DA0, tableGet = 0x0073FB90, appGlobal = 0x00A1B4A4;
     uintptr_t strCtor = 0x00733570, strDtor = 0x00733780, guidFind = 0x006545B0, guidAdd = 0x00654430, guidSet = 0x00654BB0,
@@ -761,6 +763,7 @@ const uint8_t kPushU32Code[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 
 
 const uint8_t kCanLevelUpCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20, 0x56, 0x89, 0x4D};
 const uint8_t kOptAccessorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
+const uint8_t kControlledCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC, 0x8B, 0x48, 0x04};
 const uint8_t kCharChangeCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
 const uint8_t kGetCreatureCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xFC};
 const uint8_t kPartyGetCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4};
@@ -1498,6 +1501,39 @@ void* instantGate(unsigned site, int ebpOff, void* ecx, uintptr_t ebp) {
     return g_instBuf;
 }
 
+// Leader instant (U5, doc 08 "U5"): portrait refresh 0x74EE90 calls GetControlledObject 0x73F450 at 0x74F423 and compares its +4 with the slot's
+// object id; equal (= the controlled leader) -> level-up indicator instead of AutoLevelup(1). For a configured instant, not-held creature
+// ([ebp-0x38], the same creature the 0x74F3E9 instant gate reads) we return a dummy object whose id never matches, so the engine takes its own
+// AutoLevelup(1) path (the call the Auto button makes). Any other case returns the real object. Non-leaders are unaffected (no match either way).
+typedef void* (__thiscall* Controlled_t)(void* ecx);
+uint32_t g_noCtl[4] = {0, 0x7F000000u, 0, 0};   // +4 = an object id no creature has
+int g_ctlEngState = 0;
+InstantKey g_leadSeen[16];
+int g_nLeadSeen = 0, g_leadNext = 0;
+void* leaderInstant(void* ecx, uintptr_t ebp) {
+    saferead::beginScope();
+    void* const p = reinterpret_cast<Controlled_t>(g_eng.controlled)(ecx);
+    if (!p || !gateActive() || g_cfg.mode != Mode::Rewrite) return p;
+    if (g_eng.checkCode && !g_ctlEngState) {
+        g_ctlEngState = codeMatches(g_eng.controlled, kControlledCode, sizeof kControlledCode) ? 1 : 2;
+        if (g_ctlEngState == 2) logLine("ENGINE 0x73F450 bytes differ - leader instant disabled");
+    }
+    if (g_eng.checkCode && g_ctlEngState != 1) return p;
+    uint32_t cr = 0, stats = 0, ctlId = 0;
+    if (!readAt(S_Chain, ebp, -0x38, &cr) || !cr || !readAt(S_Stats, cr, Cr_Stats, &stats) || !stats) return p;
+    Eval e = evalStats(stats, cr);
+    if (!e.ok || !e.cfg->instant || e.d == Decision::Hold) return p;
+    readAt(S_Chain, reinterpret_cast<uintptr_t>(p), 4, &ctlId);
+    bool seen = false;
+    for (int i = 0; i < g_nLeadSeen; ++i) if (g_leadSeen[i].key == e.key && !_stricmp(g_leadSeen[i].tag, e.tag)) seen = true;
+    if (!seen) {
+        InstantKey& k = g_leadSeen[g_nLeadSeen < 16 ? g_nLeadSeen++ : (g_leadNext++ & 15)];
+        snprintf(k.tag, sizeof k.tag, "%s", e.tag); k.key = e.key;
+        logLine("INSTANT-LEADER tag=%s key=%d controlledId=%08x creature=%08x site=0x74F423", e.tag, e.key, (unsigned)ctlId, (unsigned)cr);
+    }
+    return g_noCtl;
+}
+
 // Leader creature as the GUI sees it: 0x77D800(0x7E5DA0(0x73FB90([[0xA1B4A4]+4]), 0)); 0 on any null / unreadable link.
 uintptr_t leaderCreature() {
     uint32_t app = 0, client = 0;
@@ -1570,6 +1606,8 @@ void __cdecl LevelUpOverrideEntry(void* stats, void* ret, void* pending, int add
 LUO_HOLD(74F3C7) LUO_HOLD(5FD7CE) LUO_HOLD(5FE2A3) LUO_HOLD(66C95C) LUO_HOLD(5FEE32) LUO_HOLD(756DD4)
 LUO_HOLD(7575B5) LUO_HOLD(757808) LUO_HOLD(75798C) LUO_HOLD(75218B) LUO_HOLD(7C9F3B) LUO_HOLD(75FCB8)
 LUO_INSTANT(74F3E9, -0x38) LUO_INSTANT(5FD7A0, -0x14) LUO_INSTANT(5FE281, -0x18) LUO_INSTANT(66C93A, -8)
+// GetControlledObject 0x73F450 call at 0x74F423 in portrait refresh (ecx, ebp; creature = [ebp-0x38]): leader instant.
+void* __cdecl LuoLeaderInstant_74F423(void* ecx, void* ebp) { return leaderInstant(ecx, reinterpret_cast<uintptr_t>(ebp)); }
 
 // SetStats site 0x84F221: params ecx = stats, ebp (panel = [ebp-0x288]). Same hold semantics as the other sites, then the character-screen UI tick.
 int __cdecl LuoHold_84F221(void* stats, void* ebp) {

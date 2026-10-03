@@ -365,3 +365,22 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "[ebp-0x254]"
 type = "int"
+
+# ---- 0.3.0 leader instant (doc 08 "U5"): GetControlledObject 0x73F450 call in portrait refresh 0x74EE90; the engine compares the result's +4 with
+# the slot's object id (0x74F449) and shows the indicator for the controlled leader instead of AutoLevelup(1). The handler calls 0x73F450 itself and
+# returns a dummy object (id 0x7F000000) for a configured instant, not-held creature ([ebp-0x38]) -> the leader auto-levels like any companion.
+[[hooks]]
+address = 0x0074F423
+type = "detour"
+function = "LuoLeaderInstant_74F423"
+original_bytes = [0xE8, 0x28, 0x00, 0xFF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"

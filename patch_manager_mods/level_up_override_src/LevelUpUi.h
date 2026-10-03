@@ -13,7 +13,7 @@
 // guikit::clickEdge adds the foreground-window check (the same two conditions Mod 14's tickInput 969-973 uses: its tick + GetForegroundWindow).
 // Layout units are the 800x600 GUI units of character_p.gui; Mod 14's panel is x 536-752, ours stays within x 54..456 (options page 54..300).
 
-#include "OptionsLogic.h"   // no-op when LevelUpOverride.cpp already included it at file scope (pragma once); pure inline, safe in the anon namespace
+#include "OptionsLogic.h"   // also included at file scope by LevelUpOverride.cpp (pragma once -> no-op here)
 
 // ---- pure text builders (unit-tested) -----------------------------------------------------------------------------------
 // R11 status line. false = hidden (PC / not configurable, or unconfigured). held: "Holding N level(s) for <Jedi class> - <short>"

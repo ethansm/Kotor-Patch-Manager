@@ -34,6 +34,9 @@ static int fakeCharChange(void*) { ++g_fakeCalls; return g_ccRet; }
 static void* fakeTableGet(void* ecx) { ++g_fakeCalls; g_lastTableEcx = ecx; return reinterpret_cast<void*>(0x1000F000); }
 static void* fakePartyGet(void* party, int idx) { ++g_fakeCalls; return party == reinterpret_cast<void*>(0x1000F000) && idx == 0 ? reinterpret_cast<void*>(0x1000F100) : nullptr; }
 static void* fakeGetCreature(void*) { ++g_fakeCalls; return g_creatureRet; }
+static uint32_t g_ctlObj[4] = {0, 0x00001234u, 0, 0};
+static void* g_ctlEcx = nullptr;
+static void* fakeControlled(void* ecx) { ++g_fakeCalls; g_ctlEcx = ecx; return g_ctlObj; }
 
 // ---- fake globals table (M3): values keyed by (table, upper-case-agnostic name) ----
 static std::map<std::pair<void*, std::string>, int> g_vars;
@@ -107,6 +110,7 @@ int main(int argc, char** argv) {
     g_eng.checkCode = false;
     g_eng.canLevelUp = reinterpret_cast<uintptr_t>(&fakeCanLevelUp);
     g_eng.optAccessor = reinterpret_cast<uintptr_t>(&fakeAccessor);
+    g_eng.controlled = reinterpret_cast<uintptr_t>(&fakeControlled);
     g_eng.charChange = reinterpret_cast<uintptr_t>(&fakeCharChange);
     g_eng.tableGet = reinterpret_cast<uintptr_t>(&fakeTableGet);
     g_eng.partyGet = reinterpret_cast<uintptr_t>(&fakePartyGet);
@@ -232,6 +236,32 @@ int main(int argc, char** argv) {
     snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\ninstant.atton=0", PRESET);
     setIni(ini, table);
     CHECK(LuoInstant_74F3E9(P(1), P(ebp)) == g_optPtr, "instant=0 -> original pointer");
+
+    // 7b. leader instant 0x74F423: dummy controlled object only for a configured instant, not-held creature in rewrite mode
+    {
+        void* const real = g_ctlObj;
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=1", PRESET);
+        setIni(ini, table); clearLog();
+        memset(P(frame), 0, 0x200);
+        *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)onPath.creature;
+        void* r = LuoLeaderInstant_74F423(P(0x5678), P(ebp));
+        CHECK(r && r != real && static_cast<const uint32_t*>(r)[1] == 0x7F000000u && g_ctlEcx == P(0x5678), "leader instant: dummy object with a non-matching id, real call made with ecx");
+        LuoLeaderInstant_74F423(P(0x5678), P(ebp));
+        { std::string l = readLog(); size_t n = 0, q = 0; while ((q = l.find("INSTANT-LEADER tag=atton key=6", q)) != std::string::npos) { ++n; ++q; } CHECK(n == 1, "INSTANT-LEADER logged %zu times (want once)", n); }
+        *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)heldAtton.creature;
+        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: held -> real object");
+        *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)pc.creature;
+        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: PC -> real object");
+        *reinterpret_cast<uint32_t*>(ebp - 0x38) = 0x20;
+        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: unreadable creature -> real object");
+        *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)onPath.creature;
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\ninstant.atton=0", PRESET);
+        setIni(ini, table);
+        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: instant=0 -> real object");
+        snprintf(ini, sizeof ini, "mode=log\npreset.atton=%s\ninstant.atton=1", PRESET);
+        setIni(ini, table);
+        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: log mode -> real object");
+    }
 
     // 8. GUI guards + Auto OK backstop
     snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1", PRESET);
