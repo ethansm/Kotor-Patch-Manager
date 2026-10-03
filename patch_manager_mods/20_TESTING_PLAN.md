@@ -147,7 +147,7 @@ Priority comes from the audit: complexity × crash risk × churn. Unit counts ar
 
 ### High
 1. **BuffDurationHUD** (0 tests, 46 commits, per-frame engine writes, 21 raw addresses).
-   - **10-03 status:** F7 fix DONE (`bh::appendf` + `buff_hud_logic_test`, `abc01d8`; call sites in the buff/shield split session's W2 commit). T1 extraction ON HOLD until that session's W3/W4 split lands: shield + gauges move to `shield_bar_src/`, expiry is `k2fx` in `_shared_src/Effects.h`; arrow counters + columns stay ours for `BuffHudLogic.h`.
+   - **10-03 status:** F7 fix DONE (`bh::appendf` + `buff_hud_logic_test`, `abc01d8`; call sites in the buff/shield split session's W2 commit). T1 DONE after the split (`ce37f3e`, BuffDurationHUD 2.0.0): arrow counters + column geometry in `BuffHudLogic.h`, `buff_hud_logic_test` 64302 checks (differential 0 mismatches). Shield + gauges live in `shield_bar_src/` (`ShieldLogic.h`, `shield_logic_test`, owned by the split session; its `sb::appendf` drift-guards against `bh::appendf`); expiry is `k2fx` in `_shared_src/Effects.h`.
    - First, fix the `ICONCACHE` `snprintf` overrun: clamp `len`, and add a test that feeds 6 maximum-width entries.
    - Extract the counter and arrow logic (raw → tracked → counters, the companion-without-icons bump from bc34464), the duration formatting and the icon-table lookup into `BuffHudLogic.h`. T1 tests cover:
      - every counter transition in the 10-02 fix;
@@ -314,7 +314,7 @@ Rules that apply to every phase:
   - F10: parity stub 32-bit `RegionSize` ends at `UINTPTR_MAX` (`-m32` saferead_test: old hangs, new 55 checks).
   - F11: `wine:perflab` leak check asserts deltas.
   - New `scripts/build_check.py` (+14 tests): mod sources built like KPM `create-patch.py`, exports checked. Opt-in tier: `run_tests.py --build` (also run by `--wine`).
-- 10-03: **Phase 3 partial.** EquipCharPreview T1 (`1d0ccab`), T0 extras raw addresses + subclassers (`670905a`). BuffDurationHUD T1 on hold (see §5 High #1). Hotbar Phase T stays with the hotbar session.
+- 10-03: **Phase 3 partial.** EquipCharPreview T1 (`1d0ccab`), T0 extras raw addresses + subclassers (`670905a`). BuffDurationHUD T1 (`ce37f3e`, after the split's W4 `a193a08`). Hotbar Phase T stays with the hotbar session.
   - Level-up suites `levelup-scenarios` and `levelup-scenarios-m32` added as requested above; the forge test needed no suite after `fa6d4fc`.
   - Runner: default 53 items in ~16 s; `--wine` 83 items in 172 s; `--selftest` passes.
   - **Default tier is red at the moment, from other sessions' uncommitted work:** `check-hook-spans` (the portrait_slots_src split duplicates BuffHUD hooks mid-split) and `check-raw-addresses` (31 new addresses in RobustnessFixes.cpp WIP). Both owners have been told.
