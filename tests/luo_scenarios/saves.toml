@@ -164,7 +164,8 @@ xp = 36000
 [scenario.S9_g0t0_levelable]
 title = "G0-T0 in the party with XP for a level: options page shows the Variant row"
 source = "Game2"
-status = "unproven"
+# offline-only until a save with G0-T0 joined exists (Game2 has no availnpc for g0t0; the forge never synthesises creatures)
+status = "offline-only"
 v_items = [1]
 [scenario.S9_g0t0_levelable.save]
 [[scenario.S9_g0t0_levelable.save.creature]]
@@ -189,7 +190,7 @@ companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 absent = ['DECIDE tag=\? ', 'INSTANT(-LEADER)? tag=\? ']
 
 [scenario.S11_multi_levelable]
-title = "Three companions with banked XP at once: per-companion status/banked text"
+title = "Three companions with banked XP at once (atton, kreia, t3m4): per-companion status/banked text"
 source = "Game2"
 status = "unproven"
 v_items = [3]
@@ -204,7 +205,7 @@ tag = "kreia"
 xp = 105000
 in_party = true
 [[scenario.S11_multi_levelable.save.creature]]
-tag = "baodur"
+tag = "t3m4"
 xp = 105000
 [scenario.S11_multi_levelable.config]
 playthrough_guid = "save"
