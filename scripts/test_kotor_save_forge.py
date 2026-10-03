@@ -14,6 +14,15 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+try:
+    import pykotor  # noqa: F401
+except ImportError:  # scripts/run_tests.py runs test_*.py with the system python: re-run under the repo venv (pykotor lives there)
+    _venv = Path(__file__).resolve().parent.parent / ".venv" / "bin" / "python3"
+    if _venv.exists() and Path(sys.executable).resolve() != _venv.resolve():
+        os.execv(str(_venv), [str(_venv), __file__] + sys.argv[1:])
+    print("SKIP: pykotor not importable and no repo .venv")
+    sys.exit(0)
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kotor_save_forge as F  # noqa: E402
 from pykotor.resource.formats.erf import read_erf  # noqa: E402

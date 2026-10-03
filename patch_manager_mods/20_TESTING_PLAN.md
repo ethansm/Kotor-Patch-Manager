@@ -303,4 +303,4 @@ Rules that apply to every phase:
   `research/companion_levelup/tools/parity/scenarios.py` (`scenario_test.cpp`, host + `--m32`, 0481b70). Forced-state testing (forged saves,
   ini switcher, log checker) is doc 21 `21_FORCED_STATE_TESTING.md`. Proposed suites.toml entries for the owner:
   `{name = "levelup-scenarios", cmd = ["python", "research/companion_levelup/tools/parity/scenarios.py"], requires = ["which:g++"]}` and the same
-  with `"--m32"`; `scripts/test_kotor_save_forge.py` needs `python = "venv"` (auto-discovered under the system python it would fail on the pykotor import).
+  with `"--m32"`; `scripts/test_kotor_save_forge.py` re-execs itself under `.venv` when pykotor is missing (auto-discovery works).
