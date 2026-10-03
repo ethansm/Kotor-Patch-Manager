@@ -61,6 +61,26 @@ def ln_cases(recs, presets):
     return out
 
 
+def ln_early_cases(recs, presets):
+    """B2: explicit early-conversion cases. For every preset with hold_class != 0: the story converts the companion after L base-class levels, L from
+    the utc start level (first record's class level - 1, min 1) up to convert_at-1; then EVERY Jedi class level j = 0..(30-L-1) up to character
+    level 30 (state [(base, L), (hold_class, j)], key = L + j + 1), hold on and off. The B2 script (phase6_evidence/B2_rebase_check.py) proves the properties."""
+    out = []
+    for pid, lv in recs.items():
+        hc = presets[pid].hold_class if pid in presets else 0
+        if not lv or not hc:
+            continue
+        base = lv[min(lv)].cls
+        conv = min([cl for cl, r in lv.items() if r.cls != base] or [0])
+        if not conv:
+            continue
+        for L in range(max(1, lv[min(lv)].clvl - 1), conv):
+            for j in range(0, 30 - L):
+                for hold in (True, False):
+                    out.append((pid, L + j + 1, hold, [(base, L), (hc, j)]))
+    return out
+
+
 def main():
     build(EXE, "parity_main.cpp")
     build(APPLY_EXE, "apply_test.cpp")
@@ -109,6 +129,20 @@ def main():
     print("levelNow cases", len(lcases), "cpp lines", len(lcpp), "mismatches", len(lbad), "decisions", decs)
     for x, y, c in lbad[:5]:
         print(" C++:", x, " Py:", y, " case:", c)
+    # B2: explicit early-conversion levelNow cases (every preset with a hold class, every conversion level, every Jedi level to char 30)
+    ecases = ln_early_cases(recs, presets)
+    etext = "\n".join("L %s %d %d %d %s" % (pid, key, int(hold), len(cl), ",".join("%d:%d" % c for c in cl)) for pid, key, hold, cl in ecases) + "\n"
+    ecpp = subprocess.run([EXE, INI], input=etext, capture_output=True, text=True, check=True).stdout.splitlines()
+    epy = []
+    edecs = {}
+    for pid, key, hold, cl in ecases:
+        d, c, _ = S.level_now(cl, recs[pid], key, hold, presets[pid].hold_class)
+        epy.append("%s %s" % (d, "-" if c is None else c))
+        edecs[d] = edecs.get(d, 0) + 1
+    ebad = [(x, y, c) for x, y, c in zip(ecpp, epy, ecases) if x != y]
+    print("levelNow early-conversion cases", len(ecases), "cpp lines", len(ecpp), "mismatches", len(ebad), "decisions", edecs)
+    for x, y, c in ebad[:5]:
+        print(" C++:", x, " Py:", y, " case:", c)
     # applyRewrite on fake engine pending structs, same cases (apply_test.cpp)
     ap = subprocess.run([APPLY_EXE, INI], input=text, capture_output=True, text=True)
     print(ap.stdout.strip())
@@ -129,7 +163,7 @@ def main():
     print(ui.stdout.strip())
     if ui.stderr:
         print(ui.stderr[:4000])
-    sys.exit(1 if bad or lbad or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
+    sys.exit(1 if bad or lbad or ebad or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
 
 
 if __name__ == "__main__":
