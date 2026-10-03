@@ -1028,3 +1028,10 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   GetCharacterChangeInProgress are both CClientExoApp thiscalls. F5 (multi-level XP across pause/convert -> HOLD_MIDLOOP engine picks) and
   F10 (table over-cap drops all holds) remain documented RISKs (not fixed).
 - Running: A3 mutate.py (>= 25 mutations, scratch copies), B5 pause trade-off report. Then A6: build 1.0.0 + independent review + install with consent.
+- B5 DONE (`phase6_evidence/B5_pause_tradeoffs.{py,md}`): pausing early trades base-class levels (feats/skills, e.g. Atton Sneak Attack + TWF)
+  for extra Jedi levels at the END that have no planned picks (Jedi records stop at class level 31 - convert_at -> VANILLA engine picks); 14
+  presets start Jedi (pause n/a). Re-surfaced the B2 advisory: early conversion applies Jedi picks without prerequisites (94 feat rows) or below
+  min level (235 power / 15 feat rows) - the rewrite does not check prereqs.
+- **User decision 2026-10-03: carry-over fix before 1.0.0** - stateless "owed picks": each slot takes the earliest planned-but-missing pick that is
+  legal now; a missing prerequisite is taken first, too-early powers wait. Prototype running (new files `phase6_evidence/CO_carryover_*`), then
+  port to simulate_rewrite + gen_runtime_table + C++ after the A3 mutation run (which copies the sources). 1.0.0 build waits for it.
