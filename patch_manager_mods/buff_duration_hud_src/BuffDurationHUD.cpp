@@ -16,21 +16,24 @@
 #include <stdarg.h>
 #include <math.h>
 
-#include "EffectIconTable.inc"
-#include "DebuffIconTable.inc"
 #include "ShieldTable.inc"
-#include "../_shared/SafeRead.h"   // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
+#include "BuffHudLogic.h"          // bh::appendf (bounded log formatting, audit 20a F7)
+#include "../_shared/SafeRead.h"    // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
+#include "../_shared/EffectIcons.h" // effect-list walk + decode (Effects.h) and the buff/debuff icon tables (doc 21 W2)
+#include "../_shared/Gui2D.h"       // 2D batch / clip / flush / image draw + CapGuard
+#include "../_shared/GuiKit.h"      // imageFor: one pooled engine image per resref
 
 namespace {
 
-// CGameEffect (non-virtual). +0x1c = spells.2da row of the spell/item ability that made it.
-constexpr int Effect_DurationOffset = 0xC;    // float, total seconds
-constexpr int Effect_ExpiryDayOffset = 0x10;  // int
-constexpr int Effect_ExpiryTimeOffset = 0x14; // int, ms of day
-constexpr int Effect_SpellIdOffset = 0x1c;
-// creature (CSWSObject) active-effect list
-constexpr int Creature_EffectArrayOffset = 0x148; // CGameEffect**
-constexpr int Creature_EffectCountOffset = 0x14c; // int
+using k2fx::Buff;
+using k2fx::collectBuffs;
+using k2fx::currentTime;
+using guikit::imageFor;
+using gui2d::CapGuard;
+constexpr int Effect_SpellIdOffset = k2fx::Effect_SpellId;
+constexpr int Creature_EffectArrayOffset = k2fx::Creature_EffectArray;
+constexpr int Creature_EffectCountOffset = k2fx::Creature_EffectCount;
+constexpr int MaxEffects = k2fx::MaxEffects;
 // The icon widget is a CSWGuiLabel with two embedded children: +0x60 CSWGuiBorder ("BORDER",
 // draws the arrow glyph as its fill image) and +0xd8 CSWGuiText (font text, unused here).
 // Verified by live memory dump: border vtable 009875bc, fill image at border+0x74 (what
@@ -40,19 +43,7 @@ constexpr int Border_WidthOffset = 0xc;
 constexpr int Border_HeightOffset = 0x10;
 constexpr int Border_FillImageOffset = 0x74;      // bound FILL image object (direct field)
 
-constexpr int WorldTimerSingletonGlobal = 0x00a1b4a4;
-constexpr int WorldTimerGetCurrentTime = 0x0051ad20; // thiscall(timer, int* day, uint* ms), RET 8
-constexpr int LoadFillResource = 0x0047eb60;         // cdecl(resref buf) -> CAurGUIImageInternal*
-constexpr int MsPerDay = 86400000;
-constexpr int MaxEffects = 512;
-constexpr int MaxPoolImages = 128;
-constexpr float MinWipeRatio = 0.0f;
 constexpr int CExoStringSprintf = 0x00734270;  // cdecl (CExoString* dst, const char* fmt, ...)
-constexpr int HudScaleFn = 0x00479ab0;        // cdecl, returns float in st0
-constexpr int FlushGuiBatch = 0x0047ea60;     // cdecl(float), flushes batched GUI quads
-constexpr int PushClipRect = 0x00479460;      // cdecl(x,y,w,h,color*,flag,float alpha) -> nonzero if pushed
-constexpr int PopClipRect = 0x004799c0;
-const void* const ClipNoFillColor = reinterpret_cast<const void*>(0x00a1ba3c); // what the row itself passes
 constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferred icon size / card width
 constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
 constexpr int MaxColumns = 3;
@@ -63,11 +54,6 @@ constexpr float DimAlpha = 0.35f;
 constexpr float BgAlpha = 0.80f;              // backing disc, full-strength part
 const float BgColor[3] = { 0.035f, 0.415f, 0.34f };  // the HUD border teal (sampled 9,106,87)
 const char* const CircleResref = "buffhud_circle";  // white disc TGA shipped in override/
-
-// spells.2da rows that are ITEM abilities (stims, shots, shields, cloak); force powers get no backing
-bool isItemAbility(int spell) {
-    return (spell >= 69 && spell <= 77) || (spell >= 99 && spell <= 108) || (spell >= 110 && spell <= 115) || spell == 129 || spell == 132 || spell == 257;
-}
 
 // ---- diagnostics: OFF by default. Create an empty "buffhud_debug.txt" in the game dir to turn
 // on buffhud_log.txt (capped, first-N + change-detected lines from the hooks below). ----
@@ -105,71 +91,6 @@ template <typename T> bool readAt(int base, int off, T* out) {
     return saferead::readAt(1, static_cast<uintptr_t>(base), off, out);
 }
 
-bool currentTime(int* day, int* ms) {
-    int g, a, b;
-    if (!readAt(WorldTimerSingletonGlobal, 0, &g) || !readAt(g, 8, &a) || !readAt(a, 4, &b)) return false;
-    int timer;                                  // FUN_0051c370: *(*(a+4)+0x10048)
-    if (!readAt(b, 0x10048, &timer) || timer == 0) return false;
-    using GetTime = void(__thiscall*)(void*, int*, int*);
-    reinterpret_cast<GetTime>(WorldTimerGetCurrentTime)(reinterpret_cast<void*>(timer), day, ms);
-    return true;
-}
-
-// One engine image object per icon resref, created lazily and never released: the
-// widget's own image is put back after every Draw, so the engine never sees ours.
-struct PoolEntry { char resref[17]; void* image; };
-PoolEntry g_pool[MaxPoolImages];
-int g_poolCount = 0;
-
-void* imageFor(const char* resref) {
-    for (int i = 0; i < g_poolCount; ++i)
-        if (strcmp(g_pool[i].resref, resref) == 0) return g_pool[i].image;
-    if (g_poolCount >= MaxPoolImages) return nullptr;
-    char buf[20] = {};                          // same shape FUN_00414840 builds: 16 chars + NUL
-    strncpy(buf, resref, 16);
-    void* image = reinterpret_cast<void*(__cdecl*)(const char*)>(LoadFillResource)(buf);
-    PoolEntry& e = g_pool[g_poolCount++];       // cache misses too (image may be null)
-    memset(&e, 0, sizeof(e));
-    strncpy(e.resref, resref, 16);
-    e.image = image;
-    return image;
-}
-
-struct Buff { const char* resref; float ratio; bool item; };
-
-// distinct tracked spell ids on the creature, in application order
-int collectBuffs(int creature, int day, int ms, bool haveTime, Buff* out, int maxOut, bool debuff = false) {
-    int arr = 0, count = 0;
-    if (!readAt(creature, Creature_EffectArrayOffset, &arr) || !readAt(creature, Creature_EffectCountOffset, &count)) return 0;
-    if (arr == 0 || count <= 0 || count > MaxEffects) return 0;
-    int seen[MaxEffects]; int nSeen = 0; int n = 0;
-    for (int i = 0; i < count && n < maxOut; ++i) {
-        int eff, spell;
-        if (!readAt(arr, i * 4, &eff) || !readAt(eff, Effect_SpellIdOffset, &spell)) continue;
-        const char* resref = nullptr; bool item = false;
-        if (spell >= 0 && spell < kEffectIconTableSize) {
-            if (debuff) { resref = kDebuffIcons[spell].resref; item = kDebuffIcons[spell].item; }
-            else { resref = kEffectIcons[spell]; item = isItemAbility(spell); }
-        }
-        if (!resref) continue;
-        bool dup = false;
-        for (int k = 0; k < nSeen; ++k) if (seen[k] == spell) { dup = true; break; }
-        if (dup) continue;
-        seen[nSeen++] = spell;
-        float ratio = 1.0f;
-        float duration; int eDay, eMs;
-        if (haveTime && readAt(eff, Effect_DurationOffset, &duration) && duration > 0.0f &&
-            readAt(eff, Effect_ExpiryDayOffset, &eDay) && readAt(eff, Effect_ExpiryTimeOffset, &eMs)) {
-            double remaining = double(eDay - day) * MsPerDay + double(eMs - ms);
-            ratio = float(remaining / (double(duration) * 1000.0));
-            if (ratio > 1.0f) ratio = 1.0f;
-            if (ratio < MinWipeRatio) ratio = MinWipeRatio;
-        }
-        out[n++] = { resref, ratio, item };
-    }
-    return n;
-}
-
 // state saved by hook 2 for hook 3
 struct Saved { bool active; int border; int origImage; int width; int height; } g_saved;
 
@@ -198,11 +119,11 @@ CreatureRec g_cr[ProbeMaxCreatures];
 void probeDump(int eff, char* out, int cap) {
     int len = 0;
     for (int row = 0; row < 12; ++row) {
-        len += snprintf(out + len, cap - len, "\n    +%02x:", row * 16);
+        len = bh::appendf(out, cap, len, "\n    +%02x:", row * 16);
         for (int k = 0; k < 16; ++k) {
             unsigned char b = 0;
-            if (!readAt(eff, row * 16 + k, &b)) { len += snprintf(out + len, cap - len, " .."); continue; }
-            len += snprintf(out + len, cap - len, " %02x", b);
+            if (!readAt(eff, row * 16 + k, &b)) { len = bh::appendf(out, cap, len, " .."); continue; }
+            len = bh::appendf(out, cap, len, " %02x", b);
         }
     }
 }
@@ -232,7 +153,7 @@ void probeEffects(int slotPtr, int creature) {
         if (!old) {
             if (cr->n >= ProbeMaxEff) continue;
             char dump[1400]; probeDump(eff, dump, sizeof(dump));
-            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, 0x34, &ip) && ip) { len += snprintf(dump + len, sizeof(dump) - len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len += snprintf(dump + len, sizeof(dump) - len, " %d", v); } } }
+            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, 0x34, &ip) && ip) { len = bh::appendf(dump, (int)sizeof(dump), len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len = bh::appendf(dump, (int)sizeof(dump), len, " %d", v); } } }
             probeLog("APPLY%s n34=%d c=%08x slot=%08x e=%08x type=0x%04x sub=0x%04x spell=%d creator=%08x dur=%.2f ints=[%d,%d,%d,%d,%d,%d,%d,%d]%s",
                      cr->primed ? "" : "(pre)", cur.n34, creature, slotPtr, eff, cur.type, cur.sub, cur.spell, cur.creator, cur.dur,
                      cur.ints[0], cur.ints[1], cur.ints[2], cur.ints[3], cur.ints[4], cur.ints[5], cur.ints[6], cur.ints[7], dump);
@@ -274,7 +195,6 @@ const char* const ShieldBarTexture = "uibit_bar_sh_p";     // curved outer-left,
 const char* const CornerTexture = "uibit_bar_sc_p";          // wedge that fills the card-frame corner notch (drawn on the health rect)
 const char* const HealthSquareTexture = "uibit_bar_vp_sq"; // health bar with a squared, outline-free left edge
 constexpr int Slot_VitBarOffset = 0x690, Bar_Border1Offset = 0x6c, Bar_Border2Offset = 0xe4, BorderVtable = 0x009875bc;
-constexpr int Eff_Pool = 0x02, Eff_Visual = 0x1e;
 #define HEX(r, g, b) { r / 255.0f, g / 255.0f, b / 255.0f }
 struct Pool { int eff; int remaining; int max; const float* rgb; };
 struct MaxRec { int creature, eff, max, stamp, lastLogged, spell, last; };
@@ -291,25 +211,13 @@ const float* shieldColor(int vfx, int damageFlags) {
 // type-0x02 sub&8 effects = shield pools (remaining = ints[2]); colour key = sibling type-0x1e ints[0]
 int collectPools(int creature, Pool* out, int maxOut) {
     int arr = 0, count = 0;
-    if (!readAt(creature, Creature_EffectArrayOffset, &arr) || !readAt(creature, Creature_EffectCountOffset, &count)) return 0;
-    if (arr == 0 || count <= 0 || count > MaxEffects) return 0;
+    if (!k2fx::effectListNonEmpty(creature, &arr, &count)) return 0;
     ++g_maxStamp;
+    k2fx::PoolRaw raw[16];
+    int nRaw = k2fx::scanShieldPools(creature, raw, maxOut < 16 ? maxOut : 16);
     int n = 0;
-    for (int i = 0; i < count && n < maxOut; ++i) {
-        int eff = 0; unsigned short type = 0, sub = 0;
-        if (!readAt(arr, i * 4, &eff) || !eff || !readAt(eff, 0x8, &type) || !readAt(eff, 0xa, &sub)) continue;
-        if (type != Eff_Pool || !(sub & 8)) continue;
-        int ip = 0, cnt = 0, spell = 0;
-        if (!readAt(eff, 0x30, &cnt) || cnt < 3 || !readAt(eff, 0x34, &ip) || !ip || !readAt(eff, Effect_SpellIdOffset, &spell)) continue;
-        int flags = 0, remaining = 0;
-        if (!readAt(ip, 0, &flags) || !readAt(ip, 8, &remaining) || remaining <= 0) continue;
-        int vfx = 0;
-        for (int k = 0; k < count; ++k) {
-            int e2 = 0; unsigned short t2 = 0; int sp2 = 0, ip2 = 0;
-            if (!readAt(arr, k * 4, &e2) || !e2 || !readAt(e2, 0x8, &t2) || t2 != Eff_Visual) continue;
-            if (!readAt(e2, Effect_SpellIdOffset, &sp2) || sp2 != spell || !readAt(e2, 0x34, &ip2) || !ip2) continue;
-            readAt(ip2, 0, &vfx); break;
-        }
+    for (int i = 0; i < nRaw; ++i) {
+        const int eff = raw[i].eff, spell = raw[i].spell, flags = raw[i].flags, remaining = raw[i].remaining, vfx = raw[i].vfx;
         MaxRec* m = nullptr; MaxRec* freeSlot = nullptr;
         for (auto& r : g_max) { if (r.creature == creature && r.eff == eff) { m = &r; break; } if (!freeSlot && r.stamp < g_maxStamp - 300) freeSlot = &r; }
         if (!m && freeSlot) { m = freeSlot; *m = { creature, eff, remaining, 0, -1, spell, remaining }; }
@@ -337,7 +245,7 @@ int describePools(int creature, char* out, int cap) {
     if (n <= 0) return 0;
     int len = snprintf(out, cap, "Shield: ");
     for (int i = 0; i < n && len > 0 && len < cap; ++i)
-        len += snprintf(out + len, cap - len, "%s%d/%d", i ? " + " : "", pools[i].remaining, pools[i].max);
+        len = bh::appendf(out, cap, len, "%s%d/%d", i ? " + " : "", pools[i].remaining, pools[i].max);
     return n;
 }
 
@@ -398,16 +306,13 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     int x = seamX - V, y = vy + inset;
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
     if (total < 1) return 0;
-    float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
-    auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
-    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
-    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
+    const float flushArg = gui2d::flushArg();
     auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
         (*reinterpret_cast<void***>(image))[6]);
-    flush(flushArg);
+    gui2d::flush(flushArg);
     // Everything is clipped to [x, seamX): the art's body now extends past its visible edge, so the right edge is pixel-exact on the seam
     // (a hard clip edge, no texture-filter fringe = no hairline between shield, corner wedge and health bar).
-    if (pushClip(x, y, V, H, ClipNoFillColor, 0, 1.0f)) { draw(image, 0, 0, W, H, 0, 0, TrackTint, 1.0f); popClip(); }   // empty track: the engine's neutral teal
+    if (gui2d::pushClip(x, y, V, H)) { draw(image, 0, 0, W, H, 0, 0, TrackTint, 1.0f); gui2d::popClip(); }   // empty track: the engine's neutral teal
     int baseUp = 0;                                            // px of bar height already used, from the bottom
     for (int i = 0; i < n; ++i) {
         int segH = int(double(H) * pools[i].max / total + 0.5);
@@ -419,7 +324,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
             if (noClip) {                                          // menu frames: the engine clip stack reads 0xFFFF there and pushClip
                 draw(image, x, y0, W, fillH, 0, 0, lit, 1.0f);     // misbehaves (black menu), so draw the art squashed to the fill height
             } else {
-            int pushed = pushClip(x, y0, V, fillH, ClipNoFillColor, 0, 1.0f);
+            int pushed = gui2d::pushClip(x, y0, V, fillH);
             { static int lastPush[8]; static int pushSlot[8]; static int nPush = 0;
               int pi = -1; for (int k = 0; k < nPush; ++k) if (pushSlot[k] == slotPtr) pi = k;
               if (pi < 0 && nPush < 8) { pi = nPush++; pushSlot[pi] = slotPtr; lastPush[pi] = -1; }
@@ -427,7 +332,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
               if (pi >= 0 && lastPush[pi] != psig) { lastPush[pi] = psig; probeLog("FILL slot=%08x seg=%d pushClip=%d rect=(%d,%d,%d,%d) vit=(%d,%d,%d,%d) n=%d", slotPtr, i, pushed, x, y0, W, fillH, vx, vy, vw, vh, n); } }
             if (pushed) {
                 draw(image, 0, -(y0 - y), W, H, 0, 0, lit, 1.0f);
-                popClip();
+                gui2d::popClip();
             }
             }
         }
@@ -448,12 +353,12 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
         if (noClip) cdraw(corner, vx, vy, vw, vh, 0, 0, bc, 1.0f);
         else {
             int half = vh / 2;
-            if (pushClip(vx, vy, vw, half, ClipNoFillColor, 0, 1.0f)) { cdraw(corner, 0, 0, vw, vh, 0, 0, tc, 1.0f); popClip(); }
-            if (pushClip(vx, vy + half, vw, vh - half, ClipNoFillColor, 0, 1.0f)) { cdraw(corner, 0, -half, vw, vh, 0, 0, bc, 1.0f); popClip(); }
+            if (gui2d::pushClip(vx, vy, vw, half)) { cdraw(corner, 0, 0, vw, vh, 0, 0, tc, 1.0f); gui2d::popClip(); }
+            if (gui2d::pushClip(vx, vy + half, vw, vh - half)) { cdraw(corner, 0, -half, vw, vh, 0, 0, bc, 1.0f); gui2d::popClip(); }
         }
     }
-    if (DrawSeam && !noClip && pushClip(seamX - dw, y, dw, H, SeamTint, 0, 0.85f)) popClip();
-    flush(flushArg);
+    if (DrawSeam && !noClip && gui2d::pushClip(seamX - dw, y, dw, H, SeamTint, 0.85f)) gui2d::popClip();
+    gui2d::flush(flushArg);
     return n;
 }
 
@@ -465,34 +370,14 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
 // before/after our draws for 4 frames (PRE/POST) and the scene brightness is sampled every 30 frames (SCENE dark=0/1). ----
 bool g_noDraw = false, g_noSwap = false, g_noBuff = false;
 bool fileExists(const char* n) { return GetFileAttributesA(n) != INVALID_FILE_ATTRIBUTES; }
-struct GlFns {
-    bool tried = false, ok = false;
-    int (WINAPI* getError)();
-    void (WINAPI* getIntegerv)(unsigned, int*);
-    void (WINAPI* getBooleanv)(unsigned, unsigned char*);
-    unsigned char (WINAPI* isEnabled)(unsigned);
-    void (WINAPI* readPixels)(int, int, int, int, unsigned, unsigned, void*);
-    void (WINAPI* enable)(unsigned);
-    void (WINAPI* disable)(unsigned);
-} g_gl;
-void glInit() {
-    if (g_gl.tried) return;
-    g_gl.tried = true;
-    HMODULE m = GetModuleHandleA("opengl32.dll");
-    if (!m) return;
-    g_gl.getError = reinterpret_cast<decltype(g_gl.getError)>(GetProcAddress(m, "glGetError"));
-    g_gl.getIntegerv = reinterpret_cast<decltype(g_gl.getIntegerv)>(GetProcAddress(m, "glGetIntegerv"));
-    g_gl.getBooleanv = reinterpret_cast<decltype(g_gl.getBooleanv)>(GetProcAddress(m, "glGetBooleanv"));
-    g_gl.isEnabled = reinterpret_cast<decltype(g_gl.isEnabled)>(GetProcAddress(m, "glIsEnabled"));
-    g_gl.readPixels = reinterpret_cast<decltype(g_gl.readPixels)>(GetProcAddress(m, "glReadPixels"));
-    g_gl.enable = reinterpret_cast<decltype(g_gl.enable)>(GetProcAddress(m, "glEnable"));
-    g_gl.disable = reinterpret_cast<decltype(g_gl.disable)>(GetProcAddress(m, "glDisable"));
-    g_gl.ok = g_gl.getError && g_gl.getIntegerv && g_gl.getBooleanv && g_gl.isEnabled;
-    probeLog("GLINIT ok=%d readPixels=%d enable/disable=%d", g_gl.ok, g_gl.readPixels != nullptr, g_gl.enable && g_gl.disable);
+// GL function table + CapGuard live in Gui2D.h; GLINIT / CAPFIX lines come back through gui2d::g_hooks (set in DllMain).
+void onGlInit(const gui2d::GlFns& g) {
+    probeLog("GLINIT ok=%d readPixels=%d enable/disable=%d", g.ok, g.readPixels != nullptr, g.enable && g.disable);
 }
+void onCapFix(unsigned cap, int was, int now) { probeLog("CAPFIX cap=%x was=%d now=%d -> restored", cap, was, now); }
 void glDump(const char* tag) {
     if (!g_probe) return;
-    glInit();
+    const gui2d::GlFns& g_gl = gui2d::gl();
     if (!g_gl.ok) return;
     int vp[4] = {}, sc[4] = {}, prog = 0, fbo = 0, tex = 0, mm = 0, mvd = 0, prd = 0, bsrc = 0, bdst = 0, drawbuf = 0;
     unsigned char dm = 0, cm[4] = {};
@@ -501,7 +386,7 @@ void glDump(const char* tag) {
     g_gl.getIntegerv(0x0BA0, &mm); g_gl.getIntegerv(0x0BA3, &mvd); g_gl.getIntegerv(0x0BA4, &prd);
     g_gl.getIntegerv(0x0BE1, &bsrc); g_gl.getIntegerv(0x0BE0, &bdst); g_gl.getIntegerv(0x0C01, &drawbuf);
     g_gl.getBooleanv(0x0B72, &dm); g_gl.getBooleanv(0x0C23, cm);
-    int clipDepth = 0; readAt(0x00a309c0, 0, &clipDepth);
+    int clipDepth = gui2d::clipDepthRaw();
     probeLog("GL %s vp=(%d,%d,%d,%d) scissor=(%d,%d,%d,%d) en[scis=%d sten=%d depth=%d light=%d blend=%d fog=%d tex2d=%d cull=%d alpha=%d vprog=%d fprog=%d] depthmask=%d colormask=%d%d%d%d prog=%d fbo=%d tex=%d drawbuf=%x blend=%x/%x mm=%x mvdepth=%d prdepth=%d clipDepth=%d",
              tag, vp[0], vp[1], vp[2], vp[3], sc[0], sc[1], sc[2], sc[3],
              g_gl.isEnabled(0x0C11), g_gl.isEnabled(0x0B90), g_gl.isEnabled(0x0B71), g_gl.isEnabled(0x0B50), g_gl.isEnabled(0x0BE2),
@@ -511,7 +396,7 @@ void glDump(const char* tag) {
 }
 // average brightness (0..255) of a 5x5 grid over the 3D scene area; -1 when unavailable
 int sceneBrightness() {
-    glInit();
+    const gui2d::GlFns& g_gl = gui2d::gl();
     if (!g_gl.readPixels) return -1;
     int w = 0, h = 0; readAt(0x009f42a4, 0, &w); readAt(0x009f42a8, 0, &h);
     if (w < 100 || h < 100) return -1;
@@ -525,30 +410,6 @@ int sceneBrightness() {
     return int(sum / (3 * cnt));
 }
 
-// Our GUI draws leave GL_LIGHTING enabled (probe 02:34: PRE light=0 -> POST light=1; the engine's colour-fill clip / batch flush
-// toggle it). Snapshot the on/off capabilities before our draws and put them back afterwards, every frame, probe flag or not.
-struct CapGuard {
-    static constexpr unsigned Caps[9] = { 0x0C11, 0x0B90, 0x0B71, 0x0B50, 0x0BE2, 0x0B60, 0x0DE1, 0x0B44, 0x0BC0 };
-    unsigned char before[9] = {}; bool armed = false;
-    CapGuard() {
-        glInit();
-        if (!g_gl.ok || !g_gl.enable || !g_gl.disable) return;
-        for (int i = 0; i < 9; ++i) before[i] = g_gl.isEnabled(Caps[i]);
-        armed = true;
-    }
-    ~CapGuard() {
-        if (!armed) return;
-        for (int i = 0; i < 9; ++i) {
-            unsigned char now = g_gl.isEnabled(Caps[i]);
-            if (now != before[i]) {
-                static int logged = 0;
-                if (logged < 20) { ++logged; probeLog("CAPFIX cap=%x was=%d now=%d -> restored", Caps[i], before[i], now); }
-                (before[i] ? g_gl.enable : g_gl.disable)(Caps[i]);
-            }
-        }
-    }
-};
-constexpr unsigned CapGuard::Caps[9];
 } // namespace
 
 extern "C" {
@@ -615,8 +476,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     int nOther = collectBuffs(creature, day, ms, haveTime, other, 16, !debuff);
     int nSize = n > nOther ? n : nOther;        // both columns share one icon size
 
-    float scale = 1.0f;
-    { float s = reinterpret_cast<float(__cdecl*)()>(HudScaleFn)(); if (s > 0.1f && s < 10.0f) scale = s; }
+    float scale = gui2d::hudScale();
     int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
     // preferred size (smaller on the little companion cards so the face stays visible), then
     // shrink so all n fit down the column; below MinIconSize add another column instead.
@@ -653,16 +513,13 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     int rotBits = 0; if (border) readAt(border, 0x20, &rotBits);
     const float* color = border ? reinterpret_cast<const float*>(border + 0x28) : whiteTint;
     float baseAlpha = 1.0f; if (border) readAt(border, 0x24, &baseAlpha);
-    float flushArg = 0.0f; readAt(0x009f5f60, 0, &flushArg);
-    auto flush = reinterpret_cast<void(__cdecl*)(float)>(FlushGuiBatch);
-    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
-    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
+    const float flushArg = gui2d::flushArg();
 
     auto draw2 = [&](void* img, int x, int y, int w, int h, const float* tint, float alpha) {
         reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
             (*reinterpret_cast<void***>(img))[6])(img, x, y, w, h, 0, rotBits, tint, alpha);
     };
-    flush(flushArg);
+    gui2d::flush(flushArg);
     for (int i = 0; i < drawN; ++i) {
         void* image = imageFor(buffs[i].resref);
         if (!image) { if (logIt) logf("  icon[%d] %s: no image", i, buffs[i].resref); continue; }
@@ -680,11 +537,11 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
         draw(image, ix, iy, size, size, 0, rotBits, color, baseAlpha * DimAlpha);
         if (bright > 0) {                                                               // remaining part, bottom-anchored
             int y0 = iy + size - bright;
-            int ok = pushClip(ix, y0, size, bright, ClipNoFillColor, 0, 1.0f);
+            int ok = gui2d::pushClip(ix, y0, size, bright);
             if (ok) {
                 if (disc) draw2(disc, 0, -(size - bright), size, size, BgColor, BgAlpha);
                 draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
-                popClip();
+                gui2d::popClip();
                 if (disc && bright < size) {                                                     // 1px boundary line (round item icons only)
                     int lx = ix, lw = size;
                     if (disc) {                                     // item icons: only inside the round backing
@@ -693,12 +550,12 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
                         lw = chord2 > 0.0f ? int(2.0f * sqrtf(chord2) + 0.5f) : 0;
                         lx = ix + (size - lw) / 2;
                     }
-                    if (lw > 0 && pushClip(lx, y0, lw, 1, LineColor, 0, LineAlpha)) popClip();
+                    if (lw > 0 && gui2d::pushClip(lx, y0, lw, 1, LineColor, LineAlpha)) gui2d::popClip();
                 }
             } else if (logIt) logf("  icon[%d] clip push refused", i);
         }
     }
-    flush(flushArg);
+    gui2d::flush(flushArg);
 }
 
 void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
@@ -768,7 +625,7 @@ void ForceArrowCounters(int slotPtr) {
                 int e = 0; short id = 0; int f14 = 0, f1c = 0;
                 if (!readAt(cacheData, k * 4, &e) || !e) continue;
                 readAt(e, 0, &id); readAt(e, 0x14, &f14); readAt(e, 0x1c, &f1c);
-                len += snprintf(ent + len, sizeof(ent) - len, " [%d id=%d f14=%d f1c=%d]", k, id, f14, f1c);
+                len = bh::appendf(ent, (int)sizeof(ent), len, " [%d id=%d f14=%d f1c=%d]", k, id, f14, f1c);
             }
             probeLog("ICONCACHE slot=%08x creature=%08x count=%d%s", slotPtr, creature, cacheCount, ent);
         }
@@ -783,7 +640,6 @@ void ForceArrowCounters(int slotPtr) {
 // The selected creature = caller's local [callerEbp-0x38] (= FUN_0077d800(handle), the object the HUD also uses; [-0x28] is the handle).
 // Companions = roster positions 1 and 2 (the menu sets LBL_CHAR2/3 portraits from FUN_007e5da0(roster, 1/2)).
 constexpr int Menu_SlotOffset = 0x2350, Menu_Char2Offset = 0x3134, Menu_Char3Offset = 0x36DC;
-constexpr int BeginGui2D = 0x004792c0, EndGui2D = 0x004793f0, PanelRectFn = 0x00410020;
 constexpr int RosterAccessor = 0x0073fb90, RosterMember = 0x007e5da0, MemberCreature = 0x0077d800;
 
 int rosterCreature(int idx) {
@@ -831,11 +687,9 @@ void drawGauge(const char* texture, int x, int y, int w, int h, const float* fil
     if (cur < 0) cur = 0; if (cur > mx) cur = mx;
     auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>((*reinterpret_cast<void***>(img))[6]);
     if (mx < 1) { draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f); return; }     // no Force (droid): empty teal track, as the active portrait shows
-    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
-    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
     draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f);
     int fh = int(double(h) * cur / mx + 0.5), y0 = y + h - fh;
-    if (fh > 0 && pushClip(x, y0, w, fh, ClipNoFillColor, 0, 1.0f)) { draw(img, 0, -(y0 - y), w, h, 0, 0, fill, 1.0f); popClip(); }
+    if (fh > 0 && gui2d::pushClip(x, y0, w, fh)) { draw(img, 0, -(y0 - y), w, h, 0, 0, fill, 1.0f); gui2d::popClip(); }
 }
 
 // Spread the two companion portrait groups apart (runtime write of the controls' x, so no .gui edit and the hit areas move too).
@@ -874,14 +728,12 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
     static int lastSig = -1; int sig = slotPtr ^ creature ^ (pools << 28) ^ v[0] ^ (v[1] << 4) ^ (v[2] << 8) ^ (v[3] << 12) ^ comp[0] ^ (comp[1] << 3);
     if (sig != lastSig) { lastSig = sig; probeLog("MENUSLOT slot=%08x callerEbp=%08x creature=%08x pools=%d vit=(%d,%d,%d,%d) companions=%08x,%08x", slotPtr, callerEbp, creature, pools, v[0], v[1], v[2], v[3], comp[0], comp[1]); }
     int pr[4] = {};
-    reinterpret_cast<void(__thiscall*)(int, int*)>(PanelRectFn)(panel, pr);
+    gui2d::g_g2d.panelRect(panel, pr);
     if (pr[2] < 1 || pr[3] < 1 || pr[2] > 8192 || pr[3] > 8192) { probeLog("MENUDRAW bad panel rect %d,%d,%d,%d", pr[0], pr[1], pr[2], pr[3]); return; }
     CapGuard capGuard;
-    auto pushClip = reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(PushClipRect);
-    auto popClip = reinterpret_cast<void(__cdecl*)()>(PopClipRect);
-    reinterpret_cast<void(__cdecl*)()>(BeginGui2D)();
+    gui2d::g_g2d.begin();
     int shown = 0, cols = 0;
-    if (pushClip(pr[0], pr[1], pr[2], pr[3], ClipNoFillColor, 0, 1.0f)) {
+    if (gui2d::pushClip(pr[0], pr[1], pr[2], pr[3])) {
         if (pools > 0) shown = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, false);
         if (g_probe) { int q[2][4] = {}; for (int k = 0; k < 2; ++k) for (int i = 0; i < 4; ++i) readAt(panel + (k ? Menu_Char3Offset : Menu_Char2Offset), 4 + 4 * i, &q[k][i]);
             static int lastQ = -1; int sq = q[0][0] * 3 ^ q[1][0] * 7 ^ q[0][1] ^ q[1][2];
@@ -908,15 +760,15 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
               }
             }
             if (g_noBuff) continue;
-            if (pushClip(r[0], r[1], r[2], r[3], ClipNoFillColor, 0, 1.0f)) {
+            if (gui2d::pushClip(r[0], r[1], r[2], r[3])) {
                 drawColumnCore(ctrl, comp[k], 0, 0, 1, r[2], r[3]);     // buffs: left edge
                 drawColumnCore(ctrl, comp[k], 0, 0, 0, r[2], r[3]);     // debuffs: right edge
-                popClip(); ++cols;
+                gui2d::popClip(); ++cols;
             }
         }
-        popClip();
+        gui2d::popClip();
     }
-    reinterpret_cast<void(__cdecl*)()>(EndGui2D)();
+    gui2d::g_g2d.end();
     static int lastShown = -2, lastCols = -2;
     if (shown != lastShown || cols != lastCols) { lastShown = shown; lastCols = cols; probeLog("MENUDRAW panel=(%d,%d,%d,%d) bar=%d companionPortraits=%d", pr[0], pr[1], pr[2], pr[3], shown, cols); }
 }
@@ -926,7 +778,7 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
 // after the panel controls drew and independent of the engine's arrow counts.
 void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
-    { int cd = 0; readAt(0x00a309c0, 0, &cd);                       // menu frame: map the menu portrait slot to its creature so the Buff HUD
+    { int cd = gui2d::clipDepthRaw();                       // menu frame: map the menu portrait slot to its creature so the Buff HUD
       if ((cd & 0xffff) != 0 && isLarge) {                             // hooks (which run later in 0x745770) and the arrow-counter bump know it
           int c = 0; readAt(callerEbp, -0x38, &c);
           int cnt = 0, arr = 0;
@@ -972,8 +824,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
             }
         }
     }
-    float scale = 1.0f;
-    { float s = reinterpret_cast<float(__cdecl*)()>(HudScaleFn)(); if (s > 0.1f && s < 10.0f) scale = s; }
+    float scale = gui2d::hudScale();
     int sig = slotPtr ^ creature ^ flags ^ isLarge ^ (vit[0] * 3) ^ (vit[1] * 5) ^ (vit[2] * 7) ^ (vit[3] * 11) ^ (force[0] * 13) ^ (card[0] * 17) ^ (card[2] * 19) ^ int(scale * 100);
     static int lastSig[8]; static int sigSlot[8]; static int nSig = 0;
     int si = -1; for (int k = 0; k < nSig; ++k) if (sigSlot[k] == slotPtr) si = k;
@@ -990,7 +841,7 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     if (!isLarge) return;
     // Menu frames (settings etc.): the engine's GUI clip stack reads 0xFFFF and the 3D viewport is 0x0 (probe 02:34 logs). The HUD
     // hook still runs there; drawing then produced a black bar. Only draw in the normal HUD state (clip stack empty).
-    { int cd = 0; readAt(0x00a309c0, 0, &cd); bool menu = (cd & 0xffff) != 0;
+    { int cd = gui2d::clipDepthRaw(); bool menu = (cd & 0xffff) != 0;
       static bool lastMenu = false;
       if (menu != lastMenu) { lastMenu = menu; probeLog("MENUSTATE skip=%d clipDepth=%x", menu, cd); }
       if (menu) { if (!g_noDraw) DrawMenuOverlay(slotPtr, callerEbp, scale); return; } }
@@ -1049,6 +900,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_debugLog = GetFileAttributesA("buffhud_debug.txt") != INVALID_FILE_ATTRIBUTES;
         g_probe = GetFileAttributesA("shieldprobe.txt") != INVALID_FILE_ATTRIBUTES;
         saferead::enableRing(g_probe);
+        gui2d::g_hooks.onGlInit = onGlInit;
+        gui2d::g_hooks.onCapFix = onCapFix;
         logf("buffhud loaded");
     }
     return TRUE;

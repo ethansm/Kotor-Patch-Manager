@@ -1,4 +1,4 @@
-"""Generate Patches/BuffDurationHUD/EffectIconTable.inc from the live spells.2da.
+"""Generate patch_manager_mods/_shared_src/EffectIconTable.inc from the live spells.2da. (shared via Patches/Common; was Patches/BuffDurationHUD)
 
 Usage: gen_buff_hud_icon_table.py <spells.2da> <texture-name-list.txt> <out.inc>
 Buff rows = non-hostile rows (forcehostile empty, hostilesetting 0/empty) with an

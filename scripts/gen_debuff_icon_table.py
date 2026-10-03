@@ -1,4 +1,4 @@
-"""Generate Patches/BuffDurationHUD/DebuffIconTable.inc (negative-effect icons).
+"""Generate patch_manager_mods/_shared_src/DebuffIconTable.inc (negative-effect icons). (shared via Patches/Common; was Patches/BuffDurationHUD)
 
 Usage: gen_debuff_icon_table.py <game dir> <out.inc>
 Hostile spells.2da rows (forcehostile set or hostilesetting 1) with an iconresref use it

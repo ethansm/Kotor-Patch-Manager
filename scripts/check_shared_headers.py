@@ -40,7 +40,8 @@ def main() -> int:
     if not common.is_dir():
         print(f"ERROR: framework Common dir not found: {common} (set KPM_DIR)")
         return 2
-    headers = sorted(CANONICAL.glob("*.h"))
+    # .inc = generated tables included by a shared header (EffectIcons.h -> EffectIconTable.inc / DebuffIconTable.inc)
+    headers = sorted(list(CANONICAL.glob("*.h")) + list(CANONICAL.glob("*.inc")))
     drift = 0
     for src in headers:
         want = src.read_bytes()
@@ -61,7 +62,7 @@ def main() -> int:
             if other.is_file() and other.read_bytes() != want:
                 print(f"WARN    foreign   {other} differs (owner syncs it)")
     # Headers that exist only in the framework would be edited where nobody looks.
-    for path in sorted(shims.glob("*.h")):
+    for path in sorted(list(shims.glob("*.h")) + list(shims.glob("*.inc"))):
         if not (CANONICAL / path.name).is_file():
             drift += 1
             print(f"DRIFT   orphan    {path} has no canonical copy in {CANONICAL}")

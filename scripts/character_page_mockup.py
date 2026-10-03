@@ -37,6 +37,7 @@ from pykotor.resource.type import ResourceType
 GAME = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II"
 REPO = Path(__file__).resolve().parent.parent
 BUFF_SRC = REPO / "patch_manager_mods/buff_duration_hud_src"
+SHARED_SRC = REPO / "patch_manager_mods/_shared_src"   # icon tables moved here (doc 21 W2)
 NAME_TABLE = Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/EffectNameTable.inc"
 W, H = 3840, 1600
 SX, SY = W / 800, H / 600
@@ -306,10 +307,10 @@ def check(ctls):
 # ---- effect data -------------------------------------------------------------------------------------------------
 def icon_tables():
     good, bad = {}, {}
-    for l in open(BUFF_SRC / "EffectIconTable.inc"):
+    for l in open(SHARED_SRC / "EffectIconTable.inc"):
         m = re.search(r'/\*(\d+)\*/ "(\w+)"', l)
         if m: good[int(m.group(1))] = m.group(2)
-    for l in open(BUFF_SRC / "DebuffIconTable.inc"):
+    for l in open(SHARED_SRC / "DebuffIconTable.inc"):
         m = re.search(r'/\*(\d+)\*/ \{ "(\w+)"', l)
         if m: bad[int(m.group(1))] = m.group(2)
     return good, bad
