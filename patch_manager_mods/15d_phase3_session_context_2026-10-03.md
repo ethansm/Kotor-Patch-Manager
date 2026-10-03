@@ -53,6 +53,7 @@ Commits this session: `bfd543e` Step 0, `719f034` B0/B1 briefs, `53ccd55` A1 ana
 - Opus review: all new lines read; predicate checks w before h (engine checks h first) = only the reported term differs when both fail.
 
 ## 5. Next actions
+**Phase 4 (2026-10-03) plan: `engine_bug_research/PHASE4_PLAN.md`** (everything except the user's T1 screenshot: L4 drop, V11, 1.0.1 pre-build, analyzer probe branch, stage A/B).
 1. User: one F12 screenshot during a conversation (bright area). Optional A/B: `enabled=0` in `$G/dialogue_letterbox_fix.ini` (game closed), repeat, delete.
    Steam screenshots: `~/.local/share/Steam/userdata/62703561/760/remote/208580/screenshots/` (dir did not exist on 10-03; if F12 does nothing, find another capture).
 2. After the session: copy log + screenshots to `~/Games/KOTOR2_Mod_Workspace/playlogs_engfix_<MMDD_HHMM>/`, run `analyze_engfix_logs.py` on the copy, Read the images.
