@@ -3,10 +3,18 @@ target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBB
 
 # No hooks: DLL-only patch. DllMain verifies and writes per group (doc 10 "Robustness set"):
 #   kt      0x00726527 89 50 0C C7 45 FC FF FF FF FF -> E9 cave (+5 NOP); 0x00726C9C 89 50 0C EB 3C -> E9 cave
-#   vmid    0x00668FE0 7D 30 -> 73 30
-#   sndri   0x007054CE C7 82 D4 00 00 00 00 00 00 00 EB 52 -> FF 15 7C 65 98 00 66 0F 1F 44 00 00
-#   netovf  0x00704406 C7 45 FC FF FF FF FF 8D 4D E4 E8 6B F3 02 00 -> 8D 4D E4 E8 72 F3 02 00 33 C0 E9 58 00 00 00
+#   vmid    0x00668FE0 7D 30 -> 73 30 (JGE -> JAE)
+#           0x00669012 B8 2E F8 FF FF -> E9 cave   (cave: lock inc g_vmReject; if [ebp+8] < 0 { lock inc g_vmNeg;
+#           g_vmLastId = [ebp+8] }; mov eax,-2002; jmp 0x669017). Both sites verified before either is written.
+#   sndri   0x007054CE C7 82 D4 00 00 00 00 00 00 00 EB 52 -> E9 cave + 7 NOP
+#           (cave: lock inc g_sndri; call [0x98657C] AIL_quick_shutdown; jmp 0x7054DA)
+#   netovf  0x00704406 C7 45 FC FF FF FF FF 8D 4D E4 E8 6B F3 02 00 -> E9 cave + 10 NOP
+#           (cave: lock inc g_netDrop; g_netLastLen = [ebp+0x10]; replay mov [ebp-4],-1 / lea ecx,[ebp-0x1C] /
+#           call 0x733780; xor eax,eax; jmp 0x70446D)
 #           0x007040EF 05 00 00 01 00 -> B8 00 00 02 00
-#   guiid   0x0040F972 83 7D B0 00 7C 6C -> C1 E9 0C 75 6D 90
+#   guiid   0x0040F972 83 7D B0 00 7C 6C -> E9 cave + NOP
+#           (cave: cmp [ebp-0x50],0 / jl 0x40F9E4 uncounted; cmp [ebp-0x50],0x1000 / jl 0x40F978; else lock inc
+#           g_guiReject, g_guiLastId = ecx, jmp 0x40F9E4)
 #   abbound 0x0058C61A 8B 55 EC 3B 51 04 7D 1C -> E9 cave (+3 NOP)
+# Counters (kt, ab and the four above) are polled every 5 s by a helper thread into the COUNTERS / FIRED log lines.
 # Neighbour: perf-lab 0.3.0 detour 0x0072650B (6 bytes) ends 0x16 bytes before the kt site 0x726527.
