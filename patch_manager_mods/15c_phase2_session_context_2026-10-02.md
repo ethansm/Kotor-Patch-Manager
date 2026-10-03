@@ -29,6 +29,8 @@ Branch `KOTOR-II`. Commits: `7d7e310` S1 (V7), `0fa8046` S2 (L4), `40e2161` S3 (
   X=1066 fs=2.0 panelH=200 replyY=1333` + `wrote ... verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964`. **0 SETTOP/SETBOTTOM lines = no conversation
   started yet** -> T1 not done. T2 not done. L4 has no log and no switch.
 
+- **Update 2026-10-03 ~01:15 (Phase 3 Step 0):** the user played (log mtime 01:12, 60 lines; copy = `engine_bug_research/fixtures/letterbox_log_1003_0112.txt`): 4 launches with `newBar=267 ... verify OK`, **12 SETTOP/SETBOTTOM pairs**, all target `(0,0,3840,267)` / `(0,1333,3840,267)`, start h 0 / y 1600, 0 error lines -> **T1 computation PASS**. Visual: user "didn't notice / no bars", no screenshots -> **visual UNKNOWN** (Phase 3 A2). T2 not run. Live set now 31 ids / 198 hooks (UpdatedAt 10-03 00:24, sibling reinstall); both fixes still installed; still no INI in the game dir.
+
 ## 3. Facts a fresh context needs (verified this session)
 - L1 hook: `0x411AC1` 7 B `8B 55 F4 83 7A 7C 00` in `CSWGuiManager::SetScreenSize` 0x411A80 (after W/H stores 0x411AAA/0x411AB5 and CALL 0x413DD0;
   manager `[ebp-0xC]`; reached only when W/H change; 4 callers: startup 0x78A20F, options Apply 0x78DDA7, credits force 0x89222B / restore 0x892756).
