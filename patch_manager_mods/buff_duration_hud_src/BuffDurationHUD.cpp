@@ -21,7 +21,7 @@
 #include <stdarg.h>
 #include <math.h>
 
-#include "BuffHudLogic.h"          // bh::appendf (bounded log formatting, audit 20a F7)
+#include "BuffHudLogic.h"          // bh:: pure logic: appendf (bounded log formatting, audit 20a F7), arrow counter bump, column geometry
 #include "../_shared/SafeRead.h"    // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
 #include "../_shared/EffectIcons.h" // effect-list walk + decode (Effects.h) and the buff/debuff icon tables (doc 21 W2)
 #include "../_shared/Gui2D.h"       // 2D batch / clip / flush / image draw + CapGuard
@@ -48,10 +48,7 @@ constexpr int Border_WidthOffset = 0xc;
 constexpr int Border_HeightOffset = 0x10;
 constexpr int Border_FillImageOffset = 0x74;      // bound FILL image object (direct field)
 
-constexpr float SmallCardFraction = 0.19f, LargeCardFraction = 0.22f; // preferred icon size / card width
-constexpr float MinIconSize = 5.0f, MaxIconSize = 24.0f;  // x HUD scale (=10 / 48 px at scale 2)
-constexpr int MaxColumns = 3;
-constexpr int RightInset = 0;                 // debuff column: extra px in from the card's right edge
+// icon size / column constants (SmallCardFraction, LargeCardFraction, MinIconSize, MaxIconSize, MaxColumns, RightInset) live in BuffHudLogic.h
 const float LineColor[3] = { 0.0f, 0.16f, 0.14f };  // thin dark-teal edge between remaining and elapsed
 constexpr float LineAlpha = 0.95f;
 constexpr float DimAlpha = 0.35f;
@@ -136,8 +133,8 @@ void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichR
     bool haveTime = currentTime(&day, &ms);
     Buff buffs[16];
     int n = collectBuffs(creature, day, ms, haveTime, buffs, 16, whichRow == 0);
-    if (logIt) logf("arrow row=%d slot=%08x idx=%d tracked=%d -> %s", whichRow, slotPtr, index, n, index < n ? "suppress" : "keep");
-    if (index >= n) return;                     // untracked engine buff: leave its arrow
+    if (logIt) logf("arrow row=%d slot=%08x idx=%d tracked=%d -> %s", whichRow, slotPtr, index, n, bh::arrowSuppressed(index, n) ? "suppress" : "keep");
+    if (!bh::arrowSuppressed(index, n)) return; // untracked engine buff: leave its arrow
 
     int border = iconWidget + Label_TextBorderOffset;
     int w = 0, h = 0, bvt = 0;
@@ -166,33 +163,16 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     Buff buffs[16], other[16];
     int n = collectBuffs(creature, day, ms, haveTime, buffs, 16, debuff);
     int nOther = collectBuffs(creature, day, ms, haveTime, other, 16, !debuff);
-    int nSize = n > nOther ? n : nOther;        // both columns share one icon size
 
     float scale = gui2d::hudScale();
-    int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
-    // preferred size (smaller on the little companion cards so the face stays visible), then
-    // shrink so all n fit down the column; below MinIconSize add another column instead.
-    int size = int(cardW * (isLarge ? LargeCardFraction : SmallCardFraction));
-    int maxSize = int(MaxIconSize * scale), minSize = int(MinIconSize * scale);
-    if (size > maxSize) size = maxSize;
-    if (size < minSize) size = minSize;
-    int cols = 1;
-    for (;; ++cols) {
-        int perCol = (nSize + cols - 1) / cols; if (perCol < 1) perCol = 1;
-        int fitSize = (cardH - gap) / perCol - gap;
-        if (fitSize < size) size = fitSize > 0 ? fitSize : 1;
-        if (size >= minSize || cols >= MaxColumns) break;
-        size = int(cardW * (isLarge ? LargeCardFraction : SmallCardFraction));
-        if (size > maxSize) size = maxSize;
-    }
-    int perCol = (cardH - gap) / (size + gap); if (perCol < 1) perCol = 1;
-    int fit = perCol * cols;
-    int drawN = n < fit ? n : fit;
+    // both columns share one icon size; preferred size shrunk so all fit down the column, else another column (bh::columnLayout)
+    const bh::ColumnLayout lay = bh::columnLayout(n, nOther, isLarge, cardW, cardH, scale);
+    const int gap = lay.gap, size = lay.size, cols = lay.cols, fit = lay.fit, drawN = lay.drawN;
 
     static int lastSig[8]; static int sigSlot[8]; static int nSig = 0;
     int si = -1; for (int k = 0; k < nSig; ++k) if (sigSlot[k] == slotPtr) si = k;
     if (si < 0 && nSig < 8) { si = nSig++; sigSlot[si] = slotPtr; lastSig[si] = -1; }
-    int sig = (n << 16) ^ (debuff << 4) ^ (nOther << 12) ^ (size << 8) ^ (cardW << 20) ^ cardH ^ isLarge;
+    int sig = bh::columnSig(n, debuff, nOther, size, cardW, cardH, isLarge);
     bool logIt = callNo <= 30 || (si >= 0 && lastSig[si] != sig);
     if (si >= 0) lastSig[si] = sig;
     if (logIt) logf("COLUMN#%d %s slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d cols=%d fit=%d draw=%d size=%d gap=%d",
@@ -217,11 +197,10 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
         if (!image) { if (logIt) logf("  icon[%d] %s: no image", i, buffs[i].resref); continue; }
         auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
             (*reinterpret_cast<void***>(image))[6]);
-        int colIdx = i / perCol;
-        int ix = debuff ? cardW - gap - size - colIdx * (size + gap) - RightInset : gap + colIdx * (size + gap), iy = gap + (i % perCol) * (size + gap);
+        const bh::IconPos pos = bh::iconPos(lay, i, debuff, cardW);
+        int ix = pos.x, iy = pos.y;
         float ratio = buffs[i].ratio;
-        int bright = int(size * ratio + 0.5f);
-        if (bright > size) bright = size;
+        int bright = bh::brightPx(size, ratio);
         if (logIt) logf("  icon[%d] %s rect=(%d,%d,%d,%d) ratio=%.3f bright=%d dimAlpha=%.2f", i, buffs[i].resref, ix, iy, size, size, ratio, bright, DimAlpha);
         void* disc = buffs[i].item ? imageFor(CircleResref) : nullptr;   // round backing for item abilities only
         // elapsed part (whole square, dim): backing disc + icon
@@ -237,10 +216,9 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
                 if (disc && bright < size) {                                                     // 1px boundary line (round item icons only)
                     int lx = ix, lw = size;
                     if (disc) {                                     // item icons: only inside the round backing
-                        float r = size * 0.5f - 0.5f, dy = (y0 + 0.5f) - (iy + size * 0.5f);
-                        float chord2 = r * r - dy * dy;
-                        lw = chord2 > 0.0f ? int(2.0f * sqrtf(chord2) + 0.5f) : 0;
-                        lx = ix + (size - lw) / 2;
+                        const bh::DiscLine dl = bh::discLine(ix, iy, size, y0);
+                        lw = dl.w;
+                        lx = dl.x;
                     }
                     if (lw > 0 && gui2d::pushClip(lx, y0, lw, 1, LineColor, LineAlpha)) gui2d::popClip();
                 }
@@ -267,19 +245,15 @@ void __cdecl DrawBuffColumn(int slotPtr, int iconWidget, int isLarge, int whichR
 // creature+0xFFC, NOT from the +0x148 effect list we read, so a creature can hold tracked effects and still be at 0
 // (doc 02 "Engine arrow counter root cause"). FUN_00745770 reads the counters right after hook 6, so raise them
 // here: native code then draws that many identical arrows and hooks 2/3/5 hide/replace them as usual.
-struct ArrowRaw { int slot; unsigned char buff, debuff, nBuff, nDebuff; };
+using bh::ArrowRaw;
 ArrowRaw g_arrowRaw[8];
 
-ArrowRaw* arrowRawFor(int slotPtr) {
-    for (auto& r : g_arrowRaw) if (r.slot == slotPtr) return &r;
-    for (auto& r : g_arrowRaw) if (r.slot == 0) { r = {}; r.slot = slotPtr; return &r; }
-    return nullptr;
-}
+ArrowRaw* arrowRawFor(int slotPtr) { return bh::arrowRawFor(g_arrowRaw, 8, slotPtr); }
 
 void ForceArrowCounters(int slotPtr) {
     if (g_noBuff) return;
     int gate = 0;
-    if (!readAt(slotPtr, 0x590, &gate) || !(gate & 2)) return;              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
+    if (!readAt(slotPtr, 0x590, &gate) || !bh::arrowGateOpen(gate)) return;              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
     unsigned char rawBuff = 0, rawDebuff = 0;
     if (!readAt(slotPtr, 0xddc, &rawBuff) || !readAt(slotPtr, 0xddd, &rawDebuff)) return;
     int creature = creatureForSlot(slotPtr);
@@ -287,7 +261,7 @@ void ForceArrowCounters(int slotPtr) {
     ArrowRaw* raw = arrowRawFor(slotPtr);
     int overlay[3] = {};                                                    // FUN_00744f00: mask&2 -> +0x1b8, mask&1 -> +0x300, mask&4 -> +0x448 (bit 1 = shown)
     readAt(slotPtr, 0x1b8, &overlay[0]); readAt(slotPtr, 0x300, &overlay[1]); readAt(slotPtr, 0x448, &overlay[2]);
-    bool hidden = ((overlay[0] | overlay[1] | overlay[2]) & 2) != 0;        // engine deliberately hid the arrows (dead/disabled): keep that
+    bool hidden = bh::arrowsHidden(overlay[0], overlay[1], overlay[2]);      // engine deliberately hid the arrows (dead/disabled): keep that
     int nBuff = 0, nDebuff = 0;
     if (!hidden) {
         int day = 0, ms = 0;
@@ -296,15 +270,12 @@ void ForceArrowCounters(int slotPtr) {
         nBuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, false);
         nDebuff = collectBuffs(creature, day, ms, haveTime, tmp, 16, true);
     }
-    unsigned char newBuff = rawBuff, newDebuff = rawDebuff;
-    if (nBuff > 0 && rawBuff == 0) newBuff = 1;                             // never lower an engine value
-    if (nDebuff > 0 && rawDebuff == 0) newDebuff = 1;
+    const bh::ArrowCounters ctr = bh::bumpArrowCounters(rawBuff, rawDebuff, nBuff, nDebuff, hidden);   // never lowers an engine value
+    unsigned char newBuff = (unsigned char)ctr.buff, newDebuff = (unsigned char)ctr.debuff;
     if (newBuff != rawBuff) *reinterpret_cast<unsigned char*>(slotPtr + 0xddc) = newBuff;
     if (newDebuff != rawDebuff) *reinterpret_cast<unsigned char*>(slotPtr + 0xddd) = newDebuff;
     if (raw) {
-        unsigned char sig[4] = { rawBuff, rawDebuff, (unsigned char)nBuff, (unsigned char)nDebuff };
-        bool changed = memcmp(sig, &raw->buff, 4) != 0;
-        raw->buff = rawBuff; raw->debuff = rawDebuff; raw->nBuff = (unsigned char)nBuff; raw->nDebuff = (unsigned char)nDebuff;
+        bool changed = bh::arrowRawUpdate(raw, rawBuff, rawDebuff, nBuff, nDebuff);
         if (changed) {
             logf("ARROWS slot=%08x creature=%08x raw=(%d,%d) tracked=(%d,%d) -> counters=(%d,%d) overlay=(%08x,%08x,%08x)%s",
                  slotPtr, creature, rawBuff, rawDebuff, nBuff, nDebuff, newBuff, newDebuff, overlay[0], overlay[1], overlay[2], hidden ? " HIDDEN" : "");
@@ -356,9 +327,9 @@ static void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     int cols = 0;
     for (int k = 0; k < 2; ++k) {
         int comp = c->companions[k], ctrl = c->companionCtrl[k], fl = 0, r[4] = {};
-        if (!comp || !readAt(ctrl, 0x48, &fl) || !(fl & 2)) continue;
+        if (!comp || !readAt(ctrl, 0x48, &fl) || !bh::menuPortraitVisible(fl)) continue;
         for (int q = 0; q < 4; ++q) readAt(ctrl, 4 + 4 * q, &r[q]);
-        if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) continue;
+        if (!bh::menuRectOk(r[2], r[3])) continue;
         if (gui2d::pushClip(r[0], r[1], r[2], r[3])) {
             drawColumnCore(ctrl, comp, 0, 0, 1, r[2], r[3]);     // buffs: left edge
             drawColumnCore(ctrl, comp, 0, 0, 0, r[2], r[3]);     // debuffs: right edge
