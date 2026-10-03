@@ -1,4 +1,4 @@
-// LevelUpUi.h - M4 character-screen UI of Level-Up Override 0.3.0: Configure button (R6) with the R9 nudge, the path wizard (R8, WizardLogic.h),
+// LevelUpUi.h - M4 character-screen UI of Level-Up Override 0.3.0: Configure button (R6) with the R9 nudge, the single options page (OptionsLogic.h; WizardLogic.h supplies the Item type),
 // the R11 status line. NOT a standalone header: LevelUpOverride.cpp includes it INSIDE its anonymous namespace after the gates (it uses the .cpp's
 // tagConfig / evalStats / ptApply / ptRemove / g_presets / bankedLevels / logLine), and includes GuiKit.h + WizardLogic.h at file scope.
 //
@@ -11,7 +11,9 @@
 // "Character screen is the active panel" = this tick runs: SetStats is called from CSWGuiInGameCharacter::Update 0x84FBB0 (the function Mod 14
 // ticks on, CharEffectsPanel.cpp CharEffectsTick ~1162 + its hooks.toml), so a click is only evaluated while the panel is being updated, and
 // guikit::clickEdge adds the foreground-window check (the same two conditions Mod 14's tickInput 969-973 uses: its tick + GetForegroundWindow).
-// Layout units are the 800x600 GUI units of character_p.gui; Mod 14's panel is x 536-752, ours stays within x 54..456 (wizard 54..300).
+// Layout units are the 800x600 GUI units of character_p.gui; Mod 14's panel is x 536-752, ours stays within x 54..456 (options page 54..300).
+
+#include "OptionsLogic.h"   // no-op when LevelUpOverride.cpp already included it at file scope (pragma once); pure inline, safe in the anon namespace
 
 // ---- pure text builders (unit-tested) -----------------------------------------------------------------------------------
 // R11 status line. false = hidden (PC / not configurable, or unconfigured). held: "Holding N level(s) for <Jedi class> - <short>"
@@ -31,28 +33,33 @@ const char* cfgButtonText(bool configured, bool canLevelUp, bool* highlight) {
     return configured ? "Change path" : (*highlight ? "Plan level-ups" : "Configure");
 }
 
+
 // ---- controls -------------------------------------------------------------------------------------------------------------
 constexpr unsigned S_Ui = 120;
-constexpr int NumCells = 6, MaxUiPanels = 4, BtnLevelUpIndex = 66, UiText = 160;
-constexpr uint32_t UiMagic = 0x4C554931;   // 'LUI1'
-enum UiCtl { C_CFG, C_STATUS, C_WBG, C_WTITLE, C_CELL0, C_WBACK = C_CELL0 + NumCells, C_WCANCEL, C_N };
+constexpr int NumRows = opt::NumRows + 1, MaxUiPanels = 4, BtnLevelUpIndex = 66, UiText = 160;   // option rows: Convert, Role, Style, Alignment, Skills, Variant
+constexpr uint32_t UiMagic = 0x4C554932;   // 'LUI2'
+enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_N };
+constexpr int NumBg = 3;
 struct UiSpec { bool framed; int x, y, w, h; };   // layout units (800x600)
+// Options page over the stats column only (live 2026-10-02: BTN_AUTO/BTN_LEVELUP, SLD_ALIGN x 310 and LBL_LIGHT/DARK x 304 draw ON TOP of anything
+// placed in the 3D-character column, whatever the list order) -> x 54..300, y 134..470. Three stacked framed labels with the black fill = opaque.
+constexpr int kRowY0 = 162, kRowStep = 30;   // option rows: y = kRowY0 + kRowStep * (index among the SHOWN rows)
 const UiSpec kUiSpec[C_N] = {
     {true, 362, 372, 94, 26},                                                                            // cfgBtn, under BTN_LEVELUP [362,325,94,40]
     {false, 54, 474, 350, 20},                                                                           // status, below LBL_XP_BACK (bottom 470), left of LBL_BAR5 (x 407)
-    // Wizard over the stats column only (live 2026-10-02: BTN_AUTO/BTN_LEVELUP, SLD_ALIGN x 310 and LBL_LIGHT/DARK x 304 draw ON TOP of anything
-    // placed in the 3D-character column, whatever the list order) -> x 54..300, y 134..470; opaque black fill (uibit_fill_2bt, as Mod 14's back).
-    {true, 54, 134, 246, 336}, {false, 62, 140, 230, 24},                                                // wizard bg, title
-    {true, 62, 170, 230, 36}, {true, 62, 212, 230, 36}, {true, 62, 254, 230, 36},                        // cells
-    {true, 62, 296, 230, 36}, {true, 62, 338, 230, 36}, {true, 62, 380, 230, 36},
-    {true, 62, 428, 108, 32}, {true, 184, 428, 108, 32}};                                                // Back, Cancel
-const char* const kUiName[C_N] = {"cfg", "status", "wbg", "title", "cell0", "cell1", "cell2", "cell3", "cell4", "cell5", "back", "cancel"};
+    {true, 54, 134, 246, 336}, {true, 54, 134, 246, 336}, {true, 54, 134, 246, 336},                     // backgrounds
+    {false, 62, 138, 230, 20},                                                                           // title
+    {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26},               // option rows (y recomputed per slot)
+    {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26},
+    {false, 62, 346, 230, 20},                                                                           // build line
+    {true, 62, 370, 113, 26}, {true, 179, 370, 113, 26},                                                 // Instant, Bank for Jedi
+    {true, 62, 400, 230, 24},                                                                            // Use recommended
+    {true, 62, 428, 72, 32}, {true, 138, 428, 72, 32}, {true, 214, 428, 78, 32}};                        // Apply, Vanilla, Cancel
+const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "recommended", "apply", "vanilla", "cancel"};
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
-const char* const kWizBackFill = "uibit_fill_2bt";   // opaque black (Mod 14 LBL_EFX_BACK); LBL_XP_BACK's own fill uibit_fill_2wt is see-through
+const char* const kPageBackFill = "uibit_fill_2bt";   // opaque black (Mod 14 LBL_EFX_BACK); LBL_XP_BACK's own fill uibit_fill_2wt is see-through
 constexpr int kPlainRect[4] = {60, 449, 108, 18}, kFramedRect[4] = {54, 431, 223, 39};   // the templates' own unit rects (fallback scale)
-
-enum UiAct { A_NONE, A_CHOOSE, A_INFO, A_INSTANT, A_HOLD, A_APPLY, A_VANILLA };
 
 struct UiPanel {
     uint32_t magic = 0;
@@ -62,23 +69,22 @@ struct UiPanel {
     bool appended = false, createLogged = false;
     guikit::Scale fb = {1.f, 1.f, 0.f, 0.f, 60, 449, false};   // fallback scale from a control's ctor-time extent
     char text[C_N][UiText] = {};
-    uint32_t textFail = 0;
+    uint32_t textFail = 0, shownMask = 0;   // shownMask: bit i = control i currently shown by us (clicks only count on shown controls)
     bool colorTried = false, colorOk = false, nudgeOn = false;
     float base[3] = {};
     guikit::ClickEdge edge;
     int hover = -1;
     char lastTag[32] = {};
-    // wizard
-    bool wizOpen = false;
-    char wizTag[32] = {};
-    uint64_t wizTable = 0;
+    // options page
+    bool open = false;
+    char pageTag[32] = {};
+    uint64_t pageTable = 0;
     wiz::Item items[wiz::MaxItems] = {};
     int itemPreset[wiz::MaxItems] = {};
-    int nItems = 0;
-    wiz::State ws = {};
-    int resSeen = -1;
-    bool instant = false, hold = true, failed = false;
-    int act[NumCells] = {}, actArg[NumCells] = {};
+    int nItems = 0, recItem = -1;
+    opt::State os = {};
+    bool instant = false, bank = true, failed = false;
+    int rowSlot[NumRows] = {};   // compact slot of each shown option row, -1 = hidden
 };
 UiPanel g_ui[MaxUiPanels];
 int g_uiNext = 0;
@@ -115,7 +121,8 @@ void uiPanelCtor(uintptr_t panel) {
     logLine("UI ctor panel=%08x created=%d/%d fallbackScale=%d", (unsigned)panel, r->nCreated, (int)C_N, r->fb.ok);
 }
 
-// First tick: append every control (draw order = append order: bg before cells), set alignments, log once.
+
+// First tick: append every control (draw order = append order: the three backgrounds first), set alignments, log once.
 void uiAppend(UiPanel* r) {
     int ok = 0;
     for (int i = 0; i < C_N; ++i) {
@@ -123,23 +130,23 @@ void uiAppend(UiPanel* r) {
         if (guikit::appendToPanel(r->panel, r->c[i])) ++ok; else r->c[i] = 0;   // a failed control stays hidden and unused
     }
     r->appended = true;
-    if (r->c[C_WBG]) {   // opaque wizard background: swap the framed template's translucent fill for black, full alpha
-        const bool f = guikit::setFill(r->c[C_WBG], guikit::imageFor(kWizBackFill));
-        const bool a = guikit::setAlpha(r->c[C_WBG], 1.0f);
-        logLine("UI wizard back fill=%s ok=%d alpha ok=%d", kWizBackFill, f, a);
+    for (int b = 0; b < NumBg; ++b) {   // opaque background: swap the framed template's translucent fill for black, full alpha (3 stacked = opaque)
+        if (!r->c[C_BG0 + b]) continue;
+        const bool f = guikit::setFill(r->c[C_BG0 + b], guikit::imageFor(kPageBackFill));
+        const bool a = guikit::setAlpha(r->c[C_BG0 + b], 1.0f);
+        logLine("UI page back%d fill=%s ok=%d alpha ok=%d", b, kPageBackFill, f, a);
     }
     for (int i = 0; i < C_N; ++i) {
-        if (!r->c[i] || i == C_WBG || i == C_STATUS) continue;
-        guikit::setAlign(r->c[i], i == C_WTITLE ? 17 : 18);   // 17 top-centre, 18 centre; the status line keeps the template's left alignment
+        if (!r->c[i] || (i >= C_BG0 && i <= C_BG2) || i == C_STATUS) continue;
+        guikit::setAlign(r->c[i], i == C_TITLE ? 17 : 18);   // 17 top-centre, 18 centre; the status line keeps the template's left alignment
     }
     unsigned mask = 0;
     for (int i = 0; i < C_N; ++i) if (r->c[i] && guikit::detail::textObjOk(r->c[i])) mask |= 1u << i;
-    logLine("UI create panel=%08x n=%d appended=%d textobj=%03x", (unsigned)r->panel, r->nCreated, ok, mask);
+    logLine("UI create panel=%08x n=%d appended=%d textobj=%05x", (unsigned)r->panel, r->nCreated, ok, mask);
     r->createLogged = true;
 }
 
 // ---- placement ------------------------------------------------------------------------------------------------------------
-// Scale from BTN_LEVELUP (panel control list index 66, unit rect 362,325,94,40) when its extent looks right (w/h = 2.35 +- 0.4), else the
 // ctor-time fallback. false = no usable scale.
 bool uiScale(const UiPanel* r, guikit::Scale* out) {
     uint32_t arr = 0, ctl = 0;
@@ -158,17 +165,28 @@ bool uiScale(const UiPanel* r, guikit::Scale* out) {
     if (r->fb.ok) { *out = r->fb; return true; }
     return false;
 }
+
+// Compact slots of the shown option rows (only while the page is open).
+void uiSlots(UiPanel* r) {
+    int k = 0;
+    for (int row = 0; row < NumRows; ++row) r->rowSlot[row] = (r->open && opt::shown(r->os, row)) ? k++ : -1;
+}
 void uiPlace(UiPanel* r, const guikit::Scale& s) {
     for (int i = 0; i < C_N; ++i) {
         if (!r->c[i]) continue;
-        int x, y, w, h, ex, ey, ew, eh;
-        guikit::unitRect(s, kUiSpec[i].x, kUiSpec[i].y, kUiSpec[i].w, kUiSpec[i].h, &x, &y, &w, &h);
-        if (!guikit::getExtent(r->c[i], &ex, &ey, &ew, &eh) || ex != x || ey != y || ew != w || eh != h) guikit::setRect(r->c[i], x, y, w, h);
+        int y = kUiSpec[i].y;
+        if (i >= C_ROW0 && i < C_ROW0 + NumRows) y = kRowY0 + kRowStep * (r->rowSlot[i - C_ROW0] >= 0 ? r->rowSlot[i - C_ROW0] : 0);
+        int x, py, w, h, ex, ey, ew, eh;
+        guikit::unitRect(s, kUiSpec[i].x, y, kUiSpec[i].w, kUiSpec[i].h, &x, &py, &w, &h);
+        if (!guikit::getExtent(r->c[i], &ex, &ey, &ew, &eh) || ex != x || ey != py || ew != w || eh != h) guikit::setRect(r->c[i], x, py, w, h);
     }
 }
 
 // ---- small setters ------------------------------------------------------------------------------------------------------
-void uiShow(UiPanel* r, int i, bool vis) { if (r->c[i]) guikit::setVisible(r->c[i], vis); }
+void uiShow(UiPanel* r, int i, bool vis) {
+    if (vis) r->shownMask |= 1u << i; else r->shownMask &= ~(1u << i);
+    if (r->c[i]) guikit::setVisible(r->c[i], vis);
+}
 void uiSetText(UiPanel* r, int i, const char* t) {
     if (!r->c[i] || !strcmp(r->text[i], t)) return;
     if (guikit::setText(r->c[i], t)) { snprintf(r->text[i], UiText, "%s", t); return; }
@@ -190,7 +208,8 @@ void uiNudge(UiPanel* r, bool on) {
     r->nudgeOn = on;
 }
 
-// ---- wizard ---------------------------------------------------------------------------------------------------------------
+
+// ---- options page -----------------------------------------------------------------------------------------------------------
 int uiCountSelectable(const char* tag) {
     int n = 0;
     for (int i = 0; i < g_nPresets; ++i) {
@@ -201,16 +220,22 @@ int uiCountSelectable(const char* tag) {
     }
     return n;
 }
-void uiCloseWizard(UiPanel* r) {
-    r->wizOpen = false;
+void uiClosePage(UiPanel* r) {
+    r->open = false;
     r->nItems = 0;
-    r->ws = wiz::State();
-    r->resSeen = -1;
+    r->recItem = -1;
+    r->os = opt::State();
     r->failed = false;
-    for (int j = 0; j < NumCells; ++j) { r->act[j] = A_NONE; r->actArg[j] = 0; }
+    for (int row = 0; row < NumRows; ++row) r->rowSlot[row] = -1;
 }
-void uiOpenWizard(UiPanel* r, const char* tag) {
-    uiCloseWizard(r);
+// First class of a preset's records (the companion's base class); -1 when none.
+int presetBaseClass(const Preset& p) {
+    for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return p.lv[cl].cls;
+    return -1;
+}
+// Opens the page: items = the tag's selectable presets; start = the configured preset, else the recommended one, else the first.
+void uiOpenPage(UiPanel* r, const char* tag) {
+    uiClosePage(r);
     for (int i = 0; i < g_nPresets && r->nItems < wiz::MaxItems; ++i) {
         const Preset& p = g_presets[i];
         if (!p.indexed || _stricmp(p.tag, tag)) continue;
@@ -220,144 +245,120 @@ void uiOpenWizard(UiPanel* r, const char* tag) {
         it.id = p.id;
         for (int q = 0; q < wiz::NumQuestions; ++q) it.ans[q] = ans[q];
         it.shortName = p.shortName;
+        if (p.recommended && r->recItem < 0) r->recItem = r->nItems;
         r->itemPreset[r->nItems++] = i;
     }
-    wiz::reset(r->ws, r->items, r->nItems);
-    snprintf(r->wizTag, sizeof r->wizTag, "%s", tag);
-    r->wizTable = g_tableStamp;
-    r->wizOpen = r->nItems > 0;
+    const TagCfg* cfg = tagConfig(tag);
+    const bool configured = cfg && cfg->preset >= 0 && g_tableOk;
+    int start = -1;
+    const char* how = "first";
+    if (configured) for (int i = 0; i < r->nItems; ++i) if (r->itemPreset[i] == cfg->preset) { start = i; how = "configured"; break; }
+    if (start < 0 && r->recItem >= 0) { start = r->recItem; how = "recommended"; }
+    if (start < 0) start = 0;
+    opt::init(r->os, r->items, r->nItems, start);
+    r->instant = configured ? cfg->instant : false;
+    r->bank = configured ? cfg->hold : true;
+    snprintf(r->pageTag, sizeof r->pageTag, "%s", tag);
+    r->pageTable = g_tableStamp;
+    r->open = r->nItems > 0;
+    if (r->open) logLine("UI page open tag=%s start=%s (%s)", tag, r->items[start].id, how);
 }
-// First class of a preset's records (the companion's base class); -1 when none.
-int presetBaseClass(const Preset& p) {
-    for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return p.lv[cl].cls;
-    return -1;
-}
-// Option label. The Jedi question names the class and the level ("Early: Jedi Sentinel at level 8"; lowest convert_at among the presets still
-// offering that answer), "Never: stay Scoundrel"; every other page uses wiz::answerLabel.
-const char* uiOptionLabel(const UiPanel* r, const wiz::View& v, int j, char* buf, size_t cap) {
-    if (v.page == wiz::Pick && v.optionItem[j] >= 0) return r->items[v.optionItem[j]].shortName;
-    const char* base = wiz::answerLabel(v.page, v.options[j]);
-    if (v.page != wiz::Convert) return base;
-    int at = 0, hc = 0, bc = -1;
-    for (int i = 0; i < r->nItems; ++i) {
-        if (!wiz::ieq(r->items[i].ans[wiz::Convert], v.options[j])) continue;
-        const Preset& P = g_presets[r->itemPreset[i]];
-        if (bc < 0) bc = presetBaseClass(P);
-        if (P.holdClass && P.convertAt > 0 && (!at || P.convertAt < at)) { at = P.convertAt; hc = P.holdClass; }
+// Text of one option row for the current preset (rows Convert, Role, Style, Alignment, Skills, Variant).
+const char* uiRowText(const Preset& p, int row, char* buf, size_t cap) {
+    char c1[16];
+    switch (row) {
+    case 0: {   // Convert
+        const char* lab = wiz::answerLabel(wiz::Convert, p.convert);
+        if (p.holdClass && p.convertAt > 0) snprintf(buf, cap, "Jedi: %s - %s at %d", lab, className(p.holdClass, c1, sizeof c1), p.convertAt);
+        else if (wiz::ieq(p.convert, "never") && presetBaseClass(p) >= 0) snprintf(buf, cap, "Jedi: Never (stays %s)", className(presetBaseClass(p), c1, sizeof c1));
+        else snprintf(buf, cap, "Jedi: %s", lab);
+        break;
     }
-    char c1[16], c2[16];
-    if (at) snprintf(buf, cap, "%s: %s at level %d", base, className(hc, c1, sizeof c1), at);
-    else if (wiz::ieq(v.options[j], "never") && bc >= 0) snprintf(buf, cap, "%s: stay %s", base, className(bc, c2, sizeof c2));
-    else return base;
+    case 1: snprintf(buf, cap, "Role: %s", wiz::answerLabel(wiz::Role, p.role)); break;
+    case 2: snprintf(buf, cap, "Weapons: %s", wiz::answerLabel(wiz::Style, p.style)); break;
+    case 3: snprintf(buf, cap, "Powers: %s", wiz::answerLabel(wiz::Alignment, p.alignment)); break;
+    case 4: snprintf(buf, cap, "Skills: %s", wiz::answerLabel(wiz::Skills, p.skills)); break;
+    default: snprintf(buf, cap, "Variant: %s", p.shortName); break;
+    }
     return buf;
 }
-const char* uiPageName(const UiPanel* r, const wiz::View& v) {
-    if (!r->wizOpen) return "-";
-    return v.result ? "Result" : wiz::pageName(v.page);
-}
 
-// Draws the wizard for the current view and fills the row actions (cells 0..5).
-void uiRenderWizard(UiPanel* r, const char* tag) {
-    wiz::View v = wiz::view(r->ws);
-    if (!v.result && v.page < 0) { uiCloseWizard(r); return; }   // no candidates (should not happen): close
-    for (int j = 0; j < NumCells; ++j) { r->act[j] = A_NONE; r->actArg[j] = 0; }
-    char buf[UiText], cb[16];
-    if (!v.result) {
-        uiSetText(r, C_WTITLE, wiz::questionText(v.page));
-        for (int j = 0; j < v.nOptions && j < NumCells; ++j) {
-            r->act[j] = A_CHOOSE; r->actArg[j] = j;
-            uiSetText(r, C_CELL0 + j, uiOptionLabel(r, v, j, buf, sizeof buf));
-        }
-    } else {
-        const wiz::Item& it = r->items[v.resultItem];
-        const Preset& P = g_presets[r->itemPreset[v.resultItem]];
-        const TagCfg* cfg = tagConfig(tag);
-        if (r->resSeen != v.resultItem) {   // toggles start from the current config when re-configuring the same preset
-            const bool same = cfg && cfg->preset == r->itemPreset[v.resultItem];
-            r->instant = same ? cfg->instant : false;
-            r->hold = same ? cfg->hold : true;
-            r->resSeen = v.resultItem;
-            r->failed = false;
-        }
-        uiSetText(r, C_WTITLE, r->failed ? "Could not save - see log" : "Your build:");
-        int row = 0;
-        r->act[row] = A_INFO; uiSetText(r, C_CELL0 + row++, it.shortName);
-        if (P.holdClass && P.convertAt > 0) snprintf(buf, sizeof buf, "%s %s, %s at %d", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]),
-                                                     wiz::answerLabel(wiz::Style, it.ans[wiz::Style]), className(P.holdClass, cb, sizeof cb), P.convertAt);
-        else if (wiz::ieq(it.ans[wiz::Convert], "never") && presetBaseClass(P) >= 0)
-            snprintf(buf, sizeof buf, "%s %s, stays %s", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]), wiz::answerLabel(wiz::Style, it.ans[wiz::Style]),
-                     className(presetBaseClass(P), cb, sizeof cb));
-        else snprintf(buf, sizeof buf, "%s %s", wiz::answerLabel(wiz::Role, it.ans[wiz::Role]), wiz::answerLabel(wiz::Style, it.ans[wiz::Style]));   // already a Jedi (Kreia, Visas)
-        r->act[row] = A_INFO; uiSetText(r, C_CELL0 + row++, buf);
-        r->act[row] = A_INSTANT; uiSetText(r, C_CELL0 + row++, r->instant ? "Instant level-ups: On" : "Instant level-ups: Off");
-        if (P.holdClass) {
-            snprintf(buf, sizeof buf, "Bank levels until %s: %s", className(P.holdClass, cb, sizeof cb), r->hold ? "On" : "Off");
-            r->act[row] = A_HOLD; uiSetText(r, C_CELL0 + row++, buf);
-        }
-        r->act[row] = A_APPLY; uiSetText(r, C_CELL0 + row++, "Apply");
-        if (cfg && cfg->preset >= 0) { r->act[row] = A_VANILLA; uiSetText(r, C_CELL0 + row++, "Use vanilla (no path)"); }
+// Draws the page for the current state.
+void uiRenderPage(UiPanel* r, const char* tag) {
+    if (r->os.n <= 0) { uiClosePage(r); return; }
+    const Preset& P = g_presets[r->itemPreset[r->os.cur]];
+    const TagCfg* cfg = tagConfig(tag);
+    const bool configured = cfg && cfg->preset >= 0 && g_tableOk;
+    char buf[UiText];
+    uiSlots(r);
+    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, true);
+    if (r->failed) uiSetText(r, C_TITLE, "Could not save - see log");
+    else { snprintf(buf, sizeof buf, "%s - %s", P.name[0] ? P.name : tag, P.recommended ? "recommended build" : "level-up path"); uiSetText(r, C_TITLE, buf); }
+    uiShow(r, C_TITLE, true);
+    for (int row = 0; row < NumRows; ++row) {
+        const bool sh = r->rowSlot[row] >= 0;
+        if (sh) uiSetText(r, C_ROW0 + row, uiRowText(P, row, buf, sizeof buf));
+        uiShow(r, C_ROW0 + row, sh);
     }
-    uiShow(r, C_WBG, true);
-    uiShow(r, C_WTITLE, true);
-    for (int j = 0; j < NumCells; ++j) uiShow(r, C_CELL0 + j, r->act[j] != A_NONE);
-    uiShow(r, C_WBACK, wiz::canBack(r->ws));
-    uiShow(r, C_WCANCEL, true);
-    uiSetText(r, C_WBACK, "Back");
-    uiSetText(r, C_WCANCEL, "Cancel");
+    uiSetText(r, C_BUILD, P.shortName);
+    uiShow(r, C_BUILD, true);
+    uiSetText(r, C_INSTANT, r->instant ? "Instant: On" : "Instant: Off");
+    uiShow(r, C_INSTANT, true);
+    uiSetText(r, C_BANK, r->bank ? "Bank for Jedi: On" : "Bank for Jedi: Off");
+    uiShow(r, C_BANK, P.holdClass != 0);
+    uiSetText(r, C_REC, "Use recommended");
+    uiShow(r, C_REC, r->recItem >= 0 && r->os.cur != r->recItem);
+    uiSetText(r, C_APPLY, "Apply");
+    uiShow(r, C_APPLY, true);
+    uiSetText(r, C_VANILLA, "Vanilla");
+    uiShow(r, C_VANILLA, configured);
+    uiSetText(r, C_CANCEL, "Cancel");
+    uiShow(r, C_CANCEL, true);
 }
 
 void uiHideAll(UiPanel* r) {
     for (int i = 0; i < C_N; ++i) uiShow(r, i, false);
-    if (r->wizOpen) uiCloseWizard(r);
+    if (r->open) uiClosePage(r);
     r->hover = -1;
 }
 
 // ---- input ----------------------------------------------------------------------------------------------------------------
-// Top-most visible control under (x,y): wizard controls first (Back, Cancel, cells, bg), else the Configure button. -1 = none.
-int uiHit(const UiPanel* r, int x, int y) {
-    int order[C_N], n = 0;
-    if (r->wizOpen) {
-        order[n++] = C_WBACK; order[n++] = C_WCANCEL;
-        for (int j = 0; j < NumCells; ++j) order[n++] = C_CELL0 + j;
-        order[n++] = C_WBG;
-    } else {
-        order[n++] = C_CFG;
-    }
-    for (int k = 0; k < n; ++k) if (r->c[order[k]] && guikit::hit(r->c[order[k]], x, y)) return order[k];
-    return -1;
-}
 bool uiClickable(const UiPanel* r, int i) {
-    if (i == C_CFG || i == C_WBACK || i == C_WCANCEL) return true;
-    if (i >= C_CELL0 && i < C_CELL0 + NumCells) { const int a = r->act[i - C_CELL0]; return a != A_NONE && a != A_INFO; }
-    return false;
+    if (!(r->shownMask & (1u << i))) return false;
+    if (i == C_CFG) return !r->open;
+    if (!r->open) return false;
+    return (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
+}
+// Clickable shown control under (x,y); -1 = none.
+int uiHit(const UiPanel* r, int x, int y) {
+    for (int i = 0; i < C_N; ++i) if (uiClickable(r, i) && r->c[i] && guikit::hit(r->c[i], x, y)) return i;
+    return -1;
 }
 
 void uiClick(UiPanel* r, const char* tag, int ctl) {
-    const wiz::View v = wiz::view(r->ws);
-    logLine("UI click %s tag=%s page=%s", kUiName[ctl], tag, uiPageName(r, v));
-    if (ctl == C_CFG) { uiOpenWizard(r, tag); return; }
-    if (!r->wizOpen) return;
-    if (ctl == C_WCANCEL) { uiCloseWizard(r); return; }
-    if (ctl == C_WBACK) { wiz::back(r->ws); r->failed = false; return; }
-    if (ctl < C_CELL0 || ctl >= C_CELL0 + NumCells) return;
-    const int j = ctl - C_CELL0;
-    switch (r->act[j]) {
-    case A_CHOOSE: wiz::choose(r->ws, r->actArg[j]); break;
-    case A_INSTANT: r->instant = !r->instant; break;
-    case A_HOLD: r->hold = !r->hold; break;
-    case A_APPLY:
-        if (v.result && v.resultItem >= 0 && v.resultItem < r->nItems) {
-            const Preset& P = g_presets[r->itemPreset[v.resultItem]];
-            const bool hold = P.holdClass ? r->hold : true;
-            const bool ok = ptApply(tag, P.id, r->instant, hold);
-            logLine("UI apply tag=%s preset=%s instant=%d hold=%d ok=%d", tag, P.id, r->instant, hold, ok);
-            if (ok) uiCloseWizard(r); else r->failed = true;
-        }
+    const int row = (ctl >= C_ROW0 && ctl < C_ROW0 + NumRows) ? ctl - C_ROW0 : -1;
+    logLine("UI click %s tag=%s row=%s", kUiName[ctl], tag, row >= 0 ? opt::rowName(row) : "-");
+    if (ctl == C_CFG) { uiOpenPage(r, tag); return; }
+    if (!r->open) return;
+    if (ctl == C_CANCEL) { uiClosePage(r); return; }
+    r->failed = false;
+    if (row >= 0) { opt::cycle(r->os, row, +1); return; }
+    switch (ctl) {
+    case C_INSTANT: r->instant = !r->instant; break;
+    case C_BANK: r->bank = !r->bank; break;
+    case C_REC: if (r->recItem >= 0) r->os.cur = r->recItem; break;   // re-init on the recommended item; toggles are kept
+    case C_APPLY: {
+        const Preset& P = g_presets[r->itemPreset[r->os.cur]];
+        const bool hold = P.holdClass ? r->bank : true;
+        const bool ok = ptApply(tag, P.id, r->instant, hold);
+        logLine("UI apply tag=%s preset=%s instant=%d hold=%d ok=%d", tag, P.id, r->instant, hold, ok);
+        if (ok) uiClosePage(r); else r->failed = true;
         break;
-    case A_VANILLA: {
+    }
+    case C_VANILLA: {
         const bool ok = ptRemove(tag);
         logLine("UI vanilla tag=%s ok=%d", tag, ok);
-        if (ok) uiCloseWizard(r); else r->failed = true;
+        if (ok) uiClosePage(r); else r->failed = true;
         break;
     }
     default: break;
@@ -379,16 +380,14 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     char tag[32];
     const bool haveTag = stats && readTag(stats, tag, sizeof tag);
     if (!haveTag || !uiCountSelectable(tag)) { uiHideAll(r); r->lastTag[0] = 0; return; }   // PC (empty tag) or a tag without selectable presets
-    if (strcmp(r->lastTag, tag)) { if (r->wizOpen) uiCloseWizard(r); snprintf(r->lastTag, sizeof r->lastTag, "%s", tag); }
-    if (r->wizOpen && (_stricmp(r->wizTag, tag) || r->wizTable != g_tableStamp)) uiCloseWizard(r);
+    if (strcmp(r->lastTag, tag)) { if (r->open) uiClosePage(r); snprintf(r->lastTag, sizeof r->lastTag, "%s", tag); }
+    if (r->open && (_stricmp(r->pageTag, tag) || r->pageTable != g_tableStamp)) uiClosePage(r);
     guikit::Scale sc;
     if (!uiScale(r, &sc)) {
         if (!g_uiNoScaleLogged) { g_uiNoScaleLogged = true; logLine("UI no usable scale (BTN_LEVELUP missing, no fallback) - controls hidden"); }
         uiHideAll(r);
         return;
     }
-    uiPlace(r, sc);
-
     // input first (acts on what the previous tick drew)
     int cx = 0, cy = 0;
     const int hit = guikit::cursorEngine(&cx, &cy) ? uiHit(r, cx, cy) : -1;
@@ -398,17 +397,20 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     r->hover = clickable ? hit : -1;
     if (click && hovered) uiClick(r, tag, hit);
 
+    uiSlots(r);
+    uiPlace(r, sc);
+
     // draw
     const TagCfg* cfg = tagConfig(tag);
     const Preset* P = cfg && cfg->preset >= 0 && g_tableOk ? &g_presets[cfg->preset] : nullptr;
     const bool configured = P != nullptr;
-    if (r->wizOpen) {
+    if (r->open) {
         uiShow(r, C_CFG, false);
         uiShow(r, C_STATUS, false);
-        uiRenderWizard(r, tag);
+        uiRenderPage(r, tag);
         return;
     }
-    for (int i = C_WBG; i < C_N; ++i) uiShow(r, i, false);
+    for (int i = C_BG0; i < C_N; ++i) uiShow(r, i, false);
     bool hl = false;
     uiSetText(r, C_CFG, cfgButtonText(configured, realCan != 0, &hl));
     uiNudge(r, hl);

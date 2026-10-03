@@ -167,17 +167,6 @@ static void clickCtl(uintptr_t panel, const Fake& who, int real, int idx) {
     lmb = true; tick(panel, who, real);
     lmb = false; tick(panel, who, real);
 }
-// Clicks cell 0 until the wizard shows the result page (max 8 pages).
-static bool toResult(uintptr_t panel, const Fake& who, int real) {
-    for (int i = 0; i < 8; ++i) {
-        UiPanel* r = rec(panel);
-        if (!r->wizOpen) return false;
-        if (wiz::view(r->ws).result) return true;
-        clickCtl(panel, who, real, C_CELL0);
-    }
-    return rec(panel)->wizOpen && wiz::view(rec(panel)->ws).result;
-}
-
 int main(int argc, char** argv) {
     if (argc < 2) return 2;
     const char* table = argv[1];
@@ -270,7 +259,7 @@ int main(int argc, char** argv) {
     uintptr_t pA = makePanel();
     LuoUiPanelCtor((int)pA);
     CHECK(rec(pA) && rec(pA)->nCreated == C_N && nCtor == C_N && nInit == C_N, "ctor created %d (nCtor %d nInit %d)", rec(pA) ? rec(pA)->nCreated : -1, nCtor, nInit);
-    CHECK(nInitFramed == 10 && nInitPlain == 2, "templates framed %d plain %d (want 10/2)", nInitFramed, nInitPlain);
+    CHECK(nInitFramed == 16 && nInitPlain == 3, "templates framed %d plain %d (want 16/3)", nInitFramed, nInitPlain);
     CHECK(g_addToListSeen == 0, "InitControl addToList must be 0");
     CHECK(at<int>(pA, Panel_CtlCount) == 70 && nList == 0, "ctor must not append (count %d, listAdd %d)", at<int>(pA, Panel_CtlCount), nList);
     { bool allHidden = true; for (int i = 0; i < C_N; ++i) if (isVisible(ctl(pA, i))) allHidden = false; CHECK(allHidden, "created hidden"); }
@@ -283,7 +272,7 @@ int main(int argc, char** argv) {
     CHECK(at<int>(pA, Panel_CtlCount) == 70 + C_N && nList == C_N, "first tick appends %d (count %d listAdd %d)", (int)C_N, at<int>(pA, Panel_CtlCount), nList);
     { bool ordered = true; uint32_t arr = at<uint32_t>(pA, Panel_CtlArray); for (int i = 0; i < C_N; ++i) if (at<uint32_t>(arr, (70 + i) * 4) != (uint32_t)ctl(pA, i) || at<int>(ctl(pA, i), Ctl_Id) != 70 + i) ordered = false; CHECK(ordered, "z-order / ids"); }
     CHECK(logCount("UI create panel=") == 1, "UI create logged %d times", logCount("UI create panel="));
-    CHECK(vis(pA, C_CFG) && txt(pA, C_CFG) == "Configure" && !vis(pA, C_STATUS) && !vis(pA, C_WBG) && !vis(pA, C_WTITLE) && !vis(pA, C_WBACK) && !vis(pA, C_WCANCEL), "state: cfg=%d '%s'", vis(pA, C_CFG), txt(pA, C_CFG).c_str());
+    CHECK(vis(pA, C_CFG) && txt(pA, C_CFG) == "Configure" && !vis(pA, C_STATUS) && !vis(pA, C_BG0) && !vis(pA, C_TITLE) && !vis(pA, C_APPLY) && !vis(pA, C_CANCEL), "state: cfg=%d '%s'", vis(pA, C_CFG), txt(pA, C_CFG).c_str());
     for (int i = 0; i < 3; ++i) tick(pA, atton, 0);
     CHECK(at<int>(pA, Panel_CtlCount) == 70 + C_N && nList == C_N && logCount("UI create panel=") == 1, "no re-append on later ticks");
     { int x, y, w, h; getExtent(ctl(pA, C_CFG), &x, &y, &w, &h); CHECK(x == 724 && y == 744 && w == 188 && h == 52, "cfg rect %d,%d,%d,%d (want 724,744,188,52)", x, y, w, h);
@@ -346,7 +335,8 @@ int main(int argc, char** argv) {
     CHECK(!anyVisible(pG), "mode=off: hidden");
     setIni("mode=rewrite", table);
 
-    // 4. wizard through simulated clicks on panel pE (fresh: first tick appends)
+
+    // 4. options page through simulated clicks on panel pE (fresh: first tick appends)
     uintptr_t pW = pE;
     tick(pW, atton, 0);
     CHECK(vis(pW, C_CFG), "pW cfg visible");
@@ -354,103 +344,176 @@ int main(int argc, char** argv) {
     clearLog();
     clickCtl(pW, atton, 0, C_CFG);
     CHECK(nSound == sounds + 1, "hover sound once per enter (%d)", nSound - sounds);
-    CHECK(rec(pW)->wizOpen && logHas("UI click cfg tag=Atton page=-"), "cfg click opens the wizard:\n%s", readLog().c_str());
-    CHECK(vis(pW, C_WBG) && vis(pW, C_WTITLE) && vis(pW, C_WCANCEL) && !vis(pW, C_WBACK) && !vis(pW, C_CFG) && !vis(pW, C_STATUS), "page 1 visibility (back hidden on the first page)");
-    CHECK(txt(pW, C_WTITLE) == "Become a Jedi?" && txt(pW, C_CELL0) == "Early: Jedi Sentinel at level 8" && txt(pW, C_CELL0 + 1) == "Late: Jedi Sentinel at level 20" && txt(pW, C_CELL0 + 2) == "Never: stay Scoundrel" && vis(pW, C_CELL0 + 2) && !vis(pW, C_CELL0 + 3),
-          "page 1 texts '%s' '%s' '%s' '%s'", txt(pW, C_WTITLE).c_str(), txt(pW, C_CELL0).c_str(), txt(pW, C_CELL0 + 1).c_str(), txt(pW, C_CELL0 + 2).c_str());
-    // wizard geometry: stats column x 54..300 units (left of SLD_ALIGN 310 / LBL_LIGHT 304, which draw on top)
-    { int x, y, w, h; getExtent(ctl(pW, C_WBG), &x, &y, &w, &h); CHECK(x == 108 && x + w == 600 && x + w <= 2 * 304, "wizard bg px x %d..%d", x, x + w); }
-    // clicks on a hidden cell / on the bg do nothing
-    { int x, y, w, h; getExtent(ctl(pW, C_CELL0 + 4), &x, &y, &w, &h); curX = x + 2; curY = y + 2; lmb = false; tick(pW, atton, 0); lmb = true; tick(pW, atton, 0); lmb = false; tick(pW, atton, 0);
-      CHECK(rec(pW)->wizOpen && rec(pW)->ws.depth == 0 && logCount("UI click") == 1, "hidden cell click ignored"); }
-    // press from elsewhere dragged onto a button does not fire (no rising edge over it)
-    { int x, y, w, h; getExtent(ctl(pW, C_CELL0), &x, &y, &w, &h); curX = 0; curY = 0; lmb = true; tick(pW, atton, 0); curX = x + 5; curY = y + 5; tick(pW, atton, 0); lmb = false; tick(pW, atton, 0);
-      CHECK(rec(pW)->ws.depth == 0, "drag-in press must not click"); }
-    // not foreground: no click
-    { fg = false; clickCtl(pW, atton, 0, C_CELL0); fg = true; CHECK(rec(pW)->ws.depth == 0, "no click while the game is not foreground"); }
-    CHECK(toResult(pW, atton, 0), "wizard reaches the result page");
+    CHECK(rec(pW)->open && logHas("UI click cfg tag=Atton row=-") && logHas("UI page open tag=Atton start=atton__melee_dual_light_early (recommended)"), "cfg click opens the page:\n%s", readLog().c_str());
     {
-        wiz::View v = wiz::view(rec(pW)->ws);
-        const Preset& Pr = g_presets[rec(pW)->itemPreset[v.resultItem]];
-        const bool hc = Pr.holdClass != 0;
-        CHECK(txt(pW, C_WTITLE) == "Your build:" && txt(pW, C_CELL0) == Pr.shortName, "result title '%s' vs '%s'", txt(pW, C_WTITLE).c_str(), Pr.shortName);
-        CHECK(txt(pW, C_CELL0 + 1).find("Jedi Sentinel at 8") != std::string::npos, "summary '%s'", txt(pW, C_CELL0 + 1).c_str());
-        CHECK(txt(pW, C_CELL0 + 2) == "Instant level-ups: Off", "instant toggle '%s'", txt(pW, C_CELL0 + 2).c_str());
-        CHECK(hc && txt(pW, C_CELL0 + 3).rfind("Bank levels until Jedi", 0) == 0 && txt(pW, C_CELL0 + 3).find(": On") != std::string::npos, "hold toggle '%s'", txt(pW, C_CELL0 + 3).c_str());
-        CHECK(txt(pW, C_CELL0 + 4) == "Apply" && vis(pW, C_CELL0 + 4) && !vis(pW, C_CELL0 + 5), "Apply row; no 'Use vanilla' while unconfigured");
-        CHECK(vis(pW, C_WBACK), "back visible on the result page");
-        // Back pops one answer; choosing again reaches the result again
-        const int d = rec(pW)->ws.depth;
-        clickCtl(pW, atton, 0, C_WBACK);
-        CHECK(rec(pW)->ws.depth == d - 1 && !wiz::view(rec(pW)->ws).result, "back pops one answer");
-        CHECK(toResult(pW, atton, 0), "result again");
-        // toggles
-        clickCtl(pW, atton, 0, C_CELL0 + 2);
-        CHECK(txt(pW, C_CELL0 + 2) == "Instant level-ups: On", "instant toggled on '%s'", txt(pW, C_CELL0 + 2).c_str());
-        clickCtl(pW, atton, 0, C_CELL0 + 3);
-        CHECK(txt(pW, C_CELL0 + 3).find(": Off") != std::string::npos, "hold toggled off '%s'", txt(pW, C_CELL0 + 3).c_str());
-        clickCtl(pW, atton, 0, C_CELL0 + 3);
-        CHECK(txt(pW, C_CELL0 + 3).find(": On") != std::string::npos, "hold toggled on");
-        // the clicks on info rows do nothing
-        clickCtl(pW, atton, 0, C_CELL0);
-        CHECK(rec(pW)->wizOpen && wiz::view(rec(pW)->ws).result, "info row click ignored");
-        // Apply: GUID created in the live table, playthrough ini line, tagConfig switches, wizard closes
+        UiPanel* r = rec(pW);
+        const Preset* rp = findPreset(PRESET);
+        CHECK(r->nItems == 7 && !strcmp(r->items[r->os.cur].id, PRESET) && r->recItem == r->os.cur, "starts on the recommended preset (%d items, cur %d)", r->nItems, r->os.cur);
+        CHECK(!vis(pW, C_CFG) && !vis(pW, C_STATUS) && vis(pW, C_BG0) && vis(pW, C_BG1) && vis(pW, C_BG2) && vis(pW, C_TITLE) && vis(pW, C_BUILD) && vis(pW, C_INSTANT) && vis(pW, C_BANK) && vis(pW, C_APPLY) && vis(pW, C_CANCEL),
+              "page visibility");
+        CHECK(!vis(pW, C_REC) && !vis(pW, C_VANILLA), "no 'Use recommended' on the recommended preset, no Vanilla while unconfigured");
+        CHECK(txt(pW, C_TITLE) == "Atton Rand - recommended build", "title '%s'", txt(pW, C_TITLE).c_str());
+        CHECK(txt(pW, C_BUILD) == rp->shortName && txt(pW, C_INSTANT) == "Instant: Off" && txt(pW, C_BANK) == "Bank for Jedi: On" && txt(pW, C_APPLY) == "Apply" && txt(pW, C_CANCEL) == "Cancel",
+              "build '%s' instant '%s' bank '%s'", txt(pW, C_BUILD).c_str(), txt(pW, C_INSTANT).c_str(), txt(pW, C_BANK).c_str());
+        CHECK(txt(pW, C_ROW0 + 0) == "Jedi: Early - Jedi Sentinel at 8", "convert row '%s'", txt(pW, C_ROW0 + 0).c_str());
+        CHECK(txt(pW, C_ROW0 + 1) == std::string("Role: ") + wiz::answerLabel(wiz::Role, rp->role) && txt(pW, C_ROW0 + 2) == std::string("Weapons: ") + wiz::answerLabel(wiz::Style, rp->style) &&
+              txt(pW, C_ROW0 + 3) == std::string("Powers: ") + wiz::answerLabel(wiz::Alignment, rp->alignment) && txt(pW, C_ROW0 + 4) == std::string("Skills: ") + wiz::answerLabel(wiz::Skills, rp->skills),
+              "row texts '%s' '%s' '%s' '%s'", txt(pW, C_ROW0 + 1).c_str(), txt(pW, C_ROW0 + 2).c_str(), txt(pW, C_ROW0 + 3).c_str(), txt(pW, C_ROW0 + 4).c_str());
+        // geometry: every page control inside the stats column (units x 54..300, y 134..470 -> px at scale 2); bg labels carry the opaque fill
+        for (int i = C_BG0; i <= C_CANCEL; ++i) {
+            int x, y, w, h;
+            getExtent(ctl(pW, i), &x, &y, &w, &h);
+            CHECK(x >= 108 && x + w <= 600 && y >= 268 && y + h <= 940, "ctl %s px rect %d,%d,%d,%d outside x 108..600 y 268..940", kUiName[i], x, y, w, h);
+        }
+        for (int b = 0; b < NumBg; ++b) {
+            CHECK(at<uint32_t>(ctl(pW, C_BG0 + b), Label_Border + Border_Fill) != 0 && at<float>(ctl(pW, C_BG0 + b), Label_Border + Border_Alpha) == 1.0f, "bg%d fill + alpha 1", b);
+            int x, y, w, h; getExtent(ctl(pW, C_BG0 + b), &x, &y, &w, &h);
+            CHECK(x == 108 && y == 268 && w == 492 && h == 672, "bg%d rect %d,%d,%d,%d", b, x, y, w, h);
+        }
+        // info labels are not clickable
+        { int x, y, w, h; getExtent(ctl(pW, C_TITLE), &x, &y, &w, &h); curX = x + 5; curY = y + 5; lmb = false; tick(pW, atton, 0); lmb = true; tick(pW, atton, 0); lmb = false; tick(pW, atton, 0);
+          CHECK(r->open && logCount("UI click") == 1, "title click ignored"); }
+        // press from elsewhere dragged onto a button does not fire (no rising edge over it)
+        { int x, y, w, h; getExtent(ctl(pW, C_INSTANT), &x, &y, &w, &h); curX = 0; curY = 0; lmb = true; tick(pW, atton, 0); curX = x + 5; curY = y + 5; tick(pW, atton, 0); lmb = false; tick(pW, atton, 0);
+          CHECK(!r->instant, "drag-in press must not click"); }
+        { fg = false; clickCtl(pW, atton, 0, C_INSTANT); fg = true; CHECK(!r->instant, "no click while the game is not foreground"); }
+        // rows cycle exactly like opt::cycle (parallel state), twice around; texts, build line and compact positions follow
+        opt::State par; opt::init(par, r->items, r->nItems, r->os.cur);
+        int clicks = 0;
+        for (int round = 0; round < 2; ++round)
+            for (int row = 0; row < NumRows; ++row) {
+                if (!opt::shown(r->os, row)) continue;
+                clickCtl(pW, atton, 0, C_ROW0 + row);
+                opt::cycle(par, row, +1);
+                ++clicks;
+                const Preset& cp = g_presets[r->itemPreset[r->os.cur]];
+                CHECK(r->os.cur == par.cur, "row %s click -> cur %d, opt::cycle -> %d", opt::rowName(row), r->os.cur, par.cur);
+                CHECK(txt(pW, C_BUILD) == cp.shortName, "build line '%s' vs '%s'", txt(pW, C_BUILD).c_str(), cp.shortName);
+                char b[UiText];
+                int k = 0;
+                for (int q = 0; q < NumRows; ++q) {
+                    const bool sh = opt::shown(par, q);
+                    CHECK(vis(pW, C_ROW0 + q) == sh, "row %d visibility %d vs %d", q, vis(pW, C_ROW0 + q), sh);
+                    if (!sh) continue;
+                    int x, y, w, h; getExtent(ctl(pW, C_ROW0 + q), &x, &y, &w, &h);
+                    CHECK(txt(pW, C_ROW0 + q) == uiRowText(cp, q, b, sizeof b) && y == 2 * (162 + 30 * k) && h == 52, "row %d text '%s' y %d (slot %d)", q, txt(pW, C_ROW0 + q).c_str(), y, k);
+                    ++k;
+                }
+                CHECK(vis(pW, C_REC) == (r->os.cur != r->recItem), "recommended button visibility");
+                CHECK(vis(pW, C_BANK) == (cp.holdClass != 0), "bank visibility");
+                CHECK(txt(pW, C_TITLE) == std::string(cp.name) + (cp.recommended ? " - recommended build" : " - level-up path"), "title '%s'", txt(pW, C_TITLE).c_str());
+            }
+        CHECK(clicks >= 8, "cycled %d rows", clicks);
+        // "Use recommended": jumps back, keeps toggles
+        if (r->os.cur == r->recItem) clickCtl(pW, atton, 0, C_ROW0 + 0 + (opt::shown(r->os, 0) ? 0 : 1));
+        CHECK(r->os.cur != r->recItem && vis(pW, C_REC), "off the recommended preset: button shown");
+        clickCtl(pW, atton, 0, C_INSTANT);
+        CHECK(r->instant && txt(pW, C_INSTANT) == "Instant: On", "instant toggled '%s'", txt(pW, C_INSTANT).c_str());
+        clickCtl(pW, atton, 0, C_REC);
+        CHECK(r->os.cur == r->recItem && !vis(pW, C_REC) && r->instant && txt(pW, C_TITLE) == "Atton Rand - recommended build", "Use recommended jumps back (cur %d), toggles kept", r->os.cur);
+        // bank toggle
+        clickCtl(pW, atton, 0, C_BANK);
+        CHECK(!r->bank && txt(pW, C_BANK) == "Bank for Jedi: Off", "bank toggled off '%s'", txt(pW, C_BANK).c_str());
+        // Cancel closes
+        clickCtl(pW, atton, 0, C_CANCEL);
+        CHECK(!r->open && !vis(pW, C_BG0) && !vis(pW, C_APPLY) && vis(pW, C_CFG), "cancel closes");
+        // reopen -> toggles reset; pick a non-recommended preset, Apply writes the line with the toggles
+        clickCtl(pW, atton, 0, C_CFG);
+        CHECK(r->open && r->instant == false && r->bank == true, "reopen resets toggles for an unconfigured tag");
+        clickCtl(pW, atton, 0, C_ROW0 + 1);   // Role cycles (atton has several roles)
+        CHECK(r->os.cur != r->recItem, "moved off the recommended preset");
+        clickCtl(pW, atton, 0, C_INSTANT); clickCtl(pW, atton, 0, C_BANK);
+        const std::string id = r->items[r->os.cur].id;
         remove("levelup_playthroughs.ini");
-        const std::string id = Pr.id;
         CHECK(tagConfig("atton") == nullptr, "unconfigured before Apply");
         clearLog();
-        clickCtl(pW, atton, 0, C_CELL0 + 4);
-        CHECK(!rec(pW)->wizOpen && !vis(pW, C_WBG), "wizard closed after Apply");
-        CHECK(ptGuid() != 0 && logHas("UI apply tag=Atton preset=") && logHas("instant=1 hold=1 ok=1"), "apply log:\n%s", readLog().c_str());
+        clickCtl(pW, atton, 0, C_APPLY);
+        CHECK(!r->open && !vis(pW, C_BG0), "page closed after Apply");
+        CHECK(ptGuid() != 0 && logHas("UI apply tag=Atton preset=") && logHas("instant=1 hold=0 ok=1"), "apply log:\n%s", readLog().c_str());
         const std::string ini = fileText("levelup_playthroughs.ini");
-        CHECK(ini.find("atton=" + id + "|instant=1|hold=1") != std::string::npos, "ini line:\n%s", ini.c_str());
-        { const TagCfg* c = tagConfig("atton"); CHECK(c && c->instant && c->hold && c->preset >= 0 && g_presets[c->preset].id == id, "tagConfig switched"); }
+        CHECK(ini.find("atton=" + id + "|instant=1|hold=0") != std::string::npos, "ini line:\n%s", ini.c_str());
+        { const TagCfg* c = tagConfig("atton"); CHECK(c && c->instant && !c->hold && c->preset >= 0 && g_presets[c->preset].id == id, "tagConfig switched"); }
         tick(pW, atton, 0);
-        CHECK(txt(pW, C_CFG) == "Change path" && vis(pW, C_CFG), "cfg text after apply '%s'", txt(pW, C_CFG).c_str());
-        { char want[160]; buildStatus(true, true, true, 0, Pr.holdClass, Pr.shortName, true, want, sizeof want); CHECK(txt(pW, C_STATUS) == want, "held (class level 7 used up) status '%s' want '%s'", txt(pW, C_STATUS).c_str(), want); }
-        { Fake low = makeCreature("atton", {{2, 3}}, 0); tick(pW, low, 0); }
-        { char want[160]; buildStatus(true, true, false, 0, Pr.holdClass, Pr.shortName, true, want, sizeof want); CHECK(vis(pW, C_STATUS) && txt(pW, C_STATUS) == want, "status '%s' want '%s'", txt(pW, C_STATUS).c_str(), want); }
-        // reconfigure: same preset keeps the config's toggles; "Use vanilla" is offered; clicking it removes the line
-        clickCtl(pW, atton, 0, C_CFG);
-        CHECK(rec(pW)->wizOpen && toResult(pW, atton, 0), "reopen to the result");
-        CHECK(wiz::view(rec(pW)->ws).resultItem == v.resultItem && txt(pW, C_CELL0 + 2) == "Instant level-ups: On", "toggles start from the current config '%s'", txt(pW, C_CELL0 + 2).c_str());
-        CHECK(txt(pW, C_CELL0 + 5) == "Use vanilla (no path)" && vis(pW, C_CELL0 + 5), "vanilla row '%s'", txt(pW, C_CELL0 + 5).c_str());
-        clickCtl(pW, atton, 0, C_WCANCEL);
-        CHECK(!rec(pW)->wizOpen && !vis(pW, C_WBG) && vis(pW, C_CFG), "cancel closes");
-        clickCtl(pW, atton, 0, C_CFG);
-        CHECK(toResult(pW, atton, 0), "reopen");
+        CHECK(txt(pW, C_CFG) == "Change path" && vis(pW, C_CFG) && vis(pW, C_STATUS), "cfg text after apply '%s'", txt(pW, C_CFG).c_str());
+        // configured: opens on the configured preset with the config's toggles; Vanilla and Use recommended are offered
         clearLog();
-        clickCtl(pW, atton, 0, C_CELL0 + 5);
-        CHECK(!rec(pW)->wizOpen && logHas("UI vanilla tag=Atton ok=1"), "vanilla log:\n%s", readLog().c_str());
+        clickCtl(pW, atton, 0, C_CFG);
+        CHECK(r->open && r->items[r->os.cur].id == id && logHas(("UI page open tag=Atton start=" + id + " (configured)").c_str()), "reopen on the configured preset:\n%s", readLog().c_str());
+        CHECK(r->instant && !r->bank && txt(pW, C_INSTANT) == "Instant: On" && txt(pW, C_BANK) == "Bank for Jedi: Off", "toggles from the config");
+        CHECK(vis(pW, C_VANILLA) && txt(pW, C_VANILLA) == "Vanilla" && vis(pW, C_REC) && txt(pW, C_TITLE).find("level-up path") != std::string::npos, "vanilla + recommended offered");
+        // a preset without a hold class: bank toggle hidden, Apply writes hold=1 whatever the (hidden) toggle says
+        for (int i = 0; i < 4 && g_presets[r->itemPreset[r->os.cur]].holdClass != 0; ++i) clickCtl(pW, atton, 0, C_ROW0 + 0);
+        CHECK(g_presets[r->itemPreset[r->os.cur]].holdClass == 0 && !vis(pW, C_BANK) && !r->bank, "convert row reached a no-Jedi preset (bank hidden, toggle still Off)");
+        clearLog();
+        clickCtl(pW, atton, 0, C_APPLY);
+        CHECK(!r->open && logHas("hold=1 ok=1") && fileText("levelup_playthroughs.ini").find("|hold=1") != std::string::npos, "hold-less preset applies hold=1:\n%s", readLog().c_str());
+        clickCtl(pW, atton, 0, C_CFG);
+        clickCtl(pW, atton, 0, C_ROW0 + 1);
+        clickCtl(pW, atton, 0, C_CANCEL);
+        CHECK(!r->open && tagConfig("atton") != nullptr, "cancel leaves the config alone");
+        clickCtl(pW, atton, 0, C_CFG);
+        clearLog();
+        clickCtl(pW, atton, 0, C_VANILLA);
+        CHECK(!r->open && logHas("UI click vanilla tag=Atton row=-") && logHas("UI vanilla tag=Atton ok=1"), "vanilla log:\n%s", readLog().c_str());
         CHECK(fileText("levelup_playthroughs.ini").find("atton=") == std::string::npos && tagConfig("atton") == nullptr, "line removed, tag unconfigured");
         tick(pW, atton, 0);
         CHECK(txt(pW, C_CFG) == "Configure" && !vis(pW, C_STATUS), "cfg back to Configure, status hidden");
-        // the wizard resets when the leader changes
+        // leader change closes the page
         clickCtl(pW, atton, 0, C_CFG);
-        CHECK(rec(pW)->wizOpen, "open again");
+        CHECK(r->open, "open again");
         Fake other = makeCreature("kreia", {{4, 3}});
         tick(pW, other, 0);
-        CHECK(!rec(pW)->wizOpen && !vis(pW, C_WBG) && txt(pW, C_CFG) == "Configure", "leader change closes the wizard");
+        CHECK(!r->open && !vis(pW, C_BG0) && txt(pW, C_CFG) == "Configure", "leader change closes the page");
+        // Kreia: no Convert row (compact), no bank toggle
+        clearLog();
         clickCtl(pW, other, 0, C_CFG);
-        CHECK(rec(pW)->wizOpen && !strcmp(rec(pW)->wizTag, "kreia") && rec(pW)->nItems == 7, "kreia wizard has its 7 selectable presets (not the __live one): %d", rec(pW)->nItems);
+        CHECK(r->open && !strcmp(r->pageTag, "kreia") && r->nItems == 7 && logHas("start=kreia__support_neutral (recommended)"), "kreia page: 7 selectable presets (not the __live one): %d\n%s", r->nItems, readLog().c_str());
+        CHECK(!opt::shown(r->os, 0) && !vis(pW, C_ROW0 + 0) && !vis(pW, C_BANK) && vis(pW, C_INSTANT), "kreia: no Convert row, no bank toggle");
+        { int first = -1; for (int q = 0; q < NumRows && first < 0; ++q) if (vis(pW, C_ROW0 + q)) first = q;
+          int x, y, w, h; getExtent(ctl(pW, C_ROW0 + first), &x, &y, &w, &h);
+          CHECK(first > 0 && y == 2 * 162, "kreia: first shown row %d sits in slot 0 (y %d)", first, y); }
+        { const int before = logCount("UI click"); clickCtl(pW, other, 0, C_BANK); CHECK(logCount("UI click") == before && !r->instant, "hidden bank toggle ignored"); }
+        { int x, y, w, h; getExtent(ctl(pW, C_ROW0 + 0), &x, &y, &w, &h); (void)x; (void)y; (void)w; (void)h; }
+        // PC leader hides + resets the page
         tick(pW, pc, 0);
-        CHECK(!rec(pW)->wizOpen && !anyVisible(pW), "PC leader hides + resets the wizard");
-        // Kreia: no hold class -> no hold row, Apply is cell 3
+        CHECK(!r->open && !anyVisible(pW), "PC leader hides + closes the page");
+        // Apply failure (no live table) -> title says so and the page stays open
         tick(pW, other, 0);
         clickCtl(pW, other, 0, C_CFG);
-        CHECK(toResult(pW, other, 0), "kreia result");
-        CHECK(txt(pW, C_CELL0 + 1).find("Jedi") == std::string::npos && txt(pW, C_CELL0 + 2).rfind("Instant", 0) == 0 && txt(pW, C_CELL0 + 3) == "Apply" && !vis(pW, C_CELL0 + 4), "no hold row for hold_class 0: '%s'", txt(pW, C_CELL0 + 3).c_str());
-        // Apply failure (no live table) -> title says so and the wizard stays open
         at<uint32_t>(app, 8) = 0;
         const uint32_t g0 = ptGuid();
         remove("levelup_playthroughs.ini");
         LuoGuidNewServer(P(1));   // GUID forgotten: ptApply needs the live table again
-        clickCtl(pW, other, 0, C_CELL0 + 3);
-        CHECK(rec(pW)->wizOpen && txt(pW, C_WTITLE) == "Could not save - see log" && tagConfig("kreia") == nullptr, "save failure keeps the wizard open: '%s'", txt(pW, C_WTITLE).c_str());
+        clickCtl(pW, other, 0, C_APPLY);
+        CHECK(r->open && txt(pW, C_TITLE) == "Could not save - see log" && tagConfig("kreia") == nullptr, "save failure keeps the page open: '%s'", txt(pW, C_TITLE).c_str());
         at<uint32_t>(app, 8) = (uint32_t)srv;
-        clickCtl(pW, other, 0, C_CELL0 + 3);
-        CHECK(!rec(pW)->wizOpen && tagConfig("kreia") != nullptr && ptGuid() != 0 && ptGuid() != g0, "second attempt succeeds");
+        clickCtl(pW, other, 0, C_APPLY);
+        CHECK(!r->open && tagConfig("kreia") != nullptr && ptGuid() != 0 && ptGuid() != g0, "second attempt succeeds");
         ptRemove("kreia");
+        // g0t0: the Variant row appears on the identical-answer pair, cycles, and sits in the last slot
+        Fake g0t0 = makeCreature("g0t0", {{0, 3}});
+        tick(pW, g0t0, 0);
+        clickCtl(pW, g0t0, 0, C_CFG);
+        CHECK(r->open && !strcmp(r->pageTag, "g0t0") && !opt::shown(r->os, opt::VariantRow) && !vis(pW, C_ROW0 + opt::VariantRow), "g0t0 opens without a Variant row");
+        for (int i = 0; i < 6 && !opt::shown(r->os, opt::VariantRow); ++i) clickCtl(pW, g0t0, 0, C_ROW0 + 1);   // Role cycles onto the ranged/pistols/none/n/a/combat pair
+        CHECK(opt::shown(r->os, opt::VariantRow) && vis(pW, C_ROW0 + opt::VariantRow), "g0t0: Variant row appears on the identical-answer pair");
+        if (opt::shown(r->os, opt::VariantRow)) {
+            const int before = r->os.cur;
+            int slot = 0; for (int q = 0; q < opt::VariantRow; ++q) if (opt::shown(r->os, q)) ++slot;
+            int x, y, w, h; getExtent(ctl(pW, C_ROW0 + opt::VariantRow), &x, &y, &w, &h);
+            CHECK(y == 2 * (162 + 30 * slot) && txt(pW, C_ROW0 + opt::VariantRow) == std::string("Variant: ") + r->items[before].shortName, "variant row last slot (y %d slot %d) '%s'", y, slot, txt(pW, C_ROW0 + opt::VariantRow).c_str());
+            clickCtl(pW, g0t0, 0, C_ROW0 + opt::VariantRow);
+            CHECK(r->os.cur != before && txt(pW, C_BUILD) == r->items[r->os.cur].shortName && txt(pW, C_ROW0 + opt::VariantRow) == std::string("Variant: ") + r->items[r->os.cur].shortName, "variant click cycles to %d", r->os.cur);
+        }
+        clickCtl(pW, g0t0, 0, C_CANCEL);
+        // a table change (stamp) closes the page
+        tick(pW, atton, 0);
+        clickCtl(pW, atton, 0, C_CFG);
+        CHECK(r->open, "open before the table change");
+        g_tableStamp ^= 1;
+        tick(pW, atton, 0);
+        CHECK(!r->open && !vis(pW, C_BG0), "table change closes the page");
+        (void)rp;
     }
 
     // 5. held status + R11 banked message
