@@ -1,5 +1,14 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**TARGET PROBE BUILD 29p READY, NOT INSTALLED (2026-10-03 ~13:00): `afe1553c`** (kpatch in `~/Games/KOTOR2_Mod_Workspace/hotbar_probe_b29/`). Install waits for the user's build 28 report.
+- Code: UB-C Party.h vitals (33aa74e, clone fa653d0), UB-I `@lowhp[:pct[:self|none]]` + `[General] HealThreshold/HealFallback` (33aa74e), UB-L HotbarLogic.h (cc4a6e4), probe `targetedUse` in drainRing.
+- Probe use: hand-edit an item slot to `item:<name>@lowhp:90` and set `[General] TargetProbe=1` (log only, still uses it on self) or `=2` (live: PerformUseItem on the chosen member). INI reloads live.
+  Log lines `target: ...` (item ids/type, one line per member with hp/ok/down/eligible, the choice, PerformUseItem called/returned).
+- Opus review fix before build: object table = `*(app+8)` (0x77c7aa), the agent had chained app+4 -> +8. ABI re-checked: 0x51C8B0 / 0x51C0E0 RET 4, 0x6D6E30 no args.
+- NOTE: a build-28 DLL refuses editor saves on an INI containing `@lowhp` (parse warning). Don't hand-edit `@lowhp` until the probe is installed.
+- Probe test plan: (1) TargetProbe=1, Medpac@lowhp:90 with a hurt companion -> log shows members + choice; (2) TargetProbe=2 -> companion healed, one medpac used, no crash;
+  (3) repair kit with no droid in the party -> eligible=0 for all; (4) everyone healthy -> self; (5) `@lowhp:90:none` everyone healthy -> "nobody, skipped".
+
 **TARGET MODES GATE R PASSED (2026-10-03 ~12:15)** -- `07_force_power_hotbar_evidence/target_modes/FINDINGS.md` + `TARGETABLE.md`, DB lessons 388-390.
 - Items: replicate vanilla 0x77C780: member 0x7E5DA0 -> server 0x77D800 -> CanUseItem 0x5D2F80(ECX=server; 0x51C0E0(id),0,1) -> PerformUseItem 0x775600(id,0,*(member+4),member+0x24).
 - Powers: NO vanilla power is single-target friendly (Heal x3 = party within 15 m), so target modes = items only (medpacs, stims, antidote, repair kits, adrenaline/combat shots; not shields/cloak). Mode button disabled for powers.
