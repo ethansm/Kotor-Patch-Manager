@@ -1,3 +1,6 @@
+# Default for every hotbar test: warnings are errors. Per-test tables replace (not merge) these keys.
+cxxflags = ["-Werror"]
+
 # Per-test table: only the Common contract test needs the shared headers + host Win32 stub (mirrors _shared_src/test.toml).
 # The four older hotbar tests keep their defaults.
 [common_contract_test]

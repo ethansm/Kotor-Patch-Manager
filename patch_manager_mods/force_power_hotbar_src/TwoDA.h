@@ -25,7 +25,35 @@ struct TwoDA {
         return Parse(d);
     }
 
+    // Replaces any previous state; on failure leaves cols/labels/rows empty and `error` set.
     bool Parse(const std::string& d) {
+        cols.clear(); labels.clear(); rows.clear(); error.clear();
+        if (ParseImpl(d)) return true;
+        cols.clear(); labels.clear(); rows.clear();
+        return false;
+    }
+
+    // Column index by name, ASCII case-insensitive (engine 2DA column names are); first match wins; -1 if none.
+    int Col(const char* name) const {
+        if (!name) return -1;
+        for (size_t i = 0; i < cols.size(); ++i) if (ieq(cols[i], name)) return (int)i;
+        return -1;
+    }
+    std::string Get(int row, const char* col) const {
+        int c = Col(col);
+        if (c < 0 || row < 0 || row >= (int)rows.size()) return "";
+        return rows[row][c];
+    }
+
+private:
+    static bool ieq(const std::string& a, const char* b) {
+        size_t i = 0;
+        for (; i < a.size() && b[i]; ++i) if (lower(a[i]) != lower(b[i])) return false;
+        return i == a.size() && !b[i];
+    }
+    static char lower(char c) { return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c; }
+
+    bool ParseImpl(const std::string& d) {
         if (d.size() < 16 || d.compare(0, 8, "2DA V2.b") != 0) { error = "not a binary 2DA V2.b"; return false; }
         size_t p = 9;   // "2DA V2.b\n"
         while (p < d.size() && d[p] != '\0') {
@@ -58,14 +86,6 @@ struct TwoDA {
         return true;
     }
 
-    int Col(const char* name) const { for (size_t i = 0; i < cols.size(); ++i) if (cols[i] == name) return (int)i; return -1; }
-    std::string Get(int row, const char* col) const {
-        int c = Col(col);
-        if (c < 0 || row < 0 || row >= (int)rows.size()) return "";
-        return rows[row][c];
-    }
-
-private:
     static uint32_t rd32(const std::string& d, size_t p) { return (uint8_t)d[p] | ((uint8_t)d[p + 1] << 8) | ((uint8_t)d[p + 2] << 16) | ((uint32_t)(uint8_t)d[p + 3] << 24); }
     static uint32_t rd16(const std::string& d, size_t p) { return (uint8_t)d[p] | ((uint8_t)d[p + 1] << 8); }
 };

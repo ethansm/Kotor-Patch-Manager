@@ -7,6 +7,26 @@
 #include "check.h"
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <vector>
+#include <unistd.h>
+
+// ---- in-memory binary 2DA builder for malformed-file tests (Parse takes a string, no files needed).
+static void le32(std::string& s, uint32_t v) { for (int i = 0; i < 4; ++i) s += (char)((v >> (8 * i)) & 0xFF); }
+static void le16(std::string& s, uint32_t v) { s += (char)(v & 0xFF); s += (char)((v >> 8) & 0xFF); }
+// cells[r][c] strings are laid out back to back in the data blob. Overrides let a test lie in the header.
+static std::string Build2da(const std::vector<std::string>& cols, const std::vector<std::vector<std::string>>& cells,
+                            long nrowsOverride = -1, bool colTerm = true, long offOverride = -1) {
+    std::string s = "2DA V2.b\n";
+    for (const std::string& c : cols) { s += c; s += '\t'; }
+    if (colTerm) s += '\0';
+    le32(s, nrowsOverride >= 0 ? (uint32_t)nrowsOverride : (uint32_t)cells.size());
+    for (size_t r = 0; r < cells.size(); ++r) { s += std::to_string(r); s += '\t'; }
+    std::string blob; std::string offs;
+    for (const auto& row : cells) for (const std::string& c : row) { le16(offs, offOverride >= 0 ? (uint32_t)offOverride : (uint32_t)blob.size()); blob += c; blob += '\0'; }
+    s += offs; le16(s, (uint32_t)blob.size()); s += blob;
+    return s;
+}
 struct Expect { int row; const char* name; const char* fp; const char* range; const char* category; const char* icon; };
 int main(int argc, char** argv) {
     const bool real = argc > 1;
@@ -48,6 +68,96 @@ int main(int argc, char** argv) {
     KT_CHECK_EQ(t.Get(-1, "name").c_str(), "");
     KT_CHECK_EQ(t.Get((int)t.rows.size(), "name").c_str(), "");
     KT_CHECK_EQ(t.Get(100000, "name").c_str(), "");
+
+    // ================= malformed / edge-case Parse tests =================
+    {
+        const std::vector<std::string> C = {"Label", "Name"};
+        const std::vector<std::vector<std::string>> R = {{"a", "1"}, {"b", "2"}};
+        const std::string good = Build2da(C, R);
+        hb::TwoDA m;
+        KT_CHECK(m.Parse(good));
+        KT_CHECK_EQ(m.rows.size(), 2); KT_CHECK_EQ(m.Get(1, "Name").c_str(), "2"); KT_CHECK_EQ(m.labels[1].c_str(), "1");
+        // < 16 bytes, bad magic.
+        KT_CHECK(!m.Parse(std::string())); KT_CHECK_EQ(m.error.c_str(), "not a binary 2DA V2.b");
+        KT_CHECK(!m.Parse(good.substr(0, 15)));
+        KT_CHECK(!m.Parse(std::string("2DA V2.b\n") + "abc"));                 // 12 bytes
+        { std::string b = good; b[0] = 'X'; KT_CHECK(!m.Parse(b)); }
+        { std::string b = good; b.replace(0, 8, "2DA V2.0"); KT_CHECK(!m.Parse(b)); }   // ASCII 2DA unsupported
+        { std::string b = good; b.replace(0, 8, "2da v2.b"); KT_CHECK(!m.Parse(b)); }
+        // Header without \t terminator / without the \0 list terminator.
+        { std::string b = "2DA V2.b\nLabel Name"; b.append(8, 'x'); KT_CHECK(!m.Parse(b)); KT_CHECK_EQ(m.error.c_str(), "bad column header"); }
+        KT_CHECK(!m.Parse(Build2da(C, R, -1, false)));                           // no \0: counts read as column text, no \t found
+        { std::string b = "2DA V2.b\nLabel\tName\t"; KT_CHECK(!m.Parse(b + std::string(1, '\0'))); }   // ends right after terminator (truncated)
+        // Truncated counts/offsets.
+        { std::string b = good.substr(0, 9 + 12 + 1 + 2); KT_CHECK(!m.Parse(b)); }    // cut inside the row-count field
+        KT_CHECK_EQ(m.error.c_str(), "truncated");
+        { size_t labelEnd = 9 + 12 + 1 + 4 + 4; KT_CHECK(!m.Parse(good.substr(0, labelEnd + 3))); KT_CHECK_EQ(m.error.c_str(), "truncated offsets"); }
+        KT_CHECK(m.Parse(good.substr(0, good.size() - 3)));                     // data blob cut short: unreachable cells -> ""
+        KT_CHECK_EQ(m.Get(1, "Label").c_str(), "b"); KT_CHECK_EQ(m.Get(1, "Name").c_str(), "");
+        { std::string b = good.substr(0, 9 + 12 + 1 + 4 + 2); KT_CHECK(!m.Parse(b)); }   // cut inside row labels
+        KT_CHECK_EQ(m.error.c_str(), "bad row label");
+        // nrows limits.
+        KT_CHECK(!m.Parse(Build2da(C, R, 100001))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");
+        KT_CHECK(!m.Parse(Build2da(C, R, 0xFFFFFFFFl)));
+        KT_CHECK(!m.Parse(Build2da(C, R, 100000)));                              // allowed count, but data is far too short
+        KT_CHECK(!m.Parse(Build2da(C, R, 3)));                                   // header claims one row more than exists
+        // Cell offset past end -> "" (not a crash).
+        KT_CHECK(m.Parse(Build2da(C, R, -1, true, 0xFFFF)));
+        KT_CHECK_EQ(m.Get(0, "Name").c_str(), ""); KT_CHECK_EQ(m.Get(1, "Label").c_str(), "");
+        // Cell offset exactly at the end of the data blob (== d.size()) -> "".
+        KT_CHECK(m.Parse(Build2da({"A"}, {{"x"}}, -1, true, 2))); KT_CHECK_EQ(m.Get(0, "A").c_str(), "");
+        // 0 rows with columns; 0 cols with rows; both zero.
+        KT_CHECK(m.Parse(Build2da(C, {})));
+        KT_CHECK_EQ(m.cols.size(), 2); KT_CHECK_EQ(m.rows.size(), 0); KT_CHECK_EQ(m.labels.size(), 0);
+        KT_CHECK_EQ(m.Get(0, "Name").c_str(), "");
+        KT_CHECK(m.Parse(Build2da({}, {{}, {}}, 2)));                            // 0 columns, 2 rows
+        KT_CHECK_EQ(m.cols.size(), 0); KT_CHECK_EQ(m.rows.size(), 2); KT_CHECK_EQ(m.labels.size(), 2);
+        KT_CHECK_EQ(m.Get(0, "Name").c_str(), ""); KT_CHECK_EQ(m.Col("x"), -1);
+        KT_CHECK(m.Parse(Build2da({}, {})));
+        KT_CHECK_EQ(m.rows.size(), 0);
+        // Load: missing file.
+        KT_CHECK(!m.Load("testdata/no_such_file.2da")); KT_CHECK_EQ(m.error.c_str(), "cannot open");
+        KT_CHECK_EQ(m.cols.size(), 0);
+    }
+
+    // ================= Parse is self-contained: a second Parse replaces, not appends =================
+    {
+        const std::string a = Build2da({"Label", "Name"}, {{"a", "1"}, {"b", "2"}});
+        const std::string b = Build2da({"X"}, {{"z"}});
+        hb::TwoDA m;
+        KT_CHECK(m.Parse(a)); KT_CHECK(m.Parse(b));
+        KT_CHECK_EQ(m.cols.size(), 1); KT_CHECK_EQ(m.rows.size(), 1); KT_CHECK_EQ(m.labels.size(), 1);
+        KT_CHECK_EQ(m.Get(0, "X").c_str(), "z");
+        KT_CHECK_EQ(m.Col("Name"), -1);
+        KT_CHECK(m.Parse(b));                                                    // same content twice: still 1 row
+        KT_CHECK_EQ(m.rows.size(), 1); KT_CHECK_EQ(m.cols.size(), 1);
+        // Stale error cleared by a good Parse.
+        KT_CHECK(!m.Parse("junk")); KT_CHECK(m.Parse(a)); KT_CHECK_EQ(m.error.c_str(), "");
+        // A failed Parse leaves no partial state behind.
+        KT_CHECK(m.Parse(a)); KT_CHECK(!m.Parse(Build2da({"Q"}, {{"1"}}, 100001)));
+        KT_CHECK_EQ(m.cols.size(), 0); KT_CHECK_EQ(m.rows.size(), 0); KT_CHECK_EQ(m.labels.size(), 0);
+        // Load twice on the fixture: no accumulation either.
+        hb::TwoDA f; KT_CHECK(f.Load("testdata/spells_fixture.2da")); KT_CHECK(f.Load("testdata/spells_fixture.2da"));
+        KT_CHECK_EQ(f.rows.size(), 43); KT_CHECK_EQ(f.cols.size(), 7);
+    }
+
+    // ================= Col is case-insensitive (engine 2DA column names are), first match wins =================
+    {
+        hb::TwoDA m; KT_CHECK(m.Parse(Build2da({"Label", "ForcePoints", "SPELLDESC", "dup", "DUP"}, {{"l", "25", "d", "first", "second"}})));
+        KT_CHECK_EQ(m.Col("Label"), 0); KT_CHECK_EQ(m.Col("label"), 0); KT_CHECK_EQ(m.Col("LABEL"), 0);
+        KT_CHECK_EQ(m.Col("forcepoints"), 1); KT_CHECK_EQ(m.Col("FORCEPOINTS"), 1);
+        KT_CHECK_EQ(m.Col("spelldesc"), 2); KT_CHECK_EQ(m.Col("SpellDesc"), 2);
+        KT_CHECK_EQ(m.Col("dup"), 3); KT_CHECK_EQ(m.Col("Dup"), 3);              // first of duplicates
+        KT_CHECK_EQ(m.Col("labe"), -1); KT_CHECK_EQ(m.Col("labels"), -1); KT_CHECK_EQ(m.Col(""), -1);
+        KT_CHECK_EQ(m.Col(nullptr), -1);
+        KT_CHECK_EQ(m.Get(0, "forcePOINTS").c_str(), "25");
+        KT_CHECK_EQ(m.Get(0, "SpellDesc").c_str(), "d");
+        // The real fixture, with the exact names ForcePowerHotbar.cpp uses, resolves to the same columns either way.
+        for (const char* n : {"name", "forcepoints", "range", "category", "iconresref", "spelldesc", "label"}) {
+            std::string up = n; for (char& ch : up) ch = (char)toupper((unsigned char)ch);
+            KT_CHECK_EQ(t.Col(up.c_str()), t.Col(n)); KT_CHECK(t.Col(n) >= 0);
+        }
+    }
     hb::Tlk k;
     if (argc > 2 && k.Open(argv[2])) {
         for (int r : {8, 10}) { int n = atoi(t.Get(r, "name").c_str()), d = atoi(t.Get(r, "spelldesc").c_str()); printf("tlk name[%d]='%s'\n desc[%d]='%s'\n", n, k.Get(n).c_str(), d, k.Get(d).c_str()); }

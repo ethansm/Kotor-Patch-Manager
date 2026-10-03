@@ -30,24 +30,28 @@ struct Tlk {
         return ok;
     }
 
-    // ASCII-fied, whitespace-collapsed text of a strref ("" if invalid). Cached.
+    // ASCII-fied, whitespace-collapsed text of a strref ("" if invalid). Successful reads and structurally
+    // invalid entries are cached; I/O failures (file missing, truncated) are NOT, so a later call can retry.
     std::string Get(uint32_t ref) {
         if (!ok || ref >= count) return "";
         auto it = cache.find(ref); if (it != cache.end()) return it->second;
-        std::string out;
         FILE* f = fopen(path.c_str(), "rb");
-        if (f) {
-            unsigned char e[40];
-            if (fseek(f, (long)(20 + (long)ref * 40), SEEK_SET) == 0 && fread(e, 1, 40, f) == 40) {
-                uint32_t off = u32(e + 28), size = u32(e + 32);
-                if (size < 65536 && fseek(f, (long)(strOff + off), SEEK_SET) == 0) {
-                    std::string raw(size, '\0');
-                    if (fread(&raw[0], 1, size, f) == size) out = Clean(raw);
-                }
+        if (!f) return "";
+        std::string out; bool cacheIt = false;
+        unsigned char e[40];
+        // 64-bit offsets (uint32 strOff+off would wrap); fseek takes a long, so stay below 2^31.
+        const uint64_t entPos = 20 + (uint64_t)ref * 40;
+        if (entPos + 40 <= 0x7FFFFFFFull && fseek(f, (long)entPos, SEEK_SET) == 0 && fread(e, 1, 40, f) == 40) {
+            uint32_t off = u32(e + 28), size = u32(e + 32);
+            const uint64_t dataPos = (uint64_t)strOff + off;
+            if (size >= 65536) cacheIt = true;   // never valid: don't re-read it every call
+            else if (dataPos + size <= 0x7FFFFFFFull && fseek(f, (long)dataPos, SEEK_SET) == 0) {
+                std::string raw(size, '\0');
+                if (fread(&raw[0], 1, size, f) == size) { out = Clean(raw); cacheIt = true; }
             }
-            fclose(f);
         }
-        cache[ref] = out;
+        fclose(f);
+        if (cacheIt) cache[ref] = out;
         return out;
     }
 
