@@ -104,7 +104,7 @@ __attribute__((noinline)) static bool probeRead(unsigned site, const void* p, si
 
 // True when [p, p+len) is committed, writable memory (PAGE_READWRITE/WRITECOPY/EXECUTE_READWRITE/EXECUTE_WRITECOPY, no GUARD/NOACCESS).
 // Same shape, cache scope (beginScope) and failure ring as probeRead; uses VirtualQuery only (IsBadWritePtr fault-storms under Wine).
-__attribute__((noinline)) static bool probeWrite(unsigned site, void* p, size_t len) {
+__attribute__((noinline, unused)) static bool probeWrite(unsigned site, void* p, size_t len) {
     uintptr_t a = reinterpret_cast<uintptr_t>(p);
     uintptr_t caller = reinterpret_cast<uintptr_t>(__builtin_return_address(0));
     if (len == 0) return true;
