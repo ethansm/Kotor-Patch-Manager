@@ -144,6 +144,7 @@ static uintptr_t makeChain(bool viaAuto) {
 // ---- config / log helpers ----
 static void writeIni(const std::vector<std::string>& lines, const char* table) {
     FILE* f = fopen("levelup_override.ini", "w");
+    fprintf(f, "dev=1\n");   // 1.0.0: dev keys (preset./hold./instant./pause.<tag>) need dev=1
     for (auto& l : lines) fprintf(f, "%s\n", l.c_str());
     fprintf(f, "table=%s\n", table);
     fclose(f);

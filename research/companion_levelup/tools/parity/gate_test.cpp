@@ -87,7 +87,7 @@ static void* P(uintptr_t a) { return reinterpret_cast<void*>(a); }
 // ---- config / log helpers ----
 static void setIni(const char* body, const char* table) {
     FILE* f = fopen("levelup_override.ini", "w");
-    fprintf(f, "%s\ntable=%s\n", body, table);
+    fprintf(f, "dev=1\n%s\ntable=%s\n", body, table);   // dev=1: these tests use the dev keys (1.0.0: ignored without it)
     fclose(f);
     g_stubTick += 5000;   // past the 1000 ms reload throttle; the next gate call re-reads the ini
 }
@@ -143,6 +143,23 @@ int main(int argc, char** argv) {
     Fake other = makeCreature("hk47", {{6, 7}});
     // the preset must hold [(2,7)] and not hold [(2,7),(5,0)] / [(2,5)] (levelNow twin of the python rule)
     char ini[512];
+
+    // 0. 1.0.0 banner: first hook call logs the module file's crc32 (zlib crc32 of "123456789" = cbf43926); no ini yet -> defaults mode=rewrite
+    { FILE* mf = fopen("luo_module.bin", "wb"); fputs("123456789", mf); fclose(mf); }
+    g_stubModulePath = "luo_module.bin";
+    remove("levelup_override.ini");
+    g_stubTick += 5000;
+    g_canRet = 1;
+    CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 1, "missing ini: nothing configured -> pass-through");
+    CHECK(logHas("loaded; first hook call (build apply=1 crc32=cbf43926) ==") && logHas("CONFIG missing (defaults) mode=rewrite apply=1 verbose=0 ") && g_cfg.mode == Mode::Rewrite && !g_cfg.verbose,
+          "banner crc32 / missing-ini defaults (rewrite, verbose=0):\n%s", readLog().c_str());
+    // 0b. dev keys and legacy tags= are ignored without dev=1 (any position in the file); with dev=1 they apply
+    snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ntags=kreia\npause.atton=6\ntable=%s\n", PRESET, table);
+    { FILE* f = fopen("levelup_override.ini", "w"); fputs(ini, f); fclose(f); g_stubTick += 5000; }
+    CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 1 && g_cfg.nTags == 0 && !g_cfg.dev && tagConfig("atton") == nullptr && tagConfig("kreia") == nullptr, "dev keys without dev=1 are ignored");
+    { FILE* f = fopen("levelup_override.ini", "w"); fprintf(f, "%sdev=1\n", ini); fclose(f); g_stubTick += 5000; }
+    CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 0 && g_cfg.dev && tagConfig("atton") != nullptr && tagConfig("kreia") != nullptr && logHas("DEV keys enabled (dev=1)"), "dev=1 (last line of the file) enables the dev keys");
+    g_nHoldState = 0; clearLog();   // forget the HOLD state / banner lines of the checks above
 
     // 1. mode=rewrite, no tag configured -> pass-through
     setIni("mode=rewrite", table);
@@ -270,7 +287,7 @@ int main(int argc, char** argv) {
     CHECK(LuoGuardGui_84FD2F(P(7)) == 1, "gui guard: held leader -> 1");
     CHECK(g_lastTableEcx == P(0x10001234), "table-get ECX must be [[appGlobal]+4], got %p", g_lastTableEcx);
     CHECK(LuoGuardAuto_84F9FE(P(7)) == 1, "auto guard: held leader -> 1");
-    CHECK(logHas("GUARD gui tag=Atton") && logHas("GUARD auto tag=Atton") && logHas("GUARD-PROBE gui") && logHas("tagCreature=Atton"), "guard log lines:\n%s", readLog().c_str());
+    CHECK(logHas("GUARD gui tag=Atton") && logHas("GUARD auto tag=Atton"), "guard log lines:\n%s", readLog().c_str());
     g_creatureRet = P(sentinel.creature);
     CHECK(LuoGuardGui_84FD2F(P(7)) == 0, "gui guard: unheld leader -> 0");
     g_creatureRet = P(pc.creature);

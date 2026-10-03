@@ -1,14 +1,16 @@
-// Level-Up Override 0.3.1 (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
+// Level-Up Override 1.0.0 (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
 // preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini plus a
-// per-playthrough (save-bound) config, plus a character-screen UI (Configure button, path wizard, status line, banked-level message).
-// Default mode=log only logs + dry-runs.
+// per-playthrough (save-bound) config, plus a character-screen UI (Configure button, options page, status line, banked-level message).
+// Default (levelup_override.ini missing, or no mode= key) is mode=rewrite: nothing changes for a companion until the player configures a path
+// on the character screen (or a dev key does). mode=log only logs + dry-runs; mode=off is inert.
 // History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump;
 // 0.2.1 rewrite only under AutoLevelup (user requirement: pre-determine the auto level-up, never override manual picks);
 // 0.3.0-a table v2 (presets + class levels), levelNow (hold rule v2), per-tag config (preset./instant./hold.), Class Skill feats in the
 // unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop;
 // 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API);
-// 0.3.0 M4 character-screen Configure button + wizard + R11 status line / banked message (LevelUpUi.h, WizardLogic.h, _shared/GuiKit.h);
+// 0.3.0 M4 character-screen Configure button + options page + R11 status line / banked message (LevelUpUi.h, OptionsLogic.h, WizardLogic.h = Item type, _shared/GuiKit.h);
 // 0.3.1 per-companion "Pause at level N" (pause.<tag>= / |pause=N; levelNow pauseAt: bank every level above N for the hold class; Bank button cycles N).
+// 1.0.0 cleanup: mode=rewrite is the default, verbose=0 default, dev probes removed, legacy tags= / per-tag dev keys only with dev=1, banner logs the DLL crc32.
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
 // Hook 1: detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
@@ -40,7 +42,7 @@
 //   creates our labels (guikit::createLabelFromTemplate, addToList=0) and does NOT append them (Mod 14's 0x84D871 hook later binds LBL_EFX_* with
 //   InitControl addToList=1 and expects ids 69..150).
 // Hook 4b (M4 UI, tick): the SetStats hold-gate site 0x84F221 now also passes ebp (panel = [ebp-0x288]) to LuoHold_84F221, which keeps the hold
-//   semantics and then runs the UI tick (append once on the first tick, placement, Configure button / status line / wizard, click polling).
+//   semantics and then runs the UI tick (append once on the first tick, placement, Configure button / status line / options page, click polling).
 //   SetStats runs every frame from CSWGuiInGameCharacter::Update 0x84FBB0 (the hook Mod 14 ticks on), i.e. only while the character screen is the
 //   updated panel - clicks are polled only inside that tick.
 // R11 banked message: from every hold gate, a configured creature that is HOLD with N>0 banked levels (XP table rules+0x38) shows once per
@@ -48,11 +50,13 @@
 //   (thiscall(GuiInGame=*(clientInternal+0x40), CExoString*, 0x80, 0) RET 0xC; every link of the chain checked, else retried on the next gate call).
 //
 // Config levelup_override.ini (game dir, re-read when its mtime changes, stat at most once per second from the gates; missing = defaults):
-//   mode=log (default) | rewrite (apply DRY result / hold / instant for configured tags) | off
-//   preset.<tag>=<preset id>   instant.<tag>=0|1 (default 0)   hold.<tag>=0|1 (default 1)      (dev keys; M3 adds a per-playthrough source)
-//   tags=atton,kreia   legacy: each tag without a preset key gets preset <tag>__live, instant 0, hold 0 (0.2.1 behaviour)
-//   verbose=1 (0 = one summary line per call)   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run (WOULD REWRITE)
+//   mode=rewrite (default; also when the file is missing: apply DRY result / hold / instant for configured tags) | log (log + dry run only) | off
+//   verbose=0 (default; 1 adds the detailed per-call dumps: pending before/after, creature ranks and feat lists)
+//   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run (WOULD REWRITE)
 //   table=levelup_paths.ini
+//   dev=0 (default). With dev=1 the dev keys are read (otherwise they are ignored; the per-playthrough config of the options page is the product path):
+//     preset.<tag>=<preset id>   instant.<tag>=0|1 (default 0)   hold.<tag>=0|1 (default 1)   pause.<tag>=N
+//     tags=atton,kreia   legacy: each tag without a preset key gets preset <tag>__live, instant 0, hold 0 (0.2.1 behaviour)
 // Config levelup_playthroughs.ini (game dir, mtime-reloaded like the above; written by ptApply/ptRemove via .tmp + MoveFileExA; format in
 // Playthrough.h): sections [g<8 hex guid>], lines <tag>=<preset id>|instant=0|1|hold=0|1. Precedence in tagConfig: if the current GUID has a
 // section there, ONLY that section applies (a tag missing from it is unconfigured = vanilla, even if a dev key names it); otherwise the dev keys.
@@ -74,8 +78,8 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.3.1";
-constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
+constexpr const char* Version = "1.0.0";
+constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
 constexpr uintptr_t RulesGlobal = 0x00A1B4D0;      // rules singleton; +0x123 byte skill count
@@ -170,9 +174,10 @@ struct TagCfg {
     int pause;   // 0 = preset default; N > 0 = last character level taken before banking for the hold class (levelNow pauseAt)
 };
 struct Config {
-    Mode mode = Mode::Log;
-    bool verbose = true;
+    Mode mode = Mode::Rewrite;
+    bool verbose = false;
     bool apply = true;
+    bool dev = false;    // dev=1: read the dev keys (preset./instant./hold./pause.<tag>=, legacy tags=)
     char table[MAX_PATH] = "levelup_paths.ini";
     TagCfg tags[MaxTagCfg] = {};
     char presetId[MaxTagCfg][48] = {};   // requested preset id per tag (resolved against the table by resolvePresets)
@@ -242,6 +247,8 @@ void reloadConfig(bool force = false) {
             if (!strcmp(k, "mode")) {
                 lower(v);
                 c.mode = !strcmp(v, "off") ? Mode::Off : !strcmp(v, "rewrite") ? Mode::Rewrite : Mode::Log;
+            } else if (!strcmp(k, "dev")) {
+                c.dev = atoi(v) != 0;
             } else if (!strcmp(k, "verbose")) {
                 c.verbose = atoi(v) != 0;
             } else if (!strcmp(k, "apply")) {
@@ -270,6 +277,7 @@ void reloadConfig(bool force = false) {
         }
         fclose(f);
     }
+    if (!c.dev) { c.nTags = 0; nLegacy = 0; }   // dev keys (any order in the file) count only with dev=1
     // Legacy allow-list: a tag without a preset key behaves as in 0.2.1 (preset <tag>__live, no instant, no hold).
     for (int j = 0; j < nLegacy; ++j) {
         int i = cfgEntry(c, legacy[j]);
@@ -284,6 +292,7 @@ void reloadConfig(bool force = false) {
     for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold, c.tags[i].pause);
     logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
             c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
+    if (c.dev) logLine("DEV keys enabled (dev=1): preset./instant./hold./pause.<tag>= and tags= are read");
 }
 
 // Per-tag configuration lookup (case-insensitive); nullptr = unconfigured -> every gate passes through.
@@ -898,12 +907,31 @@ const char* classify(uintptr_t ret, const uintptr_t* frames, int nFrames) {
     return "unknown";
 }
 
+// CRC-32 (IEEE, zlib-compatible: zlib.crc32(bytes)) of a file; 0 when it cannot be read. Identifies the installed DLL in the banner.
+uint32_t fileCrc32(const char* path) {
+    FILE* f = fopen(path, "rb");
+    if (!f) return 0;
+    uint32_t crc = 0xFFFFFFFFu;
+    uint8_t buf[4096];
+    for (size_t n; (n = fread(buf, 1, sizeof buf, f)) > 0;)
+        for (size_t i = 0; i < n; ++i) {
+            crc ^= buf[i];
+            for (int k = 0; k < 8; ++k) crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
+        }
+    fclose(f);
+    return ~crc;
+}
+HINSTANCE g_inst = nullptr;   // this module (set by DllMain)
+
 // Once per process, from whichever hook runs first (the gates run every frame, before the first LevelUp call).
 void ensureHeader() {
     if (g_headerDone) return;
     g_headerDone = true;
     rotateIfLarge();
-    logLine("== LevelUpOverride %s loaded; first hook call (build apply=%d) ==", Version, ApplyEnabled);
+    char path[MAX_PATH] = "";
+    uint32_t crc = 0;
+    if (GetModuleFileNameA(g_inst, path, sizeof path) > 0 && path[0]) crc = fileCrc32(path);
+    logLine("== LevelUpOverride %s loaded; first hook call (build apply=%d crc32=%08x) ==", Version, ApplyEnabled, (unsigned)crc);
 }
 
 // The creature's class entries (engine order, newest last) and total level; false when unreadable or not 1..4 classes.
@@ -1314,7 +1342,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
                         readPend(pending, nSkills, &after);
                         const bool ok = after.ok && after.featsOk && after.spellsOk && after.deltasOk && samePend(after.pd, res.p);
                         logf("  APPLIED tag=%s key=%d ok=%d", lt, key, ok);
-                        logPend("after", after, nSkills);
+                        if (v) logPend("after", after, nSkills);
                     }
                     break;
                 }
@@ -1583,7 +1611,6 @@ Eval evalCreature(uintptr_t cr) {
     return evalStats(stats, cr);
 }
 
-int g_probeLines = 0;
 int guiGuard(unsigned site, const char* what, void* ecx) {
     saferead::beginScope();
     const int r = reinterpret_cast<CharChange_t>(g_eng.charChange)(ecx);
@@ -1592,14 +1619,6 @@ int guiGuard(unsigned site, const char* what, void* ecx) {
     uint32_t stats = 0;
     if (cr) readAt(S_Stats, cr, Cr_Stats, &stats);
     Eval e = evalStats(stats, cr);
-    if (g_probeLines < 300) {   // the tag offset on this path is unverified: log what each route reads on every trigger (clicks, not frames)
-        ++g_probeLines;
-        char tc[32] = "", ts[32] = "";
-        const bool okC = cr && readCreatureTag(cr, tc, sizeof tc);
-        const bool okS = stats && readTag(stats, ts, sizeof ts);
-        logLine("GUARD-PROBE %s site=0x%X leader=%08x stats=%08x tagCreature=%s tagStats=%s decision=%s", what, site, (unsigned)cr, (unsigned)stats,
-                okC ? tc : "?", okS ? ts : "?", e.ok ? decisionName(e.d) : "n/a");
-    }
     if (e.ok && e.d == Decision::Hold && g_cfg.mode == Mode::Rewrite) {
         logLine("GUARD %s tag=%s key=%d site=0x%X", what, e.tag, e.key, site);
         return 1;
@@ -1667,6 +1686,6 @@ int __cdecl LuoGuidNewServer(void* app) { return guidNewServer(app); }
 } // extern "C"
 
 BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_ATTACH) DisableThreadLibraryCalls(inst);
+    if (reason == DLL_PROCESS_ATTACH) { g_inst = inst; DisableThreadLibraryCalls(inst); }
     return TRUE;
 }

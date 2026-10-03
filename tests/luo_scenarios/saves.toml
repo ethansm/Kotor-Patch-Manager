@@ -26,10 +26,12 @@
 #   leader       = true -> this creature is the party leader
 #
 #   [scenario.<id>.config]               game-dir ini state (M2) / fake ini (M3)
-#   mode, apply, verbose                 levelup_override.ini keys (missing = keep / M3 default rewrite,1,1)
+#   mode, apply, verbose                 levelup_override.ini keys (missing = keep; 1.0.0 DLL defaults rewrite / apply 1 / verbose 0;
+#                                        the M3 runner passes verbose=1)
 #   companions   = { atton = "<preset>|instant=0|hold=1|pause=3" }  section for the scenario GUID in levelup_playthroughs.ini
 #   playthrough_guid = "g<8 hex>" | "save" (= the GUID the forged save carries) | "none" (no section)
-#   dev          = { "preset.atton" = "...", "pause.atton" = "3" }   dev keys in levelup_override.ini
+#   dev          = { "preset.atton" = "...", "pause.atton" = "3" }   dev keys in levelup_override.ini (luo_scenario.py adds dev=1;
+#                                        dev keys apply only when the save GUID has no playthrough section)
 #
 #   [scenario.<id>.expect]
 #   events       = log-event patterns that must appear (regex, matched against the log line after the `[tick] ` prefix and leading

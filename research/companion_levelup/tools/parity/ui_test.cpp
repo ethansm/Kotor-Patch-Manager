@@ -139,7 +139,7 @@ static Fake makeCreature(const char* tag, std::vector<std::pair<int, int>> class
 
 static void setIni(const char* body, const char* table) {
     FILE* f = fopen("levelup_override.ini", "w");
-    fprintf(f, "%s\ntable=%s\n", body, table);
+    fprintf(f, "dev=1\n%s\ntable=%s\n", body, table);   // dev=1: the dev keys are ignored without it (1.0.0)
     fclose(f);
     g_stubTick += 5000;
 }

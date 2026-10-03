@@ -1,0 +1,5 @@
+[1000] == LevelUpOverride 1.0.0 loaded; first hook call (build apply=1 crc32=cbf43926) ==
+[1000] CONFIG missing (defaults) mode=rewrite apply=1 verbose=0 table=levelup_paths.ini tags=
+[1000] CONFIG source=dev
+[1010] TABLE loaded levelup_paths.ini: 72 presets, 1800 records;
+[1020] DEV keys enabled (dev=1): preset./instant./hold./pause.<tag>= and tags= are read

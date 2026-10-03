@@ -38,6 +38,7 @@ class T(unittest.TestCase):
         rc, out, _ = self.run_cli("plan", "T_save", "--guid", "gaaaaaaaa")
         self.assertEqual(rc, 0)
         self.assertIn("+mode=log", out)
+        self.assertIn("+dev=1", out)   # 1.0.0 reads dev keys only with dev=1
         self.assertIn("+[gaaaaaaaa]", out)
         self.assertEqual({n: self.cur(n) for n in self.orig}, self.orig)
         self.assertFalse(os.path.exists(os.path.join(self.d, L.BACKUP_ROOT)))

@@ -3,7 +3,7 @@
 
 Usage:
     luo_log_check.py [--log PATH] [--from LINE] [--to LINE] [--scenario ID] [--scenarios-file PATH]
-                     [--expect-md5 HEX] [--expect-version X.Y.Z] [--table PATH] [--json]
+                     [--expect-crc HEX|DLLPATH] [--expect-version X.Y.Z] [--table PATH] [--json]
 
   --log        default ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/levelup_override_log.txt
                (C++ LogName = "levelup_override_log.txt", LevelUpOverride.cpp:120; the previous log rotates to
@@ -29,6 +29,7 @@ import json
 import os
 import re
 import sys
+import zlib
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -50,7 +51,7 @@ SIM_PATH = REPO / "research/companion_levelup/simulate_rewrite.py"
 V_RULES = {
     1: ("Configure page look (LevelUpUi.h:122-204)",
         "PASS: a `UI ctor ... created=N/N` with equal N, back0..back2 lines all `ok=1 alpha ok=1`, `UI create` appended==n, "
-        "`UI colour readback ok=1`, >=1 `UI page open`. FAIL: ctor created<N, any back/alpha ok=0, appended!=n, readback ok=0, "
+        ">=1 `UI page open` (a `UI colour readback` line, logged before 1.0.0, must be ok=1 when present). FAIL: ctor created<N, any back/alpha ok=0, appended!=n, readback ok=0, "
         "`UI setText failed`, `UI no usable scale`, `UI tick: no record`. PARTIAL: ctor/create fine but no page opened. "
         "NOT-EXERCISED: no UI ctor line. Note lists page tags seen (doc 08: kreia/g0t0 rows still to be confirmed by eye)."),
     2: ("Leader instant level-up (LevelUpOverride.cpp:1512-1545)",
@@ -88,7 +89,8 @@ TS_RE = re.compile(r"^\[(\d+)\] (.*)$")
 HDR_RE = re.compile(r"^\[(\d+)\] #(\d+) tid=(\d+) flow=(\S+) .*? stats=([0-9a-f]+) pending=([0-9a-f]+) addToList=(-?\d+) tag=(\S+) "
                     r"classes=(.*?) total=(-?\d+) key=(-?\d+) xp=(\d+) unspent170=(\d+)\s*$")       # cpp:1224
 GRAMMAR = [
-    ("BANNER", r"== LevelUpOverride (\S+) loaded; first hook call \(build apply=(\d+)\) ==", "cpp:906"),
+    ("BANNER", r"== LevelUpOverride (\S+) loaded; first hook call \(build apply=(\d+)(?: crc32=([0-9a-f]{8}))?\) ==", "cpp:906 (crc32= since 1.0.0)"),
+    ("DEV_ENABLED", r"DEV keys enabled \(dev=1\)", "cpp:285 (1.0.0)"),
     ("GUID_NEW_SERVER", r"GUID new-server \(cache cleared, was g([0-9a-f]+)\)", "cpp:1153"),
     ("GUID_NEW", r"GUID new g([0-9a-f]+) live-write ok=(\d+)", "cpp:1109"),
     ("GUID_NEW_REFUSED", r"GUID new: ", "cpp:1099/1101"),
@@ -142,7 +144,7 @@ GRAMMAR_RE = [(k, re.compile(r"^(?:" + rx + r")"), src) for k, rx, src in GRAMMA
 INDENTED = {"DECIDE", "DRY", "SKIP_MANUAL", "SKIP", "ALREADY", "WOULD_REWRITE", "APPLIED", "APPLY_ABORTED", "PRESET_MISSING",
             "PENDING_UNREADABLE", "DETAIL"}
 ALL_KINDS = [k for k, _, _ in GRAMMAR] + ["CALL"]
-MD5_RE = re.compile(r"md5[=: ]+([0-9a-fA-F]{8,32})", re.I)
+CRC_RE = re.compile(r"crc32=([0-9a-f]{8})")
 CLASS_RE = re.compile(r"(\d+):(\d+)(?:\(neg\)\d*)?")
 
 
@@ -518,7 +520,7 @@ def check_scenario(sid, path, rng, vres):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-def run(lines, lo=1, hi=None, scenario=None, scenarios_file=DEFAULT_SCENARIOS, expect_md5=None, expect_version=None, table=DEFAULT_TABLE):
+def run(lines, lo=1, hi=None, scenario=None, scenarios_file=DEFAULT_SCENARIOS, expect_crc=None, expect_version=None, table=DEFAULT_TABLE):
     evs_all, unknown = parse_log(lines)
     hi = hi if hi is not None else len(lines)
     rng = [e for e in evs_all if lo <= e.line <= hi]
@@ -536,21 +538,24 @@ def run(lines, lo=1, hi=None, scenario=None, scenarios_file=DEFAULT_SCENARIOS, e
         vres[i]["rule"] = V_RULES[i][1]
     banners = by(rng, "BANNER")
     versions = [(e.line, e.g[0], e.g[1]) for e in banners]
-    md5s = []
-    for e in rng:
-        mm = MD5_RE.search(e.raw)
+    crcs = []
+    for e in banners:
+        mm = CRC_RE.search(e.raw)
         if mm:
-            md5s.append((e.line, mm.group(1).lower()))
-    ident = {"banners": versions, "md5": md5s, "checks": []}
+            crcs.append((e.line, mm.group(1)))
+    ident = {"banners": versions, "crc32": crcs, "checks": []}
     if expect_version:
         okv = bool(versions) and all(v[1] == expect_version for v in versions)
         ident["checks"].append({"what": "version==%s" % expect_version, "ok": okv if versions else None})
-    if expect_md5:
-        if not md5s:
-            ident["checks"].append({"what": "md5==%s" % expect_md5, "ok": None,
-                                    "note": "UNVERIFIABLE: the DLL does not log an md5 (banner has version only; add `md5=%08x` to cpp:906 to enable)"})
+    if expect_crc:
+        want = expect_crc.lower()
+        if os.path.isfile(expect_crc):   # a DLL path: crc32 of the file (same value the DLL logs)
+            want = "%08x" % (zlib.crc32(Path(expect_crc).read_bytes()) & 0xFFFFFFFF)
+        if not crcs:
+            ident["checks"].append({"what": "crc32==%s" % want, "ok": None,
+                                    "note": "UNVERIFIABLE: no banner with crc32= in range (DLLs before 1.0.0 log the version only)"})
         else:
-            ident["checks"].append({"what": "md5==%s" % expect_md5, "ok": all(m[1].startswith(expect_md5.lower()) or expect_md5.lower().startswith(m[1]) for m in md5s)})
+            ident["checks"].append({"what": "crc32==%s" % want, "ok": all(c[1] == want for c in crcs)})
     rep = replay(evs_all, rng, table)
     sc = check_scenario(scenario, scenarios_file, rng, vres) if scenario else None
     kinds = Counter(e.kind for e in rng)
@@ -575,7 +580,7 @@ def format_report(r):
     o.append("")
     idn = r["ident"]
     o.append("banner: " + ("; ".join("line %d version %s apply=%s" % b for b in idn["banners"]) or "none in range"))
-    o.append("dll md5 logged: " + ("; ".join("line %d %s" % m for m in idn["md5"]) or "no (the DLL does not log it)"))
+    o.append("dll crc32 logged: " + ("; ".join("line %d %s" % m for m in idn["crc32"]) or "no (DLLs before 1.0.0 do not log it)"))
     for c in idn["checks"]:
         o.append("  %s: %s %s" % (c["what"], {True: "OK", False: "FAIL", None: "n/a"}[c["ok"]], c.get("note", "")))
     rp = r["replay"]
@@ -604,7 +609,7 @@ def main(argv=None):
     ap.add_argument("--to", dest="hi", type=int, default=None)
     ap.add_argument("--scenario")
     ap.add_argument("--scenarios-file", default=str(DEFAULT_SCENARIOS))
-    ap.add_argument("--expect-md5")
+    ap.add_argument("--expect-crc", help="8-hex crc32 of the installed DLL, or the DLL path (crc computed here); compared with the banner crc32=")
     ap.add_argument("--expect-version")
     ap.add_argument("--table", default=str(DEFAULT_TABLE), help="levelup_paths.ini for the replay (default: repo runtime table)")
     ap.add_argument("--json", action="store_true")
@@ -614,7 +619,7 @@ def main(argv=None):
     except OSError as ex:
         print("cannot read log: %s" % ex, file=sys.stderr)
         return 2
-    r = run(lines, a.lo, a.hi, a.scenario, a.scenarios_file, a.expect_md5, a.expect_version, a.table)
+    r = run(lines, a.lo, a.hi, a.scenario, a.scenarios_file, a.expect_crc, a.expect_version, a.table)
     print(json.dumps(r, indent=1, default=str) if a.json else format_report(r))
     return r["exit"]
 

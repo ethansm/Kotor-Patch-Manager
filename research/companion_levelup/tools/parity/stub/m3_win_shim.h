@@ -4,8 +4,12 @@
 #include "windows.h"
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 union LARGE_INTEGER { long long QuadPart; };
 inline BOOL QueryPerformanceCounter(LARGE_INTEGER* q) { timespec t; clock_gettime(CLOCK_MONOTONIC, &t); q->QuadPart = (long long)t.tv_sec * 1000000000LL + t.tv_nsec; return 1; }
+// GetModuleFileNameA: tests set g_stubModulePath to a file whose crc32 the banner must log (null = unreadable -> crc32=00000000).
+inline const char* g_stubModulePath = nullptr;
+inline DWORD GetModuleFileNameA(HINSTANCE, char* out, DWORD cap) { if (!g_stubModulePath) return 0; snprintf(out, cap, "%s", g_stubModulePath); return (DWORD)strlen(out); }
 #define MOVEFILE_REPLACE_EXISTING 1
 #define MOVEFILE_WRITE_THROUGH 8
 inline BOOL MoveFileExA(const char* a, const char* b, DWORD) { return rename(a, b) == 0; }

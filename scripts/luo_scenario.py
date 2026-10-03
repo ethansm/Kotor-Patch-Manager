@@ -183,6 +183,8 @@ def compute(game_dir, toml_path, sid, guid_arg):
     old = {OVR: read(os.path.join(game_dir, OVR)), PLY: read(os.path.join(game_dir, PLY))}
     new = dict(old)
     kv = {**scal, **dev}
+    if dev:
+        kv["dev"] = "1"   # 1.0.0: dev keys are read only with dev=1
     if kv:
         new[OVR] = set_keys(old[OVR] or "", kv)
     if guid and comps:

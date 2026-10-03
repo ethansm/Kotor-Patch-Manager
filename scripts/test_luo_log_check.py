@@ -44,12 +44,24 @@ class RealRuns(unittest.TestCase):
         r2 = L.run((FX / "run4_only.txt").read_text().splitlines() + (FX / "run4b.txt").read_text().splitlines())
         self.assertEqual(status(r2, 6), "PASS")
 
-    def test_range_and_md5(self):
-        r = run("run4b.txt", lo=5, expect_md5="deadbeef")
+    def test_range_and_crc(self):
+        r = run("run4b.txt", lo=5, expect_crc="deadbeef")
         self.assertEqual(r["events"], 20)
         self.assertEqual(r["ident"]["banners"], [])
         self.assertIsNone(r["ident"]["checks"][0]["ok"])   # unverifiable, not a FAIL
         self.assertEqual(r["exit"], 0)
+
+    def test_banner_crc32(self):
+        r = run("synth_banner_crc.txt", expect_crc="cbf43926", expect_version="1.0.0")
+        self.assertEqual(r["ident"]["banners"], [(1, "1.0.0", "1")])
+        self.assertEqual(r["ident"]["crc32"], [(1, "cbf43926")])
+        self.assertEqual([c["ok"] for c in r["ident"]["checks"]], [True, True])
+        self.assertEqual(r["unknown_lines"], 0)
+        r = run("synth_banner_crc.txt", expect_crc="00000001")
+        self.assertIs(r["ident"]["checks"][0]["ok"], False)
+        self.assertEqual(r["exit"], 1)   # a crc32 mismatch is a failing identity check
+        r = run("run4b.txt", expect_crc="cbf43926")   # a pre-1.0.0 banner: unverifiable, not a FAIL
+        self.assertIsNone(r["ident"]["checks"][0]["ok"])
 
 
 class Synthetic(unittest.TestCase):

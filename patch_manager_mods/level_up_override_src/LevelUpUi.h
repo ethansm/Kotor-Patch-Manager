@@ -1,4 +1,4 @@
-// LevelUpUi.h - M4 character-screen UI of Level-Up Override 0.3.1: Configure button (R6) with the R9 nudge, the single options page (OptionsLogic.h; WizardLogic.h supplies the Item type),
+// LevelUpUi.h - M4 character-screen UI of Level-Up Override 1.0.0: Configure button (R6) with the R9 nudge, the single options page (OptionsLogic.h; WizardLogic.h supplies the Item type),
 // the R11 status line. NOT a standalone header: LevelUpOverride.cpp includes it INSIDE its anonymous namespace after the gates (it uses the .cpp's
 // tagConfig / evalStats / ptApply / ptRemove / g_presets / bankedLevels / logLine), and includes GuiKit.h + WizardLogic.h at file scope.
 //
@@ -193,7 +193,7 @@ void uiSetText(UiPanel* r, int i, const char* t) {
     if (guikit::setText(r->c[i], t)) { snprintf(r->text[i], UiText, "%s", t); return; }
     if (!(r->textFail & (1u << i))) { r->textFail |= 1u << i; logLine("UI setText failed ctl=%s panel=%08x (text object not ready?)", kUiName[i], (unsigned)r->panel); }
 }
-// R9 highlight on the Configure button. The base colour is read back once; colour writes happen only when that readback looks sane (Mod 14 1140-1150).
+// R9 highlight on the Configure button. The base colour is read back once (silently); colour writes happen only when that readback looks sane (Mod 14 1140-1150).
 void uiNudge(UiPanel* r, bool on) {
     if (!r->c[C_CFG]) return;
     if (!r->colorTried) {
@@ -201,7 +201,6 @@ void uiNudge(UiPanel* r, bool on) {
         float v[3];
         r->colorOk = guikit::getTextColor(r->c[C_CFG], v) && v[0] >= 0.f && v[0] <= 2.f && v[1] >= 0.f && v[1] <= 2.f && v[2] >= 0.f && v[2] <= 2.f;
         if (r->colorOk) memcpy(r->base, v, sizeof v);
-        logLine("UI colour readback ok=%d base=(%.2f,%.2f,%.2f)", r->colorOk, r->colorOk ? v[0] : 0.0, r->colorOk ? v[1] : 0.0, r->colorOk ? v[2] : 0.0);
     }
     if (!r->colorOk || on == r->nudgeOn) return;
     if (on) guikit::setTextColor(r->c[C_CFG], 1.0f, 0.85f, 0.3f);
