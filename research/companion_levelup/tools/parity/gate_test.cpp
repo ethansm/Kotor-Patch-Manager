@@ -184,6 +184,7 @@ int main(int argc, char** argv) {
     // 3. Sentinel added -> pass-through + UNHOLD logged
     CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 0, "held again");
     clearLog();
+    g_stubTick += 3000;   // F14: HOLD/UNHOLD lines are rate limited per tag (2 s); the UNHOLD below is a deliberate, later transition
     CHECK(LuoHold_74F3C7(P(sentinel.stats)) == 1, "atton with Sentinel must pass through");
     CHECK(logHas("UNHOLD tag=atton"), "UNHOLD log line missing:\n%s", readLog().c_str());
     // 4. mode=log -> r + WOULD HOLD
@@ -257,13 +258,14 @@ int main(int argc, char** argv) {
     // 7b. leader instant 0x74F423: dummy controlled object only for a configured instant, not-held creature in rewrite mode
     {
         void* const real = g_ctlObj;
+        const uintptr_t ctlEcxMem = arenaAlloc(32);   // F4: the 0x740FC0 guarded read needs a readable ecx
         snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=1", PRESET);
         setIni(ini, table); clearLog();
         memset(P(frame), 0, 0x200);
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)onPath.creature;
-        void* r = LuoLeaderInstant_74F423(P(0x5678), P(ebp));
-        CHECK(r && r != real && static_cast<const uint32_t*>(r)[1] == 0x7F000000u && g_ctlEcx == P(0x5678), "leader instant: dummy object with a non-matching id, real call made with ecx");
-        LuoLeaderInstant_74F423(P(0x5678), P(ebp));
+        void* r = LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp));
+        CHECK(r && r != real && static_cast<const uint32_t*>(r)[1] == 0x7F000000u && g_ctlEcx == P(ctlEcxMem), "leader instant: dummy object with a non-matching id, real call made with ecx");
+        LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp));
         { std::string l = readLog(); size_t n = 0, q = 0; while ((q = l.find("INSTANT-LEADER tag=atton key=6", q)) != std::string::npos) { ++n; ++q; } CHECK(n == 1, "INSTANT-LEADER logged %zu times (want once)", n); }
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)heldAtton.creature;
         CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: held -> real object");
@@ -278,6 +280,13 @@ int main(int argc, char** argv) {
         snprintf(ini, sizeof ini, "mode=log\npreset.atton=%s\ninstant.atton=1", PRESET);
         setIni(ini, table);
         CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: log mode -> real object");
+        // F4: 0x740FC0 (character change in progress) nonzero -> the real object, no INSTANT-LEADER; zero again -> dummy
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=1", PRESET);
+        setIni(ini, table); clearLog();
+        g_ccRet = 3;
+        CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real && !logHas("INSTANT-LEADER"), "leader instant: character change in progress -> real object, not logged");
+        g_ccRet = 0;
+        { void* r2 = LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)); CHECK(r2 && r2 != real, "leader instant: no change in progress -> dummy again"); }
     }
 
     // 8. GUI guards + Auto OK backstop

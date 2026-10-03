@@ -50,7 +50,7 @@
 //   (thiscall(GuiInGame=*(clientInternal+0x40), CExoString*, 0x80, 0) RET 0xC; every link of the chain checked, else retried on the next gate call).
 //
 // Config levelup_override.ini (game dir, re-read when its mtime changes, stat at most once per second from the gates; missing = defaults):
-//   mode=rewrite (default; also when the file is missing: apply DRY result / hold / instant for configured tags) | log (log + dry run only) | off
+//   mode=rewrite (default; also when the file is missing or the value is unknown (logged as CONFIG WARNING): apply DRY result / hold / instant for configured tags) | log (log + dry run only) | off
 //   verbose=0 (default; 1 adds the detailed per-call dumps: pending before/after, creature ranks and feat lists)
 //   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run (WOULD REWRITE)
 //   table=levelup_paths.ini
@@ -245,8 +245,14 @@ void reloadConfig(bool force = false) {
             char* k = trim(l); char* v = trim(eq + 1);
             lower(k);
             if (!strcmp(k, "mode")) {
+                char raw[48]; snprintf(raw, sizeof raw, "%s", v);
                 lower(v);
-                c.mode = !strcmp(v, "off") ? Mode::Off : !strcmp(v, "rewrite") ? Mode::Rewrite : Mode::Log;
+                if (!strcmp(v, "off")) c.mode = Mode::Off;
+                else if (!strcmp(v, "log")) c.mode = Mode::Log;
+                else {
+                    c.mode = Mode::Rewrite;   // F17: same as a missing key; only an explicit mode=rewrite is silent
+                    if (strcmp(v, "rewrite")) logLine("CONFIG WARNING unknown mode=%s - using rewrite", raw);
+                }
             } else if (!strcmp(k, "dev")) {
                 c.dev = atoi(v) != 0;
             } else if (!strcmp(k, "verbose")) {
@@ -551,6 +557,9 @@ void resolvePresets() {
     return &p->lv[keyLevel];
 }
 
+// Jedi (hold-group) class ids: Guardian 3, Consular 4, Sentinel 5, Weapon Master 11, Master 12, Watchman 13 (classes.2da).
+bool isJediClass(int id) { return (id >= 3 && id <= 5) || (id >= 11 && id <= 13); }
+
 // ---- levelNow: hold rule v2, keyed by CLASS level (twin: simulate_rewrite.py level_now) ------------------
 enum class Decision { Vanilla, Path, Rebase, Hold };
 const char* decisionName(Decision d) { return d == Decision::Path ? "PATH" : d == Decision::Rebase ? "REBASE" : d == Decision::Hold ? "HOLD" : "VANILLA"; }
@@ -559,7 +568,8 @@ const char* decisionName(Decision d) { return d == Decision::Path ? "PATH" : d =
 // PATH/REBASE: the record whose (class, class level) == (newest class, its level + 1); PATH when its char level == key.
 // HOLD: no such record, hold && the preset has a hold class the creature lacks, and the preset's records for the newest class are used up.
 // pauseAt (0.3.1; 0 = off): the LAST character level taken before banking. Evaluated first: hold && pauseAt > 0 && hold class lacking && key > pauseAt -> HOLD
-// even where a base-class record exists. Once the creature has the hold class the record matching below applies again (REBASE).
+// even where a base-class record exists. Once the creature has the hold class the record matching below applies again (REBASE); a creature that converted
+// to a DIFFERENT Jedi class is not held either (A2 F2: the non-pause rule gives it VANILLA, the pause rule must agree).
 Decision levelNow(const uint8_t* clsId, const uint8_t* clsLvl, int nClass, const Preset* p, int key, bool hold, int pauseAt, const Rec** outRec, int* outCharLevel) {
     if (outRec) *outRec = nullptr;
     if (outCharLevel) *outCharLevel = -1;
@@ -567,7 +577,7 @@ Decision levelNow(const uint8_t* clsId, const uint8_t* clsLvl, int nClass, const
     const int cls = clsId[nClass - 1], lvl = clsLvl[nClass - 1];
     if (hold && pauseAt > 0 && p->holdClass && key > pauseAt) {
         bool lacks = true;
-        for (int i = 0; i < nClass; ++i) if (clsId[i] == p->holdClass) lacks = false;
+        for (int i = 0; i < nClass; ++i) if (clsId[i] == p->holdClass || isJediClass(clsId[i])) lacks = false;
         if (lacks) return Decision::Hold;
     }
     int top = -1;
@@ -1047,6 +1057,8 @@ char g_ptText[pt::MaxText];
 uint64_t g_ptStamp = ~0ULL;
 DWORD g_ptLast = 0;
 bool g_ptChecked = false;
+size_t g_ptLen = 0;           // bytes of the file text held in g_ptText after the last reloadPlay
+bool g_ptBig = false;         // the file did not fit g_ptText (g_ptText holds only its beginning)
 int g_srcLast = -1;           // last logged config source: 1 dev, 2 playthrough
 uint32_t g_srcGuid = 0;
 
@@ -1087,6 +1099,7 @@ void reloadPlay(bool force = false) {
     g_ptStamp = st;
     size_t len = 0;
     bool big = false;
+    g_ptLen = 0; g_ptBig = false;
     if (st) {
         if (FILE* f = fopen(PtName, "rb")) {
             len = fread(g_ptText, 1, sizeof g_ptText - 1, f);
@@ -1094,17 +1107,15 @@ void reloadPlay(bool force = false) {
             fclose(f);
         }
     }
+    g_ptLen = len; g_ptBig = big;
     pt::parse(g_ptDoc, g_ptText, len);
     if (big) g_ptDoc.lossy = true;
     if (changed) logLine("PLAYTHROUGH %s: %d section(s)%s", st ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
     rebuildPtCfg();
 }
 
-// Serialises g_ptDoc to levelup_playthroughs.ini.tmp and replaces the ini. Refuses when the parse lost data (caps).
-bool ptWrite() {
-    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
-    const size_t n = pt::serialise(g_ptDoc, g_ptText, sizeof g_ptText);
-    if (!n) return false;
+// Writes n bytes of g_ptText to levelup_playthroughs.ini.tmp and replaces the ini.
+bool ptWriteText(size_t n) {
     FILE* f = fopen(PtTmp, "wb");
     if (!f) return false;
     bool ok = fwrite(g_ptText, 1, n, f) == n;
@@ -1112,6 +1123,12 @@ bool ptWrite() {
     ok = ok && MoveFileExA(PtTmp, PtName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
     if (!ok) remove(PtTmp);
     return ok;
+}
+// Serialises g_ptDoc and replaces the ini. Refuses when the parse lost data (caps).
+bool ptWrite() {
+    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
+    const size_t n = pt::serialise(g_ptDoc, g_ptText, sizeof g_ptText);
+    return n && ptWriteText(n);
 }
 
 [[maybe_unused]] uint32_t ptGuid() { return g_guid; }
@@ -1149,6 +1166,15 @@ bool ptWrite() {
     ensureHeader();
     if (!tag || !*tag || !g_guid) return false;
     reloadPlay(true);
+    if (g_ptDoc.lossy) {   // F6: a lossy parse cannot be serialised (data would be lost) - but deleting ONE line of the raw text loses nothing, so Vanilla still works
+        if (g_ptBig) { logLine("PLAYTHROUGH write refused: file too large to edit (only its beginning was read)"); return false; }
+        size_t n = g_ptLen;
+        if (!pt::removeTagRaw(g_ptText, &n, g_guid, tag)) return false;
+        const bool ok = ptWriteText(n);
+        logLine("PLAYTHROUGH write g%08x tag=%s ok=%d (raw line removal, file is LOSSY)", (unsigned)g_guid, tag, ok);
+        reloadPlay(true);
+        return ok;
+    }
     if (!pt::removeTag(g_ptDoc, g_guid, tag)) return false;
     const bool ok = ptWrite();
     logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
@@ -1202,7 +1228,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
     if (g_cfg.mode == Mode::Off) return;
     reloadTable(true);
     reloadPlay(true);
-    if (!logOpen()) return;
+    logOpen();   // F1: the log is diagnostics only - a closed/capped/unopenable log (g_f == nullptr) makes logf a no-op, the decision and rewrite below still run
     const bool v = g_cfg.verbose;
 
     // -- caller chain: EBP at hook time = LevelUp's caller frame; [ebp+4] = caller's return address
@@ -1413,8 +1439,11 @@ Eval evalStats(uintptr_t stats, uintptr_t creature) {
     return e;
 }
 
-// Log-on-change state (never per frame).
-struct HoldState { char tag[32]; bool held; int key; };
+// Log-on-change state, rate limited per tag (F14). `held/key` = the latest state seen; `logHeld/logKey` = the state the log last showed. A transition is logged
+// only when the latest state differs from the logged one AND at least HoldLogGapMs passed since the tag's previous HOLD/UNHOLD line; a withheld transition is
+// counted and the count is printed (" suppressed=N") on the next logged line. A held (client vs server object) flap per frame therefore costs <= 1 line per gap.
+constexpr DWORD HoldLogGapMs = 2000;
+struct HoldState { char tag[32]; bool held; int key; bool logHeld; int logKey; DWORD lastLog; bool everLogged; int suppressed; };
 HoldState g_holdState[MaxTagCfg];
 int g_nHoldState = 0;
 void noteHold(const char* tag, int key, bool held, unsigned site, bool real) {
@@ -1424,11 +1453,18 @@ void noteHold(const char* tag, int key, bool held, unsigned site, bool real) {
         if (g_nHoldState >= MaxTagCfg) return;
         s = &g_holdState[g_nHoldState++];
         snprintf(s->tag, sizeof s->tag, "%s", tag);
-        s->held = false; s->key = 0;
+        s->held = false; s->key = 0; s->logHeld = false; s->logKey = 0; s->lastLog = 0; s->everLogged = false; s->suppressed = 0;
     }
-    if (held && (!s->held || s->key != key)) logLine("%s tag=%s key=%d site=0x%X", real ? "HOLD" : "WOULD HOLD", tag, key, site);
-    else if (!held && s->held) logLine("UNHOLD tag=%s", tag);
     s->held = held; s->key = key;
+    const bool differs = held ? (!s->logHeld || s->logKey != key) : s->logHeld;   // same predicate as before: HOLD on a new (held,key), UNHOLD when the log showed HOLD
+    if (!differs) return;
+    const DWORD now = GetTickCount();
+    if (s->everLogged && now - s->lastLog < HoldLogGapMs) { ++s->suppressed; return; }
+    char sup[32] = "";
+    if (s->suppressed) snprintf(sup, sizeof sup, " suppressed=%d", s->suppressed);
+    if (held) logLine("%s tag=%s key=%d site=0x%X%s", real ? "HOLD" : "WOULD HOLD", tag, key, site, sup);
+    else logLine("UNHOLD tag=%s%s", tag, sup);
+    s->logHeld = held; s->logKey = held ? key : 0; s->lastLog = now; s->everLogged = true; s->suppressed = 0;
 }
 
 // ---- R11: class names, banked levels, banked message ---------------------------------------------------------
@@ -1583,6 +1619,10 @@ void* leaderInstant(void* ecx, uintptr_t ebp) {
     if (!readAt(S_Chain, ebp, -0x38, &cr) || !cr || !readAt(S_Stats, cr, Cr_Stats, &stats) || !stats) return p;
     Eval e = evalStats(stats, cr);
     if (!e.ok || !e.cfg->instant || e.d == Decision::Hold) return p;
+    // F4 (doc 08 U5): no dummy while a character change is in progress (0x740FC0 != 0). Both 0x73F450 (GetPlayerCreature) and 0x740FC0
+    // (GetCharacterChangeInProgress) are CClientExoApp thiscalls (knowledge DB, high), so the ecx of the 0x73F450 call is the right `this`;
+    // still guarded: unreadable ecx = do not touch (real object).
+    if (!probeRead(S_Chain, ecx, 8) || reinterpret_cast<CharChange_t>(g_eng.charChange)(ecx)) return p;
     readAt(S_Chain, reinterpret_cast<uintptr_t>(p), 4, &ctlId);
     bool seen = false;
     for (int i = 0; i < g_nLeadSeen; ++i) if (g_leadSeen[i].key == e.key && !_stricmp(g_leadSeen[i].tag, e.tag)) seen = true;

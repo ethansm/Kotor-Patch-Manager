@@ -56,6 +56,7 @@ const UiSpec kUiSpec[C_N] = {
     {true, 62, 400, 230, 24},                                                                            // Use recommended
     {true, 62, 428, 72, 32}, {true, 138, 428, 72, 32}, {true, 214, 428, 78, 32}};                        // Apply, Vanilla, Cancel
 const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "recommended", "apply", "vanilla", "cancel"};
+const char* const kLossyText = "levelup_playthroughs.ini too large - edit by hand";   // F6: shown instead of the generic failure / status text when the file parse was lossy
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
 const char* const kPageBackFill = "uibit_fill_2bt";   // opaque black (Mod 14 LBL_EFX_BACK); LBL_XP_BACK's own fill uibit_fill_2wt is see-through
@@ -323,7 +324,7 @@ void uiRenderPage(UiPanel* r, const char* tag) {
     char buf[UiText];
     uiSlots(r);
     for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, true);
-    if (r->failed) uiSetText(r, C_TITLE, "Could not save - see log");
+    if (r->failed) uiSetText(r, C_TITLE, g_ptDoc.lossy ? kLossyText : "Could not save - see log");
     else { snprintf(buf, sizeof buf, "%s - %s", P.name[0] ? P.name : tag, P.recommended ? "recommended build" : "level-up path"); uiSetText(r, C_TITLE, buf); }
     uiShow(r, C_TITLE, true);
     for (int row = 0; row < NumRows; ++row) {
@@ -457,6 +458,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     }
     bool sv = configured && buildStatus(true, true, held, banked, P->holdClass, P->shortName, cfg->instant, st, sizeof st);
     if (sv && g_cfg.mode != Mode::Rewrite) { const size_t l = strlen(st); snprintf(st + l, sizeof st - l, " (inactive: mode=log)"); }
+    if (g_ptDoc.lossy) { snprintf(st, sizeof st, "%s", kLossyText); sv = true; }   // F6: the file cannot be rewritten (Apply refused); say why on the screen
     if (sv) uiSetText(r, C_STATUS, st);
     uiShow(r, C_STATUS, sv);
 }

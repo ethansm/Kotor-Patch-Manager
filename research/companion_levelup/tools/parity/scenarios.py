@@ -113,8 +113,26 @@ def scenario_dat(sid, sc):
     return "\n".join(L)
 
 
-# Scenarios that exist only offline (UI actions the toml cannot express yet): the options page Configure -> Apply flow creates the GUID and the
-# 32 globals at once ("no write until Apply"), and a save then carries them.
+# Scenarios that exist only offline (UI actions / file states the toml cannot express yet): the options page Configure -> Apply flow creates the GUID and the
+# 32 globals at once ("no write until Apply"), and a save then carries them. X11-X15 + X4/X5 = A2 robustness review fixes (F17, F1, F14, F6).
+PRESET = "atton__melee_dual_light_early"
+EARLY_CONV = "CREATURE atton 2:3,5:1 28000 1 0"   # Scoundrel 3 + JediSentinel 1, XP for level 8: re-based onto the Jedi records (levels via APPLIED)
+LONG = "; " + "a" * 300                            # a 302-character comment line: over the Playthrough.h line cap -> lossy parse (F6)
+PT_LOSSY = "[g5eed0004]\natton=%s|instant=0|hold=1\nkreia=kreia__sage|instant=0|hold=1\n%s\n" % (PRESET, LONG)
+
+
+def _x(sid, guid, creatures, ini, pt, acts, events=(), absent=(), decisions=()):
+    L = ["SCENARIO " + sid, "GLOBALS %08x 32" % guid if guid else "GLOBALS 00000000 0"] + creatures + ini
+    L.append("PTGUID %08x" % pt[0] if pt else "PTGUID none")
+    if pt and pt[1]:
+        L.append("PTRAW " + pt[1].encode().hex())
+    elif pt:
+        L.append("COMPANION atton %s|instant=0|hold=1" % PRESET)
+    L += ["ACT " + a for a in acts] + ["EVENT " + e for e in events] + ["ABSENT " + e for e in absent] + ["DECISION %s %s" % kv for kv in decisions] + ["END"]
+    return "\n".join(L)
+
+
+INI_DEF = ["INI mode=rewrite", "INI apply=1", "INI verbose=1"]
 EXTRA = {"X1_ui_apply_writes_globals": """SCENARIO X1_ui_apply_writes_globals
 GLOBALS 00000000 0
 CREATURE atton 2:7 28000 1 0
@@ -135,6 +153,30 @@ DECISION save.globals 32
 DECISION load.found 0
 DECISION ui.open 0
 END"""}
+# F-fix scenarios (A2 review): each fails on the pre-fix code, see the fix report.
+EXTRA["X11_no_ini"] = _x("X11_no_ini", 0, ["CREATURE atton 2:7 28000 1 0", "CREATURE pc 2:7 105000 1 1"], ["INIMISSING"], None,
+    ["load", "tick atton", "auto atton", "tick pc", "auto pc", "ui atton"],
+    events=[r"^CONFIG missing \(defaults\) mode=rewrite"], absent=[r"^DECIDE", r"^APPLIED", r"^HOLD", r"^INSTANT"],
+    decisions=[("atton.canLevelUp", "PASS"), ("atton.autoLevel", "NONE"), ("pc.canLevelUp", "PASS"), ("pc.autoLevel", "NONE"), ("ui.cfg", "1"), ("ui.status", "0")])
+EXTRA["X12_mode_garbage"] = _x("X12_mode_garbage", FIXTURE_GUID, [EARLY_CONV], ["INI mode=on", "INI apply=1", "INI verbose=1"], (FIXTURE_GUID, None),
+    ["load", "tick atton", "auto atton"],
+    events=[r"^CONFIG WARNING unknown mode=on - using rewrite", r"^CONFIG loaded mode=rewrite", r"^APPLIED tag=atton__"],
+    decisions=[("atton.autoLevel", "APPLIED")])
+EXTRA["X13_log_capped"] = _x("X13_log_capped", FIXTURE_GUID, [EARLY_CONV], INI_DEF, (FIXTURE_GUID, None),
+    ["load", "logcap", "tick atton", "auto atton"], decisions=[("atton.canLevelUp", "PASS"), ("atton.pending", "REWRITTEN")])
+EXTRA["X14_log_readonly"] = _x("X14_log_readonly", FIXTURE_GUID, [EARLY_CONV], INI_DEF, (FIXTURE_GUID, None),
+    ["load", "logro", "tick atton", "auto atton"], decisions=[("atton.canLevelUp", "PASS"), ("atton.pending", "REWRITTEN")])
+EXTRA["X15_hold_flap"] = _x("X15_hold_flap", FIXTURE_GUID, ["CREATURE atton 2:7 28000 1 0"], INI_DEF, (FIXTURE_GUID, None),
+    ["load", "flap atton 300", "count holdlines ^(HOLD|UNHOLD) tag=atton"],
+    events=[r"^HOLD tag=atton key=8 site=0x74F3C7", r"^(HOLD|UNHOLD) tag=atton.* suppressed=[0-9]+"], decisions=[("holdlines", "<=6")])
+EXTRA["X4_pt_lossy_apply"] = _x("X4_pt_lossy_apply", 0x5eed0004, ["CREATURE atton 2:7 28000 1 0"], INI_DEF, (0x5eed0004, PT_LOSSY),
+    ["load", "ptsnap", "ui atton", "click cfg", "click apply", "ptdiff"],
+    events=[r"^PLAYTHROUGH write refused"], absent=[r"^PLAYTHROUGH write g[0-9a-f]+ tag=atton ok=1"],
+    decisions=[("ui.statustext", "levelup_playthroughs.ini too large - edit by hand"), ("ui.failed", "1"), ("ui.title", "levelup_playthroughs.ini too large - edit by hand"), ("ptfile.unchanged", "1")])
+EXTRA["X5_pt_lossy_vanilla"] = _x("X5_pt_lossy_vanilla", 0x5eed0004, ["CREATURE atton 2:7 28000 1 0"], INI_DEF, (0x5eed0004, PT_LOSSY),
+    ["load", "ptsnap", "ui atton", "click cfg", "click vanilla", "ptdiff"],
+    events=[r"^UI vanilla tag=atton ok=1"],
+    decisions=[("ui.failed", "0"), ("ptfile.unchanged", "0"), ("ptfile.atton", "0"), ("ptfile.kreia", "1"), ("ptfile.comment", "1")])
 
 
 def run(exe, args, env):

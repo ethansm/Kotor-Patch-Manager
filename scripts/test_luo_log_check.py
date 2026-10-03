@@ -51,6 +51,13 @@ class RealRuns(unittest.TestCase):
         self.assertIsNone(r["ident"]["checks"][0]["ok"])   # unverifiable, not a FAIL
         self.assertEqual(r["exit"], 0)
 
+    def test_config_warning_and_hold_suppressed_suffix(self):
+        r = run("synth_config_warning.txt")
+        self.assertEqual(r["unknown_lines"], 0)
+        self.assertEqual(r["kinds"].get("CONFIG_WARNING"), 1)
+        self.assertEqual(r["kinds"].get("HOLD"), 2)
+        self.assertEqual(r["kinds"].get("UNHOLD"), 1)
+
     def test_banner_crc32(self):
         r = run("synth_banner_crc.txt", expect_crc="cbf43926", expect_version="1.0.0")
         self.assertEqual(r["ident"]["banners"], [(1, "1.0.0", "1")])

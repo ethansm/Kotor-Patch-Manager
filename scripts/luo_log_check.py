@@ -100,6 +100,7 @@ GRAMMAR = [
     ("GUID_ENGINE_MISMATCH", r"GUID ENGINE mismatch", "cpp:962"),
     ("CONFIG_PT", r"CONFIG source=playthrough g([0-9a-f]+) tags=(.*)", "cpp:1050"),
     ("CONFIG_DEV", r"CONFIG source=dev\s*$", "cpp:1046"),
+    ("CONFIG_WARNING", r"CONFIG WARNING unknown mode=(.*) - using rewrite", "cpp:reloadConfig (1.0.1, A2 F17)"),
     ("CONFIG", r"CONFIG (loaded|missing \(defaults\)) mode=(\w+) apply=(\d+) verbose=(\d+) table=(\S+) tags=(.*)", "cpp:285"),
     ("PLAYTHROUGH_LOSSY", r"PLAYTHROUGH (?:write refused|.*LOSSY)", "cpp:1071/1077"),
     ("PLAYTHROUGH", r"PLAYTHROUGH (loaded|missing|write g([0-9a-f]+) tag=(\S+) ok=(\d+))", "cpp:1071/1114"),

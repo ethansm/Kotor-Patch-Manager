@@ -122,12 +122,16 @@ def format_dry(tag, key_level, res):
                j(res["deltas"]), res["unspent"], res["ability"]))
 
 
+JEDI_CLASSES = (3, 4, 5, 11, 12, 13)   # Guardian, Consular, Sentinel, Weapon Master, Master, Watchman (classes.2da); twin of isJediClass in LevelUpOverride.cpp
+
+
 def level_now(classes, preset, key, hold, hold_class, pause_at=0):
     """Hold rule v2 (+ 0.3.1 pause_at: last char level taken before banking, 0 = off). Returns (decision, char_level_or_None, rec)."""
     if preset is None or not classes:
         return ("VANILLA", None, None)
     cls, lvl = classes[-1]
-    if hold and pause_at > 0 and hold_class and key > pause_at and hold_class not in [c for c, _ in classes]:
+    # A2 F2: a creature that converted to a DIFFERENT Jedi class is not held (the non-pause rule gives it VANILLA too)
+    if hold and pause_at > 0 and hold_class and key > pause_at and not any(c == hold_class or c in JEDI_CLASSES for c, _ in classes):
         return ("HOLD", None, None)
     for cl in sorted(preset):
         r = preset[cl]
@@ -196,6 +200,9 @@ def level_now_tests(check):
     check("ln pause: no hold class no effect", lp([(2, 6)], 7, 6, hc=0) == ("PATH", 7))
     check("ln pause: creature has class -> REBASE", lp([(2, 6), (5, 0)], 7, 6) == ("REBASE", 8))
     check("ln pause: unconfigured", lp([(2, 5)], 6, 3, pr=None) == ("VANILLA", None))
+    check("ln pause: OTHER Jedi class (Guardian 3 vs hold Sentinel 5) -> VANILLA like the non-pause rule", lp([(2, 5), (3, 2)], 8, 3) == ln([(2, 5), (3, 2)], 8) == ("VANILLA", None))
+    check("ln pause: other Jedi class at level 0 -> VANILLA", lp([(2, 5), (4, 0)], 6, 3) == ("VANILLA", None))
+    check("ln pause: foreign non-Jedi class still held", lp([(2, 5), (99, 1)], 7, 3) == ("HOLD", None))
     check("ln pause >= default end = default", lp([(2, 7)], 8, 7) == ("HOLD", None) and lp([(2, 6)], 7, 7) == ("PATH", 7))
     v1 = "[classskills]\ncs2=11111111\n[t]\nL1=2|1|3||0:1|\n"
     cs, rc = parse_table(v1)

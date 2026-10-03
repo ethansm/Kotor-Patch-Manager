@@ -214,3 +214,21 @@ playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
 [scenario.S11_multi_levelable.expect]
 events = ['^HOLD tag=atton ']
+
+[scenario.S13_pause_other_jedi]
+title = "Atton converted to a DIFFERENT Jedi class (Guardian) than the preset hold class (Sentinel) with Pause at level 3: vanilla, not held (A2 F2)"
+source = "Game2"
+status = "unproven"
+v_items = [8]
+[scenario.S13_pause_other_jedi.save]
+[[scenario.S13_pause_other_jedi.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 5], ["JediGuardian", 2]]
+xp = 28000
+in_party = true
+[scenario.S13_pause_other_jedi.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
+[scenario.S13_pause_other_jedi.expect]
+absent = ['^HOLD tag=atton ', '^BANKED tag=atton ']
+decisions = { "atton.canLevelUp" = "PASS", "atton.autoLevel" = "SKIP" }

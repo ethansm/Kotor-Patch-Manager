@@ -8,6 +8,7 @@
 // Regexes are ECMAScript, matched per log line after the `[tick] ` prefix and leading spaces (saves.toml contract). Exit 1 on any failure.
 #include "../../../../patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <deque>
 #include <fstream>
@@ -168,6 +169,19 @@ static bool logRe(const std::string& re) {
     return false;
 }
 
+static int logCount(const std::string& re) {   // number of log lines matching (same per-line view as logRe)
+    std::regex rx;
+    try { rx = std::regex(re, std::regex::ECMAScript); } catch (std::regex_error&) { CHECK(false, "bad regex %s", re.c_str()); return 0; }
+    std::istringstream is(readLog()); std::string l; int n = 0;
+    while (std::getline(is, l)) {
+        size_t p = 0;
+        if (!l.empty() && l[0] == '[') { size_t q = l.find("] "); if (q != std::string::npos) p = q + 2; }
+        while (p < l.size() && l[p] == ' ') ++p;
+        if (std::regex_search(l.substr(p), rx)) ++n;
+    }
+    return n;
+}
+
 // ---- GuiKit / character-screen fakes (as ui_test.cpp) for `ui` / `click` actions ----
 using namespace guikit;
 static void* fAlloc(unsigned n) { return reinterpret_cast<void*>(arenaAlloc(n)); }
@@ -268,7 +282,8 @@ static bool loadXp(const std::string& path) {
 struct Scn {
     std::string id; uint32_t globals = 0; int nGlobals = 0; bool ptSet = false; uint32_t ptGuid = 0;
     struct CrSpec { std::string tag; std::vector<std::pair<int, int>> classes; uint32_t xp; bool inParty, leader; };
-    std::vector<CrSpec> cr; std::vector<std::string> ini, companions, acts, events, absent; std::vector<std::pair<std::string, std::string>> decisions;
+    std::vector<CrSpec> cr; bool iniMissing = false, hasPtRaw = false; std::string ptRaw;
+    std::vector<std::string> ini, companions, acts, events, absent; std::vector<std::pair<std::string, std::string>> decisions;
 };
 static bool readScn(const char* path, const std::string& id, Scn& out) {
     std::ifstream f(path); std::string line; bool in = false;
@@ -287,6 +302,8 @@ static bool readScn(const char* path, const std::string& id, Scn& out) {
             out.cr.push_back(c);
         }
         else if (k == "INI") out.ini.push_back(rest);
+        else if (k == "INIMISSING") out.iniMissing = true;
+        else if (k == "PTRAW") { out.hasPtRaw = true; out.ptRaw.clear(); for (size_t i = 0; i + 1 < rest.size(); i += 2) out.ptRaw += (char)strtol(rest.substr(i, 2).c_str(), nullptr, 16); }
         else if (k == "PTGUID") { if (rest != "none") { out.ptSet = true; rs >> std::hex >> out.ptGuid; } }
         else if (k == "COMPANION") out.companions.push_back(rest);
         else if (k == "ACT") out.acts.push_back(rest);
@@ -299,6 +316,7 @@ static bool readScn(const char* path, const std::string& id, Scn& out) {
 }
 
 static std::map<std::string, std::string> g_dec;
+static std::string g_ptSnap;
 static const char* g_preset = "atton__melee_dual_light_early";
 
 // One action of the script. Returns false on an unknown action.
@@ -325,6 +343,7 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
         const size_t before = readLog().size();
         uintptr_t pend = makePending(newestClass(*c));
         LevelUpOverrideEntry(P(c->stats), P(0x006B9770), P(pend), 1, P(makeChain(true)));
+        { const uint32_t nF = at<uint32_t>(pend, Pd_Feats + 4); g_dec[arg + ".pending"] = nF > 0 || at<uint16_t>(pend, Pd_Unspent) != 3 ? "REWRITTEN" : "VANILLA"; }   // log-independent: did the hook change the pending
         const std::string seg = readLog().substr(before);
         g_dec[arg + ".autoLevel"] = seg.find("APPLIED tag=") != std::string::npos ? "APPLIED" : seg.find("WOULD REWRITE") != std::string::npos ? "WOULD_REWRITE" :
             seg.find("ALREADY") != std::string::npos ? "ALREADY" : seg.find("SKIP") != std::string::npos ? "SKIP" : seg.find(" DRY ") != std::string::npos ? "DRY" : "NONE";
@@ -335,6 +354,35 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
     } else if (a == "ui") {
         Cr* c = crByTag(arg); if (!c) return false;
         uiTickAs(*c); uiTickAs(*c);
+        UiPanel* r = findUi(g_panel);
+        if (r) {
+            g_dec["ui.cfg"] = (r->shownMask >> C_CFG) & 1 ? "1" : "0";
+            g_dec["ui.status"] = (r->shownMask >> C_STATUS) & 1 ? "1" : "0";
+            if (r->c[C_STATUS]) g_dec["ui.statustext"] = g_text[r->c[C_STATUS]];
+        }
+    } else if (a == "logcap") {   // the 20000-line log cap reached (F1)
+        g_logLines = MaxLogLines;
+    } else if (a == "logro") {    // the log file cannot be opened for append (read-only; F1)
+        if (geteuid() == 0) { fprintf(stderr, "logro: running as root, chmod 0444 does not stop fopen - scenario meaningless\n"); return false; }
+        if (FILE* f = fopen(LogName, "a")) fclose(f);
+        chmod(LogName, 0444);
+    } else if (a == "flap") {     // alternate the creature between HOLD (1 class) and not held (+ a Sentinel class entry) once per simulated 16 ms frame (F14)
+        Cr* c = crByTag(arg); if (!c) return false;
+        int n = 0; ss >> n;
+        at<uint8_t>(c->stats, St_ClassId + 1 * St_ClassStride) = 5; at<uint8_t>(c->stats, St_ClassLevel + 1 * St_ClassStride) = 0;
+        for (int i = 0; i < n; ++i) { at<uint8_t>(c->stats, St_ClassCount) = (i & 1) ? 2 : 1; g_stubTick += 16; LuoHold_74F3C7(P(c->stats)); }
+        at<uint8_t>(c->stats, St_ClassCount) = 1;
+    } else if (a == "count") {    // count <key> <regex>: number of log lines matching, as decision <key>
+        std::string re; std::getline(ss, re); if (!re.empty() && re[0] == ' ') re.erase(0, 1);
+        g_dec[arg] = std::to_string(logCount(re));
+    } else if (a == "ptsnap") {   // remember the playthroughs file bytes
+        g_ptSnap = fileText("levelup_playthroughs.ini");
+    } else if (a == "ptdiff") {   // compare the playthroughs file with the snapshot (F3/F6)
+        const std::string t = fileText("levelup_playthroughs.ini");
+        g_dec["ptfile.unchanged"] = t == g_ptSnap ? "1" : "0";
+        g_dec["ptfile.atton"] = t.find("\natton=") != std::string::npos ? "1" : "0";
+        g_dec["ptfile.kreia"] = t.find("\nkreia=") != std::string::npos ? "1" : "0";
+        g_dec["ptfile.comment"] = t.find("; " + std::string(300, 'a')) != std::string::npos ? "1" : "0";
     } else if (a == "click") {   // arg = control name; the UI tick uses the creature of the previous `ui` (or the first one)
         Cr* c = crByTag(g_cr.empty() ? "" : g_cr[0].tag); if (!c) return false;
         int idx = -1; for (int i = 0; i < C_N; ++i) if (arg == kUiName[i]) idx = i;
@@ -345,6 +393,8 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
         curX = x + w / 2; curY = y + h / 2;
         lmb = false; uiTickAs(*c); lmb = true; uiTickAs(*c); lmb = false; uiTickAs(*c);
         g_dec["ui.open"] = r->open ? "1" : "0";
+        g_dec["ui.failed"] = r->failed ? "1" : "0";
+        if (r->c[C_TITLE]) g_dec["ui.title"] = g_text[r->c[C_TITLE]];
     } else return false;
     return true;
 }
@@ -362,15 +412,24 @@ static int runScenario(const char* datPath, const std::string& id) {
     if (!g_leader) for (auto& c : g_cr) if (c.inParty) { g_leader = &c; break; }
     std::vector<std::string> ini = s.ini;
     remove("levelup_playthroughs.ini");
-    if (s.ptSet) { FILE* f = fopen("levelup_playthroughs.ini", "w"); fprintf(f, "[g%08x]\n", (unsigned)s.ptGuid); for (auto& c : s.companions) { size_t sp = c.find(' '); fprintf(f, "%s=%s\n", c.substr(0, sp).c_str(), c.substr(sp + 1).c_str()); } fclose(f); }
+    if (s.ptSet && s.hasPtRaw) { FILE* f = fopen("levelup_playthroughs.ini", "wb"); fwrite(s.ptRaw.data(), 1, s.ptRaw.size(), f); fclose(f); }
+    else if (s.ptSet) { FILE* f = fopen("levelup_playthroughs.ini", "w"); fprintf(f, "[g%08x]\n", (unsigned)s.ptGuid); for (auto& c : s.companions) { size_t sp = c.find(' '); fprintf(f, "%s=%s\n", c.substr(0, sp).c_str(), c.substr(sp + 1).c_str()); } fclose(f); }
     writeIni(ini, table);
+    if (s.iniMissing) {   // no levelup_override.ini at all: defaults; the table is found under its default name
+        remove("levelup_override.ini");
+        std::ifstream src(table, std::ios::binary); std::ofstream dst("levelup_paths.ini", std::ios::binary); dst << src.rdbuf();
+    }
     clearLog();
     for (auto& a : s.acts) { if (!act(a, tabLoad, tabSave)) CHECK(false, "unknown or failed action '%s'", a.c_str()); }
     // banked count: the last BANKED line
     { std::string l = readLog(); size_t p = l.rfind("BANKED tag="); if (p != std::string::npos) { size_t q = l.find(" n=", p); if (q != std::string::npos) g_dec["banked"] = std::to_string(atoi(l.c_str() + q + 3)); } }
     for (auto& e : s.events) CHECK(logRe(e), "expected event /%s/ not in log:\n%s", e.c_str(), readLog().c_str());
     for (auto& e : s.absent) CHECK(!logRe(e), "forbidden event /%s/ in log:\n%s", e.c_str(), readLog().c_str());
-    for (auto& d : s.decisions) { auto it = g_dec.find(d.first); CHECK(it != g_dec.end() && it->second == d.second, "decision %s = '%s' (want '%s')", d.first.c_str(), it == g_dec.end() ? "<unset>" : it->second.c_str(), d.second.c_str()); }
+    for (auto& d : s.decisions) {
+        auto it = g_dec.find(d.first);
+        if (d.second.rfind("<=", 0) == 0 && it != g_dec.end()) { CHECK(atoi(it->second.c_str()) <= atoi(d.second.c_str() + 2), "decision %s = %s (want %s)", d.first.c_str(), it->second.c_str(), d.second.c_str()); continue; }
+        CHECK(it != g_dec.end() && it->second == d.second, "decision %s = '%s' (want '%s')", d.first.c_str(), it == g_dec.end() ? "<unset>" : it->second.c_str(), d.second.c_str());
+    }
     printf("scenario %s: checks %d failures %d", id.c_str(), g_checks, g_fail);
     for (auto& d : g_dec) printf(" %s=%s", d.first.c_str(), d.second.c_str());
     printf("\n");

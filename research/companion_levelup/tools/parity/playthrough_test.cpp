@@ -68,7 +68,7 @@ int main() {
       const pt::Line* h = s ? pt::findTag(*s, "hk47") : nullptr; CHECK(h && !h->instant && h->hold && !strcmp(h->preset, "hk47__gunner"), "hk47 defaults");
       const pt::Line* t = s ? pt::findTag(*s, "t3m4") : nullptr; CHECK(t && !t->instant && !t->hold, "t3m4 hold=0");
       const pt::Line* b = s ? pt::findTag(*s, "bastila") : nullptr; CHECK(b && b->instant && b->hold, "bastila instant=1, hold default"); }
-    CHECK(ser(d) == "[G0000000A]\nhk47=hk47__gunner|instant=0|hold=1\nt3m4=t3m4__x|instant=0|hold=0\nbastila=bastila__y|instant=1|hold=1\n", "normalised output:\n%s", ser(d).c_str());
+    CHECK(ser(d) == "[G0000000A]\r\nhk47=hk47__gunner|instant=0|hold=1\r\nt3m4=t3m4__x|instant=0|hold=0\r\nbastila=bastila__y|instant=1|hold=1\r\n", "normalised output keeps the file's CRLF (F3):\n%s", ser(d).c_str());
 
     // 4. set/remove keep other sections; remove keeps an empty section
     load(d, text);
@@ -128,6 +128,45 @@ int main() {
     CHECK(pt::setTag(d, 0xaa, "atton", "a__b", false, true, -2) && pt::findTag(*pt::findGuid(d, 0xaa), "atton")->pause == 0, "setTag negative pause stored as 0");
     CHECK(pt::setTag(d, 0xaa, "atton", "a__b", false, true, 7) && pt::setTag(d, 0xaa, "atton", "a__b", false, true, 0) && ser(d).find("atton=a__b|instant=0|hold=1\n") != std::string::npos && ser(d).find("atton=a__b|instant=0|hold=1|pause") == std::string::npos, "setTag pause 0 drops the field");
     { pt::Doc* d3 = new pt::Doc; load(*d3, "[g00000001]\nx=y__z|instant=1|hold=0\n"); CHECK(ser(*d3) == "[g00000001]\nx=y__z|instant=1|hold=0\n", "pause-less line round-trips byte-identical"); delete d3; }
+
+    // F3 (A2 review): a rewrite keeps text after `]` on section lines, inline `;` comments on tag lines and the file's line endings
+    {
+        const std::string hdr = "[g00000001] ; my first run\n; note\natton=atton__a|instant=1|hold=0 ; keep me\nkreia=kreia__k ;and me\n[ GDEADBEEF ]   ; spaced\nbao=bao__b\n";
+        load(d, hdr);
+        CHECK(!d.lossy && pt::findTag(*pt::findGuid(d, 1), "kreia") && !strcmp(pt::findTag(*pt::findGuid(d, 1), "kreia")->preset, "kreia__k"), "inline comment is not part of the preset id");
+        CHECK(pt::setTag(d, 1, "atton", "atton__z", false, true, 0), "setTag on a commented line");
+        const std::string o = ser(d);
+        CHECK(o.find("[g00000001] ; my first run\n") != std::string::npos, "text after ] kept:\n%s", o.c_str());
+        CHECK(o.find("[ GDEADBEEF ]   ; spaced\n") != std::string::npos, "second header kept verbatim:\n%s", o.c_str());
+        CHECK(o.find("kreia=kreia__k|instant=0|hold=1 ;and me\n") != std::string::npos, "unchanged tag line keeps its inline comment:\n%s", o.c_str());
+        CHECK(o.find("atton=atton__z|instant=0|hold=1 ; keep me\n") != std::string::npos, "changed tag line keeps its inline comment:\n%s", o.c_str());
+        pt::Doc* d2 = new pt::Doc; load(*d2, o); CHECK(ser(*d2) == o, "commented file is a fixed point"); delete d2;
+        // CRLF: detected per file, written back; LF and new files stay LF
+        std::string crlf; for (char c : hdr) { if (c == '\n') crlf += '\r'; crlf += c; }
+        load(d, crlf);
+        CHECK(pt::setTag(d, 1, "kreia", "kreia__q", false, true, 0), "setTag on CRLF file");
+        const std::string oc = ser(d); bool lone = false;
+        for (size_t i = 0; i < oc.size(); ++i) if (oc[i] == '\n' && (i == 0 || oc[i - 1] != '\r')) lone = true;
+        CHECK(!lone && oc.find("[g00000001] ; my first run\r\n") != std::string::npos && oc.find("kreia=kreia__q|instant=0|hold=1 ;and me\r\n") != std::string::npos, "CRLF kept on every line:\n%s", oc.c_str());
+        load(d, hdr); CHECK(pt::setTag(d, 1, "kreia", "kreia__q", false, true, 0) && ser(d).find('\r') == std::string::npos, "LF file stays LF");
+        load(d, ""); CHECK(pt::setTag(d, 7, "atton", "a__b", false, true, 0) && ser(d) == "[g00000007]\natton=a__b|instant=0|hold=1\n", "new file is LF");
+    }
+
+    // F6: removeTagRaw deletes exactly one line of a LOSSY file (over-long comment) and nothing else
+    {
+        const std::string longc = "; " + std::string(300, 'a');
+        const std::string raw = "pre=1\r\n[g00000005] ; a\r\nAtton = x__y|instant=0|hold=1 ; c\r\n" + longc + "\r\nkreia=k__z\r\n[g00000005]\natton=second\r\n[g00000006]\natton=other\r\n";
+        load(d, raw); CHECK(d.lossy, "long comment line is lossy");
+        std::string t = raw; size_t n = t.size();
+        CHECK(pt::removeTagRaw(&t[0], &n, 5, "ATTON"), "raw removal finds the first line of the first section");
+        t.resize(n);
+        CHECK(t == "pre=1\r\n[g00000005] ; a\r\n" + longc + "\r\nkreia=k__z\r\n[g00000005]\natton=second\r\n[g00000006]\natton=other\r\n", "only that line is gone:\n%s", t.c_str());
+        size_t n2 = t.size(); std::string t2 = t;
+        CHECK(!pt::removeTagRaw(&t2[0], &n2, 5, "atton") && n2 == t.size() && t2 == t, "second section of the same GUID is never touched; absent tag -> false");
+        CHECK(!pt::removeTagRaw(&t2[0], &n2, 9, "atton") && !pt::removeTagRaw(&t2[0], &n2, 6, "kreia") && t2 == t, "other guid / tag in another section -> false, unchanged");
+        std::string t3 = "[g00000007]\natton=a__b"; size_t n3 = t3.size();
+        CHECK(pt::removeTagRaw(&t3[0], &n3, 7, "atton") && n3 == 12 && t3.substr(0, n3) == "[g00000007]\n", "last line without a newline");
+    }
 
     printf("playthrough_test checks %d failures %d\n", g_checks, g_fail);
     return g_fail ? 1 : 0;

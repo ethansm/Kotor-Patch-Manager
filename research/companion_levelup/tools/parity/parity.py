@@ -93,7 +93,8 @@ def ln_early_cases(recs, presets):
 def ln_pause_cases(recs, presets):
     """0.3.1 pause cases. For every preset with hold_class != 0 and convert_at > 0: every pause 1..convert_at (covers out of range, the default
     convert_at-1 and above) x hold on/off x creature states: base class at every level 0..blv+1 (key = total + 1), base at L + hold class at j in (0, 1, 5),
-    and a foreign class on top. Cases are (id, key, hold, pause, classes)."""
+    a foreign (non-Jedi) class on top, and (A2 F2) a DIFFERENT Jedi class than the preset's hold class (every other Jedi class id, levels 0/1/5, also with the
+    base class behind it). Cases are (id, key, hold, pause, classes)."""
     out = []
     for pid, lv in recs.items():
         pr = presets.get(pid)
@@ -108,6 +109,11 @@ def ln_pause_cases(recs, presets):
                     for j in (0, 1, 5):
                         out.append((pid, L + j + 1, hold, pause, [(base, L), (pr.hold_class, j)]))
                     out.append((pid, L + 2, hold, pause, [(base, L), (99, 1)]))
+                    for oj in (3, 4, 5, 11, 12, 13):
+                        if oj == pr.hold_class:
+                            continue
+                        for j in (0, 1, 5):
+                            out.append((pid, L + j + 1, hold, pause, [(base, L), (oj, j)]))
     return out
 
 
