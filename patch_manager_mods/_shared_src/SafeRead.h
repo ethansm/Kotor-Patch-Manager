@@ -26,6 +26,8 @@ struct Fail { unsigned site; uintptr_t addr; unsigned len; uintptr_t caller; DWO
 
 static thread_local Region t_cache[CacheSlots];
 static thread_local int t_next;
+static thread_local Region t_wcache[CacheSlots];   // writable regions (probeWrite); separate so a read-only region never answers a write probe
+static thread_local int t_wnext;
 static Fail g_ring[RingSize];
 static volatile LONG g_ringCount = 0;   // total failures recorded (ring index = count % RingSize)
 static bool g_ringOn = false;           // set from the DLL's debug flag
@@ -34,6 +36,7 @@ inline void enableRing(bool on) { g_ringOn = on; }
 
 inline void beginScope() {
     for (auto& r : t_cache) r = { 0, 0 };
+    for (auto& r : t_wcache) r = { 0, 0 };
 }
 
 inline bool readableProtect(DWORD p) {
@@ -52,8 +55,32 @@ inline bool regionReadable(uintptr_t a, uintptr_t end) {
         if (VirtualQuery(reinterpret_cast<LPCVOID>(a), &mbi, sizeof(mbi)) != sizeof(mbi)) return false;
         if (mbi.State != MEM_COMMIT || !readableProtect(mbi.Protect)) return false;
         uintptr_t lo = reinterpret_cast<uintptr_t>(mbi.BaseAddress), hi = lo + mbi.RegionSize;
+        if (hi <= a) return false;   // degenerate answer (region end wrapped): refuse rather than loop forever
         t_cache[t_next] = { lo, hi };
         t_next = (t_next + 1) % CacheSlots;
+        a = hi;
+    }
+    return true;
+}
+
+inline bool writableProtect(DWORD p) {
+    if (p & (PAGE_GUARD | PAGE_NOACCESS)) return false;
+    return (p & (PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+}
+
+// [a, end) fully inside committed writable memory? Same walk as regionReadable, own cache. Never IsBadWritePtr.
+inline bool regionWritable(uintptr_t a, uintptr_t end) {
+    while (a < end) {
+        bool hit = false;
+        for (auto& r : t_wcache) if (a >= r.lo && a < r.hi) { a = r.hi; hit = true; break; }
+        if (hit) continue;
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQuery(reinterpret_cast<LPCVOID>(a), &mbi, sizeof(mbi)) != sizeof(mbi)) return false;
+        if (mbi.State != MEM_COMMIT || !writableProtect(mbi.Protect)) return false;
+        uintptr_t lo = reinterpret_cast<uintptr_t>(mbi.BaseAddress), hi = lo + mbi.RegionSize;
+        if (hi <= a) return false;   // degenerate answer: refuse rather than loop
+        t_wcache[t_wnext] = { lo, hi };
+        t_wnext = (t_wnext + 1) % CacheSlots;
         a = hi;
     }
     return true;
@@ -72,6 +99,16 @@ __attribute__((noinline)) static bool probeRead(unsigned site, const void* p, si
     uintptr_t caller = reinterpret_cast<uintptr_t>(__builtin_return_address(0));
     if (len == 0) return true;
     if (a < 0x10000 || a + len < a || !regionReadable(a, a + len)) { recordFail(site, a, len, caller); return false; }
+    return true;
+}
+
+// True when [p, p+len) is committed, writable memory (PAGE_READWRITE/WRITECOPY/EXECUTE_READWRITE/EXECUTE_WRITECOPY, no GUARD/NOACCESS).
+// Same shape, cache scope (beginScope) and failure ring as probeRead; uses VirtualQuery only (IsBadWritePtr fault-storms under Wine).
+__attribute__((noinline)) static bool probeWrite(unsigned site, void* p, size_t len) {
+    uintptr_t a = reinterpret_cast<uintptr_t>(p);
+    uintptr_t caller = reinterpret_cast<uintptr_t>(__builtin_return_address(0));
+    if (len == 0) return true;
+    if (a < 0x10000 || a + len < a || !regionWritable(a, a + len)) { recordFail(site, a, len, caller); return false; }
     return true;
 }
 
@@ -106,17 +143,23 @@ inline int readExo(unsigned site, uintptr_t addr, char* buf, int cap, int maxLen
     return n;
 }
 
-// Formats the ring (oldest first) into buf; returns chars written.
+// Formats the ring (oldest first) into buf; returns chars written (NUL-terminated, never more than cap-1; 0 for a null buf or cap <= 0).
 inline int dump(char* buf, int cap) {
+    if (!buf || cap <= 0) return 0;
+    buf[0] = 0;
     LONG count = g_ringCount;
     int n = count < RingSize ? count : RingSize, len = 0;
-    len += snprintf(buf + len, cap - len, "saferead: %ld failed probes (showing last %d)\n", count, n);
+    auto put = [&](int w) {   // advance by what snprintf wrote, clamped to the room left (snprintf returns the untruncated length)
+        if (w < 0) w = 0;
+        len = w < cap - len ? len + w : cap - 1;
+    };
+    put(snprintf(buf, cap, "saferead: %ld failed probes (showing last %d)\n", count, n));
     for (int k = 0; k < n && len < cap - 1; ++k) {
         const Fail& f = g_ring[(count - n + k) % RingSize];
-        len += snprintf(buf + len, cap - len, "  t=%lu site=%u addr=%08x len=%u caller=%08x\n",
-                        f.tick, f.site, (unsigned)f.addr, f.len, (unsigned)f.caller);
+        put(snprintf(buf + len, cap - len, "  t=%lu site=%u addr=%08x len=%u caller=%08x\n",
+                     f.tick, f.site, (unsigned)f.addr, f.len, (unsigned)f.caller));
     }
-    return len < cap ? len : cap - 1;
+    return len;
 }
 
 } // namespace saferead

@@ -517,6 +517,27 @@ static void party_contract() {
     HCHECK("members keeps client at the unreadable member's slot", v[1].client == g_clients[1]);
 }
 
+// ============================================================ 2b. saferead::probeWrite (write guard before engine-memory stores)
+static void saferead_write_contract() {
+    uintptr_t w = arenaAlloc(64);
+    auto W = [&](uintptr_t p, size_t n) { return saferead::probeWrite(4u, reinterpret_cast<void*>(p), n); };
+    saferead::beginScope();
+    HCHECK("probeWrite true on a writable arena range", W(w, 64));
+    HCHECK("probeWrite true on a 4-byte field inside it (the typical store)", W(w + 8, 4));
+    HCHECK("probeWrite len 0 is true (probeRead shape)", W(w, 0));
+    HCHECK("probeWrite false on null", !W(0, 4));
+    HCHECK("probeWrite false below 0x10000", !W(0x20, 4));
+    HCHECK("probeWrite false at the 0xFFFF boundary", !W(0xFFFF, 4));
+    HCHECK("probeWrite false when p+len wraps the address space", !W(~uintptr_t(0) - 3, 16));
+    HCHECK("probeWrite false when len is huge", !W(w, ~size_t(0)));
+    g_stubVirtualQueryAll = false; saferead::beginScope();
+    HCHECK("probeWrite false when VirtualQuery fails (unreadable)", !W(w, 4));
+    g_stubVirtualQueryAll = true; saferead::beginScope();
+    HCHECK("probeWrite true again after the stub is restored", W(w, 4));
+    // read-only / guard / reserved pages are not fakeable here (the stub reports one PAGE_READWRITE region); the protection verdicts
+    // are pinned in _shared_src/saferead_test.cpp, which routes VirtualQuery through a fake.
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -527,6 +548,7 @@ int main() {
     g_arena = static_cast<uint8_t*>(m);
     g_stubVirtualQueryAll = true;   // every arena address reads as committed readable memory; < 0x10000 and 0 stay unreadable (probeRead rule)
     saferead_contract();
+    saferead_write_contract();
     guikit_contract();
     party_contract();
     return kt::Report("common_contract_test (force_power_hotbar)");
