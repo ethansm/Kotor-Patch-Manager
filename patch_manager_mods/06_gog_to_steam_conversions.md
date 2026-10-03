@@ -674,8 +674,8 @@ than "port the next candidate," and not started here.
    The real proof the hook applies is the steam log's `[KotorPatcher]
    Applied ... hook at 0x...` line, which only appears once the patch
    actually runs against the live exe.
-8. Install on the live game directly (same LAA-hash two-part recipe as
-   any other patch, `05_build_plan.md`'s Phase 1a section) and check the
+8. Install on the live game directly (KPM matches the original vanilla hash `6A522E71`; no LAA
+   hash/db aliases since 2026-10-02, see `vanilla_migration/README.md`) and check the
    steam log for the `Applied ... hook` + `SUCCESS: Patcher initialized`
    lines as the actual confirmation, plus `AR_ERROR.LOG` against baseline.
    There is no safe way to get a stronger pre-live signal than the
@@ -686,17 +686,12 @@ than "port the next candidate," and not started here.
 
 ## Open items before starting
 
-- **LAA-hash mismatch — RESOLVED as of Phase 1a/1b (2026-09-28), recipe
-  proven twice.** No longer a blocker requiring a decision; it's now a
-  known, repeatable two-part mechanical step for *any* patch we want on
-  the live exe: (1) add `kotor2_steam_aspyr_laa = "<live hash>"` to the
-  patch's `manifest.toml` and to its `kotor2-steam-aspyr.hooks.toml`'s
-  `target_versions`, (2) clone the matching `AddressDatabases/*.db` and
-  retarget its `sha256_hash` row to the same hash (only needed if the
-  patch ships a DLL — `detour`/some `simple` hooks that resolve exported
-  functions at runtime). Full worked example: `05_build_plan.md`'s Phase
-  1a section. Applies the same way once a GOG-ported patch has a working
-  `kotor2-steam-aspyr.hooks.toml` — no new unknowns here.
+- **LAA-hash mismatch — OBSOLETE since 2026-10-02.** The live exe is now vanilla `6A522E71` +
+  KPM `4gb-patch` (`7751F7D8`); KPM matches `target_versions` and the address DB by the original
+  hash `6A522E71`. A new patch needs only `kotor2_steam_aspyr` in `manifest.toml` and
+  `6A522E71...` in its `kotor2-steam-aspyr.hooks.toml` `target_versions`; do NOT add a
+  `kotor2_steam_aspyr_laa` key, a `4AB72FC1` hash, or clone any `*_laa.db`. (The 09-28 two-part
+  recipe is kept in `05_build_plan.md` Phase 1a as history.)
 - **Ghidra environment — RESOLVED (Phase 2, 2026-09-28).** Ghidra 12.1.4 +
   JDK 21 installed, project at
   `~/Games/KOTOR2_Mod_Workspace/tools/ghidra_projects/KOTOR2_SteamAspyr`

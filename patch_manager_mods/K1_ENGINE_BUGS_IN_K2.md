@@ -5,8 +5,8 @@ The KOTOR 1 community has documented and fixed a set of engine bugs: KMRP (KOTOR
 `K1StrayBugFixes`). The two games share most of the Odyssey/Aurora GUI code, so an obvious question is whether each bug
 also exists in KOTOR II. This page records what we found, so nobody has to repeat the work.
 
-**Scope and method.** The target is KOTOR II Steam (Aspyr) `swkotor2.exe`, sha256 `6A522E71631DCEE9...FFEF`. Its LAA variant
-`4AB72FC1...5A5B` has the same code at every address listed here. GOG Aspyr addresses differ but the code is very
+**Scope and method.** The target is KOTOR II Steam (Aspyr) `swkotor2.exe`, sha256 `6A522E71631DCEE9...FFEF`. A large-address-aware build of it (e.g. via KPM's `4gb-patch`, or the old prepatched
+`4AB72FC1...FB5A`) has the same code at every address listed here. GOG Aspyr addresses differ but the code is very
 likely the same; we did not check GOG. The analysis was static: Ghidra decompile and disassembly, with constants read from
 the vanilla exe. We located each K2 function independently. A matching name was never treated as proof. Every verdict below
 was re-checked against the disassembly. Done 2026-10-01/03.

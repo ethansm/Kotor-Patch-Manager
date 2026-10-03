@@ -45,9 +45,9 @@ end-to-end under our Proton setup before we build anything custom.
 
 ## Do not install
 
-- **Patch Manager's own `4GBPatch`.** Directly redundant with mod #4 (4GB
-  Patcher) already applied to this exe. Installing both risks two
-  independent LAA-flag writes to the same PE header field.
+- **(Superseded 2026-10-02) Patch Manager's own `4GBPatch`.** It is now the installed LAA mechanism
+  (`4gb-patch`, live exe `7751F7D8` = vanilla `6A522E71` + 1 byte at 0x11E). Do NOT combine it with
+  mod #4 or the 3C-FD prepatched exe: two independent LAA-flag writes to the same PE header field.
 
 ## Install with caution / needs a plan first
 

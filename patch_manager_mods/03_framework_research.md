@@ -108,10 +108,10 @@ unless merged manually. See `04_recommended_installs.md` for the verdict.
 
 ## Compatibility warnings for this install
 
-- **`4GBPatch` (Patch Manager's own) directly overlaps with mod #4 (4GB
-  Patcher, ntcore.com), already applied.** Do not install Patch Manager's
-  copy — same static LAA-flag patch, redundant at best, corrupting at
-  worst if both try to flip the same PE header bit independently.
+- **`4GBPatch` (Patch Manager's own) overlaps with mod #4 (4GB Patcher, ntcore.com).**
+  (Superseded 2026-10-02: mod #4 / the 3C-FD prepatched exe was retired; the live exe is vanilla
+  `6A522E71` + KPM `4gb-patch` = `7751F7D8`, so Patch Manager's copy IS the one installed.
+  Never combine it with an externally LAA-patched exe: two independent writers of the same PE header bit.)
 - No evidence of conflicts with TSLPatcher-based mods in general —
   different modification layers (TSLPatcher writes 2DA/GFF/override files
   at install time; Patch Manager patches the running process at launch

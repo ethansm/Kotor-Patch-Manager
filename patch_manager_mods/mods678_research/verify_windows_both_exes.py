@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Compare every window's original_bytes (from check_windows_output_*.txt) against BOTH game executables:
-swkotor2.exe (LAA build, sha 4AB72FC1...) and swkotor2.exe.unpatched_vanilla (base build, sha 6A522E71...).
+swkotor2.exe (live: since 2026-10-02 vanilla + KPM 4gb-patch, sha 7751F7D8...; before that the 3C-FD/LAA build 4AB72FC1...)
+and swkotor2.exe.unpatched_vanilla (base build, sha 6A522E71...). The two now differ only by the PE LAA flag byte at 0x11E.
 2026-09-30: all 11 windows identical in both. Re-run after any game/exe change."""
 import struct, re, sys, os
 L = "/home/ethansm/.local/share/Steam/steamapps/common/Knights of the Old Republic II"
@@ -25,5 +26,5 @@ for m in re.finditer(r"\] (.+?): 0x([0-9a-f]+) len (\d+).*?bytes = \[(.*?)\]", t
     name, addr, ln, bs = m.groups(); want = bytes(int(x, 16) for x in bs.split(", "))
     res = {k: rd(t, int(addr, 16), int(ln)) == want for k, t in exes.items()}
     ok &= all(res.values())
-    print(f"{name:32} {addr} {ln:>3}  LAA:{res['swkotor2.exe']}  base:{res['swkotor2.exe.unpatched_vanilla']}")
+    print(f"{name:32} {addr} {ln:>3}  live:{res['swkotor2.exe']}  base:{res['swkotor2.exe.unpatched_vanilla']}")
 print("ALL MATCH" if ok else "MISMATCH")

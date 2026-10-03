@@ -1,5 +1,7 @@
 # Batch-3 GOG→Steam porting: detailed continuation plan
 
+> **2026-10-03 note:** the 2026-09-28 LAA-alias steps below (live hash `4ab72fc1...`, `4AB72FC1` in `target_versions`, `kotor2_steam_aspyr_laa` manifest key / `_laa.db`) are OBSOLETE. The live exe is vanilla `6A522E71` + KPM `4gb-patch` (`7751F7D8`); use only `kotor2_steam_aspyr` / `6A522E71` (see `vanilla_migration/README.md`).
+
 **Written 2026-09-28 for a context-clearing hand-off.** The user asked to
 persist everything and switch to plan mode because context was getting
 full. This file is the source of truth for resuming — read this instead

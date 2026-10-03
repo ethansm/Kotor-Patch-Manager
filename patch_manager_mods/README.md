@@ -94,10 +94,9 @@ Two things about this build make Patch Manager both *more* attractive and
    output under this exact environment. Assume the same risk here until
    proven otherwise; this is the single biggest open question in
    `03_framework_research.md`.
-3. **Existing exe-level patch already applied.** Mod #4 (4GB/LAA Patcher) and
-   mod #1 (3C-FD Patcher, which also applies an LAA patch and explicitly
-   **refuses to run on an already-patched executable** — see its install
-   note) already modify `swkotor2.exe`'s PE headers. `KPatchLauncher.exe`
+3. **Exe-level patch.** (Updated 2026-10-02: the live exe is vanilla `6A522E71`
+   + KPM's own `4gb-patch` = `7751F7D8`; the old Mod #4 / Mod #1 (3C-FD) prepatched build
+   `4AB72FC1` is retired.) The one byte `4gb-patch` flips is the PE LAA flag. `KPatchLauncher.exe`
    injects at runtime rather than patching the binary on disk, so it should
    be independent of LAA — but this needs confirming, not assuming, per
    [[feedback-calibrate-detectors]] ("verify claims on disk").

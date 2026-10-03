@@ -1,8 +1,8 @@
 # 08 - Level-up override (per-character fixed level-up path)
 
 Phase 1 (read-only Ghidra investigation) record. Plan: `research/companion_levelup/PHASE1_PLAN.md`; overall:
-`research/companion_levelup/MASTER_PLAN.md`. Target: Steam Aspyr LAA `swkotor2.exe` (sha256 6A522E71... = `.unpatched_vanilla`; the
-live exe 4AB72FC1... is the patched one - bytes at every shortlisted site are identical in both). Ghidra image base 0x400000; file
+`research/companion_levelup/MASTER_PLAN.md`. Target: Steam Aspyr `swkotor2.exe` (sha256 6A522E71... = `.unpatched_vanilla`; since 2026-10-02 the
+live exe is that vanilla + KPM `4gb-patch` = 7751F7D8..., formerly the 3C-FD build 4AB72FC1... - bytes at every shortlisted site are identical in all). Ghidra image base 0x400000; file
 offset of a .text VA = VA - 0x400C00. All Steam functions below were read in a decompile (2026-09-30), not just address-matched.
 
 ## Status

@@ -21,7 +21,7 @@ conclusions; this folder holds the raw evidence so nothing has to be re-derived.
 | `copy_dump_excerpts.sh ADDR...` | copy more functions from the dump into `dump_excerpts/` |
 | `check_windows.py` / `check_windows_output_2026-09-30.txt` | validates every proposed splice window (whole instructions, relative branches inside, external branches into the interior, overlap with live hooks) and prints TOML-ready `original_bytes` |
 | `live_hooks_2026-09-30.tsv` | the 63 hooks in the live `patch_config.toml` (address, window length, type, function, patch id) |
-| `verify_windows_both_exes.py` | compares every window's original bytes against BOTH executables (LAA `4AB72FC1`, base `6A522E71`); 2026-09-30 all 11 identical |
+| `verify_windows_both_exes.py` | compares every window's original bytes against BOTH executables (live `swkotor2.exe`: 2026-09-30 = LAA 3C-FD build `4AB72FC1`, since 2026-10-02 = vanilla + 4gb-patch `7751F7D8`; base = `.unpatched_vanilla` `6A522E71`); 2026-09-30 all 11 identical |
 | `persist_batch3_db.py` | idempotent upsert of batch-3 `functions` / `name_map` / lessons 171-178 into the knowledge DB |
 
 Related tool: `../ghidra_knowledge/gog_cluster_delta_map.py` (+ `../ghidra_knowledge/gog_map_mods678.tsv`,

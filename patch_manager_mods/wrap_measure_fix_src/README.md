@@ -1,6 +1,6 @@
 # K2 Wrap Measure Fix (k2-wrap-measure-fix 1.0.0)
 
-A tiny KPM "simple" byte patch for KOTOR II (Steam Aspyr and Steam Aspyr LAA exes).
+A tiny KPM "simple" byte patch for KOTOR II (Steam Aspyr exe, hash 6A522E71; the LAA alias was dropped 2026-10-02, the live exe is vanilla + 4gb-patch).
 
 ## What it does
 

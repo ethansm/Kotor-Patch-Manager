@@ -1668,7 +1668,7 @@ First live test: hooks all applied, hook 2 ran and found the right buffs (spell 
 
 **What the player sees.** On every party portrait card the engine's plain buff/debuff *arrow chevrons* are replaced by the effect's own icons. Buffs run in a column down the card's LEFT edge, debuffs down the RIGHT edge (both columns share one icon size). Item-sourced effects (stims, combat shots, forearm/droid shields, droid devices) sit on a round translucent teal disc; force powers are the bare icon. Each icon "drains" top-down: the elapsed part (top) is drawn dim (35% alpha, disc + icon), the remaining part (bottom-anchored) at full alpha, with a 1 px dark-teal line at the boundary (on item icons the line is clipped to the round disc: width = the circle's chord at that height, hidden outside it; force-power icons keep a full-width line). Untracked engine effects (spell id -1, grenades/rockets/darts/monster abilities) keep their native arrows.
 
-**Hooks** (`kotor2-steam-aspyr.hooks.toml`, all detours, `original_bytes` verified vs the live exe; target hashes: Steam `6A522E71...` and its LAA build `4AB72FC1...`):
+**Hooks** (`kotor2-steam-aspyr.hooks.toml`, all detours, `original_bytes` verified vs the live exe; target hash: Steam `6A522E71...` only (the former LAA alias `4AB72FC1...` was dropped 2026-10-02)):
 | # | Address | Export | Job |
 |---|---|---|---|
 | 1a/1b | `0x0074f25a` / `0x0074f8ab` | `SnapshotPortraitSlot(slotPtr, creaturePtr)` | UpdatePortraits: remember slot -> creature (4-entry table) |
