@@ -18,7 +18,7 @@ try:
     import pykotor  # noqa: F401
 except ImportError:  # scripts/run_tests.py runs test_*.py with the system python: re-run under the repo venv (pykotor lives there)
     _venv = Path(__file__).resolve().parent.parent / ".venv" / "bin" / "python3"
-    if _venv.exists() and Path(sys.executable).resolve() != _venv.resolve():
+    if _venv.exists() and Path(sys.prefix).resolve() != _venv.parent.parent.resolve():  # venv python is a symlink: compare prefixes
         os.execv(str(_venv), [str(_venv), __file__] + sys.argv[1:])
     print("SKIP: pykotor not importable and no repo .venv")
     sys.exit(0)
@@ -67,9 +67,10 @@ def flat(slot_dir):
 class ForgeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        shutil.rmtree(SCRATCH, ignore_errors=True)
-        cls.saves = SCRATCH / "saves"
-        cls.saves.mkdir(parents=True)
+        SCRATCH.mkdir(parents=True, exist_ok=True)
+        cls.root = Path(tempfile.mkdtemp(prefix="forge_test_", dir=SCRATCH))  # unique per run: parallel runs never collide
+        cls.saves = cls.root / "saves"
+        cls.saves.mkdir()
         shutil.copytree(G2, cls.saves / G2.name)
         shutil.copytree(QS, cls.saves / QS.name)
         assert not str(cls.saves).startswith(str(REAL))
@@ -80,6 +81,7 @@ class ForgeTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.patch.stop()
+        shutil.rmtree(cls.root, ignore_errors=True)
 
     def forge(self, sid, src="Game2", *extra):
         before = {p.name for p in self.saves.iterdir()}
