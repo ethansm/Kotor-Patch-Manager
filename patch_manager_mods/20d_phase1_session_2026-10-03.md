@@ -42,18 +42,27 @@ The user wants these called out for other contributors. See memory `feedback-rep
 
 | # | Where | Issue | Kind | Ours/upstream | Status |
 |---|---|---|---|---|---|
-| F1 | KPM `Patches/K2DialogueLetterboxFixProbe/manifest.toml` | Reuses the id `k2-dialogue-letterbox-fix` of `Patches/K2DialogueLetterboxFix`. KPM's validator FAILs (83 patches, 1 error). It was staged by another session (doc 17 letterbox probe 1.0.1). | hygiene, blocks the gate | ours (in the KPM tree) | **open: user decides** whether to delete the probe dir or give it its own id. Default `run_tests.py` is red until then. |
+| F1 | KPM `Patches/K2DialogueLetterboxFixProbe/manifest.toml` | Reuses the id `k2-dialogue-letterbox-fix` of `Patches/K2DialogueLetterboxFix`. KPM's validator FAILs (83 patches, 1 error). It was staged by another session (doc 17 letterbox probe 1.0.1). | hygiene, blocks the gate | ours (in the KPM tree) | **RESOLVED `abc01d8`** (user decision 10-03): kpatch moved to KPM `letterbox_probe_stage/`, probe dir removed (inputs identical to the repo source), id kept (installing it replaces 1.0.0). Validator: 82 patches, 0 errors. |
 | F2 | KPM `Patches/CompanionAI/CompanionAI-0.1.0-live.kpatch` | Stale build next to the 0.2.0-probe: 18 hooks against 31 in source. A wrong install is possible. | hygiene | ours | open: delete it (user approval, KPM tree) |
 | F3 | LoadHangProbe 0x40D692-0x40D698 vs ActivationFix code patch 0x40D69E | 6-byte gap | latent risk | ours | WARN only |
 | F4 | PerfLab `PerfLabNetOvfTest` 0x7040E0-0x7040E9 vs Robustness `netovf_b` 0x7040EF | 6-byte gap | latent risk | ours | WARN only |
 | F5 | `RuntimeGuiControls.md` | Said the hotbar has 57 controls (N..N+56); the real count is 75. | doc drift | ours | FIXED `9a44ddf` |
 | F6 | Plan / doc 20 claim "ActivationFix.kpatch stale" | False: the size difference is an extra LAA sha in `target_versions`. The checker compares parsed hooks. | wrong fact | n/a | corrected |
-| F7 | BuffDurationHUD ICONCACHE `snprintf` overrun | Found by audit 20a (code reading), not by tests | real bug | ours | **open: Phase 2** |
+| F7 | BuffDurationHUD ICONCACHE `snprintf` overrun | Found by audit 20a (code reading), not by tests. **Latent:** the 6th (last) ICONCACHE entry is the one that truncates, so nothing writes past the end today; probeDump/dump never truncate. | real bug (latent) | ours | **RESOLVED** `abc01d8` (`bh::appendf` + `buff_hud_logic_test`, red on the old idiom) + call sites (7, incl. describePools) in the buff/shield split session's W2 commit |
 | F8 | ForcePowerHotbar `hb::slotDigit` unbounded | audit 20a | real bug | ours | FIXED `446bb8d` (test-first, `hotbar_bugs_test`); build 27 awaits the user's smoke test |
-| F9 | PerfLab `g_stop` never set | audit 20a | real bug | ours | **open: Phase 2** |
-| F10 | level-up parity `stub/windows.h` `VirtualQuery` returns `RegionSize = 1<<40` | `regionReadable` loops forever under `-m32` (it wraps). Blocks T3 for Common tests. | test-tool bug | ours (stub owner = level-up session) | open |
-| F11 | `perflab` leak check | No headroom: exactly 100000 bytes in 1000 blocks against a `>=` check (doc 20c) | test fragility | ours | open (low) |
+| F9 | PerfLab `g_stop` never set | audit 20a | dead code | ours | **RESOLVED** `abc01d8`: flag and unreachable tail removed; reports are written every flushMs. No red test (dead code). |
+| F10 | level-up parity `stub/windows.h` `VirtualQuery` returns `RegionSize = 1<<40` | `regionReadable` loops forever under `-m32` (it wraps). Blocks T3 for Common tests. | test-tool bug | ours (stub owner = level-up session) | **RESOLVED** `abc01d8`: 32-bit RegionSize ends at `UINTPTR_MAX` (the plan's `2^32 - a` would also wrap to 0). `-m32` saferead_test: old stub timeout 124, new 55 checks. |
+| F11 | `perflab` leak check | No headroom: exactly 100000 bytes in 1000 blocks against a `>=` check (doc 20c) | test fragility | ours | **RESOLVED** `abc01d8`: deltas over a pre-leak `stats()` snapshot |
 | F12 | GUI append-id semantics | The engine's base is the vanilla max id + 1, not the control count. The plan's wording was wrong; the numbers were right. | wrong fact | n/a | documented in `gui_ids.toml` header |
+| F13 | KPM `Patches/create-patch.py` `find_sources` | Compiles every root `*.cpp`; it does NOT exclude `*_test.cpp` / `t32_*` (doc 20 assumed it did). Copying a mod dir with colocated tests into `Patches/<Name>/` breaks the build (`main`, `check.h`). `build_check.py` excludes them itself, so it cannot catch this. | build risk | KPM (upstream-interesting) | open: copy only non-test sources; upstream exclusion RFC needs user approval |
+| F14 | EquipCharPreview `:238` screen clamp | A bad `screen_w` resets to 3840x1600 but leaves `screenExplicit` true, so `syncScreen` stops following the framebuffer; a lone `screen_w` keeps h=1600 and marks the pair explicit | real bug (config edge) | ours | open (pinned as CHARACTERIZATION in `equip3d_logic_test`) |
+| F15 | EquipCharPreview `:817`/`:933` | `fov / zoom` uncapped: fov 90 and zoom_min 0.2 give a 450-degree FOV | real bug (config edge) | ours | open |
+| F16 | EquipCharPreview `:681` | Unreadable stats pointer -> alignment 0 -> "evil" idle | latent | ours | open |
+| F17 | EquipCharPreview `:760` `styleFor` | Dual wield: only the left weapon decides the style (right pistol + left saber = style 4) | behaviour question | ours | open |
+| F18 | EquipCharPreview spin layout | `(int)(W*0.04f)` differs by 1px under x87 (MinGW i686 default) vs SSE at widths that are multiples of 25 | cosmetic | ours | open (tests avoid those widths) |
+| F19 | EquipCharPreview | INI: `strtof` takes hex floats (`stage=0x10` = 16), `(int)1e30` is UB, `;`/`#` cut values; `fgets(600)` splits long lines; `partLen`, `getModel` unused | hygiene | ours | open |
+| F20 | Raw addresses across mods | Same address, different names: `0x0099EE14` (ClientCreatureVftable / CreatureVftable), `0x0051AD20`, `0x006D6E30`, `0x00A1B4E0`/`0x00A1B76C`; 8 addresses copy-pasted between EquipCharPreview and Inventory3DViewport; `FnGetArea` in CompanionAI and RangedAI; GuiKit.h holds 19 raw copies of GameAddr.h values | GameAddr.h migration candidates | ours | open (INFO lines in `check_raw_addresses`) |
+| F21 | ForcePowerHotbar subclass comment | Says "Mod 1/5 do the same"; no other source subclasses the WndProc | doc drift | ours | open |
 
 Upstream-interesting candidates. Do not post without the user's approval.
 - **KPM `HookValidator` only catches same-address hooks.** Partial overlaps and DLL code patches are invisible to it, and our spans checker covers both. A natural upstream RFC.
@@ -75,3 +84,11 @@ Upstream-interesting candidates. Do not post without the user's approval.
 - Never launch the game. Wine only through `run_tests.py --wine` (the prefix is under `/tmp/claude-1000/kotor-tests`).
 - Stage by path: the tree holds unrelated changes from other sessions.
 - Sonnet subagents do the routine work. Opus reviews, wires, verifies and commits.
+
+## Phase 2-3 session (10-03, plan `~/.claude/plans` "Fix the Phase 1 findings, then expand test coverage")
+- Commits: `abc01d8` (Phase 2: F1/F7/F9/F10/F11 + `build_check.py`), `1d0ccab` (EquipCharPreview T1), `670905a` (T0 raw addresses + subclassers), then docs.
+- **Concurrent sessions.** The buff/shield split session (doc 21 W2-W4) rewrote BuffDurationHUD.cpp mid-plan and adopted `bh::appendf`; BuffHUD T1 is held until its W4 commit (it messages this session). The engine-research session's PerfLab 0.4.0 shares PerfLab.cpp; only the F9 hunk was committed here (index-staged against HEAD), and its `e5aa526` carries it.
+- **Plan corrections.** "bc34464 stale" was wrong (that commit adds `ForceArrowCounters`). The F10 formula in the plan wrapped. `create-patch.py` does not exclude tests (F13).
+- **Red default tier from others' WIP** at session end: `check-hook-spans` (portrait_slots_src mid-split) and `check-raw-addresses` (RobustnessFixes 1.2.0 WIP; owner will `--write-baseline` at its commit).
+- **Read-only check:** this session wrote only `letterbox_probe_stage/` (and removed the probe dir) in KPM. Other KPM and `patch_config.toml` changes after the marker are other sessions' (Common headers, PortraitSlots, shield_live_patches, a 12:00 install).
+- F2 (stale `CompanionAI-0.1.0-live.kpatch`) stays open: it needs separate approval.

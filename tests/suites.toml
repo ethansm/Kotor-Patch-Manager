@@ -132,3 +132,15 @@ timeout_s = 60
 name = "check-subclassers"
 cmd = ["python", "scripts/check_subclassers.py", "--quiet"]
 timeout_s = 60
+
+# ---- level-up Phase 6b (requested by the level-up session in doc 20 Status, 10-03) ----
+
+[[suite]]
+name = "levelup-scenarios"
+cmd = ["python", "research/companion_levelup/tools/parity/scenarios.py"]
+requires = ["which:g++"]
+
+[[suite]]
+name = "levelup-scenarios-m32"
+cmd = ["python", "research/companion_levelup/tools/parity/scenarios.py", "--m32"]
+requires = ["which:g++"]

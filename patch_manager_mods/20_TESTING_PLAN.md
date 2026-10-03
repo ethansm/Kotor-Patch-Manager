@@ -147,6 +147,7 @@ Priority comes from the audit: complexity × crash risk × churn. Unit counts ar
 
 ### High
 1. **BuffDurationHUD** (0 tests, 46 commits, per-frame engine writes, 21 raw addresses).
+   - **10-03 status:** F7 fix DONE (`bh::appendf` + `buff_hud_logic_test`, `abc01d8`; call sites in the buff/shield split session's W2 commit). T1 extraction ON HOLD until that session's W3/W4 split lands: shield + gauges move to `shield_bar_src/`, expiry is `k2fx` in `_shared_src/Effects.h`; arrow counters + columns stay ours for `BuffHudLogic.h`.
    - First, fix the `ICONCACHE` `snprintf` overrun: clamp `len`, and add a test that feeds 6 maximum-width entries.
    - Extract the counter and arrow logic (raw → tracked → counters, the companion-without-icons bump from bc34464), the duration formatting and the icon-table lookup into `BuffHudLogic.h`. T1 tests cover:
      - every counter transition in the 10-02 fix;
@@ -163,6 +164,7 @@ Priority comes from the audit: complexity × crash risk × churn. Unit counts ar
    - T2 tests: the per-save binding flow (`onSave`/`onLoad`/`onNewGame` against fake save names); HUD rebuild on area transition (the leak in RuntimeGuiControls).
    - This is the hotbar's planned "1.0.0 Phase T". Do it there, adopting Common headers as listed in the extraction plan.
 3. **EquipCharPreview** (static checker only, window subclassing, GUI ids 49..78, 29 raw addresses with no byte checks).
+   - **10-03 status:** T1 DONE (`1d0ccab`): `Equip3dLogic.h` (`eq3d`) + `equip3d_logic_test` (13459 checks). Raw addresses are now gated by `check_raw_addresses`. Weapon-table drift test skipped (generator runs at import time, needs the game install + pykotor).
    - T0: declare its code-patched and raw-address sites so `check_hook_spans.py` sees them.
    - T1: the weapon/appearance table lookup (`gen_equip3d_weapon_table.py` output), the camera and layout math (share `Inv3dQuat` where it is the same), and the INI.
    - T3: the window-procedure chain test (shared with the three other subclassing mods).
@@ -197,7 +199,8 @@ Priority comes from the audit: complexity × crash risk × churn. Unit counts ar
   - EquipCharPreview's 49..78 and CharEffectsPanel's 69..150 overlap numerically, but they target different files: `equip_p.gui` (EquipCharPreview.cpp:59) and `character_p.gui` (CharEffectsPanel.cpp:64-65). That is not a conflict (checked 10-03). The registry has to be keyed by `.gui` file.
   - `character_p.gui` is shared on screen: Mod 14's panel uses x 536-752, and level-up stays within 54..456 (LevelUpUi.h:14). The registry records **screen rects** as well as ids, and fails on overlapping rects within the same `.gui`.
 - **2DA row claims** (compatch pipeline): every row our scripts add (e.g. `build_ranged_kite_2da.py`, row 693 per the capsule-replay memory) is registered, and `verify_2da.py` fails on two claimants. Fold it into the runner.
-- **Window procedure subclassers:** the T3 chain test, plus a T0 count. Adding a fifth subclasser fails until it uses Common `WindowHook.h`.
+- **Window procedure subclassers:** the T3 chain test, plus a T0 count. Adding a fifth subclasser fails until it uses Common `WindowHook.h`. **T0 count DONE** (`check_subclassers.py`, `tests/static/subclassers.toml`, `670905a`).
+- **Raw-address allowlist DONE** (`check_raw_addresses.py`, `tests/static/raw_addresses.toml`, `670905a`): 236 distinct addresses outside GameAddr.h. A new address FAILs; `--write-baseline` only by a human or Opus, committed with the change that adds the address.
 
 ## 7. Developing the tests: phases
 
@@ -304,3 +307,14 @@ Rules that apply to every phase:
   ini switcher, log checker) is doc 21 `21_FORCED_STATE_TESTING.md`. Proposed suites.toml entries for the owner:
   `{name = "levelup-scenarios", cmd = ["python", "research/companion_levelup/tools/parity/scenarios.py"], requires = ["which:g++"]}` and the same
   with `"--m32"`; `scripts/test_kotor_save_forge.py` re-execs itself under `.venv` when pykotor is missing (auto-discovery works).
+- 10-03: **Phase 2 done** (`abc01d8`; session record doc 20d "Phase 2-3 session").
+  - F1: probe moved out of KPM `Patches/` to `letterbox_probe_stage/`; `kpm-validate-patches` green (82 patches, 0 errors).
+  - F7: `bh::appendf` + `cpp:buff_hud_logic_test` (35 checks; red on the old idiom via ASan + canary). Latent, not live.
+  - F9: PerfLab `g_stop` and the unreachable tail removed (no red test possible: dead code).
+  - F10: parity stub 32-bit `RegionSize` ends at `UINTPTR_MAX` (`-m32` saferead_test: old hangs, new 55 checks).
+  - F11: `wine:perflab` leak check asserts deltas.
+  - New `scripts/build_check.py` (+14 tests): mod sources built like KPM `create-patch.py`, exports checked. Opt-in tier: `run_tests.py --build` (also run by `--wine`).
+- 10-03: **Phase 3 partial.** EquipCharPreview T1 (`1d0ccab`), T0 extras raw addresses + subclassers (`670905a`). BuffDurationHUD T1 on hold (see §5 High #1). Hotbar Phase T stays with the hotbar session.
+  - Level-up suites `levelup-scenarios` and `levelup-scenarios-m32` added as requested above; the forge test needed no suite after `fa6d4fc`.
+  - Runner: default 53 items in ~16 s; `--wine` 83 items in 172 s; `--selftest` passes.
+  - **Default tier is red at the moment, from other sessions' uncommitted work:** `check-hook-spans` (the portrait_slots_src split duplicates BuffHUD hooks mid-split) and `check-raw-addresses` (31 new addresses in RobustnessFixes.cpp WIP). Both owners have been told.

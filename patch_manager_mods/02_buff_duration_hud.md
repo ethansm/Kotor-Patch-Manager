@@ -1,3 +1,5 @@
+**Doc 20 note (2026-10-03):** `buff_duration_hud_src/BuffHudLogic.h` (`bh::appendf`, host test `buff_hud_logic_test`) fixes F7, the latent `len += snprintf` overrun. The call sites ship with the buff/shield split. The next build includes F7; no behaviour change is expected (log text is identical when it fits). T1 extraction of arrow counters and columns follows the split (doc 20 §5).
+
 **STATUS 2026-09-29: FINAL (v1.0.0), installed live as the 14th patch.** Read "## FINAL IMPLEMENTATION (v1.0.0)" at the bottom of this file first; everything else is the research trail. Diagnostic logging is off by default (create an empty `buffhud_debug.txt` in the game dir to re-enable `buffhud_log.txt`). Open items: see "Known limits" in the final section.
 
 # Mod Idea 2: Visual Buff Duration HUD

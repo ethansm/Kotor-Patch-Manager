@@ -1,3 +1,5 @@
+**Doc 20 note (2026-10-03):** the pure logic is extracted to `equipment_3d_character_src/Equip3dLogic.h` (`eq3d`: INI parse and clamps, weapon table, camera and zoom, rect hit tests, menu and spin layout, idle choice) with host test `equip3d_logic_test` (13459 checks; differential fuzz showed 0 differences). The next build ships the extraction; no behaviour change is expected. Findings F14-F19 are in doc 20d.
+
 # Mod Idea 5: Equipment screen live 3D character (+ flourish animation)
 
 ## 2026-10-02 ~02:40: headgear-loss FIX USER-CONFIRMED (world helmets stay on after closing the page, party switch, equip/unequip on the page). Fix installed 01:05 (READ THIS FIRST) - see "Headgear missing after equip page" at the end (root cause, own-model helmet, DLL md5 `962f9e22`, rollback)
