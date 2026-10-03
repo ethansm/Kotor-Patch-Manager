@@ -1,0 +1,125 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (908 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2125 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DecompileArgs.java (HeadlessAnalyzer)  
+=== FUN_007791a0 @ 007791a0 size=830
+
+void __thiscall FUN_007791a0(int param_1,uint param_2,int param_3)
+
+{
+  char cVar1;
+  int iVar2;
+  undefined4 local_48;
+  undefined4 local_44;
+  undefined4 local_40;
+  undefined1 local_3c [8];
+  int local_34;
+  undefined4 local_30;
+  undefined4 local_2c;
+  undefined4 local_28;
+  undefined1 local_24 [4];
+  int local_20;
+  int local_1c;
+  byte local_15;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00965168;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  param_2 = param_2 & 0xdfffffff;
+  if ((param_2 < 0x102) || (0x10c < param_2)) {
+    local_14 = FUN_0073f810(DAT_00a11f20 ^ (uint)&stack0xfffffffc);
+    if (local_14 != 0) {
+      local_1c = *(int *)(param_3 + 0x310);
+      local_15 = 0;
+      while (((((local_15 < 2 && (cVar1 = FUN_00844e40(local_15), cVar1 != '\x03')) &&
+               (cVar1 = FUN_00844e40(local_15), cVar1 != '\x04')) &&
+              ((((cVar1 = FUN_00844e40(local_15), cVar1 != '\x05' &&
+                 (cVar1 = FUN_00844e40(local_15), cVar1 != '\v')) &&
+                ((cVar1 = FUN_00844e40(local_15), cVar1 != '\f' &&
+                 ((cVar1 = FUN_00844e40(local_15), cVar1 != '\r' &&
+                  (cVar1 = FUN_00844e40(local_15), cVar1 != '\x10')))))) &&
+               (cVar1 = FUN_00844e40(local_15), cVar1 != '\x0e')))) &&
+             (cVar1 = FUN_00844e40(local_15), cVar1 != '\x0f'))) {
+        local_15 = local_15 + 1;
+      }
+      if ((((param_2 == 0x10f) || (param_2 == 0x110)) || (param_2 == 0x111)) ||
+         ((param_2 == 0x10d || (param_2 == 0xc9)))) {
+        local_30 = 0;
+        local_2c = 0;
+        local_28 = 0;
+        FUN_00775700(param_2,*(undefined4 *)(param_1 + 4),&local_30,0,0,0,0);
+      }
+      else if (local_15 < 2) {
+        local_20 = 1;
+        FUN_00733570("FORCEHOSTILE");
+        local_8 = 0;
+        local_34 = FUN_0071bcf0(param_2,local_3c,local_24);
+        local_8 = 0xffffffff;
+        FUN_00733780();
+        if (local_34 == 0) {
+          iVar2 = FUN_00740a20(3,*(undefined4 *)(param_1 + 4),local_15,param_2);
+          if (iVar2 != 0) {
+            local_20 = 0;
+          }
+        }
+        else {
+          iVar2 = FUN_00740a20(4,*(undefined4 *)(param_1 + 4),local_15,param_2);
+          if (iVar2 != 0) {
+            local_20 = 0;
+          }
+        }
+        if (local_20 != 0) {
+          local_48 = 0;
+          local_44 = 0;
+          local_40 = 0;
+          FUN_00775700(param_2,*(undefined4 *)(param_1 + 4),&local_48,local_15,0,0,0);
+        }
+      }
+      else if (*(short *)(local_1c + 0x24) == DAT_0099a8b8) {
+        FUN_00879af0(param_2,0,0,*(undefined4 *)(param_1 + 4),param_1 + 0x24);
+      }
+    }
+  }
+  else {
+    FUN_0077d120(param_2,0);
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+

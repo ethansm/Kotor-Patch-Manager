@@ -1,0 +1,80 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (878 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2094 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DisasmArgs.java (HeadlessAnalyzer)  
+00899270  55                      PUSH EBP
+00899271  8b ec                   MOV EBP,ESP
+00899273  83 ec 1c                SUB ESP,0x1c
+00899276  89 4d e4                MOV dword ptr [EBP + -0x1c],ECX
+00899279  a1 a4 b4 a1 00          MOV EAX,[0x00a1b4a4]
+0089927e  8b 48 04                MOV ECX,dword ptr [EAX + 0x4]
+00899281  89 4d ec                MOV dword ptr [EBP + -0x14],ECX
+00899284  8b 55 e4                MOV EDX,dword ptr [EBP + -0x1c]
+00899287  8b 82 c8 09 00 00       MOV EAX,dword ptr [EDX + 0x9c8]
+0089928d  50                      PUSH EAX
+0089928e  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+00899291  e8 ba 62 ea ff          CALL 0x0073f550
+00899296  89 45 fc                MOV dword ptr [EBP + -0x4],EAX
+00899299  6a 00                   PUSH 0x0
+0089929b  8b 4d e4                MOV ECX,dword ptr [EBP + -0x1c]
+0089929e  e8 dd fe ff ff          CALL 0x00899180
+008992a3  83 7d fc 00             CMP dword ptr [EBP + -0x4],0x0
+008992a7  75 02                   JNZ 0x008992ab
+008992a9  eb 43                   JMP 0x008992ee
+008992ab  d9 ee                   FLDZ
+008992ad  d9 5d f0                FSTP float ptr [EBP + -0x10]
+008992b0  d9 ee                   FLDZ
+008992b2  d9 5d f4                FSTP float ptr [EBP + -0xc]
+008992b5  d9 ee                   FLDZ
+008992b7  d9 5d f8                FSTP float ptr [EBP + -0x8]
+008992ba  8b 4d fc                MOV ECX,dword ptr [EBP + -0x4]
+008992bd  8b 51 04                MOV EDX,dword ptr [ECX + 0x4]
+008992c0  89 55 e8                MOV dword ptr [EBP + -0x18],EDX
+008992c3  6a 00                   PUSH 0x0
+008992c5  6a 00                   PUSH 0x0
+008992c7  6a 00                   PUSH 0x0
+008992c9  8b 45 e4                MOV EAX,dword ptr [EBP + -0x1c]
+008992cc  0f b6 88 cc 09 00 00    MOVZX ECX,byte ptr [EAX + 0x9cc]
+008992d3  51                      PUSH ECX
+008992d4  8d 55 f0                LEA EDX,[EBP + -0x10]
+008992d7  52                      PUSH EDX
+008992d8  8b 45 e8                MOV EAX,dword ptr [EBP + -0x18]
+008992db  50                      PUSH EAX
+008992dc  8b 4d e4                MOV ECX,dword ptr [EBP + -0x1c]
+008992df  8b 91 d0 09 00 00       MOV EDX,dword ptr [ECX + 0x9d0]
+008992e5  52                      PUSH EDX
+008992e6  8b 4d fc                MOV ECX,dword ptr [EBP + -0x4]
+008992e9  e8 12 c4 ed ff          CALL 0x00775700
+008992ee  8b e5                   MOV ESP,EBP
+008992f0  5d                      POP EBP
+008992f1  c2 04 00                RET 0x4

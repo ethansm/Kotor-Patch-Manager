@@ -1,0 +1,161 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (865 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2013 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/DisasmArgs.java (HeadlessAnalyzer)  
+0087a5c0  55                      PUSH EBP
+0087a5c1  8b ec                   MOV EBP,ESP
+0087a5c3  83 ec 18                SUB ESP,0x18
+0087a5c6  89 4d ec                MOV dword ptr [EBP + -0x14],ECX
+0087a5c9  c6 45 f3 00             MOV byte ptr [EBP + -0xd],0x0
+0087a5cd  c7 45 f4 04 00 00 00    MOV dword ptr [EBP + -0xc],0x4
+0087a5d4  6a 01                   PUSH 0x1
+0087a5d6  6a ff                   PUSH -0x1
+0087a5d8  8b 45 f4                MOV EAX,dword ptr [EBP + -0xc]
+0087a5db  50                      PUSH EAX
+0087a5dc  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a5df  e8 3c 99 d6 ff          CALL 0x005e3f20
+0087a5e4  81 7d 20 00 00 00 7f    CMP dword ptr [EBP + 0x20],0x7f000000
+0087a5eb  74 0a                   JZ 0x0087a5f7
+0087a5ed  0f b6 4d f3             MOVZX ECX,byte ptr [EBP + -0xd]
+0087a5f1  83 c1 01                ADD ECX,0x1
+0087a5f4  88 4d f3                MOV byte ptr [EBP + -0xd],CL
+0087a5f7  8b 55 1c                MOV EDX,dword ptr [EBP + 0x1c]
+0087a5fa  52                      PUSH EDX
+0087a5fb  8b 45 1c                MOV EAX,dword ptr [EBP + 0x1c]
+0087a5fe  50                      PUSH EAX
+0087a5ff  e8 9c 12 bd ff          CALL 0x0044b8a0
+0087a604  83 c4 08                ADD ESP,0x8
+0087a607  d9 5d fc                FSTP float ptr [EBP + -0x4]
+0087a60a  d9 45 fc                FLD float ptr [EBP + -0x4]
+0087a60d  dc 1d 68 37 99 00       FCOMP double ptr [0x00993768]
+0087a613  df e0                   FNSTSW AX
+0087a615  f6 c4 01                TEST AH,0x1
+0087a618  75 0a                   JNZ 0x0087a624
+0087a61a  0f b6 4d f3             MOVZX ECX,byte ptr [EBP + -0xd]
+0087a61e  83 c1 02                ADD ECX,0x2
+0087a621  88 4d f3                MOV byte ptr [EBP + -0xd],CL
+0087a624  83 7d 18 00             CMP dword ptr [EBP + 0x18],0x0
+0087a628  74 0a                   JZ 0x0087a634
+0087a62a  0f b6 55 f3             MOVZX EDX,byte ptr [EBP + -0xd]
+0087a62e  83 c2 04                ADD EDX,0x4
+0087a631  88 55 f3                MOV byte ptr [EBP + -0xd],DL
+0087a634  6a 20                   PUSH 0x20
+0087a636  8b 45 08                MOV EAX,dword ptr [EBP + 0x8]
+0087a639  50                      PUSH EAX
+0087a63a  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a63d  e8 6e 9d d6 ff          CALL 0x005e43b0
+0087a642  6a 08                   PUSH 0x8
+0087a644  0f b6 4d 0c             MOVZX ECX,byte ptr [EBP + 0xc]
+0087a648  51                      PUSH ECX
+0087a649  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a64c  e8 5f 9b d6 ff          CALL 0x005e41b0
+0087a651  6a 08                   PUSH 0x8
+0087a653  0f b6 55 10             MOVZX EDX,byte ptr [EBP + 0x10]
+0087a657  52                      PUSH EDX
+0087a658  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a65b  e8 50 9b d6 ff          CALL 0x005e41b0
+0087a660  6a 08                   PUSH 0x8
+0087a662  0f b6 45 14             MOVZX EAX,byte ptr [EBP + 0x14]
+0087a666  50                      PUSH EAX
+0087a667  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a66a  e8 41 9b d6 ff          CALL 0x005e41b0
+0087a66f  6a 08                   PUSH 0x8
+0087a671  0f b6 4d f3             MOVZX ECX,byte ptr [EBP + -0xd]
+0087a675  51                      PUSH ECX
+0087a676  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a679  e8 32 9b d6 ff          CALL 0x005e41b0
+0087a67e  81 7d 20 00 00 00 7f    CMP dword ptr [EBP + 0x20],0x7f000000
+0087a685  74 0c                   JZ 0x0087a693
+0087a687  8b 55 20                MOV EDX,dword ptr [EBP + 0x20]
+0087a68a  52                      PUSH EDX
+0087a68b  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a68e  e8 bd 90 01 00          CALL 0x00893750
+0087a693  d9 45 fc                FLD float ptr [EBP + -0x4]
+0087a696  dc 1d 68 37 99 00       FCOMP double ptr [0x00993768]
+0087a69c  df e0                   FNSTSW AX
+0087a69e  f6 c4 01                TEST AH,0x1
+0087a6a1  75 59                   JNZ 0x0087a6fc
+0087a6a3  6a 20                   PUSH 0x20
+0087a6a5  51                      PUSH ECX
+0087a6a6  d9 e8                   FLD1
+0087a6a8  d9 1c 24                FSTP float ptr [ESP]
+0087a6ab  8b 45 1c                MOV EAX,dword ptr [EBP + 0x1c]
+0087a6ae  51                      PUSH ECX
+0087a6af  d9 00                   FLD float ptr [EAX]
+0087a6b1  d9 1c 24                FSTP float ptr [ESP]
+0087a6b4  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a6b7  e8 d4 9e d6 ff          CALL 0x005e4590
+0087a6bc  6a 20                   PUSH 0x20
+0087a6be  51                      PUSH ECX
+0087a6bf  d9 e8                   FLD1
+0087a6c1  d9 1c 24                FSTP float ptr [ESP]
+0087a6c4  8b 4d 1c                MOV ECX,dword ptr [EBP + 0x1c]
+0087a6c7  51                      PUSH ECX
+0087a6c8  d9 41 04                FLD float ptr [ECX + 0x4]
+0087a6cb  d9 1c 24                FSTP float ptr [ESP]
+0087a6ce  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a6d1  e8 ba 9e d6 ff          CALL 0x005e4590
+0087a6d6  6a 20                   PUSH 0x20
+0087a6d8  51                      PUSH ECX
+0087a6d9  d9 e8                   FLD1
+0087a6db  d9 1c 24                FSTP float ptr [ESP]
+0087a6de  8b 55 1c                MOV EDX,dword ptr [EBP + 0x1c]
+0087a6e1  d9 42 08                FLD float ptr [EDX + 0x8]
+0087a6e4  dc 05 10 bb 98 00       FADD double ptr [0x0098bb10]
+0087a6ea  d9 5d e8                FSTP float ptr [EBP + -0x18]
+0087a6ed  d9 45 e8                FLD float ptr [EBP + -0x18]
+0087a6f0  51                      PUSH ECX
+0087a6f1  d9 1c 24                FSTP float ptr [ESP]
+0087a6f4  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a6f7  e8 94 9e d6 ff          CALL 0x005e4590
+0087a6fc  8d 45 f4                LEA EAX,[EBP + -0xc]
+0087a6ff  50                      PUSH EAX
+0087a700  8d 4d f8                LEA ECX,[EBP + -0x8]
+0087a703  51                      PUSH ECX
+0087a704  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a707  e8 d4 a0 d6 ff          CALL 0x005e47e0
+0087a70c  85 c0                   TEST EAX,EAX
+0087a70e  75 04                   JNZ 0x0087a714
+0087a710  33 c0                   XOR EAX,EAX
+0087a712  eb 14                   JMP 0x0087a728
+0087a714  8b 55 f4                MOV EDX,dword ptr [EBP + -0xc]
+0087a717  52                      PUSH EDX
+0087a718  8b 45 f8                MOV EAX,dword ptr [EBP + -0x8]
+0087a71b  50                      PUSH EAX
+0087a71c  6a 12                   PUSH 0x12
+0087a71e  6a 06                   PUSH 0x6
+0087a720  8b 4d ec                MOV ECX,dword ptr [EBP + -0x14]
+0087a723  e8 28 fc ff ff          CALL 0x0087a350
+0087a728  8b e5                   MOV ESP,EBP
+0087a72a  5d                      POP EBP
+0087a72b  c2 1c 00                RET 0x1c

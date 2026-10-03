@@ -1,5 +1,10 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**TARGET MODES GATE R PASSED (2026-10-03 ~12:15)** -- `07_force_power_hotbar_evidence/target_modes/FINDINGS.md` + `TARGETABLE.md`, DB lessons 388-390.
+- Items: replicate vanilla 0x77C780: member 0x7E5DA0 -> server 0x77D800 -> CanUseItem 0x5D2F80(ECX=server; 0x51C0E0(id),0,1) -> PerformUseItem 0x775600(id,0,*(member+4),member+0x24).
+- Powers: NO vanilla power is single-target friendly (Heal x3 = party within 15 m), so target modes = items only (medpacs, stims, antidote, repair kits, adrenaline/combat shots; not shields/cloak). Mode button disabled for powers.
+- Next: UB-C (Party.h vitals), UB-L (HotbarLogic.h chooseTarget), probe build with TargetProbe=1 -- the probe BUILD waits for the user's build 28 report (doc 20 gate).
+
 **BUILD 28 INSTALLED (2026-10-03 11:29): `6dd6d0e2` = Phase X + U1 + U2** (plan "Hotbar U1-U3 ... then the remaining 1.0.0 phases", Phase U-A).
 User chose to SKIP the separate build 27 smoke test and test 28 directly (27's checklist still applies, see "PHASE X INSTALLED" below).
 - U1: the out-of-stock "0" is drawn gray (`QtyOutOfStockRgb` 0.55); the template text colour is read at creation (`guikit::getTextColor`, which also gates writes) and restored when the count is > 1 again (`wTextColor`).

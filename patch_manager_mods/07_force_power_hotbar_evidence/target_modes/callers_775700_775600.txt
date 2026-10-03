@@ -1,0 +1,72 @@
+openjdk version "21.0.12.1" 2026-08-18
+OpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode)
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (827 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (2061 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BytePatterns/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/BSim/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/DATA/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/VersionTracking/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/JVM/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FunctionID/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Decompiler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/Base/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PDB/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/FileFormats/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/Atmel/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/8051/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/PyGhidra/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Debug/Debugger/ghidra_scripts
+    /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/ghidra/ghidra_12.1.4_PUBLIC/Ghidra/Processors/PIC/ghidra_scripts (HeadlessAnalyzer)  
+INFO  SCRIPT: /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts/Callers.java (HeadlessAnalyzer)  
+== refs to 775700
+  from 00779368 in FUN_007791a0@007791a0 sz=830
+  from 00779488 in FUN_007791a0@007791a0 sz=830
+  from 008992e9 in FUN_00899270@00899270 sz=132
+== refs to 775600
+  from 0077c9a2 in FUN_0077c780@0077c780 sz=1271
+  from 0077cb26 in FUN_0077c780@0077c780 sz=1271
+  from 0077cba3 in FUN_0077c780@0077c780 sz=1271
+  from 0077ccc3 in FUN_0077cc80@0077cc80 sz=117
+  from 0077ccea in FUN_0077cc80@0077cc80 sz=117
+  from 00842bc1 in FUN_00842b90@00842b90 sz=60
+  from 00842ced in FUN_00842bd0@00842bd0 sz=296
+  from 008993d6 in FUN_00899380@00899380 sz=97
+== refs to 77c780
+  from 00752119 in FUN_00752050@00752050 sz=614
+  from 0077bff3 in FUN_0077bcf0@0077bcf0 sz=1209
+  from 0077c021 in FUN_0077bcf0@0077bcf0 sz=1209
+== refs to 77cc80
+  from 0077c834 in FUN_0077c780@0077c780 sz=1271
+  from 0077cdf2 in FUN_0077cdd0@0077cdd0 sz=45
+  from 0077c037 in FUN_0077bcf0@0077bcf0 sz=1209
+  from 0077c065 in FUN_0077bcf0@0077bcf0 sz=1209
+== refs to 7791a0
+  from 00779502 in FUN_007794e0@007794e0 sz=45
+  from 0077a18f in FUN_0077a030@0077a030 sz=578
+  from 0077a1bd in FUN_0077a030@0077a030 sz=578
+  from 00779f4a in FUN_00779e00@00779e00 sz=557
+  from 00779f78 in FUN_00779e00@00779e00 sz=557
+  from 007797e7 in FUN_00779510@00779510 sz=831
+  from 00779815 in FUN_00779510@00779510 sz=831
+== refs to 751750
+  from 007b26b9 in FUN_007b12c0@007b12c0 sz=7087
+  from 007b2752 in FUN_007b12c0@007b12c0 sz=7087
+  from 007b27eb in FUN_007b12c0@007b12c0 sz=7087
+  from 007b2885 in FUN_007b12c0@007b12c0 sz=7087
+  from 0074d9b1 in FUN_0074d930@0074d930 sz=203
+  from 007516e6 in FUN_007516b0@007516b0 sz=84
+  from 00746c66 in FUN_007469f0@007469f0 sz=1310
