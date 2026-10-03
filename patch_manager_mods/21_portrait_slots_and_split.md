@@ -13,7 +13,7 @@ live patcher first.
 | W2 live gate | **pending user session**: visuals of b7dbebe9 features, Proton log all `Applied`, `AR_ERROR.LOG` md5 `a2d88789` unchanged, diff `shieldprobe_log.txt`/`buffhud_log.txt` against `*_b7dbebe9_baseline.txt` (DRAW/POOL/MENUCOMP/FORCEMOVE/MENUMOVE equal modulo t=/f=) |
 | W3 provider | 5954112 (`portrait_slots_src/`, `_shared_src/PortraitSlots.h`, ps_dispatch_test 53 checks) |
 | W4 consumers | a193a08 + 354b507 (`buff-duration-hud` 2.0.0, `shield_bar_src/` 1.2.0, shield_logic_test 37 checks); KPM mirror 28ae185 + 6192f36 |
-| W5 install + A/B | not started. Packages in `kotor-patch-manager/split_build/` (portrait-slots `b6914e69`, buff 2.0.0 `f37135c8`, shield-bar `55dcd83e`); stage with `scripts/stage_portrait_split.py --variant both|buff|shield|none` |
+| W5 install + A/B | **variant both LIVE 15:33** (user chose to skip the separate W2 gate): portrait-slots b6914e69 + buff 2.0.0 f37135c8 + shield-bar 55dcd83e, patch_config 248c996a from `split_stage_both/`, kplog.ini enabled (portrait-slots info); backup `backups/shield_split_w5_install_20261003_153348` (W2 config + dll); W2 logs renamed `*_w2_20261003_153348.txt`; kpm_install_state.json NOT changed (a KPM reinstall reverts to the single W2 DLL = safe). Awaiting user session. Before: Packages in `kotor-patch-manager/split_build/` (portrait-slots `b6914e69`, buff 2.0.0 `f37135c8`, shield-bar `55dcd83e`); stage with `scripts/stage_portrait_split.py --variant both|buff|shield|none` |
 | W6 adoption | later, owners: active_effects_panel -> Effects.h / EffectIcons.h |
 
 ## Architecture
