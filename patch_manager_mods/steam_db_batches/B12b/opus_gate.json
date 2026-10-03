@@ -1,0 +1,216 @@
+{
+ "batch": "B12b",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 10,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10
+ },
+ "full_read": 14,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006db6a0",
+   "name": "AIActionUnequipItem",
+   "route": "sig",
+   "steam_addr": "0x005d0a80"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x00698810",
+   "name": "UpdatePersonalSpace",
+   "route": "sig",
+   "steam_addr": "0x0057fce0"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x0069db00",
+   "name": "CutWaypointPath",
+   "route": "sig",
+   "steam_addr": "0x00585020"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006de0a0",
+   "name": "CheckItemAlignmentRestrictions",
+   "route": "sig",
+   "steam_addr": "0x005d3480"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006df450",
+   "name": "CleanInvitationLists",
+   "route": "sig",
+   "steam_addr": "0x005d4830"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006e0170",
+   "name": "UnsummonMyself",
+   "route": "c2",
+   "steam_addr": "0x005d5550"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006c8460",
+   "name": "CanEquipItem",
+   "route": "c2",
+   "steam_addr": "0x005bd6a0"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a3420",
+   "name": "IsPartyVisible",
+   "route": "c2",
+   "steam_addr": "0x0058a940"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CSWSCreature",
+   "gog": "0x00698df0",
+   "name": "UpdateAppearanceForEquippedItems_2",
+   "steam_addr": "0x005802c0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x0069df00",
+   "name": "BroadcastAttackOfOpportunity",
+   "steam_addr": "0x00585420",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a2600",
+   "name": "UpdatePureGoodEvilPowers",
+   "steam_addr": "0x00589b20",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a26d0",
+   "name": "ComputeArmourClass",
+   "steam_addr": "0x00589bf0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a2e10",
+   "name": "SetInParty",
+   "steam_addr": "0x0058a610",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a3e00",
+   "name": "HasEffect",
+   "steam_addr": "0x0058b320",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a4d30",
+   "name": "UseLoreOnItem",
+   "steam_addr": "0x0058c290",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006a4da0",
+   "name": "LearnScroll",
+   "steam_addr": "0x0058c300",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006d5a90",
+   "name": "WalkUpdateLocation_QuickWalk_FollowLeader_OffsetWaitDest",
+   "steam_addr": "0x005cacd0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006d5bc0",
+   "name": "WalkUpdateLocation_QuickWalk_FollowLeader_PathWaitDest",
+   "steam_addr": "0x005cae00",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006d5cf0",
+   "name": "WalkUpdateLocation_QuickWalk_FollowLeader_ToOffsetWaitDest",
+   "steam_addr": "0x005caf30",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006d5e20",
+   "name": "WalkUpdateLocation_QuickWalk_FollowLeader_ToPathWaitDest",
+   "steam_addr": "0x005cb060",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006d5f50",
+   "name": "WalkUpdateLocation_QuickWalk_FollowLeader_TeleportForward",
+   "steam_addr": "0x005cb190",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006dc300",
+   "name": "GetCreatureReputation_2",
+   "steam_addr": "0x005d16e0",
+   "why": "label_suspect"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CSWSCreature",
+   "content_level": "C0",
+   "gog": "0x006dfcc0",
+   "name": "HasAction",
+   "steam_addr": "0x005d50a0"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x006c66e0",
+   "name": "AIActionCheckInterAreaPathfinding",
+   "steam_addr": "0x005bb920"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x006dc370",
+   "name": "GetVisibleListElement",
+   "steam_addr": "0x005d1750"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C2",
+   "gog": "0x006dba10",
+   "name": "AdjustReputation",
+   "steam_addr": "0x005d0df0"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x00698350",
+   "name": "CalculateDamagePower",
+   "steam_addr": "0x0057f820"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 19,
+ "sample_rate": 0.2,
+ "sample_size": 5,
+ "unanswered_decoys": 0
+}

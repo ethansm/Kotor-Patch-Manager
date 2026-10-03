@@ -1,0 +1,8 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x00698df0	CSWSCreature::UpdateAppearanceForEquippedItems_2	0x005802c0	Tiny byte getter (GOG disps 0xd8/0x510, imm 0x2710 match); UpdateAppearanceForEquippedItems contradicted; fits GetDetectModeState.	review:sonnet_c1.tsv
+0x0069df00	CSWSCreature::BroadcastAttackOfOpportunity	0x00585420	Flag predicate on +0xff4 (disp, imms 2/8/0x10 match GOG; caller GetSkillRank matches); fits GetIsBlindOrInDarkness, not BroadcastAttackOfOpportunity.	review:sonnet_c1.tsv
+0x006a26d0	CSWSCreature::ComputeArmourClass	0x00589bf0	Body removes pending spell action when present (both GOG callees and disp 0x10dc match); ComputeArmourClass contradicted.	review:sonnet_c1.tsv
+0x006a3e00	CSWSCreature::HasEffect	0x0058b320	Body is slot-keyed setter for +0x11d0/+0x11d4 (size 61, RET 8 match GOG); HasEffect contradicted; fits SetLastInstantEquip.	review:sonnet_c1.tsv
+0x006a4d30	CSWSCreature::UseLoreOnItem	0x0058c290	Body is CExoArrayList<float>::Add (grow, store, size+1); name UseLoreOnItem contradicted. Callers match GOG.	review:sonnet_c1.tsv
+0x006a4da0	CSWSCreature::LearnScroll	0x0058c300	Body is CExoArrayList<float>::Insert(value,index); not LearnScroll. Caller GetNearestObject matches GOG caller.	review:sonnet_c1.tsv
+0x006dc300	CSWSCreature::GetCreatureReputation_2	0x005d16e0	Body is boolean 'id in visible list' scan; GOG name GetCreatureReputation_2 contradicts; fits visible-list contains check.	review:sonnet_c1.tsv

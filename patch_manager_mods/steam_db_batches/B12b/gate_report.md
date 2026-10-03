@@ -6,10 +6,10 @@ Rows: 201. Source order for tie-breaks: server > trusted name_map > mapper:vote 
 
 | class | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|
-| CSWSCreature | 148 | 33 | 17 | 3 | 201 |
-| **all** | 148 | 33 | 17 | 3 | 201 |
+| CSWSCreature | 149 | 32 | 17 | 3 | 201 |
+| **all** | 149 | 32 | 17 | 3 | 201 |
 
-AUTO by route: c2=96 sig=52 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=97 sig=52 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 
@@ -41,11 +41,6 @@ AUTO by route: c2=96 sig=52 (the sig route is non-propagating, see DESIGN 4.2)
 - CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_Moving_To_Path gog 0x006d35a0 -> 0x00669020: fail:trusted_holder=CSWVirtualMachineCommands::RunScriptCallback
 - CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_Moving_To_Offset gog 0x006d4dc0 -> 0x005bbf40: review:held_by=CSWSCreature::AIActionCheckMoveToObject
 - CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_WaitingForPath gog 0x006d5460 -> 0x0067df50: fail:trusted_holder=Global::ExecuteCommandGetGoldPieceValue
-- CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_OffsetWaitDest gog 0x006d5a90 -> 0x005bd1d0: review:held_by=CanEquip_WeaponHands?
-- CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_PathWaitDest gog 0x006d5bc0 -> 0x005bd1d0: review:held_by=CanEquip_WeaponHands?
-- CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_ToOffsetWaitDest gog 0x006d5cf0 -> 0x005bd1d0: review:held_by=CanEquip_WeaponHands?
-- CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_ToPathWaitDest gog 0x006d5e20 -> 0x005bd1d0: review:held_by=CanEquip_WeaponHands?
-- CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_TeleportForward gog 0x006d5f50 -> 0x005bd1d0: review:held_by=CanEquip_WeaponHands?
 - CSWSCreature::AIActionWaitForEndOfRound gog 0x006db820 -> 0x00418990: fail:trusted_holder=CSWGuiControl::Constructor
 - CSWSCreature::UpdateVisibleList gog 0x006dbb50 -> 0x005c3270: review:held_by=CSWSCreature::ComputeTotalWalkDistance
 - CSWSCreature::AIActionRest gog 0x006dc3f0 -> 0x00983c00: review:held_by=CGuiInGame::HandleDialogEntry
