@@ -270,7 +270,7 @@ Rules that apply to every phase:
     - `smoke_perflab` and `smoke_probe12` now assert.
     - `smoke.cpp` became `smoke_probe11.cpp` and now asserts. Its old manual-dump step never checked anything: it copied the report before the probe had written it.
     - `smoke_probe13` is retired to `harness/retired/`.
-  - Next: Phase 1.
+  - Session context: `20c_phase0_session_2026-10-03.md`. Next: Phase 1.
 - 10-03 (hotbar Phase X, X1-X3): **colocated Common tests** in `patch_manager_mods/_shared_src/` (shared `test.toml`: parity stub `-I`, `-DGUIKIT_HOST`, `-Werror`):
   `saferead_test` (55 checks, `readExo`), `guikit_test` (42, the new `imageFor`/`createLabelFromTemplate` out-params), `party_test` (89, `Party.h` + `static_assert`s that
   `gameaddr::` equals GuiKit's constants). Each was hand-broken once and went red. `check_shared_headers.py` syncs only `*.h`, so tests never reach `Patches/Common`.
