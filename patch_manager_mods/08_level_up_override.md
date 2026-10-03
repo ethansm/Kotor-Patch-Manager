@@ -893,4 +893,13 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   spent on skills lines only (no feats/powers/classes/convert_at changed); 22 accepted (Bao-Dur Tech Specialist L16-23, class skills maxed, 1 point
   left; see `paths/presets/WARNINGS.md`). Repo runtime table regenerated (82 presets, 2047 records); live table NOT updated (copy at next install).
   Gates green (parity, simulate_rewrite). Taste item for B3: Kreia +1 Stealth/level L10-30 (her utc has the Stealth class feat).
+- B2 DONE 262da10: early conversion proven on the C++ oracle (34 hold presets, 384 scenarios, 7616 calls): no HOLD after conversion, no Jedi
+  feat/power lost; only base-class records between the early conversion and convert_at are skipped (inherent). parity.py +6944 early-conversion
+  levelNow cases. Advisory: early Jedi picks can sit below 2da min level / miss a base-class prereq - harmless (LevelUp has no prereq checks, Q3).
+- Run 4 (2026-10-03 ~01:00-01:20, log 387-448, `phase6_evidence/V_run4_log_387-448.txt`): no LevelUp happened (no HOLD/GUARD/INSTANT/APPLIED lines;
+  0 GUARD-PROBE). Verified: page backs opaque fill ok, 19/19 controls; quickload g11b3b802 found=32/32 -> source=playthrough; load of GUID-less Game2 ->
+  g00000000 -> dev (unconfigured); Configure -> Apply -> `GUID new gfb7bdbf7` + ini write; Vanilla + re-Apply write ok; 10 saves `GUID save gfb7bdbf7
+  ok=1`; reload found=32/32. User: "still saw the level up icon on the portrait" = EXPECTED: Atton Scoundrel 3 XP 30014 (Game2) -> levels 4-7 are
+  PATH (convert_at 8), hold rule hides the icon only when the NEXT level is held. QUICKSAVE was overwritten 01:18 (g11b3b802 save gone; ini keeps the
+  section). Asked user to level Atton 4->7 manually (R1 + hold at 7) and/or instant leader test.
 
