@@ -295,3 +295,7 @@ Rules that apply to every phase:
   - **Session context and findings table (F1-F12):** `20d_phase1_session_2026-10-03.md`.
   - **Next:** Phase 2, the three bugs.
 
+- 10-03 (level-up Phase 6b, `research/companion_levelup/PHASE6B_PLAN.md`; coordination note): the level-up session adds
+  `tests/luo_scenarios/saves.toml` (forced-state scenarios shared by a save forge, an offline fake-engine runner and a live log checker; doc 21
+  to come), `scripts/luo_log_check.py` + `scripts/test_luo_log_check.py` (auto-discovered), and fixes **F10** in the parity stub. Proposed
+  `tests/suites.toml` entries (scenario runner, forge test) will be posted here for the doc-20 owner before they are added; `run_tests.py` is not touched.
