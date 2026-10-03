@@ -1,5 +1,14 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**RESUME HERE (2026-10-03 ~00:15, end of session 6):** live = **build 26 `504372b1`** (stage `hotbar_stage15/`, backup `backups/inst15_1003_0003`,
+31 installed ids; rollback = stage14 `a3303cb3`). Build 26 = stack counts on the bar and picker cells, out-of-stock items dimmed with "0", per-save hotbars
+(5 detours S1/S2/L1/L1b/NG; Steam Cloud syncs the snapshot, verified). **Awaiting the user's build 26 check** (picker counts; use an item down to 0 -> dimmed + 0 ->
+pick one up -> re-enabled). User's pre-feature INI: `<game>/force_power_hotbar.ini.pre_persave`. Phase C committed (9134fb5). **Next (user decision 10-03):
+the Common extraction plan (`COMMON_EXTRACTION_PLAN.md`, ~/.claude/plans) runs BEFORE Phase D (comments) and T (tests); the hotbar adopts the Common headers
+in that work.** Then D -> T -> E (README, rewrite the stale KPM `PULL_REQUEST.md`; PR screenshots are uploaded by the user on github.com, then the README
+references those CDN URLs) -> F (independent review; include: free orphaned labels on HUD rebuild, setVisible live-flag compare) -> L (final).
+Upstream-ready doc: `RuntimeGuiControls.md` (copied to the KPM clone docs/). Steam DB PR3 branch `addressdb/k2-steam-acc` 62a9deb has +17 save/load rows.
+
 **STATUS (2026-10-02 ~00:45, end of session 5) -- READ THIS FIRST. User verdict on the live build: "looks excellent!" -- the mod is FEATURE-COMPLETE; the remaining work is the final review/polish/documentation phase (see `~/.claude/plans/` plan "Mod 3 final review and finalization", summarised in the last section of this doc).**
 - **1.0.0 finalization in progress (2026-10-02 ~01:40):** Phase R done (Gate R passed statically, section "1.0.0 finalization, Phase R" at the end). Phase B PROTOTYPE
   installed = DLL md5 `4f6d235b` (stage `hotbar_stage9/`, 28 ids, backup `backups/inst9_1002_0138`): the wrench is created at runtime from the LBL_QUEUE1 template
