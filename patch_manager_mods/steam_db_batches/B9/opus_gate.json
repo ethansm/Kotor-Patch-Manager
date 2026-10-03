@@ -79,7 +79,7 @@
    "class": "CServerExoApp",
    "gog": "0x0064b640",
    "name": "Constructor",
-   "steam_addr": "0x0051bcc0",
+   "steam_addr": "0x0051bc20",
    "why": "reviewer corrected_addr"
   },
   {
@@ -128,21 +128,21 @@
    "class": "CServerExoApp",
    "gog": "0x0064c140",
    "name": "GetPauseState",
-   "steam_addr": "0x0051c6f0",
+   "steam_addr": "0x0051c720",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CServerExoApp",
    "gog": "0x0064c1e0",
    "name": "RemoveFromExclusionList",
-   "steam_addr": "0x0051c790",
+   "steam_addr": "0x0051c7c0",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CServerExoApp",
    "gog": "0x0064c500",
    "name": "UpdateSubareasOnMoveTo",
-   "steam_addr": "0x0051ca40",
+   "steam_addr": "0x0051cae0",
    "why": "reviewer corrected_addr"
   },
   {
@@ -156,7 +156,7 @@
    "class": "CServerExoApp",
    "gog": "0x0064c940",
    "name": "ShrinkLineByCreatures",
-   "steam_addr": "0x0051cc00",
+   "steam_addr": "0x0051cf20",
    "why": "reviewer corrected_addr"
   },
   {
@@ -184,7 +184,7 @@
    "class": "CSWSModule",
    "gog": "0x00733ef0",
    "name": "non_virtual_thunk_to_dtor_CSWSModule",
-   "steam_addr": "0x005615c0",
+   "steam_addr": "0x00561c80",
    "why": "reviewer corrected_addr"
   },
   {
@@ -212,14 +212,14 @@
    "class": "CServerExoAppInternal",
    "gog": "0x007bbf20",
    "name": "GetPauseState",
-   "steam_addr": "0x00538c20",
+   "steam_addr": "0x00538cd0",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CServerExoAppInternal",
    "gog": "0x007bc710",
    "name": "RemoveFromExclusionList",
-   "steam_addr": "0x005393b0",
+   "steam_addr": "0x005394c0",
    "why": "reviewer corrected_addr"
   },
   {
@@ -233,7 +233,7 @@
    "class": "CServerExoAppInternal",
    "gog": "0x007bfa90",
    "name": "GetMoveToWorldTime",
-   "steam_addr": "0x0053cc80",
+   "steam_addr": "0x0053ccf0",
    "why": "reviewer corrected_addr"
   }
  ],
@@ -1240,7 +1240,7 @@
    "steam_addr": "0x0055a900"
   }
  ],
- "sample_errors": null,
+ "sample_errors": 0,
  "sample_pool": 143,
  "sample_rate": 0.2,
  "sample_size": 143,

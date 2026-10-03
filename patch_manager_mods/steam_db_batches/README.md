@@ -90,3 +90,21 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
     also needs the calibration review.
   - An empty `fp_sha` mark never goes stale.
   - A key-error decoy still counts toward the chunk minimum.
+
+## B9: Server Core & World Lifecycle (2026-10-03)
+
+- Scope: 270 GOG rows across `CServerExoApp` (45), `CServerExoAppInternal` (87), and `CSWSModule` (138).
+- Gates: AUTO 102, REVIEW 166, NOCAND 1, REJECT 1. 4 Sonnet card chunks, 40 decoys.
+- Reviewer: Sonnet reviewed 4 chunks; accepted 1 decoy card, triggering ESCALATE: 100% of reviewer matches to Opus.
+- Opus: parts a/b/c covered 174 rows (all 166 REVIEW rows + 8 AUTO meaning checks).
+  - overrides_a: 60 rows (59 verified, 1 likely, 0 sample errors)
+  - overrides_b: 60 rows (58 verified, 2 likely, 0 sample errors)
+  - overrides_c: 54 rows (52 verified, 1 likely, 1 label_suspect, 0 sample errors)
+  - Combined `overrides.tsv`: 174 rows (169 verified, 4 likely, 1 label_suspect, 0 sample errors).
+- Final verdicts: verified 263, likely 4, rejected 1, unresolved 1, label_suspect 1. Details in `B9/B9_SUMMARY.md`.
+- Knowledge DB (`persist B9 --apply`): high-confidence mappings upserted into `name_map`, 263 marks added to `steam_validated`.
+- Branch DB (`addressdb/k2-steam-acc` commit 4b81a2b, `import-ghidra --mode append`): 2,321 -> 2,568 rows.
+  - 247 new rows, 16 existing rows confirmed at the same address.
+  - `SqliteTools validate` passed with 0 errors.
+- `check-validated`: 2,568 of 2,568 branch rows are `validated` (`B9/check_validated.tsv`).
+

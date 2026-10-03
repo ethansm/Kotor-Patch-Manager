@@ -1,2 +1,2 @@
 gog_addr	gog_name	steam_counterpart	body_fits_name	source
-0x007bda10	CServerExoAppInternal::Uninitialize	0x0053a7c0	Same body as GOG (sole callee RunDeathSequence) but body is a death-sequence call, not Uninitialize	review:sonnet_c4.tsv
+0x007bda10	CServerExoAppInternal::Uninitialize	0x0053a7c0	pair right (fp=GOG 32B; 0053a7d7 CALL 0x7403a0 = GOG 0x40d860 RunDeathSequence; sole caller TempDeathUpdate 0x53a0c0). Mac Uninitialize is an empty 5B stub	override

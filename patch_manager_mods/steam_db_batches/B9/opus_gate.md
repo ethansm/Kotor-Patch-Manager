@@ -4,7 +4,7 @@ Decision: **ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer
 
 - decoy cards: 40 (per chunk {'1': 10, '2': 10, '3': 10, '4': 10}), accepted by the reviewer: 1, unanswered: 0
 - chunks not reviewed: none
-- Opus-found sample errors: pending (pass `finalize --opus-sample-errors N` after the Opus pass)
+- Opus-found sample errors: 0 (pass `finalize --opus-sample-errors N` after the Opus pass)
 - consecutive clean batches before this one: 0 -> sample rate 20%
 
 ## Decoy key errors (decoy = Opus-shipped counterpart)
@@ -17,29 +17,29 @@ None.
 
 ## Opus reads 100% (23 rows)
 
-- CServerExoApp::Constructor gog 0x0064b640 -> 0x0051bcc0: reviewer corrected_addr
+- CServerExoApp::Constructor gog 0x0064b640 -> 0x0051bc20: reviewer corrected_addr
 - CServerExoApp::GetObjectArray gog 0x0064baa0 -> 0x0051c080: match cites a layout/offset difference
 - CServerExoApp::GetNetLayer gog 0x0064bce0 -> 0x0051c2c0: match cites a layout/offset difference
 - CServerExoApp::GetSWSMessage gog 0x0064bd00 -> 0x0051c2e0: match cites a layout/offset difference
 - CServerExoApp::Initialize gog 0x0064be70 -> 0x0051c450: match cites a layout/offset difference
 - CServerExoApp::ContinueMessageProcessing gog 0x0064bee0 -> 0x0051c4c0: match cites a layout/offset difference
 - CServerExoApp::InitiateModuleForPlayer gog 0x0064c070 -> 0x0051c650: match cites a layout/offset difference
-- CServerExoApp::GetPauseState gog 0x0064c140 -> 0x0051c6f0: reviewer corrected_addr
-- CServerExoApp::RemoveFromExclusionList gog 0x0064c1e0 -> 0x0051c790: reviewer corrected_addr
-- CServerExoApp::UpdateSubareasOnMoveTo gog 0x0064c500 -> 0x0051ca40: reviewer corrected_addr
+- CServerExoApp::GetPauseState gog 0x0064c140 -> 0x0051c720: reviewer corrected_addr
+- CServerExoApp::RemoveFromExclusionList gog 0x0064c1e0 -> 0x0051c7c0: reviewer corrected_addr
+- CServerExoApp::UpdateSubareasOnMoveTo gog 0x0064c500 -> 0x0051cae0: reviewer corrected_addr
 - CServerExoApp::CreatureAcquireItem gog 0x0064c680 -> 0x0051cc60: match cites a layout/offset difference
-- CServerExoApp::ShrinkLineByCreatures gog 0x0064c940 -> 0x0051cc00: reviewer corrected_addr
+- CServerExoApp::ShrinkLineByCreatures gog 0x0064c940 -> 0x0051cf20: reviewer corrected_addr
 - CServerExoApp::GetMoveToPausedCalendarDay gog 0x0064c9a0 -> 0x0051cf80: match cites a layout/offset difference
 - CServerExoApp::GetMoveToPausedTimeOfDay gog 0x0064c9f0 -> 0x0051cfd0: match cites a layout/offset difference
 - CServerExoApp::GetModulePreviouslyVisited gog 0x0064ca90 -> 0x0051d070: match cites a layout/offset difference
-- CSWSModule::non_virtual_thunk_to_dtor_CSWSModule gog 0x00733ef0 -> 0x005615c0: reviewer corrected_addr
+- CSWSModule::non_virtual_thunk_to_dtor_CSWSModule gog 0x00733ef0 -> 0x00561c80: reviewer corrected_addr
 - CServerExoAppInternal::InitiateModuleForPlayer gog 0x007b8a10 -> 0x005356d0: match cites a layout/offset difference
 - CServerExoAppInternal::PlayerListChange gog 0x007b8f70 -> 0x00535c30: match cites a layout/offset difference
 - CServerExoAppInternal::IsInjured gog 0x007bbef0 -> 0x00538ca0: match cites a layout/offset difference
-- CServerExoAppInternal::GetPauseState gog 0x007bbf20 -> 0x00538c20: reviewer corrected_addr
-- CServerExoAppInternal::RemoveFromExclusionList gog 0x007bc710 -> 0x005393b0: reviewer corrected_addr
+- CServerExoAppInternal::GetPauseState gog 0x007bbf20 -> 0x00538cd0: reviewer corrected_addr
+- CServerExoAppInternal::RemoveFromExclusionList gog 0x007bc710 -> 0x005394c0: reviewer corrected_addr
 - CServerExoAppInternal::Uninitialize gog 0x007bda10 -> 0x0053a7c0: label_suspect
-- CServerExoAppInternal::GetMoveToWorldTime gog 0x007bfa90 -> 0x0053cc80: reviewer corrected_addr
+- CServerExoAppInternal::GetMoveToWorldTime gog 0x007bfa90 -> 0x0053ccf0: reviewer corrected_addr
 
 ## Sample of the other reviewer matches (143 of 143)
 
