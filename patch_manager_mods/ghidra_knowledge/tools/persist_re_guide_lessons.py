@@ -17,8 +17,9 @@ LESSONS = [
      "callee pop = ceil(gog_bytes/4)*4 (cdecl pops 0). 30 of the pilot's 82 false mismatches. Pre-compute it "
      "(re_card_prep.py abi) and state 'Stack Slot Match: TRUE' in the prompt."),
     ("method", "Ghidra decompile prints small offsets in DECIMAL",
-     "Bare numbers in .c output are decimal: 0x5F2FE0 has '+ 100)' = byte 0x64 (458 decimal vs 12189 hex '+ N)' forms "
-     "in 0x5xxxxx). Asm operands are always hex. Convert before prompting: '+ 0x64 [dec 100]' (re_card_prep.py annotate)."),
+     "Bare numbers in .c output are decimal (458 decimal vs 12189 hex '+ N)' forms in 0x5xxxxx) AND typed pointer "
+     "arithmetic scales: 0x5F2FE0 'int *param_1', '*(short *)(param_1 + 100)' = byte +0x190 (asm 005f3385 MOV word ptr "
+     "[EDX + 0x190],AX), not 0x64 or 0x100. Quote the asm operand (always hex bytes). re_card_prep.py annotate adds both."),
     ("method", "Thunks, auto labels and same-ret neighbours fool name matching",
      "Thiscall thunks decompile without __thiscall (judge the JMP target); Ghidra FID/library labels and mapper/DB "
      "names are hypotheses. Neighbours share ret N: 0x5644B0 (CALL AddActionToFront 0x5645E4) vs 0x564770 (CALL "

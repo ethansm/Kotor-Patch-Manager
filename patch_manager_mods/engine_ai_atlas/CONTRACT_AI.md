@@ -30,7 +30,7 @@ output, never touch the game folder. `ROOT = ~/Games/KOTOR2_Mod_Workspace/ghidra
 
 ## Small-model traps
 Read `REPO/patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md` sections 3 and 5 (stack-slot promotion, thiscall thunks,
-decimal decompile offsets, unreliable labels, neighbour decoys, dead `XOR/Jcc` blocks, class-by-provenance, private scratch
+decimal and pointer-scaled decompile offsets, unreliable labels, neighbour decoys, dead `XOR/Jcc` blocks, class-by-provenance, private scratch
 dirs). CONTRACT.md "Small-model rules" has the short form.
 
 ## Verdict words

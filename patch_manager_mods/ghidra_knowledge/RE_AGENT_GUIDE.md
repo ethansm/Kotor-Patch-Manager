@@ -70,7 +70,7 @@ Tools that do tier-0 work here:
 - `engine_ai_atlas/tools/cg.py` (call graph, paths, vtable-slot sites);
 - `engine_ai_atlas/tools/field_census.py` (every `[reg+off]` read/write);
 - `ghidra_knowledge/tools/re_card_prep.py`:
-  - `annotate` rewrites decimal offsets to hex and flags auto labels and thunks;
+  - `annotate` rewrites decimal offsets to hex, adds the pointer-scaled byte offset, and flags auto labels and thunks;
   - `abi` gives the promoted `ret N` verdict;
   - `anchors` lists strings, callees and offsets;
   - `prologue` checks alignment and prologue.
@@ -88,11 +88,20 @@ argument occupies a 4-byte slot, so the expected callee pop is `ceil(gog_bytes/4
 A one-line forwarding thunk (`JMP target`, or `MOV ECX,..; JMP`) is often decompiled as a plain function; ECX passes
 through invisibly. That produced 12 false mismatches in the pilot. Resolve thunks to their target and judge the target.
 
-### 3.3 Decompile offsets: bare numbers are DECIMAL
+### 3.3 Decompile offsets: bare numbers are DECIMAL, and pointer arithmetic is SCALED
 **[checked]** Ghidra prints most offsets in hex but small ones in decimal: 458 decimal vs 12,189 hex `+ N)` forms in
-0x5xxxxx. For example 0x5F2FE0 has `+ 100)` = byte offset 0x64, not 0x100. Asm operands are always hex
-(`[EAX + 0x524]`). Pre-convert: `(param_1 + 100)` -> `(param_1 + 0x64 [dec 100])`. The pilot had one offset false
-mismatch from this.
+0x5xxxxx. On top of that, `p + N` on a typed pointer scales by the element size, as in C.
+
+Example: in 0x5F2FE0, `param_1` is `int *` and line 175 is `*(short *)(param_1 + 100) = ...`. That is byte offset
+100 x 4 = **0x190**, not 0x64 or 0x100. The asm agrees: `005f3385 MOV word ptr [EDX + 0x190],AX`.
+
+The rules:
+- An `int` / `char *` / `undefined *` base adds bytes.
+- An `int *` / `undefined4 *` base multiplies by 4; `short *` by 2.
+- Asm operands are always hex byte offsets and settle any doubt: quote the asm.
+
+Pre-convert in the prompt, e.g. `(param_1 + 0x64 [dec 100] {int*: byte +0x190})` (`re_card_prep.py annotate`). The pilot
+had one offset false mismatch from reading `+ 100` as hex.
 
 ### 3.4 Ghidra auto labels are not ground truth
 FID/library labels (`FID_conflict:*`, `vector_deleting_destructor`, `_atexit`, ...) land on small game functions: 7
@@ -168,7 +177,7 @@ The model decides as it writes, so the verdict field goes LAST:
 Include 2-3 traps with their answers:
 - the neighbour pair (3.5);
 - a bool argument with `RET 4` (3.1);
-- the decimal offset (3.3);
+- the decimal + scaled offset (3.3: `int *p; p + 100` = byte 0x190);
 - optionally the dead `XOR/JZ` block (3.6).
 
 Keep decoys in every wave: gold negatives paired with real rows (neighbour, same-`ret N` function in the same run, random).

@@ -53,7 +53,8 @@ texture id. Operator delete is expected at 0x9196FD (verify).
 - Read the guide's section 3 (traps) before analysing. The ones that caused most false results:
   - **x86 stack slots:** GOG param sizes of 1/2/5/13 bytes pop `ceil(n/4)*4` (bool -> `RET 4`).
   - **Thiscall thunks:** Ghidra prints them without `__thiscall`; judge the thunk's target.
-  - **Decimal offsets:** bare decompile offsets are DECIMAL (`+ 100)` = `0x64`); asm operands are hex.
+  - **Decimal offsets:** bare decompile offsets are DECIMAL and scale by the pointer type (`int *p; p + 100` = byte
+    `0x190`); asm operands are hex byte offsets, so quote the asm.
   - **Labels:** Ghidra FID/library labels and mapper/DB names are hypotheses.
   - **Neighbours:** adjacent functions share `ret N`; separate them by a content anchor.
 - Never claim an identity ("this is X") on `ret N`, size or name alone. Cite a content anchor: a string literal, a
