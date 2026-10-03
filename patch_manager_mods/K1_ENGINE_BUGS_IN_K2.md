@@ -51,6 +51,6 @@ to level 1 after load; Soft Shadows slowdown.
 ## Caveats
 - "No" means the K1 mechanism is absent or neutralised in this K2 build's code. It does not mean K2 has no bug of
   that kind.
-- L1 and L4 are confirmed in code and arithmetic. Their on-screen effect is being checked in-game as of 2026-10-02.
+- L1 and L4 are confirmed in code and arithmetic. Their on-screen effect is being checked in-game as of 2026-10-02. Update 2026-10-03: L4 is a no-op at fs 1/2/3 and is dropped at the next install; for L1, V11 found that the only other readers of the bar edges are the clairvoyance/Fury video-effect overlays, so the fix moves or clips nothing else (L1 1.0.1 built, awaiting the T1 screenshot).
 - If you port a K1 fix anyway, re-derive the K2 addresses. K1 addresses never transfer. A K1 -> K2 name bridge is in
   `engine_bug_research/k1_k2_bridge.tsv` and is a starting point only.

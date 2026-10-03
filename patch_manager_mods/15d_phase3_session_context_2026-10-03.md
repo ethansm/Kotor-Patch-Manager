@@ -1,5 +1,7 @@
 # Session context: doc-15 Phase 3 (L1/L4 validation + KMRP static triage) (2026-10-03)
 
+**SUPERSEDED for next actions by `15e_phase4_session_context_2026-10-03.md` (Phase 4 done: L4 dropped, V11, L1 1.0.1 built, stage A/B).**
+
 Companion to `15c_phase2_session_context_2026-10-02.md` (Phase 2: owned files, build/smoke facts), plan
 `engine_bug_research/PHASE3_PLAN.md` (verbatim user-approved plan), `17_dialogue_letterbox_and_wrap_fixes.md` (build doc, STATUS at top),
 `16_candidate_register.md` (register L1-L23, test cards T1-T6). Branch `KOTOR-II`.
