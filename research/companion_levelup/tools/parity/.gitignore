@@ -7,3 +7,7 @@ playthrough_test_bin
 ui_test_bin
 wizard_test_bin
 __pycache__/
+scenario_test_bin
+scenario_test_bin32
+gate_test_bin32
+ui_test_bin32

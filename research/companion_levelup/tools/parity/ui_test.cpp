@@ -5,6 +5,7 @@
 #include "../../../../patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
 #include <sys/mman.h>
 #include <unistd.h>
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -282,7 +283,7 @@ int main(int argc, char** argv) {
     CHECK(nSetRect == rects, "setRect only when the rect changed");
     // R9 nudge: unconfigured + real CanLevelUp -> text + highlight colour; back to normal when it cannot level
     tick(pA, atton, 1);
-    CHECK(txt(pA, C_CFG) == "Plan level-ups" && nColor == 1 && lastColor[0] == 1.0f && lastColor[1] == 0.85f, "nudge text '%s' colour writes %d", txt(pA, C_CFG).c_str(), nColor);
+    CHECK(txt(pA, C_CFG) == "Plan level-ups" && nColor == 1 && lastColor[0] == 1.0f && std::fabs(lastColor[1] - 0.85f) < 1e-6f, "nudge text '%s' colour writes %d", txt(pA, C_CFG).c_str(), nColor);
     tick(pA, atton, 1);
     CHECK(nColor == 1, "colour written only on change");
     tick(pA, atton, 0);

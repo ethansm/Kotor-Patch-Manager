@@ -25,11 +25,20 @@ def case(tag, key, p, mask=0):
     return "%s %d %d %d %d %d|%s|%s|%s" % (tag, key, p["cls"], p["ability"], p["unspent"], mask, j(p["feats"]), j(p["spells"]), j(p["deltas"]))
 
 
-def build(exe, src):
-    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-o", exe,
+def build(exe, src, m32=False):
+    r = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra"] + (["-m32"] if m32 else []) + ["-I", os.path.join(HERE, "stub"), "-I", os.path.join(HERE, "stub", "inc"), "-include", os.path.join(HERE, "stub", "m3_win_shim.h"), "-o", exe,
                         os.path.join(HERE, src)], capture_output=True, text=True)
     if r.returncode:
         sys.exit(r.stderr)
+
+
+def m32_ok():
+    """True when `g++ -m32` can build and run a C++ program here (T3: the engine's real 32-bit pointer layout)."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        c = os.path.join(d, "t.cpp")
+        open(c, "w").write("#include <vector>\nint main(){std::vector<int> v(3);return v.size()==3?0:1;}\n")
+        return subprocess.run(["g++", "-m32", "-o", os.path.join(d, "t"), c], capture_output=True).returncode == 0 and subprocess.run([os.path.join(d, "t")]).returncode == 0
 
 
 def ln_cases(recs, presets):
@@ -198,7 +207,19 @@ def main():
     print(ui.stdout.strip())
     if ui.stderr:
         print(ui.stderr[:4000])
-    sys.exit(1 if bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
+    # T3: the gate and UI tests again as 32-bit builds (F10: the stub VirtualQuery must not wrap; uintptr_t == the engine's 4-byte pointers)
+    m32bad = 0
+    if m32_ok():
+        for exe, src, args in ((GATE_EXE + "32", "gate_test.cpp", [INI]), (UI_EXE + "32", "ui_test.cpp", [INI])):
+            build(exe, src, m32=True)
+            r32 = subprocess.run([exe] + args, capture_output=True, text=True, timeout=300)
+            print("-m32 " + r32.stdout.strip())
+            if r32.stderr:
+                print(r32.stderr[:4000])
+            m32bad += 1 if r32.returncode else 0
+    else:
+        print("-m32 gate/ui tests SKIPPED (g++ -m32 unavailable)")
+    sys.exit(1 if m32bad or bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
 
 
 if __name__ == "__main__":

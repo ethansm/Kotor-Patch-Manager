@@ -1156,6 +1156,17 @@ int guidNewServer(void* app) {
     return r;
 }
 
+// What onLevelUp does with a rewrite-mode tag after the dry run (pure; T2 seam, doc 20): rewrite only under AutoLevelup (viaAuto), never when the
+// pending already matches ("already") or the rewrite is not applicable (any status but "rewrite"), log-only when the build/ini apply switch is off.
+enum class LuAct { SkipManual, Already, SkipStatus, WouldRewrite, Apply };
+LuAct decideAct(bool viaAuto, const char* status, bool applyBuild, bool cfgApply) {
+    if (!viaAuto) return LuAct::SkipManual;
+    if (!strcmp(status, "already")) return LuAct::Already;
+    if (strcmp(status, "rewrite")) return LuAct::SkipStatus;
+    if (!applyBuild || !cfgApply) return LuAct::WouldRewrite;
+    return LuAct::Apply;
+}
+
 void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList, uintptr_t ebp) {
     LONG call = InterlockedIncrement(&g_calls);
     ensureHeader();
@@ -1283,21 +1294,29 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
             formatDry(d, lt, key, res);
             logf("  %s", d.s);
             if (rewriteTag) {
-                if (!viaAuto) {
+                switch (decideAct(viaAuto, res.status, ApplyEnabled, g_cfg.apply)) {
+                case LuAct::SkipManual:
                     logf("  SKIP manual %s key=%d flow=%s - player's picks kept (rewrite only under AutoLevelup)", lt, key, flow);
-                } else if (!strcmp(res.status, "already")) {
+                    break;
+                case LuAct::Already:
                     logf("  ALREADY (replay) %s key=%d - no write", lt, key);
-                } else if (strcmp(res.status, "rewrite")) {
+                    break;
+                case LuAct::SkipStatus:
                     logf("  SKIP %s %s key=%d - vanilla", res.status, lt, key);
-                } else if (!ApplyEnabled || !g_cfg.apply) {
+                    break;
+                case LuAct::WouldRewrite:
                     logf("  WOULD REWRITE %s key=%d (apply=0)", lt, key);
-                } else if (applyRewrite(pending, pd, res, nSkills)) {
-                    saferead::beginScope();   // the engine push helpers may have reallocated the arrays
-                    PendDump after;
-                    readPend(pending, nSkills, &after);
-                    const bool ok = after.ok && after.featsOk && after.spellsOk && after.deltasOk && samePend(after.pd, res.p);
-                    logf("  APPLIED tag=%s key=%d ok=%d", lt, key, ok);
-                    logPend("after", after, nSkills);
+                    break;
+                case LuAct::Apply:
+                    if (applyRewrite(pending, pd, res, nSkills)) {
+                        saferead::beginScope();   // the engine push helpers may have reallocated the arrays
+                        PendDump after;
+                        readPend(pending, nSkills, &after);
+                        const bool ok = after.ok && after.featsOk && after.spellsOk && after.deltasOk && samePend(after.pd, res.p);
+                        logf("  APPLIED tag=%s key=%d ok=%d", lt, key, ok);
+                        logPend("after", after, nSkills);
+                    }
+                    break;
                 }
             }
         }
