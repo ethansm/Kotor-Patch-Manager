@@ -1023,3 +1023,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   re-pointed to TI ~33 - user kept it). Kreia Stealth / Bao-Dur Persuade kept. Repo `runtime/levelup_paths.ini` regenerated (game-dir copy NOT
   updated - ships with the 1.0.0 install). User idea logged in mods README: wording patch for mod #142 mechanics.
 - Running: A2 fix round (F1/F2/F3/F4/F6/F14/F17 + scenarios S13, X11). After it: A3 mutate.py, then A6 1.0.0 build (install = user consent).
+- A2 fix round DONE f532ebf: F1/F2/F3/F4/F6/F14/F17 fixed red-first; offline scenarios now 20 (S13 pause-other-Jedi, X4/X5 lossy, X11 no ini,
+  X12 unknown mode, X13/X14 log capped/read-only, X15 hold flap). F4 ecx proven by DB: 0x73F450 GetPlayerCreature and 0x740FC0
+  GetCharacterChangeInProgress are both CClientExoApp thiscalls. F5 (multi-level XP across pause/convert -> HOLD_MIDLOOP engine picks) and
+  F10 (table over-cap drops all holds) remain documented RISKs (not fixed).
+- Running: A3 mutate.py (>= 25 mutations, scratch copies), B5 pause trade-off report. Then A6: build 1.0.0 + independent review + install with consent.
