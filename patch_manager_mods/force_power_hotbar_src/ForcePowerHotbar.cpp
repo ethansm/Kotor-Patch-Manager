@@ -22,6 +22,7 @@
 #include "Party.h"
 #include "GuiKit.h"
 #include "GameAddr.h"
+#include "FileWatch.h"
 #include "HotbarConfig.h"
 #include "HotbarLogic.h"
 #include "TwoDA.h"
@@ -161,8 +162,7 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
 const char* IniPath = "force_power_hotbar.ini";
 hb::Config g_cfg;
 #define VLOG(...) do { if (g_cfg.general.verbose) logf(__VA_ARGS__); } while (0)   // VERBOSE tier: only with Verbose=1 in the INI
-long long g_cfgMtime = -2;
-DWORD g_lastCfgCheck = 0;
+filewatch::ReloadPoll g_cfgPoll;   // INI change poll (1 s throttle); seenMs() is -2 until the first look, -1 = missing
 std::string g_charKey;                 // key of the controlled creature
 DWORD g_charChangeTick = 0;            // GetTickCount() of the last character-key change (0 = none yet)
 volatile bool g_slotBound[hb::Slots];   // Bottom row (row 0)
@@ -312,15 +312,14 @@ int targetProbeMode() {
 }
 
 void checkConfig(bool force) {
-    DWORD now = GetTickCount();
-    if (!force && now - g_lastCfgCheck < 1000) return;
-    g_lastCfgCheck = now;
-    long long mt = hb::Config::mtimeOf(IniPath);
-    if (mt == -1 && g_cfgMtime == -2) { writeTemplateIni(); mt = hb::Config::mtimeOf(IniPath); }
-    if (mt == g_cfgMtime) return;
+    bool first = !g_cfgPoll.primed;
+    filewatch::Stamp st;
+    if (!filewatch::changed(g_cfgPoll, IniPath, GetTickCount(), force, &st)) return;
+    if (first && !st.exists) { writeTemplateIni(); st = filewatch::accept(g_cfgPoll, IniPath); }
+    long long mt = st.mtimeMs();
     hb::Config c;
-    if (!c.Load(IniPath)) { logf("cfg: cannot read %s (mtime=%lld, keeping previous)", IniPath, mt); g_cfgMtime = mt; return; }
-    g_cfg = c; g_cfgMtime = mt;
+    if (!c.Load(IniPath)) { logf("cfg: cannot read %s (mtime=%lld, keeping previous)", IniPath, mt); return; }
+    g_cfg = c;
     logf("cfg: loaded %s: invoke=%d verbose=%d kbdev=%d profiles=%d warnings=%d",
          IniPath, g_cfg.general.invoke, g_cfg.general.verbose, g_cfg.general.keyboardDevice,
          (int)g_cfg.profiles.size(), (int)g_cfg.warnings.size());
@@ -862,7 +861,7 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     static bool backedUp = false;
     if (!backedUp) { backedUp = true; BOOL ok = CopyFileA(IniPath, "force_power_hotbar.ini.bak", FALSE); logf("edit: backup %s -> force_power_hotbar.ini.bak: %s", IniPath, ok ? "ok" : "FAILED (no ini yet?)"); }
     bool ok = g_cfg.Save(IniPath);
-    long long mt = hb::Config::mtimeOf(IniPath); if (ok) g_cfgMtime = mt;
+    filewatch::Stamp st = filewatch::stamp(IniPath); long long mt = st.mtimeMs(); if (ok) filewatch::accept(g_cfgPoll, st);
     logf("edit: assign slot %d (%s) := %s; froze %d autofilled slot(s) into the profile; character '%s'; Save %s (mtime %lld)", slot, hb::SlotKeyName(0, slot).c_str(),
          e ? hb::Format(a).c_str() : "none", frozen, g_charKey.c_str(), ok ? "ok" : "FAILED", mt);
     if (!ok) { ed.msg = "Saving the config failed (see log)"; return false; }
@@ -1300,7 +1299,7 @@ void replaceLiveProfiles(const hb::Config* snap, const std::string& source, cons
     if (snap) for (auto& kv : snap->profiles) n.profiles[kv.first] = kv.second;
     BOOL bak = CopyFileA(IniPath, "force_power_hotbar.ini.bak", FALSE);
     bool ok = n.Save(IniPath);
-    if (ok) { g_cfg = n; g_cfgMtime = hb::Config::mtimeOf(IniPath); recomputeBound(); }
+    if (ok) { g_cfg = n; filewatch::accept(g_cfgPoll, IniPath); recomputeBound(); }
     if (g_bar.ed.mode != M_Normal) setMode(M_Normal, -1, why);
     logf("persave: %s: %s -> live hotbar %s (%d profile(s), snapshot warnings=%d, backup %s)", why, source.c_str(),
          ok ? "replaced" : "NOT replaced (save failed)", (int)n.profiles.size(), snap ? (int)snap->warnings.size() : 0, bak ? "ok" : "none");
@@ -1310,7 +1309,7 @@ void restoreFromSave(const char* folder, const char* why) {
     std::string dir = saveDirFor(folder);
     if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), live hotbar kept", why, folder && saferead::probeRead(S_Save, folder, 1) ? folder : "?"); return; }
     std::string src = dir + "/" + SnapshotFile;
-    hb::Config snap; bool have = hb::Config::mtimeOf(src) >= 0 && snap.Load(src);
+    hb::Config snap; bool have = filewatch::stamp(src.c_str()).exists && snap.Load(src);
     replaceLiveProfiles(have ? &snap : nullptr, "'" + src + "' " + (have ? "found" : "absent (empty bar)"), why);
 }
 
@@ -1428,7 +1427,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     static DWORD lastTickTime = 0; DWORD nowT = GetTickCount();
     if (lastTickTime && nowT - lastTickTime > 1500) logf("tick: gap of %lu ms since previous HUD tick (load/menu/HUD destroyed?)", (unsigned long)(nowT - lastTickTime));
     lastTickTime = nowT;
-    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld bar(panel=%08x built=%d vis=%d%d%d%d%d%d%d%d%d%d) gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d", g_frame, (unsigned)g_bar.panel, g_bar.built, g_bar.b[0].ic.visible, g_bar.b[1].ic.visible, g_bar.b[2].ic.visible, g_bar.b[3].ic.visible, g_bar.b[4].ic.visible, g_bar.b[5].ic.visible, g_bar.b[6].ic.visible, g_bar.b[7].ic.visible, g_bar.b[8].ic.visible, g_bar.b[9].ic.visible, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke);
+    if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld bar(panel=%08x built=%d vis=%d%d%d%d%d%d%d%d%d%d) gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d", g_frame, (unsigned)g_bar.panel, g_bar.built, g_bar.b[0].ic.visible, g_bar.b[1].ic.visible, g_bar.b[2].ic.visible, g_bar.b[3].ic.visible, g_bar.b[4].ic.visible, g_bar.b[5].ic.visible, g_bar.b[6].ic.visible, g_bar.b[7].ic.visible, g_bar.b[8].ic.visible, g_bar.b[9].ic.visible, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgPoll.seenMs(), g_cfg.general.invoke);
     if (g_frame == 1) logf("tick: first HUD tick hud=%08x kbdev=%d", (unsigned)hud, g_kbDevice);
     if (hud != g_hud) { g_hud = hud; logf("tick: hud pointer now %08x", (unsigned)hud); }
     if (!hud || !saferead::probeRead(S_Hud, hudPtr, 0x1CA0)) { if (g_hudGateOk) logf("tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }

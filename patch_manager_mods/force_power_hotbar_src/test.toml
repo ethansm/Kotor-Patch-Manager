@@ -5,3 +5,13 @@ cxxflags = ["-Werror"]
 # The four older hotbar tests keep their defaults.
 [common_contract_test]
 cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+# HotbarConfig.h includes the shared FileWatch.h (POSIX branch on the host; no Win32 stub needed).
+[config_roundtrip_test]
+cxxflags = ["-I../_shared_src", "-Werror"]
+
+[hotbar_bugs_test]
+cxxflags = ["-I../_shared_src", "-Werror"]
+
+[hotbar_logic_test]
+cxxflags = ["-I../_shared_src", "-Werror"]

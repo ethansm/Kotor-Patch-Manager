@@ -6,7 +6,7 @@
 // SafeRead.h / GuiKit.h / Party.h / GameAddr.h re-runs this test: a Common change that would break the hotbar fails here first.
 //
 // Areas: (1) gameaddr constants (compile time), (2) saferead, (3) guikit on fake engine objects in a MAP_32BIT arena,
-// (4) party on a fake app -> a -> b -> table chain with fake vtable HP slots. Host-only, deterministic, no game, no DLL.
+// (4) party on a fake app -> a -> b -> table chain with fake vtable HP slots, (5) filewatch (INI reload poll + atomic save) in a temp dir. Host-only, deterministic, no game, no DLL.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -14,10 +14,15 @@
 #include "GameAddr.h"
 #include "GuiKit.h"
 #include "Party.h"
+#include "FileWatch.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <type_traits>
 #include <string>
+#include <filesystem>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define HCHECK(why, expr) ::kt::Check("hotbar relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("hotbar relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
@@ -538,6 +543,73 @@ static void saferead_write_contract() {
     // are pinned in _shared_src/saferead_test.cpp, which routes VirtualQuery through a fake.
 }
 
+// ============================================================ 5. FileWatch (config reload + atomic save)
+// The hotbar polls force_power_hotbar.ini once a second and saves it from the editor; see checkConfig / assignSlot / replaceLiveProfiles.
+static std::string fwRead(const std::string& p) {
+    std::string o; FILE* f = fopen(p.c_str(), "rb"); if (!f) return "<missing>";
+    char b[256]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) o.append(b, n);
+    fclose(f); return o;
+}
+static void fwPut(const std::string& p, const std::string& s) { FILE* f = fopen(p.c_str(), "wb"); if (f) { fwrite(s.data(), 1, s.size(), f); fclose(f); } }
+static bool fwExists(const std::string& p) { struct stat st; return lstat(p.c_str(), &st) == 0; }
+
+static void filewatch_contract() {
+    const char* t = std::getenv("TMPDIR");
+    std::string tmpl = std::string(t && *t ? t : "/tmp") + "/hotbar_fw.XXXXXX";
+    char* d = mkdtemp(&tmpl[0]);
+    if (!d) { HCHECK("mkdtemp works", false); return; }
+    std::string dir = d, ini = dir + "/force_power_hotbar.ini";
+
+    // A hand edit within the same second as the previous write must be seen (the old 1 s stat mtime missed it).
+    fwPut(ini, "[General]\nInvoke=1\n");
+    filewatch::ReloadPoll poll; poll.throttleMs = 1000;
+    HCHECK("first poll reports a change (initial load) and records the stamp", filewatch::changed(poll, ini.c_str(), 0));
+    HCHECK("an untouched ini is not reloaded", !filewatch::changed(poll, ini.c_str(), 1000));
+    timespec ts[2] = { {1700000000, 0}, {1700000000, 0} };
+    HCHECK("utimensat works", utimensat(AT_FDCWD, ini.c_str(), ts, 0) == 0);   // pin the mtime so both writes share a second on any filesystem
+    filewatch::changed(poll, ini.c_str(), 2000);
+    fwPut(ini, "[General]\nInvoke=0\nVerbose=1\n"); HCHECK("utimensat works again", utimensat(AT_FDCWD, ini.c_str(), ts, 0) == 0);
+    HCHECK("a same-second rewrite with a different size is detected", filewatch::changed(poll, ini.c_str(), 3000));
+    HCHECK("the hotbar's 1000 ms throttle: no stamp inside the window", !filewatch::changed(poll, ini.c_str(), 3500));
+    fwPut(ini, "[General]\nInvoke=0\nVerbose=1\nAutoFill=1\n");
+    HCHECK("force (checkConfig(true) before a save) bypasses the throttle", filewatch::changed(poll, ini.c_str(), 3600, true));
+    filewatch::accept(poll, ini.c_str());
+    HCHECK("accept() after our own Save: the write is not reloaded as a change", !filewatch::changed(poll, ini.c_str(), 9000));
+    remove(ini.c_str());
+    HCHECK("a deleted ini is a change (template rewrite path)", filewatch::changed(poll, ini.c_str(), 11000));
+
+    // Save must never lose the user's file: failures keep the old content and leave no .tmp.
+    fwPut(ini, "old content");
+    std::filesystem::create_directory(dir + "/asdir");
+    HCHECK("atomicWrite returns false when the replace fails (target is a directory)", !filewatch::atomicWrite((dir + "/asdir").c_str(), "x", false));
+    HCHECK("atomicWrite failure leaves no .tmp behind", !fwExists(dir + "/asdir.tmp"));
+    HCHECK("atomicWrite failure leaves the target untouched", std::filesystem::is_directory(dir + "/asdir"));
+    HCHECK("atomicWrite to a missing directory fails", !filewatch::atomicWrite((dir + "/nodir/f.ini").c_str(), "x", false));
+    if (geteuid() != 0) {
+        std::filesystem::create_directory(dir + "/ro");
+        fwPut(dir + "/ro/f.ini", "keep me");
+        chmod((dir + "/ro").c_str(), 0555);
+        bool ok = filewatch::atomicWrite((dir + "/ro/f.ini").c_str(), "new", false);
+        chmod((dir + "/ro").c_str(), 0755);
+        HCHECK("atomicWrite fails in an unwritable directory", !ok);
+        HCHECK("atomicWrite keeps the old file on failure", fwRead(dir + "/ro/f.ini") == "keep me");
+        HCHECK("atomicWrite leaves no .tmp after an unwritable-dir failure", !fwExists(dir + "/ro/f.ini.tmp"));
+    }
+    HCHECK("atomicWrite replaces the content", filewatch::atomicWrite(ini.c_str(), "new content", false) && fwRead(ini) == "new content");
+    HCHECK("atomicWrite leaves no .tmp on success", !fwExists(ini + ".tmp"));
+    HCHECK("makeBakOnce=false never writes a .bak (hotbar Save makes its own backups)", !fwExists(ini + ".bak"));
+
+    // .bak is written once: the first managed save keeps the pre-edit file.
+    std::string f2 = dir + "/b.ini";
+    fwPut(f2, "original");
+    HCHECK("atomicWrite(makeBakOnce) writes", filewatch::atomicWrite(f2.c_str(), "v2", true));
+    HCHECK("the .bak holds the original", fwRead(f2 + ".bak") == "original");
+    HCHECK("a second atomicWrite writes", filewatch::atomicWrite(f2.c_str(), "v3", true) && fwRead(f2) == "v3");
+    HCHECK("the .bak is NOT overwritten by later saves", fwRead(f2 + ".bak") == "original");
+
+    std::error_code ec; std::filesystem::remove_all(dir, ec);
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -551,5 +623,6 @@ int main() {
     saferead_write_contract();
     guikit_contract();
     party_contract();
+    filewatch_contract();
     return kt::Report("common_contract_test (force_power_hotbar)");
 }

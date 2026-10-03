@@ -8,10 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "FileWatch.h"   // filewatch::atomicWrite / stamp (Patches/Common; pulls in windows.h on Win32)
 
 namespace hb {
 
@@ -356,26 +353,8 @@ struct Config {
         return o;
     }
 
-    // Atomic: write <path>.tmp then replace.
-    bool Save(const std::string& path) const {
-        std::string tmp = path + ".tmp", text = Serialize();
-        FILE* f = fopen(tmp.c_str(), "wb");
-        if (!f) return false;
-        bool ok = fwrite(text.data(), 1, text.size(), f) == text.size();
-        ok = (fclose(f) == 0) && ok;
-        if (!ok) { remove(tmp.c_str()); return false; }
-#ifdef _WIN32
-        return MoveFileExA(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING) != 0;
-#else
-        return rename(tmp.c_str(), path.c_str()) == 0;
-#endif
-    }
-
-    static long long mtimeOf(const std::string& path) {
-        struct stat st;
-        if (stat(path.c_str(), &st) != 0) return -1;
-        return (long long)st.st_mtime * 1000 + 0;
-    }
+    // Atomic: <path>.tmp then replace (filewatch::atomicWrite). No .bak here: the hotbar makes its own backups (FPH assignSlot / replaceLiveProfiles).
+    bool Save(const std::string& path) const { return filewatch::atomicWrite(path.c_str(), Serialize(), false); }
 };
 
 } // namespace hb
