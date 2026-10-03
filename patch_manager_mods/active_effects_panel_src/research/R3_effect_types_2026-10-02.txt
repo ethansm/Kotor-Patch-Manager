@@ -98,3 +98,33 @@ R-d descriptions: 114 of 215 named spells rows have spelldesc text (live TLK), a
  sentences ending ':', <= 2 sentences <= 220 chars (max 219; rows 19/27/48 use the "..." fallback). No description:
  item shields 99-101/107/257, medpacs 64-66, stims/shots 69-77, 129. effecticon.2da has a `description` column but it is
  empty (****) in all 120 rows -> icon-only entries get the description of their EffectIcon effect's spell (if any).
+
+R3c addendum 2026-10-03 (build 4b log follow-up; Sonnet research, Opus re-read the decomp + exe constants)
+R-e  MovementSpeed value 199 (Burst of Speed, live log 01:13 '0x1c ints=[199]'):
+ - Scripts pass 99: vanilla k_inc_force.nss EffectMovementSpeedIncrease(99) at 2585/2608/3353/3374/3408/3432/5237-5330;
+   decreases pass 50. $GAME/override has no k_inc_force / movement script (only k_sp_fcrush.ncs).
+ - Script commands 0x675b70 (inc) / 0x6759e0 (dec) store the arg raw in ints[0] (0x5e4e80 SetInteger).
+ - The +100 is the 0x1c APPLY handler 0x59e970 (InitializeEffects 0x593a30; remove[0x1c]=0x59ea10):
+     v = GetInteger(0); if (v < 100) SetInteger(0, v + 100);
+     SetMovementRateFactor(GetMovementRateFactor(0) * (GetInteger(0) / 100.0))      // 0x98ba38 = 100.0
+   so after apply ints[0] = 100 + pct (99 -> 199 = x1.99). A value >= 100 is kept as is.
+ - 0x1d apply 0x59eb80: returns if ints[0] >= 100 (or creature +0xfc != 0, or 0x6bc570(0x18,..)); else
+   rate *= 1 - v/100; ints[0] stays raw (50 -> x0.5).
+ - Remove 0x59ea10 (both types) recomputes from 1.0: + v/100 per 0x1c, - v/100 per 0x1d over the remaining effects
+   (additive, unlike apply's multiply; not traced further).
+ - SetMovementRateFactor 0x5766a0 clamps to [0.125, 1.5] (doubles 0x9954e8/0x989f10, floats 0x98daa8/0x98b5c0, read
+   from the live exe) and stores at creature +0x112c. Burst of Speed's x1.99 is stored as x1.5. Consumers of +0x112c
+   (e.g. 0x5889b0) not traced.
+ - Display (build 4c): 0x1c -> pct = v >= 100 ? v - 100 : v, 'Speed +99%'; long form adds ' (engine cap +50%)' when
+   pct > 50. 0x1d -> 'Speed -v%'.
+R-f  doc-20 gate CLIs for one mod + a staged kpatch (run from the repo root; honour $KPM_DIR, default $TOOL_DIR):
+   KP=$TOOL_DIR/Patches/CharEffectsPanel/CharEffectsPanel.kpatch
+   .venv/bin/python scripts/check_hook_bytes.py --mod character-effects-panel --kpatch "$KP"
+   .venv/bin/python scripts/check_exports.py    --mod character-effects-panel --kpatch "$KP"
+   .venv/bin/python scripts/check_hook_spans.py --mod character-effects-panel      (no --kpatch option)
+   .venv/bin/python scripts/check_gui_ids.py                                        (repo + live override character_p.gui)
+ - check_hook_spans reads the live $GAME/patch_config.toml (31 installed patches) and FAILs on overlap, WARNs <= 8 bytes,
+   but it uses the repo's source hooks, never the kpatch's embedded hooks; check_exports has no import check. The retired
+   scripts/retired/check_chareffects_kpatch.py "$KP" $TOOL_DIR/chareffects_stage still covers both (kpatch hooks vs
+   739 live/staged addresses, USER32 imports) -> keep running it as an extra gate for this mod.
+ - 4b tree: all four PASS for character-effects-panel; retired script ALL PASS.
