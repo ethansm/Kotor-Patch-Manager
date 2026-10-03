@@ -981,3 +981,13 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   line 63. A1 todo: add `md5=` to the banner (cpp ~906) so the checker can verify the dll; CONFIG lines already carry `/p` since 0.3.1.
   saves.toml patterns anchored (`^HOLD tag=atton ` - 'HOLD' alone matches UNHOLD/WOULD HOLD; APPLIED logs the preset id; PC logs `tag=?`).
 - Running: M1 forge, M2 ini switcher, M3 scenario runner (C++), C1b DB packet, B3 review.
+- M2 DONE 49622d1 (`scripts/luo_scenario.py` plan/apply/restore/status, 10 tests). M1 DONE c869d7f (`scripts/kotor_save_forge.py`, 11 tests;
+  Game2 has atton/kreia/3cfd/t3m4 availnpc, 0 party members -> in_party edits UNPROVEN (standing-NPC git copy); S9 offline-only; S11 uses t3m4).
+  M3 DONE 0481b70 (scenario_test.cpp + scenarios.py, 12 scenarios host + -m32, decideAct seam in onLevelUp, removal safety; S2 banks N=12;
+  F10 was already fixed by doc-20 abc01d8). All gates green after M3.
+- C1b: packet 43 real/86 decoy cards; Haiku verdicts (scratchpad, merged `all_verdicts.json`): 18 candidates pass the decoy rule, 23 address
+  groups sent to a blind Sonnet adjudicator (output `scratchpad/c1b/adjudication.json`, may be lost with the scratchpad - re-run from
+  `C1b_verify_packet.md` if so). Nothing inserted; C1b packet files uncommitted. Decision 0x77D800: DB already names it ClientParty::GetCurrentCreature.
+- **RESUME HERE (Phase 6b, usage limit 2026-10-03):** next = commit C1b packet files + verdicts, Opus gate -> `C1b_insert.py --verdicts --gate --write`;
+  read B3 review (`phase6_evidence/B3_build_review.md` if the agent finished) and ask the user its questions; then A1 (C++ cleanup incl. banner
+  md5, mode=rewrite default), A2, A3 mutate, M5 doc 21 + skill, A5 README, suites.toml proposals (`scenarios.py`, `--m32`) to doc-20 owner.
