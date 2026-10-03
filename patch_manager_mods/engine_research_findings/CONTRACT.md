@@ -49,6 +49,20 @@ texture id. Operator delete is expected at 0x9196FD (verify).
 - Budget your reading: use grep over `decomp/` to find callers/users first, then read only the functions you need.
 - Finish with a 5-line summary at the top of the file (most important findings first).
 
+## Small-model rules (2026-10-03; full guide: `/home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md`)
+- Read the guide's section 3 (traps) before analysing. The ones that caused most false results:
+  - **x86 stack slots:** GOG param sizes of 1/2/5/13 bytes pop `ceil(n/4)*4` (bool -> `RET 4`).
+  - **Thiscall thunks:** Ghidra prints them without `__thiscall`; judge the thunk's target.
+  - **Decimal offsets:** bare decompile offsets are DECIMAL (`+ 100)` = `0x64`); asm operands are hex.
+  - **Labels:** Ghidra FID/library labels and mapper/DB names are hypotheses.
+  - **Neighbours:** adjacent functions share `ret N`; separate them by a content anchor.
+- Never claim an identity ("this is X") on `ret N`, size or name alone. Cite a content anchor: a string literal, a
+  confirmed callee or a member offset access, each with its address.
+- Dead code: `XOR r,r` + `Jcc` is unconditional. Check the guard's flag source before calling a block live.
+- The same offset is a different field in a different class: decide the class from the base register's provenance.
+- Use a private scratch dir (`mktemp -d`) for helper scripts; other agents run in parallel.
+- Pre-processing helper: `python3 /home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/ghidra_knowledge/tools/re_card_prep.py annotate|abi|anchors|prologue ADDR`.
+
 ## Verified facts from wave 1 (Opus-checked; build on these, do not re-derive)
 - 194.8 MB live at census a2 0x712FB7 = CExoResMan::Malloc `size+10` branch (CRes+0x24!=0), set only by CResTPC (0x945CE0),
   CResTGA (0x9452C0), CResPLT: i.e. **texture data**; the TPC load path keeps a Demand reference (not evictable).

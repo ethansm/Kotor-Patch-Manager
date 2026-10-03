@@ -16,6 +16,9 @@ policy, that's the only repo we commit to for now (see
 [[kotor2-patch-manager]] memory) — the `kotor-patch-manager` clone itself
 stays uncommitted until a mod is ready to contribute upstream.
 
+**Briefing a Haiku/Sonnet analyst or judge?** Read `RE_AGENT_GUIDE.md` first (tiered funnel, ABI/decimal/thunk/decoy
+traps, prompt schema, calibration). Pre-processing helper: `tools/re_card_prep.py`.
+
 ## Schema
 
 - `binaries` — one row per known binary hash (GOG, Steam pristine, Steam+LAA),

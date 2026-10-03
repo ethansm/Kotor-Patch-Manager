@@ -28,6 +28,11 @@ output, never touch the game folder. `ROOT = ~/Games/KOTOR2_Mod_Workspace/ghidra
   FM1-FM7, FM2b, E3, E4, E7, E9, L1/L2/L3, M5, M8, P1, P2, A1, a1_retarget_strict, C1, T1, R1, AIQ, PFLK, EFFOVF,
   enemy-E7 (`hold_enemies`), enemy-AI, medpac, party-flag (`+0x11AC`), Mod 8 (kite), perf. Use "none" if none.
 
+## Small-model traps
+Read `REPO/patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md` sections 3 and 5 (stack-slot promotion, thiscall thunks,
+decimal decompile offsets, unreliable labels, neighbour decoys, dead `XOR/Jcc` blocks, class-by-provenance, private scratch
+dirs). CONTRACT.md "Small-model rules" has the short form.
+
 ## Verdict words
 CONFIRMED / REFUTED / SPECULATIVE. "Verified" means a quoted asm or decompile line with its address. A grep absence is
 never proof (lesson 168): check indirect writes via `this+off`, asm `[reg + off]`, and vtable calls
