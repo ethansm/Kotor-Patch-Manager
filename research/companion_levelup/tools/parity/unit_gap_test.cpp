@@ -1,0 +1,128 @@
+// Unit tests added by the A3 mutation gate (mutate.py): pure logic whose edge cases no table-driven parity run reaches (synthetic presets / items,
+// the log cap, the HOLD log rate limit, the options and wizard state machines). Run via parity.py.
+#include "../../../../patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
+#include <string>
+#include <unistd.h>
+
+static int g_fail = 0, g_checks = 0;
+#define CHECK(c, ...) do { ++g_checks; if (!(c)) { ++g_fail; fprintf(stderr, "FAIL line %d: ", __LINE__); fprintf(stderr, __VA_ARGS__); fputc('\n', stderr); } } while (0)
+
+static std::string readLog() {
+    std::string s; FILE* f = fopen(LogName, "rb"); if (!f) return s;
+    char b[4096]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) s.append(b, n);
+    fclose(f); return s;
+}
+static int countStr(const std::string& s, const char* sub) { int n = 0; for (size_t p = 0; (p = s.find(sub, p)) != std::string::npos; ++p) ++n; return n; }
+
+static wiz::Item mk(const char* id, const char* convert, const char* role, const char* style) {
+    wiz::Item it{};
+    it.id = id; it.shortName = id;
+    it.ans[wiz::Role] = role; it.ans[wiz::Style] = style; it.ans[wiz::Alignment] = "light"; it.ans[wiz::Convert] = convert; it.ans[wiz::Skills] = "combat";
+    return it;
+}
+
+int main() {
+    char dir[] = "/tmp/luo_gap_XXXXXX";
+    if (!mkdtemp(dir) || chdir(dir)) return 2;
+
+    // ---- levelNow: a record with an unknown class level (clvl 0) never matches and never counts towards "records used up" ----
+    {
+        static Preset p; memset(&p, 0, sizeof p);
+        p.holdClass = 5; p.convertAt = 9;
+        p.lv[3].present = true; p.lv[3].cls = 2; p.lv[3].clvl = 0;
+        const uint8_t ids[1] = {2}, lv[1] = {3};
+        CHECK(levelNow(ids, lv, 1, &p, 4, true, 0, nullptr, nullptr) == Decision::Vanilla, "clvl-0 record: no match, not 'used up' -> VANILLA");
+        p.lv[4].present = true; p.lv[4].cls = 2; p.lv[4].clvl = 4;
+        const Rec* rec = nullptr; int cl = -1;
+        CHECK(levelNow(ids, lv, 1, &p, 4, true, 0, &rec, &cl) == Decision::Path && cl == 4 && rec == &p.lv[4], "known record still matches");
+    }
+
+    // ---- log cap (F1): exactly MaxLogLines lines, one cap marker, then silence; logOpen refuses ----
+    {
+        remove(LogName);
+        g_logLines = MaxLogLines - 2;
+        CHECK(logOpen(), "logOpen below the cap");
+        logf("line-a"); logf("line-b"); logf("line-c");
+        logClose();
+        std::string l = readLog();
+        CHECK(l.find("line-a") != std::string::npos && l.find("line-b") != std::string::npos && l.find("line-c") == std::string::npos, "logf stops at the cap:\n%s", l.c_str());
+        CHECK(countStr(l, "== log line cap reached ==") == 1, "one cap marker");
+        CHECK(g_logLines == MaxLogLines, "counter == cap (%d)", g_logLines);
+        CHECK(!logOpen() && g_f == nullptr, "logOpen refuses at the cap");
+        logLine("late line");
+        CHECK(readLog() == l, "logLine writes nothing at the cap");
+        g_logLines = 0;
+    }
+
+    // ---- HOLD/UNHOLD log rate limit (F14): a withheld transition is counted, printed on the next logged line, then reset ----
+    {
+        remove(LogName); g_nHoldState = 0; g_logLines = 0;
+        g_stubTick = 1000; noteHold("t", 5, true, 0x1, true);
+        g_stubTick = 1100; noteHold("t", 6, true, 0x1, true);      // new key, inside the gap -> suppressed (1)
+        g_stubTick = 4000; noteHold("t", 7, true, 0x1, true);      // logged with suppressed=1, counter reset
+        g_stubTick = 4100; noteHold("t", 8, true, 0x1, true);      // suppressed again (1)
+        g_stubTick = 7000; noteHold("t", 0, false, 0x1, true);     // UNHOLD logged with suppressed=1 (not 2)
+        std::string l = readLog();
+        CHECK(countStr(l, "HOLD tag=t key=5 site=0x1\n") == 1, "first HOLD logged:\n%s", l.c_str());
+        CHECK(l.find("key=6") == std::string::npos && l.find("key=8") == std::string::npos, "withheld keys not logged");
+        CHECK(l.find("HOLD tag=t key=7 site=0x1 suppressed=1\n") != std::string::npos, "key 7 line carries suppressed=1:\n%s", l.c_str());
+        CHECK(l.find("UNHOLD tag=t suppressed=1\n") != std::string::npos, "UNHOLD carries suppressed=1 (counter was reset):\n%s", l.c_str());
+        // same state again: nothing; HOLD on a NEW key after the gap is logged (the key is part of the state)
+        remove(LogName); g_nHoldState = 0; g_logLines = 0;
+        g_stubTick = 20000; noteHold("u", 5, true, 0x2, false);
+        g_stubTick = 30000; noteHold("u", 5, true, 0x2, false);
+        g_stubTick = 40000; noteHold("u", 6, true, 0x2, false);
+        l = readLog();
+        CHECK(countStr(l, "WOULD HOLD tag=u key=5") == 1 && countStr(l, "WOULD HOLD tag=u key=6") == 1, "same key once, new key logged:\n%s", l.c_str());
+    }
+
+    // ---- OptionsLogic ----
+    {
+        // a row differing only for item 1 is shown (rowShown must compare item 1 against item 0)
+        wiz::Item a[2] = {mk("a", "never", "melee", "single"), mk("b", "early", "melee", "single")};
+        opt::State s; opt::init(s, a, 2, 0);
+        CHECK(opt::shown(s, 0) && !opt::shown(s, 1), "2 items differing on Convert only: Convert shown, Role hidden");
+        // tie-break: cycling Convert prefers the candidate that keeps the next row (Role)
+        wiz::Item b[3] = {mk("b0", "never", "melee", "single"), mk("b1", "early", "ranged", "single"), mk("b2", "early", "melee", "single")};
+        opt::init(s, b, 3, 0);
+        CHECK(opt::cycle(s, 0, +1) && s.cur == 2, "cycle keeps Role: cur %d", s.cur);
+        // Variant cycle honours the direction
+        wiz::Item c[3] = {mk("c0", "early", "melee", "single"), mk("c1", "early", "melee", "single"), mk("c2", "early", "melee", "single")};
+        opt::init(s, c, 3, 1);
+        CHECK(opt::shown(s, opt::VariantRow), "variant shown for 3 identical presets");
+        CHECK(opt::cycle(s, opt::VariantRow, -1) && s.cur == 0, "variant -1: cur %d", s.cur);
+        CHECK(opt::cycle(s, opt::VariantRow, +1) && s.cur == 1, "variant +1: cur %d", s.cur);
+        CHECK(opt::cycle(s, opt::VariantRow, -1) && opt::cycle(s, opt::VariantRow, -1) && s.cur == 2, "variant wraps backwards: cur %d", s.cur);
+        // two presets, one answer set: Variant hidden (needs > 1 identical, shown only with >= 2)
+        wiz::Item d2[2] = {mk("d0", "early", "melee", "single"), mk("d1", "never", "melee", "single")};
+        opt::init(s, d2, 2, 0);
+        CHECK(!opt::shown(s, opt::VariantRow), "variant hidden when no identical presets");
+        // a row cycle with direction -1 goes to the previous value
+        wiz::Item e[3] = {mk("e0", "early", "melee", "single"), mk("e1", "late", "melee", "single"), mk("e2", "never", "melee", "single")};
+        opt::init(s, e, 3, 1);
+        CHECK(opt::cycle(s, 0, -1) && s.cur == 0, "row -1: cur %d", s.cur);
+        opt::init(s, e, 3, 1);
+        CHECK(opt::cycle(s, 0, +1) && s.cur == 2, "row +1: cur %d", s.cur);
+    }
+
+    // ---- WizardLogic ----
+    {
+        wiz::State w; wiz::reset(w, nullptr, 0);
+        wiz::View v = wiz::view(w);
+        CHECK(!v.result && v.page == -1 && v.nOptions == 0, "no candidates: neither a result nor a page (page %d)", v.page);
+        wiz::Item it[2] = {mk("w0", "early", "melee", "single"), mk("w1", "never", "melee", "single")};
+        wiz::reset(w, it, 2);
+        CHECK(!wiz::back(w) && w.depth == 0, "back() at depth 0 is a no-op (depth %d)", w.depth);
+        // a Pick answer pins the exact item
+        wiz::Item same[2] = {mk("p0", "early", "melee", "single"), mk("p1", "early", "melee", "single")};
+        wiz::reset(w, same, 2);
+        v = wiz::view(w);
+        CHECK(v.page == wiz::Pick && v.nOptions == 2, "identical presets -> Pick page");
+        CHECK(wiz::choose(w, 1), "choose on the Pick page");
+        v = wiz::view(w);
+        CHECK(v.result && v.resultItem == 1, "Pick answer selects exactly that item (%d)", v.resultItem);
+    }
+
+    printf("unit_gap_test checks %d failures %d\n", g_checks, g_fail);
+    return g_fail ? 1 : 0;
+}

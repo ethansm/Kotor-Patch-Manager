@@ -5,6 +5,7 @@ guikit_test_bin
 options_test_bin
 playthrough_test_bin
 ui_test_bin
+unit_gap_test_bin
 wizard_test_bin
 __pycache__/
 scenario_test_bin

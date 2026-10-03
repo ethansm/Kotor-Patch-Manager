@@ -168,6 +168,24 @@ int main() {
         CHECK(pt::removeTagRaw(&t3[0], &n3, 7, "atton") && n3 == 12 && t3.substr(0, n3) == "[g00000007]\n", "last line without a newline");
     }
 
+    // A3 mutation gaps
+    {
+        std::unique_ptr<pt::Doc> d2(new pt::Doc);
+        load(*d2, "[g00000001]\r\natton=a__b\n");   // 1 CRLF of 2 newline-terminated lines: not a majority -> LF
+        CHECK(!d2->crlf, "CRLF tie is not CRLF");
+        load(*d2, "[g00000001]\r\natton=a__b\r\nkreia=c__d\n");
+        CHECK(d2->crlf, "CRLF majority (2 of 3)");
+        load(*d2, "[g0000000a]\natton=p|instant=0\t; note\n");   // a TAB before the ';' belongs to the inline comment tail
+        CHECK(ser(*d2).find("|hold=1\t; note\n") != std::string::npos, "inline comment keeps the TAB before ';': '%s'", ser(*d2).c_str());
+        load(*d2, "[g0000000a]\natton=p ; note\n");
+        CHECK(ser(*d2).find("|hold=1 ; note\n") != std::string::npos, "inline comment keeps the blank before ';'");
+        // removeTagRaw only searches sections of ITS guid: the tag in a section of another guid, then the right one
+        std::string t = "[g00000001]\natton=a__b\n[g00000002]\nkreia=c__d\natton=e__f\n"; size_t n = t.size();
+        CHECK(pt::removeTagRaw(&t[0], &n, 2, "atton") && t.substr(0, n) == "[g00000001]\natton=a__b\n[g00000002]\nkreia=c__d\n", "guid 2 atton removed, guid 1 untouched: '%s'", t.substr(0, n).c_str());
+        std::string u = "[g00000001]\nkreia=a__b\n[g00000002]\natton=e__f\n"; size_t un = u.size();
+        CHECK(pt::removeTagRaw(&u[0], &un, 2, "atton") && u.substr(0, un) == "[g00000001]\nkreia=a__b\n[g00000002]\n", "section of another guid without the tag does not end the search: '%s'", u.substr(0, un).c_str());
+    }
+
     printf("playthrough_test checks %d failures %d\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

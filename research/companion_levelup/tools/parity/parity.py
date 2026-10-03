@@ -18,6 +18,7 @@ APPLY_EXE = os.path.join(HERE, "apply_test_bin")
 GATE_EXE = os.path.join(HERE, "gate_test_bin")
 PT_EXE = os.path.join(HERE, "playthrough_test_bin")
 UI_EXE = os.path.join(HERE, "ui_test_bin")
+GAP_EXE = os.path.join(HERE, "unit_gap_test_bin")
 
 
 def case(tag, key, p, mask=0):
@@ -123,6 +124,7 @@ def main():
     build(GATE_EXE, "gate_test.cpp")
     build(PT_EXE, "playthrough_test.cpp")
     build(UI_EXE, "ui_test.cpp")
+    build(GAP_EXE, "unit_gap_test.cpp")
     cs, presets, recs = S.parse_table_v2(open(INI).read())
     rnd = random.Random(1)
     cases = []
@@ -213,6 +215,11 @@ def main():
     print(ui.stdout.strip())
     if ui.stderr:
         print(ui.stderr[:4000])
+    # A3: unit tests for the edge cases the mutation gate (mutate.py) found untested (unit_gap_test.cpp)
+    gp = subprocess.run([GAP_EXE], capture_output=True, text=True)
+    print(gp.stdout.strip())
+    if gp.stderr:
+        print(gp.stderr[:4000])
     # T3: the gate and UI tests again as 32-bit builds (F10: the stub VirtualQuery must not wrap; uintptr_t == the engine's 4-byte pointers)
     m32bad = 0
     if m32_ok():
@@ -225,7 +232,7 @@ def main():
             m32bad += 1 if r32.returncode else 0
     else:
         print("-m32 gate/ui tests SKIPPED (g++ -m32 unavailable)")
-    sys.exit(1 if m32bad or bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
+    sys.exit(1 if m32bad or bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode or gp.returncode else 0)
 
 
 if __name__ == "__main__":

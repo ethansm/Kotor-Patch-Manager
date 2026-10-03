@@ -514,6 +514,18 @@ int main(int argc, char** argv) {
               uiBankCycle(tiny, &bk, &pz); CHECK(!bk && pz == 0, "empty range: default -> Off");
               uiBankCycle(tiny, &bk, &pz); CHECK(bk && pz == 0, "Off -> default");
               char tb[24]; CHECK(!strcmp(uiBankText(tiny, true, 0, tb, sizeof tb), "Pause at level 1") || tiny.convertAt - 1 != 1, "default text"); }
+            // A3 mutation gaps: absolute (non-tautological) expectations on synthetic presets
+            { Preset sp = *ep; for (int cl = 0; cl <= MaxLevel; ++cl) sp.lv[cl].present = false;
+              sp.holdClass = 5; sp.convertAt = 10;
+              sp.lv[4].present = true; CHECK(uiMinPause(sp) == 3, "uiMinPause first record at char level 4 -> 3 (got %d)", uiMinPause(sp));
+              sp.lv[4].present = false; sp.lv[2].present = true; CHECK(uiMinPause(sp) == 1, "uiMinPause first record at level 2 -> 1 (got %d)", uiMinPause(sp));
+              sp.lv[2].present = false; sp.lv[1].present = true; CHECK(uiMinPause(sp) == 1, "uiMinPause first record at level 1 -> 1");
+              CHECK(uiCanPause(sp), "holdClass + convertAt -> can pause");
+              Preset a = sp; a.holdClass = 0; CHECK(!uiCanPause(a), "no hold class -> cannot pause (convertAt set)");
+              Preset b = sp; b.convertAt = 0; CHECK(!uiCanPause(b), "no convertAt -> cannot pause (hold class set)");
+              bool bk = true; int pz = 6; uiBankCycle(a, &bk, &pz); CHECK(!bk && pz == 0, "non-pausable toggle: On -> Off, stale pause cleared (pause %d)", pz);
+              bk = false; pz = 6; uiBankCycle(a, &bk, &pz); CHECK(bk && pz == 0, "non-pausable toggle: Off -> On, stale pause cleared (pause %d)", pz);
+              bk = false; pz = 4; uiBankCycle(sp, &bk, &pz); CHECK(bk && pz == 0, "Off -> default clears the pause"); }
             // Use recommended keeps the toggles and clamps
             clickCtl(pW, atton, 0, C_CANCEL);
             clickCtl(pW, atton, 0, C_CFG);
@@ -526,6 +538,13 @@ int main(int argc, char** argv) {
             clearLog();
             clickCtl(pW, atton, 0, C_APPLY);
             CHECK(logHas("hold=0 pause=0 ok=1") && fileText("levelup_playthroughs.ini").find("pause") == std::string::npos, "bank off: pause dropped:\n%s", fileText("levelup_playthroughs.ini").c_str());
+            // Apply with bank OFF never stores a pause, even when a stale config row (hold=0, pause=N) opened the page with one
+            { CHECK(ptApply("atton", ep->id, false, false, mn), "ptApply hold=0 with a pause");
+              clickCtl(pW, atton, 0, C_CFG);
+              CHECK(r->open && !r->bank && r->pause == mn, "stale hold=0 pause=%d opens bank off with the pause (bank %d pause %d)", mn, r->bank, r->pause);
+              clearLog(); clickCtl(pW, atton, 0, C_APPLY);
+              CHECK(logHas("hold=0 pause=0 ok=1") && fileText("levelup_playthroughs.ini").find("pause") == std::string::npos, "Apply with bank off drops the stale pause:\n%s", readLog().c_str());
+              }
             // stale / out-of-range config (hand-edited |pause=99) is clamped on page open and never applied raw
             CHECK(ptApply("atton", PRESET, false, true, 99), "ptApply pause 99");
             clickCtl(pW, atton, 0, C_CFG);
@@ -672,6 +691,17 @@ int main(int argc, char** argv) {
         LuoHold_74F3C7(P(attonXp5.stats)); LuoHold_74F3C7(P(attonXp5.stats));
         g_eng.checkCode = false; g_engState = 0;
         CHECK(g_banked.size() == 4 && logCount("BANKED engine function bytes differ") == 1, "engine mismatch: disabled, logged once (%d)", logCount("BANKED engine function bytes differ"));
+        // A3: levels taken (banked count drops) -> a later increase announces again
+        g_stubTick += 6000;
+        LuoHold_74F3C7(P(attonXp5.stats));
+        const size_t bAfter = g_banked.size();
+        CHECK(bAfter == 5, "announced once the engine check is off (%zu)", bAfter);
+        g_stubTick += 6000;
+        LuoHold_74F3C7(P(attonXp1.stats));
+        CHECK(g_banked.size() == bAfter, "fewer banked levels: no message");
+        g_stubTick += 6000;
+        LuoHold_74F3C7(P(attonXp5.stats));
+        CHECK(g_banked.size() == bAfter + 1, "banked count dropped then rose again -> announced again (%zu)", g_banked.size());
     }
 
     printf("ui_test checks %d failures %d\n", g_checks, g_fail);

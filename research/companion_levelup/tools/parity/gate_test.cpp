@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
         LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp));
         { std::string l = readLog(); size_t n = 0, q = 0; while ((q = l.find("INSTANT-LEADER tag=atton key=6", q)) != std::string::npos) { ++n; ++q; } CHECK(n == 1, "INSTANT-LEADER logged %zu times (want once)", n); }
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)heldAtton.creature;
-        CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: held -> real object");
+        CHECK(LuoLeaderInstant_74F423(P(ctlEcxMem), P(ebp)) == real, "leader instant: held -> real object (readable ecx: only the HOLD rule may refuse)");
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = (uint32_t)pc.creature;
         CHECK(LuoLeaderInstant_74F423(P(1), P(ebp)) == real, "leader instant: PC -> real object");
         *reinterpret_cast<uint32_t*>(ebp - 0x38) = 0x20;
