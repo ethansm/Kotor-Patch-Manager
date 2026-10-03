@@ -1,0 +1,12 @@
+[2794837313] k2-dialogue-letterbox-fix 1.0.0 loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=00 00 00 80 aa aa 02 40 (2.3333330154418945) pid=312
+[2794840632] APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+[2794840633] APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+[2796179372] k2-dialogue-letterbox-fix 1.0.0 loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=00 00 00 80 aa aa 02 40 (2.3333330154418945) pid=312
+[2796181946] APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+[2796181946] APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+[2797499542] k2-dialogue-letterbox-fix 1.0.0 loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=00 00 00 80 aa aa 02 40 (2.3333330154418945) pid=312
+[2797502006] APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+[2797502006] APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+[2797683484] k2-dialogue-letterbox-fix 1.0.0 loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=00 00 00 80 aa aa 02 40 (2.3333330154418945) pid=316
+[2797686045] APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+[2797686046] APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
