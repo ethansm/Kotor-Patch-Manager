@@ -1,0 +1,10 @@
+gog_addr	corrected_addr	source	reason
+0x0064b640	0x0051bc20	review:sonnet_c1.tsv	Candidate is the 17-byte GetFPS stub; the constructor (alloc 0x1f350, vftable) is 0x51bc20.
+0x0064c140	0x0051c720	review:sonnet_c2.tsv	Candidate is IsInjured wrapper; GetPauseState wrapper is 0x51c720.
+0x0064c1e0	0x0051c7c0	review:sonnet_c2.tsv	Candidate is AddToExclusionList; remove thunk is 0x51c7c0.
+0x0064c500	0x0051cae0	review:sonnet_c2.tsv	Candidate is ComputeHeight; 0x51cae0 fits size 36 ret 12.
+0x0064c940	0x0051cf20	review:sonnet_c2.tsv	Candidate is GetRoomIndex; 0x51cf20 sits between ClearAreaCache and SetMoveToPaused, ret 12.
+0x00733ef0	0x00561c80	review:sonnet_c3.tsv	Candidate is a 64-byte nullable-pointer deleter; the real 8-byte thunk is 0x561c80.
+0x007bbf20	0x00538cd0	review:sonnet_c3.tsv	Candidate toggles pause state (calls getter and setter); 0x538cd0 reads bit of +0x10078.
+0x007bc710	0x005394c0	review:sonnet_c4.tsv	Candidate is the add function; remove function is 0x5394c0 with GOG size 220
+0x007bfa90	0x0053ccf0	review:sonnet_c4.tsv	Candidate is the setter; getter 0x53ccf0 has GOG size 117 and Get semantics

@@ -1,0 +1,1248 @@
+{
+ "batch": "B9",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus",
+ "decoy_cards": 40,
+ "decoys_accepted": 1,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10
+ },
+ "full_read": 23,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007b46f0",
+   "name": "LoadPrimaryPlayer",
+   "route": "sig",
+   "steam_addr": "0x00531370"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bdb00",
+   "name": "UpdateMapData",
+   "route": "sig",
+   "steam_addr": "0x0053a8b0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bc8a0",
+   "name": "ResolvePlayerByFirstName",
+   "route": "sig",
+   "steam_addr": "0x00539650"
+  },
+  {
+   "class": "CSWSModule",
+   "gog": "0x00732020",
+   "name": "TimeStopSanityCheck",
+   "route": "sig",
+   "steam_addr": "0x0055f990"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bb0d0",
+   "name": "GetWaypointByGameObjectID",
+   "route": "sig",
+   "steam_addr": "0x00537e80"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c5c0",
+   "name": "ClearAllQueuedCombatActions",
+   "route": "c2",
+   "steam_addr": "0x0051cba0"
+  },
+  {
+   "class": "CSWSModule",
+   "gog": "0x00732700",
+   "name": "RemoveModuleResources",
+   "route": "c2",
+   "steam_addr": "0x00560070"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007b2990",
+   "name": "SaveGame",
+   "route": "c2",
+   "steam_addr": "0x0052f610"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064b640",
+   "name": "Constructor",
+   "steam_addr": "0x0051bcc0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064baa0",
+   "name": "GetObjectArray",
+   "steam_addr": "0x0051c080",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064bce0",
+   "name": "GetNetLayer",
+   "steam_addr": "0x0051c2c0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064bd00",
+   "name": "GetSWSMessage",
+   "steam_addr": "0x0051c2e0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064be70",
+   "name": "Initialize",
+   "steam_addr": "0x0051c450",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064bee0",
+   "name": "ContinueMessageProcessing",
+   "steam_addr": "0x0051c4c0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c070",
+   "name": "InitiateModuleForPlayer",
+   "steam_addr": "0x0051c650",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c140",
+   "name": "GetPauseState",
+   "steam_addr": "0x0051c6f0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c1e0",
+   "name": "RemoveFromExclusionList",
+   "steam_addr": "0x0051c790",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c500",
+   "name": "UpdateSubareasOnMoveTo",
+   "steam_addr": "0x0051ca40",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c680",
+   "name": "CreatureAcquireItem",
+   "steam_addr": "0x0051cc60",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c940",
+   "name": "ShrinkLineByCreatures",
+   "steam_addr": "0x0051cc00",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c9a0",
+   "name": "GetMoveToPausedCalendarDay",
+   "steam_addr": "0x0051cf80",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064c9f0",
+   "name": "GetMoveToPausedTimeOfDay",
+   "steam_addr": "0x0051cfd0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoApp",
+   "gog": "0x0064ca90",
+   "name": "GetModulePreviouslyVisited",
+   "steam_addr": "0x0051d070",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWSModule",
+   "gog": "0x00733ef0",
+   "name": "non_virtual_thunk_to_dtor_CSWSModule",
+   "steam_addr": "0x005615c0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007b8a10",
+   "name": "InitiateModuleForPlayer",
+   "steam_addr": "0x005356d0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007b8f70",
+   "name": "PlayerListChange",
+   "steam_addr": "0x00535c30",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bbef0",
+   "name": "IsInjured",
+   "steam_addr": "0x00538ca0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bbf20",
+   "name": "GetPauseState",
+   "steam_addr": "0x00538c20",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bc710",
+   "name": "RemoveFromExclusionList",
+   "steam_addr": "0x005393b0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bda10",
+   "name": "Uninitialize",
+   "steam_addr": "0x0053a7c0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x007bfa90",
+   "name": "GetMoveToWorldTime",
+   "steam_addr": "0x0053cc80",
+   "why": "reviewer corrected_addr"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CSWSModule",
+   "content_level": "C0",
+   "gog": "0x00731ee0",
+   "name": "AddObjectToLimbo",
+   "steam_addr": "0x0055f850"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bbea0",
+   "name": "UpDatePlayerPosition",
+   "steam_addr": "0x00538c50"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c210",
+   "name": "GetActiveExclusionList",
+   "steam_addr": "0x0051c7f0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bc60",
+   "name": "GetPlayerLanguage",
+   "steam_addr": "0x0051c240"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c090",
+   "name": "MovePlayerToArea",
+   "steam_addr": "0x0051c670"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bd40",
+   "name": "GetServerMode",
+   "steam_addr": "0x0051c320"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bca50",
+   "name": "AddCharListRequest",
+   "steam_addr": "0x00539800"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064be90",
+   "name": "MainLoop",
+   "steam_addr": "0x0051c470"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c040",
+   "name": "GetClientObjectByPlayerId",
+   "steam_addr": "0x0051c620"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b780",
+   "name": "GetModuleDescription",
+   "steam_addr": "0x0051bd60"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C0",
+   "gog": "0x007294a0",
+   "name": "Destructor",
+   "steam_addr": "0x00556cf0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c110",
+   "name": "IsInjured",
+   "steam_addr": "0x0051c6f0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c230",
+   "name": "ResolvePlayerByFirstName",
+   "steam_addr": "0x0051c810"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064cab0",
+   "name": "ExecuteLoadModule",
+   "steam_addr": "0x0051d090"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c760",
+   "name": "GetActionConversation",
+   "steam_addr": "0x0051cd40"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bcf80",
+   "name": "ClientToServerObjectId",
+   "steam_addr": "0x00539d30"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bd20",
+   "name": "GetSysAdminList",
+   "steam_addr": "0x0051c300"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064be40",
+   "name": "HandleMessage",
+   "steam_addr": "0x0051c420"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c900",
+   "name": "ClearLastModuleFound",
+   "steam_addr": "0x0051cee0"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C0",
+   "gog": "0x00731f50",
+   "name": "RemoveObjectFromLimbo",
+   "steam_addr": "0x0055f8c0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bbe0",
+   "name": "GetAreaOfEffectByGameObjectID",
+   "steam_addr": "0x0051c1c0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bd70",
+   "name": "GetActiveTimer",
+   "steam_addr": "0x0051c350"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bc010",
+   "name": "GetActivePauseState",
+   "steam_addr": "0x00538dc0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bdd0",
+   "name": "GetPauseTimer",
+   "steam_addr": "0x0051c3b0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bf80",
+   "name": "GetPlayerListString",
+   "steam_addr": "0x0051c560"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bba0",
+   "name": "GetStoreByGameObjectID",
+   "steam_addr": "0x0051c180"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b8a0",
+   "name": "GetMoveToModulePending",
+   "steam_addr": "0x0051be80"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007baa80",
+   "name": "ContinueMessageProcessing",
+   "steam_addr": "0x00537830"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c0f0",
+   "name": "SkipPastDialog",
+   "steam_addr": "0x0051c6d0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c780",
+   "name": "SetIgnoreConversationStartRange",
+   "steam_addr": "0x0051cd60"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c600",
+   "name": "IsActionsPending",
+   "steam_addr": "0x0051cbe0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c9c0",
+   "name": "SetMoveToPausedTimeOfDay",
+   "steam_addr": "0x0051cfa0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064ca50",
+   "name": "GetMoveToWorldTime",
+   "steam_addr": "0x0051d030"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bdf0",
+   "name": "SetDebugMode",
+   "steam_addr": "0x0051c3d0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c000",
+   "name": "StopServices",
+   "steam_addr": "0x0051c5e0"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C0",
+   "gog": "0x00729480",
+   "name": "non_virtual_thunk_to_AsSWSModule",
+   "steam_addr": "0x00556cd0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b7d0",
+   "name": "GetModuleName",
+   "steam_addr": "0x0051bdb0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bf60",
+   "name": "RunModule",
+   "steam_addr": "0x0051c540"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bc850",
+   "name": "GetActiveExclusionList",
+   "steam_addr": "0x00539600"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007b28f0",
+   "name": "ClearLastModuleFound",
+   "steam_addr": "0x0052f570"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064ca10",
+   "name": "SetMoveToWorldTime",
+   "steam_addr": "0x0051cff0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b940",
+   "name": "SetLoadingModule",
+   "steam_addr": "0x0051bf20"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c1b0",
+   "name": "AddToExclusionList",
+   "steam_addr": "0x0051c790"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c160",
+   "name": "GetActivePauseState",
+   "steam_addr": "0x0051c740"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c180",
+   "name": "SetPauseState",
+   "steam_addr": "0x0051c760"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b9a0",
+   "name": "GetAutoSavePending",
+   "steam_addr": "0x0051bf80"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064be20",
+   "name": "GetDebugMode",
+   "steam_addr": "0x0051c400"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bfe0",
+   "name": "StartServices",
+   "steam_addr": "0x0051c5c0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007baee0",
+   "name": "ClearAreaCache",
+   "steam_addr": "0x00537c90"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bdb0",
+   "name": "GetTimestopTimer",
+   "steam_addr": "0x0051c390"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bc80",
+   "name": "GetModuleLanguage",
+   "steam_addr": "0x0051c260"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bf00",
+   "name": "Shutdown",
+   "steam_addr": "0x0051c4e0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bce00",
+   "name": "GetFirstPCObject",
+   "steam_addr": "0x00539bb0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b920",
+   "name": "GetLoadingModule",
+   "steam_addr": "0x0051bf00"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bc7f0",
+   "name": "IsOnActiveExclusionList",
+   "steam_addr": "0x005395a0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c290",
+   "name": "GetFirstPCObject",
+   "steam_addr": "0x0051c870"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c8d0",
+   "name": "GetNormalOfPoint",
+   "steam_addr": "0x0051ceb0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c8a0",
+   "name": "SetDoingStartNewModule",
+   "steam_addr": "0x0051ce80"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064ba80",
+   "name": "LoadCharacterFinish",
+   "steam_addr": "0x0051c060"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c970",
+   "name": "SetMoveToPausedCalendarDay",
+   "steam_addr": "0x0051cf50"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064beb0",
+   "name": "PlayerListChange",
+   "steam_addr": "0x0051c490"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bc00",
+   "name": "GetWaypointByGameObjectID",
+   "steam_addr": "0x0051c1e0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bf40",
+   "name": "LoadModule",
+   "steam_addr": "0x0051c520"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064b6e0",
+   "name": "GetFPS",
+   "steam_addr": "0x0051bcc0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c4c0",
+   "name": "UpDatePlayerPosition",
+   "steam_addr": "0x0051caa0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x007bbe70",
+   "name": "TogglePauseState",
+   "steam_addr": "0x00538c20"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064bfc0",
+   "name": "GetConnectionLib",
+   "steam_addr": "0x0051c5a0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C0",
+   "gog": "0x0064c270",
+   "name": "AddCharListRequest",
+   "steam_addr": "0x0051c850"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c730",
+   "name": "SetActionConversation",
+   "steam_addr": "0x0051cd10"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C1",
+   "gog": "0x00731970",
+   "name": "DeleteWorldJournalEntryStrref",
+   "steam_addr": "0x0055f2e0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064cad0",
+   "name": "SetSaveGameName",
+   "steam_addr": "0x0051d0b0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007b96e0",
+   "name": "StartServices",
+   "steam_addr": "0x005363a0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c2d0",
+   "name": "ClientToServerObjectId",
+   "steam_addr": "0x0051c8b0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bf20",
+   "name": "UnloadModule",
+   "steam_addr": "0x0051c500"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007baac0",
+   "name": "Shutdown",
+   "steam_addr": "0x00537870"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007bd180",
+   "name": "IsActionsPending",
+   "steam_addr": "0x00539f30"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c820",
+   "name": "SetLoadFromSaveGame",
+   "steam_addr": "0x0051ce00"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bb40",
+   "name": "GetAreaByGameObjectID",
+   "steam_addr": "0x0051c120"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007baa10",
+   "name": "ValidatePlayerLogin",
+   "steam_addr": "0x005377c0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007bcab0",
+   "name": "UpdateShutdownTimer",
+   "steam_addr": "0x00539860"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C2",
+   "gog": "0x0072f300",
+   "name": "SaveModuleIFOFinish",
+   "steam_addr": "0x0055cb50"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bcc0",
+   "name": "GetPlayerList",
+   "steam_addr": "0x0051c2a0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007be0f0",
+   "name": "ShrinkLineByCreatures",
+   "steam_addr": "0x0053aea0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007b7980",
+   "name": "StallEventSaveGame",
+   "steam_addr": "0x00534600"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007bfcb0",
+   "name": "GetModulePreviouslyVisited",
+   "steam_addr": "0x0053cf10"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c920",
+   "name": "ClearAreaCache",
+   "steam_addr": "0x0051cf00"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007c0210",
+   "name": "HasEnoughDiskSpaceForSaveGame",
+   "steam_addr": "0x0053d470"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bc20",
+   "name": "GetEncounterByGameObjectID",
+   "steam_addr": "0x0051c200"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c7b0",
+   "name": "TestSafeLocation",
+   "steam_addr": "0x0051cd90"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C2",
+   "gog": "0x0072f830",
+   "name": "SavePlayers",
+   "steam_addr": "0x0055d080"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007b6bb0",
+   "name": "MainLoop",
+   "steam_addr": "0x00533830"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007be120",
+   "name": "GetSystemTimeAsDWORD64",
+   "steam_addr": "0x0053aed0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c250",
+   "name": "GetDifficultyOption",
+   "steam_addr": "0x0051c830"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c460",
+   "name": "ComputeHeight",
+   "steam_addr": "0x0051ca40"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007bc600",
+   "name": "AddToExclusionList",
+   "steam_addr": "0x005393b0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bca0",
+   "name": "GetServerAIMaster",
+   "steam_addr": "0x0051c280"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C1",
+   "gog": "0x00731860",
+   "name": "DeleteWorldJournalEntry",
+   "steam_addr": "0x0055f1d0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bb60",
+   "name": "GetTriggerByGameObjectID",
+   "steam_addr": "0x0051c140"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b870",
+   "name": "SetMoveToModulePending",
+   "steam_addr": "0x0051be50"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007b4920",
+   "name": "Initialize",
+   "steam_addr": "0x005315a0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bd90",
+   "name": "GetWorldTimer",
+   "steam_addr": "0x0051c370"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c0d0",
+   "name": "TogglePauseState",
+   "steam_addr": "0x0051c6b0"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C2",
+   "gog": "0x0072dfe0",
+   "name": "SaveModuleStart",
+   "steam_addr": "0x0055b830"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007b4f60",
+   "name": "CopyModuleToCurrentGame",
+   "steam_addr": "0x00531be0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b840",
+   "name": "LoadGame",
+   "steam_addr": "0x0051be20"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C2",
+   "gog": "0x0072ffa0",
+   "name": "SavePrimaryPlayerInfo",
+   "steam_addr": "0x0055d7f0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b7b0",
+   "name": "GetModule",
+   "steam_addr": "0x0051bd90"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007b8d50",
+   "name": "MovePlayerToArea",
+   "steam_addr": "0x00535a10"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c0b0",
+   "name": "GetFactionOfObject",
+   "steam_addr": "0x0051c690"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007b9ef0",
+   "name": "StopServices",
+   "steam_addr": "0x00536c10"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b810",
+   "name": "SaveGame",
+   "steam_addr": "0x0051bdf0"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C1",
+   "gog": "0x0072a670",
+   "name": "GetWaypoint",
+   "steam_addr": "0x00557ec0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c6c0",
+   "name": "SetLastConversation",
+   "steam_addr": "0x0051cca0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c870",
+   "name": "SetButtonMashCheck",
+   "steam_addr": "0x0051ce50"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c850",
+   "name": "GetButtonMashCheck",
+   "steam_addr": "0x0051ce30"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007b2920",
+   "name": "GetModuleName",
+   "steam_addr": "0x0052f5a0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bb80",
+   "name": "GetPlaceableByGameObjectID",
+   "steam_addr": "0x0051c160"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c800",
+   "name": "GetLoadFromSaveGame",
+   "steam_addr": "0x0051cde0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bb00",
+   "name": "GetItemByGameObjectID",
+   "steam_addr": "0x0051c0e0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c620",
+   "name": "GetRoomIndex",
+   "steam_addr": "0x0051cc00"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bc40",
+   "name": "GetSoundObjectByGameObjectID",
+   "steam_addr": "0x0051c220"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007b9510",
+   "name": "RunModule",
+   "steam_addr": "0x005361d0"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C1",
+   "gog": "0x00731fc0",
+   "name": "IsObjectInLimbo",
+   "steam_addr": "0x0055f930"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007b39e0",
+   "name": "StoreCurrentModule",
+   "steam_addr": "0x00530660"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C2",
+   "gog": "0x0072d430",
+   "name": "PlotPathInArea",
+   "steam_addr": "0x0055ac80"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bb20",
+   "name": "GetCreatureByGameObjectID",
+   "steam_addr": "0x0051c100"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064bbc0",
+   "name": "GetDoorByGameObjectID",
+   "steam_addr": "0x0051c1a0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007ba760",
+   "name": "UpdateClientGameObjects",
+   "steam_addr": "0x00537510"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c7d0",
+   "name": "ComputeSafeLocation",
+   "steam_addr": "0x0051cdb0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b8c0",
+   "name": "SetMoveToModuleString",
+   "steam_addr": "0x0051bea0"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x007bfb10",
+   "name": "DoModuleEnterSaveCleanup",
+   "steam_addr": "0x0053cd70"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c2b0",
+   "name": "GetGlobalVariableTable",
+   "steam_addr": "0x0051c890"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b8f0",
+   "name": "SetExportAllCharactersPending",
+   "steam_addr": "0x0051bed0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c020",
+   "name": "GetClientObjectByObjectId",
+   "steam_addr": "0x0051c600"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b760",
+   "name": "GetServerInfo",
+   "steam_addr": "0x0051bd40"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007b8970",
+   "name": "DealWithLoadGameError",
+   "steam_addr": "0x00535630"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007ba7e0",
+   "name": "UpdateClientGameObjectsForPlayer",
+   "steam_addr": "0x00537590"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064b970",
+   "name": "SetAutoSavePending",
+   "steam_addr": "0x0051bf50"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x007bad50",
+   "name": "GetItemByGameObjectID",
+   "steam_addr": "0x00537b00"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C2",
+   "gog": "0x0072f420",
+   "name": "SaveModuleFAC",
+   "steam_addr": "0x0055cc70"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c310",
+   "name": "GetPlayerCreatureId",
+   "steam_addr": "0x0051c8f0"
+  },
+  {
+   "class": "CServerExoApp",
+   "content_level": "C1",
+   "gog": "0x0064c6a0",
+   "name": "GetFactionManager",
+   "steam_addr": "0x0051cc80"
+  },
+  {
+   "class": "CSWSModule",
+   "content_level": "C1",
+   "gog": "0x0072d0b0",
+   "name": "PlotInterAreaPath",
+   "steam_addr": "0x0055a900"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 143,
+ "sample_rate": 0.2,
+ "sample_size": 143,
+ "unanswered_decoys": 0
+}
