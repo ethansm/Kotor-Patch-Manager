@@ -906,4 +906,16 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   Web check: both strategies are common (bank-until-Jedi = more Jedi levels; ElKripper = Scoundrel to ~19 for Sneak Attack). Decision: 0.3.1
   per-companion "Pause at level N" (Bank control becomes a cycler; ini `|pause=N`; levelNow HOLDs when key > pause and the hold class is missing).
   Spec `phase6_evidence/A_pause_spec.md`; Sonnet C++ draft running. Hooks/exports unchanged -> dll-only swap.
+- C1 DONE 66a6020: R10 static map in `phase6_evidence/R10_findings.md` (feat grid 0x909E00/0x90AEA0, choosable vector built 0x90C230 via
+  CanChooseFeat at 0x90C349; powers 0x9074E0 / choosable 0x9098D0 via 0x848660; skills 0x90C6A0 fixed rows, cap in 0x90EDE0; accept reads ids
+  from vectors -> removal index-safe; TRAP: accept blocks while picks remain and choosable >= 1 -> a hidden-but-counted entry soft-locks;
+  Recommended button calls the tests directly). Hook candidates F1 0x89B6E4:6, F2 0x90C2BE:5, P1 0x89AB29:9, P2 0x9099A2:5 - live == vanilla
+  (Opus re-read bytes), +-16 clean. Not in the DB yet (needs Haiku + decoys). NEXT for C = C2 design note.
+- 0.3.1 Pause at level N DONE b016ab6 (Opus-reviewed Sonnet draft): gates parity 0 mismatches (+74900 pause cases), gate 140, playthrough 257,
+  ui 347, options/wizard/guikit, simulate 0 failures. Atton early: Bank cycles "Pause at level 7" -> 6 -> 5 -> 4 -> 3 -> "Bank for Jedi: Off".
+  **INSTALLED 01:52 by dll swap** (user consent; aaedb93e for e64cb387; hooks toml identical), backup `backups/pre_levelup_031_pause_20261003_015201/`.
+  Build tree `$T/Patches/LevelUpOverride` = b016ab6 sources. Live table still the pre-B1 one (B1 skill changes ship at the next table copy).
+- Run 4b (log 449-472, `V_run4b_log_449-472.txt`, 0.3.0): fresh launch -> `GUID load gfb7bdbf7 found=32/32` -> source=playthrough = **V item 6
+  (restart -> load) VERIFIED**. Log 472 lines before run 5. NEXT = user: Atton page -> Bank to "Pause at level 3" -> Apply (expect `UI apply ...
+  pause=3`, then HOLD: icon gone, status "Holding N levels for Jedi Sentinel", GUARD on Level Up/Auto, BANKED once).
 

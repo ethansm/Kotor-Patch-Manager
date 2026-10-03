@@ -1,6 +1,6 @@
 # MASTER PLAN: per-character level-up override (Ghidra mapping + Patch Manager C++ mod)
 
-Status as of 2026-10-03 (Phase 6 started): LIVE unchanged = 0.3.0 + options page + recommended presets + leader instant (dll e64cb387, 31 ids/198 hooks, stage `$T/levelup_stage7`, backup `backups/pre_levelup_030_page_20261003_002447`). Phase 6 plan `research/companion_levelup/PHASE6_PLAN.md` (V live run 4 -> A 1.0.0 hardening, B preset quality, C R10 PC-filter research). NEXT = user live run 4; read log from line 387. Doc 08 'Session notes - Phase 6'.
+Status as of 2026-10-03 01:52 (Phase 6): LIVE = 0.3.1 'Pause at level N' (dll aaedb93e, dll swap; hooks unchanged, 31 ids/198 hooks; backup `backups/pre_levelup_031_pause_20261003_015201`). Phase 6 plan `research/companion_levelup/PHASE6_PLAN.md`; done: B1, B2, C1, V item 6 + page/save binding. NEXT = user run 5 (Atton Pause at level 3 -> hold checks); read log from line 473. Doc 08 'Session notes - Phase 6'.
 
 Requirements update 2026-10-02 (user): rewrite only the AUTO level-up, never manual picks (0.2.1 does this); builds are player-chosen per playthrough; configuration via an in-game GUI (settings page or new main-menu page) - Phase 3 research item. Details: doc 08 Status.
 Read order after a context clear: this file -> `PROJECT_CONTEXT.md` (sections 1-9) -> `PHASE1_PLAN.md` -> `README.md`.
