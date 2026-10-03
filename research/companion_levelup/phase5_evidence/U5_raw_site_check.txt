@@ -1,0 +1,5 @@
+0x74F423:5 vanilla=e8 28 00 ff ff live=e8 28 00 ff ff SAME overlap(+-16)=none
+0x74F449:2 vanilla=74 36 live=74 36 SAME overlap(+-16)=none
+0x74F461:2 vanilla=75 1e live=75 1e SAME overlap(+-16)=none
+0x74F47A:5 vanilla=e8 71 f9 f6 ff live=e8 71 f9 f6 ff SAME overlap(+-16)=none
+0x74F3E9:5 vanilla=e8 12 07 fe ff live=e8 12 07 fe ff SAME overlap(+-16)=[('0x74f3e9', 5, 'LuoInstant_74F3E9', './patch_manager_mods/level_up_override_src/kotor2-steam-aspyr.hooks.toml'), ('0x74f3e9', 5, 'LuoInstant_74F3E9', 'LevelUpOverride/kotor2-steam-aspyr.hooks.toml'), ('0x74f3e9', 5, 'LuoInstant_74F3E9', 'LIVE:level-up-override')]

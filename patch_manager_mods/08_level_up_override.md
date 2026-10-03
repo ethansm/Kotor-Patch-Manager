@@ -683,6 +683,17 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   (61aa066 presets); no `levelup_playthroughs.ini` yet. Log `levelup_override_log.txt` had **175 lines** before the combined test.
 - Rollback: `mode=off` (hot) or reinstall the backup set via `stage_vanilla_1002_1214` (= 0.3.0-a + current set).
 
+### U5 - instant for the controlled leader (static, 2026-10-03, Sonnet agent; `phase5_evidence/U5_findings.txt`)
+- In portrait refresh 0x74EE90 after the options test (0x74F3E9 hook, +8 bit0): 0x74F402 `[entry+4]` = slot object id; **0x74F423 `call 0x73F450`
+  (`e8 28 00 ff ff`)** returns the controlled client object (wrapper over 0x78CEE0, field internal+0x20 written by 0x798660 / leader switch 0x79ED60);
+  0x74F428..43 compares its `+4` with the slot id; 0x74F449 `jz 0x74F481` = controlled -> indicator (`[ebp-0x31] |= 4`); 0x74F44B..61
+  `[creature+0x1200]` (PlayerCreated) nonzero -> indicator; else 0x74F463..7A `ecx=[creature+0x1198]; push 1; call 0x6BEDF0` (AutoLevelup, RET 4),
+  creature = `[ebp-0x38]`.
+- **Chosen fix (A):** detour 0x74F423 (skip, params ecx + ebp): call 0x73F450 ourselves; when `[ebp-0x38]` is a configured instant, not-held creature
+  (and 0x740FC0 == 0, no character change in progress) return a dummy object whose +4 = 0x7F000000 (no id match) -> the leader takes the engine's own
+  AutoLevelup(1) path (same call as the Auto button 0x850081, arg 1 adds the notify 0x7408C0). Live == vanilla, +-16 clean (`U5_raw_site_check.txt`).
+  Rejected: own AutoLevelup call (duplicates gates), patching `74 36` (all creatures), DoAutoLevelup 0x850010 (confirm-box callback).
+
 ## Open items
 - Live confirmation only (Steps 3-4): real pending dumps per flow (manual / Auto button / Auto NPCs / XP award), that `ecx`/`[esp+4]` behave as documented in the
   hook framework, and that the sheet shows rewritten picks. Everything else statically closed.

@@ -1,0 +1,42 @@
+U5 - why the controlled leader never auto-levels in UpdatePortraits 0x74EE90 (static, 2026-10-03). Raw: U5_raw_*.txt; disasm source ../phase3_evidence/A1_disasm_74ee90.txt (line = file line; VAs below).
+C = confirmed in disasm/decompile, I = inferred.
+
+== Q1. The branch (C) ==
+Frame: ecx=this(portrait HUD); [ebp-0x10]=party table (0x73FB90(clientApp)); loop idx [ebp-0x1C]=0..2 (CMP 3 @0x74EF02); [ebp-0x14]=party ENTRY (0x7E5DA0(party,idx), stride 0x88, +4 = object id, +0xF8 = cached client object);
+[ebp-0x38]=client creature = 0x77D800(entry) (obj vtbl+0x30 on 0x7F2540 result; CLIENT object); stats = creature+0x1198; byte [ebp-0x31] = overlay mask (bit1 debil, bit2... bit4 = level-up indicator, 0x74F485 or 4).
+Sequence (A1_disasm lines ~342-383):
+ 0x74F3B2..0x74F3C7  stats=[creature+0x1198]; call CanLevelUp 0x6B9790(ecx=stats); 0x74F3CE jz 0x74F4E3 (debilitated check)
+ 0x74F3D4..0x74F3E9  ecx=[[A1B4A4]+4]; call 0x72FB00 (options accessor) -> [ebp-0xF0]
+ 0x74F3FA..0x74F400  edx=[opts+8]&1 ; jz 0x74F481  (Auto Level Up NPCs off -> indicator)        <- our 0x74F3E9 hook forces this to 1
+ 0x74F402..0x74F408  [ebp-0xF4] = [entry+4]   (this slot's object id)
+ 0x74F40E..0x74F423  ecx=[[A1B4A4]+4]; **call 0x0073F450** (e8 28 00 ff ff)  -> eax = CONTROLLED/"player" client object
+ 0x74F428..0x74F443  [ebp-0x100] = [eax+4] (its object id); cmp [entry+4], that
+ 0x74F449 jz 0x74F481  (74 36)  -> slot IS the controlled creature -> INDICATOR   <== THE DECIDING TEST
+ 0x74F44B..0x74F461  cmp [creature+0x1200](PlayerCreated),0 ; jnz 0x74F481 (75 1e) -> indicator
+ 0x74F463..0x74F47A  ecx=[creature+0x1198]; push 1; call 0x006BEDF0 (AutoLevelup, thiscall(ecx=stats), arg1 = int/bool "send+notify", RET 4)   (e8 71 f9 f6 ff @0x74F47A)
+ 0x74F47F jmp 0x74F4DE (-> 0x74F57F tail).   Indicator: 0x74F481 `or [ebp-0x31],4`, then 0x74F48B.. optional tutorial text via [hud+0x458] bit1 (0x73F750 box + 0x7CEEF0) once.
+So the "controlled -> indicator" test is NOT IsPC (+0x10E8). It is object-id equality between the party entry and 0x73F450(clientApp)->+4.
+0x73F450 = thin wrapper -> 0x78CEE0(ecx=clientApp internal): cached lookup (cache id +0x3BC/obj +0x3C0) of object id = internal+0x20 via 0x73F550 -> 0x78BDF0 (finds object by id, calls vtbl+0x2C = AsCreature-like).
+internal+0x20 = the "current player/controlled" object id: written by 0x798660 (SetPlayer: `[this+0x20]=id; if party(+0x270) -> 0x7E5730(id)`), called from 0x79ED60 (pending leader switch: id=[this+0x338], swaps inventories/party positions),
+0x781BE0, 0x785410(reset, 0x7F000000 sentinel), 0x7B3050, wrapper 0x73F910. So it follows leader switching: the controlled character (not necessarily the Exile) -> matches the live observation.
+Only ONE call to 0x73F450 in 0x74EE90 (0x74F423); the returned pointer is read ONLY as [ptr+4] (0x74F42E..0x74F437). EAX/ECX/EDX dead after (all values spilled to [ebp-xx]).
+Indicator path = 0x74F481 (mask |= 4 in [ebp-0x31]) -> later FUN_00744f00(slot,visible,mask,...) shows LBL_LEVELUP (phase3 Item 2). Side effect of mask!=0: buff/debuff rows hidden (R5).
+
+== Q2. Options (all sites: live==vanilla; U_site_check overlap(+-16): NONE for 0x74F423/0x74F449/0x74F461/0x74F47A; see U5_raw_site_check.txt) ==
+A) detour the control-test call 0x74F423  (5 bytes e8 28 00 ff ff, vanilla==live, no overlap; nearest own hook 0x74F3E9 is 58 bytes before).
+   Params: ecx = clientApp (A1B4A4+4); ebp (frame) gives creature = [ebp-0x38], entry = [ebp-0x14], slot idx = [ebp-0x1C]. Return: pointer P read only as [P+4]. Handler: real = 0x73F450(ecx) (call original); if (instantCreature([ebp-0x38]) ) return &static_dummy{ [+4]=0x7F000000 } (never equals a real entry id; sentinel 0x7F000000 = engine "invalid object") else return real.
+   Then flow continues: 0x74F449 not equal -> 0x74F44B PlayerCreated test (leader companions: 0) -> AutoLevelup(1) at 0x74F47A with ecx=[creature+0x1198]. Indicator mask not set, buff rows unaffected.
+   Combined with existing 0x74F3E9 hook (bit0 forced) and the 0x74F3C7 hold gate: held creature -> CanLevelUp veto (jz 0x74F4E3) skips everything; instant creature -> reaches AutoLevelup. Consistent. Per-frame cadence identical to the non-leader path.
+   Side effects: none new. The leader's AutoLevelup is exactly what the character-screen Auto button does (DoAutoLevelup 0x850010 -> `push 0; call 0x6BEDF0` at 0x850081 with the SAME client creature chain 0x77D800(0x7E5D80(0x73FB90))). Here arg=1 (vs 0 from the button) -> tail `if(param_2) FUN_007408c0(FUN_0073FEC0(creatureId),4,level)` (U5_raw_dec.txt, ~line 580-585: notify/refresh call), which is the same as for non-controlled companions today.
+   AutoLevelup/0x6B9640 sends message 0x25 to server via 0x51C280/0x51E220 when stats+0x6C != 0 (client creature); no GUI opened, no GUI guards (0x84FD2F/0x84F9FE/0x850062 are GUI-entry gates only; AutoLevelup never reads them). It loops while XP>=table[level] (never veto in CanLevelUp 0x6B9790/ValidateLevelUp/LevelUp; keep the hold veto at 0x74F3C7).
+   Creature object = CLIENT object (0x77D800 -> client app lookup 0x7F2540 [clientApp internal]); stats+0x24 owner link per existing doc; same as the non-leader instant path (the mod already handles it).
+   Risks: (1) leader manual level-up GUI open (CSWGuiLevelUpCharGen) while the tick auto-levels the real creature: engine has no guard in the portrait path; guard in handler: if 0x740FC0(clientApp)!=0 ("character change in progress", the engine's own refusal flag, [[clientApp+4]+0x4AC]) return real (indicator) - I (flag semantics inferred from the guard role at 0x84FD2F; verify live log). (2) character screen open showing the leader: SetStats is refreshed by its own on-show; stale stats for the open screen until reopen - cosmetic, same as the Auto button (I).
+B) own call of AutoLevelup 0x6BEDF0 from the 0x74F3E9 handler (thiscall ecx=[creature+0x1198], push 1, RET 4; ebp gives creature [ebp-0x38]):
+   returns an options ptr afterwards -> engine still takes the "controlled -> indicator" branch THIS tick (mask|=4 stale for one frame, flicker; and CanLevelUp already false) and re-entrancy: we are inside the options accessor call mid-function, reading is fine but we duplicate the 0x74F44B PlayerCreated + control gates ourselves. Rejected (as phase3 Item 1 did).
+C) the 0x74F449 jz (`74 36`, 2 bytes) -> cannot detour (too short); nop/patch (`74 36`->`eb 00`-ish) would be global (all controlled creatures incl. the PC) - rejected. 0x74F461 `75 1e` (PlayerCreated) is irrelevant for companions.
+D) engine DoAutoLevelup 0x850010 = GUI OK-callback (needs the confirm box object; box +0x68 bit0) - not callable standalone; rejected.
+
+== Q3. Recommendation: A ==
+Hook 0x74F423, type detour (call replacement, 5 bytes `e8 28 00 ff ff`, original_bytes live==vanilla, no +-16 overlap). Fastcall-like thiscall: params `ecx` (clientApp), `ebp` (frame: creature=[ebp-0x38]). Handler: `void* h(ecx, ebp)`: real = call 0x0073F450 with ecx; creature = SafeRead([ebp-0x38]); if (creature && mode instant && creature is configured+instant [same predicate as the 0x74F3E9 handler, tag at creature+0x18 / existing helper] && 0x740FC0(ecx)==0) return &g_notControlled (static 8+ byte struct, +4 = 0x7F000000); else return real. Return: pointer, only [ret+4] is dereferenced (4 bytes read at ret+4).
+Must also keep: 0x74F3E9 (bit0), 0x74F3C7 (hold gate). Add log line when the override fires (once per creature/level) for the live check.
+Uncertainties: (a) 0x740FC0 flag semantics for the manual GUI guard (I); (b) whether leader slot may appear twice in the 3-slot loop (no: party table entries are distinct); (c) secondary updater 0x756B70 / HUD 0x752050 have their own CanLevelUp overlay logic (I) - after AutoLevelup CanLevelUp is false so no indicator; not hooked; (d) first-tick race: controlled creature during a leader switch (0x79ED60 pending +0x338): entry/id equality is unaffected by our override, only the "not controlled" answer.
