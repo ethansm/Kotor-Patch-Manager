@@ -21,6 +21,8 @@ Commits this session: `bfd543e` Step 0, `719f034` B0/B1 briefs, `53ccd55` A1 ana
 ## 2. Live state (re-read 2026-10-03)
 - Live set: **31 ids / 198 hooks**, `kpm_install_state.json` UpdatedAt 2026-10-03 00:24 (sibling reinstall). Both `k2-dialogue-letterbox-fix` 1.0.0 and
   `k2-wrap-measure-fix` 1.0.0 still installed. No `dialogue_letterbox_fix.ini` in the game dir (defaults enabled=1 mode=h6 log=1).
+- **Phase 4 re-read (10-03 ~11:45):** still 31 ids, but UpdatedAt **2026-10-03 11:29** (sibling hotbar build 28 reinstall), `swkotor2.exe` md5 `62411a3a3282ecf92bdf54aeb1bac671`. `stage_lbprobe_1003_0200` is STALE.
+- **User decision 10-03: DROP L4 (`k2-wrap-measure-fix`) at the next install** (no-op at fs 1/2/3); install id list = live ids minus it (doc 17 Install).
 - Game was closed at ~02:00. Never launch it; installs only on the user's explicit go, re-stage first (re-read UpdatedAt + id list).
 
 ## 3. Verified facts (Opus-checked against asm/bytes this session)
@@ -32,7 +34,7 @@ Commits this session: `bfd543e` Step 0, `719f034` B0/B1 briefs, `53ccd55` A1 ana
 - 0x8BB467 writes top-bar h to `[0xA309B4]`, 0x8BB531 bottom-bar y to `[0xA309B8]`; 0x7CEB80 sets `[0xA309BC]` = (arg==1). Consumers not traced.
 - **L4 is a no-op at fs 1.0/2.0/3.0** (V8 + independent pykotor recomputation over stock `TexturePacks/swpc_tex_gui.erf`): glyph advances are within
   0.0005 px of integers, +0.25 and +0.5 agree on all 95 ASCII glyphs; only fs 1.5 (2046-3069 px wide) differs (14/29 glyphs). Override has no font files.
-  Caveat: breaker scale `[ECX+0x54]` assumed = fs. Decision pending: keep (harmless) or drop L4 at the next install (user choice).
+  Caveat: breaker scale `[ECX+0x54]` assumed = fs. Decision 10-03: drop L4 at the next install.
 - Breaker advance (0x47B203..0x47B238): `((lr.u[+0x24]-ul.u[+0x18])*texW[+0xC] + spacingR[+0x10]) * scale[+0x54] * 100.0 + 0.25`, `_ftol2`.
 - **Bink (V9, L16 latent BUG):** 0x40CC70 one scale `clientW/movieW` (FDIVP 0x40D262, FSTP [ebp-0xB4]) used for width (0x40D28B) and height (0x40D2BE).
   All 85 installed .bik are 3440x1440 -> 3840x1607 (7 rows cropped, invisible). Window 0x40D26A 6 B `8B 85 10 FF FF FF`. L17 equal-width unsigned offset latent.
@@ -58,7 +60,7 @@ Commits this session: `bfd543e` Step 0, `719f034` B0/B1 briefs, `53ccd55` A1 ana
    Steam screenshots: `~/.local/share/Steam/userdata/62703561/760/remote/208580/screenshots/` (dir did not exist on 10-03; if F12 does nothing, find another capture).
 2. After the session: copy log + screenshots to `~/Games/KOTOR2_Mod_Workspace/playlogs_engfix_<MMDD_HHMM>/`, run `analyze_engfix_logs.py` on the copy, Read the images.
 3. A3: top band visible -> A4 1.0.1 trim + archive probe; no bands -> ask the user to install 1.0.1-probe (re-stage first), one conversation, analyse PROBE lines per V8b (c).
-4. Ask the user: keep or drop L4 at the next install.
+4. ~~Ask the user: keep or drop L4 at the next install.~~ DECIDED 10-03: drop (doc 17 DECISION, register L4).
 - Out of scope (unchanged): upstream KPM PR (draft `engine_bug_research/upstream_kpm_k2_status_note.patch`, user-gated), L15, GOG port.
 
 ## 6. Gotchas
