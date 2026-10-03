@@ -1,0 +1,8 @@
+gog_addr	corrected_addr	source	reason
+0x0040e480	0x00740fc0	review:sonnet_c1.tsv	Candidate thunks to a 500 ms busy-wait; GOG getter of +0x4ac is 0x740fc0.
+0x00410c80	0x00764fb0	review:sonnet_c1.tsv	Candidate is a 111-byte CGuiInGame teardown. Correct function is 0x764fb0 (vtbl+0xb0).
+0x00588990	0x0089aef0	review:sonnet_c3.tsv	Candidate has different disps/stride; 0x89aef0 matches GOG disp 0x8d/0xab, imm 0x28, size 60, RET 4 exactly
+0x00605680	0x00733570	review:sonnet_c3.tsv	Candidate is assignment operator; 0x733570 is the char* constructor with new, strlen, strcpy, size 126
+0x00605890	0x00733780	review:sonnet_c3.tsv	Candidate is the empty constructor; 0x733780 size 60 with delete matches GOG callee and imm 4,8
+0x0061aa20	0x007110d0	review:sonnet_c3.tsv	Candidate only sets vftable and calls 0x711230 (size 30); 0x7110d0 matches GOG size 151, disps 4-0x24 and imm -5/-9
+0x0066af00	0x006076d0	review:sonnet_c6.tsv	Candidate is 721-byte property-description builder with 26 callees; 0x6076d0 matches GOG disp 0x2f0/0xac and imm sets, size 181

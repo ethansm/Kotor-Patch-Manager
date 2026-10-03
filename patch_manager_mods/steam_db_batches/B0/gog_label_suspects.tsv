@@ -1,0 +1,26 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x004744b0	CSWCObject::AnimationPlayOutOfPlace	0x007ef350	Candidate is the range check; GOG 129-byte sibling is 0x7ef350 but it reads the Pause column, not PlayOutOfPlace.	review:sonnet_c2.tsv
+0x004cdda0	CGuiInGame::ShutDownGlobal	0x007bdb10	Body is a scalar/vector deleting destructor (size 173 = GOG, precedes CGuiInGame dtor); ShutDownGlobal name does not fit.	review:sonnet_c2.tsv
+0x004dbda0	CGuiInGame::IsCameraDialog	0x007cb6a0	Body forwards four args to the letterbox SetFade routine; an Is-predicate name does not fit.	review:sonnet_c2.tsv
+0x004dbde0	CGuiInGame::IsAnimationPlayingInDialog	0x007cb6e0	Candidate disps differ (0x190/0x194/0x2c). Real match 0x7cb6e0 sets a flag and calls a vfunc; not a predicate.	review:sonnet_c13.tsv
+0x004dbe50	CGuiInGame::IsFadingInDialog	0x007cb750	GOG disp 0x3c/0x40 and size 43 fit 0x7cb750; its id comparison does not look like a fade test.	review:sonnet_c2.tsv
+0x004df1f0	CGuiInGame::GetCanOrientInDialog	0x007ceaf0	Body returns a vector from +0x9c object at +0x440; the real CanOrient list check is 0x7cf710.	review:sonnet_c2.tsv
+0x004e0c60	CGuiInGame::GetMiniMapVisible	0x007d0560	Same disps and size, but body closes a popup via vcall +0x84 when a==b; fits RemoveGUIPopUps, not a getter	review:sonnet_c3.tsv
+0x004e0ca0	CGuiInGame::RemoveGUIPopUps	0x007d05a0	True counterpart is 0x7d05a0, a bool predicate (options bit, minigame, +0x59b4 bit1); not a popup remover; name suspect.	review:sonnet_c12.tsv
+0x0064c2f0	CTwoDimArrays::GetSwoopUpgradeRowProvider	0x0051c8d0	Counterpart sure (imm 0x1f0b4, size 22) but body returns the embedded party table; name fits GetPartyTable, not SwoopUpgradeRowProvider.	review:sonnet_c5.tsv
+0x00667600	CSWSItem::GetPropertyByTypeExists	0x00603dd0	0x603dd0 matches GOG (245 bytes, disps, GetActiveProperty) but loops properties resetting used flags: fits RestoreUsedActiveProperties, not Exists.	review:sonnet_c4.tsv
+0x00667710	CSWSItem::RestoreUsedActiveProperties	0x00603ee0	GOG fn is the 63-byte switch predicate at 603ee0 (types 10,0x25,0x2e,0x35), not a Restore; candidate 603dd0 245B loops.	review:sonnet_c11.tsv
+0x006e5390	CSWSCreatureStats::GetWeaponSpecialization	0x006a8f10	Counterpart ok (size 202, same disps/imms; monk-table decoy returns 4/6/8/10); body is monk-level based, no feat check, name suspect	review:sonnet_c6.tsv
+0x006f5a80	CSWSCreatureStats::GetCreatureTalentRandomPower	0x006b9600	Counterpart via ClassInfo callee 0x6a40d0 (GOG GetSpellGain, address order kept); body is a plain class-bounded accessor, nothing random	review:sonnet_c6.tsv
+0x006f88f0	CSWSCreatureStats::ComputeNumberKnownSpellsLeft	0x006bc470	Counterpart: identical imms 0xb7-0xbd,0xffff, HasFeat callee, RET 4. Body maps skill index to Skill Focus feat then HasFeat; not spells-left.	review:sonnet_c7.tsv
+0x006f8bb0	CSWSCreatureStats::CheckInclusionMatch	0x006bc730	Counterpart by identical imm set and size 447. Body maps effect type to immunity index, not an inclusion check.	review:sonnet_c7.tsv
+0x006fa1e0	CSWSCreatureStats::AddSpellLikeAbilityToList	0x006bdd60	Pure nibble-mask compare with 0xf wildcard, no list write; counterpart by imms and size 205. Not AddSpellLikeAbilityToList.	review:sonnet_c7.tsv
+0x006fcf40	CSWSItem::SetNumActiveProperties	0x006c0aa0	Candidate uses +0x288/+0x290, size 133. 85-byte match is ushort-array Contains (called by HasFeat), contradicting SetNumActiveProperties.	review:sonnet_c7.tsv
+0x00709770	CSWSArea::GridDFSTransTableInitialize	0x0054f3d0	Counterpart via both Smooth callees and disp 0x1b0/0x8c/0x90/0x94/0x98. Body smooths a node path, not DFS table init.	review:sonnet_c7.tsv
+0x0070cd90	CSWSArea::PlotSoundPath	0x00552b70	Candidate 0x552c90 is a 252-byte table Put; 0x552b70 matches GOG size and is a hash lookup, not PlotSoundPath.	review:sonnet_c2.tsv
+0x0070ceb0	CSWSArea::PathPointDFSTransTableInitialize	0x00552c90	Offsets and imms match GOG, size 252 and order separate it from decoy. Body is a hash Put of 4 values, not Initialize.	review:sonnet_c7.tsv
+0x00718400	CSWSArea::GetNextObjectInArea	0x00523250	Size 81, offsets match GOG; body resets index and returns first element, so GOG First/Next labels look swapped (see B0-7-56).	review:sonnet_c7.tsv
+0x00718460	CSWSArea::GetFirstObjectInArea	0x005232b0	Size 97 and offsets match GOG; body increments index and returns next element, so GOG First/Next labels look swapped.	review:sonnet_c7.tsv
+0x007184d0	CSWSArea::SetMaxStealthXP	0x00523320	Counterpart: GOG callee IncreaseAILevelPriority and disp 0x12c. Body increments players-in-area, not SetMaxStealthXP.	review:sonnet_c7.tsv
+0x00722ee0	CSWSArea::GetClientArea_2	0x0052de00	Body sets +0x2e8 max and clamps +0x2ec (SetMaxStealthXP shape), not GetClientArea. Layout follows AwardStealthXP; twin 0x52de40 is set-current.	review:sonnet_c8.tsv
+0x0084b0b0	Gob::SetScene	0x00458ae0	Body is a sorted-array binary search of Gob names (+0x64) returning index, not SetScene; FindGob helper.	review:sonnet_c12.tsv

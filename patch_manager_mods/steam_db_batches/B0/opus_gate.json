@@ -1,0 +1,32 @@
+{
+ "batch": "B0",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 140,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "10": 10,
+  "11": 10,
+  "12": 10,
+  "13": 10,
+  "14": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10,
+  "5": 10,
+  "6": 10,
+  "7": 10,
+  "8": 10,
+  "9": 10
+ },
+ "full_read": 148,
+ "sample_errors": null,
+ "sample_pool": 507,
+ "sample_rate": 0.2,
+ "sample_size": 102,
+ "unanswered_decoys": 0
+}

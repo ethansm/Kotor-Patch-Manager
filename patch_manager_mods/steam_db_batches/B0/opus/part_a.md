@@ -1,0 +1,74 @@
+- CClientExoApp::RunDeathSequence gog 0x0040d860 -> 0x007403a0: match cites a layout/offset difference
+- CClientExoApp::PlayerFlourishWeapons gog 0x0040dd60 -> 0x007408a0: match cites a layout/offset difference
+- CClientExoApp::EnableVideoEffect gog 0x0040de60 -> 0x007409a0: reviewer corrected_addr
+- CClientExoApp::DisableVideoEffect gog 0x0040de80 -> 0x007409c0: reviewer corrected_addr
+- CClientExoApp::SetMouseMode gog 0x0040e400 -> 0x00740f40: match cites a layout/offset difference
+- CClientExoApp::GetCharacterChangeInProgress gog 0x0040e480 -> 0x00740f00: reviewer corrected_addr
+- CSWCObject::SetId gog 0x00410c30 -> 0x00764f60: reviewer corrected_addr, match cites a layout/offset difference
+- CSWCObject::HideShadowBlob gog 0x00410c80 -> 0x0078bc50: reviewer corrected_addr
+- CSWCArea::Constructor gog 0x0044ef30 -> 0x007a2590: reviewer corrected_addr
+- CSWCArea::Unknown_ReturnTrue_7Args gog 0x004550b0 -> 0x007a86b0: match cites a layout/offset difference
+- CSWCArea::AddWeatherObject gog 0x00456040 -> 0x007a9640: reviewer corrected_addr
+- CSWCArea::StopWeather gog 0x00456230 -> 0x007a9830: reviewer corrected_addr
+- CSWCArea::ClearAllMapPins gog 0x00457310 -> 0x007aa910: reviewer corrected_addr, match cites a layout/offset difference, match on a mac_contra row
+- CSWCArea::AttachmentFromServerArea gog 0x00457880 -> 0x007aae80: reviewer corrected_addr
+- CClientOptions::SetCameraMode gog 0x00462bc0 -> 0x007b5e50: match on a mac_contra row
+- CSWCObject::TurnOnShadows gog 0x00472630 -> 0x007ed4d0: reviewer corrected_addr
+- CSWCObject::AnimationStationary gog 0x00474420 -> 0x007ef2c0: reviewer corrected_addr
+- CSWCObject::AnimationPlayOutOfPlace gog 0x004744b0 -> 0x007ef730: reviewer corrected_addr, label_suspect
+- CSWCObject::AnimationPause gog 0x00474890 -> 0x007ef730: match on a mac_contra row, match on a name_held_elsewhere row
+- CGuiInGame::ShutDownGlobal gog 0x004cdda0 -> 0x007bdb10: label_suspect
+- CGuiInGame::IsCameraDialog gog 0x004dbda0 -> 0x007cb6a0: label_suspect
+- CGuiInGame::IsAnimationPlayingInDialog gog 0x004dbde0 -> 0x007cb6e0: reviewer corrected_addr, label_suspect
+- CGuiInGame::IsFadingInDialog gog 0x004dbe50 -> 0x007cb720: reviewer corrected_addr, label_suspect
+- CGuiInGame::GetCanOrientInDialog gog 0x004df1f0 -> 0x007ceaf0: label_suspect
+- CGuiInGame::AddFloatyText gog 0x004df580 -> 0x007cee80: match cites a layout/offset difference
+- CGuiInGame::GetCanHeadFollowInDialog gog 0x004dfff0 -> 0x007cf8f0: reviewer corrected_addr
+- CGuiInGame::GetMiniMapVisible gog 0x004e0c60 -> 0x007d0560: label_suspect
+- CGuiInGame::RemoveGUIPopUps gog 0x004e0ca0 -> 0x007d05a0: reviewer corrected_addr, label_suspect
+- CSWGuiMainMenu::OnLoadGamePicked gog 0x0053cf90 -> 0x008824f0: match on a name_held_elsewhere row
+- CSWCAreaOfEffectObject::Destructor gog 0x005821d0 -> 0x008ee7f0: reviewer corrected_addr
+- CSWSCreatureStats::GetClassByPosition gog 0x00588990 -> 0x00844e40: reviewer corrected_addr
+- CSWGuiInGameInventory::OnPanelRemoved gog 0x0059b420 -> 0x008a7520: match on a mac_contra row
+- CSWGuiUpgrade::OnPanelRemoved gog 0x005bce30 -> 0x008cca70: match on a mac_contra row
+- CSWGuiUpgrade::SetDescription gog 0x005bd130 -> 0x008ccd70: match on a mac_contra row
+- CSWGuiSaveLoad::Constructor gog 0x005cfd00 -> 0x00850770: match cites a layout/offset difference
+- CSWGuiSaveLoad::VerifyLoadGame gog 0x005d1bf0 -> 0x008528b0: match cites a layout/offset difference
+- CSWGuiSaveLoad::LoadGame gog 0x005d33b0 -> 0x00853a00: match cites a layout/offset difference
+- CSWGuiSaveLoad::LaunchMostRecentSave gog 0x005d86f0 -> 0x00859270: match on a mac_contra row
+- CExoString::Constructor_2 gog 0x00605680 -> 0x007338d0: reviewer corrected_addr
+- CExoString::Destructor gog 0x00605890 -> 0x00733540: reviewer corrected_addr
+- CRes::Constructor gog 0x0061aa20 -> 0x007111a0: reviewer corrected_addr
+- CRes::Destructor gog 0x0061aad0 -> 0x00711170: match cites a layout/offset difference
+- CExoResMan::AddEncapsulatedResourceFile gog 0x0061af20 -> 0x007115c0: reviewer corrected_addr
+- CExoResMan::AddResourceImageFile gog 0x0061af40 -> 0x007115e0: reviewer corrected_addr
+- CExoResMan::Exists_2 gog 0x0061b890 -> 0x00711f30: reviewer corrected_addr
+- CExoResMan::GetResRefFromFile gog 0x0061c540 -> 0x00712be0: reviewer corrected_addr
+- CExoResMan::ServiceFromEncapsulated gog 0x0061d550 -> 0x00713bf0: match cites a layout/offset difference
+- CExoResMan::ServiceFromImageRaw gog 0x0061e490 -> 0x00714b30: match cites a layout/offset difference
+- CExoResMan::ServiceFromResFileRaw gog 0x0061e5c0 -> 0x00714c60: match cites a layout/offset difference
+- CExoResMan::FileCopy gog 0x0061f0a0 -> 0x00715740: reviewer corrected_addr
+- CResGFF::GetField_2 gog 0x00623b60 -> 0x00717a00: reviewer corrected_addr
+- CResGFF::GetList gog 0x006248c0 -> 0x00718760: match cites a layout/offset difference
+- CResGFF::GetListCount gog 0x00624970 -> 0x00718810: match cites a layout/offset difference
+- CResGFF::ReadFieldDWORD gog 0x00624d60 -> 0x00718c00: match on a twin row
+- CResGFF::ReadFieldCExoLocString gog 0x00625240 -> 0x007190e0: match on a mac_contra row
+- CResGFF::WriteFieldBYTE gog 0x00625b30 -> 0x007199d0: reviewer corrected_addr
+- CResGFF::WriteFieldWORD gog 0x00625c10 -> 0x00719ab0: reviewer corrected_addr
+- CResGFF::WriteFieldSHORT gog 0x00625c80 -> 0x00719b20: match on a twin row
+- CResGFF::WriteFieldDWORD gog 0x00625cf0 -> 0x00719b90: match on a twin row
+- CResGFF::WriteFieldINT gog 0x00625d50 -> 0x00719bf0: reviewer corrected_addr, match on a twin row
+- CResGFF::WriteFieldFLOAT gog 0x00625e40 -> 0x00719ce0: match on a twin row
+- CVirtualMachine::Constructor gog 0x00640920 -> 0x006fd700: match cites a layout/offset difference
+- CVirtualMachine::StackPushFloat gog 0x00640c20 -> 0x006fda00: reviewer corrected_addr
+- CVirtualMachine::StackPopCommand gog 0x00640d50 -> 0x006fdb30: match cites a layout/offset difference
+- CVirtualMachineStack::LoadStack gog 0x006421c0 -> 0x006fef80: reviewer corrected_addr
+- CVirtualMachineInternal::RunScriptFile gog 0x00645af0 -> 0x00702850: reviewer corrected_addr
+- CVirtualMachineInternal::StackPushObject gog 0x00646390 -> 0x007030f0: match on a twin row
+- CServerExoApp::GetGameObject gog 0x0064bac0 -> 0x0051c0a0: reviewer corrected_addr
+- CTwoDimArrays::GetSwoopUpgradeRowProvider gog 0x0064c2f0 -> 0x0051c8d0: label_suspect
+- CSWSEffectListHandler::Destructor gog 0x0064ceb0 -> 0x0051d4b0: reviewer corrected_addr
+- CSWSItem::GetPropertyByTypeExists gog 0x00667600 -> 0x00603dd0: reviewer corrected_addr, label_suspect
+- CSWSItem::RestoreUsedActiveProperties gog 0x00667710 -> 0x00603ee0: reviewer corrected_addr, label_suspect
+- CSWSItem::GetUpgradableType gog 0x0066af00 -> 0x00607790: reviewer corrected_addr
+- CSWSItem::AddSubraceRequirements gog 0x0066d900 -> 0x0060a0d0: reviewer corrected_addr

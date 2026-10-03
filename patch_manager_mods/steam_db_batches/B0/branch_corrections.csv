@@ -1,0 +1,14 @@
+class_name,function_name,address,calling_convention,param_size_bytes,notes
+CSWCObject,AnimationPause,0x007EF730,__thiscall,4,Steam batch B0: SIG 0.50 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 2
+CSWGuiMainMenu,OnLoadGamePicked,0x008824F0,__thiscall,0,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWGuiInGameInventory,OnControlSelected,0x008A8480,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSArea,LoadRoomInfo,0x005258A0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSArea,LoadRooms,0x005259B0,__cdecl,4,Steam batch B0: SIG 0.50 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSEffectListHandler,OnApplySummonParty,0x00599A10,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
+CSWSEffectListHandler,OnApplyForceResistanceIncrease,0x0059F710,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
+CSWSEffectListHandler,OnApplyInvisibility,0x005A1C50,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
+CSWSEffectListHandler,OnApplyDispelAllMagic,0x005A2EE0,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
+CSWSEffectListHandler,OnApplyTimestop,0x005A4D70,__thiscall,12,"Steam batch B0: CALLEE 2 (GetActiveTimer 0x51c350,AddWorldTimes 0x51aef0); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8"
+CSWSEffectListHandler,OnApplyNegativeLevel,0x005A65D0,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSCombatRound,DEBUGDumpCombatRoundToScreen,0x00593000,__thiscall,8,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSEncounter,AIUpdate,0x00623330,__thiscall,0,Steam batch B0: CALLEE 1 (SubtractWorldTimes 0x51af60); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)

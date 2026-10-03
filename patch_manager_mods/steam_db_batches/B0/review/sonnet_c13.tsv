@@ -1,0 +1,61 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0084c360	0x00459d80	match		00459d8a MOV byte ptr [EAX+0x10],0x0 (GOG disp 0x10); sibling 00459d6a writes 1 (Enable)	4	Clears +0x10 flag; neighbour 0x459d60 sets it, so this is Disable.
+0x0084be50	0x00459870	match		00459877 MOV EAX,0x1 ; 0045987f MOV word ptr [ECX+0xee],AX (GOG disp 0xee)	4	Sets +0xee=1; neighbour 0x459850 sets 0 (TurnOff). Name fits.
+0x0084c570	0x00459f90	match		00459f97 PUSH 0x1 ; 00459fa3 CALL 0x00459f00 with [EAX+0x98] (recursive part-fog setter writing [ECX+0x7d])	4	Passes 1 to fog setter on +0x98; DisableFog 0x459f70 passes 0.
+0x00867920	0x00475a70	mismatch	0x004759b0	004759b3 SUB ESP,0x10 ; 004759c8 MOV EDX,[ECX+0x50] ; 004759bd CALL 0x00474fa0 (GOG disp 0x50, imm 0x10, size 72)	4	Candidate frees +8 buffer (disp 0x8, size 53). 0x4759b0 matches GOG disp 0x50, imm 0x10, size 72; it is a destructor.
+0x007c9840	0x005b2650	mismatch	0x005b2430	0x5b2430 is 0xf0 after RemoveRegeneration 0x5b2340 and 0x130 before RemoveIncrease 0x5b2560, like GOG 0x7c9750/0x7c9840/0x7c9970	3	Identical-shape sibling; 0x5b2650 follows RemoveIncrease so it is ApplyDecrease (DAT_0099608c vs ...088).
+0x00855260	0x00462cd0	match		00462ce5 MOV EAX,[EDX+0x10c] ; 00462ceb CALL EAX ; 00462d46 RET 0xc (GOG disp 0x10c, 0x4/0x8/0xc)	4	Virtual call at +0x10c then copies 3+4 floats to out params; matches GOG displacement set and name.
+0x0084bfd0	0x004599f0	match		004599fa MOV byte ptr [EAX+0x1a8],0x1 (GOG disp 0x1a8)	4	Sets +0x1a8=1; DisableDistortion 0x459a10 writes 0 to same field.
+0x00861da0	0x0046fb60	match		0046fb6a MOVSX EAX,word ptr [EAX+0xe4] (GOG disp 0xe4)	4	Reads +0xe4 that Disable/EnableVisibilityGraph (0x46fb40/0x46fb10) write; fits Get...Ignore.
+0x0084c400	0x00459e20	match		00459e2a MOV AL,byte ptr [EAX+0x14] (GOG disp 0x14)	4	Returns +0x14 flag that DisableInCutscene 0x459e00 clears.
+0x008646a0	0x00472460	match		00472467 MOV ECX,0xa732d0 ; 0047246c CALL 0x00476620 (Count) ; 0047247e CALL 0x00449170 (Remove); size 71	4	Count then Remove on global scene lists; GOG callees Remove and Count; sibling 0x4723e0 is size 118.
+0x00456230	0x007a98d0	mismatch	0x007a9830	007a983a MOV byte ptr [EAX+0x1f5],0x0 ; 007a9844 MOV dword ptr [ECX+0x1f0],0x1770 (GOG disp 0x1f0/0x1f5, imm 0x1770)	4	Candidate switches on param, vtable +0x4c, disp 0x188/0x4c. 0x7a9830 matches GOG disps and 0x1770, clears flag.
+0x008557b0	0x004632c0	match		004632c0 body CALL 0x00476620 (Count) then CALL 0x00473f40 (push_back = List::Add); GOG callees Count and Add	4	Add if not already present; decoy 0x463300 calls Remove 0x449170 instead.
+0x0084c5e0	0x0045a000	match		0045a010 PUSH 0x98b988 'propagateviewvolume' ; 0045a01d MOV EAX,[EDX+0x1b4]; GOG string same	5	Same string and displacements 0x11/0x1b4; sets +0x11=1 (Disable clears it).
+0x00857590	0x004651b0	match		004651ba MOV byte ptr [EAX+0xe6],0x1 (GOG disp 0xe6)	4	Sets +0xe6=1; DisableAnimations 0x4651d0 writes 0; IsAnimating reads it.
+0x00853b60	0x004615d0	match		004615da CMP dword ptr [EAX+0x84],0x0 ; 004615f0 ADD EAX,0x8 (GOG disp 0x84, imm 0x8)	4	Returns model pointer+8 or null; displacement and immediate match GOG.
+0x0084bf50	0x00459970	match		0045997d MOV byte ptr [EAX+0x181],CL ; RET 0x4 (GOG disp 0x181)	4	Stores bool arg to +0x181; GetMotionBlurred 0x459990 reads it. Neighbour SetRenderPersonalSpace uses 0x180.
+0x008575f0	0x00465210	match		00465222 MOV [0x00a7be44],ECX ; RET 0x4; flag read by glEnableClientState gate at 0x4ceac0; between IsAnimating 0x4651f0 and FindScene 0x465230	3	Global flag setter; unique function between verified neighbours, consistent size 30. No GOG-side content anchor.
+0x00857030	0x00464c50	match		00464c5d FLD float ptr [ECX+0x64] ; 00464c68 FLD float ptr [EAX+0x68] (GOG disp 0x64/0x68)	4	Reads two floats to out params; SetFogRange 0x464c80 is the writer.
+0x00861d80	0x0046fb40	match		0046fb4f MOV word ptr [ECX+0xe4],AX with AX=1 (GOG disp 0xe4)	3	Sets +0xe4=1, the ignore flag read by GetIgnore; Enable 0x46fb10 writes 0.
+0x007f07d0	0x005e6f60	mismatch	0x005e6f40	005e6f67 PUSH 0x4 (candidate, DestroyObject) vs 005e6f47 PUSH 0x3 in 0x5e6f40; GOG imm 0x3	5	Candidate passes type 4; GOG imm set has 3 (string). 0x5e6f40 pushes 3 to DeleteIndex.
+0x0084e530	0x0045bf50	match		0045c0d4 'blending' ; 0045c10a 'additive' ; 0045c12f 'punchthrough' (GOG strings identical, size 1343)	4	Strings and 11 displacements match; sets +0x15 flag, Disable 0x45c490 clears it. Name not contradicted.
+0x00858000	0x00465c20	match		call 0x00449170 (List::Remove, scans from back) at 0x465c20 body; GOG callee List_T__::Remove; ChildAdd 0x465bb0 uses push_back 0x473f40	4	Remove-variant with disp 0x84/0x98/0x1a8; decoy ChildAdd calls Add instead.
+0x00857060	0x00464c80	match		00464c8d FSTP float ptr [EAX+0x64] ; 00464c96 FSTP float ptr [ECX+0x68] (GOG disp 0x64/0x68)	4	Writes two floats to +0x64/+0x68; GetFogRange 0x464c50 reads them.
+0x0084c3c0	0x00459de0	match		00459dea MOV byte ptr [EAX+0x12],0x0 (GOG disp 0x12)	4	Clears +0x12; EnableAlwaysRender 0x459dc0 sets 1, IsAlwaysRendering reads it.
+0x0084e4f0	0x0045bf10	match		0045bf1c MOV word ptr [ECX+0xf4],AX with AX=0 (GOG disp 0xf4)	4	Clears +0xf4; Enable 0x45bed0 writes 1 to same word.
+0x00857f90	0x00465bb0	match		body calls 0x00473f40 (push_back = List::Add) ; GOG callee List_T_::Add ; disp 0x84/0x98/0x1a8 match	4	Add variant of the pair; decoy ChildRemove 0x465c20 calls Remove 0x449170.
+0x008621f0	0x0046ffb0	match		0046ffc3 CMP ECX,[EAX+0xd8] ; 0046ffce MOV EAX,[EDX+0xd4] ; 0046ffdd MOV [ECX+0xe0],EAX (GOG disp 0xd4/0xd8/0xe0)	4	Bounds-checked room-array index store into +0xe0; all three displacements match.
+0x008557f0	0x00463300	match		body CALL 0x00476620 (Count) then CALL 0x00449170 (Remove); GOG callees Remove and Count	4	Removes if present; sibling AddAttachment 0x4632c0 calls push_back instead.
+0x0084c4c0	0x00459ee0	match		00459eea MOV AL,byte ptr [EAX+0x12] (GOG disp 0x12)	4	Returns +0x12 flag written by Enable/DisableAlwaysRender.
+0x004dbde0	0x007cb5e0	label_suspect	0x007cb6e0	007cb6e0 body: [this+0x64] test, [this+0xfb4]=1, vfunc [[this+0x3c]+0x84]; GOG disp 0x3c/0x64/0x84/0xfb4, size 55	3	Candidate disps differ (0x190/0x194/0x2c). Real match 0x7cb6e0 sets a flag and calls a vfunc; not a predicate.
+0x007c9840	0x005b21c0	mismatch	0x005b2430	005b21c0 body FUN_005e4e80(1,6000) and 0x34/0x1770 immediates absent from GOG; SetCreator then Destructor path	4	This is ApplyRegeneration (6000 ms interval, size 369). Increase is the 293-byte sibling 0x5b2430.
+0x008647f0	0x004725b0	match		004725d0 MOV EAX,[EDX+0xcc] ; 004725d6 CALL EAX ; RET 0x8 (GOG disp 0xcc, imm 8)	4	Forwards scale to object vfunc +0xcc; next function 0x4725e0 is SetGeomFadeProperties as in GOG.
+0x0084c730	0x0045a150	match		0045a15a CMP [EAX+0x90],0x0 ; 0045a170 CALL 0x00452cf0 (refcount --[+0x54], Model::DelRef) ; 0045a178 MOV [EAX+0x90],0	4	Releases model at +0x90 via DelRef then nulls it; GOG callee DelRef, disp 0x90.
+0x00456230	0x007a9800	mismatch	0x007a9830	007a980d MOV byte ptr [EAX+0x1f5],CL (stores arg) vs 007a983a MOV byte ptr [EAX+0x1f5],0x0 in 0x7a9830	3	Same fingerprint, but this stores its arg (Start); 0x7a9830 clears flag, fits Stop and sits between Start and SetLightningDone.
+0x0084be10	0x00459830	match		0045983d MOV byte ptr [EAX+0x1a9],CL ; RET 0x4 (GOG disp 0x1a9)	4	Stores bool arg at unique offset +0x1a9.
+0x0084beb0	0x004598d0	match		004598da MOV AL,byte ptr [EAX+0x11] (GOG disp 0x11)	4	Returns +0x11 flag cleared by DisableInViewVolume 0x4598b0.
+0x0084c380	0x00459da0	match		00459daa MOV AL,byte ptr [EAX+0x10] (GOG disp 0x10)	4	Returns +0x10 flag written by Enable/DisableForceAnimations.
+0x0084be70	0x00459890	match		0045989a MOV AL,byte ptr [EAX+0x1aa] (GOG disp 0x1aa)	4	Returns byte at unique offset +0x1aa.
+0x008575b0	0x004651d0	match		004651da MOV byte ptr [EAX+0xe6],0x0 (GOG disp 0xe6)	4	Clears +0xe6; EnableAnimations 0x4651b0 sets 1, IsAnimating reads it.
+0x0084c340	0x00459d60	match		00459d6a MOV byte ptr [EAX+0x10],0x1 (GOG disp 0x10)	4	Sets +0x10=1; DisableForceAnimations 0x459d80 writes 0.
+0x00867920	0x004756f0	mismatch	0x004759b0	004756f0 body parses 'name=value' into local buffer, __security_check_cookie; 004759b3 SUB ESP,0x10 / 004759c8 [ECX+0x50] in 0x4759b0	5	Candidate is a command-line parser, size 216. 0x4759b0 (size 72, disp 0x50) is the destructor.
+0x0084c550	0x00459f70	match		00459f77 PUSH 0x0 ; 00459f83 CALL 0x00459f00 with [EAX+0x98] (recursive part-fog setter)	4	Passes 0 to fog setter on +0x98; EnableFog 0x459f90 passes 1.
+0x0084bff0	0x00459a10	match		00459a1a MOV byte ptr [EAX+0x1a8],0x0 (GOG disp 0x1a8)	4	Clears +0x1a8; EnableDistortion 0x4599f0 sets 1.
+0x0084be90	0x004598b0	match		004598ba MOV byte ptr [EAX+0x11],0x0 (GOG disp 0x11)	4	Clears +0x11; EnableInViewVolume 0x45a000 sets 1.
+0x0084be30	0x00459850	match		00459857 XOR EAX,EAX ; 0045985c MOV word ptr [ECX+0xee],AX (GOG disp 0xee)	4	Clears +0xee; TurnOnShadows 0x459870 sets 1.
+0x0084c3e0	0x00459e00	match		00459e0a MOV byte ptr [EAX+0x14],0x0 (GOG disp 0x14)	4	Clears +0x14; IsInCutscene 0x459e20 reads it.
+0x0084bf30	0x00459950	match		0045995d MOV byte ptr [EAX+0x180],CL ; RET 0x4 (GOG disp 0x180)	4	Stores bool arg at +0x180; neighbour SetMotionBlurred uses +0x181.
+0x00861d50	0x0046fb10	match		0046fb1c MOV word ptr [ECX+0xe4],AX (=0) and reads [+0xe0] (GOG disp 0xe0/0xe4)	4	Clears ignore flag +0xe4, returns +0xe0!=0; both displacements match GOG.
+0x0085f680	0x0046d440	match		0046d456 CALL 0x00461aa0 (Gob::SetScene: stores [+0x94], fires 'UpdateScenes') ; 0046d45b MOV EAX,1 ; RET 4	3	Calls SetScene then returns 1; GOG callee SetScene_2 sits at same offset from GetModelName.
+0x008570b0	0x00464cd0	match		00464cd7 MOV EAX,[0x009f5d28] ; 00464cdc CMP EAX,[0x0098ba8c] ; SETZ AL; global written by SetGeomFadeProperties 0x4725e0	3	Compares geom-fade mode global that SetGeomFadeProperties writes; GOG side has no displacements to compare.
+0x008575d0	0x004651f0	match		004651fa MOV AL,byte ptr [EAX+0xe6] (GOG disp 0xe6)	4	Returns +0xe6 flag written by Enable/DisableAnimations.
+0x0084c3a0	0x00459dc0	match		00459dca MOV byte ptr [EAX+0x12],0x1 (GOG disp 0x12)	4	Sets +0x12=1; DisableAlwaysRender 0x459de0 clears it.
+0x007f07d0	0x005e6f20	mismatch	0x005e6f40	005e6f20 body pushes 2 to DeleteIndex (DestroyFloat); 005e6f47 PUSH 0x3 in 0x5e6f40; GOG imm 0x3	5	Candidate passes type 2 (float); GOG has 3 (string). 0x5e6f40 pushes 3.
+0x00855bc0	0x004636d0	match		004636da CMP [EAX+0x1b4],0x0 ; 004636fb MOV EAX,[EDX+0xc] ; CALL EAX ; RET 0x4 (GOG disp 0xc/0x1b4)	3	Forwards message arg to object at +0x1b4 via vfunc +0xc; Ghidra SerializeTabWindow label ignored.
+0x0084bf90	0x004599b0	match		004599bd FSTP float ptr [EAX+0x1ac] ; RET 0x4 (GOG disp 0x1ac)	4	Stores float at +0x1ac; GetMaxBlurLength 0x4599d0 loads it.
+0x00857010	0x00464c30	match		00464c3d MOV dword ptr [EAX+0x60],ECX ; RET 0x4 (GOG disp 0x60)	4	Stores arg at +0x60, adjacent to fog range +0x64/+0x68.
+0x008621b0	0x0046ff70	match		0046ff7a MOV EAX,[EAX+0xd8] (GOG disp 0xd8); 0x46ffb0 uses +0xd8 as room count	4	Returns room count +0xd8, the bound used by SetCurrentRoom_2.
+0x0084bfb0	0x004599d0	match		004599da FLD float ptr [EAX+0x1ac] (GOG disp 0x1ac)	4	Loads float +0x1ac stored by SetMaxBlurLength 0x4599b0.
+0x0084bf70	0x00459990	match		0045999a MOV AL,byte ptr [EAX+0x181] (GOG disp 0x181)	4	Returns +0x181 flag stored by SetMotionBlurred 0x459970.
+0x00700490	0x005fa960	mismatch	0x005fa920	005fa92e CALL 0x005fa960 ; 005fa941 MOV [EDX+ECX*4+0x4c],0x0 in 0x5fa920 (GOG callee GetIsNPCAvailable, disp 0x4c)	4	Candidate is GetIsNPCAvailable itself (bounds check, read). 0x5fa920 calls it then clears slot +0x4c: RemoveNPC.

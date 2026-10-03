@@ -1,0 +1,695 @@
+# Review scores
+
+key `B0/cards/key.tsv`, review `B0/review/`
+
+| rows | match | label_suspect | mismatch | unsure | missing | total |
+|---|---|---|---|---|---|---|
+| expected match | 0 | 0 | 0 | 0 | 0 | 0 |
+| expected mismatch | 623 | 22 | 155 | 5 | 0 | 805 |
+| annotated label_suspect | 0 | 0 | 0 | 0 | 0 | 0 |
+
+- precision on `match` (matches on expected-match rows / all matches, annotated rows excluded): 0 / 623 = 0.0%
+- recall on expected-match rows: n/a
+- annotated label_suspect rows are counted apart: 0 (verdicts: none)
+
+## False accepts (expected mismatch, reviewer `match`)
+
+- B0-1-01 0x0044f680 -> 0x007a2c80 (real): Calls Destructor_2 then conditional delete, same as GOG callee list; RET 4 deleting-dtor shape.
+- B0-1-02 0x0040d7f0 -> 0x00740330 (real): Getter of pause-state bit 2; its setter 0x79bf40 compares against it. Name consistent, GOG callee unnamed.
+- B0-1-03 0x0040c6f0 -> 0x0073f230 (real): Callee builds the main menu GUI and is called from ShutDownToMainMenu; consistent with DisplayMainMenu.
+- B0-1-04 0x0040c5a0 -> 0x0073f0e0 (real): Callee looks up object by id and returns its name string; ret 8 = retptr+id. DB callee label is stale.
+- B0-1-05 0x0040d750 -> 0x00740290 (real): Callee polls a sound stream status for the dialog speaker and returns bool; consistent with name.
+- B0-1-08 0x0040cc10 -> 0x0073f750 (real): Getter of Internal+0x40, the in-game GUI object; GOG disps {0x4,0x40} identical.
+- B0-1-09 0x004550b0 -> 0x007a86b0 (real): Return-true stub with 28-byte pop; layout gap between two trusted neighbours is identical. No string/callee exists.
+- B0-1-10 0x0040dd40 -> 0x00740880 (real): Callee stores a mode value at +0x320 and toggles start/stop calls; consistent with SetCombatMode.
+- B0-1-11 0x0040cbb0 -> 0x0073f6f0 (real): Callee forwards a 3-arg message; save vs load only separated by order and delta (4 vs 5 minor).
+- B0-1-12 0x0040d300 -> 0x0073fe20 (real): Callee is a quit-confirm routine (pause, prompt, input class); delta equals neighbouring Internal methods.
+- B0-1-13 0x0040d2e0 -> 0x0073fe00 (real): Callee returns the active pause state value 2/1/0; matches GetActivePauseState; delta 0x3539e0.
+- B0-1-15 0x0040d3c0 -> 0x0073fee0 (real): Callee is the input-class state switch (stores class at +0x9c); ret 8 matches 2 args.
+- B0-1-16 0x0044f660 -> 0x007a2c60 (real): Secondary-vtable this-adjust by -0x104, matching the ctor's second vftable at +0x104 and GOG imm.
+- B0-1-17 0x0040ca10 -> 0x0073f550 (real): Callee looks up object by id and returns it only if it is a creature.
+- B0-1-18 0x0040d8e0 -> 0x00740420 (real): Callee stores flag plus timestamp for dialog sending; consistent with SetCanSendDialog.
+- B0-1-19 0x0044ef30 -> 0x007a2590 (real): Constructor: same size, same callee set (InitializeStaticObjects, GetWorldTimer) and 37 shared offsets/immediates.
+- B0-1-20 0x0040d640 -> 0x00740180 (real): Callee appends the argument to a list at +0x2d8; consistent with AddMoveToModuleMovie.
+- B0-1-22 0x0040c990 -> 0x0073f4d0 (real): Calls the trusted GetGameObject hash lookup via [internal+0x14] and returns the pointer.
+- B0-1-23 0x0040c750 -> 0x0073f290 (real): Callee quits the application, exactly ExitProgram.
+- B0-1-24 0x00410c50 -> 0x00764f80 (real): Guarded vtbl+0xac call with arg 0 matches GOG offsets; HideShadowBlob uses +0xb0.
+- B0-1-25 0x0040d7d0 -> 0x00740310 (real): Callee closes in-game GUI then resets input class; consistent with DismissInGameGUI.
+- B0-1-26 0x0040cdf0 -> 0x0073f910 (real): Callee stores player creature id at +0x20, which GetPlayerCreature reads.
+- B0-1-27 0x0040ccf0 -> 0x0072fb00 (real): Same two-level +4 getter as GOG; shared (folded) with OptionsHolder::GetGameOptions. No unique callee/string.
+- B0-1-28 0x0040d840 -> 0x00740380 (real): Callee switches party leader and plays select sound; ret 8 matches 2 args.
+- B0-1-29 0x00456200 -> 0x007a9800 (real): Writes byte flag at +0x1f5 and 6000 at +0x1f0, same offsets and 0x1770 immediate as GOG.
+- B0-1-30 0x0040d880 -> 0x007403c0 (real): Callee writes the game-over flag that the GetGameOver thunk reads; death sequence sets it.
+- B0-1-31 0x0040d7b0 -> 0x007402f0 (real): Callee clears the input-blocked flag that DisableInput sets; reader skips input when nonzero.
+- B0-1-32 0x0040d020 -> 0x0073fb40 (real): Callee unloads area then displays the main menu; consistent with ShutDownToMainMenu.
+- B0-1-33 0x00455cc0 -> 0x007a92c0 (real): Dusk starts from the day brightness with +0x1bc set; Dawn decoy starts from 0. Size and callees match.
+- B0-1-34 0x0040ddb0 -> 0x007408f0 (real): Callee binary-searches a string table and returns a CExoString; fits GetGUIString, ret 8.
+- B0-1-35 0x0040cbe0 -> 0x0073f720 (real): Same shape as Save; Load uses message minor 5 and sits second in both builds.
+- B0-1-36 0x0040e420 -> 0x00740f60 (real): Callee stops the movie player if present; consistent with CancelMovie.
+- B0-1-37 0x0040d0b0 -> 0x0073fbd0 (real): Callee changes display mode via EnumDisplaySettingsA; fits SetVideoMode (4-byte arg).
+- B0-1-41 0x00455d60 -> 0x007a9360 (real): Dawn starts from night brightness with +0x1b8 set; Dusk decoy starts from day value. Size and callees match.
+- B0-1-42 0x0040e510 -> 0x00741050 (real): Callee clears the credit-sequence flag that Start sets; consistent with StopCreditSequence.
+- B0-1-43 0x0040d860 -> 0x007403a0 (real): Callee marks game over and sets up the death sequence; consistent with RunDeathSequence.
+- B0-1-44 0x0040de60 -> 0x007409a0 (real): Callee disables the previous effect then enables the requested one; fits EnableVideoEffect.
+- B0-1-45 0x0040cfe0 -> 0x0073fb00 (real): Callee reads keymapping/event descriptions from swkotor2.ini; consistent with SetEventDescriptions.
+- B0-1-46 0x0040d0d0 -> 0x0073fbf0 (real): Callee loads texpacks.2da and sets texture pack, exact name match; byte arg ret 4.
+- B0-1-47 0x00410c30 -> 0x00764f60 (real): Simple setter of +4 (object id) with identical offset and layout spacing; no callee or string.
+- B0-1-48 0x0040e400 -> 0x00740f40 (real): Callee toggles mouse mode with hide/show calls; layout consistent with neighbours.
+- B0-1-49 0x0040d790 -> 0x007402d0 (real): Callee sets the input-blocked flag; matches DisableInput.
+- B0-1-50 0x00456040 -> 0x007a9640 (real): Calls the dynamic-array Add on the list at +0x1c8, same immediate as GOG.
+- B0-1-52 0x0040de80 -> 0x007409c0 (real): Callee resets the effect state to -2; Enable calls it first, so it is Disable.
+- B0-1-53 0x004213a0 -> 0x005ef180 (real): Setter of +0x3e0 matching GOG offset and RET 4; getter neighbour distinguished by ret 0.
+- B0-1-55 0x0040c910 -> 0x0073f450 (real): Callee returns cached creature for the player id at +0x20; matches GetPlayerCreature.
+- B0-1-56 0x0040de20 -> 0x00740960 (real): Returns bit 0 of internal +0x384, the field SetAutoPaused maintains; GOG disps {0x4,0x384} identical.
+- B0-1-59 0x0040dd60 -> 0x007408a0 (real): Callee operates on the player creature (weapon animation); weak semantic anchor, layout consistent.
+- B0-2-02 0x004749e0 -> 0x007ef880 (real): Column-flag check on the Attack column; siblings read other columns (Parry fe3c, Running fe34).
+- B0-2-03 0x004ce720 -> 0x007be090 (real): Message buffer append capped at 0x3f entries using +0x110/+0x11c; decoy 0x7be1b0 uses +0x118/+0x124 (combat buffer).
+- B0-2-04 0x0048f9b0 -> 0x00844e40 (real): Only function in dump with this exact body; GOG disp 0xf8 and imm 2,4,5,8 all present; decoy reads +0xf9.
+- B0-2-05 0x004da930 -> 0x007ca230 (real): Increments +0x2c and wraps at 8 (GOG imm 8); Prev decoy decrements and wraps to 7.
+- B0-2-07 0x00472930 -> 0x007ed7d0 (real): Only 18-byte getter of word +0x48 in dump; sits directly before AttachToScene 0x7ed7f0 like GOG.
+- B0-2-08 0x004dbda0 -> 0x007cb6a0 (real): Body forwards four args to the letterbox SetFade routine; an Is-predicate name does not fit.
+- B0-2-10 0x00457880 -> 0x007aae80 (real): Stores its argument at +0x280 (GOG disp 0x280); decoy 0x7aaea0 stores 0 with no argument.
+- B0-2-11 0x00472ab0 -> 0x007ed950 (real): Calls AnimationLooping then stores word at +0x58, same as GOG imm/disp sets.
+- B0-2-12 0x00474950 -> 0x007ef7f0 (real): Column-flag check on Parry; Attack decoy 0x7ef880 reads fe4c.
+- B0-2-13 0x004db020 -> 0x007ca920 (real): All GOG callees and offsets present; Steam has one extra SetSoundMode call (size 239 vs 224).
+- B0-2-15 0x00474a70 -> 0x007ef470 (real): Column-flag check on Running; Walking decoy 0x7ef3e0 reads fe30.
+- B0-2-16 0x004df580 -> 0x007cee80 (real): Forwards four args to the floaty-text creator; decoy 0x7ceec0 calls 0x750c10 (lbl_map labels).
+- B0-2-17 0x004745d0 -> 0x007ef3e0 (real): Column-flag check on Walking; decoy 0x7ef350 reads fe2c (Pause).
+- B0-2-18 0x00472ae0 -> 0x007ed980 (real): Getter of the +0x58 word that SetLoopingAnimation writes; size 18 matches GOG.
+- B0-2-19 0x004777d0 -> 0x007f2630 (real): Clears +0xf8 (GOG disp 0xf8), size 24; decoy 0x7f2610 stores its argument.
+- B0-2-20 0x004cdda0 -> 0x007bdb10 (real): Body is a scalar/vector deleting destructor (size 173 = GOG, precedes CGuiInGame dtor); ShutDownGlobal name does not fit.
+- B0-2-24 0x004df250 -> 0x007ceb50 (real): Offset 0x98, size and neighbour chain match; GOG callee PopulateMenus not independently confirmed.
+- B0-2-26 0x004df1f0 -> 0x007ceaf0 (real): Body returns a vector from +0x9c object at +0x440; the real CanOrient list check is 0x7cf710.
+- B0-2-27 0x004d8430 -> 0x007c7d40 (real): Getter of +0x11c (GOG disp 0x11c); decoy 0x7c7d20 reads +0x110 (GetMessageBuffer).
+- B0-2-28 0x004578a0 -> 0x007aaea0 (real): Clears +0x280 (GOG disp 0x280), no argument; decoy 0x7aae80 stores an argument.
+- B0-2-29 0x004777b0 -> 0x007f2610 (real): Stores its argument at +0xf8 (GOG disp 0xf8, RET 4); decoy clears it.
+- B0-2-30 0x004ce5d0 -> 0x004185d0 (real): Sets bit 0 of +0x48 with mask 0xfffffffe like GOG; other copies are larger functions.
+- B0-2-32 0x00457310 -> 0x007aa910 (real): Clears the two lists at +0x248/+0x23c (GOG imm 0x23c,0x248); two Allocate-style callees as in GOG.
+- B0-2-33 0x00474890 -> 0x007ef730 (real): Range-check immediates 4b0/52f/640/6bf identical to GOG; name not contradicted, though family labels look swapped.
+- B0-2-34 0x004725e0 -> 0x007ed480 (real): Passes this+0xa8 to the portrait routine (GOG imm 0xa8), RET 8; decoy 0x7ed850 uses +0x68.
+- B0-2-36 0x00462bc0 -> 0x007b5e50 (real): Writes +0x75 and conditionally +0x76 (GOG disp 0x75,0x76) and clears a global on mode 4.
+- B0-2-38 0x004ce500 -> 0x00418640 (real): Destroys members at +0x1c/+0x2c/+0x3c with free helper and ~CExoString, matching GOG imm set.
+- B0-2-39 0x004dbba0 -> 0x007cb4a0 (real): Uses panel at +0x70 (GOG disp 0x70); decoy 0x7cb540 uses +0x74 (PowersFeatsSkills menu).
+- B0-2-40 0x004daac0 -> 0x007ca3c0 (real): Decrements +0x2c and wraps to 7 (GOG imm 7); Next decoy 0x7ca230 increments and wraps at 8.
+- B0-2-41 0x004805b0 -> 0x006e7610 (real): Same size and 85-callee loader sequence; Appearance neighbour is trusted AUTO mapping.
+- B0-2-42 0x004de2e0 -> 0x007cdbe0 (real): Uses +0x88 (GOG disp 0x88) and the same four callees; decoy 0x7cdcc0 uses +0x8c.
+- B0-2-43 0x00477660 -> 0x007f24c0 (real): Server ClearAllActions call; decoy 0x7f2500 calls 0x51cba0 which only clears combat-round actions.
+- B0-2-45 0x004dfff0 -> 0x007cf8f0 (real): Lock-list scan using +0xf28 (GOG imm 0xf28); identical sibling 0x7cf710 uses +0xf24.
+- B0-2-46 0x00472580 -> 0x007ed420 (real): Returns an empty CExoString via the same ctor as GOG callee; size 47 and neighbour chain match.
+- B0-2-47 0x00472660 -> 0x007ed500 (real): Calls vtable slot 0xbc on the +0x68 object (GOG disp 0x68,0xbc); On variant uses 0xb8.
+- B0-2-48 0x00480170 -> 0x006e71d0 (real): Zero-initialises dozens of fields at identical offsets and same size 1042; Destructor follows at 0x6e75f0.
+- B0-2-49 0x00472630 -> 0x007ed4d0 (real): Vtable slot 0xb8 on the +0x68 object (GOG disp 0x68,0xb8); Off variant uses 0xbc.
+- B0-2-50 0x004d00b0 -> 0x007bfa20 (real): Compare-and-store of +0x12c (GOG disp 0x12c); decoy 0x7bfcc0 is a large function.
+- B0-2-51 0x00472610 -> 0x007ed4b0 (real): Word getter of +0xb8 (GOG disp 0xb8, size 21); decoy 0x7ed4d0 is the TurnOn vcall.
+- B0-2-52 0x00474540 -> 0x007ef910 (real): Column-flag check on HideEquippedItems; decoy 0x7ef880 reads fe4c (Attack).
+- B0-2-53 0x004dc340 -> 0x007cbc40 (real): Fade-done check via +0x6c object (GOG disp 0x6c, callee IsFadeDone); decoy 0x7cbc70 has no callee.
+- B0-2-54 0x00456350 -> 0x007a9950 (real): Drains the list at +0x208 (GOG imm 0x208); sits between 0x7a98d0 and 0x7a9990 with GOG spacing.
+- B0-2-55 0x004dbc40 -> 0x007cb540 (real): Uses panel at +0x74 (GOG disp 0x74); decoy 0x7cb4a0 uses +0x70 (LoadModule menu).
+- B0-2-56 0x00480590 -> 0x006e75f0 (real): Thunk to the unload routine, matching GOG callee UnLoad2DArrays; sits between ctor and Load2DArrays.
+- B0-2-57 0x004dbde0 -> 0x007cb6e0 (real): Disp 0x3c/0x64/0x84/0xfb4 match GOG exactly, but the body sets a flag and calls a method; not an Is-predicate.
+- B0-2-58 0x00474420 -> 0x007ef2c0 (real): Column-flag check on Stationary; the only 132-byte sibling (others 129) like GOG size 132.
+- B0-2-59 0x004776a0 -> 0x007f2500 (real): Clears queued combat actions only; decoy 0x7f24c0 also clears all actions via 0x541080.
+- B0-2-60 0x00456230 -> 0x007a9830 (real): Writes +0x1f5=0 and +0x1f0=6000 (GOG imm 0x1770); GOG retn is also 4 (DB param bad); decoy stores a parameter.
+- B0-3-02 0x0061af40 -> 0x007115e0 (real): Thunk to AddKeyTable type 4 (RIM image files); sibling thunks use 3, 1, 2; GOG imm {4}
+- B0-3-03 0x005070c0 -> 0x0087b7e0 (real): Byte getter at +0x120 matches GOG disp and size; called from CSWCDoor::AnimationUpdate
+- B0-3-04 0x0061ac30 -> 0x007112d0 (real): Forwards to resource-manager Request (request count +6); neighbour forwards to Release
+- B0-3-05 0x0061b030 -> 0x007116d0 (real): Thunk to RemoveKeyTable type 4 = image file; GOG imm {4}; sibling types 3,1,2 belong to other names
+- B0-3-06 0x005d33b0 -> 0x00853a00 (real): Same size 2611, trusted SendLoadGameRequest callee, 13 shared disps; only tail field shifted per layout rule
+- B0-3-08 0x005d86f0 -> 0x00859270 (real): Same size 294; calls LoadGame, GOG imm 0x2c/0x970 and disp 0x8 shared; picks most recent save then loads
+- B0-3-09 0x005349c0 -> 0x00841140 (real): Copies string at this+0xfc to out param; GOG imm 0xfc/4/8 shared; unique body, between placeable neighbours
+- B0-3-10 0x00506a80 -> 0x0087b1a0 (real): Non-deleting door destructor, called by deleting dtor 0x87b170; imm 0xfc/0x134/0x140 match GOG
+- B0-3-12 0x0061aad0 -> 0x00711170 (real): Scalar deleting destructor: Destructor_2 call plus conditional delete, size 44, layout order same as GOG
+- B0-3-13 0x004e09b0 -> 0x007d02b0 (real): Loads this+0x98 then calls one callee, matches GOG disp 0x98 and size; unique in exe; decoy 0x7d02d0 is extent setup
+- B0-3-16 0x005eeb30 -> 0x00907340 (real): Two callees fit RemoveSubPanels then ClassSelection::BeginPlayGame on +0x6c; disp 0x6c matches; sole caller of 0x8faca0
+- B0-3-18 0x00582200 -> 0x008ee820 (real): Class-specific vftable, +0x154 and imm 0x10 match GOG; callees match Destructor_2 and UnloadModel
+- B0-3-19 0x005bce30 -> 0x008cca70 (real): Same size 258, trusted OnPanelRemoved callee, six shared +0x3dXX disps and imm 6/0x20
+- B0-3-20 0x0059af30 -> 0x008a7030 (real): Scalar deleting dtor calling inventory Destructor_2 (class vftable) plus delete; size 44, RET 4
+- B0-3-22 0x0061b050 -> 0x007116f0 (real): Remove type 1 thunk; types 4,2,3 are claimed by ImageFile, Directory, Encapsulated siblings
+- B0-3-23 0x0061b070 -> 0x00711710 (real): Thunk with type 2 matches GOG imm 2 and 4; decoy 0x711730 calls UpdateKeyTable
+- B0-3-24 0x0061aff0 -> 0x00711690 (real): AddKeyTable thunk type 2 matches GOG imm 2 and 4; sibling thunks use types 3,4,1
+- B0-3-26 0x0061ab40 -> 0x007111e0 (real): Forwards to resource-manager Demand (loads data); sits after CancelRequest like GOG order
+- B0-3-27 0x0061ab20 -> 0x007111c0 (real): Forwards to resource-manager CancelRequest (decrements request count); GOG order same
+- B0-3-28 0x005bd130 -> 0x008ccd70 (real): Same size 250, six callees, +0x2ee0/0x2fb8/0x2670 immediates all shared with GOG
+- B0-3-29 0x00506a50 -> 0x0087b170 (real): Deleting destructor calling door Destructor_2 plus delete; size 44, RET 4
+- B0-3-30 0x00561f80 -> 0x00716fa0 (real): Deleting destructor with trusted Destructor_2 callee and delete, size 44
+- B0-3-31 0x0061b010 -> 0x007116b0 (real): Thunk passes 3 matching GOG imm 3 and 4; decoy passes 4 only
+- B0-3-33 0x00507760 -> 0x0087be80 (real): GetServerObject callee trusted, vtable +0x18 and SUB ESP,8 match GOG; sits between mapped door neighbours
+- B0-3-34 0x004e0c60 -> 0x007d0560 (real): Same disps and size, but body closes a popup via vcall +0x84 when a==b; fits RemoveGUIPopUps, not a getter
+- B0-3-35 0x00536580 -> 0x00842d00 (real): Trusted GetServerObject callee and vtable +0x48 match GOG; door twin uses 0x18
+- B0-3-36 0x005d1d20 -> 0x008529e0 (real): Same size 2923, GOG strings TEMP:/SAVES:/%06d - %s/GAMEINPROGRESS: all present, 35 shared immediates
+- B0-3-38 0x00534a80 -> 0x00841200 (real): Class vftable, imm 0xfc/0x104/0x148/2/3 and callees match GOG; deleting dtor 0x8411d0 calls it
+- B0-3-39 0x005bb0e0 -> 0x008cad20 (real): Deleting destructor calling the CSWGuiUpgrade Destructor_2; 0x8cad50 follows at same offset as GOG 0x5bb110
+- B0-3-41 0x0061b090 -> 0x00711730 (real): Thunk to UpdateKeyTable with type 2 matches GOG imm 2/4 and callee; decoy 0x711710 calls RemoveKeyTable
+- B0-3-42 0x0061afd0 -> 0x00711670 (real): Type 1 thunk by elimination: types 2,3,4 are claimed by directory, encapsulated, image siblings
+- B0-3-43 0x004e0ca0 -> 0x007d05a0 (real): Same size 120 and every disp/imm match; body is a boolean visibility getter, not a popup remover (labels with 0x4e0c60 swapped)
+- B0-3-44 0x005cfd00 -> 0x00850770 (real): Shared disps/strings/61 immediates; only tail fields shifted by 0x2d0 plus added filter button fields; class vftable same
+- B0-3-45 0x0053ccd0 -> 0x00882230 (real): All three GOG strings present, same size 702, 15 shared immediates, disps 0x1c98/0x50 shared
+- B0-3-47 0x005821d0 -> 0x008ee7f0 (real): Deleting destructor calling the area-of-effect Destructor_2 plus delete; size 44, RET 4
+- B0-3-48 0x0061af20 -> 0x007115c0 (real): Thunk passes type 3 matching GOG imm 3 and 8, two stack params like GOG
+- B0-3-49 0x00534a50 -> 0x008411d0 (real): Deleting destructor calling the placeable Destructor_2 plus delete; size 44, RET 4
+- B0-3-50 0x00605790 -> 0x00733680 (real): Length-limited string copy constructor: new plus strncpy, imm 4/8/0xc, size 117; decoy 0x7335f0 uses strlen
+- B0-3-51 0x0053cf90 -> 0x008824f0 (real): Same size, shared string, CacheResource callee, all seven disps shared; decoy 0x8827a0 builds SaveLoad panel
+- B0-3-52 0x004eaed0 -> 0x00733540 (real): Empty CExoString constructor zeroing both fields; GOG disp 0x4, size 33, no callees
+- B0-3-53 0x005d1bf0 -> 0x008528b0 (real): Trusted LoadGame and AddPanel callees, imm 0x7d9b/0x970/0x18 shared; only tail field shifted per layout rule
+- B0-3-55 0x0061ac10 -> 0x007112b0 (real): Forwards to resource-manager Release (decrements count +4); GOG callee CExoResMan::Release; order matches
+- B0-3-57 0x0059b420 -> 0x008a7520 (real): Same size 195; GOG ClearNewItems, GetPartyItems, GetSwoopUpgradeRowProvider callees by name; disps 0x24b0/0x24b4 shared
+- B0-3-58 0x00534a00 -> 0x00841180 (real): GOG callee GetServerPlaceable and disp 0x398 and imm 0x10 match; between GetName and Destructor like GOG
+- B0-3-59 0x004ecc00 -> 0x006d6e30 (real): Reads base item id at +0xc and array at global +0x34 then array getter; GOG disps 0xc/0x34 and imm 0xc shared
+- B0-3-60 0x005355c0 -> 0x00841d40 (real): Both GOG callees by name (ShowTutorialWindow, PerformAttack) and imm 8/0x14/0x21 shared; GOG param size is the known bad DB value
+- B0-4-01 0x006409d0 -> 0x006fd7b0 (real): Vector-destructor call plus virtual delete via +0x1c; size 137 equal. Decoy 0x6fd700 is the constructor (new 0x3d8).
+- B0-4-02 0x00640ba0 -> 0x006fd980 (real): Thunk target stores the implementer pointer at +0x3d4 and notifies it; fits SetCommandImplementer. Decoy calls StackPopInteger.
+- B0-4-03 0x00624c60 -> 0x00718b00 (real): Type check against 2 (WORD), GetFieldByLabel callee, RET 0x10. Decoy 0x718a80 checks type 1.
+- B0-4-05 0x0061de00 -> 0x007144a0 (real): Table switch +0x10..0x1c, name compare, rebuild call; imm set equals GOG. Decoy 0x714630 is a string builder.
+- B0-4-06 0x00624b30 -> 0x007189d0 (real): Tiny getter returning struct index 0 via out pointer fits GetTopLevelStruct; anchor semantic only, GOG has no callees.
+- B0-4-07 0x0061f070 -> 0x00715710 (real): Thunk calls WipeDirectory with remove-directory flag set; Nuke removes the directory itself. Decoy 0x7156e0 passes p3=0 (Clean).
+- B0-4-08 0x0061c7f0 -> 0x00712e90 (real): Switch over resource type ids 0x7d9..0xbbb returning 1; immediates equal GOG set. Decoy 0x712e50 calls GetTable.
+- B0-4-09 0x006248c0 -> 0x00718760 (real): List type 0xf, GetDataLayoutList callee, 16-byte label copy; GOG imm 0xf,0x10 match. Decoy GetListCount lacks the copy.
+- B0-4-10 0x00640c90 -> 0x006fda70 (real): Thunk target pops a type-5 (string) stack entry and assigns CExoString. Decoy 0x6fda90 pushes a string.
+- B0-4-11 0x00623710 -> 0x007175b0 (real): Clears the nine cached resource pointer fields; exact displacement set of GOG. Decoy ReleaseResource calls CRes::Release.
+- B0-4-12 0x00625b30 -> 0x007199d0 (real): AddField type 0 with zero-extended byte store; GOG imms cannot split BYTE/CHAR, GFF type ids do. Decoy is CHAR.
+- B0-4-13 0x0061d910 -> 0x00713fb0 (real): Has CStr callee and +0x1a access that GOG lists; size 843 equal. Decoy Encapsulated variant lacks both.
+- B0-4-14 0x00640c20 -> 0x006fda00 (real): Thunk target pushes a float-tagged entry. Decoy 0x6fd9e0 is StackPopFloat.
+- B0-4-15 0x00640be0 -> 0x006fd9c0 (real): Thunk target pushes an int-tagged entry. Decoy 0x6fdaf0 is StackPopObject.
+- B0-4-16 0x0061d550 -> 0x00713bf0 (real): Malloc present, CStr and +0x1a absent exactly as GOG; decoy ResFile variant has them.
+- B0-4-17 0x0061e5c0 -> 0x00714c60 (real): Callee/imm set equals GOG with no Malloc; ImageRaw sibling 0x714b30 calls Malloc at 00714bee. Anchor is absence-based.
+- B0-4-18 0x00622ff0 -> 0x00716e60 (real): Calls CRes ctor then initialises fields with GOG constants 0x286/0x72c/0xfd4/0x6e/0x62. Decoy is a destructor.
+- B0-4-19 0x006247f0 -> 0x00718690 (real): GetStruct callee then returns struct type id or -1; size 46 equal. Decoy is GetFieldCount_2.
+- B0-4-20 0x00620700 -> 0x00716da0 (real): Wrapper calling the adjacent CacheResource_2 matched in card 33; RET 12. Decoy 0x716d80 is a stub.
+- B0-4-22 0x00624970 -> 0x00718810 (real): List type 0xf check, GetDataLayoutList callee, returns first dword (count). Decoy GetListElement uses +0xc/+0x40.
+- B0-4-23 0x00625cf0 -> 0x00719b90 (real): AddField with type 4 plus InitializeForWriting; GOG imm 0x4. Decoy SHORT uses 3.
+- B0-4-24 0x00640920 -> 0x006fd700 (real): Allocates 0x3d8 internal object, constructs it, stores at +0x1c; GOG imm 0x3d8. Decoy is the destructor.
+- B0-4-26 0x00624b60 -> 0x00718a00 (real): Type 0 (BYTE) check, GetFieldByLabel, RET 16 equals GOG retn (GOG param size is a DB defect). Decoy is CHAR.
+- B0-4-28 0x00625c10 -> 0x00719ab0 (real): AddField with type 2 and zero-extended word; GOG imm 0x2. Decoy CHAR uses type 1.
+- B0-4-30 0x00624d60 -> 0x00718c00 (real): Type 4 check, GetFieldByLabel callee, imm 0x4 equals GOG. Decoy SHORT checks type 3.
+- B0-4-31 0x00623b60 -> 0x00717a00 (real): Exactly the seven GOG displacements 0x4/0x8/0x14/0x2c/0x40/0x4c/0x64 and *0xc scaling. Decoy GetStruct uses +0x40/+0x44.
+- B0-4-33 0x00620740 -> 0x00716de0 (real): String copy-construct/destruct pair as GOG callees; size 119 and RET 16 equal. Decoy is the stub.
+- B0-4-35 0x0061e490 -> 0x00714b30 (real): Malloc callee and 0x1c table offset present as in GOG; sibling ResFileRaw lacks both.
+- B0-4-36 0x00624820 -> 0x007186c0 (real): Returns field count at struct+8 or -1; matches GOG disp 0x8. Decoy 0x7186e0 is the GetStruct variant (_2).
+- B0-4-37 0x00625d50 -> 0x00719bf0 (real): AddField type 5 plus InitializeForWriting; GOG imm 0x5. Decoy DWORD uses 4.
+- B0-4-38 0x0061c5f0 -> 0x00712c90 (real): Finds extension dot, takes 3 chars, maps to type id, 0xffff on failure; imms equal GOG. Decoy takes 16.
+- B0-4-39 0x00624870 -> 0x00718710 (real): Optional label lookup then field entry type or -1; callees as GOG. Decoy GetList has more callees.
+- B0-4-40 0x0061c7b0 -> 0x00712e50 (real): Calls GetTable, counts entries, -1 if none; same shape and RET 8. Decoy 0x712be0 is a string parser.
+- B0-4-42 0x00625c80 -> 0x00719b20 (real): AddField type 3 with sign-extended short; GOG imm 0x3. Decoy WORD uses 2.
+- B0-4-44 0x006257a0 -> 0x00719640 (real): Type 0xd, GetDataField and memcpy as GOG; RET 24. Decoy ReadFieldVector lacks memcpy.
+- B0-4-45 0x00640b80 -> 0x006fd960 (real): Thunk target returns the stored run-script result and type via two out pointers, RET 8. Decoy pops engine structure.
+- B0-4-46 0x0061f040 -> 0x007156e0 (real): Thunk calls WipeDirectory with remove-directory flag 0 (clean contents only). Decoy 0x715710 passes 1 (Nuke).
+- B0-4-47 0x00625ba0 -> 0x00719a40 (real): AddField type 1 with sign-extended byte; GOG imms cannot split BYTE/CHAR, GFF type ids do. Decoy BYTE uses 0.
+- B0-4-48 0x00625240 -> 0x007190e0 (real): Type 0xc, LocString destructor and GetDataField as GOG; imm set equals GOG. Decoy ReadFieldCExoString lacks LocString calls.
+- B0-4-49 0x00640bc0 -> 0x006fd9a0 (real): Thunk target pops an int-tagged stack entry into out pointer. Decoy 0x6fdaf0 pops object.
+- B0-4-50 0x00640c40 -> 0x006fda20 (real): Thunk target pops three floats into x/y/z. Decoy 0x6fd9c0 is StackPushInteger.
+- B0-4-51 0x00640c00 -> 0x006fd9e0 (real): Thunk target pops a float-tagged entry. Decoy 0x6fd9c0 pushes an integer.
+- B0-4-52 0x0061b890 -> 0x00711f30 (real): Table switch with GOG offsets 0x10..0x1c and call to the key-entry-from-table routine. Decoy Exists calls GetKeyEntry 0x712360.
+- B0-4-53 0x00625e40 -> 0x00719ce0 (real): AddField type 8 plus InitializeForWriting. Decoy DWORD64 has AddDataField.
+- B0-4-54 0x00640b50 -> 0x006fd930 (real): Thunk target initialises a script-situation run in the VM internal (+0x1ac,+0x3d4), RET 12. Decoy RunScript has a string.
+- B0-4-56 0x0061bf10 -> 0x007125b0 (real): Calls GetResOfTypeFromTable over tables +0x10..0x1c; imm set equals GOG; size 875 equal. Decoy is the table function.
+- B0-4-57 0x0061f0a0 -> 0x00715740 (real): operator== and 0xffff default as GOG imm set; size 404 and RET 16 equal. Decoy RemoveFile uses strlen/CStr.
+- B0-4-58 0x0061c540 -> 0x00712be0 (real): Finds dot, clamps ResRef length to 0x10, SubString as GOG. Decoy GetResTypeFromFile takes 3 chars.
+- B0-4-59 0x00624be0 -> 0x00718a80 (real): Type 1 (CHAR) check with byte result; GOG imm cannot split BYTE/CHAR, GFF type id does. Decoy BYTE checks 0.
+- B0-5-03 0x0064bd90 -> 0x0051c370 (real): 31-byte callee-free accessor of the default world timer field +0x10048; next accessor reads +0x1004c. Weak anchor, no GOG offset shown.
+- B0-5-04 0x00645830 -> 0x00702590 (real): All 7 GOG callees present (dtor, CopyFromStack, SetUp, RunScriptFile, DeleteScript, script dtor, delete); 13 shared displacements; ret 12.
+- B0-5-05 0x0064bb20 -> 0x0051c100 (real): Thunk to creature-type-checked object lookup; matches GOG callee CServerExoAppInternal::GetCreatureByGameObjectID.
+- B0-5-06 0x0064bd70 -> 0x0051c350 (real): Thunk to internal timer selector keyed by object id, matching GOG callee GetActiveTimer (4-byte param). No GOG body to compare.
+- B0-5-08 0x0064b810 -> 0x0051bdf0 (real): Thunk to the save routine (SAVEGAME and Screen strings); GOG callee is CServerExoAppInternal::SaveGame; the load twin is the next thunk.
+- B0-5-09 0x00640d50 -> 0x006fdb30 (real): Thunk to pop-command body (copies current script frame into a new object); name fits. Semantic anchor only.
+- B0-5-10 0x00640d10 -> 0x006fdaf0 (real): Thunk to the pop that checks tag 6 (object); GOG callee StackPopObject has the same tag.
+- B0-5-11 0x00640dd0 -> 0x006fdbb0 (real): Thunk to DeleteScriptSituation: destroys a script object and frees it; matches GOG callee DeleteScriptSituation.
+- B0-5-12 0x0064c820 -> 0x0051ce00 (real): Setter for field +0x100c4 read by GetLoadFromSaveGame; callers are the load paths. 36 bytes, ret 4.
+- B0-5-13 0x0064bac0 -> 0x0051c0a0 (real): Calls the one GOG callee CGameObjectArray::GetGameObject (0x53dfb0) with the object array and returns the out value.
+- B0-5-14 0x00646010 -> 0x00702d70 (real): Pushes three floats via StackPushFloat, the single GOG callee; ret 12 for three params.
+- B0-5-15 0x0064ceb0 -> 0x0051d4b0 (real): Deleting-destructor wrapper whose inner call sets the CSWSEffectListHandler vftable; matches GOG callees.
+- B0-5-16 0x00640cd0 -> 0x006fdab0 (real): Thunk to engine-structure pop (tag param+0x10, SetStackPointer); size 32 ret 8 as GOG.
+- B0-5-17 0x00645c90 -> 0x007029f0 (real): Both GOG callees present, 17 shared displacements, imm -0x5e shared.
+- B0-5-18 0x00646100 -> 0x00702e60 (real): Matches all GOG callee roles (new, CStr, string ctor, AddToTopOfStack, GetStackPointer), tag 5, disp 0x1bc.
+- B0-5-19 0x0064baa0 -> 0x0051c080 (real): Returns the object-array field that GetGameObject (0x51c0a0) hands to the array lookup; 31 bytes, no callees.
+- B0-5-20 0x0064c800 -> 0x0051cde0 (real): Getter of the field the load paths set; script command caller is GetLoadFromSaveGame. 31 bytes.
+- B0-5-22 0x00640d30 -> 0x006fdb10 (real): Thunk to push-object body (tag 6); GOG callee StackPushObject has imm 6.
+- B0-5-23 0x0064c310 -> 0x0051c8f0 (real): Thunk to a player-creature lookup returning the object id or invalid id; GOG callee GetPlayerCreatureId. Semantic anchor only.
+- B0-5-24 0x00642b70 -> 0x006ff930 (real): Same two callees, identical 6 displacements and imm 0xd.
+- B0-5-25 0x00642680 -> 0x006ff440 (real): 16-byte accessor of field +0, which LoadStack stores 'StackPointer' into. No offsets in GOG to compare.
+- B0-5-26 0x0064c2b0 -> 0x0051c890 (real): Returns internal+0x100fc, same immediate as GOG; address-of accessor.
+- B0-5-30 0x006634d0 -> 0x005ffd60 (real): Item ctor: AddObject, CSWSObject ctor, 3 locstring ctors, memset; 26 shared displacements, 20 shared immediates.
+- B0-5-31 0x00645f50 -> 0x00702cb0 (real): Float push: tag 4, both GOG callees, disp 0x1bc. Integer twin uses tag 3.
+- B0-5-32 0x00640d70 -> 0x006fdb50 (real): Thunk to the save body that writes GFF fields and calls SaveStack; load twin reads. Ghidra Statistics label ignored.
+- B0-5-33 0x00645c50 -> 0x007029b0 (real): Exact GOG displacements 0x1c/0x20 and imm 3; returns bool and two out values.
+- B0-5-34 0x00645540 -> 0x007022a0 (real): GOG side is a 9-byte prologue chunk (imm 0x10); Steam matches, body runs ReadScriptFile then RunScriptFile. Weak anchor.
+- B0-5-35 0x00641680 -> 0x006fe440 (real): Destructor wrapper calling the stack-clear body, same as GOG callee ClearStack_2.
+- B0-5-36 0x00640da0 -> 0x006fdb80 (real): Thunk to the load body reading GFF and calling LoadStack; save twin writes. Ghidra Statistics label ignored.
+- B0-5-37 0x00645270 -> 0x00701fd0 (real): All three GOG chunk immediates and disp 0x28 sit in the first 64 bytes; depth check then -0x5e.
+- B0-5-38 0x00646a60 -> 0x007037c0 (real): Both GOG callees (script dtor, delete) present with imm 0x1c and 4.
+- B0-5-39 0x00646310 -> 0x00703070 (real): Pop checking tag 6 with both stack-pointer callees; GOG imm 6 and disp 0x1b8/0x1bc.
+- B0-5-40 0x006637e0 -> 0x0053ef30 (real): Writes an empty resref into the out param; GOG callee CResRef::Constructor_4 same role. Base-class stub, weak anchor.
+- B0-5-41 0x00642c30 -> 0x006ff9f0 (real): Huge opcode switch calling the GOG-listed push helpers and string ops; 10 shared displacements, 25 shared immediates.
+- B0-5-42 0x006421c0 -> 0x006fef80 (real): Same strings and all five CResGFF read callees; decoy SaveStack uses Write* callees.
+- B0-5-43 0x0064c2d0 -> 0x0051c8b0 (real): Thunk to client-to-server id mask; GOG callee ClientToServerObjectId.
+- B0-5-44 0x0064b840 -> 0x0051be20 (real): Thunk to the load routine ('SAVES:' + format); GOG callee CServerExoAppInternal::LoadGame. Ghidra DoHillClimbing label ignored.
+- B0-5-45 0x00640cb0 -> 0x006fda90 (real): Thunk to push-string body; GOG callee StackPushString.
+- B0-5-46 0x006451c0 -> 0x00701f20 (real): Decrements +0x1c4 and reads the +0x1c8 array: pop; size 92 as GOG. Same disp 0x1c4/0x1c8.
+- B0-5-47 0x006429f0 -> 0x006ff7b0 (real): Deleting-destructor wrapper calling the class's Destructor_2 and operator delete.
+- B0-5-48 0x00646390 -> 0x007030f0 (real): Object push: tag 6 with both GOG callees; integer/float twins use 3/4.
+- B0-5-49 0x00645e00 -> 0x00702b60 (real): Pop checking tag 3 with both stack-pointer callees; GOG imm 3, disp 0x1b8/0x1bc.
+- B0-5-50 0x0064cee0 -> 0x0051d4e0 (real): Deleting-destructor wrapper whose inner call sets CSWSItemPropertyHandler vftable; GOG callees Destructor_2 plus delete.
+- B0-5-51 0x00645af0 -> 0x00702850 (real): All GOG callees present (ExecuteCode, PushInstructionPtr, stack pointer, CStr, string ctor/dtor); identical disp set.
+- B0-5-53 0x00640cf0 -> 0x006fdad0 (real): Thunk to engine-structure push (tag param+0x10, AddToTopOfStack); size 32 as GOG.
+- B0-5-54 0x00645e80 -> 0x00702be0 (real): Integer push: tag 3 and both GOG callees; float twin 0x702cb0 pushes tag 4.
+- B0-5-56 0x00646070 -> 0x00702dd0 (real): Pop checking tag 5 with CExoString::operator=, the GOG callee; disp 0x1b8/0x1bc.
+- B0-5-57 0x00645220 -> 0x00701f80 (real): Push to +0x1c8 array, increments +0x1c4, compares 0x80; same disp/imm as GOG.
+- B0-5-58 0x0064c2f0 -> 0x0051c8d0 (real): Counterpart sure (imm 0x1f0b4, size 22) but body returns the embedded party table; name fits GetPartyTable, not SwoopUpgradeRowProvider.
+- B0-5-60 0x00645ed0 -> 0x00702c30 (real): Pop checking tag 4 with both stack-pointer callees; GOG imm 4/0xc/0x1ac, no 3.
+- B0-6-01 0x006696b0 -> 0x00605e80 (real): DelIndex callee plus +0x2c8 bit7 clear and +4 count decrement match GOG disp/imm sets; name fits
+- B0-6-02 0x006f6ec0 -> 0x006baa40 (real): Same callee and +0x24 as STR/CON neighbours; only index 1 (DEX) fits name; GOG imm set cannot show it
+- B0-6-03 0x006f4a70 -> 0x006b85f0 (real): Removes feat id from list+0xc via DelIndex and frees; decoy 0x6b8370 calls 0x5933f0 instead; name fits
+- B0-6-05 0x00669a30 -> 0x00606200 (real): Clears the +0xc array (same array RemoveItem DelIndex uses) and zeroes +4 count; size 34 and disp/imm sets match
+- B0-6-06 0x006e35f0 -> 0x006a7170 (real): Trivial return-1 body tiles exact gap between trusted neighbours 0x6a6f80 and 0x6a7190; no callee/string anchor exists
+- B0-6-07 0x006a3970 -> 0x0058ae90 (real): GetClientObject callee mapped by GOG side and disp 0x2c vtable slot both match; decoy 0x58ad80 differs
+- B0-6-08 0x00679380 -> 0x00615b50 (real): Both GOG callees (GetClientItem, CSWCItem::PowerItem) appear in order; RET 0xc equals GOG retn 12
+- B0-6-09 0x006f6fb0 -> 0x006bab30 (real): Same GetTotalEffectBonus wrapper pattern as siblings; ability index 4 fits WIS and neighbour order INT/WIS/CHA
+- B0-6-10 0x006f5030 -> 0x006b8bb0 (real): rand-driven choice among 4 sub-talent callees (same 5 callees as GOG), imm set identical; name fits; neighbour tiling holds
+- B0-6-11 0x006b3380 -> 0x005d7190 (real): Only function with this 0x46 action-switch shape; decoy 0x5d7160 uses 5/0x30/1/0x33; no callee anchors
+- B0-6-12 0x0067a210 -> 0x00616a60 (real): 8-byte this-adjust thunk with imm 0x10 matches GOG; target is the CSWSItem deleting destructor
+- B0-6-14 0x006f6e70 -> 0x006ba9f0 (real): Same wrapper as DEX/CON siblings; index 0 fits STR and neighbour order GetFeat/STR/DEX
+- B0-6-16 0x006f5a80 -> 0x006b9600 (real): Counterpart via ClassInfo callee 0x6a40d0 (GOG GetSpellGain, address order kept); body is a plain class-bounded accessor, nothing random
+- B0-6-17 0x006f4c80 -> 0x006b8800 (real): ClassInfo count accessor callee fits GetNumberKnownSpells; sibling 0x6b87b0 calls 0x6a4080 instead; disp 0x8d/0x90, imm 8/0x28 match
+- B0-6-18 0x00668830 -> 0x00605000 (real): Destroys the +0xc array (GOG callee ExoArrayList dtor, imm 0xc); decoy 0x604fb0 is the constructor
+- B0-6-19 0x006e5390 -> 0x006a8f10 (real): Counterpart ok (size 202, same disps/imms; monk-table decoy returns 4/6/8/10); body is monk-level based, no feat check, name suspect
+- B0-6-20 0x006699d0 -> 0x006061a0 (real): Both GOG callees appear in a sum loop over count at +0x10; neighbours ItemListGetItemObjectID and ClearItems tile around it
+- B0-6-22 0x006f8850 -> 0x006bc3d0 (real): Matches GOG disp 0x12b and callee UpdateCombatInformation; decoy 0x6bc400 writes +0x12c (SetForceResistancePenalty)
+- B0-6-24 0x006f2fb0 -> 0x006b6b30 (real): Returns this->+0x24 plus 0x18 (tag address), matching GOG disp 0x24 and imm 0x18; decoy 0x6b6b50 is SetTag
+- B0-6-25 0x00663870 -> 0x0053efd0 (real): Resref assign at +0x20 matches GOG imm 0x20 and CResRef operator= callee; GetPortrait/GetPortraitId neighbours tile
+- B0-6-26 0x006638e0 -> 0x006000b0 (real): Deleting destructor calling Destructor_2 and delete matches both GOG callees and RET 4
+- B0-6-29 0x006e06e0 -> 0x006a4260 (real): Size 1894 vs 1893, 110 shared disps, 25 shared imms, same constructor callees; destructor follows
+- B0-6-30 0x006ada90 -> 0x00546db0 (real): Single store at +0x54 matches GOG disp; gap from 0x546bd0 (0x1e0) equals GOG gap from GetNearestObjectByName; decoy 0x546dd0 uses +0x1b0
+- B0-6-31 0x006e10b0 -> 0x006a4c30 (real): Matches GOG callee set and imm 0x34/0x3c/0x10/0x14; size 145; decoy 0x6a4cd0 is class-level code
+- B0-6-32 0x006695b0 -> 0x00605d80 (real): All three GOG callees (GetItemByGameObjectID, GetBaseItem, self) present; disps 0x34/0x70/0x2ac equal
+- B0-6-34 0x006f3820 -> 0x006b73a0 (real): Fort callee 0x6f0920 is first of the trio spaced +0x30,+0x40 exactly as GOG 0x50efd0; disp/imm sets equal, size 542
+- B0-6-36 0x006f3c60 -> 0x006b77e0 (real): Reflex callee 0x6f0950 = Fort callee +0x30 as GOG 0x50f000 = 0x50efd0 +0x30; Fort/Will decoys call other callees
+- B0-6-37 0x006796c0 -> 0x00615e90 (real): Filters out matching entries via memcpy; size 349 equals GOG; decoy 0x615d60 (AddUpgrade, size 304) lacks 0x3c
+- B0-6-38 0x006f2f70 -> 0x006b6af0 (real): Computes (stat-10)/2 with floor, matching GOG imm 0xa/0xb/4 and name; neighbours SetClassNegativeLevels/GetTag tile around it
+- B0-6-39 0x006f6f60 -> 0x006baae0 (real): Index 3 appears in GOG imm set {3,4,0x10,0xff}; sibling WIS pushes 4, CON 2
+- B0-6-41 0x00667020 -> 0x006037f0 (real): Four callees in GOG order (GetArea, SetArea, RemoveObjectFromArea, SetPosition), disp 0x14, imm 0x10; size 102
+- B0-6-42 0x006e5320 -> 0x006a8ea0 (real): Both GOG callees present (GetUseMonkAbilities, GetItemInSlot) with disps 0x24/0x1150 and imm 0x10; decoy 0x6a8f10 lacks the slot call
+- B0-6-43 0x006a8070 -> 0x00541390 (real): Matches GOG callee SetDirtyFlag and disp 0xd8; decoy 0x5413c0 uses +0xe0/+0xe8
+- B0-6-44 0x00669770 -> 0x00605f40 (real): Both GOG callees present; RemoveItem decoy 0x605e80 has no object-by-id call; size 162 equals GOG
+- B0-6-45 0x006f3760 -> 0x006b72e0 (real): GetLevel callee and disp 0x38 table lookup match GOG; decoy 0x6b7310 (GetPotentialLevel) uses +0x68/+0x6c/+0x94
+- B0-6-47 0x006f47f0 -> 0x006b8370 (real): Empties the feat list and frees every entry; GOG callees DelIndex+delete present; RemoveFeat decoy uses 0x5aa100 find-by-id instead
+- B0-6-49 0x006638a0 -> 0x0053f000 (real): Returns word at +0x30 matching GOG disp 0x30 and size 18; follows SetPortrait 0x53efd0 as GOG does
+- B0-6-50 0x006e5460 -> 0x006a8fe0 (real): Constants 6, 0xa, 0x14 are in the GOG imm set and absent from the 0x6a8f10 decoy; size 277 equals GOG
+- B0-6-51 0x00663840 -> 0x0053efa0 (real): Copies 16-byte resref at this+0x20 (matches SetPortrait's +0x20 write and GOG disps 4/8/0xc); GetRect label is auto and ignored
+- B0-6-52 0x00667710 -> 0x00603ee0 (real): Counterpart fits (size 63, short arg, imm 0xa/0x2b, no callee); body is a pure type-set predicate, not a restore
+- B0-6-53 0x00667600 -> 0x00603dd0 (real): Counterpart sure (size 245, GetActiveProperty callee, disps 6/0xc/0x10/0x288); body resets use counters, not an exists check
+- B0-6-54 0x00679590 -> 0x00615d60 (real): Size 296 equals GOG; appends other item's properties (memcpy, +0x294/+0x28c); RemoveUpgrade decoy is size 349
+- B0-6-55 0x006f3a40 -> 0x006b75c0 (real): Will callee order matches GOG spacing; Fort/Reflex siblings call 0x6f0920/0x6f0950; disp and imm sets equal, size 542
+- B0-6-56 0x0066d900 -> 0x0060a0d0 (real): Size 1056, constant 0x3d and the six GOG disps all present; Gender decoy 0x609cb0 uses 0x3c and an extra +0x14
+- B0-6-57 0x006f53c0 -> 0x006b8f40 (real): Exactly the five GOG callees plus 13 shared disps; size 620; decoy 0x6b91b0 adds SetCurrentHitPoints and is bigger
+- B0-6-58 0x0066d4e0 -> 0x00609cb0 (real): Size 1053, constant 0x3c and disp 0x14 are in the GOG sets; Subrace decoy uses 0x3d and lacks +0x14
+- B0-6-59 0x006f7000 -> 0x006bab80 (real): Index 5 is in the GOG imm set {4,5,0x10,0xff}; sibling WIS pushes 4
+- B0-6-60 0x006f6f10 -> 0x006baa90 (real): Index 2 is in the GOG imm set {2,4,0x10,0xff}; DEX decoy pushes 1
+- B0-7-01 0x00703650 -> 0x005fdca0 (real): Counter at +0x168 checked then incremented; adds resource dir. Decoy 0x5fdd30 decrements and calls RemoveResourceDirectory.
+- B0-7-02 0x00703770 -> 0x005fddc0 (real): Fills 12 member slots with 0x7f000000 sentinel; GOG disp 0x1c and imms 8,0xc,0x7f000000 identical; size 53 equal.
+- B0-7-03 0x00709fd0 -> 0x0054fdb0 (real): Three SmoothSelectionRestartable calls then frees temp arrays, same callees as GOG; decoy calls SmoothSelectNodesRestartable.
+- B0-7-04 0x006f88f0 -> 0x006bc470 (real): Counterpart: identical imms 0xb7-0xbd,0xffff, HasFeat callee, RET 4. Body maps skill index to Skill Focus feat then HasFeat; not spells-left.
+- B0-7-05 0x007036e0 -> 0x005fdd30 (real): Decrements counter and removes resource dir at zero; decoy 0x5fdca0 increments and calls the Add variant.
+- B0-7-06 0x007048a0 -> 0x005feef0 (real): Stores solo flag at +0x238, unstealths party when turning off; callee and disp match GOG.
+- B0-7-07 0x00718510 -> 0x00523360 (real): Decrements players-in-area counter, calls Decrease priority at zero; decoy 0x523320 increments and calls 0x5233a0.
+- B0-7-09 0x007049b0 -> 0x005ff000 (real): Stores current FILETIME into globals; GOG imms 8,0x20 and single shift callee match; decoy 0x5fee60 reads +0x1a8.
+- B0-7-10 0x00718400 -> 0x00523250 (real): Size 81, offsets match GOG; body resets index and returns first element, so GOG First/Next labels look swapped (see B0-7-56).
+- B0-7-12 0x006fd830 -> 0x005f7cc0 (real): Reads JNL_* fields via CResGFF Read callees matching GOG; decoy SaveJournal uses Write callees.
+- B0-7-13 0x00716b50 -> 0x005219a0 (real): Scalar deleting destructor: calls Destructor_2 then delete if flag&1; decoy 0x521950 has no Destructor_2 call.
+- B0-7-14 0x00705280 -> 0x0054aee0 (real): Same callees (TestDirectLine, sqrt) and imms 5,8,0x30,0x41,0x60 as GOG; float corner search loop.
+- B0-7-15 0x00704df0 -> 0x0054aa50 (real): Disp 0x1b0 and imm 0x194 plus vector/TestDirectLine callees match GOG; decoy ComputeBestCorner lacks them.
+- B0-7-16 0x007037f0 -> 0x005fde40 (real): Bounds-checked clear of one puppet slot at +0x14c; ClearMember twin uses +0x1c and bound 0xc.
+- B0-7-17 0x007002b0 -> 0x005fa740 (real): PUP variant: GOG imms have bound 3 and no 0xc; decoy AddNPC_2 calls 0x5fa960/0x5f9ff0 with bound 0xc.
+- B0-7-18 0x0071ab60 -> 0x005259b0 (real): Room array build, walkmesh, weld, normals loop; GOG retn 0 equals Steam RET 0, GOG param count flagged bad.
+- B0-7-19 0x00700cb0 -> 0x005fb140 (real): Getter returns byte at +0x7c+idx or 0xff; decoy 0x5fb170 is the setter (RET 8).
+- B0-7-20 0x00704b00 -> 0x005ff150 (real): Last-name twin: frame 0x30, extra call 0x5355f0; first-name function 0x5ff040 has frame 0x2c, matching GOG GetPCFirstName.
+- B0-7-22 0x00700490 -> 0x005fa920 (real): Zeroes NPC slot at +0x4c if available; callee and disp match GOG.
+- B0-7-25 0x00702df0 -> 0x005fd440 (real): Same three callees as GOG Save; update members and inventory if flag set, then SaveTableInfo.
+- B0-7-26 0x006fe090 -> 0x005f8520 (real): Puppet bound 3 and GetPupFilename separate it from decoy 0x5f8130 (bound 0xc, GetFilename).
+- B0-7-27 0x00709770 -> 0x0054f3d0 (real): Counterpart via both Smooth callees and disp 0x1b0/0x8c/0x90/0x94/0x98. Body smooths a node path, not DFS table init.
+- B0-7-28 0x007037b0 -> 0x005fde00 (real): Loop over 3 puppet slots to sentinel at +0x14c, RET 0; matches GOG disp and imms.
+- B0-7-29 0x00703960 -> 0x005fdfb0 (real): Plot XP variant calling GetINTEntry_2; decoy 0x5fdea0 calls the plain GetINTEntry. Disps 0xe8/0x130 match.
+- B0-7-30 0x0070ceb0 -> 0x00552c90 (real): Offsets and imms match GOG, size 252 and order separate it from decoy. Body is a hash Put of 4 values, not Initialize.
+- B0-7-32 0x006fdca0 -> 0x005f8130 (real): Member bound 0xc and GetFilename separate it from puppet twin 0x5f8520; GAMEINPROGRESS string present.
+- B0-7-33 0x007005f0 -> 0x005faa80 (real): Stores object id into NPC slot +0x1c if available; callee, disp and RET 8 match GOG.
+- B0-7-34 0x006fda30 -> 0x005f7ec0 (real): Loops 12 members then 3 puppets calling Save callees; imms 3,4,8,0xc match GOG.
+- B0-7-35 0x00716560 -> 0x00521360 (real): Constructor with identical callees, 55 common disps, 39 common imms, RET 0xc; dtor 0x5219d0 sets same vtable fields.
+- B0-7-36 0x006f8bb0 -> 0x006bc730 (real): Counterpart by identical imm set and size 447. Body maps effect type to immunity index, not an inclusion check.
+- B0-7-37 0x00700170 -> 0x005fa600 (real): NPC variant: bound 0xc and AddNPC callee; decoy AddPUP_2 uses bound 3 and AddPUP.
+- B0-7-39 0x006fec70 -> 0x005f9100 (real): Format string 'AVAILNPC%d' equals GOG string; decoy 0x5f9190 uses 'AVAILPUP%d'.
+- B0-7-40 0x0071b570 -> 0x005263c0 (real): Item list loader: GOG strings and imm 0x30c match; decoy LoadCreatures uses creature callees.
+- B0-7-42 0x006fed00 -> 0x005f9190 (real): Format string 'AVAILPUP%d' equals GOG string; decoy 0x5f9100 uses 'AVAILNPC%d'.
+- B0-7-43 0x0070cd90 -> 0x00552b70 (real): Offsets, imms and size 273 match GOG, order after Get 0x552b40. Body is a two-probe hash lookup, not PlotSoundPath.
+- B0-7-44 0x007184d0 -> 0x00523320 (real): Counterpart: GOG callee IncreaseAILevelPriority and disp 0x12c. Body increments players-in-area, not SetMaxStealthXP.
+- B0-7-45 0x00700ce0 -> 0x005fb170 (real): Setter writes byte at +0x7c+idx; GOG param 5 bytes gives RET 8; decoy 0x5fb140 is the getter.
+- B0-7-46 0x006fa1e0 -> 0x006bdd60 (real): Pure nibble-mask compare with 0xf wildcard, no list write; counterpart by imms and size 205. Not AddSpellLikeAbilityToList.
+- B0-7-47 0x00703dc0 -> 0x005fe410 (real): Searches 12 slots for id and stores index at +0x114; decoy GetIsLeader only reads it (size 90 vs 92).
+- B0-7-48 0x006fe490 -> 0x005f8920 (real): Clears item repository and zeroes +0x1a4; disps 0x1a4/0x1ac and ClearItems callee match GOG.
+- B0-7-49 0x007035a0 -> 0x005fdbf0 (real): Returns slot index matching id over 12 slots; disp 0x1c only (GetIsLeader twin also uses 0x114); size 78.
+- B0-7-51 0x00703d60 -> 0x005fe3b0 (real): Read-only compare of leader index; decoy SetLeader writes +0x114. Disps 0x1c,0x114 and size 90 match GOG.
+- B0-7-53 0x00703820 -> 0x005fde70 (real): Bounds-checked clear of one member slot at +0x1c; ClearPuppet twin uses +0x14c and bound 3.
+- B0-7-54 0x00701d10 -> 0x005fbf60 (real): 58 shared strings, 35 common disps and Reader callees; decoy SaveTableInfo uses Write callees.
+- B0-7-55 0x006f8880 -> 0x006bc400 (real): Stores byte at +0x12c then updates combat info; decoy SetForceResistance writes +0x12b.
+- B0-7-56 0x00718460 -> 0x005232b0 (real): Size 97 and offsets match GOG; body increments index and returns next element, so GOG First/Next labels look swapped.
+- B0-7-57 0x00703850 -> 0x005fdea0 (real): Plain GetINTEntry variant; decoy 0x5fdfb0 calls GetINTEntry_2. Disps 0x4,0xe8,0x130 and callees match GOG.
+- B0-7-58 0x007035f0 -> 0x005fdc40 (real): Searches 3 puppet slots for id, returns index; GOG disp 0x14c and imm 3 match.
+- B0-7-59 0x007049f0 -> 0x005ff040 (real): First-name twin: frame 0x2c, no 0x5355f0 call; GetPCLastName has frame 0x30.
+- B0-8-01 0x00736240 -> 0x00593960 (real): Dtor resets vftable, deletes members +4/+8, restores base vftable; matches GOG delete callee and disps 4,8.
+- B0-8-02 0x00722d10 -> 0x0052dc30 (real): Detach clears +0x334 (GOG disp 0x334, ret 0); neighbour 0x52dc10 stores a parameter, ret 4.
+- B0-8-04 0x0073d5b0 -> 0x0059acc0 (real): String BLOODCOLR and 12 disps match GOG; subtracts GetInteger from HP +0xe8, consistent with removing temp HP.
+- B0-8-05 0x0073d410 -> 0x0059ab70 (real): Disps 0x30/0x384 and ret 12 match; only function between anchored AttackDecrease and DamageDecrease; sibling 0x59aa40 differs (ret 8, returns 1).
+- B0-8-06 0x00734c40 -> 0x005e4f80 (real): Stores both args to +0x10/+0x14, matching GOG disps and Set name; decoy 0x5e4fa0 reads them (Get).
+- B0-8-07 0x0073dcd0 -> 0x0059b3e0 (real): Vtable +0xb0 plus loop over effect types 0x10/0x11 matches GOG disp 0xb0; decoy 0x59b1a0 uses 0xb4.
+- B0-8-08 0x00734bc0 -> 0x005e4f00 (real): Stores arg at this+0x78+idx*4, matching GOG disp 0x78 and Set; decoy 0x5e4ee0 only reads it.
+- B0-8-09 0x007232a0 -> 0x0052e1c0 (real): Loop over +0x130 list with count +0x134, trigger lookup, tests +0x2fc/+0x354; all five GOG disps present.
+- B0-8-10 0x0073c6d0 -> 0x00599de0 (real): GetInteger callee, 0x30/0x384 and ret 12 match; follows anchored RemoveSummonParty 0x599d90; decoy Decrease has immunity calls.
+- B0-8-11 0x00734be0 -> 0x005e4f20 (real): Returns copy-constructed string from this+0x48+idx*8; GOG callee is a CExoString copy ctor; decoy uses operator=.
+- B0-8-13 0x00723350 -> 0x0052e270 (real): Calls the mine counter and compares to 0xf, matching GOG callee and imm 0xf; name fits.
+- B0-8-14 0x0073d450 -> 0x0059abb0 (real): Callees GetCreatureByGameObjectID and GetEffectImmunity plus disps 0x384/0x1198 match GOG; decoy 0x59aa90 adds GetInteger/0xfc.
+- B0-8-16 0x00734780 -> 0x005e4ac0 (real): Copy constructor: reads param +0x30 into SetNumIntegers; 17 shared disps as GOG Constructor_2; plain Constructor has 16.
+- B0-8-19 0x00737020 -> 0x00594740 (real): Dispatch via table at this+4 with limit 0x76 matches GOG disps {4,8} imm 0x76; remove variant uses +8.
+- B0-8-20 0x00734c60 -> 0x005e4fa0 (real): Reads +0x10/+0x14 into two out params, matching GOG disps and Get name; decoy stores them.
+- B0-8-22 0x007221c0 -> 0x0052d0e0 (real): Wrapper pushes extra zero args then calls NoNonWalkPolysDetailed; GOG sole callee, ret 32, imm 0x8/0x20 match.
+- B0-8-23 0x00737990 -> 0x005950b0 (real): Scans effect list (+0x148/+0x14c) for type 0x6f then resets +0x120/+0x124; GOG imms 0x6f/0x148 match; decoy OnApplyFury lacks them.
+- B0-8-24 0x00734a90 -> 0x005e4dd0 (real): Sets count at +0x30, frees and reallocates array at +0x34 with memset; GOG callees delete/new/memset, disps 0x30/0x34.
+- B0-8-26 0x00736310 -> 0x00593a30 (real): Allocates two 0x1d8 tables, loops 0x76 and fills handler pointers; GOG imm 0x1d8/0x76 and 116 shared disps.
+- B0-8-27 0x00734ba0 -> 0x005e4ee0 (real): Reads this+0x78+idx*4 and returns it; GOG disp 0x78, ret 4, Get name; decoy 0x5e4f00 writes it.
+- B0-8-28 0x0073c680 -> 0x00599d90 (real): Exact GOG callee trio GetObjectID, GetCreatureByGameObjectID, UnsummonMyself; ret 8 matches gog_retn despite bad param meta.
+- B0-8-30 0x0073da90 -> 0x0059b1a0 (real): Vtable +0xb4 matches GOG disp 0xb4; remove-Increase subtracts; twin 0x59b3e0 uses +0xb0.
+- B0-8-33 0x00734b60 -> 0x005e4ea0 (real): Returns float at this+0x38+idx*4; GOG disp 0x38 and ret 4; decoy is SetFloat.
+- B0-8-34 0x0073d330 -> 0x0059aa90 (real): GOG callees GetCreatureByGameObjectID/GetEffectImmunity/GetInteger and disps 0xfc/0x384/0x1198 all present; immunity code 0x14.
+- B0-8-35 0x00722ee0 -> 0x0052de00 (real): Body sets +0x2e8 max and clamps +0x2ec (SetMaxStealthXP shape), not GetClientArea. Layout follows AwardStealthXP; twin 0x52de40 is set-current.
+- B0-8-36 0x00734b20 -> 0x005e4e60 (real): Loads from array at this+0x34 by index, ret 4; GOG disp 0x34; decoy SetInteger stores (RET 8).
+- B0-8-37 0x0073d020 -> 0x0059a730 (real): Eleven shared disps (0xfd,0xff,0x101,0x103,0x105,0x13a) and imm 0x31 match GOG; decoy Apply variant differs.
+- B0-8-38 0x0073d4f0 -> 0x0059aa40 (real): Body equals GOG 66-byte remove stub (disps 0x30/0x384, ret 8); one shared copy serves several remove slots (folded).
+- B0-8-39 0x00737830 -> 0x00594f50 (real): Sets +0x120/+0x124 to 7/8/9 by effect subtype 0xa4..; GOG imms 7,8,9,0xa4 and disps match; OnRemoveFury restores.
+- B0-8-40 0x0073dbd0 -> 0x0059b2e0 (real): All four GOG callees and disps 0xb4/0xfc/0x1198, imm 0x16 present; Apply-Decrease form (subtract).
+- B0-8-42 0x00734960 -> 0x005e4ca0 (real): Frees +0x28/+0x2c/+0x34 and destroys 6 strings at +0x48; GOG callees (self, delete, vector destructor) and disps match.
+- B0-8-44 0x00734b40 -> 0x005e4e80 (real): Stores arg into array at this+0x34 by index, ret 8; GOG disp 0x34; decoy GetInteger loads (RET 4).
+- B0-8-45 0x0073d540 -> 0x0059ac50 (real): Adds GetInteger to HP at +0xe8 (temp hitpoints); GOG callee GetInteger, disps 0x30/0xe8 match.
+- B0-8-46 0x00723250 -> 0x0052e170 (real): Sets +0x2e4 and unstealths party; GOG callees and disps 0x2e4/0x8 match.
+- B0-8-47 0x0073da20 -> 0x0059b130 (real): Vtable +0xb4 plus GetInteger adds to immunity; size 110 and disp 0xb4 match GOG; Remove twin is 313 bytes.
+- B0-8-48 0x007370f0 -> 0x00594810 (real): Same 14 strings (DamageFlags etc.), imm 0x6b, disp 0x1184/0x110; size 1841.
+- B0-8-49 0x0073e1c0 -> 0x0059b8d0 (real): GOG disps 0xff5/0x10dc/0x7c and trusted callees 0x53dfb0/0x51c100 present; size 1441.
+- B0-8-50 0x0073e160 -> 0x0059b870 (real): Two GOG callees (ClearVisibleList and visible-list update) and disp 0x10e8 match; exactly two callees.
+- B0-8-51 0x0073de10 -> 0x0059b520 (real): Trusted callees 0x51c100/0x541080 present, 13 shared imms (0x25,0x74,0xa,0x34); size 836.
+- B0-8-52 0x00734c20 -> 0x005e4f60 (real): Assigns string into this+0x48+idx*8 via operator= (GOG callee trusted 0x7337c0); decoy GetString copy-constructs.
+- B0-8-54 0x00737080 -> 0x005947a0 (real): Dispatch via table at this+8 limit 0x76; GOG disp {0x8} imm 0x76; Apply variant uses +4.
+- B0-8-55 0x007345e0 -> 0x005e4920 (real): Plain constructor with ID counter and 16 disps (copy ctor has 17); GOG callees SetNumIntegers/memset/vector ctor present.
+- B0-8-56 0x007231f0 -> 0x0052e110 (real): Sets +0x2f8/+0x2fd and calls SetInputActive, matching GOG disps and callee; ret 8 vs 5 bytes is slot promotion.
+- B0-8-57 0x00734b80 -> 0x005e4ec0 (real): Stores float at this+0x38+idx*4, GOG disp 0x38, ret 8; decoy GetFloat loads.
+- B0-8-58 0x00720d10 -> 0x0052bb60 (real): GOG 176-byte row is the first slice of this 767-byte function (starts same address); imms 0x41/0xc0/0x7f000000 match; name fits LOS test.
+- B0-8-59 0x0073d2d0 -> 0x0059a9e0 (real): GetInteger callee, 0x30/0x384, ret 12, size 95 match GOG; follows anchored OnRemoveACDecrease, precedes AttackDecrease (0x14 immunity).
+- B0-8-60 0x00722cf0 -> 0x0052dc10 (real): Stores its argument at +0x334 (GOG disp 0x334, ret 4), fitting Attach; decoy 0x52dc30 clears the field (ret 0).
+- B0-9-01 0x0073f2a0 -> 0x0059c9b0 (real): Apply: sets +0x384 and feeds GetInteger result to 0x40e770; GOG disp/imm sets identical; Remove decoy differs.
+- B0-9-03 0x00741470 -> 0x0059eb80 (real): Scales movement rate by (1 - x/100); all callees and offsets agree with GOG.
+- B0-9-05 0x007423b0 -> 0x0059fae0 (real): Remove decrease: sums type 0x21/0x22 effects then SetForceResistancePenalty; callee separates it from the Increase neighbour.
+- B0-9-06 0x007444e0 -> 0x005a1c10 (real): Remove clears slow field +0xfd8 and returns 1; GOG disp set {0x30,0xfd8} exact; layout between 0x5a18d0 and 0x5a1c50.
+- B0-9-08 0x00748db0 -> 0x005a64c0 (real): Apply Disappear: clear actions + AddDisappearActions or delayed event; callees, disps 4/8/0x18/0x30 match.
+- B0-9-09 0x00748b70 -> 0x005a6280 (real): Remove DisappearAppear: places creature back in area and AddAppearActions; 12 callees map to GOG list.
+- B0-9-10 0x00745540 -> 0x005a2c70 (real): Apply Silence: immunity check, feedback 0x91, sets +0xfd0=1; GOG disp/imm sets identical (0xb,0x17,0x91).
+- B0-9-11 0x00741150 -> 0x0059e860 (real): Remove SetStateInternal: switch on state, RunScript at +0x270, recompute ambient anim, clear visible list; GOG sets agree.
+- B0-9-13 0x00741de0 -> 0x0059f4f0 (real): Remove AoE: looks up object by GetObjectID and queues server AI event; callees map to GOG list; small offset set.
+- B0-9-14 0x0073eca0 -> 0x0059c3b0 (real): Apply SetAIState ANDs mask at +0x1114 with effect integer; Remove (0x59c420) recomputes mask over type-0x17 effects.
+- B0-9-16 0x0073ee40 -> 0x0059c550 (real): Apply Deaf: immunity 8, feedback 0x8c, builds type-0x17 effect; callees and imm set identical to GOG.
+- B0-9-17 0x0073e770 -> 0x0059be80 (real): Remove Knockdown: unpauses combat round, stand-up animation 0x2711; 8 disps and 4 imms identical.
+- B0-9-18 0x00741e90 -> 0x0059f5a0 (real): Apply Beam: copies object id and 3 ints to a new type-0x1e effect and applies it; all 7 GOG callees present.
+- B0-9-19 0x00741a10 -> 0x0059f120 (real): Remove VisualEffect: GetInteger then RemoveLoopingVisualEffect(id); size 37, RET 8; callee identified by spacing.
+- B0-9-20 0x00745c80 -> 0x005a3390 (real): Dispel Best: picks one effect per pass via level+d20 roll; size 1132 and 20 callees equal GOG, DispelAll neighbour has 19.
+- B0-9-21 0x007489a0 -> 0x005a60b0 (real): Apply DisappearAppear: pacify, store position at +0x350..0x360, AddDisappearActions; offsets and callees match.
+- B0-9-22 0x00741260 -> 0x0059e970 (real): Apply speed increase: clamps to +100 and scales movement rate; all four GOG callees present.
+- B0-9-23 0x0073ed10 -> 0x0059c420 (real): Remove SetAIState: recomputes +0x1114 mask from remaining type-0x17 effects; GOG sets identical.
+- B0-9-24 0x00747810 -> 0x005a4f20 (real): Remove Timestop: pause toggle then remove object from exclusion list; callee identity by spacing; Apply decoy uses SetExpiryTime.
+- B0-9-25 0x00740440 -> 0x0059db50 (real): Remove SetState: clears +0xff5, removes type-9 effect, reapplies best type-8 state; all 7 callees map.
+- B0-9-26 0x00744e00 -> 0x005a2530 (real): Apply Vision: builds temp type-0x1e effect and destroys it; exact 5-callee GOG list, unlike Apply Light neighbour.
+- B0-9-27 0x00744fe0 -> 0x005a2710 (real): Apply Curse: immunity 0x11, feedback 0x8d, type-0x25 effect; imm set 13 of 13 identical.
+- B0-9-28 0x0074a0d0 -> 0x005a7820 (real): Apply ForceJumpDelayed: computes landing position near target and queues move; 14 disps and 13 imms identical.
+- B0-9-29 0x0073f490 -> 0x0059cba0 (real): Apply SetState: giant per-state switch with feedback; all 13 disps and 40 imms equal GOG.
+- B0-9-30 0x0073f180 -> 0x0059c890 (real): Remove EnemyAttackBonus: recomputes +0x107 from remaining type-0x18 effects; Apply neighbour adds instead.
+- B0-9-31 0x00748790 -> 0x005a5ea0 (real): Apply MissChance validates value in 1..100 via GetInteger, returns 0 if valid; tiny but callee and immediates agree.
+- B0-9-34 0x00749ec0 -> 0x005a7610 (real): Apply ForceJump: locks orientation, schedules event with effect type 0x67, applies type-0x1e effect 0x3ea.
+- B0-9-36 0x0073f340 -> 0x0059ca50 (real): Remove ArcaneSpellFailure: sums type-0x19 effects, sets +0x384, calls 0x40e770; GOG sets identical.
+- B0-9-37 0x00740720 -> 0x0059de30 (real): Apply SetStateInternal: switch on state, resets actions, applies per-state effects; 12 disps equal.
+- B0-9-38 0x007420a0 -> 0x0059f7d0 (real): Remove ForceResistanceIncrease: sums type 0x21/0x22 and SetForceResistance(max-penalty); callee separates it from Decrease.
+- B0-9-39 0x00749540 -> 0x005a6c60 (real): Remove NegativeLevel: reads class negative levels and subtracts effect value; all 3 GOG callees present.
+- B0-9-40 0x00744f70 -> 0x005a26a0 (real): Remove subtracts effect value from bonus attacks; Apply neighbour 0x5a2640 adds; same callees, layout fits.
+- B0-9-41 0x0074acc0 -> 0x005a8410 (real): Remove ForcePush: unlock orientation, build effect type 0x17 with -0x15f; imm set incl. 0xfffffea1 identical.
+- B0-9-42 0x0074b090 -> 0x005a87e0 (real): Apply BodyFuel sets +0x11c4=1; Remove neighbour 0x5a8820 clears it; same layout position.
+- B0-9-43 0x0074ae10 -> 0x005a8560 (real): Apply DamageForcePoints: reduces the +0x130 value (sum with +0x132 compared to GetInteger); GOG sets identical.
+- B0-9-44 0x0073f0e0 -> 0x0059c7f0 (real): Apply EnemyAttackBonus adds effect value to +0x107; Remove (0x59c890) recomputes; +0xfc guard only here.
+- B0-9-45 0x00744d20 -> 0x005a2450 (real): Apply Light: copies int into new type-0x1e effect and applies; exactly GOG's 5 callees.
+- B0-9-46 0x00749640 -> 0x005a6d60 (real): Remove BonusFeat: GetInteger feat id then helper 0x5aa100; disps 0x30,0x1198 imms 8,0x10,0x18 identical; second callee unnamed.
+- B0-9-48 0x00744f10 -> 0x005a2640 (real): Apply ModifyNumAttacks adds effect value to bonus attacks; Remove neighbour subtracts; size 96 equals GOG.
+- B0-9-49 0x00741560 -> 0x0059ec70 (real): Apply VisualEffect: 2DA row lookup keyed by 'Type_FD', ranged miss target; string, size and offsets equal GOG.
+- B0-9-51 0x0073e870 -> 0x0059bf80 (real): Apply Disarm: removes weapon item and drops or moves it to inventory; size 1072 and 10 disps identical.
+- B0-9-52 0x0074a720 -> 0x005a7e70 (real): Apply ForcePush: moves target along a computed line with area test; callees, disps, imms equal GOG.
+- B0-9-53 0x00741a40 -> 0x0059f150 (real): Apply AreaOfEffect: creates AoE object from effect strings and adds to area; disps 0x2a0,0xbc match.
+- B0-9-54 0x00741300 -> 0x0059ea10 (real): Remove speed increase: recomputes rate factor from remaining +/- speed effects; GOG callees and imms match.
+- B0-9-55 0x00748e60 -> 0x005a6570 (real): Apply Appear: clears actions and AddAppearActions; callee separates it from Disappear neighbour.
+- B0-9-56 0x0074ade0 -> 0x005a8530 (real): Stub: getter call then return 1; matches GOG's lone +0x30 and size 36; anchor is weak, layout pinned.
+- B0-9-57 0x00748940 -> 0x005a6050 (real): Apply TurnResistance gate on +0x6c; offset set identical to GOG; neighbours Darkness/DisappearAppear differ.
+- B0-9-58 0x007457d0 -> 0x005a2ee0 (real): Apply DispelAllMagic: loops all dispellable effects with RollDice; size, 19 callees and imm 0xc0 equal GOG.
+- B0-9-59 0x00745760 -> 0x005a2e90 (real): Remove Silence clears +0xfd0; matches Apply's field; layout before DispelAll 0x5a2ee0.
+- B0-9-60 0x0074af10 -> 0x005a8660 (real): Apply HealForcePoints: adds to current FP clamped at max, sends feedback 0xe4; GOG sets identical.
+- B0-10-02 0x0078c440 -> 0x00676e60 (real): Same template as TempHP twin; type const differs from TempHP's, order after 0x676d20 matches GOG; no unique string
+- B0-10-03 0x007623f0 -> 0x00616f40 (real): Returns this+0x3ec like GOG; door-block neighbours agree
+- B0-10-04 0x0077ed70 -> 0x00669790 (real): Switch on type 0..3 allocating effect/event/location/talent objects; GOG 4 ctors and imms 0x8c,0x34,0x18 agree
+- B0-10-05 0x00785950 -> 0x00670370 (real): Pops float then command, converts seconds, schedules event: DelayCommand; AssignCommand twin lacks PopFloat
+- B0-10-06 0x0074bdc0 -> 0x005a94e0 (real): Clears the +0x1128 flag that OnApplyLightsaberThrow sets; GOG disp {0x30,0x1128} agree
+- B0-10-07 0x00769550 -> 0x005ef160 (real): Getter of +0x3e0 matches GOG disp and size 20; 0x5ef180 is the setter, not this
+- B0-10-08 0x00774fa0 -> 0x005908f0 (real): Loops 5 attacks calling GetAttack then a clear routine; GOG callees and imm 5 agree
+- B0-10-09 0x00774f30 -> 0x00590880 (real): Byte getter at +0xb24; direction separates it from SetCurrentAction
+- B0-10-10 0x0074bf20 -> 0x005a9640 (real): Effect with SetInteger 0xfc4 and ApplyEffect; ForceResisted neighbour uses 0xfc5
+- B0-10-12 0x007769a0 -> 0x005922f0 (real): Setter of +0xac8; offset unique among neighbours
+- B0-10-15 0x00761e60 -> 0x00622bd0 (real): GetClientObject then vcall +0x3c; offset differs from placeable twin +0x4c
+- B0-10-16 0x00776930 -> 0x00592280 (real): Setter of +0xaf4; getter twins are 0x5922a0/0x5922c0
+- B0-10-17 0x00776910 -> 0x00592260 (real): Returns sum of two counters at +0xae0/+0xae4
+- B0-10-18 0x00769570 -> 0x005ef1a0 (real): Scalar deleting dtor calling placeable Destructor_2, as GOG callee
+- B0-10-20 0x00774c30 -> 0x00590580 (real): Getter of +0xac0; setter is SetOffHandAttack
+- B0-10-22 0x0075d320 -> 0x0061e090 (real): Returns this+0x268; GOG neighbours are CSWSTrigger ctor/dtor so class label likely Trigger
+- B0-10-23 0x00783180 -> 0x0066dba0 (real): Pops object+3 ints and adds cutscene attack actions; Move twin uses PopVector
+- B0-10-25 0x00768410 -> 0x0061d000 (real): Returns true when link byte is 1 or 2
+- B0-10-26 0x007a4c20 -> 0x0068f5d0 (real): Pop n, rand()%n, push result: Random; GOG callees agree
+- B0-10-27 0x0074c010 -> 0x005a9730 (real): Good-side force power handler: HP/force offsets 0x98/0x9c; Evil twin lacks them
+- B0-10-28 0x0078ebd0 -> 0x006795f0 (real): Pop float, truncate, push int: FloatToInt
+- B0-10-29 0x007c1880 -> 0x005aa470 (real): Only installs base vftable; likely base-class ctor but fits ctor slot; no stronger anchor
+- B0-10-30 0x0074be00 -> 0x005a9520 (real): Unique 0xfc5/0x27a1 constants and +0x7c vcall match GOG
+- B0-10-31 0x007830d0 -> 0x0066daf0 (real): Pops object and optional int, queues attack actions with 0x2719
+- B0-10-33 0x00762410 -> 0x00616f60 (real): Scalar deleting dtor calling door Destructor_2
+- B0-10-34 0x0077efb0 -> 0x006699d0 (real): Pops command, resolves object, adds DoCommand action; EquipMelee twin pops object+int
+- B0-10-35 0x00770e40 -> 0x005f6a70 (real): GetClientObject then vcall +0x4c; trigger twin uses +0x3c
+- B0-10-37 0x0074c480 -> 0x005a9ba0 (real): Evil-side handler: +0x122 and 0x32 match GOG; no SetCurrentHitPoints call
+- B0-10-38 0x00774c10 -> 0x00590560 (real): Setter of +0xac0; getter twin 0x590580
+- B0-10-39 0x00776950 -> 0x005922a0 (real): Plain getter of +0xaf4; Limited twin clamps to 2
+- B0-10-40 0x0075d340 -> 0x0061e0b0 (real): Scalar deleting dtor calling trigger Destructor_2
+- B0-10-42 0x007c17d0 -> 0x005aa3c0 (real): Frees fields +4/+8 then resets to base vftable; GOG disp {4,8} imm {4,0xc} agree
+- B0-10-43 0x00783260 -> 0x0066dc80 (real): Pops object, vector, int and adds cutscene move actions
+- B0-10-44 0x0077b500 -> 0x00536be0 (real): Scalar deleting dtor calling CSWVirtualMachineCommands Destructor, as GOG callee
+- B0-10-45 0x0074b0d0 -> 0x005a8820 (real): Clears +0x11c4 flag; Apply twin 0x5a87e0 sets it
+- B0-10-46 0x007b2990 -> 0x0052f610 (real): Save-game routine with SAVES strings; size 1386 and disp/imm sets equal
+- B0-10-47 0x007a08e0 -> 0x0068b290 (real): Pop int, convert to float, push float; hex-string twin uses Format
+- B0-10-48 0x0077f030 -> 0x00669a50 (real): Pop object+int, equip melee; Ranged sibling follows at 0x669ad0 as in GOG
+- B0-10-50 0x00782fd0 -> 0x0066d9f0 (real): Pop object+command, schedule zero-delay event: AssignCommand; no PopFloat
+- B0-10-51 0x0077e710 -> 0x00669130 (real): Allocates by type and copies via per-type copy routines, as GOG 9 callees
+- B0-10-52 0x0074c8d0 -> 0x005a9ff0 (real): Scans 2DA EffectType rows for ignore-on-death types; GOG string and callees agree
+- B0-10-53 0x007c18a0 -> 0x005aa490 (real): Allocates two 0x118 tables and fills 0x46 handler pointers
+- B0-10-54 0x00776970 -> 0x005922c0 (real): Clamped getter of +0xaf4
+- B0-10-56 0x00774f50 -> 0x005908a0 (real): Byte setter at +0xb24; getter twin 0x590880
+- B0-10-57 0x0077b430 -> 0x00665eb0 (real): Frees +0xc and resets vftable; RET 0 size 127
+- B0-10-59 0x0074b140 -> 0x005a8860 (real): Large lightsaber throw handler; size, disp and callee sets agree
+- B0-10-60 0x0077ec30 -> 0x00669650 (real): Switch on type, destroy and delete object; GOG callees agree
+- B0-11-01 0x007c8270 -> 0x005b0e60 (real): Negated Value fits Decrease; decoy 5b0b50 has no NEG. Callees/disp/imm sets equal GOG.
+- B0-11-02 0x007c4f00 -> 0x005adaf0 (real): Same callee/disp/imm sets as GOG; decoy 5ad9b0 has no string, other callees.
+- B0-11-04 0x007c7c30 -> 0x005b0820 (real): GOG imm 0x7 present; decoy 5b04f0 uses PUSH 0x6. Damage-type bitmask fits Resistance.
+- B0-11-05 0x007c72b0 -> 0x005afea0 (real): Imm/disp sets identical incl. 0x4000/0x8000/0x10000, 0x122; decoy 5b01e0 is the Remove (RemoveEffectById).
+- B0-11-07 0x007c1e20 -> 0x005aaa10 (real): GOG disp {0x4} imm {8,0x14,0x46}; decoy 5aaa70 uses [+0x8] table (Removed). Dispatch fits Applied.
+- B0-11-08 0x007c6260 -> 0x005aee50 (real): Imm/disp sets identical to GOG; decoy 5af1b0 lacks 0xffe7 and SetInteger.
+- B0-11-09 0x007c5f30 -> 0x005aeb20 (real): Sign-select of two effect types; imm/disp sets identical to GOG; decoy 5aee50 (SpecialWalk) has no 0x122.
+- B0-11-10 0x007c5c30 -> 0x005ae820 (real): Decoy 5ae9a0 identical but GetIPRPCostTable(0x14) and slots 0x84/0x88 (Reduced); Improved=bonus table 1.
+- B0-11-11 0x007c53c0 -> 0x005adfb0 (real): Disp/imm sets and 12 callees incl. destructor equal GOG; decoy 5ae260 is Remove (RemoveEffectById).
+- B0-11-13 0x007c1ee0 -> 0x005aaad0 (real): Imm (0x4000,0x8000,0xc4...) and disp sets identical; decoy 5ab1f0 is Remove (RemoveEffectById). Registered slots 5-7.
+- B0-11-14 0x007c7f60 -> 0x005b0b50 (real): Decoy 5b0820 uses 'Amount' and table 7; GOG imm 0x16 and 'Value' only fit this one.
+- B0-11-15 0x007c4ee0 -> 0x005adad0 (real): Only stub between ApplyLight and ApplyAbilityBonus; no callees/strings so no strong content anchor.
+- B0-11-16 0x007c43d0 -> 0x005acfc0 (real): Callees GetInteger/RemoveEffectById, 'Value' 005acfe8, size 1017; decoy 5acc60 is Apply (ApplyEffect).
+- B0-11-17 0x007c5670 -> 0x005ae260 (real): Disp 0x8b/0x13a and imm sets identical to GOG; decoy 5adfb0 is ApplyACBonus (ApplyEffect, no 0x13a).
+- B0-11-18 0x007c5a90 -> 0x005ae680 (real): Disp 0x14e/0x1198 and imm 0x48 match GOG; decoy 5ae530 is Apply (ApplyEffect).
+- B0-11-19 0x007c4ad0 -> 0x005ad6c0 (real): Disp/imm sets identical to GOG; decoy 5ad3c0 is ApplyAttackPenalty (ApplyEffect, no 0x13c).
+- B0-11-20 0x007c5940 -> 0x005ae530 (real): Callee/disp/imm sets identical to GOG; decoy 5ae680 is Remove (RemoveEffectById, +0x14e).
+- B0-11-22 0x007c6c70 -> 0x005af860 (real): Disp 0x1198 and imm 0x24 equal GOG, no GetIPRPCostTable/'Value'; decoy 5afa80 has 'Value' and table call.
+- B0-11-23 0x007c8ac0 -> 0x005b16b0 (real): Decoy 5b1320 pushes 0x14 and adds SetInteger(5,..); GOG imm 0x15/0x38 fit candidate only.
+- B0-11-24 0x007c1e80 -> 0x005aaa70 (real): GOG disp {0x8} imm {8,0x10,0x46}; decoy 5aaa10 uses [this+4] (Applied). Dispatch fits Removed.
+- B0-11-26 0x007c5100 -> 0x005adcf0 (real): Callee/disp/imm sets identical to GOG; decoy 5adaf0 is ApplyAbilityBonus (ApplyEffect).
+- B0-11-28 0x007c60c0 -> 0x005aecb0 (real): Disp/imm sets identical, no string; decoy 5af020 has 0x4c/0x15c/0x1198 absent in GOG; called by both ST removers.
+- B0-11-29 0x007c88d0 -> 0x005b14c0 (real): Disp/imm sets identical; decoy 5b1840 reads +0x164 (RemoveDecreaseSkillModifier).
+- B0-11-31 0x007c6d90 -> 0x005af980 (real): Disp/imm sets identical, RemoveEffectById/GetInteger; decoy 5af710 has +0x16a and SUB 0x34.
+- B0-11-32 0x007c5cf0 -> 0x005ae8e0 (real): Decoy 5aea60 has PUSH 0x14 (005aeac3), absent from GOG imms; 5aa490 remove-table slots 0x68/0x6c.
+- B0-11-33 0x007c6e90 -> 0x005afa80 (real): Callees/disp/imm sets identical to GOG; decoy 5af860 (BonusFeat) has no string, no table call.
+- B0-11-34 0x007c2600 -> 0x005ab1f0 (real): Disp 0x38/0x13c/0x1198 and 0x4000/0x8000/0x10000 imms identical; decoy 5aaad0 is Apply (ApplyEffect).
+- B0-11-35 0x007c7a70 -> 0x005b0660 (real): Disp 0x13e and imm 0x4c/0x6 equal GOG; decoy 5b0990 reads +0x140 (RemoveDamageResistance).
+- B0-11-36 0x007c66a0 -> 0x005af290 (real): GOG imm 0x2c, only callee RemoveEffectById, no string; decoy 5af020 has 0x4c/0x15c/0x1198 not in GOG.
+- B0-11-37 0x007c8470 -> 0x005b1060 (real): Disp 0x150/0x1198 and imm sets identical; decoy 5b0cc0 (RemoveDamageVulnerability) lacks 0x150.
+- B0-11-38 0x007c4070 -> 0x005acc60 (real): Size 864 = GOG, CopyEffect/ApplyEffect callees; decoy 5acfc0 is RemoveAttackBonus (RemoveEffectById).
+- B0-11-39 0x007c7da0 -> 0x005b0990 (real): GOG disp 0x140 imm 0x7/0x4c; decoy 5b0660 reads +0x13e and PUSH 6 (RemoveDamageReduction).
+- B0-11-40 0x007c47d0 -> 0x005ad3c0 (real): 13 callees incl. GetIPRPCostTable/CopyEffect equal GOG; decoy 5ad6c0 is RemoveAttackPenalty (RemoveEffectById).
+- B0-11-41 0x007c2d90 -> 0x005ab980 (real): Disp/imm sets identical, negated value; decoy 5abef0 is Remove (RemoveEffectById).
+- B0-11-43 0x007c7020 -> 0x005afc10 (real): Callee/disp/imm sets identical; decoy 5af980 (RemoveBonusFeat) has no string or table call.
+- B0-11-44 0x007c80d0 -> 0x005b0cc0 (real): Callee/disp/imm sets identical to GOG; decoy 5b0990 uses 'Amount' and PUSH 7.
+- B0-11-45 0x007c6430 -> 0x005af020 (real): Disp/imm sets identical, RemoveEffectById+GetInteger; decoy 5af290 (RemoveTrueSeeing) lacks 0x15c/0x1198.
+- B0-11-47 0x007c5db0 -> 0x005ae9a0 (real): Same order as GOG: Apply/Remove Improved then Apply Reduced; twin 5ae820 has PUSH 0x1 and slots 0x68/0x6c.
+- B0-11-48 0x007c3800 -> 0x005ac3f0 (real): Size 1142 = GOG, 9 callees incl. Destructor/CopyEffect equal; decoy 5ac870 is Remove (+0x142, RemoveEffectById).
+- B0-11-49 0x007c6b20 -> 0x005af710 (real): Disp/imm sets identical, only GetInteger/RemoveEffectById, no string; decoy 5af980 lacks 0x16a.
+- B0-11-50 0x007c8c50 -> 0x005b1840 (real): Disp/imm sets identical; decoy 5b14c0 reads +0x13a and pushes 0x14.
+- B0-11-51 0x007c75f0 -> 0x005b01e0 (real): Callee/disp/imm sets identical to GOG incl. 0x4000..0x10000; decoy 5afea0 is Apply (ApplyEffect).
+- B0-11-52 0x007c8730 -> 0x005b1320 (real): Imm 0x5/0x14/0x38 and +0x122 equal GOG; decoy 5b16b0 pushes 0x15 and has no PUSH 5 (ApplyDecreaseSkillModifier).
+- B0-11-54 0x007c3300 -> 0x005abef0 (real): Disp/imm sets identical; decoy 5ab980 is ApplyEnhancementPenalty (ApplyEffect, no +0x13c).
+- B0-11-55 0x007c7900 -> 0x005b04f0 (real): Imm {4,6,0x14,0x38,0x8c} equal GOG; decoy 5b0820 (ApplyDamageResistance) pushes 0x7.
+- B0-11-56 0x007c4dc0 -> 0x005ad9b0 (real): Imm/disp sets identical to GOG, no string; decoy 5adaf0 (ApplyAbilityBonus) has 'Value' and table call.
+- B0-11-57 0x007c65c0 -> 0x005af1b0 (real): GOG has the same 4 callees and no SetInteger; decoy 5af360 (FreedomOfMovement) has SetInteger and +0x122.
+- B0-11-58 0x007c3c80 -> 0x005ac870 (real): Size 995 = GOG; GetInteger/RemoveEffectById only; decoy 5ac3f0 is ApplyDamageBonus (ApplyEffect).
+- B0-11-59 0x007c5e70 -> 0x005aea60 (real): Twin 5ae8e0 pushes 0x1 and GOG RemoveImproved imm lacks 0x14; decoy 5ae9a0 is Apply (calls 5aeb20).
+- B0-11-60 0x007c6770 -> 0x005af360 (real): Disp 0x122 and imm sets identical, no string; decoy 5af1b0 (TrueSeeing) has no SetInteger/0x122.
+- B0-12-01 0x0080b620 -> 0x0051b140 (real): Returns minute out-slot of ConvertFromTimeOfDay; Hour decoy 0x51b100 returns [EBP-0x10].
+- B0-12-02 0x007f0180 -> 0x005e68f0 (real): MatchIndex(name,4,0) then +0xC; type 4 is object, matching GetObjectA.
+- B0-12-03 0x0084bcd0 -> 0x004596f0 (real): Pure this+0x64 getter; only anchor is offset and neighbour order (GetPosition 0x459710).
+- B0-12-04 0x007f07b0 -> 0x005e6f20 (real): DeleteIndex thunk with type 2 (float); String is 3, Object is 4.
+- B0-12-05 0x007c9340 -> 0x005b1f30 (real): Same callee set and 0x122 field as GOG; decoy Regeneration lacks 0x122.
+- B0-12-07 0x007c9490 -> 0x005b2080 (real): All 9 GOG disps incl 0x13c/0x1198 present; decoy Regeneration remove lacks them.
+- B0-12-09 0x0080b6a0 -> 0x0051b1c0 (real): Returns the millisecond out-slot of ConvertFromTimeOfDay; Second decoy returns [EBP-0xc].
+- B0-12-10 0x007f98e0 -> 0x006f6320 (real): Copies event string at +0x10 via operator=; ModelName decoy 0x6f6420 uses operator=_2 and +0x18/+0xc.
+- B0-12-11 0x007e6370 -> 0x0062c1a0 (real): Setter of +0x274 with RET 4; getter decoy 0x62c180 reads it and RET 0.
+- B0-12-12 0x007e9150 -> 0x00622c90 (real): Size 894, 41 common disps, 14 common imms, AddObject/GetWorldTimer callees all agree.
+- B0-12-13 0x007c9f80 -> 0x005b2b70 (real): Adds ushort(param_2+6) to +0x2EC (Apply); Remove decoy 0x5b2bc0 subtracts.
+- B0-12-14 0x007f99e0 -> 0x006f6420 (real): Has +0x18 and +0xC accesses and operator=_2 like GOG; GetLastEvent decoy has neither.
+- B0-12-16 0x007c9f50 -> 0x005b2b40 (real): Sets +0x2E4=1; neighbours write 0x2e8 (Sniper) and 0x2ec; GOG disp is 0x2e4.
+- B0-12-17 0x007e6350 -> 0x0062c180 (real): Getter of +0x274, ret 0; setter twin is 0x62c1a0 with RET 4.
+- B0-12-19 0x007c8e40 -> 0x005b1a30 (real): Immunity switch with GOG-matching 0x4c/0x122; effect type DAT_00995f74 is shared with RemoveImmunity 0x5b1d00.
+- B0-12-20 0x0080b660 -> 0x0051b180 (real): Returns the seconds out-slot of ConvertFromTimeOfDay; minute is [EBP-8], ms is [EBP-4].
+- B0-12-21 0x0080b440 -> 0x0051af60 (real): Calls CompareWorldTimes and subtracts with borrow; Add decoy 0x51aef0 has no callee.
+- B0-12-22 0x007c9ef0 -> 0x005b2ae0 (real): Sets +0x2E0=1; DoorCutting neighbour writes 0x2dc.
+- B0-12-23 0x007c9b90 -> 0x005b2780 (real): Remove twin of the Decrease apply (global 0x99608c); 0x5b2560 uses 0x996088 (Increase).
+- B0-12-24 0x007facb0 -> 0x006f76f0 (real): PopObject+PopInteger and command ids 0x26a/0x26e match GOG; decoy pops float.
+- B0-12-26 0x0084b0b0 -> 0x00458ae0 (real): Body is a sorted-array binary search of Gob names (+0x64) returning index, not SetScene; FindGob helper.
+- B0-12-27 0x007c9970 -> 0x005b2560 (real): Remove twin of Increase apply (global 0x996088); Decrease uses 0x99608c.
+- B0-12-28 0x007e9df0 -> 0x00623940 (real): All six GOG callees present (RemoveFromArea, SetArea, SetPosition, GetArea, AddObjectToArea, Add).
+- B0-12-29 0x007e6390 -> 0x0062c1c0 (real): Scalar deleting destructor calling Destructor_2 and delete like GOG callees.
+- B0-12-30 0x0080b3d0 -> 0x0051aef0 (real): Add twin; Subtract decoy 0x51af60 calls CompareWorldTimes. Card callee line (SetDialogDelay) is stale.
+- B0-12-31 0x0080b580 -> 0x0051b0a0 (real): Clears pause flag and restores saved time via SetWorldTime-like call; Pause decoy 0x51b050 calls GetWorldTime and sets 1.
+- B0-12-32 0x007f07d0 -> 0x005e6f40 (real): DeleteIndex thunk with type 3 (string).
+- B0-12-33 0x007c9750 -> 0x005b2340 (real): Remove twin of ApplyRegeneration via shared effect-type global 0x995f38.
+- B0-12-34 0x007e94f0 -> 0x00623030 (real): Scalar deleting destructor calling Destructor_2 and delete.
+- B0-12-35 0x007e9520 -> 0x00623060 (real): Callees RemoveObject/LocString dtor and 8 common disps incl 0x350 match GOG.
+- B0-12-36 0x007c9fd0 -> 0x005b2bc0 (real): Subtracts from +0x2EC (Remove); Apply decoy 0x5b2b70 adds.
+- B0-12-37 0x007f9fb0 -> 0x006f69f0 (real): Command ids 0x24e/0x25c and PopObject+PopInteger match GOG; decoy pushes an object.
+- B0-12-38 0x007f00a0 -> 0x005e6810 (real): MatchIndex type 2 float; Int is type 1 (0x5e67d0), Object is 4.
+- B0-12-39 0x007c9ea0 -> 0x005b2a90 (real): SetSilentMove(0) with RET 0x10 (Remove); Apply twin 0x5b2a70 pushes 1, RET 0x14.
+- B0-12-41 0x007c9c80 -> 0x005b2870 (real): Apply twin of RemoveDisguise via shared effect-type global 0x996014; SetInteger(1,0).
+- B0-12-42 0x007c9d90 -> 0x005b2980 (real): Remove twin of ApplyDisguise via shared global 0x996014.
+- B0-12-44 0x0080b5e0 -> 0x0051b100 (real): Returns the hour out-slot of ConvertFromTimeOfDay (x/60 / minutes-per-hour).
+- B0-12-45 0x007c9f20 -> 0x005b2b10 (real): Sets +0x2E8=1; RapidShot writes 0x2e4, DoorSabering 0x2e0.
+- B0-12-46 0x007c9e80 -> 0x005b2a70 (real): SetSilentMove(1) with RET 0x14 (Apply); Remove twin pushes 0, RET 0x10.
+- B0-12-48 0x007c9a60 -> 0x005b2650 (real): Apply twin of the Decrease remove (global 0x99608c); Increase uses 0x996088.
+- B0-12-49 0x007c95d0 -> 0x005b21c0 (real): 6000 duration constant and Destructor/delete callees match GOG; decoy lacks them.
+- B0-12-50 0x007c9110 -> 0x005b1d00 (real): Remove twin of ApplyImmunity (0x995f74, 10-case switch, imm 0x50/0x9).
+- B0-12-51 0x007e94d0 -> 0x00623010 (real): Pure this+0x270 getter; only offset and ctor/dtor ordering support it.
+- B0-12-52 0x007f07f0 -> 0x005e6f60 (real): DeleteIndex thunk with type 4 (object); String twin passes 3.
+- B0-12-53 0x007e9e80 -> 0x006239d0 (real): RemoveObjectFromArea/GetArea/SetArea/SetPosition callees and 0x1a4 match; AddToArea decoy calls it.
+- B0-12-54 0x007c9ec0 -> 0x005b2ab0 (real): Sets +0x2DC=1; neighbours write 0x2e0.
+- B0-12-57 0x007f9140 -> 0x006f5b80 (real): Size 1659 command-table init; 104 common disps; stores the GetLastEvent handler at +0x91c.
+- B0-12-58 0x007c9840 -> 0x005b2430 (real): Apply twin of the Increase remove (global 0x996088); Decrease 0x5b2650 uses 0x99608c.
+- B0-12-59 0x007f0060 -> 0x005e67d0 (real): MatchIndex type 1 int; Float is 2, Object 4.
+- B0-13-01 0x0084c360 -> 0x00459d80 (real): Clears +0x10 flag; neighbour 0x459d60 sets it, so this is Disable.
+- B0-13-02 0x0084be50 -> 0x00459870 (real): Sets +0xee=1; neighbour 0x459850 sets 0 (TurnOff). Name fits.
+- B0-13-03 0x0084c570 -> 0x00459f90 (real): Passes 1 to fog setter on +0x98; DisableFog 0x459f70 passes 0.
+- B0-13-06 0x00855260 -> 0x00462cd0 (real): Virtual call at +0x10c then copies 3+4 floats to out params; matches GOG displacement set and name.
+- B0-13-07 0x0084bfd0 -> 0x004599f0 (real): Sets +0x1a8=1; DisableDistortion 0x459a10 writes 0 to same field.
+- B0-13-08 0x00861da0 -> 0x0046fb60 (real): Reads +0xe4 that Disable/EnableVisibilityGraph (0x46fb40/0x46fb10) write; fits Get...Ignore.
+- B0-13-09 0x0084c400 -> 0x00459e20 (real): Returns +0x14 flag that DisableInCutscene 0x459e00 clears.
+- B0-13-10 0x008646a0 -> 0x00472460 (real): Count then Remove on global scene lists; GOG callees Remove and Count; sibling 0x4723e0 is size 118.
+- B0-13-12 0x008557b0 -> 0x004632c0 (real): Add if not already present; decoy 0x463300 calls Remove 0x449170 instead.
+- B0-13-13 0x0084c5e0 -> 0x0045a000 (real): Same string and displacements 0x11/0x1b4; sets +0x11=1 (Disable clears it).
+- B0-13-14 0x00857590 -> 0x004651b0 (real): Sets +0xe6=1; DisableAnimations 0x4651d0 writes 0; IsAnimating reads it.
+- B0-13-15 0x00853b60 -> 0x004615d0 (real): Returns model pointer+8 or null; displacement and immediate match GOG.
+- B0-13-16 0x0084bf50 -> 0x00459970 (real): Stores bool arg to +0x181; GetMotionBlurred 0x459990 reads it. Neighbour SetRenderPersonalSpace uses 0x180.
+- B0-13-17 0x008575f0 -> 0x00465210 (real): Global flag setter; unique function between verified neighbours, consistent size 30. No GOG-side content anchor.
+- B0-13-18 0x00857030 -> 0x00464c50 (real): Reads two floats to out params; SetFogRange 0x464c80 is the writer.
+- B0-13-19 0x00861d80 -> 0x0046fb40 (real): Sets +0xe4=1, the ignore flag read by GetIgnore; Enable 0x46fb10 writes 0.
+- B0-13-21 0x0084e530 -> 0x0045bf50 (real): Strings and 11 displacements match; sets +0x15 flag, Disable 0x45c490 clears it. Name not contradicted.
+- B0-13-22 0x00858000 -> 0x00465c20 (real): Remove-variant with disp 0x84/0x98/0x1a8; decoy ChildAdd calls Add instead.
+- B0-13-23 0x00857060 -> 0x00464c80 (real): Writes two floats to +0x64/+0x68; GetFogRange 0x464c50 reads them.
+- B0-13-24 0x0084c3c0 -> 0x00459de0 (real): Clears +0x12; EnableAlwaysRender 0x459dc0 sets 1, IsAlwaysRendering reads it.
+- B0-13-25 0x0084e4f0 -> 0x0045bf10 (real): Clears +0xf4; Enable 0x45bed0 writes 1 to same word.
+- B0-13-26 0x00857f90 -> 0x00465bb0 (real): Add variant of the pair; decoy ChildRemove 0x465c20 calls Remove 0x449170.
+- B0-13-27 0x008621f0 -> 0x0046ffb0 (real): Bounds-checked room-array index store into +0xe0; all three displacements match.
+- B0-13-28 0x008557f0 -> 0x00463300 (real): Removes if present; sibling AddAttachment 0x4632c0 calls push_back instead.
+- B0-13-29 0x0084c4c0 -> 0x00459ee0 (real): Returns +0x12 flag written by Enable/DisableAlwaysRender.
+- B0-13-32 0x008647f0 -> 0x004725b0 (real): Forwards scale to object vfunc +0xcc; next function 0x4725e0 is SetGeomFadeProperties as in GOG.
+- B0-13-33 0x0084c730 -> 0x0045a150 (real): Releases model at +0x90 via DelRef then nulls it; GOG callee DelRef, disp 0x90.
+- B0-13-35 0x0084be10 -> 0x00459830 (real): Stores bool arg at unique offset +0x1a9.
+- B0-13-36 0x0084beb0 -> 0x004598d0 (real): Returns +0x11 flag cleared by DisableInViewVolume 0x4598b0.
+- B0-13-37 0x0084c380 -> 0x00459da0 (real): Returns +0x10 flag written by Enable/DisableForceAnimations.
+- B0-13-38 0x0084be70 -> 0x00459890 (real): Returns byte at unique offset +0x1aa.
+- B0-13-39 0x008575b0 -> 0x004651d0 (real): Clears +0xe6; EnableAnimations 0x4651b0 sets 1, IsAnimating reads it.
+- B0-13-40 0x0084c340 -> 0x00459d60 (real): Sets +0x10=1; DisableForceAnimations 0x459d80 writes 0.
+- B0-13-42 0x0084c550 -> 0x00459f70 (real): Passes 0 to fog setter on +0x98; EnableFog 0x459f90 passes 1.
+- B0-13-43 0x0084bff0 -> 0x00459a10 (real): Clears +0x1a8; EnableDistortion 0x4599f0 sets 1.
+- B0-13-44 0x0084be90 -> 0x004598b0 (real): Clears +0x11; EnableInViewVolume 0x45a000 sets 1.
+- B0-13-45 0x0084be30 -> 0x00459850 (real): Clears +0xee; TurnOnShadows 0x459870 sets 1.
+- B0-13-46 0x0084c3e0 -> 0x00459e00 (real): Clears +0x14; IsInCutscene 0x459e20 reads it.
+- B0-13-47 0x0084bf30 -> 0x00459950 (real): Stores bool arg at +0x180; neighbour SetMotionBlurred uses +0x181.
+- B0-13-48 0x00861d50 -> 0x0046fb10 (real): Clears ignore flag +0xe4, returns +0xe0!=0; both displacements match GOG.
+- B0-13-49 0x0085f680 -> 0x0046d440 (real): Calls SetScene then returns 1; GOG callee SetScene_2 sits at same offset from GetModelName.
+- B0-13-50 0x008570b0 -> 0x00464cd0 (real): Compares geom-fade mode global that SetGeomFadeProperties writes; GOG side has no displacements to compare.
+- B0-13-51 0x008575d0 -> 0x004651f0 (real): Returns +0xe6 flag written by Enable/DisableAnimations.
+- B0-13-52 0x0084c3a0 -> 0x00459dc0 (real): Sets +0x12=1; DisableAlwaysRender 0x459de0 clears it.
+- B0-13-54 0x00855bc0 -> 0x004636d0 (real): Forwards message arg to object at +0x1b4 via vfunc +0xc; Ghidra SerializeTabWindow label ignored.
+- B0-13-55 0x0084bf90 -> 0x004599b0 (real): Stores float at +0x1ac; GetMaxBlurLength 0x4599d0 loads it.
+- B0-13-56 0x00857010 -> 0x00464c30 (real): Stores arg at +0x60, adjacent to fog range +0x64/+0x68.
+- B0-13-57 0x008621b0 -> 0x0046ff70 (real): Returns room count +0xd8, the bound used by SetCurrentRoom_2.
+- B0-13-58 0x0084bfb0 -> 0x004599d0 (real): Loads float +0x1ac stored by SetMaxBlurLength 0x4599b0.
+- B0-13-59 0x0084bf70 -> 0x00459990 (real): Returns +0x181 flag stored by SetMotionBlurred 0x459970.
+- B0-14-01 0x008fd290 -> 0x004e3160 (real): Same +0xdc/+0xe0/+8 as GOG; size 82 matches GOG Remove, decoy 0x4e3110 (OR, 67) is Add; SUB clears flag, not contradicted
+- B0-14-02 0x00866b40 -> 0x00474c00 (real): GOG imm 0x434 and 2 callees (new, PostedString ctor) match; 4 args cdecl RET 0; decoy 0x474c90 adds strlen etc
+- B0-14-05 0x0089aba0 -> 0x004b3fe0 (real): All GOG strings present, size 1673 and offsets identical, CALL 0x4b3d80 at 004b4508
+- B0-14-06 0x00912fc0 -> 0x00414bf0 (real): Callee Destructor_2 trusted-mapped and listed by GOG; scalar deleting destructor shape matches name
+- B0-14-07 0x00867740 -> 0x004757d0 (real): Constructor w/ no-param subobject, callees new(8)/strcpy-like/0x474f10, +0x50 match; sibling ctors use 0x4765c0/0x4765f0
+- B0-14-08 0x0089a850 -> 0x004b3c90 (real): Callee ProxyPartDraw matches GOG side, disp {0x4,0x8,0xc,0x98,0x1e0} identical, size 231; blur wrapper
+- B0-14-09 0x008f6e70 -> 0x004dcce0 (real): Calls vslot +8 of +0x1a0 object set by Begin (0x4dca80); Begin-End distance 0x260 equals GOG 0x8f6c10 to 0x8f6e70
+- B0-14-11 0x0090cb30 -> 0x0040e5a0 (real): Border ctor callee trusted-mapped; 12 disp and 11 imm values identical, size 423
+- B0-14-13 0x00867880 -> 0x00475910 (real): Int-parameter subobject ctor matches IntConstructor name; same shape/+0x50/imm as GOG; siblings use 0x476570/0x4765c0
+- B0-14-17 0x00867920 -> 0x004759b0 (real): +0x50 subobject written by ctors is deleted here; callee mirrors ctor callee; disp {0x50}, imm {4,0x10}, size 72
+- B0-14-18 0x008fd240 -> 0x004e3110 (real): Offsets +0xdc/+0xe0/+8 match GOG; OR sets flag = Add; size 67 equals GOG Add, Remove variant is 82
+- B0-14-20 0x008677e0 -> 0x00475870 (real): String-parameter subobject ctor matches StringConstructor; same shape/+0x50/imm as GOG; siblings 0x476570/0x4765f0
+- B0-14-21 0x00864850 -> 0x00472610 (real): Returns float scale at +0x1e0 matching GOG disp 0x1e0; size 22, no callees; neighbour of SetObjectScale 0x4725b0
+- B0-14-25 0x009175d0 -> 0x00419330 (real): GOG imm 0x1c and Add callee match; +0x1c child array confirmed by sibling GetIsChild; RET 4
+
+## Expected-match rows not judged `match`
+
+None.
+
+## Annotated label_suspect rows
+
+None.
+
+## Decoy cards per chunk (DESIGN 4.6, 0 tolerance)
+
+- chunk 1: 10 decoys, 0 accepted
+- chunk 2: 10 decoys, 0 accepted
+- chunk 3: 10 decoys, 0 accepted
+- chunk 4: 10 decoys, 0 accepted
+- chunk 5: 10 decoys, 0 accepted
+- chunk 6: 10 decoys, 0 accepted
+- chunk 7: 10 decoys, 0 accepted
+- chunk 8: 10 decoys, 0 accepted
+- chunk 9: 10 decoys, 0 accepted
+- chunk 10: 10 decoys, 0 accepted
+- chunk 11: 10 decoys, 0 accepted
+- chunk 12: 10 decoys, 0 accepted
+- chunk 13: 10 decoys, 0 accepted
+- chunk 14: 10 decoys, 0 accepted
+- decision: **OK: 0 of 140 decoy cards accepted**
+
+## Unsure
+
+- B0-3-11 0x00722ee0 -> 0x0052de40 (decoy_next)
+- B0-4-25 0x006206e0 -> 0x00716d80 (real)
+- B0-8-31 0x007362f0 -> 0x00593a10 (real)
+- B0-10-41 0x00770da0 -> 0x00619e30 (real)
+- B0-14-24 0x00864820 -> 0x004725e0 (real)

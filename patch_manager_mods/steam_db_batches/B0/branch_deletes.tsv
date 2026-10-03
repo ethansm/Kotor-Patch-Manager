@@ -1,0 +1,3 @@
+class	function	address	reason
+CVirtualMachineStack	ClearStack	0x006fd6b0	gog_db_param_bad;why:G4 steam retn 0 vs GOG retn 12 (no thunk explanation)
+CSWGuiBorderParams	SetFillImage	0x00414840	why:G6 address held by trusted CSWGuiControl

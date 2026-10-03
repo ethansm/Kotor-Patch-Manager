@@ -1,0 +1,74 @@
+- CSWSItem::AddUpgrade gog 0x00679590 -> 0x00615d60: reviewer corrected_addr
+- CSWSCreatureStats::GetWeaponFinesse gog 0x006e5320 -> 0x006a8ea0: match on a mac_contra row
+- CSWSCreatureStats::GetWeaponSpecialization gog 0x006e5390 -> 0x006a8f10: reviewer corrected_addr, label_suspect
+- CSWSCreatureStats::GetNumberKnownSpells gog 0x006f4c80 -> 0x006b8800: match on a twin row
+- CSWSCreatureStats::GetCreatureTalentRandomPower gog 0x006f5a80 -> 0x006b9600: label_suspect
+- CSWSCreatureStats::GetTotalSTRBonus gog 0x006f6e70 -> 0x006ba9f0: reviewer corrected_addr
+- CSWSCreatureStats::ComputeNumberKnownSpellsLeft gog 0x006f88f0 -> 0x006bc470: label_suspect
+- CSWSCreatureStats::CheckInclusionMatch gog 0x006f8bb0 -> 0x006bc730: label_suspect
+- CSWSCreatureStats::AddSpellLikeAbilityToList gog 0x006fa1e0 -> 0x006bdd60: label_suspect
+- CSWSItem::SetNumActiveProperties gog 0x006fcf40 -> 0x00604140: reviewer corrected_addr, label_suspect
+- CSWPartyTable::ClearInventory gog 0x006fe490 -> 0x005f8920: reviewer corrected_addr
+- CSWPartyTable::RemoveNPC gog 0x00700490 -> 0x005fa920: reviewer corrected_addr
+- CSWPartyTable::GetNPCSelectability gog 0x00700cb0 -> 0x005fb140: reviewer corrected_addr
+- CSWPartyTable::AddGameInProgress gog 0x00703650 -> 0x005fdca0: reviewer corrected_addr
+- CSWPartyTable::SetSoloMode gog 0x007048a0 -> 0x005feef0: reviewer corrected_addr
+- CSWSArea::GridDFSTransTableInitialize gog 0x00709770 -> 0x0054f3d0: label_suspect
+- CSWSArea::PlotSoundPath gog 0x0070cd90 -> 0x00552b70: reviewer corrected_addr, label_suspect
+- CSWSArea::PathPointDFSTransTableInitialize gog 0x0070ceb0 -> 0x00552c90: label_suspect
+- CSWSArea::GetNextObjectInArea gog 0x00718400 -> 0x00523250: label_suspect
+- CSWSArea::GetFirstObjectInArea gog 0x00718460 -> 0x005232b0: label_suspect
+- CSWSArea::SetMaxStealthXP gog 0x007184d0 -> 0x00523320: reviewer corrected_addr, label_suspect
+- CSWSArea::GetClientArea_2 gog 0x00722ee0 -> 0x0052de00: label_suspect
+- CSWSArea::SetTransitionPending gog 0x007231f0 -> 0x0052e110: reviewer corrected_addr
+- CGameEffect::Destructor gog 0x00734960 -> 0x005e4ca0: reviewer corrected_addr
+- CGameEffect::SetNumIntegers gog 0x00734a90 -> 0x005e4dd0: match cites a layout/offset difference
+- CGameEffect::GetString gog 0x00734be0 -> 0x005e4f20: reviewer corrected_addr
+- CSWSEffectListHandler::InitializeEffects gog 0x00736310 -> 0x00593a30: match cites a layout/offset difference
+- CSWSEffectListHandler::OnEffectApplied gog 0x00737020 -> 0x00594740: reviewer corrected_addr
+- CSWSEffectListHandler::OnApplySavingThrowIncrease gog 0x0073c6d0 -> 0x00599de0: match on a twin row
+- CSWSEffectListHandler::OnApplyDamageImmunityIncrease gog 0x0073da20 -> 0x0059b130: reviewer corrected_addr
+- CSWSEffectListHandler::OnApplyDamageImmunityDecrease gog 0x0073dbd0 -> 0x0059b2e0: reviewer corrected_addr
+- CSWSEffectListHandler::OnRemoveEntangled gog 0x0073e160 -> 0x0059b870: reviewer corrected_addr
+- CSWSEffectListHandler::OnApplyEnemyAttackBonus gog 0x0073f0e0 -> 0x0059c7f0: reviewer corrected_addr
+- CSWSEffectListHandler::OnRemoveSetStateInternal gog 0x00741150 -> 0x0059e860: reviewer corrected_addr
+- CSWSEffectListHandler::OnApplyMovementSpeedIncrease gog 0x00741260 -> 0x0059e970: reviewer corrected_addr
+- CSWSEffectListHandler::OnRemoveAreaOfEffect gog 0x00741de0 -> 0x0059f4f0: reviewer corrected_addr
+- CSWSEffectListHandler::OnRemoveSlowInternal gog 0x007444e0 -> 0x005a1c10: match cites a layout/offset difference
+- CSWSEffectListHandler::OnRemoveModifyNumAttacks gog 0x00744f70 -> 0x005a26a0: match cites a layout/offset difference
+- CSWSEffectListHandler::OnApplyCurse gog 0x00744fe0 -> 0x005a2710: reviewer corrected_addr
+- CSWSEffectListHandler::OnRemoveSilence gog 0x00745760 -> 0x005a2e90: match cites a layout/offset difference
+- CSWSEffectListHandler::OnApplyMissChance gog 0x00748790 -> 0x005a5ea0: match cites a layout/offset difference
+- CSWSEffectListHandler::OnApplyDisappear gog 0x00748db0 -> 0x005a64c0: reviewer corrected_addr
+- CSWSEffectListHandler::OnRemoveHorrified gog 0x0074ade0 -> 0x005a8530: match cites a layout/offset difference
+- CSWSEffectListHandler::OnApplyBodyFuel gog 0x0074b090 -> 0x005a87e0: match cites a layout/offset difference
+- CSWSEffectListHandler::OnApplyPureEvilPowers gog 0x0074c480 -> 0x005a9ba0: reviewer corrected_addr
+- CSWSTrigger::GetClientTrigger gog 0x00761e60 -> 0x00622bd0: match cites a layout/offset difference
+- CSWSDoor::GetIsLinked gog 0x00768410 -> 0x0061d000: reviewer corrected_addr
+- CSWSCombatRound::SetOffHandAttack gog 0x00774c10 -> 0x00590560: reviewer corrected_addr
+- CSWVirtualMachineCommands::CopyGameDefinedStructure gog 0x0077e710 -> 0x00669130: match cites a layout/offset difference
+- CSWVirtualMachineCommands::CreateGameDefinedStructure gog 0x0077ed70 -> 0x00669790: match cites a layout/offset difference
+- CSWVirtualMachineCommands::ExecuteCommandCutsceneMove gog 0x00783260 -> 0x0066dc80: reviewer corrected_addr
+- CSWVirtualMachineCommands::ExecuteCommandFloatToInt gog 0x0078ebd0 -> 0x006795f0: reviewer corrected_addr
+- CSWSItemPropertyHandler::InitializeItemProperties gog 0x007c18a0 -> 0x005aa490: match cites a layout/offset difference
+- CSWSItemPropertyHandler::RemoveEnhancementBonus gog 0x007c2600 -> 0x005ab1f0: reviewer corrected_addr
+- CSWSItemPropertyHandler::RemoveEnhancementPenalty gog 0x007c3300 -> 0x005abef0: reviewer corrected_addr
+- CSWSItemPropertyHandler::ApplyLight gog 0x007c4dc0 -> 0x005ad9b0: reviewer corrected_addr
+- CSWSItemPropertyHandler::ApplyACBonus gog 0x007c53c0 -> 0x005adfb0: reviewer corrected_addr
+- CSWSItemPropertyHandler::RemoveACBonus gog 0x007c5670 -> 0x005ae260: reviewer corrected_addr
+- CSWSItemPropertyHandler::ApplyImprovedForceResistance gog 0x007c5940 -> 0x005ae530: reviewer corrected_addr
+- CSWSItemPropertyHandler::RemoveChangedSavingThrow gog 0x007c60c0 -> 0x005aecb0: reviewer corrected_addr
+- CSWSItemPropertyHandler::RemoveSpecialWalk gog 0x007c6430 -> 0x005af020: reviewer corrected_addr
+- CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionIncrease gog 0x007c9840 -> 0x005b2430: reviewer corrected_addr
+- CSWSItemPropertyHandler::ApplySniperBonus gog 0x007c9f20 -> 0x005b2b10: reviewer corrected_addr
+- CSWSItemPropertyHandler::ApplyRapidShotBonus gog 0x007c9f50 -> 0x005b2b40: reviewer corrected_addr
+- CSWSEncounter::Destructor gog 0x007e94f0 -> 0x00623030: reviewer corrected_addr
+- CSWSScriptVarTable::DestroyString gog 0x007f07d0 -> 0x005e6f40: reviewer corrected_addr
+- CSWVirtualMachineCommands::InitializeSWMGCommands gog 0x007f9140 -> 0x006f5b80: match on a mac_contra row
+- Gob::SetScene gog 0x0084b0b0 -> 0x00458ae0: label_suspect
+- Gob::DisableFog gog 0x0084c550 -> 0x00459f70: reviewer corrected_addr
+- Scene::ChildAdd gog 0x00857f90 -> 0x00465bb0: reviewer corrected_addr
+- Scene::SetCurrentRoom_2 gog 0x008621f0 -> 0x0046ffb0: reviewer corrected_addr
+- ConsoleFunc::Constructor_2 gog 0x008677e0 -> 0x00475870: reviewer corrected_addr
+- ConsoleFunc::Destructor gog 0x00867920 -> 0x004759b0: reviewer corrected_addr
+- Gob::AddAnimationFlag gog 0x008fd240 -> 0x004e3110: reviewer corrected_addr
