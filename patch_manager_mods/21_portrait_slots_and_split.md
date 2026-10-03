@@ -77,3 +77,10 @@ Before W5, `Patches/BuffDurationHUD/BuffDurationHUD.kpatch` stays the live singl
 - A committed `exports.def` skips create-patch's export scan: add `KPatchInit` by hand.
 - In a shared worktree, never `git checkout --` a shared file and never leave paths staged. Other sessions' commits sweep the index (4bcc143 took our renames). Use `git add P && git commit -- P` in one step.
 - `check_raw_addresses.py --write-baseline` regenerates the whole allowlist. While other sessions have unreviewed addresses in flight, hand-edit only your own entries.
+
+## Backlog (after the W5 live session)
+- Source vs live: ce37f3e (doc-20 T1 extraction into BuffHudLogic.h, behaviour-neutral per its author) landed AFTER the live buff 2.0.0 build f37135c8. Rebuild + re-install only after the current session's logs are read, so a log difference can't be blamed on the wrong change.
+- Latent bugs reported by the doc-20 session (pinned as characterisation tests in buff_hud_logic_test; behaviour changes, so fix deliberately with a test update):
+  1. columnLayout re-derive on the next column (~BuffHudLogic.h:180-186) has no MinIconSize clamp: a tiny card can get size 0.
+  2. `(cardH-gap)/(size+gap)` can divide by zero when scale < 0.2 and cardW < 0; DrawBuffColumn passes engine cardW/cardH unchecked -> guard cardW/cardH >= 1 at entry.
+  3. columnSig fields overlap, so a COLUMN log line can be missed (diagnostics only).
