@@ -6,30 +6,41 @@
 saber-hilt, normal-map, `fog_reflection_fix_k2` OFF. Sibling ids also live: mouse-probe, k2-robustness-fixes,
 k2-texture-memory-release.
 
+**Follow-up done 10-03 ~12:00 (plan "branch workflow, launcher rebuild, stale-LAA sweep"):**
+- **Branch workflow adopted.** `ethansm/local-mods` = what's live, pushed to the fork at `977f4f3` (WIP commits: BuffDurationHUD,
+  LevelUpOverride, RobustnessFixes, ghidra scripts, MouseProbe, launcher NoLaunch). Held (sibling sessions mid-edit at
+  11:46-11:49): ForcePowerHotbar + docs/RuntimeGuiControls.md, CharEffectsPanel; BuffDurationHUD dirty again (new .inc/.h).
+  Excluded locally: `launch_kpm_ui.sh`, `registry_core_stage/`, `Patches/K2DialogueLetterboxFixProbe/` (duplicate id
+  `k2-dialogue-letterbox-fix`). Inventory: `phase1_inventory.md`.
+- **Commit-before-install rule** (doc 10 Standing rules + CLAUDE.md "KPM Install Rule"): `stage_and_verify_install.py stage`
+  writes `<stage>/STAGE_INFO.txt` (branch/head/upstream/per-id clean|DIRTY), prints `WARN DIRTY`, exits 2 unless
+  `--allow-dirty`; `verify` prints the recorded head.
+- **Launcher rebuilt** (includes upstream #283; `KPATCH_NO_LAUNCH` now in source, local commit 977f4f3, not for upstream).
+  `bin/NoLaunch` = new build: KPatchLauncher.dll `f9527abb`, KPatchCore.dll `8629dde6`, KotorPatcher.dll `36f10b7f` (copied
+  from live, NOT built), binkw32 proxy `753ca1f1`. Rollback = `bin/NoLaunch_old_0928` (launcher `5bc31e49`, core `b236fcec`,
+  patcher `2a706ac9`). dotnet test 427/427 before and after. Sandbox A/B (old vs new, first install + reinstall):
+  byte-identical except KotorPatcher.dll; no new #283 state fields; reinstall restores the vanilla backup and re-patches.
+- **RFC #180 registry patcher went live 11:51** (sibling registry session hot-copied `registry_core_stage/KotorPatcher.dll`,
+  md5 `36f10b7f`, source `fa67a3b`). The OLD bin ships `2a706ac9`: installing with `NoLaunch_old_0928` reverts it.
+- **Live reinstall with the new launcher 12:00:17** (stage `kotor-patch-manager/launcher_swap_stage_1003`, head 977f4f3,
+  hotbar build 28 `6dd6d0e2` passed as EXTRA from `hotbar_stage17/`, because the newest tree kpatch is the uninstalled 29p
+  probe). Result: every DLL/proxy/patcher md5 + exe sha `7751F7D8` identical to backup `backups/pre_launcher_swap_1003/`;
+  OriginalHash `6A522E`; verify 0 mismatches; 31 ids/198 hooks; patch_config per-id identical (hotbar moved last; no shared
+  hook addresses, so order is irrelevant).
+- **Stale-LAA sweep** applied (commit b4c1612; `phase3_sweep.md`); memory kotor2-patch-manager.md LAA recipe marked obsolete.
+
 **Open items (in order):**
 1. User reported "very dark" after shader changes. `colorshift_k2` removed 10-02 14:58; user has NOT yet re-tested.
    If still dark: in-game Brightness (ini `Brightness=50`) first, else ask which areas; suspect Shader Fixes' +15
    brightness offset removal -> tweak in a branch (do not just drop the patch; it carries the saber/normal/fog fixes).
-2. Pending user answer: adopt branch workflow (commit uncommitted mod work to `ethansm/local-mods`, add "commit before
-   install" step to the install procedure; per-mod `pr/<id>` branches off master for upstream).
-3. KPM rebuild with upstream 55725f7 (#283 deployment changes) not done; installs still use the old
-   `bin/NoLaunch/KPatchLauncher` (`KPATCH_NO_LAUNCH=1`). NoLaunch is a source edit that was reverted: rebuilding needs it
-   re-applied (see 09_load_hang_investigation.md).
-4. Upstream PR for `docs/prepatched-executables` (hash note, issues #49/#91) NOT opened; needs user OK. #49/#91 link to
-   this hash is unverified.
+2. Held WIP commits (ForcePowerHotbar, CharEffectsPanel, BuffDurationHUD .inc/.h) once their sessions settle.
+3. Upstream PRs: none (user, 10-03). `docs/prepatched-executables` branch stays on the fork.
 
-**KPM clone** `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`: origin = fork `ethansm/Kotor-Patch-Manager`,
-upstream = LaneDibello (push URL DISABLE), `gh auth setup-git` done. Branches: `master` (= upstream 55725f7),
-`ethansm/local-mods` (pushed, e3bc575: dcc1cf6 LAA aliases, 2dcf48a ghidra scripts, 583ba96 local patches, b5806b1 LAA
-removal, e3bc575 doc), `docs/prepatched-executables` (f9f3ec6, pushed). Working tree has sibling-session uncommitted
-edits (BuffDurationHUD, CharEffectsPanel, ForcePowerHotbar, LevelUpOverride, untracked MouseProbe): do not commit or
-discard them without the user. Local excludes in `.git/info/exclude`.
-
-**Install rules learned:** siblings hand-install DLLs into patch_config.toml without KPM (mouse-probe 12:11) and
-reinstall often; right before any install: game closed, re-read live ids, build stage with
-`mods678_research/stage_and_verify_install.py stage <dir>` (4gb-patch "hooks=DIFF" is expected: static hook not in
-patch_config), back up, `KPATCH_NO_LAUNCH=1 bin/NoLaunch/KPatchLauncher "$G/swkotor2.exe" --patches <stage> <ids>`,
-then md5 DLLs vs backup. Exe swaps need `swkotor2.exe.backup.*` + `kpm_install_state.json` moved aside first.
+**Install rules:** siblings hot-swap live DLLs and the patcher without KPM (11:51 chareffects + KotorPatcher) and
+reinstall often; right before any install: game closed, re-read live ids, `stage <dir>` (4gb-patch "hooks=DIFF" is
+expected: static hook not in patch_config; a `dll=NO-MATCH` means pass the live build's kpatch as EXTRA), back up,
+`KPATCH_NO_LAUNCH=1 bin/NoLaunch/KPatchLauncher "$G/swkotor2.exe" --patches <stage> <ids>`, then `verify` + md5 vs backup.
+Exe swaps need `swkotor2.exe.backup.*` + `kpm_install_state.json` moved aside first.
 
 **Status: INSTALLED, awaiting in-game check.** 12:14: `colorshift_k2` + `K2_music_fix` added (31 ids / 202 hooks incl. a sibling's
 `mouse-probe`, hand-installed 12:11 and carried over unchanged). LAA aliases removed from all manifests/hooks (KPM
