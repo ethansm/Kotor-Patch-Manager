@@ -902,4 +902,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   ok=1`; reload found=32/32. User: "still saw the level up icon on the portrait" = EXPECTED: Atton Scoundrel 3 XP 30014 (Game2) -> levels 4-7 are
   PATH (convert_at 8), hold rule hides the icon only when the NEXT level is held. QUICKSAVE was overwritten 01:18 (g11b3b802 save gone; ini keeps the
   section). Asked user to level Atton 4->7 manually (R1 + hold at 7) and/or instant leader test.
+- User 2026-10-03: wants to bank ALL of Atton's levels until he converts (after Telos / Nar Shaddaa), asked for a user-entered pause level.
+  Web check: both strategies are common (bank-until-Jedi = more Jedi levels; ElKripper = Scoundrel to ~19 for Sneak Attack). Decision: 0.3.1
+  per-companion "Pause at level N" (Bank control becomes a cycler; ini `|pause=N`; levelNow HOLDs when key > pause and the hold class is missing).
+  Spec `phase6_evidence/A_pause_spec.md`; Sonnet C++ draft running. Hooks/exports unchanged -> dll-only swap.
 
