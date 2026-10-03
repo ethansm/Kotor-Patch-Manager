@@ -1,0 +1,8 @@
+# Live DECODE lines from chareffects_log.txt (build 4b, 2026-10-03 01:11/01:30 runs, log lines 7333+).
+# Regression fixture for scripts/check_effect_decode.py. Append new lines after each play session.
+01:13:17.061 DECODE: type=0x1c ints=[199,0,0,0,0,0,0,0] -> 'Speed +199%' / 'Movement speed +199%'
+01:13:17.062 DECODE: type=0x1e ints=[2031,0,0,0,0,0,0,0] -> (no stat shown)
+01:13:17.062 DECODE: type=0x30 ints=[0,2,7,0,0,8199,0,0] -> 'Def +2' / 'Defense +2'
+01:39:36.991 DECODE: type=0x02 ints=[4224,300,50,2048,1,0,0,0] -> 'Res 300 Energy' / 'Resist 300 Electrical, Energy (up to 50)'
+01:39:36.991 DECODE: type=0x1e ints=[2045,0,0,0,0,0,0,0] -> (no stat shown)
+01:39:36.991 DECODE: type=0x6b ints=[0,0,0,0,0,0,0,0] -> 'Shield 50 Energy' / 'Absorbs 50: Electrical, Energy'
