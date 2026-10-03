@@ -843,6 +843,12 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   GUID-less save in the same server instance gives `found=32/32 g00000000` (names stay in the catalogue, values reset) -> treated as none (correct).
   User feedback: popup still slightly see-through; first two result rows look like buttons but are info; wants a recommended path per character and
   asks whether a single options page would beat the wizard.
+- 2026-10-03 00:25 INSTALLED (KPM reinstall, user-consented): options page (748c8b7: OptionsLogic.h single page replaces the wizard; rows cycle,
+  start = configured / `[recommended]` / first; 3 stacked opaque backs; Use recommended; toggles; Apply/Vanilla/Cancel), `[recommended]` canon-style
+  preset per companion (d92406f), **leader instant** hook 0x74F423 (58e06d2, `INSTANT-LEADER` log). dll e64cb387, 26 hooks; set 31 ids / 198 hooks;
+  stage `$T/levelup_stage7` (stager from live; `4gb-patch` "hooks=DIFF" is an artifact: its 1-byte header patch has 0 hooks in patch_config,
+  1 in every kpatch); verify 0 mismatches. Backup `backups/pre_levelup_030_page_20261003_002447/`. Table copied (adds `[recommended]`). Log 386 lines
+  before run 4. Playthrough ini keeps `[g11b3b802] atton=atton__melee_dual_light_early|instant=1|hold=1` (load the 16:04 QUICKSAVE to use it).
 - 0.3.0 INSTALLED 12:45 (see '0.3.0 install'); NEXT = user plays the combined checklist (PHASE5_PLAN step C 1-8), Opus reads the log from line 176.
 - (superseded) Live state: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
 
