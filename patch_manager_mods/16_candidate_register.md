@@ -1,6 +1,6 @@
 # Engine-bug candidate register (doc 16): Phase 0/1 of the doc-15 research
 
-Status: **Phase 1 complete (2026-10-01); Phase 2 builds INSTALLED live 2026-10-02 01:33 (doc 17), awaiting T1/T2.** Plan: `15_engine_bug_candidates_research_plan.md`; context: `15a_research_session_context_2026-10-01.md`.
+Status: **Phase 1 complete (2026-10-01); Phase 2 builds INSTALLED live 2026-10-02 01:33 (doc 17), awaiting T1/T2.** Plan: `15_engine_bug_candidates_research_plan.md`; context: `15a_research_session_context_2026-10-01.md`, `15b_...` (Phase 1), **`15c_phase2_session_context_2026-10-02.md` (Phase 2, latest)**.
 Static analysis only. No game launch, no installs, nothing written to the game dir.
 
 ## Hand-off summary (top section; updated at the end of Phase 2)
