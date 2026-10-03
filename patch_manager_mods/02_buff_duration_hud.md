@@ -1753,3 +1753,6 @@ per-creature action lists ARE inventory items (key = objectId|0x40000000). Live-
 - **B2 GuiKit:** `setFill`, `imageFor`.
 - **B6 party/leader accessor** (:789). Upstream GameAPI `GetPlayerCreature`/`GetWorldTime` exist but are bypassed.
 - **Logging:** the shield-bar probe lines (`MENUSLOT DRAW POOL CAPFIX SWAP ...`) are doc 19 Phase 3, the second reference migration (byte caps fix the SWAP-line starvation).
+
+## Split into portrait-slots + buff-duration-hud 2.0.0 + shield-bar 1.2.0 (2026-10-03)
+The shared portrait hooks moved to the new `portrait-slots` provider patch; this mod is now its own DLL on the `k2.portraitslots` registry interface. Source of truth for state, phases, install rules and the W5 test matrix: `21_portrait_slots_and_split.md` ("RESUME HERE").
