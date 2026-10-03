@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
-"""Python port of the CharEffectsPanel stat decoder (atomOf/fmtAtom/maskName/dmgBonus/addAtom/formatStats/wrapAppend)
-with hand-derived test cases and a --samples checker for real DECODE log lines.
+"""Python port of the CharEffectsPanel stat decoder (atomOf/fmtAtom/maskName/dmgBonus/addAtom/formatStats) and the
+pixel-width text layer (textPx/wrapAppend/fitText/marqueeText) with hand-derived test cases and a checker for real
+DECODE log lines (the live fixture patch_manager_mods/active_effects_panel_src/research/decode_samples_live.txt always
+runs; --samples adds another log).
 
 Source of truth: ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/CharEffectsPanel.cpp
 Usage: check_effect_decode.py [--samples chareffects_log.txt] [--inc PATH_TO_EffectNameTable.inc]
 """
-import argparse, os, re, sys
+import argparse, os, re, struct, sys
 
 DEFAULT_INC = os.path.expanduser(
     "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/EffectNameTable.inc")
+LIVE_FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "patch_manager_mods",
+                            "active_effects_panel_src", "research", "decode_samples_live.txt")
+# Fixture lines were logged by an older build; an intentional output change is listed here per (type, ints) as
+# (new short, new long) so the stale line still checks the new behaviour. Any other mismatch FAILs.
+KNOWN_CHANGES = {   # build 4b -> 4c: engine apply handler stores v+100 for v<100, so >=100 is shown minus 100 (+ cap note)
+    (0x1c, (199, 0, 0, 0, 0, 0, 0, 0)): ("Speed +99%", "Movement speed +99% (engine cap +50%)"),
+}
+SX, SY, TEXT_K16, TEXT_K10, TEXT_SCALE = 4.7963, 2.6667, 0.75, 1.03, 1.0   # px per GUI unit (LBL_EFX_BACK extent), INI defaults
 LINE_LEN, SHORT_LEN, STAT_LEN, MAX_LINES, MAX_ATOMS = 96, 48, 96, 8, 12
 
 (A_NONE, A_ABIL, A_AC, A_ATT, A_DMG, A_RES, A_DR, A_IMMD, A_SAVE, A_SKILL, A_THP, A_REGEN, A_SPEED, A_IMM,
@@ -46,6 +56,48 @@ def load_force_shield(path):
 FORCE_SHIELD = []
 
 
+def f32(x):  # C++ float
+    return struct.unpack("f", struct.pack("f", x))[0]
+
+
+def load_font_tables(path):
+    txt = open(path).read()
+    out = {}
+    for name in ("kFontTexW", "kFont10TexW"):
+        m = re.search(name + r"\[256\]\s*=\s*\{(.*?)\};", txt, re.S)
+        out[name] = [int(t) for t in re.findall(r"\d+", m.group(1))] if m else None
+        assert out[name] is None or len(out[name]) == 256, "%s parse: %d entries" % (name, len(out[name]))
+    return out
+
+
+FONT_TEX_W = {}   # "F16" / "F10" -> 256 glyph widths in font texels, filled by main()
+
+
+def text_px(t, font="F16"):
+    tw = FONT_TEX_W[font]
+    w = sum(tw[ord(c)] for c in t)
+    return f32(f32(f32(w * f32(SY)) * f32(TEXT_K10 if font == "F10" else TEXT_K16)) * f32(TEXT_SCALE))
+
+
+def fit_text(name, max_px, font="F16"):
+    """returns (text, cut)"""
+    ln = len(name)
+    if text_px(name, font) <= max_px: return name, False
+    dots = text_px("...", font)
+    while ln > 0 and text_px(name[:ln], font) + dots > max_px: ln -= 1
+    while ln > 0 and name[ln - 1] == " ": ln -= 1
+    return name[:ln] + "...", True
+
+
+def marquee_text(full, max_px, off, font="F16"):
+    """returns (text, maxOff)"""
+    ln, m = len(full), 0
+    while m < ln and text_px(full[m:], font) > max_px: m += 1
+    if off > m: off = m
+    while 0 < off < ln and full[off] == " ": off += 1   # never start on a space
+    return fit_text(full[off:], max_px, font)[0], m
+
+
 def trunc(s, n):  # snprintf into a buffer of n bytes
     return s[:n - 1]
 
@@ -79,7 +131,7 @@ def atom_of(typ, v):
     I = lambda i: v[i] if i < len(v) else 0
     sg = 1
     t = typ
-    neg = {0x25: 0x24, 0x31: 0x30, 0x0b: 0x0a, 0x0e: 0x0d, 0x11: 0x10, 0x1b: 0x1a, 0x38: 0x37, 0x1d: 0x1c,
+    neg = {0x25: 0x24, 0x31: 0x30, 0x0b: 0x0a, 0x0e: 0x0d, 0x11: 0x10, 0x1b: 0x1a, 0x38: 0x37,
            0x22: 0x21, 0x5d: 0x5c}
     if t in neg:
         sg, t = -1, neg[t]
@@ -98,7 +150,8 @@ def atom_of(typ, v):
         return (A_SKILL, sg * I(1), I(0), 0, 0)
     if t == 0x0f: return (A_THP, I(0), 0, 0, 0)
     if t == 0x07: return (A_REGEN, I(0), I(1), 0, 0)
-    if t == 0x1c: return (A_SPEED, sg * I(0), 0, 0, 0)
+    if t == 0x1d: return (A_SPEED, -I(0), 0, 0, 0)
+    if t == 0x1c: return (A_SPEED, I(0) - 100 if I(0) >= 100 else I(0), 0, 0, 0)   # apply handler stores v+100 when v<100
     if t == 0x16: return (A_IMM, 0, I(0), 0, 0)
     if t == 0x21: return (A_FR, sg * I(0), 0, 0, 0)
     if t == 0x5c: return (A_DEFL, sg * I(0), 0, 0, 0)
@@ -165,7 +218,8 @@ def fmt_atom(x, shn=SHORT_LEN, lgn=LINE_LEN):
         sec = (b + 500) // 1000 if b > 0 else 0   # C int division; b>0 so floor == trunc
         sh, lg = "Regen %d/%ds" % (a, sec), "Regenerates %d Vitality every %d s" % (a, sec)
     elif kind == A_SPEED:
-        sh, lg = "Speed %+d%%" % a, "Movement speed %+d%%" % a
+        sh = "Speed %+d%%" % a
+        lg = "Movement speed %+d%%%s" % (a, " (engine cap +50%)" if a > 50 else "")
     elif kind == A_IMM:
         nm = IMMUNITY[b] if 0 <= b < 34 else "?"
         sh, lg = "Imm: %s" % nm, "Immune: %s" % nm
@@ -254,9 +308,9 @@ def wrap_append(src, max_px, width, st, cap):
     return lines
 
 
-def wrap(src, max_chars, cap=1024):
+def wrap(src, max_chars, cap=1024, width=len):   # default: width = char count; pass a text_px lambda for pixel wrap
     st = {"len": 0, "buf": ""}
-    n = wrap_append(src, max_chars, len, st, cap)
+    n = wrap_append(src, max_chars, width, st, cap)
     return n, st["buf"]
 
 
@@ -281,6 +335,10 @@ TESTS = [
     ("shield + limit res reorder", [(0x02, [32, 20, 0]), (0x6b, [6])], "Res 20 Cold, Shield 40 Energy",
      ["Resist 20 Cold", "Absorbs 40: Electrical, Energy"]),
     ("burst of speed", [(0x1c, [50]), (0x30, [0, 2])], "Speed +50%, Def +2", ["Movement speed +50%", "Defense +2"]),
+    ("speed 199 (engine v+100) capped note", [(0x1c, [199])], "Speed +99%", ["Movement speed +99% (engine cap +50%)"]),
+    ("speed 99 pre-apply", [(0x1c, [99])], "Speed +99%", ["Movement speed +99% (engine cap +50%)"]),
+    ("speed 150 -> +50 no note", [(0x1c, [150])], "Speed +50%", ["Movement speed +50%"]),
+    ("speed decrease 0x1d", [(0x1d, [50])], "Speed -50%", ["Movement speed -50%"]),
     ("decreases", [(0x25, [1, 2]), (0x38, [2, 4]), (0x11, [256, 50])], "-2 Dex, Stealth -4, Imm -50% Fire",
      ["-2 Dexterity", "Stealth -4", "-50% immunity: Fire"]),
     ("dmg increase enum", [(0x0d, [7, 4096])], "Dmg +1d6", ["Damage +1d6 Energy"]),
@@ -351,7 +409,51 @@ WRAP_TESTS = [
 ]
 
 
-def run_tests():
+def px10(t): return text_px(t, "F10")
+
+
+# need/fit rule of layout() (build 4c): need = text/sx + 3 units, fit = (col - 2) * sx, both float; col == need never cuts
+def fit_at_need(t, font):
+    col = f32(f32(text_px(t, font) / f32(SX)) + 3)
+    return fit_text(t, f32(f32(col - 2) * f32(SX)), font)
+
+
+# pixel wrap: 'W' = 9 texels, 'i' = 3, ' ' = 7 (F10); limit 60 texels. "WWW WWW" is 7 chars but 61 texels -> breaks,
+# while 17-char "iiiiiiii iiiiiiii" (55 texels) stays whole; a 7-char limit by count would cut very differently
+PX_WRAP_LIMIT = f32(60 * f32(f32(SY) * f32(TEXT_K10)))
+PX_WRAP_CASES = [
+    ("wrap px: wide glyphs break at 7 chars", "WWW WWW iiiiiiii iiiiiiii", PX_WRAP_LIMIT,
+     ["WWW", "WWW iiiiiiii", "iiiiiiii"]),
+    ("wrap px: narrow glyphs 17 chars stay whole", "iiiiiiii iiiiiiii", PX_WRAP_LIMIT, ["iiiiiiii iiiiiiii"]),
+]
+
+
+def run_fit_tests(fixture_stats):
+    rows = []
+    cases = [("name:" + n, n, "F16") for n in ("Burst of Speed", "Droid Deflector Mark I", "Force Valor", "Energy Shield")]
+    cases += [("stat:" + t, t, "F10") for t in ["Speed +199%"] + fixture_stats]
+    for label, t, font in cases:
+        out, cut = fit_at_need(t, font)
+        ok = (not cut and out == t)
+        rows.append(("fit at need never cuts (4c) " + label, ok, "" if ok else "cut to %r" % out))
+    # a column two units narrower than need (fit = text - 1 unit) must cut (rule is not vacuous)
+    t = "Speed +99%"
+    out, cut = fit_text(t, f32(f32(f32(text_px(t, "F10") / f32(SX)) + 3 - 2 - 2) * f32(SX)), "F10")
+    rows.append(("fit two units under need cuts", cut and out.endswith("..."), "" if cut else "no cut"))
+    # marquee: whole text fits -> maxOff 0; narrow column scrolls and the offset never starts on a space
+    full = "Droid Deflector Mark I"
+    wide = f32(text_px(full) + 1)
+    txt, mo = marquee_text(full, wide, 0)
+    rows.append(("marquee fits -> maxOff 0", (txt, mo) == (full, 0), "" if (txt, mo) == (full, 0) else repr((txt, mo))))
+    narrow = f32(text_px(full) * 0.6)
+    txt, mo = marquee_text(full, narrow, 100)
+    rest = full[mo:]
+    ok = mo > 0 and text_px(rest) <= narrow and text_px(full[mo - 1:]) > narrow and txt == rest
+    rows.append(("marquee scrolls to the offset where the rest fits", ok, "" if ok else repr((txt, mo))))
+    return rows
+
+
+def run_tests(fixture_stats=()):
     rows = []
     for name, effs, es, el in TESTS:
         s, l = decode_entry(effs)
@@ -361,6 +463,14 @@ def run_tests():
         n, buf = wrap(src, mx)
         ok = (buf == "\n".join(exp) and n == len(exp))
         rows.append((name, ok, "" if ok else "got %d %r want %r" % (n, buf, exp)))
+    for name, src, mx, exp in PX_WRAP_CASES:
+        n, buf = wrap(src, mx, width=px10)
+        ok = (buf == "\n".join(exp) and n == len(exp))
+        rows.append((name, ok, "" if ok else "got %d %r want %r" % (n, buf, exp)))
+    n, buf = wrap("WWW WWW iiiiiiii iiiiiiii", 7)   # contrast: by char count the same limit gives a different cut
+    ok = buf != "\n".join(PX_WRAP_CASES[0][3])
+    rows.append(("wrap px differs from char-count wrap", ok, "" if ok else repr(buf)))
+    rows += run_fit_tests(list(fixture_stats))
     # wrap: multi-emit with shared out buffer ('\n' between separate calls) and cap overflow
     st = {"len": 0, "buf": ""}
     n1 = wrap_append("aa bb", 10, len, st, 1024); n2 = wrap_append("cc", 10, len, st, 1024)
@@ -376,12 +486,23 @@ def run_tests():
 SAMPLE_RE = re.compile(r"DECODE: type=0x([0-9a-fA-F]+) ints=\[([^\]]*)\] -> (?:\(no stat shown\)|'(.*)' / '(.*)')\s*$")
 
 
-def run_samples(path):
+def sample_stats(path):
+    """short stat strings the port decodes from the DECODE lines of a log (inputs for the fit tests)"""
+    out = []
+    for line in open(path, errors="replace"):
+        m = SAMPLE_RE.search(line)
+        if m and m.group(3) is not None:
+            a = atom_of(int(m.group(1), 16), [int(t) for t in m.group(2).split(",") if t.strip()])
+            if a and fmt_atom(a)[0] not in out: out.append(fmt_atom(a)[0])
+    return out
+
+
+def run_samples(path, tag="sample"):
     rows = []
     for ln, line in enumerate(open(path, errors="replace"), 1):
         if "DECODE:" not in line: continue
         m = SAMPLE_RE.search(line)
-        name = "sample L%d" % ln
+        name = "%s L%d" % (tag, ln)
         if not m:
             rows.append((name, False, "unparsable: " + line.strip())); continue
         typ = int(m.group(1), 16)
@@ -394,20 +515,26 @@ def run_samples(path):
             if a is None:
                 rows.append((name + " 0x%02x%s" % (typ, ints), False, "port: no atom; log: %r" % (m.group(3),))); continue
             sh, lg = fmt_atom(a)
-            ok = (sh, lg) == (m.group(3), m.group(4))
-            rows.append((name + " 0x%02x%s" % (typ, ints), ok,
-                         "" if ok else "got %r / %r want %r / %r" % (sh, lg, m.group(3), m.group(4))))
+            want = KNOWN_CHANGES.get((typ, tuple(ints)), (m.group(3), m.group(4)))
+            ok = (sh, lg) == want
+            note = " (known change)" if want != (m.group(3), m.group(4)) else ""
+            rows.append((name + " 0x%02x%s%s" % (typ, ints, note), ok,
+                         "" if ok else "got %r / %r want %r / %r" % (sh, lg, want[0], want[1])))
     return rows
 
 
 def main():
-    global FORCE_SHIELD
+    global FORCE_SHIELD, FONT_TEX_W
     ap = argparse.ArgumentParser()
-    ap.add_argument("--samples", help="chareffects_log.txt copy with DECODE: lines")
+    ap.add_argument("--samples", help="chareffects_log.txt copy with DECODE: lines (in addition to the live fixture)")
     ap.add_argument("--inc", default=DEFAULT_INC)
     args = ap.parse_args()
     FORCE_SHIELD = load_force_shield(args.inc)
-    rows = run_tests()
+    ft = load_font_tables(args.inc)
+    FONT_TEX_W = {"F16": ft["kFontTexW"], "F10": ft["kFont10TexW"]}
+    live = os.path.normpath(LIVE_FIXTURE)
+    rows = run_tests(sample_stats(live))
+    rows += run_samples(live, "live")
     if args.samples: rows += run_samples(args.samples)
     bad = 0
     for name, ok, detail in rows:

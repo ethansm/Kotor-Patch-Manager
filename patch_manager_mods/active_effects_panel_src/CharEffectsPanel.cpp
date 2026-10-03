@@ -508,8 +508,10 @@ bool atomOf(int type, const int* v, int n, Atom* at) {
     case 0x37: if (I(0) < 0 || I(0) > 7) return false; x = {A_SKILL, sg * I(1), I(0), 0, 0}; break;
     case 0x0f: x = {A_THP, I(0), 0, 0, 0}; break;
     case 0x07: x = {A_REGEN, I(0), I(1), 0, 0}; break;
-    case 0x1d: sg = -1; /* fallthrough */
-    case 0x1c: x = {A_SPEED, sg * I(0), 0, 0, 0}; break;
+    // increase: the apply handler 0x59e970 stores v+100 when v < 100 (script 99 -> 199) and multiplies the rate by
+    // ints[0]/100, clamped to [0.125, 1.5] (0x5766a0); decrease 0x59eb80 stores v raw, rate *= 1 - v/100 (R3c)
+    case 0x1d: x = {A_SPEED, -I(0), 0, 0, 0}; break;
+    case 0x1c: x = {A_SPEED, I(0) >= 100 ? I(0) - 100 : I(0), 0, 0, 0}; break;
     case 0x16: x = {A_IMM, 0, I(0), 0, 0}; break;
     case 0x22: sg = -1; /* fallthrough */
     case 0x21: x = {A_FR, sg * I(0), 0, 0, 0}; break;
@@ -558,7 +560,7 @@ void fmtAtom(const Atom& x, char* sh, int shn, char* lg, int lgn) {
     case A_THP: snprintf(sh, shn, "+%d VP", x.a); snprintf(lg, lgn, "+%d temporary Vitality", x.a); break;
     case A_REGEN: { int sec = x.b > 0 ? (x.b + 500) / 1000 : 0;
         snprintf(sh, shn, "Regen %d/%ds", x.a, sec); snprintf(lg, lgn, "Regenerates %d Vitality every %d s", x.a, sec); break; }
-    case A_SPEED: snprintf(sh, shn, "Speed %+d%%", x.a); snprintf(lg, lgn, "Movement speed %+d%%", x.a); break;
+    case A_SPEED: snprintf(sh, shn, "Speed %+d%%", x.a); snprintf(lg, lgn, "Movement speed %+d%%%s", x.a, x.a > 50 ? " (engine cap +50%)" : ""); break;
     case A_IMM: { const char* nm = x.b >= 0 && x.b < 34 ? kImmunity[x.b] : "?";
         snprintf(sh, shn, "Imm: %s", nm); snprintf(lg, lgn, "Immune: %s", nm); break; }
     case A_FR: snprintf(sh, shn, "FR %+d", x.a); snprintf(lg, lgn, "Force resistance %+d", x.a); break;
@@ -868,6 +870,8 @@ void layout(Slot* s) {
     // columns sized from the content of the visible rows (build 4b): time column = widest time; stat and name want their
     // widest text; when both do not fit, the stat column keeps at least stat_min_frac of the room and the name the rest.
     // The stat column is shared (left-aligned at one x); a row without a stat lets its name run up to the time column.
+    // need = text + 3 units and the fit below = column - 2 units, both in float (build 4c): a column equal to its need
+    // never cuts (4b lost ~1 px to ux() rounding and cut 'Speed +199%' in a 86/86 column).
     float timeCol = 0, statNeed = 0, nameNeed = 0;
     for (int k = 0, rr = 0; k < cnt && rr < MaxRows; ++k) {
         const Entry& x = e[s->first + k];
@@ -875,8 +879,8 @@ void layout(Slot* s) {
         ++rr;
         char tm[16]; fmtTime(x, tm, sizeof tm);
         timeCol = fmaxf(timeCol, textPx(s, tm, (int)strlen(tm)) / s->sx + 1);
-        if (g_cfg.statColumn && x.stat[0]) statNeed = fmaxf(statNeed, textPx(s, x.stat, (int)strlen(x.stat), F10) / s->sx + 2);
-        nameNeed = fmaxf(nameNeed, textPx(s, x.name, (int)strlen(x.name)) / s->sx + 2);
+        if (g_cfg.statColumn && x.stat[0]) statNeed = fmaxf(statNeed, textPx(s, x.stat, (int)strlen(x.stat), F10) / s->sx + 3);
+        nameNeed = fmaxf(nameNeed, textPx(s, x.name, (int)strlen(x.name)) / s->sx + 3);
     }
     const float nx = X0 + IconW + 4, tr = X0 + rowW - TimePadR;
     float room = tr - timeCol - nx - (statNeed > 0 ? StatGap + ColGap : NameGap), statCol = 0;
@@ -913,7 +917,7 @@ void layout(Slot* s) {
         if (statCol > 0 && x.stat[0]) {
             place(s, T_S0 + r, statX, y, statCol, RowH);
             // fit 2 units inside the label: a text wider than its label is word-wrapped by the engine (15:09 screenshot)
-            int mo = 0; marqueeText(s, x.stat, (float)(ux(s, statX + statCol) - ux(s, statX)) - 2 * s->sx, s->mqOff, st, sizeof st, &mo, F10);
+            int mo = 0; marqueeText(s, x.stat, (statCol - 2) * s->sx, s->mqOff, st, sizeof st, &mo, F10);
             if (mo > mqMax) mqMax = mo;
             mqRows += mo > 0;
             setText(s, T_S0 + r, st);
@@ -923,7 +927,7 @@ void layout(Slot* s) {
         place(s, T_N0 + r, nx, y, nw, RowH);
         s->rowY[r] = y; s->rowEnt[r] = s->first + k;
         char nm[64]; int mo = 0;
-        marqueeText(s, x.name, (float)(ux(s, nx + nw) - ux(s, nx)) - 2 * s->sx, s->mqOff, nm, sizeof nm, &mo);
+        marqueeText(s, x.name, (nw - 2) * s->sx, s->mqOff, nm, sizeof nm, &mo);
         if (mo > mqMax) mqMax = mo;
         mqRows += mo > 0;
         setText(s, T_N0 + r, nm);
@@ -1138,6 +1142,7 @@ extern "C" void __cdecl BindCharEffects(int panel) {
     if (!panel) { logf("H1: null panel, abort"); return; }
     if (!g_cfg.enabled) { logf("H1: disabled by INI, controls not bound (right third stays empty)"); return; }
     Slot* s = claimSlot(panel);
+    if (s->mqActive && s->panel == panel) logf("MARQUEE: reset (rebind)");
     *s = Slot();
     s->panel = panel; s->seq = ++g_seq; s->bindTick = GetTickCount();
     static const char* const fixed[] = {"LBL_EFX_BACK", "LBL_EFX_HEADER", "LBL_EFX_SECG", "LBL_EFX_SECB"};
@@ -1250,6 +1255,6 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
         SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
     }
-    if (reason == DLL_PROCESS_ATTACH) { logf("chareffects 0.1.0-probe build 4 loaded"); loadIni(); saferead::enableRing(g_debug); }
+    if (reason == DLL_PROCESS_ATTACH) { logf("chareffects 0.1.0-probe build 4c loaded"); loadIni(); saferead::enableRing(g_debug); }
     return TRUE;
 }

@@ -9,9 +9,10 @@ dialog.tlk. Sample effect rows use real spell icons (EffectIconTable.inc / Debuf
 spells.2da names; the times are fake.
 
 Geometry: GUI units are 800x600, the engine stretches them to the screen, so screen px = units * (4.8, 8/3) at
-3840x1600. A square on screen is therefore 10 x 18 units (48 x 48 px). Text is drawn at a UNIFORM 8/3 px per font
-texel (assumption: the engine does not stretch glyphs horizontally; --text-hstretch draws them at 4.8 px instead,
-for comparison with a screenshot).
+3840x1600. A square on screen is therefore 10 x 18 units (48 x 48 px). Text is drawn at the DLL's calibrated scale
+(uniform in x and y): dialogfont16x16 = TEXT_K16 * SY = 2.0 px/texel, dialogfont10x10 = TEXT_K10 * SY = 2.75 px/texel,
+with the glyph advances of EffectNameTable.inc (kFontTexW / kFont10TexW), so widths equal the DLL's textPx. The column
+layout is CharEffectsPanel.cpp layout() (build 4b/4c).
 
 Thirds (columns as equip_p layout A: 48..284 | 294..526 | 536..752):
   left   stats group      dx -353 (x 407 -> 54)
@@ -19,7 +20,7 @@ Thirds (columns as equip_p layout A: 48..284 | 294..526 | 536..752):
   right  effects panel    [536,134,216,336] + header [536,104,216,24]
 Fixed: LBL_BAR1..5, LBL_TITLE, BTN_EXIT.
 
-usage: character_page_mockup.py OUTDIR [--text-hstretch] [--names-font=dialogfont16x16|dialogfont10x10]
+usage: character_page_mockup.py OUTDIR [--names-font=dialogfont16x16|dialogfont10x10]
 Outputs: char_before.png, char_after.png, char_after_empty.png, char_after_tooltip.png, char_after_panel_zoom.png
 """
 import logging, re, sys
@@ -36,6 +37,7 @@ from pykotor.resource.type import ResourceType
 GAME = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II"
 REPO = Path(__file__).resolve().parent.parent
 BUFF_SRC = REPO / "patch_manager_mods/buff_duration_hud_src"
+NAME_TABLE = Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/EffectNameTable.inc"
 W, H = 3840, 1600
 SX, SY = W / 800, H / 600
 
@@ -68,9 +70,13 @@ PAD_X, PAD_TOP = 8, 8
 ROW_H, SEC_H, SEC_GAP = 24, 20, 8
 SEC_PAD = 4                        # section band -> first row (DLL build 3, 2026-10-01 spacing polish)
 ICON_W, ICON_H = 10, 18            # square on screen (48x48 px)
-TIME_W = 54                        # fits "Permanent" in dialogfont16x16 (52.2 units)
-STAT_FONT = "dialogfont10x10"      # build 4 stat column (2nd from the right): short forms joined with ", ", cut with "..."
-STAT_MAX_W, STAT_GAP = 70, 4       # stat column width cap and stat-time gap (units); width = measured text, right-aligned
+STAT_FONT = "dialogfont10x10"      # stat column (2nd from the right): short forms joined with ", ", cut with "..."
+TIME_PAD_R, NAME_GAP = 2, 4        # time inset from the row's right; name-time gap (rows without a stat)
+COL_STAT_GAP, COL_GAP = 6, 8       # stat-time gap; name-stat gap (build 4b/4c column algorithm; DLL StatGap / ColGap)
+COL_STAT_CAP, STAT_MIN_FRAC = 0, 0.4   # chareffects.ini defaults: stat_max_w 0 = no cap, stat_min_frac
+# initial GUI rects only (mirror_character_page.py): the DLL re-places every row label from the column layout above
+TIME_W, STAT_MAX_W, STAT_GAP = 54, 70, 4
+TEXT_K = {"dialogfont16x16": 0.75, "dialogfont10x10": 1.03}   # px per texel = TEXT_K * SY (TextK, text_k10; screenshot-calibrated)
 MAX_ROWS = 14                      # label pool: rows that fit the scroll window at once
 SB_W, SB_ARROW_H, SB_GAP = 10, 18, 3   # scrollbar (shown only when the list overflows): width, arrow height, gap to rows
 SB_THUMB_MIN = 16
@@ -131,25 +137,44 @@ def font(name):
     return tex, boxes
 
 
-def text_size(name, s, hscale, vscale):
+@lru_cache(None)
+def texel_widths():
+    """kFontTexW / kFont10TexW of the DLL's EffectNameTable.inc: {font name: 256 glyph advances in texels}."""
+    src = NAME_TABLE.read_text()
+    out = {}
+    for var, name in (("kFontTexW", "dialogfont16x16"), ("kFont10TexW", "dialogfont10x10")):
+        body = re.search(var + r"\[256\]\s*=\s*\{(.*?)\};", src, re.S).group(1)
+        out[name] = [int(v) for v in re.findall(r"\d+", body)]
+        assert len(out[name]) == 256, var
+    return out
+
+
+def tscale(name):
+    """Screen px per font texel (uniform in x and y)."""
+    return TEXT_K[name] * SY
+
+
+def text_size(name, s):
+    """(width, height) in px; width = the DLL's textPx (sum of glyph texel advances * scale)."""
     tex, boxes = font(name)
-    wid = sum(boxes[ord(c) if ord(c) < 256 else 63][2] - boxes[ord(c) if ord(c) < 256 else 63][0] for c in s)
+    tw = texel_widths()[name]
     ht = boxes[ord("A")][3] - boxes[ord("A")][1]
-    return wid * hscale, ht * vscale
+    return sum(tw[ord(c) if ord(c) < 256 else 63] for c in s) * tscale(name), ht * tscale(name)
 
 
-def fit(name, s, max_px, hscale, vscale):
-    if text_size(name, s, hscale, vscale)[0] <= max_px:
+def fit(name, s, max_px):
+    if text_size(name, s)[0] <= max_px:
         return s
-    while s and text_size(name, s + "...", hscale, vscale)[0] > max_px:
+    while s and text_size(name, s + "...")[0] > max_px:
         s = s[:-1]
     return s.rstrip() + "..."
 
 
-def draw_text(canvas, name, s, rect_px, align, col, hscale, vscale):
+def draw_text(canvas, name, s, rect_px, align, col):
     """align = KotOR TEXT ALIGNMENT: low bits 1/2/3 = left/centre/right, 8 top, 16 middle, 32 bottom."""
     tex, boxes = font(name)
-    tw, th = text_size(name, s, hscale, vscale)
+    tw, th = text_size(name, s)
+    k, adv = tscale(name), texel_widths()[name]
     x0, y0, x1, y1 = rect_px
     h = align & 3
     x = x0 if h == 1 else (x1 - tw if h == 3 else (x0 + x1 - tw) / 2)
@@ -158,10 +183,10 @@ def draw_text(canvas, name, s, rect_px, align, col, hscale, vscale):
     for c in s:
         b = boxes[ord(c) if ord(c) < 256 else 63]
         g = tinted.crop(b)
-        gw, gh = max(1, round(g.width * hscale)), max(1, round(g.height * vscale))
+        gw, gh = max(1, round(g.width * k)), max(1, round(g.height * k))
         if c != " ":
             canvas.alpha_composite(g.resize((gw, gh), Image.LANCZOS), (int(round(x)), int(round(y))))
-        x += g.width * hscale
+        x += adv[ord(c) if ord(c) < 256 else 63] * k
 
 
 def px(r):
@@ -351,12 +376,7 @@ def scroll_state(ents, first):
     return first, fits(ents, first, win), True, last_first
 
 
-def stat_w(s, hscale):
-    """Measured width in GUI units of s in STAT_FONT (hscale = px per font texel; 1 unit = SX px)."""
-    return text_size(STAT_FONT, s, hscale, 1)[0] / SX
-
-
-def panel_controls(good, bad, names_font, hscale, vscale, first=0):
+def panel_controls(good, bad, names_font, first=0):
     """Lay out the panel the way the DLL will: header, frame, scrolled slice of [Beneficial + rows, Harmful + rows],
     scrollbar (up arrow, track, thumb, down arrow) only when the list overflows the window."""
     items = []   # (kind, rect, payload)
@@ -373,8 +393,30 @@ def panel_controls(good, bad, names_font, hscale, vscale, first=0):
     st = scroll_state(ents, first)
     first, n, over = st[0], st[1], st[2]
     row_w = inner_w - (SB_W + SB_GAP if over else 0)
+    shown = ents[first:first + n]
+    # column pre-pass over the visible rows (= CharEffectsPanel.cpp layout(), build 4b/4c): time column = widest time + 1 unit,
+    # need = text + 3 units; the stat column keeps at least STAT_MIN_FRAC of the room, the name gets the rest
+    time_col = stat_need = name_need = 0
+    for e in shown:
+        if e[0] == "row":
+            time_col = max(time_col, text_size(names_font, fmt_time(e[2]))[0] / SX + 1)
+            stat = SAMPLE_STAT.get(e[1], "")
+            if stat:
+                stat_need = max(stat_need, text_size(STAT_FONT, stat)[0] / SX + 3)
+            name_need = max(name_need, text_size(names_font, spell_text(e[1], "name"))[0] / SX + 3)
+    nx = x0 + ICON_W + 4
+    tr = x0 + row_w - TIME_PAD_R
+    room = tr - time_col - nx - (COL_STAT_GAP + COL_GAP if stat_need else NAME_GAP)
+    stat_col = 0
+    if stat_need:
+        stat_col = min(stat_need, max(room - name_need, min(stat_need, room * STAT_MIN_FRAC)))
+        if COL_STAT_CAP > 0:
+            stat_col = min(stat_col, COL_STAT_CAP)
+        if stat_col < 12:
+            stat_col = 0
+    stat_x = tr - time_col - COL_STAT_GAP - stat_col
     y = top
-    for k, e in enumerate(ents[first:first + n]):
+    for k, e in enumerate(shown):
         if e[0] == "section":
             if e[3] and k > 0:
                 y += SEC_GAP
@@ -383,19 +425,15 @@ def panel_controls(good, bad, names_font, hscale, vscale, first=0):
         else:
             _, spell, secs, item, harmful, icon = e
             items.append(("icon", (x0, y + (ROW_H - ICON_H) // 2, ICON_W, ICON_H), (icon, item)))
-            nx = x0 + ICON_W + 4
-            time_l = x0 + row_w - TIME_W
+            tm = fmt_time(secs)
+            tx = tr - text_size(names_font, tm)[0] / SX - 1      # time right-aligned by placement
+            items.append(("time", (tx, y, tr - tx, ROW_H), (tm, harmful, secs)))
+            name_r = tr - time_col - NAME_GAP                    # no stat: the name runs up to the time column
             stat = SAMPLE_STAT.get(spell, "")
-            name_r = time_l - 2                    # no stat: name runs up to the time (previous behaviour)
-            if stat:
-                name_min = 40
-                room = name_r - 4 - STAT_GAP - nx - name_min     # most the stat may take while the name keeps 40 units
-                sw = min(STAT_MAX_W, room, stat_w(stat, hscale) + 1)
-                stat_l = time_l - STAT_GAP - sw
-                items.append(("stat", (stat_l, y, sw, ROW_H), stat))
-                name_r = stat_l - 4
+            if stat_col and stat:
+                items.append(("stat", (stat_x, y, stat_col, ROW_H), stat))
+                name_r = stat_x - COL_GAP
             items.append(("name", (nx, y, name_r - nx, ROW_H), spell_text(spell, "name")))
-            items.append(("time", (time_l, y, TIME_W, ROW_H), (fmt_time(secs), harmful, secs)))
             y += ROW_H
     assert y <= top + win, f"panel overflow: y {y} > {top + win}"
     rows_drawn = sum(1 for it in items if it[0] == "name")
@@ -414,7 +452,7 @@ def panel_controls(good, bad, names_font, hscale, vscale, first=0):
 
 
 # ---- rendering -----------------------------------------------------------------------------------------------------
-def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, title=""):
+def render(root, ctls, panel_items, names_font, tooltip=False, title=""):
     canvas = Image.new("RGBA", (W, H), (0, 0, 0, 255))
     bg = texture(root.get("FILL"))
     if bg is not None:
@@ -443,12 +481,12 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
                 paste_stretched(canvas, th, px((l - 2, ty - 4, w + 4, 8)))
         tx = c.get("TEXT")
         if tx and tx["S"]:
-            draw_text(canvas, tx["FONT"] or "dialogfont16x16", tx["S"], px(c["RECT"]), tx["ALIGN"], tx["COLOR"], hscale, vscale)
+            draw_text(canvas, tx["FONT"] or "dialogfont16x16", tx["S"], px(c["RECT"]), tx["ALIGN"], tx["COLOR"])
     stats_hdr = by_tag["LBL_BAR6"]["RECT"]
     for kind, rect, pl in panel_items:
         if kind == "bar6":
             draw_border(canvas, by_tag["LBL_BAR6"]["BORDER"], rect)
-            draw_text(canvas, "dialogfont16x16", pl, px(rect), 18, CREAM, hscale, vscale)
+            draw_text(canvas, "dialogfont16x16", pl, px(rect), 18, CREAM)
         elif kind == "frame":
             # black interior (uibit_fill_2bt, the HUD moulding fill) + thin-line frame (LBL_MORE_BACK edge/corner)
             draw_border(canvas, {"FILL": "uibit_fill_2bt", "COLOR": (0, 0, 0)}, rect)
@@ -457,7 +495,7 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
             # dark teal band (the XP_BACK translucent fill) only under the section header
             l, t, w, h = rect
             draw_border(canvas, {"FILL": "uibit_fill_2wt", "COLOR": TEAL_FRAME}, (l - 4, t, w + 8, h))
-            draw_text(canvas, "dialogfont16x16", pl[0].upper(), px((l + 2, t, w - 2, h)), 17, pl[1], hscale, vscale)
+            draw_text(canvas, "dialogfont16x16", pl[0].upper(), px((l + 2, t, w - 2, h)), 17, pl[1])
         elif kind == "icon":
             resref, item = pl
             box = px(rect)
@@ -469,16 +507,16 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
                 ic = texture("ip_mind")
             paste_stretched(canvas, ic, box)
         elif kind == "name":
-            s = fit(names_font, pl, px(rect)[2] - px(rect)[0], hscale, vscale)
-            draw_text(canvas, names_font, s, px(rect), 17, TEAL_TEXT, hscale, vscale)
+            s = fit(names_font, pl, (px(rect)[2] - px(rect)[0]) - 2 * SX)
+            draw_text(canvas, names_font, s, px(rect), 17, TEAL_TEXT)
         elif kind == "stat":
-            s = fit(STAT_FONT, pl, px(rect)[2] - px(rect)[0], hscale, vscale)
-            draw_text(canvas, STAT_FONT, s, px(rect), 19, CREAM, hscale, vscale)
+            s = fit(STAT_FONT, pl, (px(rect)[2] - px(rect)[0]) - 2 * SX)
+            draw_text(canvas, STAT_FONT, s, px(rect), 17, CREAM)
         elif kind == "time":
             s, harmful, secs = pl
             col = ORANGE if harmful else (CREAM if secs is None or secs >= 30 else ORANGE)
             fnt = names_font
-            draw_text(canvas, fnt, s, px(rect), 19, col if not harmful else ORANGE, hscale, vscale)
+            draw_text(canvas, fnt, s, px(rect), 19, col if not harmful else ORANGE)
         elif kind in ("sb_up", "sb_dn"):
             arr = texture("uibit_uparrowg")
             if kind == "sb_dn":
@@ -489,7 +527,7 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
         elif kind == "sb_thumb":
             draw_border(canvas, {"FILL": "uibit_fill_16g", "COLOR": (1, 1, 1)}, rect)
         elif kind in ("more", "empty"):
-            draw_text(canvas, "dialogfont16x16", pl, px(rect), 18, CREAM, hscale, vscale)
+            draw_text(canvas, "dialogfont16x16", pl, px(rect), 18, CREAM)
     if tooltip:
         name_rows = [r for k, r, p in panel_items if k == "name"]
         if name_rows:
@@ -498,11 +536,11 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
             r = next((r for k, r, p in panel_items if k == "name" and p == spell_text(spell, "name")), name_rows[0])
             tw_u = PANEL[2] - 8
             pad = 5                                           # units, inside the tooltip frame
-            lh = 12.5 * vscale                                # 10x10 line pitch: 12.5 texels
-            title_h = 16 * vscale * 1.25
+            lh = 12.5 * tscale("dialogfont10x10")                                # 10x10 line pitch: 12.5 texels
+            title_h = 16 * tscale("dialogfont16x16") * 1.25
             body_w = (tw_u - 2 * pad) * SX
             desc = tooltip_desc(spell)
-            dlines = wrap(desc, "dialogfont10x10", body_w, hscale, vscale)
+            dlines = wrap(desc, "dialogfont10x10", body_w)
             body = SAMPLE_TIP_LINES + [""] + dlines
             th_px = 2 * pad * SY + title_h + len(body) * lh
             th_u = th_px / SY
@@ -517,11 +555,11 @@ def render(root, ctls, panel_items, names_font, hscale, vscale, tooltip=False, t
             x = tx0 + pad * SX
             y = ty0 + pad * SY
             draw_text(canvas, "dialogfont16x16", f"{spell_text(spell, 'name')} - {fmt_time(secs)}",
-                      (x, y, tx1 - pad * SX, y + title_h), 9, CREAM, hscale, vscale)
+                      (x, y, tx1 - pad * SX, y + title_h), 9, CREAM)
             y += title_h
             for ln in body:
                 if ln:
-                    draw_text(canvas, "dialogfont10x10", ln, (x, y, tx1 - pad * SX, y + lh), 9, TEAL_TEXT, hscale, vscale)
+                    draw_text(canvas, "dialogfont10x10", ln, (x, y, tx1 - pad * SX, y + lh), 9, TEAL_TEXT)
                 y += lh
     if title:
         ImageDraw.Draw(canvas).text((12, H - 24), title, fill=(120, 120, 120, 255))
@@ -546,11 +584,11 @@ def tooltip_desc(spell, mx=220):
     return out or sents[0][:mx - 3].rsplit(" ", 1)[0] + "..."
 
 
-def wrap(s, fnt, max_px, hscale, vscale):
+def wrap(s, fnt, max_px):
     lines, cur = [], ""
     for w in s.split():
         t = (cur + " " + w).strip()
-        if text_size(fnt, t, hscale, vscale)[0] > max_px and cur:
+        if text_size(fnt, t)[0] > max_px and cur:
             lines.append(cur); cur = w
         else:
             cur = t
@@ -562,8 +600,6 @@ def wrap(s, fnt, max_px, hscale, vscale):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     out = Path(args[0]); out.mkdir(parents=True, exist_ok=True)
-    hscale = SX / 1.0 * (1 if "--text-hstretch" in sys.argv else SY / SX)
-    vscale = SY
     names_font = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--names-font=")), "dialogfont16x16")
     root, ctls = load_gui()
     print(f"live character_p.gui: {len(ctls)} controls, ids {sorted(c['ID'] for c in ctls)}")
@@ -575,18 +611,18 @@ def main():
     print("checks:", "OK" if not errs else errs)
     good = [s for s in SAMPLE_GOOD]; bad = [s for s in SAMPLE_BAD]
     outs = {
-        "char_before.png": render(root, ctls, [], names_font, hscale, vscale, title="before: live character_p.gui"),
-        "char_after.png": render(root, after, panel_controls(good, bad, names_font, hscale, vscale), names_font, hscale, vscale,
+        "char_before.png": render(root, ctls, [], names_font, title="before: live character_p.gui"),
+        "char_after.png": render(root, after, panel_controls(good, bad, names_font), names_font,
                                  title="after: thirds + Active Effects (sample data)"),
-        "char_after_empty.png": render(root, after, panel_controls([], [], names_font, hscale, vscale), names_font, hscale, vscale,
+        "char_after_empty.png": render(root, after, panel_controls([], [], names_font), names_font,
                                        title="after: empty state"),
         "char_after_overflow.png": render(root, after, panel_controls(good + [(17, 120, False), (24, 33, False), (41, 400, False)],
-                                                                      bad + [(9, 3, False), (48, 41, False)], names_font, hscale, vscale),
-                                          names_font, hscale, vscale, title="after: overflow, scrolled to the top"),
+                                                                      bad + [(9, 3, False), (48, 41, False)], names_font),
+                                          names_font, title="after: overflow, scrolled to the top"),
         "char_after_overflow_scrolled.png": render(root, after, panel_controls(good + [(17, 120, False), (24, 33, False), (41, 400, False)],
-                                                                      bad + [(9, 3, False), (48, 41, False)], names_font, hscale, vscale, first=99),
-                                          names_font, hscale, vscale, title="after: overflow, scrolled to the bottom"),
-        "char_after_tooltip.png": render(root, after, panel_controls(good, bad, names_font, hscale, vscale), names_font, hscale, vscale,
+                                                                      bad + [(9, 3, False), (48, 41, False)], names_font, first=99),
+                                          names_font, title="after: overflow, scrolled to the bottom"),
+        "char_after_tooltip.png": render(root, after, panel_controls(good, bad, names_font), names_font,
                                          tooltip=True, title="after: hover tooltip (optional polish stage)"),
     }
     for n, im in outs.items():

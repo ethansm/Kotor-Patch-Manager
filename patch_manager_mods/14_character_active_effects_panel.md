@@ -1,12 +1,9 @@
-**RESUME HERE (checkpoint 2026-10-03 ~01:45, written for a fresh context):**
-- **Live:** build 4b, DLL `0891be6727d67513cff4dc7f1c251e44`. GUI `character_p.gui` has 82 EFX controls (ids 69..150): S00..S13 = 129..142, MORE..TIP = 143..150. Live set 31 ids.
-- **Live INI** (`$GAME/chareffects.ini`): tooltips=1 tooltip_delay_ms=350 tooltip_desc=1 tip_line_scale=1.0 stat_column=1 stat_max_w=0 stat_min_frac=0.4 text_k10=1.03 marquee=1 marquee_delay_ms=2500 marquee_step_ms=160 marquee_hold_ms=1200 fake_rows=0 (rest as Stage 1).
-- **Backups:** `patches/character-effects-panel.dll.bak_1002_1514` (build 4), `.bak_1002_0246` (build 3); `chareffects.ini.bak_1002_0246`; GUI `backups/charmirror_20261002_024637_262214` (the build-3 GUI). Rollback to build 3 = DLL `.bak_1002_0246` + GUI rollback, together (ids differ). 4b -> 4 is a DLL swap only.
-- **UNREAD:** the game ran 4b on 10-03 at 01:11 and 01:30 (log lines 7333 and 7893, file 817 KB, last write 01:41). Next session:
-  1. Copy `$GAME/chareffects_log.txt` to the scratchpad. Never clear it.
-  2. Read from line 7333: `LAYOUT ... cols[name w/need stat w/need time w]`, `DECODE:`, `TIP:`, `MARQUEE:`.
-  3. Run the DECODE lines through `.venv/bin/python scripts/check_effect_decode.py --samples <file>`.
-  4. Ask the user for a screenshot / verdict on the 4b columns.
+**RESUME HERE (checkpoint 2026-10-03 11:51, written for a fresh context):**
+- **Live:** build 4c, DLL `2e14e871847974a71d1c86c56342426a` (kpatch md5 `8a490751`, staged in `$TOOL_DIR/chareffects_stage/`). GUI unchanged: `character_p.gui` has 82 EFX controls (ids 69..150): S00..S13 = 129..142, MORE..TIP = 143..150.
+- **Live INI** (`$GAME/chareffects.ini`): unchanged from 4b (tooltips=1 tooltip_delay_ms=350 tooltip_desc=1 tip_line_scale=1.0 stat_column=1 stat_max_w=0 stat_min_frac=0.4 text_k10=1.03 marquee=1 marquee_delay_ms=2500 marquee_step_ms=160 marquee_hold_ms=1200 fake_rows=0).
+- **Backups:** `patches/character-effects-panel.dll.bak_1003_1151` (= build 4b `0891be67`), `.bak_1002_1514` (build 4), `.bak_1002_0246` (build 3); GUI `backups/charmirror_20261002_024637_262214`. 4c -> 4b/4 = DLL swap only (game closed); to build 3 = DLL + GUI rollback together.
+- **4b log is READ** (section "Build 4b log (10-03 01:11/01:30)"); log copy in that session's scratchpad. The next unread log starts after line 8298 of `$GAME/chareffects_log.txt`.
+- **Next = user play test of 4c** (see "Build 4c" at the end): after it, copy the log, read from line 8299 `LAYOUT cols[...]` / `DECODE` / `TIP` / `MARQUEE`, append new DECODE lines to `active_effects_panel_src/research/decode_samples_live.txt`, run `.venv/bin/python scripts/check_effect_decode.py`.
 - **Open items:**
   - (a) User verdict on the 4b spacing/columns; tune `text_k10` / `stat_min_frac` / `tip_line_scale` by INI (hot reload, no build).
   - (b) Marquee visibility with real cut text; `fake_rows=20` test on request (say so first, then set back to 0).
@@ -17,7 +14,7 @@
   1. Edit `$TOOL_DIR/Patches/CharEffectsPanel/CharEffectsPanel.cpp`.
   2. Run `i686-w64-mingw32-g++-posix -std=c++17 -Wall -Wextra -fsyntax-only`.
   3. Run `python3 ../create-patch.py`.
-  4. Run `scripts/check_chareffects_kpatch.py <kpatch> $TOOL_DIR/chareffects_stage` and `scripts/check_effect_decode.py`.
+  4. Run the doc-20 gates (`check_hook_bytes.py`/`check_exports.py --mod character-effects-panel --kpatch <kpatch>`, `check_hook_spans.py --mod character-effects-panel`, `check_gui_ids.py`), plus `scripts/retired/check_chareffects_kpatch.py <kpatch> $TOOL_DIR/chareffects_stage` (kpatch-hook clash + imports, not covered by doc 20) and `scripts/check_effect_decode.py`.
   5. `pgrep -x swkotor2.exe` must be empty. Back up the live DLL as `.bak_MMDD_HHMM`, copy the kpatch's `binaries/windows_x86.dll`, check md5 == kpatch, then copy the kpatch to `chareffects_stage/`.
   6. Mirror the cpp into `active_effects_panel_src/` and commit by explicit path.
 - **Calibration facts:**
@@ -26,7 +23,9 @@
   - The engine ignores right alignment, so right-align by placement.
   - Unit scale: sx 4.7963, sy 2.6667 px/unit (BACK 1036x896 px).
 
-**STATUS 2026-10-02 15:14: build 4b INSTALLED (DLL swap only, md5 `0891be67`, backup `.bak_1002_1514` = build 4 `dbb080ae`; GUI unchanged), AWAITING USER RETEST of the columns.** See "Build 4 first look + 4b" at the end.
+**STATUS 2026-10-03 11:51: build 4c INSTALLED (DLL swap only, md5 `2e14e871`, backup `.bak_1003_1151` = 4b), AWAITING USER TEST (checklist in "Build 4c").**
+
+Previous status line: **STATUS 2026-10-02 15:14: build 4b INSTALLED (DLL swap only, md5 `0891be67`, backup `.bak_1002_1514` = build 4 `dbb080ae`; GUI unchanged), AWAITING USER RETEST of the columns.** See "Build 4 first look + 4b" at the end.
 
 Previous status line: **STATUS 2026-10-02 02:47: build 4 INSTALLED (stat column + marquee + hover tooltips), AWAITING USER TEST** (checklist in "Build 4" at the end). DLL md5 `dbb080ae`, backup `$GAME/patches/character-effects-panel.dll.bak_1002_0246` (= build 3 `93ca3014`); GUI 82 EFX controls ids 69..150 (S block 129..142, MORE..TIP moved to 143..150), backup `backups/charmirror_20261002_024637_262214`; INI backup `chareffects.ini.bak_1002_0246`, new keys added (tooltips=1). Rollback = `.bak` DLL **and** `mirror_character_page.py --rollback` + re-apply the build-3 GUI (git `43b36df` script) so GUI and DLL ids stay matched.
 
@@ -226,3 +225,17 @@ Log copied to the session scratchpad (`chareffects_log_1003_4b.txt`, 8298 lines)
 - **Droid Deflector Mark I:** `0x6b [0] -> 'Shield 50 Energy'`; the engine-made `0x02 [4224,300,50,2048,1]` is hidden by the shield rule (OK). `cols[name 91/94 stat 61/71]`: both cut, marquee `start rows=2 max=3` works, resets on input. Tooltip `lines=1 rect=[2591,506,998,131] lineU=12.88` shown/hidden on enter/leave (OK).
 - Cosmetic: `MARQUEE: start` repeats without a `reset` line when the page is re-bound (`*s = Slot()`). Fix: log `MARQUEE: reset (rebind)`.
 - Repo tooling changed (doc 20, sibling session): `scripts/check_chareffects_kpatch.py` moved to `scripts/retired/`; gates are now `check_hook_bytes.py`, `check_hook_spans.py`, `check_exports.py`, `check_gui_ids.py` (registry `tests/static/gui_ids.toml` lists character_p 69..150). Audit `20a...:93`: the wrap test counts chars, not textPx.
+
+## Build 4c (2026-10-03 11:51, INSTALLED, DLL swap only)
+Changes (`CharEffectsPanel.cpp`, log string `0.1.0-probe build 4c`; version bump left for close-out):
+1. **Fit/need consistency:** column pre-pass need = `textPx/sx + 3` units (names and stats); the per-row fit uses `maxPx = (col - 2) * sx` in float (was integer `ux()` differences minus 2 units, which lost ~1 px and cut `Speed +199%` in an 86/86 column). A column equal to its need never cuts; the label rect from `place()` keeps >= 1 unit of slack so the engine does not word-wrap.
+2. **Speed display (R3c):** the 0x1c apply handler `0x59e970` rewrites ints[0] = v + 100 when v < 100 (script 99 -> 199) and multiplies the rate by ints[0]/100; `SetMovementRateFactor 0x5766a0` clamps to [0.125, 1.5]. 0x1c now shows `pct = v >= 100 ? v - 100 : v` -> `Speed +99%`; the long form adds ` (engine cap +50%)` when pct > 50. 0x1d (stored raw) -> `Speed -50%`.
+3. `MARQUEE: reset (rebind)` is logged in `BindCharEffects` when the re-bound slot of the same panel had an active marquee.
+Offline tools: `scripts/check_effect_decode.py` 88/88 PASS. It runs the live fixture by default; a `KNOWN_CHANGES` entry covers the intentional 4b->4c 0x1c change. It ports `textPx`/`fitText`/`marqueeText` with real widths (`kFontTexW`/`kFont10TexW`, K16 0.75, K10 1.03), has pixel-width wrap cases (closes audit 20a:93) and a "col == need never cuts" case for live stats and names. `scripts/character_page_mockup.py` now uses the 4b/4c column algorithm and the calibrated scale. Measured against the 15:09 screenshot: "Heat Shield" 220 vs 218 px, "Shield 20 3" 225 vs 224 px, panel 1037 vs 1034 px. `mirror_character_page.py --dry-run` still prints "add 82 effects-panel controls, IDs 69..150". The mock-up's `BTN_AUTO/BTN_LEVELUP outside the left third` check warnings predate this change (the old script prints them too).
+Gates: `-Wall -Wextra -fsyntax-only` clean (0 warnings). doc-20 `check_hook_bytes` 6 PASS / 0 FAIL, `check_exports` 2 PASS, `check_hook_spans --mod` PASS, `check_gui_ids` rc 0, retired `check_chareffects_kpatch.py` ALL PASS. Deploy: game not running; the md5 of all 21 `patches/*.dll` was compared before and after, and only `character-effects-panel.dll` changed; installed md5 == the kpatch's `binaries/windows_x86.dll`.
+**User test checklist (4c):**
+- (1) Burst of Speed shows `Speed +99%` and is not cut.
+- (2) A stat or name whose column equals its need is not cut: in the log, `cols[... stat W/N ...]` with W == N and the row text whole.
+- (3) Reopen the page while a marquee runs: the log shows `MARQUEE: reset (rebind)`.
+- (4) Open items (a)-(d) from RESUME HERE still apply: column look, multi-effect screenshot, stat numbers vs the character sheet, `fake_rows=20` on request.
+Rollback: copy `patches/character-effects-panel.dll.bak_1003_1151` over the DLL (game closed).
