@@ -162,14 +162,19 @@ def server_name_index(corpus: bd.Corpus) -> dict[str, list[int]]:
 
 
 def build_candidates(corpus: bd.Corpus, scorer: bd.Scorer, g: GogFn, mapper: dict, run_delta: Optional[int],
-                     srv_index: dict, from_branch: bool, near_k: int = 3) -> "OrderedDict[int, list[str]]":
-    """All candidate Steam addresses of one GOG function with their source tags (section 4.1)."""
+                     srv_index: dict, from_branch: bool, near_k: int = 3,
+                     extra: Optional[dict] = None) -> "OrderedDict[int, list[str]]":
+    """All candidate Steam addresses of one GOG function with their source tags (section 4.1).
+    `extra`: GOG addr -> [(steam addr, tag)] from `--extra-candidates` (e.g. the B15 command table)."""
     cands: "OrderedDict[int, list[str]]" = OrderedDict()
 
     def add(addr: int, tag: str) -> None:
         tags = cands.setdefault(addr, [])
         if tag not in tags:
             tags.append(tag)
+
+    for s_addr, tag in (extra or {}).get(g.addr, []):
+        add(s_addr, tag)
 
     b = corpus.branch_by_name.get(g.name)
     if from_branch and b is not None:
@@ -215,9 +220,16 @@ def cmd_candidates(args) -> int:
         classes = sorted({g.cls for g in rows})
     else:
         rows = [g for g in corpus.gog if g.cls in classes]
+    if args.name_regex:
+        rows = [g for g in rows if re.search(args.name_regex, g.func)]
+    extra: dict[int, list] = {}
+    if args.extra_candidates:
+        for r in iter_tsv(Path(args.extra_candidates)):
+            extra.setdefault(parse_addr(r["gog"]), []).append((parse_addr(r["steam"]), r["source"].strip()))
+    if not args.from_branch:
         for c in classes:
             if not any(g.cls == c for g in rows):
-                print("warning: class %s has no GOG functions in gog_functions.tsv" % c)
+                print("warning: class %s has no GOG functions in gog_functions.tsv (after --name-regex)" % c)
     findings = Path(args.findings_dir).resolve() if args.findings_dir else paths.dump / "findings"
     mapper: dict[int, tuple[int, str]] = {}
     if args.from_branch:
@@ -230,7 +242,7 @@ def cmd_candidates(args) -> int:
     deltas = {c: corpus.mapped_run_delta(c, mapper) for c in classes}
     out = []
     for g in rows:
-        cands = build_candidates(corpus, scorer, g, mapper, deltas.get(g.cls), srv_index, args.from_branch)
+        cands = build_candidates(corpus, scorer, g, mapper, deltas.get(g.cls), srv_index, args.from_branch, extra=extra)
         gs, gr = corpus.gog_size(g.addr), corpus.gog_retn(g.addr)
         out.append({"class": g.cls, "name": g.func, "gog": hx8(g.addr), "gog_callconv": g.callconv,
                     "gog_param": "" if g.param is None else g.param, "gog_size": "" if gs is None else gs,
@@ -311,6 +323,8 @@ def source_strength(corpus_sources: list) -> int:
     for s in corpus_sources:
         if s == "server":
             v = 7
+        elif s in ("cmdtable", "cmdtable_overwritten"):      # engine dispatch table, equal slot sets (B15)
+            v = 6
         elif s.startswith("name_map:high:") and not bd.is_unaudited_source(s[len("name_map:high:"):]):
             v = 6
         elif s == "mapper:vote":
@@ -965,7 +979,17 @@ def gog_side_section(corpus: bd.Corpus, g: GogFn, ce: CandEval) -> list[str]:
     return L
 
 
-def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog: dict, mapper_tag: str) -> str:
+def load_card_facts(bdir: Path) -> dict[int, list[str]]:
+    """`B<n>/card_facts.tsv` (`gog fact`): GOG-side facts printed on every card of that GOG function (real and decoy
+    alike, so they never reveal which Steam address is the counterpart)."""
+    out: dict[int, list[str]] = {}
+    for r in iter_tsv(bdir / "card_facts.tsv"):
+        out.setdefault(parse_addr(r["gog"]), []).append(r["fact"])
+    return out
+
+
+def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog: dict, mapper_tag: str,
+              card_facts: Optional[dict] = None) -> str:
     rp = corpus.rp
     root = str(corpus.paths.dump)
     L = ["## Card %s" % card_id, "",
@@ -975,7 +999,8 @@ def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog
          "Candidate Steam address: %s (size %s, retn %s)%s" % (
              hx8(ce.addr), ce.steam_size, ce.steam_retn,
              "  THUNK -> %s (everything below is judged on the target)" % hx8(ce.eff) if ce.thunk else ""),
-         "Candidate sources: %s    mapper tag: %s" % ("+".join(ce.sources) or "-", mapper_tag or "-"), "",
+         # candidate sources / mapper tag are withheld: decoy cards have none, so printing them marks the decoys
+         "Candidate sources: (withheld on every card; judge the body)", "",
          "### Computed facts (script output, do not recompute)",
          "- G1 start: %s | G2 align: %s | G3 prologue: %s | G4 ret: %s | G5 thunk: %s | G6 dup: %s | G7 mac: %s | "
          "G8 mac_rotation: %s" % (ce.g1, ce.g2, ce.g3, ce.g4, ce.g5 or "none", ce.g6, ce.g7, ce.g8),
@@ -992,6 +1017,8 @@ def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog
     srv = corpus.steam_srv.get(ce.eff)
     if srv and srv.get("source") in ("USER_DEFINED", "IMPORTED"):
         L.append("- server Steam name at this address: %s::%s" % (srv.get("namespace", ""), srv.get("name", "")))
+    for fact in (card_facts or {}).get(g.addr, []):
+        L.append("- GOG-side fact: %s" % fact)
     L += ["", "DECOY NOTE: assume this candidate is a neighbouring function or thunk with the same RET signature "
           "until a content anchor proves otherwise.", ""]
     L += gog_side_section(corpus, g, ce)
@@ -1072,6 +1099,7 @@ def cmd_cards(args) -> int:
     ev_by_gog = {parse_addr(e["gog"]): e for e in evs}
     crows = {parse_addr(r["gog"]): r for r in iter_tsv(bdir / "candidates.tsv")}
     rng = random.Random("cards-" + args.batch)
+    facts = load_card_facts(bdir)
     review = [e for e in evs if e["gate_class"] == "REVIEW"]
     per_chunk_decoys = max(MIN_DECOYS, args.chunk // 6) if args.decoys is None else args.decoys
     per_chunk_real = max(1, args.chunk - per_chunk_decoys)
@@ -1100,7 +1128,7 @@ def cmd_cards(args) -> int:
                 ce = next((c for c in row.cands if c.addr == want), row.best)
             else:
                 ce = evaluate_row(corpus, scorer, g, [(forced, ["card"])]).best
-            text.append(make_card(cid, corpus, g, ce, ev_by_gog, ce.mapper_tag if kind == "real" else ""))
+            text.append(make_card(cid, corpus, g, ce, ev_by_gog, ce.mapper_tag if kind == "real" else "", facts))
             key_rows.append({"card_id": cid, "chunk": k, "gog": hx8(g.addr), "steam_addr": hx8(ce.addr),
                              "kind": kind, "expected": expected})
         (cards_dir / ("chunk_%d.md" % k)).write_text("\n".join(text), encoding="utf-8")
@@ -1816,6 +1844,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from-branch", action="store_true", help="B0: audit the branch-DB rows")
     p.add_argument("--no-reexport", action="store_true", help="never refresh DUMP/inputs/name_map.tsv")
     p.add_argument("--findings-dir", default=None, help="where mapper output goes (default DUMP/findings)")
+    p.add_argument("--name-regex", default=None, help="keep only GOG functions whose name matches (re.search)")
+    p.add_argument("--extra-candidates", default=None,
+                   help="TSV `gog steam source`: extra candidates with that source tag (e.g. B<n>/extra_candidates.tsv)")
     p = sub.add_parser("gates", help="invariants, anchors, gate classes")
     p.add_argument("batch", type=batch_name)
     p.add_argument("--untrust", default=None, help="file of Steam addresses (hex, one per line) to drop from trust")

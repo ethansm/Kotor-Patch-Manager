@@ -1,0 +1,656 @@
+gog	name	gog_slots	steam_counterpart	match	name_slot	name_steam
+0x0077eef0	Global::ExecuteCommandActionBarkString	700	0x00669910	exact	yes	0x00669910
+0x0077efb0	CSWVirtualMachineCommands::ExecuteCommandActionDoCommand	294	0x006699d0	exact	yes	0x006699d0
+0x0077f030	CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingMelee	399	0x00669a50	exact	yes	0x00669a50
+0x0077f0b0	CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingRanged	400	0x00669ad0	exact	yes	0x00669ad0
+0x0077f130	CSWVirtualMachineCommands::ExecuteCommandActionEquipMostEffectiveArmor	404	0x00669b50	exact	yes	0x00669b50
+0x0077f170	Global::ExecuteCommandActionExchangeItem	135,136	0x00669b90	exact	n/a	
+0x0077f260	Global::ExecuteCommandActionFollowObject	167	0x00669c80	exact	n/a	
+0x0077f5a0	Global::ExecuteCommandActionFollowLeader	730	0x00669fc0	exact	yes	0x00669fc0
+0x0077f640	Global::ExecuteCommandActionInteractObject	329	0x0066a060	exact	yes	0x0066a060
+0x0077f6d0	Global::ExecuteCommandActionJumpToObject	196,385	0x0066a0f0	exact	yes	0x0066a0f0
+0x0077f810	Global::ExecuteCommandActionJumpToPoint	214,313	0x0066a230	exact	n/a	
+0x0077fac0	Global::ExecuteCommandActionLockActions	483,484	0x0066a4e0	exact	n/a	
+0x0077fb70	Global::ExecuteCommandActionMoveAwayFromLocation	360	0x0066a590	exact	yes	0x0066a590
+0x0077ff30	Global::ExecuteCommandActionPauseConversation	205	0x0066a950	exact	yes	0x0066a950
+0x00780100	Global::ExecuteCommandActionRandomWalk	20	0x0066ab20	exact	yes	0x0066ab20
+0x00780240	Global::ExecuteCommandActionResumeConversation	206	0x0066ac60	exact	yes	0x0066ac60
+0x007802f0	Global::ExecuteCommandActionStartConversation	204	0x0066ad10	exact	yes	0x0066ad10
+0x00780c20	Global::ExecuteCommandSetCreatureAILevel	834	0x0066b640	exact	yes	0x0066b640
+0x00780d50	Global::ExecuteCommandChangeObjectAppearance	850	0x0066b770	exact	yes	0x0066b770
+0x00780de0	Global::ExecuteCommandResetCreatureAILevel	835	0x0066b800	exact	yes	0x0066b800
+0x00780e80	Global::ExecuteCommandCreatureFlourishWeapon	847	0x0066b8a0	exact	yes	0x0066b8a0
+0x00781130	Global::ExecuteCommandActionUseFeat	287	0x0066bb50	exact	yes	0x0066bb50
+0x00781230	Global::ExecuteCommandActionUseSkill	288	0x0066bc50	exact	yes	0x0066bc50
+0x007813a0	Global::ExecuteCommandActionUseTalent	309,310	0x0066bdc0	exact	n/a	
+0x00781580	Global::ExecuteCommandAddAvailableNPCByObject	694	0x0066bfa0	exact	yes	0x0066bfa0
+0x00781620	Global::ExecuteCommandAddAvailableNPCByTemplate	697	0x0066c040	exact	yes	0x0066c040
+0x00781740	Global::ExecuteCommandAddJournalQuestEntry	367	0x0066c160	exact	yes	0x0066c160
+0x00781a10	Global::ExecuteCommandAddJournalWorldEntry	669	0x0066c430	exact	yes	0x0066c430
+0x00781c40	Global::ExecuteCommandAddJournalWorldEntryStrref	670	0x0066c660	exact	yes	0x0066c660
+0x00781d80	Global::ExecuteCommandAddMultiClass	389	0x0066c7a0	exact	yes	0x0066c7a0
+0x00781f70	Global::ExecuteCommandAddPartyMember	574	0x0066c990	exact	yes	0x0066c990
+0x00782060	Global::ExecuteCommandAddToParty	572	0x0066ca80	exact	yes	0x0066ca80
+0x00782130	Global::ExecuteCommandAdjustAlignment	201	0x0066cb50	exact	yes	0x0066cb50
+0x00782790	Global::ExecuteCommandAdjustReputation	209	0x0066d1b0	exact	yes	0x0066d1b0
+0x00782890	Global::ExecuteCommandAmbientSound	433,434,435,436,567,568	0x0066d2b0	exact	n/a	
+0x00782ab0	Global::ExecuteCommandApplyEffectAtPoint	216	0x0066d4d0	exact	n/a	
+0x00782d60	Global::ExecuteCommandApplyEffectOnObject	220	0x0066d780	exact	n/a	
+0x00782fd0	CSWVirtualMachineCommands::ExecuteCommandAssignCommand	6	0x0066d9f0	exact	yes	0x0066d9f0
+0x007830d0	CSWVirtualMachineCommands::ExecuteCommandAttack	37	0x0066daf0	exact	n/a	
+0x00783180	CSWVirtualMachineCommands::ExecuteCommandCutsceneAttack	503	0x0066dba0	exact	yes	0x0066dba0
+0x00783260	CSWVirtualMachineCommands::ExecuteCommandCutsceneMove	507	0x0066dc80	exact	yes	0x0066dc80
+0x00783310	Global::ExecuteCommandBarkString	671	0x0066dd30	exact	yes	0x0066dd30
+0x00783550	Global::ExecuteCommandBeginConversation	255	0x0066df70	exact	yes	0x0066df70
+0x00783dc0	Global::ExecuteCommandCastSpell	48,234,501,502	0x0066e7e0	exact	n/a	
+0x00784680	Global::ExecuteCommandChangeFaction	173,412	0x0066f0a0	exact	yes	0x0066f0a0
+0x00784910	Global::ExecuteCommandClearAllActions	9	0x0066f330	exact	yes	0x0066f330
+0x00784990	Global::ExecuteCommandCloseDoor	44	0x0066f3b0	exact	n/a	
+0x00784a60	Global::ExecuteCommandCreateItemOnObject	31	0x0066f480	exact	yes	0x0066f480
+0x00784f70	Global::ExecuteCommandCreateObject	243	0x0066f990	exact	yes	0x0066f990
+0x00785950	CSWVirtualMachineCommands::ExecuteCommandDelayCommand	7	0x00670370	exact	yes	0x00670370
+0x00785a90	Global::ExecuteCommandDeleteJournalWorldAllEntries	672	0x006704b0	exact	yes	0x006704b0
+0x00785b60	Global::ExecuteCommandDeleteJournalWorldEntry	673	0x00670580	exact	yes	0x00670580
+0x00785c50	Global::ExecuteCommandDeleteJournalWorldEntryStrref	674	0x00670670	exact	yes	0x00670670
+0x00785d40	Global::ExecuteCommandDestroyObject	241	0x00670760	exact	yes	0x00670760
+0x007860c0	Global::ExecuteCommandDisplayFeedBackText	366	0x00670ae0	exact	yes	0x00670ae0
+0x00786270	Global::ExecuteCommandDistanceConversions	218,219	0x00670c90	exact	n/a	
+0x007862f0	Global::ExecuteCommandDoDoorAction	338,547	0x00670d10	exact	yes	0x00670d10
+0x00786680	Global::ExecuteCommandDoSinglePlayerAutoSave	512	0x006710a0	exact	yes	0x006710a0
+0x007866b0	Global::ExecuteCommandDoTouchAttack	146,147	0x006710d0	exact	n/a	
+0x00786c40	Global::ExecuteCommandEffectAbilityDecrease	446	0x00671660	exact	yes	0x00671660
+0x00786e00	Global::ExecuteCommandEffectAbilityIncrease	80	0x00671820	exact	yes	0x00671820
+0x00786fc0	Global::ExecuteCommandEffectACDecrease	450	0x006719e0	exact	yes	0x006719e0
+0x007871e0	Global::ExecuteCommandEffectACIncrease	115	0x00671c00	exact	yes	0x00671c00
+0x00787400	Global::ExecuteCommandEffectAreaEffect	171	0x00671e20	exact	n/a	
+0x00787700	Global::ExecuteCommandEffectAttackDecrease	447	0x00672120	exact	yes	0x00672120
+0x007878e0	Global::ExecuteCommandEffectAttackIncrease	118	0x00672300	exact	yes	0x00672300
+0x00787ac0	Global::ExecuteCommandEffectBeam	207	0x006724e0	exact	yes	0x006724e0
+0x00787cb0	Global::ExecuteCommandEffectBlind	778	0x006726d0	exact	yes	0x006726d0
+0x00787e10	Global::ExecuteCommandEffectCrush	781	0x00672830	exact	yes	0x00672830
+0x00787f10	Global::ExecuteCommandEffectComplex	51,130,133,134,148,154,157,158,161,164,252,270,402,420,460,463,467,473,754,755,756,809,848,852	0x00672930	exact	n/a	
+0x00788850	Global::ExecuteCommandEffectConcealment	458	0x00673270	exact	yes	0x00673270
+0x007889d0	Global::ExecuteCommandEffectDamage	79	0x006733f0	exact	yes	0x006733f0
+0x00788c70	Global::ExecuteCommandEffectDamageDecrease	448	0x00673690	exact	yes	0x00673690
+0x00788e60	Global::ExecuteCommandEffectDamageImmunityDecrease	449	0x00673880	exact	yes	0x00673880
+0x00789030	Global::ExecuteCommandEffectDamageImmunityIncrease	275	0x00673a50	exact	yes	0x00673a50
+0x00789200	Global::ExecuteCommandEffectDamageIncrease	120	0x00673c20	exact	yes	0x00673c20
+0x007893f0	Global::ExecuteCommandEffectDamageReduction	119	0x00673e10	exact	yes	0x00673e10
+0x00789600	Global::ExecuteCommandEffectDamageResistance	81	0x00674020	exact	yes	0x00674020
+0x007897f0	Global::ExecuteCommandEffectForceShield	459	0x00674210	exact	yes	0x00674210
+0x00789930	Global::ExecuteCommandEffectDamageShield	487	0x00674350	exact	yes	0x00674350
+0x00789b10	Global::ExecuteCommandEffectFactionModifier	849	0x00674530	exact	yes	0x00674530
+0x00789c80	Global::ExecuteCommandEffectForceBody	770	0x006746a0	exact	yes	0x006746a0
+0x00789df0	Global::ExecuteCommandEffectForceSight	823	0x00674810	exact	yes	0x00674810
+0x00789f30	Global::ExecuteCommandEffectFPRegenModifier	779	0x00674950	exact	yes	0x00674950
+0x0078a0a0	Global::ExecuteCommandEffectVPRegenModifier	780	0x00674ac0	exact	yes	0x00674ac0
+0x0078a210	Global::ExecuteCommandEffectFury	777	0x00674c30	exact	yes	0x00674c30
+0x0078a350	Global::ExecuteCommandEffectForceDrain	675	0x00674d70	exact	yes	0x00674d70
+0x0078a500	Global::ExecuteCommandEffectHeal	78	0x00674f20	exact	yes	0x00674f20
+0x0078a6c0	Global::ExecuteCommandEffectHitPointChangeWhenDying	387	0x006750e0	exact	yes	0x006750e0
+0x0078a840	Global::ExecuteCommandEffectImmunity	273	0x00675260	exact	yes	0x00675260
+0x0078a9f0	Global::ExecuteCommandEffectInvisibility	457	0x00675410	exact	yes	0x00675410
+0x0078ab80	Global::ExecuteCommandEffectLinkEffects	199	0x006755a0	exact	yes	0x006755a0
+0x0078acf0	Global::ExecuteCommandEffectMissChance	477	0x00675710	exact	yes	0x00675710
+0x0078ae60	Global::ExecuteCommandEffectModifyAttacks	485	0x00675880	exact	yes	0x00675880
+0x0078afc0	Global::ExecuteCommandEffectMovementSpeedDecrease	451	0x006759e0	exact	yes	0x006759e0
+0x0078b150	Global::ExecuteCommandEffectMovementSpeedIncrease	165	0x00675b70	exact	yes	0x00675b70
+0x0078b2e0	Global::ExecuteCommandEffectPoison	250	0x00675d00	exact	yes	0x00675d00
+0x0078b420	Global::ExecuteCommandEffectResurrection	82	0x00675e40	exact	yes	0x00675e40
+0x0078b5a0	Global::ExecuteCommandEffectSavingThrowDecrease	452	0x00675fc0	exact	yes	0x00675fc0
+0x0078b7b0	Global::ExecuteCommandEffectSavingThrowIncrease	117	0x006761d0	exact	yes	0x006761d0
+0x0078b9c0	Global::ExecuteCommandEffectSeeInvisible	466	0x006763e0	exact	yes	0x006763e0
+0x0078bae0	Global::ExecuteCommandEffectSkillDecrease	453	0x00676500	exact	yes	0x00676500
+0x0078bca0	Global::ExecuteCommandEffectSkillIncrease	351	0x006766c0	exact	yes	0x006766c0
+0x0078be60	Global::ExecuteCommandEffectSpellImmunity	149	0x00676880	exact	yes	0x00676880
+0x0078bfe0	Global::ExecuteCommandEffectSpellLevelAbsorption	472	0x00676a00	exact	yes	0x00676a00
+0x0078c1c0	Global::ExecuteCommandEffectForceResistanceDecrease	454	0x00676be0	exact	yes	0x00676be0
+0x0078c300	Global::ExecuteCommandEffectForceResistanceIncrease	212	0x00676d20	exact	yes	0x00676d20
+0x0078c440	CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints	156	0x00676e60	exact	yes	0x00676e60
+0x0078c5f0	Global::ExecuteCommandEffectTemporaryHP	314	0x00677010	exact	n/a	
+0x0078c7a0	Global::ExecuteCommandEffectTrueSeeing	465	0x006771c0	exact	yes	0x006771c0
+0x0078c8c0	Global::ExecuteCommandEffectVisualEffect	180	0x006772e0	exact	yes	0x006772e0
+0x0078cac0	Global::ExecuteCommandEffectDroidStun	391	0x006774e0	exact	yes	0x006774e0
+0x0078cbc0	Global::ExecuteCommandEffectForceJump	153	0x006775e0	exact	yes	0x006775e0
+0x0078cd30	Global::ExecuteCommandEffectForcePushed	392	0x00677750	exact	yes	0x00677750
+0x0078ce40	Global::ExecuteCommandEffectForcePushTargeted	269	0x00677860	exact	yes	0x00677860
+0x0078d030	Global::ExecuteCommandEffectWhirlwind	703	0x00677a50	exact	n/a	
+0x0078d130	Global::ExecuteCommandEffectBlasterDeflectionIncrease	469	0x00677b50	exact	yes	0x00677b50
+0x0078d250	Global::ExecuteCommandEffectBlasterDeflectionDecrease	470	0x00677c70	exact	yes	0x00677c70
+0x0078d370	Global::ExecuteCommandEffectHorrified	471	0x00677d90	exact	yes	0x00677d90
+0x0078d470	Global::ExecuteCommandEffectDamageForcePoints	372	0x00677e90	exact	yes	0x00677e90
+0x0078d590	Global::ExecuteCommandEffectHealForcePoints	373	0x00677fb0	exact	yes	0x00677fb0
+0x0078d6b0	Global::ExecuteCommandEffectTemporaryFP		0x006780d0	overwritten_slot_156	n/a	
+0x0078d7d0	Global::ExecuteCommandEffectChoke	159	0x006781f0	exact	yes	0x006781f0
+0x0078d8d0	Global::ExecuteCommandEffectBodyFuel	224	0x006782f0	exact	yes	0x006782f0
+0x0078d9c0	Global::ExecuteCommandEffectPsychicStatic	676	0x006783e0	exact	yes	0x006783e0
+0x0078dab0	Global::ExecuteCommandEffectLightsaberThrow	702	0x006784d0	exact	yes	0x006784d0
+0x0078dc70	Global::ExecuteCommandEndGame	564	0x00678690	exact	yes	0x00678690
+0x0078dce0	Global::ExecuteCommandEquipItem	32	0x00678700	exact	n/a	
+0x0078de70	Global::ExecuteCommandEventActivateItem	424	0x00678890	exact	yes	0x00678890
+0x0078e130	Global::ExecuteCommandEventConversation	295	0x00678b50	exact	yes	0x00678b50
+0x0078e220	Global::ExecuteCommandEventSpellCastAt	244	0x00678c40	exact	yes	0x00678c40
+0x0078e490	Global::ExecuteCommandEventUserDefined	132	0x00678eb0	exact	yes	0x00678eb0
+0x0078e630	Global::ExecuteCommandExecuteScript	8	0x00679050	exact	yes	0x00679050
+0x0078e770	Global::ExecuteCommandExportAllCharacters	557	0x00679190	exact	yes	0x00679190
+0x0078e7a0	Global::ExecuteCommandFindSubString	66	0x006791c0	exact	yes	0x006791c0
+0x0078e8f0	Global::ExecuteCommandFloatingText	525,526	0x00679310	exact	n/a	
+0x0078ebd0	CSWVirtualMachineCommands::ExecuteCommandFloatToInt	231	0x006795f0	exact	yes	0x006795f0
+0x0078ec20	Global::ExecuteCommandFloatToString	3	0x00679640	exact	yes	0x00679640
+0x0078edf0	Global::ExecuteCommandForceHeartbeat	822	0x00679810	exact	yes	0x00679810
+0x0078eed0	Global::ExecuteCommandGetAbilityScore	139	0x006798f0	exact	yes	0x006798f0
+0x0078f0e0	Global::ExecuteCommandGetAbilityModifier	331	0x00679b00	exact	yes	0x00679b00
+0x0078f270	Global::ExecuteCommandGetAC	116	0x00679c90	exact	yes	0x00679c90
+0x0078f3b0	Global::ExecuteCommandGetAlignment	125,127	0x00679dd0	exact	n/a	
+0x0078f500	Global::ExecuteCommandGetAOEObjectCreator	264	0x00679f20	exact	n/a	
+0x0078f5c0	Global::ExecuteCommandGetAppearanceType	524	0x00679fe0	exact	yes	0x00679fe0
+0x0078f650	Global::ExecuteCommandGetArea	24	0x0067a070	exact	yes	0x0067a070
+0x0078f7c0	Global::ExecuteCommandGetAreaUnescapable	15	0x0067a1e0	exact	yes	0x0067a1e0
+0x0078f830	Global::ExecuteCommandGetAttackTarget	316	0x0067a250	exact	yes	0x0067a250
+0x0078f8b0	Global::ExecuteCommandGetAttemptedAttackTarget	361	0x0067a2d0	exact	yes	0x0067a2d0
+0x0078f920	Global::ExecuteCommandGetAttemptedSpellTarget	375	0x0067a340	exact	yes	0x0067a340
+0x0078f990	Global::ExecuteCommandGetAttemptedMovementTarget	489	0x0067a3b0	exact	yes	0x0067a3b0
+0x0078fa00	Global::ExecuteCommandGetSpellTarget	752	0x0067a420	exact	yes	0x0067a420
+0x0078fa80	Global::ExecuteCommandGetBaseItemType	397	0x0067a4a0	exact	yes	0x0067a4a0
+0x0078fb00	Global::ExecuteCommandGetBattleTrack	569	0x0067a520	exact	n/a	
+0x0078fb90	Global::ExecuteCommandGetBlockingDoor	336	0x0067a5b0	exact	yes	0x0067a5b0
+0x0078fc00	Global::ExecuteCommandGetCasterLevel	84	0x0067a620	exact	yes	0x0067a620
+0x0078feb0	Global::ExecuteCommandGetChallengeRating	494	0x0067a8d0	exact	yes	0x0067a8d0
+0x0078ff50	Global::ExecuteCommandGetClassInformation	341,342,343	0x0067a970	exact	n/a	
+0x00790200	Global::ExecuteCommandGetCommandable	163	0x0067ac20	exact	yes	0x0067ac20
+0x007902a0	Global::ExecuteCommandGetCreatureHasTalent	306	0x0067acc0	exact	yes	0x0067acc0
+0x007903a0	Global::ExecuteCommandGetCreatureSize	479	0x0067adc0	exact	yes	0x0067adc0
+0x00790420	Global::ExecuteCommandGetCreatureTalent	307,308	0x0067ae40	exact	n/a	
+0x007906e0	Global::ExecuteCommandGetCurrentAction	522	0x0067b100	exact	yes	0x0067b100
+0x00790810	Global::ExecuteCommandGetDamageDealtByType	344	0x0067b230	exact	yes	0x0067b230
+0x00790900	Global::ExecuteCommandGetDayTrack	558	0x0067b320	exact	n/a	
+0x00790990	Global::ExecuteCommandGetDistanceBetween	151	0x0067b3b0	exact	yes	0x0067b3b0
+0x00790a80	Global::ExecuteCommandGetDistanceBetween2D	319	0x0067b4a0	exact	yes	0x0067b4a0
+0x00790ba0	Global::ExecuteCommandGetDistanceBetweenLocations	298	0x0067b5c0	exact	yes	0x0067b5c0
+0x00790db0	Global::ExecuteCommandGetDistanceBetweenLocations2D	334	0x0067b7d0	exact	yes	0x0067b7d0
+0x00791000	Global::ExecuteCommandGetDistanceToObject	41	0x0067ba20	exact	yes	0x0067ba20
+0x007911a0	Global::ExecuteCommandGetDistanceToObject2D	335	0x0067bbc0	exact	yes	0x0067bbc0
+0x00791350	Global::ExecuteCommandGetEffect	85,86	0x0067bd70	exact	n/a	
+0x007916e0	Global::ExecuteCommandGetEffectCreator	91	0x0067c100	exact	yes	0x0067c100
+0x00791790	Global::ExecuteCommandGetEffectDurationType	89	0x0067c1b0	exact	yes	0x0067c1b0
+0x00791830	Global::ExecuteCommandGetEffectSpellId	305	0x0067c250	exact	yes	0x0067c250
+0x007918d0	Global::ExecuteCommandGetEffectSubType	90	0x0067c2f0	exact	yes	0x0067c2f0
+0x00791970	Global::ExecuteCommandGetEffectType	170	0x0067c390	exact	yes	0x0067c390
+0x00791a10	Global::ExecuteCommandGetEmotions	235,236,237	0x0067c430	exact	n/a	
+0x00791bf0	Global::ExecuteCommandGetEncounterData	276,278,280,297	0x0067c610	exact	n/a	
+0x00791cd0	Global::ExecuteCommandGetEnteringObject	25,326	0x0067c6f0	exact	yes	0x0067c6f0
+0x00791e90	Global::ExecuteCommandGetFacing	28	0x0067c8b0	exact	yes	0x0067c8b0
+0x00791ff0	Global::ExecuteCommandGetFactionAverageGoodEvilAlignment	187	0x0067ca10	exact	yes	0x0067ca10
+0x007920d0	Global::ExecuteCommandGetFactionAverageLevel	189	0x0067caf0	exact	yes	0x0067caf0
+0x007921b0	Global::ExecuteCommandGetFactionAverageReputation	186	0x0067cbd0	exact	yes	0x0067cbd0
+0x007922a0	Global::ExecuteCommandGetFactionAverageXP	190	0x0067ccc0	exact	yes	0x0067ccc0
+0x00792380	Global::ExecuteCommandGetFactionBestAC	193	0x0067cda0	exact	yes	0x0067cda0
+0x00792490	Global::ExecuteCommandGetFactionEqual	172	0x0067ceb0	exact	yes	0x0067ceb0
+0x00792550	Global::ExecuteCommandGetFactionGold	185	0x0067cf70	exact	yes	0x0067cf70
+0x00792630	Global::ExecuteCommandGetFactionLeastDamagedMember	184	0x0067d050	exact	yes	0x0067d050
+0x00792740	Global::ExecuteCommandGetFactionLeader	562	0x0067d160	exact	yes	0x0067d160
+0x007927d0	Global::ExecuteCommandGetFactionMember	380,381	0x0067d1f0	exact	n/a	
+0x00792960	Global::ExecuteCommandGetFactionMostDamagedMember	183	0x0067d380	exact	yes	0x0067d380
+0x00792a70	Global::ExecuteCommandGetFactionMostFrequentClass	191	0x0067d490	exact	yes	0x0067d490
+0x00792b50	Global::ExecuteCommandGetFactionStrongestMember	182	0x0067d570	exact	yes	0x0067d570
+0x00792c60	Global::ExecuteCommandGetFactionWeakestMember	181	0x0067d680	exact	yes	0x0067d680
+0x00792d70	Global::ExecuteCommandGetFactionWorstAC	192	0x0067d790	exact	yes	0x0067d790
+0x00792e80	Global::ExecuteCommandGetFortitudeSavingThrow	491	0x0067d8a0	exact	yes	0x0067d8a0
+0x00792fd0	Global::ExecuteCommandGetGameDifficulty	513	0x0067d9f0	exact	yes	0x0067d9f0
+0x00793030	Global::ExecuteCommandGetGlobalLocation	692	0x0067da50	exact	yes	0x0067da50
+0x00793150	Global::ExecuteCommandGetGlobalNumber	578,580	0x0067db70	exact	yes	0x0067db70
+0x00793290	Global::ExecuteCommandGetGlobalString	194	0x0067dcb0	exact	yes	0x0067dcb0
+0x007933b0	Global::ExecuteCommandGetGoingToBeAttackedBy	211	0x0067ddd0	exact	yes	0x0067ddd0
+0x00793430	Global::ExecuteCommandGetGold	418,771	0x0067de50	exact	yes	0x0067de50
+0x00793530	Global::ExecuteCommandGetGoldPieceValue	311,772	0x0067df50	exact	yes	0x0067df50
+0x007935e0	Global::ExecuteCommandGetChemical	774	0x0067e000	exact	n/a	
+0x007936e0	Global::ExecuteCommandGetChemicalPieceValue	775	0x0067e100	exact	yes	0x0067e100
+0x00793790	Global::ExecuteCommandGetHasFeat	285,783	0x0067e1b0	exact	yes	0x0067e1b0
+0x007938b0	Global::ExecuteCommandGetHasFeatEffect	543	0x0067e2d0	exact	yes	0x0067e2d0
+0x00793970	Global::ExecuteCommandGetHasInventory	570	0x0067e390	exact	yes	0x0067e390
+0x00793a80	Global::ExecuteCommandGetHasSkill	286	0x0067e4a0	exact	yes	0x0067e4a0
+0x00793b70	Global::ExecuteCommandGetHasSpell	377,784	0x0067e590	exact	yes	0x0067e590
+0x00793c50	Global::ExecuteCommandGetHasSpellEffect	304	0x0067e670	exact	yes	0x0067e670
+0x00793d10	Global::ExecuteCommandGetHitDice	166	0x0067e730	exact	yes	0x0067e730
+0x00793df0	Global::ExecuteCommandGetHitpoints	49,50	0x0067e810	exact	n/a	
+0x00793f80	Global::ExecuteCommandGetCurrentForcePoints	55	0x0067e9a0	exact	yes	0x0067e9a0
+0x00794030	Global::ExecuteCommandGetMaxForcePoints	56	0x0067ea50	exact	yes	0x0067ea50
+0x007940b0	Global::ExecuteCommandGetIdentified	332	0x0067ead0	exact	yes	0x0067ead0
+0x00794130	Global::ExecuteCommandGetInPersistentObject	262,263	0x0067eb50	exact	n/a	
+0x00794e20	Global::ExecuteCommandGetInventoryDisturbItem	353	0x0067f840	exact	yes	0x0067f840
+0x00794ea0	Global::ExecuteCommandGetInventoryDisturbType	352	0x0067f8c0	exact	yes	0x0067f8c0
+0x00794f20	Global::ExecuteCommandGetIsDawn	407	0x0067f940	exact	yes	0x0067f940
+0x00794f90	Global::ExecuteCommandGetIsDay	405	0x0067f9b0	exact	yes	0x0067f9b0
+0x00795000	Global::ExecuteCommandGetIsDoorActionPossible	337,546	0x0067fa20	exact	yes	0x0067fa20
+0x007953a0	Global::ExecuteCommandGetIsDusk	408	0x0067fdc0	exact	yes	0x0067fdc0
+0x00795410	Global::ExecuteCommandGetIsEncounterCreature	409	0x0067fe30	exact	yes	0x0067fe30
+0x007954a0	Global::ExecuteCommandGetIsImmune	274	0x0067fec0	exact	yes	0x0067fec0
+0x007955e0	Global::ExecuteCommandGetIsInCombat	320	0x00680000	exact	yes	0x00680000
+0x007956b0	Global::ExecuteCommandGetIsNight	406	0x006800d0	exact	yes	0x006800d0
+0x00795720	Global::ExecuteCommandGetIsOpen	443	0x00680140	exact	yes	0x00680140
+0x00795810	Global::ExecuteCommandGetIsRacialTypePlayable	312	0x00680230	exact	n/a	
+0x00795930	Global::ExecuteCommandGetIsTalentValid	359	0x00680350	exact	yes	0x00680350
+0x007959e0	Global::ExecuteCommandGetIsMined	551	0x00680400	exact	n/a	
+0x00795af0	Global::ExecuteCommandGetIsWeaponEffective	422	0x00680510	exact	yes	0x00680510
+0x00795b90	Global::ExecuteCommandGetItemACValue	401	0x006805b0	exact	yes	0x006805b0
+0x00795c80	Global::ExecuteCommandGetItemHasItemProperty	398	0x006806a0	exact	yes	0x006806a0
+0x00795e10	Global::ExecuteCommandGetItemInInventory	339,340	0x00680830	exact	n/a	
+0x00796500	Global::ExecuteCommandGetItemInSlot	155	0x00680f20	exact	yes	0x00680f20
+0x00796630	Global::ExecuteCommandGetItemPossessedBy	30	0x00681050	exact	yes	0x00681050
+0x00796930	Global::ExecuteCommandGetItemPossessor	29	0x00681350	exact	yes	0x00681350
+0x00796a30	Global::ExecuteCommandGetJournalEntry	369	0x00681450	exact	yes	0x00681450
+0x00796bc0	Global::ExecuteCommandGetJournalQuestExperience	384	0x006815e0	exact	yes	0x006815e0
+0x00796e60	Global::ExecuteCommandGetLastAttacker	36	0x00681890	exact	yes	0x00681890
+0x00796f10	Global::ExecuteCommandGetLastHostileTarget	721	0x00681940	exact	yes	0x00681940
+0x00796f90	Global::ExecuteCommandGetLastAttackAction	722	0x006819c0	exact	yes	0x006819c0
+0x00797010	Global::ExecuteCommandGetLastAttackMode	318	0x00681a40	exact	yes	0x00681a40
+0x00797150	Global::ExecuteCommandGetLastAttackResult	725	0x00681b80	exact	yes	0x00681b80
+0x007971d0	Global::ExecuteCommandGetWasForcePowerSuccessful	726	0x00681c00	exact	yes	0x00681c00
+0x00797250	Global::ExecuteCommandGetLastAttackType	317	0x00681c80	exact	yes	0x00681c80
+0x00797340	Global::ExecuteCommandGetLastClosedBy	260	0x00681d70	exact	yes	0x00681d70
+0x00797400	Global::ExecuteCommandGetLastCombatFeatUsed	724	0x00681e30	exact	yes	0x00681e30
+0x00797480	Global::ExecuteCommandGetLastDamager	346	0x00681eb0	exact	yes	0x00681eb0
+0x00797510	Global::ExecuteCommandGetLastDisarmed	347	0x00681f40	exact	yes	0x00681f40
+0x00797610	Global::ExecuteCommandGetLastDisturbed	348	0x00682040	exact	yes	0x00682040
+0x007976f0	Global::ExecuteCommandGetLastForcePowerUsed	723	0x00682120	exact	yes	0x00682120
+0x00797770	Global::ExecuteCommandGetLastHostileActor	556	0x006821a0	exact	yes	0x006821a0
+0x007979b0	Global::ExecuteCommandGetLastKiller	437	0x006823e0	exact	yes	0x006823e0
+0x00797a40	Global::ExecuteCommandGetLastLocked	349	0x00682470	exact	yes	0x00682470
+0x00797b20	Global::ExecuteCommandGetLastOpenedBy	376	0x00682550	exact	yes	0x00682550
+0x00797be0	Global::ExecuteCommandGetLastPazaakResult	365	0x00682610	exact	yes	0x00682610
+0x00797c40	Global::ExecuteCommandGetLastPerceived	256	0x00682670	exact	yes	0x00682670
+0x00797ce0	Global::ExecuteCommandGetLastPerception	257,258,259,261	0x00682710	exact	n/a	
+0x00797ed0	Global::ExecuteCommandGetLastSpeaker	254	0x00682900	exact	yes	0x00682900
+0x00797f70	Global::ExecuteCommandGetLastMineDetected	486	0x006829a0	exact	n/a	
+0x00797ff0	Global::ExecuteCommandGetLastUnlocked	350	0x00682a20	exact	yes	0x00682a20
+0x007980d0	Global::ExecuteCommandGetLastUsedBy	330	0x00682b00	exact	yes	0x00682b00
+0x00798180	Global::ExecuteCommandGetLastWeaponUsed	328	0x00682bb0	exact	yes	0x00682bb0
+0x00798200	Global::ExecuteCommandGetLeavingObject	26	0x00682c30	exact	n/a	
+0x00798390	Global::ExecuteCommandGetLoadFromSaveGame	251	0x00682dc0	exact	yes	0x00682dc0
+0x007983e0	Global::ExecuteCommandGetLocalValue	679,681	0x00682e10	exact	n/a	
+0x00798520	Global::ExecuteCommandGetLocation	213	0x00682f50	exact	yes	0x00682f50
+0x00798690	Global::ExecuteCommandGetLocked	325	0x006830c0	exact	yes	0x006830c0
+0x00798770	Global::ExecuteCommandGetLockInfo	537,538,539,540,541	0x006831a0	exact	n/a	
+0x00798b40	Global::ExecuteCommandGetMatchedString	178	0x00683570	exact	n/a	
+0x00798c90	Global::ExecuteCommandGetMatchedStringsCount	179	0x006836c0	exact	n/a	
+0x00798d10	Global::ExecuteCommandGetMatchedStringsNum	195	0x00683740	exact	n/a	
+0x00798d90	Global::ExecuteCommandGetMetaMagicFeat	105	0x006837c0	exact	yes	0x006837c0
+0x00798e20	Global::ExecuteCommandGetModule	242	0x00683850	exact	yes	0x00683850
+0x00798ea0	Global::ExecuteCommandGetModuleItemStuff	282,283,292,293	0x006838d0	exact	n/a	
+0x00798f70	Global::ExecuteCommandGetModuleName	210,561	0x006839a0	exact	yes	0x006839a0
+0x00799100	Global::ExecuteCommandGetMovementRate	496	0x00683b30	exact	yes	0x00683b30
+0x007991a0	Global::ExecuteCommandGetName	253	0x00683bd0	exact	yes	0x00683bd0
+0x00799310	Global::ExecuteCommandGetNearestObject	38,226,227,228,229	0x00683d40	exact	yes	0x00683d40
+0x0079a710	Global::ExecuteCommandGetNearestMine	488	0x00685140	exact	n/a	
+0x0079a9c0	Global::ExecuteCommandGetNightTrack	559	0x006853f0	exact	n/a	
+0x0079aa50	Global::ExecuteCommandGetNumStackedItems	475	0x00685480	exact	yes	0x00685480
+0x0079aad0	Global::ExecuteCommandGetObjectByTag	200	0x00685500	exact	yes	0x00685500
+0x0079ac00	Global::ExecuteCommandGetObjectInArea	93,94	0x00685630	exact	n/a	
+0x0079af30	Global::ExecuteCommandGetObjectInShape	128,129	0x00685960	exact	n/a	
+0x0079bd70	Global::ExecuteCommandGetObjectType	106	0x006867a0	exact	yes	0x006867a0
+0x0079bee0	Global::ExecuteCommandGetObjectValid	42	0x00686910	exact	n/a	
+0x0079bf60	Global::ExecuteCommandGetObjectVisibility	289,290	0x00686990	exact	n/a	
+0x0079c090	Global::ExecuteCommandGetOwnerDemolitionsSkill	793	0x00686ac0	exact	yes	0x00686ac0
+0x0079c1d0	Global::ExecuteCommandGetLastForfeitViolation	827	0x00686c00	exact	yes	0x00686c00
+0x0079c250	Global::ExecuteCommandAdjustCreatureAttributes	833	0x00686c80	exact	yes	0x00686c80
+0x0079c4b0	Global::ExecuteCommandAdjustCreatureSkills	869	0x00686ee0	exact	yes	0x00686ee0
+0x0079c5c0	Global::ExecuteCommandModifyBaseSavingThrow	828,829,830	0x00686ff0	exact	n/a	
+0x0079c750	Global::ExecuteCommandGetObjectPersonalSpace	832	0x00687180	exact	yes	0x00687180
+0x0079c800	Global::ExecuteCommandInfluence	795,796,797	0x00687230	exact	n/a	
+0x0079cac0	Global::ExecuteCommandGetPartyMemberByIndex	577	0x006874f0	exact	yes	0x006874f0
+0x0079cb60	Global::ExecuteCommandGetPartyMemberCount	126	0x00687590	exact	yes	0x00687590
+0x0079cbb0	Global::ExecuteCommandGetPC	548,549	0x006875e0	exact	n/a	
+0x0079cc80	Global::ExecuteCommandGetPCLevellingUp	542	0x006876b0	exact	yes	0x006876b0
+0x0079cce0	Global::ExecuteCommandGetPartyLeader	238,845	0x0069b7c0	exact	yes	0x0069b7c0
+0x0079cd60	Global::ExecuteCommandGetPlaceableIllumination	545	0x00687710	exact	yes	0x00687710
+0x0079cde0	Global::ExecuteCommandGetPlotFlag	455	0x00687790	exact	yes	0x00687790
+0x0079ce90	Global::ExecuteCommandGetPosition	27	0x00687840	exact	yes	0x00687840
+0x0079cf80	Global::ExecuteCommandGetRacialType	107	0x00687930	exact	yes	0x00687930
+0x0079d050	Global::ExecuteCommandGetReflexAdjustedDamage	299	0x00687a00	exact	yes	0x00687a00
+0x0079d300	Global::ExecuteCommandGetReflexSavingThrow	493	0x00687cb0	exact	yes	0x00687cb0
+0x0079d450	Global::ExecuteCommandGetReputation	208	0x00687e00	exact	yes	0x00687e00
+0x0079d510	Global::ExecuteCommandGetRestrictMode	83	0x00687ec0	exact	n/a	
+0x0079d600	Global::ExecuteCommandGetRunScriptVar	565	0x00687fb0	exact	yes	0x00687fb0
+0x0079d630	Global::ExecuteCommandGetSkillRank	315,870	0x00687fe0	exact	yes	0x00687fe0
+0x0079d740	Global::ExecuteCommandGetSpellCast	245,246,423	0x006880f0	exact	n/a	
+0x0079d9b0	Global::ExecuteCommandGetSpellCasterItem	438	0x00688360	exact	n/a	
+0x0079da40	Global::ExecuteCommandGetSpellForcePointCost	776	0x006883f0	exact	yes	0x006883f0
+0x0079db00	Global::ExecuteCommandGrantAbility	786,787	0x006884b0	exact	n/a	
+0x0079dbe0	Global::ExecuteCommandGetSpellFormMask	817	0x00688590	exact	yes	0x00688590
+0x0079dc70	Global::ExecuteCommandGetSpellBaseForcePointCost	818	0x00688620	exact	yes	0x00688620
+0x0079dd00	Global::ExecuteCommandGetSpellId	248	0x006886b0	exact	yes	0x006886b0
+0x0079dda0	Global::ExecuteCommandGetSpellSaveDC	111	0x00688750	exact	yes	0x00688750
+0x0079df00	Global::ExecuteCommandGetSpellTargetLoc	222	0x006888b0	exact	n/a	
+0x0079e050	Global::ExecuteCommandGetSpellTargetObject	47	0x00688a00	exact	yes	0x00688a00
+0x0079e110	Global::ExecuteCommandGetStat	358	0x00688ac0	exact	n/a	
+0x0079e1b0	Global::ExecuteCommandGetStrByStrRef	239	0x00688b60	exact	n/a	
+0x0079e2c0	Global::ExecuteCommandGetStringLeft	63	0x00688c70	exact	yes	0x00688c70
+0x0079e430	Global::ExecuteCommandGetStringLength	59	0x00688de0	exact	yes	0x00688de0
+0x0079e520	Global::ExecuteCommandGetStringLowerCase	61	0x00688ed0	exact	yes	0x00688ed0
+0x0079e650	Global::ExecuteCommandGetStringRight	62	0x00689000	exact	yes	0x00689000
+0x0079e7c0	Global::ExecuteCommandGetStringUpperCase	60	0x00689170	exact	yes	0x00689170
+0x0079e8f0	Global::ExecuteCommandGetStrRefSoundDuration	571	0x006892a0	exact	yes	0x006892a0
+0x0079ea00	Global::ExecuteCommandGetSubString	65	0x006893b0	exact	yes	0x006893b0
+0x0079ebb0	Global::ExecuteCommandGetTag	168	0x00689560	exact	yes	0x00689560
+0x0079ed20	Global::ExecuteCommandGetTimeHour	16	0x006896d0	exact	yes	0x006896d0
+0x0079ed70	Global::ExecuteCommandGetTimeMillisecond	19	0x00689720	exact	yes	0x00689720
+0x0079edc0	Global::ExecuteCommandGetTimeMinute	17	0x00689770	exact	yes	0x00689770
+0x0079ee10	Global::ExecuteCommandGetTimeSecond	18	0x006897c0	exact	yes	0x006897c0
+0x0079ee60	Global::ExecuteCommandGetTotalDamageDealt	345	0x00689810	exact	yes	0x00689810
+0x0079ef30	Global::ExecuteCommandGetMineInfo	527,528,529,530,531,532,533,534,535,536,550,555	0x006898e0	exact	n/a	
+0x0079fce0	Global::ExecuteCommandGetUserActionsPending	514	0x0068a690	exact	yes	0x0068a690
+0x0079fd70	Global::ExecuteCommandGetUserDefinedEventNumber	247	0x0068a720	exact	yes	0x0068a720
+0x0079fe60	Global::ExecuteCommandGetWaypointByTag	197	0x0068a810	exact	yes	0x0068a810
+0x0079ffa0	Global::ExecuteCommandGetWaypointByTrigger	198	0x0068a950	exact	n/a	
+0x007a0100	Global::ExecuteCommandGetWeaponRanged	511	0x0068aab0	exact	yes	0x0068aab0
+0x007a01b0	Global::ExecuteCommandGetWillSavingThrow	492	0x0068ab60	exact	yes	0x0068ab60
+0x007a0300	Global::ExecuteCommandGetXP	395	0x0068acb0	exact	yes	0x0068acb0
+0x007a03c0	Global::ExecuteCommandGiveGoldToCreature	322	0x0068ad70	exact	yes	0x0068ad70
+0x007a04b0	Global::ExecuteCommandGiveXPToCreature	393	0x0068ae60	exact	yes	0x0068ae60
+0x007a05d0	Global::ExecuteCommandGiveItem	271	0x0068af80	exact	yes	0x0068af80
+0x007a0760	Global::ExecuteCommandInsertString	64	0x0068b110	exact	yes	0x0068b110
+0x007a08e0	CSWVirtualMachineCommands::ExecuteCommandIntToFloat	230	0x0068b290	exact	yes	0x0068b290
+0x007a0930	Global::ExecuteCommandIntToHexString	396	0x0068b2e0	exact	yes	0x0068b2e0
+0x007a0a10	Global::ExecuteCommandIntToString	92	0x0068b3c0	exact	yes	0x0068b3c0
+0x007a0b00	Global::ExecuteCommandIsAIState	140	0x0068b4b0	exact	n/a	
+0x007a0c40	Global::ExecuteCommandIsAvailableNPC	696,709	0x0068b5f0	exact	n/a	
+0x007a0d10	Global::ExecuteCommandIsEffectValid	88	0x0068b6c0	exact	n/a	
+0x007a0e60	Global::ExecuteCommandGetIsInConversation	445	0x0068b810	exact	yes	0x0068b810
+0x007a0f80	Global::ExecuteCommandGetIsConversationActive	701	0x0068b930	exact	yes	0x0068b930
+0x007a0fd0	Global::ExecuteCommandGetCreatureMovmentType	566	0x0068b980	exact	yes	0x0068b980
+0x007a1060	Global::ExecuteCommandGetLastConversation	711	0x0068ba10	exact	yes	0x0068ba10
+0x007a10f0	Global::ExecuteCommandIsListening	174	0x0068baa0	exact	n/a	
+0x007a1190	Global::ExecuteCommandIsNPCPartyMember	699	0x0068bb40	exact	yes	0x0068bb40
+0x007a1230	Global::ExecuteCommandIsObjectPartyMember	576	0x0068bbe0	exact	yes	0x0068bbe0
+0x007a12b0	Global::ExecuteCommandIsPC	217	0x0068bc60	exact	n/a	
+0x007a1340	Global::ExecuteCommandIsStealthed	810	0x0068bcf0	exact	yes	0x0068bcf0
+0x007a13c0	Global::ExecuteCommandIsMeditating	811	0x0068bd70	exact	yes	0x0068bd70
+0x007a1450	Global::ExecuteCommandIsInTotalDefense	812	0x0068be00	exact	yes	0x0068be00
+0x007a14d0	Global::ExecuteCommandIsFormActive	816	0x0068be80	exact	yes	0x0068be80
+0x007a15b0	Global::ExecuteCommandItemActivated	439,440,441,442	0x0068bf60	exact	n/a	
+0x007a17b0	Global::ExecuteCommandLocation	215	0x0068c160	exact	yes	0x0068c160
+0x007a19d0	Global::ExecuteCommandLocationAccess	223,225	0x0068c380	exact	n/a	
+0x007a1af0	Global::ExecuteCommandMath	67,68,69,70,71,72,73,74,75,76,77	0x0068c4a0	exact	n/a	
+0x007a1e10	Global::ExecuteCommandModuleAccess	52,291,410,411,419	0x0068c7c0	exact	n/a	
+0x007a2000	Global::ExecuteCommandMoveAwayFromObject	23	0x0068c9b0	exact	n/a	
+0x007a21a0	Global::ExecuteCommandMoveToObject	22,383	0x0068cb50	exact	n/a	
+0x007a2530	Global::ExecuteCommandMoveToPoint	21,382	0x0068cee0	exact	n/a	
+0x007a27b0	Global::ExecuteCommandMusicBackground	425,426,427,428,429	0x0068d160	exact	n/a	
+0x007a2950	Global::ExecuteCommandMusicBattle	430,431,432	0x0068d300	exact	n/a	
+0x007a2a60	Global::ExecuteCommandModifyGlobal	799,800	0x0068d410	exact	n/a	
+0x007a2c40	Global::ExecuteCommandObjectToString	272	0x0068d5f0	exact	yes	0x0068d5f0
+0x007a2d30	Global::ExecuteCommandOpenDoor	43	0x0068d6e0	exact	n/a	
+0x007a2e20	Global::ExecuteCommandOpenStore	378	0x0068d7d0	exact	yes	0x0068d7d0
+0x007a30e0	Global::ExecuteCommandPickUpItem	34	0x0068da90	exact	n/a	
+0x007a3150	Global::ExecuteCommandPlayAnimation	40,300	0x0068db00	exact	yes	0x0068db00
+0x007a3c10	Global::ExecuteCommandPlayRoomAnimation	738	0x0068e5c0	exact	yes	0x0068e5c0
+0x007a3d70	Global::ExecuteCommandPlayMovie	733	0x0068e720	exact	yes	0x0068e720
+0x007a3ed0	Global::ExecuteCommandPlayPazaak	364	0x0068e880	exact	yes	0x0068e880
+0x007a4060	Global::ExecuteCommandPlayRumblePattern	370	0x0068ea10	exact	yes	0x0068ea10
+0x007a40c0	Global::ExecuteCommandPlaySound	46	0x0068ea70	exact	yes	0x0068ea70
+0x007a4240	Global::ExecuteCommandPlayVisualAreaEffect	677	0x0068ebf0	exact	yes	0x0068ebf0
+0x007a4330	Global::ExecuteCommandPopUpGUIPanel	388,554	0x0068ece0	exact	yes	0x0068ece0
+0x007a4540	Global::ExecuteCommandPrintFloat	2	0x0068eef0	exact	yes	0x0068eef0
+0x007a4710	Global::ExecuteCommandPrintInteger	4	0x0068f0c0	exact	yes	0x0068f0c0
+0x007a4770	Global::ExecuteCommandPrintLogEntry	560	0x0068f120	exact	n/a	
+0x007a4850	Global::ExecuteCommandPrintObject	5	0x0068f200	exact	yes	0x0068f200
+0x007a48b0	Global::ExecuteCommandPrintString	1	0x0068f260	exact	yes	0x0068f260
+0x007a4a20	Global::ExecuteCommandPrintVector	141	0x0068f3d0	exact	yes	0x0068f3d0
+0x007a4a90	Global::ExecuteCommandPlayOverlayAnimation	854	0x0068f440	exact	yes	0x0068f440
+0x007a4bb0	Global::ExecuteCommandPutDownItem	35	0x0068f560	exact	n/a	
+0x007a4c20	CSWVirtualMachineCommands::ExecuteCommandRandom	0	0x0068f5d0	exact	yes	0x0068f5d0
+0x007a4c90	Global::ExecuteCommandRandomName	249	0x0068f640	exact	yes	0x0068f640
+0x007a4dc0	Global::ExecuteCommandRemoveAvailableNPC	695	0x0068f770	exact	yes	0x0068f770
+0x007a4e30	Global::ExecuteCommandRemoveEffect	87	0x0068f7e0	exact	yes	0x0068f7e0
+0x007a5000	Global::ExecuteCommandRemoveEffectByID	867	0x0068f9b0	exact	yes	0x0068f9b0
+0x007a5170	Global::ExecuteCommandRemoveEffectByExactMatch	868	0x0068fb20	exact	yes	0x0068fb20
+0x007a5390	Global::ExecuteCommandRemoveFromParty	573	0x0068fd40	exact	yes	0x0068fd40
+0x007a5410	Global::ExecuteCommandRemoveHeartbeat	866	0x0068fdc0	exact	yes	0x0068fdc0
+0x007a5500	Global::ExecuteCommandRemoveJournalQuestEntry	368	0x0068feb0	exact	yes	0x0068feb0
+0x007a5650	Global::ExecuteCommandRemovePartyMember	575	0x00690000	exact	yes	0x00690000
+0x007a5740	Global::ExecuteCommandResistSpell	169	0x006900f0	exact	n/a	
+0x007a5df0	Global::ExecuteCommandRollDice	95,96,97,98,99,100,101,102,103	0x006907a0	exact	n/a	
+0x007a5f20	Global::ExecuteCommandSaveNPCState	734	0x006908d0	exact	yes	0x006908d0
+0x007a5f70	Global::ExecuteCommandSavingThrow	108,109,110	0x00690920	exact	n/a	
+0x007a60e0	Global::ExecuteCommandSendMessageToPC	374	0x00690a90	exact	yes	0x00690a90
+0x007a6250	Global::ExecuteCommandSetAreaTransitionBMP	203	0x00690c00	exact	yes	0x00690c00
+0x007a6350	Global::ExecuteCommandSetAreaUnescapable	14	0x00690d00	exact	yes	0x00690d00
+0x007a63c0	Global::ExecuteCommandSetCameraLocation	45	0x00690d70	exact	n/a	
+0x007a64f0	Global::ExecuteCommandSetCameraMode	504	0x00690ea0	exact	yes	0x00690ea0
+0x007a6590	Global::ExecuteCommandSetCommandable	162	0x00690f40	exact	yes	0x00690f40
+0x007a6670	Global::ExecuteCommandSetCurrentForm	859	0x00691020	exact	yes	0x00691020
+0x007a6730	Global::ExecuteCommandSetCustomToken	284	0x006910e0	exact	yes	0x006910e0
+0x007a68d0	Global::ExecuteCommandSetEncounterData	277,279,281,296	0x00691280	exact	n/a	
+0x007a69b0	Global::ExecuteCommandSetFacing	10,143	0x00691360	exact	yes	0x00691360
+0x007a6c60	Global::ExecuteCommandSetGlobalLocation	693	0x00691610	exact	yes	0x00691610
+0x007a6da0	Global::ExecuteCommandSetGlobalNumber	579,581	0x00691750	exact	yes	0x00691750
+0x007a6ee0	Global::ExecuteCommandSetGlobalString	160	0x00691890	exact	yes	0x00691890
+0x007a7000	Global::ExecuteCommandSetIdentified	333	0x006919b0	exact	yes	0x006919b0
+0x007a7080	Global::ExecuteCommandSetIsDestroyable	323	0x00691a30	exact	yes	0x00691a30
+0x007a7280	Global::ExecuteCommandSetJournalQuestEntryPicture	678	0x00691c30	exact	yes	0x00691c30
+0x007a7620	Global::ExecuteCommandSetLightsaberPowered	421	0x00691fd0	exact	yes	0x00691fd0
+0x007a76e0	Global::ExecuteCommandSetListening	175	0x00692090	exact	yes	0x00692090
+0x007a7780	Global::ExecuteCommandSetListenString	176	0x00692130	exact	n/a	
+0x007a7890	Global::ExecuteCommandSetLocalValue	680,682	0x00692240	exact	n/a	
+0x007a79f0	Global::ExecuteCommandSetLocked	324	0x006923a0	exact	yes	0x006923a0
+0x007a7ae0	Global::ExecuteCommandSetMapPinEnabled	386	0x00692490	exact	yes	0x00692490
+0x007a7c20	Global::ExecuteCommandSetNPCSelectability	708	0x006925d0	exact	yes	0x006925d0
+0x007a7c90	Global::ExecuteCommandSetPlaceableIllumination	544	0x00692640	exact	yes	0x00692640
+0x007a7d10	Global::ExecuteCommandSetPlotFlag	456	0x006926c0	exact	yes	0x006926c0
+0x007a7db0	Global::ExecuteCommandSetRestrictMode	58	0x00692760	exact	n/a	
+0x007a7e40	Global::ExecuteCommandSetReturnStrref	152	0x006927f0	exact	yes	0x006927f0
+0x007a7ee0	Global::ExecuteCommandSetSpeedBlurEffect	563	0x00692890	exact	n/a	
+0x007a7f60	Global::ExecuteCommandSetSubType	112,113,114	0x00692910	exact	n/a	
+0x007a8050	Global::ExecuteCommandSetTime	12	0x00692a00	exact	yes	0x00692a00
+0x007a8150	Global::ExecuteCommandSetForcePowerUnsuccessful	731	0x00692b00	exact	yes	0x00692b00
+0x007a81d0	Global::ExecuteCommandSetXP	394	0x00692b80	exact	yes	0x00692b80
+0x007a8290	Global::ExecuteCommandShipBuild	761	0x00692c40	exact	yes	0x00692c40
+0x007a82d0	Global::ExecuteCommandShowLevelUpGUI	265	0x00692c80	exact	yes	0x00692c80
+0x007a8330	Global::ExecuteCommandShowPartySelection	712	0x00692ce0	exact	n/a	
+0x007a84a0	Global::ExecuteCommandShowUpgradeScreen	354	0x00692e50	exact	yes	0x00692e50
+0x007a8670	Global::ExecuteCommandSignalEvent	131	0x00693020	exact	yes	0x00693020
+0x007a8770	Global::ExecuteCommandSoundObjectGetFixedVariance	188	0x00693120	exact	yes	0x00693120
+0x007a87f0	Global::ExecuteCommandSoundObjectGetPitchVariation	689	0x006931a0	exact	n/a	
+0x007a8870	Global::ExecuteCommandSoundObjectGetVolume	691	0x00693220	exact	yes	0x00693220
+0x007a88f0	Global::ExecuteCommandSoundObjectPlay	413	0x006932a0	exact	yes	0x006932a0
+0x007a8950	Global::ExecuteCommandSoundObjectSetFixedVariance	124	0x00693300	exact	yes	0x00693300
+0x007a89d0	Global::ExecuteCommandSoundObjectSetPitchVariation	690	0x00693380	exact	n/a	
+0x007a8a50	Global::ExecuteCommandSoundObjectSetPosition	416	0x00693400	exact	yes	0x00693400
+0x007a8af0	Global::ExecuteCommandSoundObjectSetVolume	415	0x006934a0	exact	yes	0x006934a0
+0x007a8b70	Global::ExecuteCommandSoundObjectStop	414	0x00693520	exact	yes	0x00693520
+0x007a8bd0	Global::ExecuteCommandSoundObjectFadeAndStop	745	0x00693580	exact	yes	0x00693580
+0x007a8c70	Global::ExecuteCommandSpawnAvailableNPC	698	0x00693620	exact	yes	0x00693620
+0x007a8d60	Global::ExecuteCommandSpeakOneLinerConversation	417	0x00693710	exact	yes	0x00693710
+0x007a8eb0	Global::ExecuteCommandSpeakString	39,221	0x00693860	exact	yes	0x00693860
+0x007a9110	Global::ExecuteCommandSpeakStrRef	240	0x00693ac0	exact	n/a	
+0x007a9260	Global::ExecuteCommandStartNewModule	509	0x00693c10	exact	yes	0x00693c10
+0x007a97c0	Global::ExecuteCommandStopRumblePattern	371	0x00694170	exact	yes	0x00694170
+0x007a9820	Global::ExecuteCommandStringConversions	232,233	0x006941d0	exact	n/a	
+0x007a9940	Global::ExecuteCommandSurrenderToEnemies	379,476,762	0x006942f0	exact	yes	0x006942f0
+0x007a9a50	Global::ExecuteCommandSwitchPlayerCreature	11	0x00694400	exact	n/a	
+0x007a9ac0	Global::ExecuteCommandSpawnMine	788	0x00694470	exact	yes	0x00694470
+0x007a9fd0	Global::ExecuteCommandSetForfeitConditions	826	0x00694980	exact	yes	0x00694980
+0x007aa040	Global::ExecuteCommandTakeGoldFromCreature	444	0x006949f0	exact	yes	0x006949f0
+0x007aa460	Global::ExecuteCommandTalent	301,302,303	0x00694e10	exact	n/a	
+0x007aa620	Global::ExecuteCommandTalentAccess	362,363,735	0x00694fd0	exact	n/a	
+0x007aa790	Global::ExecuteCommandTimeConversions	121,122,123	0x00695140	exact	n/a	
+0x007aa860	Global::ExecuteCommandTestString	177	0x00695210	exact	n/a	
+0x007aa9c0	Global::ExecuteCommandUnequipItem	33	0x00695370	exact	n/a	
+0x007aaac0	Global::ExecuteCommandVector	142	0x00695470	exact	yes	0x00695470
+0x007aab50	Global::ExecuteCommandVectorConversions	144,145	0x00695500	exact	n/a	
+0x007aacd0	Global::ExecuteCommandVectorMagnitude	104	0x00695680	exact	yes	0x00695680
+0x007aad40	Global::ExecuteCommandVectorNormalize	137	0x006956f0	exact	yes	0x006956f0
+0x007aae00	Global::ExecuteCommandVersusEffect	355,356,357	0x006957b0	exact	n/a	
+0x007ab560	Global::ExecuteCommandWait	202	0x00695f10	exact	n/a	
+0x007ab660	Global::ExecuteCommandGetIsLinkImmune	390	0x00696010	exact	yes	0x00696010
+0x007ab790	Global::ExecuteCommandGetPartyAIStyle	704	0x00696140	exact	yes	0x00696140
+0x007ab7e0	Global::ExecuteCommandGetNPCAIStyle	705	0x00696190	exact	yes	0x00696190
+0x007ab8a0	Global::ExecuteCommandSetPartyLeader	13	0x00696250	exact	yes	0x00696250
+0x007abb70	Global::ExecuteCommandSetPartyAIStyle	706	0x00696520	exact	yes	0x00696520
+0x007abbd0	Global::ExecuteCommandSetNPCAIStyle	707	0x00696580	exact	yes	0x00696580
+0x007abca0	Global::ExecuteCommandClearAllEffects	710	0x00696650	exact	yes	0x00696650
+0x007abd00	Global::ExecuteCommandGetStandardFaction	713	0x006966b0	exact	yes	0x006966b0
+0x007abdf0	Global::ExecuteCommandGivePlotXP	714	0x006967a0	exact	yes	0x006967a0
+0x007abee0	Global::ExecuteCommandGetMinOneHP	715	0x00696890	exact	yes	0x00696890
+0x007abf80	Global::ExecuteCommandSetMinOneHP	716	0x00696930	exact	yes	0x00696930
+0x007ac030	Global::ExecuteCommandSetFadeIn	719	0x006969e0	exact	n/a	
+0x007ac150	Global::ExecuteCommandSetFadeOut	720	0x00696b00	exact	n/a	
+0x007ac240	Global::ExecuteCommandGetAttacker	727,728	0x00696bf0	exact	n/a	
+0x007ac310	Global::ExecuteCommandSetFormation	729	0x00696cc0	exact	yes	0x00696cc0
+0x007ac3d0	Global::ExecuteCommandGetIsDebilitated	732	0x00696d80	exact	yes	0x00696d80
+0x007ac460	Global::ExecuteCommandChangeByFaction	736,737	0x00696e10	exact	n/a	
+0x007ac670	Global::ExecuteCommandGetSubScreenID	53	0x00697020	exact	yes	0x00697020
+0x007ac6e0	Global::ExecuteCommandCancelCombat	54	0x00697090	exact	yes	0x00697090
+0x007ac770	Global::ExecuteCommandPauseGame	57	0x00697120	exact	yes	0x00697120
+0x007ac7c0	Global::ExecuteCommandGetItemStackSize	138	0x00697170	exact	yes	0x00697170
+0x007ac840	Global::ExecuteCommandSetItemStackSize	150	0x006971f0	exact	yes	0x006971f0
+0x007acab0	Global::ExecuteCommandShowGalaxyMapGui	739	0x00697460	exact	n/a	
+0x007acb00	Global::ExecuteCommandSetGalaxyMapPlanetAvailable	742	0x006974b0	exact	n/a	
+0x007acb70	Global::ExecuteCommandGetGalaxyMapPlanetAvailable	743	0x00697520	exact	n/a	
+0x007acbe0	Global::ExecuteCommandSetGalaxyMapPlanetSelectable	740	0x00697590	exact	n/a	
+0x007acc50	Global::ExecuteCommandGetGalaxyMapPlanetSelectable	741	0x00697600	exact	n/a	
+0x007accc0	Global::ExecuteCommandGetGalaxyMapSelectedPlanet	744	0x00697670	exact	n/a	
+0x007acd10	Global::ExecuteCommandSetItemNonEquippable	266	0x006976c0	exact	yes	0x006976c0
+0x007acda0	Global::ExecuteCommandGetButtonMashCheck	267	0x00697750	exact	yes	0x00697750
+0x007acdf0	Global::ExecuteCommandSetButtonMashCheck	268	0x006977a0	exact	yes	0x006977a0
+0x007ace40	Global::ExecuteCommandSetDialogPlaceableCamera	461	0x006977f0	exact	yes	0x006977f0
+0x007acec0	Global::ExecuteCommandGetSoloMode	462	0x00697870	exact	yes	0x00697870
+0x007acf10	Global::ExecuteCommandGetMaxStealthXP	464	0x006978c0	exact	yes	0x006978c0
+0x007acf90	Global::ExecuteCommandSetMaxStealthXP	468	0x00697940	exact	yes	0x00697940
+0x007ad000	Global::ExecuteCommandGetCurrentStealthXP	474	0x006979b0	exact	yes	0x006979b0
+0x007ad080	Global::ExecuteCommandSetCurrentStealthXP	478	0x00697a30	exact	yes	0x00697a30
+0x007ad0f0	Global::ExecuteCommandAwardStealthXP	480	0x00697aa0	exact	yes	0x00697aa0
+0x007ad170	Global::ExecuteCommandGetStealthXPEnabled	481	0x00697b20	exact	yes	0x00697b20
+0x007ad1f0	Global::ExecuteCommandSetStealthXPEnabled	482	0x00697ba0	exact	yes	0x00697ba0
+0x007ad270	Global::ExecuteCommandGetSubRace	497	0x00697c20	exact	yes	0x00697c20
+0x007ad310	Global::ExecuteCommandGetBlockingCreature	490	0x00697cc0	exact	yes	0x00697cc0
+0x007ad3a0	Global::ExecuteCommandGetFoundEnemyCreature	495	0x00697d50	exact	yes	0x00697d50
+0x007ad430	Global::ExecuteCommandGetStealthXPDecrement	498	0x00697de0	exact	yes	0x00697de0
+0x007ad4b0	Global::ExecuteCommandSetStealthXPDecrement	499	0x00697e60	exact	yes	0x00697e60
+0x007ad530	Global::ExecuteCommandDuplicateHeadAppearance	500	0x00697ee0	exact	yes	0x00697ee0
+0x007ad6c0	Global::ExecuteCommandSetLockOrientationInDialog	505	0x00698070	exact	yes	0x00698070
+0x007ad750	Global::ExecuteCommandSetLockHeadFollowInDialog	506	0x00698100	exact	yes	0x00698100
+0x007ad7e0	Global::ExecuteCommandEnableRendering	871	0x00698190	exact	yes	0x00698190
+0x007add30	Global::ExecuteCommandEnableVideoEffect	508	0x006986e0	exact	yes	0x006986e0
+0x007adda0	Global::ExecuteCommandDisableVideoEffect	510	0x00698750	exact	yes	0x00698750
+0x007addf0	Global::ExecuteCommandRevealMap	515	0x006987a0	exact	yes	0x006987a0
+0x007adec0	Global::ExecuteCommandSetTutorialWindowsEnabled	516	0x00698870	exact	yes	0x00698870
+0x007adf30	Global::ExecuteCommandShowTutorialWindow	517	0x006988e0	exact	yes	0x006988e0
+0x007adf80	Global::ExecuteCommandIsCreditSequenceInProgress	519	0x00698930	exact	yes	0x00698930
+0x007adfd0	Global::ExecuteCommandStartCreditSequence	518	0x00698980	exact	yes	0x00698980
+0x007ae110	Global::ExecuteCommandGetDifficultyMultiplier	523	0x00698ac0	exact	n/a	
+0x007ae1f0	Global::ExecuteCommandSetEffectIcon	552	0x00698ba0	exact	yes	0x00698ba0
+0x007ae4d0	Global::ExecuteCommandFaceObjectAwayFromObject	553	0x00698e80	exact	yes	0x00698e80
+0x007ae650	Global::ExecuteCommandSetAreaFogColor	746	0x00699000	exact	yes	0x00699000
+0x007ae730	Global::ExecuteCommandChangeItemCost	747	0x006990e0	exact	yes	0x006990e0
+0x007ae890	Global::ExecuteCommandGetIsLiveContentAvailable	748	0x00699240	exact	yes	0x00699240
+0x007ae9d0	Global::ExecuteCommandResetDialogState	749	0x00699380	exact	yes	0x00699380
+0x007aea00	Global::ExecuteCommandSetGoodEvilValue	750	0x006993b0	exact	yes	0x006993b0
+0x007aeae0	Global::ExecuteCommandGetIsPoisoned	751	0x00699490	exact	yes	0x00699490
+0x007aeba0	Global::ExecuteCommandSetSoloMode	753	0x00699550	exact	yes	0x00699550
+0x007aebf0	Global::ExecuteCommandCancelPostDialogCharacterSwitch	757	0x006995a0	exact	yes	0x006995a0
+0x007aec30	Global::ExecuteCommandSetMaxHitPoints	758	0x006995e0	exact	yes	0x006995e0
+0x007aece0	Global::ExecuteCommandNoClicksFor	759	0x00699690	exact	yes	0x00699690
+0x007aed70	Global::ExecuteCommandHoldWorldFadeInForDialog	760	0x00699720	exact	yes	0x00699720
+0x007aedb0	Global::ExecuteCommandSuppressStatusSummaryEntry	763	0x00699760	exact	yes	0x00699760
+0x007aee00	Global::ExecuteCommandGetCheatCode	764	0x006997b0	exact	yes	0x006997b0
+0x007aee50	Global::ExecuteCommandSetMusicVolume	765	0x00699800	exact	yes	0x00699800
+0x007aeef0	Global::ExecuteCommandCreateItemOnFloor	766	0x006998a0	exact	yes	0x006998a0
+0x007af280	Global::ExecuteCommandSetAvailableNPCID	767	0x00699c30	exact	n/a	
+0x007af2f0	Global::ExecuteCommandGetScriptParameter	768	0x00699ca0	exact	yes	0x00699ca0
+0x007af360	Global::ExecuteCommandGetScriptStringParameter	831	0x00699d10	exact	yes	0x00699d10
+0x007af400	Global::ExecuteCommandSetFadeUntilScript	769	0x00699db0	exact	yes	0x00699db0
+0x007af440	Global::ExecuteCommandShowChemicalUpgradeScreen	773	0x00699df0	exact	yes	0x00699df0
+0x007af4a0	Global::ExecuteCommandShowSwoopUpgradeScreen	785	0x00699e50	exact	yes	0x00699e50
+0x007af4d0	Global::ExecuteCommandSetFakeCombatState	791	0x00699e80	exact	yes	0x00699e80
+0x007af5b0	Global::ExecuteCommandSetOrientOnClick	794	0x00699f60	exact	yes	0x00699f60
+0x007af640	Global::ExecuteCommandGetRacialSubType	798	0x00699ff0	exact	yes	0x00699ff0
+0x007af710	Global::ExecuteCommandSetBonusForcePoints	801	0x0069a0c0	exact	yes	0x0069a0c0
+0x007af840	Global::ExecuteCommandAddBonusForcePoints	802	0x0069a1f0	exact	yes	0x0069a1f0
+0x007af950	Global::ExecuteCommandGetBonusForcePoints	803	0x0069a300	exact	yes	0x0069a300
+0x007af9f0	Global::ExecuteCommandIsMoviePlaying	805	0x0069a3a0	exact	yes	0x0069a3a0
+0x007afa40	Global::ExecuteCommandQueueMovie	806	0x0069a3f0	exact	yes	0x0069a3f0
+0x007afb20	Global::ExecuteCommandPlayMovieQueue	807	0x0069a4d0	exact	yes	0x0069a4d0
+0x007afb70	Global::ExecuteCommandYavinHackCloseDoor	808	0x0069a520	exact	n/a	
+0x007afbd0	Global::ExecuteCommandSetHealTarget	813	0x0069a580	exact	yes	0x0069a580
+0x007afc50	Global::ExecuteCommandGetHealTarget	814	0x0069a600	exact	yes	0x0069a600
+0x007afcd0	Global::ExecuteCommandGetRandomDestination	815	0x0069a680	exact	yes	0x0069a680
+0x007b0250	Global::ExecuteCommandSetKeepStealthInDialog	819	0x0069ac00	exact	yes	0x0069ac00
+0x007b02b0	Global::ExecuteCommandHasLineOfSight	820	0x0069ac60	exact	yes	0x0069ac60
+0x007b0510	Global::ExecuteCommandShowDemoScreen	821	0x0069aec0	exact	yes	0x0069aec0
+0x007b06b0	Global::ExecuteCommandIsRunning	824	0x0069b060	exact	yes	0x0069b060
+0x007b0750	Global::ExecuteCommandAddAvailablePUPByTemplate	836	0x0069b100	exact	yes	0x0069b100
+0x007b0870	Global::ExecuteCommandAddAvailablePUPByObject	837	0x0069b220	exact	yes	0x0069b220
+0x007b0910	Global::ExecuteCommandAssignPUP	838	0x0069b2c0	exact	yes	0x0069b2c0
+0x007b09a0	Global::ExecuteCommandSpawnAvailablePUP	839	0x0069b350	exact	yes	0x0069b350
+0x007b0a90	Global::ExecuteCommandAddPartyPuppet	840	0x0069b440	exact	yes	0x0069b440
+0x007b0b80	Global::ExecuteCommandGetPUPOwner	841	0x0069b530	exact	yes	0x0069b530
+0x007b0c30	Global::ExecuteCommandGetIsPuppet	842	0x0069b5e0	exact	yes	0x0069b5e0
+0x007b0cb0	Global::ExecuteCommandActionFollowOwner	843	0x0069b660	exact	yes	0x0069b660
+0x007b0d70	Global::ExecuteCommandGetIsPartyLeader	844	0x0069b720	exact	yes	0x0069b720
+0x007b0e10	Global::ExecuteCommandRemoveNPCFromPartyToBase	846	0x0069b840	exact	yes	0x0069b840
+0x007b0f10	Global::ExecuteCommandGetIsXBox	851	0x0069b940	exact	yes	0x0069b940
+0x007b0f50	Global::ExecuteCommandActionSwitchWeapons	853	0x0069b980	exact	yes	0x0069b980
+0x007b0fd0	Global::ExecuteCommandUnlockAllMusic	855	0x0069ba00	exact	n/a	
+0x007b10d0	Global::ExecuteCommandDisableMap	856	0x0069bb00	exact	yes	0x0069bb00
+0x007b1130	Global::ExecuteCommandDetonateMine	857	0x0069bb60	exact	yes	0x0069bb60
+0x007b11e0	Global::ExecuteCommandDisableHealthRegen	858	0x0069bc10	exact	yes	0x0069bc10
+0x007b1240	Global::ExecuteCommandSetDisableTransit	860	0x0069bc70	exact	yes	0x0069bc70
+0x007b12c0	Global::ExecuteCommandSetInputClass	861	0x0069bcf0	exact	yes	0x0069bcf0
+0x007b1320	Global::ExecuteCommandForceAlwaysUpdate	862	0x0069bd50	exact	n/a	
+0x007b13b0	Global::ExecuteCommandEnableRain	863	0x0069bde0	exact	yes	0x0069bde0
+0x007b1470	Global::ExecuteCommandDisplayMessageBox	864	0x0069bea0	exact	yes	0x0069bea0
+0x007b15f0	Global::ExecuteCommandDisplayDatapad	865	0x0069c020	exact	yes	0x0069c020
+0x007b17d0	Global::ExecuteCommandGetCombatActionPending	872	0x0069c200	exact	n/a	
+0x007b1890	Global::ExecuteCommandSaveNPCByObject	873	0x0069c2c0	exact	yes	0x0069c2c0
+0x007b1910	Global::ExecuteCommandSavePUPByObject	874	0x0069c340	exact	yes	0x0069c340
+0x007b1990	Global::ExecuteCommandGetIsPlayerMadeCharacter	875	0x0069c3c0	exact	yes	0x0069c3c0
+0x007b1a30	Global::ExecuteCommandRebuildPartyTable	876	0x0069c460	exact	yes	0x0069c460
+0x007f97c0	Global::ExecuteCommandAurPostString	582	0x006f6200	exact	yes	0x006f6200
+0x007f98e0	CSWVirtualMachineCommands::ExecuteCommandSWMG_GetLastEvent	583	0x006f6320	exact	yes	0x006f6320
+0x007f99e0	CSWVirtualMachineCommands::ExecuteCommandSWMG_GetLastEventModelName	584	0x006f6420	exact	yes	0x006f6420
+0x007f9b00	Global::ExecuteCommandSWMG_GetObjectByName	585	0x006f6540	exact	yes	0x006f6540
+0x007f9c00	Global::ExecuteCommandSWMG_PlayAnimation	586	0x006f6640	exact	yes	0x006f6640
+0x007f9e00	Global::ExecuteCommandSWMG_GetLastBulletInfo	587,588,595,596	0x006f6840	exact	n/a	
+0x007f9f30	Global::ExecuteCommandSWMG_GetLastBulletShooter	589	0x006f6970	exact	n/a	
+0x007f9fb0	CSWVirtualMachineCommands::ExecuteCommandSWMG_AdjustFollowerHitPoints	590,604	0x006f69f0	exact	yes	0x006f69f0
+0x007fa060	Global::ExecuteCommandSWMG_DefaultImplementations	591,592,598,605	0x006f6aa0	exact	n/a	
+0x007fa180	Global::ExecuteCommandSWMG_GetLastObjectHit	593,594	0x006f6bc0	exact	n/a	
+0x007fa250	Global::ExecuteCommandSWMG_GetObjectName	597	0x006f6c90	exact	yes	0x006f6c90
+0x007fa370	Global::ExecuteCommandSWMG_IsSomething	599,600,601,602,603	0x006f6db0	exact	n/a	
+0x007fa4d0	Global::ExecuteCommandSWMG_GetLastHPChange	606	0x006f6f10	exact	yes	0x006f6f10
+0x007fa540	Global::ExecuteCommandSWMG_RemoveAnimation	607	0x006f6f80	exact	yes	0x006f6f80
+0x007fa650	Global::ExecuteCommandSWMG_GetCameraClipping	608,609	0x006f7090	exact	n/a	
+0x007fa6e0	Global::ExecuteCommandSWMG_SetCameraClipping	610	0x006f7120	exact	n/a	
+0x007fa760	Global::ExecuteCommandSWMG_GetPlayer	611	0x006f71a0	exact	yes	0x006f71a0
+0x007fa7d0	Global::ExecuteCommandSWMG_GetMiniGameCounts	612,614	0x006f7210	exact	n/a	
+0x007fa860	Global::ExecuteCommandSWMG_GetMiniGameObjects	613,615	0x006f72a0	exact	n/a	
+0x007fa920	Global::ExecuteCommandSWMG_GetFollowerIntInfo	616,617,621,624,665	0x006f7360	exact	n/a	
+0x007faa80	Global::ExecuteCommandSWMG_StartInvulnerability	666	0x006f74c0	exact	yes	0x006f74c0
+0x007faaf0	Global::ExecuteCommandSWMG_GetFollowerFloatInfo	619,642	0x006f7530	exact	n/a	
+0x007faba0	Global::ExecuteCommandSWMG_GetFollowerPosition	623	0x006f75e0	exact	n/a	
+0x007facb0	CSWVirtualMachineCommands::ExecuteCommandSWMG_SetFollowerIntInfo	618,622	0x006f76f0	exact	n/a	
+0x007fad60	Global::ExecuteCommandSWMG_SetFollowerFloatInfo	620,648	0x006f77a0	exact	n/a	
+0x007fae10	Global::ExecuteCommandSWMG_GetGunBankStringInfo	625,626	0x006f7850	exact	n/a	
+0x007faf80	Global::ExecuteCommandSWMG_GetGunBankIntInfo	627,631,640	0x006f79c0	exact	n/a	
+0x007fb080	Global::ExecuteCommandSWMG_GetGunBankFloatInfo	628,629,630	0x006f7ac0	exact	n/a	
+0x007fb170	Global::ExecuteCommandSWMG_GetTargettingGunBankFloatInfo	657,658,659,660	0x006f7bb0	exact	n/a	
+0x007fb290	Global::ExecuteCommandSWMG_SetGunBankStringInfo	632,633	0x006f7cd0	exact	n/a	
+0x007fb420	Global::ExecuteCommandSWMG_SetGunBankIntInfo	634,638	0x006f7e60	exact	n/a	
+0x007fb500	Global::ExecuteCommandSWMG_SetGunBankFloatInfo	635,636,637	0x006f7f40	exact	n/a	
+0x007fb600	Global::ExecuteCommandSWMG_SetTargettingGunBankFloatInfo	661,662,663,664	0x006f8040	exact	n/a	
+0x007fb740	Global::ExecuteCommandSWMG_GetLastBulletHitPart	639	0x006f8180	exact	yes	0x006f8180
+0x007fb810	Global::ExecuteCommandSWMG_GetPlayerFloatInfo	643,644,645,667	0x006f8250	exact	n/a	
+0x007fb900	Global::ExecuteCommandSWMG_GetPlayerVectorInfo	641,646,653,655,717	0x006f8340	exact	n/a	
+0x007fbaa0	Global::ExecuteCommandSWMG_SetPlayerFloatInfo	649,650,651,668	0x006f84e0	exact	n/a	
+0x007fbb90	Global::ExecuteCommandSWMG_SetPlayerVectorInfo	647,652,654,656,718	0x006f85d0	exact	n/a	
+0x007fbd00	Global::ExecuteCommandSWMG_GetSoundProperty	683,685,687	0x006f8740	exact	n/a	
+0x007fbdf0	Global::ExecuteCommandSWMG_SetSoundProperty	684,686,688	0x006f8830	exact	n/a	
+0x007fbee0	Global::ExecuteCommandSWMG_SetLateralAccelPerSec	520	0x006f8920	exact	n/a	
+0x007fbf80	Global::ExecuteCommandSWMG_GetLateralAccelPerSec	521	0x006f89c0	exact	n/a	
+0x007fbfd0	Global::ExecuteCommandSWMG_GetSwoopUpgrade	782	0x006f8a10	exact	yes	0x006f8a10
+0x007fc050	Global::ExecuteCommandSWMG_GetTrackPosition	789	0x006f8a90	exact	yes	0x006f8a90
+0x007fc120	Global::ExecuteCommandSWMG_SetFollowerPosition	790	0x006f8b60	exact	yes	0x006f8b60
+0x007fc190	Global::ExecuteCommandSWMG_DestroyMiniGameObject	792	0x006f8bd0	exact	yes	0x006f8bd0
+0x007fc210	Global::ExecuteCommandSWMG_SetJumpSpeed	804	0x006f8c50	exact	yes	0x006f8c50
+0x007fc260	Global::ExecuteCommandSWMG_PlayerApplyForce	825	0x006f8ca0	exact	yes	0x006f8ca0
