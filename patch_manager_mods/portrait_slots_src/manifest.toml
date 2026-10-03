@@ -1,0 +1,14 @@
+[patch]
+id = "portrait-slots"
+name = "Portrait Slots (shared party-portrait hooks)"
+version = "1.0.0"
+author = "local"
+description = "Owns the party-portrait hooks (UpdatePortraits + the per-slot draw gate) and provides the k2.portraitslots v1 registry interface, so several HUD mods (Buff Duration HUD, Shield Bar) can share them. Draws nothing by itself. Needs a KotorPatcher with the patch registry (KPatchInit)."
+
+requires = []
+conflicts = []
+
+# Steam/LAA only (same hook sites as Buff Duration HUD v1.1.0). See patch_manager_mods/21_portrait_slots_and_split.md
+# (local-setup/KOTOR-II worktree).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

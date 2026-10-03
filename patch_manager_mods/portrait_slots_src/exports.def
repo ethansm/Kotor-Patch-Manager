@@ -1,0 +1,5 @@
+LIBRARY PortraitSlots
+EXPORTS
+    KPatchInit
+    PS_SnapshotPortraitSlot
+    PS_PortraitSlotDraw

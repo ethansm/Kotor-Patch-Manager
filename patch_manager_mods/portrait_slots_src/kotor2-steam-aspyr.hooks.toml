@@ -1,0 +1,56 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# UpdatePortraits, normal slot: EAX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0074F25A
+type = "detour"
+function = "PS_SnapshotPortraitSlot"
+original_bytes = [0x89, 0x85, 0x44, 0xFF, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# UpdatePortraits, extra/mirror slot: EDX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0074F8AB
+type = "detour"
+function = "PS_SnapshotPortraitSlot"
+original_bytes = [0x89, 0x95, 0xA4, 0xFE, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "edx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# FUN_00745770 per-slot icon-row gate, after prologue (55 8b ec 51 done). ECX = slotPtr (this), [ebp+0xc] = isFirst (leader;
+# RET 8 = dt + isFirst), [ebp] = caller frame. Runs every frame per slot, before the arrow-count test. Window 89 4d fc / 8b 45 fc
+# (2 whole instructions, 6 bytes, no jumps).
+[[hooks]]
+address = 0x00745774
+type = "detour"
+function = "PS_PortraitSlotDraw"
+original_bytes = [0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0xc]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp]"
+type = "int"
