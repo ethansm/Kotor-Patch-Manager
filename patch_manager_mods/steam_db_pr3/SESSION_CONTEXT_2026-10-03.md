@@ -102,5 +102,8 @@ Phase 0 (refresh):
 - 10-03 evening: #292/#293/#294 MERGED (16:14Z). #291 has 3 Lane review comments; license fix applied by user
   (4e17f12); local commit 31dd299 (external patches + hooks link) on docs/contributing-guide, NOT pushed;
   reply draft in drafts/followups_291_294.md.
-- NEXT = Phase 4 user gates (+ push 31dd299 and reply on #291): push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
+- Phase 4 (10-03): user approved ONLY the #291 follow-up -> pushed 31dd299, reply posted (issuecomment-5973037915).
+  runscript decision: issue only, let Lane choose; fallback documented in upstream_prs/runscript_classes/FALLBACK.md.
+  NOT approved yet: GameAPI PR, pushing EKC/ACC, filing the issue.
+- NEXT = remaining user gates: push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
   PR; file the issue; runscript/classes decision.
