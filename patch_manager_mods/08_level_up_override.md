@@ -884,3 +884,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
     $TMPDIR, add to .gitignore), doc 07 shared save-binding plan.
   - NEXT phase plan: `research/companion_levelup/PHASE6_PLAN.md` (written at session end).
 
+
+## Session notes - Phase 6 (live run 4 -> 1.0.0 hardening + preset quality + R10 research, started 2026-10-03)
+- Plan: `research/companion_levelup/PHASE6_PLAN.md` (authoritative). Evidence: `research/companion_levelup/phase6_evidence/` (README lists prefixes).
+- Step 0 done. Pre-run-4 baseline re-checked: log 386 lines, live dll e64cb387, `levelup_playthroughs.ini` `[g11b3b802]` present, game closed.
+  Upstream KPM check silent. NEXT = user plays run 4 (V checklist 1-7); meanwhile static agents only (B1/B2 data, C1 Ghidra).
+
