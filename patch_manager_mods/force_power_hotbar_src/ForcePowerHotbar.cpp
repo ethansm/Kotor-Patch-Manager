@@ -20,6 +20,7 @@
 #include <algorithm>
 #include "SafeRead.h"
 #include "Party.h"
+#include "GuiKit.h"
 #include "HotbarConfig.h"
 #include "TwoDA.h"
 #include "Tlk.h"
@@ -408,19 +409,15 @@ volatile bool g_escHit = false;      // set by the input hook when it swallowed 
 Bar g_bar;
 
 // one engine image object per icon resref, created lazily and never released (the border only borrows the pointer).
+// The pool itself now lives in guikit::imageFor (lowercased resref, 256 entries, never released); this wrapper only adds the log lines.
 // INVARIANT: the border owns its fill at +0x74 (border dtor 0x00414C60 / fill setter 0x00414840 delete it), and pooled images are shared
 // between buttons and HUD instances. Safe only because our labels are never destroyed and the fill setter is never called on them;
 // any future cleanup must null border+0x74 before freeing a label.
-struct PoolEntry { char resref[17]; void* image; };
-constexpr int MaxPoolImages = 256;
-PoolEntry g_pool[MaxPoolImages]; int g_poolCount = 0;
 void* imageFor(const char* resref) {
-    for (int i = 0; i < g_poolCount; ++i) if (strcmp(g_pool[i].resref, resref) == 0) return g_pool[i].image;
-    if (g_poolCount >= MaxPoolImages) { logf("img: pool full (%d), cannot load '%s'", g_poolCount, resref); return nullptr; }
-    char buf[20] = {}; strncpy(buf, resref, 16);
-    void* image = reinterpret_cast<LoadImageFn>(FnLoadImage)(buf);
-    PoolEntry& e = g_pool[g_poolCount++]; memset(&e, 0, sizeof e); strncpy(e.resref, resref, 16); e.image = image;
-    logf("img: loaded '%s' -> %p (pool %d)", resref, image, g_poolCount);
+    bool loaded = false; int pool = 0;
+    void* image = guikit::imageFor(resref, &loaded, &pool);
+    if (loaded) logf("img: loaded '%s' -> %p (pool %d)", resref, image, pool);
+    else if (!image && pool >= guikit::ImagePoolSize) logf("img: pool full (%d), cannot load '%s'", pool, resref);
     return image;
 }
 
@@ -443,19 +440,19 @@ void setFill(Button& bt, Widget& b, int slot, const std::string& icon) {
     if (!b.ctl || b.icon == icon) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
-    int bvt = rdInt(S_Border, border, 0);
-    if (bvt != (int)BorderVtable) { logf("btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); return; }
     int old = rdInt(S_Border, border, Border_Fill);
-    *reinterpret_cast<void**>(border + Border_Fill) = image;
+    if (!guikit::setFill(reinterpret_cast<uintptr_t>(b.ctl), image)) {
+        int bvt = rdInt(S_Border, border, 0);
+        logf("btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str());
+        return;
+    }
     VLOG("btn[%d].%s key %c: fill '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, wname(b, bt), slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(S_Border, border, Border_W), rdInt(S_Border, border, Border_H));
     b.icon = icon;
 }
 
 void setAlpha(Button& bt, Widget& b, int slot, float a) {
     if (!b.ctl || b.alpha == a) return;
-    uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
-    if (rdInt(S_Border, border, 0) != (int)BorderVtable) { logf("btn[%d].%s: border vtable bad, not setting alpha", slot, wname(b, bt)); return; }
-    *reinterpret_cast<float*>(border + Border_Alpha) = a;
+    if (!guikit::setAlpha(reinterpret_cast<uintptr_t>(b.ctl), a)) { logf("btn[%d].%s: border vtable bad, not setting alpha", slot, wname(b, bt)); return; }
     VLOG("btn[%d].%s key %c: alpha %.2f -> %.2f", slot, wname(b, bt), slotDigit(slot), b.alpha, a);
     b.alpha = a;
 }
@@ -549,10 +546,7 @@ std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
 
 void setRect(Widget& w, const char* nm, int x, int y, int ww, int hh) {
     if (!w.ctl) return;
-    void** vt = *reinterpret_cast<void***>(w.ctl);
-    if (!saferead::probeRead(S_Geom, vt + 1, 4)) { logf("tip: %s vtable unreadable", nm); return; }
-    int r[4] = { x, y, ww, hh };
-    reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(w.ctl, r);
+    if (!guikit::setRect(reinterpret_cast<uintptr_t>(w.ctl), x, y, ww, hh)) logf("tip: %s vtable unreadable", nm);
 }
 
 void setWidgetVisible(Widget& w, bool vis) {
@@ -574,10 +568,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     g_bar.tipText = text;
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
     if (rdInt(S_Border, tx, 0) != (int)TextVtable || rdInt(S_Border, tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(S_Border, tx, 0), (unsigned)rdInt(S_Border, tx, Text_Renderer)); g_bar.tipSlot = s; return; }
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, text.c_str());
-    reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + Text_StringSub), exo);
-    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+    guikit::setText(tc, text.c_str());
     int lines = 1, maxLen = 0, cur = 0;
     for (char c : text) { if (c == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
     int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
@@ -600,10 +591,9 @@ void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { showTipT
 
 // The same short sound the native quick-action buttons play when the mouse enters them.
 void playHoverSound(const char* why) {
-    void* mgr = nullptr; static int logs = 0;
-    if (!saferead::readAt(S_Misc, GuiSoundMgrGlobal, 0, &mgr) || !mgr) { if (logs < 20) { ++logs; logf("sound: manager null (%s), skipped", why); } return; }
-    reinterpret_cast<void(__thiscall*)(void*, char)>(FnPlayGuiSound)(mgr, 1);
-    if (logs < 40) { ++logs; VLOG("sound: hover (%s) mgr=%p", why, mgr); }
+    static int logs = 0;
+    if (!guikit::playHoverSound()) { if (logs < 20) { ++logs; logf("sound: manager null (%s), skipped", why); } return; }
+    if (logs < 40) { ++logs; void* mgr = nullptr; saferead::readAt(S_Misc, GuiSoundMgrGlobal, 0, &mgr); VLOG("sound: hover (%s) mgr=%p", why, mgr); }
 }
 
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
@@ -613,7 +603,7 @@ void updateHover(bool gate) {
     if (gate && cursorInGame(&pt)) {
         for (int s = 0; s < ButtonCount && over < 0; ++s) {
             const Widget& w = g_bar.b[s].bg; if (!w.ctl || !w.visible) continue;
-            uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(S_Geom, c, 4), y = rdInt(S_Geom, c, 8), ww = rdInt(S_Geom, c, 0xC), hh = rdInt(S_Geom, c, 0x10);
+            uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = 0, y = 0, ww = 0, hh = 0; guikit::getExtent(c, &x, &y, &ww, &hh);
             if (pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh) over = s;
         }
     }
@@ -689,7 +679,6 @@ void updateButtons(uintptr_t hud, bool gate) {
 
 
 // ---- generic widget helpers for the editor controls (log every change) -------------------------------------
-bool textObjOk(Widget& w) { uintptr_t tx = reinterpret_cast<uintptr_t>(w.ctl) + Label_Text; return rdInt(S_Border, tx, 0) == (int)TextVtable && rdInt(S_Border, tx, Text_Renderer) != 0; }
 void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
     if (!w.ctl) return;
     int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) { logf("edit: %s flags unreadable", nm); return; }
@@ -703,35 +692,26 @@ void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
 }
 void wFill(Widget& w, const char* nm, const std::string& icon) {
     if (!w.ctl || w.icon == icon) return;
-    uintptr_t border = reinterpret_cast<uintptr_t>(w.ctl) + Label_Border;
-    if (rdInt(S_Border, border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
-    *reinterpret_cast<void**>(border + Border_Fill) = image;
+    if (!guikit::setFill(reinterpret_cast<uintptr_t>(w.ctl), image)) { logf("edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
     VLOG("edit: %s fill '%s' -> '%s' image=%p", nm, w.icon.c_str(), icon.c_str(), image);
     w.icon = icon;
 }
 void wAlpha(Widget& w, const char* nm, float a) {
     if (!w.ctl || w.alpha == a) return;
-    uintptr_t border = reinterpret_cast<uintptr_t>(w.ctl) + Label_Border;
-    if (rdInt(S_Border, border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting alpha", nm); return; }
-    *reinterpret_cast<float*>(border + Border_Alpha) = a;
+    if (!guikit::setAlpha(reinterpret_cast<uintptr_t>(w.ctl), a)) { logf("edit: %s border vtable bad, not setting alpha", nm); return; }
     VLOG("edit: %s alpha %.2f -> %.2f", nm, w.alpha, a);
     w.alpha = a;
 }
 void wText(Widget& w, const char* nm, const std::string& text) {
     if (!w.ctl || w.text == text) return;
-    if (!textObjOk(w)) { logf("edit: %s text object bad, cannot set \"%s\"", nm, text.c_str()); return; }
-    uintptr_t tx = reinterpret_cast<uintptr_t>(w.ctl) + Label_Text;
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, text.c_str());
-    reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + Text_StringSub), exo);
-    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
+    if (!guikit::setText(reinterpret_cast<uintptr_t>(w.ctl), text.c_str())) { logf("edit: %s text object bad, cannot set \"%s\"", nm, text.c_str()); return; }
     VLOG("edit: %s text \"%s\" -> \"%s\"", nm, w.text.c_str(), text.c_str());
     w.text = text;
 }
 bool wHit(const Widget& w, const POINT& pt) {
     if (!w.ctl || w.visible != 1) return false;
-    uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(S_Geom, c, 4), y = rdInt(S_Geom, c, 8), ww = rdInt(S_Geom, c, 0xC), hh = rdInt(S_Geom, c, 0x10);
+    uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = 0, y = 0, ww = 0, hh = 0; guikit::getExtent(c, &x, &y, &ww, &hh);
     return pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh;
 }
 
@@ -987,50 +967,44 @@ using SetUIntFn = void(__thiscall*)(void*, unsigned);
 // Creates one label from its Layout[] spec and appends it to the panel's control list. Returns nullptr (label not in the list) on
 // any failure; the caller then leaves that part of the bar/editor disabled.
 unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
-    unsigned char* ctl = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(LabelSize));
-    if (!ctl) { logf("H3 %s: allocation failed", sp.name); return nullptr; }
-    memset(ctl, 0, LabelSize);
-    reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
-    uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
-    if (rdInt(S_Create, c, 0) != (int)LabelVtable) { logf("H3 %s: ctor left vtable %08x (expected %08x), not created", sp.name, (unsigned)rdInt(S_Create, c, 0), (unsigned)LabelVtable); return nullptr; }
-    *reinterpret_cast<int*>(ctl + Ctl_Id) = IdSentinel;
-    char exo[16] = {0};
-    reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, TemplateTags[sp.tmpl]);
-    reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 0, 1);
-    reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
-    if (rdInt(S_Create, c, Ctl_Id) == IdSentinel) { logf("H3 %s: template %s not in the HUD layout, control not created", sp.name, TemplateTags[sp.tmpl]); return nullptr; }
+    int why = guikit::CF_None; uint32_t badVt = 0;
+    uintptr_t c = guikit::createLabelFromTemplate(panel, TemplateTags[sp.tmpl], &why, &badVt);
+    if (!c) {
+        switch (why) {
+            case guikit::CF_Alloc: logf("H3 %s: allocation failed", sp.name); break;
+            case guikit::CF_Vtable: logf("H3 %s: ctor left vtable %08x (expected %08x), not created", sp.name, (unsigned)badVt, (unsigned)LabelVtable); break;
+            case guikit::CF_Template: logf("H3 %s: template %s not in the HUD layout, control not created", sp.name, TemplateTags[sp.tmpl]); break;
+            default: logf("H3 %s: panel control count unreadable, control not created", sp.name); break;   // CF_Count / CF_Flags
+        }
+        return nullptr;
+    }
+    unsigned char* ctl = reinterpret_cast<unsigned char*>(c);
     int index = rdInt(S_Create, panel, Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
     if (index < 0) { logf("H3 %s: panel control count unreadable, control not created", sp.name); return nullptr; }
-    *reinterpret_cast<int*>(ctl + Ctl_Id) = index;
     const Scale& k = g_scale;
     int r[4] = { (int)((int)(sp.x * k.sx) * k.c + 0.5), (int)(sp.y * k.sy), (int)((int)(sp.w * k.sx) * k.c + 0.5), (int)(sp.h * k.sy) };
-    reinterpret_cast<void(__thiscall*)(void*, int*)>((*reinterpret_cast<void***>(ctl))[1])(ctl, r);
-    void* ts = ctl + Label_Text + Text_StringSub;
-    if (sp.font) { char rr[16] = {0}; strncpy(rr, sp.font, sizeof rr); reinterpret_cast<SetResFn>(FnSetFont)(ts, rr); }
-    if (sp.text) {
-        char ex[16] = {0};
-        reinterpret_cast<CExoCtorFn>(FnExoCtor)(ex, sp.text);
-        reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(ts, ex);
-        reinterpret_cast<CExoDtorFn>(FnExoDtor)(ex);
-    }
-    if (sp.align >= 0) reinterpret_cast<SetUIntFn>(FnSetAlign)(ts, (unsigned)sp.align);
+    guikit::setRect(c, r[0], r[1], r[2], r[3]);
+    bool textOk = true;
+    if (sp.font) textOk &= guikit::setFont(c, sp.font);
+    if (sp.text) textOk &= guikit::setText(c, sp.text);
+    if (sp.align >= 0) textOk &= guikit::setAlign(c, (unsigned)sp.align);
+    if (!textOk) logf("H3 %s: text object bad, font/text/align not applied", sp.name);
     uintptr_t border = c + Label_Border;
     if (sp.fill) {
         if (rdInt(S_Create, border, Border_Fill)) logf("H3 %s: template already has a fill, keeping it", sp.name);
-        else *reinterpret_cast<void**>(border + Border_Fill) = imageFor(sp.fill);
+        else guikit::setFill(c, imageFor(sp.fill));
     }
-    int fl = rdInt(S_Create, c, Ctl_Flags);
     // Hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so a hidden control never
     // swallows clicks; the tick clears it on shown frames/editor controls so clicks on the bar do not reach the world.
-    *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
-    reinterpret_cast<PtrListAddFn>(FnPtrListAdd)(reinterpret_cast<void*>(panel + Panel_CtlArray), ctl);
-    int cnt = rdInt(S_Create, panel, Panel_CtlCount, -1);
-    if (cnt != index + 1 || rdInt(S_Create, static_cast<uintptr_t>(rdInt(S_Create, panel, Panel_CtlArray)), index * 4) != static_cast<int>(c)) {
+    guikit::setVisible(c, false);
+    if (!guikit::appendToPanel(panel, c)) {
+        int cnt = rdInt(S_Create, panel, Panel_CtlCount, -1);
         logf("H3 %s: append to the panel list failed (count %d -> %d), control not used", sp.name, index, cnt); return nullptr;
     }
     float ba = 1.0f; saferead::readAt(S_Create, border, Border_Alpha, &ba);
+    int ex = 0, ey = 0, ew = 0, eh = 0; guikit::getExtent(c, &ex, &ey, &ew, &eh);
     VLOG("H3 %s: created at index %d from %s rect=[%d,%d,%d,%d] fill=%s text=%s", sp.name, index, TemplateTags[sp.tmpl],
-         rdInt(S_Create, c, 4), rdInt(S_Create, c, 8), rdInt(S_Create, c, 0xC), rdInt(S_Create, c, 0x10), sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
+         ex, ey, ew, eh, sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
     w->ctl = ctl; w->baseAlpha = ba; w->visible = 0; w->why = "built";
     w->icon = sp.fill ? sp.fill : ""; w->text = sp.text ? sp.text : "";
     return ctl;
