@@ -21,6 +21,9 @@ live patcher first.
 User direction: "we need to create a new category of shared functionality so this is treated differently than just a patch. Other mods, to be compatible would likely leverage these as well. Would this be cross compatible between Gog/steam? or do we need to plan and accomodate for that as well?"
 Answer so far: the interface (k2.portraitslots v1) is version-neutral, but every binary we built hardcodes Steam addresses (hook sites, engine functions, struct offsets), so GOG needs per-version hooks files + a per-version address table (or GameAPI DB lookups). KPM already selects kotor2-gog-aspyr.hooks.toml per version. Plan: see the plan file of the next session (library category in KPM manifest/installer + version-table refactor + GOG RE).
 
+## GOG callout rule (user, 10-03)
+Every future issue / PR / RFC #180 comment that mentions these libraries or GOG support must state: "GOG support is static-verified only (no GOG install here); **GOG contributor testing is required** before it is considered supported", plus the test list. Canonical text: `portrait_slots_src/PULL_REQUEST.md` "GOG support callout" (also in buff/shield PULL_REQUEST.md and `19a_rfc180_comment_DRAFT.md`). GOG status of the split set: **untested live**.
+
 ## Architecture
 ```
 _shared_src/ (synced to KPM Patches/Common by scripts/check_shared_headers.py --sync; *.inc included since W2)
