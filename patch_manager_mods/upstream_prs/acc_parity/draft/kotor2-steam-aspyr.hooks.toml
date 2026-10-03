@@ -1,0 +1,18 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Runs once the engine's static ConsoleFunc objects exist: PUSH hInstance (0x400000) in
+# ___tmainCRTStartup, just before the WinMain call and after __cinit
+[[hooks]]
+address = 0x0091D52D
+function = "InitializeAdditionalCommands"
+original_bytes = [0x68, 0x00, 0x00, 0x40, 0x00]
+type = "detour"
+exclude_from_restore = []
+
+# Set Console History to save
+[[hooks]]
+address = 0x004752D8
+type = "simple"
+original_bytes = [0x0F, 0xB6, 0x15, 0x28, 0x08, 0xA3, 0x00]
+replacement_bytes = [0xBA, 0x01, 0x00, 0x00, 0x00, 0x90, 0x90]

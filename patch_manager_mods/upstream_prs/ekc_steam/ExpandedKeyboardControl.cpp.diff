@@ -1,0 +1,227 @@
+--- a/Patches/ExpandedKeyboardControl/ExpandedKeyboardControl.cpp
++++ b/Patches/ExpandedKeyboardControl/ExpandedKeyboardControl.cpp
+@@ -1,6 +1,10 @@
++#define WIN32_LEAN_AND_MEAN
++#include <windows.h>
++
+ #include <array>
+ #include <cstddef>
+ #include <cstdint>
++#include <cstring>
+ 
+ namespace {
+ 
+@@ -121,8 +125,6 @@
+ constexpr std::uintptr_t K1_FEATS_SELECT_CALLBACK = 0x00624BA0;
+ constexpr std::ptrdiff_t K1_POWERS_SELECT_OFFSET = 0x1470;
+ constexpr std::uintptr_t K1_POWERS_SELECT_CALLBACK = 0x00624BC0;
+-constexpr std::uintptr_t K2_INVENTORY_PANEL_VTABLE = 0x00992994;
+-constexpr std::uintptr_t K2_JOURNAL_PANEL_VTABLE = 0x00992274;
+ constexpr std::uintptr_t K1_MOVIE_PLAYER_POINTER = 0x007A3CF4;
+ constexpr std::uintptr_t K1_CANCEL_MOVIE = 0x00404C40;
+ constexpr std::uint32_t WM_KEYDOWN_MESSAGE = 0x0100;
+@@ -157,6 +159,8 @@
+     std::uintptr_t activate;
+     std::uintptr_t cancelLastAction;
+     std::uintptr_t handleGuiInputEvent;
++    std::uintptr_t inventoryPanelVtable;
++    std::uintptr_t journalPanelVtable;
+ };
+ 
+ constexpr std::ptrdiff_t MANAGER_PANEL_LIST_OFFSET = 0x0088;
+@@ -186,9 +190,11 @@
+     0x0068B970,
+     0x00688790,
+     0x0040C8E0,
++    0,
++    0,
+ };
+ 
+-constexpr GameConfig K2_CONFIG = {
++constexpr GameConfig K2_GOG_CONFIG = {
+     0x1C, 0x20, 0x48, 0xCC, 0x733C, 0x750,
+     {0x000, 0x1D0, 0x3A0, 0x570},
+     6,
+@@ -206,8 +212,57 @@
+     0x00522E30,
+     0x00523AE0,
+     0x0090EF20,
++    0x00992994,
++    0x00992274,
++};
++
++// Steam Aspyr (6A522E71...): same struct layouts and event ids as GOG, different addresses.
++constexpr GameConfig K2_STEAM_CONFIG = {
++    0x1C, 0x20, 0x48, 0xCC, 0x733C, 0x750,
++    {0x000, 0x1D0, 0x3A0, 0x570},
++    6,
++    0x0099E5EC,
++    0x009A044C,
++    0x009A7BAC,
++    0x0099C884,
++    0x004190A0,
++    0x0040EC00,
++    0x0074B3A0,
++    0x00751C30,
++    0x00751CE0,
++    0x00751D90,
++    0x00751E40,
++    0x007516B0,
++    0x00752360,
++    0x00410AA0,
++    0x009A72AC,
++    0x009A24DC,
+ };
+ 
++// KotorPatcher exports the target build's SHA-256 as KOTOR_VERSION_SHA before it loads any
++// patch module, so one module can serve both K2 builds without opening addresses.db.
++constexpr char K2_STEAM_SHA[] =
++    "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF";
++
++bool IsSteamBuild()
++{
++    char sha[128] = {};
++    const DWORD length = GetEnvironmentVariableA(
++        "KOTOR_VERSION_SHA", sha, sizeof(sha));
++    return length == sizeof(K2_STEAM_SHA) - 1 &&
++        _stricmp(sha, K2_STEAM_SHA) == 0;
++}
++
++// Anything that is not the Steam build keeps the GOG addresses it always used.
++const GameConfig& K2Config()
++{
++    static const GameConfig* config = nullptr;
++    if (!config) {
++        config = IsSteamBuild() ? &K2_STEAM_CONFIG : &K2_GOG_CONFIG;
++    }
++    return *config;
++}
++
+ using ActionButtons = std::array<void*, MAX_ACTION_BUTTON_COUNT>;
+ using GetIsSelectableFn = bool(__thiscall*)(void*);
+ using SetActiveControlFn = void(__thiscall*)(void*, void*, int);
+@@ -289,9 +344,10 @@
+ bool IsK2FilterPanel(void* panel)
+ {
+     std::uintptr_t vtable = *reinterpret_cast<std::uintptr_t*>(panel);
+-    return vtable == K2_INVENTORY_PANEL_VTABLE ||
+-        vtable == K2_JOURNAL_PANEL_VTABLE ||
+-        vtable == K2_CONFIG.inGameMessagePanelVtable;
++    const GameConfig& config = K2Config();
++    return vtable == config.inventoryPanelVtable ||
++        vtable == config.journalPanelVtable ||
++        vtable == config.inGameMessagePanelVtable;
+ }
+ 
+ void* FindK2FilterPanel(void* manager)
+@@ -300,7 +356,7 @@
+         ReadPointer(manager, MANAGER_MODAL_LIST_OFFSET));
+     int modalCount = ReadInt(manager, MANAGER_MODAL_COUNT_OFFSET);
+     for (int i = modalCount - 1; i >= 0; --i) {
+-        if (!IsIgnoredByInput(K2_CONFIG, modalPanels[i]) &&
++        if (!IsIgnoredByInput(K2Config(), modalPanels[i]) &&
+             IsK2FilterPanel(modalPanels[i])) {
+             return modalPanels[i];
+         }
+@@ -310,7 +366,7 @@
+         ReadPointer(manager, MANAGER_PANEL_LIST_OFFSET));
+     int panelCount = ReadInt(manager, MANAGER_PANEL_COUNT_OFFSET);
+     for (int i = panelCount - 1; i >= 0; --i) {
+-        if (!IsIgnoredByInput(K2_CONFIG, panels[i]) &&
++        if (!IsIgnoredByInput(K2Config(), panels[i]) &&
+             IsK2FilterPanel(panels[i])) {
+             return panels[i];
+         }
+@@ -971,35 +1027,35 @@
+     const int inputDevice = *reinterpret_cast<const int*>(
+         static_cast<const std::uint8_t*>(getEventsFrame) - 0x10);
+     if (input &&
+-        inputDevice == *reinterpret_cast<int*>(K2_CONFIG.keyboardDeviceIndex) &&
++        inputDevice == *reinterpret_cast<int*>(K2Config().keyboardDeviceIndex) &&
+         input->offset == DIK_DELETE) {
+         void* mainInterface = g_mainInterface;
+         void* manager = mainInterface
+-            ? ReadPointer(mainInterface, K2_CONFIG.panelManagerOffset)
++            ? ReadPointer(mainInterface, K2Config().panelManagerOffset)
+             : nullptr;
+         if (!manager ||
+-            !IsGameplayHudActive(K2_CONFIG, manager, mainInterface)) {
++            !IsGameplayHudActive(K2Config(), manager, mainInterface)) {
+             input->offset = DIK_ESCAPE;
+             return;
+         }
+     }
+ 
+-    CaptureActionBarInput(K2_CONFIG, input, inputDevice);
++    CaptureActionBarInput(K2Config(), input, inputDevice);
+     if (input &&
+-        inputDevice == *reinterpret_cast<int*>(K2_CONFIG.keyboardDeviceIndex) &&
++        inputDevice == *reinterpret_cast<int*>(K2Config().keyboardDeviceIndex) &&
+         (input->value & KEY_PRESSED) != 0) {
+         void* mainInterface = g_mainInterface;
+         void* manager = mainInterface
+-            ? ReadPointer(mainInterface, K2_CONFIG.panelManagerOffset)
++            ? ReadPointer(mainInterface, K2Config().panelManagerOffset)
+             : nullptr;
+         if (!manager) {
+             return;
+         }
+         if (input->offset == DIK_SPACE &&
+-            !IsGameplayHudActive(K2_CONFIG, manager, mainInterface)) {
++            !IsGameplayHudActive(K2Config(), manager, mainInterface)) {
+             g_pendingInput |= PENDING_CONTROLLER_X;
+         } else if (!IsGameplayHudActive(
+-                       K2_CONFIG,
++                       K2Config(),
+                        manager,
+                        mainInterface) &&
+                    FindK2FilterPanel(manager)) {
+@@ -1033,7 +1089,7 @@
+ 
+ extern "C" void __cdecl UpdateActionBarControlsK2(void* mainInterface)
+ {
+-    UpdateActionBarControls(K2_CONFIG, mainInterface);
++    UpdateActionBarControls(K2Config(), mainInterface);
+ }
+ 
+ extern "C" void __cdecl MapMovieDeleteToEscapeK2(void* movieWindowFrame)
+@@ -1323,10 +1379,10 @@
+     g_pendingInput &= ~PENDING_CONTEXT_INPUT;
+     void* mainInterface = g_mainInterface;
+     void* manager = mainInterface
+-        ? ReadPointer(mainInterface, K2_CONFIG.panelManagerOffset)
++        ? ReadPointer(mainInterface, K2Config().panelManagerOffset)
+         : nullptr;
+     if ((pending & PENDING_CONTROLLER_X) != 0 && manager) {
+-        reinterpret_cast<HandleInputEventFn>(K2_CONFIG.handleGuiInputEvent)(
++        reinterpret_cast<HandleInputEventFn>(K2Config().handleGuiInputEvent)(
+             manager,
+             K2_GUI_CONTROLLER_X_EVENT,
+             1);
+@@ -1340,11 +1396,11 @@
+     }
+     if ((pending & PENDING_CONTEXT_CANCEL) != 0 &&
+         manager &&
+-        IsGameplayHudActive(K2_CONFIG, manager, mainInterface)) {
+-        reinterpret_cast<CancelLastActionFn>(K2_CONFIG.cancelLastAction)(
++        IsGameplayHudActive(K2Config(), manager, mainInterface)) {
++        reinterpret_cast<CancelLastActionFn>(K2Config().cancelLastAction)(
+             mainInterface);
+     } else if ((pending & PENDING_CONTEXT_CANCEL) != 0 && manager) {
+-        reinterpret_cast<HandleInputEventFn>(K2_CONFIG.handleGuiInputEvent)(
++        reinterpret_cast<HandleInputEventFn>(K2Config().handleGuiInputEvent)(
+             manager,
+             DIK_ESCAPE,
+             1);
+@@ -1407,9 +1463,9 @@
+     int mouseY = ReadInt(mainInterface, 0x10) -
+         ReadInt(inputInternal, 0x3E8);
+     void* hoveredControl = reinterpret_cast<K2GetControlAtFn>(
+-        K2_CONFIG.getControlAt)(mainInterface, mouseX, mouseY);
++        K2Config().getControlAt)(mainInterface, mouseX, mouseY);
+     ClearActionBarKeyboardFocus(
+-        K2_CONFIG,
++        K2Config(),
+         mainInterface,
+         hoveredControl);
+ }

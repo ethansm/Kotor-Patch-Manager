@@ -1,0 +1,218 @@
+patch	idx	gog_addr	type	function	len	class	exact_n	same_va	masked_n	delta_if_unique	ctx_hit	exact_vas	mask_pattern	original_bytes
+PartyRosterLimit32K2	0	0x0058be29	simple		5	exact-unique@moved	1	0	142031	+0x3124f0	95 cands	0x89e319	e8xxxxxxxx	e8 42 26 00 00
+PartyRosterLimit32K2	1	0x004cfea4	simple		4	exact-multiple	4	0				0x46ee88,0x7bf814,0x7cba6e,0x7d096c		b4 50 00 00
+PartyRosterLimit32K2	2	0x004dc16e	simple		4	exact-multiple	4	0				0x46ee88,0x7bf814,0x7cba6e,0x7d096c		b4 50 00 00
+PartyRosterLimit32K2	3	0x004e106c	simple		4	exact-multiple	4	0				0x46ee88,0x7bf814,0x7cba6e,0x7d096c		b4 50 00 00
+PartyRosterLimit32K2	4	0x0058aad1	simple		4	exact-multiple	5	0			2 cands	0x89cfc1,0x89d383,0x89dddb,0x976e9f		24 36 00 00
+PartyRosterLimit32K2	5	0x0058aae6	simple		4	exact-multiple	13	0			0x89cfd6	0x51d8f0,0x89cfd6,0x89d568,0x89d90d		6c 37 00 00
+PartyRosterLimit32K2	6	0x0058aafb	simple		4	exact-multiple	8	0			2 cands	0x89cfeb,0x89d3c0,0x89dd83,0x89f593		3c 39 00 00
+PartyRosterLimit32K2	7	0x0058ab10	simple		4	exact-multiple	8	0			2 cands	0x89d000,0x89d3fc,0x89dd3d,0x89f5c6		84 3a 00 00
+PartyRosterLimit32K2	8	0x0058ab24	simple		4	exact-multiple	22	0			0x89d014	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	9	0x0058ab74	simple		4	exact-multiple	5	0			0x89d064	0x89d064,0x89d476,0x89dcf7,0x976f0a		60 3c 00 00
+PartyRosterLimit32K2	10	0x0058ab8a	simple		4	exact-multiple	10	0			0x89d07a	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	11	0x0058ab9f	simple		4	exact-multiple	9	0			0x89d08f	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	12	0x0058abc4	simple		4	exact-multiple	6	0			0x89d0b4	0x788a84,0x89d0b4,0x89d636,0x89dcb5		fc 48 00 00
+PartyRosterLimit32K2	13	0x0058abda	simple		4	exact-multiple	4	0			0x89d0ca	0x89d0ca,0x89d793,0x89dc63,0x976f5d		64 4f 00 00
+PartyRosterLimit32K2	14	0x0058ae93	simple		4	exact-multiple	5	0			2 cands	0x89cfc1,0x89d383,0x89dddb,0x976e9f		24 36 00 00
+PartyRosterLimit32K2	15	0x0058aed0	simple		4	exact-multiple	8	0			2 cands	0x89cfeb,0x89d3c0,0x89dd83,0x89f593		3c 39 00 00
+PartyRosterLimit32K2	16	0x0058af0c	simple		4	exact-multiple	8	0			2 cands	0x89d000,0x89d3fc,0x89dd3d,0x89f5c6		84 3a 00 00
+PartyRosterLimit32K2	17	0x0058af49	simple		4	exact-multiple	22	0			0x89d439	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	18	0x0058af86	simple		4	exact-multiple	5	0			0x89d476	0x89d064,0x89d476,0x89dcf7,0x976f0a		60 3c 00 00
+PartyRosterLimit32K2	19	0x0058afc2	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d4b2	0x89d4b2		38 40 00 00
+PartyRosterLimit32K2	20	0x0058afff	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d4ef	0x89d4ef		80 41 00 00
+PartyRosterLimit32K2	21	0x0058b03c	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d52c	0x89d52c		10 44 00 00
+PartyRosterLimit32K2	22	0x0058b078	simple		4	exact-multiple	13	0			3 cands	0x51d8f0,0x89cfd6,0x89d568,0x89d90d		6c 37 00 00
+PartyRosterLimit32K2	23	0x0058b0bb	simple		4	exact-multiple	10	0			4 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	24	0x0058b101	simple		4	exact-multiple	9	0			3 cands	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	25	0x0058b146	simple		4	exact-multiple	6	0			0x89d636	0x788a84,0x89d0b4,0x89d636,0x89dcb5		fc 48 00 00
+PartyRosterLimit32K2	26	0x0058b18c	simple		4	exact-multiple	2	0			0x89d67c	0x5e9d68,0x89d67c		44 4a 00 00
+PartyRosterLimit32K2	27	0x0058b1d2	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d6c2	0x89d6c2		8c 4b 00 00
+PartyRosterLimit32K2	28	0x0058b217	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d707	0x89d707		d4 4c 00 00
+PartyRosterLimit32K2	29	0x0058b25d	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d74d	0x89d74d		1c 4e 00 00
+PartyRosterLimit32K2	30	0x0058b2a3	simple		4	exact-multiple	4	0			0x89d793	0x89d0ca,0x89d793,0x89dc63,0x976f5d		64 4f 00 00
+PartyRosterLimit32K2	31	0x0058b2ca	simple		4	exact-multiple	2	0			0x89d7ba	0x5d6158,0x89d7ba		44 3c 00 00
+PartyRosterLimit32K2	32	0x0058b2d9	simple		4	exact-multiple	25	0			0x89d7c9	0x404be6,0x491b7a,0x493398,0x49910c		40 3c 00 00
+PartyRosterLimit32K2	33	0x0058b36a	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d85a	0x89d85a		2c 3c 00 00
+PartyRosterLimit32K2	34	0x0058b3c2	simple		4	exact-multiple	22	0			0x89d8b2	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	35	0x0058b403	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89d8f3	0x89d8f3		48 43 00 00
+PartyRosterLimit32K2	36	0x0058b41d	simple		4	exact-multiple	13	0			4 cands	0x51d8f0,0x89cfd6,0x89d568,0x89d90d		6c 37 00 00
+PartyRosterLimit32K2	37	0x0058b430	simple		4	exact-multiple	13	0			4 cands	0x51d8f0,0x89cfd6,0x89d568,0x89d90d		6c 37 00 00
+PartyRosterLimit32K2	38	0x0058b446	simple		4	exact-multiple	10	0			5 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	39	0x0058b45b	simple		4	exact-multiple	10	0			5 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	40	0x0058b49a	simple		4	exact-multiple	10	0			5 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	41	0x0058b4ab	simple		4	exact-multiple	9	0			4 cands	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	42	0x0058b4ea	simple		4	exact-multiple	9	0			4 cands	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	43	0x0058b4fb	simple		4	exact-multiple	23	0			0x89d9eb	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	44	0x0058b50b	simple		4	exact-multiple	13	0			4 cands	0x51d8f0,0x89cfd6,0x89d568,0x89d90d		6c 37 00 00
+PartyRosterLimit32K2	45	0x0058b53c	simple		4	exact-multiple	11	0			0x89da2c	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	46	0x0058b566	simple		4	exact-multiple	7	0			0x89da56	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	47	0x0058b773	simple		4	exact-multiple	4	0			0x89dc63	0x89d0ca,0x89d793,0x89dc63,0x976f5d		64 4f 00 00
+PartyRosterLimit32K2	48	0x0058b7c5	simple		4	exact-multiple	6	0			0x89dcb5	0x788a84,0x89d0b4,0x89d636,0x89dcb5		fc 48 00 00
+PartyRosterLimit32K2	49	0x0058b7d8	simple		4	exact-multiple	9	0			3 cands	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	50	0x0058b7ea	simple		4	exact-multiple	10	0			4 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	51	0x0058b807	simple		4	exact-multiple	5	0			0x89dcf7	0x89d064,0x89d476,0x89dcf7,0x976f0a		60 3c 00 00
+PartyRosterLimit32K2	52	0x0058b81a	simple		4	exact-multiple	22	0			0x89dd0a	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	53	0x0058b84d	simple		4	exact-multiple	8	0			0x89dd3d	0x89d000,0x89d3fc,0x89dd3d,0x89f5c6		84 3a 00 00
+PartyRosterLimit32K2	54	0x0058b893	simple		4	exact-multiple	8	0			0x89dd83	0x89cfeb,0x89d3c0,0x89dd83,0x89f593		3c 39 00 00
+PartyRosterLimit32K2	55	0x0058b8d9	simple		4	exact-multiple	13	0			2 cands	0x51d8f0,0x89cfd6,0x89d568,0x89d90d		6c 37 00 00
+PartyRosterLimit32K2	56	0x0058b8eb	simple		4	exact-multiple	5	0			0x89dddb	0x89cfc1,0x89d383,0x89dddb,0x976e9f		24 36 00 00
+PartyRosterLimit32K2	57	0x0058bbe8	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	58	0x0058bbf4	simple		4	exact-multiple	7	0			5 cands	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	59	0x0058bc5f	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	60	0x0058bc6f	simple		4	exact-multiple	7	0			5 cands	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	61	0x0058bc7f	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	62	0x0058bcb3	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	63	0x0058bcc3	simple		4	exact-multiple	7	0			5 cands	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	64	0x0058bcd3	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	65	0x0058bd07	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	66	0x0058bd17	simple		4	exact-multiple	7	0			5 cands	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	67	0x0058bd33	simple		4	exact-multiple	11	0			7 cands	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	68	0x0058bd43	simple		4	exact-multiple	7	0			5 cands	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	69	0x0058bd7c	simple		4	exact-multiple	2	0			2 cands	0x89e26c,0x89e2a8		d0 46 00 00
+PartyRosterLimit32K2	70	0x0058bd8d	simple		4	exact-multiple	3	0			2 cands	0x72affc,0x89e27d,0x89e2b9		f0 45 00 00
+PartyRosterLimit32K2	71	0x0058bdb8	simple		4	exact-multiple	2	0			2 cands	0x89e26c,0x89e2a8		d0 46 00 00
+PartyRosterLimit32K2	72	0x0058bdc9	simple		4	exact-multiple	3	0			2 cands	0x72affc,0x89e27d,0x89e2b9		f0 45 00 00
+PartyRosterLimit32K2	73	0x0058c459	simple		4	exact-multiple	10	0			2 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	74	0x0058c487	simple		4	exact-multiple	10	0			2 cands	0x89d07a,0x89d5ab,0x89d936,0x89d94b		58 45 00 00
+PartyRosterLimit32K2	75	0x0058c681	simple		4	exact-multiple	11	0			0x89eb71	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	76	0x0058c6c7	simple		4	exact-multiple	7	0			0x89ebb7	0x89da56,0x89e0e4,0x89e15f,0x89e1b3		b0 50 00 00
+PartyRosterLimit32K2	77	0x0058c72a	simple		4	exact-multiple	9	0			0x89ec1a	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	78	0x0058c738	simple		4	exact-multiple	23	0			2 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	79	0x0058c74f	simple		4	exact-multiple	23	0			2 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	80	0x0058ca97	simple		4	exact-multiple	11	0			0x89ef87	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	81	0x0058ceaa	simple		4	exact-multiple	25	0			0x89f39a	0x404be6,0x491b7a,0x493398,0x49910c		40 3c 00 00
+PartyRosterLimit32K2	82	0x0058cee1	simple		4	exact-multiple	22	0			3 cands	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	83	0x0058d03c	simple		4	exact-multiple	2	0			2 cands	0x89f52c,0x89f68e		2c 3a 00 00
+PartyRosterLimit32K2	84	0x0058d060	simple		4	exact-multiple	2	0			2 cands	0x89f550,0x89f6cf		74 3b 00 00
+PartyRosterLimit32K2	85	0x0058d071	simple		4	exact-multiple	22	0			4 cands	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	86	0x0058d0a3	simple		4	exact-multiple	8	0			3 cands	0x89cfeb,0x89d3c0,0x89dd83,0x89f593		3c 39 00 00
+PartyRosterLimit32K2	87	0x0058d0d6	simple		4	exact-multiple	8	0			3 cands	0x89d000,0x89d3fc,0x89dd3d,0x89f5c6		84 3a 00 00
+PartyRosterLimit32K2	88	0x0058d128	simple		4	exact-multiple	7	0			4 cands	0x84d625,0x89f618,0x89f630,0x89f78c		e0 3f 00 00
+PartyRosterLimit32K2	89	0x0058d140	simple		4	exact-multiple	7	0			4 cands	0x84d625,0x89f618,0x89f630,0x89f78c		e0 3f 00 00
+PartyRosterLimit32K2	90	0x0058d19e	simple		4	exact-multiple	2	0			2 cands	0x89f52c,0x89f68e		2c 3a 00 00
+PartyRosterLimit32K2	91	0x0058d1df	simple		4	exact-multiple	2	0			2 cands	0x89f550,0x89f6cf		74 3b 00 00
+PartyRosterLimit32K2	92	0x0058d201	simple		4	exact-multiple	8	0			3 cands	0x89cfeb,0x89d3c0,0x89dd83,0x89f593		3c 39 00 00
+PartyRosterLimit32K2	93	0x0058d234	simple		4	exact-multiple	8	0			3 cands	0x89d000,0x89d3fc,0x89dd3d,0x89f5c6		84 3a 00 00
+PartyRosterLimit32K2	94	0x0058d267	simple		4	exact-multiple	22	0			4 cands	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	95	0x0058d29c	simple		4	exact-multiple	7	0			4 cands	0x84d625,0x89f618,0x89f630,0x89f78c		e0 3f 00 00
+PartyRosterLimit32K2	96	0x0058d2ba	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	97	0x0058d2c9	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	98	0x0058d2da	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	99	0x0058d2ed	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	100	0x0058d2fb	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	101	0x0058d317	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	102	0x0058d323	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	103	0x0058d33f	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	104	0x0058d34d	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	105	0x0058d359	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	106	0x0058d377	simple		4	exact-multiple	22	0			3 cands	0x89d014,0x89d439,0x89d8b2,0x89dd0a		cc 3b 00 00
+PartyRosterLimit32K2	107	0x0058d3a6	simple		4	exact-multiple	8	0			3 cands	0x89cfeb,0x89d3c0,0x89dd83,0x89f593		3c 39 00 00
+PartyRosterLimit32K2	108	0x0058d3d6	simple		4	exact-multiple	8	0			3 cands	0x89d000,0x89d3fc,0x89dd3d,0x89f5c6		84 3a 00 00
+PartyRosterLimit32K2	109	0x0058d40b	simple		4	exact-multiple	7	0			4 cands	0x84d625,0x89f618,0x89f630,0x89f78c		e0 3f 00 00
+PartyRosterLimit32K2	110	0x0058d429	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	111	0x0058d438	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	112	0x0058d44b	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	113	0x0058d459	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	114	0x0058d473	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	115	0x0058d47f	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	116	0x0058d498	simple		4	exact-multiple	23	0			17 cands	0x5e64b4,0x74f651,0x89d9eb,0x89ec28		f8 48 00 00
+PartyRosterLimit32K2	117	0x0058d628	simple		4	exact-unique@moved	1	0		+0x3124f0	0x89fb18	0x89fb18		14 37 00 00
+PartyRosterLimit32K2	118	0x0058e387	simple		4	exact-multiple	7	0			2 cands	0x84d625,0x89f618,0x89f630,0x89f78c		e0 3f 00 00
+PartyRosterLimit32K2	119	0x0058e39a	simple		4	exact-multiple	5	0			4 cands	0x41369c,0x8a088a,0x8a08b2,0x8a08e0		a0 48 00 00
+PartyRosterLimit32K2	120	0x0058e3af	simple		4	exact-multiple	7	0			2 cands	0x84d625,0x89f618,0x89f630,0x89f78c		e0 3f 00 00
+PartyRosterLimit32K2	121	0x0058e3c2	simple		4	exact-multiple	5	0			4 cands	0x41369c,0x8a088a,0x8a08b2,0x8a08e0		a0 48 00 00
+PartyRosterLimit32K2	122	0x0058e3df	simple		4	exact-multiple	11	0			0x8a08cf	0x89da2c,0x89e0d8,0x89e14f,0x89e16f		ac 50 00 00
+PartyRosterLimit32K2	123	0x0058e3f0	simple		4	exact-multiple	5	0			4 cands	0x41369c,0x8a088a,0x8a08b2,0x8a08e0		a0 48 00 00
+PartyRosterLimit32K2	124	0x0058e3fe	simple		4	exact-multiple	2	0			2 cands	0x8a08ee,0x8a0924		c0 47 00 00
+PartyRosterLimit32K2	125	0x0058e426	simple		4	exact-multiple	5	0			4 cands	0x41369c,0x8a088a,0x8a08b2,0x8a08e0		a0 48 00 00
+PartyRosterLimit32K2	126	0x0058e434	simple		4	exact-multiple	2	0			2 cands	0x8a08ee,0x8a0924		c0 47 00 00
+PartyRosterLimit32K2	127	0x0058e457	simple		4	exact-multiple	9	0			0x8a0947	0x89d08f,0x89d5f1,0x89d99b,0x89d9da		28 47 00 00
+PartyRosterLimit32K2	128	0x0058aaad	simple		1	exact-multiple	42056	0			13 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	129	0x0058ac35	simple		1	exact-multiple	42056	0			8 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	130	0x0058b932	simple		1	exact-multiple	42056	0			9 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	131	0x0058be89	simple		1	exact-multiple	42056	0			6 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	132	0x0058c57b	simple		1	exact-multiple	42056	0			3 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	133	0x0058c927	simple		1	exact-multiple	42056	0			9 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	134	0x0058cab3	simple		1	exact-multiple	42056	0			8 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	135	0x0058ba1f	simple		1	exact-multiple	42056	0			9 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	136	0x006e7600	simple		1	exact-multiple	42056	0			20 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	137	0x006e7a2e	simple		1	exact-multiple	42056	0			17 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	138	0x006e9a82	simple		1	exact-multiple	42056	0			36 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	139	0x006fc5dc	simple		1	exact-multiple	42056	0			24 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	140	0x005b7a88	simple		1	exact-multiple	42056	0			11 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	141	0x005b9533	simple		1	exact-multiple	42056	0			21 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	142	0x00807d82	simple		1	exact-multiple	42056	0			7 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	143	0x006fda4e	simple		1	exact-multiple	42056	0			10 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	144	0x0070041e	simple		1	exact-multiple	42056	0			19 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	145	0x0058d660	simple		1	exact-multiple	42056	0			15 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	146	0x0058d69f	simple		1	exact-multiple	42056	0			16 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	147	0x0059ed68	simple		1	exact-multiple	42056	0			7 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	148	0x0059edb1	simple		1	exact-multiple	7724	0			7 cands	0x401376,0x40137f,0x4013f2,0x4013fb		0b
+PartyRosterLimit32K2	149	0x0059ede6	simple		1	exact-multiple	613801	0			276 cands	0x401008,0x401009,0x40100f,0x401010		00
+PartyRosterLimit32K2	150	0x0059ef56	simple		1	exact-multiple	42056	0			5 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	151	0x0059ef7b	simple		1	exact-multiple	42056	0			5 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	152	0x00703afd	simple		1	exact-multiple	52091	0			13 cands	0x4010bc,0x4010c0,0x4010d9,0x4010e3		51
+PartyRosterLimit32K2	153	0x00703bfa	simple		1	exact-multiple	52091	0			13 cands	0x4010bc,0x4010c0,0x4010d9,0x4010e3		51
+PartyRosterLimit32K2	154	0x0070497b	simple		1	exact-multiple	52091	0			15 cands	0x4010bc,0x4010c0,0x4010d9,0x4010e3		51
+PartyRosterLimit32K2	155	0x0058d763	simple		1	exact-multiple	42056	0			18 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	156	0x0058d7fd	simple		1	exact-multiple	42056	0			20 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	157	0x0058d8b0	simple		1	exact-multiple	42056	0			22 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	158	0x0058d9cb	simple		1	exact-multiple	42056	0			20 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	159	0x0058e0cf	simple		1	exact-multiple	42056	0			3 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	160	0x006ff4c5	simple		1	exact-multiple	42056	0			12 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	161	0x006ff4d5	simple		1	exact-multiple	28013	0			11 cands	0x4010c8,0x40169d,0x4019ac,0x401d3a		52
+PartyRosterLimit32K2	162	0x006ff52f	simple		1	exact-multiple	42056	0			12 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	163	0x006ff53f	simple		1	exact-multiple	52091	0			10 cands	0x4010bc,0x4010c0,0x4010d9,0x4010e3		51
+PartyRosterLimit32K2	164	0x006fe97d	simple		1	exact-multiple	42056	0			20 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	165	0x007001a1	simple		1	exact-multiple	42056	0			20 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	166	0x00703362	simple		1	exact-multiple	42056	0			10 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	167	0x00704da4	simple		1	exact-multiple	42056	0			16 cands	0x4010c4,0x40148d,0x401667,0x401688		0c
+PartyRosterLimit32K2	168	0x006fee42	detour	StoreCreatePartyPlayerObjectId	22	exact-unique@moved	1	0	1	-0x105b70	0x5f92d2	0x5f92d2		8b 8d fc fe ff ff 8b 91 18 01 00 00 8b 8d fc fe ff ff 89 44 91 1c
+PartyRosterLimit32K2	169	0x006ff4c8	detour	ResolveCreatePartyMemberObjectId	13	exact-unique@moved	1	0	1	-0x105b70	0x5f9958	0x5f9958		8b 45 e8 8b 8d fc fe ff ff 8b 54 81 1c
+PartyRosterLimit32K2	170	0x006ff532	detour	ResolveCreatePartyMemberObjectId	13	exact-unique@moved	1	0	1	-0x105b70	0x5f99c2	0x5f99c2		8b 55 e8 8b 85 fc fe ff ff 8b 4c 90 1c
+PartyRosterLimit32K2	171	0x0058b3f0	detour	FinishPartySelectionLayout	5	masked-multiple	0	0	142031		73 cands		e8xxxxxxxx	e8 2b 26 38 00
+PartyRosterLimit32K2	172	0x0058b740	detour	PreparePartySelectionDestructor	10	masked-multiple	0	0	2803		4 cands		558bec6aff68xxxxxxxx	55 8b ec 6a ff 68 2a cd 95 00
+PartyRosterLimit32K2	173	0x00703770	detour	ClearExtendedPartyMembers	9	exact-multiple	822	0	822		4 cands	0x401cf0,0x402b70,0x402bb0,0x4053c0		55 8b ec 83 ec 08 89 4d f8
+PartyRosterLimit32K2	174	0x00703820	detour	PrepareClearPartyMember	7	exact-multiple	2406	0	2406		2 cands	0x401b60,0x401b90,0x401d20,0x401d90		55 8b ec 51 89 4d fc
+PartyRosterLimit32K2	175	0x006fdaa0	detour	PrepareSavePartyMember	10	masked-multiple	0	0	2803		4 cands		558bec6aff68xxxxxxxx	55 8b ec 6a ff 68 bb 30 97 00
+PartyRosterLimit32K2	176	0x006fdca0	detour	PrepareSavePartyMemberByObject	10	masked-multiple	0	0	2803		4 cands		558bec6aff68xxxxxxxx	55 8b ec 6a ff 68 bb 30 97 00
+PartyRosterLimit32K2	177	0x00703dc0	detour	PrepareSetPartyLeader	6	exact-multiple	1078	0	1078		3 cands	0x4016e0,0x401cf0,0x402b70,0x402bb0		55 8b ec 83 ec 08
+PartyRosterLimit32K2	178	0x00700560	detour	PrepareSetPartyInfluence	7	exact-multiple	2406	0	2406		7 cands	0x401b60,0x401b90,0x401d20,0x401d90		55 8b ec 51 89 4d fc
+PartyRosterLimit32K2	179	0x00700607	detour	StoreLogicalPartyNpcObject	13	exact-unique@moved	1	0	1	-0x105b70	0x5faa97	0x5faa97		8b 45 08 8b 4d fc 8b 55 0c 89 54 81 1c
+PartyRosterLimit32K2	180	0x00700cf7	detour	StoreLogicalPartyNpcSelectability	12	exact-unique@moved	1	0	1	-0x105b70		0x5fb187		8b 4d fc 03 4d 08 8a 55 0c 88 51 7c
+PartyRosterLimit32K2	181	0x006fd210	detour	ResetExtendedPartySidecar	9	exact-multiple	27	0	27		0x5f76a0	0x52e870,0x5a7520,0x5cb330,0x5f5470		55 8b ec 83 ec 20 89 4d e8
+PartyRosterLimit32K2	182	0x00701336	detour	WriteExtendedPartyPersistenceFromFrame	5	exact-unique@moved	1	0	40785	-0xd0ee	46 cands	0x6f4248	68xxxxxxxx	68 14 b5 99 00
+PartyRosterLimit32K2	183	0x007024c2	detour	ReadExtendedPartyPersistenceFromFrame	5	exact-multiple	14	0	14		8 cands	0x5fc3c0,0x5fc57f,0x5fc649,0x5fc712		6a 00 8d 45 88
+PartyRosterLimit32K2	184	0x0059efb1	detour	PrepareExtendedNextEquipmentCandidate	9	exact-unique@moved	1	0	1	+0x30c1b0		0x8ab161		8b 4d a8 8b 91 ec 50 00 00
+PartyRosterLimit32K2	185	0x0059f13b	detour	RouteNextEquipmentCandidate	5	exact-multiple	2	0	31937		26 cands	0x47bbd9,0x8ab2eb	e9xxxxxxxx	e9 0a fe ff ff
+PartyRosterLimit32K2	186	0x00703aec	detour	ResolveExperienceFeatMemberObjectId	17	exact-unique@moved	1	0	1	-0x1059b0	0x5fe13c	0x5fe13c		8b 45 e0 8b 4d 98 8b 54 81 08 8b 45 98 8b 4c 90 1c
+PartyRosterLimit32K2	187	0x00703be9	detour	ResolveExperienceRecipientObjectId	17	exact-unique@moved	1	0	1	-0x1059b0	0x5fe239	0x5fe239		8b 45 d8 8b 4d 98 8b 54 81 08 8b 45 98 8b 4c 90 1c
+PartyRosterLimit32K2	188	0x00704969	detour	ResolveUnstealthMemberObjectId	18	exact-unique@moved	1	0	1	-0x1059b0	0x5fefb9	0x5fefb9		0f b6 45 ff 8b 4d d8 8b 54 81 08 8b 45 d8 8b 4c 90 1c
+PartyRosterLimit32K2	189	0x007047b0	detour	ResolveAutoLevelMemberObjectId	17	exact-unique@moved	1	0	1	-0x1059b0	0x5fee00	0x5fee00		8b 55 fc 8b 45 e8 8b 4c 90 08 8b 55 e8 8b 44 8a 1c
+PartyRosterLimit32K2	190	0x006fe988	detour	ResolveAddMemberDuplicateObjectId	10	exact-unique@moved	1	0	1	-0x105b70	0x5f8e18	0x5f8e18		8b 4d fc 8b 55 cc 8b 44 8a 1c
+PartyRosterLimit32K2	191	0x006fe9af	detour	StoreAddMemberObjectId	13	exact-unique@moved	1	0	1	-0x105b70	0x5f8e3f	0x5f8e3f		8b 55 08 8b 45 cc 8b 4d 0c 89 4c 90 1c
+PartyRosterLimit32K2	192	0x006ffb60	detour	PrepareAddPartyNpc	10	masked-multiple	0	0	2803		2 cands		558bec6aff68xxxxxxxx	55 8b ec 6a ff 68 2b 32 97 00
+PartyRosterLimit32K2	193	0x007004ab	detour	ClearLogicalPartyNpcAvailability	14	exact-unique@moved	1	0	1	-0x105b70	0x5fa93b	0x5fa93b		8b 4d 08 8b 55 fc c7 44 8a 4c 00 00 00 00
+PartyRosterLimit32K2	194	0x00703383	detour	ResolveKillNpcObjectId	10	exact-unique@moved	1	0	1	-0x1059b0	0x5fd9d3	0x5fd9d3		8b 4d 08 8b 55 d0 8b 44 8a 1c
+PartyRosterLimit32K2	195	0x007033ab	detour	ClearKillNpcObjectId	14	exact-unique@moved	1	0	1	-0x1059b0	0x5fd9fb	0x5fd9fb		8b 4d 08 8b 55 d0 c7 44 8a 1c 00 00 00 7f
+PartyRosterLimit32K2	196	0x007035e8	detour	FinalizeLogicalPartyNpcId	6	exact-multiple	3489	0	3489		4 cands	0x401b4b,0x401b87,0x401baf,0x401c62		8b e5 5d c2 04 00
+PartyRosterLimit32K2	197	0x00700c4c	detour	FinalizeIsLogicalPartyMember	6	exact-multiple	3489	0	3489		5 cands	0x401b4b,0x401b87,0x401baf,0x401c62		8b e5 5d c2 04 00
+PartyRosterLimit32K2	198	0x00700c9b	detour	FinalizeIsLogicalPartyNpcAvailableByObject	6	exact-multiple	3489	0	3489		5 cands	0x401b4b,0x401b87,0x401baf,0x401c62		8b e5 5d c2 04 00
+PartyRosterLimit32K2	199	0x00703db4	detour	FinalizeIsLogicalPartyLeader	6	exact-multiple	3489	0	3489		3 cands	0x401b4b,0x401b87,0x401baf,0x401c62		8b e5 5d c2 04 00
+PartyRosterLimit32K2	200	0x007004f1	detour	FinalizeGetLogicalPartyNpcAvailability	6	exact-multiple	3489	0	3489		4 cands	0x401b4b,0x401b87,0x401baf,0x401c62		8b e5 5d c2 04 00
+PartyRosterLimit32K2	201	0x00700554	detour	FinalizeGetLogicalPartyInfluence	6	exact-multiple	3489	0	3489		4 cands	0x401b4b,0x401b87,0x401baf,0x401c62		8b e5 5d c2 04 00
+PartyRosterLimit32K2	202	0x00704dac	detour	ResolveNextPcMemberObjectId	23	exact-unique@moved	1	0	1	-0x1059b0	0x5ff3fc	0x5ff3fc		8b 4d f8 8b 91 54 02 00 00 8b 45 f8 8b 4c 90 08 8b 55 f8 8b 44 8a 1c
+PartyRosterLimit32K2	203	0x0070069c	detour	PrepareGetLogicalPartyNpcObject	6	exact-multiple	3	0	3		2 cands	0x5fab2c,0x5fad0a,0x707f4f		8b 4d 08 8b 55 a0
+PartyRosterLimit32K2	204	0x00700cc7	detour	PrepareGetLogicalPartyNpcSelectability	6	exact-multiple	2	0	2		2 cands	0x5fb157,0x5fb187		8b 4d fc 03 4d 08
+PartyRosterLimit32K2	205	0x00703f70	detour	ResolveSwitchBackPlayerObjectId	22	exact-unique@moved	1	0	1	-0x1059b0	0x5fe5c0	0x5fe5c0		8b 85 04 ff ff ff 8b 88 18 01 00 00 8b 95 04 ff ff ff 8b 44 8a 1c
+PartyRosterLimit32K2	206	0x0058bb10	detour	PreparePartySelectionOnPanelAdded	10	masked-multiple	0	0	2803		2 cands		558bec6aff68xxxxxxxx	55 8b ec 6a ff 68 58 cd 95 00
+PartyRosterLimit32K2	207	0x0058c516	detour	FinishPartySelectionOnPanelAdded	10	exact-multiple	2804	0	2804		0x89ea06	0x4018a2,0x401957,0x401b40,0x401c57		8b 4d f4 64 89 0d 00 00 00 00
+PartyRosterLimit32K2	208	0x007b1f4f	detour	FinishRebuildLogicalPartyTable	10	exact-multiple	2804	0	2804			0x4018a2,0x401957,0x401b40,0x401c57		8b 4d f4 64 89 0d 00 00 00 00
+PartyRosterLimit32K2	209	0x0058c530	detour	PreparePartySelectionOnPanelRemoved	6	exact-multiple	162	0	162		0x89ea20	0x402a40,0x403f80,0x404150,0x40e360		55 8b ec 83 ec 28
+PartyRosterLimit32K2	210	0x0058c650	detour	FinishPartySelectionOnPanelRemoved	5	exact-multiple	3593	0	3593		2 cands	0x4010db,0x401642,0x401724,0x4018ad		8b e5 5d c3 cc
+K2ClassMenuClothes	0	0x005de18a	detour	BeginClassMenuAppearance	10	exact-unique@moved	1	0	1	+0x31bc40		0x8f9dca		8d 45 88 50 8b 8d 5c ff ff ff
+K2ClassMenuClothes	1	0x0048e574	detour	OverrideClassMenuModel	7	exact-multiple	3	0	3			0x74de4b,0x83e2f8,0x85e4e4		8d 45 e0 50 8d 4d 8c
+K2ClassMenuClothes	2	0x0048e691	detour	OverrideClassMenuTexture	7	exact-multiple	32	0	32			0x546206,0x5462f9,0x546385,0x5464d1		c6 45 fc 00 8d 4d b4
+K2ClassMenuClothes	3	0x005de199	detour	EndClassMenuAppearance	10	exact-unique@moved	1	0	1	+0x31bc40		0x8f9dd9		8b 4d 80 51 8b 95 5c ff ff ff
+Movie Patch	0	0x00920af1	detour	blitMovieMitchellNetravaliKotor2	30	masked-unique	0	0	1	-0x5131f0			508b8d20ffffff8b514883c234528b8520ffffff8b484c51ff15xxxxxxxx	50 8b 8d 20 ff ff ff 8b 51 48 83 c2 34 52 8b 85 20 ff ff ff 8b 48 4c 51 ff 15 bc 54 98 00
+Movie Patch	1	0x0091fd10	detour	releaseMovieFilterKotor2	9	exact-multiple	13	0	13			0x40cb20,0x430ea0,0x493dd0,0x4be4f0		55 8b ec 81 ec 84 00 00 00

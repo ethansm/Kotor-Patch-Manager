@@ -1,0 +1,834 @@
+# GameAPI dir: /tmp/claude-1000/-home-ethansm-orca-workspaces-local-setup-KOTOR-II/64189a71-021c-4f66-8a9d-eebc5aa38044/scratchpad/upstream_master/Patches/Common/GameAPI
+# init functions parsed: 130, lookups: 1107
+# lookup kinds: {'F': 624, 'O': 419, 'R': 43, 'S': 19, 'V': 2}
+
+====================================================================================================
+DB branch: 1683 functions, 58 offsets, 14 globals, 0 classes rows
+====================================================================================================
+class                      init                looks  assign full    miss  flag  first missing (throwing) | notes
+C2DA                       InitializeFunctions     6       0 NO         6 unset  C2DA::Constructor
+CAppManager                InitializeOffsets       2       2 yes        0   set  
+CClientExoApp              InitializeFunctions    55      22 NO         3 unset  CClientExoApp::IsValidResolution
+CClientExoApp              InitializeOffsets      12       1 NO        11 unset  CClientExoAppInternal::debug_mode
+CClientOptions             InitializeFunctions    22       1 yes       21   set  optional-miss: CClientOptions::GetCameraKeyboardAcceleration,CClientOptions::GetCameraKeyboardDeceleration,CClientOptions::GetCameraKeyboardDPS,CClientOptions::GetGammaSetting...
+CClientOptions             InitializeOffsets       1       0 yes        1   set  optional-miss: CClientOptions::tooltip_delay
+CExoIni                    InitializeFunctions     4       0 NO         4 unset  CExoIni::Constructor
+CExoIni                    InitializeOffsets       1       0 NO         1 unset  CExoIni::<classes.size>
+CExoLocString              InitializeOffsets       1       0 NO         1 unset  CExoLocString::internal
+CExoSound                  InitializeFunctions    20       0 yes       20   set  optional-miss: CExoSound::EnableNonStreamingEnvironmentEffects,CExoSound::EnableStreamingEnvironmentEffects,CExoSound::SetDesiredEnvironment,CExoSound::GetBestEAXAvailable...
+CExoString                 InitializeFunctions     4       4 yes        0   set  
+CExoString                 InitializeOffsets       3       2 NO         1 unset  CExoString::<classes.size>
+CGameObject                InitializeOffsets       2       2 yes        0   set  
+CGameObjectArray           InitializeFunctions     1       1 yes        0   set  
+CGuiInGame                 InitializeFunctions    56       6 NO         4 unset  CGuiInGame::GetCurrentEquipScreenNPC
+CRes                       InitializeFunctions     7       7 yes        0   set  
+CRes                       InitializeOffsets       3       3 yes        0   set  
+CResGFF                    InitializeFunctions    64       4 NO         1 unset  CResGFF::Destructor_3 | calls base CRes::InitializeFunctions
+CResGFF                    InitializeOffsets       5       5 yes        0   set  calls base CRes::InitializeOffsets
+CSWCAreaOfEffectObject     InitializeOffsets       8       0 NO         8 unset  CSWCAreaOfEffectObject::total_actors | calls base CSWCObject::InitializeOffsets
+CSWCCreature               InitializeOffsets      35       1 NO        34 unset  CSWCCreature::Stealth | calls base CSWCObject::InitializeOffsets
+CSWCDoor                   InitializeFunctions     7       0 NO         3 unset  CSWCDoor::GetIsOpen | calls base CSWCObject::InitializeFunctions
+CSWCDoor                   InitializeOffsets       4       0 NO         4 unset  CSWCDoor::is_hostile | calls base CSWCObject::InitializeOffsets
+CSWCObject                 InitializeFunctions    33      33 yes        0   set  calls base CGameObject::InitializeFunctions
+CSWCObject                 InitializeOffsets       3       0 NO         3 unset  CSWCObject::position | calls base CGameObject::InitializeOffsets
+CSWCPlaceable              InitializeFunctions     4       4 yes        0   set  calls base CSWCObject::InitializeFunctions
+CSWCTrigger                InitializeOffsets       3       0 NO         3 unset  CSWCTrigger::name | calls base CSWCObject::InitializeOffsets
+CSWCVisualEffect           InitializeOffsets       1       0 NO         1 unset  CSWCVisualEffect::effect_row | calls base CSWCObject::InitializeOffsets
+CSWGui3DSceneView          InitializeFunctions     1       0 NO         1 unset  CSWGui3DSceneView::Destructor | calls base CSWGuiControl::InitializeFunctions
+CSWGui3DSceneView          InitializeOffsets       3       0 NO         3 unset  CSWGui3DSceneView::scene | calls base CSWGuiControl::InitializeOffsets
+CSWGuiBorder               InitializeFunctions     8       8 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiBorder               InitializeOffsets       2       1 NO         1 unset  CSWGuiBorder::<classes.size> | calls base CSWGuiObject::InitializeOffsets
+CSWGuiBorderParams         InitializeFunctions     5       5 yes        0   set  
+CSWGuiBorderParams         InitializeOffsets      10      10 yes        0   set  
+CSWGuiButton               InitializeFunctions     9       0 NO         9 unset  CSWGuiButton::Draw | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiButton               InitializeOffsets       4       0 NO         4 unset  CSWGuiButton::text | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiButtonToggle         InitializeFunctions     4       0 NO         4 unset  CSWGuiButtonToggle::SetSelected | calls base CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle         InitializeOffsets       6       0 NO         6 unset  CSWGuiButtonToggle::toggle_event | calls base CSWGuiButton::InitializeOffsets
+CSWGuiControl              InitializeFunctions    10      10 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiControl              InitializeOffsets       5       3 NO         2 unset  CSWGuiControl::bit_flags | calls base CSWGuiObject::InitializeOffsets
+CSWGuiEditBox              InitializeFunctions     9       0 NO         9 unset  CSWGuiEditbox::GetIsSelectable | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox              InitializeOffsets       3       0 NO         3 unset  CSWGuiEditbox::border | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiEditText             InitializeFunctions     6       0 NO         6 unset  CSWGuiEditText::AddNewChar | calls base CSWGuiText::InitializeFunctions
+CSWGuiEditText             InitializeOffsets       3       0 NO         3 unset  CSWGuiEditText::max_length | calls base CSWGuiText::InitializeOffsets
+CSWGuiImage                InitializeFunctions     3       0 NO         3 unset  CSWGuiImage::GetImageExtent | calls base CSWGuiObject::InitializeFunctions
+CSWGuiImage                InitializeOffsets       2       0 NO         2 unset  CSWGuiImage::params | calls base CSWGuiObject::InitializeOffsets
+CSWGuiImageParams          InitializeFunctions     4       0 NO         4 unset  CSWGuiImageParams::SetImage
+CSWGuiImageParams          InitializeOffsets       5       0 NO         5 unset  CSWGuiImageParams::resref
+CSWGuiLabel                InitializeFunctions     6       0 NO         6 unset  CSWGuiLabel::ReSetFont | calls base CSWGuiControl::InitializeFunctions
+CSWGuiLabel                InitializeOffsets       2       0 NO         2 unset  CSWGuiLabel::text | calls base CSWGuiControl::InitializeOffsets
+CSWGuiListBox              InitializeFunctions    24       0 NO        24 unset  CSWGuiListBox::Constructor | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox              InitializeOffsets      13       0 NO        13 unset  CSWGuiListBox::border | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiManager              InitializeFunctions     3       3 yes        0   set  
+CSWGuiManager              InitializeOffsets       5       0 NO         3 unset  CSWGuiManager::viewport_width
+CSWGuiNavigable            InitializeFunctions     4       0 NO         4 unset  CSWGuiNavigable::Constructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiNavigable            InitializeOffsets       5       0 NO         5 unset  CSWGuiNavigable::up | calls base CSWGuiControl::InitializeOffsets
+CSWGuiObject               InitializeOffsets       1       1 yes        0   set  
+CSWGuiPanel                InitializeFunctions    20      20 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiPanel                InitializeOffsets       7       6 NO         1 unset  CSWGuiPanel::<classes.size> | calls base CSWGuiObject::InitializeOffsets
+CSWGuiProgressBar          InitializeFunctions     5       0 NO         5 unset  CSWGuiProgressBar::Constructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar          InitializeOffsets       4       0 NO         4 unset  CSWGuiProgressBar::max | calls base CSWGuiControl::InitializeOffsets
+CSWGuiScene                InitializeFunctions     5       0 NO         5 unset  CSWGuiScene::Constructor | calls base CSWGuiObject::InitializeFunctions
+CSWGuiScene                InitializeOffsets       4       0 NO         4 unset  CSWGuiScene::scene | calls base CSWGuiObject::InitializeOffsets
+CSWGuiScrollBar            InitializeFunctions     6       0 NO         6 unset  CSWGuiScrollBar::Constructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar            InitializeOffsets       7       0 NO         7 unset  CSWGuiScrollBar::max_value | calls base CSWGuiControl::InitializeOffsets
+CSWGuiSlider               InitializeFunctions     9       0 NO         9 unset  CSWGuiSlider::Initialize | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider               InitializeOffsets       7       0 NO         7 unset  CSWGuiSlider::max_value | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiText                 InitializeFunctions     9       0 NO         9 unset  CSWGuiText::Constructor | calls base CSWGuiObject::InitializeFunctions
+CSWGuiText                 InitializeOffsets       2       0 NO         2 unset  CSWGuiText::text_params | calls base CSWGuiObject::InitializeOffsets
+CSWGuiTextParams           InitializeFunctions    12       0 NO        12 unset  CSWGuiTextParams::RestoreDefaultColor
+CSWGuiTextParams           InitializeOffsets       8       0 NO         8 unset  CSWGuiTextParams::text
+CSWInventory               InitializeFunctions     1       1 yes        0   set  
+CSWItem                    InitializeFunctions     1       1 yes        0   set  
+CSWSAreaOfEffectObject     InitializeOffsets      10       0 NO        10 unset  CSWSAreaOfEffectObject::shape | calls base CSWSObject::InitializeOffsets
+CSWSCreature               InitializeFunctions     1       1 yes        0   set  calls base CSWSObject::InitializeFunctions
+CSWSCreature               InitializeOffsets      37       2 NO        35 unset  CSWSCreature::joining_xp | calls base CSWSObject::InitializeOffsets
+CSWSCreatureStats          InitializeFunctions    15      15 yes        0   set  
+CSWSCreatureStats          InitializeOffsets       7       7 yes        0   set  
+CSWSDoor                   InitializeFunctions     7       4 NO         1 unset  CSWSDoor::InDoor | calls base CSWSObject::InitializeFunctions
+CSWSDoor                   InitializeOffsets      43       0 NO        43 unset  CSWSDoor::script_on_open | calls base CSWSObject::InitializeOffsets
+CSWSEncounter              InitializeOffsets      34       0 NO        34 unset  CSWSEncounter::faction | calls base CSWSObject::InitializeOffsets
+CSWSObject                 InitializeFunctions    25      12 NO         1 unset  CSWSObject::SetTag | calls base CGameObject::InitializeFunctions
+CSWSObject                 InitializeOffsets      23       3 NO        20 unset  CSWSObject::tag | calls base CGameObject::InitializeOffsets
+CSWSPlaceable              InitializeFunctions    10      10 yes        0   set  calls base CSWSObject::InitializeFunctions
+CSWSPlaceable              InitializeOffsets      48       0 NO        48 unset  CSWSPlaceable::loc_name | calls base CSWSObject::InitializeOffsets
+CSWSStore                  InitializeOffsets       5       0 NO         5 unset  CSWSStore::on_open_store | calls base CSWSObject::InitializeOffsets
+CSWSTrigger                InitializeFunctions     7       2 NO         1 unset  CSWSTrigger::GetFirstName | calls base CSWSObject::InitializeFunctions
+CSWSTrigger                InitializeOffsets      27       0 NO        27 unset  CSWSTrigger::localized_name | calls base CSWSObject::InitializeOffsets
+CSWSWaypoint               InitializeOffsets       4       0 NO         4 unset  CSWSWaypoint::has_map_note | calls base CSWSObject::InitializeOffsets
+CServerExoApp              InitializeFunctions     9       8 yes        1   set  optional-miss: CServerExoApp::GetPlayerCreature
+CVirtualMachine            InitializeFunctions    14      14 yes        0   set  
+CWorldTimer                InitializeFunctions    18       3 NO         5 unset  CWorldTimer::ConvertFromCalendarDay
+Camera                     InitializeFunctions    19       0 NO        19 unset  Camera::AsCAurObject
+Camera                     InitializeOffsets       1       0 NO         1 unset  Camera::object
+ConsoleFunc                InitializeFunctions     4       4 yes        0   set  
+ConsoleFunc                InitializeOffsets       2       0 NO         2 unset  ConsoleFunc::name
+Gob                        InitializeFunctions    65      18 NO         3 unset  Gob::EnableInCutscene
+Gob                        InitializeOffsets       1       0 NO         1 unset  Gob::scene
+Scene                      InitializeFunctions    26       6 NO         1 unset  Scene::FindRoom
+Scene                      InitializeOffsets       6       1 NO         1 unset  Scene::fog
+
+====================================================================================================
+DB up48: 48 functions, 21 offsets, 14 globals, 0 classes rows
+====================================================================================================
+class                      init                looks  assign full    miss  flag  first missing (throwing) | notes
+C2DA                       InitializeFunctions     6       0 NO         6 unset  C2DA::Constructor
+CAppManager                InitializeOffsets       2       2 yes        0   set  
+CClientExoApp              InitializeFunctions    55       1 NO        54 unset  CClientExoApp::AddMoveToModuleMovie
+CClientExoApp              InitializeOffsets      12       0 NO        12 unset  CClientExoApp::internal
+CClientOptions             InitializeFunctions    22       1 yes       21   set  optional-miss: CClientOptions::GetCameraKeyboardAcceleration,CClientOptions::GetCameraKeyboardDeceleration,CClientOptions::GetCameraKeyboardDPS,CClientOptions::GetGammaSetting...
+CClientOptions             InitializeOffsets       1       0 yes        1   set  optional-miss: CClientOptions::tooltip_delay
+CExoIni                    InitializeFunctions     4       0 NO         4 unset  CExoIni::Constructor
+CExoIni                    InitializeOffsets       1       0 NO         1 unset  CExoIni::<classes.size>
+CExoLocString              InitializeOffsets       1       0 NO         1 unset  CExoLocString::internal
+CExoSound                  InitializeFunctions    20       0 yes       20   set  optional-miss: CExoSound::EnableNonStreamingEnvironmentEffects,CExoSound::EnableStreamingEnvironmentEffects,CExoSound::SetDesiredEnvironment,CExoSound::GetBestEAXAvailable...
+CExoString                 InitializeFunctions     4       4 yes        0   set  
+CExoString                 InitializeOffsets       3       2 NO         1 unset  CExoString::<classes.size>
+CGameObject                InitializeOffsets       2       2 yes        0   set  
+CGameObjectArray           InitializeFunctions     1       1 yes        0   set  
+CGuiInGame                 InitializeFunctions    56       0 NO        56 unset  CGuiInGame::AddFloatyText
+CRes                       InitializeFunctions     7       0 NO         7 unset  CRes::Constructor
+CRes                       InitializeOffsets       3       0 NO         3 unset  CRes::vtable
+CResGFF                    InitializeFunctions    64       0 NO        64 unset  CResGFF::Constructor | calls base CRes::InitializeFunctions
+CResGFF                    InitializeOffsets       5       0 NO         5 unset  CResGFF::header | calls base CRes::InitializeOffsets
+CSWCAreaOfEffectObject     InitializeOffsets       8       0 NO         8 unset  CSWCAreaOfEffectObject::total_actors | calls base CSWCObject::InitializeOffsets
+CSWCCreature               InitializeOffsets      35       1 NO        34 unset  CSWCCreature::Stealth | calls base CSWCObject::InitializeOffsets
+CSWCDoor                   InitializeFunctions     7       0 NO         7 unset  CSWCDoor::GetIsOpen | calls base CSWCObject::InitializeFunctions
+CSWCDoor                   InitializeOffsets       4       0 NO         4 unset  CSWCDoor::is_hostile | calls base CSWCObject::InitializeOffsets
+CSWCObject                 InitializeFunctions    33       0 NO        33 unset  CSWCObject::AnimationAttack | calls base CGameObject::InitializeFunctions
+CSWCObject                 InitializeOffsets       3       0 NO         3 unset  CSWCObject::position | calls base CGameObject::InitializeOffsets
+CSWCPlaceable              InitializeFunctions     4       0 NO         4 unset  CSWCPlaceable::ActionMenuSecurity | calls base CSWCObject::InitializeFunctions
+CSWCTrigger                InitializeOffsets       3       0 NO         3 unset  CSWCTrigger::name | calls base CSWCObject::InitializeOffsets
+CSWCVisualEffect           InitializeOffsets       1       0 NO         1 unset  CSWCVisualEffect::effect_row | calls base CSWCObject::InitializeOffsets
+CSWGui3DSceneView          InitializeFunctions     1       0 NO         1 unset  CSWGui3DSceneView::Destructor | calls base CSWGuiControl::InitializeFunctions
+CSWGui3DSceneView          InitializeOffsets       3       0 NO         3 unset  CSWGui3DSceneView::scene | calls base CSWGuiControl::InitializeOffsets
+CSWGuiBorder               InitializeFunctions     8       0 NO         8 unset  CSWGuiBorder::FillCenter | calls base CSWGuiObject::InitializeFunctions
+CSWGuiBorder               InitializeOffsets       2       0 NO         2 unset  CSWGuiBorder::border_params | calls base CSWGuiObject::InitializeOffsets
+CSWGuiBorderParams         InitializeFunctions     5       0 NO         5 unset  CSWGuiBorderParams::SetBorder
+CSWGuiBorderParams         InitializeOffsets      10       0 NO        10 unset  CSWGuiBorderParams::dimension
+CSWGuiButton               InitializeFunctions     9       0 NO         9 unset  CSWGuiButton::Draw | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiButton               InitializeOffsets       4       0 NO         4 unset  CSWGuiButton::text | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiButtonToggle         InitializeFunctions     4       0 NO         4 unset  CSWGuiButtonToggle::SetSelected | calls base CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle         InitializeOffsets       6       0 NO         6 unset  CSWGuiButtonToggle::toggle_event | calls base CSWGuiButton::InitializeOffsets
+CSWGuiControl              InitializeFunctions    10       0 NO        10 unset  CSWGuiControl::AddChildControl | calls base CSWGuiObject::InitializeFunctions
+CSWGuiControl              InitializeOffsets       5       0 NO         5 unset  CSWGuiControl::parent_control | calls base CSWGuiObject::InitializeOffsets
+CSWGuiEditBox              InitializeFunctions     9       0 NO         9 unset  CSWGuiEditbox::GetIsSelectable | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox              InitializeOffsets       3       0 NO         3 unset  CSWGuiEditbox::border | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiEditText             InitializeFunctions     6       0 NO         6 unset  CSWGuiEditText::AddNewChar | calls base CSWGuiText::InitializeFunctions
+CSWGuiEditText             InitializeOffsets       3       0 NO         3 unset  CSWGuiEditText::max_length | calls base CSWGuiText::InitializeOffsets
+CSWGuiImage                InitializeFunctions     3       0 NO         3 unset  CSWGuiImage::GetImageExtent | calls base CSWGuiObject::InitializeFunctions
+CSWGuiImage                InitializeOffsets       2       0 NO         2 unset  CSWGuiImage::params | calls base CSWGuiObject::InitializeOffsets
+CSWGuiImageParams          InitializeFunctions     4       0 NO         4 unset  CSWGuiImageParams::SetImage
+CSWGuiImageParams          InitializeOffsets       5       0 NO         5 unset  CSWGuiImageParams::resref
+CSWGuiLabel                InitializeFunctions     6       0 NO         6 unset  CSWGuiLabel::ReSetFont | calls base CSWGuiControl::InitializeFunctions
+CSWGuiLabel                InitializeOffsets       2       0 NO         2 unset  CSWGuiLabel::text | calls base CSWGuiControl::InitializeOffsets
+CSWGuiListBox              InitializeFunctions    24       0 NO        24 unset  CSWGuiListBox::Constructor | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox              InitializeOffsets      13       0 NO        13 unset  CSWGuiListBox::border | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiManager              InitializeFunctions     3       0 NO         3 unset  CSWGuiManager::AddPanel
+CSWGuiManager              InitializeOffsets       5       0 NO         5 unset  CSWGuiManager::viewport_width
+CSWGuiNavigable            InitializeFunctions     4       0 NO         4 unset  CSWGuiNavigable::Constructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiNavigable            InitializeOffsets       5       0 NO         5 unset  CSWGuiNavigable::up | calls base CSWGuiControl::InitializeOffsets
+CSWGuiObject               InitializeOffsets       1       0 NO         1 unset  CSWGuiObject::extent
+CSWGuiPanel                InitializeFunctions    20       0 NO        20 unset  CSWGuiPanel::AddControl | calls base CSWGuiObject::InitializeFunctions
+CSWGuiPanel                InitializeOffsets       7       0 NO         7 unset  CSWGuiPanel::active_control | calls base CSWGuiObject::InitializeOffsets
+CSWGuiProgressBar          InitializeFunctions     5       0 NO         5 unset  CSWGuiProgressBar::Constructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar          InitializeOffsets       4       0 NO         4 unset  CSWGuiProgressBar::max | calls base CSWGuiControl::InitializeOffsets
+CSWGuiScene                InitializeFunctions     5       0 NO         5 unset  CSWGuiScene::Constructor | calls base CSWGuiObject::InitializeFunctions
+CSWGuiScene                InitializeOffsets       4       0 NO         4 unset  CSWGuiScene::scene | calls base CSWGuiObject::InitializeOffsets
+CSWGuiScrollBar            InitializeFunctions     6       0 NO         6 unset  CSWGuiScrollBar::Constructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar            InitializeOffsets       7       0 NO         7 unset  CSWGuiScrollBar::max_value | calls base CSWGuiControl::InitializeOffsets
+CSWGuiSlider               InitializeFunctions     9       0 NO         9 unset  CSWGuiSlider::Initialize | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider               InitializeOffsets       7       0 NO         7 unset  CSWGuiSlider::max_value | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiText                 InitializeFunctions     9       0 NO         9 unset  CSWGuiText::Constructor | calls base CSWGuiObject::InitializeFunctions
+CSWGuiText                 InitializeOffsets       2       0 NO         2 unset  CSWGuiText::text_params | calls base CSWGuiObject::InitializeOffsets
+CSWGuiTextParams           InitializeFunctions    12       0 NO        12 unset  CSWGuiTextParams::RestoreDefaultColor
+CSWGuiTextParams           InitializeOffsets       8       0 NO         8 unset  CSWGuiTextParams::text
+CSWInventory               InitializeFunctions     1       1 yes        0   set  
+CSWItem                    InitializeFunctions     1       1 yes        0   set  
+CSWSAreaOfEffectObject     InitializeOffsets      10       0 NO        10 unset  CSWSAreaOfEffectObject::shape | calls base CSWSObject::InitializeOffsets
+CSWSCreature               InitializeFunctions     1       1 yes        0   set  calls base CSWSObject::InitializeFunctions
+CSWSCreature               InitializeOffsets      37       2 NO        35 unset  CSWSCreature::joining_xp | calls base CSWSObject::InitializeOffsets
+CSWSCreatureStats          InitializeFunctions    15      15 yes        0   set  
+CSWSCreatureStats          InitializeOffsets       7       7 yes        0   set  
+CSWSDoor                   InitializeFunctions     7       0 NO         7 unset  CSWSDoor::GetDialogResref | calls base CSWSObject::InitializeFunctions
+CSWSDoor                   InitializeOffsets      43       0 NO        43 unset  CSWSDoor::script_on_open | calls base CSWSObject::InitializeOffsets
+CSWSEncounter              InitializeOffsets      34       0 NO        34 unset  CSWSEncounter::faction | calls base CSWSObject::InitializeOffsets
+CSWSObject                 InitializeFunctions    25       1 NO        24 unset  CSWSObject::ClearAllActions | calls base CGameObject::InitializeFunctions
+CSWSObject                 InitializeOffsets      23       3 NO        20 unset  CSWSObject::tag | calls base CGameObject::InitializeOffsets
+CSWSPlaceable              InitializeFunctions    10       0 NO        10 unset  CSWSPlaceable::GetBodyBagAppearance | calls base CSWSObject::InitializeFunctions
+CSWSPlaceable              InitializeOffsets      48       0 NO        48 unset  CSWSPlaceable::loc_name | calls base CSWSObject::InitializeOffsets
+CSWSStore                  InitializeOffsets       5       0 NO         5 unset  CSWSStore::on_open_store | calls base CSWSObject::InitializeOffsets
+CSWSTrigger                InitializeFunctions     7       0 NO         7 unset  CSWSTrigger::GetCanFireMineOnObject | calls base CSWSObject::InitializeFunctions
+CSWSTrigger                InitializeOffsets      27       0 NO        27 unset  CSWSTrigger::localized_name | calls base CSWSObject::InitializeOffsets
+CSWSWaypoint               InitializeOffsets       4       0 NO         4 unset  CSWSWaypoint::has_map_note | calls base CSWSObject::InitializeOffsets
+CServerExoApp              InitializeFunctions     9       3 NO         6 unset  CServerExoApp::GetGlobalVariableTable | optional-miss: CServerExoApp::GetPlayerCreature
+CVirtualMachine            InitializeFunctions    14      14 yes        0   set  
+CWorldTimer                InitializeFunctions    18       0 NO        18 unset  CWorldTimer::AddWorldTimes
+Camera                     InitializeFunctions    19       0 NO        19 unset  Camera::AsCAurObject
+Camera                     InitializeOffsets       1       0 NO         1 unset  Camera::object
+ConsoleFunc                InitializeFunctions     4       4 yes        0   set  
+ConsoleFunc                InitializeOffsets       2       0 NO         2 unset  ConsoleFunc::name
+Gob                        InitializeFunctions    65       0 NO        65 unset  Gob::AddAnimationFlag
+Gob                        InitializeOffsets       1       0 NO         1 unset  Gob::scene
+Scene                      InitializeFunctions    26       0 NO        26 unset  Scene::ChildAdd
+Scene                      InitializeOffsets       6       0 NO         6 unset  Scene::objects
+
+====================================================================================================
+DB gog: 10425 functions, 778 offsets, 21 globals, 0 classes rows
+====================================================================================================
+class                      init                looks  assign full    miss  flag  first missing (throwing) | notes
+C2DA                       InitializeFunctions     6       6 yes        0   set  
+CAppManager                InitializeOffsets       2       2 yes        0   set  
+CClientExoApp              InitializeFunctions    55      22 NO         3 unset  CClientExoApp::IsValidResolution
+CClientExoApp              InitializeOffsets      12       1 NO        11 unset  CClientExoAppInternal::debug_mode
+CClientOptions             InitializeFunctions    22      21 yes        1   set  optional-miss: CClientOptions::GetMouseSenSetting
+CClientOptions             InitializeOffsets       1       0 yes        1   set  optional-miss: CClientOptions::tooltip_delay
+CExoIni                    InitializeFunctions     4       4 yes        0   set  
+CExoIni                    InitializeOffsets       1       0 NO         1 unset  CExoIni::<classes.size>
+CExoLocString              InitializeOffsets       1       0 NO         1 unset  CExoLocString::internal
+CExoSound                  InitializeFunctions    20      20 yes        0   set  
+CExoString                 InitializeFunctions     4       4 yes        0   set  
+CExoString                 InitializeOffsets       3       2 NO         1 unset  CExoString::<classes.size>
+CGameObject                InitializeOffsets       2       2 yes        0   set  
+CGameObjectArray           InitializeFunctions     1       1 yes        0   set  
+CGuiInGame                 InitializeFunctions    56       6 NO         4 unset  CGuiInGame::GetCurrentEquipScreenNPC
+CRes                       InitializeFunctions     7       7 yes        0   set  
+CRes                       InitializeOffsets       3       3 yes        0   set  
+CResGFF                    InitializeFunctions    64       4 NO         1 unset  CResGFF::Destructor_3 | calls base CRes::InitializeFunctions
+CResGFF                    InitializeOffsets       5       5 yes        0   set  calls base CRes::InitializeOffsets
+CSWCAreaOfEffectObject     InitializeOffsets       8       0 NO         8 unset  CSWCAreaOfEffectObject::total_actors | calls base CSWCObject::InitializeOffsets
+CSWCCreature               InitializeOffsets      35       1 NO        34 unset  CSWCCreature::Stealth | calls base CSWCObject::InitializeOffsets
+CSWCDoor                   InitializeFunctions     7       0 NO         3 unset  CSWCDoor::GetIsOpen | calls base CSWCObject::InitializeFunctions
+CSWCDoor                   InitializeOffsets       4       0 NO         4 unset  CSWCDoor::is_hostile | calls base CSWCObject::InitializeOffsets
+CSWCObject                 InitializeFunctions    33      33 yes        0   set  calls base CGameObject::InitializeFunctions
+CSWCObject                 InitializeOffsets       3       0 NO         3 unset  CSWCObject::position | calls base CGameObject::InitializeOffsets
+CSWCPlaceable              InitializeFunctions     4       4 yes        0   set  calls base CSWCObject::InitializeFunctions
+CSWCTrigger                InitializeOffsets       3       0 NO         3 unset  CSWCTrigger::name | calls base CSWCObject::InitializeOffsets
+CSWCVisualEffect           InitializeOffsets       1       0 NO         1 unset  CSWCVisualEffect::effect_row | calls base CSWCObject::InitializeOffsets
+CSWGui3DSceneView          InitializeFunctions     1       0 NO         1 unset  CSWGui3DSceneView::Destructor | calls base CSWGuiControl::InitializeFunctions
+CSWGui3DSceneView          InitializeOffsets       3       1 NO         2 unset  CSWGui3DSceneView::<classes.size> | calls base CSWGuiControl::InitializeOffsets
+CSWGuiBorder               InitializeFunctions     8       8 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiBorder               InitializeOffsets       2       1 NO         1 unset  CSWGuiBorder::<classes.size> | calls base CSWGuiObject::InitializeOffsets
+CSWGuiBorderParams         InitializeFunctions     5       5 yes        0   set  
+CSWGuiBorderParams         InitializeOffsets      10      10 yes        0   set  
+CSWGuiButton               InitializeFunctions     9       9 yes        0   set  calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiButton               InitializeOffsets       4       1 NO         3 unset  CSWGuiButton::border | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiButtonToggle         InitializeFunctions     4       0 NO         2 unset  CSWGuiButtonToggle::SetSelected | calls base CSWGuiButton::InitializeFunctions
+CSWGuiButtonToggle         InitializeOffsets       6       0 NO         6 unset  CSWGuiButtonToggle::toggle_event | calls base CSWGuiButton::InitializeOffsets
+CSWGuiControl              InitializeFunctions    10      10 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiControl              InitializeOffsets       5       3 NO         2 unset  CSWGuiControl::bit_flags | calls base CSWGuiObject::InitializeOffsets
+CSWGuiEditBox              InitializeFunctions     9       9 yes        0   set  calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiEditBox              InitializeOffsets       3       0 NO         3 unset  CSWGuiEditbox::border | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiEditText             InitializeFunctions     6       5 NO         1 unset  CSWGuiEditText::Destructor_2 | calls base CSWGuiText::InitializeFunctions
+CSWGuiEditText             InitializeOffsets       3       0 NO         3 unset  CSWGuiEditText::max_length | calls base CSWGuiText::InitializeOffsets
+CSWGuiImage                InitializeFunctions     3       3 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiImage                InitializeOffsets       2       1 NO         1 unset  CSWGuiImage::<classes.size> | calls base CSWGuiObject::InitializeOffsets
+CSWGuiImageParams          InitializeFunctions     4       2 NO         1 unset  CSWGuiImageParams::SetAlignment
+CSWGuiImageParams          InitializeOffsets       5       5 yes        0   set  
+CSWGuiLabel                InitializeFunctions     6       5 NO         1 unset  CSWGuiLabel::Destructor | calls base CSWGuiControl::InitializeFunctions
+CSWGuiLabel                InitializeOffsets       2       1 NO         1 unset  CSWGuiLabel::<classes.size> | calls base CSWGuiControl::InitializeOffsets
+CSWGuiListBox              InitializeFunctions    24      21 NO         2 unset  CSWGuiListBox::SetTopVisible | calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiListBox              InitializeOffsets      13      12 NO         1 unset  CSWGuiListBox::<classes.size> | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiManager              InitializeFunctions     3       3 yes        0   set  
+CSWGuiManager              InitializeOffsets       5       0 NO         3 unset  CSWGuiManager::viewport_width
+CSWGuiNavigable            InitializeFunctions     4       4 yes        0   set  calls base CSWGuiControl::InitializeFunctions
+CSWGuiNavigable            InitializeOffsets       5       4 NO         1 unset  CSWGuiNavigable::<classes.size> | calls base CSWGuiControl::InitializeOffsets
+CSWGuiObject               InitializeOffsets       1       1 yes        0   set  
+CSWGuiPanel                InitializeFunctions    20      20 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiPanel                InitializeOffsets       7       6 NO         1 unset  CSWGuiPanel::<classes.size> | calls base CSWGuiObject::InitializeOffsets
+CSWGuiProgressBar          InitializeFunctions     5       1 NO         2 unset  CSWGuiProgressBar::Destructor_2 | calls base CSWGuiControl::InitializeFunctions
+CSWGuiProgressBar          InitializeOffsets       4       0 NO         4 unset  CSWGuiProgressBar::max | calls base CSWGuiControl::InitializeOffsets
+CSWGuiScene                InitializeFunctions     5       5 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiScene                InitializeOffsets       4       4 yes        0   set  calls base CSWGuiObject::InitializeOffsets
+CSWGuiScrollBar            InitializeFunctions     6       3 NO         3 unset  CSWGuiScrollBar::setCurValue | calls base CSWGuiControl::InitializeFunctions
+CSWGuiScrollBar            InitializeOffsets       7       6 NO         1 unset  CSWGuiScrollBar::<classes.size> | calls base CSWGuiControl::InitializeOffsets
+CSWGuiSlider               InitializeFunctions     9       9 yes        0   set  calls base CSWGuiNavigable::InitializeFunctions
+CSWGuiSlider               InitializeOffsets       7       0 NO         7 unset  CSWGuiSlider::max_value | calls base CSWGuiNavigable::InitializeOffsets
+CSWGuiText                 InitializeFunctions     9       9 yes        0   set  calls base CSWGuiObject::InitializeFunctions
+CSWGuiText                 InitializeOffsets       2       1 NO         1 unset  CSWGuiText::<classes.size> | calls base CSWGuiObject::InitializeOffsets
+CSWGuiTextParams           InitializeFunctions    12       0 NO         1 unset  CSWGuiTextParams::RestoreDefaultColor
+CSWGuiTextParams           InitializeOffsets       8       7 NO         1 unset  CSWGuiTextParams::<classes.size>
+CSWInventory               InitializeFunctions     1       1 yes        0   set  
+CSWItem                    InitializeFunctions     1       1 yes        0   set  
+CSWSAreaOfEffectObject     InitializeOffsets      10       0 NO        10 unset  CSWSAreaOfEffectObject::shape | calls base CSWSObject::InitializeOffsets
+CSWSCreature               InitializeFunctions     1       1 yes        0   set  calls base CSWSObject::InitializeFunctions
+CSWSCreature               InitializeOffsets      37       2 NO        35 unset  CSWSCreature::joining_xp | calls base CSWSObject::InitializeOffsets
+CSWSCreatureStats          InitializeFunctions    15      15 yes        0   set  
+CSWSCreatureStats          InitializeOffsets       7       7 yes        0   set  
+CSWSDoor                   InitializeFunctions     7       4 NO         1 unset  CSWSDoor::InDoor | calls base CSWSObject::InitializeFunctions
+CSWSDoor                   InitializeOffsets      43       0 NO        43 unset  CSWSDoor::script_on_open | calls base CSWSObject::InitializeOffsets
+CSWSEncounter              InitializeOffsets      34       0 NO        34 unset  CSWSEncounter::faction | calls base CSWSObject::InitializeOffsets
+CSWSObject                 InitializeFunctions    25      12 NO         1 unset  CSWSObject::SetTag | calls base CGameObject::InitializeFunctions
+CSWSObject                 InitializeOffsets      23       3 NO        20 unset  CSWSObject::tag | calls base CGameObject::InitializeOffsets
+CSWSPlaceable              InitializeFunctions    10      10 yes        0   set  calls base CSWSObject::InitializeFunctions
+CSWSPlaceable              InitializeOffsets      48       0 NO        48 unset  CSWSPlaceable::loc_name | calls base CSWSObject::InitializeOffsets
+CSWSStore                  InitializeOffsets       5       0 NO         5 unset  CSWSStore::on_open_store | calls base CSWSObject::InitializeOffsets
+CSWSTrigger                InitializeFunctions     7       2 NO         1 unset  CSWSTrigger::GetFirstName | calls base CSWSObject::InitializeFunctions
+CSWSTrigger                InitializeOffsets      27       0 NO        27 unset  CSWSTrigger::localized_name | calls base CSWSObject::InitializeOffsets
+CSWSWaypoint               InitializeOffsets       4       0 NO         4 unset  CSWSWaypoint::has_map_note | calls base CSWSObject::InitializeOffsets
+CServerExoApp              InitializeFunctions     9       8 yes        1   set  optional-miss: CServerExoApp::GetPlayerCreature
+CVirtualMachine            InitializeFunctions    14      14 yes        0   set  
+CWorldTimer                InitializeFunctions    18       3 NO         5 unset  CWorldTimer::ConvertFromCalendarDay
+Camera                     InitializeFunctions    19      19 yes        0   set  
+Camera                     InitializeOffsets       1       1 yes        0   set  
+ConsoleFunc                InitializeFunctions     4       4 yes        0   set  
+ConsoleFunc                InitializeOffsets       2       0 NO         2 unset  ConsoleFunc::name
+Gob                        InitializeFunctions    65      18 NO         2 unset  Gob::EnableInCutscene
+Gob                        InitializeOffsets       1       0 NO         1 unset  Gob::scene
+Scene                      InitializeFunctions    26       6 NO         1 unset  Scene::FindRoom
+Scene                      InitializeOffsets       6       1 NO         1 unset  Scene::fog
+
+====================================================================================================
+PARITY: init functions where branch Steam DB assigns FEWER lookups than GOG, or differs in full-init
+====================================================================================================
+C2DA                       InitializeFunctions steam assigned   0/6 full=False first-miss=C2DA::Constructor | gog assigned   6 full=True first-miss=-
+CClientOptions             InitializeFunctions steam assigned   1/22 full=True first-miss=- | gog assigned  21 full=True first-miss=-
+CExoIni                    InitializeFunctions steam assigned   0/4 full=False first-miss=CExoIni::Constructor | gog assigned   4 full=True first-miss=-
+CExoSound                  InitializeFunctions steam assigned   0/20 full=True first-miss=- | gog assigned  20 full=True first-miss=-
+CSWGui3DSceneView          InitializeOffsets   steam assigned   0/3 full=False first-miss=CSWGui3DSceneView::scene | gog assigned   1 full=False first-miss=CSWGui3DSceneView::<classes.size>
+CSWGuiButton               InitializeFunctions steam assigned   0/9 full=False first-miss=CSWGuiButton::Draw | gog assigned   9 full=True first-miss=-
+CSWGuiButton               InitializeOffsets   steam assigned   0/4 full=False first-miss=CSWGuiButton::text | gog assigned   1 full=False first-miss=CSWGuiButton::border
+CSWGuiEditBox              InitializeFunctions steam assigned   0/9 full=False first-miss=CSWGuiEditbox::GetIsSelectable | gog assigned   9 full=True first-miss=-
+CSWGuiEditText             InitializeFunctions steam assigned   0/6 full=False first-miss=CSWGuiEditText::AddNewChar | gog assigned   5 full=False first-miss=CSWGuiEditText::Destructor_2
+CSWGuiImage                InitializeFunctions steam assigned   0/3 full=False first-miss=CSWGuiImage::GetImageExtent | gog assigned   3 full=True first-miss=-
+CSWGuiImage                InitializeOffsets   steam assigned   0/2 full=False first-miss=CSWGuiImage::params | gog assigned   1 full=False first-miss=CSWGuiImage::<classes.size>
+CSWGuiImageParams          InitializeFunctions steam assigned   0/4 full=False first-miss=CSWGuiImageParams::SetImage | gog assigned   2 full=False first-miss=CSWGuiImageParams::SetAlignment
+CSWGuiImageParams          InitializeOffsets   steam assigned   0/5 full=False first-miss=CSWGuiImageParams::resref | gog assigned   5 full=True first-miss=-
+CSWGuiLabel                InitializeFunctions steam assigned   0/6 full=False first-miss=CSWGuiLabel::ReSetFont | gog assigned   5 full=False first-miss=CSWGuiLabel::Destructor
+CSWGuiLabel                InitializeOffsets   steam assigned   0/2 full=False first-miss=CSWGuiLabel::text | gog assigned   1 full=False first-miss=CSWGuiLabel::<classes.size>
+CSWGuiListBox              InitializeFunctions steam assigned   0/24 full=False first-miss=CSWGuiListBox::Constructor | gog assigned  21 full=False first-miss=CSWGuiListBox::SetTopVisible
+CSWGuiListBox              InitializeOffsets   steam assigned   0/13 full=False first-miss=CSWGuiListBox::border | gog assigned  12 full=False first-miss=CSWGuiListBox::<classes.size>
+CSWGuiNavigable            InitializeFunctions steam assigned   0/4 full=False first-miss=CSWGuiNavigable::Constructor | gog assigned   4 full=True first-miss=-
+CSWGuiNavigable            InitializeOffsets   steam assigned   0/5 full=False first-miss=CSWGuiNavigable::up | gog assigned   4 full=False first-miss=CSWGuiNavigable::<classes.size>
+CSWGuiProgressBar          InitializeFunctions steam assigned   0/5 full=False first-miss=CSWGuiProgressBar::Constructor | gog assigned   1 full=False first-miss=CSWGuiProgressBar::Destructor_2
+CSWGuiScene                InitializeFunctions steam assigned   0/5 full=False first-miss=CSWGuiScene::Constructor | gog assigned   5 full=True first-miss=-
+CSWGuiScene                InitializeOffsets   steam assigned   0/4 full=False first-miss=CSWGuiScene::scene | gog assigned   4 full=True first-miss=-
+CSWGuiScrollBar            InitializeFunctions steam assigned   0/6 full=False first-miss=CSWGuiScrollBar::Constructor | gog assigned   3 full=False first-miss=CSWGuiScrollBar::setCurValue
+CSWGuiScrollBar            InitializeOffsets   steam assigned   0/7 full=False first-miss=CSWGuiScrollBar::max_value | gog assigned   6 full=False first-miss=CSWGuiScrollBar::<classes.size>
+CSWGuiSlider               InitializeFunctions steam assigned   0/9 full=False first-miss=CSWGuiSlider::Initialize | gog assigned   9 full=True first-miss=-
+CSWGuiText                 InitializeFunctions steam assigned   0/9 full=False first-miss=CSWGuiText::Constructor | gog assigned   9 full=True first-miss=-
+CSWGuiText                 InitializeOffsets   steam assigned   0/2 full=False first-miss=CSWGuiText::text_params | gog assigned   1 full=False first-miss=CSWGuiText::<classes.size>
+CSWGuiTextParams           InitializeOffsets   steam assigned   0/8 full=False first-miss=CSWGuiTextParams::text | gog assigned   7 full=False first-miss=CSWGuiTextParams::<classes.size>
+Camera                     InitializeFunctions steam assigned   0/19 full=False first-miss=Camera::AsCAurObject | gog assigned  19 full=True first-miss=-
+Camera                     InitializeOffsets   steam assigned   0/1 full=False first-miss=Camera::object | gog assigned   1 full=True first-miss=-
+init functions: 100 total with lookups; equal-or-better than GOG: 70; steam assigns MORE than GOG: 0; worse: 30
+
+====================================================================================================
+ACC COMMANDS: requirement check per DB (requirement = lookup assigned before any abort)
+====================================================================================================
+
+-- DB branch
+  runscript <resref> (string)    FAIL: CExoString::<classes.size> [CExoString::InitializeOffsets]
+  teleport "x y" (string)        OK
+  freecam                        OK
+  addfeat <feat> (int)           OK
+  walkmeshrender                 OK
+  guirender                      OK
+  wireframerender                OK
+  triggersrender                 OK
+  personalspacerender            OK
+  boundingboxesrender            OK
+
+-- DB up48
+  runscript <resref> (string)    FAIL: CExoString::<classes.size> [CExoString::InitializeOffsets]
+  teleport "x y" (string)        OK
+  freecam                        OK
+  addfeat <feat> (int)           OK
+  walkmeshrender                 OK
+  guirender                      OK
+  wireframerender                OK
+  triggersrender                 OK
+  personalspacerender            OK
+  boundingboxesrender            OK
+
+-- DB gog
+  runscript <resref> (string)    FAIL: CExoString::<classes.size> [CExoString::InitializeOffsets]
+  teleport "x y" (string)        OK
+  freecam                        OK
+  addfeat <feat> (int)           OK
+  walkmeshrender                 OK
+  guirender                      OK
+  wireframerender                OK
+  triggersrender                 OK
+  personalspacerender            OK
+  boundingboxesrender            OK
+
+====================================================================================================
+GOG DB: lookups issued by GameAPI inits that the GOG DB lacks (all wrappers), grouped by init function
+  (first = first THROWING miss, i.e. where the try block abandons the rest)
+====================================================================================================
+CClientExoApp            InitializeFunctions missing  3 of 55; first=CClientExoApp::IsValidResolution
+      CClientExoApp::IsValidResolution, CClientExoApp::GetLoadingSaveGame, CClientExoApp::SetRunScript
+CClientExoApp            InitializeOffsets  missing 11 of 12; first=CClientExoAppInternal::debug_mode
+      CClientExoAppInternal::debug_mode, CClientExoAppInternal::selected_texture_pack, CClientExoAppInternal::input_disabled, CClientExoAppInternal::mouse_x, CClientExoAppInternal::mouse_y, CClientExoAppInternal::game_obj_array, CClientExoAppInternal::animation_timer, CClientExoAppInternal::gui_manager, CClientExoAppInternal::cached_creature, CClientExoAppInternal::run_script, CClientExoAppInternal::disable_movies
+CClientOptions           InitializeFunctions missing  1 of 22; first=(none throwing)
+      CClientOptions::GetMouseSenSetting(opt)
+CClientOptions           InitializeOffsets  missing  1 of  1; first=(none throwing)
+      CClientOptions::tooltip_delay(opt)
+CExoIni                  InitializeOffsets  missing  1 of  1; first=CExoIni::<classes.size>
+      CExoIni::<classes.size>
+CExoLocString            InitializeOffsets  missing  1 of  1; first=CExoLocString::internal
+      CExoLocString::internal
+CExoString               InitializeOffsets  missing  1 of  3; first=CExoString::<classes.size>
+      CExoString::<classes.size>
+CGuiInGame               InitializeFunctions missing  4 of 56; first=CGuiInGame::GetCurrentEquipScreenNPC
+      CGuiInGame::GetCurrentEquipScreenNPC, CGuiInGame::GetAreaTranstionPosition, CGuiInGame::IsGlobalFadeObscuring, CGuiInGame::GetPartyAccessPanelUp
+CResGFF                  InitializeFunctions missing  1 of 64; first=CResGFF::Destructor_3
+      CResGFF::Destructor_3
+CSWCAreaOfEffectObject   InitializeOffsets  missing  8 of  8; first=CSWCAreaOfEffectObject::total_actors
+      CSWCAreaOfEffectObject::total_actors, CSWCAreaOfEffectObject::radius, CSWCAreaOfEffectObject::width, CSWCAreaOfEffectObject::length, CSWCAreaOfEffectObject::shape, CSWCAreaOfEffectObject::sound_one_shot, CSWCAreaOfEffectObject::sound_one_shot_percentage, CSWCAreaOfEffectObject::orient_with_ground
+CSWCCreature             InitializeOffsets  missing 34 of 35; first=CSWCCreature::Stealth
+      CSWCCreature::Stealth, CSWCCreature::start_waypoint, CSWCCreature::current_waypoint, CSWCCreature::moving_orientation, CSWCCreature::waypoint_count, CSWCCreature::creature_type, CSWCCreature::head_id, CSWCCreature::torso_id, CSWCCreature::hands_id, CSWCCreature::main_hand_id, CSWCCreature::off_hand_id, CSWCCreature::left_arm_band_id, CSWCCreature::right_arm_band_id, CSWCCreature::implant_id, CSWCCreature::belt_id, CSWCCreature::left_claw_id, CSWCCreature::right_claw_id, CSWCCreature::bite_id, CSWCCreature::hide_id, CSWCCreature::head_last_instant, CSWCCreature::torso_last_instant, CSWCCreature::hands_last_instant, CSWCCreature::main_hand_last_instant, CSWCCreature::off_hand_last_instant, CSWCCreature::left_arm_band_last_instant, CSWCCreature::right_arm_band_last_instant, CSWCCreature::implant_last_instant, CSWCCreature::belt_last_instant, CSWCCreature::left_claw_last_instant, CSWCCreature::right_claw_last_instant, CSWCCreature::bite_last_instant, CSWCCreature::hide_last_instant, CSWCCreature::sound_set, CSWCCreature::thrown_lightsaber
+CSWCDoor                 InitializeFunctions missing  3 of  7; first=CSWCDoor::GetIsOpen
+      CSWCDoor::GetIsOpen, CSWCDoor::GetModelName, CSWCDoor::GetName
+CSWCDoor                 InitializeOffsets  missing  4 of  4; first=CSWCDoor::is_hostile
+      CSWCDoor::is_hostile, CSWCDoor::appearance, CSWCDoor::door_type, CSWCDoor::is_transition
+CSWCObject               InitializeOffsets  missing  3 of  3; first=CSWCObject::position
+      CSWCObject::position, CSWCObject::orientation, CSWCObject::ground_normal
+CSWCTrigger              InitializeOffsets  missing  3 of  3; first=CSWCTrigger::name
+      CSWCTrigger::name, CSWCTrigger::cursor_id, CSWCTrigger::geometry
+CSWCVisualEffect         InitializeOffsets  missing  1 of  1; first=CSWCVisualEffect::effect_row
+      CSWCVisualEffect::effect_row
+CSWGui3DSceneView        InitializeFunctions missing  1 of  1; first=CSWGui3DSceneView::Destructor
+      CSWGui3DSceneView::Destructor
+CSWGui3DSceneView        InitializeOffsets  missing  2 of  3; first=CSWGui3DSceneView::<classes.size>
+      CSWGui3DSceneView::<classes.size>, CSWGui3DSceneView::<classes.vtable>(opt)
+CSWGuiBorder             InitializeOffsets  missing  1 of  2; first=CSWGuiBorder::<classes.size>
+      CSWGuiBorder::<classes.size>
+CSWGuiButton             InitializeOffsets  missing  3 of  4; first=CSWGuiButton::border
+      CSWGuiButton::border, CSWGuiButton::hilight, CSWGuiButton::<classes.size>
+CSWGuiButtonToggle       InitializeFunctions missing  2 of  4; first=CSWGuiButtonToggle::SetSelected
+      CSWGuiButtonToggle::SetSelected, CSWGuiButtonToggle::Destructor_2
+CSWGuiButtonToggle       InitializeOffsets  missing  6 of  6; first=CSWGuiButtonToggle::toggle_event
+      CSWGuiButtonToggle::toggle_event, CSWGuiButtonToggle::bit_flags, CSWGuiButtonToggle::selected, CSWGuiButtonToggle::hilight_selected, CSWGuiButtonToggle::<classes.size>, CSWGuiOptionsCheckbox::<classes.vtable>(opt)
+CSWGuiControl            InitializeOffsets  missing  2 of  5; first=CSWGuiControl::bit_flags
+      CSWGuiControl::bit_flags, CSWGuiControl::<classes.size>
+CSWGuiEditBox            InitializeOffsets  missing  3 of  3; first=CSWGuiEditbox::border
+      CSWGuiEditbox::border, CSWGuiEditbox::edit_text, CSWGuiEditbox::<classes.size>
+CSWGuiEditText           InitializeFunctions missing  1 of  6; first=CSWGuiEditText::Destructor_2
+      CSWGuiEditText::Destructor_2
+CSWGuiEditText           InitializeOffsets  missing  3 of  3; first=CSWGuiEditText::max_length
+      CSWGuiEditText::max_length, CSWGuiEditText::string, CSWGuiEditText::<classes.size>
+CSWGuiImage              InitializeOffsets  missing  1 of  2; first=CSWGuiImage::<classes.size>
+      CSWGuiImage::<classes.size>
+CSWGuiImageParams        InitializeFunctions missing  1 of  4; first=CSWGuiImageParams::SetAlignment
+      CSWGuiImageParams::SetAlignment
+CSWGuiLabel              InitializeFunctions missing  1 of  6; first=CSWGuiLabel::Destructor
+      CSWGuiLabel::Destructor
+CSWGuiLabel              InitializeOffsets  missing  1 of  2; first=CSWGuiLabel::<classes.size>
+      CSWGuiLabel::<classes.size>
+CSWGuiListBox            InitializeFunctions missing  2 of 24; first=CSWGuiListBox::SetTopVisible
+      CSWGuiListBox::SetTopVisible, CSWGuiListBox::getPagesToScroll
+CSWGuiListBox            InitializeOffsets  missing  1 of 13; first=CSWGuiListBox::<classes.size>
+      CSWGuiListBox::<classes.size>
+CSWGuiManager            InitializeOffsets  missing  3 of  5; first=CSWGuiManager::viewport_width
+      CSWGuiManager::viewport_width, CSWGuiManager::focused_edit_box, CSWGuiManager::tooltip_appear_time
+CSWGuiNavigable          InitializeOffsets  missing  1 of  5; first=CSWGuiNavigable::<classes.size>
+      CSWGuiNavigable::<classes.size>
+CSWGuiPanel              InitializeOffsets  missing  1 of  7; first=CSWGuiPanel::<classes.size>
+      CSWGuiPanel::<classes.size>
+CSWGuiProgressBar        InitializeFunctions missing  2 of  5; first=CSWGuiProgressBar::Destructor_2
+      CSWGuiProgressBar::Destructor_2, CSWGuiProgressBar::SetStartFromLeft
+CSWGuiProgressBar        InitializeOffsets  missing  4 of  4; first=CSWGuiProgressBar::max
+      CSWGuiProgressBar::max, CSWGuiProgressBar::border_1, CSWGuiProgressBar::border_2, CSWGuiProgressBar::<classes.size>
+CSWGuiScrollBar          InitializeFunctions missing  3 of  6; first=CSWGuiScrollBar::setCurValue
+      CSWGuiScrollBar::setCurValue, CSWGuiScrollBar::setMaxValue, CSWGuiScrollBar::setVisibleValue
+CSWGuiScrollBar          InitializeOffsets  missing  1 of  7; first=CSWGuiScrollBar::<classes.size>
+      CSWGuiScrollBar::<classes.size>
+CSWGuiSlider             InitializeOffsets  missing  7 of  7; first=CSWGuiSlider::max_value
+      CSWGuiSlider::max_value, CSWGuiSlider::cur_value, CSWGuiSlider::gui_sound, CSWGuiSlider::border, CSWGuiSlider::border_hilight, CSWGuiSlider::image, CSWGuiSlider::<classes.size>
+CSWGuiText               InitializeOffsets  missing  1 of  2; first=CSWGuiText::<classes.size>
+      CSWGuiText::<classes.size>
+CSWGuiTextParams         InitializeFunctions missing  1 of 12; first=CSWGuiTextParams::RestoreDefaultColor
+      CSWGuiTextParams::RestoreDefaultColor
+CSWGuiTextParams         InitializeOffsets  missing  1 of  8; first=CSWGuiTextParams::<classes.size>
+      CSWGuiTextParams::<classes.size>
+CSWSAreaOfEffectObject   InitializeOffsets  missing 10 of 10; first=CSWSAreaOfEffectObject::shape
+      CSWSAreaOfEffectObject::shape, CSWSAreaOfEffectObject::spell_id, CSWSAreaOfEffectObject::corners, CSWSAreaOfEffectObject::script_on_heartbeat, CSWSAreaOfEffectObject::script_on_user_defined, CSWSAreaOfEffectObject::script_on_enter, CSWSAreaOfEffectObject::script_on_exit, CSWSAreaOfEffectObject::duration_type, CSWSAreaOfEffectObject::last_heartbeat_day, CSWSAreaOfEffectObject::last_heartbeat_time
+CSWSCreature             InitializeOffsets  missing 35 of 37; first=CSWSCreature::joining_xp
+      CSWSCreature::joining_xp, CSWSCreature::script_heartbeat, CSWSCreature::script_on_notice, CSWSCreature::script_spell_at, CSWSCreature::script_attacked, CSWSCreature::script_damaged, CSWSCreature::script_disturbed, CSWSCreature::script_end_round, CSWSCreature::script_dialogue, CSWSCreature::script_spawn, CSWSCreature::script_rested, CSWSCreature::script_death, CSWSCreature::script_user_define, CSWSCreature::script_on_blocked, CSWSCreature::script_end_dialogue, CSWSCreature::area_object_id, CSWSCreature::entry_point, CSWSCreature::blocking_door_id, CSWSCreature::create_on_script_fired, CSWSCreature::ambient_animation_state, CSWSCreature::detect_mode, CSWSCreature::stealth_mode, CSWSCreature::disarmable, CSWSCreature::creature_size, CSWSCreature::effect_spell_id, CSWSCreature::primary_range, CSWSCreature::secondary_range, CSWSCreature::invited_to_party, CSWSCreature::base_class_level, CSWSCreature::sound_set_file, CSWSCreature::body_bag, CSWSCreature::movement_rate_factor, CSWSCreature::is_disguised, CSWSCreature::appearance, CSWSCreature::heartbeat_ms_remaining
+CSWSDoor                 InitializeFunctions missing  1 of  7; first=CSWSDoor::InDoor
+      CSWSDoor::InDoor
+CSWSDoor                 InitializeOffsets  missing 43 of 43; first=CSWSDoor::script_on_open
+      CSWSDoor::script_on_open, CSWSDoor::script_on_closed, CSWSDoor::script_on_damaged, CSWSDoor::script_on_death, CSWSDoor::script_on_disarm, CSWSDoor::script_on_heartbeat, CSWSDoor::script_on_lock, CSWSDoor::script_on_melee_attacked, CSWSDoor::script_on_spell_cast_at, CSWSDoor::script_on_trap_tiggered, CSWSDoor::script_on_unlock, CSWSDoor::script_on_user_defined, CSWSDoor::script_on_click, CSWSDoor::script_on_dialog, CSWSDoor::script_on_fail_to_open, CSWSDoor::appearance, CSWSDoor::generic_type, CSWSDoor::conversation, CSWSDoor::faction, CSWSDoor::fortitude, CSWSDoor::reflex, CSWSDoor::will, CSWSDoor::open_lock_dc, CSWSDoor::close_lock_dc, CSWSDoor::secret_door_dc, CSWSDoor::hardness, CSWSDoor::open_state, CSWSDoor::key_name, CSWSDoor::key_required, CSWSDoor::disarm_dc, CSWSDoor::detect_dc, CSWSDoor::trap_type, CSWSDoor::corners, CSWSDoor::linked_to_flags, CSWSDoor::linked_to, CSWSDoor::linked_to_module, CSWSDoor::loc_name, CSWSDoor::description, CSWSDoor::load_screen_id_lower, CSWSDoor::load_screen_id_upper, CSWSDoor::transition_destination, CSWSDoor::last_heartbeat_day, CSWSDoor::last_heartbeat_ms
+CSWSEncounter            InitializeOffsets  missing 34 of 34; first=CSWSEncounter::faction
+      CSWSEncounter::faction, CSWSEncounter::localized_name, CSWSEncounter::active, CSWSEncounter::reset, CSWSEncounter::reset_time, CSWSEncounter::spawn_option, CSWSEncounter::difficulty, CSWSEncounter::difficulty_index, CSWSEncounter::rec_creatures, CSWSEncounter::max_creatures, CSWSEncounter::number_spawned, CSWSEncounter::heartbeat_day, CSWSEncounter::heartbeat_time, CSWSEncounter::last_spawn_day, CSWSEncounter::last_spawn_time, CSWSEncounter::started, CSWSEncounter::exhausted, CSWSEncounter::area_list, CSWSEncounter::area_count, CSWSEncounter::geometry_list, CSWSEncounter::geometry_count, CSWSEncounter::creatures_count, CSWSEncounter::spawn_points_count, CSWSEncounter::max_spawns, CSWSEncounter::current_spawns, CSWSEncounter::area_points, CSWSEncounter::spawn_pool_active, CSWSEncounter::script_on_entered, CSWSEncounter::script_on_exit, CSWSEncounter::script_on_heartbeat, CSWSEncounter::script_on_exhausted, CSWSEncounter::script_on_user_defined, CSWSEncounter::custom_script_id, CSWSEncounter::player_only
+CSWSObject               InitializeFunctions missing  1 of 25; first=CSWSObject::SetTag
+      CSWSObject::SetTag
+CSWSObject               InitializeOffsets  missing 20 of 23; first=CSWSObject::tag
+      CSWSObject::tag, CSWSObject::dlg_delay_day, CSWSObject::dlg_delay_ms, CSWSObject::dlg_last_time_day, CSWSObject::dlg_last_time_ms, CSWSObject::dialog_owner, CSWSObject::ai_level, CSWSObject::animation, CSWSObject::hit_points, CSWSObject::is_destroyable, CSWSObject::is_raiseable, CSWSObject::dead_selectable, CSWSObject::plot, CSWSObject::effect_targets, CSWSObject::listening, CSWSObject::matched_expression_strings, CSWSObject::spell_target_position, CSWSObject::min1hp, CSWSObject::party_interact, CSWSObject::reorienting
+CSWSPlaceable            InitializeOffsets  missing 48 of 48; first=CSWSPlaceable::loc_name
+      CSWSPlaceable::loc_name, CSWSPlaceable::appearance, CSWSPlaceable::description, CSWSPlaceable::faction, CSWSPlaceable::conversation, CSWSPlaceable::hardness, CSWSPlaceable::locked, CSWSPlaceable::key_name, CSWSPlaceable::key_required, CSWSPlaceable::auto_remove_key, CSWSPlaceable::open_lock_dc, CSWSPlaceable::trap_detect_dc, CSWSPlaceable::trap_flag, CSWSPlaceable::disarm_dc, CSWSPlaceable::trap_disarmable, CSWSPlaceable::trap_detectable, CSWSPlaceable::trap_one_shot, CSWSPlaceable::trap_type, CSWSPlaceable::script_on_closed, CSWSPlaceable::script_on_damaged, CSWSPlaceable::script_on_death, CSWSPlaceable::script_on_disarm, CSWSPlaceable::script_on_heartbeat, CSWSPlaceable::script_on_inventory_disturbed, CSWSPlaceable::script_on_lock, CSWSPlaceable::script_on_melee_attacked, CSWSPlaceable::script_on_open, CSWSPlaceable::script_on_spell_cast_at, CSWSPlaceable::script_on_trap_triggered, CSWSPlaceable::script_on_unlock, CSWSPlaceable::script_on_used, CSWSPlaceable::script_on_user_defined, CSWSPlaceable::script_on_dialog, CSWSPlaceable::script_on_end_dialog, CSWSPlaceable::fortitude, CSWSPlaceable::will, CSWSPlaceable::reflex, CSWSPlaceable::usable, CSWSPlaceable::lockable, CSWSPlaceable::has_inventory, CSWSPlaceable::open, CSWSPlaceable::template_res_ref, CSWSPlaceable::body_bag, CSWSPlaceable::orientation, CSWSPlaceable::is_body_bag, CSWSPlaceable::is_corpse, CSWSPlaceable::last_heartbeat_day, CSWSPlaceable::last_heartbeat_ms
+CSWSStore                InitializeOffsets  missing  5 of  5; first=CSWSStore::on_open_store
+      CSWSStore::on_open_store, CSWSStore::loc_name, CSWSStore::mark_down, CSWSStore::mark_up, CSWSStore::buy_sell_flag
+CSWSTrigger              InitializeFunctions missing  1 of  7; first=CSWSTrigger::GetFirstName
+      CSWSTrigger::GetFirstName
+CSWSTrigger              InitializeOffsets  missing 27 of 27; first=CSWSTrigger::localized_name
+      CSWSTrigger::localized_name, CSWSTrigger::linked_to, CSWSTrigger::linked_to_module, CSWSTrigger::script_heartbeat, CSWSTrigger::script_on_enter, CSWSTrigger::script_on_exit, CSWSTrigger::script_user_defined, CSWSTrigger::script_on_trap_triggered, CSWSTrigger::script_on_disarm, CSWSTrigger::script_on_click, CSWSTrigger::key_name, CSWSTrigger::geometry_count, CSWSTrigger::geometry, CSWSTrigger::geometry_indices, CSWSTrigger::faction, CSWSTrigger::trap_detectable, CSWSTrigger::trap_disarmable, CSWSTrigger::trap_type, CSWSTrigger::bbox_min_x, CSWSTrigger::bbox_min_y, CSWSTrigger::bbox_max_x, CSWSTrigger::bbox_max_y, CSWSTrigger::cursor, CSWSTrigger::load_screen_id, CSWSTrigger::transition_destination, CSWSTrigger::last_heartbeat_ms, CSWSTrigger::last_heartbeat_days
+CSWSWaypoint             InitializeOffsets  missing  4 of  4; first=CSWSWaypoint::has_map_note
+      CSWSWaypoint::has_map_note, CSWSWaypoint::map_note_enabled, CSWSWaypoint::map_note, CSWSWaypoint::localized_name
+CServerExoApp            InitializeFunctions missing  1 of  9; first=(none throwing)
+      CServerExoApp::GetPlayerCreature(opt)
+CWorldTimer              InitializeFunctions missing  5 of 18; first=CWorldTimer::ConvertFromCalendarDay
+      CWorldTimer::ConvertFromCalendarDay, CWorldTimer::ConvertHourMinSecMsToMs, CWorldTimer::GetCalendarDayFromSeconds, CWorldTimer::AdvanceToTime, CWorldTimer::SetSnapshotScale
+ConsoleFunc              InitializeOffsets  missing  2 of  2; first=ConsoleFunc::name
+      ConsoleFunc::name, ConsoleFunc::funcholder
+Gob                      InitializeFunctions missing  2 of 65; first=Gob::EnableInCutscene
+      Gob::EnableInCutscene, Gob::SetCanDownSample
+Gob                      InitializeOffsets  missing  1 of  1; first=Gob::scene
+      Gob::scene
+Scene                    InitializeFunctions missing  1 of 26; first=Scene::FindRoom
+      Scene::FindRoom
+Scene                    InitializeOffsets  missing  1 of  6; first=Scene::fog
+      Scene::fog
+total missing lookups (GOG): 378
+
+====================================================================================================
+MARKDOWN: ACC-reachable wrapper classes (per init function); cell = assigned/lookups, full?, first throwing miss, total missing
+====================================================================================================
+| Class / init | Lookups | branch (assigned, full, first miss, total missing) | up48 (assigned, full, first miss, total missing) | gog (assigned, full, first miss, total missing) |
+| --- | --- | --- | --- | --- |
+| ConsoleFunc fns | 4 | 4/4, full, -, 0 missing | 4/4, full, -, 0 missing | 4/4, full, -, 0 missing |
+| ConsoleFunc offsets | 2 | 0/2, ABORTS, first miss `ConsoleFunc::name`, 2 missing | 0/2, ABORTS, first miss `ConsoleFunc::name`, 2 missing | 0/2, ABORTS, first miss `ConsoleFunc::name`, 2 missing |
+| CExoString fns | 4 | 4/4, full, -, 0 missing | 4/4, full, -, 0 missing | 4/4, full, -, 0 missing |
+| CExoString offsets | 3 | 2/3, ABORTS, first miss `CExoString::<classes.size>`, 1 missing | 2/3, ABORTS, first miss `CExoString::<classes.size>`, 1 missing | 2/3, ABORTS, first miss `CExoString::<classes.size>`, 1 missing |
+| CVirtualMachine fns | 14 | 14/14, full, -, 0 missing | 14/14, full, -, 0 missing | 14/14, full, -, 0 missing |
+| CAppManager offsets | 2 | 2/2, full, -, 0 missing | 2/2, full, -, 0 missing | 2/2, full, -, 0 missing |
+| CServerExoApp fns | 9 | 8/9, full, -, 1 missing | 3/9, ABORTS, first miss `CServerExoApp::GetGlobalVariableTable`, 6 missing | 8/9, full, -, 1 missing |
+| CClientExoApp fns | 55 | 22/55, ABORTS, first miss `CClientExoApp::IsValidResolution`, 3 missing | 1/55, ABORTS, first miss `CClientExoApp::AddMoveToModuleMovie`, 54 missing | 22/55, ABORTS, first miss `CClientExoApp::IsValidResolution`, 3 missing |
+| CClientExoApp offsets | 12 | 1/12, ABORTS, first miss `CClientExoAppInternal::debug_mode`, 11 missing | 0/12, ABORTS, first miss `CClientExoApp::internal`, 12 missing | 1/12, ABORTS, first miss `CClientExoAppInternal::debug_mode`, 11 missing |
+| CClientOptions fns | 22 | 1/22, full, -, 21 missing | 1/22, full, -, 21 missing | 21/22, full, -, 1 missing |
+| CClientOptions offsets | 1 | 0/1, full, -, 1 missing | 0/1, full, -, 1 missing | 0/1, full, -, 1 missing |
+| CGameObject offsets | 2 | 2/2, full, -, 0 missing | 2/2, full, -, 0 missing | 2/2, full, -, 0 missing |
+| CSWSObject fns | 25 | 12/25, ABORTS, first miss `CSWSObject::SetTag`, 1 missing | 1/25, ABORTS, first miss `CSWSObject::ClearAllActions`, 24 missing | 12/25, ABORTS, first miss `CSWSObject::SetTag`, 1 missing |
+| CSWSObject offsets | 23 | 3/23, ABORTS, first miss `CSWSObject::tag`, 20 missing | 3/23, ABORTS, first miss `CSWSObject::tag`, 20 missing | 3/23, ABORTS, first miss `CSWSObject::tag`, 20 missing |
+| CSWSCreature fns | 1 | 1/1, full, -, 0 missing | 1/1, full, -, 0 missing | 1/1, full, -, 0 missing |
+| CSWSCreature offsets | 37 | 2/37, ABORTS, first miss `CSWSCreature::joining_xp`, 35 missing | 2/37, ABORTS, first miss `CSWSCreature::joining_xp`, 35 missing | 2/37, ABORTS, first miss `CSWSCreature::joining_xp`, 35 missing |
+| CSWSCreatureStats fns | 15 | 15/15, full, -, 0 missing | 15/15, full, -, 0 missing | 15/15, full, -, 0 missing |
+| CSWSCreatureStats offsets | 7 | 7/7, full, -, 0 missing | 7/7, full, -, 0 missing | 7/7, full, -, 0 missing |
+
+====================================================================================================
+APPENDIX: per-lookup presence (classes used by AdditionalConsoleCommands), source order
+====================================================================================================
+
+-- ConsoleFunc::InitializeFunctions (ConsoleFunc.cpp)  base calls: []
+   1 F T ConsoleFunc::NoParamConstructor                  YYY
+   2 F T ConsoleFunc::IntConstructor                      YYY
+   3 F T ConsoleFunc::StringConstructor                   YYY
+   4 F T ConsoleFunc::Destructor                          YYY
+
+-- ConsoleFunc::InitializeOffsets (ConsoleFunc.cpp)  base calls: []
+   1 O T ConsoleFunc::name                                ...
+   2 O T ConsoleFunc::funcholder                          ...
+
+-- CExoString::InitializeFunctions (CExoString.cpp)  base calls: []
+   1 F T CExoString::DefaultConstructor                   YYY
+   2 F T CExoString::CStrLenConstructor                   YYY
+   3 F T CExoString::CStrConstructor                      YYY
+   4 F T CExoString::Destructor                           YYY
+
+-- CExoString::InitializeOffsets (CExoString.cpp)  base calls: []
+   1 O T CExoString::CStr                                 YYY
+   2 O T CExoString::Length                               YYY
+   3 S T CExoString::<classes.size>                       ...
+
+-- CVirtualMachine::InitializeFunctions (CVirtualMachine.cpp)  base calls: []
+   1 F T CVirtualMachine::StackPopInteger                 YYY
+   2 F T CVirtualMachine::StackPopFloat                   YYY
+   3 F T CVirtualMachine::StackPopVector                  YYY
+   4 F T CVirtualMachine::StackPopString                  YYY
+   5 F T CVirtualMachine::StackPopEngineStructure         YYY
+   6 F T CVirtualMachine::StackPopObject                  YYY
+   7 F T CVirtualMachine::StackPopCommand                 YYY
+   8 F T CVirtualMachine::StackPushInteger                YYY
+   9 F T CVirtualMachine::StackPushFloat                  YYY
+  10 F T CVirtualMachine::StackPushVector                 YYY
+  11 F T CVirtualMachine::StackPushString                 YYY
+  12 F T CVirtualMachine::StackPushEngineStructure        YYY
+  13 F T CVirtualMachine::StackPushObject                 YYY
+  14 F T CVirtualMachine::RunScript                       YYY
+
+-- CAppManager::InitializeOffsets (CAppManager.cpp)  base calls: []
+   1 O T CAppManager::Client                              YYY
+   2 O T CAppManager::Server                              YYY
+
+-- CServerExoApp::InitializeFunctions (CServerExoApp.cpp)  base calls: []
+   1 F T CServerExoApp::GetObjectArray                    YYY
+   2 F T CServerExoApp::GetPlayerCreatureId               YYY
+   3 F T CServerExoApp::GetCreatureByGameObjectID         YYY
+   4 R o CServerExoApp::GetPlayerCreature                 ...
+   5 F T CServerExoApp::GetGlobalVariableTable            Y.Y
+   6 F T CServerExoApp::ClientToServerObjectId            Y.Y
+   7 F T CServerExoApp::GetWorldTimer                     Y.Y
+   8 F T CServerExoApp::GetActiveTimer                    Y.Y
+   9 F T CServerExoApp::GetGameObject                     Y.Y
+
+-- CClientExoApp::InitializeFunctions (CClientExoApp.cpp)  base calls: []
+   1 F T CClientExoApp::GetClientOptions                  YYY
+   2 F T CClientExoApp::AddMoveToModuleMovie              Y.Y
+   3 F T CClientExoApp::AddMovieToMovieQueue              Y.Y
+   4 F T CClientExoApp::CancelMovie                       Y.Y
+   5 F T CClientExoApp::RemoveMoveToModuleMovies          Y.Y
+   6 F T CClientExoApp::ChangeCharacter                   Y.Y
+   7 F T CClientExoApp::CreatureAcquireItem               Y.Y
+   8 F T CClientExoApp::GetCreatureByGameObjectID         Y.Y
+   9 F T CClientExoApp::GetPlayerCreature                 Y.Y
+  10 F T CClientExoApp::SetPlayerCreature                 Y.Y
+  11 F T CClientExoApp::SetFutureLeader                   Y.Y
+  12 F T CClientExoApp::GetCharacterChangeInProgress      Y.Y
+  13 F T CClientExoApp::PlayerFlourishWeapons             Y.Y
+  14 F T CClientExoApp::RunDeathSequence                  Y.Y
+  15 F T CClientExoApp::DisableInput                      Y.Y
+  16 F T CClientExoApp::EnableInput                       Y.Y
+  17 F T CClientExoApp::GetInputClass                     Y.Y
+  18 F T CClientExoApp::SetInputClass                     Y.Y
+  19 F T CClientExoApp::GetInFreeLook                     Y.Y
+  20 F T CClientExoApp::SetMouseMode                      Y.Y
+  21 F T CClientExoApp::DisableVideoEffect                Y.Y
+  22 F T CClientExoApp::EnableVideoEffect                 Y.Y
+  23 F T CClientExoApp::IsValidResolution                 ...
+  24 F T CClientExoApp::SetVideoMode                      Y.Y
+  25 F T CClientExoApp::SetTexturePack                    Y.Y
+  26 F T CClientExoApp::DismissInGameGUI                  Y.Y
+  27 F T CClientExoApp::DisplayMainMenu                   Y.Y
+  28 F T CClientExoApp::ShutDownToMainMenu                Y.Y
+  29 F T CClientExoApp::GetGUIString                      Y.Y
+  30 F T CClientExoApp::GetInGameGui                      Y.Y
+  31 F T CClientExoApp::ExitProgram                       Y.Y
+  32 F T CClientExoApp::QueryExitProgram                  Y.Y
+  33 F T CClientExoApp::GetGameOver                       Y.Y
+  34 F T CClientExoApp::SetGameOver                       Y.Y
+  35 F T CClientExoApp::GetActivePauseState               Y.Y
+  36 F T CClientExoApp::GetAutoPaused                     Y.Y
+  37 F T CClientExoApp::GetPausedByCombat                 Y.Y
+  38 F T CClientExoApp::SetCombatMode                     Y.Y
+  39 F T CClientExoApp::GetGameObject                     Y.Y
+  40 F T CClientExoApp::GetObjectName                     Y.Y
+  41 F T CClientExoApp::GetLastTarget                     Y.Y
+  42 F T CClientExoApp::GetTargetChanging                 Y.Y
+  43 F T CClientExoApp::GetLoadingSaveGame                ...
+  44 F T CClientExoApp::SendLoadGameRequest               Y.Y
+  45 F T CClientExoApp::SendSaveGameRequest               Y.Y
+  46 F T CClientExoApp::IsSoundPlayingInDialog            Y.Y
+  47 F T CClientExoApp::SetCanSendDialog                  Y.Y
+  48 F T CClientExoApp::SetRunScript                      ...
+  49 F T CClientExoApp::GetPazaakIsRunning                Y.Y
+  50 F T CClientExoApp::GetPazaakResults                  Y.Y
+  51 F T CClientExoApp::GetCreditSequenceInProgress       Y.Y
+  52 F T CClientExoApp::StopCreditSequence                Y.Y
+  53 F T CClientExoApp::GetClientLanguage                 Y.Y
+  54 F T CClientExoApp::GetWorldTimer                     Y.Y
+  55 F T CClientExoApp::SetEventDescriptions              Y.Y
+
+-- CClientExoApp::InitializeOffsets (CClientExoApp.cpp)  base calls: []
+   1 O T CClientExoApp::internal                          Y.Y
+   2 O T CClientExoAppInternal::debug_mode                ...
+   3 O T CClientExoAppInternal::selected_texture_pack     ...
+   4 O T CClientExoAppInternal::input_disabled            ...
+   5 O T CClientExoAppInternal::mouse_x                   ...
+   6 O T CClientExoAppInternal::mouse_y                   ...
+   7 O T CClientExoAppInternal::game_obj_array            ...
+   8 O T CClientExoAppInternal::animation_timer           ...
+   9 O T CClientExoAppInternal::gui_manager               ...
+  10 O T CClientExoAppInternal::cached_creature           ...
+  11 O T CClientExoAppInternal::run_script                ...
+  12 O T CClientExoAppInternal::disable_movies            ...
+
+-- CClientOptions::InitializeFunctions (CClientOptions.cpp)  base calls: []
+   1 R o CClientOptions::SetCameraMode                    YYY
+   2 R o CClientOptions::GetCameraKeyboardAcceleration    ..Y
+   3 R o CClientOptions::GetCameraKeyboardDeceleration    ..Y
+   4 R o CClientOptions::GetCameraKeyboardDPS             ..Y
+   5 R o CClientOptions::GetGammaSetting                  ..Y
+   6 R o CClientOptions::SetAnisotropy                    ..Y
+   7 R o CClientOptions::SetAntiAlias                     ..Y
+   8 R o CClientOptions::SetFrameBuffer                   ..Y
+   9 R o CClientOptions::SetFullScreenEnabled             ..Y
+  10 R o CClientOptions::SetGrass                         ..Y
+  11 R o CClientOptions::SetShadows                       ..Y
+  12 R o CClientOptions::SetSoftShadows                   ..Y
+  13 R o CClientOptions::SetTexQual                       ..Y
+  14 R o CClientOptions::SetUseSmallFonts                 ..Y
+  15 R o CClientOptions::SetVSync                         ..Y
+  16 R o CClientOptions::GetMouseSenSetting               ...
+  17 R o CClientOptions::SetEnableHardwareMouseCursor     ..Y
+  18 R o CClientOptions::GetMovieShown                    ..Y
+  19 R o CClientOptions::SetMovieShown                    ..Y
+  20 R o CClientOptions::SetAutoLevelUpNPCs               ..Y
+  21 R o CClientOptions::LoadOptions                      ..Y
+  22 R o CClientOptions::SaveOptions                      ..Y
+
+-- CClientOptions::InitializeOffsets (CClientOptions.cpp)  base calls: []
+   1 O o CClientOptions::tooltip_delay                    ...
+
+-- CGameObject::InitializeOffsets (CGameObject.cpp)  base calls: []
+   1 O T CGameObject::Id                                  YYY
+   2 O T CGameObject::ObjectType                          YYY
+
+-- CSWSObject::InitializeFunctions (CSWSObject.cpp)  base calls: [('CGameObject', 'Functions')]
+   1 F T CSWSObject::AddActionToFront                     YYY
+   2 F T CSWSObject::ClearAllActions                      Y.Y
+   3 F T CSWSObject::GetAcceptableAction                  Y.Y
+   4 F T CSWSObject::GetAIStateReputation                 Y.Y
+   5 F T CSWSObject::GetDead                              Y.Y
+   6 F T CSWSObject::GetHasFeatEffectApplied              Y.Y
+   7 F T CSWSObject::HasSpellEffectApplied                Y.Y
+   8 F T CSWSObject::SetAnimation                         Y.Y
+   9 F T CSWSObject::SetCurrentHitPoints                  Y.Y
+  10 F T CSWSObject::SetKeepCorpse                        Y.Y
+  11 F T CSWSObject::SpawnBodyBag                         Y.Y
+  12 F T CSWSObject::GetLastName                          Y.Y
+  13 F T CSWSObject::SetTag                               ...
+  14 F T CSWSObject::GetPortrait                          Y.Y
+  15 F T CSWSObject::SetPortrait                          Y.Y
+  16 F T CSWSObject::GetPortraitId                        Y.Y
+  17 F T CSWSObject::SetPortraitId                        Y.Y
+  18 F T CSWSObject::GetScriptLocation                    Y.Y
+  19 F T CSWSObject::GetNearestObjectByName               Y.Y
+  20 F T CSWSObject::GetClientObject                      Y.Y
+  21 F T CSWSObject::GetDialogResref                      Y.Y
+  22 F T CSWSObject::SetDialogDelay                       Y.Y
+  23 F T CSWSObject::SetDialogOwner                       Y.Y
+  24 F T CSWSObject::StopDialog                           Y.Y
+  25 F T CSWSObject::StopSoundPlayingInDialog             Y.Y
+
+-- CSWSObject::InitializeOffsets (CSWSObject.cpp)  base calls: [('CGameObject', 'Offsets')]
+   1 O T CSWSObject::Position                             YYY
+   2 O T CSWSObject::Orientation                          YYY
+   3 O T CSWSObject::AreaId                               YYY
+   4 O T CSWSObject::tag                                  ...
+   5 O T CSWSObject::dlg_delay_day                        ...
+   6 O T CSWSObject::dlg_delay_ms                         ...
+   7 O T CSWSObject::dlg_last_time_day                    ...
+   8 O T CSWSObject::dlg_last_time_ms                     ...
+   9 O T CSWSObject::dialog_owner                         ...
+  10 O T CSWSObject::ai_level                             ...
+  11 O T CSWSObject::animation                            ...
+  12 O T CSWSObject::hit_points                           ...
+  13 O T CSWSObject::is_destroyable                       ...
+  14 O T CSWSObject::is_raiseable                         ...
+  15 O T CSWSObject::dead_selectable                      ...
+  16 O T CSWSObject::plot                                 ...
+  17 O T CSWSObject::effect_targets                       ...
+  18 O T CSWSObject::listening                            ...
+  19 O T CSWSObject::matched_expression_strings           ...
+  20 O T CSWSObject::spell_target_position                ...
+  21 O T CSWSObject::min1hp                               ...
+  22 O T CSWSObject::party_interact                       ...
+  23 O T CSWSObject::reorienting                          ...
+
+-- CSWSCreature::InitializeFunctions (CSWSCreature.cpp)  base calls: [('CSWSObject', 'Functions')]
+   1 F T CSWSCreature::GetClientCreature                  YYY
+
+-- CSWSCreature::InitializeOffsets (CSWSCreature.cpp)  base calls: [('CSWSObject', 'Offsets')]
+   1 O T CSWSCreature::CreatureStats                      YYY
+   2 O T CSWSCreature::Inventory                          YYY
+   3 O T CSWSCreature::joining_xp                         ...
+   4 O T CSWSCreature::script_heartbeat                   ...
+   5 O T CSWSCreature::script_on_notice                   ...
+   6 O T CSWSCreature::script_spell_at                    ...
+   7 O T CSWSCreature::script_attacked                    ...
+   8 O T CSWSCreature::script_damaged                     ...
+   9 O T CSWSCreature::script_disturbed                   ...
+  10 O T CSWSCreature::script_end_round                   ...
+  11 O T CSWSCreature::script_dialogue                    ...
+  12 O T CSWSCreature::script_spawn                       ...
+  13 O T CSWSCreature::script_rested                      ...
+  14 O T CSWSCreature::script_death                       ...
+  15 O T CSWSCreature::script_user_define                 ...
+  16 O T CSWSCreature::script_on_blocked                  ...
+  17 O T CSWSCreature::script_end_dialogue                ...
+  18 O T CSWSCreature::area_object_id                     ...
+  19 O T CSWSCreature::entry_point                        ...
+  20 O T CSWSCreature::blocking_door_id                   ...
+  21 O T CSWSCreature::create_on_script_fired             ...
+  22 O T CSWSCreature::ambient_animation_state            ...
+  23 O T CSWSCreature::detect_mode                        ...
+  24 O T CSWSCreature::stealth_mode                       ...
+  25 O T CSWSCreature::disarmable                         ...
+  26 O T CSWSCreature::creature_size                      ...
+  27 O T CSWSCreature::effect_spell_id                    ...
+  28 O T CSWSCreature::primary_range                      ...
+  29 O T CSWSCreature::secondary_range                    ...
+  30 O T CSWSCreature::invited_to_party                   ...
+  31 O T CSWSCreature::base_class_level                   ...
+  32 O T CSWSCreature::sound_set_file                     ...
+  33 O T CSWSCreature::body_bag                           ...
+  34 O T CSWSCreature::movement_rate_factor               ...
+  35 O T CSWSCreature::is_disguised                       ...
+  36 O T CSWSCreature::appearance                         ...
+  37 O T CSWSCreature::heartbeat_ms_remaining             ...
+
+-- CSWSCreatureStats::InitializeFunctions (CSWSCreatureStats.cpp)  base calls: []
+   1 F T CSWSCreatureStats::HasFeat                       YYY
+   2 F T CSWSCreatureStats::AddFeat                       YYY
+   3 F T CSWSCreatureStats::RemoveFeat                    YYY
+   4 F T CSWSCreatureStats::HasSpell                      YYY
+   5 F T CSWSCreatureStats::AddKnownSpell                 YYY
+   6 F T CSWSCreatureStats::SetSTRBase                    YYY
+   7 F T CSWSCreatureStats::SetDEXBase                    YYY
+   8 F T CSWSCreatureStats::SetCONBase                    YYY
+   9 F T CSWSCreatureStats::SetINTBase                    YYY
+  10 F T CSWSCreatureStats::SetWISBase                    YYY
+  11 F T CSWSCreatureStats::SetCHABase                    YYY
+  12 F T CSWSCreatureStats::GetSkillRank                  YYY
+  13 F T CSWSCreatureStats::SetSkillRank                  YYY
+  14 F T CSWSCreatureStats::SetMovementRate               YYY
+  15 F T CSWSCreatureStats::GetClass                      YYY
+
+-- CSWSCreatureStats::InitializeOffsets (CSWSCreatureStats.cpp)  base calls: []
+   1 O T CSWSCreatureStats::STRBase                       YYY
+   2 O T CSWSCreatureStats::DEXBase                       YYY
+   3 O T CSWSCreatureStats::CONBase                       YYY
+   4 O T CSWSCreatureStats::INTBase                       YYY
+   5 O T CSWSCreatureStats::WISBase                       YYY
+   6 O T CSWSCreatureStats::CHABase                       YYY
+   7 O T CSWSCreatureStats::ClassCount                    YYY
+
+(columns after name = presence in DBs in the order: branch, up48, gog ; Y present, . missing; T throwing-in-try, o optional)
+
+Global pointers read outside init functions (GetGlobalPointer):
+  CAppManager.cpp          APP_MANAGER_PTR      branch=Y up48=Y gog=Y
+  CAppManager.cpp          APP_MANAGER_PTR      branch=Y up48=Y gog=Y
+  CExoSound.cpp            ExoSound             branch=. up48=. gog=.
+  CSWGuiManager.cpp        GUI_MANAGER_PTR      branch=Y up48=Y gog=Y
+  CVirtualMachine.cpp      VIRTUAL_MACHINE_PTR  branch=Y up48=Y gog=Y

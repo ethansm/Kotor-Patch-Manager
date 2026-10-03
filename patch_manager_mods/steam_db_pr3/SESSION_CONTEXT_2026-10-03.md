@@ -75,3 +75,14 @@ PR worktrees are siblings under `tools/`.
 - Remaining GOG-only patches for Steam ports: ExpandedKeyboardControl (6 hooks, no DB lookups, best next
   candidate), PartyRosterLimit32K2 (211 hooks), K2ClassMenuClothes and Movie Patch (check how they target GOG).
   Skip ShaderDebug.
+
+## Next phase (plan "next phase of the upstream KPM PR series", started 10-03 afternoon)
+
+Outputs live in `patch_manager_mods/upstream_prs/` (gameapi_signatures, ekc_steam, gog_only_triage, acc_parity, drafts).
+
+Phase 0 (refresh):
+- #291-#294: still OPEN, 0 comments, 0 reviews.
+- upstream/master moved 55725f7 -> 8b33840 (#288, #304: Referenced Model Stealth Fix only). No overlap with our branches.
+- DB PR not ready: steam_db_batches is consolidating B15 (branch head still 4324098, 1,683 functions).
+- Phase 1 research inputs snapshotted to the session scratchpad: upstream/master export, Steam vanilla exe (6a522e71),
+  branch DB copy at 4324098.

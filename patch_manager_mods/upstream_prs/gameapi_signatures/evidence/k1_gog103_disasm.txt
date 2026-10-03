@@ -1,0 +1,4287 @@
+#### 5ed7e0 fn=CreatureAcquireItem entry=005ed7e0 cc=__stdcall proto=void __stdcall CreatureAcquireItem(ulong creatureId, CResRef * param_2)
+005ed7e0  a1fc397a00         MOV EAX,[0x007a39fc]
+005ed7e5  8b542404           MOV EDX,dword ptr [ESP + 0x4]
+005ed7e9  8b4808             MOV ECX,dword ptr [EAX + 0x8]
+005ed7ec  52                 PUSH EDX
+005ed7ed  e83e12ecff         CALL 0x004aea30
+005ed7f2  8b0dfc397a00       MOV ECX,dword ptr [0x007a39fc]
+005ed7f8  8b4908             MOV ECX,dword ptr [ECX + 0x8]
+005ed7fb  89442404           MOV dword ptr [ESP + 0x4],EAX
+005ed7ff  e93c13ecff         JMP 0x004aeb40
+--- decompile
+
+void CClientExoApp::CreatureAcquireItem(ulong creatureId,CResRef *param_2)
+
+{
+  ulong uVar1;
+  
+  uVar1 = CServerExoApp::ClientToServerObjectId(AppManager->server,creatureId);
+  CServerExoApp::CreatureAcquireItem(AppManager->server,uVar1,param_2);
+  return;
+}
+
+
+#### 5ed420 fn=DisplayMainMenu entry=005ed420 cc=__thiscall proto=void __thiscall DisplayMainMenu(void)
+005ed420  8b4904             MOV ECX,dword ptr [ECX + 0x4]
+005ed423  e908f60000         JMP 0x005fca30
+--- decompile
+
+void __thiscall CClientExoApp::DisplayMainMenu(CClientExoApp *this)
+
+{
+  CClientExoAppInternal::DisplayMainMenu(this->internal);
+  return;
+}
+
+
+#### 5ed450 fn=ExitProgram entry=005ed450 cc=__stdcall proto=undefined __stdcall ExitProgram(void)
+005ed450  8b4904             MOV ECX,dword ptr [ECX + 0x4]
+005ed453  e9b8150000         JMP 0x005eea10
+--- decompile
+
+void CClientExoApp::ExitProgram(void)
+
+{
+  CClientExoAppInternal::ExitProgram();
+  return;
+}
+
+
+#### 5edc10 fn=GetPausedByCombat entry=005edc10 cc=__stdcall proto=int __stdcall GetPausedByCombat(void)
+005edc10  8b4904             MOV ECX,dword ptr [ECX + 0x4]
+005edc13  e9d8510000         JMP 0x005f2df0
+--- decompile
+
+int CClientExoApp::GetPausedByCombat(void)
+
+{
+  int iVar1;
+  
+  iVar1 = CClientExoAppInternal::GetPausedByCombat();
+  return iVar1;
+}
+
+
+#### 6288f0 fn=GetCameraAnimationName entry=006288f0 cc=__stdcall proto=CExoString * __stdcall GetCameraAnimationName(CExoString * outName, short animationId)
+006288f0  6aff               PUSH -0x1
+006288f2  680f927200         PUSH 0x72920f
+006288f7  64a100000000       MOV EAX,FS:[0x0]
+006288fd  50                 PUSH EAX
+006288fe  64892500000000     MOV dword ptr FS:[0x0],ESP
+00628905  83ec0c             SUB ESP,0xc
+00628908  56                 PUSH ESI
+00628909  6844ed7300         PUSH 0x73ed44
+0062890e  8d4c240c           LEA ECX,[ESP + 0xc]
+00628912  c744240800000000   MOV dword ptr [ESP + 0x8],0x0
+0062891a  e871d1fbff         CALL 0x005e5a90
+0062891f  668b442424         MOV AX,word ptr [ESP + 0x24]
+00628924  663d7227           CMP AX,0x2772
+00628928  c744241801000000   MOV dword ptr [ESP + 0x18],0x1
+00628930  7515               JNZ 0x00628947
+00628932  8b742420           MOV ESI,dword ptr [ESP + 0x20]
+00628936  8d442408           LEA EAX,[ESP + 0x8]
+0062893a  50                 PUSH EAX
+0062893b  8bce               MOV ECX,ESI
+0062893d  e8bed1fbff         CALL 0x005e5b00
+00628942  e9d0130000         JMP 0x00629d17
+00628947  0fb7c0             MOVZX EAX,AX
+0062894a  0518fcffff         ADD EAX,0xfffffc18
+0062894f  3dd7020000         CMP EAX,0x2d7
+00628954  0f87ad130000       JA 0x00629d07
+0062895a  ff2485449d6200     JMP dword ptr [EAX*0x4 + 0x629d44]
+00628961  689c137500         PUSH 0x75139c
+00628966  e993130000         JMP 0x00629cfe
+0062896b  6894137500         PUSH 0x751394
+00628970  e989130000         JMP 0x00629cfe
+00628975  688c137500         PUSH 0x75138c
+0062897a  e97f130000         JMP 0x00629cfe
+0062897f  6884137500         PUSH 0x751384
+00628984  e975130000         JMP 0x00629cfe
+00628989  687c137500         PUSH 0x75137c
+0062898e  e96b130000         JMP 0x00629cfe
+00628993  6874137500         PUSH 0x751374
+00628998  e961130000         JMP 0x00629cfe
+0062899d  686c137500         PUSH 0x75136c
+006289a2  e957130000         JMP 0x00629cfe
+006289a7  6864137500         PUSH 0x751364
+006289ac  e94d130000         JMP 0x00629cfe
+006289b1  685c137500         PUSH 0x75135c
+006289b6  e943130000         JMP 0x00629cfe
+006289bb  6854137500         PUSH 0x751354
+006289c0  e939130000         JMP 0x00629cfe
+006289c5  684c137500         PUSH 0x75134c
+006289ca  e92f130000         JMP 0x00629cfe
+006289cf  6844137500         PUSH 0x751344
+006289d4  e925130000         JMP 0x00629cfe
+006289d9  683c137500         PUSH 0x75133c
+006289de  e91b130000         JMP 0x00629cfe
+006289e3  6834137500         PUSH 0x751334
+006289e8  e911130000         JMP 0x00629cfe
+006289ed  682c137500         PUSH 0x75132c
+006289f2  e907130000         JMP 0x00629cfe
+006289f7  6824137500         PUSH 0x751324
+006289fc  e9fd120000         JMP 0x00629cfe
+00628a01  681c137500         PUSH 0x75131c
+00628a06  e9f3120000         JMP 0x00629cfe
+00628a0b  6814137500         PUSH 0x751314
+00628a10  e9e9120000         JMP 0x00629cfe
+00628a15  680c137500         PUSH 0x75130c
+00628a1a  e9df120000         JMP 0x00629cfe
+00628a1f  6804137500         PUSH 0x751304
+00628a24  e9d5120000         JMP 0x00629cfe
+00628a29  68fc127500         PUSH 0x7512fc
+00628a2e  e9cb120000         JMP 0x00629cfe
+00628a33  68f4127500         PUSH 0x7512f4
+00628a38  e9c1120000         JMP 0x00629cfe
+00628a3d  68ec127500         PUSH 0x7512ec
+00628a42  e9b7120000         JMP 0x00629cfe
+00628a47  68e4127500         PUSH 0x7512e4
+00628a4c  e9ad120000         JMP 0x00629cfe
+00628a51  68dc127500         PUSH 0x7512dc
+00628a56  e9a3120000         JMP 0x00629cfe
+00628a5b  68d4127500         PUSH 0x7512d4
+00628a60  e999120000         JMP 0x00629cfe
+00628a65  68cc127500         PUSH 0x7512cc
+00628a6a  e98f120000         JMP 0x00629cfe
+00628a6f  68c4127500         PUSH 0x7512c4
+00628a74  e985120000         JMP 0x00629cfe
+00628a79  68bc127500         PUSH 0x7512bc
+00628a7e  e97b120000         JMP 0x00629cfe
+00628a83  68b4127500         PUSH 0x7512b4
+00628a88  e971120000         JMP 0x00629cfe
+00628a8d  68ac127500         PUSH 0x7512ac
+00628a92  e967120000         JMP 0x00629cfe
+00628a97  68a4127500         PUSH 0x7512a4
+00628a9c  e95d120000         JMP 0x00629cfe
+00628aa1  689c127500         PUSH 0x75129c
+00628aa6  e953120000         JMP 0x00629cfe
+00628aab  6894127500         PUSH 0x751294
+00628ab0  e949120000         JMP 0x00629cfe
+00628ab5  688c127500         PUSH 0x75128c
+00628aba  e93f120000         JMP 0x00629cfe
+00628abf  6884127500         PUSH 0x751284
+00628ac4  e935120000         JMP 0x00629cfe
+00628ac9  687c127500         PUSH 0x75127c
+00628ace  e92b120000         JMP 0x00629cfe
+00628ad3  6874127500         PUSH 0x751274
+00628ad8  e921120000         JMP 0x00629cfe
+00628add  686c127500         PUSH 0x75126c
+00628ae2  e917120000         JMP 0x00629cfe
+00628ae7  6864127500         PUSH 0x751264
+00628aec  e90d120000         JMP 0x00629cfe
+00628af1  685c127500         PUSH 0x75125c
+00628af6  e903120000         JMP 0x00629cfe
+00628afb  6854127500         PUSH 0x751254
+00628b00  e9f9110000         JMP 0x00629cfe
+00628b05  684c127500         PUSH 0x75124c
+00628b0a  e9ef110000         JMP 0x00629cfe
+00628b0f  6844127500         PUSH 0x751244
+00628b14  e9e5110000         JMP 0x00629cfe
+00628b19  683c127500         PUSH 0x75123c
+00628b1e  e9db110000         JMP 0x00629cfe
+00628b23  6834127500         PUSH 0x751234
+00628b28  e9d1110000         JMP 0x00629cfe
+00628b2d  682c127500         PUSH 0x75122c
+00628b32  e9c7110000         JMP 0x00629cfe
+00628b37  6824127500         PUSH 0x751224
+00628b3c  e9bd110000         JMP 0x00629cfe
+00628b41  681c127500         PUSH 0x75121c
+00628b46  e9b3110000         JMP 0x00629cfe
+00628b4b  6814127500         PUSH 0x751214
+00628b50  e9a9110000         JMP 0x00629cfe
+00628b55  680c127500         PUSH 0x75120c
+00628b5a  e99f110000         JMP 0x00629cfe
+00628b5f  6804127500         PUSH 0x751204
+00628b64  e995110000         JMP 0x00629cfe
+00628b69  68fc117500         PUSH 0x7511fc
+00628b6e  e98b110000         JMP 0x00629cfe
+00628b73  68f4117500         PUSH 0x7511f4
+00628b78  e981110000         JMP 0x00629cfe
+00628b7d  68ec117500         PUSH 0x7511ec
+00628b82  e977110000         JMP 0x00629cfe
+00628b87  68e4117500         PUSH 0x7511e4
+00628b8c  e96d110000         JMP 0x00629cfe
+00628b91  68dc117500         PUSH 0x7511dc
+00628b96  e963110000         JMP 0x00629cfe
+00628b9b  68d4117500         PUSH 0x7511d4
+00628ba0  e959110000         JMP 0x00629cfe
+00628ba5  68cc117500         PUSH 0x7511cc
+00628baa  e94f110000         JMP 0x00629cfe
+00628baf  68c4117500         PUSH 0x7511c4
+00628bb4  e945110000         JMP 0x00629cfe
+00628bb9  68bc117500         PUSH 0x7511bc
+00628bbe  e93b110000         JMP 0x00629cfe
+00628bc3  68b4117500         PUSH 0x7511b4
+00628bc8  e931110000         JMP 0x00629cfe
+00628bcd  68ac117500         PUSH 0x7511ac
+00628bd2  e927110000         JMP 0x00629cfe
+00628bd7  68a4117500         PUSH 0x7511a4
+00628bdc  e91d110000         JMP 0x00629cfe
+00628be1  689c117500         PUSH 0x75119c
+00628be6  e913110000         JMP 0x00629cfe
+00628beb  6894117500         PUSH 0x751194
+00628bf0  e909110000         JMP 0x00629cfe
+00628bf5  688c117500         PUSH 0x75118c
+00628bfa  e9ff100000         JMP 0x00629cfe
+00628bff  6884117500         PUSH 0x751184
+00628c04  e9f5100000         JMP 0x00629cfe
+00628c09  687c117500         PUSH 0x75117c
+00628c0e  e9eb100000         JMP 0x00629cfe
+00628c13  6874117500         PUSH 0x751174
+00628c18  e9e1100000         JMP 0x00629cfe
+00628c1d  686c117500         PUSH 0x75116c
+00628c22  e9d7100000         JMP 0x00629cfe
+00628c27  6864117500         PUSH 0x751164
+00628c2c  e9cd100000         JMP 0x00629cfe
+00628c31  685c117500         PUSH 0x75115c
+00628c36  e9c3100000         JMP 0x00629cfe
+00628c3b  6854117500         PUSH 0x751154
+00628c40  e9b9100000         JMP 0x00629cfe
+00628c45  684c117500         PUSH 0x75114c
+00628c4a  e9af100000         JMP 0x00629cfe
+00628c4f  6844117500         PUSH 0x751144
+00628c54  e9a5100000         JMP 0x00629cfe
+00628c59  683c117500         PUSH 0x75113c
+00628c5e  e99b100000         JMP 0x00629cfe
+00628c63  6834117500         PUSH 0x751134
+00628c68  e991100000         JMP 0x00629cfe
+00628c6d  682c117500         PUSH 0x75112c
+00628c72  e987100000         JMP 0x00629cfe
+00628c77  6824117500         PUSH 0x751124
+00628c7c  e97d100000         JMP 0x00629cfe
+00628c81  681c117500         PUSH 0x75111c
+00628c86  e973100000         JMP 0x00629cfe
+00628c8b  6814117500         PUSH 0x751114
+00628c90  e969100000         JMP 0x00629cfe
+00628c95  680c117500         PUSH 0x75110c
+00628c9a  e95f100000         JMP 0x00629cfe
+00628c9f  6804117500         PUSH 0x751104
+00628ca4  e955100000         JMP 0x00629cfe
+00628ca9  68fc107500         PUSH 0x7510fc
+00628cae  e94b100000         JMP 0x00629cfe
+00628cb3  68f4107500         PUSH 0x7510f4
+00628cb8  e941100000         JMP 0x00629cfe
+00628cbd  68ec107500         PUSH 0x7510ec
+00628cc2  e937100000         JMP 0x00629cfe
+00628cc7  68e4107500         PUSH 0x7510e4
+00628ccc  e92d100000         JMP 0x00629cfe
+00628cd1  68dc107500         PUSH 0x7510dc
+00628cd6  e923100000         JMP 0x00629cfe
+00628cdb  68d4107500         PUSH 0x7510d4
+00628ce0  e919100000         JMP 0x00629cfe
+00628ce5  68cc107500         PUSH 0x7510cc
+00628cea  e90f100000         JMP 0x00629cfe
+00628cef  68c4107500         PUSH 0x7510c4
+00628cf4  e905100000         JMP 0x00629cfe
+00628cf9  68bc107500         PUSH 0x7510bc
+00628cfe  e9fb0f0000         JMP 0x00629cfe
+00628d03  68b4107500         PUSH 0x7510b4
+00628d08  e9f10f0000         JMP 0x00629cfe
+00628d0d  68ac107500         PUSH 0x7510ac
+00628d12  e9e70f0000         JMP 0x00629cfe
+00628d17  68a4107500         PUSH 0x7510a4
+00628d1c  e9dd0f0000         JMP 0x00629cfe
+00628d21  689c107500         PUSH 0x75109c
+00628d26  e9d30f0000         JMP 0x00629cfe
+00628d2b  6894107500         PUSH 0x751094
+00628d30  e9c90f0000         JMP 0x00629cfe
+00628d35  688c107500         PUSH 0x75108c
+00628d3a  e9bf0f0000         JMP 0x00629cfe
+00628d3f  6884107500         PUSH 0x751084
+00628d44  e9b50f0000         JMP 0x00629cfe
+00628d49  687c107500         PUSH 0x75107c
+00628d4e  e9ab0f0000         JMP 0x00629cfe
+00628d53  6874107500         PUSH 0x751074
+00628d58  e9a10f0000         JMP 0x00629cfe
+00628d5d  686c107500         PUSH 0x75106c
+00628d62  e9970f0000         JMP 0x00629cfe
+00628d67  6864107500         PUSH 0x751064
+00628d6c  e98d0f0000         JMP 0x00629cfe
+00628d71  685c107500         PUSH 0x75105c
+00628d76  e9830f0000         JMP 0x00629cfe
+00628d7b  6854107500         PUSH 0x751054
+00628d80  e9790f0000         JMP 0x00629cfe
+00628d85  684c107500         PUSH 0x75104c
+00628d8a  e96f0f0000         JMP 0x00629cfe
+00628d8f  6844107500         PUSH 0x751044
+00628d94  e9650f0000         JMP 0x00629cfe
+00628d99  683c107500         PUSH 0x75103c
+00628d9e  e95b0f0000         JMP 0x00629cfe
+00628da3  6834107500         PUSH 0x751034
+00628da8  e9510f0000         JMP 0x00629cfe
+00628dad  682c107500         PUSH 0x75102c
+00628db2  e9470f0000         JMP 0x00629cfe
+00628db7  6824107500         PUSH 0x751024
+00628dbc  e93d0f0000         JMP 0x00629cfe
+00628dc1  681c107500         PUSH 0x75101c
+00628dc6  e9330f0000         JMP 0x00629cfe
+00628dcb  6814107500         PUSH 0x751014
+00628dd0  e9290f0000         JMP 0x00629cfe
+00628dd5  680c107500         PUSH 0x75100c
+00628dda  e91f0f0000         JMP 0x00629cfe
+00628ddf  6804107500         PUSH 0x751004
+00628de4  e9150f0000         JMP 0x00629cfe
+00628de9  68fc0f7500         PUSH 0x750ffc
+00628dee  e90b0f0000         JMP 0x00629cfe
+00628df3  68f40f7500         PUSH 0x750ff4
+00628df8  e9010f0000         JMP 0x00629cfe
+00628dfd  68ec0f7500         PUSH 0x750fec
+00628e02  e9f70e0000         JMP 0x00629cfe
+00628e07  68e40f7500         PUSH 0x750fe4
+00628e0c  e9ed0e0000         JMP 0x00629cfe
+00628e11  68dc0f7500         PUSH 0x750fdc
+00628e16  e9e30e0000         JMP 0x00629cfe
+00628e1b  68d40f7500         PUSH 0x750fd4
+00628e20  e9d90e0000         JMP 0x00629cfe
+00628e25  68cc0f7500         PUSH 0x750fcc
+00628e2a  e9cf0e0000         JMP 0x00629cfe
+00628e2f  68c40f7500         PUSH 0x750fc4
+00628e34  e9c50e0000         JMP 0x00629cfe
+00628e39  68bc0f7500         PUSH 0x750fbc
+00628e3e  e9bb0e0000         JMP 0x00629cfe
+00628e43  68b40f7500         PUSH 0x750fb4
+00628e48  e9b10e0000         JMP 0x00629cfe
+00628e4d  68ac0f7500         PUSH 0x750fac
+00628e52  e9a70e0000         JMP 0x00629cfe
+00628e57  68a40f7500         PUSH 0x750fa4
+00628e5c  e99d0e0000         JMP 0x00629cfe
+00628e61  689c0f7500         PUSH 0x750f9c
+00628e66  e9930e0000         JMP 0x00629cfe
+00628e6b  68940f7500         PUSH 0x750f94
+00628e70  e9890e0000         JMP 0x00629cfe
+00628e75  688c0f7500         PUSH 0x750f8c
+00628e7a  e97f0e0000         JMP 0x00629cfe
+00628e7f  68840f7500         PUSH 0x750f84
+00628e84  e9750e0000         JMP 0x00629cfe
+00628e89  687c0f7500         PUSH 0x750f7c
+00628e8e  e96b0e0000         JMP 0x00629cfe
+00628e93  68740f7500         PUSH 0x750f74
+00628e98  e9610e0000         JMP 0x00629cfe
+00628e9d  686c0f7500         PUSH 0x750f6c
+00628ea2  e9570e0000         JMP 0x00629cfe
+00628ea7  68640f7500         PUSH 0x750f64
+00628eac  e94d0e0000         JMP 0x00629cfe
+00628eb1  685c0f7500         PUSH 0x750f5c
+00628eb6  e9430e0000         JMP 0x00629cfe
+00628ebb  68540f7500         PUSH 0x750f54
+00628ec0  e9390e0000         JMP 0x00629cfe
+00628ec5  684c0f7500         PUSH 0x750f4c
+00628eca  e92f0e0000         JMP 0x00629cfe
+00628ecf  68440f7500         PUSH 0x750f44
+00628ed4  e9250e0000         JMP 0x00629cfe
+00628ed9  683c0f7500         PUSH 0x750f3c
+00628ede  e91b0e0000         JMP 0x00629cfe
+00628ee3  68340f7500         PUSH 0x750f34
+00628ee8  e9110e0000         JMP 0x00629cfe
+00628eed  682c0f7500         PUSH 0x750f2c
+00628ef2  e9070e0000         JMP 0x00629cfe
+00628ef7  68240f7500         PUSH 0x750f24
+00628efc  e9fd0d0000         JMP 0x00629cfe
+00628f01  681c0f7500         PUSH 0x750f1c
+00628f06  e9f30d0000         JMP 0x00629cfe
+00628f0b  68140f7500         PUSH 0x750f14
+00628f10  e9e90d0000         JMP 0x00629cfe
+00628f15  680c0f7500         PUSH 0x750f0c
+00628f1a  e9df0d0000         JMP 0x00629cfe
+00628f1f  68040f7500         PUSH 0x750f04
+00628f24  e9d50d0000         JMP 0x00629cfe
+00628f29  68fc0e7500         PUSH 0x750efc
+00628f2e  e9cb0d0000         JMP 0x00629cfe
+00628f33  68f40e7500         PUSH 0x750ef4
+00628f38  e9c10d0000         JMP 0x00629cfe
+00628f3d  68ec0e7500         PUSH 0x750eec
+00628f42  e9b70d0000         JMP 0x00629cfe
+00628f47  68e40e7500         PUSH 0x750ee4
+00628f4c  e9ad0d0000         JMP 0x00629cfe
+00628f51  68dc0e7500         PUSH 0x750edc
+00628f56  e9a30d0000         JMP 0x00629cfe
+00628f5b  68d40e7500         PUSH 0x750ed4
+00628f60  e9990d0000         JMP 0x00629cfe
+00628f65  68cc0e7500         PUSH 0x750ecc
+00628f6a  e98f0d0000         JMP 0x00629cfe
+00628f6f  68c40e7500         PUSH 0x750ec4
+00628f74  e9850d0000         JMP 0x00629cfe
+00628f79  68bc0e7500         PUSH 0x750ebc
+00628f7e  e97b0d0000         JMP 0x00629cfe
+00628f83  68b40e7500         PUSH 0x750eb4
+00628f88  e9710d0000         JMP 0x00629cfe
+00628f8d  68ac0e7500         PUSH 0x750eac
+00628f92  e9670d0000         JMP 0x00629cfe
+00628f97  68a40e7500         PUSH 0x750ea4
+00628f9c  e95d0d0000         JMP 0x00629cfe
+00628fa1  689c0e7500         PUSH 0x750e9c
+00628fa6  e9530d0000         JMP 0x00629cfe
+00628fab  68940e7500         PUSH 0x750e94
+00628fb0  e9490d0000         JMP 0x00629cfe
+00628fb5  688c0e7500         PUSH 0x750e8c
+00628fba  e93f0d0000         JMP 0x00629cfe
+00628fbf  68840e7500         PUSH 0x750e84
+00628fc4  e9350d0000         JMP 0x00629cfe
+00628fc9  687c0e7500         PUSH 0x750e7c
+00628fce  e92b0d0000         JMP 0x00629cfe
+00628fd3  68740e7500         PUSH 0x750e74
+00628fd8  e9210d0000         JMP 0x00629cfe
+00628fdd  686c0e7500         PUSH 0x750e6c
+00628fe2  e9170d0000         JMP 0x00629cfe
+00628fe7  68640e7500         PUSH 0x750e64
+00628fec  e90d0d0000         JMP 0x00629cfe
+00628ff1  685c0e7500         PUSH 0x750e5c
+00628ff6  e9030d0000         JMP 0x00629cfe
+00628ffb  68540e7500         PUSH 0x750e54
+00629000  e9f90c0000         JMP 0x00629cfe
+00629005  684c0e7500         PUSH 0x750e4c
+0062900a  e9ef0c0000         JMP 0x00629cfe
+0062900f  68440e7500         PUSH 0x750e44
+00629014  e9e50c0000         JMP 0x00629cfe
+00629019  683c0e7500         PUSH 0x750e3c
+0062901e  e9db0c0000         JMP 0x00629cfe
+00629023  68340e7500         PUSH 0x750e34
+00629028  e9d10c0000         JMP 0x00629cfe
+0062902d  682c0e7500         PUSH 0x750e2c
+00629032  e9c70c0000         JMP 0x00629cfe
+00629037  68240e7500         PUSH 0x750e24
+0062903c  e9bd0c0000         JMP 0x00629cfe
+00629041  681c0e7500         PUSH 0x750e1c
+00629046  e9b30c0000         JMP 0x00629cfe
+0062904b  68140e7500         PUSH 0x750e14
+00629050  e9a90c0000         JMP 0x00629cfe
+00629055  680c0e7500         PUSH 0x750e0c
+0062905a  e99f0c0000         JMP 0x00629cfe
+0062905f  68040e7500         PUSH 0x750e04
+00629064  e9950c0000         JMP 0x00629cfe
+00629069  68fc0d7500         PUSH 0x750dfc
+0062906e  e98b0c0000         JMP 0x00629cfe
+00629073  68f40d7500         PUSH 0x750df4
+00629078  e9810c0000         JMP 0x00629cfe
+0062907d  68ec0d7500         PUSH 0x750dec
+00629082  e9770c0000         JMP 0x00629cfe
+00629087  68e40d7500         PUSH 0x750de4
+0062908c  e96d0c0000         JMP 0x00629cfe
+00629091  68dc0d7500         PUSH 0x750ddc
+00629096  e9630c0000         JMP 0x00629cfe
+0062909b  68d40d7500         PUSH 0x750dd4
+006290a0  e9590c0000         JMP 0x00629cfe
+006290a5  68cc0d7500         PUSH 0x750dcc
+006290aa  e94f0c0000         JMP 0x00629cfe
+006290af  68c40d7500         PUSH 0x750dc4
+006290b4  e9450c0000         JMP 0x00629cfe
+006290b9  68bc0d7500         PUSH 0x750dbc
+006290be  e93b0c0000         JMP 0x00629cfe
+006290c3  68b40d7500         PUSH 0x750db4
+006290c8  e9310c0000         JMP 0x00629cfe
+006290cd  68ac0d7500         PUSH 0x750dac
+006290d2  e9270c0000         JMP 0x00629cfe
+006290d7  68a40d7500         PUSH 0x750da4
+006290dc  e91d0c0000         JMP 0x00629cfe
+006290e1  689c0d7500         PUSH 0x750d9c
+006290e6  e9130c0000         JMP 0x00629cfe
+006290eb  68940d7500         PUSH 0x750d94
+006290f0  e9090c0000         JMP 0x00629cfe
+006290f5  688c0d7500         PUSH 0x750d8c
+006290fa  e9ff0b0000         JMP 0x00629cfe
+006290ff  68840d7500         PUSH 0x750d84
+00629104  e9f50b0000         JMP 0x00629cfe
+00629109  687c0d7500         PUSH 0x750d7c
+0062910e  e9eb0b0000         JMP 0x00629cfe
+00629113  68740d7500         PUSH 0x750d74
+00629118  e9e10b0000         JMP 0x00629cfe
+0062911d  686c0d7500         PUSH 0x750d6c
+00629122  e9d70b0000         JMP 0x00629cfe
+00629127  68640d7500         PUSH 0x750d64
+0062912c  e9cd0b0000         JMP 0x00629cfe
+00629131  685c0d7500         PUSH 0x750d5c
+00629136  e9c30b0000         JMP 0x00629cfe
+0062913b  68540d7500         PUSH 0x750d54
+00629140  e9b90b0000         JMP 0x00629cfe
+00629145  684c0d7500         PUSH 0x750d4c
+0062914a  e9af0b0000         JMP 0x00629cfe
+0062914f  68440d7500         PUSH 0x750d44
+00629154  e9a50b0000         JMP 0x00629cfe
+00629159  683c0d7500         PUSH 0x750d3c
+0062915e  e99b0b0000         JMP 0x00629cfe
+00629163  68340d7500         PUSH 0x750d34
+00629168  e9910b0000         JMP 0x00629cfe
+0062916d  682c0d7500         PUSH 0x750d2c
+00629172  e9870b0000         JMP 0x00629cfe
+00629177  68240d7500         PUSH 0x750d24
+0062917c  e97d0b0000         JMP 0x00629cfe
+00629181  681c0d7500         PUSH 0x750d1c
+00629186  e9730b0000         JMP 0x00629cfe
+0062918b  68140d7500         PUSH 0x750d14
+00629190  e9690b0000         JMP 0x00629cfe
+00629195  680c0d7500         PUSH 0x750d0c
+0062919a  e95f0b0000         JMP 0x00629cfe
+0062919f  68040d7500         PUSH 0x750d04
+006291a4  e9550b0000         JMP 0x00629cfe
+006291a9  68fc0c7500         PUSH 0x750cfc
+006291ae  e94b0b0000         JMP 0x00629cfe
+006291b3  68f40c7500         PUSH 0x750cf4
+006291b8  e9410b0000         JMP 0x00629cfe
+006291bd  68ec0c7500         PUSH 0x750cec
+006291c2  e9370b0000         JMP 0x00629cfe
+006291c7  68e40c7500         PUSH 0x750ce4
+006291cc  e92d0b0000         JMP 0x00629cfe
+006291d1  68dc0c7500         PUSH 0x750cdc
+006291d6  e9230b0000         JMP 0x00629cfe
+006291db  68d40c7500         PUSH 0x750cd4
+006291e0  e9190b0000         JMP 0x00629cfe
+006291e5  68cc0c7500         PUSH 0x750ccc
+006291ea  e90f0b0000         JMP 0x00629cfe
+006291ef  68c40c7500         PUSH 0x750cc4
+006291f4  e9050b0000         JMP 0x00629cfe
+006291f9  68bc0c7500         PUSH 0x750cbc
+006291fe  e9fb0a0000         JMP 0x00629cfe
+00629203  68b40c7500         PUSH 0x750cb4
+00629208  e9f10a0000         JMP 0x00629cfe
+0062920d  68ac0c7500         PUSH 0x750cac
+00629212  e9e70a0000         JMP 0x00629cfe
+00629217  68a40c7500         PUSH 0x750ca4
+0062921c  e9dd0a0000         JMP 0x00629cfe
+00629221  689c0c7500         PUSH 0x750c9c
+00629226  e9d30a0000         JMP 0x00629cfe
+0062922b  68940c7500         PUSH 0x750c94
+00629230  e9c90a0000         JMP 0x00629cfe
+00629235  688c0c7500         PUSH 0x750c8c
+0062923a  e9bf0a0000         JMP 0x00629cfe
+0062923f  68840c7500         PUSH 0x750c84
+00629244  e9b50a0000         JMP 0x00629cfe
+00629249  687c0c7500         PUSH 0x750c7c
+0062924e  e9ab0a0000         JMP 0x00629cfe
+00629253  68740c7500         PUSH 0x750c74
+00629258  e9a10a0000         JMP 0x00629cfe
+0062925d  686c0c7500         PUSH 0x750c6c
+00629262  e9970a0000         JMP 0x00629cfe
+00629267  68640c7500         PUSH 0x750c64
+0062926c  e98d0a0000         JMP 0x00629cfe
+00629271  685c0c7500         PUSH 0x750c5c
+00629276  e9830a0000         JMP 0x00629cfe
+0062927b  68540c7500         PUSH 0x750c54
+00629280  e9790a0000         JMP 0x00629cfe
+00629285  684c0c7500         PUSH 0x750c4c
+0062928a  e96f0a0000         JMP 0x00629cfe
+0062928f  68440c7500         PUSH 0x750c44
+00629294  e9650a0000         JMP 0x00629cfe
+00629299  683c0c7500         PUSH 0x750c3c
+0062929e  e95b0a0000         JMP 0x00629cfe
+006292a3  68340c7500         PUSH 0x750c34
+006292a8  e9510a0000         JMP 0x00629cfe
+006292ad  682c0c7500         PUSH 0x750c2c
+006292b2  e9470a0000         JMP 0x00629cfe
+006292b7  68240c7500         PUSH 0x750c24
+006292bc  e93d0a0000         JMP 0x00629cfe
+006292c1  681c0c7500         PUSH 0x750c1c
+006292c6  e9330a0000         JMP 0x00629cfe
+006292cb  68140c7500         PUSH 0x750c14
+006292d0  e9290a0000         JMP 0x00629cfe
+006292d5  680c0c7500         PUSH 0x750c0c
+006292da  e91f0a0000         JMP 0x00629cfe
+006292df  68040c7500         PUSH 0x750c04
+006292e4  e9150a0000         JMP 0x00629cfe
+006292e9  68fc0b7500         PUSH 0x750bfc
+006292ee  e90b0a0000         JMP 0x00629cfe
+006292f3  68f40b7500         PUSH 0x750bf4
+006292f8  e9010a0000         JMP 0x00629cfe
+006292fd  68ec0b7500         PUSH 0x750bec
+00629302  e9f7090000         JMP 0x00629cfe
+00629307  68e40b7500         PUSH 0x750be4
+0062930c  e9ed090000         JMP 0x00629cfe
+00629311  68dc0b7500         PUSH 0x750bdc
+00629316  e9e3090000         JMP 0x00629cfe
+0062931b  68d40b7500         PUSH 0x750bd4
+00629320  e9d9090000         JMP 0x00629cfe
+00629325  68cc0b7500         PUSH 0x750bcc
+0062932a  e9cf090000         JMP 0x00629cfe
+0062932f  68c40b7500         PUSH 0x750bc4
+00629334  e9c5090000         JMP 0x00629cfe
+00629339  68bc0b7500         PUSH 0x750bbc
+0062933e  e9bb090000         JMP 0x00629cfe
+00629343  68b40b7500         PUSH 0x750bb4
+00629348  e9b1090000         JMP 0x00629cfe
+0062934d  68ac0b7500         PUSH 0x750bac
+00629352  e9a7090000         JMP 0x00629cfe
+00629357  68a40b7500         PUSH 0x750ba4
+0062935c  e99d090000         JMP 0x00629cfe
+00629361  689c0b7500         PUSH 0x750b9c
+00629366  e993090000         JMP 0x00629cfe
+0062936b  68940b7500         PUSH 0x750b94
+00629370  e989090000         JMP 0x00629cfe
+00629375  688c0b7500         PUSH 0x750b8c
+0062937a  e97f090000         JMP 0x00629cfe
+0062937f  68840b7500         PUSH 0x750b84
+00629384  e975090000         JMP 0x00629cfe
+00629389  687c0b7500         PUSH 0x750b7c
+0062938e  e96b090000         JMP 0x00629cfe
+00629393  68740b7500         PUSH 0x750b74
+00629398  e961090000         JMP 0x00629cfe
+0062939d  686c0b7500         PUSH 0x750b6c
+006293a2  e957090000         JMP 0x00629cfe
+006293a7  68640b7500         PUSH 0x750b64
+006293ac  e94d090000         JMP 0x00629cfe
+006293b1  685c0b7500         PUSH 0x750b5c
+006293b6  e943090000         JMP 0x00629cfe
+006293bb  68540b7500         PUSH 0x750b54
+006293c0  e939090000         JMP 0x00629cfe
+006293c5  684c0b7500         PUSH 0x750b4c
+006293ca  e92f090000         JMP 0x00629cfe
+006293cf  68440b7500         PUSH 0x750b44
+006293d4  e925090000         JMP 0x00629cfe
+006293d9  683c0b7500         PUSH 0x750b3c
+006293de  e91b090000         JMP 0x00629cfe
+006293e3  68340b7500         PUSH 0x750b34
+006293e8  e911090000         JMP 0x00629cfe
+006293ed  682c0b7500         PUSH 0x750b2c
+006293f2  e907090000         JMP 0x00629cfe
+006293f7  68240b7500         PUSH 0x750b24
+006293fc  e9fd080000         JMP 0x00629cfe
+00629401  681c0b7500         PUSH 0x750b1c
+00629406  e9f3080000         JMP 0x00629cfe
+0062940b  68140b7500         PUSH 0x750b14
+00629410  e9e9080000         JMP 0x00629cfe
+00629415  680c0b7500         PUSH 0x750b0c
+0062941a  e9df080000         JMP 0x00629cfe
+0062941f  68040b7500         PUSH 0x750b04
+00629424  e9d5080000         JMP 0x00629cfe
+00629429  68fc0a7500         PUSH 0x750afc
+0062942e  e9cb080000         JMP 0x00629cfe
+00629433  68f40a7500         PUSH 0x750af4
+00629438  e9c1080000         JMP 0x00629cfe
+0062943d  68ec0a7500         PUSH 0x750aec
+00629442  e9b7080000         JMP 0x00629cfe
+00629447  68e40a7500         PUSH 0x750ae4
+0062944c  e9ad080000         JMP 0x00629cfe
+00629451  68dc0a7500         PUSH 0x750adc
+00629456  e9a3080000         JMP 0x00629cfe
+0062945b  68d40a7500         PUSH 0x750ad4
+00629460  e999080000         JMP 0x00629cfe
+00629465  68cc0a7500         PUSH 0x750acc
+0062946a  e98f080000         JMP 0x00629cfe
+0062946f  68c40a7500         PUSH 0x750ac4
+00629474  e985080000         JMP 0x00629cfe
+00629479  68bc0a7500         PUSH 0x750abc
+0062947e  e97b080000         JMP 0x00629cfe
+00629483  68b40a7500         PUSH 0x750ab4
+00629488  e971080000         JMP 0x00629cfe
+0062948d  68ac0a7500         PUSH 0x750aac
+00629492  e967080000         JMP 0x00629cfe
+00629497  68a40a7500         PUSH 0x750aa4
+0062949c  e95d080000         JMP 0x00629cfe
+006294a1  689c0a7500         PUSH 0x750a9c
+006294a6  e953080000         JMP 0x00629cfe
+006294ab  68940a7500         PUSH 0x750a94
+006294b0  e949080000         JMP 0x00629cfe
+006294b5  688c0a7500         PUSH 0x750a8c
+006294ba  e93f080000         JMP 0x00629cfe
+006294bf  68840a7500         PUSH 0x750a84
+006294c4  e935080000         JMP 0x00629cfe
+006294c9  687c0a7500         PUSH 0x750a7c
+006294ce  e92b080000         JMP 0x00629cfe
+006294d3  68740a7500         PUSH 0x750a74
+006294d8  e921080000         JMP 0x00629cfe
+006294dd  686c0a7500         PUSH 0x750a6c
+006294e2  e917080000         JMP 0x00629cfe
+006294e7  68640a7500         PUSH 0x750a64
+006294ec  e90d080000         JMP 0x00629cfe
+006294f1  685c0a7500         PUSH 0x750a5c
+006294f6  e903080000         JMP 0x00629cfe
+006294fb  68540a7500         PUSH 0x750a54
+00629500  e9f9070000         JMP 0x00629cfe
+00629505  684c0a7500         PUSH 0x750a4c
+0062950a  e9ef070000         JMP 0x00629cfe
+0062950f  68440a7500         PUSH 0x750a44
+00629514  e9e5070000         JMP 0x00629cfe
+00629519  683c0a7500         PUSH 0x750a3c
+0062951e  e9db070000         JMP 0x00629cfe
+00629523  68340a7500         PUSH 0x750a34
+00629528  e9d1070000         JMP 0x00629cfe
+0062952d  682c0a7500         PUSH 0x750a2c
+00629532  e9c7070000         JMP 0x00629cfe
+00629537  68240a7500         PUSH 0x750a24
+0062953c  e9bd070000         JMP 0x00629cfe
+00629541  681c0a7500         PUSH 0x750a1c
+00629546  e9b3070000         JMP 0x00629cfe
+0062954b  68140a7500         PUSH 0x750a14
+00629550  e9a9070000         JMP 0x00629cfe
+00629555  680c0a7500         PUSH 0x750a0c
+0062955a  e99f070000         JMP 0x00629cfe
+0062955f  68040a7500         PUSH 0x750a04
+00629564  e995070000         JMP 0x00629cfe
+00629569  68fc097500         PUSH 0x7509fc
+0062956e  e98b070000         JMP 0x00629cfe
+00629573  68f4097500         PUSH 0x7509f4
+00629578  e981070000         JMP 0x00629cfe
+0062957d  68ec097500         PUSH 0x7509ec
+00629582  e977070000         JMP 0x00629cfe
+00629587  68e4097500         PUSH 0x7509e4
+0062958c  e96d070000         JMP 0x00629cfe
+00629591  68dc097500         PUSH 0x7509dc
+00629596  e963070000         JMP 0x00629cfe
+0062959b  68d4097500         PUSH 0x7509d4
+006295a0  e959070000         JMP 0x00629cfe
+006295a5  68cc097500         PUSH 0x7509cc
+006295aa  e94f070000         JMP 0x00629cfe
+006295af  68c4097500         PUSH 0x7509c4
+006295b4  e945070000         JMP 0x00629cfe
+006295b9  68bc097500         PUSH 0x7509bc
+006295be  e93b070000         JMP 0x00629cfe
+006295c3  68b4097500         PUSH 0x7509b4
+006295c8  e931070000         JMP 0x00629cfe
+006295cd  68ac097500         PUSH 0x7509ac
+006295d2  e927070000         JMP 0x00629cfe
+006295d7  68a4097500         PUSH 0x7509a4
+006295dc  e91d070000         JMP 0x00629cfe
+006295e1  689c097500         PUSH 0x75099c
+006295e6  e913070000         JMP 0x00629cfe
+006295eb  6894097500         PUSH 0x750994
+006295f0  e909070000         JMP 0x00629cfe
+006295f5  688c097500         PUSH 0x75098c
+006295fa  e9ff060000         JMP 0x00629cfe
+006295ff  6884097500         PUSH 0x750984
+00629604  e9f5060000         JMP 0x00629cfe
+00629609  687c097500         PUSH 0x75097c
+0062960e  e9eb060000         JMP 0x00629cfe
+00629613  6874097500         PUSH 0x750974
+00629618  e9e1060000         JMP 0x00629cfe
+0062961d  686c097500         PUSH 0x75096c
+00629622  e9d7060000         JMP 0x00629cfe
+00629627  6864097500         PUSH 0x750964
+0062962c  e9cd060000         JMP 0x00629cfe
+00629631  685c097500         PUSH 0x75095c
+00629636  e9c3060000         JMP 0x00629cfe
+0062963b  6854097500         PUSH 0x750954
+00629640  e9b9060000         JMP 0x00629cfe
+00629645  684c097500         PUSH 0x75094c
+0062964a  e9af060000         JMP 0x00629cfe
+0062964f  6844097500         PUSH 0x750944
+00629654  e9a5060000         JMP 0x00629cfe
+00629659  683c097500         PUSH 0x75093c
+0062965e  e99b060000         JMP 0x00629cfe
+00629663  6834097500         PUSH 0x750934
+00629668  e991060000         JMP 0x00629cfe
+0062966d  682c097500         PUSH 0x75092c
+00629672  e987060000         JMP 0x00629cfe
+00629677  6824097500         PUSH 0x750924
+0062967c  e97d060000         JMP 0x00629cfe
+00629681  681c097500         PUSH 0x75091c
+00629686  e973060000         JMP 0x00629cfe
+--- decompile
+
+CExoString * CGuiInGame::GetCameraAnimationName(CExoString *outName,short animationId)
+
+{
+  char *pcVar1;
+  CExoString local_14;
+  void *local_c;
+  code *pcStack_8;
+  uint local_4;
+  
+  local_4 = 0xffffffff;
+  pcStack_8 = FrameHandler_0072920f;
+  local_c = ExceptionList;
+  ExceptionList = &local_c;
+  CExoString::CExoString(&local_14,"none");
+  local_4 = 1;
+  if (animationId == 0x2772) {
+    CExoString::CExoString(outName,&local_14);
+    goto LAB_00629d17;
+  }
+  switch(animationId) {
+  case 1000:
+    pcVar1 = "cut001";
+    break;
+  case 0x3e9:
+    pcVar1 = "cut002";
+    break;
+  case 0x3ea:
+    pcVar1 = "cut003";
+    break;
+  case 0x3eb:
+    pcVar1 = "cut004";
+    break;
+  case 0x3ec:
+    pcVar1 = "cut005";
+    break;
+  case 0x3ed:
+    pcVar1 = "cut006";
+    break;
+  case 0x3ee:
+    pcVar1 = "cut007";
+    break;
+  case 0x3ef:
+    pcVar1 = "cut008";
+    break;
+  case 0x3f0:
+    pcVar1 = "cut009";
+    break;
+  case 0x3f1:
+    pcVar1 = "cut010";
+    break;
+  case 0x3f2:
+    pcVar1 = "cut011";
+    break;
+  case 0x3f3:
+    pcVar1 = "cut012";
+    break;
+  case 0x3f4:
+    pcVar1 = "cut013";
+    break;
+  case 0x3f5:
+    pcVar1 = "cut014";
+    break;
+  case 0x3f6:
+    pcVar1 = "cut015";
+    break;
+  case 0x3f7:
+    pcVar1 = "cut016";
+    break;
+  case 0x3f8:
+    pcVar1 = "cut017";
+    break;
+  case 0x3f9:
+    pcVar1 = "cut018";
+    break;
+  case 0x3fa:
+    pcVar1 = "cut019";
+    break;
+  case 0x3fb:
+    pcVar1 = "cut020";
+    break;
+  case 0x3fc:
+    pcVar1 = "cut021";
+    break;
+  case 0x3fd:
+    pcVar1 = "cut022";
+    break;
+  case 0x3fe:
+    pcVar1 = "cut023";
+    break;
+  case 0x3ff:
+    pcVar1 = "cut024";
+    break;
+  case 0x400:
+    pcVar1 = "cut025";
+    break;
+  case 0x401:
+    pcVar1 = "cut026";
+    break;
+  case 0x402:
+    pcVar1 = "cut027";
+    break;
+  case 0x403:
+    pcVar1 = "cut028";
+    break;
+  case 0x404:
+  case 0x40e:
+    pcVar1 = "cut039";
+    break;
+  case 0x405:
+    pcVar1 = "cut030";
+    break;
+  case 0x406:
+    pcVar1 = "cut031";
+    break;
+  case 0x407:
+    pcVar1 = "cut032";
+    break;
+  case 0x408:
+    pcVar1 = "cut033";
+    break;
+  case 0x409:
+    pcVar1 = "cut034";
+    break;
+  case 0x40a:
+    pcVar1 = "cut035";
+    break;
+  case 0x40b:
+    pcVar1 = "cut036";
+    break;
+  case 0x40c:
+    pcVar1 = "cut037";
+    break;
+  case 0x40d:
+    pcVar1 = "cut038";
+    break;
+  case 0x40f:
+    pcVar1 = "cut040";
+    break;
+  case 0x410:
+    pcVar1 = "cut041";
+    break;
+  case 0x411:
+    pcVar1 = "cut042";
+    break;
+  case 0x412:
+    pcVar1 = "cut043";
+    break;
+  case 0x413:
+    pcVar1 = "cut044";
+    break;
+  case 0x414:
+    pcVar1 = "cut045";
+    break;
+  case 0x415:
+    pcVar1 = "cut046";
+    break;
+  case 0x416:
+    pcVar1 = "cut047";
+    break;
+  case 0x417:
+    pcVar1 = "cut048";
+    break;
+  case 0x418:
+    pcVar1 = "cut049";
+    break;
+  case 0x419:
+    pcVar1 = "cut050";
+    break;
+  case 0x41a:
+    pcVar1 = "cut051";
+    break;
+  case 0x41b:
+    pcVar1 = "cut052";
+    break;
+  case 0x41c:
+    pcVar1 = "cut053";
+    break;
+  case 0x41d:
+    pcVar1 = "cut054";
+    break;
+  case 0x41e:
+    pcVar1 = "cut055";
+    break;
+  case 0x41f:
+    pcVar1 = "cut056";
+    break;
+  case 0x420:
+    pcVar1 = "cut057";
+    break;
+  case 0x421:
+    pcVar1 = "cut058";
+    break;
+  case 0x422:
+    pcVar1 = "cut059";
+    break;
+  case 0x423:
+    pcVar1 = "cut060";
+    break;
+  case 0x424:
+    pcVar1 = "cut061";
+    break;
+  case 0x425:
+    pcVar1 = "cut062";
+    break;
+  case 0x426:
+    pcVar1 = "cut063";
+    break;
+  case 0x427:
+    pcVar1 = "cut064";
+    break;
+  case 0x428:
+    pcVar1 = "cut065";
+    break;
+  case 0x429:
+    pcVar1 = "cut066";
+    break;
+  case 0x42a:
+    pcVar1 = "cut067";
+    break;
+  case 0x42b:
+    pcVar1 = "cut068";
+    break;
+  case 0x42c:
+    pcVar1 = "cut069";
+    break;
+  case 0x42d:
+    pcVar1 = "cut070";
+    break;
+  case 0x42e:
+    pcVar1 = "cut071";
+    break;
+  case 0x42f:
+    pcVar1 = "cut072";
+    break;
+  case 0x430:
+    pcVar1 = "cut073";
+    break;
+  case 0x431:
+    pcVar1 = "cut074";
+    break;
+  case 0x432:
+    pcVar1 = "cut075";
+    break;
+  case 0x433:
+    pcVar1 = "cut076";
+    break;
+  case 0x434:
+    pcVar1 = "cut077";
+    break;
+  case 0x435:
+    pcVar1 = "cut078";
+    break;
+  case 0x436:
+    pcVar1 = "cut079";
+    break;
+  case 0x437:
+    pcVar1 = "cut080";
+    break;
+  case 0x438:
+    pcVar1 = "cut081";
+    break;
+  case 0x439:
+    pcVar1 = "cut082";
+    break;
+  case 0x43a:
+    pcVar1 = "cut083";
+    break;
+  case 0x43b:
+    pcVar1 = "cut084";
+    break;
+  case 0x43c:
+    pcVar1 = "cut085";
+    break;
+  case 0x43d:
+    pcVar1 = "cut086";
+    break;
+  case 0x43e:
+    pcVar1 = "cut087";
+    break;
+  case 0x43f:
+    pcVar1 = "cut088";
+    break;
+  case 0x440:
+    pcVar1 = "cut089";
+    break;
+  case 0x441:
+    pcVar1 = "cut090";
+    break;
+  case 0x442:
+    pcVar1 = "cut091";
+    break;
+  case 0x443:
+    pcVar1 = "cut092";
+    break;
+  case 0x444:
+    pcVar1 = "cut093";
+    break;
+  case 0x445:
+    pcVar1 = "cut094";
+    break;
+  case 0x446:
+    pcVar1 = "cut095";
+    break;
+  case 0x447:
+    pcVar1 = "cut096";
+    break;
+  case 0x448:
+    pcVar1 = "cut097";
+    break;
+  case 0x449:
+    pcVar1 = "cut098";
+    break;
+  case 0x44a:
+    pcVar1 = "cut099";
+    break;
+  case 1099:
+    pcVar1 = "cut100";
+    break;
+  case 0x44c:
+    pcVar1 = "cut101";
+    break;
+  case 0x44d:
+    pcVar1 = "cut102";
+    break;
+  case 0x44e:
+    pcVar1 = "cut103";
+    break;
+  case 0x44f:
+    pcVar1 = "cut104";
+    break;
+  case 0x450:
+    pcVar1 = "cut105";
+    break;
+  case 0x451:
+    pcVar1 = "cut106";
+    break;
+  case 0x452:
+    pcVar1 = "cut107";
+    break;
+  case 0x453:
+    pcVar1 = "cut108";
+    break;
+  case 0x454:
+    pcVar1 = "cut109";
+    break;
+  case 0x455:
+    pcVar1 = "cut110";
+    break;
+  case 0x456:
+    pcVar1 = "cut111";
+    break;
+  case 0x457:
+    pcVar1 = "cut112";
+    break;
+  case 0x458:
+    pcVar1 = "cut113";
+    break;
+  case 0x459:
+    pcVar1 = "cut114";
+    break;
+  case 0x45a:
+    pcVar1 = "cut115";
+    break;
+  case 0x45b:
+    pcVar1 = "cut116";
+    break;
+  case 0x45c:
+    pcVar1 = "cut117";
+    break;
+  case 0x45d:
+    pcVar1 = "cut118";
+    break;
+  case 0x45e:
+    pcVar1 = "cut119";
+    break;
+  case 0x45f:
+    pcVar1 = "cut120";
+    break;
+  case 0x460:
+    pcVar1 = "cut121";
+    break;
+  case 0x461:
+    pcVar1 = "cut122";
+    break;
+  case 0x462:
+    pcVar1 = "cut123";
+    break;
+  case 0x463:
+    pcVar1 = "cut124";
+    break;
+  case 0x464:
+    pcVar1 = "cut125";
+    break;
+  case 0x465:
+    pcVar1 = "cut126";
+    break;
+  case 0x466:
+    pcVar1 = "cut127";
+    break;
+  case 0x467:
+    pcVar1 = "cut128";
+    break;
+  default:
+    goto switchD_0062895a_caseD_468;
+  case 0x4b0:
+    pcVar1 = "cut001w";
+    break;
+  case 0x4b1:
+    pcVar1 = "cut002w";
+    break;
+  case 0x4b2:
+    pcVar1 = "cut003w";
+    break;
+  case 0x4b3:
+    pcVar1 = "cut004w";
+    break;
+  case 0x4b4:
+    pcVar1 = "cut005w";
+    break;
+  case 0x4b5:
+    pcVar1 = "cut006w";
+    break;
+  case 0x4b6:
+    pcVar1 = "cut007w";
+    break;
+  case 0x4b7:
+    pcVar1 = "cut008w";
+    break;
+  case 0x4b8:
+    pcVar1 = "cut009w";
+    break;
+  case 0x4b9:
+    pcVar1 = "cut010w";
+    break;
+  case 0x4ba:
+    pcVar1 = "cut011w";
+    break;
+  case 0x4bb:
+    pcVar1 = "cut012w";
+    break;
+  case 0x4bc:
+    pcVar1 = "cut013w";
+    break;
+  case 0x4bd:
+    pcVar1 = "cut014w";
+    break;
+  case 0x4be:
+    pcVar1 = "cut015w";
+    break;
+  case 0x4bf:
+    pcVar1 = "cut016w";
+    break;
+  case 0x4c0:
+    pcVar1 = "cut017w";
+    break;
+  case 0x4c1:
+    pcVar1 = "cut018w";
+    break;
+  case 0x4c2:
+    pcVar1 = "cut019w";
+    break;
+  case 0x4c3:
+    pcVar1 = "cut020w";
+    break;
+  case 0x4c4:
+    pcVar1 = "cut021w";
+    break;
+  case 0x4c5:
+    pcVar1 = "cut022w";
+    break;
+  case 0x4c6:
+    pcVar1 = "cut023w";
+    break;
+  case 0x4c7:
+    pcVar1 = "cut024w";
+    break;
+  case 0x4c8:
+    pcVar1 = "cut025w";
+    break;
+  case 0x4c9:
+    pcVar1 = "cut026w";
+    break;
+  case 0x4ca:
+    pcVar1 = "cut027w";
+    break;
+  case 0x4cb:
+    pcVar1 = "cut028w";
+    break;
+  case 0x4cc:
+  case 0x4d6:
+    pcVar1 = "cut039w";
+    break;
+  case 0x4cd:
+    pcVar1 = "cut030w";
+    break;
+  case 0x4ce:
+    pcVar1 = "cut031w";
+    break;
+  case 0x4cf:
+    pcVar1 = "cut032w";
+    break;
+  case 0x4d0:
+    pcVar1 = "cut033w";
+    break;
+  case 0x4d1:
+    pcVar1 = "cut034w";
+    break;
+  case 0x4d2:
+    pcVar1 = "cut035w";
+    break;
+  case 0x4d3:
+    pcVar1 = "cut036w";
+    break;
+  case 0x4d4:
+    pcVar1 = "cut037w";
+    break;
+  case 0x4d5:
+    pcVar1 = "cut038w";
+    break;
+  case 0x4d7:
+    pcVar1 = "cut040w";
+    break;
+  case 0x4d8:
+    pcVar1 = "cut041w";
+    break;
+  case 0x4d9:
+    pcVar1 = "cut042w";
+    break;
+  case 0x4da:
+    pcVar1 = "cut043w";
+    break;
+  case 0x4db:
+    pcVar1 = "cut044w";
+    break;
+  case 0x4dc:
+    pcVar1 = "cut045w";
+    break;
+  case 0x4dd:
+    pcVar1 = "cut046w";
+    break;
+  case 0x4de:
+    pcVar1 = "cut047w";
+    break;
+  case 0x4df:
+    pcVar1 = "cut048w";
+    break;
+  case 0x4e0:
+    pcVar1 = "cut049w";
+    break;
+  case 0x4e1:
+    pcVar1 = "cut050w";
+    break;
+  case 0x4e2:
+    pcVar1 = "cut051w";
+    break;
+  case 0x4e3:
+    pcVar1 = "cut052w";
+    break;
+  case 0x4e4:
+    pcVar1 = "cut053w";
+    break;
+  case 0x4e5:
+    pcVar1 = "cut054w";
+    break;
+  case 0x4e6:
+    pcVar1 = "cut055w";
+    break;
+  case 0x4e7:
+    pcVar1 = "cut056w";
+    break;
+  case 0x4e8:
+    pcVar1 = "cut057w";
+    break;
+  case 0x4e9:
+    pcVar1 = "cut058w";
+    break;
+  case 0x4ea:
+    pcVar1 = "cut059w";
+    break;
+  case 0x4eb:
+    pcVar1 = "cut060w";
+    break;
+  case 0x4ec:
+    pcVar1 = "cut061w";
+    break;
+  case 0x4ed:
+    pcVar1 = "cut062w";
+    break;
+  case 0x4ee:
+    pcVar1 = "cut063w";
+    break;
+  case 0x4ef:
+    pcVar1 = "cut064w";
+    break;
+  case 0x4f0:
+    pcVar1 = "cut065w";
+    break;
+  case 0x4f1:
+    pcVar1 = "cut066w";
+    break;
+  case 0x4f2:
+    pcVar1 = "cut067w";
+    break;
+  case 0x4f3:
+    pcVar1 = "cut068w";
+    break;
+  case 0x4f4:
+    pcVar1 = "cut069w";
+    break;
+  case 0x4f5:
+    pcVar1 = "cut070w";
+    break;
+  case 0x4f6:
+    pcVar1 = "cut071w";
+    break;
+  case 0x4f7:
+    pcVar1 = "cut072w";
+    break;
+  case 0x4f8:
+    pcVar1 = "cut073w";
+    break;
+  case 0x4f9:
+    pcVar1 = "cut074w";
+    break;
+  case 0x4fa:
+    pcVar1 = "cut075w";
+    break;
+  case 0x4fb:
+    pcVar1 = "cut076w";
+    break;
+  case 0x4fc:
+    pcVar1 = "cut077w";
+    break;
+  case 0x4fd:
+    pcVar1 = "cut078w";
+    break;
+  case 0x4fe:
+    pcVar1 = "cut079w";
+    break;
+  case 0x4ff:
+    pcVar1 = "cut080w";
+    break;
+  case 0x500:
+    pcVar1 = "cut081w";
+    break;
+  case 0x501:
+    pcVar1 = "cut082w";
+    break;
+  case 0x502:
+    pcVar1 = "cut083w";
+    break;
+  case 0x503:
+    pcVar1 = "cut084w";
+    break;
+  case 0x504:
+    pcVar1 = "cut085w";
+    break;
+  case 0x505:
+    pcVar1 = "cut086w";
+    break;
+  case 0x506:
+    pcVar1 = "cut087w";
+    break;
+  case 0x507:
+    pcVar1 = "cut088w";
+    break;
+  case 0x508:
+    pcVar1 = "cut089w";
+    break;
+  case 0x509:
+    pcVar1 = "cut090w";
+    break;
+  case 0x50a:
+    pcVar1 = "cut091w";
+    break;
+  case 0x50b:
+    pcVar1 = "cut092w";
+    break;
+  case 0x50c:
+    pcVar1 = "cut093w";
+    break;
+  case 0x50d:
+    pcVar1 = "cut094w";
+    break;
+  case 0x50e:
+    pcVar1 = "cut095w";
+    break;
+  case 0x50f:
+    pcVar1 = "cut096w";
+    break;
+  case 0x510:
+    pcVar1 = "cut097w";
+    break;
+  case 0x511:
+    pcVar1 = "cut098w";
+    break;
+  case 0x512:
+    pcVar1 = "cut099w";
+    break;
+  case 0x513:
+    pcVar1 = "cut100w";
+    break;
+  case 0x514:
+    pcVar1 = "cut101w";
+    break;
+  case 0x515:
+    pcVar1 = "cut102w";
+    break;
+  case 0x516:
+    pcVar1 = "cut103w";
+    break;
+  case 0x517:
+    pcVar1 = "cut104w";
+    break;
+  case 0x518:
+    pcVar1 = "cut105w";
+    break;
+  case 0x519:
+    pcVar1 = "cut106w";
+    break;
+  case 0x51a:
+    pcVar1 = "cut107w";
+    break;
+  case 0x51b:
+    pcVar1 = "cut108w";
+    break;
+  case 0x51c:
+    pcVar1 = "cut109w";
+    break;
+  case 0x51d:
+    pcVar1 = "cut110w";
+    break;
+  case 0x51e:
+    pcVar1 = "cut111w";
+    break;
+  case 0x51f:
+    pcVar1 = "cut112w";
+    break;
+  case 0x520:
+    pcVar1 = "cut113w";
+    break;
+  case 0x521:
+    pcVar1 = "cut114w";
+    break;
+  case 0x522:
+    pcVar1 = "cut115w";
+    break;
+  case 0x523:
+    pcVar1 = "cut116w";
+    break;
+  case 0x524:
+    pcVar1 = "cut117w";
+    break;
+  case 0x525:
+    pcVar1 = "cut118w";
+    break;
+  case 0x526:
+    pcVar1 = "cut119w";
+    break;
+  case 0x527:
+    pcVar1 = "cut120w";
+    break;
+  case 0x528:
+    pcVar1 = "cut121w";
+    break;
+  case 0x529:
+    pcVar1 = "cut122w";
+    break;
+  case 0x52a:
+    pcVar1 = "cut123w";
+    break;
+  case 0x52b:
+    pcVar1 = "cut124w";
+    break;
+  case 0x52c:
+    pcVar1 = "cut125w";
+    break;
+  case 0x52d:
+    pcVar1 = "cut126w";
+    break;
+  case 0x52e:
+    pcVar1 = "cut127w";
+    break;
+  case 0x52f:
+    pcVar1 = "cut128w";
+    break;
+  case 0x578:
+    pcVar1 = "cut001l";
+    break;
+  case 0x579:
+    pcVar1 = "cut002l";
+    break;
+  case 0x57a:
+    pcVar1 = "cut003l";
+    break;
+  case 0x57b:
+    pcVar1 = "cut004l";
+    break;
+  case 0x57c:
+    pcVar1 = "cut005l";
+    break;
+  case 0x57d:
+    pcVar1 = "cut006l";
+    break;
+  case 0x57e:
+    pcVar1 = "cut007l";
+    break;
+  case 0x57f:
+    pcVar1 = "cut008l";
+    break;
+  case 0x580:
+    pcVar1 = "cut009l";
+    break;
+  case 0x581:
+    pcVar1 = "cut010l";
+    break;
+  case 0x582:
+    pcVar1 = "cut011l";
+    break;
+  case 0x583:
+    pcVar1 = "cut012l";
+    break;
+  case 0x584:
+    pcVar1 = "cut013l";
+    break;
+  case 0x585:
+    pcVar1 = "cut014l";
+    break;
+  case 0x586:
+    pcVar1 = "cut015l";
+    break;
+  case 0x587:
+    pcVar1 = "cut016l";
+    break;
+  case 0x588:
+    pcVar1 = "cut017l";
+    break;
+  case 0x589:
+    pcVar1 = "cut018l";
+    break;
+  case 0x58a:
+    pcVar1 = "cut019l";
+    break;
+  case 0x58b:
+    pcVar1 = "cut020l";
+    break;
+  case 0x58c:
+    pcVar1 = "cut021l";
+    break;
+  case 0x58d:
+    pcVar1 = "cut022l";
+    break;
+  case 0x58e:
+    pcVar1 = "cut023l";
+    break;
+  case 0x58f:
+    pcVar1 = "cut024l";
+    break;
+  case 0x590:
+    pcVar1 = "cut025l";
+    break;
+  case 0x591:
+    pcVar1 = "cut026l";
+    break;
+  case 0x592:
+    pcVar1 = "cut027l";
+    break;
+  case 0x593:
+    pcVar1 = "cut028l";
+    break;
+  case 0x594:
+  case 0x59e:
+    pcVar1 = "cut039l";
+    break;
+  case 0x595:
+    pcVar1 = "cut030l";
+    break;
+  case 0x596:
+    pcVar1 = "cut031l";
+    break;
+  case 0x597:
+    pcVar1 = "cut032l";
+    break;
+  case 0x598:
+    pcVar1 = "cut033l";
+    break;
+  case 0x599:
+    pcVar1 = "cut034l";
+    break;
+  case 0x59a:
+    pcVar1 = "cut035l";
+    break;
+  case 0x59b:
+    pcVar1 = "cut036l";
+    break;
+  case 0x59c:
+    pcVar1 = "cut037l";
+    break;
+  case 0x59d:
+    pcVar1 = "cut038l";
+    break;
+  case 0x59f:
+    pcVar1 = "cut040l";
+    break;
+  case 0x5a0:
+    pcVar1 = "cut041l";
+    break;
+  case 0x5a1:
+    pcVar1 = "cut042l";
+    break;
+  case 0x5a2:
+    pcVar1 = "cut043l";
+    break;
+  case 0x5a3:
+    pcVar1 = "cut044l";
+    break;
+  case 0x5a4:
+    pcVar1 = "cut045l";
+    break;
+  case 0x5a5:
+    pcVar1 = "cut046l";
+    break;
+  case 0x5a6:
+    pcVar1 = "cut047l";
+    break;
+  case 0x5a7:
+    pcVar1 = "cut048l";
+    break;
+  case 0x5a8:
+    pcVar1 = "cut049l";
+    break;
+  case 0x5a9:
+    pcVar1 = "cut050l";
+    break;
+  case 0x5aa:
+    pcVar1 = "cut051l";
+    break;
+  case 0x5ab:
+    pcVar1 = "cut052l";
+    break;
+  case 0x5ac:
+    pcVar1 = "cut053l";
+    break;
+  case 0x5ad:
+    pcVar1 = "cut054l";
+    break;
+  case 0x5ae:
+    pcVar1 = "cut055l";
+    break;
+  case 0x5af:
+    pcVar1 = "cut056l";
+    break;
+  case 0x5b0:
+    pcVar1 = "cut057l";
+    break;
+  case 0x5b1:
+    pcVar1 = "cut058l";
+    break;
+  case 0x5b2:
+    pcVar1 = "cut059l";
+    break;
+  case 0x5b3:
+    pcVar1 = "cut060l";
+    break;
+  case 0x5b4:
+    pcVar1 = "cut061l";
+    break;
+  case 0x5b5:
+    pcVar1 = "cut062l";
+    break;
+  case 0x5b6:
+    pcVar1 = "cut063l";
+    break;
+  case 0x5b7:
+    pcVar1 = "cut064l";
+    break;
+  case 0x5b8:
+    pcVar1 = "cut065l";
+    break;
+  case 0x5b9:
+    pcVar1 = "cut066l";
+    break;
+  case 0x5ba:
+    pcVar1 = "cut067l";
+    break;
+  case 0x5bb:
+    pcVar1 = "cut068l";
+    break;
+  case 0x5bc:
+    pcVar1 = "cut069l";
+    break;
+  case 0x5bd:
+    pcVar1 = "cut070l";
+    break;
+  case 0x5be:
+    pcVar1 = "cut071l";
+    break;
+  case 0x5bf:
+    pcVar1 = "cut072l";
+    break;
+  case 0x5c0:
+    pcVar1 = "cut073l";
+    break;
+  case 0x5c1:
+    pcVar1 = "cut074l";
+    break;
+  case 0x5c2:
+    pcVar1 = "cut075l";
+    break;
+  case 0x5c3:
+    pcVar1 = "cut076l";
+    break;
+  case 0x5c4:
+    pcVar1 = "cut077l";
+    break;
+  case 0x5c5:
+    pcVar1 = "cut078l";
+    break;
+  case 0x5c6:
+    pcVar1 = "cut079l";
+    break;
+  case 0x5c7:
+    pcVar1 = "cut080l";
+    break;
+  case 0x5c8:
+    pcVar1 = "cut081l";
+    break;
+  case 0x5c9:
+    pcVar1 = "cut082l";
+    break;
+  case 0x5ca:
+    pcVar1 = "cut083l";
+    break;
+  case 0x5cb:
+    pcVar1 = "cut084l";
+    break;
+  case 0x5cc:
+    pcVar1 = "cut085l";
+    break;
+  case 0x5cd:
+    pcVar1 = "cut086l";
+    break;
+  case 0x5ce:
+    pcVar1 = "cut087l";
+    break;
+  case 0x5cf:
+    pcVar1 = "cut088l";
+    break;
+  case 0x5d0:
+    pcVar1 = "cut089l";
+    break;
+  case 0x5d1:
+    pcVar1 = "cut090l";
+    break;
+  case 0x5d2:
+    pcVar1 = "cut091l";
+    break;
+  case 0x5d3:
+    pcVar1 = "cut092l";
+    break;
+  case 0x5d4:
+    pcVar1 = "cut093l";
+    break;
+  case 0x5d5:
+    pcVar1 = "cut094l";
+    break;
+  case 0x5d6:
+    pcVar1 = "cut095l";
+    break;
+  case 0x5d7:
+    pcVar1 = "cut096l";
+    break;
+  case 0x5d8:
+    pcVar1 = "cut097l";
+    break;
+  case 0x5d9:
+    pcVar1 = "cut098l";
+    break;
+  case 0x5da:
+    pcVar1 = "cut099l";
+    break;
+  case 0x5db:
+    pcVar1 = "cut100l";
+    break;
+  case 0x5dc:
+    pcVar1 = "cut101l";
+    break;
+  case 0x5dd:
+    pcVar1 = "cut102l";
+    break;
+  case 0x5de:
+    pcVar1 = "cut103l";
+    break;
+  case 0x5df:
+    pcVar1 = "cut104l";
+    break;
+  case 0x5e0:
+    pcVar1 = "cut105l";
+    break;
+  case 0x5e1:
+    pcVar1 = "cut106l";
+    break;
+  case 0x5e2:
+    pcVar1 = "cut107l";
+    break;
+  case 0x5e3:
+    pcVar1 = "cut108l";
+    break;
+  case 0x5e4:
+    pcVar1 = "cut109l";
+    break;
+  case 0x5e5:
+    pcVar1 = "cut110l";
+    break;
+  case 0x5e6:
+    pcVar1 = "cut111l";
+    break;
+  case 0x5e7:
+    pcVar1 = "cut112l";
+    break;
+  case 0x5e8:
+    pcVar1 = "cut113l";
+    break;
+  case 0x5e9:
+    pcVar1 = "cut114l";
+    break;
+  case 0x5ea:
+    pcVar1 = "cut115l";
+    break;
+  case 0x5eb:
+    pcVar1 = "cut116l";
+    break;
+  case 0x5ec:
+    pcVar1 = "cut117l";
+    break;
+  case 0x5ed:
+    pcVar1 = "cut118l";
+    break;
+  case 0x5ee:
+    pcVar1 = "cut119l";
+    break;
+  case 0x5ef:
+    pcVar1 = "cut120l";
+    break;
+  case 0x5f0:
+    pcVar1 = "cut121l";
+    break;
+  case 0x5f1:
+    pcVar1 = "cut122l";
+    break;
+  case 0x5f2:
+    pcVar1 = "cut123l";
+    break;
+  case 0x5f3:
+    pcVar1 = "cut124l";
+    break;
+  case 0x5f4:
+    pcVar1 = "cut125l";
+    break;
+  case 0x5f5:
+    pcVar1 = "cut126l";
+    break;
+  case 0x5f6:
+    pcVar1 = "cut127l";
+    break;
+  case 0x5f7:
+    pcVar1 = "cut128l";
+    break;
+  case 0x640:
+    pcVar1 = "cut001wl";
+    break;
+  case 0x641:
+    pcVar1 = "cut002wl";
+    break;
+  case 0x642:
+    pcVar1 = "cut003wl";
+    break;
+  case 0x643:
+    pcVar1 = "cut004wl";
+    break;
+  case 0x644:
+    pcVar1 = "cut005wl";
+    break;
+  case 0x645:
+    pcVar1 = "cut006wl";
+    break;
+  case 0x646:
+    pcVar1 = "cut007wl";
+    break;
+  case 0x647:
+    pcVar1 = "cut008wl";
+    break;
+  case 0x648:
+    pcVar1 = "cut009wl";
+    break;
+  case 0x649:
+    pcVar1 = "cut010wl";
+    break;
+  case 0x64a:
+    pcVar1 = "cut011wl";
+    break;
+  case 0x64b:
+    pcVar1 = "cut012wl";
+    break;
+  case 0x64c:
+    pcVar1 = "cut013wl";
+    break;
+  case 0x64d:
+    pcVar1 = "cut014wl";
+    break;
+  case 0x64e:
+    pcVar1 = "cut015wl";
+    break;
+  case 0x64f:
+    pcVar1 = "cut016wl";
+    break;
+  case 0x650:
+    pcVar1 = "cut017wl";
+    break;
+  case 0x651:
+    pcVar1 = "cut018wl";
+    break;
+  case 0x652:
+    pcVar1 = "cut019wl";
+    break;
+  case 0x653:
+    pcVar1 = "cut020wl";
+    break;
+  case 0x654:
+    pcVar1 = "cut021wl";
+    break;
+  case 0x655:
+    pcVar1 = "cut022wl";
+    break;
+  case 0x656:
+    pcVar1 = "cut023wl";
+    break;
+  case 0x657:
+    pcVar1 = "cut024wl";
+    break;
+  case 0x658:
+    pcVar1 = "cut025wl";
+    break;
+  case 0x659:
+    pcVar1 = "cut026wl";
+    break;
+  case 0x65a:
+    pcVar1 = "cut027wl";
+    break;
+  case 0x65b:
+    pcVar1 = "cut028wl";
+    break;
+  case 0x65c:
+  case 0x666:
+    pcVar1 = "cut039wl";
+    break;
+  case 0x65d:
+    pcVar1 = "cut030wl";
+    break;
+  case 0x65e:
+    pcVar1 = "cut031wl";
+    break;
+  case 0x65f:
+    pcVar1 = "cut032wl";
+    break;
+  case 0x660:
+    pcVar1 = "cut033wl";
+    break;
+  case 0x661:
+    pcVar1 = "cut034wl";
+    break;
+  case 0x662:
+    pcVar1 = "cut035wl";
+    break;
+  case 0x663:
+    pcVar1 = "cut036wl";
+    break;
+  case 0x664:
+    pcVar1 = "cut037wl";
+    break;
+  case 0x665:
+    pcVar1 = "cut038wl";
+    break;
+  case 0x667:
+    pcVar1 = "cut040wl";
+    break;
+  case 0x668:
+    pcVar1 = "cut041wl";
+    break;
+  case 0x669:
+    pcVar1 = "cut042wl";
+    break;
+  case 0x66a:
+    pcVar1 = "cut043wl";
+    break;
+  case 0x66b:
+    pcVar1 = "cut044wl";
+    break;
+  case 0x66c:
+    pcVar1 = "cut045wl";
+    break;
+  case 0x66d:
+    pcVar1 = "cut046wl";
+    break;
+  case 0x66e:
+    pcVar1 = "cut047wl";
+    break;
+  case 0x66f:
+    pcVar1 = "cut048wl";
+    break;
+  case 0x670:
+    pcVar1 = "cut049wl";
+    break;
+  case 0x671:
+    pcVar1 = "cut050wl";
+    break;
+  case 0x672:
+    pcVar1 = "cut051wl";
+    break;
+  case 0x673:
+    pcVar1 = "cut052wl";
+    break;
+  case 0x674:
+    pcVar1 = "cut053wl";
+    break;
+  case 0x675:
+    pcVar1 = "cut054wl";
+    break;
+  case 0x676:
+    pcVar1 = "cut055wl";
+    break;
+  case 0x677:
+    pcVar1 = "cut056wl";
+    break;
+  case 0x678:
+    pcVar1 = "cut057wl";
+    break;
+  case 0x679:
+    pcVar1 = "cut058wl";
+    break;
+  case 0x67a:
+    pcVar1 = "cut059wl";
+    break;
+  case 0x67b:
+    pcVar1 = "cut060wl";
+    break;
+  case 0x67c:
+    pcVar1 = "cut061wl";
+    break;
+  case 0x67d:
+    pcVar1 = "cut062wl";
+    break;
+  case 0x67e:
+    pcVar1 = "cut063wl";
+    break;
+  case 0x67f:
+    pcVar1 = "cut064wl";
+    break;
+  case 0x680:
+    pcVar1 = "cut065wl";
+    break;
+  case 0x681:
+    pcVar1 = "cut066wl";
+    break;
+  case 0x682:
+    pcVar1 = "cut067wl";
+    break;
+  case 0x683:
+    pcVar1 = "cut068wl";
+    break;
+  case 0x684:
+    pcVar1 = "cut069wl";
+    break;
+  case 0x685:
+    pcVar1 = "cut070wl";
+    break;
+  case 0x686:
+    pcVar1 = "cut071wl";
+    break;
+  case 0x687:
+    pcVar1 = "cut072wl";
+    break;
+  case 0x688:
+    pcVar1 = "cut073wl";
+    break;
+  case 0x689:
+    pcVar1 = "cut074wl";
+    break;
+  case 0x68a:
+    pcVar1 = "cut075wl";
+    break;
+  case 0x68b:
+    pcVar1 = "cut076wl";
+    break;
+  case 0x68c:
+    pcVar1 = "cut077wl";
+    break;
+  case 0x68d:
+    pcVar1 = "cut078wl";
+    break;
+  case 0x68e:
+    pcVar1 = "cut079wl";
+    break;
+  case 0x68f:
+    pcVar1 = "cut080wl";
+    break;
+  case 0x690:
+    pcVar1 = "cut081wl";
+    break;
+  case 0x691:
+    pcVar1 = "cut082wl";
+    break;
+  case 0x692:
+    pcVar1 = "cut083wl";
+    break;
+  case 0x693:
+    pcVar1 = "cut084wl";
+    break;
+  case 0x694:
+    pcVar1 = "cut085wl";
+    break;
+  case 0x695:
+    pcVar1 = "cut086wl";
+    break;
+  case 0x696:
+    pcVar1 = "cut087wl";
+    break;
+  case 0x697:
+    pcVar1 = "cut088wl";
+    break;
+  case 0x698:
+    pcVar1 = "cut089wl";
+    break;
+  case 0x699:
+    pcVar1 = "cut090wl";
+    break;
+  case 0x69a:
+    pcVar1 = "cut091wl";
+    break;
+  case 0x69b:
+    pcVar1 = "cut092wl";
+    break;
+  case 0x69c:
+    pcVar1 = "cut093wl";
+    break;
+  case 0x69d:
+    pcVar1 = "cut094wl";
+    break;
+  case 0x69e:
+    pcVar1 = "cut095wl";
+    break;
+  case 0x69f:
+    pcVar1 = "cut096wl";
+    break;
+  case 0x6a0:
+    pcVar1 = "cut097wl";
+    break;
+  case 0x6a1:
+    pcVar1 = "cut098wl";
+    break;
+  case 0x6a2:
+    pcVar1 = "cut099wl";
+    break;
+  case 0x6a3:
+    pcVar1 = "cut100wl";
+    break;
+  case 0x6a4:
+    pcVar1 = "cut101wl";
+    break;
+  case 0x6a5:
+    pcVar1 = "cut102wl";
+    break;
+  case 0x6a6:
+    pcVar1 = "cut103wl";
+    break;
+  case 0x6a7:
+    pcVar1 = "cut104wl";
+    break;
+  case 0x6a8:
+    pcVar1 = "cut105wl";
+    break;
+  case 0x6a9:
+    pcVar1 = "cut106wl";
+    break;
+  case 0x6aa:
+    pcVar1 = "cut107wl";
+    break;
+  case 0x6ab:
+    pcVar1 = "cut108wl";
+    break;
+  case 0x6ac:
+    pcVar1 = "cut109wl";
+    break;
+  case 0x6ad:
+    pcVar1 = "cut110wl";
+    break;
+  case 0x6ae:
+    pcVar1 = "cut111wl";
+    break;
+  case 0x6af:
+    pcVar1 = "cut112wl";
+    break;
+  case 0x6b0:
+    pcVar1 = "cut113wl";
+    break;
+  case 0x6b1:
+    pcVar1 = "cut114wl";
+    break;
+  case 0x6b2:
+    pcVar1 = "cut115wl";
+    break;
+  case 0x6b3:
+    pcVar1 = "cut116wl";
+    break;
+  case 0x6b4:
+    pcVar1 = "cut117wl";
+    break;
+  case 0x6b5:
+    pcVar1 = "cut118wl";
+    break;
+  case 0x6b6:
+    pcVar1 = "cut119wl";
+    break;
+  case 0x6b7:
+    pcVar1 = "cut120wl";
+    break;
+  case 0x6b8:
+    pcVar1 = "cut121wl";
+    break;
+  case 0x6b9:
+    pcVar1 = "cut122wl";
+    break;
+  case 0x6ba:
+    pcVar1 = "cut123wl";
+    break;
+  case 0x6bb:
+    pcVar1 = "cut124wl";
+    break;
+  case 0x6bc:
+    pcVar1 = "cut125wl";
+    break;
+  case 0x6bd:
+    pcVar1 = "cut126wl";
+    break;
+  case 0x6be:
+    pcVar1 = "cut127wl";
+    break;
+  case 0x6bf:
+    pcVar1 = "cut128wl";
+  }
+  CExoString::operator=(&local_14,pcVar1);
+switchD_0062895a_caseD_468:
+  CExoString::CExoString(outName,&local_14);
+LAB_00629d17:
+  local_4 = local_4 & 0xffffff00;
+  CExoString::~CExoString(&local_14);
+  ExceptionList = local_c;
+  return outName;
+}
+
+
+#### 62dd20 fn=ShowPartySelection entry=0062dd20 cc=__thiscall proto=void __thiscall ShowPartySelection(CExoString * exitScript, int requireAccept, int forcedNPC1, int forcedNPC2)
+0062dd20  64a100000000       MOV EAX,FS:[0x0]
+0062dd26  6aff               PUSH -0x1
+0062dd28  686b937200         PUSH 0x72936b
+0062dd2d  50                 PUSH EAX
+0062dd2e  a1fc397a00         MOV EAX,[0x007a39fc]
+0062dd33  64892500000000     MOV dword ptr FS:[0x0],ESP
+0062dd3a  56                 PUSH ESI
+0062dd3b  57                 PUSH EDI
+0062dd3c  8b7808             MOV EDI,dword ptr [EAX + 0x8]
+0062dd3f  8bf1               MOV ESI,ECX
+0062dd41  8b8608010000       MOV EAX,dword ptr [ESI + 0x108]
+0062dd47  85c0               TEST EAX,EAX
+0062dd49  0f8461010000       JZ 0x0062deb0
+0062dd4f  8bcf               MOV ECX,EDI
+0062dd51  e81a11e8ff         CALL 0x004aee70
+0062dd56  8b80f0000000       MOV EAX,dword ptr [EAX + 0xf0]
+0062dd5c  83f8ff             CMP EAX,-0x1
+0062dd5f  0f854b010000       JNZ 0x0062deb0
+0062dd65  8bcf               MOV ECX,EDI
+0062dd67  e8d40ce8ff         CALL 0x004aea40
+0062dd6c  50                 PUSH EAX
+0062dd6d  8bcf               MOV ECX,EDI
+0062dd6f  e8fc09e8ff         CALL 0x004ae770
+0062dd74  85c0               TEST EAX,EAX
+0062dd76  0f8434010000       JZ 0x0062deb0
+0062dd7c  8bcf               MOV ECX,EDI
+0062dd7e  e8bd0ce8ff         CALL 0x004aea40
+0062dd83  50                 PUSH EAX
+0062dd84  8bcf               MOV ECX,EDI
+0062dd86  e8e509e8ff         CALL 0x004ae770
+0062dd8b  8bc8               MOV ECX,EAX
+0062dd8d  e88ed3e9ff         CALL 0x004cb120
+0062dd92  85c0               TEST EAX,EAX
+0062dd94  0f8416010000       JZ 0x0062deb0
+0062dd9a  8bcf               MOV ECX,EDI
+0062dd9c  e89f0ce8ff         CALL 0x004aea40
+0062dda1  50                 PUSH EAX
+0062dda2  8bcf               MOV ECX,EDI
+0062dda4  e8c709e8ff         CALL 0x004ae770
+0062dda9  8bc8               MOV ECX,EAX
+0062ddab  e870d3e9ff         CALL 0x004cb120
+0062ddb0  8b88ac020000       MOV ECX,dword ptr [EAX + 0x2ac]
+0062ddb6  85c9               TEST ECX,ECX
+0062ddb8  8b7c241c           MOV EDI,dword ptr [ESP + 0x1c]
+0062ddbc  7408               JZ 0x0062ddc6
+0062ddbe  85ff               TEST EDI,EDI
+0062ddc0  0f84ea000000       JZ 0x0062deb0
+0062ddc6  8b4e78             MOV ECX,dword ptr [ESI + 0x78]
+0062ddc9  51                 PUSH ECX
+0062ddca  8b4e38             MOV ECX,dword ptr [ESI + 0x38]
+0062ddcd  e89edfddff         CALL 0x0040bd70
+0062ddd2  85c0               TEST EAX,EAX
+0062ddd4  0f85d6000000       JNZ 0x0062deb0
+0062ddda  85ff               TEST EDI,EDI
+0062dddc  743a               JZ 0x0062de18
+0062ddde  8b86380b0000       MOV EAX,dword ptr [ESI + 0xb38]
+0062dde4  85c0               TEST EAX,EAX
+0062dde6  7515               JNZ 0x0062ddfd
+0062dde8  8b15fc397a00       MOV EDX,dword ptr [0x007a39fc]
+0062ddee  8b4a04             MOV ECX,dword ptr [EDX + 0x4]
+0062ddf1  e8faf8fbff         CALL 0x005ed6f0
+0062ddf6  8bc8               MOV ECX,EAX
+0062ddf8  e8039a0400         CALL 0x00677800
+0062ddfd  8b4e38             MOV ECX,dword ptr [ESI + 0x38]
+0062de00  6a04               PUSH 0x4
+0062de02  e839c3ddff         CALL 0x0040a140
+0062de07  a1fcc57400         MOV EAX,[0x0074c5fc]
+0062de0c  8b0dec397a00       MOV ECX,dword ptr [0x007a39ec]
+0062de12  50                 PUSH EAX
+0062de13  e86880faff         CALL 0x005d5e80
+0062de18  8b4678             MOV EAX,dword ptr [ESI + 0x78]
+0062de1b  85c0               TEST EAX,EAX
+0062de1d  7537               JNZ 0x0062de56
+0062de1f  68803a0000         PUSH 0x3a80
+0062de24  e8bdc90c00         CALL 0x006fa7e6
+0062de29  83c404             ADD ESP,0x4
+0062de2c  8944241c           MOV dword ptr [ESP + 0x1c],EAX
+0062de30  85c0               TEST EAX,EAX
+0062de32  c744241000000000   MOV dword ptr [ESP + 0x10],0x0
+0062de3a  740d               JZ 0x0062de49
+0062de3c  8b4e38             MOV ECX,dword ptr [ESI + 0x38]
+0062de3f  51                 PUSH ECX
+0062de40  8bc8               MOV ECX,EAX
+0062de42  e8f91b0900         CALL 0x006bfa40
+0062de47  eb02               JMP 0x0062de4b
+0062de49  33c0               XOR EAX,EAX
+0062de4b  c7442410ffffffff   MOV dword ptr [ESP + 0x10],0xffffffff
+0062de53  894678             MOV dword ptr [ESI + 0x78],EAX
+0062de56  8b542418           MOV EDX,dword ptr [ESP + 0x18]
+0062de5a  8b4e78             MOV ECX,dword ptr [ESI + 0x78]
+0062de5d  52                 PUSH EDX
+0062de5e  83c174             ADD ECX,0x74
+0062de61  e8ea7dfbff         CALL 0x005e5c50
+0062de66  8b4c2424           MOV ECX,dword ptr [ESP + 0x24]
+0062de6a  8b4678             MOV EAX,dword ptr [ESI + 0x78]
+0062de6d  8b542420           MOV EDX,dword ptr [ESP + 0x20]
+0062de71  51                 PUSH ECX
+0062de72  897870             MOV dword ptr [EAX + 0x70],EDI
+0062de75  8b4e78             MOV ECX,dword ptr [ESI + 0x78]
+0062de78  52                 PUSH EDX
+0062de79  e892040900         CALL 0x006be310
+0062de7e  8b4e78             MOV ECX,dword ptr [ESI + 0x78]
+0062de81  33c0               XOR EAX,EAX
+0062de83  85ff               TEST EDI,EDI
+0062de85  0f95c0             SETNZ AL
+0062de88  6a01               PUSH 0x1
+0062de8a  6a03               PUSH 0x3
+0062de8c  48                 DEC EAX
+0062de8d  83e002             AND EAX,0x2
+0062de90  894164             MOV dword ptr [ECX + 0x64],EAX
+0062de93  8b5678             MOV EDX,dword ptr [ESI + 0x78]
+0062de96  8b4e38             MOV ECX,dword ptr [ESI + 0x38]
+0062de99  52                 PUSH EDX
+0062de9a  e8d1ddddff         CALL 0x0040bc70
+0062de9f  a1fc397a00         MOV EAX,[0x007a39fc]
+0062dea4  8b4804             MOV ECX,dword ptr [EAX + 0x4]
+0062dea7  6a01               PUSH 0x1
+0062dea9  6a02               PUSH 0x2
+0062deab  e8b0fbfbff         CALL 0x005eda60
+0062deb0  8b4c2408           MOV ECX,dword ptr [ESP + 0x8]
+0062deb4  5f                 POP EDI
+0062deb5  64890d00000000     MOV dword ptr FS:[0x0],ECX
+0062debc  5e                 POP ESI
+0062debd  83c40c             ADD ESP,0xc
+0062dec0  c21000             RET 0x10
+--- decompile
+
+void __thiscall
+CGuiInGame::ShowPartySelection
+          (CGuiInGame *this,CExoString *exitScript,int requireAccept,int forcedNPC1,int forcedNPC2)
+
+{
+  CServerExoApp *this_00;
+  CSWPartyTable *pCVar1;
+  ulong uVar2;
+  CSWSCreature *pCVar3;
+  CSWSArea *pCVar4;
+  int iVar5;
+  CSWGuiPartySelection *pCVar6;
+  void *local_c;
+  code *pcStack_8;
+  undefined4 uStack_4;
+  
+  uStack_4 = 0xffffffff;
+  pcStack_8 = FrameHandler_0072936b;
+  local_c = ExceptionList;
+  this_00 = AppManager->server;
+  if (this->initialized != 0) {
+    ExceptionList = &local_c;
+    pCVar1 = CServerExoApp::GetPartyTable(this_00);
+    if (pCVar1->pt_controlled_npc == -1) {
+      uVar2 = CServerExoApp::GetPlayerCreatureId();
+      pCVar3 = CServerExoApp::GetCreatureByGameObjectID(this_00,uVar2);
+      if (pCVar3 != (CSWSCreature *)0x0) {
+        uVar2 = CServerExoApp::GetPlayerCreatureId();
+        pCVar3 = CServerExoApp::GetCreatureByGameObjectID(this_00,uVar2);
+        pCVar4 = CSWSObject::GetArea(&pCVar3->object);
+        if (pCVar4 != (CSWSArea *)0x0) {
+          uVar2 = CServerExoApp::GetPlayerCreatureId();
+          pCVar3 = CServerExoApp::GetCreatureByGameObjectID(this_00,uVar2);
+          pCVar4 = CSWSObject::GetArea(&pCVar3->object);
+          if ((pCVar4->unescapable == 0) || (requireAccept != 0)) {
+            iVar5 = CSWGuiManager::PanelExists
+                              (this->manager,&this->party_selection->partyselection_panel);
+            if (iVar5 == 0) {
+              if (requireAccept != 0) {
+                if (this->field119_0xb38 == 0) {
+                  CClientExoApp::GetSWCMessage(AppManager->client);
+                  CSWCMessage::SendPlayerToServerInput_TogglePauseRequest();
+                }
+                CSWGuiManager::PlayGuiSound(this->manager,4);
+                CExoSoundInternal::SetSoundMode((CExoSoundInternal *)ExoSound,DAT_0074c5fc);
+              }
+              if (this->party_selection == (CSWGuiPartySelection *)0x0) {
+                pCVar6 = operator_new(0x3a80);
+                uStack_4 = 0;
+                if (pCVar6 == (CSWGuiPartySelection *)0x0) {
+                  pCVar6 = (CSWGuiPartySelection *)0x0;
+                }
+                else {
+                  pCVar6 = CSWGuiPartySelection::CSWGuiPartySelection(pCVar6,this->manager);
+                }
+                uStack_4 = 0xffffffff;
+                this->party_selection = pCVar6;
+              }
+              CExoString::operator=(&this->party_selection->exit_script,exitScript);
+              this->party_selection->field4_0x70 = requireAccept;
+              CSWGuiPartySelection::SetForcedNPC(this->party_selection,forcedNPC1,forcedNPC2);
+              this->party_selection->field1_0x64 = (requireAccept != 0) - 1 & 2;
+              CSWGuiManager::AddPanel
+                        (this->manager,&this->party_selection->partyselection_panel,3,1);
+              CClientExoApp::SetInputClass(AppManager->client,2,1);
+            }
+          }
+        }
+      }
+    }
+  }
+  ExceptionList = local_c;
+  return;
+}
+
+
+#### 62e760 fn=ShowUpgradeScreen entry=0062e760 cc=__thiscall proto=void __thiscall ShowUpgradeScreen(ulong itemId)
+0062e760  64a100000000       MOV EAX,FS:[0x0]
+0062e766  6aff               PUSH -0x1
+0062e768  686b957200         PUSH 0x72956b
+0062e76d  50                 PUSH EAX
+0062e76e  64892500000000     MOV dword ptr FS:[0x0],ESP
+0062e775  56                 PUSH ESI
+0062e776  8bf1               MOV ESI,ECX
+0062e778  8b8608010000       MOV EAX,dword ptr [ESI + 0x108]
+0062e77e  85c0               TEST EAX,EAX
+0062e780  57                 PUSH EDI
+0062e781  0f84d0000000       JZ 0x0062e857
+0062e787  8b4638             MOV EAX,dword ptr [ESI + 0x38]
+0062e78a  85c0               TEST EAX,EAX
+0062e78c  0f84c5000000       JZ 0x0062e857
+0062e792  8b8688000000       MOV EAX,dword ptr [ESI + 0x88]
+0062e798  85c0               TEST EAX,EAX
+0062e79a  0f85b7000000       JNZ 0x0062e857
+0062e7a0  8b7c2418           MOV EDI,dword ptr [ESP + 0x18]
+0062e7a4  81ff0000007f       CMP EDI,0x7f000000
+0062e7aa  7416               JZ 0x0062e7c2
+0062e7ac  a1fc397a00         MOV EAX,[0x007a39fc]
+0062e7b1  8b4808             MOV ECX,dword ptr [EAX + 0x8]
+0062e7b4  57                 PUSH EDI
+0062e7b5  e8a6ffe7ff         CALL 0x004ae760
+0062e7ba  85c0               TEST EAX,EAX
+0062e7bc  0f8495000000       JZ 0x0062e857
+0062e7c2  8b0dfcc57400       MOV ECX,dword ptr [0x0074c5fc]
+0062e7c8  51                 PUSH ECX
+0062e7c9  8b0dec397a00       MOV ECX,dword ptr [0x007a39ec]
+0062e7cf  e8ac76faff         CALL 0x005d5e80
+0062e7d4  8b86380b0000       MOV EAX,dword ptr [ESI + 0xb38]
+0062e7da  85c0               TEST EAX,EAX
+0062e7dc  7515               JNZ 0x0062e7f3
+0062e7de  8b15fc397a00       MOV EDX,dword ptr [0x007a39fc]
+0062e7e4  8b4a04             MOV ECX,dword ptr [EDX + 0x4]
+0062e7e7  e804effbff         CALL 0x005ed6f0
+0062e7ec  8bc8               MOV ECX,EAX
+0062e7ee  e80d900400         CALL 0x00677800
+0062e7f3  6858110000         PUSH 0x1158
+0062e7f8  e8e9bf0c00         CALL 0x006fa7e6
+0062e7fd  83c404             ADD ESP,0x4
+0062e800  89442418           MOV dword ptr [ESP + 0x18],EAX
+0062e804  85c0               TEST EAX,EAX
+0062e806  c744241000000000   MOV dword ptr [ESP + 0x10],0x0
+0062e80e  740d               JZ 0x0062e81d
+0062e810  8b4e38             MOV ECX,dword ptr [ESI + 0x38]
+0062e813  51                 PUSH ECX
+0062e814  8bc8               MOV ECX,EAX
+0062e816  e8b5900900         CALL 0x006c78d0
+0062e81b  eb02               JMP 0x0062e81f
+0062e81d  33c0               XOR EAX,EAX
+0062e81f  898688000000       MOV dword ptr [ESI + 0x88],EAX
+0062e825  6a01               PUSH 0x1
+0062e827  89b83c110000       MOV dword ptr [EAX + 0x113c],EDI
+0062e82d  8b9688000000       MOV EDX,dword ptr [ESI + 0x88]
+0062e833  8b4e38             MOV ECX,dword ptr [ESI + 0x38]
+0062e836  6a03               PUSH 0x3
+0062e838  52                 PUSH EDX
+0062e839  c744241cffffffff   MOV dword ptr [ESP + 0x1c],0xffffffff
+0062e841  e82ad4ddff         CALL 0x0040bc70
+0062e846  a1fc397a00         MOV EAX,[0x007a39fc]
+0062e84b  8b4804             MOV ECX,dword ptr [EAX + 0x4]
+0062e84e  6a01               PUSH 0x1
+0062e850  6a02               PUSH 0x2
+0062e852  e809f2fbff         CALL 0x005eda60
+0062e857  8b4c2408           MOV ECX,dword ptr [ESP + 0x8]
+0062e85b  5f                 POP EDI
+0062e85c  64890d00000000     MOV dword ptr FS:[0x0],ECX
+0062e863  5e                 POP ESI
+0062e864  83c40c             ADD ESP,0xc
+0062e867  c20400             RET 0x4
+--- decompile
+
+void __thiscall CGuiInGame::ShowUpgradeScreen(CGuiInGame *this,ulong itemId)
+
+{
+  CSWSItem *pCVar1;
+  CSWGuiUpgradeSelection *pCVar2;
+  void *local_c;
+  code *pcStack_8;
+  undefined4 local_4;
+  
+  local_4 = 0xffffffff;
+  pcStack_8 = FrameHandler_0072956b;
+  local_c = ExceptionList;
+  if (((this->initialized != 0) && (this->manager != (CSWGuiManager *)0x0)) &&
+     (this->field34_0x88 == 0)) {
+    ExceptionList = &local_c;
+    if ((itemId != 0x7f000000) &&
+       (ExceptionList = &local_c,
+       pCVar1 = CServerExoApp::GetItemByGameObjectID(AppManager->server,itemId),
+       pCVar1 == (CSWSItem *)0x0)) {
+      ExceptionList = local_c;
+      return;
+    }
+    CExoSoundInternal::SetSoundMode((CExoSoundInternal *)ExoSound,DAT_0074c5fc);
+    if (this->field119_0xb38 == 0) {
+      CClientExoApp::GetSWCMessage(AppManager->client);
+      CSWCMessage::SendPlayerToServerInput_TogglePauseRequest();
+    }
+    pCVar2 = operator_new(0x1158);
+    local_4 = 0;
+    if (pCVar2 == (CSWGuiUpgradeSelection *)0x0) {
+      pCVar2 = (CSWGuiUpgradeSelection *)0x0;
+    }
+    else {
+      pCVar2 = CSWGuiUpgradeSelection::CSWGuiUpgradeSelection(pCVar2,this->manager);
+    }
+    this->field34_0x88 = pCVar2;
+    pCVar2->field12_0x113c = itemId;
+    local_4 = 0xffffffff;
+    CSWGuiManager::AddPanel(this->manager,(CSWGuiPanel *)this->field34_0x88,3,1);
+    CClientExoApp::SetInputClass(AppManager->client,2,1);
+  }
+  ExceptionList = local_c;
+  return;
+}
+
+
+#### 62a970 fn=ShutDownGlobal entry=0062a970 cc=__thiscall proto=void __thiscall ShutDownGlobal(void)
+0062a970  56                 PUSH ESI
+0062a971  8bf1               MOV ESI,ECX
+0062a973  8b8e98000000       MOV ECX,dword ptr [ESI + 0x98]
+0062a979  57                 PUSH EDI
+0062a97a  33ff               XOR EDI,EDI
+0062a97c  3bcf               CMP ECX,EDI
+0062a97e  740c               JZ 0x0062a98c
+0062a980  8b01               MOV EAX,dword ptr [ECX]
+0062a982  6a01               PUSH 0x1
+0062a984  ff10               CALL dword ptr [EAX]
+0062a986  89be98000000       MOV dword ptr [ESI + 0x98],EDI
+0062a98c  8b8e9c000000       MOV ECX,dword ptr [ESI + 0x9c]
+0062a992  3bcf               CMP ECX,EDI
+0062a994  740c               JZ 0x0062a9a2
+0062a996  8b11               MOV EDX,dword ptr [ECX]
+0062a998  6a01               PUSH 0x1
+0062a99a  ff12               CALL dword ptr [EDX]
+0062a99c  89be9c000000       MOV dword ptr [ESI + 0x9c],EDI
+0062a9a2  8b8ea0000000       MOV ECX,dword ptr [ESI + 0xa0]
+0062a9a8  3bcf               CMP ECX,EDI
+0062a9aa  740c               JZ 0x0062a9b8
+0062a9ac  8b01               MOV EAX,dword ptr [ECX]
+0062a9ae  6a01               PUSH 0x1
+0062a9b0  ff10               CALL dword ptr [EAX]
+0062a9b2  89bea0000000       MOV dword ptr [ESI + 0xa0],EDI
+0062a9b8  8b8ea4000000       MOV ECX,dword ptr [ESI + 0xa4]
+0062a9be  3bcf               CMP ECX,EDI
+0062a9c0  740c               JZ 0x0062a9ce
+0062a9c2  8b11               MOV EDX,dword ptr [ECX]
+0062a9c4  6a01               PUSH 0x1
+0062a9c6  ff12               CALL dword ptr [EDX]
+0062a9c8  89bea4000000       MOV dword ptr [ESI + 0xa4],EDI
+0062a9ce  897e38             MOV dword ptr [ESI + 0x38],EDI
+0062a9d1  5f                 POP EDI
+0062a9d2  5e                 POP ESI
+0062a9d3  c3                 RET
+--- decompile
+
+void __thiscall CGuiInGame::ShutDownGlobal(CGuiInGame *this)
+
+{
+  if (this->message_box != (CSWGuiMessageBox *)0x0) {
+    (*((this->message_box->panel).vtable)->_destructor)(1);
+    this->message_box = (CSWGuiMessageBox *)0x0;
+  }
+  if (this->skill_info_box != (CSWGuiSkillInfoBox *)0x0) {
+    (*((this->skill_info_box->panel).vtable)->_destructor)(1);
+    this->skill_info_box = (CSWGuiSkillInfoBox *)0x0;
+  }
+  if (this->tutorial_box != (CSWGuiTutorialBox *)0x0) {
+    (*((this->tutorial_box->message_box).panel.vtable)->_destructor)(1);
+    this->tutorial_box = (CSWGuiTutorialBox *)0x0;
+  }
+  if (this->controller_loss_box != (CSWGuiMessageBox *)0x0) {
+    (*((this->controller_loss_box->panel).vtable)->_destructor)(1);
+    this->controller_loss_box = (CSWGuiMessageBox *)0x0;
+  }
+  this->manager = (CSWGuiManager *)0x0;
+  return;
+}
+
+
+#### 62ad60 fn=UpdateMessageGUI entry=0062ad60 cc=__thiscall proto=void __thiscall UpdateMessageGUI(void)
+0062ad60  56                 PUSH ESI
+0062ad61  8bf1               MOV ESI,ECX
+0062ad63  8b8600010000       MOV EAX,dword ptr [ESI + 0x100]
+0062ad69  8b8ef8000000       MOV ECX,dword ptr [ESI + 0xf8]
+0062ad6f  50                 PUSH EAX
+0062ad70  51                 PUSH ECX
+0062ad71  8b4e1c             MOV ECX,dword ptr [ESI + 0x1c]
+0062ad74  e8a7bbffff         CALL 0x00626920
+0062ad79  8b9604010000       MOV EDX,dword ptr [ESI + 0x104]
+0062ad7f  8b86fc000000       MOV EAX,dword ptr [ESI + 0xfc]
+0062ad85  8b4e1c             MOV ECX,dword ptr [ESI + 0x1c]
+0062ad88  52                 PUSH EDX
+0062ad89  50                 PUSH EAX
+0062ad8a  e881bdffff         CALL 0x00626b10
+0062ad8f  5e                 POP ESI
+0062ad90  c3                 RET
+--- decompile
+
+void __thiscall CGuiInGame::UpdateMessageGUI(CGuiInGame *this)
+
+{
+  CSWGuiInGameMessages::AddMessages
+            (this->in_game_messages,this->message_buffer,this->message_buffer_count);
+  CSWGuiInGameMessages::AddDialogMessages
+            (this->in_game_messages,this->dialog_buffer,this->dialog_buffer_count);
+  return;
+}
+
+
+#### 409d40 fn=~CRes entry=00409d40 cc=__thiscall proto=undefined __thiscall ~CRes(void)
+00409d40  6683790400         CMP word ptr [ECX + 0x4],0x0
+00409d45  c7016cd87300       MOV dword ptr [ECX],0x73d86c
+00409d4b  7608               JBE 0x00409d55
+00409d4d  81490c00010000     OR dword ptr [ECX + 0xc],0x100
+00409d54  c3                 RET
+00409d55  f6410c14           TEST byte ptr [ECX + 0xc],0x14
+00409d59  7413               JZ 0x00409d6e
+00409d5b  8b4110             MOV EAX,dword ptr [ECX + 0x10]
+00409d5e  85c0               TEST EAX,EAX
+00409d60  740c               JZ 0x00409d6e
+00409d62  51                 PUSH ECX
+00409d63  8b0de8397a00       MOV ECX,dword ptr [0x007a39e8]
+00409d69  e8b2d2ffff         CALL 0x00407020
+00409d6e  c3                 RET
+--- decompile
+
+void __thiscall CRes::~CRes(CRes *this)
+
+{
+  this->vtable = (CRes_Methods *)&CRes_vtable;
+  if (this->demands != 0) {
+    this->bit_flags = this->bit_flags | 0x100;
+    return;
+  }
+  if (((*(byte *)&this->bit_flags & 0x14) != 0) && (this->data != (void *)0x0)) {
+    CExoResMan::Free(ExoResMan,this);
+  }
+  return;
+}
+
+
+#### 411570 fn=~CResGFF entry=00411570 cc=__thiscall proto=void __thiscall ~CResGFF(void)
+00411570  6aff               PUSH -0x1
+00411572  68684d7100         PUSH 0x714d68
+00411577  64a100000000       MOV EAX,FS:[0x0]
+0041157d  50                 PUSH EAX
+0041157e  64892500000000     MOV dword ptr FS:[0x0],ESP
+00411585  51                 PUSH ECX
+00411586  56                 PUSH ESI
+00411587  8bf1               MOV ESI,ECX
+00411589  57                 PUSH EDI
+0041158a  89742408           MOV dword ptr [ESP + 0x8],ESI
+0041158e  c706d0e27300       MOV dword ptr [ESI],0x73e2d0
+00411594  8b8698000000       MOV EAX,dword ptr [ESI + 0x98]
+0041159a  33ff               XOR EDI,EDI
+0041159c  3bc7               CMP EAX,EDI
+0041159e  897c2414           MOV dword ptr [ESP + 0x14],EDI
+004115a2  7559               JNZ 0x004115fd
+004115a4  8b4670             MOV EAX,dword ptr [ESI + 0x70]
+004115a7  50                 PUSH EAX
+004115a8  e8e38d2e00         CALL 0x006fa390
+004115fd  8bce               MOV ECX,ESI
+004115ff  e8bcf2ffff         CALL 0x004108c0
+00411604  8bce               MOV ECX,ESI
+00411606  c7442414ffffffff   MOV dword ptr [ESP + 0x14],0xffffffff
+0041160e  e82d87ffff         CALL 0x00409d40
+00411613  8b4c240c           MOV ECX,dword ptr [ESP + 0xc]
+00411617  5f                 POP EDI
+00411618  5e                 POP ESI
+00411619  64890d00000000     MOV dword ptr FS:[0x0],ECX
+00411620  83c410             ADD ESP,0x10
+00411623  c3                 RET
+--- decompile
+
+void __thiscall CResGFF::~CResGFF(CResGFF *this)
+
+{
+  void *local_c;
+  code *pcStack_8;
+  undefined4 local_4;
+  
+  pcStack_8 = FrameHandler_00714d68;
+  local_c = ExceptionList;
+  ExceptionList = &local_c;
+  (this->resource).vtable = (CRes_Methods *)&CResGFF_vtable;
+  local_4 = 0;
+  if (this->field32_0x98 == 0) {
+    _free(this->list_indices_data);
+    this->list_indices_data = (ulong *)0x0;
+    _free(this->field_indices_data);
+    this->field_indices_data = (ulong *)0x0;
+    _free(this->field_data);
+    this->field_data = (void *)0x0;
+    _free(this->labels);
+    this->labels = (char (*) [16])0x0;
+    _free(this->fields);
+    this->fields = (GFFFieldData *)0x0;
+    _free(this->structs);
+    this->structs = (GFFStructData *)0x0;
+    _free(this->header);
+    this->header = (GFFHeaderInfo *)0x0;
+  }
+  else {
+    ReleaseResource(this);
+  }
+  local_4 = 0xffffffff;
+  CRes::~CRes(&this->resource);
+  ExceptionList = local_c;
+  return;
+}
+
+
+#### 413010 fn=~CResGFF entry=00413010 cc=__thiscall proto=int * * __thiscall ~CResGFF(byte shouldFree)
+00413010  56                 PUSH ESI
+00413011  8bf1               MOV ESI,ECX
+00413013  e858e5ffff         CALL 0x00411570
+00413018  f644240801         TEST byte ptr [ESP + 0x8],0x1
+0041301d  7409               JZ 0x00413028
+0041301f  56                 PUSH ESI
+00413020  e86b732e00         CALL 0x006fa390
+00413028  8bc6               MOV EAX,ESI
+0041302a  5e                 POP ESI
+0041302b  c20400             RET 0x4
+--- decompile
+
+int ** __thiscall CResGFF::~CResGFF(CResGFF *this,byte shouldFree)
+
+{
+  ~CResGFF(this);
+  if ((shouldFree & 1) != 0) {
+    _free(this);
+  }
+  return (int **)this;
+}
+
+
+#### 63e770 fn=GetPortrait entry=0063e770 cc=__thiscall proto=CResRef * __thiscall GetPortrait(CResRef * outResRef, byte param_2)
+0063e770  8b442408           MOV EAX,dword ptr [ESP + 0x8]
+0063e774  56                 PUSH ESI
+0063e775  8b742408           MOV ESI,dword ptr [ESP + 0x8]
+0063e779  50                 PUSH EAX
+0063e77a  56                 PUSH ESI
+0063e77b  81c1a8000000       ADD ECX,0xa8
+0063e781  e86aa70300         CALL 0x00678ef0
+0063e786  8bc6               MOV EAX,ESI
+0063e788  5e                 POP ESI
+0063e789  c20800             RET 0x8
+--- decompile
+
+CResRef * __thiscall CSWCObject::GetPortrait(CSWCObject *this,CResRef *outResRef,byte param_2)
+
+{
+  CSWPortrait::GetPortrait(&this->portrait,outResRef,param_2);
+  return outResRef;
+}
+
+
+#### 682dd0 fn=ActionMenuSecurity entry=00682dd0 cc=__thiscall proto=void __thiscall ActionMenuSecurity(CSWCCreature * creature)
+00682dd0  a1fc397a00         MOV EAX,[0x007a39fc]
+00682dd5  56                 PUSH ESI
+00682dd6  8bf1               MOV ESI,ECX
+00682dd8  8b4804             MOV ECX,dword ptr [EAX + 0x4]
+00682ddb  e810a9f6ff         CALL 0x005ed6f0
+00682de0  85c0               TEST EAX,EAX
+00682de2  7410               JZ 0x00682df4
+00682de4  8b4e04             MOV ECX,dword ptr [ESI + 0x4]
+00682de7  680000007f         PUSH 0x7f000000
+00682dec  51                 PUSH ECX
+00682ded  8bc8               MOV ECX,EAX
+00682def  e8ec4fffff         CALL 0x00677de0
+00682df4  5e                 POP ESI
+00682df5  c20800             RET 0x8
+--- decompile
+
+void __thiscall CSWCPlaceable::ActionMenuSecurity(CSWCPlaceable *this,CSWCCreature *creature)
+
+{
+  CSWCMessage *this_00;
+  
+  this_00 = CClientExoApp::GetSWCMessage(AppManager->client);
+  if (this_00 != (CSWCMessage *)0x0) {
+    CSWCMessage::SendPlayerToServerInput_UnlockObject(this_00,(this->object).id,0x7f000000);
+  }
+  return;
+}
+
+
+#### 4151c0 fn=~CSWGuiBorder entry=004151c0 cc=__thiscall proto=void __thiscall ~CSWGuiBorder(void)
+004151c0  6aff               PUSH -0x1
+004151c2  68e84e7100         PUSH 0x714ee8
+004151c7  64a100000000       MOV EAX,FS:[0x0]
+004151cd  50                 PUSH EAX
+004151ce  64892500000000     MOV dword ptr FS:[0x0],ESP
+004151d5  51                 PUSH ECX
+004151d6  56                 PUSH ESI
+004151d7  8bf1               MOV ESI,ECX
+004151d9  57                 PUSH EDI
+004151da  89742408           MOV dword ptr [ESP + 0x8],ESI
+004151de  c70638e37300       MOV dword ptr [ESI],0x73e338
+004151e4  8b4e68             MOV ECX,dword ptr [ESI + 0x68]
+004151e7  33ff               XOR EDI,EDI
+004151e9  3bcf               CMP ECX,EDI
+004151eb  897c2414           MOV dword ptr [ESP + 0x14],EDI
+004151ef  740a               JZ 0x004151fb
+004151f1  8b01               MOV EAX,dword ptr [ECX]
+004151f3  6a01               PUSH 0x1
+004151f5  ff5004             CALL dword ptr [EAX + 0x4]
+004151f8  897e68             MOV dword ptr [ESI + 0x68],EDI
+004151fb  8b4e6c             MOV ECX,dword ptr [ESI + 0x6c]
+004151fe  3bcf               CMP ECX,EDI
+00415200  740a               JZ 0x0041520c
+00415202  8b11               MOV EDX,dword ptr [ECX]
+00415204  6a01               PUSH 0x1
+00415206  ff5204             CALL dword ptr [EDX + 0x4]
+00415209  897e6c             MOV dword ptr [ESI + 0x6c],EDI
+0041520c  8b4e70             MOV ECX,dword ptr [ESI + 0x70]
+0041520f  3bcf               CMP ECX,EDI
+00415211  740a               JZ 0x0041521d
+00415213  8b01               MOV EAX,dword ptr [ECX]
+00415215  6a01               PUSH 0x1
+00415217  ff5004             CALL dword ptr [EAX + 0x4]
+0041521a  897e70             MOV dword ptr [ESI + 0x70],EDI
+0041521d  8b4c240c           MOV ECX,dword ptr [ESP + 0xc]
+00415221  c70624e37300       MOV dword ptr [ESI],0x73e324
+00415227  5f                 POP EDI
+00415228  5e                 POP ESI
+00415229  64890d00000000     MOV dword ptr FS:[0x0],ECX
+00415230  83c410             ADD ESP,0x10
+00415233  c3                 RET
+--- decompile
+
+void __thiscall CSWGuiBorder::~CSWGuiBorder(CSWGuiBorder *this)
+
+{
+  CAurGUIImageInternal *pCVar1;
+  void *pvStack_c;
+  code *pcStack_8;
+  undefined4 local_4;
+  
+  pcStack_8 = FrameHandler_00714ee8;
+  pvStack_c = ExceptionList;
+  ExceptionList = &pvStack_c;
+  this->vtable = (CSWGuiBorder_Methods *)&CSWGuiBorder_vtable;
+  pCVar1 = this->corner_image;
+  local_4 = 0;
+  if (pCVar1 != (CAurGUIImageInternal *)0x0) {
+    (*pCVar1->vtable->~CAurGUIImageInternal)(pCVar1,1);
+    this->corner_image = (CAurGUIImage)0x0;
+  }
+  pCVar1 = this->edge_image;
+  if (pCVar1 != (CAurGUIImageInternal *)0x0) {
+    (*pCVar1->vtable->~CAurGUIImageInternal)(pCVar1,1);
+    this->edge_image = (CAurGUIImage)0x0;
+  }
+  pCVar1 = this->fill_image;
+  if (pCVar1 != (CAurGUIImageInternal *)0x0) {
+    (*pCVar1->vtable->~CAurGUIImageInternal)(pCVar1,1);
+    this->fill_image = (CAurGUIImage)0x0;
+  }
+  this->vtable = (CSWGuiBorder_Methods *)&CSWGuiDrawable_vtable;
+  ExceptionList = pvStack_c;
+  return;
+}
+
+
+#### 40b930 fn=InitControl entry=0040b930 cc=__thiscall proto=void __thiscall InitControl(CSWGuiControl * controlToInit, CExoString * label, int activate)
+0040b930  8b442408           MOV EAX,dword ptr [ESP + 0x8]
+0040b934  55                 PUSH EBP
+0040b935  8b6c2408           MOV EBP,dword ptr [ESP + 0x8]
+0040b939  56                 PUSH ESI
+0040b93a  8bf1               MOV ESI,ECX
+0040b93c  8b562c             MOV EDX,dword ptr [ESI + 0x2c]
+0040b93f  50                 PUSH EAX
+0040b940  8d4e30             LEA ECX,[ESI + 0x30]
+0040b943  51                 PUSH ECX
+0040b944  52                 PUSH EDX
+0040b945  56                 PUSH ESI
+0040b946  8bcd               MOV ECX,EBP
+0040b948  e8f3ce0000         CALL 0x00418840
+0040b94d  8b442414           MOV EAX,dword ptr [ESP + 0x14]
+0040b951  85c0               TEST EAX,EAX
+0040b953  743a               JZ 0x0040b98f
+0040b955  57                 PUSH EDI
+0040b956  8b7d50             MOV EDI,dword ptr [EBP + 0x50]
+0040b959  85ff               TEST EDI,EDI
+0040b95b  7c31               JL 0x0040b98e
+0040b95d  8b4624             MOV EAX,dword ptr [ESI + 0x24]
+0040b960  3bf8               CMP EDI,EAX
+0040b962  7d0c               JGE 0x0040b970
+0040b964  8b4620             MOV EAX,dword ptr [ESI + 0x20]
+0040b967  892cb8             MOV dword ptr [EAX + EDI*0x4],EBP
+0040b96a  5f                 POP EDI
+0040b96b  5e                 POP ESI
+0040b96c  5d                 POP EBP
+0040b96d  c20c00             RET 0xc
+0040b970  7e13               JLE 0x0040b985
+0040b972  53                 PUSH EBX
+0040b973  8d5e20             LEA EBX,[ESI + 0x20]
+0040b976  6a00               PUSH 0x0
+0040b978  8bcb               MOV ECX,EBX
+0040b97a  e881622600         CALL 0x00671c00
+0040b97f  3b7e24             CMP EDI,dword ptr [ESI + 0x24]
+0040b982  7ff2               JG 0x0040b976
+0040b984  5b                 POP EBX
+0040b985  55                 PUSH EBP
+0040b986  8d4e20             LEA ECX,[ESI + 0x20]
+0040b989  e872622600         CALL 0x00671c00
+0040b98e  5f                 POP EDI
+0040b98f  5e                 POP ESI
+0040b990  5d                 POP EBP
+0040b991  c20c00             RET 0xc
+--- decompile
+
+void __thiscall
+CSWGuiPanel::InitControl
+          (CSWGuiPanel *this,CSWGuiControl *controlToInit,CExoString *label,int activate)
+
+{
+  int iVar1;
+  int iVar2;
+  
+  CSWGuiControl::Load(controlToInit,(CSWGuiObject *)this,this->gff,&this->control_res_list,label);
+  if ((activate != 0) && (iVar1 = controlToInit->id, -1 < iVar1)) {
+    iVar2 = (this->controls).size;
+    if (iVar1 < iVar2) {
+      (this->controls).data[iVar1] = controlToInit;
+      return;
+    }
+    if (iVar2 < iVar1) {
+      do {
+        CExoArrayList::Add((CExoArrayList *)&this->controls,0);
+      } while ((this->controls).size < iVar1);
+    }
+    CExoArrayList::Add((CExoArrayList *)&this->controls,controlToInit);
+  }
+  return;
+}
+
+
+#### 40a680 fn=StartLoadFromLayout entry=0040a680 cc=__thiscall proto=void __thiscall StartLoadFromLayout(CResRef * guiResref)
+0040a680  64a100000000       MOV EAX,FS:[0x0]
+0040a686  6aff               PUSH -0x1
+0040a688  6883467100         PUSH 0x714683
+0040a68d  50                 PUSH EAX
+0040a68e  64892500000000     MOV dword ptr FS:[0x0],ESP
+0040a695  83ec44             SUB ESP,0x44
+0040a698  56                 PUSH ESI
+0040a699  8bf1               MOV ESI,ECX
+0040a69b  f6464402           TEST byte ptr [ESI + 0x44],0x2
+0040a69f  0f85b5010000       JNZ 0x0040a85a
+0040a6a5  55                 PUSH EBP
+0040a6a6  57                 PUSH EDI
+0040a6a7  68a0000000         PUSH 0xa0
+0040a6ac  e835012f00         CALL 0x006fa7e6
+0040a6b1  83c404             ADD ESP,0x4
+0040a6b4  8944240c           MOV dword ptr [ESP + 0xc],EAX
+0040a6b8  85c0               TEST EAX,EAX
+0040a6ba  c744245800000000   MOV dword ptr [ESP + 0x58],0x0
+0040a6c2  741a               JZ 0x0040a6de
+0040a6c4  8b4c2460           MOV ECX,dword ptr [ESP + 0x60]
+0040a6c8  51                 PUSH ECX
+0040a6c9  68e4df7300         PUSH 0x73dfe4
+0040a6ce  68ff070000         PUSH 0x7ff
+0040a6d3  8bc8               MOV ECX,EAX
+0040a6d5  e8565f0000         CALL 0x00410630
+0040a6da  8bf8               MOV EDI,EAX
+0040a6dc  eb02               JMP 0x0040a6e0
+0040a6de  33ff               XOR EDI,EDI
+0040a6e0  83cdff             OR EBP,0xffffffff
+0040a6e3  8bcf               MOV ECX,EDI
+0040a6e5  896c2458           MOV dword ptr [ESP + 0x58],EBP
+0040a6e9  897e2c             MOV dword ptr [ESI + 0x2c],EDI
+0040a6ec  e81ff4ffff         CALL 0x00409b10
+0040a6f1  85c0               TEST EAX,EAX
+0040a6f3  0f845f010000       JZ 0x0040a858
+0040a6f9  8d542460           LEA EDX,[ESP + 0x60]
+0040a6fd  52                 PUSH EDX
+0040a6fe  8bcf               MOV ECX,EDI
+0040a700  e83b6b0000         CALL 0x00411240
+0040a705  8d442460           LEA EAX,[ESP + 0x60]
+0040a709  50                 PUSH EAX
+0040a70a  57                 PUSH EDI
+0040a70b  8d4e04             LEA ECX,[ESI + 0x4]
+0040a70e  e8adf6ffff         CALL 0x00409dc0
+0040a713  8d4c2414           LEA ECX,[ESP + 0x14]
+0040a717  51                 PUSH ECX
+0040a718  8d542410           LEA EDX,[ESP + 0x10]
+0040a71c  52                 PUSH EDX
+0040a71d  68dcdf7300         PUSH 0x73dfdc
+0040a722  8d44246c           LEA EAX,[ESP + 0x6c]
+0040a726  50                 PUSH EAX
+0040a727  8d4c2430           LEA ECX,[ESP + 0x30]
+0040a72b  51                 PUSH ECX
+0040a72c  8bcf               MOV ECX,EDI
+0040a72e  c7442428000080bf   MOV dword ptr [ESP + 0x28],0xbf800000
+0040a736  c744242c000080bf   MOV dword ptr [ESP + 0x2c],0xbf800000
+0040a73e  c7442430000080bf   MOV dword ptr [ESP + 0x30],0xbf800000
+0040a746  e8557b0000         CALL 0x004122a0
+0040a74b  8b08               MOV ECX,dword ptr [EAX]
+0040a74d  8d5650             LEA EDX,[ESI + 0x50]
+0040a750  890a               MOV dword ptr [EDX],ECX
+0040a752  8b4804             MOV ECX,dword ptr [EAX + 0x4]
+0040a755  894a04             MOV dword ptr [EDX + 0x4],ECX
+0040a758  8b4008             MOV EAX,dword ptr [EAX + 0x8]
+0040a75b  68d4df7300         PUSH 0x73dfd4
+0040a760  8d4c2464           LEA ECX,[ESP + 0x64]
+0040a764  894208             MOV dword ptr [EDX + 0x8],EAX
+0040a767  51                 PUSH ECX
+0040a768  8d542418           LEA EDX,[ESP + 0x18]
+0040a76c  52                 PUSH EDX
+0040a76d  8bcf               MOV ECX,EDI
+0040a76f  e89c720000         CALL 0x00411a10
+0040a774  85c0               TEST EAX,EAX
+0040a776  7463               JZ 0x0040a7db
+0040a778  68d4df7300         PUSH 0x73dfd4
+0040a77d  8d4c2418           LEA ECX,[ESP + 0x18]
+0040a781  e80ab31d00         CALL 0x005e5a90
+0040a786  8b4e5c             MOV ECX,dword ptr [ESI + 0x5c]
+0040a789  8b01               MOV EAX,dword ptr [ECX]
+0040a78b  8d542414           LEA EDX,[ESP + 0x14]
+0040a78f  52                 PUSH EDX
+0040a790  8d542464           LEA EDX,[ESP + 0x64]
+0040a794  52                 PUSH EDX
+0040a795  57                 PUSH EDI
+0040a796  c744246401000000   MOV dword ptr [ESP + 0x64],0x1
+0040a79e  ff5010             CALL dword ptr [EAX + 0x10]
+0040a7a1  8d4c2414           LEA ECX,[ESP + 0x14]
+0040a7a5  896c2458           MOV dword ptr [ESP + 0x58],EBP
+0040a7a9  e872b41d00         CALL 0x005e5c20
+0040a7ae  8b460c             MOV EAX,dword ptr [ESI + 0xc]
+0040a7b1  8b4e10             MOV ECX,dword ptr [ESI + 0x10]
+0040a7b4  89442428           MOV dword ptr [ESP + 0x28],EAX
+0040a7b8  894c242c           MOV dword ptr [ESP + 0x2c],ECX
+0040a7bc  8b4e5c             MOV ECX,dword ptr [ESI + 0x5c]
+0040a7bf  8d442420           LEA EAX,[ESP + 0x20]
+0040a7c3  c744242000000000   MOV dword ptr [ESP + 0x20],0x0
+0040a7cb  c744242400000000   MOV dword ptr [ESP + 0x24],0x0
+0040a7d3  8b11               MOV EDX,dword ptr [ECX]
+0040a7d5  50                 PUSH EAX
+0040a7d6  ff5204             CALL dword ptr [EDX + 0x4]
+0040a7d9  eb3e               JMP 0x0040a819
+0040a7db  681cd77300         PUSH 0x73d71c
+0040a7e0  8d4c2434           LEA ECX,[ESP + 0x34]
+0040a7e4  e897c5ffff         CALL 0x00406d80
+0040a7e9  8b6e5c             MOV EBP,dword ptr [ESI + 0x5c]
+0040a7ec  8d4c2430           LEA ECX,[ESP + 0x30]
+0040a7f0  51                 PUSH ECX
+0040a7f1  8d542410           LEA EDX,[ESP + 0x10]
+0040a7f5  52                 PUSH EDX
+0040a7f6  68c8df7300         PUSH 0x73dfc8
+0040a7fb  8d44246c           LEA EAX,[ESP + 0x6c]
+0040a7ff  50                 PUSH EAX
+0040a800  8d4c2450           LEA ECX,[ESP + 0x50]
+0040a804  51                 PUSH ECX
+0040a805  8bcf               MOV ECX,EDI
+0040a807  83c514             ADD EBP,0x14
+0040a80a  e801760000         CALL 0x00411e10
+0040a80f  6a00               PUSH 0x0
+0040a811  50                 PUSH EAX
+0040a812  8bcd               MOV ECX,EBP
+0040a814  e8e7a30000         CALL 0x00414c00
+0040a819  680000803f         PUSH 0x3f800000
+0040a81e  8d542410           LEA EDX,[ESP + 0x10]
+0040a822  52                 PUSH EDX
+0040a823  68c0df7300         PUSH 0x73dfc0
+0040a828  8d44246c           LEA EAX,[ESP + 0x6c]
+0040a82c  50                 PUSH EAX
+0040a82d  8bcf               MOV ECX,EDI
+0040a82f  e8cc740000         CALL 0x00411d00
+0040a834  51                 PUSH ECX
+0040a835  8bce               MOV ECX,ESI
+0040a837  d91c24             FSTP float ptr [ESP]
+0040a83a  e8c1a2ffff         CALL 0x00404b00
+0040a83f  68b4df7300         PUSH 0x73dfb4
+0040a844  8d4c2464           LEA ECX,[ESP + 0x64]
+0040a848  51                 PUSH ECX
+0040a849  8d5630             LEA EDX,[ESI + 0x30]
+0040a84c  52                 PUSH EDX
+0040a84d  8bcf               MOV ECX,EDI
+0040a84f  e86c700000         CALL 0x004118c0
+0040a854  834e4402           OR dword ptr [ESI + 0x44],0x2
+0040a858  5f                 POP EDI
+0040a859  5d                 POP EBP
+0040a85a  8b4c2448           MOV ECX,dword ptr [ESP + 0x48]
+0040a85e  5e                 POP ESI
+0040a85f  64890d00000000     MOV dword ptr FS:[0x0],ECX
+0040a866  83c450             ADD ESP,0x50
+0040a869  c20400             RET 0x4
+--- decompile
+
+void __thiscall CSWGuiPanel::StartLoadFromLayout(CSWGuiPanel *this,CResRef *guiResref)
+
+{
+  CResGFF *this_00;
+  int iVar2;
+  Vector *pVVar3;
+  CResRef *pCVar4;
+  float10 fVar5;
+  CResGFF *local_50;
+  CResStruct local_4c;
+  Vector local_48;
+  CSWGuiExtent local_3c;
+  CResRef local_2c;
+  CResRef local_1c;
+  void *local_c;
+  code *pcStack_8;
+  ConstructorProgressCounter CPC;
+  CSWGuiBorder *pCVar1;
+  
+  CPC.base = -1;
+  pcStack_8 = FrameHandler_00714683;
+  local_c = ExceptionList;
+  if ((this->bit_flags & 2) == 0) {
+    ExceptionList = &local_c;
+    local_50 = operator_new(0xa0);
+    CPC.base = 0;
+    if (local_50 == (CResGFF *)0x0) {
+      this_00 = (CResGFF *)0x0;
+    }
+    else {
+      this_00 = CResGFF::CResGFF(local_50,GUI,"GUI ",guiResref);
+    }
+    CPC.base = -1;
+    this->gff = this_00;
+    iVar2 = CRes::Demand(&this_00->resource);
+    if (iVar2 != 0) {
+      CResGFF::GetTopLevelStruct(this_00,(CResStruct *)&guiResref);
+      CSWGuiExtent::Load(&this->extent,this_00,(CResStruct *)&guiResref);
+      local_48.x = -1.0;
+      local_48.y = -1.0;
+      local_48.z = -1.0;
+      pVVar3 = CResGFF::ReadFieldVector
+                         (this_00,(Vector *)&local_3c,(CResStruct *)&guiResref,"COLOR",
+                          (int *)&local_50,&local_48);
+      (this->color).x = pVVar3->x;
+      (this->color).y = pVVar3->y;
+      (this->color).z = pVVar3->z;
+      iVar2 = CResGFF::GetStructFromStruct(this_00,&local_4c,(CResStruct *)&guiResref,"BORDER");
+      if (iVar2 == 0) {
+        CResRef::CResRef(&local_2c,"");
+        pCVar1 = this->border;
+        pCVar4 = CResGFF::ReadFieldCResRef
+                           (this_00,&local_1c,(CResStruct *)&guiResref,"BACKGROUND",(int *)&local_50
+                            ,&local_2c);
+        CSWGuiBorderParams::SetFillImage(&pCVar1->border_params,pCVar4,0);
+      }
+      else {
+        CExoString::CExoString((CExoString *)&local_48,"BORDER");
+        CPC.base = 1;
+        (*this->border->vtable->Load)
+                  (this->border,this_00,(CResStruct *)&guiResref,(CExoString *)&local_48);
+        CPC.base = -1;
+        CExoString::~CExoString((CExoString *)&local_48);
+        local_3c.width = (this->extent).width;
+        local_3c.height = (this->extent).height;
+        local_3c.left = 0;
+        local_3c.top = 0;
+        (*((CSWGuiObject_Methods *)this->border->vtable)->SetExtent)
+                  ((CSWGuiObject *)this->border,&local_3c);
+      }
+      fVar5 = CResGFF::ReadFieldFLOAT(this_00,(CResStruct *)&guiResref,"ALPHA",(int *)&local_50,1.0)
+      ;
+      SetPanelAlpha(this,(float)fVar5);
+      CResGFF::GetList(this_00,&this->control_res_list,(CResStruct *)&guiResref,"CONTROLS");
+      this->bit_flags = this->bit_flags | 2;
+    }
+  }
+  ExceptionList = local_c;
+  return;
+}
+
+
+#### 448130 fn=EnableRenderBumpedOut entry=00448130 cc=__thiscall proto=void __thiscall EnableRenderBumpedOut(char * param_1, float param_2)
+00448130  6aff               PUSH -0x1
+00448132  68fb5e7100         PUSH 0x715efb
+00448137  64a100000000       MOV EAX,FS:[0x0]
+0044813d  50                 PUSH EAX
+0044813e  b840200000         MOV EAX,0x2040
+00448143  64892500000000     MOV dword ptr FS:[0x0],ESP
+0044814a  e8413f2b00         CALL 0x006fc090
+0044814f  53                 PUSH EBX
+00448150  55                 PUSH EBP
+00448151  33ed               XOR EBP,EBP
+00448153  56                 PUSH ESI
+00448154  bb01000000         MOV EBX,0x1
+00448159  57                 PUSH EDI
+0044815a  894c242c           MOV dword ptr [ESP + 0x2c],ECX
+0044815e  885915             MOV byte ptr [ECX + 0x15],BL
+00448161  896c2424           MOV dword ptr [ESP + 0x24],EBP
+00448165  896c2428           MOV dword ptr [ESP + 0x28],EBP
+00448169  896c2420           MOV dword ptr [ESP + 0x20],EBP
+0044816d  8b01               MOV EAX,dword ptr [ECX]
+0044816f  8d542420           LEA EDX,[ESP + 0x20]
+00448173  52                 PUSH EDX
+00448174  6840ee4300         PUSH 0x43ee40
+00448179  89ac2460200000     MOV dword ptr [ESP + 0x2060],EBP
+00448180  ff9010010000       CALL dword ptr [EAX + 0x110]
+00448186  8bb42460200000     MOV ESI,dword ptr [ESP + 0x2060]
+0044818d  55                 PUSH EBP
+0044818e  56                 PUSH ESI
+0044818f  896c2420           MOV dword ptr [ESP + 0x20],EBP
+00448193  c644243800         MOV byte ptr [ESP + 0x38],0x0
+00448198  e8c3b8fdff         CALL 0x00423a60
+0044819d  8bf8               MOV EDI,EAX
+0044819f  8b07               MOV EAX,dword ptr [EDI]
+004481a1  83c408             ADD ESP,0x8
+004481a4  8bcf               MOV ECX,EDI
+004481a6  897c2410           MOV dword ptr [ESP + 0x10],EDI
+004481aa  896c241c           MOV dword ptr [ESP + 0x1c],EBP
+004481ae  895c2414           MOV dword ptr [ESP + 0x14],EBX
+004481b2  ff5034             CALL dword ptr [EAX + 0x34]
+004481b5  84c0               TEST AL,AL
+004481b7  0f851e010000       JNZ 0x004482db
+004481bd  53                 PUSH EBX
+004481be  8d4c241c           LEA ECX,[ESP + 0x1c]
+004481c2  51                 PUSH ECX
+004481c3  689cf07300         PUSH 0x73f09c
+004481c8  56                 PUSH ESI
+004481c9  e872450000         CALL 0x0044c740
+004481ce  8be8               MOV EBP,EAX
+004481d0  83c410             ADD ESP,0x10
+004481d3  85ed               TEST EBP,EBP
+004481d5  7510               JNZ 0x004481e7
+004481d7  8b17               MOV EDX,dword ptr [EDI]
+004481d9  53                 PUSH EBX
+004481da  8bcf               MOV ECX,EDI
+004481dc  ff92a4000000       CALL dword ptr [EDX + 0xa4]
+004481e2  e993030000         JMP 0x0044857a
+004481e7  8b4c2418           MOV ECX,dword ptr [ESP + 0x18]
+004481eb  85c9               TEST ECX,ECX
+004481ed  7d07               JGE 0x004481f6
+004481ef  83c8ff             OR EAX,0xffffffff
+004481f2  2bc1               SUB EAX,ECX
+004481f4  eb02               JMP 0x004481f8
+004481f6  8bc1               MOV EAX,ECX
+004481f8  85c0               TEST EAX,EAX
+004481fa  0f8ec1000000       JLE 0x004482c1
+00448200  8b37               MOV ESI,dword ptr [EDI]
+00448202  50                 PUSH EAX
+00448203  55                 PUSH EBP
+00448204  6a00               PUSH 0x0
+00448206  e8053b0000         CALL 0x0044bd10
+0044820b  83c408             ADD ESP,0x8
+0044820e  50                 PUSH EAX
+0044820f  8bcf               MOV ECX,EDI
+00448211  ff96a0000000       CALL dword ptr [ESI + 0xa0]
+00448217  e8843d0000         CALL 0x0044bfa0
+0044821c  8bf0               MOV ESI,EAX
+0044821e  85f6               TEST ESI,ESI
+00448220  0f8497000000       JZ 0x004482bd
+00448226  8a06               MOV AL,byte ptr [ESI]
+00448228  3c20               CMP AL,0x20
+0044822a  7404               JZ 0x00448230
+0044822c  3c09               CMP AL,0x9
+0044822e  7503               JNZ 0x00448233
+00448230  46                 INC ESI
+00448231  ebf3               JMP 0x00448226
+00448233  56                 PUSH ESI
+00448234  e8f7b20100         CALL 0x00463530
+00448239  50                 PUSH EAX
+0044823a  68fc107400         PUSH 0x7410fc
+0044823f  e86b2a2c00         CALL 0x0070acaf
+00448244  83c40c             ADD ESP,0xc
+00448247  85c0               TEST EAX,EAX
+00448249  7511               JNZ 0x0044825c
+0044824b  8d442430           LEA EAX,[ESP + 0x30]
+0044824f  50                 PUSH EAX
+00448250  83c608             ADD ESI,0x8
+00448253  56                 PUSH ESI
+00448254  e837b30100         CALL 0x00463590
+00448259  83c408             ADD ESP,0x8
+0044825c  8a442430           MOV AL,byte ptr [ESP + 0x30]
+00448260  84c0               TEST AL,AL
+00448262  744a               JZ 0x004482ae
+00448264  bff0107400         MOV EDI,0x7410f0
+00448269  8d742430           LEA ESI,[ESP + 0x30]
+0044826d  b909000000         MOV ECX,0x9
+00448272  33d2               XOR EDX,EDX
+00448274  f3a6               CMPSB.REPE ES:EDI,ESI
+00448276  750e               JNZ 0x00448286
+00448278  8954241c           MOV dword ptr [ESP + 0x1c],EDX
+0044827c  c744241402000000   MOV dword ptr [ESP + 0x14],0x2
+00448284  eb24               JMP 0x004482aa
+00448286  bfe0107400         MOV EDI,0x7410e0
+0044828b  8d742430           LEA ESI,[ESP + 0x30]
+0044828f  b90d000000         MOV ECX,0xd
+00448294  33c0               XOR EAX,EAX
+00448296  f3a6               CMPSB.REPE ES:EDI,ESI
+00448298  7510               JNZ 0x004482aa
+0044829a  c744241c02000000   MOV dword ptr [ESP + 0x1c],0x2
+004482a2  c744241403000000   MOV dword ptr [ESP + 0x14],0x3
+004482aa  8b7c2410           MOV EDI,dword ptr [ESP + 0x10]
+004482ae  e8ed3c0000         CALL 0x0044bfa0
+004482b3  8bf0               MOV ESI,EAX
+004482b5  85f6               TEST ESI,ESI
+004482b7  0f8569ffffff       JNZ 0x00448226
+004482bd  8b4c2418           MOV ECX,dword ptr [ESP + 0x18]
+004482c1  51                 PUSH ECX
+004482c2  55                 PUSH EBP
+004482c3  e828460000         CALL 0x0044c8f0
+004482c8  8b17               MOV EDX,dword ptr [EDI]
+004482ca  83c408             ADD ESP,0x8
+004482cd  53                 PUSH EBX
+004482ce  8bcf               MOV ECX,EDI
+004482d0  ff92a4000000       CALL dword ptr [EDX + 0xa4]
+004482d6  e9e5000000         JMP 0x004483c0
+004482db  8b07               MOV EAX,dword ptr [EDI]
+004482dd  8bcf               MOV ECX,EDI
+004482df  ff9094000000       CALL dword ptr [EAX + 0x94]
+004482e5  8b17               MOV EDX,dword ptr [EDI]
+004482e7  8bcf               MOV ECX,EDI
+004482e9  8be8               MOV EBP,EAX
+004482eb  ff9290000000       CALL dword ptr [EDX + 0x90]
+004482f1  85ed               TEST EBP,EBP
+004482f3  8bd8               MOV EBX,EAX
+004482f5  0f84c5000000       JZ 0x004483c0
+004482fb  85db               TEST EBX,EBX
+004482fd  0f8ebd000000       JLE 0x004483c0
+00448303  33c0               XOR EAX,EAX
+00448305  8a4d00             MOV CL,byte ptr [EBP]
+00448308  884c0450           MOV byte ptr [ESP + EAX*0x1 + 0x50],CL
+0044830c  40                 INC EAX
+0044830d  45                 INC EBP
+0044830e  3bc3               CMP EAX,EBX
+00448310  7d07               JGE 0x00448319
+00448312  807c044f0a         CMP byte ptr [ESP + EAX*0x1 + 0x4f],0xa
+00448317  75ec               JNZ 0x00448305
+00448319  2bd8               SUB EBX,EAX
+0044831b  0f889f000000       JS 0x004483c0
+00448321  c644045000         MOV byte ptr [ESP + EAX*0x1 + 0x50],0x0
+00448326  8d742450           LEA ESI,[ESP + 0x50]
+0044832a  8d9b00000000       LEA EBX,[EBX]
+00448330  8a06               MOV AL,byte ptr [ESI]
+00448332  3c20               CMP AL,0x20
+00448334  7404               JZ 0x0044833a
+00448336  3c09               CMP AL,0x9
+00448338  7503               JNZ 0x0044833d
+0044833a  46                 INC ESI
+0044833b  ebf3               JMP 0x00448330
+0044833d  56                 PUSH ESI
+0044833e  e8edb10100         CALL 0x00463530
+00448343  50                 PUSH EAX
+00448344  68fc107400         PUSH 0x7410fc
+00448349  e861292c00         CALL 0x0070acaf
+0044834e  83c40c             ADD ESP,0xc
+00448351  85c0               TEST EAX,EAX
+00448353  7511               JNZ 0x00448366
+00448355  8d542430           LEA EDX,[ESP + 0x30]
+00448359  52                 PUSH EDX
+0044835a  83c608             ADD ESI,0x8
+0044835d  56                 PUSH ESI
+0044835e  e82db20100         CALL 0x00463590
+00448363  83c408             ADD ESP,0x8
+00448366  8a442430           MOV AL,byte ptr [ESP + 0x30]
+0044836a  84c0               TEST AL,AL
+0044836c  744a               JZ 0x004483b8
+0044836e  bff0107400         MOV EDI,0x7410f0
+00448373  8d742430           LEA ESI,[ESP + 0x30]
+00448377  b909000000         MOV ECX,0x9
+0044837c  33c0               XOR EAX,EAX
+0044837e  f3a6               CMPSB.REPE ES:EDI,ESI
+00448380  750e               JNZ 0x00448390
+00448382  8944241c           MOV dword ptr [ESP + 0x1c],EAX
+00448386  c744241402000000   MOV dword ptr [ESP + 0x14],0x2
+0044838e  eb24               JMP 0x004483b4
+00448390  bfe0107400         MOV EDI,0x7410e0
+00448395  8d742430           LEA ESI,[ESP + 0x30]
+00448399  b90d000000         MOV ECX,0xd
+0044839e  33d2               XOR EDX,EDX
+004483a0  f3a6               CMPSB.REPE ES:EDI,ESI
+004483a2  7510               JNZ 0x004483b4
+004483a4  c744241c02000000   MOV dword ptr [ESP + 0x1c],0x2
+004483ac  c744241403000000   MOV dword ptr [ESP + 0x14],0x3
+004483b4  8b7c2410           MOV EDI,dword ptr [ESP + 0x10]
+004483b8  85db               TEST EBX,EBX
+004483ba  0f8f43ffffff       JG 0x00448303
+004483c0  8b442424           MOV EAX,dword ptr [ESP + 0x24]
+004483c4  33ed               XOR EBP,EBP
+004483c6  85c0               TEST EAX,EAX
+004483c8  0f8e9b010000       JLE 0x00448569
+004483ce  8d5f04             LEA EBX,[EDI + 0x4]
+004483d1  8b442420           MOV EAX,dword ptr [ESP + 0x20]
+004483d5  8b0ca8             MOV ECX,dword ptr [EAX + EBP*0x4]
+004483d8  8b4144             MOV EAX,dword ptr [ECX + 0x44]
+004483db  8b780c             MOV EDI,dword ptr [EAX + 0xc]
+004483de  85ff               TEST EDI,EDI
+004483e0  8d700c             LEA ESI,[EAX + 0xc]
+004483e3  741e               JZ 0x00448403
+004483e5  8bc7               MOV EAX,EDI
+004483e7  85c0               TEST EAX,EAX
+004483e9  7409               JZ 0x004483f4
+004483eb  8d4804             LEA ECX,[EAX + 0x4]
+004483ee  56                 PUSH ESI
+004483ef  e88cccffff         CALL 0x00445080
+004483f4  57                 PUSH EDI
+004483f5  c70600000000       MOV dword ptr [ESI],0x0
+004483fb  e87089fdff         CALL 0x00420d70
+00448400  83c404             ADD ESP,0x4
+00448403  8b542420           MOV EDX,dword ptr [ESP + 0x20]
+00448407  8b04aa             MOV EAX,dword ptr [EDX + EBP*0x4]
+0044840a  8b7044             MOV ESI,dword ptr [EAX + 0x44]
+0044840d  8b4e0c             MOV ECX,dword ptr [ESI + 0xc]
+00448410  83c60c             ADD ESI,0xc
+00448413  85c9               TEST ECX,ECX
+00448415  7440               JZ 0x00448457
+00448417  8b4108             MOV EAX,dword ptr [ECX + 0x8]
+0044841a  8d78ff             LEA EDI,[EAX + -0x1]
+0044841d  8bc7               MOV EAX,EDI
+0044841f  85c0               TEST EAX,EAX
+00448421  7c19               JL 0x0044843c
+00448423  8b5104             MOV EDX,dword ptr [ECX + 0x4]
+00448426  8d1482             LEA EDX,[EDX + EAX*0x4]
+00448429  8da42400000000     LEA ESP,[ESP]
+00448430  3932               CMP dword ptr [EDX],ESI
+00448432  7408               JZ 0x0044843c
+00448434  48                 DEC EAX
+00448435  83ea04             SUB EDX,0x4
+00448438  85c0               TEST EAX,EAX
+0044843a  7df4               JGE 0x00448430
+0044843c  3bc7               CMP EAX,EDI
+0044843e  897908             MOV dword ptr [ECX + 0x8],EDI
+00448441  7d14               JGE 0x00448457
+00448443  8b5104             MOV EDX,dword ptr [ECX + 0x4]
+00448446  8b7c8204           MOV EDI,dword ptr [EDX + EAX*0x4 + 0x4]
+0044844a  8d1482             LEA EDX,[EDX + EAX*0x4]
+0044844d  893a               MOV dword ptr [EDX],EDI
+0044844f  8b5108             MOV EDX,dword ptr [ECX + 0x8]
+00448452  40                 INC EAX
+00448453  3bc2               CMP EAX,EDX
+00448455  7cec               JL 0x00448443
+00448457  8b442410           MOV EAX,dword ptr [ESP + 0x10]
+0044845b  8906               MOV dword ptr [ESI],EAX
+0044845d  8b4308             MOV EAX,dword ptr [EBX + 0x8]
+00448460  394304             CMP dword ptr [EBX + 0x4],EAX
+00448463  7515               JNZ 0x0044847a
+00448465  85c0               TEST EAX,EAX
+00448467  7404               JZ 0x0044846d
+00448469  03c0               ADD EAX,EAX
+0044846b  eb05               JMP 0x00448472
+0044846d  b808000000         MOV EAX,0x8
+00448472  50                 PUSH EAX
+00448473  8bcb               MOV ECX,EBX
+00448475  e8467f1900         CALL 0x005e03c0
+0044847a  8b4b04             MOV ECX,dword ptr [EBX + 0x4]
+0044847d  8b13               MOV EDX,dword ptr [EBX]
+0044847f  89348a             MOV dword ptr [EDX + ECX*0x4],ESI
+00448482  ff4304             INC dword ptr [EBX + 0x4]
+00448485  8b442420           MOV EAX,dword ptr [ESP + 0x20]
+00448489  c744241800000000   MOV dword ptr [ESP + 0x18],0x0
+00448491  8b0ca8             MOV ECX,dword ptr [EAX + EBP*0x4]
+00448494  8b7144             MOV ESI,dword ptr [ECX + 0x44]
+00448497  8b7e28             MOV EDI,dword ptr [ESI + 0x28]
+0044849a  83c628             ADD ESI,0x28
+0044849d  6a08               PUSH 0x8
+0044849f  c7460802000000     MOV dword ptr [ESI + 0x8],0x2
+004484a6  e83b232b00         CALL 0x006fa7e6
+004484ab  8b4e04             MOV ECX,dword ptr [ESI + 0x4]
+004484ae  8906               MOV dword ptr [ESI],EAX
+004484b0  83c404             ADD ESP,0x4
+004484b3  33c0               XOR EAX,EAX
+004484b5  85c9               TEST ECX,ECX
+004484b7  7e17               JLE 0x004484d0
+004484b9  8da42400000000     LEA ESP,[ESP]
+004484c0  8b0c87             MOV ECX,dword ptr [EDI + EAX*0x4]
+004484c3  8b16               MOV EDX,dword ptr [ESI]
+004484c5  890c82             MOV dword ptr [EDX + EAX*0x4],ECX
+004484c8  8b4e04             MOV ECX,dword ptr [ESI + 0x4]
+004484cb  40                 INC EAX
+004484cc  3bc1               CMP EAX,ECX
+004484ce  7cf0               JL 0x004484c0
+004484d0  85ff               TEST EDI,EDI
+004484d2  7409               JZ 0x004484dd
+004484d4  57                 PUSH EDI
+004484d5  e8b61e2b00         CALL 0x006fa390
+004484dd  b802000000         MOV EAX,0x2
+004484e2  894604             MOV dword ptr [ESI + 0x4],EAX
+004484e5  8b542420           MOV EDX,dword ptr [ESP + 0x20]
+004484e9  8b0caa             MOV ECX,dword ptr [EDX + EBP*0x4]
+004484ec  8b7144             MOV ESI,dword ptr [ECX + 0x44]
+004484ef  8b7e34             MOV EDI,dword ptr [ESI + 0x34]
+004484f2  83c634             ADD ESI,0x34
+004484f5  6a08               PUSH 0x8
+004484f7  894608             MOV dword ptr [ESI + 0x8],EAX
+004484fa  e8e7222b00         CALL 0x006fa7e6
+004484ff  8b4e04             MOV ECX,dword ptr [ESI + 0x4]
+00448502  8906               MOV dword ptr [ESI],EAX
+00448504  83c404             ADD ESP,0x4
+00448507  33c0               XOR EAX,EAX
+00448509  85c9               TEST ECX,ECX
+0044850b  7e13               JLE 0x00448520
+0044850d  8d4900             LEA ECX,[ECX]
+00448510  8b0c87             MOV ECX,dword ptr [EDI + EAX*0x4]
+00448513  8b16               MOV EDX,dword ptr [ESI]
+00448515  890c82             MOV dword ptr [EDX + EAX*0x4],ECX
+00448518  8b4e04             MOV ECX,dword ptr [ESI + 0x4]
+0044851b  40                 INC EAX
+0044851c  3bc1               CMP EAX,ECX
+0044851e  7cf0               JL 0x00448510
+00448520  85ff               TEST EDI,EDI
+00448522  7409               JZ 0x0044852d
+00448524  57                 PUSH EDI
+00448525  e8661e2b00         CALL 0x006fa390
+0044852d  c7460402000000     MOV dword ptr [ESI + 0x4],0x2
+00448534  8b542420           MOV EDX,dword ptr [ESP + 0x20]
+00448538  8b04aa             MOV EAX,dword ptr [EDX + EBP*0x4]
+0044853b  8b4844             MOV ECX,dword ptr [EAX + 0x44]
+0044853e  8b5128             MOV EDX,dword ptr [ECX + 0x28]
+00448541  8b44241c           MOV EAX,dword ptr [ESP + 0x1c]
+00448545  894204             MOV dword ptr [EDX + 0x4],EAX
+00448548  8b4c2420           MOV ECX,dword ptr [ESP + 0x20]
+0044854c  8b14a9             MOV EDX,dword ptr [ECX + EBP*0x4]
+0044854f  8b4244             MOV EAX,dword ptr [EDX + 0x44]
+00448552  8b4834             MOV ECX,dword ptr [EAX + 0x34]
+00448555  8b542414           MOV EDX,dword ptr [ESP + 0x14]
+00448559  895104             MOV dword ptr [ECX + 0x4],EDX
+0044855c  8b442424           MOV EAX,dword ptr [ESP + 0x24]
+00448560  45                 INC EBP
+00448561  3be8               CMP EBP,EAX
+00448563  0f8c68feffff       JL 0x004483d1
+00448569  8b842464200000     MOV EAX,dword ptr [ESP + 0x2064]
+00448570  8b4c242c           MOV ECX,dword ptr [ESP + 0x2c]
+00448574  89811c010000       MOV dword ptr [ECX + 0x11c],EAX
+0044857a  8b442420           MOV EAX,dword ptr [ESP + 0x20]
+0044857e  85c0               TEST EAX,EAX
+00448580  c7842458200000ffffffff MOV dword ptr [ESP + 0x2058],0xffffffff
+0044858b  7409               JZ 0x00448596
+0044858d  50                 PUSH EAX
+0044858e  e8fd1d2b00         CALL 0x006fa390
+00448596  8b8c2450200000     MOV ECX,dword ptr [ESP + 0x2050]
+0044859d  5f                 POP EDI
+0044859e  5e                 POP ESI
+0044859f  5d                 POP EBP
+004485a0  5b                 POP EBX
+004485a1  64890d00000000     MOV dword ptr FS:[0x0],ECX
+004485a8  81c44c200000       ADD ESP,0x204c
+004485ae  c20800             RET 0x8
+--- decompile
+
+/* WARNING: Function: __chkstk replaced with injection: alloca_probe */
+
+void __thiscall Gob::EnableRenderBumpedOut(Gob *this,char *param_1,float param_2)
+
+{
+  CExoArrayList<SafePointer<CAurTexture>*> *this_00;
+  CAurTexture_Methods *pCVar1;
+  CAurTexture *pCVar2;
+  Material *pMVar3;
+  undefined4 *puVar4;
+  int *piVar5;
+  bool bVar6;
+  CAurTextureBasic *this_01;
+  CAurRes *res;
+  byte *pbVar7;
+  char *pcVar8;
+  char *pcVar9;
+  int iVar10;
+  char *pcVar11;
+  int iVar12;
+  undefined4 *puVar13;
+  int iVar14;
+  SafePointer<CAurTexture> *pSVar15;
+  SafePointer<CAurTexture> *pSVar16;
+  undefined4 uStack_2048;
+  int iStack_2044;
+  undefined4 uStack_2040;
+  CExoArrayList<Part*> local_203c;
+  Gob *local_2030;
+  char acStack_202c [32];
+  char acStack_200c [8188];
+  undefined4 uStack_10;
+  void *pvStack_c;
+  code *pcStack_8;
+  undefined4 local_4;
+  
+  pcStack_8 = FrameHandler_00715efb;
+  pvStack_c = ExceptionList;
+  uStack_10 = 0x44814f;
+  ExceptionList = &pvStack_c;
+  this->field7_0x15 = 1;
+  local_203c.size = 0;
+  local_203c.capacity = 0;
+  local_203c.data = (Part **)0x0;
+  local_4 = 0;
+  local_2030 = this;
+  (*this->vtable->EnumParts)(this,PartHasMaterial,&local_203c);
+  iStack_2044 = 0;
+  acStack_202c[0] = '\0';
+  this_01 = AurTextureGetReference(param_1,(char *)0x0);
+  uStack_2040 = 0;
+  uStack_2048 = 1;
+  bVar6 = (*((this_01->texture).vtable)->IsTxiLoaded)(&this_01->texture);
+  if (bVar6) {
+    pcVar8 = (char *)(*((this_01->texture).vtable)->GetTxiData)(&this_01->texture);
+    iVar10 = (*((this_01->texture).vtable)->GetTxiSize)(&this_01->texture);
+    if (pcVar8 != (char *)0x0) {
+      while (0 < iVar10) {
+        iVar14 = 0;
+        do {
+          iVar12 = iVar14;
+          acStack_200c[iVar12] = *pcVar8;
+          iVar14 = iVar12 + 1;
+          pcVar8 = pcVar8 + 1;
+          if (iVar10 <= iVar14) break;
+        } while (acStack_200c[iVar12] != '\n');
+        iVar10 = iVar10 - iVar14;
+        if (iVar10 < 0) break;
+        acStack_200c[iVar12 + 1] = '\0';
+        for (pcVar9 = acStack_200c; (*pcVar9 == ' ' || (*pcVar9 == '\t')); pcVar9 = pcVar9 + 1) {
+        }
+        pcVar11 = firstword(pcVar9);
+        iVar14 = __stricmp("blending",pcVar11);
+        if (iVar14 == 0) {
+          Parse_cStr(pcVar9 + 8,acStack_202c);
+        }
+        if (acStack_202c[0] != '\0') {
+          iVar14 = 9;
+          bVar6 = true;
+          pcVar9 = acStack_202c;
+          pcVar11 = "additive";
+          do {
+            if (iVar14 == 0) break;
+            iVar14 = iVar14 + -1;
+            bVar6 = *pcVar9 == *pcVar11;
+            pcVar9 = pcVar9 + 1;
+            pcVar11 = pcVar11 + 1;
+          } while (bVar6);
+          if (bVar6) {
+            uStack_2040 = 0;
+            uStack_2048 = 2;
+          }
+          else {
+            iVar14 = 0xd;
+            bVar6 = true;
+            pcVar9 = acStack_202c;
+            pcVar11 = "punchthrough";
+            do {
+              if (iVar14 == 0) break;
+              iVar14 = iVar14 + -1;
+              bVar6 = *pcVar9 == *pcVar11;
+              pcVar9 = pcVar9 + 1;
+              pcVar11 = pcVar11 + 1;
+            } while (bVar6);
+            if (bVar6) {
+              uStack_2040 = 2;
+              uStack_2048 = 3;
+            }
+          }
+        }
+      }
+    }
+  }
+  else {
+    res = AurResGet(param_1,".txi",&iStack_2044,true);
+    if (res == (CAurRes *)0x0) {
+      (*((this_01->texture).vtable)->SetTxiLoaded)(&this_01->texture,true);
+      goto LAB_0044857a;
+    }
+    iVar10 = iStack_2044;
+    if (iStack_2044 < 0) {
+      iVar10 = -1 - iStack_2044;
+    }
+    if (0 < iVar10) {
+      pCVar1 = (this_01->texture).vtable;
+      pbVar7 = AurResGetDataBytes(0,res);
+      (*pCVar1->SetTxiData)(&this_01->texture,pbVar7,iVar10);
+      pcVar8 = AurResGetNextLine();
+      while (pcVar8 != (char *)0x0) {
+        for (; (*pcVar8 == ' ' || (*pcVar8 == '\t')); pcVar8 = pcVar8 + 1) {
+        }
+        pcVar9 = firstword(pcVar8);
+        iVar10 = __stricmp("blending",pcVar9);
+        if (iVar10 == 0) {
+          Parse_cStr(pcVar8 + 8,acStack_202c);
+        }
+        if (acStack_202c[0] != '\0') {
+          iVar10 = 9;
+          bVar6 = true;
+          pcVar8 = acStack_202c;
+          pcVar9 = "additive";
+          do {
+            if (iVar10 == 0) break;
+            iVar10 = iVar10 + -1;
+            bVar6 = *pcVar8 == *pcVar9;
+            pcVar8 = pcVar8 + 1;
+            pcVar9 = pcVar9 + 1;
+          } while (bVar6);
+          if (bVar6) {
+            uStack_2040 = 0;
+            uStack_2048 = 2;
+          }
+          else {
+            iVar10 = 0xd;
+            bVar6 = true;
+            pcVar8 = acStack_202c;
+            pcVar9 = "punchthrough";
+            do {
+              if (iVar10 == 0) break;
+              iVar10 = iVar10 + -1;
+              bVar6 = *pcVar8 == *pcVar9;
+              pcVar8 = pcVar8 + 1;
+              pcVar9 = pcVar9 + 1;
+            } while (bVar6);
+            if (bVar6) {
+              uStack_2040 = 2;
+              uStack_2048 = 3;
+            }
+          }
+        }
+        pcVar8 = AurResGetNextLine();
+      }
+    }
+    AurResFree(res,iStack_2044);
+    (*((this_01->texture).vtable)->SetTxiLoaded)(&this_01->texture,true);
+  }
+  iVar10 = 0;
+  if (0 < local_203c.size) {
+    this_00 = &(this_01->texture).field1_0x4;
+    do {
+      pCVar2 = (local_203c.data[iVar10]->material->field3_0xc).value;
+      pSVar16 = &local_203c.data[iVar10]->material->field3_0xc;
+      if (pCVar2 != (CAurTexture *)0x0) {
+        if (pCVar2 != (CAurTexture *)0x0) {
+          CExoArrayList::Remove((CExoArrayList *)&pCVar2->field1_0x4,pSVar16);
+        }
+        pSVar16->value = (CAurTexture *)0x0;
+        AurTextureRelease(pCVar2);
+      }
+      pCVar2 = (local_203c.data[iVar10]->material->field3_0xc).value;
+      pSVar16 = &local_203c.data[iVar10]->material->field3_0xc;
+      if (pCVar2 != (CAurTexture *)0x0) {
+        iVar14 = (pCVar2->field1_0x4).size + -1;
+        iVar12 = iVar14;
+        if (-1 < iVar14) {
+          pSVar15 = (pCVar2->field1_0x4).data + iVar14;
+          do {
+            if (pSVar15->value == (CAurTexture *)pSVar16) break;
+            iVar12 = iVar12 + -1;
+            pSVar15 = pSVar15 + -1;
+          } while (-1 < iVar12);
+        }
+        (pCVar2->field1_0x4).size = iVar14;
+        if (iVar12 < iVar14) {
+          do {
+            pSVar15 = (pCVar2->field1_0x4).data;
+            pSVar15[iVar12].value = pSVar15[iVar12 + 1].value;
+            iVar12 = iVar12 + 1;
+          } while (iVar12 < (pCVar2->field1_0x4).size);
+        }
+      }
+      pSVar16->value = &this_01->texture;
+      iVar14 = (this_01->texture).field1_0x4.capcity;
+      if ((this_01->texture).field1_0x4.size == iVar14) {
+        if (iVar14 == 0) {
+          iVar14 = 8;
+        }
+        else {
+          iVar14 = iVar14 * 2;
+        }
+        CExoArrayList::Allocate((CExoArrayList *)this_00,iVar14);
+      }
+      this_00->data[(this_01->texture).field1_0x4.size].value = (CAurTexture *)pSVar16;
+      piVar5 = &(this_01->texture).field1_0x4.size;
+      *piVar5 = *piVar5 + 1;
+      iStack_2044 = 0;
+      pMVar3 = local_203c.data[iVar10]->material;
+      puVar4 = (pMVar3->field10_0x28).data;
+      (pMVar3->field10_0x28).capacity = 2;
+      puVar13 = operator_new(8);
+      (pMVar3->field10_0x28).data = puVar13;
+      iVar14 = 0;
+      if (0 < (pMVar3->field10_0x28).size) {
+        do {
+          (pMVar3->field10_0x28).data[iVar14] = puVar4[iVar14];
+          iVar14 = iVar14 + 1;
+        } while (iVar14 < (pMVar3->field10_0x28).size);
+      }
+      if (puVar4 != (undefined4 *)0x0) {
+        _free(puVar4);
+      }
+      (pMVar3->field10_0x28).size = 2;
+      pMVar3 = local_203c.data[iVar10]->material;
+      puVar4 = (pMVar3->field11_0x34).data;
+      (pMVar3->field11_0x34).capacity = 2;
+      puVar13 = operator_new(8);
+      (pMVar3->field11_0x34).data = puVar13;
+      iVar14 = 0;
+      if (0 < (pMVar3->field11_0x34).size) {
+        do {
+          (pMVar3->field11_0x34).data[iVar14] = puVar4[iVar14];
+          iVar14 = iVar14 + 1;
+        } while (iVar14 < (pMVar3->field11_0x34).size);
+      }
+      if (puVar4 != (undefined4 *)0x0) {
+        _free(puVar4);
+      }
+      (pMVar3->field11_0x34).size = 2;
+      (local_203c.data[iVar10]->material->field10_0x28).data[1] = uStack_2040;
+      (local_203c.data[iVar10]->material->field11_0x34).data[1] = uStack_2048;
+      iVar10 = iVar10 + 1;
+    } while (iVar10 < local_203c.size);
+  }
+  local_2030->field58_0x11c = param_2;
+LAB_0044857a:
+  local_4 = 0xffffffff;
+  if (local_203c.data != (Part **)0x0) {
+    _free(local_203c.data);
+  }
+  ExceptionList = pvStack_c;
+  return;
+}
+
+
+#### 43f540 fn=GetPartLocalPosition entry=0043f540 cc=__thiscall proto=int __thiscall GetPartLocalPosition(Vector * position, Vector * outPosition, Quaternion * outOrientation)
+0043f540  8b542404           MOV EDX,dword ptr [ESP + 0x4]
+0043f544  8b01               MOV EAX,dword ptr [ECX]
+0043f546  52                 PUSH EDX
+0043f547  ff900c010000       CALL dword ptr [EAX + 0x10c]
+0043f54d  85c0               TEST EAX,EAX
+0043f54f  7503               JNZ 0x0043f554
+0043f551  c20c00             RET 0xc
+0043f554  8b4c2408           MOV ECX,dword ptr [ESP + 0x8]
+0043f558  85c9               TEST ECX,ECX
+0043f55a  7415               JZ 0x0043f571
+0043f55c  56                 PUSH ESI
+0043f55d  8d5008             LEA EDX,[EAX + 0x8]
+0043f560  8b32               MOV ESI,dword ptr [EDX]
+0043f562  8931               MOV dword ptr [ECX],ESI
+0043f564  8b7204             MOV ESI,dword ptr [EDX + 0x4]
+0043f567  897104             MOV dword ptr [ECX + 0x4],ESI
+0043f56a  8b5208             MOV EDX,dword ptr [EDX + 0x8]
+0043f56d  895108             MOV dword ptr [ECX + 0x8],EDX
+0043f570  5e                 POP ESI
+0043f571  8b4c240c           MOV ECX,dword ptr [ESP + 0xc]
+0043f575  85c9               TEST ECX,ECX
+0043f577  7419               JZ 0x0043f592
+0043f579  83c014             ADD EAX,0x14
+0043f57c  8b10               MOV EDX,dword ptr [EAX]
+0043f57e  8911               MOV dword ptr [ECX],EDX
+0043f580  8b5004             MOV EDX,dword ptr [EAX + 0x4]
+0043f583  895104             MOV dword ptr [ECX + 0x4],EDX
+0043f586  8b5008             MOV EDX,dword ptr [EAX + 0x8]
+0043f589  895108             MOV dword ptr [ECX + 0x8],EDX
+0043f58c  8b400c             MOV EAX,dword ptr [EAX + 0xc]
+0043f58f  89410c             MOV dword ptr [ECX + 0xc],EAX
+0043f592  b801000000         MOV EAX,0x1
+0043f597  c20c00             RET 0xc
+--- decompile
+
+int __thiscall
+Gob::GetPartLocalPosition(Gob *this,Vector *position,Vector *outPosition,Quaternion *outOrientation)
+
+{
+  Part *pPVar1;
+  
+  pPVar1 = (*this->vtable->GetPart)(this,(char *)position);
+  if (pPVar1 == (Part *)0x0) {
+    return 0;
+  }
+  if (outPosition != (Vector *)0x0) {
+    outPosition->x = (pPVar1->postition).x;
+    outPosition->y = (pPVar1->postition).y;
+    outPosition->z = (pPVar1->postition).z;
+  }
+  if (outOrientation != (Quaternion *)0x0) {
+    outOrientation->w = (pPVar1->orientation).w;
+    outOrientation->x = (pPVar1->orientation).x;
+    outOrientation->y = (pPVar1->orientation).y;
+    outOrientation->z = (pPVar1->orientation).z;
+  }
+  return 1;
+}
+
+
+#### 44fd40 fn=GetObjectScale entry=0044fd40 cc=__stdcall proto=float10 __stdcall GetObjectScale(CAurObject * param_1)
+0044fd40  8b442404           MOV EAX,dword ptr [ESP + 0x4]
+0044fd44  d980b4010000       FLD float ptr [EAX + 0x1b4]
+0044fd4a  c20400             RET 0x4
+--- decompile
+
+float10 Scene::GetObjectScale(CAurObject *param_1)
+
+{
+  return (float10)(param_1->gob).scale;
+}
+
+
+#### 458bc0 fn=IsGeomFadeEnabled entry=00458bc0 cc=__stdcall proto=bool __stdcall IsGeomFadeEnabled(void)
+00458bc0  833da0e3780001     CMP dword ptr [0x0078e3a0],0x1
+00458bc7  0f94c0             SETZ AL
+00458bca  c3                 RET
+--- decompile
+
+bool Scene::IsGeomFadeEnabled(void)
+
+{
+  return geomFadeEnabled == 1;
+}
+
+
+#### 44fd10 fn=SetGeomFadeProperties entry=0044fd10 cc=__stdcall proto=byte __stdcall SetGeomFadeProperties(int property)
+0044fd10  8b442404           MOV EAX,dword ptr [ESP + 0x4]
+0044fd14  83f801             CMP EAX,0x1
+0044fd17  740f               JZ 0x0044fd28
+0044fd19  83f802             CMP EAX,0x2
+0044fd1c  740a               JZ 0x0044fd28
+0044fd1e  83f804             CMP EAX,0x4
+0044fd21  7405               JZ 0x0044fd28
+0044fd23  32c0               XOR AL,AL
+0044fd25  c20400             RET 0x4
+0044fd28  a3a0e37800         MOV [0x0078e3a0],EAX
+0044fd2d  b001               MOV AL,0x1
+0044fd2f  c20400             RET 0x4
+--- decompile
+
+byte Scene::SetGeomFadeProperties(int property)
+
+{
+  if (((property != 1) && (property != 2)) && (property != 4)) {
+    return 0;
+  }
+  geomFadeEnabled = property;
+  return 1;
+}
+
+
+#### 5fca30 fn=DisplayMainMenu entry=005fca30 cc=__thiscall proto=void __thiscall DisplayMainMenu(void)
+005fca30  6aff               PUSH -0x1
+005fca32  686b657200         PUSH 0x72656b
+005fca37  64a100000000       MOV EAX,FS:[0x0]
+005fca3d  50                 PUSH EAX
+005fca3e  64892500000000     MOV dword ptr FS:[0x0],ESP
+005fca45  51                 PUSH ECX
+005fca46  56                 PUSH ESI
+005fca47  8bf1               MOV ESI,ECX
+005fca49  8b8680020000       MOV EAX,dword ptr [ESI + 0x280]
+005fca4f  85c0               TEST EAX,EAX
+005fca51  7414               JZ 0x005fca67
+005fca53  8b8e74020000       MOV ECX,dword ptr [ESI + 0x274]
+005fca59  50                 PUSH EAX
+005fca5a  e811f3e0ff         CALL 0x0040bd70
+005fca5f  85c0               TEST EAX,EAX
+005fca61  0f85d6000000       JNZ 0x005fcb3d
+005fca67  8b8684020000       MOV EAX,dword ptr [ESI + 0x284]
+005fca6d  85c0               TEST EAX,EAX
+005fca6f  7444               JZ 0x005fcab5
+005fca71  8b8e74020000       MOV ECX,dword ptr [ESI + 0x274]
+005fca77  50                 PUSH EAX
+005fca78  e8f3f2e0ff         CALL 0x0040bd70
+005fca7d  85c0               TEST EAX,EAX
+005fca7f  741a               JZ 0x005fca9b
+005fca81  8b8684020000       MOV EAX,dword ptr [ESI + 0x284]
+005fca87  8b4844             MOV ECX,dword ptr [EAX + 0x44]
+005fca8a  81e1fffcffff       AND ECX,0xfffffcff
+005fca90  81c900040000       OR ECX,0x400
+005fca96  894844             MOV dword ptr [EAX + 0x44],ECX
+005fca99  eb10               JMP 0x005fcaab
+005fca9b  8b8e84020000       MOV ECX,dword ptr [ESI + 0x284]
+005fcaa1  85c9               TEST ECX,ECX
+005fcaa3  7406               JZ 0x005fcaab
+005fcaa5  8b11               MOV EDX,dword ptr [ECX]
+005fcaa7  6a01               PUSH 0x1
+005fcaa9  ff12               CALL dword ptr [EDX]
+005fcaab  c7868402000000000000 MOV dword ptr [ESI + 0x284],0x0
+005fcab5  6814140000         PUSH 0x1414
+005fcaba  e827dd0f00         CALL 0x006fa7e6
+005fcabf  83c404             ADD ESP,0x4
+005fcac2  89442404           MOV dword ptr [ESP + 0x4],EAX
+005fcac6  85c0               TEST EAX,EAX
+005fcac8  c744241000000000   MOV dword ptr [ESP + 0x10],0x0
+005fcad0  7410               JZ 0x005fcae2
+005fcad2  8b8e74020000       MOV ECX,dword ptr [ESI + 0x274]
+005fcad8  51                 PUSH ECX
+005fcad9  8bc8               MOV ECX,EAX
+005fcadb  e8e0f90700         CALL 0x0067c4c0
+005fcae0  eb02               JMP 0x005fcae4
+005fcae2  33c0               XOR EAX,EAX
+005fcae4  6a01               PUSH 0x1
+005fcae6  6a02               PUSH 0x2
+005fcae8  8bce               MOV ECX,ESI
+005fcaea  c7442418ffffffff   MOV dword ptr [ESP + 0x18],0xffffffff
+005fcaf2  898680020000       MOV dword ptr [ESI + 0x280],EAX
+005fcaf8  e8e3350200         CALL 0x006200e0
+005fcafd  8b9680020000       MOV EDX,dword ptr [ESI + 0x280]
+005fcb03  8b8e74020000       MOV ECX,dword ptr [ESI + 0x274]
+005fcb09  6a01               PUSH 0x1
+005fcb0b  6a02               PUSH 0x2
+005fcb0d  52                 PUSH EDX
+005fcb0e  e85df1e0ff         CALL 0x0040bc70
+005fcb13  6a02               PUSH 0x2
+005fcb15  6a7f               PUSH 0x7f
+005fcb17  6a01               PUSH 0x1
+005fcb19  8bce               MOV ECX,ESI
+005fcb1b  e8d0cfffff         CALL 0x005f9af0
+005fcb20  83be9404000001     CMP dword ptr [ESI + 0x494],0x1
+005fcb27  750a               JNZ 0x005fcb33
+005fcb29  c7869404000000000000 MOV dword ptr [ESI + 0x494],0x0
+005fcb33  8b4e40             MOV ECX,dword ptr [ESI + 0x40]
+005fcb36  6a00               PUSH 0x0
+005fcb38  e8d3e80200         CALL 0x0062b410
+005fcb3d  8b4c2408           MOV ECX,dword ptr [ESP + 0x8]
+005fcb41  5e                 POP ESI
+005fcb42  64890d00000000     MOV dword ptr FS:[0x0],ECX
+005fcb49  83c410             ADD ESP,0x10
+005fcb4c  c20400             RET 0x4
+--- decompile
+
+void __thiscall CClientExoAppInternal::DisplayMainMenu(CClientExoAppInternal *this)
+
+{
+  int iVar1;
+  CSWGuiMainMenu *pCVar2;
+  void *local_c;
+  code *pcStack_8;
+  undefined4 local_4;
+  
+  local_4 = 0xffffffff;
+  pcStack_8 = FrameHandler_0072656b;
+  local_c = ExceptionList;
+  ExceptionList = &local_c;
+  if ((this->main_menu != (CSWGuiMainMenu *)0x0) &&
+     (ExceptionList = &local_c,
+     iVar1 = CSWGuiManager::PanelExists(this->gui_manager,&this->main_menu->panel), iVar1 != 0)) {
+    ExceptionList = local_c;
+    return;
+  }
+  if (this->field161_0x284 != (CSWGuiPanel *)0x0) {
+    iVar1 = CSWGuiManager::PanelExists(this->gui_manager,this->field161_0x284);
+    if (iVar1 == 0) {
+      if (this->field161_0x284 != (CSWGuiPanel *)0x0) {
+        (*this->field161_0x284->vtable->_destructor)(1);
+      }
+    }
+    else {
+      this->field161_0x284->bit_flags = this->field161_0x284->bit_flags & 0xfffffcffU | 0x400;
+    }
+    this->field161_0x284 = (CSWGuiPanel *)0x0;
+  }
+  pCVar2 = operator_new(0x1414);
+  local_4 = 0;
+  if (pCVar2 == (CSWGuiMainMenu *)0x0) {
+    pCVar2 = (CSWGuiMainMenu *)0x0;
+  }
+  else {
+    pCVar2 = CSWGuiMainMenu::CSWGuiMainMenu(pCVar2,this->gui_manager);
+  }
+  local_4 = 0xffffffff;
+  this->main_menu = pCVar2;
+  SetInputClass(this,2,1);
+  CSWGuiManager::AddPanel(this->gui_manager,&this->main_menu->panel,2,1);
+  StartMenuMusic(this,1,0x7f,2);
+  if (this->field256_0x494 == 1) {
+    this->field256_0x494 = 0;
+  }
+  CGuiInGame::SetGlobalUnpauseableState(this->gui_in_game,0);
+  ExceptionList = local_c;
+  return;
+}
+
+
+#### 5eea10 fn=ExitProgram entry=005eea10 cc=__stdcall proto=undefined __stdcall ExitProgram(void)
+005eea10  6a00               PUSH 0x0
+005eea12  ff15dcd37300       CALL dword ptr [0x0073d3dc]
+005eea18  c3                 RET
+--- decompile
+
+void CClientExoAppInternal::ExitProgram(void)
+
+{
+  PostQuitMessage(0);
+  return;
+}
+
+
+#### 5f2df0 fn=GetPausedByCombat entry=005f2df0 cc=__stdcall proto=int __stdcall GetPausedByCombat(void)
+005f2df0  a1fc397a00         MOV EAX,[0x007a39fc]
+005f2df5  8b4808             MOV ECX,dword ptr [EAX + 0x8]
+005f2df8  85c9               TEST ECX,ECX
+005f2dfa  7408               JZ 0x005f2e04
+005f2dfc  6a02               PUSH 0x2
+005f2dfe  e87dbbebff         CALL 0x004ae980
+005f2e03  c3                 RET
+005f2e04  33c0               XOR EAX,EAX
+005f2e06  c3                 RET
+--- decompile
+
+int CClientExoAppInternal::GetPausedByCombat(void)
+
+{
+  int iVar1;
+  
+  if (AppManager->server != (CServerExoApp *)0x0) {
+    iVar1 = CServerExoApp::GetPauseState(AppManager->server,2);
+    return iVar1;
+  }
+  return 0;
+}
+
+
+#### 4aea30 fn=ClientToServerObjectId entry=004aea30 cc=__thiscall proto=ulong __thiscall ClientToServerObjectId(ulong clientId)
+004aea30  8b4904             MOV ECX,dword ptr [ECX + 0x4]
+004aea33  e938350000         JMP 0x004b1f70
+--- decompile
+
+ulong __thiscall CServerExoApp::ClientToServerObjectId(CServerExoApp *this,ulong clientId)
+
+{
+  ulong uVar1;
+  
+  uVar1 = CServerExoAppInternal::ClientToServerObjectId(this->internal,clientId);
+  return uVar1;
+}
+
+
+#### 4aeb40 fn=CreatureAcquireItem entry=004aeb40 cc=__thiscall proto=void __thiscall CreatureAcquireItem(ulong param_1, CResRef * param_2)
+004aeb40  8b4904             MOV ECX,dword ptr [ECX + 0x4]
+004aeb43  e998340000         JMP 0x004b1fe0
+--- decompile
+
+void __thiscall
+CServerExoApp::CreatureAcquireItem(CServerExoApp *this,ulong param_1,CResRef *param_2)
+
+{
+  CServerExoAppInternal::CreatureAcquireItem(this->internal,param_1,param_2);
+  return;
+}
+
+
+#### 413010 fn=~CResGFF entry=00413010 cc=__thiscall proto=int * * __thiscall ~CResGFF(byte shouldFree)
+00413010  56                 PUSH ESI
+00413011  8bf1               MOV ESI,ECX
+00413013  e858e5ffff         CALL 0x00411570
+00413018  f644240801         TEST byte ptr [ESP + 0x8],0x1
+0041301d  7409               JZ 0x00413028
+0041301f  56                 PUSH ESI
+00413020  e86b732e00         CALL 0x006fa390
+00413028  8bc6               MOV EAX,ESI
+0041302a  5e                 POP ESI
+0041302b  c20400             RET 0x4
+--- decompile
+
+int ** __thiscall CResGFF::~CResGFF(CResGFF *this,byte shouldFree)
+
+{
+  ~CResGFF(this);
+  if ((shouldFree & 1) != 0) {
+    _free(this);
+  }
+  return (int **)this;
+}
+
+
