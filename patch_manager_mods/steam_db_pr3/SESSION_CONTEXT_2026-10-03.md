@@ -86,3 +86,12 @@ Phase 0 (refresh):
 - DB PR not ready: steam_db_batches is consolidating B15 (branch head still 4324098, 1,683 functions).
 - Phase 1 research inputs snapshotted to the session scratchpad: upstream/master export, Steam vanilla exe (6a522e71),
   branch DB copy at 4324098.
+
+### RESUME HERE (stopped at usage limit, 10-03)
+- Phase 1 DONE + gated + committed (0069e63): see `upstream_prs/README.md` (gate results, decisions).
+- Phase 2 STARTED then STOPPED: worktrees created from upstream/master 8b33840:
+  `tools/kpm-pr-gameapi` (gameapi/match-engine-signatures), `tools/kpm-pr-ekc` (port/k2-expandedkeyboard-steam),
+  `tools/kpm-pr-acc` (port/k2-acc-steam). I1/I2/I3 agents were killed mid-edit: inspect `git -C <wt> status/diff`,
+  then either finish or `git checkout .` and re-run the I1-I3 briefs (scope: R1 Commit 1 only; R2 port_spec;
+  R4 draft TOML + manifest 1.5.0). Nothing committed on those branches.
+- Phases 3-4 not started. Open user decision: runscript/`classes` fix (see upstream_prs/README.md).
