@@ -155,6 +155,7 @@ namespace KotorPatcher {
 
                         // Create a special "DLL-only" patch entry
                         PatchInfo dllOnlyPatch;
+                        dllOnlyPatch.patchId = patchId;
                         dllOnlyPatch.dllPath = dllPathStr;
                         dllOnlyPatch.type = HookType::DLL_ONLY;
                         dllOnlyPatch.hookAddress = 0; // No hook address needed
@@ -181,6 +182,7 @@ namespace KotorPatcher {
                     }
 
                     PatchInfo patch;
+                    patch.patchId = patchId;
                     patch.dllPath = dllPathStr;
 
                     // Get hook address (required)
