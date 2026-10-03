@@ -1,0 +1,61 @@
+gog_addr	steam_addr	final_verdict	note
+0x0064bf60	0x0051c540	verified	0051c54d CALL 0x5361d0 = Internal::RunModule (464B, fp = GOG 0x7b9510); callers 0x660040/0x662f60 sig-match GOG HandlePlayerToServerModule/ServerAdmin msgs; delta 0x12fa20
+0x007bc850	0x00539600	verified	00539600 CALL 0x538dc0 (GetActivePauseState) x2; state 2 -> [this+0x10070], state 1 -> [+0x10074]; callers = ExoApp wrapper 0x51c7f0 + IsOnActiveExclusionList 0x5395a0
+0x007b28f0	0x0052f570	verified	0052f57a MOV [EAX+0x1f324],0x7f000000 / +0x1f328=0: cache read by GetModule 0x52f4c0 (0052f4cf); twin ClearAreaCache uses +0x1f32c; sole caller wrapper 0x51cee0
+0x0064ca10	0x0051cff0	verified	0051d01f CALL 0x53cc80 = Internal::SetMoveToWorldTime (103B writes +0x1009c..+0x100a8; fp = GOG 0x7bfa20); trusted caller LoadPCAutoSave 0085322e; RET 0x1c
+0x0064b940	0x0051bf20	verified	0051bf38 MOV [EDX+0x100b4],EAX (loading flag, set =1 in Internal::LoadModule 00531d35); trusted caller LoadPCAutoSave 00852a74; twin SetAutoSavePending 0x51bf50 = +0x100b8
+0x0064c1b0	0x0051c790	verified	0051c7a6 CALL 0x5393b0 = Internal::AddToExclusionList (add-tail 0x54aa30); trusted caller OnApplyTimestop 0x5a4d70 (005a4db1); Remove twin is 0x51c7c0 -> 0x5394c0
+0x0064c160	0x0051c740	verified	0051c74d CALL 0x538dc0 (returns 2/1/0 from pause bits [+0x10078]); trusted callers OnApplyTimestop 005a4d87, AddEventDeltaTime 0x51e170; AIUpdate 0x557260
+0x0064c180	0x0051c760	verified	0051c776 CALL 0x538ed0 = Internal::SetPauseState (1239B = GOG 0x7bc120); trusted callers CSWSDoor::EventHandler 0x617b40, CSWSTrigger::EventHandler 0x61f170; RET 8
+0x0064b9a0	0x0051bf80	verified	0051bf8f MOV EDX,[ECX+0x100b8] (Internal MainLoop tests/clears +0x100b8); trusted caller CClientExoAppInternal::MainLoop 00782180; twin GetLoadingModule = +0x100b4
+0x0064be20	0x0051c400	verified	0051c40f MOV EDX,[ECX+0x1006c] (setter 0x51c3d0 writes it); callers 00549fa6/00656fb9 in 0x549f70 (615B=GOG ReportOverflow) and 0x656af0 (13697B=GOG CheatMessage)
+0x0064bfe0	0x0051c5c0	verified	0051c5d1 CALL 0x5363a0 = Internal::StartServices (strings OVERRIDE:/SERVERVAULT:, CExoResMan ctor 0x711360); RET 4; delta 0x12fa20
+0x007baee0	0x00537c90	verified	00537ca7 MOV [ECX+0x1f32c],0x7f000000 / +0x1f330=0: cache read by GetAreaByGameObjectID 0x537be0 (00537bec); sole caller ExoApp::ClearAreaCache 0x51cf00
+0x0064bdb0	0x0051c390	verified	0051c39f [ECX+0x1004c]; GetActiveTimer 0x538e00 returns +0x1004c when pause state 1, and OnApplyTimestop toggles pause type 1 => timestop; World=+0x10048, Pause=+0x10050
+0x0064bc80	0x0051c260	verified	0051c26d CALL 0x4558a0 (return 0, 13B = GOG Global::return_zero callee); 3 callers sig-match GOG CSWSMessage HasValidString/WriteCExoLocStringServer/GetLocStringServerTime
+0x0064bf00	0x0051c4e0	verified	0051c4f5 CALL 0x537870 = Internal::Shutdown (645B, PUSH 0xaba9500); caller 0x662d50 sig = GOG HandlePlayerToServerShutDownServer (112B); RET 8
+0x007bce00	0x00539bb0	verified	00539bc2 CALL 0x7a1720 GetHeadPosition on [+0x10064] player list, iterator -> [+0x100f8], returns [obj+0x38]; GOG disp 0x38 + 2 list callees equal; caller wrapper 0x51c870
+0x0064b920	0x0051bf00	verified	0051bf0f [ECX+0x100b4] = field SetLoadingModule 0x51bf20 writes; caller 00660456 in 0x660040 (1465B = GOG HandlePlayerToServerModuleMessage) which then sets it
+0x007bc7f0	0x005395a0	verified	005395ac CALL 0x539600 (GetActiveExclusionList) then list walk 0x7a1720/0x561430/0x58c370; caller GetActiveTimer 0x538e00 = GOG caller 0x7bc050
+0x0064c290	0x0051c870	verified	0051c87d CALL 0x539bb0 = Internal::GetFirstPCObject; trusted caller ExecuteCommandGetPC 00687656; 5/5 callers sig-match GOG
+0x0064c8d0	0x0051ceb0	verified	0051cec5 CALL 0x53aae0 = Internal::GetNormalOfPoint (118B, default normal 1.0f); caller 0x7664b0 sig = GOG CSWCCreature::AIUpdate_2 (3620B); RET 8
+0x0064c8a0	0x0051ce80	verified	0051ce98 MOV [EDX+0x1007c],EAX (flag tested/cleared in Internal::RunModule 0x5361d0); sole caller = trusted LoadPCAutoSave 008534d3 (GOG sole caller)
+0x0064ba80	0x0051c060	verified	0051c075 CALL 0x530ec0 = Internal::LoadCharacterFinish (1187B, 'NORMALHEAD'); caller 0x65f630 sig = GOG HandlePlayerToServerLoginMessage; RET 8
+0x0064c970	0x0051cf50	verified	0051cf68 MOV [EDX+0x100b0],EAX; LoadModuleStart 0x5582f0 fills same local from 'Mod_PauseDay' GFF (0x994c10) or Get 0x51cf80 (+0x100b0); PauseTime = +0x100ac
+0x0064beb0	0x0051c490	verified	0051c4a9 CALL 0x535c30 = Internal::PlayerListChange (1428B fp = GOG 0x7b8f70); RET 0xc; 0 callers both; delta 0x12fa20
+0x0064bc00	0x0051c1e0	verified	0051c1f1 CALL 0x537e80 (Internal GetWaypointByGameObjectID, 105B); trusted caller ExecuteCommandSetMapPinEnabled 006924fb; 2/2 callers
+0x0064bf40	0x0051c520	verified	0051c535 CALL 0x531c50 = Internal::LoadModule (6280B = GOG 0x7b4fd0, MODULES: strings); caller 0x662f60 sig = GOG HandleServerAdminToServerMessage; RET 8
+0x0064b6e0	0x0051bcc0	likely	17B FLD [0x98c270] (const 100.0), no member access, 0 callers; GOG 17B/8 insn equal, delta 0x12fa20; Mac GetFPS 11B no-member fits; no content anchor
+0x0064c4c0	0x0051caa0	verified	0051cab0 CALL 0x51c8b0 (trusted ClientToServerObjectId) + 0051caca CALL 0x538c50 (Internal UpDatePlayerPosition 66B); caller sig = GOG SetPrecalculatedPosition; RET 0xc
+0x007bbe70	0x00538c20	verified	00538c2f CALL 0x538cd0 (GetPauseState: [+0x10078]&mask) then 00538c44 CALL 0x538ed0 (SetPauseState) with inverted value; RET 4; caller wrapper 0x51c6b0
+0x0064bfc0	0x0051c5a0	likely	0051c5af [ECX+0x10058] getter; only 31B slot between 0x51c560 (GetPlayerListString) and 0x51c5c0 (StartServices), 0 callers both; no other reader found; positional only
+0x0064c270	0x0051c850	verified	0051c861 CALL 0x539800 (ADD ECX,0x100ec; CALL 0x5210a0 add-unique) = Internal AddCharListRequest 31B; caller 0x65fef0 sig = GOG HandlePlayerToServerCharListMessage
+0x0064c730	0x0051cd10	verified	0051cd28 MOV [EDX+0x1f31c],EAX (Get 0x51cd40 reads it); trusted ExecuteCommandBeginConversation 0066e0b4 calls it, not twin 0x51cd60 (+0x1f320 = SetIgnoreConversationStartRange)
+0x00731970	0x0055f2e0	verified	0055f3ce CALL 0x64bba0 (Strref delete msg, +0x70 like GOG 0x7e22c0 vs 0x7e2250); trusted caller ExecuteCommandDeleteJournalWorldEntryStrref 0x670670; twin is 0x55f1d0
+0x0064cad0	0x0051d0b0	verified	0051d0c9 ADD ECX,0x1f348 + 0051d0cf CALL 0x7337c0 (trusted CExoString::operator=); GOG imm 0x1f348 + operator= callee identical; RET 4
+0x007b96e0	0x005363a0	verified	strings OVERRIDE:/SERVERVAULT:/TEMP:, 005365a0 CALL 0x711360 CExoResMan ctor, 0053675c CALL 0x711690 AddResourceDirectory; 27/28 caller+callee sigs; fp equal
+0x0064c2d0	0x0051c8b0	verified	0051c8c1 CALL 0x539d30 (keeps 0x7f000000 else &~mask) = Internal ClientToServerObjectId 37B; 84 callers incl trusted client MainLoop, GetServerArea; GOG slot differs from Mac order, body fits
+0x0064bf20	0x0051c500	verified	0051c50d CALL 0x5315e0 = Internal::UnloadModule (1521B = GOG 0x7b4960); trusted callers client MainLoop 0x781be0, LoadPCAutoSave 00852a58
+0x007baac0	0x00537870	verified	00537ab2 PUSH 0xaba9500 / 00537ad2 PUSH 0xf4240 (GOG imm same), player-list loop; 4 callers = GOG (wrapper, MainLoop, PlayerListChange, StopServices); RET 8
+0x007bd180	0x00539f30	verified	calls 0x539d30 (Internal ClientToServerObjectId) + 0x537b70 (GetCreatureByGameObjectID 105B) as GOG; caller wrapper 0x51cbe0; RET 4
+0x0064c820	0x0051ce00	verified	0051ce18 MOV [EDX+0x100c4],EAX; trusted callers CSWGuiSaveLoad::LoadGame 00854187, CGuiInGame::DoQuickLoad 007d142d, CSWSArea::EventHandler 0x5221b0
+0x0064bb40	0x0051c120	verified	CALL 0x537be0 (Internal GetAreaByGameObjectID, area cache +0x1f32c); trusted caller CSWCArea::GetServerArea 007aae3d; 22/22 caller+callee sigs
+0x007baa10	0x005377c0	verified	sets [player+0x24]=1 then calls 0x647020 (33B = GOG SendServerToPlayerLogin_Confirm) and 0x647110 (180B = Module_Info); caller Internal LoadCharacterFinish 0x530ec0
+0x007bcab0	0x00539860	verified	imm 0xf4240/0x1c9c380/0x3938700 (1s/30s/60s shutdown countdown) equal GOG; sole caller Internal MainLoop 0x533830; RET 8
+0x0072f300	0x0055cb50	verified	calls SavePlayers 0x55d080 (1904B) and trusted CERFFile::WriteResource 0x721bb0 as GOG; caller SaveModuleFinish 0x55bb80; RET 0x14; fp equal
+0x0064bcc0	0x0051c2a0	verified	0051c2af [ECX+0x10064] (player list head used by Internal GetFirstPCObject); trusted callers DistributeExperience 005fe2d6, SwitchPlayerCharacter, CloseItemForAllPlayers; 44/44
+0x007be0f0	0x0053aea0	verified	calls trusted CSWSArea::ShrinkLineByCreatures 0x54e070 + GetModule 0x52f4c0 + CSWSModule::GetArea 0x557ef0 (= GOG callees); caller wrapper 0x51cf20; RET 0xc
+0x007b7980	0x00534600	verified	63/64 caller+callee sigs incl trusted CResGFF::WriteField*/CreateGFFFile, CSWPartyTable::Save, imm 0x1f348; sole caller Internal MainLoop 0x533830; fp equal
+0x007bfcb0	0x0053cf10	verified	calls trusted CExoResMan::Exists/AddResourceDirectory, CSWPartyTable::Add/RemoveGameInProgress, IncludeModuleInSave 0x53ab60 as GOG; caller wrapper 0x51d070
+0x0064c920	0x0051cf00	verified	0051cf0d CALL 0x537c90 (Internal ClearAreaCache, +0x1f32c); trusted caller CSWSArea::Destructor 00521d13
+0x007c0210	0x0053d470	verified	calls trusted CExoResMan::GetFreeDiskSpace 0x714de0 (GOG callee), imm 0x640/0x4000 equal GOG, 1 str; sole caller Internal MainLoop
+0x0064bc20	0x0051c200	verified	CALL 0x537ef0 (Internal GetEncounterByGameObjectID 105B); trusted callers ExecuteCommandGetEncounterData 0067c65d, SetEncounterData 0x691280, OnApplyDeath 0x597d90
+0x0064c7b0	0x0051cd90	verified	CALL 0x53a7e0 (Internal TestSafeLocation 91B, RET 8 = GOG); trusted caller OnApplyForceJumpDelayed 005a79f5; RET 8
+0x0072f830	0x0055d080	verified	38/39 sigs: trusted CResGFF Add/WriteField*, CGameObjectArray::GetGameObject, ClientToServerObjectId 0x51c8b0, imm 0xbead; caller SaveModuleIFOFinish 0x55cb50
+0x007b6bb0	0x00533830	verified	62/63 sigs: calls trusted CServerAIMaster::UpdateState, CSWSModule ctor/LoadModuleStart, StallEventSaveGame, HasEnoughDiskSpace; caller wrapper 0x51c470; str 4 vs GOG 5
+0x007be120	0x0053aed0	verified	0053aede CALL [GetLocalTime], 0053aeec CALL [SystemTimeToFileTime], CALL __allshl 0x920060 (= Mac callees); trusted caller DoPCAutosave 0x53af20
+0x0064c250	0x0051c830	verified	CALL 0x5397c0 (Internal GetDifficultyOption 52B); trusted callers CSWSCreatureStats::GetUnarmedDamageRoll 006a91f4, GetDamageRoll 0x6adec0; RET 4
+0x0064c460	0x0051ca40	verified	calls trusted CSWSArea::ComputeHeight 0x54b130 + GetModule + CSWSModule::GetArea (= GOG callees); trusted caller PathPointDFSearch 0x554eb0; RET 0xc
+0x007bc600	0x005393b0	verified	00539434 CALL 0x54aa30 add-tail (GOG AddTail_2 27B) after list search; 260B = GOG Add (Remove 220B = 0x5394c0, calls 0x64dde0); caller wrapper 0x51c790
+0x0064bca0	0x0051c280	verified	0051c28f [ECX+0x10044] (written in Internal StartServices 00536713); trusted callers CSWSItem ctor 005ffe4b, SetPossessor, EventHandler; 137/138 sigs
+0x00731860	0x0055f1d0	verified	0055f2be CALL 0x64bb30 (delete-world msg, GOG 0x7e2250) not Strref 0x64bba0; trusted caller ExecuteCommandDeleteJournalWorldEntry 0x670580; twin 0x55f2e0
