@@ -1,5 +1,36 @@
 # Vanilla exe migration (2026-10-02 12:02)
 
+## RESUME HERE (session context, 2026-10-03)
+**Live (checked 10-03, sibling install 11:29:44):** exe `7751F7D8` = vanilla `6A522E` + `4gb-patch`; KPM state OriginalHash
+`6A522E`. 31 ids / 198 hooks. Shader set: `4gb-patch`, `k2_aspyr_shader_fixes`, `K2_music_fix` ON; `colorshift_k2`,
+saber-hilt, normal-map, `fog_reflection_fix_k2` OFF. Sibling ids also live: mouse-probe, k2-robustness-fixes,
+k2-texture-memory-release.
+
+**Open items (in order):**
+1. User reported "very dark" after shader changes. `colorshift_k2` removed 10-02 14:58; user has NOT yet re-tested.
+   If still dark: in-game Brightness (ini `Brightness=50`) first, else ask which areas; suspect Shader Fixes' +15
+   brightness offset removal -> tweak in a branch (do not just drop the patch; it carries the saber/normal/fog fixes).
+2. Pending user answer: adopt branch workflow (commit uncommitted mod work to `ethansm/local-mods`, add "commit before
+   install" step to the install procedure; per-mod `pr/<id>` branches off master for upstream).
+3. KPM rebuild with upstream 55725f7 (#283 deployment changes) not done; installs still use the old
+   `bin/NoLaunch/KPatchLauncher` (`KPATCH_NO_LAUNCH=1`). NoLaunch is a source edit that was reverted: rebuilding needs it
+   re-applied (see 09_load_hang_investigation.md).
+4. Upstream PR for `docs/prepatched-executables` (hash note, issues #49/#91) NOT opened; needs user OK. #49/#91 link to
+   this hash is unverified.
+
+**KPM clone** `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`: origin = fork `ethansm/Kotor-Patch-Manager`,
+upstream = LaneDibello (push URL DISABLE), `gh auth setup-git` done. Branches: `master` (= upstream 55725f7),
+`ethansm/local-mods` (pushed, e3bc575: dcc1cf6 LAA aliases, 2dcf48a ghidra scripts, 583ba96 local patches, b5806b1 LAA
+removal, e3bc575 doc), `docs/prepatched-executables` (f9f3ec6, pushed). Working tree has sibling-session uncommitted
+edits (BuffDurationHUD, CharEffectsPanel, ForcePowerHotbar, LevelUpOverride, untracked MouseProbe): do not commit or
+discard them without the user. Local excludes in `.git/info/exclude`.
+
+**Install rules learned:** siblings hand-install DLLs into patch_config.toml without KPM (mouse-probe 12:11) and
+reinstall often; right before any install: game closed, re-read live ids, build stage with
+`mods678_research/stage_and_verify_install.py stage <dir>` (4gb-patch "hooks=DIFF" is expected: static hook not in
+patch_config), back up, `KPATCH_NO_LAUNCH=1 bin/NoLaunch/KPatchLauncher "$G/swkotor2.exe" --patches <stage> <ids>`,
+then md5 DLLs vs backup. Exe swaps need `swkotor2.exe.backup.*` + `kpm_install_state.json` moved aside first.
+
 **Status: INSTALLED, awaiting in-game check.** 12:14: `colorshift_k2` + `K2_music_fix` added (31 ids / 202 hooks incl. a sibling's
 `mouse-probe`, hand-installed 12:11 and carried over unchanged). LAA aliases removed from all manifests/hooks (KPM
 `b5806b1`, mirrors here). Community note with the 3C-FD hash: KPM `docs/PrePatchedExecutables.md` (branch
