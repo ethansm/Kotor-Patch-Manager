@@ -1017,3 +1017,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   F3 Playthrough.h rewrite drops text after `]`, inline comments, CRLF. Top RISKs: F4 leaderInstant lacks the 0x740FC0 check, F5 multi-level XP
   across pause/convert -> HOLD_MIDLOOP engine picks, F6 lossy parse blocks all writes incl. Vanilla, F10 table over-cap drops all HOLDs,
   F14 HOLD/UNHOLD per-frame flap fills the log, F17 unknown mode= -> log-only. NEXT: scenarios first, then a C++ fix round (after the preset agent).
+- B4 preset fixes DONE (commit after a060686): Close Combat/Improved Close Combat x19 -> melee/defence feats; Finesse: Melee Weapons right
+  AFTER Two-Weapon Fighting (user choice: Atton TWF L5/Finesse L8, Mira + Visas TWF L7/Finesse L9; one late Master feat dropped); heal builds
+  Treat Injury first (Handmaiden x6 reorder; Kreia caster_light, Disciple support_tech, Mira rifle_light_late, Atton light_late + atton.toml
+  re-pointed to TI ~33 - user kept it). Kreia Stealth / Bao-Dur Persuade kept. Repo `runtime/levelup_paths.ini` regenerated (game-dir copy NOT
+  updated - ships with the 1.0.0 install). User idea logged in mods README: wording patch for mod #142 mechanics.
+- Running: A2 fix round (F1/F2/F3/F4/F6/F14/F17 + scenarios S13, X11). After it: A3 mutate.py, then A6 1.0.0 build (install = user consent).
