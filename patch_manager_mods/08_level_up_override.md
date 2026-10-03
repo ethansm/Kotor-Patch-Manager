@@ -411,6 +411,7 @@ User: one Auto-button level-up of Atton 3 -> 7 (4 LevelUp calls in one tick, flo
   ```
   Anything else = hold (XP banks). Prestige needs no special case. Preset constraints: after conversion every record is the Jedi class; max 2 classes.
 - Residual: classes.2da ids for 0xB-0x10 (read the 2DA); AddMultiClass routine id (routine table entry for 0x66C7A0); which .dlg calls a_makejedi at what level.
+  - RESOLVED 2026-10-03 (Steam DB batch B15, `steam_db_batches/B15/cmdtable.tsv`): 0x66C7A0 = `ExecuteCommandAddMultiClass`, NWScript routine id **389**. Proof: the Steam InitCommands store `006662e9 MOV [EDX+0x614],0x66c7a0` (0x614 / 4 = 389). `LevelUpOverride.cpp:103` names it "LevelUpHenchman": the address is right, the label is wrong.
 
 ### Item 4 - banking, level cap, XP-award gates (Step 4, agent D; hang hazard spot-checked)
 - **HANG HAZARD (CONFIRMED, `phase1_evidence/asm_auto.txt:1127-1150`):** inside AutoLevelup 0x6BEDF0, `0x6C00AA call ValidateLevelUp; jnz 0x6C0114`, failure frees
@@ -937,9 +938,18 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
     never commit them; `$T` = `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`; `$G` = `~/.local/share/Steam/steamapps/common/Knights of the
     Old Republic II`; saves in `$G/cloudsaves/62703561/`; kpatch dll = `binaries/windows_x86.dll` inside the zip; Atton minPause = 3 (first record
     char 4); pause clamps to 0 when a row cycle moves to a preset with another range (user value not remembered - acceptable, note for README).
+  - **Phase 6b (2026-10-03, user away from the game):** plan `research/companion_levelup/PHASE6B_PLAN.md` supersedes PHASE6_PLAN ordering for the
+    "while waiting" period: Track M forced-state/mock toolkit (M0 save layout, M1 save forge, M2 ini switcher, M3 offline scenario runner, M4 log
+    checker, M5 doc 21 + skill), A 1.0.0 hardening, B3-B5 presets, C1b/C2 R10. User decisions: (1) forged saves go into NEW removable slots
+    (consent per write, `cleanup` command); (2) doc-20 scope = level-up items + seeded shared infra only; (3) **1.0.0 default with no ini =
+    `mode=rewrite`** (answers the open question); (4) B1 spare-point choice (Kreia Stealth, Bao-Dur Persuade) decided in the B3 review.
+    Progress: see "Session notes - Phase 6b" below.
 
 
 ### Note from the hotbar session (2026-10-03 01:57)
 - `GuiKit.h` gained additive out-params only (`imageFor(resref, bool* loaded, int* poolCount)`, pool 128 -> 256; `createLabelFromTemplate(panel, tag, int* why, uint32_t* badVtable)`). No change needed here; LevelUpOverride.cpp compiles with 0 warnings and the parity `guikit_test.py` stays 49/49.
 - Live install 01:57 used stage `hotbar_stage16/`, which contains YOUR `Patches/LevelUpOverride/LevelUpOverride.kpatch` 0.3.1 (`aaedb93e`, the DLL you hot-copied at 01:52; hooks identical to 0.3.0). Your next stage must include ForcePowerHotbar build 27 (`106be06e`, in `hotbar_stage16/`), or the install reverts the hotbar.
 - The parity stub `stub/windows.h` `VirtualQuery` returns `RegionSize = 1<<40`, which wraps under `-m32` and hangs `saferead::regionReadable` (doc 20 Status).
+
+### Session notes - Phase 6b (2026-10-03, plan `research/companion_levelup/PHASE6B_PLAN.md`)
+- Step 0: plan copied to the repo, decisions (1)-(4) recorded in the Phase 6 RESUME HERE block. Live unchanged (0.3.1 dll aaedb93e; log read from 473).
