@@ -1000,3 +1000,7 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   Lesson: decoy cards that are TRUE (ctor vs vftable claims on the same address, G14/G15/G19/G22) confuse "pick one" adjudication - make decoys mutually exclusive.
 - B3 DONE 398394e (`phase6_evidence/B3_build_review.md`): BUG 12 (Close Combat / Improved Close Combat = ranged-only feats in 12 melee/unarmed
   presets incl. recommended atton__melee_dual_light_early:127,171), QUALITY 31, TASTE 25; user questions Q-U1..Q-U10 pending.
+- M5 DONE: doc 21 `21_FORCED_STATE_TESTING.md` + skill `.claude/skills/kotor2-forced-state-testing/SKILL.md`; doc-20 cross-reference + suites.toml proposal.
+- User answers B3 (2026-10-03): keep Kreia Stealth + Bao-Dur Persuade; replace the 19 Close Combat picks in one batch; add Finesse: Melee Weapons
+  early to the five DEX saber presets; mod #142 combined TI install IS live (`Override/k_fp_heal{1,2,3}ti.ncs`) -> reorder Treat Injury first in
+  the Heal builds. Preset edits wait for the A1 agent to finish (shared gates).
