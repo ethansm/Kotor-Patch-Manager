@@ -1,0 +1,100 @@
+gog_addr	steam_addr	final_verdict	note
+0x007f0180	0x005e68f0	verified	fp=; 005e6903 PUSH 0x4 (type 4 = object; Mac imm 0x4) + 005e690c CALL 0x005e6580 MatchIndex (fp= GOG 0x7efe10), returns +0xc
+0x007f07b0	0x005e6f20	verified	fp=; 005e6f27 PUSH 0x2 (float; Mac imm 0x2) + CALL 0x5e6750 DeleteIndex (fp= GOG 0x7effe0); String/Object siblings use 3/4
+0x0077b430	0x00665eb0	verified	fp=; 00665edb MOV [EAX],0x9940d0 derived vptr (inlined ctor stores base 0x994100 then 0x9940d0 at 005369b4), frees +0xc, 00665f1a restores base
+0x0077b500	0x00536be0	verified	fp=; 00536bea CALL 0x00665eb0 (the dtor above) then delete if flag&1, RET 4: scalar deleting dtor
+0x0077ec30	0x00669650	verified	fp=; 0066967a CALL 0x005e4ca0 ~CGameEffect (fp= GOG 0x734960) + ~CSWCCMessageData 0x5e1af0; switch on type 0..3; all 4 callees fp=
+0x00782fd0	0x0066d9f0	verified	fp=; 0066da27 CALL 0x006fdb30 PopCommand, 0066dab5 CALL 0x0051e170 AddEventDeltaTime (fp= GOG 0x64db90); no PopFloat (Delay twin has it)
+0x007830d0	0x0066daf0	verified	fp=; 0066db6d PUSH 0x2719, 0066db89 CALL 0x00568540 AddAttackActions (fp= GOG 0x681170); imm 0x5dc as Mac
+0x00783180	0x0066dba0	verified	fp=; 0066dc67 CALL 0x005683d0 AddCutsceneAttackActions (fp= GOG 0x681000); imm 0x7f000000 as Mac
+0x00785950	0x00670370	verified	fp=; 0067038a CALL 0x006fd9e0 PopFloat, 006703a7 CALL 0x006fdb30 PopCommand, CALL 0x51e170 AddEventDeltaTime
+0x007a08e0	0x0068b290	verified	fp=; 0068b2a3 CALL 0x006fd9a0 PopInteger, 0068b2c6 CALL 0x006fda00 PushFloat; Mac same 2 callees
+0x007a4c20	0x0068f5d0	verified	fp=; 0068f600 CALL 0x0091eb8b rand (fp= GOG 0x925936) then IDIV; PopInteger/PushInteger
+0x007f98e0	0x006f6320	verified	fp=; 006f638d CALL 0x007337c0 CExoString::operator= on event +0x10; 8 callees fp= GOG; Mac disp 0x4,0x8
+0x007f99e0	0x006f6420	verified	fp=; 006f6486 MOV EDX,[ECX+0x18], CALL 0x7338d0 operator=_2 (fp= GOG 0x6059e0); disp 0xc/0x18 as Mac (0x10/0x18)
+0x007f9fb0	0x006f69f0	verified	fp=; 006f6a5d CMP [EBP-0x18],0x24e; callees SetMaxHitPoints 0x835620 / AdjustHitPoints 0x835820 fp= GOG; Mac imm 0x24e,0x25c
+0x007facb0	0x006f76f0	verified	fp=; 006f775d CMP [EBP-0x18],0x26a; callee 0x835690 fp= GOG CSWTrackFollower::SetHitPoints; Mac imm 0x26a,0x26e
+0x0064baa0	0x0051c080	verified	fp=; 0051c08f MOV EDX,[ECX+0x1005c]: the array GetGameObject 0x51c0a0 passes to CGameObjectArray::GetGameObject (0051c0d0); 260/261 caller sizes equal
+0x0064bb20	0x0051c100	verified	fp=; 0051c111 CALL 0x00537b70 (fp= GOG Internal::GetCreatureByGameObjectID 0x7badc0; tests creature type DAT_00994474); 393/396 caller sizes
+0x0064bd70	0x0051c350	verified	fp=; 0051c361 CALL 0x00538e00 (fp= GOG Internal::GetActiveTimer 0x7bc050; picks +0x10048/+0x1004c/+0x10050 by object); 12/12 callers
+0x0064bd90	0x0051c370	likely	getter 0051c37f MOV EDX,[ECX+0x10048] (default timer of GetActiveTimer); next getters +0x1004c/+0x10050 = Timestop/Pause order; 70/70 callers
+0x0064c2b0	0x0051c890	verified	fp=; 0051c89d ADD EAX,0x100fc; callers incl. ExecuteCommandGet/SetGlobalNumber (GOG 0x793150 307 B = Steam 0x67db70); 34/35 caller sizes
+0x0064c2d0	0x0051c8b0	verified	fp=; 0051c8c1 CALL 0x00539d30 (fp= GOG Internal::ClientToServerObjectId 0x7bcf80): keeps 0x7f000000, else masks client bit
+0x0064c310	0x0051c8f0	verified	fp=; 0051c8fd CALL 0x00539d60 (fp= GOG Internal::GetPlayerCreatureId 0x7bcfb0; returns id or 0x7f000000); 117/117 caller sizes
+0x0064c800	0x0051cde0	verified	fp=; 0051cdef MOV EDX,[ECX+0x100c4]; caller 0x682dc0 = ExecuteCommandGetLoadFromSaveGame (GOG 0x798390, 65 B); 5 callers as GOG
+0x0064c820	0x0051ce00	verified	fp=; 0051ce18 MOV [EDX+0x100c4],EAX; callers DoQuickLoad 0x7d0f50 and CSWGuiSaveLoad::LoadGame 0x853a00, as GOG
+0x007b2990	0x0052f610	verified	fp= except GOG empty string 0x9858f5; 0052f6ed PUSH 0x993e30 'SAVES:', 'SAVEGAME', 'SAVES:%06d - %s'; 22/22 callees fp=
+0x00480170	0x006e71d0	verified	fp= (1042 B, 86 disp); zero-inits all 2DA slots incl. 006e75aa MOV [EDX+0x14c],0x0 (the AlienVO slot Load2DArrays_AlienVO fills)
+0x00480590	0x006e75f0	verified	fp=; 006e75fa CALL 0x006ed7d0 UnLoad2DArrays (9797 B, fp= GOG 0x486770)
+0x004805b0	0x006e7610	verified	fp=; 85/85 callees fp= in order, 006e762a CALL 0x006e7c70 Load2DArrays_Appearance ... AlienVO 0x6ed4d0
+0x006409d0	0x006fd7b0	verified	fp=; 006fd825 CALL 0x00919bcc eh vector dtor (fp= GOG 0x9217f0), virtual delete via +0x1c; ctor twin 0x6fd700 (new 0x3d8)
+0x00640b80	0x006fd960	verified	fp=; 006fd975 CALL 0x007029b0 = VMI::GetRunScriptReturnValue (007029ba CMP [EAX+0x1c],0x3); EngineStructure twins call others
+0x00640bc0	0x006fd9a0	verified	fp=; 006fd9b1 CALL 0x00702b60 = VMI::StackPopInteger (00702b9d CMP ECX,0x3 int tag)
+0x00640c40	0x006fda20	verified	fp=; 006fda31 CALL 0x00702d00 = VMI::StackPopVector (fp= GOG 0x645fa0; 3x CALL 0x702c30 PopFloat)
+0x00640c90	0x006fda70	verified	fp=; 006fda81 CALL 0x00702dd0 = VMI::StackPopString (00702e0d CMP ECX,0x5 string tag)
+0x00640cd0	0x006fdab0	verified	fp=; 006fdac5 CALL 0x00702f20 = VMI::StackPopEngineStructure (185 B fp= GOG 0x6461c0)
+0x00640cf0	0x006fdad0	verified	fp=; 006fdae5 CALL 0x00702fe0 = VMI::StackPushEngineStructure (131 B fp= GOG 0x646280)
+0x00640d10	0x006fdaf0	verified	fp=; 006fdb01 CALL 0x00703070 = VMI::StackPopObject (007030ad CMP ECX,0x6 object tag)
+0x00640da0	0x006fdb80	verified	fp=; 006fdb99 CALL 0x00703530 = VMI::LoadScriptSituation (646 B, disp/imm = GOG 0x6467d0; 0070379b CALL LoadStack). FID label noise
+0x00640dd0	0x006fdbb0	verified	fp=; 006fdbc1 CALL 0x007037c0 = VMI::DeleteScriptSituation (fp= GOG 0x646a60)
+0x006429f0	0x006ff7b0	verified	fp=; 006ff7ba CALL 0x006ff7e0 (fp= GOG ~CVirtualMachineInternal 0x642a20) then delete if flag&1: deleting dtor
+0x00642b70	0x006ff930	verified	fp=; 006ff9c0 MOV [EDX+0x8],0xd; callee 0x6fe440 Stack dtor; disp set as Mac DeleteScript
+0x006451c0	0x00701f20	verified	fp=; 00701f30 SUB ECX,0x1 on [+0x1c4], 00701f68 reads [+0x1c8+i*4]: pop; Push twin 0x701f80 increments
+0x00645220	0x00701f80	verified	fp=; 00701fb5 CMP [ECX+0x1c4],0x80 limit, stores into [+0x1c8+i*4], increments
+0x00645270	0x00701fd0	verified	GOG split (64 B head + 0x6452b0 626 B, span 720 vs 716); 00702000 MOV EAX,0xffffffa2; called by SetUpScriptSituation at 00702a15 as GOG
+0x00645830	0x00702590	verified	fp=; 7/7 callees fp=: 0070265c CALL 0x007029f0 SetUp, 007026f4 CALL 0x00702850 RunScriptFile; disp set as Mac
+0x00645c50	0x007029b0	verified	fp=; 007029ba CMP [EAX+0x1c],0x3, returns [+0x1c]/[+0x20]; Mac disp 0x1c,0x20 imm 3
+0x00645c90	0x007029f0	verified	fp=; 00702a15 CALL 0x00701fd0 ReadScriptFile + CALL 0x7337c0 operator=; Mac same 2 callees
+0x00645e00	0x00702b60	verified	fp=; 00702b9d CMP ECX,0x3 (int tag); Mac imm 0x3
+0x00645e80	0x00702be0	verified	fp=; 00702be9 PUSH 0x3 + CALL 0x6fe460 AddToTopOfStack; Mac imm 0x3
+0x00645ed0	0x00702c30	verified	fp=; 00702c6d CMP ECX,0x4 (float tag); Mac imm 0x4
+0x00645f50	0x00702cb0	verified	fp=; 00702cb9 PUSH 0x4 + AddToTopOfStack; Mac imm 0x4
+0x00646070	0x00702dd0	verified	fp=; 00702e0d CMP ECX,0x5 (string tag) + 00702e2f CALL 0x007337c0 operator=; Mac imm 0x5
+0x00646100	0x00702e60	verified	fp=; 00702ed2 PUSH 0x5 + AddToTopOfStack, new(8) + CExoString ctor; Mac imm 0x5
+0x00646310	0x00703070	verified	fp=; 007030ad CMP ECX,0x6 (object tag); Mac imm 0x6
+0x00646a60	0x007037c0	verified	fp=; 007037de CALL 0x006ff6e0 ~CVirtualMachineScript (fp= GOG 0x642920) + delete
+0x00641680	0x006fe440	verified	fp=; 006fe44a CALL 0x006ff2a0 ClearStack (fp= GOG 0x6424e0); its 7 callers are the counterparts of the 7 GOG callers
+0x00642680	0x006ff440	likely	16 B getter 006ff44a MOV EAX,[EAX] (field +0); called by the VMI StackPop/Push fns as on GOG; no Mac symbol
+0x0080b3d0	0x0051aef0	verified	fp=; adds day/ms pairs: 0051af17 ADD ECX,[EBP+0x10], carry when >= [+0x3c] (0051af4c SUB); -2 on range error; Mac disp 0x3c
+0x0080b440	0x0051af60	verified	fp=; 0051af7a CALL 0x0051afe0 CompareWorldTimes (fp= GOG 0x80b4c0); -2 / RET 0x18
+0x0080b5e0	0x0051b100	verified	0051b12a MOV EAX,[EBP-0x10] = param_3 of 0x51ab40 = (t/1000/60)/[+0x38] = hours; twins return min/sec/ms
+0x0080b620	0x0051b140	verified	0051b16a MOV EAX,[EBP-0x8] = param_4 of 0x51ab40 = (t/1000/60)%[+0x38] = minutes
+0x00867880	0x00475910	verified	fp=; callers register 'addlightside'/'adddarkside' (00984272 CALL 0x00475910), as GOG 0x982ac0/0x982af0; 3rd funcholder 0x4765f0
+0x00866b40	0x00474c00	verified	fp=; 00474c25 PUSH 0x434 new, 00474c58 CALL 0x004744d0 PostedString ctor (fp= GOG 0x866410)
+0x0084bcd0	0x004596f0	likely	getter 004596fa ADD EAX,0x64 (returns this+0x64); fp=; Mac imm 0x64
+0x0084be10	0x00459830	likely	setter 0045983d MOV byte ptr [EAX+0x1a9],CL; fp=; Mac disp 0x1a9
+0x0084be30	0x00459850	likely	0045985c MOV word ptr [ECX+0xee],AX (=0); TurnOn twin writes 1; fp=; Mac disp 0xee
+0x0084be50	0x00459870	likely	0045987f MOV word ptr [ECX+0xee],AX (=1); fp=; Mac disp 0xee
+0x0084be90	0x004598b0	likely	004598ba MOV byte ptr [EAX+0x11],0x0; EnableInViewVolume sets 1; fp=; Mac disp 0x11
+0x0084bf30	0x00459950	likely	setter 0045995d MOV byte ptr [EAX+0x180],CL; fp=; Mac disp 0x180
+0x0084bf50	0x00459970	likely	setter 0045997d MOV byte ptr [EAX+0x181],CL; fp=; Mac disp 0x181
+0x0084bf70	0x00459990	likely	getter 0045999a MOV AL,byte ptr [EAX+0x181]; fp=; Mac disp 0x181
+0x0084bf90	0x004599b0	likely	setter 004599bd FSTP [EAX+0x1ac]; fp=; Mac disp 0x1ac
+0x0084bfb0	0x004599d0	likely	getter 004599da FLD [EAX+0x1ac]; fp=; Mac disp 0x1ac
+0x0084bfd0	0x004599f0	likely	004599fa MOV byte ptr [EAX+0x1a8],0x1; Disable twin writes 0; fp=; Mac disp 0x1a8
+0x0084bff0	0x00459a10	likely	00459a1a MOV byte ptr [EAX+0x1a8],0x0; fp=; Mac disp 0x1a8
+0x0084c340	0x00459d60	likely	00459d6a MOV byte ptr [EAX+0x10],0x1; Disable twin writes 0; fp=; Mac disp 0x10
+0x0084c360	0x00459d80	likely	00459d8a MOV byte ptr [EAX+0x10],0x0; fp=; Mac disp 0x10
+0x0084c3a0	0x00459dc0	likely	00459dca MOV byte ptr [EAX+0x12],0x1; fp=; Mac disp 0x12
+0x0084c3c0	0x00459de0	likely	00459dea MOV byte ptr [EAX+0x12],0x0; fp=; Mac disp 0x12
+0x0084c3e0	0x00459e00	likely	00459e0a MOV byte ptr [EAX+0x14],0x0; fp=; Mac disp 0x14
+0x0084c400	0x00459e20	likely	getter 00459e2a MOV AL,byte ptr [EAX+0x14]; fp=; Mac disp 0x14; 4/5 caller sizes
+0x0084c4c0	0x00459ee0	likely	getter 00459eea MOV AL,byte ptr [EAX+0x12]; fp=; Mac disp 0x12
+0x0084c570	0x00459f90	verified	fp=; 00459f97 PUSH 0x1 + 00459fa3 CALL 0x00459f00 PartSetFog (fp= GOG 0x84c4e0) on [+0x98]; DisableFog twin pushes 0; Mac disp 0x98
+0x0084c5e0	0x0045a000	verified	fp=; 0045a010 PUSH 0x98b988 'propagateviewvolume' (GOG same string), sets +0x11; Mac disp 0x11
+0x0084e530	0x0045bf50	verified	fp=; strings 'blending' (0045c0d4), 'additive', 'punchthrough' as GOG; 17/17 callees fp=; Mac disp set
+0x00855260	0x00462cd0	verified	fp=; 00462ce5 MOV EAX,[EDX+0x10c] vcall (Mac 0x110, vt +4), copies part +8..+0x20 (local pos+orient); GetPartPosition is the 187 B sibling
+0x008557b0	0x004632c0	verified	fp=; 004632d4 CALL 0x00476620 Count, 004632ee CALL 0x00473f40 List::Add (fp= GOG 0x8bfdd0) on +0x1e8
+0x008557f0	0x00463300	verified	fp=; 00463314 CALL 0x00476620 Count, 0046332a CALL 0x00449170 List::Remove (fp= GOG 0x8730c0) on +0x1e8
+0x00855bc0	0x004636d0	likely	forwarder: 004636da CMP [EAX+0x1b4],0x0 then vcall +0xc on it (Mac 0x10, vt +4; disp 0x1b4); fp=; FID label noise
+0x0085f680	0x0046d440	verified	fp=; 0046d456 CALL 0x00461aa0 Gob::SetScene (fp= GOG 0x854030 'SetScene', Mac SetScene disp 0x94) then returns 1
+0x0089a850	0x004b3c90	verified	fp=; 004b3d20 CALL 0x004b3d80 ProxyPartDraw (fp= GOG 0x89a940), scale [+0x1e0]; Mac disp 0x98,0x1e0
+0x0089aba0	0x004b3fe0	verified	fp=; 004b43a1 PUSH 0x98dae0 'GetPersonalRadius', 'GetCreatureRadius', 'propagaterender' as GOG; 10/10 callees fp=
+0x008f6e70	0x004dcce0	likely	004dccea CMP [EAX+0x1a0],0 then vcall +8 and clear; Begin sets +0x1a0; fp=; Mac disp 0xc (vt +4),0x1a0
+0x00857010	0x00464c30	likely	setter 00464c3d MOV [EAX+0x60],ECX; fp=; Mac disp 0x60
+0x00857030	0x00464c50	likely	getter 00464c5d FLD [ECX+0x64] / 00464c68 FLD [EAX+0x68]; fp=; Mac disp 0x64,0x68
+0x008575d0	0x004651f0	likely	getter 004651fa MOV AL,byte ptr [EAX+0xe6] (flag Enable/DisableAnimations write); fp=; Mac disp 0xe6
+0x008575f0	0x00465210	likely	global setter 00465222 MOV [0x00a7be44],ECX; fp=; Mac 16 B no disp; between verified neighbours
+0x008621b0	0x0046ff70	likely	getter 0046ff7a MOV EAX,[EAX+0xd8] (room count bound of SetCurrentRoom); fp=; Mac disp 0xd8
+0x008647f0	0x004725b0	likely	forwarder 004725d0 MOV EAX,[EDX+0xcc] vcall (Mac 0xd0, vt +4); fp=
+0x00864850	0x00472610	likely	getter 0047261a FLD [EAX+0x1e0] of the gob arg; fp=; Mac disp 0x1e0

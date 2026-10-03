@@ -39,7 +39,7 @@ EVIDENCE_COLS = [
     "kind", "class", "name", "gog", "steam_addr", "verdict", "calling_convention", "param_size_bytes", "evidence",
     "cand_orig", "cand_status", "content_level", "wrapper_issue", "steam_size", "gog_param_size",
     "batch", "cand_sources", "mapper_tag", "gog_size", "gog_retn", "steam_retn", "g1", "g2", "g3", "g4", "g5_target",
-    "g6", "g7", "a_str", "a_callee", "a_sig", "a_srv", "a_vt", "families", "run_ok", "decoy_best", "gate_class",
+    "g6", "g7", "g8", "a_str", "a_callee", "a_sig", "a_srv", "a_vt", "families", "run_ok", "decoy_best", "gate_class",
     "review_ref", "flags",
 ]
 CANDIDATE_COLS = ["class", "name", "gog", "gog_callconv", "gog_param", "gog_size", "gog_retn", "candidates"]
@@ -266,6 +266,7 @@ class CandEval:
     decoy_sig_max: float = 0.0          # highest A-SIG score among the decoys (n/a counts as 0)
     twin_sig_max: float = 0.0           # same, over same-size/same-retn starts within +-8 starts (Opus gate R2)
     g7: str = "n/a"                     # Mac name contradiction check (Opus gate R3)
+    g8: str = "n/a"                     # Mac rotation check: pass | n/a | rotation:<G'>:<fits> | rotation_in:<G'>:<fits>
     eff_size: Optional[int] = None      # size of the thunk-resolved Steam function
     gog_size: Optional[int] = None      # size of the (thunk-resolved) GOG function
 
@@ -440,6 +441,8 @@ def evaluate_candidate(corpus: bd.Corpus, scorer: bd.Scorer, g: GogFn, addr: int
     ce.twin_sig_max = max([s.score for s in tsigs if s is not None], default=0.0)
     state, ov = corpus.mac_check(g, eff)
     ce.g7 = state if ov is None else "%s(%.2f)" % (state, ov)
+    rstate, rdetail = corpus.mac_rotation(g)
+    ce.g8 = rstate if not rdetail else "%s:%s" % (rstate, rdetail)
     ce.eff_size = ef.size
     ce.gog_size = corpus.gog_size(corpus.resolve_gog(g.addr))
     callee = ce.fam.get("CALLEE")
@@ -519,6 +522,8 @@ def sig_route_check(row: RowEval, run_ok: str, permuted: bool) -> str:
         return "invariant"
     if b.g7.startswith("mac_contra"):
         return "mac_contra"
+    if b.g8.startswith("rotation"):
+        return "mac_rotation"
     if [f for f in b.families if f != "VT"] != ["SIG"]:
         return "families"
     sig = b.fam.get("SIG")
@@ -575,6 +580,10 @@ def classify(row: RowEval, run_ok: str, permuted: bool) -> tuple[str, list[str],
         why.append("callee_contradiction")
     if b.g7.startswith("mac_contra"):
         why.append("mac_contra")
+    if b.g8.startswith("rotation_in"):
+        why.append("mac_rotation_in")
+    elif b.g8.startswith("rotation"):
+        why.append("mac_rotation")
     if not why:
         return "AUTO", [], "c2"
     code = sig_route_check(row, run_ok, permuted)
@@ -675,7 +684,7 @@ def evidence_row(batch: str, corpus: bd.Corpus, row: RowEval, gate: str, run_ok:
              cand_status="confirmed" if b.addr == row.cand_orig else "changed",
              content_level="C%d" % min(b.n_fam, 2), steam_size="" if b.steam_size is None else b.steam_size,
              mapper_tag=b.mapper_tag, steam_retn="" if sretn is None else sretn, g1=b.g1, g2=b.g2, g3=b.g3, g4=b.g4,
-             g5_target=b.g5, g6=b.g6, g7=b.g7, a_str=fmt_score(b.fam.get("STR")), a_callee=fmt_score(b.fam.get("CALLEE")),
+             g5_target=b.g5, g6=b.g6, g7=b.g7, g8=b.g8, a_str=fmt_score(b.fam.get("STR")), a_callee=fmt_score(b.fam.get("CALLEE")),
              a_sig=fmt_score(b.fam.get("SIG"), "float"), a_srv=fmt_score(b.fam.get("SRV")),
              a_vt=fmt_score(b.fam.get("VT")), families=",".join(b.families), run_ok=run_ok, decoy_best=b.decoy_best)
     flags = list(b.flags)
@@ -928,6 +937,15 @@ def gog_side_section(corpus: bd.Corpus, g: GogFn, ce: CandEval) -> list[str]:
             "n/a" if sa is None else ("yes" if sa in s_callees else "no")))
     if len(callees) > 8:
         L.append("  ... %d more GOG callees" % (len(callees) - 8))
+    s_callers = set(corpus.cg.callers.get(ce.eff, set()))
+    g_callers = sorted(corpus.gog_callers().get(g.addr, set()) | corpus.gog_callers().get(corpus.resolve_gog(g.addr), set()))
+    mapped_callers = [(c, corpus.pairs[c]) for c in g_callers if c in corpus.pairs]
+    L.append("GOG callers mapped through trusted rows (%d of %d): the card's A-CALLEE credit may come from these, not from callees" % (
+        len(mapped_callers), len(g_callers)))
+    for c, sa in mapped_callers[:4]:
+        gg = corpus.gog_by_addr.get(c)
+        L.append("  0x%08x %s -> Steam %s  in candidate callers: %s" % (c, gg.name if gg else "unnamed", hx8(sa),
+                                                                   "yes" if sa in s_callers else "no"))
     texts = [corpus.gog_texts.get(a) for a in sorted(gfp.str_refs)]
     texts = [t for t in texts if t]
     L.append("GOG strings (%d): %s" % (len(texts), "; ".join(repr(t[:40]) for t in texts[:4]) + (" ..." if len(texts) > 4 else "")))
@@ -955,8 +973,8 @@ def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog
              "  THUNK -> %s (everything below is judged on the target)" % hx8(ce.eff) if ce.thunk else ""),
          "Candidate sources: %s    mapper tag: %s" % ("+".join(ce.sources) or "-", mapper_tag or "-"), "",
          "### Computed facts (script output, do not recompute)",
-         "- G1 start: %s | G2 align: %s | G3 prologue: %s | G4 ret: %s | G5 thunk: %s | G6 dup: %s" % (
-             ce.g1, ce.g2, ce.g3, ce.g4, ce.g5 or "none", ce.g6),
+         "- G1 start: %s | G2 align: %s | G3 prologue: %s | G4 ret: %s | G5 thunk: %s | G6 dup: %s | G7 mac: %s | "
+         "G8 mac_rotation: %s" % (ce.g1, ce.g2, ce.g3, ce.g4, ce.g5 or "none", ce.g6, ce.g7, ce.g8),
          "- anchors: A-STR %s | A-CALLEE %s | A-SIG %s | A-SRV %s | A-VT %s" % (
              fmt_score(ce.fam.get("STR")), fmt_score(ce.fam.get("CALLEE")), fmt_score(ce.fam.get("SIG"), "float"),
              fmt_score(ce.fam.get("SRV")), fmt_score(ce.fam.get("VT"))),

@@ -707,6 +707,81 @@ class Corpus:
             return True, "SIG %.2f" % ((jd + ji) / 2)
         return False, "size GOG %d vs Steam %d, SIG %.2f (intersection %d)" % (gfp.size, sfp.size, (jd + ji) / 2, inter)
 
+    def _class_order(self) -> dict[str, list[GogFn]]:
+        if getattr(self, "_class_lists", None) is None:
+            lists: dict[str, list[GogFn]] = defaultdict(list)
+            for g in self.gog:
+                lists[g.cls].append(g)
+            self._class_lists = lists
+        return self._class_lists
+
+    def mac_fit(self, x: GogFn, m: Fp) -> Optional[float]:
+        """Opus/G8 fit of a GOG function body against a Mac function (see DESIGN 4.2 G8).
+
+        fit = 0.75 * overlap + 0.25 * closeness.  overlap = average of the two directions of the +-4 value overlap of
+        V(x) (GOG fp) and V(m) (Mac fp); closeness = min(size)/max(size).  None when either side has < 2 values.
+        """
+        xfp = self.gog_fp.get(self.resolve_gog(x.addr))
+        if xfp is None:
+            return None
+        vx, vm = sorted(self._values(xfp)), sorted(self._values(m))
+        if len(vx) < 2 or len(vm) < 2:
+            return None
+
+        def share(a, b):
+            hit = 0
+            for v in a:
+                i = bisect.bisect_left(b, v - 4)
+                if i < len(b) and b[i] <= v + 4:
+                    hit += 1
+            return hit / len(a)
+
+        overlap = (share(vx, vm) + share(vm, vx)) / 2
+        closeness = (min(xfp.size, m.size) / max(xfp.size, m.size)) if xfp.size and m.size else 0.0
+        return 0.75 * overlap + 0.25 * closeness
+
+    def mac_rotation(self, g: GogFn) -> tuple[str, str]:
+        """Invariant G8 `mac_rotation` (DESIGN 4.2): -> (state, detail), state pass | n/a | rotation | rotation_in.
+
+        rotation: some other GOG function G' of the same class within +-4 positions fits a Mac function named like G
+        better than G does (fit(G') > fit(G) + 0.15 and fit(G') >= 0.5; overloads of G, i.e. names equal up to a `_N`
+        suffix, are not compared because one Mac symbol cannot tell them apart).  rotation_in: G's name has no Mac symbol but G's
+        body fits the Mac function named like a neighbour G' better than G''s own body does (same thresholds).
+        """
+        if os.environ.get("BD_DISABLE_G8"):          # study switch: baseline without G8
+            return "n/a", ""
+        cache = self.__dict__.setdefault("_rot_cache", {})
+        if g.addr in cache:
+            return cache[g.addr]
+        order = self._class_order()[g.cls]
+        i = order.index(g)
+        stem = lambda f: re.sub(r"_\d+$", "", f.func)      # noqa: E731  overloads (X, X_2) share one Mac symbol
+        near = [x for x in order[max(0, i - 4):i + 5] if x is not g and stem(x) != stem(g)]
+        macs = self.mac_by_name.get(g.name, [])
+        res = ("n/a", "")
+        if macs:
+            fits = [self.mac_fit(g, m) for m in macs]
+            own = max([f for f in fits if f is not None], default=None)
+            if own is not None:
+                best = None
+                for x in near:
+                    f = max([v for v in (self.mac_fit(x, m) for m in macs) if v is not None], default=None)
+                    if f is not None and f > own + 0.15 and f >= 0.5 and (best is None or f > best[0]):
+                        best = (f, x)
+                res = ("rotation", "%s:%.2f>%.2f" % (hx8(best[1].addr), best[0], own)) if best else ("pass", "")
+        else:
+            best = None
+            for x in near:
+                for m in self.mac_by_name.get(x.name, []):
+                    own_x, mine = self.mac_fit(x, m), self.mac_fit(g, m)
+                    if mine is not None and own_x is not None and mine > own_x + 0.15 and mine >= 0.5 \
+                            and (best is None or mine > best[0]):
+                        best = (mine, x, own_x)
+            if best:
+                res = ("rotation_in", "%s:%.2f>%.2f" % (hx8(best[1].addr), best[0], best[2]))
+        cache[g.addr] = res
+        return res
+
     @staticmethod
     def _values(fp: Fp) -> set[int]:
         return {v for v in list(fp.disp) + list(fp.imm) if 0x10 <= v < 0x100000}
@@ -952,11 +1027,15 @@ class Scorer:
                     matched.append((label, sa))
                 elif label == "callee":
                     contra.append(sa)
-        names = []
-        for _lab, sa in matched[:3]:
-            nm = c.name_map.get(sa)
-            names.append("%s 0x%x" % (base_name(nm.name).split("::")[-1] if nm else "?", sa))
-        detail = "%d (%s)" % (len(matched), ",".join(names)) if matched else "0"
+        parts = []
+        for label in ("callee", "caller"):
+            items = []
+            for _lab, sa in [m for m in matched if m[0] == label][:3]:
+                nm = c.name_map.get(sa)
+                items.append("%s 0x%x" % (base_name(nm.name).split("::")[-1] if nm else "?", sa))
+            if items:
+                parts.append("%ss: %s" % (label, ", ".join(items)))
+        detail = "%d (%s)" % (len(matched), "; ".join(parts)) if matched else "0"
         return FamScore(float(len(matched)), len(matched) >= 1, detail,
                         {"contradictions": len(contra), "matched": matched})
 

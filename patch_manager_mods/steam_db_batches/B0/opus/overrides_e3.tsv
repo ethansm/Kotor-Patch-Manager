@@ -1,0 +1,103 @@
+gog_addr	steam_addr	final_verdict	note
+0x007420a0	0x0059f7d0	verified	fp=; 0059f9b7 CALL 0x006bc3d0 SetForceResistance (fp= GOG 0x6f8850); Decrease twin calls ..Penalty 0x6bc400; Mac same callee names
+0x007423b0	0x0059fae0	verified	fp=; 0059fc91 CALL 0x006bc400 SetForceResistancePenalty (fp= GOG 0x6f8880); Increase twin calls SetForceResistance; Mac same callees
+0x00744d20	0x005a2450	verified	fp=; 005a24d5 MOV ECX,0x1e then 005a250f CALL 0x00544210 ApplyEffect (new type-0x1e effect); Vision twin has no ApplyEffect; Mac imm 0x1e, 5 callees
+0x00744e00	0x005a2530	verified	fp=; 005a25d5 MOV ECX,0x1e temp effect destroyed at 005a25f6 CALL 0x005e4ca0 ~CGameEffect (no ApplyEffect); Mac Vision same 5 callee names
+0x00744f10	0x005a2640	verified	fp=; 005a268c ADD ESI,EAX then SetBonusEffectAttacks 0x592280 (fp= GOG 0x776930); Remove twin 0x5a26a0 subtracts; Mac disp 0x10dc
+0x00745540	0x005a2c70	verified	fp=; 005a2cea CALL 0x006bc570 GetEffectImmunity, 005a2da6 PUSH 0x91 feedback, 005a2e6b MOV [ECX+0xfd0],0x1; Mac disp 0xfd0 imm 0x91
+0x007457d0	0x005a2ee0	verified	fp= 1199 B; 005a2ef1 SUB ESP,0xc0 (Best 0xb8); 19 callees fp-matched incl list AddUnique (Best uses Add); Mac All > Best in size
+0x00745c80	0x005a3390	verified	fp= 1132 B; 005a33a1 SUB ESP,0xb8; 20 callees fp-matched incl Add + GetCreatureByGameObjectID; DispelAll twin 0x5a2ee0 has 19
+0x00747810	0x005a4f20	verified	fp=; 005a4f39 CALL 0x0051c6b0 TogglePauseState, 005a4f5c CALL 0x0051c7c0 RemoveFromExclusionList (both fp= GOG callees); Mac same 2 callees
+0x00748940	0x005a6050	verified	fp= 90 B no callees; 005a6083 MOV EDX,[ECX+0x1198] then 005a608f MOV ECX,[EAX+0x6c]; Mac TurnResistance disp 0x6c,0x1198
+0x007489a0	0x005a60b0	verified	fp=; 005a615c CALL 0x005864d0 PacifyCreature, 005a6210 CALL 0x0057d790 AddDisappearActions (fp= GOG callees); Mac same callee names
+0x00748b70	0x005a6280	verified	fp=; 005a63a8 CALL 0x0054bdc0 ComputeSafeLocation, 005a637c CALL 0x0057d700 AddAppearActions; 12 callees fp-matched; Mac same names
+0x00748e60	0x005a6570	verified	fp=; 005a65a0 CALL 0x00541080 ClearAllActions, 005a65a8 CALL 0x0057d700 AddAppearActions; Disappear twin calls 0x57d790; Mac 72 B 2 callees
+0x00749540	0x005a6c60	verified	fp=; 005a6cab CALL 0x006ad370 GetClassNegativeLevels, 005a6cda CALL 0x006b6ab0 SetClassNegativeLevels; Mac same 3 callees
+0x00749640	0x005a6d60	verified	fp=; 005a6db5 CALL 0x005aa100 (fp= GOG 0x4c75e0, ushort list Remove; Apply twin calls Add 0x4952b0); Mac OnRemoveBonusFeat calls CExoArrayList<ushort>::Remove
+0x00749ec0	0x005a7610	verified	fp=; 005a7690 CALL 0x0057d370 SetLockOrientationToObject, 005a76dd MOV EAX,0x67, 005a77df PUSH 0x3ea; Mac imm 0x67,0x3ea
+0x0074a0d0	0x005a7820	verified	fp= 1603 B; 005a7be8 CALL 0x005644b0 AddMoveToPointActionToFront, 005a795d CALL 0x005716a0 DesiredAttackRange, 005a7a17 [EAX+0xb08]; Mac disp 0xb08
+0x0074a720	0x005a7e70	verified	fp= 1440 B; 005a80fe CALL 0x0052be60 CWalkHitInfo ctor, 005a81b8 CALL 0x0051c910 TestDirectLine (fp= GOG callees); 005a7e81 SUB ESP,0x164
+0x0074acc0	0x005a8410	verified	fp= except GOG str 0x99cdc4 = float 2.55 ('33#@', Mac imm 0x40233333); 005a8454 PUSH 0x7f000000 + SetLockOrientationToObject; imm 0xfffffea1 equal
+0x0074ae10	0x005a8560	verified	fp=; 005a85c0 MOVSX ECX,word [EAX+0x130], 005a85d9 MOVZX [ECX+0x132] FP pair, GetInteger only (Heal twin calls GetMaxForcePoints); Mac disp 0x130,0x132
+0x0074af10	0x005a8660	verified	fp=; 005a8711 CALL 0x0057eca0 GetMaxForcePoints, 005a87b0 PUSH 0xe4 feedback; Mac imm 0xe4, same 7 callee names
+0x0074b0d0	0x005a8820	verified	fp=; 005a8842 MOV [ECX+0x11c4],0x0 clears the flag Apply twin 0x5a87e0 sets to 1; Mac disp 0x11c4
+0x0074b140	0x005a8860	verified	fp= 3187 B; 005a88f9 MOV [EDX+0x1128],0x1 (flag cleared by OnRemoveLightsaberThrow); Mac disp/callee names match
+0x0074bdc0	0x005a94e0	verified	fp=; 005a9502 MOV [ECX+0x1128],0x0 clears the flag OnApplyLightsaberThrow sets (005a88f9); Mac disp 0x1128
+0x0074be00	0x005a9520	verified	fp=; 005a95db PUSH 0xfc5, 005a9611 PUSH 0x27a1, 005a961e vt+0x7c (Mac 0x80); Mac imm 0xfc5
+0x0074bf20	0x005a9640	verified	fp=; 005a96e2 PUSH 0xfc4 (Resisted twin uses 0xfc5); Mac ForceFizzle imm 0xfc4
+0x0074c010	0x005a9730	verified	fp= 1136 B; 005a9b13 CALL 0x0054a610 SetCurrentHitPoints (fp= GOG 0x6b12f0), 005a9a4d [EDX+0x98]; Mac Good callee names match
+0x0074c8d0	0x005a9ff0	verified	fp=; 005aa059 PUSH 0x9963e8 'EffectType' -> CExoString, 2DA GetINTEntry 0x71bcf0; imm 0x15,0x1e; Mac same str/imm
+0x007e9150	0x00622c90	verified	fp= 894 B; 00622d3a CALL 0x0051e040 AddObject, 00622e56 MOV [EDX+0x320],0x7f000000; Mac ctor disp set matches
+0x007e9520	0x00623060	verified	fp= 590 B; 006230ba CALL 0x0051e0c0 RemoveObject, 0062328b CALL 0x00735360 ~CExoLocString; called by deleting dtor 0x623030
+0x007e9df0	0x00623940	verified	fp=; 0062394c CALL 0x006239d0 RemoveFromArea, 0062399c CALL 0x00522bf0 AddObjectToArea; Mac same 6 callee names
+0x007e9e80	0x006239d0	verified	fp=; 006239f6 CALL 0x00523090 RemoveObjectFromArea, 00623a16 ADD ECX,0x1a4; Mac same 5 callee names
+0x006634d0	0x005ffd60	verified	fp= 772 B; 005ffdab CALL 0x0053e830 CSWSObject ctor, 005ffdb7 MOV [EDX],0x9973b0 CSWSItem::vftable, 005ffe52 CALL 0x0051e040 AddObject
+0x006638e0	0x006000b0	verified	deleting dtor fp=: 006000ba CALL 0x006000e0 (~CSWSItem, stores CSWSItem::vftable at 0060010b) then 006000cb CALL 0x009196fd delete; RET 4
+0x0066d4e0	0x00609cb0	verified	fp= 1053 B; 00609d0e PUSH 0x3c / 00609d16 CALL 0x00603f60 GetPropertyByTypeExists; Mac AddGenderRequirements imm 0x3c (Subrace uses 0x3d)
+0x00679380	0x00615b50	verified	fp=; 00615b5c CALL 0x00607690 GetClientItem, 00615b77 CALL 0x007fe6c0 CSWCItem::PowerItem (fp= GOG 0x47f970); RET 0xc; Mac same 2 callees
+0x006796c0	0x00615e90	verified	fp= 349 B; 00615f55 MOV AX,[EDX+0x12] upgrade compare, 00615f8a CALL 0x0091dba0 memcpy compaction; Mac disp 0x12,0x28c,0x294; AddUpgrade is 0x615d60
+0x0064cee0	0x0051d4e0	verified	deleting dtor fp=: 0051d4ea CALL 0x005aa3c0 (~CSWSItemPropertyHandler) then 0051d4fb CALL 0x009196fd delete; fp twin 0x51d4b0 = EffectListHandler
+0x007c17d0	0x005aa3c0	verified	fp= 167 B; 005aa3eb MOV [EAX],0x992468 (Handler vptr), frees +4/+8, 005aa452 MOV [EDX],0x99247c (base vptr) = ~CSWSItemPropertyHandler
+0x007c1e20	0x005aaa10	verified	fp=; 005aaa27 CMP EDX,0x46, 005aaa33 MOV EDX,[ECX+0x4] apply table, 005aaa60 CALL EDX; Removed twin uses [this+8]; Mac disp 0x4
+0x007c1e80	0x005aaa70	verified	fp=; 005aaa87 CMP EDX,0x46, dispatch via table [this+0x8], 005aaabc CALL EDX; RET 0x10; Mac Removed disp 0x8
+0x007c1ee0	0x005aaad0	verified	fp= 1809 B; 005aabd9 PUSH 0x992e8c 'Value', GetDamageFlags 0x606bd0, ApplyEffect; Remove twin 0x5ab1f0 uses RemoveEffectById; Mac disp set equal
+0x007c2d90	0x005ab980	verified	fp= 1391 B; 005ab991 SUB ESP,0xa8, 005abaab PUSH 0x14 (penalty cost table), 005aba70 PUSH 0x992e8c 'Value'; Mac Penalty imm 0x14
+0x007c3800	0x005ac3f0	verified	fp= 1142 B; 005ac5c3 MOV CL,[EAX+0x9], 005ac598 CMP EDX,0xb, 005ac6a8 CMP EDX,0xc; ApplyEffect; Mac imm 0xb,0xc,0xd
+0x007c3c80	0x005ac870	verified	fp= 995 B; 005ac8dc MOV CX,[EAX+0x142], 005acbed CMP EDX,0xd, RemoveEffectById; Mac disp 0x142
+0x007c4070	0x005acc60	verified	fp= 864 B; 005ace56 CMP ECX,0x27, 005acecf CMP ECX,0x28, 005accce PUSH 0x992e8c 'Value', ApplyEffect; Mac imm 0x27,0x28
+0x007c43d0	0x005acfc0	verified	fp= 1017 B; 005ad243 CMP EAX,0x26 .. 005ad348 CMP EDX,0x28, 005ad05d MOV CX,[EAX+0x13c], RemoveEffectById; Mac disp 0x13c imm 0x26-0x28
+0x007c47d0	0x005ad3c0	verified	fp= 765 B; 005ad469 PUSH 0x14 (penalty table), 005ad42e PUSH 0x992e8c 'Value', ApplyEffect; Mac imm 0x14
+0x007c4ad0	0x005ad6c0	verified	fp= 740 B; 005ad766 MOV AX,[EDX+0x13c], 005ad834 MOV AL,[EDX+0x122], RemoveEffectById; Mac disp 0x13c,0x122
+0x007c4f00	0x005adaf0	verified	fp= 479 B; 005adb18 PUSH 0x992e8c 'Value', cost table 1, no NEG, ApplyEffect; Mac ApplyAbilityBonus disp/str match (Decrease twin pushes 0x15)
+0x007c5100	0x005adcf0	verified	fp= 669 B; 005add8e MOV DX,[ECX+0x150], 005add01 SUB ESP,0x50, RemoveEffectById; Mac disp 0x150
+0x007c5a90	0x005ae680	verified	fp= 407 B; 005ae71e MOV DX,[ECX+0x14e], cost table 0xb, RemoveEffectById; Mac disp 0x14e imm 0xb
+0x007c5c30	0x005ae820	verified	fp=; 005ae883 PUSH 0x1 (bonus table) + 005ae8c0 CALL 0x005aeb20 ApplyChangedSavingThrow, RET 0x14; Mac Improved has no imm 0x14 (Reduced does)
+0x007c5cf0	0x005ae8e0	verified	fp=; 005ae943 PUSH 0x1, 005ae97c CALL 0x005aecb0 RemoveChangedSavingThrow, 005ae991 RET 0x10; Mac RemoveImproved has no imm 0x14
+0x007c5db0	0x005ae9a0	verified	fp=; 005aea03 PUSH 0x14 (penalty table) + 005aea40 CALL 0x005aeb20 ApplyChangedSavingThrow, RET 0x14; Mac ApplyReduced imm 0x14
+0x007c5e70	0x005aea60	verified	fp=; 005aeac3 PUSH 0x14 + 005aeafc CALL 0x005aecb0 RemoveChangedSavingThrow, RET 0x10; Mac RemoveReduced imm 0x14
+0x007c5f30	0x005aeb20	verified	fp=; 005aec70 MOV DL,[ECX+0x122]; called by both saving-throw Apply wrappers 0x5ae820/0x5ae9a0 (GOG callee 0x7c5f30 in both); Mac disp 0x122
+0x007c6260	0x005aee50	verified	fp=; 005aeec5 AND EAX,0xffffffe7, 005aef98 AND ECX,0xffffffe7; Mac SpecialWalk disp set equal (0xa x8, 0x14 x2)
+0x007c65c0	0x005af1b0	verified	fp=; 005af21e MOV EDX,[0x0099603c] effect type, same global RemoveTrueSeeing compares (005af2eb); no SetInteger; Mac 4 callees
+0x007c66a0	0x005af290	verified	fp=; 005af2eb CMP EDX,[0x0099603c] (type ApplyTrueSeeing creates), RemoveEffectById only; Mac RemoveTrueSeeing 1 callee
+0x007c6770	0x005af360	verified	fp= 942 B; 005af371 SUB ESP,0x84, four effects of type [0x00995f74] (005af3da); Mac FreedomOfMovement disp 0x122 x4
+0x007c6b20	0x005af710	verified	fp=; 005af733 MOV CX,[EAX+0x16a], 005af713 SUB ESP,0x34, RemoveEffectById; Mac disp 0x16a
+0x007c6c70	0x005af860	verified	fp=; 005af88b MOV ECX,[EAX+0x1198], 005af8f1 type [0x00996068] (RemoveBonusFeat compares same); no 'Value'; Mac disp set equal incl 0x1198
+0x007c6d90	0x005af980	verified	fp=; 005af983 SUB ESP,0x30, [stats+0x1198] test, effect type 0x996068 shared with ApplyBonusFeat; Mac disp 0x1198
+0x007c6e90	0x005afa80	verified	fp=; 005afa91 SUB ESP,0x40, 005afae8 PUSH 0x992e8c 'Value', table by subtype, damage-bit SHL; Mac ApplyDamageImmunity disp/str match
+0x007c7020	0x005afc10	verified	fp= 593 B; 005afcd7 CMP [EBP-0x5c],0xd, 005afc8d 'Value', RemoveEffectById; Mac RemoveDamageImmunity imm 0x7/0xe shape
+0x007c72b0	0x005afea0	verified	fp= 823 B; 005aff32 PUSH 0x992e8c 'Value', GetDamageFlags 0x606bd0, penalty table 0x14, ApplyEffect; Mac imm 0x14
+0x007c75f0	0x005b01e0	verified	fp= 780 B; 005b0287 MOV AX,[EDX+0x13c], 005b0493 CALL 0x00606bd0 GetDamageFlags, RemoveEffectById; Mac disp 0x13c,0x122
+0x007c7900	0x005b04f0	verified	fp=; 005b05a9 PUSH 0x99626c 'Amount' + 005b05e3 PUSH 0x6 (Resistance uses 7); Mac Reduction imm 0x6, 'Amount' str
+0x007c7a70	0x005b0660	verified	fp=; 005b06fe MOV DX,[ECX+0x13e], 005b06c3 PUSH 0x6, 'Amount'; Mac RemoveDamageReduction disp 0x13e imm 0x6
+0x007c7c30	0x005b0820	verified	fp=; 005b0913 PUSH 0x7, 005b08d9 PUSH 0x99626c 'Amount', 005b0947 SHL EDX,CL; Mac Resistance imm 0x7
+0x007c7da0	0x005b0990	verified	fp=; 005b0a38 MOV CX,[EAX+0x140], 005b09fe PUSH 0x7, 'Amount'; Mac RemoveDamageResistance disp 0x140
+0x007c7f60	0x005b0b50	verified	fp=; 005b0c4f PUSH 0x16 cost table, 005b0c14 PUSH 0x992e8c 'Value'; Mac Vulnerability imm 0x16
+0x007c80d0	0x005b0cc0	verified	fp=; 005b0d2e PUSH 0x16, 005b0cd1 SUB ESP,0x44, RemoveEffectById; Mac RemoveDamageVulnerability imm 0x16
+0x007c8270	0x005b0e60	verified	fp=; 005b0ee6 NEG ECX, cost table 0x15, 005b0e88 'Value'; Mac DecreaseAbilityScore imm 0x15
+0x007c8470	0x005b1060	verified	fp=; 005b10c3 PUSH 0x15, 005b1071 SUB ESP,0x50, [+0x150], RemoveEffectById; Mac disp 0x150 imm 0x15
+0x007c8730	0x005b1320	verified	fp=; 005b1383 PUSH 0x14, 005b13a6 NEG ECX, 005b148f PUSH 0x5; Mac DecreaseAC imm 0x5,0x14 (SkillModifier twin uses 0x15)
+0x007c88d0	0x005b14c0	verified	fp=; 005b1566 MOV AX,[EDX+0x13a], 005b1523 PUSH 0x14; Mac RemoveDecreaseAC disp 0x13a imm 0x14
+0x007c8ac0	0x005b16b0	verified	fp=; 005b1713 PUSH 0x15, 005b1736 NEG ECX, 005b16d8 'Value'; Mac DecreaseSkillModifier imm 0x15
+0x007c8c50	0x005b1840	verified	fp=; 005b18e6 MOV AX,[EDX+0x164], 005b18a3 PUSH 0x15; Mac RemoveDecreaseSkillModifier disp 0x164
+0x007c8e40	0x005b1a30	verified	fp= 672 B; 005b1a41 SUB ESP,0x4c, 005b1b9c MOV CL,[EAX+0x122], 10-case switch, type [0x995f74]; Mac ApplyImmunity imm 0x9 disp 0x122
+0x007c9110	0x005b1d00	verified	fp= 518 B; 005b1d36 CMP [EBP-0x50],0x9 switch, 005b1e0f CMP EDX,[0x00995f74] (ApplyImmunity type); Mac imm 0x9
+0x007c9340	0x005b1f30	verified	fp=; 005b2036 MOV AL,[EDX+0x122] with new 0x8c effect + ApplyEffect; Mac ApplySkillBonus disp 0x122, 5 callees
+0x007c9490	0x005b2080	verified	fp=; 005b2097 MOV EDX,[ECX+0x1198], 005b20a3 MOV CX,[EAX+0x13c], RemoveEffectById; Mac disp 0x13c,0x1198
+0x007c95d0	0x005b21c0	verified	fp=; 005b22a3 PUSH 0x1770, 005b225f type [0x00995f38]=7 (regenerate; OPUS_REVIEW part c); Mac Regeneration 7 callees
+0x007c9a60	0x005b2650	likely	fp= (twin 0x5b2430); 005b26dd MOV EDX,[0x0099608c]=93, same type RemoveBBDDecrease 0x5b2780 compares; Increase vs Decrease rests on GOG order (part c)
+0x007c9b90	0x005b2780	likely	fp= (twin 0x5b2560); 005b27f3 CMP EDX,[0x0099608c]=93 (type of Apply 0x5b2650); 92/93 = Increase/Decrease by GOG order only (part c)
+0x007c9c80	0x005b2870	verified	fp=; 005b28f0 MOV EDX,[0x00996014], same type RemoveDisguise compares (005b29f3); no +0x6 field (Mac Disguise lacks 0x6, BBD has it)
+0x007c9d90	0x005b2980	verified	fp=; 005b29f3 CMP EDX,[0x00996014] (type ApplyDisguise 0x5b2870 creates), RemoveEffectById; Mac RemoveDisguise disp set equal
+0x007c9e80	0x005b2a70	verified	fp= 25 B; 005b2a77 PUSH 0x1, 005b2a7c CALL 0x005663b0 SetSilentMove (fp= GOG 0x67efe0), 005b2a86 RET 0x14; Remove twin pushes 0
+0x007c9ef0	0x005b2ae0	verified	fp= 34 B; 005b2af0 MOV [EAX+0x2e0],0x1, RET 0x14; Mac ApplyDoorSabering disp 0x2e0 (DoorCutting 0x2dc)
+0x007c9f80	0x005b2b70	verified	fp=; 005b2b82 MOV ECX,[EAX+0x2ec], 005b2b9a ADD ECX,[EBP-4], 005b2ba6 store, RET 0x14; Remove twin subtracts; Mac disp 0x2ec
+0x007c9fd0	0x005b2bc0	verified	fp=; 005b2bed SUB EDX,ECX on [+0x2ec] (005b2bf8 store), 005b2c03 RET 0x10; Apply twin adds; Mac disp 0x2ec
+0x006637e0	0x0053ef30	likely	virtual stub: 0053ef37 PUSH 0x986925 (empty str), 0053ef3f CALL 0x00710840 CResRef(char*); RET 4; fp= except Steam fp lacks str ref; Mac 32 B same shape
+0x00663840	0x0053efa0	likely	virtual getter: 0053efaa ADD EAX,0x20 copies 16-B resref (field SetPortrait writes), RET 4; Mac GetPortrait disp 0x20,0x28; FID label GetRect ignored
+0x00663870	0x0053efd0	verified	0053efe7 CALL 0x00710ca0 resref copy to +0x20; SetPortraitId 0x540b40 calls it via 00540ba0 [EAX+0xcc] (Mac SetPortraitId vt 0xd0 = +4)
+0x006638a0	0x0053f000	likely	getter: 0053f00a MOV AX,[EAX+0x30], RET; Mac GetPortraitId disp 0x30, 18 B; fp=. (pr3 GetLastName kludge also points here: not this row)
+0x006b3380	0x005d7190	verified	fp=; 005d71a8 CMP [EBP-8],0x46 action switch; callers 0x53f3c0 (209 B) + 0x67b100 (294 B) = GOG/Mac GetActionByGroupId + ExecuteCommandGetCurrentAction
+0x004213a0	0x005ef180	likely	005ef18d MOV [EAX+0x3e0],ECX; RET 4; unique body both builds, ICF-folded with CSWCCreature::SetThrownLightsaber (Mac 0x2870e4); only caller ApplyLightsaberThrow
+0x00769550	0x005ef160	likely	getter: 005ef16a MOV EAX,[EAX+0x3e0]; RET; unique 20 B 0x3e0 getter; Mac GetEffectSpellId disp 0x3e0; setter 0x5ef180 adjacent
+0x00770e40	0x005f6a70	verified	fp=; 005f6a7c CALL 0x0054a840 GetClientObject (fp= GOG 0x6b1520), 005f6a98 MOV EAX,[EDX+0x4c] cast vcall (Mac 0x50 = +4)
+0x007f00a0	0x005e6810	verified	fp=; 005e6820 PUSH 0x2 MatchIndex type 2 (float), 005e683a FLD [ECX+0xc], 005e6846 RET 0x4; Mac GetFloat imm 0x2 (SetFloat takes 2 args)

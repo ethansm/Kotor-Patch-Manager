@@ -1,0 +1,75 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040d860	0x007403a0	verified	007403ad CALL 0x0079c0e0 = Internal::RunDeathSequence (325 B, fp equal to GOG 0x4486e0; disp 0x274,0x2d4 as Mac Internal). Thunk fp equal.
+0x0040dd60	0x007408a0	verified	007408ad CALL 0x0079f430 = Internal::PlayerFlourishWeapons (642 B, fp equal to GOG 0x44ba30). Thunk fp equal.
+0x0040de60	0x007409a0	verified	007409b1 CALL 0x0079e550 = Internal::EnableVideoEffect (1036 B, fp equal to GOG 0x44ab50). Pipeline neighbours 0x740980/0x740a50 forward elsewhere.
+0x0040de80	0x007409c0	verified	007409cd CALL 0x0079e960 = Internal::DisableVideoEffect (54 B, fp equal GOG 0x44af60; stores -2, Mac imm 0xfffffffe).
+0x0040e400	0x00740f40	verified	00740f52 CALL 0x007a0490 = Internal::SetMouseMode (100 B, fp equal to GOG 0x44ca90).
+0x0040e480	0x00740fc0	verified	CORRECTION from 0x740f00 (thunk to a busy-wait). 00740fcf MOV EDX,[ECX+0x4ac] via [this+4]; setter twin 0x740fe0 follows; Mac Get/Set pair same shape.
+0x00410c30	0x00764f60	likely	00764f6d MOV [EAX+0x4],ECX / RET 4: thin setter. Run SetId,ShowShadowBlob(vt 0xac),HideShadowBlob(vt 0xb0) equal; fp twin 0x50e7b0 is another class.
+0x00410c80	0x00764fb0	verified	CORRECTION from 0x78bc50 (111 B CGuiInGame teardown). 00764fce MOV EAX,[EDX+0xb0] vcall on [this+0x68]; Mac HideShadowBlob vt 0xb4 (Mac +4).
+0x0044ef30	0x007a2590	verified	Decoy cards corrected to here. 1741 B fp equal; 007a28ce CALL 0x005e7a50, 007a2b48 CALL 0x0073f3b0 (GetWorldTimer). 0x7a2570/0x7a2c60 are thunks.
+0x004550b0	0x007a86b0	likely	Stub: 007a86b7 MOV EAX,0x1 / 007a86bf RET 0x1c; fp unique in both binaries (18 B, RET 0x1c). Fits the name; positional only.
+0x00456040	0x007a9640	label_suspect	Body = Mac CSWCArea::AddMapPin (imm 0x1c8): 007a964e ADD ECX,0x1c8 / 007a9654 CALL 0x0083ea60 (array Add). Mac has no WeatherObject API; GOG GetWeatherObject = Mac GetMapPin.
+0x00456230	0x007a9830	verified	007a983a MOV byte [EAX+0x1f5],0x0; 007a9844 MOV [ECX+0x1f0],0x1770; fp unique. Mac StopWeather disp 0x1f0,0x1f5. StartWeather twin 0x7a9800 stores the arg.
+0x00457310	0x007aa910	label_suspect	Body = Mac CSWCArea::ClearTilePathNodes (disp 0x23c..0x250): 007aa91c ADD ECX,0x248 / 007aa92c ADD ECX,0x23c + 2 SetSize. Mac ClearAllMapPins clears 0x1c8 (GOG 0x4560f0 shape).
+0x00457880	0x007aae80	verified	007aae8d MOV [EAX+0x280],ECX / RET 4; fp unique in both binaries; Mac AttachmentFromServerArea disp 0x280.
+0x00462bc0	0x007b5e50	verified	007b5e5d MOV [EAX+0x75],CL; 007b5e77 MOV [ECX+0x76],DL when mode<=1. Mac same shape at 0x63/0x64: Mac-vs-Win CClientOptions layout, Steam=GOG exact.
+0x00472630	0x007ed4d0	verified	007ed4ee MOV EAX,[EDX+0xb8] vcall on [this+0x68]; Mac TurnOnShadows vt 0xbc (Mac +4). 0x7ed500 uses vt 0xbc (TurnOffShadows).
+0x00474420	0x007ef2c0	verified	007ef317 MOV EAX,[0x00a0fe28] = 'Stationary' column handle (stored 006ebad1) then GetINTEntry 0x71b8b0; 132 B fp equal.
+0x004744b0	0x007ef350	label_suspect	GOG_LABEL_SUSPECTS #10: body = AnimationPause (007ef3a7 MOV EAX,[0x00a0fe2c], 'Pause' 006eba0a PUSH 0x99af6c). Real AnimationPlayOutOfPlace = GOG 0x474890 -> 0x7ef730.
+0x00474890	0x007ef730	label_suspect	GOG_LABEL_SUSPECTS #9: id-range test 007ef752 CMP EDX,0x640 (0x4b0..0x6bf) = Mac AnimationPlayOutOfPlace. Real AnimationPause = GOG 0x4744b0 -> 0x7ef350.
+0x004cdda0	0x007bdb10	label_suspect	Body = compiler vector-deleting dtor of a 16 B {CExoString,CExoString}: 007bdb50 CALL 0x00919bcc (eh vector dtor, PUSH 0x10), 007bdb81 CALL 0x00733780. Mac ShutDownGlobal differs. Real one: to locate.
+0x004dbda0	0x007cb6a0	label_suspect	Body = 4-arg forwarder 007cb6cc CALL 0x008bb0e0 (CSWGuiDialogLetterbox::SetFade, GOG 0x5af830) on [this+0x68], RET 0x10; not a predicate. Mac name not found. IsCameraDialog = GOG 0x4dbe50.
+0x004dbde0	0x007cb6e0	label_suspect	GOG_LABEL_SUSPECTS #5: DialogGuiDoneScroll (007cb6f3 MOV [ECX+0xfb4],1; vt+0x84 on [+0x3c]). Real IsAnimationPlayingInDialog = GOG 0x4db4b0 -> 0x7cadb0.
+0x004dbe50	0x007cb750	label_suspect	CORRECTION from 0x7cb720. Body = Mac IsCameraDialog: 007cb75a CMP [EAX+0x3c],0 / 007cb769 CMP EAX,[EDX+0x40]. Real IsFadingInDialog = GOG 0x4dbe20 -> Steam 0x7cb720 (Mac 42 B, [+0x68]).
+0x004df1f0	0x007ceaf0	label_suspect	GOG_LABEL_SUSPECTS #7: Vector3 getter 007ceb28 ADD EDX,0x440 on [this+0x9c]. Real GetCanOrientInDialog = GOG 0x4dfe10 -> 0x7cf710.
+0x004df580	0x007cee80	verified	007ceeaf CALL 0x00750f30 (new CSWGuiFloatyText), 007cee8a CMP [EAX+0x98],0; Mac AddFloatyText disp 0x98, 1 callee; 58 B fp equal.
+0x004dfff0	0x007cf8f0	verified	007cf905 ADD ECX,0xf28 (list walk) + 0x7f000000; Mac GetCanHeadFollowInDialog disp 0xf28. 0x7cf710 is the 0xf24 twin (GetCanOrientInDialog).
+0x004e0c60	0x007d0560	label_suspect	GOG_LABEL_SUSPECTS #1: ShowDialogMessage (007d0570 CMP EDX,[ECX+0x40]; vt+0x84). Real GetMiniMapVisible = GOG 0x4e0ca0 -> 0x7d05a0.
+0x004e0ca0	0x007d05a0	label_suspect	GOG_LABEL_SUSPECTS #2: GetMiniMapVisible (007d0602 MOV EAX,[EDX+0x59b4], GetMiniGame 0x7400a0). Real RemoveGUIPopUps = GOG 0x4e0d20 -> 0x7d0620.
+0x0053cf90	0x008824f0	verified	OPUS_REVIEW 4c: 679 B retn 0 fp equal; 0088253a 'HD0:effects', CALL 0x00716da0; caller 0x883d70 = GOG OnWarpButtonPressed. OnLoadSaveGame = 0x8827a0.
+0x005821d0	0x008ee7f0	verified	Decoy cards corrected to here. Deleting dtor: 008ee7fa CALL 0x008ee820 (dtor body, AOE vftable) then 008ee80b CALL 0x009196fd if flag&1; 44 B RET 4.
+0x00588990	0x0089aef0	verified	CORRECTION from 0x844e40 (= CSWCCreatureStats::GetClass shape, +0xf8). 0089af00 MOVZX EDX,[ECX+0x8d]; 0089af13 IMUL 0x28; 0089af19 [ECX+EAX+0xab] = Mac stats layout.
+0x0059b420	0x008a7520	verified	195 B fp equal incl. disp 0x24b0/0x24b4, imm 0x24bc, 5 callees (0x605f40, 0x5f7a30, 0x51c8d0). Mac disp +0x54 lower: Mac layout, not a mismatch.
+0x005bce30	0x008cca70	verified	258 B fp equal; tail CALL 0x0040f4c0 (CSWGuiPanel::OnPanelRemoved); disp 0x3d2c..0x3d54. Mac same shape at 0x3ca1..0x3cc8 (Mac layout).
+0x005bd130	0x008ccd70	verified	250 B fp equal; CALL 0x00416e30 CSWGuiTextParams::SetText, disp 0x2ee0, imm 0x2fb8/0x2670. Mac offsets 0x2e7c.. (Mac layout).
+0x005cfd00	0x00850770	verified	Aspyr growth +0x2d0: 00850dfe PUSH 0x9a3ef4 'CB_CLOUDSAVE' (Steam only), BTN_FILTER/LBL_BAR4 shared, tail 00851296 MOV [EAX+0x1e40] (GOG 0x1b70).
+0x005d1bf0	0x008528b0	verified	OPUS_REVIEW 4d: only diff 0x1b70->0x1e40 (008528f8 CMP [ECX+0x1e40],0); PUSH 0x7d9b, CALL 0x00853a00 LoadGame.
+0x005d33b0	0x00853a00	verified	2611 B; only diff disp 0x1b70->0x1e40 (00853a84 CMP [EDX+0x1e40],0) = SaveLoad tail growth; 008541c8 CALL 0x0073f720.
+0x005d86f0	0x00859270	verified	294 B fp equal; 00859334 CALL 0x00853a00 (LoadGame), ADD ECX,0x970. Mac 0x94c offsets differ: Mac layout.
+0x00605680	0x00733570	verified	CORRECTION from 0x7338d0 (operator=, 250 B). 126 B fp equal: strlen, 007335ab CALL 0x00919723 new, 007335c8 CALL 0x0091cff0 strcpy (char* ctor).
+0x00605890	0x00733780	verified	CORRECTION from 0x733540 (33 B init). 00733794 MOV [ECX+0x4],0 and 007337a7 CALL 0x009196fd (free); 60 B fp equal.
+0x0061aa20	0x007110d0	verified	CORRECTION from 0x7111a0 (vftable-setting dtor body). 151 B fp equal: MOV [EAX+0x8],-1; AND 0xfffffffb / 0xfffffff7; stores +4..+0x24.
+0x0061aad0	0x00711170	verified	Deleting dtor: 0071117a CALL 0x007111a0 (sets CRes vftable) then 0071118b CALL 0x009196fd if flag&1; 44 B fp equal.
+0x0061af20	0x007115c0	verified	Decoy cards corrected to here. 007115cb PUSH 0x3 / 007115d4 CALL 0x00711750 AddKeyTable (type 3 = encapsulated); RET 8.
+0x0061af40	0x007115e0	verified	Decoy cards corrected to here. 007115e9 PUSH 0x4 / 007115f2 CALL 0x00711750 AddKeyTable (type 4 = RIM); RET 4.
+0x0061b890	0x00711f30	verified	Decoy cards corrected to here. 00711fb7 CALL 0x007122c0 (GetKeyEntryFromTable), 00711f5d CMP [EBP-0x14],3; RET 0xc; 150 B fp equal.
+0x0061c540	0x00712be0	verified	Decoy cards corrected to here. 00712c0a PUSH 0x2e (find '.') + 00712c4a CALL 0x00734a00 SubString; 00712c30 CMP [EBP-0x10],0x10; 175 B fp equal.
+0x0061d550	0x00713bf0	verified	644 B fp equal; 00713cd3 CALL 0x00712f30 (Malloc, GOG 0x61c890).
+0x0061e490	0x00714b30	verified	292 B fp equal; 00714bee CALL 0x00712f30 (Malloc), imm 0x3ff00000/0xfc000.
+0x0061e5c0	0x00714c60	verified	370 B fp equal; 00714c83 AND ECX,0x3ff00000, 00714cdb AND EAX,0xfc000; no Malloc (GOG has none).
+0x0061f0a0	0x00715740	verified	Decoy cards corrected to here. 0071576f CALL 0x007339d0 (CExoString ==), 00715783 CMP ECX,0xffff, 7 CExoFile calls; RET 0x10; 404 B fp equal.
+0x00623b60	0x00717a00	verified	Decoy cards corrected to here. 00717a16 CMP [EAX+0x4c],0; 00717a42 CMP [EDX+0x64],0; 00717a54 CMP EAX,[EDX+0x2c]; 156 B fp equal.
+0x006248c0	0x00718760	verified	007187ae CMP [ECX],0xf (GFF List type); 007187c2 CALL 0x00717880; 164 B fp equal.
+0x00624970	0x00718810	verified	00718855 CMP [ECX],0xf (GFF List); 00718869 CALL 0x00717880; 124 B fp equal.
+0x00624d60	0x00718c00	verified	00718c52 CMP [EDX],0x4 (GFF DWORD); 00718c2e CALL 0x007178e0; RET 0x10.
+0x00625240	0x007190e0	verified	0071918b CMP [ECX],0xc (GFF CExoLocString); 741 B fp equal. Mac shape differs (compiler).
+0x00625b30	0x007199d0	verified	Decoy cards corrected to here. 007199fd PUSH 0x0 (GFF BYTE) before 00719a0a CALL 0x00718030 AddField; 00719a1c MOVZX byte.
+0x00625c10	0x00719ab0	verified	Decoy cards corrected to here. 00719add PUSH 0x2 (GFF WORD) before AddField 0x718030.
+0x00625c80	0x00719b20	verified	00719b4d PUSH 0x3 (GFF SHORT) before AddField 0x718030.
+0x00625cf0	0x00719b90	verified	00719bbd PUSH 0x4 (GFF DWORD) before AddField 0x718030.
+0x00625d50	0x00719bf0	verified	00719c1d PUSH 0x5 (GFF INT) before AddField 0x718030.
+0x00625e40	0x00719ce0	verified	00719d0d PUSH 0x8 (GFF FLOAT) before AddField 0x718030.
+0x00640920	0x006fd700	verified	006fd749 PUSH 0x3d8 + CALL 0x00919723 (new), 006fd766 CALL 0x006ff570 (Internal ctor), 006fd787 MOV [EDX+0x1c],EAX.
+0x00640c20	0x006fda00	verified	Decoy cards corrected to here. 006fda14 CALL 0x00702cb0 = Internal::StackPushFloat (72 B fp equal GOG 0x645f50; PUSH 0x4 float tag).
+0x00640d50	0x006fdb30	verified	006fdb41 CALL 0x00703140 = Internal::StackPopCommand (547 B fp equal GOG 0x6463e0). Run StackPopObject/PushObject/PopCommand matches.
+0x006421c0	0x006fef80	verified	Decoy cards corrected to here. Strings 'BasePointer','StackPointer','TotalSize','Stack' (GOG same, its fn split at 0x642387); Read* GFF callees.
+0x00645af0	0x00702850	verified	Decoy cards corrected to here. 007028e2 CALL 0x006ff9f0 (ExecuteCode), 007028ae CALL 0x00701f80; 345 B fp equal.
+0x00646390	0x007030f0	verified	007030f9 PUSH 0x6 (object tag) + 00703104 CALL 0x006fe460; disp 0x1bc; 72 B fp equal.
+0x0064bac0	0x0051c0a0	verified	Decoy cards corrected to here. 0051c0d0 CALL 0x0053dfb0 (CGameObjectArray::GetGameObject) on [+0x1005c]; 62 B fp equal.
+0x0064c2f0	0x0051c8d0	label_suspect	Body = CServerExoApp::GetPartyTable (Mac 0x324362, 16 B disp 0x4): 0051c8dd ADD EAX,0x1f0b4 on [this+4]; callers use it as CSWPartyTable. Not a 2DA row provider.
+0x0064ceb0	0x0051d4b0	verified	Decoy cards corrected to here. 0051d4ba CALL 0x00593960 (sets CSWSEffectListHandler vftable) then 0051d4cb CALL 0x009196fd if flag&1.
+0x00667600	0x00603dd0	label_suspect	Body = Mac RestoreUsedActiveProperties (imm 2..5,0xa,0xff; disp 0x288): type-0xa props get 00603e88 MOV byte [EDX+0x10],1.. by subtype. Real GetPropertyByTypeExists = GOG 0x667790 -> 0x603f60.
+0x00667710	0x00603ee0	label_suspect	Body = 63 B static type predicate: 00603ef3 SUB ECX,0xa / 00603ef9 CMP [EBP-8],0x2b, byte switch table, no this use. Name unknown. RestoreUsedActiveProperties = GOG 0x667600.
+0x0066af00	0x006076d0	verified	CORRECTION from 0x607790 (721 B). 006076e0 CMP [EAX+0x2f0],0; 006076fb MOV DL,[ECX+0xac]; GetBaseItem callee; Mac disp 0xac,0x2f0. 181 B fp equal.
+0x0066d900	0x0060a0d0	verified	Decoy cards corrected to here. 0060a12e PUSH 0x3d / 0060a136 CALL 0x00603f60 (GetPropertyByTypeExists), 0060a250 CALL 0x007408f0; Mac imm 0x3d. 1056 B fp equal.

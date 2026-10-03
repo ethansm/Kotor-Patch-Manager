@@ -13,10 +13,10 @@ Rows: 1704. Source order for tie-breaks: server > trusted name_map > mapper:vote
 | CGameEffect | 7 | 14 | 0 | 0 | 21 |
 | CGameObjectArray | 1 | 0 | 0 | 0 | 1 |
 | CGuiInGame | 32 | 21 | 0 | 0 | 53 |
-| CItemRepository | 9 | 6 | 0 | 0 | 15 |
+| CItemRepository | 4 | 11 | 0 | 0 | 15 |
 | CRes | 1 | 6 | 0 | 0 | 7 |
-| CResGFF | 42 | 23 | 0 | 0 | 65 |
-| CSWCArea | 39 | 13 | 0 | 0 | 52 |
+| CResGFF | 39 | 26 | 0 | 0 | 65 |
+| CSWCArea | 37 | 15 | 0 | 0 | 52 |
 | CSWCAreaOfEffectObject | 14 | 2 | 0 | 0 | 16 |
 | CSWCDoor | 16 | 4 | 0 | 0 | 20 |
 | CSWCLevelUpStats | 0 | 1 | 0 | 0 | 1 |
@@ -35,36 +35,36 @@ Rows: 1704. Source order for tie-breaks: server > trusted name_map > mapper:vote
 | CSWInventory | 1 | 0 | 0 | 0 | 1 |
 | CSWItem | 0 | 1 | 0 | 0 | 1 |
 | CSWPartyTable | 49 | 31 | 0 | 0 | 80 |
-| CSWSArea | 93 | 25 | 0 | 0 | 118 |
+| CSWSArea | 87 | 31 | 0 | 0 | 118 |
 | CSWSAreaOfEffectObject | 19 | 3 | 0 | 0 | 22 |
-| CSWSCombatRound | 43 | 10 | 0 | 0 | 53 |
+| CSWSCombatRound | 40 | 13 | 0 | 0 | 53 |
 | CSWSCreature | 0 | 1 | 0 | 0 | 1 |
 | CSWSCreatureStats | 98 | 30 | 0 | 0 | 128 |
 | CSWSDoor | 25 | 3 | 0 | 0 | 28 |
-| CSWSEffectListHandler | 72 | 85 | 0 | 0 | 157 |
-| CSWSEncounter | 23 | 6 | 0 | 0 | 29 |
-| CSWSItem | 61 | 13 | 0 | 0 | 74 |
+| CSWSEffectListHandler | 71 | 86 | 0 | 0 | 157 |
+| CSWSEncounter | 22 | 7 | 0 | 0 | 29 |
+| CSWSItem | 57 | 17 | 0 | 0 | 74 |
 | CSWSItemPropertyHandler | 0 | 74 | 0 | 0 | 74 |
 | CSWSObject | 16 | 8 | 0 | 0 | 24 |
-| CSWSPlaceable | 31 | 7 | 0 | 0 | 38 |
+| CSWSPlaceable | 30 | 8 | 0 | 0 | 38 |
 | CSWSScriptVarTable | 12 | 6 | 0 | 0 | 18 |
 | CSWSTrigger | 23 | 2 | 0 | 0 | 25 |
 | CSWVirtualMachineCommands | 8 | 21 | 0 | 0 | 29 |
 | CServerExoApp | 0 | 12 | 0 | 0 | 12 |
 | CServerExoAppInternal | 3 | 1 | 0 | 0 | 4 |
-| CTwoDimArrays | 90 | 4 | 0 | 0 | 94 |
+| CTwoDimArrays | 87 | 7 | 0 | 0 | 94 |
 | CVirtualMachine | 3 | 20 | 0 | 0 | 23 |
 | CVirtualMachineInternal | 10 | 21 | 0 | 0 | 31 |
 | CVirtualMachineScript | 2 | 0 | 0 | 0 | 2 |
-| CVirtualMachineStack | 7 | 3 | 1 | 0 | 11 |
+| CVirtualMachineStack | 5 | 5 | 1 | 0 | 11 |
 | CWorldTimer | 6 | 7 | 0 | 0 | 13 |
 | ConsoleFunc | 0 | 4 | 0 | 0 | 4 |
 | Global | 0 | 1 | 0 | 0 | 1 |
 | Gob | 22 | 41 | 0 | 0 | 63 |
-| Scene | 6 | 19 | 0 | 0 | 25 |
-| **all** | 1037 | 665 | 2 | 0 | 1704 |
+| Scene | 5 | 20 | 0 | 0 | 25 |
+| **all** | 1005 | 697 | 2 | 0 | 1704 |
 
-AUTO by route: c2=383 sig=654 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=375 sig=630 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 
@@ -87,7 +87,6 @@ AUTO by route: c2=383 sig=654 (the sig route is non-propagating, see DESIGN 4.2)
 - CExoString::Constructor gog 0x004eaed0 -> 0x00733540: review:held_by=CExoString::CExoString,CExoString::DefaultConstructor
 - CSWGuiMainMenu::OnNewGamePicked gog 0x0053ccd0 -> 0x00882230: review:held_by=CSWGuiMainMenu
 - CSWGuiMainMenu::OnLoadGamePicked gog 0x0053cf90 -> 0x008824f0: review:name_held_elsewhere=0x008827a0
-- CSWSCreatureStats::GetClassByPosition gog 0x00588990 -> 0x00844e40: review:held_by=CSWSCreatureStats::GetClass
 - CSWGuiSaveLoad::LoadPCAutoSave gog 0x005d1d20 -> 0x008529e0: review:held_by=LoadAutosaveSlot
 - CExoString::Constructor_2 gog 0x00605680 -> 0x007338d0: review:held_by=CExoString::operator=_2
 - CExoString::Constructor_4 gog 0x00605790 -> 0x00733680: review:held_by=CExoString::CStrLenConstructor

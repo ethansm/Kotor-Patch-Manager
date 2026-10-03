@@ -1,0 +1,103 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040c5a0	0x0073f0e0	verified	thunk fp=; 0073f0f5 CALL 0x0078eba0 = GOG Internal::GetObjectName 0x43b150 (1424 B, fp= but for empty-str ref); Mac wrapper->Internal::GetObjectName
+0x0040c990	0x0073f4d0	verified	fp= unique; 0073f4fd CALL 0x0053dfb0 = CGameObjectArray::GetGameObject (trusted), 0073f4ec [EDX+0x14]; Mac disp 0x4,0x14 same callee
+0x0040ca10	0x0073f550	verified	thunk fp=; 0073f561 CALL 0x0078bdf0 fp= GOG Internal 0x4383d0 (unique key, vt+0x2c AsCreature; Item twin +0x34); Mac Internal vt 0x30 (+4)
+0x0040cc10	0x0073f750	likely	getter: 0073f75f MOV EDX,[ECX+0x40] via [this+4]; fp= unique; Mac disp 0x4,0x40
+0x0040ccf0	0x0072fb00	verified	ICF-folded getter [[this+4]+4] (also OptionsHolder::GetGameOptions); GetMiniMapVisible 0x7d05a0 (fp= GOG 0x4e0ca0, which calls 0x40ccf0): 007d05b7 CALL 0x0072fb00
+0x0040cdf0	0x0073f910	verified	thunk fp=; 0073f921 CALL 0x00798660 fp= GOG Internal::SetPlayerCreature 0x444c80 (unique key); Mac Internal same name
+0x0040d020	0x0073fb40	verified	thunk fp=; 0073fb4d CALL 0x0078e0f0 fp= GOG Internal::ShutDownToMainMenu 0x43a6c0 (339 B, unique); Mac Internal same name, shape fits
+0x0040d0d0	0x0073fbf0	verified	thunk fp=; 0073fc04 CALL 0x0078d6a0 fp= GOG Internal::SetTexturePack 0x439c70 (1345 B, unique); Mac Internal same name
+0x0040d300	0x0073fe20	verified	thunk fp=; 0073fe2d CALL 0x00796ba0 fp= GOG Internal::QueryExitProgram 0x4431c0 (508 B, unique); Mac Internal same name, shape fits
+0x0040d3c0	0x0073fee0	verified	thunk fp=; 0073fef5 CALL 0x007b3050 fp= GOG Internal::SetInputClass 0x45fc60 (774 B, unique); Mac Internal same name
+0x0040d640	0x00740180	verified	thunk fp=; 00740191 CALL 0x00798b70 fp= GOG Internal::AddMoveToModuleMovie 0x445190 (unique); Mac Internal same name
+0x0040d750	0x00740290	verified	thunk fp=; 0074029d CALL 0x0079bcc0 fp= GOG Internal::IsSoundPlayingInDialog 0x4482c0 (376 B, unique); Mac Internal same name
+0x0040d790	0x007402d0	verified	thunk fp=; 007402dd CALL 0x007b3370 which writes [+0x2bc]=1 (Enable twin 0x7b3390 writes 0; part c); GOG order Disable,Enable; Mac disp 0x2bc
+0x0040d7d0	0x00740310	verified	thunk fp=; 0074031d CALL 0x007b33b0 fp= GOG Internal::DismissInGameGUI 0x45ffc0 (unique); Mac Internal same name, disp fits
+0x0040d840	0x00740380	verified	thunk fp=; 00740395 CALL 0x00797f30 fp= GOG Internal::ChangeCharacter 0x444550 (355 B, unique); Mac Internal same name
+0x0040d880	0x007403c0	verified	thunk fp=; 007403d1 CALL 0x0079c230 fp= GOG 0x448830 (disp 0x2c0,0x2c4 = Mac Internal::SetGameOver); GetGameOver 0x7403e0 reads +0x2c0
+0x0040d8e0	0x00740420	verified	thunk fp=; 00740431 CALL 0x0079c550 fp= GOG Internal::SetCanSendDialog 0x448b50 (unique); Mac Internal same name
+0x0040ddb0	0x007408f0	verified	thunk fp=; 0074090e CALL 0x0079e210 fp= GOG Internal::GetGUIString 0x44a810 (528 B, unique); Mac Internal same name
+0x0040de20	0x00740960	likely	getter: 0074096d MOV EAX,[ECX+0x384] / 00740973 AND EAX,0x1; fp= unique; Mac disp 0x4,0x384
+0x0061afd0	0x00711670	verified	00711679 PUSH 0x1 (key table type 1 = fixed/BIF) + 00711682 CALL 0x00711750 AddKeyTable (trusted); twins pass 2/3/4; fp=
+0x0061aff0	0x00711690	verified	00711699 PUSH 0x2 (directory) + 007116a2 CALL 0x00711750 AddKeyTable (trusted); Mac AddResourceDirectory imm 0x2; fp=
+0x0061b010	0x007116b0	verified	007116b7 PUSH 0x3 (encapsulated) + 007116c0 CALL 0x007131d0 RemoveKeyTable (trusted); Mac imm 0x3; fp=
+0x0061b070	0x00711710	verified	00711717 PUSH 0x2 (directory) + 00711720 CALL 0x007131d0 RemoveKeyTable; Mac RemoveResourceDirectory imm 0x2; fp=
+0x0061b090	0x00711730	verified	00711737 PUSH 0x2 + 00711740 CALL 0x007144a0 (UpdateKeyTable, fp= GOG 0x61de00); Mac UpdateResourceDirectory imm 0x2 -> UpdateKeyTable
+0x0061bf10	0x007125b0	verified	fp=; 007125d9 CALL 0x00712470 (fp= GetResOfTypeFromTable), 007125ec CALL 0x0073ac70 (fp= CExoStringList::Merge); Mac 346-B overload same callees
+0x0061c5f0	0x00712c90	verified	fp=; 00712cc9 PUSH 0x2e + 00712cce CALL 0x00734190 (CExoString::Find '.'), 00712d3e CALL 0x007360c0 GetResTypeFromExtension; Mac same 6 callees
+0x0061c7b0	0x00712e50	verified	fp=; 00712e60 CALL 0x00712d70 GetTable (trusted) + 00712e75 CALL 0x00726050 (fp= CExoKeyTable::GetEntryCount); Mac same callees
+0x0061c7f0	0x00712e90	verified	fp= unique; 00712ec7 byte-table switch on res type, imm 0x7d9+0x31 (=0x80a) and 0xbbb = Mac GetIsStaticType bounds 0x80a/0xbbb
+0x0061d910	0x00713fb0	verified	fp= (764 B); 007140b6 CALL 0x00712f30 CExoResMan::Malloc (trusted), linked-list walk 0x7a1720; Mac callees GetResourceExtension/Malloc/GetNext
+0x0061de00	0x007144a0	verified	fp=; 00714535 CALL 0x00734d60 (fp= CompareNoCase) + 00714541 CALL 0x00726a50 (fp= RebuildTable, empty-str diff only); Mac same callees
+0x0061f040	0x007156e0	verified	007156ef PUSH 0x0 as WipeDirectory p3 (p3!=0 -> RemoveDirectoryA in 0x715030); Nuke twin passes p3=1; Mac order Clean,Nuke
+0x0061f070	0x00715710	verified	0071571d PUSH 0x1 as WipeDirectory p3 -> RemoveDirectoryA (0x715030 line 'if (param_3 != 0)'); Clean twin passes 0; fp=
+0x00620700	0x00716da0	verified	fp= unique; 00716dc4 CALL 0x00716de0 = CacheResource (GOG 0x620740, part c verified); same-name overload wrapper, RET 0xc
+0x004eaed0	0x00733540	verified	default ctor: 0073354a MOV [EAX],0x0 / 00733553 MOV [ECX+0x4],0x0; fp= unique; GetResTypeFromFile calls it on both sides; Mac CExoString() disp 0x4
+0x00605790	0x00733680	verified	fp= unique; (char*,len) ctor: 007336a2 CALL 0x00919723 new + 007336c3 CALL 0x0091d0f0 strncpy; Mac CExoString 0x2ecdf4 uses strncpy
+0x007345e0	0x005e4920	verified	fp= but empty-str ref; plain ctor: 005e49b8 MOV [ECX+0x20],EDX (id counter), 005e4a37 CALL 0x005e4dd0 SetNumIntegers(8); Mac 290-B ctor shape
+0x00734780	0x005e4ac0	verified	fp= but empty-str ref; copy ctor: 005e4b90 MOV EDX,[ECX+0x30] (source count) -> SetNumIntegers; Mac 305-B ctor (disp 0x30, triples) fits
+0x00734b20	0x005e4e60	likely	getter: 005e4e6a MOV ECX,[EAX+0x34], RET 4; fp= unique; Mac GetInteger disp 0x34
+0x00734b40	0x005e4e80	likely	setter: 005e4e8a MOV ECX,[EAX+0x34], RET 8; fp= unique; Mac SetInteger disp 0x34
+0x00734b60	0x005e4ea0	likely	getter: 005e4ead FLD [ECX+EAX*4+0x38], RET 4; fp= unique; Mac GetFloat disp 0x38
+0x00734b80	0x005e4ec0	likely	setter: 005e4ed0 FSTP [ECX+EAX*4+0x38], RET 8; fp= unique; Mac SetFloat disp 0x38
+0x00734ba0	0x005e4ee0	likely	getter: 005e4eed MOV EAX,[ECX+EAX*4+0x78], RET 4; fp= unique; Mac GetObjectID disp 0x78
+0x00734c40	0x005e4f80	likely	setter: 005e4f8d MOV [EAX+0x10],ECX / 005e4f96 MOV [EDX+0x14],EAX; fp= unique; Mac SetExpiryTime disp 0x10,0x14
+0x004ce720	0x007be090	verified	fp= but empty-str ref; 007be0b1 CMP [EAX+0x11c],0x40 / 007be0bd MOV [ECX+0x11c],0x3f; Mac AppendToMsgBuffer imm 0x3f,0x40 disp 0x110/0x11c
+0x004d8430	0x007c7d40	likely	getter: 007c7d4a MOV EAX,[EAX+0x11c] (count capped by AppendToMsgBuffer); fp= unique; Mac disp 0x11c; twin GetMessageBuffer +0x110
+0x004da930	0x007ca230	verified	fp=; 007ca2bc ADD EDX,0x1 on [+0x2c], 007ca2c8 CMP [ECX+0x2c],0x8 wrap; Prev twin subtracts; Mac Next/Prev same 9 callees
+0x004daac0	0x007ca3c0	verified	fp=; 007ca44c SUB EDX,0x1 on [+0x2c], 007ca458 CMP [ECX+0x2c],0x0 then wrap (imm 0x7 = Mac Prev imm 0x7)
+0x004db020	0x007ca920	verified	Steam 239 B = GOG 224 B + GOG 15-B tail 0x4db100 (Ghidra split, mislabelled ShowDebugMenu): 007caa06 CALL 0x0070bc60 SetSoundMode; 007ca989 CALL 0x0073fee0; Mac fits
+0x004dbba0	0x007cb4a0	verified	fp=; panel +0x70: 007cb4b8 MOV EDX,[ECX+0x70], 007cb4d1 CALL 0x004109c0 PopModalPanel; Mac disp 0x70 same 5 callees; twin uses +0x74
+0x004dbc40	0x007cb540	verified	fp=; panel +0x74: 007cb558 MOV EDX,[ECX+0x74], 007cb571 CALL 0x004109c0 PopModalPanel; Mac disp 0x74 same 5 callees
+0x004dc340	0x007cbc40	verified	fp= unique; 007cbc4a CMP [EAX+0x6c],0 + 007cbc56 CALL 0x007bca60 (fp= CSWGuiFade::IsFadeDone); Mac same callee, disp 0x6c
+0x004de2e0	0x007cdbe0	verified	fp=; 007cdc09 CMP [EDX+0x88],0, 007cdc38 CALL 0x0087a730 TogglePauseRequest, 007cdc63 CALL 0x0070bc60 SetSoundMode; Mac same 4 callees, disp 0x88
+0x004df250	0x007ceb50	verified	fp= unique; 007ceb5a CMP [EAX+0x98],0 + 007ceb6e CALL 0x0074cfe0 (fp= CSWGuiMainInterface::PopulateMenus); Mac same callee, disp 0x98
+0x00668830	0x00605000	verified	deleting-free dtor: 0060500d CALL 0x0064ddb0 (fp= ~CExoArrayList) on this+0xc; Mac ~CItemRepository deletes [+0xc]; next to ctor 0x604fb0
+0x006695b0	0x00605d80	verified	fp= unique; 00605dd4 CALL 0x0051c0e0 GetItemByGameObjectID, 00605e17 CALL 0x006d5200 GetBaseItem, 00605e5d self-recursion; Mac same 3 callees
+0x006696b0	0x00605e80	verified	fp= unique; 00605eda CALL 0x0049b840 DelIndex + 00605f10 AND EAX,0xffffff7f on [+0x2c8]; Mac RemoveItem disp 0x2c8 imm 0x7f
+0x00669770	0x00605f40	verified	fp= unique; 00605f8f CALL 0x0051c0e0 GetItemByGameObjectID + 00605fae AND EDX,0xffffff7f [+0x2c8]; Mac ClearNewItems same callee + mask
+0x006699d0	0x006061a0	verified	fp= unique; 006061da CALL 0x00606100 ItemListGetItem + 006061eb CALL 0x00606b50 (fp= CSWSItem::GetWeight) summed over [+0x10]; Mac same callees
+0x00669a30	0x00606200	verified	fp= unique; 00606207 PUSH 0x0 + 0060620f CALL 0x006169e0 (fp= SetSize) on this+0xc, 00606217 MOV [EAX+0x4],0x0; between Weight and SetParentId
+0x0061ab40	0x007111e0	verified	thunk fp=; 007111f1 CALL 0x00711c20 fp= GOG CExoResMan::Demand 0x61b580 (548 B); twins call CancelRequest/Release/Request; Mac CRes::Demand same
+0x0061ac10	0x007112b0	verified	thunk fp=; 007112c1 CALL 0x007130b0 = CExoResMan::Release (trusted); twins call other ResMan fns; Mac CRes::Release -> CExoResMan::Release
+0x00561f80	0x00716fa0	verified	deleting dtor (GOG COMDAT copy): 00716faa CALL 0x007171b0 (~CResGFF body, trusted Destructor_2) + 00716fbb CALL 0x009196fd delete
+0x00622ff0	0x00716e60	verified	fp= unique; 00716e6a CALL 0x007110d0 CRes ctor, 00716f1b MOV [EDX+0x2c],0x286; Mac default CResGFF() imm 0x286,0x72c,0xfd4 (other ctor = 0x623130)
+0x00623710	0x007175b0	verified	fp= unique; clears 9 cached ptrs: 007175c6 MOV [ECX+0x70],0x0 .. 00717619 MOV [EAX+0x94],0x0; disp set = Mac OnResourceFreed exactly
+0x006247f0	0x00718690	verified	fp= unique; 007186a0 CALL 0x00717720 GetStruct (trusted), returns [struct] or -1; Mac GetElementType calls GetStruct
+0x00624820	0x007186c0	likely	struct-ptr overload: 007186d5 MOV EAX,[EAX+0x8], -1 if null; fp= unique; Mac has only the GetStruct overload (= GOG 0x624840 -> 0x7186e0)
+0x00624870	0x00718710	verified	fp= unique; 0071872a CALL 0x007178e0 GetFieldByLabel + 0071873d CALL 0x00717770 GetField, RET 0xc; Mac GetFieldType same callees
+0x00624b30	0x007189d0	likely	stub: 007189e4 MOV dword ptr [EAX],0x0 (out = struct 0), returns 1; fp= unique; Mac GetTopLevelStruct 25 B no callees
+0x00624b60	0x00718a00	verified	00718a52 CMP dword ptr [EDX],0x0 (GFF type BYTE) after 00718a2e CALL 0x007178e0 GetFieldByLabel; CHAR twin 0x718a80 compares 1 (part c)
+0x00624c60	0x00718b00	verified	fp= unique; 00718b53 CMP dword ptr [EDX],0x2 (GFF WORD) + 00718b2f CALL 0x007178e0; Mac ReadFieldWORD imm 0x2
+0x006257a0	0x00719640	verified	fp= unique; 0071969b CMP dword ptr [EDX],0xd (VOID), 007196bc CALL 0x00717820 GetDataField, 0071972d CALL 0x0091dba0 memcpy; Mac imm 0xd + same
+0x0044f660	0x007a2c60	verified	fp= unique; 007a2c6a SUB EAX,0x104 (secondary vtable at +0x104 set by ctor 0x7a2590); Mac AsSWCArea thunk 0x270782 imm -0x104
+0x0044f680	0x007a2c80	verified	deleting dtor: 007a2c8a CALL 0x007a2cb0 (~CSWCArea body, trusted) + 007a2c9b CALL 0x009196fd delete
+0x00456350	0x007a9950	label_suspect	body drains CAurObject list at +0x208 (007a9985 CALL 0x007f2a90 RemoveHead loop), caller UnloadArea 0x7a5fa0; Mac ClearTilePathNodes = 0x23c..0x250 array = GOG 0x457310
+0x004578a0	0x007aaea0	verified	fp= unique; 007aaeaa MOV dword ptr [EAX+0x280],0x0 (Attach twin 0x7aae80 stores arg); Mac DetachFromServerArea disp 0x280
+0x00582200	0x008ee820	verified	fp= unique; 008ee85b CMP [ECX+0x154],0, 008ee899 CALL 0x008f0580 (fp= UnloadModel), 008ee8a8 CALL 0x007ed5f0 ~CSWCObject; Mac dtor disp 0x154
+0x00506a50	0x0087b170	verified	deleting dtor: 0087b17a CALL 0x0087b1a0 (~CSWCDoor body, trusted) + 0087b18b CALL 0x009196fd delete
+0x00506a80	0x0087b1a0	verified	fp= unique; 3x ~CExoString 0087b1eb/1fd/20f at +0x140/+0x134/+0xfc, 0087b21e CALL 0x007ed5f0; Mac ~CSWCDoor imm 0xfc disp 0x134,0x140
+0x005070c0	0x0087b7e0	likely	getter: 0087b7ea MOV AL,byte ptr [EAX+0x120]; fp= unique; no Mac CSWCDoor::GetState; caller AnimationUpdate 0x87b3f0
+0x00507760	0x0087be80	verified	fp= unique; 0087be8c CALL 0x007f2540 GetServerObject (trusted) + 0087bea8 vt+0x18 (AsSWSDoor); Mac GetServerDoor vt 0x1c (+4)
+0x0048f9b0	0x00844e40	label_suspect	body = CSWCCreatureStats::GetClass: 00844e60 MOV AL,[EDX+ECX+0xf8], fp= unique; Mac 0x184b08 disp 0xf8 imm 5; Mac CSWCLevelUpStats has no GetClass
+0x00472580	0x007ed420	verified	fp= but empty-str ref; base GetName returns "": 007ed430 PUSH 0x986925 (empty) + 007ed438 CALL 0x00733570 char* ctor; Mac GetName 32 B same
+0x004725e0	0x007ed480	verified	fp= unique; 007ed493 ADD ECX,0xa8 + 007ed499 CALL 0x0085e8c0 (= CSWPortrait::GetPortrait, fp= but empty str); Mac imm 0xa8
+0x00472610	0x007ed4b0	likely	getter: 007ed4ba MOV AX,word ptr [EAX+0xb8]; fp= unique; Mac GetPortraitId disp 0xb8
+0x00472660	0x007ed500	verified	fp= unique; 007ed51e MOV EAX,[EDX+0xbc] vcall on [this+0x68]; TurnOn twin vt+0xb8; Mac TurnOffShadows vt 0xc0 (+4)
+0x00472930	0x007ed7d0	likely	getter: 007ed7da MOV AX,word ptr [EAX+0x48]; fp= unique; Mac GetCurrentAnimation disp 0x48
+0x00472ae0	0x007ed980	likely	getter: 007ed98a MOV AX,word ptr [EAX+0x58]; fp= unique; Mac GetLoopingAnimation disp 0x58
+0x00474540	0x007ef3e0	label_suspect	steam corrected (pipeline 0x7ef910): body (run d=0x37aea0) = AnimationWalking, 007ef437 MOV EAX,[0x00a0fe30] 'Walking' handle (006ebae5); HideEquippedItems = GOG 0x474a70
+0x004745d0	0x007ef470	label_suspect	steam corrected (pipeline 0x7ef3e0): body = AnimationRunning, 007ef4c7 MOV EAX,[0x00a0fe34] 'Running' handle (006eba53); AnimationWalking = GOG 0x474540 -> 0x7ef3e0
+0x004749e0	0x007ef880	verified	body counterpart (run d=0x37aea0); 007ef8d7 MOV EAX,[0x00a0fe4c], handle stored at 006eb765 after 006eb730 PUSH 0x99afb4 'Attack'
+0x00474a70	0x007ef910	label_suspect	steam corrected (pipeline 0x7ef470): body = AnimationHideEquippedItems, 007ef967 MOV EAX,[0x00a0fe50] (006eb89d 'HideEquippedItems'); Running = GOG 0x4745d0
+0x00477660	0x007f24c0	verified	007f24ed CALL 0x0051cb10 (fp= CServerExoApp::ClearAllActions) after ClientToServerObjectId; twin 0x7f2500 calls 0x51cba0; Mac same callees
+0x004776a0	0x007f2500	verified	007f252d CALL 0x0051cba0 (fp= CServerExoApp::ClearAllQueuedCombatActions); twin 0x7f24c0 calls 0x51cb10; Mac same callees
+0x004777b0	0x007f2610	verified	fp= unique; 007f261d MOV [EAX+0xf8],ECX (stores arg; Detach twin writes 0), RET 4; Mac AttachmentFromServerObject disp 0xf8
+0x005349c0	0x00841140	verified	fp= unique; 00841153 ADD EAX,0xfc + 0084115c CALL 0x007335f0 CExoString copy to out param; Mac CSWCPlaceable::GetName imm 0xfc
+0x00534a50	0x008411d0	verified	deleting dtor: 008411da CALL 0x00841200 (~CSWCPlaceable body, trusted) + 008411eb CALL 0x009196fd delete
+0x00534a80	0x00841200	verified	fp= unique; 00841239 CALL 0x008424a0 (fp= UnloadLight), ~CExoString at +0x148/+0x104/+0xfc, 00841286 CALL 0x007ed5f0; Mac dtor disp 0x104,0x148 imm 0xfc
+0x005355c0	0x00841d40	verified	fp= unique; 00841d79 PUSH 0x21 + 00841d7e CALL 0x00740a20 ShowTutorialWindow, 00841d97 CALL 0x007756c0 PerformAttack; Mac same callees, imm 0x21
+0x00536580	0x00842d00	verified	fp= unique; 00842d0c CALL 0x007f2540 GetServerObject + 00842d28 vt+0x48 (AsSWSPlaceable); Mac GetServerPlaceable vt 0x4c (+4)
+0x004ce500	0x00418640	verified	fp= unique; body dtor: 0041867c CALL 0x0064ddb0 / 0041868b CALL 0x00733780 / 0041869a CALL 0x0064ddb0 on +0x3c/+0x2c/+0x1c; Mac ~CSWGuiControl disp 0x1c,0x2c,0x3c
+0x004ce5d0	0x004185d0	likely	setter: 004185e3 AND EDX,0xfffffffe / 004185eb MOV [EAX+0x48],EDX (bit 0); fp= unique; Mac SetActive disp 0x48 imm 0xfe
+0x0059af30	0x008a7030	verified	deleting dtor: 008a703a CALL 0x008a7060 (~CSWGuiInGameInventory body, trusted) + 008a704b CALL 0x009196fd delete

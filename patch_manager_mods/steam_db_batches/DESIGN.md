@@ -130,6 +130,20 @@ Invariants:
   > function with exactly the GOG `Class::Name`, overlap = |{x in V(S): exists y in V(M), |x-y| <= 4}| / |V(S)|. If |V(S)| >= 2,
   > |V(M)| >= 2 and overlap == 0 for every such Mac function, flag `mac_contra` -> REVIEW (never REJECT). No Mac function
   > of that name, or too few values -> pass (recorded `g7=n/a`).
+- G8 `mac_rotation` (lead decision after the B0 Opus gate, 2026-10-03; both routes; REVIEW, never REJECT). Catches GOG label
+  rotations / swaps inside a class, which G7 misses when the wrong name still has a Mac symbol with some overlap.
+  Let V(X) be as in G7 (X = a GOG function from the GOG fp, M = a Mac function from the Mac fp). Define
+  `fit(X, M) = 0.75 * overlap(X, M) + 0.25 * closeness(X, M)` where overlap is the average of the two directions of the
+  +-4 value overlap (share of V(X) with a V(M) value within 4, and share of V(M) with a V(X) value within 4) and
+  closeness = min(size)/max(size) of the two fingerprints; fit is undefined (skipped) if |V(X)| < 2 or |V(M)| < 2.
+  For the row's GOG function G and every GOG function G' of the same class within +-4 positions in GOG address order
+  (overloads of G, i.e. names equal up to a `_N` suffix, are skipped: one Mac symbol cannot tell them apart):
+  - if the GOG name has Mac functions M: flag `rotation:<G' addr>:<fit G'>><fit G>` when some G' has
+    fit(G', M) > fit(G, M) + 0.15 and fit(G', M) >= 0.5 (best over the Mac functions of that name);
+  - if the GOG name has no Mac function: flag `rotation_in:<G' addr>:...` when G's body fits the Mac function named like a
+    neighbour G' better than G''s own body does (same thresholds).
+  Otherwise `pass`, or `n/a` when nothing can be computed. Recorded in the `g8` evidence column; why-codes `mac_rotation` /
+  `mac_rotation_in`. Calibration (`tools/g8_study.py`): positives lose 2.5-2.6% of their AUTO rows (block-1 split).
 
 Anchor families (computed for the candidate S AND for its decoys D = the previous and next Steam function starts
 and every other candidate of the row; a family counts only if it is **discriminating**: S's score > every decoy's):
@@ -149,10 +163,10 @@ Run consistency `run_ok`: S-G equals the delta of the nearest mapped GOG neighbo
 fingerprint scores prefer the swapped assignment).
 
 Gate class:
-- AUTO: G1, G3, G4, G5, G6 pass; G7 not `mac_contra`; C2; run_ok or mapper `vote`; not ambiguous; G2 pass.
+- AUTO: G1, G3, G4, G5, G6 pass; G7 not `mac_contra`; G8 not a rotation; C2; run_ok or mapper `vote`; not ambiguous; G2 pass.
   - `auto_route=c2` is the rule above.
   - `auto_route=sig` (R3; lead decision 2026-10-03, signed off with changes R1-R7 (calibration/OPUS_REVIEW.md)): every invariant
-    passes (g1 pass, g2 pass, g3 pass or pass(exe), g4 pass, g6 pass, g7 not `mac_contra`, no unresolved thunk), the counting
+    passes (g1 pass, g2 pass, g3 pass or pass(exe), g4 pass, g6 pass, g7 not `mac_contra`, g8 not a rotation, no unresolved thunk), the counting
     families (VT excluded) are exactly {SIG}, a_sig >= 0.75, run_ok == yes, steam_size == gog_size, not permuted, not ambiguous,
     and no callee contradiction. `mapper:vote` does not help this route. Opus gate R2 (2026-10-03), exact rule text:
     > ... the best decoy's SIG <= a_sig - 0.25, where the decoys are the previous and next Steam starts, every other

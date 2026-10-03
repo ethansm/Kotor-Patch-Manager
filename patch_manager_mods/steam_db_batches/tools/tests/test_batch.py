@@ -8,6 +8,7 @@ import contextlib
 import csv
 import hashlib
 import io
+import re
 import json
 import os
 import sqlite3
@@ -1381,6 +1382,134 @@ class OpusGateTests(Base):
         self.assertIn("mac_contra row", text)
         sample_lines = text.split("## Sample")[1].split("##")[0]
         self.assertEqual(sample_lines.count("(C0)"), 5)                         # C0 rows first
+
+
+class MacRotationTests(Base):
+    """G8 mac_rotation: label rotations inside a class, judged against the Mac symbols (REVIEW, never REJECT)."""
+
+    A = ([0x1000, 0x1004, 0x1008, 0x100C], [])            # R1's own body
+    B = ([0x2000, 0x2004, 0x2008, 0x200C], [])            # a neighbour's body
+
+    def rot_fn(self, name, idx, body):
+        w = self.world
+        g, s = 0x00420000 + 0x40 * idx, 0x00520000 + 0x40 * idx
+        w.pair("CRot", name, g, s, 8, 8)
+        for side in (w.gog_fp, w.steam_fp):
+            side[g if side is w.gog_fp else s]["disp"], side[g if side is w.gog_fp else s]["imm"] = list(body[0]), list(body[1])
+        return g, s
+
+    def gates(self, spec):
+        self.world.build()
+        write_candidates(self.root, "B1", spec)
+        run("gates", "B1")
+        return self.evidence()
+
+    def test_rotation_flags_the_function_whose_mac_symbol_fits_a_neighbour(self):
+        self.rot_fn("R1", 0, self.A)
+        self.rot_fn("R2", 1, self.B)
+        self.world.mac = [("CRot", "R1", self.B[0] + [0x1000], [])]        # Mac R1 looks like GOG R2's body
+        ev = self.gates({"R1": "0x00520000|mapper:vote", "R2": "0x00520040|mapper:vote"})
+        e = ev["R1"]
+        self.assertRegex(e["g8"], r"^rotation:0x00420040:0\.\d\d>0\.\d\d$")
+        self.assertTrue(e["g7"].startswith("pass"), e["g7"])               # G7 alone would not have caught it
+        self.assertEqual(e["gate_class"], "REVIEW")                         # C2 + vote would be AUTO otherwise
+        self.assertIn("mac_rotation", e["flags"])
+        self.assertNotEqual(e["gate_class"], "REJECT")
+        # R2 has no Mac symbol, but its body fits R1's Mac symbol better than R1's own body does
+        self.assertRegex(ev["R2"]["g8"], r"^rotation_in:0x00420000:")
+        self.assertEqual(ev["R2"]["gate_class"], "REVIEW")
+        self.assertIn("mac_rotation_in", ev["R2"]["flags"])
+
+    def test_agreeing_mac_symbol_passes_and_missing_data_is_na(self):
+        self.rot_fn("R1", 0, self.A)
+        self.rot_fn("R2", 1, self.B)
+        self.world.mac = [("CRot", "R1", self.A[0], [])]
+        ev = self.gates({"R1": "0x00520000|mapper:vote", "R2": "0x00520040|mapper:vote"})
+        self.assertEqual(ev["R1"]["g8"], "pass")
+        self.assertEqual(ev["R1"]["gate_class"], "AUTO")
+        self.assertEqual(ev["R2"]["g8"], "n/a")                             # no Mac symbol, no neighbour pointing at it
+        self.assertEqual(ev["R2"]["gate_class"], "AUTO")
+
+    def test_overloads_are_not_compared(self):
+        self.rot_fn("R1", 0, self.A)
+        self.rot_fn("R1_2", 1, self.B)
+        self.world.mac = [("CRot", "R1", self.B[0] + [0x1000], [])]
+        ev = self.gates({"R1": "0x00520000|mapper:vote"})
+        self.assertEqual(ev["R1"]["g8"], "pass")                            # one Mac symbol cannot tell R1 / R1_2 apart
+
+    def window_g8(self, gap):
+        self.rot_fn("R1", 0, self.A)
+        for k in range(gap):
+            self.world.gog_fn(0x00420000 + 0x40 * (1 + k), "CRot", "Fill%d" % k)
+            self.world.steam_fn(0x00520000 + 0x40 * (1 + k), "FUN_%d" % k, retn=0)
+        self.rot_fn("R9", 1 + gap, self.B)
+        self.world.mac = [("CRot", "R1", self.B[0] + [0x1000], [])]
+        return self.gates({"R1": "0x00520000|mapper:vote"})["R1"]["g8"]
+
+    def test_neighbour_four_positions_away_counts(self):
+        self.assertTrue(self.window_g8(3).startswith("rotation:"))          # R9 is 4 positions away
+
+    def test_neighbour_five_positions_away_does_not(self):
+        self.assertEqual(self.window_g8(4), "pass")
+
+    def test_too_few_values_is_na(self):
+        self.rot_fn("R1", 0, ([0x1000], []))
+        self.world.mac = [("CRot", "R1", [0x2000, 0x2004], [])]
+        ev = self.gates({"R1": "0x00520000|mapper:vote"})
+        self.assertEqual(ev["R1"]["g8"], "n/a")
+
+    def test_disable_switch_for_baselines(self):
+        self.rot_fn("R1", 0, self.A)
+        self.rot_fn("R2", 1, self.B)
+        self.world.mac = [("CRot", "R1", self.B[0] + [0x1000], [])]
+        with mock.patch.dict(os.environ, {"BD_DISABLE_G8": "1"}):
+            ev = self.gates({"R1": "0x00520000|mapper:vote"})
+        self.assertEqual(ev["R1"]["g8"], "n/a")
+
+
+class CardFactsBelongToTheCandidateTests(Base):
+    """The evidence summary says which side matched: a caller-only match must not read like a callee match."""
+
+    def test_caller_match_is_labelled_as_caller(self):
+        w = self.world
+        w.pair("CFoo", "Qq", GOG_BASE + 0x2000, STEAM_BASE + 0x2000, 8, 8, anchors=())       # no own anchors
+        w.name_map.append((h(STEAM_BASE + 0x2100), "CFoo::CallerQ", WAVE2, "high", "trusted caller"))
+        w.filler("CFoo", "CallerQ", GOG_BASE + 0x2100, STEAM_BASE + 0x2100)
+        w.gog_fp[GOG_BASE + 0x2100] = dict(retn=8, callees={GOG_BASE + 0x2000}, strs=set(), disp=[], imm=[], size=48)
+        w.steam_fp[STEAM_BASE + 0x2100] = dict(retn=8, callees={STEAM_BASE + 0x2000}, strs=set(), disp=[], imm=[], size=48)
+        w.calls.append((STEAM_BASE + 0x2100, STEAM_BASE + 0x2000))
+        w.build()
+        write_candidates(self.root, "B1", {"Qq": "0x00512000|near"})
+        run("gates", "B1")
+        e = self.evidence()["Qq"]
+        self.assertIn("CALLEE 1 (callers: CallerQ 0x512100)", e["evidence"])
+        self.assertNotIn("callees:", e["evidence"])
+        run("cards", "B1", "--chunk", "10", "--decoys", "2")
+        chunk = (self.root / "batches" / "B1" / "cards" / "chunk_1.md").read_text()
+        card = next(c for c in chunk.split("## Card ")[1:] if "Candidate Steam address: 0x00512000" in c)
+        self.assertIn("evidence summary: CALLEE 1 (callers: CallerQ 0x512100)", card)
+        self.assertIn("direct callees (0):", card)                           # the candidate itself calls nothing
+        self.assertRegex(card, r"0x[0-9a-f]{8} CFoo::CallerQ -> Steam 0x00512100  in candidate callers: yes")
+
+    def test_every_decoy_card_describes_its_own_candidate(self):
+        write_candidates(self.root, "B1", B1_SPEC)
+        run("gates", "B1")
+        run("cards", "B1")
+        cards = self.root / "batches" / "B1" / "cards"
+        key = {k["card_id"]: k for k in bd.iter_tsv(cards / "key.tsv")}
+        chunk = (cards / "chunk_1.md").read_text()
+        corpus = bd.Corpus(bd.get_paths())
+        n = 0
+        for c in chunk.split("## Card ")[1:]:
+            cid = c.split("\n")[0].strip()
+            k = key[cid]
+            m = re.search(r"Candidate Steam address: (0x[0-9a-f]+)", c)
+            self.assertEqual(m.group(1), k["steam_addr"])                      # the card shows the key's address
+            m2 = re.search(r"direct callees \((\d+)\):", c)
+            self.assertEqual(int(m2.group(1)), len([a for a in corpus.rp.asm_call_targets(corpus.asm(int(k["steam_addr"], 16)))
+                                                    if a >= 0x401000]))        # anchors are the candidate's own asm
+            n += 1
+        self.assertEqual(n, len(key))
 
 
 if __name__ == "__main__":
