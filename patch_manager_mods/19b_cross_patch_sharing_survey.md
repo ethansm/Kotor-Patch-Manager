@@ -103,6 +103,8 @@ that log. `scripts/check_effect_decode.py` parses the effects panel output. Any 
 
 **Consumer contract tests (user rule, 2026-10-03).** Every mod that includes a Common header owns `<mod>_src/common_contract_test.cpp` pinning the Common semantics it relies on (doc 20 §4.1). A Common change that breaks a consumer fails in that consumer's test, with a `<mod> relies on:` message. Adoptions and Common edits add/extend the block in the same commit.
 
+**Hotbar shared services (2026-10-03):** doc 22 `22_hotbar_shared_services.md`: hook map (hotbar's 8 sites uncontested), `k2.saveevents@1` = item 9's "framework save events" (recommended first library), hotbar as optional `k2.portraitslots@1` / A1 consumer, GOG address hand-off table for K2Addr.h.
+
 **Quiet mods (safe first adopters):** EquipIconFix, ActivationFix, TextureMemoryRelease, RangedAI, MouseProbe, LoadHangProbe.
 
 **Hotbar (Mod 3), Phase X (2026-10-03):** adopts SafeRead, B7 `readExo`, B2 GuiKit setters, `GameAddr.h`, B6 `Party.h` before its Phase D/T.
