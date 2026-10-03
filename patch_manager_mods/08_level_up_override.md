@@ -957,3 +957,18 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   forge (M1), ini switcher (M2), offline runner (M3) and log checker (M4).
 - C2 DONE: design note `patch_manager_mods/22_pc_levelup_filter.md` (recommend filter source A = PC presets, DIM first via F2/P2, empty-choosable
   fallback rule, Recommended button left vanilla, skills out of scope, log-only probe spec). C3 = user gate (questions in doc 22 section 10).
+- **A4 Common adoption notes** (offer to the Common owner, doc 19b section D rows 4 + 9; no moves from this session):
+  - *SaveBinding (19b row 9, "stays local" until the framework has save events).* What level-up has that is reusable as-is:
+    - 3 hooks: pre-save 0x656640 (globals saver entry, ecx = CSWGlobalVariableTable, original bytes run), post-load 0x65675B (inside LoadFromSave
+      0x656710; table `[ebp-0x1c]`, eax = load result), new server 0x401C52 (replaces `call 0x51C450` in 0x401BC0; handler calls it and returns
+      EAX). Engine helpers find/add/set/get + CExoString ctor/dtor, all code-checked (`guidEngineOk`, `LevelUpOverride.cpp` ~950) -> on mismatch
+      the binding disables itself, gates keep working.
+    - The trick: the engine re-adds unknown global names on load, so 32 Boolean globals `LUO_G00..31` carry a 32-bit playthrough id through any
+      save with no globalcat.2da row (doc 08 Item 7). Packing is pure (`Playthrough.h` `bitName/packBits/unpackBits/sectionName`).
+    - Removal safety: with the mod removed the globals are inert booleans no script reads; Phase 6b M3 (S7/S5) proves the load side offline.
+    - API shape for a Common `SaveBinding.h`: `uint32_t currentPlaythrough()` (0 = none), `onNewPlaythrough(cb)`, a per-mod prefix (`<MOD>_G`)
+      so two mods never share bits. Hotbar's per-save files could key on the same id instead of save-folder names.
+  - *IniFile (19b row 4).* `Playthrough.h` is a verbatim-preserving sectioned ini model with fixed caps (no STL), a `lossy` flag that blocks
+    rewrites, lowercase keys, `|k=v` sub-fields with defaults (`instant=0 hold=1 pause=0`, `|pause=N` written only when N > 0 so old files
+    round-trip byte-identical) and 257 host checks (`playthrough_test.cpp`). A Common IniFile could take the Doc/Section/Line core and leave the
+    `|`-field parser to the mod.
