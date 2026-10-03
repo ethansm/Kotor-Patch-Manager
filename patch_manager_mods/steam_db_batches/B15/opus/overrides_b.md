@@ -1,0 +1,189 @@
+# B15 Opus gate, part B (opus_gate.md lines 121-211 + extras)
+
+Gate: Opus 2026-10-03. Read-only pass; OUT = `B15/opus/overrides_b.tsv` (100 rows: 98 verified, 2 label_suspect, 0 corrections).
+
+## Method
+
+- Re-decoded the three command tables from `server/cmdstores/*.cmdstores.tsv` independently (Win disp/4, Mac disp/8, later store wins in insn order): 877 slots each; 655 distinct handlers on GOG and Steam (Mac 658). My decode equals `B15/cmdtable.tsv` on **877/877 slots, 0 wrong**. Separately re-parsed the Steam asm (`decomp/66/00665f50.asm` + `decomp/6f/006f5b80.asm`): 879 stores, 877 slots, 0 differences from the table. Slots stored twice on all three binaries: 156 (two handlers) and 709 (same handler twice, harmless).
+- Per row: GOG slot set == Steam slot set of the row's steam_addr; GOG fp vs Steam fp (size, retn, n_insn, disp list, imm list) compared; GOG callees mapped through B0+B15 validated rows (no mapped callee is missing on Steam in any row); Mac symbol of the same slot set compared with the GOG name.
+- Result for all 88 table rows in this part: steam_addr == table counterpart, slot sets identical, size/retn/n_insn/disp/imm identical (one exception: AurPostString size 283 vs 284, same n_insn/disp/imm/callees), 0 contradicting callees, Mac symbol == GOG name (GetPartyLeader shares slots 238/845 with Mac GetPCSpeaker: same handler, both names are Mac symbols of it).
+
+## Per-row evidence (store line = Steam InitCommands store; anchor = Steam CALL whose target is the B0/B15-validated counterpart of the GOG callee)
+
+### Sample of reviewer matches (80 rows; all reviewer verdicts = match)
+
+| gog | name | steam | verdict | evidence |
+|---|---|---|---|---|
+| 0x00793c50 | ExecuteCommandGetHasSpellEffect | 0x0067e670 | verified | slot 304: 006673a8 MOV [EDX + 0x4c0],0x67e670; 0067e704 CALL 0x005476c0=HasSpellEffectApplied; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a4bb0 | ExecuteCommandPutDownItem | 0x0068f560 | verified | slot 35: 0066618c MOV [EAX + 0x8c],0x68f560; 0068f599 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007acab0 | ExecuteCommandShowGalaxyMapGui | 0x00697460 | verified | slot 739: 00668ba7 MOV [EDX + 0xb8c],0x697460; 0069749d CALL 0x007ca730=ShowGalaxyMapGui; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a5170 | ExecuteCommandRemoveEffectByExactMatch | 0x0068fb20 | verified | slot 868: 00668663 MOV [EAX + 0xd90],0x68fb20; 0068fc49 CALL 0x005e4e60=GetInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078a500 | ExecuteCommandEffectHeal | 0x00674f20 | verified | slot 78: 00666a7d MOV [EAX + 0x138],0x674f20; 0067502d CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007b0f50 | ExecuteCommandActionSwitchWeapons | 0x0069b980 | verified | slot 853: 006661f9 MOV [EDX + 0xd54],0x69b980; 0069b99e CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a4770 | ExecuteCommandPrintLogEntry | 0x0068f120 | verified | slot 560: 0066859d MOV [ECX + 0x8c0],0x68f120; 0068f14b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00796f10 | ExecuteCommandGetLastHostileTarget | 0x00681940 | verified | slot 721: 00667702 MOV [EDX + 0xb44],0x681940; 006819a8 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007b1910 | ExecuteCommandSavePUPByObject | 0x0069c340 | verified | slot 874: 00668723 MOV [EAX + 0xda8],0x69c340; 0069c3a9 CALL 0x005f8520=SavePuppetByObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007afbd0 | ExecuteCommandSetHealTarget | 0x0069a580 | verified | slot 813: 0066891d MOV [ECX + 0xcb4],0x69a580; 0069a5d0 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00796f90 | ExecuteCommandGetLastAttackAction | 0x006819c0 | verified | slot 722: 006676e2 MOV [ECX + 0xb48],0x6819c0; 00681a04 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079ed20 | ExecuteCommandGetTimeHour | 0x006896d0 | verified | slot 16: 0066809f MOV [ECX + 0x40],0x6896d0; 006896ee CALL 0x0051b100=GetWorldTimeHour; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00793d10 | ExecuteCommandGetHitDice | 0x0067e730 | verified | slot 166: 006673c8 MOV [EAX + 0x298],0x67e730; 0067e7e1 CALL 0x006a4e00=GetLevel; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007971d0 | ExecuteCommandGetWasForcePowerSuccessful | 0x00681c00 | verified | slot 726: 006681d3 MOV [EDX + 0xb58],0x681c00; 00681c44 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00790200 | ExecuteCommandGetCommandable | 0x0067ac20 | verified | slot 163: 00666f21 MOV [EAX + 0x28c],0x67ac20; 0067ac76 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00791970 | ExecuteCommandGetEffectType | 0x0067c390 | verified | slot 170: 00667071 MOV [EAX + 0x2a8],0x67c390; 0067c3bf CALL 0x005e5f60=GetEffectTypeScriptConstant; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007918d0 | ExecuteCommandGetEffectSubType | 0x0067c2f0 | verified | slot 90: 00667061 MOV [ECX + 0x168],0x67c2f0; 0067c30c CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a5df0 | ExecuteCommandRollDice | 0x006907a0 | verified | slot 95..103(9): 00666550 MOV [EDX + 0x190],0x6907a0; 00690885 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a7db0 | ExecuteCommandSetRestrictMode | 0x00692760 | verified | slot 58: 00668b0a MOV [EAX + 0xe8],0x692760; 006927da CALL 0x0052e170=SetPlayerRestrictMode; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00788c70 | ExecuteCommandEffectDamageDecrease | 0x00673690 | verified | slot 448: 006668dd MOV [EDX + 0x700],0x673690; 006737e6 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007aad40 | ExecuteCommandVectorNormalize | 0x006956f0 | verified | slot 137: 00668f24 MOV [EAX + 0x224],0x6956f0; 00695796 CALL 0x006fda40=StackPushVector; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00788e60 | ExecuteCommandEffectDamageImmunityDecrease | 0x00673880 | verified | slot 449: 006668ed MOV [ECX + 0x704],0x673880; 006739b8 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007abf80 | ExecuteCommandSetMinOneHP | 0x00696930 | verified | slot 716: 00668a7d MOV [EAX + 0xb30],0x696930; 00696983 CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079edc0 | ExecuteCommandGetTimeMinute | 0x00689770 | verified | slot 17: 006680b9 MOV [EDX + 0x44],0x689770; 0068978e CALL 0x0051b140=GetWorldTimeMinute; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007ac240 | ExecuteCommandGetAttacker | 0x00696bf0 | verified | slot 727..728(2): 006671d8 MOV [ECX + 0xb5c],0x696bf0; 00696c9d CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079ee10 | ExecuteCommandGetTimeSecond | 0x006897c0 | verified | slot 18: 006680c6 MOV [ECX + 0x48],0x6897c0; 006897de CALL 0x0051b180=GetWorldTimeSecond; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a7ee0 | ExecuteCommandSetSpeedBlurEffect | 0x00692890 | verified | slot 563: 00668b3a MOV [EAX + 0x8cc],0x692890; 006928cc CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079cce0 | ExecuteCommandGetPartyLeader | 0x0069b7c0 | verified | slot 238..845(2): 006675d8 MOV [EAX + 0xd34],0x69b7c0; 0069b811 CALL 0x0051c8b0=ClientToServerObjectId; fp size/ret/disp/imm identical; Mac ExecuteCommandGetPCSpeaker,ExecuteCommandGetPartyLeader |
+| 0x007aa860 | ExecuteCommandTestString | 0x00695210 | verified | slot 177: 00668eb4 MOV [ECX + 0x2c4],0x695210; 0069523b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007897f0 | ExecuteCommandEffectForceShield | 0x00674210 | verified | slot 459: 00666a2d MOV [EDX + 0x72c],0x674210; 006742ac CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00792a70 | ExecuteCommandGetFactionMostFrequentClass | 0x0067d490 | verified | slot 191: 00667198 MOV [EDX + 0x2fc],0x67d490; 0067d4d7 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0077efb0 | CSWVMC::ExecuteCommandActionDoCommand | 0x006699d0 | verified | slot 294: 00666025 MOV [EDX + 0x498],0x6699d0; 006699ea CALL 0x006fdb30=StackPopCommand; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a7c90 | ExecuteCommandSetPlaceableIllumination | 0x00692640 | verified | slot 544: 00668aca MOV [ECX + 0x880],0x692640; 006926a5 CALL 0x005f6470=SetLightIsOn; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007b0e10 | ExecuteCommandRemoveNPCFromPartyToBase | 0x0069b840 | verified | slot 846: 006686a3 MOV [EDX + 0xd38],0x69b840; 0069b89e CALL 0x005f8b00=RemoveMember; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007b0fd0 | ExecuteCommandUnlockAllMusic | 0x0069ba00 | verified | slot 855: 00668ef4 MOV [EAX + 0xd5c],0x69ba00; 0069ba46 CALL 0x00733570=CStrConstructor; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00792d70 | ExecuteCommandGetFactionWorstAC | 0x0067d790 | verified | slot 192: 006671c8 MOV [EDX + 0x300],0x67d790; 0067d886 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079ed70 | ExecuteCommandGetTimeMillisecond | 0x00689720 | verified | slot 19: 006680ac MOV [EAX + 0x4c],0x689720; 0068973e CALL 0x0051b1c0=GetWorldTimeMillisecond; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078e490 | ExecuteCommandEventUserDefined | 0x00678eb0 | verified | slot 132: 00666ccd MOV [EDX + 0x210],0x678eb0; 00678f9a CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a1af0 | ExecuteCommandMath | 0x0068c4a0 | verified | slot 67..77(11): 00665fa5 MOV [ECX + 0x134],0x68c4a0; 0068c773 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078ebd0 | CSWVMC::ExecuteCommandFloatToInt | 0x006795f0 | verified | slot 231: 00666d7a MOV [EAX + 0x39c],0x6795f0; 00679603 CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a0760 | ExecuteCommandInsertString | 0x0068b110 | verified | slot 64: 00668293 MOV [EDX + 0x100],0x68b110; 0068b221 CALL 0x006fda90=StackPushString; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007afc50 | ExecuteCommandGetHealTarget | 0x0069a600 | verified | slot 814: 006673b8 MOV [ECX + 0xcb8],0x69a600; 0069a667 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078a840 | ExecuteCommandEffectImmunity | 0x00675260 | verified | slot 273: 00666a9d MOV [ECX + 0x444],0x675260; 006752ec CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007acc50 | ExecuteCommandGetGalaxyMapPlanetSelectable | 0x00697600 | verified | slot 741: 00667cc2 MOV [EAX + 0xb94],0x697600; 0069763d CALL 0x005fed00=GetPlanetSelectable; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078acf0 | ExecuteCommandEffectMissChance | 0x00675710 | verified | slot 477: 00666add MOV [EAX + 0x774],0x675710; 006757da CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00781d80 | ExecuteCommandAddMultiClass | 0x0066c7a0 | verified | slot 389: 006662e9 MOV [EDX + 0x614],0x66c7a0; 0066c93a CALL 0x0072fb00=GetClientOptions; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00790db0 | ExecuteCommandGetDistanceBetweenLocations2D | 0x0067b7d0 | verified | slot 334: 00667001 MOV [ECX + 0x538],0x67b7d0; 0067b8c2 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078cd30 | ExecuteCommandEffectForcePushed | 0x00677750 | verified | slot 392: 0066673d MOV [ECX + 0x620],0x677750; 006777dc CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00789930 | ExecuteCommandEffectDamageShield | 0x00674350 | verified | slot 487: 0066693d MOV [EDX + 0x79c],0x674350; 00674476 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007af710 | ExecuteCommandSetBonusForcePoints | 0x0069a0c0 | verified | slot 801: 00668e34 MOV [EAX + 0xc84],0x69a0c0; 0069a19b CALL 0x0073f750=GetInGameGui; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078d030 | ExecuteCommandEffectWhirlwind | 0x00677a50 | verified | slot 703: 0066675d MOV [EDX + 0xafc],0x677a50; 00677ad9 CALL 0x005e4e80=SetInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007acb70 | ExecuteCommandGetGalaxyMapPlanetAvailable | 0x00697520 | verified | slot 743: 00667cb2 MOV [ECX + 0xb9c],0x697520; 0069755d CALL 0x005fed60=GetPlanetAvailable; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007af840 | ExecuteCommandAddBonusForcePoints | 0x0069a1f0 | verified | slot 802: 00668e44 MOV [EDX + 0xc88],0x69a1f0; 0069a2c7 CALL 0x0073f750=GetInGameGui; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079e430 | ExecuteCommandGetStringLength | 0x00688de0 | verified | slot 59: 0066800f MOV [ECX + 0xec],0x688de0; 00688e0b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007921b0 | ExecuteCommandGetFactionAverageReputation | 0x0067cbd0 | verified | slot 186: 00667118 MOV [ECX + 0x2e8],0x67cbd0; 0067cc2d CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078ae60 | ExecuteCommandEffectModifyAttacks | 0x00675880 | verified | slot 485: 00666aed MOV [EDX + 0x794],0x675880; 00675943 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007af2f0 | ExecuteCommandGetScriptParameter | 0x00699ca0 | verified | slot 768: 00667daf MOV [EAX + 0xc00],0x699ca0; 00699cf2 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00797150 | ExecuteCommandGetLastAttackResult | 0x00681b80 | verified | slot 725: 006676f2 MOV [EAX + 0xb54],0x681b80; 00681bc4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007abee0 | ExecuteCommandGetMinOneHP | 0x00696890 | verified | slot 715: 00667a22 MOV [EAX + 0xb2c],0x696890; 006968cd CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078e7a0 | ExecuteCommandFindSubString | 0x006791c0 | verified | slot 66: 00666d4a MOV [EAX + 0x108],0x6791c0; 006791eb CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00786270 | ExecuteCommandDistanceConversions | 0x00670c90 | verified | slot 218..219(2): 00666d3a MOV [ECX + 0x368],0x670c90; 00670cf4 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00797010 | ExecuteCommandGetLastAttackMode | 0x00681a40 | verified | slot 318: 006676d2 MOV [EDX + 0x4f8],0x681a40; 00681a8b CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007b10d0 | ExecuteCommandDisableMap | 0x0069bb00 | verified | slot 856: 0066663d MOV [EDX + 0xd60],0x69bb00; 0069bb1a CALL 0x006fd9a0=StackPopInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a4e30 | ExecuteCommandRemoveEffect | 0x0068f7e0 | verified | slot 87: 00668643 MOV [EDX + 0x15c],0x68f7e0; 0068f819 CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007ac3d0 | ExecuteCommandGetIsDebilitated | 0x00696d80 | verified | slot 732: 00667458 MOV [EAX + 0xb70],0x696d80; 00696dc4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007f97c0 | ExecuteCommandAurPostString | 0x006f6200 | verified | slot 582: 006f5b8d MOV [ECX + 0x918],0x6f6200; 006f622b CALL 0x00733540=DefaultConstructor; fp ret/n_insn/disp/imm/str identical (size 283 vs 284); Mac =GOG name |
+| 0x00791790 | ExecuteCommandGetEffectDurationType | 0x0067c1b0 | verified | slot 89: 00667041 MOV [EAX + 0x164],0x67c1b0; 0067c1cc CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078b2e0 | ExecuteCommandEffectPoison | 0x00675d00 | verified | slot 250: 00666b2d MOV [ECX + 0x3e8],0x675d00; 00675da9 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a4c20 | CSWVMC::ExecuteCommandRandom | 0x0068f5d0 | verified | slot 0: 006685f7 MOV [ECX],0x68f5d0; 0068f625 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007aee50 | ExecuteCommandSetMusicVolume | 0x00699800 | verified | slot 765: 00668a8d MOV [EDX + 0xbf4],0x699800; 00699813 CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078f990 | ExecuteCommandGetAttemptedMovementTarget | 0x0067a3b0 | verified | slot 489: 00666e71 MOV [EDX + 0x7a4],0x67a3b0; 0067a3f9 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007acbe0 | ExecuteCommandSetGalaxyMapPlanetSelectable | 0x00697590 | verified | slot 740: 00668aea MOV [EDX + 0xb90],0x697590; 006975eb CALL 0x005fecd0=SetPlanetSelectable; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007ac6e0 | ExecuteCommandCancelCombat | 0x00697090 | verified | slot 54: 00666466 MOV [EDX + 0xd8],0x697090; 006970f4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078cac0 | ExecuteCommandEffectDroidStun | 0x006774e0 | verified | slot 391: 0066671d MOV [EAX + 0x61c],0x6774e0; 00677569 CALL 0x005e4e80=SetInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078e130 | ExecuteCommandEventConversation | 0x00678b50 | verified | slot 295: 00666cad MOV [ECX + 0x49c],0x678b50; 00678bd0 CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00790a80 | ExecuteCommandGetDistanceBetween2D | 0x0067b4a0 | verified | slot 319: 00666fe1 MOV [EAX + 0x4fc],0x67b4a0; 0067b59a CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00789030 | ExecuteCommandEffectDamageImmunityIncrease | 0x00673a50 | verified | slot 275: 006668fd MOV [EAX + 0x44c],0x673a50; 00673b88 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007b0d70 | ExecuteCommandGetIsPartyLeader | 0x0069b720 | verified | slot 844: 006675c8 MOV [ECX + 0xd30],0x69b720; 0069b78c CALL 0x0051c8b0=ClientToServerObjectId; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078e220 | ExecuteCommandEventSpellCastAt | 0x00678c40 | verified | slot 244: 00666cbd MOV [EAX + 0x3d0],0x678c40; 00678e0b CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00789200 | ExecuteCommandEffectDamageIncrease | 0x00673c20 | verified | slot 120: 0066690d MOV [EDX + 0x1e0],0x673c20; 00673d76 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+
+### AUTO meaning checks (5 sig + 3 c2)
+
+| gog | name | steam | verdict | evidence |
+|---|---|---|---|---|
+| 0x007fa370 | ExecuteCommandSWMG_IsSomething | 0x006f6db0 | verified | slot 599..603(5): 006f5c9d MOV [EDX + 0x95c],0x6f6db0; 006f6eda CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007afb20 | ExecuteCommandPlayMovieQueue | 0x0069a4d0 | verified | slot 807: 006684f3 MOV [EAX + 0xc9c],0x69a4d0; 0069a4e3 CALL 0x006fd9a0=StackPopInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007fbfd0 | ExecuteCommandSWMG_GetSwoopUpgrade | 0x006f8a10 | verified | slot 782: 006f619d MOV [EAX + 0xc38],0x6f8a10; 006f8a6a CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x00790810 | ExecuteCommandGetDamageDealtByType | 0x0067b230 | verified | slot 344: 00666fb1 MOV [EAX + 0x560],0x67b230; 0067b25c CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0077f260 | ExecuteCommandActionFollowObject | 0x00669c80 | verified | slot 167: 00666095 MOV [ECX + 0x29c],0x669c80; 00669dca CALL 0x0073f550=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a8a50 | ExecuteCommandSoundObjectSetPosition | 0x00693400 | verified | slot 416: 00668c97 MOV [EDX + 0x680],0x693400; 0069343c CALL 0x006fda20=StackPopVector; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007802f0 | ExecuteCommandActionStartConversation | 0x0066ad10 | verified | slot 204: 006661d9 MOV [ECX + 0x330],0x66ad10; 0066b18e CALL 0x007f24c0=ClearAllActions; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0079c250 | ExecuteCommandAdjustCreatureAttributes | 0x00686c80 | verified | slot 833: 00667eff MOV [EAX + 0xd04],0x686c80; 00686d93 CALL 0x006b67d0=SetSTRBase; fp size/ret/disp/imm identical; Mac =GOG name |
+
+### Extra 1: slot 156 pair
+
+| gog | name | steam | verdict | evidence |
+|---|---|---|---|---|
+| 0x0078c440 | CSWVMC::ExecuteCommandEffectTemporaryForcePoints | 0x00676e60 | label_suspect | slot 156 live: 00666bed MOV [ECX+0x270],0x676e60 (last store); 00676f8f CALL 0x005e5ea0=SetCreator; fp identical; Mac live slot-156=ExecuteCommandEffectTemporaryFP: names swapped |
+| 0x0078d6b0 | ExecuteCommandEffectTemporaryFP | 0x006780d0 | label_suspect | slot 156 dead: 006667bd MOV [EDX+0x270],0x6780d0 overwritten; no SetCreator; fp identical (282B, 7 callees); Mac dead=ExecuteCommandEffectTemporaryForcePoints: names swapped |
+
+### Extra 2: bare ExecuteCommand (VM dispatcher)
+
+| gog | name | steam | verdict | evidence |
+|---|---|---|---|---|
+| 0x0077e5b0 | CSWVMC::ExecuteCommand | 0x00668fd0 | verified | VM dispatcher: 00668fd9 CMP [EBP+0x8],0x36d; 00669005 MOV EAX,[EAX+EDX*4] from [this+0xc] (table InitCommands 0x665f6f) ; CALL EAX; 00669012 MOV EAX,0xfffff82e; RET 8; fp identical |
+
+### Extra 3: method audit, 10 random AUTO rows (seed 20261003; 0x007fbfd0 also in AUTO checks above)
+
+| gog | name | steam | verdict | evidence |
+|---|---|---|---|---|
+| 0x00780240 | ExecuteCommandActionResumeConversation | 0x0066ac60 | verified | AUTO audit: slot 206: 006661a9 MOV [ECX + 0x338],0x66ac60; 0066ac97 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a8870 | ExecuteCommandSoundObjectGetVolume | 0x00693220 | verified | AUTO audit: slot 691: 00668c57 MOV [EAX + 0xacc],0x693220; 0069327a CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007fc190 | ExecuteCommandSWMG_DestroyMiniGameObject | 0x006f8bd0 | verified | AUTO audit: slot 792: 006f61cd MOV [EAX + 0xc60],0x6f8bd0; 006f8be3 CALL 0x006fdaf0=StackPopObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0077f0b0 | CSWVMC::ExecuteCommandActionEquipMostDamagingRanged | 0x00669ad0 | verified | AUTO audit: slot 400: 00666055 MOV [EDX + 0x640],0x669ad0; 00669b17 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007991a0 | ExecuteCommandGetName | 0x00683bd0 | verified | AUTO audit: slot 253: 00667ad2 MOV [ECX + 0x3f4],0x683bd0; 00683cf1 CALL 0x006fda90=StackPushString; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x0078e8f0 | ExecuteCommandFloatingText | 0x00679310 | verified | AUTO audit: slot 525..526(2): 00666d5a MOV [EDX + 0x838],0x679310; 00679445 CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007f9c00 | ExecuteCommandSWMG_PlayAnimation | 0x006f6640 | verified | AUTO audit: slot 586: 006f5bcd MOV [EAX + 0x928],0x6f6640; 006f66b9 CALL 0x006fda70=StackPopString; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007a30e0 | ExecuteCommandPickUpItem | 0x0068da90 | verified | AUTO audit: slot 34: 0066616c MOV [EDX + 0x88],0x68da90; 0068dac9 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name |
+| 0x007976f0 | ExecuteCommandGetLastForcePowerUsed | 0x00682120 | verified | AUTO audit: slot 723: 00667782 MOV [EAX + 0xb4c],0x682120; 00682188 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name |
+
+## Extra 1: slot 156 decision
+
+- Stores, all three binaries store slot 156 twice; the later store wins:
+  - Steam: `006667bd MOV [EDX+0x270],0x6780d0` then `00666bed MOV [ECX+0x270],0x676e60` (live).
+  - GOG: `0077bd9d` -> 0x78d6b0, then `0077c1cd` -> 0x78c440 (live).
+  - Mac (disp 0x4e0): `0032566d` -> 0x333c92 `ExecuteCommandEffectTemporaryForcePoints`, then `00325c72` -> 0x337b80 `ExecuteCommandEffectTemporaryFP` (live).
+- Bodies, cross-matched by shape:
+  - live: GOG 0x78c440 = Steam 0x676e60 (418 B, 127 insn, 10 callees incl. GetGameObject + `00676f8f CALL 0x005e5ea0` CGameEffect::SetCreator, disp 0x8x5,0xa,0xa,0x30) ~ Mac live 0x337b80 `ExecuteCommandEffectTemporaryFP` (10 callees, disp 0x8x5,0xa,0xa,0x34).
+  - dead: GOG 0x78d6b0 = Steam 0x6780d0 (282 B, 84 insn, 7 callees, no SetCreator, disp 0x8) ~ Mac dead 0x333c92 `ExecuteCommandEffectTemporaryForcePoints` (7 callees, disp 0x8).
+- Verdict: **the two GOG names are swapped** relative to the real Mac symbols. GOG 0x78c440 should be `ExecuteCommandEffectTemporaryFP`, GOG 0x78d6b0 should be `ExecuteCommandEffectTemporaryForcePoints`. Both rows `label_suspect`; both Steam counterparts are right by body.
+- Ship: keep GOG-name parity at the body counterparts: `CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints` -> 0x00676e60 (the live slot-156 handler) and `Global::ExecuteCommandEffectTemporaryFP` -> 0x006780d0 (dead: its only reference is the overwritten store; cg.py shows 0 callers). Record the swap in the GOG label ledger. If the lead prefers not to ship dead code under a name that Mac uses for the live handler, omitting 0x006780d0 is also safe; never put either name on the other address.
+
+## Extra 2: CSWVirtualMachineCommands::ExecuteCommand
+
+GOG 0x77E5B0 and Steam 0x668FD0 are identical (77 B, 28 insn, RET 8, disp 0xc,0xc, imm 0x8,0x8,0x36d,0xfffff82e). Steam body: `00668fd9 CMP dword ptr [EBP+0x8],0x36d` (877 = table size) / `00668feb CMP dword ptr [ECX+EDX*4],0` / `00669005 MOV EAX,dword ptr [EAX+EDX*4]` / `00669008 CALL EAX` / `00669012 MOV EAX,0xfffff82e`, with the array loaded from `[this+0xc]`, which is where InitCommands stores the 0xdb4-byte table (`00665f59 PUSH 0xdb4`, `00665f6f MOV [EAX+0xc],ECX`). Mac `CSWVirtualMachineCommands::ExecuteCommand` 0x352a98 has the same shape (0x36c, 0xfffff82e). **verified**.
+
+## Extra 3: method audit (AUTO rows)
+
+| gog | steam | name | GOG slots | (a) Steam store at those slots | (b) GOG name == Mac symbol |
+|---|---|---|---|---|---|
+| 0x00780240 | 0x0066ac60 | ActionResumeConversation | 206 | PASS (006661a9 disp 0x338) | PASS |
+| 0x007a8870 | 0x00693220 | SoundObjectGetVolume | 691 | PASS (00668c57 disp 0xacc) | PASS |
+| 0x007fc190 | 0x006f8bd0 | SWMG_DestroyMiniGameObject | 792 | PASS (006f61cd disp 0xc60) | PASS |
+| 0x0077f0b0 | 0x00669ad0 | ActionEquipMostDamagingRanged | 400 | PASS (00666055 disp 0x640) | PASS |
+| 0x007991a0 | 0x00683bd0 | GetName | 253 | PASS (00667ad2 disp 0x3f4) | PASS |
+| 0x007fbfd0 | 0x006f8a10 | SWMG_GetSwoopUpgrade | 782 | PASS (006f619d disp 0xc38) | PASS |
+| 0x0078e8f0 | 0x00679310 | FloatingText | 525,526 | PASS (00666d5a 0x838, 00666d6a 0x834) | PASS |
+| 0x007f9c00 | 0x006f6640 | SWMG_PlayAnimation | 586 | PASS (006f5bcd disp 0x928) | PASS |
+| 0x007a30e0 | 0x0068da90 | PickUpItem | 34 | PASS (0066616c disp 0x88) | PASS |
+| 0x007976f0 | 0x00682120 | GetLastForcePowerUsed | 723 | PASS (00667782 disp 0xb4c) | PASS |
+
+10/10 pass; all ten also have identical GOG/Steam fp (size, retn, n_insn, disp, imm).
+
+## AUTO meaning checks: pass/fail
+
+| gog | name | steam | result |
+|---|---|---|---|
+| 0x007fa370 | SWMG_IsSomething | 0x006f6db0 | PASS (slots 599-603, one handler for the SWMG_Is* family; Mac symbol identical) |
+| 0x007afb20 | PlayMovieQueue | 0x0069a4d0 | PASS (slot 807) |
+| 0x007fbfd0 | SWMG_GetSwoopUpgrade | 0x006f8a10 | PASS (slot 782) |
+| 0x00790810 | GetDamageDealtByType | 0x0067b230 | PASS (slot 344) |
+| 0x0077f260 | ActionFollowObject | 0x00669c80 | PASS (slot 167) |
+| 0x007a8a50 | SoundObjectSetPosition | 0x00693400 | PASS (slot 416, StackPopVector) |
+| 0x007802f0 | ActionStartConversation | 0x0066ad10 | PASS (slot 204, 2343 B identical) |
+| 0x0079c250 | AdjustCreatureAttributes | 0x00686c80 | PASS (slot 833, CALL SetSTRBase) |
+
+## Findings
+
+- Table decode wrong at any slot: **0** (877/877 on my independent re-decode and on a direct Steam asm parse). The method stands.
+- sample_errors: 0 (80 reviewer `match` rows in this part; all equal the table counterpart and the bodies agree).
+- Outside this part (for the part-A gate): the reviewer correction `ExecuteCommandGetCreatureTalent 0x00790420 -> 0x0067ac20` collides with GetCommandable (0x00790200 -> 0x0067ac20, slot 163, verified here). The table puts GetCreatureTalent (slots 307,308) at **0x0067ae40**, so that reviewer correction is wrong.
+- GOG label suspects: the slot-156 pair (swapped names, see Extra 1). No other label issue in this part.

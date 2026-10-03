@@ -41,6 +41,11 @@ class DecodeTests(unittest.TestCase):
         self.assertEqual(sets[0x500040], frozenset({1, 2}))
         self.assertEqual(cmdtable.fmt_slots(sets[0x500040]), "1,2")
 
+    def test_mac_stride_8(self):
+        # gcc pointer-to-member slots are 8 bytes: 0x0 -> 0, 0x8 -> 1; 0x4 / 0xc are not slot starts
+        table, _ = cmdtable.decode(self.path, [0x700000, 0x710000], slots=6, stride=8)
+        self.assertEqual(table, {0: 0x500000, 1: 0x500040, 2: 0x500140})
+
     def test_missing_init_function_is_an_error(self):
         with self.assertRaises(SystemExit):
             cmdtable.decode(self.path, [0x700000, 0x7FFFFF], slots=6)

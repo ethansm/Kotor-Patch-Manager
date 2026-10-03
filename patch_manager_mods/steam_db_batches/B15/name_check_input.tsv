@@ -1,0 +1,153 @@
+gog	gog_name	gate_class	steam_counterpart	match	dispatched_nwscript_functions
+0x0077f170	Global::ExecuteCommandActionExchangeItem	AUTO	0x00669b90	exact	135 ActionGiveItem; 136 ActionTakeItem
+0x0077f260	Global::ExecuteCommandActionFollowObject	AUTO	0x00669c80	exact	167 ActionForceFollowObject
+0x0077f810	Global::ExecuteCommandActionJumpToPoint	AUTO	0x0066a230	exact	214 ActionJumpToLocation; 313 JumpToLocation
+0x0077fac0	Global::ExecuteCommandActionLockActions	AUTO	0x0066a4e0	exact	483 ActionUnlockObject; 484 ActionLockObject
+0x007813a0	Global::ExecuteCommandActionUseTalent	AUTO	0x0066bdc0	exact	309 ActionUseTalentOnObject; 310 ActionUseTalentAtLocation
+0x00782890	Global::ExecuteCommandAmbientSound	AUTO	0x0066d2b0	exact	433 AmbientSoundPlay; 434 AmbientSoundStop; 435 AmbientSoundChangeDay; 436 AmbientSoundChangeNight; 567 AmbientSoundSetDayVolume; 568 AmbientSoundSetNightVolume
+0x00782ab0	Global::ExecuteCommandApplyEffectAtPoint	AUTO	0x0066d4d0	exact	216 ApplyEffectAtLocation
+0x00782d60	Global::ExecuteCommandApplyEffectOnObject	AUTO	0x0066d780	exact	220 ApplyEffectToObject
+0x007830d0	CSWVirtualMachineCommands::ExecuteCommandAttack	AUTO	0x0066daf0	exact	37 ActionAttack
+0x00783dc0	Global::ExecuteCommandCastSpell	AUTO	0x0066e7e0	exact	48 ActionCastSpellAtObject; 234 ActionCastSpellAtLocation; 501 ActionCastFakeSpellAtObject; 502 ActionCastFakeSpellAtLocation
+0x00784990	Global::ExecuteCommandCloseDoor	AUTO	0x0066f3b0	exact	44 ActionCloseDoor
+0x00786270	Global::ExecuteCommandDistanceConversions	REVIEW	0x00670c90	exact	218 FeetToMeters; 219 YardsToMeters
+0x007866b0	Global::ExecuteCommandDoTouchAttack	AUTO	0x006710d0	exact	146 TouchAttackMelee; 147 TouchAttackRanged
+0x00787400	Global::ExecuteCommandEffectAreaEffect	AUTO	0x00671e20	exact	171 EffectAreaOfEffect
+0x00787f10	Global::ExecuteCommandEffectComplex	AUTO	0x00672930	exact	51 EffectAssuredHit; 130 EffectEntangle; 133 EffectDeath; 134 EffectKnockdown; 148 EffectParalyze; 154 EffectSleep; 157 EffectConfused; 158 EffectFrightened; 161 EffectStunned; 164 EffectRegenerate; 252 EffectAssuredDeflection; 270 EffectHaste; 402 EffectForceResisted; 420 EffectForceFizzle; 460 EffectDispelMagicAll; 463 EffectDisguise; 467 EffectTimeStop; 473 EffectDispelMagicBest; 754 EffectCutSceneHorrified; 755 EffectCutSceneParalyze; 756 EffectCutSceneStunned; 809 EffectDroidConfused; 848 EffectMindTrick; 852 EffectDroidScramble
+0x0078c5f0	Global::ExecuteCommandEffectTemporaryHP	REVIEW	0x00677010	exact	314 EffectTemporaryHitpoints
+0x0078d030	Global::ExecuteCommandEffectWhirlwind	REVIEW	0x00677a50	exact	703 EffectWhirlWind
+0x0078d6b0	Global::ExecuteCommandEffectTemporaryFP	REVIEW	0x006780d0	overwritten_slot_156	
+0x0078dce0	Global::ExecuteCommandEquipItem	AUTO	0x00678700	exact	32 ActionEquipItem
+0x0078e8f0	Global::ExecuteCommandFloatingText	AUTO	0x00679310	exact	525 FloatingTextStrRefOnCreature; 526 FloatingTextStringOnCreature
+0x0078f3b0	Global::ExecuteCommandGetAlignment	AUTO	0x00679dd0	exact	125 GetGoodEvilValue; 127 GetAlignmentGoodEvil
+0x0078f500	Global::ExecuteCommandGetAOEObjectCreator	AUTO	0x00679f20	exact	264 GetAreaOfEffectCreator
+0x0078fb00	Global::ExecuteCommandGetBattleTrack	AUTO	0x0067a520	exact	569 MusicBackgroundGetBattleTrack
+0x0078ff50	Global::ExecuteCommandGetClassInformation	AUTO	0x0067a970	exact	341 GetClassByPosition; 342 GetLevelByPosition; 343 GetLevelByClass
+0x00790420	Global::ExecuteCommandGetCreatureTalent	REVIEW	0x0067ae40	exact	307 GetCreatureTalentRandom; 308 GetCreatureTalentBest
+0x00790900	Global::ExecuteCommandGetDayTrack	AUTO	0x0067b320	exact	558 MusicBackgroundGetDayTrack
+0x00791350	Global::ExecuteCommandGetEffect	AUTO	0x0067bd70	exact	85 GetFirstEffect; 86 GetNextEffect
+0x00791a10	Global::ExecuteCommandGetEmotions	REVIEW	0x0067c430	exact	235 GetIsEnemy; 236 GetIsFriend; 237 GetIsNeutral
+0x00791bf0	Global::ExecuteCommandGetEncounterData	AUTO	0x0067c610	exact	276 GetEncounterActive; 278 GetEncounterSpawnsMax; 280 GetEncounterSpawnsCurrent; 297 GetEncounterDifficulty
+0x007927d0	Global::ExecuteCommandGetFactionMember	AUTO	0x0067d1f0	exact	380 GetFirstFactionMember; 381 GetNextFactionMember
+0x007935e0	Global::ExecuteCommandGetChemical	REVIEW	0x0067e000	exact	774 GetChemicals
+0x00793df0	Global::ExecuteCommandGetHitpoints	AUTO	0x0067e810	exact	49 GetCurrentHitPoints; 50 GetMaxHitPoints
+0x00794130	Global::ExecuteCommandGetInPersistentObject	AUTO	0x0067eb50	exact	262 GetFirstInPersistentObject; 263 GetNextInPersistentObject
+0x00795810	Global::ExecuteCommandGetIsRacialTypePlayable	AUTO	0x00680230	exact	312 GetIsPlayableRacialType
+0x007959e0	Global::ExecuteCommandGetIsMined	AUTO	0x00680400	exact	551 GetIsTrapped
+0x00795e10	Global::ExecuteCommandGetItemInInventory	AUTO	0x00680830	exact	339 GetFirstItemInInventory; 340 GetNextItemInInventory
+0x00797ce0	Global::ExecuteCommandGetLastPerception	AUTO	0x00682710	exact	257 GetLastPerceptionHeard; 258 GetLastPerceptionInaudible; 259 GetLastPerceptionSeen; 261 GetLastPerceptionVanished
+0x00797f70	Global::ExecuteCommandGetLastMineDetected	AUTO	0x006829a0	exact	486 GetLastTrapDetected
+0x00798200	Global::ExecuteCommandGetLeavingObject	AUTO	0x00682c30	exact	26 GetExitingObject
+0x007983e0	Global::ExecuteCommandGetLocalValue	AUTO	0x00682e10	exact	679 GetLocalBoolean; 681 GetLocalNumber
+0x00798770	Global::ExecuteCommandGetLockInfo	AUTO	0x006831a0	exact	537 GetLockKeyRequired; 538 GetLockKeyTag; 539 GetLockLockable; 540 GetLockUnlockDC; 541 GetLockLockDC
+0x00798b40	Global::ExecuteCommandGetMatchedString	AUTO	0x00683570	exact	178 GetMatchedSubstring
+0x00798c90	Global::ExecuteCommandGetMatchedStringsCount	AUTO	0x006836c0	exact	179 GetMatchedSubstringsCount
+0x00798d10	Global::ExecuteCommandGetMatchedStringsNum	REVIEW	0x00683740	exact	195 GetListenPatternNumber
+0x00798ea0	Global::ExecuteCommandGetModuleItemStuff	AUTO	0x006838d0	exact	282 GetModuleItemAcquired; 283 GetModuleItemAcquiredFrom; 292 GetModuleItemLost; 293 GetModuleItemLostBy
+0x0079a710	Global::ExecuteCommandGetNearestMine	AUTO	0x00685140	exact	488 GetNearestTrapToObject
+0x0079a9c0	Global::ExecuteCommandGetNightTrack	AUTO	0x006853f0	exact	559 MusicBackgroundGetNightTrack
+0x0079ac00	Global::ExecuteCommandGetObjectInArea	AUTO	0x00685630	exact	93 GetFirstObjectInArea; 94 GetNextObjectInArea
+0x0079af30	Global::ExecuteCommandGetObjectInShape	AUTO	0x00685960	exact	128 GetFirstObjectInShape; 129 GetNextObjectInShape
+0x0079bee0	Global::ExecuteCommandGetObjectValid	AUTO	0x00686910	exact	42 GetIsObjectValid
+0x0079bf60	Global::ExecuteCommandGetObjectVisibility	AUTO	0x00686990	exact	289 GetObjectSeen; 290 GetObjectHeard
+0x0079c5c0	Global::ExecuteCommandModifyBaseSavingThrow	AUTO	0x00686ff0	exact	828 ModifyReflexSavingThrowBase; 829 ModifyFortitudeSavingThrowBase; 830 ModifyWillSavingThrowBase
+0x0079c800	Global::ExecuteCommandInfluence	AUTO	0x00687230	exact	795 GetInfluence; 796 SetInfluence; 797 ModifyInfluence
+0x0079cbb0	Global::ExecuteCommandGetPC	AUTO	0x006875e0	exact	548 GetFirstPC; 549 GetNextPC
+0x0079d510	Global::ExecuteCommandGetRestrictMode	AUTO	0x00687ec0	exact	83 GetPlayerRestrictMode
+0x0079d740	Global::ExecuteCommandGetSpellCast	AUTO	0x006880f0	exact	245 GetLastSpellCaster; 246 GetLastSpell; 423 GetLastSpellHarmful
+0x0079d9b0	Global::ExecuteCommandGetSpellCasterItem	AUTO	0x00688360	exact	438 GetSpellCastItem
+0x0079db00	Global::ExecuteCommandGrantAbility	AUTO	0x006884b0	exact	786 GrantFeat; 787 GrantSpell
+0x0079df00	Global::ExecuteCommandGetSpellTargetLoc	AUTO	0x006888b0	exact	222 GetSpellTargetLocation
+0x0079e110	Global::ExecuteCommandGetStat	AUTO	0x00688ac0	exact	358 GetGender
+0x0079e1b0	Global::ExecuteCommandGetStrByStrRef	REVIEW	0x00688b60	exact	239 GetStringByStrRef
+0x0079ef30	Global::ExecuteCommandGetMineInfo	AUTO	0x006898e0	exact	527 GetTrapDisarmable; 528 GetTrapDetectable; 529 GetTrapDetectedBy; 530 GetTrapFlagged; 531 GetTrapBaseType; 532 GetTrapOneShot; 533 GetTrapCreator; 534 GetTrapKeyTag; 535 GetTrapDisarmDC; 536 GetTrapDetectDC; 550 SetTrapDetectedBy; 555 SetTrapDisabled
+0x0079ffa0	Global::ExecuteCommandGetWaypointByTrigger	AUTO	0x0068a950	exact	198 GetTransitionTarget
+0x007a0b00	Global::ExecuteCommandIsAIState	REVIEW	0x0068b4b0	exact	140 GetIsDead
+0x007a0c40	Global::ExecuteCommandIsAvailableNPC	AUTO	0x0068b5f0	exact	696 IsAvailableCreature; 709 GetNPCSelectability
+0x007a0d10	Global::ExecuteCommandIsEffectValid	AUTO	0x0068b6c0	exact	88 GetIsEffectValid
+0x007a10f0	Global::ExecuteCommandIsListening	AUTO	0x0068baa0	exact	174 GetIsListening
+0x007a12b0	Global::ExecuteCommandIsPC	AUTO	0x0068bc60	exact	217 GetIsPC
+0x007a15b0	Global::ExecuteCommandItemActivated	AUTO	0x0068bf60	exact	439 GetItemActivated; 440 GetItemActivator; 441 GetItemActivatedTargetLocation; 442 GetItemActivatedTarget
+0x007a19d0	Global::ExecuteCommandLocationAccess	AUTO	0x0068c380	exact	223 GetPositionFromLocation; 225 GetFacingFromLocation
+0x007a1af0	Global::ExecuteCommandMath	REVIEW	0x0068c4a0	exact	67 fabs; 68 cos; 69 sin; 70 tan; 71 acos; 72 asin; 73 atan; 74 log; 75 pow; 76 sqrt; 77 abs
+0x007a1e10	Global::ExecuteCommandModuleAccess	AUTO	0x0068c7c0	exact	52 GetLastItemEquipped; 291 GetLastPlayerDied; 410 GetLastPlayerDying; 411 GetStartingLocation; 419 GetLastRespawnButtonPresser
+0x007a2000	Global::ExecuteCommandMoveAwayFromObject	AUTO	0x0068c9b0	exact	23 ActionMoveAwayFromObject
+0x007a21a0	Global::ExecuteCommandMoveToObject	AUTO	0x0068cb50	exact	22 ActionMoveToObject; 383 ActionForceMoveToObject
+0x007a2530	Global::ExecuteCommandMoveToPoint	REVIEW	0x0068cee0	exact	21 ActionMoveToLocation; 382 ActionForceMoveToLocation
+0x007a27b0	Global::ExecuteCommandMusicBackground	AUTO	0x0068d160	exact	425 MusicBackgroundPlay; 426 MusicBackgroundStop; 427 MusicBackgroundSetDelay; 428 MusicBackgroundChangeDay; 429 MusicBackgroundChangeNight
+0x007a2950	Global::ExecuteCommandMusicBattle	AUTO	0x0068d300	exact	430 MusicBattlePlay; 431 MusicBattleStop; 432 MusicBattleChange
+0x007a2a60	Global::ExecuteCommandModifyGlobal	AUTO	0x0068d410	exact	799 IncrementGlobalNumber; 800 DecrementGlobalNumber
+0x007a2d30	Global::ExecuteCommandOpenDoor	AUTO	0x0068d6e0	exact	43 ActionOpenDoor
+0x007a30e0	Global::ExecuteCommandPickUpItem	AUTO	0x0068da90	exact	34 ActionPickUpItem
+0x007a4770	Global::ExecuteCommandPrintLogEntry	REVIEW	0x0068f120	exact	560 WriteTimestampedLogEntry
+0x007a4bb0	Global::ExecuteCommandPutDownItem	REVIEW	0x0068f560	exact	35 ActionPutDownItem
+0x007a5740	Global::ExecuteCommandResistSpell	AUTO	0x006900f0	exact	169 ResistForce
+0x007a5df0	Global::ExecuteCommandRollDice	REVIEW	0x006907a0	exact	95 d2; 96 d3; 97 d4; 98 d6; 99 d8; 100 d10; 101 d12; 102 d20; 103 d100
+0x007a5f70	Global::ExecuteCommandSavingThrow	AUTO	0x00690920	exact	108 FortitudeSave; 109 ReflexSave; 110 WillSave
+0x007a63c0	Global::ExecuteCommandSetCameraLocation	AUTO	0x00690d70	exact	45 SetCameraFacing
+0x007a68d0	Global::ExecuteCommandSetEncounterData	AUTO	0x00691280	exact	277 SetEncounterActive; 279 SetEncounterSpawnsMax; 281 SetEncounterSpawnsCurrent; 296 SetEncounterDifficulty
+0x007a7780	Global::ExecuteCommandSetListenString	AUTO	0x00692130	exact	176 SetListenPattern
+0x007a7890	Global::ExecuteCommandSetLocalValue	AUTO	0x00692240	exact	680 SetLocalBoolean; 682 SetLocalNumber
+0x007a7db0	Global::ExecuteCommandSetRestrictMode	REVIEW	0x00692760	exact	58 SetPlayerRestrictMode
+0x007a7ee0	Global::ExecuteCommandSetSpeedBlurEffect	REVIEW	0x00692890	exact	563 SWMG_SetSpeedBlurEffect
+0x007a7f60	Global::ExecuteCommandSetSubType	AUTO	0x00692910	exact	112 MagicalEffect; 113 SupernaturalEffect; 114 ExtraordinaryEffect
+0x007a8330	Global::ExecuteCommandShowPartySelection	AUTO	0x00692ce0	exact	712 ShowPartySelectionGUI
+0x007a87f0	Global::ExecuteCommandSoundObjectGetPitchVariation	AUTO	0x006931a0	exact	689 SoundObjectGetPitchVariance
+0x007a89d0	Global::ExecuteCommandSoundObjectSetPitchVariation	REVIEW	0x00693380	exact	690 SoundObjectSetPitchVariance
+0x007a9110	Global::ExecuteCommandSpeakStrRef	AUTO	0x00693ac0	exact	240 ActionSpeakStringByStrRef
+0x007a9820	Global::ExecuteCommandStringConversions	AUTO	0x006941d0	exact	232 StringToInt; 233 StringToFloat
+0x007a9a50	Global::ExecuteCommandSwitchPlayerCreature	AUTO	0x00694400	exact	11 SwitchPlayerCharacter
+0x007aa460	Global::ExecuteCommandTalent	AUTO	0x00694e10	exact	301 TalentSpell; 302 TalentFeat; 303 TalentSkill
+0x007aa620	Global::ExecuteCommandTalentAccess	AUTO	0x00694fd0	exact	362 GetTypeFromTalent; 363 GetIdFromTalent; 735 GetCategoryFromTalent
+0x007aa790	Global::ExecuteCommandTimeConversions	AUTO	0x00695140	exact	121 RoundsToSeconds; 122 HoursToSeconds; 123 TurnsToSeconds
+0x007aa860	Global::ExecuteCommandTestString	REVIEW	0x00695210	exact	177 TestStringAgainstPattern
+0x007aa9c0	Global::ExecuteCommandUnequipItem	AUTO	0x00695370	exact	33 ActionUnequipItem
+0x007aab50	Global::ExecuteCommandVectorConversions	AUTO	0x00695500	exact	144 AngleToVector; 145 VectorToAngle
+0x007aae00	Global::ExecuteCommandVersusEffect	AUTO	0x006957b0	exact	355 VersusAlignmentEffect; 356 VersusRacialTypeEffect; 357 VersusTrapEffect
+0x007ab560	Global::ExecuteCommandWait	AUTO	0x00695f10	exact	202 ActionWait
+0x007ac030	Global::ExecuteCommandSetFadeIn	AUTO	0x006969e0	exact	719 SetGlobalFadeIn
+0x007ac150	Global::ExecuteCommandSetFadeOut	AUTO	0x00696b00	exact	720 SetGlobalFadeOut
+0x007ac240	Global::ExecuteCommandGetAttacker	REVIEW	0x00696bf0	exact	727 GetFirstAttacker; 728 GetNextAttacker
+0x007ac460	Global::ExecuteCommandChangeByFaction	AUTO	0x00696e10	exact	736 SurrenderByFaction; 737 ChangeFactionByFaction
+0x007acab0	Global::ExecuteCommandShowGalaxyMapGui	REVIEW	0x00697460	exact	739 ShowGalaxyMap
+0x007acb00	Global::ExecuteCommandSetGalaxyMapPlanetAvailable	REVIEW	0x006974b0	exact	742 SetPlanetAvailable
+0x007acb70	Global::ExecuteCommandGetGalaxyMapPlanetAvailable	REVIEW	0x00697520	exact	743 GetPlanetAvailable
+0x007acbe0	Global::ExecuteCommandSetGalaxyMapPlanetSelectable	REVIEW	0x00697590	exact	740 SetPlanetSelectable
+0x007acc50	Global::ExecuteCommandGetGalaxyMapPlanetSelectable	REVIEW	0x00697600	exact	741 GetPlanetSelectable
+0x007accc0	Global::ExecuteCommandGetGalaxyMapSelectedPlanet	AUTO	0x00697670	exact	744 GetSelectedPlanet
+0x007ae110	Global::ExecuteCommandGetDifficultyMultiplier	AUTO	0x00698ac0	exact	523 GetDifficultyModifier
+0x007af280	Global::ExecuteCommandSetAvailableNPCID	AUTO	0x00699c30	exact	767 SetAvailableNPCId
+0x007afb70	Global::ExecuteCommandYavinHackCloseDoor	AUTO	0x0069a520	exact	808 YavinHackDoorClose
+0x007b0fd0	Global::ExecuteCommandUnlockAllMusic	REVIEW	0x0069ba00	exact	855 UnlockAllSongs
+0x007b1320	Global::ExecuteCommandForceAlwaysUpdate	AUTO	0x0069bd50	exact	862 SetForceAlwaysUpdate
+0x007b17d0	Global::ExecuteCommandGetCombatActionPending	AUTO	0x0069c200	exact	872 GetCombatActionsPending
+0x007f9e00	Global::ExecuteCommandSWMG_GetLastBulletInfo	AUTO	0x006f6840	exact	587 SWMG_GetLastBulletHitDamage; 588 SWMG_GetLastBulletHitTarget; 595 SWMG_GetLastBulletFiredDamage; 596 SWMG_GetLastBulletFiredTarget
+0x007f9f30	Global::ExecuteCommandSWMG_GetLastBulletShooter	AUTO	0x006f6970	exact	589 SWMG_GetLastBulletHitShooter
+0x007fa060	Global::ExecuteCommandSWMG_DefaultImplementations	AUTO	0x006f6aa0	exact	591 SWMG_OnBulletHit; 592 SWMG_OnObstacleHit; 598 SWMG_OnDeath; 605 SWMG_OnDamage
+0x007fa180	Global::ExecuteCommandSWMG_GetLastObjectHit	AUTO	0x006f6bc0	exact	593 SWMG_GetLastFollowerHit; 594 SWMG_GetLastObstacleHit
+0x007fa370	Global::ExecuteCommandSWMG_IsSomething	AUTO	0x006f6db0	exact	599 SWMG_IsFollower; 600 SWMG_IsPlayer; 601 SWMG_IsEnemy; 602 SWMG_IsTrigger; 603 SWMG_IsObstacle
+0x007fa650	Global::ExecuteCommandSWMG_GetCameraClipping	AUTO	0x006f7090	exact	608 SWMG_GetCameraNearClip; 609 SWMG_GetCameraFarClip
+0x007fa6e0	Global::ExecuteCommandSWMG_SetCameraClipping	AUTO	0x006f7120	exact	610 SWMG_SetCameraClip
+0x007fa7d0	Global::ExecuteCommandSWMG_GetMiniGameCounts	AUTO	0x006f7210	exact	612 SWMG_GetEnemyCount; 614 SWMG_GetObstacleCount
+0x007fa860	Global::ExecuteCommandSWMG_GetMiniGameObjects	AUTO	0x006f72a0	exact	613 SWMG_GetEnemy; 615 SWMG_GetObstacle
+0x007fa920	Global::ExecuteCommandSWMG_GetFollowerIntInfo	AUTO	0x006f7360	exact	616 SWMG_GetHitPoints; 617 SWMG_GetMaxHitPoints; 621 SWMG_GetNumLoops; 624 SWMG_GetGunBankCount; 665 SWMG_GetIsInvulnerable
+0x007faaf0	Global::ExecuteCommandSWMG_GetFollowerFloatInfo	AUTO	0x006f7530	exact	619 SWMG_GetSphereRadius; 642 SWMG_GetPlayerInvincibility
+0x007faba0	Global::ExecuteCommandSWMG_GetFollowerPosition	AUTO	0x006f75e0	exact	623 SWMG_GetPosition
+0x007facb0	CSWVirtualMachineCommands::ExecuteCommandSWMG_SetFollowerIntInfo	AUTO	0x006f76f0	exact	618 SWMG_SetMaxHitPoints; 622 SWMG_SetNumLoops
+0x007fad60	Global::ExecuteCommandSWMG_SetFollowerFloatInfo	AUTO	0x006f77a0	exact	620 SWMG_SetSphereRadius; 648 SWMG_SetPlayerInvincibility
+0x007fae10	Global::ExecuteCommandSWMG_GetGunBankStringInfo	AUTO	0x006f7850	exact	625 SWMG_GetGunBankBulletModel; 626 SWMG_GetGunBankGunModel
+0x007faf80	Global::ExecuteCommandSWMG_GetGunBankIntInfo	AUTO	0x006f79c0	exact	627 SWMG_GetGunBankDamage; 631 SWMG_GetGunBankTarget; 640 SWMG_IsGunBankTargetting
+0x007fb080	Global::ExecuteCommandSWMG_GetGunBankFloatInfo	AUTO	0x006f7ac0	exact	628 SWMG_GetGunBankTimeBetweenShots; 629 SWMG_GetGunBankLifespan; 630 SWMG_GetGunBankSpeed
+0x007fb170	Global::ExecuteCommandSWMG_GetTargettingGunBankFloatInfo	AUTO	0x006f7bb0	exact	657 SWMG_GetGunBankHorizontalSpread; 658 SWMG_GetGunBankVerticalSpread; 659 SWMG_GetGunBankSensingRadius; 660 SWMG_GetGunBankInaccuracy
+0x007fb290	Global::ExecuteCommandSWMG_SetGunBankStringInfo	AUTO	0x006f7cd0	exact	632 SWMG_SetGunBankBulletModel; 633 SWMG_SetGunBankGunModel
+0x007fb420	Global::ExecuteCommandSWMG_SetGunBankIntInfo	AUTO	0x006f7e60	exact	634 SWMG_SetGunBankDamage; 638 SWMG_SetGunBankTarget
+0x007fb500	Global::ExecuteCommandSWMG_SetGunBankFloatInfo	AUTO	0x006f7f40	exact	635 SWMG_SetGunBankTimeBetweenShots; 636 SWMG_SetGunBankLifespan; 637 SWMG_SetGunBankSpeed
+0x007fb600	Global::ExecuteCommandSWMG_SetTargettingGunBankFloatInfo	AUTO	0x006f8040	exact	661 SWMG_SetGunBankHorizontalSpread; 662 SWMG_SetGunBankVerticalSpread; 663 SWMG_SetGunBankSensingRadius; 664 SWMG_SetGunBankInaccuracy
+0x007fb810	Global::ExecuteCommandSWMG_GetPlayerFloatInfo	AUTO	0x006f8250	exact	643 SWMG_GetPlayerSpeed; 644 SWMG_GetPlayerMinSpeed; 645 SWMG_GetPlayerAccelerationPerSecond; 667 SWMG_GetPlayerMaxSpeed
+0x007fb900	Global::ExecuteCommandSWMG_GetPlayerVectorInfo	AUTO	0x006f8340	exact	641 SWMG_GetPlayerOffset; 646 SWMG_GetPlayerTunnelPos; 653 SWMG_GetPlayerTunnelNeg; 655 SWMG_GetPlayerOrigin; 717 SWMG_GetPlayerTunnelInfinite
+0x007fbaa0	Global::ExecuteCommandSWMG_SetPlayerFloatInfo	AUTO	0x006f84e0	exact	649 SWMG_SetPlayerSpeed; 650 SWMG_SetPlayerMinSpeed; 651 SWMG_SetPlayerAccelerationPerSecond; 668 SWMG_SetPlayerMaxSpeed
+0x007fbb90	Global::ExecuteCommandSWMG_SetPlayerVectorInfo	AUTO	0x006f85d0	exact	647 SWMG_SetPlayerOffset; 652 SWMG_SetPlayerTunnelPos; 654 SWMG_SetPlayerTunnelNeg; 656 SWMG_SetPlayerOrigin; 718 SWMG_SetPlayerTunnelInfinite
+0x007fbd00	Global::ExecuteCommandSWMG_GetSoundProperty	AUTO	0x006f8740	exact	683 SWMG_GetSoundFrequency; 685 SWMG_GetSoundFrequencyIsRandom; 687 SWMG_GetSoundVolume
+0x007fbdf0	Global::ExecuteCommandSWMG_SetSoundProperty	AUTO	0x006f8830	exact	684 SWMG_SetSoundFrequency; 686 SWMG_SetSoundFrequencyIsRandom; 688 SWMG_SetSoundVolume
+0x007fbee0	Global::ExecuteCommandSWMG_SetLateralAccelPerSec	AUTO	0x006f8920	exact	520 SWMG_SetLateralAccelerationPerSecond
+0x007fbf80	Global::ExecuteCommandSWMG_GetLateralAccelPerSec	AUTO	0x006f89c0	exact	521 SWMG_GetLateralAccelerationPerSecond

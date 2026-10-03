@@ -11,10 +11,13 @@ Two separate facts per GOG `ExecuteCommand*` row (G = its GOG address):
 - counterpart: the Steam handler whose slot set equals G's slot set (engine data, independent of any label);
 - name: for `ExecuteCommand<X>` with <X> in nwscript.nss, whether slot(<X>) is in G's slot set (`name_slot` =
   yes / no / n/a). `no` = the GOG label contradicts the dispatch table (a label suspect for the gate).
+- Mac: the real symbol names (Mac x86 build) of the Mac handlers of G's slots (`mac_names`), and `name_mac` = yes when
+  G's GOG name (up to a `_N` suffix) is one of them, else no.
 
 Writes (never a database):
 - B<n>/cmdtable.tsv          `index nwscript gog_handler steam_handler`
-- B<n>/cmdtable_rows.tsv     per GOG row: `gog name gog_slots steam_counterpart match name_slot name_steam`
+- B<n>/cmdtable_rows.tsv     per GOG row: `gog name gog_slots steam_counterpart match name_slot name_steam mac_names
+                             name_mac`
                              (name_steam = Steam handler of slot(<X>), the name-correct address)
 - B<n>/extra_candidates.tsv  `gog steam source` for `batch.py candidates --extra-candidates`
 - B<n>/cmdtable_report.md
@@ -32,6 +35,7 @@ from batch import write_tsv  # noqa: E402
 SLOTS = 0x36D
 GOG_FNS = "0x77b530,0x7f9140"
 STEAM_FNS = "0x665f50,0x6f5b80"
+MAC_FNS = "0x324a7c,0x3579d4"     # Mac x86 CSWVirtualMachineCommands::InitializeCommands / InitializeSWMGCommands
 DEFAULT_NSS = Path.home() / "Games/KOTOR2_Mod_Workspace/mod8_kite_script/vanilla/nwscript.nss"
 NSS_TYPES = "int|float|void|object|string|location|vector|effect|event|talent|action|itemproperty"
 
@@ -44,8 +48,9 @@ def nss_functions(path: Path) -> list[str]:
     return re.findall(r"^\s*(?:%s)\s+(\w+)\s*\(" % NSS_TYPES, src, re.M)
 
 
-def decode(stores: Path, fns: list[int], slots: int = SLOTS) -> tuple[dict[int, int], list]:
-    """-> (slot -> handler, overwrites [(slot, old, new, insn)])."""
+def decode(stores: Path, fns: list[int], slots: int = SLOTS, stride: int = 4) -> tuple[dict[int, int], list]:
+    """-> (slot -> handler, overwrites [(slot, old, new, insn)]). stride = bytes per slot: 4 on Windows (MSVC
+    function pointers), 8 on Mac x86 (gcc pointer-to-member {ptr, adj})."""
     by_fn = defaultdict(list)
     for r in bd.iter_tsv(stores):
         by_fn[bd.parse_addr(r["fn"])].append((bd.parse_addr(r["insn"]), int(r["disp"], 16), bd.parse_addr(r["target"])))
@@ -54,9 +59,9 @@ def decode(stores: Path, fns: list[int], slots: int = SLOTS) -> tuple[dict[int, 
         if f not in by_fn:
             raise SystemExit("%s has no stores for init function 0x%x" % (stores, f))
         for insn, disp, tgt in sorted(by_fn[f]):
-            if disp % 4 or disp // 4 >= slots:
+            if disp % stride or disp // stride >= slots:
                 continue
-            i = disp // 4
+            i = disp // stride
             if i in table and table[i] != tgt:
                 over.append((i, table[i], tgt, insn))
             table[i] = tgt
@@ -79,6 +84,7 @@ def main(argv=None) -> int:
     ap.add_argument("batch")
     ap.add_argument("--gog-fns", default=GOG_FNS, help="GOG init functions, in call order")
     ap.add_argument("--steam-fns", default=STEAM_FNS, help="Steam init functions, in call order")
+    ap.add_argument("--mac-fns", default=MAC_FNS, help="Mac x86 init functions, in call order ('' = skip Mac)")
     ap.add_argument("--nss", default=str(DEFAULT_NSS))
     ap.add_argument("--prefix", default="ExecuteCommand", help="GOG name prefix before the nwscript name")
     a = ap.parse_args(argv)
@@ -94,6 +100,11 @@ def main(argv=None) -> int:
     gt, gover = decode(paths.server / paths.gog_program / "cmdstores.tsv", parse(a.gog_fns))
     st, sover = decode(paths.server / paths.steam_program / "cmdstores.tsv", parse(a.steam_fns))
     gsets, ssets = slot_sets(gt), slot_sets(st)
+    mac_name = {}
+    if a.mac_fns:
+        mt, _mover = decode(paths.server / paths.mac_program / "cmdstores.tsv", parse(a.mac_fns), stride=8)
+        mfp = {bd.parse_addr(r["addr"]): r.get("name", "") for r in bd.iter_tsv(paths.server / paths.mac_program / "fp.tsv")}
+        mac_name = {i: mfp.get(h, "") or "0x%08x" % h for i, h in mt.items()}
     steam_by_set = defaultdict(list)
     for h, s in ssets.items():
         steam_by_set[s].append(h)
@@ -119,9 +130,11 @@ def main(argv=None) -> int:
         name_slot = "n/a" if xi is None or not gs else ("yes" if xi in gs else "no")
         if not gs and g.addr in dead:
             cps, match = [dead[g.addr][0]], "overwritten_slot_%d" % dead[g.addr][1]
+        macs = sorted({mac_name[i] for i in gs if i in mac_name})
         rows.append({"gog": bd.hx8(g.addr), "name": g.name, "gog_slots": fmt_slots(gs),
                      "steam_counterpart": ",".join(bd.hx8(c) for c in cps), "match": match, "name_slot": name_slot,
-                     "name_steam": bd.hx8(st[xi]) if xi is not None and xi in st else ""})
+                     "name_steam": bd.hx8(st[xi]) if xi is not None and xi in st else "", "mac_names": ",".join(macs),
+                     "name_mac": "n/a" if not macs else ("yes" if re.sub(r"_\d+$", "", g.func) in macs else "no")})
         if match == "exact":
             extra.append({"gog": bd.hx8(g.addr), "steam": bd.hx8(cps[0]), "source": "cmdtable"})
         elif match.startswith("overwritten"):
@@ -130,7 +143,7 @@ def main(argv=None) -> int:
             for h in sorted({st[i] for i in gs if i in st}):
                 extra.append({"gog": bd.hx8(g.addr), "steam": bd.hx8(h), "source": "cmdtable_partial"})
     write_tsv(bdir / "cmdtable_rows.tsv", ["gog", "name", "gog_slots", "steam_counterpart", "match", "name_slot",
-                                           "name_steam"], rows)
+                                           "name_steam", "mac_names", "name_mac"], rows)
     write_tsv(bdir / "extra_candidates.tsv", ["gog", "steam", "source"], extra)
     # GOG-side card fact (no Steam address, so decoy cards stay blind)
     facts = []
@@ -147,6 +160,7 @@ def main(argv=None) -> int:
     for r in rows:
         cnt["match:" + r["match"]] += 1
         cnt["name:" + r["name_slot"]] += 1
+        cnt["mac:" + r["name_mac"]] += 1
     gnames = {g.addr: g.name for g in bd.load_gog_functions(paths.dump)}
     unnamed = sorted(h for h in gsets if not gnames.get(h, "").split("::")[-1].startswith(a.prefix))
     rep = ["# %s command tables (GOG %s, Steam %s)" % (a.batch, a.gog_fns, a.steam_fns), "",
@@ -162,6 +176,9 @@ def main(argv=None) -> int:
           ["- %s %s slots {%s}; slot of the name = %d -> name-correct Steam %s" % (
               r["gog"], r["name"], r["gog_slots"], index_of[re.sub(r"_\d+$", "", r["name"].split("::")[-1][len(a.prefix):])],
               r["name_steam"]) for r in rows if r["name_slot"] == "no"] + \
+          ["", "## GOG name is not a Mac symbol of its slots (name_mac = no)", ""] + \
+          ["- %s %s slots {%s}; Mac: %s; nwscript slot check: %s" % (r["gog"], r["name"], r["gog_slots"], r["mac_names"],
+                                                                     r["name_slot"]) for r in rows if r["name_mac"] == "no"] + \
           ["", "## GOG rows without an exact counterpart", ""] + \
           ["- %s %s slots {%s} -> %s (%s)" % (r["gog"], r["name"], r["gog_slots"], r["steam_counterpart"] or "-", r["match"])
            for r in rows if r["match"] != "exact"] + \

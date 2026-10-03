@@ -1,0 +1,22 @@
+{
+ "batch": "B15",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus",
+ "decoy_cards": 40,
+ "decoys_accepted": 1,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10
+ },
+ "full_read": 26,
+ "sample_errors": null,
+ "sample_pool": 156,
+ "sample_rate": 0.2,
+ "sample_size": 156,
+ "unanswered_decoys": 0
+}

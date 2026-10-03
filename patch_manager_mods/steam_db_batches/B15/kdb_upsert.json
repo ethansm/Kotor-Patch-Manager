@@ -1,0 +1,4570 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077e5b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommand",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00668fd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077eef0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionBarkString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669910"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077efb0] Steam batch B15: CALLEE 1 (callees: StackPopCommand 0x6fdb30) | reviewer match with anchor: InitCommands 0x00665f50 store 00666025->slot 294=0x006699d0 (294 ActionDoCommand); StackPopCommand 0x6fdb30 (GOG-mapped), GetGameObject chain, FUN_005e1340 at end; imm 0x14",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandActionDoCommand",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006699d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f0b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingRanged",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669ad0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f130] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandActionEquipMostEffectiveArmor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669b50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f170] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionExchangeItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669b90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f260] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionFollowObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669c80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f5a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionFollowLeader",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669fc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f640] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionInteractObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066a060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f6d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionJumpToObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066a0f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f810] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionJumpToPoint",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066a230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077fac0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionLockActions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066a4e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077fb70] Steam batch B15: CALLEE 3 (callees: StackPopEngineStructure 0x6fdab0, AddMoveToPointAction 0x564770, ComputeAwayVector 0x54aa50); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPopEngineStructure 0x6fdab0, AddMoveToPointAction 0x564770, ComputeAwayVector 0x54aa50); SIG 1.00",
+  "name": "Global::ExecuteCommandActionMoveAwayFromLocation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066a590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077ff30] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionPauseConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066a950"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780100] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionRandomWalk",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066ab20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780240] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionResumeConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066ac60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007802f0] Steam batch B15: CALLEE 2 (callees: ClearAllActions 0x7f24c0, SetAILevel 0x51e120); SIG 1.00 | AUTO: CALLEE 2 (callees: ClearAllActions 0x7f24c0, SetAILevel 0x51e120); SIG 1.00",
+  "name": "Global::ExecuteCommandActionStartConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066ad10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780c20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetCreatureAILevel",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066b640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780d50] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandChangeObjectAppearance",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066b770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780de0] Steam batch B15: CALLEE 1 (callees: SetAILevel 0x51e120); SIG 1.00 | AUTO: CALLEE 1 (callees: SetAILevel 0x51e120); SIG 1.00",
+  "name": "Global::ExecuteCommandResetCreatureAILevel",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066b800"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780e80] Steam batch B15: CALLEE 1 (callees: GetClientCreature 0x58ae90); SIG 1.00 | AUTO: CALLEE 1 (callees: GetClientCreature 0x58ae90); SIG 1.00",
+  "name": "Global::ExecuteCommandCreatureFlourishWeapon",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066b8a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781130] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionUseFeat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066bb50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781230] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionUseSkill",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066bc50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007813a0] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandActionUseTalent",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066bdc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781580] Steam batch B15: CALLEE 1 (callees: AddNPC 0x5f9ff0); SIG 1.00 | AUTO: CALLEE 1 (callees: AddNPC 0x5f9ff0); SIG 1.00",
+  "name": "Global::ExecuteCommandAddAvailableNPCByObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066bfa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781620] Steam batch B15: CALLEE 1 (callees: AddNPC_2 0x5fa600); SIG 1.00 | AUTO: CALLEE 1 (callees: AddNPC_2 0x5fa600); SIG 1.00",
+  "name": "Global::ExecuteCommandAddAvailableNPCByTemplate",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066c040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781740] Steam batch B15: CALLEE 1 (callees: DistributeExperience 0x5fe0c0); SIG 1.00 | AUTO: CALLEE 1 (callees: DistributeExperience 0x5fe0c0); SIG 1.00",
+  "name": "Global::ExecuteCommandAddJournalQuestEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066c160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781a10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandAddJournalWorldEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066c430"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781c40] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandAddJournalWorldEntryStrref",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066c660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781d80] Steam batch B15: CALLEE 6 (callees: AddExperience 0x6b7060, GetExpNeededForLevelUp 0x6b72e0, CanLevelUp 0x6b9790); SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006662e9->slot 389=0x0066c7a0 (389 AddMultiClass); StackPopInteger+StackPopObject; GetExpNeededForLevelUp 0x6b72e0, AddExperience 0x6b7060, CanLevelUp 0x6b9790 (GOG-mappe",
+  "name": "Global::ExecuteCommandAddMultiClass",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066c7a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781f70] Steam batch B15: CALLEE 1 (callees: AddMember 0x5f8d80); SIG 1.00 | AUTO: CALLEE 1 (callees: AddMember 0x5f8d80); SIG 1.00",
+  "name": "Global::ExecuteCommandAddPartyMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066c990"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782060] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandAddToParty",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066ca80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782130] Steam batch B15: STR 'G_PC_Light_Total'@00998c4c; 'G_PC_Dark_Total'@00998c60; CALLEE 2 (callees: GetGlobalVariableTable 0x51c890, ModifyAlignment 0x6ad400); SIG 1.00 | AUTO: STR 'G_PC_Light_Total'@00998c4c; 'G_PC_Dark_Total'@00998c60; CALLEE 2 (callees: GetGlobalVariableTable 0x51c890, ModifyAlignment 0x6ad400); SIG 1.00",
+  "name": "Global::ExecuteCommandAdjustAlignment",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066cb50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782790] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandAdjustReputation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066d1b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782890] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandAmbientSound",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066d2b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782ab0] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, ApplyEffect 0x52bf30); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, ApplyEffect 0x52bf30); SIG 1.00",
+  "name": "Global::ExecuteCommandApplyEffectAtPoint",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066d4d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782d60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandApplyEffectOnObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066d780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00782fd0] Steam batch B15: CALLEE 1 (callees: StackPopCommand 0x6fdb30); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopCommand 0x6fdb30); SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandAssignCommand",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066d9f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007830d0] Steam batch B15: CALLEE 1 (callees: AddAttackActions 0x568540); SIG 1.00 | AUTO: CALLEE 1 (callees: AddAttackActions 0x568540); SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandAttack",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066daf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00783180] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandCutsceneAttack",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066dba0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00783260] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandCutsceneMove",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066dc80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00783310] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandBarkString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066dd30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00783550] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandBeginConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066df70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00783dc0] Steam batch B15: CALLEE 4 (callees: StackPopEngineStructure 0x6fdab0, GetSpellUsesLeft 0x6b8f40, GetSpellLikeAbilityCasterLevel 0x6bd810); SIG 1.00 | AUTO: CALLEE 4 (callees: StackPopEngineStructure 0x6fdab0, GetSpellUsesLeft 0x6b8f40, GetSpellLikeAbilityCasterLevel 0x6bd810); SIG 1.00",
+  "name": "Global::ExecuteCommandCastSpell",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066e7e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00784910] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandClearAllActions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066f330"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00784990] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandCloseDoor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066f3b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00784a60] Steam batch B15: CALLEE 3 (callees: Constructor 0x5ffd60, LoadFromTemplate 0x601610, AcquireItem 0x5f4ed0); SIG 1.00 | AUTO: CALLEE 3 (callees: Constructor 0x5ffd60, LoadFromTemplate 0x601610, AcquireItem 0x5f4ed0); SIG 1.00",
+  "name": "Global::ExecuteCommandCreateItemOnObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066f480"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00784f70] Steam batch B15: CALLEE 10 (callees: StackPopEngineStructure 0x6fdab0, Constructor 0x5ffd60, AddToArea 0x600eb0); SIG 1.00 | AUTO: CALLEE 10 (callees: StackPopEngineStructure 0x6fdab0, Constructor 0x5ffd60, AddToArea 0x600eb0); SIG 1.00",
+  "name": "Global::ExecuteCommandCreateObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066f990"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00785950] Steam batch B15: CALLEE 1 (callees: StackPopCommand 0x6fdb30); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopCommand 0x6fdb30); SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandDelayCommand",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670370"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00785a90] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandDeleteJournalWorldAllEntries",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006704b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00785d40] Steam batch B15: CALLEE 6 (callees: SetPlayerCreature 0x73f910, ChangeCharacter 0x740380, GetNPCID 0x5fdbf0); SIG 1.00 | AUTO: CALLEE 6 (callees: SetPlayerCreature 0x73f910, ChangeCharacter 0x740380, GetNPCID 0x5fdbf0); SIG 1.00",
+  "name": "Global::ExecuteCommandDestroyObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007860c0] Steam batch B15: STR 'StrRef'@00996e34; 'BAD STRREF'@00998c70; CALLEE 1 (callees: SetFeedbackInfo 0x7f2200); SIG 1.00 | AUTO: STR 'StrRef'@00996e34; 'BAD STRREF'@00998c70; CALLEE 1 (callees: SetFeedbackInfo 0x7f2200); SIG 1.00",
+  "name": "Global::ExecuteCommandDisplayFeedBackText",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670ae0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00786270] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50 | reviewer match with anchor: InitCommands 0x00665f50 store 00666d3a->slot 218=0x00670c90; 00668f94->slot 219=0x00670c90 (218 FeetToMeters, 219 YardsToMeters); StackPopFloat 0x6fd9e0, branch on cmd id 0xda/0xdb, StackPushFloat 0x6",
+  "name": "Global::ExecuteCommandDistanceConversions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670c90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007862f0] Steam batch B15: CALLEE 2 (callees: AddAttackActions 0x568540, GetSpellUsesLeft 0x6b8f40); SIG 1.00 | AUTO: CALLEE 2 (callees: AddAttackActions 0x568540, GetSpellUsesLeft 0x6b8f40); SIG 1.00",
+  "name": "Global::ExecuteCommandDoDoorAction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670d10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007866b0] Steam batch B15: CALLEE 2 (callees: GetArmorClassVersus 0x6a5110, GetMeleeAttackBonus 0x6a7db0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetArmorClassVersus 0x6a5110, GetMeleeAttackBonus 0x6a7db0); SIG 1.00",
+  "name": "Global::ExecuteCommandDoTouchAttack",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006710d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00787400] Steam batch B15: CALLEE 1 (callees: SetString 0x5e4f60); SIG 1.00 | AUTO: CALLEE 1 (callees: SetString 0x5e4f60); SIG 1.00",
+  "name": "Global::ExecuteCommandEffectAreaEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00671e20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00787ac0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectBeam",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006724e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00787cb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectBlind",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006726d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00787e10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectCrush",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00672830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00787f10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectComplex",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00672930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00788850] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectConcealment",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00673270"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007889d0] Steam batch B15: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00",
+  "name": "Global::ExecuteCommandEffectDamage",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006733f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00788c70] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006668dd->slot 448=0x00673690 (448 EffectDamageDecrease); two StackPopInteger, 1..10 check, type DAT_00995f54, +0x122; imm 0xa",
+  "name": "Global::ExecuteCommandEffectDamageDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00673690"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00788e60] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006668ed->slot 449=0x00673880 (449 EffectDamageImmunityDecrease); two StackPopInteger, clamp +-100 (0x64/0xffffff9c) then SetInteger(0),(1)",
+  "name": "Global::ExecuteCommandEffectDamageImmunityDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00673880"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789030] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006668fd->slot 275=0x00673a50 (275 EffectDamageImmunityIncrease); two StackPopInteger, clamp 0..100, SetInteger(0),(1); type DAT_00995f5c",
+  "name": "Global::ExecuteCommandEffectDamageImmunityIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00673a50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789200] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066690d->slot 120=0x00673c20 (120 EffectDamageIncrease); two StackPopInteger, 1..10 type check, SetInteger(0..2), +0x122; imm 0xa",
+  "name": "Global::ExecuteCommandEffectDamageIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00673c20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007897f0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666a2d->slot 459=0x00674210 (459 EffectForceShield); one StackPopInteger initialised, SetCreator before type DAT_009960c4; imm 0x28",
+  "name": "Global::ExecuteCommandEffectForceShield",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789930] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066693d->slot 487=0x00674350 (487 EffectDamageShield); three StackPopInteger; clamps 10000 (0x2710) and 10; imm 0x30",
+  "name": "Global::ExecuteCommandEffectDamageShield",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789df0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006669cd->slot 823=0x00674810 (823 EffectForceSight); no StackPop; GetObjectArray 0x51c080+GetGameObject 0x53dfb0+SetCreator 0x5e5ea0 as GOG; imms 0x30,0x8c",
+  "name": "Global::ExecuteCommandEffectForceSight",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a350] Steam batch B15: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00",
+  "name": "Global::ExecuteCommandEffectForceDrain",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674d70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a500] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666a7d->slot 78=0x00674f20 (78 EffectHeal); param_3==1 guard, one StackPopInteger, <1 error, type DAT_00995fb8; imm 0x30,0x38",
+  "name": "Global::ExecuteCommandEffectHeal",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674f20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a6c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectHitPointChangeWhenDying",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006750e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a840] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666a9d->slot 273=0x00675260 (273 EffectImmunity); StackPopInteger 0x6fd9a0 then SetInteger(0,clamp) and SetInteger(1,[DAT_00a1b4d0+0x122]); disps 0xa,0x122,imm 0x38",
+  "name": "Global::ExecuteCommandEffectImmunity",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675260"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a9f0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666aad->slot 457=0x00675410 (457 EffectInvisibility); StackPopInteger; allowed values 1,2,4; SetInteger(0),(1,[+0x122]); imm 2,4,0x30",
+  "name": "Global::ExecuteCommandEffectInvisibility",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ab80] Steam batch B15: CALLEE 3 (callees: StackPopEngineStructure 0x6fdab0, SetLinked 0x5e5260, UpdateLinked 0x5e5290); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPopEngineStructure 0x6fdab0, SetLinked 0x5e5260, UpdateLinked 0x5e5290); SIG 1.00",
+  "name": "Global::ExecuteCommandEffectLinkEffects",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006755a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078acf0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666add->slot 477=0x00675710 (477 EffectMissChance); one StackPopInteger, 1..100 check (imm 0x64), SetInteger(0),(1,DAT_00996254); imm 0x2c",
+  "name": "Global::ExecuteCommandEffectMissChance",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ae60] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666aed->slot 485=0x00675880 (485 EffectModifyAttacks); one StackPopInteger, branch <6 else error type; imm 0x5 (limit 5), 0x2c",
+  "name": "Global::ExecuteCommandEffectModifyAttacks",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675880"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b2e0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666b2d->slot 250=0x00675d00 (250 EffectPoison); one StackPopInteger, SetCreator, SetInteger(0), type DAT_00995fa8; imm 0x28",
+  "name": "Global::ExecuteCommandEffectPoison",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675d00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b9c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectSeeInvisible",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006763e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078be60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectSpellImmunity",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00676880"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078bfe0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666bcd->slot 472=0x00676a00 (472 EffectSpellLevelAbsorption); three StackPopInteger, range <10 and >-2, SetInteger(0..3); imm 9",
+  "name": "Global::ExecuteCommandEffectSpellLevelAbsorption",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00676a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078c7a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectTrueSeeing",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006771c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078c8c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectVisualEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006772e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078cac0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066671d->slot 391=0x006774e0 (391 EffectDroidStun); no pops, SetInteger(0,3), no SetCreator; imms 0x3,0x24",
+  "name": "Global::ExecuteCommandEffectDroidStun",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006774e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078cbc0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectForceJump",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006775e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078cd30] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066673d->slot 392=0x00677750 (392 EffectForcePushed); no pops, SetCreator only, type DAT_0099600c; imm 0x24",
+  "name": "Global::ExecuteCommandEffectForcePushed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ce40] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandEffectForcePushTargeted",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677860"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d030] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066675d->slot 703=0x00677a50 (703 EffectWhirlWind); no pops, SetInteger(0,10) (DroidStun uses 3); imms 0xa,0x24",
+  "name": "Global::ExecuteCommandEffectWhirlwind",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677a50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d370] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 471: 0066678d MOV dword ptr [EDX + 0x75c],0x677d90; 00677dfe MOV EDX,dword ptr [0x00995f3c]",
+  "name": "Global::ExecuteCommandEffectHorrified",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677d90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d7d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 159: 006667cd MOV dword ptr [ECX + 0x27c],0x6781f0; 0067825e MOV EDX,dword ptr [0x00995f3c]",
+  "name": "Global::ExecuteCommandEffectChoke",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006781f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078dab0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEffectLightsaberThrow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006784d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078dc70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEndGame",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00678690"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078dce0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEquipItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00678700"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078de70] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandEventActivateItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00678890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e130] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 295: 00666cad MOV dword ptr [ECX + 0x49c],0x678b50; 00678bb9 MOV EDX,0x7",
+  "name": "Global::ExecuteCommandEventConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00678b50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e220] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 244: 00666cbd MOV dword ptr [EAX + 0x3d0],0x678c40; 00678dfa CALL 0x005e1c70",
+  "name": "Global::ExecuteCommandEventSpellCastAt",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00678c40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e490] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 132: 00666ccd MOV dword ptr [EDX + 0x210],0x678eb0; 00678f75 MOV EDX,0xb",
+  "name": "Global::ExecuteCommandEventUserDefined",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00678eb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e630] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandExecuteScript",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679050"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e7a0] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 66: 00666d4a MOV dword ptr [EAX + 0x108],0x6791c0; 0067928a CALL 0x00734030",
+  "name": "Global::ExecuteCommandFindSubString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006791c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e8f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandFloatingText",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679310"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ebd0] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 231: 00666d7a MOV dword ptr [EAX + 0x39c],0x6795f0; 00679616 CALL 0x0091c860",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandFloatToInt",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006795f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ec20] Steam batch B15: STR '%%%1d.%02df\\n'@00998c90; '%%%2d.%02df\\n'@00998ca0; CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50 | AUTO: STR '%%%1d.%02df\\n'@00998c90; '%%%2d.%02df\\n'@00998ca0; CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50",
+  "name": "Global::ExecuteCommandFloatToString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078edf0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandForceHeartbeat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078eed0] Steam batch B15: CALLEE 5 (callees: GetSTRStat 0x6b5990, GetCONStat 0x6b5a40, GetINTStat 0x6b5af0); SIG 1.00 | AUTO: CALLEE 5 (callees: GetSTRStat 0x6b5990, GetCONStat 0x6b5a40, GetINTStat 0x6b5af0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetAbilityScore",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006798f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f0e0] Steam batch B15: CALLEE 1 (callees: GetDEXMod 0x6b5db0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetDEXMod 0x6b5db0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetAbilityModifier",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f270] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679c90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f3b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAlignment",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679dd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f500] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAOEObjectCreator",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679f20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f5c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAppearanceType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679fe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f650] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetArea",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f7c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAreaUnescapable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a1e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f830] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAttackTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a250"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f8b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetAttemptedAttackTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a2d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f920] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 375: 00666e61 MOV dword ptr [EAX + 0x5dc],0x67a340; 0067a376 MOV EDX,dword ptr [ECX + 0x568]",
+  "name": "Global::ExecuteCommandGetAttemptedSpellTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a340"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f990] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 489: 00666e71 MOV dword ptr [EDX + 0x7a4],0x67a3b0; 0067a3e6 MOV EDX,dword ptr [ECX + 0x54c]",
+  "name": "Global::ExecuteCommandGetAttemptedMovementTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a3b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078fa00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078fa80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetBaseItemType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a4a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078fb00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetBattleTrack",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078fb90] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetBlockingDoor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a5b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078fc00] Steam batch B15: CALLEE 2 (callees: GetClassLevel 0x6ad2f0, GetSpellLikeAbilityCasterLevel 0x6bd810); SIG 1.00 | AUTO: CALLEE 2 (callees: GetClassLevel 0x6ad2f0, GetSpellLikeAbilityCasterLevel 0x6bd810); SIG 1.00",
+  "name": "Global::ExecuteCommandGetCasterLevel",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a620"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078feb0] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandGetChallengeRating",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a8d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ff50] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetClassInformation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067a970"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790200] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 163: 00666f21 MOV dword ptr [EAX + 0x28c],0x67ac20; 0067ac90 MOV ECX,dword ptr [EAX + 0xec]",
+  "name": "Global::ExecuteCommandGetCommandable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ac20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007902a0] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetCreatureHasTalent 0x6b8840); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetCreatureHasTalent 0x6b8840); SIG 1.00",
+  "name": "Global::ExecuteCommandGetCreatureHasTalent",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067acc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007903a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetCreatureSize",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067adc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007906e0] Steam batch B15: CALLEE 1 (callees: GetAcceptableAction 0x5d7190); SIG 1.00 | AUTO: CALLEE 1 (callees: GetAcceptableAction 0x5d7190); SIG 1.00",
+  "name": "Global::ExecuteCommandGetCurrentAction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b100"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790810] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetDamageDealtByType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790900] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetDayTrack",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b320"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790990] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetDistanceBetween",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b3b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790a80] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 319: 00666fe1 MOV dword ptr [EAX + 0x4fc],0x67b4a0; 0067b579 CALL 0x004452b0",
+  "name": "Global::ExecuteCommandGetDistanceBetween2D",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b4a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790ba0] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 298: 00666ff1 MOV dword ptr [EDX + 0x4a8],0x67b5c0; 0067b65f CALL 0x004452b0",
+  "name": "Global::ExecuteCommandGetDistanceBetweenLocations",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b5c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790db0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 334: 00667001 MOV dword ptr [ECX + 0x538],0x67b7d0; 0067b8aa CALL 0x005142f0",
+  "name": "Global::ExecuteCommandGetDistanceBetweenLocations2D",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067b7d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791350] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067bd70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007916e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetEffectCreator",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c100"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791790] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 89: 00667041 MOV dword ptr [EAX + 0x164],0x67c1b0; 0067c1e3 AND EDX,0x7",
+  "name": "Global::ExecuteCommandGetEffectDurationType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c1b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791830] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetEffectSpellId",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c250"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007918d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 90: 00667061 MOV dword ptr [ECX + 0x168],0x67c2f0; 0067c323 AND EDX,0x18",
+  "name": "Global::ExecuteCommandGetEffectSubType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c2f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791970] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetEffectTypeScriptConstant 0x5e5f60) | reviewer match with anchor: InitCommands 0x665f50 slot 170: 00667071 MOV dword ptr [EAX + 0x2a8],0x67c390; 0067c3bf CALL 0x005e5f60",
+  "name": "Global::ExecuteCommandGetEffectType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791bf0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetEncounterData",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c610"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791cd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetEnteringObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c6f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791e90] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandGetFacing",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c8b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007921b0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 186: 00667118 MOV dword ptr [ECX + 0x2e8],0x67cbd0; 0067cc95 CALL 0x006d3ff0",
+  "name": "Global::ExecuteCommandGetFactionAverageReputation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067cbd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792490] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetFactionEqual",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ceb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792740] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetFactionLeader",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007927d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetFactionMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d1f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792a70] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 191: 00667198 MOV dword ptr [EDX + 0x2fc],0x67d490; 0067d53a CALL 0x006d4360",
+  "name": "Global::ExecuteCommandGetFactionMostFrequentClass",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792d70] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 192: 006671c8 MOV dword ptr [EDX + 0x300],0x67d790; 0067d874 CALL 0x006d4560",
+  "name": "Global::ExecuteCommandGetFactionWorstAC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d790"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792e80] Steam batch B15: CALLEE 1 (callees: GetFortSavingThrow 0x6ba620); SIG 1.00 | AUTO: CALLEE 1 (callees: GetFortSavingThrow 0x6ba620); SIG 1.00",
+  "name": "Global::ExecuteCommandGetFortitudeSavingThrow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d8a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792fd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetGameDifficulty",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d9f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793030] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetGlobalLocation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067da50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793150] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetGlobalNumber",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067db70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793290] Steam batch B15: CALLEE 2 (callees: StackPushString 0x6fda90, GetGlobalVariableTable 0x51c890); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPushString 0x6fda90, GetGlobalVariableTable 0x51c890); SIG 1.00",
+  "name": "Global::ExecuteCommandGetGlobalString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067dcb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007933b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetGoingToBeAttackedBy",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ddd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793790] Steam batch B15: CALLEE 1 (callees: GetFeatRemainingUses 0x6b8440); SIG 1.00 | AUTO: CALLEE 1 (callees: GetFeatRemainingUses 0x6b8440); SIG 1.00",
+  "name": "Global::ExecuteCommandGetHasFeat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e1b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007938b0] Steam batch B15: CALLEE 1 (callees: GetHasFeatEffectApplied 0x549ed0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetHasFeatEffectApplied 0x549ed0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetHasFeatEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e2d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793970] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetHasInventory",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793a80] Steam batch B15: CALLEE 1 (callees: GetCanUseSkill 0x6b7a00); SIG 1.00 | AUTO: CALLEE 1 (callees: GetCanUseSkill 0x6b7a00); SIG 1.00",
+  "name": "Global::ExecuteCommandGetHasSkill",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e4a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793b70] Steam batch B15: CALLEE 1 (callees: HasSpell 0x6bd9c0); SIG 1.00 | AUTO: CALLEE 1 (callees: HasSpell 0x6bd9c0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetHasSpell",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793c50] Steam batch B15: CALLEE 1 (callees: HasSpellEffectApplied 0x5476c0) | reviewer match with anchor: InitCommands 0x665f50 slot 304: 006673a8 MOV dword ptr [EDX + 0x4c0],0x67e670; 0067e704 CALL 0x005476c0",
+  "name": "Global::ExecuteCommandGetHasSpellEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e670"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793d10] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 166: 006673c8 MOV dword ptr [EAX + 0x298],0x67e730; 0067e7e1 CALL 0x006a4e00",
+  "name": "Global::ExecuteCommandGetHitDice",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e730"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793df0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetHitpoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793f80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetCurrentForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794130] Steam batch B15: CALLEE 5 (callees: GetFirstObjectIndiceByX 0x522af0, InTrigger 0x61fc60, InAreaOfEffect 0x62d280); SIG 1.00 | AUTO: CALLEE 5 (callees: GetFirstObjectIndiceByX 0x522af0, InTrigger 0x61fc60, InAreaOfEffect 0x62d280); SIG 1.00",
+  "name": "Global::ExecuteCommandGetInPersistentObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067eb50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794e20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetInventoryDisturbItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067f840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794ea0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetInventoryDisturbType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067f8c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794f20] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 407: 00667438 MOV dword ptr [EDX + 0x65c],0x67f940; 0067f96f MOV AL,byte ptr [EDX + 0x1dc]",
+  "name": "Global::ExecuteCommandGetIsDawn",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067f940"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794f90] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 405: 00667448 MOV dword ptr [ECX + 0x654],0x67f9b0; 0067f9df MOV AL,byte ptr [EDX + 0x1dc]",
+  "name": "Global::ExecuteCommandGetIsDay",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067f9b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795000] Steam batch B15: CALLEE 3 (callees: GetSpellUsesLeft 0x6b8f40, GetOpenLockDC 0x61cd50, GetOpenLockDC 0x5f5c40); SIG 1.00 | AUTO: CALLEE 3 (callees: GetSpellUsesLeft 0x6b8f40, GetOpenLockDC 0x61cd50, GetOpenLockDC 0x5f5c40); SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsDoorActionPossible",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067fa20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007953a0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 408: 00667478 MOV dword ptr [ECX + 0x660],0x67fdc0; 0067fdef MOV AL,byte ptr [EDX + 0x1dc]",
+  "name": "Global::ExecuteCommandGetIsDusk",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067fdc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795410] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsEncounterCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067fe30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007954a0] Steam batch B15: CALLEE 1 (callees: GetEffectImmunity 0x6bc570); SIG 1.00 | AUTO: CALLEE 1 (callees: GetEffectImmunity 0x6bc570); SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsImmune",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067fec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007955e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsInCombat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007956b0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068010c CMP ECX,0x2 after 006800ff MOV AL,[EDX+0x1dc] from GetModule 0x0051bd90 (decoy compares 4)",
+  "name": "Global::ExecuteCommandGetIsNight",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006800d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795720] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsOpen",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680140"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795810] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsRacialTypePlayable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795930] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 0.50",
+  "name": "Global::ExecuteCommandGetIsTalentValid",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007959e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsMined",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795af0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsWeaponEffective",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680510"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795b90] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemACValue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006805b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795c80] Steam batch B15: CALLEE 2 (callees: GetActiveProperty 0x604260, GetPassiveProperty 0x6042a0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetActiveProperty 0x604260, GetPassiveProperty 0x6042a0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemHasItemProperty",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006806a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00795e10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemInInventory",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796500] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemInSlot",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00680f20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796630] Steam batch B15: CALLEE 1 (callees: FindItemWithTag 0x605cb0); SIG 1.00 | AUTO: CALLEE 1 (callees: FindItemWithTag 0x605cb0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemPossessedBy",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681050"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796930] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemPossessor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796a30] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetJournalEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681450"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796bc0] Steam batch B15: STR 'Categories'@00998cb0; 'Global'@00998cc4; CALLEE 2 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0); SIG 1.00 | AUTO: STR 'Categories'@00998cb0; 'Global'@00998cc4; CALLEE 2 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetJournalQuestExperience",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006815e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796e60] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068190d MOV EDX,dword ptr [ECX + 0x180] with 0x7f000000 invalid-object default; callees PopObject 0x6fdaf0, GetGameObject 0x51c0a0, PushObject 0x6fdb10",
+  "name": "Global::ExecuteCommandGetLastAttacker",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796f10] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681940: CALL 0x0051c100 then MOV [..+0x580] (GOG disp 0x580) pushed via StackPushObject 0x6fdb10 with 0x7f000000 default",
+  "name": "Global::ExecuteCommandGetLastHostileTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681940"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796f90] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006819c0: CALL 0x0051c100 then MOV [..+0x588] (GOG disp 0x588) pushed via StackPushInteger 0x6fd9c0",
+  "name": "Global::ExecuteCommandGetLastAttackAction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006819c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797010] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681a40: GetObject via 0x51c080/0x53dfb0, vtable+0x30 then [..+0x520] test and switch on byte [..+0x192] mapping 1,2,3,5,6 -> 1,2,3,4,5 (GOG disps 0x30,0x192,0x520 all present)",
+  "name": "Global::ExecuteCommandGetLastAttackMode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681a40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797150] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681b80: CALL 0x0051c100 GetCreatureByGameObjectID then MOV [..+0x5a0] (GOG disp 0x5a0) with 0x7f000000 default; decoy 681c00 reads +0x5a8",
+  "name": "Global::ExecuteCommandGetLastAttackResult",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681b80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007971d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681c00: CALL 0x0051c100 then MOV [..+0x5a8] (GOG disp 0x5a8) pushed with StackPushInteger 0x6fd9c0",
+  "name": "Global::ExecuteCommandGetWasForcePowerSuccessful",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681c00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797250] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastAttackType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681c80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797340] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastClosedBy",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681d70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797400] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastCombatFeatUsed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681e30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797480] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastDamager",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681eb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797510] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastDisarmed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00681f40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797610] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastDisturbed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007976f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastForcePowerUsed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682120"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797770] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastHostileActor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006821a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007979b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastKiller",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006823e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797a40] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastLocked",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797b20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastOpenedBy",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797be0] Steam batch B15: CALLEE 1 (callees: GetPazaakResults 0x740730); SIG 1.00 | AUTO: CALLEE 1 (callees: GetPazaakResults 0x740730); SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastPazaakResult",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682610"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797c40] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastPerceived",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682670"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797ce0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastPerception",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797ed0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastSpeaker",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682900"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797f70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastMineDetected",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006829a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797ff0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastUnlocked",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682a20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007980d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastUsedBy",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798180] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastWeaponUsed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682bb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798200] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLeavingObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682c30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798390] Steam batch B15: CALLEE 1 (callees: GetLoadFromSaveGame 0x51cde0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetLoadFromSaveGame 0x51cde0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetLoadFromSaveGame",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682dc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007983e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLocalValue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682e10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798520] Steam batch B15: CALLEE 1 (callees: GetScriptLocation 0x547600); SIG 1.00 | AUTO: CALLEE 1 (callees: GetScriptLocation 0x547600); SIG 1.00",
+  "name": "Global::ExecuteCommandGetLocation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00682f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798690] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLocked",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006830c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798770] Steam batch B15: CALLEE 3 (callees: StackPushString 0x6fda90, GetOpenLockDC 0x61cd50, GetOpenLockDC 0x5f5c40); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPushString 0x6fda90, GetOpenLockDC 0x61cd50, GetOpenLockDC 0x5f5c40); SIG 1.00",
+  "name": "Global::ExecuteCommandGetLockInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006831a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798b40] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetMatchedString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00683570"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798c90] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetMatchedStringsCount",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006836c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798d90] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetMetaMagicFeat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006837c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798e20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetModule",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00683850"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798ea0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetModuleItemStuff",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006838d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798f70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetModuleName",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006839a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00799100] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetMovementRate",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00683b30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007991a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetName",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00683bd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079a710] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetNearestMine",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00685140"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079a9c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetNightTrack",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006853f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079aa50] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetNumStackedItems",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00685480"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079aad0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectByTag",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00685500"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ac00] Steam batch B15: CALLEE 2 (callees: GetNextObjectInArea 0x5232b0, GetFirstObjectInArea 0x523250); SIG 1.00 | AUTO: CALLEE 2 (callees: GetNextObjectInArea 0x5232b0, GetFirstObjectInArea 0x523250); SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectInArea",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00685630"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079af30] Steam batch B15: CALLEE 3 (callees: StackPopVector 0x6fda20, StackPopEngineStructure 0x6fdab0, GetFirstObjectIndiceByX 0x522af0); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPopVector 0x6fda20, StackPopEngineStructure 0x6fdab0, GetFirstObjectIndiceByX 0x522af0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectInShape",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00685960"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079bd70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006867a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079bee0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectValid",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686910"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079bf60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectVisibility",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686990"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079c090] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetOwnerDemolitionsSkill",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079c1d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastForfeitViolation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686c00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; stdcall retn=8; GOG 0x0079c250] Steam batch B15: CALLEE 6 (callees: SetSTRBase 0x6b67d0, SetDEXBase 0x6b6810, SetCONBase 0x6b6850); SIG 1.00 | AUTO: CALLEE 6 (callees: SetSTRBase 0x6b67d0, SetDEXBase 0x6b6810, SetCONBase 0x6b6850); SIG 1.00",
+  "name": "Global::ExecuteCommandAdjustCreatureAttributes",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686c80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079c4b0] Steam batch B15: CALLEE 1 (callees: SetSkillRank 0x6b81c0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetSkillRank 0x6b81c0); SIG 1.00",
+  "name": "Global::ExecuteCommandAdjustCreatureSkills",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686ee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079c5c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandModifyBaseSavingThrow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00686ff0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079c750] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandGetObjectPersonalSpace",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687180"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079c800] Steam batch B15: CALLEE 3 (callees: GetInfluence 0x5fa9c0, SetInfluence 0x5fa9f0, GetNPCObject 0x5faaf0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetInfluence 0x5fa9c0, SetInfluence 0x5fa9f0, GetNPCObject 0x5faaf0); SIG 1.00",
+  "name": "Global::ExecuteCommandInfluence",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cac0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetPartyMemberByIndex",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006874f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cb60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetPartyMemberCount",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cbb0] Steam batch B15: CALLEE 1 (callees: GetNextPC 0x5ff3b0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetNextPC 0x5ff3b0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetPC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006875e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cc80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetPCLevellingUp",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006876b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cce0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069b7c0: no pops; CALL 0x0073fb90 (party), CALL 0x007e5da0 (member idx 0), CALL 0x0051c8b0 ClientToServerObjectId, CALL 0x006fdb10 PushObject; GOG has no PopInteger",
+  "name": "Global::ExecuteCommandGetPartyLeader",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b7c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cd60] Steam batch B15: CALLEE 1 (callees: GetLightIsOn 0x5f6570); SIG 1.00 | reviewer match with anchor: CALL 0x005f6570 CSWSPlaceable::GetLightIsOn (GOG callee 0x770910 maps to it) after GetPlaceableById 0x51c160 and PopObject 0x6fdaf0",
+  "name": "Global::ExecuteCommandGetPlaceableIllumination",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cde0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetPlotFlag",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687790"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ce90] Steam batch B15: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00",
+  "name": "Global::ExecuteCommandGetPosition",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cf80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetRacialType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d050] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetReflexAdjustedDamage",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d300] Steam batch B15: CALLEE 1 (callees: GetReflexSavingThrow 0x6ba740); SIG 1.00 | AUTO: CALLEE 1 (callees: GetReflexSavingThrow 0x6ba740); SIG 1.00",
+  "name": "Global::ExecuteCommandGetReflexSavingThrow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687cb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d450] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetReputation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687e00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d510] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetRestrictMode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d630] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSkillRank",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687fe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d740] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellCast",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006880f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d9b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellCasterItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079da40] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellForcePointCost",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006883f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; stdcall retn=8; GOG 0x0079db00] Steam batch B15: CALLEE 2 (callees: AddFeat 0x6b8280, AddKnownSpell 0x6b86a0); SIG 1.00 | AUTO: CALLEE 2 (callees: AddFeat 0x6b8280, AddKnownSpell 0x6b86a0); SIG 1.00",
+  "name": "Global::ExecuteCommandGrantAbility",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006884b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079dbe0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellFormMask",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079dc70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellBaseForcePointCost",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688620"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079dd00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellId",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006886b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079dda0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellSaveDC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079df00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellTargetLoc",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006888b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e050] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSpellTargetObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e110] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetStat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e430] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00688e56 CALL 0x00919f10 (strlen, same call as in CExoString::Left 0x734500) after StackPopString 0x6fda70, then CALL 0x006fd9c0 push int; imm 0x1c as GOG",
+  "name": "Global::ExecuteCommandGetStringLength",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688de0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e8f0] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50",
+  "name": "Global::ExecuteCommandGetStrRefSoundDuration",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006892a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ea00] Steam batch B15: CALLEE 2 (callees: SubString 0x734a00, StackPushString 0x6fda90); SIG 0.50 | AUTO: CALLEE 2 (callees: SubString 0x734a00, StackPushString 0x6fda90); SIG 0.50",
+  "name": "Global::ExecuteCommandGetSubString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006893b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ebb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetTag",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00689560"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ed20] Steam batch B15: CALLEE 1 (callees: GetWorldTimeHour 0x51b100) | reviewer match with anchor: 006896d0: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b100 GetWorldTimeHour (GOG 0x80b5e0 maps there)",
+  "name": "Global::ExecuteCommandGetTimeHour",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006896d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ed70] Steam batch B15: CALLEE 1 (callees: GetWorldTimeMillisecond 0x51b1c0) | reviewer match with anchor: 00689720: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b1c0 GetWorldTimeMillisecond (GOG 0x80b6a0 maps there)",
+  "name": "Global::ExecuteCommandGetTimeMillisecond",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00689720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079edc0] Steam batch B15: CALLEE 1 (callees: GetWorldTimeMinute 0x51b140) | reviewer match with anchor: 00689770: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b140 GetWorldTimeMinute (GOG 0x80b620 maps there)",
+  "name": "Global::ExecuteCommandGetTimeMinute",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00689770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ee10] Steam batch B15: CALLEE 1 (callees: GetWorldTimeSecond 0x51b180) | reviewer match with anchor: 006897c0: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b180 GetWorldTimeSecond (GOG 0x80b660 maps there) then push 0x6fd9c0",
+  "name": "Global::ExecuteCommandGetTimeSecond",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006897c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ee60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetTotalDamageDealt",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00689810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ef30] Steam batch B15: CALLEE 7 (callees: StackPushString 0x6fda90, GetDetectDC 0x61fa00, GetDisarmDC 0x61fa90); SIG 1.00 | AUTO: CALLEE 7 (callees: StackPushString 0x6fda90, GetDetectDC 0x61fa00, GetDisarmDC 0x61fa90); SIG 1.00",
+  "name": "Global::ExecuteCommandGetMineInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006898e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079fce0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetUserActionsPending",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068a690"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079fd70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetUserDefinedEventNumber",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068a720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079fe60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetWaypointByTag",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068a810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ffa0] Steam batch B15: CALLEE 1 (callees: GetLinkedObject 0x61d620); SIG 1.00 | AUTO: CALLEE 1 (callees: GetLinkedObject 0x61d620); SIG 1.00",
+  "name": "Global::ExecuteCommandGetWaypointByTrigger",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068a950"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0100] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetWeaponRanged",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068aab0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a01b0] Steam batch B15: CALLEE 1 (callees: GetWillSavingThrow 0x6ba6b0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetWillSavingThrow 0x6ba6b0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetWillSavingThrow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ab60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0300] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068acb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a03c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGiveGoldToCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ad70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a04b0] Steam batch B15: CALLEE 1 (callees: DistributeExperience 0x5fe0c0); SIG 1.00 | AUTO: CALLEE 1 (callees: DistributeExperience 0x5fe0c0); SIG 1.00",
+  "name": "Global::ExecuteCommandGiveXPToCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ae60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a05d0] Steam batch B15: CALLEE 2 (callees: AcquireItem 0x606e20, AcquireItem 0x5f4ed0); SIG 1.00 | AUTO: CALLEE 2 (callees: AcquireItem 0x606e20, AcquireItem 0x5f4ed0); SIG 1.00",
+  "name": "Global::ExecuteCommandGiveItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068af80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0760] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0068b110: two CALL 0x006fda70 StackPopString, CALL 0x006fd9a0 PopInteger, CALL 0x007343f0 CExoString::Insert (GOG 0x606500 + delta 0x12def0), PushString 0x6fda90",
+  "name": "Global::ExecuteCommandInsertString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b110"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a08e0] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandIntToFloat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b290"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0930] Steam batch B15: STR '0x%08x'@00998cd8; SIG 0.50 | AUTO: STR '0x%08x'@00998cd8; SIG 0.50",
+  "name": "Global::ExecuteCommandIntToHexString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b2e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0c40] Steam batch B15: CALLEE 2 (callees: GetIsNPCAvailable 0x5fa960, GetNPCSelectability 0x5fb140); SIG 1.00 | AUTO: CALLEE 2 (callees: GetIsNPCAvailable 0x5fa960, GetNPCSelectability 0x5fb140); SIG 1.00",
+  "name": "Global::ExecuteCommandIsAvailableNPC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b5f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0d10] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandIsEffectValid",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b6c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0e60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsInConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0f80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsConversationActive",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0fd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetCreatureMovmentType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1060] Steam batch B15: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00",
+  "name": "Global::ExecuteCommandGetLastConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ba10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a10f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsListening",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068baa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1190] Steam batch B15: CALLEE 1 (callees: GetIsMember 0x5fafd0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetIsMember 0x5fafd0); SIG 1.00",
+  "name": "Global::ExecuteCommandIsNPCPartyMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068bb40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1230] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsObjectPartyMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068bbe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a12b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsPC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068bc60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a13c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsMeditating",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068bd70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a14d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsFormActive",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068be80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a15b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandItemActivated",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068bf60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a17b0] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandLocation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068c160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a19d0] Steam batch B15: CALLEE 3 (callees: StackPushFloat 0x6fda00, StackPushVector 0x6fda40, StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPushFloat 0x6fda00, StackPushVector 0x6fda40, StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandLocationAccess",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068c380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1af0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0068c4a0 size 747 = GOG 747: switch on command id 0x43..0x4c (fabs,sin,cos,...,sqrt via CALL 0x0091cb24) and 0x4d abs via 0x91fbf2; imm set {0x41,0x43,0x44,0x4d,0x50} identical to GOG",
+  "name": "Global::ExecuteCommandMath",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068c4a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1e10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandModuleAccess",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068c7c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2000] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandMoveAwayFromObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068c9b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a21a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandMoveToObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068cb50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a27b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandMusicBackground",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068d160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2950] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandMusicBattle",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068d300"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2a60] Steam batch B15: CALLEE 1 (callees: GetGlobalVariableTable 0x51c890); SIG 1.00 | AUTO: CALLEE 1 (callees: GetGlobalVariableTable 0x51c890); SIG 1.00",
+  "name": "Global::ExecuteCommandModifyGlobal",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068d410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2c40] Steam batch B15: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50",
+  "name": "Global::ExecuteCommandObjectToString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068d5f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2d30] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandOpenDoor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068d6e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2e20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandOpenStore",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068d7d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a30e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPickUpItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068da90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a3150] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPlayAnimation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068db00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a3c10] Steam batch B15: CALLEE 1 (callees: GetRoom_3 0x7aabd0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetRoom_3 0x7aabd0); SIG 1.00",
+  "name": "Global::ExecuteCommandPlayRoomAnimation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068e5c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a3d70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPlayMovie",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068e720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a3ed0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPlayPazaak",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068e880"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4060] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPlayRumblePattern",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ea10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a40c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPlaySound",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ea70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4240] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, PlayVisualEffect 0x52b6e0); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, PlayVisualEffect 0x52b6e0); SIG 1.00",
+  "name": "Global::ExecuteCommandPlayVisualAreaEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ebf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4330] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPopUpGUIPanel",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068ece0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4540] Steam batch B15: STR '%%%1d.%02df\\n'@00998c90; '%%%2d.%02df\\n'@00998ca0; 'PRINTFLOAT2: %%%1d.%02df\\n'@00998ce0; SIG 0.50 | AUTO: STR '%%%1d.%02df\\n'@00998c90; '%%%2d.%02df\\n'@00998ca0; 'PRINTFLOAT2: %%%1d.%02df\\n'@00998ce0; SIG 0.50",
+  "name": "Global::ExecuteCommandPrintFloat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068eef0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4770] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068f120: PopString 0x6fda70, CALL 0x00733540 ctor, CALL 0x0073a590 (log write) gated by [0x00a7e110]==0, then CALL 0x00734010 CExoString::CStr x2 (GOG 0x606120 + delta 0x12def0); no format string",
+  "name": "Global::ExecuteCommandPrintLogEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f120"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a48b0] Steam batch B15: STR 'PRINTSTRING: %s\\n'@00998d18; SIG 1.00 | AUTO: STR 'PRINTSTRING: %s\\n'@00998d18; SIG 1.00",
+  "name": "Global::ExecuteCommandPrintString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f260"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4a20] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 0.50",
+  "name": "Global::ExecuteCommandPrintVector",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f3d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4a90] Steam batch B15: CALLEE 1 (callees: GetClientCreature 0x58ae90); SIG 1.00 | AUTO: CALLEE 1 (callees: GetClientCreature 0x58ae90); SIG 1.00",
+  "name": "Global::ExecuteCommandPlayOverlayAnimation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f440"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4bb0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068f5ba CALL 0x00567f00 (args item, [creature+0x94], 0) after GetCreatureByGameObjectID 0x51c100; 0x567f00 maps to GOG 0x680b30 at the same +0x118c30 delta as RunUnequip 0x5676d0 -> 0x680300",
+  "name": "Global::ExecuteCommandPutDownItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f560"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4c20] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0068f5d0: PopInteger 0x6fd9a0, CALL 0x0091eb8b (rand) then IDIV [EBP-4] and sign fix, PushInteger 0x6fd9c0; size 109 = GOG 109",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandRandom",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f5d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4c90] Steam batch B15: STR 'names'@00998d2c; CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50 | AUTO: STR 'names'@00998d2c; CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50",
+  "name": "Global::ExecuteCommandRandomName",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4dc0] Steam batch B15: CALLEE 1 (callees: RemoveNPC 0x5fa920); SIG 1.00 | AUTO: CALLEE 1 (callees: RemoveNPC 0x5fa920); SIG 1.00",
+  "name": "Global::ExecuteCommandRemoveAvailableNPC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4e30] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068f7e0 size 457 = GOG 457: PopObject 0x6fdaf0 + PopEngineStructure 0x6fdab0, list at [+0x148]/[+0x14c], compare *p==*q and p[1]==q[1], CALL 0x0051e170 AddEventDeltaTime; imm 0x50 (SUB ESP,0x50) as G",
+  "name": "Global::ExecuteCommandRemoveEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f7e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5000] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandRemoveEffectByID",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f9b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5170] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068fb20: 0x005e4e60 called twice per index 0/1 (GetInteger; 5e4ca0+0x1c0 = 5e4e60 as GOG 734960+0x1c0=734b20), loop over list [+0x148/+0x14c], then 0x0051e170 AddEventDeltaTime",
+  "name": "Global::ExecuteCommandRemoveEffectByExactMatch",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068fb20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5390] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandRemoveFromParty",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068fd40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5410] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandRemoveHeartbeat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068fdc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5500] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandRemoveJournalQuestEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068feb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5650] Steam batch B15: CALLEE 2 (callees: RemoveMember 0x5f8b00, GetNPCObject 0x5faaf0); SIG 1.00 | AUTO: CALLEE 2 (callees: RemoveMember 0x5f8b00, GetNPCObject 0x5faaf0); SIG 1.00",
+  "name": "Global::ExecuteCommandRemovePartyMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5740] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandResistSpell",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006900f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5df0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 006907a0 size 253 = GOG 253: switch on command id 0x5f..0x67 mapping to 2,3,4,6,8,10,12,20,100, CALL 0x006a2000 CSWRules::RollDice, PopInteger 0x6fd9a0, PushInteger 0x6fd9c0",
+  "name": "Global::ExecuteCommandRollDice",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006907a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5f20] Steam batch B15: CALLEE 1 (callees: SaveMember 0x5f7f30); SIG 1.00 | AUTO: CALLEE 1 (callees: SaveMember 0x5f7f30); SIG 1.00",
+  "name": "Global::ExecuteCommandSaveNPCState",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006908d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5f70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSavingThrow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690920"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a60e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSendMessageToPC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690a90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6250] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetAreaTransitionBMP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690c00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6350] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetAreaUnescapable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690d00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a63c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetCameraLocation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690d70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a64f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetCameraMode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690ea0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6590] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetCommandable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00690f40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6670] Steam batch B15: CALLEE 1 (callees: HasSpell 0x6bd9c0); SIG 1.00 | AUTO: CALLEE 1 (callees: HasSpell 0x6bd9c0); SIG 1.00",
+  "name": "Global::ExecuteCommandSetCurrentForm",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691020"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6730] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetCustomToken",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006910e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a68d0] Steam batch B15: CALLEE 2 (callees: SetDifficulty 0x627d70, SetActive 0x627f60); SIG 1.00 | AUTO: CALLEE 2 (callees: SetDifficulty 0x627d70, SetActive 0x627f60); SIG 1.00",
+  "name": "Global::ExecuteCommandSetEncounterData",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691280"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a69b0] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandSetFacing",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6c60] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetGlobalVariableTable 0x51c890); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetGlobalVariableTable 0x51c890); SIG 1.00",
+  "name": "Global::ExecuteCommandSetGlobalLocation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691610"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6da0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetGlobalNumber",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a6ee0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetGlobalString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7000] Steam batch B15: CALLEE 1 (callees: SetIdentified 0x606d00); SIG 1.00 | AUTO: CALLEE 1 (callees: SetIdentified 0x606d00); SIG 1.00",
+  "name": "Global::ExecuteCommandSetIdentified",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006919b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7080] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetIsDestroyable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691a30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7280] Steam batch B15: STR 'NW_JOURNAL_PICTURE%s'@00998d34; CALLEE 1 (callees: SetInt 0x5e6a00); SIG 1.00 | AUTO: STR 'NW_JOURNAL_PICTURE%s'@00998d34; CALLEE 1 (callees: SetInt 0x5e6a00); SIG 1.00",
+  "name": "Global::ExecuteCommandSetJournalQuestEntryPicture",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691c30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7620] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetLightsaberPowered",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00691fd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a76e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetListening",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7780] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetListenString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692130"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7890] Steam batch B15: CALLEE 1 (callees: SetLocalNumber 0x5e9340); SIG 1.00 | AUTO: CALLEE 1 (callees: SetLocalNumber 0x5e9340); SIG 1.00",
+  "name": "Global::ExecuteCommandSetLocalValue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692240"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a79f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetLocked",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006923a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7ae0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetMapPinEnabled",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7c20] Steam batch B15: CALLEE 1 (callees: SetNPCSelectability 0x5fb170); SIG 1.00 | AUTO: CALLEE 1 (callees: SetNPCSelectability 0x5fb170); SIG 1.00",
+  "name": "Global::ExecuteCommandSetNPCSelectability",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006925d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7c90] Steam batch B15: CALLEE 1 (callees: SetLightIsOn 0x5f6470) | reviewer match with anchor: 00692640 CALL 0x005f6470 CSWSPlaceable::SetLightIsOn (GOG 0x770810 maps to it) with PopObject 0x6fdaf0, PopInteger 0x6fd9a0, GetPlaceableById 0x51c160",
+  "name": "Global::ExecuteCommandSetPlaceableIllumination",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7d10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetPlotFlag",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006926c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7db0] Steam batch B15: CALLEE 1 (callees: SetPlayerRestrictMode 0x52e170) | reviewer match with anchor: 00692760 CALL 0x0052e170 CSWSArea::SetPlayerRestrictMode after GetModule 0x51bd90 and 0x557ef0 (GetArea) with PopInteger 0x6fd9a0",
+  "name": "Global::ExecuteCommandSetRestrictMode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7e40] Steam batch B15: CALLEE 1 (callees: SetReturnStrref 0x5fec90); SIG 1.00 | AUTO: CALLEE 1 (callees: SetReturnStrref 0x5fec90); SIG 1.00",
+  "name": "Global::ExecuteCommandSetReturnStrref",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006927f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7ee0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00692890: CALL 0x00478e60 (AurEnableSpeedBlur) / 0x00478e80 (Disable) / 0x00478fa0 (SetRatio, +0x140 from Enable, same as GOG 0x86ad40/0x86ae80) with PopInteger+PopFloat",
+  "name": "Global::ExecuteCommandSetSpeedBlurEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7f60] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, UpdateLinked 0x5e5290); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, UpdateLinked 0x5e5290); SIG 1.00",
+  "name": "Global::ExecuteCommandSetSubType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692910"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8050] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetTime",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8150] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetForcePowerUnsuccessful",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a81d0] Steam batch B15: CALLEE 1 (callees: SetExperience 0x6b6bd0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetExperience 0x6b6bd0); SIG 1.00",
+  "name": "Global::ExecuteCommandSetXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692b80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a82d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandShowLevelUpGUI",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692c80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8330] Steam batch B15: CALLEE 1 (callees: ShowPartySelection 0x7cb920); SIG 1.00 | AUTO: CALLEE 1 (callees: ShowPartySelection 0x7cb920); SIG 1.00",
+  "name": "Global::ExecuteCommandShowPartySelection",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692ce0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a84a0] Steam batch B15: CALLEE 1 (callees: ShowUpgradeScreen 0x7cd7e0); SIG 1.00 | AUTO: CALLEE 1 (callees: ShowUpgradeScreen 0x7cd7e0); SIG 1.00",
+  "name": "Global::ExecuteCommandShowUpgradeScreen",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692e50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8670] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandSignalEvent",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693020"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8770] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSoundObjectGetFixedVariance",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693120"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a87f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSoundObjectGetPitchVariation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006931a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8870] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSoundObjectGetVolume",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693220"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8a50] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandSoundObjectSetPosition",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8bd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSoundObjectFadeAndStop",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8c70] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, SpawnNPC 0x5fd480); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, SpawnNPC 0x5fd480); SIG 1.00",
+  "name": "Global::ExecuteCommandSpawnAvailableNPC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693620"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8d60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSpeakOneLinerConversation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8eb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSpeakString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693860"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9110] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSpeakStrRef",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9260] Steam batch B15: CALLEE 1 (callees: AddMoveToModuleMovie 0x740180); SIG 1.00 | AUTO: CALLEE 1 (callees: AddMoveToModuleMovie 0x740180); SIG 1.00",
+  "name": "Global::ExecuteCommandStartNewModule",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693c10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a97c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandStopRumblePattern",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00694170"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9820] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50",
+  "name": "Global::ExecuteCommandStringConversions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006941d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9940] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSurrenderToEnemies",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006942f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9a50] Steam batch B15: CALLEE 1 (callees: SwitchPlayerCharacter 0x5fe4b0); SIG 1.00 | AUTO: CALLEE 1 (callees: SwitchPlayerCharacter 0x5fe4b0); SIG 1.00",
+  "name": "Global::ExecuteCommandSwitchPlayerCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00694400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9ac0] Steam batch B15: STR 'TrapScript'@00996400; 'DisarmDCMod'@0099640c; 'DetectDCMod'@00996418; CALLEE 5 (callees: StackPopEngineStructure 0x6fdab0, Constructor 0x61dcf0, AddToArea 0x61e260); SIG 1.00 | AUTO: STR 'TrapScript'@00996400; 'DisarmDCMod'@0099640c; 'DetectDCMod'@00996418; CALLEE 5 (callees: StackPopEngineStructure 0x6fdab0, Constructor 0x61dcf0, AddToArea ",
+  "name": "Global::ExecuteCommandSpawnMine",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00694470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a9fd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetForfeitConditions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00694980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa040] Steam batch B15: CALLEE 4 (callees: Constructor 0x5ffd60, LoadFromTemplate 0x601610, AddItem 0x605090); SIG 1.00 | AUTO: CALLEE 4 (callees: Constructor 0x5ffd60, LoadFromTemplate 0x601610, AddItem 0x605090); SIG 1.00",
+  "name": "Global::ExecuteCommandTakeGoldFromCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006949f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa460] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandTalent",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00694e10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa620] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandTalentAccess",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00694fd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa790] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandTimeConversions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695140"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa860] Steam batch B15: SIG 0.50 | reviewer match with anchor: 006a2690/006a2900/006a34a0 callees shared with CSWSObject::SetListenExpression/TestListenExpression; 0069525d and 00695270 CALL 0x006fda70 StackPopString x2, push int 0x6fd9c0",
+  "name": "Global::ExecuteCommandTestString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa9c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandUnequipItem",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695370"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aaac0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00695470: three CALL 0x006fd9e0 StackPopFloat then CALL 0x006fda40 StackPushVector; imm 0xc/0x10 as GOG; neighbour 6956f0 pops a vector instead",
+  "name": "Global::ExecuteCommandVector",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aab50] Steam batch B15: CALLEE 3 (callees: StackPushFloat 0x6fda00, StackPopVector 0x6fda20, StackPushVector 0x6fda40); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPushFloat 0x6fda00, StackPopVector 0x6fda20, StackPushVector 0x6fda40); SIG 1.00",
+  "name": "Global::ExecuteCommandVectorConversions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695500"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aacd0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00695680: CALL 0x006fda20 PopVector, CALL 0x005142f0 = sqrt(x*x+y*y+z*z) (FMUL [EAX+8],[EDX+4],[EDX] then CALL 0x0091cb24), CALL 0x006fda00 PushFloat",
+  "name": "Global::ExecuteCommandVectorMagnitude",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aad40] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006956f0: PopVector 0x6fda20, equality test CALL 0x00517980 (3 float compares), CALL 0x005143c0 (1/len scale of x,y,z) then PushVector 0x6fda40",
+  "name": "Global::ExecuteCommandVectorNormalize",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006956f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aae00] Steam batch B15: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopEngineStructure 0x6fdab0); SIG 1.00",
+  "name": "Global::ExecuteCommandVersusEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006957b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ab560] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandWait",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00695f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ab660] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetEffectLinkImmunity 0x6bc9a0); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetEffectLinkImmunity 0x6bc9a0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsLinkImmune",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696010"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ab790] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetPartyAIStyle",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696140"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ab7e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetNPCAIStyle",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696190"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ab8a0] Steam batch B15: CALLEE 1 (callees: GetNPCObject 0x5faaf0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetNPCObject 0x5faaf0); SIG 1.00",
+  "name": "Global::ExecuteCommandSetPartyLeader",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696250"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abb70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetPartyAIStyle",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abbd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetNPCAIStyle",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abca0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandClearAllEffects",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696650"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abd00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetStandardFaction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006966b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abdf0] Steam batch B15: CALLEE 1 (callees: GivePlotXP 0x5fdea0); SIG 1.00 | AUTO: CALLEE 1 (callees: GivePlotXP 0x5fdea0); SIG 1.00",
+  "name": "Global::ExecuteCommandGivePlotXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006967a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abee0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006968ff MOV EDX,[ECX+0x22c] then StackPushInteger; slot 715 store 00667a22",
+  "name": "Global::ExecuteCommandGetMinOneHP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abf80] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006969bb MOV [ECX+0x22c],0x1 / 006969ca MOV [EDX+0x22c],0x0 after StackPopInteger; slot 716 store 00668a7d",
+  "name": "Global::ExecuteCommandSetMinOneHP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac030] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetFadeIn",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006969e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac150] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetFadeOut",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac240] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00696c4f CMP [EBP+8],0x2d7 -> 00696c5b CALL 0x006e6880 (builds attacker list) ; 00696c72 CMP 0x2d8 -> 00696c7e CALL 0x006e6a40 (next index); slots 727/728",
+  "name": "Global::ExecuteCommandGetAttacker",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696bf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac310] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetFormation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696cc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac3d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00696dd7 CALL 0x006daa00 (IsDebilitated: state byte [+0xff5], hp<1) between StackPopObject 00696d9a and StackPushInteger 00696de9; InitCommands 00667458 slot 732=0x696d80",
+  "name": "Global::ExecuteCommandGetIsDebilitated",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696d80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac460] Steam batch B15: CALLEE 2 (callees: GetNextObjectInArea 0x5232b0, GetFirstObjectInArea 0x523250); SIG 1.00 | AUTO: CALLEE 2 (callees: GetNextObjectInArea 0x5232b0, GetFirstObjectInArea 0x523250); SIG 1.00",
+  "name": "Global::ExecuteCommandChangeByFaction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00696e10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac670] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSubScreenID",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697020"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac6e0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00697109 CALL 0x00586750 (clears target to 0x7f000000, combat state) after 006970c1 CMP [EBP+0xc],0x2 and GetCreature 006970f4; slot 54 store 00666466",
+  "name": "Global::ExecuteCommandCancelCombat",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac7c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetItemStackSize",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697170"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac840] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetItemStackSize",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006971f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acab0] Steam batch B15: CALLEE 1 (callees: ShowGalaxyMapGui 0x7ca730) | reviewer match with anchor: 0069749d CALL 0x007ca730 CGuiInGame::ShowGalaxyMapGui (only caller 0x697460); InitCommands 00668ba7 slot 739",
+  "name": "Global::ExecuteCommandShowGalaxyMapGui",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697460"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acb00] Steam batch B15: CALLEE 1 (callees: SetPlanetAvailable 0x5fed30) | reviewer match with anchor: 0069750b CALL 0x005fed30 (writes [this+0x88+idx*4], available array) after two StackPopInteger; slot 742 store 00668ada",
+  "name": "Global::ExecuteCommandSetGalaxyMapPlanetAvailable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006974b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acb70] Steam batch B15: CALLEE 1 (callees: GetPlanetAvailable 0x5fed60) | reviewer match with anchor: 0069755d CALL 0x005fed60 (reads [this+0x88+idx*4]) then 0069756f StackPushInteger; slot 743 store 00667cb2",
+  "name": "Global::ExecuteCommandGetGalaxyMapPlanetAvailable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acbe0] Steam batch B15: CALLEE 1 (callees: SetPlanetSelectable 0x5fecd0) | reviewer match with anchor: 006975eb CALL 0x005fecd0 (writes [this+200+idx*4], selectable array) after two StackPopInteger; slot 740 store 00668aea",
+  "name": "Global::ExecuteCommandSetGalaxyMapPlanetSelectable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acc50] Steam batch B15: CALLEE 1 (callees: GetPlanetSelectable 0x5fed00) | reviewer match with anchor: 0069763d CALL 0x005fed00 (reads [this+200+idx*4], selectable array) then StackPushInteger; slot 741 store 00667cc2",
+  "name": "Global::ExecuteCommandGetGalaxyMapPlanetSelectable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697600"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007accc0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetGalaxyMapSelectedPlanet",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697670"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acd10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetItemNonEquippable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006976c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acda0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetButtonMashCheck",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acdf0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetButtonMashCheck",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006977a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ace40] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetDialogPlaceableCamera",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006977f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acec0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSoloMode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697870"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acf10] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetMaxStealthXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006978c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad000] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetCurrentStealthXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006979b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad0f0] Steam batch B15: CALLEE 1 (callees: AwardStealthXP 0x52dd00); SIG 1.00 | AUTO: CALLEE 1 (callees: AwardStealthXP 0x52dd00); SIG 1.00",
+  "name": "Global::ExecuteCommandAwardStealthXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697aa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad170] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetStealthXPEnabled",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697b20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad1f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetStealthXPEnabled",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697ba0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad270] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetSubRace",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697c20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad310] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetBlockingCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697cc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad3a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetFoundEnemyCreature",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697d50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad430] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetStealthXPDecrement",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697de0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad4b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetStealthXPDecrement",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697e60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad530] Steam batch B15: STR 'BACKUPHEAD'@00998d4c; SIG 1.00 | AUTO: STR 'BACKUPHEAD'@00998d4c; SIG 1.00",
+  "name": "Global::ExecuteCommandDuplicateHeadAppearance",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697ee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad7e0] Steam batch B15: CALLEE 2 (callees: GetClientItem 0x607690, GetClientObject 0x54a840); SIG 1.00 | AUTO: CALLEE 2 (callees: GetClientItem 0x607690, GetClientObject 0x54a840); SIG 1.00",
+  "name": "Global::ExecuteCommandEnableRendering",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698190"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007add30] Steam batch B15: CALLEE 1 (callees: EnableVideoEffect 0x7409a0); SIG 1.00 | AUTO: CALLEE 1 (callees: EnableVideoEffect 0x7409a0); SIG 1.00",
+  "name": "Global::ExecuteCommandEnableVideoEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006986e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007adda0] Steam batch B15: CALLEE 1 (callees: DisableVideoEffect 0x7409c0); SIG 1.00 | AUTO: CALLEE 1 (callees: DisableVideoEffect 0x7409c0); SIG 1.00",
+  "name": "Global::ExecuteCommandDisableVideoEffect",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007addf0] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandRevealMap",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006987a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007adec0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetTutorialWindowsEnabled",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698870"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007adf30] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandShowTutorialWindow",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006988e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007adf80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsCreditSequenceInProgress",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007adfd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandStartCreditSequence",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae110] Steam batch B15: STR 'MULTIPLIER'@009955b4; CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: STR 'MULTIPLIER'@009955b4; CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandGetDifficultyMultiplier",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae1f0] Steam batch B15: CALLEE 3 (callees: StackPopEngineStructure 0x6fdab0, Constructor_2 0x5e4ac0, SetLinked 0x5e5260); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPopEngineStructure 0x6fdab0, Constructor_2 0x5e4ac0, SetLinked 0x5e5260); SIG 1.00",
+  "name": "Global::ExecuteCommandSetEffectIcon",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698ba0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae4d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandFaceObjectAwayFromObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698e80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae650] Steam batch B15: CALLEE 3 (callees: SetFogColor 0x7a8370, GetClientArea 0x52db90, SetFogColor 0x52e060); SIG 1.00 | AUTO: CALLEE 3 (callees: SetFogColor 0x7a8370, GetClientArea 0x52db90, SetFogColor 0x52e060); SIG 1.00",
+  "name": "Global::ExecuteCommandSetAreaFogColor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae730] Steam batch B15: CALLEE 2 (callees: Constructor 0x5ffd60, LoadFromTemplate 0x601610); SIG 1.00 | AUTO: CALLEE 2 (callees: Constructor 0x5ffd60, LoadFromTemplate 0x601610); SIG 1.00",
+  "name": "Global::ExecuteCommandChangeItemCost",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006990e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae890] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsLiveContentAvailable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699240"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aea00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetGoodEvilValue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006993b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aeae0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsPoisoned",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aeba0] Steam batch B15: CALLEE 1 (callees: SetSoloMode 0x5feef0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetSoloMode 0x5feef0); SIG 1.00",
+  "name": "Global::ExecuteCommandSetSoloMode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aebf0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandCancelPostDialogCharacterSwitch",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006995a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aec30] Steam batch B15: CALLEE 1 (callees: SetCurrentHitPoints 0x54a610); SIG 1.00 | AUTO: CALLEE 1 (callees: SetCurrentHitPoints 0x54a610); SIG 1.00",
+  "name": "Global::ExecuteCommandSetMaxHitPoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006995e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aece0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandNoClicksFor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699690"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aed70] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandHoldWorldFadeInForDialog",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aedb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSuppressStatusSummaryEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aee50] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00699800: StackPopFloat 0x6fd9e0 then clamp; 0069988f CALL 0x0070b600 (volume setter, options slider byte +0x4d sibling of 0x70b6a0/0x70b730); slot 765 store 00668a8d",
+  "name": "Global::ExecuteCommandSetMusicVolume",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699800"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aeef0] Steam batch B15: CALLEE 4 (callees: StackPopEngineStructure 0x6fdab0, Constructor 0x5ffd60, AddToArea 0x600eb0); SIG 1.00 | AUTO: CALLEE 4 (callees: StackPopEngineStructure 0x6fdab0, Constructor 0x5ffd60, AddToArea 0x600eb0); SIG 1.00",
+  "name": "Global::ExecuteCommandCreateItemOnFloor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006998a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af280] Steam batch B15: CALLEE 1 (callees: SetNPCObject 0x5faa80); SIG 1.00 | AUTO: CALLEE 1 (callees: SetNPCObject 0x5faa80); SIG 1.00",
+  "name": "Global::ExecuteCommandSetAvailableNPCID",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699c30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af2f0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00699cc3 CMP [EBP-8],0x1 / 00699cc9 CMP [EBP-8],0x5 then read [0x00a1b4a8-4+idx*4], push; GOG imm 0x5; slot 768 store 00667daf",
+  "name": "Global::ExecuteCommandGetScriptParameter",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699ca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af360] Steam batch B15: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50 | AUTO: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 0.50",
+  "name": "Global::ExecuteCommandGetScriptStringParameter",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699d10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af400] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetFadeUntilScript",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699db0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af440] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandShowChemicalUpgradeScreen",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699df0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af4a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandShowSwoopUpgradeScreen",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699e50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af4d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetFakeCombatState",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699e80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af5b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetOrientOnClick",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699f60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af640] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetRacialSubType",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699ff0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af710] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a1d5 MOV [ECX+0x11f4],EDX after compares vs popped value (plain set, no add); slot 801 store 00668e34; SUB ESP,0x34 matches GOG imm 0x34",
+  "name": "Global::ExecuteCommandSetBonusForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a0c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af840] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a294 MOV [ECX+0x11f4],EDX after 0069a27c MOV EDX,[ECX+0x11f4] and add of popped value; SUB ESP,0x2c = GOG imm 0x2c; slot 802 store 00668e44",
+  "name": "Global::ExecuteCommandAddBonusForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a1f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af950] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetBonusForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a300"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af9f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandIsMoviePlaying",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a3a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afa40] Steam batch B15: CALLEE 1 (callees: AddMovieToMovieQueue 0x7411c0); SIG 1.00 | AUTO: CALLEE 1 (callees: AddMovieToMovieQueue 0x7411c0); SIG 1.00",
+  "name": "Global::ExecuteCommandQueueMovie",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a3f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afb20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandPlayMovieQueue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a4d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afb70] Steam batch B15: CALLEE 1 (callees: SetOpenState 0x61d6e0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetOpenState 0x61d6e0); SIG 1.00",
+  "name": "Global::ExecuteCommandYavinHackCloseDoor",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afbd0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a5ea MOV [EAX+0x5ac],ECX after two StackPopObject (006fdaf0 x2); slot 813 store 0066891d",
+  "name": "Global::ExecuteCommandSetHealTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afc50] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a64e MOV EDX,[ECX+0x5ac] then 0069a667 CALL 0x006fdb10 StackPushObject; InitCommands 006673b8 slot 814=0x69a600",
+  "name": "Global::ExecuteCommandGetHealTarget",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a600"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afcd0] Steam batch B15: CALLEE 3 (callees: StackPushVector 0x6fda40, ComputeHeight 0x54b130, TestDirectLine 0x550980); SIG 1.00 | AUTO: CALLEE 3 (callees: StackPushVector 0x6fda40, ComputeHeight 0x54b130, TestDirectLine 0x550980); SIG 1.00",
+  "name": "Global::ExecuteCommandGetRandomDestination",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069a680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0250] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetKeepStealthInDialog",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069ac00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b02b0] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandHasLineOfSight",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069ac60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0510] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandShowDemoScreen",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069aec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b06b0] Steam batch B15: CALLEE 1 (callees: GetClientCreature 0x58ae90); SIG 1.00 | AUTO: CALLEE 1 (callees: GetClientCreature 0x58ae90); SIG 1.00",
+  "name": "Global::ExecuteCommandIsRunning",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0750] Steam batch B15: CALLEE 1 (callees: AddPUP_2 0x5fa740); SIG 1.00 | AUTO: CALLEE 1 (callees: AddPUP_2 0x5fa740); SIG 1.00",
+  "name": "Global::ExecuteCommandAddAvailablePUPByTemplate",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b100"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0870] Steam batch B15: CALLEE 1 (callees: AddPUP 0x5fa3b0); SIG 1.00 | AUTO: CALLEE 1 (callees: AddPUP 0x5fa3b0); SIG 1.00",
+  "name": "Global::ExecuteCommandAddAvailablePUPByObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b220"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0910] Steam batch B15: CALLEE 1 (callees: AssignPUP 0x5fa890); SIG 1.00 | AUTO: CALLEE 1 (callees: AssignPUP 0x5fa890); SIG 1.00",
+  "name": "Global::ExecuteCommandAssignPUP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b2c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b09a0] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, SpawnPUP 0x5fd810); SIG 1.00 | AUTO: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, SpawnPUP 0x5fd810); SIG 1.00",
+  "name": "Global::ExecuteCommandSpawnAvailablePUP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0a90] Steam batch B15: CALLEE 1 (callees: AddPuppet 0x5f8f90); SIG 1.00 | AUTO: CALLEE 1 (callees: AddPuppet 0x5f8f90); SIG 1.00",
+  "name": "Global::ExecuteCommandAddPartyPuppet",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b440"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0b80] Steam batch B15: CALLEE 2 (callees: GetPUPID 0x5fdc40, GetPUPOwner 0x5ff2c0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetPUPID 0x5fdc40, GetPUPOwner 0x5ff2c0); SIG 1.00",
+  "name": "Global::ExecuteCommandGetPUPOwner",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0c30] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsPuppet",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b5e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0cb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandActionFollowOwner",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0d70] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069b78c CALL 0x0051c8b0 ClientToServerObjectId on party member 0 ([+4]) compared with popped object, push 0/1 at 0069b7a7; slot 844 store 006675c8",
+  "name": "Global::ExecuteCommandGetIsPartyLeader",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0e10] Steam batch B15: CALLEE 3 (callees: RemoveMember 0x5f8b00, GetNPCObject 0x5faaf0, KillNPCObject 0x5fd9a0); SIG 1.00 | reviewer match with anchor: 0069b89e CALL 0x005f8b00 RemoveMember, 0069b8c8 CALL 0x0073f550 / 0069b8d7 CALL 0x0051c100 client+server GetCreature, 0069b8ea CALL 0x00775860; 11 callees as GOG; slot 846 store 006686a3",
+  "name": "Global::ExecuteCommandRemoveNPCFromPartyToBase",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0f50] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069b9e0 PUSH 0xffff / 0069b9e5 PUSH 0x47 / 0069b9ea CALL 0x0053f7f0 (AddAction); slot 853 store 006661f9",
+  "name": "Global::ExecuteCommandActionSwitchWeapons",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0fd0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0069ba3e PUSH \"UnlockedPlanetSongs\" (0x998d58), 0069ba4f \"Game Options\", 0069ba60 \".\\\\swkotor2.ini\"; imm 0x7ff; slot 855 store 00668ef4",
+  "name": "Global::ExecuteCommandUnlockAllMusic",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069ba00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b10d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069bb4d MOV [ECX+0x258],EDX after StackPopInteger 0069bb1a; slot 856 store 0066663d; GOG disp 0x258",
+  "name": "Global::ExecuteCommandDisableMap",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bb00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1130] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandDetonateMine",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bb60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b11e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandDisableHealthRegen",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bc10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1240] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetDisableTransit",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bc70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b12c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSetInputClass",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bcf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1320] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandForceAlwaysUpdate",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bd50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b13b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandEnableRain",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bde0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1470] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandDisplayMessageBox",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069bea0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b15f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandDisplayDatapad",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069c020"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b17d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetCombatActionPending",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069c200"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1890] Steam batch B15: CALLEE 1 (callees: SaveMemberByObject 0x5f8130) | reviewer match with anchor: 0069c329 CALL 0x005f8130 (bound check param<0xc: NPC slots) after StackPopInteger/StackPopObject; slot 873 store 00668713",
+  "name": "Global::ExecuteCommandSaveNPCByObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069c2c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1910] Steam batch B15: CALLEE 1 (callees: SavePuppetByObject 0x5f8520) | reviewer match with anchor: 0069c3a9 CALL 0x005f8520 (bound check param<3: puppets) after StackPopInteger/StackPopObject; slot 874 store 00668723",
+  "name": "Global::ExecuteCommandSavePUPByObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069c340"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1990] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandGetIsPlayerMadeCharacter",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069c3c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1a30] Steam batch B15: STR 'disciple'@00995110; 'remote'@009958e0; CALLEE 4 (callees: GetIsNPCAvailable 0x5fa960, GetIsPUPAvailable 0x5fa990, SetNPCObject 0x5faa80); SIG 1.00 | AUTO: STR 'disciple'@00995110; 'remote'@009958e0; CALLEE 4 (callees: GetIsNPCAvailable 0x5fa960, GetIsPUPAvailable 0x5fa990, SetNPCObject 0x5faa80); SIG 1.00",
+  "name": "Global::ExecuteCommandRebuildPartyTable",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069c460"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f97c0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 006f6241 CALL 0x006fda70 StackPopString, then 006f6272/006f62a0 StackPopInteger x2 and StackPopFloat 006f62ce, CExoString ctor/dtor; slot 582 store 006f5b8d",
+  "name": "Global::ExecuteCommandAurPostString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6200"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f98e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandSWMG_GetLastEvent",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6320"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f99e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandSWMG_GetLastEventModelName",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f9b00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetObjectByName",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f9c00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_PlayAnimation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f9e00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetLastBulletInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f9f30] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetLastBulletShooter",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6970"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f9fb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandSWMG_AdjustFollowerHitPoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f69f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa060] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_DefaultImplementations",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6aa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa180] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetLastObjectHit",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6bc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa250] Steam batch B15: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetObjectName",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6c90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa370] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_IsSomething",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6db0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa4d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetLastHPChange",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa540] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_RemoveAnimation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f6f80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa650] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetCameraClipping",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa6e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetCameraClipping",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7120"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa760] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetPlayer",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f71a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa7d0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetMiniGameCounts",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa860] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetMiniGameObjects",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f72a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa920] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetFollowerIntInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007faa80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_StartInvulnerability",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f74c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007faaf0] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetFollowerFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007faba0] Steam batch B15: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetFollowerPosition",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f75e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007facb0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandSWMG_SetFollowerIntInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f76f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fad60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetFollowerFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f77a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fae10] Steam batch B15: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetGunBankStringInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7850"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007faf80] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetGunBankIntInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f79c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb080] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetGunBankFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb170] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetTargettingGunBankFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7bb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb290] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetGunBankStringInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7cd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb420] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetGunBankIntInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7e60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb500] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetGunBankFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f7f40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb600] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetTargettingGunBankFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb740] Steam batch B15: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushString 0x6fda90); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetLastBulletHitPart",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8180"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb810] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetPlayerFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8250"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fb900] Steam batch B15: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetPlayerVectorInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8340"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbaa0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetPlayerFloatInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f84e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbb90] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetPlayerVectorInfo",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f85d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbd00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetSoundProperty",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8740"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbdf0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetSoundProperty",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbee0] Steam batch B15: CALLEE 1 (callees: GetDEXMod 0x6b5db0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetDEXMod 0x6b5db0); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetLateralAccelPerSec",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8920"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbf80] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetLateralAccelPerSec",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f89c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbfd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetSwoopUpgrade",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8a10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fc050] Steam batch B15: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPushVector 0x6fda40); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_GetTrackPosition",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8a90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fc120] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetFollowerPosition",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8b60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fc190] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_DestroyMiniGameObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8bd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fc210] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_SetJumpSpeed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8c50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; stdcall retn=8; GOG 0x007fc260] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "name": "Global::ExecuteCommandSWMG_PlayerApplyForce",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006f8ca0"
+ }
+]

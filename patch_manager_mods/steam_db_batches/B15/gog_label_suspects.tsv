@@ -1,0 +1,3 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x00791a10	Global::ExecuteCommandGetEmotions	0x0067c430	Candidate wrong; slots 235-237 (GetIsEnemy/Friend/Neutral) handler 0x67c430 compares reputation 0xeb-0xed; GOG name GetEmotions is a label bug.	review:sonnet_c2.tsv
+0x007a0b00	Global::ExecuteCommandIsAIState	0x0068b4b0	Candidate is IntToString; true counterpart 0x68b4b0 body is GetIsDead (HP<=0), contradicting IsAIState name	review:sonnet_c3.tsv

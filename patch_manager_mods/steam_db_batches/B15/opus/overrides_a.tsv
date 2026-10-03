@@ -1,0 +1,104 @@
+gog_addr	steam_addr	final_verdict	note
+0x00784680	0x0066f0a0	verified	Opus corr (row 0x66f330=ClearAllActions slot 9). Store 00666496 [EDX+0x2b4],0x66f0a0 slots 173/412; 0066f0cd CMP [EBP+8],0xad + 0066f0f5 CMP 0x19c; fp=GOG 650B
+0x00786c40	0x00671660	verified	store 0066680d [EAX+0x6f8],0x671660 slot 446 EffectAbilityDecrease; fp=GOG 447B; 006716fd CALL 0x5e4920 CGameEffect ctor; differs from Increase only by global 0x995fb0 vs 0x995fac
+0x00786e00	0x00671820	verified	store 0066681d [EDX+0x140],0x671820 slot 80 EffectAbilityIncrease; fp=GOG 447B; 006718bd CALL 0x5e4920 CGameEffect ctor; global 0x995fac (Decrease uses 0x995fb0)
+0x0078b150	0x00675b70	verified	store 00666b0d [EAX+0x294],0x675b70 slot 165 EffectMovementSpeedIncrease; fp=GOG 395B; 00675be7 CALL 0x5e4920 CGameEffect ctor; Mac ExecuteCommandEffectMovementSpeedIncrease
+0x0078bfe0	0x00676a00	verified	store 00666bcd [EAX+0x760],0x676a00 slot 472 EffectSpellLevelAbsorption; fp=GOG 470B (imm 0x2,0x3,0x9); 00676b19 CALL 0x5e5ea0 SetCreator
+0x0078c1c0	0x00676be0	verified	store 006669fd [EDX+0x718],0x676be0 slot 454 EffectForceResistanceDecrease; fp=GOG 317B; 00676c47 CALL 0x5e4920 CGameEffect ctor; Mac name same
+0x0078c300	0x00676d20	verified	store 00666a0d [ECX+0x350],0x676d20 slot 212 EffectForceResistanceIncrease; fp=GOG 317B; 00676d87 CALL 0x5e4920 CGameEffect ctor; Mac name same
+0x00790420	0x0067ae40	verified	Opus corr (row 0x67ac20=GetCommandable slot 163). Stores 00666f51/00666f61 slots 307/308; 0067aea8 CMP [EBP+8],0x134; 0067b027 CALL 0x6b8bb0 GetCreatureTalentRandom; Mac name same
+0x00790ba0	0x0067b5c0	verified	store 00666ff1 [EDX+0x4a8],0x67b5c0 slot 298 GetDistanceBetweenLocations; fp=GOG; 0067b5d5 CALL 0x6fdab0 PopEngineStructure, 0067b65f CALL 0x4452b0 Vector-, 0067b680 PushFloat
+0x00791a10	0x0067c430	verified	Opus corr (row 0x67c250=GetEffectSpellId 305). Stores 00667498/006674a8/00667518 slots 235-237; 0067c545 [ECX+0x398]; fp=GOG 467B. Name=Mac symbol (source name), not a label error
+0x007920d0	0x0067caf0	verified	store 00667108 [EDX+0x2f4],0x67caf0 slot 189 GetFactionAverageLevel; fp=GOG; 0067cb37 CALL 0x51c100 GetCreatureByGameObjectID, 0067cb48 [ECX+0x1198]
+0x00793430	0x0067de50	verified	store 006672e8 [EDX+0x688],0x67de50 slots 418/771; 0067dea1 CALL 0x5812e0 CSWSCreature::GetGold, 0067deec PUSH 0x17 + 0067def1 CALL 0x605b80 FindItemWithBaseItemType; fp=GOG
+0x00794f90	0x0067f9b0	verified	store 00667448 [ECX+0x654],0x67f9b0 slot 405 GetIsDay; fp=GOG 106B; 0067f9df [module+0x1dc] then 0067f9ec CMP ECX,0x1 (Dusk=4). KDB name GetIsDoorActionPossible here is wrong
+0x007953a0	0x0067fdc0	verified	store 00667478 [ECX+0x660],0x67fdc0 slot 408 GetIsDusk; fp=GOG 106B (imm 0x4); 0067fdef [module+0x1dc], 0067fdfc CMP ECX,0x4
+0x00798d10	0x00683740	verified	Opus corr (row 0x6837c0=GetMetaMagicFeat 105). Store 006679b2 [ECX+0x30c],0x683740 slot 195; 00683790 [ECX+0x1bc]; fp=GOG 123B; Mac ExecuteCommandGetMatchedStringsNum
+0x00799310	0x00683d40	verified	Opus corr (row 0x6839a0=GetModuleFileName/Name). Stores 00667ae2/00667af2/00667b02 slots 38,226-229; 00683de6 CMP [EBP+8],0x26, 00683dec CMP 0xe2; fp=GOG 4828B
+0x0079e650	0x00689000	verified	store 0066802f [EDX+0xf8],0x689000 slot 62 GetStringRight; fp=GOG; 0068904d CALL 0x6fda70 PopString, 0068908a PopInteger, 006890fc PushString; Mac name same
+0x007a0a10	0x0068b3c0	verified	store 006682c3 [EDX+0x170],0x68b3c0 slot 92 IntToString; fp=GOG; 0068b401 CALL 0x6fd9a0 PopInteger, 0068b42c CALL 0x733700 CExoString(int), 0068b457 PushString
+0x007a0b00	0x0068b4b0	verified	Opus corr (row 0x68b3c0=IntToString). Store 006682f3 [EDX+0x230],0x68b4b0 slot 140 GetIsDead; 0068b55f CMP [EAX+0x11ac],0; fp=GOG 313B. Name=Mac symbol, not label error
+0x007a2530	0x0068cee0	verified	Opus corr (row 0x68cb50=ActionMoveToObject 22/383). Stores 006660a5/0066613f slots 21/382; 0068cf3b CMP [EBP+8],0x17e, 0068cfef CMP 0x15; fp=GOG 637B; Mac name same
+0x007a8290	0x00692c40	verified	store 00668b87 [ECX+0xbe4],0x692c40 slot 761 ShipBuild; fp=GOG 60B; 00692c50 MOV [0xa7e114],1 + 00692c64 CALL 0x6fd9c0 PushInteger(1); only global address differs (no layout shift)
+0x007aaac0	0x00695470	verified	store 00668f04 [EDX+0x238],0x695470 slot 142 Vector; fp=GOG; 00695492 CALL 0x6fd9e0 PopFloat (x3), 006954e4 CALL 0x6fda40 PushVector; Mac name same
+0x007aacd0	0x00695680	verified	store 00668f14 [ECX+0x1a0],0x695680 slot 104 VectorMagnitude; fp=GOG; 006956a7 CALL 0x6fda20 PopVector, 006956d3 CALL 0x6fda00 PushFloat
+0x007ac770	0x00697120	verified	store 006684c3 [EAX+0xe4],0x697120 slot 57 PauseGame; fp=GOG; 00697133 CALL 0x6fd9a0 PopInteger, 0069715a CALL 0x740350 SetPausedByCombat
+0x007acb00	0x006974b0	verified	store 00668ada [EAX+0xb98],0x6974b0 slot 742 SetPlanetAvailable; fp=GOG 104B; 0069750b CALL 0x5fed30 CSWPartyTable::SetPlanetAvailable; Mac ExecuteCommandSetGalaxyMapPlanetAvailable
+0x007b1890	0x0069c2c0	verified	store 00668713 [ECX+0xda4],0x69c2c0 slot 873 SaveNPCByObject; fp=GOG; 0069c329 CALL 0x5f8130 CSWPartyTable::SaveMemberByObject
+0x007940b0	0x0067ead0	verified	store 006673d8 [EDX+0x530],0x67ead0 slot 332 GetIdentified; fp=GOG 116B RET 8 (imm,disp,callees same); 0067eb2c CALL 0x6fd9c0 StackPushInteger
+0x0079e2c0	0x00688c70	verified	store 00667fff [EDX+0xfc],0x688c70 slot 63 GetStringLeft; fp=GOG 354B RET 8 (imm,disp,callees same); 00688c9b CALL 0x733540 CExoString
+0x00786680	0x006710a0	verified	store 006666bd [EAX+0x800],0x6710a0 slot 512 DoSinglePlayerAutoSave; fp=GOG 38B; 006710b9 CALL 0x51bf50 (=GOG 0x64b970 SetAutoSavePending, 36B; Export pair 0x51bed0/0x64b8f0)
+0x00785c50	0x00670670	verified	store 0066660d [EDX+0xa88],0x670670 slot 674 DeleteJournalWorldEntryStrref; fp=GOG 230B RET 8 (imm,disp,callees same); 006706b7 CALL 0x6fd9a0 StackPopInteger
+0x00787700	0x00672120	verified	store 0066685d [ECX+0x6fc],0x672120 slot 447 EffectAttackDecrease; fp=GOG 477B RET 8 (imm,disp,callees same); 00672263 CALL 0x53dfb0 GetGameObject
+0x00794030	0x0067ea50	verified	store 006679e2 [ECX+0xe0],0x67ea50 slot 56 GetMaxForcePoints; fp=GOG 123B RET 8 (imm,disp,callees same); 0067eab3 CALL 0x6fd9c0 StackPushInteger
+0x007ae9d0	0x00699380	verified	store 006686c3 [EAX+0xbb4],0x699380 slot 749 ResetDialogState; fp=GOG 45B RET 8 (imm,disp,callees same); 00699399 CALL 0x73f750 GetInGameGui
+0x00786fc0	0x006719e0	verified	store 0066682d [ECX+0x708],0x6719e0 slot 450 EffectACDecrease; fp=GOG 534B RET 8 (imm,disp,callees same); 00671b5c CALL 0x53dfb0 GetGameObject
+0x0078d8d0	0x006782f0	verified	store 006667dd [EAX+0x380],0x6782f0 slot 224 EffectBodyFuel; fp=GOG 240B RET 8 (imm,disp,callees same); 0067837e CALL 0x6fdad0 StackPushEngineStructure
+0x0078d470	0x00677e90	verified	store 0066679d [ECX+0x5d0],0x677e90 slot 372 EffectDamageForcePoints; fp=GOG 282B RET 8 (imm,disp,callees same); 00677ec2 CALL 0x6fd9a0 StackPopInteger
+0x00792b50	0x0067d570	verified	store 006671a8 [ECX+0x2d8],0x67d570 slot 182 GetFactionStrongestMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d5bb CALL 0x6fd9a0 StackPopInteger
+0x007ad6c0	0x00698070	verified	store 006689fd [EDX+0x7e4],0x698070 slot 505 SetLockOrientationInDialog; fp=GOG 140B RET 8 (imm,disp,callees same); 006980e8 CALL 0x73f750 GetInGameGui
+0x00792630	0x0067d050	verified	store 00667178 [ECX+0x2e0],0x67d050 slot 184 GetFactionLeastDamagedMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d09b CALL 0x6fd9a0 StackPopInteger
+0x0078d250	0x00677c70	verified	store 0066677d [EAX+0x758],0x677c70 slot 470 EffectBlasterDeflectionDecrease; fp=GOG 282B RET 8 (imm,disp,callees same); 00677ca2 CALL 0x6fd9a0 StackPopInteger
+0x0078a0a0	0x00674ac0	verified	store 00666c3d [EDX+0xc30],0x674ac0 slot 780 EffectVPRegenModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 00674b8d CALL 0x53dfb0 GetGameObject
+0x0079e1b0	0x00688b60	verified	store 00667fef [EAX+0x3bc],0x688b60 slot 239 GetStringByStrRef; fp=GOG 267B RET 8 (imm,disp,callees same); 00688bab CALL 0x733540 CExoString; Mac symbol=GOG name
+0x00789600	0x00674020	verified	store 0066692d [EAX+0x144],0x674020 slot 81 EffectDamageResistance; fp=GOG 492B RET 8 (imm,disp,callees same); 00674172 CALL 0x53dfb0 GetGameObject
+0x00791000	0x0067ba20	verified	store 00667011 [EAX+0xa4],0x67ba20 slot 41 GetDistanceToObject; fp=GOG 416B RET 8 (imm,disp,callees same); 0067baa5 CALL 0x53dfb0 GetGameObject
+0x0078d590	0x00677fb0	verified	store 006667ad [EAX+0x5d4],0x677fb0 slot 373 EffectHealForcePoints; fp=GOG 282B RET 8 (imm,disp,callees same); 00677fe2 CALL 0x6fd9a0 StackPopInteger
+0x0078b7b0	0x006761d0	verified	store 00666b6d [EAX+0x1d4],0x6761d0 slot 117 EffectSavingThrowIncrease; fp=GOG 528B RET 8 (imm,disp,callees same); 00676346 CALL 0x53dfb0 GetGameObject
+0x00792c60	0x0067d680	verified	store 006671b8 [EAX+0x2d4],0x67d680 slot 181 GetFactionWeakestMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d6cb CALL 0x6fd9a0 StackPopInteger
+0x007878e0	0x00672300	verified	store 0066686d [EAX+0x1d8],0x672300 slot 118 EffectAttackIncrease; fp=GOG 477B RET 8 (imm,disp,callees same); 00672443 CALL 0x53dfb0 GetGameObject
+0x00789f30	0x00674950	verified	store 00666a3d [ECX+0xc2c],0x674950 slot 779 EffectFPRegenModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 00674a1d CALL 0x53dfb0 GetGameObject
+0x007922a0	0x0067ccc0	verified	store 00667128 [EAX+0x2f8],0x67ccc0 slot 190 GetFactionAverageXP; fp=GOG 212B RET 8 (imm,disp,callees same); 0067cd7c CALL 0x6fd9c0 StackPushInteger
+0x00789c80	0x006746a0	verified	store 006669bd [EAX+0xc08],0x6746a0 slot 770 EffectForceBody; fp=GOG 359B RET 8 (imm,disp,callees same); 0067476d CALL 0x53dfb0 GetGameObject
+0x007a4850	0x0068f200	verified	store 006685ad [EAX+0x14],0x68f200 slot 5 PrintObject; fp=GOG 84B RET 8 (imm,disp,callees same); 0068f233 CALL 0x6fd9a0 StackPopInteger
+0x007a8b70	0x00693520	verified	store 00668cb7 [EAX+0x678],0x693520 slot 414 SoundObjectStop; fp=GOG 84B RET 8 (imm,disp,callees same); 00693533 CALL 0x6fdaf0 StackPopObject
+0x0078b420	0x00675e40	verified	store 00666b4d [EDX+0x148],0x675e40 slot 82 EffectResurrection; fp=GOG 379B RET 8 (imm,disp,callees same); 00675f21 CALL 0x53dfb0 GetGameObject
+0x00789b10	0x00674530	verified	store 006669ad [ECX+0xd44],0x674530 slot 849 EffectFactionModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 006745fd CALL 0x53dfb0 GetGameObject
+0x0078a210	0x00674c30	verified	store 00666a5d [EDX+0xc24],0x674c30 slot 777 EffectFury; fp=GOG 317B RET 8 (imm,disp,callees same); 00674cd3 CALL 0x53dfb0 GetGameObject
+0x007ad080	0x00697a30	verified	store 006687f0 [EDX+0x778],0x697a30 slot 478 SetCurrentStealthXP; fp=GOG 109B RET 8 (imm,disp,callees same); 00697a47 CALL 0x51c8f0 GetPlayerCreatureId
+0x007ad750	0x00698100	verified	store 00668a0d [ECX+0x7e8],0x698100 slot 506 SetLockHeadFollowInDialog; fp=GOG 140B RET 8 (imm,disp,callees same); 00698178 CALL 0x73f750 GetInGameGui
+0x0078d130	0x00677b50	verified	store 0066676d [ECX+0x754],0x677b50 slot 469 EffectBlasterDeflectionIncrease; fp=GOG 282B RET 8 (imm,disp,callees same); 00677b82 CALL 0x6fd9a0 StackPopInteger
+0x007b0f10	0x0069b940	verified	store 00667588 [EDX+0xd4c],0x69b940 slot 851 GetIsXBox; fp=GOG 50B RET 8 (imm,disp,callees same); 0069b95a CALL 0x6fd9c0 StackPushInteger
+0x007911a0	0x0067bbc0	verified	store 00667021 [EDX+0x53c],0x67bbc0 slot 335 GetDistanceToObject2D; fp=GOG 426B RET 8 (imm,disp,callees same); 0067bc45 CALL 0x53dfb0 GetGameObject
+0x0078e770	0x00679190	verified	store 00666cfa slot 557 ExportAllCharacters; fp=GOG 38B; 006791a9 CALL 0x51bed0 (=GOG 0x64b8f0 SetExportAllCharactersPending, 36B, same 0x80 spacing as AutoSave pair)
+0x0079e7c0	0x00689170	verified	store 0066803f [ECX+0xf0],0x689170 slot 60 GetStringUpperCase; fp=GOG 289B RET 8 (imm,disp,callees same); 0068919b CALL 0x733540 CExoString
+0x00792380	0x0067cda0	verified	store 00667138 [EDX+0x304],0x67cda0 slot 193 GetFactionBestAC; fp=GOG 263B RET 8 (imm,disp,callees same); 0067cdeb CALL 0x6fd9a0 StackPopInteger
+0x0079e520	0x00688ed0	verified	store 0066801f [EAX+0xf4],0x688ed0 slot 61 GetStringLowerCase; fp=GOG 289B RET 8 (imm,disp,callees same); 00688efb CALL 0x733540 CExoString
+0x007935e0	0x0067e000	verified	store 00667328 [ECX+0xc18],0x67e000 slot 774 GetChemicals; fp=GOG 248B RET 8 (imm,disp,callees same); 0067e0a1 CALL 0x605b80 FindItemWithBaseItemType; Mac symbol=GOG name
+0x00792960	0x0067d380	verified	store 00667188 [EAX+0x2dc],0x67d380 slot 183 GetFactionMostDamagedMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d3cb CALL 0x6fd9a0 StackPopInteger
+0x007aee00	0x006997b0	verified	store 00666ef1 [EAX+0xbf0],0x6997b0 slot 764 GetCheatCode; fp=GOG 76B RET 8 (imm,disp,callees same); 006997ca CALL 0x6fd9a0 StackPopInteger
+0x0078d6b0	0x006780d0	label_suspect	addr ok: fp=GOG 282B; same dead first store of slot 156 (Steam 006667bd [EDX+0x270],0x6780d0 overwritten at 00666bed; GOG 0077bd9d). Mac symbol for this body: ExecuteCommandEffectTemporaryForcePoints
+0x00785b60	0x00670580	verified	store 006665fd [EAX+0xa84],0x670580 slot 673 DeleteJournalWorldEntry; fp=GOG 230B RET 8 (imm,disp,callees same); 006705c7 CALL 0x6fd9a0 StackPopInteger
+0x0078afc0	0x006759e0	verified	store 00666afd [ECX+0x70c],0x6759e0 slot 451 EffectMovementSpeedDecrease; fp=GOG 395B RET 8 (imm,disp,callees same); 00675ad1 CALL 0x53dfb0 GetGameObject
+0x007871e0	0x00671c00	verified	store 0066683d [EAX+0x1cc],0x671c00 slot 115 EffectACIncrease; fp=GOG 534B RET 8 (imm,disp,callees same); 00671d7c CALL 0x53dfb0 GetGameObject
+0x0078bca0	0x006766c0	verified	store 00666b9d [EAX+0x57c],0x6766c0 slot 351 EffectSkillIncrease; fp=GOG 448B RET 8 (imm,disp,callees same); 00676825 CALL 0x53dfb0 GetGameObject
+0x0078d9c0	0x006783e0	verified	store 006667ed [EDX+0xa90],0x6783e0 slot 676 EffectPsychicStatic; fp=GOG 240B RET 8 (imm,disp,callees same); 0067846e CALL 0x6fdad0 StackPushEngineStructure
+0x007a8950	0x00693300	verified	store 00668c77 [ECX+0x1f0],0x693300 slot 124 SoundObjectSetFixedVariance; fp=GOG 117B RET 8 (imm,disp,callees same); 0069332d CALL 0x6fd9e0 StackPopFloat
+0x00793530	0x0067df50	verified	store 006672f8 [ECX+0x4dc],0x67df50 slot 311/772 GetGoldPieceValue; fp=GOG 165B RET 8 (imm,disp,callees same); 0067dfcb CALL 0x606a80 GetCost
+0x007a4710	0x0068f0c0	verified	store 00668590 [EDX+0x10],0x68f0c0 slot 4 PrintInteger; fp=GOG 84B RET 8 (imm,disp,callees same); 0068f0d3 CALL 0x6fd9a0 StackPopInteger
+0x0078bae0	0x00676500	verified	store 00666b8d [ECX+0x714],0x676500 slot 453 EffectSkillDecrease; fp=GOG 448B RET 8 (imm,disp,callees same); 00676665 CALL 0x53dfb0 GetGameObject
+0x00791ff0	0x0067ca10	verified	store 006670f8 [EAX+0x2ec],0x67ca10 slot 187 GetFactionAverageGoodEvilAlignment; fp=GOG 212B RET 8 (imm,disp,callees same); 0067cacc CALL 0x6fd9c0 StackPushInteger
+0x0078c440	0x00676e60	verified	runtime slot 156 EffectTemporaryForcePoints: 00666bed [ECX+0x270],0x676e60 (overwrites 0x6780d0); fp=GOG 418B. Mac symbol is ExecuteCommandEffectTemporaryFP (GOG names of pair swapped vs Mac)
+0x0079d600	0x00687fb0	verified	store 00667cd2 [EDX+0x8d4],0x687fb0 slot 565 GetRunScriptVar; fp=GOG 43B RET 8 (imm,disp,callees same); 00687fc3 CALL 0x6fd9c0 StackPushInteger
+0x007936e0	0x0067e100	verified	store 00667338 [EAX+0xc1c],0x67e100 slot 775 GetChemicalPieceValue; fp=GOG 174B RET 8 (imm,disp,callees same); 0067e17b CALL 0x606a80 GetCost
+0x0078b5a0	0x00675fc0	verified	store 00666b5d [ECX+0x710],0x675fc0 slot 452 EffectSavingThrowDecrease; fp=GOG 528B RET 8 (imm,disp,callees same); 00676136 CALL 0x53dfb0 GetGameObject
+0x007a1450	0x0068be00	verified	store 00668393 [ECX+0xcb0],0x68be00 slot 812 IsInTotalDefense; fp=GOG 128B RET 8 (imm,disp,callees same); 0068be68 CALL 0x6fd9c0 StackPushInteger
+0x007893f0	0x00673e10	verified	store 0066691d [ECX+0x1dc],0x673e10 slot 119 EffectDamageReduction; fp=GOG 526B RET 8 (imm,disp,callees same); 00673f84 CALL 0x53dfb0 GetGameObject
+0x0077f030	0x00669a50	verified	store 00666045 [EAX+0x63c],0x669a50 slot 399 ActionEquipMostDamagingMelee; fp=GOG 123B RET 8 (imm,disp,callees same); 00669a7d CALL 0x6fd9a0 StackPopInteger
+0x007a88f0	0x006932a0	verified	store 00668c67 [EDX+0x674],0x6932a0 slot 413 SoundObjectPlay; fp=GOG 84B RET 8 (imm,disp,callees same); 006932b3 CALL 0x6fdaf0 StackPopObject
+0x007acf90	0x00697940	verified	store 00668a4d [EAX+0x750],0x697940 slot 468 SetMaxStealthXP; fp=GOG 109B RET 8 (imm,disp,callees same); 00697957 CALL 0x51c8f0 GetPlayerCreatureId
+0x00792550	0x0067cf70	verified	store 00667158 [EAX+0x2e4],0x67cf70 slot 185 GetFactionGold; fp=GOG 212B RET 8 (imm,disp,callees same); 0067d02c CALL 0x6fd9c0 StackPushInteger
+0x007a1340	0x0068bcf0	verified	store 00668373 [EAX+0xca8],0x68bcf0 slot 810 IsStealthed; fp=GOG 122B RET 8 (imm,disp,callees same); 0068bd52 CALL 0x6fd9c0 StackPushInteger
+0x007a8af0	0x006934a0	verified	store 00668ca7 [ECX+0x67c],0x6934a0 slot 415 SoundObjectSetVolume; fp=GOG 114B RET 8 (imm,disp,callees same); 006934cd CALL 0x6fd9a0 StackPopInteger
+0x0078c5f0	0x00677010	verified	store 00666bfd [EAX+0x4e8],0x677010 slot 314 EffectTemporaryHitpoints; fp=GOG 418B RET 8 (imm,disp,callees same); 0067710d CALL 0x53dfb0 GetGameObject; Mac symbol=GOG name
+0x007a89d0	0x00693380	verified	store 00668c87 [EAX+0xac8],0x693380 slot 690 SoundObjectSetPitchVariance; fp=GOG 117B RET 8 (imm,disp,callees same); 006933ad CALL 0x6fd9e0 StackPopFloat; Mac symbol=GOG name
+0x00794f20	0x0067f940	verified	store 00667438 [EDX+0x65c],0x67f940 slot 407 GetIsDawn; fp=GOG 106B RET 8 (imm,disp,callees same); 0067f992 CALL 0x6fd9c0 StackPushInteger
+0x0078d370	0x00677d90	verified	store 0066678d [EDX+0x75c],0x677d90 slot 471 EffectHorrified; fp=GOG 252B RET 8 (imm,disp,callees same); 00677e2a CALL 0x6fdad0 StackPushEngineStructure
+0x0078a9f0	0x00675410	verified	store 00666aad [EAX+0x724],0x675410 slot 457 EffectInvisibility; fp=GOG 386B RET 8 (imm,disp,callees same); 00675442 CALL 0x6fd9a0 StackPopInteger
+0x00796e60	0x00681890	verified	store 006676c2 [EAX+0x90],0x681890 slot 36 GetLastAttacker; fp=GOG 168B RET 8 (imm,disp,callees same); 006818b8 CALL 0x6fdaf0 StackPopObject
+0x0078f920	0x0067a340	verified	store 00666e61 [EAX+0x5dc],0x67a340 slot 375 GetAttemptedSpellTarget; fp=GOG 97B RET 8 (imm,disp,callees same); 0067a389 CALL 0x6fdb10 StackPushObject
+0x007956b0	0x006800d0	verified	store 00667528 [EDX+0x658],0x6800d0 slot 406 GetIsNight; fp=GOG 106B RET 8 (imm,disp,callees same); 00680122 CALL 0x6fd9c0 StackPushInteger
+0x0078d7d0	0x006781f0	verified	store 006667cd [ECX+0x27c],0x6781f0 slot 159 EffectChoke; fp=GOG 252B RET 8 (imm,disp,callees same); 0067828a CALL 0x6fdad0 StackPushEngineStructure
+0x00789df0	0x00674810	verified	store 006669cd [EDX+0xcdc],0x674810 slot 823 EffectForceSight; fp=GOG 317B RET 8 (imm,disp,callees same); 006748b3 CALL 0x53dfb0 GetGameObject
+0x0079cd60	0x00687710	verified	store 00667d02 [EDX+0x884],0x687710 slot 545 GetPlaceableIllumination; fp=GOG 120B RET 8 (imm,disp,callees same); 0068775e CALL 0x5f6570 GetLightIsOn
+0x00793c50	0x0067e670	verified	store 006673a8 [EDX+0x4c0],0x67e670 slot 304 GetHasSpellEffect; fp=GOG 190B RET 8 (imm,disp,callees same); 0067e704 CALL 0x5476c0 HasSpellEffectApplied

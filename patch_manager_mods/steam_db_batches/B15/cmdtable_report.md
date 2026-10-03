@@ -2,7 +2,7 @@
 
 - slots 877; filled GOG 877 / Steam 877; distinct handlers GOG 655 / Steam 655
 - slot sets equal on both sides: 655 of 655 GOG handlers
-- GOG `ExecuteCommand*` rows 655: match:exact 654, match:overwritten_slot_156 1, name:n/a 152, name:yes 503
+- GOG `ExecuteCommand*` rows 655: mac:n/a 1, mac:no 1, mac:yes 653, match:exact 654, match:overwritten_slot_156 1, name:n/a 152, name:yes 503
 
 ## Slots stored twice (the later store is the runtime handler)
 
@@ -11,6 +11,10 @@
 
 ## GOG label contradicts the dispatch table (name_slot = no)
 
+
+## GOG name is not a Mac symbol of its slots (name_mac = no)
+
+- 0x0078c440 CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints slots {156}; Mac: ExecuteCommandEffectTemporaryFP; nwscript slot check: yes
 
 ## GOG rows without an exact counterpart
 
