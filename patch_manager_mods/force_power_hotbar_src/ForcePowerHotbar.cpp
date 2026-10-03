@@ -18,6 +18,8 @@
 #include <windows.h>
 #include <stdarg.h>
 #include <algorithm>
+#include "SafeRead.h"
+#include "Party.h"
 #include "HotbarConfig.h"
 #include "TwoDA.h"
 #include "Tlk.h"
@@ -108,24 +110,13 @@ void logf(const char* fmt, ...) {
     fputc('\n', f); fclose(f);
 }
 
-template <typename T> bool readAt(uintptr_t base, int off, T* out) {
-    if (base == 0 || IsBadReadPtr(reinterpret_cast<const void*>(base + off), sizeof(T))) return false;
-    *out = *reinterpret_cast<const T*>(base + off);
-    return true;
-}
-int rdInt(uintptr_t base, int off, int dflt = 0) { int v; return readAt(base, off, &v) ? v : dflt; }
+// saferead site ids (per DLL; the ring buffer reports them). 0x4800-0x48FF belong to this mod.
+enum Site : unsigned { S_Hud = 0x4801, S_Entry, S_Ctl, S_Border, S_Geom, S_Create, S_Save, S_Tex, S_Input, S_Misc, S_Aspect, S_Proj };
 
-// Guarded CExoString {char* text; int len} read; empty on anything implausible.
-std::string readCExoString(uintptr_t addr) {
-    int p, len;
-    if (!readAt(addr, 0, &p) || !readAt(addr, 4, &len)) return "";
-    if (len <= 0 || len > 80 || p == 0 || IsBadReadPtr(reinterpret_cast<const void*>(p), len)) return "";
-    std::string s(reinterpret_cast<const char*>(p), len);
-    while (!s.empty() && s.back() == '\0') s.pop_back();   // engine lengths include the trailing NUL (live-verified)
-    if (s.empty()) return "";
-    for (unsigned char c : s) if (c < 0x20 || c > 0x7E) return "";
-    return s;
-}
+int rdInt(unsigned site, uintptr_t base, int off, int dflt = 0) { int v; return saferead::readAt(site, base, off, &v) ? v : dflt; }
+
+// Guarded CExoString read (saferead::readExo: len 1..80, printable, trailing NULs stripped; engine lengths include the trailing NUL (live-verified)); empty on anything implausible.
+std::string readExoStr(unsigned site, uintptr_t addr) { char buf[96]; return saferead::readExo(site, addr, buf, sizeof buf) ? std::string(buf) : std::string(); }
 
 // ---- action decode (shared by the INI and the resolver) --------------------------------
 struct Entry { int group, index, key, flags; std::string name, icon; hb::ActionRef ref; };
@@ -146,15 +137,15 @@ std::string itemIconFor(const std::string& name) { auto it = g_itemIcon.find(nam
 // Reads group g's entry list from the hud (guarded) and remembers item icons. Returns count read.
 int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
     out->clear();
-    int base = rdInt(hud, Hud_GroupLists + g * 12), count = rdInt(hud, Hud_GroupLists + 4 + g * 12);
+    int base = rdInt(S_Hud, hud, Hud_GroupLists + g * 12), count = rdInt(S_Hud, hud, Hud_GroupLists + 4 + g * 12);
     if (count < 0 || count > MaxEntries) { logf("readGroup g=%d: implausible count=%d base=%08x", g, count, (unsigned)base); return 0; }
     if (base == 0 || count == 0) return 0;
     for (int i = 0; i < count; ++i) {
         uintptr_t e = (uintptr_t)base + (uintptr_t)i * EntryStride;
-        if (IsBadReadPtr(reinterpret_cast<const void*>(e), EntryStride)) { logf("readGroup g=%d: entry %d at %08x unreadable, stopping", g, i, (unsigned)e); break; }
-        Entry en; en.group = g; en.index = i; en.key = rdInt(e, Entry_Key); en.flags = rdInt(e, Entry_Flags);
-        en.name = readCExoString(e);
-        { char ib[17] = {0}; if (!IsBadReadPtr(reinterpret_cast<const void*>(e + 0x1C + 4), 16)) { memcpy(ib, reinterpret_cast<const void*>(e + 0x20), 16); for (int k = 0; k < 16; ++k) if (ib[k] && (ib[k] < 0x20 || ib[k] > 0x7E)) ib[k] = '?'; } en.icon = ib; }
+        if (!saferead::probeRead(S_Entry, reinterpret_cast<const void*>(e), EntryStride)) { logf("readGroup g=%d: entry %d at %08x unreadable, stopping", g, i, (unsigned)e); break; }
+        Entry en; en.group = g; en.index = i; en.key = rdInt(S_Entry, e, Entry_Key); en.flags = rdInt(S_Entry, e, Entry_Flags);
+        en.name = readExoStr(S_Entry, e);
+        { char ib[17] = {0}; if (saferead::probeRead(S_Entry, reinterpret_cast<const void*>(e + 0x1C + 4), 16)) { memcpy(ib, reinterpret_cast<const void*>(e + 0x20), 16); for (int k = 0; k < 16; ++k) if (ib[k] && (ib[k] < 0x20 || ib[k] > 0x7E)) ib[k] = '?'; } en.icon = ib; }
         en.ref = decodeKey(en.key, en.name);
         if (en.ref.kind == hb::K_Item && !en.icon.empty()) g_itemIcon[en.ref.name] = en.icon;
         out->push_back(en);
@@ -183,25 +174,25 @@ bool g_downSwallowed[256];
 bool g_ctrl = false, g_alt = false, g_shift = false;
 
 // ---- gate: gameplay HUD is the active panel (EKC IsGameplayHudActive port, guarded) -------------------
-bool isIgnored(uintptr_t panel) { return (rdInt(panel, Panel_Flags) & PanelIgnoredByInput) != 0; }
+bool isIgnored(uintptr_t panel) { return (rdInt(S_Hud, panel, Panel_Flags) & PanelIgnoredByInput) != 0; }
 bool isWhitelisted(uintptr_t panel) {
-    uintptr_t vt; if (!readAt(panel, 0, &vt)) return false;
+    uintptr_t vt; if (!saferead::readAt(S_Hud, panel, 0, &vt)) return false;
     for (uintptr_t w : PanelWhitelist) if (vt == w) return true;
     return false;
 }
 const char* gateWhy = "";
 bool gameplayHudActive(uintptr_t hud) {
-    uintptr_t mgr; if (!readAt(hud, Hud_Manager, &mgr) || !mgr) { gateWhy = "no manager"; return false; }
-    int modals = rdInt(mgr, Mgr_Modals), modalCount = rdInt(mgr, Mgr_ModalCount);
+    uintptr_t mgr; if (!saferead::readAt(S_Hud, hud, Hud_Manager, &mgr) || !mgr) { gateWhy = "no manager"; return false; }
+    int modals = rdInt(S_Hud, mgr, Mgr_Modals), modalCount = rdInt(S_Hud, mgr, Mgr_ModalCount);
     if (modalCount < 0 || modalCount > 64) { gateWhy = "bad modal count"; return false; }
     for (int i = modalCount - 1; i >= 0; --i) {
-        uintptr_t p; if (!readAt((uintptr_t)modals, i * 4, &p) || !p) { gateWhy = "bad modal ptr"; return false; }
+        uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)modals, i * 4, &p) || !p) { gateWhy = "bad modal ptr"; return false; }
         if (!isIgnored(p)) { gateWhy = "modal open"; return false; }
     }
-    int panels = rdInt(mgr, Mgr_Panels), panelCount = rdInt(mgr, Mgr_PanelCount);
+    int panels = rdInt(S_Hud, mgr, Mgr_Panels), panelCount = rdInt(S_Hud, mgr, Mgr_PanelCount);
     if (panelCount < 0 || panelCount > 256) { gateWhy = "bad panel count"; return false; }
     for (int i = panelCount - 1; i >= 0; --i) {
-        uintptr_t p; if (!readAt((uintptr_t)panels, i * 4, &p) || !p) { gateWhy = "bad panel ptr"; return false; }
+        uintptr_t p; if (!saferead::readAt(S_Hud, (uintptr_t)panels, i * 4, &p) || !p) { gateWhy = "bad panel ptr"; return false; }
         if (isIgnored(p)) continue;
         if (p == hud) { gateWhy = "hud on top"; return true; }
         if (!isWhitelisted(p)) { gateWhy = "other panel on top"; return false; }
@@ -210,34 +201,29 @@ bool gameplayHudActive(uintptr_t hud) {
 }
 
 void logPanels(uintptr_t hud) {
-    uintptr_t mgr; if (!readAt(hud, Hud_Manager, &mgr) || !mgr) return;
-    int modals = rdInt(mgr, Mgr_Modals), modalCount = rdInt(mgr, Mgr_ModalCount);
-    int panels = rdInt(mgr, Mgr_Panels), panelCount = rdInt(mgr, Mgr_PanelCount);
-    VLOG("  panels: hud=%08x hudvt=%08x mgr=%08x modals=%d panels=%d", (unsigned)hud, rdInt(hud, 0), (unsigned)mgr, modalCount, panelCount);
-    for (int i = 0; i < modalCount && i < 16; ++i) { int p = rdInt((uintptr_t)modals, i * 4); VLOG("    modal[%d]=%08x vt=%08x flags=%x", i, p, rdInt(p, 0), rdInt(p, Panel_Flags)); }
-    for (int i = 0; i < panelCount && i < 32; ++i) { int p = rdInt((uintptr_t)panels, i * 4); VLOG("    panel[%d]=%08x vt=%08x flags=%x", i, p, rdInt(p, 0), rdInt(p, Panel_Flags)); }
+    uintptr_t mgr; if (!saferead::readAt(S_Hud, hud, Hud_Manager, &mgr) || !mgr) return;
+    int modals = rdInt(S_Hud, mgr, Mgr_Modals), modalCount = rdInt(S_Hud, mgr, Mgr_ModalCount);
+    int panels = rdInt(S_Hud, mgr, Mgr_Panels), panelCount = rdInt(S_Hud, mgr, Mgr_PanelCount);
+    VLOG("  panels: hud=%08x hudvt=%08x mgr=%08x modals=%d panels=%d", (unsigned)hud, rdInt(S_Hud, hud, 0), (unsigned)mgr, modalCount, panelCount);
+    for (int i = 0; i < modalCount && i < 16; ++i) { int p = rdInt(S_Hud, (uintptr_t)modals, i * 4); VLOG("    modal[%d]=%08x vt=%08x flags=%x", i, p, rdInt(S_Hud, p, 0), rdInt(S_Hud, p, Panel_Flags)); }
+    for (int i = 0; i < panelCount && i < 32; ++i) { int p = rdInt(S_Hud, (uintptr_t)panels, i * 4); VLOG("    panel[%d]=%08x vt=%08x flags=%x", i, p, rdInt(S_Hud, p, 0), rdInt(S_Hud, p, Panel_Flags)); }
 }
 
 // ---- controlled creature + characterKey ---------------------------------------------------------------
 int g_partyCount = 0;   // member count seen by the last controlledCreature() call
 uintptr_t controlledCreature() {
     static const char* lastFail = nullptr;
-    auto fail = [&](const char* why) { if (lastFail != why) { lastFail = why; logf("creature: unavailable (%s)", why); } return (uintptr_t)0; };
-    int app; if (!readAt(AppGlobal, 0, &app) || !app) return fail("app global null");
-    int a; if (!readAt(app, 4, &a) || !a) return fail("app+4 null");
-    int b; if (!readAt(a, 4, &b) || !b) return fail("a+4 null");
-    int party; if (!readAt(b, 0x270, &party) || !party) return fail("party table null");
-    g_partyCount = rdInt(party, 0);
-    if (g_partyCount <= 0) return fail("party count 0");   // member count
+    party::Fail why = party::F_None;
+    uintptr_t c = party::controlledCreature(&why, &g_partyCount);
+    if (why != party::F_None) { const char* t = party::failText(why); if (lastFail != t) { lastFail = t; logf("creature: unavailable (%s)", t); } return 0; }
     lastFail = nullptr;
-    using Fn = uintptr_t(__thiscall*)(void*);
-    return reinterpret_cast<Fn>(GetControlledCreature)(reinterpret_cast<void*>(party));
+    return c;
 }
 
 std::string computeCharacterKey() {
     uintptr_t c = controlledCreature();
     if (!c) return "";
-    unsigned oid = (unsigned)rdInt(c, 4);
+    unsigned oid = (unsigned)rdInt(S_Misc, c, 4);
     if (oid == 0xFFFFFFFFu || oid == 0) {   // invalid object id: transient during loads, never a real character
         static unsigned lastBad = 1; static int badLogs = 0;
         if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) { lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs; logf("character: creature %p has invalid object id %08x (party members=%d)", (void*)c, oid, g_partyCount); }
@@ -289,7 +275,7 @@ void refreshEffective(uintptr_t hud) {
         for (int g = 1; g <= 3; ++g) {
             std::vector<Entry> is; readGroup(hud, g, &is);
             if (is.empty()) continue;
-            unsigned selKey = (unsigned)rdInt(hud, Hud_GroupSel + g * 4);
+            unsigned selKey = (unsigned)rdInt(S_Hud, hud, Hud_GroupSel + g * 4);
             const Entry* pick = &is[0]; for (auto& e : is) if ((unsigned)e.key == selKey) { pick = &e; break; }
             bool dup = false; for (auto& x : explicitRefs) if (hb::Same(x, pick->ref)) dup = true;
             for (auto& x : autos) if (hb::Same(x, pick->ref)) dup = true;
@@ -327,7 +313,7 @@ void checkConfig(bool force) {
          (int)g_cfg.profiles.size(), (int)g_cfg.warnings.size());
     for (auto& w : g_cfg.warnings) logf("cfg: WARNING %s", w.c_str());
     int dev = g_cfg.general.keyboardDevice;
-    g_kbDevice = dev >= 0 ? dev : rdInt(KeyboardDeviceGlobal, 0, 0);
+    g_kbDevice = dev >= 0 ? dev : rdInt(S_Input, KeyboardDeviceGlobal, 0, 0);
     recomputeBound();
 }
 
@@ -444,7 +430,7 @@ const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" 
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
 void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
     if (!b.ctl) return;
-    int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d].%s: flags unreadable, cannot set visible", slot, wname(b, bt)); return; }
+    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d].%s: flags unreadable, cannot set visible", slot, wname(b, bt)); return; }
     if (b.visible == (vis ? 1 : 0) && b.why == why) return;
     int nf = vis ? (fl | 2) : (fl & ~2);
     if (&b == &bt.bg) nf = vis ? (nf & ~0x20) : (nf | 0x20);   // shown frames are hit-testable so clicks on the bar do not reach the world
@@ -457,18 +443,18 @@ void setFill(Button& bt, Widget& b, int slot, const std::string& icon) {
     if (!b.ctl || b.icon == icon) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
-    int bvt = rdInt(border, 0);
+    int bvt = rdInt(S_Border, border, 0);
     if (bvt != (int)BorderVtable) { logf("btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); return; }
-    int old = rdInt(border, Border_Fill);
+    int old = rdInt(S_Border, border, Border_Fill);
     *reinterpret_cast<void**>(border + Border_Fill) = image;
-    VLOG("btn[%d].%s key %c: fill '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, wname(b, bt), slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(border, Border_W), rdInt(border, Border_H));
+    VLOG("btn[%d].%s key %c: fill '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, wname(b, bt), slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(S_Border, border, Border_W), rdInt(S_Border, border, Border_H));
     b.icon = icon;
 }
 
 void setAlpha(Button& bt, Widget& b, int slot, float a) {
     if (!b.ctl || b.alpha == a) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
-    if (rdInt(border, 0) != (int)BorderVtable) { logf("btn[%d].%s: border vtable bad, not setting alpha", slot, wname(b, bt)); return; }
+    if (rdInt(S_Border, border, 0) != (int)BorderVtable) { logf("btn[%d].%s: border vtable bad, not setting alpha", slot, wname(b, bt)); return; }
     *reinterpret_cast<float*>(border + Border_Alpha) = a;
     VLOG("btn[%d].%s key %c: alpha %.2f -> %.2f", slot, wname(b, bt), slotDigit(slot), b.alpha, a);
     b.alpha = a;
@@ -564,13 +550,13 @@ std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
 void setRect(Widget& w, const char* nm, int x, int y, int ww, int hh) {
     if (!w.ctl) return;
     void** vt = *reinterpret_cast<void***>(w.ctl);
-    if (IsBadReadPtr(vt + 1, 4)) { logf("tip: %s vtable unreadable", nm); return; }
+    if (!saferead::probeRead(S_Geom, vt + 1, 4)) { logf("tip: %s vtable unreadable", nm); return; }
     int r[4] = { x, y, ww, hh };
     reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(w.ctl, r);
 }
 
 void setWidgetVisible(Widget& w, bool vis) {
-    int fl = 0; if (!w.ctl || !readAt(reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) return;
+    int fl = 0; if (!w.ctl || !saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) return;
     int nf = vis ? (fl | 2) : (fl & ~2);
     if (nf != fl) *reinterpret_cast<int*>(w.ctl + Ctl_Flags) = nf;
     w.visible = vis ? 1 : 0;
@@ -587,7 +573,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
     g_bar.tipText = text;
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
-    if (rdInt(tx, 0) != (int)TextVtable || rdInt(tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(tx, 0), (unsigned)rdInt(tx, Text_Renderer)); g_bar.tipSlot = s; return; }
+    if (rdInt(S_Border, tx, 0) != (int)TextVtable || rdInt(S_Border, tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(S_Border, tx, 0), (unsigned)rdInt(S_Border, tx, Text_Renderer)); g_bar.tipSlot = s; return; }
     char exo[16] = {0};
     reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, text.c_str());
     reinterpret_cast<void(__thiscall*)(void*, void*)>(FnTextSet)(reinterpret_cast<void*>(tx + Text_StringSub), exo);
@@ -596,7 +582,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     for (char c : text) { if (c == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
     int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
     RECT cr = {0, 0, 3840, 1600}; if (g_gameWnd) GetClientRect(g_gameWnd, &cr);
-    uintptr_t fc = reinterpret_cast<uintptr_t>(anchor.ctl); int fx = rdInt(fc, 4), fy = rdInt(fc, 8);
+    uintptr_t fc = reinterpret_cast<uintptr_t>(anchor.ctl); int fx = rdInt(S_Geom, fc, 4), fy = rdInt(S_Geom, fc, 8);
     int x = fx, y = fy - h - 12;
     if (topAnchor >= 0) y = topAnchor - h - 10;   // picker tooltips sit above the whole picker so they never cover it
     if (x + w > cr.right - 8) x = cr.right - 8 - w;
@@ -606,7 +592,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     setRect(g_bar.tip, "tip", x + TipPad / 2, y + TipPad / 2, w - TipPad, h - TipPad);
     setWidgetVisible(g_bar.tipBg, true); setWidgetVisible(g_bar.tip, true);
     g_bar.tipSlot = s;
-    int th = 0; { void** tvt = *reinterpret_cast<void***>(tx); if (!IsBadReadPtr(tvt + 2, 4)) th = reinterpret_cast<int(__fastcall*)(void*)>(tvt[2])(reinterpret_cast<void*>(tx)); }
+    int th = 0; { void** tvt = *reinterpret_cast<void***>(tx); if (saferead::probeRead(S_Border, tvt + 2, 4)) th = reinterpret_cast<int(__fastcall*)(void*)>(tvt[2])(reinterpret_cast<void*>(tx)); }
     VLOG("tip: show slot %d lines=%d maxLen=%d rect=[%d,%d,%d,%d] client=%ldx%ld textHeight(engine)=%d text=\"%s\"", s, lines, maxLen, x, y, w, h, (long)cr.right, (long)cr.bottom, th, text.c_str());
 }
 
@@ -615,7 +601,7 @@ void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { showTipT
 // The same short sound the native quick-action buttons play when the mouse enters them.
 void playHoverSound(const char* why) {
     void* mgr = nullptr; static int logs = 0;
-    if (!readAt(GuiSoundMgrGlobal, 0, &mgr) || !mgr) { if (logs < 20) { ++logs; logf("sound: manager null (%s), skipped", why); } return; }
+    if (!saferead::readAt(S_Misc, GuiSoundMgrGlobal, 0, &mgr) || !mgr) { if (logs < 20) { ++logs; logf("sound: manager null (%s), skipped", why); } return; }
     reinterpret_cast<void(__thiscall*)(void*, char)>(FnPlayGuiSound)(mgr, 1);
     if (logs < 40) { ++logs; VLOG("sound: hover (%s) mgr=%p", why, mgr); }
 }
@@ -627,7 +613,7 @@ void updateHover(bool gate) {
     if (gate && cursorInGame(&pt)) {
         for (int s = 0; s < ButtonCount && over < 0; ++s) {
             const Widget& w = g_bar.b[s].bg; if (!w.ctl || !w.visible) continue;
-            uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(c, 4), y = rdInt(c, 8), ww = rdInt(c, 0xC), hh = rdInt(c, 0x10);
+            uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(S_Geom, c, 4), y = rdInt(S_Geom, c, 8), ww = rdInt(S_Geom, c, 0xC), hh = rdInt(S_Geom, c, 0x10);
             if (pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh) over = s;
         }
     }
@@ -703,10 +689,10 @@ void updateButtons(uintptr_t hud, bool gate) {
 
 
 // ---- generic widget helpers for the editor controls (log every change) -------------------------------------
-bool textObjOk(Widget& w) { uintptr_t tx = reinterpret_cast<uintptr_t>(w.ctl) + Label_Text; return rdInt(tx, 0) == (int)TextVtable && rdInt(tx, Text_Renderer) != 0; }
+bool textObjOk(Widget& w) { uintptr_t tx = reinterpret_cast<uintptr_t>(w.ctl) + Label_Text; return rdInt(S_Border, tx, 0) == (int)TextVtable && rdInt(S_Border, tx, Text_Renderer) != 0; }
 void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
     if (!w.ctl) return;
-    int fl = 0; if (!readAt(reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) { logf("edit: %s flags unreadable", nm); return; }
+    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) { logf("edit: %s flags unreadable", nm); return; }
     int nf = vis ? (fl | 2) : (fl & ~2);
     nf = (vis && hit) ? (nf & ~0x20) : (nf | 0x20);   // hit-testable only while shown, so hidden controls never swallow clicks
     int v = vis ? 1 : 0;
@@ -718,7 +704,7 @@ void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
 void wFill(Widget& w, const char* nm, const std::string& icon) {
     if (!w.ctl || w.icon == icon) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(w.ctl) + Label_Border;
-    if (rdInt(border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
+    if (rdInt(S_Border, border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
     *reinterpret_cast<void**>(border + Border_Fill) = image;
     VLOG("edit: %s fill '%s' -> '%s' image=%p", nm, w.icon.c_str(), icon.c_str(), image);
@@ -727,7 +713,7 @@ void wFill(Widget& w, const char* nm, const std::string& icon) {
 void wAlpha(Widget& w, const char* nm, float a) {
     if (!w.ctl || w.alpha == a) return;
     uintptr_t border = reinterpret_cast<uintptr_t>(w.ctl) + Label_Border;
-    if (rdInt(border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting alpha", nm); return; }
+    if (rdInt(S_Border, border, 0) != (int)BorderVtable) { logf("edit: %s border vtable bad, not setting alpha", nm); return; }
     *reinterpret_cast<float*>(border + Border_Alpha) = a;
     VLOG("edit: %s alpha %.2f -> %.2f", nm, w.alpha, a);
     w.alpha = a;
@@ -745,7 +731,7 @@ void wText(Widget& w, const char* nm, const std::string& text) {
 }
 bool wHit(const Widget& w, const POINT& pt) {
     if (!w.ctl || w.visible != 1) return false;
-    uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(c, 4), y = rdInt(c, 8), ww = rdInt(c, 0xC), hh = rdInt(c, 0x10);
+    uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = rdInt(S_Geom, c, 4), y = rdInt(S_Geom, c, 8), ww = rdInt(S_Geom, c, 0xC), hh = rdInt(S_Geom, c, 0x10);
     return pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh;
 }
 
@@ -976,7 +962,7 @@ Scale g_scale;
 void aspectFix() {
     // NOT FnScreenInfo: FUN_0073FEA0 is a thiscall that reads [this+0x274]; calling it as cdecl passes a garbage/null ECX and crashed on load
     // (build 8, null read at 0x73FEAF). The window client size is what the engine renders at.
-    short w = 0, h = 0; int rw = rdInt(GuiRefW, 0), rh = rdInt(GuiRefH, 0);
+    short w = 0, h = 0; int rw = rdInt(S_Aspect, GuiRefW, 0), rh = rdInt(S_Aspect, GuiRefH, 0);
     HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
     RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
     w = (short)cr.right; h = (short)cr.bottom;
@@ -1006,14 +992,14 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     memset(ctl, 0, LabelSize);
     reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
     uintptr_t c = reinterpret_cast<uintptr_t>(ctl);
-    if (rdInt(c, 0) != (int)LabelVtable) { logf("H3 %s: ctor left vtable %08x (expected %08x), not created", sp.name, (unsigned)rdInt(c, 0), (unsigned)LabelVtable); return nullptr; }
+    if (rdInt(S_Create, c, 0) != (int)LabelVtable) { logf("H3 %s: ctor left vtable %08x (expected %08x), not created", sp.name, (unsigned)rdInt(S_Create, c, 0), (unsigned)LabelVtable); return nullptr; }
     *reinterpret_cast<int*>(ctl + Ctl_Id) = IdSentinel;
     char exo[16] = {0};
     reinterpret_cast<CExoCtorFn>(FnExoCtor)(exo, TemplateTags[sp.tmpl]);
     reinterpret_cast<InitCtlFn>(FnInitControl)(reinterpret_cast<void*>(panel), ctl, exo, 0, 1);
     reinterpret_cast<CExoDtorFn>(FnExoDtor)(exo);
-    if (rdInt(c, Ctl_Id) == IdSentinel) { logf("H3 %s: template %s not in the HUD layout, control not created", sp.name, TemplateTags[sp.tmpl]); return nullptr; }
-    int index = rdInt(panel, Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
+    if (rdInt(S_Create, c, Ctl_Id) == IdSentinel) { logf("H3 %s: template %s not in the HUD layout, control not created", sp.name, TemplateTags[sp.tmpl]); return nullptr; }
+    int index = rdInt(S_Create, panel, Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
     if (index < 0) { logf("H3 %s: panel control count unreadable, control not created", sp.name); return nullptr; }
     *reinterpret_cast<int*>(ctl + Ctl_Id) = index;
     const Scale& k = g_scale;
@@ -1030,21 +1016,21 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     if (sp.align >= 0) reinterpret_cast<SetUIntFn>(FnSetAlign)(ts, (unsigned)sp.align);
     uintptr_t border = c + Label_Border;
     if (sp.fill) {
-        if (rdInt(border, Border_Fill)) logf("H3 %s: template already has a fill, keeping it", sp.name);
+        if (rdInt(S_Create, border, Border_Fill)) logf("H3 %s: template already has a fill, keeping it", sp.name);
         else *reinterpret_cast<void**>(border + Border_Fill) = imageFor(sp.fill);
     }
-    int fl = rdInt(c, Ctl_Flags);
+    int fl = rdInt(S_Create, c, Ctl_Flags);
     // Hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so a hidden control never
     // swallows clicks; the tick clears it on shown frames/editor controls so clicks on the bar do not reach the world.
     *reinterpret_cast<int*>(ctl + Ctl_Flags) = (fl & ~2) | 0x20;
     reinterpret_cast<PtrListAddFn>(FnPtrListAdd)(reinterpret_cast<void*>(panel + Panel_CtlArray), ctl);
-    int cnt = rdInt(panel, Panel_CtlCount, -1);
-    if (cnt != index + 1 || rdInt(static_cast<uintptr_t>(rdInt(panel, Panel_CtlArray)), index * 4) != static_cast<int>(c)) {
+    int cnt = rdInt(S_Create, panel, Panel_CtlCount, -1);
+    if (cnt != index + 1 || rdInt(S_Create, static_cast<uintptr_t>(rdInt(S_Create, panel, Panel_CtlArray)), index * 4) != static_cast<int>(c)) {
         logf("H3 %s: append to the panel list failed (count %d -> %d), control not used", sp.name, index, cnt); return nullptr;
     }
-    float ba = 1.0f; readAt(border, Border_Alpha, &ba);
+    float ba = 1.0f; saferead::readAt(S_Create, border, Border_Alpha, &ba);
     VLOG("H3 %s: created at index %d from %s rect=[%d,%d,%d,%d] fill=%s text=%s", sp.name, index, TemplateTags[sp.tmpl],
-         rdInt(c, 4), rdInt(c, 8), rdInt(c, 0xC), rdInt(c, 0x10), sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
+         rdInt(S_Create, c, 4), rdInt(S_Create, c, 8), rdInt(S_Create, c, 0xC), rdInt(S_Create, c, 0x10), sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
     w->ctl = ctl; w->baseAlpha = ba; w->visible = 0; w->why = "built";
     w->icon = sp.fill ? sp.fill : ""; w->text = sp.text ? sp.text : "";
     return ctl;
@@ -1179,7 +1165,7 @@ bool fillTexture(int i, const char* why) {
     b[Tex_Cube] = 0; b[Tex_FromRes] = 0; b[Tex_Tpc] = 0; b[Tex_Missing] = 0; b[Tex_Constructed] = 1;
     reinterpret_cast<PtrListAddFn>(FnTexListAdd)(reinterpret_cast<void*>(TexPendingList), b);
     t.w = w; t.h = h;
-    logf("tex %s: %s, %dx%d RGBA queued for upload (basic %p, pending %d)", src.resref, why, w, h, (void*)b, rdInt(TexPendingList, 4));
+    logf("tex %s: %s, %dx%d RGBA queued for upload (basic %p, pending %d)", src.resref, why, w, h, (void*)b, rdInt(S_Tex, TexPendingList, 4));
     return true;
 }
 void ensureTextures() {   // once per process; the textures outlive every HUD (never freed)
@@ -1196,7 +1182,7 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
 }
 void logTextures(const char* when) {
     for (int i = 0; i < TexCount; ++i) if (unsigned char* b = g_tex[i].basic)
-        logf("tex %s (%s): gl=%u constructed=%d missing=%d pixels=%p %dx%d", EmbeddedTextures[i].resref, when, (unsigned)rdInt(reinterpret_cast<uintptr_t>(b), 0x58),
+        logf("tex %s (%s): gl=%u constructed=%d missing=%d pixels=%p %dx%d", EmbeddedTextures[i].resref, when, (unsigned)rdInt(S_Tex, reinterpret_cast<uintptr_t>(b), 0x58),
              (int)b[Tex_Constructed], (int)b[Tex_Missing], *reinterpret_cast<void**>(b + Tex_Pixels), *reinterpret_cast<int*>(b + Tex_W), *reinterpret_cast<int*>(b + Tex_H));
 }
 // A GL reset (ResetAll 0x00427D90 / SetMem 0x00427DE0) Resets every registered texture (+0xE4 = 0, pixels and GL names freed) and
@@ -1207,7 +1193,7 @@ void healTextures() {
         EmbTex& t = g_tex[i]; unsigned char* b = t.basic;
         if (!b) continue;
         bool built = b[Tex_Constructed] != 0; void* px = *reinterpret_cast<void**>(b + Tex_Pixels); int w = *reinterpret_cast<int*>(b + Tex_W);
-        if (built && !px && !b[Tex_Missing] && rdInt(reinterpret_cast<uintptr_t>(b), 0x58)) { t.heals = 0; continue; }   // uploaded: healthy
+        if (built && !px && !b[Tex_Missing] && rdInt(S_Tex, reinterpret_cast<uintptr_t>(b), 0x58)) { t.heals = 0; continue; }   // uploaded: healthy
         if (t.heals >= 20) continue;   // give up after 20 consecutive failed refills (art missing, labels still work)
         if (!built && !px) { ++t.heals; fillTexture(i, "refilled after a texture reset"); }
         else if (built && !px && (b[Tex_Missing] || w != t.w)) {
@@ -1231,14 +1217,14 @@ const char* const AutosaveFolder = "000001 - AUTOSAVE";
 
 // "SAVES:000012 - Game11" / "000012 - Game11" -> "cloudsaves/<id>/000012 - Game11" (relative to the game dir = our cwd). "" if implausible.
 std::string saveDirFor(const char* folder) {
-    if (!folder || IsBadReadPtr(folder, 9)) return "";
-    std::string f; for (int i = 0; i < 260 && !IsBadReadPtr(folder + i, 1) && folder[i]; ++i) f += folder[i];
+    if (!folder || !saferead::probeRead(S_Save, folder, 9)) return "";
+    std::string f; for (int i = 0; i < 260 && saferead::probeRead(S_Save, folder + i, 1) && folder[i]; ++i) f += folder[i];
     if (f.size() > 6 && _strnicmp(f.c_str(), "SAVES:", 6) == 0) f = f.substr(6);
     while (!f.empty() && (f[0] == '\\' || f[0] == '/')) f.erase(0, 1);
     if (f.size() < 10 || f.compare(6, 3, " - ") != 0) return "";
     for (int i = 0; i < 6; ++i) if (f[i] < '0' || f[i] > '9') return "";
-    unsigned char cloud = 0; readAt(CloudSavesFlag, 0, &cloud);
-    std::string base = cloud ? readCExoString(CloudSavesDir) : std::string("saves/");
+    unsigned char cloud = 0; saferead::readAt(S_Save, CloudSavesFlag, 0, &cloud);
+    std::string base = cloud ? readExoStr(S_Save, CloudSavesDir) : std::string("saves/");
     if (base.empty()) base = "saves/";
     if (base.back() != '/' && base.back() != '\\') base += '/';
     return base + f;
@@ -1246,7 +1232,7 @@ std::string saveDirFor(const char* folder) {
 
 void snapshotToSave(const char* folder, const char* why) {
     std::string dir = saveDirFor(folder);
-    if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), no snapshot", why, folder && !IsBadReadPtr(folder, 1) ? folder : "?"); return; }
+    if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), no snapshot", why, folder && saferead::probeRead(S_Save, folder, 1) ? folder : "?"); return; }
     DWORD at = GetFileAttributesA(dir.c_str());
     if (at == INVALID_FILE_ATTRIBUTES || !(at & FILE_ATTRIBUTE_DIRECTORY)) { logf("persave: %s: folder '%s' not found, no snapshot", why, dir.c_str()); return; }
     checkConfig(true);   // a hand edit made in the last second is part of what the player saved
@@ -1270,7 +1256,7 @@ void replaceLiveProfiles(const hb::Config* snap, const std::string& source, cons
 
 void restoreFromSave(const char* folder, const char* why) {
     std::string dir = saveDirFor(folder);
-    if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), live hotbar kept", why, folder && !IsBadReadPtr(folder, 1) ? folder : "?"); return; }
+    if (dir.empty()) { logf("persave: %s: save folder not recognised ('%s'), live hotbar kept", why, folder && saferead::probeRead(S_Save, folder, 1) ? folder : "?"); return; }
     std::string src = dir + "/" + SnapshotFile;
     hb::Config snap; bool have = hb::Config::mtimeOf(src) >= 0 && snap.Load(src);
     replaceLiveProfiles(have ? &snap : nullptr, "'" + src + "' " + (have ? "found" : "absent (empty bar)"), why);
@@ -1282,6 +1268,7 @@ void restoreFromSave(const char* folder, const char* why) {
 struct DIRecord { DWORD dwOfs, dwData; };
 
 extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
+    saferead::beginScope();
     if (!rec) return;
     if (dev != g_kbDevice) return;
     DWORD dik = rec->dwOfs; bool down = (rec->dwData & 0x80) != 0;
@@ -1327,35 +1314,37 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
 // ---- hooks 4-8: per-save hotbars (see snapshotToSave / restoreFromSave) -------------------------------------------------
 // S1 0x00534527: main loop right after SaveGameInProgress (0x00534600, the only writer of menu saves, quicksaves and timer autosaves).
 extern "C" void __cdecl HotbarOnSaved() {
+    saferead::beginScope();
     uintptr_t req = 0; int app = 0;
-    if (readAt(SaveRequestHolder, 0, &app) && app) readAt(static_cast<uintptr_t>(app), 0x14, &req);
-    std::string f = req ? readCExoString(req + SaveReq_Folder) : std::string();
+    if (saferead::readAt(S_Save, SaveRequestHolder, 0, &app) && app) saferead::readAt(S_Save, static_cast<uintptr_t>(app), 0x14, &req);
+    std::string f = req ? readExoStr(S_Save, req + SaveReq_Folder) : std::string();
     snapshotToSave(f.c_str(), "save written");
 }
 // S2 0x0053C5AA: end of DoPCAutosave (module-entry autosave; always 000001 - AUTOSAVE, bypasses S1).
-extern "C" void __cdecl HotbarOnAutosaved() { snapshotToSave(AutosaveFolder, "module autosave written"); }
+extern "C" void __cdecl HotbarOnAutosaved() { saferead::beginScope(); snapshotToSave(AutosaveFolder, "module autosave written"); }
 // L1 0x0052FD1E: CServerExoAppInternal::LoadGame after the save's party table and globals loaded; folder = "SAVES:NNNNNN - Name".
-extern "C" void __cdecl HotbarOnLoadRequest(const char* folder) { restoreFromSave(folder, "save loading"); }
+extern "C" void __cdecl HotbarOnLoadRequest(const char* folder) { saferead::beginScope(); restoreFromSave(folder, "save loading"); }
 // L1b 0x008529E0: LoadAutosaveSlot (PCAUTOSAVE entries; bypasses LoadGame).
-extern "C" void __cdecl HotbarOnAutosaveSlotLoad() { restoreFromSave(AutosaveFolder, "autosave loading"); }
+extern "C" void __cdecl HotbarOnAutosaveSlotLoad() { saferead::beginScope(); restoreFromSave(AutosaveFolder, "autosave loading"); }
 // NG 0x008FACA0: chargen "Play" commit (only caller CSWGuiMainCharGen::BeginPlayGame 0x00907340), before the server is re-created.
 // Backing out of New Game never reaches it, so the previous game's hotbar is only dropped once the new game really starts.
-extern "C" void __cdecl HotbarOnNewGame() { replaceLiveProfiles(nullptr, "new game", "new game started"); }
+extern "C" void __cdecl HotbarOnNewGame() { saferead::beginScope(); replaceLiveProfiles(nullptr, "new game", "new game started"); }
 
 // ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
 // Runs inside CSWGuiMainInterface's constructor between the last InitControl and StopLoadFromLayout, so the layout GFF
 // (panel+0x30) is still open: createLabel copies native template controls from it. All native controls are bound by now.
 extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
+    saferead::beginScope();
     uintptr_t panel = static_cast<uintptr_t>(panelArg);
-    int before = rdInt(panel, Panel_CtlCount, -1);
-    logf("H3 build: panel=%08x vtable=%08x controls=%d gff=%08x (previous bar panel=%08x built=%d)", (unsigned)panel, (unsigned)rdInt(panel, 0), before, (unsigned)rdInt(panel, 0x30), (unsigned)g_bar.panel, g_bar.built);
-    if (!panel || IsBadReadPtr(reinterpret_cast<void*>(panel), 0x40)) { logf("H3: panel null/unreadable, abort"); return; }
+    int before = rdInt(S_Create, panel, Panel_CtlCount, -1);
+    logf("H3 build: panel=%08x vtable=%08x controls=%d gff=%08x (previous bar panel=%08x built=%d)", (unsigned)panel, (unsigned)rdInt(S_Create, panel, 0), before, (unsigned)rdInt(S_Create, panel, 0x30), (unsigned)g_bar.panel, g_bar.built);
+    if (!panel || !saferead::probeRead(S_Create, reinterpret_cast<void*>(panel), 0x40)) { logf("H3: panel null/unreadable, abort"); return; }
     if (g_bar.panel) logf("H3: replacing bar of old HUD %08x (its labels stay leaked, never freed)", (unsigned)g_bar.panel);
     g_bar = Bar(); g_bar.panel = panel;
     // InitControl (0x0040F620) applies a non-linear aspect projection to the extent while the global at 0x00A1B9F0 is nonzero (live build 3:
     // slots 8 and 0 came out 964 px wide). The ctor clears it right after this hook (0x0074850D), so clear it for our binds and restore.
     int* projFlag = reinterpret_cast<int*>(ProjectionFlag);
-    int savedFlag = IsBadReadPtr(projFlag, 4) ? 0 : *projFlag;
+    int savedFlag = !saferead::probeRead(S_Proj, projFlag, 4) ? 0 : *projFlag;
     logf("H3: projection flag %08x = %d (cleared for the binds, restored after)", (unsigned)ProjectionFlag, savedFlag);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = 0;
     aspectFix();
@@ -1369,10 +1358,10 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     for (int i = EditOff; i < EditOff + EditorControlCount; ++i) eb += widgetFor(g_bar, i)->ctl != nullptr;
     g_editOpen = false; g_escHit = false; g_pickRect[2] = 0; g_wheelAccum = 0;   // editor state is per HUD instance
     g_bar.editBound = (eb == EditorControlCount) ? 1 : 0;   // a partial editor UI would be confusing: all or nothing
-    if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), 4 + 4 * i);
+    if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(S_Create, reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), 4 + 4 * i);
     if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = savedFlag;
     g_bar.built = built;
-    int after = rdInt(panel, Panel_CtlCount, -1);
+    int after = rdInt(S_Create, panel, Panel_CtlCount, -1);
     logf("H3: %d controls created at runtime (indices %d..%d), %d/%d buttons, editor controls %d/%d -> editor %s, picker background rect [%d,%d,%d,%d]",
          created, before, after - 1, built, ButtonCount, eb, EditorControlCount, g_bar.editBound ? "ENABLED" : "DISABLED",
          g_bar.ed.pbgRect[0], g_bar.ed.pbgRect[1], g_bar.ed.pbgRect[2], g_bar.ed.pbgRect[3]);
@@ -1381,6 +1370,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
 
 // ---- hook 2: HUD tick ---------------------------------------------------------------------------------
 extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
+    saferead::beginScope();
     uintptr_t hud = reinterpret_cast<uintptr_t>(hudPtr);
     ++g_frame; g_frameForLog = g_frame;
     static DWORD lastTickTime = 0; DWORD nowT = GetTickCount();
@@ -1389,7 +1379,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     if (g_frame % 1800 == 0) logf("heartbeat: frame=%ld bar(panel=%08x built=%d vis=%d%d%d%d%d%d%d%d%d%d) gate=%d char='%s' ring=%d cfgMtime=%lld invoke=%d", g_frame, (unsigned)g_bar.panel, g_bar.built, g_bar.b[0].ic.visible, g_bar.b[1].ic.visible, g_bar.b[2].ic.visible, g_bar.b[3].ic.visible, g_bar.b[4].ic.visible, g_bar.b[5].ic.visible, g_bar.b[6].ic.visible, g_bar.b[7].ic.visible, g_bar.b[8].ic.visible, g_bar.b[9].ic.visible, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfgMtime, g_cfg.general.invoke);
     if (g_frame == 1) logf("tick: first HUD tick hud=%08x kbdev=%d", (unsigned)hud, g_kbDevice);
     if (hud != g_hud) { g_hud = hud; logf("tick: hud pointer now %08x", (unsigned)hud); }
-    if (!hud || IsBadReadPtr(hudPtr, 0x1CA0)) { if (g_hudGateOk) logf("tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }
+    if (!hud || !saferead::probeRead(S_Hud, hudPtr, 0x1CA0)) { if (g_hudGateOk) logf("tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }
 
     checkConfig(g_frame == 1);
     healTextures();
@@ -1403,7 +1393,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     bool charChanged = false;
     {   // every frame: the bar must follow the controlled character without a visible lag
         static uintptr_t lastCreature = ~0u; static unsigned lastOid = 0xFFFFFFF0u;
-        uintptr_t cr = controlledCreature(); unsigned oid = cr ? (unsigned)rdInt(cr, 4) : 0;
+        uintptr_t cr = controlledCreature(); unsigned oid = cr ? (unsigned)rdInt(S_Hud, cr, 4) : 0;
         static int lastParty = -1; bool same = (cr == lastCreature && oid == lastOid && g_partyCount == lastParty); lastParty = g_partyCount;   // unchanged creature: skip the key build (string work) entirely
         lastCreature = cr; lastOid = oid;
         std::string k = same ? g_charKey : computeCharacterKey();
