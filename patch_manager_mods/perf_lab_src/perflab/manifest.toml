@@ -1,9 +1,9 @@
 [patch]
 id = "perf-lab"
 name = "Perf Lab"
-version = "0.3.0"
+version = "0.4.0"
 author = "local"
-description = "Diagnostics (inert unless perflab_debug.txt exists): allocation census via IAT hooks on HeapAlloc/HeapReAlloc/HeapFree; metrics=1 adds the measurement pack M1-M7 (resman by restype, async-wait time, GetImage after upload, glFinish/mipmap time, frame-time histogram, movie spin, engine globals) and vq=1 an address-space census; 0.3.0 adds engine live counters, per-name texture tables (BR), resman/KT, NWScript VM and net-ring counters and per-handler hook cost; all written to perflab_*.txt. Flag-gated experiments, off by default: tx=1 (free TPC images after GL upload) and g1skip=1 (skip glFinish per texture upload). Research program: patch_manager_mods/10_engine_optimization_research.md."
+description = "Diagnostics (inert unless perflab_debug.txt exists): allocation census via IAT hooks on HeapAlloc/HeapReAlloc/HeapFree; metrics=1 adds the measurement pack M1-M7 (resman by restype, async-wait time, GetImage after upload, glFinish/mipmap time, frame-time histogram, movie spin, engine globals) and vq=1 an address-space census; 0.3.0 adds engine live counters, per-name texture tables (BR), resman/KT, NWScript VM and net-ring counters and per-handler hook cost; all written to perflab_*.txt. Flag-gated experiments, off by default: tx=1 (free TPC images after GL upload), g1skip=1 (skip glFinish per texture upload) and, new in 0.4.0, hwmip=1 (hardware mipmaps: replace CPU gluBuild2DMipmaps with glTexImage2D + glGenerateMipmap / GL_GENERATE_MIPMAP for POT 2D and cube-face uploads, GLU fallback otherwise; hwmip_* counters). Research program: patch_manager_mods/10_engine_optimization_research.md."
 
 requires = []
 conflicts = []

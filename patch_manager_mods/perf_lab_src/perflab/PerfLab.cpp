@@ -1,5 +1,9 @@
-// PerfLab 0.3.0 (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
-// flag-gated experiments tx=1 / g1skip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
+// PerfLab 0.4.0 (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
+// flag-gated experiments tx=1 / g1skip=1 / hwmip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
+// 0.4.0 adds the flag-gated experiment hwmip=1 (W2/M1, hardware mipmaps): the gluBuild2DMipmaps IAT hook (installed when metrics=1 OR hwmip=1,
+//   once) uploads level 0 with glTexImage2D and lets the driver build the chain (glGenerateMipmap, else GL_GENERATE_MIPMAP) for POT
+//   GL_UNSIGNED_BYTE 2D/cube-face uploads; everything else (NPOT, > GL_MAX_TEXTURE_SIZE, other type/target, NULL data, any GL error)
+//   falls back to the real GLU call. Counters hwmip_* are appended to the GL metrics line and logged as `HWMIP ...` in perflab_log.txt.
 // 0.3.0 (Phase 4) adds, all counter-only, all output from the helper thread (keys below, default 1 when metrics=1):
 //   live=1   LIVE line: engine live counters read from globals (textures, GL bytes, models, mesh bytes, gobs, nodes, scenes,
 //            focus dummies, particle emitters); no hooks
@@ -28,6 +32,7 @@
 //   tx=0             experiment TX (guarded, batch T1): at the first tick, BuildAndStoreTexture 0x4261CF `0F B6 C8 85 C9 75 10`
 //                    -> JMP to a cave that also frees the CPU image of TPC textures after GL upload, except textures with a
 //                    procedural controller ([tex+0x34] != 0, the only post-upload GetImage readers); TGA unchanged
+//   hwmip=0          experiment W2/M1 (see 0.4.0 above): hardware mipmaps instead of CPU gluBuild2DMipmaps
 //   g1skip=0         experiment G1: at the first tick, 0x4265F3 74 06 -> EB 06 (skip glFinish per texture upload)
 //                    Both verify the original bytes first and refuse on mismatch; the arm is logged in perflab_log.txt.
 //
@@ -63,7 +68,7 @@ constexpr int In_GuiMgr = 0x274, In_LoadScreen = 0x278, Mgr_Modals = 0x94, Mgr_M
 // ---- config --------------------------------------------------------------------------------------------
 struct Cfg {
     bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024;
-    bool metrics = false, vq = false, tx = false, g1skip = false;
+    bool metrics = false, vq = false, tx = false, g1skip = false, hwmip = false;
     int live = -1, br = -1, kt = -1, vm = -1, misc = -1, ai = -1;   // 0.3.0 groups; -1 = follow metrics
 } g_cfg;
 bool g_on = false;
@@ -411,14 +416,106 @@ typedef int(WINAPI* GluMip_t)(unsigned, int, int, int, unsigned, unsigned, const
 typedef BOOL(WINAPI* Swap_t)(HDC);
 GluMip_t rGluMip; Swap_t rSwap;
 
+// ---- 0.4.0 hwmip (W2/M1): hardware mipmaps behind the gluBuild2DMipmaps IAT hook --------------------------------------
+// Render thread only (the engine's four call sites run there with the GL context current); counters are plain globals so that they
+// work with metrics=0. The hook never does I/O: notable events are flagged in g_hwEv and logged once by the helper thread.
+typedef void (WINAPI* PglTexImage2D)(unsigned, int, int, int, int, int, unsigned, unsigned, const void*);
+typedef void (WINAPI* PglTexParameteri)(unsigned, unsigned, int);
+typedef unsigned (WINAPI* PglGetError)();
+typedef void (WINAPI* PglGetIntegerv)(unsigned, int*);
+typedef void (WINAPI* PglGenerateMipmap)(unsigned);
+constexpr unsigned GL_TEXTURE_2D = 0x0DE1, GL_TEXTURE_CUBE_MAP = 0x8513, GL_CUBE_FIRST = 0x8515, GL_CUBE_LAST = 0x851A,
+                   GL_UNSIGNED_BYTE = 0x1401, GL_GENERATE_MIPMAP = 0x8191, GL_MAX_TEXTURE_SIZE = 0x0D33;
+struct GlApi { PglTexImage2D texImage2D; PglTexParameteri texParameteri; PglGetError getError; PglGetIntegerv getIntegerv; PglGenerateMipmap genMip; int maxSize; };
+GlApi g_gl;
+int g_glState = 0;                                    // 0 = not resolved yet, 1 = ready, -1 = unavailable for good (everything uses GLU)
+volatile LONG g_hwEv = 0;                             // event bits for the helper thread (logged once each)
+constexpr LONG HwEvResolved = 1, HwEvResolveFail = 2, HwEvGlErr = 8;
+volatile LONG64 g_hwCalls = 0, g_hwHw = 0, g_hwFbNpot = 0, g_hwFbSize = 0, g_hwFbType = 0, g_hwFbTarget = 0, g_hwFbNull = 0, g_hwFbNoGl = 0,
+                g_hwGlError = 0, g_hwCube = 0, g_hwCubeFallback = 0;
+
+// glGenerateMipmap(EXT) via wglGetProcAddress: NULL and the documented bogus returns (1, 2, 3, -1) mean "not available".
+inline bool bogusProc(void* p) { auto v = reinterpret_cast<uintptr_t>(p); return v == 0 || v == 1 || v == 2 || v == 3 || v == static_cast<uintptr_t>(-1); }
+// Pure symbol resolution (no GL calls): the four core entries from opengl32.dll's export table, glGenerateMipmap(EXT) via wglGetProcAddress.
+bool resolveEntries(GlApi& g) {
+    memset(&g, 0, sizeof g);
+    HMODULE gl = GetModuleHandleA("opengl32.dll");
+    if (!gl) return false;
+    g.texImage2D = reinterpret_cast<PglTexImage2D>(GetProcAddress(gl, "glTexImage2D"));
+    g.texParameteri = reinterpret_cast<PglTexParameteri>(GetProcAddress(gl, "glTexParameteri"));
+    g.getError = reinterpret_cast<PglGetError>(GetProcAddress(gl, "glGetError"));
+    g.getIntegerv = reinterpret_cast<PglGetIntegerv>(GetProcAddress(gl, "glGetIntegerv"));
+    typedef PROC(WINAPI* WglGpa)(LPCSTR);
+    auto gpa = reinterpret_cast<WglGpa>(GetProcAddress(gl, "wglGetProcAddress"));
+    if (gpa) {
+        void* p = reinterpret_cast<void*>(gpa("glGenerateMipmap"));
+        if (bogusProc(p)) p = reinterpret_cast<void*>(gpa("glGenerateMipmapEXT"));
+        if (!bogusProc(p)) g.genMip = reinterpret_cast<PglGenerateMipmap>(p);
+    }
+    return g.texImage2D && g.texParameteri && g.getError && g.getIntegerv;
+}
+bool resolveGl() {   // lazy, first eligible call on the render thread (GL context current)
+    GlApi g;
+    bool ok = resolveEntries(g);
+    if (ok) { int m = 0; g.getIntegerv(GL_MAX_TEXTURE_SIZE, &m); g.maxSize = m; ok = m > 0; }
+    g_gl = g;
+    g_glState = ok ? 1 : -1;
+    InterlockedOr(&g_hwEv, ok ? HwEvResolved : HwEvResolveFail);
+    return ok;
+}
+
+inline void drainErrors() { for (int i = 0; i < 16; ++i) if (!g_gl.getError()) break; }
+
+// Every call is self-contained: whatever the outcome, the face/texture it was given ends with ALL its mip levels (HW chain or GLU chain).
+// Cube faces always use the GL_GENERATE_MIPMAP texparam path on 0x8513 (GL 1.4: the flag regenerates the levels of the face just modified, so each
+// face is complete when its own call returns; no deferred glGenerateMipmap(0x8513), no state between calls, any face order).
+int hwmipBuild(unsigned target, int comps, int w, int h, unsigned fmt, unsigned type, const void* data) {
+    InterlockedIncrement64(&g_hwCalls);
+    bool cube = target >= GL_CUBE_FIRST && target <= GL_CUBE_LAST;
+    // eligibility, cheapest checks first; each ineligible call goes straight to GLU
+    volatile LONG64* why = nullptr;
+    if (target != GL_TEXTURE_2D && !cube) why = &g_hwFbTarget;
+    else if (type != GL_UNSIGNED_BYTE) why = &g_hwFbType;
+    else if (!data) why = &g_hwFbNull;                 // data == NULL has its own counter (hwmip_fallback_null)
+    else if (w <= 0 || h <= 0 || (w & (w - 1)) || (h & (h - 1))) why = &g_hwFbNpot;
+    else if (g_glState == 0 && !resolveGl()) why = &g_hwFbNoGl;
+    else if (g_glState < 0) why = &g_hwFbNoGl;
+    else if (w > g_gl.maxSize || h > g_gl.maxSize) why = &g_hwFbSize;
+    if (why) InterlockedIncrement64(why);
+    if (!why) {
+        drainErrors();
+        if (cube) {
+            g_gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_GENERATE_MIPMAP, 1);
+            g_gl.texImage2D(target, 0, comps, w, h, 0, fmt, type, data);
+            g_gl.texParameteri(GL_TEXTURE_CUBE_MAP, GL_GENERATE_MIPMAP, 0);
+        } else if (g_gl.genMip) { g_gl.texImage2D(GL_TEXTURE_2D, 0, comps, w, h, 0, fmt, type, data); g_gl.genMip(GL_TEXTURE_2D); }
+        else {   // GL_GENERATE_MIPMAP is sticky on the texture: set it only around the upload (W2: the engine's later glTexSubImage2D path would regenerate)
+            g_gl.texParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, 1);
+            g_gl.texImage2D(GL_TEXTURE_2D, 0, comps, w, h, 0, fmt, type, data);
+            g_gl.texParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, 0);
+        }
+        if (g_gl.getError() == 0) { InterlockedIncrement64(cube ? &g_hwCube : &g_hwHw); return 0; }
+        InterlockedIncrement64(&g_hwGlError); InterlockedOr(&g_hwEv, HwEvGlErr);   // GLU re-specifies every level, level 0 included
+    }
+    if (cube) InterlockedIncrement64(&g_hwCubeFallback);   // this face goes to GLU (ineligible or GL error)
+    return rGluMip(target, comps, w, h, fmt, type, data);
+}
+
 int WINAPI hkGluBuild2DMipmaps(unsigned target, int comps, int w, int h, unsigned fmt, unsigned type, const void* data) {
     LONG64 t0 = qpc();
-    int r = rGluMip(target, comps, w, h, fmt, type, data);
+    int r = g_cfg.hwmip ? hwmipBuild(target, comps, w, h, fmt, type, data) : rGluMip(target, comps, w, h, fmt, type, data);
     if (g_m) {
         InterlockedIncrement64(&g_m->mipN); InterlockedExchangeAdd64(&g_m->mipQpc, qpc() - t0);
         if (w > 0 && h > 0) InterlockedExchangeAdd64(&g_m->mipPixels, static_cast<LONG64>(w) * h);
     }
     return r;
+}
+// Installs the gluBuild2DMipmaps IAT hook once (metrics=1 and hwmip=1 both need it). patchIat stores the original into rGluMip itself
+// BEFORE it flips the IAT slot, so no call can reach the hook with rGluMip still NULL.
+int g_gluState = 0;                                   // 0 = not tried, 1 = hooked, -1 = failed
+bool installGluHook(HMODULE exe) {
+    if (g_gluState == 0) g_gluState = patchIat(exe, "GLU32.dll", "gluBuild2DMipmaps", reinterpret_cast<void*>(hkGluBuild2DMipmaps), reinterpret_cast<void**>(&rGluMip)) ? 1 : -1;
+    return g_gluState > 0;
 }
 BOOL WINAPI hkSwapBuffers(HDC dc) {
     if (g_m) {   // called on the render (main) thread only: plain scratch fields
@@ -528,6 +625,7 @@ void writeTop(FILE* f, const char* title, int (*cmp)(const void*, const void*), 
 }
 
 void writeReport() {
+    if (!g_sites) return;   // alloc=0 (or table allocation failed): nothing to report; the loops below would dereference NULL
     FILE* f = fopen("perflab_alloc.tmp", "w");
     if (!f) return;
     writeTotals(f);
@@ -541,6 +639,7 @@ void writeReport() {
 
 int g_snapN = 0;
 void writeSnapshot(const char* ev) {
+    if (!g_sites) return;   // alloc=0: see writeReport
     FILE* f = fopen("perflab_alloc_snaps.txt", "a");
     if (!f) return;
     fprintf(f, "#SNAP %d %s ", ++g_snapN, ev);
@@ -675,13 +774,35 @@ void writeMetrics3(FILE* f, Metrics& m) {
 }
 
 int g_metricsN = 0;
+// hwmip counters as one line of key=value pairs; the same text is appended to the GL metrics line and logged as `HWMIP` (works with metrics=0).
+int hwmipFields(char* b, size_t n) {
+    return snprintf(b, n, " hwmip_calls=%lld hwmip_hw=%lld hwmip_fallback_npot=%lld hwmip_fallback_size=%lld hwmip_fallback_type=%lld hwmip_fallback_target=%lld"
+        " hwmip_fallback_null=%lld hwmip_fallback_nogl=%lld hwmip_glerror=%lld hwmip_cube=%lld hwmip_cube_fallback=%lld",
+        (long long)g_hwCalls, (long long)g_hwHw, (long long)g_hwFbNpot, (long long)g_hwFbSize, (long long)g_hwFbType, (long long)g_hwFbTarget,
+        (long long)g_hwFbNull, (long long)g_hwFbNoGl, (long long)g_hwGlError, (long long)g_hwCube, (long long)g_hwCubeFallback);
+}
+void logHwmipSummary(const char* ev) {
+    char b[640]; hwmipFields(b, sizeof b);
+    logf("HWMIP %s%s", ev, b);
+}
+LONG g_hwEvLogged = 0;
+void logHwmipEvents() {   // once per event bit, from the helper thread
+    LONG now = g_hwEv, fresh = now & ~g_hwEvLogged;
+    if (!fresh) return;
+    g_hwEvLogged |= fresh;
+    if (fresh & HwEvResolved) logf("HWMIP GL resolved: glTexImage2D=%p glTexParameteri=%p glGetError=%p glGetIntegerv=%p glGenerateMipmap=%p (%s) max_texture_size=%d", (void*)g_gl.texImage2D,
+        (void*)g_gl.texParameteri, (void*)g_gl.getError, (void*)g_gl.getIntegerv, (void*)g_gl.genMip, g_gl.genMip ? "glGenerateMipmap path" : "GL_GENERATE_MIPMAP texparam path", g_gl.maxSize);
+    if (fresh & HwEvResolveFail) logf("HWMIP GL entry points or GL_MAX_TEXTURE_SIZE unavailable: hwmip permanently falls back to GLU");
+    if (fresh & HwEvGlErr) logf("HWMIP first GL error after a hardware upload: that upload fell back to GLU (hwmip_glerror counts all)");
+}
 void writeMetrics(const char* ev) {
+    if (g_cfg.hwmip) logHwmipSummary(ev);
     if (!g_m && !g_cfg.vq) return;
     FILE* f = fopen("perflab_metrics.txt", "a");
     if (!f) return;
     auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
-    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
-        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State);
+    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld hwmip=%ld\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
+        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State, (long)g_cfg.hwmip);
     writeGlobals(f);
     if (g_m) {
         Metrics& m = *g_m;
@@ -702,8 +823,9 @@ void writeMetrics(const char* ev) {
             (long long)m.getImgCtrlTpcRetained, (long long)m.getImgOther, (long long)m.getImgOtherTpcRetained);
         fprintf(f, "BUILD calls=%lld requeue_tpc_retained=%lld tpc_with_ctrl=%lld\n", (long long)m.buildN, (long long)m.buildRequeueTpcRetained, (long long)m.buildTpcCtrl);
         writeCallers(f, "GETIMGCALLER", m.getImgCallers);
-        fprintf(f, "GL glimage=%lld glfinish=%lld glfinish_ms=%.1f glfinish_max_ms=%.2f mipmaps=%lld mip_ms=%.1f mip_mpix=%.2f\n", (long long)m.glImageN,
-            (long long)m.glFinishN, ms(m.glFinishQpc), ms(m.glFinishMaxQpc), (long long)m.mipN, ms(m.mipQpc), m.mipPixels / 1e6);
+        char hw[640]; hwmipFields(hw, sizeof hw);
+        fprintf(f, "GL glimage=%lld glfinish=%lld glfinish_ms=%.1f glfinish_max_ms=%.2f mipmaps=%lld mip_ms=%.1f mip_mpix=%.2f%s\n", (long long)m.glImageN,
+            (long long)m.glFinishN, ms(m.glFinishQpc), ms(m.glFinishMaxQpc), (long long)m.mipN, ms(m.mipQpc), m.mipPixels / 1e6, hw);
         fprintf(f, "FRAME frames=%lld max_ms=%.1f bucket_calls=%lld max_bucket_per_frame=%ld actionbar_calls=%lld max_actionbar_per_frame=%ld hist_ms",
             (long long)m.frames, ms(m.frameMaxQpc), (long long)m.bucketCalls, m.maxBucketPerFrame, (long long)m.actionBarCalls, m.maxActionBarPerFrame);
         for (int i = 0; i < 10; ++i) fprintf(f, " %ld", m.frameHist[i]);
@@ -747,6 +869,7 @@ DWORD WINAPI helper(LPVOID) {
     for (;;) {
         Sleep(100);
         if (!loggedExp && g_firstTickDone) { loggedExp = true; logExperiments(); }
+        logHwmipEvents();
         if (g_gameProcess) {
             bool nowUp = loadScreenUp();
             if (haveState && nowUp != up) { writeSnapshot(nowUp ? "LOAD_UP" : "LOAD_DOWN"); writeMetrics(nowUp ? "LOAD_UP" : "LOAD_DOWN"); }
@@ -779,6 +902,7 @@ void readCfg() {
         else if (!strcmp(line, "vq")) g_cfg.vq = v != 0;
         else if (!strcmp(line, "tx")) g_cfg.tx = v != 0;
         else if (!strcmp(line, "g1skip")) g_cfg.g1skip = v != 0;
+        else if (!strcmp(line, "hwmip")) g_cfg.hwmip = v != 0;
         else if (!strcmp(line, "live")) g_cfg.live = v != 0;
         else if (!strcmp(line, "br")) g_cfg.br = v != 0;
         else if (!strcmp(line, "kt")) g_cfg.kt = v != 0;
@@ -1100,6 +1224,32 @@ void __cdecl PerfLabPathResult(int r) {
 void __cdecl PerfLabEffectApply() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkEffApply); InterlockedIncrement64(&g_m->effApply); } }
 void __cdecl PerfLabEffectRemove() { if (g_m && grp(g_cfg.ai)) { MTimer t(HkEffRemove); InterlockedIncrement64(&g_m->effRemove); } }
 
+// ---- 0.4.0 harness-only entry points (smoke_hwmip.cpp; inert in the game: nothing calls them) ----
+// f[0..4] = glTexImage2D, glTexParameteri, glGetError, glGetIntegerv, glGenerateMipmap (NULL = unavailable), f[5] = replacement for the real
+// GLU function (NULL = keep), f[6] = GL_MAX_TEXTURE_SIZE as an integer. Resets the hwmip counters.
+void __cdecl PerfLabTestSetGl(void** f) {
+    g_gl.texImage2D = reinterpret_cast<PglTexImage2D>(f[0]); g_gl.texParameteri = reinterpret_cast<PglTexParameteri>(f[1]);
+    g_gl.getError = reinterpret_cast<PglGetError>(f[2]); g_gl.getIntegerv = reinterpret_cast<PglGetIntegerv>(f[3]);
+    g_gl.genMip = reinterpret_cast<PglGenerateMipmap>(f[4]); g_gl.maxSize = static_cast<int>(reinterpret_cast<intptr_t>(f[6]));
+    if (f[5]) rGluMip = reinterpret_cast<GluMip_t>(f[5]);
+    g_glState = 1;   // event bits are kept: the helper logs each once
+    g_hwCalls = g_hwHw = g_hwFbNpot = g_hwFbSize = g_hwFbType = g_hwFbTarget = g_hwFbNull = g_hwFbNoGl = g_hwGlError = g_hwCube = g_hwCubeFallback = 0;
+}
+// calls, hw, fb_npot, fb_size, fb_type, fb_target, fb_null, fb_nogl, glerror, cube, cube_fallback
+int __cdecl PerfLabTestHwmipCounters(long long* out, int n) {
+    long long v[11] = { g_hwCalls, g_hwHw, g_hwFbNpot, g_hwFbSize, g_hwFbType, g_hwFbTarget, g_hwFbNull, g_hwFbNoGl, g_hwGlError, g_hwCube, g_hwCubeFallback };
+    for (int i = 0; i < n && i < 11; ++i) out[i] = v[i];
+    return 11;
+}
+void* __cdecl PerfLabTestRGluMip() { return reinterpret_cast<void*>(rGluMip); }
+// Real symbol resolution (no GL calls, so no context needed): out[0..4] as in PerfLabTestSetGl; returns whether the four core entries resolved.
+int __cdecl PerfLabTestResolveEntries(void** out) {
+    GlApi g; bool ok = resolveEntries(g);
+    out[0] = reinterpret_cast<void*>(g.texImage2D); out[1] = reinterpret_cast<void*>(g.texParameteri); out[2] = reinterpret_cast<void*>(g.getError);
+    out[3] = reinterpret_cast<void*>(g.getIntegerv); out[4] = reinterpret_cast<void*>(g.genMip);
+    return ok;
+}
+
 void __cdecl PerfLabSceneDtor() { if (g_m && grp(g_cfg.misc)) { MTimer t(HkSceneDtor); InterlockedIncrement64(&g_m->sceneDtor); } }
 }
 
@@ -1114,8 +1264,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
         { LARGE_INTEGER f; QueryPerformanceFrequency(&f); g_qpf = f.QuadPart ? f.QuadPart : 1; }
-        logf("perf-lab 0.3.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s", (unsigned)g_exeLo, (unsigned)g_exeHi,
-             g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF");
+        logf("perf-lab 0.4.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s", (unsigned)g_exeLo, (unsigned)g_exeHi,
+             g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF", g_cfg.hwmip ? "ON" : "OFF");
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
             g_pk = static_cast<uint32_t*>(VirtualAlloc(nullptr, PtrCap * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -1144,11 +1294,15 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
                 void* o1 = nullptr; void* o2 = nullptr;
                 bool s = patchIat(exe, "GDI32.dll", "SwapBuffers", reinterpret_cast<void*>(hkSwapBuffers), &o1);
                 if (s) rSwap = reinterpret_cast<Swap_t>(o1);
-                bool g = patchIat(exe, "GLU32.dll", "gluBuild2DMipmaps", reinterpret_cast<void*>(hkGluBuild2DMipmaps), &o2);
-                if (g) rGluMip = reinterpret_cast<GluMip_t>(o2);
+                bool g = installGluHook(exe);   // rGluMip is stored by patchIat before the IAT slot flips
+                o2 = reinterpret_cast<void*>(rGluMip);
                 g_m = m;   // publish last: detours see NULL until everything is set
                 logf("metrics on: block=%uKB IAT SwapBuffers=%d gluBuild2DMipmaps=%d (orig %p %p) qpf=%lld", (unsigned)(sizeof(Metrics) >> 10), s, g, o1, o2, (long long)g_qpf);
             }
+        }
+        if (g_cfg.hwmip) {   // hwmip needs the GLU hook even with metrics=0; installGluHook never patches the IAT twice
+            bool g = installGluHook(exe);
+            logf("hwmip: gluBuild2DMipmaps IAT hook %s (orig %p, installed once for metrics and/or hwmip)", g ? "ON" : "FAILED: hwmip inactive", (void*)rGluMip);
         }
         g_on = true;
         HANDLE t = CreateThread(nullptr, 0, helper, nullptr, 0, nullptr);

@@ -98,6 +98,17 @@ needs_display = false
 timeout_s = 120
 
 [[smoke]]
+name = "hwmip"
+src = "smoke_hwmip.cpp"
+kpatch = "PerfLab/PerfLab.kpatch"
+dll_name = "perflab.dll"
+cxxflags = ["-lgdi32", "-lglu32"]
+runtime_dlls = true
+modes = ["run", "metrics", "off", "bare"]
+needs_display = false
+timeout_s = 60
+
+[[smoke]]
 name = "texmem"
 src = "smoke_texmem.cpp"
 kpatch = "TextureMemoryRelease/TextureMemoryRelease.kpatch"

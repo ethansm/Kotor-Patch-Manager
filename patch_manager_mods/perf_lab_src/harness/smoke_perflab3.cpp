@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
     if (txforeign) check(tx[0] == 0xE9 && log.find("tx=REFUSED(bytes)") != std::string::npos && log.find("0x4261CF saw e9") != std::string::npos, "log records tx=REFUSED(bytes) and the foreign E9 bytes it saw");
     if (!run && !refuse && !txforeign) check(log.find("tx=OFF") != std::string::npos && log.find("g1skip=OFF") != std::string::npos, "log records tx=OFF g1skip=OFF");
     if (!run && !refuse && !txforeign) check(log.find("0x4261CF saw 0f b6 c8 85 c9 75 10") != std::string::npos && log.find("0x4265F3 saw 74 06") != std::string::npos, "0.3.0: site bytes logged with the experiments off");
-    check(log.find("perf-lab 0.3.0 attach") != std::string::npos, "0.3.0 version in the attach line");
+    check(log.find("perf-lab 0.4.0 attach") != std::string::npos, "0.4.0 version in the attach line");
     if (!run) { printf("%s: %d failures\n", mode, g_fail); return g_fail ? 1 : 0; }
 
     // ---- M1 ----

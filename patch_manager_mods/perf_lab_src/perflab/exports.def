@@ -49,3 +49,7 @@ EXPORTS
     PerfLabPathResult
     PerfLabEffectApply
     PerfLabEffectRemove
+    PerfLabTestSetGl
+    PerfLabTestHwmipCounters
+    PerfLabTestRGluMip
+    PerfLabTestResolveEntries
