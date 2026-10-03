@@ -36,6 +36,8 @@ k2-texture-memory-release.
 2. Held WIP commits (ForcePowerHotbar, CharEffectsPanel, BuffDurationHUD .inc/.h) once their sessions settle.
 3. Upstream PRs: none (user, 10-03). `docs/prepatched-executables` branch stays on the fork.
 
+**10-03 15:51 hot-swap (engine research, doc 10):** `patches/perf-lab.dll` -> 0.4.0 `9c72cffb` (kpatch `Patches/PerfLab/PerfLab.kpatch`, fw 5ba6e80) and `patches/k2-robustness-fixes.dll` -> 1.2.0 `294be99f` (fw c213bfc); hook sets identical, config/state untouched (split W5 kept). A KPM reinstall picks these kpatches by md5.
+
 **Install rules:** siblings hot-swap live DLLs and the patcher without KPM (11:51 chareffects + KotorPatcher) and
 reinstall often; right before any install: game closed, re-read live ids, `stage <dir>` (4gb-patch "hooks=DIFF" is
 expected: static hook not in patch_config; a `dll=NO-MATCH` means pass the live build's kpatch as EXTRA), back up,
