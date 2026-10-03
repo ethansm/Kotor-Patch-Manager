@@ -1,0 +1,55 @@
+gog_addr	steam_addr	final_verdict	note
+0x0064bb60	0x0051c140	verified	0051c151 CALL 0x537cc0 (Internal::GetTrigger, vt slot +0x40 = GOG 0x7baf10 +0x40, Mac +0x44); caller GetNumMinesSetByPlayerParty 0x52e1c0 (db) 1/1
+0x0064b870	0x0051be50	verified	0051be68 MOV [EDX+0x10080],EAX; 4/4 db callers hit (Area/Trigger/Door EventHandler, ExecuteCommandStartNewModule 0x693c10); fp identical 36/4
+0x007b4920	0x005315a0	verified	005315a9 PUSH 'globalcat'; 005315bd ADD ECX,0x100fc; CALL 0x653e40 (ReadCatalogue, fp identical to GOG 0x650d00); fp identical
+0x0064bd90	0x0051c370	verified	0051c37f MOV EDX,[ECX+0x10048]; callers 70=70, 36/36 db-mapped hit (LoadGame 0x853a00, CSWSItem::AIUpdate 0x600f20); Timestop/Pause twins have other callers
+0x0064c0d0	0x0051c6b0	verified	0051c6c2 CALL 0x538c20 (Internal::TogglePauseState, fp = GOG 0x7bbe70 47/4); db callers OnApplyTimestop 0x5a4d70, OnRemoveTimestop 0x5a4f20
+0x0072dfe0	0x0055b830	verified	0055b865 PUSH 0xbc1; 'MOD V1.0'; disp 0x208-0x22c, 19 callees incl SaveModuleFAC/IFOStart; fp identical. GOG DB param 0 bad: RET 8 -> 8
+0x007b4f60	0x00531be0	verified	CopyFileA/GetFileAttributesA, 00531c2b PUSH 0x80 SetFileAttributesA; RET 0xc; fp identical, Mac same API callees. GOG DB param 8 bad -> 12
+0x0064b840	0x0051be20	verified	0051be3d CALL 0x52fb80 (Internal::LoadGame, db); RET 0x10; SaveGame twin 0x51bdf0 calls 0x52f610; fp identical
+0x0072ffa0	0x0055d7f0	verified	strings Mod_CommntyName/Mod_IsPrimaryPlr/ObjectId/Player 4/4; 11 db callees IN (CResGFF writers, 0x51c600); fp identical, Mac callee set same
+0x0064b7b0	0x0051bd90	verified	0051bd9d CALL 0x52f4c0 (Internal::GetModule, fp = GOG 0x7b2840 168); callers 123=123, 71/71 db-mapped hit (GetSurfaceMaterial 0x7a79f0)
+0x007b8d50	0x00535a10	verified	00535a68 ADD ECX,0x1008c, imm 0x1f0b4; callees PositionParty 0x5f9a20 + ComputeSafeLocation 0x54bdc0 (db) IN; fp identical 537/4
+0x0064c0b0	0x0051c690	verified	0051c6a5 CALL 0x538320 (Internal::GetFactionOfObject, fp = GOG 0x7bb570 386/8); 6/6 db callers hit (ExecuteCommandAdjustReputation 0x66d1b0)
+0x007b9ef0	0x00536c10	verified	strings 'HD0:chitin','ERRORTEX:' 7/7; CALL 0x711710 RemoveResourceDirectory, 0x7114d0 CExoResMan dtor; imm 0xf8; fp identical 2147
+0x0064b810	0x0051bdf0	verified	CALL 0x52f610 (Internal::SaveGame, db; 'SAVES:%06d - %s'); RET 0x10; LoadGame twin calls 0x52fb80; fp identical
+0x0072a670	0x00557ec0	verified	CALL 0x55ec70 FindObjectByTagTypeOrdinal (Mac callee same); 4/4 callers hit incl ExecuteCommandGetWaypointByTag 0x68a810 (db)
+0x0064c6c0	0x0051cca0	verified	0051ccb9 ADD ECX,0x1f314 (GOG imm 0x1f314) + CALL 0x7337c0 CExoString::operator=; db callers Door/Placeable EventHandler; Get twin is 61 bytes
+0x0064c870	0x0051ce50	verified	0051ce68 MOV [EDX+0x100d8],EAX; sole caller ExecuteCommandSetButtonMashCheck 0x6977a0 (db); fp identical 36/4
+0x0064c850	0x0051ce30	verified	0051ce3f MOV EDX,[ECX+0x100d8]; callers AddAttackAction 0x590a50 + ExecuteCommandGetButtonMashCheck 0x697750 (db) 2/2
+0x007b2920	0x0052f5a0	verified	CALL 0x52f4c0 GetModule then copy of [module+0x104]; imms 0x10/0x104 in GOG+Mac; fp identical 103/4
+0x0064bb80	0x0051c160	verified	CALL 0x537d30 (Internal::GetPlaceable, vt +0x48 = GOG 0x7baf80, Mac +0x4c); 12/12 db callers hit (SetPossessor 0x600380, ExecuteCommandGetGold)
+0x0064c800	0x0051cde0	verified	0051cdef MOV EDX,[ECX+0x100c4]; 4/4 db callers hit incl ExecuteCommandGetLoadFromSaveGame 0x682dc0, CreateParty 0x5f9220
+0x0064bb00	0x0051c0e0	verified	CALL 0x537b00 (Internal::GetItem, vt +0x38 = GOG 0x7bad50, Mac +0x3c); callers 109=109, 37/37 db hit (ShowUpgradeScreen 0x7cd7e0)
+0x0064c620	0x0051cc00	verified	callees GetModule 0x52f4c0, GetArea 0x557ef0, CSWSArea::GetRoomIndex 0x54b3b0 (Mac same 3); caller CSWCArea::GetRoomIndex 0x7aace0 (db); GOG DB param 0 bad -> 12
+0x0064bc40	0x0051c220	verified	CALL 0x537f60 (Internal::GetSoundObject, vt +0x68 = GOG 0x7bb1b0, Mac +0x6c); 10/10 db callers ExecuteCommandSoundObject*
+0x007b9510	0x005361d0	verified	00536344 ADD ECX,0x1f0b4, CALL 0x5f9220 CreateParty (db); callees LoadPrimaryPlayer 0x531370 + MovePlayerToArea 0x535a10; fp identical 464
+0x00731fc0	0x0055f930	verified	0055f93c MOV ECX,[EAX+0x200], 0055f962 [ECX+0x1fc]; 0 callees, 90 bytes (Add/Remove twins 101); sole caller 0x5be950 fp-identical to GOG AIActionJumpToPoint
+0x007b39e0	0x00530660	verified	'GAMEINPROGRESS:'; CALL 0x55b830 SaveModuleStart; 14 callees; callers StartNewModule 0x52fda0 (db) + StallEventSaveGame; fp identical 475
+0x0072d430	0x0055ac80	verified	callees TestDirectLine 0x550980, PlotGridPath 0x550e30, PlotPathPointPath 0x5532f0, GetCreature 0x51c100; imm 0x2b4/0x186a0; fp identical 2985/8
+0x0064bb20	0x0051c100	verified	CALL 0x537b70 (Internal::GetCreature, vt +0x30 = GOG 0x7badc0, Mac +0x34); callers 395/396, 226/227 db-mapped hit
+0x0064bbc0	0x0051c1a0	verified	CALL 0x537da0 (Internal::GetDoor, vt +0x18 = GOG 0x7baff0, Mac +0x1c); 6/6 db callers hit (HandleTransparentDoors 0x52b9c0, GetDoorCrossed 0x52c670)
+0x007ba760	0x00537510	verified	loop CALL 0x537590 (UpdateClientGameObjectsForPlayer) after timer 0x736220; imm 0x14; caller MainLoop; fp identical 122/4, Mac callee set same
+0x0064c7d0	0x0051cdb0	verified	CALL 0x53a840 (Internal::ComputeSafeLocation, fp = GOG 0x7bda90 106/20); RET 0x14; db caller PositionParty 0x5f9a20
+0x0064b8c0	0x0051bea0	verified	0051beb9 ADD ECX,0x10084 (GOG imm same) + CALL 0x7337c0 operator=; 4/4 db callers hit (Area/Trigger/Door EventHandler, ExecuteCommandStartNewModule)
+0x007bfb10	0x0053cd70	verified	strings 'DeleteSaveGroupOnEnter','SaveGroup','ModuleName'; CALL 0x7158e0 CExoResMan::RemoveFile; imm 0x809; caller StartNewModule 0x52fda0 (db)
+0x0064c2b0	0x0051c890	verified	0051c89d ADD EAX,0x100fc (GOG imm 0x100fc = GlobalVariableTable member, cf Initialize); 16/16 db-mapped callers hit
+0x0064b8f0	0x0051bed0	verified	0051bee8 MOV [EDX+0x100bc],EAX; sole caller ExecuteCommandExportAllCharacters 0x679190 (db); fp identical 36/4
+0x0064c020	0x0051c600	verified	CALL 0x52f330 (Internal::GetClientObjectByObjectId, fp = GOG 0x7b26b0 152/4); callers 108=108, 35/35 db hit (UpdateDialog 0x7cd0f0)
+0x0064b760	0x0051bd40	verified	0051bd4f MOV EDX,[ECX+0x10004]; db callers SetExperience 0x6b6bd0, GetPotentialLevel 0x6b7310, CanLevelUp 0x6b9790 (4/4 mapped hit); callers 9=9
+0x007b8970	0x00535630	verified	00535647 CALL 0x5315e0 (UnloadModule), disp 0x14/0x38 = GOG+Mac; callees match Mac (GetSWSMessage, UnloadModule, LoadBar_EndStallEvent); fp identical
+0x007ba7e0	0x00537590	verified	CMP 0x7f000000, CMP 0x30d40, [ECX+0x350]; timer 0x736220 + 4 callees; disp list = GOG; caller UpdateClientGameObjects; fp identical 546/16
+0x0064b970	0x0051bf50	verified	0051bf68 MOV [EDX+0x100b8],EAX; sole caller ExecuteCommandDoSinglePlayerAutoSave 0x6710a0 (db); fp identical 36/4
+0x007bad50	0x00537b00	verified	CALL 0x53dfb0 GetGameObject then vtable [+0x38] AsSWSItem (GOG disp 0x38, Mac 0x3c); Creature twin 0x537b70 uses +0x30; fp identical
+0x0072f420	0x0055cc70	verified	strings 'FactionList','RepList','GAMEINPROGRESS:REPUTE' 3/3; PUSH 0x7f6 + CALL 0x71a5a0 WriteGFFFile (db); fp identical 646
+0x0064c310	0x0051c8f0	verified	CALL 0x539d60 (Internal::GetPlayerCreatureId, fp = GOG 0x7bcfb0 87/0); callers 117=117, 42/42 db hit (UpdateDialog 0x7cd0f0)
+0x0064c6a0	0x0051cc80	verified	0051cc8f MOV EDX,[ECX+0x10054]; 5/5 db callers hit (AddPUP 0x5fa3b0, OnApplyFactionModifier 0x5951a0, ExecuteCommandChangeByFaction 0x696e10)
+0x0072d0b0	0x0055a900	verified	0055a9d3 CALL 0x55ac80 PlotPathInArea; 6 callees role-matched; disp 0x70..0xb8 list = GOG; caller PlotPath 0x55ab30; fp identical 555/8
+0x007b46f0	0x00531370	verified	AUTO sig pass: callees GetModule 0x51bd90, LoadCharacterFinish, GetPrimaryPlayerIndex (= Mac set); disp 0x8/0x44 = Mac; fp identical 86/4
+0x007bdb00	0x0053a8b0	verified	AUTO sig pass: 6 callees (GetModule 0x52f4c0 + AreaMap setters per Mac), disp 0x238 = Mac; caller MainLoop; fp identical 267
+0x007bc8a0	0x00539650	verified	AUTO sig pass: 10 callees, disp 0x30/0x8c (Mac +4: 0x34/0x90); caller CServerExoApp::ResolvePlayerByFirstName 0x51c810; fp identical 356/4
+0x00732020	0x0055f990	verified	AUTO sig pass: callees GetCreature 0x51c100, TogglePauseState 0x51c6b0, GetActiveExclusionList 0x51c7f0 (= Mac set); imm 0x148; fp identical 245
+0x007bb0d0	0x00537e80	verified	AUTO sig pass: GetGameObject 0x53dfb0 + vtable [+0x58] AsSWSWaypoint (Mac +0x5c; AoE +0x50, Encounter +0x5c differ); fp identical 105/4
+0x0064c5c0	0x0051cba0	verified	AUTO c2 pass: disp 0x10dc (= Mac CombatRound), callees GetCreature 0x51c100 + RemoveAllActions 0x590430; db caller CSWCObject::ClearAllQueuedCombatActions 0x7f2500
+0x00732700	0x00560070	verified	AUTO c2 pass: 23/23 callees, strings 9/9, imm 0xbba/0x270d/0x5b4; callers dtor/LoadModuleStart/LoadModuleInProgress; fp identical 4028/4
+0x007b2990	0x0052f610	verified	AUTO c2 pass: strings 'SAVES:%06d - %s','SAVEGAME','%s%06d - %s%sScreen' (5 of GOG 6; 6th = empty str); RET 0x10; db caller 0x51bdf0. GOG DB param 12 bad -> 16

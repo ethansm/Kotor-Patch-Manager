@@ -1,0 +1,61 @@
+gog_addr	steam_addr	final_verdict	note
+0x0064b640	0x0051bc20	verified	Opus corr (row 0x51bcc0=GetFPS 17B). 0051bc5a PUSH 0x1f350 (=GOG imm) + 0051bc7a CALL 0x52ebe0 Internal ctor; fp=GOG 147B; caller 0x401bc0; delta -0x12fa20
+0x0064baa0	0x0051c080	verified	0051c08f MOV EDX,[ECX+0x1005c] object array; 261=261 callers; fp=GOG 31B; delta -0x12fa20; already B0 name_map high
+0x0064bce0	0x0051c2c0	likely	0051c2cf MOV EDX,[ECX+0x10040]; 0 callers both sides; fp=GOG 31B; delta -0x12fa20 and Mac order GetPlayerList/GetNetLayer/GetSWSMessage; thin getter
+0x0064bd00	0x0051c2e0	verified	0051c2ef MOV EDX,[ECX+0x10010]; 118=118 callers; Internal::InitiateModuleForPlayer 0x5356d0 calls it as GOG 0x7b8a10 calls 0x64bd00; fp=GOG
+0x0064be70	0x0051c450	verified	0051c45d CALL 0x5315a0 = Internal::Initialize (49B=GOG 0x7b4920, PUSH 0x993f00 catalogue name); caller 0x401bc0 = ctor caller; fp=GOG
+0x0064bee0	0x0051c4c0	verified	0051c4cd CALL 0x537830 = Internal::ContinueMessageProcessing (47B, 0053783e MOV ECX,[EAX+0x14] = GOG disp 0x14); fp=GOG; delta -0x12fa20
+0x0064c070	0x0051c650	verified	CALL 0x5356d0 = Internal::InitiateModuleForPlayer (819B, disp/imm lists = GOG 0x7b8a10); caller 0x660040; fp=GOG 28B
+0x0064c140	0x0051c720	verified	Opus corr (row 0x51c6f0=IsInjured). 0051c732 CALL 0x538cd0 = Internal::GetPauseState (36B, MOVZX [EAX+0x10078]); 8=8 callers; fp=GOG 29B ret4
+0x0064c1e0	0x0051c7c0	verified	Opus corr (row 0x51c790=AddToExclusionList). 0051c7d6 CALL 0x5394c0 = Internal::RemoveFromExclusionList (220B=GOG 0x7bc710); fp=GOG 33B ret8
+0x0064c500	0x0051cae0	verified	Opus corr (row 0x51ca40=ComputeHeight). 0051caf9 CALL 0x539e30 (245B=GOG 0x7bd080; 00539f00 CALL 0x5c25e0 CSWSCreature::UpdateSubareasOnMoveTo); RET 0xc
+0x0064c680	0x0051cc60	verified	CALL 0x539f80 = Internal::CreatureAcquireItem (306B=GOG 0x7bd1d0, 00539fff PUSH 0x30c item alloc); caller 0x73f9e0 CClientExoApp::CreatureAcquireItem
+0x0064c940	0x0051cf20	verified	Opus corr (row 0x51cc00=GetRoomIndex). 0051cf39 CALL 0x53aea0 = Internal::ShrinkLineByCreatures (47B=GOG 0x7be0f0: GetModule/GetArea/area call); RET 0xc
+0x0064c9a0	0x0051cf80	verified	0051cf8f MOV EDX,[ECX+0x100b0]; setter 0x51cf50 gets GetWorldTime 1st out (calendar day) at 00533bfa (local -0x34); caller 0x5582f0; fp=GOG
+0x0064c9f0	0x0051cfd0	verified	0051cfdf MOV EDX,[ECX+0x100ac]; setter 0x51cfa0 gets GetWorldTime 2nd out (time of day) at 00533bdd (local -0x28); caller 0x5582f0; fp=GOG
+0x0064ca90	0x0051d070	verified	CALL 0x53cf10 = Internal::GetModulePreviouslyVisited (1367B=GOG 0x7bfcb0, PUSH 0x993f40 etc.); caller 0x79fc40; fp=GOG 28B
+0x00733ef0	0x00561c80	verified	Opus corr (row 0x5615c0 = 64B helper, 5 callers). 00561c80 SUB ECX,0x1c / 00561c83 JMP 0x556cf0 (CSWSModule deleting dtor); fp=GOG 8B imm 0x1c
+0x007b8a10	0x005356d0	verified	fp=GOG 819B, identical disp/imm lists; 00535704 PUSH 0x1220 + 0053572b CALL 0x561f30 CSWSCreature ctor; forwarder 0x51c650
+0x007b8f70	0x00535c30	verified	fp=GOG 1428B; 00536031 MOV EAX,[EDX+0x100f8], 0053614b ADD ECX,0x1001c (GOG imm); forwarder 0x51c490; RET 0xc (GOG DB param 8 is wrong, 12)
+0x007bbef0	0x00538ca0	verified	00538cb0 CALL 0x537b70 GetCreatureByGameObjectID + 00538cc1 CALL 0x58bc50 (creature IsInjured); fp=GOG 48B; caller IsInjured 0x51c6f0
+0x007bbf20	0x00538cd0	verified	Opus corr (row 0x538c20=TogglePauseState). 00538cda MOVZX ECX,[EAX+0x10078]; fp=GOG 36B no callees; 4=4 callers (toggle, GetActivePauseState, SetPauseState)
+0x007bc710	0x005394c0	verified	Opus corr (row 0x5393b0=AddToExclusionList 260B). fp=GOG 220B ret8; 0053951a CALL 0x64dde0 list remove; forwarder 0x51c7c0 (caller 0x5a4f20)
+0x007bda10	0x0053a7c0	label_suspect	pair right (fp=GOG 32B; 0053a7d7 CALL 0x7403a0 = GOG 0x40d860 RunDeathSequence; sole caller TempDeathUpdate 0x53a0c0). Mac Uninitialize is an empty 5B stub
+0x007bfa90	0x0053ccf0	verified	Opus corr (row 0x53cc80=SetMoveToWorldTime 103B). fp=GOG 117B; 0053ccfd MOV EDX,[ECX+0x1009c] copied to out ptrs; 0053cd62 RET 0x1c; forwarder 0x51d030
+0x00731ee0	0x0055f850	verified	0055f8aa CALL 0x83ea60 CExoArrayList::Add (=GOG 0x4c7640 102B); disp 0x1fc/0x200 limbo list; fp=GOG 101B
+0x007bbea0	0x00538c50	verified	00538c60 CALL 0x537b70, 00538c7b CALL 0x543f50 SetPosition, 00538c87 CALL 0x543f10 SetOrientation (GOG 0x6aac30/0x6aabf0); fp=GOG 66B
+0x0064c210	0x0051c7f0	verified	CALL 0x539600 (67B=GOG 0x7bc850): 0053961a [ECX+0x10070] / 00539637 [EAX+0x10074] by pause state; fp=GOG; 2=2 callers
+0x0064bc60	0x0051c240	verified	0051c251 CALL 0x538040 = Internal::GetPlayerLanguage (118B=GOG 0x7bb290, player list walk); 4=4 callers; fp=GOG
+0x0064c090	0x0051c670	verified	CALL 0x535a10 = Internal::MovePlayerToArea (537B=GOG 0x7b8d50); sole caller 0x660600; fp=GOG 28B
+0x0064bd40	0x0051c320	verified	0051c32f MOV DX,word ptr [ECX+0x10008] (word getter, 34B = GOG 34B, only such body); 7=7 callers by size; delta -0x12fa20
+0x007bca50	0x00539800	verified	0053980e ADD ECX,0x100ec (=GOG imm) + 00539814 CALL 0x5210a0 AddUnique (GOG 0x7e44a0 CExoArrayList<int>::AddUnique); fp=GOG 31B
+0x0064be90	0x0051c470	verified	CALL 0x533830 = Internal::MainLoop (3450B=GOG 0x7b6bb0; AUTOSAVE strings); 2 callers; fp=GOG 22B
+0x0064c040	0x0051c620	verified	0051c636 CALL 0x52f3d0 = Internal::GetClientObjectByPlayerId (230B=GOG 0x7b2750); 7=7 callers; ret 8; fp=GOG
+0x0064b780	0x0051bd60	verified	0051bd6c CALL 0x51bd90 GetModule then 0051bd83 ADD EAX,0x4c (GOG imm 0x4c, Mac same); fp=GOG 46B
+0x007294a0	0x00556cf0	verified	00556cfa CALL 0x556d20 (CSWSModule dtor body 935B=GOG 0x7294d0) + 00556d0b CALL 0x9196fd delete; fp=GOG 44B ret4 (scalar deleting dtor)
+0x0064c110	0x0051c6f0	verified	callees 0x51c8b0 ClientToServerObjectId + 0x538ca0 Internal::IsInjured (=GOG 0x64c2d0/0x7bbef0, Mac same pair); fp=GOG 45B; 3=3 callers
+0x0064c230	0x0051c810	verified	CALL 0x539650 = Internal::ResolvePlayerByFirstName (356B=GOG 0x7bc8a0, player list walk); caller 0x656870; fp=GOG
+0x0064cab0	0x0051d090	verified	CALL 0x530170 = Internal::ExecuteLoadModule (359B=GOG 0x7b34f0, calls GetModule 0x52f4c0); caller 0x8529e0; fp=GOG
+0x0064c760	0x0051cd40	verified	0051cd4f MOV EDX,[ECX+0x1f31c]; sole caller 0x66df70 (2159B = GOG caller 0x783550), which also calls setter 0x51cd10 (+0x1f31c); fp=GOG
+0x007bcf80	0x00539d30	verified	00539d37 CMP [EBP+8],0x7f000000 (GOG imm); fp=GOG 37B; 3=3 callers (0x51c8b0, 0x539e30, 0x539f30)
+0x0064bd20	0x0051c300	verified	0051c30f MOV EDX,[ECX+0x10068]; sole caller 0x662f60 = GOG 0x808d00 (both also call SaveGame/LoadModule forwarders); fp=GOG 31B
+0x0064be40	0x0051c420	verified	CALL 0x5314e0 = Internal::HandleMessage (182B=GOG 0x7b4860; 005314f9 CMP ECX,0x73); RET 0x10; fp=GOG 40B
+0x0064c900	0x0051cee0	verified	CALL 0x52f570 (37B=GOG 0x7b28f0): 0052f57a MOV [EAX+0x1f324],0x7f000000; caller CSWSModule dtor 0x556d20 (= GOG 0x7294d0); fp=GOG
+0x00731f50	0x0055f8c0	verified	0055f916 CALL 0x49b840 DelIndex (=GOG 0x903df0 CExoArrayList::DelIndex 75B); disp 0x1fc/0x200; fp=GOG 101B
+0x0064bbe0	0x0051c1c0	verified	CALL 0x537e10 (105B=GOG 0x7bb060): 00537e50 MOVZX [0x99447a] AOE type byte; Internal order Door,AOE,..,Store = GOG/Mac; fp=GOG
+0x0064bd70	0x0051c350	verified	CALL 0x538e00 = Internal::GetActiveTimer (195B=GOG 0x7bc050; 00538e24 [ECX+0x10048], calls 0x538dc0); 12=12 callers; fp=GOG
+0x007bc010	0x00538dc0	verified	00538dcc/00538de0 CALL 0x538cd0 GetPauseState (=GOG callee 0x7bbf20); fp=GOG 49B; 5=5 callers
+0x0064bdd0	0x0051c3b0	verified	0051c3bf MOV EDX,[ECX+0x10050]; 4=4 callers matched by size (AIUpdate etc.); fp=GOG 31B; delta -0x12fa20
+0x0064bf80	0x0051c560	verified	CALL 0x5384b0 = Internal::GetPlayerListString (1894B=GOG 0x7bb700; 'Players: '/'ServerAdmins: ' strings); fp=GOG 49B
+0x0064bba0	0x0051c180	verified	CALL 0x537fd0 (105B=GOG 0x7bb220, last of Internal getter block like GOG/Mac): 00538010 MOVZX [0x99447d] store type; 10=10 callers
+0x0064b8a0	0x0051be80	verified	0051be8f MOV EDX,[ECX+0x10080]; Internal::MainLoop tests +0x10080; sole caller 0x781be0 (size = GOG caller 0x42e160); fp=GOG
+0x007baa80	0x00537830	verified	0053783e MOV ECX,[EAX+0x14] (GOG disp 0x14, imm 0xc); fp=GOG 47B; forwarder 0x51c4c0
+0x0064c0f0	0x0051c6d0	verified	CALL 0x539dc0 (108B=GOG 0x7bd010): 00539e1c MOV [ECX+0x21c],1 (Mac SkipPastDialog disp 0x21c); caller 0x8ba700; fp=GOG
+0x0064c780	0x0051cd60	verified	decoy settled: 0051cd78 MOV [EDX+0x1f320]; unique caller 0x7ceb80 (215B, disp list = GOG 0x4df280 SetGlobalDialogState, which calls only 0x64c780). 0x51cd10 = SetActionConversation
+0x0064c600	0x0051cbe0	verified	CALL 0x539f30 (76B=GOG 0x7bd180): 00539f40 CALL ClientToServerObjectId, 00539f60 ADD ECX,0x100 (Mac IsActionsPending disp 0x100); fp=GOG
+0x0064c9c0	0x0051cfa0	verified	0051cfb8 MOV [EDX+0x100ac],EAX; MainLoop 00533bdd passes GetWorldTime time-of-day out (local -0x28); caller 0x8529e0; fp=GOG 36B
+0x0064ca50	0x0051d030	verified	CALL 0x53ccf0 Internal::GetMoveToWorldTime (117B=GOG 0x7bfa90, reads +0x1009c.. into out ptrs); RET 0x1c; fp=GOG 52B
+0x0064bdf0	0x0051c3d0	verified	0051c3e8 MOV [EDX+0x1006c],EAX; getter 0x51c400 reads +0x1006c (GetDebugMode next, as GOG); caller 0x656af0; fp=GOG 36B
+0x0064c000	0x0051c5e0	verified	CALL 0x536c10 = Internal::StopServices (2147B=GOG 0x7b9ef0, PUSH 0x993e5c strings); caller 0x401c70 (dtor site); fp=GOG
+0x00729480	0x00556cd0	likely	00556cda SUB EAX,0x1c (GOG imm 0x1c; Mac AsSWSModule thunk -0x1c); fp=GOG 17B; 0 callers both; stub sitting before dtor 0x556cf0 as in GOG
+0x0064b7d0	0x0051bdb0	verified	0051bdca CALL 0x52f5a0 = Internal::GetModuleName (103B=GOG 0x7b2920); caller ExecuteCommandGetModuleName 0x6839a0; 6=6 callers; fp=GOG
