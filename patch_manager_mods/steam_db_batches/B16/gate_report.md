@@ -13,10 +13,10 @@ Rows: 149. Source order for tie-breaks: server > trusted name_map > mapper:vote 
 | CSWGuiInGameCharacter | 7 | 10 | 0 | 0 | 17 |
 | CSWGuiInGameGameplay | 0 | 21 | 1 | 0 | 22 |
 | CSWGuiTextParams | 8 | 6 | 0 | 0 | 14 |
-| CServerAIMaster | 15 | 6 | 0 | 0 | 21 |
-| **all** | 65 | 81 | 2 | 1 | 149 |
+| CServerAIMaster | 16 | 5 | 0 | 0 | 21 |
+| **all** | 66 | 80 | 2 | 1 | 149 |
 
-AUTO by route: c2=38 sig=27 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=39 sig=27 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 
@@ -76,6 +76,7 @@ Trusted rows that are NOT seeds (exact name + equal retn + equal size or A-SIG >
 - GOG 0x0070ccb0 CSWSArea::GridDFSTransTablePut -> Steam 0x00552c90: retn GOG 0 vs Steam 16
 - GOG 0x00707770 CSWSArea::SetHitInfoForCreature -> Steam 0x00556040: retn GOG 32 vs Steam 20
 - GOG 0x00733ef0 CSWSModule::non_virtual_thunk_to_dtor_CSWSModule -> Steam 0x00561c80: size GOG 8 vs Steam 44, SIG 0.00 (intersection 0)
+- GOG 0x00692f50 CSWSCreature::BroadcastPoisoned -> Steam 0x0057a420: size GOG 3 vs Steam 312, SIG 0.00 (intersection 0)
 - GOG 0x00667710 CSWSItem::RestoreUsedActiveProperties -> Steam 0x00603dd0: size GOG 63 vs Steam 245, SIG 0.17 (intersection 3)
 - GOG 0x00667600 CSWSItem::GetPropertyByTypeExists -> Steam 0x00603f60: retn GOG 4 vs Steam 8
 - GOG 0x006fcf40 CSWSItem::SetNumActiveProperties -> Steam 0x00604140: size GOG 85 vs Steam 133, SIG 0.33 (intersection 2)

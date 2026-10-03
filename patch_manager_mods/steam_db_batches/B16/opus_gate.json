@@ -1,0 +1,322 @@
+{
+ "batch": "B16",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 1,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 20,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10
+ },
+ "full_read": 22,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CServerAIMaster",
+   "gog": "0x0064ea20",
+   "name": "OnEffectRemoved",
+   "route": "sig",
+   "steam_addr": "0x0051f000"
+  },
+  {
+   "class": "CSWGuiTextParams",
+   "gog": "0x00915440",
+   "name": "SetTextObject",
+   "route": "sig",
+   "steam_addr": "0x00417070"
+  },
+  {
+   "class": "CServerAIMaster",
+   "gog": "0x0064e9f0",
+   "name": "OnEffectApplied",
+   "route": "sig",
+   "steam_addr": "0x0051efd0"
+  },
+  {
+   "class": "CAurTextureBasic",
+   "gog": "0x00818ce0",
+   "name": "glImage",
+   "route": "sig",
+   "steam_addr": "0x004265e0"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x006513b0",
+   "name": "AddIdentifierLocation",
+   "route": "sig",
+   "steam_addr": "0x006544f0"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00653380",
+   "name": "ReadTable",
+   "route": "c2",
+   "steam_addr": "0x006564c0"
+  },
+  {
+   "class": "CServerAIMaster",
+   "gog": "0x0064da60",
+   "name": "AddObject",
+   "route": "c2",
+   "steam_addr": "0x0051e040"
+  },
+  {
+   "class": "CServerAIMaster",
+   "gog": "0x0064dae0",
+   "name": "RemoveObject",
+   "route": "c2",
+   "steam_addr": "0x0051e0c0"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CSWGuiInGameCharacter",
+   "gog": "0x00595eb0",
+   "name": "Constructor",
+   "steam_addr": "0x0073b4d0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGuiInGameCharacter",
+   "gog": "0x00597770",
+   "name": "Destructor",
+   "steam_addr": "0x0084de70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGuiInGameCharacter",
+   "gog": "0x005994b0",
+   "name": "Draw",
+   "steam_addr": "0x0084fbb0",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "gog": "0x005e43c0",
+   "name": "Constructor",
+   "steam_addr": "0x008df930",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "gog": "0x005e5a70",
+   "name": "OnKeyMap",
+   "steam_addr": "0x008e0fc0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "gog": "0x005e5b30",
+   "name": "OnMouse",
+   "steam_addr": "0x008e1080",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "gog": "0x005e6020",
+   "name": "OnEnterDiff",
+   "steam_addr": "0x008e1570",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "gog": "0x005e6080",
+   "name": "OnExitDiff",
+   "steam_addr": "0x008e15d0",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CServerAIMaster",
+   "gog": "0x0064dc40",
+   "name": "AddEventAbsoluteTime",
+   "steam_addr": "0x0051e220",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00651470",
+   "name": "FindIdentifierIndex",
+   "steam_addr": "0x006544f0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00651600",
+   "name": "GetValueBoolean",
+   "steam_addr": "0x00654670",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00651720",
+   "name": "GetValueNumber",
+   "steam_addr": "0x00654670",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00651a70",
+   "name": "SetValueBoolean",
+   "steam_addr": "0x00654aa0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00652550",
+   "name": "ReadTableWithoutCatalogue",
+   "steam_addr": "0x00655690",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x00653500",
+   "name": "Save",
+   "steam_addr": "0x006564c0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "gog": "0x006535d0",
+   "name": "Load",
+   "steam_addr": "0x00656780",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CServerAIMaster",
+   "gog": "0x0077e650",
+   "name": "AppendToScriptsRun",
+   "steam_addr": "0x00669070",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CAurTextureBasic",
+   "gog": "0x00815aa0",
+   "name": "GetController",
+   "steam_addr": "0x004233a0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CAurTextureBasic",
+   "gog": "0x00815b80",
+   "name": "Destructor",
+   "steam_addr": "0x004233a0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CAurTextureBasic",
+   "gog": "0x00816030",
+   "name": "RemoveFromOrderedLists",
+   "steam_addr": "0x00423820",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CExoMoviePlayerInternal",
+   "gog": "0x00920c10",
+   "name": "StopMovie",
+   "steam_addr": "0x0040dac0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CExoMoviePlayerInternal",
+   "gog": "0x00921000",
+   "name": "PauseMovie",
+   "steam_addr": "0x0040de50",
+   "why": "reviewer corrected_addr"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CSWGuiTextParams",
+   "content_level": "C0",
+   "gog": "0x009151b0",
+   "name": "SetBaseFont",
+   "steam_addr": "0x00416de0"
+  },
+  {
+   "class": "CExoMoviePlayerInternal",
+   "content_level": "C0",
+   "gog": "0x00921040",
+   "name": "ResumeMovie",
+   "steam_addr": "0x0040de50"
+  },
+  {
+   "class": "CSWGuiTextParams",
+   "content_level": "C0",
+   "gog": "0x009151e0",
+   "name": "ReSetFont",
+   "steam_addr": "0x00416e10"
+  },
+  {
+   "class": "CSWGuiTextParams",
+   "content_level": "C0",
+   "gog": "0x00915550",
+   "name": "SetDefaultColor_2",
+   "steam_addr": "0x00417180"
+  },
+  {
+   "class": "CSWGuiInGameCharacter",
+   "content_level": "C0",
+   "gog": "0x00599990",
+   "name": "SetLabelBonusPenaltyColour",
+   "steam_addr": "0x00850090"
+  },
+  {
+   "class": "CSWGuiDialogLetterbox",
+   "content_level": "C0",
+   "gog": "0x005af1f0",
+   "name": "`scalar",
+   "steam_addr": "0x008baaa0"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "content_level": "C0",
+   "gog": "0x005e5210",
+   "name": "Destructor",
+   "steam_addr": "0x008e0780"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "content_level": "C1",
+   "gog": "0x005e59f0",
+   "name": "OnEnterSlot",
+   "steam_addr": "0x008e0f40"
+  },
+  {
+   "class": "CServerAIMaster",
+   "content_level": "C2",
+   "gog": "0x0064e840",
+   "name": "SaveEventQueue",
+   "steam_addr": "0x0051ee20"
+  },
+  {
+   "class": "CSWGuiInGameCharacter",
+   "content_level": "C1",
+   "gog": "0x00599070",
+   "name": "SetModText",
+   "steam_addr": "0x0084f770"
+  },
+  {
+   "class": "CServerAIMaster",
+   "content_level": "C1",
+   "gog": "0x0064eac0",
+   "name": "AdjustTargetAndWitnessReputations",
+   "steam_addr": "0x0051f0a0"
+  },
+  {
+   "class": "CSWGlobalVariableTable",
+   "content_level": "C1",
+   "gog": "0x00650c90",
+   "name": "ClearValues",
+   "steam_addr": "0x00653dd0"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 57,
+ "sample_rate": 0.2,
+ "sample_size": 12,
+ "unanswered_decoys": 0
+}
