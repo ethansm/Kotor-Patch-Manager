@@ -296,5 +296,28 @@ class DecoyReviewIsolationTests(Base):
         self.assertEqual(g["decoys_accepted"], 0)
 
 
+class MacRotationFullReadTests(unittest.TestCase):
+    """B12b: a reviewer `match` on a mac_rotation row goes to the Opus 100% list (a rotated GOG label passes the
+    counterpart check, and the B12b sample caught one only by chance)."""
+
+    def gate(self, flags):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            bdir = Path(d)
+            (bdir / "cards").mkdir()
+            ev = {"gog": "0x006c66e0", "steam_addr": "0x005bb920", "gate_class": "REVIEW", "flags": flags, "g6": "",
+                  "content_level": "C1", "class": "C", "name": "N"}
+            fin = {"gog": "0x006c66e0", "steam_addr": "0x005bb920", "final_verdict": "verified", "class": "C", "name": "N"}
+            rev = {0x6C66E0: [{"steam_addr": "0x005bb920", "verdict": "match", "reason": "", "content_anchor": ""}]}
+            g = batch.opus_gate(bdir, "B1", [ev], [fin], rev, None)
+        return [r["why"] for r in g["rows_full"]]
+
+    def test_mac_rotation_match_is_read_in_full(self):
+        self.assertEqual(self.gate("why:c1,mac_rotation"), ["match on a mac_rotation row"])
+
+    def test_plain_match_is_not(self):
+        self.assertEqual(self.gate("why:c1"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

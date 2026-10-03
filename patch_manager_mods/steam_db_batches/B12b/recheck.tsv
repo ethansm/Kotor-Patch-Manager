@@ -1,6 +1,1 @@
 gog_addr	corrected_addr	source	reason
-0x006a2e10	0x0058a330	review:sonnet_c1.tsv	Candidate size 810, disps 0x298/0x2cc; GOG callees and size 318 match 0x58a330, whose callers equal GOG callers.
-0x006d5a90	0x005cacd0	review:sonnet_c1.tsv	0x5bd1d0 is inventory code (GetItemInSlot, disp 0x1150); real fn is the +0xfa4 sibling storing const 1.
-0x006d5bc0	0x005cae00	review:sonnet_c1.tsv	Candidate is inventory code (disp 0x1150). Sibling storing const 3 fits GOG imm 0x3 for PathWaitDest.
-0x006d5cf0	0x005caf30	review:sonnet_c1.tsv	Candidate is inventory code (disp 0x1150). Sibling storing const 4 fits GOG imm 0x4 for ToOffsetWaitDest.
-0x006d5e20	0x005cb060	review:sonnet_c1.tsv	Candidate is inventory code (disp 0x1150). Sibling storing const 2 fits GOG imm 0x2 for ToPathWaitDest.

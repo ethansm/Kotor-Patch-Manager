@@ -4,22 +4,29 @@
  "chunks_unreviewed": [],
  "clean": false,
  "clean_streak_before": 0,
- "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decision": "ESCALATE: Opus-found error in the sample -> send 100% of this batch's reviewer matches to Opus",
  "decoy_cards": 10,
  "decoys_accepted": 0,
  "decoys_per_chunk": {
   "1": 10
  },
- "full_read": 14,
+ "full_read": 24,
  "key_error_cards": [],
  "key_errors": 0,
  "rows_auto": [
   {
    "class": "CSWSCreature",
-   "gog": "0x006db6a0",
-   "name": "AIActionUnequipItem",
+   "gog": "0x006bd9d0",
+   "name": "AIActionFlagMine",
    "route": "sig",
-   "steam_addr": "0x005d0a80"
+   "steam_addr": "0x005b2c10"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x00698430",
+   "name": "UpdateAppearanceForEquippedItems",
+   "route": "sig",
+   "steam_addr": "0x0057f900"
   },
   {
    "class": "CSWSCreature",
@@ -30,38 +37,31 @@
   },
   {
    "class": "CSWSCreature",
-   "gog": "0x0069db00",
-   "name": "CutWaypointPath",
+   "gog": "0x006dd200",
+   "name": "AIActionCounterSpell",
    "route": "sig",
-   "steam_addr": "0x00585020"
+   "steam_addr": "0x005d25e0"
   },
   {
    "class": "CSWSCreature",
-   "gog": "0x006de0a0",
-   "name": "CheckItemAlignmentRestrictions",
+   "gog": "0x006d39e0",
+   "name": "WalkUpdateLocation_QuickWalk_FollowLeader_Following_Path",
    "route": "sig",
-   "steam_addr": "0x005d3480"
+   "steam_addr": "0x005c8c20"
   },
   {
    "class": "CSWSCreature",
-   "gog": "0x006df450",
-   "name": "CleanInvitationLists",
-   "route": "sig",
-   "steam_addr": "0x005d4830"
-  },
-  {
-   "class": "CSWSCreature",
-   "gog": "0x006e0170",
-   "name": "UnsummonMyself",
+   "gog": "0x00698570",
+   "name": "TransferGold",
    "route": "c2",
-   "steam_addr": "0x005d5550"
+   "steam_addr": "0x0057fa40"
   },
   {
    "class": "CSWSCreature",
-   "gog": "0x006c8460",
-   "name": "CanEquipItem",
+   "gog": "0x006c7e70",
+   "name": "AIActionEncounterCreatureDestroySelf",
    "route": "c2",
-   "steam_addr": "0x005bd6a0"
+   "steam_addr": "0x005bd0b0"
   },
   {
    "class": "CSWSCreature",
@@ -91,7 +91,7 @@
    "gog": "0x006a2600",
    "name": "UpdatePureGoodEvilPowers",
    "steam_addr": "0x00589b20",
-   "why": "match on a mac_contra row"
+   "why": "label_suspect, match on a mac_contra row"
   },
   {
    "class": "CSWSCreature",
@@ -104,7 +104,7 @@
    "class": "CSWSCreature",
    "gog": "0x006a2e10",
    "name": "SetInParty",
-   "steam_addr": "0x0058a610",
+   "steam_addr": "0x0058a330",
    "why": "reviewer corrected_addr"
   },
   {
@@ -126,6 +126,41 @@
    "gog": "0x006a4da0",
    "name": "LearnScroll",
    "steam_addr": "0x0058c300",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006c6230",
+   "name": "AIActionCheckMoveAwayFromLocation",
+   "steam_addr": "0x005bb470",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006c66e0",
+   "name": "AIActionCheckInterAreaPathfinding",
+   "steam_addr": "0x005bb920",
+   "why": "label_suspect, match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006c6930",
+   "name": "AIActionChangeFacingPoint",
+   "steam_addr": "0x005bbb70",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006c7820",
+   "name": "AIActionCheckMoveToPoint_2",
+   "steam_addr": "0x005bca60",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006c9d80",
+   "name": "AIActionCheckMoveAwayFromObject",
+   "steam_addr": "0x005befc0",
    "why": "label_suspect"
   },
   {
@@ -165,9 +200,44 @@
   },
   {
    "class": "CSWSCreature",
+   "gog": "0x006dba10",
+   "name": "AdjustReputation",
+   "steam_addr": "0x005d0df0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006dc020",
+   "name": "AddToVisibleList",
+   "steam_addr": "0x005d1400",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
    "gog": "0x006dc300",
    "name": "GetCreatureReputation_2",
    "steam_addr": "0x005d16e0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006de780",
+   "name": "CheckItemClassRestrictions",
+   "steam_addr": "0x005d3b60",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006dee60",
+   "name": "AIActionAnimalEmpathy",
+   "steam_addr": "0x005d4240",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006f5300",
+   "name": "GetRelativeWeaponSize",
+   "steam_addr": "0x006b8e80",
    "why": "label_suspect"
   }
  ],
@@ -182,9 +252,58 @@
   {
    "class": "CSWSCreature",
    "content_level": "C1",
-   "gog": "0x006c66e0",
-   "name": "AIActionCheckInterAreaPathfinding",
-   "steam_addr": "0x005bb920"
+   "gog": "0x00698350",
+   "name": "CalculateDamagePower",
+   "steam_addr": "0x0057f820"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x006a3970",
+   "name": "GetClientCreature",
+   "steam_addr": "0x0058ae90"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x006a3810",
+   "name": "GetCurrentlyFollowingLeader",
+   "steam_addr": "0x0058ad30"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x00696f00",
+   "name": "SetAttemptedAttackTarget",
+   "steam_addr": "0x0057e3d0"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x0069a160",
+   "name": "AddChemical",
+   "steam_addr": "0x00581630"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x00699fd0",
+   "name": "RemoveGold",
+   "steam_addr": "0x005814a0"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x006a3dc0",
+   "name": "GetLastInstantEquip",
+   "steam_addr": "0x0058b2e0"
+  },
+  {
+   "class": "CSWSCreature",
+   "content_level": "C1",
+   "gog": "0x006a3cf0",
+   "name": "GetListenCheckDistance",
+   "steam_addr": "0x0058b210"
   },
   {
    "class": "CSWSCreature",
@@ -195,22 +314,22 @@
   },
   {
    "class": "CSWSCreature",
-   "content_level": "C2",
-   "gog": "0x006dba10",
-   "name": "AdjustReputation",
-   "steam_addr": "0x005d0df0"
+   "content_level": "C1",
+   "gog": "0x00698e30",
+   "name": "GetJournal",
+   "steam_addr": "0x00580300"
   },
   {
    "class": "CSWSCreature",
    "content_level": "C1",
-   "gog": "0x00698350",
-   "name": "CalculateDamagePower",
-   "steam_addr": "0x0057f820"
+   "gog": "0x0069a240",
+   "name": "AddComponent",
+   "steam_addr": "0x00581710"
   }
  ],
- "sample_errors": null,
- "sample_pool": 19,
+ "sample_errors": 1,
+ "sample_pool": 12,
  "sample_rate": 0.2,
- "sample_size": 5,
+ "sample_size": 12,
  "unanswered_decoys": 0
 }

@@ -1436,6 +1436,8 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
             flags = ev.get("flags", "")
             if "mac_contra" in flags:
                 why.append("match on a mac_contra row")
+            if "mac_rotation" in flags:     # B12b: a rotated GOG label passes the counterpart check, so Opus reads it
+                why.append("match on a mac_rotation row")
             if "sig_twin" in flags:
                 why.append("match on a twin row")
             if "name_held_elsewhere" in ev.get("g6", ""):

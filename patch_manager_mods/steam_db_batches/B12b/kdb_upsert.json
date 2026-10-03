@@ -58,7 +58,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00698350] Steam batch B12b: SIG 0.50 | reviewer match with anchor: 0057f85a CALL 0x00582010 GetTotalEffectBonus; 0057f840 PUSH 0xff; caller GetDamageRoll 0x6adec0 (site 006af928)",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00698350] Steam batch B12b: SIG 0.50 | override: [a] fp 1:1, sole caller GetDamageRoll (7065b both); 0057f85a CALL 0x582010 GetTotalEffectBonus, imm 0xff x2 = Mac CalculateDamagePower imm 0xff,0xff",
   "name": "CSWSCreature::CalculateDamagePower",
   "source": "steam-db-B12b",
   "steam_addr": "0x0057f820"
@@ -90,7 +90,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x00698810] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00698810] Steam batch B12b: SIG 1.00 | override: [a] fp identical, 4 callers same sizes; 0057fd22 CALL 0x71b3f0 + 0057fd4a CALL 0x6fa530 (GetFLOATEntry, ComputeStepTolerance) = Mac UpdatePersonalSpace callees",
   "name": "CSWSCreature::UpdatePersonalSpace",
   "source": "steam-db-B12b",
   "steam_addr": "0x0057fce0"
@@ -274,7 +274,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x0069db00] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0069db00] Steam batch B12b: SIG 1.00 | override: [a] fp identical, callers 1634/1874 match; 0058502c [EAX+0x380], 0058504f [ECX+0x100]; disps 0x8c/0x9c/0xf8-0x104 = Mac CutWaypointPath",
   "name": "CSWSCreature::CutWaypointPath",
   "source": "steam-db-B12b",
   "steam_addr": "0x00585020"
@@ -418,14 +418,6 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006a2600] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 00589bac CALL 0x5d7220 GetAQActionIDByID; 00589bba MOV [EDX+ECX+0x3ec],AX; 00589b65 MOV EAX,[EDX+0x10dc]; IMUL 0x1c",
-  "name": "CSWSCreature::UpdatePureGoodEvilPowers",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x00589b20"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=0; GOG 0x006a2710] Steam batch B12b: CALLEE 1 (callees: GetActionPending 0x590110); SIG 1.00 | AUTO: CALLEE 1 (callees: GetActionPending 0x590110); SIG 1.00",
   "name": "CSWSCreature::ProcessPendingCombatActions",
   "source": "steam-db-B12b",
@@ -490,6 +482,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a2e10] Steam batch B12b: gate evidence was for a corrected pick | override: [a] CORRECTION from 0x58a610 (=GetSpikeDetails 810b). 0x58a330 sz318 RET 8 fp 1:1; 0058a3ef CALL 0x51c280 GetServerAIMaster, 0058a3f6 CALL 0x51e120 SetAILevel, +0x500/+0x11ac; Mac SetInParty fits",
+  "name": "CSWSCreature::SetInParty",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x0058a330"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x006a2f50] Steam batch B12b: CALLEE 5 (callees: SetAILevel 0x51e120; callers: RemovePuppet 0x5f8c60, AddPuppet 0x5f8f90, CreateParty 0x5f9220); SIG 1.00 | AUTO: CALLEE 5 (callees: SetAILevel 0x51e120; callers: RemovePuppet 0x5f8c60, AddPuppet 0x5f8f90, CreateParty 0x5f9220); SIG 1.00",
   "name": "CSWSCreature::SetIsPuppet",
   "source": "steam-db-B12b",
@@ -514,7 +514,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006a3420] Steam batch B12b: CALLEE 1 (callers: TempDeathUpdate 0x53a0c0); SIG 1.00 | AUTO: CALLEE 1 (callers: TempDeathUpdate 0x53a0c0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a3420] Steam batch B12b: CALLEE 1 (callers: TempDeathUpdate 0x53a0c0); SIG 1.00 | override: [a] fp identical, caller 1773b; 0058a9be CALL 0x51c100 GetCreatureByGameObjectID, 0058a95a ADD EAX,0x1028, 0058a9cf [EDX+0x11ac] = Mac IsPartyVisible",
   "name": "CSWSCreature::IsPartyVisible",
   "source": "steam-db-B12b",
   "steam_addr": "0x0058a940"
@@ -690,6 +690,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified;  retn=4; GOG 0x006c2820] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction (NOCAND). fp 1:1 unique (51/ret4/17, disp 0x510x2); 005b7a7f MOV [EAX+0x510],CL; callee ComputeModifiedMovementRate 0x5889b0. Mac SetDetectMode disp 0x510x2",
+  "name": "CSWSCreature::SetDetectMode",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005b7a60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x006c2860] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CSWSCreature::SetStealthMode",
   "source": "steam-db-B12b",
@@ -742,14 +750,6 @@
   "name": "CSWSCreature::AIActionCheckMoveToPointRadius",
   "source": "steam-db-B12b",
   "steam_addr": "0x005bb5a0"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006c66e0] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 005bb920: ComputeAwayVector 0x0054aa50 plus 0x005644b0, 0x00540ca0, 0x005453c0; disp 0x124/0x380/0x11ac",
-  "name": "CSWSCreature::AIActionCheckInterAreaPathfinding",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005bb920"
  },
  {
   "confidence": "high",
@@ -810,6 +810,22 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006c7f90] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x405100. fp 1:1 unique (519/ret16/160); 005bd20c MOV EAX,[EDX+0x1150]; 005bd21a CALL 0x6d0620 (CSWInventory::GetItemInSlot). Mac CanEquipWeapon disp set identical",
+  "name": "CSWSCreature::CanEquipWeapon",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005bd1d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006c81a0] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x670c90. fp 1:1 unique (537/ret16/160, imm 0x40000); 005bd408 CMP [EAX],0x40000; 005bd422 MOV EAX,[EDX+0x1150]; GetItemInSlot 0x6d0620 callee",
+  "name": "CSWSCreature::CanEquipWeapon2",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005bd3e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=16; GOG 0x006c83d0] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CSWSCreature::CanEquipMiscellaneous",
   "source": "steam-db-B12b",
@@ -818,10 +834,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=20; GOG 0x006c8460] Steam batch B12b: CALLEE 4 (callees: GetServerInfo 0x51bd40, GetMinEquipLevel 0x606c30; callers: OnSlotSelected 0x8ceb00, LevelDown 0x6b9d80); SIG 1.00 | AUTO: CALLEE 4 (callees: GetServerInfo 0x51bd40, GetMinEquipLevel 0x606c30; callers: OnSlotSelected 0x8ceb00, LevelDown 0x6b9d80); SIG 1.00",
+  "evidence": "[verified; thiscall retn=20; GOG 0x006c8460] Steam batch B12b: CALLEE 4 (callees: GetServerInfo 0x51bd40, GetMinEquipLevel 0x606c30; callers: OnSlotSelected 0x8ceb00, LevelDown 0x6b9d80); SIG 1.00 | override: [a] fp identical, 9 callers same sizes; GetMinEquipLevel/CanEquipWeapon/CheckProficiencies callees = Mac CanEquipItem; RET 0x14 at 005bda3d (GOG 20)",
   "name": "CSWSCreature::CanEquipItem",
   "source": "steam-db-B12b",
   "steam_addr": "0x005bd6a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006c8800] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x405970. fp 1:1 unique (278/ret8/86); 005bda87 MOV EDX,[ECX+0x1198]; 005bda95 CALL 0x6b83f0 (CSWSCreatureStats::HasFeat). Mac CheckProficiencies disp 0x80/0x1198, imm 0x5d",
+  "name": "CSWSCreature::CheckProficiencies",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005bda40"
  },
  {
   "confidence": "high",
@@ -878,6 +902,14 @@
   "name": "CSWSCreature::TerminateClientSidePath",
   "source": "steam-db-B12b",
   "steam_addr": "0x005bf760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; cdecl retn=4; GOG 0x006ca5b0] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x971dc0. fp 1:1 unique (328/ret4/98); 005bf89e MOVZX EAX,[EAX+0x1114]; 005bf911 CALL 0x51c8b0 (ClientToServerObjectId); RunActions case 0x3d. Mac disp set matches",
+  "name": "CSWSCreature::AIActionPartyFollowLeader",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005bf7f0"
  },
  {
   "confidence": "high",
@@ -962,10 +994,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d2130] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x67ac20. fp 1:1 unique (1884/ret16/509, 15 callees); 005c78d8 CALL 0x5644b0 (AddMoveToPointActionToFront); 005c792a CALL 0x54bdc0 (ComputeSafeLocation). Mac order fits",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_FindPath",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005c7370"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=16; GOG 0x006d2890] Steam batch B12b: CALLEE 2 (callees: ComputeHeight 0x54b130, TestDirectLine 0x550980); SIG 1.00 | AUTO: CALLEE 2 (callees: ComputeHeight 0x54b130, TestDirectLine 0x550980); SIG 1.00",
   "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_Offset",
   "source": "steam-db-B12b",
   "steam_addr": "0x005c7ad0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d35a0] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x669020. fp 1:1 unique (1061/ret16/267); 005c8a99 CALL 0x550980 (CSWSArea::TestDirectLine); 005c8bf7 CALL 0x51c280 (GetServerAIMaster). Mac order/imm 0x1f,0x34 fit",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_Moving_To_Path",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005c87e0"
  },
  {
   "confidence": "high",
@@ -978,7 +1026,55 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=16; GOG 0x006d5f50] Steam batch B12b: CALLEE 1 (callees: TestSafeLocationPoint 0x54b650); SIG 1.00 | AUTO: CALLEE 1 (callees: TestSafeLocationPoint 0x54b650); SIG 1.00",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d4dc0] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x5bbf40. fp 1:1 unique (1676/ret16/418, 15 callees); 005ca532 CALL 0x550980 (TestDirectLine). Neighbour order FindPath..WaitingForPath matches Mac",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_Moving_To_Offset",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005ca000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d5460] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x67df50. fp 1:1 unique (1573/ret16/385, 12 callees); 005cabdf CALL 0x550980 (TestDirectLine); next fn 0x5cacd0 = OffsetWaitDest (part a). Mac order fits",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_WaitingForPath",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005ca6a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d5a90] Steam batch B12b: SIG 1.00 | override: [a] CORRECTION. 286b RET 0x10, +0xfa4; 005cada2 MOV [ECX+4],0x1; GOG imm set has no 2/3/4 -> const 1; Mac OffsetWaitDest imm also no 2/3/4",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_OffsetWaitDest",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005cacd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d5bc0] Steam batch B12b: SIG 1.00 | override: [a] CORRECTION. 005caed2 MOV [ECX+4],0x3; GOG imm 0x3,0x3; Mac PathWaitDest imm 0x3,0x3. Same 286b/RET 0x10/+0xfa4 shape",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_PathWaitDest",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005cae00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d5cf0] Steam batch B12b: SIG 1.00 | override: [a] CORRECTION. 005cb002 MOV [ECX+4],0x4; GOG imm 0x4,0x4; Mac ToOffsetWaitDest imm 0x4,0x4",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_ToOffsetWaitDest",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005caf30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d5e20] Steam batch B12b: SIG 1.00 | override: [a] CORRECTION. 005cb132 MOV [ECX+4],0x2; GOG imm 0x2,0x2; Mac ToPathWaitDest imm 0x2,0x2",
+  "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_ToPathWaitDest",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005cb060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006d5f50] Steam batch B12b: CALLEE 1 (callees: TestSafeLocationPoint 0x54b650); SIG 1.00 | override: [a] CORRECTION. 412b RET 0x10 fp 1:1; 005cb277 CALL 0x5453c0 GetArea, 005cb27e CALL 0x54b650 TestSafeLocationPoint, 005cb263 [EAX+0x380]; Mac TeleportForward fits",
   "name": "CSWSCreature::WalkUpdateLocation_QuickWalk_FollowLeader_TeleportForward",
   "source": "steam-db-B12b",
   "steam_addr": "0x005cb190"
@@ -1090,10 +1186,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006db6a0] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006db6a0] Steam batch B12b: SIG 1.00 | override: [a] fp identical, caller 6534b both; 6 callees incl RunUnequip/SendServerToPlayerInventory_UnequipCancel = Mac AIActionUnequipItem; RET 0x4 at 005d0bf0",
   "name": "CSWSCreature::AIActionUnequipItem",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d0a80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006db820] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x418990. fp 1:1 unique (174/ret4/55); 005d0c77 MOV EAX,[EDX+0xa84]; 005d0c95 CALL 0x590180 (GetSpellActionPending); RunActions case 0x10 (=WAITFORENDOFROUND 16)",
+  "name": "CSWSCreature::AIActionWaitForEndOfRound",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d0c00"
  },
  {
   "confidence": "high",
@@ -1114,7 +1218,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x006dba10] Steam batch B12b: CALLEE 1 (callers: ExecuteCommandAdjustReputation 0x66d1b0); SIG 1.00 | reviewer match with anchor: 005d0e97 CALL 0x006644d0 SetNPCFactionReputation; 005d0e20 CALL 0x00664650 GetIsNPCFaction; 005d0e4b CALL 0x00664580; 005d0e2e MOV EDX,[ECX+0x1198]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006dba10] Steam batch B12b: CALLEE 1 (callers: ExecuteCommandAdjustReputation 0x66d1b0); SIG 1.00 | override: [a] fp 1:1, caller 0x66d1b0; 005d0e97 CALL 0x6644d0 SetNPCFactionReputation + Get/GetIsNPCFaction = Mac AdjustReputation callees. mac_rotation flag is false",
   "name": "CSWSCreature::AdjustReputation",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d0df0"
@@ -1126,6 +1230,14 @@
   "name": "CSWSCreature::SetVisibilityList",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d0eb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006dbb50] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x5c3270. fp 1:1 unique (1218/ret4/323, 14 callees all map); 005d1146 CALL 0x576dc0 (DoPerceptionUpdateOnCreature); calls RemoveFromVisibleList 0x5d15f0",
+  "name": "CSWSCreature::UpdateVisibleList",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d0f30"
  },
  {
   "confidence": "high",
@@ -1154,10 +1266,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006dc370] Steam batch B12b: CALLEE 7 (callers: OnPanelAdded 0x894320, AddAttackActions 0x568540, GetArmorClassVersus 0x6a5110) | reviewer match with anchor: 005d17b5 MOV EAX,[EDX+EAX*4]; 005d1782 MOV EDX,[ECX+0x1028]; callers OnPanelAdded 0x894320, AddAttackActions 0x568540, GetArmorClassVersus 0x6a5110",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006dc370] Steam batch B12b: CALLEE 7 (callers: OnPanelAdded 0x894320, AddAttackActions 0x568540, GetArmorClassVersus 0x6a5110) | override: [a] fp 1:1, 26 callers same sizes (OnPanelAdded 0x894320 etc.); 005d17b5 MOV EAX,[EDX+EAX*4] returns element of +0x1028 list. Mac GetVisibleListElement fits",
   "name": "CSWSCreature::GetVisibleListElement",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d1750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; cdecl retn=4; GOG 0x006dc430] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x983c40. fp 1:1 unique (208/ret4/69); 005d186e PUSH 0x274f (GOG imm 0x274f); GetWorldTimer/GetWorldTime/SubtractWorldTimes callees; RunActions case 0x34 (APPEAR=52)",
+  "name": "CSWSCreature::AIActionAppear",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d17f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; cdecl retn=4; GOG 0x006dc500] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x983d10. fp 1:1 unique (208/ret4/69); 005d193e PUSH 0x274e (GOG imm 0x274e, separates from Appear); RunActions case 0x35 (DISAPPEAR=53)",
+  "name": "CSWSCreature::AIActionDisappear",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d18c0"
  },
  {
   "confidence": "high",
@@ -1178,10 +1306,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; cdecl retn=4; GOG 0x006dd5d0] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x984de0. fp 1:1 unique (55/ret4/18); 005d29bc MOV ECX,[EAX+0x10e8]; 005d29d7 CALL 0x5d51a0 (CSWSCreature::SurrenderToEnemies); RunActions case 0x41",
+  "name": "CSWSCreature::AIActionSurrenderToEnemies",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d29b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x006dd610] Steam batch B12b: CALLEE 5 (callees: GetPauseState 0x51c720, StartCombatRound 0x58e730, ResolveEngagedState 0x590ff0); SIG 1.00 | AUTO: CALLEE 5 (callees: GetPauseState 0x51c720, StartCombatRound 0x58e730, ResolveEngagedState 0x590ff0); SIG 1.00",
   "name": "CSWSCreature::AIActionStanceTotalDefense",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d29f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; cdecl retn=4; GOG 0x006ddac0] Steam batch B12b: gate evidence was for a corrected pick | override: [r] correction of 0x9852d0. fp 1:1 unique (216/ret4/64); 005d2f10 CALL 0x563d20 (ActivityManager); 005d2f2d MOV byte [EDX+0x110c],0x1; RunActions case 0x45. Mac disp 0x110c x3",
+  "name": "CSWSCreature::AIActionStanceMeditative",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d2ea0"
  },
  {
   "confidence": "high",
@@ -1202,7 +1346,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006de0a0] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006de0a0] Steam batch B12b: SIG 1.00 | override: [a] fp identical, callers 821/926 match; HasFeat + GetPassiveProperty callees, disps 0x18a/0x28c/0x2d4, imm 0x2b/0x5d/0x64/0xff = Mac CheckItemAlignmentRestrictions; RET 0x4",
   "name": "CSWSCreature::CheckItemAlignmentRestrictions",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d3480"
@@ -1298,7 +1442,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006df450] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006df450] Steam batch B12b: SIG 1.00 | override: [a] fp identical, caller 1981b; 10 callees incl SetInvitedToParty/SubtractWorldTimes/SendFeedbackMessage = Mac CleanInvitationLists",
   "name": "CSWSCreature::CleanInvitationLists",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d4830"
@@ -1322,6 +1466,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006dfcc0] Steam batch B12b: no content anchor (C0) | override: [a] fp 1:1, callers 8036/3515/4688 match; 005d50ac ADD ECX,0x100 list scan, returns 1 on id match. Mac HasAction (disp 0x100 x3) fits",
+  "name": "CSWSCreature::HasAction",
+  "source": "steam-db-B12b",
+  "steam_addr": "0x005d50a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x006dfdc0] Steam batch B12b: CALLEE 3 (callees: GetFactionManager 0x51cc80, GetFirstObjectIndiceByX 0x522af0; callers: ExecuteCommandSurrenderToEnemies 0x6942f0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetFactionManager 0x51cc80, GetFirstObjectIndiceByX 0x522af0; callers: ExecuteCommandSurrenderToEnemies 0x6942f0); SIG 1.00",
   "name": "CSWSCreature::SurrenderToEnemies",
   "source": "steam-db-B12b",
@@ -1338,7 +1490,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006e0170] Steam batch B12b: CALLEE 2 (callees: ApplyEffect 0x52bf30; callers: OnRemoveSummonParty 0x599d90); SIG 1.00 | AUTO: CALLEE 2 (callees: ApplyEffect 0x52bf30; callers: OnRemoveSummonParty 0x599d90); SIG 1.00",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006e0170] Steam batch B12b: CALLEE 2 (callees: ApplyEffect 0x52bf30; callers: OnRemoveSummonParty 0x599d90); SIG 1.00 | override: [a] fp identical, caller 67b; callees ClearAllActions/AddEventDeltaTime/GetArea/ApplyEffect, imm 0x8c = Mac UnsummonMyself",
   "name": "CSWSCreature::UnsummonMyself",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d5550"

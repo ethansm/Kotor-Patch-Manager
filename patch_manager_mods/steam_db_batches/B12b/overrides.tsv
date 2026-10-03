@@ -1,0 +1,48 @@
+gog_addr	steam_addr	final_verdict	note
+0x00698350	0x0057f820	verified	[a] fp 1:1, sole caller GetDamageRoll (7065b both); 0057f85a CALL 0x582010 GetTotalEffectBonus, imm 0xff x2 = Mac CalculateDamagePower imm 0xff,0xff
+0x00698810	0x0057fce0	verified	[a] fp identical, 4 callers same sizes; 0057fd22 CALL 0x71b3f0 + 0057fd4a CALL 0x6fa530 (GetFLOATEntry, ComputeStepTolerance) = Mac UpdatePersonalSpace callees
+0x00698df0	0x005802c0	label_suspect	[a] fp 1:1 (0xd8/0x510, imm 0x2710), 6 callers same sizes; 005802e1 MOVZX EAX,[EDX+0x510]. Fits Mac CSWSCreature::GetDetectMode (0xd8/0x510, imm 2); real UpdateAppearanceForEquippedItems = GOG 0x698430
+0x0069db00	0x00585020	verified	[a] fp identical, callers 1634/1874 match; 0058502c [EAX+0x380], 0058504f [ECX+0x100]; disps 0x8c/0x9c/0xf8-0x104 = Mac CutWaypointPath
+0x0069df00	0x00585420	label_suspect	[a] fp 1:1; 0058542c MOV CL,[EAX+0xff4], masks 0x10/8/2 -> bool. Fits Mac GetBlind (0xff4, imm 8/0xa/0x10), Mac next = GetInvisible as GOG 0x69df60. Mac BroadcastAttackOfOpportunity = 5-byte stub
+0x006a2600	0x00589b20	label_suspect	[a] fp 1:1, sole caller UpdateActionQueue; 00589bac CALL 0x5d7220 (GetAQActionIDByID), fills +0x3e8/+0x3ec x0x1c. Mac UpdatePureGoodEvilPowers (0x18a/0x1198) contradicts; likely GOG FUN_006a42d0
+0x006a26d0	0x00589bf0	label_suspect	[a] fp 1:1; 00589c08 CALL 0x590180 GetSpellActionPending, 00589c21 CALL 0x591a70 RemoveSpellAction on +0x10dc. Fits Mac RemoveSpellActionFromRound (47b, same 2 callees); CAC likely GOG 0x693ac0
+0x006a2e10	0x0058a330	verified	[a] CORRECTION from 0x58a610 (=GetSpikeDetails 810b). 0x58a330 sz318 RET 8 fp 1:1; 0058a3ef CALL 0x51c280 GetServerAIMaster, 0058a3f6 CALL 0x51e120 SetAILevel, +0x500/+0x11ac; Mac SetInParty fits
+0x006a3420	0x0058a940	verified	[a] fp identical, caller 1773b; 0058a9be CALL 0x51c100 GetCreatureByGameObjectID, 0058a95a ADD EAX,0x1028, 0058a9cf [EDX+0x11ac] = Mac IsPartyVisible
+0x006a3e00	0x0058b320	label_suspect	[a] fp 1:1 RET 8; 0058b343 MOV [ECX+0x11d4],EDX / 0058b351 MOV [EAX+0x11d0],ECX keyed 0x10/0x20. Fits Mac SetLastInstantEquip (0x11d0/0x11d4, imm 0x10/0x20); GOG label of that name at 0x696db0 is wrong
+0x006a4d30	0x0058c290	label_suspect	[a] fp 1:1, 5 callers same sizes (2890/97/729/894/267); 0058c2cb CALL 0x58c4a0 grow, 0058c2de FSTP [ECX+EDX*4]. Fits Mac CExoArrayList<float>::Add; Mac UseLoreOnItem = 7-byte stub
+0x006a4da0	0x0058c300	label_suspect	[a] fp 1:1 RET 8, callers 2890/4828 match; 0058c31d CALL 0x58c290 (Add) then float shift loop 0058c33a. Fits Mac CExoArrayList<float>::Insert; Mac LearnScroll = 7-byte stub
+0x006c2820	0x005b7a60	verified	[r] correction (NOCAND). fp 1:1 unique (51/ret4/17, disp 0x510x2); 005b7a7f MOV [EAX+0x510],CL; callee ComputeModifiedMovementRate 0x5889b0. Mac SetDetectMode disp 0x510x2
+0x006c66e0	0x005bb920	label_suspect	[a] fp 1:1 (581b). Callees = MoveToPointFront/PathWaitFront/AddActionToFront/GetArea/ComputeAwayVector = Mac AIActionCheckMoveAwayFromLocation. ROTATION: InterAreaPathfinding is GOG 0x6c6930
+0x006c7f90	0x005bd1d0	verified	[r] correction of 0x405100. fp 1:1 unique (519/ret16/160); 005bd20c MOV EAX,[EDX+0x1150]; 005bd21a CALL 0x6d0620 (CSWInventory::GetItemInSlot). Mac CanEquipWeapon disp set identical
+0x006c81a0	0x005bd3e0	verified	[r] correction of 0x670c90. fp 1:1 unique (537/ret16/160, imm 0x40000); 005bd408 CMP [EAX],0x40000; 005bd422 MOV EAX,[EDX+0x1150]; GetItemInSlot 0x6d0620 callee
+0x006c8460	0x005bd6a0	verified	[a] fp identical, 9 callers same sizes; GetMinEquipLevel/CanEquipWeapon/CheckProficiencies callees = Mac CanEquipItem; RET 0x14 at 005bda3d (GOG 20)
+0x006c8800	0x005bda40	verified	[r] correction of 0x405970. fp 1:1 unique (278/ret8/86); 005bda87 MOV EDX,[ECX+0x1198]; 005bda95 CALL 0x6b83f0 (CSWSCreatureStats::HasFeat). Mac CheckProficiencies disp 0x80/0x1198, imm 0x5d
+0x006c9d80	0x005befc0	label_suspect	[r] correction (NOCAND). fp 1:1 unique (64/ret4/21, disp 0x10e8); 005befcc MOV ECX,[EAX+0x10e8]; RunActions case 0x3c. Fits Mac AIActionAreaWait (54B, 0x10e8, GetArea; before RandomWalk)
+0x006ca5b0	0x005bf7f0	verified	[r] correction of 0x971dc0. fp 1:1 unique (328/ret4/98); 005bf89e MOVZX EAX,[EAX+0x1114]; 005bf911 CALL 0x51c8b0 (ClientToServerObjectId); RunActions case 0x3d. Mac disp set matches
+0x006d2130	0x005c7370	verified	[r] correction of 0x67ac20. fp 1:1 unique (1884/ret16/509, 15 callees); 005c78d8 CALL 0x5644b0 (AddMoveToPointActionToFront); 005c792a CALL 0x54bdc0 (ComputeSafeLocation). Mac order fits
+0x006d35a0	0x005c87e0	verified	[r] correction of 0x669020. fp 1:1 unique (1061/ret16/267); 005c8a99 CALL 0x550980 (CSWSArea::TestDirectLine); 005c8bf7 CALL 0x51c280 (GetServerAIMaster). Mac order/imm 0x1f,0x34 fit
+0x006d4dc0	0x005ca000	verified	[r] correction of 0x5bbf40. fp 1:1 unique (1676/ret16/418, 15 callees); 005ca532 CALL 0x550980 (TestDirectLine). Neighbour order FindPath..WaitingForPath matches Mac
+0x006d5460	0x005ca6a0	verified	[r] correction of 0x67df50. fp 1:1 unique (1573/ret16/385, 12 callees); 005cabdf CALL 0x550980 (TestDirectLine); next fn 0x5cacd0 = OffsetWaitDest (part a). Mac order fits
+0x006d5a90	0x005cacd0	verified	[a] CORRECTION. 286b RET 0x10, +0xfa4; 005cada2 MOV [ECX+4],0x1; GOG imm set has no 2/3/4 -> const 1; Mac OffsetWaitDest imm also no 2/3/4
+0x006d5bc0	0x005cae00	verified	[a] CORRECTION. 005caed2 MOV [ECX+4],0x3; GOG imm 0x3,0x3; Mac PathWaitDest imm 0x3,0x3. Same 286b/RET 0x10/+0xfa4 shape
+0x006d5cf0	0x005caf30	verified	[a] CORRECTION. 005cb002 MOV [ECX+4],0x4; GOG imm 0x4,0x4; Mac ToOffsetWaitDest imm 0x4,0x4
+0x006d5e20	0x005cb060	verified	[a] CORRECTION. 005cb132 MOV [ECX+4],0x2; GOG imm 0x2,0x2; Mac ToPathWaitDest imm 0x2,0x2
+0x006d5f50	0x005cb190	verified	[a] CORRECTION. 412b RET 0x10 fp 1:1; 005cb277 CALL 0x5453c0 GetArea, 005cb27e CALL 0x54b650 TestSafeLocationPoint, 005cb263 [EAX+0x380]; Mac TeleportForward fits
+0x006db6a0	0x005d0a80	verified	[a] fp identical, caller 6534b both; 6 callees incl RunUnequip/SendServerToPlayerInventory_UnequipCancel = Mac AIActionUnequipItem; RET 0x4 at 005d0bf0
+0x006db820	0x005d0c00	verified	[r] correction of 0x418990. fp 1:1 unique (174/ret4/55); 005d0c77 MOV EAX,[EDX+0xa84]; 005d0c95 CALL 0x590180 (GetSpellActionPending); RunActions case 0x10 (=WAITFORENDOFROUND 16)
+0x006dba10	0x005d0df0	verified	[a] fp 1:1, caller 0x66d1b0; 005d0e97 CALL 0x6644d0 SetNPCFactionReputation + Get/GetIsNPCFaction = Mac AdjustReputation callees. mac_rotation flag is false
+0x006dbb50	0x005d0f30	verified	[r] correction of 0x5c3270. fp 1:1 unique (1218/ret4/323, 14 callees all map); 005d1146 CALL 0x576dc0 (DoPerceptionUpdateOnCreature); calls RemoveFromVisibleList 0x5d15f0
+0x006dc300	0x005d16e0	label_suspect	[a] fp 1:1, sole caller AddToVisibleList (269b both); loop over +0x1028/+0x102c returns 1 if id found. No Mac symbol (inlined); real GetCreatureReputation = GOG 0x6db920
+0x006dc370	0x005d1750	verified	[a] fp 1:1, 26 callers same sizes (OnPanelAdded 0x894320 etc.); 005d17b5 MOV EAX,[EDX+EAX*4] returns element of +0x1028 list. Mac GetVisibleListElement fits
+0x006dc3f0	0x005d17d0	likely	[r] correction of 0x983c00. 18B stub 005d17d7 MOV EAX,[0x9944b8] (ACTION_COMPLETE); RunActions case 0x2a (REST=42) only caller. GOG Rest/Taunt fps identical: pairing by case, not body
+0x006dc410	0x005d1990	likely	[r] correction of 0x983c20. 18B stub 005d1997 MOV EAX,[0x9944bc]; RunActions case 0x2b (TAUNT=43). ICF-folded: same body also serves cases 0x29 AnimalEmpathy, 0x36 PickPocket; hook hits all 3
+0x006dc430	0x005d17f0	verified	[r] correction of 0x983c40. fp 1:1 unique (208/ret4/69); 005d186e PUSH 0x274f (GOG imm 0x274f); GetWorldTimer/GetWorldTime/SubtractWorldTimes callees; RunActions case 0x34 (APPEAR=52)
+0x006dc500	0x005d18c0	verified	[r] correction of 0x983d10. fp 1:1 unique (208/ret4/69); 005d193e PUSH 0x274e (GOG imm 0x274e, separates from Appear); RunActions case 0x35 (DISAPPEAR=53)
+0x006dd5d0	0x005d29b0	verified	[r] correction of 0x984de0. fp 1:1 unique (55/ret4/18); 005d29bc MOV ECX,[EAX+0x10e8]; 005d29d7 CALL 0x5d51a0 (CSWSCreature::SurrenderToEnemies); RunActions case 0x41
+0x006ddac0	0x005d2ea0	verified	[r] correction of 0x9852d0. fp 1:1 unique (216/ret4/64); 005d2f10 CALL 0x563d20 (ActivityManager); 005d2f2d MOV byte [EDX+0x110c],0x1; RunActions case 0x45. Mac disp 0x110c x3
+0x006de0a0	0x005d3480	verified	[a] fp identical, callers 821/926 match; HasFeat + GetPassiveProperty callees, disps 0x18a/0x28c/0x2d4, imm 0x2b/0x5d/0x64/0xff = Mac CheckItemAlignmentRestrictions; RET 0x4
+0x006dee60	0x005d4240	label_suspect	[r] correction of 0x41bfd0. fp 1:1 unique (21/ret8/9): 005d4249 MOV byte [EBP-1],0; XOR EAX,EAX; RET 8 - 2-arg false stub amid CheckItem*Restrictions, not AIAction. Real AnimalEmpathy = 0x5d1990 (case 0x29)
+0x006df450	0x005d4830	verified	[a] fp identical, caller 1981b; 10 callees incl SetInvitedToParty/SubtractWorldTimes/SendFeedbackMessage = Mac CleanInvitationLists
+0x006dfcc0	0x005d50a0	verified	[a] fp 1:1, callers 8036/3515/4688 match; 005d50ac ADD ECX,0x100 list scan, returns 1 on id match. Mac HasAction (disp 0x100 x3) fits
+0x006e0170	0x005d5550	verified	[a] fp identical, caller 67b; callees ClearAllActions/AddEventDeltaTime/GetArea/ApplyEffect, imm 0x8c = Mac UnsummonMyself
+0x006f5300	0x006b8e80	label_suspect	[r] correction (NOCAND). fp 1:1 unique (83/ret4/28, delta 0x3c480 as HasFeat); 006b8ea9 MOV CX,[EAX+0xb2]; 006b8ec4 CALL 0x6b83f0 (HasFeat). Fits Mac CSWSCreatureStats::GetWeaponFocus
