@@ -278,3 +278,4 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 ## Execution log
 
 - Step 0 (10-03): plan copied; doc 19 status/Phase-1 row corrected (merged fa67a3b, not live); gate gets `W=` override. Multilib present (`/usr/lib/gcc/x86_64-linux-gnu/13/32`), so chunk T runs first.
+- Chunk T (10-03): gate already "GATE PASS (full, multilib)" at baseline (15 i386 + 14 x86_64 rows, ELF32 `KotorPatcher.so`). Real 32-bit smoke (scratchpad `t32smoke/`: `gcc -m32` driver dlopens the .so; constructor init reads `patch_config.toml`/`kplog.ini` from the .so dir; DLL_ONLY 32-bit provider+logger fixtures; `CleanupPatcher` then `_exit`) wrote `logger-fixture_log.txt` with header (interfaces kpatch.log + test.counter) + `main WARN hello from KPatchInit` + `main info line`. No core diff. Re-run by Opus: identical.
