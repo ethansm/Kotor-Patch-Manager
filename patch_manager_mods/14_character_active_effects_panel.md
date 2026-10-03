@@ -1,3 +1,31 @@
+**RESUME HERE (checkpoint 2026-10-03 ~01:45, written for a fresh context):**
+- **Live:** build 4b, DLL `0891be6727d67513cff4dc7f1c251e44`. GUI `character_p.gui` has 82 EFX controls (ids 69..150): S00..S13 = 129..142, MORE..TIP = 143..150. Live set 31 ids.
+- **Live INI** (`$GAME/chareffects.ini`): tooltips=1 tooltip_delay_ms=350 tooltip_desc=1 tip_line_scale=1.0 stat_column=1 stat_max_w=0 stat_min_frac=0.4 text_k10=1.03 marquee=1 marquee_delay_ms=2500 marquee_step_ms=160 marquee_hold_ms=1200 fake_rows=0 (rest as Stage 1).
+- **Backups:** `patches/character-effects-panel.dll.bak_1002_1514` (build 4), `.bak_1002_0246` (build 3); `chareffects.ini.bak_1002_0246`; GUI `backups/charmirror_20261002_024637_262214` (the build-3 GUI). Rollback to build 3 = DLL `.bak_1002_0246` + GUI rollback, together (ids differ). 4b -> 4 is a DLL swap only.
+- **UNREAD:** the game ran 4b on 10-03 at 01:11 and 01:30 (log lines 7333 and 7893, file 817 KB, last write 01:41). Next session:
+  1. Copy `$GAME/chareffects_log.txt` to the scratchpad. Never clear it.
+  2. Read from line 7333: `LAYOUT ... cols[name w/need stat w/need time w]`, `DECODE:`, `TIP:`, `MARQUEE:`.
+  3. Run the DECODE lines through `.venv/bin/python scripts/check_effect_decode.py --samples <file>`.
+  4. Ask the user for a screenshot / verdict on the 4b columns.
+- **Open items:**
+  - (a) User verdict on the 4b spacing/columns; tune `text_k10` / `stat_min_frac` / `tip_line_scale` by INI (hot reload, no build).
+  - (b) Marquee visibility with real cut text; `fake_rows=20` test on request (say so first, then set back to 0).
+  - (c) Tooltip height vs content (`lineU` 12.5 texels x text_k10; check that the description lines fit).
+  - (d) Compare the stat numbers with the character sheet.
+  - (e) Then Phase 5 close-out: one read-only Opus review agent; ask before removing `$GAME/chareffects_debug.txt`; README dated line; DB `hooks_ported` H-C1/H-C3/H-C4 if missing; memory; commit.
+- **Build/deploy recipe:**
+  1. Edit `$TOOL_DIR/Patches/CharEffectsPanel/CharEffectsPanel.cpp`.
+  2. Run `i686-w64-mingw32-g++-posix -std=c++17 -Wall -Wextra -fsyntax-only`.
+  3. Run `python3 ../create-patch.py`.
+  4. Run `scripts/check_chareffects_kpatch.py <kpatch> $TOOL_DIR/chareffects_stage` and `scripts/check_effect_decode.py`.
+  5. `pgrep -x swkotor2.exe` must be empty. Back up the live DLL as `.bak_MMDD_HHMM`, copy the kpatch's `binaries/windows_x86.dll`, check md5 == kpatch, then copy the kpatch to `chareffects_stage/`.
+  6. Mirror the cpp into `active_effects_panel_src/` and commit by explicit path.
+- **Calibration facts:**
+  - 16x16 draws 1.99 px/texel (TextK 0.75); 10x10 draws 2.73 px/texel (text_k10 1.03).
+  - Labels WORD-WRAP text wider than their rect, so always fit with slack.
+  - The engine ignores right alignment, so right-align by placement.
+  - Unit scale: sx 4.7963, sy 2.6667 px/unit (BACK 1036x896 px).
+
 **STATUS 2026-10-02 15:14: build 4b INSTALLED (DLL swap only, md5 `0891be67`, backup `.bak_1002_1514` = build 4 `dbb080ae`; GUI unchanged), AWAITING USER RETEST of the columns.** See "Build 4 first look + 4b" at the end.
 
 Previous status line: **STATUS 2026-10-02 02:47: build 4 INSTALLED (stat column + marquee + hover tooltips), AWAITING USER TEST** (checklist in "Build 4" at the end). DLL md5 `dbb080ae`, backup `$GAME/patches/character-effects-panel.dll.bak_1002_0246` (= build 3 `93ca3014`); GUI 82 EFX controls ids 69..150 (S block 129..142, MORE..TIP moved to 143..150), backup `backups/charmirror_20261002_024637_262214`; INI backup `chareffects.ini.bak_1002_0246`, new keys added (tooltips=1). Rollback = `.bak` DLL **and** `mirror_character_page.py --rollback` + re-apply the build-3 GUI (git `43b36df` script) so GUI and DLL ids stay matched.
