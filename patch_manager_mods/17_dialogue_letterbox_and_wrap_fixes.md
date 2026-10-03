@@ -1,6 +1,6 @@
 # Engine Fixes L1 + L4: dialogue letterbox and wrap-measure (doc 15 Phase 2)
 
-**DECISION (2026-10-03, user): DROP L4 (`k2-wrap-measure-fix`) at the next install** (no-op at fs 1.0/2.0/3.0, V8; still valid for fs 1.5). Source mirror `wrap_measure_fix_src/` kept. Phase 4 (`engine_bug_research/PHASE4_PLAN.md`) pre-builds L1 1.0.1 and stages it without L4. Live set re-read 10-03 11:4x: 31 ids, `kpm_install_state.json` UpdatedAt 2026-10-03 11:29 (sibling hotbar reinstall), `swkotor2.exe` md5 `62411a3a3282ecf92bdf54aeb1bac671`; `stage_lbprobe_1003_0200` is therefore STALE.
+**DECISION (2026-10-03, user): DROP L4 (`k2-wrap-measure-fix`) at the next install** (no-op at fs 1.0/2.0/3.0, V8; still valid for fs 1.5). Source mirror `wrap_measure_fix_src/` kept. Phase 4 (`engine_bug_research/PHASE4_PLAN.md`): L1 **1.0.1 BUILT** (log=0 default; kpatch `f1e59f7b...`, NOT installed) and **stage A (1.0.1) / stage B (probe) ready** without L4, see "Install (Phase 4 ...)"; V11 (10-03): L1 moves/clips nothing else (NO BUG). Live set re-read 10-03 11:4x: 31 ids, `kpm_install_state.json` UpdatedAt 2026-10-03 11:29 (sibling hotbar reinstall), `swkotor2.exe` md5 `62411a3a3282ecf92bdf54aeb1bac671`; `stage_lbprobe_1003_0200` is therefore STALE.
 
 **STATUS (2026-10-03 01:15): T1 computation PASS, visual UNKNOWN; T2 not run.** The 10-03 01:12 session log (60 lines, fixture `engine_bug_research/fixtures/letterbox_log_1003_0112.txt`) has 4 launches, each `APPLY ... newBar=267 ... verify OK`, and **12 SETTOP/SETBOTTOM pairs** (dialogue starts), all target `(0,0,3840,267)` / `(0,1333,3840,267)`, start h 0 / start y 1600, **0 error lines**. The user's visual answer: "didn't notice / no bars"; no screenshots were taken, so whether the bars are drawn is unknown (the draw path after SetExtent, V1 B5, was never read). Phase 3 (`engine_bug_research/PHASE3_PLAN.md`) A2 = F12 screenshots + an `enabled=0` A/B run. **V8b (10-03):** draw path explained (bars = 50 % black quads via fill 0x479460, drawn for every ConversationType except 1 = computer); probe windows W1-W5 ready if bars are absent; **1.0.1-probe BUILT + STAGED, NOT installed** (mirror `dialogue_letterbox_fix_probe_src/`, kpatch now in KPM `letterbox_probe_stage/` (moved out of `Patches/` 10-03, doc 20d F1: duplicate id fails KPM validate; rebuild steps in the probe README), kpatch md5 `4d680986...`, DLL `e46cfcc8...`, INI `probe=1` default 0; Wine smoke 12 modes pass; checker ALL OK + PROXIMITY OK, both exes MATCH; stage `~/Games/KOTOR2_Mod_Workspace/stage_lbprobe_1003_0200`, PROBLEMS 1 = known 4gb-patch hooks=DIFF artifact). Install only if screenshots show no bands and the user says go. The 10-03 01:30-02:00 session had 0 dialogues and no screenshots (copy `~/Games/KOTOR2_Mod_Workspace/playlogs_engfix_1003_0200/`), so T1 visual is still open. **V8 (10-03): L4 is a no-op at fs 1.0/2.0** (stock TXI glyph advances are integer-pixel; +0.25 and +0.5 agree on all 95 ASCII glyphs), so T2 cannot show a difference at 3840x1600. Live set re-read 10-03: 31 ids / 198 hooks (`kpm_install_state.json` UpdatedAt 2026-10-03 00:24, sibling reinstall), both fixes still installed.
 
@@ -76,6 +76,28 @@ additional-console-commands buff-duration-hud equipment-3d-character force-power
 5. Verify: `python3 /home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/mods678_research/stage_and_verify_install.py verify "$STAGE"` (live DLL md5s vs the staged kpatches, hook counts). Afterwards diff the `[Config] Loaded DETOUR` lines against the previous Proton log.
 
 Original 10-02 install (historical, 28 ids from `stage_engfix_1002_0121`, now stale): the 26 then-live ids + `k2-wrap-measure-fix k2-dialogue-letterbox-fix`.
+
+## Install (Phase 4, L1 1.0.1 / probe, without L4)
+Staged 2026-10-03 15:29 against the live set read at that time: 31 ids, `kpm_install_state.json` UpdatedAt **2026-10-03 12:00:17**, `swkotor2.exe` md5 `62411a3a3282ecf92bdf54aeb1bac671`. Both stage dirs hold 32 kpatches (the 31 live builds incl. `K2WrapMeasureFix.kpatch`, which the id list below simply leaves out, + the new letterbox build); PROBLEMS 1 = the known `4gb-patch` hooks=DIFF artifact. STAGE_INFO head `28ae185ef061`.
+**Both stage dirs go STALE on any sibling reinstall: at install time re-read UpdatedAt + `InstalledPatches`; if either changed, re-stage into a NEW dir** (`mods678_research/stage_and_verify_install.py stage <NEW_DIR> <kpatch> --allow-dirty`; `--allow-dirty` because the KPM clone stays uncommitted, the repo `*_src/` mirrors are the committed copies).
+- **Stage A (T1 passes: top band visible) = L1 1.0.1:** `STAGE=/home/ethansm/Games/KOTOR2_Mod_Workspace/stage_l1_101_1003_1529` (letterbox kpatch md5 `f1e59f7b12b339f2bb879cfb480a9b0c`, DLL `cf45a03af96881362e586c8baf0654b9`, log=0 default).
+- **Stage B (no bands) = 1.0.1-probe:** `STAGE=/home/ethansm/Games/KOTOR2_Mod_Workspace/stage_lbprobe_1003_1529` (kpatch md5 `4d68098658809e25307117a9bb33f460`, DLL `e46cfcc8d5684de395d2c472f764deb0`); after the install the user sets `probe=1` in `$G/dialogue_letterbox_fix.ini` (game closed), has ONE conversation, then copy the log to `~/Games/KOTOR2_Mod_Workspace/playlogs_engfix_<MMDD_HHMM>/` and run `engine_bug_research/tools/analyze_engfix_logs.py` (per-dialogue DIAGNOSIS line).
+
+Procedure (same for A and B; only `STAGE` differs; user-gated, game CLOSED: `pgrep -x swkotor2.exe` empty):
+```
+G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"
+BK=~/Games/KOTOR2_Mod_Workspace/backups/pre_l1_101_$(date +%m%d_%H%M); mkdir -p "$BK"
+cp -p "$G/kpm_install_state.json" "$G/patch_config.toml" "$BK/" && cp -rp "$G/patches" "$BK/"
+KPATCH_NO_LAUNCH=1 ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/bin/NoLaunch/KPatchLauncher "$G/swkotor2.exe" --patches "$STAGE" \
+ additional-console-commands buff-duration-hud equipment-3d-character good-alignment-heads inventory-3d-viewport \
+ loading_screen_line_fix_k2 k2-aspyr-map-aspect-fix k2-visible-console k2-finesse-melee-fix k2_grass_fog_fix k2-mp3-playback-fix \
+ max-lights perf-lab post-combat-movement-fix-v1 semi-transparent-letterbox inventory-sort-filter character-effects-panel \
+ k2-activation-fix k2-equip-icon-fix ranged-ai level-up-override companion-ai 4gb-patch k2_aspyr_shader_fixes mouse-probe \
+ K2_music_fix k2-robustness-fixes k2-texture-memory-release force-power-hotbar k2-dialogue-letterbox-fix
+python3 /home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/mods678_research/stage_and_verify_install.py verify "$STAGE"
+md5sum "$G/swkotor2.exe"   # compare with the pre-install md5 (KPM rewrites the exe per install; record the new value)
+```
+30 ids = the live 31 minus `k2-wrap-measure-fix` (decision 10-03); `k2-dialogue-letterbox-fix` comes from the stage. Rollback: restore `$BK` (state json, config, patches/) or reinstall from the stage with the 1.0.0 kpatch (`~/Games/KOTOR2_Mod_Workspace/backups/k2_dialogue_letterbox_fix_1.0.0/`, md5 `6033b700...`).
 
 ## Test plan (doc 16 cards T1 / T2, run once WITHOUT and once WITH the staged patches)
 Run A = current live (no new patches; do this BEFORE installing), run B = after the install. Resolution 3840x1600 for both.
