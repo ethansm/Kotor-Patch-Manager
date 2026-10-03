@@ -3,6 +3,19 @@
 Contract: `DESIGN.md`. Briefs: `REVIEWER_BRIEF.md` (Sonnet), `OPUS_GATE_BRIEF.md` (Opus). Resume notes (latest):
 `SESSION_CONTEXT_2026-10-03b.md`, then the newest batch section below. GOG DB label errors (read-only, for the user): `GOG_LABEL_SUSPECTS.md`.
 
+## Roadmap (user decision 2026-10-03: mod demand first, then Phase E and PR 5)
+
+Order: B12a/B12b `CSWSCreature` (split at GOG 0x696F00) -> B11a `CClientExoApp`+`Internal` -> B16 -> B13a
+`CSWCCreature` -> B10a `CSWSObject`+`CSWCObject` -> B11b `CGuiInGame`+`CSWGuiMainInterface` -> Phase E.
+- **B16 (new): mod GUI and engine classes** (149 GOG rows): CSWGuiInGameCharacter, CSWGuiTextParams,
+  CSWGuiInGameGameplay, CSWGuiDialogLetterbox, CAurTextureBasic, CSWGlobalVariableTable, CServerAIMaster,
+  CExoMoviePlayerInternal. In no other batch, but used by level_up_override, Mod 14, the letterbox fix, perf_lab,
+  texture_memory_release and companion_ai.
+- Mod address audit: `tools/mod_audit.py` -> `mod_audit/REPORT.md`; re-run after every batch.
+- **Deferred to a follow-up PR (do not start):** B10b `CSWSMessage`/`CSWCMessage` (needs the TBL anchor family and
+  the unheld-candidate ranking change, Opus calibration first); B13b `CSWCAnimBase*` (permuted-label risk, low mod
+  demand); B14 `CSWSDialog`, `CSWGuiManager`, `CExoSoundInternal`, `CExoInput*`; Phase D offsets and globals.
+
 Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A final validation pass runs
 `python3 tools/batch.py check-validated --out <file>` and reads only the rows that are not `validated`.
 
