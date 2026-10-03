@@ -2,6 +2,8 @@
 id = "portrait-slots"
 name = "Portrait Slots (shared party-portrait hooks)"
 version = "1.0.0"
+kind = "library"
+provides = ["k2.portraitslots@1"]
 author = "local"
 description = "Owns the party-portrait hooks (UpdatePortraits + the per-slot draw gate) and provides the k2.portraitslots v1 registry interface, so several HUD mods (Buff Duration HUD, Shield Bar) can share them. Draws nothing by itself. Needs a KotorPatcher with the patch registry (KPatchInit)."
 

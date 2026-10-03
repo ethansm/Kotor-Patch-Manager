@@ -6,6 +6,7 @@ author = "local"
 description = "Energy-shield absorb bar beside each party portrait's health bar (one segment per shield, coloured like its VFX, draining as it absorbs), health/force/shield gauges for the companion portraits on the in-game menu screens, and 'Shield: cur/max' in the portrait hover tooltip. Needs portrait-slots."
 
 requires = ["portrait-slots"]
+requires_interfaces = ["k2.portraitslots@1"]
 conflicts = []
 
 # Steam/LAA only. Art (override/): uibit_bar_sh_p.tga/.txi, uibit_bar_sc_p.tga/.txi (scripts/gen_shield_bar_art.py).

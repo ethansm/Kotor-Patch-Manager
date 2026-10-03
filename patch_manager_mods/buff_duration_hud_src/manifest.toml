@@ -6,6 +6,7 @@ author = "local"
 description = "Party HUD buff/debuff icon columns with duration drain (HUD cards and the menu companion portraits). Needs portrait-slots; the shield bar is the separate shield-bar patch since 2.0.0."
 
 requires = ["portrait-slots"]
+requires_interfaces = ["k2.portraitslots@1"]
 conflicts = []
 
 # Steam/LAA only -- this mod has no GOG counterpart to port from (unlike
