@@ -292,5 +292,6 @@ Rules that apply to every phase:
   - **Retired.** `check_{inv3d,equip3d,chareffects}_kpatch.py` moved to `scripts/retired/`. The old ±8 check now lives in the spans checker and the exports check in `check_exports`. The USER32-import check was dropped.
   - **New suite `kpm-validate-patches`** runs KPM's `tools/validate-patches.py`, with `cwd = ${KPM_DIR}`; `run_tests.py` gained `$`/`~` cwd expansion for this. It is **red today**: another session staged `Patches/K2DialogueLetterboxFixProbe/`, which reuses the id `k2-dialogue-letterbox-fix`. That is a real duplicate-id finding (83 patches, 1 error); the user decides whether the probe dir goes or gets its own id.
   - **§9 Q2 answered:** the registries are local sidecars, and the KPM manifests are untouched.
+  - **Session context and findings table (F1-F12):** `20d_phase1_session_2026-10-03.md`.
   - **Next:** Phase 2, the three bugs.
 
