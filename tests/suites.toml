@@ -66,6 +66,29 @@ requires = [
 timeout_s = 120
 
 [[suite]]
+name = "check-hook-spans"
+# Byte-range overlaps/near-gaps between all patches (mod hooks + code_patches.toml + the live patch_config.toml),
+# with the documented exceptions in tests/static/span_exceptions.toml.
+cmd = ["python", "scripts/check_hook_spans.py", "--quiet"]
+requires = ["${KOTOR2_ROOT}/patch_config.toml", "${KPM_DIR}/Patches"]
+timeout_s = 60
+
+[[suite]]
+name = "check-exports"
+# Detour `function`s must be in exports.def and in the PE export table of the DLL inside the KPM .kpatch.
+cmd = ["python", "scripts/check_exports.py", "--quiet"]
+requires = ["${KPM_DIR}/Patches"]
+timeout_s = 60
+
+[[suite]]
+name = "kpm-validate-patches"
+# KPM's own manifest/hooks schema validator over the framework Patches/ (read-only; exit 0 = no errors).
+cmd = ["python", "tools/validate-patches.py"]
+cwd = "${KPM_DIR}"
+requires = ["${KPM_DIR}/tools/validate-patches.py"]
+timeout_s = 120
+
+[[suite]]
 name = "check-gui-ids"
 # tests/static/gui_ids.toml vs vanilla .gui originals, the live override/ .gui files and the cited C++ constants.
 cmd = ["python", "scripts/check_gui_ids.py", "--quiet"]

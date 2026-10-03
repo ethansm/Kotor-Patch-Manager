@@ -93,7 +93,7 @@ It moves to `Patches/Common/test/` with `TestHarness.h` in Phase 4.
 
 **Still open:**
 - **The perflab leak check has no headroom.** The simulated leak is exactly 100000 bytes in 1000 blocks, and the check is `>=` those numbers. It is deterministic.
-- **Three checkers hardcode their KPM paths.** `check_{inv3d,equip3d,chareffects}_kpatch.py` use `~/Games/...` and ignore `$KPM_DIR`. Phase 1's `check_hook_bytes.py` replaces them.
+- ~~**Three checkers hardcode their KPM paths.**~~ Done in Phase 1 (10-03): retired to `scripts/retired/`, replaced by `check_hook_bytes.py` / `check_hook_spans.py` / `check_exports.py`, which honour `$KPM_DIR`.
 - **The three Phase 2 bugs are unfixed:** the BuffHUD ICONCACHE `snprintf` overrun, the unbounded hotbar `slotDigit`, and PerfLab's `g_stop`, which is never set.
 - **No mod bugs turned up.** Every existing test passed once it was wired into the runner.
 

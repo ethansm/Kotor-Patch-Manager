@@ -1,7 +1,7 @@
 // Smoke test for k2-texture-memory-release 1.0.0 (DLL-only; DllMain rewrites BuildAndStoreTexture's tail 0x4261CF).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_texmem.exe smoke_texmem.cpp
 //        (.bss pad covers 0x420000-0x430000; check `objdump -h`: .bss must start below 0x4261C0)
-// Run:   smoke_texmem.exe <run|disabled|refuse>   (dir needs windows_x86.dll from TextureMemoryRelease.kpatch). Exit 0 = pass.
+// Run:   smoke_texmem.exe <run|disabled|refuse|foreign>   (dir needs windows_x86.dll from TextureMemoryRelease.kpatch). Exit 0 = pass.
 // The fragment is the real 0x4261C2..0x4261E5 (vtable+0x30 IsTPCLoaded, site, vtable+0xB4 FreeImage) + RET at the
 // epilogue 0x4261E6; fake textures carry a vtable with fastcall stubs (ECX = this) and [tex+0x34] = controller.
 #include <windows.h>
@@ -37,6 +37,13 @@ int main(int argc, char** argv) {
     memcpy((void*)0x4261C2, F_TAIL, sizeof F_TAIL); *(unsigned char*)0x4261E6 = 0xC3;
     check(scenario(0, 0) == 1 && scenario(0, 1) == 1 && scenario(1, 0) == 0 && scenario(1, 1) == 0, "ref: TGA freed, TPC kept (engine)");
     if (!strcmp(mode, "refuse")) *(unsigned char*)0x4261D5 = 0x11;   // JNZ +0x11: wrong bytes
+    if (!strcmp(mode, "foreign")) {   // PerfLab tx=1 got there first: its 7 bytes E9 rel32 90 90 (PerfLab.cpp applyTx: rel32 = cave - (site + 5))
+        unsigned char* cave = (unsigned char*)VirtualAlloc(nullptr, 64, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        if (!cave) { printf("VirtualAlloc failed\n"); return 2; }
+        unsigned char jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
+        int d = (int)((unsigned)cave - (0x4261CF + 5)); memcpy(jmp + 1, &d, 4);
+        memcpy((void*)0x4261CF, jmp, 7);
+    }
     unsigned char before[7]; memcpy(before, (void*)0x4261CF, 7);
     DeleteFileA("texmem_log.txt");
     if (!strcmp(mode, "disabled")) { FILE* f = fopen("texmem.txt", "w"); fprintf(f, "enabled=0\n"); fclose(f); } else DeleteFileA("texmem.txt");
@@ -59,6 +66,10 @@ int main(int argc, char** argv) {
         check(scenario(1, 0) == 0, "disabled: TPC kept (engine)");
         check(strstr(g_log, "DISABLED by texmem.txt") != NULL, "log: disabled line");
         DeleteFileA("texmem.txt");
+    } else if (!strcmp(mode, "foreign")) {
+        check(before[0] == 0xE9 && before[5] == 0x90 && before[6] == 0x90, "foreign: PerfLab's E9 rel32 90 90 is in place before init");
+        check(st() == -1 && memcmp(s, before, 7) == 0, "foreign: PerfLab's jmp present -> refused, site untouched");
+        check(strstr(g_log, "REFUSED(bytes e9") != NULL, "log: REFUSED(bytes e9 ...) line");
     } else {
         check(st() == -1 && memcmp(s, before, 7) == 0, "refuse: wrong bytes -> refused, site untouched");
         check(strstr(g_log, "REFUSED(bytes 0f b6 c8 85 c9 75 11") != NULL, "log: REFUSED line");

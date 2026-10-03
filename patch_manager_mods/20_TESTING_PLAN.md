@@ -53,6 +53,8 @@ Related plans: `COMMON_EXTRACTION_PLAN.md` (row 11, `TestHarness.h`) and doc 19 
 Each tier says what it proves, where its tests live and how fast it is. The runner (section 4) runs T0 to T3 by default. T4 and T5 run only on request.
 
 ### T0: static checks (seconds, no build)
+**Built in Phase 1 (10-03).** The files are `scripts/_static_common.py` (shared lib), `scripts/check_hook_bytes.py`, `scripts/check_hook_spans.py`, `scripts/check_exports.py`, `scripts/check_gui_ids.py` (`.venv` python), the registries `tests/static/span_exceptions.toml` and `tests/static/gui_ids.toml`, and one `code_patches.toml` sidecar per byte-patch mod (6 mods, 22 sites). All are suites in `tests/suites.toml`, with colocated tests `scripts/test_static_checks.py`, `test_check_hook_spans.py`, `test_check_exports.py` and `test_check_gui_ids.py`. The bullets below are the original design.
+- **0x4261CF exception (documented):** TextureMemoryRelease and PerfLab `tx=1` both write the same 7 bytes, and both memcmp the vanilla bytes first, so whichever writer runs second refuses. `span_exceptions.toml` records this. The checker accepts it only while both `code_patches.toml` entries say `verifies_original = true`, and it fails if the exception goes unused or its `tests` name a smoke mode that does not exist. Two smokes prove each writer refuses the other's jump: `wine:texmem[foreign]` and `wine:perflab3[txforeign]`.
 - `validate-patches.py`, which KPM already has.
 - **New `scripts/check_hook_spans.py`**, promoted from `20a_audit_tools/overlap2.py`:
   - It reads every `*.hooks.toml` of ours, plus the live `patch_config.toml`, plus a **declared list of code-patched sites**. That list is a new `[[code_patches]]` table in each byte-patch mod's manifest, or a sidecar `code_patches.toml`, so the checker never has to parse C++.
@@ -190,7 +192,7 @@ Priority comes from the audit: complexity × crash risk × churn. Unit counts ar
 
 ## 6. Checks across mods (T0 additions)
 - **Hook and code-patch byte ranges:** section 3, T0.
-- **GUI control-id reservations.** A `gui_ids.toml` registry that lists every injected id range per `.gui` file (EquipCharPreview 49..78, CharEffectsPanel 69..150, level-up, hotbar, ...).
+- **GUI control-id reservations** (built in Phase 1: `tests/static/gui_ids.toml`, `scripts/check_gui_ids.py`). A `gui_ids.toml` registry that lists every injected id range per `.gui` file (EquipCharPreview 49..78, CharEffectsPanel 69..150, level-up, hotbar, ...).
   - The check fails on overlap within the same `.gui`.
   - EquipCharPreview's 49..78 and CharEffectsPanel's 69..150 overlap numerically, but they target different files: `equip_p.gui` (EquipCharPreview.cpp:59) and `character_p.gui` (CharEffectsPanel.cpp:64-65). That is not a conflict (checked 10-03). The registry has to be keyed by `.gui` file.
   - `character_p.gui` is shared on screen: Mod 14's panel uses x 536-752, and level-up stays within 54..456 (LevelUpUi.h:14). The registry records **screen rects** as well as ids, and fails on overlapping rects within the same `.gui`.
@@ -216,7 +218,7 @@ Rules that apply to every phase:
 
 **Phase 1: static checks (about half a day).**
 - `check_hook_spans.py` (with code-patch declarations for the byte-patch mods), the exports check, `check_hook_bytes.py` (merging the three per-mod checkers) and `gui_ids.toml`.
-- **Exit:** all four pass on the live set, and the 0x4261CF exception is documented.
+- **Exit:** all four pass on the live set, and the 0x4261CF exception is documented. **DONE 10-03** (see Status).
 
 **Phase 2: the three bugs (about 1 hour, small and isolated).**
 - BuffDurationHUD `snprintf` clamp, hotbar `slotDigit` bound, PerfLab `g_stop`. Each comes with a test that fails before the fix.
@@ -278,3 +280,17 @@ Rules that apply to every phase:
     forever. Fix belongs to the level-up stub owner (cap RegionSize, e.g. `0x80000000 - lo`). Host 64-bit runs are fine.
   - **Mutation pass pending** (no C++ mutation tool yet) for `SafeRead.h` `readExo`, `GuiKit.h` out-params, `GameAddr.h`, `Party.h`.
   - The level-up parity `guikit_test.cpp` (49 checks) stays where it is until its owner agrees to move it (§5 Medium #10).
+- 10-03: **Phase 1 done** (static checks; wave 1 `9a44ddf`, wave 2 + wiring in the next commit).
+  - **Live results.** All four checkers report 0 FAIL on the live set.
+    - `check_hook_bytes`: 158 hooks and 22 code patches all match the vanilla exe. 25 INFO lines report relative branches in stolen bytes, all with `skip_original_bytes = true` (H6b, CompanionAI 0x586F43, 23 LevelUpOverride sites). 2 WARN lines flag the stale `Patches/CompanionAI/CompanionAI-0.1.0-live.kpatch` (18 hooks against 31 in source). ActivationFix.kpatch is **not** stale: the size difference is only an extra LAA sha in `target_versions`, so the check compares parsed hooks.
+    - `check_hook_spans`: 18 mods and 180 spans in source, 31 patches and 220 spans installed. No overlaps. The 0x4261CF exception is used in both scopes. 2 gap WARNs, each 6 bytes: LoadHangProbe 0x40D692 against ActivationFix 0x40D69E, and PerfLab `PerfLabNetOvfTest` 0x7040E0 against Robustness `netovf_b` 0x7040EF. There is no source-vs-live drift.
+    - `check_exports`: 13 mods PASS; 5 have no detours.
+    - `check_gui_ids`: 0 FAIL. The append bases are level-up 151..169 and hotbar 111..185. The engine's base is the vanilla max id + 1, not the control count.
+  - **Runner.** `run_tests.py` now has 31 items and takes 9.2 s. `--wine` has 59 items, including the new `texmem[foreign]` and `perflab3[txforeign]`, and takes 136 s. `--selftest` passes.
+  - **Hand breaks.** Each of these went red: a flipped `code_patches` byte, a third-id code patch at 0x4261D0, the exceptions file removed, a name deleted from `exports.def` (temp repo copy), and a GUI range shifted into another mod's range.
+  - **Read-only check.** `find -newer` over the KPM tree, `override/` and `patch_config.toml` showed nothing written.
+  - **Retired.** `check_{inv3d,equip3d,chareffects}_kpatch.py` moved to `scripts/retired/`. The old ±8 check now lives in the spans checker and the exports check in `check_exports`. The USER32-import check was dropped.
+  - **New suite `kpm-validate-patches`** runs KPM's `tools/validate-patches.py`, with `cwd = ${KPM_DIR}`; `run_tests.py` gained `$`/`~` cwd expansion for this. It is **red today**: another session staged `Patches/K2DialogueLetterboxFixProbe/`, which reuses the id `k2-dialogue-letterbox-fix`. That is a real duplicate-id finding (83 patches, 1 error); the user decides whether the probe dir goes or gets its own id.
+  - **§9 Q2 answered:** the registries are local sidecars, and the KPM manifests are untouched.
+  - **Next:** Phase 2, the three bugs.
+

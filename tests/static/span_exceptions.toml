@@ -1,0 +1,24 @@
+# span_exceptions.toml - documented exe-byte overlaps between two patches that scripts/check_hook_spans.py accepts.
+#
+# Normally two patches may not touch the same exe bytes (FAIL). An exception is allowed only for two code patches (DLLs
+# that write bytes themselves, code_patches.toml sidecar) that both verify the original bytes before writing: whichever
+# writer runs second sees the first one's bytes, fails its memcmp and refuses, so the two are mutually exclusive.
+#
+# [[exception]]
+#   address  site address (int); must lie inside the overlap of the two spans
+#   patches  patch ids (manifest ids) of the writers; the overlapping pair must be exactly these ids
+#   reason   why the overlap is safe (cite the source lines of the verification)
+#   tests    ids of the tests that prove each writer refuses foreign bytes, as run_tests.py prints them
+#            (`wine:<smoke>[<mode>]`, checked against perf_lab_src/harness/smokes.toml); must not be empty
+#
+# check_hook_spans.py reports FAIL when: an exception applies to a hook (not a code patch) or to a code patch with
+# verifies_original = false; an exception matches no overlap in any scope (stale); `tests` is empty or names a smoke
+# mode that smokes.toml does not define.
+
+[[exception]]
+address = 0x004261CF
+patches = ["k2-texture-memory-release", "perf-lab"]
+reason = """Both write the 7 bytes at BuildAndStoreTexture's tail (orig 0F B6 C8 85 C9 75 10) as E9 rel32 90 90, and both memcmp the original first: \
+TextureMemoryRelease.cpp apply() :69-71 refuses with REFUSED(bytes ...), PerfLab.cpp writeCode() :446-456 returns -1 (tx=REFUSED(bytes)). \
+Mutually exclusive whichever loads first; PerfLab's tx is also off by default (tx=0, needs perflab_debug.txt)."""
+tests = ["wine:texmem[foreign]", "wine:perflab3[txforeign]"]

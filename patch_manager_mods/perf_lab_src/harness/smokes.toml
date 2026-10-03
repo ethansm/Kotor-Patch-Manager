@@ -93,7 +93,7 @@ kpatch = "PerfLab/PerfLab.kpatch"
 dll_name = "perflab.dll"
 cxxflags = ["-lgdi32", "-lglu32"]
 runtime_dlls = true
-modes = ["run", "refuse", "off", "nogroups"]
+modes = ["run", "refuse", "off", "nogroups", "txforeign"]
 needs_display = false
 timeout_s = 120
 
@@ -104,7 +104,7 @@ kpatch = "TextureMemoryRelease/TextureMemoryRelease.kpatch"
 dll_name = "windows_x86.dll"
 cxxflags = ["-static-libgcc", "-static-libstdc++"]
 runtime_dlls = false
-modes = ["run", "disabled", "refuse"]
+modes = ["run", "disabled", "refuse", "foreign"]
 needs_display = false
 timeout_s = 60
 

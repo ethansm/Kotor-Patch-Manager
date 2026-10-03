@@ -4,10 +4,11 @@
 // Build: i686-w64-mingw32-g++ -O1 -o smoke_perflab3.exe smoke_perflab3.cpp -lgdi32 -lglu32
 //   (dynamic CRT, default base 0x400000: the 7 MB .bss pad makes the image cover 0x400000-0xB00000 so the engine addresses
 //    0x4261D4, 0x4265F3, 0xA1B490 ... are ordinary memory of this exe; same trick as smoke_probe13.cpp)
-// Run:   smoke_perflab3.exe <run|refuse|off|nogroups>   (dir needs the DLL from PerfLab.kpatch as perflab.dll). Exit code 0 = all checks passed.
+// Run:   smoke_perflab3.exe <run|refuse|off|nogroups|txforeign>   (dir needs the DLL from PerfLab.kpatch as perflab.dll). Exit code 0 = all checks passed.
 //   run    = tx=1 g1skip=1 with the right original bytes -> both patched (TX cave executed on fake textures); all counter/format/census/cost checks
 //   refuse = tx=1 g1skip=1 with wrong bytes at the sites -> both refused, bytes untouched
 //   off    = no tx/g1skip keys -> bytes untouched, arm logged OFF
+//   txforeign = tx=1 with TextureMemoryRelease's 7-byte jmp (E9 rel32 90 90) already at 0x4261CF -> tx refused, bytes untouched
 #include <windows.h>
 #include <GL/glu.h>
 #include <stdio.h>
@@ -86,11 +87,12 @@ static void costGetImg(int n) { for (int i = 0; i < n; ++i) g_getimg(g_tex, (voi
 
 int main(int argc, char** argv) {
     const char* mode = argc > 1 ? argv[1] : "run";
-    bool nogroups = !strcmp(mode, "nogroups"), run = !strcmp(mode, "run") || nogroups, refuse = !strcmp(mode, "refuse");
+    bool nogroups = !strcmp(mode, "nogroups"), run = !strcmp(mode, "run") || nogroups, refuse = !strcmp(mode, "refuse"), txforeign = !strcmp(mode, "txforeign");
     if ((uintptr_t)pad > 0x420000 || (uintptr_t)pad + sizeof pad < 0xA82000) { printf("pad %p does not cover 0x420000-0xA82000\n", (void*)pad); return 2; }
     FILE* cf = fopen("perflab_debug.txt", "w");
     fprintf(cf, "alloc=1\nheapfilter=0\nflush_ms=60000\nmetrics=1\nvq=1\n");
     if (run || refuse) fprintf(cf, "tx=1\ng1skip=1\n");
+    if (txforeign) fprintf(cf, "tx=1\n");
     if (nogroups) fprintf(cf, "live=0\nbr=0\nkt=0\nvm=0\nmisc=0\n");
     fclose(cf);
     DeleteFileA("perflab_metrics.txt"); DeleteFileA("perflab_log.txt"); DeleteFileA("perflab_alloc_snaps.txt");
@@ -105,6 +107,12 @@ int main(int argc, char** argv) {
     memcpy((void*)0x4261C0, stub, sizeof stub);
     uint8_t* tx = (uint8_t*)0x4261CF; uint8_t* g1 = (uint8_t*)0x4265F3;
     if (refuse) { tx[5] = 0x74; g1[0] = 0x75; g1[1] = 0x06; } else { g1[0] = 0x74; g1[1] = 0x06; }
+    if (txforeign) {   // k2-texture-memory-release got there first: its jmp to a cave (same 7-byte shape as PerfLab's own)
+        uint8_t* cave = (uint8_t*)VirtualAlloc(nullptr, 64, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+        if (!cave) { printf("VirtualAlloc failed\n"); return 2; }
+        uint8_t jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 }; int32_t d = (int32_t)((uintptr_t)cave - (0x4261CF + 5)); memcpy(jmp + 1, &d, 4);
+        memcpy(tx, jmp, 7);
+    }
     uint8_t tx0[7], g10[2] = { g1[0], g1[1] }; memcpy(tx0, tx, 7);
     typedef int (__thiscall* BuildFn)(void*, int);
     BuildFn build = (BuildFn)0x4261C0;
@@ -122,16 +130,17 @@ int main(int argc, char** argv) {
     V0 tick = fn<V0>("PerfLabTick");
     tick();   // first tick applies the experiments
     if (run) check(tx[0] == 0xE9 && tx[5] == 0x90 && tx[6] == 0x90 && g1[0] == 0xEB && g1[1] == 0x06, "tx cave jump + g1skip patched the right original bytes");
-    else check(!memcmp(tx, tx0, 7) && g1[0] == g10[0] && g1[1] == g10[1], refuse ? "mismatched bytes refused (unchanged)" : "experiments off: bytes unchanged");
+    else check(!memcmp(tx, tx0, 7) && g1[0] == g10[0] && g1[1] == g10[1], refuse ? "mismatched bytes refused (unchanged)" : txforeign ? "foreign jmp at the tx site: refused, bytes unchanged (g1skip off)" : "experiments off: bytes unchanged");
     if (run) check(txFreed(texPlain, 0) && txFreed(texPlain, 1) && !txFreed(texCtrl, 1) && txFreed(texCtrl, 0),
                    "TX cave: TGA freed, TPC freed, TPC with controller kept, TGA with controller freed");
-    else if (!refuse) check(txFreed(texPlain, 0) && !txFreed(texPlain, 1) && !txFreed(texCtrl, 1) && txFreed(texCtrl, 0), "engine behaviour: only TGA freed");
+    else if (!refuse && !txforeign) check(txFreed(texPlain, 0) && !txFreed(texPlain, 1) && !txFreed(texCtrl, 1) && txFreed(texCtrl, 0), "engine behaviour: only TGA freed");
     Sleep(400);
     std::string log = fileText("perflab_log.txt");
     if (run) check(log.find("tx=ON") != std::string::npos && log.find("g1skip=ON") != std::string::npos, "log records tx=ON g1skip=ON");
     if (refuse) check(log.find("tx=REFUSED(bytes)") != std::string::npos && log.find("g1skip=REFUSED(bytes)") != std::string::npos, "log records REFUSED(bytes)");
-    if (!run && !refuse) check(log.find("tx=OFF") != std::string::npos && log.find("g1skip=OFF") != std::string::npos, "log records tx=OFF g1skip=OFF");
-    if (!run && !refuse) check(log.find("0x4261CF saw 0f b6 c8 85 c9 75 10") != std::string::npos && log.find("0x4265F3 saw 74 06") != std::string::npos, "0.3.0: site bytes logged with the experiments off");
+    if (txforeign) check(tx[0] == 0xE9 && log.find("tx=REFUSED(bytes)") != std::string::npos && log.find("0x4261CF saw e9") != std::string::npos, "log records tx=REFUSED(bytes) and the foreign E9 bytes it saw");
+    if (!run && !refuse && !txforeign) check(log.find("tx=OFF") != std::string::npos && log.find("g1skip=OFF") != std::string::npos, "log records tx=OFF g1skip=OFF");
+    if (!run && !refuse && !txforeign) check(log.find("0x4261CF saw 0f b6 c8 85 c9 75 10") != std::string::npos && log.find("0x4265F3 saw 74 06") != std::string::npos, "0.3.0: site bytes logged with the experiments off");
     check(log.find("perf-lab 0.3.0 attach") != std::string::npos, "0.3.0 version in the attach line");
     if (!run) { printf("%s: %d failures\n", mode, g_fail); return g_fail ? 1 : 0; }
 
