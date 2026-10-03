@@ -1,0 +1,180 @@
+{
+ "novote": {
+  "per_kind": {
+   "pos": {
+    "REVIEW": 181,
+    "AUTO": 235,
+    "REJECT": 1
+   },
+   "decoy_prev": {
+    "REVIEW": 345,
+    "REJECT": 1
+   },
+   "decoy_next": {
+    "REVIEW": 342,
+    "REJECT": 1
+   },
+   "decoy_rand": {
+    "REVIEW": 400,
+    "REJECT": 12
+   },
+   "neg_b1rej": {
+    "REVIEW": 8,
+    "REJECT": 1
+   },
+   "neg_wrong": {
+    "REJECT": 2
+   },
+   "neg_known": {
+    "REJECT": 7
+   },
+   "neg_cluster": {
+    "REJECT": 19
+   },
+   "shift_p1": {
+    "REJECT": 233,
+    "REVIEW": 184
+   },
+   "shift_m1": {
+    "REJECT": 229,
+    "REVIEW": 188
+   },
+   "shift_p2": {
+    "REJECT": 243,
+    "REVIEW": 174
+   },
+   "shift_m2": {
+    "REJECT": 252,
+    "REVIEW": 165
+   }
+  },
+  "positives": 417,
+  "positive_auto": 235,
+  "positive_auto_c2": 76,
+  "positive_auto_sig": 159,
+  "positive_auto_recall": 0.5635491606714629,
+  "positive_review_share": 0.434052757793765,
+  "positive_reject": 1,
+  "negatives_total": 1119,
+  "negatives_auto": 0,
+  "stress_total": 1687,
+  "stress_auto": 0,
+  "top_why_positive_review": [
+   [
+    "c0",
+    100
+   ],
+   [
+    "c1",
+    54
+   ],
+   [
+    "run_na",
+    28
+   ],
+   [
+    "run_no",
+    22
+   ],
+   [
+    "g6",
+    7
+   ],
+   [
+    "g1",
+    5
+   ],
+   [
+    "g4_na",
+    1
+   ]
+  ],
+  "g3_na_positives": 0,
+  "g3_na_all": 0
+ },
+ "vote": {
+  "per_kind": {
+   "pos": {
+    "REVIEW": 159,
+    "AUTO": 257,
+    "REJECT": 1
+   },
+   "decoy_prev": {
+    "REVIEW": 345,
+    "REJECT": 1
+   },
+   "decoy_next": {
+    "REVIEW": 342,
+    "REJECT": 1
+   },
+   "decoy_rand": {
+    "REVIEW": 400,
+    "REJECT": 12
+   },
+   "neg_b1rej": {
+    "REVIEW": 8,
+    "REJECT": 1
+   },
+   "neg_wrong": {
+    "REJECT": 2
+   },
+   "neg_known": {
+    "REJECT": 7
+   },
+   "neg_cluster": {
+    "REJECT": 19
+   },
+   "shift_p1": {
+    "REJECT": 233,
+    "REVIEW": 184
+   },
+   "shift_m1": {
+    "REJECT": 229,
+    "REVIEW": 188
+   },
+   "shift_p2": {
+    "REJECT": 243,
+    "REVIEW": 174
+   },
+   "shift_m2": {
+    "REJECT": 252,
+    "REVIEW": 165
+   }
+  },
+  "positives": 417,
+  "positive_auto": 257,
+  "positive_auto_c2": 98,
+  "positive_auto_sig": 159,
+  "positive_auto_recall": 0.6163069544364509,
+  "positive_review_share": 0.381294964028777,
+  "positive_reject": 1,
+  "negatives_total": 1119,
+  "negatives_auto": 0,
+  "stress_total": 1687,
+  "stress_auto": 0,
+  "top_why_positive_review": [
+   [
+    "c0",
+    100
+   ],
+   [
+    "c1",
+    54
+   ],
+   [
+    "g6",
+    7
+   ],
+   [
+    "g1",
+    5
+   ],
+   [
+    "g4_na",
+    1
+   ]
+  ],
+  "g3_na_positives": 0,
+  "g3_na_all": 0
+ }
+}

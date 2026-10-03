@@ -1,0 +1,190 @@
+# Steam address-DB batch pipeline: design (lead-approved spec)
+
+Status: 2026-10-03, Phase A. The plan is the session plan "map the Steam Aspyr exe into our DBs, in verified batches"
+(transcript ffc8cb88...). This file is the contract for every tool in `steam_db_batches/tools/`.
+`steam_db_pr3/` stays the Batch 1-8 archive.
+
+Mandatory reading for anyone who writes a brief or judges a row: `ghidra_knowledge/RE_AGENT_GUIDE.md`.
+
+## 0. Paths (all overridable by env var, defined once in `tools/bdlib.py`)
+| name | default | env |
+|---|---|---|
+| DUMP | `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/` | `BD_DUMP` |
+| SERVER | `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/upstream_server/` (one subdir per program) | `BD_SERVER` |
+| KDB | `patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db` | `BD_KDB` |
+| BRANCHDB | `~/Games/KOTOR2_Mod_Workspace/tools/kpm-pr-steam-db/AddressDatabases/kotor2_steam_aspyr.db` | `BD_BRANCHDB` |
+| GOGDB | `~/Games/KOTOR2_Mod_Workspace/tools/kpm-pr-steam-db/AddressDatabases/kotor2_gog_aspyr.db` | `BD_GOGDB` |
+| BATCHES | `patch_manager_mods/steam_db_batches/` | `BD_ROOT` |
+| B1_VERIFIED | `patch_manager_mods/steam_db_batches/gold/b1_verified_head.tsv` (= `steam_db_pr3/verified.tsv` at commit 1820a74, the Opus-reviewed Batch 1; the working copy carries Gemini's unreviewed "Option A" edits to 15 rows, listed in `gold/gemini_option_a_changed_rows.txt`, which Batch 0 reviews) | - |
+
+All tools open every DB read-only (`file:...?mode=ro`, `uri=True`), except `persist --apply` and
+`ingest_server.py --apply`, which only the lead runs. Stdlib only. No tool touches the game folder or any
+`*credential*` / `*secret*` file.
+
+## 1. Trust tiers (the most important rule)
+Gemini's Batches 2-8 were delta projection only, yet were written to `name_map` as `high`. A row counts as
+**trusted** (usable as a callee anchor, a gold positive or a "confirmed neighbour") only if:
+- it is in `B1_VERIFIED` with verdict `verified`; or
+- it is a `name_map` row with confidence `high` whose source is NOT unaudited; or
+- it is in a later `steam_db_batches/B<n>/final_rows.tsv` with verdict `verified` (persisted as source `steam-db-B<n>`).
+
+Unaudited sources (regex, case-sensitive), until Batch 0 re-audits them:
+`^batch[2-8]_`, `^gog_.*_(cluster|block)$`, `^gog_cluster_delta_map\.py$`.
+B1-only sources (`bdlib.B1_ONLY_SOURCES`): `steam-db-pr3-phase2` `name_map` rows are trusted only through the
+B1_VERIFIED route. Gemini's unreviewed "Option A" edits (10-02) rewrote 13 rows under that label (rows Batch 1 had
+rejected or left unresolved), so the label alone proves nothing.
+Branch-DB rows are trusted only through one of the routes above (the branch DB itself is not a trust source).
+`name_map` rows with confidence `wrong` are known-false: usable as negatives.
+
+Note: some `level-up-P5-static-confirmed` rows have evidence text in the `confidence` column (old column swap):
+treat any confidence not in {high, medium, med, low, wrong} as `medium`.
+
+## 2. Server fingerprint exports (read-only, Ghidra scripts in the KPM `tools/ghidra_scripts/`)
+`ExportFingerprints.java <outdir>` writes, for `currentProgram`:
+- `<outdir>/fp.tsv`, one row per function, header:
+  `addr size retn n_insn callconv thunk_target callees str_refs disp imm name namespace source`
+  - `addr`: `0x%08x` entry. `size`: body address count. `retn`: max RET imm (0 plain ret, -1 none).
+  - `thunk_target`: `0x%08x` if `fn.isThunk()` (resolve the chain to the final non-thunk), else empty.
+  - `callees`: sorted unique entry addrs of functions called (CALL and tail JMP to a function entry), comma-sep.
+  - `str_refs`: sorted unique addrs of defined string data (or data whose value is a string) referenced from
+    the body, comma-sep.
+  - `disp`: sorted multiset (repeats kept) of memory-operand displacements `[reg+disp]` with base register not
+    ESP/EBP and `0 < disp <= 0x10000`, hex, comma-sep.
+  - `imm`: sorted multiset of scalar immediates (any operand) that do NOT resolve to an address inside a memory
+    block, excluding 0, 1, -1 (0xffffffff), hex, comma-sep.
+  - empty list = empty cell.
+- `<outdir>/strings.tsv`: `addr  text` for every defined string (tabs/newlines escaped as `\t`/`\n`).
+`ExportDataTypes.java <outdir>` writes `<outdir>/types.tsv`:
+  `category type_name kind size ordinal field_offset field_name field_type`
+  (kind = struct/union/enum/typedef; enums: one row per value, field_offset = value; typedef: one row, field_type
+  = base type; types with no fields: one row with empty field columns.)
+
+Server programs (`SERVER/<program>/`): `k2_win_gog_aspyr_swkotor2.exe`, `k2_win_steam_aspyr_swkotor2.exe`,
+`k2_linux_swkotor2.elf`, `k2_mac_KOTOR2_x86`, `k2_mac_KOTOR2_x64` (each with `*_functions.tsv`,
+`*_symbols.tsv` from `ExportProgramSymbols.java`, plus `fp.tsv`, `strings.tsv`, `types.tsv`).
+GOG fingerprints use GOG addresses; Steam fingerprints use Steam addresses.
+
+## 3. Knowledge-DB server tables (`ingest_server.py`)
+```sql
+CREATE TABLE IF NOT EXISTS server_functions(
+  program TEXT NOT NULL, addr TEXT NOT NULL,          -- '0x%08x'
+  name TEXT, namespace TEXT, callconv TEXT, prototype TEXT,
+  source TEXT,                                        -- USER_DEFINED / IMPORTED / ANALYSIS / DEFAULT
+  trust TEXT,                                         -- 'trusted' (USER_DEFINED, IMPORTED) / 'auto' (ANALYSIS) / 'none' (DEFAULT)
+  size INTEGER, retn INTEGER, thunk INTEGER,
+  export_date TEXT, PRIMARY KEY(program, addr));
+CREATE TABLE IF NOT EXISTS server_symbols(            -- non-function symbols, USER_DEFINED and IMPORTED only
+  program TEXT NOT NULL, addr TEXT NOT NULL, name TEXT NOT NULL, namespace TEXT, symbol_type TEXT, source TEXT,
+  export_date TEXT, PRIMARY KEY(program, addr, name, namespace));
+CREATE TABLE IF NOT EXISTS server_types(
+  program TEXT NOT NULL, category TEXT NOT NULL, type_name TEXT NOT NULL, kind TEXT, size INTEGER,
+  ordinal INTEGER NOT NULL, field_offset INTEGER, field_name TEXT, field_type TEXT,
+  export_date TEXT, PRIMARY KEY(program, category, type_name, ordinal));
+```
+Fingerprints stay as TSV files in SERVER (too large for the repo DB). Upserts are idempotent (a re-run changes 0
+rows). Ingest writes a diff report: server USER_DEFINED Steam names vs `name_map` and the branch DB
+(agree / conflict / server-only), and server GOG names vs the KPM GOG DB (label disagreements = GOG label suspects).
+
+## 4. Batch pipeline (`tools/batch.py`)
+Working dir per batch: `BATCHES/B<n>/` (`B0` = re-audit of the branch DB). Subcommands, all deterministic:
+
+### 4.1 `candidates B<n> --classes C1,C2,...` (or `--from-branch` for B0)
+- Re-exports `DUMP/inputs/name_map.tsv` first if older than the KDB file (`engine_ai_atlas/tools/export_dump_inputs.py`).
+- Runs `ghidra_knowledge/gog_cluster_delta_map.py <class> --out DUMP/findings/B<n>_map_<class>.tsv` per class
+  (mapper output columns: steam, gog, name, tag in {vote, drift, seeded, ...}, retn=N).
+- One row per GOG function of the classes (`DUMP/inputs/gog_functions.tsv`). Candidate sources, each tagged:
+  `mapper:<tag>`, `name_map:<conf>:<source>`, `branch`, `server` (trusted server Steam name = this name),
+  `near` (top-3 Steam function starts within +-0x400 of `gog + run_delta`, ranked by fingerprint score, where
+  run_delta = the median delta of the class's trusted rows, else of its mapper `vote` rows).
+- For B0, the branch address is the candidate under test (`branch`), other sources are listed as alternatives.
+- Output `B<n>/candidates.tsv`: `class name gog gog_callconv gog_param gog_size gog_retn candidates` where
+  candidates = `addr|src1+src2;addr|src...`.
+
+### 4.2 `gates B<n>` -> `B<n>/evidence.tsv` + `B<n>/gate_report.md`
+For every (GOG row, candidate) compute; then pick the row's best candidate (most anchor families, then invariants,
+then source strength); a second candidate that also reaches C2 makes the row ambiguous (REVIEW).
+
+Invariants:
+- G1 `start`: candidate is a function entry in `DUMP/inputs/steam_functions.tsv`; not a CRT/library function (server
+  Steam `source=ANALYSIS` with a library-looking name, or in the CRT range listed in `bdlib.CRT_ADDRS`).
+- G2 `align`: 16-byte aligned (signal only: unaligned -> REVIEW, never REJECT).
+- G3 `prologue`: standard prologue per `re_card_prep.py prologue` logic (import it, do not copy).
+- G4 `ret`: Steam retn == GOG retn from the GOG fingerprint (primary). Secondary (metadata): expected
+  `ceil(gog_param/4)*4` (cdecl 0); mismatch with the GOG fingerprint -> flag `gog_db_param_bad`, not a failure.
+- G5 `thunk`: thunks are resolved to the target before G3/G4 and all anchors; record the target.
+- G6 `dup`: the address is not held by a different name in the branch DB or `name_map` (trusted holder -> REJECT;
+  untrusted holder -> REVIEW + record).
+
+Anchor families (computed for the candidate S AND for its decoys D = the previous and next Steam function starts
+and every other candidate of the row; a family counts only if it is **discriminating**: S's score > every decoy's):
+- A-STR: distinctive strings (len >= 4, referenced by <= 3 Steam functions) shared by text between the GOG function's
+  `str_refs` and S's. Score = count.
+- A-CALLEE: trusted GOG->Steam pairs P (GOG DB name == trusted Steam name). Score = |{(g,s) in P: g in callees(G),
+  s in callees(S)}| + the same over callers, counting only callees/callers with Steam in-degree <= 40 (hubs such as
+  CExoString/operator new excluded). Also report contradictions: g in callees(G) with trusted s not in callees(S).
+- A-SIG: operand signature. Jaccard of `disp` sets and of `imm` sets (GOG vs S); score = mean, counts if
+  >= 0.5 and |disp intersection| + |imm intersection| >= 3.
+- A-SRV: a trusted server name at S equal to the GOG name (or a server-program name bridged by the same method).
+- A-VT: `class_methods` row at S with the same symbol, or vtable slot equality where both sides are known.
+Content level: C0 none, C1 one family, C2 >= 2 families. A-VT is reported but does not count toward C1/C2
+(calibration 10-03: `class_methods` symbols come from the same labelling, so it is circular).
+Run consistency `run_ok`: S-G equals the delta of the nearest mapped GOG neighbour on at least one side
+(neighbour mapped by a trusted row or this batch's AUTO row), and no permuted pair (two same-size neighbours whose
+fingerprint scores prefer the swapped assignment).
+
+Gate class:
+- AUTO: G1, G3, G4, G5, G6 pass; C2; run_ok or mapper `vote`; not ambiguous; G2 pass.
+  - `auto_route=c2` is the rule above.
+  - `auto_route=sig` (R3; lead decision 2026-10-03, pending Opus calibration sign-off): every invariant passes (g1 pass, g2 pass, g3 pass or
+    pass(exe), g4 pass, g6 pass, no unresolved thunk), the counting families (VT excluded) are exactly {SIG}, a_sig >= 0.75,
+    the best decoy's SIG <= a_sig - 0.25 (best = highest SIG over all decoys), run_ok == yes, steam_size == gog_size, not permuted, not ambiguous, and no callee
+    contradiction. `mapper:vote` does not help this route.
+  - The sig route is NON-PROPAGATING: run_ok for any row may only be seeded by trusted pairs and by `auto_route=c2` rows; a
+    `sig`-route row is never added to the mapped-neighbour set. Evidence rows carry `auto_route=c2|sig` in `flags`.
+- REJECT: hard contradiction: G1 fails (not a start / CRT), G4 fails with no thunk explanation, or G6 with a trusted
+  holder.
+- REVIEW: everything else with a candidate. NOCAND: no candidate.
+(The AUTO rule is calibrated in A3; tighten it there, never loosen it without the Opus calibration review.)
+
+`evidence.tsv` columns = Batch 1 `verified.tsv` columns (`kind class name gog steam_addr verdict calling_convention
+param_size_bytes evidence cand_orig cand_status content_level wrapper_issue steam_size gog_param_size`) +
+`batch cand_sources mapper_tag gog_size gog_retn steam_retn g1 g2 g3 g4 g5_target g6 a_str a_callee a_sig a_srv a_vt
+families run_ok decoy_best gate_class review_ref`. `evidence` = a short machine-written anchor summary, e.g.
+`STR 'aborted walking...'@009965f8; CALLEE 3 (AddActionToFront 0x540ca0,...); SIG 0.82`.
+`gate_report.md`: counts per class and gate class, every REJECT with reason, duplicates/conflicts, G4 metadata flags.
+
+### 4.3 `cards B<n> [--chunk 60]` -> `B<n>/cards/chunk_<k>.md` + `B<n>/cards/key.tsv`
+One card per REVIEW row: the GOG name/metadata and mapper tag; the computed invariants and anchor scores (as stated
+facts); `re_card_prep.py annotate` (truncated to ~80 lines), `abi`, `anchors`, `prologue` of the candidate (and of
+the best decoy, labelled `decoy`); both GOG-order neighbours with their gate class; any server name; the decoy note
+("assume a same-ret neighbour"). Calibration chunks mix in decoy cards (key.tsv holds the answer; cards do not).
+
+### 4.4 `finalize B<n>`
+Inputs: `evidence.tsv`, reviewer TSVs `B<n>/review/*.tsv` (`gog_addr steam_addr verdict(match|mismatch|unsure)
+corrected_addr content_anchor confidence reason`), Opus overrides `B<n>/overrides.tsv` (`gog_addr steam_addr
+final_verdict note`). Final verdict per row: `verified` (AUTO, or REVIEW confirmed with a cited anchor and C1+),
+`likely`, `rejected`, `unresolved`. Overrides win. Outputs:
+- `B<n>/final_rows.tsv` (evidence columns + `final_verdict final_note`);
+- `B<n>/functions.csv`: SqliteTools `import-ghidra` format, header
+  `class_name,function_name,address,calling_convention,param_size_bytes,notes`, verified rows only (likely only with
+  `--with-likely`), notes = `Steam batch B<n>: <anchor summary> (evidence steam_db_batches/B<n>/evidence.tsv)`;
+  param_size_bytes = the Steam retn (stack bytes) for thiscall/stdcall (record GOG's value in notes if different);
+- `B<n>/kdb_upsert.json` (the name_map rows persist will write); for B0 also `B<n>/branch_deletes.tsv`
+  (rows to remove) and `B<n>/branch_corrections.csv`.
+
+### 4.5 `persist B<n> [--apply]`
+Dry-run by default: prints the planned inserts/updates/demotions. `--apply` (lead only): one transaction;
+`name_map` upsert with source `steam-db-B<n>`, confidence `high` (verified) / `medium` (likely); an existing row at
+the same address with a different name is replaced and its old name/source/confidence is appended to `evidence`
+(`replaces <old> (<source>/<conf>) <date>`); an existing row holding the same name at a different, now rejected
+address gets confidence `wrong` + a dated note; lessons from `gate_report.md` section `## Lessons` inserted once
+(dedupe on scope+topic). Ends with `PRAGMA integrity_check`. A second `--apply` changes 0 rows.
+
+## 5. Process rules
+- **The PR changes only the Steam DB** (user, 2026-10-03). `kotor2_gog_aspyr.db` in the KPM repo is read-only input:
+  never edited, never committed. GOG label suspects / wrong GOG param sizes are recorded (gate report, PR description),
+  and a GOG DB change is proposed to the user only for a confirmed bug.
+- Agents never commit, never write either DB, never touch the game folder or credential files; private `mktemp -d`.
+- One `analyzeHeadless` at a time, always `-readOnly` (`pgrep -af '^java.*analyzeHeadless'` first).
+- Branch-DB writes: the lead only, after a backup to `~/Games/KOTOR2_Mod_Workspace/backups/steam_db/`, via
+  SqliteTools, then `SqliteTools validate` (0 errors).
