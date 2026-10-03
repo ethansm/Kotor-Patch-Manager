@@ -1010,3 +1010,10 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Forge test made runner-safe (a8b3102: re-exec under .venv, unique temp dir). `run_tests.py` red item `check-hook-spans` = buff-duration-hud vs
   portrait-slots overlap (other sessions), not ours.
 - Running: A2 robustness review, B preset fixes (Close Combat x19, Finesse x5, TI-first heal builds), A5 README draft.
+- A5 DONE c424dc2: `level_up_override_src/README.md` (Opus fixed the minPause rule: first preset record's char level - 1).
+- A2 DONE (`phase6_evidence/A2_robustness_review.md`): 3 BUG / 17 RISK / 12 OK. Opus-confirmed BUGs: **F1** `onLevelUp` returns when the log
+  is closed/capped (cpp ~1205 `if (!logOpen()) return;`) -> after 20000 log lines every auto level-up goes vanilla while the hold gates still
+  block; **F2** pause branch of levelNow (~568) HOLDs a creature that converted to a DIFFERENT Jedi class forever (non-pause rule -> VANILLA);
+  F3 Playthrough.h rewrite drops text after `]`, inline comments, CRLF. Top RISKs: F4 leaderInstant lacks the 0x740FC0 check, F5 multi-level XP
+  across pause/convert -> HOLD_MIDLOOP engine picks, F6 lossy parse blocks all writes incl. Vanilla, F10 table over-cap drops all HOLDs,
+  F14 HOLD/UNHOLD per-frame flap fills the log, F17 unknown mode= -> log-only. NEXT: scenarios first, then a C++ fix round (after the preset agent).
