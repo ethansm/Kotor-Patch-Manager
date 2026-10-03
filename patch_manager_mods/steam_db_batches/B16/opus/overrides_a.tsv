@@ -1,0 +1,43 @@
+gog_addr	steam_addr	final_verdict	note
+0x00595eb0	0x0084c3a0	verified	correction of 0x73b4d0 (149b list accessor). fp 1:1 unique (6331/ret4/1436); 0084c3ea MOV [ECX],0x9a3e7c (CSWGuiInGameCharacter vftable); 0084da65 MOV [EDX+0x4b6c],EAX
+0x00597770	0x0084def0	verified	correction of 0x84de70 (120b, CSWGui3DSceneView vftable). Slot 0 of Character vftable 0x9a3e7c; 0084defa CALL 0x84df70 (~CSWGuiInGameCharacter); 0084df0b CALL 0x9196fd
+0x005994b0	0x0084fbb0	verified	fp 1:1 unique; 0084fbc4 MOV ECX,[EAX+0x3ad8]; 0084fbd4 ADD ECX,0x3a60; slot 13 (Draw) of vftable 0x9a3e7c. Mac contra = Mac offsets only
+0x005e43c0	0x008df930	verified	fp 1:1 unique (3659/ret4/837, same disp set, no layout shift); 008dfebf PUSH 0x9a1ecc LBL_MOUSESEN; 008df97a MOV [ECX],0x9a8ee4 (Gameplay vftable); 20/20 callees
+0x005e5a70	0x008e0fc0	verified	fp 1:1 unique; 008e0ff7 PUSH 0x1370; callee CSWGuiInGameOptKeyMapping ctor 0x8fff20; 008e105c CALL 0x410530 (AddPanel). No offset shift
+0x005e5b30	0x008e1080	verified	fp 1:1 unique; 008e10b7 PUSH 0x147c; callee CSWGuiOptionsMouse ctor 0x7dc410; 008e111c CALL 0x410530 (AddPanel). No offset shift
+0x005e6020	0x008e1570	verified	fp 1:1 unique; 008e15b6 CALL 0x8e1280 (SetDifficultyText); 008e15bb PUSH 0xa519; CALL 0x8e1410 (SetDescription); RET 4. Mac shape same (3 callees)
+0x005e6080	0x008e15d0	verified	fp 1:1 unique (70b); 008e15e1 ADD ECX,0xea0; 008e1605 AND EAX,0xffffffbf; only callee SetColor 0x417010; RET 4
+0x0064dc40	0x0051e220	verified	fp 1:1 unique (290/ret24, identical disp, no layout shift); 0051e24a PUSH 0x18; 0051e2eb CALL 0x51afe0 (CompareWorldTimes); LogEventAdd 0x51e350
+0x00651470	0x006545b0	verified	correction of 0x6544f0 (AddIdentifierLocation). fp 1:1 unique (190/ret4); 006545f6 MOV ECX,0x93d; 00654626 CALL 0x734f60 (CompareNoCase); Hash 0x654210
+0x00651600	0x00654740	verified	correction of 0x654670 (GetBit). fp 1:1 unique; 0065479e PUSH 0x9984f8 "Script var BOOLEAN '%s' not in catalogue!"; 0065483d CALL 0x654670 (GetBit); RET 8
+0x00651720	0x00654860	verified	correction of 0x654670 (GetBit). fp 1:1 unique (267/ret8); 00654951 MOV DL,[ECX+EDX+0xde29]; "NUMBER" strings; FindIdentifierIndex 0x6545b0
+0x00651a70	0x00654bb0	verified	correction of 0x654aa0 (string getter, +0xeb74). fp 1:1 unique; 00654c9f ADD EAX,0xddb8; 00654ca8 CALL 0x6546c0 (SetBit); RET 8
+0x00652550	0x00655690	verified	fp 1:1 (1110/ret8/285, disp/imm identical) except GOG empty-string ref 0x9858f5; 00655736 PUSH 0x998654 "ValBoolean"; no Cat* strings; ReadTable calls it 006565e8
+0x00653500	0x00656640	verified	correction of 0x6564c0 (ReadTable). fp 1:1 unique (204/ret4); 00656668 PUSH 0x99874c "GLOBALVARS"; 006566e7 CALL 0x655010 (WriteTable)
+0x006535d0	0x00656710	verified	correction of 0x656780 (31b). fp 1:1 unique (108/ret0); 00656738 PUSH 0x99874c "GLOBALVARS"; 00656753 CALL 0x6564c0 (ReadTable)
+0x0077e650	0x00669070	verified	fp 1:1 unique (192/ret4); 006690b7 ADD ECX,0x60; CALL 0x733df0 (CExoString::operator+) x2; 4/4 callees; Mac AppendToScriptsRun same shape (imm 0x2c/0x60)
+0x00815aa0	0x004233a0	likely	getter: fp 1:1 unique (17b, disp 0x34); 004233aa MOV EAX,[EAX+0x34]; ParseField 00423c21 stores +0x34. Thin by type (getter)
+0x00815b80	0x00423480	verified	correction of 0x4233a0 (GetController). fp 1:1 unique (543/ret0); 00423645 CALL 0x425160 (FreeImage); 0042365c CALL 0x423930 (RemoveFromOrderedLists); 9/9 callees
+0x00816030	0x00423930	verified	correction of 0x423820. fp 1:1 unique (87b); 00423940 CALL 0x476620 (Count); 0042395a MOVZX EAX,byte [EDX+0xd7]; Remove 0x449170
+0x00920c10	0x0040da20	verified	correction of 0x40dac0 (= Internal::ShowFadePanel, 390b). fp 1:1 unique (29b); 0040da2a CALL 0x40cb20 (ShutDown); 0040da32 MOV [EAX+0x30],0
+0x00921000	0x0040de10	verified	correction of 0x40de50 (Resume). 0040de2c MOV [EDX+0x64],1; 0040de41 CALL [BinkPause] arg 1; caller WindowProc 0x40c4a0 (GOG 0x91f690 calls Pause)
+0x009151b0	0x00416de0	verified	fp 1:1 unique (36/ret4); 00416dea ADD EAX,0x3c; 00416df9 CALL 0x416d60 (SetFontRename); CopyToString 0x710980
+0x00921040	0x0040de50	verified	0040de63 CMP [ECX+0x64],1; 0040de6c MOV [EDX+0x64],0; BinkPause arg 0; caller 0040d74a in RunMovieFrameLoop 0x40d6f0 (GOG 0x9208e0 calls Resume)
+0x009151e0	0x00416e10	verified	19b wrapper; 00416e1a CALL 0x416d60 (SetFontRename). SetFontRename has 3 callers each side (36/19/198b), 1:1 by size; only 19b one
+0x00915550	0x00417180	verified	fp 1:1 unique (26b); 0041718a ADD EAX,0x2c; 00417191 CALL 0x417010 (SetColor)
+0x00599990	0x00850090	verified	fp 1:1 unique (86/ret8); 008500a5/c0/d5 ADD ECX,0xf0 x3 + CALL 0x417010 (SetColor); RET 8
+0x005af1f0	0x008baaa0	verified	fp 1:1 unique (114/ret4); 008baad0 ADD ECX,0x90; 008baae5 CALL 0x40e860 (~CSWGuiPanel); _free 0x9196fd
+0x005e5210	0x008e0780	verified	slot 0 of Gameplay vftable 0x9a8ee4; 008e078c CALL 0x8e07b0 (~CSWGuiInGameGameplay); 008e079d CALL 0x9196fd
+0x005e59f0	0x008e0f40	verified	36b/ret4; 008e0f4c MOV ECX,[EAX+0x5c]; 008e0f59 CALL 0x8e1410 (SetDescription), neighbour run of OnDefault/OnKeyMap
+0x0064e840	0x0051ee20	verified	fp 1:1 unique (168/ret8); 0051ee43 CALL 0x719740 (CResGFF::AddList); 0051ee7d PUSH 0xabcd; SaveNode 0x520190
+0x00599070	0x0084f770	verified	fp 1:1 unique (360/ret8); 0084f850 ADD ECX,0xf0; 0084f856 CALL 0x416e30 (SetText); 5/5 callees
+0x0064eac0	0x0051f0a0	verified	fp 1:1 unique (68/ret12); 0051f0b1 SUB ESP,0x118; 0051f907 RET 0xc (param 12; GOG DB param bad). Body jumps over (dead in both)
+0x00650c90	0x00653dd0	verified	fp 1:1 unique (103/ret0, imm 0x71/0x3e8/0x960/0x28); 00653dde ADD EAX,0xddb8; 00653e25 ADD EAX,0xeb74; memset 0x91c630
+0x0064ea20	0x0051f000	verified	AUTO sig pass: fp 1:1 unique (40/ret8); 0051f012 MOV EAX,[EDX+0x58]; 0051f025 RET 8 (Applied is 46/ret12, distinct)
+0x00915440	0x00417070	verified	AUTO sig pass: fp 1:1 unique (198/ret4); 004170ce CALL 0x47ec30 (NewCAurGUIString); 00417109 CALL 0x416fa0 (SetAlignment); 8/8 callees
+0x0064e9f0	0x0051efd0	verified	AUTO sig pass: fp 1:1 unique (46/ret12); 0051efe6 MOV ECX,[EAX+0x58]; 0051effb RET 0xc
+0x00818ce0	0x004265e0	verified	AUTO sig pass: fp 1:1 unique (600/ret4); 00426771 CALL 0x432fa0 (CreateCubeTexture); 004267d6 CALL 0x433cd0 (CreateTexture); 9/9 callees
+0x006513b0	0x006544f0	verified	AUTO sig pass: fp 1:1 unique (85/ret4); 00654503 CMP [EAX+0xeba4],0x64; 0065451f CALL 0x6542d0 (AddIdentifier)
+0x00653380	0x006564c0	verified	AUTO c2 pass: fp 1:1 unique (377/ret4); 0065655e PUSH 0xbe76; 006565d6 CALL 0x655b00 (WithCat); 006565e8 CALL 0x655690 (WithoutCat)
+0x0064da60	0x0051e040	verified	AUTO c2 pass: fp 1:1 unique (116/ret8); 0051e062 MOV ECX,[EAX+0x78]; 0051e075 CALL 0x51e0c0 (RemoveObject); 0051e094 CALL 0x51d150
+0x0064dae0	0x0051e0c0	verified	AUTO c2 pass: fp 1:1 unique (93/ret4); 0051e0fc CALL 0x51d170; 0051e10d MOV [ECX+0x78],0xffffffff

@@ -1,0 +1,4 @@
+gog_addr	steam_addr	final_verdict	note
+0x004bcf10	0x0040de90	verified	correction (NOCAND). fp 1:1 unique (17/ret0, disp 0xc); 0040de9a MOV EAX,[EAX+0xc]; sole caller 0x93b600 = CExoMoviePlayer::GetNumberOfMoviesToPlay (GOG 0x921250, 33b, same run)
+0x005e56e0	0x007dcea0	verified	correction of 0x8e0cc0 (OnAutoSave). Slot 18 of Gameplay vftable 0x9a8ee4 (0x9a8f2c); 007dceaa CALL 0x40f3c0 (CSWGuiPanel::OnPanelAdded). ICF-shared w/ CSWGuiOptionsMouse slot 18
+0x006529c0	0x00655b00	verified	G6 holder is the same function (name_map "ReadTableWithCat"). fp 1:1 (2481/ret8/621) bar GOG empty str; 00655d37 PUSH 0x998720 "ReadTableWithCat(): BOOLEAN '%s' won't fit!"
