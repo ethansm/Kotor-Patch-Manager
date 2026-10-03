@@ -863,3 +863,24 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **B2 GuiKit:** already the only GuiKit user. GuiKit is now canonical in `Patches/Common` (KPM aad0a14), and `../_shared/GuiKit.h` still builds through a forwarding header. Its PR is likely the one that brings GuiKit upstream.
 - **B3 ini helper:** loadIni (:220).
 - **B6 party/leader accessor** (:735-745, :1494).
+- **Session end 2026-10-03 ~00:30 (Phase 5 build + 4 live runs):**
+  - Commits (this session, level-up only): 1f32a2a Step 0, 9cd0fa5 WizardLogic, e11221f GuiKit, 61aa066 presets, d368d34 U facts, 29e3763 M3, 29c56a2 M4,
+    82dede7 review fixes, 97ec212 install 12:45, 72f3256 crash (Buff HUD, fixed by its session b85ca9e), 97a09ec UI round 2, b2afbf0 run 3,
+    d92406f OptionsLogic + `[recommended]`, 748c8b7 options page, 4c1a121 U5, 58e06d2 leader instant, c6c1d54 install 00:25.
+  - LIVE: dll e64cb387 (26 hooks), set 31 ids / 198 hooks, stage `$T/levelup_stage7`, backup `backups/pre_levelup_030_page_20261003_002447/`;
+    game-dir ini `mode=rewrite apply=1 verbose=1` (no dev keys); `levelup_playthroughs.ini` `[g11b3b802] atton=atton__melee_dual_light_early|instant=1|hold=1`
+    (16:04 QUICKSAVE carries that GUID). Log 386 lines before run 4.
+  - Verified live: ctor-time UI creation + first-tick append (12/19 labels, textobj all ok), Configure button + R9 nudge text, wizard/page clicks,
+    Apply -> GUID create + live write + ini write, instant (non-leader) 3 -> 7 along the preset (APPLIED ok=1 x4), save -> GLOBALVARS has LUO_G00..31,
+    quickload -> `GUID load g11b3b802 found=32/32`. NOT yet verified: options page look, leader instant (0x74F423), HOLD + status line + banked
+    message (needs Atton at Scoundrel 7 with XP >= 28000), GUI guards on a held leader, manual level-up kept (R1), restart -> load QUICKSAVE -> GUID,
+    new game -> unconfigured, no input leak under other GUIs.
+  - Gotchas: (1) other sessions reinstall/hand-install DLLs (Shield Bar: Buff HUD / CEP) -> before any install re-run `stage_and_verify_install.py stage`
+    from live (it now finds every kpatch; `4gb-patch hooks=DIFF` is an artifact) and verify the stage; a dll-only change can be hand-swapped (backup
+    first) when hooks/exports are unchanged; (2) gen_runtime_table.py needs `.venv/bin/python3` (pykotor); (3) never `pkill -f` a pattern that appears
+    in your own command line; (4) live layout: BTN_AUTO/BTN_LEVELUP/SLD_ALIGN/LBL_LIGHT/DARK draw over anything in the 3D column - keep our UI in
+    x 54..300 (page) / the cfg slot under BTN_LEVELUP; (5) related plans by other sessions: `COMMON_EXTRACTION_PLAN.md` rows 4/7/9 (IniFile, GuiKit,
+    SaveBinding incl. level_up GUID globals), `20_TESTING_PLAN.md` (level-up suite = model for Common/TestHarness.h; *_bin files belong in
+    $TMPDIR, add to .gitignore), doc 07 shared save-binding plan.
+  - NEXT phase plan: `research/companion_levelup/PHASE6_PLAN.md` (written at session end).
+
