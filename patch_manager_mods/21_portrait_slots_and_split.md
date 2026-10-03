@@ -16,6 +16,10 @@ live patcher first.
 | W5 install + A/B | **variant both LIVE 15:33** (user chose to skip the separate W2 gate): portrait-slots b6914e69 + buff 2.0.0 f37135c8 + shield-bar 55dcd83e, patch_config 248c996a from `split_stage_both/`, kplog.ini enabled (portrait-slots info); backup `backups/shield_split_w5_install_20261003_153348` (W2 config + dll); W2 logs renamed `*_w2_20261003_153348.txt`; kpm_install_state.json NOT changed (a KPM reinstall reverts to the single W2 DLL = safe). Awaiting user session. Before: Packages in `kotor-patch-manager/split_build/` (portrait-slots `b6914e69`, buff 2.0.0 `f37135c8`, shield-bar `55dcd83e`); stage with `scripts/stage_portrait_split.py --variant both|buff|shield|none` |
 | W6 adoption | later, owners: active_effects_panel -> Effects.h / EffectIcons.h |
 
+## Next phase (user, 10-03): shared libraries as their own category + GOG/Steam
+User direction: "we need to create a new category of shared functionality so this is treated differently than just a patch. Other mods, to be compatible would likely leverage these as well. Would this be cross compatible between Gog/steam? or do we need to plan and accomodate for that as well?"
+Answer so far: the interface (k2.portraitslots v1) is version-neutral, but every binary we built hardcodes Steam addresses (hook sites, engine functions, struct offsets), so GOG needs per-version hooks files + a per-version address table (or GameAPI DB lookups). KPM already selects kotor2-gog-aspyr.hooks.toml per version. Plan: see the plan file of the next session (library category in KPM manifest/installer + version-table refactor + GOG RE).
+
 ## Architecture
 ```
 _shared_src/ (synced to KPM Patches/Common by scripts/check_shared_headers.py --sync; *.inc included since W2)
