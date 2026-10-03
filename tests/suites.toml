@@ -119,3 +119,16 @@ cmd = ["python", "scripts/build_check.py", "--quiet"]
 requires = ["which:i686-w64-mingw32-g++", "${KPM_DIR}/Patches/Common"]
 tier = "build"
 timeout_s = 300
+
+# ---- T0 extras (doc 20 Phase 3): raw engine addresses must be in GameAddr.h or the per-file allowlist; WndProc subclassers registered ----
+# Allowlist: tests/static/raw_addresses.toml (`--write-baseline` only by a human or Opus after reviewing the new addresses).
+
+[[suite]]
+name = "check-raw-addresses"
+cmd = ["python", "scripts/check_raw_addresses.py", "--quiet"]
+timeout_s = 60
+
+[[suite]]
+name = "check-subclassers"
+cmd = ["python", "scripts/check_subclassers.py", "--quiet"]
+timeout_s = 60

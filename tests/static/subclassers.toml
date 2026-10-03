@@ -1,0 +1,43 @@
+# subclassers.toml - the DLL sources allowed to subclass the game window (SetWindowLongPtr GWLP_WNDPROC).
+# Consumed by scripts/check_subclassers.py (doc 20 T0 extra, Phase 3). Several DLLs chain WndProcs over one HWND, so each must
+# install exactly one proc, keep the old proc, and on unload restore it ONLY IF its own proc is still on top (otherwise
+# restoring would unhook a DLL that subclassed later and leave a dangling proc).
+#
+# [[subclasser]]
+#   file          repo-relative path of the source file (forward slashes)
+#   install       regex (DOTALL) matching the install: the saved old proc taken from SetWindowLong(GWLP_WNDPROC, our proc)
+#   restore       regex (DOTALL) matching restore-if-still-ours: GetWindowLong(GWLP_WNDPROC) == our proc, followed by
+#                 SetWindowLong(GWLP_WNDPROC, saved old proc)
+#   install_hint, restore_hint   informational line numbers only; lines drift, never checked (drift is an INFO line)
+#
+# check_subclassers.py: FAIL for a file with a GWLP_WNDPROC SetWindowLong that is not listed here ("new WndProc subclasser:
+# use Common WindowHook.h when it lands; or register it here"), FAIL when a listed file lacks its install or restore
+# pattern, WARN for a listed file with no GWLP_WNDPROC call (stale). Use single-quoted TOML literal strings for the regexes.
+
+[[subclasser]]
+file = "patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp"
+install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
+restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
+install_hint = 498
+restore_hint = 765
+
+[[subclasser]]
+file = "patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"
+install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
+restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
+install_hint = 361
+restore_hint = 1100
+
+[[subclasser]]
+file = "patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp"
+install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
+restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
+install_hint = 254
+restore_hint = 1255
+
+[[subclasser]]
+file = "patch_manager_mods/force_power_hotbar_src/ForcePowerHotbar.cpp"
+install = 'g_oldProc\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
+restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_gameWnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_oldProc'
+install_hint = 810
+restore_hint = 1462

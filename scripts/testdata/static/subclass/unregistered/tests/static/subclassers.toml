@@ -1,0 +1,6 @@
+[[subclasser]]
+file = "patch_manager_mods/a_src/A.cpp"
+install = 'g_old\s*=[^;]*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*wheelProc'
+restore = 'GetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*\)[^;]*==\s*wheelProc[^;]*\)\s*\{\s*SetWindowLongPtr[AW]?\s*\(\s*g_hwnd\s*,\s*GWLP_WNDPROC\s*,[^;]*g_old'
+install_hint = 3
+restore_hint = 5

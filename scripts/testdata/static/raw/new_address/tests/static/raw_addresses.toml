@@ -1,0 +1,2 @@
+[files."patch_manager_mods/a_src/A.cpp"]
+addresses = ["0x00500000"]

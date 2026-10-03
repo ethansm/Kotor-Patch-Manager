@@ -1,0 +1,111 @@
+# raw_addresses.toml - engine addresses that may appear as raw 0x00XXXXXX literals in the mod sources.
+# Consumed by scripts/check_raw_addresses.py (doc 20 T0 extra, Phase 3).
+#
+# The checker scans patch_manager_mods/*_src/**/*.{cpp,h,inc} (minus testdata/, retired/, *_test.cpp, GameAddr.h and the
+# generated .inc tables) for image-range addresses 0x00400000-0x00BFFFFF. Every occurrence must be a value in
+# patch_manager_mods/_shared_src/GameAddr.h or be listed here for that file:
+#
+#   [files."patch_manager_mods/x_src/X.cpp"]      # repo-relative path, forward slashes
+#   addresses = ["0x004122A0", ...]               # normalized upper-case 0x00XXXXXX, sorted, no duplicates
+#
+# A new address in neither place is a FAIL. An entry the file no longer contains (or that GameAddr.h now covers) is a
+# stale-entry WARN. To retire an entry, move the address into GameAddr.h and use gameaddr::Name.
+#
+# GENERATED FILE: `python3 scripts/check_raw_addresses.py --write-baseline` rewrites everything below this line.
+# --write-baseline is run only by a human or Opus after reviewing the new addresses, never by automation.
+
+[files."patch_manager_mods/_shared_src/Effects.h"]
+addresses = ["0x0051AD20"]
+
+[files."patch_manager_mods/_shared_src/Gui2D.h"]
+addresses = ["0x00410020", "0x004792C0", "0x004793F0", "0x00479460", "0x004799C0", "0x00479AB0", "0x0047EA60", "0x009F5F60", "0x00A1BA3C", "0x00A309C0"]
+
+[files."patch_manager_mods/_shared_src/GuiKit.h"]
+addresses = ["0x00418D20"]
+
+[files."patch_manager_mods/activation_fix_src/ActivationFix.cpp"]
+addresses = ["0x0040D69E", "0x0098646C", "0x00A1B4E0", "0x00A1B76C"]
+
+[files."patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp"]
+addresses = ["0x0051AD20", "0x0084D871", "0x0084DEF0", "0x0084FBB0", "0x0099EE14"]
+
+[files."patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp"]
+addresses = ["0x0057ECA0", "0x00734270", "0x00744EEC", "0x00745A84", "0x00745A97", "0x00745AEC", "0x0074F25A", "0x0074F8AB"]
+
+[files."patch_manager_mods/companion_ai_src/CompanionAI.cpp"]
+addresses = ["0x0051C0A0", "0x0051C8D0", "0x0051C8F0", "0x00541080", "0x005453C0", "0x0057C990", "0x0057D370", "0x00A1B4A8", "0x00A7E10C"]
+
+[files."patch_manager_mods/dialogue_letterbox_fix_probe_src/K2DialogueLetterboxFix.cpp"]
+addresses = ["0x009A7CBC", "0x009A7D30", "0x00A309B4", "0x00A309B8", "0x00A309BC"]
+
+[files."patch_manager_mods/dialogue_letterbox_fix_probe_src/smoke_dialogueletterbox.cpp"]
+addresses = ["0x009A7000", "0x009A7CBC", "0x009A7D30", "0x00A20000", "0x00A20400", "0x00A20800", "0x00A20C00", "0x00A21000"]
+
+[files."patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp"]
+addresses = ["0x009A7D30"]
+
+[files."patch_manager_mods/dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"]
+addresses = ["0x009A7D30"]
+
+[files."patch_manager_mods/equip_icon_fix_src/EquipIconFix.cpp"]
+addresses = ["0x00414840", "0x008ABA8C", "0x008AD930", "0x008ADA08", "0x008ADA81", "0x008ADFA2", "0x008AE02D", "0x008AE19A", "0x008AE1CD", "0x008AE793"]
+
+[files."patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"]
+addresses = ["0x00417F40", "0x00418360", "0x004184B0", "0x00418990", "0x00462320", "0x0073F530", "0x007645F0", "0x0076D200", "0x0077EC20", "0x0085D430", "0x008AA16A", "0x008AA6F0", "0x008ABA50", "0x0098B5CC", "0x0098C45C", "0x0099EE14", "0x009A3D34", "0x009A4AB0", "0x009F42B4"]
+
+[files."patch_manager_mods/force_power_hotbar_src/ForcePowerHotbar.cpp"]
+addresses = ["0x0040EC90", "0x00414840", "0x00414C60", "0x00418D20", "0x00421C40", "0x00423000", "0x00423990", "0x00427D90", "0x00427DE0", "0x004491C0", "0x0051C0E0", "0x0051C8B0", "0x0052FD1E", "0x00534527", "0x00534600", "0x0053C5AA", "0x005D2F80", "0x006D6E30", "0x0072CB63", "0x00748502", "0x0074850D", "0x0074B3F0", "0x00751750", "0x00775600", "0x008529E0", "0x008FACA0", "0x00907340", "0x0091D288", "0x0099E5EC", "0x009A044C", "0x009A7BAC", "0x009A8FCC", "0x00A7EA88", "0x00A7EABC"]
+
+[files."patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp"]
+addresses = ["0x00417F40", "0x00418360", "0x00418430", "0x004184B0", "0x00418990", "0x00459710", "0x00459740", "0x00461490", "0x004614E0", "0x00461530", "0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0", "0x0098B5CC", "0x0098C45C", "0x009A3D34", "0x009F42B4"]
+
+[files."patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp"]
+addresses = ["0x005BD6A0", "0x006076D0", "0x006D6E30", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC"]
+
+[files."patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"]
+addresses = ["0x0051C450", "0x005FD480", "0x005FE0C0", "0x005FEDD0", "0x00654430", "0x006545B0", "0x00654740", "0x00654BB0", "0x00661C30", "0x0066C7A0", "0x006B6BD0", "0x006B9640", "0x006B9790", "0x006B9870", "0x006BEDF0", "0x006F5B00", "0x006F5B40", "0x0072FB00", "0x0073F450", "0x00740FC0", "0x0074EE90", "0x007BE090", "0x0084D82C", "0x0084FE20", "0x00850010", "0x008F8070", "0x00A1B4D0"]
+
+[files."patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp"]
+addresses = ["0x00400000", "0x0040A750", "0x0040BC40", "0x0040BCF0", "0x0073F926", "0x00781BE0", "0x0078237C", "0x00785453", "0x00798660", "0x0079EE47", "0x007B3107", "0x009A5C84", "0x009F42A0", "0x00A1B484", "0x00A1B48C", "0x00A1B4BC", "0x00A1B4C0", "0x00A1B4D4", "0x00A1B4E0", "0x00A1B6F4", "0x00A1B764", "0x00A1B768", "0x00A1B76C"]
+
+[files."patch_manager_mods/mouse_probe_src/MouseProbe.cpp"]
+addresses = ["0x00A7FCBC"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_activationfix.cpp"]
+addresses = ["0x0040D692", "0x0040D69E"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_equipiconfix.cpp"]
+addresses = ["0x008AE1CD"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_perflab2.cpp"]
+addresses = ["0x00401234", "0x00712245", "0x009A5C84"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp"]
+addresses = ["0x00401234", "0x00712245", "0x009A5C84"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_probe12.cpp"]
+addresses = ["0x0078237C", "0x007B3107"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_probe14.cpp"]
+addresses = ["0x0040A9AA", "0x0040C0DE", "0x009A5C84"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp"]
+addresses = ["0x00669012", "0x00726C9C"]
+
+[files."patch_manager_mods/perf_lab_src/harness/smoke_texmem.cpp"]
+addresses = ["0x004261C2", "0x004261CF"]
+
+[files."patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp"]
+addresses = ["0x00400000", "0x004261CF", "0x004261D6", "0x004261E6", "0x004265F3", "0x00478A20", "0x00712245", "0x00919000", "0x0093A000", "0x009A5C84", "0x009F6100", "0x00A1B490", "0x00A1B704", "0x00A1B710", "0x00A1BBA0", "0x00A1BBE0", "0x00A1DEE0", "0x00A1FF60", "0x00A1FF68", "0x00A1FFAC", "0x00A20030", "0x00A200F4", "0x00A7BD28", "0x00A7EB9C", "0x00A806C8"]
+
+[files."patch_manager_mods/portrait_slots_src/PortraitSlotsProvider.cpp"]
+addresses = ["0x00745774", "0x0074F25A", "0x0074F8AB"]
+
+[files."patch_manager_mods/ranged_ai_src/RangedAI.cpp"]
+addresses = ["0x005453C0", "0x0056E1E0", "0x006D7C79", "0x006D83EA", "0x006D850F", "0x0074DBDD", "0x0077AA5E", "0x0077ACBC", "0x0077D8D4"]
+
+[files."patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp"]
+addresses = ["0x0040F972", "0x0040F978", "0x0040F9E4", "0x0058C61A", "0x0058C622", "0x0058C63E", "0x00668FE0", "0x00669012", "0x00669017", "0x007040EF", "0x00704406", "0x0070446D", "0x007054CE", "0x007054DA", "0x00726527", "0x00726531", "0x00726C9C", "0x00726CDD", "0x0098657C"]
+
+[files."patch_manager_mods/texture_memory_release_src/TextureMemoryRelease.cpp"]
+addresses = ["0x004261CF", "0x004261D6", "0x004261E6"]
