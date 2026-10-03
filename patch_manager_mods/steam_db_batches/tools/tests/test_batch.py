@@ -1105,6 +1105,80 @@ class FinalizePersistTests(Base):
         self.assertEqual(con.execute("pragma integrity_check").fetchone()[0], "ok")
         con.close()
 
+    def test_validated_ledger_marks_exactly_the_shipped_rows(self):
+        bdir = self.root / "batches" / "B1"
+        led = list(bd.iter_tsv(bdir / "validated.tsv"))
+        self.assertEqual(list(led[0].keys()), batch.VALIDATED_COLS)
+        shipped = {"%s::%s" % (r[0], r[1]) for r in csv.reader((bdir / "functions.csv").read_text().split("\n")[1:-1])}
+        by = {r["name"]: r for r in led}
+        self.assertEqual(set(by), shipped)
+        self.assertEqual((by["CFoo::Alpha"]["verdict"], by["CFoo::Alpha"]["batch"]), ("verified", "B1"))
+        self.assertTrue(by["CFoo::Alpha"]["tier"].startswith("auto:"), by["CFoo::Alpha"]["tier"])
+        self.assertEqual(by["CFoo::Zeta"]["tier"], "opus")                     # override
+        self.assertEqual(by["CFoo::Theta"]["tier"], "reviewer")
+        self.assertEqual(len(by["CFoo::Alpha"]["fp_sha"]), 16)
+        self.assertFalse({"CFoo::Kappa", "CFoo::Beta", "CFoo::Iota"} & set(by))  # rejected / label_suspect / unresolved
+
+    def test_persist_writes_marks_idempotently_and_unmarks_dropped_rows(self):
+        bdir = self.root / "batches" / "B1"
+        n_led = len(list(bd.iter_tsv(bdir / "validated.tsv")))
+        rc, out = run("persist", "B1")
+        self.assertIn("mark=%d unmark=0" % n_led, out)                         # dry run against a KDB without the table
+        rc, out = run("persist", "B1", "--apply")
+        self.assertEqual(rc, 0, out)
+        con = self.kdb()
+        self.assertEqual(con.execute("select count(*) from steam_validated").fetchone()[0], n_led)
+        con.close()
+        rc, out = run("persist", "B1", "--apply")
+        self.assertIn("mark=0 unmark=0", out)
+        self.assertIn("applied: 0 rows changed", out)
+        # a row the batch no longer validates loses its mark
+        rows = list(bd.iter_tsv(bdir / "validated.tsv"))
+        batch.write_tsv(bdir / "validated.tsv", batch.VALIDATED_COLS, [r for r in rows if r["name"] != "CFoo::Alpha"])
+        rc, out = run("persist", "B1", "--apply")
+        self.assertIn("unmark 0x00510000 CFoo::Alpha: no longer validated by B1", out)
+        con = self.kdb()
+        self.assertIsNone(con.execute("select 1 from steam_validated where name='CFoo::Alpha'").fetchone())
+        con.close()
+
+    def test_a_name_is_marked_at_one_address_only(self):
+        con = sqlite3.connect(":memory:")
+        con.execute(batch.VALIDATED_DDL)
+        con.execute("insert into steam_validated values('0x00510000','CFoo::Alpha','verified','auto:c2','','B0','','','d')")
+        mark = dict.fromkeys(batch.VALIDATED_COLS, "")
+        mark.update(steam_addr="0x00510040", name="CFoo::Alpha", verdict="verified", batch="B9")
+        ops = batch.plan_marks(con, [mark], "B9")
+        self.assertEqual([o[0] for o in ops], ["mark", "unmark"])
+        self.assertEqual(ops[1][1:3], ("0x00510000", "CFoo::Alpha"))
+        # another batch's unrelated marks are kept
+        mark.update(name="CFoo::Other")
+        self.assertEqual([o[0] for o in batch.plan_marks(con, [mark], "B9")], ["mark"])
+
+    def test_check_validated_statuses(self):
+        rc, out = run("persist", "B1", "--apply")
+        self.assertEqual(rc, 0, out)
+        con = sqlite3.connect(self.world.branchdb)
+        con.execute("delete from functions")
+        for cls, fn, addr in (("CFoo", "Alpha", 0x510000), ("CFoo", "Theta", 0x510FF0), ("CFoo", "Eta", 0x510240),
+                              ("CFoo", "Never", 0x510500)):
+            con.execute("insert into functions(class_name,function_name,address) values(?,?,?)", (cls, fn, addr))
+        con.commit()
+        con.close()
+        con = self.kdb()
+        con.execute("update steam_validated set fp_sha='0000000000000000' where name='CFoo::Eta'")
+        con.commit()
+        con.close()
+        out_tsv = self.root / "status.tsv"
+        rc, out = run("check-validated", "--out", str(out_tsv))
+        self.assertEqual(rc, 0, out)
+        st = {r["name"]: r for r in bd.iter_tsv(out_tsv)}
+        self.assertEqual(st["CFoo::Alpha"]["status"], "validated")
+        self.assertEqual(st["CFoo::Theta"]["status"], "stale")                 # marked at another address
+        self.assertIn("validated at", st["CFoo::Theta"]["note"])
+        self.assertEqual(st["CFoo::Eta"]["status"], "stale")                   # body hash changed
+        self.assertEqual(st["CFoo::Never"]["status"], "unvalidated")
+        self.assertIn("validated 1 (skip), stale 2, unvalidated 1", out)
+
 
 # ------------------------------------------------------------------------------------------------ Opus gate R1-R5, G7
 WAVE2 = "engine-ai-atlas wave2"

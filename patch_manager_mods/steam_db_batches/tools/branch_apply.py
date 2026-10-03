@@ -4,7 +4,8 @@
 Reads the branch DB (read-only), B<n>/final_rows.tsv (one row per branch row, matched by `cand_orig` = the branch
 address) and B<n>/parity.tsv (user decision 2026-10-03: GameAPI-required names whose GOG label is wrong ship at the
 Steam counterpart of GOG's address). Writes B<n>/branch_functions.csv (SqliteTools import-ghidra format, the FULL
-table for `--mode replace`) and B<n>/branch_apply_report.md. Never writes a database.
+table for `--mode replace`), B<n>/validated.tsv (the validated ledger, shipped names; `batch.py persist` writes it to
+the KDB table steam_validated) and B<n>/branch_apply_report.md. Never writes a database.
 
 Rules:
 - existing rows keep their branch class/function names (KPM GameAPI looks them up by name);
@@ -19,6 +20,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import batch  # noqa: E402
 BRANCHDB = Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kpm-pr-steam-db/AddressDatabases/kotor2_steam_aspyr.db"
 SHIP = ("verified", "likely")
 
@@ -74,18 +77,20 @@ def main(argv=None):
         print("UNMATCHED branch rows:", [(b["id"], b["cls"], b["fn"]) for b in unmatched])
         return 2
 
-    out, removed, moved, kept = [], [], [], 0
+    out, marks, removed, moved, kept = [], [], [], [], 0
     for b in branch:
         f = m[b["id"]]
         p = parity.get((b["cls"], b["fn"]))
         if p:
             addr, cc, param = hx(p["steam_addr"]), p["calling_convention"], p["param_size_bytes"]
             note = "Steam B0 GOG parity: %s (evidence steam_db_batches/%s/parity.tsv)" % (p["note"], a.batch)
+            verdict, tier, ref = "parity", "opus", "parity.tsv"
         elif f["final_verdict"] in SHIP:
             addr, cc = hx(f["steam_addr"]), f["calling_convention"] or b["cc"] or ""
             param = f["param_size_bytes"] if f["param_size_bytes"] != "" else b["param"]
             why = (f.get("final_note") or f.get("evidence") or "").replace("\n", " ")[:160]
             note = "Steam B0 %s: %s (evidence steam_db_batches/%s/final_rows.tsv)" % (f["final_verdict"], why, a.batch)
+            verdict, tier, ref = f["final_verdict"], batch.gate_tier(f), "final_rows.tsv"
         else:
             removed.append((b, f["final_verdict"], f.get("final_note", "")))
             continue
@@ -97,7 +102,10 @@ def main(argv=None):
             cc = "__" + cc
         out.append({"class_name": b["cls"], "function_name": b["fn"], "address": "0x%08X" % addr,
                     "calling_convention": cc, "param_size_bytes": "" if param in (None, "") else int(param),
-                    "notes": note})
+                    "notes": batch.csv_safe_note(note)})
+        marks.append({"steam_addr": "0x%08x" % addr, "name": "%s::%s" % (b["cls"], b["fn"]), "verdict": verdict,
+                      "tier": tier, "gog_addr": f.get("gog", ""),
+                      "evidence_ref": "steam_db_batches/%s/%s" % (a.batch, ref)})
 
     # uniqueness
     seen_addr, seen_name, dup = {}, set(), []
@@ -117,6 +125,8 @@ def main(argv=None):
                                            "param_size_bytes", "notes"])
         w.writeheader()
         w.writerows(out)
+    if not dup:
+        batch.write_validated(bdir, a.batch, marks)
     rep = ["# %s branch apply plan" % a.batch, "",
            "branch rows %d -> shipped %d (same address %d, moved %d, parity %d), removed %d" %
            (len(branch), len(out), kept, len(moved), len(parity), len(removed)), "",

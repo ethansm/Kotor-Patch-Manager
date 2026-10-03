@@ -1,0 +1,6 @@
+steam_addr	action	name	note
+0x008827a0	rename	CSWGuiMainMenu::OnLoadSaveGame	fp=GOG 0x53d240 OnLoadSaveGame (395 B RET 4); 0088284d PUSH 0x1e44 (SaveLoad size, GOG 0x1b74), 00882880 CALL 0x850770 SaveLoad ctor. PR3 label wrong; OnLoadGamePicked=0x8824f0
+0x0054d3d0	demote		batch5 port of wrong GOG label 0x707770; body=EvaluateOverlappingTargets: 0054d551 MOV EDX,[ECX+0x380], no IntersectCircle2d. Real SetHitInfoForCreature 0x556040 (0055609a CALL 0x5192c0)
+0x006076d0	rename	CSWSItem::GetUpgradableType	fp=GOG 0x66af00 (181 B RET 4): 006076e0 CMP [EAX+0x2f0],0; 006076fb MOV DL,[ECX+0xac] after GetBaseItem 0x6d6e30; Mac same. Needs companion demote of stale 0x746fc0
+0x00740fc0	rename	CClientExoApp::GetCharacterChangeInProgress	fp=GOG 0x40e480 (31 B RET): 00740fcc MOV ECX,[EAX+0x4]; 00740fcf MOV EDX,[ECX+0x4ac]; setter 0x740fe0. Adds class qualifier only; no other KDB holder
+0x00746fc0	demote		gog_item_cluster port of GOG 0x66af00 is wrong: 79 B RET, 00746feb IMUL ECX,ECX,0x1d0 loop over 0x20 slots; GetUpgradableType is 0x6076d0 (181 B RET 4)

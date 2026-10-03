@@ -39,7 +39,11 @@ Briefs: `REVIEWER_BRIEF.md` (Sonnet card reviewers), `OPUS_GATE_BRIEF.md` (Opus 
   Expect the same for future batches; budget Opus for all reviewer matches.
 - Another session writes the KDB concurrently (lessons/name_map, e.g. commit fbcfe26): re-read before persist.
 
-## State at session close
+## B0 SHIPPED (later 2026-10-03)
+- Branch 4324098 (1,683 rows, validate passed); KDB persist B0 done (re-run 0); `steam_validated` ledger + `batch.py
+  check-validated` (DESIGN 4.7): 1,683/1,683 validated. Details: `README.md` B0. Next = Phase C, B15 first.
+
+## State at session close (before B0 shipped; superseded above)
 - B0 finalize: verified 1579 / likely 98 / label_suspect 15 / rejected 4 / unresolved 8 (all 1,704 rows decided;
   0 of 140 decoys accepted). Inputs: `B0/overrides.tsv` (787 rows, consolidated Opus), `B0/opus/*.md` evidence.
 - `tools/branch_apply.py B0` -> `B0/branch_functions.csv` (FULL table for SqliteTools `import-ghidra --mode replace`)

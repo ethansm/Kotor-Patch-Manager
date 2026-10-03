@@ -6,9 +6,12 @@ Subcommands (all deterministic; working dir per batch = $BD_ROOT/B<n>/):
   gates      B<n> [--untrust FILE]                  -> evidence.tsv, gate_report.md (+ recheck.tsv candidates)
   cards      B<n> [--chunk 60] [--decoys N]         -> cards/chunk_<k>.md, cards/key.tsv
   finalize   B<n> [--with-likely] [--date D]        -> final_rows.tsv, functions.csv, kdb_upsert.json, recheck.tsv,
-                                                       gog_label_suspects.tsv, opus_gate.md/json
-                                                       (B0 also: branch_deletes.tsv, branch_corrections.csv)
+                                                       gog_label_suspects.tsv, opus_gate.md/json, validated.tsv
+                                                       (B0 also: branch_deletes.tsv, branch_corrections.csv;
+                                                       B0's validated.tsv comes from tools/branch_apply.py)
   persist    B<n> [--apply]                         -> dry-run plan; --apply (lead only) writes the knowledge DB
+                                                       (name_map, lessons, steam_validated)
+  check-validated [--branch-db DB] [--out FILE]     -> per branch-DB row: validated (skip) / stale / unvalidated
 
 Only `persist --apply` ever writes a database, and only the one named by BD_KDB.
 """
@@ -17,6 +20,7 @@ from __future__ import annotations
 import argparse
 import bisect
 import csv
+import hashlib
 import io
 import json
 import math
@@ -1214,6 +1218,11 @@ def finalize_params(row: dict, steam: dict) -> tuple[str, object, str]:
     return cc, retn, note
 
 
+def csv_safe_note(note: str) -> str:
+    """SqliteTools' CSV reader is line-based and drops every `"`: keep notes on one line and quote-free."""
+    return " ".join(note.replace('"', "'").split())
+
+
 def write_functions_csv(path: Path, rows: list[dict], batch: str, steam: dict) -> int:
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
@@ -1221,8 +1230,8 @@ def write_functions_csv(path: Path, rows: list[dict], batch: str, steam: dict) -
     n = 0
     for r in rows:
         cc, param, extra = finalize_params(r, steam)
-        notes = "Steam batch %s: %s (evidence steam_db_batches/%s/evidence.tsv)%s" % (
-            batch, r.get("evidence", ""), batch, extra)
+        notes = csv_safe_note("Steam batch %s: %s (evidence steam_db_batches/%s/evidence.tsv)%s" % (
+            batch, r.get("evidence", ""), batch, extra))
         w.writerow([r["class"], r["name"], "0x%08X" % parse_addr(r["steam_addr"]), "__" + cc, param, notes])
         n += 1
     path.write_text(buf.getvalue(), encoding="utf-8")
@@ -1422,6 +1431,11 @@ def cmd_finalize(args) -> int:
         suspects.append({"gog_addr": r["gog"], "gog_name": "%s::%s" % (r["class"], r["name"]),
                          "steam_counterpart": hx8(parse_addr(counterpart)) if counterpart else r["steam_addr"], "body_fits_name": fits, "source": src})
     write_tsv(bdir / "gog_label_suspects.tsv", LABEL_SUSPECT_COLS, suspects)
+    if args.batch != "B0":      # B0 ships the branch (KPM) names: tools/branch_apply.py writes its validated.tsv
+        write_validated(bdir, args.batch, [
+            {"steam_addr": r["steam_addr"], "name": "%s::%s" % (r["class"], r["name"]), "verdict": r["final_verdict"],
+             "tier": gate_tier(r), "gog_addr": r["gog"],
+             "evidence_ref": "steam_db_batches/%s/final_rows.tsv" % args.batch} for r in export], paths)
     cnt = Counter(r["final_verdict"] for r in finals)
     print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d; rechecks=%d" % (
         args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts), len(rechecks)))
@@ -1607,7 +1621,126 @@ def apply_ops(con: sqlite3.Connection, ops: list[tuple], date: str) -> int:
         elif kind == "lesson":
             con.execute("insert into lessons(scope,topic,note,date) values(?,?,?,?)", (op[1], op[2], op[3], date))
             n += 1
+        elif kind == "mark":
+            m = op[1]
+            con.execute("insert or replace into steam_validated(%s,date) values(%s)" % (
+                ",".join(VALIDATED_COLS), ",".join("?" * (len(VALIDATED_COLS) + 1))),
+                tuple(m.get(c, "") for c in VALIDATED_COLS) + (date,))
+            n += 1
+        elif kind == "unmark":
+            n += con.execute("delete from steam_validated where steam_addr=? and name=?", (op[1], op[2])).rowcount
     return n
+
+
+# ================================================================================================ validated ledger
+# Every row a batch validated (shipped verdict verified / likely, or B0 GOG parity) is marked, so a later final
+# validation pass reads only what is not marked: `check-validated` lists branch-DB rows as validated (skip) /
+# stale (the mark is for another address, or the Steam body hash changed) / unvalidated.
+VALIDATED_COLS = ["steam_addr", "name", "verdict", "tier", "gog_addr", "batch", "fp_sha", "evidence_ref"]
+VALIDATED_DDL = ("CREATE TABLE IF NOT EXISTS steam_validated(steam_addr TEXT NOT NULL, name TEXT NOT NULL, "
+                 "verdict TEXT NOT NULL, tier TEXT, gog_addr TEXT, batch TEXT NOT NULL, fp_sha TEXT, evidence_ref TEXT, "
+                 "date TEXT, PRIMARY KEY(steam_addr, name))")
+FP_SHA_FIELDS = ("size", "retn", "n_insn", "thunk_target", "callees", "str_refs", "disp", "imm")
+CHECK_COLS = ["steam_addr", "name", "status", "verdict", "tier", "batch", "note"]
+
+
+def steam_fp_shas(paths) -> dict[int, str]:
+    """Steam address -> short sha1 of its fp.tsv body cells (a mark whose body hash changed is stale)."""
+    out = {}
+    for r in iter_tsv(paths.server / paths.steam_program / "fp.tsv"):
+        try:
+            a = parse_addr(r["addr"])
+        except (ValueError, KeyError):
+            continue
+        out[a] = hashlib.sha1("|".join(r.get(k, "") for k in FP_SHA_FIELDS).encode()).hexdigest()[:16]
+    return out
+
+
+def gate_tier(r: dict) -> str:
+    """Who validated a final row: opus (override) / auto:c2 / auto:sig / reviewer."""
+    if (r.get("final_note") or "").startswith("override"):
+        return "opus"
+    if r.get("gate_class") == "AUTO":
+        m = re.search(r"auto_route=(\w+)", r.get("flags") or "")
+        return "auto:%s" % (m.group(1) if m else "c2")
+    return "reviewer"
+
+
+def write_validated(bdir: Path, batch: str, rows: list[dict], paths=None) -> int:
+    """`B<n>/validated.tsv`: one row per validated (address, shipped name), with the Steam body hash."""
+    shas = steam_fp_shas(paths or bd.get_paths())
+    out = {}
+    for r in rows:
+        a = parse_addr(r["steam_addr"])
+        out[(hx8(a), r["name"])] = dict(r, steam_addr=hx8(a), batch=batch, fp_sha=shas.get(a, ""))
+    write_tsv(bdir / "validated.tsv", VALIDATED_COLS, [out[k] for k in sorted(out)])
+    return len(out)
+
+
+def load_marks(con: sqlite3.Connection) -> dict[tuple, tuple]:
+    """(steam_addr, name) -> row of VALIDATED_COLS ('' for NULL); empty when the table does not exist yet."""
+    if not con.execute("select 1 from sqlite_master where type='table' and name='steam_validated'").fetchone():
+        return {}
+    return {(r[0], r[1]): tuple(x or "" for x in r)
+            for r in con.execute("select %s from steam_validated" % ",".join(VALIDATED_COLS))}
+
+
+def plan_marks(con: sqlite3.Connection, marks: list[dict], batch: str) -> list[tuple]:
+    """Ops ('mark', row) / ('unmark', addr, name, why). A name is marked at one address only; this batch's
+    earlier marks that it no longer validates are removed. Rows already in the target state produce no op."""
+    have = load_marks(con)
+    want = {(m["steam_addr"], m["name"]): tuple(m.get(c, "") for c in VALIDATED_COLS) for m in marks}
+    at = {n: a for a, n in want}
+    ops = [("mark", dict(zip(VALIDATED_COLS, v))) for k, v in sorted(want.items()) if have.get(k) != v]
+    for (a, n), row in sorted(have.items()):
+        if (a, n) in want:
+            continue
+        if n in at:
+            ops.append(("unmark", a, n, "%s now validated at %s" % (n, at[n])))
+        elif row[VALIDATED_COLS.index("batch")] == batch:
+            ops.append(("unmark", a, n, "no longer validated by %s" % batch))
+    return ops
+
+
+def cmd_check_validated(args) -> int:
+    paths = bd.get_paths()
+    bcon = bd.connect_ro(Path(args.branch_db) if args.branch_db else paths.branchdb)
+    kcon = bd.connect_ro(paths.kdb)
+    try:
+        branch = bcon.execute("select class_name,function_name,address from functions order by address").fetchall()
+        marks = load_marks(kcon)
+    finally:
+        bcon.close()
+        kcon.close()
+    by_name: dict[str, list[str]] = {}
+    for a, n in marks:
+        by_name.setdefault(n, []).append(a)
+    shas = steam_fp_shas(paths)
+    ix = {c: i for i, c in enumerate(VALIDATED_COLS)}
+    out = []
+    for cls, fn, addr in branch:
+        a, name = hx8(addr), "%s::%s" % (cls, fn)
+        m = marks.get((a, name))
+        row = {"steam_addr": a, "name": name, "verdict": "", "tier": "", "batch": "", "note": ""}
+        if m:
+            row.update(verdict=m[ix["verdict"]], tier=m[ix["tier"]], batch=m[ix["batch"]])
+            if m[ix["fp_sha"]] and shas.get(addr, "") != m[ix["fp_sha"]]:
+                row.update(status="stale", note="Steam body hash changed since %s" % m[ix["batch"]])
+            else:
+                row["status"] = "validated"
+        elif name in by_name:
+            row.update(status="stale", note="validated at %s, branch has %s" % (",".join(sorted(by_name[name])), a))
+        else:
+            row["status"] = "unvalidated"
+        out.append(row)
+    if args.out:
+        write_tsv(Path(args.out), CHECK_COLS, out)
+    cnt = Counter(r["status"] for r in out)
+    print("check-validated: branch rows %d: validated %d (skip), stale %d, unvalidated %d" % (
+        len(out), cnt["validated"], cnt["stale"], cnt["unvalidated"]))
+    for r in [r for r in out if r["status"] != "validated"][:args.show]:
+        print("  %-11s %s %s %s" % (r["status"], r["steam_addr"], r["name"], r["note"]))
+    return 0
 
 
 def cmd_persist(args) -> int:
@@ -1619,11 +1752,15 @@ def cmd_persist(args) -> int:
         die("%s missing or invalid (run `finalize` first)" % (bdir / "kdb_upsert.json"))
     rejected = [r for r in iter_tsv(bdir / "final_rows.tsv") if r.get("final_verdict") == "rejected" and r.get("steam_addr")]
     lessons = parse_lessons(bdir / "gate_report.md")
+    if not (bdir / "validated.tsv").exists():
+        die("%s missing (run `finalize`; for B0 run tools/branch_apply.py)" % (bdir / "validated.tsv"))
+    marks = list(iter_tsv(bdir / "validated.tsv"))
     date = upserts[0]["date"] if upserts else today(args)
     if args.apply:
         if not paths.kdb.exists():
             die("knowledge DB %s does not exist" % paths.kdb)
         con = sqlite3.connect(str(paths.kdb), isolation_level=None)
+        con.execute(VALIDATED_DDL)
     else:
         con = bd.connect_ro(paths.kdb)
     try:
@@ -1631,10 +1768,11 @@ def cmd_persist(args) -> int:
                          if r.get("final_verdict") == "rejected" and (r.get("steam_addr") or "").strip()}
         suspects = [r for r in iter_tsv(bdir / "final_rows.tsv") if r.get("final_verdict") == "label_suspect" and r.get("steam_addr")]
         ops = plan_persist(con, upserts, rejected, lessons, args.batch, date, opus_rejected, load_kdb_overrides(bdir), suspects)
+        ops += plan_marks(con, marks, args.batch)
         cnt = Counter(o[0] for o in ops)
-        print("%s persist %s: insert=%d update=%d demote=%d rename=%d lesson=%d skip=%d" % (
+        print("%s persist %s: insert=%d update=%d demote=%d rename=%d lesson=%d skip=%d mark=%d unmark=%d" % (
             args.batch, "APPLY" if args.apply else "DRY-RUN", cnt["insert"], cnt["update"], cnt["demote"],
-            cnt["rename"], cnt["lesson"], cnt["skip"]))
+            cnt["rename"], cnt["lesson"], cnt["skip"], cnt["mark"], cnt["unmark"]))
         for o in ops:
             if o[0] in ("insert",):
                 print("  insert %s %s (%s)" % (o[1]["steam_addr"], o[1]["name"], o[1]["confidence"]))
@@ -1646,6 +1784,10 @@ def cmd_persist(args) -> int:
                 print("  rename %s -> %s: %s" % (o[1], o[2], o[3][-130:]))
             elif o[0] == "lesson":
                 print("  lesson [%s] %s" % (o[1], o[2]))
+            elif o[0] == "mark":
+                continue                                  # counted in the summary line; the rows are validated.tsv
+            elif o[0] == "unmark":
+                print("  unmark %s %s: %s" % (o[1], o[2], o[3]))
             else:
                 print("  skip   %s: %s" % (o[1], o[2]))
         if not args.apply:
@@ -1692,13 +1834,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("batch", type=batch_name)
     p.add_argument("--apply", action="store_true")
     p.add_argument("--date", default=None)
+    p = sub.add_parser("check-validated", help="which branch-DB rows a final validation pass can skip")
+    p.add_argument("--branch-db", default=None, help="default BD_BRANCHDB")
+    p.add_argument("--out", default=None, help="write every row's status as TSV")
+    p.add_argument("--show", type=int, default=20, help="print this many non-validated rows")
     return ap
 
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     fn = {"candidates": cmd_candidates, "gates": cmd_gates, "cards": cmd_cards, "finalize": cmd_finalize,
-          "persist": cmd_persist}[args.cmd]
+          "persist": cmd_persist, "check-validated": cmd_check_validated}[args.cmd]
     return fn(args)
 
 

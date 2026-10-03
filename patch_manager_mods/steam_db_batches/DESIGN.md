@@ -224,6 +224,22 @@ Opus gate R4 (2026-10-03), exact rule text:
 > `persist` never inserts a second address for a name that a trusted row already holds. It never demotes a
 > trusted row to `wrong` unless an `overrides.tsv` row from Opus names that address.
 (Such upserts / demotions are printed as `skip` lines with the reason.)
+`persist` also writes the validated ledger (section 4.7) from `B<n>/validated.tsv` (required; `mark=`/`unmark=` counts).
+
+### 4.7 Validated ledger (user decision 2026-10-03: "every row we actually validate is marked, so a final validation
+pass knows to skip it")
+- `B<n>/validated.tsv` (`steam_addr name verdict tier gog_addr batch fp_sha evidence_ref`): one row per validated
+  (address, shipped name). Written by `finalize` (the exported rows: verified, plus likely with `--with-likely`;
+  name = GOG `Class::Name`) and, for B0, by `tools/branch_apply.py` (every shipped branch row under its KPM name; verdict
+  verified / likely / `parity`). `tier` = `opus` (override) / `auto:c2` / `auto:sig` / `reviewer`. `fp_sha` = first 16 hex
+  of sha1 over the Steam fp.tsv cells `size retn n_insn thunk_target callees str_refs disp imm`.
+- `persist --apply` upserts it into the KDB table `steam_validated` (PK `steam_addr, name`, + `date`). A name is marked at
+  one address only: a newer mark moves it (`unmark` of the old address). This batch's old marks that its current
+  `validated.tsv` drops are removed. Idempotent like the rest of persist.
+- `batch.py check-validated [--branch-db DB] [--out FILE]` (read-only) classifies every branch-DB `functions` row:
+  `validated` (marked at this address under this name, body hash unchanged): a final validation pass skips it;
+  `stale` (marked at another address, or the body hash changed): re-check; `unvalidated`: never gated: check.
+  Phase E's final review reads only the non-`validated` rows.
 
 ### 4.6 Opus gate per batch (Opus calibration gate 2026-10-03, calibration/OPUS_REVIEW.md "Reviewer tier")
 The Sonnet reviewer tier is a filter, not a final gate. Per batch:
