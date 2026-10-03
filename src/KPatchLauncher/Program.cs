@@ -205,6 +205,12 @@ class Program
         }
 
         Console.WriteLine($"Applied {result.InstalledPatches.Count} patch(es) successfully.");
+        if (Environment.GetEnvironmentVariable("KPATCH_NO_LAUNCH") == "1")
+        {
+            Console.WriteLine("KPATCH_NO_LAUNCH=1: not launching the game.");
+            return 0;
+        }
+
         return RunCli(new[] { gameExePath });
     }
 
