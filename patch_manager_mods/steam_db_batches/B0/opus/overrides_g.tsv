@@ -1,0 +1,9 @@
+gog_addr	steam_addr	final_verdict	note
+0x00667f40	0x00604710	verified	[g] fp= unique; 006048f1 CALL 0x00733ae0 (fp= CExoString!=), 00604917 CALL 0x007353e0 (CExoLocString!=), 0060495e/00604abe Get{Active,Passive}Property; Mac CompareItem same 2 callees
+0x006685f0	0x00604dc0	verified	[g] fp= unique; 00604dd0 CALL 0x00604710 (CompareItem), 00604df8 CALL 0x006d5200 (fp= CSWBaseItemArray::GetBaseItem); Mac MergeItem = same 2 callees
+0x006686f0	0x00604ec0	verified	[g] fp= unique; 00604f15 CALL 0x00919723 (new), 00604f35 CALL 0x005ffd60 (fp= CSWSItem ctor), 00604f60 CALL 0x00606600 (fp= CopyItem); Mac SplitItem = new+ctor+CopyItem
+0x006687e0	0x00604fb0	verified	[g] fp= unique; 00604fbf CALL 0x0084a640 (fp= CExoArrayList ctor), sets [this]=parent, bit0 flag, returns this; 8 callers incl. CopyItem 0x606600 (GOG same)
+0x00668850	0x00605020	verified	[g] fp= unique; 00605064 CALL 0x00414280 (fp= CExoArrayList::insert), 0060507e CALL 0x0083ea60 (fp= Add), index<size test; Mac InsertItem = Insert+Add
+0x006688c0	0x00605090	verified	[g] fp= unique; 22/24 callees fp= (2 same size): MergeItem 0x604dc0, SetPossessor 0x600380, 00605159 CALL 0x005813c0 (AddGold), AddChemical/AddComponent, DestroyItem msg; Mac AddItem same set
+0x006693b0	0x00605b80	verified	[g] fp= unique; 00605be0 CALL 0x0051c0e0 (GetItemByGameObjectID), 00605c35 CALL 0x006d6e30 (fp= CSWItem::GetBaseItem), 00605c1c self-recursion; Mac same 3 callees
+0x006694e0	0x00605cb0	verified	[g] fp= unique; 00605d04 CALL 0x0051c0e0 (GetItemByGameObjectID), 00605d1c CALL 0x007339d0 (fp= CExoString==), 00605d58 self-recursion; Mac FindItemWithTag same 3

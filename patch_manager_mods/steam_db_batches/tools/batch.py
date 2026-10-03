@@ -1446,12 +1446,29 @@ def parse_lessons(report: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+def load_kdb_overrides(bdir: Path) -> list[dict]:
+    """`B<n>/kdb_overrides.tsv` (steam_addr action name note): Opus rulings on existing KDB rows (demote | rename)."""
+    out = []
+    for r in iter_tsv(bdir / "kdb_overrides.tsv"):
+        action = (r.get("action") or "").strip()
+        if action not in ("demote", "rename"):
+            die("kdb_overrides.tsv: action must be demote or rename, got %r for %s" % (action, r.get("steam_addr")))
+        if action == "rename" and not (r.get("name") or "").strip():
+            die("kdb_overrides.tsv: rename of %s needs a name" % r.get("steam_addr"))
+        out.append(dict(r, steam_addr=hx8(parse_addr(r["steam_addr"])), action=action))
+    return out
+
+
 def plan_persist(con: sqlite3.Connection, upserts: list[dict], rejected: list[dict], lessons: list, batch: str,
-                 date: str, opus_rejected: set | None = None) -> list[tuple]:
+                 date: str, opus_rejected: set | None = None, kdb_overrides: list | None = None,
+                 suspects: list | None = None) -> list[tuple]:
     """Compute the exact change list against the current name_map (no writes).
 
-    Ops: ('insert', row) ('update', row, why) ('demote', addr, evidence_suffix) ('lesson', scope, topic, note)
-         ('skip', addr, why).  Demotions run first, then upserts, with an overlay so the plan equals what apply does.
+    Ops: ('insert', row) ('update', row, why) ('demote', addr, evidence) ('rename', addr, new_name, evidence)
+         ('lesson', scope, topic, note) ('skip', addr, why).
+    Order: kdb_overrides (Opus demote / rename, trusted rows included), label_suspect demotions, rejected-row
+    demotions, then the upserts, with an overlay so the plan equals what apply does.  Rows already in the target
+    state produce no op (idempotent).
     """
     source = "steam-db-%s" % batch
     overlay: dict[str, tuple] = {}
@@ -1476,6 +1493,38 @@ def plan_persist(con: sqlite3.Connection, upserts: list[dict], rejected: list[di
                       if a != except_addr and base_name(n) == base_name(name) and bd.is_trusted(src, conf))
 
     ops: list[tuple] = []
+    named = set()
+    for o in kdb_overrides or []:                     # 1. Opus rulings on existing rows
+        addr = o["steam_addr"]
+        named.add(addr)
+        cur = current(addr)
+        note = (o.get("note") or "").strip()
+        if cur is None:
+            ops.append(("skip", addr, "kdb_overrides %s: no name_map row at this address" % o["action"]))
+        elif cur[1] == source:
+            continue            # the row was written by this batch (an earlier run replaced the row the override ruled on)
+        elif o["action"] == "demote":
+            if cur[2] != "wrong":
+                ev = "%s | [demoted %s by Opus %s: %s]" % (cur[3] or "", date, batch, note)
+                ops.append(("demote", addr, ev))
+                overlay[addr] = (cur[0], cur[1], "wrong", ev)
+        elif base_name(cur[0]) != base_name(o["name"]) or cur[0].strip() != o["name"].strip():
+            ev = "%s | [renamed %s by Opus %s: was %s (%s/%s): %s]" % (cur[3] or "", date, batch, cur[0], cur[1], cur[2], note)
+            ops.append(("rename", addr, o["name"].strip(), ev))
+            overlay[addr] = (o["name"].strip(), cur[1], cur[2], ev)
+    for s_ in suspects or []:                         # 2. KDB rows carrying a GOG name the batch proved wrong
+        addr = hx8(parse_addr(s_["steam_addr"]))
+        gname = "%s::%s" % (s_["class"], s_["name"])
+        cur = current(addr)
+        if cur is None or base_name(cur[0]) != gname or cur[2] == "wrong" or addr in named:
+            continue
+        if bd.is_trusted(cur[1], cur[2]):
+            ops.append(("skip", addr, "label_suspect: trusted row %s (%s/%s) carries the GOG name %s that this batch proved "
+                                      "wrong; needs a kdb_overrides.tsv row" % (cur[0], cur[1], cur[2], gname)))
+        else:
+            ev = "%s | [demoted %s by %s: label_suspect, the body is not %s]" % (cur[3] or "", date, "steam-db-" + batch, gname)
+            ops.append(("demote", addr, ev))
+            overlay[addr] = (cur[0], cur[1], "wrong", ev)
     for r in rejected:
         addr = hx8(parse_addr(r["steam_addr"]))
         name = "%s::%s" % (r["class"], r["name"])
@@ -1552,6 +1601,9 @@ def apply_ops(con: sqlite3.Connection, ops: list[tuple], date: str) -> int:
         elif kind == "demote":
             n += con.execute("update name_map set confidence='wrong',evidence=?,date=? where steam_addr=?",
                              (op[2], date, op[1])).rowcount
+        elif kind == "rename":
+            n += con.execute("update name_map set name=?,evidence=?,date=? where steam_addr=?",
+                             (op[2], op[3], date, op[1])).rowcount
         elif kind == "lesson":
             con.execute("insert into lessons(scope,topic,note,date) values(?,?,?,?)", (op[1], op[2], op[3], date))
             n += 1
@@ -1577,18 +1629,21 @@ def cmd_persist(args) -> int:
     try:
         opus_rejected = {hx8(parse_addr(r["steam_addr"])) for r in iter_tsv(bdir / "overrides.tsv")
                          if r.get("final_verdict") == "rejected" and (r.get("steam_addr") or "").strip()}
-        ops = plan_persist(con, upserts, rejected, lessons, args.batch, date, opus_rejected)
+        suspects = [r for r in iter_tsv(bdir / "final_rows.tsv") if r.get("final_verdict") == "label_suspect" and r.get("steam_addr")]
+        ops = plan_persist(con, upserts, rejected, lessons, args.batch, date, opus_rejected, load_kdb_overrides(bdir), suspects)
         cnt = Counter(o[0] for o in ops)
-        print("%s persist %s: insert=%d update=%d demote=%d lesson=%d skip=%d" % (
+        print("%s persist %s: insert=%d update=%d demote=%d rename=%d lesson=%d skip=%d" % (
             args.batch, "APPLY" if args.apply else "DRY-RUN", cnt["insert"], cnt["update"], cnt["demote"],
-            cnt["lesson"], cnt["skip"]))
+            cnt["rename"], cnt["lesson"], cnt["skip"]))
         for o in ops:
             if o[0] in ("insert",):
                 print("  insert %s %s (%s)" % (o[1]["steam_addr"], o[1]["name"], o[1]["confidence"]))
             elif o[0] == "update":
                 print("  update %s %s: %s" % (o[1]["steam_addr"], o[1]["name"], o[2]))
             elif o[0] == "demote":
-                print("  demote %s -> wrong" % o[1])
+                print("  demote %s -> wrong: %s" % (o[1], o[2][-130:]))
+            elif o[0] == "rename":
+                print("  rename %s -> %s: %s" % (o[1], o[2], o[3][-130:]))
             elif o[0] == "lesson":
                 print("  lesson [%s] %s" % (o[1], o[2]))
             else:

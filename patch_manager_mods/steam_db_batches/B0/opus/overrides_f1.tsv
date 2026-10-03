@@ -1,0 +1,57 @@
+gog_addr	steam_addr	final_verdict	note
+0x004db260	0x007cab60	verified	007cabfb CALL 0x8bf9f0 (ClearItems 79 B) on [+0x5c]; 007cabbb CALL 0x7400a0 GetMiniGame; Mac HideSubItemCreateMenu same 6 callees, disp 0x5c
+0x004db430	0x007cad30	verified	007cad48 MOV EDX,[ECX+0x54] panel; 007cada5 CALL 0x740350 (SetPausedByCombat 37 B); Mac HideContainerGui same callees, disp 0x54,0x128
+0x004dc020	0x007cb920	verified	007cba6d PUSH 0x50b4 new + 007cba94 CALL 0x89cf30 (CSWGuiPartySelection ctor 2904 B); 007cba1f CMP [ECX+0xf18],0; Mac same callees, disp 0xf18
+0x004dee80	0x007ce780	verified	007ce81f CALL 0x7ce970 (HideAreaTransition); 007ce8a1 CMP [EDX+0x1018],0x7f000000; Mac UpdateAreaTransitionGUI same callees incl. HideAreaTransition
+0x004df070	0x007ce970	verified	007cea44 PUSH 0x7f000000 / 007cea52 CALL 0x8b88b0 (SetTransitionObject 487 B); 007cea80 CALL 0x410670 RemovePanel; Mac same 6 callees
+0x004df190	0x007cea90	verified	007cea9c CMP [EAX+0x4c],0; 007ceaaf CALL 0x410800 PanelExists, writes out-param, RET 4; Mac GetBarkBubbleVisible PanelExists, disp 0x38,0x4c
+0x004e1290	0x007d0b90	verified	007d0bd9 MOV EAX,[EDX+0xfd0] / 007d0c14 CMP EAX,[EDX+0xfd4]; GetWorldTime 0x51ad20 + SubtractWorldTimes 0x51af60; Mac same 3 callees
+0x00623a40	0x007178e0	verified	G8 FP. 00717924 CALL _strncpy (PUSH 0x10 label), 0071796f CALL 0x717a00 GetField; Mac GetFieldByLabel GetStruct+strncpy. G' AddField calls AddLabel instead
+0x00625aa0	0x00719940	verified	G8 FP. 00719973 PUSH 0xe (GFF struct) / 00719980 CALL 0x718030 AddField / 00719999 CALL 0x717f30 AddStruct; Mac imm 0xe. G' AddListElement uses 0xf
+0x00626310	0x0071a1b0	verified	G8 FP. 0071a1e0 PUSH 0xd (GFF VOID), 0071a24b CALL _memcpy; Mac WriteFieldVOID imm 0xd. G' WriteFieldCResRef uses 0xb
+0x00455e00	0x007a9400	verified	007a94a5 FLD [ECX+0x90], 007a94be ADD EAX,0x150; Mac SetAsDay disp 0x90,0x94,0x150-0x168 (SetAsNight = 0x74/0x12c)
+0x00455f20	0x007a9520	verified	007a95be FLD [ECX+0x74], 007a95d4 ADD EAX,0x12c; Mac SetAsNight disp 0x74,0x78,0x12c-0x144
+0x00456060	0x007a9660	label_suspect	= GetMapPin: 007a9699 MOV EDX,[ECX+0x1c8] / 007a96b1 MOV EAX,[EDX+0x108]; Mac GetMapPin disp 0x108,0x10c,0x1c8,0x1cc; caller MapPinEnabled handler. Mac has no WeatherObject
+0x004560f0	0x007a96f0	label_suspect	= ClearAllMapPins: 007a9722 MOV EDX,[ECX+0x1c8], 007a9770 CALL 0x840ef0 SetSize; caller UnloadArea 0x7a5fa0 (Mac UnloadArea calls ClearAllMapPins 0x1c8)
+0x00456180	0x007a9780	verified	007a978c MOV ECX,[EAX+0x1d8], 007a97e7 CALL 0x801950 (UpdateTimeOfDay 253 B); Mac UpdateSoundObjectsTimeOfDay disp 0x1d4,0x1d8, same callees
+0x00456260	0x007a9860	verified	007a9875 CALL _rand, 007a9897 FSTP [EDX+0x1e4], [+0x1a8]; Mac SetLightningDone rand, disp 0x1a8,0x1e4
+0x004562d0	0x007a98d0	likely	fp=. No Mac/Linux/x64 symbol ApplyWeatherVisual; body: byte 0/1/2 -> flag 1/2/4, 007a9939 vcall [vt+0x4c] on scene [+0x188]; caller LoadArea. Name unconfirmed
+0x00456390	0x007a9990	verified	007a9b23 PUSH 0x99fd6c 'placeablelight', 007a9b28 PUSH 0x99fd5c 'fx_placeable01', 007a9b2d CALL 0x462320 NewCAurObject; Mac disp 0x21c,0x220
+0x00456940	0x007a9f40	verified	007a9fe4 PUSH 0x99fd7c 'LowGore', 007aa03f PUSH 0x996e50 'ModelName'; Mac AddPlaceableObjectStatic same callees (AddExternalObject, CSWCPlaceable)
+0x00456ce0	0x007aa2e0	verified	G8 FP. 007aa3c4 CALL 0x49b840 DelIndex + 007aa3af CALL free on [+0x21c] list; Mac Remove deletes (op delete); G' GetPlaceableObjectLight has no callees
+0x00456de0	0x007aa3e0	verified	no callees; 007aa3fe MOV EDX,[ECX+0x220] bound, 007aa43a MOV ECX,[EAX+0x21c] array, RET 4; Mac GetPlaceableObjectLight 58 B no callees disp 0x21c,0x220
+0x00456e60	0x007aa460	verified	007aa59e MOV DL,[ECX+0x2f4], 007aa499 MOV EDX,[ECX+0x210]; Mac HiliteAreaObjects disp 0x210,0x214,0x2f4
+0x004571a0	0x007aa7a0	verified	007aa7ac CMP [EAX+0x18c],0, 007aa7d9 CALL 0x774a80 (GetCreatureLight 183 B); Mac UpdateShadowingLights disp 0x18c + GetCreatureLight
+0x004571f0	0x007aa7f0	verified	G8 FP. 007aa8f4 MOV [ECX+0x238],EDX, 007aa80b CMP [EAX+0x188],0, CALL 0x774a80; Mac GetIsDark disp 0x188,0x238 (G' has 0x18c only)
+0x00457340	0x007aa940	verified	007aa978 PUSH 0x11c (new CSWMiniGame), 007aa96b CMP [EAX+0x268],0; Mac RestartMiniGame same callees, disp 0x268
+0x00457540	0x007aab40	verified	007aab59 CALL 0x7aace0 (GetRoomIndex 52 B), 007aab70 ADD ECX,[EDX+0x264]; Mac GetRoom(Vector) calls GetRoomIndex, disp 0x264 imm 0x48
+0x00457590	0x007aab90	verified	49 B, 007aabaf ADD EAX,[ECX+0x264] (stride 0x48), no callees; Mac GetRoom(int) 27 B disp 0x264 imm 0x48
+0x004575d0	0x007aabd0	verified	007aac1a CMP EDX,[ECX+0x260], 007aac7c CALL 0x734f60 CompareNoCase; Mac GetRoom(CExoString) CompareNoCase, disp 0x260,0x264
+0x00474660	0x007ef500	verified	007ef59b MOV EAX,[0x00a0fe24] = 'Looping' column handle (006eb8e6 PUSH 0x993244 'Looping' -> 006eb91b MOV [0x00a0fe24]); Mac imm 0x5
+0x00474730	0x007ef5d0	verified	007ef675 MOV EAX,[0x00a0fe1c] = 'FireForget' handle (006eb854 PUSH 0x99af98 -> 006eb889 MOV [0x00a0fe1c]); Mac imm 0x5,0x9
+0x004748e0	0x007ef780	verified	007ef7a3 CALL 0x7cb010 (IsFireForgetDialogAnimation = GOG 0x4db710) + 007ef7c6 CALL 0x7cae60 after GetInGameGui 0x73f750; Mac AnimationDialog same
+0x00705570	0x0054b1d0	verified	G8 FP. 0054b2a5 CALL 0x5ff5e0 CheckAABBWalkable only, 0054b282 CMP ECX,[EAX+0x250]; Mac GetRoom same; G' GetRoomIndex also calls CheckAABBAll
+0x00707770	0x0054d3d0	label_suspect	= Mac EvaluateOverlappingTargets (GetCreature+normalize, disp 0x2c,0x30,0x380): 0054d404 CALL 0x51c100, 0054d551 MOV EDX,[ECX+0x380]. Real SetHitInfo = GOG 0x710260 -> 0x556040
+0x00707af0	0x0054d750	verified	0054dad2 CMP [ECX+0x11ac],0, 0054db23 CALL 0x586940 (GetIsCreatureBumpable 551 B), CALL 0x522af0; Mac NoCreaturesOnLine disp 0x11ac,0x26a
+0x00708410	0x0054e070	verified	0054e678 CALL 0x5192c0 (IntersectCircle2d 733 B), 0054e1d5 CALL 0x522af0 GetFirstObjectIndiceByX; Mac ShrinkLineByCreatures same
+0x00709200	0x0054ee60	verified	0054ef91 CALL 0x54aee0 (ComputeBestCorner 578 B), [+0x1b0]; Mac SmoothCornerOptimize ComputeBestCorner + new[]
+0x00709980	0x0054f5e0	label_suspect	= SmoothPointsOnPathRestartable (e2): 0054f8ef CALL 0x54ee60 + 0054f88b CALL 0x54fb10, disp 0x214-0x234. Real SmoothPointsOnPath = GOG 0x709770 -> 0x54f3d0
+0x00709d30	0x0054fb10	label_suspect	= SmoothSelectionRestartable (e2): 0054fbbb CALL 0x5502d0 (SelectNodesRestartable), 0054fb22 MOV EDX,[ECX+0x218]. Real name's body = GOG 0x709980 -> 0x54f5e0
+0x0070a060	0x0054fe40	label_suspect	= SmoothSelectNodes (e2): 0054fff7 CALL 0x550980 TestDirectLine, 0054fe88 CALL 0x54b590 ComputePathDistance, no timer. Real SmoothSelectionRestartable = GOG 0x709d30 -> 0x54fb10
+0x0070a4f0	0x005502d0	verified	005502e8 CALL 0x736220 GetHighResolutionTimer, 00550356 MOV EAX,[EDX+0x234]; Mac SmoothSelectNodesRestartable timer + disp 0x230-0x238
+0x0070aba0	0x00550980	verified	00550b86 CALL 0x54d750 NoCreaturesOnLine, 005509dd CALL 0x54b1d0 GetRoom, 00550b0d CALL 0x52d130 NoNonWalkPolysDetailed; Mac TestDirectLine same
+0x0070b050	0x00550e30	verified	0055178b PUSH 0x994760 'Exceeded limits:Max search deapth'; 005514b1 CALL 0x551c30 GridDFSearch, 005512a0 CALL 0x552a90 TransTableInit; Mac PlotGridPath
+0x0070be50	0x00551c30	verified	00551e77 CALL 0x551f50 GenerateSuccessors, 00551e0e CALL 0x552b70 TransTableGet, 00551f03 self-call; Mac GridDFSearch same
+0x0070c170	0x00551f50	verified	005521ca CALL 0x550980 TestDirectLine (only real callee), [+0x1b0]; Mac GridDFSGenerateSuccessors calls TestDirectLine + new[]
+0x0070ccb0	0x00552a90	label_suspect	= GridDFSTransTableInitialize (b/c): 00552aa5 PUSH 0x2000 alloc -> [+0x1b8], imm 0x80000000 = Mac Init. Real GridDFSTransTablePut = GOG 0x70ceb0 -> 0x552c90
+0x0070cfb0	0x00552d90	verified	00552e07 CALL 0x5f6900 NoNonWalkPolys, 00552e3f CALL 0x61d110 NoNonWalkPolysInDoor, RET 0x24; Mac NoNoneWalkPolysInStaticObject same
+0x0070d080	0x00552e60	verified	0055315c CALL 0x550980 TestDirectLine, 00552e75 CMP [EAX+0x260],0; Mac ClosestPathPoint TestDirectLine, disp 0x25c,0x260
+0x0070d510	0x005532f0	verified	005535f8 PUSH 0x9948ac 'Error could not find closest path node to start or end'; 00553442 CALL 0x54bdc0 ComputeSafeLocation; Mac PlotPathPointPath
+0x0070f0d0	0x00554eb0	verified	005554ab PUSH 0x9948e4 '.\nwsareapathfind.cpp', 005551e5 CALL 0x5555c0 PathPointDFSGenerateSuccessors; Mac PathPointDFSearch same
+0x00717ca0	0x00522af0	verified	00522b12 MOV EAX,[EDX+0x198], 00522b50 MOV EAX,[EDX+0x194], 00522b6c CALL 0x53dfb0 GetGameObject; Mac GetFirstObjectIndiceByX disp 0x94,0x194,0x198
+0x00717da0	0x00522bf0	verified	00522c70 CALL 0x523090 RemoveObjectFromArea, 00522c8f CALL 0x522af0 GetFirstObjectIndiceByX; Mac same; fp equal except size 516/515
+0x00717fb0	0x00522e00	verified	00522e1f CALL 0x4142e0 IndexOf, [+0x194]/[+0x198] array; Mac UpdatePositionInObjectsArray disp 0x94,0x194 x12
+0x00718240	0x00523090	verified	0052319c CALL 0x523360 DecrementPlayersInArea, 005230db CALL 0x52e4e0 Remove; Mac RemoveObjectFromArea same
+0x00718550	0x005233a0	verified	0052350f CALL _strlen, 005234c1 CALL 0x51e120 SetAILevel; Mac IncreaseAILevelPriority strlen + SetAILevel (Decrease has no strlen)
+0x00718750	0x005235a0	verified	00523693 CALL 0x51e120 SetAILevel, no strlen, 266 B; Mac DecreaseAILevelPriority same 4 callees
+0x00718860	0x005236b0	verified	005236eb CALL 0x523870 (LoadAreaHeader 8235 B), 005237b2 CALL 0x525c60 (LoadGIT 814 B); Mac LoadArea same callees

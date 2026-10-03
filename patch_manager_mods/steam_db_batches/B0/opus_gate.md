@@ -11,39 +11,39 @@ Decision: **OK: Opus reads the 100% classes plus a 20% sample (min 5) of the oth
 
 None.
 
-## Opus reads 100% (148 rows)
+## Opus reads 100% (146 rows)
 
 - CClientExoApp::RunDeathSequence gog 0x0040d860 -> 0x007403a0: match cites a layout/offset difference
 - CClientExoApp::PlayerFlourishWeapons gog 0x0040dd60 -> 0x007408a0: match cites a layout/offset difference
 - CClientExoApp::EnableVideoEffect gog 0x0040de60 -> 0x007409a0: reviewer corrected_addr
 - CClientExoApp::DisableVideoEffect gog 0x0040de80 -> 0x007409c0: reviewer corrected_addr
 - CClientExoApp::SetMouseMode gog 0x0040e400 -> 0x00740f40: match cites a layout/offset difference
-- CClientExoApp::GetCharacterChangeInProgress gog 0x0040e480 -> 0x00740f00: reviewer corrected_addr
+- CClientExoApp::GetCharacterChangeInProgress gog 0x0040e480 -> 0x00740fc0: reviewer corrected_addr
 - CSWCObject::SetId gog 0x00410c30 -> 0x00764f60: reviewer corrected_addr, match cites a layout/offset difference
-- CSWCObject::HideShadowBlob gog 0x00410c80 -> 0x0078bc50: reviewer corrected_addr
+- CSWCObject::HideShadowBlob gog 0x00410c80 -> 0x00764fb0: reviewer corrected_addr
 - CSWCArea::Constructor gog 0x0044ef30 -> 0x007a2590: reviewer corrected_addr
 - CSWCArea::Unknown_ReturnTrue_7Args gog 0x004550b0 -> 0x007a86b0: match cites a layout/offset difference
-- CSWCArea::AddWeatherObject gog 0x00456040 -> 0x007a9640: reviewer corrected_addr
+- CSWCArea::AddWeatherObject gog 0x00456040 -> 0x007a9640: reviewer corrected_addr, label_suspect
+- CSWCArea::GetWeatherObject gog 0x00456060 -> 0x007a9660: label_suspect
+- CSWCArea::ClearWeatherObjects gog 0x004560f0 -> 0x007a96f0: label_suspect
 - CSWCArea::StopWeather gog 0x00456230 -> 0x007a9830: reviewer corrected_addr
-- CSWCArea::ClearAllMapPins gog 0x00457310 -> 0x007aa910: reviewer corrected_addr, match cites a layout/offset difference, match on a mac_contra row
+- CSWCArea::ClearAllMapPins gog 0x00457310 -> 0x007a96f0: reviewer corrected_addr, match cites a layout/offset difference, match on a mac_contra row
 - CSWCArea::AttachmentFromServerArea gog 0x00457880 -> 0x007aae80: reviewer corrected_addr
 - CClientOptions::SetCameraMode gog 0x00462bc0 -> 0x007b5e50: match on a mac_contra row
 - CSWCObject::TurnOnShadows gog 0x00472630 -> 0x007ed4d0: reviewer corrected_addr
 - CSWCObject::AnimationStationary gog 0x00474420 -> 0x007ef2c0: reviewer corrected_addr
-- CSWCObject::AnimationPlayOutOfPlace gog 0x004744b0 -> 0x007ef730: reviewer corrected_addr, label_suspect
-- CSWCObject::AnimationPause gog 0x00474890 -> 0x007ef730: match on a mac_contra row, match on a name_held_elsewhere row
+- CSWCObject::AnimationPlayOutOfPlace gog 0x004744b0 -> 0x007ef730: reviewer corrected_addr
+- CSWCObject::AnimationPause gog 0x00474890 -> 0x007ef350: match on a mac_contra row, match on a name_held_elsewhere row
+- CSWCLevelUpStats::GetClass gog 0x0048f9b0 -> 0x00844e40: label_suspect
 - CGuiInGame::ShutDownGlobal gog 0x004cdda0 -> 0x007bdb10: label_suspect
-- CGuiInGame::IsCameraDialog gog 0x004dbda0 -> 0x007cb6a0: label_suspect
-- CGuiInGame::IsAnimationPlayingInDialog gog 0x004dbde0 -> 0x007cb6e0: reviewer corrected_addr, label_suspect
-- CGuiInGame::IsFadingInDialog gog 0x004dbe50 -> 0x007cb720: reviewer corrected_addr, label_suspect
-- CGuiInGame::GetCanOrientInDialog gog 0x004df1f0 -> 0x007ceaf0: label_suspect
+- CGuiInGame::IsAnimationPlayingInDialog gog 0x004dbde0 -> 0x007cadb0: reviewer corrected_addr
+- CGuiInGame::IsFadingInDialog gog 0x004dbe50 -> 0x007cb720: reviewer corrected_addr
 - CGuiInGame::AddFloatyText gog 0x004df580 -> 0x007cee80: match cites a layout/offset difference
 - CGuiInGame::GetCanHeadFollowInDialog gog 0x004dfff0 -> 0x007cf8f0: reviewer corrected_addr
-- CGuiInGame::GetMiniMapVisible gog 0x004e0c60 -> 0x007d0560: label_suspect
-- CGuiInGame::RemoveGUIPopUps gog 0x004e0ca0 -> 0x007d05a0: reviewer corrected_addr, label_suspect
+- CGuiInGame::RemoveGUIPopUps gog 0x004e0ca0 -> 0x007d0620: reviewer corrected_addr
 - CSWGuiMainMenu::OnLoadGamePicked gog 0x0053cf90 -> 0x008824f0: match on a name_held_elsewhere row
 - CSWCAreaOfEffectObject::Destructor gog 0x005821d0 -> 0x008ee7f0: reviewer corrected_addr
-- CSWSCreatureStats::GetClassByPosition gog 0x00588990 -> 0x00844e40: reviewer corrected_addr
+- CSWSCreatureStats::GetClassByPosition gog 0x00588990 -> 0x0089aef0: reviewer corrected_addr
 - CSWGuiInGameInventory::OnPanelRemoved gog 0x0059b420 -> 0x008a7520: match on a mac_contra row
 - CSWGuiUpgrade::OnPanelRemoved gog 0x005bce30 -> 0x008cca70: match on a mac_contra row
 - CSWGuiUpgrade::SetDescription gog 0x005bd130 -> 0x008ccd70: match on a mac_contra row
@@ -51,9 +51,9 @@ None.
 - CSWGuiSaveLoad::VerifyLoadGame gog 0x005d1bf0 -> 0x008528b0: match cites a layout/offset difference
 - CSWGuiSaveLoad::LoadGame gog 0x005d33b0 -> 0x00853a00: match cites a layout/offset difference
 - CSWGuiSaveLoad::LaunchMostRecentSave gog 0x005d86f0 -> 0x00859270: match on a mac_contra row
-- CExoString::Constructor_2 gog 0x00605680 -> 0x007338d0: reviewer corrected_addr
-- CExoString::Destructor gog 0x00605890 -> 0x00733540: reviewer corrected_addr
-- CRes::Constructor gog 0x0061aa20 -> 0x007111a0: reviewer corrected_addr
+- CExoString::Constructor_2 gog 0x00605680 -> 0x00733570: reviewer corrected_addr
+- CExoString::Destructor gog 0x00605890 -> 0x00733780: reviewer corrected_addr
+- CRes::Constructor gog 0x0061aa20 -> 0x007110d0: reviewer corrected_addr
 - CRes::Destructor gog 0x0061aad0 -> 0x00711170: match cites a layout/offset difference
 - CExoResMan::AddEncapsulatedResourceFile gog 0x0061af20 -> 0x007115c0: reviewer corrected_addr
 - CExoResMan::AddResourceImageFile gog 0x0061af40 -> 0x007115e0: reviewer corrected_addr
@@ -83,31 +83,29 @@ None.
 - CServerExoApp::GetGameObject gog 0x0064bac0 -> 0x0051c0a0: reviewer corrected_addr
 - CTwoDimArrays::GetSwoopUpgradeRowProvider gog 0x0064c2f0 -> 0x0051c8d0: label_suspect
 - CSWSEffectListHandler::Destructor gog 0x0064ceb0 -> 0x0051d4b0: reviewer corrected_addr
-- CSWSItem::GetPropertyByTypeExists gog 0x00667600 -> 0x00603dd0: reviewer corrected_addr, label_suspect
-- CSWSItem::RestoreUsedActiveProperties gog 0x00667710 -> 0x00603ee0: reviewer corrected_addr, label_suspect
-- CSWSItem::GetUpgradableType gog 0x0066af00 -> 0x00607790: reviewer corrected_addr
+- CSWSItem::GetPropertyByTypeExists gog 0x00667600 -> 0x00603f60: reviewer corrected_addr
+- CSWSItem::RestoreUsedActiveProperties gog 0x00667710 -> 0x00603dd0: reviewer corrected_addr
+- CSWSItem::GetUpgradableType gog 0x0066af00 -> 0x006076d0: reviewer corrected_addr
 - CSWSItem::AddSubraceRequirements gog 0x0066d900 -> 0x0060a0d0: reviewer corrected_addr
 - CSWSItem::AddUpgrade gog 0x00679590 -> 0x00615d60: reviewer corrected_addr
-- CSWSCreatureStats::GetWeaponFinesse gog 0x006e5320 -> 0x006a8ea0: match on a mac_contra row
-- CSWSCreatureStats::GetWeaponSpecialization gog 0x006e5390 -> 0x006a8f10: reviewer corrected_addr, label_suspect
+- CSWSCreatureStats::GetWeaponFinesse gog 0x006e5320 -> 0x006b8da0: match on a mac_contra row
+- CSWSCreatureStats::GetWeaponSpecialization gog 0x006e5390 -> 0x006b8ee0: reviewer corrected_addr
 - CSWSCreatureStats::GetNumberKnownSpells gog 0x006f4c80 -> 0x006b8800: match on a twin row
-- CSWSCreatureStats::GetCreatureTalentRandomPower gog 0x006f5a80 -> 0x006b9600: label_suspect
+- CSWSCreatureStats::DecrementFeatRemainingUses_2 gog 0x006f5220 -> 0x006b8da0: label_suspect
 - CSWSCreatureStats::GetTotalSTRBonus gog 0x006f6e70 -> 0x006ba9f0: reviewer corrected_addr
+- CSWSCreatureStats::SetArcaneSpellFailure gog 0x006f7280 -> 0x006bae00: label_suspect
+- CSWSCreatureStats::GetTotalDamageRange gog 0x006f7340 -> 0x006baec0: label_suspect
 - CSWSCreatureStats::ComputeNumberKnownSpellsLeft gog 0x006f88f0 -> 0x006bc470: label_suspect
-- CSWSCreatureStats::CheckInclusionMatch gog 0x006f8bb0 -> 0x006bc730: label_suspect
 - CSWSCreatureStats::AddSpellLikeAbilityToList gog 0x006fa1e0 -> 0x006bdd60: label_suspect
-- CSWSItem::SetNumActiveProperties gog 0x006fcf40 -> 0x00604140: reviewer corrected_addr, label_suspect
+- CSWSItem::SetNumActiveProperties gog 0x006fcf40 -> 0x00604140: reviewer corrected_addr
 - CSWPartyTable::ClearInventory gog 0x006fe490 -> 0x005f8920: reviewer corrected_addr
 - CSWPartyTable::RemoveNPC gog 0x00700490 -> 0x005fa920: reviewer corrected_addr
 - CSWPartyTable::GetNPCSelectability gog 0x00700cb0 -> 0x005fb140: reviewer corrected_addr
 - CSWPartyTable::AddGameInProgress gog 0x00703650 -> 0x005fdca0: reviewer corrected_addr
 - CSWPartyTable::SetSoloMode gog 0x007048a0 -> 0x005feef0: reviewer corrected_addr
-- CSWSArea::GridDFSTransTableInitialize gog 0x00709770 -> 0x0054f3d0: label_suspect
 - CSWSArea::PlotSoundPath gog 0x0070cd90 -> 0x00552b70: reviewer corrected_addr, label_suspect
 - CSWSArea::PathPointDFSTransTableInitialize gog 0x0070ceb0 -> 0x00552c90: label_suspect
-- CSWSArea::GetNextObjectInArea gog 0x00718400 -> 0x00523250: label_suspect
-- CSWSArea::GetFirstObjectInArea gog 0x00718460 -> 0x005232b0: label_suspect
-- CSWSArea::SetMaxStealthXP gog 0x007184d0 -> 0x00523320: reviewer corrected_addr, label_suspect
+- CSWSArea::SetMaxStealthXP gog 0x007184d0 -> 0x0052de00: reviewer corrected_addr
 - CSWSArea::GetClientArea_2 gog 0x00722ee0 -> 0x0052de00: label_suspect
 - CSWSArea::SetTransitionPending gog 0x007231f0 -> 0x0052e110: reviewer corrected_addr
 - CGameEffect::Destructor gog 0x00734960 -> 0x005e4ca0: reviewer corrected_addr
@@ -139,6 +137,7 @@ None.
 - CSWVirtualMachineCommands::CreateGameDefinedStructure gog 0x0077ed70 -> 0x00669790: match cites a layout/offset difference
 - CSWVirtualMachineCommands::ExecuteCommandCutsceneMove gog 0x00783260 -> 0x0066dc80: reviewer corrected_addr
 - CSWVirtualMachineCommands::ExecuteCommandFloatToInt gog 0x0078ebd0 -> 0x006795f0: reviewer corrected_addr
+- CSWSItemPropertyHandler::Constructor gog 0x007c1880 -> 0x005aa470: label_suspect
 - CSWSItemPropertyHandler::InitializeItemProperties gog 0x007c18a0 -> 0x005aa490: match cites a layout/offset difference
 - CSWSItemPropertyHandler::RemoveEnhancementBonus gog 0x007c2600 -> 0x005ab1f0: reviewer corrected_addr
 - CSWSItemPropertyHandler::RemoveEnhancementPenalty gog 0x007c3300 -> 0x005abef0: reviewer corrected_addr
@@ -154,7 +153,6 @@ None.
 - CSWSEncounter::Destructor gog 0x007e94f0 -> 0x00623030: reviewer corrected_addr
 - CSWSScriptVarTable::DestroyString gog 0x007f07d0 -> 0x005e6f40: reviewer corrected_addr
 - CSWVirtualMachineCommands::InitializeSWMGCommands gog 0x007f9140 -> 0x006f5b80: match on a mac_contra row
-- Gob::SetScene gog 0x0084b0b0 -> 0x00458ae0: label_suspect
 - Gob::DisableFog gog 0x0084c550 -> 0x00459f70: reviewer corrected_addr
 - Scene::ChildAdd gog 0x00857f90 -> 0x00465bb0: reviewer corrected_addr
 - Scene::SetCurrentRoom_2 gog 0x008621f0 -> 0x0046ffb0: reviewer corrected_addr
@@ -162,118 +160,117 @@ None.
 - ConsoleFunc::Destructor gog 0x00867920 -> 0x004759b0: reviewer corrected_addr
 - Gob::AddAnimationFlag gog 0x008fd240 -> 0x004e3110: reviewer corrected_addr
 
-## Sample of the other reviewer matches (102 of 507)
+## Sample of the other reviewer matches (101 of 505)
 
-- CVirtualMachine::StackPushInteger gog 0x00640be0 -> 0x006fd9c0 (C0)
+- CVirtualMachine::StackPopFloat gog 0x00640c00 -> 0x006fd9e0 (C0)
 - CSWCArea::SetAsDawn gog 0x00455d60 -> 0x007a9360 (C0)
-- CServerExoApp::LoadGame gog 0x0064b840 -> 0x0051be20 (C0)
-- CSWCPlaceable::IsHostile gog 0x00534a00 -> 0x00841180 (C0)
+- CSWCPlaceable::Destructor gog 0x00534a50 -> 0x008411d0 (C0)
 - CClientExoApp::GetPlayerCreature gog 0x0040c910 -> 0x0073f450 (C0)
-- CVirtualMachineInternal::ExecuteCode gog 0x00642c30 -> 0x006ff9f0 (C0)
-- CServerExoApp::SaveGame gog 0x0064b810 -> 0x0051bdf0 (C0)
-- CSWSCombatRound::GetActualBonusEffectAttacks gog 0x00776950 -> 0x005922a0 (C0)
-- CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints gog 0x0078c440 -> 0x00676e60 (C0)
-- CSWSPlaceable::Destructor gog 0x00769570 -> 0x005ef1a0 (C0)
-- CSWPartyTable::RemoveGameInProgress gog 0x007036e0 -> 0x005fdd30 (C0)
-- CGameEffect::GetExpiryTime gog 0x00734c60 -> 0x005e4fa0 (C0)
-- CWorldTimer::GetWorldTimeMillisecond gog 0x0080b6a0 -> 0x0051b1c0 (C0)
-- CResGFF::WriteFieldCHAR gog 0x00625ba0 -> 0x00719a40 (C0)
-- CGameEffect::SetObjectID gog 0x00734bc0 -> 0x005e4f00 (C0)
-- Scene::GetIgnoreVisibilityGraph gog 0x00861da0 -> 0x0046fb60 (C0)
-- Scene::SetFogRange gog 0x00857060 -> 0x00464c80 (C0)
-- CSWSCombatRound::GetCurrentAction gog 0x00774f30 -> 0x00590880 (C0)
+- CServerExoApp::LoadGame gog 0x0064b840 -> 0x0051be20 (C0)
+- CSWSCombatRound::GetActualBonusEffectAttacksLimited gog 0x00776970 -> 0x005922c0 (C0)
+- CVirtualMachineInternal::DeleteScriptSituation gog 0x00646a60 -> 0x007037c0 (C0)
+- CResGFF::GetFieldType gog 0x00624870 -> 0x00718710 (C0)
+- CSWSItem::PowerItem gog 0x00679380 -> 0x00615b50 (C0)
+- CSWSAreaOfEffectObject::GetEffectSpellId gog 0x007e6350 -> 0x0062c180 (C0)
+- Gob::SetIgnoreHitCheck gog 0x0084be10 -> 0x00459830 (C0)
+- CGameEffect::SetString gog 0x00734c20 -> 0x005e4f60 (C0)
+- Scene::RemoveFromSceneManager_2 gog 0x008646a0 -> 0x00472460 (C0)
+- Scene::EnableAnimations gog 0x00857590 -> 0x004651b0 (C0)
+- CSWSCombatRound::SetCurrentAction gog 0x00774f50 -> 0x005908a0 (C0)
 - CClientExoApp::EnableInput gog 0x0040d7b0 -> 0x007402f0 (C0)
 - CClientExoApp::SendSaveGameRequest gog 0x0040cbb0 -> 0x0073f6f0 (C0)
-- CSWSEffectListHandler::OnRemoveVisualEffect gog 0x00741a10 -> 0x0059f120 (C0)
-- Scene::EnableAnimations gog 0x00857590 -> 0x004651b0 (C0)
-- CExoResMan::CacheResource_2 gog 0x00620740 -> 0x00716de0 (C0)
-- CExoResMan::RemoveResourceImageFile gog 0x0061b030 -> 0x007116d0 (C0)
-- CSWSScriptVarTable::GetInt gog 0x007f0060 -> 0x005e67d0 (C0)
-- CSWSCombatRound::SetDeflectArrow gog 0x007769a0 -> 0x005922f0 (C0)
-- CVirtualMachineInternal::RunScript gog 0x00645540 -> 0x007022a0 (C0)
-- CSWSItemPropertyHandler::ApplyDoorCutting gog 0x007c9ec0 -> 0x005b2ab0 (C0)
-- CSWGuiControl::AddChildControl gog 0x009175d0 -> 0x00419330 (C0)
-- CSWPartyTable::Save gog 0x00702df0 -> 0x005fd440 (C0)
-- CClientExoApp::ExitProgram gog 0x0040c750 -> 0x0073f290 (C0)
-- CVirtualMachine::StackPushObject gog 0x00640d30 -> 0x006fdb10 (C0)
-- Scene::ChildRemove gog 0x00858000 -> 0x00465c20 (C0)
-- CSWSItemPropertyHandler::RemoveRegeneration gog 0x007c9750 -> 0x005b2340 (C0)
-- CSWSCreatureStats::RemoveFeat gog 0x006f4a70 -> 0x006b85f0 (C0)
-- CRes::Request gog 0x0061ac30 -> 0x007112d0 (C0)
-- CClientExoApp::GetActivePauseState gog 0x0040d2e0 -> 0x0073fe00 (C0)
-- Scene::IsGeomFadeEnabled gog 0x008570b0 -> 0x00464cd0 (C0)
-- CSWCArea::SetAsDusk gog 0x00455cc0 -> 0x007a92c0 (C0)
-- CSWSCombatRound::GetActualBonusEffectAttacksLimited gog 0x00776970 -> 0x005922c0 (C0)
-- CClientExoApp::SetCombatMode gog 0x0040dd40 -> 0x00740880 (C0)
-- CSWVirtualMachineCommands::ExecuteCommandActionDoCommand gog 0x0077efb0 -> 0x006699d0 (C0)
-- CResGFF::ReadFieldCHAR gog 0x00624be0 -> 0x00718a80 (C0)
-- CClientExoApp::DisplayMainMenu gog 0x0040c6f0 -> 0x0073f230 (C0)
-- CSWSPlaceable::GetFirstName gog 0x0075d320 -> 0x0061e090 (C0)
-- CVirtualMachineInternal::StackPushVector gog 0x00646010 -> 0x00702d70 (C0)
-- CSWPartyTable::GivePlotXP gog 0x00703850 -> 0x005fdea0 (C0)
-- Gob::IsInViewVolume gog 0x0084beb0 -> 0x004598d0 (C0)
-- Gob::RemoveAnimationFlag gog 0x008fd290 -> 0x004e3160 (C0)
-- CWorldTimer::GetWorldTimeSecond gog 0x0080b660 -> 0x0051b180 (C0)
-- Scene::DisableVisibilityGraph gog 0x00861d80 -> 0x0046fb40 (C0)
-- CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease gog 0x007c9970 -> 0x005b2560 (C0)
-- CSWSAreaOfEffectObject::GetEffectSpellId gog 0x007e6350 -> 0x0062c180 (C0)
-- CClientExoApp::SetEventDescriptions gog 0x0040cfe0 -> 0x0073fb00 (C0)
-- CVirtualMachine::RunScriptSituation gog 0x00640b50 -> 0x006fd930 (C0)
-- CVirtualMachine::SaveScriptSituation gog 0x00640d70 -> 0x006fdb50 (C0)
-- CSWCObject::AnimationParry gog 0x00474950 -> 0x007ef7f0 (C0)
+- Scene::IsAnimating gog 0x008575d0 -> 0x004651f0 (C0)
+- CExoResMan::RemoveFixedKeyTableFile gog 0x0061b050 -> 0x007116f0 (C0)
+- CSWSScriptVarTable::GetObjectA gog 0x007f0180 -> 0x005e68f0 (C0)
+- CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints gog 0x0078c440 -> 0x00676e60 (C0)
 - CGuiInGame::SetLevelUpMode gog 0x004d00b0 -> 0x007bfa20 (C0)
-- ConsoleFunc::Constructor gog 0x00867740 -> 0x004757d0 (C0)
+- CVirtualMachineInternal::ExecuteCode gog 0x00642c30 -> 0x006ff9f0 (C0)
+- CClientExoApp::ExitProgram gog 0x0040c750 -> 0x0073f290 (C0)
+- CVirtualMachine::SaveScriptSituation gog 0x00640d70 -> 0x006fdb50 (C0)
+- CServerExoApp::GetActiveTimer gog 0x0064bd70 -> 0x0051c350 (C0)
 - Scene::EnableVisibilityGraph gog 0x00861d50 -> 0x0046fb10 (C0)
-- CClientExoApp::SetVideoMode gog 0x0040d0b0 -> 0x0073fbd0 (C0)
-- CSWSScriptVarTable::DestroyObject gog 0x007f07f0 -> 0x005e6f60 (C0)
-- CClientExoApp::GetPausedByCombat gog 0x0040d7f0 -> 0x00740330 (C0)
-- CSWSItem::RemoveFromArea gog 0x00667020 -> 0x006037f0 (C0)
-- Gob::IsAnimating gog 0x0084be70 -> 0x00459890 (C0)
-- CSWCObject::SetLoopingAnimation gog 0x00472ab0 -> 0x007ed950 (C0)
-- CSWSItemPropertyHandler::RemoveLight gog 0x007c4ee0 -> 0x005adad0 (C0)
-- CSWSAreaOfEffectObject::SetEffectSpellId gog 0x007e6370 -> 0x0062c1a0 (C0)
-- CSWSItemPropertyHandler::Constructor gog 0x007c1880 -> 0x005aa470 (C0)
-- Gob::IsForceAnimated gog 0x0084c380 -> 0x00459da0 (C0)
-- CClientExoApp::CancelMovie gog 0x0040e420 -> 0x00740f60 (C0)
-- CSWSArea::AttachmentFromClientArea gog 0x00722cf0 -> 0x0052dc10 (C0)
-- Gob::GetModelName gog 0x00853b60 -> 0x004615d0 (C0)
-- Gob::DisableRenderGobBBox gog 0x0084e4f0 -> 0x0045bf10 (C0)
-- CSWSItemPropertyHandler::RemoveDampenSound gog 0x007c9ea0 -> 0x005b2a90 (C0)
-- Scene::RemoveFromSceneManager_2 gog 0x008646a0 -> 0x00472460 (C0)
-- CVirtualMachine::StackPushString gog 0x00640cb0 -> 0x006fda90 (C0)
-- CWorldTimer::UnpauseWorldTimer gog 0x0080b580 -> 0x0051b0a0 (C0)
-- CSWSItem::non_virtual_thunk_to_dtor_CSWSItem gog 0x0067a210 -> 0x00616a60 (C0)
-- CRes::CancelRequest gog 0x0061ab20 -> 0x007111c0 (C0)
-- CSWSObject::SetAnimation gog 0x006a8070 -> 0x00541390 (C0)
-- Gob::RemoveAddInAnimations gog 0x0084c730 -> 0x0045a150 (C0)
+- CSWVirtualMachineCommands::Destructor_2 gog 0x0077b500 -> 0x00536be0 (C0)
+- CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionDecrease gog 0x007c9a60 -> 0x005b2650 (C0)
+- CExoResMan::AddFixedKeyTableFile gog 0x0061afd0 -> 0x00711670 (C0)
+- CClientExoApp::GetActivePauseState gog 0x0040d2e0 -> 0x0073fe00 (C0)
 - Scene::DisableAnimations gog 0x008575b0 -> 0x004651d0 (C0)
-- CSWSCreatureStats::GetBaseWillSavingThrow gog 0x006f3a40 -> 0x006b75c0 (C0)
+- CSWCArea::SetAsDusk gog 0x00455cc0 -> 0x007a92c0 (C0)
+- CSWSCombatRound::SetDeflectArrow gog 0x007769a0 -> 0x005922f0 (C0)
+- CClientExoApp::SetCombatMode gog 0x0040dd40 -> 0x00740880 (C0)
+- CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingMelee gog 0x0077f030 -> 0x00669a50 (C0)
+- CSWSObject::SetAnimation gog 0x006a8070 -> 0x00541390 (C0)
+- CExoResMan::GetTableCount gog 0x0061c7b0 -> 0x00712e50 (C0)
+- CSWSArea::Destructor gog 0x00716b50 -> 0x005219a0 (C0)
+- CClientExoApp::DisplayMainMenu gog 0x0040c6f0 -> 0x0073f230 (C0)
+- CSWSTrigger::Destructor gog 0x0075d340 -> 0x0061e0b0 (C0)
+- CSWSItemPropertyHandler::Destructor gog 0x0064cee0 -> 0x0051d4e0 (C0)
+- CSWPartyTable::GivePlotXP_2 gog 0x00703960 -> 0x005fdfb0 (C0)
+- Gob::SetMotionBlurred gog 0x0084bf50 -> 0x00459970 (C0)
+- CSWGuiBorder::Destructor gog 0x00912fc0 -> 0x00414bf0 (C0)
+- Gob::GetName gog 0x0084bcd0 -> 0x004596f0 (C0)
+- CSWSCombatRound::GetOffHandAttack gog 0x00774c30 -> 0x00590580 (C0)
+- Scene::GetNumRooms gog 0x008621b0 -> 0x0046ff70 (C0)
+- CSWSScriptVarTable::GetInt gog 0x007f0060 -> 0x005e67d0 (C0)
+- CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionDecrease gog 0x007c9b90 -> 0x005b2780 (C0)
+- CSWSAreaOfEffectObject::Destructor gog 0x007e6390 -> 0x0062c1c0 (C0)
+- CClientExoApp::SetEventDescriptions gog 0x0040cfe0 -> 0x0073fb00 (C0)
+- CVirtualMachine::GetRunScriptReturnValue gog 0x00640b80 -> 0x006fd960 (C0)
+- CVirtualMachine::LoadScriptSituation gog 0x00640da0 -> 0x006fdb80 (C0)
+- CSWCObject::AnimationParry gog 0x00474950 -> 0x007ef7f0 (C0)
+- Gob::DisableRenderGobBBox gog 0x0084e4f0 -> 0x0045bf10 (C0)
+- CGuiInGame::GetMessageBufferSize gog 0x004d8430 -> 0x007c7d40 (C0)
+- Scene::GetIgnoreVisibilityGraph gog 0x00861da0 -> 0x0046fb60 (C0)
+- CClientExoApp::SetVideoMode gog 0x0040d0b0 -> 0x0073fbd0 (C0)
+- CSWPartyTable::GivePlotXP gog 0x00703850 -> 0x005fdea0 (C0)
+- CClientExoApp::GetPausedByCombat gog 0x0040d7f0 -> 0x00740330 (C0)
+- CItemRepository::Destructor gog 0x00668830 -> 0x00605000 (C0)
+- Gob::IsInViewVolume gog 0x0084beb0 -> 0x004598d0 (C0)
+- Gob::RemoveAttachment gog 0x008557f0 -> 0x00463300 (C0)
+- CSWCObject::SetLoopingAnimation gog 0x00472ab0 -> 0x007ed950 (C0)
+- CWorldTimer::GetWorldTimeHour gog 0x0080b5e0 -> 0x0051b100 (C0)
+- Gob::DisableAlwaysRender gog 0x0084c3c0 -> 0x00459de0 (C0)
+- CClientExoApp::CancelMovie gog 0x0040e420 -> 0x00740f60 (C0)
+- CSWSArea::DetachFromClientArea gog 0x00722d10 -> 0x0052dc30 (C0)
+- Gob::AddAttachment gog 0x008557b0 -> 0x004632c0 (C0)
+- CSWPartyTable::SetLeader gog 0x00703dc0 -> 0x005fe410 (C0)
+- Gob::GetModelName gog 0x00853b60 -> 0x004615d0 (C0)
+- CSWSItemPropertyHandler::ApplyDoorSabering gog 0x007c9ef0 -> 0x005b2ae0 (C0)
+- Scene::GetObjectScale gog 0x00864850 -> 0x00472610 (C0)
+- CVirtualMachine::StackPopEngineStructure gog 0x00640cd0 -> 0x006fdab0 (C0)
+- CWorldTimer::GetWorldTimeMinute gog 0x0080b620 -> 0x0051b140 (C0)
+- CSWSObject::SetDialogOwner gog 0x006ada90 -> 0x00546db0 (C0)
+- CExoResMan::UpdateResourceDirectory gog 0x0061b090 -> 0x00711730 (C0)
+- Scene::SetBlindLights gog 0x008575f0 -> 0x00465210 (C0)
+- CSWSCreatureStats::GetBaseReflexSavingThrow gog 0x006f3c60 -> 0x006b77e0 (C0)
 - CClientExoApp::StopCreditSequence gog 0x0040e510 -> 0x00741050 (C0)
 - CClientExoApp::SendLoadGameRequest gog 0x0040cbe0 -> 0x0073f720 (C0)
-- CSWSObject::SetDialogOwner gog 0x006ada90 -> 0x00546db0 (C0)
-- CGuiInGame::ChangeCharacter gog 0x004e09b0 -> 0x007d02b0 (C0)
+- CSWVirtualMachineCommands::ExecuteCommandActionDoCommand gog 0x0077efb0 -> 0x006699d0 (C0)
 - CSWCObject::DetachFromServerObject gog 0x004777d0 -> 0x007f2630 (C0)
 - CSWCArea::StartWeather gog 0x00456200 -> 0x007a9800 (C0)
-- CSWSCombatRound::GetOffHandAttack gog 0x00774c30 -> 0x00590580 (C0)
-- CSWPartyTable::SetNPCSelectability gog 0x00700ce0 -> 0x005fb170 (C0)
+- CSWSCombatRound::GetCurrentAction gog 0x00774f30 -> 0x00590880 (C0)
+- CSWSDoor::Destructor gog 0x00762410 -> 0x00616f60 (C0)
+- CVirtualMachine::StackPopInteger gog 0x00640bc0 -> 0x006fd9a0 (C0)
+- CExoResMan::RemoveEncapsulatedResourceFile gog 0x0061b010 -> 0x007116b0 (C0)
+- CRes::Request gog 0x0061ac30 -> 0x007112d0 (C0)
+- CRes::CancelRequest gog 0x0061ab20 -> 0x007111c0 (C0)
+- CVirtualMachine::StackPopVector gog 0x00640c40 -> 0x006fda20 (C0)
+- Gob::RemoveAnimationFlag gog 0x008fd290 -> 0x004e3160 (C0)
 - CSWSDoor::GetFirstName gog 0x007623f0 -> 0x00616f40 (C0)
-- CExoResMan::RemoveFixedKeyTableFile gog 0x0061b050 -> 0x007116f0 (C0)
-- CSWSEncounter::GetFirstName gog 0x007e94d0 -> 0x00623010 (C0)
-- CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingMelee gog 0x0077f030 -> 0x00669a50 (C0)
-- CVirtualMachine::SetCommandImplementer gog 0x00640ba0 -> 0x006fd980 (C0)
-- CSWGuiBorder::Destructor gog 0x00912fc0 -> 0x00414bf0 (C0)
-- CVirtualMachine::StackPopFloat gog 0x00640c00 -> 0x006fd9e0 (C0)
-- CSWSTrigger::Destructor gog 0x0075d340 -> 0x0061e0b0 (C0)
 - CSWCObject::ShowShadowBlob gog 0x00410c50 -> 0x00764f80 (C0)
-- CGameEffect::SetString gog 0x00734c20 -> 0x005e4f60 (C0)
+- CGameEffect::SetExpiryTime gog 0x00734c40 -> 0x005e4f80 (C0)
+- CVirtualMachineInternal::RunScript gog 0x00645540 -> 0x007022a0 (C0)
+- CSWCArea::Destructor gog 0x0044f680 -> 0x007a2c80 (C0)
+- CSWCDoor::Destructor gog 0x00506a50 -> 0x0087b170 (C0)
+- CSWSCreatureStats::GetBaseFortSavingThrow gog 0x006f3820 -> 0x006b73a0 (C0)
+- CSWCObject::AnimationHideEquippedItems gog 0x00474540 -> 0x007ef910 (C0)
 
 ## AUTO meaning checks (5 sig + 3 c2)
 
-- sig: CSWSEffectListHandler::OnApplyLimitMovementSpeed gog 0x00746300 -> 0x005a3a10
-- sig: CSWSArea::GridDFSTransTableGet gog 0x0070cd60 -> 0x00552b40
-- sig: CSWSCreatureStats::RemoveKnownSpell gog 0x006f4be0 -> 0x006b8760
-- sig: CSWCAreaOfEffectObject::ResetTimer gog 0x00584710 -> 0x008f0d30
-- sig: CSWCObject::AnimationOverlay gog 0x00474800 -> 0x007ef6a0
-- c2: CSWSDoor::LoadDoor gog 0x00765620 -> 0x0061a210
-- c2: CSWSItem::GetIcon gog 0x006794f0 -> 0x00615cc0
-- c2: CTwoDimArrays::Load2DArrays_AlienVO gog 0x00486470 -> 0x006ed4d0
+- sig: CSWSEffectListHandler::OnApplyHasteOrSlow gog 0x00743520 -> 0x005a0c50
+- sig: CSWSEffectListHandler::OnApplyBonusFeat gog 0x007495d0 -> 0x005a6cf0
+- sig: CSWSEffectListHandler::OnRemovePoison gog 0x00742f10 -> 0x005a0640
+- sig: CSWSCreatureStats::UpdateCombatInformation gog 0x006e3610 -> 0x006a7190
+- sig: CSWSArea::GetSurfaceMaterial gog 0x00721610 -> 0x0052c530
+- c2: CSWSPlaceable::LoadBodyBag gog 0x0076b2e0 -> 0x005f0f10
+- c2: CSWCDoor::AIUpdate gog 0x00506b20 -> 0x0087b240
+- c2: CSWGuiUpgrade::Draw gog 0x005bd230 -> 0x008cce70

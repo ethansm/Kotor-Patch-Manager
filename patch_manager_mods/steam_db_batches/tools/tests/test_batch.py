@@ -1512,5 +1512,137 @@ class CardFactsBelongToTheCandidateTests(Base):
         self.assertEqual(n, len(key))
 
 
+class KdbOverrideTests(Base):
+    """B<n>/kdb_overrides.tsv (Opus demote / rename), label_suspect demotions, R4 skips resolved by overrides."""
+
+    def con_with(self, rows):
+        con = sqlite3.connect(self.world.kdb)
+        for r in rows:
+            con.execute("insert or replace into name_map values(?,?,?,?,?,?)", r + ("2026-10-01",))
+        con.commit()
+        return con
+
+    def up(self, addr, name):
+        return {"steam_addr": addr, "name": name, "source": "steam-db-B1", "confidence": "high", "evidence": "e",
+                "date": "2026-10-03"}
+
+    def settle(self, con, **kw):
+        """plan -> apply (with the overlay-free executor) -> plan again; returns (first plan, second plan)."""
+        args = dict(upserts=[], rejected=[], lessons=[], batch="B1", date="2026-10-03")
+        args.update(kw)
+        first = batch.plan_persist(con, args["upserts"], args["rejected"], args["lessons"], args["batch"], args["date"],
+                                   kdb_overrides=args.get("kdb_overrides"), suspects=args.get("suspects"))
+        con.execute("BEGIN")
+        batch.apply_ops(con, first, "2026-10-03")
+        con.commit()
+        second = batch.plan_persist(con, args["upserts"], args["rejected"], args["lessons"], args["batch"], args["date"],
+                                    kdb_overrides=args.get("kdb_overrides"), suspects=args.get("suspects"))
+        return first, second
+
+    def test_demote_works_on_a_trusted_row_and_is_idempotent(self):
+        con = self.con_with([("0x00510040", "CFoo::Old", WAVE2, "high", "trusted")])
+        ov = [{"steam_addr": "0x00510040", "action": "demote", "name": "", "note": "wrong body"}]
+        first, second = self.settle(con, kdb_overrides=ov)
+        self.assertEqual([o[0] for o in first], ["demote"])
+        row = con.execute("select confidence,evidence from name_map where steam_addr='0x00510040'").fetchone()
+        self.assertEqual(row[0], "wrong")
+        self.assertIn("[demoted 2026-10-03 by Opus B1: wrong body]", row[1])
+        self.assertEqual(second, [])                                         # second run: nothing to do
+
+    def test_rename_keeps_old_name_source_and_conf_in_the_evidence(self):
+        con = self.con_with([("0x00510040", "CFoo::Old", WAVE2, "high", "ev")])
+        ov = [{"steam_addr": "0x00510040", "action": "rename", "name": "CFoo::New", "note": "proven by Mac"}]
+        first, second = self.settle(con, kdb_overrides=ov)
+        self.assertEqual([(o[0], o[2]) for o in first], [("rename", "CFoo::New")])
+        name, src, conf, ev = con.execute("select name,source,confidence,evidence from name_map "
+                                          "where steam_addr='0x00510040'").fetchone()
+        self.assertEqual((name, src, conf), ("CFoo::New", WAVE2, "high"))
+        self.assertIn("was CFoo::Old (engine-ai-atlas wave2/high)", ev)
+        self.assertEqual(second, [])
+        # unknown address: reported as a skip, not an error
+        ops = batch.plan_persist(con, [], [], [], "B1", "2026-10-03",
+                                 kdb_overrides=[{"steam_addr": "0x00519999", "action": "demote", "name": "", "note": "n"}])
+        self.assertEqual(ops[0][0], "skip")
+        self.assertIn("no name_map row", ops[0][2])
+
+    def test_override_resolves_an_r4_trusted_holder_skip(self):
+        con = self.con_with([("0x00510040", "CFoo::Alpha", WAVE2, "high", "trusted elsewhere")])
+        up = [self.up("0x00510000", "CFoo::Alpha")]
+        ops = batch.plan_persist(con, up, [], [], "B1", "2026-10-03")
+        self.assertEqual([o[0] for o in ops], ["skip"])                      # R4 without an override
+        ov = [{"steam_addr": "0x00510040", "action": "rename", "name": "CFoo::Other", "note": "n"}]
+        first, second = self.settle(con, upserts=up, kdb_overrides=ov)
+        self.assertEqual([o[0] for o in first], ["rename", "insert"])        # override first, then the upsert
+        self.assertEqual(second, [])
+        # a trusted CONFLICT holder at the upsert's own address, demoted by an override, is replaced
+        con = self.con_with([("0x00510200", "COther::Thing", WAVE2, "high", "trusted")])
+        up = [self.up("0x00510200", "CFoo::Zeta")]
+        self.assertTrue(batch.plan_persist(con, up, [], [], "B1", "2026-10-03")[0][2].startswith("CONFLICT"))
+        ov = [{"steam_addr": "0x00510200", "action": "demote", "name": "", "note": "n"}]
+        first, second = self.settle(con, upserts=up, kdb_overrides=ov)
+        self.assertEqual([o[0] for o in first], ["demote", "update"])
+        self.assertEqual(con.execute("select name,source from name_map where steam_addr='0x00510200'").fetchone(),
+                         ("CFoo::Zeta", "steam-db-B1"))
+        self.assertEqual(second, [])
+
+    def test_label_suspect_demotes_the_wrong_gog_name_unless_trusted(self):
+        con = self.con_with([("0x00510080", "CFoo::Beta", WAVE2, "high", "trusted"),
+                             ("0x005103c0", "CFoo::Nu", "gog_cluster_delta_map.py", "medium", "mapper"),
+                             ("0x00510100", "CFoo::Gamma", "gog_cluster_delta_map.py", "medium", "other name kept")])
+        sus = [{"steam_addr": "0x00510080", "class": "CFoo", "name": "Beta"},
+               {"steam_addr": "0x005103c0", "class": "CFoo", "name": "Nu"},
+               {"steam_addr": "0x00510100", "class": "CFoo", "name": "Delta"}]      # KDB carries another name: untouched
+        ops = batch.plan_persist(con, [], [], [], "B1", "2026-10-03", suspects=sus)
+        self.assertEqual([(o[0], o[1]) for o in ops], [("skip", "0x00510080"), ("demote", "0x005103c0")])
+        self.assertIn("needs a kdb_overrides.tsv row", ops[0][2])
+        self.assertIn("label_suspect", ops[1][2])
+        # a kdb_overrides row naming the trusted address takes over
+        ov = [{"steam_addr": "0x00510080", "action": "demote", "name": "", "note": "Opus"}]
+        first, second = self.settle(con, suspects=sus, kdb_overrides=ov)
+        self.assertEqual(sorted((o[0], o[1]) for o in first), [("demote", "0x00510080"), ("demote", "0x005103c0")])
+        self.assertEqual(second, [])
+
+    def test_persist_cli_lists_every_skip_demote_and_rename_and_applies_idempotently(self):
+        write_candidates(self.root, "B1", B1_SPEC)
+        run("gates", "B1")
+        write_reviews_and_overrides(self.root)
+        run("finalize", "B1", "--date", "2026-10-03")
+        bdir = self.root / "batches" / "B1"
+        self.con_with([("0x00510200", "COther::Thing", WAVE2, "high", "trusted"),
+                       ("0x00510080", "CFoo::Beta", WAVE2, "high", "trusted label_suspect"),
+                       ("0x005103c0", "CFoo::Nu", "gog_cluster_delta_map.py", "medium", "mapper"),
+                       ("0x00510040", "CFoo::FillerX", WAVE2, "high", "to rename")]).close()
+        (bdir / "kdb_overrides.tsv").write_text("steam_addr\taction\tname\tnote\n"
+                                                "0x00510200\tdemote\t\tOpus: mapper-grade row\n"
+                                                "0x00510040\trename\tCFoo::FillerY\tOpus: proven by Mac\n")
+        before = sha(self.world.kdb)
+        rc, out = run("persist", "B1")
+        self.assertEqual(before, sha(self.world.kdb))                          # dry-run writes nothing
+        self.assertRegex(out, r"insert=\d+ update=\d+ demote=\d+ rename=1 lesson=\d+ skip=\d+")
+        self.assertIn("rename 0x00510040 -> CFoo::FillerY", out)
+        self.assertIn("demote 0x00510200 -> wrong", out)
+        self.assertIn("skip   0x00510080: label_suspect: trusted row CFoo::Beta", out)   # needs an override row
+        self.assertIn("demote 0x005103c0 -> wrong", out)                        # untrusted label_suspect row
+        self.assertNotIn("CONFLICT: trusted holder COther::Thing", out)          # resolved by the demote override
+        rc, out1 = run("persist", "B1", "--apply")
+        self.assertIn("integrity_check: ok", out1)
+        rc, out2 = run("persist", "B1", "--apply")
+        self.assertIn("applied: 0 rows changed", out2)
+        con = sqlite3.connect(self.world.kdb)
+        self.assertEqual(con.execute("select name from name_map where steam_addr='0x00510040'").fetchone()[0], "CFoo::FillerY")
+        self.assertEqual(con.execute("select name,source from name_map where steam_addr='0x00510200'").fetchone(),
+                         ("CFoo::Zeta", "steam-db-B1"))
+
+    def test_bad_override_rows_are_rejected(self):
+        bdir = self.root / "batches" / "B1"
+        bdir.mkdir(parents=True)
+        (bdir / "kdb_overrides.tsv").write_text("steam_addr\taction\tname\tnote\n0x00510040\tdelete\t\tx\n")
+        with self.assertRaises(SystemExit):
+            batch.load_kdb_overrides(bdir)
+        (bdir / "kdb_overrides.tsv").write_text("steam_addr\taction\tname\tnote\n0x00510040\trename\t\tx\n")
+        with self.assertRaises(SystemExit):
+            batch.load_kdb_overrides(bdir)
+
+
 if __name__ == "__main__":
     unittest.main()

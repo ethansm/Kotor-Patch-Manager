@@ -1,14 +1,37 @@
 class_name,function_name,address,calling_convention,param_size_bytes,notes
-CSWCObject,AnimationPause,0x007EF730,__thiscall,4,Steam batch B0: SIG 0.50 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 2
+CSWCArea,ClearTilePathNodes,0x007AA910,__thiscall,0,Steam batch B0: no content anchor (C0) (evidence steam_db_batches/B0/evidence.tsv)
+CSWCArea,ClearAllMapPins,0x007A96F0,__thiscall,0,Steam batch B0: no content anchor (C0) (evidence steam_db_batches/B0/evidence.tsv)
 CSWGuiMainMenu,OnLoadGamePicked,0x008824F0,__thiscall,0,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSCreatureStats,GetClassByPosition,0x0089AEF0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 1
 CSWGuiInGameInventory,OnControlSelected,0x008A8480,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSItem,GetUpgradableType,0x006076D0,__thiscall,4,Steam batch B0: no content anchor (C0) (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSCreatureStats,GetForceResistance,0x006BAD10,__thiscall,0,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSCreatureStats,GetWeaponFinesse,0x006B8DA0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSCreatureStats,GetWeaponSpecialization,0x006B8EE0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSCreatureStats,GetUseMonkAttackTables,0x006A8EA0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSCreatureStats,UnReadySpell,0x006B91B0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSCreatureStats,GetCreatureTalentRandomSpecialAbility,0x006BAEC0,__thiscall,32,Steam batch B0: CALLEE 1 (callees: SetCurrentHitPoints 0x54a610); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 4
+CSWSCreatureStats,GetCreatureTalentRandomPower,0x006BAE00,__thiscall,28,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 5
+CSWSCreatureStats,CheckInclusionMatch,0x006BDD60,__thiscall,8,Steam batch B0: SIG 0.50 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSCreatureStats,GetIsInSpellLikeAbilityList,0x006BA8F0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSArea,SetHitInfoForCreature,0x00556040,__thiscall,20,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 32
+CSWSArea,GridDFSTransTableInitialize,0x00552A90,__thiscall,0,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSArea,SmoothPointsOnPath,0x0054F3D0,__thiscall,0,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSArea,SmoothPointsOnPathRestartable,0x0054F5E0,__thiscall,0,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 16
+CSWSArea,SmoothSelectNodes,0x0054FE40,__thiscall,24,Steam batch B0: SIG 0.50 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 16
+CSWSArea,SmoothSelectionRestartable,0x0054FB10,__thiscall,16,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 24
+CSWSArea,GridDFSTransTablePut,0x00552C90,__thiscall,16,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
+CSWSArea,GridDFSTransTableGet,0x00552B70,__thiscall,16,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
+CSWSArea,GetNextObjectInArea,0x005232B0,__thiscall,4,Steam batch B0: no content anchor (C0) (evidence steam_db_batches/B0/evidence.tsv)
+CSWSArea,GetFirstObjectInArea,0x00523250,__thiscall,4,Steam batch B0: no content anchor (C0) (evidence steam_db_batches/B0/evidence.tsv)
+CSWSArea,SetMaxStealthXP,0x0052DE00,__thiscall,4,Steam batch B0: no content anchor (C0) (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
 CSWSArea,LoadRoomInfo,0x005258A0,__thiscall,4,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
 CSWSArea,LoadRooms,0x005259B0,__cdecl,4,Steam batch B0: SIG 0.50 (evidence steam_db_batches/B0/evidence.tsv)
 CSWSEffectListHandler,OnApplySummonParty,0x00599A10,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
 CSWSEffectListHandler,OnApplyForceResistanceIncrease,0x0059F710,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
 CSWSEffectListHandler,OnApplyInvisibility,0x005A1C50,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
 CSWSEffectListHandler,OnApplyDispelAllMagic,0x005A2EE0,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8
-CSWSEffectListHandler,OnApplyTimestop,0x005A4D70,__thiscall,12,"Steam batch B0: CALLEE 2 (GetActiveTimer 0x51c350,AddWorldTimes 0x51aef0); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8"
+CSWSEffectListHandler,OnApplyTimestop,0x005A4D70,__thiscall,12,"Steam batch B0: CALLEE 2 (callees: GetActiveTimer 0x51c350, AddWorldTimes 0x51aef0); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 8"
 CSWSEffectListHandler,OnApplyNegativeLevel,0x005A65D0,__thiscall,12,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
 CSWSCombatRound,DEBUGDumpCombatRoundToScreen,0x00593000,__thiscall,8,Steam batch B0: SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv); GOG param_size_bytes 0
-CSWSEncounter,AIUpdate,0x00623330,__thiscall,0,Steam batch B0: CALLEE 1 (SubtractWorldTimes 0x51af60); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)
+CSWSEncounter,AIUpdate,0x00623330,__thiscall,0,Steam batch B0: CALLEE 1 (callees: SubtractWorldTimes 0x51af60); SIG 1.00 (evidence steam_db_batches/B0/evidence.tsv)

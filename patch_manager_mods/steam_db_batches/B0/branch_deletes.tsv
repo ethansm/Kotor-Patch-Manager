@@ -1,3 +1,5 @@
 class	function	address	reason
 CVirtualMachineStack	ClearStack	0x006fd6b0	gog_db_param_bad;why:G4 steam retn 0 vs GOG retn 12 (no thunk explanation)
+CSWSArea	Constructor_2	0x0052be60	override: [f2] not a function: 2nd chunk of ClearLineOfSight (GOG 0x720d10+0xb0; 176+352+239=767 B = Steam 0x52bb60, part e). No Steam row for this name. Real CSWSArea ctor = GOG 0x716560
+CSWSArea	Destructor_3	0x0091c7cf	override: [merge] not a function: 3rd Ghidra chunk of ClearLineOfSight 0x720d10 (176+352+239=767 B = Steam 0x52bb60; e2 finding 3, same proof as f2 row 0x720dc0). No Steam row for this name. Real ~CSWSArea = GOG 0x716b80
 CSWGuiBorderParams	SetFillImage	0x00414840	why:G6 address held by trusted CSWGuiControl

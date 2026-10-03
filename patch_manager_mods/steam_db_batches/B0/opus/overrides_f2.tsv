@@ -1,0 +1,56 @@
+gog_addr	steam_addr	final_verdict	note
+0x0071ce60	0x00527cb0	verified	fp=; 00527ce1 PUSH 0x993778 'StoreList'; CSWSStore ctor/LoadStore/LoadFromTemplate callees = Mac LoadStores. G8 (LoadPlaceables) false: that one has 'Placeable List'
+0x0071fb00	0x0052a950	verified	fp=; 0052a979 PUSH 0x9936e0 'TriggerList'; callees+strings = Mac SaveTriggers (1.00/1.00). G8 (SavePlaceables) false
+0x00720dc0	0x0052bb60	rejected	not a function: 2nd chunk of ClearLineOfSight (GOG 0x720d10+0xb0; 176+352+239=767 B = Steam 0x52bb60, part e). No Steam row for this name. Real CSWSArea ctor = GOG 0x716560
+0x00722d30	0x0052dc50	verified	fp=; 0052dc98 MOV ECX,[EAX+0x194] / 0052dce8 MOV [EAX+0x198],0; GetObjectArray+GetGameObject = Mac ClearObjects (disp 0x194,0x198)
+0x00722de0	0x0052dd00	verified	fp=; 0052dd46 MOV EAX,[EDX+0x2ec] / 0052dd30 [EAX+0x2f4]; DistributeExperience+UpdateStatus+party table = Mac AwardStealthXP
+0x00722f60	0x0052de80	verified	fp=; 0052df1f PUSH 0x993958 'NORMALHEAD'; C2DA::GetINTEntry + GetCreatureByGameObjectID = Mac EnforceNoPCHeadCloning
+0x00723140	0x0052e060	verified	fp=; 0052e0ff MOV [ECX+0x8c],EAX (Mac SetFogColor disp 0x8c; +0x8c = 'SunFogColor' field of LoadProperties), RET 4
+0x00774920	0x00590270	verified	fp=; 0059027c CMP [EAX+0xb00],0, AddTail/AddBefore/GetAtPos on list +0xb00 = Mac AddAction; called by Add*Action (005917e0, 005919b0)
+0x00775e90	0x005917e0	verified	fp=; 0059184f MOV byte [EDX+0x10],0xe (action type 14) + CALL 0x590270 AddAction; Mac imm 0xe,0x3e8. G8 (AddSWItemSpellAction, type 0xa) false
+0x00776060	0x005919b0	verified	fp=; 00591a1f MOV byte [EDX+0x10],0xc (type 12) + AddAction, RET 0x14; Mac AddCutsceneMoveActions imm 0xc. G8 false
+0x006e41c0	0x006a7d40	label_suspect	body = min(100, b[+0x128]+b[+0x129]+b[+0x12a]) (006a7d6b CMP ECX,0x64); Mac GetForceResistance = [+0x12b]-[+0x12c]. Real one = GOG 0x6f7190 (FUN_) -> 0x6bad10
+0x006e4230	0x006a7db0	verified	fp=; 006a7eb2 CALL GetBaseAttackBonus, GetTotalEffectBonus, IsLightsaber, GetRelativeWeaponSize; feat imm 0x9c..0xa1, 0x71..0x73 = Mac GetMeleeAttackBonus
+0x006e47f0	0x006a8370	verified	fp=; 006a85ba CALL 0x6b8ee0 (GetWeaponSpecialization, as Mac) + 006a84fa [EDX+0x53c]; feat imm 0x99..0x9b,0xac..0xae = Mac
+0x006e50a0	0x006a8c20	verified	fp=; 006a8d95 CALL 0x6b8ee0 (GetWeaponSpecialization) + 006a8e70 PUSH 0xf0 (imm 0xf0..0xf4), GetPropertyByType = Mac GetRangedDamageBonus
+0x006e5580	0x006a9100	verified	fp=; 006a92b1 PUSH 0x9993f8 'DamageMult'; RollDice, GetWeightedDamageAmount, GetDifficultyOption = Mac GetUnarmedDamageRoll
+0x006e5820	0x006a93a0	verified	fp=; 006a96fb PUSH 0x999594 ' + %d (Base Attack Bonus)'; strings 1.00 / callees 0.81 vs Mac GetAttackModifierVersus
+0x006e83f0	0x006abf70	verified	fp=; 006ac180 PUSH 0x999750 ' + %d (Offhand Strength Bonus) (Critical x%d)' (Mac string); GetCriticalHitMultiplier + RollDice = Mac GetDamageBonus
+0x006e9340	0x006acec0	verified	fp=; 006aced5 MOV EAX,[EDX+0x10dc]; GetAttack + GetCurrentAttackWeapon, disp set identical to Mac ResolveSpecialAttackAttackBonus
+0x006f5360	0x006b8ee0	label_suspect	= GetWeaponSpecialization: 006b8f09 MOV CX,[EAX+0xb0] then HasFeat (Mac 74 B disp 0xb0; Focus=0xb2); callers Melee/Ranged/DamageBonus as Mac. UnReadySpell = GOG 0x6f5630
+0x006f5630	0x006b91b0	label_suspect	= UnReadySpell: callees 6/6 = Mac (SetCurrentHitPoints, no rand); sole caller DecrementSpellReadyCount (00581909, Mac same). SpecialAbility = GOG 0x6f7340 -> 0x6baec0
+0x006f5ac0	0x006b9640	verified	fp=; 006b9672 CALL 0x6b9790 CanLevelUp, LevelUp, AddEventAbsoluteTime imm 0x25 = Mac ValidateLevelUp
+0x006f5c10	0x006b9790	verified	fp=; 006b97aa CALL GetLevel + GetServerInfo accessor 006b97b5; disp 0x11ac,0x68,0x38 = Mac CanLevelUp
+0x006f5cf0	0x006b9870	verified	fp=; 006b9bed CALL AddFeat, 006b9cb5 AddKnownSpell, GetMaxForcePoints, Set*Base = Mac LevelUp
+0x006f6200	0x006b9d80	verified	fp=; 006ba276 CALL UnequipItem + 006ba25a CanEquipItem, RemoveFeat = Mac LevelDown
+0x006f8560	0x006bc0e0	verified	fp=; 006bc224 CALL GetCreatureHasTalent, 006bc152 MOV [EBP-0x24],0xffffff9c, CheckInclusionMatch, rand = Mac GetCreatureTalentRandomFeat
+0x006f88b0	0x006bc430	verified	fp=; 006bc45b MOV AX,[EDX+EAX*2] if idx<[+4] else 0xffff = Mac GetFeat (disp 0x4); _2 is an overload suffix (one Mac symbol)
+0x006f89b0	0x006bc530	verified	fp=; 006bc53c [EAX+0x1c] / 006bc559 [ECX+0x18] = Mac GetBonusFeat (disp 0x18,0x1c); GetFeat uses +0/+4
+0x006f89f0	0x006bc570	verified	fp=; 006bc5fd MOV AL,[EDX+0x122] / 006bc5af [ECX+0x18a], GetInteger = Mac GetEffectImmunity (0x122,0x16a,0x18a,0x1198)
+0x006f8e20	0x006bc9a0	verified	fp=; 006bcd6d CALL SendFeedbackMessage, 006bca98 GetEffectImmunity, recursion 006bcdb2, imm 0x7d..0x92 = Mac GetEffectLinkImmunity
+0x006f9280	0x006bce00	verified	fp=; GetSpellGainWithBonus + IsForceUserClass callees = Mac AdjustSpellUsesPerDay (IsJedi); ClassInfo spell-gain accessors inlined on Mac
+0x006f9420	0x006bcfa0	verified	fp=; caller 006bae97 from real TalentRandomPower (GOG 0x6f7280, part e2) as on Mac; rand 006bd6fc, CStr, Add, GetRoomForceRating = Mac KnownPower
+0x006f9c90	0x006bd810	verified	fp=; SLA list [+0x134] stride 0xc, id match then 006bd878 MOV AL,[EAX+ECX+0x8] else 0xff = Mac GetSpellLikeAbilityCasterLevel
+0x006f9d10	0x006bd890	verified	fp=; 006bd89c FLD [EAX+0x1bc] / 006bd8a8 FSTP [ECX+0x1bc], floor = Mac AdjustHPAccumulatorBy (0x1bc)
+0x006f9e40	0x006bd9c0	verified	fp=; caller CanChooseSpell 006be6dc CALL 0x6bd9c0 (Mac CanChooseSpell->HasSpell); GetRoomForceRating, GetInteger, +0x8d/+0x90 = Mac HasSpell
+0x006fa150	0x006bdcd0	verified	fp=; 006bdcf6 MOV [ECX+0x8d],AL (class count +1), 006bdd2d CALL SetClassLevel = Mac AddClass (0x8d, imm 0x28)
+0x006fa4c0	0x006be040	label_suspect	= last-class id: 006be081 MOV DL,[ECX+EAX+0xab], EAX=(n-1)*0x28, 0xff if none; no SLA list. Name unknown. Real GetIsInSpellLikeAbilityList = GOG 0x6f6d70 -> 0x6ba8f0
+0x006fa520	0x006be0a0	verified	fp=; 006be0f8 ADD EAX,[ECX+0x124], GetFeat + IsBonusFeat + IsNormalFeat = Mac SetNormalBonusFlags
+0x006fa5d0	0x006be150	verified	fp=; 006be1dc PUSH 0x995164 'baodur' (+ 'kreia'), FeatRequirementsMet, SetNormalBonusFlags = Mac CanChooseFeat
+0x006faa70	0x006be5f0	verified	fp=; 006be6dc CALL 0x6bd9c0 HasSpell, GetSpellLevel, HasSpellPrereq = Mac CanChooseSpell (4/4)
+0x0073b770	0x00598e80	verified	fp=; 00598ed2 MOV [EAX+0xfdc],1 + 00598ee9 RET 0xc = Mac OnApplyAssuredHit (0xfdc x2, Mac +4 0x34); Remove is RET 8. G8 false
+0x007ea040	0x00623b90	verified	fp=; caller UpdateActivateAreaList 00624057 CALL 0x623b90 (Mac same edge); 00623c15 [EAX+0x2d0] polygon test + fabs. G8 false
+0x00666f70	0x00603740	verified	fp=; 00603753 PUSH 0x995348 'ItemList', SaveItem + ItemListGetItem = Mac SaveContainerItems
+0x00667090	0x00603860	verified	fp=; 00603944 CALL 0x603b50 GetUsedActivePropertyUsesLeft + SendServerToPlayerUpdateActiveItemProperties = Mac
+0x00667380	0x00603b50	verified	fp=; 00603c05 [EDX+0x298] / 00603bda [EDX+0x2cc], imm 0xa,0x11 = Mac GetUsedActivePropertyUsesLeft; caller UpdateUsedActiveProperties
+0x00667a90	0x00604260	verified	fp=; 00604272 [EAX+0x288] / 0060428c ADD EAX,[ECX+0x290] = Mac GetActiveProperty (0x288,0x290); Passive uses 0x28c/0x294
+0x00667ad0	0x006042a0	verified	fp=; 006042b2 [EAX+0x28c] / 006042cc ADD EAX,[ECX+0x294] = Mac GetPassiveProperty (0x28c,0x294)
+0x00667b10	0x006042e0	verified	fp=; 00604345 AND EDX,[EAX+0x2d4] / 00604325 MOV AL,[EDX+0x11], RET 0xc = Mac GetPropertyByType disp. G8 (ApplyItemProperties) false
+0x00667d40	0x00604510	verified	fp=; 00604566 CALL 0x6042a0 GetPassiveProperty + OnItemPropertyApplied (GOG callee) = Mac ApplyItemProperties
+0x00770810	0x005f6470	verified	fp=; 005f6544 MOV [EAX+0x3e8],1 / 005f6554 MOV [ECX+0x3e4],EDX, 'LightColor', RET 4 = Mac SetLightIsOn (0x3e4 x2,0x3e8); Get has no arg. G8 false
+0x00481d80	0x006e8de0	verified	fp=; 006e8e32 PUSH 0x99acec 'VFX_Persistent' (+ 'DurationVFX' 006e8e97); column strings = Mac. G8 false
+0x00482710	0x006e9770	verified	fp=; 006e97bc PUSH 0x99ad2c 'GenericDoors' + 006e980c 'SoundAppType' = Mac. G8 false
+0x004830e0	0x006ea140	verified	fp=; 006ea18c PUSH 0x99addc 'AmbientMusic' = Mac. G8 false
+0x00641ad0	0x006fe890	verified	fp=; 006fe8b5 CMP ECX,0x3 (type int) then 006fe8c6 ADD EDX,[EBP+0xc] into values[loc], RET 8: adds to an int slot. No Mac symbol
+0x00641b20	0x006fe8e0	verified	fp=; 006feba0 MOV EAX,[EDX+0x3d4], ClearStack 006fe90d + memcpy + CExoString = Mac CopyFromStack. G8 (SaveStack, GFF strings) false
+0x00861e10	0x0046fbd0	verified	fp=; 0046fbf8 PUSH 0x98bda8 '.vis', 0046fc47 CALL sscanf with '%s%d', AurResGet/SetVisibility = Mac LoadVisibility

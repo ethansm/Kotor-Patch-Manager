@@ -1,0 +1,7 @@
+class	function	steam_addr	calling_convention	param_size_bytes	note
+CSWSCreatureStats	GetClass	0x00844e40	thiscall	4	GOG DB maps this name to 0x48F9B0 (= CSWCCreatureStats::GetClass, client stats +0xF8); Steam 0x844E40 is its unique fingerprint-identical counterpart (51 B, RET 4); GOG label suspect
+CGuiInGame	ShutDownGlobal	0x007bdb10	thiscall	4	GOG 0x4CDDA0 is a vector-deleting dtor of a 16 B {CExoString,CExoString}; Steam 0x7BDB10 is its unique identical counterpart (173 B, RET 4); real ShutDownGlobal not located; GOG label suspect
+CSWGuiBorderParams	SetFillImage	0x00414840	thiscall	8	GOG 0x912C10 -> Steam 0x414840 unique identical fingerprint (219 B, RET 8; CALLEE 4, SIG 1.0); KDB describes the same function as the CSWGuiControl image setter
+CSWSObject	GetLastName	0x0053ef50	thiscall	0	GOG 0x6A5CE0 -> Steam 0x53EF50 unique identical fingerprint (17 B, RET 0); branch had 0x53F000 (GetPortraitId); GOG label suspect
+CSWSPlaceable	GetDead	0x00619e30	thiscall	0	GOG 0x770DA0 -> Steam 0x619E30 unique identical fingerprint (35 B, RET 0): checks this+0xFC then calls CSWSObject::GetDead 0x5477F0
+Scene	SetGeomFadeProperties	0x004725e0	thiscall	4	GOG 0x864820 -> Steam 0x4725E0 unique identical fingerprint (45 B, RET 4); name unconfirmed (no content anchor)

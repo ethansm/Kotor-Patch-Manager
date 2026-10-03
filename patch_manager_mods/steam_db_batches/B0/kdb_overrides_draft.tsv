@@ -1,0 +1,5 @@
+steam_addr	action	name	note
+0x008827a0	rename	CSWGuiMainMenu::OnLoadSaveGame	Opus gate 4c: this 395 B / RET 4 body does new(0x1b74) + CSWGuiSaveLoad ctor 0x850770 = GOG 0x53d240 OnLoadSaveGame; the KDB label OnLoadGamePicked was Batch 1 wrong symbol (the real OnLoadGamePicked is 0x8824f0)
+0x0054d3d0	demote		Opus B0 semantic: batch5 delta-projection label SetHitInfoForCreature; body = EvaluateOverlappingTargets, the real SetHitInfoForCreature is 0x556040
+0x006076d0	rename	CSWSItem::GetUpgradableType	B0 final (GOG 0x66af00): 721 B body with [EAX+0x2f0] test, [ECX+0xac] and GetBaseItem callee matches Mac GetUpgradableType; GetUpgradeType is a mods678 paraphrase, not an equivalent name
+0x00740fc0	rename	CClientExoApp::GetCharacterChangeInProgress	Same function as the KDB label "GetCharacterChangeInProgress (client app, plain RET)" (reads [this+4]+0x4ac, setter twin 0x740fe0); only adds the class qualifier of the DB convention, old label kept in evidence

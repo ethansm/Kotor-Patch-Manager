@@ -23,10 +23,10 @@
   "8": 10,
   "9": 10
  },
- "full_read": 148,
+ "full_read": 146,
  "sample_errors": null,
- "sample_pool": 507,
+ "sample_pool": 505,
  "sample_rate": 0.2,
- "sample_size": 102,
+ "sample_size": 101,
  "unanswered_decoys": 0
 }
