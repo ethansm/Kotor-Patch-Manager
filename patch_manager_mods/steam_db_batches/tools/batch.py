@@ -206,6 +206,17 @@ def build_candidates(corpus: bd.Corpus, scorer: bd.Scorer, g: GogFn, mapper: dic
     return cands
 
 
+def parse_gog_range(spec: str) -> tuple[int, int]:
+    """`lo:hi` (hex, 0x prefix optional): GOG addresses in [lo, hi).  die() on a bad format or an empty range."""
+    m = re.fullmatch(r"\s*(?:0x)?([0-9a-fA-F]+)\s*:\s*(?:0x)?([0-9a-fA-F]+)\s*", spec or "")
+    if not m:
+        die("--gog-range %r: expected hex lo:hi, e.g. 0x400000:0x6a0000" % spec)
+    lo, hi = int(m.group(1), 16), int(m.group(2), 16)
+    if lo >= hi:
+        die("--gog-range %r: lo must be below hi (lo inclusive, hi exclusive)" % spec)
+    return lo, hi
+
+
 def cmd_candidates(args) -> int:
     paths = bd.get_paths()
     bdir = paths.batches / args.batch
@@ -223,6 +234,9 @@ def cmd_candidates(args) -> int:
         rows = [g for g in corpus.gog if g.cls in classes]
     if args.name_regex:
         rows = [g for g in rows if re.search(args.name_regex, g.func)]
+    if args.gog_range is not None:
+        lo, hi = parse_gog_range(args.gog_range)
+        rows = [g for g in rows if lo <= g.addr < hi]
     extra: dict[int, list] = {}
     if args.extra_candidates:
         for r in iter_tsv(Path(args.extra_candidates)):
@@ -1382,7 +1396,6 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
     chunks = sorted({k["chunk"] for k in key_rows}, key=bd.chunk_key)
     reviewed = {k["chunk"] for k in key_rows if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) in rev_by_pair}
     decoys = [k for k in key_rows if k["kind"].startswith("decoy") and k["chunk"] in reviewed]
-    per_chunk = Counter(k["chunk"] for k in decoys)
     shipped_pairs = set()
     for ga, ov in (overrides or {}).items():
         if (ov.get("final_verdict") or "").strip() in ("verified", "likely") and (ov.get("steam_addr") or "").strip():
@@ -1397,8 +1410,11 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
     reviewer_accepted = [k for k in decoys if accepted_by_reviewer(k)]
     key_errors = [k for k in reviewer_accepted if is_key_error(k)]
     accepted = [k for k in reviewer_accepted if not is_key_error(k)]
+    # a key-error decoy was the true counterpart, so it is not a valid control: it counts toward no chunk's minimum
+    valid_decoys = [k for k in decoys if not is_key_error(k)]
+    per_chunk = Counter(k["chunk"] for k in valid_decoys)
     unanswered = [k for k in decoys if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) not in rev_by_pair]
-    gate = bd.decoy_gate(chunks, reviewed, {c: [accepted_by_reviewer(k) and not is_key_error(k) for k in decoys if k["chunk"] == c]
+    gate = bd.decoy_gate(chunks, reviewed, {c: [accepted_by_reviewer(k) for k in valid_decoys if k["chunk"] == c]
                                             for c in reviewed}, MIN_DECOYS, partial)
     short = gate["short"]
     # rows that Opus reads in full
@@ -1922,7 +1938,9 @@ def cmd_check_validated(args) -> int:
         row = {"steam_addr": a, "name": name, "verdict": "", "tier": "", "batch": "", "note": ""}
         if m:
             row.update(verdict=m[ix["verdict"]], tier=m[ix["tier"]], batch=m[ix["batch"]])
-            if m[ix["fp_sha"]] and shas.get(addr, "") != m[ix["fp_sha"]]:
+            if not m[ix["fp_sha"]]:
+                row.update(status="nohash", note="mark has no body hash; re-check")
+            elif shas.get(addr, "") != m[ix["fp_sha"]]:
                 row.update(status="stale", note="Steam body hash changed since %s" % m[ix["batch"]])
             else:
                 row["status"] = "validated"
@@ -1934,8 +1952,8 @@ def cmd_check_validated(args) -> int:
     if args.out:
         write_tsv(Path(args.out), CHECK_COLS, out)
     cnt = Counter(r["status"] for r in out)
-    print("check-validated: branch rows %d: validated %d (skip), stale %d, unvalidated %d" % (
-        len(out), cnt["validated"], cnt["stale"], cnt["unvalidated"]))
+    print("check-validated: branch rows %d: validated %d (skip), stale %d, unvalidated %d, nohash %d" % (
+        len(out), cnt["validated"], cnt["stale"], cnt["unvalidated"], cnt["nohash"]))
     for r in [r for r in out if r["status"] != "validated"][:args.show]:
         print("  %-11s %s %s %s" % (r["status"], r["steam_addr"], r["name"], r["note"]))
     return 0
@@ -2015,6 +2033,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-reexport", action="store_true", help="never refresh DUMP/inputs/name_map.tsv")
     p.add_argument("--findings-dir", default=None, help="where mapper output goes (default DUMP/findings)")
     p.add_argument("--name-regex", default=None, help="keep only GOG functions whose name matches (re.search)")
+    p.add_argument("--gog-range", default=None, metavar="LO:HI",
+                   help="keep only GOG functions with LO <= address < HI (hex, e.g. 0x400000:0x6a0000)")
     p.add_argument("--extra-candidates", default=None,
                    help="TSV `gog steam source`: extra candidates with that source tag (e.g. B<n>/extra_candidates.tsv)")
     p = sub.add_parser("gates", help="invariants, anchors, gate classes")

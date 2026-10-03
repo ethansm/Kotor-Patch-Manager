@@ -1,0 +1,2 @@
+steam_addr	action	name	note
+0x006e6880	rename	CSWSCreature::GetFirstAttacker	fp=GOG 0x662b80 (446 B RET 0, 127 insn); disp 0x194/0x198/0x548/0x11a4/0x11a8 + imm 0x7f000000 = Mac CSWSCreature::GetFirstAttacker 0x378234; sole caller ExecuteCommandGetAttacker 0x696bf0. Was gog_cluster_delta_map low guess

@@ -120,7 +120,35 @@ class KeyErrorTests(Base):
             self.gate()
         finally:
             bd.decoy_gate = orig
-        self.assertEqual(seen, {"1": [False]})
+        # changed: key-error decoys are now left out of the list entirely (they used to be passed as False and
+        # counted toward the chunk's MIN_DECOYS minimum)
+        self.assertEqual(seen, {"1": []})
+
+    def extra_decoys(self, n):
+        rows = [{"card_id": "B1-1-%02d" % (i + 2), "chunk": 1, "gog": h(GOG_BASE + 0x1000 + 0x10 * i),
+                 "steam_addr": "0x%08x" % (0x00520000 + 0x10 * i), "kind": "decoy_next", "expected": "mismatch"}
+                for i in range(n)]
+        batch.write_tsv(self.bdir / "cards" / "key.tsv", ["card_id", "chunk", "gog", "steam_addr", "kind", "expected"],
+                        list(bd.iter_tsv(self.bdir / "cards" / "key.tsv")) + rows)
+
+    def test_key_error_decoy_does_not_count_toward_min_decoys(self):
+        self.extra_decoys(batch.MIN_DECOYS - 1)          # exactly MIN_DECOYS decoys in chunk 1, one of them Theta
+        self.add_override("0x005102c0", "verified")
+        g, md, out = self.gate()
+        self.assertEqual((g["key_errors"], g["decoys_accepted"], g["decoy_cards"]), (1, 0, batch.MIN_DECOYS))
+        self.assertEqual(g["decoys_per_chunk"], {"1": batch.MIN_DECOYS - 1})
+        self.assertEqual(g["chunks_short"], ["1"])
+        self.assertFalse(g["clean"])
+        self.assertTrue(g["decision"].startswith("INSUFFICIENT"), g["decision"])
+
+    def test_min_decoys_met_without_the_key_error_stays_clean(self):
+        self.extra_decoys(batch.MIN_DECOYS)              # MIN_DECOYS valid decoys + the key error
+        self.add_override("0x005102c0", "verified")
+        g, _md, _out = self.gate()
+        self.assertEqual((g["key_errors"], g["chunks_short"]), (1, []))
+        self.assertEqual(g["decoys_per_chunk"], {"1": batch.MIN_DECOYS})
+        self.assertTrue(g["decision"].startswith("OK"), g["decision"])
+        self.assertTrue(g["clean"])
 
 
 def rows_json(n_full, n_sample, n_auto):

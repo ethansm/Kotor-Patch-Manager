@@ -109,11 +109,9 @@ class CheckValidatedTests(FinalizedB1):
         self.assertEqual(rc, 0)
         self.assertIn("branch rows 0: validated 0 (skip), stale 0, unvalidated 0", out)
 
-    def test_mark_with_empty_fp_hash_is_validated_and_never_stale(self):
-        # Behaviour pinned from the code: `if m[fp_sha] and shas.get(addr) != m[fp_sha]` -> an empty hash skips the
-        # staleness test, so the mark is `validated` even though the Steam fp.tsv has a body hash for that address.
-        # write_validated stores '' when the address is missing from fp.tsv, so such a mark can never go stale
-        # (REPORTED: looks weak; a body that later appears/changes at that address is not detected).
+    def test_mark_with_empty_fp_hash_is_nohash_never_validated(self):
+        # Expectation changed (DESIGN 4.7): an empty fp_sha used to skip the staleness test and pass as `validated`;
+        # it is now `nohash` ("re-check"), because a mark without a body hash proves nothing about the body.
         self.assertIn(0x510000, batch.steam_fp_shas(bd.get_paths()))             # a real hash exists for Alpha
         self.insert_mark("0x00510000", "CFoo::Alpha", "")
         self.set_branch(self.world.branchdb, [("CFoo", "Alpha", 0x510000)])
@@ -121,10 +119,13 @@ class CheckValidatedTests(FinalizedB1):
         rc, out = run("check-validated", "--out", str(out_tsv))
         self.assertEqual(rc, 0, out)
         (row,) = list(bd.iter_tsv(out_tsv))
-        self.assertEqual((row["status"], row["note"]), ("validated", ""))
+        self.assertEqual((row["status"], row["note"]), ("nohash", "mark has no body hash; re-check"))
         self.assertEqual((row["verdict"], row["tier"], row["batch"]), ("verified", "auto:c2", "B1"))
+        self.assertIn("validated 0 (skip), stale 0, unvalidated 0, nohash 1", out)
+        self.assertIn("  nohash      0x00510000 CFoo::Alpha mark has no body hash; re-check", out)
 
     def test_mark_with_null_fp_hash_behaves_like_empty(self):
+        # Expectation changed with the nohash status: a NULL hash is an empty hash, so `nohash`, not `validated`.
         con = sqlite3.connect(str(self.world.kdb))
         con.execute(batch.VALIDATED_DDL)
         con.execute("insert into steam_validated(steam_addr,name,verdict,batch) values('0x00510000','CFoo::Alpha','verified','B1')")
@@ -134,7 +135,7 @@ class CheckValidatedTests(FinalizedB1):
         out_tsv = self.root / "null_fp.tsv"
         rc, _out = run("check-validated", "--out", str(out_tsv))
         self.assertEqual(rc, 0)
-        self.assertEqual([r["status"] for r in bd.iter_tsv(out_tsv)], ["validated"])
+        self.assertEqual([r["status"] for r in bd.iter_tsv(out_tsv)], ["nohash"])
 
     def test_mark_whose_hash_matches_is_validated_and_a_wrong_hash_is_stale(self):
         good = batch.steam_fp_shas(bd.get_paths())[0x510000]
@@ -166,11 +167,11 @@ class CheckValidatedTests(FinalizedB1):
         self.assertEqual((by["CFoo::Alpha"]["status"], by["CFoo::Alpha"]["tier"], by["CFoo::Alpha"]["verdict"]),
                          ("validated", "opus", "verified"))
         self.assertEqual((by["CFoo::Eta"]["status"], by["CFoo::Eta"]["batch"], by["CFoo::Eta"]["verdict"]),
-                         ("validated", "B3", "likely"))
+                         ("nohash", "B3", "likely"))       # changed: Eta's mark has an empty hash -> nohash, not validated
         self.assertEqual(by["CFoo::Never"]["status"], "unvalidated")
         self.assertEqual(by["CFoo::Theta"]["status"], "stale")
         self.assertEqual(by["CFoo::Theta"]["note"], "validated at 0x005102c0, branch has 0x00510ff0")
-        self.assertIn("validated 2 (skip), stale 1, unvalidated 1", out)
+        self.assertIn("validated 1 (skip), stale 1, unvalidated 1, nohash 1", out)
 
     def test_show_limits_listed_rows_but_not_the_out_file(self):
         self.set_branch(self.world.branchdb, [("CFoo", "N%d" % i, 0x510000 + 0x10 * i) for i in range(5)])
@@ -342,6 +343,29 @@ class NameRegexExtraCandidatesTests(Base):
         self.assertEqual(rows, {})
         self.assertIn("warning: class CFoo has no GOG functions", out)
         self.assertEqual((self.root / "batches" / "B7" / "candidates.tsv").read_text().strip(), "\t".join(batch.CANDIDATE_COLS))
+
+    def test_gog_range_keeps_only_addresses_in_lo_inclusive_hi_exclusive(self):
+        everything, _out = self.candidates()
+        lo, hi = GOG_BASE + 0x2C0, GOG_BASE + 0x500
+        want = {n for n, r in everything.items() if lo <= bd.parse_addr(r["gog"]) < hi}
+        self.assertIn("Theta", want)                                   # the lo edge is inclusive
+        self.assertTrue(want and want < set(everything))
+        rows, _out = self.candidates("--gog-range", "0x%x:0x%x" % (lo, hi))
+        self.assertEqual(set(rows), want)
+        self.assertTrue(all(lo <= bd.parse_addr(r["gog"]) < hi for r in rows.values()))
+        # hi is exclusive: a range ending exactly at Theta's address drops Theta
+        rows, _out = self.candidates("--gog-range", "%x:%x" % (lo - 0x40, lo))
+        self.assertNotIn("Theta", rows)
+        # combines with --name-regex (both filters apply)
+        rows, _out = self.candidates("--gog-range", "0x%x:0x%x" % (lo, hi), "--name-regex", "^Theta$")
+        self.assertEqual(set(rows), {"Theta"})
+
+    def test_gog_range_malformed_or_empty_dies(self):
+        for bad in ("0x400000", "zz:0x500000", "0x400000-0x500000", "0x500000:0x400000", "0x400000:0x400000", ""):
+            rc, _out, err = run_exit("candidates", "B7", "--classes", "CFoo", "--no-reexport",
+                                     "--findings-dir", str(self.root / "findings"), "--gog-range", bad)
+            self.assertNotEqual(rc, 0, bad)
+            self.assertIn("--gog-range", err, bad)
 
     def test_without_name_regex_all_class_rows_are_kept(self):
         rows, _out = self.candidates()
