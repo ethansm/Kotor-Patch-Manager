@@ -51,6 +51,6 @@ Branch `KOTOR-II`. Commits: `7d7e310` S1 (V7), `0fa8046` S2 (L4), `40e2161` S3 (
 - Never stage `research/companion_levelup/logs/*` or `ranged_ai_src/script/kite_routine.nss` (sibling-owned).
 
 ## 5. Next phase
-Plan file: `~/.claude/plans/` (written right after this file; repo copy `engine_bug_research/PHASE3_PLAN.md`). Summary: user runs T1/T2 (+T3/T4/T5) ->
+**Phase 3 context: `15d_phase3_session_context_2026-10-03.md`.** Plan file: `~/.claude/plans/` (written right after this file; repo copy `engine_bug_research/PHASE3_PLAN.md`). Summary: user runs T1/T2 (+T3/T4/T5) ->
 log/screenshot analysis -> L1/L4 acceptance (log trim, version bump) -> static triage of the not-yet-examined KMRP topics (K3 + 7 docs) -> optional
 upstream PR (user-gated).
