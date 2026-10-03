@@ -1,0 +1,5 @@
+ M Patches/Common/GameAPI/CClientExoApp.cpp
+ M Patches/Common/GameAPI/CClientExoApp.h
+ M Patches/Common/GameAPI/CSWCObject.cpp
+ M Patches/Common/GameAPI/CSWCObject.h
+ M Patches/Common/GameAPI/CSWCPlaceable.cpp

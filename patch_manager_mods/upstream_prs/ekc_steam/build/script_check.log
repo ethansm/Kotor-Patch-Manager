@@ -1,0 +1,14 @@
+K1 old 25 new 27
+K2 GOG equal: True
+K2 Steam len 27 GOG len 27
+constants removed/changed: {'K2_JOURNAL_PANEL_VTABLE', 'K2_INVENTORY_PANEL_VTABLE'}
+constants added: set()
+hooks 6 6
+0x72cb63 CaptureActionBarInputK2 bytes_match_exe True fields_eq_gog True
+0x40c4a6 MapMovieDeleteToEscapeK2 bytes_match_exe True fields_eq_gog True
+0x7ac470 DispatchContextCancelK2 bytes_match_exe True fields_eq_gog True
+0x74b3f0 UpdateActionBarControlsK2 bytes_match_exe True fields_eq_gog True
+0x74a750 ClearActionBarControlsK2 bytes_match_exe True fields_eq_gog True
+0x72e0bc CancelActionBarKeyboardFocusOnMouseMoveK2 bytes_match_exe True fields_eq_gog True
+target ['6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF'] gog ['777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914']
+OVERALL True

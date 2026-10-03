@@ -87,11 +87,17 @@ Phase 0 (refresh):
 - Phase 1 research inputs snapshotted to the session scratchpad: upstream/master export, Steam vanilla exe (6a522e71),
   branch DB copy at 4324098.
 
-### RESUME HERE (stopped at usage limit, 10-03)
-- Phase 1 DONE + gated + committed (0069e63): see `upstream_prs/README.md` (gate results, decisions).
-- Phase 2 STARTED then STOPPED: worktrees created from upstream/master 8b33840:
-  `tools/kpm-pr-gameapi` (gameapi/match-engine-signatures), `tools/kpm-pr-ekc` (port/k2-expandedkeyboard-steam),
-  `tools/kpm-pr-acc` (port/k2-acc-steam). I1/I2/I3 agents were killed mid-edit: inspect `git -C <wt> status/diff`,
-  then either finish or `git checkout .` and re-run the I1-I3 briefs (scope: R1 Commit 1 only; R2 port_spec;
-  R4 draft TOML + manifest 1.5.0). Nothing committed on those branches.
-- Phases 3-4 not started. Open user decision: runscript/`classes` fix (see upstream_prs/README.md).
+### State after Phases 2-3 (10-03)
+- Phase 2 DONE, lead-reviewed, committed (nothing pushed):
+  - `gameapi/match-engine-signatures` (worktree tools/kpm-pr-gameapi): c9d1aba, ec8b268, b3c6cca, f19550c (7 rows,
+    R1 Commit 1). validate 0 errors; publish-patches windows_x86 25/25. Lead re-checked Gob::EnableRenderBumpedOut
+    (Steam `fld [ebp+0xc]` 0x45C45C, `ret 8` 0x45C48C); no callers outside GameAPI.
+  - `port/k2-expandedkeyboard-steam` (tools/kpm-pr-ekc): c90fd4f, 1.19.0. Lead checked GOG/Steam config field order,
+    constant deltas (+0x22E880 action-bar fns, -0x4FE480 GUI manager fns), prologues. `.kpatch` for the user's test:
+    `upstream_prs/ekc_steam/build/ExpandedKeyboardControl.kpatch` (sha 7197ec83...).
+    It conflicts with ForcePowerHotbar (both detour 0x72CB63/0x74B3F0).
+  - `port/k2-acc-steam` (tools/kpm-pr-acc): acdfeeb, 1.5.0. Hook bytes re-read by lead. `.kpatch` in acc_parity/build/.
+- Phase 3 DONE: drafts in `upstream_prs/drafts/` (pr_gameapi, pr_ekc, pr_acc, issue_gog_db_missing_names, pr_db_note,
+  followups_291_294). Nothing posted.
+- NEXT = Phase 4 user gates: push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
+  PR; file the issue; runscript/classes decision.

@@ -1,0 +1,8 @@
+WARN K2AntiSkipPatch
+       version '0.1' is not major.minor.patch
+WARN PartyRosterLimit32K1
+       version '0.0.1b' is not major.minor.patch
+WARN PartyRosterLimit32K2
+       version '0.0.1b' is not major.minor.patch
+
+64 patches checked, 0 with errors, 3 with warnings
