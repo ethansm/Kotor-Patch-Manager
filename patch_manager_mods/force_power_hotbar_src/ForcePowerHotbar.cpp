@@ -62,12 +62,8 @@ constexpr int MaxEntries = 256;
 // ---- on-screen buttons: CSWGuiLabel widgets, see 07_force_power_hotbar.md "Bottom-bar UX" ---------
 constexpr uintptr_t FnNew = gameaddr::New;           // cdecl(size)
 constexpr uintptr_t LabelVtable = gameaddr::LabelVtable, BorderVtable = gameaddr::BorderVtable;
-constexpr int LabelSize = 0x148;
-constexpr int Label_Border = 0x60;                // embedded CSWGuiBorder
-constexpr int Ctl_Flags = 0x48;                   // bit1 = visible (panel Draw skips the control otherwise)
-constexpr int Ctl_Id = 0x54;
-constexpr int Border_W = 0xC, Border_H = 0x10, Border_Alpha = 0x24, Border_Fill = 0x74;
-constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
+// LabelSize / guikit::Label_Border / guikit::Ctl_Flags (bit1 = visible) / Ctl_Id / guikit::Border_Alpha / guikit::Border_Fill / Panel_Ctl* come from guikit:: (values identical).
+constexpr int Border_W = 0xC, Border_H = 0x10;     // border width/height (not in GuiKit)
 constexpr int ButtonCount = 10;
 constexpr uintptr_t ProjectionFlag = gameaddr::ProjectionFlag;
 // (FUN_0073FEA0 screen-info getter is a THISCALL reading [ecx+0x274]: never call it without a valid this)
@@ -88,7 +84,6 @@ constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t GuiSoundMgrGlobal = gameaddr::GuiSoundMgr;  // global GUI sound manager pointer (hover sound played through guikit)
 constexpr uintptr_t TextVtable = gameaddr::TextVtable;
-constexpr int Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18;
 constexpr DWORD TipDelayMs = 450;
 constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 3;   // px estimates for dialogfont16x16 at 2.667 px/unit
 const char* const Spells2daPath = "override/spells.2da";
@@ -119,7 +114,8 @@ void logf(const char* fmt, ...) {
 }
 
 // saferead site ids (per DLL; the ring buffer reports them). 0x4800-0x48FF belong to this mod.
-enum Site : unsigned { S_Hud = 0x4801, S_Entry, S_Ctl, S_Border, S_Geom, S_Create, S_Save, S_Tex, S_Input, S_Misc, S_Aspect, S_Proj, S_Target };
+enum Site : unsigned { S_Hud = 0x4801, S_Entry, S_Ctl, S_Border, S_Geom, S_Create, S_Save, S_Tex, S_Input, S_Misc, S_Aspect, S_Proj, S_Target,
+                       S_WrSel, S_WrActive, S_WrProjSet, S_WrProjRestore };   // 0x480E..0x4811: probeWrite sites
 
 int rdInt(unsigned site, uintptr_t base, int off, int dflt = 0) { int v; return saferead::readAt(site, base, off, &v) ? v : dflt; }
 
@@ -348,7 +344,7 @@ bool resolve(uintptr_t hud, const hb::ActionRef& want, Entry* out) {
 void invokeEntry(uintptr_t hud, const Entry& e) {
     int* sel = reinterpret_cast<int*>(hud + Hud_GroupSel + e.group * 4);
     int* active = reinterpret_cast<int*>(hud + Hud_ActiveGroup);
-    if (IsBadWritePtr(sel, 4) || IsBadWritePtr(active, 4)) { logf("  invoke: hud selection not writable"); return; }
+    if (!saferead::probeWrite(S_WrSel, sel, 4) || !saferead::probeWrite(S_WrActive, active, 4)) { logf("  invoke: hud selection not writable"); return; }
     VLOG("  invoke: pre group=%d key=%08x sel=%08x active=%d", e.group, (unsigned)e.key, (unsigned)*sel, *active);
     int oldSel = *sel, oldActive = *active;
     *sel = e.key;
@@ -497,20 +493,21 @@ const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" 
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
 void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
     if (!b.ctl) return;
-    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(b.ctl), Ctl_Flags, &fl)) { logf("btn[%d].%s: flags unreadable, cannot set visible", slot, wname(b, bt)); return; }
+    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(b.ctl), guikit::Ctl_Flags, &fl)) { logf("btn[%d].%s: flags unreadable, cannot set visible", slot, wname(b, bt)); return; }
     if (b.visible == (vis ? 1 : 0) && b.why == why) return;
+    // Common candidate later: guikit::setVisible clears bit5 on show for every control; here bit5 follows per-widget rules (frames / hit flag), so the writes stay local.
     int nf = vis ? (fl | 2) : (fl & ~2);
     if (&b == &bt.bg) nf = vis ? (nf & ~0x20) : (nf | 0x20);   // shown frames are hit-testable so clicks on the bar do not reach the world
-    if (nf != fl) *reinterpret_cast<int*>(b.ctl + Ctl_Flags) = nf;
+    if (nf != fl) *reinterpret_cast<int*>(b.ctl + guikit::Ctl_Flags) = nf;
     VLOG("btn[%d].%s key %c: %s -> %s (%s) flags %08x->%08x", slot, wname(b, bt), slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
     b.visible = vis ? 1 : 0; b.why = why;
 }
 
 void setFill(Button& bt, Widget& b, int slot, const std::string& icon) {
     if (!b.ctl || b.icon == icon) return;
-    uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + Label_Border;
+    uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + guikit::Label_Border;
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
-    int old = rdInt(S_Border, border, Border_Fill);
+    int old = rdInt(S_Border, border, guikit::Border_Fill);
     if (!guikit::setFill(reinterpret_cast<uintptr_t>(b.ctl), image)) {
         int bvt = rdInt(S_Border, border, 0);
         logf("btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str());
@@ -528,6 +525,7 @@ void setAlpha(Button& bt, Widget& b, int slot, float a) {
 }
 
 // ---- hover: poll the OS cursor against the frame's pixel rect (labels are click-through, so the game never sees the mouse over them)
+// Common candidate later: GuiKit's gameWindow() picks the LARGEST visible window of the pid; this takes the FIRST > 320x240 (and retries every 120 frames, logs the pick).
 HWND g_gameWnd = nullptr;
 BOOL CALLBACK enumWnd(HWND h, LPARAM lp) {
     DWORD pid = 0; GetWindowThreadProcessId(h, &pid);
@@ -620,9 +618,9 @@ void setRect(Widget& w, const char* nm, int x, int y, int ww, int hh) {
 }
 
 void setWidgetVisible(Widget& w, bool vis) {
-    int fl = 0; if (!w.ctl || !saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) return;
+    int fl = 0; if (!w.ctl || !saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), guikit::Ctl_Flags, &fl)) return;
     int nf = vis ? (fl | 2) : (fl & ~2);
-    if (nf != fl) *reinterpret_cast<int*>(w.ctl + Ctl_Flags) = nf;
+    if (nf != fl) *reinterpret_cast<int*>(w.ctl + guikit::Ctl_Flags) = nf;
     w.visible = vis ? 1 : 0;
 }
 
@@ -636,8 +634,8 @@ void hideTip(const char* why) {
 void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor = -1) {
     if (!g_bar.tip.ctl || !g_bar.tipBg.ctl) { logf("tip: show slot %d skipped: tooltip labels not bound (bg=%p text=%p)", s, (void*)g_bar.tipBg.ctl, (void*)g_bar.tip.ctl); g_bar.tipSlot = s; return; }
     g_bar.tipText = text;
-    uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + Label_Text;
-    if (rdInt(S_Border, tx, 0) != (int)TextVtable || rdInt(S_Border, tx, Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(S_Border, tx, 0), (unsigned)rdInt(S_Border, tx, Text_Renderer)); g_bar.tipSlot = s; return; }
+    uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + guikit::Label_Text;
+    if (rdInt(S_Border, tx, 0) != (int)TextVtable || rdInt(S_Border, tx, guikit::Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(S_Border, tx, 0), (unsigned)rdInt(S_Border, tx, guikit::Text_Renderer)); g_bar.tipSlot = s; return; }
     guikit::setText(tc, text.c_str());
     int lines = 1, maxLen = 0, cur = 0;
     for (char c : text) { if (c == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
@@ -686,15 +684,15 @@ void updateHover(bool gate) {
         if (b.bg.ctl && b.bg.visible) setFill(b, b.bg, s, (hov || selected) ? FrameHiResref : FrameResref);
     }
     {   // left click on an available slot = same request as its digit key
-        static bool prevDown = false;
-        bool down = gate && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
-        if (down && !prevDown && over >= 0 && g_bar.ed.mode != M_Normal) logf("click: slot %d in %s mode -> handled by the editor, not invoked", over, ModeName[g_bar.ed.mode]);
-        else if (down && !prevDown && over >= 0) {
+        static guikit::ClickEdge clickState;
+        if (!gate) clickState.prev = false;   // as before: a press held while the HUD was inactive does not fire when it becomes active
+        bool click = gate && guikit::clickEdge(clickState);   // clickEdge also requires the game window to be foreground
+        if (click && over >= 0 && g_bar.ed.mode != M_Normal) logf("click: slot %d in %s mode -> handled by the editor, not invoked", over, ModeName[g_bar.ed.mode]);
+        else if (click && over >= 0) {
             bool ok = g_bar.b[over].avail;
             logf("click: slot %d %s", over, ok ? "queued" : "ignored (no action)");
             if (ok) { int next = (g_ringHead + 1) % 16; if (next == g_ringTail) logf("click: ring full, dropped"); else { g_ring[g_ringHead] = { over }; g_ringHead = next; } }
         }
-        prevDown = down;
     }
     if (over >= 0 && g_bar.b[over].avail && g_bar.tipSlot != over && GetTickCount() - g_bar.hoverStart >= TipDelayMs) showTipAt(g_bar.b[over].bg, g_bar.b[over].entry, slotDigit(over), over);
     if ((over < 0 || !g_bar.b[over].avail) && g_bar.tipSlot < CellTipBase) hideTip("no hover");
@@ -752,12 +750,13 @@ void updateButtons(uintptr_t hud, bool gate) {
 // ---- generic widget helpers for the editor controls (log every change) -------------------------------------
 void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
     if (!w.ctl) return;
-    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), Ctl_Flags, &fl)) { logf("edit: %s flags unreadable", nm); return; }
+    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), guikit::Ctl_Flags, &fl)) { logf("edit: %s flags unreadable", nm); return; }
+    // Common candidate later: guikit::setVisible clears bit5 on show for every control; here bit5 follows per-widget rules (frames / hit flag), so the writes stay local.
     int nf = vis ? (fl | 2) : (fl & ~2);
     nf = (vis && hit) ? (nf & ~0x20) : (nf | 0x20);   // hit-testable only while shown, so hidden controls never swallow clicks
     int v = vis ? 1 : 0;
     if (w.visible == v && nf == fl) return;
-    *reinterpret_cast<int*>(w.ctl + Ctl_Flags) = nf;
+    *reinterpret_cast<int*>(w.ctl + guikit::Ctl_Flags) = nf;
     VLOG("edit: %s %s -> %s flags %08x->%08x", nm, w.visible < 0 ? "?" : (w.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", (unsigned)fl, (unsigned)nf);
     w.visible = v;
 }
@@ -787,6 +786,7 @@ void wTextColor(Widget& w, const char* nm, const float* rgb) {
     VLOG("edit: %s text colour (%.2f,%.2f,%.2f) -> (%.2f,%.2f,%.2f)", nm, w.curRgb[0], w.curRgb[1], w.curRgb[2], rgb[0], rgb[1], rgb[2]);
     w.curRgb[0] = rgb[0]; w.curRgb[1] = rgb[1]; w.curRgb[2] = rgb[2];
 }
+// Common candidate later: guikit::hit() re-reads the visible flag from the engine; this tests the cached Widget::visible (set by our own writes).
 bool wHit(const Widget& w, const POINT& pt) {
     if (!w.ctl || w.visible != 1) return false;
     uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = 0, y = 0, ww = 0, hh = 0; guikit::getExtent(c, &x, &y, &ww, &hh);
@@ -882,7 +882,7 @@ void scrollPicker(int no, const char* why) {
 void updateEditor(uintptr_t hud, bool gate) {
     Editor& ed = g_bar.ed;
     if (g_bar.panel != hud || g_bar.built == 0 || !g_bar.editBound) return;
-    static std::string lastChar = "\x01"; static bool prevDown = false; static bool lastFgOk = true;
+    static std::string lastChar = "\x01"; static guikit::ClickEdge clickState; static bool lastFgOk = true;
     ensureWheelHook();
     if (lastChar != g_charKey) { if (lastChar != "\x01" && ed.mode != M_Normal) setMode(M_Normal, -1, "character changed"); lastChar = g_charKey; }
     if (!gate && ed.mode != M_Normal) setMode(M_Normal, -1, "gate closed");
@@ -892,8 +892,9 @@ void updateEditor(uintptr_t hud, bool gate) {
     HWND fg = GetForegroundWindow(); DWORD fgPid = 0; if (fg) GetWindowThreadProcessId(fg, &fgPid);
     bool fgOk = fg && fgPid == GetCurrentProcessId();
     if (fgOk != lastFgOk) { logf("edit: foreground window %p pid=%lu ours=%d", (void*)fg, (unsigned long)fgPid, (int)fgOk); lastFgOk = fgOk; }
-    bool down = gate && fgOk && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
-    bool click = down && !prevDown; prevDown = down;
+    if (!gate) clickState.prev = false;
+    bool click = gate && guikit::clickEdge(clickState);   // clickEdge = LMB down AND game window foreground (same test as fgOk above)
+    bool down = clickState.prev;   // level state (gate && fg && LMB), as the old local `down`
 
     // ---- visibility of the always-present toggle and the mode-dependent parts
     bool showTitle = gate && ed.mode != M_Normal, showPick = gate && ed.mode == M_Pick;
@@ -1017,6 +1018,7 @@ void updateEditor(uintptr_t hud, bool gate) {
 
 // Layout units -> px. With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8).
 // The HUD is drawn at a uniform H/600 px per unit, so x/width are squeezed by c = (H/600)/(W/800) afterwards.
+// Common candidate later: guikit::Scale derives from a reference label's rect; this is the 800x600 layout space plus an x squeeze for non-4:3 windows (InitControl's scaling).
 struct Scale { double sx = 1.0, sy = 1.0, c = 1.0; };   // layout units -> px as InitControl scales (sx, sy), then the x squeeze c
 Scale g_scale;
 void aspectFix() {
@@ -1053,7 +1055,7 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
         return nullptr;
     }
     unsigned char* ctl = reinterpret_cast<unsigned char*>(c);
-    int index = rdInt(S_Create, panel, Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
+    int index = rdInt(S_Create, panel, guikit::Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
     if (index < 0) { logf("H3 %s: panel control count unreadable, control not created", sp.name); return nullptr; }
     const Scale& k = g_scale;
     int r[4] = { (int)((int)(sp.x * k.sx) * k.c + 0.5), (int)(sp.y * k.sy), (int)((int)(sp.w * k.sx) * k.c + 0.5), (int)(sp.h * k.sy) };
@@ -1063,19 +1065,19 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     if (sp.text) textOk &= guikit::setText(c, sp.text);
     if (sp.align >= 0) textOk &= guikit::setAlign(c, (unsigned)sp.align);
     if (!textOk) logf("H3 %s: text object bad, font/text/align not applied", sp.name);
-    uintptr_t border = c + Label_Border;
+    uintptr_t border = c + guikit::Label_Border;
     if (sp.fill) {
-        if (rdInt(S_Create, border, Border_Fill)) logf("H3 %s: template already has a fill, keeping it", sp.name);
+        if (rdInt(S_Create, border, guikit::Border_Fill)) logf("H3 %s: template already has a fill, keeping it", sp.name);
         else guikit::setFill(c, imageFor(sp.fill));
     }
     // Hidden until the tick decides. Bit5 (0x20) makes the label's hit-test (0x00418D20) reject the mouse, so a hidden control never
     // swallows clicks; the tick clears it on shown frames/editor controls so clicks on the bar do not reach the world.
     guikit::setVisible(c, false);
     if (!guikit::appendToPanel(panel, c)) {
-        int cnt = rdInt(S_Create, panel, Panel_CtlCount, -1);
+        int cnt = rdInt(S_Create, panel, guikit::Panel_CtlCount, -1);
         logf("H3 %s: append to the panel list failed (count %d -> %d), control not used", sp.name, index, cnt); return nullptr;
     }
-    float ba = 1.0f; saferead::readAt(S_Create, border, Border_Alpha, &ba);
+    float ba = 1.0f; saferead::readAt(S_Create, border, guikit::Border_Alpha, &ba);
     int ex = 0, ey = 0, ew = 0, eh = 0; guikit::getExtent(c, &ex, &ey, &ew, &eh);
     VLOG("H3 %s: created at index %d from %s rect=[%d,%d,%d,%d] fill=%s text=%s", sp.name, index, TemplateTags[sp.tmpl],
          ex, ey, ew, eh, sp.fill ? sp.fill : "-", sp.text ? sp.text : "-");
@@ -1386,7 +1388,7 @@ extern "C" void __cdecl HotbarOnNewGame() { saferead::beginScope(); replaceLiveP
 extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     saferead::beginScope();
     uintptr_t panel = static_cast<uintptr_t>(panelArg);
-    int before = rdInt(S_Create, panel, Panel_CtlCount, -1);
+    int before = rdInt(S_Create, panel, guikit::Panel_CtlCount, -1);
     logf("H3 build: panel=%08x vtable=%08x controls=%d gff=%08x (previous bar panel=%08x built=%d)", (unsigned)panel, (unsigned)rdInt(S_Create, panel, 0), before, (unsigned)rdInt(S_Create, panel, 0x30), (unsigned)g_bar.panel, g_bar.built);
     if (!panel || !saferead::probeRead(S_Create, reinterpret_cast<void*>(panel), 0x40)) { logf("H3: panel null/unreadable, abort"); return; }
     if (g_bar.panel) logf("H3: replacing bar of old HUD %08x (its labels stay leaked, never freed)", (unsigned)g_bar.panel);
@@ -1396,7 +1398,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     int* projFlag = reinterpret_cast<int*>(ProjectionFlag);
     int savedFlag = !saferead::probeRead(S_Proj, projFlag, 4) ? 0 : *projFlag;
     logf("H3: projection flag %08x = %d (cleared for the binds, restored after)", (unsigned)ProjectionFlag, savedFlag);
-    if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = 0;
+    if (savedFlag && saferead::probeWrite(S_WrProjSet, projFlag, 4)) *projFlag = 0;
     aspectFix();
     ensureTextures();
     // Every control is created from Layout[] and appended after the native ones (ids base..base+56). A control that fails stays
@@ -1409,9 +1411,9 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     g_editOpen = false; g_escHit = false; g_pickRect[2] = 0; g_wheelAccum = 0;   // editor state is per HUD instance
     g_bar.editBound = (eb == EditorControlCount) ? 1 : 0;   // a partial editor UI would be confusing: all or nothing
     if (g_bar.pbg.ctl) for (int i = 0; i < 4; ++i) g_bar.ed.pbgRect[i] = rdInt(S_Create, reinterpret_cast<uintptr_t>(g_bar.pbg.ctl), 4 + 4 * i);
-    if (savedFlag && !IsBadWritePtr(projFlag, 4)) *projFlag = savedFlag;
+    if (savedFlag && saferead::probeWrite(S_WrProjRestore, projFlag, 4)) *projFlag = savedFlag;
     g_bar.built = built;
-    int after = rdInt(S_Create, panel, Panel_CtlCount, -1);
+    int after = rdInt(S_Create, panel, guikit::Panel_CtlCount, -1);
     logf("H3: %d controls created at runtime (indices %d..%d), %d/%d buttons, editor controls %d/%d -> editor %s, picker background rect [%d,%d,%d,%d]",
          created, before, after - 1, built, ButtonCount, eb, EditorControlCount, g_bar.editBound ? "ENABLED" : "DISABLED",
          g_bar.ed.pbgRect[0], g_bar.ed.pbgRect[1], g_bar.ed.pbgRect[2], g_bar.ed.pbgRect[3]);
