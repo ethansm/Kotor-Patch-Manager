@@ -6,10 +6,10 @@ Rows: 201. Source order for tie-breaks: server > trusted name_map > mapper:vote 
 
 | class | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|
-| CSWSCreature | 147 | 39 | 13 | 2 | 201 |
-| **all** | 147 | 39 | 13 | 2 | 201 |
+| CSWSCreature | 150 | 35 | 14 | 2 | 201 |
+| **all** | 150 | 35 | 14 | 2 | 201 |
 
-AUTO by route: c2=96 sig=51 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=110 sig=40 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 
@@ -26,23 +26,22 @@ AUTO by route: c2=96 sig=51 (the sig route is non-propagating, see DESIGN 4.2)
 - CSWSCreature::ApplyOnHitKnockdown gog 0x00662900 -> 0x006e6ac0: G4 steam retn 0 vs GOG retn 8 (no thunk explanation)
 - CSWSCreature::SetAttackSummaryFeedbackEffectData gog 0x00663170 -> 0x006e71d0: G4 steam retn 0 vs GOG retn 8 (no thunk explanation)
 - CSWSCreature::GetNearestEnemy gog 0x006954c0 -> 0x0057c990: G6 address held by trusted CSWSCreature::GetNearestVisibleEnemyInRange
+- CSWSCreature::SetLastInstantEquip gog 0x00696db0 -> 0x0057e280: G6 address held by trusted CSWSCreature::RemoveMindTrickAndScrambleEffects
 
 ## Duplicates and conflicts (G6)
 
 - CSWSCreature::CancelAllCombatModes gog 0x00656dd0 -> 0x006dab20: review:held_by=CSWSCreature::EndAttackAction
-- CSWSCreature::ResolveMeleeSpecialAttack gog 0x0065b5a0 -> 0x00542e00: review:held_by=CSWSObject::DoDamageImmunity
 - CSWSCreature::ResolveRangedMiss gog 0x0065c680 -> 0x00543ae0: review:held_by=CSWSObject::DoSpellImmunity
 - CSWSCreature::ResolveMeleeAnimations gog 0x0065c710 -> 0x00543ae0: review:held_by=CSWSObject::DoSpellImmunity
 - CSWSCreature::CalculateMaxElementalDamage gog 0x0065da20 -> 0x005452c0: review:held_by=CSWSObject::RemoveEffectTarget
 - CSWSCreature::ResolveOnHitEffect gog 0x0065f2a0 -> 0x00546540: review:held_by=CSWSObject::SendDialogEntry
-- CSWSCreature::DoCombatStep gog 0x0065fd40 -> 0x00547100: review:held_by=CSWSObject::BroadcastDialog
 - CSWSCreature::ApplyOnHitPoison gog 0x00661b60 -> 0x00548db0: review:held_by=CSWSObject::CalculateSpellRangedMissTarget
 - CSWSCreature::ApplyOnHitInstantDeath gog 0x006625d0 -> 0x006e6880: review:held_by=CSWSCreature::GetFirstAttacker
 - CSWSCreature::SetAttackSummaryFeedbackEffectData gog 0x00663170 -> 0x006e71d0: fail:trusted_holder=CTwoDimArrays::Constructor
 - CSWSCreature::BroadcastStealthDetectionData gog 0x00692f53 -> 0x0057a420: review:held_by=CSWSCreature::BroadcastPoisoned
 - CSWSCreature::GetNearestEnemy gog 0x006954c0 -> 0x0057c990: fail:trusted_holder=CSWSCreature::GetNearestVisibleEnemyInRange
 - CSWSCreature::AddUseTalentOnObjectActions gog 0x006963e0 -> 0x0057d8b0: review:held_by=CSWSCreature::UseTalentOnObject
-- CSWSCreature::SetLastInstantEquip gog 0x00696db0 -> 0x0057e530: review:held_by=CSWSCreature::GetArmorClass
+- CSWSCreature::SetLastInstantEquip gog 0x00696db0 -> 0x0057e280: fail:trusted_holder=CSWSCreature::RemoveMindTrickAndScrambleEffects
 
 ## G4 metadata flags
 

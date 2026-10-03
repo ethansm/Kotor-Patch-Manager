@@ -1,0 +1,11 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x00657710	CSWSCreature::IsInTotalDefense_2	0x006db460	60 B thunk to client ranged-animation getter, disp 4, imm 0xc; body is not a total-defense predicate	review:sonnet_c1.tsv
+0x0065c680	CSWSCreature::ResolveRangedMiss	0x006e0380	Candidate (761 B, new/SendFeedback) differs; 0x6e0380 matches GOG disp 0xd8 and all imm ids but is an animation-id predicate	review:sonnet_c1.tsv
+0x00680a70	CSWSCreature::AddDropItemActions	0x00567e40	Counterpart exact (3 callees, disp 8/0xec, imm 3/7/0xc/0x14/0xffff, caller); called by PickUpItem command, no location param: not Drop	review:sonnet_c1.tsv
+0x00680b30	CSWSCreature::AddHealActions	0x00567f00	Counterpart exact (5 callees, disp, imm, caller); body adds action 9 with a location vector from PutDownItem, not heal	review:sonnet_c1.tsv
+0x0068a4b0	CSWSCreature::ResolveInitiative	0x00571980	Imm 0xa, size 28, 2 callers, order fit; body is bool param<10, not an initiative roll; counterpart not strongly anchored	review:sonnet_c1.tsv
+0x0068ddf0	CSWSCreature::RemoveMindTrickEffects	0x005752c0	Candidate is the 161 B init callee; 0x5752c0 matches size 120, imm 0x10/0x1c/0x20, disp 4/8, but is a follow-info constructor	review:sonnet_c1.tsv
+0x0068f7d0	CSWSCreature::GetBlind	0x00576ca0	Disp 0x6c/0x74, imm 0x100/0x28, size 277, RET 8 match; body removes action-list entries by type, not GetBlind	review:sonnet_c1.tsv
+0x00692f53	CSWSCreature::BroadcastStealthDetectionData	0x0057a420	Same body as 0x692f50 (GOG 0x692f53 is mid-function); caller OnApplyPoison and subtype 0x1b: Poisoned fits better than Stealth label	review:sonnet_c1.tsv
+0x00693490	CSWSCreature::GetDetectMode	0x0057a960	Counterpart by disp 0x51c+0x11ac, size 43, AddAttackActions caller; body writes a field, void, not a getter	review:sonnet_c1.tsv
+0x00693ac0	CSWSCreature::AddPickUpItemActions	0x0057af90	Counterpart exact (2 callees, 4 disp, imm 2/0xc/0x1c) but body copies an armor field to stats+0xfa; no AddAction, not pick-up	review:sonnet_c1.tsv
