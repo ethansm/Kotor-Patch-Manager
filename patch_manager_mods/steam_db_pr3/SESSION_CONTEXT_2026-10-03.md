@@ -99,5 +99,8 @@ Phase 0 (refresh):
   - `port/k2-acc-steam` (tools/kpm-pr-acc): acdfeeb, 1.5.0. Hook bytes re-read by lead. `.kpatch` in acc_parity/build/.
 - Phase 3 DONE: drafts in `upstream_prs/drafts/` (pr_gameapi, pr_ekc, pr_acc, issue_gog_db_missing_names, pr_db_note,
   followups_291_294). Nothing posted.
-- NEXT = Phase 4 user gates: push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
+- 10-03 evening: #292/#293/#294 MERGED (16:14Z). #291 has 3 Lane review comments; license fix applied by user
+  (4e17f12); local commit 31dd299 (external patches + hooks link) on docs/contributing-guide, NOT pushed;
+  reply draft in drafts/followups_291_294.md.
+- NEXT = Phase 4 user gates (+ push 31dd299 and reply on #291): push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
   PR; file the issue; runscript/classes decision.
