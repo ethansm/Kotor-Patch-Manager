@@ -848,10 +848,18 @@ void spreadCompanions(int panel, int w) {
     if (!rec) { static int next = 0; rec = &g_shift[next++ & 7]; *rec = {}; rec->panel = panel; }
     const int dx[2] = { int(0.30f * w + 0.5f), int(1.00f * w + 0.5f) };
     for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
-        int addr = panel + MenuCharGroup[g][i] * 4 + 4, cur = 0;
-        if (!readAt(addr, 0, &cur)) continue;
+        int ctl = panel + MenuCharGroup[g][i] * 4, rc[4] = {};
+        for (int q = 0; q < 4; ++q) readAt(ctl, 4 + 4 * q, &rc[q]);
+        if (rc[2] < 1 || rc[3] < 1) continue;
+        int cur = rc[0];
         if (cur != rec->orig[g][i] && cur != rec->shifted[g][i]) { rec->orig[g][i] = cur; rec->shifted[g][i] = cur + dx[g]; }
-        *reinterpret_cast<int*>(addr) = rec->shifted[g][i];
+        if (cur == rec->shifted[g][i]) continue;
+        // engine SetRect (vtable slot 1, RET 4: moves the rect + border/text copies, so the drawn portrait follows; raw int writes only moved the hit area)
+        int vt = 0, fn = 0;
+        if (!readAt(ctl, 0, &vt) || !vt || !readAt(vt, 4, &fn) || !fn) continue;
+        int nr[4] = { rec->shifted[g][i], rc[1], rc[2], rc[3] };
+        reinterpret_cast<void(__thiscall*)(int, int*)>(fn)(ctl, nr);
+        probeLog("MENUMOVE g=%d i=%d x %d -> %d", g, i, cur, nr[0]);
     }
 }
 
@@ -887,8 +895,8 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
             { // bars around the portrait (HUD small-card geometry scaled to this card), shield beside the health bar
               int hp = 0, hpMax = 0, fp = 0, fpMax = 0;
               if (readVitals(comp[k], &hp, &hpMax, &fp, &fpMax)) {
-                  float sf = r[2] / 85.0f;
-                  int bw = int(47 * sf + 0.5f), bh = int(96 * sf + 0.5f), by = r[1] - int(5 * sf + 0.5f);
+                  float sf = (r[3] + 4) / 96.0f;                       // bars about as tall as the portrait (visible art = 97% of the draw height)
+                  int bw = int(47 * sf + 0.5f), bh = int(96 * sf + 0.5f), by = r[1] - 2;
                   int vx = r[0] - int(40 * sf + 0.5f), fx = r[0] + int(77 * sf + 0.5f);
                   drawGauge(HealthBarTexture, vx, by, bw, bh, HealthFillRed, hp, hpMax);
                   drawGauge(ForceBarTexture, fx, by, bw, bh, ForceFillCyan, fp, fpMax);
