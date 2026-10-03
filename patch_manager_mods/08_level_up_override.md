@@ -972,3 +972,12 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
     rewrites, lowercase keys, `|k=v` sub-fields with defaults (`instant=0 hold=1 pause=0`, `|pause=N` written only when N > 0 so old files
     round-trip byte-identical) and 257 host checks (`playthrough_test.cpp`). A Common IniFile could take the Doc/Section/Line core and leave the
     `|`-field parser to the mod.
+- M0 DONE (7ce13d5, `phase6_evidence/M0_save_layout.md`): active party members live ONLY in `availnpc<n>.utc` (SAVEGAME.sav); standing NPCs also
+  in the module .git (identical but ObjectId) -> forge edits both; live PC = nested `module.ifo` Mod_PlayerList[0] (pc.utc is a stale template);
+  LUO_G in GLOBALVARS `ValBoolean` MSB-first (QUICKSAVE = gfb7bdbf7; Game2 has no LUO_G); pykotor GlobalVars packs LSB-first (never use for
+  writes); venv has pykotor patch #6; ERF round-trip byte-stable per resource; .utc rewrite drops duplicate fields (only re-serialise edited ones).
+- M4 DONE (7ce13d5): `scripts/luo_log_check.py --from N [--scenario ID]` (V1-V7 PASS/PARTIAL/FAIL/NOT-EXERCISED, scenario regexes, DECIDE replay via
+  simulate_rewrite.level_now), 14 tests. Run 4b reproduces V6 PASS. Fixture note: `V_run4_log_387-448.txt` also contains the 4b launch from its
+  line 63. A1 todo: add `md5=` to the banner (cpp ~906) so the checker can verify the dll; CONFIG lines already carry `/p` since 0.3.1.
+  saves.toml patterns anchored (`^HOLD tag=atton ` - 'HOLD' alone matches UNHOLD/WOULD HOLD; APPLIED logs the preset id; PC logs `tag=?`).
+- Running: M1 forge, M2 ini switcher, M3 scenario runner (C++), C1b DB packet, B3 review.
