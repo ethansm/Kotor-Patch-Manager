@@ -1,8 +1,8 @@
 // Playthrough.h -- pure model of the per-playthrough level-up config (levelup_playthroughs.ini) and the playthrough GUID bit packing.
 // No windows.h, no STL, fixed caps (host-tested by research/companion_levelup/tools/parity/playthrough_test.cpp).
 //
-// File format: sections `[g<8 lowercase hex>]` (one per playthrough GUID), lines `<tag>=<preset id>|instant=0|1|hold=0|1` (missing fields:
-// instant 0, hold 1). Everything else (comments, blank lines, unparseable lines, other sections, lines before the first section) is kept
+// File format: sections `[g<8 lowercase hex>]` (one per playthrough GUID), lines `<tag>=<preset id>|instant=0|1|hold=0|1|pause=N` (missing fields:
+// instant 0, hold 1, pause 0; `|pause=N` is written only when N > 0, so older files round-trip byte-identical; a garbage/negative pause parses as 0 like the other numeric fields). Everything else (comments, blank lines, unparseable lines, other sections, lines before the first section) is kept
 // verbatim and in order, so a rewrite never destroys hand-written content. Tags/presets are lowercased on parse. If a cap is exceeded the
 // document is flagged `lossy` and the DLL refuses to rewrite the file.
 //
@@ -35,6 +35,7 @@ struct Line {
     char tag[TagLen] = "";          // isTag: lowercase tag
     char preset[PresetLen] = "";    // isTag: lowercase preset id
     bool instant = false, hold = true;
+    int pause = 0;                  // 0 = preset default; N > 0 = last character level taken before banking
 };
 struct Section {
     char name[NameLen] = "";        // as written between the brackets; sec[0] (the preamble) has no header
@@ -91,9 +92,9 @@ inline const Line* findTag(const Section& s, const char* tag) {
     return nullptr;
 }
 
-// Parses one value `<preset>|instant=0|1|hold=0|1` into l (tag already set). False when the preset is empty / too long.
+// Parses one value `<preset>|instant=0|1|hold=0|1|pause=N` into l (tag already set). False when the preset is empty / too long.
 inline bool parseValue(char* v, Line* l) {
-    l->instant = false; l->hold = true;
+    l->instant = false; l->hold = true; l->pause = 0;
     char* bar = strchr(v, '|');
     if (bar) *bar = 0;
     char* p = trimStr(v);
@@ -111,6 +112,7 @@ inline bool parseValue(char* v, Line* l) {
         lowerStr(k);
         if (!strcmp(k, "instant")) l->instant = atoi(val) != 0;
         else if (!strcmp(k, "hold")) l->hold = atoi(val) != 0;
+        else if (!strcmp(k, "pause")) { const int n = atoi(val); l->pause = n > 0 ? n : 0; }
     }
     return true;
 }
@@ -191,7 +193,8 @@ inline size_t serialise(const Doc& d, char* out, size_t cap) {
             const Line& l = s.lines[j];
             if (l.isTag) {
                 char b[MaxLine + 64];
-                snprintf(b, sizeof b, "%s=%s|instant=%d|hold=%d\n", l.tag, l.preset, l.instant, l.hold);
+                if (l.pause > 0) snprintf(b, sizeof b, "%s=%s|instant=%d|hold=%d|pause=%d\n", l.tag, l.preset, l.instant, l.hold, l.pause);
+                else snprintf(b, sizeof b, "%s=%s|instant=%d|hold=%d\n", l.tag, l.preset, l.instant, l.hold);
                 if (!put(b)) return 0;
             } else if (!put(l.text) || !put("\n")) {
                 return 0;
@@ -202,8 +205,8 @@ inline size_t serialise(const Doc& d, char* out, size_t cap) {
     return n;
 }
 
-// Sets (creating the section / line when missing) tag = preset|instant|hold in the section of `guid`. False on a bad/too-long argument or a full cap.
-inline bool setTag(Doc& d, uint32_t guid, const char* tag, const char* preset, bool instant, bool hold) {
+// Sets (creating the section / line when missing) tag = preset|instant|hold|pause (pause < 0 stored as 0) in the section of `guid`. False on a bad/too-long argument or a full cap.
+inline bool setTag(Doc& d, uint32_t guid, const char* tag, const char* preset, bool instant, bool hold, int pause) {
     if (!tag || !*tag || strlen(tag) >= TagLen || !preset || !*preset || strlen(preset) >= PresetLen || strchr(tag, '=') || strchr(preset, '|') || strchr(preset, '\n')) return false;
     Section* s = findGuid(d, guid);
     if (!s) {
@@ -225,7 +228,7 @@ inline bool setTag(Doc& d, uint32_t guid, const char* tag, const char* preset, b
     }
     snprintf(l->preset, sizeof l->preset, "%s", preset);
     lowerStr(l->preset);
-    l->instant = instant; l->hold = hold;
+    l->instant = instant; l->hold = hold; l->pause = pause > 0 ? pause : 0;
     return true;
 }
 

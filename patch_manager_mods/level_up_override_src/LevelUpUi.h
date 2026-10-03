@@ -1,4 +1,4 @@
-// LevelUpUi.h - M4 character-screen UI of Level-Up Override 0.3.0: Configure button (R6) with the R9 nudge, the single options page (OptionsLogic.h; WizardLogic.h supplies the Item type),
+// LevelUpUi.h - M4 character-screen UI of Level-Up Override 0.3.1: Configure button (R6) with the R9 nudge, the single options page (OptionsLogic.h; WizardLogic.h supplies the Item type),
 // the R11 status line. NOT a standalone header: LevelUpOverride.cpp includes it INSIDE its anonymous namespace after the gates (it uses the .cpp's
 // tagConfig / evalStats / ptApply / ptRemove / g_presets / bankedLevels / logLine), and includes GuiKit.h + WizardLogic.h at file scope.
 //
@@ -84,6 +84,7 @@ struct UiPanel {
     int nItems = 0, recItem = -1;
     opt::State os = {};
     bool instant = false, bank = true, failed = false;
+    int pause = 0;               // 0.3.1: bank on + pause N = last character level taken before banking; 0 = preset default (convertAt-1)
     int rowSlot[NumRows] = {};   // compact slot of each shown option row, -1 = hidden
 };
 UiPanel g_ui[MaxUiPanels];
@@ -233,6 +234,35 @@ int presetBaseClass(const Preset& p) {
     for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return p.lv[cl].cls;
     return -1;
 }
+// 0.3.1 Pause at level N. Only presets with a hold class and a conversion level can pause. Default pause = convertAt-1 (the preset's own rule);
+// valid explicit range minPause .. convertAt-2, minPause = max(1, char level of the first present record - 1) (the level the companion already is).
+bool uiCanPause(const Preset& p) { return p.holdClass != 0 && p.convertAt > 0; }
+int uiMinPause(const Preset& p) {
+    for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return cl - 1 > 1 ? cl - 1 : 1;
+    return 1;
+}
+// Pause value as stored: out of range (incl. the default convertAt-1 and above) or not pausable -> 0.
+int uiClampPause(const Preset& p, int pause) {
+    if (!uiCanPause(p) || pause < uiMinPause(p) || pause > p.convertAt - 2) return 0;
+    return pause;
+}
+// Next state of the Bank control: default -> convertAt-2 -> ... -> minPause -> Off -> default. Presets without a pause range just toggle.
+void uiBankCycle(const Preset& p, bool* bank, int* pause) {
+    if (!uiCanPause(p)) { *bank = !*bank; *pause = 0; return; }
+    if (!*bank) { *bank = true; *pause = 0; return; }
+    const int next = (*pause > 0 ? *pause : p.convertAt - 1) - 1;
+    if (next < uiMinPause(p)) { *bank = false; *pause = 0; } else *pause = next;
+}
+// Text of the Bank control (<= 18 chars: the control is 113 wide).
+const char* uiBankText(const Preset& p, bool bank, int pause, char* buf, size_t cap) {
+    if (!uiCanPause(p)) snprintf(buf, cap, "%s", bank ? "Bank for Jedi: On" : "Bank for Jedi: Off");
+    else if (!bank) snprintf(buf, cap, "Bank for Jedi: Off");
+    else snprintf(buf, cap, "Pause at level %d", pause > 0 ? pause : p.convertAt - 1);
+    return buf;
+}
+// Re-clamps the page's pause into the current preset's range (after a row cycle / Use recommended changed the preset).
+void uiClampPagePause(UiPanel* r) { if (r->os.n > 0) r->pause = uiClampPause(g_presets[r->itemPreset[r->os.cur]], r->pause); }
+
 // Opens the page: items = the tag's selectable presets; start = the configured preset, else the recommended one, else the first.
 void uiOpenPage(UiPanel* r, const char* tag) {
     uiClosePage(r);
@@ -258,6 +288,8 @@ void uiOpenPage(UiPanel* r, const char* tag) {
     opt::init(r->os, r->items, r->nItems, start);
     r->instant = configured ? cfg->instant : false;
     r->bank = configured ? cfg->hold : true;
+    r->pause = configured ? cfg->pause : 0;
+    uiClampPagePause(r);
     snprintf(r->pageTag, sizeof r->pageTag, "%s", tag);
     r->pageTable = g_tableStamp;
     r->open = r->nItems > 0;
@@ -304,7 +336,7 @@ void uiRenderPage(UiPanel* r, const char* tag) {
     uiShow(r, C_BUILD, true);
     uiSetText(r, C_INSTANT, r->instant ? "Instant: On" : "Instant: Off");
     uiShow(r, C_INSTANT, true);
-    uiSetText(r, C_BANK, r->bank ? "Bank for Jedi: On" : "Bank for Jedi: Off");
+    { char bb[24]; uiSetText(r, C_BANK, uiBankText(P, r->bank, r->pause, bb, sizeof bb)); }
     uiShow(r, C_BANK, P.holdClass != 0);
     uiSetText(r, C_REC, "Use recommended");
     uiShow(r, C_REC, r->recItem >= 0 && r->os.cur != r->recItem);
@@ -342,16 +374,17 @@ void uiClick(UiPanel* r, const char* tag, int ctl) {
     if (!r->open) return;
     if (ctl == C_CANCEL) { uiClosePage(r); return; }
     r->failed = false;
-    if (row >= 0) { opt::cycle(r->os, row, +1); return; }
+    if (row >= 0) { opt::cycle(r->os, row, +1); uiClampPagePause(r); return; }
     switch (ctl) {
     case C_INSTANT: r->instant = !r->instant; break;
-    case C_BANK: r->bank = !r->bank; break;
-    case C_REC: if (r->recItem >= 0) r->os.cur = r->recItem; break;   // re-init on the recommended item; toggles are kept
+    case C_BANK: uiBankCycle(g_presets[r->itemPreset[r->os.cur]], &r->bank, &r->pause); break;
+    case C_REC: if (r->recItem >= 0) { r->os.cur = r->recItem; uiClampPagePause(r); } break;   // re-init on the recommended item; toggles are kept (pause clamped)
     case C_APPLY: {
         const Preset& P = g_presets[r->itemPreset[r->os.cur]];
         const bool hold = P.holdClass ? r->bank : true;
-        const bool ok = ptApply(tag, P.id, r->instant, hold);
-        logLine("UI apply tag=%s preset=%s instant=%d hold=%d ok=%d", tag, P.id, r->instant, hold, ok);
+        const int pause = (P.holdClass && r->bank) ? uiClampPause(P, r->pause) : 0;
+        const bool ok = ptApply(tag, P.id, r->instant, hold, pause);
+        logLine("UI apply tag=%s preset=%s instant=%d hold=%d pause=%d ok=%d", tag, P.id, r->instant, hold, pause, ok);
         if (ok) uiClosePage(r); else r->failed = true;
         break;
     }

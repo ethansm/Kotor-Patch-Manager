@@ -72,9 +72,9 @@ int main() {
 
     // 4. set/remove keep other sections; remove keeps an empty section
     load(d, text);
-    CHECK(pt::setTag(d, 1, "HandON", "handon__p", true, false), "setTag new tag");
-    CHECK(pt::setTag(d, 1, "atton", "atton__other", false, true), "setTag existing tag");
-    CHECK(pt::setTag(d, 0xCAFEBABEu, "atton", "atton__z", false, true), "setTag new section");
+    CHECK(pt::setTag(d, 1, "HandON", "handon__p", true, false, 0), "setTag new tag");
+    CHECK(pt::setTag(d, 1, "atton", "atton__other", false, true, 0), "setTag existing tag");
+    CHECK(pt::setTag(d, 0xCAFEBABEu, "atton", "atton__z", false, true, 0), "setTag new section");
     { const pt::Section* s = pt::findGuid(d, 1); CHECK(s && pt::tagCount(*s) == 3, "g1 has 3 tags");
       const pt::Line* a2 = s ? pt::findTag(*s, "atton") : nullptr; CHECK(a2 && !strcmp(a2->preset, "atton__other") && !a2->instant && a2->hold, "atton replaced");
       const pt::Line* hn = s ? pt::findTag(*s, "handon") : nullptr; CHECK(hn && hn->instant && !hn->hold, "handon added"); }
@@ -94,14 +94,14 @@ int main() {
       pt::Doc* d2 = new pt::Doc; load(*d2, ser(d)); CHECK(pt::findGuid(*d2, 0xCAFEBABEu) != nullptr, "empty section survives re-parse"); delete d2; }
 
     // 5. caps / bad input
-    CHECK(!pt::setTag(d, 1, "", "p", false, true) && !pt::setTag(d, 1, "t", "", false, true) && !pt::setTag(d, 1, "a=b", "p", false, true) &&
-          !pt::setTag(d, 1, "t", "a|b", false, true), "bad setTag args rejected");
+    CHECK(!pt::setTag(d, 1, "", "p", false, true, 0) && !pt::setTag(d, 1, "t", "", false, true, 0) && !pt::setTag(d, 1, "a=b", "p", false, true, 0) &&
+          !pt::setTag(d, 1, "t", "a|b", false, true, 0), "bad setTag args rejected");
     { std::string big = "[g00000001]\n";
       for (int i = 0; i < pt::MaxTags + 1; ++i) { char b[64]; snprintf(b, sizeof b, "t%02d=p%02d\n", i, i); big += b; }
       load(d, big);
       const pt::Section* s = pt::findGuid(d, 1);
       CHECK(s && pt::tagCount(*s) == pt::MaxTags, "tag cap %d", s ? pt::tagCount(*s) : -1);
-      CHECK(!pt::setTag(d, 1, "extra", "p", false, true), "setTag at the tag cap fails");
+      CHECK(!pt::setTag(d, 1, "extra", "p", false, true, 0), "setTag at the tag cap fails");
       CHECK(ser(d).find("t16=p16\n") != std::string::npos || d.lossy, "17th tag line kept verbatim or flagged lossy"); }
     { std::string many;
       for (int i = 0; i < pt::MaxSections + 2; ++i) { char b[32]; snprintf(b, sizeof b, "[g%08x]\n", (unsigned)(i + 1)); many += b; }
@@ -111,6 +111,23 @@ int main() {
       load(d, longl); CHECK(d.lossy, "over-long line flagged lossy"); }
     load(d, "");
     CHECK(d.n == 1 && !d.lossy && ser(d).empty(), "empty file");
+
+    // 0.3.1 pause field: missing = 0, written only when > 0, garbage / negative / zero = 0, order-independent, round trip, setTag
+    load(d, "[g000000aa]\natton=a__b|instant=0|hold=1|pause=6\nbao=b__c|pause=3|instant=1\nkreia=k__x|instant=0|hold=1|pause=abc\nhk=h__x|pause=-4\nt3=t__x|pause=0\nmand=m__x|hold=0\n");
+    { const pt::Section* s = pt::findGuid(d, 0xaa);
+      const pt::Line* l1 = s ? pt::findTag(*s, "atton") : nullptr; CHECK(l1 && l1->pause == 6 && !l1->instant && l1->hold, "pause=6 parsed");
+      const pt::Line* l2 = s ? pt::findTag(*s, "bao") : nullptr; CHECK(l2 && l2->pause == 3 && l2->instant, "pause before instant (order-independent)");
+      const pt::Line* l3 = s ? pt::findTag(*s, "kreia") : nullptr; CHECK(l3 && l3->pause == 0, "garbage pause -> 0 (lenient, like instant/hold; not lossy)");
+      const pt::Line* l4 = s ? pt::findTag(*s, "hk") : nullptr; CHECK(l4 && l4->pause == 0, "negative pause -> 0");
+      const pt::Line* l5 = s ? pt::findTag(*s, "t3") : nullptr; CHECK(l5 && l5->pause == 0, "pause=0 -> 0");
+      const pt::Line* l6 = s ? pt::findTag(*s, "mand") : nullptr; CHECK(l6 && l6->pause == 0 && !l6->hold, "missing pause -> 0");
+      CHECK(!d.lossy, "pause parsing never flags lossy"); }
+    CHECK(ser(d) == "[g000000aa]\natton=a__b|instant=0|hold=1|pause=6\nbao=b__c|instant=1|hold=1|pause=3\nkreia=k__x|instant=0|hold=1\nhk=h__x|instant=0|hold=1\nt3=t__x|instant=0|hold=1\nmand=m__x|instant=0|hold=0\n", "pause serialisation:\n%s", ser(d).c_str());
+    { std::string o = ser(d); pt::Doc* d2 = new pt::Doc; load(*d2, o); CHECK(ser(*d2) == o, "pause lines are a fixed point"); delete d2; }
+    CHECK(pt::setTag(d, 0xaa, "atton", "a__b", false, true, 5) && pt::findTag(*pt::findGuid(d, 0xaa), "atton")->pause == 5, "setTag with pause");
+    CHECK(pt::setTag(d, 0xaa, "atton", "a__b", false, true, -2) && pt::findTag(*pt::findGuid(d, 0xaa), "atton")->pause == 0, "setTag negative pause stored as 0");
+    CHECK(pt::setTag(d, 0xaa, "atton", "a__b", false, true, 7) && pt::setTag(d, 0xaa, "atton", "a__b", false, true, 0) && ser(d).find("atton=a__b|instant=0|hold=1\n") != std::string::npos && ser(d).find("atton=a__b|instant=0|hold=1|pause") == std::string::npos, "setTag pause 0 drops the field");
+    { pt::Doc* d3 = new pt::Doc; load(*d3, "[g00000001]\nx=y__z|instant=1|hold=0\n"); CHECK(ser(*d3) == "[g00000001]\nx=y__z|instant=1|hold=0\n", "pause-less line round-trips byte-identical"); delete d3; }
 
     printf("playthrough_test checks %d failures %d\n", g_checks, g_fail);
     return g_fail ? 1 : 0;

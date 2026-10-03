@@ -1,4 +1,4 @@
-// Level-Up Override 0.3.0 (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
+// Level-Up Override 0.3.1 (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
 // preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini plus a
 // per-playthrough (save-bound) config, plus a character-screen UI (Configure button, path wizard, status line, banked-level message).
 // Default mode=log only logs + dry-runs.
@@ -7,7 +7,8 @@
 // 0.3.0-a table v2 (presets + class levels), levelNow (hold rule v2), per-tag config (preset./instant./hold.), Class Skill feats in the
 // unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop;
 // 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API);
-// 0.3.0 M4 character-screen Configure button + wizard + R11 status line / banked message (LevelUpUi.h, WizardLogic.h, _shared/GuiKit.h).
+// 0.3.0 M4 character-screen Configure button + wizard + R11 status line / banked message (LevelUpUi.h, WizardLogic.h, _shared/GuiKit.h);
+// 0.3.1 per-companion "Pause at level N" (pause.<tag>= / |pause=N; levelNow pauseAt: bank every level above N for the hold class; Bank button cycles N).
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
 // Hook 1: detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
@@ -73,7 +74,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.3.0";
+constexpr const char* Version = "0.3.1";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -166,6 +167,7 @@ struct TagCfg {
     char tag[32];
     int preset;
     bool instant, hold;
+    int pause;   // 0 = preset default; N > 0 = last character level taken before banking for the hold class (levelNow pauseAt)
 };
 struct Config {
     Mode mode = Mode::Log;
@@ -214,7 +216,7 @@ int cfgEntry(Config& c, const char* tag, bool create = true) {
     if (!create || c.nTags >= MaxTagCfg) return -1;
     TagCfg& t = c.tags[c.nTags];
     snprintf(t.tag, sizeof t.tag, "%s", tag);
-    t.preset = -1; t.instant = false; t.hold = true;
+    t.preset = -1; t.instant = false; t.hold = true; t.pause = 0;
     c.presetId[c.nTags][0] = 0;
     return c.nTags++;
 }
@@ -261,6 +263,9 @@ void reloadConfig(bool force = false) {
             } else if (!strncmp(k, "hold.", 5) && k[5]) {
                 int i = cfgEntry(c, k + 5);
                 if (i >= 0) { c.tags[i].hold = atoi(v) != 0; hasHold[i] = true; }
+            } else if (!strncmp(k, "pause.", 6) && k[6]) {
+                int i = cfgEntry(c, k + 6);
+                if (i >= 0) { const int n = atoi(v); c.tags[i].pause = n > 0 ? n : 0; }   // garbage / negative = 0 (preset default)
             }
         }
         fclose(f);
@@ -276,7 +281,7 @@ void reloadConfig(bool force = false) {
     g_cfg = c;
     resolvePresets();
     Buf b;
-    for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold);
+    for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold, c.tags[i].pause);
     logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
             c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
 }
@@ -544,11 +549,18 @@ const char* decisionName(Decision d) { return d == Decision::Path ? "PATH" : d =
 // clsId/clsLvl: the creature's class entries in engine order (newest = last). key = total character level + 1.
 // PATH/REBASE: the record whose (class, class level) == (newest class, its level + 1); PATH when its char level == key.
 // HOLD: no such record, hold && the preset has a hold class the creature lacks, and the preset's records for the newest class are used up.
-Decision levelNow(const uint8_t* clsId, const uint8_t* clsLvl, int nClass, const Preset* p, int key, bool hold, const Rec** outRec, int* outCharLevel) {
+// pauseAt (0.3.1; 0 = off): the LAST character level taken before banking. Evaluated first: hold && pauseAt > 0 && hold class lacking && key > pauseAt -> HOLD
+// even where a base-class record exists. Once the creature has the hold class the record matching below applies again (REBASE).
+Decision levelNow(const uint8_t* clsId, const uint8_t* clsLvl, int nClass, const Preset* p, int key, bool hold, int pauseAt, const Rec** outRec, int* outCharLevel) {
     if (outRec) *outRec = nullptr;
     if (outCharLevel) *outCharLevel = -1;
     if (!p || nClass <= 0) return Decision::Vanilla;
     const int cls = clsId[nClass - 1], lvl = clsLvl[nClass - 1];
+    if (hold && pauseAt > 0 && p->holdClass && key > pauseAt) {
+        bool lacks = true;
+        for (int i = 0; i < nClass; ++i) if (clsId[i] == p->holdClass) lacks = false;
+        if (lacks) return Decision::Hold;
+    }
     int top = -1;
     for (int cl = 0; cl <= MaxLevel; ++cl) {
         const Rec& r = p->lv[cl];
@@ -1024,6 +1036,7 @@ void rebuildPtCfg() {
             snprintf(g_ptCfg.presetId[e], sizeof g_ptCfg.presetId[e], "%s", l.preset);
             g_ptCfg.tags[e].instant = l.instant;
             g_ptCfg.tags[e].hold = l.hold;
+            g_ptCfg.tags[e].pause = l.pause;
         }
     }
     resolvePresets();
@@ -1033,7 +1046,7 @@ void rebuildPtCfg() {
     if (src == 1) { logLine("CONFIG source=dev"); return; }
     Buf b;
     for (int i = 0; i < g_ptCfg.nTags; ++i)
-        b.add("%s%s:%s/i%d/h%d", i ? "," : "", g_ptCfg.tags[i].tag, g_ptCfg.presetId[i], g_ptCfg.tags[i].instant, g_ptCfg.tags[i].hold);
+        b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", g_ptCfg.tags[i].tag, g_ptCfg.presetId[i], g_ptCfg.tags[i].instant, g_ptCfg.tags[i].hold, g_ptCfg.tags[i].pause);
     logLine("CONFIG source=playthrough g%08x tags=%s", (unsigned)g_guid, b.s);
 }
 
@@ -1075,9 +1088,9 @@ bool ptWrite() {
 
 [[maybe_unused]] uint32_t ptGuid() { return g_guid; }
 
-// API for the UI (M4). Sets tag = preset|instant|hold for the current playthrough; the first call of a playthrough creates its GUID and writes it
+// API for the UI (M4). Sets tag = preset|instant|hold|pause for the current playthrough; the first call of a playthrough creates its GUID and writes it
 // to the live globals table at once (a save made afterwards carries it). False (nothing changed) when there is no live table / the write failed.
-[[maybe_unused]] bool ptApply(const char* tag, const char* presetId, bool instant, bool hold) {
+[[maybe_unused]] bool ptApply(const char* tag, const char* presetId, bool instant, bool hold, int pause) {
     saferead::beginScope();
     ensureHeader();
     if (!tag || !*tag || !presetId || !*presetId) return false;
@@ -1097,7 +1110,7 @@ bool ptWrite() {
         if (!wrote) return false;
         g_guid = guid;
     }
-    const bool ok = pt::setTag(g_ptDoc, g_guid, tag, presetId, instant, hold) && ptWrite();
+    const bool ok = pt::setTag(g_ptDoc, g_guid, tag, presetId, instant, hold, pause) && ptWrite();
     logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
     reloadPlay(true);   // on failure this restores the in-memory doc from the file
     return ok;
@@ -1254,7 +1267,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
     if (preset) {
         const Rec* rec = nullptr; int recLevel = -1;
         Decision dec = Decision::Vanilla;
-        if (total >= 0 && nGot == nClass && nClass > 0) dec = levelNow(cIds, cLvls, nGot, preset, key, cfg->hold, &rec, &recLevel);
+        if (total >= 0 && nGot == nClass && nClass > 0) dec = levelNow(cIds, cLvls, nGot, preset, key, cfg->hold, cfg->pause, &rec, &recLevel);
         const bool midloop = dec == Decision::Hold;   // the LevelUp hook can never veto: HOLD here = vanilla (engine picks)
         if (midloop) { rec = nullptr; recLevel = -1; }
         char recS[16]; if (recLevel >= 0) snprintf(recS, sizeof recS, "%d", recLevel); else strcpy(recS, "-");
@@ -1348,7 +1361,7 @@ Eval evalStats(uintptr_t stats, uintptr_t creature) {
     uint8_t ids[4], lv[4]; int n, total;
     if (!readClasses(stats, ids, lv, &n, &total)) return e;
     e.key = total + 1;
-    e.d = levelNow(ids, lv, n, e.p, e.key, e.cfg->hold, nullptr, nullptr);
+    e.d = levelNow(ids, lv, n, e.p, e.key, e.cfg->hold, e.cfg->pause, nullptr, nullptr);
     e.ok = true;
     return e;
 }

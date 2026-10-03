@@ -122,11 +122,13 @@ def format_dry(tag, key_level, res):
                j(res["deltas"]), res["unspent"], res["ability"]))
 
 
-def level_now(classes, preset, key, hold, hold_class):
-    """Hold rule v2. Returns (decision, char_level_or_None, rec)."""
+def level_now(classes, preset, key, hold, hold_class, pause_at=0):
+    """Hold rule v2 (+ 0.3.1 pause_at: last char level taken before banking, 0 = off). Returns (decision, char_level_or_None, rec)."""
     if preset is None or not classes:
         return ("VANILLA", None, None)
     cls, lvl = classes[-1]
+    if hold and pause_at > 0 and hold_class and key > pause_at and hold_class not in [c for c, _ in classes]:
+        return ("HOLD", None, None)
     for cl in sorted(preset):
         r = preset[cl]
         if (r.cls, r.clvl) == (cls, lvl + 1):
@@ -185,6 +187,16 @@ def level_now_tests(check):
     mid = simulate_auto_levelup([(2, 6)], 10 ** 6, xt, p, True, 5)
     check("mid-loop HOLD -> vanilla levels", mid[0][1] == "PATH" and all(d == "HOLD_MIDLOOP" for _, d, _ in mid[1:]))
     check("ln below path start -> vanilla", ln([(2, 2)], 3) == ("VANILLA", None))
+    lp = lambda c, k, pa, hold=True, hc=5, pr=p: level_now(c, pr, k, hold, hc, pa)[:2]
+    check("ln pause: key == pauseAt not held", lp([(2, 5)], 6, 6) == ("PATH", 6))
+    check("ln pause: key == pauseAt+1 held (PATH record exists)", lp([(2, 6)], 7, 6) == ("HOLD", None))
+    check("ln pause: held far above", lp([(2, 4)], 8, 6) == ("HOLD", None))
+    check("ln pause 0 = default", lp([(2, 6)], 7, 0) == ("PATH", 7))
+    check("ln pause: hold off no effect", lp([(2, 6)], 7, 6, hold=False) == ("PATH", 7))
+    check("ln pause: no hold class no effect", lp([(2, 6)], 7, 6, hc=0) == ("PATH", 7))
+    check("ln pause: creature has class -> REBASE", lp([(2, 6), (5, 0)], 7, 6) == ("REBASE", 8))
+    check("ln pause: unconfigured", lp([(2, 5)], 6, 3, pr=None) == ("VANILLA", None))
+    check("ln pause >= default end = default", lp([(2, 7)], 8, 7) == ("HOLD", None) and lp([(2, 6)], 7, 7) == ("PATH", 7))
     v1 = "[classskills]\ncs2=11111111\n[t]\nL1=2|1|3||0:1|\n"
     cs, rc = parse_table(v1)
     check("v1 parses clvl None", rc["t"][1].clvl is None and cs[2] == [1] * 8)

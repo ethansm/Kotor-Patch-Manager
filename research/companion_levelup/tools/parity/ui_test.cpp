@@ -353,7 +353,7 @@ int main(int argc, char** argv) {
               "page visibility");
         CHECK(!vis(pW, C_REC) && !vis(pW, C_VANILLA), "no 'Use recommended' on the recommended preset, no Vanilla while unconfigured");
         CHECK(txt(pW, C_TITLE) == "Atton Rand - recommended build", "title '%s'", txt(pW, C_TITLE).c_str());
-        CHECK(txt(pW, C_BUILD) == rp->shortName && txt(pW, C_INSTANT) == "Instant: Off" && txt(pW, C_BANK) == "Bank for Jedi: On" && txt(pW, C_APPLY) == "Apply" && txt(pW, C_CANCEL) == "Cancel",
+        CHECK(txt(pW, C_BUILD) == rp->shortName && txt(pW, C_INSTANT) == "Instant: Off" && txt(pW, C_BANK) == "Pause at level 7" && txt(pW, C_APPLY) == "Apply" && txt(pW, C_CANCEL) == "Cancel",
               "build '%s' instant '%s' bank '%s'", txt(pW, C_BUILD).c_str(), txt(pW, C_INSTANT).c_str(), txt(pW, C_BANK).c_str());
         CHECK(txt(pW, C_ROW0 + 0) == "Jedi: Early - Jedi Sentinel at 8", "convert row '%s'", txt(pW, C_ROW0 + 0).c_str());
         CHECK(txt(pW, C_ROW0 + 1) == std::string("Role: ") + wiz::answerLabel(wiz::Role, rp->role) && txt(pW, C_ROW0 + 2) == std::string("Weapons: ") + wiz::answerLabel(wiz::Style, rp->style) &&
@@ -412,24 +412,43 @@ int main(int argc, char** argv) {
         clickCtl(pW, atton, 0, C_REC);
         CHECK(r->os.cur == r->recItem && !vis(pW, C_REC) && r->instant && txt(pW, C_TITLE) == "Atton Rand - recommended build", "Use recommended jumps back (cur %d), toggles kept", r->os.cur);
         // bank toggle
-        clickCtl(pW, atton, 0, C_BANK);
-        CHECK(!r->bank && txt(pW, C_BANK) == "Bank for Jedi: Off", "bank toggled off '%s'", txt(pW, C_BANK).c_str());
+        // 0.3.1 bank cycler: default (convertAt-1) -> convertAt-2 -> ... -> minPause -> Off -> default (Atton early: 7,6,...,min,Off)
+        {
+            const int def = rp->convertAt - 1, mn = uiMinPause(*rp);
+            CHECK(rp->convertAt == 8 && def == 7 && mn >= 1 && mn <= 6, "atton early preset: convertAt %d minPause %d", rp->convertAt, mn);
+            CHECK(r->bank && r->pause == 0 && txt(pW, C_BANK) == "Pause at level 7", "page opens on bank on / default");
+            for (int v = def - 1; v >= mn; --v) {
+                clickCtl(pW, atton, 0, C_BANK);
+                char want[24]; snprintf(want, sizeof want, "Pause at level %d", v);
+                CHECK(r->bank && r->pause == v && txt(pW, C_BANK) == want, "cycle -> %d: '%s' pause %d", v, txt(pW, C_BANK).c_str(), r->pause);
+                CHECK(txt(pW, C_BANK).size() <= 18, "bank text <= 18 chars");
+            }
+            clickCtl(pW, atton, 0, C_BANK);
+            CHECK(!r->bank && r->pause == 0 && txt(pW, C_BANK) == "Bank for Jedi: Off" && txt(pW, C_BANK).size() <= 18, "cycle -> Off '%s'", txt(pW, C_BANK).c_str());
+            clickCtl(pW, atton, 0, C_BANK);
+            CHECK(r->bank && r->pause == 0 && txt(pW, C_BANK) == "Pause at level 7", "Off -> default again '%s'", txt(pW, C_BANK).c_str());
+            clickCtl(pW, atton, 0, C_BANK);   // leave on pause 6, then Off, for the checks below
+            clickCtl(pW, atton, 0, C_BANK);
+            while (r->bank) clickCtl(pW, atton, 0, C_BANK);
+            CHECK(!r->bank && txt(pW, C_BANK) == "Bank for Jedi: Off", "bank off");
+        }
         // Cancel closes
         clickCtl(pW, atton, 0, C_CANCEL);
         CHECK(!r->open && !vis(pW, C_BG0) && !vis(pW, C_APPLY) && vis(pW, C_CFG), "cancel closes");
         // reopen -> toggles reset; pick a non-recommended preset, Apply writes the line with the toggles
         clickCtl(pW, atton, 0, C_CFG);
-        CHECK(r->open && r->instant == false && r->bank == true, "reopen resets toggles for an unconfigured tag");
+        CHECK(r->open && r->instant == false && r->bank == true && r->pause == 0, "reopen resets toggles for an unconfigured tag");
         clickCtl(pW, atton, 0, C_ROW0 + 1);   // Role cycles (atton has several roles)
         CHECK(r->os.cur != r->recItem, "moved off the recommended preset");
-        clickCtl(pW, atton, 0, C_INSTANT); clickCtl(pW, atton, 0, C_BANK);
+        clickCtl(pW, atton, 0, C_INSTANT);
+        for (int i = 0; i < 20 && r->bank; ++i) clickCtl(pW, atton, 0, C_BANK);   // cycle down to Off
         const std::string id = r->items[r->os.cur].id;
         remove("levelup_playthroughs.ini");
         CHECK(tagConfig("atton") == nullptr, "unconfigured before Apply");
         clearLog();
         clickCtl(pW, atton, 0, C_APPLY);
         CHECK(!r->open && !vis(pW, C_BG0), "page closed after Apply");
-        CHECK(ptGuid() != 0 && logHas("UI apply tag=Atton preset=") && logHas("instant=1 hold=0 ok=1"), "apply log:\n%s", readLog().c_str());
+        CHECK(ptGuid() != 0 && logHas("UI apply tag=Atton preset=") && logHas("instant=1 hold=0 pause=0 ok=1"), "apply log:\n%s", readLog().c_str());
         const std::string ini = fileText("levelup_playthroughs.ini");
         CHECK(ini.find("atton=" + id + "|instant=1|hold=0") != std::string::npos, "ini line:\n%s", ini.c_str());
         { const TagCfg* c = tagConfig("atton"); CHECK(c && c->instant && !c->hold && c->preset >= 0 && g_presets[c->preset].id == id, "tagConfig switched"); }
@@ -446,7 +465,7 @@ int main(int argc, char** argv) {
         CHECK(g_presets[r->itemPreset[r->os.cur]].holdClass == 0 && !vis(pW, C_BANK) && !r->bank, "convert row reached a no-Jedi preset (bank hidden, toggle still Off)");
         clearLog();
         clickCtl(pW, atton, 0, C_APPLY);
-        CHECK(!r->open && logHas("hold=1 ok=1") && fileText("levelup_playthroughs.ini").find("|hold=1") != std::string::npos, "hold-less preset applies hold=1:\n%s", readLog().c_str());
+        CHECK(!r->open && logHas("hold=1 pause=0 ok=1") && fileText("levelup_playthroughs.ini").find("|hold=1") != std::string::npos, "hold-less preset applies hold=1:\n%s", readLog().c_str());
         clickCtl(pW, atton, 0, C_CFG);
         clickCtl(pW, atton, 0, C_ROW0 + 1);
         clickCtl(pW, atton, 0, C_CANCEL);
@@ -458,6 +477,62 @@ int main(int argc, char** argv) {
         CHECK(fileText("levelup_playthroughs.ini").find("atton=") == std::string::npos && tagConfig("atton") == nullptr, "line removed, tag unconfigured");
         tick(pW, atton, 0);
         CHECK(txt(pW, C_CFG) == "Configure" && !vis(pW, C_STATUS), "cfg back to Configure, status hidden");
+        // 0.3.1 pause: apply payload, reopen from config, clamps on row cycle / Use recommended / stale config
+        {
+            const Preset* ep = findPreset(PRESET);
+            const int mn = uiMinPause(*ep);
+            clickCtl(pW, atton, 0, C_CFG);   // opens on the recommended (early) preset: bank on, pause 0
+            CHECK(r->open && r->bank && r->pause == 0 && r->itemPreset[r->os.cur] == (int)(ep - g_presets), "pause block: page on the early preset");
+            clickCtl(pW, atton, 0, C_BANK); clickCtl(pW, atton, 0, C_BANK);   // default -> 6 -> 5
+            CHECK(r->bank && r->pause == 5 && txt(pW, C_BANK) == "Pause at level 5", "pause 5 '%s'", txt(pW, C_BANK).c_str());
+            clearLog();
+            clickCtl(pW, atton, 0, C_APPLY);
+            CHECK(!r->open && logHas("UI apply tag=Atton preset=atton__melee_dual_light_early instant=0 hold=1 pause=5 ok=1"), "apply pause=5 log:\n%s", readLog().c_str());
+            CHECK(fileText("levelup_playthroughs.ini").find("atton=atton__melee_dual_light_early|instant=0|hold=1|pause=5\n") != std::string::npos, "ini |pause=5:\n%s", fileText("levelup_playthroughs.ini").c_str());
+            { const TagCfg* c = tagConfig("atton"); CHECK(c && c->pause == 5 && c->hold, "tagConfig pause 5"); }
+            // held-by-pause status line: Scoundrel 5 -> level 6 banked once past pause 5 (Scoundrel 5 = key 6 > 5)
+            clickCtl(pW, atton, 0, C_CFG);
+            CHECK(r->open && r->bank && r->pause == 5 && txt(pW, C_BANK) == "Pause at level 5", "reopen from config shows pause 5 '%s'", txt(pW, C_BANK).c_str());
+            // cycle the Convert row (early -> late -> never ...): pause is clamped into each preset's range, 0 without a hold class
+            int expP = 5;   // once clamped to 0 (different range) the value stays 0
+            for (int i = 0; i < 4; ++i) {
+                clickCtl(pW, atton, 0, C_ROW0 + 0);
+                const Preset& cp = g_presets[r->itemPreset[r->os.cur]];
+                expP = uiClampPause(cp, expP);
+                CHECK(r->pause == expP && (cp.holdClass == 0 ? r->pause == 0 : true) && (r->pause == 0 || (r->pause >= uiMinPause(cp) && r->pause <= cp.convertAt - 2)),
+                      "row cycle %d: pause %d on %s (convertAt %d hold %d)", i, r->pause, cp.id, cp.convertAt, cp.holdClass);
+                if (cp.holdClass && cp.convertAt > 0) { char want[24]; snprintf(want, sizeof want, r->bank ? "Pause at level %d" : "Bank for Jedi: Off", r->pause > 0 ? r->pause : cp.convertAt - 1);
+                    CHECK(txt(pW, C_BANK) == want, "bank text '%s' vs '%s'", txt(pW, C_BANK).c_str(), want); }
+            }
+            // forced clamp: a preset with convertAt 5 cannot keep pause 5 (range ends at 3)
+            { Preset fake = *ep; fake.convertAt = 5;
+              CHECK(uiClampPause(fake, 5) == 0 && uiClampPause(fake, 4) == 0 && uiClampPause(fake, 3) == (3 >= uiMinPause(fake) ? 3 : 0), "uiClampPause range end convertAt-2");
+              CHECK(uiClampPause(*ep, 0) == 0 && uiClampPause(*ep, -1) == 0 && uiClampPause(*ep, ep->convertAt - 1) == 0 && uiClampPause(*ep, ep->convertAt) == 0 && uiClampPause(*ep, mn - 1) == 0 && uiClampPause(*ep, mn) == mn && uiClampPause(*ep, ep->convertAt - 2) == ep->convertAt - 2, "uiClampPause bounds");
+              fake.holdClass = 0; CHECK(uiClampPause(fake, 4) == 0, "no hold class -> 0");
+              bool bk = true; int pz = 0; Preset tiny = *ep; tiny.convertAt = mn + 1;   // range empty: default -> Off -> default
+              uiBankCycle(tiny, &bk, &pz); CHECK(!bk && pz == 0, "empty range: default -> Off");
+              uiBankCycle(tiny, &bk, &pz); CHECK(bk && pz == 0, "Off -> default");
+              char tb[24]; CHECK(!strcmp(uiBankText(tiny, true, 0, tb, sizeof tb), "Pause at level 1") || tiny.convertAt - 1 != 1, "default text"); }
+            // Use recommended keeps the toggles and clamps
+            clickCtl(pW, atton, 0, C_CANCEL);
+            clickCtl(pW, atton, 0, C_CFG);
+            CHECK(r->pause == 5, "reopen: pause 5 again");
+            for (int i = 0; i < 4 && r->os.cur == r->recItem; ++i) clickCtl(pW, atton, 0, C_ROW0 + 0);
+            clickCtl(pW, atton, 0, C_REC);
+            CHECK(r->os.cur == r->recItem && r->bank && r->pause == uiClampPause(*ep, r->pause), "Use recommended keeps the bank state (pause %d)", r->pause);
+            // Off applies hold=0 pause=0 and drops the field
+            while (r->bank) clickCtl(pW, atton, 0, C_BANK);
+            clearLog();
+            clickCtl(pW, atton, 0, C_APPLY);
+            CHECK(logHas("hold=0 pause=0 ok=1") && fileText("levelup_playthroughs.ini").find("pause") == std::string::npos, "bank off: pause dropped:\n%s", fileText("levelup_playthroughs.ini").c_str());
+            // stale / out-of-range config (hand-edited |pause=99) is clamped on page open and never applied raw
+            CHECK(ptApply("atton", PRESET, false, true, 99), "ptApply pause 99");
+            clickCtl(pW, atton, 0, C_CFG);
+            CHECK(r->bank && r->pause == 0 && txt(pW, C_BANK) == "Pause at level 7", "pause 99 clamped on open '%s'", txt(pW, C_BANK).c_str());
+            clickCtl(pW, atton, 0, C_CANCEL);
+            CHECK(ptRemove("atton") && tagConfig("atton") == nullptr, "pause block cleanup");
+            tick(pW, atton, 0);
+        }
         // leader change closes the page
         clickCtl(pW, atton, 0, C_CFG);
         CHECK(r->open, "open again");
@@ -576,9 +651,9 @@ int main(int argc, char** argv) {
         CHECK(g_banked.size() == 3, "same GUID: N=3 not repeated");
         char want[64];
         snprintf(want, sizeof want, "mode=rewrite\npreset.atton=%s\nhold.atton=1", PRESET);
-        ptApply("hk47", PRESET, false, true);   // creates a GUID: the playthrough section now applies, dev keys do not -> atton unconfigured
+        ptApply("hk47", PRESET, false, true, 0);   // creates a GUID: the playthrough section now applies, dev keys do not -> atton unconfigured
         CHECK(ptGuid() != 0 && tagConfig("atton") == nullptr, "GUID created");
-        ptApply("atton", PRESET, false, true);
+        ptApply("atton", PRESET, false, true, 0);
         LuoHold_74F3C7(P(attonXp3.stats));
         CHECK(g_banked.size() == 4, "new GUID resets lastShown: shown again (%zu)", g_banked.size());
         // log mode: no message, no hold

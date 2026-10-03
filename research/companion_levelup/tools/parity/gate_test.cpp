@@ -295,6 +295,41 @@ int main(int argc, char** argv) {
     g_creatureRet = P(heldAtton.creature);
     CHECK(LuoGuardGui_84FD2F(P(7)) == 0 && LuoAutoOk_850062(P(9)) == g_creatureRet, "guards in log mode pass through");
 
+    // 8b. 0.3.1 pause.atton=6: Scoundrel 6 (key 7 > 6) is held although the preset has a record for it; Scoundrel 5 (key 6 == pause) is not
+    {
+        Fake paused = makeCreature("atton", {{2, 6}});
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\ninstant.atton=1\npause.atton=6", PRESET);
+        setIni(ini, table); clearLog();
+        CHECK(LuoHold_74F3C7(P(paused.stats)) == 0 && LuoHold_757808(P(paused.stats)) == 0, "pause: Scoundrel 6 must be refused at the hold gates");
+        CHECK(LuoHold_74F3C7(P(onPath.stats)) == 1, "pause: key == pauseAt must pass");
+        CHECK(LuoHold_74F3C7(P(sentinel.stats)) == 1, "pause: creature with the hold class passes (REBASE)");
+        CHECK(logHas("CONFIG ") && logHas("atton:" ) && logHas("/h1/p6"), "pause: CONFIG line shows /p6:\n%s", readLog().c_str());
+        CHECK(logHas("HOLD tag=atton key=7 site=0x74F3C7"), "pause: HOLD log line:\n%s", readLog().c_str());
+        for (auto& st : sites) {
+            memset(P(frame), 0, 0x200);
+            *reinterpret_cast<uint32_t*>(ebp + st.off) = (uint32_t)paused.creature;
+            g_optPtr = P(optA);
+            CHECK(st.fn(P(0x1234), P(ebp)) == g_optPtr, "pause: held-by-pause creature gets no instant (off %d)", st.off);
+            *reinterpret_cast<uint32_t*>(ebp + st.off) = (uint32_t)onPath.creature;
+            CHECK(st.fn(P(0x1234), P(ebp)) != g_optPtr, "pause: creature at key == pauseAt still gets instant (off %d)", st.off);
+        }
+        g_ccRet = 0; g_creatureRet = P(paused.creature);
+        CHECK(LuoGuardGui_84FD2F(P(7)) == 1 && LuoGuardAuto_84F9FE(P(7)) == 1 && LuoAutoOk_850062(P(9)) == nullptr, "pause: GUI guards + Auto OK backstop hold the paused leader");
+        // pause 0 / hold off / garbage: not held
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\npause.atton=0", PRESET);
+        setIni(ini, table);
+        CHECK(LuoHold_74F3C7(P(paused.stats)) == 1, "pause=0: Scoundrel 6 passes (preset default)");
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=0\npause.atton=6", PRESET);
+        setIni(ini, table);
+        CHECK(LuoHold_74F3C7(P(paused.stats)) == 1, "hold=0: pause has no effect");
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\npause.atton=abc", PRESET);
+        setIni(ini, table);
+        CHECK(LuoHold_74F3C7(P(paused.stats)) == 1 && tagConfig("atton") && tagConfig("atton")->pause == 0, "garbage pause = 0");
+        snprintf(ini, sizeof ini, "mode=rewrite\npreset.atton=%s\nhold.atton=1\npause.atton=-3", PRESET);
+        setIni(ini, table);
+        CHECK(tagConfig("atton") && tagConfig("atton")->pause == 0, "negative pause = 0");
+    }
+
 
     // 9. M3 save binding (fake globals table, fake CExoString, fake 0x51C450)
     {
@@ -312,10 +347,10 @@ int main(int argc, char** argv) {
         { FILE* f = fopen("levelup_playthroughs.ini", "w"); fprintf(f, "; my notes\n[g11111111]\nkreia=kreia__live|instant=0|hold=1\n[misc]\nx=y\n"); fclose(f); }
         // ptApply with no live server (chain broken) -> refused
         *reinterpret_cast<uint32_t*>(app + 8) = 0;
-        CHECK(!ptApply("hk47", PRESET, false, true) && ptGuid() == 0 && g_vars.empty(), "ptApply without a live table must fail cleanly");
+        CHECK(!ptApply("hk47", PRESET, false, true, 0) && ptGuid() == 0 && g_vars.empty(), "ptApply without a live table must fail cleanly");
         *reinterpret_cast<uint32_t*>(app + 8) = (uint32_t)srv;
         // ptApply creates the GUID, writes 32 booleans to the live table and the ini
-        CHECK(ptApply("hk47", PRESET, true, false), "ptApply failed:\n%s", readLog().c_str());
+        CHECK(ptApply("hk47", PRESET, true, false, 0), "ptApply failed:\n%s", readLog().c_str());
         const uint32_t guid = ptGuid();
         int found = 0;
         CHECK(guid != 0 && fakeGuid(P(liveTbl), &found) == guid && found == 32, "live table bits %08x found %d vs guid %08x", fakeGuid(P(liveTbl), &found), found, guid);
@@ -333,9 +368,17 @@ int main(int argc, char** argv) {
         CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 1, "dev-only atton must pass through under a playthrough section");
         { const TagCfg* h = tagConfig("HK47"); CHECK(h && h->preset >= 0 && h->instant && !h->hold && !strcmp(g_presets[h->preset].id, PRESET), "hk47 playthrough entry (presets resolve against the table)"); }
         // adding atton to the playthrough re-enables the hold gate through the playthrough source
-        CHECK(ptApply("atton", PRESET, false, true) && ptGuid() == guid, "second ptApply keeps the GUID");
+        CHECK(ptApply("atton", PRESET, false, true, 0) && ptGuid() == guid, "second ptApply keeps the GUID");
         CHECK(g_adds == 32, "second ptApply must not re-add names (adds %d)", g_adds);
         CHECK(LuoHold_74F3C7(P(heldAtton.stats)) == 0, "atton held through its playthrough entry");
+        // 0.3.1: pause through the playthrough section (copied into g_ptCfg, serialised as |pause=6)
+        { Fake paused2 = makeCreature("atton", {{2, 6}});
+          CHECK(LuoHold_74F3C7(P(paused2.stats)) == 1, "playthrough pause 0: Scoundrel 6 passes");
+          CHECK(ptApply("atton", PRESET, false, true, 6) && tagConfig("atton") && tagConfig("atton")->pause == 6, "ptApply with pause");
+          CHECK(LuoHold_74F3C7(P(paused2.stats)) == 0, "playthrough pause 6: Scoundrel 6 refused");
+          std::string t2; FILE* f2 = fopen("levelup_playthroughs.ini", "r"); char b2[512]; while (f2 && fgets(b2, sizeof b2, f2)) t2 += b2; if (f2) fclose(f2);
+          CHECK(t2.find("atton=" + std::string(PRESET) + "|instant=0|hold=1|pause=6\n") != std::string::npos && t2.find("hk47=" + std::string(PRESET) + "|instant=1|hold=0\n") != std::string::npos, "ini has |pause=6 only for atton:\n%s", t2.c_str());
+          CHECK(ptApply("atton", PRESET, false, true, 0) && tagConfig("atton")->pause == 0 && LuoHold_74F3C7(P(paused2.stats)) == 1, "pause back to 0"); }
         CHECK(ptRemove("atton") && tagConfig("atton") == nullptr && LuoHold_74F3C7(P(heldAtton.stats)) == 1, "ptRemove -> unconfigured although the dev key names atton");
         CHECK(!ptRemove("atton"), "ptRemove of an absent tag");
         { FILE* f = fopen("levelup_playthroughs.ini", "r"); iniText.clear(); char b[512]; while (f && fgets(b, sizeof b, f)) iniText += b; if (f) fclose(f); }

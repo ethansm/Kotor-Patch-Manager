@@ -2,6 +2,7 @@
 // cases to simulate_rewrite.py and diffs. Table v2 (presets keyed by id).
 //  "<preset id> key cls ability unspent csExtraMask|feats|spells|d0,..,d7" -> the DRY line (computeRewrite + formatDry)
 //  "L <preset id> key hold n c1:l1,c2:l2,..."                                -> "<DECISION> <char level or ->" (levelNow; hold_class from the preset index)
+//  "P <preset id> key hold pause n c1:l1,c2:l2,..."                          -> same, with levelNow's pauseAt (0.3.1)
 #include "../../../../patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
 #include <iostream>
 #include <sstream>
@@ -13,15 +14,16 @@ int main(int argc, char** argv) {
     g_tableOk = true;
     std::string line;
     while (std::getline(std::cin, line)) {
-        if (line.size() > 2 && line[0] == 'L' && line[1] == ' ') {
-            char id[48], cl[256]; int key, hold, n;
-            if (sscanf(line.c_str() + 2, "%47s %d %d %d %255s", id, &key, &hold, &n, cl) != 5) return 3;
+        if (line.size() > 2 && (line[0] == 'L' || line[0] == 'P') && line[1] == ' ') {
+            char id[48], cl[256]; int key, hold, n, pause = 0;
+            if (line[0] == 'P' ? sscanf(line.c_str() + 2, "%47s %d %d %d %d %255s", id, &key, &hold, &pause, &n, cl) != 6
+                               : sscanf(line.c_str() + 2, "%47s %d %d %d %255s", id, &key, &hold, &n, cl) != 5) return 3;
             std::vector<uint8_t> ci, cv;
             std::stringstream cs(cl); std::string t;
             while (std::getline(cs, t, ',')) { unsigned a, b; if (sscanf(t.c_str(), "%u:%u", &a, &b) != 2) return 3; ci.push_back((uint8_t)a); cv.push_back((uint8_t)b); }
             const Preset* p = findPreset(id);
             const Rec* rec = nullptr; int cl2 = -1;
-            Decision d = levelNow(ci.data(), cv.data(), (int)ci.size(), p, key, hold != 0, &rec, &cl2);
+            Decision d = levelNow(ci.data(), cv.data(), (int)ci.size(), p, key, hold != 0, pause, &rec, &cl2);
             if (cl2 >= 0) printf("%s %d\n", decisionName(d), cl2); else printf("%s -\n", decisionName(d));
             continue;
         }

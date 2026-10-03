@@ -81,6 +81,27 @@ def ln_early_cases(recs, presets):
     return out
 
 
+def ln_pause_cases(recs, presets):
+    """0.3.1 pause cases. For every preset with hold_class != 0 and convert_at > 0: every pause 1..convert_at (covers out of range, the default
+    convert_at-1 and above) x hold on/off x creature states: base class at every level 0..blv+1 (key = total + 1), base at L + hold class at j in (0, 1, 5),
+    and a foreign class on top. Cases are (id, key, hold, pause, classes)."""
+    out = []
+    for pid, lv in recs.items():
+        pr = presets.get(pid)
+        if not lv or not pr or not pr.hold_class or pr.convert_at <= 0:
+            continue
+        base = lv[min(lv)].cls
+        blv = max([r.clvl for r in lv.values() if r.cls == base and r.clvl is not None] or [0])
+        for pause in range(0, pr.convert_at + 1):
+            for hold in (True, False):
+                for L in range(0, blv + 2):
+                    out.append((pid, L + 1, hold, pause, [(base, L)]))
+                    for j in (0, 1, 5):
+                        out.append((pid, L + j + 1, hold, pause, [(base, L), (pr.hold_class, j)]))
+                    out.append((pid, L + 2, hold, pause, [(base, L), (99, 1)]))
+    return out
+
+
 def main():
     build(EXE, "parity_main.cpp")
     build(APPLY_EXE, "apply_test.cpp")
@@ -143,6 +164,20 @@ def main():
     print("levelNow early-conversion cases", len(ecases), "cpp lines", len(ecpp), "mismatches", len(ebad), "decisions", edecs)
     for x, y, c in ebad[:5]:
         print(" C++:", x, " Py:", y, " case:", c)
+    # 0.3.1: pauseAt levelNow cases (C++ levelNow(..., pause, ...) vs S.level_now(..., pause_at))
+    pcases = ln_pause_cases(recs, presets)
+    ptext = "\n".join("P %s %d %d %d %d %s" % (pid, key, int(hold), pause, len(cl), ",".join("%d:%d" % c for c in cl)) for pid, key, hold, pause, cl in pcases) + "\n"
+    pcpp = subprocess.run([EXE, INI], input=ptext, capture_output=True, text=True, check=True).stdout.splitlines()
+    ppy = []
+    pdecs = {}
+    for pid, key, hold, pause, cl in pcases:
+        d, c, _ = S.level_now(cl, recs[pid], key, hold, presets[pid].hold_class, pause)
+        ppy.append("%s %s" % (d, "-" if c is None else c))
+        pdecs[d] = pdecs.get(d, 0) + 1
+    pbad = [(x, y, c) for x, y, c in zip(pcpp, ppy, pcases) if x != y]
+    print("levelNow pause cases", len(pcases), "cpp lines", len(pcpp), "mismatches", len(pbad), "decisions", pdecs)
+    for x, y, c in pbad[:5]:
+        print(" C++:", x, " Py:", y, " case:", c)
     # applyRewrite on fake engine pending structs, same cases (apply_test.cpp)
     ap = subprocess.run([APPLY_EXE, INI], input=text, capture_output=True, text=True)
     print(ap.stdout.strip())
@@ -163,7 +198,7 @@ def main():
     print(ui.stdout.strip())
     if ui.stderr:
         print(ui.stderr[:4000])
-    sys.exit(1 if bad or lbad or ebad or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
+    sys.exit(1 if bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode else 0)
 
 
 if __name__ == "__main__":
