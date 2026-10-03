@@ -20,7 +20,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
-#include "EquipWeaponTable.inc"   // baseitems row -> itemclass + weaponwield (scripts/gen_equip3d_weapon_table.py)
+#include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
 
 namespace {
 
@@ -48,7 +48,6 @@ constexpr int ItemModelResOff = 0x128;   // client item ctor 00801fa0 stores the
 constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
 constexpr int NumButtons = 5;   // LBL_E3D_ANIM / SPIN / WEAP / RESET / EMOTE (ids ExpectedControlId+3..+7)
 constexpr int MaxMenu = 20;     // LBL_E3D_M00..M19 (ids +8..+27): Emotes pop-up items; then LBL_E3D_TIPBG / LBL_E3D_TIP (+28,+29)
-constexpr int MenuRows = 8;     // items per pop-up column
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
 constexpr int SceneOffset = 0x60;
@@ -138,40 +137,12 @@ bool readAt(int base, int off, T* out) {
 }
 
 // ---- configuration: $GAME/equip3d.ini (missing/garbage = defaults; every key and rejected line logged) ----
-struct Cfg {
-    int enabled = 1, stage = 5;
-    char rig[64] = "charrec_light";
-    float fov = 22.726f;
-    int bevels = 1;
-    float dragDegPx = 0.5f; int wheelZoom = 1; float wheelStep = 0.9f, zoomMin = 0.6f, zoomMax = 2.5f;
-    int hitFlipY = 0; float screenW = 3840, screenH = 1600; bool screenExplicit = false;
-    int flourish = 1; float flMin = 12, flMax = 25, flFirst = 6, flQuiet = 3; int flOnEquip = 1;
-    char flStance[512] = "";   // optional flourish list used while a weapon stance is on (empty = same list)
-    char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
-    char equipAnim[64] = "itemequip";
-    int pollMs = 100, rebuildMinMs = 250, keepObj10 = 0, helmet = 1, buttons = 1; float spinToggleDegS = 20;
-    float spinDegS = 0;
-};
+using eq3d::Cfg;
 Cfg g_cfg;
 unsigned g_cfgGen = 0;
 ULONGLONG g_iniStamp = 0; DWORD g_iniLastCheck = 0;
 
-void trim(char* s) {
-    char* p = s; while (*p && isspace((unsigned char)*p)) ++p;
-    memmove(s, p, strlen(p) + 1);
-    for (int n = (int)strlen(s); n > 0 && isspace((unsigned char)s[n - 1]); --n) s[n - 1] = 0;
-}
-bool parseFloats(const char* v, float* out, int n) {
-    const char* p = v;
-    for (int i = 0; i < n; ++i) {
-        char* e; out[i] = strtof(p, &e);
-        if (e == p || !isfinite(out[i])) return false;
-        p = e; while (*p && isspace((unsigned char)*p)) ++p;
-        if (i < n - 1) { if (*p != ',') return false; ++p; }
-    }
-    while (*p && isspace((unsigned char)*p)) ++p;
-    return *p == 0;
-}
+using eq3d::trim;
 void loadIni() {
     Cfg c;
     g_debug = GetFileAttributesA("equip3d_debug.txt") != INVALID_FILE_ATTRIBUTES;
@@ -184,58 +155,20 @@ void loadIni() {
     char line[600]; int ln = 0, ok = 0, bad = 0;
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
-        if (!line[0] || line[0] == '#' || line[0] == ';') continue;
-        char* eq = strchr(line, '=');
-        if (!eq) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
-        *eq = 0; char* k = line; char* v = eq + 1;
-        for (char* cm = v; *cm; ++cm) if (*cm == ';' || *cm == '#') { *cm = 0; break; }
-        trim(k); trim(v);
-        for (char* p = k; *p; ++p) *p = (char)tolower((unsigned char)*p);
-        float a[2]; bool good = true;
-        if (!strcmp(k, "enabled")) { good = parseFloats(v, a, 1); if (good) c.enabled = (int)a[0]; }
-        else if (!strcmp(k, "stage")) { good = parseFloats(v, a, 1); if (good) c.stage = (int)a[0]; }
-        else if (!strcmp(k, "rig")) { if (v[0] && strlen(v) < sizeof(c.rig)) strcpy(c.rig, v); else good = false; }
-        else if (!strcmp(k, "fov_deg")) { good = parseFloats(v, a, 1); if (good) c.fov = a[0]; }
-        else if (!strcmp(k, "bevels")) { good = parseFloats(v, a, 1); if (good) c.bevels = (int)a[0]; }
-        else if (!strcmp(k, "drag_deg_per_px")) { good = parseFloats(v, a, 1); if (good) c.dragDegPx = a[0]; }
-        else if (!strcmp(k, "wheel_zoom")) { good = parseFloats(v, a, 1); if (good) c.wheelZoom = (int)a[0]; }
-        else if (!strcmp(k, "wheel_step")) { good = parseFloats(v, a, 1); if (good) c.wheelStep = a[0]; }
-        else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
-        else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
-        else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = (int)a[0]; }
-        else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; } }
-        else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; } }
-        else if (!strcmp(k, "flourish")) { good = parseFloats(v, a, 1); if (good) c.flourish = (int)a[0]; }
-        else if (!strcmp(k, "flourish_min_s")) { good = parseFloats(v, a, 1); if (good) c.flMin = a[0]; }
-        else if (!strcmp(k, "flourish_max_s")) { good = parseFloats(v, a, 1); if (good) c.flMax = a[0]; }
-        else if (!strcmp(k, "flourish_first_s")) { good = parseFloats(v, a, 1); if (good) c.flFirst = a[0]; }
-        else if (!strcmp(k, "flourish_quiet_s")) { good = parseFloats(v, a, 1); if (good) c.flQuiet = a[0]; }
-        else if (!strcmp(k, "flourish_on_equip")) { good = parseFloats(v, a, 1); if (good) c.flOnEquip = (int)a[0]; }
-        else if (!strcmp(k, "flourish_stance_list")) { if (strlen(v) < sizeof(c.flStance)) strcpy(c.flStance, v); else good = false; }
-        else if (!strcmp(k, "flourish_list")) { if (strlen(v) < sizeof(c.flList)) strcpy(c.flList, v); else good = false; }
-        else if (!strcmp(k, "equip_anim")) { if (v[0] && strlen(v) < sizeof(c.equipAnim)) strcpy(c.equipAnim, v); else good = false; }
-        else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = (int)a[0]; }
-        else if (!strcmp(k, "buttons")) { good = parseFloats(v, a, 1); if (good) c.buttons = (int)a[0]; }
-        else if (!strcmp(k, "spin_toggle_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinToggleDegS = a[0]; }
-        else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = (int)a[0]; if (good && c.keepObj10) logf("WARNING: keep_obj10=1 is DEPRECATED and IGNORED (it reparented the REAL helmet Gob onto the preview: 0085a9e0, doc 10); use helmet=1"); }
-        else if (!strcmp(k, "helmet")) { good = parseFloats(v, a, 1); if (good) c.helmet = (int)a[0]; }
-        else if (!strcmp(k, "rebuild_min_ms")) { good = parseFloats(v, a, 1); if (good) c.rebuildMinMs = (int)a[0]; }
-        else if (!strcmp(k, "spin_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinDegS = a[0]; }
-        else { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
-        if (!good) { logf("INI line %d rejected (bad value for '%s': '%s')", ln, k, v); ++bad; }
+        char* k = nullptr; char* v = nullptr;
+        eq3d::IniLine sp = eq3d::splitIniLine(line, &k, &v);
+        if (sp == eq3d::IniLineSkip) continue;
+        if (sp == eq3d::IniLineNoEquals) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
+        eq3d::IniResult pr = eq3d::parseIniLine(c, k, v);
+        if (pr == eq3d::IniUnknown) { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
+        if (pr == eq3d::IniOkKeepObj10) logf("WARNING: keep_obj10=1 is DEPRECATED and IGNORED (it reparented the REAL helmet Gob onto the preview: 0085a9e0, doc 10); use helmet=1");
+        if (pr == eq3d::IniBad) { logf("INI line %d rejected (bad value for '%s': '%s')", ln, k, v); ++bad; }
         else { logf("INI %s = %s", k, v); ++ok; }
     }
     fclose(f);
-    if (c.stage < 0) c.stage = 0;
-    if (c.stage > 5) c.stage = 5;
-    if (c.fov < 5 || c.fov > 90) { logf("INI fov_deg out of range, reset 22.726"); c.fov = 22.726f; }
-    if (c.wheelStep < 0.5f || c.wheelStep > 0.99f) { logf("INI wheel_step out of range, reset 0.9"); c.wheelStep = 0.9f; }
-    if (c.zoomMin < 0.2f) c.zoomMin = 0.2f;
-    if (c.zoomMax < c.zoomMin) c.zoomMax = c.zoomMin;
-    if (c.flMin < 2) c.flMin = 2;
-    if (c.flMax < c.flMin) c.flMax = c.flMin;
-    if (c.pollMs < 16) c.pollMs = 16;
-    if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; }
+    int clamped = eq3d::clampCfg(c);
+    if (clamped & eq3d::ClampFov) logf("INI fov_deg out of range, reset 22.726");
+    if (clamped & eq3d::ClampWheelStep) logf("INI wheel_step out of range, reset 0.9");
     g_cfg = c; ++g_cfgGen;
     logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d rig=%s", ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.rig);
 }
@@ -327,7 +260,7 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
 void syncScreen() {
     if (g_cfg.screenExplicit) return;
     int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
-    if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+    if (eq3d::screenValid(w, h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
 WNDPROC g_oldProc = nullptr;
 volatile LONG g_wheelAccum = 0;
@@ -339,8 +272,8 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
-            syncScreen(); float x = pt.x * g_cfg.screenW / r.right, y = pt.y * g_cfg.screenH / r.bottom;
-            inside = x >= g_viewRect[0] && x < g_viewRect[0] + g_viewRect[2] && y >= g_viewRect[1] && y < g_viewRect[1] + g_viewRect[3];
+            syncScreen(); float x, y; eq3d::clientToEngine(pt.x, pt.y, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH, &x, &y);
+            inside = eq3d::rectContains(x, y, (float)g_viewRect[0], (float)g_viewRect[1], (float)g_viewRect[2], (float)g_viewRect[3]);
         }
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
         if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
@@ -367,7 +300,7 @@ bool cursorEngine(float* x, float* y) {
     HWND h = gameWindow(); if (!h) return false;
     POINT pt; if (!GetCursorPos(&pt) || !ScreenToClient(h, &pt)) return false;
     RECT r; if (!GetClientRect(h, &r) || r.right < 1 || r.bottom < 1) return false;
-    syncScreen(); *x = pt.x * g_cfg.screenW / r.right; *y = pt.y * g_cfg.screenH / r.bottom;
+    syncScreen(); eq3d::clientToEngine(pt.x, pt.y, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH, x, y);
     return true;
 }
 LARGE_INTEGER g_qpcFreq, g_qpcLast;
@@ -437,8 +370,8 @@ bool ctlRect(unsigned char* c, float* r) {   // engine-space rect from a label's
 }
 bool btnRect(Slot* s, int i, float* r) { return ctlRect(s->btn[i], r); }
 bool overAnyButton(Slot* s, float cx, float cy) {
-    for (int i = 0; i < NumButtons; ++i) { float r[4]; if (btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3]) return true; }
-    if (s->menuOpen && s->menuPhase == 0) for (int i = 0; i < s->menuCount; ++i) { float r[4]; if (ctlRect(s->item[i], r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3]) return true; }
+    for (int i = 0; i < NumButtons; ++i) { float r[4]; if (btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
+    if (s->menuOpen && s->menuPhase == 0) for (int i = 0; i < s->menuCount; ++i) { float r[4]; if (ctlRect(s->item[i], r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
     return false;
 }
 void applyView(Slot* s);
@@ -481,9 +414,10 @@ void showTip(Slot* s, int i, const float* br) {
 constexpr DWORD MenuPreMs = 180, MenuPostMs = 300;   // buffers around an emote: menu hidden -> (pre) -> play -> finished -> (post) -> menu shown
 void spinLayout(Slot* s) {   // single Spin button, or (after the first click) play/pause 30 % + Reset on the same row
     if (!s->rowRect[2] || !s->btn[1]) return;
-    int x = (int)s->rowRect[0], y = (int)s->rowRect[1], W = (int)s->rowRect[2], H = (int)s->rowRect[3];
-    if (!g_spinUi) { setCtlRect(s->btn[1], x, y, W, H); setCtlVisible(s->btn[3], false); }
-    else { int w1 = (int)(W * 0.30f), gp = (int)(W * 0.04f); setCtlRect(s->btn[1], x, y, w1, H); setCtlRect(s->btn[3], x + w1 + gp, y, W - w1 - gp, H); setCtlVisible(s->btn[3], true); }
+    eq3d::Box sp, rs;
+    bool showReset = eq3d::layoutSpin(eq3d::Box{(int)s->rowRect[0], (int)s->rowRect[1], (int)s->rowRect[2], (int)s->rowRect[3]}, g_spinUi, &sp, &rs);
+    setCtlRect(s->btn[1], sp.x, sp.y, sp.w, sp.h);
+    if (showReset) { setCtlRect(s->btn[3], rs.x, rs.y, rs.w, rs.h); setCtlVisible(s->btn[3], true); } else setCtlVisible(s->btn[3], false);
     s->btnHover[1] = s->btnHover[3] = -1; s->spinLaid = g_spinUi ? 1 : 0;
     logf("spin row: %s", g_spinUi ? "play/pause + Reset" : "Spin");
 }
@@ -495,20 +429,17 @@ void menuClose(Slot* s, const char* why) {
 }
 void menuHideItems(Slot* s) { for (int i = 0; i < MaxMenu; ++i) setCtlVisible(s->item[i], false); s->menuLaid = -1; }
 void menuLayout(Slot* s) {   // anchored at the view's LEFT edge, below the top arc; column 0 ends with the page toggle at the bottom row
-    float e[4], r0[4], r1[4];
+    float e[4], r0[4] = {}, r1[4] = {};
     if (!btnRect(s, 4, e)) return;
-    float w = e[2], h = e[3], pitch = (btnRect(s, 0, r0) && btnRect(s, 2, r1) && r1[1] - r0[1] > 0) ? (r1[1] - r0[1]) / 2 : h * 1.2f, gap = w * 0.08f;
+    bool haveBoth = btnRect(s, 0, r0) && btnRect(s, 2, r1);
+    float w = e[2], h = e[3], pitch = eq3d::menuPitch(haveBoth, r0[1], r1[1], h);
     int vx = 0, vy = 0, vh = 0; readAt<int>(reinterpret_cast<int>(s->block), 4, &vx); readAt<int>(reinterpret_cast<int>(s->block), 8, &vy); readAt<int>(reinterpret_cast<int>(s->block), 16, &vh);
-    float left = vx + w * 0.10f, top = vy + vh * 0.12f, bottom = vy + vh - vh * 0.13f;   // margins keep clear of the curved cut-outs
-    if (vh > 0 && top + MenuRows * pitch > bottom) top = fmaxf((float)vy, bottom - MenuRows * pitch);
-    int j = 0;   // running index over the non-toggle items
+    eq3d::MenuPos pos[MaxMenu];
+    eq3d::MenuGeom geo = eq3d::layoutMenu(w, pitch, vx, vy, vh, s->menuCount, s->menuAnim, MaxMenu, pos);
+    float left = geo.left, top = geo.top;
     for (int i = 0; i < MaxMenu; ++i) {
         if (i >= s->menuCount) { setCtlVisible(s->item[i], false); continue; }
-        int col, row;
-        if (!strcmp(s->menuAnim[i], "@page")) { col = 0; row = MenuRows - 1; }
-        else { if (j < MenuRows - 1) { col = 0; row = j; } else { col = 1 + (j - (MenuRows - 1)) / MenuRows; row = (j - (MenuRows - 1)) % MenuRows; } ++j; }
-        int x = (int)(left + col * (w + gap)), y = (int)(top + row * pitch);
-        setCtlRect(s->item[i], x, y, (int)w, (int)h);
+        setCtlRect(s->item[i], pos[i].x, pos[i].y, (int)w, (int)h);
         setCtlVisible(s->item[i], true);
         char nm[12]; snprintf(nm, sizeof nm, "item[%d]", i); setLabelText(s->item[i], s->itemText[i], sizeof s->itemText[i], s->menuLabel[i], nm);
         s->itemState[i] = 0;
@@ -539,7 +470,7 @@ void tickButtons(Slot* s) {
     int overIdx = -1; float overRect[4] = {0, 0, 0, 0}; bool overEmote = false;
     for (int i = 0; i < NumButtons; ++i) {
         if (i == 3 && !g_spinUi) continue;   // Reset exists only after Spin was clicked
-        float r[4]; int over = haveCur && fg && btnRect(s, i, r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
+        float r[4]; int over = haveCur && fg && btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3]);
         bool on = i == 0 ? g_animOn : (i == 1 ? g_spinUi : (i == 2 ? g_weaponsOn : (i == 3 ? true : menuAvail)));   // play/pause and Reset never go grey
         bool inert = i == 4 && !on;   // greyed: no hover, no click
         if (over) { overIdx = i; memcpy(overRect, r, sizeof r); }
@@ -560,7 +491,7 @@ void tickButtons(Slot* s) {
     bool overItem = false;
     if (s->menuOpen && s->menuPhase == 0) {
         for (int i = 0; i < s->menuCount; ++i) {
-            float r[4]; int over = haveCur && fg && ctlRect(s->item[i], r) && cx >= r[0] && cx < r[0] + r[2] && cy >= r[1] && cy < r[1] + r[3];
+            float r[4]; int over = haveCur && fg && ctlRect(s->item[i], r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3]);
             int st = over ? 2 : 1; overItem = overItem || over;
             if (s->itemState[i] != st + 1) { s->itemState[i] = st + 1; unsigned char* c = s->item[i]; uintptr_t border = reinterpret_cast<uintptr_t>(c) + LabelBorderOff; int bvt = 0; readAt<int>(static_cast<int>(border), 0, &bvt);
                 if (bvt == BorderVtable) if (void* im = btnImage(st == 2 ? "e3d_btn_hi" : "e3d_btn")) *reinterpret_cast<void**>(border + BorderFillOff) = im; }
@@ -710,7 +641,7 @@ const FlLen kHumanoid[] = {{"pausesh",2.0f},{"scanning",5.1f},{"salute",1.7f},{"
 const FlLen kDroidT3[] = {{"victory",1.0f},{"greeting",1.0f},{"taunt",1.0f},{"equip",1.3f}};
 const FlLen kDroidG0[] = {{"victory",2.0f},{"greeting",1.3f},{"taunt",1.3f},{"equip",1.3f}};
 int appRow(Slot* s) { return (int)*reinterpret_cast<unsigned short*>(s->app + 0x18); }
-bool isDroidRow(int r) { return r == 2 || r == 57 || r == 231 || r == 232 || r == 453 || r == 3 || r == 538 || r == 539; }
+using eq3d::isDroidRow;
 const FlLen* animTable(int row, int* n) {
     if (row == 2 || row == 57 || row == 231 || row == 232) { *n = 4; return kDroidT3; }
     if (row == 453) { *n = 4; return kDroidG0; }
@@ -750,17 +681,12 @@ void menuBuild(Slot* s) {   // page 0 = gestures (+ "Attacks >" when a weapon st
 void chooseIdle(Slot* s) {
     void* body = partGob(s, 0xff);
     short al = s->align; int row = appRow(s);
-    const char* want = isDroidRow(row) ? "pause1" : (al < 40 ? "evil" : (al < 60 ? "neutral" : "good"));
+    const char* want = eq3d::idleFor(row, al);
     strcpy(s->baseIdle, want); strcpy(s->idleName, want);
     logf("anim: idle for align=%d row=%d -> '%s' body=%p", al, row, s->idleName, body);
 }
 // Engine wield-style rule (R7f 0076d590 / R7h 00863650). Only the weapons we actually attached count.
-const char* const kStyleAnim[10] = {"", "g1r1", "g2r1", "g3r1", "g4r1", "g5r1", "g6r1", "g7r1", "g8r1", "g7r1"};
-int styleFor(int rWield, int lWield, bool rHas, bool lHas) {
-    if (rHas && lHas) return lWield == 2 ? 4 : (lWield == 4 ? 6 : 0);
-    if (rHas) { static const int map[7] = {0, 1, 2, 3, 5, 7, 9}; return (rWield >= 1 && rWield <= 6) ? map[rWield] : 0; }
-    return 0;   // left only, or nothing (unarmed style 8 deliberately not applied: keep the normal idle)
-}
+using eq3d::kStyleAnim; using eq3d::styleFor;
 void attachWeapons(Slot* s, int real, const char* why) {
     s->stanceName[0] = 0;
     void* body = partGob(s, 0xff);
@@ -773,17 +699,17 @@ void attachWeapons(Slot* s, int real, const char* why) {
         int item = getItemObj(id);
         if (!item) { logf("weapons: %s id=%08x -> no client item object", hook, id); continue; }
         int base = -1, var = 0; readAt<int>(item, ItemBaseIdxOff, &base); { unsigned char vb = 0; readAt<unsigned char>(item, ItemVariationOff, &vb); var = vb; }
-        if (base < 0 || base >= kWeaponRows || !kWeapon[base].wield) { logf("weapons: %s id=%08x item=%08x base=%d var=%d: not a wieldable weapon (rows=%d), skipped", hook, id, item, base, var, kWeaponRows); continue; }
-        char name[28]; snprintf(name, sizeof name, "%s_%03d", kWeapon[base].cls, var);
+        char name[28]; int ww = 0;
+        if (!eq3d::weaponModelName(base, var, name, sizeof name, &ww)) { logf("weapons: %s id=%08x item=%08x base=%d var=%d: not a wieldable weapon (rows=%d), skipped", hook, id, item, base, var, eq3d::kWeaponRows); continue; }
         void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
         int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
-        logf("weapons: %s id=%08x item=%08x base=%d var=%d wield=%d model='%s' -> gob=%p vtable=%08x (expect %08x)", hook, id, item, base, var, kWeapon[base].wield, name, g, gvt, ExpectedGobVtable);
+        logf("weapons: %s id=%08x item=%08x base=%d var=%d wield=%d model='%s' -> gob=%p vtable=%08x (expect %08x)", hook, id, item, base, var, ww, name, g, gvt, ExpectedGobVtable);
         if (!g) continue;
         if (gvt != ExpectedGobVtable) { logf("weapons: model gob vtable mismatch, not attaching (leak instead of crash)"); continue; }
         void** vt = vtOf(g);
         reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, body, hook, 0);
         s->wpn[i] = g; strncpy(s->wpnNames[i], name, sizeof(s->wpnNames[i]) - 1);
-        has[i] = true; wield[i] = kWeapon[base].wield; baseOf[i] = base;
+        has[i] = true; wield[i] = ww; baseOf[i] = base;
         logf("weapons: attached %p to body %p node %s", g, body, hook);
     }
     int style = styleFor(wield[0], wield[1], has[0], has[1]);
@@ -814,10 +740,10 @@ void applyView(Slot* s) {
     int cam = 0; readAt<int>(reinterpret_cast<int>(s->block), CameraOffset, &cam);
     if (cam) {
         void** cv = vtOf(reinterpret_cast<void*>(cam));
-        if (cv && !IsBadReadPtr(cv + CamFovSlot / 4, 4)) reinterpret_cast<CamFov>(cv[CamFovSlot / 4])(reinterpret_cast<void*>(cam), g_cfg.fov / s->zoom);
+        if (cv && !IsBadReadPtr(cv + CamFovSlot / 4, 4)) reinterpret_cast<CamFov>(cv[CamFovSlot / 4])(reinterpret_cast<void*>(cam), eq3d::fovForZoom(g_cfg.fov, s->zoom));
     }
     if (s->creature) {
-        float rad = s->yaw * 0.0174532925f, v[3] = {cosf(rad), sinf(rad), 0.f};
+        float v[3]; eq3d::yawVec(s->yaw, v);
         void** cv = vtOf(s->creature);
         if (cv) reinterpret_cast<CrPtrFn>(cv[CrSetFacing / 4])(s->creature, v);
     }
@@ -914,9 +840,9 @@ void tickInput(Slot* s) {
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, mb = (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     int ext[4] = {0}; for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(s->block), 4 + 4 * i, &ext[i]);
-    float top = g_cfg.hitFlipY ? g_cfg.screenH - ext[1] - ext[3] : (float)ext[1];
+    float top = eq3d::hitTop(g_cfg.hitFlipY, g_cfg.screenH, ext[1], ext[3]);
     g_viewRect[0] = ext[0]; g_viewRect[1] = (LONG)top; g_viewRect[2] = ext[2]; g_viewRect[3] = ext[3];
-    bool inside = haveCur && cx >= ext[0] && cx < ext[0] + ext[2] && cy >= top && cy < top + ext[3];
+    bool inside = haveCur && eq3d::rectContains(cx, cy, (float)ext[0], top, (float)ext[2], (float)ext[3]);
     bool fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     static int presses = 0;
     if (((l && !wasL) || (mb && !wasM)) && presses < 30) { ++presses; logf("INPUT: press #%d L=%d M=%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f inside=%d fg=%d", presses, l, mb, cx, cy, ext[0], ext[1], ext[2], ext[3], top, inside, fg); }
@@ -925,12 +851,11 @@ void tickInput(Slot* s) {
     if (inside && fg && l && !wasL && !overAnyButton(s, cx, cy)) { s->dragging = true; s->lastX = cx; logf("INPUT: drag start at (%.0f,%.0f) yaw=%.1f", cx, cy, s->yaw); }
     if (s->dragging) {
         if (!l) { s->dragging = false; logf("INPUT: drag end yaw=%.1f", s->yaw); }
-        else if (haveCur && cx != s->lastX) { s->yaw += (cx - s->lastX) * g_cfg.dragDegPx; s->lastX = cx; changed = true; dlogf("INPUT: yaw=%.1f", s->yaw); }
+        else if (haveCur && cx != s->lastX) { s->yaw = eq3d::yawDrag(s->yaw, cx, s->lastX, g_cfg.dragDegPx); s->lastX = cx; changed = true; dlogf("INPUT: yaw=%.1f", s->yaw); }
     }
     LONG wheel = InterlockedExchange(&g_wheelAccum, 0);
     if (wheel) {
-        s->zoom *= powf(g_cfg.wheelStep, -wheel / 120.0f);   // wheel up (+120) = zoom in (fov smaller)
-        s->zoom = fminf(fmaxf(s->zoom, g_cfg.zoomMin), g_cfg.zoomMax); changed = true;
+        s->zoom = eq3d::zoomStep(s->zoom, wheel, g_cfg.wheelStep, g_cfg.zoomMin, g_cfg.zoomMax); changed = true;   // wheel up (+120) = zoom in (fov smaller)
         logf("WHEEL: applied %ld -> zoom=%.2f", wheel, s->zoom);
     }
     if (changed && s->built) applyView(s);
