@@ -822,6 +822,16 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   Apply / Use vanilla; status line [54,474,350,20] (LBL_BAR5 at x 407). **Hand-installed 15:17** (dll swap only; hooks/exports unchanged since
   12:45; a KPM reinstall would have reverted the Shield Bar session's hand-installed Buff HUD / CEP DLLs of 15:05/15:15). Backup
   `backups/levelup_030_ui2_20261002_151731/`. Log 211 lines before run 3.
+- Run 3 (2026-10-02 ~15:55-16:05, log lines 212+): wizard Apply -> `GUID new g11b3b802 live-write ok=1`, `PLAYTHROUGH write ok=1`,
+  `CONFIG source=playthrough`; **instant** fired at 0x74F3E9 only ~4 min later (Atton 3 -> 7, `APPLIED ok=1` x4 along the preset) - i.e. only once
+  Atton was NOT the controlled character (0x74EE90 calls AutoLevelup only for companions not under player control; for the leader it shows the
+  indicator) -> **open: instant for the leader** (user saw the level-up icon + active buttons while Atton led, configured, Scoundrel 3 with XP for 7 =
+  PATH, not HOLD, so vanilla indicator is correct per the hold rule). **Save binding verified on disk:** QUICKSAVE 16:04 GLOBALVARS has 32 LUO_G
+  booleans (208 vs 176 bools), decoded (ValBoolean msb-first, bit index = catalogue position) = g11b3b802; `GUID load g11b3b802 found=32/32` on
+  quickload. Later sessions loaded AUTOSAVE/Game2 (no LUO globals, pre-Apply lineage) -> `found=0/32` -> unconfigured (correct). Note: loading a
+  GUID-less save in the same server instance gives `found=32/32 g00000000` (names stay in the catalogue, values reset) -> treated as none (correct).
+  User feedback: popup still slightly see-through; first two result rows look like buttons but are info; wants a recommended path per character and
+  asks whether a single options page would beat the wizard.
 - 0.3.0 INSTALLED 12:45 (see '0.3.0 install'); NEXT = user plays the combined checklist (PHASE5_PLAN step C 1-8), Opus reads the log from line 176.
 - (superseded) Live state: 0.3.0-a dll 9e8cbbff installed, untested by user; the combined test happens after the 0.3.0 build (step C).
 
