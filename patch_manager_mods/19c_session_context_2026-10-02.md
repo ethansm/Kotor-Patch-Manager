@@ -88,3 +88,12 @@ Open items, in order:
 3. Merge or cherry-pick the branch into `ethansm/local-mods` for local use.
 4. **Phase 2:** `Patches/Common/KpLog.h` (pre-init buffer, `KPatchInit` chaining, macros), the `debugLog()` reroute and `debuglog=` ini key, and migrating mouse-probe first.
 5. **Upstream:** the PR waits for Phase 2 and Phase 3 (perf numbers). The 19a comment is still HELD. Posting needs the user's go.
+
+## Session 2 hand-off (Phase 1 execution, 10-02 13:50 to 10-03)
+- Phase 1 is fully executed. Branch state, commits, gate and decisions are in `19d_phase1_plan.md` "Execution log". The gate is `scripts/kpm_registry_gate.sh`; it writes its logs to `/tmp/kpm_registry_gate`.
+- Nothing is pending from Phase 1 except "Next" items 1-5 above. All of them wait on the user: multilib install, live smoke go, merge, Phase 2.
+- **Open user report, unresolved (10-02 ~14:55):** the user wrote only "it is very dark now".
+  - I checked the game dir (`~/.local/share/Steam/steamapps/common/Knights of the Old Republic II`, maxdepth 2): no files were modified in the 3 h before 14:55. This session installed nothing.
+  - I asked whether it means the game (whole screen or areas/menus, since when, screenshot) or something else. No answer yet.
+  - Candidates if it is the game: other sessions' 10-02 installs (shader fixes on the vanilla exe at 12:02, colorshift_k2 at 12:14, robustness 1.1.0 + texture-memory at 12:50) and ReShade. Use the `kotor2-crash-triage` skill and the per-mod memories. Don't touch live files mid-session.
+- The scratchpad files from that session (smoke driver, export-diff lists) are disposable. The findings they produced are recorded in 19d.
