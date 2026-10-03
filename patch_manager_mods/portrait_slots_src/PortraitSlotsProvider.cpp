@@ -7,6 +7,8 @@
 //   1a/1b  0x0074F25A / 0x0074F8AB  UpdatePortraits: slot -> creature (EAX/EDX = slot, [ebp-0x38] = creature)
 //   6      0x00745774  FUN_00745770 (per-slot icon-row gate) after its prologue: ECX = slot, [ebp+0xc] = isLarge, [ebp] = caller frame.
 //                      Runs every frame for every slot BEFORE the engine reads the arrow counters slot+0xddc/+0xddd.
+// Engine offsets (menu panel layout, the caller-frame creature local) come from k2addr::get() (K2Addr.h). A null table (unknown exe) or a
+// zero field makes that feature do nothing: no table = no snapshot / dispatch at all, no menu fields = no menu overlay. One WARN per session.
 // Logging: kpatch.log channel "portrait-slots/core" (WARN always; INFO when kplog.ini enables it).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -16,6 +18,7 @@
 
 #include "kpatch_api.h"
 #include "SafeRead.h"
+#include "K2Addr.h"
 #include "Effects.h"
 #include "Gui2D.h"
 #include "Party.h"
@@ -57,6 +60,14 @@ void logf(int level, const char* fmt, ...) {
     g_log->Submit(g_logCh, level, buf, uint32_t(n));
 }
 
+// One WARN per DLL session for the first feature that finds the address table unusable (never from KPatchInit).
+void noteTableProblem(const char* what) {
+    static bool once = false;
+    if (once) return;
+    once = true;
+    logf(KPLOG_WARN, "k2addr: %s unavailable (no address table for this exe, or a needed field is 0): feature disabled", what);
+}
+
 // ---- the interface --------------------------------------------------------------------------------------------------------------
 int32_t KPATCH_CALL apiRegister(int32_t phase, int32_t prio, K2PsCallback fn, void* user, const char* owner) {
     int32_t t = g_disp.add(phase, prio, fn, user, owner);
@@ -84,7 +95,7 @@ const K2PortraitSlotsApi g_api = { sizeof(K2PortraitSlotsApi), apiRegister, apiU
 // CSWGuiInGameMenu (the top bar shared by every in-game menu tab) draws its panel (BeginGui2D, panel clip, controls, pop, EndGui2D)
 // and THEN calls FUN_00745770 with ECX = its portrait slot (menu+0x2350): the 2D batch is closed there, so MENU_OVERLAY reopens it.
 // Selected creature = the caller's local [callerEbp-0x38]. Companions = party positions 1 / 2 (the menu fills LBL_CHAR2/3 from them).
-constexpr int Menu_SlotOffset = 0x2350, Menu_Char2Offset = 0x3134, Menu_Char3Offset = 0x36DC;
+// Offsets: K2AddrTable Menu_PortraitSlot / Menu_Char2 / Menu_Char3 / MenuCaller_Creature (psd::menuFieldsOk gates them).
 
 int rosterCreature(int idx) {
     uintptr_t c = party::serverCreature(party::member(party::table(), idx));
@@ -92,13 +103,15 @@ int rosterCreature(int idx) {
 }
 
 void runMenuOverlay(K2PsContext& ctx) {
+    const K2AddrTable* T = k2addr::get();
+    if (!psd::menuFieldsOk(T)) { noteTableProblem("menu overlay"); return; }
     ctx.phase = K2PS_MENU_OVERLAY;
-    ctx.panel = ctx.slot - Menu_SlotOffset;
+    ctx.panel = ctx.slot - T->Menu_PortraitSlot;
     ctx.menuCreature = g_menuSlot.slotPtr == ctx.slot ? g_menuSlot.creaturePtr : 0;
     ctx.companions[0] = rosterCreature(1);
     ctx.companions[1] = rosterCreature(2);
-    ctx.companionCtrl[0] = ctx.panel + Menu_Char2Offset;
-    ctx.companionCtrl[1] = ctx.panel + Menu_Char3Offset;
+    ctx.companionCtrl[0] = ctx.panel + T->Menu_Char2;
+    ctx.companionCtrl[1] = ctx.panel + T->Menu_Char3;
     if (!gui2d::panelRect(uintptr_t(ctx.panel), ctx.panelRect)) {
         static int lastBad = 0; int sig = ctx.panelRect[2] * 31 + ctx.panelRect[3];
         if (sig != lastBad) { lastBad = sig; logf(KPLOG_WARN, "menu: bad panel rect %d,%d,%d,%d (panel %08x), overlay skipped",
@@ -131,6 +144,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
 
 void __cdecl PS_SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
     saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
+    if (!k2addr::get()) { noteTableProblem("slot snapshot"); return; }
     if (!g_disp.empty(K2PS_SNAPSHOT)) {
         K2PsContext ctx = {};
         ctx.struct_size = sizeof(ctx); ctx.phase = K2PS_SNAPSHOT; ctx.slot = slotPtr; ctx.creature = creaturePtr; ctx.frame = g_frame;
@@ -144,10 +158,12 @@ void __cdecl PS_SnapshotPortraitSlot(int slotPtr, int creaturePtr) {
 
 void __cdecl PS_PortraitSlotDraw(int slotPtr, int isLarge, int callerEbp) {
     saferead::beginScope();
+    const K2AddrTable* T = k2addr::get();
+    if (!T) { noteTableProblem("portrait slot dispatch"); return; }
     const bool inMenu = gui2d::inMenuFrame();
     // menu frame: map the menu portrait slot to its creature so the consumers' hooks (which run later in 0x745770) know it
-    if (inMenu && isLarge) {
-        int c = 0; k2fx::rd(callerEbp, -0x38, &c);
+    if (inMenu && isLarge && psd::menuFieldsOk(T)) {
+        int c = 0; k2fx::rd(callerEbp, T->MenuCaller_Creature, &c);
         g_menuSlot = k2fx::plausibleCreature(c) ? SlotEntry{ slotPtr, c, GetTickCount() } : SlotEntry{ 0, 0, 0 };
     } else if (g_menuSlot.slotPtr == slotPtr) g_menuSlot = { 0, 0, 0 };
 

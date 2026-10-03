@@ -100,6 +100,45 @@ struct K2AddrTable {
     int Border_Fill = 0;                 // border +fill image*
     int Panel_CtlArray = 0;              // panel control list {ptr, count, cap}
     int Panel_CtlCount = 0;              // count inside that list
+
+    // ---- portrait-slots / buff-duration-hud / shield-bar (party portrait slot, in-game menu, creature, tooltip) ----
+    uintptr_t CExoStringFormat = 0;      // cdecl(CExoString* dst, const char* fmt, ...): sprintf into a CExoString (FUN_00734270)
+    uintptr_t GetMaxForcePoints = 0;     // fastcall(creature) -> max Force points (FUN_0057eca0)
+    int Slot_CardRect = 0;               // portrait slot +card rect (4 ints x, y, w, h)
+    int Slot_Flags = 0;                  // slot +flags word: bit 1 = icon row visible
+    int Slot_VitCtl = 0;                 // slot +embedded health-bar control (vtable ptr at +0)
+    int Slot_VitRect = 0;                // slot +health-bar rect (4 ints)
+    int Slot_ForceCtl = 0;               // slot +embedded force-bar control (vtable ptr at +0)
+    int Slot_ForceRect = 0;              // slot +force-bar rect (4 ints)
+    int Slot_ArrowBuff = 0;              // slot +buff arrow counter (unsigned char)
+    int Slot_ArrowDebuff = 0;            // slot +debuff arrow counter (unsigned char)
+    int Slot_Overlay0 = 0;               // slot +overlay flag word 0 (bit 1 = shown; FUN_00744f00 mask&2)
+    int Slot_Overlay1 = 0;               // slot +overlay flag word 1 (mask&1)
+    int Slot_Overlay2 = 0;               // slot +overlay flag word 2 (mask&4)
+    int Menu_PortraitSlot = 0;           // CSWGuiInGameMenu +top-bar portrait slot (panel = slot - this)
+    int Menu_Char2 = 0;                  // menu +LBL_CHAR2 control
+    int Menu_Level2 = 0;                 // menu +LEVELUP2 control
+    int Menu_Back2 = 0;                  // menu +BACK2 control
+    int Menu_Change2 = 0;                // menu +BTN_CHANGE2 control
+    int Menu_Char3 = 0;                  // menu +LBL_CHAR3 control
+    int Menu_Level3 = 0;                 // menu +LEVELUP3 control
+    int Menu_Back3 = 0;                  // menu +BACK3 control
+    int Menu_Change3 = 0;                // menu +BTN_CHANGE3 control
+    int MenuCaller_Creature = 0;         // frame offset from the FUN_00745770 caller's ebp: local holding the selected creature (negative)
+    int Creature_Stats = 0;              // creature +stats object
+    int Stats_ForceA = 0;                // stats +short, current Force part A (current FP = A + B)
+    int Stats_ForceB = 0;                // stats +short, current Force part B
+    int Creature_VtMaxHp = 0;            // creature vtable byte offset: max HP getter, thiscall(creature, 1) RET 4
+    int Creature_VtCurHp = 0;            // creature vtable byte offset: current HP getter, thiscall(creature, 0) RET 4
+    int Creature_IconCacheData = 0;      // creature +client effect-icon cache data ptr (diagnostic)
+    int Creature_IconCacheCount = 0;     // creature +icon cache count (diagnostic)
+    int IconEnt_F14 = 0;                 // icon cache entry +0x14 field (diagnostic; entry id short is at +0)
+    int IconEnt_F1c = 0;                 // icon cache entry +0x1c field (diagnostic)
+    int Border_Width = 0;                // CSWGuiBorder +width (0 = Draw returns at once)
+    int Border_Height = 0;               // CSWGuiBorder +height
+    int Border_Rot = 0;                  // CSWGuiBorder +rotation bits
+    int Tip_Slot = 0;                    // portrait char button +portrait slot pointer
+    int Tip_Text = 0;                    // portrait char button +tooltip CExoString
 };
 
 // Steam Aspyr exe (vanilla 6A522E..., which is also what the live 4gb-patched file reports). Built by name so a new field
@@ -183,6 +222,44 @@ constexpr K2AddrTable makeSteam() {
     t.Border_Fill = 0x74;
     t.Panel_CtlArray = 0x24;
     t.Panel_CtlCount = 0x28;
+
+    t.CExoStringFormat = 0x00734270;
+    t.GetMaxForcePoints = 0x0057ECA0;
+    t.Slot_CardRect = 0x54c;
+    t.Slot_Flags = 0x590;
+    t.Slot_VitCtl = 0x690;
+    t.Slot_VitRect = 0x694;
+    t.Slot_ForceCtl = 0x7fc;
+    t.Slot_ForceRect = 0x800;
+    t.Slot_ArrowBuff = 0xddc;
+    t.Slot_ArrowDebuff = 0xddd;
+    t.Slot_Overlay0 = 0x1b8;
+    t.Slot_Overlay1 = 0x300;
+    t.Slot_Overlay2 = 0x448;
+    t.Menu_PortraitSlot = 0x2350;
+    t.Menu_Char2 = 0x3134;
+    t.Menu_Level2 = 0x327C;
+    t.Menu_Back2 = 0x33C4;
+    t.Menu_Change2 = 0x350C;
+    t.Menu_Char3 = 0x36DC;
+    t.Menu_Level3 = 0x3824;
+    t.Menu_Back3 = 0x396C;
+    t.Menu_Change3 = 0x3AB4;
+    t.MenuCaller_Creature = -0x38;
+    t.Creature_Stats = 0x1198;
+    t.Stats_ForceA = 0x130;
+    t.Stats_ForceB = 0x132;
+    t.Creature_VtMaxHp = 0x98;
+    t.Creature_VtCurHp = 0x9c;
+    t.Creature_IconCacheData = 0xFFC;
+    t.Creature_IconCacheCount = 0x1000;
+    t.IconEnt_F14 = 0x14;
+    t.IconEnt_F1c = 0x1c;
+    t.Border_Width = 0xC;
+    t.Border_Height = 0x10;
+    t.Border_Rot = 0x20;
+    t.Tip_Slot = 0x1d0;
+    t.Tip_Text = 0x1d4;
     return t;
 }
 

@@ -96,6 +96,41 @@ static void checkSteamTable() {
     STEAM(AppGlobal_ToWorld, 8);
     STEAM(World_ToSub, 4);
     STEAM(Sub_ToTimer, 0x10048);
+    // portrait-slots / buff-duration-hud / shield-bar: the literals those three sources carried before they read the table
+    STEAM(CExoStringFormat, 0x00734270);
+    STEAM(GetMaxForcePoints, 0x0057eca0);
+    STEAM(Slot_CardRect, 0x54c);
+    STEAM(Slot_Flags, 0x590);
+    STEAM(Slot_VitCtl, 0x690);
+    STEAM(Slot_VitRect, 0x694);
+    STEAM(Slot_ForceCtl, 0x7fc);
+    STEAM(Slot_ForceRect, 0x800);
+    STEAM(Slot_ArrowBuff, 0xddc);
+    STEAM(Slot_ArrowDebuff, 0xddd);
+    STEAM(Slot_Overlay0, 0x1b8);
+    STEAM(Slot_Overlay1, 0x300);
+    STEAM(Slot_Overlay2, 0x448);
+    STEAM(Menu_PortraitSlot, 0x2350);
+    STEAM(Menu_Char2, 0x3134);
+    STEAM(Menu_Char3, 0x36DC);
+    // ShieldBar's MenuCharGroup was dword indices: LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn, offset = index * 4
+    STEAM(Menu_Char2, 0xc4d * 4);   STEAM(Menu_Level2, 0xc9f * 4);  STEAM(Menu_Back2, 0xcf1 * 4);   STEAM(Menu_Change2, 0xd43 * 4);
+    STEAM(Menu_Char3, 0xdb7 * 4);   STEAM(Menu_Level3, 0xe09 * 4);  STEAM(Menu_Back3, 0xe5b * 4);   STEAM(Menu_Change3, 0xead * 4);
+    STEAM(MenuCaller_Creature, -0x38);
+    STEAM(Creature_Stats, 0x1198);
+    STEAM(Stats_ForceA, 0x130);
+    STEAM(Stats_ForceB, 0x132);
+    STEAM(Creature_VtMaxHp, 0x98);
+    STEAM(Creature_VtCurHp, 0x9c);
+    STEAM(Creature_IconCacheData, 0xFFC);
+    STEAM(Creature_IconCacheCount, 0x1000);
+    STEAM(IconEnt_F14, 0x14);
+    STEAM(IconEnt_F1c, 0x1c);
+    STEAM(Border_Width, 0xc);
+    STEAM(Border_Height, 0x10);
+    STEAM(Border_Rot, 0x20);
+    STEAM(Tip_Slot, 0x1d0);
+    STEAM(Tip_Text, 0x1d4);
 #undef STEAM
     KT_CHECK_EQ(t.sha, kSteamSha);
     KT_CHECK_EQ(kGog.sha, kGogSha);
@@ -120,6 +155,12 @@ static void checkGogTable() {
     KT_CHECK_EQ((long long)g.Creature_EffectArray, 0ll);
     KT_CHECK_EQ((long long)g.Ctl_Flags, 0ll);
     KT_CHECK_EQ((long long)g.LabelSize, 0ll);
+    KT_CHECK_EQ((unsigned long long)g.CExoStringFormat, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.GetMaxForcePoints, 0ull);
+    KT_CHECK_EQ((long long)g.Slot_Flags, 0ll);
+    KT_CHECK_EQ((long long)g.Menu_PortraitSlot, 0ll);
+    KT_CHECK_EQ((long long)g.MenuCaller_Creature, 0ll);
+    KT_CHECK_EQ((long long)g.Tip_Text, 0ll);
 }
 
 static void checkSelection() {

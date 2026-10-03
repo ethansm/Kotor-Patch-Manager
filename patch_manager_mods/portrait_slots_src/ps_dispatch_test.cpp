@@ -4,6 +4,7 @@
 // equal the order BuffDurationHUD v1.1.0 did that work in (ForceArrowCounters before the engine read on every slot, flag polling, FORCEMOVE,
 // shield bars before buff columns in the menu, shield HUD loop from the leader call only).
 #include "PsDispatch.h"
+#include "K2Addr.h"
 #include "check.h"
 #include <string.h>
 #include <string>
@@ -126,8 +127,23 @@ static void t2() {
     KT_CHECK(!k2ps::Client::usable(&tiny)); KT_CHECK(!k2ps::Client::usable(nullptr)); KT_CHECK(k2ps::Client::usable(&g_fakePs));
 }
 
+// ---- T3: the provider's menu overlay is gated on the address table (null table / any zero menu field = off) ----
+static void t3() {
+    KT_CHECK(psd::menuFieldsOk(&kSteam));
+    KT_CHECK(!psd::menuFieldsOk(&kGog));                         // GOG column is all zeros until it is mapped
+    KT_CHECK(!psd::menuFieldsOk(static_cast<const K2AddrTable*>(nullptr)));
+    K2AddrTable t = kSteam; t.Menu_PortraitSlot = 0; KT_CHECK(!psd::menuFieldsOk(&t));
+    t = kSteam; t.Menu_Char2 = 0; KT_CHECK(!psd::menuFieldsOk(&t));
+    t = kSteam; t.Menu_Char3 = 0; KT_CHECK(!psd::menuFieldsOk(&t));
+    t = kSteam; t.MenuCaller_Creature = 0; KT_CHECK(!psd::menuFieldsOk(&t));
+    k2addr::setForTest(nullptr); KT_CHECK(!psd::menuFieldsOk(k2addr::get()));   // unknown exe
+    k2addr::setForTest(&kSteam); KT_CHECK(psd::menuFieldsOk(k2addr::get()));
+    k2addr::clearForTest();
+}
+
 int main() {
     t1();
     t2();
+    t3();
     return kt::Report("ps_dispatch_test");
 }

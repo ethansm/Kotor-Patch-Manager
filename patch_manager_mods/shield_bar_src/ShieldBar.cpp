@@ -19,6 +19,7 @@
 #include "ShieldTable.inc"
 #include "ShieldLogic.h"     // sb::appendf (bounded log formatting)
 #include "SafeRead.h"
+#include "K2Addr.h"
 #include "Effects.h"
 #include "Gui2D.h"
 #include "GuiKit.h"
@@ -29,14 +30,20 @@ namespace {
 
 using guikit::imageFor;
 using gui2d::CapGuard;
-constexpr int Effect_SpellIdOffset = k2fx::Effect_SpellId;
-constexpr int Creature_EffectArrayOffset = k2fx::Creature_EffectArray;
-constexpr int Creature_EffectCountOffset = k2fx::Creature_EffectCount;
 constexpr int MaxEffects = k2fx::MaxEffects;
-constexpr int CExoStringSprintf = 0x00734270;  // cdecl (CExoString* dst, const char* fmt, ...)
+// Every engine address / struct offset below comes from the exe's address table (K2Addr.h, k2addr::get()): CExoStringFormat,
+// GetMaxForcePoints, Slot_*, Menu_*, Creature_*, Stats_*, Tip_*, Ctl_*, Effect_*. A null table or a 0 field = that feature does nothing.
 
 template <typename T> bool readAt(int base, int off, T* out) {
     return saferead::readAt(1, static_cast<uintptr_t>(base), off, out);
+}
+// control extent (x, y, w, h) at the table's Ctl_X / Ctl_Y / Ctl_W / Ctl_H; false = offsets unknown (r untouched)
+bool readCtlRect(int ctl, int* r) {
+    const K2AddrTable* T = k2addr::get();
+    if (!T || !T->Ctl_X || !T->Ctl_Y || !T->Ctl_W || !T->Ctl_H) return false;
+    const int o[4] = { T->Ctl_X, T->Ctl_Y, T->Ctl_W, T->Ctl_H };
+    for (int q = 0; q < 4; ++q) readAt(ctl, o[q], &r[q]);
+    return true;
 }
 
 k2ps::Client g_ps;
@@ -60,6 +67,15 @@ void probeLog(const char* fmt, ...) {
     fputc('\n', f); fclose(f);
 }
 
+// A feature runs only when the exe's address table has every field it needs (K2Addr.h; null table / 0 = unknown). The first feature that
+// finds it unusable writes ONE probe-log line per session, from the hook call (KPatchInit must not do file I/O).
+bool g_tableNoted = false;
+bool featureOk(bool ok, const char* feature) {
+    if (ok) return true;
+    if (!g_tableNoted) { g_tableNoted = true; probeLog("K2ADDR %s disabled (no address table for this exe, or a needed field is 0)", feature); }
+    return false;
+}
+
 struct EffRec { int n34; int eff; unsigned short type, sub; int spell, creator; float dur; int ints[8]; bool seen; };
 constexpr int ProbeMaxEff = 128, ProbeMaxCreatures = 8;
 struct CreatureRec { int creature; unsigned lastTick; bool primed; int n; EffRec e[ProbeMaxEff]; };
@@ -78,6 +94,8 @@ void probeDump(int eff, char* out, int cap) {
 }
 
 void probeEffects(int slotPtr, int creature) {
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(sb::effectProbeFieldsOk(T), "effect probe")) return;
     CreatureRec* cr = nullptr;
     for (auto& c : g_cr) if (c.creature == creature) { cr = &c; break; }
     if (!cr) for (auto& c : g_cr) if (c.creature == 0) { cr = &c; c.creature = creature; break; }
@@ -86,23 +104,23 @@ void probeEffects(int slotPtr, int creature) {
     if (cr->lastTick == now) return;            // the mirror slot repeats slot 0's creature
     cr->lastTick = now;
     int arr = 0, count = 0;
-    if (!readAt(creature, Creature_EffectArrayOffset, &arr) || !readAt(creature, Creature_EffectCountOffset, &count)) return;
+    if (!readAt(creature, T->Creature_EffectArray, &arr) || !readAt(creature, T->Creature_EffectCount, &count)) return;
     if (arr == 0 || count < 0 || count > MaxEffects) return;
     for (int i = 0; i < cr->n; ++i) cr->e[i].seen = false;
     for (int i = 0; i < count; ++i) {
         int eff;
         if (!readAt(arr, i * 4, &eff) || eff == 0) continue;
         EffRec cur = {}; cur.eff = eff;
-        readAt(eff, 0x8, &cur.type); readAt(eff, 0xa, &cur.sub); readAt(eff, 0x1c, &cur.spell);
-        readAt(eff, 0x18, &cur.creator); readAt(eff, 0xc, &cur.dur);
-        readAt(eff, 0x30, &cur.n34);                // +0x30 = count, +0x34 = int* array (probe 2 log: dump shows 08 00 00 00 | ptr)
-        { int ip = 0; if (readAt(eff, 0x34, &ip) && ip) for (int k = 0; k < 8 && k < (cur.n34 > 0 ? cur.n34 : 8); ++k) readAt(ip, 4 * k, &cur.ints[k]); }
+        readAt(eff, T->Effect_Type, &cur.type); readAt(eff, T->Effect_Subtype, &cur.sub); readAt(eff, T->Effect_SpellId, &cur.spell);
+        readAt(eff, T->Effect_Creator, &cur.creator); readAt(eff, T->Effect_Duration, &cur.dur);
+        readAt(eff, T->Effect_IntCount, &cur.n34);  // Effect_IntCount = count, Effect_Ints = int* array (probe 2 log: dump shows 08 00 00 00 | ptr)
+        { int ip = 0; if (readAt(eff, T->Effect_Ints, &ip) && ip) for (int k = 0; k < 8 && k < (cur.n34 > 0 ? cur.n34 : 8); ++k) readAt(ip, 4 * k, &cur.ints[k]); }
         EffRec* old = nullptr;
         for (int k = 0; k < cr->n; ++k) if (cr->e[k].eff == eff) { old = &cr->e[k]; break; }
         if (!old) {
             if (cr->n >= ProbeMaxEff) continue;
             char dump[1400]; probeDump(eff, dump, sizeof(dump));
-            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, 0x34, &ip) && ip) { len = sb::appendf(dump, (int)sizeof(dump), len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len = sb::appendf(dump, (int)sizeof(dump), len, " %d", v); } } }
+            { int ip = 0, len = (int)strlen(dump); if (readAt(eff, T->Effect_Ints, &ip) && ip) { len = sb::appendf(dump, (int)sizeof(dump), len, "\n    arr@%08x:", ip); for (int k = 0; k < 16; ++k) { int v = 0; if (!readAt(ip, 4 * k, &v)) break; len = sb::appendf(dump, (int)sizeof(dump), len, " %d", v); } } }
             probeLog("APPLY%s n34=%d c=%08x slot=%08x e=%08x type=0x%04x sub=0x%04x spell=%d creator=%08x dur=%.2f ints=[%d,%d,%d,%d,%d,%d,%d,%d]%s",
                      cr->primed ? "" : "(pre)", cur.n34, creature, slotPtr, eff, cur.type, cur.sub, cur.spell, cur.creator, cur.dur,
                      cur.ints[0], cur.ints[1], cur.ints[2], cur.ints[3], cur.ints[4], cur.ints[5], cur.ints[6], cur.ints[7], dump);
@@ -212,6 +230,7 @@ void lightenFill(const float* rgb, float* out) {
 }
 
 int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, int slotPtr = 0, bool noClip = false) {
+    if (!featureOk(sb::drawFieldsOk(k2addr::get()), "shield bar draw")) return 0;
     Pool pools[8];
     int n = collectPools(creature, pools, 8);
     if (n <= 0) return 0;
@@ -236,8 +255,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     long total = 0; for (int i = 0; i < n; ++i) total += pools[i].max;
     if (total < 1) return 0;
     const float flushArg = gui2d::flushArg();
-    auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
-        (*reinterpret_cast<void***>(image))[6]);
+    auto draw = [](void* i, int dx, int dy, int dw, int dh, int, int, const float* rgb, float a) { gui2d::drawImage(i, dx, dy, dw, dh, 0, rgb, a); };   // image vtable ImageVt_Draw (a5 = rot = 0)
     gui2d::flush(flushArg);
     // Everything is clipped to [x, seamX): the art's body now extends past its visible edge, so the right edge is pixel-exact on the seam
     // (a hard clip edge, no texture-filter fringe = no hairline between shield, corner wedge and health bar).
@@ -274,7 +292,7 @@ int DrawShieldPools(int creature, int vx, int vy, int vw, int vh, float scale, i
     // right edge. uibit_bar_sc_p (scripts/gen_shield_bar_art.py) is drawn on the HEALTH rect and holds only the wedge between x=0.445*vw and
     // the health art's curved outline, so it extends the shield's top/bottom edge into the corner without touching a health pixel.
     if (void* corner = imageFor(CornerTexture)) {
-        auto cdraw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>((*reinterpret_cast<void***>(corner))[6]);
+        auto cdraw = draw;
         float top[3], bot[3];
         bool topFull = pools[n - 1].remaining >= pools[n - 1].max, botFull = pools[0].remaining > 0;
         lightenFill(pools[n - 1].rgb, top); lightenFill(pools[0].rgb, bot);
@@ -326,7 +344,9 @@ void glDump(const char* tag) {
 int sceneBrightness() {
     const gui2d::GlFns& g_gl = gui2d::gl();
     if (!g_gl.readPixels) return -1;
-    int w = 0, h = 0; readAt(0x009f42a4, 0, &w); readAt(0x009f42a8, 0, &h);
+    const uintptr_t aw = k2addr::addr(&K2AddrTable::ScreenW), ah = k2addr::addr(&K2AddrTable::ScreenH);
+    if (!aw || !ah) return -1;
+    int w = 0, h = 0; readAt(static_cast<int>(aw), 0, &w); readAt(static_cast<int>(ah), 0, &h);
     if (w < 100 || h < 100) return -1;
     long sum = 0; int cnt = 0;
     for (int iy = 0; iy < 5; ++iy) for (int ix = 0; ix < 5; ++ix) {
@@ -344,34 +364,37 @@ int sceneBrightness() {
 // uibit_bar_vp_p red over teal, uibit_bar_fp_p cyan over teal; geometry copied from the HUD small card: vit = card.x-40 .. +47 wide, force =
 // card.x+77 .. +47 wide, both 96 tall from card.y-5, on an 85 px card). Values the way UpdatePortraits gets them (0x74ee90): HP = creature
 // vtable+0x9c(0, max) with max = vtable+0x98(1, creature[0x43d]); FP = stats(+0x1198) shorts +0x130 + +0x132, max = FUN_0057eca0(creature).
-constexpr int MenuCharGroup[2][4] = { { 0xc4d, 0xc9f, 0xcf1, 0xd43 }, { 0xdb7, 0xe09, 0xe5b, 0xead } };   // dword index of LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn
+// Menu control groups (LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn for n = 2, 3) are K2AddrTable Menu_Char2 .. Menu_Change3 (byte offsets from the panel).
 const float HealthFillRed[3] = { 1.0f, 0.0f, 0.0f }, ForceFillCyan[3] = { 0.0f, 0.8f, 0.898f };
 const char* const HealthBarTexture = "uibit_bar_vp_p";
 const char* const ForceBarTexture = "uibit_bar_fp_p";
 
 bool readVitals(int creature, int* hp, int* hpMax, int* fp, int* fpMax) {
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(sb::vitalsFieldsOk(T), "companion vitals")) return false;
     int vt = 0, stats = 0;
-    if (!readAt(creature, 0, &vt) || !vt || !readAt(creature, 0x1198, &stats) || !stats) return false;
-    int fnMax = 0, fnCur = 0; short s130 = 0, s132 = 0;
-    if (!readAt(vt, 0x98, &fnMax) || !readAt(vt, 0x9c, &fnCur) || !fnMax || !fnCur || !readAt(stats, 0x130, &s130) || !readAt(stats, 0x132, &s132)) return false;
+    if (!readAt(creature, 0, &vt) || !vt || !readAt(creature, T->Creature_Stats, &stats) || !stats) return false;   // creature+0 = vtable (C++ ABI)
+    int fnMax = 0, fnCur = 0; short sForceA = 0, sForceB = 0;
+    if (!readAt(vt, T->Creature_VtMaxHp, &fnMax) || !readAt(vt, T->Creature_VtCurHp, &fnCur) || !fnMax || !fnCur || !readAt(stats, T->Stats_ForceA, &sForceA) || !readAt(stats, T->Stats_ForceB, &sForceB)) return false;
     // CSWSCreature vtable slots 38/39 (0x57e8c0 / 0x5413c0) each take ONE stack arg (RET 4): a 2-arg call unbalances the stack (crash 10-02)
     *hpMax = reinterpret_cast<short(__thiscall*)(int, int)>(fnMax)(creature, 1);
     *hp = reinterpret_cast<short(__thiscall*)(int, int)>(fnCur)(creature, 0);
-    *fp = int(s130) + int(s132);
-    *fpMax = int(reinterpret_cast<unsigned(__fastcall*)(int)>(0x0057eca0)(creature));
+    *fp = int(sForceA) + int(sForceB);
+    *fpMax = int(reinterpret_cast<unsigned(__fastcall*)(int)>(T->GetMaxForcePoints)(creature));
     return true;
 }
 
 // one vertical gauge: teal track over the whole rect, then the colour fill from the bottom (cur/max of the height), as the stock bars
 void drawGauge(const char* texture, int x, int y, int w, int h, const float* fill, int cur, int mx) {
+    if (!featureOk(sb::drawFieldsOk(k2addr::get()), "gauge draw")) return;
     void* img = imageFor(texture);
     if (!img || w < 4 || h < 4) return;
     if (cur < 0) cur = 0; if (cur > mx) cur = mx;
-    auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>((*reinterpret_cast<void***>(img))[6]);
-    if (mx < 1) { draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f); return; }     // no Force (droid): empty teal track, as the active portrait shows
-    draw(img, x, y, w, h, 0, 0, TrackTint, 1.0f);
+    auto draw = [](void* i, int dx, int dy, int dw, int dh, const float* rgb, float a) { gui2d::drawImage(i, dx, dy, dw, dh, 0, rgb, a); };   // image vtable ImageVt_Draw
+    if (mx < 1) { draw(img, x, y, w, h, TrackTint, 1.0f); return; }     // no Force (droid): empty teal track, as the active portrait shows
+    draw(img, x, y, w, h, TrackTint, 1.0f);
     int fh = int(double(h) * cur / mx + 0.5), y0 = y + h - fh;
-    if (fh > 0 && gui2d::pushClip(x, y0, w, fh)) { draw(img, 0, -(y0 - y), w, h, 0, 0, fill, 1.0f); gui2d::popClip(); }
+    if (fh > 0 && gui2d::pushClip(x, y0, w, fh)) { draw(img, 0, -(y0 - y), w, h, fill, 1.0f); gui2d::popClip(); }
 }
 
 // Spread the two companion portrait groups apart (runtime write of the controls' x, so no .gui edit and the hit areas move too).
@@ -379,20 +402,24 @@ void drawGauge(const char* texture, int x, int y, int w, int h, const float* fil
 struct ShiftRec { int panel; int orig[2][4], shifted[2][4]; };
 ShiftRec g_shift[8];
 void spreadCompanions(int panel, int w) {
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(sb::menuFieldsOk(T), "companion spacing")) return;
+    const int grp[2][4] = { { T->Menu_Char2, T->Menu_Level2, T->Menu_Back2, T->Menu_Change2 },    // LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn
+                            { T->Menu_Char3, T->Menu_Level3, T->Menu_Back3, T->Menu_Change3 } };
     ShiftRec* rec = nullptr;
     for (auto& r : g_shift) if (r.panel == panel) { rec = &r; break; }
     if (!rec) { static int next = 0; rec = &g_shift[next++ & 7]; *rec = {}; rec->panel = panel; }
     const int dx[2] = { int(0.30f * w + 0.5f), int(1.00f * w + 0.5f) };
     for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
-        int ctl = panel + MenuCharGroup[g][i] * 4, rc[4] = {};
-        for (int q = 0; q < 4; ++q) readAt(ctl, 4 + 4 * q, &rc[q]);
+        int ctl = panel + grp[g][i], rc[4] = {};
+        readCtlRect(ctl, rc);
         if (rc[2] < 1 || rc[3] < 1) continue;
         int cur = rc[0];
         if (cur != rec->orig[g][i] && cur != rec->shifted[g][i]) { rec->orig[g][i] = cur; rec->shifted[g][i] = cur + dx[g]; }
         if (cur == rec->shifted[g][i]) continue;
         // engine SetRect (vtable slot 1, RET 4: moves the rect + border/text copies, so the drawn portrait follows; raw int writes only moved the hit area)
         int vt = 0, fn = 0;
-        if (!readAt(ctl, 0, &vt) || !vt || !readAt(vt, 4, &fn) || !fn) continue;
+        if (!readAt(ctl, 0, &vt) || !vt || !readAt(vt, T->Ctl_VtSetRect, &fn) || !fn) continue;
         int nr[4] = { rec->shifted[g][i], rc[1], rc[2], rc[3] };
         reinterpret_cast<void(__thiscall*)(int, int*)>(fn)(ctl, nr);
         probeLog("MENUMOVE g=%d i=%d x %d -> %d", g, i, cur, nr[0]);
@@ -433,19 +460,21 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* c, void*) {
 // Every slot: leader force-bar slide (FORCEMOVE) + SLOT geometry log.
 void KPATCH_CALL onSlot(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(sb::slotFieldsOk(T), "slot geometry / force-bar slide")) return;
     const int slotPtr = c->slot, isLarge = c->isLarge, creature = c->creature;
     int flags = 0, vitVt = 0, forceVt = 0, vit[4] = {}, force[4] = {}, card[4] = {};
-    readAt(slotPtr, 0x590, &flags); readAt(slotPtr, 0x690, &vitVt); readAt(slotPtr, 0x7fc, &forceVt);
+    readAt(slotPtr, T->Slot_Flags, &flags); readAt(slotPtr, T->Slot_VitCtl, &vitVt); readAt(slotPtr, T->Slot_ForceCtl, &forceVt);
     for (int k = 0; k < 4; ++k) {
-        readAt(slotPtr, 0x694 + 4 * k, &vit[k]); readAt(slotPtr, 0x800 + 4 * k, &force[k]); readAt(slotPtr, 0x54c + 4 * k, &card[k]);
+        readAt(slotPtr, T->Slot_VitRect + 4 * k, &vit[k]); readAt(slotPtr, T->Slot_ForceRect + 4 * k, &force[k]); readAt(slotPtr, T->Slot_CardRect + 4 * k, &card[k]);
     }
     if (isLarge && !g_noDraw && force[2] >= 8 && force[2] <= 2000 && card[2] >= 8) {
         // leader force bar: its art leaves a few px between the portrait and the visible bar (health is flush): slide it left by that gap
         // (art columns 29..69 of 128 => visible left edge = x + 0.227*w). Engine SetRect = progress-bar vtable slot 1 (0x41b9e0, RET 4), once.
         int gap = int(force[0] + 29.0f / 128.0f * force[2] + 0.5f) - (card[0] + card[2]);
         if (gap > 0 && gap < 12) {
-            int vt = 0, fn = 0, fo = slotPtr + 0x7fc;
-            if (readAt(fo, 0, &vt) && vt && readAt(vt, 4, &fn) && fn) {
+            int vt = 0, fn = 0, fo = slotPtr + T->Slot_ForceCtl;
+            if (readAt(fo, 0, &vt) && vt && readAt(vt, T->Ctl_VtSetRect, &fn) && fn) {
                 int nr[4] = { force[0] - gap, force[1], force[2], force[3] };
                 reinterpret_cast<void(__thiscall*)(int, int*)>(fn)(fo, nr);
                 probeLog("FORCEMOVE slot=%08x x %d -> %d (gap %d)", slotPtr, force[0], nr[0], gap);
@@ -472,10 +501,14 @@ void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
     noteMenuState(true);
     if (g_noDraw) return;
+    const K2AddrTable* T = k2addr::get();
+    const bool haveVit = featureOk(sb::vitRectOk(T), "menu shield bar");          // top-bar portrait's health-bar rect
+    const bool haveMenu = featureOk(sb::menuFieldsOk(T), "menu companion bars");   // companion controls: gauges, bars, spacing
+    if (!haveVit && !haveMenu) return;
     const int slotPtr = c->slot, panel = c->panel, creature = c->menuCreature;
     const float scale = gui2d::hudScale();
     int v[4] = {};
-    for (int k = 0; k < 4; ++k) readAt(slotPtr, 0x694 + 4 * k, &v[k]);
+    if (haveVit) for (int k = 0; k < 4; ++k) readAt(slotPtr, T->Slot_VitRect + 4 * k, &v[k]);
     int pools = 0;
     if (creature && v[2] >= 1 && v[2] <= 2000 && v[3] >= 1 && v[3] <= 2000) { Pool t[8]; pools = collectPools(creature, t, 8); }
     const int comp[2] = { c->companions[0], c->companions[1] };
@@ -484,14 +517,14 @@ void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     CapGuard capGuard;
     int shown = 0, bars = 0;
     if (pools > 0) shown = DrawShieldPools(creature, v[0], v[1], v[2], v[3], scale, slotPtr, false);
-    if (g_probe) { int q[2][4] = {}; for (int k = 0; k < 2; ++k) for (int i = 0; i < 4; ++i) readAt(c->companionCtrl[k], 4 + 4 * i, &q[k][i]);
+    if (g_probe && haveMenu) { int q[2][4] = {}; for (int k = 0; k < 2; ++k) readCtlRect(c->companionCtrl[k], q[k]);
         static int lastQ = -1; int sq = q[0][0] * 3 ^ q[1][0] * 7 ^ q[0][1] ^ q[1][2];
         static int pc = 0; if (sq != lastQ || (++pc % 120) == 0) { lastQ = sq; probeLog("MENUPRE c2=(%d,%d,%d,%d) c3=(%d,%d,%d,%d) panel=%08x", q[0][0], q[0][1], q[0][2], q[0][3], q[1][0], q[1][1], q[1][2], q[1][3], panel); } }
-    { int w2 = 0; if (readAt(c->companionCtrl[0], 0xc, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2); }
-    for (int k = 0; k < 2; ++k) {
+    if (haveMenu) { int w2 = 0; if (readAt(c->companionCtrl[0], T->Ctl_W, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2); }
+    for (int k = 0; haveMenu && k < 2; ++k) {
         int ctrl = c->companionCtrl[k], fl = 0, r[4] = {};
-        if (!comp[k] || !readAt(ctrl, 0x48, &fl) || !(fl & 2)) continue;
-        for (int q = 0; q < 4; ++q) readAt(ctrl, 4 + 4 * q, &r[q]);
+        if (!comp[k] || !readAt(ctrl, T->Ctl_Flags, &fl) || !(fl & 2)) continue;
+        readCtlRect(ctrl, r);
         if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) continue;
         // bars around the portrait (HUD small-card geometry scaled to this card), shield beside the health bar
         int hp = 0, hpMax = 0, fp = 0, fpMax = 0;
@@ -518,6 +551,9 @@ void KPATCH_CALL onHudDraw(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
     noteMenuState(false);
     if (g_noDraw) return;
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(sb::vitRectOk(T), "HUD shield bars")) return;
+    const int effCountOff = T->Creature_EffectCount, arrowBuffOff = T->Slot_ArrowBuff, arrowDebuffOff = T->Slot_ArrowDebuff;   // log-only reads: 0 = skip
     const float scale = gui2d::hudScale();
     CapGuard capGuard;
     static bool prevAny = false; static int dumpFrames = 0;
@@ -530,11 +566,13 @@ void KPATCH_CALL onHudDraw(const K2PsContext* c, void*) {
         int32_t slot = 0, cr = 0;
         if (!g_ps.slotAt(i, &slot, &cr)) continue;
         int v[4] = {};
-        for (int k = 0; k < 4; ++k) readAt(slot, 0x694 + 4 * k, &v[k]);
+        for (int k = 0; k < 4; ++k) readAt(slot, T->Slot_VitRect + 4 * k, &v[k]);
         if (v[2] < 1 || v[2] > 400 || v[3] < 1 || v[3] > 400) continue;
         int n = DrawShieldPools(cr, v[0], v[1], v[2], v[3], scale, slot);
-        int effCount = 0; readAt(cr, Creature_EffectCountOffset, &effCount);
-        unsigned char arrowBuff = 0, arrowDebuff = 0; readAt(slot, 0xddc, &arrowBuff); readAt(slot, 0xddd, &arrowDebuff);
+        int effCount = 0; if (effCountOff) readAt(cr, effCountOff, &effCount);
+        unsigned char arrowBuff = 0, arrowDebuff = 0;
+        if (arrowBuffOff) readAt(slot, arrowBuffOff, &arrowBuff);
+        if (arrowDebuffOff) readAt(slot, arrowDebuffOff, &arrowDebuff);
         static int lastDraw[8]; static int drawSlot[8]; static int nDraw = 0;
         int di = -1; for (int k = 0; k < nDraw; ++k) if (drawSlot[k] == slot) di = k;
         if (di < 0 && nDraw < 8) { di = nDraw++; drawSlot[di] = slot; lastDraw[di] = -12345; }
@@ -569,8 +607,10 @@ void __cdecl AppendShieldToTooltip(int charButton) {
     saferead::beginScope();                     // engine code between hook calls can free memory: drop the cached readable regions
     g_ps.poll();
     flushConnectNote();
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(sb::tooltipFieldsOk(T), "tooltip shield line")) return;
     int slot = 0, oldText = 0;
-    if (!readAt(charButton, 0x1d0, &slot) || !slot || !readAt(charButton, 0x1d4, &oldText) || !oldText) return;
+    if (!readAt(charButton, T->Tip_Slot, &slot) || !slot || !readAt(charButton, T->Tip_Text, &oldText) || !oldText) return;
     // Defensive: the builder re-formats the text before this RET path, so the line is normally absent here; never append twice.
     if (strstr(reinterpret_cast<const char*>(oldText), "Shield:")) return;
     int creature = g_ps.creatureForSlot(slot);
@@ -579,7 +619,7 @@ void __cdecl AppendShieldToTooltip(int charButton) {
     probeLog("TIP btn=%08x slot=%08x creature=%08x pools=%d line='%s'", charButton, slot, creature, n, line);
     if (n <= 0) return;
     using CExoSprintf = void(__cdecl*)(void*, const char*, ...);
-    reinterpret_cast<CExoSprintf>(CExoStringSprintf)(reinterpret_cast<void*>(charButton + 0x1d4), "%s\n%s", reinterpret_cast<const char*>(oldText), line);
+    reinterpret_cast<CExoSprintf>(T->CExoStringFormat)(reinterpret_cast<void*>(charButton + T->Tip_Text), "%s\n%s", reinterpret_cast<const char*>(oldText), line);
 }
 
 } // extern "C"

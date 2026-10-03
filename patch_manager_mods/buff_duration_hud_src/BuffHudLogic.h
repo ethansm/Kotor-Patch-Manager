@@ -11,6 +11,29 @@
 
 namespace bh {
 
+// ---------------------------------------------------------------- address-table gates (K2Addr.h, 0 = unknown)
+// Templates over K2AddrTable so this header stays free of K2Addr.h. A feature whose gate is false does nothing (null table = unknown exe).
+// arrow counters (ForceArrowCounters): slot gate word, the two counters, the three overlay words.
+template <class T> inline bool arrowFieldsOk(const T* t) {
+    return t && t->Slot_Flags && t->Slot_ArrowBuff && t->Slot_ArrowDebuff && t->Slot_Overlay0 && t->Slot_Overlay1 && t->Slot_Overlay2;
+}
+// hide / restore one native arrow (hooks 2/3): icon label -> border sub-object, its vtable check, its size fields.
+template <class T> inline bool arrowHideFieldsOk(const T* t) {
+    return t && t->Label_Border && t->BorderVtable && t->Border_Width && t->Border_Height;
+}
+// icon column drawer: border tint / alpha / rotation of the native arrow widget and the image Draw vtable slot.
+template <class T> inline bool columnFieldsOk(const T* t) {
+    return t && t->Label_Border && t->Border_Rot && t->Border_Alpha && t->Border_Tint && t->ImageVt_Draw;
+}
+// menu companion portraits: control flags + rect (x, y, w, h).
+template <class T> inline bool menuFieldsOk(const T* t) {
+    return t && t->Ctl_Flags && t->Ctl_X && t->Ctl_Y && t->Ctl_W && t->Ctl_H;
+}
+// optional ICONCACHE diagnostic: skipped (never gates the feature) unless all four are known.
+template <class T> inline bool iconCacheFieldsOk(const T* t) {
+    return t && t->Creature_IconCacheData && t->Creature_IconCacheCount && t->IconEnt_F14 && t->IconEnt_F1c;
+}
+
 // Bounded printf-append. Replaces the `len += snprintf(buf + len, cap - len, ...)` idiom, which overruns once a write
 // truncates: snprintf returns the length it WOULD have written, so len passes cap and `cap - len` underflows to a huge size_t.
 // Appends at buf[len], never writes past buf[cap-1], always leaves buf NUL-terminated, and returns the new length,

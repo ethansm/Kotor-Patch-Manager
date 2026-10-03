@@ -8,6 +8,13 @@ namespace psd {
 
 constexpr int MaxPerPhase = 16;
 
+// The address-table fields the menu overlay needs (template over K2AddrTable so this header stays free of K2Addr.h): the menu's
+// top-bar portrait slot offset, LBL_CHAR2 / LBL_CHAR3, and the caller-frame local holding the selected creature. Null table or any
+// field 0 (unknown) = the menu overlay must do nothing.
+template <class Table> inline bool menuFieldsOk(const Table* t) {
+    return t && t->Menu_PortraitSlot && t->Menu_Char2 && t->Menu_Char3 && t->MenuCaller_Creature;
+}
+
 struct Entry { int32_t token; int32_t prio; K2PsCallback fn; void* user; const char* owner; };
 
 struct Dispatcher {

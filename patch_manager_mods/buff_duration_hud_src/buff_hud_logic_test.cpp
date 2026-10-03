@@ -3,6 +3,7 @@
 // Build/run: python3 scripts/run_tests.py -k buff_hud
 // Expected values in the geometry tests are hand-computed (see the comment on each case), not read back from the function.
 #include "BuffHudLogic.h"
+#include "K2Addr.h"
 #include "check.h"
 #include <climits>
 #include <cstdlib>
@@ -403,6 +404,38 @@ static void testMenuGates() {
 }
 
 
+// Address-table gates (doc 20 B2): every feature runs only when the K2AddrTable has the fields it needs. Null table / a zero field = off.
+void testTableGates() {
+    // Steam: everything available
+    KT_CHECK(bh::arrowFieldsOk(&kSteam)); KT_CHECK(bh::arrowHideFieldsOk(&kSteam)); KT_CHECK(bh::columnFieldsOk(&kSteam));
+    KT_CHECK(bh::menuFieldsOk(&kSteam)); KT_CHECK(bh::iconCacheFieldsOk(&kSteam));
+    // GOG column is zeros: every feature off
+    KT_CHECK(!bh::arrowFieldsOk(&kGog)); KT_CHECK(!bh::arrowHideFieldsOk(&kGog)); KT_CHECK(!bh::columnFieldsOk(&kGog));
+    KT_CHECK(!bh::menuFieldsOk(&kGog)); KT_CHECK(!bh::iconCacheFieldsOk(&kGog));
+    // null table (unknown exe)
+    const K2AddrTable* none = nullptr;
+    KT_CHECK(!bh::arrowFieldsOk(none)); KT_CHECK(!bh::arrowHideFieldsOk(none)); KT_CHECK(!bh::columnFieldsOk(none));
+    KT_CHECK(!bh::menuFieldsOk(none)); KT_CHECK(!bh::iconCacheFieldsOk(none));
+    // one zero field at a time, per gate
+    K2AddrTable t;
+#define ZERO_BREAKS(gate, field) t = kSteam; t.field = 0; KT_CHECK(!gate(&t))
+    ZERO_BREAKS(bh::arrowFieldsOk, Slot_Flags); ZERO_BREAKS(bh::arrowFieldsOk, Slot_ArrowBuff); ZERO_BREAKS(bh::arrowFieldsOk, Slot_ArrowDebuff);
+    ZERO_BREAKS(bh::arrowFieldsOk, Slot_Overlay0); ZERO_BREAKS(bh::arrowFieldsOk, Slot_Overlay1); ZERO_BREAKS(bh::arrowFieldsOk, Slot_Overlay2);
+    ZERO_BREAKS(bh::arrowHideFieldsOk, Label_Border); ZERO_BREAKS(bh::arrowHideFieldsOk, BorderVtable);
+    ZERO_BREAKS(bh::arrowHideFieldsOk, Border_Width); ZERO_BREAKS(bh::arrowHideFieldsOk, Border_Height);
+    ZERO_BREAKS(bh::columnFieldsOk, Label_Border); ZERO_BREAKS(bh::columnFieldsOk, Border_Rot); ZERO_BREAKS(bh::columnFieldsOk, Border_Alpha);
+    ZERO_BREAKS(bh::columnFieldsOk, Border_Tint); ZERO_BREAKS(bh::columnFieldsOk, ImageVt_Draw);
+    ZERO_BREAKS(bh::menuFieldsOk, Ctl_Flags); ZERO_BREAKS(bh::menuFieldsOk, Ctl_X); ZERO_BREAKS(bh::menuFieldsOk, Ctl_Y);
+    ZERO_BREAKS(bh::menuFieldsOk, Ctl_W); ZERO_BREAKS(bh::menuFieldsOk, Ctl_H);
+    ZERO_BREAKS(bh::iconCacheFieldsOk, Creature_IconCacheData); ZERO_BREAKS(bh::iconCacheFieldsOk, Creature_IconCacheCount);
+    ZERO_BREAKS(bh::iconCacheFieldsOk, IconEnt_F14); ZERO_BREAKS(bh::iconCacheFieldsOk, IconEnt_F1c);
+#undef ZERO_BREAKS
+    // the gates follow the forced table (what the DLL reads through k2addr::get())
+    k2addr::setForTest(nullptr); KT_CHECK(!bh::arrowFieldsOk(k2addr::get()));
+    k2addr::setForTest(&kSteam); KT_CHECK(bh::arrowFieldsOk(k2addr::get()));
+    k2addr::clearForTest();
+}
+
 int main() {
     // 1. Fits: exact text, exact length, NUL-terminated.
     {
@@ -516,6 +549,7 @@ int main() {
     testDiscLine();
     testColumnSig();
     testMenuGates();
+    testTableGates();
 
     return kt::Report("buff_hud_logic");
 }

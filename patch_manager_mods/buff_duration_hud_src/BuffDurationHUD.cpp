@@ -23,6 +23,7 @@
 
 #include "BuffHudLogic.h"          // bh:: pure logic: appendf (bounded log formatting, audit 20a F7), arrow counter bump, column geometry
 #include "../_shared/SafeRead.h"    // VirtualQuery-based probing: IsBadReadPtr = a real Wine page fault + SEH dispatch per bad pointer
+#include "../_shared/K2Addr.h"     // per-exe address table: every engine offset below is read from k2addr::get() (0 = unknown -> feature off)
 #include "../_shared/EffectIcons.h" // effect-list walk + decode (Effects.h) and the buff/debuff icon tables (doc 21 W2)
 #include "../_shared/Gui2D.h"       // 2D batch / clip / flush / image draw + CapGuard
 #include "../_shared/GuiKit.h"      // imageFor: one pooled engine image per resref
@@ -35,18 +36,9 @@ using k2fx::collectBuffs;
 using k2fx::currentTime;
 using guikit::imageFor;
 using gui2d::CapGuard;
-constexpr int Effect_SpellIdOffset = k2fx::Effect_SpellId;
-constexpr int Creature_EffectArrayOffset = k2fx::Creature_EffectArray;
-constexpr int Creature_EffectCountOffset = k2fx::Creature_EffectCount;
-constexpr int MaxEffects = k2fx::MaxEffects;
-// The icon widget is a CSWGuiLabel with two embedded children: +0x60 CSWGuiBorder ("BORDER",
-// draws the arrow glyph as its fill image) and +0xd8 CSWGuiText (font text, unused here).
-// Verified by live memory dump: border vtable 009875bc, fill image at border+0x74 (what
-// CSWGuiBorder::Draw 0x415300 reads), size at +0xc/+0x10.
-constexpr int Label_TextBorderOffset = 0x60;
-constexpr int Border_WidthOffset = 0xc;
-constexpr int Border_HeightOffset = 0x10;
-constexpr int Border_FillImageOffset = 0x74;      // bound FILL image object (direct field)
+// The icon widget is a CSWGuiLabel with two embedded children: a CSWGuiBorder ("BORDER", draws the arrow glyph as its fill image) and a
+// CSWGuiText (font text, unused here). Verified by live memory dump (Steam): border vtable BorderVtable, size at Border_Width/Border_Height.
+// All offsets are K2AddrTable fields (Label_Border, Border_Width, Border_Height, Border_Rot, Border_Alpha, Border_Tint, Ctl_*, Slot_*).
 
 // icon size / column constants (SmallCardFraction, LargeCardFraction, MinIconSize, MaxIconSize, MaxColumns, RightInset) live in BuffHudLogic.h
 const float LineColor[3] = { 0.0f, 0.16f, 0.14f };  // thin dark-teal edge between remaining and elapsed
@@ -83,7 +75,7 @@ template <typename T> bool readAt(int base, int off, T* out) {
 }
 
 // state saved by hook 2 for hook 3
-struct Saved { bool active; int border; int origImage; int width; int height; } g_saved;
+struct Saved { bool active; int border; int origImage; int width; int height; int widthOff, heightOff; } g_saved;
 
 
 // ---- shared probe log: OFF unless "shieldprobe.txt" exists in the game dir. ARROWS / ICONCACHE / GLINIT / CAPFIX lines go to
@@ -99,6 +91,19 @@ void probeLog(const char* fmt, ...) {
     fprintf(f, "[t=%lu f=%d] ", GetTickCount(), g_frame);
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
+}
+
+// A feature runs only when the exe's address table has every field it needs (K2Addr.h; null table / 0 = unknown). The first feature
+// that finds it unusable logs ONE line per session, from the hook call (KPatchInit must not do file I/O).
+bool g_tableNoted = false;
+bool featureOk(bool ok, const char* feature) {
+    if (ok) return true;
+    if (!g_tableNoted) {
+        g_tableNoted = true;
+        logf("k2addr: %s disabled (no address table for this exe, or a needed field is 0)", feature);
+        probeLog("K2ADDR %s disabled (no address table for this exe, or a needed field is 0)", feature);
+    }
+    return false;
 }
 
 // ---- kill switch (polled every 30 frames, works mid-session): buffhud_off.txt -> skip the icon columns (engine arrows draw natively).
@@ -136,19 +141,21 @@ void __cdecl RetargetBuffIcon(int slotPtr, int index, int iconWidget, int whichR
     if (logIt) logf("arrow row=%d slot=%08x idx=%d tracked=%d -> %s", whichRow, slotPtr, index, n, bh::arrowSuppressed(index, n) ? "suppress" : "keep");
     if (!bh::arrowSuppressed(index, n)) return; // untracked engine buff: leave its arrow
 
-    int border = iconWidget + Label_TextBorderOffset;
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(bh::arrowHideFieldsOk(T), "arrow suppression")) return;
+    int border = iconWidget + T->Label_Border;
     int w = 0, h = 0, bvt = 0;
-    if (!readAt(border, 0, &bvt) || bvt != 0x009875bc || !readAt(border, Border_WidthOffset, &w) || !readAt(border, Border_HeightOffset, &h)) return;
-    g_saved ={ true, border, 0, w, h };
-    *reinterpret_cast<int*>(border + Border_WidthOffset) = 0;
-    *reinterpret_cast<int*>(border + Border_HeightOffset) = 0;
+    if (!readAt(border, 0, &bvt) || bvt != static_cast<int>(T->BorderVtable) || !readAt(border, T->Border_Width, &w) || !readAt(border, T->Border_Height, &h)) return;
+    g_saved ={ true, border, 0, w, h, T->Border_Width, T->Border_Height };
+    *reinterpret_cast<int*>(border + T->Border_Width) = 0;
+    *reinterpret_cast<int*>(border + T->Border_Height) = 0;
 }
 
 void __cdecl RestoreBuffIcon() {
     if (!g_saved.active) return;
     g_saved.active = false;
-    *reinterpret_cast<int*>(g_saved.border + Border_WidthOffset) = g_saved.width;
-    *reinterpret_cast<int*>(g_saved.border + Border_HeightOffset) = g_saved.height;
+    *reinterpret_cast<int*>(g_saved.border + g_saved.widthOff) = g_saved.width;
+    *reinterpret_cast<int*>(g_saved.border + g_saved.heightOff) = g_saved.height;
 }
 
 // Hook 5 (once per row call, after the native loop, still inside the card's viewport whose
@@ -157,6 +164,8 @@ void __cdecl RestoreBuffIcon() {
 // companion portraits have no icon widget): then the draw uses the stock defaults (white tint, alpha 1, no rotation).
 static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarge, int whichRow, int cardW, int cardH) {
     const bool debuff = whichRow == 0;
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(bh::columnFieldsOk(T), "icon columns")) return;
     static int callNo = 0; ++callNo;
     int day = 0, ms = 0;
     bool haveTime = currentTime(&day, &ms);
@@ -180,23 +189,20 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     if (drawN <= 0) return;
 
     CapGuard capGuard;                          // same GL_LIGHTING leak as the shield bar: flush/pushClip toggle caps, put them back on exit
-    int border = iconWidget ? iconWidget + Label_TextBorderOffset : 0;
+    int border = iconWidget ? iconWidget + T->Label_Border : 0;
     static const float whiteTint[3] = { 1.0f, 1.0f, 1.0f };
-    int rotBits = 0; if (border) readAt(border, 0x20, &rotBits);
-    const float* color = border ? reinterpret_cast<const float*>(border + 0x28) : whiteTint;
-    float baseAlpha = 1.0f; if (border) readAt(border, 0x24, &baseAlpha);
+    int rotBits = 0; if (border) readAt(border, T->Border_Rot, &rotBits);
+    const float* color = border ? reinterpret_cast<const float*>(border + T->Border_Tint) : whiteTint;
+    float baseAlpha = 1.0f; if (border) readAt(border, T->Border_Alpha, &baseAlpha);
     const float flushArg = gui2d::flushArg();
 
     auto draw2 = [&](void* img, int x, int y, int w, int h, const float* tint, float alpha) {
-        reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
-            (*reinterpret_cast<void***>(img))[6])(img, x, y, w, h, 0, rotBits, tint, alpha);
+        gui2d::drawImage(img, x, y, w, h, rotBits, tint, alpha);       // image vtable slot ImageVt_Draw, a5 = 0
     };
     gui2d::flush(flushArg);
     for (int i = 0; i < drawN; ++i) {
         void* image = imageFor(buffs[i].resref);
         if (!image) { if (logIt) logf("  icon[%d] %s: no image", i, buffs[i].resref); continue; }
-        auto draw = reinterpret_cast<void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float)>(
-            (*reinterpret_cast<void***>(image))[6]);
         const bh::IconPos pos = bh::iconPos(lay, i, debuff, cardW);
         int ix = pos.x, iy = pos.y;
         float ratio = buffs[i].ratio;
@@ -205,13 +211,13 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
         void* disc = buffs[i].item ? imageFor(CircleResref) : nullptr;   // round backing for item abilities only
         // elapsed part (whole square, dim): backing disc + icon
         if (disc) draw2(disc, ix, iy, size, size, BgColor, BgAlpha * DimAlpha);
-        draw(image, ix, iy, size, size, 0, rotBits, color, baseAlpha * DimAlpha);
+        draw2(image, ix, iy, size, size, color, baseAlpha * DimAlpha);
         if (bright > 0) {                                                               // remaining part, bottom-anchored
             int y0 = iy + size - bright;
             int ok = gui2d::pushClip(ix, y0, size, bright);
             if (ok) {
                 if (disc) draw2(disc, 0, -(size - bright), size, size, BgColor, BgAlpha);
-                draw(image, 0, -(size - bright), size, size, 0, rotBits, color, baseAlpha);
+                draw2(image, 0, -(size - bright), size, size, color, baseAlpha);
                 gui2d::popClip();
                 if (disc && bright < size) {                                                     // 1px boundary line (round item icons only)
                     int lx = ix, lw = size;
@@ -252,15 +258,17 @@ ArrowRaw* arrowRawFor(int slotPtr) { return bh::arrowRawFor(g_arrowRaw, 8, slotP
 
 void ForceArrowCounters(int slotPtr) {
     if (g_noBuff) return;
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(bh::arrowFieldsOk(T), "arrow counters")) return;
     int gate = 0;
-    if (!readAt(slotPtr, 0x590, &gate) || !bh::arrowGateOpen(gate)) return;              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
+    if (!readAt(slotPtr, T->Slot_Flags, &gate) || !bh::arrowGateOpen(gate)) return;              // engine's own "row visible" bit (also excludes the creature-less mirror slot)
     unsigned char rawBuff = 0, rawDebuff = 0;
-    if (!readAt(slotPtr, 0xddc, &rawBuff) || !readAt(slotPtr, 0xddd, &rawDebuff)) return;
+    if (!readAt(slotPtr, T->Slot_ArrowBuff, &rawBuff) || !readAt(slotPtr, T->Slot_ArrowDebuff, &rawDebuff)) return;
     int creature = creatureForSlot(slotPtr);
     if (!creature) return;
     ArrowRaw* raw = arrowRawFor(slotPtr);
     int overlay[3] = {};                                                    // FUN_00744f00: mask&2 -> +0x1b8, mask&1 -> +0x300, mask&4 -> +0x448 (bit 1 = shown)
-    readAt(slotPtr, 0x1b8, &overlay[0]); readAt(slotPtr, 0x300, &overlay[1]); readAt(slotPtr, 0x448, &overlay[2]);
+    readAt(slotPtr, T->Slot_Overlay0, &overlay[0]); readAt(slotPtr, T->Slot_Overlay1, &overlay[1]); readAt(slotPtr, T->Slot_Overlay2, &overlay[2]);
     bool hidden = bh::arrowsHidden(overlay[0], overlay[1], overlay[2]);      // engine deliberately hid the arrows (dead/disabled): keep that
     int nBuff = 0, nDebuff = 0;
     if (!hidden) {
@@ -272,8 +280,8 @@ void ForceArrowCounters(int slotPtr) {
     }
     const bh::ArrowCounters ctr = bh::bumpArrowCounters(rawBuff, rawDebuff, nBuff, nDebuff, hidden);   // never lowers an engine value
     unsigned char newBuff = (unsigned char)ctr.buff, newDebuff = (unsigned char)ctr.debuff;
-    if (newBuff != rawBuff) *reinterpret_cast<unsigned char*>(slotPtr + 0xddc) = newBuff;
-    if (newDebuff != rawDebuff) *reinterpret_cast<unsigned char*>(slotPtr + 0xddd) = newDebuff;
+    if (newBuff != rawBuff) *reinterpret_cast<unsigned char*>(slotPtr + T->Slot_ArrowBuff) = newBuff;
+    if (newDebuff != rawDebuff) *reinterpret_cast<unsigned char*>(slotPtr + T->Slot_ArrowDebuff) = newDebuff;
     if (raw) {
         bool changed = bh::arrowRawUpdate(raw, rawBuff, rawDebuff, nBuff, nDebuff);
         if (changed) {
@@ -281,14 +289,16 @@ void ForceArrowCounters(int slotPtr) {
                  slotPtr, creature, rawBuff, rawDebuff, nBuff, nDebuff, newBuff, newDebuff, overlay[0], overlay[1], overlay[2], hidden ? " HIDDEN" : "");
             probeLog("ARROWS slot=%08x creature=%08x raw=(%d,%d) tracked=(%d,%d) -> counters=(%d,%d) overlay=(%08x,%08x,%08x) gate590=%08x%s",
                      slotPtr, creature, rawBuff, rawDebuff, nBuff, nDebuff, newBuff, newDebuff, overlay[0], overlay[1], overlay[2], gate, hidden ? " HIDDEN" : "");
-            // Phase 0: the engine's own count comes from the icon cache at creature+0xFFC (data) / +0x1000 (count).
+            // Phase 0: the engine's own count comes from the creature's icon cache (Creature_IconCacheData / Creature_IconCacheCount).
+            // Diagnostic only: skipped when the table does not know those offsets.
             int cacheData = 0, cacheCount = 0;
-            readAt(creature, 0xFFC, &cacheData); readAt(creature, 0x1000, &cacheCount);
+            const bool haveCache = bh::iconCacheFieldsOk(T);
+            if (haveCache) { readAt(creature, T->Creature_IconCacheData, &cacheData); readAt(creature, T->Creature_IconCacheCount, &cacheCount); }
             char ent[256]; int len = 0; ent[0] = 0;
             for (int k = 0; k < 6 && k < cacheCount && cacheData; ++k) {
                 int e = 0; short id = 0; int f14 = 0, f1c = 0;
                 if (!readAt(cacheData, k * 4, &e) || !e) continue;
-                readAt(e, 0, &id); readAt(e, 0x14, &f14); readAt(e, 0x1c, &f1c);
+                readAt(e, 0, &id); readAt(e, T->IconEnt_F14, &f14); readAt(e, T->IconEnt_F1c, &f1c);
                 len = bh::appendf(ent, (int)sizeof(ent), len, " [%d id=%d f14=%d f1c=%d]", k, id, f14, f1c);
             }
             probeLog("ICONCACHE slot=%08x creature=%08x count=%d%s", slotPtr, creature, cacheCount, ent);
@@ -324,11 +334,14 @@ static void KPATCH_CALL onFrameBegin(const K2PsContext* c, void*) {
 static void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
     if (g_noBuff) return;
+    const K2AddrTable* T = k2addr::get();
+    if (!featureOk(bh::menuFieldsOk(T), "menu companion columns")) return;
+    const int rectOff[4] = { T->Ctl_X, T->Ctl_Y, T->Ctl_W, T->Ctl_H };      // control extent: x, y, w, h
     int cols = 0;
     for (int k = 0; k < 2; ++k) {
         int comp = c->companions[k], ctrl = c->companionCtrl[k], fl = 0, r[4] = {};
-        if (!comp || !readAt(ctrl, 0x48, &fl) || !bh::menuPortraitVisible(fl)) continue;
-        for (int q = 0; q < 4; ++q) readAt(ctrl, 4 + 4 * q, &r[q]);
+        if (!comp || !readAt(ctrl, T->Ctl_Flags, &fl) || !bh::menuPortraitVisible(fl)) continue;
+        for (int q = 0; q < 4; ++q) readAt(ctrl, rectOff[q], &r[q]);
         if (!bh::menuRectOk(r[2], r[3])) continue;
         if (gui2d::pushClip(r[0], r[1], r[2], r[3])) {
             drawColumnCore(ctrl, comp, 0, 0, 1, r[2], r[3]);     // buffs: left edge

@@ -1,6 +1,7 @@
 // Regression tests for ShieldLogic.h sb::appendf: a port of buff_hud_logic_test.cpp (F7) + a check that sb::appendf and
 // sb::appendf (its original) give identical results, so the two copies cannot drift.
 #include "ShieldLogic.h"
+#include "K2Addr.h"
 #include "../buff_duration_hud_src/BuffHudLogic.h"
 #include "check.h"
 #include <climits>
@@ -23,6 +24,43 @@ struct Guarded {
         return true;
     }
 };
+
+// Address-table gates (doc 20 B2): every shield-bar feature runs only when the K2AddrTable has the fields it needs.
+void testTableGates() {
+    KT_CHECK(sb::slotFieldsOk(&kSteam)); KT_CHECK(sb::vitRectOk(&kSteam)); KT_CHECK(sb::menuFieldsOk(&kSteam));
+    KT_CHECK(sb::vitalsFieldsOk(&kSteam)); KT_CHECK(sb::tooltipFieldsOk(&kSteam)); KT_CHECK(sb::drawFieldsOk(&kSteam));
+    KT_CHECK(sb::effectProbeFieldsOk(&kSteam));
+    KT_CHECK(!sb::slotFieldsOk(&kGog)); KT_CHECK(!sb::vitRectOk(&kGog)); KT_CHECK(!sb::menuFieldsOk(&kGog));
+    KT_CHECK(!sb::vitalsFieldsOk(&kGog)); KT_CHECK(!sb::tooltipFieldsOk(&kGog)); KT_CHECK(!sb::drawFieldsOk(&kGog));
+    KT_CHECK(!sb::effectProbeFieldsOk(&kGog));
+    const K2AddrTable* none = nullptr;
+    KT_CHECK(!sb::slotFieldsOk(none)); KT_CHECK(!sb::vitRectOk(none)); KT_CHECK(!sb::menuFieldsOk(none));
+    KT_CHECK(!sb::vitalsFieldsOk(none)); KT_CHECK(!sb::tooltipFieldsOk(none)); KT_CHECK(!sb::drawFieldsOk(none));
+    KT_CHECK(!sb::effectProbeFieldsOk(none));
+    K2AddrTable t;
+#define ZERO_BREAKS(gate, field) t = kSteam; t.field = 0; KT_CHECK(!gate(&t))
+    ZERO_BREAKS(sb::slotFieldsOk, Slot_CardRect); ZERO_BREAKS(sb::slotFieldsOk, Slot_Flags); ZERO_BREAKS(sb::slotFieldsOk, Slot_VitCtl);
+    ZERO_BREAKS(sb::slotFieldsOk, Slot_VitRect); ZERO_BREAKS(sb::slotFieldsOk, Slot_ForceCtl); ZERO_BREAKS(sb::slotFieldsOk, Slot_ForceRect);
+    ZERO_BREAKS(sb::slotFieldsOk, Ctl_VtSetRect);
+    ZERO_BREAKS(sb::vitRectOk, Slot_VitRect);
+    ZERO_BREAKS(sb::menuFieldsOk, Ctl_Flags); ZERO_BREAKS(sb::menuFieldsOk, Ctl_X); ZERO_BREAKS(sb::menuFieldsOk, Ctl_Y);
+    ZERO_BREAKS(sb::menuFieldsOk, Ctl_W); ZERO_BREAKS(sb::menuFieldsOk, Ctl_H); ZERO_BREAKS(sb::menuFieldsOk, Ctl_VtSetRect);
+    ZERO_BREAKS(sb::menuFieldsOk, Menu_Char2); ZERO_BREAKS(sb::menuFieldsOk, Menu_Level2); ZERO_BREAKS(sb::menuFieldsOk, Menu_Back2);
+    ZERO_BREAKS(sb::menuFieldsOk, Menu_Change2); ZERO_BREAKS(sb::menuFieldsOk, Menu_Char3); ZERO_BREAKS(sb::menuFieldsOk, Menu_Level3);
+    ZERO_BREAKS(sb::menuFieldsOk, Menu_Back3); ZERO_BREAKS(sb::menuFieldsOk, Menu_Change3);
+    ZERO_BREAKS(sb::vitalsFieldsOk, Creature_Stats); ZERO_BREAKS(sb::vitalsFieldsOk, Stats_ForceA); ZERO_BREAKS(sb::vitalsFieldsOk, Stats_ForceB);
+    ZERO_BREAKS(sb::vitalsFieldsOk, Creature_VtMaxHp); ZERO_BREAKS(sb::vitalsFieldsOk, Creature_VtCurHp); ZERO_BREAKS(sb::vitalsFieldsOk, GetMaxForcePoints);
+    ZERO_BREAKS(sb::tooltipFieldsOk, Tip_Slot); ZERO_BREAKS(sb::tooltipFieldsOk, Tip_Text); ZERO_BREAKS(sb::tooltipFieldsOk, CExoStringFormat);
+    ZERO_BREAKS(sb::drawFieldsOk, ImageVt_Draw);
+    ZERO_BREAKS(sb::effectProbeFieldsOk, Creature_EffectArray); ZERO_BREAKS(sb::effectProbeFieldsOk, Creature_EffectCount);
+    ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_Type); ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_Subtype); ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_SpellId);
+    ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_Creator); ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_Duration);
+    ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_IntCount); ZERO_BREAKS(sb::effectProbeFieldsOk, Effect_Ints);
+#undef ZERO_BREAKS
+    k2addr::setForTest(nullptr); KT_CHECK(!sb::vitRectOk(k2addr::get()));
+    k2addr::setForTest(&kSteam); KT_CHECK(sb::vitRectOk(k2addr::get()));
+    k2addr::clearForTest();
+}
 
 }  // namespace
 
@@ -145,6 +183,8 @@ int main() {
         KT_CHECK(cases > 3000);
         KT_CHECK_EQ(diffs, 0);
     }
+
+    testTableGates();
 
     return kt::Report("shield_logic");
 }
