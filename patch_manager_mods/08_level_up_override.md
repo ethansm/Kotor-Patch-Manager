@@ -889,4 +889,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Plan: `research/companion_levelup/PHASE6_PLAN.md` (authoritative). Evidence: `research/companion_levelup/phase6_evidence/` (README lists prefixes).
 - Step 0 done. Pre-run-4 baseline re-checked: log 386 lines, live dll e64cb387, `levelup_playthroughs.ini` `[g11b3b802]` present, game closed.
   Upstream KPM check silent. NEXT = user plays run 4 (V checklist 1-7); meanwhile static agents only (B1/B2 data, C1 Ghidra).
+- B1 DONE a230f20: all 199 warnings were "unspent skill points" (Class Skill feats now cost 1/rank) on Kreia (111), Bao-Dur (80), Disciple dark (8);
+  spent on skills lines only (no feats/powers/classes/convert_at changed); 22 accepted (Bao-Dur Tech Specialist L16-23, class skills maxed, 1 point
+  left; see `paths/presets/WARNINGS.md`). Repo runtime table regenerated (82 presets, 2047 records); live table NOT updated (copy at next install).
+  Gates green (parity, simulate_rewrite). Taste item for B3: Kreia +1 Stealth/level L10-30 (her utc has the Stealth class feat).
 
