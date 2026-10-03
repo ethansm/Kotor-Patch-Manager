@@ -29,11 +29,21 @@ constexpr int kFirstDik = 0x02;  // DIK_1; slot i uses DIK 0x02+i (0x0B = key 0 
 
 enum Kind { K_None = 0, K_Spell, K_Feat, K_Item, K_Other };
 
+// Per-slot target for items ("@lowhp" = the party member with the lowest HP%). -1 = unset: use the [General] value, so a
+// [General] change still applies to slots that never overrode it, and Format can write the shortest form.
+enum TargetMode { TM_Default = 0, TM_LowHp };
+struct TargetSpec {
+    TargetMode mode = TM_Default;
+    int thresholdPct = -1;   // 1..100, -1 = [General] HealThreshold
+    int fallback = -1;       // 1 = self, 0 = nothing, -1 = [General] HealFallback
+};
+
 struct ActionRef {
     Kind kind = K_None;
     int id = 0;            // Spell: spells.2da row, Feat: feat.2da row, Other: raw key minus flag bits
     std::string name;      // Item: display name (fallback identity) -- resref/tag once proven stable
     bool blank = false;    // explicit "none" (kind stays K_None so empty() is true): blocks the Default fallback and AutoFill
+    TargetSpec target;     // "@lowhp..." suffix; not part of identity (Same ignores it)
     bool empty() const { return kind == K_None; }
 };
 
@@ -64,15 +74,51 @@ inline int StackCount(int key, const std::string& name) {
     return n;
 }
 
+// "@lowhp[:<pct>[:self|none]]", shortest form that round-trips ("" for TM_Default).
+inline std::string formatTarget(const TargetSpec& t) {
+    if (t.mode != TM_LowHp) return "";
+    std::string s = "@lowhp";
+    if (t.thresholdPct < 0 && t.fallback < 0) return s;
+    s += ":"; if (t.thresholdPct >= 0) s += std::to_string(t.thresholdPct);
+    if (t.fallback >= 0) s += t.fallback ? ":self" : ":none";
+    return s;
+}
+
 inline std::string Format(const ActionRef& r) {
     char b[32];
     switch (r.kind) {
-    case K_Spell: snprintf(b, sizeof b, "spell:%d", r.id); return b;
-    case K_Feat:  snprintf(b, sizeof b, "feat:%d", r.id); return b;
-    case K_Item:  return "item:" + r.name;
-    case K_Other: snprintf(b, sizeof b, "other:%x", (unsigned)r.id); return b;
+    case K_Spell: snprintf(b, sizeof b, "spell:%d", r.id); return b + formatTarget(r.target);
+    case K_Feat:  snprintf(b, sizeof b, "feat:%d", r.id); return b + formatTarget(r.target);
+    case K_Item:  return "item:" + r.name + formatTarget(r.target);
+    case K_Other: snprintf(b, sizeof b, "other:%x", (unsigned)r.id); return b + formatTarget(r.target);
     default: return r.blank ? "none" : "";
     }
+}
+
+// Parses the text after '@' ("lowhp[:pct[:self|none]]" or "default"); false on a bad pct/fallback/extra field.
+inline bool parseTargetSuffix(const std::string& suf, TargetSpec* ts) {
+    *ts = TargetSpec();
+    std::string f[3]; int n = 0; size_t a = 0;
+    for (;;) {
+        size_t c = suf.find(':', a);
+        if (n == 3) return false;
+        f[n++] = lower(trim(suf.substr(a, c == std::string::npos ? std::string::npos : c - a)));
+        if (c == std::string::npos) break;
+        a = c + 1;
+    }
+    if (f[0] == "default") return n == 1;
+    if (f[0] != "lowhp") return false;
+    ts->mode = TM_LowHp;
+    if (!f[1].empty()) {
+        int v = 0;
+        for (char ch : f[1]) { if (ch < '0' || ch > '9' || v > 1000) return false; v = v * 10 + (ch - '0'); }
+        if (v < 1 || v > 100) return false;
+        ts->thresholdPct = v;
+    }
+    if (!f[2].empty()) {
+        if (f[2] == "self") ts->fallback = 1; else if (f[2] == "none") ts->fallback = 0; else return false;
+    }
+    return true;
 }
 
 // Returns false (and leaves *out empty) on a malformed value. An empty string parses as "empty slot", true.
@@ -80,6 +126,18 @@ inline bool Parse(const std::string& text, ActionRef* out) {
     *out = ActionRef();
     std::string t = trim(text);
     if (t.empty()) return true;
+    // Strip a trailing "@lowhp.."/"@default" BEFORE the kind; any other '@' stays part of the value (item names).
+    TargetSpec ts;
+    size_t at = t.rfind('@');
+    if (at != std::string::npos) {
+        std::string suf = t.substr(at + 1); size_t c = suf.find(':');
+        std::string w = lower(trim(suf.substr(0, c)));
+        if (w == "lowhp" || w == "default") {
+            if (!parseTargetSuffix(suf, &ts)) return false;
+            t = trim(t.substr(0, at));
+            if (t.empty() || lower(t) == "none") return false;
+        }
+    }
     if (lower(t) == "none") { out->blank = true; return true; }
     size_t c = t.find(':');
     if (c == std::string::npos) return false;
@@ -89,14 +147,14 @@ inline bool Parse(const std::string& text, ActionRef* out) {
     if (k == "spell" || k == "feat") {
         long n = strtol(v.c_str(), &end, 10);
         if (*end || n < 0) return false;
-        out->kind = (k == "spell") ? K_Spell : K_Feat; out->id = (int)n; return true;
+        out->kind = (k == "spell") ? K_Spell : K_Feat; out->id = (int)n; out->target = ts; return true;
     }
     if (k == "other") {
         unsigned long n = strtoul(v.c_str(), &end, 16);
         if (*end) return false;
-        out->kind = K_Other; out->id = (int)n; return true;
+        out->kind = K_Other; out->id = (int)n; out->target = ts; return true;
     }
-    if (k == "item") { out->kind = K_Item; out->name = normalizeItemName(v); return !out->name.empty(); }
+    if (k == "item") { out->kind = K_Item; out->name = normalizeItemName(v); out->target = ts; return !out->name.empty(); }
     return false;
 }
 
@@ -153,8 +211,14 @@ struct General {
     int verbose = 0;              // 1 = detailed trace log (hover, widgets, every key), 0 = state changes and errors only
     int autoFill = 0;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order (default off: start empty)
     int keyboardDevice = -1;      // -1 = read the engine's constant (0x0099C884)
+    int healThreshold = 50;       // 1..100: "@lowhp" slots only target a member below this HP%
+    int healFallbackSelf = 1;     // when nobody is below the threshold: 1 = use on self, 0 = do nothing
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
 };
+
+// Slot override wins; -1 (unset) defers to [General].
+inline int effectiveThreshold(const TargetSpec& t, const General& g) { return t.thresholdPct >= 0 ? t.thresholdPct : g.healThreshold; }
+inline bool effectiveFallbackSelf(const TargetSpec& t, const General& g) { return t.fallback >= 0 ? t.fallback != 0 : g.healFallbackSelf != 0; }
 
 struct Config {
     General general;
@@ -232,6 +296,15 @@ struct Config {
                 else if (k == "verbose") general.verbose = atoi(val.c_str());
                 else if (k == "autofill") general.autoFill = atoi(val.c_str());
                 else if (k == "keyboarddevice") general.keyboardDevice = atoi(val.c_str());
+                else if (k == "healthreshold") {
+                    char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
+                    if (val.empty() || *e || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }
+                    else general.healThreshold = (int)n;
+                } else if (k == "healfallback") {
+                    std::string v = lower(val);
+                    if (v == "self") general.healFallbackSelf = 1; else if (v == "none") general.healFallbackSelf = 0;
+                    else { snprintf(msg, sizeof msg, "line %d: HealFallback '%s' must be self or none", lineNo, val.c_str()); warnings.push_back(msg); }
+                }
                 else general.extra[key] = val;
             } else if (cur) {
                 int r, s;
@@ -255,6 +328,8 @@ struct Config {
         std::string o = "; Force Power Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
                         "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
                         "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
+                        "; Item/power value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
+                        "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
                         "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
                         "; Profiles belong to the loaded save: saving copies this file into the save folder, loading a save restores its copy (none = empty bar).\n";
         char b[64];
@@ -263,6 +338,8 @@ struct Config {
         snprintf(b, sizeof b, "Invoke=%d\n", general.invoke); o += b;
         snprintf(b, sizeof b, "Verbose=%d\n", general.verbose); o += b;
         snprintf(b, sizeof b, "AutoFill=%d\n", general.autoFill); o += b;
+        snprintf(b, sizeof b, "HealThreshold=%d\n", general.healThreshold); o += b;
+        o += general.healFallbackSelf ? "HealFallback=self\n" : "HealFallback=none\n";
         if (general.keyboardDevice >= 0) { snprintf(b, sizeof b, "KeyboardDevice=%d\n", general.keyboardDevice); o += b; }
         for (auto& kv : general.extra) o += kv.first + "=" + kv.second + "\n";
         auto emit = [&](const Profile& p) {

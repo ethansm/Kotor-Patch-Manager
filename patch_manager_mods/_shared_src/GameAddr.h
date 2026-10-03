@@ -28,6 +28,7 @@ constexpr uintptr_t PtrListAdd = 0x0083EA60;            // CExoArrayList<void*>:
 constexpr uintptr_t GuiLoadImage = 0x0047EB60;          // cdecl(resref) -> new 8-byte image wrapper each call (not "LoadImage": a windows.h macro)  Mod3 53 / Mod14 46
 constexpr uintptr_t GetControlledCreature = 0x007E5D80; // thiscall(partyTable) -> controlled creature
 constexpr uintptr_t PartyGetAt = 0x007E5DA0;            // party member accessor
+constexpr uintptr_t MemberServerCreature = 0x0077D800;  // thiscall(client party member) -> server creature (CSWSCreature*); 0x77caa4 in 0x77C780
 constexpr uintptr_t ClientPartyTable = 0x0073FB90;      // FUN_0073fb90(A) = *(*(A+4)+0x270), the party table getter
 constexpr uintptr_t LabelVtable = 0x009878BC;           // CSWGuiLabel RTTI vtable
 constexpr uintptr_t BorderVtable = 0x009875BC;          // CSWGuiBorder RTTI vtable

@@ -63,6 +63,30 @@ static void broken(const char* name, party::Fail want, const char* text) {
     if (kt::g_failures != before) std::printf("  ^ in broken-link case: %s\n", name);
 }
 
+
+// ---- members / vitals ----
+struct FakeC { uintptr_t addr; int hp, maxhp; };
+static FakeC g_fc[4];
+static uintptr_t g_slotMax, g_slotCur;           // distinct non-zero fake "function addresses"
+static int g_vcalls = 0; static uintptr_t g_vFn[16], g_vC[16]; static int g_vArg[16];
+static uintptr_t g_clients[4], g_servers[4];
+static uintptr_t __thiscall fakeMember(void* t, int i) { (void)t; return g_clients[i]; }
+static uintptr_t __thiscall fakeServer(void* m) { for (int i = 0; i < 4; ++i) if (g_clients[i] == (uintptr_t)m) return g_servers[i]; return 0; }
+static int fakeVital(uintptr_t fn, uintptr_t c, int arg) {
+    if (g_vcalls < 16) { g_vFn[g_vcalls] = fn; g_vC[g_vcalls] = c; g_vArg[g_vcalls] = arg; }
+    ++g_vcalls;
+    for (int i = 0; i < 4; ++i) if (g_servers[i] == c) return arg == 1 ? g_fc[i].maxhp : g_fc[i].hp;
+    return -999;
+}
+// server creature i: vtable in the arena with slots +0x98/+0x9C
+static uintptr_t mkCreature(int i, int hp, int maxhp) {
+    uintptr_t vt = arenaAlloc(0x100), c = arenaAlloc(16);
+    at<uint32_t>(vt, 0x98) = (uint32_t)g_slotMax; at<uint32_t>(vt, 0x9C) = (uint32_t)g_slotCur;
+    at<uint32_t>(c, 0) = (uint32_t)vt;
+    g_servers[i] = c; g_clients[i] = 0x1000 + 0x10 * (i + 1); g_fc[i] = { c, hp, maxhp };
+    return vt;
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize,PROT_READ | PROT_WRITE,
                    MAP_PRIVATE | MAP_ANONYMOUS
@@ -139,6 +163,94 @@ int main() {
     build(2); party::g_getControlled = nullptr;
     KT_CHECK_EQ((unsigned long long)party::controlledCreature(), 0ull);
     party::g_getControlled = fakeGetControlled;
+
+
+    // ---- member / serverCreature / vitals / members ----
+    {
+        auto sM = party::g_member; auto sS = party::g_serverCreature; auto sV = party::g_callVital;
+        party::g_member = fakeMember; party::g_serverCreature = fakeServer; party::g_callVital = fakeVital;
+        g_slotMax = 0x401000; g_slotCur = 0x402000;
+
+        // member() bounds
+        build(3); mkCreature(0, 50, 100); mkCreature(1, 0, 80); mkCreature(2, 7, 7);
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, 0), (unsigned long long)g_clients[0]);
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, 2), (unsigned long long)g_clients[2]);
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, -1), 0ull);
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, 3), 0ull);
+        KT_CHECK_EQ((unsigned long long)party::member(0, 0), 0ull);
+        party::g_member = nullptr; KT_CHECK_EQ((unsigned long long)party::member(tbl, 0), 0ull); party::g_member = fakeMember;
+        KT_CHECK_EQ((unsigned long long)party::serverCreature(0), 0ull);
+        KT_CHECK_EQ((unsigned long long)party::serverCreature(g_clients[1]), (unsigned long long)g_servers[1]);
+
+        // vitals(): slots and exactly-one-arg ABI (max: +0x98 arg 1, cur: +0x9C arg 0)
+        g_vcalls = 0; party::Vitals v;
+        KT_CHECK(party::vitals(g_servers[0], &v));
+        KT_CHECK_EQ((long long)g_vcalls, 2ll);
+        KT_CHECK_EQ((unsigned long long)g_vFn[0], (unsigned long long)g_slotMax);
+        KT_CHECK_EQ((long long)g_vArg[0], 1ll);
+        KT_CHECK_EQ((unsigned long long)g_vFn[1], (unsigned long long)g_slotCur);
+        KT_CHECK_EQ((long long)g_vArg[1], 0ll);
+        KT_CHECK_EQ((unsigned long long)g_vC[0], (unsigned long long)g_servers[0]);
+        KT_CHECK_EQ((unsigned long long)g_vC[1], (unsigned long long)g_servers[0]);
+        KT_CHECK_EQ((long long)v.max, 100ll); KT_CHECK_EQ((long long)v.cur, 50ll);
+        KT_CHECK(v.ok); KT_CHECK(!v.down);
+        KT_CHECK_EQ((unsigned long long)v.server, (unsigned long long)g_servers[0]);
+        // cur 0 -> down; cur > 0 -> !down
+        KT_CHECK(party::vitals(g_servers[1], &v)); KT_CHECK(v.down); KT_CHECK_EQ((long long)v.cur, 0ll);
+        KT_CHECK(party::vitals(g_servers[2], &v)); KT_CHECK(!v.down);
+        // null out-param / null server
+        g_vcalls = 0;
+        KT_CHECK(party::vitals(g_servers[0], nullptr));
+        KT_CHECK(!party::vitals(0, &v)); KT_CHECK(!v.ok); KT_CHECK_EQ((long long)g_vcalls, 2ll);
+        // max <= 0 -> not ok, not down
+        g_fc[0].maxhp = 0; KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok); KT_CHECK(!v.down);
+        g_fc[0].maxhp = -5; KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+        g_fc[0].maxhp = 100;
+        // unreadable: vtable 0 / slot 0 / vtable below 0x10000 -> no call
+        uintptr_t vt0 = at<uint32_t>(g_servers[0], 0);
+        g_vcalls = 0;
+        at<uint32_t>(g_servers[0], 0) = 0;
+        KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+        at<uint32_t>(g_servers[0], 0) = 0x20;
+        KT_CHECK(!party::vitals(g_servers[0], &v));
+        at<uint32_t>(g_servers[0], 0) = (uint32_t)vt0;
+        at<uint32_t>(vt0, 0x98) = 0; KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+        at<uint32_t>(vt0, 0x98) = (uint32_t)g_slotMax; at<uint32_t>(vt0, 0x9C) = 0;
+        KT_CHECK(!party::vitals(g_servers[0], &v)); KT_CHECK(!v.ok);
+        at<uint32_t>(vt0, 0x9C) = (uint32_t)g_slotCur;
+        KT_CHECK_EQ((long long)g_vcalls, 0ll);
+
+        // members(): count, aligned indices
+        party::Vitals out[4];
+        g_vcalls = 0;
+        KT_CHECK_EQ((long long)party::members(out, 4), 3ll);
+        KT_CHECK_EQ((long long)out[0].max, 100ll); KT_CHECK(out[0].ok && !out[0].down);
+        KT_CHECK(out[1].ok && out[1].down); KT_CHECK_EQ((long long)out[1].max, 80ll);
+        KT_CHECK(out[2].ok && !out[2].down); KT_CHECK_EQ((long long)out[2].cur, 7ll);
+        KT_CHECK_EQ((unsigned long long)out[1].client, (unsigned long long)g_clients[1]);
+        KT_CHECK_EQ((unsigned long long)out[1].server, (unsigned long long)g_servers[1]);
+        KT_CHECK_EQ((long long)g_vcalls, 6ll);
+        // cap smaller than count
+        KT_CHECK_EQ((long long)party::members(out, 2), 2ll);
+        KT_CHECK_EQ((long long)party::members(out, 0), 0ll);
+        KT_CHECK_EQ((long long)party::members(nullptr, 4), 0ll);
+        // unreadable middle member keeps alignment, others still read
+        at<uint32_t>(g_servers[1], 0) = 0; g_vcalls = 0;
+        KT_CHECK_EQ((long long)party::members(out, 4), 3ll);
+        KT_CHECK(out[0].ok); KT_CHECK(!out[1].ok); KT_CHECK(!out[1].down); KT_CHECK(out[2].ok);
+        KT_CHECK_EQ((unsigned long long)out[1].server, (unsigned long long)g_servers[1]);
+        KT_CHECK_EQ((long long)g_vcalls, 4ll);
+        // member with no server creature
+        g_servers[1] = 0; g_clients[1] = 0x1099;
+        KT_CHECK_EQ((long long)party::members(out, 4), 3ll);
+        KT_CHECK(!out[1].ok); KT_CHECK_EQ((unsigned long long)out[1].server, 0ull); KT_CHECK_EQ((unsigned long long)out[1].client, 0x1099ull);
+        // chain failures -> 0
+        build(3); at<uint32_t>(b, 0x270) = 0; KT_CHECK_EQ((long long)party::members(out, 4), 0ll);
+        build(0); KT_CHECK_EQ((long long)party::members(out, 4), 0ll);
+        build(3); at<uint32_t>(cell, 0) = 0; KT_CHECK_EQ((long long)party::members(out, 4), 0ll);
+
+        party::g_member = sM; party::g_serverCreature = sS; party::g_callVital = sV;
+    }
 
     KT_CHECK_EQ(party::failText(party::F_None), "ok");
     KT_CHECK(party::failText(party::F_App) == party::failText(party::F_App));
