@@ -1,5 +1,14 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**PHASE X INSTALLED (2026-10-03 01:57): build 27 `106be06e`** = build 26 behaviour on the shared Common headers (SafeRead + readExo, GuiKit setters and
+label creation, Party.h, GameAddr.h aliases) + `hb::slotDigit` bounds fix. Stage `hotbar_stage16/` (= levelup_stage7 + framework BuffDurationHUD b7dbebe9 +
+LevelUpOverride 0.3.1 aaedb93e, both matching what other sessions had put live), backup `backups/inst16_1003_0157`, only force-power-hotbar.dll changed,
+AR_ERROR.LOG unchanged. Commits 64953dc, e3cbe91, 446bb8d (repo), 2c1bba4 (clone Common). Rollback = reinstall `hotbar_stage15` FPH kpatch (504372b1).
+**Awaiting user smoke test:** bar/digits/wrench, picker tabs + wheel + arrows (sound), assign + Clear, counts (bar + picker), out-of-stock 0, tooltips,
+character switch, save/load (`persave:` lines), Esc. **Log check after it:** `H3: 75 controls created`, no `append ... failed`, per-control rects identical
+to `force_power_hotbar_src/baseline_h3_build26.txt` (wrench `[11,1274,53,93]`), no `img: pool full`, no new WARNING / `text object bad` lines.
+**Next after it:** U1 gray "0" (small build), then Phase D (comments), T, E, F, L.
+
 **BUILD 26 USER CHECK (2026-10-03): PASSED.** Picker counts yes; item used down to 0 -> dimmed + "0" yes; picked up again -> re-enabled yes.
 Log 10-03 01:39: 2 HUD builds, 75 controls each, 0 WARNING, 0 pool full (baseline `force_power_hotbar_src/baseline_h3_build26.txt`).
 **User requests from that check (backlog):**
@@ -734,15 +743,15 @@ Goal: the `.kpatch` alone delivers the mod (no `.gui` edit, no override TGAs). E
 
 
 ## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
-**Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
+**Phase X (2026-10-03): B2, B6, B7, SafeRead and GameAddr.h are DONE (build 27 `106be06e`).** The rest is not built yet. When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
 - **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
 - **Common helpers** (B-ids) live in `Patches/Common` on the KPM fork. Edit them in `patch_manager_mods/_shared_src/` and sync with `scripts/check_shared_headers.py --sync`. New code includes `"SafeRead.h"`, not `"../_shared/SafeRead.h"`.
 - **Rollout:** shared pieces are consolidated on our fork first. Each one goes upstream inside the first mod PR that uses it, so order this mod's PR after the PR that introduces anything it reuses. Migrating this patch needs its owner's go.
 - **Logging:** move to `KpLog.h` channels and `kplog.ini` (doc 19 Phase 6). Keep the tag text exactly as it is, because the parsers depend on it.
 - **A1 `k2.guiinput` (consumer):** `ensureWheelHook` subclass (:738-750), conditional unlink (:1302, the 'only if we are still on top' comment), `enumWnd`/`cursorInGame` (~:477-490) and `GetAsyncKeyState` polling (:636, :832).
 - **A3 `k2.enginestate` (consumer):** the modal-stack walk (:185-200) becomes `modal_top()`.
-- **A6 image pool:** `imageFor` (:423), low priority.
-- **B2 GuiKit:** label creation (:982), `textObjOk` (:689), `setFill`.
-- **B6 party/leader accessor** (:215-228, via 0x7E5D80).
-- **B7:** `readCExoString` (:117).
-- **SafeRead:** the remaining direct `IsBadReadPtr` calls should move to `saferead::probeRead` (doc 19 Phase 0 left this to the owner).
+- **A6 image pool:** DONE via B2: `imageFor` is a log wrapper over `guikit::imageFor` (pool 256, lowercased keys).
+- **B2 GuiKit: DONE.** createLabel = `createLabelFromTemplate` + `appendToPanel`; setFill/setAlpha/setText/setFont/setAlign/setRect/getExtent/playHoverSound. Kept local: visibility setters (old/new flag logs, bit5 rules), cursor/aspect (client px), scale math, projection flag, wheel.
+- **B6 party/leader accessor: DONE** (`party::controlledCreature`, `failText`).
+- **B7: DONE** (`readExoStr` over `saferead::readExo`).
+- **SafeRead: DONE** (0 `IsBadReadPtr`; sites 0x4801-0x480C; `beginScope()` in all 8 hooks). Engine constants alias `gameaddr::`.

@@ -105,3 +105,4 @@ that log. `scripts/check_effect_decode.py` parses the effects panel output. Any 
 
 **Hotbar (Mod 3), Phase X (2026-10-03):** adopts SafeRead, B7 `readExo`, B2 GuiKit setters, `GameAddr.h`, B6 `Party.h` before its Phase D/T.
 Logging, wheel/WndProc, textures and per-save hooks stay local. New headers: mutation pass pending (doc 20 mutation gate, no C++ tool yet).
+**Status 10-03 01:57:** items 2, 3, 7 (setters + label creation), 8 DONE for the hotbar; build 27 `106be06e` installed, awaiting user smoke test. Common commits: repo 8e0da7c, clone 2c1bba4. Next adopters per the order above (quiet mods first; equip3d/inv3d for SafeRead).

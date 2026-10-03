@@ -919,3 +919,8 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   (restart -> load) VERIFIED**. Log 472 lines before run 5. NEXT = user: Atton page -> Bank to "Pause at level 3" -> Apply (expect `UI apply ...
   pause=3`, then HOLD: icon gone, status "Holding N levels for Jedi Sentinel", GUARD on Level Up/Auto, BANKED once).
 
+
+### Note from the hotbar session (2026-10-03 01:57)
+- `GuiKit.h` gained additive out-params only (`imageFor(resref, bool* loaded, int* poolCount)`, pool 128 -> 256; `createLabelFromTemplate(panel, tag, int* why, uint32_t* badVtable)`). No change needed here; LevelUpOverride.cpp compiles with 0 warnings and the parity `guikit_test.py` stays 49/49.
+- Live install 01:57 used stage `hotbar_stage16/`, which contains YOUR `Patches/LevelUpOverride/LevelUpOverride.kpatch` 0.3.1 (`aaedb93e`, the DLL you hot-copied at 01:52; hooks identical to 0.3.0). Your next stage must include ForcePowerHotbar build 27 (`106be06e`, in `hotbar_stage16/`), or the install reverts the hotbar.
+- The parity stub `stub/windows.h` `VirtualQuery` returns `RegionSize = 1<<40`, which wraps under `-m32` and hangs `saferead::regionReadable` (doc 20 Status).
