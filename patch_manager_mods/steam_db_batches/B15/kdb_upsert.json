@@ -2,7 +2,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0077e5b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077e5b0] Steam batch B15: SIG 1.00 | override: [b] VM dispatcher: 00668fd9 CMP [EBP+0x8],0x36d; 00669005 MOV EAX,[EAX+EDX*4] from [this+0xc] (table InitCommands 0x665f6f) ; CALL EAX; 00669012 MOV EAX,0xfffff82e; RET 8; fp identical",
   "name": "CSWVirtualMachineCommands::ExecuteCommand",
   "source": "steam-db-B15",
   "steam_addr": "0x00668fd0"
@@ -18,7 +18,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0077efb0] Steam batch B15: CALLEE 1 (callees: StackPopCommand 0x6fdb30) | reviewer match with anchor: InitCommands 0x00665f50 store 00666025->slot 294=0x006699d0 (294 ActionDoCommand); StackPopCommand 0x6fdb30 (GOG-mapped), GetGameObject chain, FUN_005e1340 at end; imm 0x14",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077efb0] Steam batch B15: CALLEE 1 (callees: StackPopCommand 0x6fdb30) | override: [b] slot 294: 00666025 MOV [EDX + 0x498],0x6699d0; 006699ea CALL 0x006fdb30=StackPopCommand; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "CSWVirtualMachineCommands::ExecuteCommandActionDoCommand",
   "source": "steam-db-B15",
   "steam_addr": "0x006699d0"
@@ -26,7 +26,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0077f0b0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f030] Steam batch B15: no content anchor (C0) | override: [a] store 00666045 [EAX+0x63c],0x669a50 slot 399 ActionEquipMostDamagingMelee; fp=GOG 123B RET 8 (imm,disp,callees same); 00669a7d CALL 0x6fd9a0 StackPopInteger",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingMelee",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00669a50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f0b0] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 400: 00666055 MOV [EDX + 0x640],0x669ad0; 00669b17 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingRanged",
   "source": "steam-db-B15",
   "steam_addr": "0x00669ad0"
@@ -50,7 +58,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0077f260] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0077f260] Steam batch B15: SIG 1.00 | override: [b] slot 167: 00666095 MOV [ECX + 0x29c],0x669c80; 00669dca CALL 0x0073f550=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandActionFollowObject",
   "source": "steam-db-B15",
   "steam_addr": "0x00669c80"
@@ -122,7 +130,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00780240] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00780240] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 206: 006661a9 MOV [ECX + 0x338],0x66ac60; 0066ac97 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandActionResumeConversation",
   "source": "steam-db-B15",
   "steam_addr": "0x0066ac60"
@@ -130,7 +138,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007802f0] Steam batch B15: CALLEE 2 (callees: ClearAllActions 0x7f24c0, SetAILevel 0x51e120); SIG 1.00 | AUTO: CALLEE 2 (callees: ClearAllActions 0x7f24c0, SetAILevel 0x51e120); SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007802f0] Steam batch B15: CALLEE 2 (callees: ClearAllActions 0x7f24c0, SetAILevel 0x51e120); SIG 1.00 | override: [b] slot 204: 006661d9 MOV [ECX + 0x330],0x66ad10; 0066b18e CALL 0x007f24c0=ClearAllActions; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandActionStartConversation",
   "source": "steam-db-B15",
   "steam_addr": "0x0066ad10"
@@ -234,7 +242,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00781d80] Steam batch B15: CALLEE 6 (callees: AddExperience 0x6b7060, GetExpNeededForLevelUp 0x6b72e0, CanLevelUp 0x6b9790); SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006662e9->slot 389=0x0066c7a0 (389 AddMultiClass); StackPopInteger+StackPopObject; GetExpNeededForLevelUp 0x6b72e0, AddExperience 0x6b7060, CanLevelUp 0x6b9790 (GOG-mappe",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00781d80] Steam batch B15: CALLEE 6 (callees: AddExperience 0x6b7060, GetExpNeededForLevelUp 0x6b72e0, CanLevelUp 0x6b9790); SIG 1.00 | override: [b] slot 389: 006662e9 MOV [EDX + 0x614],0x66c7a0; 0066c93a CALL 0x0072fb00=GetClientOptions; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandAddMultiClass",
   "source": "steam-db-B15",
   "steam_addr": "0x0066c7a0"
@@ -354,6 +362,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00784680] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x66f330=ClearAllActions slot 9). Store 00666496 [EDX+0x2b4],0x66f0a0 slots 173/412; 0066f0cd CMP [EBP+8],0xad + 0066f0f5 CMP 0x19c; fp=GOG 650B",
+  "name": "Global::ExecuteCommandChangeFaction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0066f0a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00784910] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
   "name": "Global::ExecuteCommandClearAllActions",
   "source": "steam-db-B15",
@@ -402,6 +418,22 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00785b60] Steam batch B15: no content anchor (C0) | override: [a] store 006665fd [EAX+0xa84],0x670580 slot 673 DeleteJournalWorldEntry; fp=GOG 230B RET 8 (imm,disp,callees same); 006705c7 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandDeleteJournalWorldEntry",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00785c50] Steam batch B15: no content anchor (C0) | override: [a] store 0066660d [EDX+0xa88],0x670670 slot 674 DeleteJournalWorldEntryStrref; fp=GOG 230B RET 8 (imm,disp,callees same); 006706b7 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandDeleteJournalWorldEntryStrref",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00670670"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00785d40] Steam batch B15: CALLEE 6 (callees: SetPlayerCreature 0x73f910, ChangeCharacter 0x740380, GetNPCID 0x5fdbf0); SIG 1.00 | AUTO: CALLEE 6 (callees: SetPlayerCreature 0x73f910, ChangeCharacter 0x740380, GetNPCID 0x5fdbf0); SIG 1.00",
   "name": "Global::ExecuteCommandDestroyObject",
   "source": "steam-db-B15",
@@ -418,7 +450,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00786270] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50 | reviewer match with anchor: InitCommands 0x00665f50 store 00666d3a->slot 218=0x00670c90; 00668f94->slot 219=0x00670c90 (218 FeetToMeters, 219 YardsToMeters); StackPopFloat 0x6fd9e0, branch on cmd id 0xda/0xdb, StackPushFloat 0x6",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00786270] Steam batch B15: CALLEE 1 (callees: StackPushFloat 0x6fda00); SIG 0.50 | override: [b] slot 218..219(2): 00666d3a MOV [ECX + 0x368],0x670c90; 00670cf4 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandDistanceConversions",
   "source": "steam-db-B15",
   "steam_addr": "0x00670c90"
@@ -434,6 +466,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00786680] Steam batch B15: no content anchor (C0) | override: [a] store 006666bd [EAX+0x800],0x6710a0 slot 512 DoSinglePlayerAutoSave; fp=GOG 38B; 006710b9 CALL 0x51bf50 (=GOG 0x64b970 SetAutoSavePending, 36B; Export pair 0x51bed0/0x64b8f0)",
+  "name": "Global::ExecuteCommandDoSinglePlayerAutoSave",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006710a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x007866b0] Steam batch B15: CALLEE 2 (callees: GetArmorClassVersus 0x6a5110, GetMeleeAttackBonus 0x6a7db0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetArmorClassVersus 0x6a5110, GetMeleeAttackBonus 0x6a7db0); SIG 1.00",
   "name": "Global::ExecuteCommandDoTouchAttack",
   "source": "steam-db-B15",
@@ -442,10 +482,58 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00786c40] Steam batch B15: no content anchor (C0) | override: [a] store 0066680d [EAX+0x6f8],0x671660 slot 446 EffectAbilityDecrease; fp=GOG 447B; 006716fd CALL 0x5e4920 CGameEffect ctor; differs from Increase only by global 0x995fb0 vs 0x995fac",
+  "name": "Global::ExecuteCommandEffectAbilityDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00671660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00786e00] Steam batch B15: no content anchor (C0) | override: [a] store 0066681d [EDX+0x140],0x671820 slot 80 EffectAbilityIncrease; fp=GOG 447B; 006718bd CALL 0x5e4920 CGameEffect ctor; global 0x995fac (Decrease uses 0x995fb0)",
+  "name": "Global::ExecuteCommandEffectAbilityIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00671820"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00786fc0] Steam batch B15: no content anchor (C0) | override: [a] store 0066682d [ECX+0x708],0x6719e0 slot 450 EffectACDecrease; fp=GOG 534B RET 8 (imm,disp,callees same); 00671b5c CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectACDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006719e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007871e0] Steam batch B15: no content anchor (C0) | override: [a] store 0066683d [EAX+0x1cc],0x671c00 slot 115 EffectACIncrease; fp=GOG 534B RET 8 (imm,disp,callees same); 00671d7c CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectACIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00671c00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00787400] Steam batch B15: CALLEE 1 (callees: SetString 0x5e4f60); SIG 1.00 | AUTO: CALLEE 1 (callees: SetString 0x5e4f60); SIG 1.00",
   "name": "Global::ExecuteCommandEffectAreaEffect",
   "source": "steam-db-B15",
   "steam_addr": "0x00671e20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00787700] Steam batch B15: no content anchor (C0) | override: [a] store 0066685d [ECX+0x6fc],0x672120 slot 447 EffectAttackDecrease; fp=GOG 477B RET 8 (imm,disp,callees same); 00672263 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectAttackDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00672120"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007878e0] Steam batch B15: no content anchor (C0) | override: [a] store 0066686d [EAX+0x1d8],0x672300 slot 118 EffectAttackIncrease; fp=GOG 477B RET 8 (imm,disp,callees same); 00672443 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectAttackIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00672300"
  },
  {
   "confidence": "high",
@@ -498,7 +586,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00788c70] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006668dd->slot 448=0x00673690 (448 EffectDamageDecrease); two StackPopInteger, 1..10 check, type DAT_00995f54, +0x122; imm 0xa",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00788c70] Steam batch B15: SIG 1.00 | override: [b] slot 448: 006668dd MOV [EDX + 0x700],0x673690; 006737e6 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectDamageDecrease",
   "source": "steam-db-B15",
   "steam_addr": "0x00673690"
@@ -506,7 +594,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00788e60] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006668ed->slot 449=0x00673880 (449 EffectDamageImmunityDecrease); two StackPopInteger, clamp +-100 (0x64/0xffffff9c) then SetInteger(0),(1)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00788e60] Steam batch B15: SIG 1.00 | override: [b] slot 449: 006668ed MOV [ECX + 0x704],0x673880; 006739b8 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectDamageImmunityDecrease",
   "source": "steam-db-B15",
   "steam_addr": "0x00673880"
@@ -514,7 +602,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00789030] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006668fd->slot 275=0x00673a50 (275 EffectDamageImmunityIncrease); two StackPopInteger, clamp 0..100, SetInteger(0),(1); type DAT_00995f5c",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789030] Steam batch B15: SIG 1.00 | override: [b] slot 275: 006668fd MOV [EAX + 0x44c],0x673a50; 00673b88 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectDamageImmunityIncrease",
   "source": "steam-db-B15",
   "steam_addr": "0x00673a50"
@@ -522,7 +610,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00789200] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066690d->slot 120=0x00673c20 (120 EffectDamageIncrease); two StackPopInteger, 1..10 type check, SetInteger(0..2), +0x122; imm 0xa",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789200] Steam batch B15: SIG 1.00 | override: [b] slot 120: 0066690d MOV [EDX + 0x1e0],0x673c20; 00673d76 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectDamageIncrease",
   "source": "steam-db-B15",
   "steam_addr": "0x00673c20"
@@ -530,7 +618,23 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007897f0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666a2d->slot 459=0x00674210 (459 EffectForceShield); one StackPopInteger initialised, SetCreator before type DAT_009960c4; imm 0x28",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007893f0] Steam batch B15: no content anchor (C0) | override: [a] store 0066691d [ECX+0x1dc],0x673e10 slot 119 EffectDamageReduction; fp=GOG 526B RET 8 (imm,disp,callees same); 00673f84 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectDamageReduction",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00673e10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789600] Steam batch B15: no content anchor (C0) | override: [a] store 0066692d [EAX+0x144],0x674020 slot 81 EffectDamageResistance; fp=GOG 492B RET 8 (imm,disp,callees same); 00674172 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectDamageResistance",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674020"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007897f0] Steam batch B15: SIG 1.00 | override: [b] slot 459: 00666a2d MOV [EDX + 0x72c],0x674210; 006742ac CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectForceShield",
   "source": "steam-db-B15",
   "steam_addr": "0x00674210"
@@ -538,7 +642,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00789930] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066693d->slot 487=0x00674350 (487 EffectDamageShield); three StackPopInteger; clamps 10000 (0x2710) and 10; imm 0x30",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789930] Steam batch B15: SIG 1.00 | override: [b] slot 487: 0066693d MOV [EDX + 0x79c],0x674350; 00674476 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectDamageShield",
   "source": "steam-db-B15",
   "steam_addr": "0x00674350"
@@ -546,10 +650,50 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00789df0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 006669cd->slot 823=0x00674810 (823 EffectForceSight); no StackPop; GetObjectArray 0x51c080+GetGameObject 0x53dfb0+SetCreator 0x5e5ea0 as GOG; imms 0x30,0x8c",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789b10] Steam batch B15: no content anchor (C0) | override: [a] store 006669ad [ECX+0xd44],0x674530 slot 849 EffectFactionModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 006745fd CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectFactionModifier",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789c80] Steam batch B15: no content anchor (C0) | override: [a] store 006669bd [EAX+0xc08],0x6746a0 slot 770 EffectForceBody; fp=GOG 359B RET 8 (imm,disp,callees same); 0067476d CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectForceBody",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006746a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789df0] Steam batch B15: SIG 1.00 | override: [a] store 006669cd [EDX+0xcdc],0x674810 slot 823 EffectForceSight; fp=GOG 317B RET 8 (imm,disp,callees same); 006748b3 CALL 0x53dfb0 GetGameObject",
   "name": "Global::ExecuteCommandEffectForceSight",
   "source": "steam-db-B15",
   "steam_addr": "0x00674810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00789f30] Steam batch B15: no content anchor (C0) | override: [a] store 00666a3d [ECX+0xc2c],0x674950 slot 779 EffectFPRegenModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 00674a1d CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectFPRegenModifier",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674950"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a0a0] Steam batch B15: no content anchor (C0) | override: [a] store 00666c3d [EDX+0xc30],0x674ac0 slot 780 EffectVPRegenModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 00674b8d CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectVPRegenModifier",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a210] Steam batch B15: no content anchor (C0) | override: [a] store 00666a5d [EDX+0xc24],0x674c30 slot 777 EffectFury; fp=GOG 317B RET 8 (imm,disp,callees same); 00674cd3 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectFury",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00674c30"
  },
  {
   "confidence": "high",
@@ -562,7 +706,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078a500] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666a7d->slot 78=0x00674f20 (78 EffectHeal); param_3==1 guard, one StackPopInteger, <1 error, type DAT_00995fb8; imm 0x30,0x38",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a500] Steam batch B15: SIG 1.00 | override: [b] slot 78: 00666a7d MOV [EAX + 0x138],0x674f20; 0067502d CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectHeal",
   "source": "steam-db-B15",
   "steam_addr": "0x00674f20"
@@ -578,7 +722,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078a840] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666a9d->slot 273=0x00675260 (273 EffectImmunity); StackPopInteger 0x6fd9a0 then SetInteger(0,clamp) and SetInteger(1,[DAT_00a1b4d0+0x122]); disps 0xa,0x122,imm 0x38",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a840] Steam batch B15: SIG 1.00 | override: [b] slot 273: 00666a9d MOV [ECX + 0x444],0x675260; 006752ec CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectImmunity",
   "source": "steam-db-B15",
   "steam_addr": "0x00675260"
@@ -586,7 +730,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078a9f0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666aad->slot 457=0x00675410 (457 EffectInvisibility); StackPopInteger; allowed values 1,2,4; SetInteger(0),(1,[+0x122]); imm 2,4,0x30",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078a9f0] Steam batch B15: SIG 1.00 | override: [a] store 00666aad [EAX+0x724],0x675410 slot 457 EffectInvisibility; fp=GOG 386B RET 8 (imm,disp,callees same); 00675442 CALL 0x6fd9a0 StackPopInteger",
   "name": "Global::ExecuteCommandEffectInvisibility",
   "source": "steam-db-B15",
   "steam_addr": "0x00675410"
@@ -602,7 +746,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078acf0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666add->slot 477=0x00675710 (477 EffectMissChance); one StackPopInteger, 1..100 check (imm 0x64), SetInteger(0),(1,DAT_00996254); imm 0x2c",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078acf0] Steam batch B15: SIG 1.00 | override: [b] slot 477: 00666add MOV [EAX + 0x774],0x675710; 006757da CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectMissChance",
   "source": "steam-db-B15",
   "steam_addr": "0x00675710"
@@ -610,7 +754,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078ae60] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666aed->slot 485=0x00675880 (485 EffectModifyAttacks); one StackPopInteger, branch <6 else error type; imm 0x5 (limit 5), 0x2c",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ae60] Steam batch B15: SIG 1.00 | override: [b] slot 485: 00666aed MOV [EDX + 0x794],0x675880; 00675943 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectModifyAttacks",
   "source": "steam-db-B15",
   "steam_addr": "0x00675880"
@@ -618,10 +762,50 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078b2e0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666b2d->slot 250=0x00675d00 (250 EffectPoison); one StackPopInteger, SetCreator, SetInteger(0), type DAT_00995fa8; imm 0x28",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078afc0] Steam batch B15: no content anchor (C0) | override: [a] store 00666afd [ECX+0x70c],0x6759e0 slot 451 EffectMovementSpeedDecrease; fp=GOG 395B RET 8 (imm,disp,callees same); 00675ad1 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectMovementSpeedDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006759e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b150] Steam batch B15: no content anchor (C0) | override: [a] store 00666b0d [EAX+0x294],0x675b70 slot 165 EffectMovementSpeedIncrease; fp=GOG 395B; 00675be7 CALL 0x5e4920 CGameEffect ctor; Mac ExecuteCommandEffectMovementSpeedIncrease",
+  "name": "Global::ExecuteCommandEffectMovementSpeedIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675b70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b2e0] Steam batch B15: SIG 1.00 | override: [b] slot 250: 00666b2d MOV [ECX + 0x3e8],0x675d00; 00675da9 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectPoison",
   "source": "steam-db-B15",
   "steam_addr": "0x00675d00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b420] Steam batch B15: no content anchor (C0) | override: [a] store 00666b4d [EDX+0x148],0x675e40 slot 82 EffectResurrection; fp=GOG 379B RET 8 (imm,disp,callees same); 00675f21 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectResurrection",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675e40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b5a0] Steam batch B15: no content anchor (C0) | override: [a] store 00666b5d [ECX+0x710],0x675fc0 slot 452 EffectSavingThrowDecrease; fp=GOG 528B RET 8 (imm,disp,callees same); 00676136 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectSavingThrowDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00675fc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078b7b0] Steam batch B15: no content anchor (C0) | override: [a] store 00666b6d [EAX+0x1d4],0x6761d0 slot 117 EffectSavingThrowIncrease; fp=GOG 528B RET 8 (imm,disp,callees same); 00676346 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectSavingThrowIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006761d0"
  },
  {
   "confidence": "high",
@@ -634,6 +818,22 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078bae0] Steam batch B15: no content anchor (C0) | override: [a] store 00666b8d [ECX+0x714],0x676500 slot 453 EffectSkillDecrease; fp=GOG 448B RET 8 (imm,disp,callees same); 00676665 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectSkillDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00676500"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078bca0] Steam batch B15: no content anchor (C0) | override: [a] store 00666b9d [EAX+0x57c],0x6766c0 slot 351 EffectSkillIncrease; fp=GOG 448B RET 8 (imm,disp,callees same); 00676825 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandEffectSkillIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006766c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x0078be60] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
   "name": "Global::ExecuteCommandEffectSpellImmunity",
   "source": "steam-db-B15",
@@ -642,10 +842,42 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078bfe0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 00666bcd->slot 472=0x00676a00 (472 EffectSpellLevelAbsorption); three StackPopInteger, range <10 and >-2, SetInteger(0..3); imm 9",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078bfe0] Steam batch B15: SIG 1.00 | override: [a] store 00666bcd [EAX+0x760],0x676a00 slot 472 EffectSpellLevelAbsorption; fp=GOG 470B (imm 0x2,0x3,0x9); 00676b19 CALL 0x5e5ea0 SetCreator",
   "name": "Global::ExecuteCommandEffectSpellLevelAbsorption",
   "source": "steam-db-B15",
   "steam_addr": "0x00676a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078c1c0] Steam batch B15: no content anchor (C0) | override: [a] store 006669fd [EDX+0x718],0x676be0 slot 454 EffectForceResistanceDecrease; fp=GOG 317B; 00676c47 CALL 0x5e4920 CGameEffect ctor; Mac name same",
+  "name": "Global::ExecuteCommandEffectForceResistanceDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00676be0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078c300] Steam batch B15: no content anchor (C0) | override: [a] store 00666a0d [ECX+0x350],0x676d20 slot 212 EffectForceResistanceIncrease; fp=GOG 317B; 00676d87 CALL 0x5e4920 CGameEffect ctor; Mac name same",
+  "name": "Global::ExecuteCommandEffectForceResistanceIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00676d20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078c440] Steam batch B15: no content anchor (C0) | override: GOG parity (slot 156): live, Steam 00666bed [ECX+0x270],0x676e60 last store; 00676f8f CALL SetCreator; fp=GOG 418B. Mac symbols are swapped vs GOG (Mac live = EffectTemporaryFP); GOG follows nwscript",
+  "name": "CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00676e60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078c5f0] Steam batch B15: no content anchor (C0) | override: [a] store 00666bfd [EAX+0x4e8],0x677010 slot 314 EffectTemporaryHitpoints; fp=GOG 418B RET 8 (imm,disp,callees same); 0067710d CALL 0x53dfb0 GetGameObject; Mac symbol=GOG name",
+  "name": "Global::ExecuteCommandEffectTemporaryHP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677010"
  },
  {
   "confidence": "high",
@@ -666,7 +898,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078cac0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066671d->slot 391=0x006774e0 (391 EffectDroidStun); no pops, SetInteger(0,3), no SetCreator; imms 0x3,0x24",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078cac0] Steam batch B15: SIG 1.00 | override: [b] slot 391: 0066671d MOV [EAX + 0x61c],0x6774e0; 00677569 CALL 0x005e4e80=SetInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectDroidStun",
   "source": "steam-db-B15",
   "steam_addr": "0x006774e0"
@@ -682,7 +914,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078cd30] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066673d->slot 392=0x00677750 (392 EffectForcePushed); no pops, SetCreator only, type DAT_0099600c; imm 0x24",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078cd30] Steam batch B15: SIG 1.00 | override: [b] slot 392: 0066673d MOV [ECX + 0x620],0x677750; 006777dc CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectForcePushed",
   "source": "steam-db-B15",
   "steam_addr": "0x00677750"
@@ -698,7 +930,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078d030] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x00665f50 store 0066675d->slot 703=0x00677a50 (703 EffectWhirlWind); no pops, SetInteger(0,10) (DroidStun uses 3); imms 0xa,0x24",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d030] Steam batch B15: SIG 1.00 | override: [b] slot 703: 0066675d MOV [EDX + 0xafc],0x677a50; 00677ad9 CALL 0x005e4e80=SetInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEffectWhirlwind",
   "source": "steam-db-B15",
   "steam_addr": "0x00677a50"
@@ -706,7 +938,23 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078d370] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 471: 0066678d MOV dword ptr [EDX + 0x75c],0x677d90; 00677dfe MOV EDX,dword ptr [0x00995f3c]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d130] Steam batch B15: no content anchor (C0) | override: [a] store 0066676d [ECX+0x754],0x677b50 slot 469 EffectBlasterDeflectionIncrease; fp=GOG 282B RET 8 (imm,disp,callees same); 00677b82 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandEffectBlasterDeflectionIncrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677b50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d250] Steam batch B15: no content anchor (C0) | override: [a] store 0066677d [EAX+0x758],0x677c70 slot 470 EffectBlasterDeflectionDecrease; fp=GOG 282B RET 8 (imm,disp,callees same); 00677ca2 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandEffectBlasterDeflectionDecrease",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677c70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d370] Steam batch B15: SIG 1.00 | override: [a] store 0066678d [EDX+0x75c],0x677d90 slot 471 EffectHorrified; fp=GOG 252B RET 8 (imm,disp,callees same); 00677e2a CALL 0x6fdad0 StackPushEngineStructure",
   "name": "Global::ExecuteCommandEffectHorrified",
   "source": "steam-db-B15",
   "steam_addr": "0x00677d90"
@@ -714,10 +962,50 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078d7d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 159: 006667cd MOV dword ptr [ECX + 0x27c],0x6781f0; 0067825e MOV EDX,dword ptr [0x00995f3c]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d470] Steam batch B15: no content anchor (C0) | override: [a] store 0066679d [ECX+0x5d0],0x677e90 slot 372 EffectDamageForcePoints; fp=GOG 282B RET 8 (imm,disp,callees same); 00677ec2 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandEffectDamageForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677e90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d590] Steam batch B15: no content anchor (C0) | override: [a] store 006667ad [EAX+0x5d4],0x677fb0 slot 373 EffectHealForcePoints; fp=GOG 282B RET 8 (imm,disp,callees same); 00677fe2 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandEffectHealForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00677fb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d6b0] Steam batch B15: no content anchor (C0) | override: GOG parity (slot 156): dead 1st store, Steam 006667bd [EDX+0x270],0x6780d0 overwritten at 00666bed; fp=GOG 282B. Mac symbols are swapped vs GOG (Mac live = EffectTemporaryFP); GOG follows nwscript",
+  "name": "Global::ExecuteCommandEffectTemporaryFP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006780d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d7d0] Steam batch B15: SIG 1.00 | override: [a] store 006667cd [ECX+0x27c],0x6781f0 slot 159 EffectChoke; fp=GOG 252B RET 8 (imm,disp,callees same); 0067828a CALL 0x6fdad0 StackPushEngineStructure",
   "name": "Global::ExecuteCommandEffectChoke",
   "source": "steam-db-B15",
   "steam_addr": "0x006781f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d8d0] Steam batch B15: no content anchor (C0) | override: [a] store 006667dd [EAX+0x380],0x6782f0 slot 224 EffectBodyFuel; fp=GOG 240B RET 8 (imm,disp,callees same); 0067837e CALL 0x6fdad0 StackPushEngineStructure",
+  "name": "Global::ExecuteCommandEffectBodyFuel",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006782f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078d9c0] Steam batch B15: no content anchor (C0) | override: [a] store 006667ed [EDX+0xa90],0x6783e0 slot 676 EffectPsychicStatic; fp=GOG 240B RET 8 (imm,disp,callees same); 0067846e CALL 0x6fdad0 StackPushEngineStructure",
+  "name": "Global::ExecuteCommandEffectPsychicStatic",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006783e0"
  },
  {
   "confidence": "high",
@@ -754,7 +1042,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078e130] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 295: 00666cad MOV dword ptr [ECX + 0x49c],0x678b50; 00678bb9 MOV EDX,0x7",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e130] Steam batch B15: SIG 0.50 | override: [b] slot 295: 00666cad MOV [ECX + 0x49c],0x678b50; 00678bd0 CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEventConversation",
   "source": "steam-db-B15",
   "steam_addr": "0x00678b50"
@@ -762,7 +1050,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078e220] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 244: 00666cbd MOV dword ptr [EAX + 0x3d0],0x678c40; 00678dfa CALL 0x005e1c70",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e220] Steam batch B15: SIG 0.50 | override: [b] slot 244: 00666cbd MOV [EAX + 0x3d0],0x678c40; 00678e0b CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEventSpellCastAt",
   "source": "steam-db-B15",
   "steam_addr": "0x00678c40"
@@ -770,7 +1058,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078e490] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 132: 00666ccd MOV dword ptr [EDX + 0x210],0x678eb0; 00678f75 MOV EDX,0xb",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e490] Steam batch B15: SIG 0.50 | override: [b] slot 132: 00666ccd MOV [EDX + 0x210],0x678eb0; 00678f9a CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandEventUserDefined",
   "source": "steam-db-B15",
   "steam_addr": "0x00678eb0"
@@ -786,7 +1074,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078e7a0] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 66: 00666d4a MOV dword ptr [EAX + 0x108],0x6791c0; 0067928a CALL 0x00734030",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e770] Steam batch B15: no content anchor (C0) | override: [a] store 00666cfa slot 557 ExportAllCharacters; fp=GOG 38B; 006791a9 CALL 0x51bed0 (=GOG 0x64b8f0 SetExportAllCharactersPending, 36B, same 0x80 spacing as AutoSave pair)",
+  "name": "Global::ExecuteCommandExportAllCharacters",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00679190"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e7a0] Steam batch B15: SIG 0.50 | override: [b] slot 66: 00666d4a MOV [EAX + 0x108],0x6791c0; 006791eb CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandFindSubString",
   "source": "steam-db-B15",
   "steam_addr": "0x006791c0"
@@ -794,7 +1090,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078e8f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078e8f0] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 525..526(2): 00666d5a MOV [EDX + 0x838],0x679310; 00679445 CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandFloatingText",
   "source": "steam-db-B15",
   "steam_addr": "0x00679310"
@@ -802,7 +1098,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078ebd0] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 231: 00666d7a MOV dword ptr [EAX + 0x39c],0x6795f0; 00679616 CALL 0x0091c860",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078ebd0] Steam batch B15: SIG 0.50 | override: [b] slot 231: 00666d7a MOV [EAX + 0x39c],0x6795f0; 00679603 CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "CSWVirtualMachineCommands::ExecuteCommandFloatToInt",
   "source": "steam-db-B15",
   "steam_addr": "0x006795f0"
@@ -906,7 +1202,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078f920] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 375: 00666e61 MOV dword ptr [EAX + 0x5dc],0x67a340; 0067a376 MOV EDX,dword ptr [ECX + 0x568]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f920] Steam batch B15: SIG 1.00 | override: [a] store 00666e61 [EAX+0x5dc],0x67a340 slot 375 GetAttemptedSpellTarget; fp=GOG 97B RET 8 (imm,disp,callees same); 0067a389 CALL 0x6fdb10 StackPushObject",
   "name": "Global::ExecuteCommandGetAttemptedSpellTarget",
   "source": "steam-db-B15",
   "steam_addr": "0x0067a340"
@@ -914,7 +1210,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0078f990] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 489: 00666e71 MOV dword ptr [EDX + 0x7a4],0x67a3b0; 0067a3e6 MOV EDX,dword ptr [ECX + 0x54c]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0078f990] Steam batch B15: SIG 1.00 | override: [b] slot 489: 00666e71 MOV [EDX + 0x7a4],0x67a3b0; 0067a3f9 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetAttemptedMovementTarget",
   "source": "steam-db-B15",
   "steam_addr": "0x0067a3b0"
@@ -978,7 +1274,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00790200] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 163: 00666f21 MOV dword ptr [EAX + 0x28c],0x67ac20; 0067ac90 MOV ECX,dword ptr [EAX + 0xec]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790200] Steam batch B15: SIG 1.00 | override: [b] slot 163: 00666f21 MOV [EAX + 0x28c],0x67ac20; 0067ac76 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetCommandable",
   "source": "steam-db-B15",
   "steam_addr": "0x0067ac20"
@@ -1002,6 +1298,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790420] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x67ac20=GetCommandable slot 163). Stores 00666f51/00666f61 slots 307/308; 0067aea8 CMP [EBP+8],0x134; 0067b027 CALL 0x6b8bb0 GetCreatureTalentRandom; Mac name same",
+  "name": "Global::ExecuteCommandGetCreatureTalent",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ae40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x007906e0] Steam batch B15: CALLEE 1 (callees: GetAcceptableAction 0x5d7190); SIG 1.00 | AUTO: CALLEE 1 (callees: GetAcceptableAction 0x5d7190); SIG 1.00",
   "name": "Global::ExecuteCommandGetCurrentAction",
   "source": "steam-db-B15",
@@ -1010,7 +1314,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00790810] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790810] Steam batch B15: SIG 1.00 | override: [b] slot 344: 00666fb1 MOV [EAX + 0x560],0x67b230; 0067b25c CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetDamageDealtByType",
   "source": "steam-db-B15",
   "steam_addr": "0x0067b230"
@@ -1034,7 +1338,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00790a80] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 319: 00666fe1 MOV dword ptr [EAX + 0x4fc],0x67b4a0; 0067b579 CALL 0x004452b0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790a80] Steam batch B15: SIG 1.00 | override: [b] slot 319: 00666fe1 MOV [EAX + 0x4fc],0x67b4a0; 0067b59a CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetDistanceBetween2D",
   "source": "steam-db-B15",
   "steam_addr": "0x0067b4a0"
@@ -1042,7 +1346,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00790ba0] Steam batch B15: SIG 0.50 | reviewer match with anchor: InitCommands 0x665f50 slot 298: 00666ff1 MOV dword ptr [EDX + 0x4a8],0x67b5c0; 0067b65f CALL 0x004452b0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790ba0] Steam batch B15: SIG 0.50 | override: [a] store 00666ff1 [EDX+0x4a8],0x67b5c0 slot 298 GetDistanceBetweenLocations; fp=GOG; 0067b5d5 CALL 0x6fdab0 PopEngineStructure, 0067b65f CALL 0x4452b0 Vector-, 0067b680 PushFloat",
   "name": "Global::ExecuteCommandGetDistanceBetweenLocations",
   "source": "steam-db-B15",
   "steam_addr": "0x0067b5c0"
@@ -1050,10 +1354,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00790db0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 334: 00667001 MOV dword ptr [ECX + 0x538],0x67b7d0; 0067b8aa CALL 0x005142f0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00790db0] Steam batch B15: SIG 1.00 | override: [b] slot 334: 00667001 MOV [ECX + 0x538],0x67b7d0; 0067b8c2 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetDistanceBetweenLocations2D",
   "source": "steam-db-B15",
   "steam_addr": "0x0067b7d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791000] Steam batch B15: no content anchor (C0) | override: [a] store 00667011 [EAX+0xa4],0x67ba20 slot 41 GetDistanceToObject; fp=GOG 416B RET 8 (imm,disp,callees same); 0067baa5 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandGetDistanceToObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ba20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007911a0] Steam batch B15: no content anchor (C0) | override: [a] store 00667021 [EDX+0x53c],0x67bbc0 slot 335 GetDistanceToObject2D; fp=GOG 426B RET 8 (imm,disp,callees same); 0067bc45 CALL 0x53dfb0 GetGameObject",
+  "name": "Global::ExecuteCommandGetDistanceToObject2D",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067bbc0"
  },
  {
   "confidence": "high",
@@ -1074,7 +1394,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00791790] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 89: 00667041 MOV dword ptr [EAX + 0x164],0x67c1b0; 0067c1e3 AND EDX,0x7",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791790] Steam batch B15: SIG 1.00 | override: [b] slot 89: 00667041 MOV [EAX + 0x164],0x67c1b0; 0067c1cc CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetEffectDurationType",
   "source": "steam-db-B15",
   "steam_addr": "0x0067c1b0"
@@ -1090,7 +1410,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007918d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 90: 00667061 MOV dword ptr [ECX + 0x168],0x67c2f0; 0067c323 AND EDX,0x18",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007918d0] Steam batch B15: SIG 1.00 | override: [b] slot 90: 00667061 MOV [ECX + 0x168],0x67c2f0; 0067c30c CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetEffectSubType",
   "source": "steam-db-B15",
   "steam_addr": "0x0067c2f0"
@@ -1098,10 +1418,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00791970] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetEffectTypeScriptConstant 0x5e5f60) | reviewer match with anchor: InitCommands 0x665f50 slot 170: 00667071 MOV dword ptr [EAX + 0x2a8],0x67c390; 0067c3bf CALL 0x005e5f60",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791970] Steam batch B15: CALLEE 2 (callees: StackPopEngineStructure 0x6fdab0, GetEffectTypeScriptConstant 0x5e5f60) | override: [b] slot 170: 00667071 MOV [EAX + 0x2a8],0x67c390; 0067c3bf CALL 0x005e5f60=GetEffectTypeScriptConstant; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetEffectType",
   "source": "steam-db-B15",
   "steam_addr": "0x0067c390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791a10] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x67c250=GetEffectSpellId 305). Stores 00667498/006674a8/00667518 slots 235-237; 0067c545 [ECX+0x398]; fp=GOG 467B. Name = Mac symbol: reviewer label_suspect overruled",
+  "name": "Global::ExecuteCommandGetEmotions",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067c430"
  },
  {
   "confidence": "high",
@@ -1130,10 +1458,42 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007921b0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 186: 00667118 MOV dword ptr [ECX + 0x2e8],0x67cbd0; 0067cc95 CALL 0x006d3ff0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00791ff0] Steam batch B15: no content anchor (C0) | override: [a] store 006670f8 [EAX+0x2ec],0x67ca10 slot 187 GetFactionAverageGoodEvilAlignment; fp=GOG 212B RET 8 (imm,disp,callees same); 0067cacc CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetFactionAverageGoodEvilAlignment",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ca10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007920d0] Steam batch B15: no content anchor (C0) | override: [a] store 00667108 [EDX+0x2f4],0x67caf0 slot 189 GetFactionAverageLevel; fp=GOG; 0067cb37 CALL 0x51c100 GetCreatureByGameObjectID, 0067cb48 [ECX+0x1198]",
+  "name": "Global::ExecuteCommandGetFactionAverageLevel",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067caf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007921b0] Steam batch B15: SIG 1.00 | override: [b] slot 186: 00667118 MOV [ECX + 0x2e8],0x67cbd0; 0067cc2d CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetFactionAverageReputation",
   "source": "steam-db-B15",
   "steam_addr": "0x0067cbd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007922a0] Steam batch B15: no content anchor (C0) | override: [a] store 00667128 [EAX+0x2f8],0x67ccc0 slot 190 GetFactionAverageXP; fp=GOG 212B RET 8 (imm,disp,callees same); 0067cd7c CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetFactionAverageXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ccc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792380] Steam batch B15: no content anchor (C0) | override: [a] store 00667138 [EDX+0x304],0x67cda0 slot 193 GetFactionBestAC; fp=GOG 263B RET 8 (imm,disp,callees same); 0067cdeb CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandGetFactionBestAC",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067cda0"
  },
  {
   "confidence": "high",
@@ -1142,6 +1502,22 @@
   "name": "Global::ExecuteCommandGetFactionEqual",
   "source": "steam-db-B15",
   "steam_addr": "0x0067ceb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792550] Steam batch B15: no content anchor (C0) | override: [a] store 00667158 [EAX+0x2e4],0x67cf70 slot 185 GetFactionGold; fp=GOG 212B RET 8 (imm,disp,callees same); 0067d02c CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetFactionGold",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067cf70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792630] Steam batch B15: no content anchor (C0) | override: [a] store 00667178 [ECX+0x2e0],0x67d050 slot 184 GetFactionLeastDamagedMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d09b CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandGetFactionLeastDamagedMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d050"
  },
  {
   "confidence": "high",
@@ -1162,7 +1538,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00792a70] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 191: 00667198 MOV dword ptr [EDX + 0x2fc],0x67d490; 0067d53a CALL 0x006d4360",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792960] Steam batch B15: no content anchor (C0) | override: [a] store 00667188 [EAX+0x2dc],0x67d380 slot 183 GetFactionMostDamagedMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d3cb CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandGetFactionMostDamagedMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792a70] Steam batch B15: SIG 1.00 | override: [b] slot 191: 00667198 MOV [EDX + 0x2fc],0x67d490; 0067d4d7 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetFactionMostFrequentClass",
   "source": "steam-db-B15",
   "steam_addr": "0x0067d490"
@@ -1170,7 +1554,23 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00792d70] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 192: 006671c8 MOV dword ptr [EDX + 0x300],0x67d790; 0067d874 CALL 0x006d4560",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792b50] Steam batch B15: no content anchor (C0) | override: [a] store 006671a8 [ECX+0x2d8],0x67d570 slot 182 GetFactionStrongestMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d5bb CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandGetFactionStrongestMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d570"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792c60] Steam batch B15: no content anchor (C0) | override: [a] store 006671b8 [EAX+0x2d4],0x67d680 slot 181 GetFactionWeakestMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d6cb CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandGetFactionWeakestMember",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067d680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00792d70] Steam batch B15: SIG 1.00 | override: [b] slot 192: 006671c8 MOV [EDX + 0x300],0x67d790; 0067d886 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetFactionWorstAC",
   "source": "steam-db-B15",
   "steam_addr": "0x0067d790"
@@ -1226,6 +1626,38 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793430] Steam batch B15: no content anchor (C0) | override: [a] store 006672e8 [EDX+0x688],0x67de50 slots 418/771; 0067dea1 CALL 0x5812e0 CSWSCreature::GetGold, 0067deec PUSH 0x17 + 0067def1 CALL 0x605b80 FindItemWithBaseItemType; fp=GOG",
+  "name": "Global::ExecuteCommandGetGold",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067de50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793530] Steam batch B15: no content anchor (C0) | override: [a] store 006672f8 [ECX+0x4dc],0x67df50 slot 311/772 GetGoldPieceValue; fp=GOG 165B RET 8 (imm,disp,callees same); 0067dfcb CALL 0x606a80 GetCost",
+  "name": "Global::ExecuteCommandGetGoldPieceValue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067df50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007935e0] Steam batch B15: no content anchor (C0) | override: [a] store 00667328 [ECX+0xc18],0x67e000 slot 774 GetChemicals; fp=GOG 248B RET 8 (imm,disp,callees same); 0067e0a1 CALL 0x605b80 FindItemWithBaseItemType; Mac symbol=GOG name",
+  "name": "Global::ExecuteCommandGetChemical",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007936e0] Steam batch B15: no content anchor (C0) | override: [a] store 00667338 [EAX+0xc1c],0x67e100 slot 775 GetChemicalPieceValue; fp=GOG 174B RET 8 (imm,disp,callees same); 0067e17b CALL 0x606a80 GetCost",
+  "name": "Global::ExecuteCommandGetChemicalPieceValue",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067e100"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00793790] Steam batch B15: CALLEE 1 (callees: GetFeatRemainingUses 0x6b8440); SIG 1.00 | AUTO: CALLEE 1 (callees: GetFeatRemainingUses 0x6b8440); SIG 1.00",
   "name": "Global::ExecuteCommandGetHasFeat",
   "source": "steam-db-B15",
@@ -1266,7 +1698,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00793c50] Steam batch B15: CALLEE 1 (callees: HasSpellEffectApplied 0x5476c0) | reviewer match with anchor: InitCommands 0x665f50 slot 304: 006673a8 MOV dword ptr [EDX + 0x4c0],0x67e670; 0067e704 CALL 0x005476c0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793c50] Steam batch B15: CALLEE 1 (callees: HasSpellEffectApplied 0x5476c0) | override: [a+b] store 006673a8 [EDX+0x4c0],0x67e670 slot 304 GetHasSpellEffect; 0067e704 CALL 0x5476c0 HasSpellEffectApplied; fp=GOG 190B RET 8; Mac symbol = GOG name",
   "name": "Global::ExecuteCommandGetHasSpellEffect",
   "source": "steam-db-B15",
   "steam_addr": "0x0067e670"
@@ -1274,7 +1706,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00793d10] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 166: 006673c8 MOV dword ptr [EAX + 0x298],0x67e730; 0067e7e1 CALL 0x006a4e00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00793d10] Steam batch B15: SIG 1.00 | override: [b] slot 166: 006673c8 MOV [EAX + 0x298],0x67e730; 0067e7e1 CALL 0x006a4e00=GetLevel; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetHitDice",
   "source": "steam-db-B15",
   "steam_addr": "0x0067e730"
@@ -1294,6 +1726,22 @@
   "name": "Global::ExecuteCommandGetCurrentForcePoints",
   "source": "steam-db-B15",
   "steam_addr": "0x0067e9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794030] Steam batch B15: no content anchor (C0) | override: [a] store 006679e2 [ECX+0xe0],0x67ea50 slot 56 GetMaxForcePoints; fp=GOG 123B RET 8 (imm,disp,callees same); 0067eab3 CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetMaxForcePoints",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ea50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007940b0] Steam batch B15: no content anchor (C0) | override: [a] store 006673d8 [EDX+0x530],0x67ead0 slot 332 GetIdentified; fp=GOG 116B RET 8 (imm,disp,callees same); 0067eb2c CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetIdentified",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0067ead0"
  },
  {
   "confidence": "high",
@@ -1322,7 +1770,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00794f20] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 407: 00667438 MOV dword ptr [EDX + 0x65c],0x67f940; 0067f96f MOV AL,byte ptr [EDX + 0x1dc]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794f20] Steam batch B15: SIG 1.00 | override: [a] store 00667438 [EDX+0x65c],0x67f940 slot 407 GetIsDawn; fp=GOG 106B RET 8 (imm,disp,callees same); 0067f992 CALL 0x6fd9c0 StackPushInteger",
   "name": "Global::ExecuteCommandGetIsDawn",
   "source": "steam-db-B15",
   "steam_addr": "0x0067f940"
@@ -1330,7 +1778,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00794f90] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 405: 00667448 MOV dword ptr [ECX + 0x654],0x67f9b0; 0067f9df MOV AL,byte ptr [EDX + 0x1dc]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00794f90] Steam batch B15: SIG 1.00 | override: [a] store 00667448 [ECX+0x654],0x67f9b0 slot 405 GetIsDay; fp=GOG 106B; 0067f9df [module+0x1dc] then 0067f9ec CMP ECX,0x1 (Dusk=4). KDB name GetIsDoorActionPossible here is wrong",
   "name": "Global::ExecuteCommandGetIsDay",
   "source": "steam-db-B15",
   "steam_addr": "0x0067f9b0"
@@ -1346,7 +1794,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007953a0] Steam batch B15: SIG 1.00 | reviewer match with anchor: InitCommands 0x665f50 slot 408: 00667478 MOV dword ptr [ECX + 0x660],0x67fdc0; 0067fdef MOV AL,byte ptr [EDX + 0x1dc]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007953a0] Steam batch B15: SIG 1.00 | override: [a] store 00667478 [ECX+0x660],0x67fdc0 slot 408 GetIsDusk; fp=GOG 106B (imm 0x4); 0067fdef [module+0x1dc], 0067fdfc CMP ECX,0x4",
   "name": "Global::ExecuteCommandGetIsDusk",
   "source": "steam-db-B15",
   "steam_addr": "0x0067fdc0"
@@ -1378,7 +1826,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007956b0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068010c CMP ECX,0x2 after 006800ff MOV AL,[EDX+0x1dc] from GetModule 0x0051bd90 (decoy compares 4)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007956b0] Steam batch B15: SIG 1.00 | override: [a] store 00667528 [EDX+0x658],0x6800d0 slot 406 GetIsNight; fp=GOG 106B RET 8 (imm,disp,callees same); 00680122 CALL 0x6fd9c0 StackPushInteger",
   "name": "Global::ExecuteCommandGetIsNight",
   "source": "steam-db-B15",
   "steam_addr": "0x006800d0"
@@ -1490,7 +1938,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00796e60] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068190d MOV EDX,dword ptr [ECX + 0x180] with 0x7f000000 invalid-object default; callees PopObject 0x6fdaf0, GetGameObject 0x51c0a0, PushObject 0x6fdb10",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796e60] Steam batch B15: SIG 1.00 | override: [a] store 006676c2 [EAX+0x90],0x681890 slot 36 GetLastAttacker; fp=GOG 168B RET 8 (imm,disp,callees same); 006818b8 CALL 0x6fdaf0 StackPopObject",
   "name": "Global::ExecuteCommandGetLastAttacker",
   "source": "steam-db-B15",
   "steam_addr": "0x00681890"
@@ -1498,7 +1946,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00796f10] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681940: CALL 0x0051c100 then MOV [..+0x580] (GOG disp 0x580) pushed via StackPushObject 0x6fdb10 with 0x7f000000 default",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796f10] Steam batch B15: SIG 1.00 | override: [b] slot 721: 00667702 MOV [EDX + 0xb44],0x681940; 006819a8 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetLastHostileTarget",
   "source": "steam-db-B15",
   "steam_addr": "0x00681940"
@@ -1506,7 +1954,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00796f90] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006819c0: CALL 0x0051c100 then MOV [..+0x588] (GOG disp 0x588) pushed via StackPushInteger 0x6fd9c0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00796f90] Steam batch B15: SIG 1.00 | override: [b] slot 722: 006676e2 MOV [ECX + 0xb48],0x6819c0; 00681a04 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetLastAttackAction",
   "source": "steam-db-B15",
   "steam_addr": "0x006819c0"
@@ -1514,7 +1962,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00797010] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681a40: GetObject via 0x51c080/0x53dfb0, vtable+0x30 then [..+0x520] test and switch on byte [..+0x192] mapping 1,2,3,5,6 -> 1,2,3,4,5 (GOG disps 0x30,0x192,0x520 all present)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797010] Steam batch B15: SIG 1.00 | override: [b] slot 318: 006676d2 MOV [EDX + 0x4f8],0x681a40; 00681a8b CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetLastAttackMode",
   "source": "steam-db-B15",
   "steam_addr": "0x00681a40"
@@ -1522,7 +1970,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00797150] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681b80: CALL 0x0051c100 GetCreatureByGameObjectID then MOV [..+0x5a0] (GOG disp 0x5a0) with 0x7f000000 default; decoy 681c00 reads +0x5a8",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00797150] Steam batch B15: SIG 1.00 | override: [b] slot 725: 006676f2 MOV [EAX + 0xb54],0x681b80; 00681bc4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetLastAttackResult",
   "source": "steam-db-B15",
   "steam_addr": "0x00681b80"
@@ -1530,7 +1978,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007971d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00681c00: CALL 0x0051c100 then MOV [..+0x5a8] (GOG disp 0x5a8) pushed with StackPushInteger 0x6fd9c0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007971d0] Steam batch B15: SIG 1.00 | override: [b] slot 726: 006681d3 MOV [EDX + 0xb58],0x681c00; 00681c44 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetWasForcePowerSuccessful",
   "source": "steam-db-B15",
   "steam_addr": "0x00681c00"
@@ -1586,7 +2034,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007976f0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007976f0] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 723: 00667782 MOV [EAX + 0xb4c],0x682120; 00682188 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetLastForcePowerUsed",
   "source": "steam-db-B15",
   "steam_addr": "0x00682120"
@@ -1754,6 +2202,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00798d10] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x6837c0=GetMetaMagicFeat 105). Store 006679b2 [ECX+0x30c],0x683740 slot 195; 00683790 [ECX+0x1bc]; fp=GOG 123B; Mac ExecuteCommandGetMatchedStringsNum",
+  "name": "Global::ExecuteCommandGetMatchedStringsNum",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00683740"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00798d90] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
   "name": "Global::ExecuteCommandGetMetaMagicFeat",
   "source": "steam-db-B15",
@@ -1794,10 +2250,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007991a0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007991a0] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 253: 00667ad2 MOV [ECX + 0x3f4],0x683bd0; 00683cf1 CALL 0x006fda90=StackPushString; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetName",
   "source": "steam-db-B15",
   "steam_addr": "0x00683bd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00799310] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x6839a0=GetModuleFileName/Name). Stores 00667ae2/00667af2/00667b02 slots 38,226-229; 00683de6 CMP [EBP+8],0x26, 00683dec CMP 0xe2; fp=GOG 4828B",
+  "name": "Global::ExecuteCommandGetNearestObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00683d40"
  },
  {
   "confidence": "high",
@@ -1890,7 +2354,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; stdcall retn=8; GOG 0x0079c250] Steam batch B15: CALLEE 6 (callees: SetSTRBase 0x6b67d0, SetDEXBase 0x6b6810, SetCONBase 0x6b6850); SIG 1.00 | AUTO: CALLEE 6 (callees: SetSTRBase 0x6b67d0, SetDEXBase 0x6b6810, SetCONBase 0x6b6850); SIG 1.00",
+  "evidence": "[verified; stdcall retn=8; GOG 0x0079c250] Steam batch B15: CALLEE 6 (callees: SetSTRBase 0x6b67d0, SetDEXBase 0x6b6810, SetCONBase 0x6b6850); SIG 1.00 | override: [b] slot 833: 00667eff MOV [EAX + 0xd04],0x686c80; 00686d93 CALL 0x006b67d0=SetSTRBase; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandAdjustCreatureAttributes",
   "source": "steam-db-B15",
   "steam_addr": "0x00686c80"
@@ -1962,7 +2426,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079cce0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069b7c0: no pops; CALL 0x0073fb90 (party), CALL 0x007e5da0 (member idx 0), CALL 0x0051c8b0 ClientToServerObjectId, CALL 0x006fdb10 PushObject; GOG has no PopInteger",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cce0] Steam batch B15: SIG 1.00 | override: [b] slot 238..845(2): 006675d8 MOV [EAX + 0xd34],0x69b7c0; 0069b811 CALL 0x0051c8b0=ClientToServerObjectId; fp size/ret/disp/imm identical; Mac ExecuteCommandGetPCSpeaker,ExecuteCommandGetPartyLeader",
   "name": "Global::ExecuteCommandGetPartyLeader",
   "source": "steam-db-B15",
   "steam_addr": "0x0069b7c0"
@@ -1970,7 +2434,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079cd60] Steam batch B15: CALLEE 1 (callees: GetLightIsOn 0x5f6570); SIG 1.00 | reviewer match with anchor: CALL 0x005f6570 CSWSPlaceable::GetLightIsOn (GOG callee 0x770910 maps to it) after GetPlaceableById 0x51c160 and PopObject 0x6fdaf0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079cd60] Steam batch B15: CALLEE 1 (callees: GetLightIsOn 0x5f6570); SIG 1.00 | override: [a] store 00667d02 [EDX+0x884],0x687710 slot 545 GetPlaceableIllumination; fp=GOG 120B RET 8 (imm,disp,callees same); 0068775e CALL 0x5f6570 GetLightIsOn",
   "name": "Global::ExecuteCommandGetPlaceableIllumination",
   "source": "steam-db-B15",
   "steam_addr": "0x00687710"
@@ -2030,6 +2494,14 @@
   "name": "Global::ExecuteCommandGetRestrictMode",
   "source": "steam-db-B15",
   "steam_addr": "0x00687ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079d600] Steam batch B15: no content anchor (C0) | override: [a] store 00667cd2 [EDX+0x8d4],0x687fb0 slot 565 GetRunScriptVar; fp=GOG 43B RET 8 (imm,disp,callees same); 00687fc3 CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetRunScriptVar",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00687fb0"
  },
  {
   "confidence": "high",
@@ -2130,10 +2602,50 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079e430] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00688e56 CALL 0x00919f10 (strlen, same call as in CExoString::Left 0x734500) after StackPopString 0x6fda70, then CALL 0x006fd9c0 push int; imm 0x1c as GOG",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e1b0] Steam batch B15: no content anchor (C0) | override: [a] store 00667fef [EAX+0x3bc],0x688b60 slot 239 GetStringByStrRef; fp=GOG 267B RET 8 (imm,disp,callees same); 00688bab CALL 0x733540 CExoString; Mac symbol=GOG name",
+  "name": "Global::ExecuteCommandGetStrByStrRef",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688b60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e2c0] Steam batch B15: no content anchor (C0) | override: [a] store 00667fff [EDX+0xfc],0x688c70 slot 63 GetStringLeft; fp=GOG 354B RET 8 (imm,disp,callees same); 00688c9b CALL 0x733540 CExoString",
+  "name": "Global::ExecuteCommandGetStringLeft",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688c70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e430] Steam batch B15: SIG 0.50 | override: [b] slot 59: 0066800f MOV [ECX + 0xec],0x688de0; 00688e0b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetStringLength",
   "source": "steam-db-B15",
   "steam_addr": "0x00688de0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e520] Steam batch B15: no content anchor (C0) | override: [a] store 0066801f [EAX+0xf4],0x688ed0 slot 61 GetStringLowerCase; fp=GOG 289B RET 8 (imm,disp,callees same); 00688efb CALL 0x733540 CExoString",
+  "name": "Global::ExecuteCommandGetStringLowerCase",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00688ed0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e650] Steam batch B15: no content anchor (C0) | override: [a] store 0066802f [EDX+0xf8],0x689000 slot 62 GetStringRight; fp=GOG; 0068904d CALL 0x6fda70 PopString, 0068908a PopInteger, 006890fc PushString; Mac name same",
+  "name": "Global::ExecuteCommandGetStringRight",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00689000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079e7c0] Steam batch B15: no content anchor (C0) | override: [a] store 0066803f [ECX+0xf0],0x689170 slot 60 GetStringUpperCase; fp=GOG 289B RET 8 (imm,disp,callees same); 0068919b CALL 0x733540 CExoString",
+  "name": "Global::ExecuteCommandGetStringUpperCase",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00689170"
  },
  {
   "confidence": "high",
@@ -2162,7 +2674,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079ed20] Steam batch B15: CALLEE 1 (callees: GetWorldTimeHour 0x51b100) | reviewer match with anchor: 006896d0: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b100 GetWorldTimeHour (GOG 0x80b5e0 maps there)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ed20] Steam batch B15: CALLEE 1 (callees: GetWorldTimeHour 0x51b100) | override: [b] slot 16: 0066809f MOV [ECX + 0x40],0x6896d0; 006896ee CALL 0x0051b100=GetWorldTimeHour; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetTimeHour",
   "source": "steam-db-B15",
   "steam_addr": "0x006896d0"
@@ -2170,7 +2682,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079ed70] Steam batch B15: CALLEE 1 (callees: GetWorldTimeMillisecond 0x51b1c0) | reviewer match with anchor: 00689720: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b1c0 GetWorldTimeMillisecond (GOG 0x80b6a0 maps there)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ed70] Steam batch B15: CALLEE 1 (callees: GetWorldTimeMillisecond 0x51b1c0) | override: [b] slot 19: 006680ac MOV [EAX + 0x4c],0x689720; 0068973e CALL 0x0051b1c0=GetWorldTimeMillisecond; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetTimeMillisecond",
   "source": "steam-db-B15",
   "steam_addr": "0x00689720"
@@ -2178,7 +2690,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079edc0] Steam batch B15: CALLEE 1 (callees: GetWorldTimeMinute 0x51b140) | reviewer match with anchor: 00689770: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b140 GetWorldTimeMinute (GOG 0x80b620 maps there)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079edc0] Steam batch B15: CALLEE 1 (callees: GetWorldTimeMinute 0x51b140) | override: [b] slot 17: 006680b9 MOV [EDX + 0x44],0x689770; 0068978e CALL 0x0051b140=GetWorldTimeMinute; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetTimeMinute",
   "source": "steam-db-B15",
   "steam_addr": "0x00689770"
@@ -2186,7 +2698,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0079ee10] Steam batch B15: CALLEE 1 (callees: GetWorldTimeSecond 0x51b180) | reviewer match with anchor: 006897c0: CALL 0x0051c370 GetWorldTimer then CALL 0x0051b180 GetWorldTimeSecond (GOG 0x80b660 maps there) then push 0x6fd9c0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0079ee10] Steam batch B15: CALLEE 1 (callees: GetWorldTimeSecond 0x51b180) | override: [b] slot 18: 006680c6 MOV [ECX + 0x48],0x6897c0; 006897de CALL 0x0051b180=GetWorldTimeSecond; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetTimeSecond",
   "source": "steam-db-B15",
   "steam_addr": "0x006897c0"
@@ -2290,7 +2802,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a0760] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0068b110: two CALL 0x006fda70 StackPopString, CALL 0x006fd9a0 PopInteger, CALL 0x007343f0 CExoString::Insert (GOG 0x606500 + delta 0x12def0), PushString 0x6fda90",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0760] Steam batch B15: SIG 0.50 | override: [b] slot 64: 00668293 MOV [EDX + 0x100],0x68b110; 0068b221 CALL 0x006fda90=StackPushString; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandInsertString",
   "source": "steam-db-B15",
   "steam_addr": "0x0068b110"
@@ -2310,6 +2822,22 @@
   "name": "Global::ExecuteCommandIntToHexString",
   "source": "steam-db-B15",
   "steam_addr": "0x0068b2e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0a10] Steam batch B15: no content anchor (C0) | override: [a] store 006682c3 [EDX+0x170],0x68b3c0 slot 92 IntToString; fp=GOG; 0068b401 CALL 0x6fd9a0 PopInteger, 0068b42c CALL 0x733700 CExoString(int), 0068b457 PushString",
+  "name": "Global::ExecuteCommandIntToString",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b3c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a0b00] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x68b3c0=IntToString). Store 006682f3 [EDX+0x230],0x68b4b0 slot 140; 0068b55f CMP [EAX+0x11ac],0; fp=GOG 313B. Name = Mac symbol: reviewer label_suspect overruled",
+  "name": "Global::ExecuteCommandIsAIState",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068b4b0"
  },
  {
   "confidence": "high",
@@ -2394,10 +2922,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1340] Steam batch B15: no content anchor (C0) | override: [a] store 00668373 [EAX+0xca8],0x68bcf0 slot 810 IsStealthed; fp=GOG 122B RET 8 (imm,disp,callees same); 0068bd52 CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandIsStealthed",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068bcf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x007a13c0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
   "name": "Global::ExecuteCommandIsMeditating",
   "source": "steam-db-B15",
   "steam_addr": "0x0068bd70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1450] Steam batch B15: no content anchor (C0) | override: [a] store 00668393 [ECX+0xcb0],0x68be00 slot 812 IsInTotalDefense; fp=GOG 128B RET 8 (imm,disp,callees same); 0068be68 CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandIsInTotalDefense",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068be00"
  },
  {
   "confidence": "high",
@@ -2434,7 +2978,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a1af0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0068c4a0 size 747 = GOG 747: switch on command id 0x43..0x4c (fabs,sin,cos,...,sqrt via CALL 0x0091cb24) and 0x4d abs via 0x91fbf2; imm set {0x41,0x43,0x44,0x4d,0x50} identical to GOG",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a1af0] Steam batch B15: SIG 0.50 | override: [b] slot 67..77(11): 00665fa5 MOV [ECX + 0x134],0x68c4a0; 0068c773 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandMath",
   "source": "steam-db-B15",
   "steam_addr": "0x0068c4a0"
@@ -2462,6 +3006,14 @@
   "name": "Global::ExecuteCommandMoveToObject",
   "source": "steam-db-B15",
   "steam_addr": "0x0068cb50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a2530] Steam batch B15: gate evidence was for a corrected pick | override: [a] Opus corr (row 0x68cb50=ActionMoveToObject 22/383). Stores 006660a5/0066613f slots 21/382; 0068cf3b CMP [EBP+8],0x17e, 0068cfef CMP 0x15; fp=GOG 637B; Mac name same",
+  "name": "Global::ExecuteCommandMoveToPoint",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068cee0"
  },
  {
   "confidence": "high",
@@ -2514,7 +3066,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a30e0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a30e0] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 34: 0066616c MOV [EDX + 0x88],0x68da90; 0068dac9 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandPickUpItem",
   "source": "steam-db-B15",
   "steam_addr": "0x0068da90"
@@ -2594,10 +3146,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a4770] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068f120: PopString 0x6fda70, CALL 0x00733540 ctor, CALL 0x0073a590 (log write) gated by [0x00a7e110]==0, then CALL 0x00734010 CExoString::CStr x2 (GOG 0x606120 + delta 0x12def0); no format string",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4710] Steam batch B15: no content anchor (C0) | override: [a] store 00668590 [EDX+0x10],0x68f0c0 slot 4 PrintInteger; fp=GOG 84B RET 8 (imm,disp,callees same); 0068f0d3 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandPrintInteger",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f0c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4770] Steam batch B15: SIG 1.00 | override: [b] slot 560: 0066859d MOV [ECX + 0x8c0],0x68f120; 0068f14b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandPrintLogEntry",
   "source": "steam-db-B15",
   "steam_addr": "0x0068f120"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4850] Steam batch B15: no content anchor (C0) | override: [a] store 006685ad [EAX+0x14],0x68f200 slot 5 PrintObject; fp=GOG 84B RET 8 (imm,disp,callees same); 0068f233 CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandPrintObject",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0068f200"
  },
  {
   "confidence": "high",
@@ -2626,7 +3194,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a4bb0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068f5ba CALL 0x00567f00 (args item, [creature+0x94], 0) after GetCreatureByGameObjectID 0x51c100; 0x567f00 maps to GOG 0x680b30 at the same +0x118c30 delta as RunUnequip 0x5676d0 -> 0x680300",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4bb0] Steam batch B15: SIG 1.00 | override: [b] slot 35: 0066618c MOV [EAX + 0x8c],0x68f560; 0068f599 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandPutDownItem",
   "source": "steam-db-B15",
   "steam_addr": "0x0068f560"
@@ -2634,7 +3202,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a4c20] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0068f5d0: PopInteger 0x6fd9a0, CALL 0x0091eb8b (rand) then IDIV [EBP-4] and sign fix, PushInteger 0x6fd9c0; size 109 = GOG 109",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4c20] Steam batch B15: SIG 0.50 | override: [b] slot 0: 006685f7 MOV [ECX],0x68f5d0; 0068f625 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "CSWVirtualMachineCommands::ExecuteCommandRandom",
   "source": "steam-db-B15",
   "steam_addr": "0x0068f5d0"
@@ -2658,7 +3226,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a4e30] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068f7e0 size 457 = GOG 457: PopObject 0x6fdaf0 + PopEngineStructure 0x6fdab0, list at [+0x148]/[+0x14c], compare *p==*q and p[1]==q[1], CALL 0x0051e170 AddEventDeltaTime; imm 0x50 (SUB ESP,0x50) as G",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a4e30] Steam batch B15: SIG 1.00 | override: [b] slot 87: 00668643 MOV [EDX + 0x15c],0x68f7e0; 0068f819 CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandRemoveEffect",
   "source": "steam-db-B15",
   "steam_addr": "0x0068f7e0"
@@ -2674,7 +3242,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a5170] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0068fb20: 0x005e4e60 called twice per index 0/1 (GetInteger; 5e4ca0+0x1c0 = 5e4e60 as GOG 734960+0x1c0=734b20), loop over list [+0x148/+0x14c], then 0x0051e170 AddEventDeltaTime",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5170] Steam batch B15: SIG 1.00 | override: [b] slot 868: 00668663 MOV [EAX + 0xd90],0x68fb20; 0068fc49 CALL 0x005e4e60=GetInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandRemoveEffectByExactMatch",
   "source": "steam-db-B15",
   "steam_addr": "0x0068fb20"
@@ -2722,7 +3290,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a5df0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 006907a0 size 253 = GOG 253: switch on command id 0x5f..0x67 mapping to 2,3,4,6,8,10,12,20,100, CALL 0x006a2000 CSWRules::RollDice, PopInteger 0x6fd9a0, PushInteger 0x6fd9c0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a5df0] Steam batch B15: SIG 0.50 | override: [b] slot 95..103(9): 00666550 MOV [EDX + 0x190],0x6907a0; 00690885 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandRollDice",
   "source": "steam-db-B15",
   "steam_addr": "0x006907a0"
@@ -2930,7 +3498,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a7c90] Steam batch B15: CALLEE 1 (callees: SetLightIsOn 0x5f6470) | reviewer match with anchor: 00692640 CALL 0x005f6470 CSWSPlaceable::SetLightIsOn (GOG 0x770810 maps to it) with PopObject 0x6fdaf0, PopInteger 0x6fd9a0, GetPlaceableById 0x51c160",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7c90] Steam batch B15: CALLEE 1 (callees: SetLightIsOn 0x5f6470) | override: [b] slot 544: 00668aca MOV [ECX + 0x880],0x692640; 006926a5 CALL 0x005f6470=SetLightIsOn; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetPlaceableIllumination",
   "source": "steam-db-B15",
   "steam_addr": "0x00692640"
@@ -2946,7 +3514,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a7db0] Steam batch B15: CALLEE 1 (callees: SetPlayerRestrictMode 0x52e170) | reviewer match with anchor: 00692760 CALL 0x0052e170 CSWSArea::SetPlayerRestrictMode after GetModule 0x51bd90 and 0x557ef0 (GetArea) with PopInteger 0x6fd9a0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7db0] Steam batch B15: CALLEE 1 (callees: SetPlayerRestrictMode 0x52e170) | override: [b] slot 58: 00668b0a MOV [EAX + 0xe8],0x692760; 006927da CALL 0x0052e170=SetPlayerRestrictMode; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetRestrictMode",
   "source": "steam-db-B15",
   "steam_addr": "0x00692760"
@@ -2962,7 +3530,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a7ee0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00692890: CALL 0x00478e60 (AurEnableSpeedBlur) / 0x00478e80 (Disable) / 0x00478fa0 (SetRatio, +0x140 from Enable, same as GOG 0x86ad40/0x86ae80) with PopInteger+PopFloat",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a7ee0] Steam batch B15: SIG 0.50 | override: [b] slot 563: 00668b3a MOV [EAX + 0x8cc],0x692890; 006928cc CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetSpeedBlurEffect",
   "source": "steam-db-B15",
   "steam_addr": "0x00692890"
@@ -2998,6 +3566,14 @@
   "name": "Global::ExecuteCommandSetXP",
   "source": "steam-db-B15",
   "steam_addr": "0x00692b80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8290] Steam batch B15: no content anchor (C0) | override: [a] store 00668b87 [ECX+0xbe4],0x692c40 slot 761 ShipBuild; fp=GOG 60B; 00692c50 MOV [0xa7e114],1 + 00692c64 CALL 0x6fd9c0 PushInteger(1); only global address differs (no layout shift)",
+  "name": "Global::ExecuteCommandShipBuild",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00692c40"
  },
  {
   "confidence": "high",
@@ -3050,7 +3626,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a8870] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8870] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 691: 00668c57 MOV [EAX + 0xacc],0x693220; 0069327a CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSoundObjectGetVolume",
   "source": "steam-db-B15",
   "steam_addr": "0x00693220"
@@ -3058,10 +3634,50 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007a8a50] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | AUTO: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a88f0] Steam batch B15: no content anchor (C0) | override: [a] store 00668c67 [EDX+0x674],0x6932a0 slot 413 SoundObjectPlay; fp=GOG 84B RET 8 (imm,disp,callees same); 006932b3 CALL 0x6fdaf0 StackPopObject",
+  "name": "Global::ExecuteCommandSoundObjectPlay",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006932a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8950] Steam batch B15: no content anchor (C0) | override: [a] store 00668c77 [ECX+0x1f0],0x693300 slot 124 SoundObjectSetFixedVariance; fp=GOG 117B RET 8 (imm,disp,callees same); 0069332d CALL 0x6fd9e0 StackPopFloat",
+  "name": "Global::ExecuteCommandSoundObjectSetFixedVariance",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693300"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a89d0] Steam batch B15: no content anchor (C0) | override: [a] store 00668c87 [EAX+0xac8],0x693380 slot 690 SoundObjectSetPitchVariance; fp=GOG 117B RET 8 (imm,disp,callees same); 006933ad CALL 0x6fd9e0 StackPopFloat; Mac symbol=GOG name",
+  "name": "Global::ExecuteCommandSoundObjectSetPitchVariation",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8a50] Steam batch B15: CALLEE 1 (callees: StackPopVector 0x6fda20); SIG 1.00 | override: [b] slot 416: 00668c97 MOV [EDX + 0x680],0x693400; 0069343c CALL 0x006fda20=StackPopVector; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSoundObjectSetPosition",
   "source": "steam-db-B15",
   "steam_addr": "0x00693400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8af0] Steam batch B15: no content anchor (C0) | override: [a] store 00668ca7 [ECX+0x67c],0x6934a0 slot 415 SoundObjectSetVolume; fp=GOG 114B RET 8 (imm,disp,callees same); 006934cd CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandSoundObjectSetVolume",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006934a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007a8b70] Steam batch B15: no content anchor (C0) | override: [a] store 00668cb7 [EAX+0x678],0x693520 slot 414 SoundObjectStop; fp=GOG 84B RET 8 (imm,disp,callees same); 00693533 CALL 0x6fdaf0 StackPopObject",
+  "name": "Global::ExecuteCommandSoundObjectStop",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00693520"
  },
  {
   "confidence": "high",
@@ -3194,7 +3810,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007aa860] Steam batch B15: SIG 0.50 | reviewer match with anchor: 006a2690/006a2900/006a34a0 callees shared with CSWSObject::SetListenExpression/TestListenExpression; 0069525d and 00695270 CALL 0x006fda70 StackPopString x2, push int 0x6fd9c0",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aa860] Steam batch B15: SIG 0.50 | override: [b] slot 177: 00668eb4 MOV [ECX + 0x2c4],0x695210; 0069523b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandTestString",
   "source": "steam-db-B15",
   "steam_addr": "0x00695210"
@@ -3210,7 +3826,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007aaac0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00695470: three CALL 0x006fd9e0 StackPopFloat then CALL 0x006fda40 StackPushVector; imm 0xc/0x10 as GOG; neighbour 6956f0 pops a vector instead",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aaac0] Steam batch B15: SIG 1.00 | override: [a] store 00668f04 [EDX+0x238],0x695470 slot 142 Vector; fp=GOG; 00695492 CALL 0x6fd9e0 PopFloat (x3), 006954e4 CALL 0x6fda40 PushVector; Mac name same",
   "name": "Global::ExecuteCommandVector",
   "source": "steam-db-B15",
   "steam_addr": "0x00695470"
@@ -3226,7 +3842,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007aacd0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00695680: CALL 0x006fda20 PopVector, CALL 0x005142f0 = sqrt(x*x+y*y+z*z) (FMUL [EAX+8],[EDX+4],[EDX] then CALL 0x0091cb24), CALL 0x006fda00 PushFloat",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aacd0] Steam batch B15: SIG 0.50 | override: [a] store 00668f14 [ECX+0x1a0],0x695680 slot 104 VectorMagnitude; fp=GOG; 006956a7 CALL 0x6fda20 PopVector, 006956d3 CALL 0x6fda00 PushFloat",
   "name": "Global::ExecuteCommandVectorMagnitude",
   "source": "steam-db-B15",
   "steam_addr": "0x00695680"
@@ -3234,7 +3850,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007aad40] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006956f0: PopVector 0x6fda20, equality test CALL 0x00517980 (3 float compares), CALL 0x005143c0 (1/len scale of x,y,z) then PushVector 0x6fda40",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aad40] Steam batch B15: SIG 1.00 | override: [b] slot 137: 00668f24 MOV [EAX + 0x224],0x6956f0; 00695796 CALL 0x006fda40=StackPushVector; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandVectorNormalize",
   "source": "steam-db-B15",
   "steam_addr": "0x006956f0"
@@ -3330,7 +3946,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007abee0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006968ff MOV EDX,[ECX+0x22c] then StackPushInteger; slot 715 store 00667a22",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abee0] Steam batch B15: SIG 1.00 | override: [b] slot 715: 00667a22 MOV [EAX + 0xb2c],0x696890; 006968cd CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetMinOneHP",
   "source": "steam-db-B15",
   "steam_addr": "0x00696890"
@@ -3338,7 +3954,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007abf80] Steam batch B15: SIG 1.00 | reviewer match with anchor: 006969bb MOV [ECX+0x22c],0x1 / 006969ca MOV [EDX+0x22c],0x0 after StackPopInteger; slot 716 store 00668a7d",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007abf80] Steam batch B15: SIG 1.00 | override: [b] slot 716: 00668a7d MOV [EAX + 0xb30],0x696930; 00696983 CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetMinOneHP",
   "source": "steam-db-B15",
   "steam_addr": "0x00696930"
@@ -3362,7 +3978,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007ac240] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00696c4f CMP [EBP+8],0x2d7 -> 00696c5b CALL 0x006e6880 (builds attacker list) ; 00696c72 CMP 0x2d8 -> 00696c7e CALL 0x006e6a40 (next index); slots 727/728",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac240] Steam batch B15: SIG 1.00 | override: [b] slot 727..728(2): 006671d8 MOV [ECX + 0xb5c],0x696bf0; 00696c9d CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetAttacker",
   "source": "steam-db-B15",
   "steam_addr": "0x00696bf0"
@@ -3378,7 +3994,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007ac3d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00696dd7 CALL 0x006daa00 (IsDebilitated: state byte [+0xff5], hp<1) between StackPopObject 00696d9a and StackPushInteger 00696de9; InitCommands 00667458 slot 732=0x696d80",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac3d0] Steam batch B15: SIG 1.00 | override: [b] slot 732: 00667458 MOV [EAX + 0xb70],0x696d80; 00696dc4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetIsDebilitated",
   "source": "steam-db-B15",
   "steam_addr": "0x00696d80"
@@ -3402,10 +4018,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007ac6e0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 00697109 CALL 0x00586750 (clears target to 0x7f000000, combat state) after 006970c1 CMP [EBP+0xc],0x2 and GetCreature 006970f4; slot 54 store 00666466",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac6e0] Steam batch B15: SIG 1.00 | override: [b] slot 54: 00666466 MOV [EDX + 0xd8],0x697090; 006970f4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandCancelCombat",
   "source": "steam-db-B15",
   "steam_addr": "0x00697090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ac770] Steam batch B15: no content anchor (C0) | override: [a] store 006684c3 [EAX+0xe4],0x697120 slot 57 PauseGame; fp=GOG; 00697133 CALL 0x6fd9a0 PopInteger, 0069715a CALL 0x740350 SetPausedByCombat",
+  "name": "Global::ExecuteCommandPauseGame",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697120"
  },
  {
   "confidence": "high",
@@ -3426,7 +4050,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007acab0] Steam batch B15: CALLEE 1 (callees: ShowGalaxyMapGui 0x7ca730) | reviewer match with anchor: 0069749d CALL 0x007ca730 CGuiInGame::ShowGalaxyMapGui (only caller 0x697460); InitCommands 00668ba7 slot 739",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acab0] Steam batch B15: CALLEE 1 (callees: ShowGalaxyMapGui 0x7ca730) | override: [b] slot 739: 00668ba7 MOV [EDX + 0xb8c],0x697460; 0069749d CALL 0x007ca730=ShowGalaxyMapGui; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandShowGalaxyMapGui",
   "source": "steam-db-B15",
   "steam_addr": "0x00697460"
@@ -3434,7 +4058,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007acb00] Steam batch B15: CALLEE 1 (callees: SetPlanetAvailable 0x5fed30) | reviewer match with anchor: 0069750b CALL 0x005fed30 (writes [this+0x88+idx*4], available array) after two StackPopInteger; slot 742 store 00668ada",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acb00] Steam batch B15: CALLEE 1 (callees: SetPlanetAvailable 0x5fed30) | override: [a] store 00668ada [EAX+0xb98],0x6974b0 slot 742 SetPlanetAvailable; fp=GOG 104B; 0069750b CALL 0x5fed30 CSWPartyTable::SetPlanetAvailable; Mac ExecuteCommandSetGalaxyMapPlanetAvailable",
   "name": "Global::ExecuteCommandSetGalaxyMapPlanetAvailable",
   "source": "steam-db-B15",
   "steam_addr": "0x006974b0"
@@ -3442,7 +4066,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007acb70] Steam batch B15: CALLEE 1 (callees: GetPlanetAvailable 0x5fed60) | reviewer match with anchor: 0069755d CALL 0x005fed60 (reads [this+0x88+idx*4]) then 0069756f StackPushInteger; slot 743 store 00667cb2",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acb70] Steam batch B15: CALLEE 1 (callees: GetPlanetAvailable 0x5fed60) | override: [b] slot 743: 00667cb2 MOV [ECX + 0xb9c],0x697520; 0069755d CALL 0x005fed60=GetPlanetAvailable; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetGalaxyMapPlanetAvailable",
   "source": "steam-db-B15",
   "steam_addr": "0x00697520"
@@ -3450,7 +4074,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007acbe0] Steam batch B15: CALLEE 1 (callees: SetPlanetSelectable 0x5fecd0) | reviewer match with anchor: 006975eb CALL 0x005fecd0 (writes [this+200+idx*4], selectable array) after two StackPopInteger; slot 740 store 00668aea",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acbe0] Steam batch B15: CALLEE 1 (callees: SetPlanetSelectable 0x5fecd0) | override: [b] slot 740: 00668aea MOV [EDX + 0xb90],0x697590; 006975eb CALL 0x005fecd0=SetPlanetSelectable; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetGalaxyMapPlanetSelectable",
   "source": "steam-db-B15",
   "steam_addr": "0x00697590"
@@ -3458,7 +4082,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007acc50] Steam batch B15: CALLEE 1 (callees: GetPlanetSelectable 0x5fed00) | reviewer match with anchor: 0069763d CALL 0x005fed00 (reads [this+200+idx*4], selectable array) then StackPushInteger; slot 741 store 00667cc2",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acc50] Steam batch B15: CALLEE 1 (callees: GetPlanetSelectable 0x5fed00) | override: [b] slot 741: 00667cc2 MOV [EAX + 0xb94],0x697600; 0069763d CALL 0x005fed00=GetPlanetSelectable; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetGalaxyMapPlanetSelectable",
   "source": "steam-db-B15",
   "steam_addr": "0x00697600"
@@ -3522,10 +4146,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007acf90] Steam batch B15: no content anchor (C0) | override: [a] store 00668a4d [EAX+0x750],0x697940 slot 468 SetMaxStealthXP; fp=GOG 109B RET 8 (imm,disp,callees same); 00697957 CALL 0x51c8f0 GetPlayerCreatureId",
+  "name": "Global::ExecuteCommandSetMaxStealthXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697940"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x007ad000] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
   "name": "Global::ExecuteCommandGetCurrentStealthXP",
   "source": "steam-db-B15",
   "steam_addr": "0x006979b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad080] Steam batch B15: no content anchor (C0) | override: [a] store 006687f0 [EDX+0x778],0x697a30 slot 478 SetCurrentStealthXP; fp=GOG 109B RET 8 (imm,disp,callees same); 00697a47 CALL 0x51c8f0 GetPlayerCreatureId",
+  "name": "Global::ExecuteCommandSetCurrentStealthXP",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00697a30"
  },
  {
   "confidence": "high",
@@ -3598,6 +4238,22 @@
   "name": "Global::ExecuteCommandDuplicateHeadAppearance",
   "source": "steam-db-B15",
   "steam_addr": "0x00697ee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad6c0] Steam batch B15: no content anchor (C0) | override: [a] store 006689fd [EDX+0x7e4],0x698070 slot 505 SetLockOrientationInDialog; fp=GOG 140B RET 8 (imm,disp,callees same); 006980e8 CALL 0x73f750 GetInGameGui",
+  "name": "Global::ExecuteCommandSetLockOrientationInDialog",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ad750] Steam batch B15: no content anchor (C0) | override: [a] store 00668a0d [ECX+0x7e8],0x698100 slot 506 SetLockHeadFollowInDialog; fp=GOG 140B RET 8 (imm,disp,callees same); 00698178 CALL 0x73f750 GetInGameGui",
+  "name": "Global::ExecuteCommandSetLockHeadFollowInDialog",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00698100"
  },
  {
   "confidence": "high",
@@ -3714,6 +4370,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007ae9d0] Steam batch B15: no content anchor (C0) | override: [a] store 006686c3 [EAX+0xbb4],0x699380 slot 749 ResetDialogState; fp=GOG 45B RET 8 (imm,disp,callees same); 00699399 CALL 0x73f750 GetInGameGui",
+  "name": "Global::ExecuteCommandResetDialogState",
+  "source": "steam-db-B15",
+  "steam_addr": "0x00699380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x007aea00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
   "name": "Global::ExecuteCommandSetGoodEvilValue",
   "source": "steam-db-B15",
@@ -3778,7 +4442,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007aee50] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00699800: StackPopFloat 0x6fd9e0 then clamp; 0069988f CALL 0x0070b600 (volume setter, options slider byte +0x4d sibling of 0x70b6a0/0x70b730); slot 765 store 00668a8d",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aee00] Steam batch B15: no content anchor (C0) | override: [a] store 00666ef1 [EAX+0xbf0],0x6997b0 slot 764 GetCheatCode; fp=GOG 76B RET 8 (imm,disp,callees same); 006997ca CALL 0x6fd9a0 StackPopInteger",
+  "name": "Global::ExecuteCommandGetCheatCode",
+  "source": "steam-db-B15",
+  "steam_addr": "0x006997b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007aee50] Steam batch B15: SIG 0.50 | override: [b] slot 765: 00668a8d MOV [EDX + 0xbf4],0x699800; 00699813 CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetMusicVolume",
   "source": "steam-db-B15",
   "steam_addr": "0x00699800"
@@ -3802,7 +4474,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007af2f0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 00699cc3 CMP [EBP-8],0x1 / 00699cc9 CMP [EBP-8],0x5 then read [0x00a1b4a8-4+idx*4], push; GOG imm 0x5; slot 768 store 00667daf",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af2f0] Steam batch B15: SIG 0.50 | override: [b] slot 768: 00667daf MOV [EAX + 0xc00],0x699ca0; 00699cf2 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetScriptParameter",
   "source": "steam-db-B15",
   "steam_addr": "0x00699ca0"
@@ -3866,7 +4538,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007af710] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a1d5 MOV [ECX+0x11f4],EDX after compares vs popped value (plain set, no add); slot 801 store 00668e34; SUB ESP,0x34 matches GOG imm 0x34",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af710] Steam batch B15: SIG 1.00 | override: [b] slot 801: 00668e34 MOV [EAX + 0xc84],0x69a0c0; 0069a19b CALL 0x0073f750=GetInGameGui; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetBonusForcePoints",
   "source": "steam-db-B15",
   "steam_addr": "0x0069a0c0"
@@ -3874,7 +4546,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007af840] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a294 MOV [ECX+0x11f4],EDX after 0069a27c MOV EDX,[ECX+0x11f4] and add of popped value; SUB ESP,0x2c = GOG imm 0x2c; slot 802 store 00668e44",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007af840] Steam batch B15: SIG 1.00 | override: [b] slot 802: 00668e44 MOV [EDX + 0xc88],0x69a1f0; 0069a2c7 CALL 0x0073f750=GetInGameGui; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandAddBonusForcePoints",
   "source": "steam-db-B15",
   "steam_addr": "0x0069a1f0"
@@ -3906,7 +4578,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007afb20] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afb20] Steam batch B15: SIG 1.00 | override: [b] slot 807: 006684f3 MOV [EAX + 0xc9c],0x69a4d0; 0069a4e3 CALL 0x006fd9a0=StackPopInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandPlayMovieQueue",
   "source": "steam-db-B15",
   "steam_addr": "0x0069a4d0"
@@ -3922,7 +4594,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007afbd0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a5ea MOV [EAX+0x5ac],ECX after two StackPopObject (006fdaf0 x2); slot 813 store 0066891d",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afbd0] Steam batch B15: SIG 1.00 | override: [b] slot 813: 0066891d MOV [ECX + 0xcb4],0x69a580; 0069a5d0 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSetHealTarget",
   "source": "steam-db-B15",
   "steam_addr": "0x0069a580"
@@ -3930,7 +4602,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007afc50] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069a64e MOV EDX,[ECX+0x5ac] then 0069a667 CALL 0x006fdb10 StackPushObject; InitCommands 006673b8 slot 814=0x69a600",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007afc50] Steam batch B15: SIG 1.00 | override: [b] slot 814: 006673b8 MOV [ECX + 0xcb8],0x69a600; 0069a667 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetHealTarget",
   "source": "steam-db-B15",
   "steam_addr": "0x0069a600"
@@ -4042,7 +4714,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b0d70] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069b78c CALL 0x0051c8b0 ClientToServerObjectId on party member 0 ([+4]) compared with popped object, push 0/1 at 0069b7a7; slot 844 store 006675c8",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0d70] Steam batch B15: SIG 1.00 | override: [b] slot 844: 006675c8 MOV [ECX + 0xd30],0x69b720; 0069b78c CALL 0x0051c8b0=ClientToServerObjectId; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandGetIsPartyLeader",
   "source": "steam-db-B15",
   "steam_addr": "0x0069b720"
@@ -4050,7 +4722,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b0e10] Steam batch B15: CALLEE 3 (callees: RemoveMember 0x5f8b00, GetNPCObject 0x5faaf0, KillNPCObject 0x5fd9a0); SIG 1.00 | reviewer match with anchor: 0069b89e CALL 0x005f8b00 RemoveMember, 0069b8c8 CALL 0x0073f550 / 0069b8d7 CALL 0x0051c100 client+server GetCreature, 0069b8ea CALL 0x00775860; 11 callees as GOG; slot 846 store 006686a3",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0e10] Steam batch B15: CALLEE 3 (callees: RemoveMember 0x5f8b00, GetNPCObject 0x5faaf0, KillNPCObject 0x5fd9a0); SIG 1.00 | override: [b] slot 846: 006686a3 MOV [EDX + 0xd38],0x69b840; 0069b89e CALL 0x005f8b00=RemoveMember; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandRemoveNPCFromPartyToBase",
   "source": "steam-db-B15",
   "steam_addr": "0x0069b840"
@@ -4058,7 +4730,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b0f50] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069b9e0 PUSH 0xffff / 0069b9e5 PUSH 0x47 / 0069b9ea CALL 0x0053f7f0 (AddAction); slot 853 store 006661f9",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0f10] Steam batch B15: no content anchor (C0) | override: [a] store 00667588 [EDX+0xd4c],0x69b940 slot 851 GetIsXBox; fp=GOG 50B RET 8 (imm,disp,callees same); 0069b95a CALL 0x6fd9c0 StackPushInteger",
+  "name": "Global::ExecuteCommandGetIsXBox",
+  "source": "steam-db-B15",
+  "steam_addr": "0x0069b940"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0f50] Steam batch B15: SIG 1.00 | override: [b] slot 853: 006661f9 MOV [EDX + 0xd54],0x69b980; 0069b99e CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandActionSwitchWeapons",
   "source": "steam-db-B15",
   "steam_addr": "0x0069b980"
@@ -4066,7 +4746,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b0fd0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 0069ba3e PUSH \"UnlockedPlanetSongs\" (0x998d58), 0069ba4f \"Game Options\", 0069ba60 \".\\\\swkotor2.ini\"; imm 0x7ff; slot 855 store 00668ef4",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b0fd0] Steam batch B15: SIG 0.50 | override: [b] slot 855: 00668ef4 MOV [EAX + 0xd5c],0x69ba00; 0069ba46 CALL 0x00733570=CStrConstructor; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandUnlockAllMusic",
   "source": "steam-db-B15",
   "steam_addr": "0x0069ba00"
@@ -4074,7 +4754,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b10d0] Steam batch B15: SIG 1.00 | reviewer match with anchor: 0069bb4d MOV [ECX+0x258],EDX after StackPopInteger 0069bb1a; slot 856 store 0066663d; GOG disp 0x258",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b10d0] Steam batch B15: SIG 1.00 | override: [b] slot 856: 0066663d MOV [EDX + 0xd60],0x69bb00; 0069bb1a CALL 0x006fd9a0=StackPopInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandDisableMap",
   "source": "steam-db-B15",
   "steam_addr": "0x0069bb00"
@@ -4154,7 +4834,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b1890] Steam batch B15: CALLEE 1 (callees: SaveMemberByObject 0x5f8130) | reviewer match with anchor: 0069c329 CALL 0x005f8130 (bound check param<0xc: NPC slots) after StackPopInteger/StackPopObject; slot 873 store 00668713",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1890] Steam batch B15: CALLEE 1 (callees: SaveMemberByObject 0x5f8130) | override: [a] store 00668713 [ECX+0xda4],0x69c2c0 slot 873 SaveNPCByObject; fp=GOG; 0069c329 CALL 0x5f8130 CSWPartyTable::SaveMemberByObject",
   "name": "Global::ExecuteCommandSaveNPCByObject",
   "source": "steam-db-B15",
   "steam_addr": "0x0069c2c0"
@@ -4162,7 +4842,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007b1910] Steam batch B15: CALLEE 1 (callees: SavePuppetByObject 0x5f8520) | reviewer match with anchor: 0069c3a9 CALL 0x005f8520 (bound check param<3: puppets) after StackPopInteger/StackPopObject; slot 874 store 00668723",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007b1910] Steam batch B15: CALLEE 1 (callees: SavePuppetByObject 0x5f8520) | override: [b] slot 874: 00668723 MOV [EAX + 0xda8],0x69c340; 0069c3a9 CALL 0x005f8520=SavePuppetByObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSavePUPByObject",
   "source": "steam-db-B15",
   "steam_addr": "0x0069c340"
@@ -4186,7 +4866,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007f97c0] Steam batch B15: SIG 0.50 | reviewer match with anchor: 006f6241 CALL 0x006fda70 StackPopString, then 006f6272/006f62a0 StackPopInteger x2 and StackPopFloat 006f62ce, CExoString ctor/dtor; slot 582 store 006f5b8d",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f97c0] Steam batch B15: SIG 0.50 | override: [b] slot 582: 006f5b8d MOV [ECX + 0x918],0x6f6200; 006f622b CALL 0x00733540=DefaultConstructor; fp ret/n_insn/disp/imm/str identical (size 283 vs 284); Mac =GOG name",
   "name": "Global::ExecuteCommandAurPostString",
   "source": "steam-db-B15",
   "steam_addr": "0x006f6200"
@@ -4218,7 +4898,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007f9c00] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007f9c00] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 586: 006f5bcd MOV [EAX + 0x928],0x6f6640; 006f66b9 CALL 0x006fda70=StackPopString; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSWMG_PlayAnimation",
   "source": "steam-db-B15",
   "steam_addr": "0x006f6640"
@@ -4274,7 +4954,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007fa370] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fa370] Steam batch B15: SIG 1.00 | override: [b] slot 599..603(5): 006f5c9d MOV [EDX + 0x95c],0x6f6db0; 006f6eda CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSWMG_IsSomething",
   "source": "steam-db-B15",
   "steam_addr": "0x006f6db0"
@@ -4522,7 +5202,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007fbfd0] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fbfd0] Steam batch B15: SIG 1.00 | override: [b] slot 782: 006f619d MOV [EAX + 0xc38],0x6f8a10; 006f8a6a CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSWMG_GetSwoopUpgrade",
   "source": "steam-db-B15",
   "steam_addr": "0x006f8a10"
@@ -4546,7 +5226,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x007fc190] Steam batch B15: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007fc190] Steam batch B15: SIG 1.00 | override: [b] AUTO audit: slot 792: 006f61cd MOV [EAX + 0xc60],0x6f8bd0; 006f8be3 CALL 0x006fdaf0=StackPopObject; fp size/ret/disp/imm identical; Mac =GOG name",
   "name": "Global::ExecuteCommandSWMG_DestroyMiniGameObject",
   "source": "steam-db-B15",
   "steam_addr": "0x006f8bd0"

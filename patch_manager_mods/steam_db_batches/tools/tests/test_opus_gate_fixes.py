@@ -218,5 +218,55 @@ class OpusPartsTests(Base):
         self.assertEqual(pj["total_rows"], len(g["rows_full"]) + len(g["rows_sample"]) + len(g["rows_auto"]))
 
 
+class ShippedAnchorTests(unittest.TestCase):
+    """functions.csv notes cite the final note for reviewed / overridden rows: the gate evidence describes the gate's
+    pick, which an Opus correction may have replaced (B15 ChangeFaction 0x66F0A0 carried the C0 evidence of 0x66F330)."""
+
+    def test_override_reviewed_and_auto_rows(self):
+        ov = {"gate_class": "REVIEW", "evidence": "no content anchor (C0)", "final_note": "override: slot 173 store"}
+        self.assertEqual(batch.shipped_anchor(ov), ("Opus: slot 173 store", "final_rows.tsv"))
+        rv = {"gate_class": "REVIEW", "evidence": "SIG 0.4", "final_note": "reviewer match with anchor: CALL x"}
+        self.assertEqual(batch.shipped_anchor(rv), ("reviewer match with anchor: CALL x", "final_rows.tsv"))
+        au = {"gate_class": "AUTO", "evidence": "SIG 1.00", "final_note": "AUTO: SIG 1.00"}
+        self.assertEqual(batch.shipped_anchor(au), ("SIG 1.00", "evidence.tsv"))
+        ov_auto = {"gate_class": "AUTO", "evidence": "SIG 1.00", "final_note": "override: Opus meaning check"}
+        self.assertEqual(batch.shipped_anchor(ov_auto)[1], "final_rows.tsv")
+
+
+class DecoyReviewIsolationTests(Base):
+    """F4: reviewer rows that answer a decoy card score the decoys only; they never drive a verdict, a recheck or the
+    Opus 100% list (B15: 18 of 25 'reviewer corrected_addr' rows were reviewers rejecting decoy cards)."""
+
+    def setUp(self):
+        super().setUp()
+        write_candidates(self.root, "B1", B1_SPEC)
+        run("gates", "B1")
+        write_reviews_and_overrides(self.root)
+        self.bdir = self.root / "batches" / "B1"
+        evs = list(bd.iter_tsv(self.bdir / "evidence.tsv"))
+        self.host = next(e for e in evs if e["gate_class"] == "REVIEW")
+        self.decoy = "0x%08x" % (bd.parse_addr(self.host["steam_addr"]) + 0x1230)
+        batch.write_tsv(self.bdir / "cards" / "key.tsv", ["card_id", "chunk", "gog", "steam_addr", "kind", "expected"],
+                        [{"card_id": "B1-1-01", "chunk": 1, "gog": self.host["gog"], "steam_addr": self.decoy,
+                          "kind": "decoy_next", "expected": "mismatch"}])
+        with open(self.bdir / "review" / "zz_decoy.tsv", "w") as f:
+            f.write("\t".join(batch.REVIEW_COLS) + "\n")
+            f.write("\t".join([self.host["gog"], self.decoy, "mismatch", self.host["steam_addr"], "", "high",
+                               "decoy body is a different function"]) + "\n")
+
+    def test_decoy_answer_makes_no_recheck_and_no_full_read(self):
+        before = batch.real_reviews(batch.load_reviews(self.bdir), batch.decoy_pairs(self.bdir))
+        self.assertFalse(any(r.get("_file") == "zz_decoy.tsv" for r in before.get(bd.parse_addr(self.host["gog"]), [])))
+        rc, out = run("finalize", "B1", "--date", "2026-10-03")
+        self.assertEqual(rc, 0, out)
+        rechecks = list(bd.iter_tsv(self.bdir / "recheck.tsv"))
+        self.assertNotIn(self.host["gog"], {r["gog_addr"] for r in rechecks if r["source"].endswith("zz_decoy.tsv")})
+        g = json.loads((self.bdir / "opus_gate.json").read_text())
+        why = [r["why"] for r in g["rows_full"] if r["gog"] == self.host["gog"]]
+        self.assertFalse(any("reviewer corrected_addr" in w for w in why), why)
+        self.assertEqual(g["decoy_cards"], 1)          # the decoy answer still scores the decoy
+        self.assertEqual(g["decoys_accepted"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

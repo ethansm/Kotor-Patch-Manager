@@ -1183,6 +1183,30 @@ def load_reviews(bdir: Path) -> dict[int, list[dict]]:
     return out
 
 
+def decoy_pairs(bdir: Path) -> set:
+    """(gog, steam) pairs of the decoy cards in cards/key*.tsv."""
+    out = set()
+    for kf in sorted((bdir / "cards").glob("key*.tsv")):
+        for k in iter_tsv(kf):
+            if (k.get("kind") or "").startswith("decoy"):
+                try:
+                    out.add((parse_addr(k["gog"]), parse_addr(k["steam_addr"])))
+                except (ValueError, KeyError):
+                    continue
+    return out
+
+
+def real_reviews(reviews: dict, decoys: set) -> dict:
+    """Drop the reviewer rows that answer a decoy card: they score the decoys only, and must never drive a row's
+    verdict, a recheck or the Opus 100% list (B15: 18 of 25 'reviewer corrected_addr' rows were decoy rejections)."""
+    def is_decoy(ga: int, r: dict) -> bool:
+        try:
+            return bool(r.get("steam_addr")) and (ga, parse_addr(r["steam_addr"])) in decoys
+        except ValueError:
+            return False
+    return {ga: [r for r in rows if not is_decoy(ga, r)] for ga, rows in reviews.items()}
+
+
 def load_overrides(bdir: Path) -> dict[int, dict]:
     out = {}
     for r in iter_tsv(bdir / "overrides.tsv"):
@@ -1277,6 +1301,18 @@ def csv_safe_note(note: str) -> str:
     return " ".join(note.replace('"', "'").split())
 
 
+def shipped_anchor(r: dict) -> tuple[str, str]:
+    """-> (anchor text, evidence file) for a shipped row.  AUTO rows cite the gate evidence; reviewed or overridden
+    rows cite their final note, because the gate evidence describes the gate's pick, which an Opus correction
+    replaced (B15: ChangeFaction 0x66F0A0 carried the C0 evidence of the wrong pick 0x66F330)."""
+    note = (r.get("final_note") or "").strip()
+    if note.startswith("override:"):
+        return "Opus: " + note[len("override:"):].strip(), "final_rows.tsv"
+    if r.get("gate_class") != "AUTO" and note:
+        return note, "final_rows.tsv"
+    return r.get("evidence", ""), "evidence.tsv"
+
+
 def write_functions_csv(path: Path, rows: list[dict], batch: str, steam: dict) -> int:
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
@@ -1284,8 +1320,9 @@ def write_functions_csv(path: Path, rows: list[dict], batch: str, steam: dict) -
     n = 0
     for r in rows:
         cc, param, extra = finalize_params(r, steam)
-        notes = csv_safe_note("Steam batch %s: %s (evidence steam_db_batches/%s/evidence.tsv)%s" % (
-            batch, r.get("evidence", ""), batch, extra))
+        anchor, ev_file = shipped_anchor(r)
+        notes = csv_safe_note("Steam batch %s: %s (evidence steam_db_batches/%s/%s)%s" % (
+            batch, anchor, batch, ev_file, extra))
         w.writerow([r["class"], r["name"], "0x%08X" % parse_addr(r["steam_addr"]), "__" + cc, param, notes])
         n += 1
     path.write_text(buf.getvalue(), encoding="utf-8")
@@ -1366,9 +1403,10 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
     short = gate["short"]
     # rows that Opus reads in full
     full, plain = [], []
+    real = real_reviews(reviews, decoy_pairs(bdir))     # decoy answers score the decoys only, never the 100% list
     for f in finals:
         ga = parse_addr(f["gog"])
-        rvs = reviews.get(ga, [])
+        rvs = real.get(ga, [])
         ev = ev_by.get(ga, {})
         why = []
         if any((r.get("corrected_addr") or "").strip() for r in rvs):
@@ -1464,7 +1502,8 @@ def cmd_finalize(args) -> int:
     evs = list(iter_tsv(bdir / "evidence.tsv"))
     if not evs:
         die("%s missing or empty (run `gates` first)" % (bdir / "evidence.tsv"))
-    reviews, overrides = load_reviews(bdir), load_overrides(bdir)
+    all_reviews, overrides = load_reviews(bdir), load_overrides(bdir)
+    reviews = real_reviews(all_reviews, decoy_pairs(bdir))      # decoy answers only score the decoys (opus_gate)
     finals = [final_row_for(e, reviews, overrides) for e in evs]
     write_tsv(bdir / "final_rows.tsv", EVIDENCE_COLS + ["final_verdict", "final_note"], finals)
     steam = bd.load_steam_functions(paths.dump)
@@ -1475,9 +1514,12 @@ def cmd_finalize(args) -> int:
     upserts = []
     for r in export:
         conf = "high" if r["final_verdict"] == "verified" else "medium"
+        corrected = r.get("cand_status") == "corrected"     # gate evidence/retn describe the replaced pick
+        sf = steam.get(parse_addr(r["steam_addr"]))
         ev = "[%s; %s retn=%s; GOG %s] Steam batch %s: %s | %s" % (
-            r["final_verdict"], r.get("calling_convention", ""), r.get("steam_retn", ""), r["gog"], args.batch,
-            r.get("evidence", ""), r.get("final_note", ""))
+            r["final_verdict"], r.get("calling_convention", ""),
+            (sf.retn if sf is not None else "?") if corrected else r.get("steam_retn", ""), r["gog"], args.batch,
+            "gate evidence was for a corrected pick" if corrected else r.get("evidence", ""), r.get("final_note", ""))
         upserts.append({"steam_addr": hx8(parse_addr(r["steam_addr"])), "name": "%s::%s" % (r["class"], r["name"]),
                         "source": "steam-db-%s" % args.batch, "confidence": conf, "evidence": ev[:900], "date": date})
     (bdir / "kdb_upsert.json").write_text(json.dumps(upserts, indent=1, sort_keys=True) + "\n", encoding="utf-8")
@@ -1521,7 +1563,7 @@ def cmd_finalize(args) -> int:
     cnt = Counter(r["final_verdict"] for r in finals)
     print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d; rechecks=%d" % (
         args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts), len(rechecks)))
-    gate = opus_gate(bdir, args.batch, evs, finals, reviews, args.opus_sample_errors, args.partial, overrides)
+    gate = opus_gate(bdir, args.batch, evs, finals, all_reviews, args.opus_sample_errors, args.partial, overrides)
     print("opus gate: decoy cards %d (accepted %d, key errors %d); %s" % (
         gate["decoy_cards"], gate["decoys_accepted"], gate["key_errors"], gate["decision"]))
     return 0

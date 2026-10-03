@@ -216,6 +216,9 @@ final_verdict note`). Final verdict per row: `verified` (AUTO, or REVIEW confirm
   `class_name,function_name,address,calling_convention,param_size_bytes,notes`, verified rows only (likely only with
   `--with-likely`), notes = `Steam batch B<n>: <anchor summary> (evidence steam_db_batches/B<n>/evidence.tsv)`;
   param_size_bytes = the Steam retn (stack bytes) for thiscall/stdcall (record GOG's value in notes if different);
+  the notes anchor is the gate evidence for AUTO rows, and the final note (`Opus: ...` / reviewer anchor, evidence
+  file `final_rows.tsv`) for reviewed or overridden rows: the gate evidence describes the gate's pick, which an Opus
+  correction may have replaced;
 - `B<n>/kdb_upsert.json` (the name_map rows persist will write); for B0 also `B<n>/branch_deletes.tsv`
   (rows to remove) and `B<n>/branch_corrections.csv`.
 
@@ -224,6 +227,9 @@ Reviewer corrections (Opus calibration gate 2026-10-03, R5), exact rule text:
 > as a candidate and re-gated in the next `gates` run, and is shipped only via that gate or an Opus override. It never
 > becomes `likely` by itself.
 
+Reviewer rows that answer a decoy card (pairs in `cards/key*.tsv`) only score the decoys (section 4.6). They never drive
+a row's verdict, a recheck or the Opus 100% list (fix F4, after B15: 18 of 25 "reviewer corrected_addr" rows were decoy
+rejections).
 Implementation: `finalize` writes `B<n>/recheck.tsv` (`gog_addr corrected_addr source reason`); the next `gates B<n>` appends
 each corrected address to its row as a candidate tagged `recheck`. A reviewer `label_suspect` with `corrected_addr` records
 that address as the counterpart in `gog_label_suspects.tsv`. `finalize` also writes `B<n>/opus_gate.md` / `.json` (section 4.6).

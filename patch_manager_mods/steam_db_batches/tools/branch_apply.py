@@ -19,10 +19,10 @@ import sqlite3
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import batch  # noqa: E402
-BRANCHDB = Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kpm-pr-steam-db/AddressDatabases/kotor2_steam_aspyr.db"
+import bdlib as bd  # noqa: E402
+ROOT = None         # batches dir; None = bdlib paths (BD_ROOT), tests may pin it
 SHIP = ("verified", "likely")
 
 
@@ -60,24 +60,31 @@ def match_rows(branch, final):
     return out, unmatched
 
 
+def batches_root() -> Path:
+    return ROOT if ROOT is not None else bd.get_paths().batches
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("batch")
-    ap.add_argument("--branch-db", default=str(BRANCHDB))
+    ap.add_argument("--branch-db", default=None, help="default: bdlib paths (BD_BRANCHDB)")
     a = ap.parse_args(argv)
-    bdir = ROOT / a.batch
+    a.branch_db = a.branch_db or str(bd.get_paths().branchdb)
+    bdir = batches_root() / a.batch
     branch = load_branch(a.branch_db)
-    final = list(csv.DictReader(open(bdir / "final_rows.tsv"), delimiter="\t"))
+    with open(bdir / "final_rows.tsv") as fh:
+        final = list(csv.DictReader(fh, delimiter="\t"))
     parity = {}
     if (bdir / "parity.tsv").exists():
-        for r in csv.DictReader(open(bdir / "parity.tsv"), delimiter="\t"):
-            parity[(r["class"], r["function"])] = r
+        with open(bdir / "parity.tsv") as fh:
+            for r in csv.DictReader(fh, delimiter="\t"):
+                parity[(r["class"], r["function"])] = r
     m, unmatched = match_rows(branch, final)
     if unmatched:
         print("UNMATCHED branch rows:", [(b["id"], b["cls"], b["fn"]) for b in unmatched])
         return 2
 
-    out, marks, removed, moved, kept = [], [], [], [], 0
+    out, marks, removed, moved, kept, n_parity = [], [], [], [], 0, 0
     for b in branch:
         f = m[b["id"]]
         p = parity.get((b["cls"], b["fn"]))
@@ -85,6 +92,7 @@ def main(argv=None):
             addr, cc, param = hx(p["steam_addr"]), p["calling_convention"], p["param_size_bytes"]
             note = "Steam B0 GOG parity: %s (evidence steam_db_batches/%s/parity.tsv)" % (p["note"], a.batch)
             verdict, tier, ref = "parity", "opus", "parity.tsv"
+            n_parity += 1
         elif f["final_verdict"] in SHIP:
             addr, cc = hx(f["steam_addr"]), f["calling_convention"] or b["cc"] or ""
             param = f["param_size_bytes"] if f["param_size_bytes"] != "" else b["param"]
@@ -129,7 +137,7 @@ def main(argv=None):
         batch.write_validated(bdir, a.batch, marks)
     rep = ["# %s branch apply plan" % a.batch, "",
            "branch rows %d -> shipped %d (same address %d, moved %d, parity %d), removed %d" %
-           (len(branch), len(out), kept, len(moved), len(parity), len(removed)), "",
+           (len(branch), len(out), kept, len(moved), n_parity, len(removed)), "",
            "## Duplicates", ""] + (["- %s" % (d,) for d in dup] or ["none"]) + ["", "## Moved", ""] + \
           ["- id %d %s::%s 0x%08x -> 0x%08x" % (b["id"], b["cls"], b["fn"], b["addr"], ad) for b, ad in moved] + \
           ["", "## Removed", ""] + \

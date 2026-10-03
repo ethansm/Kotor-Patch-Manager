@@ -1,7 +1,7 @@
 # Steam address-DB batches (KOTOR II Steam Aspyr, exe 6a522e71)
 
-Contract: `DESIGN.md`. Briefs: `REVIEWER_BRIEF.md` (Sonnet), `OPUS_GATE_BRIEF.md` (Opus). Resume notes:
-`SESSION_CONTEXT_2026-10-03.md`. GOG DB label errors (read-only, for the user): `GOG_LABEL_SUSPECTS.md`.
+Contract: `DESIGN.md`. Briefs: `REVIEWER_BRIEF.md` (Sonnet), `OPUS_GATE_BRIEF.md` (Opus). Resume notes (latest):
+`SESSION_CONTEXT_2026-10-03b.md`, then the newest batch section below. GOG DB label errors (read-only, for the user): `GOG_LABEL_SUSPECTS.md`.
 
 Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A final validation pass runs
 `python3 tools/batch.py check-validated --out <file>` and reads only the rows that are not `validated`.
@@ -41,3 +41,52 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
 - Tool changes:
   - `branch_apply.py` and `finalize` write `validated.tsv`.
   - The CSV writers turn `"` into `'` in notes, because SqliteTools' line-based CSV reader drops quotes.
+
+## B15: NWScript command handlers, `ExecuteCommand*` (2026-10-03)
+
+- Scope: 656 GOG rows, `Global` 638 and `CSWVirtualMachineCommands` 18. That is the 655 handlers plus the VM
+  dispatcher.
+- Proof: the NWScript command table (`tools/cmdtable.py`, DESIGN 4.8). Each GOG handler's slot set has exactly one
+  identical Steam slot set (655/655), and 653/655 GOG names equal the Mac x86 symbols.
+- Gates: AUTO 474, REVIEW 182. 4 Sonnet card chunks, 40 decoys.
+- Opus: parts a/b covered 200 rows (every REVIEW row), then a consolidation pass. Details in `B15/B15_SUMMARY.md`.
+- Final verdicts: verified 656 (0 likely / label_suspect / rejected / unresolved).
+- Opus gate: 0 sample errors, 0 decoys accepted, 1 decoy key error (B15-4-38, see the tool fixes below). There were
+  7 Opus corrections: the gate ranked `near` over the table counterpart in rows held by wave2 names.
+- Slot 156 (stored twice) ships at GOG parity, by user decision:
+  - ExecuteCommandEffectTemporaryForcePoints at the live handler 0x676E60 (B0 row unchanged);
+  - ExecuteCommandEffectTemporaryFP at the dead first store 0x6780D0.
+  - The Mac symbols are swapped, but GOG follows nwscript.
+- Branch DB (`addressdb/k2-steam-acc` 7b357da, `import-ghidra --mode append`): 1,683 -> 2,321 rows. 638 rows are
+  new, and 18 B0 rows were confirmed at the same address (notes refreshed). `validate` passed, and no address or
+  name appears twice. Backup: `backups/steam_db/kotor2_steam_aspyr.db.4324098_preB15_20261003`.
+- KDB (`persist B15 --apply`): insert 47, update 577, 8 lessons, 656 `steam_validated` marks; skip 32.
+  - The skips are 25 rows already trusted under the same name and 7 CONFLICT rows. The CONFLICT rows keep their
+    engine-ai-atlas wave2 descriptive names, which match the table's slot sets.
+  - 0x66C7A0 changes from LevelUpHenchman to ExecuteCommandAddMultiClass (slot 389; doc 08 residual resolved).
+  - A second apply changed 0 rows, and `integrity_check` is ok.
+  - Backup: `backups/kdb/kotor2_ghidra_knowledge.db.pre_B15_persist_20261003`.
+- `check-validated`: 2,321 of 2,321 branch rows are `validated` (`B15/check_validated.tsv`).
+- Lead spot-checks on disk (Steam asm, fingerprints equal to GOG):
+  - ChangeFaction 0x66F0A0 (650 B, RET 8): store `00666496 [EDX+0x2b4]` = slot 173, plus `0066f0cd CMP [EBP+8],0xad`.
+  - GetNearestObject 0x683D40 (4828 B): `00683e50 CMP [EBP+0x8],0xe3` (slot 227), plus 0xe4 and 0xe5.
+  - Slot-156 live 0x676E60 (418 B): `00676f05 MOV EAX,[0x00996084]`, `00676f8f CALL 0x005e5ea0` (SetCreator).
+- GOG label ledger:
+  - no confirmed B15 GOG label error;
+  - GOG 0x44F600 `CSWArea::GetIsIDInExcludeList` is a Windows ICF fold of 3 command stubs (Mac has 4 separate
+    bodies). See `GOG_LABEL_SUSPECTS.md`.
+- Tool fixes this round (DESIGN 4.3/4.4/4.6):
+  - F1: decoys skip proof-source candidates, and finalize lists decoy key errors.
+  - F2: `opus-parts`.
+  - F4: decoy-card answers no longer drive verdicts, rechecks or the Opus 100% list. In B15 that list shrinks from
+    26 rows to 8.
+  - `functions.csv` notes cite the final note (Opus / reviewer anchor) for reviewed rows. Before, corrected rows
+    carried the gate evidence of the replaced pick.
+  - `branch_apply.py` honours BD_ROOT and BD_BRANCHDB.
+- Tests: 257 (`tools/tests/COVERAGE.md`: 89% -> 92%; cmdtable 35% -> 98%, branch_apply 0% -> 99%).
+- Open items:
+  - A TBL anchor family needs an Opus calibration review before B10b.
+  - The gate prefers a held pick over an unheld proof candidate (6 of the 7 misses). That is a ranking change, so it
+    also needs the calibration review.
+  - An empty `fp_sha` mark never goes stale.
+  - A key-error decoy still counts toward the chunk minimum.

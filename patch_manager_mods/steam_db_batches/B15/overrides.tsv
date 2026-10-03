@@ -1,0 +1,201 @@
+gog_addr	steam_addr	final_verdict	note
+0x0077e5b0	0x00668fd0	verified	[b] VM dispatcher: 00668fd9 CMP [EBP+0x8],0x36d; 00669005 MOV EAX,[EAX+EDX*4] from [this+0xc] (table InitCommands 0x665f6f) ; CALL EAX; 00669012 MOV EAX,0xfffff82e; RET 8; fp identical
+0x0077efb0	0x006699d0	verified	[b] slot 294: 00666025 MOV [EDX + 0x498],0x6699d0; 006699ea CALL 0x006fdb30=StackPopCommand; fp size/ret/disp/imm identical; Mac =GOG name
+0x0077f030	0x00669a50	verified	[a] store 00666045 [EAX+0x63c],0x669a50 slot 399 ActionEquipMostDamagingMelee; fp=GOG 123B RET 8 (imm,disp,callees same); 00669a7d CALL 0x6fd9a0 StackPopInteger
+0x0077f0b0	0x00669ad0	verified	[b] AUTO audit: slot 400: 00666055 MOV [EDX + 0x640],0x669ad0; 00669b17 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x0077f260	0x00669c80	verified	[b] slot 167: 00666095 MOV [ECX + 0x29c],0x669c80; 00669dca CALL 0x0073f550=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x00780240	0x0066ac60	verified	[b] AUTO audit: slot 206: 006661a9 MOV [ECX + 0x338],0x66ac60; 0066ac97 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007802f0	0x0066ad10	verified	[b] slot 204: 006661d9 MOV [ECX + 0x330],0x66ad10; 0066b18e CALL 0x007f24c0=ClearAllActions; fp size/ret/disp/imm identical; Mac =GOG name
+0x00781d80	0x0066c7a0	verified	[b] slot 389: 006662e9 MOV [EDX + 0x614],0x66c7a0; 0066c93a CALL 0x0072fb00=GetClientOptions; fp size/ret/disp/imm identical; Mac =GOG name
+0x00784680	0x0066f0a0	verified	[a] Opus corr (row 0x66f330=ClearAllActions slot 9). Store 00666496 [EDX+0x2b4],0x66f0a0 slots 173/412; 0066f0cd CMP [EBP+8],0xad + 0066f0f5 CMP 0x19c; fp=GOG 650B
+0x00785b60	0x00670580	verified	[a] store 006665fd [EAX+0xa84],0x670580 slot 673 DeleteJournalWorldEntry; fp=GOG 230B RET 8 (imm,disp,callees same); 006705c7 CALL 0x6fd9a0 StackPopInteger
+0x00785c50	0x00670670	verified	[a] store 0066660d [EDX+0xa88],0x670670 slot 674 DeleteJournalWorldEntryStrref; fp=GOG 230B RET 8 (imm,disp,callees same); 006706b7 CALL 0x6fd9a0 StackPopInteger
+0x00786270	0x00670c90	verified	[b] slot 218..219(2): 00666d3a MOV [ECX + 0x368],0x670c90; 00670cf4 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x00786680	0x006710a0	verified	[a] store 006666bd [EAX+0x800],0x6710a0 slot 512 DoSinglePlayerAutoSave; fp=GOG 38B; 006710b9 CALL 0x51bf50 (=GOG 0x64b970 SetAutoSavePending, 36B; Export pair 0x51bed0/0x64b8f0)
+0x00786c40	0x00671660	verified	[a] store 0066680d [EAX+0x6f8],0x671660 slot 446 EffectAbilityDecrease; fp=GOG 447B; 006716fd CALL 0x5e4920 CGameEffect ctor; differs from Increase only by global 0x995fb0 vs 0x995fac
+0x00786e00	0x00671820	verified	[a] store 0066681d [EDX+0x140],0x671820 slot 80 EffectAbilityIncrease; fp=GOG 447B; 006718bd CALL 0x5e4920 CGameEffect ctor; global 0x995fac (Decrease uses 0x995fb0)
+0x00786fc0	0x006719e0	verified	[a] store 0066682d [ECX+0x708],0x6719e0 slot 450 EffectACDecrease; fp=GOG 534B RET 8 (imm,disp,callees same); 00671b5c CALL 0x53dfb0 GetGameObject
+0x007871e0	0x00671c00	verified	[a] store 0066683d [EAX+0x1cc],0x671c00 slot 115 EffectACIncrease; fp=GOG 534B RET 8 (imm,disp,callees same); 00671d7c CALL 0x53dfb0 GetGameObject
+0x00787700	0x00672120	verified	[a] store 0066685d [ECX+0x6fc],0x672120 slot 447 EffectAttackDecrease; fp=GOG 477B RET 8 (imm,disp,callees same); 00672263 CALL 0x53dfb0 GetGameObject
+0x007878e0	0x00672300	verified	[a] store 0066686d [EAX+0x1d8],0x672300 slot 118 EffectAttackIncrease; fp=GOG 477B RET 8 (imm,disp,callees same); 00672443 CALL 0x53dfb0 GetGameObject
+0x00788c70	0x00673690	verified	[b] slot 448: 006668dd MOV [EDX + 0x700],0x673690; 006737e6 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00788e60	0x00673880	verified	[b] slot 449: 006668ed MOV [ECX + 0x704],0x673880; 006739b8 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x00789030	0x00673a50	verified	[b] slot 275: 006668fd MOV [EAX + 0x44c],0x673a50; 00673b88 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x00789200	0x00673c20	verified	[b] slot 120: 0066690d MOV [EDX + 0x1e0],0x673c20; 00673d76 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007893f0	0x00673e10	verified	[a] store 0066691d [ECX+0x1dc],0x673e10 slot 119 EffectDamageReduction; fp=GOG 526B RET 8 (imm,disp,callees same); 00673f84 CALL 0x53dfb0 GetGameObject
+0x00789600	0x00674020	verified	[a] store 0066692d [EAX+0x144],0x674020 slot 81 EffectDamageResistance; fp=GOG 492B RET 8 (imm,disp,callees same); 00674172 CALL 0x53dfb0 GetGameObject
+0x007897f0	0x00674210	verified	[b] slot 459: 00666a2d MOV [EDX + 0x72c],0x674210; 006742ac CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x00789930	0x00674350	verified	[b] slot 487: 0066693d MOV [EDX + 0x79c],0x674350; 00674476 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x00789b10	0x00674530	verified	[a] store 006669ad [ECX+0xd44],0x674530 slot 849 EffectFactionModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 006745fd CALL 0x53dfb0 GetGameObject
+0x00789c80	0x006746a0	verified	[a] store 006669bd [EAX+0xc08],0x6746a0 slot 770 EffectForceBody; fp=GOG 359B RET 8 (imm,disp,callees same); 0067476d CALL 0x53dfb0 GetGameObject
+0x00789df0	0x00674810	verified	[a] store 006669cd [EDX+0xcdc],0x674810 slot 823 EffectForceSight; fp=GOG 317B RET 8 (imm,disp,callees same); 006748b3 CALL 0x53dfb0 GetGameObject
+0x00789f30	0x00674950	verified	[a] store 00666a3d [ECX+0xc2c],0x674950 slot 779 EffectFPRegenModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 00674a1d CALL 0x53dfb0 GetGameObject
+0x0078a0a0	0x00674ac0	verified	[a] store 00666c3d [EDX+0xc30],0x674ac0 slot 780 EffectVPRegenModifier; fp=GOG 359B RET 8 (imm,disp,callees same); 00674b8d CALL 0x53dfb0 GetGameObject
+0x0078a210	0x00674c30	verified	[a] store 00666a5d [EDX+0xc24],0x674c30 slot 777 EffectFury; fp=GOG 317B RET 8 (imm,disp,callees same); 00674cd3 CALL 0x53dfb0 GetGameObject
+0x0078a500	0x00674f20	verified	[b] slot 78: 00666a7d MOV [EAX + 0x138],0x674f20; 0067502d CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078a840	0x00675260	verified	[b] slot 273: 00666a9d MOV [ECX + 0x444],0x675260; 006752ec CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078a9f0	0x00675410	verified	[a] store 00666aad [EAX+0x724],0x675410 slot 457 EffectInvisibility; fp=GOG 386B RET 8 (imm,disp,callees same); 00675442 CALL 0x6fd9a0 StackPopInteger
+0x0078acf0	0x00675710	verified	[b] slot 477: 00666add MOV [EAX + 0x774],0x675710; 006757da CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078ae60	0x00675880	verified	[b] slot 485: 00666aed MOV [EDX + 0x794],0x675880; 00675943 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078afc0	0x006759e0	verified	[a] store 00666afd [ECX+0x70c],0x6759e0 slot 451 EffectMovementSpeedDecrease; fp=GOG 395B RET 8 (imm,disp,callees same); 00675ad1 CALL 0x53dfb0 GetGameObject
+0x0078b150	0x00675b70	verified	[a] store 00666b0d [EAX+0x294],0x675b70 slot 165 EffectMovementSpeedIncrease; fp=GOG 395B; 00675be7 CALL 0x5e4920 CGameEffect ctor; Mac ExecuteCommandEffectMovementSpeedIncrease
+0x0078b2e0	0x00675d00	verified	[b] slot 250: 00666b2d MOV [ECX + 0x3e8],0x675d00; 00675da9 CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078b420	0x00675e40	verified	[a] store 00666b4d [EDX+0x148],0x675e40 slot 82 EffectResurrection; fp=GOG 379B RET 8 (imm,disp,callees same); 00675f21 CALL 0x53dfb0 GetGameObject
+0x0078b5a0	0x00675fc0	verified	[a] store 00666b5d [ECX+0x710],0x675fc0 slot 452 EffectSavingThrowDecrease; fp=GOG 528B RET 8 (imm,disp,callees same); 00676136 CALL 0x53dfb0 GetGameObject
+0x0078b7b0	0x006761d0	verified	[a] store 00666b6d [EAX+0x1d4],0x6761d0 slot 117 EffectSavingThrowIncrease; fp=GOG 528B RET 8 (imm,disp,callees same); 00676346 CALL 0x53dfb0 GetGameObject
+0x0078bae0	0x00676500	verified	[a] store 00666b8d [ECX+0x714],0x676500 slot 453 EffectSkillDecrease; fp=GOG 448B RET 8 (imm,disp,callees same); 00676665 CALL 0x53dfb0 GetGameObject
+0x0078bca0	0x006766c0	verified	[a] store 00666b9d [EAX+0x57c],0x6766c0 slot 351 EffectSkillIncrease; fp=GOG 448B RET 8 (imm,disp,callees same); 00676825 CALL 0x53dfb0 GetGameObject
+0x0078bfe0	0x00676a00	verified	[a] store 00666bcd [EAX+0x760],0x676a00 slot 472 EffectSpellLevelAbsorption; fp=GOG 470B (imm 0x2,0x3,0x9); 00676b19 CALL 0x5e5ea0 SetCreator
+0x0078c1c0	0x00676be0	verified	[a] store 006669fd [EDX+0x718],0x676be0 slot 454 EffectForceResistanceDecrease; fp=GOG 317B; 00676c47 CALL 0x5e4920 CGameEffect ctor; Mac name same
+0x0078c300	0x00676d20	verified	[a] store 00666a0d [ECX+0x350],0x676d20 slot 212 EffectForceResistanceIncrease; fp=GOG 317B; 00676d87 CALL 0x5e4920 CGameEffect ctor; Mac name same
+0x0078c440	0x00676e60	verified	GOG parity (slot 156): live, Steam 00666bed [ECX+0x270],0x676e60 last store; 00676f8f CALL SetCreator; fp=GOG 418B. Mac symbols are swapped vs GOG (Mac live = EffectTemporaryFP); GOG follows nwscript
+0x0078c5f0	0x00677010	verified	[a] store 00666bfd [EAX+0x4e8],0x677010 slot 314 EffectTemporaryHitpoints; fp=GOG 418B RET 8 (imm,disp,callees same); 0067710d CALL 0x53dfb0 GetGameObject; Mac symbol=GOG name
+0x0078cac0	0x006774e0	verified	[b] slot 391: 0066671d MOV [EAX + 0x61c],0x6774e0; 00677569 CALL 0x005e4e80=SetInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078cd30	0x00677750	verified	[b] slot 392: 0066673d MOV [ECX + 0x620],0x677750; 006777dc CALL 0x005e5ea0=SetCreator; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078d030	0x00677a50	verified	[b] slot 703: 0066675d MOV [EDX + 0xafc],0x677a50; 00677ad9 CALL 0x005e4e80=SetInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078d130	0x00677b50	verified	[a] store 0066676d [ECX+0x754],0x677b50 slot 469 EffectBlasterDeflectionIncrease; fp=GOG 282B RET 8 (imm,disp,callees same); 00677b82 CALL 0x6fd9a0 StackPopInteger
+0x0078d250	0x00677c70	verified	[a] store 0066677d [EAX+0x758],0x677c70 slot 470 EffectBlasterDeflectionDecrease; fp=GOG 282B RET 8 (imm,disp,callees same); 00677ca2 CALL 0x6fd9a0 StackPopInteger
+0x0078d370	0x00677d90	verified	[a] store 0066678d [EDX+0x75c],0x677d90 slot 471 EffectHorrified; fp=GOG 252B RET 8 (imm,disp,callees same); 00677e2a CALL 0x6fdad0 StackPushEngineStructure
+0x0078d470	0x00677e90	verified	[a] store 0066679d [ECX+0x5d0],0x677e90 slot 372 EffectDamageForcePoints; fp=GOG 282B RET 8 (imm,disp,callees same); 00677ec2 CALL 0x6fd9a0 StackPopInteger
+0x0078d590	0x00677fb0	verified	[a] store 006667ad [EAX+0x5d4],0x677fb0 slot 373 EffectHealForcePoints; fp=GOG 282B RET 8 (imm,disp,callees same); 00677fe2 CALL 0x6fd9a0 StackPopInteger
+0x0078d6b0	0x006780d0	verified	GOG parity (slot 156): dead 1st store, Steam 006667bd [EDX+0x270],0x6780d0 overwritten at 00666bed; fp=GOG 282B. Mac symbols are swapped vs GOG (Mac live = EffectTemporaryFP); GOG follows nwscript
+0x0078d7d0	0x006781f0	verified	[a] store 006667cd [ECX+0x27c],0x6781f0 slot 159 EffectChoke; fp=GOG 252B RET 8 (imm,disp,callees same); 0067828a CALL 0x6fdad0 StackPushEngineStructure
+0x0078d8d0	0x006782f0	verified	[a] store 006667dd [EAX+0x380],0x6782f0 slot 224 EffectBodyFuel; fp=GOG 240B RET 8 (imm,disp,callees same); 0067837e CALL 0x6fdad0 StackPushEngineStructure
+0x0078d9c0	0x006783e0	verified	[a] store 006667ed [EDX+0xa90],0x6783e0 slot 676 EffectPsychicStatic; fp=GOG 240B RET 8 (imm,disp,callees same); 0067846e CALL 0x6fdad0 StackPushEngineStructure
+0x0078e130	0x00678b50	verified	[b] slot 295: 00666cad MOV [ECX + 0x49c],0x678b50; 00678bd0 CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078e220	0x00678c40	verified	[b] slot 244: 00666cbd MOV [EAX + 0x3d0],0x678c40; 00678e0b CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078e490	0x00678eb0	verified	[b] slot 132: 00666ccd MOV [EDX + 0x210],0x678eb0; 00678f9a CALL 0x006fdad0=StackPushEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078e770	0x00679190	verified	[a] store 00666cfa slot 557 ExportAllCharacters; fp=GOG 38B; 006791a9 CALL 0x51bed0 (=GOG 0x64b8f0 SetExportAllCharactersPending, 36B, same 0x80 spacing as AutoSave pair)
+0x0078e7a0	0x006791c0	verified	[b] slot 66: 00666d4a MOV [EAX + 0x108],0x6791c0; 006791eb CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078e8f0	0x00679310	verified	[b] AUTO audit: slot 525..526(2): 00666d5a MOV [EDX + 0x838],0x679310; 00679445 CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078ebd0	0x006795f0	verified	[b] slot 231: 00666d7a MOV [EAX + 0x39c],0x6795f0; 00679603 CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x0078f920	0x0067a340	verified	[a] store 00666e61 [EAX+0x5dc],0x67a340 slot 375 GetAttemptedSpellTarget; fp=GOG 97B RET 8 (imm,disp,callees same); 0067a389 CALL 0x6fdb10 StackPushObject
+0x0078f990	0x0067a3b0	verified	[b] slot 489: 00666e71 MOV [EDX + 0x7a4],0x67a3b0; 0067a3f9 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00790200	0x0067ac20	verified	[b] slot 163: 00666f21 MOV [EAX + 0x28c],0x67ac20; 0067ac76 CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00790420	0x0067ae40	verified	[a] Opus corr (row 0x67ac20=GetCommandable slot 163). Stores 00666f51/00666f61 slots 307/308; 0067aea8 CMP [EBP+8],0x134; 0067b027 CALL 0x6b8bb0 GetCreatureTalentRandom; Mac name same
+0x00790810	0x0067b230	verified	[b] slot 344: 00666fb1 MOV [EAX + 0x560],0x67b230; 0067b25c CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00790a80	0x0067b4a0	verified	[b] slot 319: 00666fe1 MOV [EAX + 0x4fc],0x67b4a0; 0067b59a CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x00790ba0	0x0067b5c0	verified	[a] store 00666ff1 [EDX+0x4a8],0x67b5c0 slot 298 GetDistanceBetweenLocations; fp=GOG; 0067b5d5 CALL 0x6fdab0 PopEngineStructure, 0067b65f CALL 0x4452b0 Vector-, 0067b680 PushFloat
+0x00790db0	0x0067b7d0	verified	[b] slot 334: 00667001 MOV [ECX + 0x538],0x67b7d0; 0067b8c2 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x00791000	0x0067ba20	verified	[a] store 00667011 [EAX+0xa4],0x67ba20 slot 41 GetDistanceToObject; fp=GOG 416B RET 8 (imm,disp,callees same); 0067baa5 CALL 0x53dfb0 GetGameObject
+0x007911a0	0x0067bbc0	verified	[a] store 00667021 [EDX+0x53c],0x67bbc0 slot 335 GetDistanceToObject2D; fp=GOG 426B RET 8 (imm,disp,callees same); 0067bc45 CALL 0x53dfb0 GetGameObject
+0x00791790	0x0067c1b0	verified	[b] slot 89: 00667041 MOV [EAX + 0x164],0x67c1b0; 0067c1cc CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name
+0x007918d0	0x0067c2f0	verified	[b] slot 90: 00667061 MOV [ECX + 0x168],0x67c2f0; 0067c30c CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name
+0x00791970	0x0067c390	verified	[b] slot 170: 00667071 MOV [EAX + 0x2a8],0x67c390; 0067c3bf CALL 0x005e5f60=GetEffectTypeScriptConstant; fp size/ret/disp/imm identical; Mac =GOG name
+0x00791a10	0x0067c430	verified	[a] Opus corr (row 0x67c250=GetEffectSpellId 305). Stores 00667498/006674a8/00667518 slots 235-237; 0067c545 [ECX+0x398]; fp=GOG 467B. Name = Mac symbol: reviewer label_suspect overruled
+0x00791ff0	0x0067ca10	verified	[a] store 006670f8 [EAX+0x2ec],0x67ca10 slot 187 GetFactionAverageGoodEvilAlignment; fp=GOG 212B RET 8 (imm,disp,callees same); 0067cacc CALL 0x6fd9c0 StackPushInteger
+0x007920d0	0x0067caf0	verified	[a] store 00667108 [EDX+0x2f4],0x67caf0 slot 189 GetFactionAverageLevel; fp=GOG; 0067cb37 CALL 0x51c100 GetCreatureByGameObjectID, 0067cb48 [ECX+0x1198]
+0x007921b0	0x0067cbd0	verified	[b] slot 186: 00667118 MOV [ECX + 0x2e8],0x67cbd0; 0067cc2d CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007922a0	0x0067ccc0	verified	[a] store 00667128 [EAX+0x2f8],0x67ccc0 slot 190 GetFactionAverageXP; fp=GOG 212B RET 8 (imm,disp,callees same); 0067cd7c CALL 0x6fd9c0 StackPushInteger
+0x00792380	0x0067cda0	verified	[a] store 00667138 [EDX+0x304],0x67cda0 slot 193 GetFactionBestAC; fp=GOG 263B RET 8 (imm,disp,callees same); 0067cdeb CALL 0x6fd9a0 StackPopInteger
+0x00792550	0x0067cf70	verified	[a] store 00667158 [EAX+0x2e4],0x67cf70 slot 185 GetFactionGold; fp=GOG 212B RET 8 (imm,disp,callees same); 0067d02c CALL 0x6fd9c0 StackPushInteger
+0x00792630	0x0067d050	verified	[a] store 00667178 [ECX+0x2e0],0x67d050 slot 184 GetFactionLeastDamagedMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d09b CALL 0x6fd9a0 StackPopInteger
+0x00792960	0x0067d380	verified	[a] store 00667188 [EAX+0x2dc],0x67d380 slot 183 GetFactionMostDamagedMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d3cb CALL 0x6fd9a0 StackPopInteger
+0x00792a70	0x0067d490	verified	[b] slot 191: 00667198 MOV [EDX + 0x2fc],0x67d490; 0067d4d7 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x00792b50	0x0067d570	verified	[a] store 006671a8 [ECX+0x2d8],0x67d570 slot 182 GetFactionStrongestMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d5bb CALL 0x6fd9a0 StackPopInteger
+0x00792c60	0x0067d680	verified	[a] store 006671b8 [EAX+0x2d4],0x67d680 slot 181 GetFactionWeakestMember; fp=GOG 263B RET 8 (imm,disp,callees same); 0067d6cb CALL 0x6fd9a0 StackPopInteger
+0x00792d70	0x0067d790	verified	[b] slot 192: 006671c8 MOV [EDX + 0x300],0x67d790; 0067d886 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00793430	0x0067de50	verified	[a] store 006672e8 [EDX+0x688],0x67de50 slots 418/771; 0067dea1 CALL 0x5812e0 CSWSCreature::GetGold, 0067deec PUSH 0x17 + 0067def1 CALL 0x605b80 FindItemWithBaseItemType; fp=GOG
+0x00793530	0x0067df50	verified	[a] store 006672f8 [ECX+0x4dc],0x67df50 slot 311/772 GetGoldPieceValue; fp=GOG 165B RET 8 (imm,disp,callees same); 0067dfcb CALL 0x606a80 GetCost
+0x007935e0	0x0067e000	verified	[a] store 00667328 [ECX+0xc18],0x67e000 slot 774 GetChemicals; fp=GOG 248B RET 8 (imm,disp,callees same); 0067e0a1 CALL 0x605b80 FindItemWithBaseItemType; Mac symbol=GOG name
+0x007936e0	0x0067e100	verified	[a] store 00667338 [EAX+0xc1c],0x67e100 slot 775 GetChemicalPieceValue; fp=GOG 174B RET 8 (imm,disp,callees same); 0067e17b CALL 0x606a80 GetCost
+0x00793c50	0x0067e670	verified	[a+b] store 006673a8 [EDX+0x4c0],0x67e670 slot 304 GetHasSpellEffect; 0067e704 CALL 0x5476c0 HasSpellEffectApplied; fp=GOG 190B RET 8; Mac symbol = GOG name
+0x00793d10	0x0067e730	verified	[b] slot 166: 006673c8 MOV [EAX + 0x298],0x67e730; 0067e7e1 CALL 0x006a4e00=GetLevel; fp size/ret/disp/imm identical; Mac =GOG name
+0x00794030	0x0067ea50	verified	[a] store 006679e2 [ECX+0xe0],0x67ea50 slot 56 GetMaxForcePoints; fp=GOG 123B RET 8 (imm,disp,callees same); 0067eab3 CALL 0x6fd9c0 StackPushInteger
+0x007940b0	0x0067ead0	verified	[a] store 006673d8 [EDX+0x530],0x67ead0 slot 332 GetIdentified; fp=GOG 116B RET 8 (imm,disp,callees same); 0067eb2c CALL 0x6fd9c0 StackPushInteger
+0x00794f20	0x0067f940	verified	[a] store 00667438 [EDX+0x65c],0x67f940 slot 407 GetIsDawn; fp=GOG 106B RET 8 (imm,disp,callees same); 0067f992 CALL 0x6fd9c0 StackPushInteger
+0x00794f90	0x0067f9b0	verified	[a] store 00667448 [ECX+0x654],0x67f9b0 slot 405 GetIsDay; fp=GOG 106B; 0067f9df [module+0x1dc] then 0067f9ec CMP ECX,0x1 (Dusk=4). KDB name GetIsDoorActionPossible here is wrong
+0x007953a0	0x0067fdc0	verified	[a] store 00667478 [ECX+0x660],0x67fdc0 slot 408 GetIsDusk; fp=GOG 106B (imm 0x4); 0067fdef [module+0x1dc], 0067fdfc CMP ECX,0x4
+0x007956b0	0x006800d0	verified	[a] store 00667528 [EDX+0x658],0x6800d0 slot 406 GetIsNight; fp=GOG 106B RET 8 (imm,disp,callees same); 00680122 CALL 0x6fd9c0 StackPushInteger
+0x00796e60	0x00681890	verified	[a] store 006676c2 [EAX+0x90],0x681890 slot 36 GetLastAttacker; fp=GOG 168B RET 8 (imm,disp,callees same); 006818b8 CALL 0x6fdaf0 StackPopObject
+0x00796f10	0x00681940	verified	[b] slot 721: 00667702 MOV [EDX + 0xb44],0x681940; 006819a8 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00796f90	0x006819c0	verified	[b] slot 722: 006676e2 MOV [ECX + 0xb48],0x6819c0; 00681a04 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x00797010	0x00681a40	verified	[b] slot 318: 006676d2 MOV [EDX + 0x4f8],0x681a40; 00681a8b CALL 0x0053dfb0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x00797150	0x00681b80	verified	[b] slot 725: 006676f2 MOV [EAX + 0xb54],0x681b80; 00681bc4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007971d0	0x00681c00	verified	[b] slot 726: 006681d3 MOV [EDX + 0xb58],0x681c00; 00681c44 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007976f0	0x00682120	verified	[b] AUTO audit: slot 723: 00667782 MOV [EAX + 0xb4c],0x682120; 00682188 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x00798d10	0x00683740	verified	[a] Opus corr (row 0x6837c0=GetMetaMagicFeat 105). Store 006679b2 [ECX+0x30c],0x683740 slot 195; 00683790 [ECX+0x1bc]; fp=GOG 123B; Mac ExecuteCommandGetMatchedStringsNum
+0x007991a0	0x00683bd0	verified	[b] AUTO audit: slot 253: 00667ad2 MOV [ECX + 0x3f4],0x683bd0; 00683cf1 CALL 0x006fda90=StackPushString; fp size/ret/disp/imm identical; Mac =GOG name
+0x00799310	0x00683d40	verified	[a] Opus corr (row 0x6839a0=GetModuleFileName/Name). Stores 00667ae2/00667af2/00667b02 slots 38,226-229; 00683de6 CMP [EBP+8],0x26, 00683dec CMP 0xe2; fp=GOG 4828B
+0x0079c250	0x00686c80	verified	[b] slot 833: 00667eff MOV [EAX + 0xd04],0x686c80; 00686d93 CALL 0x006b67d0=SetSTRBase; fp size/ret/disp/imm identical; Mac =GOG name
+0x0079cce0	0x0069b7c0	verified	[b] slot 238..845(2): 006675d8 MOV [EAX + 0xd34],0x69b7c0; 0069b811 CALL 0x0051c8b0=ClientToServerObjectId; fp size/ret/disp/imm identical; Mac ExecuteCommandGetPCSpeaker,ExecuteCommandGetPartyLeader
+0x0079cd60	0x00687710	verified	[a] store 00667d02 [EDX+0x884],0x687710 slot 545 GetPlaceableIllumination; fp=GOG 120B RET 8 (imm,disp,callees same); 0068775e CALL 0x5f6570 GetLightIsOn
+0x0079d600	0x00687fb0	verified	[a] store 00667cd2 [EDX+0x8d4],0x687fb0 slot 565 GetRunScriptVar; fp=GOG 43B RET 8 (imm,disp,callees same); 00687fc3 CALL 0x6fd9c0 StackPushInteger
+0x0079e1b0	0x00688b60	verified	[a] store 00667fef [EAX+0x3bc],0x688b60 slot 239 GetStringByStrRef; fp=GOG 267B RET 8 (imm,disp,callees same); 00688bab CALL 0x733540 CExoString; Mac symbol=GOG name
+0x0079e2c0	0x00688c70	verified	[a] store 00667fff [EDX+0xfc],0x688c70 slot 63 GetStringLeft; fp=GOG 354B RET 8 (imm,disp,callees same); 00688c9b CALL 0x733540 CExoString
+0x0079e430	0x00688de0	verified	[b] slot 59: 0066800f MOV [ECX + 0xec],0x688de0; 00688e0b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name
+0x0079e520	0x00688ed0	verified	[a] store 0066801f [EAX+0xf4],0x688ed0 slot 61 GetStringLowerCase; fp=GOG 289B RET 8 (imm,disp,callees same); 00688efb CALL 0x733540 CExoString
+0x0079e650	0x00689000	verified	[a] store 0066802f [EDX+0xf8],0x689000 slot 62 GetStringRight; fp=GOG; 0068904d CALL 0x6fda70 PopString, 0068908a PopInteger, 006890fc PushString; Mac name same
+0x0079e7c0	0x00689170	verified	[a] store 0066803f [ECX+0xf0],0x689170 slot 60 GetStringUpperCase; fp=GOG 289B RET 8 (imm,disp,callees same); 0068919b CALL 0x733540 CExoString
+0x0079ed20	0x006896d0	verified	[b] slot 16: 0066809f MOV [ECX + 0x40],0x6896d0; 006896ee CALL 0x0051b100=GetWorldTimeHour; fp size/ret/disp/imm identical; Mac =GOG name
+0x0079ed70	0x00689720	verified	[b] slot 19: 006680ac MOV [EAX + 0x4c],0x689720; 0068973e CALL 0x0051b1c0=GetWorldTimeMillisecond; fp size/ret/disp/imm identical; Mac =GOG name
+0x0079edc0	0x00689770	verified	[b] slot 17: 006680b9 MOV [EDX + 0x44],0x689770; 0068978e CALL 0x0051b140=GetWorldTimeMinute; fp size/ret/disp/imm identical; Mac =GOG name
+0x0079ee10	0x006897c0	verified	[b] slot 18: 006680c6 MOV [ECX + 0x48],0x6897c0; 006897de CALL 0x0051b180=GetWorldTimeSecond; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a0760	0x0068b110	verified	[b] slot 64: 00668293 MOV [EDX + 0x100],0x68b110; 0068b221 CALL 0x006fda90=StackPushString; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a0a10	0x0068b3c0	verified	[a] store 006682c3 [EDX+0x170],0x68b3c0 slot 92 IntToString; fp=GOG; 0068b401 CALL 0x6fd9a0 PopInteger, 0068b42c CALL 0x733700 CExoString(int), 0068b457 PushString
+0x007a0b00	0x0068b4b0	verified	[a] Opus corr (row 0x68b3c0=IntToString). Store 006682f3 [EDX+0x230],0x68b4b0 slot 140; 0068b55f CMP [EAX+0x11ac],0; fp=GOG 313B. Name = Mac symbol: reviewer label_suspect overruled
+0x007a1340	0x0068bcf0	verified	[a] store 00668373 [EAX+0xca8],0x68bcf0 slot 810 IsStealthed; fp=GOG 122B RET 8 (imm,disp,callees same); 0068bd52 CALL 0x6fd9c0 StackPushInteger
+0x007a1450	0x0068be00	verified	[a] store 00668393 [ECX+0xcb0],0x68be00 slot 812 IsInTotalDefense; fp=GOG 128B RET 8 (imm,disp,callees same); 0068be68 CALL 0x6fd9c0 StackPushInteger
+0x007a1af0	0x0068c4a0	verified	[b] slot 67..77(11): 00665fa5 MOV [ECX + 0x134],0x68c4a0; 0068c773 CALL 0x006fda00=StackPushFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a2530	0x0068cee0	verified	[a] Opus corr (row 0x68cb50=ActionMoveToObject 22/383). Stores 006660a5/0066613f slots 21/382; 0068cf3b CMP [EBP+8],0x17e, 0068cfef CMP 0x15; fp=GOG 637B; Mac name same
+0x007a30e0	0x0068da90	verified	[b] AUTO audit: slot 34: 0066616c MOV [EDX + 0x88],0x68da90; 0068dac9 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a4710	0x0068f0c0	verified	[a] store 00668590 [EDX+0x10],0x68f0c0 slot 4 PrintInteger; fp=GOG 84B RET 8 (imm,disp,callees same); 0068f0d3 CALL 0x6fd9a0 StackPopInteger
+0x007a4770	0x0068f120	verified	[b] slot 560: 0066859d MOV [ECX + 0x8c0],0x68f120; 0068f14b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a4850	0x0068f200	verified	[a] store 006685ad [EAX+0x14],0x68f200 slot 5 PrintObject; fp=GOG 84B RET 8 (imm,disp,callees same); 0068f233 CALL 0x6fd9a0 StackPopInteger
+0x007a4bb0	0x0068f560	verified	[b] slot 35: 0066618c MOV [EAX + 0x8c],0x68f560; 0068f599 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a4c20	0x0068f5d0	verified	[b] slot 0: 006685f7 MOV [ECX],0x68f5d0; 0068f625 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a4e30	0x0068f7e0	verified	[b] slot 87: 00668643 MOV [EDX + 0x15c],0x68f7e0; 0068f819 CALL 0x006fdab0=StackPopEngineStructure; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a5170	0x0068fb20	verified	[b] slot 868: 00668663 MOV [EAX + 0xd90],0x68fb20; 0068fc49 CALL 0x005e4e60=GetInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a5df0	0x006907a0	verified	[b] slot 95..103(9): 00666550 MOV [EDX + 0x190],0x6907a0; 00690885 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a7c90	0x00692640	verified	[b] slot 544: 00668aca MOV [ECX + 0x880],0x692640; 006926a5 CALL 0x005f6470=SetLightIsOn; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a7db0	0x00692760	verified	[b] slot 58: 00668b0a MOV [EAX + 0xe8],0x692760; 006927da CALL 0x0052e170=SetPlayerRestrictMode; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a7ee0	0x00692890	verified	[b] slot 563: 00668b3a MOV [EAX + 0x8cc],0x692890; 006928cc CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a8290	0x00692c40	verified	[a] store 00668b87 [ECX+0xbe4],0x692c40 slot 761 ShipBuild; fp=GOG 60B; 00692c50 MOV [0xa7e114],1 + 00692c64 CALL 0x6fd9c0 PushInteger(1); only global address differs (no layout shift)
+0x007a8870	0x00693220	verified	[b] AUTO audit: slot 691: 00668c57 MOV [EAX + 0xacc],0x693220; 0069327a CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a88f0	0x006932a0	verified	[a] store 00668c67 [EDX+0x674],0x6932a0 slot 413 SoundObjectPlay; fp=GOG 84B RET 8 (imm,disp,callees same); 006932b3 CALL 0x6fdaf0 StackPopObject
+0x007a8950	0x00693300	verified	[a] store 00668c77 [ECX+0x1f0],0x693300 slot 124 SoundObjectSetFixedVariance; fp=GOG 117B RET 8 (imm,disp,callees same); 0069332d CALL 0x6fd9e0 StackPopFloat
+0x007a89d0	0x00693380	verified	[a] store 00668c87 [EAX+0xac8],0x693380 slot 690 SoundObjectSetPitchVariance; fp=GOG 117B RET 8 (imm,disp,callees same); 006933ad CALL 0x6fd9e0 StackPopFloat; Mac symbol=GOG name
+0x007a8a50	0x00693400	verified	[b] slot 416: 00668c97 MOV [EDX + 0x680],0x693400; 0069343c CALL 0x006fda20=StackPopVector; fp size/ret/disp/imm identical; Mac =GOG name
+0x007a8af0	0x006934a0	verified	[a] store 00668ca7 [ECX+0x67c],0x6934a0 slot 415 SoundObjectSetVolume; fp=GOG 114B RET 8 (imm,disp,callees same); 006934cd CALL 0x6fd9a0 StackPopInteger
+0x007a8b70	0x00693520	verified	[a] store 00668cb7 [EAX+0x678],0x693520 slot 414 SoundObjectStop; fp=GOG 84B RET 8 (imm,disp,callees same); 00693533 CALL 0x6fdaf0 StackPopObject
+0x007aa860	0x00695210	verified	[b] slot 177: 00668eb4 MOV [ECX + 0x2c4],0x695210; 0069523b CALL 0x00733540=DefaultConstructor; fp size/ret/disp/imm identical; Mac =GOG name
+0x007aaac0	0x00695470	verified	[a] store 00668f04 [EDX+0x238],0x695470 slot 142 Vector; fp=GOG; 00695492 CALL 0x6fd9e0 PopFloat (x3), 006954e4 CALL 0x6fda40 PushVector; Mac name same
+0x007aacd0	0x00695680	verified	[a] store 00668f14 [ECX+0x1a0],0x695680 slot 104 VectorMagnitude; fp=GOG; 006956a7 CALL 0x6fda20 PopVector, 006956d3 CALL 0x6fda00 PushFloat
+0x007aad40	0x006956f0	verified	[b] slot 137: 00668f24 MOV [EAX + 0x224],0x6956f0; 00695796 CALL 0x006fda40=StackPushVector; fp size/ret/disp/imm identical; Mac =GOG name
+0x007abee0	0x00696890	verified	[b] slot 715: 00667a22 MOV [EAX + 0xb2c],0x696890; 006968cd CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007abf80	0x00696930	verified	[b] slot 716: 00668a7d MOV [EAX + 0xb30],0x696930; 00696983 CALL 0x0051c0a0=GetGameObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007ac240	0x00696bf0	verified	[b] slot 727..728(2): 006671d8 MOV [ECX + 0xb5c],0x696bf0; 00696c9d CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007ac3d0	0x00696d80	verified	[b] slot 732: 00667458 MOV [EAX + 0xb70],0x696d80; 00696dc4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007ac6e0	0x00697090	verified	[b] slot 54: 00666466 MOV [EDX + 0xd8],0x697090; 006970f4 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007ac770	0x00697120	verified	[a] store 006684c3 [EAX+0xe4],0x697120 slot 57 PauseGame; fp=GOG; 00697133 CALL 0x6fd9a0 PopInteger, 0069715a CALL 0x740350 SetPausedByCombat
+0x007acab0	0x00697460	verified	[b] slot 739: 00668ba7 MOV [EDX + 0xb8c],0x697460; 0069749d CALL 0x007ca730=ShowGalaxyMapGui; fp size/ret/disp/imm identical; Mac =GOG name
+0x007acb00	0x006974b0	verified	[a] store 00668ada [EAX+0xb98],0x6974b0 slot 742 SetPlanetAvailable; fp=GOG 104B; 0069750b CALL 0x5fed30 CSWPartyTable::SetPlanetAvailable; Mac ExecuteCommandSetGalaxyMapPlanetAvailable
+0x007acb70	0x00697520	verified	[b] slot 743: 00667cb2 MOV [ECX + 0xb9c],0x697520; 0069755d CALL 0x005fed60=GetPlanetAvailable; fp size/ret/disp/imm identical; Mac =GOG name
+0x007acbe0	0x00697590	verified	[b] slot 740: 00668aea MOV [EDX + 0xb90],0x697590; 006975eb CALL 0x005fecd0=SetPlanetSelectable; fp size/ret/disp/imm identical; Mac =GOG name
+0x007acc50	0x00697600	verified	[b] slot 741: 00667cc2 MOV [EAX + 0xb94],0x697600; 0069763d CALL 0x005fed00=GetPlanetSelectable; fp size/ret/disp/imm identical; Mac =GOG name
+0x007acf90	0x00697940	verified	[a] store 00668a4d [EAX+0x750],0x697940 slot 468 SetMaxStealthXP; fp=GOG 109B RET 8 (imm,disp,callees same); 00697957 CALL 0x51c8f0 GetPlayerCreatureId
+0x007ad080	0x00697a30	verified	[a] store 006687f0 [EDX+0x778],0x697a30 slot 478 SetCurrentStealthXP; fp=GOG 109B RET 8 (imm,disp,callees same); 00697a47 CALL 0x51c8f0 GetPlayerCreatureId
+0x007ad6c0	0x00698070	verified	[a] store 006689fd [EDX+0x7e4],0x698070 slot 505 SetLockOrientationInDialog; fp=GOG 140B RET 8 (imm,disp,callees same); 006980e8 CALL 0x73f750 GetInGameGui
+0x007ad750	0x00698100	verified	[a] store 00668a0d [ECX+0x7e8],0x698100 slot 506 SetLockHeadFollowInDialog; fp=GOG 140B RET 8 (imm,disp,callees same); 00698178 CALL 0x73f750 GetInGameGui
+0x007ae9d0	0x00699380	verified	[a] store 006686c3 [EAX+0xbb4],0x699380 slot 749 ResetDialogState; fp=GOG 45B RET 8 (imm,disp,callees same); 00699399 CALL 0x73f750 GetInGameGui
+0x007aee00	0x006997b0	verified	[a] store 00666ef1 [EAX+0xbf0],0x6997b0 slot 764 GetCheatCode; fp=GOG 76B RET 8 (imm,disp,callees same); 006997ca CALL 0x6fd9a0 StackPopInteger
+0x007aee50	0x00699800	verified	[b] slot 765: 00668a8d MOV [EDX + 0xbf4],0x699800; 00699813 CALL 0x006fd9e0=StackPopFloat; fp size/ret/disp/imm identical; Mac =GOG name
+0x007af2f0	0x00699ca0	verified	[b] slot 768: 00667daf MOV [EAX + 0xc00],0x699ca0; 00699cf2 CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007af710	0x0069a0c0	verified	[b] slot 801: 00668e34 MOV [EAX + 0xc84],0x69a0c0; 0069a19b CALL 0x0073f750=GetInGameGui; fp size/ret/disp/imm identical; Mac =GOG name
+0x007af840	0x0069a1f0	verified	[b] slot 802: 00668e44 MOV [EDX + 0xc88],0x69a1f0; 0069a2c7 CALL 0x0073f750=GetInGameGui; fp size/ret/disp/imm identical; Mac =GOG name
+0x007afb20	0x0069a4d0	verified	[b] slot 807: 006684f3 MOV [EAX + 0xc9c],0x69a4d0; 0069a4e3 CALL 0x006fd9a0=StackPopInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007afbd0	0x0069a580	verified	[b] slot 813: 0066891d MOV [ECX + 0xcb4],0x69a580; 0069a5d0 CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007afc50	0x0069a600	verified	[b] slot 814: 006673b8 MOV [ECX + 0xcb8],0x69a600; 0069a667 CALL 0x006fdb10=StackPushObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007b0d70	0x0069b720	verified	[b] slot 844: 006675c8 MOV [ECX + 0xd30],0x69b720; 0069b78c CALL 0x0051c8b0=ClientToServerObjectId; fp size/ret/disp/imm identical; Mac =GOG name
+0x007b0e10	0x0069b840	verified	[b] slot 846: 006686a3 MOV [EDX + 0xd38],0x69b840; 0069b89e CALL 0x005f8b00=RemoveMember; fp size/ret/disp/imm identical; Mac =GOG name
+0x007b0f10	0x0069b940	verified	[a] store 00667588 [EDX+0xd4c],0x69b940 slot 851 GetIsXBox; fp=GOG 50B RET 8 (imm,disp,callees same); 0069b95a CALL 0x6fd9c0 StackPushInteger
+0x007b0f50	0x0069b980	verified	[b] slot 853: 006661f9 MOV [EDX + 0xd54],0x69b980; 0069b99e CALL 0x0051c100=GetCreatureByGameObjectID; fp size/ret/disp/imm identical; Mac =GOG name
+0x007b0fd0	0x0069ba00	verified	[b] slot 855: 00668ef4 MOV [EAX + 0xd5c],0x69ba00; 0069ba46 CALL 0x00733570=CStrConstructor; fp size/ret/disp/imm identical; Mac =GOG name
+0x007b10d0	0x0069bb00	verified	[b] slot 856: 0066663d MOV [EDX + 0xd60],0x69bb00; 0069bb1a CALL 0x006fd9a0=StackPopInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007b1890	0x0069c2c0	verified	[a] store 00668713 [ECX+0xda4],0x69c2c0 slot 873 SaveNPCByObject; fp=GOG; 0069c329 CALL 0x5f8130 CSWPartyTable::SaveMemberByObject
+0x007b1910	0x0069c340	verified	[b] slot 874: 00668723 MOV [EAX + 0xda8],0x69c340; 0069c3a9 CALL 0x005f8520=SavePuppetByObject; fp size/ret/disp/imm identical; Mac =GOG name
+0x007f97c0	0x006f6200	verified	[b] slot 582: 006f5b8d MOV [ECX + 0x918],0x6f6200; 006f622b CALL 0x00733540=DefaultConstructor; fp ret/n_insn/disp/imm/str identical (size 283 vs 284); Mac =GOG name
+0x007f9c00	0x006f6640	verified	[b] AUTO audit: slot 586: 006f5bcd MOV [EAX + 0x928],0x6f6640; 006f66b9 CALL 0x006fda70=StackPopString; fp size/ret/disp/imm identical; Mac =GOG name
+0x007fa370	0x006f6db0	verified	[b] slot 599..603(5): 006f5c9d MOV [EDX + 0x95c],0x6f6db0; 006f6eda CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007fbfd0	0x006f8a10	verified	[b] slot 782: 006f619d MOV [EAX + 0xc38],0x6f8a10; 006f8a6a CALL 0x006fd9c0=StackPushInteger; fp size/ret/disp/imm identical; Mac =GOG name
+0x007fc190	0x006f8bd0	verified	[b] AUTO audit: slot 792: 006f61cd MOV [EAX + 0xc60],0x6f8bd0; 006f8be3 CALL 0x006fdaf0=StackPopObject; fp size/ret/disp/imm identical; Mac =GOG name

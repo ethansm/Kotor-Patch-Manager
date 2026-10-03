@@ -143,6 +143,34 @@ SmoothPointsOnPathRestartable -> SmoothSelectionRestartable -> SmoothSelectNodes
 |---|---|---|---|---|---|
 | 0x84B0B0 | `Gob::SetScene` | global `FindGobIdx` (stricmp binary search on name +0x64; called by FindGob 0x84B050) | Mac `FindGobIdx` 96 B | 0x458AE0 | GOG 0x854030 (DB `SetScene_2`) -> Steam 0x461AA0 (shipped, verified; `0046d456` from Gob::AttachToScene) |
 
+### CSWVirtualMachineCommands / Global (B15 command handlers)
+**No confirmed GOG label error in B15** (Opus gate parts a/b + consolidation, 2026-10-03). The rows below are recorded
+because a GOG name differs from a Mac symbol or the GOG body is shared; none is shipped against GOG parity.
+Evidence: the NWScript command tables (`B15/cmdtable.tsv`, DESIGN 4.8; the Mac x86 table uses 8-byte slots).
+
+**Slot-156 pair: Mac names differ; GOG label follows nwscript; shipped at GOG parity** (user decision 2026-10-03).
+All three binaries store slot 156 (nwscript `EffectTemporaryForcePoints`) twice and the later store is the runtime
+handler. GOG: `0077bd9d` -> 0x78D6B0 (dead, overwritten), `0077c1cd` -> 0x78C440 (live). Mac: `0032566d` -> 0x333C92, then
+`00325c72` -> 0x337B80 (live). The Mac symbols are swapped against the GOG names, but the GOG name of the live handler is
+the nwscript name of its slot (`name_slot = yes`), and the branch DB already ships it at the live Steam body (B0).
+
+| GOG addr | GOG DB name | body | Mac symbol of this body | Steam (body) | shipped |
+|---|---|---|---|---|---|
+| 0x78C440 | `CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints` | live slot-156 handler (418 B, 10 callees incl. CGameEffect::SetCreator, disp 0x8 x5,0xA,0xA,0x30) | `ExecuteCommandEffectTemporaryFP` 0x337B80 (295 B, 10 callees, disp 0x8 x5,0xA,0xA,0x34) | 0x676E60 (`00666bed MOV [ECX+0x270],0x676e60` last store; `00676f8f CALL 0x005e5ea0` SetCreator) | GOG parity: 0x676E60 (verified; same as the B0 branch row) |
+| 0x78D6B0 | `Global::ExecuteCommandEffectTemporaryFP` | dead first slot-156 store (282 B, 7 callees, no SetCreator, disp 0x8) | `ExecuteCommandEffectTemporaryForcePoints` 0x333C92 (165 B, 7 callees, disp 0x8) | 0x6780D0 (`006667bd MOV [EDX+0x270],0x6780d0`, overwritten at `00666bed`; 0 callers) | GOG parity: 0x6780D0 (verified; dead code) |
+
+**ICF fold (Mac-confirmed), GOG label correct but not the only name of its body:**
+
+| GOG addr | GOG DB name | body is | Mac evidence | Steam (body) | name really at |
+|---|---|---|---|---|---|
+| 0x44F600 | `CSWArea::GetIsIDInExcludeList` | correct, and also the command handler of slots 321/327/403 (GetLastAssociateCommand, SetAssociateListenPatterns, ExploreAreaForPlayer): ICF-shared 15 B `return 0`, RET 8 (GOG stores `0077cc92`, `0077dd50`, `0077c2ca`) | Mac has four separate 7 B `return 0` stubs: `ExecuteCommandGetLastAssociateCommand` 0x341974 (slot 321), `ExecuteCommandSetAssociateListenPatterns` 0x34CDD6 (327), `ExecuteCommandExploreAreaForPlayer` 0x338B7C (403), `CSWArea::GetIsIDInExcludeList` 0x270766 | 0x681880 (`00681887 XOR EAX,EAX` / `0068188c RET 0x8`; table stores `006676b2`, `00668770`, `00666cea`; direct caller TestPlayerUpdateDifferences `0063eecd`) | the 3 command names have no GOG DB row (extra, not shipped); GetIsIDInExcludeList not gated |
+
+Not errors (source names that differ from the nwscript names but are the Mac real symbols of the same slot set, shipped
+`verified`): `ExecuteCommandGetEmotions` 0x791A10 (slots 235-237 GetIsEnemy/Friend/Neutral, Mac 0x3400AE) -> Steam 0x67C430;
+`ExecuteCommandIsAIState` 0x7A0B00 (slot 140 GetIsDead, Mac 0x3498F4) -> Steam 0x68B4B0; `ExecuteCommandGetPartyLeader`
+0x79CCE0 (slots 238/845, Mac symbols GetPCSpeaker and GetPartyLeader for one handler) -> Steam 0x69B7C0. 653 of the 655
+GOG `ExecuteCommand*` handler rows carry the Mac symbol of their slot set; the two exceptions are the slot-156 pair.
+
 ## GOG pseudo-functions (not functions)
 | GOG addr | GOG DB name | what it is | Steam |
 |---|---|---|---|

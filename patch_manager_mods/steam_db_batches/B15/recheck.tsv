@@ -1,9 +1,1 @@
 gog_addr	corrected_addr	source	reason
-0x00784680	0x0066f0a0	review:sonnet_c1.tsv	Candidate is tiny unrelated handler; ChangeFaction handler is 0x66f0a0
-0x00784680	0x0066f0a0	review:sonnet_c4.tsv	Candidate is a 199-byte area/object handler (GetArea, vfunc +0x10); ChangeFaction is 0x66f0a0 (650 bytes)
-0x00790420	0x0067ae40	review:sonnet_c2.tsv	Slots 307/308 (GetCreatureTalent*) handler is 0x67ae40 (size 696, 0x133/0x134 branches); candidate is GetCommandable (slot 163).
-0x00798d10	0x00683740	review:sonnet_c3.tsv	Candidate is GetMetaMagicFeat body (+0x1f9); 0x683740 matches GOG callees and +0x1bc; name fits
-0x00799310	0x00683d40	review:sonnet_c3.tsv	Candidate is a small string handler (GetModuleName-like); real GetNearestObject is 0x683d40 and the name fits
-0x00799310	0x00683d40	review:sonnet_c4.tsv	Candidate is a 151-byte getter reading [creature+0x1198]+0x1a4; real handler is 0x683d40 (cmd ids 38,226-229)
-0x00799310	0x00683d40	review:sonnet_c4.tsv	Candidate is a 172-byte module getter (cmd 0x11a etc); GetNearest* handler is 0x683d40 (ids 38,226-229)
-0x007a2530	0x0068cee0	review:sonnet_c3.tsv	Candidate is MoveToObject (0x17f); the MoveToLocation/ForceMove handler with 0x15/0x17e is 0x68cee0 and name fits

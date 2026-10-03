@@ -1,211 +1,76 @@
 # Opus gate B15 (DESIGN 4.6)
 
-Decision: **ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus**
+Decision: **OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches; 1 decoy key error(s) excluded (decoy = Opus-shipped counterpart)**
 
-- decoy cards: 40 (per chunk {'1': 10, '2': 10, '3': 10, '4': 10}), accepted by the reviewer: 1, unanswered: 0
+- decoy cards: 40 (per chunk {'1': 10, '2': 10, '3': 10, '4': 10}), accepted by the reviewer: 0, unanswered: 0
 - chunks not reviewed: none
-- Opus-found sample errors: pending (pass `finalize --opus-sample-errors N` after the Opus pass)
+- Opus-found sample errors: 0 (pass `finalize --opus-sample-errors N` after the Opus pass)
 - consecutive clean batches before this one: 0 -> sample rate 20%
+
+## Decoy key errors (decoy = Opus-shipped counterpart)
+
+- B15-4-38 0x00784680 -> 0x0066f0a0 (decoy_prev): the decoy is the Opus-shipped counterpart, so the reviewer was right; fix the key
 
 ## Decoys accepted (0 tolerance)
 
-- B15-4-38 0x00784680 -> 0x0066f0a0 (decoy_prev)
+None.
 
-## Opus reads 100% (26 rows)
+## Opus reads 100% (8 rows)
 
-- Global::ExecuteCommandChangeFaction gog 0x00784680 -> 0x0066f330: reviewer corrected_addr
-- Global::ExecuteCommandEffectAbilityDecrease gog 0x00786c40 -> 0x00671660: reviewer corrected_addr
-- Global::ExecuteCommandEffectAbilityIncrease gog 0x00786e00 -> 0x00671820: reviewer corrected_addr
-- Global::ExecuteCommandEffectMovementSpeedIncrease gog 0x0078b150 -> 0x00675b70: reviewer corrected_addr
-- Global::ExecuteCommandEffectSpellLevelAbsorption gog 0x0078bfe0 -> 0x00676a00: reviewer corrected_addr
-- Global::ExecuteCommandEffectForceResistanceDecrease gog 0x0078c1c0 -> 0x00676be0: reviewer corrected_addr
-- Global::ExecuteCommandEffectForceResistanceIncrease gog 0x0078c300 -> 0x00676d20: reviewer corrected_addr
-- Global::ExecuteCommandGetCreatureTalent gog 0x00790420 -> 0x0067ac20: reviewer corrected_addr
-- Global::ExecuteCommandGetDistanceBetweenLocations gog 0x00790ba0 -> 0x0067b5c0: reviewer corrected_addr
-- Global::ExecuteCommandGetEmotions gog 0x00791a10 -> 0x0067c250: reviewer corrected_addr, label_suspect
-- Global::ExecuteCommandGetFactionAverageLevel gog 0x007920d0 -> 0x0067caf0: reviewer corrected_addr
-- Global::ExecuteCommandGetGold gog 0x00793430 -> 0x0067de50: reviewer corrected_addr
-- Global::ExecuteCommandGetIsDay gog 0x00794f90 -> 0x0067f9b0: reviewer corrected_addr
-- Global::ExecuteCommandGetIsDusk gog 0x007953a0 -> 0x0067fdc0: reviewer corrected_addr
-- Global::ExecuteCommandGetMatchedStringsNum gog 0x00798d10 -> 0x006837c0: reviewer corrected_addr
-- Global::ExecuteCommandGetNearestObject gog 0x00799310 -> 0x006839a0: reviewer corrected_addr
-- Global::ExecuteCommandGetStringRight gog 0x0079e650 -> 0x00689000: reviewer corrected_addr
-- Global::ExecuteCommandIntToString gog 0x007a0a10 -> 0x0068b3c0: reviewer corrected_addr
-- Global::ExecuteCommandIsAIState gog 0x007a0b00 -> 0x0068b3c0: reviewer corrected_addr, label_suspect
-- Global::ExecuteCommandMoveToPoint gog 0x007a2530 -> 0x0068cb50: reviewer corrected_addr
+- Global::ExecuteCommandChangeFaction gog 0x00784680 -> 0x0066f0a0: reviewer corrected_addr
+- Global::ExecuteCommandGetCreatureTalent gog 0x00790420 -> 0x0067ae40: reviewer corrected_addr
+- Global::ExecuteCommandGetEmotions gog 0x00791a10 -> 0x0067c430: reviewer corrected_addr
+- Global::ExecuteCommandGetMatchedStringsNum gog 0x00798d10 -> 0x00683740: reviewer corrected_addr
+- Global::ExecuteCommandGetNearestObject gog 0x00799310 -> 0x00683d40: reviewer corrected_addr
+- Global::ExecuteCommandIsAIState gog 0x007a0b00 -> 0x0068b4b0: reviewer corrected_addr
+- Global::ExecuteCommandMoveToPoint gog 0x007a2530 -> 0x0068cee0: reviewer corrected_addr
 - Global::ExecuteCommandShipBuild gog 0x007a8290 -> 0x00692c40: match cites a layout/offset difference
-- Global::ExecuteCommandVector gog 0x007aaac0 -> 0x00695470: reviewer corrected_addr
-- Global::ExecuteCommandVectorMagnitude gog 0x007aacd0 -> 0x00695680: reviewer corrected_addr
-- Global::ExecuteCommandPauseGame gog 0x007ac770 -> 0x00697120: reviewer corrected_addr
-- Global::ExecuteCommandSetGalaxyMapPlanetAvailable gog 0x007acb00 -> 0x006974b0: reviewer corrected_addr
-- Global::ExecuteCommandSaveNPCByObject gog 0x007b1890 -> 0x0069c2c0: reviewer corrected_addr
 
-## Sample of the other reviewer matches (156 of 156)
+## Sample of the other reviewer matches (35 of 174)
 
-- Global::ExecuteCommandGetIdentified gog 0x007940b0 -> 0x0067ead0 (C0)
-- Global::ExecuteCommandGetStringLeft gog 0x0079e2c0 -> 0x00688c70 (C0)
-- Global::ExecuteCommandDoSinglePlayerAutoSave gog 0x00786680 -> 0x006710a0 (C0)
-- Global::ExecuteCommandDeleteJournalWorldEntryStrref gog 0x00785c50 -> 0x00670670 (C0)
-- Global::ExecuteCommandEffectAttackDecrease gog 0x00787700 -> 0x00672120 (C0)
-- Global::ExecuteCommandGetMaxForcePoints gog 0x00794030 -> 0x0067ea50 (C0)
-- Global::ExecuteCommandResetDialogState gog 0x007ae9d0 -> 0x00699380 (C0)
-- Global::ExecuteCommandEffectACDecrease gog 0x00786fc0 -> 0x006719e0 (C0)
-- Global::ExecuteCommandEffectBodyFuel gog 0x0078d8d0 -> 0x006782f0 (C0)
-- Global::ExecuteCommandEffectDamageForcePoints gog 0x0078d470 -> 0x00677e90 (C0)
-- Global::ExecuteCommandGetFactionStrongestMember gog 0x00792b50 -> 0x0067d570 (C0)
-- Global::ExecuteCommandSetLockOrientationInDialog gog 0x007ad6c0 -> 0x00698070 (C0)
-- Global::ExecuteCommandGetFactionLeastDamagedMember gog 0x00792630 -> 0x0067d050 (C0)
-- Global::ExecuteCommandEffectBlasterDeflectionDecrease gog 0x0078d250 -> 0x00677c70 (C0)
-- Global::ExecuteCommandEffectVPRegenModifier gog 0x0078a0a0 -> 0x00674ac0 (C0)
-- Global::ExecuteCommandGetStrByStrRef gog 0x0079e1b0 -> 0x00688b60 (C0)
-- Global::ExecuteCommandEffectDamageResistance gog 0x00789600 -> 0x00674020 (C0)
-- Global::ExecuteCommandGetDistanceToObject gog 0x00791000 -> 0x0067ba20 (C0)
-- Global::ExecuteCommandEffectHealForcePoints gog 0x0078d590 -> 0x00677fb0 (C0)
-- Global::ExecuteCommandEffectSavingThrowIncrease gog 0x0078b7b0 -> 0x006761d0 (C0)
 - Global::ExecuteCommandGetFactionWeakestMember gog 0x00792c60 -> 0x0067d680 (C0)
-- Global::ExecuteCommandEffectAttackIncrease gog 0x007878e0 -> 0x00672300 (C0)
-- Global::ExecuteCommandEffectFPRegenModifier gog 0x00789f30 -> 0x00674950 (C0)
-- Global::ExecuteCommandGetFactionAverageXP gog 0x007922a0 -> 0x0067ccc0 (C0)
-- Global::ExecuteCommandEffectForceBody gog 0x00789c80 -> 0x006746a0 (C0)
-- Global::ExecuteCommandPrintObject gog 0x007a4850 -> 0x0068f200 (C0)
-- Global::ExecuteCommandSoundObjectStop gog 0x007a8b70 -> 0x00693520 (C0)
-- Global::ExecuteCommandEffectResurrection gog 0x0078b420 -> 0x00675e40 (C0)
-- Global::ExecuteCommandEffectFactionModifier gog 0x00789b10 -> 0x00674530 (C0)
-- Global::ExecuteCommandEffectFury gog 0x0078a210 -> 0x00674c30 (C0)
-- Global::ExecuteCommandSetCurrentStealthXP gog 0x007ad080 -> 0x00697a30 (C0)
-- Global::ExecuteCommandSetLockHeadFollowInDialog gog 0x007ad750 -> 0x00698100 (C0)
+- Global::ExecuteCommandEffectTemporaryHP gog 0x0078c5f0 -> 0x00677010 (C0)
+- Global::ExecuteCommandDoSinglePlayerAutoSave gog 0x00786680 -> 0x006710a0 (C0)
+- Global::ExecuteCommandGetGoldPieceValue gog 0x00793530 -> 0x0067df50 (C0)
+- Global::ExecuteCommandGetGold gog 0x00793430 -> 0x0067de50 (C0)
 - Global::ExecuteCommandEffectBlasterDeflectionIncrease gog 0x0078d130 -> 0x00677b50 (C0)
-- Global::ExecuteCommandGetIsXBox gog 0x007b0f10 -> 0x0069b940 (C0)
-- Global::ExecuteCommandGetDistanceToObject2D gog 0x007911a0 -> 0x0067bbc0 (C0)
-- Global::ExecuteCommandExportAllCharacters gog 0x0078e770 -> 0x00679190 (C0)
+- Global::ExecuteCommandDeleteJournalWorldEntryStrref gog 0x00785c50 -> 0x00670670 (C0)
+- Global::ExecuteCommandEffectACDecrease gog 0x00786fc0 -> 0x006719e0 (C0)
+- Global::ExecuteCommandGetFactionStrongestMember gog 0x00792b50 -> 0x0067d570 (C0)
+- Global::ExecuteCommandEffectAbilityDecrease gog 0x00786c40 -> 0x00671660 (C0)
+- Global::ExecuteCommandEffectFactionModifier gog 0x00789b10 -> 0x00674530 (C0)
+- Global::ExecuteCommandEffectBlasterDeflectionDecrease gog 0x0078d250 -> 0x00677c70 (C0)
+- Global::ExecuteCommandGetFactionMostDamagedMember gog 0x00792960 -> 0x0067d380 (C0)
+- Global::ExecuteCommandGetFactionAverageLevel gog 0x007920d0 -> 0x0067caf0 (C0)
 - Global::ExecuteCommandGetStringUpperCase gog 0x0079e7c0 -> 0x00689170 (C0)
-- Global::ExecuteCommandGetFactionBestAC gog 0x00792380 -> 0x0067cda0 (C0)
+- Global::ExecuteCommandEffectVPRegenModifier gog 0x0078a0a0 -> 0x00674ac0 (C0)
 - Global::ExecuteCommandGetStringLowerCase gog 0x0079e520 -> 0x00688ed0 (C0)
 - Global::ExecuteCommandGetChemical gog 0x007935e0 -> 0x0067e000 (C0)
-- Global::ExecuteCommandGetFactionMostDamagedMember gog 0x00792960 -> 0x0067d380 (C0)
-- Global::ExecuteCommandGetCheatCode gog 0x007aee00 -> 0x006997b0 (C0)
-- Global::ExecuteCommandEffectTemporaryFP gog 0x0078d6b0 -> 0x006780d0 (C0)
-- Global::ExecuteCommandDeleteJournalWorldEntry gog 0x00785b60 -> 0x00670580 (C0)
-- Global::ExecuteCommandEffectMovementSpeedDecrease gog 0x0078afc0 -> 0x006759e0 (C0)
-- Global::ExecuteCommandEffectACIncrease gog 0x007871e0 -> 0x00671c00 (C0)
-- Global::ExecuteCommandEffectSkillIncrease gog 0x0078bca0 -> 0x006766c0 (C0)
-- Global::ExecuteCommandEffectPsychicStatic gog 0x0078d9c0 -> 0x006783e0 (C0)
-- Global::ExecuteCommandSoundObjectSetFixedVariance gog 0x007a8950 -> 0x00693300 (C0)
-- Global::ExecuteCommandGetGoldPieceValue gog 0x00793530 -> 0x0067df50 (C0)
-- Global::ExecuteCommandPrintInteger gog 0x007a4710 -> 0x0068f0c0 (C0)
-- Global::ExecuteCommandEffectSkillDecrease gog 0x0078bae0 -> 0x00676500 (C0)
-- Global::ExecuteCommandGetFactionAverageGoodEvilAlignment gog 0x00791ff0 -> 0x0067ca10 (C0)
+- Global::ExecuteCommandSetCurrentStealthXP gog 0x007ad080 -> 0x00697a30 (C0)
 - CSWVirtualMachineCommands::ExecuteCommandEffectTemporaryForcePoints gog 0x0078c440 -> 0x00676e60 (C0)
-- Global::ExecuteCommandGetRunScriptVar gog 0x0079d600 -> 0x00687fb0 (C0)
 - Global::ExecuteCommandGetChemicalPieceValue gog 0x007936e0 -> 0x0067e100 (C0)
-- Global::ExecuteCommandEffectSavingThrowDecrease gog 0x0078b5a0 -> 0x00675fc0 (C0)
-- Global::ExecuteCommandIsInTotalDefense gog 0x007a1450 -> 0x0068be00 (C0)
-- Global::ExecuteCommandEffectDamageReduction gog 0x007893f0 -> 0x00673e10 (C0)
-- CSWVirtualMachineCommands::ExecuteCommandActionEquipMostDamagingMelee gog 0x0077f030 -> 0x00669a50 (C0)
-- Global::ExecuteCommandSoundObjectPlay gog 0x007a88f0 -> 0x006932a0 (C0)
-- Global::ExecuteCommandSetMaxStealthXP gog 0x007acf90 -> 0x00697940 (C0)
-- Global::ExecuteCommandGetFactionGold gog 0x00792550 -> 0x0067cf70 (C0)
+- Global::ExecuteCommandGetMaxForcePoints gog 0x00794030 -> 0x0067ea50 (C0)
+- Global::ExecuteCommandIntToString gog 0x007a0a10 -> 0x0068b3c0 (C0)
+- Global::ExecuteCommandEffectAttackDecrease gog 0x00787700 -> 0x00672120 (C0)
+- Global::ExecuteCommandEffectAttackIncrease gog 0x007878e0 -> 0x00672300 (C0)
+- Global::ExecuteCommandEffectACIncrease gog 0x007871e0 -> 0x00671c00 (C0)
 - Global::ExecuteCommandIsStealthed gog 0x007a1340 -> 0x0068bcf0 (C0)
-- Global::ExecuteCommandSoundObjectSetVolume gog 0x007a8af0 -> 0x006934a0 (C0)
-- Global::ExecuteCommandEffectTemporaryHP gog 0x0078c5f0 -> 0x00677010 (C0)
-- Global::ExecuteCommandSoundObjectSetPitchVariation gog 0x007a89d0 -> 0x00693380 (C0)
-- Global::ExecuteCommandGetIsDawn gog 0x00794f20 -> 0x0067f940 (C1)
-- Global::ExecuteCommandEffectHorrified gog 0x0078d370 -> 0x00677d90 (C1)
-- Global::ExecuteCommandEffectInvisibility gog 0x0078a9f0 -> 0x00675410 (C1)
-- Global::ExecuteCommandGetLastAttacker gog 0x00796e60 -> 0x00681890 (C1)
-- Global::ExecuteCommandGetAttemptedSpellTarget gog 0x0078f920 -> 0x0067a340 (C1)
-- Global::ExecuteCommandGetIsNight gog 0x007956b0 -> 0x006800d0 (C1)
-- Global::ExecuteCommandEffectChoke gog 0x0078d7d0 -> 0x006781f0 (C1)
-- Global::ExecuteCommandEffectForceSight gog 0x00789df0 -> 0x00674810 (C1)
-- Global::ExecuteCommandGetPlaceableIllumination gog 0x0079cd60 -> 0x00687710 (C2)
-- Global::ExecuteCommandGetHasSpellEffect gog 0x00793c50 -> 0x0067e670 (C1)
-- Global::ExecuteCommandPutDownItem gog 0x007a4bb0 -> 0x0068f560 (C1)
-- Global::ExecuteCommandShowGalaxyMapGui gog 0x007acab0 -> 0x00697460 (C1)
-- Global::ExecuteCommandRemoveEffectByExactMatch gog 0x007a5170 -> 0x0068fb20 (C1)
-- Global::ExecuteCommandEffectHeal gog 0x0078a500 -> 0x00674f20 (C1)
-- Global::ExecuteCommandActionSwitchWeapons gog 0x007b0f50 -> 0x0069b980 (C1)
-- Global::ExecuteCommandPrintLogEntry gog 0x007a4770 -> 0x0068f120 (C1)
-- Global::ExecuteCommandGetLastHostileTarget gog 0x00796f10 -> 0x00681940 (C1)
-- Global::ExecuteCommandSavePUPByObject gog 0x007b1910 -> 0x0069c340 (C1)
-- Global::ExecuteCommandSetHealTarget gog 0x007afbd0 -> 0x0069a580 (C1)
-- Global::ExecuteCommandGetLastAttackAction gog 0x00796f90 -> 0x006819c0 (C1)
-- Global::ExecuteCommandGetTimeHour gog 0x0079ed20 -> 0x006896d0 (C1)
-- Global::ExecuteCommandGetHitDice gog 0x00793d10 -> 0x0067e730 (C1)
-- Global::ExecuteCommandGetWasForcePowerSuccessful gog 0x007971d0 -> 0x00681c00 (C1)
-- Global::ExecuteCommandGetCommandable gog 0x00790200 -> 0x0067ac20 (C1)
-- Global::ExecuteCommandGetEffectType gog 0x00791970 -> 0x0067c390 (C1)
-- Global::ExecuteCommandGetEffectSubType gog 0x007918d0 -> 0x0067c2f0 (C1)
-- Global::ExecuteCommandRollDice gog 0x007a5df0 -> 0x006907a0 (C1)
-- Global::ExecuteCommandSetRestrictMode gog 0x007a7db0 -> 0x00692760 (C1)
-- Global::ExecuteCommandEffectDamageDecrease gog 0x00788c70 -> 0x00673690 (C1)
-- Global::ExecuteCommandVectorNormalize gog 0x007aad40 -> 0x006956f0 (C1)
-- Global::ExecuteCommandEffectDamageImmunityDecrease gog 0x00788e60 -> 0x00673880 (C1)
-- Global::ExecuteCommandSetMinOneHP gog 0x007abf80 -> 0x00696930 (C1)
-- Global::ExecuteCommandGetTimeMinute gog 0x0079edc0 -> 0x00689770 (C1)
-- Global::ExecuteCommandGetAttacker gog 0x007ac240 -> 0x00696bf0 (C1)
-- Global::ExecuteCommandGetTimeSecond gog 0x0079ee10 -> 0x006897c0 (C1)
-- Global::ExecuteCommandSetSpeedBlurEffect gog 0x007a7ee0 -> 0x00692890 (C1)
-- Global::ExecuteCommandGetPartyLeader gog 0x0079cce0 -> 0x0069b7c0 (C1)
-- Global::ExecuteCommandTestString gog 0x007aa860 -> 0x00695210 (C1)
-- Global::ExecuteCommandEffectForceShield gog 0x007897f0 -> 0x00674210 (C1)
-- Global::ExecuteCommandGetFactionMostFrequentClass gog 0x00792a70 -> 0x0067d490 (C1)
-- CSWVirtualMachineCommands::ExecuteCommandActionDoCommand gog 0x0077efb0 -> 0x006699d0 (C1)
-- Global::ExecuteCommandSetPlaceableIllumination gog 0x007a7c90 -> 0x00692640 (C1)
-- Global::ExecuteCommandRemoveNPCFromPartyToBase gog 0x007b0e10 -> 0x0069b840 (C2)
-- Global::ExecuteCommandUnlockAllMusic gog 0x007b0fd0 -> 0x0069ba00 (C1)
-- Global::ExecuteCommandGetFactionWorstAC gog 0x00792d70 -> 0x0067d790 (C1)
-- Global::ExecuteCommandGetTimeMillisecond gog 0x0079ed70 -> 0x00689720 (C1)
-- Global::ExecuteCommandEventUserDefined gog 0x0078e490 -> 0x00678eb0 (C1)
-- Global::ExecuteCommandMath gog 0x007a1af0 -> 0x0068c4a0 (C1)
-- CSWVirtualMachineCommands::ExecuteCommandFloatToInt gog 0x0078ebd0 -> 0x006795f0 (C1)
-- Global::ExecuteCommandInsertString gog 0x007a0760 -> 0x0068b110 (C1)
-- Global::ExecuteCommandGetHealTarget gog 0x007afc50 -> 0x0069a600 (C1)
-- Global::ExecuteCommandEffectImmunity gog 0x0078a840 -> 0x00675260 (C1)
-- Global::ExecuteCommandGetGalaxyMapPlanetSelectable gog 0x007acc50 -> 0x00697600 (C1)
-- Global::ExecuteCommandEffectMissChance gog 0x0078acf0 -> 0x00675710 (C1)
-- Global::ExecuteCommandAddMultiClass gog 0x00781d80 -> 0x0066c7a0 (C2)
-- Global::ExecuteCommandGetDistanceBetweenLocations2D gog 0x00790db0 -> 0x0067b7d0 (C1)
-- Global::ExecuteCommandEffectForcePushed gog 0x0078cd30 -> 0x00677750 (C1)
-- Global::ExecuteCommandEffectDamageShield gog 0x00789930 -> 0x00674350 (C1)
-- Global::ExecuteCommandSetBonusForcePoints gog 0x007af710 -> 0x0069a0c0 (C1)
-- Global::ExecuteCommandEffectWhirlwind gog 0x0078d030 -> 0x00677a50 (C1)
-- Global::ExecuteCommandGetGalaxyMapPlanetAvailable gog 0x007acb70 -> 0x00697520 (C1)
-- Global::ExecuteCommandAddBonusForcePoints gog 0x007af840 -> 0x0069a1f0 (C1)
-- Global::ExecuteCommandGetStringLength gog 0x0079e430 -> 0x00688de0 (C1)
-- Global::ExecuteCommandGetFactionAverageReputation gog 0x007921b0 -> 0x0067cbd0 (C1)
-- Global::ExecuteCommandEffectModifyAttacks gog 0x0078ae60 -> 0x00675880 (C1)
-- Global::ExecuteCommandGetScriptParameter gog 0x007af2f0 -> 0x00699ca0 (C1)
-- Global::ExecuteCommandGetLastAttackResult gog 0x00797150 -> 0x00681b80 (C1)
-- Global::ExecuteCommandGetMinOneHP gog 0x007abee0 -> 0x00696890 (C1)
-- Global::ExecuteCommandFindSubString gog 0x0078e7a0 -> 0x006791c0 (C1)
-- Global::ExecuteCommandDistanceConversions gog 0x00786270 -> 0x00670c90 (C2)
-- Global::ExecuteCommandGetLastAttackMode gog 0x00797010 -> 0x00681a40 (C1)
-- Global::ExecuteCommandDisableMap gog 0x007b10d0 -> 0x0069bb00 (C1)
-- Global::ExecuteCommandRemoveEffect gog 0x007a4e30 -> 0x0068f7e0 (C1)
-- Global::ExecuteCommandGetIsDebilitated gog 0x007ac3d0 -> 0x00696d80 (C1)
-- Global::ExecuteCommandAurPostString gog 0x007f97c0 -> 0x006f6200 (C1)
-- Global::ExecuteCommandGetEffectDurationType gog 0x00791790 -> 0x0067c1b0 (C1)
-- Global::ExecuteCommandEffectPoison gog 0x0078b2e0 -> 0x00675d00 (C1)
-- CSWVirtualMachineCommands::ExecuteCommandRandom gog 0x007a4c20 -> 0x0068f5d0 (C1)
-- Global::ExecuteCommandSetMusicVolume gog 0x007aee50 -> 0x00699800 (C1)
-- Global::ExecuteCommandGetAttemptedMovementTarget gog 0x0078f990 -> 0x0067a3b0 (C1)
-- Global::ExecuteCommandSetGalaxyMapPlanetSelectable gog 0x007acbe0 -> 0x00697590 (C1)
-- Global::ExecuteCommandCancelCombat gog 0x007ac6e0 -> 0x00697090 (C1)
-- Global::ExecuteCommandEffectDroidStun gog 0x0078cac0 -> 0x006774e0 (C1)
-- Global::ExecuteCommandEventConversation gog 0x0078e130 -> 0x00678b50 (C1)
-- Global::ExecuteCommandGetDistanceBetween2D gog 0x00790a80 -> 0x0067b4a0 (C1)
-- Global::ExecuteCommandEffectDamageImmunityIncrease gog 0x00789030 -> 0x00673a50 (C1)
-- Global::ExecuteCommandGetIsPartyLeader gog 0x007b0d70 -> 0x0069b720 (C1)
-- Global::ExecuteCommandEventSpellCastAt gog 0x0078e220 -> 0x00678c40 (C1)
-- Global::ExecuteCommandEffectDamageIncrease gog 0x00789200 -> 0x00673c20 (C1)
+- Global::ExecuteCommandEffectForceBody gog 0x00789c80 -> 0x006746a0 (C0)
+- Global::ExecuteCommandGetDistanceToObject gog 0x00791000 -> 0x0067ba20 (C0)
+- Global::ExecuteCommandGetIdentified gog 0x007940b0 -> 0x0067ead0 (C0)
+- Global::ExecuteCommandGetStringRight gog 0x0079e650 -> 0x00689000 (C0)
+- Global::ExecuteCommandEffectDamageReduction gog 0x007893f0 -> 0x00673e10 (C0)
+- Global::ExecuteCommandPrintObject gog 0x007a4850 -> 0x0068f200 (C0)
+- Global::ExecuteCommandEffectMovementSpeedDecrease gog 0x0078afc0 -> 0x006759e0 (C0)
+- Global::ExecuteCommandGetFactionAverageGoodEvilAlignment gog 0x00791ff0 -> 0x0067ca10 (C0)
 
 ## AUTO meaning checks (5 sig + 3 c2)
 
-- sig: Global::ExecuteCommandSWMG_IsSomething gog 0x007fa370 -> 0x006f6db0
-- sig: Global::ExecuteCommandPlayMovieQueue gog 0x007afb20 -> 0x0069a4d0
-- sig: Global::ExecuteCommandSWMG_GetSwoopUpgrade gog 0x007fbfd0 -> 0x006f8a10
-- sig: Global::ExecuteCommandGetDamageDealtByType gog 0x00790810 -> 0x0067b230
-- sig: Global::ExecuteCommandActionFollowObject gog 0x0077f260 -> 0x00669c80
-- c2: Global::ExecuteCommandSoundObjectSetPosition gog 0x007a8a50 -> 0x00693400
-- c2: Global::ExecuteCommandActionStartConversation gog 0x007802f0 -> 0x0066ad10
-- c2: Global::ExecuteCommandAdjustCreatureAttributes gog 0x0079c250 -> 0x00686c80
+- sig: Global::ExecuteCommandGetHitpoints gog 0x00793df0 -> 0x0067e810
+- sig: Global::ExecuteCommandGetBattleTrack gog 0x0078fb00 -> 0x0067a520
+- sig: Global::ExecuteCommandEquipItem gog 0x0078dce0 -> 0x00678700
+- sig: Global::ExecuteCommandGetButtonMashCheck gog 0x007acda0 -> 0x00697750
+- sig: Global::ExecuteCommandSetCreatureAILevel gog 0x00780c20 -> 0x0066b640
+- c2: Global::ExecuteCommandResetCreatureAILevel gog 0x00780de0 -> 0x0066b800
+- c2: Global::ExecuteCommandGiveXPToCreature gog 0x007a04b0 -> 0x0068ae60
+- c2: Global::ExecuteCommandSWMG_SetLateralAccelPerSec gog 0x007fbee0 -> 0x006f8920

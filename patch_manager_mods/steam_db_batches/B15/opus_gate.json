@@ -2,21 +2,388 @@
  "batch": "B15",
  "chunks_short": [],
  "chunks_unreviewed": [],
- "clean": false,
+ "clean": true,
  "clean_streak_before": 0,
- "decision": "ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus",
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches; 1 decoy key error(s) excluded (decoy = Opus-shipped counterpart)",
  "decoy_cards": 40,
- "decoys_accepted": 1,
+ "decoys_accepted": 0,
  "decoys_per_chunk": {
   "1": 10,
   "2": 10,
   "3": 10,
   "4": 10
  },
- "full_read": 26,
- "sample_errors": null,
- "sample_pool": 156,
+ "full_read": 8,
+ "key_error_cards": [
+  "B15-4-38"
+ ],
+ "key_errors": 1,
+ "rows_auto": [
+  {
+   "class": "Global",
+   "gog": "0x00793df0",
+   "name": "ExecuteCommandGetHitpoints",
+   "route": "sig",
+   "steam_addr": "0x0067e810"
+  },
+  {
+   "class": "Global",
+   "gog": "0x0078fb00",
+   "name": "ExecuteCommandGetBattleTrack",
+   "route": "sig",
+   "steam_addr": "0x0067a520"
+  },
+  {
+   "class": "Global",
+   "gog": "0x0078dce0",
+   "name": "ExecuteCommandEquipItem",
+   "route": "sig",
+   "steam_addr": "0x00678700"
+  },
+  {
+   "class": "Global",
+   "gog": "0x007acda0",
+   "name": "ExecuteCommandGetButtonMashCheck",
+   "route": "sig",
+   "steam_addr": "0x00697750"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00780c20",
+   "name": "ExecuteCommandSetCreatureAILevel",
+   "route": "sig",
+   "steam_addr": "0x0066b640"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00780de0",
+   "name": "ExecuteCommandResetCreatureAILevel",
+   "route": "c2",
+   "steam_addr": "0x0066b800"
+  },
+  {
+   "class": "Global",
+   "gog": "0x007a04b0",
+   "name": "ExecuteCommandGiveXPToCreature",
+   "route": "c2",
+   "steam_addr": "0x0068ae60"
+  },
+  {
+   "class": "Global",
+   "gog": "0x007fbee0",
+   "name": "ExecuteCommandSWMG_SetLateralAccelPerSec",
+   "route": "c2",
+   "steam_addr": "0x006f8920"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "Global",
+   "gog": "0x00784680",
+   "name": "ExecuteCommandChangeFaction",
+   "steam_addr": "0x0066f0a0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00790420",
+   "name": "ExecuteCommandGetCreatureTalent",
+   "steam_addr": "0x0067ae40",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00791a10",
+   "name": "ExecuteCommandGetEmotions",
+   "steam_addr": "0x0067c430",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00798d10",
+   "name": "ExecuteCommandGetMatchedStringsNum",
+   "steam_addr": "0x00683740",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00799310",
+   "name": "ExecuteCommandGetNearestObject",
+   "steam_addr": "0x00683d40",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x007a0b00",
+   "name": "ExecuteCommandIsAIState",
+   "steam_addr": "0x0068b4b0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x007a2530",
+   "name": "ExecuteCommandMoveToPoint",
+   "steam_addr": "0x0068cee0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x007a8290",
+   "name": "ExecuteCommandShipBuild",
+   "steam_addr": "0x00692c40",
+   "why": "match cites a layout/offset difference"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00792c60",
+   "name": "ExecuteCommandGetFactionWeakestMember",
+   "steam_addr": "0x0067d680"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0078c5f0",
+   "name": "ExecuteCommandEffectTemporaryHP",
+   "steam_addr": "0x00677010"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00786680",
+   "name": "ExecuteCommandDoSinglePlayerAutoSave",
+   "steam_addr": "0x006710a0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00793530",
+   "name": "ExecuteCommandGetGoldPieceValue",
+   "steam_addr": "0x0067df50"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00793430",
+   "name": "ExecuteCommandGetGold",
+   "steam_addr": "0x0067de50"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0078d130",
+   "name": "ExecuteCommandEffectBlasterDeflectionIncrease",
+   "steam_addr": "0x00677b50"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00785c50",
+   "name": "ExecuteCommandDeleteJournalWorldEntryStrref",
+   "steam_addr": "0x00670670"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00786fc0",
+   "name": "ExecuteCommandEffectACDecrease",
+   "steam_addr": "0x006719e0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00792b50",
+   "name": "ExecuteCommandGetFactionStrongestMember",
+   "steam_addr": "0x0067d570"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00786c40",
+   "name": "ExecuteCommandEffectAbilityDecrease",
+   "steam_addr": "0x00671660"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00789b10",
+   "name": "ExecuteCommandEffectFactionModifier",
+   "steam_addr": "0x00674530"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0078d250",
+   "name": "ExecuteCommandEffectBlasterDeflectionDecrease",
+   "steam_addr": "0x00677c70"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00792960",
+   "name": "ExecuteCommandGetFactionMostDamagedMember",
+   "steam_addr": "0x0067d380"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007920d0",
+   "name": "ExecuteCommandGetFactionAverageLevel",
+   "steam_addr": "0x0067caf0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0079e7c0",
+   "name": "ExecuteCommandGetStringUpperCase",
+   "steam_addr": "0x00689170"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0078a0a0",
+   "name": "ExecuteCommandEffectVPRegenModifier",
+   "steam_addr": "0x00674ac0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0079e520",
+   "name": "ExecuteCommandGetStringLowerCase",
+   "steam_addr": "0x00688ed0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007935e0",
+   "name": "ExecuteCommandGetChemical",
+   "steam_addr": "0x0067e000"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007ad080",
+   "name": "ExecuteCommandSetCurrentStealthXP",
+   "steam_addr": "0x00697a30"
+  },
+  {
+   "class": "CSWVirtualMachineCommands",
+   "content_level": "C0",
+   "gog": "0x0078c440",
+   "name": "ExecuteCommandEffectTemporaryForcePoints",
+   "steam_addr": "0x00676e60"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007936e0",
+   "name": "ExecuteCommandGetChemicalPieceValue",
+   "steam_addr": "0x0067e100"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00794030",
+   "name": "ExecuteCommandGetMaxForcePoints",
+   "steam_addr": "0x0067ea50"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007a0a10",
+   "name": "ExecuteCommandIntToString",
+   "steam_addr": "0x0068b3c0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00787700",
+   "name": "ExecuteCommandEffectAttackDecrease",
+   "steam_addr": "0x00672120"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007878e0",
+   "name": "ExecuteCommandEffectAttackIncrease",
+   "steam_addr": "0x00672300"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007871e0",
+   "name": "ExecuteCommandEffectACIncrease",
+   "steam_addr": "0x00671c00"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007a1340",
+   "name": "ExecuteCommandIsStealthed",
+   "steam_addr": "0x0068bcf0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00789c80",
+   "name": "ExecuteCommandEffectForceBody",
+   "steam_addr": "0x006746a0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00791000",
+   "name": "ExecuteCommandGetDistanceToObject",
+   "steam_addr": "0x0067ba20"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007940b0",
+   "name": "ExecuteCommandGetIdentified",
+   "steam_addr": "0x0067ead0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0079e650",
+   "name": "ExecuteCommandGetStringRight",
+   "steam_addr": "0x00689000"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007893f0",
+   "name": "ExecuteCommandEffectDamageReduction",
+   "steam_addr": "0x00673e10"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x007a4850",
+   "name": "ExecuteCommandPrintObject",
+   "steam_addr": "0x0068f200"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x0078afc0",
+   "name": "ExecuteCommandEffectMovementSpeedDecrease",
+   "steam_addr": "0x006759e0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00791ff0",
+   "name": "ExecuteCommandGetFactionAverageGoodEvilAlignment",
+   "steam_addr": "0x0067ca10"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 174,
  "sample_rate": 0.2,
- "sample_size": 156,
+ "sample_size": 35,
  "unanswered_decoys": 0
 }
