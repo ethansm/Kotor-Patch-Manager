@@ -918,6 +918,25 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - Run 4b (log 449-472, `V_run4b_log_449-472.txt`, 0.3.0): fresh launch -> `GUID load gfb7bdbf7 found=32/32` -> source=playthrough = **V item 6
   (restart -> load) VERIFIED**. Log 472 lines before run 5. NEXT = user: Atton page -> Bank to "Pause at level 3" -> Apply (expect `UI apply ...
   pause=3`, then HOLD: icon gone, status "Holding N levels for Jedi Sentinel", GUARD on Level Up/Auto, BANKED once).
+- **RESUME HERE (session checkpoint 2026-10-03 ~02:00, for a context clear):**
+  - LIVE: 0.3.1 dll aaedb93e (hand swap; hooks/exports = 0.3.0 install, 26 ours, set 31 ids/198 hooks, stage `$T/levelup_stage7` still valid for
+    hooks); backup of the 0.3.0 state `backups/pre_levelup_031_pause_20261003_015201/`; game-dir ini `mode=rewrite apply=1 verbose=1`;
+    `levelup_playthroughs.ini` sections `[g11b3b802]` (save gone: QUICKSAVE overwritten 01:18) and `[gfb7bdbf7] atton=atton__melee_dual_light_early|
+    instant=0|hold=1` (current lineage = Game2 -> latest QUICKSAVE). Live `levelup_paths.ini` = pre-B1 table (copy repo `runtime/levelup_paths.ini` at
+    the next install, with consent). Log 472 lines; read from 473.
+  - Commits this session: d9d4b51 Step 0, a230f20 B1, 4822262, 262da10 B2, 5a69c4e run 4, 8611120 pause spec, 66a6020 C1, b016ab6 0.3.1, 96ad43f install.
+  - V checklist status: (1) page look - opaque fill ok in log, user saw no complaint, Kreia/g0t0 rows NOT yet confirmed; (2) leader instant - OPEN;
+    (3) hold/status/GUARD/BANKED - OPEN (run 5 with Pause at level 3); (4) R1 manual picks kept - OPEN; (5) unconfigured + PC vanilla - OPEN;
+    (6) restart -> load -> GUID - VERIFIED (run 4b), new game -> unconfigured - OPEN (GUID-less save -> unconfigured verified); (7) no hang/leak - none seen.
+  - Waiting on the user: run 5; answer "1.0.0 default mode=rewrite when the ini is missing?" (asked twice, unanswered; Opus leans yes); B1 taste item
+    (Kreia spare points -> Stealth L10-30, Bao-Dur -> Persuade) keep or revert.
+  - No background agents running. Next work after run 5: A1-A3 (dev-probe cleanup, robustness review incl. leader instant vs 0x740FC0, tests ->
+    $TMPDIR + run_all + mutate.py incl. pause mutations), A4 adoption notes, A5 README (document Pause at level N), B3 build review, B4 recommended
+    list, C2 design note (doc 21 or doc 08) from `phase6_evidence/R10_findings.md`, then C3 user gate.
+  - Gotchas: other sessions have UNCOMMITTED edits in `patch_manager_mods/_shared_src/{GuiKit.h,SafeRead.h}` and doc 07 / steam_db_pr3 - not ours,
+    never commit them; `$T` = `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`; `$G` = `~/.local/share/Steam/steamapps/common/Knights of the
+    Old Republic II`; saves in `$G/cloudsaves/62703561/`; kpatch dll = `binaries/windows_x86.dll` inside the zip; Atton minPause = 3 (first record
+    char 4); pause clamps to 0 when a row cycle moves to a preset with another range (user value not remembered - acceptable, note for README).
 
 
 ### Note from the hotbar session (2026-10-03 01:57)
