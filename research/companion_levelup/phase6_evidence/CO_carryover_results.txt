@@ -1,0 +1,21 @@
+CO carry-over check (B2 matrix, Python twin decisions)
+
+rule text: 3239 bytes, 70 feat rows, 69 power rows
+scenarios (preset, conversion level): 192 (x hold on/off)
+
+== initial creature state: empty (B2 convention) ==
+BEFORE prereq-lost rows 94 (15 distinct preset/feat-or-power) | min-level rows 250 | absolute: prereq 681 min-level 250 not-choosable 48 (+0 inherent in as-designed records) | events 3774 (carry-mode 0, unfilled slots 0 of which blocked-with-owed-items 0, prereq-first picks 0, of which not in the plan 0) | items never obtained: Jedi-record 0, base-only 391
+AFTER  prereq-lost rows 0 (0 distinct preset/feat-or-power) | min-level rows 0 | absolute: prereq 0 min-level 0 not-choosable 0 (+424 inherent in as-designed records) | events 3774 (carry-mode 2120, unfilled slots 134 of which blocked-with-owed-items 134, prereq-first picks 199, of which not in the plan 0) | items never obtained: Jedi-record 560, base-only 116
+  items never obtained after carry-over, by reason (summed over scenarios): feat: legal by level 30 but no slot left (records exhausted)=606; power: legal by level 30 but no slot left (records exhausted)=134
+  residual violations after carry-over: none
+
+== initial creature state: starting utc feats/powers ==
+BEFORE prereq-lost rows 130 (25 distinct preset/feat-or-power) | min-level rows 250 | absolute: prereq 130 min-level 250 not-choosable 48 (+0 inherent in as-designed records) | events 3774 (carry-mode 0, unfilled slots 0 of which blocked-with-owed-items 0, prereq-first picks 0, of which not in the plan 0) | items never obtained: Jedi-record 0, base-only 391
+AFTER  prereq-lost rows 0 (0 distinct preset/feat-or-power) | min-level rows 0 | absolute: prereq 0 min-level 0 not-choosable 0 (+48 inherent in as-designed records) | events 3774 (carry-mode 2120, unfilled slots 134 of which blocked-with-owed-items 134, prereq-first picks 12, of which not in the plan 0) | items never obtained: Jedi-record 428, base-only 81
+  items never obtained after carry-over, by reason (summed over scenarios): feat: legal by level 30 but no slot left (records exhausted)=419; power: legal by level 30 but no slot left (records exhausted)=134
+  residual violations after carry-over: none
+
+ON-TIME byte identity: 4094 records walked in design order x2 initial states, 28658 format_dry comparisons (1 clean + 6 random pending lists each), all with info=ontime: IDENTICAL
+on-time conversion scenarios (L = convert_at-1, full engine loop to 30, both initial states): IDENTICAL
+
+FAILURES: 0
