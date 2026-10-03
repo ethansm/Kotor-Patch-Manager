@@ -101,6 +101,8 @@ Two-mod pairs also include the equip3d/inv3d scene functions, 0x73FB90, 0x5453C0
 **Log-parser constraints.** `mods678_research/analyze_play_logs.py` anchors `^H1 t=` in `ranged_ai_log.txt`, so no prefix may be added to
 that log. `scripts/check_effect_decode.py` parses the effects panel output. Any `KpLog.h` adoption keeps per-mod formats or updates these parsers.
 
+**Consumer contract tests (user rule, 2026-10-03).** Every mod that includes a Common header owns `<mod>_src/common_contract_test.cpp` pinning the Common semantics it relies on (doc 20 §4.1). A Common change that breaks a consumer fails in that consumer's test, with a `<mod> relies on:` message. Adoptions and Common edits add/extend the block in the same commit.
+
 **Quiet mods (safe first adopters):** EquipIconFix, ActivationFix, TextureMemoryRelease, RangedAI, MouseProbe, LoadHangProbe.
 
 **Hotbar (Mod 3), Phase X (2026-10-03):** adopts SafeRead, B7 `readExo`, B2 GuiKit setters, `GameAddr.h`, B6 `Party.h` before its Phase D/T.

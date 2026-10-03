@@ -131,6 +131,7 @@ Each tier says what it proves, where its tests live and how fast it is. The runn
   - `--mutate <header>` runs the mutation gate.
 - **Output:** one line per test; failures show the captured output; exit 1 on any failure; `--json` writes a summary for the docs.
 - **Where builds go:** `$TMPDIR/kotor-tests/`, never the repo. The level-up suite currently writes `*_bin` files into the repo, so add them to `.gitignore`.
+- **Common contract tests (user rule, 2026-10-03):** every mod that includes a `_shared_src` (Patches/Common) header owns `<mod>_src/common_contract_test.cpp`, built straight against `_shared_src`, with one block per Common API the mod calls. It pins the semantics that mod relies on (not the header's own suite); every check message starts `<mod> relies on:`. Any Common change re-runs it, so a breaking edit by any session fails in the consumer. Prove each block red once with a deliberate Common break. Proposed: the T0 checker warns on a Common include without a contract test, and `check_shared_headers.py --sync` refuses to sync while any contract test is red. Reference consumer: the hotbar.
 
 ### 4.2 The gate before an install
 Run in this order: `run_tests.py`, then a `.kpatch` rebuild, then `run_tests.py --wine` for touched mods, then install. This extends the "verify, commit, then launch" sequencing rule (feedback memory). Add a short `scripts/pre_install_gate.sh` that does exactly this and prints PASS or FAIL. It replaces the ad-hoc `kpm_registry_gate.sh` pattern.
