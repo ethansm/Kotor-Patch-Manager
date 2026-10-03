@@ -1035,3 +1035,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **User decision 2026-10-03: carry-over fix before 1.0.0** - stateless "owed picks": each slot takes the earliest planned-but-missing pick that is
   legal now; a missing prerequisite is taken first, too-early powers wait. Prototype running (new files `phase6_evidence/CO_carryover_*`), then
   port to simulate_rewrite + gen_runtime_table + C++ after the A3 mutation run (which copies the sources). 1.0.0 build waits for it.
+- A3 DONE a614e20: `tools/parity/mutate.py` 82 mutations, 100 % killed (14 test gaps closed: unit_gap_test.cpp + ui/gate/playthrough checks).
+- Carry-over prototype DONE 8bb8370 (`phase6_evidence/CO_carryover_*`): gaps 94/250 -> 0, on-time byte-identical; needs `[featrules]`/`[powerrules]`
+  table sections (70 feats / 69 powers, ~3 KB; old DLL rejects the new table -> ship together). User decisions: **Jedi plan first** (current
+  record's picks keep their slots; owed base picks only as pulled prerequisites or for slots without a legal pick); Opus decisions: no legal pick
+  -> the engine's own pick for that slot (never an empty slot); owed POWERS need the creature known-power list (RE in the port step; else
+  min-level check only). Port agent running (twin + generator + C++ + tests + mutations). Then A6 build.
