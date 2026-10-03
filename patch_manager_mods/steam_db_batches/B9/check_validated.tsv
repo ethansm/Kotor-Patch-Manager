@@ -434,6 +434,7 @@ steam_addr	name	status	verdict	tier	batch	note
 0x0053aea0	CServerExoAppInternal::ShrinkLineByCreatures	validated	verified	opus	B9	
 0x0053aed0	CServerExoAppInternal::GetSystemTimeAsDWORD64	validated	verified	opus	B9	
 0x0053af20	CServerExoAppInternal::DoPCAutosave	validated	verified	auto:c2	B9	
+0x0053cc80	CServerExoAppInternal::SetMoveToWorldTime	validated	verified	opus	B9	
 0x0053ccf0	CServerExoAppInternal::GetMoveToWorldTime	validated	verified	opus	B9	
 0x0053cd70	CServerExoAppInternal::DoModuleEnterSaveCleanup	validated	verified	opus	B9	
 0x0053cf10	CServerExoAppInternal::GetModulePreviouslyVisited	validated	verified	opus	B9	

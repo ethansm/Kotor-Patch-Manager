@@ -93,18 +93,40 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
 
 ## B9: Server Core & World Lifecycle (2026-10-03)
 
-- Scope: 270 GOG rows across `CServerExoApp` (45), `CServerExoAppInternal` (87), and `CSWSModule` (138).
+- Scope: 270 GOG rows: `CServerExoApp` 118, `CServerExoAppInternal` 98, `CSWSModule` 54.
 - Gates: AUTO 102, REVIEW 166, NOCAND 1, REJECT 1. 4 Sonnet card chunks, 40 decoys.
-- Reviewer: Sonnet reviewed 4 chunks; accepted 1 decoy card, triggering ESCALATE: 100% of reviewer matches to Opus.
-- Opus: parts a/b/c covered 174 rows (all 166 REVIEW rows + 8 AUTO meaning checks).
-  - overrides_a: 60 rows (59 verified, 1 likely, 0 sample errors)
-  - overrides_b: 60 rows (58 verified, 2 likely, 0 sample errors)
-  - overrides_c: 54 rows (52 verified, 1 likely, 1 label_suspect, 0 sample errors)
-  - Combined `overrides.tsv`: 174 rows (169 verified, 4 likely, 1 label_suspect, 0 sample errors).
-- Final verdicts: verified 263, likely 4, rejected 1, unresolved 1, label_suspect 1. Details in `B9/B9_SUMMARY.md`.
-- Knowledge DB (`persist B9 --apply`): high-confidence mappings upserted into `name_map`, 263 marks added to `steam_validated`.
-- Branch DB (`addressdb/k2-steam-acc` commit 4b81a2b, `import-ghidra --mode append`): 2,321 -> 2,568 rows.
-  - 247 new rows, 16 existing rows confirmed at the same address.
-  - `SqliteTools validate` passed with 0 errors.
-- `check-validated`: 2,568 of 2,568 branch rows are `validated` (`B9/check_validated.tsv`).
-
+- Reviewers: 1 decoy card accepted (B9-3-29 SetIgnoreConversationStartRange: the decoy 0x51CD10 is
+  SetActionConversation, so this was a genuine reviewer error, not a key error). That triggered ESCALATE: Opus read
+  100% of the reviewer matches.
+- Opus: parts a/b/c covered 174 rows (all 166 REVIEW rows plus 8 AUTO meaning checks), 0 sample errors.
+  - a: 57 verified, 2 likely, 1 label_suspect;
+  - b: 58 verified, 2 likely;
+  - c: 54 verified.
+  - The 10 address corrections were all the same-shape neighbour (Get/Set twin or adjacent field).
+- Two passes:
+  - **First pass** (another session, KOTOR-II 92569e5, branch 4b81a2b): merged the three parts as they stood and
+    shipped 263 verified rows. The branch went from 2,321 to 2,568 rows.
+  - **Opus consolidation** (`B9/B9_SUMMARY.md`): `overrides.tsv` 176 rows. It added:
+    - CServerExoAppInternal::SetMoveToWorldTime: GOG 0x7BFA20 is Steam 0x53CC80. The gate had rejected a wrong pick.
+      The fingerprint is equal (103 B, RET 0x1C), and `0053cc8d MOV [EAX+0x1009c],ECX` writes the fields that its
+      twin 0x53CCF0 reads.
+    - DebugValidatePath, GOG 0x662B80 (the NOCAND row): `label_suspect`. Its body is CSWSCreature::GetFirstAttacker,
+      Steam 0x6E6880.
+- Final verdicts: verified 264, likely 4, label_suspect 2, rejected 0, unresolved 0.
+  - The likely rows (not shipped) are GetFPS, GetNetLayer, GetConnectionLib and the AsSWSModule thunk.
+- KDB (`persist B9 --apply` after the consolidation): insert 1, evidence refresh 157, 8 lessons, 1 mark. A second
+  apply changed 0 rows. Backup: `backups/kdb/kotor2_ghidra_knowledge.db.pre_B9b_persist_20261003`.
+- Branch DB (commit 76cedbe): 2,568 -> 2,569 rows (+SetMoveToWorldTime). The notes on the other 263 rows were
+  refreshed. `validate` passed, and no address or name appears twice. Backup:
+  `backups/steam_db/kotor2_steam_aspyr.db.4b81a2b_preB9b_20261003`.
+- `check-validated`: 2,569 of 2,569 rows are `validated`.
+- Lead spot-checks on disk (Steam fingerprint equals GOG for each):
+  - SetMoveToWorldTime 0x53CC80, quoted above.
+  - SetIgnoreConversationStartRange 0x51CD60 (36 B, RET 4): `0051cd78 MOV [EDX+0x1f320],EAX`. The decoy 0x51CD10
+    writes +0x1f31c instead.
+  - Constructor 0x51BC20 (147 B): `0051bc5f CALL 0x00919723` (operator new) and `0051bc7a CALL 0x0052ebe0`
+    (CServerExoAppInternal ctor). These are the GOG callees 0x921347 and 0x7b1f60.
+- GOG label ledger: Internal::Uninitialize and DebugValidatePath are confirmed GOG label errors; 15 GOG DB param-size
+  errors are recorded (`GOG_LABEL_SUSPECTS.md`, B9 subsection).
+- Open: the KDB names 0x6E6880 "ApplyOnHitInstantDeath" (low confidence), but it is GetFirstAttacker. The rename
+  needs a kdb_overrides row.

@@ -15,7 +15,7 @@ None.
 
 - B9-3-29 0x0064c780 -> 0x0051cd10 (decoy_prev)
 
-## Opus reads 100% (23 rows)
+## Opus reads 100% (24 rows)
 
 - CServerExoApp::Constructor gog 0x0064b640 -> 0x0051bc20: reviewer corrected_addr
 - CServerExoApp::GetObjectArray gog 0x0064baa0 -> 0x0051c080: match cites a layout/offset difference
@@ -32,6 +32,7 @@ None.
 - CServerExoApp::GetMoveToPausedCalendarDay gog 0x0064c9a0 -> 0x0051cf80: match cites a layout/offset difference
 - CServerExoApp::GetMoveToPausedTimeOfDay gog 0x0064c9f0 -> 0x0051cfd0: match cites a layout/offset difference
 - CServerExoApp::GetModulePreviouslyVisited gog 0x0064ca90 -> 0x0051d070: match cites a layout/offset difference
+- CServerExoAppInternal::DebugValidatePath gog 0x00662b80 -> 0x006e6880: label_suspect
 - CSWSModule::non_virtual_thunk_to_dtor_CSWSModule gog 0x00733ef0 -> 0x00561c80: reviewer corrected_addr
 - CServerExoAppInternal::InitiateModuleForPlayer gog 0x007b8a10 -> 0x005356d0: match cites a layout/offset difference
 - CServerExoAppInternal::PlayerListChange gog 0x007b8f70 -> 0x00535c30: match cites a layout/offset difference

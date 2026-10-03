@@ -205,6 +205,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x0053aea0	CServerExoAppInternal::ShrinkLineByCreatures	verified	opus	0x007be0f0	B9	aea6339a61583dba	steam_db_batches/B9/final_rows.tsv
 0x0053aed0	CServerExoAppInternal::GetSystemTimeAsDWORD64	verified	opus	0x007be120	B9	3f2a80dbe4cd4519	steam_db_batches/B9/final_rows.tsv
 0x0053af20	CServerExoAppInternal::DoPCAutosave	verified	auto:c2	0x007be170	B9	b2bc7392a35bb97a	steam_db_batches/B9/final_rows.tsv
+0x0053cc80	CServerExoAppInternal::SetMoveToWorldTime	verified	opus	0x007bfa20	B9	84c72606111b8ad4	steam_db_batches/B9/final_rows.tsv
 0x0053ccf0	CServerExoAppInternal::GetMoveToWorldTime	verified	opus	0x007bfa90	B9	67a12dfa2642d9f9	steam_db_batches/B9/final_rows.tsv
 0x0053cd70	CServerExoAppInternal::DoModuleEnterSaveCleanup	verified	opus	0x007bfb10	B9	631d578ed5fe49fd	steam_db_batches/B9/final_rows.tsv
 0x0053cf10	CServerExoAppInternal::GetModulePreviouslyVisited	verified	opus	0x007bfcb0	B9	cd947a5409e38122	steam_db_batches/B9/final_rows.tsv

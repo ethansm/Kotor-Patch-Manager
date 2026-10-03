@@ -13,7 +13,7 @@
   "3": 10,
   "4": 10
  },
- "full_read": 23,
+ "full_read": 24,
  "key_error_cards": [],
  "key_errors": 0,
  "rows_auto": [
@@ -179,6 +179,13 @@
    "name": "GetModulePreviouslyVisited",
    "steam_addr": "0x0051d070",
    "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CServerExoAppInternal",
+   "gog": "0x00662b80",
+   "name": "DebugValidatePath",
+   "steam_addr": "0x006e6880",
+   "why": "label_suspect"
   },
   {
    "class": "CSWSModule",

@@ -171,6 +171,34 @@ Not errors (source names that differ from the nwscript names but are the Mac rea
 0x79CCE0 (slots 238/845, Mac symbols GetPCSpeaker and GetPartyLeader for one handler) -> Steam 0x69B7C0. 653 of the 655
 GOG `ExecuteCommand*` handler rows carry the Mac symbol of their slot set; the two exceptions are the slot-156 pair.
 
+### CServerExoApp / CServerExoAppInternal / CSWSModule (B9)
+B9 Opus gate parts a/b/c + consolidation, 2026-10-03. Two isolated label errors, no rotation: the AUTO neighbours of
+both rows (CreatureAcquireItem, TestSafeLocation, ComputeSafeLocation, UpdateMapData, ForceRunAreaOnExitScripts) keep
+their Mac shapes (disp 0x2C8/0x30C, 0x90/0x380, 0x238, 0x124/0x1DC). Both rows are `label_suspect` in `B9/overrides.tsv`
+and are not shipped.
+
+| GOG addr | GOG DB name | body is | Mac evidence | Steam (body) | name really at |
+|---|---|---|---|---|---|
+| 0x7BDA10 | `CServerExoAppInternal::Uninitialize` | TempDeathUpdate helper: loads the client app `[[0x00a1b4a4]+4]` and calls `CClientExoApp::RunDeathSequence` (`0053a7d7 CALL 0x007403a0` = GOG 0x40D860), 32 B, RET 0; sole caller TempDeathUpdate (GOG 0x7BD310 -> Steam 0x53A0C0) | Mac `CServerExoAppInternal::Uninitialize` 0x399CF4 is an empty 5 B stub; Mac `TempDeathUpdate` 0x3968D4 calls `CClientExoApp::RunDeathSequence` 0x1C0EFE itself (helper inlined on Mac) | 0x53A7C0 | to locate (Mac body is empty; no GOG `CServerExoApp::Uninitialize` forwarder row) |
+| 0x662B80 | `CServerExoAppInternal::DebugValidatePath` | `CSWSCreature::GetFirstAttacker`: fastcall on a creature; rebuilds the id list at `[+0x11A4]` from the area creature array `+0x194/+0x198` where `[creature+0x548]` = this id, sets `[+0x11A8]=1`, returns the first id or 0x7F000000; sits in creature code, not the Internal block | Mac `CSWSCreature::GetFirstAttacker` 0x378234 (239 B): disp 0x194,0x198,0x548,0x11A4,0x11A8, imm 0x7F000000, callee `CServerExoApp::GetCreatureByGameObjectID`; Mac `ExecuteCommandGetAttacker` 0x33C84A calls it | 0x6E6880 (unique fp = GOG: 446 B, 127 insn, same disp/imm; sole caller `ExecuteCommandGetAttacker` 0x696BF0) | DebugValidatePath: no Mac x86 symbol; Linux `CServerExoAppInternal__DebugValidatePath` 0x085CFC34 (633 B); to locate on Windows (may be compiled out). GetNextAttacker probably GOG 0x662D40 (FUN_) -> Steam 0x6E6A40 (123 B, fp equal; shape only, not gated) |
+| 0x64C2F0 | `CTwoDimArrays::GetSwoopUpgradeRowProvider` | `CServerExoApp::GetPartyTable` (already Confirmed above, B0). B9 adds a caller proof: GOG TempDeathUpdate 0x7BD310 calls 0x64C2F0 and Steam TempDeathUpdate 0x53A0C0 calls 0x51C8D0, as Mac TempDeathUpdate calls `GetPartyTable` 0x324362; +0x1F0B4 is the party table (Internal::RunModule `00536344 ADD ECX,0x1f0b4` then CreateParty) | Mac `CServerExoApp::GetPartyTable` 0x324362 16 B disp 0x4 | 0x51C8D0 (`0051c8dd ADD EAX,0x1f0b4`) | not a B9 row (class CTwoDimArrays); GetPartyTable: extra |
+
+Not errors: Mac orders two CServerExoApp forwarders differently (GetFPS last; ClientToServerObjectId between IsInjured
+and GetPauseState), but GOG and Steam agree and both bodies fit their names. Windows `GetModuleLanguage` forwards to
+`Global::return_zero` (GOG/Steam agree; Mac calls the Internal function).
+
+**GOG DB param sizes (B9).** 15 B9 rows have a GOG DB `param_size_bytes` that disagrees with the RET n of the GOG
+function itself. The Steam RET n is the same as GOG's in every row, so the GOG DB values are wrong. The Steam rows ship
+the RET n; finalize records the GOG value in the note. Format: GOG DB value -> RET n.
+- Found by the Opus parts: `CServerExoAppInternal::PlayerListChange` 0x7B8F70 8 -> 12; `CSWSModule::SaveModuleStart`
+  0x72DFE0 0 -> 8; `CServerExoAppInternal::CopyModuleToCurrentGame` 0x7B4F60 8 -> 12; `CServerExoApp::GetRoomIndex`
+  0x64C620 0 -> 12; `CServerExoAppInternal::SaveGame` 0x7B2990 12 -> 16.
+- Found by the consolidation sweep: `CServerExoApp::TestDirectLine` 0x64C330 4 -> 32; `CServerExoApp::ComputeHeight`
+  0x64C460 0 -> 12; `CSWSModule::Constructor` 0x728E20 8 -> 12; `LoadModuleInProgress` 0x72CC10 4 -> 8;
+  `PackModuleIntoMessage` 0x72CF90 0 -> 4; `SaveModuleFinish` 0x72E330 4 -> 8; `SavePlayers` 0x72F830 8 -> 16;
+  `PackPlayerCharacterListIntoMessage` 0x730B00 0 -> 8; `CServerExoAppInternal::SetEstimatedSaveSize` 0x7B6860 0 -> 8;
+  `StartServices` 0x7B96E0 0 -> 4.
+
 ## GOG pseudo-functions (not functions)
 | GOG addr | GOG DB name | what it is | Steam |
 |---|---|---|---|
