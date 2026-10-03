@@ -1,6 +1,6 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
-**TARGET PROBE BUILD 29p READY, NOT INSTALLED (2026-10-03 ~13:00): `afe1553c`** (kpatch in `~/Games/KOTOR2_Mod_Workspace/hotbar_probe_b29/`). Install waits for the user's build 28 report.
+**TARGET PROBE BUILD 29p INSTALLED (2026-10-03 16:26): `afe1553c`** -- user chose to skip the build 28 report and test 28+probe live (fix forward with logs). Stage `hotbar_stage18/` (= stage17 + framework CharEffectsPanel 2e14e871 + probe FPH), backup `backups/inst18_1003_1626`; sibling hot-copied DLLs (buff-duration-hud f37135c8, perf-lab 9c72cffb, k2-robustness-fixes 294be99f) and non-KPM DLLs (portrait-slots, shield-bar: the installer DELETES DLLs not in InstalledPatches!) copied back from the backup; full patches/ diff = only force-power-hotbar.dll; exe sha256 unchanged 7751f7d8; AR_ERROR.LOG unchanged. Live INI [General] TargetProbe=2 (load keeps [General], replaces profiles). Rollback = stage17 FPH (6dd6d0e2).
 - Code: UB-C Party.h vitals (33aa74e, clone fa653d0), UB-I `@lowhp[:pct[:self|none]]` + `[General] HealThreshold/HealFallback` (33aa74e), UB-L HotbarLogic.h (cc4a6e4), probe `targetedUse` in drainRing.
 - Probe use: hand-edit an item slot to `item:<name>@lowhp:90` and set `[General] TargetProbe=1` (log only, still uses it on self) or `=2` (live: PerformUseItem on the chosen member). INI reloads live.
   Log lines `target: ...` (item ids/type, one line per member with hp/ok/down/eligible, the choice, PerformUseItem called/returned).
