@@ -1,0 +1,259 @@
+{
+ "0x00846350": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x00846690": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G01 chose the real card (0x846690: cap = FUN_844860()+3, halved if not class skill (local_d/2), returns undefined4 bool, calls 0x845C10; ret 4)"
+ },
+ "0x008468C0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G02 chose the real card (0x8468C0 asm/dec: FUN_00845c10(param_2, local_1e + -1) then *(short*)(this+0xB6) += 1 or += 2 (refund))"
+ },
+ "0x00848660": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0089A160": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G03 chose the real card (0x89A160(this,byte slot,byte state): writes state at +0x10c+slot*0xb4, switch(state) cases 0..; single slot)"
+ },
+ "0x0089A760": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G04 chose the real card (0x89A760 reads spells table: *(char*)(row+0x14c)==1||==6 and row+0xC != 0, caches at +0x1048; callee 0x6C1450)"
+ },
+ "0x0089AAA0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G05 chose the real card (0x89AAA0 calls 0x6BD9C0 HasSpell, 0x89A760 power list, rows via 0x89AF30)"
+ },
+ "0x0089AB29": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0089AF30": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G06 chose the real card (0x89AF30 has 4 params (spell,tier2,tier3,flag), called by power rows 0x89AAA0; alloc 0x324 row)"
+ },
+ "0x0089B100": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G07 chose the real card (0x89B100 iterates feat count +0x11c via 0x6A20F0, +0x38/+0x3a prereq tiers, cache +0x103c, inserts via CExoArrayList Add)"
+ },
+ "0x0089B600": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "sonnet_override": true,
+  "note": "Opus: 0x89B600 size 2244 (dec3:2039) contains call 0x89BED0 at 0x89BE91 (disasm body:492), called by feats init 0x90AEA0 (callmap); Sonnet picked sibling 0x89B320 decoy"
+ },
+ "0x0089B6E4": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0089BED0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G09 chose the real card (0x89BED0(this,baseFeat,tier2,tier3) alloc 0x324, calls 0x6A20F0 feat getter; called from feat rows)"
+ },
+ "0x0089C070": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G10 chose the real card (0x89C070: sets cursor bytes +0xC/+0xD, FUN_0089a0e0(oldslot,0) / (new,1) = select highlight)"
+ },
+ "0x0089C170": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G11 chose the real card (0x89C170(this,id,state): scans rows +0x108+c*0xb4==id then FUN_0089a160(col,param_3 state))"
+ },
+ "0x0089C220": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G12 chose the real card (0x89C220: double loop rows x 3 slots calling FUN_0089a160(c,param_2))"
+ },
+ "0x0089C350": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x008F4AF0": {
+  "decision": "approve",
+  "confidence": "medium",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G13 chose the real card (0x8F4AF0 pushes 'MAINCG_p' at 8f4f27; param_1[0x1a]=local_1d0 (+0x68), param_1[0xb2d]=param_3 (+0x2CB4), creates panel v)"
+ },
+ "0x00902F60": {
+  "decision": "approve",
+  "confidence": "medium",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G14 chose the real card (0x902F60 pushes 'LEVELUPPNL_p' at 009030d8, +0x68 = GetCreatureByGameObjectID(param_3) (0x73F550))"
+ },
+ "0x009074E0": {
+  "decision": "approve",
+  "confidence": "medium",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G15 chose the real card (0x9074E0 pushes 'pwrlvlup_p' at 009077e9, MOV [ECX],0x9aa34c at 0090752a (CSWGuiPowersLevelUp::vftable))"
+ },
+ "0x00908540": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x00908920": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x00909360": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G16 chose the real card (0x909360: FUN_0089c220(3) then loops; asm +0x1BAC bit0==0 and id==6||0xe -> 3 else 0; grid +0x1BF8; powers panel)"
+ },
+ "0x009098D0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x009099A2": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G17 chose the real card (0x9099A2 'MOVZX ECX,word ptr [EBP-0x1C]; PUSH ECX' start of 0f b7 4d e4 51; loop-head exit JMP at 00909B51 (e9 c8 fd ff )"
+ },
+ "0x009099DB": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G18 chose the real card (009099DB e8 80 ec f3 ff CALL 0x00848660 after pushes of spell [ebp-0x1c], +0x1ba9, +0x1be0)"
+ },
+ "0x00909E00": {
+  "decision": "approve",
+  "confidence": "medium",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G19 chose the real card (0x909E00 pushes 'FTCHRGEN_p' at 0090a0d2, 'LB_FEATS', MOV [ECX],0x9aa434 at 00909e4a)"
+ },
+ "0x0090AEA0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090B200": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090B6B0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090B890": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G20 chose the real card (0x90B890 switch: case 2 0xa4c7, case 3 0xa4c6, case 4 0xa4c8 popup via ClientApp::GetGuiInGame(+0xa0))"
+ },
+ "0x0090BD50": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090C230": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090C2BE": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090C349": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G21 chose the real card (0090C349 e8 62 bd f3 ff CALL 0x008480b0 after 3 pushes ([ebp-0x1c], +0x1bdc, +0x1bdd) + &selected, ECX [ebp-0x10])"
+ },
+ "0x0090C6A0": {
+  "decision": "approve",
+  "confidence": "medium",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G22 chose the real card (0x90C6A0 pushes 'SKCHRGEN_p' at 0090cac9 with COMPUTER_USE/DEMOLITIONS... rows; MOV [ECX],0x9aa714)"
+ },
+ "0x0090E850": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "reviewer",
+  "sonnet_override": true,
+  "note": "Sonnet blind adjudication G23 chose the real card (0x90E850 is slot 15 (+0x3C) of vtable 0x9AA714 (skills); switch 0x27/0x2d etc, ret 8)"
+ },
+ "0x0090EDE0": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ },
+ "0x0090F610": {
+  "decision": "approve",
+  "confidence": "high",
+  "tier": "opus",
+  "note": "Haiku match on real card, all decoys rejected; Opus spot-checked against R10_findings"
+ }
+}

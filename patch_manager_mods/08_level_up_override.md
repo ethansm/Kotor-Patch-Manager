@@ -991,3 +991,12 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (Phase 6b, usage limit 2026-10-03):** next = commit C1b packet files + verdicts, Opus gate -> `C1b_insert.py --verdicts --gate --write`;
   read B3 review (`phase6_evidence/B3_build_review.md` if the agent finished) and ask the user its questions; then A1 (C++ cleanup incl. banner
   md5, mode=rewrite default), A2, A3 mutate, M5 doc 21 + skill, A5 README, suites.toml proposals (`scenarios.py`, `--m32`) to doc-20 owner.
+- C1b DONE (rows in the WORKING-TREE knowledge DB, not committed): Haiku 129 cards -> 18 clean passes; blind Sonnet adjudication of 23 groups
+  -> 22 correct; G08 (0x89B600) Sonnet chose the sibling decoy 0x89B320, Opus override (size 2244 contains call 0x89BED0 at 0x89BE91; caller
+  feats init 0x90AEA0). Gate `phase6_evidence/C1b_verdicts/opus_gate.json`; `C1b_insert.py --write` added name_map/functions/steam_validated 33,
+  classes 4, class_methods 17, hooks_ported 4 (planned), lessons 1; integrity ok; re-run adds 0. **The DB file also holds 224 uncommitted
+  steam-db-B9 rows from the Steam DB session**, so this session does not commit the DB; whoever commits it next carries both (source tag
+  `level-up-C1b-R10-haiku-verified`; re-run `C1b_insert.py --write` with the gate if the DB is ever reset). Pre-write copy was kept in the session scratchpad only.
+  Lesson: decoy cards that are TRUE (ctor vs vftable claims on the same address, G14/G15/G19/G22) confuse "pick one" adjudication - make decoys mutually exclusive.
+- B3 DONE 398394e (`phase6_evidence/B3_build_review.md`): BUG 12 (Close Combat / Improved Close Combat = ranged-only feats in 12 melee/unarmed
+  presets incl. recommended atton__melee_dual_light_early:127,171), QUALITY 31, TASTE 25; user questions Q-U1..Q-U10 pending.
