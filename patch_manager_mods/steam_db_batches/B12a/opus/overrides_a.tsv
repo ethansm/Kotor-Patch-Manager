@@ -1,0 +1,32 @@
+gog_addr	steam_addr	final_verdict	note
+0x00657710	0x006db460	label_suspect	fp= unique (60B RET 0xc); 006db491 CALL 0x007404d0 (=GOG 0x40d990 CClientExoApp::GetClientRangedAnimation, fp=) on [AppMgr]+4: wrapper, not TotalDefense. Real IsInTotalDefense=GOG 0x656d70->0x6daac0
+0x00658710	0x006dc460	label_suspect	fp= unique; 006dc4b5 MOV EDX,0x271e / 006dc4d7 MOV EAX,0x271c anim ids + copies target pos to attack+0x68..0x70 = Mac ResolveRangedHit. Real DischargeTime=GOG 0x65aae0->0x6de7e0
+0x0065b5a0	0x006df2a0	verified	fp= (4075B, RET 0x14, 20 callees); 006dfc11 MOV byte [EDX+0x145],0x4; sole caller ResolveMeleeAttack 006dec87 (Mac MeleeAttack calls MeleeSpecialAttack). Pipeline 0x542e00 wrong
+0x0065c680	0x006e0380	label_suspect	CORRECTION from 0x543ae0 (761B, ResistSpell callee). fp= 135B: 006e0395 MOV EDX,[ECX+0xd8]; 006e03ec CMP ..,0x2af8: anim-id predicate. Real ResolveRangedMiss=GOG 0x6587e0->0x6dc530
+0x0065c900	0x006e0600	label_suspect	fp= unique 79B RET 0xc: 006e0625 MOV [EAX+0x14],CX / 006e0645 MOV [EAX+0x10],DX on GetAttack; helper for ranged+melee anims. Real ResolveRangedAnimations=GOG 0x658540->0x6dc290
+0x0065ef50	0x006e2c50	label_suspect	fp= unique; 006e2c71 CALL 0x006d0620 GetItemInSlot(0x10/0x20) + 006e2c82 CALL 0x00615c80 IsLightsaber = Mac IsLightsaberEquipped. Real MissToParry=GOG 0x65e710->0x6e2410
+0x0065fd40	0x006e3a40	verified	fp= (3044B, RET 0xc, 20 callees); 006e3d54 CALL 0x0056e1e0 RangeWeaponEquipped, 006e3ccb CALL 0x005716a0 DesiredAttackRange; Mac DoCombatStep disp 0x1b0,0x380,0x1114. 0x54xxxx picks wrong
+0x0067c0c0	0x00563490	verified	CORRECTION from 0x563390 (that is GetPortrait GOG 0x67bfc0). fp= 44B RET 4: 0056349a CALL 0x005634c0 (fp= GOG ~CSWSCreature 0x67c0f0, 1913B) + 005634ab CALL 0x009196fd delete
+0x00680a70	0x00567e40	label_suspect	fp= unique; 00567ee0 PUSH 0x7 / 00567ee5 CALL 0x0053f7f0 AddAction; caller ExecuteCommandPickUpItem 0068dae8 = Mac AddPickUpItemActions (disp 0x8,0xec, imm 7). Labels shifted by one
+0x00680b30	0x00567f00	label_suspect	fp= unique; 00568005 PUSH 0x9 action + 00567f54 [EAX+0x520] + 00567f95 PUSH 0xc2; caller ExecuteCommandPutDownItem = Mac AddDropItemActions. Real AddHealActions=GOG 0x680c50->0x568020
+0x0068a4b0	0x00571980	label_suspect	fp= unique 28B: 00571987 CMP [EBP+8],0xa -> return arg<10; Mac ResolveInitiative (27B, disp 0x51c,0x11ac) is GOG 0x693490->0x57a960. Name unknown
+0x0068ddf0	0x005752c0	label_suspect	CORRECTION from 0x575340 (161B inner init, no GOG fp). fp= 120B: zeroes +4..+0x24, 0057532c CALL 0x00575340; kDB name CFollowInfo::CFollowInfo. RemoveMindTrick=0x57e280
+0x0068f7d0	0x00576ca0	label_suspect	fp= unique 277B RET 8: removes queued actions where 00576ce0 MOVZX EDX,[ECX+0x6c]==arg (vt 0x74 call); Mac GetBlind is 39B on +0xff4. Maybe Mac RemoveAction (vt 0x78)
+0x00692510	0x005799e0	label_suspect	fp= unique: 005799ed MOV [EAX+0x578],ECX; 005799fc MOV [EDX+0x57c],0x5dc; caller AIUpdate (Mac inlines it there). Mac SetAmbientAnimationState writes +0x504 (0xd8 test)
+0x00692f53	0x0057a420	rejected	GOG 0x692f53 is mid-function (0x692f50+3), never ship. Steam 0x57a420 = whole GOG 0x692f50 body: 0057a538 PUSH 0x1b, caller OnApplyPoison = Mac BroadcastPoisoned (kDB has it)
+0x00693490	0x0057a960	label_suspect	fp= unique 43B: 0057a96c MOV ECX,[EAX+0x11ac]; 0057a981 MOV [EAX+0x51c],EDX = Mac ResolveInitiative (27B, disp 0x51c,0x11ac); caller AddAttackActions. Not GetDetectMode
+0x00693ac0	0x0057af90	label_suspect	fp= unique: GetItemInSlot(2) armor, 0057afd0 MOV AL,[EDX+0x8a] -> 0057aff8 MOV [EDX+0xfa],AL on stats; callers Equip/UnequipItem = Mac ComputeArmourClass (disp 0x8a,0xfa,0x1150,0x1198)
+0x00696db0	0x0057e280	label_suspect	fp= unique: 0057e306 CMP EAX,0x12 / 0057e315 CMP EAX,0x13 -> 0057e333 CALL RemoveEffectById = Mac RemoveMindTrickEffects; kDB holds RemoveMindTrickAndScrambleEffects (high)
+0x0067be30	0x00563200	verified	fp= unique 20B: 0056320a MOV EAX,[EAX+0x104c]; Mac GetLockOrientationToObject disp 0x104c, Mac SetLockOrientationToObject writes +0x104c
+0x0067bf80	0x00563350	verified	fp= unique 20B: 0056335a MOV EAX,[EAX+0xff8]; Mac GetEffectSpellId/SetEffectSpellId disp 0xff8
+0x00690a00	0x00577ed0	verified	fp= unique 197B RET 0x14: 00577f3e CALL 0x00577fa0 DoListenDetection (2223B=GOG 0x690ad0) + 00577f57 CALL 0x00578850 DoSpotDetection (2662B=GOG 0x691380)
+0x0065aa20	0x006de720	verified	fp twin 0x6de660; 006de766 PUSH 0x99a94c = 'Hits' column (twin pushes 0x99a968 'Shots'); order matches GOG 0x65a960/0x65aa20
+0x0068dce0	0x005751b0	verified	fp= unique: 005751c7 PUSH 0x99547c 'FollowInfo' + 005751d7 CALL 0x00719940 AddStructToStruct; [+0x500] test = Mac SaveFollowInfo disp 0x500
+0x00681ef0	0x005692c0	verified	fp= unique 85B RET 8: 005692cd MOV [EAX+0x390],ECX ...; disp 0xac,0xb0,0x390,0x394,0x3c8,0x3cc = Mac ResetUpdateTimes exactly
+0x0065a5b0	0x006de2b0	verified	fp= unique: 006de304 MOV ECX,[EAX+0xec] of rules+0x130 2DA = Mac GetWeaponImpactTime (disp 0xec,0x130); caller ResolveMeleeAttack (Mac same)
+0x00692f00	0x0057a3d0	verified	fp= unique: 0057a3dd PUSH 0x1a -> BroadcastBreakdownMessage; Mac BroadcastDeflectBreakdown imm 0x1a; caller SignalDamage 006dda59
+0x00692420	0x005798f0	verified	fp= unique: 005799b1 PUSH 0x13 message id = Mac BroadcastMineDetectionData imm 0x13 (Stealth uses 0x10)
+0x00692dc0	0x0057a290	verified	fp= unique: 0057a29d PUSH 0x15 -> BroadcastBreakdownMessage; Mac BroadcastThreatBreakdown imm 0x15; caller SignalDamage 006dd190
+0x0065c950	0x006e0650	verified	fp= unique 1206B, 14 callees; sole caller SignalDamage 006ddae2; Mac SignalDamage calls SignalMeleeDamage; imm 0xf,0x10,0x13,0x15,0x16 as Mac
+0x00689b60	0x00571030	verified	fp= unique 952B: 00571069 CALL 0x0051c720 GetPauseState, 005711a8 CALL 0x006dcbe0 SignalDamage (Mac UpdateCombatRoundTimer calls SignalDamage); caller AIUpdate
+0x0067d2f0	0x005646c0	verified	fp= unique 164B RET 8: 0056474f PUSH 0x1e + 00564754 CALL 0x00540ca0 AddActionToFront; Mac AddPathfindingWaitActionToFront imm 0x1e; 9 AIActionCheck* callers

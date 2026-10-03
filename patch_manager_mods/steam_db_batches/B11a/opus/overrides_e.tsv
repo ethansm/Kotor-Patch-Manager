@@ -1,0 +1,9 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040c7d0	0x0073f310	verified	0073f326 ADD ECX,0x140 (Internal+0x140 CExoString, Mac GetClientName imm 0x140); 0073f336 CALL 0x007335f0 CExoString copy-ctor; RET 4; fp identical
+0x0040c790	0x0073f2d0	verified	0073f2df MOV EDX,[ECX+0x8c] = Mac GetCaptureEvents disp 0x8c; Internal::SetCaptureEvents 0x7858d0 writes +0x8c (00785902); fp identical, unique
+0x0040dc30	0x00740770	verified	00740788 MOV [EDX+0x338],EAX = Mac SetFutureLeader disp 0x338; RET 4; fp identical, unique in binary
+0x004316e0	0x007850c0	verified	007850cc CMP [EAX+0x38],0 / 007850ea CALL 0x00785130 (GOG callee 0x431750) / free / 00785117 MOV [ECX+0x38],0; Mac disp 0x38; fp identical
+0x0044d5b0	0x007a0fb0	verified	sz309 RET 0x18; callees SetInputActive 0x797d90, Hide/ShowMouse 0x7b38d0/0x7b3930, CExoMoviePlayer 0x93b590/5c0/5e0; disp 0x130/0x1f8/0x40 = GOG+Mac
+0x0040c870	0x0073f3b0	verified	0073f3bf MOV EDX,[ECX+0x24] = Mac GetWorldTimer disp 0x24; called by Internal::HandleMessage 0x781840 like GOG; fp identical
+0x00431ef0	0x007858d0	verified	00785902 MOV [EAX+0x8c],1 capture flag; strings "HD0:%s"/"Start: %d\n" (PUSH 0x99f4e8 at 007859c3); 14 callees map 1:1 incl CExoFile::Write; RET 4
+0x0040c930	0x0073f470	verified	0073f47f MOV EDX,[ECX+0x20] = Mac GetPlayerCreatureId disp 0x20 (WorldTimer is +0x24, distinct); fp identical, unique

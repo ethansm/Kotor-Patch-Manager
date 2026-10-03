@@ -1,0 +1,18 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040d990	0x007404d0	verified	correction (gate 0x740930=SetAutoPaused fwd). 007404e9 CALL 0x0079ca90 (Internal::GetClientRangedAnimation, disp 0x400/0xc5=Mac); RET 0x10; caller IsInTotalDefense 0x6db460
+0x0042db10	0x00781590	verified	correction (gate 0x781810=GetModuleCamera). 0078173c PUSH 0x1ca8 (GOG imm); 007817c1 CALL 0x0078e620 StartMenuMusic; AddPanel 0x410530; RET 4; disp 0x49c/0x274 = GOG
+0x0042ddc0	0x00781840	verified	correction (gate 0x781590=DisplayMainMenu). 007818cb CALL 0x0073f3b0 GetWorldTimer; 007818e6 PUSH 0x99f4a4 "%d %c %d %d %d "; RET 0x10; sz407 = GOG; Mac disp 0x150/0x1c0
+0x00431cc0	0x007856a0	verified	correction (gate 0x785030=CreateQuestJournal). 007856af MOV word [ECX+0x14c],AX = Mac ServerModeChange disp 0x14c; RET 4; sole caller fwd 0x73f890 like GOG 0x40cd70
+0x004353b0	0x00788d90	verified	NOCAND fill. RET 0x14; 0078a11f CALL 0x00785030 CreateQuestJournal, 00789223 CALL 0x00785230 CreateWorldJournal, calls SetTexturePack 0x78d6a0; size 5620 vs 5412 (Steam growth)
+0x00438300	0x0078bd20	verified	NOCAND fill. 0078bd4e MOV ECX,[EAX+0x28] = Mac GetPlayerByGameObjectID disp 0x28 (twin GetPlayerByPlayerID 0x78bcc0 reads +0x4); GetFirstPlayer 0x521060; RET 4
+0x00439c70	0x0078d6a0	verified	correction (gate 0x78cf50). strings "TEXTUREPACKS:"/"texpacks"/"DynMemRatio"; 0078da5d CALL 0x0093c7a0 CAuroraInterface::SetTexturePack; RET 8; sz1345 = GOG
+0x0043abf0	0x0078e620	verified	correction (gate 0x78e7e0=StopMenuMusic). 0078e648 PUSH 0x99f77c "mus_sion"; 0078e6cb CALL 0x0078e7e0 StopMenuMusic; RET 0xc; disp 0x1ec/0x238 = GOG+Mac; called by DisplayMainMenu
+0x0043b0a0	0x0078ead0	verified	correction (gate 0x78e350=AddCreatureModel..IgnoreList). 0078eb02 CMP [EAX+0x23c],0; 0078eb29 ADD EDX,0x304; 0078eb33 CALL 0x00734d60 CompareNoCase; RET 4; Mac disp 0x23c/0x304
+0x00444a00	0x007983e0	verified	correction (gate 0x797d90=SetInputActive). 00798446 CALL 0x007cbb40 StartGlobalFade; 00798509 CALL 0x00409ed0 UpdateScreen; 007983f6 CMP [EAX+0x278],0; RET 0xc; Mac disp 0x274/0x278
+0x004451c0	0x00798ba0	verified	correction (gate 0x798580). 00798bc6 CALL 0x00798b70 AddMoveToModuleMovie; 00798be4 ADD EDX,0x2d8; 00798bee CALL 0x007a0fb0 PlayMoviesInExoArrayList; RET 0x14
+0x00445220	0x00798c00	verified	gate pick right; G6 holder is the same function (bare name). 00798c20 CALL 0x0093b570 = CExoMoviePlayer::IsMoviePlaying (GOG 0x9211c0 ladder); fwd 0x740160 calls it
+0x00445390	0x00798d70	verified	correction (gate 0x7983e0=HideLoadScreen). sz5780 RET 0x10; callers DoPassiveSelection 0x79a4c0 + SelectNearestObject 0x79b700 as GOG; imm/disp sets = GOG; str clientexoappinternal.cpp
+0x00447d00	0x0079b700	verified	NOCAND fill. 0079bbf9 CALL 0x00798d70 ShowObject; 0079b82d CALL 0x00778510 CSWCCreature::CanSee; RET 8; sz1336, disp 0x2a8/0x2ac/0x2b4 = GOG+Mac
+0x0044c240	0x0079fc40	verified	correction (gate 0x79f770). strings "loadscreenhints"/"loadstoryhints"; 0079ff09 CALL 0x0051d070 GetModulePreviouslyVisited; 007a001e [EAX+0x490] (Mac 0x48c+4); RET 8
+0x0044ca90	0x007a0490	verified	correction (gate 0x79fc40=GetNextLoadScreenHintSTRREF). 007a049c CALL 0x007b38d0 HideMouse; 007a04e9 CALL 0x007b3930 ShowMouse; [ECX+0x274]; RET 4; caller fwd 0x740f40
+0x00460b10	0x007b3ee0	verified	correction (gate 0x7b3ca0). 007b3f37 CMP [EBP-0xc],0x3e9 / 007b3f50 SUB EDX,0x3f4: same 22-value imm table as GOG; RET 8 stdcall; sole caller HandleMouseOver 0x7b3a00

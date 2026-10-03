@@ -1,0 +1,61 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040e3a0	0x00740ee0	verified	CALL 0x7a0580 = GOG 0x44cb80 shape (sz166, imm 0x2ee/0x9c4, disp 0x238); unique fwd; callers 215/249/1151/2611 match. MuteSound twin -> 0x7a0630
+0x0040c710	0x0073f250	verified	0073f25d CALL 0x785410 = GOG Internal::UnloadModule 0x431a30 (sz520, disp 0x248..0x3a0 identical); callers sz329/2611 (LoadGame) match
+0x0040d340	0x0073fe60	verified	CALL 0x797df0 = GOG 0x444410 (sz199, disp 0xf8..0x150, imm 7/7/0x10); unique fwd in 28 same-shape slots; caller sz743 matches
+0x0044d710	0x007a1110	verified	007a111d CALL 0x70bbe0 = GOG CExoSound::ResumeMovieStreamingSounds 0x63ab80 shape (sz29); Deactivated twin 0x7a10f0 calls 0x70bc60 (GOG 0x63ac00)
+0x0040d900	0x00740440	verified	00740459 CALL 0x79c5b0 sz1033 ret12 = GOG 0x448bb0 (imm 0x3e8/0x7d0, disp 0x228/0x22c); caller sz564 matches
+0x0040c9d0	0x0073f510	verified	callee 0x78bd20: 0078bd4e MOV ECX,[EAX+0x28] = GOG 0x438300 disp 0x28 (sz93); only matching fwd of 20 by-id getters; callers match
+0x0040e7c0	0x00741300	verified	0074131e CALL 0x7a1380 = GOG 0x44d980 (sz115 ret8, imm 0xbe54); RET 8; callers sz2215/4547 match
+0x0040dd00	0x00740840	verified	callee 0x7980a0: 007980c8 PUSH 0x99f8d0 'k_sup_solo'; = GOG 0x4446c0 sz185 disp 0x238; callers sz219/989 match
+0x0040cd70	0x0073f890	verified	callee 0x7856a0: 007856af MOV word [ECX+0x14c],AX = GOG 0x431cc0 disp 0x14c sz28; caller sz593 matches
+0x0040cab0	0x0073f5f0	verified	callee 0x78c020: 0078c033 MOV ECX,[EAX+0x14] = GOG 0x438600 disp {0x8,0x14,0x14} sz102; only full fwd match among by-id getters
+0x0040d750	0x00740290	verified	CALL 0x79bcc0 = GOG 0x4482c0 (sz376, disp 0x1a0/0xf20); unique fwd; caller sz32 matches
+0x0040d7b0	0x007402f0	verified	CALL 0x7b3390: 007b339a MOV [EAX+0x2bc],0 vs Disable twin 007b337a ...,1; sole caller sz508 = GOG QueryExitProgram (Disable callers LoadGame etc)
+0x004397f0	0x0078d220	verified	0078d22c ADD ECX,0x190 + RemoveHead/free loop; = GOG sz91 imm 4/0x10/0x190; callers sz22/522/15798 match
+0x00444bd0	0x007985b0	verified	007985ba MOV [EAX+0x290],0 / 007985c7 ADD EAX,0x294 = GOG disp 0x290 imm 0x294 sz32; caller sz22 (App fwd) matches
+0x0040d020	0x0073fb40	verified	CALL 0x78e0f0 = GOG 0x43a6c0 (sz339; 0078e190 CALL 0x7a5fa0 UnloadArea, CALL 0x785410 UnloadModule); unique fwd
+0x0040cdf0	0x0073f910	verified	callee 0x798660: 00798673 CMP [EDX+0x270],0 = GOG 0x444c80 disp 0x20/0x270 sz55; callers sz589/883/6709 match
+0x0040dd60	0x007408a0	verified	CALL 0x79f430 = GOG 0x44ba30 (sz642, imm 0x27ad/0x27ae, disp 0x11ac); unique fwd; callers sz44/7087 match
+0x0040de20	0x00740960	verified	0074096d MOV EAX,[ECX+0x384] = GOG disp {0x4,0x384}; SetAutoPaused body writes it (0079e4fa); 7 callers match (one 625->627)
+0x0040e460	0x00740fa0	verified	CALL 0x7b3930 sz197: 007b393c NOT/AND [+0x3d8] (clear bits), 007b3963 AND ECX,0x4a = GOG ShowMouse imm 0x4a; HideMouse 0x7b38d0 ORs (sz92=GOG)
+0x0040d660	0x007401a0	verified	007401ad ADD EAX,0x2d8 = GOG imm 0x2d8; callers sz379/5789 match (DoPCAutosave, PlayLoadModuleMovies body)
+0x0040d460	0x0073ff80	verified	0073ff95 CALL 0x7b12c0 = GOG 0x45ded0 (sz7087 ret8); RET 8; caller sz1310 matches
+0x0040e400	0x00740f40	verified	CALL 0x7a0490 = GOG 0x44ca90 shape; body calls Hide 0x7b38d0 / Show 0x7b3930 around mode set; RET 4; caller sz116 matches
+0x0040cbb0	0x0073f6f0	verified	CALL 0x785620 -> 0x87a430: 0087a494 PUSH 0x4 = GOG SaveGame 0x505d10 imm 0x4; Load twin 0x87a4b0 PUSH 0x5 = GOG 0x505d90 imm 0x5
+0x0040e3c0	0x00740f00	verified	CALL 0x7a0630 = GOG 0x44cc30 shape (500 ms wait); callers sz1503/2611 = DoQuickLoad/LoadGame; MenuMusic twin -> 0x7a0580
+0x0040c5c0	0x0073f100	verified	0073f160 CALL 0x78f160 (Internal AddFeedbackMessage) + CExoString ctor/dtor/== callees; sz159 ret12 = GOG; fp diff only from truncated callee fp
+0x0040d9c0	0x00740500	verified	CALL 0x79c9c0 RET 0x18 = GOG 0x448fc0 ret24; Ranged sibling RET 0x10; caller sz69 matches
+0x00439c50	0x0078d680	verified	0078d68d MOV [EAX+0x194],ECX = GOG disp 0x194 sz25 RET 4; caller sz28 (App fwd) matches. FID label UMSThreadScheduler ignored
+0x0040d6b0	0x007401f0	verified	CALL 0x796b50 = GOG 0x443170 shape (sz70 ret8, imm 0x7f000000); callers 490/494/622 match. GOG 0x443170 label CSWCCreature::SwitchMode is rotated, see md
+0x0040d4a0	0x0073ffc0	verified	0073ffd1 CALL 0x798580 = GOG 0x444ba0 shape (CExoString assign); callers sz1118/1151/2611 match
+0x0040d000	0x0073fb20	verified	CALL 0x78ac40 = GOG 0x437190 shape; callee has 'HD0:MOVIES' (0078b66e) and 'SERVERVAULT:'; caller 3581->3611 (layout growth)
+0x0040d0d0	0x0073fbf0	verified	CALL 0x78d6a0: 0078d7f3 PUSH 'texpacks'; = GOG 0x439c70 shape; byte arg RET 4; caller sz52 matches
+0x00460d20	0x007b40f0	verified	007b45db PUSH 0x99f364 'i_dialog'; sz6909 n1516 = GOG; callers sz667 (HandleMouseOver)/7087 match
+0x0043a6c0	0x0078e0f0	verified	0078e190 CALL 0x7a5fa0 UnloadArea + CALL 0x785410 UnloadModule; sz339, 14 disps identical to GOG; callers sz22/322 match
+0x0044d8c0	0x007a12c0	verified	007a12ca MOV [EAX+0x4c0],0 = GOG disp 0x4c0 sz24; sole caller = App::StopCreditSequence fwd (sz22) as on GOG
+0x00436cf0	0x0078a7a0	verified	0078a96b PUSH 0x99f6fc 'RefreshRate' (+ 'Width', 'Graphics Options'); sz1172 RET 0x10 = GOG; callers sz333/360 match
+0x0040ca30	0x0073f570	verified	callee 0x78be60: 0078beb7 MOV EAX,[EDX+0x24] = GOG 0x438440 disp 0x24; only full fwd match among by-id getters; caller sz118 matches
+0x0044d550	0x007a0f50	verified	007a0f7a CALL 0x7a0fb0 (PlayMoviesInExoArrayList, GOG 0x44d5b0 same delta); imm 0x2e4/0x2f0; sz91; callers match
+0x0040cea0	0x0073f9c0	verified	CALL 0x781be0 sz8599 = GOG 0x42e160 MainLoop; unique fwd; caller 3581->3611 (WinMain-level layout growth)
+0x0043ab70	0x0078e5a0	verified	0078e5bb CALL 0x73f4d0 GetGameObject, vtable +0xc/+0x98, imm 0xff; sz117 ret8 = GOG; caller sz137 matches
+0x0040d840	0x00740380	verified	CALL 0x797f30 = GOG 0x444550 shape (sz355); RET 8; 6 callers match (incl. ExecuteCommandDestroyObject)
+0x0040d3a0	0x0073fec0	verified	0073fed1 CALL 0x798160 = GOG 0x444780 shape (id|0x80000000); 10+ callers match by size
+0x0040e280	0x00740dc0	verified	CALL 0x79fc40: 0079fcbc PUSH 'loadscreenhints'; = GOG 0x44c240 shape; 7 callers match
+0x0040d810	0x00740350	verified	0074036a CALL 0x79bf40 = GOG 0x448540 shape; RET 0xc; callers match (combat GUI 0x7ca730..)
+0x0040ddf0	0x00740930	verified	CALL 0x79e420: 0079e4fa MOV [EAX+0x384],EDX (bit GetAutoPaused reads); = GOG 0x44aa20; RET 8; 8 callers match
+0x0043aaf0	0x0078e520	verified	0078e530 CALL 0x78bd80 (Item getter), 0078e553 CMP EDX,0xfb; sz115 ret8 = GOG imm 0xfb; caller sz137 matches
+0x0040c490	0x0073eff0	verified	0073f01a CALL 0x7810a0 (sz767 = GOG internal dtor 0x42d620) + free; sz88 = GOG; caller sz346 matches
+0x00430a60	0x00784440	verified	0078444c CALL 0x784420 (GetPauseState) twice with PUSH 2/1; imm 2,2; sz49 = GOG; 5 callers match (incl MainLoop 8599)
+0x00460630	0x007b3a00	verified	007b3c5d CALL 0x7a17a0 + calls GetDefaultActions 0x7b40f0; sz667 ret12, imm 0x2a8/0x4b4 = GOG; caller sz15798 matches
+0x0043b710	0x0078f160	verified	0078f1e4 CMP [..],0xeb + JMP [ECX*4+0x796788] switch; PUSH 0x59b/0x59c/0x289 = GOG imms; exit 0x79663f ~ +30173 = GOG size; fp size truncated
+0x0040d770	0x007402b0	verified	CALL 0x79be40 = GOG 0x448440 shape (stops speaker [+0x1a0] sound); caller sz46 = CSWSObject::StopSoundPlayingInDialog
+0x0040c950	0x0073f490	verified	CALL 0x781810: 0078182d MOV ECX,[EAX+0x40] = GOG 0x42dd90 sz46 disp 0x40; 8+ callers match. Internal::GetModuleCamera is 0x781810 (not 0x7819e0)
+0x0040d2b0	0x0073fdd0	verified	0073fde8 MOV [EDX+0x1ec],EAX = GOG disp {0x4,0x1ec} sz36 ret4; callers sz139/228/342 match
+0x0040c830	0x0073f370	verified	0073f37f MOV EDX,[ECX+0xdc] = GOG disp {0x4,0xdc} sz31; neighbour uses 0xe0; callers sz533/4787 match
+0x0040d500	0x00740020	verified	0074002f MOV EDX,[ECX+0x288] = GOG disp {0x4,0x288}; 8 callers match by size
+0x0040d8c0	0x00740400	verified	CALL 0x79c4e0 = GOG 0x448ae0 shape (writes [+0x2d4], disp 0x11ac); caller sz4322 (OnApplyDeath) matches
+0x0040df60	0x00740aa0	verified	00740aad CALL 0x740ac0: 00740acc CMP [EAX+0x2a0],0 = GOG 0x40df80 shape (sz124); callers sz188/686/696 match
+0x0040d1a0	0x0073fcc0	verified	0073fccf MOV EDX,[ECX+0x1f8] = GOG disp {0x4,0x1f8} sz31; caller sz735 matches
+0x0040d5b0	0x007400f0	verified	CALL 0x7986a0 = GOG 0x444cc0 shape (calls GetMoveToModuleMovies 0x7401a0); caller sz969 matches
+0x0040d3c0	0x0073fee0	verified	0073fef5 CALL 0x7b3050 = GOG 0x45fc60 shape (switch on [+0x9c]); RET 8; callers match
+0x0040cd10	0x0073f830	verified	0073f83f MOV EDX,[ECX+0x8] = GOG disp {0x4,0x8} sz28 ret0; only such getter in +-0x600; caller sz2929 matches

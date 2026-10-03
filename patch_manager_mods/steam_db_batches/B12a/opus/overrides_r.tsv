@@ -1,0 +1,17 @@
+gog_addr	steam_addr	final_verdict	note
+0x00494d00	0x0084a170	label_suspect	fp exact 96/RET8/34; 0084a1af LEA ECX,[EDX+ECX*1+0xdc] + 0084a1b6 CALL 0x00849560 (=GOG HasKnownSpell 0x4940f0); fits CSWCCreatureStats::HasSpell (Mac 0x185508), not CSWSCreature
+0x006571b0	0x006daf00	verified	fp exact 1289/RET28/339/23 callees; 006daf8e MOV CL,[EAX+0xac4]; 006db406 RET 0x1c; disp set = Mac ResolveRangedAttack (0x3a,0x40,0xac4,0xae0); gate pick 0x53e450 wrong
+0x0065c710	0x006e0410	verified	fp exact 483/RET20/150; 006e051a MOV [EDX+0xa98],EAX; 006e057f MOV EAX,[EDX+0xb08]; 006e05f0 RET 0x14; = Mac ResolveMeleeAnimations disp 0x12x5,0xa98,0xb08
+0x0065da20	0x006e1720	verified	fp exact 96/RET8/34; [param+0xfc]!=0 guard then 006e176f CALL 0x00582010(2,..,0xff,0xff); 006e177d RET 0x8; = Mac CalculateMaxElementalDamage disp 0xfc imm 2,0xff,0xff
+0x0065f2a0	0x006e2fa0	verified	fp exact 1657/RET12/381; 006e30ad MOV EDX,[ECX+0x28c]; 006e310d AND EDX,[EAX+0x2d4]; 12-case on-hit dispatch (006e3191 JMP [ECX*4+0x6e361c]); RET 0xc
+0x00660930	0x006e4630	verified	fp exact 2418/RET28/642/20; 006e4d03 MOV byte [EDX+0x14c],1; 006e480d MOV DX,[ECX+0x18a]; 006e4fac RET 0x1c; called by ResolveOnHitEffect 006e3567 (Mac same edge)
+0x00661610	0x006e5310	verified	fp exact 408/RET8/122; 006e53b3 PUSH 0x11 + 006e5319 PUSH 0xd0 (= Mac Confusion imm 0x11,0xd0); ResolveOnHitEffect case 3: 006e3214 MOV [EBP-0x50],0x6e5310
+0x006617b0	0x006e54b0	verified	fp exact 408/RET8/122; 006e5553 PUSH 0x6 + 006e54b9 PUSH 0xda (= Mac Fear imm 6,0xda); ResolveOnHitEffect case 4: 006e3236 MOV [EBP-0x50],0x6e54b0
+0x00661950	0x006e5650	label_suspect	body = ApplyOnHitHold: 006e5664 PUSH 0x5, 006e5659 PUSH 0xe8 (Mac Hold imm 5,0xf,0x52,0xe8); dispatch case 2 006e31f2. Real Slow = GOG 0x661e10 -> Steam 0x6e5b10 (case 5)
+0x00661b60	0x006e5860	label_suspect	body = ApplyOnHitSleep: 006e58ed PUSH 0x5e (Mac Sleep imm 6,7,0x1b,0x5e); dispatch case 0 006e31ae. Real Poison = GOG 0x6625d0 -> Steam 0x6e62d0 (case 7)
+0x00662060	0x006e5d60	label_suspect	body = ApplyOnHitStun: 006e5e03 PUSH 0x1d + 006e5d69 PUSH 0xd0 (Mac Stun imm 0x1d,0xd0); dispatch case 1 006e31d0. Real SlayRacialGroup = GOG 0x662690 -> Steam 0x6e6390 (case 8)
+0x006625d0	0x006e62d0	label_suspect	body = ApplyOnHitPoison: 006e62e2 PUSH 0x17 (Mac Poison imm 0x17, disp 0x9); dispatch case 7 006e329c. Real InstantDeath = GOG 0x662900 -> Steam 0x6e6600 (case 10). 0x6e6880 = GetFirstAttacker
+0x00662900	0x006e6600	label_suspect	body = ApplyOnHitInstantDeath: SetInt 006e66c4/66c6 PUSH 0,PUSH 0 then (1,1), 6 callees (Mac InstantDeath 6); dispatch case 10 006e32dc. Real Knockdown = GOG 0x662a30 -> Steam 0x6e6730 (case 11)
+0x00663170	0x006e6e70	verified	fp exact 800/RET8/220/4; 006e6f24 MOV dword [EAX+0x150],1; 006e6f00 MOV EAX,[EDX+0x1198]; 006e718d RET 0x8; = Mac SetAttackSummaryFeedbackEffectData (0x145,0x150,0x1198x16)
+0x006954c0	0x0057c990	verified	fp exact 2524/RET12/680/8; 0057cd62 MOV ECX,[EAX+0x380]; 0057cc1d CMP [EAX+0x11ac],0; Mac real symbol GetNearestEnemy; KDB holder GetNearestVisibleEnemyInRange is a descriptive alias, rename
+0x00696db0	0x0057e280	label_suspect	body = RemoveMindTrickEffects (Mac 0x3b7866 imm 0x12,0x13 disp 0x148/0x14c): 0057e306 CMP EAX,0x12/0057e315 CMP EAX,0x13. Real SetLastInstantEquip = GOG 0x6a3e00 (HasEffect lbl) -> 0x58b320
