@@ -307,7 +307,7 @@ struct Preset {
     char id[48], tag[32], name[48], shortName[64];
     char role[16], style[16], alignment[16], convert[16], skills[16];
     int convertAt, holdClass;
-    bool indexed;
+    bool indexed, recommended;   // recommended: listed in [recommended] (the options page opens on it for an unconfigured companion)
     Rec lv[MaxLevel + 1];
 };
 Preset g_presets[MaxPresets];
@@ -409,7 +409,7 @@ bool parseTable(const char* path) {
     fclose(f);
     if (!full) { snprintf(g_tableErr, sizeof g_tableErr, "%s larger than %u bytes", path, (unsigned)sizeof g_fileBuf - 1); return false; }
     g_fileBuf[len] = 0;
-    enum { None, ClassSkills, PresetIndex, PresetSec } sec = None;
+    enum { None, ClassSkills, PresetIndex, Recommended, PresetSec } sec = None;
     Preset* cur = nullptr;
     int lineNo = 0;
     for (char* line = g_fileBuf; line;) {
@@ -425,6 +425,7 @@ bool parseTable(const char* path) {
             *e = 0; ++l; lower(l);
             if (!strcmp(l, "classskills")) { sec = ClassSkills; continue; }
             if (!strcmp(l, "presets")) { sec = PresetIndex; continue; }
+            if (!strcmp(l, "recommended")) { sec = Recommended; continue; }
             cur = presetSlot(l, true);
             if (!cur) goto bad;
             sec = PresetSec;
@@ -461,6 +462,12 @@ bool parseTable(const char* path) {
             snprintf(p->skills, sizeof p->skills, "%s", fl[4]);
             snprintf(p->shortName, sizeof p->shortName, "%s", fl[7]);
             p->convertAt = ca; p->holdClass = hc; p->indexed = true;
+        } else if (sec == Recommended) {
+            // <tag>=<preset id>
+            lower(v);
+            Preset* p = presetSlot(v, true);
+            if (!p) goto bad;
+            p->recommended = true;
         } else if (sec == PresetSec) {
             if (!strcmp(k, "name")) { snprintf(cur->name, sizeof cur->name, "%s", v); continue; }
             if (k[0] != 'l') goto bad;

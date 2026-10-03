@@ -7,6 +7,7 @@ utc = "p_kreia.utc"
 variant = "support_neutral"
 summary = "Gray buffer: universal powers first (Force Body, Battle Meditation, Speed, Deflection, Energy/Force Resistance, Mind control line, Push line), light-side buffs only as filler once the universal pool (about 25) runs out. Persuade focus."
 short = "Neutral buffer, universal powers only"
+recommended = true   # canon-style default for this companion (user decision 2026-10-03)
 convert_at = 0
 
 [meta.wizard]

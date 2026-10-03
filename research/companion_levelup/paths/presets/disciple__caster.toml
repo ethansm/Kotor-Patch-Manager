@@ -7,6 +7,7 @@ utc = "p_disciple.utc"
 variant = "caster"
 summary = "Convert at char 7 (Consular 1-24): Heal line, Valor line, Force Barrier, Battle Meditation, Revitalize; light-side; Master TWF/Toughness/Conditioning/Jedi Defense feats."
 short = "Light Force healer and buffer, Consular at 7"
+recommended = true   # canon-style default for this companion (user decision 2026-10-03)
 convert_at = 7   # first char level taken as Jedi Consular; real conversion happens when the story script allows (see disciple.md)
 hold_until_class = 4   # bank levels until the Jedi Consular class exists (Disciple "Training" dialogue)
 

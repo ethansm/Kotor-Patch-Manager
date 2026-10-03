@@ -7,6 +7,7 @@ utc = "p_hanharr.utc"
 variant = "melee_single"
 summary = "Scout 5-30, two-hander: Power Attack/Flurry masters, Conditioning, Toughness"
 short = "Two-handed melee Scout"
+recommended = true   # canon-style default for this companion (user decision 2026-10-03)
 convert_at = 0   # never a Jedi
 
 [meta.wizard]

@@ -7,6 +7,7 @@ utc = "p_g0t0.utc"
 variant = "support_pistols_none_na"
 summary = "Tech utility droid: Master Gear Head, Class Skill: Demolitions, then Two-Weapon Fighting line and Weapon Focus, Toughness late; Computer Use/Security/Repair/Demolitions maxed"
 short = "Tech utility droid with dual blasters"
+recommended = true   # canon-style default for this companion (user decision 2026-10-03)
 convert_at = 0   # droid: never changes class
 
 [meta.wizard]

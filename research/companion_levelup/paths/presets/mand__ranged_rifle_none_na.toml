@@ -7,6 +7,7 @@ utc = "p_mand.utc"
 variant = "ranged_rifle_none_na"
 summary = "Soldier 6-30 with a blaster rifle / Mandalorian heavy repeater: Weapon Specialization restored, Rapid Shot, Sniper Shot and Power Blast masters, Precise Shot I-V, Critical Strike line, Toughness/Conditioning; Awareness + Treat Injury"
 short = "Blaster rifle / repeater Soldier"
+recommended = true   # canon-style default for this companion (user decision 2026-10-03)
 convert_at = 0   # never becomes a Jedi (Soldier only)
 
 [meta.wizard]

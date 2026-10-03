@@ -36,7 +36,7 @@ def parse_table_v2(text):
         try:
             if line.startswith("[") and line.endswith("]"):
                 sect = line[1:-1].strip().lower()
-                if sect not in ("classskills", "presets"):
+                if sect not in ("classskills", "presets", "recommended"):
                     recs.setdefault(sect, {})
                 continue
             if sect is None or "=" not in line:
@@ -52,6 +52,8 @@ def parse_table_v2(text):
                 if len(f) != 8:
                     raise ValueError("need 8 preset fields")
                 presets[k] = Preset(f[0], f[1], f[2], f[3], f[4], int(f[5]), int(f[6]), f[7])
+            elif sect == "recommended":
+                pass   # <tag>=<preset id>: UI default only
             elif k == "name":
                 pass
             elif k.startswith("l"):
