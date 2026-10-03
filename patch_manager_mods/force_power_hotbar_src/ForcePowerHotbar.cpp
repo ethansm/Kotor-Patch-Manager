@@ -5,7 +5,7 @@
 // Hooks (cdecl detours, original bytes still run):
 //   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
 //   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, invoke, button state
-//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our 67 CSWGuiLabel controls
+//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our 75 CSWGuiLabel controls
 //               at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
 //               list. The panel's own Draw (0x0040EC90) then draws them with the HUD; the tick only swaps fill (border+0x74), alpha
 //               (border+0x24), text and visibility. Frame/wrench art is embedded (HotbarTextures.inc) and registered as engine textures.
@@ -71,8 +71,9 @@ constexpr int PrevOff = TabOff0 + TabCount, NextOff = PrevOff + 1, ClearOff = Pr
 constexpr int CellCount = 8, CellBgOff0 = ClearOff + 1, CellIcOff0 = CellBgOff0 + CellCount;
 constexpr int NumOff0 = CellIcOff0 + CellCount;                              // key-digit labels (own labels so the digit can sit above-left of the icon)
 constexpr int QtyOff0 = NumOff0 + ButtonCount;                               // item stack counts (bottom-right of the slot, above the icon)
-constexpr int TipBgOff = QtyOff0 + ButtonCount, TipOff = TipBgOff + 1;       // hover tooltip frame + text
-constexpr int ControlCount = TipOff + 1;                                     // 67
+constexpr int CellQtyOff0 = QtyOff0 + ButtonCount;                           // item stack counts on the picker cells (optional: the editor works without them)
+constexpr int TipBgOff = CellQtyOff0 + CellCount, TipOff = TipBgOff + 1;     // hover tooltip frame + text
+constexpr int ControlCount = TipOff + 1;                                     // 75
 constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 25: the editor is enabled only when all of them exist
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t FnTextSet = 0x00416E30;       // thiscall(ECX = CSWGuiText+0x18 = label+0xF0, CExoString*) RET 4: sets text + relayouts
@@ -137,7 +138,12 @@ hb::ActionRef decodeKey(int key, const std::string& name) {
     return r;
 }
 
-// Reads group g's entry list from the hud (guarded). Returns count read.
+// Item icon by item name, remembered whenever the item is seen in a HUD list (per process): an out-of-stock item is gone from every
+// list, so this is the only way to keep showing its icon. Unknown (never seen this session) -> no icon, the "0" still shows.
+std::map<std::string, std::string> g_itemIcon;
+std::string itemIconFor(const std::string& name) { auto it = g_itemIcon.find(name); return it == g_itemIcon.end() ? std::string() : it->second; }
+
+// Reads group g's entry list from the hud (guarded) and remembers item icons. Returns count read.
 int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
     out->clear();
     int base = rdInt(hud, Hud_GroupLists + g * 12), count = rdInt(hud, Hud_GroupLists + 4 + g * 12);
@@ -150,6 +156,7 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
         en.name = readCExoString(e);
         { char ib[17] = {0}; if (!IsBadReadPtr(reinterpret_cast<const void*>(e + 0x1C + 4), 16)) { memcpy(ib, reinterpret_cast<const void*>(e + 0x20), 16); for (int k = 0; k < 16; ++k) if (ib[k] && (ib[k] < 0x20 || ib[k] > 0x7E)) ib[k] = '?'; } en.icon = ib; }
         en.ref = decodeKey(en.key, en.name);
+        if (en.ref.kind == hb::K_Item && !en.icon.empty()) g_itemIcon[en.ref.name] = en.icon;
         out->push_back(en);
     }
     return (int)out->size();
@@ -392,7 +399,7 @@ struct Button { Widget bg, ic, num, qty; bool avail = false; Entry entry; };
 // ---- in-game editor state (the editor and the per-HUD hover/refresh/repeat timers live in Bar, so a HUD rebuild resets them) ----
 enum EditMode { M_Normal = 0, M_Edit = 1, M_Pick = 2 };
 const char* const ModeName[] = { "Normal", "Edit", "Pick" };
-struct Cell { Widget bg, ic; bool avail = false; Entry entry; };
+struct Cell { Widget bg, ic, qty; bool avail = false; Entry entry; };
 struct Editor {
     int mode = M_Normal, slot = -1, tab = 0, off = 0;   // off = index of the first visible picker entry (scroll position)
     std::vector<Entry> list; unsigned sig = 0; long lastRefresh = -1000;
@@ -679,13 +686,18 @@ void updateButtons(uintptr_t hud, bool gate) {
         else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
         b.avail = have; if (have) b.entry = e;
         if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { VLOG("tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
+        // An item that left the HUD's lists is out of stock: keep its (dimmed) icon from the last time it was seen and show "0"; it is not
+        // hoverable or clickable (avail = false) and comes back by itself on the next refresh once the party has one again.
+        bool outOfStock = !have && want.kind == hb::K_Item;
+        if (outOfStock) state = "out of stock";
+        std::string icon = have ? e.icon : (outOfStock ? itemIconFor(want.name) : std::string());
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state); setVisible(b, b.num, s, true, state);
         int qty = have ? hb::StackCount(e.key, e.name) : 0;   // the engine names item entries "Name (N)" only when N > 1
-        if (qty > 1) { wText(b.qty, "qty", std::to_string(qty)); setVisible(b, b.qty, s, true, state); }
+        if (qty > 1 || outOfStock) { wText(b.qty, "qty", std::to_string(qty)); setVisible(b, b.qty, s, true, state); }
         else setVisible(b, b.qty, s, false, have ? "single item / not an item" : state);
         setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
-        setFill(b, b.ic, s, have ? e.icon : std::string());
-        setAlpha(b, b.ic, s, (have && !(e.flags & 1)) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
+        setFill(b, b.ic, s, icon);
+        setAlpha(b, b.ic, s, ((have && !(e.flags & 1)) || outOfStock) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
     }
 }
 
@@ -849,7 +861,7 @@ void updateEditor(uintptr_t hud, bool gate) {
     wVisible(g_bar.title, "title", showTitle, true);
     for (int i = 0; i < TabCount; ++i) wVisible(g_bar.tab[i], "tab", showPick, true);
     wVisible(g_bar.prev, "prev", showPick, true); wVisible(g_bar.next, "next", showPick, true); wVisible(g_bar.clear, "clear", showPick, true);
-    for (int i = 0; i < CellCount; ++i) { wVisible(g_bar.cell[i].bg, "cell.bg", showPick, true); wVisible(g_bar.cell[i].ic, "cell.ic", showPick, false); }
+    for (int i = 0; i < CellCount; ++i) { wVisible(g_bar.cell[i].bg, "cell.bg", showPick, true); wVisible(g_bar.cell[i].ic, "cell.ic", showPick, false); if (!showPick) wVisible(g_bar.cell[i].qty, "cell.qty", false, false); }
 
     // ---- hover over the tabs / arrows / Clear (highlight + short tooltip)
     Widget* ow[6] = { &g_bar.tab[0], &g_bar.tab[1], &g_bar.tab[2], &g_bar.prev, &g_bar.next, &g_bar.clear };
@@ -872,6 +884,7 @@ void updateEditor(uintptr_t hud, bool gate) {
                 bool dup = false; for (auto& y : all) if (hb::Same(y.ref, x.ref)) dup = true;
                 if (dup) continue;
                 all.push_back(x); h = (h ^ (unsigned)x.key ^ ((unsigned)x.flags << 3)) * 16777619u;
+                for (char ch : x.name) h = (h ^ (unsigned char)ch) * 16777619u;   // the name carries the stack count: refresh when it changes
             }
         }
         h = (h ^ (unsigned)ed.tab) * 16777619u;
@@ -904,6 +917,9 @@ void updateEditor(uintptr_t hud, bool gate) {
             wAlpha(c.bg, "cell.bg", c.avail ? 1.0f : EmptyFrameAlpha);
             wFill(c.ic, "cell.ic", c.avail ? c.entry.icon : std::string());
             wAlpha(c.ic, "cell.ic", (c.avail && !(c.entry.flags & 1)) ? DimAlpha : 1.0f);
+            int qty = c.avail ? hb::StackCount(c.entry.key, c.entry.name) : 0;
+            if (qty > 1) wText(c.qty, "cell.qty", std::to_string(qty));
+            wVisible(c.qty, "cell.qty", qty > 1, false);
         }
     } else if (ed.mode == M_Edit) {
         wText(g_bar.title, "title", ed.msg.empty() ? std::string("Click a slot to change it") : ed.msg);
@@ -1034,7 +1050,7 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     return ctl;
 }
 
-// All 67 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
+// All 75 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
 // keep the template's value (LBL_QUEUE1: white dialogfont16x16, align 9 = top-left; 17 = top-centre, 18 = centre).
 const CtlSpec Layout[] = {
     { "LBL_HOTBARBG1",       TP_Plain,  29, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
@@ -1103,6 +1119,15 @@ const CtlSpec Layout[] = {
     { "LBL_HOTBARQTY8",      TP_Plain, 313, 495,  27,  17, nullptr,    "",       nullptr,           36 },
     { "LBL_HOTBARQTY9",      TP_Plain, 353, 495,  27,  17, nullptr,    "",       nullptr,           36 },
     { "LBL_HOTBARQTY0",      TP_Plain, 393, 495,  27,  17, nullptr,    "",       nullptr,           36 },
+    // picker cell stack counts: same placement relative to the cell as the bar's counts (cell+4, 17 units below the cell top)
+    { "LBL_HOTBARCELLQTY0",  TP_Plain,  60, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY1",  TP_Plain, 100, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY2",  TP_Plain, 140, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY3",  TP_Plain, 180, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY4",  TP_Plain, 220, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY5",  TP_Plain, 260, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY6",  TP_Plain, 300, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARCELLQTY7",  TP_Plain, 340, 443,  27,  17, nullptr,    "",       nullptr,           36 },
     { "LBL_HOTBARTIPBG",     TP_Panel,  12, 380, 300,  90, nullptr,    nullptr,  nullptr,           -1 },
     { "LBL_HOTBARTIP",       TP_Plain,  12, 380, 300,  90, nullptr,    "",       nullptr,           18 },
 };
@@ -1121,7 +1146,8 @@ Widget* widgetFor(Bar& bar, int off) {
     if (off < CellIcOff0) return &bar.cell[off - CellBgOff0].bg;
     if (off < NumOff0) return &bar.cell[off - CellIcOff0].ic;
     if (off < QtyOff0) return &bar.b[off - NumOff0].num;
-    if (off < TipBgOff) return &bar.b[off - QtyOff0].qty;
+    if (off < CellQtyOff0) return &bar.b[off - QtyOff0].qty;
+    if (off < TipBgOff) return &bar.cell[off - CellQtyOff0].qty;
     return off == TipBgOff ? &bar.tipBg : &bar.tip;
 }
 

@@ -185,7 +185,7 @@ Runtime labels have no event handlers. The hotbar polls in its per-frame hook:
 | Files | None in `override/`; the `.gui` is untouched. Uninstalling the patch leaves only its INI and log. |
 | Native controls | Unaffected. `addToList=0` never touches the list. Native controls keep indices `0..N-1`, and ours are `N..N+56`. |
 | Other `.gui` mods | Compatible if the template tags exist. If they don't, the control is not created, the log says so, and the dependent feature (slot, editor or tooltip) disables itself. No crash. |
-| Memory | 57 x `0x148` B (about 19 KB) per HUD construction, plus small text buffers, never freed. Live: 55 HUD builds in 50 game sessions (about once per launch), so negligible. |
+| Memory | One `0x148`-byte label per control (the hotbar: 75, about 25 KB) plus small text buffers per HUD construction, never freed. The HUD is rebuilt on every save load **and area transition** (sometimes at the same address), so this accrues: about 2.5 MB per 100 transitions in one session. Harmless for the large-address-aware process, but a patch with many or large controls should free its previous controls once the old panel is proven destroyed. |
 | Textures | 4 small RGBA textures, engine-allocated, so the engine's own free and reset paths match. The GL-reset ordering was analysed statically (lesson 290). |
 | Projection flag | Cleared and restored inside the hook. The constructor clears it right after anyway. |
 | Clicks | Hidden controls carry `0x20`, so the world and native controls get every click. Only visible hotbar slots and open editor controls absorb clicks, by design. |
@@ -200,13 +200,13 @@ Runtime labels have no event handlers. The hotbar polls in its per-frame hook:
 - **Visibility cache.** The hotbar skips a flag write when its cached state already matches. If engine code ever flipped
   bit 1 on a runtime control directly, the hotbar would only re-assert it on its next state change. This has not been seen
   in 50+ live sessions. The hotbar 1.0.0 review compares against the live flag.
-- **Old controls.** After a HUD rebuild, the old HUD's runtime controls leak with it and still point at pooled images and
-  textures. That is safe because those are never freed.
+- **Old controls.** After a HUD rebuild (every load and area transition), the old HUD's runtime controls leak with it and still
+  point at pooled images and textures. That is safe because those are never freed; the cost is the memory above.
 
 **Not yet tested:**
 
-- **Resolution change** in the options menu while a save is loaded. Rects are computed once, at construction. If the engine
-  rescales existing controls instead of rebuilding the HUD, they could be misplaced.
+- **Resolution change** in the options menu while a save is loaded. Statically the engine rebuilds the HUD
+  (`ResetInterfaceForSize` `0x007CFCA0` calls the HUD constructor), so the constructor hook re-creates the controls at the new size; not yet confirmed live.
 - **Gamepad UI navigation** on the HUD. Labels are not selectable, so they are expected to be inert.
 - **The GL-reset self-heal live** (texture-quality change).
 - **Other game builds** (GOG, K1). The addresses differ.

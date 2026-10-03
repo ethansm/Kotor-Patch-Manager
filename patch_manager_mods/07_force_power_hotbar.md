@@ -45,6 +45,17 @@
   Snapshot = copy of the live INI into `cloudsaves/<id>/<NNNNNN - Name>/force_power_hotbar.ini`; restore = live [General] + snapshot profiles (none -> empty).
   User's pre-feature hotbar kept at `<game>/force_power_hotbar.ini.pre_persave`. Awaiting user test (counts; save/edit/reload reverts; quicksave/quickload;
   new game empty; log `persave:` lines). DB lessons 355-357.
+  **Build 26 = `504372b1` INSTALLED 2026-10-03 00:03** (stage `hotbar_stage15/` = stage14 + this; backup `backups/inst15_1003_0003`; only the hotbar DLL
+  changed; AR_ERROR.LOG unchanged). User requests after testing build 25: (1) stack counts on the picker cells too (8 `LBL_HOTBARCELLQTY` labels, 75 controls,
+  optional: the editor works without them; picker list hash now includes entry names so a count change refreshes it); (2) out-of-stock items: the slot keeps the
+  item's icon dimmed (icon remembered per item name from every `readGroup`, per process; unknown after a fresh launch -> no icon) and shows "0"; not hoverable /
+  clickable (avail=false); re-enables on the next refresh. Antidote (count 1) has no badge by design: the engine names items "Name (N)" only when N > 1.
+  **Build 25 live results:** per-save works (log: load of saves without a snapshot -> empty bar; module autosave + manual save wrote snapshots); **Steam Cloud
+  syncs the snapshot** (`remotecache.vdf` lists `cloudsaves/62703561/<save>/force_power_hotbar.ini` for QUICKSAVE, AUTOSAVE, Game2) -> per-save files stay.
+  **CORRECTION (HUD lifetime):** the HUD is rebuilt on loads AND area transitions (log: 4 `H3 build` in one session, twice at the SAME panel address
+  0a4e4c38), not once per process as DB lesson 357 / the research said. Each rebuild orphans our labels (now 75 x 0x148 B ~ 25 KB + text) -> ~2.5 MB per 100
+  transitions per session. Harmless for the LAA process but documented; Phase F candidate: free the previous bar's labels through their deleting destructor
+  once it is proven the old HUD is destroyed (research: who destroys/reconstructs CSWGuiMainInterface on module load).
   **Post-1.0.0 plan item (user 2026-10-02): shared save binding.** Scopes differ per mod (hotbar = per-save file in the save folder; level-up override =
   per-playthrough GUID in DLL-added globals + game-folder INI) but the mechanism should be shared: (1) address rows in the KPM address DBs (SaveGameInProgress,
   LoadGame, DoPCAutosave, LoadAutosaveSlot, chargen commit 0x8FACA0, globals save/load) so patches resolve them via `GameAPI/GameVersion` instead of hard-coding;
