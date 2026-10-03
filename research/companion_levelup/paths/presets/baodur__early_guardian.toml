@@ -156,14 +156,14 @@ char_level = 26
 class = 3   # JediGuardian
 feats = [113]   # 113:Dueling
 powers = [40]   # 40:Improved Energy Resistance
-skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 27
 class = 3   # JediGuardian
 feats = []
 powers = [133]   # 133:Master Energy Resistance
-skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 28
@@ -171,18 +171,18 @@ class = 3   # JediGuardian
 attrs = {INT = 21}
 feats = [114]   # 114:Improved Dueling
 powers = [138]   # 138:Battle Meditation
-skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 29
 class = 3   # JediGuardian
 feats = []
 powers = [139]   # 139:Improved Battle Meditation
-skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 30
 class = 3   # JediGuardian
 feats = [115]   # 115:Master Dueling
 powers = [140]   # 140:Master Battle Meditation
-skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1, persuade = 1}

@@ -26,141 +26,141 @@ char_level = 8
 class = 9   # TechSpecialist
 attrs = {INT = 16}
 feats = [4]   # 4:Armor Proficiency: Heavy
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 9
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 10
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 11
 class = 9   # TechSpecialist
 feats = [84]   # 84:Toughness
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 12
 class = 9   # TechSpecialist
 attrs = {INT = 17}
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 13
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 14
 class = 9   # TechSpecialist
 feats = [123]   # 123:Improved Toughness
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 15
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 16
 class = 9   # TechSpecialist
 attrs = {INT = 18}
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 17
 class = 9   # TechSpecialist
 feats = [124]   # 124:Master Toughness
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 18
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 19
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 20
 class = 9   # TechSpecialist
 attrs = {INT = 19}
 feats = [21]   # 21:Improved Conditioning
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 21
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 22
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 23
 class = 9   # TechSpecialist
 feats = [17]   # 17:Improved Power Attack
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 24
 class = 9   # TechSpecialist
 attrs = {INT = 20}
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}
 
 [[level]]
 char_level = 25
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}
 
 [[level]]
 char_level = 26
 class = 9   # TechSpecialist
 feats = [83]   # 83:Master Power Attack
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}
 
 [[level]]
 char_level = 27
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}
 
 [[level]]
 char_level = 28
 class = 9   # TechSpecialist
 attrs = {INT = 21}
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}
 
 [[level]]
 char_level = 29
 class = 9   # TechSpecialist
 feats = [113]   # 113:Dueling
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}
 
 [[level]]
 char_level = 30
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 2}

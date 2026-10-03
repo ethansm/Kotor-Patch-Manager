@@ -27,25 +27,25 @@ char_level = 8
 class = 9   # TechSpecialist
 attrs = {INT = 16}
 feats = [3]   # 3:Two-Weapon Fighting
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 9
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 10
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 11
 class = 9   # TechSpecialist
 feats = [9]   # 9:Improved Two-Weapon Fighting
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 12
@@ -140,28 +140,28 @@ class = 3   # JediGuardian
 attrs = {INT = 20}
 feats = [140]   # 140:Improved Close Combat
 powers = [138]   # 138:Battle Meditation
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 25
 class = 3   # JediGuardian
 feats = []
 powers = [139]   # 139:Improved Battle Meditation
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 26
 class = 3   # JediGuardian
 feats = [8]   # 8:Critical Strike
 powers = [140]   # 140:Master Battle Meditation
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 27
 class = 3   # JediGuardian
 feats = []
 powers = [134]   # 134:Master Heal
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 28
@@ -169,18 +169,18 @@ class = 3   # JediGuardian
 attrs = {INT = 21}
 feats = [19]   # 19:Improved Critical Strike
 powers = [42]   # 42:Energy Resistance
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 29
 class = 3   # JediGuardian
 feats = []
 powers = [40]   # 40:Improved Energy Resistance
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 30
 class = 3   # JediGuardian
 feats = [21]   # 21:Improved Conditioning
 powers = [133]   # 133:Master Energy Resistance
-skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
+skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}

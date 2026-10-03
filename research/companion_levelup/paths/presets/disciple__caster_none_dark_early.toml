@@ -138,7 +138,7 @@ char_level = 23
 class = 4   # JediConsular
 feats = []
 powers = [37]   # 37:Master Speed
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 24
@@ -146,28 +146,28 @@ class = 4   # JediConsular
 attrs = {WIS = 20}
 feats = [24]   # 24:Master Jedi Defense
 powers = [42, 40]   # 42:Energy Resistance, 40:Improved Energy Resistance
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 25
 class = 4   # JediConsular
 feats = []
 powers = [133]   # 133:Master Energy Resistance
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 26
 class = 4   # JediConsular
 feats = []
 powers = [23]   # 23:Force Push
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 27
 class = 4   # JediConsular
 feats = [196]   # 196:Regenerate Vitality Points
 powers = [27, 26]   # 27:Force Whirlwind, 26:Force Wave
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 28
@@ -175,18 +175,18 @@ class = 4   # JediConsular
 attrs = {WIS = 21}
 feats = []
 powers = [162]   # 162:Force Deflection
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 29
 class = 4   # JediConsular
 feats = []
 powers = [163]   # 163:Force Redirection
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}
 
 [[level]]
 char_level = 30
 class = 4   # JediConsular
 feats = [36]   # 36:Weapon Focus: Lightsaber
 powers = [48, 19]   # 48:Force Suppression, 19:Force Breach
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, persuade = 1}

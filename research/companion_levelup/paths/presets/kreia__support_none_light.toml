@@ -65,14 +65,14 @@ char_level = 10
 class = 4   # JediConsular
 feats = []
 powers = [136]   # 136:Improved Force Barrier
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 11
 class = 4   # JediConsular
 feats = []
 powers = [40]   # 40:Improved Energy Resistance
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 12
@@ -80,28 +80,28 @@ class = 4   # JediConsular
 attrs = {WIS = 19}
 feats = [13]   # 13:Conditioning
 powers = [28, 139]   # 28:Improved Heal, 139:Improved Battle Meditation
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 13
 class = 4   # JediConsular
 feats = []
 powers = [17]   # 17:Force Armor
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 14
 class = 4   # JediConsular
 feats = []
 powers = [173]   # 173:Revitalize
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 15
 class = 4   # JediConsular
 feats = [123]   # 123:Improved Toughness
 powers = [41, 37]   # 41:Force Resistance, 37:Master Speed
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 16
@@ -109,28 +109,28 @@ class = 4   # JediConsular
 attrs = {WIS = 20}
 feats = []
 powers = [137]   # 137:Master Force Barrier
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 17
 class = 4   # JediConsular
 feats = []
 powers = [36]   # 36:Master Valor
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 18
 class = 4   # JediConsular
 feats = [1]   # 1:Advanced Jedi Defense
 powers = [134, 140]   # 134:Master Heal, 140:Master Battle Meditation
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 19
 class = 4   # JediConsular
 feats = []
 powers = [174]   # 174:Improved Revitalize
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 20
@@ -138,28 +138,28 @@ class = 4   # JediConsular
 attrs = {WIS = 21}
 feats = []
 powers = [133]   # 133:Master Energy Resistance
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 21
 class = 4   # JediConsular
 feats = [21]   # 21:Improved Conditioning
 powers = [175, 20]   # 175:Master Revitalize, 20:Force Immunity
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 22
 class = 4   # JediConsular
 feats = []
 powers = [162]   # 162:Force Deflection
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 23
 class = 4   # JediConsular
 feats = []
 powers = [163]   # 163:Force Redirection
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 24
@@ -167,28 +167,28 @@ class = 4   # JediConsular
 attrs = {WIS = 22}
 feats = [196]   # 196:Regenerate Vitality Points
 powers = [46, 150]   # 46:Stun, 150:Force Body
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 25
 class = 4   # JediConsular
 feats = []
 powers = [29]   # 29:Stasis
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 26
 class = 4   # JediConsular
 feats = []
 powers = [44]   # 44:Stasis Field
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 27
 class = 4   # JediConsular
 feats = [124]   # 124:Master Toughness
 powers = [151, 181]   # 151:Improved Force Body, 181:Mind Trick
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 28
@@ -196,18 +196,18 @@ class = 4   # JediConsular
 attrs = {WIS = 23}
 feats = []
 powers = [152]   # 152:Master Force Body
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 29
 class = 4   # JediConsular
 feats = []
 powers = [48]   # 48:Force Suppression
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}
 
 [[level]]
 char_level = 30
 class = 4   # JediConsular
 feats = [24]   # 24:Master Jedi Defense
 powers = [19, 27]   # 19:Force Breach, 27:Force Whirlwind
-skills = {treat_injury = 1, awareness = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, repair = 1, stealth = 1}

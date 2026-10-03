@@ -174,4 +174,4 @@ char_level = 30
 class = 3   # JediGuardian
 feats = [19]   # 19:Improved Critical Strike
 powers = [162]   # 162:Force Deflection
-skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1}
+skills = {treat_injury = 1, awareness = 1, demolitions = 1, repair = 1, persuade = 1}

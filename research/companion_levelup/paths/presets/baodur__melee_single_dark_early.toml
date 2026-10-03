@@ -27,25 +27,25 @@ char_level = 8
 class = 9   # TechSpecialist
 attrs = {INT = 16}
 feats = [4]   # 4:Armor Proficiency: Heavy
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, treat_injury = 1}
 
 [[level]]
 char_level = 9
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, treat_injury = 1}
 
 [[level]]
 char_level = 10
 class = 9   # TechSpecialist
 feats = []
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, treat_injury = 1}
 
 [[level]]
 char_level = 11
 class = 9   # TechSpecialist
 feats = [17]   # 17:Improved Power Attack
-skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1}
+skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, treat_injury = 1}
 
 [[level]]
 char_level = 12
