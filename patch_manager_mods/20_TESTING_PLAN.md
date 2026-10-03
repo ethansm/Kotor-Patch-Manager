@@ -258,3 +258,16 @@ Rules that apply to every phase:
 
 ## Status
 - 10-03: plan written; audit 20a committed. Next: Phase 0.
+- 10-03: **Phase 0 done.**
+  - `python3 scripts/run_tests.py` covers 17 items: 5 host cpp tests (ASan/UBSan), 3 Python tests/suites, 4 level-up parity scripts and 5 checkers. It is green in 8.5 s wall time; `parity.py` is the slowest at 8.4 s.
+  - `--wine` adds 27 smoke runs (10 smokes × modes from `perf_lab_src/harness/smokes.toml`). It was green 3 times out of 3, at about 138 s each, with no flakiness.
+  - `--selftest` exits 0: planted failures (C++ normal, C++ `-DNDEBUG`, Python) all report FAIL.
+  - Hand breaks went red as expected: a twoda value, a `sort_logic_test` check and the perflab leak threshold.
+  - `check.h` lives at `tests/include/check.h` (namespace `kt`). It moves to `Common/test/` with `TestHarness.h` in Phase 4.
+  - The six do-nothing tests are fixed:
+    - `config_roundtrip_test` now runs on `check.h` (51 checks).
+    - `twoda_test` uses a synthetic `testdata/spells_fixture.2da` (40 checks); the real file is still available via argv[1].
+    - `smoke_perflab` and `smoke_probe12` now assert.
+    - `smoke.cpp` became `smoke_probe11.cpp` and now asserts. Its old manual-dump step never checked anything: it copied the report before the probe had written it.
+    - `smoke_probe13` is retired to `harness/retired/`.
+  - Next: Phase 1.

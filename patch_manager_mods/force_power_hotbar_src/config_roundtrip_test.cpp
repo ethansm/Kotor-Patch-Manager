@@ -1,5 +1,5 @@
 #include "HotbarConfig.h"
-#include <assert.h>
+#include "check.h"
 #include <stdlib.h>
 #include <stdio.h>
 using namespace hb;
@@ -10,29 +10,68 @@ int main(){
    "[Profile.Atton]\nBottom1=spell:22\nBogus9=spell:1\n";
   Config a; a.Parse(sample);
   for(auto&w:a.warnings) printf("warn: %s\n",w.c_str());
-  assert(a.warnings.size()==2);
+  KT_CHECK_EQ(a.warnings.size(),2);
   std::string s1=a.Serialize(); Config b; b.Parse(s1); std::string s2=b.Serialize();
-  assert(s1==s2 && b.warnings.empty());
-  assert(s1.find("Left")==std::string::npos && s1.find("Right")==std::string::npos);   // removed Ctrl/Alt rows: dropped silently
-  assert(a.slotFor("Atton",0,0).id==22 && a.slotFor("Atton",0,9).id==135 && a.slotFor("Nobody",0,0).id==8);
-  assert(a.general.extra["Foo"]=="bar");
-  const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt.ini"; assert(a.Save(path)); Config c; assert(c.Load(path)); assert(c.Serialize()==s1);
-  assert(c.general.extra.count("Foo"));
-  { Config o; o.Parse("[General]\nCreatureTagOffset=0x10\n"); assert(o.warnings.empty() && o.general.extra["CreatureTagOffset"]=="0x10" && o.Serialize().find("CreatureTagOffset=0x10")!=std::string::npos); }
-  { Config t; t.profile("Default"); std::string ts = t.Serialize(); assert(t.general.invoke==1 && t.general.verbose==0 && ts.find("Invoke=1\n")!=std::string::npos && ts.find("Verbose=0\n")!=std::string::npos); }   // release template defaults
-  assert(StackCount(0x40000272,"Medpac (7)")==7 && StackCount(0x40000273,"Repair Kit (19)")==19 && StackCount(0x40000272,"Medpac")==0);
-  assert(StackCount(0x20000008,"Burst (3)")==0 && StackCount(0x40000001,"Odd (x)")==0 && StackCount(0x40000001,"()")==0 && StackCount(0x40000001,"A ()")==0);   // stack counts
+  KT_CHECK(s1==s2);
+  KT_CHECK(b.warnings.empty());
+  KT_CHECK(s1.find("Left")==std::string::npos && s1.find("Right")==std::string::npos);   // removed Ctrl/Alt rows: dropped silently
+  KT_CHECK_EQ(a.slotFor("Atton",0,0).id,22);
+  KT_CHECK_EQ(a.slotFor("Atton",0,9).id,135);
+  KT_CHECK_EQ(a.slotFor("Nobody",0,0).id,8);
+  KT_CHECK_EQ(a.general.extra["Foo"].c_str(),"bar");
+  const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt.ini";
+  KT_CHECK(a.Save(path));
+  Config c;
+  KT_CHECK(c.Load(path));
+  KT_CHECK(c.Serialize()==s1);
+  KT_CHECK(c.general.extra.count("Foo"));
+  { Config o; o.Parse("[General]\nCreatureTagOffset=0x10\n");
+    KT_CHECK(o.warnings.empty());
+    KT_CHECK_EQ(o.general.extra["CreatureTagOffset"].c_str(),"0x10");
+    KT_CHECK(o.Serialize().find("CreatureTagOffset=0x10")!=std::string::npos); }
+  { Config t; t.profile("Default"); std::string ts = t.Serialize();   // release template defaults
+    KT_CHECK_EQ(t.general.invoke,1);
+    KT_CHECK_EQ(t.general.verbose,0);
+    KT_CHECK(ts.find("Invoke=1\n")!=std::string::npos);
+    KT_CHECK(ts.find("Verbose=0\n")!=std::string::npos); }
+  KT_CHECK_EQ(StackCount(0x40000272,"Medpac (7)"),7);
+  KT_CHECK_EQ(StackCount(0x40000273,"Repair Kit (19)"),19);
+  KT_CHECK_EQ(StackCount(0x40000272,"Medpac"),0);
+  KT_CHECK_EQ(StackCount(0x20000008,"Burst (3)"),0);   // stack counts
+  KT_CHECK_EQ(StackCount(0x40000001,"Odd (x)"),0);
+  KT_CHECK_EQ(StackCount(0x40000001,"()"),0);
+  KT_CHECK_EQ(StackCount(0x40000001,"A ()"),0);
   remove(path.c_str());
-  ActionRef r; assert(!Parse("spell:x",&r) && r.empty()); assert(Parse("",&r)&&r.empty()); assert(Parse("OTHER:FF",&r)&&r.id==255);
-  int row,slot; assert(SlotFromKeyName("Bottom0",&row,&slot)&&row==0&&slot==9); assert(!SlotFromKeyName("Right0",&row,&slot)); assert(IsRemovedRowKey("Right0")&&IsRemovedRowKey("left1")&&!IsRemovedRowKey("Left"));
+  ActionRef r;
+  KT_CHECK(!Parse("spell:x",&r));
+  KT_CHECK(r.empty());
+  KT_CHECK(Parse("",&r));
+  KT_CHECK(r.empty());
+  KT_CHECK(Parse("OTHER:FF",&r));
+  KT_CHECK_EQ(r.id,255);
+  int row=-1,slot=-1;
+  KT_CHECK(SlotFromKeyName("Bottom0",&row,&slot));
+  KT_CHECK_EQ(row,0);
+  KT_CHECK_EQ(slot,9);
+  KT_CHECK(!SlotFromKeyName("Right0",&row,&slot));
+  KT_CHECK(IsRemovedRowKey("Right0") && IsRemovedRowKey("left1") && !IsRemovedRowKey("Left"));
   { Config n; n.Parse("[Profile.Default]\nBottom1=spell:8\nBottom2=NONE ; cleared\n[Profile.Bob]\nBottom1=none\n");
-    assert(n.warnings.empty());
-    assert(n.slotFor("Bob",0,0).empty() && n.slotFor("Bob",0,0).blank);   // none blocks the Default fallback
-    assert(!n.slotFor("Nobody",0,0).blank && n.slotFor("Nobody",0,0).id==8);
-    assert(n.slotFor("Nobody",0,1).blank && n.slotFor("Nobody",0,1).empty());
+    KT_CHECK(n.warnings.empty());
+    KT_CHECK(n.slotFor("Bob",0,0).empty());   // none blocks the Default fallback
+    KT_CHECK(n.slotFor("Bob",0,0).blank);
+    KT_CHECK(!n.slotFor("Nobody",0,0).blank);
+    KT_CHECK_EQ(n.slotFor("Nobody",0,0).id,8);
+    KT_CHECK(n.slotFor("Nobody",0,1).blank);
+    KT_CHECK(n.slotFor("Nobody",0,1).empty());
     n.SetSlot("Default",0,2,ActionRef(),"x"); n.SetSlot("Default",0,3,[]{ActionRef r; r.kind=K_Item; r.name="Medpac"; return r;}(),"Medpac");
-    std::string o=n.Serialize(); Config m; m.Parse(o); assert(m.warnings.empty() && m.Serialize()==o);
-    assert(Format(m.find("default")->slots[0][3])=="item:Medpac" && m.slotFor("",0,1).blank);
-    assert(o.find("Bottom2=none")!=std::string::npos && o.find("Bottom3=")==std::string::npos); }
-  puts(s1.c_str()); puts("config round-trip OK");
+    std::string o=n.Serialize(); Config m; m.Parse(o);
+    KT_CHECK(m.warnings.empty());
+    KT_CHECK(m.Serialize()==o);
+    const Profile* dp=m.find("default");
+    if(KT_CHECK(dp!=nullptr)) KT_CHECK_EQ(Format(dp->slots[0][3]).c_str(),"item:Medpac");
+    KT_CHECK(m.slotFor("",0,1).blank);
+    KT_CHECK(o.find("Bottom2=none")!=std::string::npos);
+    KT_CHECK(o.find("Bottom3=")==std::string::npos); }
+  puts(s1.c_str());
+  return kt::Report("config_roundtrip_test");
 }

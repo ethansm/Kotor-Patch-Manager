@@ -48,3 +48,5 @@ A hand-off for the next session. Read doc 20 (the plan) and 20a (the audit) firs
 
 ## Next
 Phase 0 of doc 20 section 7. The implementation plan is drafted in plan mode in the following session.
+
+**Phase 0 done (10-03).** Run `python3 scripts/run_tests.py` (`--wine` for smokes, `--selftest` for the runner itself); see the doc 20 Status. Next: Phase 1.

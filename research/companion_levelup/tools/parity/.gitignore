@@ -1,3 +1,9 @@
 parity_bin
 apply_test_bin
 gate_test_bin
+guikit_test_bin
+options_test_bin
+playthrough_test_bin
+ui_test_bin
+wizard_test_bin
+__pycache__/

@@ -1,6 +1,10 @@
 // Smoke test for PerfLab 1a: threads hammer HeapAlloc/HeapReAlloc/HeapFree through the exe's own IAT,
 // timing before/after the DLL attaches, then checks accounting returns to zero.
 // Build: i686-w64-mingw32-g++ -O1 -o smoke_perflab.exe smoke_perflab.cpp   (run dir needs the DLL as perflab.dll)
+// Exit code 0 = all checks passed (kt::Report). Checks: balanced run -> live_bytes==0 && live_blocks==0; leak sim -> live_bytes>=100000
+// && live_blocks>=1000; allocs>0; untracked==0 && dropped==0. The timing line is informational only.
+// Other exit codes: 1 = LoadLibrary failed (also a failed check), 3 = missing export.
+#include "check.h"
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,15 +43,22 @@ int main() {
     HMODULE m = LoadLibraryA("perflab.dll");
     if (!m) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
     StatsFn stats = (StatsFn)GetProcAddress(m, "PerfLabStats"); VoidFn snap = (VoidFn)GetProcAddress(m, "PerfLabSnapshot");
+    if (!stats || !snap) { printf("missing export: stats=%p snap=%p\n", (void*)stats, (void*)snap); return 3; }
     run(T, N); double hooked = run(T, N); double h2 = run(T, N); hooked = hooked < h2 ? hooked : h2;
     long long st[6] = {0}; stats(st, 6);
     printf("no hook: %.3fs  hooked: %.3fs  (%.0f ns/op extra over %d ops)\n", base, hooked, (hooked - base) * 1e9 / (double(T) * N), T * N);
-    printf("live_bytes=%lld live_blocks=%lld allocs=%lld frees=%lld untracked=%lld dropped=%lld  %s\n", st[0], st[1], st[2], st[3], st[4], st[5],
-           (st[0] == 0 && st[1] == 0) ? "ACCOUNTING OK" : "ACCOUNTING MISMATCH");
+    printf("live_bytes=%lld live_blocks=%lld allocs=%lld frees=%lld untracked=%lld dropped=%lld\n", st[0], st[1], st[2], st[3], st[4], st[5]);
+    KT_CHECK_EQ(st[0], 0);          // balanced run: every tracked byte freed
+    KT_CHECK_EQ(st[1], 0);
+    KT_CHECK(st[2] > 0);            // allocs observed at all
+    KT_CHECK_EQ(st[4], 0);          // untracked
+    KT_CHECK_EQ(st[5], 0);          // dropped
     // leak simulation: 1000 x 100 bytes at siteA must show as live at that site
     for (int i = 0; i < 1000; ++i) siteA(100);
     snap(); Sleep(1500);
     stats(st, 6); printf("after leak sim: live_bytes=%lld (expect ~100000+) blocks=%lld\n", st[0], st[1]);
+    KT_CHECK(st[0] >= 100000);
+    KT_CHECK(st[1] >= 1000);
     Sleep(1200);
-    return 0;
+    return kt::Report("smoke_perflab");
 }

@@ -1,0 +1,142 @@
+# smokes.toml - manifest of the Wine smoke tests in this directory (doc 20, Phase 0 Step 4).
+# Run with:  python3 scripts/run_tests.py --wine      (builds each row, extracts its DLL, runs every mode under a throwaway WINEPREFIX)
+# Hand recipe (manual fallback): see ../README.md.
+#
+# Top-level keys
+#   mingw_runtime_dirs   directories (globs allowed) searched, in order, for the MinGW runtime DLLs below; first hit wins.
+#   mingw_runtime_dll_names  the three DLLs copied next to the exe when a row has runtime_dlls = true.
+#       libstdc++-6.dll + libgcc_s_dw2-1.dll live in /usr/lib/gcc/i686-w64-mingw32/<ver>-win32/ (13-win32 here);
+#       libwinpthread-1.dll lives in /usr/i686-w64-mingw32/lib/.
+#
+# Keys of each [[smoke]] table
+#   name          short id (probe11, perflab2, ...); also the work-dir name <out>/wine/<name>/
+#   src           source file, relative to this directory
+#   kpatch        patch archive, relative to $KPM_DIR/Patches; the DLL is `unzip -j <kpatch> binaries/windows_x86.dll`
+#   dll_name      file name the smoke LoadLibrary's; the extracted DLL is renamed to it (perflab: perflab.dll)
+#   extra_dlls    (optional) list of further {kpatch, dll_name} tables for smokes that need more than one DLL (none today)
+#   cxxflags      link-style flags and libs ONLY; the runner always adds `i686-w64-mingw32-g++ -std=c++17 -O1 -I <this dir> -I tests/include`
+#   runtime_dlls  true = copy the 3 MinGW runtime DLLs next to the exe (the exe links libstdc++/libgcc dynamically)
+#   modes         argv[1] values, one run each, every one must exit 0; empty list = run once with no argument
+#   needs_display true = needs a display (DISPLAY set): the smoke creates a real window and calls SetForegroundWindow. probe14 and
+#                 activationfix fail their foreground checks without one; perflab2/3 (GLU calls only) pass headless (verified with DISPLAY and
+#                 WAYLAND_DISPLAY unset).
+#   timeout_s     per-run wall-clock limit (generous: >= 2.5x the slowest measured mode; probe11 runs ~25 s by design: 15 s MAIN_STALL wait)
+#
+# Notes
+#   - probe14 and perflab are dynamic builds and need the runtime DLLs (without them wine exits 53 silently under WINEDEBUG=-all).
+#   - The perflab2/perflab3/probe14/texmem/robustness/activationfix/equipiconfix smokes rely on a 7 MB .bss pad so the exe's own image covers
+#     the engine's addresses (0x400000-0xB00000); do not add -static (libstdc++ static grows .text past 0x4261CF in perflab2/3).
+#   - Exit codes: 0 pass, 1 check failed / LoadLibrary failed, 2 setup failure, 3 missing export.
+
+mingw_runtime_dirs = ["/usr/lib/gcc/i686-w64-mingw32/*-win32", "/usr/i686-w64-mingw32/lib"]
+mingw_runtime_dll_names = ["libstdc++-6.dll", "libgcc_s_dw2-1.dll", "libwinpthread-1.dll"]
+
+[[smoke]]
+name = "probe11"
+src = "smoke_probe11.cpp"
+kpatch = "LoadHangProbe/LoadHangProbe.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static"]
+runtime_dlls = false
+modes = []
+needs_display = false
+timeout_s = 90
+
+[[smoke]]
+name = "probe12"
+src = "smoke_probe12.cpp"
+kpatch = "LoadHangProbe/LoadHangProbe.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static"]
+runtime_dlls = false
+modes = []
+needs_display = false
+timeout_s = 60
+
+[[smoke]]
+name = "probe14"
+src = "smoke_probe14.cpp"
+kpatch = "LoadHangProbe/LoadHangProbe.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = []
+runtime_dlls = true
+modes = ["off", "auto", "manual"]
+needs_display = true
+timeout_s = 60
+
+[[smoke]]
+name = "perflab"
+src = "smoke_perflab.cpp"
+kpatch = "PerfLab/PerfLab.kpatch"
+dll_name = "perflab.dll"
+cxxflags = []
+runtime_dlls = true
+modes = []
+needs_display = false
+timeout_s = 120
+
+[[smoke]]
+name = "perflab2"
+src = "smoke_perflab2.cpp"
+kpatch = "PerfLab/PerfLab.kpatch"
+dll_name = "perflab.dll"
+cxxflags = ["-lgdi32", "-lglu32"]
+runtime_dlls = true
+modes = ["run", "refuse", "off"]
+needs_display = false
+timeout_s = 120
+
+[[smoke]]
+name = "perflab3"
+src = "smoke_perflab3.cpp"
+kpatch = "PerfLab/PerfLab.kpatch"
+dll_name = "perflab.dll"
+cxxflags = ["-lgdi32", "-lglu32"]
+runtime_dlls = true
+modes = ["run", "refuse", "off", "nogroups"]
+needs_display = false
+timeout_s = 120
+
+[[smoke]]
+name = "texmem"
+src = "smoke_texmem.cpp"
+kpatch = "TextureMemoryRelease/TextureMemoryRelease.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static-libgcc", "-static-libstdc++"]
+runtime_dlls = false
+modes = ["run", "disabled", "refuse"]
+needs_display = false
+timeout_s = 60
+
+[[smoke]]
+name = "robustness"
+src = "smoke_robustness.cpp"
+kpatch = "RobustnessFixes/RobustnessFixes.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static-libgcc", "-static-libstdc++"]
+runtime_dlls = false
+modes = ["run", "disabled", "refuse", "keys"]
+needs_display = false
+timeout_s = 60
+
+[[smoke]]
+name = "activationfix"
+src = "smoke_activationfix.cpp"
+kpatch = "ActivationFix/ActivationFix.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static-libgcc", "-static-libstdc++"]
+runtime_dlls = false
+modes = ["run", "disabled", "refuse"]
+needs_display = true
+timeout_s = 60
+
+[[smoke]]
+name = "equipiconfix"
+src = "smoke_equipiconfix.cpp"
+kpatch = "EquipIconFix/EquipIconFix.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static-libgcc", "-static-libstdc++"]
+runtime_dlls = false
+modes = ["run", "disabled", "refuse"]
+needs_display = false
+timeout_s = 60
