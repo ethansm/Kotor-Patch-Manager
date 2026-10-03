@@ -23,7 +23,7 @@ char_level = 7
 class = 3   # JediGuardian
 feats = [21]   # 21:Improved Conditioning
 powers = [8, 10]   # 8:Burst of Speed, 10:Heal
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 8
@@ -31,28 +31,28 @@ class = 3   # JediGuardian
 attrs = {STR = 15}
 feats = [124]   # 124:Master Toughness
 powers = [135]   # 135:Force Barrier
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 9
 class = 3   # JediGuardian
 feats = [22]   # 22:Master Conditioning
 powers = [34]   # 34:Knight Speed
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 10
 class = 3   # JediGuardian
 feats = []
 powers = [136]   # 136:Improved Force Barrier
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 11
 class = 3   # JediGuardian
 feats = [196]   # 196:Regenerate Vitality Points
 powers = [162]   # 162:Force Deflection
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 12
@@ -60,28 +60,28 @@ class = 3   # JediGuardian
 attrs = {STR = 16}
 feats = []
 powers = [28]   # 28:Improved Heal
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 13
 class = 3   # JediGuardian
 feats = [113]   # 113:Dueling
 powers = [163]   # 163:Force Redirection
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 14
 class = 3   # JediGuardian
 feats = []
 powers = [41]   # 41:Force Resistance
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 15
 class = 3   # JediGuardian
 feats = [114]   # 114:Improved Dueling
 powers = [37]   # 37:Master Speed
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 16
@@ -89,28 +89,28 @@ class = 3   # JediGuardian
 attrs = {CON = 15}
 feats = []
 powers = [137]   # 137:Master Force Barrier
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 17
 class = 3   # JediGuardian
 feats = [115]   # 115:Master Dueling
 powers = [20]   # 20:Force Immunity
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 18
 class = 3   # JediGuardian
 feats = []
 powers = [134]   # 134:Master Heal
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 19
 class = 3   # JediGuardian
 feats = [83]   # 83:Master Power Attack
 powers = [18]   # 18:Force Aura
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 20
@@ -118,28 +118,28 @@ class = 3   # JediGuardian
 attrs = {CON = 16}
 feats = []
 powers = [24]   # 24:Force Shield
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 21
 class = 3   # JediGuardian
 feats = [11]   # 11:Flurry
 powers = [17]   # 17:Force Armor
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 22
 class = 3   # JediGuardian
 feats = []
 powers = [42]   # 42:Energy Resistance
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 23
 class = 3   # JediGuardian
 feats = [91]   # 91:Improved Flurry
 powers = [40]   # 40:Improved Energy Resistance
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 24
@@ -147,28 +147,28 @@ class = 3   # JediGuardian
 attrs = {STR = 17}
 feats = []
 powers = [133]   # 133:Master Energy Resistance
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 25
 class = 3   # JediGuardian
 feats = [53]   # 53:Master Flurry
 powers = [138]   # 138:Battle Meditation
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 26
 class = 3   # JediGuardian
 feats = []
 powers = [139]   # 139:Improved Battle Meditation
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 27
 class = 3   # JediGuardian
 feats = [190]   # 190:Dual Strike
 powers = [22]   # 22:Force Valor
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 28
@@ -176,18 +176,18 @@ class = 3   # JediGuardian
 attrs = {STR = 18}
 feats = []
 powers = [33]   # 33:Knight Valor
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 29
 class = 3   # JediGuardian
 feats = [191]   # 191:Improved Dual Strike
 powers = [36]   # 36:Master Valor
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 30
 class = 3   # JediGuardian
 feats = []
 powers = [140]   # 140:Master Battle Meditation
-skills = {treat_injury = 1}
+skills = {awareness = 1}

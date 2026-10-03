@@ -29,3 +29,6 @@ Not covered on purpose: caster/support (no Force powers; medic play is just Trea
 4. Attack-bonus prerequisites are not checked by check_paths; Classic Class Attack Bonus (#10) could affect minattack on masters (none of the used feats lists minattack > 0 in the rules tables).
 5. Skills: Class Skill feats (Computer Use/Repair/Security/Stealth) unused; maxing Treat Injury/Awareness reaches 30 ranks by level 30. Persuade/Stealth left at live 2. Elkripper marks levels 28 and 30 feat slots "situational".
 6. Elkripper models level 30 as end; TSLRCM level cap unverified.
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+`tank_single_none_na` L30: ranged-only Improved Close Combat replaced by Master Critical Strike.

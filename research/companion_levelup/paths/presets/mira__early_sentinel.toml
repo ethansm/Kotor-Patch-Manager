@@ -35,7 +35,7 @@ skills = {security = 1, stealth = 1, treat_injury = 1, awareness = 1}
 [[level]]
 char_level = 9
 class = 5   # JediSentinel
-feats = [9]   # 9:Improved Two-Weapon Fighting
+feats = [194]   # 194:Finesse: Melee Weapons
 powers = [34]   # 34:Knight Speed
 skills = {computer_use = 1, treat_injury = 2, awareness = 1}
 
@@ -57,14 +57,14 @@ skills = {awareness = 2, computer_use = 1, treat_injury = 1}
 char_level = 12
 class = 5   # JediSentinel
 attrs = {DEX = 18}
-feats = [36]   # 36:Weapon Focus: Lightsaber
+feats = [9]   # 9:Improved Two-Weapon Fighting
 powers = [28]   # 28:Improved Heal
 skills = {treat_injury = 1, computer_use = 1, security = 1, stealth = 1}
 
 [[level]]
 char_level = 13
 class = 5   # JediSentinel
-feats = [85]   # 85:Master Two-Weapon Fighting
+feats = [36]   # 36:Weapon Focus: Lightsaber
 powers = [163]   # 163:Force Redirection
 skills = {treat_injury = 1, awareness = 2, computer_use = 1}
 
@@ -78,7 +78,7 @@ skills = {treat_injury = 1, computer_use = 1, security = 1, stealth = 1}
 [[level]]
 char_level = 15
 class = 5   # JediSentinel
-feats = [190]   # 190:Dual Strike
+feats = [85]   # 85:Master Two-Weapon Fighting
 powers = [37]   # 37:Master Speed
 skills = {treat_injury = 1, awareness = 2, computer_use = 1}
 
@@ -100,14 +100,14 @@ skills = {treat_injury = 1, awareness = 2, computer_use = 1}
 [[level]]
 char_level = 18
 class = 5   # JediSentinel
-feats = [191]   # 191:Improved Dual Strike
+feats = [190]   # 190:Dual Strike
 powers = [134]   # 134:Master Heal
 skills = {treat_injury = 1, computer_use = 1, security = 1, stealth = 1}
 
 [[level]]
 char_level = 19
 class = 5   # JediSentinel
-feats = [1]   # 1:Advanced Jedi Defense
+feats = [191]   # 191:Improved Dual Strike
 powers = [33]   # 33:Knight Valor
 skills = {treat_injury = 1, awareness = 2, computer_use = 1}
 
@@ -122,7 +122,7 @@ skills = {treat_injury = 1, computer_use = 1, security = 1, stealth = 1}
 [[level]]
 char_level = 21
 class = 5   # JediSentinel
-feats = [192]   # 192:Master Dual Strike
+feats = [1]   # 1:Advanced Jedi Defense
 powers = [140]   # 140:Master Battle Meditation
 skills = {treat_injury = 1, awareness = 2, computer_use = 1}
 
@@ -151,7 +151,7 @@ skills = {treat_injury = 1, computer_use = 1, security = 1, stealth = 1}
 [[level]]
 char_level = 25
 class = 5   # JediSentinel
-feats = [140]   # 140:Improved Close Combat
+feats = [84]   # 84:Toughness
 powers = [17]   # 17:Force Armor
 skills = {treat_injury = 1, awareness = 2, computer_use = 1}
 

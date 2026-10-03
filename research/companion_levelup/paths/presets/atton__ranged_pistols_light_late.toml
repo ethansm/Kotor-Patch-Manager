@@ -123,28 +123,28 @@ class = 5   # JediSentinel
 attrs = {DEX = 21}
 feats = [139]   # 139:Close Combat
 powers = [8, 10]   # 8:Burst of Speed, 10:Heal
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 21
 class = 5   # JediSentinel
 feats = []
 powers = [34]   # 34:Knight Speed
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 22
 class = 5   # JediSentinel
 feats = [140]   # 140:Improved Close Combat
 powers = [37]   # 37:Master Speed
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 23
 class = 5   # JediSentinel
 feats = []
 powers = [28]   # 28:Improved Heal
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 24
@@ -152,28 +152,28 @@ class = 5   # JediSentinel
 attrs = {DEX = 22}
 feats = []
 powers = [134]   # 134:Master Heal
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 25
 class = 5   # JediSentinel
 feats = [240]   # 240:Precise Shot I
 powers = [162]   # 162:Force Deflection
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 26
 class = 5   # JediSentinel
 feats = [241]   # 241:Precise Shot II
 powers = [163]   # 163:Force Redirection
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 27
 class = 5   # JediSentinel
 feats = []
 powers = [46]   # 46:Stun
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 28
@@ -181,18 +181,18 @@ class = 5   # JediSentinel
 attrs = {DEX = 23}
 feats = [242]   # 242:Precise Shot III
 powers = [29]   # 29:Stasis
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 29
 class = 5   # JediSentinel
 feats = []
 powers = [44]   # 44:Stasis Field
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}
 
 [[level]]
 char_level = 30
 class = 5   # JediSentinel
 feats = []
 powers = [138]   # 138:Battle Meditation
-skills = {stealth = 1, awareness = 1, security = 1}
+skills = {treat_injury = 3}

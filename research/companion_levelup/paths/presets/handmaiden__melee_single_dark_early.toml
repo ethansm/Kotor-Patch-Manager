@@ -165,7 +165,7 @@ skills = {treat_injury = 1}
 [[level]]
 char_level = 27
 class = 3   # JediGuardian
-feats = [139]   # 139:Close Combat
+feats = [124]   # 124:Master Toughness
 powers = [40]   # 40:Improved Energy Resistance
 skills = {treat_injury = 1}
 
@@ -180,7 +180,7 @@ skills = {treat_injury = 1}
 [[level]]
 char_level = 29
 class = 3   # JediGuardian
-feats = [140]   # 140:Improved Close Combat
+feats = [8]   # 8:Critical Strike
 powers = [162]   # 162:Force Deflection
 skills = {treat_injury = 1}
 

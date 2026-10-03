@@ -45,3 +45,7 @@ Not covered on purpose: tank, double-bladed, unarmed, pistols+early (Sentinel fe
 - Elkripper's table has Scout level 7 skills "5 points"; live is 4.
 - elkripper end level 29/30 vs this task 30; Sentinel slot table (featgain/classpowergain) confirmed from live rules via check_paths.
 - Elkripper plans CON bumps at 24/28 from CON 12 (=13/14), live +1 gives 14/15 (unverified).
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+- `early_sentinel` and `melee_dual_dark_early`: TWF stays at L7, Finesse: Melee Weapons (194) takes the next slot (L9); later feats up to the dropped Master Dual Strike shift one slot, Master Dual Strike dropped. In `early_sentinel` the ranged-only Improved Close Combat (L25) became Toughness (net after the shift).
+- `ranged_rifle_light_late`: Treat Injury first (Scout and Sentinel class skill), end Treat Injury 33 (was 11); Stealth 29, Security 24, Awareness 19, Computer Use 12 (was 33/33/25/15).

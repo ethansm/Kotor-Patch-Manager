@@ -53,3 +53,6 @@ Allocation is a proposal (class skills first, one rank each per level to the cha
 - elkripper start (Flurry, Critical Strike, Improved Gear Head granted) vs live: Thematic Companions (#8) removed Flurry/Critical Strike and replaced Improved Gear Head with Gear Head. Live has feat 12 four times and no 119; presets therefore pick Improved/Master Gear Head (119, 120) in late/tech variants (elkripper "Master Gear Head" at 14 needs 119).
 - Live also has feats 207 (Complex Unarmed), 212, 213, 220 (Shield Breaker); no Persuade.
 - Live Tech Specialist skill points: base 4 + INT mod (matches elkripper 7 at INT16); Guardian base 1 + INT mod per classes.2da (only 4-6 points/level).
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+Ranged-only Close Combat / Improved Close Combat replaced: `melee_unarmed_light_early` L8 Dueling, L13 Improved Dueling (Dueling works with Unarmed); `melee_dual_light_early` L22 Toughness, L24 Improved Toughness. Spare Persuade points (Q-U1) kept.

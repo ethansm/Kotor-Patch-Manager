@@ -35,7 +35,7 @@ skills = {treat_injury = 2, awareness = 2}
 [[level]]
 char_level = 9
 class = 5   # JediSentinel
-feats = [9]   # 9:Improved Two-Weapon Fighting
+feats = [194]   # 194:Finesse: Melee Weapons
 powers = [34]   # 34:Knight Speed
 skills = {treat_injury = 1, awareness = 3}
 
@@ -57,14 +57,14 @@ skills = {treat_injury = 1, awareness = 1, computer_use = 2}
 char_level = 12
 class = 5   # JediSentinel
 attrs = {DEX = 18}
-feats = [36]   # 36:Weapon Focus: Lightsaber
+feats = [9]   # 9:Improved Two-Weapon Fighting
 powers = [35]   # 35:Force Lightning
 skills = {treat_injury = 1, awareness = 1, computer_use = 2}
 
 [[level]]
 char_level = 13
 class = 5   # JediSentinel
-feats = [85]   # 85:Master Two-Weapon Fighting
+feats = [36]   # 36:Weapon Focus: Lightsaber
 powers = [163]   # 163:Force Redirection
 skills = {treat_injury = 1, awareness = 1, computer_use = 2}
 
@@ -78,7 +78,7 @@ skills = {treat_injury = 1, awareness = 1, computer_use = 2}
 [[level]]
 char_level = 15
 class = 5   # JediSentinel
-feats = [190]   # 190:Dual Strike
+feats = [85]   # 85:Master Two-Weapon Fighting
 powers = [37]   # 37:Master Speed
 skills = {treat_injury = 1, awareness = 1, computer_use = 2}
 
@@ -100,14 +100,14 @@ skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
 [[level]]
 char_level = 18
 class = 5   # JediSentinel
-feats = [191]   # 191:Improved Dual Strike
+feats = [190]   # 190:Dual Strike
 powers = [31]   # 31:Insanity
 skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
 
 [[level]]
 char_level = 19
 class = 5   # JediSentinel
-feats = [192]   # 192:Master Dual Strike
+feats = [191]   # 191:Improved Dual Strike
 powers = [32]   # 32:Kill
 skills = {treat_injury = 1, awareness = 1, computer_use = 1, security = 1}
 

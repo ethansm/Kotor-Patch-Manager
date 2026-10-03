@@ -138,7 +138,7 @@ skills = {treat_injury = 1}
 [[level]]
 char_level = 26
 class = 0   # Soldier
-feats = [139]   # 139:Close Combat
+feats = [8]   # 8:Critical Strike
 skills = {treat_injury = 1}
 
 [[level]]
@@ -151,7 +151,7 @@ skills = {treat_injury = 1}
 char_level = 28
 class = 0   # Soldier
 attrs = {STR = 18}
-feats = [140]   # 140:Improved Close Combat
+feats = [19]   # 19:Improved Critical Strike
 skills = {treat_injury = 1}
 
 [[level]]

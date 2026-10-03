@@ -22,28 +22,28 @@ class = 4   # JediConsular
 attrs = {WIS = 17}
 feats = []
 powers = [46]   # 46:Stun
-skills = {repair = 4}
+skills = {treat_injury = 1, repair = 3}
 
 [[level]]
 char_level = 5
 class = 4   # JediConsular
 feats = []
 powers = [47]   # 47:Stun Droid
-skills = {repair = 4}
+skills = {treat_injury = 1, repair = 3}
 
 [[level]]
 char_level = 6
 class = 4   # JediConsular
 feats = [143]   # 143:Regenerate Force Points
 powers = [22, 10]   # 22:Force Valor, 10:Heal
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 7
 class = 4   # JediConsular
 feats = []
 powers = [6]   # 6:Affect Mind
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 8
@@ -51,28 +51,28 @@ class = 4   # JediConsular
 attrs = {WIS = 18}
 feats = []
 powers = [12]   # 12:Disable Droid
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 1, awareness = 2}
 
 [[level]]
 char_level = 9
 class = 4   # JediConsular
 feats = [13]   # 13:Conditioning
 powers = [18, 29]   # 18:Force Aura, 29:Stasis
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 1, awareness = 2}
 
 [[level]]
 char_level = 10
 class = 4   # JediConsular
 feats = []
 powers = [24]   # 24:Force Shield
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 11
 class = 4   # JediConsular
 feats = []
 powers = [14]   # 14:Dominate Mind
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 12
@@ -80,28 +80,28 @@ class = 4   # JediConsular
 attrs = {WIS = 19}
 feats = [21]   # 21:Improved Conditioning
 powers = [27, 48]   # 27:Force Whirlwind, 48:Force Suppression
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 13
 class = 4   # JediConsular
 feats = []
 powers = [13]   # 13:Destroy Droid
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 14
 class = 4   # JediConsular
 feats = []
 powers = [138]   # 138:Battle Meditation
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 15
 class = 4   # JediConsular
 feats = [84]   # 84:Toughness
 powers = [34, 135]   # 34:Knight Speed, 135:Force Barrier
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 16
@@ -109,28 +109,28 @@ class = 4   # JediConsular
 attrs = {WIS = 20}
 feats = []
 powers = [44]   # 44:Stasis Field
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 17
 class = 4   # JediConsular
 feats = []
 powers = [26]   # 26:Force Wave
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 18
 class = 4   # JediConsular
 feats = [1]   # 1:Advanced Jedi Defense
 powers = [19, 40]   # 19:Force Breach, 40:Improved Energy Resistance
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 19
 class = 4   # JediConsular
 feats = []
 powers = [28]   # 28:Improved Heal
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 20
@@ -138,28 +138,28 @@ class = 4   # JediConsular
 attrs = {WIS = 21}
 feats = []
 powers = [139]   # 139:Improved Battle Meditation
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 21
 class = 4   # JediConsular
 feats = [22]   # 22:Master Conditioning
 powers = [37, 41]   # 37:Master Speed, 41:Force Resistance
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 22
 class = 4   # JediConsular
 feats = []
 powers = [17]   # 17:Force Armor
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 23
 class = 4   # JediConsular
 feats = []
 powers = [20]   # 20:Force Immunity
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 24
@@ -167,28 +167,28 @@ class = 4   # JediConsular
 attrs = {WIS = 22}
 feats = [123]   # 123:Improved Toughness
 powers = [33, 136]   # 33:Knight Valor, 136:Improved Force Barrier
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 25
 class = 4   # JediConsular
 feats = []
 powers = [36]   # 36:Master Valor
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 26
 class = 4   # JediConsular
 feats = []
 powers = [137]   # 137:Master Force Barrier
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 27
 class = 4   # JediConsular
 feats = [24]   # 24:Master Jedi Defense
 powers = [134, 140]   # 134:Master Heal, 140:Master Battle Meditation
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 28
@@ -196,18 +196,18 @@ class = 4   # JediConsular
 attrs = {WIS = 23}
 feats = []
 powers = [133]   # 133:Master Energy Resistance
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}
 
 [[level]]
 char_level = 29
 class = 4   # JediConsular
 feats = []
 powers = [173]   # 173:Revitalize
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, repair = 2, awareness = 1}
 
 [[level]]
 char_level = 30
 class = 4   # JediConsular
 feats = [196]   # 196:Regenerate Vitality Points
 powers = [162, 284]   # 162:Force Deflection, 284:Improved Force Sight
-skills = {repair = 1, computer_use = 1, awareness = 1}
+skills = {treat_injury = 1, awareness = 1, computer_use = 1}

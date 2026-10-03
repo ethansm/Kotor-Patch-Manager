@@ -4,7 +4,7 @@ tag = "baodur"
 name = "Bao-Dur"
 utc = "p_baodur.utc"
 variant = "melee_unarmed_light_early"
-summary = "Unarmed Guardian without armor feats: Close Combat/Power Attack/Critical Strike lines on top of the Unarmed Specialist ranks Guardian levels grant; light-side buffs (Valor/Speed/Force Body); convert as soon as influence allows"
+summary = "Unarmed Guardian without armor feats: Dueling (unarmed-legal)/Power Attack/Critical Strike lines on top of the Unarmed Specialist ranks Guardian levels grant; light-side buffs (Valor/Speed/Force Body); convert as soon as influence allows"
 short = "Unarmed fighter, light side, Jedi at 12"
 convert_at = 12
 hold_until_class = 3   # bank levels 12+ until the Jedi Guardian class exists
@@ -26,7 +26,7 @@ skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness
 char_level = 8
 class = 9   # TechSpecialist
 attrs = {INT = 16}
-feats = [139]   # 139:Close Combat
+feats = [113]   # 113:Dueling
 skills = {computer_use = 1, repair = 1, security = 1, demolitions = 1, awareness = 1, stealth = 1}
 
 [[level]]
@@ -58,7 +58,7 @@ skills = {awareness = 1, treat_injury = 2, demolitions = 1}
 [[level]]
 char_level = 13
 class = 3   # JediGuardian
-feats = [140]   # 140:Improved Close Combat
+feats = [114]   # 114:Improved Dueling
 powers = [10]   # 10:Heal
 skills = {awareness = 1, treat_injury = 2, demolitions = 1}
 

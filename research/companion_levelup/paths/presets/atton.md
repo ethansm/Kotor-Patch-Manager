@@ -40,3 +40,7 @@ Skill points are proposals (weighted greedy, `check_paths` rules: cap char_level
 5. Should the support preset's Heal rely on Treat Injury ranks (Scoundrel cross-class cost 2 before conversion)? Skills are proposals.
 6. Level cap with TSLRCM: files assume 30 (elkripper assumes 29).
 7. Unverified attributes: live attribute gains for Atton (DEX per level) are assumed from elkripper.
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+- `melee_dual_light_early` and `melee_dual_dark_early`: Two-Weapon Fighting stays at L5 and Finesse: Melee Weapons (194) takes the next slot (L8); feats up to L26 move one slot later (WF Lightsaber L10, Improved TWF L13, Dual Strike L14, Master TWF L16, Advanced Jedi Defense L19, Toughness L20, Improved Dual Strike L22, Master Jedi Defense L25, Improved Toughness L26, Conditioning L28). Master Dual Strike is dropped; the ranged-only Close Combat (L19) / Improved Close Combat (L25) became Toughness / Improved Toughness (net result of the shift).
+- `ranged_pistols_light_late` (+ dev `paths/atton.toml`): Heal line needs Treat Injury (#142 combined install is live). Sentinel levels (L20+, Treat Injury is a class skill) now put points into Treat Injury first (up to level+3), then Awareness/Stealth/Security. Scoundrel levels unchanged (Treat Injury is cross-class there). End ranks: Treat Injury 33 (atton.toml 27 at L28), Stealth/Awareness/Security 22.

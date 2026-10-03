@@ -169,5 +169,5 @@ skills = {treat_injury = 1, awareness = 1}
 [[level]]
 char_level = 30
 class = 0   # Soldier
-feats = [140]   # 140:Improved Close Combat
+feats = [81]   # 81:Master Critical Strike
 skills = {treat_injury = 1, awareness = 1}

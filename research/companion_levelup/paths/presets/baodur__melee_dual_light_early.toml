@@ -123,7 +123,7 @@ skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
 [[level]]
 char_level = 22
 class = 3   # JediGuardian
-feats = [139]   # 139:Close Combat
+feats = [84]   # 84:Toughness
 powers = [136]   # 136:Improved Force Barrier
 skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
 
@@ -138,7 +138,7 @@ skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1}
 char_level = 24
 class = 3   # JediGuardian
 attrs = {INT = 20}
-feats = [140]   # 140:Improved Close Combat
+feats = [123]   # 123:Improved Toughness
 powers = [138]   # 138:Battle Meditation
 skills = {awareness = 1, treat_injury = 1, demolitions = 1, repair = 1, persuade = 1}
 

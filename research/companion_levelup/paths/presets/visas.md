@@ -48,3 +48,6 @@ Runtime tag is `VisasMarr` (utc Tag, live_utc/p_visas.utc); the engine compares 
 | tank_light (`visas__tank_single_light`) | tank | single | light | combat | Toughness/Conditioning/Jedi Defense lines, Aura/Shield/Armor, Barrier, resistances, Deflection |
 
 Notes: `support` role keys on Heal/Revitalize; `tank` and `support` both use `single`/`light`, so role disambiguates. Not covered (illogical or no data): `unarmed` (live has only Unarmed Specialist I/II, no unarmed power feats beyond that), `tech` skill focus (new presets spend points on Stealth/Awareness/Treat Injury/Persuade/Security; Computer Use only in `dark`), light/dark `ranged` (no ranged feats for her). `neutral` presets still keep her already-known dark powers (Fear, Horror, Shock, Wound, Slow) since the template has them. Dual Strike (190-192) is NOT dual wield (teamwork attack bonus), so it is not used for the dual presets; TWF (3/9/85) is. Universal vs light vs dark power groups follow `text/strategywiki_Force_powers.txt:905-1560`; Whirlwind/Wave are Force Push line (universal), Stasis/Stun lines are light.
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+`melee_dual_light`: TWF stays at L7, Finesse: Melee Weapons (194) at L9; Improved TWF L12, Master TWF L13, Advanced Jedi Defense L15, Critical Strike L18; Master Flurry dropped.

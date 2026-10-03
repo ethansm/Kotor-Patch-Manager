@@ -33,7 +33,7 @@ skills = {treat_injury = 1, awareness = 1, stealth = 1}
 [[level]]
 char_level = 9
 class = 5   # JediSentinel
-feats = [9]   # 9:Improved Two-Weapon Fighting
+feats = [194]   # 194:Finesse: Melee Weapons
 powers = [8]   # 8:Burst of Speed
 skills = {treat_injury = 1, awareness = 1, stealth = 1}
 
@@ -54,14 +54,14 @@ skills = {treat_injury = 1, awareness = 1, stealth = 1}
 [[level]]
 char_level = 12
 class = 5   # JediSentinel
-feats = [85]   # 85:Master Two-Weapon Fighting
+feats = [9]   # 9:Improved Two-Weapon Fighting
 powers = [24]   # 24:Force Shield
 skills = {treat_injury = 1, awareness = 1, stealth = 1}
 
 [[level]]
 char_level = 13
 class = 5   # JediSentinel
-feats = [1]   # 1:Advanced Jedi Defense
+feats = [85]   # 85:Master Two-Weapon Fighting
 powers = [10]   # 10:Heal
 skills = {treat_injury = 1, awareness = 1, stealth = 1}
 
@@ -75,7 +75,7 @@ skills = {treat_injury = 1, awareness = 1, stealth = 1}
 [[level]]
 char_level = 15
 class = 5   # JediSentinel
-feats = [8]   # 8:Critical Strike
+feats = [1]   # 1:Advanced Jedi Defense
 powers = [36]   # 36:Master Valor
 skills = {treat_injury = 1, awareness = 1, stealth = 1}
 
@@ -96,7 +96,7 @@ skills = {treat_injury = 1, awareness = 1, stealth = 1}
 [[level]]
 char_level = 18
 class = 5   # JediSentinel
-feats = [53]   # 53:Master Flurry
+feats = [8]   # 8:Critical Strike
 powers = [17]   # 17:Force Armor
 skills = {treat_injury = 1, awareness = 1, stealth = 1}
 

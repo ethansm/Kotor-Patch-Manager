@@ -178,6 +178,6 @@ skills = {treat_injury = 1, awareness = 1, repair = 2}
 [[level]]
 char_level = 30
 class = 4   # JediConsular
-feats = [140]   # 140:Improved Close Combat
+feats = [17]   # 17:Improved Power Attack
 powers = [175, 22]   # 175:Master Revitalize, 22:Force Valor
 skills = {awareness = 1, treat_injury = 1, repair = 2}

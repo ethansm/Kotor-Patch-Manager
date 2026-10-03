@@ -42,3 +42,6 @@ Not covered (nonsense for her): dual/double/unarmed/pistols/rifle styles (no TWF
 3. Does #142 read Kreia's own alignment or the Exile's? (Same unknown as Visas.) Alignment answers assume her own.
 4. Elkripper says she should rarely melee (`elkripper_kreia.txt:301`); is a melee/tank preset wanted at all with 0.5 attack/level?
 5. Confirm in game: stealth cost 1 via feat 188, skill rank cap level+3, Force Chain list; whether Kreia uses points at all when AI-controlled.
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+`caster_none_light`: Treat Injury (was frozen at 6) is raised first to level+3 from L4, then Awareness/Repair; Computer Use cut from 25 to 11 ranks (it was cross-class 2:1). End ranks: Treat Injury 33, Awareness 33, Repair 32. Spare-point policy for Stealth/other Kreia presets unchanged (user decision).

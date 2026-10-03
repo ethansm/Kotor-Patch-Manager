@@ -57,3 +57,7 @@ Design notes for the new presets
 4. Skill priorities (Treat Injury + Awareness first) acceptable, or Computer Use/Repair for crafting?
 5. Confirm influence threshold for the training dialogue in play (wiki `< 10 Influence > 90` is ambiguous) and that TSLRCM/PartySwap do not alter it.
 6. Dark preset: restrict to PC alignment < 40 (training dialogue variant)? 7. Neutral preset tail uses light-flagged control powers - acceptable? 8. Ranged rifle vs pistols; double-bladed saber assumed equippable (stat/weapon choice is outside the level-up mod).
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+- `disciple__melee` L30: Improved Close Combat -> Improved Power Attack (Toughness/Conditioning/Flurry lines were already taken, Dueling is single-weapon only).
+- `support_none_light_early_tech`: Treat Injury is raised first (to level+3 each level, Consular class skill), then Repair as second skill, then Computer Use (cross-class); Security dropped. End ranks: Treat Injury 33, Repair 32, Computer Use 20 (was 3/16/27, Security 16).

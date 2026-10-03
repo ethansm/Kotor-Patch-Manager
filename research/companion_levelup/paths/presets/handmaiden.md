@@ -37,12 +37,12 @@ Unarmed Specialist timing shift). `convert_at = 7` records "first char level tak
    Speed line, Deflection/Redirection, Heal line, Resistance, Immunity, Aura/Shield/Armor, Energy Resistance line, Valor line) with the three dark powers
    (Drain Life, Death Field, Drain Force) replaced by Battle Meditation / Improved / Master (138, 139, 140) per Alignment Affects Force Powers
    (README finding 4). Valor line is late (as in elkripper) since Valor is a buff she may get from the Exile; could be moved up.
-2. `saber_guardian`: same conversion, but lightsaber: Weapon Focus + Specialization: Lightsaber, Dueling line, Advanced/Master Jedi Defense, Close Combat,
+2. `saber_guardian`: same conversion, but lightsaber: Weapon Focus + Specialization: Lightsaber, Dueling line, Advanced/Master Jedi Defense, Critical Strike (was Close Combat, B4 fix),
    Master Power Attack, Conditioning line, Regenerate VP. Powers lead with Burst of Speed, Heal, Valor, Knight Speed, Barrier, Master line later. Classic Class
    Attack Bonus favors Guardian (README finding 3).
 3. `unarmed_soldier`: elkripper "Unarmed Soldier" (`elkripper_handmaiden-unarmed-soldier.txt`), Soldier 7-30, never converts, no powers. Feats beyond elkripper's
-   char 20 limit (22-30) are my fill (Improved/Master Dual Strike, Close Combat, Improved Close Combat, Mobility). Hold is not needed.
-All skill allocations are proposals: Awareness to rank 15 by char 18, then Treat Injury to 14 (Treat Injury also scales Force Healing per mod #142).
+   char 20 limit (22-30) are my fill (Improved/Master Dual Strike, Critical Strike, Improved Critical Strike, Mobility; the last two replaced the ranged-only Close Combat / Improved Close Combat in B4). Hold is not needed.
+All skill allocations are proposals. B4 (2026-10-03, #142 Treat Injury Affects Force Healing is live): Treat Injury is bought FIRST (ranks 3-14 at char 7-18), then Awareness to 15 (char 19-30); in `support_single_light_early` Treat Injury is also front-loaded ahead of Persuade. End ranks unchanged (Awareness 15, Treat Injury 14). Earlier text: Awareness to rank 15 by char 18, then Treat Injury to 14 (Treat Injury also scales Force Healing per mod #142).
 
 ## Wizard presets (8)
 Questions: role / style / alignment / convert / skills (WIZARD_SCHEMA.md). All files char 7-30, check_paths 0 errors, 0 warnings. Skill focus is `combat`
@@ -82,3 +82,6 @@ Note on `late`: Soldier levels 7-12 happen BEFORE the duels' level gates are kno
 - Elkripper's Jedi table assumes Guardian 1 at char 7; reality is char level at conversion (hold design above).
 - `late` preset: the semantics of `hold_until_class` there (banking only from convert_at, not from level 7) are my assumption; the mod must replay Soldier levels 7-12 at once and bank 13+.
 - Dark preset: which of these powers #142 treats as dark (Drain Force/Improved, Scream, Choke) was not re-verified from the mod data; Barrier line added as neutral filler.
+
+## B4 preset fixes (2026-10-03, from phase6_evidence/B3_build_review.md)
+Close Combat (139) / Improved Close Combat (140) work only with blaster pistol/rifle: replaced, same slots. `melee_single_dark_early` L27 Master Toughness, L29 Critical Strike; `saber_guardian` L27 Critical Strike; `support_single_light_early` L29 Master Power Attack; `unarmed_soldier` L26 Critical Strike, L28 Improved Critical Strike; `tank_single_light_early` L27 Master Power Attack, L29 Critical Strike. Treat Injury is raised first in the six Heal presets (see the skills paragraph above).

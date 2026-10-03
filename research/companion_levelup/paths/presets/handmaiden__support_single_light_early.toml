@@ -22,7 +22,7 @@ char_level = 7
 class = 3   # JediGuardian
 feats = [36]   # 36:Weapon Focus: Lightsaber
 powers = [8, 10]   # 8:Burst of Speed, 10:Heal
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 8
@@ -30,21 +30,21 @@ class = 3   # JediGuardian
 attrs = {STR = 15}
 feats = [21]   # 21:Improved Conditioning
 powers = [22]   # 22:Force Valor
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 9
 class = 3   # JediGuardian
 feats = [124]   # 124:Master Toughness
 powers = [138]   # 138:Battle Meditation
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 10
 class = 3   # JediGuardian
 feats = []
 powers = [135]   # 135:Force Barrier
-skills = {awareness = 1}
+skills = {treat_injury = 1}
 
 [[level]]
 char_level = 11
@@ -95,21 +95,21 @@ char_level = 17
 class = 3   # JediGuardian
 feats = [1]   # 1:Advanced Jedi Defense
 powers = [136]   # 136:Improved Force Barrier
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 18
 class = 3   # JediGuardian
 feats = []
 powers = [134]   # 134:Master Heal
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 19
 class = 3   # JediGuardian
 feats = [24]   # 24:Master Jedi Defense
 powers = [140]   # 140:Master Battle Meditation
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 20
@@ -117,7 +117,7 @@ class = 3   # JediGuardian
 attrs = {CON = 16}
 feats = []
 powers = [137]   # 137:Master Force Barrier
-skills = {treat_injury = 1}
+skills = {awareness = 1}
 
 [[level]]
 char_level = 21
@@ -180,7 +180,7 @@ skills = {persuade = 1}
 [[level]]
 char_level = 29
 class = 3   # JediGuardian
-feats = [139]   # 139:Close Combat
+feats = [83]   # 83:Master Power Attack
 powers = [24]   # 24:Force Shield
 skills = {persuade = 1}
 

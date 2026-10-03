@@ -47,7 +47,7 @@ skills = {awareness = 1, treat_injury = 1, stealth = 1}
 char_level = 8
 class = 5   # JediSentinel
 attrs = {DEX = 18}
-feats = [36]   # 36:Weapon Focus: Lightsaber
+feats = [194]   # 194:Finesse: Melee Weapons
 powers = [8, 10]   # 8:Burst of Speed, 10:Heal
 skills = {treat_injury = 3}
 
@@ -61,7 +61,7 @@ skills = {treat_injury = 2, awareness = 1}
 [[level]]
 char_level = 10
 class = 5   # JediSentinel
-feats = [9]   # 9:Improved Two-Weapon Fighting
+feats = [36]   # 36:Weapon Focus: Lightsaber
 powers = [22]   # 22:Force Valor
 skills = {treat_injury = 2, awareness = 1}
 
@@ -83,14 +83,14 @@ skills = {treat_injury = 2, awareness = 1}
 [[level]]
 char_level = 13
 class = 5   # JediSentinel
-feats = [190]   # 190:Dual Strike
+feats = [9]   # 9:Improved Two-Weapon Fighting
 powers = [18]   # 18:Force Aura
 skills = {awareness = 1, treat_injury = 1, stealth = 1}
 
 [[level]]
 char_level = 14
 class = 5   # JediSentinel
-feats = [85]   # 85:Master Two-Weapon Fighting
+feats = [190]   # 190:Dual Strike
 powers = [33]   # 33:Knight Valor
 skills = {awareness = 1, treat_injury = 1, security = 1}
 
@@ -105,7 +105,7 @@ skills = {awareness = 1, treat_injury = 1, stealth = 1}
 char_level = 16
 class = 5   # JediSentinel
 attrs = {DEX = 20}
-feats = [1]   # 1:Advanced Jedi Defense
+feats = [85]   # 85:Master Two-Weapon Fighting
 powers = [163]   # 163:Force Redirection
 skills = {awareness = 1, treat_injury = 1, security = 1}
 
@@ -126,7 +126,7 @@ skills = {awareness = 1, treat_injury = 1, security = 1}
 [[level]]
 char_level = 19
 class = 5   # JediSentinel
-feats = [139]   # 139:Close Combat
+feats = [1]   # 1:Advanced Jedi Defense
 powers = [135]   # 135:Force Barrier
 skills = {awareness = 1, treat_injury = 1, stealth = 1}
 
@@ -134,7 +134,7 @@ skills = {awareness = 1, treat_injury = 1, stealth = 1}
 char_level = 20
 class = 5   # JediSentinel
 attrs = {DEX = 21}
-feats = [191]   # 191:Improved Dual Strike
+feats = [84]   # 84:Toughness
 powers = [138]   # 138:Battle Meditation
 skills = {awareness = 1, treat_injury = 1, security = 1}
 
@@ -148,7 +148,7 @@ skills = {awareness = 1, treat_injury = 1, stealth = 1}
 [[level]]
 char_level = 22
 class = 5   # JediSentinel
-feats = [24]   # 24:Master Jedi Defense
+feats = [191]   # 191:Improved Dual Strike
 powers = [17]   # 17:Force Armor
 skills = {awareness = 1, treat_injury = 1, security = 1}
 
@@ -170,14 +170,14 @@ skills = {awareness = 1, treat_injury = 1, security = 1}
 [[level]]
 char_level = 25
 class = 5   # JediSentinel
-feats = [140]   # 140:Improved Close Combat
+feats = [24]   # 24:Master Jedi Defense
 powers = [137]   # 137:Master Force Barrier
 skills = {awareness = 1, treat_injury = 1, stealth = 1}
 
 [[level]]
 char_level = 26
 class = 5   # JediSentinel
-feats = [192]   # 192:Master Dual Strike
+feats = [123]   # 123:Improved Toughness
 powers = [140]   # 140:Master Battle Meditation
 skills = {awareness = 1, treat_injury = 1, security = 1}
 
