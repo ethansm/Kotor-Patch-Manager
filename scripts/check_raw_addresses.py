@@ -50,7 +50,7 @@ GENERATED_INC = {
     "patch_manager_mods/active_effects_panel_src/EffectIconTable.inc": "scripts/gen_buff_hud_icon_table.py",
     "patch_manager_mods/active_effects_panel_src/DebuffIconTable.inc": "scripts/gen_debuff_icon_table.py",
     "patch_manager_mods/active_effects_panel_src/EffectNameTable.inc": "scripts/gen_effect_name_table.py (effect/spell name table)",
-    "patch_manager_mods/buff_duration_hud_src/ShieldTable.inc": "scripts/gen_shield_table.py (shield rows)",
+    "patch_manager_mods/shield_bar_src/ShieldTable.inc": "scripts/gen_shield_table.py (shield rows)",
     "patch_manager_mods/equipment_3d_character_src/EquipWeaponTable.inc": "scripts/gen_equip3d_weapon_table.py (baseitems.2da)",
     "patch_manager_mods/inventory_3d_viewport_src/ItemModelTable.inc": "scripts/gen_inventory_3dview_table.py (baseitems.2da)",
     "patch_manager_mods/inventory_3d_viewport_src/ItemFitTable.inc": "scripts/gen_inventory_3dview_table.py (model fit bboxes)",
