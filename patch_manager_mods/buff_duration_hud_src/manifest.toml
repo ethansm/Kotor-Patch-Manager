@@ -1,11 +1,11 @@
 [patch]
 id = "buff-duration-hud"
 name = "Buff Duration HUD"
-version = "1.1.0"
+version = "2.0.0"
 author = "local"
-description = "Party HUD buff/debuff icon columns with duration drain, shield absorb bar beside the portrait health bar, shield value in the portrait tooltip."
+description = "Party HUD buff/debuff icon columns with duration drain (HUD cards and the menu companion portraits). Needs portrait-slots; the shield bar is the separate shield-bar patch since 2.0.0."
 
-requires = []
+requires = ["portrait-slots"]
 conflicts = []
 
 # Steam/LAA only -- this mod has no GOG counterpart to port from (unlike

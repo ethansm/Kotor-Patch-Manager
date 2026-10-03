@@ -30,7 +30,7 @@ addresses = ["0x0040D69E", "0x0098646C", "0x00A1B4E0", "0x00A1B76C"]
 addresses = ["0x0051AD20", "0x0084D871", "0x0084DEF0", "0x0084FBB0", "0x0099EE14"]
 
 [files."patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp"]
-addresses = ["0x0057ECA0", "0x00734270", "0x00744EEC", "0x00745A84", "0x00745A97", "0x00745AEC", "0x0074F25A", "0x0074F8AB"]
+addresses = ["0x00745A84", "0x00745A97", "0x00745AEC"]
 
 [files."patch_manager_mods/companion_ai_src/CompanionAI.cpp"]
 addresses = ["0x0051C0A0", "0x0051C8D0", "0x0051C8F0", "0x00541080", "0x005453C0", "0x0057C990", "0x0057D370", "0x00A1B4A8", "0x00A7E10C"]
@@ -106,6 +106,9 @@ addresses = ["0x005453C0", "0x0056E1E0", "0x006D7C79", "0x006D83EA", "0x006D850F
 
 [files."patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp"]
 addresses = ["0x0040F972", "0x0040F978", "0x0040F9E4", "0x0058C61A", "0x0058C622", "0x0058C63E", "0x00668FE0", "0x00669012", "0x00669017", "0x007040EF", "0x00704406", "0x0070446D", "0x007054CE", "0x007054DA", "0x00726527", "0x00726531", "0x00726C9C", "0x00726CDD", "0x0098657C"]
+
+[files."patch_manager_mods/shield_bar_src/ShieldBar.cpp"]
+addresses = ["0x0057ECA0", "0x00734270", "0x00744EEC"]
 
 [files."patch_manager_mods/texture_memory_release_src/TextureMemoryRelease.cpp"]
 addresses = ["0x004261CF", "0x004261D6", "0x004261E6"]
