@@ -1,5 +1,20 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**SESSION CONTEXT (2026-10-03 ~02:10, end of Phase X session; read before planning U1-U3):**
+- Plan executed: `~/.claude/plans/` "Hotbar onto shared Common headers" (Phase X). X0-X8 done and committed: 00c9df5 (X0 docs + baseline), 0e5fcbf
+  (scripts/kpm_stage_check.py), 8e0da7c (Common headers + colocated tests), 64953dc / e3cbe91 / 446bb8d (hotbar), 11da397 (docs); clone 2c1bba4.
+- Live: build 27 `106be06e` (stage16). NOT yet smoke-tested by the user. The smoke test + H3 log diff vs `baseline_h3_build26.txt` gates further hotbar
+  builds (doc 20 §7). If it regresses: reinstall stage15 FPH (504372b1) and debug from the log.
+- Test infra in use: doc 20 Phase 0 landed (`scripts/run_tests.py`, `tests/include/check.h` with KT_CHECK/KT_CHECK_EQ, colocated `test.toml`).
+  Hotbar tests: config_roundtrip_test, twoda_test (fixture), hotbar_bugs_test (slotDigit). Common tests in `_shared_src/`.
+- Code map after X: reads via `rdInt(site, ...)` / `saferead::*` (site enum S_Hud..S_Proj); GUI writes via `guikit::`; party via `party::`;
+  engine constants alias `gameaddr::`. Never `using namespace guikit` (name clashes).
+- User decisions 10-03: U1 gray "0" text when out of stock; U2 = MOVE on re-pick; U3 = target modes (leader / lowest-health member) INCLUDED in 1.0.0.
+  Order after the build 27 check: plan U1-U3 (plan mode), then D, T, E, F, L. D/T should cover the new U2/U3 code too.
+- Install recipe: stage-check script must show 0 DIFFS before adding the new kpatch; sibling sessions (level-up, buff HUD, shield bar) hot-copy DLLs,
+  so pull their framework `Patches/<X>/*.kpatch` when its DLL md5 matches live and its hooks.toml is unchanged. inst.dll at /tmp/claude-1000/inst/out/.
+- Open infra notes: parity stub `-m32` RegionSize wrap (level-up owner); C++ mutation tool missing (mutation pass pending for the new Common headers).
+
 **PHASE X INSTALLED (2026-10-03 01:57): build 27 `106be06e`** = build 26 behaviour on the shared Common headers (SafeRead + readExo, GuiKit setters and
 label creation, Party.h, GameAddr.h aliases) + `hb::slotDigit` bounds fix. Stage `hotbar_stage16/` (= levelup_stage7 + framework BuffDurationHUD b7dbebe9 +
 LevelUpOverride 0.3.1 aaedb93e, both matching what other sessions had put live), backup `backups/inst16_1003_0157`, only force-power-hotbar.dll changed,
@@ -13,9 +28,11 @@ to `force_power_hotbar_src/baseline_h3_build26.txt` (wrench `[11,1274,53,93]`), 
 Log 10-03 01:39: 2 HUD builds, 75 controls each, 0 WARNING, 0 pool full (baseline `force_power_hotbar_src/baseline_h3_build26.txt`).
 **User requests from that check (backlog):**
 - (U1, small, after Phase X) the "0" count text on an out-of-stock slot is white; draw it gray (or similar) while the slot is dimmed.
-- (U2, design) allow each ability only once? i.e. filter already-assigned entries out of the picker.
-- (U3, design, likely post-1.0.0) per-slot target mode: "use on leader" or "use on the party member with the lowest health". Needs RE of the
-  item/power target argument of the invoke path, plus UX and iconography for the mode.
+- (U2, DECIDED 10-03: **move**) picking an ability that is already on the bar MOVES it to the slot being edited (the old slot is cleared), so each
+  ability appears at most once per profile. The picker still lists it (no filtering).
+- (U3, DECIDED 10-03: **include now, before 1.0.0**) per-slot target mode: default (engine's current behaviour), "use on leader", "use on the party
+  member with the lowest health". Needs RE of the target argument of the invoke path (HUD group invoke 0x00751750 / the action it queues), INI
+  syntax per slot, editor UX to cycle the mode, and a small corner badge icon per mode (generated like the other fph_* textures).
 
 **RESUME HERE (2026-10-03 ~00:15, end of session 6):** live = **build 26 `504372b1`** (stage `hotbar_stage15/`, backup `backups/inst15_1003_0003`,
 31 installed ids; rollback = stage14 `a3303cb3`). Build 26 = stack counts on the bar and picker cells, out-of-stock items dimmed with "0", per-save hotbars
