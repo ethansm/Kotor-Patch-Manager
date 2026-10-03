@@ -1,0 +1,163 @@
+[
+ {
+  "group": "G01",
+  "chosen_card": "C080",
+  "content_anchor": "0x846690: cap = FUN_844860()+3, halved if not class skill (local_d/2), returns undefined4 bool, calls 0x845C10; ret 4",
+  "why_others_wrong": "C004 not a cost getter; no 2-classSkill return, it mutates rank; 8468C0 is other",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G02",
+  "chosen_card": "C067",
+  "content_anchor": "0x8468C0 asm/dec: FUN_00845c10(param_2, local_1e + -1) then *(short*)(this+0xB6) += 1 or += 2 (refund)",
+  "why_others_wrong": "C100 rank-up claim: code lowers rank and refunds; C007 is at 0x846690 (the increment)",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G03",
+  "chosen_card": "C072",
+  "content_anchor": "0x89A160(this,byte slot,byte state): writes state at +0x10c+slot*0xb4, switch(state) cases 0..; single slot",
+  "why_others_wrong": "C062 wrong: sets one slot not all; C028 0x89A0E0 only toggles bit0 flag at +0x110 then calls 89A160",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G04",
+  "chosen_card": "C093",
+  "content_anchor": "0x89A760 reads spells table: *(char*)(row+0x14c)==1||==6 and row+0xC != 0, caches at +0x1048; callee 0x6C1450",
+  "why_others_wrong": "C049 wrong (spells, not feats); C127 at 0x89B100 is feat-prereq sorter (feat count +0x11c, skips 0xcf/0xee, +0x38/+0x3a)",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G05",
+  "chosen_card": "C070",
+  "content_anchor": "0x89AAA0 calls 0x6BD9C0 HasSpell, 0x89A760 power list, rows via 0x89AF30",
+  "why_others_wrong": "C081 wrong (HasSpell, not feat); C087 at 0x89B320 is feat rows (HasFeat 0x6B83F0, 0x89BED0)",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G06",
+  "chosen_card": "C111",
+  "content_anchor": "0x89AF30 has 4 params (spell,tier2,tier3,flag), called by power rows 0x89AAA0; alloc 0x324 row",
+  "why_others_wrong": "C118/0x89BED0 is 3-param feat row twin; C045 claims feat but 0x89AF30 is power (caller uses HasSpell)",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G07",
+  "chosen_card": "C122",
+  "content_anchor": "0x89B100 iterates feat count +0x11c via 0x6A20F0, +0x38/+0x3a prereq tiers, cache +0x103c, inserts via CExoArrayList Add 0x593450",
+  "why_others_wrong": "C116 wrong (spells list is 0x89A760); C079 0x89A0E0 only sets flag bit",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G08",
+  "chosen_card": "C061",
+  "content_anchor": "0x89B320 calls 0x89BED0 row builder, 0x89B100 feat list, HasFeat 0x6B83F0",
+  "why_others_wrong": "C063/C059 at 0x89B600 is a different 2244-byte function; not rows builder confirmed by claim",
+  "confidence_1_to_5": 3
+ },
+ {
+  "group": "G09",
+  "chosen_card": "C023",
+  "content_anchor": "0x89BED0(this,baseFeat,tier2,tier3) alloc 0x324, calls 0x6A20F0 feat getter; called from feat rows",
+  "why_others_wrong": "C056 wrong (3 params no flag, feat getter); C085 0x89AEF0 is a 60-byte getter reading +0xab",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G10",
+  "chosen_card": "C086",
+  "content_anchor": "0x89C070: sets cursor bytes +0xC/+0xD, FUN_0089a0e0(oldslot,0) / (new,1) = select highlight",
+  "why_others_wrong": "C077/C041 wrong: select logic is at 0x89C070, 0x89C170 takes a state param and calls 0x89A160",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G11",
+  "chosen_card": "C011",
+  "content_anchor": "0x89C170(this,id,state): scans rows +0x108+c*0xb4==id then FUN_0089a160(col,param_3 state)",
+  "why_others_wrong": "C038 'select' wrong: arbitrary state param; C018 at 0x89C070 is select",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G12",
+  "chosen_card": "C112",
+  "content_anchor": "0x89C220: double loop rows x 3 slots calling FUN_0089a160(c,param_2)",
+  "why_others_wrong": "C099 wrong name (single slot is 0x89A160); C014 0x89C290 resets cursor and selects slot 0",
+  "confidence_1_to_5": 5
+ },
+ {
+  "group": "G13",
+  "chosen_card": "C002",
+  "content_anchor": "0x8F4AF0 pushes 'MAINCG_p' at 8f4f27; param_1[0x1a]=local_1d0 (+0x68), param_1[0xb2d]=param_3 (+0x2CB4), creates panel via 0x902F60",
+  "why_others_wrong": "C048 wrong: 0x902F60 is the step panel; C120 0x8F7FE0 is small fastcall reading +0x2cb4",
+  "confidence_1_to_5": 3
+ },
+ {
+  "group": "G14",
+  "chosen_card": "C003",
+  "content_anchor": "0x902F60 pushes 'LEVELUPPNL_p' at 009030d8, +0x68 = GetCreatureByGameObjectID(param_3) (0x73F550)",
+  "why_others_wrong": "C055 wrong class (CharGen is 0x8F4AF0); C064 also consistent (MOV [ECX],0x9aa1ac at 00902faa) - equally supported; C051/C073 wrong class/vftable; C082 is scalar dtor",
+  "confidence_1_to_5": 3
+ },
+ {
+  "group": "G15",
+  "chosen_card": "C016",
+  "content_anchor": "0x9074E0 pushes 'pwrlvlup_p' at 009077e9, MOV [ECX],0x9aa34c at 0090752a (CSWGuiPowersLevelUp::vftable)",
+  "why_others_wrong": "C058 skills wrong, C054 feats wrong, C092 is dtor 0x908040; C024 also consistent (same facts, class-form) equally supported; C089 wrong vftable",
+  "confidence_1_to_5": 3
+ },
+ {
+  "group": "G16",
+  "chosen_card": "C017",
+  "content_anchor": "0x909360: FUN_0089c220(3) then loops; asm +0x1BAC bit0==0 and id==6||0xe -> 3 else 0; grid +0x1BF8; powers panel",
+  "why_others_wrong": "C091 wrong class (powers panel with 0x1BF8; feats grid is 0x1BF4); C066 0x908F70 is detail text/colour update by state",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G17",
+  "chosen_card": "C010",
+  "content_anchor": "0x9099A2 'MOVZX ECX,word ptr [EBP-0x1C]; PUSH ECX' start of 0f b7 4d e4 51; loop-head exit JMP at 00909B51 (e9 c8 fd ff ff)",
+  "why_others_wrong": "C035 addr 9099A7 not on those bytes; C047 exit 0x9099DB is the CALL not loop jmp",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G18",
+  "chosen_card": "C095",
+  "content_anchor": "009099DB e8 80 ec f3 ff CALL 0x00848660 after pushes of spell [ebp-0x1c], +0x1ba9, +0x1be0",
+  "why_others_wrong": "C103 wrong callee (8480B0); C050 address 9099D7 is PUSH EDX",
+  "confidence_1_to_5": 5
+ },
+ {
+  "group": "G19",
+  "chosen_card": "C053",
+  "content_anchor": "0x909E00 pushes 'FTCHRGEN_p' at 0090a0d2, 'LB_FEATS', MOV [ECX],0x9aa434 at 00909e4a",
+  "why_others_wrong": "C114 powers wrong; C128 is dtor 0x90A970; C019/C110 wrong vftable/class mapping; C001 also consistent (class form), equally supported",
+  "confidence_1_to_5": 3
+ },
+ {
+  "group": "G20",
+  "chosen_card": "C107",
+  "content_anchor": "0x90B890 switch: case 2 0xa4c7, case 3 0xa4c6, case 4 0xa4c8 popup via ClientApp::GetGuiInGame(+0xa0)",
+  "why_others_wrong": "C037 wrong: no AddDefaultPackageFeats; C071 0x90B9B0 is selected-slot detail refresh",
+  "confidence_1_to_5": 4
+ },
+ {
+  "group": "G21",
+  "chosen_card": "C027",
+  "content_anchor": "0090C349 e8 62 bd f3 ff CALL 0x008480b0 after 3 pushes ([ebp-0x1c], +0x1bdc, +0x1bdd) + &selected, ECX [ebp-0x10]",
+  "why_others_wrong": "C026 wrong callee (848660); C098 address 0x90C345 is PUSH EDX",
+  "confidence_1_to_5": 5
+ },
+ {
+  "group": "G22",
+  "chosen_card": "C115",
+  "content_anchor": "0x90C6A0 pushes 'SKCHRGEN_p' at 0090cac9 with COMPUTER_USE/DEMOLITIONS... rows; MOV [ECX],0x9aa714",
+  "why_others_wrong": "C012/C124 feats wrong; C009 wrong vftable; C129 is dtor 0x90E410; C075 also consistent (class form), equally supported",
+  "confidence_1_to_5": 3
+ },
+ {
+  "group": "G23",
+  "chosen_card": "C057",
+  "content_anchor": "0x90E850 is slot 15 (+0x3C) of vtable 0x9AA714 (skills); switch 0x27/0x2d etc, ret 8",
+  "why_others_wrong": "C039 wrong class (feats slot15 is 0x90B200); C088 0x90E810 is slot 18 ShowTutorialWindow",
+  "confidence_1_to_5": 4
+ }
+]

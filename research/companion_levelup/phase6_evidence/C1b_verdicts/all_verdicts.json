@@ -1,0 +1,1292 @@
+[
+ {
+  "card": "C001",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue confirmed)",
+  "content_anchor": "vftable 0x9aa434 set at 00909e4a via MOV dword ptr [ECX],0x9aa434",
+  "neighbour_decoy_considered": "None visible - unique string set (FTCHRGEN_p, MAIN_TITLE_LBL, etc.)",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "vftable 0x9aa434 confirmed in ctor ASM line 49; 14 UI string literals anchor feats UI"
+ },
+ {
+  "card": "C002",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard ctor prologue)",
+  "content_anchor": "string literal 0x009A96AC 'MAINCG_p' at 008f4f27; 38 total string anchors",
+  "neighbour_decoy_considered": "Could be a sibling outer-panel ctor; offset claims (+0x68, +0x2CB4) not visible in truncated decompile",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 3,
+  "verdict": "unsure",
+  "reason": "String literals confirm UI ctor; truncated decompile prevents offset verification"
+ },
+ {
+  "card": "C003",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard ctor prologue)",
+  "content_anchor": "string literal 0x009AA194 'LEVELUPPNL_p' at 009030d8; direct callee 0x00847F90 CSWCLevelUpStats::ComputeNumberKnownSpellsLeft",
+  "neighbour_decoy_considered": "None - UI name and level-up callees are unambiguous",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "LEVELUPPNL_p string literal directly anchors level-up panel; level-up-specific callees confirm"
+ },
+ {
+  "card": "C004",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue)",
+  "content_anchor": "struct offset +0xB6 x6; complex conditional logic with division; decompile truncated at line 351",
+  "neighbour_decoy_considered": "DecrementSkillRank (C007 claims same address); logic shows cost calculation but return path hidden",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "No string/callee anchors; decompile cut prevents return-value verification; name cannot be confirmed from truncated code"
+ },
+ {
+  "card": "C005",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard fastcall prologue)",
+  "content_anchor": "direct callee 0x00593450 CExoArrayList<uint16>::Add; struct offset +0x1BE0 x10 (vector-like access)",
+  "neighbour_decoy_considered": "Offset +0x1BC8 claimed but not in top-7 touched offsets list; callee 0x0090B430 (OnAcceptButton) seems misplaced for power-building",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Vector building confirmed by CExoArrayList::Add; exact vector offset +0x1BC8 absent from metrics; suspicious button-handler callee"
+ },
+ {
+  "card": "C006",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard prologue)",
+  "content_anchor": "direct callee 0x008489F0 CSWCLevelUpStats::AddDefaultPackageFeats at line 521; function name matches button handler pattern",
+  "neighbour_decoy_considered": "None - direct callee to AddDefaultPackageFeats is unambiguous for recommended-feat button",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Direct callee to AddDefaultPackageFeats at 0x008489F0 is definitive anchor for Recommended button handler"
+ },
+ {
+  "card": "C007",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue)",
+  "content_anchor": "IDENTICAL to C004 (same address, same decompile, same struct offsets)",
+  "neighbour_decoy_considered": "C004 claims GetSkillPointCost at 0x00846690; C007 claims DecrementSkillRank at same address - direct contradiction",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Same address cannot be both GetSkillPointCost (read) and DecrementSkillRank (modify) - deliberate mismatch card"
+ },
+ {
+  "card": "C008",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard prologue)",
+  "content_anchor": "direct callees 0x00846350 (unnamed) and 0x00846690 (unnamed) both present in callees list; 20 total callees; function name OnRankUpButton",
+  "neighbour_decoy_considered": "None - both claimed callees are directly verified",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Both callees 0x846350 and 0x846690 confirmed in direct callees list; size/prologue fit rank-up button handler"
+ },
+ {
+  "card": "C009",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue at 0x0090C6A0)",
+  "content_anchor": "ASM line 724 shows MOV dword ptr [ECX],0x9aa714 as ctor vftable assignment",
+  "neighbour_decoy_considered": "Claimed vftable is 0x009AA1AC; but ASM shows 0x9aa714 set at constructor - wrong vftable address",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "ASM line 724 sets vftable to 0x9aa714, not claimed 0x009aa1ac - direct address mismatch"
+ },
+ {
+  "card": "C010",
+  "observed_prologue_or_bytes": "hook site at 0x009099A2",
+  "content_anchor": "ASM shows 0f b7 4d e4 (MOVZX ECX) at 009099A2; PUSH ECX follows at 009099A6 as separate instruction",
+  "neighbour_decoy_considered": "Claimed bytes include PUSH; actual hook site bytes are 4-byte MOVZX only, PUSH is at next address",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claimed bytes 0f b7 4d e4 51 (5 bytes) do not match; actual bytes at 0x009099A2 are 0f b7 4d e4 only (4 bytes)"
+ },
+ {
+  "card": "C011",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue)",
+  "content_anchor": "decompile line 817 shows scanning loop: *(int *)(...+ 0x108 + local_18 * 0xb4) == param_2; callee 0x0089A160 when found",
+  "neighbour_decoy_considered": "None - loop structure clearly scans rows for id match and calls single callee",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Decompile shows scanning rows for id match and calling 0x0089A160 when found; matches SetSlotStateById semantics"
+ },
+ {
+  "card": "C012",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (at 0x0090C6A0)",
+  "content_anchor": "string literal 0x009AA700 'SKCHRGEN_p' at 0090cac9; vftable 0x9aa714 in ASM line 724",
+  "neighbour_decoy_considered": "Claimed CSWGuiFeatsCharGen; but 'SKCHRGEN_p' = skills character gen, not feats; vftable 0x9aa714 differs from C001/C019",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "String literal 'SKCHRGEN_p' indicates Skills, not Feats - claim name contradicts evidence"
+ },
+ {
+  "card": "C013",
+  "observed_prologue_or_bytes": "hook site at 0x0089B6E4",
+  "content_anchor": "ASM bytes 89 8d 3c ff ff ff at 0089B6E4 (MOV [EBP+0xffffff3c],ECX); exit 0x0089BE96 = MOV EDX,[EBP-0x28] loop increment",
+  "neighbour_decoy_considered": "None - bytes match exactly, exit behavior matches loop increment description",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Hook site bytes 89 8d 3c ff ff ff match exactly; exit target shows loop increment (MOV EDX,[EBP-0x28])"
+ },
+ {
+  "card": "C014",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue)",
+  "content_anchor": "decompile shows state-setting pattern; callee 0x0089A0E0; struct offsets +0xD, +0xC indicate slot/row fields",
+  "neighbour_decoy_considered": "C020 claims same address as HandleNavKey; but code shows state-clearing loops, not navigation",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Decompile pattern shows resetting/clearing slot states; callee to 0x0089A0E0 consistent with state function"
+ },
+ {
+  "card": "C015",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard prologue)",
+  "content_anchor": "direct callee 0x00846350 (unnamed) present; but claimed callee 0x00846690 ABSENT from direct callees list",
+  "neighbour_decoy_considered": "Claim mentions rank-change via 0x846690; this callee is not in the 11 listed direct callees",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claimed callee 0x846690 (rank change) not found in direct callees list at 0x0090F610"
+ },
+ {
+  "card": "C016",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard ctor prologue)",
+  "content_anchor": "string literal 0x009AA33C 'pwrlvlup_p' at 009077e9; 15 total string anchors; vftable assignment via 0x0040e5a0",
+  "neighbour_decoy_considered": "None - 'pwrlvlup_p' (power level up panel) unambiguously identifies powers UI",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "String literal 'pwrlvlup_p' directly anchors power level-up panel constructor"
+ },
+ {
+  "card": "C017",
+  "observed_prologue_or_bytes": "55 8b ec + SEH frame (standard prologue)",
+  "content_anchor": "line 1254-1257 decompile: if (panel+0x1bac & 1 == 0) && (power==6 || power==0xe) then state=3; callees 0x0089C170, 0x0089C290, 0x0089C070, 0x0089C220",
+  "neighbour_decoy_considered": "None - conditional logic exactly matches claim: spells 6 and 0xe forced to 3 when bit0 of 0x1bac is 0",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Decompile line 1254 shows exact logic: panel+0x1bac bit0==0 forces powers 6 and 0xe to state 3"
+ },
+ {
+  "card": "C018",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue at 0x0089C070)",
+  "content_anchor": "decompile shows state-setting pattern with 2 params; direct callee 0x0089A0E0; signature differs from C011 (which has 3 params and calls 0x0089A160)",
+  "neighbour_decoy_considered": "C011 (0x0089C170) claimed same name; but C011 has param_3, calls 0x0089A160; C018 has no param_3, calls 0x0089A0E0 - different functions",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Same name claimed at two addresses with different signatures/callees; C011 owns SetSlotStateById name"
+ },
+ {
+  "card": "C019",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue at 0x00909E00)",
+  "content_anchor": "ASM line 49 (matching C001 evidence) shows MOV dword ptr [ECX],0x9aa434; claimed vftable 0x009aa34c",
+  "neighbour_decoy_considered": "C001 claims same constructor at same address with vftable 0x9aa434; ASM confirms 0x9aa434, not 0x009aa34c",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "ASM line 49 sets vftable to 0x9aa434, not claimed 0x009aa34c - wrong vftable address"
+ },
+ {
+  "card": "C020",
+  "observed_prologue_or_bytes": "55 8b ec (standard prologue at 0x0089C290)",
+  "content_anchor": "decompile shows state-reset pattern (same as C014); callee 0x0089A0E0; no navigation logic visible",
+  "neighbour_decoy_considered": "C014 claimed SetAllSlotStates at same address; decompile shows state-clearing, not arrow-key navigation",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Decompile shows state-setting not navigation; same address/code already claimed as SetAllSlotStates (C014)"
+ },
+ {
+  "card": "C021",
+  "observed_prologue_or_bytes": "hook site at 0x0089AB29",
+  "content_anchor": "ASM bytes match claimed sequence; but exit target 0x0089AEB3 contains CALL 0x0089af30, not loop increment",
+  "neighbour_decoy_considered": "Claimed exit target is loop increment MOV EAX,[EBP-0x10]; actual instruction at 0x0089AEB3 is CALL; MOV EAX is 5 bytes later at 0x0089AEB8",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Exit target address 0x0089AEB3 contains CALL instruction, not claimed loop increment; MOV EAX at 0x0089AEB8 is off-by-5"
+ },
+ {
+  "card": "C022",
+  "observed_prologue_or_bytes": "hook site at 0x0090C2BE",
+  "content_anchor": "ASM bytes 0f b7 55 e4 52 at 0090C2BE match exactly; exit 0x0090C365 = JMP 0x0090c27f (jump back to loop head 0x90C27F)",
+  "neighbour_decoy_considered": "None - bytes match exactly, exit target behavior (JMP back to loop start) matches description",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Hook site bytes 0f b7 55 e4 52 match exactly; exit JMP 0x0090c27f confirmed as loop-head jump"
+ },
+ {
+  "card": "C023",
+  "observed_prologue_or_bytes": "55 8b ec 6a ff 68",
+  "content_anchor": "callee 0x00919723 (operator new with 0x324 size), but feature grid structure use not visible in truncated decompile",
+  "neighbour_decoy_considered": "Could be different grid type or similar allocation function, but truncation prevents full verification",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Allocation size matches but grid semantics unverifiable"
+ },
+ {
+  "card": "C024",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "MOV dword ptr [ECX],0x9aa34c at 0090752a | string 0x009AA33C 'pwrlvlup_p' at 009077e9",
+  "neighbour_decoy_considered": "Vftable address explicitly set in ctor with UI string anchors",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Vftable 0x9aa34c confirmed set in ctor; UI labels verify powers panel"
+ },
+ {
+  "card": "C025",
+  "observed_prologue_or_bytes": "55 8b ec 6a ff 68",
+  "content_anchor": "callee 0x008480B0 CSWCLevelUpStats::CanChooseFeat (not 0x848660)",
+  "neighbour_decoy_considered": "Function calls CanChooseFeat, not a power-specific test at 0x848660",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Claims call to 0x848660 but actually calls 0x8480B0"
+ },
+ {
+  "card": "C026",
+  "observed_prologue_or_bytes": "e8 62 bd f3 ff",
+  "content_anchor": "CALL 0x008480B0 at 0090C349 per Ghidra disassembly, not 0x848660",
+  "neighbour_decoy_considered": "Bytes decode to 0x8480B0 (CanChooseFeat), not unnamed 0x848660",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Claimed target 0x848660 but bytes encode call to 0x008480B0"
+ },
+ {
+  "card": "C027",
+  "observed_prologue_or_bytes": "e8 62 bd f3 ff",
+  "content_anchor": "CALL 0x008480B0 at 0090C349 | callee 0x008480B0 CSWCLevelUpStats::CanChooseFeat",
+  "neighbour_decoy_considered": "Confirmed CanChooseFeat call with correct register setup (ecx=S, 4 args)",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Bytes and target both confirm CanChooseFeat call"
+ },
+ {
+  "card": "C028",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "Memory access at +0x110 + param_2 * 0xb4 (grid slot offset)",
+  "neighbour_decoy_considered": "Function modifies grid slot data but decompile only shows bit-0 manipulation",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Grid slot offset correct but state machine (0-6) not fully visible"
+ },
+ {
+  "card": "C029",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callee 0x004109C0 (PopModalPanel), operates on panel state +0x68, +0x6c",
+  "neighbour_decoy_considered": "Panel manipulation plausible but AddDefaultPackageFeats call not in anchors",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Function name plausible but semantic claim unverifiable"
+ },
+ {
+  "card": "C030",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "local_c = 2 - (uint)bVar1 at if ((bVar4) && (local_c = 2 - ...))",
+  "neighbour_decoy_considered": "Function implements cost calculation exactly as claimed",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Decompile shows 2 - classSkill logic as claimed"
+ },
+ {
+  "card": "C031",
+  "observed_prologue_or_bytes": "55 8b ec 6a ff 68",
+  "content_anchor": "loop through feat vectors with state transitions but truncated",
+  "neighbour_decoy_considered": "Decompile truncated; missing visible call to 0x89C220",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "unsure",
+  "reason": "Truncated decompile prevents verification"
+ },
+ {
+  "card": "C032",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "Same address 0x00846350 as C030, decompile shows cost calc not rank decrement",
+  "neighbour_decoy_considered": "Conflicts with C030 which claims this is GetSkillPointCost",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Function returns cost, not decrements rank; contradicts C030"
+ },
+ {
+  "card": "C033",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "DB fact: 0x8480B0 = CanChooseFeat (conflicts with 0x848660 claim)",
+  "neighbour_decoy_considered": "Function at 0x848660 appears to be feat test but name already assigned",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "CanChooseFeat already assigned to 0x008480B0 in DB"
+ },
+ {
+  "card": "C034",
+  "observed_prologue_or_bytes": "55 8b ec 6a ff 68",
+  "content_anchor": "FUN_0089c220(3); FUN_0089c170 calls with state 1,4,0,2 at +0x1ba8,+0x1bcc,+0x1bc0,+0x1bb4",
+  "neighbour_decoy_considered": "Decompile exactly matches claimed state transitions",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "All claimed operations visible: 0x89C220(3) and feat state transitions"
+ },
+ {
+  "card": "C035",
+  "observed_prologue_or_bytes": "0f b7 4d e4 51",
+  "content_anchor": "Bytes start at 0x009099A2 (MOVZX), not claimed 0x009099A7",
+  "neighbour_decoy_considered": "Bytes are correct but address off by 5 bytes",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Hook site address wrong; bytes start at 0x009099A2"
+ },
+ {
+  "card": "C036",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "switch cases 0x27/0x2d (accept), 0x28/0x2e (back), 0x29 (click), 0x2a (recommended), arrows",
+  "neighbour_decoy_considered": "All claimed input event handlers present in switch",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "All claimed input events match decompile switch cases"
+ },
+ {
+  "card": "C037",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "C036 shows 0x2A recommended calls FUN_0090b6b0, not FUN_0090b890",
+  "neighbour_decoy_considered": "Function called on click (0x29) not recommended (0x2A)",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Function is click handler, not recommended button handler"
+ },
+ {
+  "card": "C038",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "loop searches offset +0x108 + local_18 * 0xb4 for param_2; calls FUN_0089a160",
+  "neighbour_decoy_considered": "Function implements exact search and select logic",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Decompile shows ID search and SetSlotState call"
+ },
+ {
+  "card": "C039",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "decompile has 0x27/0x2d, 0x28/0x2e, 0x2a but missing 0x29 (click) case",
+  "neighbour_decoy_considered": "Skills panel has different keybindings than feats; 0x29 absent",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Claimed 0x29 click handler not present; different skill keybindings"
+ },
+ {
+  "card": "C040",
+  "observed_prologue_or_bytes": "55 8b ec 6a ff 68",
+  "content_anchor": "Calls ComputeNumberKnownSpellsLeft but claimed grid/choosable/repaint functions not visible",
+  "neighbour_decoy_considered": "Large function (986 bytes) with truncated decompile; cannot verify full sequence",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "unsure",
+  "reason": "Truncated decompile prevents verification of init sequence"
+ },
+ {
+  "card": "C041",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "Searches +0x108 + local_18 * 0xb4 for param_2; calls FUN_0089a0e0 to set state",
+  "neighbour_decoy_considered": "Function implements ID-based slot state setting with optional clear-then-set",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Decompile shows ID search and state setting by SetSlotState"
+ },
+ {
+  "card": "C042",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "Decompile shows conditional logic based on status flags, not input switch",
+  "neighbour_decoy_considered": "Function lacks input event switch structure; appears to be UI state handler",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Not an input event handler; lacks switch statement"
+ },
+ {
+  "card": "C043",
+  "observed_prologue_or_bytes": "55 8b ec 6a ff 68",
+  "content_anchor": "Very large function (2082 bytes); visible decompile truncated",
+  "neighbour_decoy_considered": "Cannot verify bit4 checking or color assignments without full decompile",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "unsure",
+  "reason": "Truncated decompile; logic for claimed operations not visible"
+ },
+ {
+  "card": "C044",
+  "observed_prologue_or_bytes": "89 8d 3c ff ff ff",
+  "content_anchor": "Bytes 89 8d 3c ff ff ff actually at 0x0089B6E4, not 0x0089B6F0",
+  "neighbour_decoy_considered": "Address off by 6 bytes; instruction at 0x0089B6F0 is 0f b7 02",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Hook site address does not match byte sequence"
+ },
+ {
+  "card": "C045",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x0083EA60 CExoArrayList<uint32>::Add | asm alloc local_44 = FUN_00919723(0x324)",
+  "neighbour_decoy_considered": "Could be nearby row allocator but callees confirm Add() pattern",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Allocates 0x324 bytes for grid row; struct offsets +0x104 match claim; confirmed Add callee"
+ },
+ {
+  "card": "C046",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00844E40 CSWSCreatureStats::GetClassByPosition | FUN_00845c10(param_2,local_1e+-1) at line 193",
+  "neighbour_decoy_considered": "Could be skill test but GetClassByPosition + rank-up call confirms IncrementSkillRank",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "GetClassByPosition callee + rank-up via 0x845C10 matches claim; struct offsets +0xB6,+0x90,+0x123 consistent"
+ },
+ {
+  "card": "C047",
+  "observed_prologue_or_bytes": "0f b7 4d e4",
+  "content_anchor": "asm line at 0x009099A2: 0f b7 4d e4 MOVZX ECX | bytes at claimed address are 4 bytes, not 5",
+  "neighbour_decoy_considered": "Bytes at 0x009099A2 are 0f b7 4d e4 (4 bytes); 51 PUSH ECX is at next address 0x009099A6",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Claimed bytes 0f b7 4d e4 51 at 0x009099A2 but actual bytes are only 0f b7 4d e4; 51 at +0x4 offset"
+ },
+ {
+  "card": "C048",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009A96AC at 008f4f27 'MAINCG_p' | string 0x009A969C at 008f4f47 'MAIN_TITLE_LBL' | callee 0x0040E5A0 CSWGuiPanel::Constructor",
+  "neighbour_decoy_considered": "GUI strings (MAINCG, LEVEL_VAL, class/stat labels) definitively indicate panel constructor",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "38 string anchors (MAINCG_p, LBL_CLASS, LBL_LEVEL_VAL, etc.) match GUI panel init; CSWGuiPanel::Constructor callee"
+ },
+ {
+  "card": "C049",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x0073F750 ClientApp::GetGuiInGame | struct offset +0x104 accessed at line 375 and +0x104c at line 372",
+  "neighbour_decoy_considered": "GetGuiInGame confirms GUI state access; sorting logic (tier then id) via modulo operations",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "GetGuiInGame callee confirms access to GUI state; Add() callee for list; struct +0x104 matches decompile"
+ },
+ {
+  "card": "C050",
+  "observed_prologue_or_bytes": "52",
+  "content_anchor": "claim address 0x009099D7 has bytes 52 (PUSH EDX), not e8 80 ec f3 ff | CALL to 0x00848660 is 4 bytes later at 0x009099DB",
+  "neighbour_decoy_considered": "CALL 0x00848660 exists but at wrong address (0x009099DB, not 0x009099D7); off by 4 bytes",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Claimed bytes e8 80 ec f3 ff at 0x009099D7 but actual bytes are 52; CALL is at 0x009099DB (+4 offset)"
+ },
+ {
+  "card": "C051",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009AA194 at 009030d8 'LEVELUPPNL_p' (level-up panel, not feats) | string 0x009AA17C 'BTN_STEPNAME%d'",
+  "neighbour_decoy_considered": "Ctor 0x00902F60 sets vftable 0x009AA1AC but strings (LEVELUPPNL_p, BTN_STEPNAME) indicate CSWGuiLevelUpPanel, not CSWGuiFeatsCharGen",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Strings LEVELUPPNL_p and BTN_STEPNAME indicate level-up panel, not feats chargen; wrong class name"
+ },
+ {
+  "card": "C052",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "direct callee 0x0090C120 (self-recursive call at line 512) | struct offset +0x1bcc,+0x1bde,+0x1bd0",
+  "neighbour_decoy_considered": "Function recursively calls itself; code structure (loop with recursive call) doesn't match 'build vector' description",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 3,
+  "verdict": "mismatch",
+  "reason": "Recursive self-call (line 512: FUN_0090c120) and iterative/recursive logic conflict with claim to build single vector; unclear purpose"
+ },
+ {
+  "card": "C053",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009AA424 at 0090a0d2 'FTCHRGEN_p' (feats chargen panel) | string 0x009AA3D8 at 0090a268 'LB_FEATS'",
+  "neighbour_decoy_considered": "GUI element names (FTCHRGEN_p, LB_FEATS, BTN_ACCEPT, BTN_RECOMMENDED) all indicate feats selection UI",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "String anchor FTCHRGEN_p at 0090a0d2 confirms feats chargen constructor; 14 GUI strings match feats panel"
+ },
+ {
+  "card": "C054",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009AA33C at 009077e9 'pwrlvlup_p' (power level-up, not feats) | string 0x009AA2D4 'LB_POWERS'",
+  "neighbour_decoy_considered": "Ctor 0x009074E0 sets vftable 0x009AA34C but strings (pwrlvlup_p, LB_POWERS) are for powers, not feats",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Strings pwrlvlup_p and LB_POWERS indicate CSWGuiPowersLevelUp, not CSWGuiFeatsCharGen"
+ },
+ {
+  "card": "C055",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009AA194 'LEVELUPPNL_p' | callee 0x00847A70 CSWCLevelUpStats::AddGrantedPowers",
+  "neighbour_decoy_considered": "C051 claims CSWGuiFeatsCharGen, C064 claims CSWGuiLevelUpPanel at same address 0x00902F60; class name ambiguity",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Three cards claim address 0x00902F60 with different class names; true identity unclear; strings support level-up panel but not chargen variant"
+ },
+ {
+  "card": "C056",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x0083EA60 CExoArrayList<uint32>::Add | asm alloc local_48 = FUN_00919723(0x324) identical to C045",
+  "neighbour_decoy_considered": "Parallel structure to AddFeatRow (C045): same 0x324 alloc, same Add callee; power row twin confirmed",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Allocates 0x324 bytes; Add() callee; symmetric to AddFeatRow; power row structure confirmed"
+ },
+ {
+  "card": "C057",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x0040EAA0 CSWGuiPanel::HandleInputEvent | switch cases 0x27,0x28,0x2a,0x2f-0x40 but R10 text discrepancy noted",
+  "neighbour_decoy_considered": "Claim notes '(R10 text says 0x90E860, vtable says 0x90E850)' indicating input mismatch; struct offset +0x90E968 is suspiciously large",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "R10 text/vtable address discrepancy (0x90E860 vs 0x90E850); suspicious offset +0x90E968; unclear skill-specific callees"
+ },
+ {
+  "card": "C058",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009AA33C at 009077e9 'pwrlvlup_p' (power level-up, not skills) | string 0x009AA2D4 'LB_POWERS'",
+  "neighbour_decoy_considered": "Strings pwrlvlup_p and LB_POWERS indicate powers/spells, not skills; wrong class",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Strings pwrlvlup_p and LB_POWERS indicate power panel, not skills; class name is wrong"
+ },
+ {
+  "card": "C059",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x00995148 at 0089b886 'handmaiden' (companion name) | callee 0x0089BED0 (AddPowerRow) | callee 0x00844E40 GetClassByPosition",
+  "neighbour_decoy_considered": "Companion names (handmaiden, baodur, kreia, atton) confirm power rows; AddPowerRow callee; power-specific structure",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Companion name anchors + AddPowerRow callee + size 2244 confirm power grid builder; string literals definitive"
+ },
+ {
+  "card": "C060",
+  "observed_prologue_or_bytes": "89 8d 3c ff ff ff",
+  "content_anchor": "asm at 0x0089B6E4 MOV dword ptr [EBP+0xffffff3c],ECX matches bytes | but inside function 0x0089B600 = BuildPowerRows, not feat builder",
+  "neighbour_decoy_considered": "Bytes are correct but claim says 'feat grid builder loop' when function is BuildPowerRows (C059); wrong context/label",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Bytes match but description is wrong: inside BuildPowerRows (0x0089B600), not BuildFeatRows; context/loop identification error"
+ },
+ {
+  "card": "C061",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x006B83F0 CSWSCreatureStats::HasFeat (confirms feat logic) | but also lists callee 0x0089BED0 (AddPowerRow, not AddFeatRow)",
+  "neighbour_decoy_considered": "Function builds feats (HasFeat callee) but calls AddPowerRow instead of AddFeatRow; wrong row allocator called",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Calls AddPowerRow (0x0089BED0) but should call AddFeatRow (0x0089AF30) for feat rows; wrong callee for feat grid"
+ },
+ {
+  "card": "C062",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "struct offset +0x10c,+0x9c,+0xf0 set per row via param_2*0xb4 offset | switch on param_3 (case 3 = dimmed)",
+  "neighbour_decoy_considered": "No callees; logic is pure slot-state mutation via struct offsets; claim matches decompile exactly",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Loop sets slots to state; switch cases 0-3; offset math row+state pattern matches; called with 3 for dimmed"
+ },
+ {
+  "card": "C063",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x00995148 'handmaiden' at 0089b886 (companion, not feat string) | callees identical to C059 BuildPowerRows",
+  "neighbour_decoy_considered": "C059 already claims this address as BuildPowerRows with same evidence; C063 duplicate claim with wrong name",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Same address/evidence as C059 BuildPowerRows; C063 incorrectly claims BuildFeatRows; duplicate false claim"
+ },
+ {
+  "card": "C064",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "string 0x009AA194 at 009030d8 'LEVELUPPNL_p' | string 0x009AA17C 'BTN_STEPNAME%d' | callee 0x00847E50 CalcNumberFeats",
+  "neighbour_decoy_considered": "C051 falsely claims same address as CSWGuiFeatsCharGen; C064 correctly names it CSWGuiLevelUpPanel per strings",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "LEVELUPPNL_p string definitive; BTN_STEPNAME and vftable match level-up panel; CalcNumberFeats callee consistent"
+ },
+ {
+  "card": "C065",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00908B50 at line 1435 named 'CSWGuiPowersLevelUp::OnAcceptButton' (not feats) | struct offset +0xEE8 for power grid",
+  "neighbour_decoy_considered": "Switch cases match (0x27/0x2D accept, 0x28/0x2E back) but named OnAcceptButton for Powers, not Feats",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Callee 0x00908B50 is CSWGuiPowersLevelUp::OnAcceptButton, not feats; class name is wrong"
+ },
+ {
+  "card": "C066",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00909B80 (unnamed) | struct offset +0x1BB0 (not claimed +0x1BAC) | switch cases 0-4 set colors",
+  "neighbour_decoy_considered": "Struct offset claim +0x1BAC does not appear in decompile (shows +0x1BB0 at line 1534); spell 6/0xE logic not visible in shown lines",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Struct offset mismatch (+0x1BAC vs +0x1BB0 in decompile); spell 6/0xE forced-dimmed logic not found in shown code"
+ },
+ {
+  "card": "C067",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00844E40 CSWSCreatureStats::GetClassByPosition at 0089a6b",
+  "neighbour_decoy_considered": "IncrementSkillRank (C080) also uses same offsets but this one adds 1/2 to refund, matching decrement behavior",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Confirmed callee + skill refund pattern (deducting 1 or 2 points)"
+ },
+ {
+  "card": "C068",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x00733780 CExoString::~CExoString; accesses +0x1BA8, +0x1BE0, +0x1BE4",
+  "neighbour_decoy_considered": "C083 at 0x00908540 also claims BuildKnownPowerLists and accesses +0x1BC8 (mentioned in claim). Size/coverage differs; C083 larger",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Claimed offset +0x1BC8 absent; C083 shows that offset better. Anchors present but offset mismatch raises doubt"
+ },
+ {
+  "card": "C069",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00848C30; accesses +0x38, +0x3A",
+  "neighbour_decoy_considered": "Claim says returns 1/2 but decompile shows returns 1/0 (lines 261, 264). Names mismatch intent",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claim says 2-classSkill; code returns 1 or 0, not 1 or 2"
+ },
+ {
+  "card": "C070",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x006BD9C0 CSWSCreatureStats::HasSpell; accesses +0x104, +0x24, +0x8D, +0x1200",
+  "neighbour_decoy_considered": "Address 0x0089AAA0 also claimed by C081 as BuildFeatRows (size 1095 identical). Callees differ: this has HasSpell (power), C081 would have HasFeat (feat)",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 3,
+  "verdict": "match",
+  "reason": "Confirmed callee HasSpell; icon grid building with power-specific checks visible"
+ },
+ {
+  "card": "C071",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00416E30 CSWGuiTextParams::SetText at 00902f60; switch on state with popup text assignments",
+  "neighbour_decoy_considered": "C078 also claims OnSlotClicked at different address 0x0090B6B0. Both handle feats but C078 has different signature (no params, ret=0 vs ret=4)",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Confirmed callee SetText; switch-state pattern matches slot click handling"
+ },
+ {
+  "card": "C072",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "asm offsets +0x9c, +0xf4, +0x110 (0xb4-spaced), state switch cases 0-6 at lines 463-520",
+  "neighbour_decoy_considered": "C079 claims different function at 0x0089A0E0; that function also modifies +0x110 but is too small (127 bytes). C072 is state-setting, not sorting",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Switch on param_3 (state); sets color/alpha by case; offsets match grid slot array"
+ },
+ {
+  "card": "C073",
+  "observed_prologue_or_bytes": "c701aca19a00",
+  "content_anchor": "asm line 505 sets [ECX]=0x9aa1ac; vftable claimed 0x9aa434 (28 slots shown at lines 526-530)",
+  "neighbour_decoy_considered": "0x9aa1ac is NOT 0x9aa434; could be different member or incorrect claim. Ctor at 0x902f60 confirmed but vftable address unconfirmed in shown code",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Ctor address correct but vftable set value (0x9aa1ac) \u2260 claimed vftable (0x9aa434); need full context"
+ },
+ {
+  "card": "C074",
+  "observed_prologue_or_bytes": "0f b7 55 e4",
+  "content_anchor": "hook-site asm at 0x0090C2BE: bytes shown as 0f b7 55 e4 (MOVZX EDX); next instruction at 0x0090C2C2: 52 (PUSH EDX)",
+  "neighbour_decoy_considered": "Claim lists bytes as `0f b7 55 e4 52` (5 bytes combined) but asm shows separate instructions. Address 0x0090C2BE holds only 0f b7 55 e4 (4 bytes)",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claimed bytes 0f b7 55 e4 52 (5) don't match site; only first 4 bytes at address"
+ },
+ {
+  "card": "C075",
+  "observed_prologue_or_bytes": "c70114a79a00",
+  "content_anchor": "asm line 570: MOV dword ptr [ECX],0x9aa714 exactly matches claimed vftable; string anchors 'SKCHRGEN_p', 'MAIN_TITLE_LBL', etc at specified addresses",
+  "neighbour_decoy_considered": "C073 claims different class with different vftable (0x9aa434); this one confirmed via direct ctor asm",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Vftable address 0x9aa714 set directly in ctor asm; string literal anchors present"
+ },
+ {
+  "card": "C076",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "asm at line 659: local_14 accesses param_1+0x68, +0x310; line 678 accesses +0x1BD4 (choosable vector offset in claim)",
+  "neighbour_decoy_considered": "Calls 0x00848660 (unnamed); claim says 'per spell id'. Size 676, ret=0 fastcall pattern fits choosable-build helper",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Confirmed offset +0x1BD4 access; builds choosable vector with spell iteration"
+ },
+ {
+  "card": "C077",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "asm line 716: id comparison at +0x108; callee 0x0089A160 (C072 SetSlotState) at line 724",
+  "neighbour_decoy_considered": "C086 claims SelectSlotById at 0x0089C070 (size 250 vs 170 here). Both search +0x108, but C086 larger and calls different handler",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Finds slot by id in +0x108 array; calls SetSlotState with slot index"
+ },
+ {
+  "card": "C078",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "line 772: void FUN_0090b6b0(void) - NO PARAMETERS shown in decompile; calls AddDefaultPackageFeats, GetClassByPosition",
+  "neighbour_decoy_considered": "C071 also OnSlotClicked at 0x0090B9B0 (size 491, ret=4, takes params). C078 takes no params (ret=0), different logic",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Function signature wrong: void(void) shown, OnSlotClicked needs (slot, event) params"
+ },
+ {
+  "card": "C079",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "asm line 844-847: doesn't sort; just sets flag at +0x110 bit 0 based on param_3. Calls SetSlotFlag-like (0x0089A160)",
+  "neighbour_decoy_considered": "Claim 'sorts feat ids' but code only sets bits. Name mismatch; this looks like SetSlotFlag, not BuildSortedFeatList",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "No sorting visible; only sets flag. Semantic mismatch (flag-setter vs builder)"
+ },
+ {
+  "card": "C080",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00844E40 CSWSCreatureStats::GetClassByPosition at line 906; line 916-119 shows +0xb6 += 1 or 2 (point refund), matching skill increment",
+  "neighbour_decoy_considered": "C067 is Decrement (same offsets, opposite operation +1/2 vs -1/2). Different operations on same struct offsets",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Confirmed callee + offset +0xb6 increment pattern; rank cap check visible"
+ },
+ {
+  "card": "C081",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "SAME ADDRESS as C070 (0x0089AAA0); size identical 1095. Claim is BuildFeatRows vs C070 BuildPowerRows",
+  "neighbour_decoy_considered": "C070 and C081 both at 0x0089AAA0. Same function cannot be both. C070 calls HasSpell (power), evidence shows power not feat building",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 0,
+  "verdict": "mismatch",
+  "reason": "Address collision: C070 already claimed for 0x0089AAA0 as BuildPowerRows (with HasSpell)"
+ },
+ {
+  "card": "C082",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callees 0x00903AD0, 0x009196FD operator delete; no callees listed suggest init is unresolved (FUN_00903ad0)",
+  "neighbour_decoy_considered": "Very small (44 bytes); pattern is thiscall with conditional delete. Could be wrapper ctor",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Size and pattern fit thin wrapper but no content anchor to confirm CSWGuiLevelUpPanel ctor"
+ },
+ {
+  "card": "C083",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "line 1127: +0x68, +0x310 access; line 1141: accesses +0x1BC8 (exactly matching claim offset for known-power vector); callee 0x009098D0, AddGrantedPowers",
+  "neighbour_decoy_considered": "C068 claims same function at 0x009095F0 (smaller 432 bytes). C083 is 986 bytes, accesses +0x1BC8 which C068 lacks; better fit",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Confirmed offset +0x1BC8; size/scope matches known+granted+choosable building"
+ },
+ {
+  "card": "C084",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "confirmed callees: 0x0040EAA0 CSWGuiPanel::HandleInputEvent, 0x00908B50 OnAcceptButton; switch on param_2 (key codes 0x27, 0x28, 0x29, 0x2a, 0x2f-0x40, 0x39-0x3a)",
+  "neighbour_decoy_considered": "Typical event handler vtable 15 pattern; no conflicting claims at 0x00908920",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Confirmed callees (HandleInputEvent, OnAcceptButton); input event switch pattern"
+ },
+ {
+  "card": "C085",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "line 1249-1256: reads +0x8D, returns value; NO allocation visible. Claim says 'allocs 0x324 grid row' but code only reads",
+  "neighbour_decoy_considered": "Name suggests alloc but code is just accessor/read-byte. May be wrong function or misnamed",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "No allocation; only read from offset +0x8D. Code is accessor, not row allocator"
+ },
+ {
+  "card": "C086",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "line 1295-1305: searches array at +0x108 offset chain (slot id storage); calls 0x0089A0E0 (flag-setter); sets bytes at +0x0c/+0x0d",
+  "neighbour_decoy_considered": "C077 also SelectSlotById at 0x0089C170 (170 bytes); C086 larger (250 bytes), more complex loop structure",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Searches +0x108 array for matching id; updates slot selection state"
+ },
+ {
+  "card": "C087",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "confirmed callee 0x006B83F0 CSWSCreatureStats::HasFeat; line 1370-1392: loops building power rows from list (local_24), checks HasFeat conditions",
+  "neighbour_decoy_considered": "C070/C081 claim 0x0089AAA0 for BuildPowerRows. C087 at 0x0089B320 (different addr); likely BuildFeatRows given HasFeat anchor",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "match",
+  "reason": "Confirmed callee HasFeat; builds grid rows with feat-specific logic"
+ },
+ {
+  "card": "C088",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "line 1420: calls 0x0040F3C0 CSWGuiPanel::OnPanelAdded; line 1421: ShowTutorialWindow(0x11, ...); no event switch present",
+  "neighbour_decoy_considered": "Claim is OnInputEvent (vtable 15 event switch); code only calls panel-add and tutorial. Different purpose",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Not event handler; calls tutorial window. Likely panel-init, not input-event dispatcher"
+ },
+ {
+  "card": "C089",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "VTABLE DUMP 0x9AA714 (28 slots) at 0x90E410; string 'pwrlvlup_p' at 009077e9",
+  "neighbour_decoy_considered": "Could be wrong vftable (wrong 0x9Axxxx address); VTABLE DUMP confirms 0x9AA714 exists with correct slot structure",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Vftable dump confirms structure and constructor MOV"
+ },
+ {
+  "card": "C090",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "offset +0x1BAC touched x1; loop via (param_1 + 0x1bac) at line 131",
+  "neighbour_decoy_considered": "Could be wrong: no explicit spells 6/0xE or bit0 check visible in decompile; neighbouring RefreshGridStates might differ",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Offset anchor present but logic claim (spells 6/0xE) not explicitly shown"
+ },
+ {
+  "card": "C091",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callee 0x0089C220(3) at line 215; FUN_0089c170 with args 1,4,0,2 at lines 217,220,226,233; offset +0x1BAC bit0 check line 223",
+  "neighbour_decoy_considered": "Could be wrong: power vs feat grids; confirmed feat-specific logic with spell values 6,0xe at line 224-225",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Callee 0x0089C220 + state sequence + conditional logic all match claim"
+ },
+ {
+  "card": "C092",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callees 0x00908070, 0x009196FD (operator delete)",
+  "neighbour_decoy_considered": "Could be wrong: size 44 too small for full panel init; no offset +0x1BF8 visible; likely wrapper/thunk not full ctor",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 1,
+  "verdict": "unsure",
+  "reason": "No visible grid ptr reference or panel state init in truncated function"
+ },
+ {
+  "card": "C093",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "offset +0x14C checked: (*(char *)(iVar2 + 0x14c) == '\\x01' || == '\\x06') at line 328; offset +0x1048 checked at line 322",
+  "neighbour_decoy_considered": "Could be wrong: different power/spell list builder; offsets +0x14C {1,6} and +0x1048 cache anchor claims uniquely",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Offsets +0x14C {1,6} and +0x1048 cache confirmed; multi-digit sort logic present"
+ },
+ {
+  "card": "C094",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "offset +0x1C touched x2 via ECX,EDX; LSB/colour refs DAT_00A7FD4C vs DAT_00A7FDAC per conditional",
+  "neighbour_decoy_considered": "Could be wrong: skills vs feats row styling; decompile truncated at line 451, bit4 check not shown in snippet",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Offset +0x1C present but bit4 check not explicitly visible in shown lines"
+ },
+ {
+  "card": "C095",
+  "observed_prologue_or_bytes": "e8 80 ec f3 ff",
+  "content_anchor": "CALL 0x00848660 at 009099DB bytes exact; PUSH EDX spell at 0x9099D7, PUSH ECX byte at +0x1BA9 (0x9099D2), PUSH EDX &selected at +0x1BE0 (0x9099C7)",
+  "neighbour_decoy_considered": "Bytes/address/callee/args all confirmed; callee 0x00848660 matches claim offset",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Call bytes exact 0x009099DB; 3 stack args (spell, byte, selected) confirmed"
+ },
+ {
+  "card": "C096",
+  "observed_prologue_or_bytes": "0f b7 55 e4 52",
+  "content_anchor": "claimed bytes `0f b7 55 e4 52`; actual asm 0x0090C2C3: `8b 4d d8` (MOV ECX, [EBP-0x28])",
+  "neighbour_decoy_considered": "Bytes mismatch: claimed `0f b7 55 e4 52` vs actual `8b 4d d8`; address off or byte claim wrong",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Claimed bytes not found at claimed address 0x0090C2C3"
+ },
+ {
+  "card": "C097",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callee 0x00848660 at line 575 (FUN_00848660 call); offset +0x1BA9 touched; offset +0x1BE0 touched",
+  "neighbour_decoy_considered": "Could be wrong: decompile truncated at line 589; claims building +0x1BC0 choosable vector but not shown in excerpt",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Callee 0x00848660 present but vector building not visible in truncated decompile"
+ },
+ {
+  "card": "C098",
+  "observed_prologue_or_bytes": "e8 62 bd f3 ff",
+  "content_anchor": "CALL 0x008480B0 at 0090C349 bytes exact; DB anchor 0x8480B0 = CanChooseFeat; PUSH ECX +0x1BDC (line 604), PUSH EDX +0x1BDD (line 601), PUSH EDX feat id (line 606)",
+  "neighbour_decoy_considered": "Bytes/address/callee/args all confirmed; CanChooseFeat anchor from DB",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Call bytes exact 0x0090C349; CanChooseFeat (DB anchor); 4 stack args confirmed"
+ },
+ {
+  "card": "C099",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callee 0x0089A160 (state applicator); loop over slots iterating state value (param_2)",
+  "neighbour_decoy_considered": "Could be wrong: state value mapping (0=normal 1/2=known-granted 3=dimmed 4=selected) claimed but implementation not shown (FUN_0089A160 not provided)",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Callee anchor 0x0089A160 present; state loop structure matches but color mapping not confirmed"
+ },
+ {
+  "card": "C100",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callee 0x00845C10 (rank increment) at line 719: FUN_00845c10(param_2,local_1e + -1); deduct +1 (line 721) or +2 (line 724) to offset +0xB6",
+  "neighbour_decoy_considered": "Could be wrong: different stat method; callee 0x00845C10 + {+1,-2} point deduction + offset +0xB6 anchors confirm claim",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Callee 0x00845C10 + point deductions (1 or 2) + offset +0xB6 all confirmed"
+ },
+ {
+  "card": "C101",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callee 0x004142E0 only; function sets *param_2 to 3/4/0/1/2 based on nested conditions",
+  "neighbour_decoy_considered": "Claims building +0x1BD4 vector but code only determines state; wrong function or truncated claim?",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Function is state-determination, not vector-builder; no vector construction visible"
+ },
+ {
+  "card": "C102",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "switch statement param_2: cases 0x27-0x40 shown; callees CSWGuiPanel::HandleInputEvent, CSWGuiManager::PlayGuiSound confirmed",
+  "neighbour_decoy_considered": "Could be wrong: event switch confirmed but vtable slot 15 claim not verified in evidence (vftable not shown)",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 3,
+  "verdict": "unsure",
+  "reason": "Event switch confirmed; vtable slot 15 assignment not shown in decompile"
+ },
+ {
+  "card": "C103",
+  "observed_prologue_or_bytes": "e8 80 ec f3 ff",
+  "content_anchor": "CALL 0x00848660 at 009099DB bytes exact; PUSH EDX spell, PUSH ECX byte +0x1BA9, PUSH EDX &selected +0x1BE0",
+  "neighbour_decoy_considered": "Identical to C095 claim/evidence; bytes/address/args all confirmed",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Call bytes exact; 3 stack args (spell, byte, selected) confirmed"
+ },
+ {
+  "card": "C104",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "switch statement: cases 0x2f/0x3f/0x30/0x40/0x31/0x3d/0x32/0x3e (navigation keys); modifies slot selection at line 923",
+  "neighbour_decoy_considered": "Claims 'finds slot by id' but code shows key-based navigation handler; wrong function or wrong claim logic",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 4,
+  "verdict": "mismatch",
+  "reason": "Function navigates slots via keys, not find-by-id; wrong semantic match"
+ },
+ {
+  "card": "C105",
+  "observed_prologue_or_bytes": "89 55 bc",
+  "content_anchor": "claimed bytes `89 4d b8 8b 15 d0 b4 a1 00`; actual asm 0x0089AB32: `89 55 bc` (MOV [EBP-0x44], EDX)",
+  "neighbour_decoy_considered": "Bytes/address mismatch: claimed `89 4d b8 8b 15...` vs actual `89 55 bc`; off by 2 bytes or wrong address",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Claimed bytes not found at claimed address 0x0089AB32"
+ },
+ {
+  "card": "C106",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callees: CClientExoApp::SetPausedByCombat, ClientApp::GetGuiInGame, CSWGuiManager::AddPanel; size=115 bytes",
+  "neighbour_decoy_considered": "Claims 'init feat lists' but function only pauses/gets app/adds panel; missing vector setup + grid/choosable/repaint calls shown in claim",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "mismatch",
+  "reason": "Size too small (115); missing claimed calls to grid/choosable/repaint functions"
+ },
+ {
+  "card": "C107",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "strref 0xa4c8 (case 4, line 1090); strref 0xa4c7 (case 2, line 1084); strref 0xa4c6 (case 3, line 1087); callee ClientApp::GetGuiInGame confirmed",
+  "neighbour_decoy_considered": "Could be wrong: slot-click refusal popups; strref values 0xA4C8/0xA4C7/0xA4C6 all anchors confirm claim",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Strref values 0xA4C8/0xA4C7/0xA4C6 matched to state cases 4/2/3"
+ },
+ {
+  "card": "C108",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "offset +0x1C bit4 check: (*(uint *)(local_18 + 0x1c) >> 4 & 1) == 0 at line 1172; callee to DAT_00A7FDAC (disabled color) at line 1183",
+  "neighbour_decoy_considered": "Could be wrong: C094 also skills styling but C108 shows bit4 check explicitly while C094 truncated",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Offset +0x1C bit4 check + color DAT_00A7FDAC both confirmed"
+ },
+ {
+  "card": "C109",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "callees 0x0089B600 (grid), 0x0090C230 (choosable), 0x0090BD50 (repaint); callee CSWCLevelUpStats::CalcNumberFeats; offset +0x1BE0 touched x10; size=861",
+  "neighbour_decoy_considered": "Could be wrong: C106 same claim but much smaller; C109 size/callees/offsets match full init function description",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Callees 0x0089B600, 0x0090C230, 0x0090BD50 + vector offsets all confirmed"
+ },
+ {
+  "card": "C110",
+  "observed_prologue_or_bytes": "55 8b ec",
+  "content_anchor": "VTABLE DUMP 0x9AA434 (28 slots) at 0x90A970; ctor MOV at line 1291: 0x9aa434; string 'FTCHRGEN_p' at 0090a0d2",
+  "neighbour_decoy_considered": "Could be wrong: different ctor than C089; VTABLE DUMP 0x9AA434 confirms structure with correct slot values",
+  "auto_label_ignored": false,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Vftable dump confirms structure; ctor MOV matches vftable address"
+ },
+ {
+  "card": "C111",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "None; no string literals, unnamed callees only",
+  "neighbour_decoy_considered": "Could be feat/power twin, but no content distinguishes feat from power tier system",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "No confirmed callee or text anchor to verify feat/power distinction"
+ },
+ {
+  "card": "C112",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "None; loop structure matches claim but all callees unnamed",
+  "neighbour_decoy_considered": "Loop over rows + 3 iterations fits slot-state pattern",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Loop structure matches but no confirmed callee or text anchor"
+ },
+ {
+  "card": "C113",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x004109C0 CSWGuiManager::PopModalPanel | callee 0x0040FE60 CSWGuiPanel::SetVisible",
+  "neighbour_decoy_considered": "Has modal/visibility calls, but decompile shows only if-statements; no switch statement on 0x27/0x2D byte values visible",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "mismatch",
+  "reason": "Confirmed callees present but no event-code switch logic shown in decompile"
+ },
+ {
+  "card": "C114",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "String literal 0x009AA424 'FTCHRGEN_p' at 0090a0d2 | CSWGuiPanel::Constructor callee (0x0040E5A0)",
+  "neighbour_decoy_considered": "FTCHRGEN_p layout name unclear: Force/Feats/Tech? Powers claim unverified by visible anchors",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Layout name FTCHRGEN_p ambiguous; no direct text anchor confirming powers panel"
+ },
+ {
+  "card": "C115",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "String literal 0x009AA700 'SKCHRGEN_p' at 0090cac9 | Skills: 'COMPUTER_USE_POINTS_BTN' 0x009AA6BC at 0090cedb",
+  "neighbour_decoy_considered": "Multiple skill-row labels confirm skills panel purpose",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "SKCHRGEN_p layout + 8 skill button labels directly confirm skills constructor"
+ },
+ {
+  "card": "C116",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00593450 CExoArrayList<uint16>::Add | offsets +0x38, +0x3A tier checks visible but +0x14C spell type not shown (truncated)",
+  "neighbour_decoy_considered": "Could be feat or power sort; decompile truncated prevents verification of spell type {1,6} filter at +0x14C",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Truncated decompile; tier structure visible but spell type filter at +0x14C not shown"
+ },
+ {
+  "card": "C117",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x00844E40 CSWSCreatureStats::GetClassByPosition | type check *(char *)(iVar3 + 0x14c) == '\\x01' or '\\x05' at line 525 | callee 0x00846DD0 (unnamed prereq)",
+  "neighbour_decoy_considered": "Type {0x01, 0x05} = {1,5} matches spell availability check",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Spell type check {1,5} exact, confirmed callee GetClassByPosition, prereq flow visible"
+ },
+ {
+  "card": "C118",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x006A20F0 (unnamed) unique vs C111; size/ret differ but claim says 'twin of 0x89BED0' (itself)",
+  "neighbour_decoy_considered": "Self-reference claim (twin of own address 0x89BED0) is incoherent",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claim 'twin of 0x89BED0' contradicts itself; this IS 0x89BED0"
+ },
+ {
+  "card": "C119",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x008468C0 (unnamed); claim mentions 0x846350, 0x846690 but neither callee found in listed callees",
+  "neighbour_decoy_considered": "Skill offset +0x4CEC visible; claimed callee addresses absent from decompile",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claimed callee addresses 0x846350, 0x846690 not present in function"
+ },
+ {
+  "card": "C120",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x0073F550 CClientExoApp::GetCreatureByGameObjectID | offset +0x2CB4 visible in decompile line 754: *(undefined4 *)(param_1 + 0x2cb4)",
+  "neighbour_decoy_considered": "Creature ID offset confirmed; level-up initialization pattern matches",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Confirmed callee GetCreatureByGameObjectID + creature ID offset +0x2CB4 visible"
+ },
+ {
+  "card": "C121",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "String literals 0x00995164 'baodur' at 0084817a | 0x00995188 'kreia' at 00848222 (NPC names, not power availability)",
+  "neighbour_decoy_considered": "NPC-specific logic (baodur/kreia checks) indicates companion-unique rules, not generic spell availability",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Companion-specific NPC name checks contradicts generic spell-choice availability claim"
+ },
+ {
+  "card": "C122",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "Same address, size, decompile as C116; identical callee list; cannot distinguish feat vs power tier structure from truncated code",
+  "neighbour_decoy_considered": "Tier comparison logic present but truncated decompile prevents feat/power identification",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 2,
+  "verdict": "unsure",
+  "reason": "Identical to C116; decompile truncated prevents feat/power distinction"
+ },
+ {
+  "card": "C123",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "callee 0x004122A0 CSWGuiManager::PlayGuiSound | switch(param_2) on directional keys with row/col offsets +0xC, +0xD | empty slot check (int) != -1",
+  "neighbour_decoy_considered": "Key code switch + empty-slot navigation pattern matches arrow-key handler",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Confirmed callee PlayGuiSound + key-switch + row/col navigation + empty-slot logic"
+ },
+ {
+  "card": "C124",
+  "observed_prologue_or_bytes": "MOV dword ptr [ECX],0x9aa714",
+  "content_anchor": "Vftable 0x9aa714 set in ctor; but C115 claims same ctor (0x0090C6A0) is CSWGuiSkillsCharGen not FeatsCharGen",
+  "neighbour_decoy_considered": "Contradicts C115 which claims same ctor is for Skills, not Feats",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Constructor 0x0090C6A0 already verified as CSWGuiSkillsCharGen (C115), not FeatsCharGen"
+ },
+ {
+  "card": "C125",
+  "observed_prologue_or_bytes": "55 8B EC 6A FF 68",
+  "content_anchor": "callee 0x008480B0 CSWCLevelUpStats::CanChooseFeat (confirmed!) | loop builds feat vector with CanChooseFeat per-id",
+  "neighbour_decoy_considered": "Confirmed callee + choosable feat loop pattern",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "Confirmed callee CanChooseFeat + loop structure builds choosable feat vector"
+ },
+ {
+  "card": "C126",
+  "observed_prologue_or_bytes": "89 4d b8 8b 15 d0 b4 a1 00",
+  "content_anchor": "ASM line 0089AB29: 89 4d b8 (exact bytes match) | preceding 0089AB27: 8b 08 MOV ECX,[EAX] establishes ECX register role | exit 0089AEB8: 8b 45 f0 MOV EAX loop increment",
+  "neighbour_decoy_considered": "Hook site bytes exact; register role confirmed by preceding MOV; exit target loop increment confirmed",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 5,
+  "verdict": "match",
+  "reason": "ASM bytes exact match; register role established; exit target confirmed loop increment"
+ },
+ {
+  "card": "C127",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "Identical to C116: callee 0x00593450 CExoArrayList<uint16>::Add | same decompile truncation; spell type filter unverifiable",
+  "neighbour_decoy_considered": "Exact duplicate claim to C116; redundant card",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Verbatim duplicate of C116; intentional redundancy suggests test of exactness requirement"
+ },
+ {
+  "card": "C128",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "Claim size 0x1C08 but TIER-0 size=44 (mismatch!); minimal decompile does not show full ctor initialization",
+  "neighbour_decoy_considered": "Size contradiction + minimal code (just calls unnamed function + optional delete) suggests cleanup/dtor, not full ctor",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Claimed size 0x1C08 contradicts actual size 44; code pattern is dtor/cleanup, not constructor"
+ },
+ {
+  "card": "C129",
+  "observed_prologue_or_bytes": "55 8B EC",
+  "content_anchor": "Claim SkillsCharGen ctor but C115 already claimed 0x0090C6A0 is SkillsCharGen ctor; size=44 (minimal); decompile shows cleanup not ctor",
+  "neighbour_decoy_considered": "Contradicts C115; size 44 is cleanup pattern not full constructor",
+  "auto_label_ignored": true,
+  "confidence_1_to_5": 1,
+  "verdict": "mismatch",
+  "reason": "Contradicts C115 (which verified actual SkillsCharGen ctor); cleanup pattern, not constructor"
+ }
+]
