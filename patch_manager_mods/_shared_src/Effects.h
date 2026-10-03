@@ -11,8 +11,11 @@
 //   ints[0] = visualeffects.2da row (colour key).
 //   World time: FUN_0051ad20 thiscall(timer, int* day, uint* ms) RET 8, timer = *(*(*(*(0xA1B4A4)+8)+4)+0x10048).
 // Host tests: define K2FX_HOST to replace the engine time call through k2fx::g_fx (see effects_test.cpp).
+// Per-version addresses/offsets: the constants below are the Steam column; every helper reads the K2Addr.h table selected for the
+// running exe (k2addr::get()) and does nothing / returns its neutral value when the table is null or a field it needs is 0.
 #pragma once
 #include "SafeRead.h"
+#include "K2Addr.h"
 #include <stdint.h>
 
 namespace k2fx {
@@ -27,25 +30,34 @@ constexpr int Creature_EffectArray = 0x148, Creature_EffectCount = 0x14c;
 constexpr int MaxEffects = 512;
 constexpr int MsPerDay = 86400000;
 constexpr int EffType_Pool = 0x02, EffSub_PoolBit = 8, EffType_Visual = 0x1e;
-constexpr uintptr_t AddrAppGlobal = 0x00A1B4A4;              // = gameaddr::AppGlobal
-constexpr uintptr_t AddrWorldTimerGetCurrentTime = 0x0051AD20;
+constexpr uintptr_t AddrAppGlobal = kSteam.AppGlobal;                          // Steam column; = gameaddr::AppGlobal
+constexpr uintptr_t AddrWorldTimerGetCurrentTime = kSteam.WorldTimerGetCurrentTime;   // Steam column
+
+// thiscall(timer, int* day, int* ms) RET 8 at the table's WorldTimerGetCurrentTime; leaves day/ms untouched when that is unknown
+// (currentTime() checks for that case first).
+inline void defaultGetTime(uintptr_t timer, int* day, int* ms) {
+    using Fn = void(__thiscall*)(void*, int*, int*);
+    Fn f = k2addr::fnptr<Fn>(&K2AddrTable::WorldTimerGetCurrentTime);
+    if (f) f(reinterpret_cast<void*>(timer), day, ms);
+}
 
 struct Engine {
-    // thiscall(timer, int* day, int* ms) RET 8; a host test substitutes a fake
-    void (*getTime)(uintptr_t timer, int* day, int* ms) = [](uintptr_t timer, int* day, int* ms) {
-        reinterpret_cast<void(__thiscall*)(void*, int*, int*)>(AddrWorldTimerGetCurrentTime)(reinterpret_cast<void*>(timer), day, ms);
-    };
-    uintptr_t appGlobal = AddrAppGlobal;
+    // a host test substitutes a fake
+    void (*getTime)(uintptr_t timer, int* day, int* ms) = &defaultGetTime;
+    uintptr_t appGlobal = k2addr::UseTable;   // UseTable = the table's AppGlobal; a host test sets an arena address (0 = none)
 };
 inline Engine g_fx;
+
+inline uintptr_t appGlobal() { return g_fx.appGlobal != k2addr::UseTable ? g_fx.appGlobal : k2addr::addr(&K2AddrTable::AppGlobal); }
 
 template <typename T> inline bool rd(uintptr_t base, int off, T* out) {
     return saferead::readAt(1, base, off, out);
 }
 
-// The effect array + count of a creature, raw (no range check). False = unreadable.
+// The effect array + count of a creature, raw (no range check). False = unreadable (or offsets unknown for this exe).
 inline bool readEffectList(uintptr_t creature, int* arr, int* count) {
-    return rd(creature, Creature_EffectArray, arr) && rd(creature, Creature_EffectCount, count);
+    int oa = k2addr::off(&K2AddrTable::Creature_EffectArray), oc = k2addr::off(&K2AddrTable::Creature_EffectCount);
+    return oa && oc && rd(creature, oa, arr) && rd(creature, oc, count);
 }
 // Non-empty and sane (1..MaxEffects): what every per-effect scan wants.
 inline bool effectListNonEmpty(uintptr_t creature, int* arr, int* count) {
@@ -54,15 +66,19 @@ inline bool effectListNonEmpty(uintptr_t creature, int* arr, int* count) {
 // Cheap "looks like a live creature" check used before trusting a creature pointer read from a caller frame or the roster.
 inline bool plausibleCreature(uintptr_t c) {
     int cnt = 0, arr = 0;
-    return c && rd(c, Creature_EffectCount, &cnt) && rd(c, Creature_EffectArray, &arr) && cnt >= 0 && cnt <= MaxEffects;
+    return c && readEffectList(c, &arr, &cnt) && cnt >= 0 && cnt <= MaxEffects;
 }
 
 // Current world time (day, ms of day); false when no world timer (main menu, load).
 inline bool currentTime(int* day, int* ms) {
+    int o1 = k2addr::off(&K2AddrTable::AppGlobal_ToWorld), o2 = k2addr::off(&K2AddrTable::World_ToSub), o3 = k2addr::off(&K2AddrTable::Sub_ToTimer);
+    uintptr_t ag = appGlobal();
+    if (!ag || !o1 || !o2 || !o3) return false;
+    if (g_fx.getTime == &defaultGetTime && !k2addr::addr(&K2AddrTable::WorldTimerGetCurrentTime)) return false;   // engine call unknown
     int g, a, b;
-    if (!rd(g_fx.appGlobal, 0, &g) || !rd(g, 8, &a) || !rd(a, 4, &b)) return false;
+    if (!rd(ag, 0, &g) || !rd(g, o1, &a) || !rd(a, o2, &b)) return false;
     int timer;                                  // FUN_0051c370: *(*(a+4)+0x10048)
-    if (!rd(b, 0x10048, &timer) || timer == 0) return false;
+    if (!rd(b, o3, &timer) || timer == 0) return false;
     g_fx.getTime(static_cast<uintptr_t>(timer), day, ms);
     return true;
 }
@@ -78,8 +94,9 @@ inline float remainingRatio(int eDay, int eMs, float duration, int day, int ms, 
 // remainingRatio for one effect; 1.0 when it has no duration (permanent) or the time is unknown.
 inline float effectRatio(uintptr_t eff, int day, int ms, bool haveTime, float minRatio = 0.0f) {
     float duration; int eDay, eMs;
-    if (haveTime && rd(eff, Effect_Duration, &duration) && duration > 0.0f &&
-        rd(eff, Effect_ExpiryDay, &eDay) && rd(eff, Effect_ExpiryTime, &eMs))
+    int od = k2addr::off(&K2AddrTable::Effect_Duration), ox = k2addr::off(&K2AddrTable::Effect_ExpiryDay), ot = k2addr::off(&K2AddrTable::Effect_ExpiryTime);
+    if (haveTime && od && ox && ot && rd(eff, od, &duration) && duration > 0.0f &&
+        rd(eff, ox, &eDay) && rd(eff, ot, &eMs))
         return remainingRatio(eDay, eMs, duration, day, ms, minRatio);
     return 1.0f;
 }
@@ -96,21 +113,25 @@ struct PoolRaw { int eff; int spell; int flags; int remaining; int vfx; };
 // type 0x1e effect with the same spell id (0 if none). Returns the count written.
 inline int scanShieldPools(uintptr_t creature, PoolRaw* out, int maxOut) {
     int arr = 0, count = 0;
+    const int oType = k2addr::off(&K2AddrTable::Effect_Type), oSub = k2addr::off(&K2AddrTable::Effect_Subtype);
+    const int oIntCount = k2addr::off(&K2AddrTable::Effect_IntCount), oInts = k2addr::off(&K2AddrTable::Effect_Ints);
+    const int oSpell = k2addr::off(&K2AddrTable::Effect_SpellId);
+    if (!oType || !oSub || !oIntCount || !oInts || !oSpell) return 0;
     if (!effectListNonEmpty(creature, &arr, &count)) return 0;
     int n = 0;
     for (int i = 0; i < count && n < maxOut; ++i) {
         int eff = 0; unsigned short type = 0, sub = 0;
-        if (!rd(arr, i * 4, &eff) || !eff || !rd(eff, Effect_Type, &type) || !rd(eff, Effect_Subtype, &sub)) continue;
+        if (!rd(arr, i * 4, &eff) || !eff || !rd(eff, oType, &type) || !rd(eff, oSub, &sub)) continue;
         if (type != EffType_Pool || !(sub & EffSub_PoolBit)) continue;
         int ip = 0, cnt = 0, spell = 0;
-        if (!rd(eff, Effect_IntCount, &cnt) || cnt < 3 || !rd(eff, Effect_Ints, &ip) || !ip || !rd(eff, Effect_SpellId, &spell)) continue;
+        if (!rd(eff, oIntCount, &cnt) || cnt < 3 || !rd(eff, oInts, &ip) || !ip || !rd(eff, oSpell, &spell)) continue;
         int flags = 0, remaining = 0;
         if (!rd(ip, 0, &flags) || !rd(ip, 8, &remaining) || remaining <= 0) continue;
         int vfx = 0;
         for (int k = 0; k < count; ++k) {
             int e2 = 0; unsigned short t2 = 0; int sp2 = 0, ip2 = 0;
-            if (!rd(arr, k * 4, &e2) || !e2 || !rd(e2, Effect_Type, &t2) || t2 != EffType_Visual) continue;
-            if (!rd(e2, Effect_SpellId, &sp2) || sp2 != spell || !rd(e2, Effect_Ints, &ip2) || !ip2) continue;
+            if (!rd(arr, k * 4, &e2) || !e2 || !rd(e2, oType, &t2) || t2 != EffType_Visual) continue;
+            if (!rd(e2, oSpell, &sp2) || sp2 != spell || !rd(e2, oInts, &ip2) || !ip2) continue;
             rd(ip2, 0, &vfx); break;
         }
         out[n++] = { eff, spell, flags, remaining, vfx };

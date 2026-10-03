@@ -13,52 +13,87 @@
 // Rules learned the hard way (doc 08 session 4 root cause): our flushes/colour clips leave GL caps (GL_LIGHTING) toggled, so every
 // draw block runs under a CapGuard; never draw in a menu frame without reopening the batch (Gui2DScope) and pushing the panel clip.
 // Host tests: define GUI2D_HOST to drop the GL / CapGuard part; engine calls go through gui2d::g_g2d (fakes).
+// Per-version addresses: the Addr* constants below are the Steam column; the default engine calls read the K2Addr.h table selected
+// for the running exe (k2addr::get()) at call time and do nothing / return the neutral value when the table is null or the
+// address is 0 (never a call into address 0).
 #pragma once
 #include "SafeRead.h"
+#include "K2Addr.h"
 #include <stdint.h>
 
 namespace gui2d {
 
-constexpr uintptr_t AddrBeginGui2D = 0x004792C0, AddrEndGui2D = 0x004793F0;
-constexpr uintptr_t AddrPushClipRect = 0x00479460, AddrPopClipRect = 0x004799C0;
-constexpr uintptr_t AddrFlushGuiBatch = 0x0047EA60, AddrFlushArg = 0x009F5F60;
-constexpr uintptr_t AddrHudScale = 0x00479AB0;
-constexpr uintptr_t AddrClipDepth = 0x00A309C0;
-constexpr uintptr_t AddrClipNoFillColor = 0x00A1BA3C;     // what the engine's own icon row passes: clip only, no fill
-constexpr uintptr_t AddrPanelRect = 0x00410020;
-constexpr int ImageVtDraw = 6;
+// Steam column (values live in K2Addr.h kSteam).
+constexpr uintptr_t AddrBeginGui2D = kSteam.BeginGui2D, AddrEndGui2D = kSteam.EndGui2D;
+constexpr uintptr_t AddrPushClipRect = kSteam.PushClipRect, AddrPopClipRect = kSteam.PopClipRect;
+constexpr uintptr_t AddrFlushGuiBatch = kSteam.FlushGuiBatch, AddrFlushArg = kSteam.FlushArg;
+constexpr uintptr_t AddrHudScale = kSteam.HudScale;
+constexpr uintptr_t AddrClipDepth = kSteam.ClipDepth;
+constexpr uintptr_t AddrClipNoFillColor = kSteam.ClipNoFillColor;     // what the engine's own icon row passes: clip only, no fill
+constexpr uintptr_t AddrPanelRect = kSteam.PanelRect;
+constexpr int ImageVtDraw = kSteam.ImageVt_Draw;
 
 using DrawFn = void(__thiscall*)(void*, int, int, int, int, int, int, const float*, float);
 
 struct Engine {
-    void (*begin)() = [] { reinterpret_cast<void(__cdecl*)()>(AddrBeginGui2D)(); };
-    void (*end)() = [] { reinterpret_cast<void(__cdecl*)()>(AddrEndGui2D)(); };
-    int (*push)(int, int, int, int, const void*, int, float) = [](int x, int y, int w, int h, const void* c, int f, float a) {
-        return reinterpret_cast<int(__cdecl*)(int, int, int, int, const void*, int, float)>(AddrPushClipRect)(x, y, w, h, c, f, a);
+    void (*begin)() = [] {
+        auto f = k2addr::fnptr<void(__cdecl*)()>(&K2AddrTable::BeginGui2D);
+        if (f) f();
     };
-    void (*pop)() = [] { reinterpret_cast<void(__cdecl*)()>(AddrPopClipRect)(); };
-    void (*flush)(float) = [](float a) { reinterpret_cast<void(__cdecl*)(float)>(AddrFlushGuiBatch)(a); };
-    float (*hudScale)() = [] { return reinterpret_cast<float(__cdecl*)()>(AddrHudScale)(); };
+    void (*end)() = [] {
+        auto f = k2addr::fnptr<void(__cdecl*)()>(&K2AddrTable::EndGui2D);
+        if (f) f();
+    };
+    int (*push)(int, int, int, int, const void*, int, float) = [](int x, int y, int w, int h, const void* c, int fl, float a) {
+        auto f = k2addr::fnptr<int(__cdecl*)(int, int, int, int, const void*, int, float)>(&K2AddrTable::PushClipRect);
+        return f ? f(x, y, w, h, c, fl, a) : 0;
+    };
+    void (*pop)() = [] {
+        auto f = k2addr::fnptr<void(__cdecl*)()>(&K2AddrTable::PopClipRect);
+        if (f) f();
+    };
+    void (*flush)(float) = [](float a) {
+        auto f = k2addr::fnptr<void(__cdecl*)(float)>(&K2AddrTable::FlushGuiBatch);
+        if (f) f(a);
+    };
+    float (*hudScale)() = [] {
+        auto f = k2addr::fnptr<float(__cdecl*)()>(&K2AddrTable::HudScale);
+        return f ? f() : 1.0f;
+    };
     void (*panelRect)(uintptr_t, int*) = [](uintptr_t panel, int* r) {
-        reinterpret_cast<void(__thiscall*)(void*, int*)>(AddrPanelRect)(reinterpret_cast<void*>(panel), r);
+        auto f = k2addr::fnptr<void(__thiscall*)(void*, int*)>(&K2AddrTable::PanelRect);
+        if (f) f(reinterpret_cast<void*>(panel), r);
     };
     void (*draw)(void*, int, int, int, int, int, int, const float*, float) =
         [](void* img, int x, int y, int w, int h, int a5, int rot, const float* rgb, float alpha) {
-            reinterpret_cast<DrawFn>((*reinterpret_cast<void***>(img))[ImageVtDraw])(img, x, y, w, h, a5, rot, rgb, alpha);
+            int slot = k2addr::off(&K2AddrTable::ImageVt_Draw);
+            if (!img || slot <= 0) return;
+            reinterpret_cast<DrawFn>((*reinterpret_cast<void***>(img))[slot])(img, x, y, w, h, a5, rot, rgb, alpha);
         };
-    uintptr_t flushArgAddr = AddrFlushArg, clipDepthAddr = AddrClipDepth;
-    const void* clipNoFill = reinterpret_cast<const void*>(AddrClipNoFillColor);
+    // UseTable / nullptr = the table's FlushArg / ClipDepth / ClipNoFillColor; a host test sets arena addresses (0 = none).
+    uintptr_t flushArgAddr = k2addr::UseTable, clipDepthAddr = k2addr::UseTable;
+    const void* clipNoFill = nullptr;
 };
 inline Engine g_g2d;
 
 template <typename T> inline bool rd(uintptr_t base, int off, T* out) { return saferead::readAt(1, base, off, out); }
 
-inline const void* clipNoFill() { return g_g2d.clipNoFill; }
-inline float flushArg() { float a = 0.0f; rd(g_g2d.flushArgAddr, 0, &a); return a; }
+// The no-fill clip colour; nullptr when this exe's address is unknown (pushClip then refuses).
+inline const void* clipNoFill() {
+    return g_g2d.clipNoFill ? g_g2d.clipNoFill : reinterpret_cast<const void*>(k2addr::addr(&K2AddrTable::ClipNoFillColor));
+}
+inline float flushArg() {
+    uintptr_t a = g_g2d.flushArgAddr != k2addr::UseTable ? g_g2d.flushArgAddr : k2addr::addr(&K2AddrTable::FlushArg);
+    float v = 0.0f;
+    if (a) rd(a, 0, &v);
+    return v;
+}
 inline void flush(float arg) { g_g2d.flush(arg); }
 // Clip + new origin at (x, y); nonzero = pushed (caller must popClip). color = clipNoFill() for a pure clip.
 inline int pushClip(int x, int y, int w, int h, const void* color = nullptr, float alpha = 1.0f) {
-    return g_g2d.push(x, y, w, h, color ? color : g_g2d.clipNoFill, 0, alpha);
+    const void* c = color ? color : clipNoFill();
+    if (!c) return 0;   // no-fill colour address unknown for this exe: nothing pushed, so the caller never pops
+    return g_g2d.push(x, y, w, h, c, 0, alpha);
 }
 inline void popClip() { g_g2d.pop(); }
 // A filled rect (PushClipRect with a colour, then pop at once): 1 px lines, seams.
@@ -68,7 +103,12 @@ inline void drawImage(void* img, int x, int y, int w, int h, int rotBits, const 
 }
 // HUD scale, 1.0 when the engine returns nonsense.
 inline float hudScale() { float s = g_g2d.hudScale(); return (s > 0.1f && s < 10.0f) ? s : 1.0f; }
-inline int clipDepthRaw() { int cd = 0; rd(g_g2d.clipDepthAddr, 0, &cd); return cd; }
+inline int clipDepthRaw() {
+    uintptr_t a = g_g2d.clipDepthAddr != k2addr::UseTable ? g_g2d.clipDepthAddr : k2addr::addr(&K2AddrTable::ClipDepth);
+    int cd = 0;
+    if (a) rd(a, 0, &cd);
+    return cd;
+}
 // Menu frame: the clip stack index is not 0 (0xFFFF after a menu closed its batch). Drawing needs a Gui2DScope there.
 inline bool inMenuFrame() { return (clipDepthRaw() & 0xffff) != 0; }
 // Panel rect via the engine; false when it looks wrong (0 or > 8192 wide/high).

@@ -1,5 +1,9 @@
 // GameAddr.h -- one canonical name per engine address shared across KOTOR2 mods (header-only, no dependencies).
-// Steam Aspyr build only; move to GameAPI/GameVersion lookups when the PR3 DB rows exist.
+// Every constant below is the STEAM Aspyr column (swkotor2.exe 6A522E..., also what the 4gb-patched live file reports).
+// They stay compile-time constants so existing mods keep building, but code that must also run on GOG Aspyr reads the same
+// names from the per-version table instead: K2Addr.h defines struct K2AddrTable (one field per name here, same spelling, plus the
+// Effects.h / Gui2D.h / GuiKit.h addresses and struct offsets), kSteam (built from these constants), kGog (unfilled, all zero)
+// and k2addr::get() (selected at runtime from KOTOR_VERSION_SHA; zero field = unknown = do nothing).
 // See patch_manager_mods/19b_cross_patch_sharing_survey.md section D.
 #pragma once
 #include <stdint.h>

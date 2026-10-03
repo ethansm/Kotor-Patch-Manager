@@ -14,14 +14,11 @@
 # GENERATED FILE: `python3 scripts/check_raw_addresses.py --write-baseline` rewrites everything below this line.
 # --write-baseline is run only by a human or Opus after reviewing the new addresses, never by automation.
 
-[files."patch_manager_mods/_shared_src/Effects.h"]
-addresses = ["0x0051AD20"]
-
-[files."patch_manager_mods/_shared_src/Gui2D.h"]
-addresses = ["0x00410020", "0x004792C0", "0x004793F0", "0x00479460", "0x004799C0", "0x00479AB0", "0x0047EA60", "0x009F5F60", "0x00A1BA3C", "0x00A309C0"]
-
 [files."patch_manager_mods/_shared_src/GuiKit.h"]
 addresses = ["0x00418D20"]
+
+[files."patch_manager_mods/_shared_src/K2Addr.h"]
+addresses = ["0x00410020", "0x004792C0", "0x004793F0", "0x00479460", "0x004799C0", "0x00479AB0", "0x0047EA60", "0x0051AD20", "0x009F5F60", "0x00A1BA3C", "0x00A309C0"]
 
 [files."patch_manager_mods/activation_fix_src/ActivationFix.cpp"]
 addresses = ["0x0040D69E", "0x0098646C", "0x00A1B4E0", "0x00A1B76C"]

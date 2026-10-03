@@ -10,10 +10,14 @@
 //   Draw order = panel list index (append = on top). Label: +0x60 border (vtable 0x9875BC; +0x24 alpha, +0x28 tint rgb,
 //   +0x74 fill image*), +0xD8 text (vtable 0x9876B4; +0x14 renderer, +0x18 string sub-object, colour at +0x18+0x2C).
 //   DLL-set text draws left-aligned unless setAlign is called.
+// Per-version addresses/offsets: the Addr* / vtable / offset constants below are the Steam column (K2Addr.h kSteam); every helper reads
+// the table selected for the running exe (k2addr::get()) and does nothing / returns false when the table is null or a field it
+// needs is 0 (never a call into address 0, never a guessed offset). Engine::rebind() re-reads the table for the engine-call fields.
 // Host tests: define GUIKIT_HOST before including to drop the Win32 platform defaults; every engine call and platform
 // query is a function pointer in guikit::Engine so a test substitutes fakes (see research/companion_levelup/tools/parity/guikit_test.cpp).
 #pragma once
 #include "SafeRead.h"
+#include "K2Addr.h"
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -21,20 +25,20 @@
 namespace guikit {
 
 // ---- engine addresses / offsets (Steam Aspyr) ----
-constexpr uintptr_t AddrNew = 0x00919723;            // cdecl(size)                                   Mod3 FnNew 52
-constexpr uintptr_t AddrLabelCtor = 0x00419740;      // CSWGuiLabel ctor, ECX=this, no stack args     Mod3 FnLabelCtor 49
-constexpr uintptr_t AddrInitControl = 0x0040F620;    // thiscall(panel, ctl, CExoString*, addToList, scale) RET 16   Mod3 50
-constexpr uintptr_t AddrStopLoad = 0x0040F5A0;       // StopLoadFromLayout (createLabelFromTemplate must run BEFORE this)
-constexpr uintptr_t AddrExoCtor = 0x00733570, AddrExoDtor = 0x00733780;   // Mod3 51
-constexpr uintptr_t AddrTextSet = 0x00416E30;        // thiscall(label+0xF0, CExoString*)             Mod3 FnTextSet 77
-constexpr uintptr_t AddrSetFont = 0x00416DE0;        // thiscall(label+0xF0, char resref[16]) RET 4   Mod3 970
-constexpr uintptr_t AddrSetAlign = 0x00416FA0;       // thiscall(label+0xF0, unsigned) RET 4          Mod3 971
-constexpr uintptr_t AddrTextColor = 0x00417140;      // thiscall(label+0xF0, float rgb[3]) RET 4      Mod14 FnTextColor 47
-constexpr uintptr_t AddrPtrListAdd = 0x0083EA60;     // CExoArrayList<void*>::Add thiscall(list, v) RET 4   Mod3 969
-constexpr uintptr_t AddrLoadImage = 0x0047EB60;      // cdecl(resref buf) -> image*                   Mod3 53 / Mod14 46
-constexpr uintptr_t AddrGuiSoundMgr = 0x00A1B49C, AddrPlayGuiSound = 0x004122A0;   // thiscall(mgr, char idx), idx 1 = hover   Mod3 78
-constexpr uintptr_t AddrScreenW = 0x009F42A4, AddrScreenH = 0x009F42A8;           // engine framebuffer size   Mod14 syncScreen 218
-constexpr uint32_t LabelVtable = 0x009878BC, BorderVtable = 0x009875BC, TextVtable = 0x009876B4;
+constexpr uintptr_t AddrNew = gameaddr::New;                  // cdecl(size)                                   Mod3 FnNew 52
+constexpr uintptr_t AddrLabelCtor = gameaddr::LabelCtor;      // CSWGuiLabel ctor, ECX=this, no stack args     Mod3 FnLabelCtor 49
+constexpr uintptr_t AddrInitControl = gameaddr::InitControl;  // thiscall(panel, ctl, CExoString*, addToList, scale) RET 16   Mod3 50
+constexpr uintptr_t AddrStopLoad = gameaddr::StopLoadFromLayout;   // StopLoadFromLayout (createLabelFromTemplate must run BEFORE this)
+constexpr uintptr_t AddrExoCtor = gameaddr::ExoCtor, AddrExoDtor = gameaddr::ExoDtor;   // Mod3 51
+constexpr uintptr_t AddrTextSet = gameaddr::TextSet;          // thiscall(label+0xF0, CExoString*)             Mod3 FnTextSet 77
+constexpr uintptr_t AddrSetFont = gameaddr::SetFont;          // thiscall(label+0xF0, char resref[16]) RET 4   Mod3 970
+constexpr uintptr_t AddrSetAlign = gameaddr::SetAlign;        // thiscall(label+0xF0, unsigned) RET 4          Mod3 971
+constexpr uintptr_t AddrTextColor = gameaddr::TextColor;      // thiscall(label+0xF0, float rgb[3]) RET 4      Mod14 FnTextColor 47
+constexpr uintptr_t AddrPtrListAdd = gameaddr::PtrListAdd;    // CExoArrayList<void*>::Add thiscall(list, v) RET 4   Mod3 969
+constexpr uintptr_t AddrLoadImage = gameaddr::GuiLoadImage;   // cdecl(resref buf) -> image*                   Mod3 53 / Mod14 46
+constexpr uintptr_t AddrGuiSoundMgr = gameaddr::GuiSoundMgr, AddrPlayGuiSound = gameaddr::PlayGuiSound;   // thiscall(mgr, char idx), idx 1 = hover   Mod3 78
+constexpr uintptr_t AddrScreenW = gameaddr::ScreenW, AddrScreenH = gameaddr::ScreenH;           // engine framebuffer size   Mod14 syncScreen 218
+constexpr uint32_t LabelVtable = gameaddr::LabelVtable, BorderVtable = gameaddr::BorderVtable, TextVtable = gameaddr::TextVtable;
 constexpr int LabelSize = 0x148;
 constexpr int Ctl_Flags = 0x48, Ctl_Id = 0x54, Ctl_X = 4, Ctl_Y = 8, Ctl_W = 0xC, Ctl_H = 0x10;
 constexpr int Label_Border = 0x60, Label_Text = 0xD8, Text_Renderer = 0x14, Text_StringSub = 0x18, Text_Color = 0x2C;
@@ -60,29 +64,52 @@ using LoadImageFn = void* (__cdecl*)(const char*);
 using PlaySoundFn = void(__thiscall*)(void*, char);
 
 struct Engine {
-    NewFn alloc = reinterpret_cast<NewFn>(AddrNew);
-    CtorFn labelCtor = reinterpret_cast<CtorFn>(AddrLabelCtor);
-    InitCtlFn initControl = reinterpret_cast<InitCtlFn>(AddrInitControl);
-    ExoCtorFn exoCtor = reinterpret_cast<ExoCtorFn>(AddrExoCtor);
-    ExoDtorFn exoDtor = reinterpret_cast<ExoDtorFn>(AddrExoDtor);
-    TextSetFn textSet = reinterpret_cast<TextSetFn>(AddrTextSet);
-    SetResFn setFont = reinterpret_cast<SetResFn>(AddrSetFont);
-    SetUIntFn setAlign = reinterpret_cast<SetUIntFn>(AddrSetAlign);
-    SetColorFn textColor = reinterpret_cast<SetColorFn>(AddrTextColor);
-    ListAddFn listAdd = reinterpret_cast<ListAddFn>(AddrPtrListAdd);
-    LoadImageFn loadImage = reinterpret_cast<LoadImageFn>(AddrLoadImage);
-    PlaySoundFn playSound = reinterpret_cast<PlaySoundFn>(AddrPlayGuiSound);
+    // Engine calls: the K2Addr.h table's function for this exe, nullptr when the table is null or the address is 0 (every helper
+    // already refuses on a null pointer). Bound when g_gk is constructed; rebind() re-reads the table.
+    NewFn alloc = nullptr;
+    CtorFn labelCtor = nullptr;
+    InitCtlFn initControl = nullptr;
+    ExoCtorFn exoCtor = nullptr;
+    ExoDtorFn exoDtor = nullptr;
+    TextSetFn textSet = nullptr;
+    SetResFn setFont = nullptr;
+    SetUIntFn setAlign = nullptr;
+    SetColorFn textColor = nullptr;
+    ListAddFn listAdd = nullptr;
+    LoadImageFn loadImage = nullptr;
+    PlaySoundFn playSound = nullptr;
     // vtable slot 1 = SetRect. `fn` is the slot's value read from engine memory (a host test ignores it and records the call).
     void (*callSetRect)(uint32_t fn, uintptr_t ctl, int* xywh) = [](uint32_t fn, uintptr_t ctl, int* r) {
         reinterpret_cast<void(__thiscall*)(void*, int*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(ctl), r);
     };
-    uintptr_t guiSoundMgrAddr = AddrGuiSoundMgr, screenWAddr = AddrScreenW, screenHAddr = AddrScreenH;
+    uintptr_t guiSoundMgrAddr = 0, screenWAddr = 0, screenHAddr = 0;   // 0 = unknown for this exe (helpers skip the read)
     // Platform queries (defaults below under !GUIKIT_HOST). Client size is the game window's client rect in OS pixels.
     bool (*cursorClient)(int* cx, int* cy, int* cw, int* ch) = nullptr;   // cursor in game-window client px + client size; false = none
     bool (*gameForeground)() = nullptr;                                   // game window is the foreground window of this process
     bool (*lbuttonDown)() = nullptr;                                      // GetAsyncKeyState(VK_LBUTTON) & 0x8000
+
+    Engine() { rebind(); }
+    // Re-point the engine-call and global-address fields at the current K2Addr.h table (also resets test fakes in those fields).
+    void rebind() {
+        using k2addr::fnptr; using k2addr::addr;
+        alloc = fnptr<NewFn>(&K2AddrTable::New);
+        labelCtor = fnptr<CtorFn>(&K2AddrTable::LabelCtor);
+        initControl = fnptr<InitCtlFn>(&K2AddrTable::InitControl);
+        exoCtor = fnptr<ExoCtorFn>(&K2AddrTable::ExoCtor);
+        exoDtor = fnptr<ExoDtorFn>(&K2AddrTable::ExoDtor);
+        textSet = fnptr<TextSetFn>(&K2AddrTable::TextSet);
+        setFont = fnptr<SetResFn>(&K2AddrTable::SetFont);
+        setAlign = fnptr<SetUIntFn>(&K2AddrTable::SetAlign);
+        textColor = fnptr<SetColorFn>(&K2AddrTable::TextColor);
+        listAdd = fnptr<ListAddFn>(&K2AddrTable::PtrListAdd);
+        loadImage = fnptr<LoadImageFn>(&K2AddrTable::GuiLoadImage);
+        playSound = fnptr<PlaySoundFn>(&K2AddrTable::PlayGuiSound);
+        guiSoundMgrAddr = addr(&K2AddrTable::GuiSoundMgr);
+        screenWAddr = addr(&K2AddrTable::ScreenW);
+        screenHAddr = addr(&K2AddrTable::ScreenH);
+    }
 };
-inline Engine g_gk;   // substitutable by tests; defaults are the real Steam values
+inline Engine g_gk;   // substitutable by tests; defaults come from the K2Addr.h table for the running exe (Steam when KOTOR_VERSION_SHA is unset)
 
 namespace detail {
 constexpr unsigned SiteBase = 0x6B00;
@@ -94,14 +121,22 @@ template <typename T> inline bool wr(uintptr_t base, int off, T v) {
     T cur; if (!rd<T>(base, off, &cur)) return false;
     *reinterpret_cast<T*>(base + off) = v; return true;
 }
+// Table fields for this exe (0 = unknown): struct offsets and vtable addresses.
+inline int off(int K2AddrTable::* m) { return k2addr::off(m); }
+inline uint32_t vtab(uintptr_t K2AddrTable::* m) { return static_cast<uint32_t>(k2addr::addr(m)); }
 inline bool borderOk(uintptr_t ctl) {   // Mod3 setFill/setAlpha border-vtable gate (ForcePowerHotbar.cpp 446-465)
-    uint32_t vt = 0; return rd32(ctl + Label_Border, 0, &vt) && vt == BorderVtable;
+    uint32_t vt = 0, want = vtab(&K2AddrTable::BorderVtable); int ob = off(&K2AddrTable::Label_Border);
+    return want && ob && rd32(ctl + ob, 0, &vt) && vt == want;
 }
 inline bool textObjOk(uintptr_t ctl) {   // Mod14 textObjOk 315
-    uint32_t vt = 0, rend = 0; uintptr_t tx = ctl + Label_Text;
-    return rd32(tx, 0, &vt) && vt == TextVtable && rd32(tx, Text_Renderer, &rend) && rend;
+    uint32_t vt = 0, rend = 0, want = vtab(&K2AddrTable::TextVtable);
+    int ot = off(&K2AddrTable::Label_Text), orr = off(&K2AddrTable::Text_Renderer);
+    if (!want || !ot || !orr) return false;
+    uintptr_t tx = ctl + ot;
+    return rd32(tx, 0, &vt) && vt == want && rd32(tx, orr, &rend) && rend;
 }
-inline void* textSub(uintptr_t ctl) { return reinterpret_cast<void*>(ctl + Label_Text + Text_StringSub); }   // = label+0xF0
+// label+0xF0 (only meaningful after textObjOk passed, which proves both offsets are known)
+inline void* textSub(uintptr_t ctl) { return reinterpret_cast<void*>(ctl + off(&K2AddrTable::Label_Text) + off(&K2AddrTable::Text_StringSub)); }
 }
 
 // ---- creation ----
@@ -114,27 +149,31 @@ inline uintptr_t createLabelFromTemplate(uintptr_t panel, const char* templateTa
     using namespace detail;
     if (why) *why = CF_None;
     if (badVtable) *badVtable = 0;
-    if (!panel || !templateTag || !g_gk.alloc || !g_gk.labelCtor || !g_gk.initControl || !g_gk.exoCtor || !g_gk.exoDtor) { if (why) *why = CF_Alloc; return 0; }
-    unsigned char* mem = static_cast<unsigned char*>(g_gk.alloc(LabelSize));
+    const int labelSize = off(&K2AddrTable::LabelSize), oId = off(&K2AddrTable::Ctl_Id), oFlags = off(&K2AddrTable::Ctl_Flags);
+    const int oCount = off(&K2AddrTable::Panel_CtlCount);
+    const uint32_t labelVt = vtab(&K2AddrTable::LabelVtable);
+    if (!panel || !templateTag || !g_gk.alloc || !g_gk.labelCtor || !g_gk.initControl || !g_gk.exoCtor || !g_gk.exoDtor ||
+        labelSize <= 0 || !oId || !oFlags || !oCount || !labelVt) { if (why) *why = CF_Alloc; return 0; }
+    unsigned char* mem = static_cast<unsigned char*>(g_gk.alloc(labelSize));
     if (!mem) { if (why) *why = CF_Alloc; return 0; }
-    memset(mem, 0, LabelSize);
+    memset(mem, 0, labelSize);
     g_gk.labelCtor(mem);
     uintptr_t c = reinterpret_cast<uintptr_t>(mem);
     uint32_t vt = 0;
-    if (!rd32(c, 0, &vt) || vt != LabelVtable) { if (why) *why = CF_Vtable; if (badVtable) *badVtable = vt; return 0; }
-    if (!wr<int>(c, Ctl_Id, IdSentinel)) { if (why) *why = CF_Vtable; return 0; }
+    if (!rd32(c, 0, &vt) || vt != labelVt) { if (why) *why = CF_Vtable; if (badVtable) *badVtable = vt; return 0; }
+    if (!wr<int>(c, oId, IdSentinel)) { if (why) *why = CF_Vtable; return 0; }
     char exo[16] = {0};
     g_gk.exoCtor(exo, templateTag);
     g_gk.initControl(reinterpret_cast<void*>(panel), mem, exo, 0, 1);   // addToList = 0, scale = 1 (Mod 3 1031)
     g_gk.exoDtor(exo);
     int id = 0;
-    if (!rdInt(c, Ctl_Id, &id) || id == IdSentinel) { if (why) *why = CF_Template; return 0; }   // template not in the layout
+    if (!rdInt(c, oId, &id) || id == IdSentinel) { if (why) *why = CF_Template; return 0; }   // template not in the layout
     int index = 0;
-    if (!rdInt(panel, Panel_CtlCount, &index)) { if (why) *why = CF_Count; return 0; }
-    wr<int>(c, Ctl_Id, index);                                          // provisional; appendToPanel re-stamps it
+    if (!rdInt(panel, oCount, &index)) { if (why) *why = CF_Count; return 0; }
+    wr<int>(c, oId, index);                                             // provisional; appendToPanel re-stamps it
     int fl = 0;
-    if (!rdInt(c, Ctl_Flags, &fl)) { if (why) *why = CF_Flags; return 0; }
-    wr<int>(c, Ctl_Flags, (fl & ~FlagVisible) | FlagClickThrough);     // hidden + click-through until the caller shows it (Mod 3 1034)
+    if (!rdInt(c, oFlags, &fl)) { if (why) *why = CF_Flags; return 0; }
+    wr<int>(c, oFlags, (fl & ~FlagVisible) | FlagClickThrough);     // hidden + click-through until the caller shows it (Mod 3 1034)
     return c;
 }
 
@@ -142,14 +181,15 @@ inline uintptr_t createLabelFromTemplate(uintptr_t panel, const char* templateTa
 // index. Verifies count+1 and array[index]==ctl. Draw order = append order.
 inline bool appendToPanel(uintptr_t panel, uintptr_t ctl) {
     using namespace detail;
-    if (!panel || !ctl || !g_gk.listAdd) return false;
+    const int oCount = off(&K2AddrTable::Panel_CtlCount), oArr = off(&K2AddrTable::Panel_CtlArray), oId = off(&K2AddrTable::Ctl_Id);
+    if (!panel || !ctl || !g_gk.listAdd || !oCount || !oArr || !oId) return false;
     int index = 0;
-    if (!rdInt(panel, Panel_CtlCount, &index) || index < 0) return false;
-    if (!wr<int>(ctl, Ctl_Id, index)) return false;
-    g_gk.listAdd(reinterpret_cast<void*>(panel + Panel_CtlArray), reinterpret_cast<void*>(ctl));
+    if (!rdInt(panel, oCount, &index) || index < 0) return false;
+    if (!wr<int>(ctl, oId, index)) return false;
+    g_gk.listAdd(reinterpret_cast<void*>(panel + oArr), reinterpret_cast<void*>(ctl));
     int cnt = 0; uint32_t arr = 0, slot = 0;
-    if (!rdInt(panel, Panel_CtlCount, &cnt) || cnt != index + 1) return false;
-    if (!rd32(panel, Panel_CtlArray, &arr) || !rd32(arr, index * 4, &slot)) return false;
+    if (!rdInt(panel, oCount, &cnt) || cnt != index + 1) return false;
+    if (!rd32(panel, oArr, &arr) || !rd32(arr, index * 4, &slot)) return false;
     return slot == static_cast<uint32_t>(ctl);
 }
 
@@ -157,8 +197,9 @@ inline bool appendToPanel(uintptr_t panel, uintptr_t ctl) {
 inline bool getExtent(uintptr_t ctl, int* x, int* y, int* w, int* h) {   // engine px (Mod 3 wHit 729-733, Mod 14 ctlRect 301)
     using namespace detail;
     int e[4];
+    const int o[4] = { off(&K2AddrTable::Ctl_X), off(&K2AddrTable::Ctl_Y), off(&K2AddrTable::Ctl_W), off(&K2AddrTable::Ctl_H) };
     if (!ctl) return false;
-    for (int k = 0; k < 4; ++k) if (!rdInt(ctl, Ctl_X + 4 * k, &e[k])) return false;
+    for (int k = 0; k < 4; ++k) if (!o[k] || !rdInt(ctl, o[k], &e[k])) return false;
     if (x) *x = e[0];
     if (y) *y = e[1];
     if (w) *w = e[2];
@@ -170,7 +211,8 @@ inline bool getExtent(uintptr_t ctl, int* x, int* y, int* w, int* h) {   // engi
 inline bool setRect(uintptr_t ctl, int x, int y, int w, int h) {
     using namespace detail;
     uint32_t vt = 0, fn = 0;
-    if (!ctl || !g_gk.callSetRect || !rd32(ctl, 0, &vt) || !vt || !rd32(vt, 4, &fn) || !fn) return false;
+    const int oSlot = off(&K2AddrTable::Ctl_VtSetRect);
+    if (!ctl || !g_gk.callSetRect || !oSlot || !rd32(ctl, 0, &vt) || !vt || !rd32(vt, oSlot, &fn) || !fn) return false;
     int r[4] = { x, y, w, h };
     g_gk.callSetRect(fn, ctl, r);
     return true;
@@ -178,19 +220,24 @@ inline bool setRect(uintptr_t ctl, int x, int y, int w, int h) {
 
 inline bool setClickable(uintptr_t ctl, bool clickable) {   // clickable = bit5 CLEAR (clicks hit the control, not the world)
     using namespace detail;
-    int fl = 0; if (!ctl || !rdInt(ctl, Ctl_Flags, &fl)) return false;
+    const int oFlags = off(&K2AddrTable::Ctl_Flags);
+    int fl = 0; if (!ctl || !oFlags || !rdInt(ctl, oFlags, &fl)) return false;
     int nf = clickable ? (fl & ~FlagClickThrough) : (fl | FlagClickThrough);
-    return nf == fl ? true : wr<int>(ctl, Ctl_Flags, nf);
+    return nf == fl ? true : wr<int>(ctl, oFlags, nf);
 }
 
 // bit1 = visible. Shown -> 0x20 cleared (control swallows clicks so they never reach the world); hidden -> 0x20 set (Mod 3 setVisible 436-445).
 inline bool setVisible(uintptr_t ctl, bool vis) {
     using namespace detail;
-    int fl = 0; if (!ctl || !rdInt(ctl, Ctl_Flags, &fl)) return false;
+    const int oFlags = off(&K2AddrTable::Ctl_Flags);
+    int fl = 0; if (!ctl || !oFlags || !rdInt(ctl, oFlags, &fl)) return false;
     int nf = vis ? ((fl | FlagVisible) & ~FlagClickThrough) : ((fl & ~FlagVisible) | FlagClickThrough);
-    return nf == fl ? true : wr<int>(ctl, Ctl_Flags, nf);
+    return nf == fl ? true : wr<int>(ctl, oFlags, nf);
 }
-inline bool isVisible(uintptr_t ctl) { int fl = 0; return ctl && detail::rdInt(ctl, Ctl_Flags, &fl) && (fl & FlagVisible); }
+inline bool isVisible(uintptr_t ctl) {
+    int fl = 0, oFlags = detail::off(&K2AddrTable::Ctl_Flags);
+    return ctl && oFlags && detail::rdInt(ctl, oFlags, &fl) && (fl & FlagVisible);
+}
 
 // ---- text ----
 inline bool setText(uintptr_t ctl, const char* text) {   // Mod 3 text 0x416E30 w/ ECX = label+0xF0; Mod 14 setText 377 (textObjOk gate)
@@ -217,8 +264,9 @@ inline bool setAlign(uintptr_t ctl, unsigned align) {   // 9 = top-left, 17 = to
 }
 inline bool getTextColor(uintptr_t ctl, float* rgb) {   // readback gate (Mod 14 1140-1150): colour lives at label+0xF0+0x2C
     using namespace detail;
-    if (!ctl || !rgb || !textObjOk(ctl)) return false;
-    for (int k = 0; k < 3; ++k) if (!rd<float>(ctl + Label_Text + Text_StringSub + Text_Color, 4 * k, &rgb[k])) return false;
+    const int oc = off(&K2AddrTable::Text_Color);
+    if (!ctl || !rgb || !oc || !textObjOk(ctl)) return false;
+    for (int k = 0; k < 3; ++k) if (!rd<float>(reinterpret_cast<uintptr_t>(textSub(ctl)) + oc, 4 * k, &rgb[k])) return false;
     return true;
 }
 inline bool setTextColor(uintptr_t ctl, float r, float g, float b) {   // Mod 14 setTextColor 388 (0x417140). Gate callers with getTextColor.
@@ -253,25 +301,29 @@ inline void* imageFor(const char* resref, bool* loaded = nullptr, int* poolCount
 // Gate tint with getBorderTint first, as Mod 14 does.
 inline bool setFill(uintptr_t ctl, void* image, const float* tint = nullptr) {
     using namespace detail;
-    if (!ctl || !borderOk(ctl)) return false;
-    uintptr_t b = ctl + Label_Border;
-    if (!wr<uint32_t>(b, Border_Fill, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(image)))) return false;
-    if (tint) for (int k = 0; k < 3; ++k) if (!wr<float>(b, Border_Tint + 4 * k, tint[k])) return false;
+    const int oFill = off(&K2AddrTable::Border_Fill), oTint = off(&K2AddrTable::Border_Tint);
+    if (!ctl || !oFill || !oTint || !borderOk(ctl)) return false;
+    uintptr_t b = ctl + off(&K2AddrTable::Label_Border);
+    if (!wr<uint32_t>(b, oFill, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(image)))) return false;
+    if (tint) for (int k = 0; k < 3; ++k) if (!wr<float>(b, oTint + 4 * k, tint[k])) return false;
     return true;
 }
 inline bool getBorderTint(uintptr_t ctl, float* rgb) {
     using namespace detail;
-    if (!ctl || !rgb || !borderOk(ctl)) return false;
-    for (int k = 0; k < 3; ++k) if (!rd<float>(ctl + Label_Border, Border_Tint + 4 * k, &rgb[k])) return false;
+    const int oTint = off(&K2AddrTable::Border_Tint);
+    if (!ctl || !rgb || !oTint || !borderOk(ctl)) return false;
+    for (int k = 0; k < 3; ++k) if (!rd<float>(ctl + off(&K2AddrTable::Label_Border), oTint + 4 * k, &rgb[k])) return false;
     return true;
 }
 inline bool setAlpha(uintptr_t ctl, float a) {   // border+0x24 (Mod 3 setAlpha 457)
     using namespace detail;
-    return ctl && borderOk(ctl) && wr<float>(ctl + Label_Border, Border_Alpha, a);
+    const int oAlpha = off(&K2AddrTable::Border_Alpha);
+    return ctl && oAlpha && borderOk(ctl) && wr<float>(ctl + off(&K2AddrTable::Label_Border), oAlpha, a);
 }
 inline bool getAlpha(uintptr_t ctl, float* a) {
     using namespace detail;
-    return ctl && a && borderOk(ctl) && rd<float>(ctl + Label_Border, Border_Alpha, a);
+    const int oAlpha = off(&K2AddrTable::Border_Alpha);
+    return ctl && a && oAlpha && borderOk(ctl) && rd<float>(ctl + off(&K2AddrTable::Label_Border), oAlpha, a);
 }
 
 // ---- layout units -> engine pixels (Mod 14 ux/uy 368-375, scale from LBL_EFX_BACK 1130) ----
@@ -304,7 +356,8 @@ inline bool cursorEngine(int* x, int* y) {
     int cx, cy, cw, ch;
     if (!g_gk.cursorClient || !x || !y || !g_gk.cursorClient(&cx, &cy, &cw, &ch) || cw < 1 || ch < 1) return false;
     int sw = 0, sh = 0;
-    detail::rdInt(g_gk.screenWAddr, 0, &sw); detail::rdInt(g_gk.screenHAddr, 0, &sh);
+    if (g_gk.screenWAddr) detail::rdInt(g_gk.screenWAddr, 0, &sw);
+    if (g_gk.screenHAddr) detail::rdInt(g_gk.screenHAddr, 0, &sh);
     if (sw >= 320 && sw <= 16384 && sh >= 200 && sh <= 16384) { *x = static_cast<int>(static_cast<long long>(cx) * sw / cw); *y = static_cast<int>(static_cast<long long>(cy) * sh / ch); }
     else { *x = cx; *y = cy; }
     return true;
@@ -326,7 +379,7 @@ inline bool clickEdge(ClickEdge& e) {
 // The native quick-button mouse-enter sound (Mod 3 playHoverSound 608). False when the sound manager is null.
 inline bool playHoverSound() {
     uint32_t mgr = 0;
-    if (!g_gk.playSound || !detail::rd32(g_gk.guiSoundMgrAddr, 0, &mgr) || !mgr) return false;
+    if (!g_gk.playSound || !g_gk.guiSoundMgrAddr || !detail::rd32(g_gk.guiSoundMgrAddr, 0, &mgr) || !mgr) return false;
     g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgr)), 1);
     return true;
 }
