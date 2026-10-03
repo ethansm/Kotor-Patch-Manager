@@ -1,0 +1,7 @@
+[1000000] == LevelUpOverride 0.3.1 loaded; first hook call (build apply=1) ==
+[1000001] GUID load gfb7bdbf7 found=17/32 result=1 table=07a7a31c
+[1000010] WOULD HOLD tag=atton key=4 site=0x6B9790
+[1000011] BANKED tag=atton n=1 guid=fb7bdbf7 shown=1
+[1000012] BANKED tag=atton n=1 guid=fb7bdbf7 shown=1
+[1000013] ENGINE 0x73F450 bytes differ - leader instant disabled
+  APPLY ABORTED engine helper bytes differ - vanilla (no write)

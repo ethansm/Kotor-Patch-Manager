@@ -1,0 +1,62 @@
+[2878914486] == LevelUpOverride 0.3.0 loaded; first hook call (build apply=1) ==
+[2878914487] GUID new-server (cache cleared, was g00000000)
+[2878914487] CONFIG source=dev
+[2878914496] GUID load g00000000 found=0/32 result=1 table=07a7a31c
+[2878914497] PLAYTHROUGH loaded: 1 section(s)
+[2878915238] UI ctor panel=07dd5d58 created=19/19 fallbackScale=1
+[2878981166] UI page back0 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2878981166] UI page back1 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2878981167] UI page back2 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2878981167] UI create panel=07dd5d58 n=19 appended=19 textobj=7ffff
+[2878981168] CONFIG loaded mode=rewrite apply=1 verbose=1 table=levelup_paths.ini tags=
+[2878981176] TABLE loaded levelup_paths.ini: 82 presets, 2047 records;
+[2878988999] GUID load g11b3b802 found=32/32 result=1 table=07a7a31c
+[2878988999] CONFIG source=playthrough g11b3b802 tags=atton:atton__melee_dual_light_early/i1/h1
+[2878990046] UI ctor panel=07f2f118 created=19/19 fallbackScale=1
+[2879007893] UI page back0 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2879007893] UI page back1 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2879007894] UI page back2 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2879007894] UI create panel=07f2f118 n=19 appended=19 textobj=7ffff
+[2879007894] UI colour readback ok=1 base=(1.00,1.00,1.00)
+[2879014301] UI click cfg tag=atton row=-
+[2879014301] UI page open tag=atton start=atton__melee_dual_light_early (configured)
+[2879022115] GUID load g00000000 found=32/32 result=1 table=07a7a31c
+[2879022116] CONFIG source=dev
+[2879023022] UI ctor panel=07dd5d58 created=19/19 fallbackScale=1
+[2879029968] UI page back0 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2879029968] UI page back1 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2879029968] UI page back2 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2879029968] UI create panel=07dd5d58 n=19 appended=19 textobj=7ffff
+[2879029968] UI colour readback ok=1 base=(1.00,1.00,1.00)
+[2879032056] UI click cfg tag=atton row=-
+[2879032057] UI page open tag=atton start=atton__melee_dual_light_early (recommended)
+[2879052108] UI click apply tag=atton row=-
+[2879052108] GUID new gfb7bdbf7 live-write ok=1
+[2879052109] PLAYTHROUGH write gfb7bdbf7 tag=atton ok=1
+[2879052110] PLAYTHROUGH loaded: 2 section(s)
+[2879052110] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_light_early/i0/h1
+[2879052110] UI apply tag=atton preset=atton__melee_dual_light_early instant=0 hold=1 ok=1
+[2879053867] UI click cfg tag=atton row=-
+[2879053867] UI page open tag=atton start=atton__melee_dual_light_early (configured)
+[2879055954] UI click vanilla tag=atton row=-
+[2879055955] PLAYTHROUGH write gfb7bdbf7 tag=atton ok=1
+[2879055955] PLAYTHROUGH loaded: 2 section(s)
+[2879055955] UI vanilla tag=atton ok=1
+[2879057588] UI click cfg tag=atton row=-
+[2879057588] UI page open tag=atton start=atton__melee_dual_light_early (recommended)
+[2879059122] UI click apply tag=atton row=-
+[2879059123] PLAYTHROUGH write gfb7bdbf7 tag=atton ok=1
+[2879059124] PLAYTHROUGH loaded: 2 section(s)
+[2879059124] UI apply tag=atton preset=atton__melee_dual_light_early instant=0 hold=1 ok=1
+[2879280382] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879281993] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879283505] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879284959] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879286473] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879287998] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879289693] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879291213] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879292815] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879294491] GUID save gfb7bdbf7 table=07a7a31c ok=1
+[2879297347] GUID load gfb7bdbf7 found=32/32 result=1 table=07a7a31c
+[2879298209] UI ctor panel=07b183d0 created=19/19 fallbackScale=1

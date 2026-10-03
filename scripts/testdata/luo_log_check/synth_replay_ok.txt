@@ -1,0 +1,6 @@
+[1000002] CONFIG loaded mode=rewrite apply=1 verbose=0 table=levelup_paths.ini tags=
+[1000004] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_light_early/i0/h1/p0
+[1000100] #1 tid=5 flow=auto-button ret=00850062(DoAutoLevelup) stats=0a0b0c0d pending=0e0f0a0b addToList=1 tag=atton classes=2:3 total=3 key=4 xp=10000 unspent170=0
+  DECIDE tag=atton preset=atton__melee_dual_light_early key=4 decision=PATH rec=4
+  APPLIED tag=atton__melee_dual_light_early key=4 ok=1
+[1000200] #2 tid=5 flow=manual ret=00851111(LevelUp) stats=0a0b0c0d pending=0e0f0a0b addToList=1 tag=pc classes=1:3 total=3 key=4 xp=10000 unspent170=0

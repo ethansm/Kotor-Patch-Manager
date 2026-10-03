@@ -1,0 +1,24 @@
+[2880055105] == LevelUpOverride 0.3.0 loaded; first hook call (build apply=1) ==
+[2880055105] GUID new-server (cache cleared, was g00000000)
+[2880055106] CONFIG source=dev
+[2880055112] GUID load gfb7bdbf7 found=32/32 result=1 table=07a7a31c
+[2880055113] PLAYTHROUGH loaded: 2 section(s)
+[2880055113] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_light_early/i0/h1
+[2880055761] UI ctor panel=07d21930 created=19/19 fallbackScale=1
+[2880059277] CONFIG loaded mode=rewrite apply=1 verbose=1 table=levelup_paths.ini tags=
+[2880059280] TABLE loaded levelup_paths.ini: 82 presets, 2047 records;
+[2880166729] UI page back0 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2880166729] UI page back1 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2880166729] UI page back2 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2880166729] UI create panel=07d21930 n=19 appended=19 textobj=7ffff
+[2880166729] UI colour readback ok=1 base=(1.00,1.00,1.00)
+[2880477299] GUID new-server (cache cleared, was gfb7bdbf7)
+[2880477299] CONFIG source=dev
+[2880477307] GUID load gfb7bdbf7 found=32/32 result=1 table=15f51b4c
+[2880477307] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_light_early/i0/h1
+[2880477900] UI ctor panel=07c57dc0 created=19/19 fallbackScale=1
+[2880552110] UI page back0 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2880552110] UI page back1 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2880552111] UI page back2 fill=uibit_fill_2bt ok=1 alpha ok=1
+[2880552111] UI create panel=07c57dc0 n=19 appended=19 textobj=7ffff
+[2880552111] UI colour readback ok=1 base=(1.00,1.00,1.00)

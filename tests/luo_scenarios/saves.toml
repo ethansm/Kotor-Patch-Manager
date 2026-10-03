@@ -32,7 +32,9 @@
 #   dev          = { "preset.atton" = "...", "pause.atton" = "3" }   dev keys in levelup_override.ini
 #
 #   [scenario.<id>.expect]
-#   events       = log-event patterns that must appear (regex, matched against the raw log line after the timestamp)
+#   events       = log-event patterns that must appear (regex, matched against the log line after the `[tick] ` prefix and leading
+#                  spaces; anchor with ^ - e.g. 'HOLD tag=x' alone also matches 'UNHOLD'/'WOULD HOLD'; APPLIED prints the PRESET id;
+#                  the PC logs as tag=?)
 #   absent       = patterns that must NOT appear
 #   decisions    = M3-only: expected decision strings per action, e.g. { "atton.canLevelUp" = "HOLD" }
 #
@@ -55,8 +57,8 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S1_atton_hold_default.expect]
-events = ['HOLD .*atton', 'BANKED']
-absent = ['APPLIED .*atton', 'APPLY ABORTED']
+events = ['^HOLD tag=atton ', '^BANKED tag=atton ']
+absent = ['^APPLIED tag=atton__', 'APPLY ABORTED']
 
 [scenario.S2_atton_pause3_many]
 title = "Atton Scoundrel 3 with XP for level 15, Pause at level 3 -> HOLD every level, BANKED text"
@@ -73,8 +75,8 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
 [scenario.S2_atton_pause3_many.expect]
-events = ['HOLD .*atton', 'BANKED']
-absent = ['APPLIED .*atton']
+events = ['^HOLD tag=atton ', '^BANKED tag=atton ']
+absent = ['^APPLIED tag=atton__']
 
 [scenario.S3_atton_converted_early]
 title = "Atton Scoundrel 3 + JediSentinel 1, XP for level 8: re-base onto the Jedi records, no HOLD"
@@ -91,8 +93,8 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S3_atton_converted_early.expect]
-events = ['APPLIED .*atton']
-absent = ['HOLD .*atton']
+events = ['^APPLIED tag=atton__']
+absent = ['^HOLD tag=atton ']
 
 [scenario.S4_atton_cap]
 title = "Atton at level 30 / max XP: no level-up, status text does not crash"
@@ -109,7 +111,7 @@ in_party = true
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S4_atton_cap.expect]
-absent = ['APPLY ABORTED', 'HOLD .*atton']
+absent = ['APPLY ABORTED', '^HOLD tag=atton ']
 
 [scenario.S5_guid_partial]
 title = "Only 16 of 32 LUO_G globals present: load treats the save as having no GUID (logged)"
@@ -121,7 +123,7 @@ guid = "partial:16"
 [scenario.S5_guid_partial.config]
 playthrough_guid = "none"
 [scenario.S5_guid_partial.expect]
-events = ['GUID load g00000000']
+events = ['^GUID load g[0-9a-f]{8} found=16/32']
 
 [scenario.S6_guid_orphan]
 title = "Valid GUID with no ini section: companions unconfigured (vanilla)"
@@ -133,7 +135,7 @@ guid = "g5eed0006"
 [scenario.S6_guid_orphan.config]
 playthrough_guid = "none"
 [scenario.S6_guid_orphan.expect]
-events = ['GUID load g5eed0006']
+events = ['^GUID load g5eed0006 found=32/32']
 absent = ['APPLIED']
 
 [scenario.S7_guid_cleared]
@@ -146,8 +148,7 @@ guid = "none"
 [scenario.S7_guid_cleared.config]
 playthrough_guid = "none"
 [scenario.S7_guid_cleared.expect]
-events = ['GUID load g00000000']
-absent = ['GUID save g00000000 ok=1']
+events = ['^GUID load g00000000 found=0/32']
 
 [scenario.S8_kreia_levelable]
 title = "Kreia in the party with XP for a level: options page row has no Jedi-conversion row"
@@ -185,7 +186,7 @@ xp = 105000
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1" }
 [scenario.S10_pc_led_levelable.expect]
-absent = ['APPLIED .*\bpc\b', 'DECIDE .*\bpc\b']
+absent = ['DECIDE tag=\? ', 'INSTANT(-LEADER)? tag=\? ']
 
 [scenario.S11_multi_levelable]
 title = "Three companions with banked XP at once: per-companion status/banked text"
@@ -209,4 +210,4 @@ xp = 105000
 playthrough_guid = "save"
 companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" }
 [scenario.S11_multi_levelable.expect]
-events = ['HOLD .*atton']
+events = ['^HOLD tag=atton ']
