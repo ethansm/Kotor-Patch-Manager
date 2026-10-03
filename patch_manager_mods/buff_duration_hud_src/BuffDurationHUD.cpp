@@ -897,9 +897,11 @@ void DrawMenuOverlay(int slotPtr, int callerEbp, float scale) {
               if (readVitals(comp[k], &hp, &hpMax, &fp, &fpMax)) {
                   float sf = (r[3] + 4) / 96.0f;                       // bars about as tall as the portrait (visible art = 97% of the draw height)
                   int bw = int(47 * sf + 0.5f), bh = int(96 * sf + 0.5f), by = r[1] - 2;
-                  int vx = r[0] - int(40 * sf + 0.5f), fx = r[0] + int(77 * sf + 0.5f);
+                  // art columns: health 57..97 of 128, force 29..69: put the visible health edge flush against the portrait's left edge and the
+                  // visible force edge flush against its right edge (the 40/77 HUD constants left a ~5 px gap on the 96 px menu cards)
+                  int vx = r[0] - int(97.0f / 128.0f * bw + 0.5f), bwF = int(bw * 1.2f + 0.5f), fx = r[0] + r[2] - int(29.0f / 128.0f * bwF + 0.5f);   // force bar 20% wider (read skinny next to health)
                   drawGauge(HealthBarTexture, vx, by, bw, bh, HealthFillRed, hp, hpMax);
-                  drawGauge(ForceBarTexture, fx, by, bw, bh, ForceFillCyan, fp, fpMax);
+                  drawGauge(ForceBarTexture, fx, by, bwF, bh, ForceFillCyan, fp, fpMax);
                   DrawShieldPools(comp[k], vx, by, bw, bh, scale, ctrl, false);
                   static int lastV[2] = { -1, -1 }; int vs = hp * 7 + hpMax * 13 + fp * 17 + fpMax * 19;
                   if (lastV[k] != vs) { lastV[k] = vs; probeLog("MENUCOMP k=%d creature=%08x hp=%d/%d fp=%d/%d card=(%d,%d,%d,%d) vit=(%d,%d,%d,%d)", k, comp[k], hp, hpMax, fp, fpMax, r[0], r[1], r[2], r[3], vx, by, bw, bh); }
