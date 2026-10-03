@@ -1,0 +1,2090 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c3d0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073ef6a PUSH 0x4dc, CALL 0x00919723 new, CALL 0x00780460 sz3132 = GOG 0x42c9e0 sz3132; GOG imm 0x4dc",
+  "name": "CClientExoApp::Constructor",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073ef30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c490] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073f01a CALL 0x007810a0 sz767 (GOG 0x42d620 sz767 disp 0x1d0/0x270/0x3c4) + 0073f02d CALL 0x009196fd free (GOG 0x921321)",
+  "name": "CClientExoApp::Destructor",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073eff0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c530] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetQuestJournal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c550] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetWorldJournal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c660] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::ResetCharacterFile",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f1a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c770] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetCaptureEventFile",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f2b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c790] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetCaptureEvents",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f2d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c7b0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetCaptureEventPlayBack",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f2f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040c7d0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetClientName",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f310"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c810] Steam batch B11a: CALLEE 11 (callers: CreateUsableItemEntry 0x77bcf0, GetDoorInterfaceMines 0x87c590, GetUseItems 0x8427a0); SIG 1.00 | AUTO: CALLEE 11 (callers: CreateUsableItemEntry 0x77bcf0, GetDoorInterfaceMines 0x87c590, GetUseItems 0x8427a0); SIG 1.00",
+  "name": "CClientExoApp::GetClientLanguage",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c830] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073f37f MOV EDX,[ECX+0xdc] via [this+4]; GOG disp {0x4,0xdc} sz31",
+  "name": "CClientExoApp::IsClientImeUI",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f370"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c850] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetImeUI",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c870] Steam batch B11a: CALLEE 13 (callers: MainLoop 0x781be0, Constructor 0x7a2590, Update 0x7a6760); SIG 1.00 | AUTO: CALLEE 13 (callers: MainLoop 0x781be0, Constructor 0x7a2590, Update 0x7a6760); SIG 1.00",
+  "name": "CClientExoApp::GetWorldTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f3b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c890] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetPauseTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f3d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c8b0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetAnimationTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f3f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c8d0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073f41f MOV EDX,[ECX+0x34] via [this+4]; GOG disp {0x4,0x34} sz28; neighbour 0x73f3f0 uses 0x30",
+  "name": "CClientExoApp::GetConnectionLib",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c8f0] Steam batch B11a: CALLEE 21 (callers: GetInFreeLook 0x741290, MainLoop 0x781be0, LoadArea 0x7a2fb0) | reviewer match with anchor: callee 0x726f80 sz17: 00726f8a MOV EAX,[EAX+0x18]; GOG 0x4f0520 sz17 disp 0x18; mapped caller GetInFreeLook 0x741290 calls it",
+  "name": "CClientExoApp::GetModule",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f430"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c910] Steam batch B11a: CALLEE 8 (callers: LoadArea 0x7a2fb0, Update 0x7a6760, HiliteAreaObjects 0x7aa460) | reviewer match with anchor: callee 0x78cee0 sz101: 0078ceef MOV EDX,[EAX+0x3bc]; GOG 0x4394c0 sz101 disp 0x3bc/0x3c0/0x20",
+  "name": "CClientExoApp::GetPlayerCreature",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f450"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c930] Steam batch B11a: CALLEE 5 (callers: HandleMouseOver 0x7b3a00, OnPanelAdded 0x894320, SignalMeleeDamage 0x6e0650); SIG 1.00 | AUTO: CALLEE 5 (callers: HandleMouseOver 0x7b3a00, OnPanelAdded 0x894320, SignalMeleeDamage 0x6e0650); SIG 1.00",
+  "name": "CClientExoApp::GetPlayerCreatureId",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c950] Steam batch B11a: CALLEE 3 (callers: Update 0x7a6760, UpdateAreaTransitionDisplay 0x87c9f0, GetReticlePoint 0x843b80) | reviewer match with anchor: callee 0x781810 sz46: 0078182d MOV ECX,[EAX+0x40]; GOG 0x42dd90 sz46 disp 0x40 imm 0xc, callee 0x4f0520=Steam 0x726f80",
+  "name": "CClientExoApp::GetModuleCamera",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c970] Steam batch B11a: CALLEE 7 (callers: LoadArea 0x7a2fb0, UnloadArea 0x7a5fa0, AddPlaceableObjectStatic 0x7a9f40); SIG 1.00 | AUTO: CALLEE 7 (callers: LoadArea 0x7a2fb0, UnloadArea 0x7a5fa0, AddPlaceableObjectStatic 0x7a9f40); SIG 1.00",
+  "name": "CClientExoApp::GetGameObjectArray",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f4b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040c990] Steam batch B11a: CALLEE 13 (callers: HiliteAreaObjects 0x7aa460, LoadStuntModelsForDialog 0x7c8390, ResetDialogAnimations 0x7c93e0); SIG 1.00 | AUTO: CALLEE 13 (callers: HiliteAreaObjects 0x7aa460, LoadStuntModelsForDialog 0x7c8390, ResetDialogAnimations 0x7c93e0); SIG 1.00",
+  "name": "CClientExoApp::GetGameObject",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f4d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040c9f0] Steam batch B11a: CALLEE 2 (callers: PopulateItemListBox 0x8a7ba0, Destructor_2 0x6000e0) | reviewer match with anchor: callee 0x78bd80: 0078bdd7 MOV EAX,[EDX+0x34]; GOG 0x438360 disp 0x34",
+  "name": "CClientExoApp::GetItemByGameObjectID",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040ca10] Steam batch B11a: CALLEE 18 (callers: LoadArea 0x7a2fb0, UnloadArea 0x7a5fa0, AddCorpse 0x7aaec0) | reviewer match with anchor: callee 0x78bdf0: 0078be47 MOV EAX,[EDX+0x2c]; GOG 0x4383d0 disp 0x2c",
+  "name": "CClientExoApp::GetCreatureByGameObjectID",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040ca30] Steam batch B11a: CALLEE 1 (callers: GetClientArea 0x52db90) | reviewer match with anchor: callee 0x78be60: 0078beb7 MOV EAX,[EDX+0x24]; GOG 0x438440 disp 0x24",
+  "name": "CClientExoApp::GetAreaByGameObjectID",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f570"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040ca90] Steam batch B11a: CALLEE 2 (callers: AddPlaceableObjectStatic 0x7a9f40, AddCorpse 0x7aaec0) | reviewer match with anchor: callee 0x78bfb0: 0078c007 MOV EAX,[EDX+0x4c]; GOG 0x438590 disp 0x4c",
+  "name": "CClientExoApp::GetPlaceableByGameObjectID",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f5d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040caf0] Steam batch B11a: CALLEE 2 (callers: UnloadArea 0x7a5fa0, UpdateSoundObjectsTimeOfDay 0x7a9780) | reviewer match with anchor: callee 0x78c100: 0078c157 MOV EAX,[EDX+0x6c]; GOG 0x4386e0 disp 0x6c",
+  "name": "CClientExoApp::GetSoundObjectByGameObjectID",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f630"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040cb10] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetInStartNewModule",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f650"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040cc10] Steam batch B11a: CALLEE 107 (callers: MainLoop 0x781be0, LoadArea 0x7a2fb0, UnloadArea 0x7a5fa0); SIG 1.00 | reviewer match with anchor: 0073f75f MOV EDX,[ECX+0x40]; GOG disp {0x4,0x40} sz28; mapped GOG callers LoadArea/UnloadArea/Update call it",
+  "name": "CClientExoApp::GetInGameGui",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040cc30] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetPlayModulePanel",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040cc50] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetClientAIMaster",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f790"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040ccb0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetNetLayer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f7f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040ccd0] Steam batch B11a: CALLEE 12 (callers: LoadArea 0x7a2fb0, ShowPartySelection 0x7cb920, ShowSoloModeQuery 0x7cd510); SIG 1.00 | AUTO: CALLEE 12 (callers: LoadArea 0x7a2fb0, ShowPartySelection 0x7cb920, ShowSoloModeQuery 0x7cd510); SIG 1.00",
+  "name": "CClientExoApp::GetSWCMessage",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f810"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040ccf0] Steam batch B11a: CALLEE 41 (callers: MainLoop 0x781be0, LoadArea 0x7a2fb0, AddPlaceableObjectStatic 0x7a9f40) | reviewer match with anchor: 0072fb0c MOV ECX,[EAX+4], 0072fb0f MOV EDX,[ECX+4]; GOG disp {0x4,0x4} sz28; mapped callers MainLoop/LoadArea/AddPlaceableObjectStatic call it",
+  "name": "CClientExoApp::GetClientOptions",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0072fb00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040cd10] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073f83f MOV EDX,[ECX+0x8] via [this+4]; GOG disp {0x4,0x8} sz28",
+  "name": "CClientExoApp::GetServerInfo",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040cd30] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandDestroyObject 0x670760) | reviewer match with anchor: callee 0x78c170 sz385: 0078c1db MOV ECX,[EAX+0x328]; GOG 0x438750 sz385 disp 0x328/0x32c/0x330",
+  "name": "CClientExoApp::AttachPlayerGameObjectToArea",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f850"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040ce80] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073f9af MOV EDX,[ECX+0x204] via [this+4]; GOG disp {0x4,0x204} sz31; Initialize also touches 0x204",
+  "name": "CClientExoApp::IsClientInitialized",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040cea0] Steam batch B11a: CALLEE 1 (callees: MainLoop 0x781be0) | reviewer match with anchor: callee 0x781be0 sz8599 ret0 = GOG 0x42e160 sz8599; 007827d3 CALL 0x00781590 (DisplayMainMenu sz629 = GOG 0x42db10)",
+  "name": "CClientExoApp::MainLoop",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f9c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040cec0] Steam batch B11a: CALLEE 1 (callees: CreatureAcquireItem 0x51cc60); SIG 1.00 | AUTO: CALLEE 1 (callees: CreatureAcquireItem 0x51cc60); SIG 1.00",
+  "name": "CClientExoApp::CreatureAcquireItem",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073f9e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d040] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetApplicationIdsMatch",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fb60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d090] Steam batch B11a: CALLEE 2 (callers: SetPosition 0x8f1040, SetInstanceRandomPosition 0x8f19e0); SIG 1.00 | reviewer match with anchor: 0073fbbf MOV EDX,dword ptr [ECX + 0xa4] (GOG disp 0xa4); callers 0x8f1040/0x8f19e0 call 0x73fbb0",
+  "name": "CClientExoApp::GetHitCheckMaterialMask",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fbb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d0f0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetSoundSetList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fc10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040d110] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetItemDropSound",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fc30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d180] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetLoadBarState",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d1a0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073fccf MOV EDX,dword ptr [ECX + 0x1f8] (GOG disp 0x1f8); 0x7986a0 tests [+0x1f8] before playing movies",
+  "name": "CClientExoApp::GetDisableMovies",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fcc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d2b0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0073fde8 MOV dword ptr [EDX + 0x1ec],EAX (GOG disp 0x1ec, imm 8, no callees)",
+  "name": "CClientExoApp::SetStartMenuMusicOnMovieEnd",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fdd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040d320] Steam batch B11a: CALLEE 1 (callers: SetTransitionPending 0x52e110) | reviewer match with anchor: 0073fe55 CALL 0x00797d90: 0x797d90 (param==0 -> TurnOffKeyboardModal 0x797df0); caller SetTransitionPending 0x52e110",
+  "name": "CClientExoApp::SetInputActive",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fe40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d380] Steam batch B11a: CALLEE 21 (callers: NextSWInGameGui 0x7ca230, PrevSWInGameGui 0x7ca3c0, SwitchToSWInGameGui 0x7ca550); SIG 1.00 | AUTO: CALLEE 21 (callers: NextSWInGameGui 0x7ca230, PrevSWInGameGui 0x7ca3c0, SwitchToSWInGameGui 0x7ca550); SIG 1.00",
+  "name": "CClientExoApp::GetSWGuiManager",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fea0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d3a0] Steam batch B11a: CALLEE 49 (callers: GetTargetActions 0x842d40, AIActionPhysicalAttacks 0x6d7390, CreateNewAttackActions 0x6da4f0) | reviewer match with anchor: 0073fed1 CALL 0x00798160 (id | 0x80000000 unless 0x7f000000); callers 0x842d40/0x6d7390/0x6000e0/0x541080 call it",
+  "name": "CClientExoApp::ServerToClientObjectId",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040d3c0] Steam batch B11a: CALLEE 20 (callers: ShowGalaxyMapGui 0x7ca730, HideGalaxyMapGui 0x7ca920, ShowItemCreateMenu 0x7caa10) | reviewer match with anchor: 0073fef5 CALL 0x007b3050: 0x7b3050 switches on input class [+0x9c]; callers 0x7ca730/0x7ca920/0x7caa10/0x7caa60 call it",
+  "name": "CClientExoApp::SetInputClass",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073fee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d3e0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetInputClass",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073ff00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0040d400] Steam batch B11a: CALLEE 4 (callers: DoQuickLoad 0x7d0f50, LoadGame 0x853a00, StallEventSaveGame 0x534600) | reviewer match with anchor: 0073ff39 CALL 0x00798190; callers 0x7d0f50/0x853a00/0x534600/0x53af20 all call 0x73ff20",
+  "name": "CClientExoApp::ShowLoadScreen",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073ff20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0040d430] Steam batch B11a: CALLEE 3 (callers: UnpackQuickSaveGame 0x7d1530, ExecuteCommandPlayMovie 0x68e720, StallEventSaveGame 0x534600) | reviewer match with anchor: 0073ff69 CALL 0x007983e0 (HideLoadScreen body, clears load widget [+0x278]); callers 0x7d1530/0x68e720/0x534600 all call 0x73ff50",
+  "name": "CClientExoApp::HideLoadScreen",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0073ff50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d4e0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0074000f MOV EDX,dword ptr [ECX + 0x290] (GOG disp 0x290)",
+  "name": "CClientExoApp::GetPlayerCharacterSet",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d500] Steam batch B11a: CALLEE 3 (callers: ShowSoloModeQuery 0x7cd510, MainLoop 0x533830, TempDeathUpdate 0x53a0c0); SIG 1.00 | reviewer match with anchor: 0074002f MOV EDX,dword ptr [ECX + 0x288] (GOG disp 0x288); callers 0x7cd510/0x533830/0x53a0c0 call 0x740020",
+  "name": "CClientExoApp::GetAreaNotReadyToDisplay",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740020"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d520] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetAreaNotReadyToDisplay",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d550] Steam batch B11a: CALLEE 32 (callers: ExecuteCommandSWMG_GetLastEvent 0x6f6320, ExecuteCommandSWMG_GetLastEventModelName 0x6f6420, ExecuteCommandSWMG_GetObjectByName 0x6f6540) | reviewer match with anchor: 00740085 MOV EAX,dword ptr [EDX] after [this+4]; callers 0x6f6320/0x6f6420/0x6f6540/0x6f6640 (SWMG commands) call 0x740070",
+  "name": "CClientExoApp::GetMGOArray",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d580] Steam batch B11a: CALLEE 21 (callers: HideItemCreateMenu 0x7caa60, HideSubItemCreateMenu 0x7cab60, HideLoadModuleDebugMenu 0x7cb4a0) | reviewer match with anchor: 007400ac CALL 0x0073f430 GetModule 0x73f430 then 0x7fae30 ([this+0x48]->+0x268); callers 0x7caa60/0x7cab60/0x7cb4a0/0x7cb540 call it",
+  "name": "CClientExoApp::GetMiniGame",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007400a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d5b0] Steam batch B11a: CALLEE 1 (callers: StartNewModule 0x52fda0) | reviewer match with anchor: 007400fd CALL 0x007986a0: 0x7986a0 calls GetMoveToModuleMovies 0x7401a0 and ShowLoadScreen 0x798190",
+  "name": "CClientExoApp::PlayLoadModuleMovies",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007400f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x0040d5d0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::PlayMovie",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740110"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d620] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandIsMoviePlaying 0x69a3a0) | reviewer match with anchor: 0074016d CALL 0x00798c00: 0x798c00 returns 0 if [+0x130]==0 else 0x93b570; caller ExecuteCommandIsMoviePlaying 0x69a3a0 calls it",
+  "name": "CClientExoApp::IsMoviePlaying",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d640] Steam batch B11a: CALLEE 3 (callers: LoadPCAutoSave 0x8529e0, EventHandler 0x5221b0, ExecuteCommandStartNewModule 0x693c10) | reviewer match with anchor: 00740191 CALL 0x00798b70: 0x798b70 adds to list at this+0x2d8; callers 0x8529e0/0x5221b0/0x693c10 call it",
+  "name": "CClientExoApp::AddMoveToModuleMovie",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740180"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d680] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::RemoveMoveToModuleMovies",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007401c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d6d0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::ReattachCreatureToScene",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d700] Steam batch B11a: CALLEE 2 (callers: ExecuteCommandPlayMovie 0x68e720, ExecuteLoadModule 0x530170) | reviewer match with anchor: 0074024d CALL 0x0078c300: 0x78c300 vcall [[this+0x2a0]+0x2c]; callers ExecuteCommandPlayMovie 0x68e720 and ExecuteLoadModule 0x530170 call it",
+  "name": "CClientExoApp::ResetDriveAcceleration",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740240"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d770] Steam batch B11a: CALLEE 1 (callers: StopSoundPlayingInDialog 0x546a70) | reviewer match with anchor: caller CSWSObject::StopSoundPlayingInDialog 0x546a70 calls 0x7402b0; 007402bd CALL 0x0079be40: 0x79be40 stops sound of speaker [[this+0x40]+0x1a0]",
+  "name": "CClientExoApp::StopSoundPlayingInDialog",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007402b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d790] Steam batch B11a: CALLEE 2 (callers: LoadGame 0x853a00, ExecuteLoadModule 0x530170) | reviewer match with anchor: callers LoadGame 0x853a00 and ExecuteLoadModule 0x530170 call 0x7402d0; 007402dd CALL 0x007b3370 (empty stub)",
+  "name": "CClientExoApp::DisableInput",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007402d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d7f0] Steam batch B11a: CALLEE 5 (callers: ShowGalaxyMapGui 0x7ca730, HideGalaxyMapGui 0x7ca920, HideStoreGui 0x7ccf30) | reviewer match with anchor: body 0079bf00 size 56 returns CALL 0x51c720(2) pause state, used by SetPausedByCombat 0x79bf40; thunk callers 0x7ca730,0x7ca920,0x7ccf30,0x8f8070 = GOG callers",
+  "name": "CClientExoApp::GetPausedByCombat",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740330"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0040d810] Steam batch B11a: CALLEE 11 (callers: ShowGalaxyMapGui 0x7ca730, HideGalaxyMapGui 0x7ca920, HideContainerGui 0x7cad30) | reviewer match with anchor: body 0079bf40: sets [this+0x37c]|=4 and [+0x380]=param_2; thunk callers 0x7ca730,0x7ca920,0x7cad30,0x7ccf30 = GOG callers",
+  "name": "CClientExoApp::SetPausedByCombat",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040d840] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandDestroyObject 0x670760) | reviewer match with anchor: body 00797f30 size 355 (GOG gap 0x170 equal): swaps active party member via 0x7e5df0; thunk caller 0x670760 = GOG ExecuteCommandDestroyObject",
+  "name": "CClientExoApp::ChangeCharacter",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040d8a0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetGameOver",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007403e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d8c0] Steam batch B11a: CALLEE 1 (callers: OnApplyDeath 0x597d90) | reviewer match with anchor: body 0079c4e0: [creature+0x11ac] check then [this+0x2d4]=id; RunDeathSequence 0x79c0e0 reads [this+0x2d4]; caller 0x597d90 = OnApplyDeath",
+  "name": "CClientExoApp::SetLastPartyMemberTempKilled",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d8e0] Steam batch B11a: CALLEE 3 (callers: StartNewModule 0x52fda0, MainLoop 0x533830, StallEventSaveGame 0x534600) | reviewer match with anchor: body 0079c550: 0079c55f MOV [EAX+0x228],ECX and 0079c59c MOV [EDX+0x22c],EAX; thunk callers 0x533830,0x52fda0,0x534600 = GOG callers",
+  "name": "CClientExoApp::SetCanSendDialog",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d930] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetDialogSent",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040d960] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetDialogModelsSent",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007404a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040da00] Steam batch B11a: CALLEE 4 (callers: DoQuickLoad 0x7d0f50, LoadGame 0x853a00, StallEventSaveGame 0x534600) | reviewer match with anchor: body 0079cb20: 0079cbb5 PUSH 0x99424c 'BMPResRef' and 'load_%s' (0079cc1e PUSH 0x994244); callers 0x853a00,0x7d0f50,0x534600,0x53af20 = GOG callers",
+  "name": "CClientExoApp::SetLoadScreenByModuleName",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040da60] Steam batch B11a: CALLEE 3 (callers: DoQuickLoad 0x7d0f50, LoadPCAutoSave 0x8529e0, LoadGame 0x853a00); SIG 1.00 | AUTO: CALLEE 3 (callers: DoQuickLoad 0x7d0f50, LoadPCAutoSave 0x8529e0, LoadGame 0x853a00); SIG 1.00",
+  "name": "CClientExoApp::SetLoadMusic",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007405a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040da90] Steam batch B11a: CALLEE 7 (callers: LoadArea 0x7a2fb0, LoadPCAutoSave 0x8529e0, LoadGame 0x853a00) | reviewer match with anchor: body 0079cfb0: 0079d031 PUSH 0x99f938 'Load Bar = %d'; thunk callers include 0x7a2fb0,0x8529e0,0x853a00,0x55fa90 = GOG callers",
+  "name": "CClientExoApp::SetLoadBarProgress",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007405d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040dab0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetLoadFromIFO",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007405f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040dae0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetLoadFromIFO",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740620"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040db00] Steam batch B11a: CALLEE 1 (callers: CreateNewAttackActions 0x6da4f0) | reviewer match with anchor: body 007a0530: 007a056a MOV [EDX+0x2b4],EAX; GetLastTarget thunk 0x740660 returns [[this+4]+0x2b4]",
+  "name": "CClientExoApp::SetLastTarget",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040db20] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetLastTarget",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040db40] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetGuiGameSlow",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x0040db90] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandPlayPazaak 0x68e880) | reviewer match with anchor: body 0079d070: 0079d0a9 MOV [ECX+0x70],1; 0079d183 PUSH 0xa974 (game object new); getter 0x740f20 reads [+0x70]; caller 0x68e880 = ExecuteCommandPlayPazaak",
+  "name": "CClientExoApp::StartPazaakGame",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007406d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040dbf0] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandGetLastPazaakResult 0x682610); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandGetLastPazaakResult 0x682610); SIG 1.00",
+  "name": "CClientExoApp::GetPazaakResults",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740730"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040dc30] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetFutureLeader",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040dc60] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetFutureLeader",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007407a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0040dc80] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandEndGame 0x678690); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandEndGame 0x678690); SIG 1.00",
+  "name": "CClientExoApp::SetEndGamePending",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007407c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040dcc0] Steam batch B11a: CALLEE 2 (callers: EventHandler 0x56efd0, ExecuteCommandPlayRumblePattern 0x68ea10) | reviewer match with anchor: body 0079d3f0: appends id to list [this+0x34c] (0xc stride, count [+0x350]), CALL 0x8a6110 grow; thunk caller 0x68ea10 = ExecuteCommandPlayRumblePattern",
+  "name": "CClientExoApp::PlayRumblePattern",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740800"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040dce0] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandStopRumblePattern 0x694170) | reviewer match with anchor: body 0079d4e0 scans list [this+0x34c] (count [+0x350], stride 0xc) for id then CALL 0x7a1940 removes; thunk caller 0x694170 = ExecuteCommandStopRumblePattern",
+  "name": "CClientExoApp::StopRumblePattern",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740820"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040dd20] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetCombatMode",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740860"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0040dd80] Steam batch B11a: CALLEE 6 (callers: SignalMeleeDamage 0x6e0650, ApplyDeathExperience 0x575600, DoDamage 0x57f450) | reviewer match with anchor: body 0079de60: 0079e01c PUSH 0x9884d0 '%s %d'; CALLs GetGUIString 0x79e210; thunk callers 0x6bedf0,0x5959e0,0x597750 = GOG callers",
+  "name": "CClientExoApp::AddFloatyText",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007408c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040ddb0] Steam batch B11a: CALLEE 30 (callers: CreateUsableItemEntry 0x77bcf0, GetTargetActions 0x87bec0, GetDoorInterfaceMines 0x87c590) | reviewer match with anchor: outer 0x7408f0 CALL 0x79e210 (0074090e); body scans string table [this+0x35c]; callers 0x77bcf0,0x87bec0,0x87c590,0x742a00 = all four GOG callers",
+  "name": "CClientExoApp::GetGUIString",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007408f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040ddf0] Steam batch B11a: CALLEE 2 (callers: OnApplyDeath 0x597d90, EndCombatRound 0x58e990) | reviewer match with anchor: body 0079e420: 0079e4fa MOV [EAX+0x384],EDX toggles bit0 (getter 0x740960 reads +0x384); thunk callers 0x597d90,0x58e990 = OnApplyDeath, EndCombatRound",
+  "name": "CClientExoApp::SetAutoPaused",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040de40] Steam batch B11a: CALLEE 5 (callers: DoQuickLoad 0x7d0f50, LoadGame 0x853a00, StartNewModule 0x52fda0) | reviewer match with anchor: body 0079cf40: if [this+0x278] then CALL 0x8857e0(param); thunk callers 0x853a00,0x7d0f50,0x52fda0,0x534600 = all four GOG callers",
+  "name": "CClientExoApp::SetLoadScreenHint",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040de60] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandEnableVideoEffect 0x6986e0) | reviewer match with anchor: body 0079e550: decomp strings 'EnableClairvoyance','EnableForceSight','EnableFury' (0079e602 PUSH 0x99f9f4); thunk caller 0x6986e0 = ExecuteCommandEnableVideoEffect",
+  "name": "CClientExoApp::EnableVideoEffect",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007409a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040de80] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandDisableVideoEffect 0x698750) | reviewer match with anchor: body 0079e960: 0079e96a MOV [EAX+0x3a8],0xfffffffe; thunk caller 0x698750 = ExecuteCommandDisableVideoEffect; getter 0x7409e0 reads +0x3a8",
+  "name": "CClientExoApp::DisableVideoEffect",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007409c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040dea0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetVideoEffectType",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007409e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040dec0] Steam batch B11a: CALLEE 3 (callers: ToggleDoorState 0x87bb20, MenuActionSecurity 0x87bca0, MenuActionBash 0x87bd10) | reviewer match with anchor: body 0079e9a0: 0079e9c6 FSTP [ECX+0x38c]; AutoPaused 0x79e420 reads same +0x38c (0079e45b); thunk callers 0x87bb20,0x87bca0,0x87bd10 = GOG callers",
+  "name": "CClientExoApp::DelayNextEnemyAutoPause",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x0040dee0] Steam batch B11a: CALLEE 6 (callers: MenuActionBash 0x87bd10, BashPlaceable 0x841d40, MenuActionSetPlaceableMine 0x842bd0) | reviewer match with anchor: body 0079e9d0 stores params at [+0x3ac..0x3b8]; thunk callers 0x87bd10,0x841d40,0x842bd0,0x894320 = all four GOG callers",
+  "name": "CClientExoApp::ShowTutorialWindow",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740a20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040df60] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandCreatureFlourishWeapon 0x66b8a0) | reviewer match with anchor: thunk CALL 0x740ac0 body: 00740acc CMP [EAX+0x2a0],0, 00740af6 TEST AH,0x44 = GOG Internal GetPlayerMovementInput disps/imm; callers 0x66b8a0 = GOG caller",
+  "name": "CClientExoApp::GetPlayerMovementInput",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740aa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040df80] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::GetPlayerMovementInput",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740ac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0040e040] Steam batch B11a: CALLEE 3 (callers: HandleInputEvent 0x84f900, HandleInputEvent 0x8a8880, OnApplyDeath 0x597d90) | reviewer match with anchor: body 0079f770 CALLs 0x797f30 (ChangeCharacter); thunk callers 0x8a8880 and 0x597d90 = GOG InventoryHandleInput and OnApplyDeath",
+  "name": "CClientExoApp::ChangeCharacterToNextLivingPartyMember",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740b80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e070] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetAttackMashTutorialTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740bb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e0a0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetAttackMashTutorialTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740be0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e0c0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetLoadingSaveGame",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740c00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040e0f0] Steam batch B11a: CALLEE 2 (callers: LoadPCAutoSave 0x8529e0, LoadGame 0x52fb80); SIG 1.00 | AUTO: CALLEE 2 (callers: LoadPCAutoSave 0x8529e0, LoadGame 0x52fb80); SIG 1.00",
+  "name": "CClientExoApp::SetLoadStep",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740c30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e120] Steam batch B11a: CALLEE 3 (callers: LoadArea 0x7a2fb0, AddModuleResources 0x55fa90, DoPCAutosave 0x53af20); SIG 1.00 | AUTO: CALLEE 3 (callers: LoadArea 0x7a2fb0, AddModuleResources 0x55fa90, DoPCAutosave 0x53af20); SIG 1.00",
+  "name": "CClientExoApp::GetLoadStep",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740c60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e150] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::ClearEnemySighted",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740c90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e180] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetLiveContentName",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740cc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e1a0] Steam batch B11a: CALLEE 3 (callers: DoQuickLoad 0x7d0f50, LoadGame 0x853a00, StartNewModule 0x52fda0); SIG 1.00 | AUTO: CALLEE 3 (callers: DoQuickLoad 0x7d0f50, LoadGame 0x853a00, StartNewModule 0x52fda0); SIG 1.00",
+  "name": "CClientExoApp::SetLoadScreenHintUpdateTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740ce0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e1d0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetGamePlayHint",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740d10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e1f0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetGamePlayHint",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740d30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e220] Steam batch B11a: CALLEE 2 (callers: StallEventSaveGame 0x534600, DoPCAutosave 0x53af20); SIG 1.00 | AUTO: CALLEE 2 (callers: StallEventSaveGame 0x534600, DoPCAutosave 0x53af20); SIG 1.00",
+  "name": "CClientExoApp::GetStoryHint",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740d60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040e250] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetStoryHint",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740d90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040e280] Steam batch B11a: CALLEE 5 (callers: DoQuickLoad 0x7d0f50, LoadGame 0x853a00, StartNewModule 0x52fda0) | reviewer match with anchor: body 0079fc40: 0079fcbc PUSH 0x99fad8 'loadscreenhints' (+ 'loadstoryhints'); thunk callers 0x853a00,0x7d0f50,0x52fda0,0x534600 = GOG callers",
+  "name": "CClientExoApp::GetNextLoadScreenHintSTRREF",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740dc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e2b0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetModuleResourceLoaded",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740df0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e2f0] Steam batch B11a: CALLEE 1 (callers: RemoveModuleResources 0x560070); SIG 1.00 | AUTO: CALLEE 1 (callers: RemoveModuleResources 0x560070); SIG 1.00",
+  "name": "CClientExoApp::ResetModuleResourcesLoaded",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740e30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e310] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetModuleResourceLoaded",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740e50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e340] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetTargetChanging",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740e80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e380] Steam batch B11a: CALLEE 1 (callers: ShowStatusSummary 0x7cf270); SIG 1.00 | AUTO: CALLEE 1 (callers: ShowStatusSummary 0x7cf270); SIG 1.00",
+  "name": "CClientExoApp::GetTogglePauseAtEndOfFrame",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e3e0] Steam batch B11a: CALLEE 1 (callers: GetFadeOverridePanelVisible 0x7d0d90); SIG 1.00 | AUTO: CALLEE 1 (callers: GetFadeOverridePanelVisible 0x7d0d90); SIG 1.00",
+  "name": "CClientExoApp::GetPazaakIsRunning",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740f20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e480] Steam batch B11a: CALLEE 2 (callers: HandleInputEvent 0x84f900, ShowLevelUpGUI 0x84fcd0); SIG 1.00 | AUTO: CALLEE 2 (callers: HandleInputEvent 0x84f900, ShowLevelUpGUI 0x84fcd0); SIG 1.00",
+  "name": "CClientExoApp::GetCharacterChangeInProgress",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740fc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e4a0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetCharacterChangeInProgress",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00740fe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040e4d0] Steam batch B11a: CALLEE 1 (callers: FadeAndStopDialogAmbientTrack 0x7d0ec0) | reviewer match with anchor: body 0078e870: fade call 0x70b320(param_3) then wait loop while (now-start)<param_3; thunk caller 0x7d0ec0 = GOG caller FadeAndStopDialogAmbientTrack",
+  "name": "CClientExoApp::FadeAndStopStreamingSoundSource",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741010"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e530] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetCreditSequenceInProgress",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e570] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::SetLastClickedOnTarget",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007410b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0040e680] Steam batch B11a: STR 'malmov14'@009868c8; 'malmov12'@009868d4; CALLEE 1 (callers: ExecuteCommandQueueMovie 0x69a3f0); SIG 1.00 | AUTO: STR 'malmov14'@009868c8; 'malmov12'@009868d4; CALLEE 1 (callers: ExecuteCommandQueueMovie 0x69a3f0); SIG 1.00",
+  "name": "CClientExoApp::AddMovieToMovieQueue",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007411c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0040e6f0] Steam batch B11a: CALLEE 1 (callers: ExecuteCommandPlayMovieQueue 0x69a4d0) | reviewer match with anchor: body 007a0f50 CALLs 0x7a0fb0 on [this+0x2e4] queue (Sleep, CALL 0x7b38d0(8) hide mouse, movie calls 0x93b5c0); caller 0x69a4d0 = ExecuteCommandPlayMovieQueue",
+  "name": "CClientExoApp::PlayMovieQueue",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e750] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::GetInFreeLook",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741290"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e800] Steam batch B11a: CALLEE 1 (callers: UnloadModule 0x5315e0); SIG 1.00 | AUTO: CALLEE 1 (callers: UnloadModule 0x5315e0); SIG 1.00",
+  "name": "CClientExoApp::GetSoundPausedByCombat",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741340"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e820] Steam batch B11a: CALLEE 2 (callers: OnNewGamePicked 0x882230, OnLoadSaveGame 0x8827a0); SIG 1.00 | AUTO: CALLEE 2 (callers: OnNewGamePicked 0x882230, OnLoadSaveGame 0x8827a0); SIG 1.00",
+  "name": "CClientExoApp::ClearMainMenuPointer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e850] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoApp::EnableMainMenuIdleTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0042c9e0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::Constructor",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00780460"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0042d620] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::Destructor",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007810a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0042d920] Steam batch B11a: STR 'legal'@0099f488; 'obsidianent'@0099f490; 'leclogo'@0099f49c; SIG 1.00 | AUTO: STR 'legal'@0099f488; 'obsidianent'@0099f490; 'leclogo'@0099f49c; SIG 1.00",
+  "name": "CClientExoAppInternal::BeginIntro",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007813a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0042e160] Steam batch B11a: STR 'Playing next anim in queue: %s'@0099f4b4; CALLEE 19 (callees: StartSounds 0x7a7c00, GetServerArea 0x7aae00, AnimationLooping 0x7ef500; callers: MainLoop 0x73f9c0); SIG 1.00 | AUTO: STR 'Playing next anim in queue: %s'@0099f4b4; CALLEE 19 (callees: StartSounds 0x7a7c00, GetServerArea 0x7aae00, AnimationLooping 0x7ef500; callers: MainLoop 0x",
+  "name": "CClientExoAppInternal::MainLoop",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00781be0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00430340] Steam batch B11a: CALLEE 3 (callees: GetRoom_2 0x7aab90, GetRoomIndex 0x7aace0; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetRoom_2 0x7aab90, GetRoomIndex 0x7aace0; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::UpdateRoom",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00783dc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00430460] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::UpdateSoundEngine",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00783ee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00430a60] Steam batch B11a: CALLEE 2 (callers: GetActivePauseState 0x73fe00, MainLoop 0x781be0) | reviewer match with anchor: 00784447 PUSH 0x2 / 0078444c CALL 0x00784420 and 0078445d CALL 0x00784420 (GetPauseState, [+0x1cc]); callers 0x73fe00 and MainLoop 0x781be0 as GOG",
+  "name": "CClientExoAppInternal::GetActivePauseState",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00784440"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00430aa0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::GetActiveTimer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00784480"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00430b60] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::IsOnExclusionList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00784540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00430bd0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::ClearPauseExclusionList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007845b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00430ca0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::AddToPauseExclusionList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00784680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00430d60] Steam batch B11a: CALLEE 3 (callees: ResetTimer 0x51ae30, PauseWorldTimer 0x51b050, UnpauseWorldTimer 0x51b0a0); SIG 1.00 | AUTO: CALLEE 3 (callees: ResetTimer 0x51ae30, PauseWorldTimer 0x51b050, UnpauseWorldTimer 0x51b0a0); SIG 1.00",
+  "name": "CClientExoAppInternal::SetPauseState",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00784740"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00431650] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::CreateQuestJournal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785030"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004316e0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::DestroyQuestJournal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007850c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00431850] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 00785261 PUSH 0x20 / 00785263 CALL 0x00919723 / 0078527e CALL 0x0084b7f0 (ctor) stored to [+0x3c] (0078525b CMP [EAX+0x3c],0)",
+  "name": "CClientExoAppInternal::CreateWorldJournal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004318e0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 007852ea CALL 0x0084b870 + 007852fd CALL 0x009196fd (delete) under 007852cc CMP [EAX+0x3c],0; called at 0078aecb from StopServices 0x78ac40",
+  "name": "CClientExoAppInternal::DestroyWorldJournal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007852c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00431980] Steam batch B11a: CALLEE 1 (callers: ExitProgram 0x73f290) | reviewer match with anchor: 0073f29d CALL 0x00785360 in 0x73f290 (CClientExoApp::ExitProgram, GOG-mapped caller); 00785369 CALL [0x009863f0] after PUSH 0 (PostQuitMessage)",
+  "name": "CClientExoAppInternal::ExitProgram",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004319a0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::CreateModule",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00431a30] Steam batch B11a: STR '0 0 0'@0099f4d4; SIG 1.00 | AUTO: STR '0 0 0'@0099f4d4; SIG 1.00",
+  "name": "CClientExoAppInternal::UnloadModule",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00431c40] Steam batch B11a: CALLEE 1 (callers: SendSaveGameRequest 0x73f6f0) | reviewer match with anchor: 0073f709 CALL 0x00785620 in 0x73f6f0 (CClientExoApp::SendSaveGameRequest, GOG-mapped caller); 0087a430 uses message 3/4",
+  "name": "CClientExoAppInternal::SendSaveGameRequest",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785620"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00431c80] Steam batch B11a: CALLEE 1 (callers: SendLoadGameRequest 0x73f720) | reviewer match with anchor: 0073f739 CALL 0x00785660 in 0x73f720 (CClientExoApp::SendLoadGameRequest, GOG-mapped caller); 0078566c MOV ECX,[EAX+0x150]; 0078568a CALL 0x0087a4b0 (msg 3/5)",
+  "name": "CClientExoAppInternal::SendLoadGameRequest",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00431ce0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::Uninitialize",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007856c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00431ef0] Steam batch B11a: STR 'Start: %d\\n'@0099f4dc; 'HD0:%s'@0099f4e8; SIG 1.00 | AUTO: STR 'Start: %d\\n'@0099f4dc; 'HD0:%s'@0099f4e8; SIG 1.00",
+  "name": "CClientExoAppInternal::SetCaptureEvents",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007858d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00432170] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetCaptureEventPlayBack",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785b50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004323c0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetCaptureEventPlayBackRate",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785da0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00432410] Steam batch B11a: STR 'ScaleExp'@0099f4f0; 'ScaleMag'@0099f4fc; 'Scale'@0099f508; CALLEE 1 (callers: SetEventDescriptions 0x73fb00); SIG 1.00 | AUTO: STR 'ScaleExp'@0099f4f0; 'ScaleMag'@0099f4fc; 'Scale'@0099f508; CALLEE 1 (callers: SetEventDescriptions 0x73fb00); SIG 1.00",
+  "name": "CClientExoAppInternal::SetEventDescriptions",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00785df0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00436b80] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078a708 CALL 0x0078df40 after PUSH 0x300/0x400 (0078a6fb, 0078a700); 0078a71f CALL 0x0078dbf0; calls 0x78a7a0 and 0x78e010",
+  "name": "CClientExoAppInternal::ReadAndSetVideoMode",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078a630"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00436cf0] Steam batch B11a: STR 'RefreshRate'@0099f6fc; SIG 0.50 | reviewer match with anchor: PUSH 0x99f6fc 'RefreshRate' at 0078a96b; 'Width' at 0078a7ec; 'Graphics Options' at 0078a800 (same strings on GOG)",
+  "name": "CClientExoAppInternal::ReadVideoModeSettings",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078a7a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00437190] Steam batch B11a: STR 'RIMS:GLOBAL'@0099f618; 'GLOBAL'@0099f624; 'HD0:MOVIES'@0099f62c; CALLEE 6 (callees: ShutDown 0x7c7030, Destructor 0x7114d0, RemoveResourceImageFile 0x7116d0); SIG 1.00 | reviewer match with anchor: string PUSH 'RIMS:GLOBAL' (0x99F618) at 0078b74c, 'HD0:MOVIES' at 0078b633 (same on GOG); 0078aecb CALL 0x007852c0; 0078af3b CALL 0x007c7030",
+  "name": "CClientExoAppInternal::StopServices",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078ac40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00439530] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078cf68 MOV [EDX+0x3bc],0x7f000000 / 0078cf5a MOV ECX,[EAX+0x3c0] / 0078cf75 MOV [EAX+0x3c0],0",
+  "name": "CClientExoAppInternal::ClearCachedCreatures",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078cf50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00439850] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078d2e2 CALL 0x0053dfb0 (GetGameObject, GOG 0x469c20 trusted); 0078d3b2 CALL 0x0073f530 (App::GetItemByGameObjectID); 0078d379 MOV EDX,[ECX+0x224]; 10 shared disps, 8 shared imms",
+  "name": "CClientExoAppInternal::SetHitcheckIgnoreList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078d280"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0043a610] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078e098 MOV [EAX+0x1b4],ECX after 0078e087 CALL 0x00919723; 0078e0b0 CALL 0x0091dba0 (memcpy); disps 0x1b4/0x1b8/0x1bc = GOG",
+  "name": "CClientExoAppInternal::SetCharacterFile",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078e040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0043a6c0] Steam batch B11a: CALLEE 2 (callees: UnloadArea 0x7a5fa0; callers: ShutDownToMainMenu 0x73fb40); SIG 1.00 | reviewer match with anchor: 0078e190 CALL 0x007a5fa0 (CSWCArea::UnloadArea, GOG 0x4529a0 trusted); 0078e198 CALL 0x00785410 (UnloadModule); 0078e118 [EAX+0x254]; caller App 0x73fb40",
+  "name": "CClientExoAppInternal::ShutDownToMainMenu",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078e0f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0043a890] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078e2e4 CALL 0x0053dfb0 GetGameObject (trusted) then dispatch on type 5/6 to 0x78e350/0x78e520/0x78e5a0 (GOG callees Creature/Item/SimpleObject)",
+  "name": "CClientExoAppInternal::AddObjectModelDirectlyToIgnoreList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078e2c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0043a920] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078e350 callees 0x73f530 GetItemByGameObjectID, 0x76e610 GetEquippedItemID, 0x4491c0 List Add; slots 0xff/0xfe/0xfb loop; same size 450",
+  "name": "CClientExoAppInternal::AddCreatureModelDirectlyToIgnoreList_2",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078e350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0043aaf0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078e553 CMP EDX,0xfb loop and 0078e530 CALL 0x0078bd80 (GOG callee 0x438360 +0x353A20); 0078e586 CALL 0x4491c0 Add; [ECX+0x10]+0x98 vtable",
+  "name": "CClientExoAppInternal::AddItemModelDirectlyToIgnoreList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078e520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0043ab70] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 0078e5bb CALL 0x0073f4d0 GetGameObject (trusted GOG 0x40c990) then vtable +0xc/+0x98 PUSH 0xff then 0078e60a CALL 0x4491c0 Add",
+  "name": "CClientExoAppInternal::AddSimpleObjectModelDirectlyToIgnoreList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078e5a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0043b710] Steam batch B11a: STR '%s %s'@0098b99c; '(%d > %d) Scripts: (%s), Action: %d [Fla'@0099f788; '(%d > %d) OID: %08x, Tag: %s'@0099f7d0; CALLEE 2 (callees: SetFeedbackInfo 0x7f2200, AppendToMsgBuffer 0x7be090) | reviewer match with anchor: 00795ddf PUSH 0x99f7d0 '(%d > %d) OID: %08x, Tag: %s'; 00790177 PUSH 0x98b99c '%s %s'; 007966ef CALL 0x7be090 AppendToMsgBuffer; size 30173",
+  "name": "CClientExoAppInternal::AddFeedbackMessage",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0078f160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004431c0] Steam batch B11a: CALLEE 2 (callees: EnableInput 0x7402f0; callers: QueryExitProgram 0x73fe20); SIG 1.00 | AUTO: CALLEE 2 (callees: EnableInput 0x7402f0; callers: QueryExitProgram 0x73fe20); SIG 1.00",
+  "name": "CClientExoAppInternal::QueryExitProgram",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00796ba0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00443420] Steam batch B11a: STR 'EnableHardwareMouse'@0099f810; 'TooltipDelay Sec'@0099f824; SIG 1.00 | AUTO: STR 'EnableHardwareMouse'@0099f810; 'TooltipDelay Sec'@0099f824; SIG 1.00",
+  "name": "CClientExoAppInternal::InitializeClientOptions",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00796e00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004437c0] Steam batch B11a: STR '2D3D Bias'@0099f838; 'Environment Effects Streaming'@0099f844; 'Environment Effects Nonstreaming'@0099f864; SIG 1.00 | AUTO: STR '2D3D Bias'@0099f838; 'Environment Effects Streaming'@0099f844; 'Environment Effects Nonstreaming'@0099f864; SIG 1.00",
+  "name": "CClientExoAppInternal::InitializeSoundOptions",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007971a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00444410] Steam batch B11a: CALLEE 1 (callees: HiliteAreaObjects 0x7aa460); SIG 1.00 | AUTO: CALLEE 1 (callees: HiliteAreaObjects 0x7aa460); SIG 1.00",
+  "name": "CClientExoAppInternal::TurnOffKeyboardModal",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00797df0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004444e0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::ShutDownLoadGameLoadBar",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00797ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00444550] Steam batch B11a: CALLEE 2 (callees: RemoveAction 0x58ac50; callers: ChangeCharacter 0x740380); SIG 1.00 | AUTO: CALLEE 2 (callees: RemoveAction 0x58ac50; callers: ChangeCharacter 0x740380); SIG 1.00",
+  "name": "CClientExoAppInternal::ChangeCharacter",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00797f30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004446c0] Steam batch B11a: STR 'k_sup_solo'@0099f8d0; CALLEE 1 (callees: SetSoloMode 0x5feef0); SIG 1.00 | AUTO: STR 'k_sup_solo'@0099f8d0; CALLEE 1 (callees: SetSoloMode 0x5feef0); SIG 1.00",
+  "name": "CClientExoAppInternal::TogglePartyFollow",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007980a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00444780] Steam batch B11a: SIG 0.50 | reviewer match with anchor: 00798167 CMP [EBP+8],0x7f000000 and 00798173 OR EAX,0x80000000 (GOG imms 0x7f000000/0x80000000); size 35",
+  "name": "CClientExoAppInternal::ServerToClientObjectId",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004447b0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::ShowLoadScreen",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798190"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00444ba0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetPlayerCharacterName",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00444bf0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::IsPlayerCreature",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007985d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00444c80] Steam batch B11a: CALLEE 2 (callers: SetPlayerCreature 0x73f910, MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 2 (callers: SetPlayerCreature 0x73f910, MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::SetPlayerCreature",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00444cc0] Steam batch B11a: CALLEE 1 (callees: PauseWorldTimer 0x51b050); SIG 1.00 | AUTO: CALLEE 1 (callees: PauseWorldTimer 0x51b050); SIG 1.00",
+  "name": "CClientExoAppInternal::PlayLoadModuleMovies",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007986a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00444e40] Steam batch B11a: CALLEE 4 (callees: RemoveMoveToModuleMovies 0x7401c0, LoadAmbientTrackForDialog 0x7c40c0, UnpauseWorldTimer 0x51b0a0; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 4 (callees: RemoveMoveToModuleMovies 0x7401c0, LoadAmbientTrackForDialog 0x7c40c0, UnpauseWorldTimer 0x51b0a0; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::WaitForMovie",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798820"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00445190] Steam batch B11a: CALLEE 1 (callers: AddMoveToModuleMovie 0x740180) | reviewer match with anchor: 00798b70 thunk: CALL 0x7a0a40 AddMovieToExoArrayList with this+0x2d8 (ADD +0x2d8); GOG callee 0x44d040 +0x353A00 = 0x7a0a40; trusted caller CClientExoApp::AddMoveToModuleMovie 0x740180",
+  "name": "CClientExoAppInternal::AddMoveToModuleMovie",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798b70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00445250] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 00798c82 CALL 0x0093b470 (GOG CExoMoviePlayer::Constructor 0x9210c0 +0x1a3b0) after 00798c67 CALL operator new; MOV [EAX+0x130]",
+  "name": "CClientExoAppInternal::InitializeMoviePlayer",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798c30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004452f0] Steam batch B11a: SIG 1.00 | reviewer match with anchor: 00798cd0 body: while(0x93b570()==1){0x93b550(1,1);Sleep(5)} then 0x93b4f0 + delete [this+0x130]; GOG callees 0x921140/0x9211a0/0x9211c0 all +0x1a3b0 = 0x93b4f0/0x93b550/0x93b570",
+  "name": "CClientExoAppInternal::StopMovie",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00798cd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00446ae0] Steam batch B11a: CALLEE 2 (callees: GetNearestObjects 0x57be40; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetNearestObjects 0x57be40; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::DoPassiveSelection",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079a4c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00448240] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::BarkString",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079bc40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004482c0] Steam batch B11a: CALLEE 1 (callers: IsSoundPlayingInDialog 0x740290); SIG 1.00 | AUTO: CALLEE 1 (callers: IsSoundPlayingInDialog 0x740290); SIG 1.00",
+  "name": "CClientExoAppInternal::IsSoundPlayingInDialog",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079bcc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00448440] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::StopSoundPlayingInDialog",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079be40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00448540] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetPausedByCombat",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079bf40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00448660] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::GetControlledCharacterDead",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004486e0] Steam batch B11a: CALLEE 1 (callers: RunDeathSequence 0x7403a0); SIG 1.00 | AUTO: CALLEE 1 (callers: RunDeathSequence 0x7403a0); SIG 1.00",
+  "name": "CClientExoAppInternal::RunDeathSequence",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c0e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004489f0] Steam batch B11a: CALLEE 2 (callees: GetPauseTimer 0x51c3b0; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetPauseTimer 0x51c3b0; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::SetGameSpeed",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c3f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00448ae0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetLastPartyMemberTempKilled",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c4e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00448b50] Steam batch B11a: CALLEE 2 (callers: SetCanSendDialog 0x740420, MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 2 (callers: SetCanSendDialog 0x740420, MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::SetCanSendDialog",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00448bb0] Steam batch B11a: CALLEE 1 (callees: SetActivity 0x563da0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetActivity 0x563da0); SIG 1.00",
+  "name": "CClientExoAppInternal::GetCanSendDialog",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c5b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x00448fc0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::GetClientMeleeAnimation",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079c9c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00449090] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::GetClientRangedAnimation",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079ca90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00449120] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetLoadScreenByModuleName",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079cb20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00449360] Steam batch B11a: STR 'load_%s'@00994244; 'MusicResRef'@0099f92c; SIG 1.00 | AUTO: STR 'load_%s'@00994244; 'MusicResRef'@0099f92c; SIG 1.00",
+  "name": "CClientExoAppInternal::GetLoadMusicByModuleName",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079cd60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004495b0] Steam batch B11a: STR 'Load Bar = %d'@0099f938; SIG 1.00 | AUTO: STR 'Load Bar = %d'@0099f938; SIG 1.00",
+  "name": "CClientExoAppInternal::SetLoadBarProgress",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079cfb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x00449670] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::StartPazaakGame",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00449830] Steam batch B11a: CALLEE 2 (callees: GetGold 0x5812e0, SetGold 0x581330); SIG 1.00 | AUTO: CALLEE 2 (callees: GetGold 0x5812e0, SetGold 0x581330); SIG 1.00",
+  "name": "CClientExoAppInternal::EndPazaakGame",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004499f0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::PlayRumblePattern",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d3f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00449ae0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::StopRumblePattern",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d4e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00449b50] Steam batch B11a: CALLEE 3 (callees: IsGlobalFading 0x7cbc40; callers: MainLoop 0x781be0, DoPCAutosave 0x53af20); SIG 1.00 | AUTO: CALLEE 3 (callees: IsGlobalFading 0x7cbc40; callers: MainLoop 0x781be0, DoPCAutosave 0x53af20); SIG 1.00",
+  "name": "CClientExoAppInternal::UpdateRumble",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00449ce0] Steam batch B11a: CALLEE 2 (callees: RePopulateMainInterface 0x7ceb50; callers: SetCombatMode 0x740880); SIG 1.00 | AUTO: CALLEE 2 (callees: RePopulateMainInterface 0x7ceb50; callers: SetCombatMode 0x740880); SIG 1.00",
+  "name": "CClientExoAppInternal::SetCombatMode",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d6e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00449d70] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::UpdateSoundEngine_2",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00449e40] Steam batch B11a: CALLEE 4 (callees: GetServerDoor 0x87be80, GetServerPlaceable 0x842d00, GetClientCreature 0x58ae90; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 4 (callees: GetServerDoor 0x87be80, GetServerPlaceable 0x842d00, GetClientCreature 0x58ae90; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::UpdateCombatMode",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079d840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0044a460] Steam batch B11a: STR '%s %d'@009884d0; CALLEE 1 (callees: AddFloatyText 0x7cee80); SIG 1.00 | AUTO: STR '%s %d'@009884d0; CALLEE 1 (callees: AddFloatyText 0x7cee80); SIG 1.00",
+  "name": "CClientExoAppInternal::AddFloatyText",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079de60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044a810] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::GetGUIString",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079e210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044aa20] Steam batch B11a: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::SetAutoPaused",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079e420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044ab50] Steam batch B11a: STR 'EnableFury'@0099f948; 'EnableClairvoyanceFull'@0099f954; 'EnableForceSight'@0099f96c; CALLEE 1 (callers: EnableVideoEffect 0x7409a0); SIG 1.00 | AUTO: STR 'EnableFury'@0099f948; 'EnableClairvoyanceFull'@0099f954; 'EnableForceSight'@0099f96c; CALLEE 1 (callers: EnableVideoEffect 0x7409a0); SIG 1.00",
+  "name": "CClientExoAppInternal::EnableVideoEffect",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079e550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044af60] Steam batch B11a: CALLEE 1 (callers: DisableVideoEffect 0x7409c0); SIG 1.00 | AUTO: CALLEE 1 (callers: DisableVideoEffect 0x7409c0); SIG 1.00",
+  "name": "CClientExoAppInternal::DisableVideoEffect",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079e960"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044afa0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::DelayNextEnemyAutoPause",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079e9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x0044afd0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::ShowTutorialWindow",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079e9d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044b050] Steam batch B11a: STR 'LIVE%d:OVERRIDE\\\\textures'@0099fa04; 'LIVE%d:RIMSXBOX\\\\live%ddx'@0099fa20; 'LIVE%d:RIMSXBOX\\\\live%d'@0099fa40; CALLEE 4 (callees: AddEncapsulatedResourceFile 0x7115c0, AddResourceImageFile 0x7115e0, AddFixedKeyTableFile 0x711670); SIG 1.00 | AUTO: STR 'LIVE%d:OVERRIDE\\\\textures'@0099fa04; 'LIVE%d:RIMSXBOX\\\\live%ddx'@0099fa20; 'LIVE%d:RIMSXBOX\\\\live%d'@0099fa40; CALLEE 4 (callees: AddEncapsulatedResourceFi",
+  "name": "CClientExoAppInternal::AddDownloadedResources",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079ea50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044b360] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::CrownFutureLeader",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079ed60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0044b610] Steam batch B11a: STR 'RumbleCutOff'@0099fa70; 'RumblePattern'@0099fa80; SIG 1.00 | AUTO: STR 'RumbleCutOff'@0099fa70; 'RumblePattern'@0099fa80; SIG 1.00",
+  "name": "CClientExoAppInternal::LookUpAndPerformRumbleWithCutOff",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079f010"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044ba30] Steam batch B11a: CALLEE 3 (callees: SetCombatState 0x57a560, GetClientCreature 0x58ae90; callers: PlayerFlourishWeapons 0x7408a0); SIG 1.00 | AUTO: CALLEE 3 (callees: SetCombatState 0x57a560, GetClientCreature 0x58ae90; callers: PlayerFlourishWeapons 0x7408a0); SIG 1.00",
+  "name": "CClientExoAppInternal::PlayerFlourishWeapons",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079f430"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044bcf0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::LoadOptions",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079f6f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0044bd70] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::ChangeCharacterToNextLivingPartyMember",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079f770"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044c050] Steam batch B11a: CALLEE 1 (callees: GetModuleName 0x51bdb0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetModuleName 0x51bdb0); SIG 1.00",
+  "name": "CClientExoAppInternal::UpdateLoadingScreenHint",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x0079fa50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044cb00] Steam batch B11a: CALLEE 1 (callers: CancelMovie 0x740f60) | reviewer match with anchor: 007a0500 CMP [EAX+0x130],0 then CALL 0x0093b550(1,0) = GOG CExoMoviePlayer::CancelMovie 0x9211a0 +0x1a3b0; caller CClientExoApp::CancelMovie 0x740f60 trusted",
+  "name": "CClientExoAppInternal::CancelMovie",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0500"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044cb30] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetLastTarget",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044cb80] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::BusyWaitMenuMusic",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044cc30] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::BusyWaitMuteSound",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0630"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044cd50] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetToolTipInstantMode",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044d040] Steam batch B11a: STR 'LIVE%d:movies\\\\%s'@0099fafc; SIG 1.00 | AUTO: STR 'LIVE%d:movies\\\\%s'@0099fafc; SIG 1.00",
+  "name": "CClientExoAppInternal::AddMovieToExoArrayList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0a40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044d510] Steam batch B11a: CALLEE 1 (callers: AddMovieToMovieQueue 0x7411c0); SIG 0.50 | AUTO: CALLEE 1 (callers: AddMovieToMovieQueue 0x7411c0); SIG 0.50",
+  "name": "CClientExoAppInternal::AddMovieToMovieQueue",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044d550] Steam batch B11a: SIG 0.50 | reviewer match with anchor: 007a0f7a CALL 0x007a0fb0 PlayMoviesInExoArrayList (GOG callee 0x44d5b0 +0x353A00 same delta); ADD EAX,0x2e4 / 0x2f0",
+  "name": "CClientExoAppInternal::PlayMovieQueue",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x0044d5b0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::PlayMoviesInExoArrayList",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a0fb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044d730] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::StartCreditSequence",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a1130"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044d8c0] Steam batch B11a: CALLEE 1 (callers: StopCreditSequence 0x741050) | reviewer match with anchor: 007a12ca MOV dword ptr [EAX+0x4c0],0x0 (GOG disp 0x4c0); caller CClientExoApp::StopCreditSequence 0x741050 (0074105d CALL) trusted-maps to GOG caller",
+  "name": "CClientExoAppInternal::StopCreditSequence",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a12c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044d8e0] Steam batch B11a: SIG 0.50 | reviewer match with anchor: 007a12e9 CALL 0x0091eb8b (rand, GOG 0x925936) then 007a1306/1a/28 CALL 0x00765aa0 with PUSH 7/8/9 (GOG imms 3/4/7/8/9)",
+  "name": "CClientExoAppInternal::PlayCharacterSelectSound",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a12e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044d980] Steam batch B11a: SIG 0.50 | reviewer match with anchor: 007a1390 MOV [EBP-4],0xbe54 (GOG imm 0xbe54), 007a13dc CALL 0x72fea0 (GOG 0x616aa0 +0x119400 same delta as 0x616850->0x72fc50), 007a13bb CALL 0x71dee0 TLK string",
+  "name": "CClientExoAppInternal::GetDisplayCharacterForKey",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a1380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044da00] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetEvilEndingHackInProgress",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a1400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0044da90] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::RestoreMousePositionTo",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a1490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044dac0] Steam batch B11a: STR 'K2_%05i.tga'@0099fb18; SIG 1.00 | AUTO: STR 'K2_%05i.tga'@0099fb18; SIG 1.00",
+  "name": "CClientExoAppInternal::DoScreenShot",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a14c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0044db90] Steam batch B11a: STR 'SUPERMODELS:smsetc'@0099fb24; 'SUPERMODELS:smsetb'@0099fb38; 'SUPERMODELS:smseta'@0099fb4c; CALLEE 1 (callees: RemoveEncapsulatedResourceFile 0x7116b0); SIG 1.00 | AUTO: STR 'SUPERMODELS:smsetc'@0099fb24; 'SUPERMODELS:smsetb'@0099fb38; 'SUPERMODELS:smseta'@0099fb4c; CALLEE 1 (callees: RemoveEncapsulatedResourceFile 0x7116b0); SI",
+  "name": "CClientExoAppInternal::UnloadSuperModelSet",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007a1590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00459080] Steam batch B11a: STR '%d %c %f %f %f\\n'@0099f734; 'TILTDOWN'@0099ffe4; 'TILTUP'@0099fff0; CALLEE 8 (callees: GetInputClass 0x73ff00, GetIsObjectCorpse 0x7a79a0, HandleMouseOver 0x7b3a00; callers: MainLoop 0x781be0); SIG 1.00 | reviewer match with anchor: 007aecf6 PUSH 'TILTDOWN' (0x99ffe4) and 007aecb8 'TILTUP'; GOG also has TILTDOWN/TILTUP and '%d %c %f %f %f\\n'; size 15798 both",
+  "name": "CClientExoAppInternal::ProcessInput",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007ac470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0045cea0] Steam batch B11a: STR '%d %d %d '@009a0028; '%d %d'@009a0034; SIG 1.00 | AUTO: STR '%d %d %d '@009a0028; '%d %d'@009a0034; SIG 1.00",
+  "name": "CClientExoAppInternal::ReadPlayBackInputEvents",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b0290"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0045daa0] Steam batch B11a: STR 'yaw %f'@009a003c; 'pitch %f'@009a0044; 'dist %f'@009a0050; SIG 1.00 | AUTO: STR 'yaw %f'@009a003c; 'pitch %f'@009a0044; 'dist %f'@009a0050; SIG 1.00",
+  "name": "CClientExoAppInternal::PlayBackInputEvents",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b0e90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0045ded0] Steam batch B11a: STR 'GBL_QUIT_SWOOP'@009a0058; CALLEE 9 (callees: GetPausedByCombat 0x740330, PlayerFlourishWeapons 0x7408a0, GetAutoPaused 0x740960); SIG 1.00 | AUTO: STR 'GBL_QUIT_SWOOP'@009a0058; CALLEE 9 (callees: GetPausedByCombat 0x740330, PlayerFlourishWeapons 0x7408a0, GetAutoPaused 0x740960); SIG 1.00",
+  "name": "CClientExoAppInternal::HandleInputEvent",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b12c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0045fc60] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::SetInputClass",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3050"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0045ff80] Steam batch B11a: CALLEE 1 (callers: DisableInput 0x7402d0) | reviewer match with anchor: 007b337a MOV dword ptr [EAX+0x2bc],0x1 (GOG disp 0x2bc); sole caller CClientExoApp::DisableInput 0x7402d0 trusted-maps to GOG caller 0x40d790",
+  "name": "CClientExoAppInternal::DisableInput",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3370"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0045ffa0] Steam batch B11a: CALLEE 2 (callers: EnableInput 0x7402f0, MainLoop 0x781be0) | reviewer match with anchor: 007b339a MOV dword ptr [EAX+0x2bc],0x0 (GOG disp 0x2bc); callers CClientExoApp::EnableInput 0x7402f0 and MainLoop 0x781be0 both trusted-map to GOG callers",
+  "name": "CClientExoAppInternal::EnableInput",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0045ffc0] Steam batch B11a: CALLEE 1 (callers: DismissInGameGUI 0x740310) | reviewer match with anchor: 007b33b0 callees 0x7ca060 HideSWInGameGui and 0x7b3050 SetInputClass (GOG 0x45fc60 +0x3533F0); caller CClientExoApp::DismissInGameGUI 0x740310",
+  "name": "CClientExoAppInternal::DismissInGameGUI",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b33b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00460000] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::PerformXMouseMoveAction",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b33f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004600b0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::PerformYMouseMoveAction",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b34a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00460170] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::PerformLButtonDownAction",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3560"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00460290] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::PerformLButtonUpAction",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00460480] Steam batch B11a: CALLEE 1 (callers: HandleMouseOver 0x7b3a00) | reviewer match with anchor: 007b38bb CALL 0x00413a80 (GOG callee 0x911f00 SetSoftwareMouseCursor, same -0x4FE480 delta) and 007b389d CMP [EAX+0x274],0; RET 12",
+  "name": "CClientExoAppInternal::SetMouseCursor",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3870"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004604e0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::HideMouse",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b38d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00460540] Steam batch B11a: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CClientExoAppInternal::ShowMouse",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00460630] Steam batch B11a: CALLEE 1 (callees: SetMouseCursor 0x7b3870); SIG 1.00 | reviewer match with anchor: 007b3c5d CALL 0x007a17a0 (counterpart of GOG callee 0x44ded0) and 007b3c0e CALL 0x7b3ee0; disps 0x4b0/0x4cc/0x4d0/0x2b4 and imm 0x7f000000; size 667",
+  "name": "CClientExoAppInternal::HandleMouseOver",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3a00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004608d0] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientExoAppInternal::HandleMouseClickInWorld",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b3ca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00460d20] Steam batch B11a: STR 'UseSearch'@0099d780; 'i_dialog'@0099f364; 'i_disablemine'@009a0078; CALLEE 5 (callees: GetServerArea 0x7aae00, GetCurrentAnimation 0x7ed7d0, GetServerDoor 0x87be80; callers: HandleMouseOver 0x7b3a00); SIG 1.00 | reviewer match with anchor: 007b45db 'i_dialog' (0x99f364) and 007b5863 'i_disablemine' (0x9a0078) also in GOG strings; size 6909",
+  "name": "CClientExoAppInternal::GetDefaultActions",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007b40f0"
+ }
+]

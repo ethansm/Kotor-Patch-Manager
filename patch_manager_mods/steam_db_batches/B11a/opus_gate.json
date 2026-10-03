@@ -1,0 +1,1767 @@
+{
+ "batch": "B11a",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus",
+ "decoy_cards": 50,
+ "decoys_accepted": 2,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10,
+  "5": 10
+ },
+ "full_read": 66,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c7d0",
+   "name": "GetClientName",
+   "route": "sig",
+   "steam_addr": "0x0073f310"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c790",
+   "name": "GetCaptureEvents",
+   "route": "sig",
+   "steam_addr": "0x0073f2d0"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040dc30",
+   "name": "SetFutureLeader",
+   "route": "sig",
+   "steam_addr": "0x00740770"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004316e0",
+   "name": "DestroyQuestJournal",
+   "route": "sig",
+   "steam_addr": "0x007850c0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044d5b0",
+   "name": "PlayMoviesInExoArrayList",
+   "route": "sig",
+   "steam_addr": "0x007a0fb0"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c870",
+   "name": "GetWorldTimer",
+   "route": "c2",
+   "steam_addr": "0x0073f3b0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00431ef0",
+   "name": "SetCaptureEvents",
+   "route": "c2",
+   "steam_addr": "0x007858d0"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c930",
+   "name": "GetPlayerCreatureId",
+   "route": "c2",
+   "steam_addr": "0x0073f470"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c3d0",
+   "name": "Constructor",
+   "steam_addr": "0x0073ef30",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c470",
+   "name": "GetFPS",
+   "steam_addr": "0x0073f410",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c4f0",
+   "name": "BeginIntro",
+   "steam_addr": "0x0073f490",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040c730",
+   "name": "CreateModule",
+   "steam_addr": "0x0073f270",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040cd90",
+   "name": "AddObjectToHitcheckIgnoreList",
+   "steam_addr": "0x0073f8d0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040cdb0",
+   "name": "RemoveObjectFromHitcheckIgnoreList",
+   "steam_addr": "0x0073f8b0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040ce40",
+   "name": "ContinueMessageProcessing",
+   "steam_addr": "0x0073f980",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040ce60",
+   "name": "Initialize",
+   "steam_addr": "0x0073f9a0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040cf30",
+   "name": "SetCaptureEvents",
+   "steam_addr": "0x0073fa70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040cf50",
+   "name": "SetCaptureEventPlayBack",
+   "steam_addr": "0x0073fa90",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040cf70",
+   "name": "SetCaptureEventPlayBackRate",
+   "steam_addr": "0x0073fab0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040cf90",
+   "name": "SetDebugMode",
+   "steam_addr": "0x0073fa70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d070",
+   "name": "GetSWParty",
+   "steam_addr": "0x0073fbb0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d1c0",
+   "name": "RestartMoviesIfNecessary",
+   "steam_addr": "0x0073fd00",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d1e0",
+   "name": "GetApplicationId",
+   "steam_addr": "0x0073fd70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d250",
+   "name": "StopMenuMusic",
+   "steam_addr": "0x0073fd90",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d270",
+   "name": "StopLoadMusic",
+   "steam_addr": "0x0073fd70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d290",
+   "name": "AquireLoadMusic",
+   "steam_addr": "0x0073fdd0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d4c0",
+   "name": "GetPlayerCharacterName",
+   "steam_addr": "0x00740000",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d720",
+   "name": "BarkString",
+   "steam_addr": "0x007404d0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040d860",
+   "name": "RunDeathSequence",
+   "steam_addr": "0x007403a0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040db90",
+   "name": "StartPazaakGame",
+   "steam_addr": "0x007406d0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040dbc0",
+   "name": "EndPazaakGame",
+   "steam_addr": "0x007404d0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0040df80",
+   "name": "GetPlayerMovementInput",
+   "steam_addr": "0x00740ac0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoApp",
+   "gog": "0x0040e4f0",
+   "name": "StartCreditSequence",
+   "steam_addr": "0x00741030",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0042dd90",
+   "name": "GetModuleCamera",
+   "steam_addr": "0x007819e0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0042df60",
+   "name": "Initialize",
+   "steam_addr": "0x007819e0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00430300",
+   "name": "StallServerCode",
+   "steam_addr": "0x00783d80",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00430a40",
+   "name": "GetPauseState",
+   "steam_addr": "0x00784420",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00431750",
+   "name": "DestroyQuestJournal_2",
+   "steam_addr": "0x00785130",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004317f0",
+   "name": "AddToPauseExclusionList_2",
+   "steam_addr": "0x007851d0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00431850",
+   "name": "CreateWorldJournal",
+   "steam_addr": "0x00785230",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004318e0",
+   "name": "DestroyWorldJournal",
+   "steam_addr": "0x007852c0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00436970",
+   "name": "LoadItemDropSoundList",
+   "steam_addr": "0x0078a420",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004381a0",
+   "name": "ShutDownMoviePlayer",
+   "steam_addr": "0x0078bcc0",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438230",
+   "name": "CleanUpModuleServices",
+   "steam_addr": "0x0078bc50",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004382a0",
+   "name": "GetPlayerByPlayerID",
+   "steam_addr": "0x0078bcc0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438360",
+   "name": "GetItemByGameObjectID",
+   "steam_addr": "0x0078bd80",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004383d0",
+   "name": "GetCreatureByGameObjectID",
+   "steam_addr": "0x0078bdf0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438440",
+   "name": "GetAreaByGameObjectID",
+   "steam_addr": "0x0078be60",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004384b0",
+   "name": "GetTriggerByGameObjectID",
+   "steam_addr": "0x0078bed0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438520",
+   "name": "GetProjectileByGameObjectID",
+   "steam_addr": "0x0078bf40",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438590",
+   "name": "GetPlaceableByGameObjectID",
+   "steam_addr": "0x0078bfb0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438600",
+   "name": "GetDoorByGameObjectID",
+   "steam_addr": "0x0078c020",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438670",
+   "name": "GetAreaOfEffectByGameObjectID",
+   "steam_addr": "0x0078c090",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004386e0",
+   "name": "GetSoundObjectByGameObjectID",
+   "steam_addr": "0x0078c100",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438750",
+   "name": "AttachPlayerGameObjectToArea",
+   "steam_addr": "0x0078c170",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004388e0",
+   "name": "ResetDriveAcceleration",
+   "steam_addr": "0x0078bc50",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438910",
+   "name": "InitializeInGameGUI",
+   "steam_addr": "0x0078bc50",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00438930",
+   "name": "UpdateCamera",
+   "steam_addr": "0x0078c350",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x004394c0",
+   "name": "GetPlayerCreature",
+   "steam_addr": "0x0078cee0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00439570",
+   "name": "ContinueMessageProcessing",
+   "steam_addr": "0x0078cfa0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043a1c0",
+   "name": "SetVideoMode",
+   "steam_addr": "0x0078dbf0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043a510",
+   "name": "EndLoadBar",
+   "steam_addr": "0x0078df40",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043a5e0",
+   "name": "AddCreatureModelDirectlyToIgnoreList",
+   "steam_addr": "0x0078e010",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043a610",
+   "name": "SetCharacterFile",
+   "steam_addr": "0x0078e040",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043adb0",
+   "name": "StopMenuMusic",
+   "steam_addr": "0x0078e7e0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043ae40",
+   "name": "FadeAndStopStreamingSoundSource",
+   "steam_addr": "0x0078e870",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043aec0",
+   "name": "StartLoadMusic",
+   "steam_addr": "0x0078e8f0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043b020",
+   "name": "StopLoadMusic",
+   "steam_addr": "0x0078ea50",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0043b150",
+   "name": "GetObjectName",
+   "steam_addr": "0x0078eba0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x00444b60",
+   "name": "IndicateObject",
+   "steam_addr": "0x00798540",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044aa20",
+   "name": "SetAutoPaused",
+   "steam_addr": "0x0079e420",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044bd70",
+   "name": "ChangeCharacterToNextLivingPartyMember",
+   "steam_addr": "0x0079f770",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044deb0",
+   "name": "GetPausedByCombat",
+   "steam_addr": "0x007a1b90",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044ded0",
+   "name": "InitializeMoviePlayer_2",
+   "steam_addr": "0x007a1130",
+   "why": "reviewer corrected_addr, label_suspect"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cd50",
+   "name": "InitializeInGameGUI",
+   "steam_addr": "0x0073f870"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e730",
+   "name": "MovieWindowActivated",
+   "steam_addr": "0x00741270"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00460420",
+   "name": "PerformRButtonDownAction",
+   "steam_addr": "0x007b3810"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040df10",
+   "name": "ClearCachedCreatures",
+   "steam_addr": "0x00740a50"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cbe0",
+   "name": "SendLoadGameRequest",
+   "steam_addr": "0x0073f720"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x004489b0",
+   "name": "HurryDeathSequence",
+   "steam_addr": "0x0079c3b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e440",
+   "name": "HideMouse",
+   "steam_addr": "0x00740f80"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040da20",
+   "name": "GetLoadMusicByModuleName",
+   "steam_addr": "0x00740560"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d200",
+   "name": "AddObjectModelDirectlyToIgnoreList",
+   "steam_addr": "0x0073fd20"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00431950",
+   "name": "JournalUpdated",
+   "steam_addr": "0x00785330"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00449540",
+   "name": "SetLoadScreenHint",
+   "steam_addr": "0x0079cf40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e420",
+   "name": "CancelMovie",
+   "steam_addr": "0x00740f60"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d360",
+   "name": "IsPlayerCreature",
+   "steam_addr": "0x0073fe80"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040db70",
+   "name": "UpdateRoom",
+   "steam_addr": "0x007406b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cc90",
+   "name": "GetPlayerByPlayerID",
+   "steam_addr": "0x0073f7d0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040ca50",
+   "name": "GetTriggerByGameObjectID",
+   "steam_addr": "0x0073f590"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e000",
+   "name": "SaveOptions",
+   "steam_addr": "0x00740b40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d220",
+   "name": "StartMenuMusic",
+   "steam_addr": "0x0073fd40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c6f0",
+   "name": "DisplayMainMenu",
+   "steam_addr": "0x0073f230"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e550",
+   "name": "EnableMouseAtEndOfLoadModuleMovie",
+   "steam_addr": "0x00741090"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x0043a820",
+   "name": "RestartMoviesIfNecessary",
+   "steam_addr": "0x0078e250"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c6c0",
+   "name": "SetCharacterFile",
+   "steam_addr": "0x0073f200"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cfb0",
+   "name": "StartServices",
+   "steam_addr": "0x0073fad0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00439760",
+   "name": "RemoveObjectFromHitcheckIgnoreList",
+   "steam_addr": "0x0078d190"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cb90",
+   "name": "GetActiveTimer",
+   "steam_addr": "0x0073f6d0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x004396d0",
+   "name": "AddObjectToHitcheckIgnoreList",
+   "steam_addr": "0x0078d100"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cfe0",
+   "name": "SetEventDescriptions",
+   "steam_addr": "0x0073fb00"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d0b0",
+   "name": "SetVideoMode",
+   "steam_addr": "0x0073fbd0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d880",
+   "name": "SetGameOver",
+   "steam_addr": "0x007403c0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cf10",
+   "name": "Uninitialize",
+   "steam_addr": "0x0073fa30"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x004443b0",
+   "name": "SetInputActive",
+   "steam_addr": "0x00797d90"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cdd0",
+   "name": "EmptyHitcheckIgnoreList",
+   "steam_addr": "0x0073f8f0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d300",
+   "name": "QueryExitProgram",
+   "steam_addr": "0x0073fe20"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cb60",
+   "name": "SetPauseState",
+   "steam_addr": "0x0073f6a0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040ce10",
+   "name": "HandleMessage",
+   "steam_addr": "0x0073f930"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d480",
+   "name": "GetLoadScreenVisible",
+   "steam_addr": "0x0073ffa0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040dd40",
+   "name": "SetCombatMode",
+   "steam_addr": "0x00740880"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c570",
+   "name": "JournalUpdated",
+   "steam_addr": "0x0073f0b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cb40",
+   "name": "GetPauseState",
+   "steam_addr": "0x0073f680"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x0044d6f0",
+   "name": "MovieWindowDeactivated",
+   "steam_addr": "0x007a10f0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x0044d940",
+   "name": "EnableMouseAtEndOfLoadModuleMovie",
+   "steam_addr": "0x007a1340"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c750",
+   "name": "ExitProgram",
+   "steam_addr": "0x0073f290"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040ca70",
+   "name": "GetProjectileByGameObjectID",
+   "steam_addr": "0x0073f5b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040df30",
+   "name": "LookUpAndPerformRumbleWithCutOff",
+   "steam_addr": "0x00740a70"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cad0",
+   "name": "GetAreaOfEffectByGameObjectID",
+   "steam_addr": "0x0073f610"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e020",
+   "name": "LoadOptions",
+   "steam_addr": "0x00740b60"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00460460",
+   "name": "PerformZMouseMoveAction",
+   "steam_addr": "0x007b3850"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x0044bcc0",
+   "name": "SaveOptions",
+   "steam_addr": "0x0079f6c0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d2e0",
+   "name": "GetActivePauseState",
+   "steam_addr": "0x0073fe00"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00460440",
+   "name": "PerformRButtonUpAction",
+   "steam_addr": "0x007b3830"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cc70",
+   "name": "GetPlayerList",
+   "steam_addr": "0x0073f7b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d7d0",
+   "name": "DismissInGameGUI",
+   "steam_addr": "0x00740310"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e510",
+   "name": "StopCreditSequence",
+   "steam_addr": "0x00741050"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c5a0",
+   "name": "GetObjectName",
+   "steam_addr": "0x0073f0e0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e3a0",
+   "name": "BusyWaitMenuMusic",
+   "steam_addr": "0x00740ee0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c710",
+   "name": "UnloadModule",
+   "steam_addr": "0x0073f250"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d340",
+   "name": "TurnOffKeyboardModal",
+   "steam_addr": "0x0073fe60"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x0044d710",
+   "name": "MovieWindowActivated",
+   "steam_addr": "0x007a1110"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d900",
+   "name": "GetCanSendDialog",
+   "steam_addr": "0x00740440"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c9d0",
+   "name": "GetPlayerByGameObjectID",
+   "steam_addr": "0x0073f510"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e7c0",
+   "name": "GetDisplayCharacterForKey",
+   "steam_addr": "0x00741300"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040dd00",
+   "name": "TogglePartyFollow",
+   "steam_addr": "0x00740840"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cd70",
+   "name": "ServerModeChange",
+   "steam_addr": "0x0073f890"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cab0",
+   "name": "GetDoorByGameObjectID",
+   "steam_addr": "0x0073f5f0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d750",
+   "name": "IsSoundPlayingInDialog",
+   "steam_addr": "0x00740290"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d7b0",
+   "name": "EnableInput",
+   "steam_addr": "0x007402f0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x004397f0",
+   "name": "EmptyHitcheckIgnoreList",
+   "steam_addr": "0x0078d220"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00444bd0",
+   "name": "GetPlayerCharacterName",
+   "steam_addr": "0x007985b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d020",
+   "name": "ShutDownToMainMenu",
+   "steam_addr": "0x0073fb40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cdf0",
+   "name": "SetPlayerCreature",
+   "steam_addr": "0x0073f910"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040dd60",
+   "name": "PlayerFlourishWeapons",
+   "steam_addr": "0x007408a0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040de20",
+   "name": "GetAutoPaused",
+   "steam_addr": "0x00740960"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e460",
+   "name": "ShowMouse",
+   "steam_addr": "0x00740fa0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d660",
+   "name": "GetMoveToModuleMovies",
+   "steam_addr": "0x007401a0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d460",
+   "name": "HandleInputEvent",
+   "steam_addr": "0x0073ff80"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e400",
+   "name": "SetMouseMode",
+   "steam_addr": "0x00740f40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040cbb0",
+   "name": "SendSaveGameRequest",
+   "steam_addr": "0x0073f6f0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040e3c0",
+   "name": "BusyWaitMuteSound",
+   "steam_addr": "0x00740f00"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040c5c0",
+   "name": "AddFeedbackMessage",
+   "steam_addr": "0x0073f100"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d9c0",
+   "name": "GetClientMeleeAnimation",
+   "steam_addr": "0x00740500"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C0",
+   "gog": "0x00439c50",
+   "name": "SetDebugMode",
+   "steam_addr": "0x0078d680"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d6b0",
+   "name": "IndicateObject",
+   "steam_addr": "0x007401f0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d4a0",
+   "name": "SetPlayerCharacterName",
+   "steam_addr": "0x0073ffc0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d000",
+   "name": "StopServices",
+   "steam_addr": "0x0073fb20"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C0",
+   "gog": "0x0040d0d0",
+   "name": "SetTexturePack",
+   "steam_addr": "0x0073fbf0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x00460d20",
+   "name": "GetDefaultActions",
+   "steam_addr": "0x007b40f0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x0043a6c0",
+   "name": "ShutDownToMainMenu",
+   "steam_addr": "0x0078e0f0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0044d8c0",
+   "name": "StopCreditSequence",
+   "steam_addr": "0x007a12c0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x00436cf0",
+   "name": "ReadVideoModeSettings",
+   "steam_addr": "0x0078a7a0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ca30",
+   "name": "GetAreaByGameObjectID",
+   "steam_addr": "0x0073f570"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0044d550",
+   "name": "PlayMovieQueue",
+   "steam_addr": "0x007a0f50"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040cea0",
+   "name": "MainLoop",
+   "steam_addr": "0x0073f9c0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0043ab70",
+   "name": "AddSimpleObjectModelDirectlyToIgnoreList",
+   "steam_addr": "0x0078e5a0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d840",
+   "name": "ChangeCharacter",
+   "steam_addr": "0x00740380"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d3a0",
+   "name": "ServerToClientObjectId",
+   "steam_addr": "0x0073fec0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040e280",
+   "name": "GetNextLoadScreenHintSTRREF",
+   "steam_addr": "0x00740dc0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d810",
+   "name": "SetPausedByCombat",
+   "steam_addr": "0x00740350"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ddf0",
+   "name": "SetAutoPaused",
+   "steam_addr": "0x00740930"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0043aaf0",
+   "name": "AddItemModelDirectlyToIgnoreList",
+   "steam_addr": "0x0078e520"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c490",
+   "name": "Destructor",
+   "steam_addr": "0x0073eff0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00430a60",
+   "name": "GetActivePauseState",
+   "steam_addr": "0x00784440"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x00460630",
+   "name": "HandleMouseOver",
+   "steam_addr": "0x007b3a00"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x0043b710",
+   "name": "AddFeedbackMessage",
+   "steam_addr": "0x0078f160"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d770",
+   "name": "StopSoundPlayingInDialog",
+   "steam_addr": "0x007402b0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c950",
+   "name": "GetModuleCamera",
+   "steam_addr": "0x0073f490"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d2b0",
+   "name": "SetStartMenuMusicOnMovieEnd",
+   "steam_addr": "0x0073fdd0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c830",
+   "name": "IsClientImeUI",
+   "steam_addr": "0x0073f370"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C2",
+   "gog": "0x0040d500",
+   "name": "GetAreaNotReadyToDisplay",
+   "steam_addr": "0x00740020"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d8c0",
+   "name": "SetLastPartyMemberTempKilled",
+   "steam_addr": "0x00740400"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040df60",
+   "name": "GetPlayerMovementInput",
+   "steam_addr": "0x00740aa0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d1a0",
+   "name": "GetDisableMovies",
+   "steam_addr": "0x0073fcc0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d5b0",
+   "name": "PlayLoadModuleMovies",
+   "steam_addr": "0x007400f0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d3c0",
+   "name": "SetInputClass",
+   "steam_addr": "0x0073fee0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040cd10",
+   "name": "GetServerInfo",
+   "steam_addr": "0x0073f830"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040da00",
+   "name": "SetLoadScreenByModuleName",
+   "steam_addr": "0x00740540"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00445250",
+   "name": "InitializeMoviePlayer",
+   "steam_addr": "0x00798c30"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040de40",
+   "name": "SetLoadScreenHint",
+   "steam_addr": "0x00740980"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0044d980",
+   "name": "GetDisplayCharacterForKey",
+   "steam_addr": "0x007a1380"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d430",
+   "name": "HideLoadScreen",
+   "steam_addr": "0x0073ff50"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040de60",
+   "name": "EnableVideoEffect",
+   "steam_addr": "0x007409a0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C2",
+   "gog": "0x0040cc10",
+   "name": "GetInGameGui",
+   "steam_addr": "0x0073f750"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d7f0",
+   "name": "GetPausedByCombat",
+   "steam_addr": "0x00740330"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0045ff80",
+   "name": "DisableInput",
+   "steam_addr": "0x007b3370"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0043a920",
+   "name": "AddCreatureModelDirectlyToIgnoreList_2",
+   "steam_addr": "0x0078e350"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d550",
+   "name": "GetMGOArray",
+   "steam_addr": "0x00740070"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C2",
+   "gog": "0x0040d090",
+   "name": "GetHitCheckMaterialMask",
+   "steam_addr": "0x0073fbb0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d620",
+   "name": "IsMoviePlaying",
+   "steam_addr": "0x00740160"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040cd30",
+   "name": "AttachPlayerGameObjectToArea",
+   "steam_addr": "0x0073f850"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c8d0",
+   "name": "GetConnectionLib",
+   "steam_addr": "0x0073f410"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ca10",
+   "name": "GetCreatureByGameObjectID",
+   "steam_addr": "0x0073f550"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040dec0",
+   "name": "DelayNextEnemyAutoPause",
+   "steam_addr": "0x00740a00"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x00459080",
+   "name": "ProcessInput",
+   "steam_addr": "0x007ac470"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040de80",
+   "name": "DisableVideoEffect",
+   "steam_addr": "0x007409c0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040caf0",
+   "name": "GetSoundObjectByGameObjectID",
+   "steam_addr": "0x0073f630"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ccf0",
+   "name": "GetClientOptions",
+   "steam_addr": "0x0072fb00"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d8e0",
+   "name": "SetCanSendDialog",
+   "steam_addr": "0x00740420"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d700",
+   "name": "ResetDriveAcceleration",
+   "steam_addr": "0x00740240"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ddb0",
+   "name": "GetGUIString",
+   "steam_addr": "0x007408f0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c9f0",
+   "name": "GetItemByGameObjectID",
+   "steam_addr": "0x0073f530"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d4e0",
+   "name": "GetPlayerCharacterSet",
+   "steam_addr": "0x00740000"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d320",
+   "name": "SetInputActive",
+   "steam_addr": "0x0073fe40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d640",
+   "name": "AddMoveToModuleMovie",
+   "steam_addr": "0x00740180"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d790",
+   "name": "DisableInput",
+   "steam_addr": "0x007402d0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00439850",
+   "name": "SetHitcheckIgnoreList",
+   "steam_addr": "0x0078d280"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0045ffc0",
+   "name": "DismissInGameGUI",
+   "steam_addr": "0x007b33b0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0045ffa0",
+   "name": "EnableInput",
+   "steam_addr": "0x007b3390"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040e6f0",
+   "name": "PlayMovieQueue",
+   "steam_addr": "0x00741230"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040dcc0",
+   "name": "PlayRumblePattern",
+   "steam_addr": "0x00740800"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ce80",
+   "name": "IsClientInitialized",
+   "steam_addr": "0x0073f9a0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00431c40",
+   "name": "SendSaveGameRequest",
+   "steam_addr": "0x00785620"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d580",
+   "name": "GetMiniGame",
+   "steam_addr": "0x007400a0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00436b80",
+   "name": "ReadAndSetVideoMode",
+   "steam_addr": "0x0078a630"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040da90",
+   "name": "SetLoadBarProgress",
+   "steam_addr": "0x007405d0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00445190",
+   "name": "AddMoveToModuleMovie",
+   "steam_addr": "0x00798b70"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040db00",
+   "name": "SetLastTarget",
+   "steam_addr": "0x00740640"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0043a890",
+   "name": "AddObjectModelDirectlyToIgnoreList",
+   "steam_addr": "0x0078e2c0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040e4d0",
+   "name": "FadeAndStopStreamingSoundSource",
+   "steam_addr": "0x00741010"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00444780",
+   "name": "ServerToClientObjectId",
+   "steam_addr": "0x00798160"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0044d8e0",
+   "name": "PlayCharacterSelectSound",
+   "steam_addr": "0x007a12e0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c910",
+   "name": "GetPlayerCreature",
+   "steam_addr": "0x0073f450"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040c8f0",
+   "name": "GetModule",
+   "steam_addr": "0x0073f430"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040e040",
+   "name": "ChangeCharacterToNextLivingPartyMember",
+   "steam_addr": "0x00740b80"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040dee0",
+   "name": "ShowTutorialWindow",
+   "steam_addr": "0x00740a20"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040d400",
+   "name": "ShowLoadScreen",
+   "steam_addr": "0x0073ff20"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00431980",
+   "name": "ExitProgram",
+   "steam_addr": "0x00785360"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00439530",
+   "name": "ClearCachedCreatures",
+   "steam_addr": "0x0078cf50"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x0044cb00",
+   "name": "CancelMovie",
+   "steam_addr": "0x007a0500"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00460480",
+   "name": "SetMouseCursor",
+   "steam_addr": "0x007b3870"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x00431c80",
+   "name": "SendLoadGameRequest",
+   "steam_addr": "0x00785660"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040dd80",
+   "name": "AddFloatyText",
+   "steam_addr": "0x007408c0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C1",
+   "gog": "0x004452f0",
+   "name": "StopMovie",
+   "steam_addr": "0x00798cd0"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "content_level": "C2",
+   "gog": "0x00437190",
+   "name": "StopServices",
+   "steam_addr": "0x0078ac40"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040ca90",
+   "name": "GetPlaceableByGameObjectID",
+   "steam_addr": "0x0073f5d0"
+  },
+  {
+   "class": "CClientExoApp",
+   "content_level": "C1",
+   "gog": "0x0040dce0",
+   "name": "StopRumblePattern",
+   "steam_addr": "0x00740820"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 174,
+ "sample_rate": 0.2,
+ "sample_size": 174,
+ "unanswered_decoys": 0
+}

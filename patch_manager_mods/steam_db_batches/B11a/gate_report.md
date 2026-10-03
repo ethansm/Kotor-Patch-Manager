@@ -7,10 +7,10 @@ Rows: 429. Source order for tie-breaks: server > trusted name_map > mapper:vote 
 | class | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|
 | CClientExoApp | 72 | 152 | 1 | 0 | 225 |
-| CClientExoAppInternal | 92 | 96 | 13 | 3 | 204 |
-| **all** | 164 | 248 | 14 | 3 | 429 |
+| CClientExoAppInternal | 95 | 93 | 13 | 3 | 204 |
+| **all** | 167 | 245 | 14 | 3 | 429 |
 
-AUTO by route: c2=62 sig=102 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=66 sig=101 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 
@@ -47,20 +47,19 @@ AUTO by route: c2=62 sig=102 (the sig route is non-propagating, see DESIGN 4.2)
 - CClientExoApp::GetPlayerCharacterSet gog 0x0040d4e0 -> 0x00740000: review:held_by=CClientExoApp::GetPlayerCharacterName
 - CClientExoApp::GetAreaNotReadyToDisplay gog 0x0040d500 -> 0x00740020: review:held_by=CClientExoApp::GetPlayerCharacterSet
 - CClientExoApp::SetAutoPaused gog 0x0040ddf0 -> 0x00740930: review:held_by=CClientExoApp::GetClientRangedAnimation
-- CClientExoAppInternal::Initialize gog 0x0042df60 -> 0x007810a0: review:held_by=CClientExoAppInternal::Destructor
-- CClientExoAppInternal::GetPauseState gog 0x00430a40 -> 0x00783d80: review:held_by=CClientExoAppInternal::StallServerCode
+- CClientExoAppInternal::Initialize gog 0x0042df60 -> 0x007819e0: review:held_by=CClientExoAppInternal::GetModuleCamera
 - CClientExoAppInternal::ServerModeChange gog 0x00431cc0 -> 0x00785030: review:held_by=CClientExoAppInternal::CreateQuestJournal
+- CClientExoAppInternal::GetPlayerByPlayerID gog 0x004382a0 -> 0x0078bcc0: review:held_by=CClientExoAppInternal::ShutDownMoviePlayer
+- CClientExoAppInternal::AttachPlayerGameObjectToArea gog 0x00438750 -> 0x0078c170: review:held_by=CClientExoAppInternal::CleanUpModuleServices
+- CClientExoAppInternal::UpdateCamera gog 0x00438930 -> 0x0078c350: review:held_by=CClientExoAppInternal::GetPlayerByPlayerID
 - CClientExoAppInternal::SetTexturePack gog 0x00439c70 -> 0x0078cf50: review:held_by=CClientExoAppInternal::ClearCachedCreatures
-- CClientExoAppInternal::SetVideoMode gog 0x0043a1c0 -> 0x0078d6a0: review:held_by=CClientExoApp::SetTexturePack
-- CClientExoAppInternal::StartLoadMusic gog 0x0043aec0 -> 0x0078e0f0: review:held_by=CClientExoAppInternal::ShutDownToMainMenu
-- CClientExoAppInternal::StopLoadMusic gog 0x0043b020 -> 0x0078e0f0: review:held_by=CClientExoAppInternal::ShutDownToMainMenu
+- CClientExoAppInternal::StopMenuMusic gog 0x0043adb0 -> 0x0078e7e0: review:held_by=CClientExoAppInternal::StartMenuMusic
+- CClientExoAppInternal::StartLoadMusic gog 0x0043aec0 -> 0x0078e8f0: review:held_by=CClientExoAppInternal::StopMenuMusic
 - CClientExoAppInternal::AquireLoadMusic gog 0x0043b0a0 -> 0x0078e350: review:held_by=CClientExoAppInternal::AddCreatureModelDirectlyToIgnoreList_2
-- CClientExoAppInternal::GetObjectName gog 0x0043b150 -> 0x0078e350: review:held_by=CClientExoAppInternal::AddCreatureModelDirectlyToIgnoreList_2
+- CClientExoAppInternal::GetObjectName gog 0x0043b150 -> 0x0078eba0: review:held_by=CClientExoAppInternal::FadeAndStopStreamingSoundSource
 - CClientExoAppInternal::HideLoadScreen gog 0x00444a00 -> 0x00797d90: review:held_by=CClientExoAppInternal::SetInputActive
 - CClientExoAppInternal::PlayMovie gog 0x004451c0 -> 0x00798580: review:held_by=CClientExoAppInternal::SetPlayerCharacterName
 - CClientExoAppInternal::IsMoviePlaying gog 0x00445220 -> 0x00798c00: fail:trusted_holder=IsMoviePlaying
-- CClientExoAppInternal::SetAutoPaused gog 0x0044aa20 -> 0x0079e210: review:held_by=CClientExoAppInternal::GetGUIString
-- CClientExoAppInternal::ChangeCharacterToNextLivingPartyMember gog 0x0044bd70 -> 0x0079f010: review:held_by=CClientExoAppInternal::LookUpAndPerformRumbleWithCutOff
 - CClientExoAppInternal::InitializeMoviePlayer_2 gog 0x0044ded0 -> 0x007a1130: review:held_by=CClientExoAppInternal::StartCreditSequence
 - CClientExoAppInternal::ProcessInput gog 0x00459080 -> 0x007ac470: review:held_by=CClientExoAppInternal::Update
 - CClientExoAppInternal::ActionIconToMouseCursor gog 0x00460b10 -> 0x007b3ca0: review:held_by=CClientExoAppInternal::HandleMouseClickInWorld
@@ -83,8 +82,6 @@ Trusted rows that are NOT seeds (exact name + equal retn + equal size or A-SIG >
 
 - GOG 0x00815520 CAurTexture::SetIsEnvironmentMapped -> Steam 0x00422e20: name is not exact (suffix on the trusted row)
 - GOG 0x0084b0b0 Gob::SetScene -> Steam 0x00461aa0: retn GOG 0 vs Steam 4
-- GOG 0x0064db90 CServerAIMaster::AddEventDeltaTime -> Steam 0x0051e170: name is not exact (suffix on the trusted row)
-- GOG 0x0064e730 CServerAIMaster::EventPending -> Steam 0x0051ed10: name is not exact (suffix on the trusted row)
 - GOG 0x00720d10 CSWSArea::ClearLineOfSight -> Steam 0x0052bb60: size GOG 176 vs Steam 767, SIG 0.35 (intersection 4)
 - GOG 0x007184d0 CSWSArea::SetMaxStealthXP -> Steam 0x0052de00: retn GOG 0 vs Steam 4
 - GOG 0x00709980 CSWSArea::SmoothPointsOnPath -> Steam 0x0054f3d0: size GOG 938 vs Steam 518, SIG 0.44 (intersection 7)
@@ -96,6 +93,7 @@ Trusted rows that are NOT seeds (exact name + equal retn + equal size or A-SIG >
 - GOG 0x0070ccb0 CSWSArea::GridDFSTransTablePut -> Steam 0x00552c90: retn GOG 0 vs Steam 16
 - GOG 0x00707770 CSWSArea::SetHitInfoForCreature -> Steam 0x00556040: retn GOG 32 vs Steam 20
 - GOG 0x00733ef0 CSWSModule::non_virtual_thunk_to_dtor_CSWSModule -> Steam 0x00561c80: size GOG 8 vs Steam 44, SIG 0.00 (intersection 0)
+- GOG 0x00692f50 CSWSCreature::BroadcastPoisoned -> Steam 0x0057a420: size GOG 3 vs Steam 312, SIG 0.00 (intersection 0)
 - GOG 0x00667710 CSWSItem::RestoreUsedActiveProperties -> Steam 0x00603dd0: size GOG 63 vs Steam 245, SIG 0.17 (intersection 3)
 - GOG 0x00667600 CSWSItem::GetPropertyByTypeExists -> Steam 0x00603f60: retn GOG 4 vs Steam 8
 - GOG 0x006fcf40 CSWSItem::SetNumActiveProperties -> Steam 0x00604140: size GOG 85 vs Steam 133, SIG 0.33 (intersection 2)
@@ -126,8 +124,6 @@ Trusted rows that are NOT seeds (exact name + equal retn + equal size or A-SIG >
 - GOG 0x00478870 CSWParty::IsPartyMember -> Steam 0x007e5c40: name is not exact (suffix on the trusted row)
 - GOG 0x00474890 CSWCObject::AnimationPause -> Steam 0x007ef350: size GOG 68 vs Steam 129, SIG 0.08 (intersection 1)
 - GOG 0x004744b0 CSWCObject::AnimationPlayOutOfPlace -> Steam 0x007ef730: size GOG 129 vs Steam 68, SIG 0.08 (intersection 1)
-- GOG 0x00597ff0 CSWGuiInGameCharacter::SetStats -> Steam 0x0084e6f0: name is not exact (suffix on the trusted row)
-- GOG 0x005995d0 CSWGuiInGameCharacter::ShowLevelUpGUI -> Steam 0x0084fcd0: name is not exact (suffix on the trusted row)
 
 ## Ambiguous rows (second candidate also reaches C2)
 
