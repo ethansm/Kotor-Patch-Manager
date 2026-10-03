@@ -1243,24 +1243,31 @@ def prior_batches_clean(bdir: Path) -> int:
 
 
 def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], reviews: dict,
-              sample_errors: Optional[int]) -> dict:
+              sample_errors: Optional[int], partial: bool = False) -> dict:
     """DESIGN 4.6: score the decoy cards, decide the escalation, list what Opus must read.  Writes opus_gate.md/json."""
     ev_by = {parse_addr(e["gog"]): e for e in evs}
-    verdicts: dict[tuple[int, int], list[str]] = {}
+    rev_by_pair: dict[tuple[int, int], list[dict]] = {}
     for ga, rows in reviews.items():
         for r in rows:
             if r.get("steam_addr"):
-                verdicts.setdefault((ga, parse_addr(r["steam_addr"])), []).append(r.get("verdict", ""))
+                rev_by_pair.setdefault((ga, parse_addr(r["steam_addr"])), []).append(r)
     key_rows = []
     for kf in sorted((bdir / "cards").glob("key*.tsv")):
         key_rows += list(iter_tsv(kf))
-    decoys = [k for k in key_rows if k["kind"].startswith("decoy")]
+
+    def accepted_by_reviewer(k: dict) -> bool:
+        pair = (parse_addr(k["gog"]), parse_addr(k["steam_addr"]))
+        return any(bd.reviewer_accepts(r, pair[1]) for r in rev_by_pair.get(pair, []))
+
+    chunks = sorted({k["chunk"] for k in key_rows}, key=bd.chunk_key)
+    reviewed = {k["chunk"] for k in key_rows if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) in rev_by_pair}
+    decoys = [k for k in key_rows if k["kind"].startswith("decoy") and k["chunk"] in reviewed]
     per_chunk = Counter(k["chunk"] for k in decoys)
-    accepted = [k for k in decoys
-                if set(verdicts.get((parse_addr(k["gog"]), parse_addr(k["steam_addr"])), [])) & {"match", "label_suspect"}]
-    unanswered = [k for k in decoys if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) not in verdicts]
-    chunks = sorted({k["chunk"] for k in key_rows})
-    short = [c for c in chunks if per_chunk[c] < MIN_DECOYS]
+    accepted = [k for k in decoys if accepted_by_reviewer(k)]
+    unanswered = [k for k in decoys if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) not in rev_by_pair]
+    gate = bd.decoy_gate(chunks, reviewed, {c: [accepted_by_reviewer(k) for k in decoys if k["chunk"] == c]
+                                            for c in reviewed}, MIN_DECOYS, partial)
+    short = gate["short"]
     # rows that Opus reads in full
     full, plain = [], []
     for f in finals:
@@ -1289,6 +1296,7 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
             plain.append(f)
     if not chunks and (full or plain):
         short = ["(no cards/key.tsv: nothing was scored)"]
+    unreviewed = gate["unreviewed"]
     escalate = bool(accepted) or bool(sample_errors)
     clean_streak = prior_batches_clean(bdir)
     rate = 0.10 if clean_streak >= 3 else 0.20
@@ -1304,18 +1312,23 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
     if escalate:
         decision = ("ESCALATE: %s -> send 100%% of this batch's reviewer matches to Opus"
                     % ("decoy cards accepted" if accepted else "Opus-found error in the sample"))
-    elif short:
+    elif not chunks and short:
         decision = "INSUFFICIENT DECOYS in chunks %s (need >= %d per chunk, 0 tolerance): re-run `cards`" % (short, MIN_DECOYS)
+    elif gate["decision"].startswith("INSUFFICIENT"):
+        decision = gate["decision"]
     else:
-        decision = "OK: Opus reads the 100%% classes plus a %d%% sample (min 5) of the other reviewer matches" % int(rate * 100)
+        decision = "OK: Opus reads the 100%% classes plus a %d%% sample (min 5) of the other reviewer matches%s" % (
+            int(rate * 100), " (partial: chunks %s unreviewed)" % ", ".join(unreviewed) if unreviewed else "")
     result = {"batch": batch, "decoy_cards": len(decoys), "decoys_accepted": len(accepted),
-              "decoys_per_chunk": dict(per_chunk), "chunks_short": short, "unanswered_decoys": len(unanswered),
+              "decoys_per_chunk": dict(per_chunk), "chunks_short": short, "chunks_unreviewed": unreviewed,
+              "unanswered_decoys": len(unanswered),
               "full_read": len(full), "sample_pool": len(plain), "sample_size": len(sample), "sample_rate": rate,
               "sample_errors": sample_errors, "decision": decision, "clean_streak_before": clean_streak,
-              "clean": (not escalate and not short and sample_errors == 0)}
+              "clean": (not escalate and not short and not unreviewed and sample_errors == 0)}
     L = ["# Opus gate %s (DESIGN 4.6)" % batch, "", "Decision: **%s**" % decision, "",
          "- decoy cards: %d (per chunk %s), accepted by the reviewer: %d, unanswered: %d" % (
              len(decoys), dict(per_chunk), len(accepted), len(unanswered)),
+         "- chunks not reviewed: %s%s" % (", ".join(unreviewed) or "none", " (--partial)" if unreviewed and partial else ""),
          "- Opus-found sample errors: %s (pass `finalize --opus-sample-errors N` after the Opus pass)" % (
              "pending" if sample_errors is None else sample_errors),
          "- consecutive clean batches before this one: %d -> sample rate %d%%" % (clean_streak, int(rate * 100)), "",
@@ -1394,7 +1407,7 @@ def cmd_finalize(args) -> int:
     cnt = Counter(r["final_verdict"] for r in finals)
     print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d; rechecks=%d" % (
         args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts), len(rechecks)))
-    gate = opus_gate(bdir, args.batch, evs, finals, reviews, args.opus_sample_errors)
+    gate = opus_gate(bdir, args.batch, evs, finals, reviews, args.opus_sample_errors, args.partial)
     print("opus gate: decoy cards %d (accepted %d); %s" % (gate["decoy_cards"], gate["decoys_accepted"], gate["decision"]))
     return 0
 
@@ -1598,6 +1611,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("finalize", help="merge reviews and overrides")
     p.add_argument("batch", type=batch_name)
     p.add_argument("--with-likely", action="store_true")
+    p.add_argument("--partial", action="store_true", help="opus gate decision on the reviewed chunks only")
     p.add_argument("--opus-sample-errors", type=int, default=None,
                    help="errors Opus found in its sample of reviewer matches (omit until the Opus pass is done)")
     p.add_argument("--date", default=None, help="date stamped into kdb_upsert.json (default today)")

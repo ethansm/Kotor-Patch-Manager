@@ -1327,6 +1327,26 @@ class OpusGateTests(Base):
         res = batch.opus_gate(bdir, "B7", [], [], reviews, 2)           # Opus found errors in its sample
         self.assertTrue(res["decision"].startswith("ESCALATE"), res)
 
+    def test_unreviewed_chunks_and_corrected_label_suspect_in_the_opus_gate(self):
+        bdir, reviews = self.setup_bdir(10, set(), chunks=2)
+        for ga in [g for g in list(reviews) if g >= 0x00400000 + 0x100 * 200]:       # chunk 2 not reviewed
+            del reviews[ga]
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 0)
+        self.assertTrue(res["decision"].startswith("INSUFFICIENT: chunk(s) 2 not reviewed"), res["decision"])
+        self.assertFalse(res["clean"])
+        self.assertEqual(res["chunks_unreviewed"], ["2"])
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 0, partial=True)
+        self.assertTrue(res["decision"].startswith("OK") and "partial" in res["decision"], res["decision"])
+        # label_suspect naming a different corrected_addr correctly rejects the decoy
+        bdir, reviews = self.setup_bdir(10, set())
+        first = next(iter(reviews))
+        reviews[first] = [{"steam_addr": reviews[first][0]["steam_addr"], "verdict": "label_suspect",
+                           "corrected_addr": "0x00603dd0"}]
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 0)
+        self.assertEqual(res["decoys_accepted"], 0)
+        reviews[first][0]["corrected_addr"] = ""
+        self.assertEqual(batch.opus_gate(bdir, "B7", [], [], reviews, 0)["decoys_accepted"], 1)
+
     def test_sample_rate_drops_after_three_clean_batches(self):
         for n in (4, 5, 6):
             d = self.root / "batches" / ("B%d" % n)

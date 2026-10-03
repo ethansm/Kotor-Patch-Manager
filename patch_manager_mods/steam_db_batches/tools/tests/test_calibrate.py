@@ -376,6 +376,92 @@ class ScoreDecoyDecisionTests(unittest.TestCase):
         self.assertTrue(decision.startswith("INSUFFICIENT"))
 
 
+class ScoreAcceptanceTests(unittest.TestCase):
+    """label_suspect with a different corrected_addr rejects the candidate; unreviewed chunks; several review files."""
+
+    HEAD = "gog_addr\tsteam_addr\tverdict\tcorrected_addr\tcontent_anchor\tconfidence\treason\n"
+
+    def mk(self, n_chunks, per_chunk=10):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        d = Path(tmp.name)
+        key = ["card_id\tchunk\tgog\tsteam_addr\tkind\texpected"]
+        for c in range(1, n_chunks + 1):
+            for i in range(per_chunk):
+                g_, s_ = 0x400000 + 0x1000 * c + 0x10 * i, 0x500000 + 0x1000 * c + 0x10 * i
+                key.append("C%d-%d\t%d\t0x%08x\t0x%08x\tdecoy_next\tmismatch" % (c, i, c, g_, s_))
+        (d / "k.tsv").write_text("\n".join(key) + "\n")
+        return d
+
+    def row(self, c, i, verdict, corrected=""):
+        g_, s_ = 0x400000 + 0x1000 * c + 0x10 * i, 0x500000 + 0x1000 * c + 0x10 * i
+        return "0x%08x\t0x%08x\t%s\t%s\tx\t3\tr\n" % (g_, s_, verdict, corrected)
+
+    def test_effective_verdicts(self):
+        import bdlib
+        row = lambda v, c="": {"verdict": v, "corrected_addr": c}     # noqa: E731
+        self.assertTrue(bdlib.reviewer_accepts(row("match"), 0x603ee0))
+        self.assertTrue(bdlib.reviewer_accepts(row("label_suspect"), 0x603ee0))                    # no corrected_addr
+        self.assertTrue(bdlib.reviewer_accepts(row("label_suspect", "0x00603ee0"), 0x603ee0))      # equal to the card's
+        self.assertFalse(bdlib.reviewer_accepts(row("label_suspect", "0x00603dd0"), 0x603ee0))     # a different function
+        self.assertEqual(bdlib.effective_verdict(row("label_suspect", "0x00603dd0"), 0x603ee0), "mismatch")
+        self.assertEqual(bdlib.effective_verdict(row("mismatch", "0x00603dd0"), 0x603ee0), "mismatch")
+        self.assertEqual(bdlib.effective_verdict(None, 1), "missing")
+        self.assertFalse(bdlib.reviewer_accepts(row("unsure"), 1))
+
+    def test_corrected_label_suspect_on_a_decoy_is_a_correct_rejection(self):
+        d = self.mk(1)
+        rev = self.HEAD + "".join(self.row(1, i, "mismatch") for i in range(8))
+        rev += self.row(1, 8, "label_suspect", "0x00603dd0") + self.row(1, 9, "label_suspect", "0x00501090")   # 9: == card
+        (d / "r.tsv").write_text(rev)
+        res = score_review.score(d / "k.tsv", d / "r.tsv")
+        decision, accepted = score_review.escalation(res)
+        self.assertEqual([r["card_id"] for r in accepted], ["C1-9"])        # only the same-address label_suspect accepts
+        self.assertTrue(decision.startswith("ESCALATE: 1 decoy"))
+        (d / "r.tsv").write_text(rev.replace("0x00501090", "0x00603dd0"))
+        res = score_review.score(d / "k.tsv", d / "r.tsv")
+        self.assertTrue(score_review.escalation(res)[0].startswith("OK: 0 of 10 decoy"))
+        self.assertEqual(res["false_accepts"], [])
+
+    def test_unreviewed_chunks_make_the_decision_insufficient_unless_partial(self):
+        d = self.mk(3)
+        (d / "r1.tsv").write_text(self.HEAD + "".join(self.row(1, i, "mismatch") for i in range(10)))
+        res = score_review.score(d / "k.tsv", d / "r1.tsv")
+        decision = score_review.escalation(res)[0]
+        self.assertTrue(decision.startswith("INSUFFICIENT: chunk(s) 2, 3 not reviewed"), decision)
+        text = score_review.render(res, "k", "r")
+        self.assertIn("chunk 1: 10 decoys, 0 accepted", text)
+        self.assertIn("chunk 2: not reviewed", text)
+        res = score_review.score(d / "k.tsv", d / "r1.tsv", partial=True)
+        self.assertTrue(score_review.escalation(res)[0].startswith("OK (partial: unreviewed chunks 2, 3 ignored)"))
+        # an accepted decoy in a reviewed chunk escalates even when other chunks are unreviewed
+        (d / "r1.tsv").write_text(self.HEAD + "".join(self.row(1, i, "match" if i == 2 else "mismatch") for i in range(10)))
+        res = score_review.score(d / "k.tsv", d / "r1.tsv")
+        self.assertTrue(score_review.escalation(res)[0].startswith("ESCALATE"))
+        # a reviewed chunk with fewer decoys than the minimum
+        d2 = self.mk(1, per_chunk=9)
+        (d2 / "r.tsv").write_text(self.HEAD + "".join(self.row(1, i, "mismatch") for i in range(9)))
+        res = score_review.score(d2 / "k.tsv", d2 / "r.tsv")
+        self.assertTrue(score_review.escalation(res)[0].startswith("INSUFFICIENT DECOYS (chunks 1"))
+
+    def test_several_review_files_and_directories(self):
+        d = self.mk(2)
+        rd = d / "review"
+        rd.mkdir()
+        (rd / "a.tsv").write_text(self.HEAD + "".join(self.row(1, i, "mismatch") for i in range(10)))
+        (rd / "b.tsv").write_text(self.HEAD + "".join(self.row(2, i, "mismatch") for i in range(10)))
+        (rd / "notes.md").write_text("ignored")
+        for arg in ([rd], [rd / "a.tsv", rd / "b.tsv"], str(rd)):
+            res = score_review.score(d / "k.tsv", arg)
+            self.assertEqual(res["reviewed_chunks"], {"1", "2"})
+            self.assertTrue(score_review.escalation(res)[0].startswith("OK: 0 of 20"))
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            score_review.main([str(d / "k.tsv"), str(rd / "a.tsv"), "--partial"])
+        self.assertIn("OK (partial", buf.getvalue())
+
+
 class ScoreReviewTests(unittest.TestCase):
     def test_confusion_precision_and_annotated_rows(self):
         import score_review

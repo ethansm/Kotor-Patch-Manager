@@ -214,6 +214,61 @@ def is_soft_autolabel(name: str) -> bool:
     return not re.match(r"^(_|Catch_All@|Unwind@)", name)
 
 
+# ---------------------------------------------------------------------------------------------- reviewer scoring
+def effective_verdict(row: dict | None, card_steam: int) -> str:
+    """Reviewer row -> match | label_suspect | mismatch | unsure | missing, judged against the card's candidate.
+
+    A `label_suspect` (or `mismatch`) whose corrected_addr differs from the card's candidate REJECTED that candidate:
+    it counts as `mismatch` (for a decoy card: correctly rejected).
+    """
+    if row is None:
+        return "missing"
+    v = row.get("verdict", "missing")
+    corrected = (row.get("corrected_addr") or "").strip()
+    if v in ("label_suspect", "mismatch") and corrected:
+        try:
+            if parse_addr(corrected) != card_steam:
+                return "mismatch"
+        except ValueError:
+            pass
+    return v if v in ("match", "label_suspect", "mismatch", "unsure", "missing") else "unsure"
+
+
+def reviewer_accepts(row: dict | None, card_steam: int) -> bool:
+    """True only for `match`, or `label_suspect` that names no different corrected address (counterpart accepted)."""
+    return effective_verdict(row, card_steam) in ("match", "label_suspect")
+
+
+def chunk_key(c) -> tuple:
+    s = str(c)
+    return (0, int(s)) if s.isdigit() else (1, s)
+
+
+def decoy_gate(chunks: Iterable, reviewed: set, decoys: dict, decoys_min: int = 10, partial: bool = False) -> dict:
+    """DESIGN 4.6 decision over decoy cards.
+
+    chunks: every chunk id of the batch; reviewed: chunk ids with reviewer rows; decoys: {chunk: [accepted bool, ...]}
+    for the reviewed chunks.  Any accepted decoy escalates; an unreviewed chunk (unless `partial`) or a reviewed chunk
+    with fewer than `decoys_min` decoys is INSUFFICIENT.
+    """
+    chunks = sorted({str(c) for c in chunks}, key=chunk_key)
+    unreviewed = [c for c in chunks if c not in reviewed]
+    accepted = sum(sum(1 for a in v if a) for c, v in decoys.items() if c in reviewed)
+    short = [c for c in chunks if c in reviewed and len(decoys.get(c, [])) < decoys_min]
+    n_dec = sum(len(v) for c, v in decoys.items() if c in reviewed)
+    if accepted:
+        text = "ESCALATE: %d decoy card(s) accepted -> 100%% of this batch's reviewer matches go to Opus" % accepted
+    elif unreviewed and not partial:
+        text = "INSUFFICIENT: chunk(s) %s not reviewed yet (use --partial to decide on the reviewed chunks only)" % ", ".join(unreviewed)
+    elif not (set(chunks) & reviewed) or short:
+        text = "INSUFFICIENT DECOYS (chunks %s; need >= %d per chunk)" % (
+            ", ".join(short) if short else "none reviewed", decoys_min)
+    else:
+        text = "OK%s: 0 of %d decoy cards accepted" % (" (partial: unreviewed chunks %s ignored)" % ", ".join(unreviewed)
+                                                         if unreviewed else "", n_dec)
+    return {"decision": text, "accepted": accepted, "short": short, "unreviewed": unreviewed, "decoy_cards": n_dec}
+
+
 # ---------------------------------------------------------------------------------------------- dump records
 @dataclass
 class SteamFn:
