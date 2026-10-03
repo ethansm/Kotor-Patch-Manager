@@ -17,26 +17,13 @@
 #include <math.h>
 
 #include "ShieldTable.inc"
+#include "ShieldLogic.h"     // sb::appendf (bounded log formatting)
 #include "SafeRead.h"
 #include "Effects.h"
 #include "Gui2D.h"
 #include "GuiKit.h"
 #include "PortraitSlots.h"
 
-namespace sb {
-// Bounded printf-append (copy of bh::appendf, audit 20a F7, abc01d8): never writes past buf[cap-1], always NUL-terminated,
-// returns the new length clamped to cap-1.
-inline int appendf(char* buf, int cap, int len, const char* fmt, ...) {
-    if (cap <= 0) return len;
-    if (len < 0) len = 0;
-    if (len >= cap - 1) { buf[cap - 1] = 0; return cap - 1; }
-    va_list ap; va_start(ap, fmt);
-    int n = vsnprintf(buf + len, (size_t)(cap - len), fmt, ap);
-    va_end(ap);
-    if (n < 0) { buf[len] = 0; return len; }
-    return (n >= cap - len) ? cap - 1 : len + n;
-}
-} // namespace sb
 
 namespace {
 
