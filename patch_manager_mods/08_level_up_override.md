@@ -1004,3 +1004,9 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - User answers B3 (2026-10-03): keep Kreia Stealth + Bao-Dur Persuade; replace the 19 Close Combat picks in one batch; add Finesse: Melee Weapons
   early to the five DEX saber presets; mod #142 combined TI install IS live (`Override/k_fp_heal{1,2,3}ti.ncs`) -> reorder Treat Injury first in
   the Heal builds. Preset edits wait for the A1 agent to finish (shared gates).
+- A1 DONE 122797f: 1.0.0 sources (mode=rewrite default with no ini, verbose=0, GUARD-PROBE/colour readback removed, dev keys + tags= need dev=1,
+  banner `crc32=%08x` of the DLL file; `luo_log_check.py --expect-crc HEX|dll`); luo_scenario.py adds dev=1 with dev keys. NOT built/installed.
+  Gates green (parity incl. -m32 gate 144/ui 347, scenarios 12 x2, options/wizard/guikit, simulate 0, log-check 15 tests).
+- Forge test made runner-safe (a8b3102: re-exec under .venv, unique temp dir). `run_tests.py` red item `check-hook-spans` = buff-duration-hud vs
+  portrait-slots overlap (other sessions), not ours.
+- Running: A2 robustness review, B preset fixes (Close Combat x19, Finesse x5, TI-first heal builds), A5 README draft.
