@@ -296,6 +296,34 @@ class AnnotationAndChunkTests(CalibrateBase):
         bases = [base for h_, k, cases, base in gold["plan"] if k == "pos"]
         self.assertTrue(any(s(0x180) in b for b in bases))
 
+    def test_blank_steam_label_suspect_and_positive_corrections(self):
+        p = self.write_ann([(h(g(0x100)), "", "label_suspect"),                                   # whole GOG function
+                            (h(g(0x340)), h(s(0x340)), "positive")])                              # gold correction (Rej -> s(0x340))
+        ann = calibrate.load_annotations(p)
+        self.assertEqual(ann[(g(0x100), None)][0], "label_suspect")
+        gold = calibrate.build_gold(self.corpus, 1, calibrate.SEED, ann)
+        gogs = {c.gog for c in gold["cases"]}
+        self.assertNotIn(g(0x100), gogs)                                    # positive, decoys and shifts all gone
+        pos = {c.gog: c for c in gold["cases"] if c.kind == "pos"}
+        self.assertEqual(pos[g(0x340)].steam, s(0x340))
+        self.assertEqual(pos[g(0x340)].note, "annotation")
+        self.assertEqual(gold["corrected"], [(g(0x340), s(0x340))])
+        # the correction replaces any other gold positive that used the same Steam address
+        p2 = self.write_ann([(h(g(0x340)), h(s(0x000)), "positive")])
+        gold2 = calibrate.build_gold(self.corpus, 1, calibrate.SEED, calibrate.load_annotations(p2))
+        self.assertEqual([c.gog for c in gold2["cases"] if c.kind == "pos" and c.steam == s(0)], [g(0x340)])
+
+    def test_body_conflicting_trusted_row_is_no_gold_positive(self):
+        self.world.name_map.append((h(s(0x500)), "CCal::Wr2", TRUSTED, "high", "trusted"))
+        self.world.filler("CCal", "Wr2", g(0x500), s(0x500), retn=4, param=4)                  # GOG retn 4 ...
+        self.world.fp("gog", g(0x500), 4)
+        self.world.fp("steam", s(0x500), 8)                                                    # ... Steam fingerprint says 8
+        self.world.build()
+        corpus = bd.Corpus(bd.get_paths())
+        pos, _o, _a = calibrate.build_positives(corpus)
+        self.assertNotIn(g(0x500), pos)
+        self.assertIn("CCal::Wr2", [n for _g, _s, n, _w in corpus.pair_conflicts])
+
     def test_annotations_flow_through_the_metrics(self):
         p = self.write_ann([(h(g(0x180)), h(s(0x180)), "label_suspect")])
         self.run_cal("--quick", "--variants", "vote", "--annotations", str(p))
@@ -318,6 +346,34 @@ class AnnotationAndChunkTests(CalibrateBase):
         self.assertFalse(k1 & {r["gog"] for r in k2})
         self.assertTrue(all(r["card_id"].startswith("CAL-2-") and r["chunk"] == "2" for r in k2))
         self.assertIn("## Card CAL-2-01", (cards / "chunk_2.md").read_text())
+
+
+class ScoreDecoyDecisionTests(unittest.TestCase):
+    def run_case(self, n_decoys, accepted_idx):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        d = Path(tmp.name)
+        key = ["card_id\tchunk\tgog\tsteam_addr\tkind\texpected"]
+        rev = ["gog_addr\tsteam_addr\tverdict\tcorrected_addr\tcontent_anchor\tconfidence\treason"]
+        for i in range(n_decoys):
+            g_, s_ = 0x400000 + 0x10 * i, 0x500000 + 0x10 * i
+            key.append("C%d\t1\t0x%08x\t0x%08x\tdecoy_next\tmismatch" % (i, g_, s_))
+            rev.append("0x%08x\t0x%08x\t%s\t\tx\t3\tr" % (g_, s_, "match" if i in accepted_idx else "mismatch"))
+        (d / "k.tsv").write_text("\n".join(key) + "\n")
+        (d / "r.tsv").write_text("\n".join(rev) + "\n")
+        res = score_review.score(d / "k.tsv", d / "r.tsv")
+        return score_review.escalation(res), score_review.render(res, "k", "r")
+
+    def test_zero_tolerance_and_minimum(self):
+        (decision, accepted), text = self.run_case(10, set())
+        self.assertTrue(decision.startswith("OK"))
+        self.assertIn("chunk 1: 10 decoys, 0 accepted", text)
+        (decision, accepted), text = self.run_case(10, {4})
+        self.assertTrue(decision.startswith("ESCALATE"))
+        self.assertEqual(len(accepted), 1)
+        self.assertIn("100%", decision)
+        (decision, _a), _t = self.run_case(9, set())
+        self.assertTrue(decision.startswith("INSUFFICIENT"))
 
 
 class ScoreReviewTests(unittest.TestCase):

@@ -2,21 +2,18 @@
  "novote": {
   "per_kind": {
    "pos": {
-    "REVIEW": 181,
-    "AUTO": 253,
-    "REJECT": 1
+    "REVIEW": 191,
+    "AUTO": 244
    },
    "decoy_prev": {
-    "REVIEW": 360,
-    "REJECT": 1
+    "REVIEW": 361
    },
    "decoy_next": {
-    "REVIEW": 360,
-    "REJECT": 1
+    "REVIEW": 361
    },
    "decoy_rand": {
-    "REVIEW": 410,
-    "REJECT": 20
+    "REVIEW": 412,
+    "REJECT": 18
    },
    "neg_b1rej": {
     "REVIEW": 5,
@@ -36,8 +33,8 @@
     "REVIEW": 190
    },
    "shift_m1": {
-    "REJECT": 244,
-    "REVIEW": 191
+    "REJECT": 246,
+    "REVIEW": 189
    },
    "shift_p2": {
     "REJECT": 255,
@@ -49,12 +46,12 @@
    }
   },
   "positives": 435,
-  "positive_auto": 253,
-  "positive_auto_c2": 89,
-  "positive_auto_sig": 164,
-  "positive_auto_recall": 0.5816091954022988,
-  "positive_review_share": 0.4160919540229885,
-  "positive_reject": 1,
+  "positive_auto": 244,
+  "positive_auto_c2": 86,
+  "positive_auto_sig": 158,
+  "positive_auto_recall": 0.5609195402298851,
+  "positive_review_share": 0.43908045977011495,
+  "positive_reject": 0,
   "negatives_total": 1167,
   "negatives_auto": 0,
   "stress_total": 1759,
@@ -66,23 +63,31 @@
    ],
    [
     "c1",
-    54
+    65
    ],
    [
     "run_na",
-    28
+    31
    ],
    [
     "run_no",
-    22
+    20
    ],
    [
     "g6",
-    7
+    9
+   ],
+   [
+    "sig_twin",
+    8
    ],
    [
     "g1",
     5
+   ],
+   [
+    "mac_contra",
+    2
    ],
    [
     "g4_na",
@@ -95,21 +100,18 @@
  "vote": {
   "per_kind": {
    "pos": {
-    "REVIEW": 158,
-    "AUTO": 276,
-    "REJECT": 1
+    "REVIEW": 169,
+    "AUTO": 266
    },
    "decoy_prev": {
-    "REVIEW": 360,
-    "REJECT": 1
+    "REVIEW": 361
    },
    "decoy_next": {
-    "REVIEW": 360,
-    "REJECT": 1
+    "REVIEW": 361
    },
    "decoy_rand": {
-    "REVIEW": 410,
-    "REJECT": 20
+    "REVIEW": 412,
+    "REJECT": 18
    },
    "neg_b1rej": {
     "REVIEW": 5,
@@ -129,8 +131,8 @@
     "REVIEW": 190
    },
    "shift_m1": {
-    "REJECT": 244,
-    "REVIEW": 191
+    "REJECT": 246,
+    "REVIEW": 189
    },
    "shift_p2": {
     "REJECT": 255,
@@ -142,12 +144,12 @@
    }
   },
   "positives": 435,
-  "positive_auto": 276,
-  "positive_auto_c2": 112,
-  "positive_auto_sig": 164,
-  "positive_auto_recall": 0.6344827586206897,
-  "positive_review_share": 0.3632183908045977,
-  "positive_reject": 1,
+  "positive_auto": 266,
+  "positive_auto_c2": 108,
+  "positive_auto_sig": 158,
+  "positive_auto_recall": 0.6114942528735632,
+  "positive_review_share": 0.38850574712643676,
+  "positive_reject": 0,
   "negatives_total": 1167,
   "negatives_auto": 0,
   "stress_total": 1759,
@@ -159,15 +161,23 @@
    ],
    [
     "c1",
-    54
+    65
    ],
    [
     "g6",
-    7
+    9
+   ],
+   [
+    "sig_twin",
+    8
    ],
    [
     "g1",
     5
+   ],
+   [
+    "mac_contra",
+    2
    ],
    [
     "g4_na",

@@ -3,9 +3,10 @@
 
 Subcommands (all deterministic; working dir per batch = $BD_ROOT/B<n>/):
   candidates B<n> --classes C1,C2 | --from-branch   -> candidates.tsv (+ mapper output under --findings-dir)
-  gates      B<n> [--untrust FILE]                  -> evidence.tsv, gate_report.md
+  gates      B<n> [--untrust FILE]                  -> evidence.tsv, gate_report.md (+ recheck.tsv candidates)
   cards      B<n> [--chunk 60] [--decoys N]         -> cards/chunk_<k>.md, cards/key.tsv
-  finalize   B<n> [--with-likely] [--date D]        -> final_rows.tsv, functions.csv, kdb_upsert.json
+  finalize   B<n> [--with-likely] [--date D]        -> final_rows.tsv, functions.csv, kdb_upsert.json, recheck.tsv,
+                                                       gog_label_suspects.tsv, opus_gate.md/json
                                                        (B0 also: branch_deletes.tsv, branch_corrections.csv)
   persist    B<n> [--apply]                         -> dry-run plan; --apply (lead only) writes the knowledge DB
 
@@ -14,9 +15,11 @@ Only `persist --apply` ever writes a database, and only the one named by BD_KDB.
 from __future__ import annotations
 
 import argparse
+import bisect
 import csv
 import io
 import json
+import math
 import random
 import re
 import sqlite3
@@ -36,12 +39,13 @@ EVIDENCE_COLS = [
     "kind", "class", "name", "gog", "steam_addr", "verdict", "calling_convention", "param_size_bytes", "evidence",
     "cand_orig", "cand_status", "content_level", "wrapper_issue", "steam_size", "gog_param_size",
     "batch", "cand_sources", "mapper_tag", "gog_size", "gog_retn", "steam_retn", "g1", "g2", "g3", "g4", "g5_target",
-    "g6", "a_str", "a_callee", "a_sig", "a_srv", "a_vt", "families", "run_ok", "decoy_best", "gate_class",
+    "g6", "g7", "a_str", "a_callee", "a_sig", "a_srv", "a_vt", "families", "run_ok", "decoy_best", "gate_class",
     "review_ref", "flags",
 ]
 CANDIDATE_COLS = ["class", "name", "gog", "gog_callconv", "gog_param", "gog_size", "gog_retn", "candidates"]
 FUNCTIONS_CSV_HEADER = ["class_name", "function_name", "address", "calling_convention", "param_size_bytes", "notes"]
 FINAL_VERDICTS = ("verified", "likely", "rejected", "unresolved", "label_suspect")
+RECHECK_COLS = ["gog_addr", "corrected_addr", "source", "reason"]
 LABEL_SUSPECT_COLS = ["gog_addr", "gog_name", "steam_counterpart", "body_fits_name", "source"]
 NEAR_WINDOW = 0x400
 RUN_WINDOW = 12                    # nearest-mapped-neighbour search depth (GOG functions per side)
@@ -260,6 +264,8 @@ class CandEval:
     decoy_best: str = ""
     contradictions: int = 0
     decoy_sig_max: float = 0.0          # highest A-SIG score among the decoys (n/a counts as 0)
+    twin_sig_max: float = 0.0           # same, over same-size/same-retn starts within +-8 starts (Opus gate R2)
+    g7: str = "n/a"                     # Mac name contradiction check (Opus gate R3)
     eff_size: Optional[int] = None      # size of the thunk-resolved Steam function
     gog_size: Optional[int] = None      # size of the (thunk-resolved) GOG function
 
@@ -332,9 +338,29 @@ def check_dup(corpus: bd.Corpus, addr: int, name: str) -> tuple[str, str]:
     for b in corpus.branch_by_addr.get(addr, []):
         if b.name != name:
             holders.add(b.name)
+    elsewhere = corpus.trust.addrs_for_name(me) - {addr}
+    parts = []
     if holders:
-        return "review:held_by=%s" % ",".join(sorted(holders)), ""
+        parts.append("review:held_by=%s" % ",".join(sorted(holders)))
+    if elsewhere:           # Opus gate R4: a trusted row already holds this name at another address
+        parts.append(("" if parts else "review:") + "name_held_elsewhere=%s" % ",".join(hx8(a) for a in sorted(elsewhere)))
+    if parts:
+        return "+".join(parts), ""
     return "pass", ""
+
+
+TWIN_WINDOW = 8
+
+
+def sig_twins(corpus: bd.Corpus, eff: int) -> list[int]:
+    """Steam starts within +-8 starts of eff with the same size and retn (Opus gate R2 twin window)."""
+    ef = corpus.steam.get(eff)
+    i = bisect.bisect_left(corpus.steam_starts, eff)
+    if ef is None or i >= len(corpus.steam_starts) or corpus.steam_starts[i] != eff:
+        return []
+    lo, hi = max(0, i - TWIN_WINDOW), min(len(corpus.steam_starts), i + TWIN_WINDOW + 1)
+    return [a for a in corpus.steam_starts[lo:hi]
+            if a != eff and corpus.steam[a].size == ef.size and corpus.steam[a].retn == ef.retn]
 
 
 def evaluate_candidate(corpus: bd.Corpus, scorer: bd.Scorer, g: GogFn, addr: int, sources: list,
@@ -409,6 +435,11 @@ def evaluate_candidate(corpus: bd.Corpus, scorer: bd.Scorer, g: GogFn, addr: int
     ce.fam, ce.counts, ce.decoy_best = scorer.discriminating(g, eff, decoys)
     sigs = [scorer.a_sig(g, d) for d in decoys]
     ce.decoy_sig_max = max([s.score for s in sigs if s is not None], default=0.0)
+    twins = sig_twins(corpus, eff)
+    tsigs = [scorer.a_sig(g, d) for d in twins]
+    ce.twin_sig_max = max([s.score for s in tsigs if s is not None], default=0.0)
+    state, ov = corpus.mac_check(g, eff)
+    ce.g7 = state if ov is None else "%s(%.2f)" % (state, ov)
     ce.eff_size = ef.size
     ce.gog_size = corpus.gog_size(corpus.resolve_gog(g.addr))
     callee = ce.fam.get("CALLEE")
@@ -479,26 +510,36 @@ SIG_ROUTE_MIN = 0.75
 SIG_ROUTE_MARGIN = 0.25
 
 
-def sig_route_ok(row: RowEval, run_ok: str, permuted: bool) -> bool:
-    """Second AUTO route `auto_route=sig` (lead decision 2026-10-03, pending Opus calibration sign-off).
-
-    Every invariant passes, the only counting family (VT excluded) is SIG with score >= 0.75, no decoy's SIG score
-    exceeds ours minus 0.25, run_ok is yes (mapper:vote does NOT help), the Steam and GOG function sizes are equal,
-    and the row is neither permuted, ambiguous nor contradicted by a trusted callee.
-    """
+def sig_route_check(row: RowEval, run_ok: str, permuted: bool) -> str:
+    """'' when the sig route holds, else the first failing condition ('twin' = only the R2 twin window fails)."""
     b = row.best
     if b is None or b.hard or b.thunk_unresolved or permuted or row.ambiguous or run_ok != "yes":
-        return False
+        return "base"
     if not (b.g1 == "pass" and b.g2 == "pass" and b.g3.startswith("pass") and b.g4 == "pass" and b.g6 == "pass"):
-        return False
+        return "invariant"
+    if b.g7.startswith("mac_contra"):
+        return "mac_contra"
     if [f for f in b.families if f != "VT"] != ["SIG"]:
-        return False
+        return "families"
     sig = b.fam.get("SIG")
     if sig is None or sig.score < SIG_ROUTE_MIN or b.decoy_sig_max > sig.score - SIG_ROUTE_MARGIN:
-        return False
+        return "sig"
     if b.contradictions or b.eff_size is None or b.gog_size is None or b.eff_size != b.gog_size:
-        return False
-    return True
+        return "size"
+    if b.twin_sig_max > sig.score - SIG_ROUTE_MARGIN:
+        return "twin"
+    return ""
+
+
+def sig_route_ok(row: RowEval, run_ok: str, permuted: bool) -> bool:
+    """Second AUTO route `auto_route=sig` (lead decision 2026-10-03, signed off with changes R1-R7).
+
+    Every invariant passes (G7 may not be mac_contra), the only counting family (VT excluded) is SIG with score >=
+    0.75, no decoy's SIG score exceeds ours minus 0.25 (decoys: previous / next starts, other candidates, and every
+    start within +-8 with the same size and retn), run_ok is yes (mapper:vote does NOT help), the Steam and GOG
+    function sizes are equal, and the row is neither permuted, ambiguous nor contradicted by a trusted callee.
+    """
+    return sig_route_check(row, run_ok, permuted) == ""
 
 
 def classify(row: RowEval, run_ok: str, permuted: bool) -> tuple[str, list[str], str]:
@@ -532,10 +573,15 @@ def classify(row: RowEval, run_ok: str, permuted: bool) -> tuple[str, list[str],
     callee = b.fam.get("CALLEE")
     if callee is not None and b.contradictions > callee.score:
         why.append("callee_contradiction")
+    if b.g7.startswith("mac_contra"):
+        why.append("mac_contra")
     if not why:
         return "AUTO", [], "c2"
-    if sig_route_ok(row, run_ok, permuted):
+    code = sig_route_check(row, run_ok, permuted)
+    if code == "":
         return "AUTO", [], "sig"
+    if code == "twin":
+        why.append("sig_twin")
     return "REVIEW", why, ""
 
 
@@ -629,7 +675,7 @@ def evidence_row(batch: str, corpus: bd.Corpus, row: RowEval, gate: str, run_ok:
              cand_status="confirmed" if b.addr == row.cand_orig else "changed",
              content_level="C%d" % min(b.n_fam, 2), steam_size="" if b.steam_size is None else b.steam_size,
              mapper_tag=b.mapper_tag, steam_retn="" if sretn is None else sretn, g1=b.g1, g2=b.g2, g3=b.g3, g4=b.g4,
-             g5_target=b.g5, g6=b.g6, a_str=fmt_score(b.fam.get("STR")), a_callee=fmt_score(b.fam.get("CALLEE")),
+             g5_target=b.g5, g6=b.g6, g7=b.g7, a_str=fmt_score(b.fam.get("STR")), a_callee=fmt_score(b.fam.get("CALLEE")),
              a_sig=fmt_score(b.fam.get("SIG"), "float"), a_srv=fmt_score(b.fam.get("SRV")),
              a_vt=fmt_score(b.fam.get("VT")), families=",".join(b.families), run_ok=run_ok, decoy_best=b.decoy_best)
     flags = list(b.flags)
@@ -694,6 +740,11 @@ def write_gate_report(path: Path, batch: str, corpus: bd.Corpus, evs: list[dict]
     out += ["- %s::%s gog %s: %s (gog_param=%s gog_retn=%s steam_retn=%s)" % (
         e["class"], e["name"], e["gog"], [f for f in e["flags"].split(";") if "param_bad" in f or "meta" in f],
         e["gog_param_size"], e["gog_retn"], e["steam_retn"]) for e in flagged] or ["(none)"]
+    out += ["", "## Trusted pair body conflicts", "",
+            "Trusted rows that are NOT seeds (exact name + equal retn + equal size or A-SIG >= 0.5 with intersection >= 3 "
+            "required, Opus gate R1). They stay trusted as G6 holders until Opus rules on them.", ""]
+    conflicts = getattr(corpus, "pair_conflicts", [])
+    out += ["- GOG %s %s -> Steam %s: %s" % (hx8(g), name, hx8(s), why) for g, s, name, why in conflicts] or ["(none)"]
     out += ["", "## Ambiguous rows (second candidate also reaches C2)", ""]
     amb = [e for e, r in zip(evs, rows) if r.ambiguous]
     out += ["- %s::%s gog %s" % (e["class"], e["name"], e["gog"]) for e in amb] or ["(none)"]
@@ -708,8 +759,19 @@ def load_batch_candidates(bdir: Path) -> list[dict]:
     return rows
 
 
-def evaluate_batch(batch: str, corpus: bd.Corpus, scorer: bd.Scorer, crows: list[dict]):
-    """candidates.tsv rows -> (RowEval list, class assignment dict)."""
+def load_rechecks(bdir: Path) -> dict[int, list[int]]:
+    """recheck.tsv (written by finalize from reviewer corrected_addr): GOG addr -> corrected Steam addresses."""
+    out: dict[int, list[int]] = {}
+    for r in iter_tsv(bdir / "recheck.tsv"):
+        try:
+            out.setdefault(parse_addr(r["gog_addr"]), []).append(parse_addr(r["corrected_addr"]))
+        except (ValueError, KeyError):
+            continue
+    return out
+
+
+def evaluate_batch(batch: str, corpus: bd.Corpus, scorer: bd.Scorer, crows: list[dict], rechecks: dict | None = None):
+    """candidates.tsv rows -> (RowEval list, class assignment dict).  `rechecks` add re-gated candidates (R5)."""
     rows = []
     for r in crows:
         try:
@@ -720,7 +782,11 @@ def evaluate_batch(batch: str, corpus: bd.Corpus, scorer: bd.Scorer, crows: list
         if g is None:
             print("warning: GOG address %s not in gog_functions.tsv; row skipped" % r.get("gog"))
             continue
-        rows.append(evaluate_row(corpus, scorer, g, parse_candidates(r.get("candidates", ""))))
+        cands = parse_candidates(r.get("candidates", ""))
+        for extra in (rechecks or {}).get(g.addr, []):
+            if all(a != extra for a, _ in cands):
+                cands.append((extra, ["recheck"]))
+        rows.append(evaluate_row(corpus, scorer, g, cands))
     permuted = find_permuted(corpus, scorer, rows)
     return rows, assign_classes(corpus, rows, permuted)
 
@@ -741,7 +807,7 @@ def load_untrust(path) -> set[int]:
 
 def run_gates(batch: str, bdir: Path, corpus: bd.Corpus, scorer: bd.Scorer, crows: list[dict]) -> list[dict]:
     """Evaluate candidate rows, write evidence.tsv + gate_report.md into bdir, return the evidence rows."""
-    rows, classes = evaluate_batch(batch, corpus, scorer, crows)
+    rows, classes = evaluate_batch(batch, corpus, scorer, crows, load_rechecks(bdir))
     evs = []
     for r in rows:
         gate, run_ok, why, route = classes[r.g.addr]
@@ -933,9 +999,44 @@ def make_card(card_id: str, corpus: bd.Corpus, g: GogFn, ce: CandEval, ev_by_gog
     return "\n".join(L) + "\n"
 
 
-def decoy_target(ev: dict) -> Optional[int]:
-    m = re.match(r"(0x[0-9a-fA-F]+):", ev.get("decoy_best", ""))
-    return parse_addr(m.group(1)) if m else None
+MIN_DECOYS = 10                  # per chunk, Opus gate 4.6; 0 tolerance
+
+
+def same_retn_neighbours(corpus: bd.Corpus, addr: int) -> list[tuple[str, int]]:
+    """[('decoy_prev', a), ('decoy_next', b)]: nearest same-retn Steam starts within 8 starts of addr."""
+    f = corpus.steam.get(addr)
+    i = bisect.bisect_left(corpus.steam_starts, addr)
+    if f is None or i >= len(corpus.steam_starts) or corpus.steam_starts[i] != addr:
+        return []
+    out = []
+    for kind, step in (("decoy_prev", -1), ("decoy_next", 1)):
+        for k in range(1, 9):
+            j = i + step * k
+            if not 0 <= j < len(corpus.steam_starts):
+                break
+            a = corpus.steam_starts[j]
+            if corpus.steam[a].retn == f.retn:
+                out.append((kind, a))
+                break
+    return out
+
+
+def pick_decoy_cards(corpus: bd.Corpus, hosts: list[dict], need: int, rng: random.Random,
+                     taken: set) -> list[tuple[str, dict, int]]:
+    """Decoy cards: prev / next same-retn neighbours of REVIEW rows (hosts), never an address already carried."""
+    out = []
+    pool = list(hosts)
+    rng.shuffle(pool)
+    for ev in pool:
+        cand = parse_addr(ev["steam_addr"])
+        options = [(k, a) for k, a in same_retn_neighbours(corpus, cand) if (ev["gog"], a) not in taken]
+        rng.shuffle(options)
+        for kind, a in options:
+            if len(out) >= need:
+                return out
+            taken.add((ev["gog"], a))
+            out.append((kind, ev, a))
+    return out
 
 
 def cmd_cards(args) -> int:
@@ -950,25 +1051,21 @@ def cmd_cards(args) -> int:
     crows = {parse_addr(r["gog"]): r for r in iter_tsv(bdir / "candidates.tsv")}
     rng = random.Random("cards-" + args.batch)
     review = [e for e in evs if e["gate_class"] == "REVIEW"]
-    autos = [e for e in evs if e["gate_class"] == "AUTO" and decoy_target(e) is not None]
-    rng.shuffle(autos)
-    per_chunk_decoys = max(1, args.chunk // 10) if args.decoys is None else args.decoys
+    per_chunk_decoys = max(MIN_DECOYS, args.chunk // 6) if args.decoys is None else args.decoys
     per_chunk_real = max(1, args.chunk - per_chunk_decoys)
     chunks = [review[i:i + per_chunk_real] for i in range(0, len(review), per_chunk_real)]
     cards_dir = bdir / "cards"
     cards_dir.mkdir(parents=True, exist_ok=True)
-    for old in cards_dir.glob("chunk_*.md"):
+    for old in list(cards_dir.glob("chunk_*.md")):
         old.unlink()
-    key_rows, used_auto = [], 0
+    key_rows, taken = [], set()
     for k, real in enumerate(chunks, 1):
-        items = [("real", e, None, "") for e in real]
-        take = autos[used_auto:used_auto + per_chunk_decoys]
-        used_auto += len(take)
-        for n, e in enumerate(take):
-            if n % 3 == 2:                       # a known-good row with its real address: expected match
-                items.append(("gold", e, parse_addr(e["steam_addr"]), "match"))
-            else:                                # the neighbour decoy of a known-good row: expected mismatch
-                items.append(("decoy", e, decoy_target(e), "mismatch"))
+        in_chunk = {e["gog"] for e in real}
+        others = [e for e in review if e["gog"] not in in_chunk]     # hosts outside this chunk first
+        decoys = pick_decoy_cards(corpus, others, per_chunk_decoys, rng, taken)
+        if len(decoys) < per_chunk_decoys:
+            decoys += pick_decoy_cards(corpus, real, per_chunk_decoys - len(decoys), rng, taken)
+        items = [("real", e, None, "") for e in real] + [(kind, e, a, "mismatch") for kind, e, a in decoys]
         rng.shuffle(items)
         text = [CARD_HEADER % (args.batch, k, "steam_db_batches/" + args.batch)]
         for n, (kind, e, forced, expected) in enumerate(items, 1):
@@ -986,8 +1083,11 @@ def cmd_cards(args) -> int:
                              "kind": kind, "expected": expected})
         (cards_dir / ("chunk_%d.md" % k)).write_text("\n".join(text), encoding="utf-8")
     write_tsv(cards_dir / "key.tsv", ["card_id", "chunk", "gog", "steam_addr", "kind", "expected"], key_rows)
-    print("%s cards: %d REVIEW rows, %d chunks, %d calibration cards -> %s" % (
-        args.batch, len(review), len(chunks), sum(1 for r in key_rows if r["kind"] != "real"), cards_dir))
+    n_dec = Counter(r["chunk"] for r in key_rows if r["kind"] != "real")
+    short = [k for k in range(1, len(chunks) + 1) if n_dec[k] < MIN_DECOYS]
+    print("%s cards: %d REVIEW rows, %d chunks, %d decoy cards (key: %s)%s" % (
+        args.batch, len(review), len(chunks), sum(n_dec.values()), cards_dir / "key.tsv",
+        "; WARNING chunks %s carry fewer than %d decoys" % (short, MIN_DECOYS) if short else ""))
     return 0
 
 
@@ -1044,9 +1144,9 @@ def decide_review(ev: dict, reviews: list[dict]) -> tuple[str, str, str]:
         return "unresolved", cand, "reviewer match without a cited anchor and content level C0"
     if mism:
         fixed = [r for r in mism if (r.get("corrected_addr") or "").strip()]
-        if fixed:
-            return "likely", hx8(parse_addr(fixed[0]["corrected_addr"])), \
-                "reviewer corrected the address (not re-gated): %s" % (fixed[0].get("reason") or "")[:160]
+        if fixed:       # Opus gate R5: never `likely` by itself; the corrected address is re-gated (recheck.tsv)
+            return "unresolved", cand, "reviewer mismatch with corrected_addr %s: recheck (re-gate or Opus override): %s" % (
+                hx8(parse_addr(fixed[0]["corrected_addr"])), (fixed[0].get("reason") or "")[:140])
         return "unresolved", cand, "reviewer mismatch: %s" % (mism[0].get("reason") or "")[:160]
     return "unresolved", cand, "reviewer unsure" if reviews else "REVIEW row without a reviewer verdict"
 
@@ -1111,6 +1211,131 @@ def write_functions_csv(path: Path, rows: list[dict], batch: str, steam: dict) -
     return n
 
 
+# ---------------------------------------------------------------------------------------------- Opus gate 4.6
+LAYOUT_RE = re.compile(r"layout|offset (?:shift|differ)|shifted|enlarg|grew|alloc", re.I)
+
+
+def auto_route_of(ev: dict) -> str:
+    for part in (ev.get("flags") or "").split(";"):
+        if part.startswith("auto_route="):
+            return part.split("=", 1)[1]
+    return ""
+
+
+def prior_batches_clean(bdir: Path) -> int:
+    """Number of consecutive clean batches (opus_gate.json `clean`) immediately before this one."""
+    m = re.fullmatch(r"B(\d+)", bdir.name)
+    if not m:
+        return 0
+    cur = int(m.group(1))
+    prior = sorted((int(re.fullmatch(r"B(\d+)", p.name).group(1)), p) for p in bdir.parent.iterdir()
+                   if re.fullmatch(r"B\d+", p.name) and int(p.name[1:]) < cur and (p / "opus_gate.json").exists())
+    run_len = 0
+    for _n, p in reversed(prior):
+        try:
+            clean = json.loads((p / "opus_gate.json").read_text()).get("clean")
+        except (OSError, ValueError):
+            clean = False
+        if not clean:
+            break
+        run_len += 1
+    return run_len
+
+
+def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], reviews: dict,
+              sample_errors: Optional[int]) -> dict:
+    """DESIGN 4.6: score the decoy cards, decide the escalation, list what Opus must read.  Writes opus_gate.md/json."""
+    ev_by = {parse_addr(e["gog"]): e for e in evs}
+    verdicts: dict[tuple[int, int], list[str]] = {}
+    for ga, rows in reviews.items():
+        for r in rows:
+            if r.get("steam_addr"):
+                verdicts.setdefault((ga, parse_addr(r["steam_addr"])), []).append(r.get("verdict", ""))
+    key_rows = []
+    for kf in sorted((bdir / "cards").glob("key*.tsv")):
+        key_rows += list(iter_tsv(kf))
+    decoys = [k for k in key_rows if k["kind"].startswith("decoy")]
+    per_chunk = Counter(k["chunk"] for k in decoys)
+    accepted = [k for k in decoys
+                if set(verdicts.get((parse_addr(k["gog"]), parse_addr(k["steam_addr"])), [])) & {"match", "label_suspect"}]
+    unanswered = [k for k in decoys if (parse_addr(k["gog"]), parse_addr(k["steam_addr"])) not in verdicts]
+    chunks = sorted({k["chunk"] for k in key_rows})
+    short = [c for c in chunks if per_chunk[c] < MIN_DECOYS]
+    # rows that Opus reads in full
+    full, plain = [], []
+    for f in finals:
+        ga = parse_addr(f["gog"])
+        rvs = reviews.get(ga, [])
+        ev = ev_by.get(ga, {})
+        why = []
+        if any((r.get("corrected_addr") or "").strip() for r in rvs):
+            why.append("reviewer corrected_addr")
+        if f["final_verdict"] == "label_suspect":
+            why.append("label_suspect")
+        matched = [r for r in rvs if r.get("verdict") == "match"]
+        if matched:
+            if any(LAYOUT_RE.search((r.get("reason") or "") + " " + (r.get("content_anchor") or "")) for r in matched):
+                why.append("match cites a layout/offset difference")
+            flags = ev.get("flags", "")
+            if "mac_contra" in flags:
+                why.append("match on a mac_contra row")
+            if "sig_twin" in flags:
+                why.append("match on a twin row")
+            if "name_held_elsewhere" in ev.get("g6", ""):
+                why.append("match on a name_held_elsewhere row")
+        if why:
+            full.append((f, ", ".join(why)))
+        elif matched and ev.get("gate_class") == "REVIEW":
+            plain.append(f)
+    if not chunks and (full or plain):
+        short = ["(no cards/key.tsv: nothing was scored)"]
+    escalate = bool(accepted) or bool(sample_errors)
+    clean_streak = prior_batches_clean(bdir)
+    rate = 0.10 if clean_streak >= 3 else 0.20
+    rng = random.Random("opus-" + batch)
+    plain.sort(key=lambda f: (ev_by[parse_addr(f["gog"])].get("content_level") != "C0", rng.random()))
+    n_sample = len(plain) if escalate else min(len(plain), max(5, math.ceil(rate * len(plain))))
+    sample = plain[:n_sample]
+    autos = [e for e in evs if e["gate_class"] == "AUTO"]
+    sigs = [e for e in autos if auto_route_of(e) == "sig"]
+    c2s = [e for e in autos if auto_route_of(e) == "c2"]
+    rng.shuffle(sigs)
+    rng.shuffle(c2s)
+    if escalate:
+        decision = ("ESCALATE: %s -> send 100%% of this batch's reviewer matches to Opus"
+                    % ("decoy cards accepted" if accepted else "Opus-found error in the sample"))
+    elif short:
+        decision = "INSUFFICIENT DECOYS in chunks %s (need >= %d per chunk, 0 tolerance): re-run `cards`" % (short, MIN_DECOYS)
+    else:
+        decision = "OK: Opus reads the 100%% classes plus a %d%% sample (min 5) of the other reviewer matches" % int(rate * 100)
+    result = {"batch": batch, "decoy_cards": len(decoys), "decoys_accepted": len(accepted),
+              "decoys_per_chunk": dict(per_chunk), "chunks_short": short, "unanswered_decoys": len(unanswered),
+              "full_read": len(full), "sample_pool": len(plain), "sample_size": len(sample), "sample_rate": rate,
+              "sample_errors": sample_errors, "decision": decision, "clean_streak_before": clean_streak,
+              "clean": (not escalate and not short and sample_errors == 0)}
+    L = ["# Opus gate %s (DESIGN 4.6)" % batch, "", "Decision: **%s**" % decision, "",
+         "- decoy cards: %d (per chunk %s), accepted by the reviewer: %d, unanswered: %d" % (
+             len(decoys), dict(per_chunk), len(accepted), len(unanswered)),
+         "- Opus-found sample errors: %s (pass `finalize --opus-sample-errors N` after the Opus pass)" % (
+             "pending" if sample_errors is None else sample_errors),
+         "- consecutive clean batches before this one: %d -> sample rate %d%%" % (clean_streak, int(rate * 100)), "",
+         "## Decoys accepted (0 tolerance)", ""]
+    L += ["- %s %s -> %s (%s)" % (k["card_id"], k["gog"], k["steam_addr"], k["kind"]) for k in accepted] or ["None."]
+    L += ["", "## Opus reads 100%% (%d rows)" % len(full), ""]
+    L += ["- %s::%s gog %s -> %s: %s" % (f["class"], f["name"], f["gog"], f["steam_addr"], w) for f, w in full] or ["None."]
+    L += ["", "## Sample of the other reviewer matches (%d of %d)" % (len(sample), len(plain)), ""]
+    L += ["- %s::%s gog %s -> %s (%s)" % (f["class"], f["name"], f["gog"], f["steam_addr"],
+                                         ev_by[parse_addr(f["gog"])].get("content_level")) for f in sample] or ["None."]
+    L += ["", "## AUTO meaning checks (5 sig + 3 c2)", ""]
+    L += ["- sig: %s::%s gog %s -> %s" % (e["class"], e["name"], e["gog"], e["steam_addr"]) for e in sigs[:5]]
+    L += ["- c2: %s::%s gog %s -> %s" % (e["class"], e["name"], e["gog"], e["steam_addr"]) for e in c2s[:3]]
+    if not sigs[:5] and not c2s[:3]:
+        L.append("None.")
+    (bdir / "opus_gate.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+    (bdir / "opus_gate.json").write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return result
+
+
 def cmd_finalize(args) -> int:
     paths = bd.get_paths()
     bdir = paths.batches / args.batch
@@ -1141,6 +1366,16 @@ def cmd_finalize(args) -> int:
                     "reason": r["final_note"] or r["flags"]} for r in deletes])
         corr = [r for r in export if r["cand_orig"] and parse_addr(r["cand_orig"]) != parse_addr(r["steam_addr"])]
         write_functions_csv(bdir / "branch_corrections.csv", corr, args.batch, steam)
+    rechecks = []
+    for r in finals:
+        ga = parse_addr(r["gog"])
+        if r["final_verdict"] != "unresolved":
+            continue
+        for x in reviews.get(ga, []):
+            if x.get("verdict") == "mismatch" and (x.get("corrected_addr") or "").strip():
+                rechecks.append({"gog_addr": r["gog"], "corrected_addr": hx8(parse_addr(x["corrected_addr"])),
+                                 "source": "review:%s" % x.get("_file", "?"), "reason": (x.get("reason") or "")[:160]})
+    write_tsv(bdir / "recheck.tsv", RECHECK_COLS, rechecks)
     suspects = []
     for r in finals:
         if r["final_verdict"] != "label_suspect":
@@ -1152,12 +1387,15 @@ def cmd_finalize(args) -> int:
         else:
             rv = next((x for x in reviews.get(ga, []) if x.get("verdict") == "label_suspect"), {})
             src, fits = "review:%s" % rv.get("_file", "?"), rv.get("reason") or ""
+        counterpart = (rv.get("corrected_addr") or "").strip() if not (ov and ov["final_verdict"] == "label_suspect") else ""
         suspects.append({"gog_addr": r["gog"], "gog_name": "%s::%s" % (r["class"], r["name"]),
-                         "steam_counterpart": r["steam_addr"], "body_fits_name": fits, "source": src})
+                         "steam_counterpart": hx8(parse_addr(counterpart)) if counterpart else r["steam_addr"], "body_fits_name": fits, "source": src})
     write_tsv(bdir / "gog_label_suspects.tsv", LABEL_SUSPECT_COLS, suspects)
     cnt = Counter(r["final_verdict"] for r in finals)
-    print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d" % (
-        args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts)))
+    print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d; rechecks=%d" % (
+        args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts), len(rechecks)))
+    gate = opus_gate(bdir, args.batch, evs, finals, reviews, args.opus_sample_errors)
+    print("opus gate: decoy cards %d (accepted %d); %s" % (gate["decoy_cards"], gate["decoys_accepted"], gate["decision"]))
     return 0
 
 
@@ -1178,7 +1416,7 @@ def parse_lessons(report: Path) -> list[tuple[str, str, str]]:
 
 
 def plan_persist(con: sqlite3.Connection, upserts: list[dict], rejected: list[dict], lessons: list, batch: str,
-                 date: str) -> list[tuple]:
+                 date: str, opus_rejected: set | None = None) -> list[tuple]:
     """Compute the exact change list against the current name_map (no writes).
 
     Ops: ('insert', row) ('update', row, why) ('demote', addr, evidence_suffix) ('lesson', scope, topic, note)
@@ -1193,12 +1431,29 @@ def plan_persist(con: sqlite3.Connection, upserts: list[dict], rejected: list[di
         return con.execute("select name,source,confidence,evidence from name_map where steam_addr=?",
                            (addr,)).fetchone()
 
+    opus_rejected = opus_rejected or set()
+
+    def trusted_holders(name: str, except_addr: str) -> list[str]:
+        """Addresses where a trusted row (db or this plan) already holds this name (Opus gate R4)."""
+        found = {}
+        for a, n, src, conf in con.execute("select steam_addr,name,source,confidence from name_map where name like ?",
+                                           (base_name(name) + "%",)):
+            found[a] = (n, src, conf)
+        for a, (n, src, conf, _e) in overlay.items():
+            found[a] = (n, src, conf)
+        return sorted(a for a, (n, src, conf) in found.items()
+                      if a != except_addr and base_name(n) == base_name(name) and bd.is_trusted(src, conf))
+
     ops: list[tuple] = []
     for r in rejected:
         addr = hx8(parse_addr(r["steam_addr"]))
         name = "%s::%s" % (r["class"], r["name"])
         cur = current(addr)
-        if cur and base_name(cur[0]) == name and cur[2] != "wrong" and cur[1] != source:
+        if cur and base_name(cur[0]) == name and bd.is_trusted(cur[1], cur[2]) and addr not in opus_rejected \
+                and cur[1] != source:
+            ops.append(("skip", addr, "R4: trusted row %s (%s/%s) is demoted only by an Opus overrides.tsv row naming "
+                                      "this address" % (cur[0], cur[1], cur[2])))
+        elif cur and base_name(cur[0]) == name and cur[2] != "wrong" and cur[1] != source:
             ev = "%s | demoted by %s %s: rejected (%s)" % (cur[3] or "", source, date, (r.get("final_note") or "")[:160])
             ops.append(("demote", addr, ev))
             overlay[addr] = (cur[0], cur[1], "wrong", ev)
@@ -1206,6 +1461,11 @@ def plan_persist(con: sqlite3.Connection, upserts: list[dict], rejected: list[di
         addr = u["steam_addr"]
         cur = current(addr)
         new = (u["name"], u["source"], u["confidence"], u["evidence"])
+        held = trusted_holders(u["name"], addr)
+        if held:
+            ops.append(("skip", addr, "R4: %s is already held by a trusted row at %s; no second address" % (
+                u["name"], ",".join(held))))
+            continue
         if cur is None:
             ops.append(("insert", u))
             overlay[addr] = new
@@ -1284,7 +1544,9 @@ def cmd_persist(args) -> int:
     else:
         con = bd.connect_ro(paths.kdb)
     try:
-        ops = plan_persist(con, upserts, rejected, lessons, args.batch, date)
+        opus_rejected = {hx8(parse_addr(r["steam_addr"])) for r in iter_tsv(bdir / "overrides.tsv")
+                         if r.get("final_verdict") == "rejected" and (r.get("steam_addr") or "").strip()}
+        ops = plan_persist(con, upserts, rejected, lessons, args.batch, date, opus_rejected)
         cnt = Counter(o[0] for o in ops)
         print("%s persist %s: insert=%d update=%d demote=%d lesson=%d skip=%d" % (
             args.batch, "APPLY" if args.apply else "DRY-RUN", cnt["insert"], cnt["update"], cnt["demote"],
@@ -1336,6 +1598,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("finalize", help="merge reviews and overrides")
     p.add_argument("batch", type=batch_name)
     p.add_argument("--with-likely", action="store_true")
+    p.add_argument("--opus-sample-errors", type=int, default=None,
+                   help="errors Opus found in its sample of reviewer matches (omit until the Opus pass is done)")
     p.add_argument("--date", default=None, help="date stamped into kdb_upsert.json (default today)")
     p = sub.add_parser("persist", help="dry-run (default) or --apply the name_map upsert")
     p.add_argument("batch", type=batch_name)

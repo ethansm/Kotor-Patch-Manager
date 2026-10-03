@@ -42,6 +42,7 @@ KNOWN_CONFIDENCES = {"high", "medium", "med", "low", "wrong"}
 # edits (2026-10-02) were written under this source label for 13 rows Batch 1 had rejected/left unresolved.
 B1_ONLY_SOURCES = {"steam-db-pr3-phase2"}
 GOG_PROGRAM_DEFAULT = "k2_win_gog_aspyr_swkotor2.exe"
+MAC_PROGRAM_DEFAULT = "k2_mac_KOTOR2_x86"
 STEAM_PROGRAM_DEFAULT = "k2_win_steam_aspyr_swkotor2.exe"
 STEAM_FLAT_FUNCTIONS = "swkotor2_aspyr.exe_functions.tsv"   # flat server export that exists before the per-program dir
 
@@ -59,6 +60,7 @@ class Paths:
     b1_verified: Path
     exe: Path
     gog_program: str
+    mac_program: str
     steam_program: str
 
 
@@ -81,6 +83,7 @@ def get_paths() -> Paths:
         b1_verified=_env_path("BD_B1_VERIFIED", PM_ROOT / "steam_db_batches/gold/b1_verified_head.tsv"),
         exe=_env_path("BD_EXE", games + "/ghidra_dumps/steam_6a522e71/swkotor2_vanilla_6a522e71.exe"),
         gog_program=os.environ.get("BD_GOG_PROGRAM") or GOG_PROGRAM_DEFAULT,
+        mac_program=os.environ.get("BD_MAC_PROGRAM") or MAC_PROGRAM_DEFAULT,
         steam_program=os.environ.get("BD_STEAM_PROGRAM") or STEAM_PROGRAM_DEFAULT,
     )
 
@@ -463,15 +466,29 @@ class TrustIndex:
                 cls = r.get("class") or r.get("class_name") or ""
                 tgt[parse_addr(r["steam_addr"])].add("%s::%s" % (cls, r.get("name") or r.get("function_name") or ""))
 
-    def trusted_names(self, addr: int) -> set[str]:
-        """Names a trusted route attaches to this address."""
+    def trusted_names(self, addr: int, exact: bool = False) -> set[str]:
+        """Names a trusted route attaches to this address.
+
+        exact=True keeps only names that equal the row's full name (no `base_name` suffix stripping): the form that
+        may seed `pairs` (DESIGN 4.2, Opus gate R1).
+        """
         if addr in self.untrusted:
             return set()
         names = set(self.b1.get(addr, ())) | set(self.later.get(addr, ()))
         nm = self.name_map.get(addr)
         if nm and is_trusted(nm.source, nm.conf):
-            names.add(base_name(nm.name))
+            if not exact or nm.name.strip() == base_name(nm.name):
+                names.add(base_name(nm.name))
         return names
+
+    def addrs_for_name(self, name: str) -> set[int]:
+        """Every trusted Steam address that holds this (base) name."""
+        if getattr(self, "_by_name", None) is None:
+            idx: dict[str, set[int]] = defaultdict(set)
+            for a, n in self.trusted_addrs():
+                idx[n].add(a)
+            self._by_name = idx
+        return set(self._by_name.get(base_name(name), ()))
 
     def is_trusted(self, addr: int, name: str | None = None) -> bool:
         names = self.trusted_names(addr)
@@ -566,30 +583,106 @@ class Corpus:
         self.steam_fp = load_fp(sdir / "fp.tsv")
         self.steam_srv_texts = load_server_strings(sdir / "strings.tsv")
         self.gog_srv = load_server_functions(gdir)
+        self.mac_fp = load_fp(p.server / p.mac_program / "fp.tsv")
+        self.mac_by_name: dict[str, list[Fp]] = defaultdict(list)
+        for fp in self.mac_fp.values():
+            if fp.name and fp.namespace:
+                self.mac_by_name["%s::%s" % (fp.namespace, fp.name)].append(fp)
         self.steam_srv = load_server_functions(sdir, p.server / STEAM_FLAT_FUNCTIONS)
         self.has_gog_fp = bool(self.gog_fp)
         self.has_steam_fp = bool(self.steam_fp)
         self.pairs: dict[int, int] = {}
         self._pe: PeImage | None = None
         self._pe_loaded = False
-        self.apply_untrust(untrust)
         self._asm_cache: dict[int, object] = {}
         self._thunk_cache: dict[int, tuple[int, bool, bool]] = {}
         self._gog_callers: dict[int, set[int]] | None = None
         self._steam_fp_referrers: Counter | None = None
+        self.apply_untrust(untrust)
 
     def apply_untrust(self, addrs: Iterable[int]) -> None:
         """Remove Steam addresses from the trust index and from `pairs` (both directions) for this run.
 
-        Pairs are the trusted GOG -> Steam mappings (GOG DB name == trusted Steam name).
+        `pairs` are the trusted GOG -> Steam mappings that may seed run_ok, serve as A-CALLEE anchors and count as
+        gold positives (Opus gate R1): the GOG DB name equals the trusted Steam name EXACTLY and the GOG and Steam
+        fingerprints agree on the body (`body_agrees`).  Trusted rows that fail stay in the trust index (G6 holders)
+        and are listed in `pair_conflicts`.
         """
         self.untrusted = set(addrs)
         self.trust = TrustIndex(self.name_map, self.b1_rows, self.later_rows, self.untrusted)
         self.pairs = {}
-        for addr, name in self.trust.trusted_addrs():
+        self.pair_conflicts: list[tuple[int, int, str, str]] = []
+        for addr, name in sorted(self.trust.trusted_addrs()):
             g = self.gog_by_name.get(name)
-            if g is not None and g.addr not in self.pairs and addr not in self.untrusted:
+            if g is None or g.addr in self.pairs or addr in self.untrusted:
+                continue
+            if name not in self.trust.trusted_names(addr, exact=True):
+                self.pair_conflicts.append((g.addr, addr, name, "name is not exact (suffix on the trusted row)"))
+                continue
+            ok, why = self.body_agrees(g.addr, addr)
+            if ok:
                 self.pairs[g.addr] = addr
+            else:
+                self.pair_conflicts.append((g.addr, addr, name, why))
+
+    def body_agrees(self, g_addr: int, s_addr: int) -> tuple[bool, str]:
+        """Opus gate R1: equal retn, and equal size or A-SIG >= 0.5 with intersection >= 3 (thunks resolved).
+
+        Missing fingerprints cannot contradict: -> (True, 'no fingerprint').  A retn of -1 (no RET instruction seen,
+        e.g. a tail-jump body) is unknown and is not compared.
+        """
+        key = (g_addr, s_addr)
+        cache = self.__dict__.setdefault("_body_cache", {})
+        if key not in cache:
+            cache[key] = self._body_agrees(g_addr, s_addr)
+        return cache[key]
+
+    def _body_agrees(self, g_addr: int, s_addr: int) -> tuple[bool, str]:
+        gfp = self.gog_fp.get(self.resolve_gog(g_addr))
+        sfp = self.steam_fp.get(self.resolve_thunk(s_addr)[0])
+        if gfp is None or sfp is None:
+            return True, "no fingerprint"
+        if gfp.retn != sfp.retn and gfp.retn >= 0 and sfp.retn >= 0:      # -1 = no RET seen: unknown, not a mismatch
+            return False, "retn GOG %d vs Steam %d" % (gfp.retn, sfp.retn)
+        if gfp.size == sfp.size:
+            return True, "equal size"
+        jd, ji = jaccard(gfp.disp, sfp.disp), jaccard(gfp.imm, sfp.imm)
+        inter = len(set(gfp.disp) & set(sfp.disp)) + len(set(gfp.imm) & set(sfp.imm))
+        if (jd + ji) / 2 >= 0.5 and inter >= 3:
+            return True, "SIG %.2f" % ((jd + ji) / 2)
+        return False, "size GOG %d vs Steam %d, SIG %.2f (intersection %d)" % (gfp.size, sfp.size, (jd + ji) / 2, inter)
+
+    @staticmethod
+    def _values(fp: Fp) -> set[int]:
+        return {v for v in list(fp.disp) + list(fp.imm) if 0x10 <= v < 0x100000}
+
+    def mac_check(self, g: GogFn, s_addr: int) -> tuple[str, Optional[float]]:
+        """Opus gate R3 / invariant G7: -> ('pass' | 'n/a' | 'mac_contra', best overlap or None).
+
+        V(f) = disp and imm values in [0x10, 0x100000).  overlap = share of V(S) with a Mac value within 4.  Flag
+        `mac_contra` only if S has >= 2 values and EVERY Mac function named exactly Class::Name has >= 2 values and
+        overlap 0.  No Mac function of that name, or too few values, is `n/a`.
+        """
+        macs = self.mac_by_name.get(g.name)
+        sfp = self.steam_fp.get(s_addr)
+        if not macs or sfp is None:
+            return "n/a", None
+        vs = self._values(sfp)
+        if len(vs) < 2:
+            return "n/a", None
+        overlaps = []
+        for m in macs:
+            vm = sorted(self._values(m))
+            if len(vm) < 2:
+                return "n/a", None
+            hit = 0
+            for x in vs:
+                i = bisect.bisect_left(vm, x - 4)
+                if i < len(vm) and vm[i] <= x + 4:
+                    hit += 1
+            overlaps.append(hit / len(vs))
+        best = max(overlaps)
+        return ("mac_contra", 0.0) if best == 0 else ("pass", best)
 
     # ---- exe bytes (G3 fallback when no .asm exists)
     def exe_bytes(self, addr: int, n: int = 16) -> Optional[bytes]:

@@ -36,6 +36,15 @@ rejected or left unresolved), so the label alone proves nothing.
 Branch-DB rows are trusted only through one of the routes above (the branch DB itself is not a trust source).
 `name_map` rows with confidence `wrong` are known-false: usable as negatives.
 
+Seed hygiene (Opus calibration gate 2026-10-03, R1; `bdlib.Corpus.pairs`):
+> A trusted row enters `pairs` (run_ok seed, A-CALLEE anchor, gold positive) only if its GOG name equals the trusted
+> Steam name exactly (no `base_name` suffix stripping) AND the GOG and Steam fingerprints agree on body: equal `retn`, and
+> either equal `size` or A-SIG >= 0.5 with intersection >= 3. A trusted row that fails is listed in `gate_report.md`
+> under `## Trusted pair body conflicts` and is not a seed. It stays trusted as a G6 holder until Opus rules on it.
+
+Gold corrections (wrong gold pairs, GOG label errors) live in `calibration/gold_annotations.tsv`, loaded by `calibrate.py`;
+`gold/b1_verified_head.tsv` is never edited.
+
 Note: some `level-up-P5-static-confirmed` rows have evidence text in the `confidence` column (old column swap):
 treat any confidence not in {high, medium, med, low, wrong} as `medium`.
 
@@ -113,7 +122,14 @@ Invariants:
   `ceil(gog_param/4)*4` (cdecl 0); mismatch with the GOG fingerprint -> flag `gog_db_param_bad`, not a failure.
 - G5 `thunk`: thunks are resolved to the target before G3/G4 and all anchors; record the target.
 - G6 `dup`: the address is not held by a different name in the branch DB or `name_map` (trusted holder -> REJECT;
-  untrusted holder -> REVIEW + record).
+  untrusted holder -> REVIEW + record). Opus gate R4 (2026-10-03):
+  > G6 also fails `review:name_held_elsewhere` when a trusted row holds the GOG name at a different Steam address (AUTO
+  > blocked).
+- G7 `mac` (Opus gate R3, 2026-10-03; both routes; source `SERVER/k2_mac_KOTOR2_x86/fp.tsv`, names = `namespace::name`):
+  > let V(f) = the set of `disp` and `imm` values v with 0x10 <= v < 0x100000 in fp.tsv. For every Mac x86
+  > function with exactly the GOG `Class::Name`, overlap = |{x in V(S): exists y in V(M), |x-y| <= 4}| / |V(S)|. If |V(S)| >= 2,
+  > |V(M)| >= 2 and overlap == 0 for every such Mac function, flag `mac_contra` -> REVIEW (never REJECT). No Mac function
+  > of that name, or too few values -> pass (recorded `g7=n/a`).
 
 Anchor families (computed for the candidate S AND for its decoys D = the previous and next Steam function starts
 and every other candidate of the row; a family counts only if it is **discriminating**: S's score > every decoy's):
@@ -129,16 +145,18 @@ and every other candidate of the row; a family counts only if it is **discrimina
 Content level: C0 none, C1 one family, C2 >= 2 families. A-VT is reported but does not count toward C1/C2
 (calibration 10-03: `class_methods` symbols come from the same labelling, so it is circular).
 Run consistency `run_ok`: S-G equals the delta of the nearest mapped GOG neighbour on at least one side
-(neighbour mapped by a trusted row or this batch's AUTO row), and no permuted pair (two same-size neighbours whose
+(neighbour mapped by a trusted `pairs` row (seed hygiene, section 1) or this batch's `auto_route=c2` row), and no permuted pair (two same-size neighbours whose
 fingerprint scores prefer the swapped assignment).
 
 Gate class:
-- AUTO: G1, G3, G4, G5, G6 pass; C2; run_ok or mapper `vote`; not ambiguous; G2 pass.
+- AUTO: G1, G3, G4, G5, G6 pass; G7 not `mac_contra`; C2; run_ok or mapper `vote`; not ambiguous; G2 pass.
   - `auto_route=c2` is the rule above.
-  - `auto_route=sig` (R3; lead decision 2026-10-03, pending Opus calibration sign-off): every invariant passes (g1 pass, g2 pass, g3 pass or
-    pass(exe), g4 pass, g6 pass, no unresolved thunk), the counting families (VT excluded) are exactly {SIG}, a_sig >= 0.75,
-    the best decoy's SIG <= a_sig - 0.25 (best = highest SIG over all decoys), run_ok == yes, steam_size == gog_size, not permuted, not ambiguous, and no callee
-    contradiction. `mapper:vote` does not help this route.
+  - `auto_route=sig` (R3; lead decision 2026-10-03, signed off with changes R1-R7 (calibration/OPUS_REVIEW.md)): every invariant
+    passes (g1 pass, g2 pass, g3 pass or pass(exe), g4 pass, g6 pass, g7 not `mac_contra`, no unresolved thunk), the counting
+    families (VT excluded) are exactly {SIG}, a_sig >= 0.75, run_ok == yes, steam_size == gog_size, not permuted, not ambiguous,
+    and no callee contradiction. `mapper:vote` does not help this route. Opus gate R2 (2026-10-03), exact rule text:
+    > ... the best decoy's SIG <= a_sig - 0.25, where the decoys are the previous and next Steam starts, every other
+    > candidate of the row, AND every Steam start within +-8 starts of the candidate with the same `size` and `retn`.
   - The sig route is NON-PROPAGATING: run_ok for any row may only be seeded by trusted pairs and by `auto_route=c2` rows; a
     `sig`-route row is never added to the mapped-neighbour set. Evidence rows carry `auto_route=c2|sig` in `flags`.
 - REJECT: hard contradiction: G1 fails (not a start / CRT), G4 fails with no thunk explanation, or G6 with a trusted
@@ -163,7 +181,7 @@ the best decoy, labelled `decoy`); both GOG-order neighbours with their gate cla
 Inputs: `evidence.tsv`, reviewer TSVs `B<n>/review/*.tsv` (`gog_addr steam_addr verdict(match|mismatch|unsure)
 corrected_addr content_anchor confidence reason`), Opus overrides `B<n>/overrides.tsv` (`gog_addr steam_addr
 final_verdict note`). Final verdict per row: `verified` (AUTO, or REVIEW confirmed with a cited anchor and C1+),
-`likely`, `rejected`, `unresolved`. Overrides win. Outputs:
+`likely`, `rejected`, `unresolved`, `label_suspect` (reviewer verdict or Opus override; counterpart proven, GOG name contradicts the body: never shipped, listed in `B<n>/gog_label_suspects.tsv`). Overrides win. Outputs:
 - `B<n>/final_rows.tsv` (evidence columns + `final_verdict final_note`);
 - `B<n>/functions.csv`: SqliteTools `import-ghidra` format, header
   `class_name,function_name,address,calling_convention,param_size_bytes,notes`, verified rows only (likely only with
@@ -172,6 +190,15 @@ final_verdict note`). Final verdict per row: `verified` (AUTO, or REVIEW confirm
 - `B<n>/kdb_upsert.json` (the name_map rows persist will write); for B0 also `B<n>/branch_deletes.tsv`
   (rows to remove) and `B<n>/branch_corrections.csv`.
 
+Reviewer corrections (Opus calibration gate 2026-10-03, R5), exact rule text:
+> A reviewer `mismatch` with `corrected_addr` gives `unresolved` plus a `recheck` entry. The corrected address is added
+> as a candidate and re-gated in the next `gates` run, and is shipped only via that gate or an Opus override. It never
+> becomes `likely` by itself.
+
+Implementation: `finalize` writes `B<n>/recheck.tsv` (`gog_addr corrected_addr source reason`); the next `gates B<n>` appends
+each corrected address to its row as a candidate tagged `recheck`. A reviewer `label_suspect` with `corrected_addr` records
+that address as the counterpart in `gog_label_suspects.tsv`. `finalize` also writes `B<n>/opus_gate.md` / `.json` (section 4.6).
+
 ### 4.5 `persist B<n> [--apply]`
 Dry-run by default: prints the planned inserts/updates/demotions. `--apply` (lead only): one transaction;
 `name_map` upsert with source `steam-db-B<n>`, confidence `high` (verified) / `medium` (likely); an existing row at
@@ -179,6 +206,28 @@ the same address with a different name is replaced and its old name/source/confi
 (`replaces <old> (<source>/<conf>) <date>`); an existing row holding the same name at a different, now rejected
 address gets confidence `wrong` + a dated note; lessons from `gate_report.md` section `## Lessons` inserted once
 (dedupe on scope+topic). Ends with `PRAGMA integrity_check`. A second `--apply` changes 0 rows.
+Opus gate R4 (2026-10-03), exact rule text:
+> `persist` never inserts a second address for a name that a trusted row already holds. It never demotes a
+> trusted row to `wrong` unless an `overrides.tsv` row from Opus names that address.
+(Such upserts / demotions are printed as `skip` lines with the reason.)
+
+### 4.6 Opus gate per batch (Opus calibration gate 2026-10-03, calibration/OPUS_REVIEW.md "Reviewer tier")
+The Sonnet reviewer tier is a filter, not a final gate. Per batch:
+- **100% Opus** reads: every reviewer `corrected_addr`; every `label_suspect`; every `match` that cites a layout/offset
+  difference; every `match` on a row flagged `mac_contra`, twin (`sig_twin`, R2) or `name_held_elsewhere`.
+- **20% random sample (minimum 5) of the remaining reviewer `match` rows, C0 rows first.**
+- **Every chunk carries at least 10 decoy cards, 0 tolerance.** `cards` always mixes them in: prev / next same-retn
+  neighbours (nearest within 8 starts) of REVIEW rows, hosted preferably by rows of other chunks; they are labelled only
+  in `cards/key.tsv` (kind `decoy_prev` / `decoy_next`), never in the chunk file. Any decoy accepted (`match` or
+  `label_suspect`), or any Opus-found error in the sample, sends 100% of that batch's reviewer matches to Opus.
+- After 3 consecutive batches with 0 errors in the sample and 0 decoy accepts the sample rate may drop to 10%.
+- AUTO rows get a per-batch Opus meaning check of 5 `sig` + 3 `c2` rows.
+Tooling: `finalize` scores the decoy cards from `cards/key*.tsv` against the reviewer TSVs, writes `B<n>/opus_gate.md/json`
+(decoys per chunk, accepted decoys, the 100% list, the sample, the AUTO meaning checks, the sample rate from the previous
+batches' `opus_gate.json`) and prints the escalation decision (`OK` / `ESCALATE` / `INSUFFICIENT DECOYS`). After the Opus
+pass, re-run `finalize --opus-sample-errors N`. `tools/score_review.py KEY REVIEW` prints the same decision for one chunk.
+
+## 5. Process rules
 
 ## 5. Process rules
 - **The PR changes only the Steam DB** (user, 2026-10-03). `kotor2_gog_aspyr.db` in the KPM repo is read-only input:

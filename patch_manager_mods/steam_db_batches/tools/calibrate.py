@@ -83,6 +83,8 @@ def build_positives(corpus: bd.Corpus, skipped: list | None = None
         g = corpus.gog_by_name.get(name)
         if g is None:
             continue
+        if not corpus.body_agrees(g.addr, addr)[0]:          # Opus gate R1: a body-conflicting row is no gold positive
+            continue
         if name not in corpus.trust.b1.get(addr, ()) and name not in corpus.trust.later.get(addr, ()):
             nm = corpus.name_map.get(addr)
             if nm is not None and nm.name.strip() != name:
@@ -431,10 +433,15 @@ def write_draft(out: Path, corpus: bd.Corpus, metrics: dict, variants: list[str]
     if gold.get("annotations"):
         L += ["### Gold annotations (label_suspect pairs leave the positive and negative sets; %d cases dropped)" %
               len(gold["excluded"]), ""]
-        L += ["- GOG %s / Steam %s: %s - %s" % (hx8(g), hx8(a), ann, note[:100])
-              for (g, a), (ann, note) in sorted(gold["annotations"].items())]
+        L += ["- GOG %s / Steam %s: %s - %s" % (hx8(g), hx8(a) if a is not None else "(any)", ann, note[:100])
+              for (g, a), (ann, note) in sorted(gold["annotations"].items(), key=lambda kv: (kv[0][0], kv[0][1] or 0))]
         L.append("")
-    L += ["### Known-false mapper addresses used as negatives (AI0_mapper_summary.md)", ""]
+    L += ["### Trusted pair body conflicts (not gold positives, not seeds; Opus gate R1)", ""]
+    L += ["- GOG %s %s -> Steam %s: %s" % (hx8(g), n, hx8(a), why) for g, a, n, why in gold.get("conflicts", [])] or ["- none"]
+    if gold.get("corrected"):
+        L += ["", "Gold corrections applied from the annotations file (annotation `positive`): " +
+              ", ".join("%s -> %s" % (hx8(g), hx8(a)) for g, a in gold["corrected"])]
+    L += ["", "### Known-false mapper addresses used as negatives (AI0_mapper_summary.md)", ""]
     L += ["- %s -> GOG %s %s" % (hx8(s), hx8(g), n) for g, s, n in gold["known"]] or ["- (none parsed)"]
     L += ["", "## Gate classes per set", "", "| variant | set | AUTO | REVIEW | REJECT | NOCAND | total |",
           "|---|---|---|---|---|---|---|"]
@@ -532,14 +539,20 @@ def build_cards(out: Path, corpus, scorer, results: dict, run_untrust: dict, cas
 
 
 # ================================================================================================ main
-def load_annotations(path: Path | None) -> dict[tuple[int, int], tuple[str, str]]:
-    """gold_annotations.tsv (gog_addr, steam_addr, annotation, note) -> {(gog, steam): (annotation, note)}."""
+def load_annotations(path: Path | None) -> dict[tuple[int, int | None], tuple[str, str]]:
+    """gold_annotations.tsv (gog_addr, steam_addr, annotation, note) -> {(gog, steam or None): (annotation, note)}.
+
+    annotation `label_suspect`: the GOG label is wrong; an empty steam_addr covers every case of that GOG function.
+    annotation `positive`: gold correction, sets the positive of that GOG function to steam_addr.  Corrections live in
+    this file, never in gold/b1_verified_head.tsv.
+    """
     out = {}
     if path is None:
         return out
     for r in iter_tsv(Path(path)):
         try:
-            out[(parse_addr(r["gog_addr"]), parse_addr(r["steam_addr"]))] = (r.get("annotation", ""), r.get("note", ""))
+            steam = (r.get("steam_addr") or "").strip()
+            out[(parse_addr(r["gog_addr"]), parse_addr(steam) if steam else None)] = (r.get("annotation", ""), r.get("note", ""))
         except (ValueError, KeyError):
             continue
     return out
@@ -548,6 +561,16 @@ def load_annotations(path: Path | None) -> dict[tuple[int, int], tuple[str, str]
 def build_gold(corpus: bd.Corpus, block: int, seed: int, annotations: dict | None = None) -> dict:
     skipped: list = []
     positives, origins, ambiguous = build_positives(corpus, skipped)
+    corrected = []
+    for (ga, steam), (ann, _note) in sorted((annotations or {}).items(), key=lambda kv: (kv[0][0], kv[0][1] or 0)):
+        if ann == "positive" and steam is not None and ga in corpus.gog_by_addr and steam in corpus.steam:
+            for other in [g2 for g2, s2 in positives.items() if s2 == steam and g2 != ga]:
+                del positives[other]
+                origins.pop(other, None)
+            positives[ga], origins[ga] = steam, "annotation"
+            ambiguous = [(g2, a2) for g2, a2 in ambiguous if g2 != ga]
+            corrected.append((ga, steam))
+    positives = dict(sorted(positives.items()))
     halves = assign_halves(positives, block)
     negatives, known = build_negatives(corpus, positives, halves, block)
     decoys = build_decoys(corpus, positives, halves, seed)
@@ -579,7 +602,8 @@ def build_gold(corpus: bd.Corpus, block: int, seed: int, annotations: dict | Non
     excluded = []
     suspect = {k for k, (a, _n) in (annotations or {}).items() if a == "label_suspect"}
     if suspect:
-        drop_gogs = {c.gog for c in cases if c.kind == "pos" and (c.gog, c.steam) in suspect}
+        suspect_gogs = {g_ for g_, s_ in suspect if s_ is None}
+        drop_gogs = suspect_gogs | {c.gog for c in cases if c.kind == "pos" and (c.gog, c.steam) in suspect}
         keep = lambda c: (c.gog, c.steam) not in suspect and c.gog not in drop_gogs   # noqa: E731
         excluded = [c for c in cases if not keep(c)]
         cases = [c for c in cases if keep(c)]
@@ -589,7 +613,7 @@ def build_gold(corpus: bd.Corpus, block: int, seed: int, annotations: dict | Non
         counts.update({k: sum(1 for c in cases if c.kind == k) for k in ALL_KINDS + ("neg_cluster",) if k != "pos"})
     return {"positives": positives, "origins": origins, "ambiguous": ambiguous, "halves": halves, "skipped": skipped,
             "cases": cases, "known": known, "counts": counts, "plan": plan, "pos_runs": runs, "excluded": excluded,
-            "annotations": annotations or {}}
+            "annotations": annotations or {}, "corrected": corrected, "conflicts": list(corpus.pair_conflicts)}
 
 
 def write_gold(out: Path, corpus: bd.Corpus, gold: dict) -> None:

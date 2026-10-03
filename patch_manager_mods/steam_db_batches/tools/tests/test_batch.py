@@ -48,6 +48,7 @@ class World:
         self.sstr, self.gstr = {}, {}   # string addr -> (text, [referring function addrs])
         self.name_map, self.branch, self.b1 = [], [], []
         self.b1_rejected = []   # (class, name, cand_orig address)
+        self.mac = []           # (namespace, name, disp list, imm list) rows of the Mac x86 fingerprint export
         self.mapper = []
         self.n_helper = 0
         self.n_pair = 0
@@ -60,9 +61,9 @@ class World:
     def gog_fn(self, addr, cls, fn, cc="__thiscall", param=0):
         self.gog.append(dict(addr=addr, cls=cls, fn=fn, cc=cc, param=param))
 
-    def fp(self, side, addr, retn, callees=(), strs=(), disp=(), imm=()):
+    def fp(self, side, addr, retn, callees=(), strs=(), disp=(), imm=(), size=48):
         d = self.gog_fp if side == "gog" else self.steam_fp
-        d[addr] = dict(retn=retn, callees=set(callees), strs=set(strs), disp=list(disp), imm=list(imm))
+        d[addr] = dict(retn=retn, callees=set(callees), strs=set(strs), disp=list(disp), imm=list(imm), size=size)
 
     def string(self, side, addr, text, refs=()):
         (self.gstr if side == "gog" else self.sstr)[addr] = (text, list(refs))
@@ -114,6 +115,8 @@ class World:
         (self.dump / "inputs").mkdir(parents=True, exist_ok=True)
         self._write_dump()
         self._write_exe()
+        self.server.mkdir(parents=True, exist_ok=True)
+        self._write_mac()
         self._write_server()
         self._write_dbs()
         self._write_mapper()
@@ -160,7 +163,7 @@ class World:
         rows = ["addr\tsize\tretn\tn_insn\tcallconv\tthunk_target\tcallees\tstr_refs\tdisp\timm\tname\tnamespace\tsource"]
         for a in sorted(fps):
             f = fps[a]
-            rows.append("\t".join([h(a), "48", str(f["retn"]), "4", "unknown", "", hexlist(f["callees"]),
+            rows.append("\t".join([h(a), str(f.get("size", 48)), str(f["retn"]), "4", "unknown", "", hexlist(f["callees"]),
                                    hexlist(f["strs"]), hexlist(f["disp"]), hexlist(f["imm"]), "", "", "ANALYSIS"]))
         return "\n".join(rows) + "\n"
 
@@ -199,6 +202,17 @@ class World:
         struct.pack_into("<8sIIIIIIHHI", hdr, pe + 24 + 0xE0, b".text", len(text), 0x100000, len(text), 0x400,
                          0, 0, 0, 0, 0x60000020)
         (self.dump / "swkotor2_vanilla_6a522e71.exe").write_bytes(bytes(hdr) + bytes(text))
+
+    def _write_mac(self):
+        if not self.mac:
+            return
+        mdir = self.server / bd.MAC_PROGRAM_DEFAULT
+        mdir.mkdir(parents=True, exist_ok=True)
+        rows = ["addr\tsize\tretn\tn_insn\tcallconv\tthunk_target\tcallees\tstr_refs\tdisp\timm\tname\tnamespace\tsource"]
+        for i, (ns, name, disp, imm) in enumerate(self.mac):
+            rows.append("\t".join([h(0x1000 + 0x40 * i), "40", "0", "5", "__thiscall", "", "", "", hexlist(disp), hexlist(imm),
+                                   name, ns, "ANALYSIS"]))
+        (mdir / "fp.tsv").write_text("\n".join(rows) + "\n")
 
     def _write_dbs(self):
         self.kdb = self.root / "kdb.db"
@@ -871,6 +885,33 @@ class SigRouteTests(Base):
         self.assertEqual(self.evidence("B2")["Sg2"]["gate_class"], "REVIEW")
 
 
+class DecoyMixTests(Base):
+    """Real batches always mix >= 10 decoy cards per chunk; the decoy labels live only in key.tsv."""
+
+    def test_default_chunk_carries_at_least_ten_decoys_of_review_rows(self):
+        write_candidates(self.root, "B1", B1_SPEC)
+        run("gates", "B1")
+        rc, out = run("cards", "B1")
+        self.assertEqual(rc, 0, out)
+        cards = self.root / "batches" / "B1" / "cards"
+        key = list(bd.iter_tsv(cards / "key.tsv"))
+        decoys = [k for k in key if k["kind"].startswith("decoy_")]
+        self.assertGreaterEqual(len(decoys), batch.MIN_DECOYS)
+        self.assertTrue(all(k["expected"] == "mismatch" for k in decoys))
+        review = {e["gog"]: e for e in bd.iter_tsv(self.root / "batches" / "B1" / "evidence.tsv")
+                  if e["gate_class"] == "REVIEW"}
+        for k in decoys:                                         # every decoy hangs off a REVIEW row ...
+            host = review[k["gog"]]
+            self.assertNotEqual(k["steam_addr"], host["steam_addr"])
+            f = bd.load_steam_functions(bd.get_paths().dump)
+            self.assertEqual(f[int(k["steam_addr"], 16)].retn, f[int(host["steam_addr"], 16)].retn)   # ... same retn
+        chunk = (cards / "chunk_1.md").read_text()
+        self.assertEqual(chunk.count("## Card "), len(key))
+        for label in ("decoy_prev", "decoy_next", "mismatch\t"):
+            self.assertNotIn(label, chunk)                       # labels only in the key
+        self.assertNotIn("expected", (cards / "chunk_1.md").read_text().split("## Card ")[1].split("###")[0])
+
+
 class CardTests(Base):
     def test_cards_and_key(self):
         write_candidates(self.root, "B1", B1_SPEC)
@@ -882,7 +923,7 @@ class CardTests(Base):
         self.assertIn("Stack Slot Match", chunk)
         self.assertIn("### annotate", chunk)
         key = list(bd.iter_tsv(self.root / "batches" / "B1" / "cards" / "key.tsv"))
-        self.assertTrue(any(k["kind"] == "decoy" and k["expected"] == "mismatch" for k in key))
+        self.assertTrue(any(k["kind"] in ("decoy_prev", "decoy_next") and k["expected"] == "mismatch" for k in key))
         self.assertNotIn("\tmismatch", chunk)                    # the answer key is never inside the cards
         # GOG-side section sits before ### abi, stays compact and shows callee mapping + operand intersection
         sections = chunk.split("### GOG side (from the server GOG fingerprint)")[1:]
@@ -1062,6 +1103,264 @@ class FinalizePersistTests(Base):
         self.assertEqual(lessons_n, con.execute("select count(*) from lessons").fetchone()[0])
         self.assertEqual(con.execute("pragma integrity_check").fetchone()[0], "ok")
         con.close()
+
+
+# ------------------------------------------------------------------------------------------------ Opus gate R1-R5, G7
+WAVE2 = "engine-ai-atlas wave2"
+
+
+class SeedHygieneTests(Base):
+    """R1: a trusted row seeds pairs only with an exact name and an agreeing body; conflicts are listed."""
+
+    def test_pairs_need_exact_name_and_body_agreement(self):
+        w = self.world
+        w.name_map.append((h(0x00510000), "CFoo::Alpha", WAVE2, "high", "ok"))                  # agrees: pair
+        w.name_map.append((h(0x00510080), "CFoo::Gamma", WAVE2, "high", "wrong body"))          # retn 4 vs 8: conflict
+        w.name_map.append((h(0x005102c0), "CFoo::Theta (char*)", WAVE2, "high", "suffix"))      # not exact: conflict
+        w.name_map.append((h(0x005103c0), "CFoo::Nu", WAVE2, "high", "size differs, SIG equal"))
+        w.steam_fp[0x005103C0]["size"] = 0x38                    # still SIG-identical to the GOG fingerprint
+        w.build()
+        corpus = bd.Corpus(bd.get_paths())
+        g = lambda n: corpus.gog_by_name["CFoo::" + n].addr      # noqa: E731
+        self.assertEqual(corpus.pairs[g("Alpha")], 0x00510000)
+        self.assertNotIn(g("Gamma"), corpus.pairs)
+        self.assertNotIn(g("Theta"), corpus.pairs)
+        self.assertIn(g("Nu"), corpus.pairs)                       # A-SIG >= 0.5 with intersection >= 3 is enough
+        reasons = {name: why for _g, _s, name, why in corpus.pair_conflicts}
+        self.assertIn("retn GOG 4 vs Steam 8", reasons["CFoo::Gamma"])
+        self.assertIn("not exact", reasons["CFoo::Theta"])
+        self.assertNotIn("CFoo::Nu", reasons)
+        # a conflicting row is still trusted as a G6 holder
+        self.assertTrue(corpus.trust.is_trusted(0x00510080, "CFoo::Gamma"))
+        write_candidates(self.root, "B1", {"Beta": "0x00510080|mapper:vote"})
+        run("gates", "B1")
+        self.assertEqual(self.evidence()["Beta"]["gate_class"], "REJECT")
+        report = (self.root / "batches" / "B1" / "gate_report.md").read_text()
+        self.assertIn("## Trusted pair body conflicts", report)
+        self.assertRegex(report, r"CFoo::Gamma -> Steam 0x00510080: retn GOG 4 vs Steam 8")
+
+    def test_retn_minus_one_is_unknown_not_a_conflict(self):
+        w = self.world
+        w.name_map.append((h(0x00510000), "CFoo::Alpha", WAVE2, "high", "ok"))
+        w.gog_fp[GOG_BASE]["retn"] = -1                                    # GOG body without a RET, Steam returns 8
+        w.build()
+        corpus = bd.Corpus(bd.get_paths())
+        self.assertIn(corpus.gog_by_name["CFoo::Alpha"].addr, corpus.pairs)
+
+    def test_suffix_row_is_no_seed(self):
+        self.world.name_map.append((h(0x00510000), "CFoo::Alpha", WAVE2, "high", "ok"))
+        self.world.build()
+        self.assertIn(self.world.gog[0]["addr"], bd.Corpus(bd.get_paths()).pairs)
+        con = sqlite3.connect(self.world.kdb)
+        con.execute("update name_map set name='CFoo::Alpha (overload)' where steam_addr=?", (h(0x00510000),))
+        con.commit()
+        con.close()
+        corpus = bd.Corpus(bd.get_paths())
+        self.assertNotIn(self.world.gog[0]["addr"], corpus.pairs)
+        self.assertTrue(corpus.trust.is_trusted(0x00510000, "CFoo::Alpha"))        # still a holder
+
+
+class SigTwinTests(SigRouteTests):
+    """R2: same-size/same-retn starts within +-8 starts count as decoys for the sig margin."""
+
+    def test_twin_window_blocks_the_sig_route(self):
+        w = self.world
+        w.pair("CFoo", "SgSeed", GOG_BASE + 0x1000, STEAM_BASE + 0x1000, 8, 8)
+        w.pair("CFoo", "Sg1", GOG_BASE + 0x1040, STEAM_BASE + 0x1040, 8, 8, anchors=("SIG",))
+        for k in range(4):
+            w.filler("CFoo", "Fill%d" % k, GOG_BASE + 0x1080 + 0x40 * k, STEAM_BASE + 0x1080 + 0x40 * k)
+        sg1 = w.steam_fp[STEAM_BASE + 0x1040]
+        # a twin three starts after Sg1 (not previous / next): same size 0x30, retn 8, identical operand sets
+        w.fp("steam", STEAM_BASE + 0x1100, 8, (), (), sg1["disp"], sg1["imm"])
+        w.steam_fn(STEAM_BASE + 0x1100, "FUN_00511100", retn=8)
+        w.build()
+        write_candidates(self.root, "B1", {"SgSeed": "0x00511000|mapper:vote", "Sg1": "0x00511040|near"})
+        run("gates", "B1")
+        e = self.evidence()["Sg1"]
+        self.assertEqual((e["families"], e["run_ok"]), ("SIG", "yes"))
+        self.assertEqual(e["gate_class"], "REVIEW")
+        self.assertIn("sig_twin", e["flags"])
+        # without the twin the very same row is AUTO (sig route)
+        w.fp("steam", STEAM_BASE + 0x1100, 8, (), (), [], [])
+        w.build()
+        run("gates", "B1")
+        self.assertEqual(self.evidence()["Sg1"]["gate_class"], "AUTO")
+        self.assertIn("auto_route=sig", self.evidence()["Sg1"]["flags"])
+
+
+class SigMacTests(SigRouteTests):
+    def test_mac_contra_blocks_the_sig_route(self):
+        self.world.mac = [("CFoo", "Sg1", [0x20000, 0x20010], [0x30000, 0x30004])]
+        e = self.build_rows()["Sg1"]
+        self.assertEqual((e["families"], e["run_ok"]), ("SIG", "yes"))
+        self.assertEqual(e["g7"], "mac_contra(0.00)")
+        self.assertEqual(e["gate_class"], "REVIEW")
+
+
+class MacContraTests(Base):
+    """R3 / G7: values within 4 of a Mac function of the same name; zero overlap everywhere -> mac_contra (REVIEW)."""
+
+    def setup_mac(self, mac_rows):
+        self.world.mac = mac_rows
+        self.world.build()
+        write_candidates(self.root, "B1", {"Alpha": "0x00510000|mapper:vote"})
+        run("gates", "B1")
+        return self.evidence()["Alpha"]
+
+    def test_contradiction_review_never_reject(self):
+        e = self.setup_mac([("CFoo", "Alpha", [0x20000, 0x20010], [0x30000, 0x30004])])        # disjoint values
+        self.assertEqual(e["g7"], "mac_contra(0.00)")
+        self.assertEqual(e["gate_class"], "REVIEW")                # even with C2 and mapper:vote
+        self.assertIn("mac_contra", e["flags"])
+
+    def test_overlap_within_four_passes_and_does_not_block(self):
+        e = self.setup_mac([("CFoo", "Alpha", [0x1002, 0x1006 + 8], [0x5001, 0x5003])])        # Alpha disp 0x1000.. imm 0x5000..
+        self.assertTrue(e["g7"].startswith("pass("), e["g7"])
+        self.assertEqual(e["gate_class"], "AUTO")
+
+    def test_one_agreeing_mac_function_is_enough_and_missing_data_is_na(self):
+        e = self.setup_mac([("CFoo", "Alpha", [0x20000, 0x20010], [0x30000, 0x30004]),
+                            ("CFoo", "Alpha", [0x1000, 0x1004], [])])                            # an overload that agrees
+        self.assertTrue(e["g7"].startswith("pass("))
+        e = self.setup_mac([("CFoo", "Alpha", [0x20000], [])])                                   # < 2 values
+        self.assertEqual(e["g7"], "n/a")
+        e = self.setup_mac([("COther", "Alpha", [0x20000, 0x20010], [0x30000])])                  # other class
+        self.assertEqual(e["g7"], "n/a")
+        self.assertEqual(e["gate_class"], "AUTO")
+
+    def test_small_values_are_ignored(self):
+        e = self.setup_mac([("CFoo", "Alpha", [0x4, 0x8, 0xC], [0x4])])                          # all below 0x10
+        self.assertEqual(e["g7"], "n/a")
+
+
+class NameHeldElsewhereTests(Base):
+    def test_trusted_name_at_another_address_blocks_auto(self):
+        self.world.name_map.append((h(0x00510040), "CFoo::Alpha", WAVE2, "high", "trusted elsewhere"))
+        self.world._write_dbs()
+        write_candidates(self.root, "B1", {"Alpha": "0x00510000|mapper:vote"})
+        run("gates", "B1")
+        e = self.evidence()["Alpha"]
+        self.assertTrue(e["g6"].startswith("review:name_held_elsewhere=0x00510040"), e["g6"])
+        self.assertEqual(e["gate_class"], "REVIEW")                # families would give C2 + vote -> AUTO otherwise
+        self.assertIn("g6", e["flags"])
+
+
+class ReviewerCorrectionTests(Base):
+    def test_corrected_addr_is_unresolved_rechecked_and_regated(self):
+        write_candidates(self.root, "B1", B1_SPEC)
+        run("gates", "B1")
+        bdir = self.root / "batches" / "B1"
+        (bdir / "review").mkdir(exist_ok=True)
+        (bdir / "review" / "r.tsv").write_text(
+            "gog_addr\tsteam_addr\tverdict\tcorrected_addr\tcontent_anchor\tconfidence\treason\n"
+            "%s\t0x005102c0\tmismatch\t0x00510340\tx\t4\tthe body sits at Kappa's address\n" % h(GOG_BASE + 0x2C0))
+        rc, out = run("finalize", "B1", "--date", "2026-10-03")
+        f = {r["name"]: r for r in bd.iter_tsv(bdir / "final_rows.tsv")}
+        self.assertEqual(f["Theta"]["final_verdict"], "unresolved")          # never `likely` by itself
+        self.assertIn("recheck", f["Theta"]["final_note"])
+        rows = list(bd.iter_tsv(bdir / "recheck.tsv"))
+        self.assertEqual([(r["gog_addr"], r["corrected_addr"]) for r in rows], [(h(GOG_BASE + 0x2C0), "0x00510340")])
+        export = {r[1] for r in csv.reader((bdir / "functions.csv").read_text().split("\n")[1:-1])}
+        self.assertNotIn("Theta", export)
+        run("gates", "B1")                                                    # the next gates run re-gates it
+        ev = self.evidence()["Theta"]
+        self.assertIn("0x00510340|recheck", ev["cand_sources"])
+        self.assertIn("0x005102c0", ev["cand_sources"])
+
+
+class PersistR4Tests(Base):
+    def make_con(self):
+        return sqlite3.connect(self.world.kdb)
+
+    def test_no_second_address_for_a_trusted_name_and_no_unforced_demotion(self):
+        con = self.make_con()
+        con.execute("insert into name_map values(?,?,?,?,?,?)",
+                    ("0x00510040", "CFoo::Alpha", WAVE2, "high", "trusted", "2026-10-01"))
+        con.execute("insert into name_map values(?,?,?,?,?,?)",
+                    ("0x00510080", "CFoo::Beta", WAVE2, "high", "trusted", "2026-10-01"))
+        con.commit()
+        up = [{"steam_addr": "0x00510000", "name": "CFoo::Alpha", "source": "steam-db-B1", "confidence": "high",
+               "evidence": "e", "date": "2026-10-03"}]
+        rej = [{"steam_addr": "0x00510080", "class": "CFoo", "name": "Beta", "final_note": "gate"}]
+        ops = batch.plan_persist(con, up, rej, [], "B1", "2026-10-03", set())
+        kinds = [o[0] for o in ops]
+        self.assertEqual(kinds, ["skip", "skip"])
+        self.assertIn("already held by a trusted row at 0x00510040", [o for o in ops if o[1] == "0x00510000"][0][2])
+        self.assertIn("demoted only by an Opus overrides.tsv row", [o for o in ops if o[1] == "0x00510080"][0][2])
+        # an Opus override naming the address allows the demotion
+        ops = batch.plan_persist(con, [], rej, [], "B1", "2026-10-03", {"0x00510080"})
+        self.assertEqual([o[0] for o in ops], ["demote"])
+        con.close()
+
+
+class OpusGateTests(Base):
+    def setup_bdir(self, n_decoys, accepted, chunks=1):
+        bdir = self.root / "batches" / "B7"
+        (bdir / "cards").mkdir(parents=True, exist_ok=True)
+        key, reviews, evs = [], {}, []
+        for c in range(1, chunks + 1):
+            for i in range(n_decoys):
+                ga = 0x00400000 + 0x100 * (c * 100 + i)
+                key.append({"card_id": "B7-%d-%02d" % (c, i), "chunk": c, "gog": h(ga), "steam_addr": h(ga + 0x100000),
+                            "kind": "decoy_next", "expected": "mismatch"})
+                reviews[ga] = [{"steam_addr": h(ga + 0x100000), "verdict": "match" if (c, i) in accepted else "mismatch"}]
+        key.append({"card_id": "B7-1-99", "chunk": 1, "gog": h(0x00600000), "steam_addr": h(0x00700000),
+                    "kind": "real", "expected": ""})
+        batch.write_tsv(bdir / "cards" / "key.tsv", ["card_id", "chunk", "gog", "steam_addr", "kind", "expected"], key)
+        return bdir, reviews
+
+    def test_decisions(self):
+        bdir, reviews = self.setup_bdir(10, set())
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 0)
+        self.assertTrue(res["decision"].startswith("OK"), res)
+        self.assertTrue(res["clean"])
+        self.assertIn("Decision: **OK", (bdir / "opus_gate.md").read_text())
+        bdir, reviews = self.setup_bdir(10, {(1, 3)})
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 0)
+        self.assertTrue(res["decision"].startswith("ESCALATE"), res)
+        self.assertEqual(res["decoys_accepted"], 1)
+        self.assertFalse(res["clean"])
+        bdir, reviews = self.setup_bdir(9, set())
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 0)
+        self.assertTrue(res["decision"].startswith("INSUFFICIENT DECOYS"), res)
+        bdir, reviews = self.setup_bdir(10, set())
+        res = batch.opus_gate(bdir, "B7", [], [], reviews, 2)           # Opus found errors in its sample
+        self.assertTrue(res["decision"].startswith("ESCALATE"), res)
+
+    def test_sample_rate_drops_after_three_clean_batches(self):
+        for n in (4, 5, 6):
+            d = self.root / "batches" / ("B%d" % n)
+            d.mkdir(parents=True)
+            (d / "opus_gate.json").write_text(json.dumps({"clean": True}))
+        bdir, reviews = self.setup_bdir(10, set())
+        self.assertEqual(batch.opus_gate(bdir, "B7", [], [], reviews, 0)["sample_rate"], 0.10)
+        (self.root / "batches" / "B5" / "opus_gate.json").write_text(json.dumps({"clean": False}))
+        self.assertEqual(batch.opus_gate(bdir, "B7", [], [], reviews, 0)["sample_rate"], 0.20)
+
+    def test_full_read_classes_and_sample_minimum(self):
+        bdir, reviews = self.setup_bdir(10, set())
+        evs, finals = [], []
+        for i in range(12):                                            # 12 plain reviewer matches, some C0
+            ga = 0x00800000 + 0x100 * i
+            evs.append({"gog": h(ga), "gate_class": "REVIEW", "content_level": "C0" if i < 6 else "C1", "flags": "",
+                        "g6": "pass", "class": "C", "name": "F%d" % i, "steam_addr": h(ga + 0x100000)})
+            finals.append({"gog": h(ga), "class": "C", "name": "F%d" % i, "steam_addr": h(ga + 0x100000),
+                           "final_verdict": "verified"})
+            reviews[ga] = [{"steam_addr": h(ga + 0x100000), "verdict": "match", "reason": "ok", "content_anchor": "a"}]
+        ga = 0x00900000                                                 # layout citation + mac_contra -> 100%
+        evs.append({"gog": h(ga), "gate_class": "REVIEW", "content_level": "C1", "flags": "why:mac_contra", "g6": "pass",
+                    "class": "C", "name": "Lay", "steam_addr": h(ga + 0x100000)})
+        finals.append({"gog": h(ga), "class": "C", "name": "Lay", "steam_addr": h(ga + 0x100000), "final_verdict": "verified"})
+        reviews[ga] = [{"steam_addr": h(ga + 0x100000), "verdict": "match", "reason": "tail field moved: layout grew",
+                        "content_anchor": "a"}]
+        res = batch.opus_gate(bdir, "B7", evs, finals, reviews, 0)
+        self.assertEqual(res["full_read"], 1)
+        self.assertEqual((res["sample_pool"], res["sample_size"]), (12, 5))      # 20% of 12 = 3 -> minimum 5
+        text = (bdir / "opus_gate.md").read_text()
+        self.assertIn("layout/offset difference", text)
+        self.assertIn("mac_contra row", text)
+        sample_lines = text.split("## Sample")[1].split("##")[0]
+        self.assertEqual(sample_lines.count("(C0)"), 5)                         # C0 rows first
 
 
 if __name__ == "__main__":

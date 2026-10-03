@@ -3,3 +3,16 @@ gog_addr	steam_addr	annotation	note
 0x004dbde0	0x007cb6e0	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect
 0x004e0ca0	0x007d05a0	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect
 0x004df1f0	0x007cf710	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect
+0x004df1f0		label_suspect	Opus gate 4a: GetCanOrientInDialog stays Steam 0x7cf710 by meaning, GOG body 0x4dfe10; GOG body at 0x4df1f0 = Steam 0x7ceaf0
+0x004dfe10		label_suspect	Opus gate 4a: duplicate GOG label IsOverlayDialogAnimation (body = 0x7cf710 = GetCanOrientInDialog)
+0x00474890		label_suspect	Opus gate 4b: GOG AnimationPause body = Steam 0x7ef730 = AnimationPlayOutOfPlace (swapped pair with 0x4744b0)
+0x004744b0		label_suspect	Opus gate 4b: GOG AnimationPlayOutOfPlace body = Steam 0x7ef350 = AnimationPause (swapped pair)
+0x004e0c60		label_suspect	Opus gate s5: body = 0x7d0560 = ShowDialogMessage (CGuiInGame label rotation)
+0x004e0ca0		label_suspect	Opus gate s5: body = 0x7d05a0 = GetMiniMapVisible
+0x004e0d20		label_suspect	Opus gate s5: body = 0x7d0620 = RemoveGUIPopUps
+0x004dbde0		label_suspect	Opus gate s5: body = 0x7cb6e0 = DialogGuiDoneScroll
+0x004db4b0		label_suspect	Opus gate s5: body = 0x7cadb0 = IsAnimationPlayingInDialog
+0x004e0bf0		label_suspect	Opus gate s5: body fits Mac GetInterfaceOffset (CGuiInGame label rotation)
+0x0053cf90	0x008824f0	positive	Opus gate 4c: identical fingerprint (retn 0, 679 B), Warp caller; replaces the wrong gold 0x8827a0
+0x0053d240	0x008827a0	positive	Opus gate 4c: CSWGuiMainMenu::OnLoadSaveGame, identical fingerprint, SaveLoad ctor call
+0x005d1bf0	0x008528b0	positive	Opus gate 4d: unchanged; genuine Aspyr layout growth of CSWGuiSaveLoad (0x1b70 -> 0x1e40)

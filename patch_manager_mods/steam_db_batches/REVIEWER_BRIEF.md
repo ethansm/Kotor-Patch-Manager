@@ -14,6 +14,8 @@ Verdicts:
   label bugs; they are recorded, never shipped.
 - `mismatch`: 1 no (the body differs from the GOG side).
 - `unsure`: you cannot anchor 1.
+If you give `corrected_addr`, answer question 2 for the corrected function too. If its body contradicts the GOG
+name, answer `label_suspect` with `corrected_addr` filled.
 Write one TSV row per card to OUT (header below). Work only from the card, the dump and the tools listed here.
 
 ## Read first (required)
@@ -48,14 +50,18 @@ strings or behaviour), and give `corrected_addr` only if you found the right fun
 - bool parameter: GOG param 1 byte, Steam `RET 4` = match on the signature (not a mismatch).
 - Offset shift (calibration 2026-10-03, a reviewer got this wrong): GOG `CSWSObject::SetKeepCorpse` writes
   `+0x158`/`+0x234`; the candidate 0x54A700 (its neighbour) writes `[EAX+0x154]`/`[ECX+0x230]`. Same size, same
-  `RET 4`, but a "uniform -4 shift" means DIFFERENT FIELDS, i.e. a different function: `mismatch`. Struct layouts are
-  identical between GOG and Steam (all 21 shared DB offsets agree), so every GOG displacement and immediate on the
-  card must appear in the candidate unless the card says otherwise. Any unexplained difference = not `match`.
+  `RET 4`, but a "uniform -4 shift" means DIFFERENT FIELDS, i.e. a different function: `mismatch`.
+- Layouts (Opus calibration gate, R6): struct layouts are almost always identical (all 21 shared DB offsets agree),
+  but Aspyr enlarged some GUI panel classes. Example: CSWGuiSaveLoad is allocated `PUSH 0x1e44` on Steam (`0088284d`)
+  vs `0x1b74` on GOG, so its last field moved from +0x1b70 to +0x1e40 (`00851296 MOV [EAX+0x1e40],ECX` in the ctor).
+  A shifted offset is a layout difference ONLY if it is a tail field of a class whose ctor/allocation size differs by
+  the same amount; quote both lines. Any other unexplained difference, including a small uniform shift like -4, means
+  a different function: `mismatch`. Every other GOG displacement and immediate on the card must appear in the candidate.
 
 ## Tools (read-only)
 - `python3 patch_manager_mods/ghidra_knowledge/tools/re_card_prep.py annotate|abi|anchors|prologue 0xADDR`
 - `python3 patch_manager_mods/engine_ai_atlas/tools/cg.py callers|callees 0xADDR`
-- decompiles: `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/<first 2 hex digits>/<addr8>.{c,asm}`
+- decompiles: `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/<hex digits 3-4 of addr8>/<addr8>.{c,asm}` (e.g. `decomp/7e/007ef910.c`)
 - Put any helper script in your private SCRATCH (`mktemp -d`); other reviewers run in parallel.
 
 ## Output (evidence first, verdict decided last)

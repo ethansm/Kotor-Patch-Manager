@@ -7,8 +7,8 @@ GOG fingerprints present: yes. Steam fingerprints present: yes.
 
 | variant | positives | AUTO recall (c2 + sig) | REVIEW share | positive REJECT | G3 n/a (pos / all) | decoys+negatives | reached AUTO | shift/cluster rows | reached AUTO |
 |---|---|---|---|---|---|---|---|---|---|
-| novote | 435 | 58.2% (253 = 89 c2 + 164 sig) | 41.6% | 1 | 0 / 0 | 1167 | **0** | 1759 | **0** |
-| vote | 435 | 63.4% (276 = 112 c2 + 164 sig) | 36.3% | 1 | 0 / 0 | 1167 | **0** | 1759 | **0** |
+| novote | 435 | 56.1% (244 = 86 c2 + 158 sig) | 43.9% | 0 | 0 / 0 | 1167 | **0** | 1759 | **0** |
+| vote | 435 | 61.1% (266 = 108 c2 + 158 sig) | 38.9% | 0 | 0 / 0 | 1167 | **0** | 1759 | **0** |
 
 Target: 0 decoys/negatives reaching AUTO. The `vote` variant adds mapper:vote to the candidate (the mapper endorses the wrong answer), so it is the worst case.
 
@@ -27,18 +27,17 @@ Target: 0 decoys/negatives reaching AUTO. The `vote` variant adds mapper:vote to
 - shift_p2: 435
 - shift_m2: 435
 
-Stress sets (`shift_p1/m1/p2/m2`, `neg_cluster`): a whole segment is wrong by the same shift k, every candidate tagged mapper:vote, one gates run per half (block-20 halves, whole half untrusted); `neg_cluster` is the AI0 CSWSCreature outlier cluster in one run. Contiguous positive runs (same class, consecutive, same half): 87 (longest 20).
+Stress sets (`shift_p1/m1/p2/m2`, `neg_cluster`): a whole segment is wrong by the same shift k, every candidate tagged mapper:vote, one gates run per half (block-20 halves, whole half untrusted); `neg_cluster` is the AI0 CSWSCreature outlier cluster in one run. Contiguous positive runs (same class, consecutive, same half): 85 (longest 20).
 
 Hold-out: for each half, every positive of that half (and each run's candidate address) is untrusted; halves by rank parity of the GOG-address-sorted positives.
 
-### Excluded from positives: trusted name_map rows whose name is not exactly `Class::Func` (15)
+### Excluded from positives: trusted name_map rows whose name is not exactly `Class::Func` (14)
 
 Suffixes mark overloads or descriptions (e.g. `CompareNoCase(char*)`), so the GOG match would be ambiguous.
 
 - 0x006644d0 CFactionManager::SetNPCFactionReputation(row,col,v) = data[row*N+col-1]
 - 0x00664580 CFactionManager::GetNPCFactionReputation(a,b) = data[b*N+a-1]
 - 0x00664650 CFactionManager::GetIsNPCFaction(id) (1..N)
-- 0x00734f60 CExoString::CompareNoCase(char*)
 - 0x007e5730 CSWParty::AddCharacter(id)
 - 0x007e5c40 CSWParty::IsPartyMember(clientId)
 - 0x0051e170 CServerAIMaster::AddEventDeltaTime(dayD,msD,callerId,targetId,eventId,data)
@@ -51,12 +50,48 @@ Suffixes mark overloads or descriptions (e.g. `CompareNoCase(char*)`), so the GO
 - 0x0052fb80 CServerExoAppInternal::LoadGame (SAVES:%06d - %s; partytable, globals 0x656710, LoadModule)
 - 0x0084fcd0 CSWGuiInGameCharacter::ShowLevelUpGUI thiscall(panel, int) RET 4; callers 0x84F9BD, 0x7CB8E6
 
-### Gold annotations (label_suspect pairs leave the positive and negative sets; 11 cases dropped)
+### Gold annotations (label_suspect pairs leave the positive and negative sets; 3 cases dropped)
 
+- GOG 0x004744b0 / Steam (any): label_suspect - Opus gate 4b: GOG AnimationPlayOutOfPlace body = Steam 0x7ef350 = AnimationPause (swapped pair)
+- GOG 0x00474890 / Steam (any): label_suspect - Opus gate 4b: GOG AnimationPause body = Steam 0x7ef730 = AnimationPlayOutOfPlace (swapped pair with 
+- GOG 0x004db4b0 / Steam (any): label_suspect - Opus gate s5: body = 0x7cadb0 = IsAnimationPlayingInDialog
+- GOG 0x004dbde0 / Steam (any): label_suspect - Opus gate s5: body = 0x7cb6e0 = DialogGuiDoneScroll
 - GOG 0x004dbde0 / Steam 0x007cb6e0: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004df1f0 / Steam (any): label_suspect - Opus gate 4a: GetCanOrientInDialog stays Steam 0x7cf710 by meaning, GOG body 0x4dfe10; GOG body at 0
 - GOG 0x004df1f0 / Steam 0x007cf710: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004dfe10 / Steam (any): label_suspect - Opus gate 4a: duplicate GOG label IsOverlayDialogAnimation (body = 0x7cf710 = GetCanOrientInDialog)
+- GOG 0x004e0bf0 / Steam (any): label_suspect - Opus gate s5: body fits Mac GetInterfaceOffset (CGuiInGame label rotation)
+- GOG 0x004e0c60 / Steam (any): label_suspect - Opus gate s5: body = 0x7d0560 = ShowDialogMessage (CGuiInGame label rotation)
 - GOG 0x004e0c60 / Steam 0x007d0560: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004e0ca0 / Steam (any): label_suspect - Opus gate s5: body = 0x7d05a0 = GetMiniMapVisible
 - GOG 0x004e0ca0 / Steam 0x007d05a0: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004e0d20 / Steam (any): label_suspect - Opus gate s5: body = 0x7d0620 = RemoveGUIPopUps
+- GOG 0x0053cf90 / Steam 0x008824f0: positive - Opus gate 4c: identical fingerprint (retn 0, 679 B), Warp caller; replaces the wrong gold 0x8827a0
+- GOG 0x0053d240 / Steam 0x008827a0: positive - Opus gate 4c: CSWGuiMainMenu::OnLoadSaveGame, identical fingerprint, SaveLoad ctor call
+- GOG 0x005d1bf0 / Steam 0x008528b0: positive - Opus gate 4d: unchanged; genuine Aspyr layout growth of CSWGuiSaveLoad (0x1b70 -> 0x1e40)
+
+### Trusted pair body conflicts (not gold positives, not seeds; Opus gate R1)
+
+- GOG 0x00815520 CAurTexture::SetIsEnvironmentMapped -> Steam 0x00422e20: name is not exact (suffix on the trusted row)
+- GOG 0x0064db90 CServerAIMaster::AddEventDeltaTime -> Steam 0x0051e170: name is not exact (suffix on the trusted row)
+- GOG 0x0064e730 CServerAIMaster::EventPending -> Steam 0x0051ed10: name is not exact (suffix on the trusted row)
+- GOG 0x007b2f00 CServerExoAppInternal::LoadGame -> Steam 0x0052fb80: name is not exact (suffix on the trusted row)
+- GOG 0x007ef060 CFactionManager::SetNPCFactionReputation -> Steam 0x006644d0: name is not exact (suffix on the trusted row)
+- GOG 0x007ef110 CFactionManager::GetNPCFactionReputation -> Steam 0x00664580: name is not exact (suffix on the trusted row)
+- GOG 0x007ef1e0 CFactionManager::GetIsNPCFaction -> Steam 0x00664650: name is not exact (suffix on the trusted row)
+- GOG 0x00780d50 Global::ExecuteCommandChangeObjectAppearance -> Steam 0x0066b770: name is not exact (suffix on the trusted row)
+- GOG 0x00780e80 Global::ExecuteCommandCreatureFlourishWeapon -> Steam 0x0066b8a0: name is not exact (suffix on the trusted row)
+- GOG 0x007e4850 CSWSFaction::AddMember -> Steam 0x006d3330: name is not exact (suffix on the trusted row)
+- GOG 0x00606e70 CExoString::CompareNoCase -> Steam 0x00734f60: name is not exact (suffix on the trusted row)
+- GOG 0x004df1f0 CGuiInGame::GetCanOrientInDialog -> Steam 0x007cf710: size GOG 90 vs Steam 112, SIG 0.10 (intersection 1)
+- GOG 0x00478360 CSWParty::AddCharacter -> Steam 0x007e5730: name is not exact (suffix on the trusted row)
+- GOG 0x00478870 CSWParty::IsPartyMember -> Steam 0x007e5c40: name is not exact (suffix on the trusted row)
+- GOG 0x00474890 CSWCObject::AnimationPause -> Steam 0x007ef350: size GOG 68 vs Steam 129, SIG 0.08 (intersection 1)
+- GOG 0x00597ff0 CSWGuiInGameCharacter::SetStats -> Steam 0x0084e6f0: name is not exact (suffix on the trusted row)
+- GOG 0x005995d0 CSWGuiInGameCharacter::ShowLevelUpGUI -> Steam 0x0084fcd0: name is not exact (suffix on the trusted row)
+- GOG 0x0053cf90 CSWGuiMainMenu::OnLoadGamePicked -> Steam 0x008827a0: retn GOG 0 vs Steam 4
+
+Gold corrections applied from the annotations file (annotation `positive`): 0x0053cf90 -> 0x008824f0, 0x0053d240 -> 0x008827a0, 0x005d1bf0 -> 0x008528b0
 
 ### Known-false mapper addresses used as negatives (AI0_mapper_summary.md)
 
@@ -72,28 +107,28 @@ Suffixes mark overloads or descriptions (e.g. `CompareNoCase(char*)`), so the GO
 
 | variant | set | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|---|
-| novote | pos | 253 | 181 | 1 | 0 | 435 |
-| novote | decoy_prev | 0 | 360 | 1 | 0 | 361 |
-| novote | decoy_next | 0 | 360 | 1 | 0 | 361 |
-| novote | decoy_rand | 0 | 410 | 20 | 0 | 430 |
+| novote | pos | 244 | 191 | 0 | 0 | 435 |
+| novote | decoy_prev | 0 | 361 | 0 | 0 | 361 |
+| novote | decoy_next | 0 | 361 | 0 | 0 | 361 |
+| novote | decoy_rand | 0 | 412 | 18 | 0 | 430 |
 | novote | neg_b1rej | 0 | 5 | 1 | 0 | 6 |
 | novote | neg_wrong | 0 | 0 | 2 | 0 | 2 |
 | novote | neg_known | 0 | 0 | 7 | 0 | 7 |
 | novote | neg_cluster | 0 | 0 | 19 | 0 | 19 |
 | novote | shift_p1 | 0 | 190 | 245 | 0 | 435 |
-| novote | shift_m1 | 0 | 191 | 244 | 0 | 435 |
+| novote | shift_m1 | 0 | 189 | 246 | 0 | 435 |
 | novote | shift_p2 | 0 | 180 | 255 | 0 | 435 |
 | novote | shift_m2 | 0 | 172 | 263 | 0 | 435 |
-| vote | pos | 276 | 158 | 1 | 0 | 435 |
-| vote | decoy_prev | 0 | 360 | 1 | 0 | 361 |
-| vote | decoy_next | 0 | 360 | 1 | 0 | 361 |
-| vote | decoy_rand | 0 | 410 | 20 | 0 | 430 |
+| vote | pos | 266 | 169 | 0 | 0 | 435 |
+| vote | decoy_prev | 0 | 361 | 0 | 0 | 361 |
+| vote | decoy_next | 0 | 361 | 0 | 0 | 361 |
+| vote | decoy_rand | 0 | 412 | 18 | 0 | 430 |
 | vote | neg_b1rej | 0 | 5 | 1 | 0 | 6 |
 | vote | neg_wrong | 0 | 0 | 2 | 0 | 2 |
 | vote | neg_known | 0 | 0 | 7 | 0 | 7 |
 | vote | neg_cluster | 0 | 0 | 19 | 0 | 19 |
 | vote | shift_p1 | 0 | 190 | 245 | 0 | 435 |
-| vote | shift_m1 | 0 | 191 | 244 | 0 | 435 |
+| vote | shift_m1 | 0 | 189 | 246 | 0 | 435 |
 | vote | shift_p2 | 0 | 180 | 255 | 0 | 435 |
 | vote | shift_m2 | 0 | 172 | 263 | 0 | 435 |
 
@@ -103,13 +138,11 @@ None.
 
 ## Positive REJECT list (novote): gate bugs or gold errors
 
-| half | GOG | name | Steam | reason |
-|---|---|---|---|---|
-| B | 0x0053cf90 | CSWGuiMainMenu::OnLoadGamePicked | 0x008827a0 | g4=fail:retn 4 != gog 0 |
+None.
 
 ## Positive REVIEW reasons (novote)
 
-Top `why` codes (a row can carry several): c0=100, c1=54, run_na=28, run_no=22, g6=7, g1=5, g4_na=1
+Top `why` codes (a row can carry several): c0=100, c1=65, run_na=31, run_no=20, g6=9, sig_twin=8, g1=5, mac_contra=2, g4_na=1
 
 
 ## Decoys / negatives that reached AUTO (vote)
@@ -118,14 +151,12 @@ None.
 
 ## Positive REJECT list (vote): gate bugs or gold errors
 
-| half | GOG | name | Steam | reason |
-|---|---|---|---|---|
-| B | 0x0053cf90 | CSWGuiMainMenu::OnLoadGamePicked | 0x008827a0 | g4=fail:retn 4 != gog 0 |
+None.
 
 ## Positive REVIEW reasons (vote)
 
-Top `why` codes (a row can carry several): c0=100, c1=54, g6=7, g1=5, g4_na=1
+Top `why` codes (a row can carry several): c0=100, c1=65, g6=9, sig_twin=8, g1=5, mac_contra=2, g4_na=1
 
 ## Cards
 
-60 cards (40 positives, 20 decoys/negatives), all REVIEW in variant `novote`: cards/chunk_2.md, key_2.tsv; 59 earlier-chunk GOG functions excluded.
+Cards not built.
