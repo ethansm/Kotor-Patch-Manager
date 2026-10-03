@@ -1,10 +1,12 @@
-// Smoke test for k2-dialogue-letterbox-fix 1.0.0 (DLL-only; exercises the three detour handlers directly, no game).
+// Smoke test for k2-dialogue-letterbox-fix 1.0.1 (DLL-only; exercises the three detour handlers directly, no game).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke.exe smoke_dialogueletterbox.cpp
 //        (default base 0x400000; the 7 MB .bss pad makes the image cover ~0x40D000-0xB0D000 so the .rdata constant VA
 //        0x009A7D30 is ordinary memory of this exe; the harness verifies that with VirtualQuery and aborts otherwise)
-// Run:   smoke.exe <h6|clamp|vanilla|disabled|foreign|unchanged|late|ini|log0>
+// Run:   smoke.exe <h6|clamp|vanilla|disabled|foreign|unchanged|late|ini|log0|default>
 //        in a dir containing windows_x86.dll (the DLL from K2DialogueLetterboxFix.kpatch). Exit 0 = all checks passed.
-// The harness writes dialogue_letterbox_fix.ini before LoadLibrary and deletes the old log. dlbOnScreenSize is given a
+// The harness writes dialogue_letterbox_fix.ini before LoadLibrary and deletes the old log. 1.0.1: logging defaults to
+// log=0, so every mode that checks full logging writes "log=1" into the INI; mode log0 writes log=0 and mode default
+// writes no INI at all (both must produce only the load line, the first APPLY pair, the first SETTOP/SETBOTTOM, problems). dlbOnScreenSize is given a
 // fake frame (ebp = frame + 0x40, [ebp-0xC] = &fakeManager) and the fake manager's W/H shorts at +0x6C/+0x6E.
 #include <windows.h>
 #include <stdio.h>
@@ -82,12 +84,13 @@ int main(int argc, char** argv) {
 
     DeleteFileA("dialogue_letterbox_fix_log.txt");
     DeleteFileA("dialogue_letterbox_fix.ini");
-    if (!strcmp(mode, "clamp")) writeIni("mode=clamp\n");
-    else if (!strcmp(mode, "vanilla")) writeIni("mode=vanilla\n");
-    else if (!strcmp(mode, "disabled")) writeIni("enabled=0\n");
+    if (!strcmp(mode, "clamp")) writeIni("mode=clamp\nlog=1\n");
+    else if (!strcmp(mode, "vanilla")) writeIni("mode=vanilla\nlog=1\n");
+    else if (!strcmp(mode, "disabled")) writeIni("enabled=0\nlog=1\n");
     else if (!strcmp(mode, "ini")) writeIni("; comment line\r\n# another comment\r\n[section]\r\n   enabled  =  1  \r\n  MODE =  bogus \r\nlog=1\r\n");
     else if (!strcmp(mode, "log0")) writeIni("log = 0\r\nmode=h6\r\n");
-    // h6 / foreign / unchanged / late: no INI = defaults
+    else if (!strcmp(mode, "default")) { /* no INI file at all = defaults (log=0) */ }
+    else writeIni("log=1\n");   // h6 / foreign / unchanged / late: full logging (the 1.0.1 default is log=0)
 
     HMODULE m = LoadLibraryA("windows_x86.dll");
     if (!m) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
@@ -97,9 +100,9 @@ int main(int argc, char** argv) {
     check(pOnSize && pSetTop && pSetBottom, "exports dlbOnScreenSize / dlbLogSetTop / dlbLogSetBottom present");
     if (!pOnSize || !pSetTop || !pSetBottom) return 3;
     if (!strcmp(mode, "foreign"))
-        check(logHas("k2-dialogue-letterbox-fix 1.0.0 loaded:") && logHas("00 00 00 00 00 00 00 40"), "log: load line with version and the pre-existing 2.0 bytes");
+        check(logHas("k2-dialogue-letterbox-fix 1.0.1 loaded:") && logHas("00 00 00 00 00 00 00 40"), "log: load line with version and the pre-existing 2.0 bytes");
     else
-        check(logHas("k2-dialogue-letterbox-fix 1.0.0 loaded:") && logHas("2.3333330154418945") && logHas("00 00 00 80 aa aa 02 40"), "log: load line with version and vanilla bytes/value");
+        check(logHas("k2-dialogue-letterbox-fix 1.0.1 loaded:") && logHas("2.3333330154418945") && logHas("00 00 00 80 aa aa 02 40"), "log: load line with version and vanilla bytes/value");
 
     if (!strcmp(mode, "h6")) {
         check(logHas("enabled=1 mode=h6 log=1"), "log: load line shows enabled=1 mode=h6 log=1");
@@ -196,14 +199,36 @@ int main(int argc, char** argv) {
         check(logHas("enabled=1 mode=h6 log=1"), "ini: unknown mode falls back to h6, enabled/log parsed with spaces");
         callSize(3840, 1600);
         check(barFor(3840, 1600, curC()) == 267, "ini: h6 behaviour, bar 267");
-    } else if (!strcmp(mode, "log0")) {
-        check(logHas("enabled=1 mode=h6 log=0"), "log0: load line still written (shows log=0)");
+    } else if (!strcmp(mode, "log0") || !strcmp(mode, "default")) {
+        // 1.0.1 log=0 semantics (log0 = INI log=0, default = no INI): load line, first APPLY pair, first SETTOP and
+        // first SETBOTTOM, problem lines; nothing else.
+        char w[200];
+#define LCHK(ok, text) do { snprintf(w, sizeof w, "%s: %s", mode, text); check(ok, w); } while (0)
+        LCHK(logHas("enabled=1 mode=h6 log=0"), "load line written and shows log=0");
         callSize(3840, 1600);
-        check(barFor(3840, 1600, curC()) == 267, "log0: fix still applied, bar 267");
+        LCHK(barFor(3840, 1600, curC()) == 267, "fix still applied, bar 267");
+        LCHK(logCount("APPLY src=SetScreenSize W=3840 H=1600 mode=h6") == 1 && logCount("verify OK") == 1, "first APPLY pair logged (header + verify OK)");
+        callSize(1920, 1080);
+        LCHK(barFor(1920, 1080, curC()) == 180, "second SetScreenSize (1920x1080) applied, bar 180");
+        LCHK(logCount("APPLY src=") == 2 && !logHas("W=1920 H=1080") && logCount("wrote (protect") == 1 && logCount("verify OK") == 1,
+             "second apply NOT logged (still exactly the first header + wrote lines)");
+        setSize(3840, 1600);
+        int32_t* start = (int32_t*)(g_lb + 0x04); start[0] = 0; start[1] = 0; start[2] = 3840; start[3] = 0;
+        int32_t* targ = (int32_t*)(g_lb + 0x68); targ[0] = 0; targ[1] = 0; targ[2] = 3840; targ[3] = 267;
+        *(int32_t*)(g_lb + 0x88) = 1;
         pSetTop(g_lb);
-        check(!logHas("APPLY") && !logHas("SETTOP"), "log0: no APPLY/SETTOP lines");
+        start[1] = 1600; start[3] = 267; targ[1] = 1333; *(int32_t*)(g_lb + 0x88) = 2;
+        pSetBottom(g_lb);
+        LCHK(logCount("SETTOP lb=") == 1 && logCount("SETBOTTOM lb=") == 1, "first SETTOP and first SETBOTTOM logged");
+        LCHK(logHas("target(x,y,w,h)=(0,0,3840,267)") && logHas("target(x,y,w,h)=(0,1333,3840,267)"), "first SETTOP/SETBOTTOM lines carry the target rects");
+        // second dialogue
+        *(int32_t*)(g_lb + 0x88) = 0; pSetTop(g_lb); *(int32_t*)(g_lb + 0x88) = 1; pSetBottom(g_lb);
+        pSetTop(g_lb); pSetBottom(g_lb);
+        LCHK(logCount("SETTOP lb=") == 1 && logCount("SETBOTTOM lb=") == 1, "second and later SetTop/SetBottom NOT logged");
+        LCHK(logCount("LATE(") == 0, "no LATE fallback after a SetScreenSize hit");
         callSize(0, 0);
-        check(logHas("INVALID size"), "log0: problem lines (INVALID) still written");
+        LCHK(logHas("INVALID size"), "problem line (INVALID) still written");
+#undef LCHK
     } else {
         printf("unknown mode %s\n", mode);
         return 4;

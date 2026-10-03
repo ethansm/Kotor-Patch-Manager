@@ -1,4 +1,4 @@
-// k2-dialogue-letterbox-fix 1.0.0 (Steam Aspyr build 6A522E71...). Doc 15 Phase 2 S3, finding L1 (doc 17).
+// k2-dialogue-letterbox-fix 1.0.1 (Steam Aspyr build 6A522E71...). Doc 15 Phase 2 S3, finding L1 (doc 17).
 //
 // Problem: the dialogue letterbox bar height is bar = trunc((H - trunc(W / c)) / 2) with c a double at .rdata VA
 // 0x009A7D30 (vanilla 2.3333330154418945, bytes 00 00 00 80 AA AA 02 40), read by exactly 7 FDIV instructions and
@@ -10,7 +10,9 @@
 // give a one-shot late fallback if hook 1 was never seen.
 //
 // Config: dialogue_letterbox_fix.ini in the game dir (cwd): enabled=1|0 (default 1), mode=h6|clamp|vanilla (default h6),
-// log=1|0 (default 1; log=0 still writes the load line and problem lines). Missing file = defaults.
+// log=1|0 (default 0; log=0 still writes the load line, the first APPLY pair, the first SETTOP/SETBOTTOM pair and problem
+// lines; log=1 restores full logging). Missing file = defaults.
+// 1.0.1: logging only (log default 1 -> 0 plus the first-event lines above); hooks and the write logic are unchanged.
 // Log: dialogue_letterbox_fix_log.txt (appended, one line per event, capped at 5000 lines per process).
 // Safety: the constant is only ever written when its current 8 bytes are the vanilla bytes or the value this DLL wrote
 // earlier; anything else means another mod owns it and the DLL keeps its hands off.
@@ -24,7 +26,7 @@
 
 namespace {
 
-const char* const kVersion = "k2-dialogue-letterbox-fix 1.0.0";
+const char* const kVersion = "k2-dialogue-letterbox-fix 1.0.1";
 constexpr uintptr_t kConstVA = 0x009A7D30;
 const uint8_t kVanilla[8] = { 0x00, 0x00, 0x00, 0x80, 0xAA, 0xAA, 0x02, 0x40 };
 constexpr double kNudge = 1.0 - 1e-9;   // keeps trunc(W/c) from landing one below 2H/3 when 2H/3 is an integer (V7 Q5)
@@ -35,7 +37,7 @@ enum Mode { MODE_H6 = 0, MODE_CLAMP = 1, MODE_VANILLA = 2 };
 const char* const kModeNames[] = { "h6", "clamp", "vanilla" };
 
 bool g_enabled = true;
-bool g_log = true;
+bool g_log = false;            // log=0 default: load line, first APPLY, first SETTOP/SETBOTTOM, problem lines
 int g_mode = MODE_H6;
 CRITICAL_SECTION g_lock;
 bool g_lockInit = false;
@@ -48,8 +50,11 @@ bool g_foreign = false;         // sticky: the constant was found holding someon
 uint8_t g_written[8];
 bool g_haveWritten = false;
 bool g_lateDone = false;
+bool g_applyLogged = false;     // the first apply() call of this process is logged even with log=0
+bool g_topLogged = false;       // same for the first SETTOP
+bool g_bottomLogged = false;    // same for the first SETBOTTOM
 
-// force = true lines (load line, problems) are written even with log=0.
+// force = true lines (load line, problems, first-event lines) are written even with log=0.
 void logv(bool force, const char* fmt, va_list ap) {
     if (!g_log && !force) return;
     char line[700];
@@ -72,6 +77,7 @@ void logv(bool force, const char* fmt, va_list ap) {
 }
 void logf(const char* fmt, ...) { va_list ap; va_start(ap, fmt); logv(false, fmt, ap); va_end(ap); }
 void logForce(const char* fmt, ...) { va_list ap; va_start(ap, fmt); logv(true, fmt, ap); va_end(ap); }
+void logIf(bool force, const char* fmt, ...) { va_list ap; va_start(ap, fmt); logv(force, fmt, ap); va_end(ap); }
 
 double asDouble(const uint8_t* b) { double d; memcpy(&d, b, 8); return d; }
 void toBytes(double d, uint8_t* b) { memcpy(b, &d, 8); }
@@ -129,7 +135,8 @@ bool sameBytes(const uint8_t* a, const uint8_t* b) { return memcmp(a, b, 8) == 0
 
 void apply(int w, int h, const char* src) {
     ++g_hits;
-    if (!g_enabled) { logf("APPLY src=%s W=%d H=%d: DISABLED, no write", src, w, h); return; }
+    const bool first = !g_applyLogged;   // the first non-problem apply() call's lines are written even with log=0
+    if (!g_enabled) { g_applyLogged = true; logIf(first, "APPLY src=%s W=%d H=%d: DISABLED, no write", src, w, h); return; }
     if (w <= 0 || h <= 0) { logForce("APPLY src=%s W=%d H=%d: INVALID size, no write", src, w, h); return; }
 
     uint8_t cur[8];
@@ -145,6 +152,7 @@ void apply(int w, int h, const char* src) {
         logForce("APPLY src=%s W=%d H=%d: FOREIGN value %s %.17g: another mod owns 0x%08x, not writing", src, w, h, hx, curD, (unsigned)kConstVA);
         return;
     }
+    g_applyLogged = true;   // set only after the problem early-outs, so a first INVALID/FOREIGN call does not use up the slot
 
     double target;
     switch (g_mode) {
@@ -170,10 +178,10 @@ void apply(int w, int h, const char* src) {
     int replyY = (X + h) / 2;
     const int replyMax = static_cast<int>(h - 100.0 * fs);
     if (replyMax < replyY) replyY = replyMax;
-    logf("APPLY src=%s W=%d H=%d mode=%s old=%.17g new=%.17g vanillaBar=%d newBar=%d X=%d fs=%.1f panelH=%d replyY=%d",
+    logIf(first, "APPLY src=%s W=%d H=%d mode=%s old=%.17g new=%.17g vanillaBar=%d newBar=%d X=%d fs=%.1f panelH=%d replyY=%d",
          src, w, h, kModeNames[g_mode], curD, target, vBar, nBar, X, fs, panelH, replyY);
 
-    if (sameBytes(cur, tb)) { logf("APPLY src=%s: unchanged (already %.17g)", src, curD); return; }
+    if (sameBytes(cur, tb)) { logIf(first, "APPLY src=%s: unchanged (already %.17g)", src, curD); return; }
 
     DWORD old = 0;
     if (!VirtualProtect(reinterpret_cast<void*>(kConstVA), 8, PAGE_READWRITE, &old)) {
@@ -189,7 +197,7 @@ void apply(int w, int h, const char* src) {
     bool rd = readConst(after);
     const bool ok = rd && sameBytes(after, tb);
     hex8(rd ? after : tb, hx);
-    logf("APPLY src=%s: wrote (protect RW ok, old prot=0x%lx; protect restore %s -> 0x%lx); verify %s, now %s = %.17g",
+    logIf(first, "APPLY src=%s: wrote (protect RW ok, old prot=0x%lx; protect restore %s -> 0x%lx); verify %s, now %s = %.17g",
          src, old, back ? "ok" : "FAILED", back ? old : 0UL, ok ? "OK" : "MISMATCH", hx, rd ? asDouble(after) : 0.0);
     if (!back) logForce("APPLY src=%s: VirtualProtect(restore) FAILED err=%lu", src, GetLastError());
     if (!ok) logForce("APPLY src=%s: verify MISMATCH after write", src);
@@ -202,7 +210,7 @@ bool managerSize(const uint8_t* mgr, int* w, int* h) {
     return true;
 }
 
-void logLetterbox(const char* what, const uint8_t* lb) {
+void logLetterbox(const char* what, const uint8_t* lb, bool force) {
     const uint8_t* mgr = *reinterpret_cast<uint8_t* const*>(lb + 0x1C);
     int w = 0, h = 0;
     const bool haveMgr = managerSize(mgr, &w, &h);
@@ -212,7 +220,7 @@ void logLetterbox(const char* what, const uint8_t* lb) {
     const bool rc = readConst(cur);
     if (g_setLines < kSetLogCap) {
         ++g_setLines;
-        logf("%s lb=%p mode(+0x88, before this store)=%d start(x,y,w,h)=(%d,%d,%d,%d) target(x,y,w,h)=(%d,%d,%d,%d) mgr=%p W=%d H=%d c=%.17g",
+        logIf(force, "%s lb=%p mode(+0x88, before this store)=%d start(x,y,w,h)=(%d,%d,%d,%d) target(x,y,w,h)=(%d,%d,%d,%d) mgr=%p W=%d H=%d c=%.17g",
              what, lb, *reinterpret_cast<const int32_t*>(lb + 0x88), s[0], s[1], s[2], s[3], t[0], t[1], t[2], t[3],
              mgr, w, h, rc ? asDouble(cur) : 0.0);
     } else if (!g_setCapNoted) {
@@ -223,7 +231,7 @@ void logLetterbox(const char* what, const uint8_t* lb) {
         g_lateDone = true;
         char src[40];
         sprintf(src, "LATE(%s)", what == nullptr ? "?" : (what[3] == 'T' ? "SetTop" : "SetBottom"));
-        logf("%s: no SetScreenSize hit seen yet, applying late fallback (the bar just computed used the old constant)", what);
+        logForce("%s: no SetScreenSize hit seen yet, applying late fallback (the bar just computed used the old constant)", what);
         apply(w, h, src);
     }
 }
@@ -243,13 +251,17 @@ extern "C" void __cdecl dlbOnScreenSize(void* ebp) {
 // SetTop / SetBottom log hooks (0x8BAD7C / 0x8BAF01). lb = CSWGuiDialogLetterbox this (ECX).
 extern "C" void __cdecl dlbLogSetTop(void* lb) {
     if (lb == nullptr) return;
-    if (!g_log && (g_lateDone || g_hits != 0)) return;
-    logLetterbox("SETTOP", static_cast<const uint8_t*>(lb));
+    const bool first = !g_topLogged;
+    g_topLogged = true;
+    if (!g_log && !first && (g_lateDone || g_hits != 0)) return;
+    logLetterbox("SETTOP", static_cast<const uint8_t*>(lb), first);
 }
 extern "C" void __cdecl dlbLogSetBottom(void* lb) {
     if (lb == nullptr) return;
-    if (!g_log && (g_lateDone || g_hits != 0)) return;
-    logLetterbox("SETBOTTOM", static_cast<const uint8_t*>(lb));
+    const bool first = !g_bottomLogged;
+    g_bottomLogged = true;
+    if (!g_log && !first && (g_lateDone || g_hits != 0)) return;
+    logLetterbox("SETBOTTOM", static_cast<const uint8_t*>(lb), first);
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {

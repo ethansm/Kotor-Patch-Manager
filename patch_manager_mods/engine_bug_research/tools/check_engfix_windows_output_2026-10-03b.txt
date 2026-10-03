@@ -1,0 +1,56 @@
+live snapshot: live_hooks_2026-09-30g.tsv (120 hooks); live patch_config.toml: 31 ids, 198 hooks
+[OK  ] L1 SetScreenSize post-store: 0x00411ac1 len 7  bytes = [0x8B, 0x55, 0xF4, 0x83, 0x7A, 0x7C, 0x00]
+        00411ac1  8b55f4                 MOV EDX,dword ptr [EBP + -0xc]
+        00411ac4  837a7c00               CMP dword ptr [EDX + 0x7c],0x0
+[OK  ] L1 SetTop rect log: 0x008bad7c len 10  bytes = [0xC7, 0x81, 0x88, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00]
+        008bad7c  c7818800000001000000   MOV dword ptr [ECX + 0x88],0x1
+[OK  ] L1 SetBottom rect log: 0x008baf01 len 10  bytes = [0xC7, 0x81, 0x88, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00]
+        008baf01  c7818800000002000000   MOV dword ptr [ECX + 0x88],0x2
+[OK  ] L4 WrapStrings glyph FADD: 0x0047b232 len 6  bytes = [0xDC, 0x05, 0xD8, 0xC1, 0x98, 0x00]
+        0047b232  dc05d8c19800           FADD double ptr [0x0098c1d8]
+[OK  ] L1 probe W1 Draw top after SetExtent: 0x008bb461 len 6  bytes = [0x8B, 0x45, 0xCC, 0x8B, 0x48, 0x10]
+        008bb461  8b45cc                 MOV EAX,dword ptr [EBP + -0x34]
+        008bb464  8b4810                 MOV ECX,dword ptr [EAX + 0x10]
+[OK  ] L1 probe W2 Draw bottom after SetExtent: 0x008bb52b len 6  bytes = [0x8B, 0x4D, 0xCC, 0x8B, 0x51, 0x08]
+        008bb52b  8b4dcc                 MOV ECX,dword ptr [EBP + -0x34]
+        008bb52e  8b5108                 MOV EDX,dword ptr [ECX + 0x8]
+[OK  ] L1 probe W3 Draw pre-CALL base Draw: 0x008bb538 len 9  bytes = [0xD9, 0x45, 0x08, 0xD9, 0x1C, 0x24, 0x8B, 0x4D, 0xCC]
+        008bb538  d94508                 FLD float ptr [EBP + 0x8]
+        008bb53b  d91c24                 FSTP float ptr [ESP]
+        008bb53e  8b4dcc                 MOV ECX,dword ptr [EBP + -0x34]
+[OK  ] L1 probe W4 base Draw after fill: 0x0040ed9f len 5  bytes = [0x83, 0xC4, 0x1C, 0x85, 0xC0]
+        0040ed9f  83c41c                 ADD ESP,0x1c
+        0040eda2  85c0                   TEST EAX,EAX
+[OK  ] L1 probe W5 SetGlobalDialogState arg: 0x007ceb95 len 7  bytes = [0x83, 0x7D, 0x08, 0x01, 0x0F, 0x94, 0xC2]
+        007ceb95  837d0801               CMP dword ptr [EBP + 0x8],0x1
+        007ceb99  0f94c2                 SETZ DL
+
+Pairwise overlap among 9 windows: none
+
+TOML cross-check (source hooks.toml vs these windows): all hooks match
+  toml k2-dialogue-letterbox-fix 0x00411ac1 dlbOnScreenSize: matches window 'L1 SetScreenSize post-store'
+  toml k2-dialogue-letterbox-fix 0x008bad7c dlbLogSetTop: matches window 'L1 SetTop rect log'
+  toml k2-dialogue-letterbox-fix 0x008baf01 dlbLogSetBottom: matches window 'L1 SetBottom rect log'
+  toml k2-dialogue-letterbox-fix 0x008bb461 dlbProbeW1: matches window 'L1 probe W1 Draw top after SetExtent'
+  toml k2-dialogue-letterbox-fix 0x008bb52b dlbProbeW2: matches window 'L1 probe W2 Draw bottom after SetExtent'
+  toml k2-dialogue-letterbox-fix 0x008bb538 dlbProbeW3: matches window 'L1 probe W3 Draw pre-CALL base Draw'
+  toml k2-dialogue-letterbox-fix 0x0040ed9f dlbProbeW4: matches window 'L1 probe W4 base Draw after fill'
+  toml k2-dialogue-letterbox-fix 0x007ceb95 dlbProbeW5: matches window 'L1 probe W5 SetGlobalDialogState arg'
+  toml k2-wrap-measure-fix 0x0047b232 None: matches window 'L4 WrapStrings glyph FADD'
+
+ALL OK
+
++-8 byte proximity vs 318 live hooks (snapshot + live config):
+  L1 SetScreenSize post-store: 0x411ac1+7: none
+  L1 SetTop rect log: 0x8bad7c+10: none
+  L1 SetBottom rect log: 0x8baf01+10: none
+  L4 WrapStrings glyph FADD: 0x47b232+6: none
+  L1 probe W1 Draw top after SetExtent: 0x8bb461+6: none
+  L1 probe W2 Draw bottom after SetExtent: 0x8bb52b+6: none
+  L1 probe W3 Draw pre-CALL base Draw: 0x8bb538+9: none
+  L1 probe W4 base Draw after fill: 0x40ed9f+5: none
+  L1 probe W5 SetGlobalDialogState arg: 0x7ceb95+7: none
+
+PROXIMITY OK
+
+1.0.0 mirror (3 hooks) subset of probe mirror (8 hooks): OK

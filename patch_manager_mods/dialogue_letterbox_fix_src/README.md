@@ -1,4 +1,8 @@
-# k2-dialogue-letterbox-fix 1.0.0 (STAGED, not installed)
+# k2-dialogue-letterbox-fix 1.0.1 (STAGED, not installed)
+
+Changelog: 1.0.1 = logging only. `log` now defaults to 0 (was 1): the DLL writes the load line, the first APPLY pair (header + outcome),
+the first SETTOP and the first SETBOTTOM per process, and problem lines; `log=1` restores full logging. Hooks and the write logic are
+unchanged from 1.0.0 (hooks file byte-identical).
 
 Doc 15 Phase 2 S3, finding L1 (build doc: `../17_dialogue_letterbox_and_wrap_fixes.md`). Targets KOTOR II Steam Aspyr (sha256 6A522E71...).
 
@@ -27,7 +31,9 @@ enabled=1        ; 0 = never write anything (log "DISABLED, no write")
 mode=h6          ; h6 (default): c = 1.5*W/H*(1-1e-9), bar = H/6
                  ; clamp: only change c when the vanilla bar would be negative (c = W/H*(1-1e-9), bar 0), else vanilla
                  ; vanilla: keep/restore vanilla c
-log=1            ; 0 = only the load line and problem lines (INVALID/FOREIGN/protect/verify) are written
+log=0            ; 0 (default) = the load line, the first APPLY pair (header + wrote/unchanged/DISABLED), the first SETTOP and
+                 ; the first SETBOTTOM per process, and problem lines (INVALID/FOREIGN/protect/verify/null manager);
+                 ; 1 = full logging (every APPLY, every SETTOP/SETBOTTOM up to 400 lines)
 ```
 Spaces, CRLF and lines starting with `;` or `#` are tolerated; an unknown mode is logged and treated as `h6`.
 
@@ -36,11 +42,11 @@ Anything else is logged as `FOREIGN` (another mod owns the constant) and left al
 
 ## Log: `dialogue_letterbox_fix_log.txt` (game dir, appended, `[GetTickCount] text`, max 5000 lines per process)
 
-- `... loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=<8 bytes> (<double>) pid=N`
+- `... loaded: enabled=1 mode=h6 log=0 const@0x009a7d30=<8 bytes> (<double>) pid=N`
 - `APPLY src=<SetScreenSize|LATE(SetTop)|LATE(SetBottom)> W= H= mode= old= new= vanillaBar= newBar= X= fs= panelH= replyY=`
   followed by `wrote (protect RW ok, old prot=...; protect restore ok -> ...); verify OK, now <bytes> = <double>`,
   or `unchanged`, `DISABLED, no write`, `INVALID size, no write`, `FOREIGN value ...: another mod owns ..., not writing`.
-- `SETTOP` / `SETBOTTOM lb= mode(+0x88...)= start(x,y,w,h)= target(x,y,w,h)= mgr= W= H= c=` (max 400 lines per session).
+- `SETTOP` / `SETBOTTOM lb= mode(+0x88...)= start(x,y,w,h)= target(x,y,w,h)= mgr= W= H= c=` (max 400 lines per session; with log=0 only the first of each).
 
 ## Build
 
@@ -52,15 +58,18 @@ cd ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/K2DialogueLett
 ## Smoke test (Wine, no game)
 
 ```
-mkdir -p /tmp/claude-1000/l1_smoke && cd /tmp/claude-1000/l1_smoke
+mkdir -p /tmp/claude-1000/l1_101_smoke && cd /tmp/claude-1000/l1_101_smoke
 unzip -o -j <Patches>/K2DialogueLetterboxFix/K2DialogueLetterboxFix.kpatch binaries/windows_x86.dll
 i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke.exe <this dir>/smoke_dialogueletterbox.cpp
-export WINEPREFIX=/tmp/claude-1000/l1_smoke/prefix WINEDEBUG=-all
-for m in h6 clamp vanilla disabled foreign unchanged late ini log0; do
-  "$HOME/.local/share/Steam/steamapps/common/Proton - Experimental/files/bin/wine" smoke.exe $m; done
+export WINEPREFIX=/tmp/claude-1000/l1_101_smoke/prefix WINEDEBUG=-all
+for m in h6 clamp vanilla disabled foreign unchanged late ini log0 default; do
+  "$HOME/.local/share/Steam/steamapps/common/Proton - Experimental/files/bin/wine" smoke.exe $m
+  cp dialogue_letterbox_fix_log.txt log_$m.txt; done
 ```
 The harness maps 0x9A7D30 as ordinary memory of a 32-bit exe at base 0x400000 (7 MB .bss pad), calls the three handlers
 with a fake frame / fake manager / fake letterbox, and checks bars, page protection restore, and log lines. Exit 0 = pass.
+Since 1.0.1 the modes that check full logging write `log=1` into the INI; `log0` (INI `log=0`) and `default` (no INI) check the new
+log=0 output (first APPLY pair, first SETTOP/SETBOTTOM, INVALID problem line; a second apply and a second dialogue are not logged).
 Window check: `python3 engine_bug_research/tools/check_engfix_windows.py`.
 
 ## Rollback
