@@ -8,6 +8,7 @@
 #   enabled_by        config gate, free text
 #   source            file:line in this mod's C++ (original bytes, verify and write)
 # Sites are written per group; verifySite() memcmp's every site of a group before any of it is written.
+# 1.2.0 adds fs, ssb, ssc, td (3 sites), vmlk, movspin (default OFF: movspin=1 enables; fs: 1 = count only, 2 = count + free).
 
 [[code_patches]]
 name = "kt_a"
@@ -16,7 +17,7 @@ original_bytes = [0x89, 0x50, 0x0C, 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt kt=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:54,152-156"
+source = "RobustnessFixes.cpp:76,193-198"
 
 [[code_patches]]
 name = "kt_b"
@@ -25,7 +26,7 @@ original_bytes = [0x89, 0x50, 0x0C, 0xEB, 0x3C]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt kt=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:55,152-156"
+source = "RobustnessFixes.cpp:77,193-198"
 
 [[code_patches]]
 name = "vmid_a"
@@ -34,7 +35,7 @@ original_bytes = [0x7D, 0x30]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt vmid=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:56,152-156"
+source = "RobustnessFixes.cpp:78,193-198"
 
 [[code_patches]]
 name = "vmid_b"
@@ -43,7 +44,7 @@ original_bytes = [0xB8, 0x2E, 0xF8, 0xFF, 0xFF]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt vmid=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:57,152-156"
+source = "RobustnessFixes.cpp:79,193-198"
 
 [[code_patches]]
 name = "sndri"
@@ -52,7 +53,7 @@ original_bytes = [0xC7, 0x82, 0xD4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt sndri=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:58,152-156"
+source = "RobustnessFixes.cpp:80,193-198"
 
 [[code_patches]]
 name = "netovf_a"
@@ -61,7 +62,7 @@ original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0x8D, 0x4D, 0xE4, 0x
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt netovf=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:59,152-156"
+source = "RobustnessFixes.cpp:81,193-198"
 
 [[code_patches]]
 name = "netovf_b"
@@ -70,7 +71,7 @@ original_bytes = [0x05, 0x00, 0x00, 0x01, 0x00]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt netovf=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:60,152-156"
+source = "RobustnessFixes.cpp:82,193-198"
 
 [[code_patches]]
 name = "guiid"
@@ -79,7 +80,7 @@ original_bytes = [0x83, 0x7D, 0xB0, 0x00, 0x7C, 0x6C]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt guiid=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:61,152-156"
+source = "RobustnessFixes.cpp:83,193-198"
 
 [[code_patches]]
 name = "abbound"
@@ -88,4 +89,76 @@ original_bytes = [0x8B, 0x55, 0xEC, 0x3B, 0x51, 0x04, 0x7D, 0x1C]
 kind = "code"
 verifies_original = true
 enabled_by = "robustnessfixes.txt abbound=0 (or enabled=0) disables the group (default on)"
-source = "RobustnessFixes.cpp:62,152-156"
+source = "RobustnessFixes.cpp:84,193-198"
+
+[[code_patches]]
+name = "fs"
+address = 0x00712F55
+original_bytes = [0x8B, 0x45, 0xF0, 0x8B, 0x4D, 0x08]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt fs=0 (or enabled=0) disables the group (default 1 = count only; fs=2 also frees)"
+source = "RobustnessFixes.cpp:86,193-198"
+
+[[code_patches]]
+name = "ssb"
+address = 0x00428B2A
+original_bytes = [0x83, 0xBD, 0x5C, 0xFF, 0xFF, 0xFF, 0x00, 0x74, 0x11]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt ssb=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:87,193-198"
+
+[[code_patches]]
+name = "ssc"
+address = 0x00428AE5
+original_bytes = [0x3B, 0x55, 0xF0, 0x7E, 0x2D]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt ssc=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:88,193-198"
+
+[[code_patches]]
+name = "td_a"
+address = 0x0071C243
+original_bytes = [0x8B, 0x55, 0x10, 0x8B, 0x45, 0xFC, 0x8A, 0x08, 0x88, 0x0A, 0x8B, 0x55, 0x10, 0x83, 0xC2, 0x01, 0x89, 0x55, 0x10, 0x8B, 0x45, 0xFC, 0x83, 0xC0, 0x01, 0x89, 0x45, 0xFC, 0x8B, 0x4D, 0xF8, 0x83, 0xC1, 0x01, 0x89, 0x4D, 0xF8]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt td=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:89,193-198"
+
+[[code_patches]]
+name = "td_b"
+address = 0x0071C2C9
+original_bytes = [0x8B, 0x45, 0x10, 0x8B, 0x4D, 0xFC, 0x8A, 0x11, 0x88, 0x10, 0x8B, 0x45, 0x10, 0x83, 0xC0, 0x01, 0x89, 0x45, 0x10, 0x8B, 0x4D, 0xFC, 0x83, 0xC1, 0x01, 0x89, 0x4D, 0xFC, 0x8B, 0x55, 0xF8, 0x83, 0xC2, 0x01, 0x89, 0x55, 0xF8]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt td=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:91,193-198"
+
+[[code_patches]]
+name = "td_c"
+address = 0x0071C2F0
+original_bytes = [0x8B, 0x45, 0x08, 0x8B, 0x4D, 0xFC]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt td=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:93,193-198"
+
+[[code_patches]]
+name = "vmlk"
+address = 0x00669A27
+original_bytes = [0x0F, 0xB6, 0x0D, 0x7F, 0x44, 0x99, 0x00, 0x3B, 0xC1, 0x75, 0x0C]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt vmlk=0 (or enabled=0) disables the group (default on)"
+source = "RobustnessFixes.cpp:94,193-198"
+
+[[code_patches]]
+name = "movspin"
+address = 0x00798A47
+original_bytes = [0x8B, 0x45, 0x84, 0x8B, 0x88, 0x54, 0x02, 0x00, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "robustnessfixes.txt movspin=1 enables the group (default OFF; enabled=0 disables all)"
+source = "RobustnessFixes.cpp:95,193-198"

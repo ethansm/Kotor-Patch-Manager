@@ -126,7 +126,7 @@ kpatch = "RobustnessFixes/RobustnessFixes.kpatch"
 dll_name = "windows_x86.dll"
 cxxflags = ["-static-libgcc", "-static-libstdc++"]
 runtime_dlls = false
-modes = ["run", "disabled", "refuse", "keys"]
+modes = ["run", "fs2", "movon", "disabled", "refuse", "refuse2", "keys", "keys2"]
 needs_display = false
 timeout_s = 60
 
