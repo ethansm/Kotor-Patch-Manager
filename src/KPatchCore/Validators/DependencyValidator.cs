@@ -119,6 +119,190 @@ public static class DependencyValidator
     }
 
     /// <summary>
+    /// Resolves the install set for a request that may involve libraries.
+    /// </summary>
+    /// <remarks>
+    /// Libraries are derived, never selected. The set is the requested non-library patches plus
+    /// exactly the libraries they reach through <see cref="PatchManifest.Requires"/>, transitively.
+    /// A requested library nothing in the set needs is dropped and reported. Every library installs
+    /// before every non-library patch, ordered among themselves by dependency; the non-library
+    /// patches keep the order <see cref="CalculateInstallOrder"/> gives them, so a request with no
+    /// library in it resolves to exactly what that method returns.
+    /// </remarks>
+    /// <param name="available">Every patch that could be installed, by ID</param>
+    /// <param name="requested">Patch IDs the user asked for, in the order they arranged them</param>
+    /// <returns>The final install order with what was auto-added and skipped, or the reason it cannot be resolved</returns>
+    public static PatchResult<LibraryResolution> ResolveWithLibraries(
+        Dictionary<string, PatchManifest> available,
+        IEnumerable<string> requested)
+    {
+        var requestedIds = requested.Distinct().ToList();
+        var errors = new List<string>();
+
+        var requestedLibraries = new List<string>();
+        var nonLibraries = new List<string>();
+        foreach (var id in requestedIds)
+        {
+            if (!available.TryGetValue(id, out var manifest))
+            {
+                errors.Add($"Patch '{id}' not found");
+            }
+            else if (manifest.IsLibrary)
+            {
+                requestedLibraries.Add(id);
+            }
+            else
+            {
+                nonLibraries.Add(id);
+            }
+        }
+
+        var nonLibrarySet = nonLibraries.ToHashSet();
+
+        // Libraries reached from the non-library patches, in discovery order, with who asked for each.
+        var reached = new List<string>();
+        var requiredBy = new Dictionary<string, List<string>>();
+
+        void Reach(string library, string by)
+        {
+            if (!requiredBy.TryGetValue(library, out var askers))
+            {
+                requiredBy[library] = askers = new List<string>();
+                reached.Add(library);
+            }
+
+            if (!askers.Contains(by))
+            {
+                askers.Add(by);
+            }
+        }
+
+        foreach (var id in nonLibraries)
+        {
+            var missing = new List<string>();
+            foreach (var req in available[id].Requires)
+            {
+                if (!available.TryGetValue(req, out var reqManifest))
+                {
+                    missing.Add($"{req} (not available)");
+                }
+                else if (reqManifest.IsLibrary)
+                {
+                    Reach(req, id);
+                }
+                else if (!nonLibrarySet.Contains(req))
+                {
+                    missing.Add(req);
+                }
+            }
+
+            if (missing.Count > 0)
+            {
+                errors.Add($"Patch '{id}' requires: {string.Join(", ", missing)}");
+            }
+        }
+
+        // Follow library-to-library requirements until nothing new turns up. The list grows as it is walked.
+        for (var i = 0; i < reached.Count; i++)
+        {
+            var library = reached[i];
+            foreach (var req in available[library].Requires)
+            {
+                if (!available.TryGetValue(req, out var reqManifest))
+                {
+                    errors.Add($"Library '{library}' requires '{req}', which is not available");
+                }
+                else if (!reqManifest.IsLibrary)
+                {
+                    errors.Add($"Library '{library}' requires '{req}', which is not a library");
+                }
+                else
+                {
+                    Reach(req, library);
+                }
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return PatchResult<LibraryResolution>.Fail(
+                $"Dependency validation failed:\n  - {string.Join("\n  - ", errors)}"
+            );
+        }
+
+        // Libraries among themselves: dependencies first, otherwise in discovery order.
+        var libraryOrder = new List<string>();
+        var done = new HashSet<string>();
+        var path = new List<string>();
+
+        string? Visit(string library)
+        {
+            if (done.Contains(library))
+            {
+                return null;
+            }
+
+            if (path.Contains(library))
+            {
+                var cycle = path.SkipWhile(p => p != library).Append(library);
+                return $"Circular dependency among libraries: {string.Join(" -> ", cycle)}";
+            }
+
+            path.Add(library);
+            foreach (var req in available[library].Requires)
+            {
+                var problem = Visit(req);
+                if (problem != null)
+                {
+                    return problem;
+                }
+            }
+
+            path.RemoveAt(path.Count - 1);
+            done.Add(library);
+            libraryOrder.Add(library);
+            return null;
+        }
+
+        foreach (var library in reached)
+        {
+            var problem = Visit(library);
+            if (problem != null)
+            {
+                return PatchResult<LibraryResolution>.Fail(problem);
+            }
+        }
+
+        var orderResult = CalculateInstallOrder(available, nonLibraries);
+        if (!orderResult.Success || orderResult.Data == null)
+        {
+            return PatchResult<LibraryResolution>.Fail(orderResult.Error ?? "Failed to calculate install order");
+        }
+
+        var requestedLibrarySet = requestedLibraries.ToHashSet();
+        var autoAdded = libraryOrder
+            .Where(id => !requestedLibrarySet.Contains(id))
+            .Select(id => new LibraryAutoAdd(id, requiredBy[id]))
+            .ToList();
+        var skipped = requestedLibraries.Where(id => !requiredBy.ContainsKey(id)).ToList();
+
+        var messages = new List<string>();
+        messages.AddRange(autoAdded.Select(a =>
+            $"Auto-added library '{a.LibraryId}' (required by {string.Join(", ", a.RequiredBy)})"));
+        messages.AddRange(skipped.Select(id =>
+            $"Skipped library '{id}': no installed mod requires it"));
+
+        var resolution = new LibraryResolution(
+            libraryOrder.Concat(orderResult.Data).ToList(),
+            autoAdded,
+            skipped);
+
+        var result = PatchResult<LibraryResolution>.Ok(resolution);
+        result.Messages.AddRange(messages);
+        return result;
+    }
+
+    /// <summary>
     /// Calculates the installation order based on dependencies
     /// </summary>
     /// <param name="patches">Dictionary of patch ID to manifest</param>
@@ -250,3 +434,21 @@ public static class DependencyValidator
         return PatchResult.Ok("Version compatibility validated");
     }
 }
+
+/// <summary>
+/// A library that was added to an install because other patches need it.
+/// </summary>
+/// <param name="LibraryId">The library's patch ID</param>
+/// <param name="RequiredBy">IDs of the patches or libraries that require it directly</param>
+public sealed record LibraryAutoAdd(string LibraryId, IReadOnlyList<string> RequiredBy);
+
+/// <summary>
+/// What <see cref="DependencyValidator.ResolveWithLibraries"/> decided.
+/// </summary>
+/// <param name="InstallOrder">Final install set in install order: libraries first, then patches</param>
+/// <param name="AutoAdded">Libraries added because something requires them, in install order</param>
+/// <param name="SkippedLibraries">Requested libraries dropped because nothing in the set requires them</param>
+public sealed record LibraryResolution(
+    IReadOnlyList<string> InstallOrder,
+    IReadOnlyList<LibraryAutoAdd> AutoAdded,
+    IReadOnlyList<string> SkippedLibraries);

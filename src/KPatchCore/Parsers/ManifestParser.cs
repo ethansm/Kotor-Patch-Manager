@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using KPatchCore.Models;
 using Tomlyn;
 using Tomlyn.Model;
@@ -7,8 +8,12 @@ namespace KPatchCore.Parsers;
 /// <summary>
 /// Parses manifest.toml files from .kpatch archives
 /// </summary>
-public static class ManifestParser
+public static partial class ManifestParser
 {
+    // An interface is a lower-case dotted name and a whole-number major version.
+    [GeneratedRegex(@"^[a-z0-9_.-]+@[0-9]+\z")]
+    private static partial Regex InterfaceIdPattern();
+
     /// <summary>
     /// Parses a manifest.toml file and returns a PatchManifest
     /// </summary>
@@ -68,6 +73,27 @@ public static class ManifestParser
             var requires = TryGetStringArray(patchTable, "requires") ?? new List<string>();
             var conflicts = TryGetStringArray(patchTable, "conflicts") ?? new List<string>();
 
+            var kind = PatchManifest.KindPatch;
+            if (patchTable.TryGetValue("kind", out var kindObj))
+            {
+                if (kindObj is not string kindText ||
+                    (kindText != PatchManifest.KindPatch && kindText != PatchManifest.KindLibrary))
+                {
+                    return PatchResult<PatchManifest>.Fail(
+                        $"Manifest field patch.kind must be \"patch\" or \"library\", got: {kindObj}");
+                }
+
+                kind = kindText;
+            }
+
+            var provides = ParseInterfaceList(patchTable, "provides", out var providesError);
+            if (providesError != null)
+                return PatchResult<PatchManifest>.Fail(providesError);
+
+            var requiresInterfaces = ParseInterfaceList(patchTable, "requires_interfaces", out var requiresError);
+            if (requiresError != null)
+                return PatchResult<PatchManifest>.Fail(requiresError);
+
             // Supported versions dictionary
             var supportedVersions = new Dictionary<string, string>();
             if (patchTable.TryGetValue("supported_versions", out var versionsObj) &&
@@ -96,7 +122,10 @@ public static class ManifestParser
                 Requires = requires,
                 Conflicts = conflicts,
                 SupportedVersions = supportedVersions,
-                Options = optionsResult.Data
+                Options = optionsResult.Data,
+                Kind = kind,
+                Provides = provides,
+                RequiresInterfaces = requiresInterfaces
             };
 
             return PatchResult<PatchManifest>.Ok(manifest, "Manifest parsed successfully");
@@ -222,6 +251,34 @@ public static class ManifestParser
         }
 
         return PatchResult<List<PatchOption>>.Ok(options);
+    }
+
+    private static List<string> ParseInterfaceList(TomlTable table, string key, out string? error)
+    {
+        error = null;
+        var result = new List<string>();
+        if (!table.TryGetValue(key, out var obj))
+            return result;
+
+        if (obj is not TomlArray array)
+        {
+            error = $"Manifest field patch.{key} must be an array of \"name@major\" strings";
+            return result;
+        }
+
+        foreach (var item in array)
+        {
+            if (item is not string text || !InterfaceIdPattern().IsMatch(text))
+            {
+                error = $"Manifest field patch.{key} has an invalid interface id " +
+                        $"(expected name@major, e.g. \"k2.portraitslots@1\"): {item}";
+                return result;
+            }
+
+            result.Add(text);
+        }
+
+        return result;
     }
 
     private static bool TryGetString(TomlTable table, string key, out string value)

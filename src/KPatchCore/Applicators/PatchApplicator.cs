@@ -199,8 +199,42 @@ public class PatchApplicator
 
             // Step 3: Load and validate patches
             messages.Add("Step 3/7: Loading and validating patches...");
+            foreach (var requestedId in options.PatchIds)
+            {
+                if (!_repository.HasPatch(requestedId))
+                {
+                    return new InstallResult
+                    {
+                        Success = false,
+                        Error = $"Patch not found: {requestedId}",
+                        DetectedVersion = gameVersion,
+                        Messages = messages
+                    };
+                }
+            }
+
+            // Libraries are derived from what the requested patches require, never selected: add
+            // the ones they need, drop requested ones nothing needs, and put them ahead of
+            // everything else. A request with no library in it comes back unchanged.
+            var available = _repository.GetAllPatches()
+                .ToDictionary(kv => kv.Key, kv => kv.Value.Manifest);
+            var resolution = DependencyValidator.ResolveWithLibraries(available, options.PatchIds);
+            if (!resolution.Success || resolution.Data == null)
+            {
+                return new InstallResult
+                {
+                    Success = false,
+                    Error = resolution.Error,
+                    DetectedVersion = gameVersion,
+                    Messages = messages
+                };
+            }
+
+            messages.AddRange(resolution.Messages.Select(m => $"  {m}"));
+            var installIds = resolution.Data.InstallOrder.ToList();
+
             var patchEntries = new Dictionary<string, PatchRepository.PatchEntry>();
-            foreach (var patchId in options.PatchIds)
+            foreach (var patchId in installIds)
             {
                 var patchResult = _repository.GetPatch(patchId);
                 if (!patchResult.Success || patchResult.Data == null)
@@ -222,7 +256,7 @@ public class PatchApplicator
             var patchDict = patchEntries.ToDictionary(kv => kv.Key, kv => kv.Value.Manifest);
 
             // Check dependencies
-            var depResult = DependencyValidator.ValidateDependencies(patchDict, options.PatchIds);
+            var depResult = DependencyValidator.ValidateDependencies(patchDict, installIds);
             if (!depResult.Success)
             {
                 return new InstallResult
@@ -235,7 +269,7 @@ public class PatchApplicator
             }
 
             // Check for conflicts
-            var conflictResult = DependencyValidator.ValidateNoConflicts(patchDict, options.PatchIds);
+            var conflictResult = DependencyValidator.ValidateNoConflicts(patchDict, installIds);
             if (!conflictResult.Success)
             {
                 return new InstallResult
@@ -265,7 +299,7 @@ public class PatchApplicator
             // version-specific; using it here causes multi-version static patches to always
             // use whichever hooks file appears first in the archive.
             var hooksByPatch = new Dictionary<string, List<Hook>>();
-            foreach (var patchId in options.PatchIds)
+            foreach (var patchId in installIds)
             {
                 var hooksResult = _repository.LoadHooksForVersion(patchId, gameVersion.Hash);
                 if (!hooksResult.Success || hooksResult.Data == null)
@@ -393,7 +427,7 @@ public class PatchApplicator
             messages.AddRange(hookTargetResult.Messages.Select(m => $"  {m}"));
 
             // Calculate install order
-            var orderResult = DependencyValidator.CalculateInstallOrder(patchDict, options.PatchIds);
+            var orderResult = DependencyValidator.CalculateInstallOrder(patchDict, installIds);
             if (!orderResult.Success || orderResult.Data == null)
             {
                 return new InstallResult
@@ -420,7 +454,7 @@ public class PatchApplicator
                 var backupResult = BackupManager.CreateBackup(
                     options.GameExePath,
                     gameVersion,
-                    options.PatchIds
+                    installIds
                 );
 
                 if (!backupResult.Success || backupResult.Data == null)

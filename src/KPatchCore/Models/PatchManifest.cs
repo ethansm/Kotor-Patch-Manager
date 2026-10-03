@@ -41,6 +41,36 @@ public sealed class PatchManifest
     public List<string> Conflicts { get; init; } = new();
 
     /// <summary>
+    /// What this manifest describes: <see cref="KindPatch"/> (the default) or
+    /// <see cref="KindLibrary"/>. A library owns shared engine hooks and provides an
+    /// interface to other mods; it is derived from what is installed and never selected
+    /// directly.
+    /// </summary>
+    public string Kind { get; init; } = KindPatch;
+
+    /// <summary>
+    /// True when <see cref="Kind"/> is <see cref="KindLibrary"/>
+    /// </summary>
+    public bool IsLibrary => Kind == KindLibrary;
+
+    /// <summary>
+    /// Interfaces this patch provides, as <c>name@major</c> (e.g., "k2.portraitslots@1")
+    /// </summary>
+    public List<string> Provides { get; init; } = new();
+
+    /// <summary>
+    /// Interfaces this patch consumes, as <c>name@major</c>. Informational: dependencies
+    /// are resolved through <see cref="Requires"/>.
+    /// </summary>
+    public List<string> RequiresInterfaces { get; init; } = new();
+
+    /// <summary>The ordinary kind of patch</summary>
+    public const string KindPatch = "patch";
+
+    /// <summary>The library kind of patch</summary>
+    public const string KindLibrary = "library";
+
+    /// <summary>
     /// Game versions this patch supports (key = GameVersion.Id, value = expected hash)
     /// </summary>
     public Dictionary<string, string> SupportedVersions { get; init; } = new();

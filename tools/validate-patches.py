@@ -37,6 +37,8 @@ DATABASES = ROOT / "AddressDatabases"
 
 SHA256 = re.compile(r"[0-9A-Fa-f]{64}")
 PATCH_ID = re.compile(r"[A-Za-z0-9_-]+")
+INTERFACE_ID = re.compile(r"[a-z0-9_.-]+@[0-9]+")
+PATCH_KINDS = ("patch", "library")
 MAJOR_MINOR_PATCH = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 
 MANIFEST_FIELDS = ("id", "name", "version", "author", "description")
@@ -109,6 +111,24 @@ def check_manifest(
     patch_id = str(patch.get("id", ""))
     if patch_id and not PATCH_ID.fullmatch(patch_id):
         errors.append(f"id {patch_id!r} has characters outside [A-Za-z0-9_-]")
+
+    kind = patch.get("kind", "patch")
+    if kind not in PATCH_KINDS:
+        errors.append(f"kind {kind!r} is not one of {', '.join(PATCH_KINDS)}")
+
+    for key in ("provides", "requires_interfaces"):
+        if key not in patch:
+            continue
+        interfaces = patch[key]
+        if not isinstance(interfaces, list):
+            errors.append(f"{key} must be an array of name@major strings")
+            continue
+        for interface in interfaces:
+            if not isinstance(interface, str) or not INTERFACE_ID.fullmatch(interface):
+                errors.append(
+                    f"{key} entry {interface!r} is not name@major "
+                    "(lower-case [a-z0-9_.-] name, whole-number major)"
+                )
 
     # The manager carries the version as a string and only ever displays it, so a
     # version outside the documented format still installs.
