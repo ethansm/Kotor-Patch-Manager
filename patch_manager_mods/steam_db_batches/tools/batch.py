@@ -41,7 +41,8 @@ EVIDENCE_COLS = [
 ]
 CANDIDATE_COLS = ["class", "name", "gog", "gog_callconv", "gog_param", "gog_size", "gog_retn", "candidates"]
 FUNCTIONS_CSV_HEADER = ["class_name", "function_name", "address", "calling_convention", "param_size_bytes", "notes"]
-FINAL_VERDICTS = ("verified", "likely", "rejected", "unresolved")
+FINAL_VERDICTS = ("verified", "likely", "rejected", "unresolved", "label_suspect")
+LABEL_SUSPECT_COLS = ["gog_addr", "gog_name", "steam_counterpart", "body_fits_name", "source"]
 NEAR_WINDOW = 0x400
 RUN_WINDOW = 12                    # nearest-mapped-neighbour search depth (GOG functions per side)
 SOURCE_ORDER_NOTE = "server > trusted name_map > mapper:vote > branch > seeded > other"
@@ -998,6 +999,7 @@ def load_reviews(bdir: Path) -> dict[int, list[dict]]:
     out: dict[int, list[dict]] = {}
     for f in sorted((bdir / "review").glob("*.tsv")):
         for r in iter_tsv(f):
+            r["_file"] = f.name
             try:
                 out.setdefault(parse_addr(r["gog_addr"]), []).append(r)
             except (ValueError, KeyError):
@@ -1026,6 +1028,11 @@ def decide_review(ev: dict, reviews: list[dict]) -> tuple[str, str, str]:
     mine = [r for r in reviews if r.get("steam_addr") and parse_addr(r["steam_addr"]) == parse_addr(cand)] or reviews
     matches = [r for r in mine if r.get("verdict") == "match"]
     mism = [r for r in mine if r.get("verdict") == "mismatch"]
+    suspects = [r for r in mine if r.get("verdict") == "label_suspect" and (r.get("content_anchor") or "").strip()]
+    if suspects and mism:
+        return "unresolved", cand, "reviewers disagree (label_suspect vs mismatch)"
+    if suspects:            # counterpart confirmed, GOG name contradicts the body: recorded, never shipped
+        return "label_suspect", cand, "reviewer label_suspect: %s" % (suspects[0].get("reason") or "")[:160]
     if matches and mism:
         return "unresolved", cand, "reviewers disagree (match vs mismatch)"
     if matches:
@@ -1056,6 +1063,10 @@ def final_row_for(ev: dict, reviews: dict, overrides: dict) -> dict:
         verdict, note = "unresolved", "no candidate"
     else:
         verdict, steam, note = decide_review(ev, reviews.get(ga, []))
+    if gate == "AUTO":      # a reviewer who looked at an AUTO row can still flag the GOG label
+        v2, _s, n2 = decide_review(ev, reviews.get(ga, []))
+        if v2 == "label_suspect":
+            verdict, note = v2, n2
     ov = overrides.get(ga)
     if ov:
         verdict = ov["final_verdict"]
@@ -1130,6 +1141,20 @@ def cmd_finalize(args) -> int:
                     "reason": r["final_note"] or r["flags"]} for r in deletes])
         corr = [r for r in export if r["cand_orig"] and parse_addr(r["cand_orig"]) != parse_addr(r["steam_addr"])]
         write_functions_csv(bdir / "branch_corrections.csv", corr, args.batch, steam)
+    suspects = []
+    for r in finals:
+        if r["final_verdict"] != "label_suspect":
+            continue
+        ga = parse_addr(r["gog"])
+        ov = overrides.get(ga)
+        if ov and ov["final_verdict"] == "label_suspect":
+            src, fits = "override", ov.get("note") or ""
+        else:
+            rv = next((x for x in reviews.get(ga, []) if x.get("verdict") == "label_suspect"), {})
+            src, fits = "review:%s" % rv.get("_file", "?"), rv.get("reason") or ""
+        suspects.append({"gog_addr": r["gog"], "gog_name": "%s::%s" % (r["class"], r["name"]),
+                         "steam_counterpart": r["steam_addr"], "body_fits_name": fits, "source": src})
+    write_tsv(bdir / "gog_label_suspects.tsv", LABEL_SUSPECT_COLS, suspects)
     cnt = Counter(r["final_verdict"] for r in finals)
     print("%s finalize: %s; functions.csv rows=%d; kdb_upsert rows=%d" % (
         args.batch, "  ".join("%s=%d" % (k, cnt[k]) for k in FINAL_VERDICTS), n_csv, len(upserts)))

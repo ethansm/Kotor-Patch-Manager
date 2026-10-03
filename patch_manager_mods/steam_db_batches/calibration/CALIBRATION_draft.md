@@ -7,27 +7,27 @@ GOG fingerprints present: yes. Steam fingerprints present: yes.
 
 | variant | positives | AUTO recall (c2 + sig) | REVIEW share | positive REJECT | G3 n/a (pos / all) | decoys+negatives | reached AUTO | shift/cluster rows | reached AUTO |
 |---|---|---|---|---|---|---|---|---|---|
-| novote | 417 | 56.4% (235 = 76 c2 + 159 sig) | 43.4% | 1 | 0 / 0 | 1119 | **0** | 1687 | **0** |
-| vote | 417 | 61.6% (257 = 98 c2 + 159 sig) | 38.1% | 1 | 0 / 0 | 1119 | **0** | 1687 | **0** |
+| novote | 435 | 58.2% (253 = 89 c2 + 164 sig) | 41.6% | 1 | 0 / 0 | 1167 | **0** | 1759 | **0** |
+| vote | 435 | 63.4% (276 = 112 c2 + 164 sig) | 36.3% | 1 | 0 / 0 | 1167 | **0** | 1759 | **0** |
 
 Target: 0 decoys/negatives reaching AUTO. The `vote` variant adds mapper:vote to the candidate (the mapper endorses the wrong answer), so it is the worst case.
 
 ## Gold sets
 
-- positives: 417
-- decoy_prev: 346
-- decoy_next: 343
-- decoy_rand: 412
-- neg_b1rej: 9
+- positives: 435
+- decoy_prev: 361
+- decoy_next: 361
+- decoy_rand: 430
+- neg_b1rej: 6
 - neg_wrong: 2
 - neg_known: 7
 - neg_cluster: 19
-- shift_p1: 417
-- shift_m1: 417
-- shift_p2: 417
-- shift_m2: 417
+- shift_p1: 435
+- shift_m1: 435
+- shift_p2: 435
+- shift_m2: 435
 
-Stress sets (`shift_p1/m1/p2/m2`, `neg_cluster`): a whole segment is wrong by the same shift k, every candidate tagged mapper:vote, one gates run per half (block-20 halves, whole half untrusted); `neg_cluster` is the AI0 CSWSCreature outlier cluster in one run. Contiguous positive runs (same class, consecutive, same half): 81 (longest 20).
+Stress sets (`shift_p1/m1/p2/m2`, `neg_cluster`): a whole segment is wrong by the same shift k, every candidate tagged mapper:vote, one gates run per half (block-20 halves, whole half untrusted); `neg_cluster` is the AI0 CSWSCreature outlier cluster in one run. Contiguous positive runs (same class, consecutive, same half): 87 (longest 20).
 
 Hold-out: for each half, every positive of that half (and each run's candidate address) is untrusted; halves by rank parity of the GOG-address-sorted positives.
 
@@ -35,21 +35,28 @@ Hold-out: for each half, every positive of that half (and each run's candidate a
 
 Suffixes mark overloads or descriptions (e.g. `CompareNoCase(char*)`), so the GOG match would be ambiguous.
 
-- 0x0052fb80 CServerExoAppInternal::LoadGame (SAVES:%06d - %s; partytable, globals 0x656710, LoadModule)
-- 0x0051e170 CServerAIMaster::AddEventDeltaTime(dayD,msD,callerId,targetId,eventId,data)
 - 0x006644d0 CFactionManager::SetNPCFactionReputation(row,col,v) = data[row*N+col-1]
 - 0x00664580 CFactionManager::GetNPCFactionReputation(a,b) = data[b*N+a-1]
 - 0x00664650 CFactionManager::GetIsNPCFaction(id) (1..N)
+- 0x00734f60 CExoString::CompareNoCase(char*)
+- 0x007e5730 CSWParty::AddCharacter(id)
+- 0x007e5c40 CSWParty::IsPartyMember(clientId)
+- 0x0051e170 CServerAIMaster::AddEventDeltaTime(dayD,msD,callerId,targetId,eventId,data)
 - 0x0084e6f0 CSWGuiInGameCharacter::SetStats (CanLevelUp at 0x84F221 -> button visibility)
 - 0x0051ed10 CServerAIMaster::EventPending(day,ms)
 - 0x00422e20 CAurTexture::SetIsEnvironmentMapped (SetFlagDE)
-- 0x00734f60 CExoString::CompareNoCase(char*)
 - 0x006d3330 CSWSFaction::AddMember(objId, bSuppress)
-- 0x007e5730 CSWParty::AddCharacter(id)
 - 0x0066b770 Global::ExecuteCommandChangeObjectAppearance (850)
 - 0x0066b8a0 Global::ExecuteCommandCreatureFlourishWeapon (847)
-- 0x007e5c40 CSWParty::IsPartyMember(clientId)
+- 0x0052fb80 CServerExoAppInternal::LoadGame (SAVES:%06d - %s; partytable, globals 0x656710, LoadModule)
 - 0x0084fcd0 CSWGuiInGameCharacter::ShowLevelUpGUI thiscall(panel, int) RET 4; callers 0x84F9BD, 0x7CB8E6
+
+### Gold annotations (label_suspect pairs leave the positive and negative sets; 11 cases dropped)
+
+- GOG 0x004dbde0 / Steam 0x007cb6e0: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004df1f0 / Steam 0x007cf710: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004e0c60 / Steam 0x007d0560: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
+- GOG 0x004e0ca0 / Steam 0x007d05a0: label_suspect - calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG D
 
 ### Known-false mapper addresses used as negatives (AI0_mapper_summary.md)
 
@@ -65,30 +72,30 @@ Suffixes mark overloads or descriptions (e.g. `CompareNoCase(char*)`), so the GO
 
 | variant | set | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|---|
-| novote | pos | 235 | 181 | 1 | 0 | 417 |
-| novote | decoy_prev | 0 | 345 | 1 | 0 | 346 |
-| novote | decoy_next | 0 | 342 | 1 | 0 | 343 |
-| novote | decoy_rand | 0 | 400 | 12 | 0 | 412 |
-| novote | neg_b1rej | 0 | 8 | 1 | 0 | 9 |
+| novote | pos | 253 | 181 | 1 | 0 | 435 |
+| novote | decoy_prev | 0 | 360 | 1 | 0 | 361 |
+| novote | decoy_next | 0 | 360 | 1 | 0 | 361 |
+| novote | decoy_rand | 0 | 410 | 20 | 0 | 430 |
+| novote | neg_b1rej | 0 | 5 | 1 | 0 | 6 |
 | novote | neg_wrong | 0 | 0 | 2 | 0 | 2 |
 | novote | neg_known | 0 | 0 | 7 | 0 | 7 |
 | novote | neg_cluster | 0 | 0 | 19 | 0 | 19 |
-| novote | shift_p1 | 0 | 184 | 233 | 0 | 417 |
-| novote | shift_m1 | 0 | 188 | 229 | 0 | 417 |
-| novote | shift_p2 | 0 | 174 | 243 | 0 | 417 |
-| novote | shift_m2 | 0 | 165 | 252 | 0 | 417 |
-| vote | pos | 257 | 159 | 1 | 0 | 417 |
-| vote | decoy_prev | 0 | 345 | 1 | 0 | 346 |
-| vote | decoy_next | 0 | 342 | 1 | 0 | 343 |
-| vote | decoy_rand | 0 | 400 | 12 | 0 | 412 |
-| vote | neg_b1rej | 0 | 8 | 1 | 0 | 9 |
+| novote | shift_p1 | 0 | 190 | 245 | 0 | 435 |
+| novote | shift_m1 | 0 | 191 | 244 | 0 | 435 |
+| novote | shift_p2 | 0 | 180 | 255 | 0 | 435 |
+| novote | shift_m2 | 0 | 172 | 263 | 0 | 435 |
+| vote | pos | 276 | 158 | 1 | 0 | 435 |
+| vote | decoy_prev | 0 | 360 | 1 | 0 | 361 |
+| vote | decoy_next | 0 | 360 | 1 | 0 | 361 |
+| vote | decoy_rand | 0 | 410 | 20 | 0 | 430 |
+| vote | neg_b1rej | 0 | 5 | 1 | 0 | 6 |
 | vote | neg_wrong | 0 | 0 | 2 | 0 | 2 |
 | vote | neg_known | 0 | 0 | 7 | 0 | 7 |
 | vote | neg_cluster | 0 | 0 | 19 | 0 | 19 |
-| vote | shift_p1 | 0 | 184 | 233 | 0 | 417 |
-| vote | shift_m1 | 0 | 188 | 229 | 0 | 417 |
-| vote | shift_p2 | 0 | 174 | 243 | 0 | 417 |
-| vote | shift_m2 | 0 | 165 | 252 | 0 | 417 |
+| vote | shift_p1 | 0 | 190 | 245 | 0 | 435 |
+| vote | shift_m1 | 0 | 191 | 244 | 0 | 435 |
+| vote | shift_p2 | 0 | 180 | 255 | 0 | 435 |
+| vote | shift_m2 | 0 | 172 | 263 | 0 | 435 |
 
 ## Decoys / negatives that reached AUTO (novote)
 
@@ -121,4 +128,4 @@ Top `why` codes (a row can carry several): c0=100, c1=54, g6=7, g1=5, g4_na=1
 
 ## Cards
 
-60 cards (40 positives, 20 decoys/negatives), all REVIEW in variant `novote`: cards/chunk_1.md, key.tsv.
+60 cards (40 positives, 20 decoys/negatives), all REVIEW in variant `novote`: cards/chunk_2.md, key_2.tsv; 59 earlier-chunk GOG functions excluded.

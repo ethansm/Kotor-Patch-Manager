@@ -910,12 +910,15 @@ def write_reviews_and_overrides(root):
             (h(GOG_BASE + 0x300), "0x00510300", "mismatch", "", "", "2", "different callees"),
             (h(GOG_BASE + 0x340), "0x00510340", "match", "", "", "3", "looks right"),      # no anchor
             (h(GOG_BASE + 0x240), "0x00510240", "match", "", "string at 00a00000", "4", "ok"),
+            (h(GOG_BASE + 0x80), "0x00510080", "label_suspect", "", "00510084 CALL 0x00500040", "4",
+             "body dismisses popups, fits RemoveGUIPopUps"),                                  # AUTO row, flagged by review
         ]))
     (bdir / "overrides.tsv").write_text(
         "gog_addr\tsteam_addr\tfinal_verdict\tnote\n"
         "%s\t0x00510340\trejected\tOpus: wrong function\n"
-        "%s\t0x00510200\tverified\tOpus: gate was wrong, name_map holder is a mapper row\n" % (
-            h(GOG_BASE + 0x340), h(GOG_BASE + 0x200)))
+        "%s\t0x00510200\tverified\tOpus: gate was wrong, name_map holder is a mapper row\n"
+        "%s\t0x005103c0\tlabel_suspect\tOpus: body is a setter, name says getter\n" % (
+            h(GOG_BASE + 0x340), h(GOG_BASE + 0x200), h(GOG_BASE + 0x3C0)))
 
 
 class FinalizePersistTests(Base):
@@ -946,6 +949,35 @@ class FinalizePersistTests(Base):
         self.assertEqual(f["X1"]["final_verdict"], "unresolved")               # REVIEW without a reviewer
         self.assertEqual(f["Lambda"]["final_verdict"], "unresolved")           # NOCAND
         self.assertEqual(list(next(iter(f.values())).keys()), batch.EVIDENCE_COLS + ["final_verdict", "final_note"])
+
+    def test_label_suspect_is_recorded_and_never_shipped(self):
+        f = self.final
+        self.assertEqual(f["Beta"]["final_verdict"], "label_suspect")          # AUTO row + reviewer label_suspect
+        self.assertEqual(f["Nu"]["final_verdict"], "label_suspect")            # Opus override
+        self.assertEqual(f["Alpha"]["final_verdict"], "verified")
+        rows = {r["gog_name"]: r for r in bd.iter_tsv(self.root / "batches" / "B1" / "gog_label_suspects.tsv")}
+        self.assertEqual(set(rows), {"CFoo::Beta", "CFoo::Nu"})
+        beta, nu = rows["CFoo::Beta"], rows["CFoo::Nu"]
+        self.assertEqual((beta["gog_addr"], beta["steam_counterpart"]), (h(GOG_BASE + 0x80), "0x00510080"))
+        self.assertIn("fits RemoveGUIPopUps", beta["body_fits_name"])
+        self.assertEqual(beta["source"], "review:haiku.tsv")
+        self.assertEqual(nu["source"], "override")
+        self.assertIn("setter", nu["body_fits_name"])
+        self.assertEqual(list(next(iter(bd.iter_tsv(self.root / "batches" / "B1" / "gog_label_suspects.tsv"))).keys()),
+                         batch.LABEL_SUSPECT_COLS)
+        csv_names = {r[1] for r in csv.reader((self.root / "batches" / "B1" / "functions.csv").read_text().split("\n")[1:-1])}
+        self.assertFalse({"Beta", "Nu"} & csv_names)                           # not in functions.csv
+        upserts = {r["name"] for r in json.loads((self.root / "batches" / "B1" / "kdb_upsert.json").read_text())}
+        self.assertFalse({"CFoo::Beta", "CFoo::Nu"} & upserts)                 # not persisted as high/medium
+        # mismatch alongside label_suspect is a disagreement, not a label bug
+        ev = self.evidence()["Theta"]
+        v, _a, _n = batch.decide_review(ev, [{"steam_addr": ev["steam_addr"], "verdict": "label_suspect",
+                                              "content_anchor": "x", "reason": "r"},
+                                             {"steam_addr": ev["steam_addr"], "verdict": "mismatch"}])
+        self.assertEqual(v, "unresolved")
+        v, _a, _n = batch.decide_review(ev, [{"steam_addr": ev["steam_addr"], "verdict": "label_suspect",
+                                              "content_anchor": "", "reason": "r"}])
+        self.assertEqual(v, "unresolved")                                       # no anchor: counterpart not shown
 
     def test_match_without_anchor_never_verifies(self):
         # Kappa's reviewer `match` had no anchor; without the override it must stay below `verified`

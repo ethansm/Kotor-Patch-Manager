@@ -14,7 +14,7 @@ What it does
      case for a wrong candidate) is run for the positive set and for every decoy / negative kind.
   3. Reports under <out>/ (default $BD_ROOT/calibration): CALIBRATION_draft.md, metrics.json, auto_negatives.tsv
      (every decoy/negative that reached AUTO; target 0), positive_rejects.tsv, gold_*.tsv, runs/<variant>_<half>_<kind>/
-     (candidates.tsv, evidence.tsv, gate_report.md) and cards/chunk_1.md + cards/key.tsv (mixed REVIEW positives and
+     (candidates.tsv, evidence.tsv, gate_report.md) and cards/chunk_N.md + cards/key[_N].tsv (mixed REVIEW positives and
      decoys/negatives, answers only in key.tsv).
 
 Usage: calibrate.py [--quick] [--block N] [--variants novote,vote] [--out-dir DIR] [--sets-only]
@@ -428,6 +428,12 @@ def write_draft(out: Path, corpus: bd.Corpus, metrics: dict, variants: list[str]
               "match would be ambiguous.", ""]
         L += ["- %s %s" % (hx8(a), n) for a, n in gold["skipped"][:30]]
         L.append("")
+    if gold.get("annotations"):
+        L += ["### Gold annotations (label_suspect pairs leave the positive and negative sets; %d cases dropped)" %
+              len(gold["excluded"]), ""]
+        L += ["- GOG %s / Steam %s: %s - %s" % (hx8(g), hx8(a), ann, note[:100])
+              for (g, a), (ann, note) in sorted(gold["annotations"].items())]
+        L.append("")
     L += ["### Known-false mapper addresses used as negatives (AI0_mapper_summary.md)", ""]
     L += ["- %s -> GOG %s %s" % (hx8(s), hx8(g), n) for g, s, n in gold["known"]] or ["- (none parsed)"]
     L += ["", "## Gate classes per set", "", "| variant | set | AUTO | REVIEW | REJECT | NOCAND | total |",
@@ -463,10 +469,21 @@ def write_draft(out: Path, corpus: bd.Corpus, metrics: dict, variants: list[str]
 
 
 # ================================================================================================ cards
+def load_key_gogs(paths) -> set[int]:
+    """GOG addresses of earlier chunks' key.tsv files (`--exclude-cards`): those functions never appear again."""
+    gogs = set()
+    for p in paths or []:
+        for r in iter_tsv(Path(p)):
+            if r.get("gog"):
+                gogs.add(parse_addr(r["gog"]))
+    return gogs
+
+
 def build_cards(out: Path, corpus, scorer, results: dict, run_untrust: dict, case_index: dict, variant: str,
-                n_pos: int, n_neg: int, seed: int) -> str:
-    """One mixed chunk of REVIEW positives and REVIEW decoys/negatives; answers only in key.tsv."""
-    rng = random.Random(seed + 1)
+                n_pos: int, n_neg: int, seed: int, chunk_id: int = 1, exclude_gogs: set | None = None) -> str:
+    """One mixed chunk of REVIEW positives and REVIEW decoys/negatives; answers only in key[_N].tsv."""
+    rng = random.Random(seed)
+    exclude_gogs = exclude_gogs or set()
     pos, neg = [], []
     for (v, half, kind), evs in sorted(results.items()):
         if v != variant:
@@ -474,7 +491,7 @@ def build_cards(out: Path, corpus, scorer, results: dict, run_untrust: dict, cas
         if kind in STRESS_KINDS:                     # stress rows are tallied, not reviewed
             continue
         for e in evs:
-            if e["gate_class"] == "REVIEW":
+            if e["gate_class"] == "REVIEW" and parse_addr(e["gog"]) not in exclude_gogs:
                 (pos if kind == "pos" else neg).append((v, half, kind, e))
     rng.shuffle(pos)
     rng.shuffle(neg)
@@ -496,24 +513,39 @@ def build_cards(out: Path, corpus, scorer, results: dict, run_untrust: dict, cas
         ce = batch.evaluate_row(corpus, scorer, g, [(case.steam, ["calib"])]).best
         cards.append((kind, case, g, ce, ev_by_run[key]))
     rng.shuffle(cards)
-    text = [batch.CARD_HEADER % ("CAL", 1, "steam_db_batches/calibration")]
+    text = [batch.CARD_HEADER % ("CAL", chunk_id, "steam_db_batches/calibration")]
     key_rows = []
     for n, (kind, case, g, ce, evd) in enumerate(cards, 1):
-        cid = "CAL-1-%02d" % n
+        cid = "CAL-%d-%02d" % (chunk_id, n)
         text.append(batch.make_card(cid, corpus, g, ce, evd, ""))
-        key_rows.append({"card_id": cid, "chunk": 1, "gog": hx8(g.addr), "steam_addr": hx8(case.steam),
+        key_rows.append({"card_id": cid, "chunk": chunk_id, "gog": hx8(g.addr), "steam_addr": hx8(case.steam),
                          "kind": kind, "expected": case.expected})
     cdir = out / "cards"
     cdir.mkdir(parents=True, exist_ok=True)
-    (cdir / "chunk_1.md").write_text("\n".join(text), encoding="utf-8")
-    batch.write_tsv(cdir / "key.tsv", ["card_id", "chunk", "gog", "steam_addr", "kind", "expected"], key_rows)
+    key_name = "key.tsv" if chunk_id == 1 else "key_%d.tsv" % chunk_id
+    (cdir / ("chunk_%d.md" % chunk_id)).write_text("\n".join(text), encoding="utf-8")
+    batch.write_tsv(cdir / key_name, ["card_id", "chunk", "gog", "steam_addr", "kind", "expected"], key_rows)
     npos = sum(1 for r in key_rows if r["kind"] == "pos")
-    return "%d cards (%d positives, %d decoys/negatives), all REVIEW in variant `%s`: cards/chunk_1.md, key.tsv." % (
-        len(key_rows), npos, len(key_rows) - npos, variant)
+    return "%d cards (%d positives, %d decoys/negatives), all REVIEW in variant `%s`: cards/chunk_%d.md, %s%s." % (
+        len(key_rows), npos, len(key_rows) - npos, variant, chunk_id, key_name,
+        "; %d earlier-chunk GOG functions excluded" % len(exclude_gogs) if exclude_gogs else "")
 
 
 # ================================================================================================ main
-def build_gold(corpus: bd.Corpus, block: int, seed: int) -> dict:
+def load_annotations(path: Path | None) -> dict[tuple[int, int], tuple[str, str]]:
+    """gold_annotations.tsv (gog_addr, steam_addr, annotation, note) -> {(gog, steam): (annotation, note)}."""
+    out = {}
+    if path is None:
+        return out
+    for r in iter_tsv(Path(path)):
+        try:
+            out[(parse_addr(r["gog_addr"]), parse_addr(r["steam_addr"]))] = (r.get("annotation", ""), r.get("note", ""))
+        except (ValueError, KeyError):
+            continue
+    return out
+
+
+def build_gold(corpus: bd.Corpus, block: int, seed: int, annotations: dict | None = None) -> dict:
     skipped: list = []
     positives, origins, ambiguous = build_positives(corpus, skipped)
     halves = assign_halves(positives, block)
@@ -541,8 +573,23 @@ def build_gold(corpus: bd.Corpus, block: int, seed: int) -> dict:
         classes = {corpus.gog_by_addr[c.gog].cls for c in cluster}
         base = {positives[ga] for ga in positives if corpus.gog_by_addr[ga].cls in classes}
         plan.append(("C", "neg_cluster", cluster, base))
+    # annotations: pairs marked label_suspect leave both the positive and the negative sets (their trusted address
+    # stays untrusted in the half bases above); a suspect positive takes every case of its GOG function with it,
+    # because the true counterpart may be one of that function's decoys.
+    excluded = []
+    suspect = {k for k, (a, _n) in (annotations or {}).items() if a == "label_suspect"}
+    if suspect:
+        drop_gogs = {c.gog for c in cases if c.kind == "pos" and (c.gog, c.steam) in suspect}
+        keep = lambda c: (c.gog, c.steam) not in suspect and c.gog not in drop_gogs   # noqa: E731
+        excluded = [c for c in cases if not keep(c)]
+        cases = [c for c in cases if keep(c)]
+        plan = [(h, k, [c for c in sel if keep(c)], base) for h, k, sel, base in plan]
+        plan = [p for p in plan if p[2]]
+        counts = {"positives": sum(1 for c in cases if c.kind == "pos")}
+        counts.update({k: sum(1 for c in cases if c.kind == k) for k in ALL_KINDS + ("neg_cluster",) if k != "pos"})
     return {"positives": positives, "origins": origins, "ambiguous": ambiguous, "halves": halves, "skipped": skipped,
-            "cases": cases, "known": known, "counts": counts, "plan": plan, "pos_runs": runs}
+            "cases": cases, "known": known, "counts": counts, "plan": plan, "pos_runs": runs, "excluded": excluded,
+            "annotations": annotations or {}}
 
 
 def write_gold(out: Path, corpus: bd.Corpus, gold: dict) -> None:
@@ -562,7 +609,9 @@ def cmd(args) -> int:
                                                                                   ["novote", "vote"])
     corpus = bd.Corpus(paths)
     scorer = bd.Scorer(corpus)
-    gold = build_gold(corpus, args.block, args.seed)
+    ann_path = Path(args.annotations) if args.annotations else paths.batches / "calibration" / "gold_annotations.tsv"
+    annotations = load_annotations(ann_path if ann_path.exists() else None)
+    gold = build_gold(corpus, args.block, args.seed, annotations)
     write_gold(out, corpus, gold)
     print("gold sets: " + ", ".join("%s=%d" % kv for kv in gold["counts"].items()) +
           "; ambiguous excluded=%d" % len(gold["ambiguous"]))
@@ -583,8 +632,10 @@ def cmd(args) -> int:
     want_cards = (not args.no_cards) and (not args.quick or args.cards_pos_given or args.cards_neg_given)
     cards_info = "Cards not built."
     if want_cards:
+        cseed = args.cards_seed if args.cards_seed is not None else args.seed + 1
         cards_info = build_cards(out, corpus, scorer, results, run_untrust, case_index, variants[0],
-                                 args.cards_pos, args.cards_neg, args.seed)
+                                 args.cards_pos, args.cards_neg, cseed, args.chunk_id,
+                                 load_key_gogs(args.exclude_cards))
     write_draft(out, corpus, metrics, variants, gold, args, cards_info)
     slim = {v: {k: x for k, x in d.items() if not k.startswith("_")} for v, d in metrics["variants"].items()}
     (out / "metrics.json").write_text(json.dumps(slim, indent=1, default=str) + "\n", encoding="utf-8")
@@ -611,6 +662,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--out-dir", default=None, help="default $BD_ROOT/calibration")
     ap.add_argument("--sets-only", action="store_true", help="build and write the gold sets, run nothing")
     ap.add_argument("--no-cards", action="store_true")
+    ap.add_argument("--chunk-id", type=int, default=1, help="cards/chunk_N.md and key[_N].tsv (chunk 1 uses key.tsv)")
+    ap.add_argument("--cards-seed", type=int, default=None, help="seed of the card sampling (default seed + 1)")
+    ap.add_argument("--exclude-cards", action="append", default=None,
+                    help="key.tsv of an earlier chunk; its GOG functions are not sampled again (repeatable)")
+    ap.add_argument("--annotations", default=None, help="gold annotations TSV (default $BD_ROOT/calibration/gold_annotations.tsv)")
     ap.add_argument("--cards-pos", type=int, default=None)
     ap.add_argument("--cards-neg", type=int, default=None)
     ap.add_argument("--no-reexport", action="store_true", help="accepted, ignored (this tool never re-exports)")

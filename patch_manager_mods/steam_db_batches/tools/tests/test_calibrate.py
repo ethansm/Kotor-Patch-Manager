@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import calibrate  # noqa: E402
+import score_review  # noqa: E402,F401
 import bdlib as bd  # noqa: E402
 from test_batch import GOG_BASE, STEAM_BASE, World, h  # noqa: E402
 
@@ -272,6 +273,87 @@ class EndToEndTests(CalibrateBase):
         self.assertIn("gold sets: positives=4", out)
         self.assertFalse((self.root / "cal" / "runs").exists())
         self.assertTrue((self.root / "cal" / "gold_sets.tsv").exists())
+
+
+class AnnotationAndChunkTests(CalibrateBase):
+    def write_ann(self, rows):
+        p = self.root / "ann.tsv"
+        p.write_text("gog_addr\tsteam_addr\tannotation\tnote\n" + "".join("%s\t%s\t%s\tnote\n" % r for r in rows))
+        return p
+
+    def test_label_suspect_pairs_leave_the_gold_sets(self):
+        ann = calibrate.load_annotations(self.write_ann([(h(g(0x180)), h(s(0x180)), "label_suspect"),     # a positive
+                                                         (h(g(0x340)), h(s(0x380)), "label_suspect"),     # neg_b1rej
+                                                         (h(g(0x100)), h(s(0x100)), "other")]))           # not excluded
+        gold = calibrate.build_gold(self.corpus, 1, calibrate.SEED, ann)
+        gogs = {c.gog for c in gold["cases"]}
+        self.assertNotIn(g(0x180), gogs)                           # positive AND all its decoys / shifts are gone
+        self.assertIn(g(0x100), gogs)
+        self.assertEqual(gold["counts"]["positives"], 3)
+        self.assertEqual(gold["counts"]["neg_b1rej"], 0)
+        self.assertTrue(any(c.kind == "pos" and c.gog == g(0x180) for c in gold["excluded"]))
+        # the suspect positive's address stays untrusted in its half's base set
+        bases = [base for h_, k, cases, base in gold["plan"] if k == "pos"]
+        self.assertTrue(any(s(0x180) in b for b in bases))
+
+    def test_annotations_flow_through_the_metrics(self):
+        p = self.write_ann([(h(g(0x180)), h(s(0x180)), "label_suspect")])
+        self.run_cal("--quick", "--variants", "vote", "--annotations", str(p))
+        m = json.loads((self.root / "cal" / "metrics.json").read_text())["vote"]
+        self.assertEqual(m["positives"], 3)
+        self.assertEqual(m["stress_auto"], 0)                      # Swap's shift_p1 -> D is gone with its function
+        self.assertEqual(m["negatives_auto"], 0)                   # ... and so is its decoy_next -> D
+        self.assertIn("Gold annotations", (self.root / "cal" / "CALIBRATION_draft.md").read_text())
+
+    def test_second_chunk_excludes_earlier_rows_and_keeps_chunk_one(self):
+        self.run_cal("--quick", "--cards-pos", "2", "--cards-neg", "3")
+        cards = self.root / "cal" / "cards"
+        before = (cards / "chunk_1.md").read_bytes(), (cards / "key.tsv").read_bytes()
+        self.run_cal("--quick", "--chunk-id", "2", "--cards-seed", "20261004", "--exclude-cards", str(cards / "key.tsv"),
+                     "--cards-pos", "5", "--cards-neg", "30")
+        self.assertEqual(before, ((cards / "chunk_1.md").read_bytes(), (cards / "key.tsv").read_bytes()))
+        k1 = {r["gog"] for r in bd.iter_tsv(cards / "key.tsv")}
+        k2 = list(bd.iter_tsv(cards / "key_2.tsv"))
+        self.assertTrue(k2)
+        self.assertFalse(k1 & {r["gog"] for r in k2})
+        self.assertTrue(all(r["card_id"].startswith("CAL-2-") and r["chunk"] == "2" for r in k2))
+        self.assertIn("## Card CAL-2-01", (cards / "chunk_2.md").read_text())
+
+
+class ScoreReviewTests(unittest.TestCase):
+    def test_confusion_precision_and_annotated_rows(self):
+        import score_review
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        d = Path(tmp.name)
+        (d / "key.tsv").write_text(
+            "card_id\tchunk\tgog\tsteam_addr\tkind\texpected\n"
+            "C1\t1\t0x00400010\t0x00500010\tpos\tmatch\n"
+            "C2\t1\t0x00400020\t0x00500020\tpos\tmatch\n"
+            "C3\t1\t0x00400030\t0x00500030\tdecoy_prev\tmismatch\n"
+            "C4\t1\t0x00400040\t0x00500040\tdecoy_next\tmismatch\n"
+            "C5\t1\t0x00400050\t0x00500050\tneg_b1rej\tmismatch\n"       # annotated label_suspect
+            "C6\t1\t0x00400060\t0x00500060\tpos\tmatch\n")                 # no review row
+        head = "gog_addr\tsteam_addr\tverdict\tcorrected_addr\tcontent_anchor\tconfidence\treason\n"
+        (d / "rev.tsv").write_text(head +
+                                   "0x00400010\t0x00500010\tmatch\t\tx\t4\tok\n"
+                                   "0x00400020\t0x00500020\tunsure\t\t\t2\tno anchor\n"
+                                   "0x00400030\t0x00500030\tmatch\t\tx\t3\tfalse accept\n"
+                                   "0x00400040\t0x00500040\tmismatch\t\tx\t4\tfine\n"
+                                   "0x00400050\t0x00500050\tmatch\t\tx\t4\tlabel looks swapped\n")
+        (d / "ann.tsv").write_text("gog_addr\tsteam_addr\tannotation\tnote\n0x00400050\t0x00500050\tlabel_suspect\tn\n")
+        res = score_review.score(d / "key.tsv", d / "rev.tsv", d / "ann.tsv")
+        c = res["confusion"]
+        self.assertEqual(dict(c["expected match"]), {"match": 1, "unsure": 1, "missing": 1})
+        self.assertEqual(dict(c["expected mismatch"]), {"match": 1, "mismatch": 1})
+        self.assertEqual(dict(c["annotated label_suspect"]), {"match": 1})
+        self.assertEqual((res["tp"], res["matches"]), (1, 2))              # the annotated `match` is not counted
+        self.assertAlmostEqual(res["precision"], 0.5)
+        self.assertEqual([r["card_id"] for r in res["false_accepts"]], ["C3"])
+        self.assertEqual([r["card_id"] for r in res["annotated"]], ["C5"])
+        text = score_review.render(res, "k", "r")
+        self.assertIn("| annotated label_suspect |", text)
+        self.assertIn("1 / 2 = 50.0%", text)
 
 
 if __name__ == "__main__":

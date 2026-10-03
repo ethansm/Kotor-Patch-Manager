@@ -3,23 +3,23 @@
   "per_kind": {
    "pos": {
     "REVIEW": 181,
-    "AUTO": 235,
+    "AUTO": 253,
     "REJECT": 1
    },
    "decoy_prev": {
-    "REVIEW": 345,
+    "REVIEW": 360,
     "REJECT": 1
    },
    "decoy_next": {
-    "REVIEW": 342,
+    "REVIEW": 360,
     "REJECT": 1
    },
    "decoy_rand": {
-    "REVIEW": 400,
-    "REJECT": 12
+    "REVIEW": 410,
+    "REJECT": 20
    },
    "neg_b1rej": {
-    "REVIEW": 8,
+    "REVIEW": 5,
     "REJECT": 1
    },
    "neg_wrong": {
@@ -32,32 +32,32 @@
     "REJECT": 19
    },
    "shift_p1": {
-    "REJECT": 233,
-    "REVIEW": 184
+    "REJECT": 245,
+    "REVIEW": 190
    },
    "shift_m1": {
-    "REJECT": 229,
-    "REVIEW": 188
+    "REJECT": 244,
+    "REVIEW": 191
    },
    "shift_p2": {
-    "REJECT": 243,
-    "REVIEW": 174
+    "REJECT": 255,
+    "REVIEW": 180
    },
    "shift_m2": {
-    "REJECT": 252,
-    "REVIEW": 165
+    "REJECT": 263,
+    "REVIEW": 172
    }
   },
-  "positives": 417,
-  "positive_auto": 235,
-  "positive_auto_c2": 76,
-  "positive_auto_sig": 159,
-  "positive_auto_recall": 0.5635491606714629,
-  "positive_review_share": 0.434052757793765,
+  "positives": 435,
+  "positive_auto": 253,
+  "positive_auto_c2": 89,
+  "positive_auto_sig": 164,
+  "positive_auto_recall": 0.5816091954022988,
+  "positive_review_share": 0.4160919540229885,
   "positive_reject": 1,
-  "negatives_total": 1119,
+  "negatives_total": 1167,
   "negatives_auto": 0,
-  "stress_total": 1687,
+  "stress_total": 1759,
   "stress_auto": 0,
   "top_why_positive_review": [
    [
@@ -95,24 +95,24 @@
  "vote": {
   "per_kind": {
    "pos": {
-    "REVIEW": 159,
-    "AUTO": 257,
+    "REVIEW": 158,
+    "AUTO": 276,
     "REJECT": 1
    },
    "decoy_prev": {
-    "REVIEW": 345,
+    "REVIEW": 360,
     "REJECT": 1
    },
    "decoy_next": {
-    "REVIEW": 342,
+    "REVIEW": 360,
     "REJECT": 1
    },
    "decoy_rand": {
-    "REVIEW": 400,
-    "REJECT": 12
+    "REVIEW": 410,
+    "REJECT": 20
    },
    "neg_b1rej": {
-    "REVIEW": 8,
+    "REVIEW": 5,
     "REJECT": 1
    },
    "neg_wrong": {
@@ -125,32 +125,32 @@
     "REJECT": 19
    },
    "shift_p1": {
-    "REJECT": 233,
-    "REVIEW": 184
+    "REJECT": 245,
+    "REVIEW": 190
    },
    "shift_m1": {
-    "REJECT": 229,
-    "REVIEW": 188
+    "REJECT": 244,
+    "REVIEW": 191
    },
    "shift_p2": {
-    "REJECT": 243,
-    "REVIEW": 174
+    "REJECT": 255,
+    "REVIEW": 180
    },
    "shift_m2": {
-    "REJECT": 252,
-    "REVIEW": 165
+    "REJECT": 263,
+    "REVIEW": 172
    }
   },
-  "positives": 417,
-  "positive_auto": 257,
-  "positive_auto_c2": 98,
-  "positive_auto_sig": 159,
-  "positive_auto_recall": 0.6163069544364509,
-  "positive_review_share": 0.381294964028777,
+  "positives": 435,
+  "positive_auto": 276,
+  "positive_auto_c2": 112,
+  "positive_auto_sig": 164,
+  "positive_auto_recall": 0.6344827586206897,
+  "positive_review_share": 0.3632183908045977,
   "positive_reject": 1,
-  "negatives_total": 1119,
+  "negatives_total": 1167,
   "negatives_auto": 0,
-  "stress_total": 1687,
+  "stress_total": 1759,
   "stress_auto": 0,
   "top_why_positive_review": [
    [

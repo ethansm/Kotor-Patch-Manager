@@ -1,0 +1,5 @@
+gog_addr	steam_addr	annotation	note
+0x004e0c60	0x007d0560	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect
+0x004dbde0	0x007cb6e0	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect
+0x004e0ca0	0x007d05a0	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect
+0x004df1f0	0x007cf710	label_suspect	calibration chunk_1 2026-10-03: GOG body = candidate (fingerprint), GOG name contradicts body; GOG DB label suspect

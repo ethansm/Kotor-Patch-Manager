@@ -3,7 +3,17 @@
 Used for every batch and for calibration. The lead fills in CHUNK, OUT and SCRATCH.
 
 ## Task
-Judge each card in CHUNK: is the candidate Steam address the Steam counterpart of the named GOG function?
+Each card asks two separate questions:
+1. **Counterpart:** is the candidate Steam function the same compiled function as the GOG function at the GOG address
+   (same body: callees, strings, member offsets, immediates)?
+2. **Name:** does the body do what the GOG name says?
+Verdicts:
+- `match`: 1 yes (with an anchor) and 2 yes or not contradicted.
+- `label_suspect`: 1 yes (with an anchor) but 2 clearly no (the body contradicts the name, e.g. a "Get...Visible"
+  predicate that dismisses popups). Say in `reason` which name the body fits, if you can tell. These are GOG DB
+  label bugs; they are recorded, never shipped.
+- `mismatch`: 1 no (the body differs from the GOG side).
+- `unsure`: you cannot anchor 1.
 Write one TSV row per card to OUT (header below). Work only from the card, the dump and the tools listed here.
 
 ## Read first (required)
@@ -36,6 +46,11 @@ strings or behaviour), and give `corrected_addr` only if you found the right fun
 - 0x552A90 vs 0x552C90: GOG param sizes swapped Initialize/Put. 0x552A90 `ret 0`, `PUSH 0x2000` + `CALL 0x00919723`
   (allocates) = Initialize; 0x552C90 `RET 0x10`, calls the hash Get = Put. Structure beats position.
 - bool parameter: GOG param 1 byte, Steam `RET 4` = match on the signature (not a mismatch).
+- Offset shift (calibration 2026-10-03, a reviewer got this wrong): GOG `CSWSObject::SetKeepCorpse` writes
+  `+0x158`/`+0x234`; the candidate 0x54A700 (its neighbour) writes `[EAX+0x154]`/`[ECX+0x230]`. Same size, same
+  `RET 4`, but a "uniform -4 shift" means DIFFERENT FIELDS, i.e. a different function: `mismatch`. Struct layouts are
+  identical between GOG and Steam (all 21 shared DB offsets agree), so every GOG displacement and immediate on the
+  card must appear in the candidate unless the card says otherwise. Any unexplained difference = not `match`.
 
 ## Tools (read-only)
 - `python3 patch_manager_mods/ghidra_knowledge/tools/re_card_prep.py annotate|abi|anchors|prologue 0xADDR`
@@ -50,7 +65,7 @@ to OUT:
 ```
 gog_addr<TAB>steam_addr<TAB>verdict<TAB>corrected_addr<TAB>content_anchor<TAB>confidence<TAB>reason
 ```
-`verdict` = match | mismatch | unsure; `content_anchor` = the quoted anchor with address (empty only for unsure);
+`verdict` = match | label_suspect | mismatch | unsure; `content_anchor` = the quoted anchor with address (empty only for unsure);
 `confidence` = 1-5; `reason` <= 20 words. One row per card, card order, no extra columns.
 
 ## Rules
