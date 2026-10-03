@@ -228,3 +228,67 @@ GOG function splits seen but harmless (the GOG label is on the head chunk): `CVi
   `DecrementFeatRemainingUses_2 = 0x6B8DA0` AUTO-verified under wrong names.
 
 Found by: Steam DB calibration (chunks 1-2) and the B0 Opus gate, 2026-10-03.
+
+## B12b
+
+### CSWSCreature, GOG >= 0x696F00 (B12b: two rotations, one swap, isolated errors)
+B12b Opus gate parts a/r/z + consolidation, 2026-10-03 (`B12b/opus/overrides_{a,r,z}.md`, `B12b/B12b_SUMMARY.md`).
+Every Steam counterpart below is fp 1:1 with its GOG body (size, retn, n_insn, disp, imm); only the GOG name is wrong.
+All 20 rows are `label_suspect` in the B12b overrides and are not shipped under the GOG name.
+
+**AIAction rotation (GOG 0x6C6230-0x6C7820).** The bodies follow the Mac x86 order exactly (ChangeFacingObject,
+ChangeFacingPoint, MoveAwayFromObject, MoveAwayFromLocation, InterAreaPathfinding, MoveToObject, MoveToObjectRadius,
+MoveToPoint, MoveToPointRadius, MoveToFollowRadius); the labels on slots 2-5 and 9 are rotated.
+
+| GOG addr | GOG DB name | body is | Mac evidence | Steam (body) | name really at |
+|---|---|---|---|---|---|
+| 0x6C6230 | `AIActionCheckMoveAwayFromLocation` | ChangeFacingPoint: only normalize + SetOrientation (`005bb581 CALL 0x5143c0`, `005bb58d CALL 0x543f10`) | Mac `AIActionChangeFacingPoint` 194 B, same 2 callees, 0x94/0x98/0x11AC | 0x5BB470 | GOG 0x6C66E0 -> Steam 0x5BB920 |
+| 0x6C6360 | `AIActionCheckMoveToPointRadius` | CheckMoveAwayFromObject: CancelAction (`005bb76f CALL 0x576ca0`), action list `+0x100`, ComputeAwayVector `005bb843` | Mac `AIActionCheckMoveAwayFromObject` 947 B, CancelAction + GetNext + ComputeAwayVector, imm 0x7F000000 | 0x5BB5A0 | GOG 0x6C7820 -> Steam 0x5BCA60 |
+| 0x6C66E0 | `AIActionCheckInterAreaPathfinding` | CheckMoveAwayFromLocation: ComputeAwayVector, AddMoveToPointActionToFront, AddPathfindingWaitActionToFront | Mac `AIActionCheckMoveAwayFromLocation` same 5 callees | 0x5BB920 | GOG 0x6C6930 -> Steam 0x5BBB70 |
+| 0x6C6930 | `AIActionChangeFacingPoint` | CheckInterAreaPathfinding: GetModule, SetIntraAreaGoal (`005bbdda CALL 0x55e610`), new/free, 20x `[+0x380]`, `005bbf1e PUSH 0x1e` | Mac `AIActionCheckInterAreaPathfinding` 953 B, disp 0x5C/0x60/0x64/0x70, imm 0x1E | 0x5BBB70 | GOG 0x6C6230 -> Steam 0x5BB470 |
+| 0x6C7820 | `AIActionCheckMoveToPoint_2` | CheckMoveToPointRadius (`005bccf4 PUSH 0x12`) | Mac `AIActionCheckMoveToPointRadius` imm 0x12, disp 0x50/0x54; Mac MoveToPoint has imm 0xA, +0x1114 = GOG 0x6C74C0 | 0x5BCA60 | GOG 0x6C6360 -> Steam 0x5BB5A0 |
+| 0x6C9D80 | `AIActionCheckMoveAwayFromObject` | AIActionAreaWait (`005befcc MOV ECX,[EAX+0x10e8]`, GetArea; RunActions case 0x3C) | Mac `AIActionAreaWait` 54 B, 0x10E8, before RandomWalk | 0x5BEFC0 | GOG 0x6C6360 -> Steam 0x5BB5A0 |
+
+**CanUseItem restriction block (GOG 0x6DDEE0-0x6DEE60).** Mac CanUseItem calls 7 checks (Alignment, Class, Race, Feat,
+Gender, PC, Attribute); GOG CanUseItem calls the same 7 plus CNPC, and no GOG label says Gender.
+
+| GOG addr | GOG DB name | body is | Mac evidence | Steam (body) | name really at |
+|---|---|---|---|---|---|
+| 0x6DDEE0 | `RemoveFromInvitationsOffered` | CheckItemClassRestrictions: property 0x2C (`005d32cb PUSH 0x2c`), HasFeat 0x5D (`005d3311`), class count `+0x8D`, classes `+0xAB` | Mac `CheckItemClassRestrictions` HasFeat, disp 0x8D/0x1198, imm 0x2C/0x5D/0xAB; Mac RemoveFromInvitationsOffered is a 122 B `+0x1044` list remove | 0x5D32C0 | GOG 0x6DF1B0 (FUN_, 119 B, +0x1044, caller ReplyToInvitation) -> Steam 0x5D4590 (shape only) |
+| 0x6DE780 | `CheckItemClassRestrictions` | CheckItemGenderRestrictions: property 0x3C (`005d3b6b PUSH 0x3c`), vcall `[EDX+0x88]` (`005d3c48`), no HasFeat | Mac `CheckItemGenderRestrictions` 185 B, imm 0x3C, disp 0x8C (vt +4), 2 callees | 0x5D3B60 | GOG 0x6DDEE0 -> Steam 0x5D32C0 |
+| 0x6DEE60 | `AIActionAnimalEmpathy` | 21 B 2-arg false stub (`005d4249 MOV byte [EBP-1],0` / `XOR EAX,EAX` / `RET 8`), sole caller the Class check 0x6DDEE0 | Mac AnimalEmpathy is a 12 B stub; not called by CheckItem* | 0x5D4240 | Steam 0x5D1990 (RunActions case 0x29, ICF-folded with Taunt 0x2B and PickPocket 0x36) |
+
+**AddChemical / AddComponent swap.**
+
+| GOG addr | GOG DB name | body is | Mac evidence | Steam (body) | name really at |
+|---|---|---|---|---|---|
+| 0x69A160 | `AddChemical` | AddComponent: feedback `005816f1 PUSH 0xe9`, callees GetComponent/SetComponent (+0x174/+0x1104) | Mac `AddComponent` imm 0xE9, fields 0x174/0x1104 | 0x581630 | GOG 0x69A240 -> Steam 0x581710 |
+| 0x69A240 | `AddComponent` | AddChemical: feedback `005817d1 PUSH 0xea`, callees GetChemical/SetChemical (+0x178/+0x1108) | Mac `AddChemical` imm 0xEA, fields 0x178/0x1108 | 0x581710 | GOG 0x69A160 -> Steam 0x581630 |
+
+**Isolated label errors (no rotation).**
+
+| GOG addr | GOG DB name | body is | Mac evidence | Steam (body) | name really at |
+|---|---|---|---|---|---|
+| 0x698DF0 | `UpdateAppearanceForEquippedItems_2` | GetDetectMode (`005802e1 MOVZX EAX,[EDX+0x510]`, imm 0x2710) | Mac `GetDetectMode` disp 0xD8/0x510 | 0x5802C0 | UpdateAppearanceForEquippedItems = GOG 0x698430 -> 0x57F900 (shipped AUTO) |
+| 0x69DF00 | `BroadcastAttackOfOpportunity` | GetBlind (`0058542c MOV CL,[EAX+0xff4]`, masks 0x10/8/2) | Mac `GetBlind` 0xFF4, next = GetInvisible as GOG 0x69DF60; Mac BroadcastAoO is a 5 B stub | 0x585420 | to locate |
+| 0x6A2600 | `UpdatePureGoodEvilPowers` | combat-round action helper of UpdateActionQueue (`00589bac CALL 0x5d7220` GetAQActionIDByID, +0x3E8/+0x3EC stride 0x1C) | inlined on Mac; Mac UpdatePureGoodEvilPowers is 92 B, 0x18A/0x1198 imm 0x64 | 0x589B20 | likely GOG 0x6A42D0 (FUN_, 130 B, 0x18A/0x1198, imm 0x64) |
+| 0x6A26D0 | `ComputeArmourClass` | RemoveSpellActionFromRound (`00589c08 CALL 0x590180`, `00589c21 CALL 0x591a70` on +0x10DC) | Mac `RemoveSpellActionFromRound` 47 B, same 2 callees | 0x589BF0 | likely GOG 0x693AC0 (label AddPickUpItemActions; Mac CAC disp set) |
+| 0x6A3E00 | `HasEffect` | SetLastInstantEquip (`0058b343 MOV [ECX+0x11d4]` / `0058b351 MOV [EAX+0x11d0]` keyed 0x10/0x20) | Mac `SetLastInstantEquip` 38 B, 0x11D0/0x11D4 | 0x58B320 | to locate (Mac HasEffect 0x148/0x14C) |
+| 0x6A4D30 | `UseLoreOnItem` | `CExoArrayList<float>::Add` (`0058c2cb CALL 0x58c4a0` grow, `0058c2de FSTP [ECX+EDX*4]`) | Mac Add 75 B; Mac UseLoreOnItem is a 7 B stub | 0x58C290 | to locate |
+| 0x6A4DA0 | `LearnScroll` | `CExoArrayList<float>::Insert` (`0058c31d CALL 0x58c290`, shift loop) | Mac Insert; Mac LearnScroll is a 7 B stub | 0x58C300 | to locate |
+| 0x6DC300 | `GetCreatureReputation_2` | visible-list contains (+0x1028/+0x102C scan), sole caller AddToVisibleList | inlined on Mac | 0x5D16E0 | GetCreatureReputation = GOG 0x6DB920 |
+| 0x6F5300 | `CSWSCreature::GetRelativeWeaponSize` | `CSWSCreatureStats::GetWeaponFocus` (`006b8ea9 MOV CX,[EAX+0xb2]`, `006b8ec4 CALL 0x6b83f0` HasFeat) | Mac GetWeaponFocus 0xB2 + GetBaseItem + HasFeat | 0x6B8E80 | to locate |
+
+Below the batch (B12a range, found while gating B12b; not B12b rows):
+- 0x68F7D0 `GetBlind` = `CSWSCreature::CancelAction`: callees GetAtPos, GetNext, Remove, ~CSWSObjectActionNode, free
+  = Mac CancelAction (284 B); called by 0x6C6360 as Mac MoveAwayFromObject calls CancelAction. Steam 0x576CA0 (fp 1:1).
+- 0x693490 `GetDetectMode` (0x51C/0x11AC) and 0x696DB0 `SetLastInstantEquip` (RemoveEffectById-like) are on wrong
+  bodies; 0x693AC0 `AddPickUpItemActions` has exactly Mac ComputeArmourClass's disp set.
+
+Not errors: the AIAction neighbours ChangeFacingObject 0x6C6080, MoveToObject 0x6C6D00, MoveToObjectRadius 0x6C6F90,
+MoveToPoint 0x6C74C0, and the checks Alignment/Race/Feat/PC/Attribute/CNPC, ReplyToInvitation, AddToInvitationsOffered
+keep their Mac shapes (14 AUTO rows audited, 12 pass).
+
+**GOG DB param sizes (B12b).** 26 rows have a GOG DB `param_size_bytes` that disagrees with the GOG function's RET n
+(gate_report `G4 metadata flags`), e.g. AIActionRest/Taunt/Appear 0 vs RET 4 and the QuickWalk WaitDest family 8 vs
+RET 0x10. Steam ships its own RET n.

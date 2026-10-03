@@ -2,7 +2,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00696f00] Steam batch B12b: CALLEE 7 (callers: ClearAllActions 0x51cb10, AIActionPhysicalAttacks 0x6d7390, InitializeNewAttackTarget 0x6dac70) | reviewer match with anchor: 0057e3dd MOV [EAX+0x550],ECX; RET 4 at 0057e3e6; callers ClearAllActions 0x51cb10, AIActionPhysicalAttacks 0x6d7390, InitializeNewAttackTarget 0x6dac70",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00696f00] Steam batch B12b: CALLEE 7 (callers: ClearAllActions 0x51cb10, AIActionPhysicalAttacks 0x6d7390, InitializeNewAttackTarget 0x6dac70) | override: [z] fp 1:1 25b; 0057e3dd MOV [EAX+0x550],ECX; RET 4 at 0057e3e6; 11 callers same sizes (ClearAllActions, InitializeNewAttackTarget..) = Mac SetAttemptedAttackTarget (+0x550)",
   "name": "CSWSCreature::SetAttemptedAttackTarget",
   "source": "steam-db-B12b",
   "steam_addr": "0x0057e3d0"
@@ -106,7 +106,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x00698e30] Steam batch B12b: CALLEE 5 (callees: GetPartyJournal 0x5f7ae0; callers: ExecuteCommandAddJournalQuestEntry 0x66c160, ExecuteCommandGetJournalEntry 0x681450, ExecuteCommandRemoveJournalQuestEntry 0x68feb0) | reviewer match with anchor: 00580317 CALL 0x0051c8d0; 0058031e CALL 0x005f7ae0 GetPartyJournal (GOG callee, mapped); callers 0x66c160/0x681450/0x68feb0",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00698e30] Steam batch B12b: CALLEE 5 (callees: GetPartyJournal 0x5f7ae0; callers: ExecuteCommandAddJournalQuestEntry 0x66c160, ExecuteCommandGetJournalEntry 0x681450, ExecuteCommandRemoveJournalQuestEntry 0x68feb0) | override: [z] fp 1:1 39b; 00580317 CALL 0x51c8d0 (GetPartyTable), 0058031e CALL 0x5f7ae0 (GetPartyJournal); 7 callers same sizes = Mac GetJournal callers (Add/Get/RemoveJournal..)",
   "name": "CSWSCreature::GetJournal",
   "source": "steam-db-B12b",
   "steam_addr": "0x00580300"
@@ -178,7 +178,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00699fd0] Steam batch B12b: SIG 0.50 | reviewer match with anchor: 005814cb CALL 0x5812e0 GetGold; 005814f4 CALL 0x581330 SetGold; 00581558 PUSH 0x95 + 00581560 CALL 0x584da0 SendFeedbackMessage; 005814d0 SUB EAX,[EBP+8]",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00699fd0] Steam batch B12b: SIG 0.50 | override: [z] fp 1:1 214b RET 8; 00581558 PUSH 0x95 (Mac imm 0x95), GetGold/SetGold callees; 4 callers TransferGold/GiveItem/DropItem/TakeGoldFromCreature = Mac RemoveGold",
   "name": "CSWSCreature::RemoveGold",
   "source": "steam-db-B12b",
   "steam_addr": "0x005814a0"
@@ -198,22 +198,6 @@
   "name": "CSWSCreature::SetComponent",
   "source": "steam-db-B12b",
   "steam_addr": "0x005815d0"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0069a160] Steam batch B12b: SIG 0.50 | reviewer match with anchor: 0058168d CALL 0x5815d0; 005816f1 PUSH 0xe9; 00581666 CMP [EBP-0x10],0x3b9ac9ff; caller 0x605090 AddItem",
-  "name": "CSWSCreature::AddChemical",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x00581630"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0069a240] Steam batch B12b: SIG 0.50 | reviewer match with anchor: 005817d1 PUSH 0xea; 00581746 CMP [EBP-0x10],0x3b9ac9ff; 00581772 CALL 0x581840 (Set) after 0x5817f0 (Get); caller 0x605090 AddItem",
-  "name": "CSWSCreature::AddComponent",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x00581710"
  },
  {
   "confidence": "high",
@@ -538,7 +522,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006a3810] Steam batch B12b: SIG 0.50 | reviewer match with anchor: 0058ad6e CMP dword [ECX],0x3d; 0058ad3c ADD ECX,0x100; 0058ad5d CALL 0x00561430",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a3810] Steam batch B12b: SIG 0.50 | override: [z] fp 1:1 80b; 0058ad3c ADD ECX,0x100 action list head, 0058ad6e CMP [ECX],0x3d (PartyFollowLeader case 0x3d); sole caller CSWCCreature::AIUpdate = Mac",
   "name": "CSWSCreature::GetCurrentlyFollowingLeader",
   "source": "steam-db-B12b",
   "steam_addr": "0x0058ad30"
@@ -554,7 +538,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006a3970] Steam batch B12b: CALLEE 12 (callees: GetClientObject 0x54a840; callers: CheckFilter 0x8a8df0, RemovePuppet 0x5f8c60, KillNPCObject 0x5fd9a0) | reviewer match with anchor: 0058ae9c CALL 0x0054a840 GetClientObject; 0058aebb CALL [EDX+0x2c]; callers CheckFilter 0x8a8df0, RemovePuppet 0x5f8c60",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a3970] Steam batch B12b: CALLEE 12 (callees: GetClientObject 0x54a840; callers: CheckFilter 0x8a8df0, RemovePuppet 0x5f8c60, KillNPCObject 0x5fd9a0) | override: [z] fp 1:1 53b; 0058aeb8 MOV EAX,[EDX+0x2c] / CALL EAX (Mac vt 0x30), GetClientObject callee; 34 callers same sizes as GOG; Mac GetClientCreature callers fit",
   "name": "CSWSCreature::GetClientCreature",
   "source": "steam-db-B12b",
   "steam_addr": "0x0058ae90"
@@ -586,7 +570,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x006a3cf0] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 0058b277 PUSH 0x995908 'SecondaryRange'; 0058b23b FLD [EAX+0x1020]; CALLs 0x51c100/0x51c8f0/0x733570/0x733780",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a3cf0] Steam batch B12b: SIG 1.00 | override: [z] fp 1:1 201b; 0058b23b FLD [EAX+0x1020], 0058b247 [ECX+0x520], SecondaryRange string, GetFLOATEntry; 7 callers = Mac GetListenCheckDistance callers (UpdateVisibleList, DoListen..)",
   "name": "CSWSCreature::GetListenCheckDistance",
   "source": "steam-db-B12b",
   "steam_addr": "0x0058b210"
@@ -594,7 +578,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006a3dc0] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 0058b2ef CMP [EBP-8],0x10; 0058b300 MOV EAX,[ECX+0x11d4]; 0058b30b MOV EAX,[EDX+0x11d0]",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a3dc0] Steam batch B12b: SIG 1.00 | override: [z] fp 1:1 59b RET 4; 0058b300 MOV EAX,[ECX+0x11d4], 0058b30b MOV EAX,[EDX+0x11d0] keyed 0x10/0x20; callers WriteInventorySlotAdd/Delete = Mac GetLastInstantEquip",
   "name": "CSWSCreature::GetLastInstantEquip",
   "source": "steam-db-B12b",
   "steam_addr": "0x0058b2e0"
@@ -738,30 +722,6 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006c6230] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 005bb58d CALL 0x00543f10 SetOrientation; 005bb4e8 CALL 0x0091dba0 memcpy; 005bb498 CMP [EDX+0x11ac],0",
-  "name": "CSWSCreature::AIActionCheckMoveAwayFromLocation",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005bb470"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006c6360] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
-  "name": "CSWSCreature::AIActionCheckMoveToPointRadius",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005bb5a0"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006c6930] Steam batch B12b: CALLEE 2 (callees: AddMoveToPointActionToFront 0x5644b0, SetIntraAreaGoal 0x55e610); SIG 1.00 | reviewer match with anchor: 005bbeac CALL 0x005644b0 AddMoveToPointActionToFront; 005bbdda CALL 0x0055e610 SetIntraAreaGoal; 005bbdd3 CALL 0x0051bd90 GetModule",
-  "name": "CSWSCreature::AIActionChangeFacingPoint",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005bbb70"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x006c6d00] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CSWSCreature::AIActionCheckMoveToObject",
   "source": "steam-db-B12b",
@@ -782,14 +742,6 @@
   "name": "CSWSCreature::AIActionCheckMoveToPoint",
   "source": "steam-db-B12b",
   "steam_addr": "0x005bc700"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006c7820] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 005bcb9f CALL 0x0051c080 GetObjectArray; 005bcba6 CALL 0x0053dfb0 GetGameObject; 005bcd89 CALL 0x005644b0; 005bccfc CALL 0x00540ca0",
-  "name": "CSWSCreature::AIActionCheckMoveToPoint_2",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005bca60"
  },
  {
   "confidence": "high",
@@ -1242,7 +1194,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=20; GOG 0x006dc020] Steam batch B12b: CALLEE 1 (callers: ReadStatsFromGff 0x6afed0); SIG 1.00 | reviewer match with anchor: 005d1410 CALL 0x005d16e0 (visible-list contains); 005d14fc ADD ECX,0x1028; 005d1502 CALL 0x0083ea60; caller ReadStatsFromGff 0x6afed0",
+  "evidence": "[verified; thiscall retn=20; GOG 0x006dc020] Steam batch B12b: CALLEE 1 (callers: ReadStatsFromGff 0x6afed0); SIG 1.00 | override: [z] fp 1:1 269b RET 0x14; 005d1410 CALL 0x5d16e0 (contains), 005d14fc ADD ECX,0x1028, 005d1502 CALL 0x83ea60 Add. 6 callers = Mac AddToVisibleList callers by name (ctor, SetId, AcceptParty..)",
   "name": "CSWSCreature::AddToVisibleList",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d1400"
@@ -1338,14 +1290,6 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006ddee0] Steam batch B12b: SIG 1.00 | AUTO: SIG 1.00",
-  "name": "CSWSCreature::RemoveFromInvitationsOffered",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005d32c0"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x006de0a0] Steam batch B12b: SIG 1.00 | override: [a] fp identical, callers 821/926 match; HasFeat + GetPassiveProperty callees, disps 0x18a/0x28c/0x2d4, imm 0x2b/0x5d/0x64/0xff = Mac CheckItemAlignmentRestrictions; RET 0x4",
   "name": "CSWSCreature::CheckItemAlignmentRestrictions",
   "source": "steam-db-B12b",
@@ -1366,14 +1310,6 @@
   "name": "CSWSCreature::CheckItemFeatRestrictions",
   "source": "steam-db-B12b",
   "steam_addr": "0x005d3a20"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006de780] Steam batch B12b: SIG 1.00 | reviewer match with anchor: 005d3bb4 CALL 0x006042a0 GetPassiveProperty; 005d3b98 MOV EDX,[ECX+0x28c]; 005d3bdf AND EDX,[EAX+0x2d4]; caller CanUseItem 0x5d2f80",
-  "name": "CSWSCreature::CheckItemClassRestrictions",
-  "source": "steam-db-B12b",
-  "steam_addr": "0x005d3b60"
  },
  {
   "confidence": "high",

@@ -1,0 +1,17 @@
+gog_addr	steam_addr	final_verdict	note
+0x006c6230	0x005bb470	label_suspect	fp 1:1 299b; only callees normalize+SetOrientation (005bb581 CALL 0x5143c0, 005bb58d CALL 0x543f10). Fits Mac AIActionChangeFacingPoint; real MoveAwayFromLocation = GOG 0x6c66e0
+0x006c6930	0x005bbb70	label_suspect	fp 1:1 962b; 005bbdd3 CALL 0x51bd90 GetModule, 005bbdda CALL 0x55e610 SetIntraAreaGoal, new/free, 005bbf1e PUSH 0x1e. Fits Mac AIActionCheckInterAreaPathfinding; ChangeFacingPoint = 0x6c6230
+0x006c7820	0x005bca60	label_suspect	fp 1:1 848b; 005bccf4 PUSH 0x12 (Mac MoveToPointRadius imm 0x12; MoveToPoint 0x5bc700 pushes 0xa). Fits Mac AIActionCheckMoveToPointRadius; _2 dup of MoveToPoint 0x6c74c0
+0x006dc020	0x005d1400	verified	fp 1:1 269b RET 0x14; 005d1410 CALL 0x5d16e0 (contains), 005d14fc ADD ECX,0x1028, 005d1502 CALL 0x83ea60 Add. 6 callers = Mac AddToVisibleList callers by name (ctor, SetId, AcceptParty..)
+0x006de780	0x005d3b60	label_suspect	fp 1:1 298b; 005d3b6b PUSH 0x3c + CALL 0x603f60, 005d3c48 MOV EAX,[EDX+0x88] vcall, no HasFeat. Fits Mac CheckItemGenderRestrictions (imm 0x3c, vt 0x8c); Class = GOG 0x6ddee0
+0x006a3970	0x0058ae90	verified	fp 1:1 53b; 0058aeb8 MOV EAX,[EDX+0x2c] / CALL EAX (Mac vt 0x30), GetClientObject callee; 34 callers same sizes as GOG; Mac GetClientCreature callers fit
+0x006a3810	0x0058ad30	verified	fp 1:1 80b; 0058ad3c ADD ECX,0x100 action list head, 0058ad6e CMP [ECX],0x3d (PartyFollowLeader case 0x3d); sole caller CSWCCreature::AIUpdate = Mac
+0x00696f00	0x0057e3d0	verified	fp 1:1 25b; 0057e3dd MOV [EAX+0x550],ECX; RET 4 at 0057e3e6; 11 callers same sizes (ClearAllActions, InitializeNewAttackTarget..) = Mac SetAttemptedAttackTarget (+0x550)
+0x0069a160	0x00581630	label_suspect	fp 1:1 223b; 005816f1 PUSH 0xe9 (Mac AddComponent feedback 0xe9; AddChemical 0xea), callees GOG GetComponent/SetComponent (+0x1104/+0x174). Body = AddComponent; AddChemical = GOG 0x69a240
+0x00699fd0	0x005814a0	verified	fp 1:1 214b RET 8; 00581558 PUSH 0x95 (Mac imm 0x95), GetGold/SetGold callees; 4 callers TransferGold/GiveItem/DropItem/TakeGoldFromCreature = Mac RemoveGold
+0x006a3dc0	0x0058b2e0	verified	fp 1:1 59b RET 4; 0058b300 MOV EAX,[ECX+0x11d4], 0058b30b MOV EAX,[EDX+0x11d0] keyed 0x10/0x20; callers WriteInventorySlotAdd/Delete = Mac GetLastInstantEquip
+0x006a3cf0	0x0058b210	verified	fp 1:1 201b; 0058b23b FLD [EAX+0x1020], 0058b247 [ECX+0x520], SecondaryRange string, GetFLOATEntry; 7 callers = Mac GetListenCheckDistance callers (UpdateVisibleList, DoListen..)
+0x00698e30	0x00580300	verified	fp 1:1 39b; 00580317 CALL 0x51c8d0 (GetPartyTable), 0058031e CALL 0x5f7ae0 (GetPartyJournal); 7 callers same sizes = Mac GetJournal callers (Add/Get/RemoveJournal..)
+0x0069a240	0x00581710	label_suspect	fp 1:1 223b; 005817d1 PUSH 0xea (Mac AddChemical feedback 0xea), callees GOG GetChemical/SetChemical (+0x1108/+0x178). Body = AddChemical; AddComponent = GOG 0x69a160
+0x006c6360	0x005bb5a0	label_suspect	AUTO audit. fp 1:1 892b; 005bb70e ADD EAX,0x100, 005bb76f CALL 0x576ca0 (CancelAction 277b), 005bb843 CALL 0x54aa50 ComputeAwayVector. Fits Mac AIActionCheckMoveAwayFromObject
+0x006ddee0	0x005d32c0	label_suspect	AUTO audit. fp 1:1 437b; 005d32cb PUSH 0x2c, 005d3311 CALL 0x6b83f0 HasFeat(0x5d), 005d3403 [EDX+0x8d], 005d3443 [..+0xab]. Fits Mac CheckItemClassRestrictions; caller CanUseItem
