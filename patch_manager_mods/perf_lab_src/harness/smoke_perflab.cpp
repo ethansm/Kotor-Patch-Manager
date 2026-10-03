@@ -1,8 +1,8 @@
 // Smoke test for PerfLab 1a: threads hammer HeapAlloc/HeapReAlloc/HeapFree through the exe's own IAT,
 // timing before/after the DLL attaches, then checks accounting returns to zero.
 // Build: i686-w64-mingw32-g++ -O1 -o smoke_perflab.exe smoke_perflab.cpp   (run dir needs the DLL as perflab.dll)
-// Exit code 0 = all checks passed (kt::Report). Checks: balanced run -> live_bytes==0 && live_blocks==0; leak sim -> live_bytes>=100000
-// && live_blocks>=1000; allocs>0; untracked==0 && dropped==0. The timing line is informational only.
+// Exit code 0 = all checks passed (kt::Report). Checks: balanced run -> live_bytes==0 && live_blocks==0; leak sim -> live_bytes and live_blocks each rise
+// by >=100000 / >=1000 relative to a stats() snapshot taken just before the leak loop (delta check, no absolute thresholds); allocs>0; untracked==0 && dropped==0. The timing line is informational only.
 // Other exit codes: 1 = LoadLibrary failed (also a failed check), 3 = missing export.
 #include "check.h"
 #include <windows.h>
@@ -53,12 +53,13 @@ int main() {
     KT_CHECK(st[2] > 0);            // allocs observed at all
     KT_CHECK_EQ(st[4], 0);          // untracked
     KT_CHECK_EQ(st[5], 0);          // dropped
-    // leak simulation: 1000 x 100 bytes at siteA must show as live at that site
+    // leak simulation: 1000 x 100 bytes at siteA must show as live at that site (asserted as a delta over the pre-leak snapshot)
+    long long pre[6] = {0}; stats(pre, 6);
     for (int i = 0; i < 1000; ++i) siteA(100);
     snap(); Sleep(1500);
-    stats(st, 6); printf("after leak sim: live_bytes=%lld (expect ~100000+) blocks=%lld\n", st[0], st[1]);
-    KT_CHECK(st[0] >= 100000);
-    KT_CHECK(st[1] >= 1000);
+    stats(st, 6); printf("after leak sim: live_bytes=%lld (+%lld, expect >=100000) blocks=%lld (+%lld, expect >=1000)\n", st[0], st[0] - pre[0], st[1], st[1] - pre[1]);
+    KT_CHECK(st[0] - pre[0] >= 100000);
+    KT_CHECK(st[1] - pre[1] >= 1000);
     Sleep(1200);
     return kt::Report("smoke_perflab");
 }

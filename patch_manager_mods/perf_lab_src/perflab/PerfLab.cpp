@@ -732,7 +732,6 @@ bool loadScreenUp() {
     return false;
 }
 
-volatile LONG g_stop = 0;
 volatile LONG g_snapNow = 0, g_unloadNow = 0;
 bool g_gameProcess = false;
 
@@ -744,7 +743,8 @@ void logExperiments() {
 
 DWORD WINAPI helper(LPVOID) {
     DWORD lastFlush = GetTickCount(); bool up = false; bool haveState = false, loggedExp = false;
-    while (!g_stop) {
+    // No stop flag: the DLL is never unloaded and a detach-time flag would wake this thread in unmapped code; reports are written periodically below.
+    for (;;) {
         Sleep(100);
         if (!loggedExp && g_firstTickDone) { loggedExp = true; logExperiments(); }
         if (g_gameProcess) {
@@ -762,8 +762,6 @@ DWORD WINAPI helper(LPVOID) {
             logf("live=%lldB blocks=%lld sites=%ld dropped=%ld", (long long)g_liveBytes, (long long)g_liveN, g_siteCount, g_dropped);
         }
     }
-    writeReport();
-    return 0;
 }
 
 void readCfg() {

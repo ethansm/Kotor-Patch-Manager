@@ -13,6 +13,7 @@
 #   requires   optional list; each entry is a path (~, $VAR and ${VAR:-default} are expanded)
 #              or `which:<tool>`. Anything missing makes the item SKIP (missing X), not FAIL.
 #   timeout_s  optional (default 300)
+#   tier       optional; "build" = only with --build or --wine (not in the default run)
 # Variables available in requires: $REPO, $KPM_DIR (default ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager),
 # $KOTOR2_ROOT (game dir, default Steam install), plus the normal environment.
 #
@@ -108,3 +109,13 @@ name = "check-shared-headers"
 cmd = ["python", "scripts/check_shared_headers.py"]
 requires = ["${KPM_DIR}/Patches/Common"]
 timeout_s = 60
+
+# ---- Windows source build (doc 20 Phase 2): mod *_src compiled like KPM create-patch.py, DLL exports checked ----
+# Opt-in tier: cold Common build ~13 s + ~8 s for all mods, and it sees other sessions' in-progress mod edits.
+
+[[suite]]
+name = "build-check"
+cmd = ["python", "scripts/build_check.py", "--quiet"]
+requires = ["which:i686-w64-mingw32-g++", "${KPM_DIR}/Patches/Common"]
+tier = "build"
+timeout_s = 300

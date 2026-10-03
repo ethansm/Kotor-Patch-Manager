@@ -4,7 +4,8 @@
   python3 scripts/run_tests.py                 # host C++ tests + Python tests + explicit suites
   python3 scripts/run_tests.py --list          # what would run, and what would SKIP
   python3 scripts/run_tests.py -k twoda -v     # filter on item id, print full output
-  python3 scripts/run_tests.py --wine          # also the Wine smoke tests (harness/smokes.toml)
+  python3 scripts/run_tests.py --wine          # also the Wine smoke tests (harness/smokes.toml) and the build tier
+  python3 scripts/run_tests.py --build         # also tier="build" suites (scripts/build_check.py, ~8-20 s)
   python3 scripts/run_tests.py --selftest      # prove the runner reports failures as FAIL
 
 Items and how they are found
@@ -279,7 +280,7 @@ def unittest_item(d: Path) -> Item:
                 env={"PYTHONDONTWRITEBYTECODE": "1"})
 
 
-def discover(sanitize=True):
+def discover(sanitize=True, tiers=()):
     suites_cfg = load_toml(SUITES_TOML)
     excludes = {}
     for e in suites_cfg.get("discovery", {}).get("exclude", []):
@@ -325,6 +326,8 @@ def discover(sanitize=True):
 
     # Explicit suites.
     for s in suites_cfg.get("suite", []):
+        if s.get("tier") and s["tier"] not in tiers:
+            continue
         cmd = list(s["cmd"])
         skip = missing_requirement(s.get("requires"))
         if cmd[0] == "python":
@@ -514,6 +517,7 @@ def main() -> int:
     ap.add_argument("-k", metavar="SUBSTR", help="only items whose id contains SUBSTR")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 4, help="parallel builds/host runs (default: cpu count)")
     ap.add_argument("--wine", action="store_true", help="also run the Wine smokes from harness/smokes.toml")
+    ap.add_argument("--build", action="store_true", help="also run tier=\"build\" suites (Windows source builds; implied by --wine)")
     ap.add_argument("--json", metavar="PATH", help="write machine-readable results")
     ap.add_argument("-v", action="store_true", help="print the full output of every item (as each finishes)")
     ap.add_argument("--no-sanitize", action="store_true", help="drop -fsanitize=address,undefined from C++ builds")
@@ -524,7 +528,7 @@ def main() -> int:
         return selftest(a.jobs, a.v)
 
     t_start = time.monotonic()
-    items = discover(sanitize=not a.no_sanitize)
+    items = discover(sanitize=not a.no_sanitize, tiers=("build",) if (a.build or a.wine) else ())
     smokes, wine_err = ([], "")
     if a.wine:
         smokes, wine_err = wine_plan(SMOKES_TOML)

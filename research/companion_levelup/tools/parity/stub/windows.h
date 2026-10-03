@@ -28,7 +28,9 @@ inline bool g_stubVirtualQueryAll = false;
 inline SIZE_T VirtualQuery(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T) {
     if (!g_stubVirtualQueryAll) return 0;
     m->BaseAddress = const_cast<void*>(a); m->AllocationBase = m->BaseAddress; m->AllocationProtect = PAGE_READWRITE;
-    m->RegionSize = (SIZE_T)1 << 40; m->State = MEM_COMMIT; m->Protect = PAGE_READWRITE; m->Type = 0;
+    // 32-bit (-m32): end the region at UINTPTR_MAX so lo + RegionSize cannot wrap to 0 and loop regionReadable forever.
+    m->RegionSize = sizeof(void*) == 8 ? (SIZE_T)1 << 40 : (SIZE_T)(UINTPTR_MAX - (uintptr_t)a);
+    m->State = MEM_COMMIT; m->Protect = PAGE_READWRITE; m->Type = 0;
     return sizeof *m;
 }
 inline DWORD g_stubTick = 0;   // tests advance it to step over the 1000 ms reload throttle

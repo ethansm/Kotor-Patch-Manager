@@ -45,7 +45,7 @@ Commits this session: `bfd543e` Step 0, `719f034` B0/B1 briefs, `53ccd55` A1 ana
   0x413CE0 force-appends `b` to font names (cosmetic; explains K1 "10x10 renders as 16x16").
 
 ## 4. 1.0.1-probe (staged, NOT installed)
-- Mirror `dialogue_letterbox_fix_probe_src/`, build dir `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/K2DialogueLetterboxFixProbe/`
+- Mirror `dialogue_letterbox_fix_probe_src/`, kpatch in `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/letterbox_probe_stage/` (moved out of `Patches/` 10-03, doc 20d F1; rebuild steps in the probe README)
   (same id `k2-dialogue-letterbox-fix`, version `1.0.1-probe`). kpatch md5 `4d68098658809e25307117a9bb33f460`, DLL `e46cfcc8d5684de395d2c472f764deb0`
   (KERNEL32 + msvcrt). Base 1.0.0 build dir + `dialogue_letterbox_fix_src/` untouched.
 - Windows: W1 0x8BB461 (6), W2 0x8BB52B (6), W3 0x8BB538 (9), W4 0x40ED9F (5, hot base Draw, vtable 0x9A7CBC filter), W5 0x7CEB95 (7). INI `probe=1` (default 0);

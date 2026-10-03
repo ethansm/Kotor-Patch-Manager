@@ -91,16 +91,24 @@ cap 3000 PROBE lines per process (one `PROBE cap (3000 lines) reached` notice). 
 
 ## Build
 
+The built probe lives in the KPM root stage dir `letterbox_probe_stage/`, NOT in `Patches/` (moved 2026-10-03, doc 20d F1). It reuses
+the id `k2-dialogue-letterbox-fix` on purpose (installing it replaces 1.0.0), and KPM's `tools/validate-patches.py` FAILs on two
+catalog dirs with the same id, so a `Patches/K2DialogueLetterboxFixProbe/` dir must not stay in the catalog. To rebuild:
 ```
-cd ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/K2DialogueLetterboxFixProbe && python3 ../create-patch.py
+K=~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager
+mkdir $K/Patches/K2DialogueLetterboxFixProbe
+cp exports.def K2DialogueLetterboxFix.cpp kotor2-steam-aspyr.hooks.toml manifest.toml $K/Patches/K2DialogueLetterboxFixProbe/
+cd $K/Patches/K2DialogueLetterboxFixProbe && python3 ../create-patch.py
+mv K2DialogueLetterboxFixProbe.kpatch $K/letterbox_probe_stage/ && cd .. && rm -r K2DialogueLetterboxFixProbe
 ```
-(mingw i686, links only KERNEL32 + msvcrt). The sources in this directory are byte-identical mirrors of that folder (the smoke harness and this README live only here).
+(mingw i686, links only KERNEL32 + msvcrt). This directory is the source of record (the smoke harness and this README live only here).
+The staged kpatch is sha256 `0d490cd4cf32fd65934b9dfec061b8cd0682d761710e268930c1db9aa9fd5954` (built 10-03 01:58).
 
 ## Smoke test (Wine, no game)
 
 ```
 mkdir -p /tmp/claude-1000/l1_smoke && cd /tmp/claude-1000/l1_smoke
-unzip -o -j <Patches>/K2DialogueLetterboxFixProbe/K2DialogueLetterboxFixProbe.kpatch binaries/windows_x86.dll
+unzip -o -j <KPM>/letterbox_probe_stage/K2DialogueLetterboxFixProbe.kpatch binaries/windows_x86.dll
 i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke.exe <this dir>/smoke_dialogueletterbox.cpp
 export WINEPREFIX=/tmp/claude-1000/l1_smoke/prefix WINEDEBUG=-all
 for m in h6 clamp vanilla disabled foreign unchanged late ini log0 probe probe0 probelog0; do
