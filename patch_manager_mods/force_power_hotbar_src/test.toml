@@ -1,0 +1,4 @@
+# Per-test table: only the Common contract test needs the shared headers + host Win32 stub (mirrors _shared_src/test.toml).
+# The four older hotbar tests keep their defaults.
+[common_contract_test]
+cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
