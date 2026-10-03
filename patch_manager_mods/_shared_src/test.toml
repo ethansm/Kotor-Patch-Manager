@@ -1,0 +1,1 @@
+cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]

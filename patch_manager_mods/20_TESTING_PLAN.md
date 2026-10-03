@@ -271,3 +271,10 @@ Rules that apply to every phase:
     - `smoke.cpp` became `smoke_probe11.cpp` and now asserts. Its old manual-dump step never checked anything: it copied the report before the probe had written it.
     - `smoke_probe13` is retired to `harness/retired/`.
   - Next: Phase 1.
+- 10-03 (hotbar Phase X, X1-X3): **colocated Common tests** in `patch_manager_mods/_shared_src/` (shared `test.toml`: parity stub `-I`, `-DGUIKIT_HOST`, `-Werror`):
+  `saferead_test` (55 checks, `readExo`), `guikit_test` (42, the new `imageFor`/`createLabelFromTemplate` out-params), `party_test` (89, `Party.h` + `static_assert`s that
+  `gameaddr::` equals GuiKit's constants). Each was hand-broken once and went red. `check_shared_headers.py` syncs only `*.h`, so tests never reach `Patches/Common`.
+  - **-m32 blocked by the parity stub:** `stub/windows.h` `VirtualQuery` returns `RegionSize = 1<<40`; on 32-bit `lo + RegionSize` wraps and `regionReadable` loops
+    forever. Fix belongs to the level-up stub owner (cap RegionSize, e.g. `0x80000000 - lo`). Host 64-bit runs are fine.
+  - **Mutation pass pending** (no C++ mutation tool yet) for `SafeRead.h` `readExo`, `GuiKit.h` out-params, `GameAddr.h`, `Party.h`.
+  - The level-up parity `guikit_test.cpp` (49 checks) stays where it is until its owner agrees to move it (§5 Medium #10).

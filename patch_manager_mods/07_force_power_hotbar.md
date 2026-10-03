@@ -1,5 +1,13 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**BUILD 26 USER CHECK (2026-10-03): PASSED.** Picker counts yes; item used down to 0 -> dimmed + "0" yes; picked up again -> re-enabled yes.
+Log 10-03 01:39: 2 HUD builds, 75 controls each, 0 WARNING, 0 pool full (baseline `force_power_hotbar_src/baseline_h3_build26.txt`).
+**User requests from that check (backlog):**
+- (U1, small, after Phase X) the "0" count text on an out-of-stock slot is white; draw it gray (or similar) while the slot is dimmed.
+- (U2, design) allow each ability only once? i.e. filter already-assigned entries out of the picker.
+- (U3, design, likely post-1.0.0) per-slot target mode: "use on leader" or "use on the party member with the lowest health". Needs RE of the
+  item/power target argument of the invoke path, plus UX and iconography for the mode.
+
 **RESUME HERE (2026-10-03 ~00:15, end of session 6):** live = **build 26 `504372b1`** (stage `hotbar_stage15/`, backup `backups/inst15_1003_0003`,
 31 installed ids; rollback = stage14 `a3303cb3`). Build 26 = stack counts on the bar and picker cells, out-of-stock items dimmed with "0", per-save hotbars
 (5 detours S1/S2/L1/L1b/NG; Steam Cloud syncs the snapshot, verified). **Awaiting the user's build 26 check** (picker counts; use an item down to 0 -> dimmed + 0 ->

@@ -14,6 +14,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 namespace saferead {
 
@@ -78,6 +79,31 @@ template <typename T> bool readAt(unsigned site, uintptr_t base, int off, T* out
     if (base == 0 || !probeRead(site, reinterpret_cast<const void*>(base + off), sizeof(T))) return false;
     *out = *reinterpret_cast<const T*>(base + off);
     return true;
+}
+
+// Reads an engine CExoString {char* p @+0; int len @+4} (32-bit fields) into buf as a NUL-terminated string.
+// Returns the length (trailing NULs stripped; engine lengths include the NUL), or 0 with buf[0]=0 on any failure:
+// bad read, len <= 0 or > maxLen, len >= cap, empty after stripping, or (printableOnly) a byte outside 0x20..0x7E.
+inline int readExo(unsigned site, uintptr_t addr, char* buf, int cap, int maxLen = 80, bool printableOnly = true) {
+    if (!buf || cap <= 0) return 0;
+    buf[0] = 0;
+    uint32_t p = 0;
+    int len = 0;
+    if (!readAt(site, addr, 0, &p) || !readAt(site, addr, 4, &len)) return 0;
+    if (len <= 0 || len > maxLen || p == 0 || len >= cap) return 0;
+    const void* src = reinterpret_cast<const void*>(static_cast<uintptr_t>(p));
+    if (!probeRead(site, src, len)) return 0;
+    memcpy(buf, src, len);
+    buf[len] = 0;
+    int n = len;
+    while (n > 0 && buf[n - 1] == 0) --n;
+    if (n == 0) return 0;
+    if (printableOnly)
+        for (int i = 0; i < n; ++i) {
+            unsigned char c = static_cast<unsigned char>(buf[i]);
+            if (c < 0x20 || c > 0x7E) { buf[0] = 0; return 0; }
+        }
+    return n;
 }
 
 // Formats the ring (oldest first) into buf; returns chars written.

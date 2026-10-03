@@ -41,6 +41,8 @@ constexpr int Label_Border = 0x60, Label_Text = 0xD8, Text_Renderer = 0x14, Text
 constexpr int Border_Alpha = 0x24, Border_Tint = 0x28, Border_Fill = 0x74;
 constexpr int Panel_CtlArray = 0x24, Panel_CtlCount = 0x28;
 constexpr int FlagVisible = 0x2, FlagClickThrough = 0x20;
+constexpr int ImagePoolSize = 256;                   // imageFor pool capacity (one entry per distinct resref)
+enum CreateFail { CF_None = 0, CF_Alloc, CF_Vtable, CF_Template, CF_Count, CF_Flags };   // createLabelFromTemplate failure reason
 constexpr int IdSentinel = -31337;                   // InitControl's Load overwrites ctl+0x54; unchanged = template tag not in layout (Mod3 60)
 
 // Calling conventions: the label ctor is "ECX only", i.e. thiscall with no args (Mod 3 spells it __fastcall; identical).
@@ -107,28 +109,31 @@ inline void* textSub(uintptr_t ctl) { return reinterpret_cast<void*>(ctl + Label
 // NOT appended to the panel (call appendToPanel). Created hidden + click-through (flags bit1 clear, 0x20 set).
 // ONLY valid while the panel's layout GFF is open: inside the panel ctor, before StopLoadFromLayout (0x0040F5A0).
 // Returns the label, or 0 (allocation failed, ctor vtable wrong, or the template tag is not in the layout).
-inline uintptr_t createLabelFromTemplate(uintptr_t panel, const char* templateTag) {
+// Optional out-params: *why = CreateFail reason (CF_None on success); *badVtable = the vtable read when why == CF_Vtable.
+inline uintptr_t createLabelFromTemplate(uintptr_t panel, const char* templateTag, int* why = nullptr, uint32_t* badVtable = nullptr) {
     using namespace detail;
-    if (!panel || !templateTag || !g_gk.alloc || !g_gk.labelCtor || !g_gk.initControl || !g_gk.exoCtor || !g_gk.exoDtor) return 0;
+    if (why) *why = CF_None;
+    if (badVtable) *badVtable = 0;
+    if (!panel || !templateTag || !g_gk.alloc || !g_gk.labelCtor || !g_gk.initControl || !g_gk.exoCtor || !g_gk.exoDtor) { if (why) *why = CF_Alloc; return 0; }
     unsigned char* mem = static_cast<unsigned char*>(g_gk.alloc(LabelSize));
-    if (!mem) return 0;
+    if (!mem) { if (why) *why = CF_Alloc; return 0; }
     memset(mem, 0, LabelSize);
     g_gk.labelCtor(mem);
     uintptr_t c = reinterpret_cast<uintptr_t>(mem);
     uint32_t vt = 0;
-    if (!rd32(c, 0, &vt) || vt != LabelVtable) return 0;
-    if (!wr<int>(c, Ctl_Id, IdSentinel)) return 0;
+    if (!rd32(c, 0, &vt) || vt != LabelVtable) { if (why) *why = CF_Vtable; if (badVtable) *badVtable = vt; return 0; }
+    if (!wr<int>(c, Ctl_Id, IdSentinel)) { if (why) *why = CF_Vtable; return 0; }
     char exo[16] = {0};
     g_gk.exoCtor(exo, templateTag);
     g_gk.initControl(reinterpret_cast<void*>(panel), mem, exo, 0, 1);   // addToList = 0, scale = 1 (Mod 3 1031)
     g_gk.exoDtor(exo);
     int id = 0;
-    if (!rdInt(c, Ctl_Id, &id) || id == IdSentinel) return 0;           // template not in the layout
+    if (!rdInt(c, Ctl_Id, &id) || id == IdSentinel) { if (why) *why = CF_Template; return 0; }   // template not in the layout
     int index = 0;
-    if (!rdInt(panel, Panel_CtlCount, &index)) return 0;
+    if (!rdInt(panel, Panel_CtlCount, &index)) { if (why) *why = CF_Count; return 0; }
     wr<int>(c, Ctl_Id, index);                                          // provisional; appendToPanel re-stamps it
     int fl = 0;
-    if (!rdInt(c, Ctl_Flags, &fl)) return 0;
+    if (!rdInt(c, Ctl_Flags, &fl)) { if (why) *why = CF_Flags; return 0; }
     wr<int>(c, Ctl_Flags, (fl & ~FlagVisible) | FlagClickThrough);     // hidden + click-through until the caller shows it (Mod 3 1034)
     return c;
 }
@@ -226,16 +231,22 @@ inline bool setTextColor(uintptr_t ctl, float r, float g, float b) {   // Mod 14
 
 // ---- border: fill image / tint / alpha ----
 // Image wrapper for a resref (lowercased, pooled one per resref, never released: Mod 14 imageFor 289). Returns 0 on failure.
-inline void* imageFor(const char* resref) {
+// Optional out-params: *loaded = true only when this call invoked loadImage (new pool entry, even if it returned null);
+// *poolCount = pool entries after the call (every path). Pool full == !loaded && result==null && *poolCount >= ImagePoolSize.
+inline void* imageFor(const char* resref, bool* loaded = nullptr, int* poolCount = nullptr) {
     struct E { char name[17]; void* im; };
-    static E pool[128]; static int n = 0;
+    static E pool[ImagePoolSize]; static int n = 0;
+    if (loaded) *loaded = false;
+    if (poolCount) *poolCount = n;
     if (!resref || !*resref || !g_gk.loadImage) return nullptr;
     char buf[20] = {0}; strncpy(buf, resref, 16);
     for (char* p = buf; *p; ++p) *p = static_cast<char>(tolower(static_cast<unsigned char>(*p)));
     for (int i = 0; i < n; ++i) if (!strcmp(pool[i].name, buf)) return pool[i].im;
-    if (n >= 128) return nullptr;
+    if (n >= ImagePoolSize) return nullptr;
     void* im = g_gk.loadImage(buf);
     memset(&pool[n], 0, sizeof pool[n]); strncpy(pool[n].name, buf, 16); pool[n].im = im; ++n;
+    if (loaded) *loaded = true;
+    if (poolCount) *poolCount = n;
     return im;
 }
 // border+0x74 = image (nullptr clears it); tint (optional rgb) -> border+0x28. Refused unless the border vtable is 0x9875BC.
