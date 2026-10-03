@@ -1,10 +1,14 @@
-// Level-Up Override 0.3.0-a (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
-// preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini only
-// (no UI / save binding yet). Default mode=log only logs + dry-runs.
+// Level-Up Override 0.3.1 (Steam Aspyr build 6A522E71...). Makes the engine's AUTO level-up follow a per-character build
+// preset, can HOLD a creature's level-up until a class change (hold mode) and can make level-ups instant (opt-in). Config from ini plus a
+// per-playthrough (save-bound) config, plus a character-screen UI (Configure button, path wizard, status line, banked-level message).
+// Default mode=log only logs + dry-runs.
 // History: 0.1.0-probe log + dry run; 0.1.1 creature feat lists read from +0x00/+0x18; 0.2.0 applyRewrite + APPLIED/AFTER dump;
 // 0.2.1 rewrite only under AutoLevelup (user requirement: pre-determine the auto level-up, never override manual picks);
 // 0.3.0-a table v2 (presets + class levels), levelNow (hold rule v2), per-tag config (preset./instant./hold.), Class Skill feats in the
-// unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop.
+// unspent recomputation, hold gate (13 CanLevelUp sites), instant gate (4 options-accessor sites), GUI guards + Auto OK backstop;
+// 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API);
+// 0.3.0 M4 character-screen Configure button + wizard + R11 status line / banked message (LevelUpUi.h, WizardLogic.h, _shared/GuiKit.h);
+// 0.3.1 per-companion "Pause at level N" (pause.<tag>= / |pause=N; levelNow pauseAt: bank every level above N for the hold class; Bank button cycles N).
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
 // Hook 1: detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
@@ -25,12 +29,33 @@
 //   Auto OK      0x77D800 at 0x850062: returns 0 for a held leader so DoAutoLevelup skips AutoLevelup
 // All handlers pass through to the real function on any unreadable pointer, for the PC (empty tag) and for unconfigured tags.
 //
+// Hooks 6-8 (M3 save binding; handlers never throw and always fall through to vanilla):
+//   pre-save    0x656640 globals saver entry (ecx = table), original bytes still run: writes the GUID bits LUO_G00..G31 into the table
+//   post-load   0x65675B inside LoadFromSave 0x656710 (params [ebp-0x1c] = table, eax = load result), original runs: reads the GUID back
+//   new server  0x401C52 call 0x51C450 in the server-app funnel 0x401BC0 (replaced; the handler calls it and returns EAX): GUID cache cleared
+// The GUID (uint32, 0 = none) lives only in the save's globals; g_guid caches it. ptApply() creates one on first use.
+//
+// Hook 9 (M4 UI, creation): detour at 0x0084D82C inside the character panel ctor 0x84C3A0 (`push imm32` of "LBL_STATSBORDER", original bytes
+//   68 DC 39 9A 00, plain relocatable instruction, NOT skipped), param [ebp-0x254] = the panel. The layout GFF is still open here: LuoUiPanelCtor
+//   creates our labels (guikit::createLabelFromTemplate, addToList=0) and does NOT append them (Mod 14's 0x84D871 hook later binds LBL_EFX_* with
+//   InitControl addToList=1 and expects ids 69..150).
+// Hook 4b (M4 UI, tick): the SetStats hold-gate site 0x84F221 now also passes ebp (panel = [ebp-0x288]) to LuoHold_84F221, which keeps the hold
+//   semantics and then runs the UI tick (append once on the first tick, placement, Configure button / status line / wizard, click polling).
+//   SetStats runs every frame from CSWGuiInGameCharacter::Update 0x84FBB0 (the hook Mod 14 ticks on), i.e. only while the character screen is the
+//   updated panel - clicks are polled only inside that tick.
+// R11 banked message: from every hold gate, a configured creature that is HOLD with N>0 banked levels (XP table rules+0x38) shows once per
+//   (GUID, tag, N) and at most every 5 s "<Name>: level banked - waiting for <Jedi class> (level-up path)" through the client list append 0x7BE090
+//   (thiscall(GuiInGame=*(clientInternal+0x40), CExoString*, 0x80, 0) RET 0xC; every link of the chain checked, else retried on the next gate call).
+//
 // Config levelup_override.ini (game dir, re-read when its mtime changes, stat at most once per second from the gates; missing = defaults):
 //   mode=log (default) | rewrite (apply DRY result / hold / instant for configured tags) | off
 //   preset.<tag>=<preset id>   instant.<tag>=0|1 (default 0)   hold.<tag>=0|1 (default 1)      (dev keys; M3 adds a per-playthrough source)
 //   tags=atton,kreia   legacy: each tag without a preset key gets preset <tag>__live, instant 0, hold 0 (0.2.1 behaviour)
 //   verbose=1 (0 = one summary line per call)   apply=1 (default)  second kill switch: mode=rewrite + apply=0 = dry run (WOULD REWRITE)
 //   table=levelup_paths.ini
+// Config levelup_playthroughs.ini (game dir, mtime-reloaded like the above; written by ptApply/ptRemove via .tmp + MoveFileExA; format in
+// Playthrough.h): sections [g<8 hex guid>], lines <tag>=<preset id>|instant=0|1|hold=0|1. Precedence in tagConfig: if the current GUID has a
+// section there, ONLY that section applies (a tag missing from it is unconfigured = vanilla, even if a dev key names it); otherwise the dev keys.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -39,13 +64,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "../_shared/SafeRead.h"
+#include "../_shared/GuiKit.h"
+#include "Playthrough.h"
+#include "WizardLogic.h"
+#include "OptionsLogic.h"
 
 namespace {
 
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "0.3.0-a";
+constexpr const char* Version = "0.3.1";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1 + tags=
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -138,6 +167,7 @@ struct TagCfg {
     char tag[32];
     int preset;
     bool instant, hold;
+    int pause;   // 0 = preset default; N > 0 = last character level taken before banking for the hold class (levelNow pauseAt)
 };
 struct Config {
     Mode mode = Mode::Log;
@@ -149,6 +179,9 @@ struct Config {
     int nTags = 0;
 };
 Config g_cfg;
+Config g_ptCfg;                // tag entries of the current playthrough's section (valid while g_ptActive)
+bool g_ptActive = false;
+uint32_t g_guid = 0;           // playthrough GUID of the current game (0 = none); set by the save/load hooks and ptApply
 uint64_t g_cfgStamp = ~0ULL;   // forces the first read
 DWORD g_cfgLast = 0, g_tableLast = 0;
 bool g_cfgChecked = false, g_tableChecked = false;
@@ -183,7 +216,7 @@ int cfgEntry(Config& c, const char* tag, bool create = true) {
     if (!create || c.nTags >= MaxTagCfg) return -1;
     TagCfg& t = c.tags[c.nTags];
     snprintf(t.tag, sizeof t.tag, "%s", tag);
-    t.preset = -1; t.instant = false; t.hold = true;
+    t.preset = -1; t.instant = false; t.hold = true; t.pause = 0;
     c.presetId[c.nTags][0] = 0;
     return c.nTags++;
 }
@@ -230,6 +263,9 @@ void reloadConfig(bool force = false) {
             } else if (!strncmp(k, "hold.", 5) && k[5]) {
                 int i = cfgEntry(c, k + 5);
                 if (i >= 0) { c.tags[i].hold = atoi(v) != 0; hasHold[i] = true; }
+            } else if (!strncmp(k, "pause.", 6) && k[6]) {
+                int i = cfgEntry(c, k + 6);
+                if (i >= 0) { const int n = atoi(v); c.tags[i].pause = n > 0 ? n : 0; }   // garbage / negative = 0 (preset default)
             }
         }
         fclose(f);
@@ -245,17 +281,23 @@ void reloadConfig(bool force = false) {
     g_cfg = c;
     resolvePresets();
     Buf b;
-    for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold);
+    for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold, c.tags[i].pause);
     logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
             c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
 }
 
 // Per-tag configuration lookup (case-insensitive); nullptr = unconfigured -> every gate passes through.
-// TODO(M3): consult the per-playthrough (save-bound) configuration FIRST and only fall back to the ini entries below.
+// Playthrough section of the current GUID wins outright (g_ptActive); else the dev keys of levelup_override.ini.
 const TagCfg* tagConfig(const char* tag) {
     if (!tag || !*tag) return nullptr;
-    for (int i = 0; i < g_cfg.nTags; ++i) if (!_stricmp(g_cfg.tags[i].tag, tag)) return &g_cfg.tags[i];
+    Config& c = g_ptActive ? g_ptCfg : g_cfg;
+    for (int i = 0; i < c.nTags; ++i) if (!_stricmp(c.tags[i].tag, tag)) return &c.tags[i];
     return nullptr;
+}
+// Requested preset id of an entry returned by tagConfig (either source).
+const char* presetIdOf(const TagCfg* t) {
+    if (t >= g_ptCfg.tags && t < g_ptCfg.tags + MaxTagCfg) return g_ptCfg.presetId[t - g_ptCfg.tags];
+    return g_cfg.presetId[t - g_cfg.tags];
 }
 
 // ---- runtime table v2 (levelup_paths.ini; format in gen_runtime_table.py docstring) ----------------------
@@ -271,7 +313,7 @@ struct Preset {
     char id[48], tag[32], name[48], shortName[64];
     char role[16], style[16], alignment[16], convert[16], skills[16];
     int convertAt, holdClass;
-    bool indexed;
+    bool indexed, recommended;   // recommended: listed in [recommended] (the options page opens on it for an unconfigured companion)
     Rec lv[MaxLevel + 1];
 };
 Preset g_presets[MaxPresets];
@@ -373,7 +415,7 @@ bool parseTable(const char* path) {
     fclose(f);
     if (!full) { snprintf(g_tableErr, sizeof g_tableErr, "%s larger than %u bytes", path, (unsigned)sizeof g_fileBuf - 1); return false; }
     g_fileBuf[len] = 0;
-    enum { None, ClassSkills, PresetIndex, PresetSec } sec = None;
+    enum { None, ClassSkills, PresetIndex, Recommended, PresetSec } sec = None;
     Preset* cur = nullptr;
     int lineNo = 0;
     for (char* line = g_fileBuf; line;) {
@@ -389,6 +431,7 @@ bool parseTable(const char* path) {
             *e = 0; ++l; lower(l);
             if (!strcmp(l, "classskills")) { sec = ClassSkills; continue; }
             if (!strcmp(l, "presets")) { sec = PresetIndex; continue; }
+            if (!strcmp(l, "recommended")) { sec = Recommended; continue; }
             cur = presetSlot(l, true);
             if (!cur) goto bad;
             sec = PresetSec;
@@ -425,6 +468,12 @@ bool parseTable(const char* path) {
             snprintf(p->skills, sizeof p->skills, "%s", fl[4]);
             snprintf(p->shortName, sizeof p->shortName, "%s", fl[7]);
             p->convertAt = ca; p->holdClass = hc; p->indexed = true;
+        } else if (sec == Recommended) {
+            // <tag>=<preset id>
+            lower(v);
+            Preset* p = presetSlot(v, true);
+            if (!p) goto bad;
+            p->recommended = true;
         } else if (sec == PresetSec) {
             if (!strcmp(k, "name")) { snprintf(cur->name, sizeof cur->name, "%s", v); continue; }
             if (k[0] != 'l') goto bad;
@@ -485,6 +534,7 @@ const Preset* findPreset(const char* id) {
 }
 void resolvePresets() {
     for (int i = 0; i < g_cfg.nTags; ++i) g_cfg.tags[i].preset = findPresetIdx(g_cfg.presetId[i]);
+    for (int i = 0; i < g_ptCfg.nTags; ++i) g_ptCfg.tags[i].preset = findPresetIdx(g_ptCfg.presetId[i]);
 }
 [[maybe_unused]] const Rec* lookupRecord(const char* id, int keyLevel) {
     const Preset* p = findPreset(id);
@@ -499,11 +549,18 @@ const char* decisionName(Decision d) { return d == Decision::Path ? "PATH" : d =
 // clsId/clsLvl: the creature's class entries in engine order (newest = last). key = total character level + 1.
 // PATH/REBASE: the record whose (class, class level) == (newest class, its level + 1); PATH when its char level == key.
 // HOLD: no such record, hold && the preset has a hold class the creature lacks, and the preset's records for the newest class are used up.
-Decision levelNow(const uint8_t* clsId, const uint8_t* clsLvl, int nClass, const Preset* p, int key, bool hold, const Rec** outRec, int* outCharLevel) {
+// pauseAt (0.3.1; 0 = off): the LAST character level taken before banking. Evaluated first: hold && pauseAt > 0 && hold class lacking && key > pauseAt -> HOLD
+// even where a base-class record exists. Once the creature has the hold class the record matching below applies again (REBASE).
+Decision levelNow(const uint8_t* clsId, const uint8_t* clsLvl, int nClass, const Preset* p, int key, bool hold, int pauseAt, const Rec** outRec, int* outCharLevel) {
     if (outRec) *outRec = nullptr;
     if (outCharLevel) *outCharLevel = -1;
     if (!p || nClass <= 0) return Decision::Vanilla;
     const int cls = clsId[nClass - 1], lvl = clsLvl[nClass - 1];
+    if (hold && pauseAt > 0 && p->holdClass && key > pauseAt) {
+        bool lacks = true;
+        for (int i = 0; i < nClass; ++i) if (clsId[i] == p->holdClass) lacks = false;
+        if (lacks) return Decision::Hold;
+    }
     int top = -1;
     for (int cl = 0; cl <= MaxLevel; ++cl) {
         const Rec& r = p->lv[cl];
@@ -697,11 +754,19 @@ typedef void (__thiscall* PushU32_t)(void* arr, uint32_t value);
 // Gate functions (all thiscall; the originals the hooked call sites used to call): canLevelUp(stats) plain RET; optAccessor(ecx) (__fastcall,
 // ECX only); charChange 0x740FC0 (GetCharacterChangeInProgress) plain RET; getCreature 0x77D800 (-> creature*); partyGet 0x7E5DA0(party, idx) RET 4;
 // tableGet 0x73FB90 (-> party). appGlobal = address of the global holding the app object (+4 = table-get ECX).
+// M3 save binding (all thiscall, name = CExoString* {char*, len+1}): strCtor 0x733570 (buf, const char*) RET 4, strDtor 0x733780 plain RET,
+// guidFind 0x6545B0 (table, name) -> index/-1 RET 4, guidAdd 0x654430 (no dup check!) RET 4, guidSet 0x654BB0 (table, name, 0/1) RET 8,
+// guidGet 0x654740 (table, name, int*) RET 8, serverInit 0x51C450 (ecx = new server app, no args, plain RET).
 struct Engine {
     uintptr_t addFeat, setSkillDelta, pushU32;
     bool checkCode;   // compare the functions' first bytes before calling (off in the host test, which uses fakes)
+    uintptr_t controlled = 0x0073F450;   // client GetControlledObject (thiscall ECX, no args, plain RET): +4 = controlled object id (U5)
     uintptr_t canLevelUp = 0x006B9790, optAccessor = 0x0072FB00, charChange = 0x00740FC0, getCreature = 0x0077D800,
               partyGet = 0x007E5DA0, tableGet = 0x0073FB90, appGlobal = 0x00A1B4A4;
+    uintptr_t strCtor = 0x00733570, strDtor = 0x00733780, guidFind = 0x006545B0, guidAdd = 0x00654430, guidSet = 0x00654BB0,
+              guidGet = 0x00654740, serverInit = 0x0051C450;
+    uintptr_t rulesGlobal = 0x00A1B4D0;   // address of the global holding the rules object (XP table at +0x38)
+    uintptr_t bankedAdd = 0x007BE090;     // client message-list append, thiscall(GuiInGame, CExoString*, int 0x80, uint8 0) RET 0xC
 };
 Engine g_eng = {0x006F5B40, 0x006F5B00, 0x0083EA60, true};
 const uint8_t kAddFeatCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC};
@@ -710,10 +775,21 @@ const uint8_t kPushU32Code[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 
 
 const uint8_t kCanLevelUpCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20, 0x56, 0x89, 0x4D};
 const uint8_t kOptAccessorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
+const uint8_t kControlledCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC, 0x8B, 0x48, 0x04};
 const uint8_t kCharChangeCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
 const uint8_t kGetCreatureCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xFC};
 const uint8_t kPartyGetCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4};
 const uint8_t kTableGetCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
+// M3 (first bytes of the vanilla exe, pebytes.py): Find, AddBoolean, SetBoolean (= GetBoolean's SEH prologue), GetBoolean, CExoString ctor/dtor, 0x51C450.
+const uint8_t kGuidFindCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4, 0x8B, 0x45, 0x08};
+const uint8_t kGuidAddCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF};
+const uint8_t kGuidSetCode[] = {0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x00, 0x8E, 0x95, 0x00, 0x64, 0xA1};
+const uint8_t kGuidGetCode[] = {0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x00, 0x8E, 0x95, 0x00, 0x64, 0xA1};
+const uint8_t kStrCtorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0x83, 0x7D, 0x08, 0x00};
+const uint8_t kStrDtorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8, 0x8B, 0x45, 0xF8};
+const uint8_t kServerInitCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC, 0x8B, 0x48, 0x04};
+// M4 (pebytes.py, vanilla): 0x7BE090 client message-list append (first 14 bytes: prologue + `mov [ebp-0x10],ecx` + `push 0x986925`).
+const uint8_t kBankedAddCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10, 0x89, 0x4D, 0xF0, 0x68, 0x25, 0x69, 0x98, 0x00};
 
 bool writableProtect(DWORD p) {
     if (p & (PAGE_GUARD | PAGE_NOACCESS)) return false;
@@ -861,12 +937,232 @@ uint8_t classSkillMask(uintptr_t stats) {
     return mask;
 }
 
+// ---- M3 save binding: playthrough GUID in 32 Boolean globals + levelup_playthroughs.ini ------------------------
+// The table (CSWGlobalVariableTable) is saved/loaded by name by the engine and re-adds unknown names on load, so LUO_G00..LUO_G31 round-trip
+// through a save without a globalcat.2da row (doc 08 Item 7). All engine calls are thiscall with CExoString names built by the engine ctor.
+constexpr unsigned S_Glob = 110;
+constexpr uintptr_t TableOffset = 0x100FC;   // CServerExoAppInternal -> globals table (an address inside the object, not a pointer)
+typedef void* (__thiscall* StrCtor_t)(void* buf, const char* s);
+typedef void (__thiscall* StrDtor_t)(void* buf);
+typedef int (__thiscall* GFind_t)(void* table, void* name);
+typedef int (__thiscall* GAdd_t)(void* table, void* name);
+typedef void (__thiscall* GSet_t)(void* table, void* name, uint32_t v);
+typedef void (__thiscall* GGet_t)(void* table, void* name, int* out);
+typedef int (__thiscall* ServerInit_t)(void* app);
+
+int g_guidEngState = 0;   // 0 unchecked, 1 verified, 2 mismatch (save binding disabled; the gates keep working)
+bool guidEngineOk() {
+    if (!g_eng.checkCode) return true;
+    if (!g_guidEngState) {
+        const bool ok = codeMatches(g_eng.guidFind, kGuidFindCode, sizeof kGuidFindCode) && codeMatches(g_eng.guidAdd, kGuidAddCode, sizeof kGuidAddCode) &&
+                        codeMatches(g_eng.guidSet, kGuidSetCode, sizeof kGuidSetCode) && codeMatches(g_eng.guidGet, kGuidGetCode, sizeof kGuidGetCode) &&
+                        codeMatches(g_eng.strCtor, kStrCtorCode, sizeof kStrCtorCode) && codeMatches(g_eng.strDtor, kStrDtorCode, sizeof kStrDtorCode) &&
+                        codeMatches(g_eng.serverInit, kServerInitCode, sizeof kServerInitCode);
+        g_guidEngState = ok ? 1 : 2;
+        if (!ok) logLine("GUID ENGINE mismatch - save binding disabled (gates keep working)");
+    }
+    return g_guidEngState == 1;
+}
+
+// Live globals table: *(*(*[appGlobal]+8)+4) + 0x100FC; 0 on any null / unreadable link (main menu: server app is 0).
+uintptr_t liveTable() {
+    uint32_t app = 0, srv = 0, intl = 0;
+    if (!readAt(S_Glob, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Glob, app, 8, &srv) || !srv || !readAt(S_Glob, srv, 4, &intl) || !intl) return 0;
+    return intl + TableOffset;
+}
+
+// Writes the 32 bits (Find first: AddBoolean has no duplicate check), then reads each back. True when every bit reads back as written.
+bool writeGuid(void* table, uint32_t guid) {
+    uint8_t bits[32];
+    pt::unpackBits(guid, bits);
+    bool ok = true;
+    for (int i = 0; i < 32; ++i) {
+        char nm[8]; uint32_t cs[2] = {0, 0};
+        pt::bitName(i, nm);
+        reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, nm);
+        if (reinterpret_cast<GFind_t>(g_eng.guidFind)(table, cs) < 0 && reinterpret_cast<GAdd_t>(g_eng.guidAdd)(table, cs) < 0) {
+            ok = false;
+        } else {
+            int back = 0;
+            reinterpret_cast<GSet_t>(g_eng.guidSet)(table, cs, bits[i]);
+            reinterpret_cast<GGet_t>(g_eng.guidGet)(table, cs, &back);
+            if (back != bits[i]) ok = false;
+        }
+        reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
+    }
+    return ok;
+}
+// Reads the bits of the names that exist; *found = how many of the 32 names exist (0 = no GUID saved).
+void readGuid(void* table, uint32_t* guid, int* found) {
+    uint8_t bits[32] = {};
+    *found = 0;
+    for (int i = 0; i < 32; ++i) {
+        char nm[8]; uint32_t cs[2] = {0, 0};
+        pt::bitName(i, nm);
+        reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, nm);
+        if (reinterpret_cast<GFind_t>(g_eng.guidFind)(table, cs) >= 0) {
+            int v = 0;
+            reinterpret_cast<GGet_t>(g_eng.guidGet)(table, cs, &v);
+            bits[i] = v != 0;
+            ++*found;
+        }
+        reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
+    }
+    *guid = pt::packBits(bits);
+}
+
+// ---- levelup_playthroughs.ini ---------------------------------------------------------------------------------
+const char* const PtName = "levelup_playthroughs.ini";
+const char* const PtTmp = "levelup_playthroughs.ini.tmp";
+pt::Doc g_ptDoc;
+char g_ptText[pt::MaxText];
+uint64_t g_ptStamp = ~0ULL;
+DWORD g_ptLast = 0;
+bool g_ptChecked = false;
+int g_srcLast = -1;           // last logged config source: 1 dev, 2 playthrough
+uint32_t g_srcGuid = 0;
+
+// Rebuilds g_ptCfg from the current GUID's section (if any) and logs a source change once.
+void rebuildPtCfg() {
+    const pt::Section* s = g_guid ? pt::findGuid(g_ptDoc, g_guid) : nullptr;
+    g_ptActive = s != nullptr;
+    g_ptCfg.nTags = 0;
+    if (s) {
+        for (int i = 0; i < s->n; ++i) {
+            const pt::Line& l = s->lines[i];
+            if (!l.isTag) continue;
+            const int e = cfgEntry(g_ptCfg, l.tag);
+            if (e < 0) continue;
+            snprintf(g_ptCfg.presetId[e], sizeof g_ptCfg.presetId[e], "%s", l.preset);
+            g_ptCfg.tags[e].instant = l.instant;
+            g_ptCfg.tags[e].hold = l.hold;
+            g_ptCfg.tags[e].pause = l.pause;
+        }
+    }
+    resolvePresets();
+    const int src = g_ptActive ? 2 : 1;
+    if (src == g_srcLast && (src == 1 || g_srcGuid == g_guid)) return;
+    g_srcLast = src; g_srcGuid = g_guid;
+    if (src == 1) { logLine("CONFIG source=dev"); return; }
+    Buf b;
+    for (int i = 0; i < g_ptCfg.nTags; ++i)
+        b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", g_ptCfg.tags[i].tag, g_ptCfg.presetId[i], g_ptCfg.tags[i].instant, g_ptCfg.tags[i].hold, g_ptCfg.tags[i].pause);
+    logLine("CONFIG source=playthrough g%08x tags=%s", (unsigned)g_guid, b.s);
+}
+
+// Re-reads levelup_playthroughs.ini when its stamp changed (throttled like the other configs); force = re-read now regardless.
+void reloadPlay(bool force = false) {
+    if (!reloadDue(&g_ptLast, &g_ptChecked, force)) return;
+    const uint64_t st = fileStamp(PtName);
+    if (st == g_ptStamp && !force) return;
+    const bool changed = st != g_ptStamp;
+    g_ptStamp = st;
+    size_t len = 0;
+    bool big = false;
+    if (st) {
+        if (FILE* f = fopen(PtName, "rb")) {
+            len = fread(g_ptText, 1, sizeof g_ptText - 1, f);
+            big = !feof(f);
+            fclose(f);
+        }
+    }
+    pt::parse(g_ptDoc, g_ptText, len);
+    if (big) g_ptDoc.lossy = true;
+    if (changed) logLine("PLAYTHROUGH %s: %d section(s)%s", st ? "loaded" : "missing", g_ptDoc.n - 1, g_ptDoc.lossy ? " LOSSY (caps exceeded, writes disabled)" : "");
+    rebuildPtCfg();
+}
+
+// Serialises g_ptDoc to levelup_playthroughs.ini.tmp and replaces the ini. Refuses when the parse lost data (caps).
+bool ptWrite() {
+    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
+    const size_t n = pt::serialise(g_ptDoc, g_ptText, sizeof g_ptText);
+    if (!n) return false;
+    FILE* f = fopen(PtTmp, "wb");
+    if (!f) return false;
+    bool ok = fwrite(g_ptText, 1, n, f) == n;
+    ok = fclose(f) == 0 && ok;
+    ok = ok && MoveFileExA(PtTmp, PtName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    if (!ok) remove(PtTmp);
+    return ok;
+}
+
+[[maybe_unused]] uint32_t ptGuid() { return g_guid; }
+
+// API for the UI (M4). Sets tag = preset|instant|hold|pause for the current playthrough; the first call of a playthrough creates its GUID and writes it
+// to the live globals table at once (a save made afterwards carries it). False (nothing changed) when there is no live table / the write failed.
+[[maybe_unused]] bool ptApply(const char* tag, const char* presetId, bool instant, bool hold, int pause) {
+    saferead::beginScope();
+    ensureHeader();
+    if (!tag || !*tag || !presetId || !*presetId) return false;
+    reloadPlay(true);
+    if (!g_guid) {
+        if (g_ptDoc.n >= pt::MaxSections + 1) { logLine("GUID new: levelup_playthroughs.ini already holds %d playthroughs (cap) - not applied", pt::MaxSections); return false; }
+        const uintptr_t tb = liveTable();
+        if (!tb || !guidEngineOk()) { logLine("GUID new: no live globals table / engine mismatch - not applied"); return false; }
+        uint32_t guid;
+        do {
+            LARGE_INTEGER q;
+            QueryPerformanceCounter(&q);
+            guid = static_cast<uint32_t>(q.QuadPart) ^ static_cast<uint32_t>(GetTickCount()) ^ (static_cast<uint32_t>(rand()) << 16 | static_cast<uint32_t>(rand()));
+        } while (!guid || pt::findGuid(g_ptDoc, guid));
+        const bool wrote = writeGuid(reinterpret_cast<void*>(tb), guid);
+        logLine("GUID new g%08x live-write ok=%d", (unsigned)guid, wrote);
+        if (!wrote) return false;
+        g_guid = guid;
+    }
+    const bool ok = pt::setTag(g_ptDoc, g_guid, tag, presetId, instant, hold, pause) && ptWrite();
+    logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
+    reloadPlay(true);   // on failure this restores the in-memory doc from the file
+    return ok;
+}
+// Removes the tag from the current playthrough's section; the (possibly empty) section stays so the dev keys never apply again to this playthrough.
+[[maybe_unused]] bool ptRemove(const char* tag) {
+    saferead::beginScope();
+    ensureHeader();
+    if (!tag || !*tag || !g_guid) return false;
+    reloadPlay(true);
+    if (!pt::removeTag(g_ptDoc, g_guid, tag)) return false;
+    const bool ok = ptWrite();
+    logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
+    reloadPlay(true);
+    return ok;
+}
+
+// Save/load/new-server hook bodies (mode=off still tracks and logs; every failure falls through to vanilla).
+void guidSave(void* table) {
+    saferead::beginScope();
+    ensureHeader();
+    if (!g_guid) { logLine("GUID save none"); return; }
+    if (!table || !guidEngineOk()) return;
+    const bool ok = writeGuid(table, g_guid);
+    logLine("GUID save g%08x table=%08x ok=%d", (unsigned)g_guid, (unsigned)reinterpret_cast<uintptr_t>(table), ok);
+}
+void guidLoad(void* table, int result) {
+    saferead::beginScope();
+    ensureHeader();
+    uint32_t g = 0; int found = 0;
+    if (table && guidEngineOk()) readGuid(table, &g, &found);
+    g_guid = found == 32 ? g : 0;   // a partial set (1..31 names) is not a GUID we wrote: treat as none (logged below)
+    logLine("GUID load g%08x found=%d/32 result=%d table=%08x", (unsigned)g_guid, found, result, (unsigned)reinterpret_cast<uintptr_t>(table));
+    reloadPlay(true);
+}
+int guidNewServer(void* app) {
+    saferead::beginScope();
+    const int r = reinterpret_cast<ServerInit_t>(g_eng.serverInit)(app);   // the replaced call; its EAX is returned
+    ensureHeader();
+    logLine("GUID new-server (cache cleared, was g%08x)", (unsigned)g_guid);
+    g_guid = 0;
+    rebuildPtCfg();
+    return r;
+}
+
 void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList, uintptr_t ebp) {
     LONG call = InterlockedIncrement(&g_calls);
     ensureHeader();
     reloadConfig(true);
     if (g_cfg.mode == Mode::Off) return;
     reloadTable(true);
+    reloadPlay(true);
     if (!logOpen()) return;
     const bool v = g_cfg.verbose;
 
@@ -971,7 +1267,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
     if (preset) {
         const Rec* rec = nullptr; int recLevel = -1;
         Decision dec = Decision::Vanilla;
-        if (total >= 0 && nGot == nClass && nClass > 0) dec = levelNow(cIds, cLvls, nGot, preset, key, cfg->hold, &rec, &recLevel);
+        if (total >= 0 && nGot == nClass && nClass > 0) dec = levelNow(cIds, cLvls, nGot, preset, key, cfg->hold, cfg->pause, &rec, &recLevel);
         const bool midloop = dec == Decision::Hold;   // the LevelUp hook can never veto: HOLD here = vanilla (engine picks)
         if (midloop) { rec = nullptr; recLevel = -1; }
         char recS[16]; if (recLevel >= 0) snprintf(recS, sizeof recS, "%d", recLevel); else strcpy(recS, "-");
@@ -1006,7 +1302,7 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
             }
         }
     } else if (cfg) {
-        logf("  tag %s configured but preset %s not in table (table %s)", tag, g_cfg.presetId[cfg - g_cfg.tags], g_tableOk ? "ok" : "ERROR");
+        logf("  tag %s configured but preset %s not in table (table %s)", tag, presetIdOf(cfg), g_tableOk ? "ok" : "ERROR");
     }
     logClose();
 }
@@ -1042,6 +1338,7 @@ bool gateActive() {
     reloadConfig();
     if (g_cfg.mode == Mode::Off) return false;
     reloadTable();
+    reloadPlay();
     return engineOk();
 }
 
@@ -1064,7 +1361,7 @@ Eval evalStats(uintptr_t stats, uintptr_t creature) {
     uint8_t ids[4], lv[4]; int n, total;
     if (!readClasses(stats, ids, lv, &n, &total)) return e;
     e.key = total + 1;
-    e.d = levelNow(ids, lv, n, e.p, e.key, e.cfg->hold, nullptr, nullptr);
+    e.d = levelNow(ids, lv, n, e.p, e.key, e.cfg->hold, e.cfg->pause, nullptr, nullptr);
     e.ok = true;
     return e;
 }
@@ -1087,14 +1384,106 @@ void noteHold(const char* tag, int key, bool held, unsigned site, bool real) {
     s->held = held; s->key = key;
 }
 
-int holdGate(unsigned site, void* stats) {
+// ---- R11: class names, banked levels, banked message ---------------------------------------------------------
+// Class names (live classes.2da + dialog.tlk, doc 08 "Phase 5 U facts" U4); anything else = "class N".
+const char* className(int id, char* buf, size_t cap) {
+    static const char* const n[] = {"Soldier", "Scout", "Scoundrel", "Jedi Guardian", "Jedi Consular", "Jedi Sentinel", "Combat Droid", "Expert Droid", "Minion", "Tech Specialist"};
+    if (id >= 0 && id < 10) return n[id];
+    snprintf(buf, cap, "class %d", id);
+    return buf;
+}
+
+// Levels a creature could take with its XP: tbl[i] = XP needed to REACH level i+1 (rules+0x38+4*i, 51 rows). While L < MaxLevel && tbl[L] <= xp: L++, n++.
+int bankedFromTable(const uint32_t* tbl, int level, uint32_t xp) {
+    if (!tbl || level < 1) return 0;
+    int n = 0;
+    while (level < MaxLevel && tbl[level] <= xp) { ++level; ++n; }
+    return n;
+}
+
+// Banked levels of the creature `stats` (0 on any unreadable link).
+int bankedLevels(uintptr_t stats) {
+    uint8_t ids[4], lv[4]; int nc, total;
+    uint32_t xp = 0, rules = 0, tbl[MaxLevel + 1];
+    if (!readClasses(stats, ids, lv, &nc, &total) || !readAt(S_Stats, stats, St_XP, &xp)) return 0;
+    if (!readAt(S_Rules, g_eng.rulesGlobal, 0, &rules) || !rules || !probeRead(S_Rules, reinterpret_cast<const void*>(static_cast<uintptr_t>(rules) + 0x38), sizeof tbl)) return 0;
+    memcpy(tbl, reinterpret_cast<const void*>(static_cast<uintptr_t>(rules) + 0x38), sizeof tbl);
+    return bankedFromTable(tbl, total, xp);
+}
+
+// "<Name>: level banked - waiting for <Jedi class> (level-up path)" / "<Name>: N levels banked - ..."
+void buildBankedText(char* out, size_t cap, const char* name, int n, const char* cls) {
+    if (n > 1) snprintf(out, cap, "%s: %d levels banked - waiting for %s (level-up path)", name, n, cls);
+    else snprintf(out, cap, "%s: level banked - waiting for %s (level-up path)", name, cls);
+}
+
+typedef void (__thiscall* BankedAdd_t)(void* gui, void* text, int flags, uint8_t b);
+constexpr DWORD BankedMinGapMs = 5000;
+struct BankedEntry { char tag[32]; int lastN; };
+BankedEntry g_bankedTags[MaxTagCfg];
+int g_nBankedTags = 0;
+uint32_t g_bankedGuid = 0;
+DWORD g_bankedLast = 0;
+bool g_bankedEver = false;
+int g_bankedEngState = 0;   // 0 unchecked, 1 verified, 2 mismatch (message disabled)
+bool bankedEngineOk() {
+    if (!g_eng.checkCode) return true;
+    if (!g_bankedEngState) {
+        const bool ok = codeMatches(g_eng.bankedAdd, kBankedAddCode, sizeof kBankedAddCode) && codeMatches(g_eng.strCtor, kStrCtorCode, sizeof kStrCtorCode) &&
+                        codeMatches(g_eng.strDtor, kStrDtorCode, sizeof kStrDtorCode);
+        g_bankedEngState = ok ? 1 : 2;
+        if (!ok) logLine("BANKED engine function bytes differ - banked message disabled");
+    }
+    return g_bankedEngState == 1;
+}
+// GuiInGame = *(clientInternal+0x40), clientInternal = *(*(*[appGlobal]+4)+4); 0 on any null / unreadable link.
+uintptr_t guiInGame() {
+    uint32_t app = 0, client = 0, ci = 0, gui = 0;
+    if (!readAt(S_Chain, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Chain, app, 4, &client) || !client || !readAt(S_Chain, client, 4, &ci) || !ci ||
+        !readAt(S_Chain, ci, 0x40, &gui) || !gui) return 0;
+    return gui;
+}
+
+// Called from the hold gates for a creature that is HOLD in rewrite mode. Never from inside the LevelUp hook.
+void maybeBanked(const Eval& e, uintptr_t stats) {
+    if (!e.ok || !e.p) return;
+    if (g_guid != g_bankedGuid) { g_nBankedTags = 0; g_bankedGuid = g_guid; }
+    BankedEntry* be = nullptr;
+    for (int i = 0; i < g_nBankedTags; ++i) if (!_stricmp(g_bankedTags[i].tag, e.tag)) be = &g_bankedTags[i];
+    const int n = bankedLevels(stats);
+    if (!be) {
+        if (n <= 0 || g_nBankedTags >= MaxTagCfg) return;
+        be = &g_bankedTags[g_nBankedTags++];
+        snprintf(be->tag, sizeof be->tag, "%s", e.tag);
+        be->lastN = 0;
+    }
+    if (n < be->lastN) be->lastN = n;   // levels were taken: a later increase announces again
+    if (n <= be->lastN) return;
+    const DWORD now = GetTickCount();
+    if (g_bankedEver && now - g_bankedLast < BankedMinGapMs) return;
+    const uintptr_t gui = guiInGame();
+    if (!gui || !bankedEngineOk()) return;   // retried on the next gate call
+    char cb[16], text[200];
+    buildBankedText(text, sizeof text, e.p->name[0] ? e.p->name : e.tag, n, className(e.p->holdClass, cb, sizeof cb));
+    uint32_t cs[4] = {0, 0, 0, 0};
+    be->lastN = n; g_bankedLast = now; g_bankedEver = true;   // state first: a re-entrant gate call during the engine call is a no-op
+    reinterpret_cast<StrCtor_t>(g_eng.strCtor)(cs, text);
+    reinterpret_cast<BankedAdd_t>(g_eng.bankedAdd)(reinterpret_cast<void*>(gui), cs, 0x80, 0);
+    reinterpret_cast<StrDtor_t>(g_eng.strDtor)(cs);
+    logLine("BANKED tag=%s n=%d guid=%08x shown=1", e.tag, n, (unsigned)g_guid);
+}
+
+// realOut (optional) receives the real CanLevelUp result (before the gate). Returns the gated result.
+int holdGate(unsigned site, void* stats, int* realOut = nullptr) {
     saferead::beginScope();
     const int r = reinterpret_cast<CanLevelUp_t>(g_eng.canLevelUp)(stats);
+    if (realOut) *realOut = r;
     if (!r || !gateActive()) return r;
     Eval e = evalStats(reinterpret_cast<uintptr_t>(stats), 0);
     if (!e.ok) return r;
     const bool held = e.d == Decision::Hold, real = g_cfg.mode == Mode::Rewrite;
     noteHold(e.tag, e.key, held, site, real);
+    if (held && real) maybeBanked(e, reinterpret_cast<uintptr_t>(stats));
     return held && real ? 0 : r;
 }
 
@@ -1123,6 +1512,39 @@ void* instantGate(unsigned site, int ebpOff, void* ecx, uintptr_t ebp) {
         logLine("INSTANT tag=%s key=%d site=0x%X", e.tag, e.key, site);
     }
     return g_instBuf;
+}
+
+// Leader instant (U5, doc 08 "U5"): portrait refresh 0x74EE90 calls GetControlledObject 0x73F450 at 0x74F423 and compares its +4 with the slot's
+// object id; equal (= the controlled leader) -> level-up indicator instead of AutoLevelup(1). For a configured instant, not-held creature
+// ([ebp-0x38], the same creature the 0x74F3E9 instant gate reads) we return a dummy object whose id never matches, so the engine takes its own
+// AutoLevelup(1) path (the call the Auto button makes). Any other case returns the real object. Non-leaders are unaffected (no match either way).
+typedef void* (__thiscall* Controlled_t)(void* ecx);
+uint32_t g_noCtl[4] = {0, 0x7F000000u, 0, 0};   // +4 = an object id no creature has
+int g_ctlEngState = 0;
+InstantKey g_leadSeen[16];
+int g_nLeadSeen = 0, g_leadNext = 0;
+void* leaderInstant(void* ecx, uintptr_t ebp) {
+    saferead::beginScope();
+    void* const p = reinterpret_cast<Controlled_t>(g_eng.controlled)(ecx);
+    if (!p || !gateActive() || g_cfg.mode != Mode::Rewrite) return p;
+    if (g_eng.checkCode && !g_ctlEngState) {
+        g_ctlEngState = codeMatches(g_eng.controlled, kControlledCode, sizeof kControlledCode) ? 1 : 2;
+        if (g_ctlEngState == 2) logLine("ENGINE 0x73F450 bytes differ - leader instant disabled");
+    }
+    if (g_eng.checkCode && g_ctlEngState != 1) return p;
+    uint32_t cr = 0, stats = 0, ctlId = 0;
+    if (!readAt(S_Chain, ebp, -0x38, &cr) || !cr || !readAt(S_Stats, cr, Cr_Stats, &stats) || !stats) return p;
+    Eval e = evalStats(stats, cr);
+    if (!e.ok || !e.cfg->instant || e.d == Decision::Hold) return p;
+    readAt(S_Chain, reinterpret_cast<uintptr_t>(p), 4, &ctlId);
+    bool seen = false;
+    for (int i = 0; i < g_nLeadSeen; ++i) if (g_leadSeen[i].key == e.key && !_stricmp(g_leadSeen[i].tag, e.tag)) seen = true;
+    if (!seen) {
+        InstantKey& k = g_leadSeen[g_nLeadSeen < 16 ? g_nLeadSeen++ : (g_leadNext++ & 15)];
+        snprintf(k.tag, sizeof k.tag, "%s", e.tag); k.key = e.key;
+        logLine("INSTANT-LEADER tag=%s key=%d controlledId=%08x creature=%08x site=0x74F423", e.tag, e.key, (unsigned)ctlId, (unsigned)cr);
+    }
+    return g_noCtl;
 }
 
 // Leader creature as the GUI sees it: 0x77D800(0x7E5DA0(0x73FB90([[0xA1B4A4]+4]), 0)); 0 on any null / unreadable link.
@@ -1178,6 +1600,8 @@ void* autoOkBackstop(void* ecx) {
     return c;
 }
 
+#include "LevelUpUi.h"
+
 } // namespace
 
 extern "C" {
@@ -1192,15 +1616,34 @@ void __cdecl LevelUpOverrideEntry(void* stats, void* ret, void* pending, int add
 // One export per call site so the handler knows its site. Hold gate: param ecx = stats. Instant gate: params ecx, ebp (creature = [ebp+OFF]).
 #define LUO_HOLD(VA) int __cdecl LuoHold_##VA(void* stats) { return holdGate(0x##VA, stats); }
 #define LUO_INSTANT(VA, OFF) void* __cdecl LuoInstant_##VA(void* ecx, void* ebp) { return instantGate(0x##VA, OFF, ecx, reinterpret_cast<uintptr_t>(ebp)); }
-LUO_HOLD(74F3C7) LUO_HOLD(84F221) LUO_HOLD(5FD7CE) LUO_HOLD(5FE2A3) LUO_HOLD(66C95C) LUO_HOLD(5FEE32) LUO_HOLD(756DD4)
+LUO_HOLD(74F3C7) LUO_HOLD(5FD7CE) LUO_HOLD(5FE2A3) LUO_HOLD(66C95C) LUO_HOLD(5FEE32) LUO_HOLD(756DD4)
 LUO_HOLD(7575B5) LUO_HOLD(757808) LUO_HOLD(75798C) LUO_HOLD(75218B) LUO_HOLD(7C9F3B) LUO_HOLD(75FCB8)
 LUO_INSTANT(74F3E9, -0x38) LUO_INSTANT(5FD7A0, -0x14) LUO_INSTANT(5FE281, -0x18) LUO_INSTANT(66C93A, -8)
+// GetControlledObject 0x73F450 call at 0x74F423 in portrait refresh (ecx, ebp; creature = [ebp-0x38]): leader instant.
+void* __cdecl LuoLeaderInstant_74F423(void* ecx, void* ebp) { return leaderInstant(ecx, reinterpret_cast<uintptr_t>(ebp)); }
+
+// SetStats site 0x84F221: params ecx = stats, ebp (panel = [ebp-0x288]). Same hold semantics as the other sites, then the character-screen UI tick.
+int __cdecl LuoHold_84F221(void* stats, void* ebp) {
+    int real = 0;
+    const int r = holdGate(0x84F221, stats, &real);
+    uint32_t panel = 0;
+    saferead::beginScope();
+    if (readAt(S_Frame, reinterpret_cast<uintptr_t>(ebp), -0x288, &panel) && panel) uiTick(panel, reinterpret_cast<uintptr_t>(stats), real, r);
+    return r;
+}
+// CSWGuiInGameCharacter ctor 0x84C3A0, site 0x84D82C (layout still open): param [ebp-0x254] = the panel. Creates (does not append) the UI labels.
+void __cdecl LuoUiPanelCtor(int panel) { uiPanelCtor(static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
 
 // GetCharacterChangeInProgress 0x740FC0 call sites (ecx).
 int __cdecl LuoGuardGui_84FD2F(void* ecx) { return guiGuard(0x84FD2F, "gui", ecx); }
 int __cdecl LuoGuardAuto_84F9FE(void* ecx) { return guiGuard(0x84F9FE, "auto", ecx); }
 // DoAutoLevelup 0x77D800 call at 0x850062 (ecx).
 void* __cdecl LuoAutoOk_850062(void* ecx) { return autoOkBackstop(ecx); }
+
+// M3 save binding. Pre-save 0x656640 (ecx = table), post-load 0x65675B (table = [ebp-0x1c], eax = load result), new server 0x401C52 (ecx = app; returns 0x51C450's EAX).
+void __cdecl LuoGuidSave(void* table) { guidSave(table); }
+void __cdecl LuoGuidLoad(void* table, int result) { guidLoad(table, result); }
+int __cdecl LuoGuidNewServer(void* app) { return guidNewServer(app); }
 
 } // extern "C"
 
