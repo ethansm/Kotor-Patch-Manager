@@ -16,9 +16,13 @@ Commits this session: `c7a6303` Step 0, `226c437` Step 1 (L4 drop), `16f52b7` + 
 | 4 analyzer: PROBE W1-W5 diagnosis + 1.0.1 log=0 format | DONE (46 tests) |
 | 5 stage A (1.0.1) / stage B (probe), install commands without L4 in doc 17 | DONE |
 | 6 persist (register, DB, K1 doc, 15e, memory) | DONE |
+| Install (user go 16:44) | DONE: 1.0.1 live, L4 dropped, core restored |
 | T1 screenshot (user) | **OPEN**: the only remaining input |
 
-## 2. Live state (re-read 2026-10-03 15:29)
+## 2. Live state
+- **16:44 INSTALL (user go):** L1 1.0.1 live (log=1 INI), L4 dropped from `patch_config.toml`, registry core `36f10b7f` restored (had been reverted to `2a706ac9`), `bin/Debug` core updated. Details + backup: doc 17 top.
+
+Re-read 2026-10-03 15:29 (before the install):
 - 31 ids, `kpm_install_state.json` UpdatedAt **2026-10-03 12:00:17** (sibling reinstalls at 11:29 and 12:00 during this session), `swkotor2.exe` md5
   `62411a3a3282ecf92bdf54aeb1bac671`. This session wrote nothing to the game dir. L1 1.0.0 and L4 still installed; no `dialogue_letterbox_fix.ini`.
 - KPM rewrites `swkotor2.exe` on every install, so its md5 is only a "nothing changed since X" check, not a constant (Phase 2's `c9a1e3c5...` is history).
