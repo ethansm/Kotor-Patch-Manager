@@ -958,6 +958,20 @@ void __cdecl DrawShieldBar(int slotPtr, int isLarge, int callerEbp) {
     for (int k = 0; k < 4; ++k) {
         readAt(slotPtr, 0x694 + 4 * k, &vit[k]); readAt(slotPtr, 0x800 + 4 * k, &force[k]); readAt(slotPtr, 0x54c + 4 * k, &card[k]);
     }
+    if (isLarge && !g_noDraw && force[2] >= 8 && force[2] <= 2000 && card[2] >= 8) {
+        // leader force bar: its art leaves a few px between the portrait and the visible bar (health is flush): slide it left by that gap
+        // (art columns 29..69 of 128 => visible left edge = x + 0.227*w). Engine SetRect = progress-bar vtable slot 1 (0x41b9e0, RET 4), once.
+        int gap = int(force[0] + 29.0f / 128.0f * force[2] + 0.5f) - (card[0] + card[2]);
+        if (gap > 0 && gap < 12) {
+            int vt = 0, fn = 0, fo = slotPtr + 0x7fc;
+            if (readAt(fo, 0, &vt) && vt && readAt(vt, 4, &fn) && fn) {
+                int nr[4] = { force[0] - gap, force[1], force[2], force[3] };
+                reinterpret_cast<void(__thiscall*)(int, int*)>(fn)(fo, nr);
+                probeLog("FORCEMOVE slot=%08x x %d -> %d (gap %d)", slotPtr, force[0], nr[0], gap);
+                force[0] = nr[0];
+            }
+        }
+    }
     float scale = 1.0f;
     { float s = reinterpret_cast<float(__cdecl*)()>(HudScaleFn)(); if (s > 0.1f && s < 10.0f) scale = s; }
     int sig = slotPtr ^ creature ^ flags ^ isLarge ^ (vit[0] * 3) ^ (vit[1] * 5) ^ (vit[2] * 7) ^ (vit[3] * 11) ^ (force[0] * 13) ^ (card[0] * 17) ^ (card[2] * 19) ^ int(scale * 100);
