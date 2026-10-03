@@ -3,7 +3,8 @@
 # test row must report "all pass"; i386 rows may only fail on the missing
 # multilib headers (bits/c++config.h / bits/wordsize.h). With multilib present,
 # requires full `make all test` green.
-W=~/Games/KOTOR2_Mod_Workspace/tools/kpm-registry/src/KotorPatcher
+# W= env override: point at another KPM checkout's src/KotorPatcher (default: kpm-registry worktree).
+W=${W:-~/Games/KOTOR2_Mod_Workspace/tools/kpm-registry/src/KotorPatcher}
 S=${TMPDIR:-/tmp}/kpm_registry_gate; mkdir -p $S
 out=$S/gate_$(date +%H%M%S)
 make -C $W dll > $out.dll.log 2>&1 || { echo "GATE FAIL: dll build"; tail -20 $out.dll.log; exit 1; }

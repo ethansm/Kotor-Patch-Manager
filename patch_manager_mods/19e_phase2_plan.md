@@ -1,0 +1,280 @@
+# 19e. Phase 2 plan: KpLog.h (2026-10-03)
+
+Status: in progress. Approved plan below; execution log at the end.
+
+
+## Context
+Phase 1 is done: the RFC #180 registry and the `kpatch.log` v1 service live in the KotorPatcher core.
+- Branch `feat/patch-registry-logging`, e36afa4..4fd1d12, worktree `~/Games/KOTOR2_Mod_Workspace/tools/kpm-registry`.
+- A sibling session already merged it into the fork branch `ethansm/local-mods` as **fa67a3b**; the fork's HEAD is now fa653d0.
+- **It is not installed live.** The live `KotorPatcher.dll` dates from Sep 28 and contains no kplog code.
+
+The goal is a framework-level logging standard. Phase 2 gives patches the convenience header that sits on top of the service, and proves it on the reference patch mouse-probe. The phase also covers:
+- the shared parser;
+- the upstream PR draft;
+- a 32-bit verification pass;
+- a shared memory that tells every Claude session on this machine to convert its mods to the new logger in our local build.
+
+**New rollout rule (user, 10-03):** whichever mod ships first with the logger triggers the upstream PR for the logger (registry + `kpatch.log` + `KpLog.h`). It goes up together with that mod. Posting still needs the user's explicit go.
+
+**Resume docs** (local-setup repo `/home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/`):
+- 19c: session context, "Next" + "Session 2 hand-off".
+- 19d: Phase 1 plan and execution log.
+- 19: design.
+- 19a: the held RFC comment.
+- 19b: the cross-patch survey.
+- Memory: `kotor2-shared-logging`.
+
+User decisions (10-03):
+- The `debugLog()` reroute is **opt-in only**. It applies only to patches that include `KpLog.h` and define `KPatchInit`; unmigrated patches behave exactly as today.
+- Scope includes mouse-probe, `kplog_parse.py`, the PR draft and the 32-bit run.
+- `KpLog.h` lives in the KPM repo next to `kpatch_api.h`, not in the `_shared_src` flow.
+
+## Ground rules (carry over)
+- **Delegation:**
+  - Sonnet `general-purpose` subagents (`model: "sonnet"`) do each mechanical chunk, one at a time.
+  - Opus re-runs the acceptance checks, reviews the diff and commits.
+  - Brief each agent with: this plan's path plus its chunk, the worktree, the allowed files, the acceptance commands, "do not commit, no git stash; report a diff summary and test output", and the conventions.
+- **Commit style:** `patcher:`/`Common:`/`docs:` subject, then a prose paragraph, then `- path: change` bullets, then the `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` trailer.
+- **Before each build/test:** `ps aux | grep -E 'make|cc1'`.
+- **Gate:** `scripts/kpm_registry_gate.sh` in local-setup, which hardcodes the `kpm-registry` path.
+  - Point it at `$W/src/KotorPatcher` through a `W=` env override (Opus adds that override in Step 0).
+  - It tolerates only missing-multilib errors. With multilib present it demands full `make all test`.
+- **Never launch the game. Never touch live files** without the user's go.
+- **Repo boundaries:**
+  - Sibling sessions edit the fork clone and local-setup. Never touch untracked `Patches/MouseProbe/` in the fork clone except in chunk M. Commit only our own paths.
+  - Never edit sibling-owned mods' sources.
+- **Upstream:** never post upstream (PR or #180 comment) without the user's go.
+- **Persistence:** after every chunk, append to `19e_phase2_plan.md` "Execution log" and commit (local-setup).
+
+## Step 0 (Opus)
+1. Copy this plan to `patch_manager_mods/19e_phase2_plan.md` and commit it in local-setup.
+2. Branch: in `kpm-registry`, run `git switch -c feat/kplog-header feat/patch-registry-logging`. It stacks on the registry branch, so the upstream PR can be the stack. Call this worktree `$W`.
+3. Fix stale docs. Doc 19 status (line 3) and Phase 1 row (line 116) say "not merged into local-mods". Correct both to "merged fa67a3b (sibling session), not installed live". Commit.
+4. Add the `W=` env override to `scripts/kpm_registry_gate.sh` (default stays the `kpm-registry` path) and commit it.
+5. Baseline: run `W=$W scripts/kpm_registry_gate.sh` and record the result. If `/usr/lib/gcc/x86_64-linux-gnu/13/32` exists (multilib installed), run chunk T first.
+
+## Chunk T: 32-bit full verification (Sonnet; only if multilib is installed, otherwise record "skipped" and re-check at the end)
+- **Run:** in `$W`, `make -C src/KotorPatcher all test` must be fully green, i386 rows included, and the Linux `KotorPatcher.so` must build.
+- **Real 32-bit smoke:** recreate the Phase 1 host smoke (19d "Chunks C, D, E" describes it) with a 32-bit driver.
+  1. `gcc -m32` driver; it `dlopen`s `build/KotorPatcher.so`.
+  2. The temp dir holds `patch_config.toml` with DLL_ONLY entries for `build/tests/fixtures/32/{provider,logger}.so`, plus `kplog.ini`.
+  3. The driver resolves `_ZN12KotorPatcher14CleanupPatcherEv` and calls it before `_exit`. This works around the pre-existing dlclose-at-exit crash, which is not ours.
+  4. Expect `logger-fixture_log.txt` with the header and the WARN/INFO lines.
+  - Driver and script go in the session scratchpad.
+- **Fix i386-only failures:** allowed files are the core and tests.
+- **Accept:** gate prints "GATE PASS (full, multilib)" and the smoke files are correct.
+
+## Chunk K: `Patches/Common/KpLog.h` + `KpDebugHook.h` (Sonnet)
+Files: `Patches/Common/KpLog.h`, `Patches/Common/KpDebugHook.h`. No core changes.
+
+**Constraints:**
+- C++17; compiles with `-fno-exceptions -fno-rtti` (Linux/mac patch flags).
+- No `windows.h`. Declare `extern "C" __declspec(dllimport) void __stdcall OutputDebugStringA(const char*);` under `_WIN32` instead.
+- No `##__VA_ARGS__`/`__VA_OPT__`, because of the MSVC traditional preprocessor.
+- On non-Windows, wrap all header state in `#pragma GCC visibility push(hidden)`/`pop`. GCC otherwise makes inline variables and statics `STB_GNU_UNIQUE`, which merges them across `RTLD_LOCAL` `.so`s.
+- No 64-bit atomics. Use `std::atomic<uint32_t>` ms, because i386 would otherwise need libatomic.
+- Use `fopen_s` under `_MSC_VER`.
+- Comments explain why. Document that `KPatchInit` must be written literally in a `.cpp`; a macro cannot satisfy create-patch's export scan.
+
+**API:**
+- `KP_LOG_PATCH("id")`
+  - Expands to a `static_assert(ValidId)` plus `namespace kplog { extern const char kPatchId[] = id; }`.
+  - Exactly one `.cpp` uses it; a missing one is a link error.
+- `int KpLog_Init(const KPatchApi* api)`
+  - The patch calls it from its own `extern "C" void __cdecl KPatchInit(const KPatchApi* api)`.
+  - It requires `"kpatch.log"` v1, needs `struct_size >= sizeof(KPatchLogApi)`, and `Register`s the id.
+  - On success it sets the api atomically (release) and installs the debug hook, then returns 1.
+  - On any failure it returns 0 and the patch stays in fallback. It is DllMain-safe: no I/O.
+- `bool KpLog_HasCore()`, `void KpLog_SetFallbackLevel(int)`, `void KpLog_SetFallbackFile(const char* path)` (plus the `KP_LOG_FALLBACK_FILE` / `KP_LOG_FALLBACK_LEVEL` / `KP_LOG_FALLBACK_MAX_LINES` macros; defaults are WARN and 60000).
+- `KP_CHANNEL(var, "name")`
+  - Declares a constexpr-constructed `kplog::Channel { const char* name; std::atomic<int32_t> id{-2}; }`, at namespace scope or function-local.
+  - Resolution is lazy: it stays -2 while there is no api; with an api it calls `Channel()` and caches the id.
+  - A result of -1 is cached as dead and produces one fallback WARN `channel '<n>' rejected`.
+- `KP_LOG(ch, ...)` is INFO. `KP_LOGV(ch, lvl, ...)` is `do { if (On(ch,lvl)) Write(ch,lvl,__VA_ARGS__); } while(0)`.
+  - `Write` formats into a **stack** `char[512]` with the printf attribute on GCC/clang.
+  - It splits on embedded `\n`, one `Submit` per piece.
+- `KP_WARN(...)`/`KP_ERR(...)` use the built-in `main` channel.
+- `KP_LOG_EVERY(ch, ms, ...)` uses a per-call-site `static std::atomic<uint32_t>` with CAS; the first call always logs.
+- `KP_ENABLED(ch[, lvl])`, `KP_MARK(label)`, `KP_FRAME_TICK()`. Mark and FrameTick are no-ops in fallback.
+
+**Fallback rule:** no api means the fallback sink on every call until init. There is no pre-init ring and no timeout heuristic.
+- On the new core, `KPatchInit` precedes every hook, so only static-ctor/DllMain lines fall back.
+- On the old core everything falls back, gated by `level <= fallbackLevel`.
+
+**Fallback sink:**
+- Uses the fallback file if one was set, opened lazily. Otherwise ODS on Windows and stderr elsewhere.
+- Line: `<ms steady_clock> <id>/<ch> [WARN |ERR ]text\n`, written with one `fwrite` + `fflush`, which is thread-safe through the CRT lock.
+- After the cap, writes `--- log cap reached ---` once.
+
+**`KpDebugHook.h`:**
+- `using KpDebugHookFn = void(*)(const char*, size_t); inline std::atomic<KpDebugHookFn> kp_debug_hook{nullptr};`
+- `inline void kp_debug_emit(const char* text, size_t len)` calls the hook if set, else ODS on Windows / `fputs` to stderr elsewhere.
+- Hidden visibility on non-Windows.
+- `KpLog_Init`'s hook submits on channel `debug` at `KPLOG_DEBUG` (split on `\n`). It also emits ODS when `KP_DEBUGLOG_ODS`, which defaults to 1.
+
+**Accept:**
+- Chunk H tests pass.
+- Compile checks: the `make kplog-check` target from chunk H, run with MinGW win32 and posix alike, `-Wall -Werror -fno-exceptions -fno-rtti`.
+
+## Chunk C: `Common.h` opt-in reroute (Sonnet, small)
+- `Patches/Common/Common.h`: `#include "KpDebugHook.h"`.
+  - `debugLog` keeps its `vsnprintf_s` into `char[512]`, then calls `kp_debug_emit(buffer, strlen)` instead of `OutputDebugStringA`.
+  - The `debugHexDump` rows do the same.
+- With no hook set the behaviour is byte-identical (ODS).
+- Document the caveat: `debugLog("a"); debugLog("b\n")` concatenated in ODS but becomes two file lines once rerouted.
+- **Accept:** `tests/compile/kplog_common.cpp`, from chunk H, includes `Common.h` + `KpLog.h` in both orders and calls `debugLog`. It must compile with `i686-w64-mingw32-g++` and with `-posix`. Also build one upstream patch that uses `debugLog` (e.g. `Patches/ModOptions`) through `create-patch.py` with MinGW, unchanged, as a regression check.
+
+## Chunk H: host tests for the header (Sonnet)
+**Makefile (`src/KotorPatcher`):**
+- `FIXTURES_CXX := $(basename $(notdir $(wildcard tests/fixtures/*.cpp)))`.
+- In the width loop: `g++ $$m -std=c++17 -Wall -Wextra -fno-exceptions -fno-rtti -shared -fPIC -I../../Patches/Common`.
+- Add a `kplog-check` target for the compile checks. It skips a toolchain that is missing.
+
+**Fixtures:**
+- `tests/fixtures/kplog_a.cpp` (id `kplog-a`) and `kplog_b.cpp` (`kplog-b`), sharing `tests/fixtures/kplog_body.inc` (kept outside the `*.cpp` glob).
+- Exports: `KPatchInit`, `fx_log`, `fx_debuglog`, `fx_every`, `fx_threads`, `fx_set_fallback`, `fx_has_core`, plus a static-ctor line.
+
+**`tests/any_kplog_header.cpp`:** each scenario runs in a `fork()` child, because `dlopen` state persists per process. The child does `LogService::Init(tmp, {startThread=false})`, writes the ini, and calls `Registry::Provide`/`OnModuleLoaded`.
+
+| # | Scenario | Expect |
+|---|---|---|
+| 1 | INFO/DEBUG with ini enabled | lines in the `kplog-a/<ch>` file |
+| 2 | no ini | WARN/ERR only |
+| 3 | old core (never init) | fallback file + prefix, `fx_has_core()==0`, INFO gated |
+| 4 | old core, no fallback file | stderr shows `kplog-a/` |
+| 5 | static-ctor line | goes to fallback, not the core file |
+| 6 | fake api: null require / short `struct_size` | stays fallback, no crash |
+| 7 | **two fixtures with the same channel names** | separate files (GNU_UNIQUE guard) |
+| 8 | 8 threads, first use of one channel | one id, no lost lines |
+| 9 | `KP_LOG_EVERY(50ms)` ×1000 over ~200 ms | 4-6 lines |
+| 10 | debuglog with/without init, embedded `\n` | debug channel / split / stderr |
+| 11 | 300-byte line | `[...]` |
+| 12 | 257th channel or bad name | one rejection WARN, then no-ops |
+
+Also add `tests/compile/kplog_common.cpp`, used by chunk C.
+
+**Accept:** gate PASS with the new row, 20× loop clean, TSan (64-bit, `setarch -R`) clean.
+
+## Chunk D: docs (Sonnet drafts, Opus edits)
+- **`docs/PatchRegistry.md`:** replace the "KpLog.h planned" note (around line 275) with a "Logging with KpLog.h" section:
+  - minimal example (`KP_LOG_PATCH`, `KPatchInit` → `KpLog_Init`, `KP_CHANNEL`, `KP_LOG`, `KP_ENABLED` for expensive arguments);
+  - fallback behaviour on old cores;
+  - debugLog opt-in, plus the ODS concatenation caveat;
+  - rate-limit and `KP_LOG_EVERY` advice;
+  - channel naming (`[a-z0-9_]`, ≤12 chars, tags UPPERCASE, kept stable);
+  - the exports.def note.
+- **`src/KotorPatcher/README.md`:** a short pointer.
+- **`tests/README.md`:** the C++ fixtures and `kplog-check`.
+- **local-setup `19f_kplog_migration_guide.md`:** the checklist sibling sessions follow (see chunk A):
+  1. Include path. Fork builds: `#include "KpLog.h"` (Windows `-I Common`); Linux/mac native: `"../Common/KpLog.h"`.
+  2. Add `KPatchInit` to the `.cpp` and to a committed `exports.def`.
+  3. Map each helper's tags to channels; keep tag text.
+  4. Legacy flag file: gate it to `!KpLog_HasCore()` and drive `KpLog_SetFallbackLevel`.
+  5. Behavioural kill switches stay.
+  6. Parser impact: `ranged_ai`/`ai_trace` regexes are `^`-anchored in `mods678_research/analyze_play_logs.py:125-185`, so update the parser alongside or use `kplog_parse.py`'s prefix strip.
+  7. Never call `KP_FRAME_TICK` from a hook that is not frame-global.
+  8. Verify: build, no-ini run shows only WARN, ini run shows channels.
+
+## Chunk M: mouse-probe migration (Sonnet; source of truth = local-setup `patch_manager_mods/mouse_probe_src/`, build copy = fork `Patches/MouseProbe/`)
+1. `KP_LOG_PATCH("mouse-probe")` and a literal `extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); }`. Add `KPatchInit` to the committed `exports.def`. Bump the manifest version to 0.2.0.
+2. Channels:
+   - `main`: START/STOP
+   - `raw`: RAW
+   - `polls`: POLLS
+   - `norm`: NORM
+   - `drag`: DRAGSTATE; STUCKDRAG? goes out at **WARN**
+   - `cam`: CAM
+   Keep every tag word and field layout. The core prefix replaces the raw-QPC `%.3f` clock; note this in doc 18.
+3. Gating:
+   - Per-channel early-outs (`KP_ENABLED(raw)||KP_ENABLED(polls)`, …). Always track drag state.
+   - The legacy `mouseprobe.txt` poll runs only when `!KpLog_HasCore()`. It toggles `KpLog_SetFallbackLevel(INFO/WARN)` and logs START/STOP.
+   - `KpLog_SetFallbackFile("mouseprobe_log.txt")` with the 60000 cap, so on the live old core it behaves as today.
+   - On the new core, log `START mouseprobe 0.2.0` once and use no STOP.
+   - **No `KP_FRAME_TICK`**: the camera hook is in-world only, and first-caller ownership would lock out a better ticker. At most gate it behind `-DMOUSEPROBE_FRAMETICK`.
+4. Build: the fork clone needs `KpLog.h` there first, so Opus merges `feat/kplog-header` into `ethansm/local-mods` after K/C/H/D are committed. Rebase is not allowed (shared branch); a merge commit is fine. Check that the sibling's latest commits are intact.
+   Then sync `mouse_probe_src` → `Patches/MouseProbe/` and run `python3 Patches/create-patch.py MouseProbe` (MinGW). Stage the `.kpatch`; **do not install**.
+5. Offline proof without the game (the Windows DLL can't be loaded natively on Linux; the KpLog behaviour itself is covered by chunk H's tests):
+   - `objdump -p` must show the exports `KPatchInit`, `ProbeMouseRaw`, `ProbeMouseNorm`, `ProbeCameraFrame`.
+   - `strings` must show `mouse-probe`, `kpatch.log`.
+6. Commit `mouse_probe_src` (local-setup). In the fork, the MouseProbe dir is untracked and sibling-adjacent, so ask before tracking it in git; just stage the build.
+
+**Accept:** build OK, exports OK, doc 18 + mouse-probe doc updated, and a ready-to-run install checklist for the user test (step U).
+
+## Chunk P: `scripts/kplog_parse.py` + tests (Sonnet, local-setup)
+- `parse_line(s)`:
+  - `^T=(\d+)\.(\d{3}) f=(\d+|-) ([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+) (?:(WARN|ERR) )?(.*)$` → dict with t_ms, frame|None, patch, channel, level, msg.
+  - Also: `# ` header lines, `MARK` lines (`T=… f=… MARK <label>`), and the `kplog` DROPPED line `(ring a, rate b)`.
+- `strip_prefix(s)` returns the bare message, for legacy parsers.
+- CLI:
+  - `kplog_parse.py FILE... [--patch P] [--channel C] [--level L] [--since MS] [--merge]`
+  - `--merge` gives one timeline across per-patch files (sorted by T; the same session is detected by the header wall clock).
+  - `--stats` gives per-patch/channel counts and drops.
+- `scripts/test_kplog_parse.py` (unittest): format variants, f=-, WARN/ERR, truncation `[...]`, header/MARK/DROPPED lines, merge ordering, malformed lines ignored.
+  - Use real sample files from the Phase 1 smoke output; regenerate them via the H fixtures if needed.
+- **Accept:** `python3 -m unittest scripts/test_kplog_parse.py` green, and `analyze_play_logs` tests still green (`mods678_research/test_analyze_play_logs.py`).
+
+## Chunk R: upstream PR draft (Opus, with Sonnet drafting allowed)
+- **`patch_manager_mods/19g_upstream_pr_draft.md`:** title, summary, motivation (19a "why"), what is included (the registry, `kpatch.log`, `KpLog.h`, the opt-in `debugLog` hook, tests, docs).
+  - Stack: `feat/patch-registry-logging` + `feat/kplog-header`, rebased onto current upstream/master at PR time.
+  - The first mod that ships with the logger is a placeholder, filled in when it happens.
+  - Testing notes: host tests; msbuild/mac only covered by CI; multilib status.
+  - Known pre-existing issue: dlclose at exit in a dlopen'd harness.
+  - The MinGW auto-export note.
+  - End with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
+- **Refresh 19a:** `KpLog.h` exists now. The "two migrated patches" become the first shipped mod; there is no pre-init buffer (fallback rule instead); PR # stays blank. **HOLD**: post nothing.
+- **Doc 19 §8/§8a:** record the new rollout rule (PR goes up with the first mod that ships with the logger). Mark Phase 2 done and Phase 3 = mouse-probe migrated, awaiting the user test.
+
+## Chunk A: adoption memory for all local Claude sessions (Opus)
+- Write the memory file `~/.claude/projects/-home-ethansm-orca-projects-local-setup/memory/kotor2-kplog-adoption.md`, type `project`.
+- **Content:**
+  - "The new logger (`KpLog.h` on `kpatch.log`) is merged into fork `ethansm/local-mods` (commit …)."
+  - "Every session that owns a mod: convert your mod's logging to KpLog.h in our local build, following `patch_manager_mods/19f_kplog_migration_guide.md`. Mouse-probe is the reference."
+  - The rules:
+    - keep tag text;
+    - legacy flag files map to the fallback only;
+    - no FrameTick unless the hook is frame-global;
+    - update any `^`-anchored parser;
+    - do not break the live install: the live core may be old, and fallback must keep your current file logging working.
+  - "**Whichever mod ships first with the logger is when the logger goes up for its upstream PR.** That session tells the user and points to `19g_upstream_pr_draft.md`; never post without the user's go."
+  - "Record your migration in your mod doc's 'Planned shared state and shared code' section, and in 19e's adoption table."
+  - **Why:** the user wants one framework standard (10-02/10-03).
+  - **How to apply:** before touching your mod's logging, read 19f.
+- Add a `MEMORY.md` index line: `- [KOTOR2 kplog adoption](kotor2-kplog-adoption.md) — all sessions: convert your mod to KpLog.h (guide 19f); first mod shipping with it triggers the logger's upstream PR`.
+- Update `kotor2-shared-logging.md`: Phase 2 status, the branch, the PR trigger rule.
+- Add an adoption table to 19e (mod → owner session → status), initially mouse-probe = migrated/staged and the rest = pending.
+- Commit the 19c/19e updates.
+
+## Step U: user test handoff (prepare only; no install without the go)
+Write the install/rollback checklist into 19e:
+1. Back up the live `KotorPatcher.dll` and `MouseProbe` artifacts.
+2. Install the new core DLL from local-mods (`make -C src/KotorPatcher dll`) and the 0.2.0 mouse-probe through the usual KPM install path (see doc 10 install records / `kpm_install_state.json`).
+3. Optional `kplog.ini` enabling `[mouse-probe] channels=*`.
+4. The user plays briefly.
+5. Expected files: `mouse-probe_log.txt` with header + channels. With no ini, only WARN lines.
+6. Rollback commands.
+
+Per memory: offer "deploy now with rollback" vs wait. Never launch the game.
+
+## Order and gates
+Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Opus) → M → P → R → A → U-prep → final gate + T re-check → update 19c "Next", memory, 19e log.
+
+## Verification (end of phase)
+- `W=$W scripts/kpm_registry_gate.sh` PASS: x86_64 rows + `any_kplog_header`, plus full i386 if multilib.
+- `make kplog-check` OK under MinGW win32 + posix. One upstream `debugLog` patch rebuilds unchanged.
+- MouseProbe 0.2.0 built, exports verified, staged.
+- `kplog_parse` tests and `analyze_play_logs` tests green.
+- Docs are committed in KPM (`feat/kplog-header`, merged to local-mods) and in local-setup (19e/19f/19g, 19/19a/19c updates).
+- Adoption memory and MEMORY.md line exist.
+- Nothing posted upstream, nothing installed live.
+
+## Risks / watch items
+- **MSVC (preprocessor, `/W4`, `fopen_s`) is untested locally.** The first Windows/CI build of mouse-probe or the PR CI covers it. Keep macros `__VA_ARGS__`-plain.
+- **The `Common.h` edit touches every upstream patch.** It is behaviour-neutral (ODS when no hook) but every patch needs a rebuild to pick it up. `Common.lib` is unaffected (inline).
+- **The mouse-probe log changes.** Its file name changes to `mouse-probe_log.txt` on the new core, and the timestamp becomes the core `T=` prefix. Doc 18 notes need updating.
+- **Merging into `local-mods`, which siblings also commit to.** Use a merge commit (no rebase) and verify sibling commits are intact afterwards.
+- **High-rate CAM/RAW lines** can approach the 2000 lines/s per-patch limit. Look for `DROPPED` lines in the user test.
+
+## Execution log
+
+- Step 0 (10-03): plan copied; doc 19 status/Phase-1 row corrected (merged fa67a3b, not live); gate gets `W=` override. Multilib present (`/usr/lib/gcc/x86_64-linux-gnu/13/32`), so chunk T runs first.
