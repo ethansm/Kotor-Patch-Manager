@@ -1,0 +1,15 @@
+> CGuiInGame	GetMiniMapVisible	0x007d05a0	verified
+> CGuiInGame	IsAnimationPlayingInDialog	0x007cb6e0	likely
+> CGuiInGame	RemoveGUIPopUps	0x007d0560	verified
+> CGuiInGame	ShutDownGlobal	0x007bdb10	likely
+> CSWGuiControl	SetActive	0x004185d0	verified
+> CSWSObject	GetDialogResref	0x0053ef30	verified
+> CSWSObject	GetLastName	0x0053f000	likely
+> CSWSObject	GetPortrait	0x0053efa0	verified
+> CSWSObject	GetPortraitId	0x0053f000	verified
+> CSWSObject	SetPortrait	0x0053efd0	verified
+> CSWSPlaceable	GetDead	0x00619e30	verified
+> Gob	Render	0x004b3fe0	verified
+> Gob	RenderBlur	0x004b3c90	verified
+> Gob	SetProcessFlag	0x00461ed0	verified
+> Gob	SetScene	0x00461aa0	verified
