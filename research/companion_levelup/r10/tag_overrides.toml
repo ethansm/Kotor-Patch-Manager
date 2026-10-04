@@ -1,0 +1,82 @@
+# Hand-curated overrides for r10/gen_r10_tags.py. Each entry needs id + reason; keys: set (replace), add, remove (vocabulary tags).
+# Every entry below was found by `--check` (companion presets that take the row for a build the rule-derived tags excluded) and judged
+# a real tagging error: in KOTOR II these feats are usable by every build that has the prerequisites.
+
+[[feat]]
+id = 1
+set = ["general", "combat"]
+reason = "Advanced Jedi Defense: passive saber defense, taken by caster/support/ranged Jedi presets alike"
+[[feat]]
+id = 24
+set = ["general", "combat"]
+reason = "Master Jedi Defense: same as Advanced Jedi Defense (passive, every Jedi build)"
+[[feat]]
+id = 8
+add = ["ranged"]
+reason = "Critical Strike: ranged/pistol/rifle presets (Mira, Atton, Mandalore, Hanharr) take it; it applies to blasters too"
+[[feat]]
+id = 19
+add = ["ranged"]
+reason = "Improved Critical Strike: as Critical Strike"
+[[feat]]
+id = 81
+add = ["ranged"]
+reason = "Master Critical Strike: as Critical Strike"
+[[feat]]
+id = 83
+add = ["support"]
+reason = "Master Power Attack: support/single presets (Handmaiden) take it"
+[[feat]]
+id = 32
+add = ["tank", "support"]
+reason = "Weapon Focus: Blaster Pistol: T3-M4 tank/support presets carry a pistol"
+[[feat]]
+id = 36
+add = ["caster", "support"]
+reason = "Weapon Focus: Lightsaber: Jedi caster/support presets (Disciple) still fight with a saber"
+[[feat]]
+id = 85
+add = ["tank", "support"]
+reason = "Master Two-Weapon Fighting: Disciple tank/support presets take it"
+[[feat]]
+id = 113
+add = ["caster", "support"]
+reason = "Dueling: caster presets using one saber take it"
+[[feat]]
+id = 114
+add = ["caster", "support"]
+reason = "Improved Dueling: as Dueling"
+[[feat]]
+id = 115
+add = ["caster", "support"]
+reason = "Master Dueling: as Dueling"
+[[feat]]
+id = 143
+set = ["general", "force"]
+reason = "Regenerate Force Points: every Force-using build (melee/tank included) takes it; role-agnostic"
+[[feat]]
+id = 190
+set = ["general", "combat"]
+reason = "Dual Strike: ranged/single/tank/support presets all take it, role-agnostic"
+[[feat]]
+id = 191
+set = ["general", "combat"]
+reason = "Improved Dual Strike: as Dual Strike"
+[[feat]]
+id = 192
+set = ["general", "combat"]
+reason = "Master Dual Strike: as Dual Strike"
+
+# Preset-side label defect (not a tagging error): kreia__support_none_dark.toml is labelled alignment=dark but takes light-side powers
+# (Heal, Cure, Valor, Force Armor/Shield/Barrier, Aura). Kreia is a gray character; spells.2da goodevil=G is the truth, so the row tags
+# stay `light` and the conflict is waived here instead of loosening the fits rule. Fix = relabel that preset alignment=neutral or drop the picks.
+[[preset_waiver]]
+preset = "kreia__support_none_dark.toml"
+kind = "power"
+reason = "dark-labelled Kreia support preset takes light-side powers (preset label defect)"
+
+# Same defect: handmaiden__melee_single_dark_early.toml (alignment=dark) takes power 135 Force Barrier (goodevil=G, light).
+[[preset_waiver]]
+preset = "handmaiden__melee_single_dark_early.toml"
+kind = "power"
+reason = "dark-labelled Handmaiden preset takes light-side Force Barrier (preset label defect)"
