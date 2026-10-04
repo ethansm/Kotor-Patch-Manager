@@ -10,8 +10,9 @@ k2-texture-memory-release.
 - **Branch workflow adopted.** `ethansm/local-mods` = what's live, pushed to the fork at `977f4f3` (WIP commits: BuffDurationHUD,
   LevelUpOverride, RobustnessFixes, ghidra scripts, MouseProbe, launcher NoLaunch). Held (sibling sessions mid-edit at
   11:46-11:49): ForcePowerHotbar + docs/RuntimeGuiControls.md, CharEffectsPanel; BuffDurationHUD dirty again (new .inc/.h).
-  Excluded locally: `launch_kpm_ui.sh`, `registry_core_stage/`, `Patches/K2DialogueLetterboxFixProbe/` (duplicate id
-  `k2-dialogue-letterbox-fix`). Inventory: `phase1_inventory.md`.
+  Excluded locally: `launch_kpm_ui.sh`, `registry_core_stage/`. `Patches/K2DialogueLetterboxFixProbe/` (duplicate id
+  `k2-dialogue-letterbox-fix`) is REMOVED from Patches/ for good (doc 20d F1: probe kpatch lives in KPM `letterbox_probe_stage/`);
+  its exclude entry was dropped 10-03 so a recreation shows in `git status`. Inventory: `phase1_inventory.md`.
 - **Commit-before-install rule** (doc 10 Standing rules + CLAUDE.md "KPM Install Rule"): `stage_and_verify_install.py stage`
   writes `<stage>/STAGE_INFO.txt` (branch/head/upstream/per-id clean|DIRTY), prints `WARN DIRTY`, exits 2 unless
   `--allow-dirty`; `verify` prints the recorded head.
