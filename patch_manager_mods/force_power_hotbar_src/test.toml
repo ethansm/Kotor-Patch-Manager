@@ -15,3 +15,6 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 [hotbar_logic_test]
 cxxflags = ["-I../_shared_src", "-Werror"]
+
+[textures_test]
+cxxflags = ["-I../_shared_src", "-Werror"]

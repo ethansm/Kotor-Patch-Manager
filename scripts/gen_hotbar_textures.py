@@ -3,7 +3,8 @@
 
 Writes patch_manager_mods/force_power_hotbar_src/HotbarTextures.inc: one uncompressed 32-bit TGA byte array per texture
 (fph_slot / fph_slot_hi: 128x128 rounded-square slot frame, teal / beige like the native lbl_mibox00 / 00a;
-fph_edit / fph_edit_hi: 72x128 thin frame with a wrench, normal / active). The DLL registers them with the engine at
+fph_edit / fph_edit_hi: 72x128 thin frame with a wrench, normal / active; fph_mode / fph_mode_hi: same frame with a
+crosshair, the target-mode button; fph_tgt_lowhp: 32x32 red-cross corner badge for 'lowest-HP party member' slots). The DLL registers them with the engine at
 start-up, so nothing is installed into override/. Re-run after changing the art, then rebuild the patch.
 
   --out-dir DIR   also write the .tga files to DIR (for inspection)
@@ -36,18 +37,31 @@ def make_textures(out: Path) -> list[Path]:
     return made
 
 
+EDIT_COLS = ((EDIT_TEX[0], (10, 96, 80)), (EDIT_TEX[1], (208, 204, 170)))
+MODE_TEX = ("fph_mode", "fph_mode_hi")
+BADGE_TEX = "fph_tgt_lowhp"
+ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX,) + MODE_TEX
+
+
+def _editor_frame(col, S=4, W=72, H=128):
+    """Thin rounded 72x128 button frame (supersampled by S), shared by the edit and target-mode buttons."""
+    from PIL import Image, ImageDraw
+    im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=22 * S, fill=col + (255,))
+    d.rounded_rectangle([3 * S, 3 * S, (W - 3) * S, (H - 3) * S], radius=19 * S, fill=(0, 0, 0, 175))
+    return im, d
+
+
 def make_edit_textures(out: Path) -> list[Path]:
     """Thin rounded frame (72x128) with a wrench, normal and active (beige frame) variants."""
     from PIL import Image, ImageDraw, ImageFilter, ImageChops
     import math
     made = []
-    for name, col in ((EDIT_TEX[0], (10, 96, 80)), (EDIT_TEX[1], (208, 204, 170))):
+    for name, col in EDIT_COLS:
         S = 4
         W, H = 72, 128
-        im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
-        d = ImageDraw.Draw(im)
-        d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=22 * S, fill=col + (255,))
-        d.rounded_rectangle([3 * S, 3 * S, (W - 3) * S, (H - 3) * S], radius=19 * S, fill=(0, 0, 0, 175))
+        im, d = _editor_frame(col, S, W, H)
         # Wrench, shaded like the native force-power icons: mint->teal gradient body, dark outline, soft glow, upper-left rim light and
         # lower-right shade, a RECESSED channel down the handle (raised rim around a darker inset), a U jaw, and a round beveled hanging
         # ring. The hole is drawn last and separately so the directional shading never distorts it.
@@ -119,18 +133,60 @@ def make_edit_textures(out: Path) -> list[Path]:
     return made
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out-dir", type=Path)
-    a = ap.parse_args()
-    import tempfile
-    with tempfile.TemporaryDirectory() as td:
-        made = make_textures(Path(td)) + make_edit_textures(Path(td))
-        blobs = [(p.stem, p.read_bytes()) for p in made]
-        if a.out_dir:
-            a.out_dir.mkdir(parents=True, exist_ok=True)
-            for name, data in blobs:
-                (a.out_dir / f"{name}.tga").write_bytes(data)
+def make_mode_textures(out: Path) -> list[Path]:
+    """Target-mode button: same frame as the edit button, with a crosshair (ring + 4 ticks + centre dot), mint->teal shaded."""
+    from PIL import Image, ImageDraw
+    made = []
+    for name, (_, col) in zip(MODE_TEX, EDIT_COLS):
+        S, W, H = 4, 72, 128
+        im, d = _editor_frame(col, S, W, H)
+        cx, cy = W / 2, H / 2
+        def ring(r, wd, fill):
+            d.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], outline=fill, width=int(wd * S))
+        def ticks(wd, fill, a, b):
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                d.line([((cx + dx * a) * S, (cy + dy * a) * S), ((cx + dx * b) * S, (cy + dy * b) * S)], fill=fill, width=int(wd * S))
+        # dark outline pass, then bright mint body, then teal lower shade: reads like the wrench's gradient on a flat glyph
+        ring(15.5, 6.5, (6, 60, 50, 255)); ticks(7.5, (6, 60, 50, 255), 10, 28)
+        d.ellipse([(cx - 6) * S, (cy - 6) * S, (cx + 6) * S, (cy + 6) * S], fill=(6, 60, 50, 255))
+        ring(14, 3.6, (28, 150, 122, 255)); ticks(4.5, (28, 150, 122, 255), 11, 26)
+        ring(14, 2.4, (140, 238, 208, 255)); ticks(3.2, (140, 238, 208, 255), 11, 26)
+        ring(13.2, 1.0, (200, 255, 238, 255))
+        d.ellipse([(cx - 4) * S, (cy - 4) * S, (cx + 4) * S, (cy + 4) * S], fill=(28, 150, 122, 255))
+        d.ellipse([(cx - 3.2) * S, (cy - 3.8) * S, (cx + 3.2) * S, (cy + 2.6) * S], fill=(175, 252, 228, 255))
+        im = im.resize((W, H), Image.LANCZOS)
+        p = out / f"{name}.tga"
+        im.save(p, format="TGA")
+        made.append(p)
+    return made
+
+
+def make_badge_texture(out: Path) -> list[Path]:
+    """32x32 'lowest-HP party member' corner badge: dark round backing, light outline, red medical cross."""
+    from PIL import Image, ImageDraw
+    S, N = 4, 32
+    im = Image.new("RGBA", (N * S, N * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([1 * S, 1 * S, 31 * S - 1, 31 * S - 1], fill=(235, 240, 238, 255))   # light outline
+    d.ellipse([2.5 * S, 2.5 * S, 29.5 * S - 1, 29.5 * S - 1], fill=(8, 10, 12, 200))   # dark backing
+    arm, half = 4.2, 9.0
+    c = N / 2
+    for col, g in (((70, 0, 0, 255), 1.0), ((235, 30, 30, 255), 0.0)):   # dark red edge, then bright red cross
+        a, h = arm / 2 + g, half + g
+        d.rectangle([(c - h) * S, (c - a) * S, (c + h) * S - 1, (c + a) * S - 1], fill=col)
+        d.rectangle([(c - a) * S, (c - h) * S, (c + a) * S - 1, (c + h) * S - 1], fill=col)
+    im = im.resize((N, N), Image.LANCZOS)
+    p = out / f"{BADGE_TEX}.tga"
+    im.save(p, format="TGA")
+    return [p]
+
+
+def make_all(out: Path) -> list[Path]:
+    """Every texture, in EmbeddedTextures[] order (new art appended after the original four)."""
+    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_mode_textures(out)
+
+
+def render_inc(blobs) -> str:
     out = ["// GENERATED by scripts/gen_hotbar_textures.py -- do not edit. Uncompressed 32-bit TGA images served from memory by the DLL.", ""]
     for name, data in blobs:
         out.append(f"static const unsigned char Tex_{name}[{len(data)}] = {{")
@@ -143,7 +199,22 @@ def main() -> int:
     for name, data in blobs:
         out.append(f'    {{ "{name}", Tex_{name}, {len(data)}u }},')
     out.append("};")
-    INC.write_text("\n".join(out) + "\n")
+    return "\n".join(out) + "\n"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--out-dir", type=Path)
+    a = ap.parse_args()
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        made = make_all(Path(td))
+        blobs = [(p.stem, p.read_bytes()) for p in made]
+        if a.out_dir:
+            a.out_dir.mkdir(parents=True, exist_ok=True)
+            for name, data in blobs:
+                (a.out_dir / f"{name}.tga").write_bytes(data)
+    INC.write_text(render_inc(blobs))
     print(f"wrote {INC} ({', '.join(f'{n} {len(d)} B' for n, d in blobs)})")
     return 0
 
