@@ -17,6 +17,12 @@ constexpr int Rows = 1;    // Bottom (keys 1..0). The early Ctrl/Alt rows (Left/
 constexpr int Slots = 10;  // digits 1..9, 0
 constexpr int SchemaVersion = 1;
 
+// 1.2.0 rename (Force Power Hotbar -> Action Hotbar): the INI and its per-save snapshots changed name. Old files are never deleted or rewritten.
+constexpr const char* IniName = "action_hotbar.ini", *LegacyIniName = "force_power_hotbar.ini";
+enum IniMigrate { IM_UseNew, IM_CopyLegacy, IM_None };
+inline IniMigrate iniMigrateAction(bool newExists, bool legacyExists) { return newExists ? IM_UseNew : legacyExists ? IM_CopyLegacy : IM_None; }
+inline std::vector<std::string> snapshotNames() { return { IniName, LegacyIniName }; }   // per-save load order; saves write only IniName
+
 // Key digit shown for a slot (0..8 -> '1'..'9', 9 -> '0'); '?' for anything out of range.
 inline char slotDigit(int slot) { return (slot >= 0 && slot < 10) ? "1234567890"[slot] : '?'; }
 

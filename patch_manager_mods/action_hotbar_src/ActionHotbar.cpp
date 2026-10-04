@@ -224,7 +224,7 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
 }
 
 // ---- state --------------------------------------------------------------------------------------------
-const char* IniPath = "action_hotbar.ini";
+const char* IniPath = hb::IniName;
 hb::Config g_cfg;
 int g_qtyColorFail = 0; std::string g_qtyColorFirst;   // qty controls whose text-colour readback failed in the current HUD build (map section 4 #14)
 int g_buildSeq = 0;   // HUD builds so far (once-per-build change-only caches)
@@ -1571,7 +1571,7 @@ void healTextures() {
 constexpr uintptr_t SaveRequestHolder = gameaddr::AppGlobal;   // same global as AppGlobal: *(*(it)+0x14) = server save/load request
 constexpr int SaveReq_Folder = 0x18;
 constexpr uintptr_t CloudSavesFlag = 0x00A7EA88, CloudSavesDir = 0x00A7EABC;
-const char* const SnapshotFile = "action_hotbar.ini";
+const char* const SnapshotFile = hb::IniName;
 const char* const AutosaveFolder = "000001 - AUTOSAVE";
 
 // "SAVES:000012 - Game11" / "000012 - Game11" -> "cloudsaves/<id>/000012 - Game11" (relative to the game dir = our cwd). "" if implausible.
@@ -1618,9 +1618,13 @@ void replaceLiveProfiles(const hb::Config* snap, const std::string& source, cons
 void restoreFromSave(const char* folder, const char* why) {
     std::string dir = saveDirFor(folder);
     if (dir.empty()) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%.120s'), live hotbar kept", why, folder && saferead::probeRead(S_Save, folder, 1) ? folder : "?"); return; }
-    std::string src = dir + "/" + SnapshotFile;
+    std::string src = dir + "/" + SnapshotFile; bool legacy = false;
+    for (const std::string& nm : hb::snapshotNames()) {   // new name first, then the pre-1.2.0 one; the first file that exists is used
+        std::string cand = dir + "/" + nm;
+        if (filewatch::stamp(cand.c_str()).exists) { src = cand; legacy = (nm == hb::LegacyIniName); break; }
+    }
     hb::Config snap; bool have = filewatch::stamp(src.c_str()).exists && snap.Load(src);
-    replaceLiveProfiles(have ? &snap : nullptr, src + (have ? " found" : " absent (empty bar)"), why);
+    replaceLiveProfiles(have ? &snap : nullptr, src + (have ? (legacy ? " found (legacy name)" : " found") : " absent (empty bar)"), why);
 }
 
 // Runs at the top of every exported hook (once). Not in DllMain: KpLog_Init runs from KPatchInit, so KpLog_HasCore() is always false
@@ -1631,6 +1635,13 @@ void startOnce() {
     if (!KpLog_HasCore()) {                                        // old core: behave exactly like 1.0.0
         KpLog_SetFallbackLevel(KPLOG_INFO);                        // header default is WARN: the INFO trail would be dropped
         DeleteFileA(LogPrevPath); MoveFileA(LogPath, LogPrevPath); // rotate BEFORE the first fallback write (the header keeps the file open)
+    }
+    {   // 1.2.0 rename: carry a pre-existing force_power_hotbar.ini over once; the old file stays untouched
+        DWORD an = GetFileAttributesA(hb::IniName), al = GetFileAttributesA(hb::LegacyIniName);
+        if (hb::iniMigrateAction(an != INVALID_FILE_ATTRIBUTES, al != INVALID_FILE_ATTRIBUTES) == hb::IM_CopyLegacy) {
+            if (CopyFileA(hb::LegacyIniName, hb::IniName, TRUE)) KP_LOG(chMain, "migrate: copied force_power_hotbar.ini -> action_hotbar.ini (old file kept)");
+            else KP_LOGV(chMain, KPLOG_WARN, "migrate: copy force_power_hotbar.ini -> action_hotbar.ini failed (err=%lu), using defaults", (unsigned long)GetLastError());
+        }
     }
     char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
     KP_LOG(chMain, "action-hotbar %s loaded; pid=%lu ini=%s core=%d", Version, (unsigned long)GetCurrentProcessId(), IniPath, KpLog_HasCore() ? 1 : 0);

@@ -370,6 +370,14 @@ int main(){
     FILE* t=fopen((path+".tmp").c_str(),"rb"); KT_CHECK(t==nullptr); if(t) fclose(t);
     Config d; KT_CHECK(d.Load(path)); KT_CHECK_EQ(d.general.invoke,0);
     remove(path.c_str()); remove((path+".bak").c_str()); }
+  { // ini migration: new name wins; else copy the legacy file; else nothing. Snapshots load new name first, then legacy.
+    KT_CHECK_EQ(IniName,"action_hotbar.ini"); KT_CHECK_EQ(LegacyIniName,"force_power_hotbar.ini");
+    KT_CHECK_EQ((int)iniMigrateAction(true,true),(int)IM_UseNew);
+    KT_CHECK_EQ((int)iniMigrateAction(true,false),(int)IM_UseNew);
+    KT_CHECK_EQ((int)iniMigrateAction(false,true),(int)IM_CopyLegacy);
+    KT_CHECK_EQ((int)iniMigrateAction(false,false),(int)IM_None);
+    std::vector<std::string> sn=snapshotNames(); KT_CHECK_EQ(sn.size(),2);
+    if(sn.size()==2){ KT_CHECK(sn[0]==IniName); KT_CHECK(sn[1]==LegacyIniName); } }
   puts(s1.c_str());
   return kt::Report("config_roundtrip_test");
 }
