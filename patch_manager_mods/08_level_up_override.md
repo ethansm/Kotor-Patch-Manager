@@ -1083,5 +1083,7 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   Gates: ui_test 640/640 (x64 + m32), guitip_test 97/97, contract 40/40, mutate 136/136, run_tests 95/95, mingw 0 warnings.
   **Build:** kpatch ac531c4c (`ac531c4c22b86a0e07649c4c02ac1936`), DLL 8f9ca9e2 (`8f9ca9e2dd3bd74fa3ac07743b5ff42f`), KPM c7a2bb6.
   Supersedes d5602400 (same install recipe: DLL swap + v3 `levelup_paths.ini`, user consent, game closed, backup).
+  **INSTALLED LIVE 2026-10-04 03:54** (user consent; DLL swap only: live was 1.0.0 31c3a83f with v3 table 472a9303 already in place,
+  hooks/exports/manifest identical since KPM eebfd18). Backup `$G/backups/pre_luo_ux_20261004_035402/`. Read the log from line 629.
   **Live check:** Atton (future Jedi) Configure -> pause = his current level, "+" raises; hover each control -> read TIPPROBE lines:
   `owner_is_ours=1` = native works (custom box never shows); `over_is_ours=0` = hit-test misses (custom box covers it).
