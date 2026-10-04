@@ -212,12 +212,13 @@ static void checkTd(bool on) {
 }
 
 // --- VMLK: ActionDoCommand failure path -----------------------------------------------------------------------------------------
-static volatile long g_handoff, g_delsit; static volatile unsigned g_hoOwner, g_hoSit, g_delArg;
-static void* p_handoff; static void* p_delsit;
+static volatile long g_handoff, g_delsit, g_wrongDel; static volatile unsigned g_hoOwner, g_hoSit, g_delArg;
+static void* p_handoff; static void* p_delsit; static void* p_wrongDel;
 static void __attribute__((thiscall)) fakeHandoff(void* owner, void* sit) { ++g_handoff; g_hoOwner = (unsigned)owner; g_hoSit = (unsigned)sit; }   // 0x5E1340
-static void __stdcall fakeDelSit(void* sit) { ++g_delsit; g_delArg = (unsigned)sit; }   // 0x6FDBB0
+static void __stdcall fakeDelSit(void* sit) { ++g_delsit; g_delArg = (unsigned)sit; }   // 0x7037C0 (ignores ECX)
+static void __stdcall fakeWrongDel(void* sit) { ++g_wrongDel; (void)sit; }   // 0x6FDBB0: thiscall needing ECX=owner (1.2.0 bug); must never be called
 static unsigned vmlkRun(unsigned lookup, bool* bal) {
-    fr(-0xC) = 0x5150; fr(-8) = 0x7770; g_handoff = g_delsit = 0; g_hoOwner = g_hoSit = g_delArg = 0;
+    fr(-0xC) = 0x5150; fr(-8) = 0x7770; g_handoff = g_delsit = g_wrongDel = 0; g_hoOwner = g_hoSit = g_delArg = 0;
     unsigned r = run(0x669A27, lookup, 0, 0, ebpAt()); *bal = g_r.esp0 == g_r.esp1; return r;
 }
 static void checkVmlk(bool on) {
@@ -226,7 +227,7 @@ static void checkVmlk(bool on) {
     long dFound = ctr(C_VMLK) - c0;
     unsigned rm = vmlkRun(1, &b1); long dMiss = ctr(C_VMLK) - c0;
     checkf(foundOk && dFound == 0, "%s vmlk: object found -> hand-over 0x5E1340(owner, situation), nothing freed, not counted (%s)", on ? "patched" : "not patched");
-    if (on) checkf(rm == 0 && b1 && g_handoff == 0 && g_delsit == 1 && g_delArg == 0x5150 && dMiss == 1, "%s vmlk: object missing -> situation freed via 0x6FDBB0 once + counted, returns 0 (%s)", "patched");
+    if (on) checkf(rm == 0 && b1 && g_handoff == 0 && g_delsit == 1 && g_wrongDel == 0 && g_delArg == 0x5150 && dMiss == 1, "%s vmlk: object missing -> situation freed via 0x7037C0 once (never 0x6FDBB0) + counted, returns 0 (%s)", "patched");
     else    checkf(rm == 0 && b1 && g_handoff == 0 && g_delsit == 0 && dMiss == 0, "%s vmlk: object missing -> situation dropped, never freed (leak) (%s)", "not patched");
 }
 
@@ -291,12 +292,12 @@ int main(int argc, char** argv) {
     put(0x726C9C, F_KTB, sizeof F_KTB); *(unsigned char*)0x726CDD = 0xC3;
     put(0x58C60E, F_AB, sizeof F_AB); *(unsigned char*)0x58C63E = 0xC3; stubInc(0x58C700, &g_copies, 4);
     // 1.2.0 sites
-    p_fsResume = (void*)&fsResume; p_fakeFree = (void*)&fakeFreeRes; p_handoff = (void*)&fakeHandoff; p_delsit = (void*)&fakeDelSit;
+    p_fsResume = (void*)&fsResume; p_fakeFree = (void*)&fakeFreeRes; p_handoff = (void*)&fakeHandoff; p_delsit = (void*)&fakeDelSit; p_wrongDel = (void*)&fakeWrongDel;
     put(0x712F55, F_FS, sizeof F_FS); stubCapEaxJmp(0x712F5B, &g_fsEax, &p_fsResume); stubJmpInd(0x7120C0, &p_fakeFree);
     put(0x428B2A, F_SSB, sizeof F_SSB); stubRet(0x428B33, 1); stubRet(0x428B44, 3); stubRet(0x428B88, 2);
     put(0x428AE5, F_SSC, sizeof F_SSC); stubRet(0x428AEA, 1); stubRet(0x428B17, 2);
     put(0x71C180, F_TDFN, sizeof F_TDFN);
-    *(unsigned char*)0x99447F = 0; put(0x669A27, F_VMLK, sizeof F_VMLK); *(unsigned char*)0x669A40 = 0xC3; stubJmpInd(0x5E1340, &p_handoff); stubJmpInd(0x6FDBB0, &p_delsit);
+    *(unsigned char*)0x99447F = 0; put(0x669A27, F_VMLK, sizeof F_VMLK); *(unsigned char*)0x669A40 = 0xC3; stubJmpInd(0x5E1340, &p_handoff); stubJmpInd(0x7037C0, &p_delsit); stubJmpInd(0x6FDBB0, &p_wrongDel);
     put(0x798A47, F_MOV, sizeof F_MOV); stubCapEaxEcxRet(0x798A50, &g_movEax, &g_movEcx); *(void**)0x9860D4 = (void*)&FakeSleep;
 
     // reference run (original bytes = engine behaviour incl. the bugs)
@@ -350,7 +351,7 @@ int main(int argc, char** argv) {
     if (isRun || isFs2 || isMovon) dumpCaves(mode, st);
     int npatched = 0; for (int g = 0; g < 12; ++g) if (want[g] == 1) ++npatched;
     char loaded[400]; snprintf(loaded, sizeof loaded, "%d/12 groups patched:", npatched); check(strstr(g_log, loaded) != NULL, "log: loaded line count");
-    check(strstr(g_log, "k2-robustness-fixes 1.2.0 loaded") != NULL, "log: version 1.2.0");
+    check(strstr(g_log, "k2-robustness-fixes 1.2.1 loaded") != NULL, "log: version 1.2.1");
     if (isRun || isFs2 || isMovon) {
         const char* names[12] = { "kt", "vmid", "sndri", "netovf", "guiid", "abbound", "fs", "ssb", "ssc", "td", "vmlk", "movspin" };
         char exp[400]; int k = 0; for (int g = 0; g < 12; ++g) {

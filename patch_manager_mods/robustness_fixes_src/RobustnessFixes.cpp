@@ -1,4 +1,4 @@
-// k2-robustness-fixes 1.2.0 (Steam Aspyr build 6A522E71...). Engine robustness fixes from the
+// k2-robustness-fixes 1.2.1 (Steam Aspyr build 6A522E71...). Engine robustness fixes from the
 // doc 10 Phase 6E research (batches W4-W8, Opus-verified; section "Robustness set").
 //
 // DLL-only. Each fix is an independent group: DllMain verifies every byte of the group's sites, then writes the group;
@@ -45,8 +45,11 @@
 //            (cmp [ebp-8],0xFF / adc [ebp+0x10],0); counter cave at the shared loop exit 0x71C2F0 counts td_long (len > 255).
 //            All three sites are one group.
 //   vmlk     VMLK: ActionDoCommand 0x6699D0 drops the popped script situation (code copy + stack, ~45 KB) when OBJECT_SELF
-//            is missing (JNZ 0x669A30 -> 0x669A3E). Cave at 0x669A27 frees it with 0x6FDBB0 (ret 4) like the success path and
+//            is missing (JNZ 0x669A30 -> 0x669A3E). Cave at 0x669A27 frees it with 0x7037C0 (situation delete: dtor 0x6FF6E0 +
+//            operator delete, ret 4, ignores ECX) and
 //            counts vmlk_free. The success exit jumps to 0x669A32 (perf-lab PerfLabAdcHandoff detour, adjacent, no overlap).
+//            1.2.1 (W9 item 6.3): 1.2.0 called 0x6FDBB0, a thiscall wrapper that loads ECX=[ECX+0x1C] before calling 0x7037C0;
+//            on this branch ECX = the byte at 0x99447F (0/1), so the first vmlk fire would have faulted. Never fired in the field.
 //   movspin  F1: PlayMovies 0x798820 spins with no yield; cave at the pump branch 0x798A47 does one Sleep(1) via the IAT slot
 //            0x9860D4 per message pump (once per 501 spins) and counts f1_sleeps. DEFAULT OFF (movspin=1 enables): may shift
 //            the load-hang (H1) race, test in a dedicated soak.
@@ -101,7 +104,7 @@ constexpr uintptr_t SndriResume = 0x007054DA, VmidResume = 0x00669017, GuiAccept
 constexpr uintptr_t AilQuickShutdownIat = 0x0098657C;
 constexpr uintptr_t FsResume = 0x00712F5B, FsFreeResData = 0x007120C0;
 constexpr uintptr_t SsbSkip = 0x00428B88, SsbPresent = 0x00428B33, SscResume = 0x00428AEA, TdResume = 0x0071C2F6;
-constexpr uintptr_t VmlkSuccess = 0x00669A32, VmlkDone = 0x00669A3E, VmlkDeleteSituation = 0x006FDBB0;
+constexpr uintptr_t VmlkSuccess = 0x00669A32, VmlkDone = 0x00669A3E, VmlkDeleteSituation = 0x007037C0;   // 1.2.1: was 0x6FDBB0 (needs ECX = owner; see header)
 constexpr uintptr_t MovResume = 0x00798A50, SleepIat = 0x009860D4;
 
 alignas(16) uint8_t g_ktDummy[0x24];   // stand-in key entry for orphaned CRes (+0x10 is written 0 by ReleaseResObject)
@@ -432,7 +435,7 @@ void applyVmlk() {
     uintptr_t missing = e.here();
     e.lockInc(&g_vmlkFree);                    // object missing: the popped situation would leak
     e.b({ 0xFF, 0x75, 0xF4 });                 // push dword [ebp-0xC]          situation
-    e.rel(0xE8, VmlkDeleteSituation);          // call 0x006FDBB0               DeleteScriptSituation (ret 4)
+    e.rel(0xE8, VmlkDeleteSituation);          // call 0x007037C0               delete situation (ret 4, ECX unused)
     e.rel(0xE9, VmlkDone);                     // jmp 0x00669A3E                xor eax,eax / epilogue, as before
     e.fix8(jMissing, missing);
     if (e.bad8) { g_state[g] = -4; return; }
@@ -525,7 +528,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         else k += snprintf(buf + k, sizeof(buf) - k, " %s=%s", GroupKey[g], stateName(g_state[g]));
         if (g_state[g] == 1) ++patched;
     }
-    logf("k2-robustness-fixes 1.2.0 loaded: %d/%d groups patched:%s cave=%p pid=%lu", patched, G_COUNT, buf, (void*)g_cave, GetCurrentProcessId());
+    logf("k2-robustness-fixes 1.2.1 loaded: %d/%d groups patched:%s cave=%p pid=%lu", patched, G_COUNT, buf, (void*)g_cave, GetCurrentProcessId());
     for (int g = 0; g < G_COUNT; ++g) if (g_state[g] == -1) {
         char hex[100]; int h = 0; for (int i = 0; i < g_seenN[g] && i < 24; ++i) h += snprintf(hex + h, sizeof(hex) - h, "%02x ", g_seen[g][i]);
         logf("  %s REFUSED: bytes at 0x%08x are %s(group untouched)", GroupKey[g], (unsigned)g_badAt[g], hex);
