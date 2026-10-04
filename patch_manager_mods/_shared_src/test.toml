@@ -5,3 +5,6 @@ cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HO
 
 [sceneview_test]
 cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+[vtable_override_test]
+cxxflags = ["-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]
