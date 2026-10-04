@@ -1,0 +1,15 @@
+[1000001] TABLE loaded levelup_paths.ini: 82 presets, 2047 records; atton=atton__melee_dual_dark_early
+[1000002] CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off
+[1000003] CONFIG loaded mode=rewrite apply=1 verbose=1 table=levelup_paths.ini tags=
+[1000004] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_dark_early/i0/h1/p3
+[1000100] #1 tid=5 flow=auto-button ret=00850062(DoAutoLevelup) stats=0a0b0c0d pending=0e0f0a0b addToList=1 tag=atton classes=2:3,5:5 total=8 key=9 xp=36000 unspent170=0
+  DECIDE tag=atton preset=atton__melee_dual_dark_early key=9 decision=REBASE rec=13
+  CARRYREAD tag=atton__melee_dual_dark_early key=9 feats=0 powers=0 kind=carry
+  DRY tag=atton__melee_dual_dark_early key=9 status=rewrite feats=[99,213,3] spells=[16] deltas=[0,0,0,0,0,0,0,0] unspent=60 ability=6
+  CARRY tag=atton__melee_dual_dark_early key=9 cl=13 owed=3/6 picks=1/1 fb=0/0 unfilled=0/0 prereq_first=1/0 pk=1
+  APPLIED tag=atton__melee_dual_dark_early key=9 ok=1
+[1000200] #2 tid=5 flow=auto-button ret=00850062(DoAutoLevelup) stats=0a0b0c0d pending=0e0f0a0b addToList=1 tag=atton classes=2:3,5:6 total=9 key=10 xp=45000 unspent170=0
+  DECIDE tag=atton preset=atton__melee_dual_dark_early key=10 decision=REBASE rec=14
+  CARRY tag=atton__melee_dual_dark_early key=10 skipped=skipped
+  DRY tag=atton__melee_dual_dark_early key=10 status=rewrite feats=[190] spells=[35] deltas=[0,0,0,0,0,0,0,0] unspent=60 ability=6
+  APPLIED tag=atton__melee_dual_dark_early key=10 ok=1

@@ -4,7 +4,7 @@
 //   scenario_test <levelup_paths.ini> --unit                 onLevelUp T2 (decideAct truth table, DECIDE/DRY/SKIP/APPLIED on fake call chains)
 //                                                            and LUO_G removal safety (no LUO_G -> unconfigured, no writes until Apply)
 // Data file (line based, produced by scenarios.py): SCENARIO id | GLOBALS hex8 count | CREATURE tag classes xp inparty leader |
-//   INI key=value | PTGUID hex8|none | COMPANION tag spec | ACT words... | EVENT regex | ABSENT regex | DECISION key value | END
+//   KFEATS tag ids | KPOWERS tag ids (the creature's known feats / powers) | ENGF tag ids | ENGS tag ids (the engine's own picks in the pending list of an `auto` level-up) | INI key=value | PTGUID hex8|none | COMPANION tag spec | ACT words... | EVENT regex | ABSENT regex | DECISION key value | END
 // Regexes are ECMAScript, matched per log line after the `[tick] ` prefix and leading spaces (saves.toml contract). Exit 1 on any failure.
 #include "../../../../patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"
 #include <sys/mman.h>
@@ -39,7 +39,7 @@ static void* P(uintptr_t a) { return reinterpret_cast<void*>(a); }
 static uint32_t g_xpTbl[51];
 
 // ---- fake creatures ----
-struct Cr { std::string tag, memTag; uintptr_t stats = 0, creature = 0; bool inParty = true, leader = false; };
+struct Cr { std::string tag, memTag; uintptr_t stats = 0, creature = 0; bool inParty = true, leader = false; std::vector<uint32_t> engF, engS; };
 static std::deque<Cr> g_cr;   // deque: addCreature hands out references
 static Cr* crByStats(void* s) { for (auto& c : g_cr) if (P(c.stats) == s) return &c; return nullptr; }
 static Cr* crByTag(const std::string& t) { for (auto& c : g_cr) if (c.tag == t) return &c; return nullptr; }
@@ -57,6 +57,20 @@ static Cr& addCreature(const std::string& tag, const std::vector<std::pair<int, 
     at<uint32_t>(c.creature, Cr_Tag) = (uint32_t)str; at<uint32_t>(c.creature, Cr_Tag + 4) = (uint32_t)c.memTag.size();
     at<uint32_t>(c.creature, Cr_Stats) = (uint32_t)c.stats;
     return c;
+}
+// The creature's known feats (stats+0x00 list) and known powers (array of the newest class entry, stats+0x90+i*0x28), as the carry-over read expects them.
+static void setKnown(Cr& c, const std::vector<uint32_t>& feats, const std::vector<uint32_t>& powers) {
+    if (!feats.empty()) {
+        uintptr_t a = arenaAlloc(feats.size() * 2);
+        for (size_t i = 0; i < feats.size(); ++i) reinterpret_cast<uint16_t*>(a)[i] = (uint16_t)feats[i];
+        at<uint32_t>(c.stats, St_FeatList) = (uint32_t)a; at<uint32_t>(c.stats, St_FeatList + 4) = (uint32_t)feats.size(); at<uint32_t>(c.stats, St_FeatList + 8) = (uint32_t)feats.size();
+    }
+    if (!powers.empty()) {
+        const int off = 0x90 + (at<uint8_t>(c.stats, St_ClassCount) - 1) * 0x28;   // literal offsets on purpose: the test must not follow a changed source constant
+        uintptr_t a = arenaAlloc(powers.size() * 4);
+        for (size_t i = 0; i < powers.size(); ++i) reinterpret_cast<uint32_t*>(a)[i] = powers[i];
+        at<uint32_t>(c.stats, off) = (uint32_t)a; at<uint32_t>(c.stats, off + 4) = (uint32_t)powers.size(); at<uint32_t>(c.stats, off + 8) = (uint32_t)powers.size();
+    }
 }
 static int totalLevel(const Cr& c) { int t = 0; for (int i = 0; i < at<uint8_t>(c.stats, St_ClassCount); ++i) t += at<uint8_t>(c.stats, St_ClassLevel + i * St_ClassStride); return t; }
 static int newestClass(const Cr& c) { int n = at<uint8_t>(c.stats, St_ClassCount); return n ? at<uint8_t>(c.stats, St_ClassId + (n - 1) * St_ClassStride) : 0; }
@@ -282,6 +296,7 @@ static bool loadXp(const std::string& path) {
 struct Scn {
     std::string id; uint32_t globals = 0; int nGlobals = 0; bool ptSet = false; uint32_t ptGuid = 0;
     struct CrSpec { std::string tag; std::vector<std::pair<int, int>> classes; uint32_t xp; bool inParty, leader; };
+    std::map<std::string, std::vector<uint32_t>> kFeats, kPowers, engF, engS;
     std::vector<CrSpec> cr; bool iniMissing = false, hasPtRaw = false; std::string ptRaw;
     std::vector<std::string> ini, companions, acts, events, absent; std::vector<std::pair<std::string, std::string>> decisions;
 };
@@ -300,6 +315,11 @@ static bool readScn(const char* path, const std::string& id, Scn& out) {
             std::istringstream cs(cl); std::string it;
             while (std::getline(cs, it, ',')) { int a, b; if (sscanf(it.c_str(), "%d:%d", &a, &b) == 2) c.classes.push_back({a, b}); }
             out.cr.push_back(c);
+        }
+        else if (k == "KFEATS" || k == "KPOWERS" || k == "ENGF" || k == "ENGS") {
+            std::string tg; rs >> tg; std::vector<uint32_t> v; unsigned x;
+            while (rs >> x) { v.push_back(x); if (rs.peek() == ',') rs.get(); }
+            (k == "KFEATS" ? out.kFeats : k == "KPOWERS" ? out.kPowers : k == "ENGF" ? out.engF : out.engS)[tg] = v;
         }
         else if (k == "INI") out.ini.push_back(rest);
         else if (k == "INIMISSING") out.iniMissing = true;
@@ -342,7 +362,16 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
         if (!real || !r) { g_dec[arg + ".autoLevel"] = "BLOCKED"; return true; }
         const size_t before = readLog().size();
         uintptr_t pend = makePending(newestClass(*c));
+        for (uint32_t f : c->engF) fakeAddFeat(P(pend), (uint16_t)f);
+        for (uint32_t sp : c->engS) fakePushU32(P(pend), sp);
         LevelUpOverrideEntry(P(c->stats), P(0x006B9770), P(pend), 1, P(makeChain(true)));
+        {   // the pending lists after the hook (feats +0x18 u16, spells-add +0x00 u32) as comma lists: decisions <tag>.feats / <tag>.spells
+            std::string f, sp;
+            for (uint32_t i = 0; i < at<uint32_t>(pend, Pd_Feats + 4); ++i) f += (i ? "," : "") + std::to_string(reinterpret_cast<uint16_t*>(uintptr_t(at<uint32_t>(pend, Pd_Feats)))[i]);
+            for (uint32_t i = 0; i < at<uint32_t>(pend, Pd_SpellsAdd + 4); ++i) sp += (i ? "," : "") + std::to_string(reinterpret_cast<uint32_t*>(uintptr_t(at<uint32_t>(pend, Pd_SpellsAdd)))[i]);
+            g_dec[arg + ".feats"] = f; g_dec[arg + ".spells"] = sp;
+            g_dec[arg + ".carry"] = readLog().substr(before).find("CARRY tag=") != std::string::npos ? "1" : "0";
+        }
         { const uint32_t nF = at<uint32_t>(pend, Pd_Feats + 4); g_dec[arg + ".pending"] = nF > 0 || at<uint16_t>(pend, Pd_Unspent) != 3 ? "REWRITTEN" : "VANILLA"; }   // log-independent: did the hook change the pending
         const std::string seg = readLog().substr(before);
         g_dec[arg + ".autoLevel"] = seg.find("APPLIED tag=") != std::string::npos ? "APPLIED" : seg.find("WOULD REWRITE") != std::string::npos ? "WOULD_REWRITE" :
@@ -407,7 +436,11 @@ static int runScenario(const char* datPath, const std::string& id) {
     initWorld("luo_scn");
     void* tabLoad = P(arenaAlloc(64)); void* tabSave = P(arenaAlloc(64));
     preloadGlobals(tabLoad, s.globals, s.nGlobals);
-    for (auto& c : s.cr) addCreature(c.tag, c.classes, c.xp, c.inParty, c.leader);
+    for (auto& c : s.cr) {
+        Cr& cr = addCreature(c.tag, c.classes, c.xp, c.inParty, c.leader);
+        setKnown(cr, s.kFeats[c.tag], s.kPowers[c.tag]);
+        cr.engF = s.engF[c.tag]; cr.engS = s.engS[c.tag];
+    }
     for (auto& c : g_cr) if (c.leader) g_leader = &c;
     if (!g_leader) for (auto& c : g_cr) if (c.inParty) { g_leader = &c; break; }
     std::vector<std::string> ini = s.ini;
@@ -493,8 +526,10 @@ static int runUnit(const char* table) {
         uint8_t ids[2] = {2, 5}, lv[2] = {3, 1};
         levelNow(ids, lv, 2, pr, 5, true, 0, &rec, &rl);
         Pend base{}; base.cls = 5; base.unspent = 3;
-        Result r = computeRewrite(rec, base, 0);
-        CHECK(d.ok && !strcmp(r.status, "rewrite") && samePend(d.pd, r.p), "pending after APPLIED != computeRewrite (status %s)", r.status);
+        KnownSet ks0; CarryInfo ci0;   // an empty creature: the early conversion (REBASE) runs the carry-over rule
+        Result r = computeCarry(rec, pr, rl, 5, base, &ks0, true, 0, &ci0);
+        CHECK(d.ok && !strcmp(r.status, "rewrite") && !strcmp(ci0.kind, "carry") && samePend(d.pd, r.p), "pending after APPLIED != computeCarry (status %s kind %s)", r.status, ci0.kind);
+        CHECK(logHas("CARRY tag=atton__melee_dual_light_early key=5 cl=9 owed=") && logHas("CARRYREAD tag=atton__melee_dual_light_early key=5 feats=0 powers=0 kind=carry"), "CARRY/CARRYREAD lines:\n%s", readLog().c_str());
         clearLog();
         LevelUpOverrideEntry(P(rebase.stats), P(0x006B9770), P(pd), 1, P(makeChain(true)));
         CHECK(logHas("ALREADY (replay)") && !logHas("APPLIED"), "replay:\n%s", readLog().c_str());
@@ -512,6 +547,47 @@ static int runUnit(const char* table) {
     devIni("rewrite", 1);
     { Cr& h7 = addCreature("atton", {{2, 7}}, 28000, true, false); fire(h7, true, &pd);
       CHECK(logHas("decision=HOLD_MIDLOOP") && !logHas("APPLIED"), "HOLD mid-loop is vanilla:\n%s", readLog().c_str()); }
+
+    // 2b. carry-over: on-time (no CARRY line), unreadable feat list (skipped), unreadable power list (powers plain), old table (carry disabled, one line)
+    g_ctx = "carry";
+    {
+        devIni("rewrite", 1);
+        Cr& ontime = addCreature("atton", {{2, 3}}, 28000, true, false);   // Scoundrel 3: the next record (char level 4) is on time, nothing owed
+        fire(ontime, true, &pd);
+        CHECK(logHas("DECIDE tag=atton preset=atton__melee_dual_light_early key=4 decision=PATH") && logHas(" DRY ") && !logHas("CARRY tag=") && logHas("CARRYREAD tag=atton__melee_dual_light_early key=4 feats=0 powers=0 kind=ontime"),
+              "on-time: no CARRY line, CARRYREAD only in verbose:\n%s", readLog().c_str());
+        Cr& badF = addCreature("atton", {{2, 3}, {5, 1}}, 28000, true, false);
+        at<uint32_t>(badF.stats, St_FeatList + 4) = 500;   // over the read cap = unreadable
+        devIni("rewrite", 1);
+        fire(badF, true, &pd);
+        CHECK(logHas("CARRY tag=atton__melee_dual_light_early key=5 skipped=skipped") && logHas("CARRYREAD tag=atton__melee_dual_light_early key=5 feats=UNREADABLE:0") && logHas("APPLIED"), "feats unreadable:\n%s", readLog().c_str());
+        Cr& badP = addCreature("atton", {{2, 3}, {5, 1}}, 28000, true, false);
+        { uintptr_t big = arenaAlloc(500 * 4);   // a readable array over the per-class cap: unreadable all the same
+          at<uint32_t>(badP.stats, 0x90 + 1 * 0x28) = (uint32_t)big; at<uint32_t>(badP.stats, 0x90 + 1 * 0x28 + 4) = 500; }   // literal offsets (see setKnown)
+        devIni("rewrite", 1);
+        fire(badP, true, &pd);
+        CHECK(logHas(" pk=0") && logHas("powers=UNREADABLE:0"), "powers unreadable:\n%s", readLog().c_str());
+        // old table (no rule sections): carry-over off with ONE log line at the table load, no per-call CARRY line, plain DRY
+        std::string t = fileText(table);
+        const size_t a = t.find("\n[featrules]") + 1, b = t.find("\n[atton__live]") + 1;
+        CHECK(a != std::string::npos && b != std::string::npos && a < b, "table has the rule sections before the first preset body");
+        std::ofstream("old_paths.ini", std::ios::binary) << t.substr(0, a) << t.substr(b);
+        writeIni({"mode=rewrite", "verbose=1", "apply=1", "preset.atton=" + P_, "hold.atton=1", "instant.atton=0"}, "old_paths.ini");
+        clearLog();
+        fire(rebase, true, &pd);
+        CHECK(logCount("^CARRY disabled") == 1 && !logHas("CARRY tag=") && !logHas("CARRYREAD") && logHas("APPLIED tag=atton__melee_dual_light_early key=5 ok=1"), "old table:\n%s", readLog().c_str());
+        { PendDump d; readPend(pd, NumSkills, &d);
+          const Preset* pr = findPreset(P_.c_str()); const Rec* rec = nullptr; int rl = -1;
+          uint8_t ids[2] = {2, 5}, lv[2] = {3, 1};
+          levelNow(ids, lv, 2, pr, 5, true, 0, &rec, &rl);
+          Pend base{}; base.cls = 5; base.unspent = 3;
+          Result plain = computeRewrite(rec, base, 0);
+          CHECK(d.ok && samePend(d.pd, plain.p), "old table: the applied pending is the plain computeRewrite"); }
+        writeIni({"mode=rewrite", "verbose=1", "apply=1", "preset.atton=" + P_, "hold.atton=1", "instant.atton=0"}, table);   // back to the real table
+        clearLog();
+        fire(rebase, true, &pd);
+        CHECK(!logHas("CARRY disabled") && logHas("CARRY tag="), "real table again:\n%s", readLog().c_str());
+    }
 
     // 3. LUO_G removal safety
     g_ctx = "luog";

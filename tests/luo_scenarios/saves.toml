@@ -24,6 +24,8 @@
 #   xp           = total experience; missing = keep
 #   in_party     = true | false (active party member); missing = keep
 #   leader       = true -> this creature is the party leader
+#   feats / powers = [ids] the creature's KNOWN feats / powers (carry-over input; M3 offline only - the forge cannot set them: scenarios using these are "offline-only")
+#   engine_feats / engine_powers = [ids] what the engine's own auto level-up puts in the pending list (class-granted feats, engine picks; M3 offline only)
 #
 #   [scenario.<id>.config]               game-dir ini state (M2) / fake ini (M3)
 #   mode, apply, verbose                 levelup_override.ini keys (missing = keep; 1.0.0 DLL defaults rewrite / apply 1 / verbose 0;
@@ -232,3 +234,44 @@ companions = { atton = "atton__melee_dual_light_early|instant=0|hold=1|pause=3" 
 [scenario.S13_pause_other_jedi.expect]
 absent = ['^HOLD tag=atton ', '^BANKED tag=atton ']
 decisions = { "atton.canLevelUp" = "PASS", "atton.autoLevel" = "SKIP" }
+
+# ---- carry-over (0.4.0): early conversion keeps legal picks; M3 offline only (the forge cannot set known feats/powers) ----
+[scenario.S14_atton_pause3_converted]
+title = "Atton converted early (Scoundrel 3 + Sentinel 5, Pause at 3) at Sentinel 6: planned Advanced Two-Weapon Fighting needs Two-Weapon Fighting, which the Scoundrel record 5 would have given: TWF (3) is pulled first"
+source = "Game2"
+status = "offline-only"
+[scenario.S14_atton_pause3_converted.save]
+[[scenario.S14_atton_pause3_converted.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 3], ["JediSentinel", 5]]
+xp = 36000
+in_party = true
+engine_feats = [99, 213]
+[scenario.S14_atton_pause3_converted.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_dark_early|instant=0|hold=1|pause=3" }
+[scenario.S14_atton_pause3_converted.expect]
+events = ['^DECIDE tag=atton preset=atton__melee_dual_dark_early key=9 decision=REBASE rec=13', '^CARRY tag=atton__melee_dual_dark_early key=9 cl=13 owed=3/6 picks=1/1 fb=0/0 unfilled=0/0 prereq_first=1/0 pk=1', '^APPLIED tag=atton__melee_dual_dark_early key=9 ok=1']
+absent = ['APPLY ABORTED', 'CARRY disabled']
+decisions = { "atton.canLevelUp" = "PASS", "atton.autoLevel" = "APPLIED", "atton.carry" = "1", "atton.feats" = "99,213,3", "atton.spells" = "16" }
+
+[scenario.S15_atton_minlevel_engine_pick]
+title = "Atton converted early (Scoundrel 3 + Sentinel 1) at Sentinel 2: the planned power (34) is below its minimum level and nothing owed is legal: the slot keeps the engine's own pick (77)"
+source = "Game2"
+status = "offline-only"
+[scenario.S15_atton_minlevel_engine_pick.save]
+[[scenario.S15_atton_minlevel_engine_pick.save.creature]]
+tag = "atton"
+classes = [["Scoundrel", 3], ["JediSentinel", 1]]
+xp = 10000
+in_party = true
+powers = [8, 43]
+engine_feats = [116, 212]
+engine_powers = [77]
+[scenario.S15_atton_minlevel_engine_pick.config]
+playthrough_guid = "save"
+companions = { atton = "atton__melee_dual_dark_early|instant=0|hold=1|pause=3" }
+[scenario.S15_atton_minlevel_engine_pick.expect]
+events = ['^CARRY tag=atton__melee_dual_dark_early key=5 cl=9 owed=2/0 picks=0/0 fb=0/1 unfilled=0/1 prereq_first=0/0 pk=1', '^APPLIED tag=atton__melee_dual_dark_early key=5 ok=1']
+absent = ['APPLY ABORTED']
+decisions = { "atton.autoLevel" = "APPLIED", "atton.carry" = "1", "atton.feats" = "116,212", "atton.spells" = "77" }

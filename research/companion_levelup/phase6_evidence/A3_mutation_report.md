@@ -89,3 +89,5 @@ Gates per mutation (scratch tree): options_parity.py, wizard_parity.py, parity.p
 | WZ03 | WizardLogic.h | KILLED | wizard_parity.py | wizard: a Pick answer does not pin the item |
 | WZ04 | WizardLogic.h | KILLED | options_parity.py | wizard: '-' answers selectable |
 | WZ05 | WizardLogic.h | KILLED | wizard_parity.py | wizard: back() at depth 0 |
+
+> Update 2026-10-03 (carry-over port): mutate.py now has 102 mutations (CO01-CO20 added), 102 killed (100 %), 634 s with --jobs 6. The table above predates CO01-CO20.

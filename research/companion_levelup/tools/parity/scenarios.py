@@ -81,6 +81,9 @@ def scenario_dat(sid, sc):
         classes = ",".join("%d:%d" % (CLASS_IDS[n], lv) for n, lv in c.get("classes", [])) or "2:7"   # missing classes = keep: a stand-in Scoundrel 7
         L.append("CREATURE %s %s %d %d %d" % (c["tag"], classes, c.get("xp", 0), 1 if c.get("in_party", True) else 0, 1 if c.get("leader") else 0))
         tags.append(c)
+        for key, verb in (("feats", "KFEATS"), ("powers", "KPOWERS"), ("engine_feats", "ENGF"), ("engine_powers", "ENGS")):
+            if c.get(key):   # carry-over: the creature's known feats/powers and the engine's own picks in the auto level-up's pending list (offline only)
+                L.append("%s %s %s" % (verb, c["tag"], ",".join(map(str, c[key]))))
     L.append("INI mode=%s" % cfg.get("mode", "rewrite"))
     L.append("INI apply=%s" % cfg.get("apply", 1))
     L.append("INI verbose=%s" % cfg.get("verbose", 1))

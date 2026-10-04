@@ -106,6 +106,7 @@ GRAMMAR = [
     ("PLAYTHROUGH", r"PLAYTHROUGH (loaded|missing|write g([0-9a-f]+) tag=(\S+) ok=(\d+))", "cpp:1071/1114"),
     ("TABLE_ERROR", r"TABLE ERROR", "cpp:522"),
     ("TABLE", r"TABLE (loaded|warning)", "cpp:519"),
+    ("CARRY_DISABLED", r"CARRY disabled: table has no \[featrules\]/\[powerrules\] sections", "cpp:reloadTable (carry-over, table without rule sections)"),
     ("UI_CTOR", r"UI ctor panel=([0-9a-f]+) created=(\d+)/(\d+) fallbackScale=(\d+)", "ui.h:122"),
     ("UI_PAGE_BACK", r"UI page back(\d+) fill=(\S+) ok=(\d+) alpha ok=(\d+)", "ui.h:138"),
     ("UI_CREATE", r"UI create panel=([0-9a-f]+) n=(\d+) appended=(\d+) textobj=([0-9a-f]+)", "ui.h:146"),
@@ -131,6 +132,8 @@ GRAMMAR = [
     # indented (inside a call dump)
     ("DECIDE", r"\s+DECIDE tag=(\S+) preset=(\S+) key=(-?\d+) decision=(\S+) rec=(\S+)", "cpp:1274"),
     ("DRY", r"\s+DRY tag=(\S+) key=(-?\d+) status=(\S+)", "cpp:1278/formatDry"),
+    ("CARRYREAD", r"\s+CARRYREAD tag=(\S+) key=(-?\d+) feats=(\S+) powers=(\S+) kind=(\S+)", "cpp:onLevelUp (verbose=1; carry-over read of the creature's known feats/powers)"),
+    ("CARRY", r"\s+CARRY tag=(\S+) key=(-?\d+) (?:cl=(\d+) owed=(\d+)/(\d+) picks=(\d+)/(\d+) fb=(\d+)/(\d+) unfilled=(\d+)/(\d+) prereq_first=(\d+)/(\d+) pk=([01])|skipped=(\S+))", "cpp:formatCarry (carry-mode level-ups only)"),
     ("SKIP_MANUAL", r"\s+SKIP manual (\S+) key=(-?\d+) flow=(\S+)", "cpp:1287"),
     ("SKIP", r"\s+SKIP (.*)", "cpp:1279/1291"),
     ("ALREADY", r"\s+ALREADY \(replay\) (\S+) key=(-?\d+)", "cpp:1289"),
@@ -142,7 +145,7 @@ GRAMMAR = [
     ("DETAIL", r"\s+(?:pend|after)[.:]|\s+stats\.", "cpp:722-760,1243-1259 (verbose dumps)"),
 ]
 GRAMMAR_RE = [(k, re.compile(r"^(?:" + rx + r")"), src) for k, rx, src in GRAMMAR]
-INDENTED = {"DECIDE", "DRY", "SKIP_MANUAL", "SKIP", "ALREADY", "WOULD_REWRITE", "APPLIED", "APPLY_ABORTED", "PRESET_MISSING",
+INDENTED = {"DECIDE", "DRY", "CARRY", "CARRYREAD", "SKIP_MANUAL", "SKIP", "ALREADY", "WOULD_REWRITE", "APPLIED", "APPLY_ABORTED", "PRESET_MISSING",
             "PENDING_UNREADABLE", "DETAIL"}
 ALL_KINDS = [k for k, _, _ in GRAMMAR] + ["CALL"]
 CRC_RE = re.compile(r"crc32=([0-9a-f]{8})")

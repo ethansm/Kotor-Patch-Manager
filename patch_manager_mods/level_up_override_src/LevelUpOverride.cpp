@@ -10,6 +10,7 @@
 // 0.3.0-b M3 save binding (playthrough GUID in 32 save-persisted Boolean globals, levelup_playthroughs.ini, 3 hooks, ptApply/ptRemove API);
 // 0.3.0 M4 character-screen Configure button + options page + R11 status line / banked message (LevelUpUi.h, OptionsLogic.h, WizardLogic.h = Item type, _shared/GuiKit.h);
 // 0.3.1 per-companion "Pause at level N" (pause.<tag>= / |pause=N; levelNow pauseAt: bank every level above N for the hold class; Bank button cycles N).
+// carry-over (table format v3, [featrules]/[powerrules]): an early-converted (REBASE) creature gets LEGAL picks, see computeCarry; powers need the known-power read (St_ClassSpells).
 // 1.0.0 cleanup: mode=rewrite is the default, verbose=0 default, dev probes removed, legacy tags= / per-tag dev keys only with dev=1, banner logs the DLL crc32.
 // Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
@@ -87,6 +88,12 @@ constexpr int Rules_SkillCount = 0x123;
 constexpr int St_Creature = 0x24, St_FeatList = 0x00, St_FeatList2 = 0x18, St_XP = 0x68, St_ClassCount = 0x8D,
               St_ClassId = 0xAB, St_ClassLevel = 0xAC, St_ClassNeg = 0xAD, St_ClassStride = 0x28, St_Unspent = 0x170,
               St_SkillRanks = 0x174;
+// Known powers (carry-over, doc 08 / CO_carryover_design.md): class entry i keeps its known power ids as an engine array {uint32* data, int count, int cap}
+// at stats + 0x90 + i*0x28 (the class id is at +0x1B of the same entry = St_ClassId). Evidence (swkotor2.exe 6A522E71, vanilla): AddKnownSpell 0x6B86A0
+// does `lea ecx,[stats + classPos*0x28 + 0x90]; call 0x6A4030(level 0, spellId)`, which de-duplicates through 0x4142E0 (reads [ecx] data, [ecx+4] count,
+// dword compare) and appends through 0x83EA60 (the push helper this mod uses as PushU32 on the pending spells-add array); LevelUp 0x6B9870 calls
+// AddKnownSpell for every pending spells-add entry (0x6B9CB5).
+constexpr int St_ClassSpells = 0x90;
 constexpr int Cr_Tag = 0x18;                       // CExoString {char*, len}
 constexpr int Pd_SpellsAdd = 0x00, Pd_SpellsRem = 0x0C, Pd_Feats = 0x18, Pd_Deltas = 0x24, Pd_Unspent = 0x28,
               Pd_Ability = 0x2A, Pd_HP = 0x2B, Pd_Class = 0x2C, Pd_Force = 0x2D, Pd_Size = 0x30;
@@ -315,7 +322,7 @@ const char* presetIdOf(const TagCfg* t) {
     return g_cfg.presetId[t - g_cfg.tags];
 }
 
-// ---- runtime table v2 (levelup_paths.ini; format in gen_runtime_table.py docstring) ----------------------
+// ---- runtime table v3 (levelup_paths.ini; format in gen_runtime_table.py docstring; v3 = v2 + [featrules]/[powerrules]) ----------------------
 constexpr int NumSkills = 8, MaxLevel = 50, MaxPresets = 128, MaxList = 16, MaxGranted = 24, MaxClass = 256;
 constexpr size_t FileBufSize = 256 * 1024;
 struct Rec {
@@ -341,6 +348,15 @@ char g_tableErr[160] = "";
 int g_tableWarn = 0;
 char g_tableWarnIds[200] = "";
 char g_fileBuf[FileBufSize];
+
+// Carry-over rule data (table format v3: [featrules] / [powerrules]; twin: simulate_rewrite.py Rules). g_rules = the table has at least one of the sections;
+// without them (old v2 table) carry-over is off and computeCarry returns the plain rewrite.
+constexpr int MaxFeatId = 255, MaxPowerId = 319, MaxRuleClass = 15;
+struct FeatRule { bool present; uint8_t minChar, nReq, nOr; uint16_t req[2], orr[5]; uint16_t clsMask; };
+struct PowerRule { bool present; uint8_t nPre; uint32_t pre[4]; uint8_t minLvl[MaxRuleClass + 1]; };   // minLvl 0xFF = the class has no entry
+FeatRule g_fr[MaxFeatId + 1];
+PowerRule g_pr[MaxPowerId + 1];
+bool g_rules = false;
 
 // Parses "1,2,3" (may be empty) into out; false on a non-digit token or overflow.
 template <typename T> bool parseIds(char* s, T* out, int cap, int* n, uint32_t maxv) {
@@ -430,7 +446,10 @@ bool parseTable(const char* path) {
     fclose(f);
     if (!full) { snprintf(g_tableErr, sizeof g_tableErr, "%s larger than %u bytes", path, (unsigned)sizeof g_fileBuf - 1); return false; }
     g_fileBuf[len] = 0;
-    enum { None, ClassSkills, PresetIndex, Recommended, PresetSec } sec = None;
+    memset(g_fr, 0, sizeof g_fr);
+    memset(g_pr, 0, sizeof g_pr);
+    g_rules = false;
+    enum { None, ClassSkills, PresetIndex, Recommended, FeatRules, PowerRules, PresetSec } sec = None;
     Preset* cur = nullptr;
     int lineNo = 0;
     for (char* line = g_fileBuf; line;) {
@@ -447,6 +466,8 @@ bool parseTable(const char* path) {
             if (!strcmp(l, "classskills")) { sec = ClassSkills; continue; }
             if (!strcmp(l, "presets")) { sec = PresetIndex; continue; }
             if (!strcmp(l, "recommended")) { sec = Recommended; continue; }
+            if (!strcmp(l, "featrules")) { sec = FeatRules; g_rules = true; continue; }
+            if (!strcmp(l, "powerrules")) { sec = PowerRules; g_rules = true; continue; }
             cur = presetSlot(l, true);
             if (!cur) goto bad;
             sec = PresetSec;
@@ -489,6 +510,50 @@ bool parseTable(const char* path) {
             Preset* p = presetSlot(v, true);
             if (!p) goto bad;
             p->recommended = true;
+        } else if (sec == FeatRules) {
+            // f<id>=<mincharlevel>|<req feat ids ,>|<any-of feat ids ,>|<class ids that may pick it ,>
+            char* fl[4]; int nf = 0;
+            fl[nf++] = v;
+            for (char* p = v; *p; ++p) if (*p == '|') { *p = 0; if (nf == 4) goto bad; fl[nf++] = p + 1; }
+            uint16_t id[1]; int n, mc = 0; uint8_t cl[MaxRuleClass + 1];
+            if (nf != 4 || k[0] != 'f' || !parseIds(k + 1, id, 1, &n, MaxFeatId) || n != 1 || g_fr[id[0]].present || !parseInt(fl[0], 255, &mc)) goto bad;
+            FeatRule& fr = g_fr[id[0]];
+            int nc = 0;
+            if (!parseIds(fl[1], fr.req, 2, &n, 0xFFFF)) goto bad;
+            fr.nReq = static_cast<uint8_t>(n);
+            if (!parseIds(fl[2], fr.orr, 5, &n, 0xFFFF)) goto bad;
+            fr.nOr = static_cast<uint8_t>(n);
+            if (!parseIds(fl[3], cl, MaxRuleClass + 1, &nc, MaxRuleClass)) goto bad;
+            fr.clsMask = 0;
+            for (int i = 0; i < nc; ++i) fr.clsMask = static_cast<uint16_t>(fr.clsMask | (1u << cl[i]));
+            fr.minChar = static_cast<uint8_t>(mc);
+            fr.present = true;
+        } else if (sec == PowerRules) {
+            // p<id>=<prereq power ids ,>|<class>:<min character level ,>   (99 = never selectable, 0 = no minimum)
+            char* fl[2]; int nf = 0;
+            fl[nf++] = v;
+            for (char* p = v; *p; ++p) if (*p == '|') { *p = 0; if (nf == 2) goto bad; fl[nf++] = p + 1; }
+            uint16_t id[1]; int n;
+            if (nf != 2 || k[0] != 'p' || !parseIds(k + 1, id, 1, &n, MaxPowerId) || n != 1 || g_pr[id[0]].present) goto bad;
+            PowerRule& pr = g_pr[id[0]];
+            if (!parseIds(fl[0], pr.pre, 4, &n, 0xFFFFFF)) goto bad;
+            pr.nPre = static_cast<uint8_t>(n);
+            memset(pr.minLvl, 0xFF, sizeof pr.minLvl);
+            if (*fl[1]) {
+                for (char* p = fl[1];;) {
+                    char* comma = strchr(p, ',');
+                    if (comma) *comma = 0;
+                    char* colon = strchr(p, ':');
+                    if (!colon) goto bad;
+                    *colon = 0;
+                    uint8_t a[1], b[1]; int na, nb;
+                    if (!parseIds(p, a, 1, &na, MaxRuleClass) || na != 1 || !parseIds(colon + 1, b, 1, &nb, 255) || nb != 1) goto bad;
+                    pr.minLvl[a[0]] = b[0];
+                    if (!comma) break;
+                    p = comma + 1;
+                }
+            }
+            pr.present = true;
         } else if (sec == PresetSec) {
             if (!strcmp(k, "name")) { snprintf(cur->name, sizeof cur->name, "%s", v); continue; }
             if (k[0] != 'l') goto bad;
@@ -532,6 +597,7 @@ void reloadTable(bool force = false) {
             b.add(" %s=%s", tc.tag, tc.preset >= 0 ? g_presets[tc.preset].id : "UNRESOLVED");
         }
         logLine("TABLE loaded %s: %d presets, %d records;%s", g_cfg.table, g_nPresets, total, b.s);
+        if (!g_rules) logLine("CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off");
         if (g_tableWarn) logLine("TABLE warning: %d preset section(s) without an index row (hold_class 0):%s", g_tableWarn, g_tableWarnIds);
     } else {
         logLine("TABLE ERROR %s -> rewrite disabled", g_tableErr);
@@ -657,6 +723,166 @@ void formatDry(Buf& b, const char* tag, int key, const Result& r) {
     b.add("] deltas=[");
     for (int i = 0; i < NumSkills; ++i) b.add("%s%d", i ? "," : "", r.p.deltas[i]);
     b.add("] unspent=%d ability=%d", r.p.unspent, r.p.ability);
+}
+
+// ---- carry-over (twin: simulate_rewrite.py carry_rewrite; design: research/companion_levelup/phase6_evidence/CO_carryover_design.md) -------------
+// An early-converted creature (REBASE: the Jedi record applied below the character level it was designed for) skipped the base-class records in between, and
+// a player may have deviated on time. computeCarry fills the record's slots (slots = the record's own feat / power count) with LEGAL picks: the CURRENT
+// record's planned picks keep their slots; owed picks of records with a lower character level are taken only (a) when a planned pick is illegal only because
+// a prerequisite is missing and that prerequisite chain (depth <= 4, OR-lists: first legal alternative) ends in a legal pick, which is then taken first (the
+// planned pick waits) or (b) when no planned pick is legal for a slot. A slot with no legal pick keeps the ENGINE's own pick for that slot (pending entries that
+// are neither granted nor chosen; they join the kept prefix, nKeptFeats/nKeptSpells), else stays empty. Legal = rule row present, class may pick it, min
+// character level <= key, prerequisites known (powers: every prerequisite; feats: all req + one of the any-of list). Stateless: recomputed from the creature
+// and the table at every level-up. On time (key == record char level and nothing owed from earlier records) the result is exactly computeRewrite.
+constexpr int MaxKnown = 512, MaxPlan = 256, MaxPicks = MaxList;
+bool samePend(const Pend& a, const Pend& b);   // below
+struct KnownSet {
+    int nf = 0, np = 0;
+    uint16_t f[MaxKnown]; uint32_t p[MaxKnown];
+    bool hasF(uint32_t v) const { return has(f, nf, v); }
+    bool hasP(uint32_t v) const { return isEngineGrantPower(v) || has(p, np, v); }   // the engine-granted powers count as known (kept on every rewrite)
+    bool addF(uint32_t v) { if (nf >= MaxKnown) return false; f[nf++] = static_cast<uint16_t>(v); return true; }
+    bool addP(uint32_t v) { if (np >= MaxKnown) return false; p[np++] = v; return true; }
+};
+enum class CSt { Ok, Known, Level, Class, Prereq, NoRule };
+CSt featState(uint32_t id, int cls, int key, const KnownSet& k, uint32_t* miss, int* nMiss) {
+    *nMiss = 0;
+    if (k.hasF(id)) return CSt::Known;
+    if (id > static_cast<uint32_t>(MaxFeatId) || !g_fr[id].present) return CSt::NoRule;
+    const FeatRule& r = g_fr[id];
+    if (cls < 0 || cls > MaxRuleClass || !((r.clsMask >> cls) & 1)) return CSt::Class;
+    if (r.minChar > key) return CSt::Level;
+    for (int i = 0; i < r.nReq; ++i) if (!k.hasF(r.req[i])) miss[(*nMiss)++] = r.req[i];
+    bool any = false;
+    for (int i = 0; i < r.nOr; ++i) if (k.hasF(r.orr[i])) any = true;
+    if (r.nOr && !any) for (int i = 0; i < r.nOr; ++i) miss[(*nMiss)++] = r.orr[i];
+    return *nMiss ? CSt::Prereq : CSt::Ok;
+}
+CSt powerState(uint32_t id, int cls, int key, const KnownSet& k, uint32_t* miss, int* nMiss) {
+    *nMiss = 0;
+    if (k.hasP(id)) return CSt::Known;
+    if (id > static_cast<uint32_t>(MaxPowerId) || !g_pr[id].present) return CSt::NoRule;
+    const PowerRule& r = g_pr[id];
+    int mc = cls >= 0 && cls <= MaxRuleClass ? r.minLvl[cls] : 0xFF;
+    if (mc == 0xFF) mc = isJediClass(cls) ? 99 : 0;   // a Jedi class without an entry: never selectable; any other class: no gate
+    if (mc > key) return CSt::Level;
+    for (int i = 0; i < r.nPre; ++i) if (!k.hasP(r.pre[i])) miss[(*nMiss)++] = r.pre[i];
+    return *nMiss ? CSt::Prereq : CSt::Ok;
+}
+// First candidate that is legal now, or whose missing prerequisite chain ends in a legal id (returned instead; *viaPrereq). -1 = none.
+int carryPick(bool isFeat, const uint32_t* cand, int n, int cls, int key, const KnownSet& k, int depth, bool* viaPrereq) {
+    for (int i = 0; i < n; ++i) {
+        uint32_t miss[8]; int nm = 0;
+        const CSt st = isFeat ? featState(cand[i], cls, key, k, miss, &nm) : powerState(cand[i], cls, key, k, miss, &nm);
+        if (st == CSt::Known) continue;
+        if (st == CSt::Ok) { *viaPrereq = depth > 0; return static_cast<int>(cand[i]); }
+        if (st == CSt::Prereq && depth < 4 && nm) {
+            const int r = carryPick(isFeat, miss, nm, cls, key, k, depth + 1, viaPrereq);
+            if (r >= 0) return r;
+        }
+    }
+    return -1;
+}
+struct CarryInfo {
+    const char* kind = "n/a";   // n/a | norules | skipped | cap | ontime | negative-unspent | carry
+    int cl = 0; bool pk = false;
+    int owed[2] = {0, 0}, picks[2] = {0, 0}, fb[2] = {0, 0}, unfilled[2] = {0, 0}, prereqFirst[2] = {0, 0};
+};
+// owed ids of the records below char level cl (record order, then in-record order), minus known ids and ids already in `skip`; false on a plan overflow.
+bool collectOwed(const Preset* p, int cl, bool feats, const KnownSet& k, const uint32_t* skip, int nSkip, uint32_t* out, int* n) {
+    *n = 0;
+    for (int c = 0; c < cl && c <= MaxLevel; ++c) {
+        const Rec& r = p->lv[c];
+        if (!r.present) continue;
+        const int cnt = feats ? r.nFeats : r.nPowers;
+        for (int i = 0; i < cnt; ++i) {
+            const uint32_t id = feats ? r.feats[i] : r.powers[i];
+            if (feats ? k.hasF(id) : k.hasP(id)) continue;
+            if (has(out, *n, id) || has(skip, nSkip, id)) continue;
+            if (*n >= MaxPlan) return false;
+            out[(*n)++] = id;
+        }
+    }
+    return true;
+}
+// ks == nullptr: the creature's feat lists were unreadable (carry skipped). pkOk: ks->p holds the creature's known powers (false: powers stay as computeRewrite made them).
+Result computeCarry(const Rec* r, const Preset* p, int cl, int key, const Pend& in, const KnownSet* ks, bool pkOk, uint8_t csExtra, CarryInfo* ci) {
+    Result res = computeRewrite(r, in, csExtra);
+    *ci = CarryInfo{};
+    if (!r || r->cls != in.cls) return res;
+    if (!g_rules) { ci->kind = "norules"; return res; }
+    if (!ks || !p) { ci->kind = "skipped"; return res; }
+    ci->cl = cl; ci->pk = pkOk;
+    KnownSet k = *ks;
+    uint16_t keptF[MaxPend]; uint32_t keptP[MaxPend]; int nKeptF = 0, nKeptP = 0;
+    for (int i = 0; i < in.nFeats; ++i) if (has(r->granted, r->nGranted, in.feats[i])) { keptF[nKeptF++] = in.feats[i]; if (!k.addF(in.feats[i])) { ci->kind = "cap"; return res; } }
+    for (int i = 0; i < in.nSpells; ++i) if (isEngineGrantPower(in.spells[i])) keptP[nKeptP++] = in.spells[i];
+    uint32_t owedF[MaxPlan], owedP[MaxPlan], ownF[MaxList] = {}, ownP[MaxList] = {}; int nOwedF = 0, nOwedP = 0, nOwnF = 0, nOwnP = 0;
+    if (!collectOwed(p, cl, true, k, nullptr, 0, owedF, &nOwedF) || (pkOk && !collectOwed(p, cl, false, k, nullptr, 0, owedP, &nOwedP))) { ci->kind = "cap"; return res; }
+    if (key == cl && !nOwedF && !nOwedP) { ci->kind = "ontime"; return res; }
+    if (!strcmp(res.status, "negative-unspent")) { ci->kind = "negative-unspent"; return res; }
+    // this record's own planned picks (not yet known, de-duplicated), then the owed ones of the skipped records without them
+    for (int i = 0; i < r->nFeats; ++i) if (!k.hasF(r->feats[i]) && !has(ownF, nOwnF, r->feats[i])) ownF[nOwnF++] = r->feats[i];
+    if (!collectOwed(p, cl, true, k, ownF, nOwnF, owedF, &nOwedF)) { ci->kind = "cap"; return res; }
+    Pend& o = res.p;
+    uint16_t pickF[MaxPicks], fbF[MaxPicks]; int nPickF = 0, nFbF = 0, preF = 0;
+    for (int slot = 0; slot < r->nFeats; ++slot) {
+        bool via = false;
+        int f = carryPick(true, ownF, nOwnF, r->cls, key, k, 0, &via);
+        if (f < 0) f = carryPick(true, owedF, nOwedF, r->cls, key, k, 0, &via);
+        if (f < 0) break;
+        pickF[nPickF++] = static_cast<uint16_t>(f); k.addF(f); preF += via;
+    }
+    const int noFillF = r->nFeats - nPickF;
+    for (int i = 0; i < in.nFeats && nFbF < noFillF; ++i) {
+        const uint16_t e = in.feats[i];
+        if (!has(r->granted, r->nGranted, e) && !has(pickF, nPickF, e) && !has(fbF, nFbF, e)) fbF[nFbF++] = e;
+    }
+    o.nFeats = 0;
+    for (int i = 0; i < nKeptF; ++i) o.feats[o.nFeats++] = keptF[i];
+    for (int i = 0; i < nFbF; ++i) o.feats[o.nFeats++] = fbF[i];
+    res.nKeptFeats = o.nFeats;
+    for (int i = 0; i < nPickF; ++i) o.feats[o.nFeats++] = pickF[i];
+    int nPickP = 0, nFbP = 0, preP = 0, noFillP = 0;
+    if (pkOk) {
+        uint32_t pickP[MaxPicks], fbP[MaxPicks];
+        for (int i = 0; i < r->nPowers; ++i) if (!k.hasP(r->powers[i]) && !has(ownP, nOwnP, r->powers[i])) ownP[nOwnP++] = r->powers[i];
+        if (!collectOwed(p, cl, false, k, ownP, nOwnP, owedP, &nOwedP)) { ci->kind = "cap"; return res; }
+        for (int slot = 0; slot < r->nPowers; ++slot) {
+            bool via = false;
+            int pw = carryPick(false, ownP, nOwnP, r->cls, key, k, 0, &via);
+            if (pw < 0) pw = carryPick(false, owedP, nOwedP, r->cls, key, k, 0, &via);
+            if (pw < 0) break;
+            pickP[nPickP++] = static_cast<uint32_t>(pw); k.addP(pw); preP += via;
+        }
+        noFillP = r->nPowers - nPickP;
+        for (int i = 0; i < in.nSpells && nFbP < noFillP; ++i) {
+            const uint32_t e = in.spells[i];
+            if (!isEngineGrantPower(e) && !has(pickP, nPickP, e) && !has(fbP, nFbP, e)) fbP[nFbP++] = e;
+        }
+        o.nSpells = 0;
+        for (int i = 0; i < nKeptP; ++i) o.spells[o.nSpells++] = keptP[i];
+        for (int i = 0; i < nFbP; ++i) o.spells[o.nSpells++] = fbP[i];
+        res.nKeptSpells = o.nSpells;
+        for (int i = 0; i < nPickP; ++i) o.spells[o.nSpells++] = pickP[i];
+    } else {
+        nOwedP = 0;
+    }
+    res.status = samePend(o, in) ? "already" : "rewrite";
+    ci->kind = "carry";
+    ci->owed[0] = nOwedF; ci->owed[1] = nOwedP;
+    ci->picks[0] = nPickF; ci->picks[1] = nPickP;
+    ci->fb[0] = nFbF; ci->fb[1] = nFbP;
+    ci->unfilled[0] = noFillF; ci->unfilled[1] = noFillP;
+    ci->prereqFirst[0] = preF; ci->prereqFirst[1] = preP;
+    return res;
+}
+void formatCarry(Buf& b, const char* tag, int key, const CarryInfo& c) {
+    if (!strcmp(c.kind, "carry"))
+        b.add("CARRY tag=%s key=%d cl=%d owed=%d/%d picks=%d/%d fb=%d/%d unfilled=%d/%d prereq_first=%d/%d pk=%d", tag, key, c.cl, c.owed[0], c.owed[1], c.picks[0], c.picks[1],
+              c.fb[0], c.fb[1], c.unfilled[0], c.unfilled[1], c.prereqFirst[0], c.prereqFirst[1], c.pk ? 1 : 0);
+    else
+        b.add("CARRY tag=%s key=%d skipped=%s", tag, key, c.kind);
 }
 
 // ---- dump helpers (every read SafeRead-guarded) -------------------------------------------------------------
@@ -973,6 +1199,36 @@ uint8_t classSkillMask(uintptr_t stats) {
         }
     }
     return mask;
+}
+
+// The creature's known feats (both lists, as HasFeat 0x6B83F0 checks) and known powers (one engine array per class entry, see St_ClassSpells) for carry-over.
+// Returns false when a feat list is unreadable or over its cap (carry skipped); *pkOk = every class entry's power array was read (false: powers stay plain).
+constexpr int MaxFeatListRead = 200, MaxPowersPerClass = 100;
+bool readKnown(uintptr_t stats, int nClass, KnownSet* ks, bool* pkOk) {
+    ks->nf = ks->np = 0;
+    *pkOk = false;
+    const int lists[2] = {St_FeatList, St_FeatList2};
+    for (int L = 0; L < 2; ++L) {
+        uint32_t fl = 0, fc = 0;
+        if (!readAt(S_FeatList, stats, lists[L], &fl) || !readAt(S_FeatList, stats, lists[L] + 4, &fc) || fc > static_cast<uint32_t>(MaxFeatListRead)) return false;
+        if (!fc) continue;
+        const uintptr_t a = fl;
+        if (!a || !probeRead(S_FeatList, reinterpret_cast<const void*>(a), fc * 2)) return false;
+        for (uint32_t i = 0; i < fc; ++i) ks->f[ks->nf++] = reinterpret_cast<const uint16_t*>(a)[i];
+    }
+    bool ok = nClass >= 1 && nClass <= 4;
+    for (int c = 0; ok && c < nClass; ++c) {
+        uint32_t pa = 0, pc = 0;
+        const int off = St_ClassSpells + c * St_ClassStride;
+        if (!readAt(S_Class, stats, off, &pa) || !readAt(S_Class, stats, off + 4, &pc) || pc > static_cast<uint32_t>(MaxPowersPerClass)) { ok = false; break; }
+        if (!pc) continue;
+        const uintptr_t a = pa;
+        if (!a || !probeRead(S_Class, reinterpret_cast<const void*>(a), pc * 4)) { ok = false; break; }
+        for (uint32_t i = 0; i < pc; ++i) ks->p[ks->np++] = reinterpret_cast<const uint32_t*>(a)[i];
+    }
+    *pkOk = ok;
+    if (!ok) ks->np = 0;
+    return true;
 }
 
 // ---- M3 save binding: playthrough GUID in 32 Boolean globals + levelup_playthroughs.ini ------------------------
@@ -1310,13 +1566,14 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
         const int lists[2] = {St_FeatList, St_FeatList2};
         for (int L = 0; L < 2; ++L) {
             Buf fb;
-            uintptr_t fl = 0; uint32_t fc = 0;
+            uint32_t fl = 0, fc = 0;   // engine pointer: 32 bits (readAt reads sizeof(T) bytes; a 64-bit uintptr_t would pull in the count on the x64 test host)
             fb.add("  stats.feats%s", L ? "2" : "");
             if (readAt(S_FeatList, stats, lists[L], &fl) && readAt(S_FeatList, stats, lists[L] + 4, &fc)) {
                 uint32_t take = fc > 200 ? 200 : fc;
                 fb.add(" count=%u [", fc);
-                if (take && fl && probeRead(S_FeatList, reinterpret_cast<const void*>(fl), take * 2))
-                    for (uint32_t i = 0; i < take; ++i) fb.add("%s%u", i ? "," : "", reinterpret_cast<const uint16_t*>(fl)[i]);
+                const uintptr_t fa = fl;
+                if (take && fa && probeRead(S_FeatList, reinterpret_cast<const void*>(fa), take * 2))
+                    for (uint32_t i = 0; i < take; ++i) fb.add("%s%u", i ? "," : "", reinterpret_cast<const uint16_t*>(fa)[i]);
                 fb.add("]");
             } else {
                 fb.add(" UNREADABLE");
@@ -1343,10 +1600,19 @@ void onLevelUp(uintptr_t stats, uintptr_t ret, uintptr_t pending, int addToList,
             logf("  DRY tag=%s key=%d status=skipped-unreadable (skills=%u feats=%u spells=%u)", lt, key, nSkills, dp.fCnt, dp.sCnt);
             if (rewriteTag) logf("  SKIP skipped-unreadable %s key=%d - vanilla", lt, key);
         } else {
-            Result res = computeRewrite(rec, pd, classSkillMask(stats));
+            KnownSet ks; bool haveKnown = false, pkOk = false;
+            if (g_rules && rec) haveKnown = readKnown(stats, nGot, &ks, &pkOk);
+            CarryInfo ci;
+            Result res = computeCarry(rec, preset, recLevel, key, pd, haveKnown ? &ks : nullptr, pkOk, classSkillMask(stats), &ci);
+            if (v && g_rules && rec) logf("  CARRYREAD tag=%s key=%d feats=%s%d powers=%s%d kind=%s", lt, key, haveKnown ? "" : "UNREADABLE:", haveKnown ? ks.nf : 0, pkOk ? "" : "UNREADABLE:", pkOk ? ks.np : 0, ci.kind);
             Buf d;
             formatDry(d, lt, key, res);
             logf("  %s", d.s);
+            if (!strcmp(ci.kind, "carry") || !strcmp(ci.kind, "skipped") || !strcmp(ci.kind, "cap")) {
+                Buf cb;
+                formatCarry(cb, lt, key, ci);
+                logf("  %s", cb.s);
+            }
             if (rewriteTag) {
                 switch (decideAct(viaAuto, res.status, ApplyEnabled, g_cfg.apply)) {
                 case LuAct::SkipManual:

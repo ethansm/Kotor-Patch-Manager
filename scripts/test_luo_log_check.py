@@ -107,6 +107,14 @@ class Synthetic(unittest.TestCase):
         self.assertEqual(status(r, 7), "FAIL")
         self.assertEqual(r["exit"], 1)
 
+    def test_carry_lines_parse(self):
+        r = run("synth_carry.txt")
+        self.assertEqual(r["unknown_lines"], 0)
+        self.assertEqual(r["kinds"].get("CARRY"), 2)
+        self.assertEqual(r["kinds"].get("CARRYREAD"), 1)
+        self.assertEqual(r["kinds"].get("CARRY_DISABLED"), 1)
+        self.assertEqual(r["exit"], 0)
+
     def test_replay_missing_fields(self):
         lines = [x for x in (FX / "synth_replay_ok.txt").read_text().splitlines() if "CONFIG source=playthrough" not in x]
         r = L.run(lines)

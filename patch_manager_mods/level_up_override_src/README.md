@@ -104,6 +104,14 @@ resets to the preset's default (0 in the ini). The value you typed is not rememb
 Presets with no Jedi class (Kreia, HK-47 and so on) have no pause range. Their control just shows
 `Bank for Jedi: On` or `Off`.
 
+**Early conversion keeps legal picks (carry-over).** When the companion becomes a Jedi earlier than the preset
+planned (a lower Pause), the Jedi record is applied at a lower character level than it was designed for, and the base-class
+picks in between were skipped. The mod then reads what the creature already knows and fills each feat/power slot with a
+legal pick: the Jedi record's own planned picks keep their slots; a skipped earlier pick is taken only when a planned pick is
+illegal because a prerequisite is missing (the prerequisite is taken first, the planned pick follows) or when no planned pick
+is legal for the slot. A slot with no legal pick keeps the engine's own pick. A level taken on time is unchanged. This needs the
+table format v3 (`[featrules]`/`[powerrules]`, shipped with the DLL); with an older table carry-over is off (one log line).
+
 ## Instant levels and banked levels
 
 - **Instant** (opt-in, off by default): the companion levels at once with the Auto path, with no level-up screen. It

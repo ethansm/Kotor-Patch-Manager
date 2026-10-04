@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline Python twin of the C++ dry-run rewrite (KOTOR II level-up override).
 
-C++ twins: parseTable / lookupRecord / computeRewrite / skillCost / formatDry.
+C++ twins: parseTable / lookupRecord / computeRewrite / computeCarry (carry_rewrite) / skillCost / formatDry / formatCarry.
 format_dry() output must be byte-identical to the C++ DRY log line.
 Run: python3 simulate_rewrite.py   (self-tests against runtime/levelup_paths.ini)
 """
@@ -22,13 +22,36 @@ def _ids(s, ln):
     return [int(x) for x in s.split(",")] if s else []
 
 
+class Rules:
+    """[featrules]/[powerrules] of table format v3 (twin of g_fr / g_pr). feat[id] = (minchar, req, orreq, class set); power[id] = (prereq, {cls: min char level})."""
+    def __init__(self):
+        self.feat, self.power = {}, {}
+
+
+MAX_FEAT_ID, MAX_POWER_ID, MAX_RULE_CLASS = 255, 319, 15
+
+
+def _rule_ids(s, cap, maxv):
+    v = _ids(s, 0)
+    if len(v) > cap or any(not 0 <= x <= maxv for x in v):
+        raise ValueError("rule id list")
+    return v
+
+
 def parse_table(text):
     cs, _presets, recs = parse_table_v2(text)
     return cs, recs
 
 
 def parse_table_v2(text):
+    cs, presets, recs, _rules = parse_table_v3(text)
+    return cs, presets, recs
+
+
+def parse_table_v3(text):
+    """-> (classskills, presets, records, Rules or None). Rules is None for an old (v2) table without [featrules]/[powerrules]: carry-over off."""
     cs, recs, presets, sect = {}, {}, {}, None
+    rules, seen_rules = Rules(), False
     for n, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith(";"):
@@ -36,7 +59,9 @@ def parse_table_v2(text):
         try:
             if line.startswith("[") and line.endswith("]"):
                 sect = line[1:-1].strip().lower()
-                if sect not in ("classskills", "presets", "recommended"):
+                if sect in ("featrules", "powerrules"):
+                    seen_rules = True
+                elif sect not in ("classskills", "presets", "recommended"):
                     recs.setdefault(sect, {})
                 continue
             if sect is None or "=" not in line:
@@ -54,6 +79,30 @@ def parse_table_v2(text):
                 presets[k] = Preset(f[0], f[1], f[2], f[3], f[4], int(f[5]), int(f[6]), f[7])
             elif sect == "recommended":
                 pass   # <tag>=<preset id>: UI default only
+            elif sect == "featrules":
+                # f<id>=<mincharlevel>|<req feat ids ,>|<any-of feat ids ,>|<class ids that may pick it ,>
+                f = v.split("|")
+                if len(f) != 4 or not k.startswith("f"):
+                    raise ValueError("need 4 featrule fields")
+                fid, mc = int(k[1:]), int(f[0])
+                if not 0 <= fid <= MAX_FEAT_ID or not 0 <= mc <= 255 or fid in rules.feat:
+                    raise ValueError("featrule id/min level")
+                rules.feat[fid] = (mc, _rule_ids(f[1], 2, 0xFFFF), _rule_ids(f[2], 5, 0xFFFF), set(_rule_ids(f[3], 16, MAX_RULE_CLASS)))
+            elif sect == "powerrules":
+                # p<id>=<prereq power ids ,>|<class:min character level ,>   (99 = never selectable)
+                f = v.split("|")
+                if len(f) != 2 or not k.startswith("p"):
+                    raise ValueError("need 2 powerrule fields")
+                pid = int(k[1:])
+                if not 0 <= pid <= MAX_POWER_ID or pid in rules.power:
+                    raise ValueError("powerrule id")
+                mins = {}
+                for x in (f[1].split(",") if f[1].strip() else []):
+                    c, m = x.split(":")
+                    if not 0 <= int(c) <= MAX_RULE_CLASS or not 0 <= int(m) <= 255:
+                        raise ValueError("powerrule class/min")
+                    mins[int(c)] = int(m)
+                rules.power[pid] = (_rule_ids(f[0], 4, 0xFFFFFF), mins)
             elif k == "name":
                 pass
             elif k.startswith("l"):
@@ -75,7 +124,7 @@ def parse_table_v2(text):
                 raise ValueError("unknown key")
         except ValueError as e:
             raise ValueError("line %d: %s: %r" % (n, e, raw))
-    return cs, presets, recs
+    return cs, presets, recs, (rules if seen_rules else None)
 
 
 def lookup_record(recs, tag, key_level):
@@ -123,6 +172,164 @@ def format_dry(tag, key_level, res):
 
 
 JEDI_CLASSES = (3, 4, 5, 11, 12, 13)   # Guardian, Consular, Sentinel, Weapon Master, Master, Watchman (classes.2da); twin of isJediClass in LevelUpOverride.cpp
+
+
+
+# ---- carry-over (0.4.0; C++ twin: computeCarry) --------------------------------------------------------------------------------------------
+# Early conversion (REBASE: the Jedi record applied below the character level it was designed for) skips the base-class records between the
+# conversion and the Jedi record, and a player may have deviated on time. The creature is read (feats, known powers) and the record's slots are
+# filled with legal picks: the CURRENT (Jedi) record's planned picks keep their slots; owed picks of skipped records (char level < the record's) are
+# taken only (a) when a planned pick is illegal only because a prerequisite is missing and that prerequisite chain ends in a legal pick (the
+# prerequisite is taken first, the planned pick waits) or (b) when no planned pick is legal for a slot. A slot with no legal pick keeps the
+# ENGINE's own pick for that slot (entries of the pending list that are neither granted nor chosen), else it stays empty. Stateless: everything is
+# recomputed from the creature and the table at every level-up. On time (key == record char level, nothing owed from earlier records) the result is
+# exactly compute_rewrite.
+NEVER = 99   # runtime min level of a Jedi class a power row has no entry for ("not selectable")
+
+
+def _feat_state(R, f, cls, key, known):
+    """-> ('ok'|'known'|'level'|'class'|'prereq'|'norule', missing prerequisite ids)."""
+    if f in known:
+        return "known", []
+    row = R.feat.get(f)
+    if row is None:
+        return "norule", []
+    mc, req, ors, sel = row
+    if cls not in sel:
+        return "class", []
+    if mc > key:
+        return "level", []
+    miss = [x for x in req if x not in known]
+    if ors and not any(x in known for x in ors):
+        miss += ors
+    return ("prereq", miss) if miss else ("ok", [])
+
+
+def _power_state(R, p, cls, key, known):
+    """known must already contain ENGINE_GRANT_POWERS."""
+    if p in known:
+        return "known", []
+    row = R.power.get(p)
+    if row is None:
+        return "norule", []
+    pre, mins = row
+    mc = mins.get(cls, NEVER if cls in JEDI_CLASSES else 0)
+    if mc > key:
+        return "level", []
+    miss = [x for x in pre if x not in known]
+    return ("prereq", miss) if miss else ("ok", [])
+
+
+def _pick(state_fn, cands, cls, key, known, depth=0, plan=()):
+    """First candidate that is legal now, or whose missing prerequisite chain (depth <= 4, OR-lists: first legal alternative) ends in a legal id,
+    which is returned instead. -> (id, why) with why 'plan' | 'prereq' | 'prereq_extra' (prerequisite not in the plan), or (None, 'none')."""
+    for e in cands:
+        if e in known:
+            continue
+        st, miss = state_fn(e, cls, key, known)
+        if st == "ok":
+            return e, "plan" if depth == 0 else ("prereq" if e in plan else "prereq_extra")
+        if st == "prereq" and depth < 4 and miss:
+            r, w = _pick(state_fn, miss, cls, key, known, depth + 1, plan)
+            if r is not None:
+                return r, w
+    return None, "none"
+
+
+def _owed(rec_lists, known, skip=()):
+    out = []
+    for lst in rec_lists:
+        for x in lst:
+            if x not in known and x not in out and x not in skip:
+                out.append(x)
+    return out
+
+
+def carry_rewrite(rec, cl, key, recs, pend, known_f, known_p, R, cs, cs_extra=0):
+    """Carry-over version of compute_rewrite (same result dict + 'info').
+    recs = {char level: Rec} of the preset; cl = char level of rec; key = character level being reached; known_f/known_p = ids the creature has
+    (None = unreadable: carry-over skipped for feats, or for powers only when just known_p is None); R = Rules or None (old table: off).
+    info: 'n/a' (no record / class mismatch), 'norules', 'skipped' (feats unreadable), 'ontime', 'carry'."""
+    base = compute_rewrite(rec, pend, cs, cs_extra)
+    if rec is None or rec.cls != pend["cls"]:
+        return dict(base, info="n/a")
+    if R is None:
+        return dict(base, info="norules")
+    if known_f is None:
+        return dict(base, info="skipped")
+    before = [r for c, r in sorted(recs.items()) if c < cl]
+    kept_f = [f for f in pend["feats"] if f in rec.granted]
+    kept_p = [s for s in pend["spells"] if s in ENGINE_GRANT_POWERS]
+    kf = set(known_f) | set(kept_f)
+    kp = (set(known_p) | set(kept_p) | ENGINE_GRANT_POWERS) if known_p is not None else None
+    owed_f0 = _owed([r.feats for r in before], kf)
+    owed_p0 = _owed([r.powers for r in before], kp) if kp is not None else []
+    if key == cl and not owed_f0 and not owed_p0:
+        return dict(base, info="ontime")
+    if base["status"] == "negative-unspent":
+        return dict(base, info="negative-unspent")
+    eng_f = [f for f in pend["feats"] if f not in rec.granted]      # the engine's own picks (pending entries that are not granted ones)
+    eng_p = [s for s in pend["spells"] if s not in ENGINE_GRANT_POWERS]
+    own_f = _owed([rec.feats], kf)
+    owed_f = _owed([r.feats for r in before], kf, own_f)
+    feats, why_f = [], []
+    plan_f = own_f + owed_f
+    ff = lambda e, c, k, kn: _feat_state(R, e, c, k, kn)
+    for _ in range(len(rec.feats)):
+        f, w = _pick(ff, own_f, rec.cls, key, kf, 0, plan_f)
+        if f is None:
+            f, w = _pick(ff, owed_f, rec.cls, key, kf, 0, plan_f)
+        if f is None:
+            break
+        feats.append(f); kf.add(f); why_f.append(w)
+    nofill_f = len(rec.feats) - len(feats)
+    fb_f = []
+    for e in eng_f:
+        if len(fb_f) < nofill_f and e not in feats and e not in fb_f:
+            fb_f.append(e)
+    if known_p is None:    # known powers unreadable: powers stay as the plain rewrite made them
+        spells, why_p, fb_p, nofill_p, owed_p = list(base["spells"]), [], [], 0, []
+        picks_p = []
+    else:
+        own_p = _owed([rec.powers], kp)
+        owed_p = _owed([r.powers for r in before], kp, own_p)
+        plan_p = own_p + owed_p
+        pf = lambda e, c, k, kn: _power_state(R, e, c, k, kn)
+        picks_p, why_p = [], []
+        for _ in range(len(rec.powers)):
+            p, w = _pick(pf, own_p, rec.cls, key, kp, 0, plan_p)
+            if p is None:
+                p, w = _pick(pf, owed_p, rec.cls, key, kp, 0, plan_p)
+            if p is None:
+                break
+            picks_p.append(p); kp.add(p); why_p.append(w)
+        nofill_p = len(rec.powers) - len(picks_p)
+        fb_p = []
+        for e in eng_p:
+            if len(fb_p) < nofill_p and e not in picks_p and e not in fb_p:
+                fb_p.append(e)
+        spells = kept_p + fb_p + picks_p
+    new = dict(base, feats=kept_f + fb_f + feats, spells=spells)
+    same = all(new[k] == pend[k] for k in ("feats", "spells", "deltas", "unspent", "ability"))
+    new["status"] = "already" if same else "rewrite"
+    new["info"] = "carry"
+    new["cl"] = cl
+    new["pk"] = known_p is not None
+    new["owed"] = (len(owed_f), len(owed_p))
+    new["picks"] = (len(feats), len(picks_p))
+    new["fb"] = (len(fb_f), len(fb_p))
+    new["unfilled"] = (nofill_f, nofill_p)
+    new["prereq_first"] = (sum(1 for w in why_f if w.startswith("prereq")), sum(1 for w in why_p if w.startswith("prereq")))
+    new["extra"] = (sum(1 for w in why_f if w == "prereq_extra"), sum(1 for w in why_p if w == "prereq_extra"))
+    new["blocked"] = (nofill_f if any(x not in kf for x in plan_f) else 0, nofill_p if known_p is not None and any(x not in kp for x in plan_p) else 0)
+    new["deferred"] = new["prereq_first"]
+    return new
+
+
+def format_carry(tag, key, res):
+    """The CARRY log line (carry-mode records only); byte-identical to the C++ formatCarry."""
+    return ("CARRY tag=%s key=%d cl=%d owed=%d/%d picks=%d/%d fb=%d/%d unfilled=%d/%d prereq_first=%d/%d pk=%d"
+            % ((tag, key, res["cl"]) + res["owed"] + res["picks"] + res["fb"] + res["unfilled"] + res["prereq_first"] + (1 if res["pk"] else 0,)))
 
 
 def level_now(classes, preset, key, hold, hold_class, pause_at=0):

@@ -120,6 +120,28 @@ m("WZ04", WIZ, r"\(ans\[i\]\[0\] == '-' && !ans\[i\]\[1\]\)\) return false;", "f
 m("WZ05", WIZ, r"if \(s\.depth <= 0\) return false;\n    --s\.depth;", "if (s.depth < 0) return false;\n    --s.depth;", "wizard: back() at depth 0")
 
 
+# ---- carry-over (computeCarry / rule parser / known-power read) ------------------------------------------------------------------------------
+m("CO01", CPP, r"if \(r\.minChar > key\) return CSt::Level;", "if (r.minChar >= key) return CSt::Level;", "carry: feat min character level off by one")
+m("CO02", CPP, r"if \(mc > key\) return CSt::Level;", "if (mc >= key) return CSt::Level;", "carry: power min character level off by one")
+m("CO03", CPP, r"if \(r\.nOr && !any\) for", "if (false) for", "carry: the any-of (OR) prerequisite list is ignored")
+m("CO04", CPP, r"if \(key == cl && !nOwedF && !nOwedP\) \{ ci->kind = \"ontime\"", "if (false && !nOwedF && !nOwedP) { ci->kind = \"ontime\"", "carry: the on-time gate is skipped")
+m("CO05", CPP, r"if \(st == CSt::Prereq && depth < 4 && nm\) \{", "if (false && st == CSt::Prereq && depth < 4 && nm) {", "carry: no prerequisite pull")
+m("CO06", CPP, r"if \(st == CSt::Prereq && depth < 4 && nm\) \{", "if (st == CSt::Prereq && depth < 5 && nm) {", "carry: prerequisite chain depth cap 4 -> 5")
+m("CO07", CPP, r"int f = carryPick\(true, ownF, nOwnF,", "int f = carryPick(true, owedF, nOwedF,", "carry: owed picks first, the current record's picks never planned (Jedi-first tie-break lost)")
+m("CO08", CPP, r"for \(int i = 0; i < in\.nFeats && nFbF < noFillF; \+\+i\) \{", "for (int i = 0; i < in.nFeats && nFbF < 0; ++i) {", "carry: no engine-pick fallback for an unfilled feat slot")
+m("CO09", CPP, r"for \(int i = 0; i < in\.nSpells && nFbP < noFillP; \+\+i\) \{", "for (int i = 0; i < in.nSpells && nFbP < 0; ++i) {", "carry: no engine-pick fallback for an unfilled power slot")
+m("CO10", CPP, r"constexpr int St_ClassSpells = 0x90;", "constexpr int St_ClassSpells = 0x8C;", "known powers read from the wrong struct offset")
+m("CO11", CPP, r"return isEngineGrantPower\(v\) \|\| has\(p, np, v\);", "return has(p, np, v);", "carry: engine-granted powers no longer count as known")
+m("CO12", CPP, r"if \(cls < 0 \|\| cls > MaxRuleClass \|\| !\(\(r\.clsMask >> cls\) & 1\)\) return CSt::Class;", "if (cls < 0 || cls > MaxRuleClass) return CSt::Class;", "carry: the class may-pick mask is ignored")
+m("CO13", CPP, r"pr\.minLvl\[a\[0\]\] = b\[0\];", "pr.minLvl[a[0]] = 0;", "parser: [powerrules] minimum levels dropped")
+m("CO14", CPP, r"res\.status = samePend\(o, in\) \? \"already\" : \"rewrite\";", "res.status = \"rewrite\";", "carry: a replayed carry result is not 'already'")
+m("CO15", CPP, r"if \(!strcmp\(res\.status, \"negative-unspent\"\)\) \{ ci->kind = \"negative-unspent\"; return res; \}", "", "carry: negative-unspent no longer returns the untouched pending")
+m("CO16", CPP, r"if \(!g_rules\) logLine\(\"CARRY disabled", "if (g_rules) logLine(\"CARRY disabled", "old table: the 'carry-over off' line inverted")
+m("CO17", CPP, r"if \(!ks \|\| !p\) \{ ci->kind = \"skipped\"; return res; \}", "if (!p) { ci->kind = \"skipped\"; return res; }", "carry: unreadable feat lists no longer skip carry-over")
+m("CO18", CPP, r"\|\| !readAt\(S_Class, stats, off \+ 4, &pc\) \|\| pc > static_cast<uint32_t>\(MaxPowersPerClass\)\) \{ ok = false; break; \}", "|| !readAt(S_Class, stats, off + 4, &pc)) { ok = false; break; }", "known powers: the per-class cap check dropped")
+m("CO19", CPP, r"if \(!g_rules\) \{ ci->kind = \"norules\"; return res; \}", "", "carry: runs without rule sections (old table)")
+m("CO20", CPP, r"for \(int i = 0; i < nFbF; \+\+i\) o\.feats\[o\.nFeats\+\+\] = fbF\[i\];\n    res\.nKeptFeats = o\.nFeats;", "res.nKeptFeats = o.nFeats;\n    for (int i = 0; i < nFbF; ++i) o.feats[o.nFeats++] = fbF[i];", "carry: engine-pick fallback feats not part of the kept prefix")
+
 BY_ID = {x[0]: x for x in M}
 assert len(BY_ID) == len(M), "duplicate mutation id"
 
