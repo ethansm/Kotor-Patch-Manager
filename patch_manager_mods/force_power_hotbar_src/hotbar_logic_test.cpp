@@ -605,5 +605,51 @@ int main() {
     KT_CHECK_EQ(stanceKey(0xC), 0x413); KT_CHECK_EQ(stanceKey(0xD), 0x414); KT_CHECK_EQ(stanceKey(16), 0x415);
     KT_CHECK_EQ(stanceKey(0), 0); KT_CHECK_EQ(stanceKey(14), 0); KT_CHECK_EQ(stanceKey(-1), 0);
   }
+  { // target-mode cycle / badge / button state / tooltips
+    ActionRef it; it.kind = K_Item; it.id = 1; it.name = "medpac";
+    ActionRef sp; sp.kind = K_Spell; sp.id = 3; sp.target.mode = TM_LowHp; sp.target.thresholdPct = 30;
+    ActionRef em;
+    auto M = [](TargetMode m, int th = -1, int fb = -1) { TargetSpec t; t.mode = m; t.thresholdPct = th; t.fallback = fb; return t; };
+    auto step = [&](ActionRef a, TargetMode m, bool heal, bool selfOk) { a.target = M(m); return nextTargetMode(a, heal, selfOk); };
+    KT_CHECK_EQ(step(it, TM_Default, true, true).mode, TM_LowHp);
+    KT_CHECK_EQ(step(it, TM_LowHp, true, true).mode, TM_Self);
+    KT_CHECK_EQ(step(it, TM_Self, true, true).mode, TM_Default);
+    KT_CHECK_EQ(step(it, TM_Default, true, false).mode, TM_LowHp);
+    KT_CHECK_EQ(step(it, TM_LowHp, true, false).mode, TM_Default);
+    KT_CHECK_EQ(step(it, TM_Default, false, true).mode, TM_Self);
+    KT_CHECK_EQ(step(it, TM_Self, false, true).mode, TM_Default);
+    KT_CHECK_EQ(step(it, TM_Default, false, false).mode, TM_Default);
+    KT_CHECK_EQ(step(it, TM_LowHp, false, true).mode, TM_Self);      // odd non-healing LowHp -> Self
+    KT_CHECK_EQ(step(it, TM_LowHp, false, false).mode, TM_Default);
+    KT_CHECK_EQ(step(it, TM_Self, true, false).mode, TM_Default);    // stale Self with self disallowed
+    { ActionRef c = it; c.target = M(TM_LowHp, 25, 1); TargetSpec n = nextTargetMode(c, true, true);
+      KT_CHECK_EQ(n.mode, TM_Self); KT_CHECK_EQ(n.thresholdPct, -1); KT_CHECK_EQ(n.fallback, -1);
+      n = nextTargetMode(c, true, false); KT_CHECK_EQ(n.mode, TM_Default); KT_CHECK_EQ(n.thresholdPct, -1); KT_CHECK_EQ(n.fallback, -1);
+      KT_CHECK(dropsCustomSuffix(c.target)); KT_CHECK(dropsCustomSuffix(M(TM_LowHp, 25))); KT_CHECK(dropsCustomSuffix(M(TM_LowHp, -1, 0)));
+      KT_CHECK(!dropsCustomSuffix(M(TM_LowHp))); KT_CHECK(!dropsCustomSuffix(M(TM_Self))); }
+    { TargetSpec n = nextTargetMode(sp, true, true); KT_CHECK_EQ(n.mode, TM_LowHp); KT_CHECK_EQ(n.thresholdPct, 30); }   // non-item unchanged
+    { TargetSpec n = nextTargetMode(em, true, true); KT_CHECK_EQ(n.mode, TM_Default); }
+    KT_CHECK(std::strcmp(badgeFor(M(TM_LowHp)), "fph_tgt_lowhp") == 0);
+    KT_CHECK(std::strcmp(badgeFor(M(TM_Self)), "fph_tgt_self") == 0);
+    KT_CHECK(badgeFor(M(TM_Default)) == nullptr);
+    KT_CHECK_EQ(modeButtonState(em, true, true), MB_Hidden);
+    KT_CHECK_EQ(modeButtonState(sp, true, true), MB_DisabledItemsOnly);
+    KT_CHECK_EQ(modeButtonState(it, true, true), MB_Enabled);
+    KT_CHECK_EQ(modeButtonState(it, true, false), MB_Enabled);
+    KT_CHECK_EQ(modeButtonState(it, false, true), MB_Enabled);
+    KT_CHECK_EQ(modeButtonState(it, false, false), MB_DisabledCannotTarget);
+    KT_CHECK_EQ(modeTooltip(it, true, true).c_str(), "Target: Default (click: Lowest HP)");
+    { ActionRef a = it; a.target = M(TM_LowHp); KT_CHECK_EQ(modeTooltip(a, true, true).c_str(), "Target: Lowest HP (click: Self)");
+      KT_CHECK_EQ(modeTooltip(a, true, false).c_str(), "Target: Lowest HP (click: Default)");
+      a.target = M(TM_Self); KT_CHECK_EQ(modeTooltip(a, true, true).c_str(), "Target: Self (click: Default)"); }
+    KT_CHECK_EQ(modeTooltip(it, false, true).c_str(), "Target: Default (click: Self)");
+    KT_CHECK_EQ(modeTooltip(sp, true, true).c_str(), "Target modes: items only");
+    KT_CHECK_EQ(modeTooltip(it, false, false).c_str(), "Target: cannot target this item");
+    KT_CHECK_EQ(modeTooltip(em, true, true).c_str(), "");
+    KT_CHECK_EQ(slotTargetLine(M(TM_LowHp), 50).c_str(), "Target: Lowest HP (below 50%)");
+    KT_CHECK_EQ(slotTargetLine(M(TM_LowHp, 30), 30).c_str(), "Target: Lowest HP (below 30%)");
+    KT_CHECK_EQ(slotTargetLine(M(TM_Self), 50).c_str(), "Target: Self");
+    KT_CHECK_EQ(slotTargetLine(M(TM_Default), 50).c_str(), "");
+  }
   return kt::Report("hotbar_logic_test");
 }

@@ -383,4 +383,35 @@ inline int stanceKey(int stance) {
     switch (stance) { case 9: return 0x410; case 10: return 0x411; case 0xB: return 0x412; case 0xC: return 0x413; case 0xD: return 0x414; case 16: return 0x415; default: return 0; }
 }
 
+// Item target-mode cycle: Default -> LowHp (healing only) -> Self (if allowed) -> Default; non-items unchanged; result is a fresh spec (custom suffix dropped).
+inline TargetSpec nextTargetMode(const ActionRef& a, bool isHealing, bool selfAllowed) {
+    if (a.kind != K_Item) return a.target;
+    TargetSpec n;
+    if (a.target.mode < TM_LowHp && isHealing) n.mode = TM_LowHp;
+    else if (a.target.mode < TM_Self && selfAllowed) n.mode = TM_Self;
+    else n.mode = TM_Default;
+    return n;
+}
+inline bool dropsCustomSuffix(const TargetSpec& from) { return from.thresholdPct >= 0 || from.fallback >= 0; }
+inline const char* badgeFor(const TargetSpec& t) { return t.mode == TM_LowHp ? "fph_tgt_lowhp" : t.mode == TM_Self ? "fph_tgt_self" : nullptr; }
+enum ModeBtn { MB_Hidden, MB_Enabled, MB_DisabledItemsOnly, MB_DisabledCannotTarget };
+inline ModeBtn modeButtonState(const ActionRef& a, bool isHealing, bool selfAllowed) {
+    if (a.empty()) return MB_Hidden;
+    if (a.kind != K_Item) return MB_DisabledItemsOnly;
+    return (!isHealing && !selfAllowed) ? MB_DisabledCannotTarget : MB_Enabled;
+}
+inline const char* targetModeName(TargetMode m) { return m == TM_LowHp ? "Lowest HP" : m == TM_Self ? "Self" : "Default"; }
+inline std::string modeTooltip(const ActionRef& a, bool isHealing, bool selfAllowed) {
+    switch (modeButtonState(a, isHealing, selfAllowed)) {
+    case MB_Enabled: return std::string("Target: ") + targetModeName(a.target.mode) + " (click: " + targetModeName(nextTargetMode(a, isHealing, selfAllowed).mode) + ")";
+    case MB_DisabledItemsOnly: return "Target modes: items only";
+    case MB_DisabledCannotTarget: return "Target: cannot target this item";
+    default: return "";
+    }
+}
+inline std::string slotTargetLine(const TargetSpec& t, int effectiveThresholdPct) {
+    if (t.mode == TM_LowHp) return "Target: Lowest HP (below " + std::to_string(effectiveThresholdPct) + "%)";
+    return t.mode == TM_Self ? "Target: Self" : "";
+}
+
 }  // namespace hb
