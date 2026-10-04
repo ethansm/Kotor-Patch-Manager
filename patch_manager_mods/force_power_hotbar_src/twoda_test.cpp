@@ -76,10 +76,12 @@ int main(int argc, char** argv) {
         const std::string good = Build2da(C, R);
         hb::TwoDA m;
         KT_CHECK(m.Parse(good));
+        KT_CHECK(m.labels[0] == "0" && m.labels[1] == "1");                      // the first label must not swallow the row-count's top byte
+        for (const auto& row : m.rows) KT_CHECK_EQ(row.size(), m.cols.size());   // exactly one cell per column
         KT_CHECK_EQ(m.rows.size(), 2); KT_CHECK_EQ(m.Get(1, "Name").c_str(), "2"); KT_CHECK_EQ(m.labels[1].c_str(), "1");
         // < 16 bytes, bad magic.
         KT_CHECK(!m.Parse(std::string())); KT_CHECK_EQ(m.error.c_str(), "not a binary 2DA V2.b");
-        KT_CHECK(!m.Parse(good.substr(0, 15)));
+        KT_CHECK(!m.Parse(good.substr(0, 15))); KT_CHECK_EQ(m.error.c_str(), "not a binary 2DA V2.b");   // 15 bytes is still "too short" (not a later parse error)
         KT_CHECK(!m.Parse(std::string("2DA V2.b\n") + "abc"));                 // 12 bytes
         { std::string b = good; b[0] = 'X'; KT_CHECK(!m.Parse(b)); }
         { std::string b = good; b.replace(0, 8, "2DA V2.0"); KT_CHECK(!m.Parse(b)); }   // ASCII 2DA unsupported
@@ -99,8 +101,18 @@ int main(int argc, char** argv) {
         // nrows limits.
         KT_CHECK(!m.Parse(Build2da(C, R, 100001))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");
         KT_CHECK(!m.Parse(Build2da(C, R, 0xFFFFFFFFl)));
-        KT_CHECK(!m.Parse(Build2da(C, R, 100000)));                              // allowed count, but data is far too short
+        KT_CHECK(!m.Parse(Build2da(C, R, 100000))); KT_CHECK_EQ(m.error.c_str(), "bad row label");   // allowed count (limit is > 100000), data far too short
+        KT_CHECK(!m.Parse(Build2da(C, R, 65536))); KT_CHECK_EQ(m.error.c_str(), "bad row label");      // byte 2 of the count counts (not implausible, just truncated)
+        KT_CHECK(!m.Parse(Build2da(C, R, 0x01000000l))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");   // byte 3 of the count counts
+        KT_CHECK(!m.Parse(Build2da(C, R, 0x80000000l))); KT_CHECK_EQ(m.error.c_str(), "implausible row count");
         KT_CHECK(!m.Parse(Build2da(C, R, 3)));                                   // header claims one row more than exists
+        // Exact size boundaries: header + labels + offsets + the 2-byte data size, no blob, is the smallest valid file.
+        { const size_t minSize = good.size() - 8;                                 // blob "a\0" "1\0" "b\0" "2\0" = 8 bytes
+          KT_CHECK(m.Parse(good.substr(0, minSize))); KT_CHECK_EQ(m.rows.size(), 2); KT_CHECK_EQ(m.Get(0, "Label").c_str(), "");
+          KT_CHECK(!m.Parse(good.substr(0, minSize - 1))); KT_CHECK_EQ(m.error.c_str(), "truncated offsets"); }
+        // Row count field exactly at the end of the file: not "truncated" (the 4 bytes are there), but there is no room for the offsets.
+        { std::string b = "2DA V2.b\nA\t"; b += '\0'; le32(b, 0); KT_CHECK_EQ(b.size(), 16);
+          KT_CHECK(!m.Parse(b)); KT_CHECK_EQ(m.error.c_str(), "truncated offsets"); }
         // Cell offset past end -> "" (not a crash).
         KT_CHECK(m.Parse(Build2da(C, R, -1, true, 0xFFFF)));
         KT_CHECK_EQ(m.Get(0, "Name").c_str(), ""); KT_CHECK_EQ(m.Get(1, "Label").c_str(), "");
@@ -152,11 +164,26 @@ int main(int argc, char** argv) {
         KT_CHECK_EQ(m.Col(nullptr), -1);
         KT_CHECK_EQ(m.Get(0, "forcePOINTS").c_str(), "25");
         KT_CHECK_EQ(m.Get(0, "SpellDesc").c_str(), "d");
+        { hb::TwoDA z; KT_CHECK(z.Parse(Build2da({"Z", "a"}, {{"1", "2"}})));      // 'Z' is the last upper-case letter folded
+          KT_CHECK_EQ(z.Col("z"), 0); KT_CHECK_EQ(z.Col("Z"), 0); KT_CHECK_EQ(z.Col("A"), 1); }
         // The real fixture, with the exact names ForcePowerHotbar.cpp uses, resolves to the same columns either way.
         for (const char* n : {"name", "forcepoints", "range", "category", "iconresref", "spelldesc", "label"}) {
             std::string up = n; for (char& ch : up) ch = (char)toupper((unsigned char)ch);
             KT_CHECK_EQ(t.Col(up.c_str()), t.Col(n)); KT_CHECK(t.Col(n) >= 0);
         }
+    }
+    // ================= Load reads the whole file, including a final 1-byte chunk (file size = 64 KiB + 1) =================
+    {
+        std::string probe = Build2da({"A"}, {{"Q"}}); probe.pop_back();             // no trailing NUL: the last cell ends at EOF
+        const size_t pad = 65537 - probe.size();
+        std::string big = Build2da({"A"}, {{std::string(pad, 'p') + "Q"}}); big.pop_back();
+        KT_CHECK_EQ(big.size(), 65537);
+        const char* td = getenv("TMPDIR"); std::string path = std::string(td && *td ? td : "/tmp") + "/twoda_big_" + std::to_string((long)getpid()) + ".2da";
+        FILE* f = fopen(path.c_str(), "wb"); KT_CHECK(f != nullptr);
+        if (f) { fwrite(big.data(), 1, big.size(), f); fclose(f); }
+        hb::TwoDA m; KT_CHECK(m.Load(path.c_str()));
+        KT_CHECK(m.Get(0, "A") == std::string(pad, 'p') + "Q");
+        remove(path.c_str());
     }
     hb::Tlk k;
     if (argc > 2 && k.Open(argv[2])) {

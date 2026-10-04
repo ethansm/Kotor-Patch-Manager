@@ -520,6 +520,25 @@ static void party_contract() {
     HCHECK("the unreadable member is ok=false/down=false and its neighbours are read", v[0].ok && !v[1].ok && !v[1].down && v[2].ok && v[2].down && v[1].server == g_servers[1]);
     HEQ("only readable members trigger engine calls (idx 0, 2, 3 x 2 calls; the unreadable idx 1 none)", g_vcalls, 6);
     HCHECK("members keeps client at the unreadable member's slot", v[1].client == g_clients[1]);
+
+    // ---- a one-member party (the Exile alone; the hotbar's characterKeyFor special-cases partyCount == 1) ----
+    build(1); mkCreature(0, 50, 100);
+    { party::Fail w = party::F_App; int n = 77;
+      HEQ("hotbar relies on: a one-member party still has a controlled creature", (unsigned long long)party::controlledCreature(&w, &n), (unsigned long long)Creature);
+      HEQ("hotbar relies on: a one-member party reports F_None", (int)w, (int)party::F_None);
+      HEQ("hotbar relies on: a one-member party reports count 1", n, 1); }
+    { party::Vitals one[3];
+      HEQ("hotbar relies on: members() of a one-member party returns 1", party::members(one, 3), 1);
+      HCHECK("hotbar relies on: members() fills entry 0 of a one-member party", one[0].client == g_clients[0] && one[0].ok && one[0].cur == 50 && one[0].max == 100); }
+    // ---- a corrupt (negative) count is "no members", never a negative loop bound ----
+    build(-1);
+    { party::Vitals neg[3]; HEQ("hotbar relies on: a negative party count makes members() return 0 (the hotbar loops i < n)", party::members(neg, 3), 0);
+      party::Fail w = party::F_None; int n = 77;
+      HEQ("a negative party count makes controlledCreature return 0", (unsigned long long)party::controlledCreature(&w, &n), 0ull);
+      HEQ("a negative party count reports F_Count", (int)w, (int)party::F_Count); }
+    // ---- Vitals default: unread (the hotbar's Vitals[3] entries past the party size stay default) ----
+    { party::Vitals z;
+      HCHECK("hotbar relies on: a default Vitals is all zero / not ok / not down", z.client == 0 && z.server == 0 && z.cur == 0 && z.max == 0 && !z.ok && !z.down); }
 }
 
 // ============================================================ 2b. saferead::probeWrite (write guard before engine-memory stores)

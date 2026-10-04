@@ -2,6 +2,7 @@
 #include "check.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 using namespace hb;
 int main(){
   const char* sample =
@@ -19,7 +20,7 @@ int main(){
   KT_CHECK_EQ(a.slotFor("Atton",0,9).id,135);
   KT_CHECK_EQ(a.slotFor("Nobody",0,0).id,8);
   KT_CHECK_EQ(a.general.extra["Foo"].c_str(),"bar");
-  const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt.ini";
+  const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt_"+std::to_string((long)getpid())+".ini";
   KT_CHECK(a.Save(path));
   Config c;
   KT_CHECK(c.Load(path));
@@ -265,10 +266,96 @@ int main(){
         KT_CHECK_EQ(x->slots[0][s].kind,y->slots[0][s].kind); KT_CHECK_EQ(x->slots[0][s].target.thresholdPct,y->slots[0][s].target.thresholdPct);
         KT_CHECK_EQ(x->slots[0][s].target.fallback,y->slots[0][s].target.fallback); KT_CHECK_EQ(x->notes[0][s].c_str(),y->notes[0][s].c_str()); } }
     // file round trip through Save/Load
-    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt2.ini";
+    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt2_"+std::to_string((long)getpid())+".ini";
     KT_CHECK(c.Save(path)); Config e; KT_CHECK(e.Load(path)); KT_CHECK(e.warnings.empty()); KT_CHECK(e.Serialize()==o); remove(path.c_str());
     Config nf; KT_CHECK(!nf.Load("/nonexistent_dir_xyz/none.ini"));
   }
+  // ===== mutation-triage additions (doc 20e) =====
+  { // layout constants: the INI keys, the editor grid and the file header all derive from these
+    KT_CHECK_EQ(Rows,1); KT_CHECK_EQ(Slots,10); KT_CHECK_EQ(SchemaVersion,1);
+    KT_CHECK(validSlot(0,0)); KT_CHECK(validSlot(0,9)); KT_CHECK(!validSlot(0,10)); KT_CHECK(!validSlot(0,-1)); KT_CHECK(!validSlot(1,0)); KT_CHECK(!validSlot(-1,0));
+    KT_CHECK_EQ(SlotKeyName(0,10).c_str(),""); KT_CHECK_EQ(slotDigit(0),'1'); KT_CHECK_EQ(slotDigit(8),'9');
+    Config c; c.profile("Default");
+    KT_CHECK(c.Serialize().find("[General]\nSchemaVersion=1\nInvoke=")!=std::string::npos); }
+  { // parseInt32 range (through the strict General ints): INT32_MIN..INT32_MAX
+    Config c=W("[General]\nInvoke=-2147483648\nVerbose=2147483647\n"); KT_CHECK(c.warnings.empty());
+    KT_CHECK_EQ(c.general.invoke,(int)(-2147483647-1)); KT_CHECK_EQ(c.general.verbose,2147483647);
+    c=W("[General]\nInvoke=-2147483649\nVerbose=2147483648\nAutoFill=-99999999999\n"); KT_CHECK_EQ(c.warnings.size(),3);
+    KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,0); KT_CHECK_EQ(c.general.autoFill,0);
+    c=W("[General]\nInvoke=+7\nVerbose=-0\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,7); KT_CHECK_EQ(c.general.verbose,0); }
+  { // trim / lower
+    for(const char* ws:{" ","\t","\r","\n"}){ std::string w=ws; KT_CHECK_EQ(trim(w+"x"+w).c_str(),"x"); KT_CHECK_EQ(trim("x"+w).c_str(),"x"); KT_CHECK_EQ(trim(w+"x").c_str(),"x"); }
+    KT_CHECK_EQ(trim("x \t\r\n").c_str(),"x"); KT_CHECK_EQ(trim(" \t\r\n x").c_str(),"x"); KT_CHECK_EQ(trim(" \t\r\n").c_str(),""); KT_CHECK_EQ(trim("").c_str(),"");
+    KT_CHECK_EQ(trim("a b").c_str(),"a b"); KT_CHECK_EQ(trim("\vx").c_str(),"\vx");
+    KT_CHECK_EQ(lower("AZ").c_str(),"az"); KT_CHECK_EQ(lower("@A[Zz`").c_str(),"@a[zz`"); }
+  { // StackCount edges
+    const int K=0x40000001;
+    KT_CHECK_EQ(StackCount(K," (1)"),1); KT_CHECK_EQ(StackCount(K,"x555)"),0); KT_CHECK_EQ(StackCount(K,"Medpac (10)"),10); KT_CHECK_EQ(StackCount(K,"A (2)"),2);
+    KT_CHECK_EQ(StackCount(K," (1"),0); KT_CHECK_EQ(StackCount(K,"(12)"),0); KT_CHECK_EQ(StackCount(K,"X (12"),0);
+    KT_CHECK_EQ(StackCount(0x40000000,"X (3)"),3); KT_CHECK_EQ(StackCount(0x3FFFFFFF,"X (3)"),0); }
+  { // formatTarget: shortest form; a threshold of 0 or a fallback of 0 are real values (only < 0 is unset)
+    TargetSpec t; t.mode=TM_LowHp;
+    KT_CHECK_EQ(formatTarget(t).c_str(),"@lowhp");
+    t.thresholdPct=0; KT_CHECK_EQ(formatTarget(t).c_str(),"@lowhp:0");
+    t.fallback=1; KT_CHECK_EQ(formatTarget(t).c_str(),"@lowhp:0:self");
+    t.thresholdPct=-1; KT_CHECK_EQ(formatTarget(t).c_str(),"@lowhp::self");
+    t.fallback=0; KT_CHECK_EQ(formatTarget(t).c_str(),"@lowhp::none");
+    t.thresholdPct=100; KT_CHECK_EQ(formatTarget(t).c_str(),"@lowhp:100:none");
+    t.mode=TM_Default; KT_CHECK_EQ(formatTarget(t).c_str(),""); }
+  { // parseTargetSuffix / Parse: field and range limits
+    TargetSpec ts; KT_CHECK(!parseTargetSuffix("bogus",&ts)); KT_CHECK(!parseTargetSuffix("",&ts)); KT_CHECK(parseTargetSuffix("default",&ts)); KT_CHECK(!parseTargetSuffix("default:1",&ts));
+    KT_CHECK(parseTargetSuffix("lowhp",&ts)); KT_CHECK(!parseTargetSuffix("lowhp:1:self:x",&ts));
+    ActionRef r;
+    KT_CHECK(Parse("spell:1@lowhp:19",&r)); KT_CHECK_EQ(r.target.thresholdPct,19);
+    KT_CHECK(Parse("spell:1@lowhp:99",&r)); KT_CHECK_EQ(r.target.thresholdPct,99);
+    KT_CHECK(Parse("spell:1@lowhp:0050",&r)); KT_CHECK_EQ(r.target.thresholdPct,50);
+    KT_CHECK(!Parse("spell:1@lowhp:4294967346",&r));       // would wrap to 50 without the digit-accumulator guard
+    KT_CHECK(!Parse("spell:1@lowhp:1x",&r)); KT_CHECK(!Parse("spell:1@lowhp:9a",&r)); KT_CHECK(!Parse("spell:1@lowhp:101",&r)); KT_CHECK(!Parse("spell:1@lowhp:1000",&r)); KT_CHECK(!Parse("spell:1@lowhp:1001",&r)); KT_CHECK(!Parse("spell:1@lowhp:00000000000000000000000101",&r));
+    KT_CHECK(!Parse("item",&r)); KT_CHECK(r.empty()); KT_CHECK(!Parse("item:",&r)); KT_CHECK(r.empty()); KT_CHECK(!Parse("item:   ",&r)); KT_CHECK(!Parse("spell",&r));
+    KT_CHECK(!Parse("other:+5",&r)); KT_CHECK(!Parse("other:-0",&r)); KT_CHECK(!Parse("other:-5",&r)); KT_CHECK(r.empty()); }
+  { // Same(): identity only
+    ActionRef a,b; a.kind=K_Item; a.name="Medpac"; b=a; KT_CHECK(Same(a,b));
+    b.name="Repair Kit"; KT_CHECK(!Same(a,b)); b.name="MEDPAC"; KT_CHECK(Same(a,b));
+    ActionRef s; s.kind=K_Spell; s.id=8; ActionRef f=s; f.kind=K_Feat; KT_CHECK(!Same(s,f)); f.kind=K_Spell; KT_CHECK(Same(s,f)); f.id=9; KT_CHECK(!Same(s,f)); }
+  { // IsRemovedRowKey: exactly Left/Right + one digit
+    KT_CHECK(IsRemovedRowKey("Left9")); KT_CHECK(IsRemovedRowKey("Right9")); KT_CHECK(IsRemovedRowKey("Left0")); KT_CHECK(IsRemovedRowKey("RIGHT5"));
+    KT_CHECK(!IsRemovedRowKey("Left:")); KT_CHECK(!IsRemovedRowKey("Left/")); KT_CHECK(!IsRemovedRowKey("Left10")); KT_CHECK(!IsRemovedRowKey("Leftx")); KT_CHECK(!IsRemovedRowKey("Lef9")); KT_CHECK(!IsRemovedRowKey("Bottom1")); KT_CHECK(!IsRemovedRowKey("")); }
+  { // effective values: a slot override of 0 is a value, not "unset"
+    General g; g.healThreshold=70; TargetSpec t; t.thresholdPct=0; KT_CHECK_EQ(effectiveThreshold(t,g),0);
+    t.thresholdPct=-1; KT_CHECK_EQ(effectiveThreshold(t,g),70); t.fallback=0; g.healFallbackSelf=1; KT_CHECK(!effectiveFallbackSelf(t,g)); }
+  { // Config::readFile: whole file, including a final partial chunk
+    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rf_"+std::to_string((long)getpid())+".bin";
+    for(size_t n:{(size_t)1,(size_t)4095,(size_t)4096,(size_t)4097,(size_t)8193}){
+      std::string body(n,'a'); body[n-1]='Z'; FILE* f=fopen(path.c_str(),"wb"); KT_CHECK(f!=nullptr); if(!f) continue; fwrite(body.data(),1,n,f); fclose(f);
+      std::string got="stale"; KT_CHECK(Config::readFile(path,&got)); KT_CHECK(got==body); }
+    { FILE* f=fopen(path.c_str(),"wb"); if(f) fclose(f); std::string got="stale"; KT_CHECK(Config::readFile(path,&got)); KT_CHECK(got.empty()); }   // empty file: cleared, true
+    remove(path.c_str()); std::string g2; KT_CHECK(!Config::readFile(path,&g2)); }
+  { // warning line numbers: LF, CRLF, CR, mixed; BOM-only text; first line is line 1
+    for(const char* nl:{"\n","\r\n","\r"}){ std::string n=nl;
+      Config c=W("[Profile.X]"+n+"bad1"+n+"bad2"+n); KT_CHECK_EQ(c.warnings.size(),2);
+      if(c.warnings.size()==2){ KT_CHECK(c.warnings[0].compare(0,8,"line 2: ")==0); KT_CHECK(c.warnings[1].compare(0,8,"line 3: ")==0); } }
+    Config c=W("bad\n"); KT_CHECK_EQ(c.warnings.size(),1); if(!c.warnings.empty()) KT_CHECK(c.warnings[0].compare(0,8,"line 1: ")==0);
+    c=W("[Profile.X]\r\n\r\nbad\r\n"); KT_CHECK_EQ(c.warnings.size(),1); if(!c.warnings.empty()) KT_CHECK(c.warnings[0].compare(0,8,"line 3: ")==0);   // CRLF is ONE break, a blank line is a line
+    c=W("[Profile.X]\n\nbad\n"); KT_CHECK_EQ(c.warnings.size(),1); if(!c.warnings.empty()) KT_CHECK(c.warnings[0].compare(0,8,"line 3: ")==0);          // a blank line after LF is a line
+    c=W("[Profile.X]\n\rbad\n"); KT_CHECK_EQ(c.warnings.size(),1); if(!c.warnings.empty()) KT_CHECK(c.warnings[0].compare(0,8,"line 3: ")==0);        // LF then CR are two breaks
+    c=W("\xEF\xBB\xBF"); KT_CHECK(c.warnings.empty()); c=W("\xEF\xBB\xBF" "bad\n"); KT_CHECK_EQ(c.warnings.size(),1); if(!c.warnings.empty()) KT_CHECK(c.warnings[0].compare(0,8,"line 1: ")==0);
+    c=W(""); KT_CHECK(c.warnings.empty()); KT_CHECK(c.profiles.empty()); }
+  { // a note needs no space after ';'; an empty note is empty
+    Config c=W("[Profile.Default]\nBottom1=spell:8;note\nBottom2=spell:9;\nBottom3=spell:10;  spaced  \n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(P(c,"Default").notes[0][0].c_str(),"note"); KT_CHECK_EQ(P(c,"Default").notes[0][1].c_str(),""); KT_CHECK_EQ(P(c,"Default").notes[0][2].c_str(),"spaced"); }
+  { // warning text clips long values (key/value/section) but keeps the line number and slot key
+    Config c=W("[Profile.Long]\nBottom7=item:"+std::string(300,'x')+"@lowhp:0\n"); KT_CHECK_EQ(c.warnings.size(),1);
+    if(!c.warnings.empty()) KT_CHECK_EQ(c.warnings[0].c_str(),("line 2: Bottom7: bad value 'item:"+std::string(95,'x')+"' (slot left empty)").c_str());
+    c=W("[Profile.Long]\n"+std::string(300,'k')+"=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),1);
+    if(!c.warnings.empty()) KT_CHECK_EQ(c.warnings[0].c_str(),("line 2: unknown key '"+std::string(40,'k')+"' in [Profile.Long]").c_str()); }
+  { // Save never leaves a .bak (the hotbar makes its own backups) and replaces the file each time
+    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_save2_"+std::to_string((long)getpid())+".ini";
+    remove(path.c_str()); remove((path+".bak").c_str()); remove((path+".tmp").c_str());   // stale files from an aborted earlier run must not matter
+    Config c; c.profile("Default"); KT_CHECK(c.Save(path)); c.general.invoke=0; KT_CHECK(c.Save(path));
+    FILE* b=fopen((path+".bak").c_str(),"rb"); KT_CHECK(b==nullptr); if(b) fclose(b);
+    FILE* t=fopen((path+".tmp").c_str(),"rb"); KT_CHECK(t==nullptr); if(t) fclose(t);
+    Config d; KT_CHECK(d.Load(path)); KT_CHECK_EQ(d.general.invoke,0);
+    remove(path.c_str()); remove((path+".bak").c_str()); }
   puts(s1.c_str());
   return kt::Report("config_roundtrip_test");
 }

@@ -22,6 +22,7 @@ struct Opt {
     uint32_t count = 0xFFFFFFFFu;     // header count override (default = entries.size())
     uint32_t strOff = 0xFFFFFFFFu;    // header strings offset override
     uint32_t addOff = 0;              // added to each entry's real offset
+    uint32_t lang = 0;                // header language id (bytes 8..11)
     int32_t sizeDelta = 0;            // added to each entry's real size field
     const char* magic = "TLK V3.0";
     size_t truncateTo = (size_t)-1;   // cut the finished file to this many bytes
@@ -31,7 +32,7 @@ static std::string Build(const std::vector<std::string>& ents, const Opt& o = Op
     uint32_t n = (uint32_t)ents.size();
     uint32_t realStr = 20 + n * 40;
     std::string s(o.magic, 8);
-    put32(s, 0);
+    put32(s, o.lang);
     put32(s, o.count == 0xFFFFFFFFu ? n : o.count);
     put32(s, o.strOff == 0xFFFFFFFFu ? realStr : o.strOff);
     std::string blob;
@@ -70,6 +71,8 @@ int main() {
     // ---- committed fixture
     {
         hb::Tlk t;
+        KT_CHECK_EQ(t.count, 0); KT_CHECK_EQ(t.strOff, 0); KT_CHECK(!t.ok);   // fresh state: nothing opened
+        KT_CHECK(!t.Open("testdata/no_such.tlk")); KT_CHECK_EQ(t.count, 0); KT_CHECK_EQ(t.strOff, 0); KT_CHECK(!t.ok);   // a failed first Open keeps it
         KT_CHECK_EQ(t.Get(0).c_str(), "");                    // Get before Open
         KT_CHECK(t.Open("testdata/fixture.tlk"));
         KT_CHECK_EQ(t.count, 6);
@@ -88,6 +91,7 @@ int main() {
         // Re-Open resets the cache and state.
         KT_CHECK(!t.Open("testdata/no_such.tlk"));
         KT_CHECK_EQ(t.error.c_str(), "cannot open");
+        KT_CHECK(!t.ok);                                      // a failed re-Open drops the previous ok
         KT_CHECK_EQ(t.Get(0).c_str(), "");                    // !ok -> ""
         KT_CHECK(t.Open("testdata/fixture.tlk"));
         KT_CHECK_EQ(t.Get(4).c_str(), "padded text");
@@ -99,6 +103,10 @@ int main() {
         KT_CHECK(!t.Open(Write(Build({"x"}, [] { Opt o; o.magic = "TLK V2.0"; return o; }())).c_str()));
         KT_CHECK_EQ(t.error.c_str(), "not TLK V3.0");
         KT_CHECK(!t.Open(Write(Build({"x"}, [] { Opt o; o.magic = "tlk v3.0"; return o; }())).c_str()));
+        KT_CHECK(!t.Open(Write(Build({"x"}, [] { Opt o; o.magic = "TLK V3.1"; return o; }())).c_str()));   // all 8 magic bytes are compared
+        KT_CHECK(!t.Open(Write(Build({"x"}, [] { Opt o; o.magic = "TLK V3.0"; o.count = 0x01000000u; return o; }())).c_str()));   // high count byte counts (16777216 >= limit)
+        KT_CHECK(t.Open(Write(Build({"x"}, [] { Opt o; o.lang = 0x01020304u; return o; }())).c_str()));   // the language id (header bytes 8..11) is not part of the magic
+        KT_CHECK_EQ(t.Get(0).c_str(), "x");
         KT_CHECK(!t.Open(Write(Build({"x"}, [] { Opt o; o.truncateTo = 19; return o; }())).c_str()));   // short header
         KT_CHECK_EQ(t.error.c_str(), "not TLK V3.0");
         KT_CHECK(!t.Open(Write(Build({"x"}, [] { Opt o; o.truncateTo = 0; return o; }())).c_str()));    // empty file
@@ -141,6 +149,14 @@ int main() {
         KT_CHECK_EQ(One(std::string(65536, 'a')).c_str(), "");
         hb::Tlk t8; KT_CHECK(t8.Open(Write(Build({"abc"}, [] { Opt o; o.sizeDelta = -4; return o; }())).c_str()));   // size = 0xFFFFFFFF
         KT_CHECK_EQ(t8.Get(0).c_str(), "");
+    }
+
+    // ---- data position exactly at the 2^31-1 fseek limit: an empty entry there is still a cached success
+    {
+        Opt o; o.strOff = 0x7FFFFFFFu;
+        hb::Tlk t; KT_CHECK(t.Open(Write(Build({""}, o)).c_str()));
+        KT_CHECK_EQ(t.Get(0).c_str(), "");
+        KT_CHECK(t.cache.count(0) == 1);                      // size 0 at dataPos == 0x7FFFFFFF is within the limit (<=)
     }
 
     // ---- offset+size wrap: strOff + off wraps past 2^32 onto a valid-looking blob position
@@ -202,6 +218,7 @@ int main() {
         KT_CHECK_EQ(One("x \x92").c_str(), "x '");
         KT_CHECK_EQ(One("quote\x94  ").c_str(), "quote\"");
         KT_CHECK_EQ(One("\x01").c_str(), "?");
+        KT_CHECK_EQ(One("a\x1F" "b\x20" "c").c_str(), "a?b c");        // 0x1F is the last control char; 0x20 is a space
         KT_CHECK_EQ(One("tilde~ and {brace}").c_str(), "tilde~ and {brace}");   // 0x7E/0x7B..0x7D pass through
     }
 

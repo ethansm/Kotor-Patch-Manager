@@ -30,6 +30,7 @@ static void test_stamp() {
     std::string f = P("a.ini");
     Stamp m = stamp(f.c_str());
     KT_CHECK(!m.exists);
+    KT_CHECK_EQ(m.size, 0ull); KT_CHECK_EQ(m.mtime, 0LL); KT_CHECK_EQ(m.mtimeMs(), -1LL);   // a missing file stamps as all zero
     KT_CHECK(m == stamp((f + "2").c_str()));   // two missing files compare equal
     put(f, "aaa");
     Stamp s1 = stamp(f.c_str());
@@ -44,6 +45,9 @@ static void test_stamp() {
     // Same size, same second, different content: only the sub-second part differs.
     put(f, "aaaa"); setMtime(f, 1700000000, 123456789);
     Stamp n1 = stamp(f.c_str());
+    { struct stat rs; KT_CHECK(stat(f.c_str(), &rs) == 0);   // independent of the guard below: mtime is exactly seconds * 1e9 PLUS the nanoseconds
+      KT_CHECK_EQ(n1.mtime, (long long)rs.st_mtim.tv_sec * 1000000000LL + (long long)rs.st_mtim.tv_nsec);
+      KT_CHECK_EQ(n1.mtime / 1000000000LL, 1700000000LL); }
     if (n1.mtime % 1000000000LL != 123456789LL) {
         std::printf("note: filesystem has no ns mtime; same-second/same-size check skipped\n");
     } else {
@@ -53,6 +57,7 @@ static void test_stamp() {
         KT_CHECK_EQ(n2.mtime / 1000000000LL, n1.mtime / 1000000000LL);   // same second
         KT_CHECK(n2 != n1);                                              // ns differs -> detected
         KT_CHECK_EQ(n1.mtimeMs(), 1700000000123LL);
+        KT_CHECK_EQ(n1.mtime, 1700000000LL * 1000000000LL + 123456789LL);
     }
 }
 
@@ -60,6 +65,10 @@ static void test_poll() {
     std::string f = P("p.ini");
     ReloadPoll p; p.throttleMs = 1000;
     KT_CHECK_EQ(p.seenMs(), -2LL);              // unprimed
+    { ReloadPoll d; std::string g = P("dflt.ini");   // the default throttle is 1000 ms (the hotbar relies on it): 999 ms is still inside, 1000 is due
+      KT_CHECK_EQ(d.throttleMs, 1000u);
+      KT_CHECK(changed(d, g.c_str(), 5000)); put(g, "x");
+      KT_CHECK(!changed(d, g.c_str(), 5999)); KT_CHECK(changed(d, g.c_str(), 6000)); }
     // First call is a change (nothing seen yet), also for a missing file: the hotbar loads / writes its template then.
     KT_CHECK(changed(p, f.c_str(), 0));
     KT_CHECK_EQ(p.seenMs(), -1LL);              // missing
@@ -142,6 +151,26 @@ static void test_failures() {
         KT_CHECK(!exists(d + ".tmp"));
         KT_CHECK(!exists(d + ".bak"));
     }
+    // .bak copy failures: the old file must survive and atomicWrite must report false.
+    if (geteuid() != 0) {
+        std::string u = P("unreadable.ini");   // exists (stat works) but cannot be opened for the .bak copy
+        put(u, "old"); chmod(u.c_str(), 0000);
+        KT_CHECK(!atomicWrite(u.c_str(), "new", true));
+        chmod(u.c_str(), 0644);
+        KT_CHECK(get(u) == "old"); KT_CHECK(!exists(u + ".tmp")); KT_CHECK(!exists(u + ".bak"));
+    }
+    {   std::string d = P("dangling.ini");   // .bak is a dangling symlink: stat says "absent", fopen("wb") cannot create it
+        put(d, "old");
+        KT_CHECK(symlink("/nonexistent_dir_xyz/bak", (d + ".bak").c_str()) == 0);
+        KT_CHECK(!atomicWrite(d.c_str(), "new", true));
+        KT_CHECK(get(d) == "old"); KT_CHECK(!exists(d + ".tmp"));
+        unlink((d + ".bak").c_str()); }
+    {   std::string big = P("big.ini");   // the .bak copy keeps the final partial chunk (4096 * k + 1 bytes)
+        for (size_t n : { (size_t)4097, (size_t)1, (size_t)8193 }) {
+            remove(big.c_str()); remove((big + ".bak").c_str());
+            std::string body(n, 'a'); body[n - 1] = 'Z'; put(big, body);
+            KT_CHECK(atomicWrite(big.c_str(), "new", true));
+            KT_CHECK(get(big + ".bak") == body); KT_CHECK(get(big) == "new"); } }
     // Unwritable directory (skipped as root: root ignores the mode bits).
     if (geteuid() == 0) { std::printf("note: running as root; unwritable-dir check skipped\n"); return; }
     std::string sub = P("ro");

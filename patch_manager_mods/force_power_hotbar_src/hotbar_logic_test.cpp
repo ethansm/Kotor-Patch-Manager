@@ -495,5 +495,95 @@ int main() {
       KT_CHECK_EQ(MaxTgaDim, 4096);
     }
   }
+  // ===== mutation-triage additions (doc 20e): boundaries and defaults the pure units rely on =====
+  { // Candidate defaults: unreadable, not down, eligible (the DLL only fills the readable ones)
+    Candidate c; KT_CHECK_EQ(c.cur, 0); KT_CHECK_EQ(c.max, 0); KT_CHECK(!c.ok); KT_CHECK(!c.down); KT_CHECK(c.eligible);
+  }
+  { // chooseTarget: threshold clamping, max <= 0 rows, 1% resolution, selfIdx bound
+    Candidate m[4]; for (Candidate& c : m) c.ok = true;
+    m[0].cur = 0; m[0].max = 100;
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, -5, false), -1);        // negative threshold clamps to 0: nobody is below 0%
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 1, false), 0);          // 0 of 100 is below 1%
+    m[0].cur = 100; m[0].max = 100;
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 100, false), -1);       // full health is never below the threshold
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 101, false), -1);       // thresholds above 100 clamp to 100 (not 101%)
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 500, false), -1);
+    m[0].cur = -5; m[0].max = 0;
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, false), -1);        // max <= 0 is skipped even with a negative cur
+    m[0].cur = 0; m[0].max = 1;
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, false), 0);         // max == 1 is a valid row
+    m[0].cur = 499; m[0].max = 1000;
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, false), 0);         // 49.9% is strictly below 50% (no rounding slack)
+    m[0].cur = 500; m[0].max = 1000;
+    KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, false), -1);        // exactly 50% is not
+    for (int i = 0; i < 3; ++i) { m[i].cur = 100; m[i].max = 100; }
+    m[3].cur = 0; m[3].max = 100;
+    KT_CHECK_EQ(chooseTarget(m, 3, 3, 50, true), -1);         // selfIdx == n is out of range: never read m[n]
+    KT_CHECK_EQ(chooseTarget(m, 3, 2, 50, true), 2);          // selfIdx n-1 is fine
+  }
+  { // pickIndexByKey with a single entry
+    const int keys[1] = { 5 };
+    KT_CHECK_EQ(pickIndexByKey(keys, 1, 5), 0); KT_CHECK_EQ(pickIndexByKey(keys, 1, 9), 0);
+  }
+  { // shortDesc: the " This " header cut applies only below index 120
+    std::string a(120, 'a'), b(119, 'a');
+    KT_CHECK_EQ(shortDesc(a + " This is it. More.").c_str(), (a + " This is it.").c_str());   // p == 120: kept whole
+    KT_CHECK_EQ(shortDesc(b + " This is it. More.").c_str(), "This is it.");                  // p == 119: header dropped
+  }
+  { // tipLayout edges
+    KT_CHECK_EQ(tipLayout("ab", 100, 1000, 0, 3840).y, 8);          // topAnchor 0 is an anchor (>= 0): sits above it, clamped to the top margin
+    KT_CHECK_EQ(tipLayout("ab", 100, 1000, -1, 3840).y, 1000 - 76 - 12);
+    // w = 2*21+44 = 86: the right edge keeps 8 px; one px inside / exactly on / one px over the limit
+    KT_CHECK_EQ(tipLayout("ab", 906, 500, -1, 1000).x, 906);
+    KT_CHECK_EQ(tipLayout("ab", 905, 500, -1, 1000).x, 905);
+    KT_CHECK_EQ(tipLayout("ab", 907, 500, -1, 1000).x, 906);        // 7 px from the edge: pushed to 8
+    KT_CHECK_EQ(tipLayout("ab", 950, 500, -1, 1000).x, 906);
+    KT_CHECK_EQ(tipLayout("ab", 7, 500, -1, 3840).x, 8);            // left margin
+    KT_CHECK_EQ(tipLayout("ab", 8, 500, -1, 3840).x, 8); KT_CHECK_EQ(tipLayout("ab", 9, 500, -1, 3840).x, 9);
+    KT_CHECK_EQ(tipLayout("ab", 100, 95, -1, 3840).y, 8);           // y would be 7: top margin
+    KT_CHECK_EQ(tipLayout("ab", 100, 96, -1, 3840).y, 8); KT_CHECK_EQ(tipLayout("ab", 100, 97, -1, 3840).y, 9);
+    TipRect d; KT_CHECK_EQ(d.lines, 1); KT_CHECK_EQ(d.maxLen, 0); KT_CHECK_EQ(d.x, 0); KT_CHECK_EQ(d.y, 0); KT_CHECK_EQ(d.w, 0); KT_CHECK_EQ(d.h, 0);
+  }
+  { // slotView: defaults stay quiet on the settling early-out, qty 2 shows a count, out-of-stock colour has 3 channels
+    SlotView h = slotView(false, true, false, 0, 0, "", true);
+    KT_CHECK(h.hideSettling); KT_CHECK(!h.outOfStock); KT_CHECK(!h.showQty); KT_CHECK(!h.grayQty); KT_CHECK_EQ(h.qty, 0);
+    KT_CHECK(!slotView(false, false, true, 1, 0x20000005, "Heal", false).hideSettling);
+    SlotView t = slotView(false, true, true, 1, 0x40000009, "Medpac (2)", false);
+    KT_CHECK_EQ(t.qty, 2); KT_CHECK(t.showQty); KT_CHECK(!t.grayQty);
+    KT_CHECK_EQ(sizeof(QtyOutOfStockRgb) / sizeof(QtyOutOfStockRgb[0]), 3);
+  }
+  { // aspectCorrection: every dimension of 1 is a real size (only <= 0 means unknown)
+    auto near = [](double a, double b) { return a - b < 1e-9 && b - a < 1e-9; };
+    KT_CHECK(near(aspectCorrection(1, 10, 10, 10), 10.0));
+    KT_CHECK(near(aspectCorrection(10, 1, 10, 10), 0.1));
+    KT_CHECK(near(aspectCorrection(10, 10, 1, 10), 0.1));
+    KT_CHECK(near(aspectCorrection(10, 10, 10, 1), 10.0));
+    KT_CHECK(near(aspectCorrection(0, 10, 10, 10), 1.0)); KT_CHECK(near(aspectCorrection(10, 0, 10, 10), 1.0));
+  }
+  { // normalizeSaveFolder: the first digit is checked and '9' is a digit
+    KT_CHECK_EQ(normalizeSaveFolder("A00012 - Game11").c_str(), "");
+    KT_CHECK_EQ(normalizeSaveFolder("0000a2 - Game11").c_str(), "");
+    KT_CHECK_EQ(normalizeSaveFolder("999999 - Game11").c_str(), "999999 - Game11");
+    KT_CHECK_EQ(normalizeSaveFolder("SAVES:090909 - G").c_str(), "090909 - G");
+  }
+  { // decideKey / KeyEvent / KeyAction defaults: a default event is an idle, unbound, not-down key 0
+    KeyAction a = decideKey(KeyEvent());
+    KT_CHECK_EQ(a.decision, "pass"); KT_CHECK(!a.swallow && !a.markDown && !a.clearDown && !a.enqueue && !a.escHit); KT_CHECK_EQ(a.slot, -1);
+    KeyEvent d; d.down = true; a = decideKey(d); KT_CHECK_EQ(a.decision, "pass");                    // dik defaults to 0 (not Esc)
+    KeyEvent g; g.dik = 0x02;
+    a = decideKey(g); KT_CHECK_EQ(a.decision, "pass"); KT_CHECK(!a.swallow && !a.clearDown);        // down / downSwallowed default false
+    g.down = true; a = decideKey(g); KT_CHECK_EQ(a.decision, "pass(hud inactive)");                  // hudActive defaults false
+    g.hudActive = true; a = decideKey(g); KT_CHECK_EQ(a.decision, "pass(unbound)"); KT_CHECK(!a.swallow);   // slotBound defaults false
+    g.slotBound = true; a = decideKey(g); KT_CHECK_EQ(a.decision, "SWALLOW"); KT_CHECK_EQ(a.slot, 0);
+  }
+  { // tgaInspect: a header-sized (18 byte) buffer is long enough to be read (-> truncated, not "not uncompressed"); early-outs leave *t alone
+    unsigned char h[18] = {0}; h[2] = 2; h[16] = 32; h[12] = 1; h[14] = 1;
+    TgaInfo t; KT_CHECK_EQ(tgaInspect(h, 18, &t), TGA_TRUNCATED);
+    KT_CHECK_EQ(t.w, 1); KT_CHECK_EQ(t.h, 1); KT_CHECK_EQ((long long)t.off, 18); KT_CHECK_EQ((long long)t.bytes, 0);
+    TgaInfo u; KT_CHECK_EQ(tgaInspect(h, 17, &u), TGA_NOT_UNCOMPRESSED32);
+    KT_CHECK_EQ(u.w, 0); KT_CHECK_EQ(u.h, 0); KT_CHECK_EQ((long long)u.off, 0); KT_CHECK_EQ((long long)u.bytes, 0);
+    h[12] = 0; TgaInfo z; z.bytes = 7; KT_CHECK_EQ(tgaInspect(h, 18, &z), TGA_TRUNCATED); KT_CHECK_EQ((long long)z.bytes, 0);   // w == 0
+    TgaInfo e; KT_CHECK_EQ(e.w, 0); KT_CHECK_EQ(e.h, 0); KT_CHECK_EQ((long long)e.off, 0); KT_CHECK_EQ((long long)e.bytes, 0);
+  }
   return kt::Report("hotbar_logic_test");
 }
