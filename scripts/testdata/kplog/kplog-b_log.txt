@@ -1,0 +1,6 @@
+# kplog session 2026-10-03 20:39:35 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=unknown
+# interfaces: (not yet applied)
+T=1.035 f=- kplog-b/alpha b-alpha
+T=1.044 f=- kplog-b/beta WARN b-beta
+T=1.066 f=- kplog-b/debug b-debug

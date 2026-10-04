@@ -1,0 +1,7 @@
+# kplog session 2026-10-03 16:58:14 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=smoke
+# interfaces:
+#   kpatch.log v1 by patcher
+#   test.counter v1 by provider-fixture
+T=0.307 f=- logger-fixture/main WARN hello from KPatchInit
+T=0.309 f=- logger-fixture/main info line

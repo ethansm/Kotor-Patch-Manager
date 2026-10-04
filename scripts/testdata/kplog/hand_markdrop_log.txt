@@ -1,0 +1,12 @@
+# kplog session 2026-10-03 20:39:35 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=unknown
+# interfaces: (not yet applied)
+T=0.801 f=- hand/main starting up
+T=1.500 f=1 hand/draw drew 12 quads
+T=1.750 f=1 hand/draw WARN texture 4 missing
+T=2.000 f=2 MARK before the cutscene
+T=2.250 f=2 hand/main ERR hook returned null
+T=3.000 f=2 hand/kplog DROPPED 7 (ring 4, rate 3)
+this line is not a log line
+T=3.500 f=3 hand/draw drew 3 quads
+T=4.000 f=3 hand/kplog DROPPED 2 (ring 0, rate 2)

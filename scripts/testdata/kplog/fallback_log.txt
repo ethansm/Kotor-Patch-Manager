@@ -1,0 +1,4 @@
+57843211 old-mod/main WARN fell back to the file sink
+57843290 old-mod/input plain fallback line
+57843300 old-mod/main ERR something broke
+--- log cap reached ---
