@@ -203,6 +203,29 @@ int main() {
     HCHECK("probeRead true when the 16 bytes end exactly at the hole", saferead::probeRead(62, reinterpret_cast<const void*>(a + 0x2E8), 16));
     g_badLo = g_badHi = 0; saferead::beginScope();
 
+    // ---- readResRef16 (PerfLab.cpp readResRef: RR_LOWER | RR_SPACE_BAD | RR_EMPTY_Q, site 62)
+    {
+        const unsigned F = saferead::RR_LOWER | saferead::RR_SPACE_BAD | saferead::RR_EMPTY_Q;
+        char o[17]; uintptr_t rr = a + 0x500;
+        memset(reinterpret_cast<void*>(rr), 0, 16); memcpy(reinterpret_cast<void*>(rr), "N_Hk_Door01", 11);
+        saferead::beginScope();
+        HCHECK("readResRef16 reads a readable CResRef and lower-cases A-Z (TPCTOP names are lower-case)", saferead::readResRef16(62, rr, o, F) && !strcmp(o, "n_hk_door01"));
+        memset(reinterpret_cast<void*>(rr), 0, 16); memcpy(reinterpret_cast<void*>(rr), "a b\x01" "c\xe9", 6);
+        HCHECK("readResRef16 maps space, control and high bytes to '?' with RR_SPACE_BAD", saferead::readResRef16(62, rr, o, F) && !strcmp(o, "a?b?c?"));
+        memset(reinterpret_cast<void*>(rr), 'Z', 16);
+        HCHECK("readResRef16 handles a full 16-byte name with no NUL (17th byte terminated)", saferead::readResRef16(62, rr, o, F) && strlen(o) == 16 && o[0] == 'z' && o[15] == 'z');
+        memset(reinterpret_cast<void*>(rr), 0, 16);
+        HCHECK("readResRef16 turns an empty name into \"?\" with RR_EMPTY_Q (readable, returns true)", saferead::readResRef16(62, rr, o, F) && !strcmp(o, "?"));
+        memset(o, 'x', sizeof o);
+        HCHECK("readResRef16 gives \"?\" and false for a null address", !saferead::readResRef16(62, 0, o, F) && !strcmp(o, "?"));
+        memset(o, 'x', sizeof o);
+        HCHECK("readResRef16 gives \"?\" and false below 0x10000", !saferead::readResRef16(62, 0x1000, o, F) && !strcmp(o, "?"));
+        g_badLo = a + 0x2F8; g_badHi = a + 0x1000; saferead::beginScope();
+        memset(o, 'x', sizeof o);
+        HCHECK("readResRef16 gives \"?\" and false when the 16 bytes straddle into unreadable memory", !saferead::readResRef16(62, a + 0x2F4, o, F) && !strcmp(o, "?"));
+        g_badLo = g_badHi = 0; saferead::beginScope();
+    }
+
     // ---- exo-string loop (522-527)
     const char txt[] = "hello\0junk";
     uintptr_t data = a + 0x400, exo = a + 0x440;

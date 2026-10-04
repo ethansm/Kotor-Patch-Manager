@@ -478,15 +478,9 @@ int topSnapshot() {
 }
 // 16-byte CResRef at *(CRes+0x14) (not NUL-terminated) -> lower-cased, printable, NUL-terminated name[17]. Call after restypeOf (same scope).
 void readResRef(uintptr_t cres, char* out) {
-    out[0] = '?'; out[1] = 0;
     uintptr_t ke = *reinterpret_cast<const uintptr_t*>(cres + 0x14);
-    char raw[16];
-    if (!ke || !saferead::probeRead(62, reinterpret_cast<const void*>(ke), 16)) return;
-    memcpy(raw, reinterpret_cast<const void*>(ke), 16);
-    int n = 0;
-    for (; n < 16 && raw[n]; ++n) { char ch = raw[n]; out[n] = (ch >= 'A' && ch <= 'Z') ? ch + 32 : (ch > 32 && ch < 127 ? ch : '?'); }
-    if (!n) { out[0] = '?'; n = 1; }
-    out[n] = 0;
+    if (!ke) { out[0] = '?'; out[1] = 0; return; }
+    saferead::readResRef16(62, ke, out, saferead::RR_LOWER | saferead::RR_SPACE_BAD | saferead::RR_EMPTY_Q);
 }
 
 // ---- 0.5.0 EVT ring ---------------------------------------------------------------------------------------------------------
