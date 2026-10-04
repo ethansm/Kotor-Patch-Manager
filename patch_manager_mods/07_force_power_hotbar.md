@@ -184,6 +184,24 @@ Upstream-ready doc: `RuntimeGuiControls.md` (copied to the KPM clone docs/). Ste
 > Everything from here to "## Next-phase findings" is the original pre-Ghidra spec. Where it conflicts with the later sections, the later sections win
 > (notably: items ARE in the HUD action bar; the four 0x1D0 arrays are sub-controls, not per-portrait bars; the 3-edge/30-slot layout is deferred).
 
+## Target modes: item edge-case decision table (B2, 2026-10-04)
+Source: `07_force_power_hotbar_evidence/target_modes/EDGE_CASES.md` (B1, static, anchored; Haiku 2/3 real + 3/3 decoys). Rules are column-driven from `override/spells.2da` (never hard-coded rows).
+
+| case | decision | where |
+|---|---|---|
+| medpac on droid / repair kit on organic | already filtered: `CanUseItem(strict=1)` on each candidate's server creature (0x5D3650 race gate, baseitems+0xB4); no `isDroid`/affinity field needed | chooseTarget (existing `eligible`) |
+| controlled char is a droid holding a medpac | same: self fails CanUseItem strict -> not eligible -> fallback self refused -> -1 (logged) | chooseTarget |
+| healing item at full HP | CanUseItem strict refuses (0x5D3023, classes 0x2D/0x1A); threshold already excludes full HP | chooseTarget |
+| dead / KO / absent / other-area member | not eligible (`ok`/`down`/null server); party members share the area | chooseTarget |
+| property 0 not CastSpell, or use flag `entry+0xC == 0` (charges spent) | read item `+0x288` count / `+0x290` array (stride 0x1C, `+0` type 10, `+2` row, `+0xC` usable); not usable -> log, fall back to the vanilla path (engine shows its own refusal) | use path |
+| out of range | accept: engine queues walk-to + ItemCastSpell; log | log |
+| stealth veto, combat interrupt, plot items | accept engine behaviour + log | log |
+| last of a stack used twice quickly | accept: second use fails at 0x5B8000 without consuming; log | log |
+| **"Lowest HP" offered for** | `isHealingRow`: spells row usertype 4, range T, category 0x1408 / 0x1404 / 0x1048 (medpacs, repair/construction kits, antidote, Recovery Stim) | UI (mode cycle) |
+| **"Self" offered for** | `selfAllowedRow`: range T and hostilesetting != 1 (refuses grenades L, droid weapons M/S, disruptors/oil slick hostile=1); unknown row -> refused | UI (mode button) |
+| lowhp picks member 0, and Self mode | direct `PerformUseItem(self)` (CanUseItem strict on self first). NOT `invokeEntry`: vanilla 0x77C780 with >=2 members only ARMS portrait-pick (gui+0x15230) | use path |
+| Default mode | unchanged `invokeEntry` = vanilla semantics (immediate in solo / class 0x14 / 0x2F, else portrait pick) | use path |
+
 ## Goal
 
 30 generic hotbar slots across three screen edges — bottom (keys **1-0**),
