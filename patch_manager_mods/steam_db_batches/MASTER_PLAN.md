@@ -17,7 +17,7 @@ the user directs PR 5). User decisions: mod-demand order, then Phase E and the P
 | P3 | B16 mod GUI/engine classes | SHIPPED (branch caf65ec, +146) | README B16 |
 | P4 | B11a CClientExoApp(+Internal) | SHIPPED (branch bcb4acb, +356) | README B11a |
 | P5 | B12a CSWSCreature lower half | SHIPPED (branch db4f5cf, +171; 3,420 rows) | README B12a |
-| P6 | B13a CSWCCreature: Opus gate+consolidation, then ship | Opus running at handoff | B13a/ |
+| P6 | B13a CSWCCreature: ship (merge a/r/z -> finalize --opus-sample-errors 1 -> expect verified 177, label_suspect 19, unresolved 3; kdb_overrides.tsv 28 rows) | Opus + consolidation DONE | B13a/ |
 | P7 | B10a CSWSObject+CSWCObject: ship (merge a/r/z -> finalize --opus-sample-errors 0 -> expect verified 210, likely 29, label_suspect 5, rejected 1; KDB has kdb_overrides.tsv 6 rows) | Opus + consolidation DONE (commit after 2dc30c6) | B10a/ |
 | P8 | B11b CGuiInGame+CSWGuiMainInterface: consolidation (summary, lessons, ledger side file, AUTO rotation audit; GOG labels heavily rotated), then ship | Opus a/b/c/r DONE (sample_errors a 2, b 0, c 0 -> finalize --opus-sample-errors 2) | B11b/ |
 | P9 | Ledger + audit catch-up: append B13a/B10a/B11b `gog_ledger_section.md` to GOG_LABEL_SUSPECTS.md; `mod_audit.py` re-run + diff; report label findings to the user | TODO | mod_audit/ |
@@ -48,5 +48,4 @@ the user directs PR 5). User decisions: mod-demand order, then Phase E and the P
 - Never edit `*_src`, the GOG DB, the game folder; only the lead writes DBs.
 
 ## Next phase
-P6-P8 finish when the in-flight Opus agents return: next plan = ship whichever of B13a/B10a/B11b has all its Opus
-outputs (one batch per plan), then P9.
+P6 ship B13a (all Opus outputs in). Then P7 ship B10a, P8 B11b consolidation + ship, P9.
