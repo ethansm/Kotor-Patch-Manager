@@ -1062,3 +1062,11 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   **Rebuilt 1.0.0:** kpatch md5 c77b1cc0 (`c77b1cc09f11324da62e202647653e9f`), DLL `binaries/windows_x86.dll` 31c3a83f
   (`31c3a83fa0c6d94d0a7758cafcce3b2e`); KPM source commit eebfd18 (`ethansm/local-mods`). Supersedes d16bfe5f. **INSTALLED LIVE 2026-10-03 22:54** (DLL swap 31c3a83f + repo `runtime/levelup_paths.ini` v3 472a9303; backup `backups/pre_luo_100_install_20261003_225406`).
   Next chunk: C1 (integration audit, read-only).
+- **Apply-now fix (2026-10-04, 6ad2f8d):** user bug "configured plan, level-up arrow stays until the menu closes" (party-portrait arrow).
+  Cause: instant levelling only runs in HUD UpdatePartyPortraits 0x74EE90, not drawn while the menu is open (log: UI apply instant=1, INSTANT
+  249 s later). Fix: Apply (instant=1) -> one-shot request -> next menu-draw gate (0x756DD4/0x7575B5/0x757808/0x75798C) calls AutoLevelup
+  0x6BEDF0(stats,1). Non-instant configs keep the arrow by design (path levels left = manual level-up). Log tag `INSTANT apply-now`.
+  Evidence: scratchpad report (copied into the commit message). Open: the HUD path's post-AutoLevelup one-shot 0x74F4B4 (callee 0x7CEEF0)
+  is not replicated - check the first live log/feedback message. mutate 120/120.
+  **Build:** kpatch d5602400 (`d560240bc8acd46154384138a07b1b47`), DLL 9df5edad (`9df5edad9af1f6393859399522a1ff39`), KPM 9c60e5b.
+  Supersedes c77b1cc0. NOT installed; install = DLL swap + v3 `levelup_paths.ini` together (user consent, game closed, backup).
