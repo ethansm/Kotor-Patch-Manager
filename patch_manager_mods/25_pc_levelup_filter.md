@@ -140,3 +140,23 @@ simulate/check_paths/gen_r10_tags --check green, mingw 0 warnings.
 confirm tag="" only for the PC in the `R10 panel` lines. Run 2: `r10=1`, `r10.profile=melee/single/light` (or the PC's build), `r10.feats=build_dim`,
 `r10.powers=build_dim`; PC level-up: non-fitting feats greyed, `R10 dim ... verdict=applied`; companion: `reason=not_pc`. Recommended button still
 ignores the filter (section 12 item 5). Next offline: batch 2b = in-panel `Filter:` button + save-bound `pcfilter=` (needs panel GUI RE).
+
+## 14. Batch 3a: character-screen UX for the PC filter + settings icon (built, NOT installed) - 2026-10-04
+User direction: a level-up settings UX for the PC's filter, sharing the companion options page; the big `Configure/Change path` button only while
+the engine shows BTN_LEVELUP/BTN_AUTO, otherwise a small icon with a tooltip in a corner of the 3D view.
+| part | what |
+|---|---|
+| icon | `C_ICON` (framed label, inserted before the tip controls) at unit rect [492,172,28,28], top-right of LBL_3DCHAR; texture `lbl_icn_opt2` (vanilla hammer "Options" icon, swpc_tex_gui.erf), ini `ui.icon=<resref>`, text "LU" if the image fails. Recon `research/companion_levelup/r10/ui_icon/README.md` (overlap PASS; BTN_3DCHAR covers the view, our own hit test runs first). Tip "Level-up settings", box kept in units 350..525 x 134..255. |
+| rule | `lvl = heldResult != 0` (SetStats' CanLevelUp/held result = the engine's BTN_LEVELUP visibility). lvl -> C_CFG shown, icon hidden; else icon shown, C_CFG hidden; page open -> both hidden. Log `UI lvlbtn shown=%d isVisible=%d` on change (cross-check of control 66). The R9 nudge only colours a shown button. |
+| PC | `uiReadTag`: readable creature + empty tag = PC (r10IsPc's rule). PC button text "Level-up filter"; C_CFG/C_ICON open the R10 page (`pcPage`) in C_BG0..2, C_TITLE "Level-up filter", C_ROW0..5 = `R10Page.h` rows (Filter on/off, Role, Style, Alignment, Feats, Powers; modes all/build_dim/combat/force), Apply, Cancel. Start = playthrough `pc` line, else ini r10* when r10=1, else default (off, melee/none/none, build_dim x2). Status "Level-up filter: on - feats X, powers Y" (hidden when off). |
+| save | `Playthrough.h`: reserved key `pc` + preset `r10`, new field `|r10=1` (written only when on: old files byte-identical), `findPc` / `setPc` (create-or-update, refuses lossy). `ptSetPc()` in LevelUpOverride.cpp (GUID via the new `ptEnsureGuid()`, shared with ptApply). `rebuildPtCfg` skips the `pc` line. |
+| dim | `r10Effective()`: the GUID's `pc` line wins (on/profile/modes); no line -> ini r10* keys (dev override). Log `R10 config source=playthrough|ini on= profile= feats= powers=` on change. |
+| tips | Native tip strings for C_CFG/rows/Apply swap per creature kind (`uiTipKind`, log `UI tips kind=pc|companion native=N`) on a kind change in uiTick, never from uiClick (cursor is on the party selector then). Deliberate deviation from "native tips only in uiAppend"; verify live with TIPPROBE. |
+| tests | r10_page_test 1222 (run_tests + parity.py), playthrough_test 315, ui_test 687 (CFG/ICON switch, PC page open/cancel/apply/reopen/off, tip swap), gate_test 213 (pc line on/off/all vs ini), scenarios 22 (cfg click -> icon when no level-up), gui_ids count 25 (ids 151..175). mutate 184/184 (RB01-11 new, RD02/RD04 retargeted). |
+Build: 1.3.0-dev, LevelUpOverride.kpatch md5 8dfce2de (dll 545e330b), previous kept as `LevelUpOverride.kpatch.120dev_7c687dec.bak`; KOTOR-II 4d0fb1e/9a2e705/7caa75b, KPM de587d3.
+Gates: run_tests 104/104, check_hook_bytes FAIL=0 (32 hooks, unchanged), check_hook_spans / check_exports FAIL=0, parity/scenarios(-m32)/options/wizard/guikit/simulate/check_paths/gen_r10_tags --check green, mingw clean.
+
+**Live test (user present, consent; one reinstall carries 2a + 3a):** (1) character screen, no level-up: icon top-right of the 3D view + tooltip, no
+Change path button; check the icon draws over the 3D model (not live-verified) and that clicking it does not rotate the model. (2) Level-up available:
+Change path under Level Up, icon hidden. (3) PC: icon -> filter page -> On + profile -> Apply -> `pc=r10|...|r10=1|...` in levelup_playthroughs.ini ->
+PC feats level-up greyed entries + `R10 config source=playthrough` + `R10 dim` lines. Next offline: batch 3b (in-panel `Filter:` button, needs panel GUI RE).

@@ -1099,3 +1099,6 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (2026-10-04, R10 batch 2a):** dim wiring DONE offline, NOT installed, gated `r10=0` (doc 25 section 13): 1.2.0-dev kpatch 7c687dec
   (32 hooks). Live still 8f9ca9e2. When the user is back: play-test 8f9ca9e2, then one reinstall (consent) carries probe + dim; run `r10probe=1 r10=0`
   first, then `r10=1` per doc 25 s13 "Live test". Next offline = batch 2b (in-panel Filter button, needs panel GUI RE).
+- **RESUME HERE (2026-10-04, R10 batch 3a):** PC filter page + settings icon DONE offline, NOT installed (doc 25 section 14): 1.3.0-dev kpatch 8dfce2de
+  (KPM de587d3, 32 hooks unchanged). Live still 8f9ca9e2. When the user is back: play-test 8f9ca9e2, then one reinstall (consent) carries 2a + 3a; run
+  doc 25 s14 "Live test" (icon/Change path switch, PC page Apply -> `pc=` line -> dim). Next offline = batch 3b (in-panel Filter button).
