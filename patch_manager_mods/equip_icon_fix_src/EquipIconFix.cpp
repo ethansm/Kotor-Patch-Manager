@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include "../_shared/SafeRead.h"
 #include "CodePatch.h"
 
 namespace {
@@ -83,7 +84,7 @@ bool configEnabled() {
     return on;
 }
 
-void resrefName(const void* r, char out[17]) { memcpy(out, r, 16); out[16] = 0; for (int i = 0; i < 16; ++i) if (out[i] && (out[i] < 0x20 || out[i] > 0x7e)) out[i] = '?'; }
+void resrefName(const void* r, char out[17]) { saferead::formatResRef16(r, out, 0); }
 
 DWORD WINAPI statsThread(LPVOID) {
     LONG last = -1;

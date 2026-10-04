@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <initializer_list>
 #include "CodePatch.h"
+#include "SafeRead.h"
 #include "check.h"
 
 #define CCHECK(why, expr) ::kt::Check("equip_icon_fix relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
@@ -103,6 +104,26 @@ int main() {
         uint8_t again[5];
         codepatch::callRel(0x8AE793, 0x8AD930, again);
         CCHECK("callRel is deterministic (DllMain compares assembled call bytes with the bytes found)", memcmp(back, again, 5) == 0);
+    }
+
+    // ---- formatResRef16 (EquipIconFix.cpp resrefName, flags 0): case kept, space kept, non-printable -> '?', stops at the first NUL
+    {
+        char o[17]; char raw[16];
+        memset(raw, 0, 16); memcpy(raw, "Icon_Item 01", 12);
+        memset(o, 'x', sizeof o); saferead::formatResRef16(raw, o, 0);
+        CCHECK("formatResRef16 keeps case and spaces with flags 0 (resrefName)", !strcmp(o, "Icon_Item 01"));
+        memset(raw, 0, 16); memcpy(raw, "ab\x01" "c\x7f" "d\xe9" "e", 8);
+        saferead::formatResRef16(raw, o, 0);
+        CCHECK("formatResRef16 maps control (0x01), DEL and high (0xE9) bytes to '?'", !strcmp(o, "ab?c?d?e"));
+        memset(raw, 0, 16); memcpy(raw, "ab", 2); raw[5] = 'z';
+        saferead::formatResRef16(raw, o, 0);
+        CCHECK("formatResRef16 stops at the first NUL (bytes after it are ignored)", !strcmp(o, "ab"));
+        memset(raw, 0, 16); memset(o, 'x', sizeof o);
+        saferead::formatResRef16(raw, o, 0);
+        CCHECK("formatResRef16 gives \"\" for an all-NUL name with flags 0 (no RR_EMPTY_Q)", o[0] == 0);
+        memset(raw, 'Q', 16);
+        saferead::formatResRef16(raw, o, 0);
+        CCHECK("formatResRef16 writes 16 chars then the terminator for a full name, case kept", strlen(o) == 16 && o[0] == 'Q' && o[15] == 'Q');
     }
 
     return kt::Report("common_contract_test (equip_icon_fix)");
