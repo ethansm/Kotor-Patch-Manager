@@ -39,7 +39,7 @@ python3 scripts/luo_scenario.py apply <id> --guid g<hex> --yes
 ```
 
 ## Step 5: the user plays
-Record the current log length first: `wc -l "$G/levelup_override_log.txt"`. Give the user a short card: which slot to load, what to click.
+Record the current log length first: `wc -l "$G/levelup_override_log.txt"` (`G=~/.local/share/Steam/steamapps/common/"Knights of the Old Republic II"`). Give the user a short card: which slot to load, what to click.
 
 ## Step 6: check the log
 ```
