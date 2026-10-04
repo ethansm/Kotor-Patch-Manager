@@ -49,12 +49,12 @@ def archive_logs(game_dir: str, archive_dir: str, tag: str) -> str:
     return dest_path
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Archive KOTOR II mod log files")
     parser.add_argument("--tag", default="session", help="Tag label for the archive folder")
     parser.add_argument("--game-dir", default=DEFAULT_GAME_DIR, help="Path to game directory")
     parser.add_argument("--dest", default=DEFAULT_ARCHIVE_DIR, help="Path to archive destination")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     archive_logs(args.game_dir, args.dest, args.tag)
 

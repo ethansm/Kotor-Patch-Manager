@@ -176,7 +176,7 @@ def export_program_symbols(program_name, folder="TSL", output_dir=None, script="
         "stdout_summary": clean_stdout[-1500:] if len(clean_stdout) > 1500 else clean_stdout
     }
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="Ghidra Server Autonomous API")
     subparsers = parser.add_subparsers(dest="command")
 
@@ -209,7 +209,7 @@ def main():
     # status
     p_status = subparsers.add_parser("status", help="Check credential vault configuration")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.command == "status":
         creds = load_credentials()
