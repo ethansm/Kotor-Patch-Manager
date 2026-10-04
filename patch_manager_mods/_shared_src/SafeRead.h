@@ -143,6 +143,59 @@ inline int readExo(unsigned site, uintptr_t addr, char* buf, int cap, int maxLen
     return n;
 }
 
+// Tolerant CExoString copy for logging: p/len already read by the caller (len < 0 = unknown). No printable filter, no length cap.
+// out is "" (p == 0, cap < 2, or len == 0), the bytes (truncated to cap-1; to the page end when the rest is unreadable), or "?" (unreadable).
+// Returns the byte count copied, 0 for "", -1 for "?".
+inline int readExoLoose(unsigned site, uint32_t p, int len, char* out, int cap) {
+    if (!out || cap <= 0) return 0;
+    out[0] = 0;
+    if (!p || cap < 2) return 0;
+    int n = cap - 1;
+    if (len >= 0 && len < n) n = len;
+    if (n <= 0) return 0;
+    const void* src = reinterpret_cast<const void*>(static_cast<uintptr_t>(p));
+    if (!probeRead(site, src, n)) {
+        int toPage = static_cast<int>(((p | 0xFFFu) + 1u) - p);   // bytes left on p's page (the next page may be unmapped)
+        if (toPage < n && probeRead(site, src, toPage)) n = toPage;
+        else { out[0] = '?'; out[1] = 0; return -1; }
+    }
+    memcpy(out, src, n);
+    out[n] = 0;
+    return n;
+}
+
+// 16-byte CResRef (not NUL-terminated) -> NUL-terminated out[17]. Stops at the first NUL; any byte outside 0x20..0x7E becomes '?'.
+enum : unsigned {
+    RR_LOWER = 1,       // lowercase A-Z
+    RR_SPACE_BAD = 2,   // space is not printable either (0x21..0x7E only)
+    RR_EMPTY_Q = 4,     // an empty name reads "?" instead of ""
+};
+inline void formatResRef16(const void* raw16, char out[17], unsigned flags) {
+    const unsigned char* r = static_cast<const unsigned char*>(raw16);
+    const unsigned lo = (flags & RR_SPACE_BAD) ? 0x21u : 0x20u;
+    int n = 0;
+    for (; n < 16 && r[n]; ++n) {
+        unsigned c = r[n];
+        if ((flags & RR_LOWER) && c >= 'A' && c <= 'Z') c += 32;
+        else if (c < lo || c > 0x7E) c = '?';
+        out[n] = static_cast<char>(c);
+    }
+    if (n == 0 && (flags & RR_EMPTY_Q)) out[n++] = '?';
+    out[n] = 0;
+}
+
+// probeRead 16 bytes at addr, then formatResRef16. On addr == 0 or unreadable: out = RR_EMPTY_Q ? "?" : "", returns false.
+inline bool readResRef16(unsigned site, uintptr_t addr, char out[17], unsigned flags) {
+    char raw[16];
+    if (!addr || !probeRead(site, reinterpret_cast<const void*>(addr), 16)) {
+        if (flags & RR_EMPTY_Q) { out[0] = '?'; out[1] = 0; } else out[0] = 0;
+        return false;
+    }
+    memcpy(raw, reinterpret_cast<const void*>(addr), 16);
+    formatResRef16(raw, out, flags);
+    return true;
+}
+
 // Formats the ring (oldest first) into buf; returns chars written (NUL-terminated, never more than cap-1; 0 for a null buf or cap <= 0).
 inline int dump(char* buf, int cap) {
     if (!buf || cap <= 0) return 0;

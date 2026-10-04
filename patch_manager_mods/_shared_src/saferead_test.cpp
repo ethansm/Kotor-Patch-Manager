@@ -1,8 +1,9 @@
-// Host test of saferead::readExo (SafeRead.h) on fake CExoStrings in a MAP_32BIT arena.
+// Host test of saferead::readExo / readExoLoose / formatResRef16 / readResRef16 (SafeRead.h) on fake CExoStrings in a MAP_32BIT arena.
 // Windows is the stub windows.h; g_stubVirtualQueryAll makes the arena read as committed memory.
 #include <windows.h>
 #include <sys/mman.h>
 #include <initializer_list>
+#include <vector>
 #include <unistd.h>
 // Protection faking: the host stub's VirtualQuery reports every address as one committed PAGE_READWRITE region. Route SafeRead.h's
 // VirtualQuery through a wrapper that can override State/Protect for a chosen range (and clip RegionSize at its edges) while
@@ -347,6 +348,167 @@ int main() {
         saferead::enableRing(false);
         g_fakeN = 0; saferead::beginScope();
         KT_CHECK(P(a, 64));
+    }
+
+    // ---- readExoLoose / formatResRef16 / readResRef16
+    {
+        g_fakeN = 0; saferead::beginScope();
+        // Legacy bodies the helpers replace (kept verbatim, minus logging/sanitize) for the golden comparison below.
+        auto legacy_copyStr = [](int p, int len, char* out, int cap) {   // companion_ai CompanionAI.cpp copyStr, minus cai::sanitize
+            out[0] = 0;
+            if (!p || cap < 2) return;
+            int n = cap - 1;
+            if (len >= 0 && len < n) n = len;
+            if (n <= 0) return;
+            if (!saferead::probeRead(3, reinterpret_cast<const void*>(p), n)) {
+                int toPage = int(((static_cast<unsigned>(p) | 0xFFFu) + 1u) - static_cast<unsigned>(p));
+                if (toPage < n && saferead::probeRead(3, reinterpret_cast<const void*>(p), toPage)) n = toPage;
+                else { out[0] = '?'; out[1] = 0; return; }
+            }
+            std::memcpy(out, reinterpret_cast<const void*>(p), n);
+            out[n] = 0;
+        };
+        auto legacy_perflabResRef = [](uintptr_t ke, char* out) {   // perf_lab PerfLab.cpp readResRef after the CRes+0x14 deref
+            out[0] = '?'; out[1] = 0;
+            char raw[16];
+            if (!ke || !saferead::probeRead(62, reinterpret_cast<const void*>(ke), 16)) return;
+            std::memcpy(raw, reinterpret_cast<const void*>(ke), 16);
+            int n = 0;
+            for (; n < 16 && raw[n]; ++n) { char ch = raw[n]; out[n] = (ch >= 'A' && ch <= 'Z') ? ch + 32 : (ch > 32 && ch < 127 ? ch : '?'); }
+            if (!n) { out[0] = '?'; n = 1; }
+            out[n] = 0;
+        };
+        auto legacy_resrefName = [](const void* r, char out[17]) {   // equip_icon_fix EquipIconFix.cpp resrefName
+            std::memcpy(out, r, 16); out[16] = 0;
+            for (int i = 0; i < 16; ++i) if (out[i] && (out[i] < 0x20 || out[i] > 0x7e)) out[i] = '?';
+        };
+
+        // Page layout inside the arena: [pg, pg+0x1000) readable, [pg+0x1000, pg+0x2000) faked NOACCESS (an unreadable next page).
+        const uintptr_t pg = reinterpret_cast<uintptr_t>(g_arena) + 0x8000;
+        auto setTail = [&](bool on) { g_fakeN = on ? 1 : 0; g_fake[0] = { pg + 0x1000, pg + 0x2000, PAGE_NOACCESS, MEM_COMMIT }; saferead::beginScope(); };
+        const uintptr_t tail = pg + 0x1000 - 5;   // 5 bytes before the unreadable page
+        std::memcpy(reinterpret_cast<void*>(tail), "abcde", 5);
+        std::memset(reinterpret_cast<void*>(pg + 0x1000), 'Z', 32);
+
+        char o[64];
+        auto ofill = [&] { std::memset(o, 'X', sizeof o); };
+        auto L = [&](uintptr_t p, int len, int cap) { ofill(); return saferead::readExoLoose(5, static_cast<uint32_t>(p), len, o, cap); };
+
+        // p == 0 / cap < 2 / len == 0: ""
+        KT_CHECK_EQ(L(0, 4, 16), 0); KT_CHECK_EQ(o[0], 0); KT_CHECK_EQ(o[1], 'X');
+        uintptr_t h = arenaAlloc(32); std::memcpy(reinterpret_cast<void*>(h), "hello world", 12);
+        KT_CHECK_EQ(L(h, 5, 1), 0); KT_CHECK_EQ(o[0], 0); KT_CHECK_EQ(o[1], 'X');
+        KT_CHECK_EQ(L(h, 5, 0), 0); KT_CHECK_EQ(o[0], 'X');                       // cap 0: nothing written
+        KT_CHECK_EQ(L(h, 0, 16), 0); KT_CHECK_EQ(o[0], 0); KT_CHECK_EQ(o[1], 'X');
+        ofill(); KT_CHECK_EQ(saferead::readExoLoose(5, (uint32_t)h, 5, nullptr, 16), 0); KT_CHECK_EQ(o[0], 'X');   // null out: no write
+        // exact copy / unknown len reads cap-1 / len above cap-1 truncates / len == cap-1
+        KT_CHECK_EQ(L(h, 5, 16), 5); KT_CHECK_EQ(o, "hello"); KT_CHECK_EQ(o[6], 'X');
+        KT_CHECK_EQ(L(h, -1, 6), 5); KT_CHECK_EQ(o, "hello"); KT_CHECK_EQ(o[6], 'X');
+        KT_CHECK_EQ(L(h, 11, 6), 5); KT_CHECK_EQ(o, "hello"); KT_CHECK_EQ(o[6], 'X');
+        KT_CHECK_EQ(L(h, 5, 6), 5); KT_CHECK_EQ(o, "hello");
+        KT_CHECK_EQ(L(h, -1, 2), 1); KT_CHECK_EQ(o, "h"); KT_CHECK_EQ(o[2], 'X');
+        // no printable filter: control and high bytes pass through, an embedded NUL is copied and counted
+        { uintptr_t c = arenaAlloc(8); const char raw[] = { 'a', 0x07, (char)0x80, 0, 'b' }; std::memcpy(reinterpret_cast<void*>(c), raw, 5);
+          KT_CHECK_EQ(L(c, 5, 16), 5); KT_CHECK(std::memcmp(o, raw, 5) == 0); KT_CHECK_EQ(o[5], 0); KT_CHECK_EQ(o[6], 'X'); }
+        // unreadable: "?" and -1 (low address, and an unreadable page with the whole range outside it)
+        KT_CHECK_EQ(L(0x20, 4, 16), -1); KT_CHECK_EQ(o, "?"); KT_CHECK_EQ(o[2], 'X');
+        setTail(true);
+        KT_CHECK_EQ(L(pg + 0x1000, 4, 16), -1); KT_CHECK_EQ(o, "?");
+        // partial page: readable only to the page end -> truncated there (5 bytes), whatever len/cap asked for
+        KT_CHECK_EQ(L(tail, -1, 32), 5); KT_CHECK_EQ(o, "abcde"); KT_CHECK_EQ(o[6], 'X');
+        KT_CHECK_EQ(L(tail, 20, 32), 5); KT_CHECK_EQ(o, "abcde");
+        KT_CHECK_EQ(L(tail, 6, 32), 5); KT_CHECK_EQ(o, "abcde");                  // one past the page end
+        KT_CHECK_EQ(L(tail, 5, 32), 5); KT_CHECK_EQ(o, "abcde");                  // exactly to the page end: plain probe passes
+        KT_CHECK_EQ(L(tail, 3, 32), 3); KT_CHECK_EQ(o, "abc");
+        KT_CHECK_EQ(L(tail, -1, 4), 3); KT_CHECK_EQ(o, "abc");                    // cap limits before the page does
+        setTail(false);
+        KT_CHECK_EQ(L(tail, -1, 32), 31); KT_CHECK_EQ(o[5], 'Z');                 // whole next page readable again: no page-end cut
+        // a page-end cut must not run with the page itself unreadable
+        g_fake[0] = { pg, pg + 0x1000, PAGE_NOACCESS, MEM_COMMIT }; g_fakeN = 1; saferead::beginScope();
+        KT_CHECK_EQ(L(tail, -1, 32), -1); KT_CHECK_EQ(o, "?");
+        setTail(false);
+
+        // golden: legacy copyStr vs readExoLoose, byte for byte over the whole buffer
+        {
+            int plen[] = { -5, -1, 0, 1, 2, 4, 5, 6, 7, 15, 16, 17, 40 };
+            int pcap[] = { -1, 0, 1, 2, 3, 5, 6, 7, 16, 33 };
+            uintptr_t ptrs[] = { 0, 0x20, 0xFFFF, tail, tail + 2, tail + 4, pg + 0x1000, pg + 0x1000 - 1, pg, h };
+            for (int tailOn = 0; tailOn < 2; ++tailOn) {
+                setTail(tailOn);
+                for (uintptr_t p : ptrs) for (int len : plen) for (int cap : pcap) {
+                    if (cap <= 0) continue;   // legacy writes out[0] unconditionally; real callers pass real buffers
+                    char a[48], b[48]; std::memset(a, 'X', sizeof a); std::memset(b, 'X', sizeof b);
+                    legacy_copyStr(static_cast<int>(p), len, a, cap);
+                    int r = saferead::readExoLoose(3, static_cast<uint32_t>(p), len, b, cap);
+                    KT_CHECK(std::memcmp(a, b, sizeof a) == 0);
+                    KT_CHECK(r == -1 ? (b[0] == '?' && b[1] == 0) : (r >= 0 && b[r] == 0));
+                }
+            }
+            setTail(false);
+        }
+
+        // formatResRef16
+        auto F = [&](const char* r16, unsigned fl) { std::memset(o, 'X', sizeof o); saferead::formatResRef16(r16, o, fl); };
+        F("abcdefghijklmnop", 0);        KT_CHECK_EQ(o, "abcdefghijklmnop"); KT_CHECK_EQ(o[16], 0); KT_CHECK_EQ(o[17], 'X');   // 16 chars, no NUL
+        { char r[16] = { 'a', 'b', 0, 'c', 'd' }; F(r, 0); KT_CHECK_EQ(o, "ab"); KT_CHECK_EQ(o[3], 'X'); }                    // stops at the first NUL
+        F("AbC_09-Z", 0);                KT_CHECK_EQ(o, "AbC_09-Z");
+        F("AbC_09-Z", saferead::RR_LOWER); KT_CHECK_EQ(o, "abc_09-z");
+        { char r[16] = { '@', '[', '`', '{', 'A', 'Z' }; F(r, saferead::RR_LOWER); KT_CHECK_EQ(o, "@[`{az"); }              // only A-Z lowercase
+        F("a b", 0);                     KT_CHECK_EQ(o, "a b");
+        F("a b", saferead::RR_SPACE_BAD); KT_CHECK_EQ(o, "a?b");
+        F(" ", saferead::RR_SPACE_BAD);  KT_CHECK_EQ(o, "?");
+        { char r[16] = { 'a', (char)0x80, (char)0xFF, 0x1F, 0x7F, '~', '!' }; F(r, 0); KT_CHECK_EQ(o, "a????~!"); F(r, saferead::RR_SPACE_BAD); KT_CHECK_EQ(o, "a????~!"); }
+        { char r[16] = { 0x1F }; F(r, 0); KT_CHECK_EQ(o, "?"); }
+        { char r[16] = { 0x20 }; F(r, 0); KT_CHECK_EQ(o, " "); }
+        { char r[16] = { 0 }; F(r, 0); KT_CHECK_EQ(o, ""); KT_CHECK_EQ(o[1], 'X'); F(r, saferead::RR_EMPTY_Q); KT_CHECK_EQ(o, "?"); KT_CHECK_EQ(o[2], 'X');
+          F(r, saferead::RR_LOWER | saferead::RR_SPACE_BAD); KT_CHECK_EQ(o, ""); }
+        { char r[16] = { 'a' }; F(r, saferead::RR_EMPTY_Q); KT_CHECK_EQ(o, "a"); }                                          // EMPTY_Q only for empty
+
+        // readResRef16
+        uintptr_t rr = arenaAlloc(16); std::memcpy(reinterpret_cast<void*>(rr), "Foo BAR\0xyz\0\0\0\0\0", 16);
+        auto R = [&](uintptr_t a, unsigned fl) { std::memset(o, 'X', sizeof o); return saferead::readResRef16(6, a, o, fl); };
+        KT_CHECK(R(rr, 0));                                                        KT_CHECK_EQ(o, "Foo BAR");
+        KT_CHECK(R(rr, saferead::RR_LOWER | saferead::RR_SPACE_BAD | saferead::RR_EMPTY_Q)); KT_CHECK_EQ(o, "foo?bar");
+        KT_CHECK(!R(0, 0));                                                        KT_CHECK_EQ(o, ""); KT_CHECK_EQ(o[1], 'X');
+        KT_CHECK(!R(0, saferead::RR_EMPTY_Q));                                     KT_CHECK_EQ(o, "?"); KT_CHECK_EQ(o[2], 'X');
+        KT_CHECK(!R(0x20, 0));                                                     KT_CHECK_EQ(o, "");
+        KT_CHECK(!R(0x20, saferead::RR_EMPTY_Q));                                  KT_CHECK_EQ(o, "?");
+        setTail(true);
+        KT_CHECK(!R(pg + 0x1000 - 8, 0));                                          KT_CHECK_EQ(o, "");   // straddles into the unreadable page: all 16 or nothing
+        KT_CHECK(R(pg + 0x1000 - 16, saferead::RR_EMPTY_Q));
+        { uintptr_t z = arenaAlloc(16); KT_CHECK(R(z, 0)); KT_CHECK_EQ(o, ""); KT_CHECK(R(z, saferead::RR_EMPTY_Q)); KT_CHECK_EQ(o, "?"); }   // readable but empty
+        setTail(false);
+
+        // golden: legacy perf-lab readResRef (LOWER|SPACE_BAD|EMPTY_Q) and equip-icon resrefName (flags 0, up to the first NUL)
+        {
+            struct Row { unsigned char b[16]; };
+            std::vector<Row> rows;
+            auto add = [&](std::initializer_list<int> v) { Row r; std::memset(r.b, 0, 16); int i = 0; for (int x : v) r.b[i++] = (unsigned char)x; rows.push_back(r); };
+            { Row r; std::memcpy(r.b, "ABCDEFGHIJKLMNOP", 16); rows.push_back(r); }
+            { Row r; std::memcpy(r.b, "abcdefghijklmnop", 16); rows.push_back(r); }
+            add({}); add({ 0x20 }); add({ 0x21 }); add({ 0x1F }); add({ 0x7E }); add({ 0x7F }); add({ 0x80 }); add({ 0xFF }); add({ 'A', 0, 'B' });
+            add({ 'a', ' ', 'b' }); add({ ' ', ' ', ' ' }); add({ '@', '[', '`', '{', 'Z', 'a' }); add({ 0, 'a' }); add({ 'a', 0x09, 'b', 0x0A });
+            add({ 'i', 'w', '_', 'b', 'l', 'a', 's', 't', 'e', 'r', '0', '1', 'A', 0x80, 0x7F, 0x20 });
+            for (int c = 0; c < 256; ++c) add({ 'x', c, 'y' });
+            for (int c = 0; c < 256; ++c) add({ c });
+            for (const Row& r : rows) {
+                uintptr_t a = arenaAlloc(16); std::memcpy(reinterpret_cast<void*>(a), r.b, 16);
+                char x[17], y[17], z[17], w[17];
+                std::memset(x, 'X', 17); std::memset(y, 'Y', 17);
+                legacy_perflabResRef(a, x);
+                KT_CHECK(saferead::readResRef16(62, a, y, saferead::RR_LOWER | saferead::RR_SPACE_BAD | saferead::RR_EMPTY_Q));
+                KT_CHECK_EQ(std::strcmp(x, y), 0);
+                std::memset(z, 'X', 17); std::memset(w, 'Y', 17);
+                legacy_resrefName(r.b, z);
+                saferead::formatResRef16(r.b, w, 0);
+                KT_CHECK_EQ(std::strcmp(z, w), 0);   // legacy keeps bytes after an embedded NUL; the callers only print it with %s, so equality is up to the first NUL
+            }
+            // unreadable address: legacy perf-lab gives "?" too
+            char x[17], y[17]; legacy_perflabResRef(0x20, x); saferead::readResRef16(62, 0x20, y, saferead::RR_LOWER | saferead::RR_SPACE_BAD | saferead::RR_EMPTY_Q);
+            KT_CHECK_EQ(std::strcmp(x, y), 0);
+            legacy_perflabResRef(0, x); saferead::readResRef16(62, 0, y, saferead::RR_LOWER | saferead::RR_SPACE_BAD | saferead::RR_EMPTY_Q);
+            KT_CHECK_EQ(std::strcmp(x, y), 0);
+        }
     }
 
     return kt::Report("saferead_test");
