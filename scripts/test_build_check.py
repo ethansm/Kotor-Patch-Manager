@@ -233,6 +233,28 @@ class SkipAndUnitTests(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in (dest.parent / "_shared").iterdir()), ["S.h"])
             self.assertEqual([p.name for p in bc.find_sources(dest)], ["A.cpp", "B.cpp"])
 
+    def test_stage_mod_overlay_variant(self):
+        """A variant dir without .cpp (dialogue_letterbox_fix_src/probe/) stages the parent's sources + its own files."""
+        with tempfile.TemporaryDirectory() as t:
+            t = Path(t)
+            src = t / "m"
+            (src / "probe").mkdir(parents=True)
+            for rel, txt in (("A.cpp", "a"), ("A.h", "a"), ("exports.def", "ship"), ("manifest.toml", "ship"),
+                             ("probe/exports.def", "probe"), ("probe/manifest.toml", "probe"), ("probe/v.h", "v"),
+                             ("probe/notes.md", "n")):
+                (src / rel).write_text(txt + "\n")
+            shared = t / "sh"
+            shared.mkdir()
+            dest = bc.stage_mod(src / "probe", "Name", t / "build" / "key", shared)
+            self.assertEqual([p.name for p in bc.find_sources(dest)], ["A.cpp"])
+            self.assertEqual((dest / "exports.def").read_text(), "probe\n")
+            self.assertEqual((dest / "manifest.toml").read_text(), "probe\n")
+            self.assertTrue((dest / "v.h").is_file())
+            self.assertFalse((dest / "notes.md").exists())
+            ship = bc.stage_mod(src, "Name", t / "build" / "key2", shared)
+            self.assertEqual((ship / "exports.def").read_text(), "ship\n")
+            self.assertFalse((ship / "v.h").exists())
+
     def test_discover_default_and_explicit(self):
         with tempfile.TemporaryDirectory() as t:
             t = Path(t)

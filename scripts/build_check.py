@@ -191,16 +191,7 @@ def ensure_common_library(kpm_dir: Path, compiler: str, cache_root: Path):
 
 # ---------------------------------------------------------------- staging
 
-def stage_mod(src: Path, name: str, key_dir: Path, shared_src: Path) -> Path:
-    """key_dir/<Name>/ (mod sources) + key_dir/_shared/ (copy of _shared_src); returns the <Name> dir.
-
-    Copies what a build consumes (.cpp/.h/.hpp/.inc/.def/.toml): .cpp at the root and one level down (find_sources),
-    headers and .inc at any depth. *_test.cpp, t32_*, and the SKIP_DIRS (testdata, retired, ...) are left out.
-    """
-    shutil.rmtree(key_dir, ignore_errors=True)
-    dest = key_dir / name
-    dest.mkdir(parents=True)
-    src = Path(src)
+def _copy_sources(src: Path, dest: Path) -> None:
     for root, dirs, files in os.walk(src):
         dirs[:] = sorted(d for d in dirs if d not in sc.SKIP_DIRS)
         depth = len(Path(root).relative_to(src).parts)
@@ -213,6 +204,28 @@ def stage_mod(src: Path, name: str, key_dir: Path, shared_src: Path) -> Path:
             out = dest / Path(root).relative_to(src) / f
             out.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(Path(root) / f, out)
+
+
+def stage_mod(src: Path, name: str, key_dir: Path, shared_src: Path) -> Path:
+    """key_dir/<Name>/ (mod sources) + key_dir/_shared/ (copy of _shared_src); returns the <Name> dir.
+
+    Copies what a build consumes (.cpp/.h/.hpp/.inc/.def/.toml): .cpp at the root and one level down (find_sources),
+    headers and .inc at any depth. *_test.cpp, t32_*, and the SKIP_DIRS (testdata, retired, ...) are left out.
+    Overlay variant: a dir with no .cpp of its own whose parent has them (e.g. dialogue_letterbox_fix_src/probe/,
+    built by its build_probe.sh) stages the parent's sources, then copies the variant's own files on top (its
+    exports.def, manifest, hooks toml and variant header replace or join the parent's), as that build script does.
+    """
+    shutil.rmtree(key_dir, ignore_errors=True)
+    dest = key_dir / name
+    dest.mkdir(parents=True)
+    src = Path(src)
+    if src.is_dir() and not find_sources(src) and find_sources(src.parent):
+        _copy_sources(src.parent, dest)
+        for p in sorted(src.iterdir()):
+            if p.is_file() and p.suffix.lower() in SRC_SUFFIXES and not is_test_source(p.name):
+                shutil.copy2(p, dest / p.name)
+    else:
+        _copy_sources(src, dest)
     shared = key_dir / "_shared"
     shared.mkdir()
     if Path(shared_src).is_dir():
