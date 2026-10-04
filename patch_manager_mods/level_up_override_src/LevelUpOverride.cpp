@@ -62,6 +62,9 @@
 //   r10=0 (default)  1 = R10 dim (batch 2a): on the PC's feats/powers level-up panels, ids that do not fit the build are left out of the panel's
 //     choosable vector, so the engine greys them. r10.profile=<role>/<style>/<align> (R10Filter.h), r10.feats= / r10.powers= all | build_dim |
 //     build_hide (= build_dim for now) | combat | force. Tags: r10_tags.ini in the directory of table=. Off with mode=off.
+//     Batch 3a: the PC's filter page (character screen) saves a `pc=r10|r10=1|pcfilter=..|ffilter=..|pfilter=..` line in levelup_playthroughs.ini;
+//     when the current GUID section has one it wins over these r10* keys (they stay a dev override for playthroughs without a pc line).
+//   ui.icon=lbl_icn_opt2 (default)  texture of the small settings icon in the 3D view's top-right corner (research/companion_levelup/r10/ui_icon)
 // Config levelup_playthroughs.ini (game dir, mtime-reloaded like the above; written by ptApply/ptRemove via .tmp + MoveFileExA; format in
 // Playthrough.h): sections [g<8 hex guid>], lines <tag>=<preset id>|instant=0|1|hold=0|1. Precedence in tagConfig: if the current GUID has a
 // section there, ONLY that section applies (a tag missing from it is unconfigured = vanilla, even if a dev key names it); otherwise the dev keys.
@@ -78,6 +81,7 @@
 #include "Playthrough.h"
 #include "R10Probe.h"
 #include "R10Filter.h"
+#include "R10Page.h"
 #include "WizardLogic.h"
 #include "OptionsLogic.h"
 
@@ -195,6 +199,7 @@ struct Config {
     bool r10 = false;        // r10=1: R10 dim on the PC's feats/powers level-up panels (batch 2a); default off
     char r10Profile[48] = "";
     r10f::Mode r10Feats = r10f::All, r10Powers = r10f::All;
+    char uiIcon[17] = "lbl_icn_opt2";   // ui.icon=<resref>: the settings icon texture (16-char resref)
     bool dev = false;    // dev=1: read the dev keys (preset./instant./hold./pause.<tag>=, legacy tags=)
     char table[MAX_PATH] = "levelup_paths.ini";
     TagCfg tags[MaxTagCfg] = {};
@@ -283,6 +288,8 @@ void reloadConfig(bool force = false) {
                 lower(v); c.r10Feats = r10f::parseMode(v);
             } else if (!strcmp(k, "r10.powers")) {
                 lower(v); c.r10Powers = r10f::parseMode(v);
+            } else if (!strcmp(k, "ui.icon")) {
+                lower(v); if (*v && strlen(v) < sizeof c.uiIcon) snprintf(c.uiIcon, sizeof c.uiIcon, "%s", v);
             } else if (!strcmp(k, "verbose")) {
                 c.verbose = atoi(v) != 0;
             } else if (!strcmp(k, "apply")) {
@@ -1372,7 +1379,7 @@ void rebuildPtCfg() {
     if (s) {
         for (int i = 0; i < s->n; ++i) {
             const pt::Line& l = s->lines[i];
-            if (!l.isTag) continue;
+            if (!l.isTag || pt::eqi(l.tag, pt::kPcKey)) continue;   // the PC's R10 line (reserved key, batch 3a) is not a companion tag
             const int e = cfgEntry(g_ptCfg, l.tag);
             if (e < 0) continue;
             snprintf(g_ptCfg.presetId[e], sizeof g_ptCfg.presetId[e], "%s", l.preset);
@@ -1435,6 +1442,25 @@ bool ptWrite() {
 
 [[maybe_unused]] uint32_t ptGuid() { return g_guid; }
 
+// The current playthrough's GUID; the first call of a playthrough creates it and writes it to the live globals table at once. False = none (logged).
+bool ptEnsureGuid() {
+    if (g_guid) return true;
+    if (g_ptDoc.n >= pt::MaxSections + 1) { logLine("GUID new: levelup_playthroughs.ini already holds %d playthroughs (cap) - not applied", pt::MaxSections); return false; }
+    const uintptr_t tb = liveTable();
+    if (!tb || !guidEngineOk()) { logLine("GUID new: no live globals table / engine mismatch - not applied"); return false; }
+    uint32_t guid;
+    do {
+        LARGE_INTEGER q;
+        QueryPerformanceCounter(&q);
+        guid = static_cast<uint32_t>(q.QuadPart) ^ static_cast<uint32_t>(GetTickCount()) ^ (static_cast<uint32_t>(rand()) << 16 | static_cast<uint32_t>(rand()));
+    } while (!guid || pt::findGuid(g_ptDoc, guid));
+    const bool wrote = writeGuid(reinterpret_cast<void*>(tb), guid);
+    logLine("GUID new g%08x live-write ok=%d", (unsigned)guid, wrote);
+    if (!wrote) return false;
+    g_guid = guid;
+    return true;
+}
+
 // API for the UI (M4). Sets tag = preset|instant|hold|pause for the current playthrough; the first call of a playthrough creates its GUID and writes it
 // to the live globals table at once (a save made afterwards carries it). False (nothing changed) when there is no live table / the write failed.
 [[maybe_unused]] bool ptApply(const char* tag, const char* presetId, bool instant, bool hold, int pause) {
@@ -1442,26 +1468,28 @@ bool ptWrite() {
     ensureHeader();
     if (!tag || !*tag || !presetId || !*presetId) return false;
     reloadPlay(true);
-    if (!g_guid) {
-        if (g_ptDoc.n >= pt::MaxSections + 1) { logLine("GUID new: levelup_playthroughs.ini already holds %d playthroughs (cap) - not applied", pt::MaxSections); return false; }
-        const uintptr_t tb = liveTable();
-        if (!tb || !guidEngineOk()) { logLine("GUID new: no live globals table / engine mismatch - not applied"); return false; }
-        uint32_t guid;
-        do {
-            LARGE_INTEGER q;
-            QueryPerformanceCounter(&q);
-            guid = static_cast<uint32_t>(q.QuadPart) ^ static_cast<uint32_t>(GetTickCount()) ^ (static_cast<uint32_t>(rand()) << 16 | static_cast<uint32_t>(rand()));
-        } while (!guid || pt::findGuid(g_ptDoc, guid));
-        const bool wrote = writeGuid(reinterpret_cast<void*>(tb), guid);
-        logLine("GUID new g%08x live-write ok=%d", (unsigned)guid, wrote);
-        if (!wrote) return false;
-        g_guid = guid;
-    }
+    if (!ptEnsureGuid()) return false;
     const bool ok = pt::setTag(g_ptDoc, g_guid, tag, presetId, instant, hold, pause) && ptWrite();
     logLine("PLAYTHROUGH write g%08x tag=%s ok=%d", (unsigned)g_guid, tag, ok);
     reloadPlay(true);   // on failure this restores the in-memory doc from the file
     return ok;
 }
+// API for the UI (batch 3a): the PC's R10 filter line `pc=r10|r10=1|pcfilter=..|ffilter=..|pfilter=..` (pt::setPc) for the current playthrough,
+// GUID created as in ptApply. Tokens are R10Page.h's (already valid). False (nothing changed) on no GUID / a lossy file / a failed write.
+[[maybe_unused]] bool ptSetPc(bool on, const char* pcfilter, const char* ffilter, const char* pfilter) {
+    saferead::beginScope();
+    ensureHeader();
+    reloadPlay(true);
+    if (!ptEnsureGuid()) return false;
+    if (g_ptDoc.lossy) { logLine("PLAYTHROUGH write refused: file exceeded the caps (would lose data)"); return false; }
+    const bool ok = pt::setPc(g_ptDoc, g_guid, on, pcfilter, ffilter, pfilter) && ptWrite();
+    logLine("PLAYTHROUGH write g%08x tag=%s r10=%d ok=%d", (unsigned)g_guid, pt::kPcKey, on, ok);
+    reloadPlay(true);
+    return ok;
+}
+// The PC's saved R10 line of the current playthrough, nullptr = none (the ini r10* keys apply).
+const pt::Line* ptPcLine() { return g_guid ? pt::findPc(g_ptDoc, g_guid) : nullptr; }
+
 // Removes the tag from the current playthrough's section; the (possibly empty) section stays so the dev keys never apply again to this playthrough.
 [[maybe_unused]] bool ptRemove(const char* tag) {
     saferead::beginScope();
@@ -2193,11 +2221,37 @@ int r10DimVector(int kind, uint32_t vec, const r10f::Profile& p, r10f::Mode m, i
     return v;
 }
 
+// Effective R10 config (batch 3a): the current playthrough's `pc` line when there is one, else the ini r10* keys (dev override).
+struct R10Eff { bool on = false, playthrough = false; char profile[48] = ""; r10f::Mode feats = r10f::All, powers = r10f::All; };
+R10Eff r10Effective() {
+    R10Eff e;
+    if (const pt::Line* l = ptPcLine()) {
+        e.playthrough = true; e.on = l->r10;
+        snprintf(e.profile, sizeof e.profile, "%s", l->pcfilter);
+        e.feats = r10f::parseMode(l->ffilter[0] ? l->ffilter : "all"); e.powers = r10f::parseMode(l->pfilter[0] ? l->pfilter : "all");
+    } else {
+        e.on = g_cfg.r10;
+        snprintf(e.profile, sizeof e.profile, "%s", g_cfg.r10Profile);
+        e.feats = g_cfg.r10Feats; e.powers = g_cfg.r10Powers;
+    }
+    return e;
+}
+int g_r10SrcLast = -1;   // last logged R10 source: 0 ini, 1 playthrough (+ on/off bit 2)
+void r10LogSource(const R10Eff& e) {
+    const int k = (e.playthrough ? 1 : 0) | (e.on ? 2 : 0);
+    if (k == g_r10SrcLast) return;
+    g_r10SrcLast = k;
+    logLine("R10 config source=%s on=%d profile=%s feats=%s powers=%s", e.playthrough ? "playthrough" : "ini", e.on, e.profile[0] ? e.profile : "-", r10f::modeName(e.feats), r10f::modeName(e.powers));
+}
+
 void r10Dim(int kind, uintptr_t ebp, int panelOff) {
     saferead::beginScope();
     reloadConfig();
-    if (!g_cfg.r10 || g_cfg.mode == Mode::Off) return;
-    const r10f::Mode m = kind == r10::Powers ? g_cfg.r10Powers : g_cfg.r10Feats;
+    reloadPlay();
+    const R10Eff eff = r10Effective();
+    r10LogSource(eff);
+    if (!eff.on || g_cfg.mode == Mode::Off) return;
+    const r10f::Mode m = kind == r10::Powers ? eff.powers : eff.feats;
     if (!r10f::dims(r10f::dimMode(m))) return;
     uint32_t panel = 0;
     if (!readAt(S_Frame, ebp, panelOff, &panel) || !panel) return;
@@ -2206,7 +2260,7 @@ void r10Dim(int kind, uintptr_t ebp, int panelOff) {
     if (pc != 1) { logLine("R10 dim skip kind=%s panel=%08x reason=%s", kn, (unsigned)panel, pc ? "unreadable" : "not_pc"); return; }
     if (!r10TagsReady()) return;
     r10f::Profile prof;
-    r10f::parseProfile(g_cfg.r10Profile, &prof);   // invalid -> empty profile -> build modes report noprofile
+    r10f::parseProfile(eff.profile, &prof);   // invalid -> empty profile -> build modes report noprofile
     int picks = -1;
     uint16_t w = 0; uint8_t b = 0;
     if (kind == r10::Feats) { if (readAt(S_R10, panel, PnF_Picks, &w)) picks = w; }

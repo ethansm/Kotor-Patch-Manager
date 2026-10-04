@@ -36,6 +36,10 @@ struct State {
 };
 inline State defaultState() { return State(); }
 
+inline const char* rowName(int row) {
+    static const char* const n[RowCount] = {"on", "role", "style", "align", "feats", "powers"};
+    return row >= 0 && row < RowCount ? n[row] : "-";
+}
 inline int rowCount(int row) {
     switch (row) {
         case RowOn: return 2;

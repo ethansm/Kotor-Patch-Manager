@@ -165,6 +165,7 @@ static bool anyVisible(uintptr_t panel) { for (int i = 0; i < C_N; ++i) if (vis(
 // Hover tick, press tick, release tick over the centre of control idx.
 static void clickCtl(uintptr_t panel, const Fake& who, int real, int idx) {
     int x, y, w, h;
+    if (idx == C_CFG && !vis(panel, C_CFG) && vis(panel, C_ICON)) idx = C_ICON;   // batch 3a: no level-up buttons -> the corner icon opens the same page
     if (!getExtent(ctl(panel, idx), &x, &y, &w, &h)) { ++g_fail; fprintf(stderr, "FAIL clickCtl: no extent\n"); return; }
     curX = x + w / 2; curY = y + h / 2;
     lmb = false; tick(panel, who, real);
@@ -176,32 +177,34 @@ static unsigned g_tipCovered = 0; static int g_tipHovers = 0;
 static bool boxShown(uintptr_t panel) { return vis(panel, C_TIPBG) || vis(panel, C_TIP); }
 static const uintptr_t kTipDelay = 500;   // fake manager appear time 0.5 s
 // Hover the centre of control idx from a fresh hover, step the clock around delay + grace (500 + 250 ms), check the box, then move away.
-static void tipHover(uintptr_t panel, const Fake& who, int idx) {
+static void tipHover(uintptr_t panel, const Fake& who, int idx, int real = 0) {   // real = the SetStats CanLevelUp value (1: Configure shown, 0: icon)
     UiPanel* r = rec(panel);
     int x, y, w, h;
     if (!r || !getExtent(ctl(panel, idx), &x, &y, &w, &h)) { ++g_fail; fprintf(stderr, "FAIL tipHover: no extent for %d\n", idx); return; }
     at<uint32_t>(g_tipMgr, 0x40) = 0; at<uint32_t>(g_tipMgr, 0x08) = (uint32_t)ctl(panel, idx); at<uint32_t>(g_tipMgr, 0x1C) = 0;
-    curX = 0; curY = 0; lmb = false; tick(panel, who, 0);   // start from no hover
+    curX = 0; curY = 0; lmb = false; tick(panel, who, real);   // start from no hover
     curX = x + w / 2; curY = y + h / 2;
     g_stubTick += 20000;
     const DWORD t0 = g_stubTick;
     ++g_tipHovers;
-    tick(panel, who, 0);
+    tick(panel, who, real);
     CHECK(!boxShown(panel), "%s: no box on the first hover tick", kUiName[idx]);
-    g_stubTick = t0 + kTipDelay + 249; tick(panel, who, 0);
+    g_stubTick = t0 + kTipDelay + 249; tick(panel, who, real);
     CHECK(!boxShown(panel), "%s: no box before delay + 250 ms grace", kUiName[idx]);
-    g_stubTick = t0 + kTipDelay + 250; tick(panel, who, 0);
+    g_stubTick = t0 + kTipDelay + 250; tick(panel, who, real);
     CHECK(boxShown(panel) && vis(panel, C_TIPBG) && vis(panel, C_TIP) && txt(panel, C_TIP) == uiTipText(idx), "%s: custom box at delay + grace (tipbg %d tip %d '%s')", kUiName[idx], vis(panel, C_TIPBG), vis(panel, C_TIP), txt(panel, C_TIP).c_str());
     int bx, by, bw, bh, tx, ty, tw, th;
     getExtent(ctl(panel, C_TIPBG), &bx, &by, &bw, &bh); getExtent(ctl(panel, C_TIP), &tx, &ty, &tw, &th);
     const int yEnd = r->open ? 940 : 744;   // page column y 134..470, or above the Configure button (y 372) when the page is closed; scale 2, origin 0
-    CHECK(bx >= 108 && bx + bw <= 600 && by >= 268 && by + bh <= yEnd && bw > 0 && bh > 0, "%s: box px rect %d,%d,%d,%d outside the column (y end %d)", kUiName[idx], bx, by, bw, bh, yEnd);
+    if (idx == C_ICON)   // batch 3a: the icon's box stays inside the 3D view right of SLD_ALIGN and above BTN_AUTO (units 350..525 x 134..255)
+        CHECK(bx >= 700 && bx + bw <= 1050 && by >= 268 && by + bh <= 510 && bw > 0 && bh > 0, "%s: box px rect %d,%d,%d,%d outside the 3D-view region", kUiName[idx], bx, by, bw, bh);
+    else CHECK(bx >= 108 && bx + bw <= 600 && by >= 268 && by + bh <= yEnd && bw > 0 && bh > 0, "%s: box px rect %d,%d,%d,%d outside the column (y end %d)", kUiName[idx], bx, by, bw, bh, yEnd);
     CHECK(tx >= bx && ty >= by && tx + tw <= bx + bw && ty + th <= by + bh, "%s: text rect %d,%d,%d,%d not inside the box", kUiName[idx], tx, ty, tw, th);
     CHECK(!(at<int>(ctl(panel, C_TIPBG), Ctl_Flags) & 0x2) == false && (at<int>(ctl(panel, C_TIPBG), Ctl_Flags) & FlagClickThrough) && (at<int>(ctl(panel, C_TIP), Ctl_Flags) & FlagClickThrough), "%s: box click-through", kUiName[idx]);
     CHECK(bx + bw <= x || x + w <= bx || by + bh <= y || y + h <= by, "%s: box %d,%d,%d,%d must not cover the control %d,%d,%d,%d", kUiName[idx], bx, by, bw, bh, x, y, w, h);
-    { const int sr = nSetRect; tick(panel, who, 0); CHECK(nSetRect == sr && boxShown(panel), "%s: a steady box costs no setRect (%d)", kUiName[idx], nSetRect - sr); }
+    { const int sr = nSetRect; tick(panel, who, real); CHECK(nSetRect == sr && boxShown(panel), "%s: a steady box costs no setRect (%d)", kUiName[idx], nSetRect - sr); }
     g_tipCovered |= 1u << idx;
-    curX = 0; curY = 0; tick(panel, who, 0);   // moving away hides it
+    curX = 0; curY = 0; tick(panel, who, real);   // moving away hides it
     CHECK(!boxShown(panel), "%s: box hidden on move", kUiName[idx]);
 }
 static void tipCoverShown(uintptr_t panel, const Fake& who) {
@@ -303,7 +306,7 @@ int main(int argc, char** argv) {
     uintptr_t pA = makePanel();
     LuoUiPanelCtor((int)pA);
     CHECK(rec(pA) && rec(pA)->nCreated == C_N && nCtor == C_N && nInit == C_N, "ctor created %d (nCtor %d nInit %d)", rec(pA) ? rec(pA)->nCreated : -1, nCtor, nInit);
-    CHECK(nInitFramed == 19 && nInitPlain == 5, "templates framed %d plain %d (want 19/5)", nInitFramed, nInitPlain);
+    CHECK(nInitFramed == 20 && nInitPlain == 5, "templates framed %d plain %d (want 20/5)", nInitFramed, nInitPlain);
     CHECK(g_addToListSeen == 0, "InitControl addToList must be 0");
     CHECK(at<int>(pA, Panel_CtlCount) == 70 && nList == 0, "ctor must not append (count %d, listAdd %d)", at<int>(pA, Panel_CtlCount), nList);
     { bool allHidden = true; for (int i = 0; i < C_N; ++i) if (isVisible(ctl(pA, i))) allHidden = false; CHECK(allHidden, "created hidden"); }
@@ -316,7 +319,7 @@ int main(int argc, char** argv) {
     CHECK(at<int>(pA, Panel_CtlCount) == 70 + C_N && nList == C_N, "first tick appends %d (count %d listAdd %d)", (int)C_N, at<int>(pA, Panel_CtlCount), nList);
     { bool ordered = true; uint32_t arr = at<uint32_t>(pA, Panel_CtlArray); for (int i = 0; i < C_N; ++i) if (at<uint32_t>(arr, (70 + i) * 4) != (uint32_t)ctl(pA, i) || at<int>(ctl(pA, i), Ctl_Id) != 70 + i) ordered = false; CHECK(ordered, "z-order / ids"); }
     CHECK(logCount("UI create panel=") == 1, "UI create logged %d times", logCount("UI create panel="));
-    CHECK(vis(pA, C_CFG) && txt(pA, C_CFG) == "Configure" && !vis(pA, C_STATUS) && !vis(pA, C_BG0) && !vis(pA, C_TITLE) && !vis(pA, C_APPLY) && !vis(pA, C_CANCEL), "state: cfg=%d '%s'", vis(pA, C_CFG), txt(pA, C_CFG).c_str());
+    CHECK(!vis(pA, C_CFG) && vis(pA, C_ICON) && txt(pA, C_CFG) == "Configure" && !vis(pA, C_STATUS) && !vis(pA, C_BG0) && !vis(pA, C_TITLE) && !vis(pA, C_APPLY) && !vis(pA, C_CANCEL), "state: cfg=%d '%s'", vis(pA, C_CFG), txt(pA, C_CFG).c_str());
     for (int i = 0; i < 3; ++i) tick(pA, atton, 0);
     CHECK(at<int>(pA, Panel_CtlCount) == 70 + C_N && nList == C_N && logCount("UI create panel=") == 1, "no re-append on later ticks");
     { int x, y, w, h; getExtent(ctl(pA, C_CFG), &x, &y, &w, &h); CHECK(x == 724 && y == 744 && w == 188 && h == 52, "cfg rect %d,%d,%d,%d (want 724,744,188,52)", x, y, w, h);
@@ -331,14 +334,18 @@ int main(int argc, char** argv) {
     CHECK(nColor == 1, "colour written only on change");
     tick(pA, atton, 0);
     CHECK(txt(pA, C_CFG) == "Configure" && nColor == 2 && lastColor[0] == 0.f && lastColor[1] == 1.f, "nudge off restores the base colour");
-    // PC and a tag without presets: everything hidden
+    // batch 3a: level-up buttons shown (held result 1) -> Configure, no icon; the PC gets the filter button; a tag without presets: everything hidden
+    tick(pA, atton, 1);
+    CHECK(vis(pA, C_CFG) && !vis(pA, C_ICON), "held result 1: cfg %d icon %d", vis(pA, C_CFG), vis(pA, C_ICON));
     tick(pA, pc, 1);
-    CHECK(!anyVisible(pA), "PC leader: all hidden");
+    CHECK(vis(pA, C_CFG) && !vis(pA, C_ICON) && txt(pA, C_CFG) == "Level-up filter" && !vis(pA, C_STATUS) && !vis(pA, C_BG0), "PC leader: filter button '%s'", txt(pA, C_CFG).c_str());
+    tick(pA, pc, 0);
+    CHECK(!vis(pA, C_CFG) && vis(pA, C_ICON), "PC, no level-up: icon only");
     tick(pA, nobody, 1);
     CHECK(!anyVisible(pA), "tag without presets: all hidden");
     Fake garbage = makeCreature("x", {{0, 1}});
     tick(pA, atton, 0);
-    CHECK(vis(pA, C_CFG), "atton shown again");
+    CHECK(vis(pA, C_ICON) && !vis(pA, C_CFG), "atton shown again");
     CHECK(LuoHold_84F221(P(0x20), P(g_frames[pA])) == 0 && !anyVisible(pA), "unreadable stats: hidden, no crash");
     CHECK(LuoHold_84F221(P(atton.stats), nullptr) == 0 && LuoHold_84F221(P(atton.stats), P(arenaAlloc(0x400) + 0x300)) == 0, "no frame / empty panel slot: no tick, no crash");
     (void)garbage;
@@ -373,7 +380,7 @@ int main(int argc, char** argv) {
     uintptr_t pG = makePanel();
     LuoUiPanelCtor((int)pG);
     tick(pG, atton, 0);
-    CHECK(vis(pG, C_CFG), "pG shown");
+    CHECK(vis(pG, C_ICON), "pG shown");
     setIni("mode=off", table);
     tick(pG, atton, 0);
     CHECK(!anyVisible(pG), "mode=off: hidden");
@@ -383,12 +390,12 @@ int main(int argc, char** argv) {
     // 4. options page through simulated clicks on panel pE (fresh: first tick appends)
     uintptr_t pW = pE;
     tick(pW, atton, 0);
-    CHECK(vis(pW, C_CFG), "pW cfg visible");
+    CHECK(vis(pW, C_ICON) && !vis(pW, C_CFG), "pW icon visible (no level-up: no Configure button)");
     const int sounds = nSound;
     clearLog();
     clickCtl(pW, atton, 0, C_CFG);
     CHECK(nSound == sounds + 1, "hover sound once per enter (%d)", nSound - sounds);
-    CHECK(rec(pW)->open && logHas("UI click cfg tag=Atton row=-") && logHas("UI page open tag=Atton start=atton__melee_dual_light_early (recommended)"), "cfg click opens the page:\n%s", readLog().c_str());
+    CHECK(rec(pW)->open && logHas("UI click icon tag=Atton row=-") && logHas("UI page open tag=Atton start=atton__melee_dual_light_early (recommended)"), "cfg click opens the page:\n%s", readLog().c_str());
     {
         UiPanel* r = rec(pW);
         const Preset* rp = findPreset(PRESET);
@@ -473,7 +480,7 @@ int main(int argc, char** argv) {
         }
         // Cancel closes
         clickCtl(pW, atton, 0, C_CANCEL);
-        CHECK(!r->open && !vis(pW, C_BG0) && !vis(pW, C_APPLY) && vis(pW, C_CFG), "cancel closes");
+        CHECK(!r->open && !vis(pW, C_BG0) && !vis(pW, C_APPLY) && vis(pW, C_ICON), "cancel closes");
         // reopen -> toggles reset; pick a non-recommended preset, Apply writes the line with the toggles
         clickCtl(pW, atton, 0, C_CFG);
         CHECK(r->open && r->instant == false && r->bank == true && r->pause == 0, "reopen resets toggles for an unconfigured tag");
@@ -493,7 +500,7 @@ int main(int argc, char** argv) {
         CHECK(ini.find("atton=" + id + "|instant=1|hold=0") != std::string::npos, "ini line:\n%s", ini.c_str());
         { const TagCfg* c = tagConfig("atton"); CHECK(c && c->instant && !c->hold && c->preset >= 0 && g_presets[c->preset].id == id, "tagConfig switched"); }
         tick(pW, atton, 0);
-        CHECK(txt(pW, C_CFG) == "Change path" && vis(pW, C_CFG) && vis(pW, C_STATUS), "cfg text after apply '%s'", txt(pW, C_CFG).c_str());
+        CHECK(txt(pW, C_CFG) == "Change path" && !vis(pW, C_CFG) && vis(pW, C_ICON) && vis(pW, C_STATUS), "cfg text after apply '%s'", txt(pW, C_CFG).c_str());
         // configured: opens on the configured preset with the config's toggles; Vanilla and Use recommended are offered
         clearLog();
         clickCtl(pW, atton, 0, C_CFG);
@@ -690,7 +697,51 @@ int main(int argc, char** argv) {
         { int x, y, w, h; getExtent(ctl(pW, C_ROW0 + 0), &x, &y, &w, &h); (void)x; (void)y; (void)w; (void)h; }
         // PC leader hides + resets the page
         tick(pW, pc, 0);
-        CHECK(!r->open && !anyVisible(pW), "PC leader hides + closes the page");
+        CHECK(!r->open && !vis(pW, C_BG0) && !vis(pW, C_STATUS) && vis(pW, C_ICON) && !vis(pW, C_CFG), "PC leader closes the page, shows its own icon");
+        // batch 3a: the PC's R10 filter page (icon -> page -> rows -> Apply writes the pc line; Cancel writes nothing; reopen loads it)
+        {
+            const std::string before = fileText("levelup_playthroughs.ini");
+            clearLog();
+            clickCtl(pW, pc, 0, C_ICON);
+            CHECK(r->open && r->pcPage && logHas("UI click icon tag= row=-") && logHas("UI r10 page open start=default on=0"), "PC icon opens the R10 page:\n%s", readLog().c_str());
+            CHECK(vis(pW, C_BG0) && txt(pW, C_TITLE) == "Level-up filter" && vis(pW, C_APPLY) && vis(pW, C_CANCEL) && !vis(pW, C_INSTANT) && !vis(pW, C_BANK) && !vis(pW, C_PAUSE) &&
+                  !vis(pW, C_BUILD) && !vis(pW, C_VANILLA) && !vis(pW, C_REC) && !vis(pW, C_ICON) && !vis(pW, C_CFG) && !vis(pW, C_STATUS), "R10 page controls");
+            { bool rows = true; for (int i = 0; i < NumRows; ++i) if (!vis(pW, C_ROW0 + i)) rows = false; CHECK(rows, "all six R10 rows shown"); }
+            CHECK(txt(pW, C_ROW0) == "Filter: off" && txt(pW, C_ROW0 + 1) == "Role: melee" && txt(pW, C_ROW0 + 4) == "Feats: build_dim" && txt(pW, C_ROW0 + 5) == "Powers: build_dim",
+                  "R10 rows '%s' '%s' '%s'", txt(pW, C_ROW0).c_str(), txt(pW, C_ROW0 + 1).c_str(), txt(pW, C_ROW0 + 4).c_str());
+            clickCtl(pW, pc, 0, C_CANCEL);
+            CHECK(!r->open && !r->pcPage && fileText("levelup_playthroughs.ini") == before && vis(pW, C_ICON), "Cancel closes and writes nothing");
+            clickCtl(pW, pc, 0, C_ICON);
+            clearLog();
+            clickCtl(pW, pc, 0, C_ROW0);       // on
+            clickCtl(pW, pc, 0, C_ROW0 + 2);   // style none -> single
+            clickCtl(pW, pc, 0, C_ROW0 + 3);   // alignment none -> light
+            CHECK(txt(pW, C_ROW0) == "Filter: on" && txt(pW, C_ROW0 + 2) == "Style: single" && txt(pW, C_ROW0 + 3) == "Alignment: light" && logHas("UI click row0 tag= row=on") && logHas("UI click row3 tag= row=align"),
+                  "R10 rows cycle '%s' '%s' '%s':\n%s", txt(pW, C_ROW0).c_str(), txt(pW, C_ROW0 + 2).c_str(), txt(pW, C_ROW0 + 3).c_str(), readLog().c_str());
+            clearLog();
+            clickCtl(pW, pc, 0, C_APPLY);
+            std::string ini = fileText("levelup_playthroughs.ini");
+            CHECK(!r->open && ini.find("pc=r10|instant=0|hold=1|r10=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim") != std::string::npos &&
+                  logHas("UI apply pc r10=1 pcfilter=melee/single/light ffilter=build_dim pfilter=build_dim ok=1"), "Apply writes the pc line:\n%s\n%s", ini.c_str(), readLog().c_str());
+            CHECK(tagConfig("pc") == nullptr && !logHas(":r10/"), "the pc line is not a companion tag:\n%s", readLog().c_str());
+            tick(pW, pc, 0);
+            CHECK(vis(pW, C_STATUS) && txt(pW, C_STATUS) == "Level-up filter: on - feats build_dim, powers build_dim", "PC status '%s'", txt(pW, C_STATUS).c_str());
+            clearLog();
+            clickCtl(pW, pc, 0, C_ICON);
+            CHECK(r->pcPage && txt(pW, C_ROW0) == "Filter: on" && txt(pW, C_ROW0 + 3) == "Alignment: light" && logHas("UI r10 page open start=playthrough on=1"), "reopen loads the saved line:\n%s", readLog().c_str());
+            clickCtl(pW, pc, 0, C_ROW0);   // off
+            clickCtl(pW, pc, 0, C_APPLY);
+            ini = fileText("levelup_playthroughs.ini");
+            CHECK(ini.find("pc=r10|instant=0|hold=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim") != std::string::npos, "off: the line stays, no r10 field:\n%s", ini.c_str());
+            tick(pW, pc, 0);
+            CHECK(!vis(pW, C_STATUS), "filter off: no PC status");
+            tick(pW, pc, 1);
+            CHECK(vis(pW, C_CFG) && !vis(pW, C_ICON) && txt(pW, C_CFG) == "Level-up filter", "PC with a level-up: the big button '%s'", txt(pW, C_CFG).c_str());
+            CHECK(g_exoDst[ctl(pW, C_ROW0) + 0x2C] == uiTipText(C_ROW0, true) && g_exoDst[ctl(pW, C_CFG) + 0x2C] == uiTipText(C_CFG, true), "PC native tips swapped");
+            tick(pW, other, 0);
+            CHECK(logHas("UI tips kind=companion native=") && g_exoDst[ctl(pW, C_ROW0) + 0x2C] == uiTipText(C_ROW0) && !r->pcPage, "companion native tips restored");
+            for (int i = 0; i < C_N; ++i) if (uiTipText(i, true)) { int ln = 0, mx = 0; guitip::measure(uiTipText(i, true), &ln, &mx); CHECK(ln <= TipMaxLines && mx <= TipMaxChars, "PC tip %s: %d lines, %d chars", kUiName[i], ln, mx); }
+        }
         // Apply failure (no live table) -> title says so and the page stays open
         tick(pW, other, 0);
         clickCtl(pW, other, 0, C_CFG);
@@ -828,7 +879,7 @@ int main(int argc, char** argv) {
         unsigned wantMask = 0;
         for (int i = 0; i < C_N; ++i) {
             const char* t = uiTipText(i);
-            const bool want = i == C_CFG || (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PAUSE || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
+            const bool want = i == C_CFG || i == C_ICON || (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PAUSE || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
             CHECK((t != nullptr) == want, "tip text for %s: %s (want %d)", kUiName[i], t ? "set" : "null", want);
             if (!t) continue;
             wantMask |= 1u << i;
@@ -854,7 +905,7 @@ int main(int argc, char** argv) {
         }
         // closed page: Configure button tip (box goes above y 372, inside x 54..300)
         tipCoverShown(pT, attonLo);
-        CHECK(g_tipCovered == (1u << C_CFG), "closed page: only the Configure button has a tip (%x)", g_tipCovered);
+        CHECK(g_tipCovered == (1u << C_ICON), "closed page, no level-up: only the icon has a tip (%x)", g_tipCovered);
         clickCtl(pT, attonLo, 0, C_CFG);
         CHECK(rec(pT)->open && !boxShown(pT), "page open, box hidden after the click");
         tipCoverShown(pT, attonLo);
@@ -875,8 +926,16 @@ int main(int argc, char** argv) {
             CHECK(vis(pV, C_ROW0 + opt::VariantRow), "variant row shown for the tip test");
             if (vis(pV, C_ROW0 + opt::VariantRow)) { tipHover(pV, g0, C_ROW0 + opt::VariantRow); }
         }
+        {   // batch 3a: the Configure button exists only next to the engine's level-up buttons (held result 1; g0t0 is unconfigured here)
+            const Fake g1 = makeCreature("g0t0", {{0, 3}});
+            uintptr_t pC = makePanel();
+            LuoUiPanelCtor((int)pC);
+            tick(pC, g1, 1);
+            CHECK(vis(pC, C_CFG) && !vis(pC, C_ICON), "level-up shown: Configure, no icon");
+            if (vis(pC, C_CFG)) tipHover(pC, g1, C_CFG, 1);
+        }
         CHECK(g_tipCovered == wantMask, "every tip control shown + hovered once (covered %06x, want %06x)", g_tipCovered, wantMask);
-        CHECK(logCount("UI tips native=") == 2, "native tips set once per appended panel (pT, pV), not from clicks (%d)", logCount("UI tips native="));
+        CHECK(logCount("UI tips native=") == 3, "native tips set once per appended panel (pT, pV, pC), not from clicks (%d)", logCount("UI tips native="));
         { bool same = true; for (int i = 0; i < C_N; ++i) if (uiTipText(i) && g_exoDst[ctl(pT, i) + 0x2C] != uiTipText(i)) same = false; CHECK(same, "native strings unchanged after the clicks"); }
         CHECK(logCount("TIPPROBE over_is_ours=1 owner_is_ours=0 shown=0 ctl40=0 timer=0.00 appear=0.50 dis=0 ctl=") >= g_tipHovers && logCount("UI tip custom ctl=") == g_tipHovers,
               "one probe line + one custom-box line per hover (%d hovers):\n%s", g_tipHovers, readLog().c_str());
@@ -917,7 +976,7 @@ int main(int argc, char** argv) {
             uintptr_t pN = makePanel();
             LuoUiPanelCtor((int)pN);
             tick(pN, attonLo, 0);
-            const uintptr_t c = ctl(pN, C_CFG);
+            const uintptr_t c = ctl(pN, C_ICON);   // batch 3a: no level-up -> the icon is the closed-page control
             int x, y, w, h; getExtent(c, &x, &y, &w, &h);
             at<uint32_t>(g_tipMgr, 0x08) = (uint32_t)c; at<uint32_t>(g_tipMgr, 0x40) = (uint32_t)c; at<uint32_t>(g_tipMgr, 0x1C) = 8; at<int>(c, Ctl_Flags) |= 0x40;
             curX = x + w / 2; curY = y + h / 2; g_stubTick += 20000; const DWORD t0 = g_stubTick;

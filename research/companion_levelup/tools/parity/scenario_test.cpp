@@ -386,6 +386,7 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
         UiPanel* r = findUi(g_panel);
         if (r) {
             g_dec["ui.cfg"] = (r->shownMask >> C_CFG) & 1 ? "1" : "0";
+            g_dec["ui.icon"] = (r->shownMask >> C_ICON) & 1 ? "1" : "0";
             g_dec["ui.status"] = (r->shownMask >> C_STATUS) & 1 ? "1" : "0";
             if (r->c[C_STATUS]) g_dec["ui.statustext"] = g_text[r->c[C_STATUS]];
         }
@@ -417,6 +418,7 @@ static bool act(const std::string& line, void* tabLoad, void* tabSave) {
         int idx = -1; for (int i = 0; i < C_N; ++i) if (arg == kUiName[i]) idx = i;
         if (idx < 0) return false;
         ensurePanel(); UiPanel* r = findUi(g_panel);
+        if (r && idx == C_CFG && !((r->shownMask >> C_CFG) & 1) && ((r->shownMask >> C_ICON) & 1)) idx = C_ICON;   // batch 3a: no level-up buttons -> the corner icon opens the same page
         int x, y, w, h;
         if (!r || !r->c[idx] || !getExtent(r->c[idx], &x, &y, &w, &h)) { CHECK(false, "click %s: no control extent", arg.c_str()); return true; }
         curX = x + w / 2; curY = y + h / 2;

@@ -16,7 +16,8 @@ int main() {
         KT_CHECK(!d.on);
         CHECK_STR(text(d, RowOn), "Filter: off"); CHECK_STR(text(d, RowRole), "Role: melee"); CHECK_STR(text(d, RowStyle), "Style: none");
         CHECK_STR(text(d, RowAlign), "Alignment: none"); CHECK_STR(text(d, RowFeats), "Feats: build_dim"); CHECK_STR(text(d, RowPowers), "Powers: build_dim");
-        CHECK_STR(text(d, RowCount), ""); CHECK_STR(text(d, -1), "");
+        KT_CHECK_EQ(rowName(RowOn), "on"); KT_CHECK_EQ(rowName(RowPowers), "powers"); KT_CHECK_EQ(rowName(RowCount), "-"); KT_CHECK_EQ(rowName(-1), "-");
+        CHECK_STR(text(d, RowCount), "");CHECK_STR(text(d, -1), "");
         CHECK_STR(pcTok(d), "melee/none/none");
     }
     { // cycle: every row wraps both ways after rowCount steps; the on row toggles

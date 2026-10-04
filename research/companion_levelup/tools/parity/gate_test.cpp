@@ -626,6 +626,34 @@ int main(int argc, char** argv) {
         CHECK(*reinterpret_cast<int32_t*>(panel + PnP_Vec + 4) == 4 && !memcmp(P(pArr), pWant, sizeof pWant), "powers: dark 7, 9 dropped (count %d)",
               *reinterpret_cast<int32_t*>(panel + PnP_Vec + 4));
         CHECK(logHas("R10 dim kind=powers") && logHas("before=6 after=4 picks=2 fallback=0 verdict=applied"), "powers dim line:\n%s", readLog().c_str());
+
+        // batch 3a: the current playthrough's `pc` line wins over the ini r10* keys; a section without one leaves the ini in charge
+        {
+            const uint32_t savedGuid = g_guid;
+            g_guid = 0x0abc1234;
+            auto writePt = [](const char* body) { FILE* f = fopen("levelup_playthroughs.ini", "w"); fprintf(f, "[g0abc1234]\n%s\n", body); fclose(f); reloadPlay(true); };
+            setIni("r10=0", table);
+            writePt("pc=r10|instant=0|hold=1|r10=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim");
+            clearLog(); setF(fBase, 10, 1);
+            LuoR10Dim_90C36A(P(ebp));
+            CHECK(fSame(fWant, 6) && logHas("R10 config source=playthrough on=1 profile=melee/single/light feats=build_dim powers=build_dim"), "pc line on: dims without ini r10:\n%s", readLog().c_str());
+            setIni(on, table);
+            writePt("pc=r10|instant=0|hold=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim");
+            clearLog(); setF(fBase, 10, 1);
+            LuoR10Dim_90C36A(P(ebp));
+            CHECK(fSame(fBase, 10) && !logHas("R10 dim") && logHas("R10 config source=playthrough on=0"), "pc line off wins over ini r10=1:\n%s", readLog().c_str());
+            writePt("pc=r10|instant=0|hold=1|r10=1|pcfilter=ranged/none/none|ffilter=all|pfilter=build_dim");   // feats all -> no feat dim
+            clearLog(); setF(fBase, 10, 1);
+            LuoR10Dim_90C36A(P(ebp));
+            CHECK(fSame(fBase, 10) && !logHas("R10 dim"), "pc line ffilter=all: feats untouched:\n%s", readLog().c_str());
+            writePt("kreia=kreia__live|instant=0|hold=1");   // no pc line: the ini keys apply
+            clearLog(); setF(fBase, 10, 1);
+            LuoR10Dim_90C36A(P(ebp));
+            CHECK(fSame(fWant, 6) && logHas("R10 config source=ini on=1"), "no pc line: ini r10=1 dims:\n%s", readLog().c_str());
+            remove("levelup_playthroughs.ini");
+            g_guid = savedGuid;
+            reloadPlay(true);
+        }
         remove("levelup_override.ini");
     }
 

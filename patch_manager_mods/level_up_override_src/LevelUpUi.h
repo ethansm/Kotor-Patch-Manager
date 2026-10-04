@@ -7,6 +7,9 @@
 //     stored in a record keyed by the panel pointer (4 records, round robin). Nothing is appended yet (Mod 14 binds its ids 69..150 later).
 //   SetStats hook 0x84F221 (every frame while the screen is the updated panel) -> uiTick(panel, stats, realCanLevelUp, heldResult): the first
 //     tick appends every control in z-order, then each tick places (scale from BTN_LEVELUP = control index 66), shows/hides, sets text, polls clicks.
+// Batch 3a: the Configure button shows only while the engine shows BTN_LEVELUP/BTN_AUTO (heldResult != 0); otherwise a small icon button (C_ICON,
+//   top-right corner of the 3D view, research/companion_levelup/r10/ui_icon) opens the same page. The PC (empty tag) gets the R10 filter page
+//   (R10Page.h) in the same controls (bg, title, rows, Apply, Cancel), saved as the playthrough's `pc` line (ptSetPc).
 // Templates: plain LBL_EXPERIENCE_STAT (green text, unit rect 60,449,108,18), framed LBL_XP_BACK (framed fill, 54,431,223,39).
 // "Character screen is the active panel" = this tick runs: SetStats is called from CSWGuiInGameCharacter::Update 0x84FBB0 (the function Mod 14
 // ticks on, CharEffectsPanel.cpp CharEffectsTick ~1162 + its hooks.toml), so a click is only evaluated while the panel is being updated, and
@@ -38,8 +41,9 @@ const char* cfgButtonText(bool configured, bool canLevelUp, bool* highlight) {
 constexpr unsigned S_Ui = 120;
 constexpr int NumRows = opt::NumRows + 1, MaxUiPanels = 4, BtnLevelUpIndex = 66, UiText = 160;   // option rows: Convert, Role, Style, Alignment, Skills, Variant
 constexpr uint32_t UiMagic = 0x4C554932;   // 'LUI2'
-enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_TIPBG, C_TIP, C_N };
+enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_ICON, C_TIPBG, C_TIP, C_N };
 constexpr int NumBg = 3;
+static_assert(NumRows == r10p::RowCount, "the R10 page reuses the option rows one to one");
 struct UiSpec { bool framed; int x, y, w, h; };   // layout units (800x600)
 // Options page over the stats column only (live 2026-10-02: BTN_AUTO/BTN_LEVELUP, SLD_ALIGN x 310 and LBL_LIGHT/DARK x 304 draw ON TOP of anything
 // placed in the 3D-character column, whatever the list order) -> x 54..300, y 134..470. Three stacked framed labels with the black fill = opaque.
@@ -56,8 +60,9 @@ const UiSpec kUiSpec[C_N] = {
     {false, 62, 386, 150, 24}, {true, 216, 386, 36, 24}, {true, 256, 386, 36, 24},                       // Pause at level N (label), "-", "+"
     {true, 62, 414, 230, 24},                                                                            // Use recommended
     {true, 62, 442, 72, 26}, {true, 138, 442, 72, 26}, {true, 214, 442, 78, 26},                         // Apply, Vanilla, Cancel
+    {true, 492, 172, 28, 28},                                                                            // settings icon: top-right of LBL_3DCHAR [295,134,230,336] (r10/ui_icon README)
     {true, 54, 134, 120, 40}, {false, 60, 139, 108, 30}};                                                // tooltip box + text (CUSTOM fallback, placed per hover by uiTipTick; created last = on top)
-const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel", "tipbg", "tip"};
+const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel", "icon", "tipbg", "tip"};
 const char* const kLossyText = "levelup_playthroughs.ini too large - edit by hand";   // F6: shown instead of the generic failure / status text when the file parse was lossy
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
@@ -78,9 +83,15 @@ struct UiPanel {
     guikit::ClickEdge edge;
     int hover = -1;
     char lastTag[32] = {};
+    bool pc = false;             // batch 3a: the shown creature is the PC (empty tag): Configure / icon open the R10 filter page
+    bool tipPc = false;          // kind the native tip strings are currently set for (uiTipKind)
+    int lvlLogged = -1;          // last logged level-up-buttons-shown state (UI lvlbtn line)
+    bool iconTried = false, iconOk = false;
     // options page
     bool open = false;
     char pageTag[32] = {};
+    bool pcPage = false;         // the open page is the PC's R10 filter page (r10 below), not a companion options page
+    r10p::State r10 = {};
     uint64_t pageTable = 0;
     wiz::Item items[wiz::MaxItems] = {};
     int itemPreset[wiz::MaxItems] = {};
@@ -134,9 +145,24 @@ void uiPanelCtor(uintptr_t panel) {
 
 // ---- tooltip text (pure; every line <= TipMaxChars chars, <= TipMaxLines lines: the engine box does not wrap, ours is sized from the text) ----
 constexpr int TipMaxChars = 36, TipMaxLines = 3;
-// nullptr = no tip (status, title, build line, backgrounds, the tip controls themselves).
-const char* uiTipText(int ctl) {
+// nullptr = no tip (status, title, build line, backgrounds, the tip controls themselves). pc = the PC's R10 page texts (batch 3a).
+const char* uiTipTextPc(int ctl) {
     switch (ctl) {
+    case C_CFG: return "Set your level-up filter: grey\nout feats and powers that do not\nfit your build.";
+    case C_ROW0 + r10p::RowOn: return "On: feats and powers that do not\nfit your build are greyed out\nwhen you level up.";
+    case C_ROW0 + r10p::RowRole: return "Click to cycle your build's role.";
+    case C_ROW0 + r10p::RowStyle: return "Click to cycle your weapon style.";
+    case C_ROW0 + r10p::RowAlign: return "Click to cycle your alignment.";
+    case C_ROW0 + r10p::RowFeats: return "Feats panel: all = no filter,\nbuild_dim = grey off-build feats,\ncombat / force = grey the rest.";
+    case C_ROW0 + r10p::RowPowers: return "Powers panel: all = no filter,\nbuild_dim = grey off-build powers,\ncombat / force = grey the rest.";
+    case C_APPLY: return "Save the filter for the current\nplaythrough.";
+    default: return nullptr;
+    }
+}
+const char* uiTipText(int ctl, bool pc = false) {
+    if (pc && uiTipTextPc(ctl)) return uiTipTextPc(ctl);
+    switch (ctl) {
+    case C_ICON: return "Level-up settings";
     case C_CFG: return "Choose a level-up plan for this\ncompanion. Unplanned companions\nlevel up as in the vanilla game.";
     case C_ROW0 + 0: return "When (or whether) this companion\nbecomes a Jedi.";
     case C_ROW0 + 1: return "Click to cycle Role choices;\nthe build below updates.";
@@ -183,6 +209,12 @@ void uiAppend(UiPanel* r) {
         for (int i = 0; i < C_N; ++i) if (r->c[i] && uiTipText(i) && guitip::setNative(r->c[i], uiTipText(i))) ++nat;
         logLine("UI tips native=%d", nat);
     }
+    if (r->c[C_ICON]) {   // settings icon texture (ui.icon=); the text "LU" stays as the fallback when the image does not load
+        void* im = guikit::imageFor(g_cfg.uiIcon);
+        r->iconOk = im && guikit::setFill(r->c[C_ICON], im) && guikit::setAlpha(r->c[C_ICON], 1.0f);
+        r->iconTried = true;
+        logLine("UI icon fill=%s ok=%d", g_cfg.uiIcon, r->iconOk);
+    }
     unsigned mask = 0;
     for (int i = 0; i < C_N; ++i) if (r->c[i] && guikit::detail::textObjOk(r->c[i])) mask |= 1u << i;
     logLine("UI create panel=%08x n=%d appended=%d textobj=%05x", (unsigned)r->panel, r->nCreated, ok, mask);
@@ -212,7 +244,7 @@ bool uiScale(const UiPanel* r, guikit::Scale* out) {
 // Compact slots of the shown option rows (only while the page is open).
 void uiSlots(UiPanel* r) {
     int k = 0;
-    for (int row = 0; row < NumRows; ++row) r->rowSlot[row] = (r->open && opt::shown(r->os, row)) ? k++ : -1;
+    for (int row = 0; row < NumRows; ++row) r->rowSlot[row] = (r->open && (r->pcPage || opt::shown(r->os, row))) ? k++ : -1;
 }
 void uiPlace(UiPanel* r, const guikit::Scale& s) {
     for (int i = 0; i < C_TIPBG; ++i) {   // the tooltip controls are placed per hover by uiTipTick
@@ -264,6 +296,7 @@ int uiCountSelectable(const char* tag) {
 }
 void uiClosePage(UiPanel* r) {
     r->open = false;
+    r->pcPage = false;
     r->nItems = 0;
     r->recItem = -1;
     r->os = opt::State();
@@ -423,12 +456,88 @@ void uiRenderPage(UiPanel* r, const char* tag) {
     uiShow(r, C_CANCEL, true);
 }
 
+// ---- R10 filter page (the PC, batch 3a): same controls as the options page; rows = R10Page.h ------------------------------------------
+// Start state: the playthrough's `pc` line, else the ini r10* keys when r10=1, else R10Page's default.
+void uiOpenR10(UiPanel* r) {
+    uiClosePage(r);
+    reloadPlay(true);
+    const char* how = "default";
+    if (const pt::Line* l = ptPcLine()) { r->r10 = r10p::fromTokens(l->r10, l->pcfilter, l->ffilter, l->pfilter); how = "playthrough"; }
+    else if (g_cfg.r10) { r->r10 = r10p::fromTokens(true, g_cfg.r10Profile, r10f::modeName(g_cfg.r10Feats), r10f::modeName(g_cfg.r10Powers)); how = "ini"; }
+    else r->r10 = r10p::defaultState();
+    r->open = r->pcPage = true;
+    r->pageTable = g_tableStamp;
+    logLine("UI r10 page open start=%s on=%d", how, r->r10.on);
+}
+void uiRenderR10(UiPanel* r) {
+    char buf[UiText];
+    uiSlots(r);
+    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, true);
+    uiSetText(r, C_TITLE, r->failed ? (g_ptDoc.lossy ? kLossyText : "Could not save - see log") : "Level-up filter");
+    uiShow(r, C_TITLE, true);
+    for (int row = 0; row < NumRows; ++row) {
+        r10p::rowText(r->r10, row, buf, sizeof buf);
+        uiSetText(r, C_ROW0 + row, buf);
+        uiShow(r, C_ROW0 + row, true);
+    }
+    for (int i = C_BUILD; i <= C_CANCEL; ++i) if (i != C_APPLY && i != C_CANCEL) uiShow(r, i, false);
+    uiSetText(r, C_APPLY, "Apply");
+    uiShow(r, C_APPLY, true);
+    uiSetText(r, C_CANCEL, "Cancel");
+    uiShow(r, C_CANCEL, true);
+}
+// Row click cycles; Apply saves the `pc` line (closes on success, else the title shows the failure).
+void uiClickR10(UiPanel* r, int row, int ctl) {
+    if (row >= 0) { r10p::cycle(r->r10, row, +1); return; }
+    if (ctl != C_APPLY) return;
+    char pcf[r10p::TokenLen];
+    const char* ff = nullptr; const char* pf = nullptr;
+    r10p::toTokens(r->r10, pcf, sizeof pcf, &ff, &pf);
+    const bool ok = ptSetPc(r->r10.on, pcf, ff, pf);
+    logLine("UI apply pc r10=%d pcfilter=%s ffilter=%s pfilter=%s ok=%d", r->r10.on, pcf, ff, pf, ok);
+    if (ok) uiClosePage(r); else r->failed = true;
+}
+// R11-style status line for the PC: the effective filter (playthrough line or ini), false = hidden (filter off).
+bool buildPcStatus(char* out, size_t cap) {
+    const R10Eff e = r10Effective();
+    if (out && cap) out[0] = 0;
+    if (!out || !cap || !e.on) return false;
+    snprintf(out, cap, "Level-up filter: on - feats %s, powers %s", r10f::modeName(e.feats), r10f::modeName(e.powers));
+    return true;
+}
+// Native tip strings for the PC or a companion (only the controls whose text differs). Called from uiTick when the shown creature's kind changes,
+// never from uiClick: at that moment the cursor is on the party selector, so no control of ours owns the engine tooltip.
+void uiTipKind(UiPanel* r, bool pc) {
+    int nat = 0;
+    for (int i = 0; i < C_N; ++i) if (r->c[i] && uiTipTextPc(i) && guitip::setNative(r->c[i], uiTipText(i, pc))) ++nat;
+    r->tipPc = pc;
+    logLine("UI tips kind=%s native=%d", pc ? "pc" : "companion", nat);
+}
+// 1 = a tagged creature (tag in out), 0 = the PC (readable creature with an empty tag: r10IsPc's rule), -1 = unreadable.
+int uiReadTag(uintptr_t stats, char* out, int cap) {
+    out[0] = 0;
+    if (!stats) return -1;
+    if (readTag(stats, out, cap)) return out[0] ? 1 : 0;
+    uint32_t cr = 0, str = 0, len = 0;
+    if (!readAt(S_Tag, stats, St_Creature, &cr) || !cr || !readAt(S_Tag, cr, Cr_Tag, &str) || !readAt(S_Tag, cr, Cr_Tag + 4, &len)) return -1;
+    return (!str || !len) ? 0 : -1;
+}
+// 1/0 = BTN_LEVELUP (control index 66) visible flag; -1 = unreadable. Cross-check for the heldResult rule (logged on change only).
+int uiLvlBtnVisible(const UiPanel* r) {
+    uint32_t arr = 0, ctl = 0;
+    int cnt = 0;
+    if (!readAt(S_Ui, r->panel, guikit::Panel_CtlCount, &cnt) || cnt <= BtnLevelUpIndex || !readAt(S_Ui, r->panel, guikit::Panel_CtlArray, &arr) || !arr ||
+        !readAt(S_Ui, arr, BtnLevelUpIndex * 4, &ctl) || !ctl) return -1;
+    return guikit::isVisible(ctl) ? 1 : 0;
+}
+
 // ---- hover tooltips: custom fallback box (GuiTip.h; the native strings are set in uiAppend) --------------------------------------
 // Box metrics in layout units (the controls' dialog font is ~6 units per char at 800x600): 36 chars + padding = 228 <= the 246-wide column.
 constexpr guitip::Metrics kTipMetrics = {6, 12, 6, 5};
 constexpr int kTipGap = 4;
 constexpr guitip::Region kTipRegionPage = {54, 134, 300, 470};   // stats column (nothing may sit right of x 300 inside the page area)
 constexpr guitip::Region kTipRegionCfg = {54, 134, 300, 372};    // page closed: the box goes left of / above the Configure button (y 372)
+constexpr guitip::Region kTipRegionIcon = {350, 134, 525, 255};   // icon: inside the 3D view right of SLD_ALIGN (x 346), above BTN_AUTO (y 260)
 
 // Rect of control i in layout units as uiPlace places it.
 guitip::Rect uiRectUnits(const UiPanel* r, int i) {
@@ -438,7 +547,7 @@ guitip::Rect uiRectUnits(const UiPanel* r, int i) {
 }
 // Shown control with tip text under (x,y); -1 = none. Separate from uiHit: the pause label has a tip but is not clickable.
 int uiTipHit(const UiPanel* r, int x, int y) {
-    for (int i = 0; i < C_TIPBG; ++i) if ((r->shownMask & (1u << i)) && r->c[i] && uiTipText(i) && guikit::hit(r->c[i], x, y)) return i;
+    for (int i = 0; i < C_TIPBG; ++i) if ((r->shownMask & (1u << i)) && r->c[i] && uiTipText(i, r->tipPc) && guikit::hit(r->c[i], x, y)) return i;
     return -1;
 }
 void uiTipHide(UiPanel* r) { uiShow(r, C_TIPBG, false); uiShow(r, C_TIP, false); }
@@ -465,10 +574,10 @@ void uiTipTick(UiPanel* r, const guikit::Scale& sc, int hov, bool clicked) {
                     mg.timer, mg.appear, (unsigned)mg.disabled, kUiName[hov]);
     }
     if (!show || !r->c[C_TIPBG] || !r->c[C_TIP]) { if (!show) uiTipHide(r); return; }
-    const char* t = uiTipText(hov);
+    const char* t = uiTipText(hov, r->tipPc);
     int lines = 0, maxLen = 0;
     guitip::measure(t, &lines, &maxLen);
-    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov), r->open ? kTipRegionPage : kTipRegionCfg, kTipGap);
+    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov), r->open ? kTipRegionPage : hov == C_ICON ? kTipRegionIcon : kTipRegionCfg, kTipGap);
     uiPlaceUnits(r, C_TIPBG, sc, b);
     uiPlaceUnits(r, C_TIP, sc, {b.x + kTipMetrics.padX, b.y + kTipMetrics.padY, b.w - 2 * kTipMetrics.padX, b.h - 2 * kTipMetrics.padY});
     uiSetText(r, C_TIP, t);
@@ -489,7 +598,7 @@ void uiHideAll(UiPanel* r) {
 // ---- input ----------------------------------------------------------------------------------------------------------------
 bool uiClickable(const UiPanel* r, int i) {
     if (!(r->shownMask & (1u << i))) return false;
-    if (i == C_CFG) return !r->open;
+    if (i == C_CFG || i == C_ICON) return !r->open;
     if (!r->open) return false;
     return (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
 }
@@ -501,11 +610,12 @@ int uiHit(const UiPanel* r, int x, int y) {
 
 void uiClick(UiPanel* r, const char* tag, int ctl) {
     const int row = (ctl >= C_ROW0 && ctl < C_ROW0 + NumRows) ? ctl - C_ROW0 : -1;
-    logLine("UI click %s tag=%s row=%s", kUiName[ctl], tag, row >= 0 ? opt::rowName(row) : "-");
-    if (ctl == C_CFG) { uiOpenPage(r, tag, r->curLevel); return; }
+    logLine("UI click %s tag=%s row=%s", kUiName[ctl], tag, row >= 0 ? (r->pcPage ? r10p::rowName(row) : opt::rowName(row)) : "-");
+    if (ctl == C_CFG || ctl == C_ICON) { if (r->pc) uiOpenR10(r); else uiOpenPage(r, tag, r->curLevel); return; }
     if (!r->open) return;
     if (ctl == C_CANCEL) { uiClosePage(r); return; }
     r->failed = false;
+    if (r->pcPage) { uiClickR10(r, row, ctl); return; }
     if (row >= 0) { opt::cycle(r->os, row, +1); uiClampPagePause(r); return; }
     switch (ctl) {
     case C_INSTANT: r->instant = !r->instant; break;
@@ -535,7 +645,6 @@ void uiClick(UiPanel* r, const char* tag, int ctl) {
 
 // ---- tick (from the SetStats hook) ----------------------------------------------------------------------------------------
 void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
-    (void)heldResult;   // the held state is re-evaluated (evalStats) so that "holding with no XP yet" is shown too
     saferead::beginScope();
     UiPanel* r = findUi(panel);
     if (!r) {
@@ -547,10 +656,14 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     if (!r->appended) uiAppend(r);
     if (!gateActive()) { uiHideAll(r); return; }
     char tag[32];
-    const bool haveTag = stats && readTag(stats, tag, sizeof tag);
-    if (!haveTag || !uiCountSelectable(tag)) { uiHideAll(r); r->lastTag[0] = 0; return; }   // PC (empty tag) or a tag without selectable presets
-    if (strcmp(r->lastTag, tag)) { if (r->open) uiClosePage(r); snprintf(r->lastTag, sizeof r->lastTag, "%s", tag); }
-    if (r->open && (_stricmp(r->pageTag, tag) || r->pageTable != g_tableStamp)) uiClosePage(r);
+    const int kind = uiReadTag(stats, tag, sizeof tag);
+    const bool haveTag = kind >= 0, pc = kind == 0;   // batch 3a: the PC (empty tag) gets the R10 filter page
+    if (!haveTag || (!pc && !uiCountSelectable(tag))) { uiHideAll(r); r->lastTag[0] = 0; return; }   // unreadable, or a tag without selectable presets
+    if (strcmp(r->lastTag, tag) || r->pc != pc) { if (r->open) uiClosePage(r); snprintf(r->lastTag, sizeof r->lastTag, "%s", tag); r->pc = pc; }
+    if (r->tipPc != pc) { uiTipReset(r); uiTipKind(r, pc); }
+    if (r->open && !r->pcPage && (_stricmp(r->pageTag, tag) || r->pageTable != g_tableStamp)) uiClosePage(r);
+    const bool lvl = heldResult != 0;   // the engine shows BTN_LEVELUP/BTN_AUTO exactly when SetStats' CanLevelUp (held) result is nonzero
+    if (static_cast<int>(lvl) != r->lvlLogged) { r->lvlLogged = lvl; logLine("UI lvlbtn shown=%d isVisible=%d", lvl, uiLvlBtnVisible(r)); }
     guikit::Scale sc;
     if (!uiScale(r, &sc)) {
         if (!g_uiNoScaleLogged) { g_uiNoScaleLogged = true; logLine("UI no usable scale (BTN_LEVELUP missing, no fallback) - controls hidden"); }
@@ -571,21 +684,45 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     uiPlace(r, sc);
 
     // draw
+    if (pc) {
+        if (r->open) {
+            uiShow(r, C_CFG, false); uiShow(r, C_ICON, false); uiShow(r, C_STATUS, false);
+            uiRenderR10(r);
+        } else {
+            for (int i = C_BG0; i <= C_CANCEL; ++i) uiShow(r, i, false);
+            bool hl = false;
+            uiSetText(r, C_CFG, "Level-up filter");
+            uiNudge(r, hl);
+            uiShow(r, C_CFG, lvl);
+            uiSetText(r, C_ICON, r->iconOk ? "" : "LU");
+            uiShow(r, C_ICON, !lvl);
+            char st[UiText];
+            bool sv = buildPcStatus(st, sizeof st);
+            if (g_ptDoc.lossy) { snprintf(st, sizeof st, "%s", kLossyText); sv = true; }
+            if (sv) uiSetText(r, C_STATUS, st);
+            uiShow(r, C_STATUS, sv);
+        }
+        uiTipTick(r, sc, haveCur ? uiTipHit(r, cx, cy) : -1, click);
+        return;
+    }
     const TagCfg* cfg = tagConfig(tag);
     const Preset* P = cfg && cfg->preset >= 0 && g_tableOk ? &g_presets[cfg->preset] : nullptr;
     const bool configured = P != nullptr;
     if (r->open) {
         uiShow(r, C_CFG, false);
+        uiShow(r, C_ICON, false);
         uiShow(r, C_STATUS, false);
         uiRenderPage(r, tag);
         uiTipTick(r, sc, haveCur ? uiTipHit(r, cx, cy) : -1, click);
         return;
     }
-    for (int i = C_BG0; i < C_TIPBG; ++i) uiShow(r, i, false);
+    for (int i = C_BG0; i <= C_CANCEL; ++i) uiShow(r, i, false);
     bool hl = false;
     uiSetText(r, C_CFG, cfgButtonText(configured, realCan != 0, &hl));
-    uiNudge(r, hl);
-    uiShow(r, C_CFG, true);
+    uiNudge(r, hl && lvl);
+    uiShow(r, C_CFG, lvl);   // batch 3a: the big button only next to the engine's level-up buttons; else the corner icon
+    uiSetText(r, C_ICON, r->iconOk ? "" : "LU");
+    uiShow(r, C_ICON, !lvl);
     char st[UiText];
     bool held = false;
     int banked = 0;
