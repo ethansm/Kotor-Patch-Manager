@@ -47,6 +47,7 @@ Re-read 2026-10-03 15:29 (before the install):
 - Analyzer fixtures: `engine_bug_research/fixtures/letterbox_log_101_smoke_{default,log0}.txt` (raw smoke logs: FAIL on the deliberate INVALID line only, WARN on c).
 
 ## 5. Next actions
+**RESUME HERE (10-04):** the user finished a game session (logs ~1.5 h old; 18 live logs incl. `k2-dialogue-letterbox-fix_log.txt` 32 lines). Next = analyze ALL logs with the `kotor2-log-analysis` skill (`scripts/kotor2_logs.py status|check`), archive first; handoff `.claude/handoffs/PHASE4_PLAN.handoff.md`.
 1. User: one F12 screenshot during a conversation (bright area); also check that the first NPC line shows its text (V11 add-on).
 2. Copy log + screenshots to `~/Games/KOTOR2_Mod_Workspace/playlogs_engfix_<MMDD_HHMM>/`, run `analyze_engfix_logs.py` on the copy, Read the images.
 3. A3 decision (register T1 card): top band visible -> install stage A (re-stage first if UpdatedAt / ids changed), verify, mark L1 accepted; no bands ->
