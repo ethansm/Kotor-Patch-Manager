@@ -370,13 +370,13 @@ void refreshEffective(uintptr_t hud) {
     }
 }
 
-// [General] TargetProbe (not parsed by HotbarConfig, so it lives in extra): 0 off, 1 log the decision only, 2 live.
+// [General] TargetProbe (not parsed by HotbarConfig, so it lives in extra): 0 off, 1 log the decision only, 2 live (default: a missing key means 2).
 int targetProbeMode() {
     for (auto& kv : g_cfg.general.extra) {
         std::string k = kv.first; for (auto& ch : k) ch = (char)tolower((unsigned char)ch);
         if (k == "targetprobe") return atoi(kv.second.c_str());
     }
-    return 0;
+    return 2;
 }
 
 void checkConfig(bool force) {
