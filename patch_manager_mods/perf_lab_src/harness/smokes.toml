@@ -24,7 +24,7 @@
 #
 # Notes
 #   - probe14 and perflab are dynamic builds and need the runtime DLLs (without them wine exits 53 silently under WINEDEBUG=-all).
-#   - The perflab2/perflab3/probe14/texmem/robustness/activationfix/equipiconfix smokes rely on a 7 MB .bss pad so the exe's own image covers
+#   - The perflab2/perflab3/probe14/texmem/robustness/activationfix/equipiconfix/letterbox smokes rely on a 7 MB .bss pad so the exe's own image covers
 #     the engine's addresses (0x400000-0xB00000); do not add -static (libstdc++ static grows .text past 0x4261CF in perflab2/3).
 #   - Exit codes: 0 pass, 1 check failed / LoadLibrary failed, 2 setup failure, 3 missing export.
 
@@ -175,5 +175,30 @@ extra_dlls = [
 cxxflags = ["-static", "-I../../_shared_src", "-I$KPM_DIR/Patches/Common"]
 runtime_dlls = false
 modes = ["wire", "late", "inert", "order"]
+needs_display = false
+timeout_s = 60
+
+# Letterbox (doc 24 T7): one harness for both DLL variants; probe-only modes print SKIP on the shipping DLL.
+# DLLs: live 1.0.2 md5 7b3936bc (stage_lb_102), probe 1.0.2-probe md5 969fe458. Pinned to the stage dirs, not Patches/: that copy
+# moves with in-tree rebuilds (it held 1.0.1 cf45a03a until 10-03). 1.0.0/1.0.1 fail every mode here (exit 3, missing dlbLog* exports).
+[[smoke]]
+name = "letterbox"
+src = "../../dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"
+kpatch = "../../../stage_lb_102/K2DialogueLetterboxFix.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static-libgcc", "-static-libstdc++", "-I$KPM_DIR/Patches/Common"]
+runtime_dlls = false
+modes = ["h6", "clamp", "vanilla", "disabled", "foreign", "unchanged", "late", "ini", "log0", "default", "core"]
+needs_display = false
+timeout_s = 60
+
+[[smoke]]
+name = "letterbox_probe"
+src = "../../dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"
+kpatch = "../letterbox_probe_stage/1.0.2-probe/K2DialogueLetterboxFixProbe.kpatch"
+dll_name = "windows_x86.dll"
+cxxflags = ["-static-libgcc", "-static-libstdc++", "-I$KPM_DIR/Patches/Common"]
+runtime_dlls = false
+modes = ["h6", "clamp", "vanilla", "disabled", "foreign", "unchanged", "late", "ini", "log0", "default", "core", "probe", "probe0", "probelog0"]
 needs_display = false
 timeout_s = 60
