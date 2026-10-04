@@ -421,5 +421,83 @@ class Cli(unittest.TestCase):
             shutil.rmtree(d)
 
 
+class Compact(unittest.TestCase):
+    """--latest / --summary / VERDICT (fixture GAME: 4 launches, launch 2 hangs, launch 3 gate FAIL)."""
+
+    def render(self, latest=None, summary=False, game=GAME):
+        return ar.run(game, ZERO, None, latest, summary)[0]
+
+    def test_default_unchanged_plus_verdict(self):
+        md = self.render()
+        self.assertIn("## Sources", md)
+        self.assertIn("## Summary (all launches)", md)
+        self.assertIn("**Hangs (UP without DOWN): launch 2**", md)
+        self.assertEqual(md.splitlines()[-1], "VERDICT: FAIL launches=4 hangs=1 gateB=FAIL")
+        self.assertEqual(md, ar.run(GAME, ZERO)[0])
+
+    def test_latest(self):
+        md = self.render(latest=1)
+        self.assertIn("## Summary (last 1 of 4 launches)", md)
+        full = self.render()
+        self.assertLess(len(md), len(full))
+        self.assertIn("(other_tpc_retained == 0 in every launch) [all 4 launches]: FAIL (launch 3)", md)
+        self.assertIn("**Hangs (UP without DOWN) [all 4 launches]: launch 2**", md)
+        self.assertEqual(md.splitlines()[-1], "VERDICT: FAIL launches=4 hangs=1 gateB=FAIL")
+        sec = md.split("## Summary", 1)[1].split("**Overall", 1)[0]
+        ids = [l.split("|")[1].strip() for l in sec.splitlines() if l.startswith("| ")][1:]
+        self.assertEqual(ids, ["4"])
+        self.assertNotIn("### Launch 1:", md)
+        self.assertIn("### Launch 4:", md)
+
+    def test_latest_larger_than_launches_is_all(self):
+        self.assertEqual(self.render(latest=99), self.render())
+
+    def test_summary(self):
+        md = self.render(summary=True)
+        self.assertNotIn("## Sources", md)
+        self.assertNotIn("## Launch details", md)
+        self.assertIn("## Summary (all launches)", md)
+        self.assertIn("Overall run B gate", md)
+        self.assertEqual(md.splitlines()[-1], "VERDICT: FAIL launches=4 hangs=1 gateB=FAIL")
+        self.assertLess(len(md), len(self.render()) // 2)
+
+    def test_summary_latest(self):
+        md = self.render(latest=1, summary=True)
+        self.assertNotIn("## Launch details", md)
+        self.assertIn("## Summary (last 1 of 4 launches)", md)
+        self.assertTrue(md.endswith("gateB=FAIL\n"))
+
+    def test_verdict_pass(self):
+        md = self.render(game=GAME050)
+        last = md.splitlines()[-1]
+        self.assertTrue(last.startswith("VERDICT: "), last)
+        _, L, A = ar.run(GAME050, ZERO)
+        hangs = sum(1 for x in L if A[x.idx]["hang"])
+        fail = any(A[x.idx]["gate"] == "FAIL" for x in L)
+        self.assertEqual(last, "VERDICT: %s launches=%d hangs=%d gateB=%s" % ("FAIL" if hangs or fail else "PASS", len(L), hangs, "FAIL" if fail else "PASS"))
+
+    def test_verdict_pass_single_launch(self):
+        md = ar.run(GAME, {"perflab_metrics.txt": Gate._offset_of_launch(4)})[0]
+        self.assertIn("gateB=PASS", md.splitlines()[-1])
+
+    def test_cli_out_file_ends_with_verdict_and_flags(self):
+        d = tempfile.mkdtemp()
+        try:
+            out = os.path.join(d, "o.md")
+            off = os.path.join(d, "off.txt")
+            with open(off, "w") as f:
+                f.write("perflab_metrics.txt 0\n")
+            ar.main(["--game-dir", GAME, "--from-offsets", off, "--summary", "--latest", "1", "--out", out])
+            with open(out) as f:
+                lines = f.read().splitlines()
+            self.assertTrue(lines[-1].startswith("VERDICT: "))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                ar.main(["--game-dir", GAME, "--from-offsets", off, "--latest", "2"])
+            self.assertIn("last 2 of 4", buf.getvalue())
+        finally:
+            shutil.rmtree(d)
+
+
 if __name__ == "__main__":
     unittest.main()

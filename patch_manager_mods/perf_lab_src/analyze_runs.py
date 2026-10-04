@@ -2,7 +2,9 @@
 """perf-lab / robustness / texmem / activationfix run analyzer (stdlib only, read-only).
 
 Usage:
-  analyze_runs.py [--game-dir DIR] [--from-offsets FILE] [--out OUT.md] [--arms texmem|hwmip]
+  analyze_runs.py [--game-dir DIR] [--from-offsets FILE] [--out OUT.md] [--arms texmem|hwmip] [--latest N] [--summary]
+  --latest N: summary table + launch details for the last N launches only (overall gate/hang lines still cover ALL, labelled).
+  --summary: only the summary table + overall lines. Every output (stdout and --out) ends with `VERDICT: PASS|FAIL launches=K hangs=H gateB=PASS|FAIL`.
 
 Inputs (all optional; a missing file is reported as absent, never a crash):
   perflab_metrics.txt, perflab_alloc_snaps.txt, perflab_log.txt, robustnessfixes_log.txt, texmem_log.txt,
@@ -1209,15 +1211,23 @@ def render_hwv(L, A):
     return o
 
 
-def render(game_dir, infos, offsets_used, L, A, orphans, snap_orph, headless, arms, cfg_text):
+def verdict_line(L, A):
+    """Final line of every output. gateB is FAIL only when some launch's run B gate is FAIL (N/A counts as not failed)."""
+    hung = [x for x in L if A[x.idx]["hang"]]
+    gate_ok = not any(A[x.idx]["gate"] == "FAIL" for x in L)
+    return "VERDICT: %s launches=%d hangs=%d gateB=%s" % ("PASS" if gate_ok and not hung else "FAIL", len(L), len(hung), "PASS" if gate_ok else "FAIL")
+
+
+def render(game_dir, infos, offsets_used, L, A, orphans, snap_orph, headless, arms, cfg_text, latest=None, summary=False):
     o = ["# perf-lab run analysis", "", "Game dir: `%s`" % game_dir, ""]
-    o.append("## Sources")
-    rows = [[n, offsets_used.get(n, 0), infos[n].size if infos[n].present else "-", infos[n].status()] for n in ALL_FILES]
-    o += table(["file", "start offset", "size", "status"], rows)
-    for n, t in cfg_text.items():
+    if not summary:
+        o.append("## Sources")
+        rows = [[n, offsets_used.get(n, 0), infos[n].size if infos[n].present else "-", infos[n].status()] for n in ALL_FILES]
+        o += table(["file", "start offset", "size", "status"], rows)
+        for n, t in cfg_text.items():
+            o.append("")
+            o.append("`%s` (current, not per launch): %s" % (n, t))
         o.append("")
-        o.append("`%s` (current, not per launch): %s" % (n, t))
-    o.append("")
     o.append("Launches found: %d (%d with metrics, %d attach-only stubs)." % (len(L), sum(1 for x in L if not x.stub), sum(1 for x in L if x.stub)))
     extra = []
     for n in LOG_FILES:
@@ -1228,37 +1238,42 @@ def render(game_dir, infos, offsets_used, L, A, orphans, snap_orph, headless, ar
     if extra:
         o.append("Unmatched: " + "; ".join(extra) + ".")
     o.append("")
-    o.append("## Summary (all launches)")
+    shown = L[-latest:] if latest is not None and latest > 0 else L
+    cut = len(shown) < len(L)
+    o.append("## Summary (last %d of %d launches)" % (len(shown), len(L)) if cut else "## Summary (all launches)")
     o.append("")
-    if L:
-        o += table(SUMMARY_HDR, summary_rows(L, A))
+    if shown:
+        o += table(SUMMARY_HDR, summary_rows(shown, A))
     else:
         o.append("(no launches)")
     o.append("")
+    tag = (" [all %d launches]" % len(L)) if cut else ""
     gates = [A[x.idx]["gate"] for x in L]
     real = [g for g in gates if g != "n/a"]
     if not real:
-        o.append("**Overall run B gate (other_tpc_retained == 0 in every launch): N/A (no GETIMG data)**")
+        o.append("**Overall run B gate (other_tpc_retained == 0 in every launch)%s: N/A (no GETIMG data)**" % tag)
     elif all(g == "PASS" for g in real):
-        o.append("**Overall run B gate (other_tpc_retained == 0 in every launch): PASS (%d launches)**" % len(real))
+        o.append("**Overall run B gate (other_tpc_retained == 0 in every launch)%s: PASS (%d launches)**" % (tag, len(real)))
     else:
         bad = [str(x.idx) for x in L if A[x.idx]["gate"] == "FAIL"]
-        o.append("**Overall run B gate (other_tpc_retained == 0 in every launch): FAIL (launch %s)**" % ", ".join(bad))
+        o.append("**Overall run B gate (other_tpc_retained == 0 in every launch)%s: FAIL (launch %s)**" % (tag, ", ".join(bad)))
     hung = [str(x.idx) for x in L if A[x.idx]["hang"]]
-    o.append("**Hangs (UP without DOWN): %s**" % (("launch " + ", ".join(hung)) if hung else "none"))
+    o.append("**Hangs (UP without DOWN)%s: %s**" % (tag, ("launch " + ", ".join(hung)) if hung else "none"))
     o.append("")
-    if arms:
-        o += render_arms(arms, L, A)
-    o.append("## Launch details")
-    o.append("")
-    for x in L:
-        o += render_launch(x, A[x.idx])
+    if not summary:
+        if arms:
+            o += render_arms(arms, shown, A)
+        o.append("## Launch details")
         o.append("")
+        for x in shown:
+            o += render_launch(x, A[x.idx])
+            o.append("")
+    o.append(verdict_line(L, A))
     return "\n".join(o) + "\n"
 
 
 # ----------------------------------------------------------------------------------------------------------------
-def run(game_dir, offsets, arms=None):
+def run(game_dir, offsets, arms=None, latest=None, summary=False):
     infos = {n: ReadInfo(n, os.path.join(game_dir, n), offsets.get(n, 0)) for n in ALL_FILES}
     mlaunches = parse_metrics(infos["perflab_metrics.txt"])
     snaps = parse_snaps(infos["perflab_alloc_snaps.txt"])
@@ -1279,7 +1294,7 @@ def run(game_dir, offsets, arms=None):
                 cfg[n] = "(unreadable)"
         else:
             cfg[n] = "absent"
-    md = render(game_dir, infos, offsets, L, A, orphans, snap_orph, headless, arms, cfg)
+    md = render(game_dir, infos, offsets, L, A, orphans, snap_orph, headless, arms, cfg, latest, summary)
     return md, L, A
 
 
@@ -1289,11 +1304,13 @@ def main(argv=None):
     ap.add_argument("--from-offsets", metavar="FILE")
     ap.add_argument("--out", metavar="OUT.md")
     ap.add_argument("--arms", choices=("texmem", "hwmip"))
+    ap.add_argument("--latest", type=int, metavar="N", help="summary table and launch details for the last N launches only (overall gate/hang lines still cover all)")
+    ap.add_argument("--summary", action="store_true", help="only the summary table and overall lines (no Sources, no Launch details)")
     args = ap.parse_args(argv)
     offsets = dict(DEFAULT_OFFSETS)
     if args.from_offsets:
         offsets = load_offsets(args.from_offsets)   # an explicit file replaces the defaults; unlisted files start at 0
-    md, _, _ = run(args.game_dir, offsets, args.arms)
+    md, _, _ = run(args.game_dir, offsets, args.arms, args.latest, args.summary)
     if args.out:
         with open(args.out, "w") as f:
             f.write(md)
