@@ -1,0 +1,6 @@
+[1000] == LevelUpOverride 1.0.0 loaded; first hook call (build apply=1 crc32=cbf43926) ==
+[1000] CONFIG loaded mode=rewrite apply=1 verbose=0 table=levelup_paths.ini tags=
+[1100] INSTANT tag=atton key=6 site=0x74F3E9
+[2000] INSTANT apply-now tag=atton lvl 5->6
+[3000] INSTANT apply-now skip tag=atton key=6 reason=player-created
+[4000] INSTANT apply-now WOULD tag=atton key=6

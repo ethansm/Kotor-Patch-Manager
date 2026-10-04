@@ -126,6 +126,7 @@ GRAMMAR = [
     ("BANKED_DISABLED", r"BANKED engine function bytes differ", "cpp:1435"),
     ("BANKED", r"BANKED tag=(\S+) n=(\d+) guid=([0-9a-f]+) shown=(\d+)", "cpp:1473"),
     ("INSTANT_LEADER", r"INSTANT-LEADER tag=(\S+) key=(-?\d+) controlledId=([0-9a-f]+) creature=([0-9a-f]+) site=(0x[0-9A-Fa-f]+)", "cpp:1545"),
+    ("INSTANT_APPLYNOW", r"INSTANT apply-now (?:(?:WOULD|skip) tag=(\S+) key=(-?\d+)(?: reason=(\S+))?|tag=(\S+) lvl (-?\d+)->(-?\d+))", "cpp:applyNowConsume (apply-now: menu arrow of an instant creature)"),
     ("INSTANT", r"INSTANT tag=(\S+) key=(-?\d+) site=(0x[0-9A-Fa-f]+)", "cpp:1512"),
     ("ENGINE_MISMATCH", r"ENGINE .*differ", "cpp:1330/1532"),
     ("LOG_CAP", r"== log line cap reached ==", "cpp:135"),

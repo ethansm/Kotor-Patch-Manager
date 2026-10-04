@@ -53,6 +53,11 @@ m("GT06", CPP, r"!readAt\(S_Opt, pa, 8, &flags\) \|\| \(flags & 1\) \|\|", "!rea
 m("GT07", CPP, r'(site\);\n        return )1;', r"\g<1>0;", "guiGuard no longer blocks a held leader")
 m("GT08", CPP, r'(GUARD autook[^\n]*\n        return )nullptr;', r"\g<1>c;", "autoOkBackstop no longer blocks")
 m("GT09", CPP, r"if \(!e\.ok \|\| !e\.cfg->instant \|\| e\.d == Decision::Hold\) return p;(?=\n    const uintptr_t pa)", "if (!e.ok || e.d == Decision::Hold) return p;", "instantGate ignores the instant=0 setting")
+m("AN01", CPP, r"if \(!e\.cfg->instant\) return false;   // a non-instant", "if (false) return false;   // a non-instant", "apply-now levels a non-instant config")
+m("AN02", CPP, r"\|\| pcr\) \{", ") {", "apply-now ignores PlayerCreated")
+m("AN03", CPP, r"if \(g_cfg\.mode != Mode::Rewrite\) \{ logLine\(\"INSTANT apply-now WOULD", "if (false) { logLine(\"INSTANT apply-now WOULD", "apply-now acts in log mode")
+m("AN04", CPP, r"g_applyNow\.pending = false;   // one-shot, also", "g_applyNow.pending = true;   // one-shot, also", "apply-now request never cleared (not one-shot)")
+m("AN05", CPP, r"if \(!held && g_applyNow\.pending && isMenuDrawSite", "if (g_applyNow.pending && isMenuDrawSite", "apply-now also levels a HELD creature")
 # ---- log cap (F1) / HOLD log rate limit (F14) -------------------------------------------------------------------------------------------
 m("LG01", CPP, r"    logOpen\(\);   // F1", "    if (!logOpen()) return;   // F1", "F1 regression: capped log disables the rewrite")
 m("LG02", CPP, r"if \(!g_f \|\| g_logLines >= MaxLogLines\) return;", "if (!g_f) return;", "log cap never reached")

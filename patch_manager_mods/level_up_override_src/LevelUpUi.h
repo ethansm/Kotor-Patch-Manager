@@ -385,6 +385,7 @@ void uiClick(UiPanel* r, const char* tag, int ctl) {
         const int pause = (P.holdClass && r->bank) ? uiClampPause(P, r->pause) : 0;
         const bool ok = ptApply(tag, P.id, r->instant, hold, pause);
         logLine("UI apply tag=%s preset=%s instant=%d hold=%d pause=%d ok=%d", tag, P.id, r->instant, hold, pause, ok);
+        if (ok && r->instant) requestApplyNow(tag);   // consumed by the next menu-draw gate call (outside SetStats)
         if (ok) uiClosePage(r); else r->failed = true;
         break;
     }

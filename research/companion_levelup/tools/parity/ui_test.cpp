@@ -450,6 +450,7 @@ int main(int argc, char** argv) {
         clickCtl(pW, atton, 0, C_APPLY);
         CHECK(!r->open && !vis(pW, C_BG0), "page closed after Apply");
         CHECK(ptGuid() != 0 && logHas("UI apply tag=Atton preset=") && logHas("instant=1 hold=0 pause=0 ok=1"), "apply log:\n%s", readLog().c_str());
+        CHECK(g_applyNow.pending && !_stricmp(g_applyNow.tag, "Atton"), "Apply with instant=1 records the apply-now request (consumed later, outside SetStats)");
         const std::string ini = fileText("levelup_playthroughs.ini");
         CHECK(ini.find("atton=" + id + "|instant=1|hold=0") != std::string::npos, "ini line:\n%s", ini.c_str());
         { const TagCfg* c = tagConfig("atton"); CHECK(c && c->instant && !c->hold && c->preset >= 0 && g_presets[c->preset].id == id, "tagConfig switched"); }
@@ -486,9 +487,10 @@ int main(int argc, char** argv) {
             CHECK(r->open && r->bank && r->pause == 0 && r->itemPreset[r->os.cur] == (int)(ep - g_presets), "pause block: page on the early preset");
             clickCtl(pW, atton, 0, C_BANK); clickCtl(pW, atton, 0, C_BANK);   // default -> 6 -> 5
             CHECK(r->bank && r->pause == 5 && txt(pW, C_BANK) == "Pause at level 5", "pause 5 '%s'", txt(pW, C_BANK).c_str());
-            clearLog();
+            clearLog(); g_applyNow.pending = false;
             clickCtl(pW, atton, 0, C_APPLY);
             CHECK(!r->open && logHas("UI apply tag=Atton preset=atton__melee_dual_light_early instant=0 hold=1 pause=5 ok=1"), "apply pause=5 log:\n%s", readLog().c_str());
+            CHECK(!g_applyNow.pending, "Apply with instant=0 records no apply-now request");
             CHECK(fileText("levelup_playthroughs.ini").find("atton=atton__melee_dual_light_early|instant=0|hold=1|pause=5\n") != std::string::npos, "ini |pause=5:\n%s", fileText("levelup_playthroughs.ini").c_str());
             { const TagCfg* c = tagConfig("atton"); CHECK(c && c->pause == 5 && c->hold, "tagConfig pause 5"); }
             // held-by-pause status line: Scoundrel 5 -> level 6 banked once past pause 5 (Scoundrel 5 = key 6 > 5)

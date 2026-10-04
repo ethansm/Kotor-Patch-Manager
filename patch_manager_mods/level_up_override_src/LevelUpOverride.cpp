@@ -1027,6 +1027,7 @@ struct Engine {
               guidGet = 0x00654740, serverInit = 0x0051C450;
     uintptr_t rulesGlobal = 0x00A1B4D0;   // address of the global holding the rules object (XP table at +0x38)
     uintptr_t bankedAdd = 0x007BE090;     // client message-list append, thiscall(GuiInGame, CExoString*, int 0x80, uint8 0) RET 0xC
+    uintptr_t autoLevelup = 0x006BEDF0;   // CSWSCreatureStats::AutoLevelup, thiscall(stats, int notify) RET 4 (the call UpdatePortraits makes at 0x74F47A)
 };
 Engine g_eng = {0x006F5B40, 0x006F5B00, 0x0083EA60, true};
 const uint8_t kAddFeatCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC};
@@ -1035,6 +1036,7 @@ const uint8_t kPushU32Code[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 
 
 const uint8_t kCanLevelUpCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20, 0x56, 0x89, 0x4D};
 const uint8_t kOptAccessorCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
+const uint8_t kAutoLevelupCode[] = {0x55, 0x8B, 0xEC, 0x6A, 0xFF};   // 08_level_up_override.md: AutoLevelup first 5 bytes
 const uint8_t kControlledCode[] = {0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC, 0x8B, 0x48, 0x04};
 const uint8_t kCharChangeCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xF8};
 const uint8_t kGetCreatureCode[] = {0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08, 0x89, 0x4D, 0xFC};
@@ -1844,6 +1846,61 @@ void maybeBanked(const Eval& e, uintptr_t stats) {
     logLine("BANKED tag=%s n=%d guid=%08x shown=1", e.tag, n, (unsigned)g_guid);
 }
 
+// ---- apply-now: clear the menu arrow of an instant creature right after "Apply" (doc 08) ----
+// The HUD refresh 0x74EE90 (the only place instant creatures are levelled) does not run while the in-game menu is open, so after "UI apply instant=1"
+// the portrait arrow (menu Draw 0x756B70, 4 CanLevelUp sites) stayed until the menu closed. uiClick (inside SetStats - never act there) records a
+// one-shot request (tag + short window); the next menu-draw gate call for that creature performs the same AutoLevelup(1) the HUD refresh would.
+typedef void (__thiscall* AutoLevelup_t)(void* stats, int notify);
+constexpr int Cr_PlayerCreated = 0x1200;   // creature + 0x1200: GFF PlayerCreated (08_level_up_override.md; 0x74F44B test)
+constexpr DWORD ApplyNowWindowMs = 3000;
+struct ApplyNowReq { bool pending; char tag[32]; DWORD until; };
+ApplyNowReq g_applyNow = {false, "", 0};
+int g_autoEngState = 0;   // 0 unchecked, 1 verified, 2 mismatch (apply-now disabled)
+void requestApplyNow(const char* tag) {
+    snprintf(g_applyNow.tag, sizeof g_applyNow.tag, "%s", tag);
+    g_applyNow.until = GetTickCount() + ApplyNowWindowMs;
+    g_applyNow.pending = true;
+}
+bool isMenuDrawSite(unsigned site) { return site == 0x756DD4 || site == 0x7575B5 || site == 0x757808 || site == 0x75798C; }
+// Called from holdGate for a menu-draw site with a configured, NOT held creature whose gated CanLevelUp is 1. True = the creature was levelled.
+bool applyNowConsume(uintptr_t stats, const Eval& e) {
+    if (!g_applyNow.pending) return false;
+    if (static_cast<int32_t>(GetTickCount() - g_applyNow.until) >= 0) { g_applyNow.pending = false; return false; }   // window over
+    if (_stricmp(g_applyNow.tag, e.tag)) return false;   // another portrait's gate call: keep waiting for the configured creature
+    g_applyNow.pending = false;   // one-shot, also on every failure below
+    if (!e.cfg->instant) return false;   // a non-instant config keeps its arrow (path levels left) by design
+    uint32_t cr = 0, back = 0, pcr = 0, app = 0, client = 0;
+    if (!readAt(S_Chain, stats, St_Creature, &cr) || !cr || !readAt(S_Chain, cr, Cr_Stats, &back) || back != stats) {
+        logLine("INSTANT apply-now skip tag=%s key=%d reason=creature-unreadable", e.tag, e.key);
+        return false;
+    }
+    if (!readAt(S_Chain, cr, Cr_PlayerCreated, &pcr) || pcr) {
+        logLine("INSTANT apply-now skip tag=%s key=%d reason=%s", e.tag, e.key, pcr ? "player-created" : "creature-unreadable");
+        return false;
+    }
+    if (g_cfg.mode != Mode::Rewrite) { logLine("INSTANT apply-now WOULD tag=%s key=%d", e.tag, e.key); return false; }
+    // F4 (as leaderInstant): no auto level-up while a character change is in progress; 0x740FC0 takes the client app object ([[appGlobal]+4]).
+    if (!readAt(S_Chain, g_eng.appGlobal, 0, &app) || !app || !readAt(S_Chain, app, 4, &client) || !client || !probeRead(S_Chain, reinterpret_cast<const void*>(static_cast<uintptr_t>(client)), 8)) {
+        logLine("INSTANT apply-now skip tag=%s key=%d reason=client-unreadable", e.tag, e.key);
+        return false;
+    }
+    if (reinterpret_cast<CharChange_t>(g_eng.charChange)(reinterpret_cast<void*>(static_cast<uintptr_t>(client)))) {
+        logLine("INSTANT apply-now skip tag=%s key=%d reason=character-change", e.tag, e.key);
+        return false;
+    }
+    if (g_eng.checkCode && !g_autoEngState) {
+        g_autoEngState = codeMatches(g_eng.autoLevelup, kAutoLevelupCode, sizeof kAutoLevelupCode) ? 1 : 2;
+        if (g_autoEngState == 2) logLine("ENGINE 0x6BEDF0 bytes differ - apply-now disabled");
+    }
+    if (g_eng.checkCode && g_autoEngState != 1) return false;
+    uint8_t ids[4], lv[4]; int n = 0, before = -1, after = -1;
+    if (!readClasses(stats, ids, lv, &n, &before)) before = -1;
+    reinterpret_cast<AutoLevelup_t>(g_eng.autoLevelup)(reinterpret_cast<void*>(stats), 1);
+    if (!readClasses(stats, ids, lv, &n, &after)) after = -1;
+    logLine("INSTANT apply-now tag=%s lvl %d->%d", e.tag, before, after);
+    return true;
+}
+
 // realOut (optional) receives the real CanLevelUp result (before the gate). Returns the gated result.
 int holdGate(unsigned site, void* stats, int* realOut = nullptr) {
     saferead::beginScope();
@@ -1855,6 +1912,8 @@ int holdGate(unsigned site, void* stats, int* realOut = nullptr) {
     const bool held = e.d == Decision::Hold, real = g_cfg.mode == Mode::Rewrite;
     noteHold(e.tag, e.key, held, site, real);
     if (held && real) maybeBanked(e, reinterpret_cast<uintptr_t>(stats));
+    if (!held && g_applyNow.pending && isMenuDrawSite(site) && applyNowConsume(reinterpret_cast<uintptr_t>(stats), e))
+        return holdGate(site, stats, realOut);   // levelled: re-evaluate (the request is already cleared, so no loop)
     return held && real ? 0 : r;
 }
 

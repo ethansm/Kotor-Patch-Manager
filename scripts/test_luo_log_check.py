@@ -58,6 +58,12 @@ class RealRuns(unittest.TestCase):
         self.assertEqual(r["kinds"].get("HOLD"), 2)
         self.assertEqual(r["kinds"].get("UNHOLD"), 1)
 
+    def test_instant_apply_now_lines_parse(self):
+        r = run("synth_apply_now.txt")
+        self.assertEqual(r["unknown_lines"], 0)
+        self.assertEqual(r["kinds"].get("INSTANT_APPLYNOW"), 3)
+        self.assertEqual(r["kinds"].get("INSTANT"), 1)
+
     def test_banner_crc32(self):
         r = run("synth_banner_crc.txt", expect_crc="cbf43926", expect_version="1.0.0")
         self.assertEqual(r["ident"]["banners"], [(1, "1.0.0", "1")])

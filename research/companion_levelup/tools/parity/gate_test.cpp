@@ -34,6 +34,10 @@ static int fakeCharChange(void*) { ++g_fakeCalls; return g_ccRet; }
 static void* fakeTableGet(void* ecx) { ++g_fakeCalls; g_lastTableEcx = ecx; return reinterpret_cast<void*>(0x1000F000); }
 static void* fakePartyGet(void* party, int idx) { ++g_fakeCalls; return party == reinterpret_cast<void*>(0x1000F000) && idx == 0 ? reinterpret_cast<void*>(0x1000F100) : nullptr; }
 static void* fakeGetCreature(void*) { ++g_fakeCalls; return g_creatureRet; }
+// apply-now: fake CSWSCreatureStats::AutoLevelup(stats, notify): counts, raises class slot 0 by one level, and the (fake) real CanLevelUp then answers 0
+static int g_autoCalls = 0, g_autoNotify = -1;
+static void* g_autoEcx = nullptr;
+static void fakeAutoLevelup(void* st, int notify) { ++g_autoCalls; g_autoEcx = st; g_autoNotify = notify; ++reinterpret_cast<uint8_t*>(st)[St_ClassLevel]; g_canRet = 0; }
 static uint32_t g_ctlObj[4] = {0, 0x00001234u, 0, 0};
 static void* g_ctlEcx = nullptr;
 static void* fakeControlled(void* ecx) { ++g_fakeCalls; g_ctlEcx = ecx; return g_ctlObj; }
@@ -69,7 +73,7 @@ struct Fake { uintptr_t stats, creature; };
 static Fake makeCreature(const char* tag, std::vector<std::pair<int, int>> classes) {
     Fake f;
     f.stats = arenaAlloc(0x400);
-    f.creature = arenaAlloc(0x1200);
+    f.creature = arenaAlloc(0x1210);   // +0x1200 = PlayerCreated flag (apply-now)
     uint8_t* st = reinterpret_cast<uint8_t*>(f.stats);
     st[St_ClassCount] = (uint8_t)classes.size();
     for (size_t i = 0; i < classes.size(); ++i) { st[St_ClassId + i * St_ClassStride] = (uint8_t)classes[i].first; st[St_ClassLevel + i * St_ClassStride] = (uint8_t)classes[i].second; }
@@ -115,6 +119,7 @@ int main(int argc, char** argv) {
     g_eng.tableGet = reinterpret_cast<uintptr_t>(&fakeTableGet);
     g_eng.partyGet = reinterpret_cast<uintptr_t>(&fakePartyGet);
     g_eng.getCreature = reinterpret_cast<uintptr_t>(&fakeGetCreature);
+    g_eng.autoLevelup = reinterpret_cast<uintptr_t>(&fakeAutoLevelup);
     // app global chain: [appGlobal] = app, [app+4] = client
     uintptr_t cell = arenaAlloc(16), app = arenaAlloc(32);
     *reinterpret_cast<uint32_t*>(cell) = (uint32_t)app;
@@ -356,6 +361,56 @@ int main(int argc, char** argv) {
         CHECK(tagConfig("atton") && tagConfig("atton")->pause == 0, "negative pause = 0");
     }
 
+
+    // 8c. apply-now: after "Apply" with instant=1 the next menu-draw gate call levels the creature once (the HUD refresh does not run in the menu)
+    {
+        const unsigned menuSites[4] = {0x756DD4, 0x7575B5, 0x757808, 0x75798C};
+        auto gate = [&](unsigned site, const Fake& c) -> int {
+            switch (site) { case 0x756DD4: return LuoHold_756DD4(P(c.stats)); case 0x7575B5: return LuoHold_7575B5(P(c.stats));
+                            case 0x757808: return LuoHold_757808(P(c.stats)); case 0x75798C: return LuoHold_75798C(P(c.stats)); default: return LuoHold_74F3C7(P(c.stats)); } };
+        auto cfgIni = [&](const char* mode, int instant) { snprintf(ini, sizeof ini, "mode=%s\npreset.atton=%s\nhold.atton=1\ninstant.atton=%d", mode, PRESET, instant); setIni(ini, table); };
+        g_ccRet = 0;
+        // (a) instant + rewrite: one AutoLevelup(stats, 1), the arrow-site CanLevelUp then returns 0; logged; one-shot (f)
+        for (unsigned site : menuSites) {
+            Fake a = makeCreature("atton", {{2, 5}});
+            cfgIni("rewrite", 1); clearLog(); g_canRet = 1; g_autoCalls = 0; g_autoEcx = nullptr; g_autoNotify = -1;
+            CHECK(gate(site, a) == 1 && g_autoCalls == 0, "apply-now: no request -> arrow stays, no AutoLevelup (site %x)", site);
+            requestApplyNow("Atton");   // tag compare is case-insensitive
+            CHECK(gate(0x74F3C7, a) == 1 && g_autoCalls == 0, "apply-now: only the menu-draw sites consume the request (site %x)", site);
+            CHECK(gate(site, a) == 0 && g_autoCalls == 1 && g_autoEcx == P(a.stats) && g_autoNotify == 1, "apply-now: levelled once, arrow cleared (site %x calls %d)", site, g_autoCalls);
+            CHECK(logHas("INSTANT apply-now tag=atton lvl 5->6"), "apply-now log line (site %x):\n%s", site, readLog().c_str());
+            g_canRet = 1;
+            CHECK(gate(site, a) == 1 && g_autoCalls == 1, "apply-now: one-shot, the second gate call does nothing (site %x)", site);
+        }
+        // a gate call for another creature leaves the request pending; the configured one then consumes it; the window expires
+        { Fake a = makeCreature("atton", {{2, 5}}); cfgIni("rewrite", 1); g_canRet = 1; g_autoCalls = 0;
+          requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(other.stats)) == 1 && g_autoCalls == 0 && g_applyNow.pending, "apply-now: other creature's gate call keeps the request");
+          CHECK(LuoHold_756DD4(P(a.stats)) == 0 && g_autoCalls == 1 && !g_applyNow.pending, "apply-now: configured creature consumes it");
+          g_canRet = 1; Fake a2 = makeCreature("atton", {{2, 5}}); requestApplyNow("atton"); g_stubTick += ApplyNowWindowMs + 10;
+          CHECK(LuoHold_756DD4(P(a2.stats)) == 1 && g_autoCalls == 1 && !g_applyNow.pending, "apply-now: an expired request is dropped, no AutoLevelup"); }
+        // (b) instant=0 -> no AutoLevelup (request cleared, arrow stays by design)
+        { Fake b = makeCreature("atton", {{2, 5}}); cfgIni("rewrite", 0); clearLog(); g_canRet = 1; g_autoCalls = 0; requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(b.stats)) == 1 && g_autoCalls == 0 && !g_applyNow.pending, "apply-now: instant=0 -> no AutoLevelup, request cleared"); }
+        // (c) held creature (Scoundrel 7 with the hold class missing) -> none; the hold gate still hides the arrow
+        { cfgIni("rewrite", 1); clearLog(); g_canRet = 1; g_autoCalls = 0; requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(heldAtton.stats)) == 0 && g_autoCalls == 0, "apply-now: held creature -> no AutoLevelup (calls %d)", g_autoCalls);
+          g_applyNow.pending = false; }
+        // (d) PlayerCreated / PC / real CanLevelUp 0 / character change -> none
+        { Fake d = makeCreature("atton", {{2, 5}}); cfgIni("rewrite", 1); clearLog(); g_canRet = 1; g_autoCalls = 0;
+          *reinterpret_cast<uint32_t*>(d.creature + Cr_PlayerCreated) = 1; requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(d.stats)) == 1 && g_autoCalls == 0 && logHas("INSTANT apply-now skip tag=atton key=6 reason=player-created"), "apply-now: PlayerCreated -> none:\n%s", readLog().c_str());
+          requestApplyNow("atton"); CHECK(LuoHold_756DD4(P(pc.stats)) == 1 && g_autoCalls == 0 && g_applyNow.pending, "apply-now: PC (empty tag) never matches"); g_applyNow.pending = false;
+          Fake d2 = makeCreature("atton", {{2, 5}}); g_canRet = 0; requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(d2.stats)) == 0 && g_autoCalls == 0, "apply-now: real CanLevelUp 0 -> none"); g_applyNow.pending = false;
+          g_canRet = 1; g_ccRet = 3; requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(d2.stats)) == 1 && g_autoCalls == 0 && logHas("reason=character-change"), "apply-now: character change in progress -> none");
+          g_ccRet = 0; }
+        // (e) log mode -> WOULD line only
+        { Fake e = makeCreature("atton", {{2, 5}}); cfgIni("log", 1); clearLog(); g_canRet = 1; g_autoCalls = 0; requestApplyNow("atton");
+          CHECK(LuoHold_756DD4(P(e.stats)) == 1 && g_autoCalls == 0 && logHas("INSTANT apply-now WOULD tag=atton key=6") && !logHas("apply-now tag="), "apply-now: log mode -> WOULD only:\n%s", readLog().c_str()); }
+        g_canRet = 1;
+    }
 
     // 9. M3 save binding (fake globals table, fake CExoString, fake 0x51C450)
     {
