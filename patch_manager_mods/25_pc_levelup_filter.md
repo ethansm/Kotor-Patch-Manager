@@ -96,3 +96,27 @@ Review notes (Opus, 2026-10-04; not yet planned):
 - Persistence: Playthrough.h is a line format (`pc=<preset>|filter=dim`, section 7), not INI sections - use `pc=...|feat_filter=..|power_filter=..`
   rather than a `[PC]` section, or the playthrough parser/lossy checks need a change.
 - The "<0.1 ms" and effort numbers are estimates, not measured. Section 10 questions (build or park; source; dim vs hide) still gate this.
+
+## 12. Batch 1 (built, NOT installed) - 2026-10-04
+Decisions: R10 lives inside level-up-override (shares preset pipeline, playthrough binding, log, GuiKit; a second DLL would need its own save
+binding). Dim first, hide last; source = tags. Persistence uses Playthrough.h line fields, not a `[PC]` section.
+| part | commit (KOTOR-II) | what |
+|---|---|---|
+| contract test | d89b511 | SafeRead pins (PHASE7 C2 / doc 24 T5d, 43 checks) |
+| probe hooks | eb079ba | F1 0x89B6E4, F2 0x90C2BE, P1 0x89AB29, P2 0x9099A2: consumed-exit detours, LOG ONLY (always return 0), `r10probe=1` gate. Pure state machine `R10Probe.h` (r10_probe_test 37). Lines: `R10 panel kind= panel= bonus= client= server= tag="" ispc= stats6c= lvl= picks=` and `R10 done kind= panel= rows= choosable_seen=`; `R10 id ...` only with verbose=1 (cap 400 lines). P2 panel = `[ebp-0x68]` (disasm 0x9098F5); server = client+0xF8 cache (UNVERIFIED field). Flush on the 0x84F221 char-screen tick (may land early if that tick runs under the panel: then a duplicate session appears, harmless). |
+| tag table | f68f2b1, 2be4856 | `runtime/r10_tags.ini` from `r10/gen_r10_tags.py` (82 feats, 73 powers, 0 preset conflicts, 16 overrides, 2 preset waivers); power alignment = spells.2da `goodevil`; Haiku spot-check 18/20 + decoys 3/3. Known limit: powers carry all 5 roles (only alignment narrows them), so Build mode is permissive. |
+| filter logic | f782862 | `R10Filter.h`: modes All -> build_dim -> build_hide -> combat -> force, `fits()` = Python rule, `filterChoosable()` -1 = fallback (empty filtered set with picks left would let Accept skip the picks). Playthrough fields `|pcfilter=role/style/align|ffilter=<mode>|pfilter=<mode>` written only when set. r10_filter_test 204, playthrough 298, mutate 162/162. |
+Build: KPM 06c67a4, LevelUpOverride.kpatch md5 2604a541 (dll 1c6208ea), previous kpatch kept as `LevelUpOverride.kpatch.100_c7a2bb6.bak`.
+Gates 2026-10-04: run_tests 97/97, check_hook_bytes FAIL=0 (30 hooks), check_exports FAIL=0, parity/scenarios/mutate green, mingw 0 warnings.
+
+**Install (user present, game closed):** hooks + exports changed -> full KPatchLauncher run with all live ids (a DLL swap is NOT enough); then
+`r10probe=1` in levelup_override.ini; one feats + one powers level-up on the PC and on one companion; read the `R10 panel` / `R10 done` lines
+(`kotor2_logs.py check <log> --new`). Decide the PC test from tag="" vs ispc vs stats6c per creature.
+
+### Batch 2 outline (after the probe log)
+1. Dim: at F2/P2 return 1 (consumed exit = skip the choosable push) for ids that `fits()` rejects; run `filterChoosable` semantics per panel
+   (pre-count the choosable set, fall back to vanilla when the filtered set would be empty with picks left). PC only; `r10=1` gate.
+2. Profile: PC wizard answers -> `pcfilter=` (Configure page); companions untouched.
+3. In-panel `Filter:` button (GuiKit, feats + powers panels) cycling the mode, persisted in `ffilter=`/`pfilter=`; rebuild choosable on click.
+4. Hide last: F1/P1 skip grid rows together with F2/P2 (never F1/P1 alone: accept soft-lock), empty-grid guard (R10_findings open question 2).
+5. Recommended button ignores the filter (calls CanChooseFeat directly): document, or filter later.

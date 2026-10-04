@@ -1092,3 +1092,6 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   filter batch 1 (doc 25): probe hooks + PC/theme data + pure filter logic, built not installed. Handoff `.claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`.
 
 - Note (log analysis 2026-10-04, 1.0.0 a8fa2534 session, lines 473-628): `luo_log_check --from 473` V1/V2/V5/V7 PASS, V3 PARTIAL (no GUARD), V6 PARTIAL (first load g00000000). **V4 FAIL is a checker false positive:** `flow=portrait-refresh` (via AutoLevelup, after INSTANT-LEADER, lines 495-555) is counted as manual by `scripts/luo_log_check.py:64`; count it as auto. The unscoped run also FAILs V5 on old 0.1.0/0.2.1 lines; always pass `--from`. Report `play_session_reports/2026-10-03_evening.md`.
+- **RESUME HERE (2026-10-04 ~12:00):** R10 batch 1 DONE offline, NOT installed (doc 25 section 12): 1.1.0-probe KPM 06c67a4, kpatch 2604a541.
+  Live is still 8f9ca9e2 (UX build, not play-tested). When the user is back: (1) play-test 8f9ca9e2 (TIPPROBE / `UI pause` from line 629), (2) with consent
+  reinstall with the probe (full KPatchLauncher run, hooks changed), `r10probe=1`, PC + companion feats/powers level-up, read `R10` lines -> batch 2 plan.

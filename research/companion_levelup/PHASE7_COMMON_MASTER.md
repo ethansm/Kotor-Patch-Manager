@@ -120,3 +120,5 @@ cd ../.. && python3 scripts/test_luo_log_check.py && python3 scripts/test_luo_sc
 # mingw: copy $T/Patches to $TMPDIR, swap in our sources, i686-w64-mingw32-g++-posix -std=c++17 -Wall -Wextra -fsyntax-only -I ../Common (0 warnings)
 ```
 Live changes only with user consent, game closed, backups, never launch the game.
+
+Note 2026-10-04: R10 PC level-up filter batch 1 built inside this mod (doc 25 section 12; commits eb079ba f68f2b1 f782862, KPM 06c67a4), not installed.
