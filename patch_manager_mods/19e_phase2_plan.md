@@ -297,7 +297,8 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | shield-bar | shield bar | pending |
 | force-power-hotbar | hotbar | pending |
 | level-up-override | level-up | pending |
-| perf-lab, robustness-fixes, k2-dialogue-letterbox-fix | engine research / engine-bug | pending |
+| perf-lab, robustness-fixes | engine research / engine-bug | pending |
+| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | planning 10-03 22:20 |
 | companion-ai, ranged-ai | engine AI atlas | pending (parser `^` anchors: analyze_play_logs.py) |
 | char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe, activation-fix | their sessions | pending |
 
@@ -312,3 +313,7 @@ G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"; S=
 7. Rollback: `cp $B/mouse-probe.dll "$G/patches/" && cp $B/kplog.ini "$G/"`.
 - Chunk P (10-03, 1ec9833): scripts/kplog_parse.py (+40 tests, testdata/kplog real + hand-written samples); analyze_play_logs tests 53/53 still green. Final: gate GATE PASS (full, multilib) after the last KpLog.h change (22add9a); kplog-check OK; chunk T needed no re-check (multilib present all phase). **Phase 2 DONE 10-03.** Next = step U (user go).
 - **Step U INSTALLED 10-03 21:02 (user go: "install")**: game closed; live core 36f10b7f unchanged; `patches/mouse-probe.dll` 548d4237 (0.1.0) -> **c4fa4f8f** (0.2.0, = staged kpatch DLL); `kplog.ini` += `[mouse-probe] enabled=1 level=info channels=*`; config hooks ProbeMouseRaw/Norm/CameraFrame all exported (+KPatchInit). Backup `/home/ethansm/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_20261003_2102` (dll, kplog.ini, config, core). Rollback: `cp /home/ethansm/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_20261003_2102/mouse-probe.dll "$G/patches/" && cp /home/ethansm/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_20261003_2102/kplog.ini "$G/"`. Awaiting user play test -> expect `mouse-probe_log.txt`; `mouseprobe_log.txt` must not grow (last write 10-03 01:41).
+
+## RESUME HERE (10-03 22:20)
+- Next phase (user-routed via the vanilla-exe session): fold the dialogue-letterbox probe into KpLog.h per `19h_letterbox_probe_kplog_handoff.md` (5da68a7): fix 1.0.2 + probe variant 1.0.2-probe from one source, analyzer update, T1 path kept installable. Plan is made in plan mode from `.claude/session_handoff.md`.
+- Still open: mouse-probe 0.2.0 user play test (read `mouse-probe_log.txt` with `kplog_parse.py --stats`).
