@@ -1,0 +1,343 @@
+{
+ "batch": "B13a",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 20,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10
+ },
+ "full_read": 26,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00420410",
+   "name": "TurnOffShadows",
+   "route": "sig",
+   "steam_addr": "0x00774540"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00416c70",
+   "name": "GetWayPoints",
+   "route": "sig",
+   "steam_addr": "0x0076ae50"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00423970",
+   "name": "FollowAnimationUpdate",
+   "route": "sig",
+   "steam_addr": "0x007779b0"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00428c00",
+   "name": "PartyMenuUseItem",
+   "route": "sig",
+   "steam_addr": "0x0077cc80"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x004247a0",
+   "name": "CheckFeat",
+   "route": "sig",
+   "steam_addr": "0x007787e0"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x004244d0",
+   "name": "CanSee",
+   "route": "c2",
+   "steam_addr": "0x00778510"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041dbb0",
+   "name": "PlaySwingSound",
+   "route": "c2",
+   "steam_addr": "0x00771d40"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041a480",
+   "name": "GetEquippedItemID",
+   "route": "c2",
+   "steam_addr": "0x0076e610"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00410e50",
+   "name": "`scalar",
+   "steam_addr": "0x00765110",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00413620",
+   "name": "StripEquippedItems",
+   "steam_addr": "0x007678f0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x004137c0",
+   "name": "ClearVisibilityList",
+   "steam_addr": "0x007679f0",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00413e70",
+   "name": "UpdateRollingFootstepSound",
+   "steam_addr": "0x007680a0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041ac10",
+   "name": "UpdateRangedAttackData",
+   "steam_addr": "0x0076eda0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041ae50",
+   "name": "BarkBubble",
+   "steam_addr": "0x0076efe0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041f5a0",
+   "name": "SetDesiredOrientationForLock",
+   "steam_addr": "0x007736d0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041f6b0",
+   "name": "UnloadMonkVisuals",
+   "steam_addr": "0x007737e0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0041f730",
+   "name": "ResetAnimationState",
+   "steam_addr": "0x007737e0",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00420070",
+   "name": "GetHeadTurnHorizontal",
+   "steam_addr": "0x00774200",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x004200d0",
+   "name": "GetHeadTurnVertical",
+   "steam_addr": "0x00774260",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x004213c0",
+   "name": "SetThrownLightsaber",
+   "steam_addr": "0x007754d0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00421650",
+   "name": "CreateNewSpellLikeAbilityList",
+   "steam_addr": "0x00775760",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00421750",
+   "name": "SetInParty",
+   "steam_addr": "0x00775860",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00421820",
+   "name": "GetCameraFollowPart",
+   "steam_addr": "0x007759b0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00421840",
+   "name": "GetFollowingBody",
+   "steam_addr": "0x00775970",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00421860",
+   "name": "GetHeadHeightOffset",
+   "steam_addr": "0x00775990",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00421880",
+   "name": "GetCameraOffset",
+   "steam_addr": "0x00775950",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00422dd0",
+   "name": "IsDriveAnimationBlocked",
+   "steam_addr": "0x00776e10",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00422e00",
+   "name": "InCreatureCombat",
+   "steam_addr": "0x00776e40",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x004248c0",
+   "name": "GetEquipmentForcePowers",
+   "steam_addr": "0x00778900",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00426430",
+   "name": "ActionMenuSwapImplantRegen",
+   "steam_addr": "0x0077a470",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00426450",
+   "name": "ActionMenuSwapImplantStr",
+   "steam_addr": "0x0077a490",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x00426490",
+   "name": "ActionMenuSwapImplantEnd",
+   "steam_addr": "0x0077a4b0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0042bae0",
+   "name": "IsInjured",
+   "steam_addr": "0x0077fac0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWCCreature",
+   "gog": "0x0042bd00",
+   "name": "SetSWAnimationSpeed",
+   "steam_addr": "0x0077fce0",
+   "why": "label_suspect"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00422e80",
+   "name": "SetEngagedState",
+   "steam_addr": "0x00776ec0"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x0041f7b0",
+   "name": "ResetDesiredPositionTimer",
+   "steam_addr": "0x007738e0"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00415cf0",
+   "name": "GetCurrentWayPoint",
+   "steam_addr": "0x00769ed0"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x004208e0",
+   "name": "Hilite",
+   "steam_addr": "0x00774a10"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00426470",
+   "name": "ActionMenuSwapImplantAgi",
+   "steam_addr": "0x0077a4b0"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00428620",
+   "name": "GetHostileItems",
+   "steam_addr": "0x0077c6a0"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00428690",
+   "name": "GetHostileItems_2",
+   "steam_addr": "0x0077c710"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00420920",
+   "name": "UnHilite",
+   "steam_addr": "0x00774a50"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x0041ce10",
+   "name": "GetArmourClass",
+   "steam_addr": "0x00770fa0"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x0041cdb0",
+   "name": "DeleteLoopingCreatureSound",
+   "steam_addr": "0x00770f40"
+  },
+  {
+   "class": "CSWCCreature",
+   "content_level": "C0",
+   "gog": "0x00429f10",
+   "name": "GetTargetInterfaceTargetType",
+   "steam_addr": "0x0077df90"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 52,
+ "sample_rate": 0.2,
+ "sample_size": 11,
+ "unanswered_decoys": 0
+}

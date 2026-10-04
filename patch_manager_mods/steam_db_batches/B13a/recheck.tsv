@@ -1,0 +1,11 @@
+gog_addr	corrected_addr	source	reason
+0x00410e50	0x00765180	review:sonnet_c1.tsv	Candidate copies a CExoString at +0x310. Corrected fn is scalar deleting destructor with matching callees.
+0x00420070	0x007741a0	review:sonnet_c1.tsv	Candidate is the size-93 Vertical twin; size-92 sibling has mapped caller. Corrected body fits name.
+0x004200d0	0x00774200	review:sonnet_c1.tsv	Candidate is ApplyShadowBlob (458 bytes). Size-93 float getter after Horizontal slot matches; fits name.
+0x00421820	0x00775930	review:sonnet_c1.tsv	Candidate is a 188-byte unrelated fn; 25-byte thunk two slots earlier matches size, +0x224, callee; body fits name.
+0x00421840	0x00775950	review:sonnet_c1.tsv	Candidate is next-next thunk (float getter); slot-ordered thunk 0x775950 matches callee delta. Body fits name.
+0x00421860	0x00775970	review:sonnet_c2.tsv	0x85d320 sits 0xb0 before 0x85d3d0 as GOG 0x48d3b0 before 0x48d460. Candidate is the GetCameraOffset twin.
+0x00421880	0x00775990	review:sonnet_c2.tsv	0x85d3d0 is last getter before SetAppearanceAlignment 0x85d430, same as GOG 0x48d460 before 0x48d4c0. Candidate is a bool thunk.
+0x00426430	0x0077a470	review:sonnet_c2.tsv	Candidate pushes 0x409 (Str); 0x77a470 pushes 0x408 matching GOG Regen. Slot off by one.
+0x00426450	0x0077a490	review:sonnet_c2.tsv	Candidate pushes 0x40b; 0x77a490 pushes 0x409 matching GOG Str. Slot off by one.
+0x00426490	0x0077a4d0	review:sonnet_c2.tsv	Candidate pushes 0x40b; 0x77a4d0 pushes 0x40a as GOG End.

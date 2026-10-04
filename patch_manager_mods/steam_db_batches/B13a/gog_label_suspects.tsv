@@ -1,0 +1,13 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x00413620	CSWCCreature::StripEquippedItems	0x007678f0	Body computes direction to target (+0x30c) and stores orientation; no equipment stripping. Fits face-target.	review:sonnet_c1.tsv
+0x00413e70	CSWCCreature::UpdateRollingFootstepSound	0x007680a0	GOG callers are FlourishWeapons; body tests weapon animation ids and equipped items, no footstep sound. Param flagged bad.	review:sonnet_c1.tsv
+0x0041ac10	CSWCCreature::UpdateRangedAttackData	0x0076eda0	Pure getter by slot mask, mirror of SetLastInstant 0x76eb20; fits GetLastInstant, not UpdateRangedAttackData.	review:sonnet_c1.tsv
+0x0041ae50	CSWCCreature::BarkBubble	0x0076efe0	Maps attack index to equipped item id; no bubble or bark. Name unrelated.	review:sonnet_c1.tsv
+0x0041f5a0	CSWCCreature::SetDesiredOrientationForLock	0x007736d0	Loops 20 equip slots, then calls model vtable+0x7c twice with empty strings; no orientation or lock logic.	review:sonnet_c1.tsv
+0x0041f6b0	CSWCCreature::UnloadMonkVisuals	0x007737e0	Slot order gives this twin; content cannot separate from 0x773860. Body is a 2DA float getter, not Unload.	review:sonnet_c1.tsv
+0x0041f730	CSWCCreature::ResetAnimationState	0x00773860	Twin 116-byte 2DA float getters; slot order puts this at 0x773860, candidate is previous slot. Body is not Reset.	review:sonnet_c1.tsv
+0x004213c0	CSWCCreature::SetThrownLightsaber	0x007754d0	Derives area object id from area pointer, called by SetArea; no lightsaber logic. Fits UpdateAreaId.	review:sonnet_c1.tsv
+0x00422dd0	CSWCCreature::IsDriveAnimationBlocked	0x00776e10	Body stores two float args to +0x3c8/+0x3cc: a setter, not a predicate named IsDriveAnimationBlocked.	review:sonnet_c2.tsv
+0x004248c0	CSWCCreature::GetEquipmentForcePowers	0x00778900	Body is a 4-arg compare helper (no calls). Real equipment force-power builder is 0x778ba0 (loops [+0x228]); GOG label misplaced.	review:sonnet_c2.tsv
+0x0042bae0	CSWCCreature::IsInjured	0x0077fac0	Body releases sound source and clears +0x450/+0x454: StopRollingFootstepSound, not IsInjured. GOG callee CExoSoundSource::Stop.	review:sonnet_c2.tsv
+0x0042bd00	CSWCCreature::SetSWAnimationSpeed	0x0077fce0	Body returns a float read from +0x11dc: a getter, not a setter. Likely GetSWAnimationSpeed.	review:sonnet_c2.tsv
