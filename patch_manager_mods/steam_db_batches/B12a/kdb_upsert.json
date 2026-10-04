@@ -82,6 +82,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=28; GOG 0x006571b0] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 1289/RET28/339/23 callees; 006daf8e MOV CL,[EAX+0xac4]; 006db406 RET 0x1c; disp set = Mac ResolveRangedAttack (0x3a,0x40,0xac4,0xae0); gate pick 0x53e450 wrong",
+  "name": "CSWSCreature::ResolveRangedAttack",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006daf00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00657750] Steam batch B12a: CALLEE 4 (callees: GetClientCreature 0x58ae90, GetDEXMod 0x6b5db0, GetFeatRemainingUses 0x6b8440); SIG 1.00 | AUTO: CALLEE 4 (callees: GetClientCreature 0x58ae90, GetDEXMod 0x6b5db0, GetFeatRemainingUses 0x6b8440); SIG 1.00",
   "name": "CSWSCreature::ResolveRangedSpecialAttack",
   "source": "steam-db-B12a",
@@ -102,14 +110,6 @@
   "name": "CSWSCreature::ResolvePostRangedDamage",
   "source": "steam-db-B12a",
   "steam_addr": "0x006dc290"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00658710] Steam batch B12a: SIG 1.00 | reviewer match with anchor: 006dc499 CALL 0x005908c0 (GetAttack); 006dc4b5 MOV EDX,0x271e; 006dc4d7 MOV EAX,0x271c; [EAX+0x12]; 7/7 disp and 6/6 imm shared",
-  "name": "CSWSCreature::GetWeaponDischargeTime",
-  "source": "steam-db-B12a",
-  "steam_addr": "0x006dc460"
  },
  {
   "confidence": "high",
@@ -154,7 +154,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0065a5b0] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0065a5b0] Steam batch B12a: SIG 1.00 | override: [a] fp= unique: 006de304 MOV ECX,[EAX+0xec] of rules+0x130 2DA = Mac GetWeaponImpactTime (disp 0xec,0x130); caller ResolveMeleeAttack (Mac same)",
   "name": "CSWSCreature::GetWeaponImpactTime",
   "source": "steam-db-B12a",
   "steam_addr": "0x006de2b0"
@@ -174,6 +174,14 @@
   "name": "CSWSCreature::GetWeaponDischargeShots",
   "source": "steam-db-B12a",
   "steam_addr": "0x006de660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0065aa20] Steam batch B12a: no content anchor (C0) | override: [a] fp twin 0x6de660; 006de766 PUSH 0x99a94c = 'Hits' column (twin pushes 0x99a968 'Shots'); order matches GOG 0x65a960/0x65aa20",
+  "name": "CSWSCreature::GetWeaponHitShots",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006de720"
  },
  {
   "confidence": "high",
@@ -202,7 +210,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=20; GOG 0x0065b5a0] Steam batch B12a: CALLEE 3 (callees: GetFeatRemainingUses 0x6b8440, GetEffectLinkImmunity 0x6bc9a0, SetNumIntegers 0x5e4dd0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetFeatRemainingUses 0x6b8440, GetEffectLinkImmunity 0x6bc9a0, SetNumIntegers 0x5e4dd0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=20; GOG 0x0065b5a0] Steam batch B12a: CALLEE 3 (callees: GetFeatRemainingUses 0x6b8440, GetEffectLinkImmunity 0x6bc9a0, SetNumIntegers 0x5e4dd0); SIG 1.00 | override: [a] fp= (4075B, RET 0x14, 20 callees); 006dfc11 MOV byte [EDX+0x145],0x4; sole caller ResolveMeleeAttack 006dec87 (Mac MeleeAttack calls MeleeSpecialAttack). Pipeline 0x542e00 wrong",
   "name": "CSWSCreature::ResolveMeleeSpecialAttack",
   "source": "steam-db-B12a",
   "steam_addr": "0x006df2a0"
@@ -210,7 +218,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0065c950] Steam batch B12a: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00 | AUTO: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=20; GOG 0x0065c710] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 483/RET20/150; 006e051a MOV [EDX+0xa98],EAX; 006e057f MOV EAX,[EDX+0xb08]; 006e05f0 RET 0x14; = Mac ResolveMeleeAnimations disp 0x12x5,0xa98,0xb08",
+  "name": "CSWSCreature::ResolveMeleeAnimations",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e0410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0065c950] Steam batch B12a: CALLEE 1 (callees: SetNumIntegers 0x5e4dd0); SIG 1.00 | override: [a] fp= unique 1206B, 14 callees; sole caller SignalDamage 006ddae2; Mac SignalDamage calls SignalMeleeDamage; imm 0xf,0x10,0x13,0x15,0x16 as Mac",
   "name": "CSWSCreature::SignalMeleeDamage",
   "source": "steam-db-B12a",
   "steam_addr": "0x006e0650"
@@ -238,6 +254,14 @@
   "name": "CSWSCreature::ResolveDamage",
   "source": "steam-db-B12a",
   "steam_addr": "0x006e1540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0065da20] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 96/RET8/34; [param+0xfc]!=0 guard then 006e176f CALL 0x00582010(2,..,0xff,0xff); 006e177d RET 0x8; = Mac CalculateMaxElementalDamage disp 0xfc imm 2,0xff,0xff",
+  "name": "CSWSCreature::CalculateMaxElementalDamage",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e1720"
  },
  {
   "confidence": "high",
@@ -290,18 +314,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x0065ef50] Steam batch B12a: CALLEE 1 (callees: IsLightsaber 0x615c80); SIG 1.00 | reviewer match with anchor: 006e2c71 CALL 0x006d0620 (GetItemInSlot, PUSH 0x10/0x20) + 006e2c82 CALL 0x00615c80 (IsLightsaber), [EAX+0x1150]; same as GOG callees",
-  "name": "CSWSCreature::ResolveRangedMissToParry",
-  "source": "steam-db-B12a",
-  "steam_addr": "0x006e2c50"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x0065efd0] Steam batch B12a: STR 'VisualEffect'@0099a988; 'RangedEffect'@0099a998; SIG 1.00 | AUTO: STR 'VisualEffect'@0099a988; 'RangedEffect'@0099a998; SIG 1.00",
   "name": "CSWSCreature::ResolveOnHitVisuals",
   "source": "steam-db-B12a",
   "steam_addr": "0x006e2cd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0065f2a0] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 1657/RET12/381; 006e30ad MOV EDX,[ECX+0x28c]; 006e310d AND EDX,[EAX+0x2d4]; 12-case on-hit dispatch (006e3191 JMP [ECX*4+0x6e361c]); RET 0xc",
+  "name": "CSWSCreature::ResolveOnHitEffect",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e2fa0"
  },
  {
   "confidence": "high",
@@ -314,10 +338,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=12; GOG 0x0065fd40] Steam batch B12a: CALLEE 6 (callees: RangeWeaponEquipped 0x56e1e0, DesiredAttackRange 0x5716a0, UpdateSubareasOnMoveTo 0x5c25e0); SIG 1.00 | AUTO: CALLEE 6 (callees: RangeWeaponEquipped 0x56e1e0, DesiredAttackRange 0x5716a0, UpdateSubareasOnMoveTo 0x5c25e0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0065fd40] Steam batch B12a: CALLEE 6 (callees: RangeWeaponEquipped 0x56e1e0, DesiredAttackRange 0x5716a0, UpdateSubareasOnMoveTo 0x5c25e0); SIG 1.00 | override: [a] fp= (3044B, RET 0xc, 20 callees); 006e3d54 CALL 0x0056e1e0 RangeWeaponEquipped, 006e3ccb CALL 0x005716a0 DesiredAttackRange; Mac DoCombatStep disp 0x1b0,0x380,0x1114. 0x54xxxx picks wrong",
   "name": "CSWSCreature::DoCombatStep",
   "source": "steam-db-B12a",
   "steam_addr": "0x006e3a40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=28; GOG 0x00660930] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 2418/RET28/642/20; 006e4d03 MOV byte [EDX+0x14c],1; 006e480d MOV DX,[ECX+0x18a]; 006e4fac RET 0x1c; called by ResolveOnHitEffect 006e3567 (Mac same edge)",
+  "name": "CSWSCreature::SavingThrowRoll",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e4630"
  },
  {
   "confidence": "high",
@@ -338,6 +370,22 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00661610] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 408/RET8/122; 006e53b3 PUSH 0x11 + 006e5319 PUSH 0xd0 (= Mac Confusion imm 0x11,0xd0); ResolveOnHitEffect case 3: 006e3214 MOV [EBP-0x50],0x6e5310",
+  "name": "CSWSCreature::ApplyOnHitConfusion",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e5310"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006617b0] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 408/RET8/122; 006e5553 PUSH 0x6 + 006e54b9 PUSH 0xda (= Mac Fear imm 6,0xda); ResolveOnHitEffect case 4: 006e3236 MOV [EBP-0x50],0x6e54b0",
+  "name": "CSWSCreature::ApplyOnHitFear",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e54b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00662200] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CSWSCreature::ApplyOnHitAbilityDamage",
   "source": "steam-db-B12a",
@@ -354,10 +402,26 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00663170] Steam batch B12a: gate evidence was for a corrected pick | override: [r] fp exact 800/RET8/220/4; 006e6f24 MOV dword [EAX+0x150],1; 006e6f00 MOV EAX,[EDX+0x1198]; 006e718d RET 0x8; = Mac SetAttackSummaryFeedbackEffectData (0x145,0x150,0x1198x16)",
+  "name": "CSWSCreature::SetAttackSummaryFeedbackEffectData",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x006e6e70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x0067ab60] Steam batch B12a: CALLEE 17 (callees: AddObject 0x51e040, Constructor 0x604fb0, AddToVisibleList 0x5d1400; callers: AddNPC_2 0x5fa600, AddPUP_2 0x5fa740, GetNPCObject 0x5faaf0); SIG 1.00 | AUTO: CALLEE 17 (callees: AddObject 0x51e040, Constructor 0x604fb0, AddToVisibleList 0x5d1400; callers: AddNPC_2 0x5fa600, AddPUP_2 0x5fa740, GetNPCObject 0x5faaf0); ",
   "name": "CSWSCreature::Constructor",
   "source": "steam-db-B12a",
   "steam_addr": "0x00561f30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0067be30] Steam batch B12a: no content anchor (C0) | override: [a] fp= unique 20B: 0056320a MOV EAX,[EAX+0x104c]; Mac GetLockOrientationToObject disp 0x104c, Mac SetLockOrientationToObject writes +0x104c",
+  "name": "CSWSCreature::GetLockOrientationToObject",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x00563200"
  },
  {
   "confidence": "high",
@@ -402,6 +466,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0067bf80] Steam batch B12a: no content anchor (C0) | override: [a] fp= unique 20B: 0056335a MOV EAX,[EAX+0xff8]; Mac GetEffectSpellId/SetEffectSpellId disp 0xff8",
+  "name": "CSWSCreature::GetEffectSpellId",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x00563350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x0067bfc0] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CSWSCreature::GetPortrait",
   "source": "steam-db-B12a",
@@ -422,6 +494,14 @@
   "name": "CSWSCreature::GetDead",
   "source": "steam-db-B12a",
   "steam_addr": "0x00563460"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0067c0c0] Steam batch B12a: gate evidence was for a corrected pick | override: [a] CORRECTION from 0x563390 (that is GetPortrait GOG 0x67bfc0). fp= 44B RET 4: 0056349a CALL 0x005634c0 (fp= GOG ~CSWSCreature 0x67c0f0, 1913B) + 005634ab CALL 0x009196fd delete",
+  "name": "CSWSCreature::Destructor",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x00563490"
  },
  {
   "confidence": "high",
@@ -506,7 +586,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0067d2f0] Steam batch B12a: CALLEE 9 (callers: AIActionCheckMoveToPointRadius 0x5bb5a0, AIActionCheckInterAreaPathfinding 0x5bb920, AIActionChangeFacingPoint 0x5bbb70); SIG 1.00 | AUTO: CALLEE 9 (callers: AIActionCheckMoveToPointRadius 0x5bb5a0, AIActionCheckInterAreaPathfinding 0x5bb920, AIActionChangeFacingPoint 0x5bbb70); SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0067d2f0] Steam batch B12a: CALLEE 9 (callers: AIActionCheckMoveToPointRadius 0x5bb5a0, AIActionCheckInterAreaPathfinding 0x5bb920, AIActionChangeFacingPoint 0x5bbb70); SIG 1.00 | override: [a] fp= unique 164B RET 8: 0056474f PUSH 0x1e + 00564754 CALL 0x00540ca0 AddActionToFront; Mac AddPathfindingWaitActionToFront imm 0x1e; 9 AIActionCheck* callers",
   "name": "CSWSCreature::AddPathfindingWaitActionToFront",
   "source": "steam-db-B12a",
   "steam_addr": "0x005646c0"
@@ -650,7 +730,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00681ef0] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00681ef0] Steam batch B12a: SIG 1.00 | override: [a] fp= unique 85B RET 8: 005692cd MOV [EAX+0x390],ECX ...; disp 0xac,0xb0,0x390,0x394,0x3c8,0x3cc = Mac ResetUpdateTimes exactly",
   "name": "CSWSCreature::ResetUpdateTimes",
   "source": "steam-db-B12a",
   "steam_addr": "0x005692c0"
@@ -794,7 +874,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x00689b60] Steam batch B12a: CALLEE 4 (callees: GetPauseState 0x51c720, EndCombatRound 0x58e990, IncrementTimer 0x58f7a0); SIG 1.00 | AUTO: CALLEE 4 (callees: GetPauseState 0x51c720, EndCombatRound 0x58e990, IncrementTimer 0x58f7a0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00689b60] Steam batch B12a: CALLEE 4 (callees: GetPauseState 0x51c720, EndCombatRound 0x58e990, IncrementTimer 0x58f7a0); SIG 1.00 | override: [a] fp= unique 952B: 00571069 CALL 0x0051c720 GetPauseState, 005711a8 CALL 0x006dcbe0 SignalDamage (Mac UpdateCombatRoundTimer calls SignalDamage); caller AIUpdate",
   "name": "CSWSCreature::UpdateCombatRoundTimer",
   "source": "steam-db-B12a",
   "steam_addr": "0x00571030"
@@ -906,6 +986,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0068dce0] Steam batch B12a: no content anchor (C0) | override: [a] fp= unique: 005751c7 PUSH 0x99547c 'FollowInfo' + 005751d7 CALL 0x00719940 AddStructToStruct; [+0x500] test = Mac SaveFollowInfo disp 0x500",
+  "name": "CSWSCreature::SaveFollowInfo",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x005751b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x0068dd30] Steam batch B12a: CALLEE 1 (callees: GetStructFromStruct 0x718960); SIG 1.00 | AUTO: CALLEE 1 (callees: GetStructFromStruct 0x718960); SIG 1.00",
   "name": "CSWSCreature::LoadFollowInfo",
   "source": "steam-db-B12a",
@@ -1010,6 +1098,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x00690a00] Steam batch B12a: no content anchor (C0) | override: [a] fp= unique 197B RET 0x14: 00577f3e CALL 0x00577fa0 DoListenDetection (2223B=GOG 0x690ad0) + 00577f57 CALL 0x00578850 DoSpotDetection (2662B=GOG 0x691380)",
+  "name": "CSWSCreature::DoStealthDetection",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x00577ed0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00690ad0] Steam batch B12a: CALLEE 4 (callees: MaxAttackRange 0x571570, GetClientCreature 0x58ae90, GetListenCheckDistance 0x58b210); SIG 1.00 | AUTO: CALLEE 4 (callees: MaxAttackRange 0x571570, GetClientCreature 0x58ae90, GetListenCheckDistance 0x58b210); SIG 1.00",
   "name": "CSWSCreature::DoListenDetection",
   "source": "steam-db-B12a",
@@ -1074,18 +1170,10 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00692420] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00692420] Steam batch B12a: SIG 1.00 | override: [a] fp= unique: 005799b1 PUSH 0x13 message id = Mac BroadcastMineDetectionData imm 0x13 (Stealth uses 0x10)",
   "name": "CSWSCreature::BroadcastMineDetectionData",
   "source": "steam-db-B12a",
   "steam_addr": "0x005798f0"
- },
- {
-  "confidence": "high",
-  "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00692510] Steam batch B12a: SIG 1.00 | reviewer match with anchor: 005799ed MOV [EAX+0x578],ECX; 005799fc MOV [EDX+0x57c],0x5dc",
-  "name": "CSWSCreature::SetAmbientAnimationState",
-  "source": "steam-db-B12a",
-  "steam_addr": "0x005799e0"
  },
  {
   "confidence": "high",
@@ -1138,7 +1226,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00692dc0] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00692dc0] Steam batch B12a: SIG 1.00 | override: [a] fp= unique: 0057a29d PUSH 0x15 -> BroadcastBreakdownMessage; Mac BroadcastThreatBreakdown imm 0x15; caller SignalDamage 006dd190",
   "name": "CSWSCreature::BroadcastThreatBreakdown",
   "source": "steam-db-B12a",
   "steam_addr": "0x0057a290"
@@ -1170,7 +1258,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00692f00] Steam batch B12a: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00692f00] Steam batch B12a: SIG 1.00 | override: [a] fp= unique: 0057a3dd PUSH 0x1a -> BroadcastBreakdownMessage; Mac BroadcastDeflectBreakdown imm 0x1a; caller SignalDamage 006dda59",
   "name": "CSWSCreature::BroadcastDeflectBreakdown",
   "source": "steam-db-B12a",
   "steam_addr": "0x0057a3d0"
@@ -1254,6 +1342,14 @@
   "name": "CSWSCreature::GetNearestObjects",
   "source": "steam-db-B12a",
   "steam_addr": "0x0057be40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006954c0] Steam batch B12a: CALLEE 4 (callees: GetAIStateReputation 0x5e1680, GetVisibleListElement 0x5d1750; callers: AIActionPhysicalAttacks 0x6d7390, OnApplyDamage 0x5959e0); SIG 1.00 | override: [r] fp exact 2524/RET12/680/8; 0057cd62 MOV ECX,[EAX+0x380]; 0057cc1d CMP [EAX+0x11ac],0; Mac real symbol GetNearestEnemy; KDB holder GetNearestVisibleEnemyInRange is a descriptive alias, rename",
+  "name": "CSWSCreature::GetNearestEnemy",
+  "source": "steam-db-B12a",
+  "steam_addr": "0x0057c990"
  },
  {
   "confidence": "high",
