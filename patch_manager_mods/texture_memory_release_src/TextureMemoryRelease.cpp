@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include "CodePatch.h"
 
 namespace {
 
@@ -58,16 +59,10 @@ bool configEnabled() {
     return on;
 }
 
-bool committed(uintptr_t at, size_t n) {
-    MEMORY_BASIC_INFORMATION mb;
-    return VirtualQuery(reinterpret_cast<void*>(at), &mb, sizeof(mb)) && mb.State == MEM_COMMIT &&
-           at + n <= reinterpret_cast<uintptr_t>(mb.BaseAddress) + mb.RegionSize;
-}
-void putRel32(uint8_t* at, uintptr_t target) { int32_t d = static_cast<int32_t>(target - (reinterpret_cast<uintptr_t>(at) + 4)); memcpy(at, &d, 4); }
 void putAbs(uint8_t* at, volatile LONG* p) { uint32_t a = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(p)); memcpy(at, &a, 4); }
 
 int apply() {
-    if (!committed(Site, 7)) return -3;
+    if (!codepatch::committed(Site, 7)) return -3;
     memcpy(g_seen, reinterpret_cast<const void*>(Site), 7);
     if (memcmp(g_seen, SiteOrig, 7) != 0) return -1;
     g_cave = static_cast<uint8_t*>(VirtualAlloc(nullptr, 64, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
@@ -87,18 +82,14 @@ int apply() {
     static const uint8_t head[16] = { 0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x74, 0x21, 0x8B, 0x55, 0xFC, 0x83, 0x7A, 0x34, 0x00, 0x75, 0x0C };
     memcpy(c, head, 16);
     c[16] = 0xF0; c[17] = 0xFF; c[18] = 0x05; putAbs(c + 19, &g_freed);
-    c[23] = 0xE9; putRel32(c + 24, TxFree);
+    c[23] = 0xE9; codepatch::putRel32(c + 24, reinterpret_cast<uintptr_t>(c + 24), TxFree);
     c[28] = 0xF0; c[29] = 0xFF; c[30] = 0x05; putAbs(c + 31, &g_kept);
-    c[35] = 0xE9; putRel32(c + 36, TxSkip);
-    c[40] = 0xE9; putRel32(c + 41, TxFree);
+    c[35] = 0xE9; codepatch::putRel32(c + 36, reinterpret_cast<uintptr_t>(c + 36), TxSkip);
+    c[40] = 0xE9; codepatch::putRel32(c + 41, reinterpret_cast<uintptr_t>(c + 41), TxFree);
     FlushInstructionCache(GetCurrentProcess(), c, 45);
     uint8_t jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
     int32_t d = static_cast<int32_t>(reinterpret_cast<uintptr_t>(c) - (Site + 5)); memcpy(jmp + 1, &d, 4);
-    DWORD old;
-    if (!VirtualProtect(reinterpret_cast<void*>(Site), 7, PAGE_EXECUTE_READWRITE, &old)) return -2;
-    memcpy(reinterpret_cast<void*>(Site), jmp, 7);
-    VirtualProtect(reinterpret_cast<void*>(Site), 7, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), reinterpret_cast<void*>(Site), 7);
+    if (codepatch::write(Site, jmp, 7) != 1) return -2;
     return 1;
 }
 
