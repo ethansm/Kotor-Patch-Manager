@@ -39,9 +39,9 @@ constexpr int kFirstDik = 0x02;  // DIK_1; slot i uses DIK 0x02+i (0x0B = key 0 
 
 enum Kind { K_None = 0, K_Spell, K_Feat, K_Item, K_Other };
 
-// Per-slot target for items ("@lowhp" = the party member with the lowest HP%). -1 = unset: use the [General] value, so a
+// Per-slot target for items ("@lowhp" = the party member with the lowest HP%, "@self" = always the controlled character). -1 = unset: use the [General] value, so a
 // [General] change still applies to slots that never overrode it, and Format can write the shortest form.
-enum TargetMode { TM_Default = 0, TM_LowHp };
+enum TargetMode { TM_Default = 0, TM_LowHp, TM_Self };
 struct TargetSpec {
     TargetMode mode = TM_Default;
     int thresholdPct = -1;   // 1..100, -1 = [General] HealThreshold
@@ -86,8 +86,9 @@ inline int StackCount(int key, const std::string& name) {
     return n;
 }
 
-// "@lowhp[:<pct>[:self|none]]", shortest form that round-trips ("" for TM_Default).
+// "@lowhp[:<pct>[:self|none]]" / "@self", shortest form that round-trips ("" for TM_Default).
 inline std::string formatTarget(const TargetSpec& t) {
+    if (t.mode == TM_Self) return "@self";
     if (t.mode != TM_LowHp) return "";
     std::string s = "@lowhp";
     if (t.thresholdPct < 0 && t.fallback < 0) return s;
@@ -107,7 +108,7 @@ inline std::string Format(const ActionRef& r) {
     }
 }
 
-// Parses the text after '@' ("lowhp[:pct[:self|none]]" or "default"); false on a bad pct/fallback/extra field.
+// Parses the text after '@' ("lowhp[:pct[:self|none]]", "self" or "default"); false on a bad pct/fallback/extra field.
 inline bool parseTargetSuffix(const std::string& suf, TargetSpec* ts) {
     *ts = TargetSpec();
     std::string f[3]; int n = 0; size_t a = 0;
@@ -119,6 +120,7 @@ inline bool parseTargetSuffix(const std::string& suf, TargetSpec* ts) {
         a = c + 1;
     }
     if (f[0] == "default") return n == 1;
+    if (f[0] == "self") { ts->mode = TM_Self; return n == 1; }
     if (f[0] != "lowhp") return false;
     ts->mode = TM_LowHp;
     if (!f[1].empty()) {
@@ -138,13 +140,13 @@ inline bool Parse(const std::string& text, ActionRef* out) {
     *out = ActionRef();
     std::string t = trim(text);
     if (t.empty()) return true;
-    // Strip a trailing "@lowhp.."/"@default" BEFORE the kind; any other '@' stays part of the value (item names).
+    // Strip a trailing "@lowhp.."/"@self"/"@default" BEFORE the kind; any other '@' stays part of the value (item names).
     TargetSpec ts;
     size_t at = t.rfind('@');
     if (at != std::string::npos) {
         std::string suf = t.substr(at + 1); size_t c = suf.find(':');
         std::string w = lower(trim(suf.substr(0, c)));
-        if (w == "lowhp" || w == "default") {
+        if (w == "lowhp" || w == "self" || w == "default") {
             if (!parseTargetSuffix(suf, &ts)) return false;
             t = trim(t.substr(0, at));
             if (t.empty() || lower(t) == "none") return false;
@@ -355,6 +357,7 @@ struct Config {
                         "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
                         "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
                         "; Item/power value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
+                        "; Item value suffix @self = always use the item on the controlled character, whatever is targeted\n"
                         "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
                         "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
                         "; Profiles belong to the loaded save: saving copies this file into the save folder, loading a save restores its copy (none = empty bar).\n";

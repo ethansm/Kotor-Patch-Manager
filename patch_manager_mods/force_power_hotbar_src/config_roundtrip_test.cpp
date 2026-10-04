@@ -108,6 +108,15 @@ int main(){
     KT_CHECK(!Parse("@lowhp",&r));
     KT_CHECK(!Parse("item:@lowhp",&r));
     KT_CHECK(!Parse("bogus:1@lowhp",&r));
+    // @self: always use on the controlled character (C0)
+    KT_CHECK(Parse("item:Medpac@self",&r)); KT_CHECK_EQ(r.name.c_str(),"Medpac"); KT_CHECK_EQ(r.target.mode,TM_Self);
+    KT_CHECK_EQ(Format(r).c_str(),"item:Medpac@self");
+    KT_CHECK(Parse("item:Stim@SELF",&r)); KT_CHECK_EQ(r.target.mode,TM_Self); KT_CHECK_EQ(r.target.thresholdPct,-1); KT_CHECK_EQ(r.target.fallback,-1);
+    KT_CHECK(Parse("spell:8@self",&r)); KT_CHECK_EQ(r.kind,K_Spell); KT_CHECK_EQ(r.target.mode,TM_Self);   // parses; ignored at use
+    KT_CHECK(!Parse("item:X@self:40",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("item:X@self:",&r));
+    KT_CHECK(!Parse("none@self",&r));
+    KT_CHECK(Parse("item:A@b@self",&r)); KT_CHECK_EQ(r.name.c_str(),"A@b"); KT_CHECK_EQ(r.target.mode,TM_Self);
     // Format: shortest form that round-trips
     const char* forms[]={"item:Medpac","item:Medpac@lowhp","item:Medpac@lowhp:40","item:Medpac@lowhp::none","item:Medpac@lowhp::self","item:Medpac@lowhp:40:none","item:Medpac@lowhp:40:self",
                          "spell:8","spell:8@lowhp","spell:8@lowhp:40","spell:8@lowhp::none","spell:8@lowhp:40:none","feat:3@lowhp","other:1a"};
