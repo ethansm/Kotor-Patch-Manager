@@ -225,7 +225,7 @@ class CommandConstructionTest(Base):
             self.assertIn(tok, p.cmd)
         i = p.cmd.index("-postScript")
         self.assertEqual(p.cmd[i + 1:i + 3], ["ExportProgramSymbols.java", str(out_dir)])
-        self.assertEqual(p.cmd[p.cmd.index("-scriptPath") + 1], str(gsa.SCRIPT_PATH))
+        self.assertEqual(p.cmd[p.cmd.index("-scriptPath") + 1], f"{gsa.SCRIPT_PATH};{gsa.LOCAL_SCRIPT_PATH}")
         self.assertEqual(p.input, FAKE_SECRET + "\n")
         self.assertTrue(out_dir.is_dir())
         # secret absent from argv, env, stdout, stderr

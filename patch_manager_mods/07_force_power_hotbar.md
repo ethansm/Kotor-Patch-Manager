@@ -85,6 +85,8 @@ Log 10-03 01:39: 2 HUD builds, 75 controls each, 0 WARNING, 0 pool full (baselin
 - (U3, DECIDED 10-03: **include now, before 1.0.0**) per-slot target mode: default (engine's current behaviour), "use on leader", "use on the party
   member with the lowest health". Needs RE of the target argument of the invoke path (HUD group invoke 0x00751750 / the action it queues), INI
   syntax per slot, editor UX to cycle the mode, and a small corner badge icon per mode (generated like the other fph_* textures).
+- (U4, user 10-04, backlog, NOT started) Expanded Keyboard Control support for the Action Hotbar. Both patches detour 0x72CB63 (action-bar key capture)
+  and 0x74B3F0 (action-bar update), so today they are mutually exclusive. Design research: `upstream_prs/ekc_hotbar_coexist/DESIGN.md` (task R-A).
 
 **RESUME HERE (2026-10-03 ~00:15, end of session 6):** live = **build 26 `504372b1`** (stage `hotbar_stage15/`, backup `backups/inst15_1003_0003`,
 31 installed ids; rollback = stage14 `a3303cb3`). Build 26 = stack counts on the bar and picker cells, out-of-stock items dimmed with "0", per-save hotbars

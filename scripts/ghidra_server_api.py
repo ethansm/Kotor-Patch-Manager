@@ -19,6 +19,8 @@ DEFAULT_REPO = "Odyssey"
 DEFAULT_USER = "Ethansm"
 CRED_FILE = Path(os.path.expanduser("~/.config/ghidra/.server_credentials"))
 SCRIPT_PATH = Path("/home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/tools/ghidra_scripts")
+# Repo-local exporters (searched after SCRIPT_PATH), so new Export*.java scripts never touch the KPM clone.
+LOCAL_SCRIPT_PATH = Path(__file__).resolve().parent / "ghidra_scripts"
 DUMP_DIR = Path("/home/ethansm/Games/KOTOR2_Mod_Workspace/ghidra_dumps/upstream_server")
 
 def load_credentials():
@@ -158,7 +160,7 @@ def export_program_symbols(program_name, folder="TSL", output_dir=None, script="
         "-process", program_name,
         "-readOnly", "-noanalysis",
         "-connect", creds["user"], "-p",
-        "-scriptPath", str(SCRIPT_PATH),
+        "-scriptPath", f"{SCRIPT_PATH};{LOCAL_SCRIPT_PATH}",
         "-postScript", script, str(out_path)
     ]
 
@@ -239,7 +241,7 @@ def main(argv=None):
         script = "ExportDataTypes.java" if args.command == "export-types" else args.script
         # Only read-only exporters: the run is -readOnly anyway, this keeps arbitrary scripts out.
         if not (script.startswith("Export") and script.endswith(".java") and "/" not in script):
-            print(json.dumps({"error": f"refusing script {script!r}: must be an Export*.java in {SCRIPT_PATH}"}))
+            print(json.dumps({"error": f"refusing script {script!r}: must be an Export*.java in {SCRIPT_PATH} or {LOCAL_SCRIPT_PATH}"}))
             return 2
         res = export_program_symbols(args.program, folder=args.folder, output_dir=args.out, script=script)
         print(json.dumps(res, indent=2))
