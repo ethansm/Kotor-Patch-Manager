@@ -1060,6 +1060,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **P0 (2026-10-03):** review fixes committed 6408800 (gates: mutate 115/115, run_tests 73/73, all parity/scenarios incl. -m32, mingw clean).
   Docs renumbered: forced-state 21->26 (`26_FORCED_STATE_TESTING.md`), PC filter 22->25 (`25_pc_levelup_filter.md`), 456a3b0 (+6f9363e).
   **Rebuilt 1.0.0:** kpatch md5 c77b1cc0 (`c77b1cc09f11324da62e202647653e9f`), DLL `binaries/windows_x86.dll` 31c3a83f
-  (`31c3a83fa0c6d94d0a7758cafcce3b2e`); KPM source commit eebfd18 (`ethansm/local-mods`). Supersedes d16bfe5f. Live still 0.3.1 aaedb93e.
-  Install = DLL swap + repo `runtime/levelup_paths.ini` (v3) together, game closed, backups first - **awaiting user consent**.
-  Then the step-(4) play card above. Next chunk: C1 (integration audit, read-only).
+  (`31c3a83fa0c6d94d0a7758cafcce3b2e`); KPM source commit eebfd18 (`ethansm/local-mods`). Supersedes d16bfe5f. **INSTALLED LIVE 2026-10-03 22:54** (DLL swap 31c3a83f + repo `runtime/levelup_paths.ini` v3 472a9303; backup `backups/pre_luo_100_install_20261003_225406`).
+  Next chunk: C1 (integration audit, read-only).
