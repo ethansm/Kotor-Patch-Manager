@@ -317,3 +317,15 @@ G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"; S=
 ## RESUME HERE (10-03 22:20)
 - Next phase (user-routed via the vanilla-exe session): fold the dialogue-letterbox probe into KpLog.h per `19h_letterbox_probe_kplog_handoff.md` (5da68a7): fix 1.0.2 + probe variant 1.0.2-probe from one source, analyzer update, T1 path kept installable. Plan is made in plan mode from `.claude/session_handoff.md`.
 - Still open: mouse-probe 0.2.0 user play test (read `mouse-probe_log.txt` with `kplog_parse.py --stats`).
+
+## Phase 3 (letterbox): k2-dialogue-letterbox-fix 1.0.2 + 1.0.2-probe on KpLog.h (19h), started 10-03
+
+Plan (user-approved): one source `dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp`. The probe code sits under `#ifdef DLB_PROBE`, switched on by an optional `dlb_variant.h` (`__has_include`), so create-patch stays unedited. Probe variant files live in `dialogue_letterbox_fix_src/probe/` (variant header, manifest 1.0.2-probe, 3+5 hooks toml, exports.def, `build_probe.sh`). `build_probe.sh` builds in a temporary `Patches/` dir, removed on exit, into `KPM/letterbox_probe_stage/1.0.2-probe/`.
+- Channels: `main` (load, APPLY, LATE), `set` (SETTOP/SETBOTTOM), `probe` (W1/W2/W3/W3b/W5), `probe_w4` (W4). Problem lines go out as WARN/ERR.
+- Switches: `log=` stays the content gate (1.0.1 semantics), `probe=` stays the first-instruction gate, `enabled=`/`mode=` unchanged.
+- Old core: fallback file `dialogue_letterbox_fix_log.txt` at INFO.
+- The load line is deferred out of DllMain (emitted by KPatchInit, or by the first hook on an old core).
+- Dropped: own fopen, `[GetTickCount]` prefix, the 5000 cap. Kept: the SET cap of 400, and the probe limiter (`n=`/`skip=`).
+- PROBE W3 is split into W3 + W3b (same `n=`) to stay under 232 bytes.
+- The analyzer accepts the legacy, core and fallback prefixes and joins W3b into W3.
+- Tasks: 0 baseline (fork `3a86d89` = 1.0.1 committed), 1 source, 2 smoke (+ core stub mode), 3 builds + DLL checks, 4 analyzer + fixtures, 5 review/commits/docs, 6 install checklist (prepare only).
