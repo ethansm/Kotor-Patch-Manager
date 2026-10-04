@@ -55,7 +55,7 @@ bool g_keyPrev = false;
 int g_probeCall = 0, g_probeLabel = 0, g_callKey = 0x4A;
 bool g_callPrev = false;
 DWORD g_lastCallMs = 0;
-uintptr_t g_labelPanel = 0, g_label = 0;
+uintptr_t g_label = 0;
 bool g_p45Logged = false;
 struct Post { bool active = false; DWORD start = 0, next = 0; int member = 0; uint32_t itemKey = 0; int preHp = 0, preStack = 0; uintptr_t server = 0; } g_post;
 
@@ -231,7 +231,8 @@ void doPost(DWORD now) {
     KP_LOG(chCall, "POST t=%dms hp=%d stack=%d cmd=%u", (int)t, hp, stack, (unsigned)cmd);
     g_post.next += PostStepMs;
     if (t >= PostMs) {
-        KP_LOG(chCall, "RESULT hp%+d stack%+d", hp - g_post.preHp, stack - g_post.preStack);
+        int gone = stack < 0;
+        KP_LOG(chCall, "RESULT hp%+d stack%+d (gone=%d)", hp - g_post.preHp, (gone ? 0 : stack) - g_post.preStack, gone);
         g_post.active = false;
     }
 }
@@ -255,8 +256,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
 
 // P2: one test label from the HUD's LBL_QUEUE1 template, created while the HUD layout is still open (before StopLoadFromLayout).
 void createTestLabel(uintptr_t panel) {
-    if (panel == g_labelPanel) return;
-    g_labelPanel = panel; g_label = 0; g_p45Logged = false;
+    g_label = 0; g_p45Logged = false;
     int* projFlag = reinterpret_cast<int*>(gameaddr::ProjectionFlag);
     bool flagRead = saferead::probeRead(SiteBase + 1, projFlag, 4);
     int saved = flagRead ? *projFlag : 0;
