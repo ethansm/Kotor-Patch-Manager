@@ -105,5 +105,7 @@ Phase 0 (refresh):
 - Phase 4 (10-03): user approved ONLY the #291 follow-up -> pushed 31dd299, reply posted (issuecomment-5973037915).
   runscript decision: issue only, let Lane choose; fallback documented in upstream_prs/runscript_classes/FALLBACK.md.
   NOT approved yet: GameAPI PR, pushing EKC/ACC, filing the issue.
-- NEXT = remaining user gates: push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
+- NEXT (10-04 plan-handoff): EKC Steam in-game test. EKC collides with live force-power-hotbar at 0x72CB63/0x74B3F0;
+  install by scripted patch_config edit (no full KPatchLauncher apply). See .claude/handoffs/24_master_plan_status.handoff.md.
+- Remaining user gates: push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
   PR; file the issue; runscript/classes decision.
