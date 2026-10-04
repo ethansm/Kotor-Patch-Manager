@@ -25,8 +25,9 @@ KPM correspondence (Patches/create-patch.py in the kotor-patch-manager checkout)
              -lkernel32 <#pragma comment(lib) names as -l...>`
   :660-672   pragma_libraries; :641-657 exports.def (the committed one is used as is)
   :725-751   compile_module: the Windows module links Common/GameAPI and sqlite
-KPM does not exclude *_test.cpp / t32_* sources (doc 20 4.x drafts that); the staging here does, since the
-patch_manager_mods dirs hold host unit tests next to the DLL sources.
+KPM's find_sources leaves *_test.cpp / t32_*.cpp out since fork commit f743ac4 (ethansm/local-mods; doc 20d F13;
+upstream create-patch.py still compiles them). The staging here excludes them too (any suffix), so a build matches
+both, since the patch_manager_mods dirs hold host unit tests next to the DLL sources.
 
 Findings (scripts/_static_common.Reporter conventions):
   FAIL  compile/link error (compiler stderr is printed), no DLL produced, DLL unreadable, or a detour `function`
