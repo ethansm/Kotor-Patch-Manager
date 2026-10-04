@@ -72,6 +72,7 @@
 #include "../_shared/GuiKit.h"
 #include "../_shared/GuiTip.h"
 #include "Playthrough.h"
+#include "R10Probe.h"
 #include "WizardLogic.h"
 #include "OptionsLogic.h"
 
@@ -80,7 +81,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "1.0.0";
+constexpr const char* Version = "1.1.0-probe";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -185,6 +186,7 @@ struct Config {
     Mode mode = Mode::Rewrite;
     bool verbose = false;
     bool apply = true;
+    bool r10probe = false;   // r10probe=1: log-only R10 probe hooks (feats/powers level-up panels; doc 25 section 8); default off
     bool dev = false;    // dev=1: read the dev keys (preset./instant./hold./pause.<tag>=, legacy tags=)
     char table[MAX_PATH] = "levelup_paths.ini";
     TagCfg tags[MaxTagCfg] = {};
@@ -263,6 +265,8 @@ void reloadConfig(bool force = false) {
                 }
             } else if (!strcmp(k, "dev")) {
                 c.dev = atoi(v) != 0;
+            } else if (!strcmp(k, "r10probe")) {
+                c.r10probe = atoi(v) != 0;
             } else if (!strcmp(k, "verbose")) {
                 c.verbose = atoi(v) != 0;
             } else if (!strcmp(k, "apply")) {
@@ -2026,6 +2030,77 @@ void* autoOkBackstop(void* ecx) {
     return c;
 }
 
+// ---- R10 probe (1.1.0-probe): LOG-ONLY hooks at the feats / powers level-up panel build sites (doc 25 section 8) --------------------
+// Handlers always return 0 (run the stolen bytes, continue vanilla); every read is saferead; no engine function is called here.
+// Gate: r10probe=1 in levelup_override.ini. State machine + line formats: R10Probe.h. New log lines only, prefix "R10 ".
+// Close detection: the level-up panels are children of the character screen, whose SetStats tick (LuoHold_84F221, runs every frame only
+// while the character screen is the updated panel) is the first hook that runs again once they are gone, so it flushes the active session.
+// Builds on the assumption that both builds of a panel happen within one open (see R10Probe.h); if the tick also runs while a panel is up,
+// the done line is just early and a late F2/P2 call opens a duplicate session (visible in the log, harmless).
+constexpr unsigned S_R10 = 120;
+constexpr int Pn_Client = 0x68, Cl_Server = 0xF8, Sv_IsPC = 0x10E8, Sv_Stats = 0x1198, Stt_Flags6C = 0x6C;
+constexpr int PnF_Picks = 0x1BDE, PnF_Flags = 0x1BE0, PnP_Picks = 0x1BA8;
+constexpr int F2_Panel = -0x28, P2_Panel = -0x68, X2_Id = -0x1C;   // P2: the panel is held in [ebp-0x68] of the 0x9098D0 frame (offsets used with it: +0x1BE0/+0x1BEC/+0x1BA9)
+
+r10::State g_r10;
+
+void r10Emit(void*, const char* line) { logLine("%s", line); }
+
+// Pulls the config into the state; false = probe off (handlers return at once).
+bool r10Active() {
+    reloadConfig();
+    g_r10.on = g_cfg.r10probe;
+    g_r10.verbose = g_cfg.verbose;
+    if (!g_r10.emit) g_r10.emit = r10Emit;
+    return g_r10.on;
+}
+
+// Panel facts for the first choosable call of a panel; anything unreadable stays -1 / 0 / "".
+void r10Gather(int kind, uint32_t panel, char* tag, int cap, r10::PanelInfo* pi) {
+    pi->panel = panel; tag[0] = 0; pi->tag = tag;
+    uint32_t client = 0, server = 0, stats = 0;
+    uint8_t b = 0; uint16_t w = 0; uint32_t f = 0;
+    if (!readAt(S_R10, panel, Pn_Client, &client)) client = 0;
+    pi->client = client;
+    if (client && readAt(S_R10, client, Cl_Server, &server)) pi->server = server;   // cached ptr (UNVERIFIED field, R10_findings (d)); 0 = not cached
+    server = pi->server;
+    if (kind == r10::Feats) {
+        if (readAt(S_R10, panel, PnF_Flags, &f)) pi->bonus = (f >> 1) & 1;
+        if (readAt(S_R10, panel, PnF_Picks, &w)) pi->picks = w;
+    } else if (readAt(S_R10, panel, PnP_Picks, &b)) pi->picks = b;
+    if (!server) return;
+    readCreatureTag(server, tag, cap);
+    if (readAt(S_R10, server, Sv_IsPC, &b)) pi->ispc = b;
+    if (readAt(S_R10, server, Sv_Stats, &stats) && stats) {
+        if (readAt(S_R10, stats, Stt_Flags6C, &b)) pi->stats6c = b & 1;
+        uint8_t ids[4], lv[4]; int n = 0, total = 0;
+        if (readClasses(stats, ids, lv, &n, &total)) pi->lvl = total;
+    }
+}
+
+void r10Row(int kind, uint32_t id) {
+    saferead::beginScope();
+    if (!r10Active()) return;
+    r10::onRow(g_r10, kind, id);
+}
+void r10Choosable(int kind, uintptr_t ebp, int panelOff) {
+    saferead::beginScope();
+    if (!r10Active()) return;
+    uint32_t panel = 0, id = 0;
+    uint16_t w = 0;
+    if (!readAt(S_Frame, ebp, panelOff, &panel)) panel = 0;
+    if (readAt(S_Frame, ebp, X2_Id, &w)) id = w;
+    if (r10::wantInfo(g_r10, kind, panel)) {
+        char tag[40]; r10::PanelInfo pi;
+        r10Gather(kind, panel, tag, sizeof tag, &pi);
+        r10::onChoosable(g_r10, kind, panel, id, &pi);
+    } else r10::onChoosable(g_r10, kind, panel, id, nullptr);
+}
+void r10Close() {
+    if (!g_r10.active) return;   // cheap: runs every character-screen frame
+    if (r10Active()) r10::flush(g_r10); else g_r10.active = false;
+}
+
 #include "LevelUpUi.h"
 
 } // namespace
@@ -2055,8 +2130,24 @@ int __cdecl LuoHold_84F221(void* stats, void* ebp) {
     uint32_t panel = 0;
     saferead::beginScope();
     if (readAt(S_Frame, reinterpret_cast<uintptr_t>(ebp), -0x288, &panel) && panel) uiTick(panel, reinterpret_cast<uintptr_t>(stats), real, r);
+    r10Close();   // R10 probe: the level-up panels are gone once the character screen ticks again (flushes the "R10 done" line)
     return r;
 }
+
+// R10 probe hooks (consumed-exit detours, LOG ONLY, always return 0 = run the stolen bytes and continue vanilla). See the R10 block above.
+// F1 0x89B6E4 feats grid row: ecx = &featId (ushort).   P1 0x89AB29 powers grid row: ecx = spellId.
+// F2 0x90C2BE feats choosable test: ebp frame (panel [ebp-0x28], id word [ebp-0x1C]).   P2 0x9099A2 powers choosable test: panel [ebp-0x68], id [ebp-0x1C].
+int __cdecl LuoR10_89B6E4(void* ecx) {
+    saferead::beginScope();
+    if (!r10Active()) return 0;
+    uint16_t id = 0;
+    if (readAt(S_R10, reinterpret_cast<uintptr_t>(ecx), 0, &id)) r10::onRow(g_r10, r10::Feats, id);
+    else r10::onRow(g_r10, r10::Feats, 0xFFFFu);
+    return 0;
+}
+int __cdecl LuoR10_89AB29(unsigned spellId) { r10Row(r10::Powers, spellId); return 0; }
+int __cdecl LuoR10_90C2BE(void* ebp) { r10Choosable(r10::Feats, reinterpret_cast<uintptr_t>(ebp), F2_Panel); return 0; }
+int __cdecl LuoR10_9099A2(void* ebp) { r10Choosable(r10::Powers, reinterpret_cast<uintptr_t>(ebp), P2_Panel); return 0; }
 // CSWGuiInGameCharacter ctor 0x84C3A0, site 0x84D82C (layout still open): param [ebp-0x254] = the panel. Creates (does not append) the UI labels.
 void __cdecl LuoUiPanelCtor(int panel) { uiPanelCtor(static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
 

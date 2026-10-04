@@ -2,3 +2,7 @@
 # Per-test tables replace the top-level keys, so ../_shared_src is repeated.
 [common_contract_test]
 cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+# R10 probe state machine (pure header R10Probe.h); no shared headers needed.
+[r10_probe_test]
+cxxflags = ["-Werror"]

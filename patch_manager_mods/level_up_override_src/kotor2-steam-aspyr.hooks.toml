@@ -384,3 +384,55 @@ type = "pointer"
 [[hooks.parameters]]
 source = "ebp"
 type = "pointer"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x89BE96 is never taken.
+[[hooks]]
+address = 0x0089B6E4
+type = "detour"
+function = "LuoR10_89B6E4"
+original_bytes = [0x89, 0x8D, 0x3C, 0xFF, 0xFF, 0xFF]
+consumed_exit_address = 0x0089BE96
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x90C365 is never taken.
+[[hooks]]
+address = 0x0090C2BE
+type = "detour"
+function = "LuoR10_90C2BE"
+original_bytes = [0x0F, 0xB7, 0x55, 0xE4, 0x52]
+consumed_exit_address = 0x0090C365
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x89AEB8 is never taken.
+[[hooks]]
+address = 0x0089AB29
+type = "detour"
+function = "LuoR10_89AB29"
+original_bytes = [0x89, 0x4D, 0xB8, 0x8B, 0x15, 0xD0, 0xB4, 0xA1, 0x00]
+consumed_exit_address = 0x0089AEB8
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x909B51 is never taken.
+[[hooks]]
+address = 0x009099A2
+type = "detour"
+function = "LuoR10_9099A2"
+original_bytes = [0x0F, 0xB7, 0x4D, 0xE4, 0x51]
+consumed_exit_address = 0x00909B51
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
