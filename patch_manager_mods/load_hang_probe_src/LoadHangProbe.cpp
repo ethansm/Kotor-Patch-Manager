@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "../_shared/SafeRead.h"
+#include "CodePatch.h"
 
 namespace {
 
@@ -340,31 +341,6 @@ BOOL WINAPI hkCloseHandle(HANDLE h) {
         if (s) { IoEv* e = ioSlot(); e->tick = GetTickCount(); e->tid = GetCurrentThreadId(); e->kind = 'C'; e->ok = 1; e->h = h; e->a = e->b = e->err = 0; memcpy(e->name, s->name, 40); s->h = nullptr; }
     }
     return rCloseHandle(h);
-}
-
-bool patchIat(HMODULE mod, const char* dll, const char* fn, void* hook, void** orig) {
-    auto base = reinterpret_cast<uint8_t*>(mod);
-    auto dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
-    auto nt = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-    auto& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-    if (!dir.VirtualAddress) return false;
-    for (auto d = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress); d->Name; ++d) {
-        if (_stricmp(reinterpret_cast<const char*>(base + d->Name), dll) != 0) continue;
-        auto oft = reinterpret_cast<IMAGE_THUNK_DATA32*>(base + (d->OriginalFirstThunk ? d->OriginalFirstThunk : d->FirstThunk));
-        auto ft = reinterpret_cast<IMAGE_THUNK_DATA32*>(base + d->FirstThunk);
-        for (; oft->u1.AddressOfData; ++oft, ++ft) {
-            if (oft->u1.Ordinal & IMAGE_ORDINAL_FLAG32) continue;
-            auto ibn = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(base + oft->u1.AddressOfData);
-            if (strcmp(reinterpret_cast<const char*>(ibn->Name), fn) != 0) continue;
-            DWORD old;
-            if (!VirtualProtect(&ft->u1.Function, 4, PAGE_READWRITE, &old)) return false;
-            *orig = reinterpret_cast<void*>(ft->u1.Function);
-            ft->u1.Function = reinterpret_cast<DWORD>(hook);
-            VirtualProtect(&ft->u1.Function, 4, old, &old);
-            return true;
-        }
-    }
-    return false;
 }
 
 const char* funcName(uintptr_t a) { return ""; }   // names are resolved offline (steam_functions.tsv)
@@ -744,11 +720,11 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }
             if (ioWanted) {
                 void *o1 = 0, *o2 = 0, *o3 = 0, *o4 = 0, *o5 = 0;
-                bool a = patchIat(exe, "KERNEL32.dll", "CreateFileA", reinterpret_cast<void*>(hkCreateFileA), &o1); if (a) rCreateFileA = reinterpret_cast<CreateFileA_t>(o1);
-                bool w = patchIat(exe, "KERNEL32.dll", "CreateFileW", reinterpret_cast<void*>(hkCreateFileW), &o2); if (w) rCreateFileW = reinterpret_cast<CreateFileW_t>(o2);
-                bool r = patchIat(exe, "KERNEL32.dll", "ReadFile", reinterpret_cast<void*>(hkReadFile), &o3); if (r) rReadFile = reinterpret_cast<ReadFile_t>(o3);
-                bool s = patchIat(exe, "KERNEL32.dll", "SetFilePointer", reinterpret_cast<void*>(hkSetFilePointer), &o4); if (s) rSetFilePointer = reinterpret_cast<SetFilePointer_t>(o4);
-                bool c = patchIat(exe, "KERNEL32.dll", "CloseHandle", reinterpret_cast<void*>(hkCloseHandle), &o5); if (c) rCloseHandle = reinterpret_cast<CloseHandle_t>(o5);
+                bool a = codepatch::patchIat(exe, "KERNEL32.dll", "CreateFileA", reinterpret_cast<void*>(hkCreateFileA), &o1); if (a) rCreateFileA = reinterpret_cast<CreateFileA_t>(o1);
+                bool w = codepatch::patchIat(exe, "KERNEL32.dll", "CreateFileW", reinterpret_cast<void*>(hkCreateFileW), &o2); if (w) rCreateFileW = reinterpret_cast<CreateFileW_t>(o2);
+                bool r = codepatch::patchIat(exe, "KERNEL32.dll", "ReadFile", reinterpret_cast<void*>(hkReadFile), &o3); if (r) rReadFile = reinterpret_cast<ReadFile_t>(o3);
+                bool s = codepatch::patchIat(exe, "KERNEL32.dll", "SetFilePointer", reinterpret_cast<void*>(hkSetFilePointer), &o4); if (s) rSetFilePointer = reinterpret_cast<SetFilePointer_t>(o4);
+                bool c = codepatch::patchIat(exe, "KERNEL32.dll", "CloseHandle", reinterpret_cast<void*>(hkCloseHandle), &o5); if (c) rCloseHandle = reinterpret_cast<CloseHandle_t>(o5);
                 g_ioOn = (a || w) && r && s && c;
                 logf("IAT file I/O hooks: CreateFileA=%d CreateFileW=%d ReadFile=%d SetFilePointer=%d CloseHandle=%d -> capture %s", a, w, r, s, c, g_ioOn ? "ON" : "OFF (ReadFile/SetFilePointer/CloseHandle or both CreateFile variants missing)");
             } else logf("file I/O capture disabled (io=0)");

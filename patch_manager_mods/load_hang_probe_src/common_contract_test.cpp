@@ -6,11 +6,13 @@
 // edit to SafeRead.h re-runs this test: a Common change that would break the probe fails here first.
 //
 // Areas: (1) readAt as the snapshot code uses it (LoadHangProbe.cpp:148-175), (2) the failure ring: off until enableRing(true) (:734),
-// g_ringCount (:610), dump() (:497, :725). Host-only, deterministic. Failures are made with the stub's VirtualQuery switched off.
+// g_ringCount (:610), dump() (:497, :725). Host-only, deterministic.
+// (3) CodePatch.h codepatch::patchIat (the five file-I/O IAT hooks), via injected codepatch::ops() fakes and a hand-built PE32 image. Failures are made with the stub's VirtualQuery switched off.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
 #include "SafeRead.h"
+#include "CodePatch.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <string.h>
@@ -33,6 +35,57 @@ static bool failingRead(unsigned site, uintptr_t base, int off) {
     g_stubVirtualQueryAll = true; saferead::beginScope();
     return r;
 }
+
+// ---- codepatch (CodePatch.h) fakes: every Win32 call goes through codepatch::ops(), replaced here by recorders ------------------
+namespace cpfake {
+struct ProtCall { void* p; SIZE_T n; DWORD newProt; uint8_t firstByte; int seq; };
+struct FlushCall { const void* p; SIZE_T n; int seq; };
+static ProtCall prot[8]; static int protN = 0;
+static FlushCall flushed[8]; static int flushN = 0;
+static int seq = 0;
+static bool protFail = false;
+static DWORD oldProt = PAGE_EXECUTE_READ;   // what the fake reports as the previous protection
+static BOOL protect(LPVOID p, SIZE_T n, DWORD np, PDWORD old) {
+    if (protN < 8) prot[protN] = { p, n, np, *static_cast<uint8_t*>(p), seq };
+    ++protN; ++seq;
+    if (protFail) return 0;
+    *old = oldProt;
+    return 1;
+}
+static void flush(const void* p, SIZE_T n) { if (flushN < 8) flushed[flushN] = { p, n, seq }; ++flushN; ++seq; }
+static SIZE_T query(LPCVOID, MEMORY_BASIC_INFORMATION*, SIZE_T) { return 0; }
+static void reset() { protN = flushN = seq = 0; protFail = false; oldProt = PAGE_EXECUTE_READ; }
+}
+
+// ---- hand-built PE32 image for patchIat (offsets by hand, independent of CodePatch.h's structs) -----------------------------
+// desc0 = decoy dll importing the same function names (slot values 0x5555000i); desc1 = the mod's dll: slot 0 is an ordinal import,
+// slot i+1 is fn[i] (value 0x2222000i). The two descriptors share the name strings, so a wrong-dll match would swap the decoy.
+static uint8_t g_img[0x1000] __attribute__((aligned(16)));
+static void put32(uint32_t off, uint32_t v) { memcpy(g_img + off, &v, 4); }
+static void putStr(uint32_t off, const char* s) { memcpy(g_img + off, s, strlen(s) + 1); }
+static uint32_t get32(uint32_t off) { uint32_t v; memcpy(&v, g_img + off, 4); return v; }
+constexpr uint32_t E_LFANEW = 0x80, DIR_IMPORT = E_LFANEW + 24 + 96 + 8;      // PE sig(4)+file hdr(20); data dirs at opt+96; dir 1 = import
+constexpr uint32_t DESC_D = 0x200, DESC_G = DESC_D + 20;
+constexpr uint32_t OFT_D = 0x400, OFT_G = 0x440, FT_D = 0x500, FT_G = 0x540, NAMES = 0x600;
+constexpr uint32_t N_FN = 3;
+static const char* const FN[N_FN] = { "CreateFileA", "ReadFile", "CloseHandle" };
+static void buildImage(const char* dll, const char* decoy, bool withImportDir) {
+    memset(g_img, 0, sizeof g_img);
+    put32(0x3C, E_LFANEW);
+    memcpy(g_img + E_LFANEW, "PE\0\0", 4);
+    if (withImportDir) { put32(DIR_IMPORT, DESC_D); put32(DIR_IMPORT + 4, 60); }
+    putStr(0x300, decoy); putStr(0x320, dll);
+    for (uint32_t i = 0; i < N_FN; ++i) putStr(NAMES + i * 0x20 + 2, FN[i]);                   // hint(2) + name
+    put32(DESC_D + 0, OFT_D); put32(DESC_D + 12, 0x300); put32(DESC_D + 16, FT_D);
+    put32(DESC_G + 0, OFT_G); put32(DESC_G + 12, 0x320); put32(DESC_G + 16, FT_G);
+    put32(OFT_G, 0x80000000u | 16); put32(FT_G, 0x11110000u);
+    for (uint32_t i = 0; i < N_FN; ++i) {
+        put32(OFT_D + i * 4, NAMES + i * 0x20); put32(FT_D + i * 4, 0x55550000u + i);
+        put32(OFT_G + (i + 1) * 4, NAMES + i * 0x20); put32(FT_G + (i + 1) * 4, 0x22220000u + i);
+    }                                                                                           // terminators stay zero
+}
+static uint32_t slotG(uint32_t i) { return FT_G + (i + 1) * 4; }
+static uint32_t slotD(uint32_t i) { return FT_D + i * 4; }
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -160,6 +213,37 @@ int main() {
         char sm[300]; int ns = saferead::dump(sm, 300);
         HEQ("small cap after wrap still returns strlen", ns, (int)strlen(sm));
         HCHECK("small cap after wrap stays in bounds", ns <= 299);
+    }
+    // ---- codepatch::patchIat: the five file-I/O IAT hooks (LoadHangProbe.cpp CreateFileA/W, ReadFile, SetFilePointer, CloseHandle)
+    {
+        codepatch::Ops savedOps = codepatch::ops();
+        codepatch::ops() = { cpfake::query, cpfake::protect, cpfake::flush };
+        buildImage("KERNEL32.dll", "USER32.dll", true);
+        HMODULE mod = g_img;
+        void* orig = nullptr;
+        void* const hook = reinterpret_cast<void*>(static_cast<uintptr_t>(0x12345678));
+        cpfake::reset();
+        HCHECK("patchIat swaps the named IAT slot, matching the dll name case-insensitively (\"kernel32.DLL\" vs \"KERNEL32.dll\")", codepatch::patchIat(mod, "kernel32.DLL", "ReadFile", hook, &orig));
+        HEQ("patchIat writes the hook into the named slot", get32(slotG(1)), 0x12345678u);
+        HEQ("patchIat returns the old slot value in *orig (rReadFile is called through it)", (unsigned long long)reinterpret_cast<uintptr_t>(orig), 0x22220001ull);
+        HCHECK("patchIat leaves neighbouring slots (other hooked imports) and the ordinal entry alone", get32(slotG(0)) == 0x22220000u && get32(slotG(2)) == 0x22220002u && get32(FT_G) == 0x11110000u);
+        HEQ("patchIat does not touch the other dll's same-named slot", get32(slotD(1)), 0x55550001u);
+        HCHECK("patchIat opens just the 4-byte slot RW and restores the previous protection", cpfake::protN == 2 && cpfake::prot[0].n == 4 && cpfake::prot[0].newProt == PAGE_READWRITE && cpfake::prot[1].newProt == PAGE_EXECUTE_READ);
+        void* o2 = nullptr;
+        HCHECK("a second patchIat on another import of the same dll works (the mod hooks five in a row)", codepatch::patchIat(mod, "KERNEL32.dll", FN[2], hook, &o2));
+        HEQ("the second hook's *orig is the second slot's old value", (unsigned long long)reinterpret_cast<uintptr_t>(o2), 0x22220002ull);
+        HEQ("the first hooked slot is unchanged by the second call", get32(slotG(1)), 0x12345678u);
+        void* o3 = reinterpret_cast<void*>(0x1);
+        HCHECK("patchIat is false for a function the dll does not import, *orig untouched (the mod then keeps its r* pointer null)", !codepatch::patchIat(mod, "KERNEL32.dll", "NotImported", hook, &o3) && o3 == reinterpret_cast<void*>(0x1));
+        HCHECK("patchIat is false for a dll the exe does not import", !codepatch::patchIat(mod, "OLE32.dll", "ReadFile", hook, &o3));
+        buildImage("KERNEL32.dll", "USER32.dll", true);
+        cpfake::reset(); cpfake::protFail = true;
+        HCHECK("patchIat is false when protect fails (that hook is simply not installed), *orig untouched", !codepatch::patchIat(mod, "KERNEL32.dll", "ReadFile", hook, &o3) && o3 == reinterpret_cast<void*>(0x1));
+        HEQ("patchIat leaves the slot untouched when protect fails", get32(slotG(1)), 0x22220001u);
+        cpfake::protFail = false;
+        buildImage("KERNEL32.dll", "USER32.dll", false);
+        HCHECK("patchIat is false for an image without an import directory", !codepatch::patchIat(mod, "KERNEL32.dll", "ReadFile", hook, &o3));
+        codepatch::ops() = savedOps;
     }
     return kt::Report("common_contract_test (load_hang_probe)");
 }
