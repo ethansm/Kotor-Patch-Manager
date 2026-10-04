@@ -1,0 +1,20 @@
+# kplog session 2026-10-04 00:48:25 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF
+# interfaces:
+#   k2.portraitslots v1 by portrait-slots
+#   kpatch.log v1 by patcher
+T=163.386 f=- k2-dialogue-letterbox-fix/main k2-dialogue-letterbox-fix 1.0.2 loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=00 00 00 80 aa aa 02 40 (2.3333330154418945) pid=320
+T=3130.815 f=- k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+T=3130.836 f=- k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+T=942545.855 f=- k2-dialogue-letterbox-fix/set SETTOP lb=16b750c0 mode(+0x88, before this store)=0 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=942545.863 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=16b75170 mode(+0x88, before this store)=0 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=1200147.697 f=- k2-dialogue-letterbox-fix/set SETTOP lb=16b750c0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=1200147.706 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=16b75170 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=1221038.886 f=- k2-dialogue-letterbox-fix/set SETTOP lb=16b750c0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=1221038.894 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=16b75170 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=2646391.606 f=- k2-dialogue-letterbox-fix/set SETTOP lb=16b750c0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=2646391.613 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=16b75170 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=2655577.434 f=- k2-dialogue-letterbox-fix/set SETTOP lb=16b750c0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=2655577.441 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=16b75170 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=2736751.336 f=- k2-dialogue-letterbox-fix/set SETTOP lb=16b750c0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002
+T=2736751.342 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=16b75170 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=06460fb8 W=3840 H=1600 c=3.5999999964000002

@@ -1,0 +1,16 @@
+[100 f0] demo-mod 1.0.0 loaded; pid=1
+[101 f0] cfg: loaded demo.ini: keys=3 warnings=0
+[102 f1] tick 5 pos=(1.5,-2.25) addr=0829ef5c
+[103 f2] tick 6 pos=(2.5,-3.25) addr=0829f504
+[104 f2] WARN slot 7 bad value 0x1F
+[105 f3] WARN slot 9 bad value 0x2A
+[106 f3] dropped=0 errors: 0 nothing wrong
+[200 f0] demo-mod 1.0.0 loaded; pid=2
+[201 f0] INI loaded: 3 keys ok
+[202 f1] tick 1 pos=(0.5,0.5) addr=0829ef5c
+[300 f0] demo-mod 1.0.1 loaded; pid=3
+[301 f1] tick 2 pos=(9.5,1.5) addr=0829ef5c
+[302 f1] ERROR load failed for 'x.tga'
+[303 f1] ERROR load failed for 'y.tga'
+[304 f2] tick 3 pos=(7.5,1.5) addr=0829ef5d
+[305 f2] limit reached, logging stopped

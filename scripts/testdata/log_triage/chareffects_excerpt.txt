@@ -1,0 +1,45 @@
+18:47:35.711 chareffects 0.1.0-probe loaded
+18:47:35.712 INI enabled = 1
+18:47:35.712 INI stage = 0
+18:47:35.712 INI poll_ms = 250
+18:47:35.712 INI show_permanent = 1
+18:47:35.712 INI wheel_scroll = 1
+18:47:35.712 INI tooltips = 0
+18:47:35.712 INI skip_equipped = 1
+18:47:35.713 INI icon_source = 1
+18:47:35.713 INI color_times = 1
+18:47:35.713 INI soon_s = 30
+18:47:35.713 INI discs = 1
+18:47:35.713 INI text_scale = 1.0
+18:47:35.713 INI fallback_icon = ip_mind
+18:47:35.713 INI loaded: 13 keys ok, 0 rejected, debug=1 gen=1 enabled=1 stage=0 poll_ms=250
+18:47:50.582 H1 BindCharEffects panel=076c2808 controls=69 enabled=1 stage=0
+18:47:50.582 H1 LBL_EFX_BACK: ctl=0764bd78 id=69 (expect 69) extent=[2572,357,1036,896] flags=0000000a -> 0000002a
+18:47:50.582 H1 LBL_EFX_HEADER: ctl=0764bec8 id=70 (expect 70) extent=[2572,277,1036,64] flags=0000000a -> 0000002a
+18:47:50.582 H1 LBL_EFX_SECG: ctl=076e64e8 id=71 (expect 71) extent=[2592,373,998,53] flags=0000000a -> 0000002a
+18:47:50.582 H1 LBL_EFX_SECB: ctl=076e6638 id=72 (expect 72) extent=[2592,906,998,53] flags=0000000a -> 0000002a
+18:49:32.692 H3 beat: client=15933728 server=07513dc8 entries=2 first=0 over=0 stage=0
+18:51:50.713 H4 CharEffectsDestroy panel=076c2808 slot=found
+19:04:22.263 chareffects 0.1.0-probe loaded
+19:04:22.263 INI enabled = 1
+19:04:22.264 INI stage = 1
+19:04:22.264 INI poll_ms = 250
+19:04:22.264 INI show_permanent = 1
+19:04:22.264 INI wheel_scroll = 1
+19:04:22.264 INI tooltips = 0
+19:04:22.264 INI skip_equipped = 1
+19:04:22.264 INI icon_source = 1
+19:04:22.264 INI color_times = 1
+19:04:22.265 INI soon_s = 30
+19:04:22.265 INI discs = 1
+19:04:22.265 INI text_scale = 1.0
+19:04:22.265 INI fallback_icon = ip_mind
+19:04:22.265 INI fake_rows = 0
+19:04:22.265 INI loaded: 14 keys ok, 0 rejected, debug=1 gen=1 enabled=1 stage=1 poll_ms=250 fake_rows=0
+19:04:39.143 H1 BindCharEffects panel=076c0a40 controls=69 enabled=1 stage=1
+19:04:39.143 H1 LBL_EFX_BACK: ctl=07649e10 id=69 (expect 69) extent=[2572,357,1036,896] flags=0000000a -> 0000002a
+19:04:39.143 H1 LBL_EFX_HEADER: ctl=07649f60 id=70 (expect 70) extent=[2572,277,1036,64] flags=0000000a -> 0000002a
+19:04:39.143 H1 LBL_EFX_SECG: ctl=076e4720 id=71 (expect 71) extent=[2592,373,998,53] flags=0000000a -> 0000002a
+19:04:39.144 H1 LBL_EFX_SECB: ctl=076e4870 id=72 (expect 72) extent=[2592,906,998,53] flags=0000000a -> 0000002a
+19:04:39.144 H1 LBL_EFX_D00: ctl=076e49c0 id=73 (expect 73) extent=[2611,437,48,48] flags=0000000a -> 0000002a
+19:04:39.144 H1 LBL_EFX_D01: ctl=076e4b10 id=74 (expect 74) extent=[2611,496,48,48] flags=0000000a -> 0000002a

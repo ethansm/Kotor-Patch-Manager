@@ -1,0 +1,24 @@
+# kplog session 2026-10-04 00:48:34 | kpatch.log v1 | patcher ABI 1
+# KOTOR_VERSION_SHA=6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF
+# interfaces:
+#   k2.portraitslots v1 by portrait-slots
+#   kpatch.log v1 by patcher
+T=9810.025 f=- mouse-probe/main START mouseprobe 0.2.0
+T=9810.031 f=- mouse-probe/raw RAW 0 0 0 00000000
+T=10814.099 f=- mouse-probe/polls POLLS n=60 zero=60 maxgap=39.50ms
+T=11595.850 f=- mouse-probe/raw RAW -11956 -4112 0 00000000
+T=11595.860 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11614.716 f=- mouse-probe/raw RAW -31936 -11091 0 00000000
+T=11614.726 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11629.565 f=- mouse-probe/raw RAW -30205 -11073 0 00000000
+T=11629.574 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11645.912 f=- mouse-probe/raw RAW -26343 -9976 0 00000000
+T=11645.921 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11662.825 f=- mouse-probe/raw RAW -16261 -6259 0 00000000
+T=11662.834 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11679.434 f=- mouse-probe/raw RAW -16277 -6315 0 00000000
+T=11679.442 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11695.940 f=- mouse-probe/raw RAW -12231 -4778 0 00000000
+T=11695.952 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT
+T=11712.484 f=- mouse-probe/raw RAW -8166 -3206 0 00000000
+T=11712.493 f=- mouse-probe/norm NORM 1.0000 1.0000 SAT

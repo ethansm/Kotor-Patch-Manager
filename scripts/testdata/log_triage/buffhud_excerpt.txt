@@ -1,0 +1,25 @@
+buffhud loaded
+portrait-slots ok: registered
+COLUMN#1 buff slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#2 DEBUFF slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#3 buff slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#4 DEBUFF slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#5 buff slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#6 DEBUFF slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#7 buff slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#8 DEBUFF slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#9 buff slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#10 DEBUFF slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#11 buff slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#12 DEBUFF slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#13 buff slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#14 DEBUFF slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#15 buff slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#16 DEBUFF slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#17 buff slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#18 DEBUFF slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#19 buff slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#20 DEBUFF slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#21 buff slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#22 DEBUFF slot=0829ef5c large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2
+COLUMN#23 buff slot=0829f504 large=0 card=96x96 scale=2.000 tracked=0 cols=1 fit=4 draw=0 size=18 gap=2

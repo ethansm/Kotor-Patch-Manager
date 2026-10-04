@@ -1,0 +1,45 @@
+[19:14:56.972 2771081893] k2-equip-icon-fix 1.0.0 loaded: 8 sites patched (pass 0x8ABA8C, defer 0x8ADA08/0x8ADA81/0x8AE793, set x4) pid=312
+[19:15:06.980 2771091902] STATS passes=0 deferred=0 cancelled=0 replaced=0 applied=0 sets=0 outside_pass=0
+[19:16:07.285 2771152206] STATS passes=143 deferred=943 cancelled=0 replaced=286 applied=657 sets=1546 outside_pass=0
+[19:20:38.647 2771423566] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.647 2771423566] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.647 2771423566] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.647 2771423566] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.647 2771423566] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.647 2771423567] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.648 2771423567] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.648 2771423567] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.648 2771423567] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.648 2771423567] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.648 2771423567] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.648 2771423568] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.649 2771423568] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.649 2771423568] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.649 2771423568] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.649 2771423568] CANCEL ctl=078f83a0 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:20:38.649 2771423568] STATS passes=223 deferred=1263 cancelled=80 replaced=366 applied=817 sets=2986 outside_pass=0
+[19:20:48.699 2771433618] STATS passes=813 deferred=3623 cancelled=670 replaced=956 applied=1997 sets=13606 outside_pass=0
+[19:20:58.749 2771443668] STATS passes=1416 deferred=6035 cancelled=1273 replaced=1559 applied=3203 sets=24460 outside_pass=0
+[19:21:08.799 2771453718] STATS passes=2019 deferred=8447 cancelled=1876 replaced=2162 applied=4409 sets=35314 outside_pass=0
+[19:21:18.849 2771463768] STATS passes=2622 deferred=10859 cancelled=2479 replaced=2765 applied=5615 sets=46168 outside_pass=0
+[19:21:28.899 2771473818] STATS passes=3225 deferred=13271 cancelled=3082 replaced=3368 applied=6821 sets=57022 outside_pass=0
+[19:21:38.949 2771483868] STATS passes=3828 deferred=15683 cancelled=3685 replaced=3971 applied=8027 sets=67876 outside_pass=0
+[19:21:48.999 2771493918] STATS passes=4431 deferred=18095 cancelled=4288 replaced=4574 applied=9233 sets=78730 outside_pass=0
+[19:21:59.049 2771503968] STATS passes=5033 deferred=20503 cancelled=4890 replaced=5176 applied=10437 sets=89566 outside_pass=0
+[19:22:09.100 2771514019] STATS passes=5625 deferred=22871 cancelled=5482 replaced=5768 applied=11621 sets=100222 outside_pass=0
+[19:22:19.151 2771524070] STATS passes=6098 deferred=25106 cancelled=5785 replaced=6446 applied=12875 sets=107681 outside_pass=0
+[19:22:29.204 2771534122] STATS passes=6407 deferred=26460 cancelled=6035 replaced=6833 applied=13592 sets=112870 outside_pass=0
+[19:24:07.433 2771632350] k2-equip-icon-fix 1.0.0 loaded: 8 sites patched (pass 0x8ABA8C, defer 0x8ADA08/0x8ADA81/0x8AE793, set x4) pid=312
+[19:24:17.442 2771642359] STATS passes=0 deferred=0 cancelled=0 replaced=0 applied=0 sets=0 outside_pass=0
+[19:26:07.992 2771752907] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.992 2771752908] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.992 2771752908] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.992 2771752908] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.992 2771752908] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.992 2771752908] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.993 2771752908] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.993 2771752909] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.993 2771752909] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.993 2771752909] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.993 2771752909] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass
+[19:26:07.994 2771752909] CANCEL ctl=0782c6c8 deferred 'iweap_l' superseded by 'iw_vbroshort_001' (ra=008ae19f) in the same pass

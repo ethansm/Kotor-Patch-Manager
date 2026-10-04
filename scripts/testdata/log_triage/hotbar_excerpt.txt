@@ -1,0 +1,37 @@
+[2963888425 f0] force-power-hotbar 1.0.0 loaded; cwd=S:\steamapps\common\Knights of the Old Republic II pid=320 ini=force_power_hotbar.ini
+[2963888425 f0] addresses: invoke=00751750 kbdevGlobal=0099c884 app=00a1b4a4 getCreature=007e5d80 whitelist=0099e5ec,009a044c,009a7bac,009a8fcc
+[2963905458 f0] cfg: loaded force_power_hotbar.ini: invoke=1 verbose=1 kbdev=-1 profiles=1 warnings=0
+[2963905458 f0] cfg: TargetProbe=2
+[2963905458 f0] cfg: profile for character '' -> 0/10 slots bound
+[2963905459 f0] cfg: profile for character '' -> 0/10 slots bound
+[2963905460 f0] persave: save loading: 'cloudsaves/62703561/000010 - game9/force_power_hotbar.ini' absent (empty bar) -> live hotbar replaced (1 profile(s), snapshot warnings=0, backup ok)
+[2963906194 f0] H3 build: panel=085ee2e8 vtable=0099dcc4 controls=111 gff=0840e830 (previous bar panel=00000000 built=0)
+[2963906195 f0] H3: projection flag 00a1b9f0 = 1 (cleared for the binds, restored after)
+[2963906195 f0] H3: window 000600d2 client=3840x1600 ref=800x600 -> x correction 0.5556
+[2963906195 f0] tex fph_slot: created, 128x128 RGBA queued for upload (basic 08647f20, pending 43)
+[2963906195 f0] img: loaded 'fph_slot' -> 0864e4c8 (pool 1)
+[2963906195 f0] tex fph_slot_hi: created, 128x128 RGBA queued for upload (basic 08648020, pending 44)
+[2963906195 f0] img: loaded 'fph_slot_hi' -> 0864e588 (pool 2)
+[2963906196 f0] tex fph_edit: created, 72x128 RGBA queued for upload (basic 08648120, pending 45)
+[2963906196 f0] img: loaded 'fph_edit' -> 0864e648 (pool 3)
+[2963906196 f0] tex fph_edit_hi: created, 72x128 RGBA queued for upload (basic 08648220, pending 46)
+[2963906196 f0] img: loaded 'fph_edit_hi' -> 0864e708 (pool 4)
+[2963906196 f0] H3 LBL_HOTBARBG1: created at index 111 from LBL_QUEUE1 rect=[77,1274,93,93] fill=fph_slot text=-
+[2963906196 f0] H3 LBL_HOTBARBG2: created at index 112 from LBL_QUEUE1 rect=[184,1274,93,93] fill=fph_slot text=-
+[2963906197 f0] H3 LBL_HOTBARBG3: created at index 113 from LBL_QUEUE1 rect=[291,1274,93,93] fill=fph_slot text=-
+[2963906197 f0] H3 LBL_HOTBARBG4: created at index 114 from LBL_QUEUE1 rect=[397,1274,93,93] fill=fph_slot text=-
+[2963906197 f0] H3 LBL_HOTBARBG5: created at index 115 from LBL_QUEUE1 rect=[504,1274,93,93] fill=fph_slot text=-
+[2963906197 f0] H3 LBL_HOTBARBG6: created at index 116 from LBL_QUEUE1 rect=[611,1274,93,93] fill=fph_slot text=-
+[2963906197 f0] H3 LBL_HOTBARBG7: created at index 117 from LBL_QUEUE1 rect=[717,1274,93,93] fill=fph_slot text=-
+[2963906198 f0] H3 LBL_HOTBARBG8: created at index 118 from LBL_QUEUE1 rect=[824,1274,93,93] fill=fph_slot text=-
+[2963906198 f0] H3 LBL_HOTBARBG9: created at index 119 from LBL_QUEUE1 rect=[931,1274,93,93] fill=fph_slot text=-
+[2963906198 f0] H3 LBL_HOTBARBG0: created at index 120 from LBL_QUEUE1 rect=[1037,1274,93,93] fill=fph_slot text=-
+[2963906198 f0] H3 LBL_HOTBAR1: created at index 121 from LBL_QUEUE1 rect=[82,1280,82,82] fill=- text=-
+[2963906198 f0] H3 LBL_HOTBAR2: created at index 122 from LBL_QUEUE1 rect=[189,1280,82,82] fill=- text=-
+[2964815357 f25564] H3: 75 controls created at runtime (indices 111..185), 10/10 buttons, editor controls 25/25 -> editor ENABLED, picker background rect [11,960,1120,298]
+[2964822393 f25565] tick: gap of 7995 ms since previous HUD tick (load/menu/HUD destroyed?)
+[2964822393 f25565] tick: hud pointer now 166210b0
+[2964822393 f25565] gate: ACTIVE (hud on top)
+[2964822393 f25565] character: creature 0cd83410 has invalid object id ffffffff (party members=1)
+[2964822393 f25565] btn[0].bg key 1: hidden -> shown (out of stock) flags 00000028->0000000a
+[2964822393 f25565] btn[0].ic key 1: hidden -> shown (out of stock) flags 00000028->0000002a
