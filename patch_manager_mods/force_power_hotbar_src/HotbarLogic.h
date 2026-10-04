@@ -6,6 +6,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -412,6 +413,25 @@ inline std::string modeTooltip(const ActionRef& a, bool isHealing, bool selfAllo
 inline std::string slotTargetLine(const TargetSpec& t, int effectiveThresholdPct) {
     if (t.mode == TM_LowHp) return "Target: Lowest HP (below " + std::to_string(effectiveThresholdPct) + "%)";
     return t.mode == TM_Self ? "Target: Self" : "";
+}
+
+// ---- item edge cases (B2, doc 07): column-driven from spells.2da, item property 0 from the engine item ----
+inline int parseHexOrInt(const std::string& s) {   // spells.2da category is "0x1408"; "****"/empty/garbage -> -1
+    if (s.empty() || s == "****") return -1;
+    char* e = nullptr; long v = strtol(s.c_str(), &e, 0);
+    return (e && e != s.c_str() && *e == 0) ? (int)v : -1;
+}
+inline bool isHealingRow(int usertype, const std::string& range, int category) {
+    return usertype == 4 && range == "T" && (category == 0x1408 || category == 0x1404 || category == 0x1048);
+}
+inline bool selfAllowedRow(const std::string& range, int hostileSetting) { return (range == "T" || range == "t") && hostileSetting != 1; }
+struct ItemProp { int count = 0; int type = -1; int row = -1; int usable = 0; };
+inline int usableSpellRow(const ItemProp& p) { return (p.count > 0 && p.type == 10 && p.usable != 0 && p.row >= 0) ? p.row : -1; }
+inline const char* itemPropWhy(const ItemProp& p) {
+    if (p.count <= 0) return "no properties";
+    if (p.type != 10) return "property 0 not CastSpell";
+    if (p.usable == 0) return "no uses left";
+    return p.row < 0 ? "bad row" : "ok";
 }
 
 }  // namespace hb

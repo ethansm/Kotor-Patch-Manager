@@ -651,5 +651,34 @@ int main() {
     KT_CHECK_EQ(slotTargetLine(M(TM_Self), 50).c_str(), "Target: Self");
     KT_CHECK_EQ(slotTargetLine(M(TM_Default), 50).c_str(), "");
   }
+  { // B2: item edge-case decision table (spells.2da columns, item property 0)
+    KT_CHECK_EQ(parseHexOrInt("0x1408"), 0x1408);
+    KT_CHECK_EQ(parseHexOrInt("0X1048"), 0x1048);
+    KT_CHECK_EQ(parseHexOrInt("12"), 12);
+    KT_CHECK_EQ(parseHexOrInt("****"), -1);
+    KT_CHECK_EQ(parseHexOrInt(""), -1);
+    KT_CHECK(isHealingRow(4, "T", 0x1408) && isHealingRow(4, "T", 0x1404) && isHealingRow(4, "T", 0x1048));
+    KT_CHECK(!isHealingRow(3, "T", 0x1408) && !isHealingRow(4, "L", 0x1408) && !isHealingRow(4, "T", 0x1000) && !isHealingRow(4, "T", -1));
+    KT_CHECK(selfAllowedRow("T", 0) && selfAllowedRow("t", -1) && !selfAllowedRow("T", 1));
+    KT_CHECK(!selfAllowedRow("L", 0) && !selfAllowedRow("M", 0) && !selfAllowedRow("S", 0) && !selfAllowedRow("", 0));
+    ItemProp p; p.count = 1; p.type = 10; p.row = 55; p.usable = 1;
+    KT_CHECK_EQ(usableSpellRow(p), 55); KT_CHECK_EQ(itemPropWhy(p), "ok");
+    ItemProp q = p; q.count = 0; KT_CHECK_EQ(usableSpellRow(q), -1); KT_CHECK_EQ(itemPropWhy(q), "no properties");
+    q = p; q.type = 9; KT_CHECK_EQ(usableSpellRow(q), -1); KT_CHECK_EQ(itemPropWhy(q), "property 0 not CastSpell");
+    q = p; q.usable = 0; KT_CHECK_EQ(usableSpellRow(q), -1); KT_CHECK_EQ(itemPropWhy(q), "no uses left");
+    q = p; q.row = -1; KT_CHECK_EQ(usableSpellRow(q), -1); KT_CHECK_EQ(itemPropWhy(q), "bad row");
+    KT_CHECK_EQ(usableSpellRow(ItemProp()), -1);
+    { Candidate m[1] = { C(10, 100, true, false, false) };        // party of 1, self ineligible
+      KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, true), -1); }
+    { Candidate m[2] = { C(10, 100, true, false, false), C(100, 100) };   // repair kit: only member 1 eligible, healthy; never self
+      KT_CHECK_EQ(chooseTarget(m, 2, 0, 50, true), -1); }
+    { Candidate m[3] = { C(100, 100, true, false, false), C(20, 100), C(60, 100) };   // medpac, self is a droid
+      KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, true), 1);
+      Candidate n[3] = { C(100, 100, true, false, false), C(90, 100), C(20, 100) };
+      KT_CHECK_EQ(chooseTarget(n, 3, 0, 50, true), 2); }
+    { Candidate m[3] = { C(0, 100, true, true), C(0, 100, true, true), C(0, 100, true, true) };
+      KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, true), -1); }
+    { Candidate m[1] = { C(10, 100) }; KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, false), 0); }
+  }
   return kt::Report("hotbar_logic_test");
 }
