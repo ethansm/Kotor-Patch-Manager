@@ -1,0 +1,14 @@
+ Patches/Common/GameAPI/CGuiInGame.cpp      | 48 +++++++++++++++++++++++++-----
+ Patches/Common/GameAPI/CGuiInGame.h        | 19 ++++++++++--
+ Patches/Common/GameAPI/CRes.cpp            |  3 +-
+ Patches/Common/GameAPI/CResGFF.cpp         |  7 ++---
+ Patches/Common/GameAPI/CResGFF.h           |  2 --
+ Patches/Common/GameAPI/CSWGuiBorder.cpp    |  3 +-
+ Patches/Common/GameAPI/CSWGuiImage.cpp     |  3 +-
+ Patches/Common/GameAPI/CSWGuiListBox.cpp   |  3 +-
+ Patches/Common/GameAPI/CSWGuiPanel.cpp     | 30 ++++++++++++++-----
+ Patches/Common/GameAPI/CSWGuiPanel.h       |  6 ++++
+ Patches/Common/GameAPI/CSWGuiScrollBar.cpp |  3 +-
+ Patches/Common/GameAPI/CSWGuiSlider.cpp    |  7 +++--
+ Patches/Common/GameAPI/CSWGuiText.cpp      |  3 +-
+ 13 files changed, 106 insertions(+), 31 deletions(-)

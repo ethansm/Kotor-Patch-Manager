@@ -1,0 +1,18 @@
+patch	hook_index	address	function	check	result	detail
+K2ClassMenuClothes	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2ClassMenuClothes	0	0x008F9DCA	BeginClassMenuAppearance	BYTES	PASS	10 bytes match
+K2ClassMenuClothes	0	0x008F9DCA	BeginClassMenuAppearance	BOUNDARY	PASS	votes 7/7
+K2ClassMenuClothes	0	0x008F9DCA	BeginClassMenuAppearance	UNIQUE	PASS	18-byte pattern occurs 1x in .text
+K2ClassMenuClothes	0	0x008F9DCA	BeginClassMenuAppearance	DRIFT	PASS	fields equal
+K2ClassMenuClothes	1	0x0085E4E4	OverrideClassMenuModel	BYTES	PASS	7 bytes match
+K2ClassMenuClothes	1	0x0085E4E4	OverrideClassMenuModel	BOUNDARY	PASS	votes 9/9
+K2ClassMenuClothes	1	0x0085E4E4	OverrideClassMenuModel	UNIQUE	PASS	15-byte pattern occurs 1x in .text
+K2ClassMenuClothes	1	0x0085E4E4	OverrideClassMenuModel	DRIFT	PASS	fields equal
+K2ClassMenuClothes	2	0x0085E601	OverrideClassMenuTexture	BYTES	PASS	7 bytes match
+K2ClassMenuClothes	2	0x0085E601	OverrideClassMenuTexture	BOUNDARY	PASS	votes 7/7
+K2ClassMenuClothes	2	0x0085E601	OverrideClassMenuTexture	UNIQUE	PASS	15-byte pattern occurs 1x in .text
+K2ClassMenuClothes	2	0x0085E601	OverrideClassMenuTexture	DRIFT	PASS	fields equal
+K2ClassMenuClothes	3	0x008F9DD9	EndClassMenuAppearance	BYTES	PASS	10 bytes match
+K2ClassMenuClothes	3	0x008F9DD9	EndClassMenuAppearance	BOUNDARY	PASS	votes 7/7
+K2ClassMenuClothes	3	0x008F9DD9	EndClassMenuAppearance	UNIQUE	PASS	18-byte pattern occurs 1x in .text
+K2ClassMenuClothes	3	0x008F9DD9	EndClassMenuAppearance	DRIFT	PASS	fields equal

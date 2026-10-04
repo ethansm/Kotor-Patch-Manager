@@ -1,0 +1,3 @@
+removed (ignored, created by create-patch.py; absent before):
+Patches/K2ClassMenuClothes/K2ClassMenuClothes.kpatch
+Patches/build/ (common/ GameAPI objs, 73 files)

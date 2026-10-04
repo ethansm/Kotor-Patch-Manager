@@ -1,0 +1,103 @@
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = HGLRC__* (__attribute__((stdcall)) *)(); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:167:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘HGLRC__* (__attribute__((stdcall)) *)()’ [-Wcast-function-type]
+  148 |     proc = reinterpret_cast<T>(GetProcAddress(module, name));
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = HDC__* (__attribute__((stdcall)) *)(); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:168:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘HDC__* (__attribute__((stdcall)) *)()’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) * (__attribute__((stdcall)) *)(const char*))(); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:169:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) * (__attribute__((stdcall)) *)(const char*))()’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = HGLRC__* (__attribute__((stdcall)) *)(HDC__*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:170:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘HGLRC__* (__attribute__((stdcall)) *)(HDC__*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) *)(HGLRC__*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:171:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(HGLRC__*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) *)(HDC__*, HGLRC__*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:172:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(HDC__*, HGLRC__*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:173:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, unsigned int); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:174:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, unsigned int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(float, float, float, float); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:176:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(float, float, float, float)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned char, unsigned char, unsigned char, unsigned char); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:177:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned char, unsigned char, unsigned char, unsigned char)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(int, unsigned int*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:182:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(int, unsigned int*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, int*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:184:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, int*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = const unsigned char* (__attribute__((stdcall)) *)(unsigned int); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:185:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘const unsigned char* (__attribute__((stdcall)) *)(unsigned int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(double, double, double, double, double, double); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:188:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(double, double, double, double, double, double)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, int); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:189:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(float, float); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:196:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(float, float)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, unsigned int, int); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:197:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, unsigned int, int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, int, int, int, int, int, unsigned int, unsigned int, const void*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:198:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, int, int, int, int, int, unsigned int, unsigned int, const void*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = void (__attribute__((stdcall)) *)(int, int, int, int); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:202:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(int, int, int, int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) *)(HDC__*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:204:21:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(HDC__*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) *)(HDC__*, const tagPIXELFORMATDESCRIPTOR*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:205:21:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(HDC__*, const tagPIXELFORMATDESCRIPTOR*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) *)(HDC__*, int, const tagPIXELFORMATDESCRIPTOR*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:207:21:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(HDC__*, int, const tagPIXELFORMATDESCRIPTOR*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = HDC__* (__attribute__((stdcall)) *)(HWND__*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:208:21:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘HDC__* (__attribute__((stdcall)) *)(HWND__*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveProc(HMODULE, const char*, T&) [with T = int (__attribute__((stdcall)) *)(HWND__*, HDC__*); HMODULE = HINSTANCE__*]’:
+Patches/Movie Patch/better_movie_playback.cpp:209:21:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:148:12: warning: cast between incompatible function types from ‘FARPROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(HWND__*, HDC__*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = unsigned int (__attribute__((stdcall)) *)(unsigned int)]’:
+Patches/Movie Patch/better_movie_playback.cpp:289:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘unsigned int (__attribute__((stdcall)) *)(unsigned int)’ [-Wcast-function-type]
+  267 |     proc = reinterpret_cast<T>(address);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, int, const char* const*, const int*)]’:
+Patches/Movie Patch/better_movie_playback.cpp:290:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, int, const char* const*, const int*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int)]’:
+Patches/Movie Patch/better_movie_playback.cpp:291:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, unsigned int, int*)]’:
+Patches/Movie Patch/better_movie_playback.cpp:292:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, unsigned int, int*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, int, int*, char*)]’:
+Patches/Movie Patch/better_movie_playback.cpp:293:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, int, int*, char*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(unsigned int, unsigned int)]’:
+Patches/Movie Patch/better_movie_playback.cpp:296:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(unsigned int, unsigned int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = int (__attribute__((stdcall)) *)(unsigned int, const char*)]’:
+Patches/Movie Patch/better_movie_playback.cpp:302:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘int (__attribute__((stdcall)) *)(unsigned int, const char*)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(int, int)]’:
+Patches/Movie Patch/better_movie_playback.cpp:303:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(int, int)’ [-Wcast-function-type]
+Patches/Movie Patch/better_movie_playback.cpp: In instantiation of ‘bool BetterMoviePlayback::{anonymous}::resolveContextProc(const char*, T&) [with T = void (__attribute__((stdcall)) *)(int, float, float)]’:
+Patches/Movie Patch/better_movie_playback.cpp:304:5:   required from here
+Patches/Movie Patch/better_movie_playback.cpp:267:12: warning: cast between incompatible function types from ‘PROC’ {aka ‘int (__attribute__((stdcall)) *)()’} to ‘void (__attribute__((stdcall)) *)(int, float, float)’ [-Wcast-function-type]

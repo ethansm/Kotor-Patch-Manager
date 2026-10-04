@@ -1,0 +1,39 @@
+
+===================================================
+  KotOR Patch Manager - Patch Creation Tool
+===================================================
+
+Using current directory name: K2ClassMenuClothes
+
+[1/5] Validating patch files...
+  [OK] manifest.toml found
+  [OK] hooks file(s) found
+
+[2/5] Detecting patch type...
+  Patch type: DETOUR (1 C++ file(s) detected)
+
+[3/5] Building modules for: windows_x86
+  Building the shared Common/GameAPI library (71 sources)...
+  [OK] windows_x86.dll (i686-w64-mingw32-g++-posix)
+
+[4/5] Creating .kpatch package...
+  Copying files...
+  [OK] manifest.toml
+  [OK] hooks.toml
+  [OK] kotor2-steam-aspyr.hooks.toml
+  [OK] binaries/windows_x86.dll
+  Creating archive...
+
+[5/5] Verifying package...
+  [OK] Package created: K2ClassMenuClothes.kpatch
+
+  Package contents:
+      manifest.toml
+      hooks.toml
+      kotor2-steam-aspyr.hooks.toml
+      binaries/windows_x86.dll
+
+===================================================
+  SUCCESS! Patch created successfully.
+===================================================
+

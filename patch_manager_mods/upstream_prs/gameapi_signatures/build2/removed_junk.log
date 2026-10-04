@@ -1,0 +1,6 @@
+removed Patches/ModOptions/ModOptions.kpatch
+removed Patches/PartyRosterLimit32K1/exports.def
+removed Patches/PartyRosterLimit32K2/exports.def
+removed Patches/__pycache__
+removed Patches/build
+removed build

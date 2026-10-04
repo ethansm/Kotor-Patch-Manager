@@ -1,0 +1,10 @@
+patch	hook_index	address	function	check	result	detail
+Movie Patch	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+Movie Patch	0	0x0040D901	blitMovieMitchellNetravaliKotor2	BYTES	PASS	30 bytes match
+Movie Patch	0	0x0040D901	blitMovieMitchellNetravaliKotor2	BOUNDARY	PASS	votes 7/7
+Movie Patch	0	0x0040D901	blitMovieMitchellNetravaliKotor2	UNIQUE	PASS	38-byte pattern occurs 1x in .text
+Movie Patch	0	0x0040D901	blitMovieMitchellNetravaliKotor2	DRIFT	PASS	fields equal
+Movie Patch	1	0x0040CB20	releaseMovieFilterKotor2	BYTES	PASS	9 bytes match
+Movie Patch	1	0x0040CB20	releaseMovieFilterKotor2	BOUNDARY	PASS	votes 9/9
+Movie Patch	1	0x0040CB20	releaseMovieFilterKotor2	UNIQUE	WARN	17-byte pattern occurs 3x in .text; also at 0x005BB5A0, 0x005BF940 [allowlisted: function-entry prologue (CExoMoviePlayerInternal::ShutDown); 22 bytes unique; identity pinned by its 3 callers (GOG-0x5131F0 delta); address-pinned]
+Movie Patch	1	0x0040CB20	releaseMovieFilterKotor2	DRIFT	PASS	fields equal

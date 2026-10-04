@@ -1,0 +1,28 @@
+  25 patch(es) into /home/ethansm/Games/KOTOR2_Mod_Workspace/tools/kpm-pr-gameapi2/build/patches, up to 12 job(s).
+    [OK]   AdditionalConsoleCommands
+    [OK]   Alt Tab Patch
+    [OK]   EnableScriptAurPostString
+    [OK]   ExpandedKeyboardControl
+    [OK]   ExpandedVanillaOptions
+    [OK]   FrameLimiter
+    [OK]   K1GUITests
+    [OK]   K1SecurityDemolitionsXP
+    [OK]   K1SecuritySpikes
+    [OK]   K2AspyrMapAspectFix
+    [OK]   K2AspyrVisibleConsole
+    [OK]   K2ClassMenuClothes
+    [OK]   K2MP3PlaybackFix
+    [OK]   LevelUpLimit
+    [OK]   Max Lights
+    [OK]   ModOptions
+    [OK]   Movie Patch
+    [OK]   PartyRosterLimit32K1
+    [OK]   PartyRosterLimit32K2
+    [OK]   PlanetsLimit
+    [OK]   Referenced Model Stealth Fix
+    [OK]   SaveGameMemoryLeak
+    [OK]   ScriptExtender
+    [OK]   ShaderDebug
+    [OK]   Snake
+
+  Packaged 25/25.

@@ -109,3 +109,26 @@ Phase 0 (refresh):
   install by scripted patch_config edit (no full KPatchLauncher apply). See .claude/handoffs/24_master_plan_status.handoff.md.
 - Remaining user gates: push the 3 branches; open GameAPI PR; EKC PR after the in-game test; ACC PR after the DB
   PR; file the issue; runscript/classes decision.
+
+## Next phase, 2026-10-04 (plan `upstream_prs/NEXT_PHASE_PLAN_2026-10-04.md`; no in-game testing, user deferred the EKC test)
+Upstream master = 6374f73: #291 (contributing guide) MERGED, plus #296, #297, #289, #306.
+
+Branches (all committed locally, NOT pushed; worktrees under `~/Games/KOTOR2_Mod_Workspace/tools/`):
+| branch | worktree | head | base | kpatch (untested) | PR draft |
+|---|---|---|---|---|---|
+| port/k2-classmenuclothes-steam | kpm-pr-cmc | 746265f | 6374f73 | upstream_prs/cmc_steam/build/K2ClassMenuClothes.kpatch | drafts/pr_cmc.md |
+| port/movie-patch-k2-steam | kpm-pr-movie | 8cc2647 | 6374f73 | upstream_prs/movie_steam/build/Movie Patch.kpatch | drafts/pr_movie.md |
+| gameapi/k2-title-gated-signatures | kpm-pr-gameapi2 | 5a7821f | 6374f73 | (library; publish 25/25 OK) | drafts/pr_gameapi_k2.md |
+| port/k2-expandedkeyboard-steam | kpm-pr-ekc | c90fd4f | 8b33840 (merges clean into 6374f73) | upstream_prs/ekc_steam/build/ | drafts/pr_ekc.md |
+| port/k2-acc-steam | kpm-pr-acc | acdfeeb | 8b33840 (merges clean) | upstream_prs/acc_parity/build/ | drafts/pr_acc.md |
+| gameapi/match-engine-signatures | kpm-pr-gameapi | f19550c | 8b33840 (merges clean) | - | drafts/pr_gameapi.md |
+Rebase the 8b33840-based branches onto upstream/master before opening their PRs.
+
+Research done (commit d841fae): R-A EKC x Action Hotbar = option (c), move hotbar hooks to 0x72CB84 / 0x74B3F5 (backlog U4, doc 07);
+R-B EKC GOG semantics 6/6 PASS; R-C PartyRosterLimit32K2 conditional GO (211/211 hooks same; its partyselect_p.gui would
+overwrite our ultrawide override, needs a 32-slot ultrawide regen); R-D GameAPI follow-up (K2 ShutDownGlobal DB rows wrong:
+real GOG 0x4D8230 / Steam 0x7C7B40, a DB fix for upstream + the DB session).
+Tools: `scripts/verify_steam_hooks.py` (all worktrees 0 FAIL; allowlist in upstream_prs/verify_steam_hooks/), `scripts/disasm_va.py`
+(offline GOG disassembly from `ghidra_dumps/upstream_server/k2_win_gog_aspyr_swkotor2.exe/memblocks/`).
+Pending user approvals: push which branches; open which PRs (GameAPI K2 needs no in-game test); file the runscript issue.
+Untested in game: EKC, ACC, CMC, Movie kpatches.

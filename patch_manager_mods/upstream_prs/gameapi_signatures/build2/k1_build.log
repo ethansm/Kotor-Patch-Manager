@@ -1,0 +1,36 @@
+
+===================================================
+  KotOR Patch Manager - Patch Creation Tool
+===================================================
+
+Using current directory name: ModOptions
+
+[1/5] Validating patch files...
+  [OK] manifest.toml found
+  [OK] hooks file(s) found
+
+[2/5] Detecting patch type...
+  Patch type: DETOUR (1 C++ file(s) detected)
+
+[3/5] Building modules for: windows_x86
+  [OK] windows_x86.dll (i686-w64-mingw32-g++-posix)
+
+[4/5] Creating .kpatch package...
+  Copying files...
+  [OK] manifest.toml
+  [OK] hooks.toml
+  [OK] binaries/windows_x86.dll
+  Creating archive...
+
+[5/5] Verifying package...
+  [OK] Package created: ModOptions.kpatch
+
+  Package contents:
+      manifest.toml
+      hooks.toml
+      binaries/windows_x86.dll
+
+===================================================
+  SUCCESS! Patch created successfully.
+===================================================
+
