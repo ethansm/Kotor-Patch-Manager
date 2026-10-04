@@ -1087,3 +1087,6 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   hooks/exports/manifest identical since KPM eebfd18). Backup `$G/backups/pre_luo_ux_20261004_035402/`. Read the log from line 629.
   **Live check:** Atton (future Jedi) Configure -> pause = his current level, "+" raises; hover each control -> read TIPPROBE lines:
   `owner_is_ours=1` = native works (custom box never shows); `over_is_ours=0` = hit-test misses (custom box covers it).
+- **RESUME HERE (2026-10-04 ~04:00, handoff):** UX build 8f9ca9e2 LIVE, NOT yet play-tested (user away; read TIPPROBE + `UI pause` lines from
+  log line 629 when they return). Next phase (user: "keep working in the next set of feature development work", offline) = R10 PC level-up
+  filter batch 1 (doc 25): probe hooks + PC/theme data + pure filter logic, built not installed. Handoff `.claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`.
