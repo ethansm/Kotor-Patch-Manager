@@ -16,4 +16,4 @@ original_bytes = [0x00, 0x00, 0x00, 0x80, 0xAA, 0xAA, 0x02, 0x40]
 kind = "data"
 verifies_original = true
 enabled_by = "dialogue_letterbox_fix.ini enabled=1 (default); mode=vanilla/h6/clamp, first write on the first GUI-manager size change"
-source = "K2DialogueLetterboxFix.cpp:28-29,138-147"
+source = "K2DialogueLetterboxFix.cpp:60-61,171-180"

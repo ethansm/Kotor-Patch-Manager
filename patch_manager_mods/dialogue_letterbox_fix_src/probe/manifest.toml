@@ -1,0 +1,12 @@
+[patch]
+id = "k2-dialogue-letterbox-fix"
+name = "K2 Dialogue Letterbox Fix"
+version = "1.0.2-probe"
+author = "ethansm"
+description = "PROBE VARIANT of 1.0.2 (adds log-only windows W1-W5, INI probe=1, default off; channels probe and probe_w4; same id, never install together with the shipping build). Restores the dialogue letterbox bars on ultrawide resolutions (at 3840x1600 the vanilla bar height is negative and the bars vanish). Rewrites the 2.3333 aspect constant at 0x009A7D30 whenever the screen size changes so the bars are H/6 tall. Config: dialogue_letterbox_fix.ini (enabled, mode=h6|clamp|vanilla, log=0|1, probe=0|1) in the game folder; log: kplog.ini [k2-dialogue-letterbox-fix] (channels main, set, probe, probe_w4); old core: dialogue_letterbox_fix_log.txt."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

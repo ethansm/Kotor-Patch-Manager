@@ -516,5 +516,383 @@ class ProbeTests(unittest.TestCase):
         self.assertNotIn("Probe (", A.render_text("x", launches, unparsed, total, ok, verdict, dlg))
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# 1.0.2 (KpLog.h) prefixes: legacy / new core / old-core fallback, other-patch filtering, session header, W3 + W3b join
+# ---------------------------------------------------------------------------------------------------------------------
+import json  # noqa: E402
+import re  # noqa: E402
+
+PID = "k2-dialogue-letterbox-fix"
+LEGACY_PREFIX = re.compile(r"^\[\d+\] ")
+
+
+def bare(line):
+    return LEGACY_PREFIX.sub("", line)
+
+
+def channel_of(msg):
+    if msg.startswith("PROBE W4 "):
+        return "probe_w4"
+    if msg.startswith("PROBE "):
+        return "probe"
+    if msg.startswith(("SETTOP", "SETBOTTOM")):
+        return "set"
+    return "main"
+
+
+def core_line(msg, t, tag="", frame="-", patch=PID, ch=None):
+    return "T=%d.%03d f=%s %s/%s %s%s" % (t // 1000, t % 1000, frame, patch, ch or channel_of(msg), tag, msg)
+
+
+def fb_line(msg, t, tag="", patch=PID, ch=None):
+    return "%d %s/%s %s%s" % (t, patch, ch or channel_of(msg), tag, msg)
+
+
+def to_core(legacy_lines, header=True):
+    out = ["# kplog session 2026-10-03 22:40:01 | kpatch.log v1 | patcher ABI 1", "# KOTOR_VERSION_SHA=abcdef"] if header else []
+    for i, ln in enumerate(legacy_lines):
+        m = bare(ln)
+        out.append(core_line(m, 1500 + 7 * i, tag="ERR " if A.classify_error(m) and not m.startswith("PROBE") else "",
+                             frame=str(i) if i % 2 else "-"))
+    return out
+
+
+def to_fallback(legacy_lines):
+    return [fb_line(bare(ln), 2930091408 + 5 * i, tag="WARN " if A.classify_error(bare(ln)) and not bare(ln).startswith("PROBE") else "")
+            for i, ln in enumerate(legacy_lines)]
+
+
+def w3_split(n, pred="WOULD-DRAW", alpha=0x3F000000, vt="letterbox", skip=0, labels="short", unr=""):
+    """(W3, W3b) bare messages, as the 1.0.2 probe prints them. labels='long' keeps the legacy `flags(+0x48)=`/`rect(x,y,w,h)=` labels."""
+    vtbl = 0x009A7CBC if vt == "letterbox" else 0x00995D70
+    fl, rc = ("flags(+0x48)", "rect(x,y,w,h)") if labels == "long" else ("flags", "rect")
+    a = ("PROBE W3 n=%d skip=%d this=0x0c92d1e8 vtbl=0x%08x(%s) %s=0x00000044 bit2=1 bit6=1 %s=%s W=3840 H=1600 predicate=%s dt=0x3c888889"
+         % (n, skip, vtbl, vt, fl, rc, R4 % (0, 0, 3840, 267), pred))
+    b = ("PROBE W3b n=%d skip=%d alpha=0x%08x color(+0x54..)=0x00000000,0x00000000,0x00000000 mgr=0x05bc0fb8 "
+         "DAT_a309b4=267 DAT_a309b8=1333 DAT_a309bc=1%s" % (n, skip, alpha, unr))
+    return a, b
+
+
+def probe_launch_legacy():
+    """Legacy (unsplit) probe launch with W3 records; returns (lines, split-equivalent bare messages)."""
+    head = [load2("1.0.2-probe", log=1, probe=1)] + apply_lines()
+    dlg = [settop(new=C36), setbottom(new=C36), p_w5(1, 1), p_w1(1, 8), p_w1(2, 267, done=1), p_w2(1, 1592), p_w2(2, 1333, done=1),
+           p_w3(1, pred="WOULD-DRAW"), p_w3(2, pred="FAIL:bit6", vt="OTHER"), p_w4(1, eax=1), p_w5(2, 0)]
+    return head + dlg
+
+
+def split_equivalent(lines):
+    """Replace each legacy `PROBE W3 ... ` line by its W3 + W3b pair (same field values)."""
+    out = []
+    for ln in lines:
+        m = re.match(r"^\[(\d+)\] PROBE W3 n=(\d+) skip=(\d+) this=0x(\w+) vtbl=0x(\w+)\((\w+)\) flags\(\+0x48\)=(\S+) bit2=(\d) bit6=(\d) "
+                     r"rect\(x,y,w,h\)=(\S+) alpha=(\S+) (color\(\+0x54\.\.\)=\S+) mgr=(\S+) W=(\d+) H=(\d+) predicate=(\S+) dt=(\S+) "
+                     r"(DAT_a309b4=\S+ DAT_a309b8=\S+ DAT_a309bc=\S+)$", ln)
+        if not m:
+            out.append(ln)
+            continue
+        g = m.groups()
+        out.append("[%s] PROBE W3 n=%s skip=%s this=0x%s vtbl=0x%s(%s) flags=%s bit2=%s bit6=%s rect=%s W=%s H=%s predicate=%s dt=%s"
+                   % (g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9], g[13], g[14], g[15], g[16]))
+        out.append("[%s] PROBE W3b n=%s skip=%s alpha=%s %s mgr=%s %s" % (g[0], g[1], g[2], g[10], g[11], g[12], g[17]))
+    return out
+
+
+def summary_key(text):
+    """Everything the verdict / diagnosis depends on, without file/line numbers."""
+    launches, unparsed, total = A.analyze_text(text)
+    ok, verdict, dlg, errs = A.summarize(launches, unparsed, total)
+    return {"ok": ok, "verdict": verdict, "dialogues": dlg, "unparsed": len(unparsed),
+            "launches": [(L.mode, L.pid, L.settop, L.setbottom, [e[1] for e in L.errors],
+                          [A.probe_summary(b) for b in L.buckets if any(b[t] for t in ("W1", "W2", "W3", "W4", "W5"))])
+                         for L in launches]}
+
+
+def strip_lines(key):
+    """probe_summary carries settop_line numbers; drop them for cross-shape comparisons."""
+    for lau in key["launches"]:
+        for ps in lau[5]:
+            ps.pop("settop_line", None)
+    return key
+
+
+class PrefixShapeTests(unittest.TestCase):
+    def setUp(self):
+        self.legacy = probe_launch_legacy()
+        self.split = split_equivalent(self.legacy)
+        self.base = strip_lines(summary_key("\n".join(self.legacy)))
+
+    def test_baseline_is_a_real_probe_run(self):
+        self.assertTrue(self.base["ok"])
+        self.assertEqual(self.base["unparsed"], 0)
+        self.assertEqual(self.base["launches"][0][5][0]["W3"]["n"], 2)
+
+    def test_core_shape_same_result_as_legacy(self):
+        text = "\n".join(to_core(self.split))
+        self.assertEqual(strip_lines(summary_key(text)), self.base)
+
+    def test_core_shape_without_session_header(self):
+        self.assertEqual(strip_lines(summary_key("\n".join(to_core(self.split, header=False)))), self.base)
+
+    def test_fallback_shape_same_result_as_legacy(self):
+        self.assertEqual(strip_lines(summary_key("\n".join(to_fallback(self.split)))), self.base)
+
+    def test_legacy_unsplit_w3_still_works(self):
+        launches, unparsed, _ = A.analyze_text("\n".join(self.legacy))
+        self.assertEqual(unparsed, [])
+        self.assertEqual([r["alpha"] for r in launches[0].buckets[0]["W3"]], [HALF, HALF])
+
+    def test_legacy_prefix_with_split_w3_lines(self):
+        # prefix shape and W3 shape are independent
+        self.assertEqual(strip_lines(summary_key("\n".join(self.split))), self.base)
+
+    def test_crlf_lines(self):
+        self.assertEqual(strip_lines(summary_key("\r\n".join(to_core(self.split)))), self.base)
+
+    def test_mixed_shapes_in_one_file(self):
+        core = to_core(self.split, header=False)
+        text = "\n".join(self.legacy[:2] + core[2:5] + to_fallback(self.split)[5:])
+        k = strip_lines(summary_key(text))
+        self.assertEqual(k["unparsed"], 0)
+        self.assertTrue(k["ok"])
+
+    def test_cli_on_core_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            p = os.path.join(td, "k2-dialogue-letterbox-fix_log.txt")
+            with open(p, "w") as f:
+                f.write("\n".join(to_core(self.split)) + "\n")
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                self.assertEqual(A.main(["x", p]), 0)
+            self.assertIn("VERDICT: PASS (1 launches, 1 dialogues, 0 errors)", buf.getvalue())
+            self.assertIn("DIAGNOSIS: bars drawn (fill issued)", buf.getvalue())
+
+    def test_usage_names_both_files(self):
+        self.assertIn("dialogue_letterbox_fix_log.txt", A.__doc__)
+        self.assertIn("k2-dialogue-letterbox-fix_log.txt", A.__doc__)
+
+
+class FilteringTests(unittest.TestCase):
+    def test_other_patch_lines_dropped_core(self):
+        good = to_core([load2("1.0.2", log=1)] + apply_lines() + [settop(new=C36), setbottom(new=C36)], header=False)
+        noise = [core_line("APPLY src=X W=1 H=1: FOREIGN value", 1600, patch="other-mod", ch="main"),
+                 core_line("something unparseable here", 1601, patch="mouse-probe", ch="probe"),
+                 "T=1602.000 f=- MARK before the cutscene",
+                 "# kplog session 2026-10-03 22:40:01 | kpatch.log v1 | patcher ABI 1".replace("# kplog", "# other")]
+        text = "\n".join(good[:3] + noise + good[3:])
+        launches, unparsed, total = A.analyze_text(text)
+        self.assertEqual(unparsed, [])
+        self.assertEqual(len(launches), 1)
+        self.assertEqual(launches[0].errors, [])
+        self.assertEqual(total, len(good))  # dropped lines are not counted
+        self.assertTrue(A.summarize(launches, unparsed, total)[0])
+
+    def test_other_patch_lines_dropped_fallback(self):
+        text = "\n".join([fb_line(bare(load2("1.0.2", log=1)), 1000), fb_line("boom FOREIGN", 1001, patch="other-mod", ch="main")])
+        launches, unparsed, _ = A.analyze_text(text)
+        self.assertEqual((len(launches), unparsed, launches[0].errors), (1, [], []))
+
+    def test_patch_id_must_match_exactly(self):
+        text = "\n".join([core_line(bare(load2("1.0.2", log=1)), 1000),
+                          core_line("APPLY src=X W=1 H=1: FOREIGN", 1001, patch=PID + "-probe", ch="main")])
+        launches, unparsed, _ = A.analyze_text(text)
+        self.assertEqual(launches[0].errors, [])
+
+    def test_garbage_is_unparsed_not_dropped(self):
+        launches, unparsed, total = A.analyze_text("\n".join([load2("1.0.2", log=1), "not a log line", "[12] ???"]))
+        self.assertEqual([u[1] for u in unparsed], ["not a log line", "[12] ???"])
+
+    def test_header_only_file_has_no_launch(self):
+        launches, unparsed, total = A.analyze_text("# kplog session 2026-10-03 22:40:01 | kpatch.log v1\n# other header\n")
+        ok, verdict, _, _ = A.summarize(launches, unparsed, total)
+        self.assertEqual((launches, total, ok), ([], 0, False))
+        self.assertIn("no launch / load line found", verdict)
+
+
+class LevelTagTests(unittest.TestCase):
+    def test_warn_tag_stripped_from_valid_line(self):
+        lines = [core_line(bare(load2("1.0.2", log=1)), 1000)] + [core_line(bare(a), 1010 + i, tag="WARN ") for i, a in enumerate(apply_lines())]
+        launches, unparsed, _ = A.analyze_text("\n".join(lines))
+        self.assertEqual((unparsed, launches[0].errors), ([], []))
+        self.assertEqual(launches[0].applies[0]["result"], "verify_ok")
+
+    def test_err_tag_with_error_text_still_fails(self):
+        msg = "APPLY src=SetScreenSize W=3840 H=1600: FOREIGN value 00 00 00 00 00 00 00 40 2: another mod owns 0x009a7d30, not writing"
+        for line in (core_line(msg, 1010, tag="ERR "), fb_line(msg, 1010, tag="ERR ")):
+            ok, verdict, _, errs, launches, unparsed = run_text("\n".join([core_line(bare(load2("1.0.2", log=1)), 1000), line]))
+            self.assertFalse(ok)
+            self.assertEqual(unparsed, [])
+            self.assertIn("FOREIGN", verdict)
+            self.assertTrue(any("FOREIGN" in r for _, r, _ in launches[0].errors))
+            self.assertNotIn("ERR ", launches[0].errors[0][2])  # the tag is not part of the reported text
+
+    def test_level_tag_is_not_a_verdict(self):
+        # an ERR-tagged line whose text is benign must not fail the launch
+        lines = [core_line(bare(load2("1.0.2", log=1)), 1000)] + [core_line(bare(a), 1010 + i) for i, a in enumerate(apply_lines())]
+        lines.append(core_line("unknown mode 'zz' in dialogue_letterbox_fix.ini, using h6", 1020, tag="WARN "))
+        ok, verdict, _, _, launches, unparsed = run_text("\n".join(lines))
+        self.assertTrue(ok, verdict)
+        self.assertEqual(len(launches[0].warnings), 1)
+
+
+class SessionBoundaryTests(unittest.TestCase):
+    HDR = "# kplog session 2026-10-03 22:%02d:01 | kpatch.log v1 | patcher ABI 1"
+
+    def launch(self, t0, pid):
+        return [core_line(bare(load2("1.0.2", log=1, pid=pid)), t0)] + [core_line(bare(a), t0 + 1 + i) for i, a in enumerate(apply_lines())]
+
+    def test_header_then_load_is_one_launch(self):
+        launches, unparsed, total = A.analyze_text("\n".join([self.HDR % 1] + self.launch(1000, 11)))
+        self.assertEqual((len(launches), launches[0].pid, launches[0].has_load, unparsed), (1, 11, True, []))
+
+    def test_two_sessions_two_launches(self):
+        text = "\n".join([self.HDR % 1] + self.launch(1000, 11) + [self.HDR % 5] + self.launch(900, 22))
+        launches, _, _ = A.analyze_text(text)
+        self.assertEqual([(L.pid, len(L.applies)) for L in launches], [(11, 1), (22, 1)])
+
+    def test_consecutive_headers_do_not_make_empty_launches(self):
+        text = "\n".join([self.HDR % 1, self.HDR % 2] + self.launch(1000, 11) + [self.HDR % 5, self.HDR % 6] + self.launch(900, 22))
+        launches, _, _ = A.analyze_text(text)
+        self.assertEqual([L.pid for L in launches], [11, 22])
+
+    def test_header_starts_new_launch_even_without_load_line(self):
+        # a session whose load line was lost: its lines must not be glued to the previous launch
+        body = [core_line(bare(a), 1100 + i) for i, a in enumerate(apply_lines())]
+        text = "\n".join([self.HDR % 1] + self.launch(1000, 11) + [self.HDR % 5] + body)
+        launches, _, _ = A.analyze_text(text)
+        self.assertEqual([(L.pid, L.has_load) for L in launches], [(11, True), (None, False)])
+
+    def test_load_line_still_splits_launches_without_headers(self):
+        text = "\n".join(self.launch(1000, 11) + self.launch(1100, 22) + [core_line(bare(load2("1.0.2", pid=33)), 1200)])
+        launches, _, _ = A.analyze_text(text)
+        self.assertEqual([L.pid for L in launches], [11, 22, 33])
+
+    def test_launch_line_number_is_the_load_line_after_a_header(self):
+        launches, _, _ = A.analyze_text("\n".join([self.HDR % 1] + self.launch(1000, 11)))
+        self.assertEqual(launches[0].line_no, 2)
+
+
+class W3JoinTests(unittest.TestCase):
+    def run_w3(self, *w3_msgs, extra=()):
+        lines = [core_line(bare(load2("1.0.2-probe", log=1, probe=1)), 1000)] + [core_line(bare(a), 1001 + i) for i, a in enumerate(apply_lines())]
+        lines += [core_line(bare(settop(new=C36)), 1010), core_line(bare(p_w1(1, 8)), 1011)]
+        lines += [core_line(m, 1020 + i) for i, m in enumerate(w3_msgs)]
+        lines += [core_line(m, 1100 + i) for i, m in enumerate(extra)]
+        return run_text("\n".join(lines))
+
+    def test_join_fills_alpha_and_pred(self):
+        ok, verdict, _, _, launches, unparsed = self.run_w3(*w3_split(1, pred="WOULD-DRAW", alpha=0))
+        self.assertTrue(ok, verdict)
+        self.assertEqual(unparsed, [])
+        rec = launches[0].buckets[0]["W3"][0]
+        self.assertEqual((rec["alpha"], rec["pred"], rec["letterbox"], rec["unreadable"], rec["awaiting_w3b"]), (0, "WOULD-DRAW", True, False, False))
+        self.assertEqual(A.probe_summary(launches[0].buckets[0])["diagnosis"], "alpha 0")
+        self.assertEqual(launches[0].warnings, [])
+
+    def test_join_equals_unsplit_summary(self):
+        _, _, _, _, l_split, _ = self.run_w3(*w3_split(1, alpha=HALF), *w3_split(2, pred="FAIL:bit6", vt="OTHER", alpha=ONE))
+        _, _, _, _, l_leg, _ = probe_run([settop(new=C36), p_w1(1, 8), p_w3(1, alpha=HALF), p_w3(2, pred="FAIL:bit6", vt="OTHER", alpha=ONE)])
+        a, b = A.probe_summary(l_split[0].buckets[0]), A.probe_summary(l_leg[0].buckets[0])
+        for k in ("W1", "W3", "diagnosis"):
+            self.assertEqual(a[k], b[k])
+
+    def test_long_labels_also_accepted(self):
+        ok, verdict, _, _, launches, unparsed = self.run_w3(*w3_split(1, labels="long"))
+        self.assertEqual(unparsed, [])
+        self.assertEqual(launches[0].buckets[0]["W3"][0]["alpha"], HALF)
+
+    def test_w3b_joins_the_matching_n_not_the_latest(self):
+        a1, b1 = w3_split(1, alpha=HALF)
+        a2, b2 = w3_split(2, pred="FAIL:h>0", alpha=ONE)
+        ok, verdict, _, _, launches, unparsed = self.run_w3(a1, a2, b1, b2)
+        self.assertEqual(unparsed, [])
+        recs = launches[0].buckets[0]["W3"]
+        self.assertEqual([(r["n"], r["alpha"]) for r in recs], [(1, HALF), (2, ONE)])
+
+    def test_w3_without_w3b_warns_and_alpha_unknown(self):
+        a, _ = w3_split(1)
+        ok, verdict, _, _, launches, unparsed = self.run_w3(a)
+        self.assertTrue(ok)
+        self.assertEqual(unparsed, [])
+        self.assertIsNone(launches[0].buckets[0]["W3"][0]["alpha"])
+        self.assertTrue(any("no matching W3b" in w[1] for w in launches[0].warnings))
+        A.probe_summary(launches[0].buckets[0])  # must not raise
+
+    def test_orphan_w3b_is_unparsed_warning_only(self):
+        _, b = w3_split(7)
+        ok, verdict, _, _, launches, unparsed = self.run_w3(b)
+        self.assertTrue(ok)
+        self.assertEqual(len(unparsed), 1)
+        self.assertIn("PROBE W3b n=7", unparsed[0][1])
+
+    def test_w3b_with_other_n_does_not_join(self):
+        a, _ = w3_split(1)
+        _, b = w3_split(2)
+        ok, verdict, _, _, launches, unparsed = self.run_w3(a, b)
+        self.assertEqual(len(unparsed), 1)
+        self.assertIsNone(launches[0].buckets[0]["W3"][0]["alpha"])
+
+    def test_w3b_unreadable_tail_sets_unreadable_and_warns(self):
+        for tail in (" [SOME-UNREADABLE]", " unreadable"):
+            a, b = w3_split(1, unr=tail)
+            ok, verdict, _, _, launches, unparsed = self.run_w3(a, b)
+            self.assertTrue(ok, verdict)  # PROBE lines never fail a launch
+            self.assertEqual(unparsed, [])
+            self.assertTrue(launches[0].buckets[0]["W3"][0]["unreadable"])
+            self.assertTrue(any("unreadable memory" in w[1] for w in launches[0].warnings))
+
+    def test_null_w3_needs_no_w3b(self):
+        ok, verdict, _, _, launches, unparsed = self.run_w3("PROBE W3 n=1 skip=0 this=NULL/UNREADABLE dt=0x3c888889")
+        self.assertEqual(unparsed, [])
+        self.assertFalse(any("W3b" in w[1] for w in launches[0].warnings))
+
+    def test_w3b_does_not_join_across_dialogues(self):
+        a, _ = w3_split(1)
+        _, b = w3_split(1)
+        lines = ([core_line(bare(load2("1.0.2-probe", log=1, probe=1)), 1000)] + [core_line(bare(x), 1001 + i) for i, x in enumerate(apply_lines())]
+                 + [core_line(bare(settop(new=C36)), 1010), core_line(a, 1011), core_line(bare(settop(new=C36)), 1012), core_line(b, 1013)])
+        launches, unparsed, _ = A.analyze_text("\n".join(lines))
+        self.assertEqual(len(unparsed), 1)
+
+    def test_probe_lines_counts_both_physical_lines(self):
+        ok, verdict, _, _, launches, unparsed = self.run_w3(*w3_split(1))
+        self.assertEqual(launches[0].probe_lines, 3)  # W1 + W3 + W3b
+
+
+class SyntheticFixtureTests(unittest.TestCase):
+    """fixtures/letterbox_log_102_synthetic_{core,fallback}.txt = letterbox_log_101_smoke_default.txt converted to the 1.0.2 prefixes."""
+
+    @staticmethod
+    def key(name):
+        path = os.path.join(FIXTURES, name)
+        launches, unparsed, total = A.analyze_file(path)
+        ok, verdict, dlg, errs = A.summarize(launches, unparsed, total)
+        d = A.build_json(name, launches, unparsed, total, ok, verdict, dlg)
+        for L in d["launch_details"]:
+            L.pop("line", None)
+            for a in L["applies"]:
+                a.pop("line", None)
+            for coll in ("errors", "warnings"):
+                for e in L[coll]:
+                    e.pop("line", None)
+        d.pop("lines")
+        d.pop("file")
+        d["unparsed"] = [u["text"] for u in d["unparsed"]]
+        return d
+
+    def test_core_matches_legacy_smoke(self):
+        self.assertEqual(self.key("letterbox_log_102_synthetic_core.txt"), self.key("letterbox_log_101_smoke_default.txt"))
+
+    def test_fallback_matches_legacy_smoke(self):
+        self.assertEqual(self.key("letterbox_log_102_synthetic_fallback.txt"), self.key("letterbox_log_101_smoke_default.txt"))
+
+    def test_core_fixture_has_noise_that_is_dropped(self):
+        with open(os.path.join(FIXTURES, "letterbox_log_102_synthetic_core.txt")) as f:
+            t = f.read()
+        self.assertIn("# kplog session", t)
+        self.assertIn("other-patch/", t)
+        self.assertIn("MARK", t)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

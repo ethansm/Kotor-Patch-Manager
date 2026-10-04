@@ -1,4 +1,9 @@
-# k2-dialogue-letterbox-fix 1.0.1 (STAGED, not installed)
+# k2-dialogue-letterbox-fix 1.0.2 (STAGED, not installed)
+
+Changelog: 1.0.2 = logging only: all lines now go through the shared `KpLog.h` (channels `main`, `set`; problem lines at WARN/ERR),
+the own file logger, the `[GetTickCount]` prefix and the 5000-line cap are gone, and the load line is emitted by `KPatchInit` (or the
+first hook call on an old core) instead of `DllMain`. Hooks, the constant write, the FOREIGN guard, the modes and the `log=0` first-event
+gating are unchanged. The probe variant (`probe/`, version `1.0.2-probe`) is built from the same source: see "Probe variant" below.
 
 Changelog: 1.0.1 = logging only. `log` now defaults to 0 (was 1): the DLL writes the load line, the first APPLY pair (header + outcome),
 the first SETTOP and the first SETBOTTOM per process, and problem lines; `log=1` restores full logging. Hooks and the write logic are
@@ -40,9 +45,26 @@ Spaces, CRLF and lines starting with `;` or `#` are tolerated; an unknown mode i
 Safety guard: the DLL writes 0x9A7D30 only if its current 8 bytes are the vanilla bytes or the last value this DLL wrote.
 Anything else is logged as `FOREIGN` (another mod owns the constant) and left alone.
 
-## Log: `dialogue_letterbox_fix_log.txt` (game dir, appended, `[GetTickCount] text`, max 5000 lines per process)
+## Log (KpLog.h, 1.0.2)
 
-- `... loaded: enabled=1 mode=h6 log=0 const@0x009a7d30=<8 bytes> (<double>) pid=N`
+On a core with the `kpatch.log` service, lines go to `k2-dialogue-letterbox-fix_log.txt` with the core prefix `T=<ms> f=<frame> k2-dialogue-letterbox-fix/<channel> `
+once `kplog.ini` (game dir) enables them:
+
+```
+[global]
+enabled=1
+[k2-dialogue-letterbox-fix]
+enabled=1
+level=info
+channels=main,set        ; probe variant: main,set,probe,probe_w4
+```
+Channels: `main` = load line, APPLY header + result lines, LATE notice; `set` = SETTOP/SETBOTTOM and the 400-line cap note.
+Problem lines (INVALID size, FOREIGN, unknown mode, null manager = WARN; not readable, VirtualProtect FAILED, verify MISMATCH = ERR) need no `kplog.ini`.
+`log=` in the INI is still the content gate described above (log=0: only the load line, first APPLY pair, first SETTOP/SETBOTTOM and problems).
+On an old core (no service, `KPatchInit` never called) the header's fallback sink writes `dialogue_letterbox_fix_log.txt` at INFO, each line prefixed
+`<ms> k2-dialogue-letterbox-fix/<channel> ` instead of 1.0.1's `[GetTickCount] `. Message text below is unchanged from 1.0.1.
+
+- `k2-dialogue-letterbox-fix 1.0.2 loaded: enabled=1 mode=h6 log=0 const@0x009a7d30=<8 bytes> (<double>) pid=N`
 - `APPLY src=<SetScreenSize|LATE(SetTop)|LATE(SetBottom)> W= H= mode= old= new= vanillaBar= newBar= X= fs= panelH= replyY=`
   followed by `wrote (protect RW ok, old prot=...; protect restore ok -> ...); verify OK, now <bytes> = <double>`,
   or `unchanged`, `DISABLED, no write`, `INVALID size, no write`, `FOREIGN value ...: another mod owns ..., not writing`.
@@ -53,7 +75,15 @@ Anything else is logged as `FOREIGN` (another mod owns the constant) and left al
 ```
 cd ~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/K2DialogueLetterboxFix && python3 ../create-patch.py
 ```
-(mingw i686, links only KERNEL32 + msvcrt). The sources in this directory are byte-identical mirrors of that folder.
+(mingw i686, links only KERNEL32 + msvcrt; `KpLog.h` comes from `Patches/Common`). The sources in this directory are byte-identical mirrors of that folder.
+
+## Probe variant (`probe/`, 1.0.2-probe)
+
+Same `K2DialogueLetterboxFix.cpp`; `probe/dlb_variant.h` (`#define DLB_PROBE 1`) is found through `__has_include`, so the probe build must have
+`probe/` on its include path (the shipping dir has no `dlb_variant.h`). The probe build uses `probe/manifest.toml`, `probe/exports.def` (KPatchInit + 3 + 5 handlers) and
+`probe/kotor2-steam-aspyr.hooks.toml` (3 shared hooks + W1-W5). It adds INI `probe=1|0` (default 0), the channels `probe` (PROBE W1/W2/W3/W3b/W5) and `probe_w4`
+(PROBE W4), and splits `PROBE W3` into `PROBE W3` + `PROBE W3b` (same `n=`) to stay under the core's 232-byte line cut. Spec and expected signals:
+`../dialogue_letterbox_fix_probe_src/README.md` (the 1.0.0-based predecessor, left untouched). Same patch id as the shipping build: never install both.
 
 ## Smoke test (Wine, no game)
 
@@ -68,7 +98,7 @@ for m in h6 clamp vanilla disabled foreign unchanged late ini log0 default; do
 ```
 The harness maps 0x9A7D30 as ordinary memory of a 32-bit exe at base 0x400000 (7 MB .bss pad), calls the three handlers
 with a fake frame / fake manager / fake letterbox, and checks bars, page protection restore, and log lines. Exit 0 = pass.
-Since 1.0.1 the modes that check full logging write `log=1` into the INI; `log0` (INI `log=0`) and `default` (no INI) check the new
+NOTE: the smoke harness below still targets the 1.0.1 log shape (`[ms] text`); it has not been ported to the fallback prefix yet. Since 1.0.1 the modes that check full logging write `log=1` into the INI; `log0` (INI `log=0`) and `default` (no INI) check the new
 log=0 output (first APPLY pair, first SETTOP/SETBOTTOM, INVALID problem line; a second apply and a second dialogue are not logged).
 Window check: `python3 engine_bug_research/tools/check_engfix_windows.py`.
 

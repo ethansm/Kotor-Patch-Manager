@@ -1,0 +1,11 @@
+LIBRARY K2DialogueLetterboxFix
+EXPORTS
+    KPatchInit
+    dlbOnScreenSize
+    dlbLogSetTop
+    dlbLogSetBottom
+    dlbProbeW1
+    dlbProbeW2
+    dlbProbeW3
+    dlbProbeW4
+    dlbProbeW5

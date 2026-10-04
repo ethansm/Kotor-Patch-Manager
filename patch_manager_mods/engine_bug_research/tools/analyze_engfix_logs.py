@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
-"""Read-only offline analyzer for dialogue_letterbox_fix_log.txt (mod k2-dialogue-letterbox-fix 1.0.0 / 1.0.1 / 1.0.1-probe).
+"""Read-only offline analyzer for the k2-dialogue-letterbox-fix log (mod 1.0.0 / 1.0.1 / 1.0.1-probe / 1.0.2 / 1.0.2-probe).
 
 Usage: analyze_engfix_logs.py <logfile> [--json]
+  <logfile> is dialogue_letterbox_fix_log.txt (legacy 1.0.0/1.0.1 own log, or the 1.0.2 old-core fallback sink) or
+  k2-dialogue-letterbox-fix_log.txt (1.0.2 on a KotorPatcher with kpatch.log); there is no default path, pass the file.
 
-Log format (one event per line, `[GetTickCount] text`) is defined by
-dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp and doc 17 "Config and log (L1)".
-The log is split into launches on `loaded:` lines; per launch the analyzer checks:
+Line prefixes accepted (a prefix stage strips them; the message regexes below only ever see the bare text):
+  * legacy:    `[<GetTickCount>] text`                                          (1.0.0 / 1.0.1 own log)
+  * new core:  `T=<ms>.<3 digits> f=<n|-> k2-dialogue-letterbox-fix/<channel> [WARN |ERR ]text`
+  * fallback:  `<ms> k2-dialogue-letterbox-fix/<channel> [WARN |ERR ]text`      (old core, KpLog.h fallback sink)
+  The core/fallback shapes are parsed by scripts/kplog_parse.py. Lines of other patch ids (sink=merged) and MARK lines are
+  dropped; `# ` header lines are skipped, except `# kplog session ...`, which starts a new launch (a load line right after
+  it belongs to that same launch). The WARN/ERR level tag is stripped and does not change any verdict.
+  PROBE W3 may arrive split in two lines with the same n= (`PROBE W3` + `PROBE W3b`); W3b is joined into the W3 record,
+  so the diagnosis sees the same data as an unsplit legacy W3 line (a W3 with no W3b leaves alpha unknown + a warning).
+
+Log format (one event per line) is defined by dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp and doc 17 "Config and log (L1)".
+The log is split into launches on `# kplog session` headers and `loaded:` lines; per launch the analyzer checks:
   * load line: vanilla start bytes `00 00 00 80 aa aa 02 40` (else FAIL)
   * APPLY lines: W, H, newBar, verify OK / unchanged / DISABLED (plus internal consistency: X, newBar, fs, panelH)
   * error lines: FOREIGN, INVALID, protect failures, MISMATCH, null, not readable, UNREADABLE
@@ -24,9 +35,14 @@ SETTOP line; earlier lines go to a "pre-dialogue" bucket) and summarised with a 
 Exit code 0 = PASS (including "no dialogue yet"), 1 = FAIL. Nothing is written anywhere.
 """
 import json
+import os
 import re
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "scripts"))
+import kplog_parse  # noqa: E402  (prefix grammar for the core / fallback line shapes; not duplicated here)
+
+PATCH_ID = "k2-dialogue-letterbox-fix"
 VANILLA_BYTES = "00 00 00 80 aa aa 02 40"
 
 LINE_RE = re.compile(r"^\[(\d+)\]\s?(.*)$")
@@ -57,7 +73,7 @@ VPROT_RE = re.compile(r"^APPLY src=(?P<src>\S+): VirtualProtect\((?P<which>RW|re
 MISMATCH_RE = re.compile(r"^APPLY src=(?P<src>\S+): verify MISMATCH after write$")
 
 # ---- PROBE W1..W5 lines (formats: dialogue_letterbox_fix_probe_src/K2DialogueLetterboxFix.cpp)
-PROBE_RE = re.compile(r"^PROBE (?P<tag>W[1-5]) n=(?P<n>\d+) skip=(?P<skip>\d+) (?P<rest>.*)$")
+PROBE_RE = re.compile(r"^PROBE (?P<tag>W3b|W[1-5]) n=(?P<n>\d+) skip=(?P<skip>\d+) (?P<rest>.*)$")
 PROBE_CAP_RE = re.compile(r"^PROBE cap \((?P<n>\d+) lines\) reached, further PROBE lines dropped$")
 _R4 = r"\((?P<%s>-?\d+),(?P<%s>-?\d+),(?P<%s>-?\d+),(?P<%s>-?\d+)\)"
 W12_RE = re.compile(
@@ -70,6 +86,16 @@ W3_RE = re.compile(
     + r" alpha=0x(?P<alpha>[0-9a-fA-F]+) color\(\+0x54\.\.\)=0x[0-9a-fA-F]+,0x[0-9a-fA-F]+,0x[0-9a-fA-F]+ "
     r"mgr=0x(?P<mgr>[0-9a-fA-F]+) W=(?P<mw>-?\d+) H=(?P<mh>-?\d+) predicate=(?P<pred>\S+) dt=0x(?P<dt>[0-9a-fA-F]+) "
     r"DAT_a309b4=(?P<d4>-?\d+) DAT_a309b8=(?P<d8>-?\d+) DAT_a309bc=(?P<dc>-?\d+)(?P<unr> \[SOME-UNREADABLE\])?$")
+# Split form (1.0.2 on KpLog.h, 232-byte core line cap): `PROBE W3` carries identity/state/predicate, `PROBE W3b` the rest, same n=.
+# Label variants (`flags(+0x48)=` vs `flags=`, `rect(x,y,w,h)=` vs `rect=`) are both accepted; value formats are unchanged.
+_UNR = r"(?P<unr> (?i:\[(?:SOME-)?UNREADABLE\]|unreadable))?"
+W3A_RE = re.compile(
+    r"^this=0x(?P<this>[0-9a-fA-F]+) vtbl=0x(?P<vtbl>[0-9a-fA-F]+)\((?P<vkind>letterbox|OTHER)\) "
+    r"flags(?:\(\+0x48\))?=0x(?P<flags>[0-9a-fA-F]+) bit2=(?P<bit2>\d+) bit6=(?P<bit6>\d+) rect(?:\(x,y,w,h\))?=" + _R4 % ("x", "y", "w", "h")
+    + r" W=(?P<mw>-?\d+) H=(?P<mh>-?\d+) predicate=(?P<pred>\S+) dt=0x(?P<dt>[0-9a-fA-F]+)" + _UNR + "$")
+W3B_RE = re.compile(
+    r"^alpha=0x(?P<alpha>[0-9a-fA-F]+) color(?:\(\+0x54\.\.\))?=0x[0-9a-fA-F]+,0x[0-9a-fA-F]+,0x[0-9a-fA-F]+ "
+    r"mgr=0x(?P<mgr>[0-9a-fA-F]+) DAT_a309b4=(?P<d4>-?\d+) DAT_a309b8=(?P<d8>-?\d+) DAT_a309bc=(?P<dc>-?\d+)" + _UNR + "$")
 W3_NULL_RE = re.compile(r"^this=NULL/UNREADABLE dt=0x(?P<dt>[0-9a-fA-F]+)$")
 W4_RE = re.compile(
     r"^this=0x(?P<this>[0-9a-fA-F]+) mode=(?P<mode>-?\d+) eax=(?P<eax>-?\d+) fillRect\(x,y,w,h\)=" + _R4 % ("x", "y", "w", "h")
@@ -202,6 +228,30 @@ def check_set_self_consistent(L, line_no, what, g, body):
             L.err(line_no, "SETBOTTOM target y %s != H - max(target h, trunc(100*fs)) = %d" % (g["ty"], exp_y), body)
 
 
+def split_prefix(raw):
+    """Prefix stage. Returns (kind, body): 'msg' + bare message text, 'session' (a `# kplog session` header = launch
+    boundary), 'skip' (other header, MARK, another patch's line), or 'bad' (not a log line at all)."""
+    s = raw.rstrip("\r")
+    m = LINE_RE.match(s)
+    if m:
+        return "msg", m.group(2)
+    p = kplog_parse.parse_line(s)
+    if p is None:
+        return "bad", None
+    if p["kind"] == "header":
+        return ("session" if p.get("session") else "skip"), None
+    if p["kind"] == "mark" or p["patch"] != PATCH_ID:
+        return "skip", None
+    return "msg", p["msg"]
+
+
+def _find_w3_to_join(L, n):
+    for r in reversed(L.cur_bucket()["W3"]):
+        if r["n"] == n and r.get("awaiting_w3b"):
+            return r
+    return None
+
+
 def parse_probe(L, line_no, body):
     """Parse one `PROBE Wn ...` line into the current dialogue bucket. False = unrecognised format."""
     pm = PROBE_RE.match(body)
@@ -222,10 +272,26 @@ def parse_probe(L, line_no, body):
             rec.update(letterbox=m.group("vkind") == "letterbox", alpha=int(m.group("alpha"), 16), pred=m.group("pred"),
                        unreadable=bool(m.group("unr")))
         else:
-            m = W3_NULL_RE.match(rest)
-            if not m:
-                return False
-            rec.update(letterbox=False, alpha=None, pred="NULL/UNREADABLE", unreadable=True)
+            m = W3A_RE.match(rest)
+            if m:  # split form: alpha / unreadable arrive on the matching W3b line
+                rec.update(letterbox=m.group("vkind") == "letterbox", alpha=None, pred=m.group("pred"),
+                           unreadable=bool(m.group("unr")), awaiting_w3b=True)
+            else:
+                m = W3_NULL_RE.match(rest)
+                if not m:
+                    return False
+                rec.update(letterbox=False, alpha=None, pred="NULL/UNREADABLE", unreadable=True)
+    elif tag == "W3b":
+        m = W3B_RE.match(rest)
+        target = _find_w3_to_join(L, rec["n"]) if m else None
+        if target is None:
+            return False
+        target.update(alpha=int(m.group("alpha"), 16), unreadable=target["unreadable"] or bool(m.group("unr")),
+                      awaiting_w3b=False)
+        L.probe_lines += 1
+        if m.group("unr"):
+            L.warn(line_no, "PROBE W3 record has unreadable memory (informational)")
+        return True
     elif tag == "W4":
         m = W4_RE.match(rest)
         if not m:
@@ -302,10 +368,12 @@ def analyze_text(text):
     unparsed = []
     cur = None
     total_lines = 0
+    boundary = False  # a `# kplog session` header was seen and no line of the new session has started a launch yet
 
     def ensure(line_no):
-        nonlocal cur
-        if cur is None:
+        nonlocal cur, boundary
+        if cur is None or boundary:
+            boundary = False
             cur = Launch(len(launches) + 1, line_no)
             launches.append(cur)
         return cur
@@ -313,15 +381,20 @@ def analyze_text(text):
     for line_no, raw in enumerate(text.splitlines(), 1):
         if not raw.strip():
             continue
+        kind, body = split_prefix(raw)
+        if kind == "session":
+            boundary = True
+            continue
+        if kind == "skip":
+            continue
         total_lines += 1
-        m = LINE_RE.match(raw.rstrip("\r"))
-        if not m:
+        if kind == "bad":
             unparsed.append((line_no, raw))
             continue
-        body = m.group(2)
 
         if " loaded:" in body:
             lm = LOAD_RE.match(body)
+            boundary = False  # the load line itself starts the launch: header + load = one launch
             cur = Launch(len(launches) + 1, line_no)
             launches.append(cur)
             cur.has_load = True
@@ -516,6 +589,10 @@ def analyze_text(text):
             L.warn(L.line_no, "%d PROBE line(s) although the load line says probe=0" % L.probe_lines)
         if L.probe == 1 and L.log == 1 and L.settop and not L.probe_lines:
             L.warn(L.line_no, "probe=1 log=1 with %d SETTOP line(s) but no PROBE line" % L.settop)
+        for b in [L.pre_bucket] + L.buckets:
+            for r in b["W3"]:
+                if r.get("awaiting_w3b"):
+                    L.warn(r["line"], "PROBE W3 n=%d has no matching W3b line (alpha unknown; log cut off or line dropped)" % r["n"])
         if L.pre_apply_sets and not L.late:
             L.warn(L.line_no, "%d SET line(s) before the first APPLY but no LATE fallback seen" % L.pre_apply_sets)
 
