@@ -1,0 +1,4 @@
+gog_addr	steam_addr	final_verdict	note
+0x0044ccb0	0x007a06b0	label_suspect	Fits Mac CClientExoAppInternal::DoQuickSave (0x1a7d86, "QUICKSAVE"). 007a06b0 CExoString("QUICKSAVE") x2 + CALL 0x73f6f0 (=SendSaveGameRequest, DB); caller 0x7b12c0 = Internal::HandleInputEvent
+0x004cdda0	0x007bdb10	label_suspect	vector-deleting dtor of 16 B {CExoString,CExoString}: 007bdb4a PUSH 0x10 / 007bdb50 CALL 0x919bcc (eh_vector_destructor_iterator); only caller = dtor 0x7bdbc0. Real ShutDownGlobal not found
+0x004cde50	0x007bdbc0	verified	CORRECTION from 0x740070 (=GetMGOArray). 007bdbf2 CALL 0x007c7030 (=CGuiInGame::ShutDown, DB); 007bdc28 CALL 0x7bdb10; frees this+0x110/0x114/0x118; sz702 = GOG, unique exact fp

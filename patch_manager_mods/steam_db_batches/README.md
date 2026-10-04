@@ -1,6 +1,6 @@
 # Steam address-DB batches (KOTOR II Steam Aspyr, exe 6a522e71)
 
-Contract: `DESIGN.md`. Briefs: `REVIEWER_BRIEF.md` (Sonnet), `OPUS_GATE_BRIEF.md` (Opus). Resume notes (latest):
+Master plan (read first): `MASTER_PLAN.md`. Contract: `DESIGN.md`. Briefs: `REVIEWER_BRIEF.md` (Sonnet), `OPUS_GATE_BRIEF.md` (Opus). Resume notes (latest):
 `SESSION_CONTEXT_2026-10-03b.md`, then the newest batch section below. GOG DB label errors (read-only, for the user): `GOG_LABEL_SUSPECTS.md`.
 
 ## Roadmap (user decision 2026-10-03: mod demand first, then Phase E and PR 5)

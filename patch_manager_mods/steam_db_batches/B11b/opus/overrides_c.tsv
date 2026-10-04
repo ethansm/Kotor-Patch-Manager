@@ -1,0 +1,10 @@
+gog_addr	steam_addr	final_verdict	note
+0x00523d50	0x007525d0	verified	00752742 PUSH 0x7 / 00752747 CALL 0x004122a0 (=PlayGuiSound, DB); decomp idx-1 wrap to count-1 (Prev); sz387 ret4 disp/imm incl 0x2c = GOG, unique exact fp; Next=0x752450 (0x28)
+0x004ddbd0	0x007cd4d0	verified	007cd4dd MOV [EAX+0xe0],ECX .. 007cd4f5 MOV [ECX+0xec],EDX; 007cd50b RET 0xc; sz62 disp 0xe0-0xec = GOG + Mac SetDialogSelection; unique exact fp; delta 0x2ef900
+0x004dd740	0x007cd040	verified	007cd064/080/09c CALL 0x758e30/0x7592f0/0x759820 (sz1197/1319/1262 ret8 = GOG AddMessages/AddDialogMessages/AddCombatMessages); disp 0x110-0x124; RET 0x4; unique
+0x004d46f0	0x007c4060	verified	007c4090 CALL 0x0073f430 (=GetModule, DB); 007c40a5 CALL 0x7f66e0 (sz163 ret4 = LoadAnimatedCamera); 007c40ad MOV [ECX+0xf08],0x1; RET 0x4; Mac disp 0xf08; unique
+0x004d8a80	0x007c8390	verified	007c83f8 CALL 0x0073f4d0 (=GetGameObject, DB); 007c843a CALL 0x710980 (sz38 = CResRef::CopyToString); 007c83a8 CMP [EAX+0x1ac],0; disp/imm = GOG + Mac; unique
+0x004dc660	0x007cbf60	verified	sz1476 RET 0x5c (007cc521) = GOG retn 92; callees 0x7bfb10 (=ShowDialogEntry sz428), 0x7be2d0 (=AppendToDialogBuffer sz226); 007cc4d4 PUSH 0x106d; unique exact fp
+0x004ce720	0x007be090	verified	007be099 PUSH 0x986925 ("") + 007be0a1 CALL 0x733b60 (CExoString !=, sz110); 007be0bd MOV [ECX+0x11c],0x3f (wrap, Mac 0x3f); RET 0xc; disp 0x110/0x11c = GOG; unique
+0x004e1490	0x007d0d90	verified	007d0e9d CALL 0x00740f20 (=GetPazaakIsRunning, DB); 4x CALL 0x410800 (=PanelExists sz35); 007d0d9c CMP [EAX+0x128],0; disp set = GOG; unique exact fp
+0x004e2730	0x007d2030	verified	007d2064 PUSH 0x724 / CALL 0x919723 (new); 007d208b CALL 0x760210 (sz724 = CSWGuiDeathDisplay ctor); 007d20e0 CALL 0x410530 (=AddPanel, DB); unique
