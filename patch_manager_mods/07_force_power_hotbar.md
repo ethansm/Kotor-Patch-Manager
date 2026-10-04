@@ -1,5 +1,8 @@
 # Mod Idea 3: Force Power Hotbar (1-0 keybound, customizable)
 
+**COMMON / TEST HARDENING (2026-10-03 evening, not built yet):** commits 9aae0c2 (contract-test rule), 9d5c843 (stage check --post), 10dfc08 (contract test), 123a7a9+9c0f2fc (SafeRead), 372a2b3 (clickEdge foreground fix, probeWrite), 98d1f79 (FileWatch.h: same-second INI edits now seen, atomic save), 7182329 (Tlk/TwoDA fixes), de2774b (HotbarConfig strict parsing, slot bounds, lone CR), e378666 (13 units -> HotbarLogic.h, TGA overflow fix), c6500c1 (coverage/mutation tooling); clone ab5c55b, fa587ff, 67bff5e. Design: doc 22 `22_hotbar_shared_services.md`. Task 3 (item addresses) deferred to the split session's K2Addr.h.
+- **Next build (30)** = all of the above, behaviour-neutral except: click outside the game window no longer invokes a slot; bad INI ints warn and keep defaults; lone-CR INI lines parse. Build only after the user's 29p probe report; install per the recipe below with `--post` clean; then diff H3 rects vs `baseline_h3_build26.txt` (host test already reproduces 9 of them).
+
 **INSTALL RECIPE (2026-10-03 17:00, mandatory until the split session's library category / launcher A3 ships):**
 1. Base the stage on the sibling's split config: `python3 scripts/kpm_stage_check.py <stage> "$G"` must show 0 DIFFS **and no WARN lines** (WARN = the installer would delete an orphan DLL or drop a config id; today `hotbar_stage18` warns for portrait-slots + shield-bar -> add their kpatches/ids first).
 2. Backup = `patches/` **plus `patch_config.toml`** (inst18 had no config, so `--post` cannot prove it safe).
