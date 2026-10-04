@@ -86,18 +86,18 @@ constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;         
 constexpr uintptr_t GuiSoundMgrGlobal = gameaddr::GuiSoundMgr;  // global GUI sound manager pointer (hover sound played through guikit)
 constexpr uintptr_t TextVtable = gameaddr::TextVtable;
 constexpr DWORD TipDelayMs = 450;
-constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipWrap = 38, TipMaxDescLines = 3;   // px estimates for dialogfont16x16 at 2.667 px/unit
+using hb::TipWrap; using hb::TipMaxDescLines;   // tooltip metrics live in HotbarLogic.h (hb::tipLayout)
 const char* const Spells2daPath = "override/spells.2da";
 const char* const TlkPath = "dialog.tlk";
 // Art embedded in the DLL (HotbarTextures.inc) and registered as engine textures under these names (ensureTextures).
 const char* const FrameResref = "fph_slot", *const FrameHiResref = "fph_slot_hi";   // slot / tab / cell frame, normal + hover
 const char* const EditResref = "fph_edit", *const EditHiResref = "fph_edit_hi";     // thin wrench toggle, normal + active
 constexpr double EditBoxUnits = 38.0, PickBoxUnits = 112.0, BoxPadUnits = 8.0, TitleUnits = 22.0;   // must match LBL_HOTBARPBG / PTITLE in Layout[]
-constexpr float EmptyFrameAlpha = 0.45f;
+using hb::EmptyFrameAlpha;
 constexpr DWORD SettleMs = 1500;                  // after a character switch the HUD action lists lag behind: unresolved slots stay hidden, checked every frame
 constexpr int ButtonRefreshFrames = 8;            // entry re-resolve interval (usable/dim state changes are slow)
-constexpr float DimAlpha = 0.35f;
-constexpr float QtyOutOfStockRgb[3] = { 0.55f, 0.55f, 0.55f };   // "0" on an out-of-stock slot is drawn gray (user request U1)
+using hb::DimAlpha;
+using hb::QtyOutOfStockRgb;   // "0" on an out-of-stock slot is drawn gray (user request U1)
 
 // ---- logging: force_power_hotbar_log.txt in the game dir, capped ------------------------------------
 int g_logLines = 0;
@@ -126,13 +126,7 @@ std::string readExoStr(unsigned site, uintptr_t addr) { char buf[96]; return saf
 // ---- action decode (shared by the INI and the resolver) --------------------------------
 struct Entry { int group, index, key, flags; std::string name, icon; hb::ActionRef ref; };
 
-hb::ActionRef decodeKey(int key, const std::string& name) {
-    hb::ActionRef r;
-    if (key & 0x40000000) { r.kind = hb::K_Item; r.name = hb::normalizeItemName(name); if (r.name.empty()) r.kind = hb::K_None; }
-    else if (key & 0x20000000) { r.kind = hb::K_Spell; r.id = key & 0x1FFFFFFF; }
-    else { r.kind = hb::K_Other; r.id = key; }
-    return r;
-}
+using hb::decodeKey;
 
 // Item icon by item name, remembered whenever the item is seen in a HUD list (per process): an out-of-stock item is gone from every
 // list, so this is the only way to keep showing its icon. Unknown (never seen this session) -> no icon, the "0" still shows.
@@ -228,16 +222,15 @@ std::string computeCharacterKey() {
     uintptr_t c = controlledCreature();
     if (!c) return "";
     unsigned oid = (unsigned)rdInt(S_Misc, c, 4);
-    if (oid == 0xFFFFFFFFu || oid == 0) {   // invalid object id: transient during loads, never a real character
+    bool invalid = false;
+    std::string key = hb::characterKeyFor(oid, g_partyCount, &invalid);
+    if (invalid) {   // invalid object id: transient during loads, never a real character
         static unsigned lastBad = 1; static int badLogs = 0;
         if (lastBad != oid * 31u + (unsigned)g_partyCount && badLogs < 30) { lastBad = oid * 31u + (unsigned)g_partyCount; ++badLogs; logf("character: creature %p has invalid object id %08x (party members=%d)", (void*)c, oid, g_partyCount); }
         // A one-member party is always the player character (the Exile, whose valid id is fffffffd): the id can read 0xFFFFFFFF for a whole session
-        // (seen on the Ebon Hawk), which would otherwise leave the character unidentified and refuse every assignment.
-        if (oid == 0xFFFFFFFFu && g_partyCount == 1) return "objfffffffd";
-        return "";
+        // (seen on the Ebon Hawk), which would otherwise leave the character unidentified and refuse every assignment (hb::characterKeyFor).
     }
-    char b[24]; snprintf(b, sizeof b, "obj%08x", oid);
-    return b;
+    return key;
 }
 
 // ---- config: load / hot-reload / active slots --------------------------------------------------------
@@ -265,36 +258,31 @@ void recomputeBound() {
 }
 
 void refreshEffective(uintptr_t hud) {
-    std::vector<hb::ActionRef> explicitRefs;
-    for (int i = 0; i < hb::Slots; ++i) { hb::ActionRef a = g_cfg.slotFor(g_charKey, 0, i); if (!a.empty()) explicitRefs.push_back(a); }
+    std::vector<hb::ActionRef> explicitRefs; hb::ActionRef cfgSlots[hb::Slots];
+    for (int i = 0; i < hb::Slots; ++i) { cfgSlots[i] = g_cfg.slotFor(g_charKey, 0, i); if (!cfgSlots[i].empty()) explicitRefs.push_back(cfgSlots[i]); }
     std::vector<hb::ActionRef> autos;
     if (g_cfg.general.autoFill) {
         std::vector<Entry> es; readGroup(hud, 0, &es);
         for (auto& e : es) {
-            if ((e.key & 0x40000000) || !(e.key & 0x20000000)) continue;   // known Force powers only (no items, no mode toggles)
-            bool dup = false; for (auto& x : explicitRefs) if (hb::Same(x, e.ref)) dup = true;
-            if (!dup) autos.push_back(e.ref);
+            if (!hb::isKnownPowerKey(e.key)) continue;   // known Force powers only (no items, no mode toggles)
+            if (!hb::hasSame(explicitRefs, e.ref)) autos.push_back(e.ref);
         }
         // then the selected entry of each item group (1 medpac/stim, 2 shield, 3 mine), like the native quick bar's current pick
         for (int g = 1; g <= 3; ++g) {
             std::vector<Entry> is; readGroup(hud, g, &is);
             if (is.empty()) continue;
             unsigned selKey = (unsigned)rdInt(S_Hud, hud, Hud_GroupSel + g * 4);
-            const Entry* pick = &is[0]; for (auto& e : is) if ((unsigned)e.key == selKey) { pick = &e; break; }
-            bool dup = false; for (auto& x : explicitRefs) if (hb::Same(x, pick->ref)) dup = true;
-            for (auto& x : autos) if (hb::Same(x, pick->ref)) dup = true;
+            int keys[256]; int nk = std::min((int)is.size(), 256); for (int i = 0; i < nk; ++i) keys[i] = is[i].key;
+            const Entry* pick = &is[std::max(0, hb::pickIndexByKey(keys, nk, selKey))];
+            bool dup = hb::hasSame(explicitRefs, pick->ref) || hb::hasSame(autos, pick->ref);
             VLOG("eff: autofill group %d pick key=%08x '%s' ref=%s%s", g, (unsigned)pick->key, pick->name.c_str(), hb::Format(pick->ref).c_str(), dup ? " (dup, skipped)" : "");
             if (!dup && !pick->ref.empty()) autos.push_back(pick->ref);
         }
     }
-    size_t next = 0; unsigned h = 2166136261u; int nAuto = 0;
-    for (int s = 0; s < hb::Slots; ++s) {
-        hb::ActionRef a = g_cfg.slotFor(g_charKey, 0, s); bool isAuto = false;
-        if (a.empty() && !a.blank && next < autos.size()) { a = autos[next++]; isAuto = true; ++nAuto; }   // explicit "none" stays empty
-        g_eff[s] = a; g_effAuto[s] = isAuto; g_slotBound[s] = !a.empty();
-        h = (h ^ (unsigned)hb::Format(a).size() ^ ((unsigned)a.id << 8) ^ (isAuto ? 0x5000000u : 0)) * 16777619u;
-        for (char c : hb::Format(a)) h = (h ^ (unsigned char)c) * 16777619u;
-    }
+    bool effAuto[hb::Slots]; hb::ActionRef eff[hb::Slots];
+    int nAuto = hb::assignAutoFill(cfgSlots, autos, eff, effAuto);   // explicit "none" stays empty
+    for (int s = 0; s < hb::Slots; ++s) { g_eff[s] = eff[s]; g_effAuto[s] = effAuto[s]; g_slotBound[s] = !eff[s].empty(); }
+    unsigned h = hb::effSignature(g_eff, g_effAuto);
     if (h != g_effHash) {
         g_effHash = h;
         logf("eff: character '%s' autofill=%d explicit=%d auto=%d", g_charKey.c_str(), g_cfg.general.autoFill, (int)explicitRefs.size(), nAuto);
@@ -563,29 +551,7 @@ void ensureLookups() {
 
 std::string nullish(const std::string& s) { return s == "****" ? std::string() : s; }
 
-// greedy word wrap into '\n'-joined lines (at most maxLines, "..." when cut)
-std::string wrapText(const std::string& in, int width, int maxLines) {
-    std::string out, line; int lines = 0; size_t i = 0;
-    while (i < in.size()) {
-        size_t e = in.find(' ', i); if (e == std::string::npos) e = in.size();
-        std::string w = in.substr(i, e - i); i = e + 1;
-        if (!line.empty() && (int)(line.size() + 1 + w.size()) > width) {
-            if (++lines >= maxLines) { line += "..."; break; }
-            out += line + "\n"; line.clear();
-        }
-        line += (line.empty() ? "" : " ") + w;
-    }
-    out += line;
-    return out;
-}
-
-// Descriptions start with a category/prerequisite header ("Universal Power Restricted By Armor This power ...", "Light Side Power
-// Prerequisites: Character Level 6 This power ..."): drop it and keep the first sentence.
-std::string shortDesc(const std::string& d) {
-    size_t p = d.find(" This "); std::string t = (p != std::string::npos && p < 120) ? d.substr(p + 1) : d;
-    size_t e = t.find(". "); if (e != std::string::npos) t.resize(e + 1);
-    return t;
-}
+using hb::wrapText; using hb::shortDesc;   // greedy word wrap / first-sentence description (HotbarLogic.h)
 
 // Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
 std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
@@ -636,18 +602,12 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     uintptr_t tc = reinterpret_cast<uintptr_t>(g_bar.tip.ctl), tx = tc + guikit::Label_Text;
     if (rdInt(S_Border, tx, 0) != (int)TextVtable || rdInt(S_Border, tx, guikit::Text_Renderer) == 0) { logf("tip: slot %d: text object bad (vt=%08x renderer=%08x), tooltip skipped", s, (unsigned)rdInt(S_Border, tx, 0), (unsigned)rdInt(S_Border, tx, guikit::Text_Renderer)); g_bar.tipSlot = s; return; }
     guikit::setText(tc, text.c_str());
-    int lines = 1, maxLen = 0, cur = 0;
-    for (char c : text) { if (c == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
-    int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
     RECT cr = {0, 0, 3840, 1600}; if (g_gameWnd) GetClientRect(g_gameWnd, &cr);
     uintptr_t fc = reinterpret_cast<uintptr_t>(anchor.ctl); int fx = rdInt(S_Geom, fc, 4), fy = rdInt(S_Geom, fc, 8);
-    int x = fx, y = fy - h - 12;
-    if (topAnchor >= 0) y = topAnchor - h - 10;   // picker tooltips sit above the whole picker so they never cover it
-    if (x + w > cr.right - 8) x = cr.right - 8 - w;
-    if (x < 8) x = 8;
-    if (y < 8) y = 8;
+    hb::TipRect tr = hb::tipLayout(text, fx, fy, topAnchor, (int)cr.right);   // size from the text, anchored above the frame (or the picker), clamped on screen
+    int lines = tr.lines, maxLen = tr.maxLen, x = tr.x, y = tr.y, w = tr.w, h = tr.h;
     setRect(g_bar.tipBg, "tipbg", x, y, w, h);
-    setRect(g_bar.tip, "tip", x + TipPad / 2, y + TipPad / 2, w - TipPad, h - TipPad);
+    setRect(g_bar.tip, "tip", x + hb::TipPad / 2, y + hb::TipPad / 2, w - hb::TipPad, h - hb::TipPad);
     setWidgetVisible(g_bar.tipBg, true); setWidgetVisible(g_bar.tip, true);
     g_bar.tipSlot = s;
     int th = 0; { void** tvt = *reinterpret_cast<void***>(tx); if (saferead::probeRead(S_Border, tvt + 2, 4)) th = reinterpret_cast<int(__fastcall*)(void*)>(tvt[2])(reinterpret_cast<void*>(tx)); }
@@ -707,7 +667,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         if (lastMissingHud != hud) { lastMissingHud = hud; logf("buttons: no usable bar for hud %08x (bar panel=%08x built=%d/%d) -- HUD ctor hook did not run for it, or no button bound", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built, ButtonCount); }
         return;
     }
-    bool settling = g_charChangeTick && GetTickCount() - g_charChangeTick < SettleMs;
+    bool settling = hb::isSettling(g_charChangeTick, GetTickCount(), SettleMs);
     static bool wasSettling = false; bool settleEdge = settling != wasSettling; wasSettling = settling;
     bool stale = settling || settleEdge || g_frame - g_bar.refreshLast >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar || g_bar.ed.mode != lastMode;
     if (!stale) return;
@@ -721,27 +681,21 @@ void updateButtons(uintptr_t hud, bool gate) {
         if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
             b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); setVisible(b, b.qty, s, false, "unassigned"); continue;
         }
-        Entry e; const char* state; bool have = false;
-        if (want.empty()) state = "unbound";
-        else if (!resolve(hud, want, &e)) {
-            if (settling && g_bar.ed.mode == M_Normal) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); setVisible(b, b.qty, s, false, "settling after character switch"); continue; }
-            state = "entry not available";
-        }
-        else { have = true; state = (e.flags & 1) ? "usable" : "unusable (dimmed)"; }
+        Entry e; bool have = !want.empty() && resolve(hud, want, &e);
+        hb::SlotView sv = hb::slotView(want.empty(), want.kind == hb::K_Item, have, have ? e.flags : 0, have ? e.key : 0, have ? e.name : std::string(), settling && g_bar.ed.mode == M_Normal);
+        if (sv.hideSettling) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); setVisible(b, b.qty, s, false, "settling after character switch"); continue; }
+        const char* state = sv.state;
         b.avail = have; if (have) b.entry = e;
         if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { VLOG("tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
         // An item that left the HUD's lists is out of stock: keep its (dimmed) icon from the last time it was seen and show "0"; it is not
         // hoverable or clickable (avail = false) and comes back by itself on the next refresh once the party has one again.
-        bool outOfStock = !have && want.kind == hb::K_Item;
-        if (outOfStock) state = "out of stock";
-        std::string icon = have ? e.icon : (outOfStock ? itemIconFor(want.name) : std::string());
+        std::string icon = have ? e.icon : (sv.outOfStock ? itemIconFor(want.name) : std::string());
         setVisible(b, b.bg, s, true, state); setVisible(b, b.ic, s, true, state); setVisible(b, b.num, s, true, state);
-        int qty = have ? hb::StackCount(e.key, e.name) : 0;   // the engine names item entries "Name (N)" only when N > 1
-        if (qty > 1 || outOfStock) { wText(b.qty, "qty", std::to_string(qty)); wTextColor(b.qty, "qty", outOfStock ? QtyOutOfStockRgb : b.qty.textRgb); setVisible(b, b.qty, s, true, state); }
-        else setVisible(b, b.qty, s, false, have ? "single item / not an item" : state);
-        setAlpha(b, b.bg, s, have ? b.bg.baseAlpha : b.bg.baseAlpha * EmptyFrameAlpha);
+        if (sv.showQty) { wText(b.qty, "qty", std::to_string(sv.qty)); wTextColor(b.qty, "qty", sv.grayQty ? QtyOutOfStockRgb : b.qty.textRgb); setVisible(b, b.qty, s, true, state); }
+        else setVisible(b, b.qty, s, false, sv.qtyHideWhy);
+        setAlpha(b, b.bg, s, b.bg.baseAlpha * sv.bgFactor);
         setFill(b, b.ic, s, icon);
-        setAlpha(b, b.ic, s, ((have && !(e.flags & 1)) || outOfStock) ? b.ic.baseAlpha * DimAlpha : b.ic.baseAlpha);
+        setAlpha(b, b.ic, s, b.ic.baseAlpha * sv.icFactor);
     }
 }
 
@@ -837,7 +791,7 @@ void setMode(int m, int slot, const char* why) {
     if (m != M_Normal) placePanel(m == M_Pick); else { g_pickRect[2] = 0; ed.placed = -1; }
 }
 
-int tabOf(const Entry& e) { return (e.key & 0x40000000) ? 1 : ((e.key & 0x20000000) ? 0 : 2); }
+int tabOf(const Entry& e) { return hb::tabOfKey(e.key); }
 const char* const TabName[TabCount] = { "Power", "Item", "Mode" };
 
 // Writes (or, with e == nullptr, clears) hotbar slot `slot` of the controlled character's profile ([Profile.<key>], key = obj%08x of the creature id) and saves the INI.
@@ -938,13 +892,13 @@ void updateEditor(uintptr_t hud, bool gate) {
             if (h != ed.sig) logf("edit: picker list tab=%s off=%d entries=%d (was %d) slot=%d", TabName[ed.tab], ed.off, (int)all.size(), (int)ed.list.size(), ed.slot);
             ed.sig = h; ed.lastRefresh = g_frame; ed.list = all;
         }
-        maxOff = std::max(0, (int)ed.list.size() - CellCount);
-        if (ed.off > maxOff) { VLOG("edit: scroll offset %d clamped to %d (entries=%d)", ed.off, maxOff, (int)ed.list.size()); ed.off = maxOff; }
+        maxOff = hb::pickerMaxOff((int)ed.list.size(), CellCount);
+        if (ed.off > maxOff) { VLOG("edit: scroll offset %d clamped to %d (entries=%d)", ed.off, maxOff, (int)ed.list.size()); ed.off = hb::clampOffset(ed.off, maxOff); }
         // wheel over the picker scrolls the list one entry per notch like the native quick-action buttons (wheel up = back toward the start)
         LONG acc = InterlockedExchange(&g_wheelAccum, 0);
         if (acc) {
-            int steps = acc / 120; if (!steps) steps = acc > 0 ? 1 : -1;
-            int no = std::max(0, std::min(maxOff, ed.off - steps));
+            int steps = hb::wheelSteps(acc);
+            int no = hb::scrollClamp(ed.off - steps, maxOff);
             VLOG("edit: wheel acc=%ld steps=%d offset %d -> %d (max %d)", (long)acc, steps, ed.off, no, maxOff);
             scrollPicker(no, "wheel");
         }
@@ -991,7 +945,7 @@ void updateEditor(uintptr_t hud, bool gate) {
         else if (click) { ed.arrowHeld = arrow; ed.arrowHeldSince = ed.arrowLastRep = GetTickCount(); }
         else if (arrow == ed.arrowHeld) {
             DWORD now = GetTickCount();
-            if (now - ed.arrowHeldSince >= 350 && now - ed.arrowLastRep >= 90) { scrollPicker(std::max(0, std::min(maxOff, ed.off + arrow)), "arrow held"); ed.arrowLastRep = now; }
+            if (hb::arrowRepeatDue(now, ed.arrowHeldSince, ed.arrowLastRep)) { scrollPicker(hb::scrollClamp(ed.off + arrow, maxOff), "arrow held"); ed.arrowLastRep = now; }
         }
     }
 
@@ -1018,7 +972,7 @@ void updateEditor(uintptr_t hud, bool gate) {
 // Layout units -> px. With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8).
 // The HUD is drawn at a uniform H/600 px per unit, so x/width are squeezed by c = (H/600)/(W/800) afterwards.
 // Common candidate later: guikit::Scale derives from a reference label's rect; this is the 800x600 layout space plus an x squeeze for non-4:3 windows (InitControl's scaling).
-struct Scale { double sx = 1.0, sy = 1.0, c = 1.0; };   // layout units -> px as InitControl scales (sx, sy), then the x squeeze c
+using hb::Scale;   // layout units -> px as InitControl scales (sx, sy), then the x squeeze c (HotbarLogic.h)
 Scale g_scale;
 void aspectFix() {
     // NOT FnScreenInfo: FUN_0073FEA0 is a thiscall that reads [this+0x274]; calling it as cdecl passes a garbage/null ECX and crashed on load
@@ -1027,8 +981,7 @@ void aspectFix() {
     HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
     RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
     w = (short)cr.right; h = (short)cr.bottom;
-    double c = (w > 0 && h > 0 && rw > 0 && rh > 0) ? ((double)h / rh) / ((double)w / rw) : 1.0;
-    if (c != 1.0) { g_scale.sx = (double)w / rw; g_scale.sy = (double)h / rh; g_scale.c = c; } else g_scale = Scale();
+    g_scale = hb::makeScale(w, h, rw, rh); double c = hb::aspectCorrection(w, h, rw, rh);
     logf("H3: window %p client=%dx%d ref=%dx%d -> x correction %.4f", (void*)win, (int)w, (int)h, rw, rh, c);
 }
 // ---- runtime-created controls + textures served from DLL memory (1.0.0; doc 07 "Phase R") ------------------------------------
@@ -1057,7 +1010,7 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     int index = rdInt(S_Create, panel, guikit::Panel_CtlCount, -1);   // always appended: id == list index, so draw order follows Layout[]
     if (index < 0) { logf("H3 %s: panel control count unreadable, control not created", sp.name); return nullptr; }
     const Scale& k = g_scale;
-    int r[4] = { (int)((int)(sp.x * k.sx) * k.c + 0.5), (int)(sp.y * k.sy), (int)((int)(sp.w * k.sx) * k.c + 0.5), (int)(sp.h * k.sy) };
+    int r[4]; hb::unitRect(sp.x, sp.y, sp.w, sp.h, k, r);
     guikit::setRect(c, r[0], r[1], r[2], r[3]);
     bool textOk = true;
     if (sp.font) textOk &= guikit::setFont(c, sp.font);
@@ -1203,12 +1156,14 @@ EmbTex g_tex[TexCount]; bool g_texInit = false;
 
 bool fillTexture(int i, const char* why) {
     const EmbeddedTexture& src = EmbeddedTextures[i]; EmbTex& t = g_tex[i]; const unsigned char* d = src.data;
-    if (src.size < 18 || d[1] != 0 || d[2] != 2 || d[16] != 32) { logf("tex %s: embedded TGA not uncompressed 32-bit, skipped", src.resref); return false; }
-    int w = d[12] | d[13] << 8, h = d[14] | d[15] << 8; unsigned off = 18u + d[0], n = (unsigned)w * h * 4;
-    if (w <= 0 || h <= 0 || off + n > src.size) { logf("tex %s: embedded TGA truncated (%dx%d, %u bytes)", src.resref, w, h, src.size); return false; }
+    hb::TgaInfo ti; hb::TgaStatus ts = hb::tgaInspect(d, src.size, &ti);   // 64-bit size math + MaxTgaDim limit (HotbarLogic.h)
+    if (ts == hb::TGA_NOT_UNCOMPRESSED32) { logf("tex %s: embedded TGA not uncompressed 32-bit, skipped", src.resref); return false; }
+    if (ts == hb::TGA_TRUNCATED) { logf("tex %s: embedded TGA truncated (%dx%d, %u bytes)", src.resref, ti.w, ti.h, src.size); return false; }
+    if (ts == hb::TGA_TOO_LARGE) { logf("tex %s: embedded TGA too large (%dx%d, limit %d), skipped", src.resref, ti.w, ti.h, hb::MaxTgaDim); return false; }
+    int w = ti.w, h = ti.h; unsigned n = ti.bytes;
     unsigned char* px = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnEngineMalloc)(n));
     if (!px) { logf("tex %s: engine malloc(%u) failed", src.resref, n); return false; }
-    for (unsigned j = 0; j < n; j += 4) { px[j] = d[off + j + 2]; px[j + 1] = d[off + j + 1]; px[j + 2] = d[off + j]; px[j + 3] = d[off + j + 3]; }   // BGRA -> RGBA, rows as stored (= CResTGA)
+    hb::tgaBgraToRgba(d, ti, px);   // BGRA -> RGBA, rows as stored (= CResTGA)
     unsigned char* b = t.basic;
     *reinterpret_cast<unsigned char**>(b + Tex_Pixels) = px;
     *reinterpret_cast<int*>(b + Tex_W) = w; *reinterpret_cast<int*>(b + Tex_H) = h; *reinterpret_cast<int*>(b + Tex_Bpp) = 4;
@@ -1270,15 +1225,10 @@ const char* const AutosaveFolder = "000001 - AUTOSAVE";
 std::string saveDirFor(const char* folder) {
     if (!folder || !saferead::probeRead(S_Save, folder, 9)) return "";
     std::string f; for (int i = 0; i < 260 && saferead::probeRead(S_Save, folder + i, 1) && folder[i]; ++i) f += folder[i];
-    if (f.size() > 6 && _strnicmp(f.c_str(), "SAVES:", 6) == 0) f = f.substr(6);
-    while (!f.empty() && (f[0] == '\\' || f[0] == '/')) f.erase(0, 1);
-    if (f.size() < 10 || f.compare(6, 3, " - ") != 0) return "";
-    for (int i = 0; i < 6; ++i) if (f[i] < '0' || f[i] > '9') return "";
+    f = hb::normalizeSaveFolder(f);
+    if (f.empty()) return "";
     unsigned char cloud = 0; saferead::readAt(S_Save, CloudSavesFlag, 0, &cloud);
-    std::string base = cloud ? readExoStr(S_Save, CloudSavesDir) : std::string("saves/");
-    if (base.empty()) base = "saves/";
-    if (base.back() != '/' && base.back() != '\\') base += '/';
-    return base + f;
+    return hb::joinSaveDir(cloud ? readExoStr(S_Save, CloudSavesDir) : std::string("saves/"), f);
 }
 
 void snapshotToSave(const char* folder, const char* why) {
@@ -1330,35 +1280,23 @@ extern "C" void __cdecl CaptureHotbarKey(DIRecord* rec, int dev) {
     case 0x2A: case 0x36: g_shift = down; break;
     default: isMod = false;
     }
-    bool isDigit = dik >= 0x02 && dik <= 0x0B, isEsc = dik == 0x01;
+    bool isDigit = hb::isHotbarDigit(dik), isEsc = dik == 0x01;
     if (isDigit && down) {   // resync modifiers that missed their key-up (Alt-Tab, modal): only ever CLEAR a stuck flag
         bool c = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0, a = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0, sh = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
         if ((g_ctrl && !c) || (g_alt && !a) || (g_shift && !sh)) { logf("cap: stuck modifier cleared (ctrl %d->%d alt %d->%d shift %d->%d)", (int)g_ctrl, (int)(g_ctrl && c), (int)g_alt, (int)(g_alt && a), (int)g_shift, (int)(g_shift && sh)); g_ctrl = g_ctrl && c; g_alt = g_alt && a; g_shift = g_shift && sh; }
     }
-    const char* decision = "pass";
-    if (isEsc) {   // while the editor is open Esc backs out of it instead of opening the game menu
-        if (!down) { if (g_downSwallowed[dik]) { g_downSwallowed[dik] = false; rec->dwOfs = 0; rec->dwData = 0; decision = "swallow-up (edit)"; } }
-        else if (g_editOpen && g_hudGateOk && (GetTickCount() - g_hudTick) < 250) { g_downSwallowed[dik] = true; g_escHit = true; rec->dwOfs = 0; rec->dwData = 0; decision = "SWALLOW (edit Esc)"; }
-        else decision = "pass(edit closed)";
-    }
-    if (isDigit) {
-        if (!down) {
-            if (g_downSwallowed[dik]) { g_downSwallowed[dik] = false; rec->dwOfs = 0; rec->dwData = 0; decision = "swallow-up"; }
-        } else if (!g_shift) {
-            int slot = (int)dik - hb::kFirstDik;
-            bool active = g_hudGateOk && (GetTickCount() - g_hudTick) < 250;
-            if (g_ctrl || g_alt) decision = "pass(ctrl/alt)";   // only plain digits are ours; Ctrl/Alt+digit stay the game's
-            else if (!active) decision = "pass(hud inactive)";
-            else if (g_editOpen) decision = "pass(edit mode: never invoke)";
-            else if (!g_slotBound[slot]) decision = "pass(unbound)";
-            else {
-                int next = (g_ringHead + 1) % 16;   // a bound key is ALWAYS swallowed: passing it on would switch party members (keys 1-3)
-                g_downSwallowed[dik] = true; rec->dwOfs = 0; rec->dwData = 0;
-                if (next == g_ringTail) decision = "SWALLOW(ring full, request dropped)";
-                else { g_ring[g_ringHead] = { slot }; g_ringHead = next; decision = "SWALLOW"; }
-            }
-        } else decision = "pass(shift)";
-    }
+    hb::KeyEvent ke; ke.dik = dik; ke.down = down; ke.ctrl = g_ctrl; ke.alt = g_alt; ke.shift = g_shift;
+    ke.hudActive = g_hudGateOk && (GetTickCount() - g_hudTick) < 250; ke.editOpen = g_editOpen;
+    ke.downSwallowed = dik < 256 && g_downSwallowed[dik];
+    ke.slotBound = isDigit && g_slotBound[dik - hb::kFirstDik];
+    ke.ringFull = (g_ringHead + 1) % 16 == g_ringTail;   // a bound key is ALWAYS swallowed: passing it on would switch party members (keys 1-3)
+    hb::KeyAction ka = hb::decideKey(ke);   // the DIK -> slot decision table (HotbarLogic.h)
+    if (ka.clearDown) g_downSwallowed[dik] = false;
+    if (ka.markDown) g_downSwallowed[dik] = true;
+    if (ka.escHit) g_escHit = true;
+    if (ka.enqueue) { g_ring[g_ringHead] = { ka.slot }; g_ringHead = (g_ringHead + 1) % 16; }
+    if (ka.swallow) { rec->dwOfs = 0; rec->dwData = 0; }
+    const char* decision = ka.decision;
     if (isDigit || isMod || isEsc) { VLOG("cap: dev=%d dik=%02x %s mods=%c%c%c -> %s", dev, (unsigned)dik, down ? "down" : "up", g_ctrl ? 'C' : '-', g_alt ? 'A' : '-', g_shift ? 'S' : '-', decision); }
 }
 

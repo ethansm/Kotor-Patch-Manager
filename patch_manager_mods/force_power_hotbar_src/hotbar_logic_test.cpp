@@ -2,6 +2,8 @@
 #include "HotbarConfig.h"
 #include "HotbarLogic.h"
 #include "check.h"
+#include <memory>
+#include <cstring>
 using namespace hb;
 
 static ActionRef mk(Kind k, int id, const char* name = "") { ActionRef r; r.kind = k; r.id = id; r.name = name; return r; }
@@ -182,6 +184,316 @@ int main() {
   { // vanilla "usable on another member" rule
     for (int t : { 45, 26, 25, 0 }) KT_CHECK(isTargetableItemType(t));
     for (int t : { 20, 47, -1, -100 }) KT_CHECK(!isTargetableItemType(t));
+  }
+  // ======== units extracted from ForcePowerHotbar.cpp (behaviour-neutral; doc 20 sec 4.1) ========
+  { // 1. decodeKey / tabOfKey
+    ActionRef i = decodeKey(0x40000007, "Medpac (3)");
+    KT_CHECK(i.kind == K_Item); KT_CHECK_EQ(i.name.c_str(), "Medpac"); KT_CHECK_EQ(i.id, 0);
+    ActionRef e = decodeKey(0x40000007, "");                              // item with no usable name -> K_None
+    KT_CHECK(e.kind == K_None);
+    ActionRef sp = decodeKey(0x2000002A, "ignored");
+    KT_CHECK(sp.kind == K_Spell); KT_CHECK_EQ(sp.id, 0x2A); KT_CHECK(sp.name.empty());
+    ActionRef both = decodeKey((int)0x60000005, "Both");                 // item bit wins over the spell bit
+    KT_CHECK(both.kind == K_Item);
+    ActionRef o = decodeKey(0x1234, "Mode");
+    KT_CHECK(o.kind == K_Other); KT_CHECK_EQ(o.id, 0x1234);
+    ActionRef neg = decodeKey(-1, "x");                                  // all bits set: item
+    KT_CHECK(neg.kind == K_Item);
+    KT_CHECK_EQ(tabOfKey(0x40000001), 1); KT_CHECK_EQ(tabOfKey(0x20000001), 0); KT_CHECK_EQ(tabOfKey(5), 2);
+    KT_CHECK_EQ(tabOfKey(0x60000000), 1);
+  }
+  { // 2. characterKeyFor: obj%08x / invalid / party==1
+    bool bad = true;
+    KT_CHECK_EQ(characterKeyFor(0x7F000001u, 3, &bad).c_str(), "obj7f000001"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFDu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(!bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 1, &bad).c_str(), "objfffffffd"); KT_CHECK(bad);   // one-member party = the Exile
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 2, &bad).c_str(), ""); KT_CHECK(bad);
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFFu, 0, &bad).c_str(), ""); KT_CHECK(bad);
+    KT_CHECK_EQ(characterKeyFor(0u, 1, &bad).c_str(), ""); KT_CHECK(bad);                       // id 0 never gets the party==1 rescue
+    KT_CHECK_EQ(characterKeyFor(0u, 3, &bad).c_str(), ""); KT_CHECK(bad);
+    KT_CHECK_EQ(characterKeyFor(1u, 3).c_str(), "obj00000001");                                // bad == nullptr allowed
+    KT_CHECK_EQ(characterKeyFor(0xFFFFFFFEu, 1).c_str(), "objfffffffe");
+  }
+  { // 3. AutoFill merge + FNV signature
+    ActionRef cfg[Slots], eff[Slots]; bool isAuto[Slots];
+    std::vector<ActionRef> autos = { mk(K_Spell, 1), mk(K_Spell, 2), mk(K_Item, 0, "Medpac"), mk(K_Spell, 4) };
+    cfg[1] = mk(K_Spell, 9);                    // explicit
+    cfg[3].blank = true;                        // explicit "none": stays empty, takes no auto
+    cfg[4] = mk(K_Spell, 9);
+    int n = assignAutoFill(cfg, autos, eff, isAuto);
+    KT_CHECK_EQ(n, 4 + 0);                      // empty slots 0,2,5,6,... fill in order: 4 autos -> slots 0,2,5,6
+    KT_CHECK(eff[0].kind == K_Spell && eff[0].id == 1 && isAuto[0]);
+    KT_CHECK(eff[1].id == 9 && !isAuto[1]);
+    KT_CHECK(eff[2].id == 2 && isAuto[2]);
+    KT_CHECK(eff[3].empty() && eff[3].blank && !isAuto[3]);
+    KT_CHECK(eff[4].id == 9 && !isAuto[4]);
+    KT_CHECK(eff[5].kind == K_Item && isAuto[5]);
+    KT_CHECK(eff[6].kind == K_Spell && eff[6].id == 4 && isAuto[6]);
+    for (int s = 7; s < Slots; ++s) KT_CHECK(eff[s].empty() && !isAuto[s]);
+    KT_CHECK_EQ(assignAutoFill(cfg, std::vector<ActionRef>(), eff, isAuto), 0);   // no autos: eff == cfg
+    KT_CHECK(eff[0].empty() && eff[1].id == 9);
+    // signature: equals the original loop (reproduced below); changes with id / auto flag / name
+    ActionRef z[Slots]; bool za[Slots] = {};
+    unsigned h0 = effSignature(z, za);
+    KT_CHECK_EQ(h0, effSignature(z, za));                                          // deterministic
+    unsigned h = 2166136261u;                                                      // reference implementation, verbatim from the DLL
+    for (int s = 0; s < Slots; ++s) { h = (h ^ (unsigned)Format(z[s]).size() ^ ((unsigned)z[s].id << 8) ^ (za[s] ? 0x5000000u : 0)) * 16777619u; for (char c : Format(z[s])) h = (h ^ (unsigned char)c) * 16777619u; }
+    KT_CHECK_EQ(h0, h);
+    ActionRef a[Slots]; bool aa[Slots] = {}; a[2] = mk(K_Spell, 8); a[5] = mk(K_Item, 0, "Medpac");
+    unsigned h1 = effSignature(a, aa);
+    h = 2166136261u;
+    for (int s = 0; s < Slots; ++s) { h = (h ^ (unsigned)Format(a[s]).size() ^ ((unsigned)a[s].id << 8) ^ (aa[s] ? 0x5000000u : 0)) * 16777619u; for (char c : Format(a[s])) h = (h ^ (unsigned char)c) * 16777619u; }
+    KT_CHECK_EQ(h1, h);
+    KT_CHECK(h1 != h0);
+    bool ab[Slots] = {}; ab[2] = true;
+    KT_CHECK(effSignature(a, ab) != h1);                                           // auto flag changes it
+    a[2].id = 9; KT_CHECK(effSignature(a, aa) != h1);
+    // helpers: known-power key filter, dedup, selection pick
+    KT_CHECK(isKnownPowerKey(0x20000005)); KT_CHECK(!isKnownPowerKey(0x40000005)); KT_CHECK(!isKnownPowerKey(0x60000005)); KT_CHECK(!isKnownPowerKey(0x5));
+    std::vector<ActionRef> v = { mk(K_Spell, 3), mk(K_Item, 0, "medpac") };
+    KT_CHECK(hasSame(v, mk(K_Spell, 3))); KT_CHECK(hasSame(v, mk(K_Item, 0, "MEDPAC"))); KT_CHECK(!hasSame(v, mk(K_Feat, 3)));
+    int keys[3] = { 0x40000001, 0x40000002, 0x40000003 };
+    KT_CHECK_EQ(pickIndexByKey(keys, 3, 0x40000002u), 1);
+    KT_CHECK_EQ(pickIndexByKey(keys, 3, 0xFFFFFFFFu), 0);                          // no match: first
+    KT_CHECK_EQ(pickIndexByKey(keys, 0, 1u), -1);
+  }
+  { // 4a. wrapText
+    KT_CHECK_EQ(wrapText("alpha beta gamma", 10, 3).c_str(), "alpha beta\ngamma");
+    KT_CHECK_EQ(wrapText("supercalifragilistic ok", 5, 3).c_str(), "supercalifragilistic\nok");   // long word is never split
+    KT_CHECK_EQ(wrapText("supercalifragilistic", 5, 3).c_str(), "supercalifragilistic");
+    KT_CHECK_EQ(wrapText("aa bb cc", 4, 1).c_str(), "aa...");                      // maxLines <= 1: cut at the first wrap
+    KT_CHECK_EQ(wrapText("aa bb cc", 4, 0).c_str(), "aa...");
+    KT_CHECK_EQ(wrapText("aa bb cc", 4, -3).c_str(), "aa...");
+    KT_CHECK_EQ(wrapText("aa bb", 20, 1).c_str(), "aa bb");                         // fits: no cut even with maxLines 1
+    KT_CHECK_EQ(wrapText("", 10, 3).c_str(), "");
+    KT_CHECK_EQ(wrapText("a  b", 10, 3).c_str(), "a  b");                          // double space survives inside a line
+    KT_CHECK_EQ(wrapText(" a", 10, 3).c_str(), "a");                               // leading space dropped
+    KT_CHECK_EQ(wrapText("abc ", 10, 3).c_str(), "abc");                           // trailing space dropped
+    KT_CHECK_EQ(wrapText("aa bb cc dd ee", 2, 2).c_str(), "aa\nbb...");            // overflow: "..." on the last allowed line
+    KT_CHECK_EQ(wrapText("abc de", 6, 2).c_str(), "abc de");                       // exact fit
+    KT_CHECK_EQ(wrapText("abc def", 6, 2).c_str(), "abc\ndef");
+    KT_CHECK_EQ(wrapText("a b c d e f", 3, 3).c_str(), "a b\nc d\ne f");
+    KT_CHECK_EQ(wrapText("a b c d e f g", 3, 3).c_str(), "a b\nc d\ne f...");
+  }
+  { // 4b. shortDesc
+    KT_CHECK_EQ(shortDesc("Universal Power Restricted By Armor This power heals. More text.").c_str(), "This power heals.");
+    KT_CHECK_EQ(shortDesc("Light Side Power Prerequisites: Character Level 6 This power does X. Y.").c_str(), "This power does X.");
+    KT_CHECK_EQ(shortDesc("One. Two").c_str(), "One.");                            // no header
+    KT_CHECK_EQ(shortDesc("No full stop").c_str(), "No full stop");
+    KT_CHECK_EQ(shortDesc("").c_str(), "");
+    KT_CHECK_EQ(shortDesc(" This x").c_str(), "This x");                           // marker at 0
+    std::string late = std::string(130, 'a') + " This power. Rest";                // marker at 130 (>= 120): header kept
+    KT_CHECK_EQ(shortDesc(late).c_str(), (std::string(130, 'a') + " This power.").c_str());
+    std::string edge = std::string(119, 'a') + " This b. c";                       // marker at 119 (< 120): trimmed
+    KT_CHECK_EQ(shortDesc(edge).c_str(), "This b.");
+    KT_CHECK_EQ(shortDesc("Ends with dot.").c_str(), "Ends with dot.");            // ". " needs a following space
+  }
+  { // 5. tooltip size + screen clamp
+    TipRect t = tipLayout("ab\ncde", 100, 500, -1, 3840);
+    KT_CHECK_EQ(t.lines, 2); KT_CHECK_EQ(t.maxLen, 3); KT_CHECK_EQ(t.w, 3 * 21 + 44); KT_CHECK_EQ(t.h, 2 * 32 + 44);
+    KT_CHECK_EQ(t.x, 100); KT_CHECK_EQ(t.y, 500 - 108 - 12);
+    TipRect a = tipLayout("ab\ncde", 100, 500, 300, 3840);                          // picker tooltips sit above the picker
+    KT_CHECK_EQ(a.y, 300 - 108 - 10); KT_CHECK_EQ(a.x, 100);
+    TipRect r = tipLayout("ab\ncde", 100, 500, -1, 150);                            // right edge: x + w <= right - 8
+    KT_CHECK_EQ(r.x, 150 - 8 - 107);
+    TipRect l = tipLayout("ab\ncde", -50, 500, -1, 3840); KT_CHECK_EQ(l.x, 8);      // left clamp
+    TipRect tp = tipLayout("ab\ncde", 100, 50, -1, 3840); KT_CHECK_EQ(tp.y, 8);     // top clamp
+    TipRect w = tipLayout("ab\ncde", 100, 500, -1, 100); KT_CHECK_EQ(w.x, 8);       // wider than the screen: left clamp wins
+    TipRect e = tipLayout("", 10, 500, -1, 3840); KT_CHECK_EQ(e.lines, 1); KT_CHECK_EQ(e.maxLen, 0); KT_CHECK_EQ(e.w, 44); KT_CHECK_EQ(e.h, 76);
+    TipRect nl = tipLayout("a\n", 10, 500, -1, 3840); KT_CHECK_EQ(nl.lines, 2); KT_CHECK_EQ(nl.maxLen, 1);   // trailing newline = extra line
+    TipRect lg = tipLayout("abcd\nx\nabcdefg", 10, 500, -1, 3840); KT_CHECK_EQ(lg.lines, 3); KT_CHECK_EQ(lg.maxLen, 7);
+    KT_CHECK_EQ(TipWrap, 38); KT_CHECK_EQ(TipMaxDescLines, 3);
+  }
+  { // 6. settling predicate
+    KT_CHECK(!isSettling(0, 5000, 1500));                                          // no character change seen yet
+    KT_CHECK(isSettling(1000, 2000, 1500));
+    KT_CHECK(isSettling(1000, 2499, 1500));
+    KT_CHECK(!isSettling(1000, 2500, 1500));                                       // strictly less than
+    KT_CHECK(isSettling(1000, 1000, 1500));
+    KT_CHECK(isSettling(0xFFFFFF00u, 0x100u, 1500));                               // GetTickCount wrap: 512 ms elapsed
+    KT_CHECK(!isSettling(0xFFFFFF00u, 0x1000u, 1500));
+  }
+  { // 7. per-slot display state
+    const float E = EmptyFrameAlpha, D = DimAlpha;
+    SlotView u = slotView(true, false, false, 0, 0, "", false);                    // unbound slot (edit mode)
+    KT_CHECK_EQ(u.state, "unbound"); KT_CHECK(!u.hideSettling && !u.outOfStock && !u.showQty);
+    KT_CHECK_EQ(u.qtyHideWhy, "unbound"); KT_CHECK(u.bgFactor == E && u.icFactor == 1.0f);
+    SlotView p = slotView(false, false, true, 1, 0x20000005, "Heal", false);       // usable power
+    KT_CHECK_EQ(p.state, "usable"); KT_CHECK(!p.showQty && !p.outOfStock);
+    KT_CHECK_EQ(p.qtyHideWhy, "single item / not an item"); KT_CHECK(p.bgFactor == 1.0f && p.icFactor == 1.0f);
+    SlotView d = slotView(false, false, true, 0, 0x20000005, "Heal", false);       // unusable: icon dimmed
+    KT_CHECK_EQ(d.state, "unusable (dimmed)"); KT_CHECK(d.icFactor == D && d.bgFactor == 1.0f);
+    SlotView m = slotView(false, true, true, 1, 0x40000009, "Medpac (3)", false);  // stack of 3
+    KT_CHECK(m.showQty && !m.grayQty && m.qty == 3); KT_CHECK_EQ(m.state, "usable");
+    SlotView s1 = slotView(false, true, true, 1, 0x40000009, "Medpac", false);     // single item: no count
+    KT_CHECK(!s1.showQty && s1.qty == 0);
+    SlotView s2 = slotView(false, true, true, 1, 0x40000009, "Medpac (1)", false); // "(1)" is not > 1
+    KT_CHECK(!s2.showQty);
+    SlotView o = slotView(false, true, false, 0, 0, "", false);                    // out of stock: gray "0", dim icon
+    KT_CHECK_EQ(o.state, "out of stock"); KT_CHECK(o.outOfStock && o.showQty && o.grayQty && o.qty == 0);
+    KT_CHECK(o.icFactor == D && o.bgFactor == E); KT_CHECK(!o.hideSettling);
+    SlotView n = slotView(false, false, false, 0, 0, "", false);                   // power not available
+    KT_CHECK_EQ(n.state, "entry not available"); KT_CHECK(!n.outOfStock && !n.showQty && n.icFactor == 1.0f && n.bgFactor == E);
+    KT_CHECK_EQ(n.qtyHideWhy, "entry not available");
+    KT_CHECK(slotView(false, false, false, 0, 0, "", true).hideSettling);          // not resolved while settling in Normal mode: hide
+    KT_CHECK(slotView(false, true, false, 0, 0, "", true).hideSettling);
+    KT_CHECK(!slotView(false, true, true, 1, 0x40000001, "X", true).hideSettling); // resolved: never hidden
+    KT_CHECK(QtyOutOfStockRgb[0] == 0.55f && QtyOutOfStockRgb[1] == 0.55f && QtyOutOfStockRgb[2] == 0.55f);
+  }
+  { // 8. picker maxOff + clamp + wheel steps
+    KT_CHECK_EQ(pickerMaxOff(0, 8), 0); KT_CHECK_EQ(pickerMaxOff(5, 8), 0); KT_CHECK_EQ(pickerMaxOff(8, 8), 0);
+    KT_CHECK_EQ(pickerMaxOff(9, 8), 1); KT_CHECK_EQ(pickerMaxOff(20, 8), 12);
+    KT_CHECK_EQ(clampOffset(5, 3), 3); KT_CHECK_EQ(clampOffset(2, 3), 2); KT_CHECK_EQ(clampOffset(3, 3), 3); KT_CHECK_EQ(clampOffset(4, 0), 0);
+    KT_CHECK_EQ(wheelSteps(120), 1); KT_CHECK_EQ(wheelSteps(240), 2); KT_CHECK_EQ(wheelSteps(-120), -1); KT_CHECK_EQ(wheelSteps(-360), -3);
+    KT_CHECK_EQ(wheelSteps(60), 1); KT_CHECK_EQ(wheelSteps(-60), -1); KT_CHECK_EQ(wheelSteps(1), 1); KT_CHECK_EQ(wheelSteps(-1), -1);
+    KT_CHECK_EQ(wheelSteps(119), 1); KT_CHECK_EQ(wheelSteps(239), 1); KT_CHECK_EQ(wheelSteps(0), 0);
+    KT_CHECK_EQ(scrollClamp(-4, 12), 0); KT_CHECK_EQ(scrollClamp(5, 12), 5); KT_CHECK_EQ(scrollClamp(99, 12), 12); KT_CHECK_EQ(scrollClamp(1, 0), 0);
+    KT_CHECK_EQ(scrollClamp(5 - wheelSteps(120), 12), 4);                          // wheel up = back toward the start
+    KT_CHECK_EQ(scrollClamp(0 - wheelSteps(120), 12), 0);
+    KT_CHECK_EQ(scrollClamp(12 - wheelSteps(-120), 12), 12);
+  }
+  { // 9. arrow repeat timing: 350 ms first, then every 90 ms
+    KT_CHECK_EQ(ArrowFirstMs, 350); KT_CHECK_EQ(ArrowRepeatMs, 90);
+    KT_CHECK(!arrowRepeatDue(1349, 1000, 1000)); KT_CHECK(arrowRepeatDue(1350, 1000, 1000));
+    KT_CHECK(!arrowRepeatDue(1400, 1000, 1350)); KT_CHECK(!arrowRepeatDue(1439, 1000, 1350)); KT_CHECK(arrowRepeatDue(1440, 1000, 1350));
+    KT_CHECK(!arrowRepeatDue(5000, 4800, 4990));                                   // repeat fine, first delay not reached (200 ms)
+    KT_CHECK(arrowRepeatDue(0x100u, 0xFFFFFF00u, 0xFFFFFF00u) == true);            // wrap: 512 ms since start
+    KT_CHECK(!arrowRepeatDue(0x20u, 0xFFFFFF00u, 0xFFFFFF00u));                    // wrap: 288 ms
+  }
+  { // 10. aspect correction + layout units -> px (the H3 baseline: 3840x1600, ref 800x600)
+    double c = aspectCorrection(3840, 1600, 800, 600);
+    KT_CHECK(c > 0.555555 && c < 0.555556);
+    Scale k = makeScale(3840, 1600, 800, 600);
+    KT_CHECK(k.sx == 4.8 && k.sy == 1600.0 / 600 && k.c == c);
+    struct R { const char* name; int x, y, w, h; int e[4]; };
+    const R rs[] = {   // layout units from Layout[] -> rect=[..] logged by build 26 (baseline_h3_build26.txt)
+        { "LBL_HOTBAREDIT",   4, 478, 20, 35,    { 11, 1274, 53, 93 } },
+        { "LBL_HOTBARBG1",   29, 478, 35, 35,    { 77, 1274, 93, 93 } },
+        { "LBL_HOTBARBG0",  389, 478, 35, 35,    { 1037, 1274, 93, 93 } },
+        { "LBL_HOTBAR1",     31, 480, 31, 31,    { 82, 1280, 82, 82 } },
+        { "LBL_HOTBARPBG",    4, 360, 420, 112,  { 11, 960, 1120, 298 } },
+        { "LBL_HOTBARQTY1",  33, 495, 27, 17,    { 88, 1320, 72, 45 } },
+        { "LBL_HOTBARCELLBG0", 56, 426, 35, 35,  { 149, 1136, 93, 93 } },
+        { "LBL_HOTBARCELLQTY7", 340, 443, 27, 17, { 907, 1181, 72, 45 } },
+        { "LBL_HOTBARTIPBG",  12, 380, 300, 90,  { 32, 1013, 800, 240 } },
+    };
+    for (const R& q : rs) { int r[4]; unitRect(q.x, q.y, q.w, q.h, k, r); char b[96]; std::snprintf(b, sizeof b, "%s", q.name);
+        KT_CHECK(r[0] == q.e[0] && r[1] == q.e[1] && r[2] == q.e[2] && r[3] == q.e[3]); if (r[0] != q.e[0] || r[1] != q.e[1] || r[2] != q.e[2] || r[3] != q.e[3]) std::printf("  ^ %s got [%d,%d,%d,%d]\n", b, r[0], r[1], r[2], r[3]); }
+    Scale i = makeScale(800, 600, 800, 600); KT_CHECK(i.sx == 1.0 && i.sy == 1.0 && i.c == 1.0);   // 4:3: identity
+    int r4[4]; unitRect(4, 478, 20, 35, i, r4); KT_CHECK(r4[0] == 4 && r4[1] == 478 && r4[2] == 20 && r4[3] == 35);
+    Scale i2 = makeScale(1600, 1200, 800, 600); KT_CHECK(i2.sx == 1.0 && i2.c == 1.0);                // 4:3 at 2x: still the identity (c == 1)
+    KT_CHECK_EQ(aspectCorrection(0, 1200, 800, 600) == 1.0, 1); KT_CHECK_EQ(aspectCorrection(1600, 0, 800, 600) == 1.0, 1);
+    KT_CHECK_EQ(aspectCorrection(1600, 1200, 0, 600) == 1.0, 1); KT_CHECK_EQ(aspectCorrection(1600, 1200, 800, 0) == 1.0, 1);
+    Scale iv = makeScale(-5, 1200, 800, 600); KT_CHECK(iv.sx == 1.0 && iv.c == 1.0);
+    Scale w = makeScale(2560, 1080, 800, 600); KT_CHECK(w.c < 1.0 && w.sx == 3.2 && w.sy == 1.8);     // 21:9
+  }
+  { // 11. save-folder parsing
+    KT_CHECK_EQ(normalizeSaveFolder("SAVES:000012 - Game11").c_str(), "000012 - Game11");
+    KT_CHECK_EQ(normalizeSaveFolder("saves:000012 - Game11").c_str(), "000012 - Game11");          // alias is case-insensitive
+    KT_CHECK_EQ(normalizeSaveFolder("000012 - Game11").c_str(), "000012 - Game11");
+    KT_CHECK_EQ(normalizeSaveFolder("SAVES:/000012 - Game11").c_str(), "000012 - Game11");
+    KT_CHECK_EQ(normalizeSaveFolder("SAVES:\\\\000012 - Game11").c_str(), "000012 - Game11");
+    KT_CHECK_EQ(normalizeSaveFolder("/000001 - AUTOSAVE").c_str(), "000001 - AUTOSAVE");
+    KT_CHECK_EQ(normalizeSaveFolder("SAVES:").c_str(), "");
+    KT_CHECK_EQ(normalizeSaveFolder("").c_str(), "");
+    KT_CHECK_EQ(normalizeSaveFolder("12 - Game").c_str(), "");                                      // too short
+    KT_CHECK_EQ(normalizeSaveFolder("000012 - ").c_str(), "");                                      // no name
+    KT_CHECK_EQ(normalizeSaveFolder("000012 - G").c_str(), "000012 - G");
+    KT_CHECK_EQ(normalizeSaveFolder("00001x - Game11").c_str(), "");                                // non-digit
+    KT_CHECK_EQ(normalizeSaveFolder("000012-Game11").c_str(), "");                                  // separator
+    KT_CHECK_EQ(normalizeSaveFolder("000012  -Game11").c_str(), "");
+    KT_CHECK_EQ(normalizeSaveFolder("SAVES:SAVES:000012 - Game11").c_str(), "");
+    KT_CHECK_EQ(joinSaveDir("saves/", "000012 - G").c_str(), "saves/000012 - G");
+    KT_CHECK_EQ(joinSaveDir("cloudsaves/123/", "000012 - G").c_str(), "cloudsaves/123/000012 - G");
+    KT_CHECK_EQ(joinSaveDir("cloudsaves/123", "000012 - G").c_str(), "cloudsaves/123/000012 - G");   // missing slash added
+    KT_CHECK_EQ(joinSaveDir("cloudsaves\\123\\", "000012 - G").c_str(), "cloudsaves\\123\\000012 - G");
+    KT_CHECK_EQ(joinSaveDir("", "000012 - G").c_str(), "saves/000012 - G");                          // empty cloud dir -> saves/
+  }
+  { // 12. DIK -> slot decision table (decision strings are logged: they must not change)
+    auto K = [](unsigned dik, bool down) { KeyEvent k; k.dik = dik; k.down = down; return k; };
+    KeyEvent k;
+    // digit down, plain, everything fine, bound -> swallow + enqueue slot (dik - 2)
+    k = K(0x05, true); k.hudActive = true; k.slotBound = true;
+    KeyAction a = decideKey(k);
+    KT_CHECK_EQ(a.decision, "SWALLOW"); KT_CHECK(a.swallow && a.markDown && a.enqueue && !a.clearDown && !a.escHit); KT_CHECK_EQ(a.slot, 3);
+    k.ringFull = true; a = decideKey(k);
+    KT_CHECK_EQ(a.decision, "SWALLOW(ring full, request dropped)"); KT_CHECK(a.swallow && a.markDown && !a.enqueue);
+    k.ringFull = false;
+    k.shift = true; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(shift)"); KT_CHECK(!a.swallow && !a.enqueue && !a.markDown); k.shift = false;
+    k.ctrl = true; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(ctrl/alt)"); KT_CHECK(!a.swallow); k.ctrl = false;
+    k.alt = true; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(ctrl/alt)"); k.alt = false;
+    k.ctrl = k.alt = true; k.hudActive = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(ctrl/alt)"); k.ctrl = k.alt = false;   // ctrl/alt tested before inactive
+    k.hudActive = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(hud inactive)"); KT_CHECK(!a.swallow); k.hudActive = true;
+    k.editOpen = true; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(edit mode: never invoke)"); KT_CHECK(!a.swallow); k.editOpen = false;
+    k.slotBound = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(unbound)"); KT_CHECK(!a.swallow && !a.enqueue); k.slotBound = true;
+    k.hudActive = false; k.editOpen = true; k.slotBound = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(hud inactive)");     // order: inactive before edit before unbound
+    // every digit -> its own slot
+    for (unsigned dik = 0x02; dik <= 0x0B; ++dik) { KeyEvent q = K(dik, true); q.hudActive = true; q.slotBound = true; KeyAction r = decideKey(q); KT_CHECK(r.enqueue && r.slot == (int)dik - 2); }
+    // digit up: swallow only if the down was swallowed
+    k = K(0x03, false); k.downSwallowed = true; a = decideKey(k);
+    KT_CHECK_EQ(a.decision, "swallow-up"); KT_CHECK(a.swallow && a.clearDown && !a.markDown && !a.enqueue);
+    k.downSwallowed = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass"); KT_CHECK(!a.swallow && !a.clearDown);
+    // Esc
+    k = K(0x01, true); k.editOpen = true; k.hudActive = true; a = decideKey(k);
+    KT_CHECK_EQ(a.decision, "SWALLOW (edit Esc)"); KT_CHECK(a.swallow && a.markDown && a.escHit && !a.enqueue);
+    k.editOpen = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(edit closed)"); KT_CHECK(!a.swallow && !a.escHit);
+    k.editOpen = true; k.hudActive = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(edit closed)");
+    k = K(0x01, false); k.downSwallowed = true; a = decideKey(k);
+    KT_CHECK_EQ(a.decision, "swallow-up (edit)"); KT_CHECK(a.swallow && a.clearDown && !a.escHit);
+    k.downSwallowed = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass");
+    // other keys: pass, never touched
+    for (unsigned dik : { 0x00u, 0x0Cu, 0x1Du, 0x2Au, 0x38u, 0x9Du, 0xFFu }) { KeyEvent q = K(dik, true); q.hudActive = true; q.slotBound = true; q.downSwallowed = true; KeyAction r = decideKey(q); KT_CHECK_EQ(r.decision, "pass"); KT_CHECK(!r.swallow && !r.enqueue && !r.markDown && !r.clearDown && !r.escHit); }
+    KT_CHECK(isHotbarDigit(0x02) && isHotbarDigit(0x0B) && !isHotbarDigit(0x01) && !isHotbarDigit(0x0C));
+  }
+  { // 13. TGA -> RGBA
+    auto hdr = [](std::vector<unsigned char>& d, int idlen, int w, int h, int bpp = 32, int type = 2, int cmap = 0) {
+      d.assign(18 + idlen, 0); d[0] = (unsigned char)idlen; d[1] = (unsigned char)cmap; d[2] = (unsigned char)type;
+      d[12] = (unsigned char)(w & 255); d[13] = (unsigned char)(w >> 8); d[14] = (unsigned char)(h & 255); d[15] = (unsigned char)(h >> 8); d[16] = (unsigned char)bpp; };
+    { // valid 2x1 with a 3-byte id field and a footer
+      std::vector<unsigned char> d; hdr(d, 3, 2, 1);
+      const unsigned char px[8] = { 1, 2, 3, 4, 5, 6, 7, 8 }; d.insert(d.end(), px, px + 8); d.insert(d.end(), 26, 0xEE);
+      TgaInfo t; KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_OK);
+      KT_CHECK_EQ(t.w, 2); KT_CHECK_EQ(t.h, 1); KT_CHECK_EQ((long long)t.off, 21); KT_CHECK_EQ((long long)t.bytes, 8);
+      unsigned char out[8] = {}; tgaBgraToRgba(d.data(), t, out);
+      const unsigned char want[8] = { 3, 2, 1, 4, 7, 6, 5, 8 };                    // BGRA -> RGBA
+      KT_CHECK(memcmp(out, want, 8) == 0);
+      std::vector<unsigned char> s(d.begin(), d.begin() + 21 + 7);                 // one byte short
+      KT_CHECK_EQ(tgaInspect(s.data(), s.size(), &t), TGA_TRUNCATED); KT_CHECK_EQ(t.w, 2); KT_CHECK_EQ(t.h, 1);
+      std::vector<unsigned char> e(d.begin(), d.begin() + 21 + 8);                 // exact, no footer
+      KT_CHECK_EQ(tgaInspect(e.data(), e.size(), &t), TGA_OK);
+    }
+    { // format rejections
+      std::vector<unsigned char> d; TgaInfo t; hdr(d, 0, 1, 1); d.insert(d.end(), 4, 0);
+      KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_OK);
+      KT_CHECK_EQ(tgaInspect(d.data(), 17, &t), TGA_NOT_UNCOMPRESSED32);           // header cut
+      KT_CHECK_EQ(tgaInspect(d.data(), 0, &t), TGA_NOT_UNCOMPRESSED32);
+      hdr(d, 0, 1, 1, 24); d.insert(d.end(), 4, 0); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_NOT_UNCOMPRESSED32);
+      hdr(d, 0, 1, 1, 32, 10); d.insert(d.end(), 4, 0); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_NOT_UNCOMPRESSED32);   // RLE
+      hdr(d, 0, 1, 1, 32, 2, 1); d.insert(d.end(), 4, 0); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_NOT_UNCOMPRESSED32); // colour map
+      hdr(d, 0, 0, 1); d.insert(d.end(), 4, 0); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_TRUNCATED);                    // w == 0
+      hdr(d, 0, 1, 0); d.insert(d.end(), 4, 0); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_TRUNCATED);                    // h == 0
+      hdr(d, 255, 1, 1); d.insert(d.end(), 3, 0); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_TRUNCATED);                  // id field eats the pixel
+    }
+    { // crafted headers: 32-bit w*h*4 overflow must never pass the bounds check (RED before the fix; ASan faults on the read past the array)
+      struct C { int w, h; const char* why; };
+      const C cs[] = { { 32767, 32769, "w*h*4 == 2^32-4: off+n wraps to 14 and passed the old check" },
+                       { 32768, 32768, "w*h*4 == 0 (mod 2^32)" },
+                       { 65535, 65535, "w*h*4 wraps to a huge value" },
+                       { 65535, 1, "wide" }, { 1, 65535, "tall" }, { 4097, 1, "one past the dimension limit" } };
+      for (const C& c : cs) {
+        std::vector<unsigned char> d; hdr(d, 0, c.w, c.h); d.insert(d.end(), 64, 0x5A);
+        TgaInfo t; TgaStatus s = tgaInspect(d.data(), d.size(), &t);
+        KT_CHECK(s != TGA_OK); if (s == TGA_OK) std::printf("  ^ accepted %dx%d (%s)\n", c.w, c.h, c.why);
+        if (s == TGA_OK) { std::unique_ptr<unsigned char[]> dst(new unsigned char[(size_t)t.bytes]); tgaBgraToRgba(d.data(), t, dst.get()); }   // what the DLL does next
+        else KT_CHECK_EQ(s, TGA_TOO_LARGE);
+      }
+    }
+    { // limits: exactly MaxTgaDim x MaxTgaDim is fine when the data is there; one more is not
+      std::vector<unsigned char> d; hdr(d, 0, MaxTgaDim, MaxTgaDim); d.resize(d.size() + (size_t)MaxTgaDim * MaxTgaDim * 4);
+      TgaInfo t; KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_OK); KT_CHECK_EQ((long long)t.bytes, (long long)MaxTgaDim * MaxTgaDim * 4);
+      hdr(d, 0, MaxTgaDim + 1, 1); d.resize(d.size() + 16); KT_CHECK_EQ(tgaInspect(d.data(), d.size(), &t), TGA_TOO_LARGE);
+      KT_CHECK_EQ(MaxTgaDim, 4096);
+    }
   }
   return kt::Report("hotbar_logic_test");
 }
