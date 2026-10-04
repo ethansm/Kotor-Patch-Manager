@@ -41,8 +41,7 @@ Re-read 2026-10-03 15:29 (before the install):
   `cf45a03af96881362e586c8baf0654b9` (KERNEL32 + msvcrt). Hooks TOML identical to 1.0.0. log=0 default writes load line, first non-problem APPLY pair, first
   SETTOP + first SETBOTTOM, all problem lines (LATE notice now forced too). Wine smoke 10 modes pass. Checker output `check_engfix_windows_output_2026-10-03b.txt`
   (ALL OK, PROXIMITY OK, subset OK; both exes ALL MATCH). 1.0.0 kpatch backup `~/Games/KOTOR2_Mod_Workspace/backups/k2_dialogue_letterbox_fix_1.0.0/` (md5 `6033b700...`).
-- **1.0.1-probe** unchanged (kpatch `4d680986...`, DLL `e46cfcc8...`). Its KPM build dir had been deleted by a sibling cleanup; restored from the mirror + the
-  `letterbox_probe_stage` kpatch.
+- **1.0.1-probe** unchanged (kpatch `4d680986...`, DLL `e46cfcc8...`). It lives ONLY in `KPM/letterbox_probe_stage/` (doc 20d F1: a `Patches/K2DialogueLetterboxFixProbe/` dir duplicates the id and turns `validate-patches` red). This session wrongly recreated that dir at 15:29; the testing session removed it again (byte-identical, nothing lost). Never recreate it; build per `dialogue_letterbox_fix_probe_src/README.md` "Build" (temp Patches dir).
 - **Stage A** `~/Games/KOTOR2_Mod_Workspace/stage_l1_101_1003_1529`, **stage B** `~/Games/KOTOR2_Mod_Workspace/stage_lbprobe_1003_1529`: 32 kpatches each,
   PROBLEMS 1 = known 4gb-patch hooks=DIFF artifact; STAGE_INFO head `28ae185ef061`. Install commands (30 ids, no L4) in doc 17. Stale on any sibling reinstall.
 - Analyzer fixtures: `engine_bug_research/fixtures/letterbox_log_101_smoke_{default,log0}.txt` (raw smoke logs: FAIL on the deliberate INVALID line only, WARN on c).
@@ -58,6 +57,7 @@ Re-read 2026-10-03 15:29 (before the install):
 - Sibling sessions reinstall often (twice during this session): always re-read UpdatedAt + `InstalledPatches` right before an install and re-stage into a NEW dir.
 - `stage_and_verify_install.py stage` needs `--allow-dirty` for this mod (KPM clone stays uncommitted; repo mirror is the committed copy). DIRTY warnings for
   `character-effects-panel` / `force-power-hotbar` are sibling-owned.
-- Sibling cleanups can delete untracked KPM build dirs (the probe dir vanished); kpatches also live in the stage dirs and `KPM/letterbox_probe_stage/`.
+- Do NOT recreate `KPM/Patches/K2DialogueLetterboxFixProbe/` (duplicate id; doc 20d F1). Probe kpatches live in `KPM/letterbox_probe_stage/`.
+- **Superseded later on 10-03:** the shared-logging session moved L1 to KpLog.h as **1.0.2** (installed live 22:42, DLL `7b3936bc`; log `k2-dialogue-letterbox-fix_log.txt` via `kplog.ini`). See doc 17 top + 19e. 1.0.1 and stage A are history; 1.0.2-probe is the no-bands path.
 - `analyze_engfix_logs.py` takes `<logfile> [--json]` (no `--help`). Smoke harness logs are synthetic (fake structs); judge the analyzer on real game logs.
 - Earlier gotchas in 15d section 6 still apply (pgrep self-match, sibling-owned paths, DB idempotency).
