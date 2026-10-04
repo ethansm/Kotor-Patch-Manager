@@ -9,7 +9,7 @@ plan it in detail, execute with Sonnet agents, commit, then tick its row below. 
 |---|---|---|---|
 | P0 | Close Phase 6b (review fixes, 1.0.0 rebuild, doc renumber, this file) | DONE; 1.0.0 (31c3a83f) INSTALLED LIVE 22:54 | 6408800, 456a3b0, KPM eebfd18 |
 | C1 | Integration audit baseline (read-only) | TODO | |
-| C2 | Common contract test | TODO | |
+| C2 | Common contract test | DONE | d89b511 |
 | C3 | Include style + parity stub alignment | TODO | |
 | C4 | Engine addresses -> GameAddr.h (+ proposal) | TODO | |
 | C5 | Party.h adoption | TODO | |
