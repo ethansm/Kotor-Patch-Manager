@@ -1,0 +1,31 @@
+gog_addr	steam_addr	final_verdict	note
+0x004744b0	0x007ef730	verified	semantic: GOG label at 0x004744b0 wrong (body = AnimationPause, Steam 0x7ef350); Mac PlayOutOfPlace = id-range test, no callee: 007ef752 CMP EDX,0x640; caller AnimateFireAndForget
+0x00474540	0x007ef910	verified	semantic: GOG label at 0x00474540 wrong (body = AnimationWalking, Steam 0x7ef3e0); 007ef967 MOV EAX,[0x00a0fe50] = 'HideEquippedItems' column; TestAndReEquipweapons calls it (Mac same)
+0x004745d0	0x007ef3e0	verified	semantic: GOG label at 0x004745d0 wrong (body = AnimationRunning, Steam 0x7ef470); 007ef437 MOV EAX,[0x00a0fe30] = 'Walking' column (store 006ebb20)
+0x00474890	0x007ef350	verified	semantic: GOG label at 0x00474890 wrong (body = AnimationPlayOutOfPlace, Steam 0x7ef730); 007ef3a7 MOV EAX,[0x00a0fe2c] = 'Pause' column (store 006eba3f)
+0x00474a70	0x007ef470	verified	semantic: GOG label at 0x00474a70 wrong (body = AnimationHideEquippedItems, Steam 0x7ef910); 007ef4c7 MOV EAX,[0x00a0fe34] = 'Running' column (store 006eba88)
+0x006a60a0	0x0053f3c0	verified	fp 1:1 (209 B RET 8); 0053f44a CALL 0x005d7190 GetAcceptableAction in list walk, disp 0x6c = Mac GetActionByGroupId; callers UpdateActionQueue+ClearHostileActionsVersus = Mac
+0x006ad780	0x00546aa0	label_suspect	fp 1:1 (39 B); body = GetInGameGui -> IsAnimationPlayingInDialog (00546abe CALL 0x007cadb0), caller IsDialogDelay; real RemoveObjectFromDialog = GOG 0x6ad7e0 -> 0x546b00
+0x006adc90	0x00546fb0	verified	fp 1:1 (144 B RET 4); new + CExoString copy + 00547024 ADD ECX,0x1c4 / CALL 0x0083ea60 (Add) = Mac AddMatchedExpressionString imm 0x1c4; no layout difference
+0x006b3410	0x005d7220	verified	fp 1:1 (388 B RET 8, 39 imm); action switch 005d7277 CMP [EBP-0xc],0x46, default 0xffff = Mac GetAQActionIDByID (imm 0x46); callers UpdateActionQueue + GetCurrentAction = Mac
+0x00472720	0x007ed5c0	verified	fp 1:1 (44 B RET 4); deleting dtor: 007ed5ca CALL 0x007ed5f0 (~CSWCObject body) + 007ed5db CALL 0x009196fd (delete) = Mac ~CSWCObject D0 (dtor + delete)
+0x00475b50	0x007f09f0	verified	fp 1:1 (83 B); 007f09fc ADD ECX,0x6c list + 007f0a26 CALL 0x00872300 (= GOG StopVisualEffect, 337 insn, 18 callees) = Mac StopAllVisualEffects
+0x004726f0	0x007ed590	verified	fp 1:1 (33 B RET 4); 007ed5a3 MOV EAX,[EDX+0x88] vcall = Mac Orientation slot 0x8c (+4); Position sibling 0x7ed560 uses 0x8c (Mac 0x90)
+0x00475420	0x007f02c0	verified	fp 1:1 (53 B); 007f02de MOVZX EDX,word ptr [ECX+0x5a] count + 007f02ea CALL 0x007f00b0 (fp= GOG RemoveTopFireForgetAnimation 518 B) = Mac
+0x00472610	0x007ed4b0	likely	fp 1:1 getter: 007ed4ba MOV AX,word ptr [EAX+0xb8] = Mac GetPortraitId disp 0xb8; thin body
+0x00472660	0x007ed500	verified	fp 1:1 (42 B); 007ed51e MOV EAX,[EDX+0xbc] vcall on [this+0x68] = Mac TurnOffShadows slot 0xc0 (+4); TurnOnShadows sibling uses 0xb8
+0x00472630	0x007ed4d0	verified	fp 1:1 (42 B); 007ed4ee MOV EAX,[EDX+0xb8] vcall on [this+0x68] = Mac TurnOnShadows slot 0xbc (+4); TurnOffShadows sibling uses 0xbc
+0x004725e0	0x007ed480	verified	fp 1:1 (39 B RET 8); 007ed493 ADD ECX,0xa8 + 007ed499 CALL 0x0085e8c0 (fp= GOG CSWPortrait::GetPortrait 502 B) = Mac GetPortrait (imm 0xa8)
+0x006b1160	0x0054a480	verified	fp 1:1 (67 B RET 4); 0054a4b0 AND EAX,[EDX+ECX*4+0x224] bit test (Set=OR, Clear=AND-NOT siblings); caller UpdateState = Mac IsDirtyFlagSet
+0x00410c30	0x00764f60	likely	fp 1:1 setter: 00764f6d MOV [EAX+0x4],ECX / RET 4 = Mac SetId disp 0x4; run 0x764f60/80/b0/e0 = GOG 0x410c30/50/80/b0
+0x00477820	0x007f2680	verified	fp 1:1 (44 B); 007f26a0 MOV EAX,[EDX+0xe8] vcall on [this+0x68] = Mac DisableDistortion slot 0xec (+4); Enable sibling 0x7f2650 uses 0xe4
+0x00410cb0	0x00764fe0	likely	fp 1:1 (17 B): 00764fe7 FLD float ptr [0x0098b5c0] / RET = Mac GetCanSeeHeight 11 B constant getter; run position after HideShadowBlob
+0x006638a0	0x0053f000	likely	fp 1:1 getter: 0053f00a MOV AX,word ptr [EAX+0x30] = Mac CSWSObject::GetPortraitId disp 0x30; portrait run 0x53efa0/0x53efd0/0x53f000
+0x006bd060	0x005e0e70	verified	AUTO sig PASS: fp 1:1 (186 B RET 4); 005e0ea4 CMP [ECX+0x11ac],0, disp 0xec/0x11ac = Mac AIActionSetCommandable (0xec, 0x11ac; caller RunActions)
+0x00475a80	0x007f0920	verified	AUTO sig PASS: fp 1:1 (195 B); 007f09b5 CALL 0x00872300 StopVisualEffect, disp 0xc0/0xc4/0xdc = Mac DeleteVisualEffect (0xc0/0xc4/0xe0 vt+4)
+0x006aa7c0	0x00543ae0	verified	AUTO sig PASS: fp 1:1 (761 B); 00543b61 MOV EDX,[ECX+0x1198], 00543cf8 CALL 0x00584da0 SendFeedbackMessage; disp 0x160/0x1e4 = Mac DoSpellImmunity
+0x00472a30	0x007ed8d0	verified	AUTO sig PASS: fp 1:1 (57 B RET 0xc); 007ed8fe MOV EAX,[EDX+0x18] = Mac ReplaceTexture overload with disp 0x18 (58 B); disp 0x1c overload = 0x7ed890
+0x00474800	0x007ef6a0	verified	AUTO sig PASS: 007ef6f9 MOV EAX,[0x00a0fe20] = 'Overlay' column (store 006eb9ad); sole caller AnimateFireAndForget = Mac
+0x006b0c50	0x00549f70	verified	AUTO c2 PASS: fp 1:1 (615 B RET 0x10); 0054a13b MOV EAX,[EDX+0x7c], disp 0x68..0x7c + imm 0xa3/0x7f000000 = Mac ReportOverflow; caller UpdateState
+0x006a70f0	0x00540410	verified	AUTO c2 PASS: 00540423 PUSH 0x99462c; strings ActionList/ActionId/GroupActionId/NumParams via WriteField* = Mac SaveActionQueue (caller SaveObjectState)
+0x00477360	0x007f2200	verified	AUTO c2 PASS: 007f220e ADD ECX,0xe8 (string) + 007f221c MOV [ECX+0xf0],0x1388 = Mac SetFeedbackInfo (0xe8/0xf0); caller ExecuteCommandDisplayFeedBackText

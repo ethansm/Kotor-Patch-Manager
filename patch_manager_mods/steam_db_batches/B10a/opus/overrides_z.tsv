@@ -1,0 +1,3 @@
+gog_addr	steam_addr	final_verdict	note
+0x006ae890	0x00547bb0	label_suspect	[z AUTO audit] fp 1:1; body = Mac AddSwitchWeaponsAction: 00547c1a CALL 0x00590110 GetActionPending, 00547c4e CALL 0x005917e0 CombatRound::AddSwitchWeaponsAction; DoorSaber = GOG 0x6ae820
+0x004727b0	0x007ed5f0	rejected	[z dup] GOG split fragment 0x472750+0x60 inside Steam 0x7ed5f0 (475 B = 96+379); no entry at 0x7ed650; 0x7ed5f0 belongs to Destructor_2 (GOG 0x472750)

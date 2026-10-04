@@ -1,0 +1,15 @@
+gog_addr	steam_addr	final_verdict	note
+0x0042b680	0x0077f660	label_suspect	fp 1:1 unique (85 B RET 8); 0077f677 CALL 0x0073f810 GetSWCMessage, 0077f69a CALL 0x008799a0 Attack input, 0077f6aa CALL 0x0077fd20 SetCombatMode = Mac CSWCCreature::PerformCombatFeat
+0x004726c0	0x007ed560	verified	fp 1:1 unique (33 B RET 0xc); 007ed573 MOV EAX,[EDX+0x8c] vcall = Mac Position slot 0x90 (+4); Orientation 0x7ed590 uses 0x88; gate pick 0x405970 unrelated
+0x004774e0	0x0077b630	verified	fp 1:1 unique (62 B RET 0x10); 0077b657 CALL 0x0073f750 GetInGameGui + 0077b65e CALL 0x007ca6e0 (fp= GOG ShowBarkBubble) = Mac BarkBubble; one body, also CSWCCreature's
+0x00663800	0x0053ef70	likely	fp 1:1 unique (23 B RET 4): 0053ef7a MOV AX,word ptr [EAX+0xe4] = Mac GetMaxHitPoints disp 0xe4; run 0x53ef30 GetDialogResref..0x53f000 GetPortraitId
+0x00663830	0x0053ef90	likely	fp 1:1 unique (16 B): 0053ef97 MOV EAX,0x7f000000 / RET = Mac GetLockOrientationToObject (OBJECT_INVALID stub); same run as GetMaxHitPoints
+0x006638c0	0x00600090	label_suspect	fp 1:1 unique (19 B): 0060009a ADD EAX,0x2b0 = Mac CSWSItem::GetFirstName (imm 0x2b0); next = CSWSItem dtor 0x6000b0 (0x6000e0 fp= GOG 0x663910)
+0x006969a0	0x0057de70	label_suspect	fp 1:1 unique (716 B); body = Mac CSWSCreature::Rest (same 16 callees): 0057df52 CALL 0x0057c990 GetNearestEnemy; real AddSwitchWeaponsAction = GOG 0x6ae890 -> 0x547bb0
+0x006a2c90	0x0058a1b0	likely	fp 1:1 unique (15 B): 0058a1b7 XOR EAX,EAX / 0058a1bc RET 0x4 = Mac LipSync empty stub; sits in CSWSCreature block: likely ICF-shared, a hook fires for all folds
+0x006b5760	0x005d9570	verified	fp 1:1 unique (274 B RET 4); 005d95a4 CMP [ECX+0x11ac],0, disp 0x1124/0x11ac, no direct callee = Mac AIActionPauseDialog; RunActions handler 0x1F (KDB)
+0x006b5880	0x005d9690	verified	fp 1:1 unique (320 B RET 4); 005d96c4 CMP [ECX+0x11ac],0 + ActivityManager/SetActivity = Mac AIActionResumeDialog; RunActions handler 0x20 (KDB)
+0x006bbb10	0x005df920	verified	fp 1:1 unique (696 B); 005df93e CALL 0x00541080 ClearAllActions, 005dfba9 PUSH 0x5dc, 005dfbc8 CALL 0x00568540 AddAttackActions = Mac AIActionSwitchWeapons
+0x006bd120	0x005e0f30	verified	fp 1:1 unique (111 B RET 4); 005e0f8a PUSH 0x28 / 005e0f8f CALL 0x0053f7f0 AddAction = Mac AddUseObjectAction (imm 0x28); local delta -0xdc1f0
+0x006bd190	0x005e0fa0	verified	fp 1:1 unique (419 B RET 0x10); 005e1130 PUSH 0x22 / 005e1135 CALL 0x0053f7f0 AddAction, [+0x11ac] = Mac AddGiveItemActions (imm 0x22, 0x2a8/0x11ac)
+0x006bd340	0x005e1150	verified	fp 1:1 unique (486 B RET 0xc); 005e12df CALL 0x00564770 AddMoveToPointAction, 005e1323 PUSH 0x23 / CALL 0x0053f7f0 = Mac AddTakeItemActions (imm 0x23)
