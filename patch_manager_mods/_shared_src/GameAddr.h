@@ -60,6 +60,7 @@ constexpr uintptr_t ClientToServerObjectId = 0x0051C8B0; // thiscall(objTable, c
 constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;      // thiscall(objTable, serverId) RET 4 -> item ptr (0 = none)
 constexpr uintptr_t HudVtable = 0x0099DCC4;              // CSWGuiInGame (HUD panel) RTTI vtable
 constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask]
-constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0): logged by the probe, never called
+constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0) RET 0x20: called only by companion-selfheal 0.2.0-probe with [probe] call=1
+constexpr uintptr_t CanUseItem = 0x005D2F80;             // thiscall(server creature; itemPtr,0,1) RET 0xC -> nonzero = usable; verified B12b
 
 } // namespace gameaddr

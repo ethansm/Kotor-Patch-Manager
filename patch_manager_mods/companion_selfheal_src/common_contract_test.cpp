@@ -12,6 +12,7 @@
 #include "PortraitSlots.h"
 #include "HealItems.h"
 #include "ItemRead.h"
+#include "GuiKit.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <string.h>
@@ -87,6 +88,16 @@ int main() {
 
     // ===== 3. K2Addr / GameAddr
     HEQ("gameaddr::AppGlobal is the Steam app global (ItemRead g_appGlobal default)", (unsigned long long)gameaddr::AppGlobal, 0x00A1B4A4ULL);
+
+    HEQ("gameaddr::CanUseItem is the Steam CanUseItem (thiscall, RET 0xC, called with itemPtr,0,1)", (unsigned long long)gameaddr::CanUseItem, 0x005D2F80ULL);
+    HEQ("gameaddr::UseItemRouteA is the Steam route A (thiscall, RET 0x20, 8 stack args)", (unsigned long long)gameaddr::UseItemRouteA, 0x0057D8B0ULL);
+    HEQ("gameaddr::ProjectionFlag is cleared/restored around the label create", (unsigned long long)gameaddr::ProjectionFlag, 0x00A1B9F0ULL);
+    HCHECK("guikit::createLabelFromTemplate(panel, tag, int* why, uint32_t* badVt) -> uintptr_t", static_cast<uintptr_t(*)(uintptr_t, const char*, int*, uint32_t*)>(&guikit::createLabelFromTemplate) != nullptr);
+    HCHECK("guikit::appendToPanel(panel, ctl) -> bool", static_cast<bool(*)(uintptr_t, uintptr_t)>(&guikit::appendToPanel) != nullptr);
+    HCHECK("guikit::setText(ctl, const char*) -> bool", static_cast<bool(*)(uintptr_t, const char*)>(&guikit::setText) != nullptr);
+    HCHECK("guikit::setVisible(ctl, bool) / getExtent(ctl, x,y,w,h) keep their signatures", static_cast<bool(*)(uintptr_t, bool)>(&guikit::setVisible) != nullptr && static_cast<bool(*)(uintptr_t, int*, int*, int*, int*)>(&guikit::getExtent) != nullptr);
+    HEQ("guikit CF_Count is a CreateFail reason (label P2 log)", (int)guikit::CF_Count, 4);
+    HEQ("K2PsContext carries inMenu (the call's menu refusal)", (long long)offsetof(K2PsContext, inMenu), 28LL);
 
     // ===== 4. Party: Vitals defaults + vitals() through the vtable slots
     party::Vitals def;

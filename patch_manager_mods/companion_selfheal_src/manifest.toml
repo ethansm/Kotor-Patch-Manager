@@ -1,9 +1,9 @@
 [patch]
 id = "companion-selfheal"
 name = "Companion Self-Heal"
-version = "0.1.0-probe"
+version = "0.2.0-probe"
 author = "local"
-description = "LOG-ONLY probe for companion self-heal (doc 27 CS2): logs the HUD panel layout, portrait slot to HUD mapping, companion vitals/skills, healing-item candidates and the route A args on Ctrl+Shift+H. Never calls engine functions or writes engine memory. Needs portrait-slots."
+description = "Probe for companion self-heal (doc 27 CS2): logs the HUD panel layout, portrait slot to HUD mapping, companion vitals/skills, healing-item candidates and the route A args on Ctrl+Shift+H. Default INI = log only (no engine calls, no engine writes). Opt-in [probe] call=1 adds Ctrl+Shift+J: one CanUseItem + UseItemRouteA self-heal call with POST logging; [probe] label=1 adds one test label on the HUD. Needs portrait-slots."
 
 requires = ["portrait-slots"]
 requires_interfaces = ["k2.portraitslots@1"]
