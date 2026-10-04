@@ -1,0 +1,17 @@
+# kplog session 2026-10-03 22:40:00 | smoke (converted from core_lines.txt)
+T=1500.000 f=- k2-dialogue-letterbox-fix/main k2-dialogue-letterbox-fix 1.0.2-probe loaded: enabled=1 mode=h6 log=1 probe=1 const@0x009a7d30=00 00 00 00 00 00 00 40 (2) pid=32
+T=1509.000 f=- k2-dialogue-letterbox-fix/main WARN APPLY src=SetScreenSize W=3840 H=1600: FOREIGN value 00 00 00 00 00 00 00 40 2: another mod owns 0x009a7d30, not writing
+T=1518.000 f=- k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+T=1527.000 f=- k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+T=1536.000 f=- k2-dialogue-letterbox-fix/set SETTOP lb=003d79c0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=003d0670 W=3840 H=1600 c=3.5999999964000002
+T=1545.000 f=- k2-dialogue-letterbox-fix/set SETBOTTOM lb=003d79c0 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=003d0670 W=3840 H=1600 c=3.5999999964000002
+T=1554.000 f=- k2-dialogue-letterbox-fix/main WARN APPLY src=SetScreenSize W=0 H=1600: INVALID size, no write
+T=1563.000 f=- k2-dialogue-letterbox-fix/probe PROBE W1 n=1 skip=0 this=0x00a20000 mode=1 done=0 alpha=0x3f000000 passedRect(x,y,w,h)=(0,0,3840,8) ctrlRect(x,y,w,h)=(0,0,3840,267) targetH(+0x74)=267
+T=1572.000 f=- k2-dialogue-letterbox-fix/probe PROBE W2 n=1 skip=0 this=0x00a20000 mode=2 done=0 alpha=0x3f000000 passedRect(x,y,w,h)=(0,1333,3840,267) ctrlRect(x,y,w,h)=(0,0,3840,267) targetH(+0x74)=267
+T=1581.000 f=- k2-dialogue-letterbox-fix/probe PROBE W3 n=1 skip=0 this=0x00a20000 vtbl=0x009a7cbc(letterbox) flags(+0x48)=0x00000044 bit2=1 bit6=1 rect(x,y,w,h)=(0,0,3840,267) W=3840 H=1600 predicate=WOULD-DRAW dt=0x3c888889
+T=1590.000 f=- k2-dialogue-letterbox-fix/probe PROBE W3b n=1 skip=0 alpha=0x3f000000 color(+0x54..)=0x00000000,0x00000000,0x00000000 mgr=0x00a20400 DAT_a309b4=267 DAT_a309b8=1333 DAT_a309bc=1
+T=1599.000 f=- k2-dialogue-letterbox-fix/probe_w4 PROBE W4 n=1 skip=0 this=0x00a20000 mode=1 eax=1 fillRect(x,y,w,h)=(0,0,3840,267) alpha=0x3f000000
+T=1608.000 f=- k2-dialogue-letterbox-fix/probe PROBE W5 n=1 skip=0 arg=1 this=0x00a20000
+T=1617.000 f=- k2-dialogue-letterbox-fix/probe PROBE W5 n=2 skip=0 arg=0 this=0x00a20000
+T=1626.000 f=- k2-dialogue-letterbox-fix/set SETTOP lb=00a20000 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,267) target(x,y,w,h)=(0,0,0,267) mgr=00a20400 W=3840 H=1600 c=3.5999999964000002
+T=1635.000 f=- k2-dialogue-letterbox-fix/probe PROBE W2 n=1 skip=0 this=0x00a20000 mode=1 done=0 alpha=0x3f000000 passedRect(x,y,w,h)=(0,1333,3840,267) ctrlRect(x,y,w,h)=(0,0,3840,267) targetH(+0x74)=267

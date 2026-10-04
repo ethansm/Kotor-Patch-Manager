@@ -1,0 +1,24 @@
+2955932234 k2-dialogue-letterbox-fix/main k2-dialogue-letterbox-fix 1.0.2 loaded: enabled=1 mode=h6 log=1 const@0x009a7d30=00 00 00 80 aa aa 02 40 (2.3333330154418945) pid=32
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=2.3333330154418945 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=1920 H=1080 mode=h6 old=3.5999999964000002 new=2.6666666640000001 vanillaBar=129 newBar=180 X=720 fs=1.0 panelH=100 replyY=900
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now 16 b5 f9 54 55 55 05 40 = 2.6666666640000001
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=3440 H=1440 mode=h6 old=2.6666666640000001 new=3.5833333297500003 vanillaBar=-17 newBar=240 X=960 fs=2.0 panelH=200 replyY=1200
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now 56 8b 2f aa aa aa 0c 40 = 3.5833333297500003
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=5120 H=1440 mode=h6 old=3.5833333297500003 new=5.3333333280000002 vanillaBar=-377 newBar=240 X=960 fs=3.0 panelH=300 replyY=1140
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now 16 b5 f9 54 55 55 15 40 = 5.3333333280000002
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=800 H=600 mode=h6 old=5.3333333280000002 new=1.9999999980000001 vanillaBar=129 newBar=100 X=400 fs=1.0 panelH=100 replyY=500
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now a1 8f 76 ff ff ff ff 3f = 1.9999999980000001
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=640 H=480 mode=h6 old=1.9999999980000001 new=1.9999999980000001 vanillaBar=103 newBar=80 X=320 fs=1.0 panelH=100 replyY=380
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: unchanged (already 1.9999999980000001)
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=1.9999999980000001 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+2955932235 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002
+2955932235 k2-dialogue-letterbox-fix/main WARN APPLY src=SetScreenSize W=0 H=1600: INVALID size, no write
+2955932235 k2-dialogue-letterbox-fix/main WARN APPLY src=SetScreenSize W=1920 H=0: INVALID size, no write
+2955932235 k2-dialogue-letterbox-fix/main WARN dlbOnScreenSize: manager pointer [ebp-0xC] is null, skipping
+2955932235 k2-dialogue-letterbox-fix/set SETTOP lb=003d79b0 mode(+0x88, before this store)=1 start(x,y,w,h)=(0,0,3840,0) target(x,y,w,h)=(0,0,3840,267) mgr=003d0670 W=3840 H=1600 c=3.5999999964000002
+2955932235 k2-dialogue-letterbox-fix/set SETBOTTOM lb=003d79b0 mode(+0x88, before this store)=2 start(x,y,w,h)=(0,1600,3840,267) target(x,y,w,h)=(0,1333,3840,267) mgr=003d0670 W=3840 H=1600 c=3.5999999964000002
+2955932236 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=640 H=480 mode=h6 old=3.5999999964000002 new=1.9999999980000001 vanillaBar=103 newBar=80 X=320 fs=1.0 panelH=100 replyY=380
+2955932236 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now a1 8f 76 ff ff ff ff 3f = 1.9999999980000001
+2955932236 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize W=3840 H=1600 mode=h6 old=1.9999999980000001 new=3.5999999964000002 vanillaBar=-22 newBar=267 X=1066 fs=2.0 panelH=200 replyY=1333
+2955932236 k2-dialogue-letterbox-fix/main APPLY src=SetScreenSize: wrote (protect RW ok, old prot=0x2; protect restore ok -> 0x2); verify OK, now de 1a 51 cc cc cc 0c 40 = 3.5999999964000002

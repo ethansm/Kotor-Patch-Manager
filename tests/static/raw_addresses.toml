@@ -42,7 +42,7 @@ addresses = ["0x009A7000", "0x009A7CBC", "0x009A7D30", "0x00A20000", "0x00A20400
 addresses = ["0x009A7CBC", "0x009A7D30", "0x00A309B4", "0x00A309B8", "0x00A309BC"]
 
 [files."patch_manager_mods/dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp"]
-addresses = ["0x009A7D30"]
+addresses = ["0x009A7000", "0x009A7CBC", "0x009A7D30", "0x00A20000", "0x00A20400", "0x00A20800", "0x00A20C00", "0x00A21000"]
 
 [files."patch_manager_mods/equip_icon_fix_src/EquipIconFix.cpp"]
 addresses = ["0x00414840", "0x008ABA8C", "0x008AD930", "0x008ADA08", "0x008ADA81", "0x008ADFA2", "0x008AE02D", "0x008AE19A", "0x008AE1CD", "0x008AE793"]

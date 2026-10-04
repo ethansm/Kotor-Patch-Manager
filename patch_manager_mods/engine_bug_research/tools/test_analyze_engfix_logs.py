@@ -894,5 +894,79 @@ class SyntheticFixtureTests(unittest.TestCase):
         self.assertIn("MARK", t)
 
 
+class Smoke102FixtureTests(unittest.TestCase):
+    """fixtures/letterbox_log_102_{fallback,probe_fallback,probe_core}.txt = real output of the 1.0.2 / 1.0.2-probe Wine smoke
+    harness (dialogue_letterbox_fix_src/smoke_dialogueletterbox.cpp, modes h6 / probe / core). The data is synthetic (fake
+    objects, deliberate INVALID/FOREIGN calls), so FAIL verdicts are expected, like the legacy letterbox_log_101_smoke_default."""
+
+    @staticmethod
+    def run_fixture(name):
+        launches, unparsed, total = A.analyze_file(os.path.join(FIXTURES, name))
+        ok, verdict, dlg, errs = A.summarize(launches, unparsed, total)
+        return launches, unparsed, total, ok, verdict, dlg
+
+    @staticmethod
+    def reasons(L):
+        return sorted(e[1].split(":")[0].split(" (")[0] for e in L.errors)
+
+    def test_fallback_h6_shipping(self):
+        launches, unparsed, total, ok, verdict, dlg = self.run_fixture("letterbox_log_102_fallback.txt")
+        self.assertEqual((len(launches), total, len(unparsed), dlg), (1, 24, 0, 1))
+        L = launches[0]
+        self.assertEqual((L.mode, L.log, L.pid, L.probe, L.probe_lines), ("h6", 1, 32, None, 0))
+        # CRLF fallback lines parse; the only errors are the harness's deliberate W=0 / H=0 / null-manager calls
+        self.assertFalse(ok)
+        self.assertEqual(len(L.errors), 3)
+        self.assertIn("INVALID x2", verdict)
+        self.assertIn("null pointer x1", verdict)
+
+    def test_probe_fallback_counts_and_w3_join(self):
+        launches, unparsed, total, ok, verdict, dlg = self.run_fixture("letterbox_log_102_probe_fallback.txt")
+        self.assertEqual((len(launches), total, len(unparsed), dlg), (1, 3599, 0, 13))
+        L = launches[0]
+        self.assertEqual((L.probe, L.pid), (1, 224))
+        # 3000 gate lines (W1/W2/W3/W4/W5) + 581 W3b lines that ride on their W3
+        self.assertEqual(L.probe_lines, 3581)
+        self.assertEqual(L.cap, ["probe-cap(3000)"])
+        buckets = [L.pre_bucket] + list(L.buckets)
+        w3 = [r for b in buckets for r in b["W3"]]
+        self.assertEqual(len(w3), 581)
+        self.assertTrue(all(r["alpha"] == 0x3F000000 and not r.get("awaiting_w3b") for r in w3), "every W3 joined with its W3b (alpha known)")
+        ps = A.probe_summary(L.pre_bucket)
+        self.assertEqual((ps["W3"]["n"], ps["W3"]["vtbl_letterbox"], ps["W3"]["vtbl_other"]), (8, 8, 0))
+        self.assertEqual(ps["W3"]["alpha"], {"0x3F000000 0.5 (semi-transparent letterbox)": 8})
+        self.assertEqual(ps["W3"]["predicate"]["WOULD-DRAW"], 1)
+        self.assertEqual((ps["W5"]["start_arg1"], ps["W5"]["end_arg0"]), (True, True))
+        # the harness's fake SETTOP has start h 267 != 0: the only failing-line reason
+        self.assertFalse(ok)
+        self.assertEqual(len(L.errors), 13)
+        self.assertEqual(verdict.count("SETTOP start h"), 1)
+
+    def test_probe_core_shape(self):
+        launches, unparsed, total, ok, verdict, dlg = self.run_fixture("letterbox_log_102_probe_core.txt")
+        # the `# kplog session` header and the load line right after it are ONE launch
+        self.assertEqual((len(launches), total, len(unparsed), dlg), (1, 16, 0, 2))
+        L = launches[0]
+        self.assertEqual((L.probe, L.pid, L.probe_lines), (1, 32, 8))
+        b1 = A.probe_summary(L.buckets[0])
+        self.assertEqual((b1["W1"]["n"], b1["W2"]["n"], b1["W3"]["n"], b1["W4"]["n"], b1["W5"]["n"]), (1, 1, 1, 1, 2))
+        self.assertEqual(b1["W3"]["alpha"], {"0x3F000000 0.5 (semi-transparent letterbox)": 1})   # W3 joined with W3b, alpha known
+        self.assertEqual(b1["diagnosis"], "bars drawn (fill issued)")
+        # this run deliberately starts with a FOREIGN constant (2.0): reported, not hidden
+        self.assertFalse(ok)
+        self.assertIn("FOREIGN x1", verdict)
+        self.assertIn("start bytes not vanilla x1", verdict)
+        self.assertIn("INVALID x1", verdict)
+
+    def test_probe_fixtures_agree_on_probe_shapes(self):
+        # core and fallback shapes of the same probe lines give the same per-window parse of the first dialogue block
+        la, *_ = self.run_fixture("letterbox_log_102_probe_core.txt")
+        lb, *_ = self.run_fixture("letterbox_log_102_probe_fallback.txt")
+        a = A.probe_summary(la[0].buckets[0])
+        b = A.probe_summary(lb[0].pre_bucket)
+        for w in ("W1", "W4", "W5"):
+            self.assertEqual({k: v for k, v in a[w].items() if k != "n"}, {k: v for k, v in b[w].items() if k != "n"}, w)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
