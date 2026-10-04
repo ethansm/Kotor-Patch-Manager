@@ -12,6 +12,11 @@ Offsets: each log is read from a byte offset (default table below = doc 10 run A
 `name bytes [ignored...]`, `#` comments).  The file is opened, seeked to the offset, and if the byte before the offset
 is not a newline the partial first line is discarded, so a mid-line offset never produces a garbage record.
 
+0.5.0 log content (all append-only, absent in 0.3.0/0.4.0 logs, parsed generically as key=value and tolerated when missing):
+  `module=<name|->` header key; `EVT kind=.. tick= slot= name=` + `EVT counts ...` (S3 measured, SNDRI verdict); `TPCTOP` /
+  `RESTOP` (top-N tables at LOAD_DOWN/UNLOAD); `VA` (address-space: min/last largest_free_mb, WARN < 256 MB); `HWV` + `HWVFB`
+  (`--arms hwmip`); FRAME `gms_calls/gms_ms`, KT `txi_via_tpc_kb`, BUILD `requeue_tpc_retained_kb`, RT `redemB`.
+
 Launch splitting and matching rule (what each log actually prints):
   * perflab_metrics.txt: a new launch starts at every `#METRICS 1 <event> tick=<GetTickCount>` header (the block counter
     is per process).  The header carries NO pid, version or wall-clock; `tick` is GetTickCount() in ms.
@@ -56,6 +61,7 @@ TAIL_SLACK_MS = 5000
 FRAME_EDGES = ["<1", "1", "2-3", "4-7", "8-15", "16-31", "32-63", "64-127", "128-255", ">=256"]  # ms, PerfLab.cpp lbucket
 TPC_RESTYPE = 3007
 MB = 1024.0 * 1024.0
+VA_WARN_MB = 256.0   # WARN when a launch's smallest largest_free_mb drops below this
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -201,7 +207,7 @@ def norm_flag(v):
 # perflab_metrics.txt
 # ----------------------------------------------------------------------------------------------------------------
 class Block:
-    __slots__ = ("n", "ev", "tick", "frames", "live", "allocs", "hdr", "kv", "rt")
+    __slots__ = ("n", "ev", "tick", "frames", "live", "allocs", "hdr", "kv", "rt", "rt_redem", "evts", "tpctop", "restop", "hwvfb")
 
     def __init__(self, n, ev, hdr):
         self.n, self.ev = n, ev
@@ -212,6 +218,17 @@ class Block:
         self.allocs = hdr.get("allocs")
         self.kv = {}   # TAG -> dict
         self.rt = {}   # restype -> resident bytes
+        self.rt_redem = {}   # restype -> redemB (0.5.0 RT column / `redemB=` token; absent in older logs)
+        self.evts = []   # 0.5.0 `EVT kind=...` lines of this block (dicts)
+        self.tpctop = None   # 0.5.0 {"hdr": {n,total_mb,overflow}, "items": [(rank, kb, name)]}
+        self.restop = None   # 0.5.0 {"items": [(rank, type, kb, name)]}
+        self.hwvfb = []   # 0.5.0 `HWVFB <i> reason= target= w= h= fmt= type=` dicts
+
+    @property
+    def module(self):
+        """0.5.0 header `module=<name|->`; None if absent, "-" if menu / no module."""
+        m = self.hdr.get("module")
+        return None if m is None else str(m)
 
     def g(self, tag, key, default=None):
         return self.kv.get(tag, {}).get(key, default)
@@ -219,6 +236,26 @@ class Block:
 
 _SKIP_PREFIX = ("NAME ", "NAMES ", "BRRING ", "HOOKCOST_BY ", "VQTOP ", "FREECALLER ", "REQUEUECALLER ",
                 "GETIMGCALLER ", "VMCMD", "# ", "G ", "RES ", "VQ ")
+
+
+def _parse_top(blk, tag, p):
+    """`TPCTOP n= total_mb= [overflow=]` / `TPCTOP <rank> kb= name=` and `RESTOP <rank> type= kb= name=` (0.5.0)."""
+    if len(p) > 1 and "=" in p[1]:                     # header line
+        if tag == "TPCTOP":
+            blk.tpctop = {"hdr": parse_kv(p[1:]), "items": []}
+        return
+    if len(p) < 2:
+        return
+    d = parse_kv(p[2:])
+    rank = num(p[1])
+    if tag == "TPCTOP":
+        if blk.tpctop is None:
+            blk.tpctop = {"hdr": {}, "items": []}
+        blk.tpctop["items"].append((rank, d.get("kb"), d.get("name", "?")))
+    else:
+        if blk.restop is None:
+            blk.restop = {"items": []}
+        blk.restop["items"].append((rank, d.get("type", "?"), d.get("kb"), d.get("name", "?")))
 
 
 def parse_metrics(info):
@@ -249,11 +286,49 @@ def parse_metrics(info):
         p = ln.split()
         tag = p[0]
         if tag == "RT":
-            if len(p) >= 13:
+            # `RT <restype> <11 counters> <resident> [<redemB> | redemB=<n>]` (0.5.0 appends redemB); `RT stat redemB=..` tolerated
+            ints = None
+            if len(p) >= 2:
                 try:
-                    blk.rt[int(p[1])] = int(p[12])
+                    ints = int(p[1])
+                except ValueError:
+                    ints = None
+            if ints is not None and len(p) >= 13 and "=" not in p[12]:
+                try:
+                    blk.rt[ints] = int(p[12])
                 except ValueError:
                     pass
+            red = None
+            for t in p[13:]:
+                if t.startswith("redemB="):
+                    red = num(t.split("=", 1)[1])
+                elif red is None and is_num(num(t)):
+                    red = num(t)
+            if red is None:
+                for t in p[1:]:
+                    if t.startswith("redemB="):
+                        red = num(t.split("=", 1)[1])
+            if is_num(red):
+                if ints is not None:
+                    blk.rt_redem[ints] = red
+                else:
+                    blk.rt_redem["stat"] = red
+            continue
+        if tag == "EVT":
+            d = parse_kv(p[1:])
+            if len(p) > 1 and p[1] == "counts":
+                blk.kv.setdefault("EVTC", {}).update(d)
+            elif "kind" in d:
+                blk.evts.append(d)
+            continue
+        if tag in ("TPCTOP", "RESTOP"):
+            _parse_top(blk, tag, p)
+            continue
+        if tag == "HWVFB":
+            d = parse_kv(p[2:] if len(p) > 1 and "=" not in p[1] else p[1:])
+            if len(p) > 1 and "=" not in p[1]:
+                d["i"] = num(p[1])
+            blk.hwvfb.append(d)
             continue
         d = parse_kv(p[1:])
         if d:
@@ -378,7 +453,7 @@ class Launch:
                 d["scan"] = self.attach["kv"]["scan"]
         for b in self.blocks[:1]:
             for k, v in b.hdr.items():
-                if k not in ("tick", "frames(hook)", "live_bytes", "allocs"):
+                if k not in ("tick", "frames(hook)", "live_bytes", "allocs", "module"):
                     d.setdefault(k, v)
         return d
 
@@ -438,11 +513,23 @@ class Launch:
                     u = gu.get(k, 0)
                     u = u if is_num(u) else 0
                     L["gl"][k] = v if "max" in k else v - u
-            for b in (down, up):
-                for key in ("module", "mod", "area"):
-                    if key in b.hdr:
-                        L["module"] = b.hdr[key]
-                        break
+        L["module_up"] = up.module
+        L["module_down"] = down.module if down is not None else None
+        for key in ("module_down", "module_up"):
+            if L[key] not in (None, "-"):
+                L["module"] = L[key]
+                break
+        else:
+            if "-" in (L["module_down"], L["module_up"]):
+                L["module"] = "-"
+            if L["module"] is None:
+                for b in (down, up):
+                    if b is None:
+                        continue
+                    for key in ("mod", "area"):
+                        if key in b.hdr:
+                            L["module"] = b.hdr[key]
+                            break
         return L
 
     def last(self):
@@ -458,6 +545,87 @@ class Launch:
     def cum_max(self, tag, key):
         vals = [b.kv[tag][key] for b in self.blocks if tag in b.kv and is_num(b.kv[tag].get(key))]
         return max(vals) if vals else None
+
+    # ---- 0.5.0 helpers
+    def module_seq(self):
+        """Distinct consecutive module names (header `module=`, menu `-` skipped) in block order."""
+        seq = []
+        for b in self.blocks:
+            m = b.module
+            if m is None or m == "-":
+                continue
+            if not seq or seq[-1] != m:
+                seq.append(m)
+        return seq
+
+    def round_trip(self):
+        """-> (bool, sequence): True if some module name is seen again after a different one."""
+        seq = self.module_seq()
+        return len(seq) != len(set(seq)), seq
+
+    def has_evt(self):
+        return any(b.evts or "EVTC" in b.kv for b in self.blocks)
+
+    def evt_counts(self):
+        """Cumulative EVT counters (last `EVT counts` line); falls back to tallying `EVT kind=` lines (deduped across blocks)."""
+        for b in reversed(self.blocks):
+            if "EVTC" in b.kv:
+                return {k: v for k, v in b.kv["EVTC"].items() if is_num(v)}
+        seen, c = set(), {}
+        for b in self.blocks:
+            for e in b.evts:
+                key = (e.get("kind"), e.get("tick"), e.get("slot"), e.get("name"))
+                if key in seen:
+                    continue
+                seen.add(key)
+                c[e["kind"]] = c.get(e["kind"], 0) + 1
+        return c
+
+    def evt_list(self):
+        seen, out = set(), []
+        for b in self.blocks:
+            for e in b.evts:
+                key = (e.get("kind"), e.get("tick"), e.get("slot"), e.get("name"))
+                if key not in seen:
+                    seen.add(key)
+                    out.append(e)
+        return out
+
+    def va_series(self):
+        """-> list of (tick, largest_free_mb, free_mb) for blocks that carry a `VA` line."""
+        out = []
+        for b in self.blocks:
+            v = b.kv.get("VA")
+            if v and is_num(v.get("largest_free_mb")):
+                out.append((b.tick, v["largest_free_mb"], v.get("free_mb")))
+        return out
+
+    def tpctops(self):
+        """-> blocks that carry a TPCTOP capture (LOAD_DOWN / UNLOAD)."""
+        return [b for b in self.blocks if b.tpctop is not None]
+
+    def hwv_last(self):
+        for b in reversed(self.blocks):
+            if "HWV" in b.kv:
+                return b.kv["HWV"]
+        return None
+
+    def hwv_first_bad(self):
+        for b in self.blocks:
+            v = b.kv.get("HWV", {}).get("lvl1_first_bad")
+            if v not in (None, "-", 0, "none", "0"):
+                return v
+        return None
+
+    def hwvfb_all(self):
+        seen, out = set(), []
+        for b in self.blocks:
+            for d in b.hwvfb:
+                key = tuple(sorted((k, str(v)) for k, v in d.items()))
+                if key not in seen:
+                    seen.add(key)
+                    out.append(d)
+        return out
 
     def tpc_resident_mb(self, which="last"):
         bl = [b for b in self.blocks if TPC_RESTYPE in b.rt]
@@ -620,32 +788,57 @@ def scenarios(x):
     else:
         out["S1"] = ("not covered", "longest in-module span %.0f s < 120 s" % (mx / 1000.0))
     nu = sum(1 for L in done if L["unload"])
-    if nu >= 2:
-        out["S2"] = ("covered", "%d loads with a module UNLOAD (out and back possible; module names are not logged, round trip unproven)" % nu)
+    rt, seq = x.round_trip()
+    if seq:
+        if rt:
+            out["S2"] = ("covered", "PASS round trip by module name: %s" % " -> ".join(seq))
+        else:
+            out["S2"] = ("not covered", "round trip: - (no module name seen again after a different one); modules seen: %s" % " -> ".join(seq))
+    elif nu >= 2:
+        out["S2"] = ("covered", "%d loads with a module UNLOAD (out and back possible; no module names in this log, round trip unproven) (heuristic)" % nu)
     elif nu == 1:
-        out["S2"] = ("unknown", "1 load with a module UNLOAD; return leg not provable (no module names)")
+        out["S2"] = ("unknown", "1 load with a module UNLOAD; return leg not provable (no module names) (heuristic)")
     else:
-        out["S2"] = ("not covered", "no load with a module UNLOAD")
+        out["S2"] = ("not covered", "no load with a module UNLOAD (heuristic)")
     cl = classify_loads(loads)
-    if cl["quicksave_pairs"] >= 10 and cl["quickloads"] >= 1:
+    if x.has_evt():
+        ec = x.evt_counts()
+        saves = sum(ec.get(k, 0) for k in ("save", "qsave", "autosave"))
+        lds = sum(ec.get(k, 0) for k in ("load", "qload"))
+        msg = "%d save-type events (save+qsave+autosave), %d load/qload (measured: EVT)" % (saves, lds)
+        if saves >= 10 and lds >= 1:
+            out["S3"] = ("covered", msg)
+        elif saves >= 10:
+            out["S3"] = ("unknown", msg + "; no load/qload seen")
+        else:
+            out["S3"] = ("not covered", msg + "; need >= 10 save-type and >= 1 load")
+    elif cl["quicksave_pairs"] >= 10 and cl["quickloads"] >= 1:
         out["S3"] = ("covered", "%d short save-like load pairs in a chain + %d quickload-like (heuristic)" % (cl["quicksave_pairs"], cl["quickloads"]))
     elif cl["quicksave_pairs"] >= 10:
-        out["S3"] = ("unknown", "%d short save-like pairs but no following UNLOAD load (quickload not seen)" % cl["quicksave_pairs"])
+        out["S3"] = ("unknown", "%d short save-like pairs but no following UNLOAD load (quickload not seen) (heuristic)" % cl["quicksave_pairs"])
     elif cl["quicksave_pairs"] == 0 and cl["quickloads"] == 0:
-        out["S3"] = ("not covered", "no short save-like load pairs")
+        out["S3"] = ("not covered", "no short save-like load pairs (heuristic)")
     else:
-        out["S3"] = ("not covered", "longest short-pair chain %d (<10), quickloads %d" % (cl["quicksave_pairs"], cl["quickloads"]))
+        out["S3"] = ("not covered", "longest short-pair chain %d (<10), quickloads %d (heuristic)" % (cl["quicksave_pairs"], cl["quickloads"]))
     rb = x.logs.get("robustnessfixes_log.txt")
+    ec = x.evt_counts() if x.has_evt() else None
+    snd = ec.get("sndapply", 0) if ec is not None else None
+    opt = ec.get("optsave", 0) if ec is not None else None
     if rb is None:
-        out["SNDRI"] = ("unknown", "no robustness log block")
+        out["SNDRI"] = ("unknown", "no robustness log block" + ("" if ec is None else "; EVT sndapply=%s optsave=%s" % (snd, opt)))
     else:
         c = rb.counters()
         fired = [m for m in rb.where("FIRED") if "sndri" in m]
         v = c.get("sndri_restart")
         if fired or (is_num(v) and v > 0):
-            out["SNDRI"] = ("covered", "sndri_restart=%s%s" % (v, ", FIRED line" if fired else ""))
+            out["SNDRI"] = ("covered", "fired: sndri_restart=%s%s%s" % (v, ", FIRED line" if fired else "",
+                                                                    "" if ec is None else "; EVT sndapply=%s optsave=%s" % (snd, opt)))
+        elif ec is None:
+            out["SNDRI"] = ("unknown", "sndri_restart=%s (0 = options/sound apply not observed, or no restart needed) (no EVT counts)" % fmt(v))
+        elif snd > 0:
+            out["SNDRI"] = ("toggled, no fire", "sndapply=%s optsave=%s, sndri_restart=%s, no FIRED sndri" % (snd, opt, fmt(v)))
         else:
-            out["SNDRI"] = ("unknown", "sndri_restart=%s (0 = options/sound apply not observed, or no restart needed)" % fmt(v))
+            out["SNDRI"] = ("not toggled", "sndapply=0 optsave=%s: sound options were never applied, no verdict" % opt)
     out["_cl"] = cl
     return out
 
@@ -682,6 +875,35 @@ def analyze(x):
                 if k.startswith("hwmip") and is_num(v):
                     hw[k] = v
     a["hw"] = hw
+    # 0.5.0
+    a["requeue_kb"] = x.cum("BUILD", "requeue_tpc_retained_kb")
+    a["txi_kb"] = x.cum("KT", "txi_via_tpc_kb")
+    a["gms_calls"] = x.cum("FRAME", "gms_calls")
+    a["gms_ms"] = x.cum("FRAME", "gms_ms")
+    reds = [b.rt_redem[TPC_RESTYPE] for b in x.blocks if TPC_RESTYPE in b.rt_redem]
+    a["redemB"] = reds[-1] if reds else None
+    a["round_trip"], a["modules"] = x.round_trip()
+    va = x.va_series()
+    if va:
+        lf = [v[1] for v in va]
+        mn = min(lf)
+        first, last = lf[0], lf[-1]
+        thr = max(32.0, 0.10 * first)
+        trend = "falling" if last < first - thr else "rising" if last > first + thr else "flat"
+        a["va"] = {"n": len(va), "min": mn, "last": last, "first": first, "trend": trend, "warn": mn < VA_WARN_MB,
+                   "min_free": min((v[2] for v in va if is_num(v[2])), default=None)}
+    else:
+        a["va"] = None
+    tops = x.tpctops()
+    a["tpc_first"] = tops[0] if tops else None
+    a["tpc_largest"] = max(tops, key=lambda b: b.tpctop["hdr"].get("total_mb", 0) if is_num(b.tpctop["hdr"].get("total_mb")) else 0) if tops else None
+    hwv = x.hwv_last()
+    if hwv is not None:
+        bad = hwv.get("lvl1_bad")
+        a["hwv"] = {"v": hwv, "bad": bad, "ok": hwv.get("lvl1_ok"), "first_bad": x.hwv_first_bad(),
+                    "verdict": "FAIL" if (is_num(bad) and bad > 0) else "PASS" if is_num(bad) else "n/a", "fb": x.hwvfb_all()}
+    else:
+        a["hwv"] = None
     return a
 
 
@@ -690,6 +912,73 @@ def analyze(x):
 # ----------------------------------------------------------------------------------------------------------------
 def mbs(v):
     return None if v is None else v / MB
+
+
+def mod_label(L):
+    """Module column text: n/a (no module= header, perf-lab < 0.5.0), menu, name, or `up -> down` when they differ."""
+    u, d = L.get("module_up"), L.get("module_down")
+    nm = lambda v: "menu" if v == "-" else v
+    if u is None and d is None:
+        return L["module"] if L["module"] not in (None, "-") else ("menu" if L["module"] == "-" else "n/a")
+    if d is None:
+        return "%s -> ?" % nm(u)
+    if u is None or u == d:
+        return nm(d)
+    return "%s -> %s" % (nm(u), nm(d))
+
+
+def render_top(title, b, restop=False):
+    """TPCTOP (top 20) table of one capture block, optionally followed by its RESTOP (top 10)."""
+    h = b.tpctop["hdr"]
+    o = ["", "%s: block #%d %s tick %d, module %s; n=%s total_mb=%s%s" % (
+        title, b.n, b.ev, b.tick, mod_label({"module": b.module, "module_up": b.module, "module_down": b.module}),
+        fmt(h.get("n")), fmt(h.get("total_mb"), 2), (" overflow=%s" % fmt(h["overflow"])) if h.get("overflow") else "")]
+    o += [""] + table(["rank", "kb", "name"], [[r, fmt(kb), nm] for r, kb, nm in b.tpctop["items"][:20]])
+    if restop and b.restop:
+        o += ["", "RESTOP top %d of the same block:" % min(10, len(b.restop["items"]))]
+        o += [""] + table(["rank", "type", "kb", "name"], [[r, t, fmt(kb), nm] for r, t, kb, nm in b.restop["items"][:10]])
+    return o
+
+
+def render_launch_050(x, a):
+    """0.5.0 sections: modules / EVT / VA / TPCTOP / HWV. Empty list for 0.3.0/0.4.0 logs."""
+    o = []
+    if a["modules"]:
+        o.append("- modules seen (header `module=`): %s; **round trip (same module before and after a different one): %s**" % (
+            " -> ".join(a["modules"]),
+            ("PASS (%s)" % " -> ".join(a["modules"])) if a["round_trip"] else "- (none)"))
+    if x.has_evt():
+        ec = x.evt_counts()
+        ev = x.evt_list()
+        o.append("- EVT counts (cumulative since attach): " + " ".join("%s=%s" % (k, fmt(ec[k])) for k in
+                                                                       ("save", "load", "qsave", "qload", "autosave", "optsave", "sndapply") if k in ec) +
+                 ("; extra: " + " ".join("%s=%s" % kv for kv in sorted(ec.items()) if kv[0] not in
+                                         ("save", "load", "qsave", "qload", "autosave", "optsave", "sndapply")) if
+                  any(k not in ("save", "load", "qsave", "qload", "autosave", "optsave", "sndapply") for k in ec) else ""))
+        if ev:
+            o.append("- EVT lines (%d, last 5): %s" % (len(ev), "; ".join(
+                "%s@%s slot=%s name=%s" % (e.get("kind"), e.get("tick"), fmt(e.get("slot")), e.get("name")) for e in ev[-5:])))
+    va = a["va"]
+    if va:
+        o.append("- VA (address space): min largest_free_mb %s, last %s, first %s, trend %s (%d samples)%s%s" % (
+            fmt(va["min"]), fmt(va["last"]), fmt(va["first"]), va["trend"], va["n"],
+            (", min free_mb %s" % fmt(va["min_free"])) if va["min_free"] is not None else "",
+            ("; **WARN: min largest_free_mb %s < %d MB**" % (fmt(va["min"]), VA_WARN_MB)) if va["warn"] else ""))
+    first, big = a["tpc_first"], a["tpc_largest"]
+    if first is not None:
+        if big is first:
+            o += render_top("TPCTOP top 20 (first capture = largest total_mb)", first, restop=True)
+        else:
+            o += render_top("TPCTOP top 20, first capture", first)
+            o += render_top("TPCTOP top 20, largest total_mb", big, restop=True)
+        o.append("")
+    hw = a["hwv"]
+    if hw:
+        v = hw["v"]
+        o.append("- HWV (hwmip formats, last): %s; lvl1 ok=%s bad=%s -> **%s**%s; HWVFB entries %d" % (
+            " ".join("%s=%s" % (k, fmt(v[k])) for k in ("fmt_rgba", "fmt_rgb", "fmt_la", "fmt_l", "fmt_other") if k in v) or "no fmt_ counters",
+            fmt(hw["ok"]), fmt(hw["bad"]), hw["verdict"], (" (first bad %s)" % hw["first_bad"]) if hw["first_bad"] else "", len(hw["fb"])))
+    return o
 
 
 def render_launch(x, a):
@@ -736,30 +1025,34 @@ def render_launch(x, a):
                 rows.append([i, "**HANG**", "-", "-", "-", "-", "-"] + ["-"] * len(hwk) + ["-", fmt(hu), "-", "-", "-", "-"])
                 continue
             g = L["gl"]
-            rows.append([i, L["ms"], L["module"] or "n/a", "yes" if L["unload"] else "no",
+            rows.append([i, L["ms"], mod_label(L), "yes" if L["unload"] else "no",
                          fmt(g.get("mip_ms")), fmt(g.get("mipmaps")), fmt(g.get("glfinish_ms"))] +
                         [fmt(g.get(k)) for k in hwk] +
                         [" ".join("%s=%s" % (k, fmt(g[k])) for k in other if k in g and g[k] != 0) or "-",
                          fmt(hu), fmt(hd), fmt(dd), fmt(dn.rt.get(TPC_RESTYPE) / MB if TPC_RESTYPE in dn.rt else None),
                          fmt(dn.g("LIVE", "textures"))])
         o += [""] + table(hdr, rows) + [""]
-        o.append("(GL columns are UP->DOWN deltas of the cumulative GL counters, `*max*` keys show the DOWN value; the module name is "
-                 "not logged by perf-lab 0.3.0, shown only if a `module=` key exists; `unload` = a perf-lab UNLOAD block within the load window.)")
+        o.append("(GL columns are UP->DOWN deltas of the cumulative GL counters, `*max*` keys show the DOWN value; `module` is the "
+                 "`module=` header key of perf-lab 0.5.0+ (`a -> b` when the UP and DOWN blocks differ, `menu` = `-`, `n/a` on 0.3.0/0.4.0 logs); "
+                 "`unload` = a perf-lab UNLOAD block within the load window.)")
     # counters
     o.append("")
-    o.append("- GETIMG (end of launch): other_tpc_retained=%s ctrl_tpc_retained=%s; BUILD requeue_tpc_retained=%s; **run B gate (other_tpc_retained == 0): %s**" % (
-        fmt(a["other_ret"]), fmt(a["ctrl_ret"]), fmt(a["requeue_ret"]), a["gate"]))
-    o.append("- RT: TPC (restype 3007) resident at last block %s MB (at first block %s MB)" % (
-        fmt(a["tpc_mb"]), fmt(x.tpc_resident_mb("first"))))
+    o.append("- GETIMG (end of launch): other_tpc_retained=%s ctrl_tpc_retained=%s; BUILD requeue_tpc_retained=%s%s; **run B gate (other_tpc_retained == 0): %s**" % (
+        fmt(a["other_ret"]), fmt(a["ctrl_ret"]), fmt(a["requeue_ret"]),
+        (" (%s kb)" % fmt(a["requeue_kb"])) if a["requeue_kb"] is not None else "", a["gate"]))
+    o.append("- RT: TPC (restype 3007) resident at last block %s MB (at first block %s MB)%s" % (
+        fmt(a["tpc_mb"]), fmt(x.tpc_resident_mb("first")),
+        ("; redemB (last) %s B = %s MB" % (fmt(a["redemB"]), fmt(a["redemB"] / MB, 2))) if a["redemB"] is not None else ""))
+    kt_txi = ("; txi_via_tpc=%s (%s kb)" % (fmt(x.cum("KT", "txi_via_tpc")), fmt(a["txi_kb"]))) if a["txi_kb"] is not None else ""
     unl = [b for b in x.blocks if b.ev == "UNLOAD" and "KT" in b.kv]
     if unl:
         o.append("- KT per UNLOAD (cumulative still_in_demand/uaf_write): " + ", ".join(
             "#%d %s/%s" % (b.n, fmt(b.g("KT", "still_in_demand")), fmt(b.g("KT", "uaf_write"))) for b in unl) +
-                 "; end of launch %s/%s. Note: since robustness 1.1.0, uaf_write counts writes into the KT dummy = orphan released, not a real UAF." % (
-                     fmt(a["kt_sid"]), fmt(a["kt_uaf"])))
+                 "; end of launch %s/%s%s. Note: since robustness 1.1.0, uaf_write counts writes into the KT dummy = orphan released, not a real UAF." % (
+                     fmt(a["kt_sid"]), fmt(a["kt_uaf"]), kt_txi))
     else:
-        o.append("- KT: no UNLOAD blocks with KT data; end of launch still_in_demand=%s uaf_write=%s (since robustness 1.1.0 uaf_write = writes into the KT dummy, not a real UAF)" % (
-            fmt(a["kt_sid"]), fmt(a["kt_uaf"])))
+        o.append("- KT: no UNLOAD blocks with KT data; end of launch still_in_demand=%s uaf_write=%s (since robustness 1.1.0 uaf_write = writes into the KT dummy, not a real UAF)%s" % (
+            fmt(a["kt_sid"]), fmt(a["kt_uaf"]), kt_txi))
     o.append("- NET max_len=%s; VM exec_bad_id=%s instr_limit=%s; AB 0x74CFE0 actionbar_calls=%s, max per frame=%s" % (
         fmt(a["netmax"]), fmt(a["vm_bad"]), fmt(a["vm_lim"]), fmt(a["ab_calls"]), fmt(a["ab_max"])))
     fs = a["frame"]
@@ -768,6 +1061,8 @@ def render_launch(x, a):
             fs["n"], fs["p50"], fs["p95"], fs["slow32"], fs["slow32pct"], fmt(fs["max_ms"]), " ".join(str(v) for v in fs["hist"])))
     else:
         o.append("- frame-time histogram: none")
+    if a["gms_calls"] is not None or a["gms_ms"] is not None:
+        o.append("- FRAME gms (GetMessage-style wait, cumulative): gms_calls=%s gms_ms=%s" % (fmt(a["gms_calls"]), fmt(a["gms_ms"])))
     if a["hw"]:
         o.append("- hwmip counters (last): " + " ".join("%s=%s" % (k, fmt(v)) for k, v in sorted(a["hw"].items())))
     if x.snaps:
@@ -779,9 +1074,11 @@ def render_launch(x, a):
     # scenarios
     sc = a["scen"]
     cl = sc["_cl"]
-    o.append("- save/load events: no explicit save/load text exists in any log; heuristic from load pairs: quicksave-like pairs (longest chain) %d, quickload-like %d" % (
-        cl["quicksave_pairs"], cl["quickloads"]))
+    o.append("- save/load events: %s heuristic from load pairs gives quicksave-like pairs (longest chain) %d, quickload-like %d%s" % (
+        "measured by EVT (see below; S3 uses it); for comparison only, the" if x.has_evt() else "no EVT lines in this launch (pre-0.5.0 log), so",
+        cl["quicksave_pairs"], cl["quickloads"], " (heuristic)"))
     o.append("- scenarios: " + "; ".join("**%s %s** (%s)" % (k, v[0], v[1]) for k, v in sc.items() if not k.startswith("_")))
+    o += render_launch_050(x, a)
     # logs
     rb = x.logs.get("robustnessfixes_log.txt")
     if rb:
@@ -830,13 +1127,14 @@ def summary_rows(L, A):
                      fmt(a["other_ret"]), fmt(a["ctrl_ret"]), a["gate"], fmt(a["kt_sid"]), fmt(a["kt_uaf"]),
                      fmt(a["tpc_mb"]), fmt(mbs(f["up"].live) if f else None), fmt(mbs(f["down"].live) if f and f["down"] else None),
                      len(rb.where("FIRED")) if rb else "-", ("%d/%d" % (af.count("IGNORED"), af.count("PASSED"))) if af else "-",
-                     sc["S1"][0], sc["S2"][0], sc["S3"][0], sc["SNDRI"][0]])
+                     sc["S1"][0], sc["S2"][0], sc["S3"][0], sc["SNDRI"][0],
+                     ("%s%s" % (fmt(a["va"]["min"]), " WARN" if a["va"]["warn"] else "")) if a["va"] else "-"])
     return rows
 
 
 SUMMARY_HDR = ["#", "start", "pid", "ver", "hwmip", "texmem", "loads", "first load ms", "hang", "other_tpc_ret", "ctrl_tpc_ret", "run B gate",
                "KT still_in_demand", "KT uaf_write", "TPC MB", "heap UP MB (1st)", "heap DOWN MB (1st)", "robust FIRED", "act IGN/PASS",
-               "S1", "S2", "S3", "SNDRI"]
+               "S1", "S2", "S3", "SNDRI", "VA min largest MB"]
 
 
 def render_arms(mode, L, A):
@@ -879,6 +1177,34 @@ def render_arms(mode, L, A):
     o.append("")
     o.append("Launches per arm: " + "; ".join("%s = %s" % (n, ",".join(str(x.idx) for x in xs)) for n, xs in sorted(arms.items())) +
              ". Medians skip launches without the value (a hung launch has no first load).")
+    o.append("")
+    if mode == "hwmip":
+        o += render_hwv(L, A)
+    return o
+
+
+def render_hwv(L, A):
+    """`--arms hwmip` (0.5.0): HWV per-format counts, lvl1 ok/bad (FAIL if any bad) and the HWVFB fallback list per launch."""
+    o = ["### HWV (hwmip upload formats, perf-lab 0.5.0+)", ""]
+    xs = [x for x in L if A[x.idx]["hwv"]]
+    if not xs:
+        return o + ["(no HWV lines in these launches: perf-lab < 0.5.0 or hwmip arm off)", ""]
+    rows = []
+    for x in xs:
+        h = A[x.idx]["hwv"]
+        v = h["v"]
+        rows.append([x.idx, x.hwmip] + [fmt(v.get(k)) for k in ("fmt_rgba", "fmt_rgb", "fmt_la", "fmt_l", "fmt_other")] +
+                    [fmt(h["ok"]), fmt(h["bad"]), "**%s**" % h["verdict"], h["first_bad"] or "-", len(h["fb"])])
+    o += table(["launch", "hwmip", "rgba", "rgb", "la", "l", "other", "lvl1 ok", "lvl1 bad", "verdict", "first bad (target/w/got)", "HWVFB"], rows)
+    o.append("")
+    bad = [str(x.idx) for x in xs if A[x.idx]["hwv"]["verdict"] == "FAIL"]
+    o.append("**HWV lvl1 verdict: %s**" % (("FAIL (launch %s)" % ", ".join(bad)) if bad else "PASS (no lvl1_bad in %d launches)" % len(xs)))
+    for x in xs:
+        fb = A[x.idx]["hwv"]["fb"]
+        if fb:
+            o += ["", "HWVFB (hwmip fallbacks) launch %d:" % x.idx, ""]
+            o += table(["i", "reason", "target", "w", "h", "fmt", "type"],
+                       [[fmt(d.get("i")), d.get("reason", "-"), d.get("target", "-"), fmt(d.get("w")), fmt(d.get("h")), d.get("fmt", "-"), d.get("type", "-")] for d in fb])
     o.append("")
     return o
 

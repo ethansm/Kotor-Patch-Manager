@@ -49,7 +49,15 @@ EXPORTS
     PerfLabPathResult
     PerfLabEffectApply
     PerfLabEffectRemove
+    PerfLabSaveGame
+    PerfLabLoadGame
+    PerfLabQuickLoad
+    PerfLabQuickSave
+    PerfLabAutosave
+    PerfLabOptSave
+    PerfLabSoundApply
     PerfLabTestSetGl
     PerfLabTestHwmipCounters
     PerfLabTestRGluMip
     PerfLabTestResolveEntries
+    PerfLabTestSetGetTexLevel

@@ -1,0 +1,6 @@
+[11:23:20.070 5000070] k2-equip-icon-fix 1.0.0 loaded: 8 sites patched (pass 0x8ABA8C) pid=200
+[11:23:30.070 5010070] STATS passes=5 deferred=9 cancelled=0 replaced=1 applied=4 sets=12 outside_pass=0
+[11:40:00.070 6000070] k2-equip-icon-fix 1.0.0 loaded: 8 sites patched (pass 0x8ABA8C) pid=201
+[11:40:10.070 6010070] STATS passes=5 deferred=9 cancelled=0 replaced=1 applied=4 sets=12 outside_pass=0
+[11:56:40.070 7000070] k2-equip-icon-fix 1.0.0 loaded: 8 sites patched (pass 0x8ABA8C) pid=202
+[11:56:50.070 7010070] STATS passes=5 deferred=9 cancelled=0 replaced=1 applied=4 sets=12 outside_pass=0

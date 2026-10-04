@@ -1,0 +1,9 @@
+[5000000 t0] perf-lab 0.5.0 attach exe=00400000-00ab9000 game=1 alloc=1 heapfilter=1 scan=48 metrics=1 vq=1 tx=OFF g1skip=OFF hwmip=ON
+[5002500 t1] experiments at first tick: tx=OFF
+[5030000 t2027] live=6953325B blocks=10112 sites=1854 dropped=0
+[6000000 t0] perf-lab 0.5.0 attach exe=00400000-00ab9000 game=1 alloc=1 heapfilter=1 scan=48 metrics=1 vq=1 tx=OFF g1skip=OFF hwmip=OFF
+[6002500 t1] experiments at first tick: tx=OFF
+[6030000 t2027] live=6953325B blocks=10112 sites=1854 dropped=0
+[7000000 t0] perf-lab 0.5.0 attach exe=00400000-00ab9000 game=1 alloc=1 heapfilter=1 scan=48 metrics=1 vq=1 tx=OFF g1skip=OFF hwmip=OFF
+[7002500 t1] experiments at first tick: tx=OFF
+[7030000 t2027] live=6953325B blocks=10112 sites=1854 dropped=0

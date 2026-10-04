@@ -1,5 +1,23 @@
-// PerfLab 0.4.0 (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
+// PerfLab 0.5.0 (Steam Aspyr build 6A522E71...). Diagnostics; the only behaviour changes are the
 // flag-gated experiments tx=1 / g1skip=1 / hwmip=1 (off by default). Research program: patch_manager_mods/10_engine_optimization_research.md.
+// 0.5.0 is measurement-only (all file output on the helper thread, hooks only count/copy; every engine pointer through SafeRead):
+//   MOD      (no hook) the `#METRICS` header gets ` module=<resref|-|?>` appended (client module name, `-` = no module/menu, `?` = chain unreadable)
+//   ev=1     (group key, default = metrics) EVT + TPCTOP/RESTOP; 7 new detours (kind: tick/slot/name ring of 64 + counters):
+//            server SaveGame 0x52F610 (save), LoadGame 0x52FB80 (load), QuickLoad 0x7D0F50 (qload), QuickSave 0x7A06B0 (qsave),
+//            DoPCAutosave 0x53AF20 (autosave), OptionsSave 0x740B40 (optsave), SoundOptionsApply 0x70B9B0 (sndapply). Lines per block:
+//              EVT kind=<k> tick=<t> slot=<s> name=<n|->        (ring entries new since the previous block; slot=-1 when the hook has no slot)
+//              EVT counts save= load= qsave= qload= autosave= optsave= sndapply= [lost=<n>]
+//            TPCTOP: pointer-keyed table (16384 slots, ~15872 usable) of live resman allocations {CRes, size, restype, resref}, inserted in ResMalloc
+//            and removed in ResFreeData (spinlock; the helper copies it under the lock, sorts outside). Written in the LOAD_DOWN and UNLOAD blocks:
+//              TPCTOP n=<TPC count> total_mb=<x.y> [overflow=<n>]   then   TPCTOP <rank> kb=<k> name=<resref>   (top 20 of restype 3007)
+//              RESTOP <rank> type=<restype> kb=<k> name=<resref>    (top 10 of all restypes)
+//   VA       every block (also with vq=0): VA free_mb= largest_free_mb= largest_free_at=0x%08x commit_mb= reserve_mb= regions=
+//   ledger   appended at the END of existing lines: RT ... redemB (bytes of 60 s re-demands), KT ... txi_via_tpc_kb (size of the TPC resource
+//            demanded for its TXI), BUILD ... requeue_tpc_retained_kb (retained TPC buffer size, derived with FreeImage's own formula),
+//            FRAME ... gms_calls= gms_ms= (IAT hook on KERNEL32!GlobalMemoryStatus, imported by the exe at IAT 0x986128)
+//   HWV      (hwmip=1) HWV fmt_rgba= fmt_rgb= fmt_la= fmt_l= fmt_other= lvl1_ok= lvl1_bad= lvl1_first_bad=<target>/<w>/<got>, HWVFB <i> reason= target= w= h= fmt= type=
+//            (first 8 fallbacks); lvl1 = one-shot glGetTexLevelParameteriv(target, 1, GL_TEXTURE_WIDTH) check after each of the first 16 HW uploads
+//            (pure queries, same intercepted call). Written next to the HWMIP lines (perflab_log.txt) and into the metrics block after the GL line.
 // 0.4.0 adds the flag-gated experiment hwmip=1 (W2/M1, hardware mipmaps): the gluBuild2DMipmaps IAT hook (installed when metrics=1 OR hwmip=1,
 //   once) uploads level 0 with glTexImage2D and lets the driver build the chain (glGenerateMipmap, else GL_GENERATE_MIPMAP) for POT
 //   GL_UNSIGNED_BYTE 2D/cube-face uploads; everything else (NPOT, > GL_MAX_TEXTURE_SIZE, other type/target, NULL data, any GL error)
@@ -64,12 +82,16 @@ constexpr uintptr_t CrtLo = 0x00919000, CrtHi = 0x0093A000;   // CRT text: alloc
 constexpr uintptr_t AppGlobal = 0x00A1B4A4;          // app; client = *(app+4); internal = *(client+4)
 constexpr uintptr_t LoadScreenVtable = 0x009A5C84;
 constexpr int In_GuiMgr = 0x274, In_LoadScreen = 0x278, Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
+// 0.5.0 engine layout (offsets, no new absolute addresses): current module = *(internal + 0x18) (NULL on the main menu), its name = the CExoString at
+// module + 0x38 (c_str at +0). CRes (R1 layout below): +0x14 key entry -> 16-byte CResRef at +0, +0x18 size. The 7 EVT detour addresses live in the hooks toml.
+constexpr int In_Module = 0x18, Mod_Name = 0x38;
 
 // ---- config --------------------------------------------------------------------------------------------
 struct Cfg {
     bool alloc = true, heapFilter = true; DWORD flushMs = 30000; int scan = 48; unsigned snapMin = 1024;
     bool metrics = false, vq = false, tx = false, g1skip = false, hwmip = false;
     int live = -1, br = -1, kt = -1, vm = -1, misc = -1, ai = -1;   // 0.3.0 groups; -1 = follow metrics
+    int ev = -1;                                      // 0.5.0 group: EVT + TPCTOP/RESTOP; -1 = follow metrics
 } g_cfg;
 bool g_on = false;
 uintptr_t g_exeLo = 0, g_exeHi = 0;
@@ -284,12 +306,12 @@ constexpr uintptr_t G_ResMan = 0x00A1B490;
 enum Hk { HkMalloc, HkEvict, HkFreeData, HkRelease, HkDemand, HkGetImage, HkBuild, HkBucket, HkActionBar,
           HkBr1, HkBr2, HkBr3, HkAsync, HkDestroyTable, HkStillDemand, HkUafWrite, HkTxiTpc, HkRequeue, HkFreeImage, HkTexDtor,
           HkUnload, HkRunScript, HkExecCmd, HkTmi, HkDelay, HkAdcEnter, HkAdcHandoff, HkNetSend, HkNetOvf, HkFocus, HkSceneDtor,
-          HkAiTick, HkAiPre, HkAiPost, HkPathEnter, HkPathResult, HkEffApply, HkEffRemove, HkCount };
+          HkAiTick, HkAiPre, HkAiPost, HkPathEnter, HkPathResult, HkEffApply, HkEffRemove, HkEvt, HkCount };
 const char* const HkName[HkCount] = { "ResMalloc", "ResEvict", "ResFreeData", "ResRelease", "ResDemand", "GetImage", "BuildTex", "Bucket",
           "ActionBar", "BrSetter1", "BrSetter2", "BrTexMiss", "AsyncStart", "DestroyTable", "StillInDemand", "KtUafWrite", "TxiViaTpc",
           "TexRequeue", "FreeImage", "TexDtor", "UnloadModule", "RunScript", "ExecCommand", "InstrLimit", "DelayCommand", "AdcEnter",
           "AdcHandoff", "NetSend", "NetOvfTest", "FocusDummy", "SceneDtor", "AiTick", "AiObjPre", "AiObjPost", "PathEnter", "PathResult",
-          "EffectApply", "EffectRemove" };
+          "EffectApply", "EffectRemove", "Evt" };
 enum Nt { NtTgaLoad, NtBuild, NtBr1, NtBr2, NtBr3, NtScript, NtTxiTpc, NtCount };
 const char* const NtName[NtCount] = { "tga_load", "build", "gui_setter1", "gui_setter2", "tex_miss", "script", "txi_via_tpc" };
 constexpr int NameSlots = 512, NameLen = 24, RingN = 64, ExecIds = 0x36D;
@@ -297,7 +319,12 @@ struct NameSlot { volatile LONG key, n; volatile LONG ra; char name[NameLen]; };
 struct RingEv { volatile LONG tick, table, ra; char name[NameLen]; };
 struct HookCost { volatile LONG64 cyc, n, calls; };
 
-struct RtStat { volatile LONG64 allocN, allocB, evictN, evictB, freeN, freeB, relN, relZero, demN, redemN; };
+// 0.5.0 EVT: save/load/options events (7 detours share one ring and one cost id).
+enum EvKind { EkSave, EkLoad, EkQSave, EkQLoad, EkAutosave, EkOptSave, EkSndApply, EkCount };
+const char* const EvName[EkCount] = { "save", "load", "qsave", "qload", "autosave", "optsave", "sndapply" };
+constexpr int EvtRingN = 64, EvtNameLen = 32;
+struct EvtRec { volatile LONG seq, tick, kind, slot; char name[EvtNameLen]; };   // seq = ring index + 1, stored last (0 while being rewritten)
+struct RtStat { volatile LONG64 allocN, allocB, evictN, evictB, freeN, freeB, relN, relZero, demN, redemN, redemB; };   // redemB: 0.5.0
 struct CallerStat { volatile LONG key; volatile LONG n; };
 struct EvSlot { volatile LONG cres, tick; };
 struct Metrics {
@@ -329,6 +356,9 @@ struct Metrics {
     uintptr_t aiMaster; LONG64 aiTickT0, aiLastPost, aiObjT0;
     volatile LONG64 pathN, pathPending, pathOk, pathFail, pathOther, pathQpc, pathMaxQpc; LONG64 pathT0;
     volatile LONG64 effApply, effRemove;
+    // 0.5.0
+    EvtRec evt[EvtRingN]; volatile LONG evtN; volatile LONG64 evtCount[EkCount];
+    volatile LONG64 txiTpcBytes, requeueRetainedBytes, gmsCalls, gmsQpc;
 };
 Metrics* g_m = nullptr;
 LONG64 g_qpf = 1;
@@ -410,11 +440,131 @@ ring:
     e.tick = static_cast<LONG>(GetTickCount()); e.table = table; e.ra = static_cast<LONG>(ra); memcpy(e.name, nm, NameLen);
 }
 inline bool grp(int v) { return v < 0 ? g_cfg.metrics : v != 0; }
+inline bool evOn() { return g_m && grp(g_cfg.ev); }
+
+// ---- 0.5.0 TPCTOP: live resman allocations by CRes ----------------------------------------------------------------------------
+// Open addressing (linear probing, tombstones) keyed by the CRes pointer, in one VirtualAlloc'd block made at attach (never in the tracked heap).
+// Insert in PerfLabResMalloc, remove in PerfLabResFreeData (the same pair that drives RT `resident`). Not every Malloc caller is provably on
+// the main thread, so every access takes a spinlock (the hold is a probe of at most TopProbeMax slots; the helper's snapshot scans the table once
+// into a scratch buffer under the lock and sorts outside it). A removal whose next slot is empty turns the slot (and any tombstones before it)
+// back into empty slots, so tombstones do not pile up over a long session. Usable capacity is TopLiveMax (96.9% load); inserts beyond it, or
+// whose probe never finds a slot, are counted in `overflow` and dropped (a later free of such a CRes simply finds nothing).
+constexpr int TopSlots = 1 << 14, TopLiveMax = TopSlots - 512, TopProbeMax = 1024;
+struct TopEnt { uint32_t cres; int size; int restype; char name[17]; };   // cres: 0 = empty, 1 = tombstone
+struct TopCopy { int size; int restype; char name[17]; };
+TopEnt* g_top = nullptr; TopCopy* g_topCopy = nullptr;
+volatile LONG g_topLock = 0; LONG g_topLive = 0; volatile LONG g_topOverflow = 0;
+inline uint32_t topHash(uint32_t p) { return ((p >> 3) * 2654435761u) >> (32 - 14); }
+inline void topLock() { for (int i = 0; InterlockedCompareExchange(&g_topLock, 1, 0) != 0; ++i) { if (i < 100) YieldProcessor(); else SwitchToThread(); } }
+inline void topUnlock() { InterlockedExchange(&g_topLock, 0); }
+inline void topFill(TopEnt& e, uint32_t c, int size, int restype, const char* name) { e.size = size; e.restype = restype; memcpy(e.name, name, 17); e.cres = c; }
+void topInsert(uint32_t c, int size, int restype, const char* name) {
+    if (!g_top || c < 2) return;
+    uint32_t h = topHash(c); int tomb = -1; bool placed = false;
+    topLock();
+    for (int i = 0; i < TopProbeMax && !placed; ++i, h = (h + 1) & (TopSlots - 1)) {
+        TopEnt& e = g_top[h];
+        if (e.cres == c) { topFill(e, c, size, restype, name); placed = true; }                       // same CRes allocated again without a free: refresh
+        else if (e.cres == 1) { if (tomb < 0) tomb = static_cast<int>(h); }
+        else if (e.cres == 0) {
+            if (g_topLive < TopLiveMax) { topFill(g_top[tomb >= 0 ? tomb : static_cast<int>(h)], c, size, restype, name); ++g_topLive; placed = true; }
+            break;
+        }
+    }
+    if (!placed && tomb >= 0 && g_topLive < TopLiveMax) { topFill(g_top[tomb], c, size, restype, name); ++g_topLive; placed = true; }   // probe ran out: reuse a tombstone
+    topUnlock();
+    if (!placed) InterlockedIncrement(&g_topOverflow);
+}
+void topRemove(uint32_t c) {
+    if (!g_top || c < 2) return;
+    uint32_t h = topHash(c);
+    topLock();
+    for (int i = 0; i < TopProbeMax; ++i, h = (h + 1) & (TopSlots - 1)) {
+        uint32_t k = g_top[h].cres;
+        if (k == 0) break;
+        if (k != c) continue;
+        g_top[h].cres = 1; --g_topLive;
+        if (g_top[(h + 1) & (TopSlots - 1)].cres == 0)
+            for (uint32_t j = h; g_top[j].cres == 1; j = (j - 1) & (TopSlots - 1)) g_top[j].cres = 0;
+        break;
+    }
+    topUnlock();
+}
+// Copies the live entries into g_topCopy under the lock; returns how many.
+int topSnapshot() {
+    int n = 0;
+    topLock();
+    for (int i = 0; i < TopSlots; ++i) {
+        const TopEnt& e = g_top[i];
+        if (e.cres > 1) { g_topCopy[n].size = e.size; g_topCopy[n].restype = e.restype; memcpy(g_topCopy[n].name, e.name, 17); ++n; }
+    }
+    topUnlock();
+    return n;
+}
+// 16-byte CResRef at *(CRes+0x14) (not NUL-terminated) -> lower-cased, printable, NUL-terminated name[17]. Call after restypeOf (same scope).
+void readResRef(uintptr_t cres, char* out) {
+    out[0] = '?'; out[1] = 0;
+    uintptr_t ke = *reinterpret_cast<const uintptr_t*>(cres + 0x14);
+    char raw[16];
+    if (!ke || !saferead::probeRead(62, reinterpret_cast<const void*>(ke), 16)) return;
+    memcpy(raw, reinterpret_cast<const void*>(ke), 16);
+    int n = 0;
+    for (; n < 16 && raw[n]; ++n) { char ch = raw[n]; out[n] = (ch >= 'A' && ch <= 'Z') ? ch + 32 : (ch > 32 && ch < 127 ? ch : '?'); }
+    if (!n) { out[0] = '?'; n = 1; }
+    out[n] = 0;
+}
+
+// ---- 0.5.0 EVT ring ---------------------------------------------------------------------------------------------------------
+// CExoString = { char* c_str; int len }. Copies at most EvtNameLen-1 chars through SafeRead; printable ASCII only, '?' otherwise; empty on any failure.
+void copyExo(uintptr_t exo, char* out) {
+    out[0] = 0;
+    uint32_t p = 0; int len = 0;
+    saferead::beginScope();
+    if (!exo || !saferead::readAt(63, exo, 0, &p) || !saferead::readAt(64, exo, 4, &len) || !p || len <= 0) return;
+    int n = len < EvtNameLen - 1 ? len : EvtNameLen - 1, k = 0;
+    for (; k < n; ++k) {
+        char ch = 0;
+        if (!saferead::readAt(65, p, k, &ch) || !ch) break;
+        out[k] = (ch >= 32 && ch < 127) ? ch : '?';
+    }
+    out[k] = 0;
+}
+void evtRecord(int kind, int slot, uintptr_t exo) {
+    Metrics& m = *g_m;
+    InterlockedIncrement64(&m.evtCount[kind]);
+    LONG i = InterlockedIncrement(&m.evtN) - 1;
+    EvtRec& e = m.evt[i % EvtRingN];
+    e.seq = 0; MemoryBarrier();
+    e.tick = static_cast<LONG>(GetTickCount()); e.kind = kind; e.slot = slot;
+    copyExo(exo, e.name);
+    MemoryBarrier(); e.seq = i + 1;
+}
+
+// ---- 0.5.0 MOD: current client module name (read at every metrics block) -------------------------------------------------------
+// app = *(0xA1B4A4); client = *(app+4); internal = *(client+4); module = *(internal+0x18); name = CExoString at module+0x38.
+// out[32]: the name, "-" when there is no module (main menu) or no name, "?" when the chain is unreadable.
+void readModuleName(char* out) {
+    using saferead::readAt;
+    strcpy(out, "?");
+    saferead::beginScope();
+    uintptr_t app = 0, client = 0, in = 0, mod = 0, nm = 0;
+    if (!readAt(70, AppGlobal, 0, &app) || !app || !readAt(71, app, 4, &client) || !client || !readAt(72, client, 4, &in) || !in || !readAt(73, in, In_Module, &mod)) return;
+    strcpy(out, "-");
+    if (!mod || !readAt(74, mod, Mod_Name, &nm) || !nm) return;
+    int k = 0;
+    for (; k < 31; ++k) {
+        char ch = 0;
+        if (!readAt(75, nm, k, &ch) || !ch) break;
+        out[k] = (ch > 32 && ch < 127) ? ch : '_';
+    }
+    if (k) out[k] = 0;
+}
 
 // IAT hooks (M4 mipmaps, M5 frame time)
 typedef int(WINAPI* GluMip_t)(unsigned, int, int, int, unsigned, unsigned, const void*);
 typedef BOOL(WINAPI* Swap_t)(HDC);
-GluMip_t rGluMip; Swap_t rSwap;
+typedef void(WINAPI* Gms_t)(LPMEMORYSTATUS);
+GluMip_t rGluMip; Swap_t rSwap; Gms_t rGms;
 
 // ---- 0.4.0 hwmip (W2/M1): hardware mipmaps behind the gluBuild2DMipmaps IAT hook --------------------------------------
 // Render thread only (the engine's four call sites run there with the GL context current); counters are plain globals so that they
@@ -424,13 +574,38 @@ typedef void (WINAPI* PglTexParameteri)(unsigned, unsigned, int);
 typedef unsigned (WINAPI* PglGetError)();
 typedef void (WINAPI* PglGetIntegerv)(unsigned, int*);
 typedef void (WINAPI* PglGenerateMipmap)(unsigned);
+typedef void (WINAPI* PglGetTexLevelParameteriv)(unsigned, int, unsigned, int*);   // 0.5.0 HWV (pure query)
 constexpr unsigned GL_TEXTURE_2D = 0x0DE1, GL_TEXTURE_CUBE_MAP = 0x8513, GL_CUBE_FIRST = 0x8515, GL_CUBE_LAST = 0x851A,
-                   GL_UNSIGNED_BYTE = 0x1401, GL_GENERATE_MIPMAP = 0x8191, GL_MAX_TEXTURE_SIZE = 0x0D33;
-struct GlApi { PglTexImage2D texImage2D; PglTexParameteri texParameteri; PglGetError getError; PglGetIntegerv getIntegerv; PglGenerateMipmap genMip; int maxSize; };
+                   GL_UNSIGNED_BYTE = 0x1401, GL_GENERATE_MIPMAP = 0x8191, GL_MAX_TEXTURE_SIZE = 0x0D33, GL_TEXTURE_WIDTH = 0x1000;
+struct GlApi { PglTexImage2D texImage2D; PglTexParameteri texParameteri; PglGetError getError; PglGetIntegerv getIntegerv; PglGenerateMipmap genMip; int maxSize;
+               PglGetTexLevelParameteriv getTexLevel; };   // getTexLevel optional (HWV check is skipped without it)
 GlApi g_gl;
 int g_glState = 0;                                    // 0 = not resolved yet, 1 = ready, -1 = unavailable for good (everything uses GLU)
 volatile LONG g_hwEv = 0;                             // event bits for the helper thread (logged once each)
 constexpr LONG HwEvResolved = 1, HwEvResolveFail = 2, HwEvGlErr = 8;
+
+// 0.5.0 HWV (hwmip validation). Render thread only; plain globals like the other hwmip counters (work with metrics=0).
+//  - fmt_*: GL format argument of every upload that completed on the HW path (2D and cube faces), 0x1908 RGBA / 0x1907 RGB / 0x190A LA / 0x1909 L / other.
+//  - fallbacks: the first 8 calls that went to GLU (any reason incl. a GL error after the HW sequence).
+//  - lvl1: after each of the first 16 successful HW uploads, glGetTexLevelParameteriv(target, 1, GL_TEXTURE_WIDTH) must be max(1, w/2) (1x1 textures have no
+//    level 1 and are skipped). Pure queries in the same intercepted call, followed by a glGetError drain (a query must not leave an error for the engine).
+enum HwvReason { FbNpot = 1, FbSize, FbType, FbTarget, FbNull, FbNoGl, FbGlErr };
+const char* const HwvReasonName[] = { "?", "npot", "size", "type", "target", "null", "nogl", "glerror" };
+constexpr int HwvFbN = 8, HwvChecks = 16;
+struct HwvFb { volatile LONG valid; int reason, target, w, h; unsigned fmt, type; };
+HwvFb g_hwvFb[HwvFbN]; volatile LONG g_hwvFbCount = 0;
+volatile LONG64 g_hwvFmt[5] = {}, g_hwvOk = 0, g_hwvBad = 0; volatile LONG g_hwvChecked = 0;
+struct HwvBad { volatile LONG valid; unsigned target; int w, got; } g_hwvFirstBad;
+void hwvReset() {
+    for (auto& x : g_hwvFb) x.valid = 0;
+    g_hwvFbCount = 0; for (auto& x : g_hwvFmt) x = 0; g_hwvOk = g_hwvBad = 0; g_hwvChecked = 0; g_hwvFirstBad.valid = 0;
+}
+void hwvFallback(int reason, unsigned target, int w, int h, unsigned fmt, unsigned type) {
+    LONG i = InterlockedIncrement(&g_hwvFbCount) - 1;
+    if (i >= HwvFbN) return;
+    HwvFb& e = g_hwvFb[i];
+    e.reason = reason; e.target = static_cast<int>(target); e.w = w; e.h = h; e.fmt = fmt; e.type = type; MemoryBarrier(); e.valid = 1;
+}
 volatile LONG64 g_hwCalls = 0, g_hwHw = 0, g_hwFbNpot = 0, g_hwFbSize = 0, g_hwFbType = 0, g_hwFbTarget = 0, g_hwFbNull = 0, g_hwFbNoGl = 0,
                 g_hwGlError = 0, g_hwCube = 0, g_hwCubeFallback = 0;
 
@@ -445,6 +620,7 @@ bool resolveEntries(GlApi& g) {
     g.texParameteri = reinterpret_cast<PglTexParameteri>(GetProcAddress(gl, "glTexParameteri"));
     g.getError = reinterpret_cast<PglGetError>(GetProcAddress(gl, "glGetError"));
     g.getIntegerv = reinterpret_cast<PglGetIntegerv>(GetProcAddress(gl, "glGetIntegerv"));
+    g.getTexLevel = reinterpret_cast<PglGetTexLevelParameteriv>(reinterpret_cast<void*>(GetProcAddress(gl, "glGetTexLevelParameteriv")));   // optional
     typedef PROC(WINAPI* WglGpa)(LPCSTR);
     auto gpa = reinterpret_cast<WglGpa>(GetProcAddress(gl, "wglGetProcAddress"));
     if (gpa) {
@@ -466,6 +642,20 @@ bool resolveGl() {   // lazy, first eligible call on the render thread (GL conte
 
 inline void drainErrors() { for (int i = 0; i < 16; ++i) if (!g_gl.getError()) break; }
 
+// HWV bookkeeping for one upload that finished on the HW path (called right after the error check, same intercepted call, texture still bound).
+void hwvOnUpload(unsigned target, int w, int h, unsigned fmt) {
+    InterlockedIncrement64(&g_hwvFmt[fmt == 0x1908 ? 0 : fmt == 0x1907 ? 1 : fmt == 0x190A ? 2 : fmt == 0x1909 ? 3 : 4]);
+    if (!g_gl.getTexLevel || (w == 1 && h == 1) || g_hwvChecked >= HwvChecks) return;
+    InterlockedIncrement(&g_hwvChecked);
+    int got = -1;
+    g_gl.getTexLevel(target, 1, GL_TEXTURE_WIDTH, &got);   // pure query: level 1 of the face/texture just uploaded
+    drainErrors();                                          // the query itself must not leave a GL error behind for the engine
+    int want = w / 2 > 1 ? w / 2 : 1;
+    if (got == want) { InterlockedIncrement64(&g_hwvOk); return; }
+    InterlockedIncrement64(&g_hwvBad);
+    if (InterlockedCompareExchange(&g_hwvFirstBad.valid, 2, 0) == 0) { g_hwvFirstBad.target = target; g_hwvFirstBad.w = w; g_hwvFirstBad.got = got; MemoryBarrier(); g_hwvFirstBad.valid = 1; }
+}
+
 // Every call is self-contained: whatever the outcome, the face/texture it was given ends with ALL its mip levels (HW chain or GLU chain).
 // Cube faces always use the GL_GENERATE_MIPMAP texparam path on 0x8513 (GL 1.4: the flag regenerates the levels of the face just modified, so each
 // face is complete when its own call returns; no deferred glGenerateMipmap(0x8513), no state between calls, any face order).
@@ -473,15 +663,15 @@ int hwmipBuild(unsigned target, int comps, int w, int h, unsigned fmt, unsigned 
     InterlockedIncrement64(&g_hwCalls);
     bool cube = target >= GL_CUBE_FIRST && target <= GL_CUBE_LAST;
     // eligibility, cheapest checks first; each ineligible call goes straight to GLU
-    volatile LONG64* why = nullptr;
-    if (target != GL_TEXTURE_2D && !cube) why = &g_hwFbTarget;
-    else if (type != GL_UNSIGNED_BYTE) why = &g_hwFbType;
-    else if (!data) why = &g_hwFbNull;                 // data == NULL has its own counter (hwmip_fallback_null)
-    else if (w <= 0 || h <= 0 || (w & (w - 1)) || (h & (h - 1))) why = &g_hwFbNpot;
-    else if (g_glState == 0 && !resolveGl()) why = &g_hwFbNoGl;
-    else if (g_glState < 0) why = &g_hwFbNoGl;
-    else if (w > g_gl.maxSize || h > g_gl.maxSize) why = &g_hwFbSize;
-    if (why) InterlockedIncrement64(why);
+    volatile LONG64* why = nullptr; int reason = 0;
+    if (target != GL_TEXTURE_2D && !cube) { why = &g_hwFbTarget; reason = FbTarget; }
+    else if (type != GL_UNSIGNED_BYTE) { why = &g_hwFbType; reason = FbType; }
+    else if (!data) { why = &g_hwFbNull; reason = FbNull; }                 // data == NULL has its own counter (hwmip_fallback_null)
+    else if (w <= 0 || h <= 0 || (w & (w - 1)) || (h & (h - 1))) { why = &g_hwFbNpot; reason = FbNpot; }
+    else if (g_glState == 0 && !resolveGl()) { why = &g_hwFbNoGl; reason = FbNoGl; }
+    else if (g_glState < 0) { why = &g_hwFbNoGl; reason = FbNoGl; }
+    else if (w > g_gl.maxSize || h > g_gl.maxSize) { why = &g_hwFbSize; reason = FbSize; }
+    if (why) { InterlockedIncrement64(why); hwvFallback(reason, target, w, h, fmt, type); }
     if (!why) {
         drainErrors();
         if (cube) {
@@ -494,8 +684,12 @@ int hwmipBuild(unsigned target, int comps, int w, int h, unsigned fmt, unsigned 
             g_gl.texImage2D(GL_TEXTURE_2D, 0, comps, w, h, 0, fmt, type, data);
             g_gl.texParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, 0);
         }
-        if (g_gl.getError() == 0) { InterlockedIncrement64(cube ? &g_hwCube : &g_hwHw); return 0; }
+        if (g_gl.getError() == 0) {
+            hwvOnUpload(target, w, h, fmt);
+            InterlockedIncrement64(cube ? &g_hwCube : &g_hwHw); return 0;
+        }
         InterlockedIncrement64(&g_hwGlError); InterlockedOr(&g_hwEv, HwEvGlErr);   // GLU re-specifies every level, level 0 included
+        hwvFallback(FbGlErr, target, w, h, fmt, type);
     }
     if (cube) InterlockedIncrement64(&g_hwCubeFallback);   // this face goes to GLU (ineligible or GL error)
     return rGluMip(target, comps, w, h, fmt, type, data);
@@ -516,6 +710,12 @@ int g_gluState = 0;                                   // 0 = not tried, 1 = hook
 bool installGluHook(HMODULE exe) {
     if (g_gluState == 0) g_gluState = patchIat(exe, "GLU32.dll", "gluBuild2DMipmaps", reinterpret_cast<void*>(hkGluBuild2DMipmaps), reinterpret_cast<void**>(&rGluMip)) ? 1 : -1;
     return g_gluState > 0;
+}
+// 0.5.0: KERNEL32!GlobalMemoryStatus (the exe imports it: IAT 0x986128, called from the per-frame function 0x478A20 and from 0x711360). Count + time only.
+void WINAPI hkGlobalMemoryStatus(LPMEMORYSTATUS p) {
+    LONG64 t0 = qpc();
+    rGms(p);
+    if (g_m) { InterlockedIncrement64(&g_m->gmsCalls); InterlockedExchangeAdd64(&g_m->gmsQpc, qpc() - t0); }
 }
 BOOL WINAPI hkSwapBuffers(HDC dc) {
     if (g_m) {   // called on the render (main) thread only: plain scratch fields
@@ -666,34 +866,46 @@ void writeGlobals(FILE* f) {
         fl, ok1, sleepGate, ok2, flSrc, ok3, glf, ok4, (unsigned)rm, b4, b8, ok5);
 }
 
-// M8: whole 4 GB address space by state/type, largest free block, top regions.
-void writeVq(FILE* f) {
-    struct R { uintptr_t base; SIZE_T size; DWORD state, type, prot; } top[TopRegions] = {};
-    uint64_t by[3][4] = {};   // [commit, reserve, free][image, mapped, private, none]
-    unsigned cnt[3] = {}; SIZE_T largestFree = 0; uintptr_t largestFreeAt = 0;
+// M8: whole 4 GB address space by state/type, largest free block, top regions. One VirtualQuery walk (VqScan) feeds both the VA summary line
+// (0.5.0, every block) and the VQ lines (vq=1).
+struct VqScan {
+    struct R { uintptr_t base; SIZE_T size; DWORD state, type, prot; } top[TopRegions];
+    uint64_t by[3][4];   // [commit, reserve, free][image, mapped, private, none]
+    unsigned cnt[3]; SIZE_T largestFree; uintptr_t largestFreeAt;
+};
+void scanVq(VqScan& v) {
+    memset(&v, 0, sizeof v);
     MEMORY_BASIC_INFORMATION mbi;
     for (uintptr_t a = 0; VirtualQuery(reinterpret_cast<LPCVOID>(a), &mbi, sizeof mbi) == sizeof mbi; ) {
         int st = mbi.State == MEM_COMMIT ? 0 : mbi.State == MEM_RESERVE ? 1 : 2;
         int ty = mbi.Type == MEM_IMAGE ? 0 : mbi.Type == MEM_MAPPED ? 1 : mbi.Type == MEM_PRIVATE ? 2 : 3;
-        by[st][ty] += mbi.RegionSize; ++cnt[st];
-        if (st == 2 && mbi.RegionSize > largestFree) { largestFree = mbi.RegionSize; largestFreeAt = reinterpret_cast<uintptr_t>(mbi.BaseAddress); }
+        v.by[st][ty] += mbi.RegionSize; ++v.cnt[st];
+        if (st == 2 && mbi.RegionSize > v.largestFree) { v.largestFree = mbi.RegionSize; v.largestFreeAt = reinterpret_cast<uintptr_t>(mbi.BaseAddress); }
         if (st != 2) {   // keep the TopRegions largest non-free regions
             int k = TopRegions - 1;
-            if (mbi.RegionSize > top[k].size) {
-                while (k > 0 && top[k - 1].size < mbi.RegionSize) { top[k] = top[k - 1]; --k; }
-                top[k] = { reinterpret_cast<uintptr_t>(mbi.BaseAddress), mbi.RegionSize, mbi.State, mbi.Type, mbi.Protect };
+            if (mbi.RegionSize > v.top[k].size) {
+                while (k > 0 && v.top[k - 1].size < mbi.RegionSize) { v.top[k] = v.top[k - 1]; --k; }
+                v.top[k] = { reinterpret_cast<uintptr_t>(mbi.BaseAddress), mbi.RegionSize, mbi.State, mbi.Type, mbi.Protect };
             }
         }
         uintptr_t next = reinterpret_cast<uintptr_t>(mbi.BaseAddress) + mbi.RegionSize;
         if (next <= a) break;
         a = next;
     }
+}
+void writeVq(FILE* f, const VqScan& v) {
     const char* sn[3] = { "commit", "reserve", "free" };
-    fprintf(f, "VQ regions commit=%u reserve=%u free=%u largest_free=%uMB@%08x\n", cnt[0], cnt[1], cnt[2], (unsigned)(largestFree >> 20), (unsigned)largestFreeAt);
+    fprintf(f, "VQ regions commit=%u reserve=%u free=%u largest_free=%uMB@%08x\n", v.cnt[0], v.cnt[1], v.cnt[2], (unsigned)(v.largestFree >> 20), (unsigned)v.largestFreeAt);
     for (int s = 0; s < 3; ++s)
-        fprintf(f, "VQ %s MB image=%u mapped=%u private=%u none=%u\n", sn[s], (unsigned)(by[s][0] >> 20), (unsigned)(by[s][1] >> 20), (unsigned)(by[s][2] >> 20), (unsigned)(by[s][3] >> 20));
-    for (int i = 0; i < TopRegions && top[i].size; ++i)
-        fprintf(f, "VQTOP %08x %uKB state=%lx type=%lx prot=%lx\n", (unsigned)top[i].base, (unsigned)(top[i].size >> 10), top[i].state, top[i].type, top[i].prot);
+        fprintf(f, "VQ %s MB image=%u mapped=%u private=%u none=%u\n", sn[s], (unsigned)(v.by[s][0] >> 20), (unsigned)(v.by[s][1] >> 20), (unsigned)(v.by[s][2] >> 20), (unsigned)(v.by[s][3] >> 20));
+    for (int i = 0; i < TopRegions && v.top[i].size; ++i)
+        fprintf(f, "VQTOP %08x %uKB state=%lx type=%lx prot=%lx\n", (unsigned)v.top[i].base, (unsigned)(v.top[i].size >> 10), v.top[i].state, v.top[i].type, v.top[i].prot);
+}
+// 0.5.0 VA: the same walk summarised (written at every metrics block, also with vq=0).
+void writeVa(FILE* f, const VqScan& v) {
+    auto mb = [&](int st) { return static_cast<unsigned>((v.by[st][0] + v.by[st][1] + v.by[st][2] + v.by[st][3]) >> 20); };
+    fprintf(f, "VA free_mb=%u largest_free_mb=%u largest_free_at=0x%08x commit_mb=%u reserve_mb=%u regions=%u\n", mb(2), (unsigned)(v.largestFree >> 20),
+        (unsigned)v.largestFreeAt, mb(0), mb(1), v.cnt[0] + v.cnt[1] + v.cnt[2]);
 }
 
 void writeCallers(FILE* f, const char* tag, const CallerStat* t) {
@@ -736,9 +948,9 @@ void writeMetrics3(FILE* f, Metrics& m) {
         }
     }
     if (grp(g_cfg.kt)) {
-        fprintf(f, "KT async_start=%lld async_bytes=%lld destroy_table=%lld still_in_demand=%lld uaf_write=%lld release_ok=%lld txi_via_tpc=%lld unload=%lld\n",
+        fprintf(f, "KT async_start=%lld async_bytes=%lld destroy_table=%lld still_in_demand=%lld uaf_write=%lld release_ok=%lld txi_via_tpc=%lld unload=%lld txi_via_tpc_kb=%lld\n",
             (long long)m.asyncStart, (long long)m.asyncBytes, (long long)m.destroyTable, (long long)m.stillDemand, (long long)m.uafWrite,
-            (long long)m.releaseOk, (long long)m.txiTpc, (long long)m.unloadN);
+            (long long)m.releaseOk, (long long)m.txiTpc, (long long)m.unloadN, (long long)(m.txiTpcBytes >> 10));
         fprintf(f, "TEXLIFE requeue=%lld requeue_built=%lld freeimage=%lld freeimage_tpc=%lld freeimage_tpc_buf=%lld freeimage_tga_buf=%lld tex_dtor=%lld\n",
             (long long)m.requeueN, (long long)m.requeueBuilt, (long long)m.freeImgN, (long long)m.freeImgTpc, (long long)m.freeImgTpcBuf,
             (long long)m.freeImgTgaBuf, (long long)m.texDtor);
@@ -781,9 +993,25 @@ int hwmipFields(char* b, size_t n) {
         (long long)g_hwCalls, (long long)g_hwHw, (long long)g_hwFbNpot, (long long)g_hwFbSize, (long long)g_hwFbType, (long long)g_hwFbTarget,
         (long long)g_hwFbNull, (long long)g_hwFbNoGl, (long long)g_hwGlError, (long long)g_hwCube, (long long)g_hwCubeFallback);
 }
+// 0.5.0 HWV / HWVFB lines (hwmip=1 only); `emit` receives one finished line at a time (no trailing newline).
+template <typename F> void hwvLines(F emit) {
+    char b[320];
+    char bad[64] = "-";
+    if (g_hwvFirstBad.valid == 1) snprintf(bad, sizeof bad, "0x%x/%d/%d", g_hwvFirstBad.target, g_hwvFirstBad.w, g_hwvFirstBad.got);
+    snprintf(b, sizeof b, "HWV fmt_rgba=%lld fmt_rgb=%lld fmt_la=%lld fmt_l=%lld fmt_other=%lld lvl1_ok=%lld lvl1_bad=%lld lvl1_first_bad=%s", (long long)g_hwvFmt[0], (long long)g_hwvFmt[1],
+        (long long)g_hwvFmt[2], (long long)g_hwvFmt[3], (long long)g_hwvFmt[4], (long long)g_hwvOk, (long long)g_hwvBad, bad);
+    emit(b);
+    for (int i = 0; i < HwvFbN; ++i) {
+        const HwvFb& e = g_hwvFb[i];
+        if (e.valid != 1) continue;
+        snprintf(b, sizeof b, "HWVFB %d reason=%s target=0x%x w=%d h=%d fmt=0x%x type=0x%x", i + 1, HwvReasonName[e.reason], e.target, e.w, e.h, e.fmt, e.type);
+        emit(b);
+    }
+}
 void logHwmipSummary(const char* ev) {
     char b[640]; hwmipFields(b, sizeof b);
     logf("HWMIP %s%s", ev, b);
+    hwvLines([](const char* l) { logf("%s", l); });
 }
 LONG g_hwEvLogged = 0;
 void logHwmipEvents() {   // once per event bit, from the helper thread
@@ -792,28 +1020,73 @@ void logHwmipEvents() {   // once per event bit, from the helper thread
     g_hwEvLogged |= fresh;
     if (fresh & HwEvResolved) logf("HWMIP GL resolved: glTexImage2D=%p glTexParameteri=%p glGetError=%p glGetIntegerv=%p glGenerateMipmap=%p (%s) max_texture_size=%d", (void*)g_gl.texImage2D,
         (void*)g_gl.texParameteri, (void*)g_gl.getError, (void*)g_gl.getIntegerv, (void*)g_gl.genMip, g_gl.genMip ? "glGenerateMipmap path" : "GL_GENERATE_MIPMAP texparam path", g_gl.maxSize);
+    if (fresh & HwEvResolved) logf("HWMIP glGetTexLevelParameteriv=%p (%s)", (void*)g_gl.getTexLevel, g_gl.getTexLevel ? "level-1 validation on" : "unavailable: no level-1 validation");
     if (fresh & HwEvResolveFail) logf("HWMIP GL entry points or GL_MAX_TEXTURE_SIZE unavailable: hwmip permanently falls back to GLU");
     if (fresh & HwEvGlErr) logf("HWMIP first GL error after a hardware upload: that upload fell back to GLU (hwmip_glerror counts all)");
 }
+// 0.5.0 EVT lines: ring entries since the previous block, then the counters line.
+LONG g_evtLast = 0, g_evtLost = 0;
+void writeEvt(FILE* f, Metrics& m) {
+    LONG n = m.evtN, from = g_evtLast;
+    if (n - from > EvtRingN) { g_evtLost += n - from - EvtRingN; from = n - EvtRingN; }
+    LONG i = from;
+    for (; i < n; ++i) {
+        const EvtRec& e = m.evt[i % EvtRingN];
+        LONG sq = e.seq;
+        if (sq == 0 || sq < i + 1) break;                       // a producer took this index but has not finished: report it in the next block
+        char nm[EvtNameLen]; memcpy(nm, e.name, EvtNameLen); nm[EvtNameLen - 1] = 0;
+        LONG tick = e.tick, kind = e.kind, slot = e.slot;
+        if (e.seq != i + 1) { ++g_evtLost; continue; }          // overwritten while copying
+        fprintf(f, "EVT kind=%s tick=%lu slot=%ld name=%s\n", kind >= 0 && kind < EkCount ? EvName[kind] : "?", (unsigned long)tick, slot, nm[0] ? nm : "-");
+    }
+    g_evtLast = i;
+    fprintf(f, "EVT counts");
+    for (int k = 0; k < EkCount; ++k) fprintf(f, " %s=%lld", EvName[k], (long long)m.evtCount[k]);
+    if (g_evtLost) fprintf(f, " lost=%ld", g_evtLost);
+    fputc('\n', f);
+}
+
+// 0.5.0 TPCTOP / RESTOP (LOAD_DOWN and UNLOAD blocks): snapshot under the spinlock, sort outside it.
+int cmpTopCopy(const void* a, const void* b) {
+    const TopCopy& x = g_topCopy[*static_cast<const int*>(a)]; const TopCopy& y = g_topCopy[*static_cast<const int*>(b)];
+    if (x.size != y.size) return x.size < y.size ? 1 : -1;
+    int c = strcmp(x.name, y.name); return c ? c : (x.restype < y.restype ? -1 : x.restype > y.restype);
+}
+void writeTpcTop(FILE* f) {
+    if (!g_top || !g_topCopy) return;
+    static int idx[TopSlots];
+    int n = topSnapshot(), m = 0; LONG64 total = 0;
+    for (int i = 0; i < n; ++i) if (g_topCopy[i].restype == 3007) { idx[m++] = i; total += g_topCopy[i].size; }
+    qsort(idx, m, sizeof(int), cmpTopCopy);
+    fprintf(f, "TPCTOP n=%d total_mb=%.1f", m, double(total) / 1048576.0);
+    if (g_topOverflow) fprintf(f, " overflow=%ld", g_topOverflow);
+    fputc('\n', f);
+    for (int r = 0; r < m && r < 20; ++r) fprintf(f, "TPCTOP %d kb=%d name=%s\n", r + 1, g_topCopy[idx[r]].size / 1024, g_topCopy[idx[r]].name);
+    for (int i = 0; i < n; ++i) idx[i] = i;
+    qsort(idx, n, sizeof(int), cmpTopCopy);
+    for (int r = 0; r < n && r < 10; ++r) fprintf(f, "RESTOP %d type=%d kb=%d name=%s\n", r + 1, g_topCopy[idx[r]].restype, g_topCopy[idx[r]].size / 1024, g_topCopy[idx[r]].name);
+}
+
 void writeMetrics(const char* ev) {
     if (g_cfg.hwmip) logHwmipSummary(ev);
     if (!g_m && !g_cfg.vq) return;
     FILE* f = fopen("perflab_metrics.txt", "a");
     if (!f) return;
     auto ms = [](LONG64 q) { return static_cast<double>(q) * 1000.0 / static_cast<double>(g_qpf); };
-    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld hwmip=%ld\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
-        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State, (long)g_cfg.hwmip);
+    char modName[32]; readModuleName(modName);   // 0.5.0 MOD: appended at the END of the header
+    fprintf(f, "#METRICS %d %s tick=%lu frames(hook)=%ld live_bytes=%lld allocs=%lld tx=%ld g1skip=%ld hwmip=%ld module=%s\n", ++g_metricsN, ev, GetTickCount(), g_ticks,
+        (long long)g_liveBytes, (long long)g_allocN, g_txState, g_g1State, (long)g_cfg.hwmip, modName);
     writeGlobals(f);
     if (g_m) {
         Metrics& m = *g_m;
         fprintf(f, "RES malloc=%lld over_budget=%lld budget_min=%ld redemand_60s=%lld\n", (long long)m.mallocN, (long long)m.mallocOverBudget, m.budgetMin, (long long)m.redemAll);
-        fprintf(f, "# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident\n");
+        fprintf(f, "# RT restype allocN allocB evictN evictB freeN freeB relN relZero demN redem60 resident redemB\n");
         for (int i = 0; i < RtSlots; ++i) {
             RtStat& r = m.rt[i];
             if (!r.allocN && !r.freeN && !r.demN && !r.relN) continue;
-            fprintf(f, "RT %d %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld\n", i == RtUnknown ? -1 : i,
+            fprintf(f, "RT %d %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld\n", i == RtUnknown ? -1 : i,
                 (long long)r.allocN, (long long)r.allocB, (long long)r.evictN, (long long)r.evictB, (long long)r.freeN, (long long)r.freeB,
-                (long long)r.relN, (long long)r.relZero, (long long)r.demN, (long long)r.redemN, (long long)(r.allocB - r.freeB));
+                (long long)r.relN, (long long)r.relZero, (long long)r.demN, (long long)r.redemN, (long long)(r.allocB - r.freeB), (long long)r.redemB);
         }
         writeCallers(f, "FREECALLER", m.freeCallers);
         fprintf(f, "WAIT begin=%lld end=%lld total_ms=%.1f max_ms=%.2f sleeps=%lld hist", (long long)m.waitBegin, (long long)m.waitEnd, ms(m.waitQpc), ms(m.waitMaxQpc), (long long)m.sleeps);
@@ -821,23 +1094,30 @@ void writeMetrics(const char* ev) {
         fprintf(f, "\nGETIMG calls=%lld tpc=%lld tpc_retained=%lld upload=%lld ctrl=%lld ctrl_tpc_retained=%lld other=%lld other_tpc_retained=%lld\n",
             (long long)m.getImgN, (long long)m.getImgTpc, (long long)m.getImgTpcRetained, (long long)m.getImgUpload, (long long)m.getImgCtrl,
             (long long)m.getImgCtrlTpcRetained, (long long)m.getImgOther, (long long)m.getImgOtherTpcRetained);
-        fprintf(f, "BUILD calls=%lld requeue_tpc_retained=%lld tpc_with_ctrl=%lld\n", (long long)m.buildN, (long long)m.buildRequeueTpcRetained, (long long)m.buildTpcCtrl);
+        fprintf(f, "BUILD calls=%lld requeue_tpc_retained=%lld tpc_with_ctrl=%lld requeue_tpc_retained_kb=%lld\n", (long long)m.buildN, (long long)m.buildRequeueTpcRetained,
+            (long long)m.buildTpcCtrl, (long long)(m.requeueRetainedBytes >> 10));
         writeCallers(f, "GETIMGCALLER", m.getImgCallers);
         char hw[640]; hwmipFields(hw, sizeof hw);
         fprintf(f, "GL glimage=%lld glfinish=%lld glfinish_ms=%.1f glfinish_max_ms=%.2f mipmaps=%lld mip_ms=%.1f mip_mpix=%.2f%s\n", (long long)m.glImageN,
             (long long)m.glFinishN, ms(m.glFinishQpc), ms(m.glFinishMaxQpc), (long long)m.mipN, ms(m.mipQpc), m.mipPixels / 1e6, hw);
+        if (g_cfg.hwmip) hwvLines([&](const char* l) { fprintf(f, "%s\n", l); });   // 0.5.0 HWV / HWVFB next to the hwmip_* fields
         fprintf(f, "FRAME frames=%lld max_ms=%.1f bucket_calls=%lld max_bucket_per_frame=%ld actionbar_calls=%lld max_actionbar_per_frame=%ld hist_ms",
             (long long)m.frames, ms(m.frameMaxQpc), (long long)m.bucketCalls, m.maxBucketPerFrame, (long long)m.actionBarCalls, m.maxActionBarPerFrame);
         for (int i = 0; i < 10; ++i) fprintf(f, " %ld", m.frameHist[i]);
         fprintf(f, " allocs_per_frame_hist");
         for (int i = 0; i < 16; ++i) fprintf(f, " %ld", m.allocHist[i]);
+        fprintf(f, " gms_calls=%lld gms_ms=%.2f", (long long)m.gmsCalls, ms(m.gmsQpc));   // 0.5.0 (appended)
         fprintf(f, "\nMOVIE calls=%lld spins=%lld pump_cutoff_seen=%ld last_this254=%ld spin_hist", (long long)m.movieCalls, (long long)m.movieSpins, m.cutoffSeen, m.lastThis254);
         for (int i = 0; i < 24; ++i) fprintf(f, " %ld", m.spinHist[i]);
         double cyc = m.hookSamples ? double(m.hookCycles) / double(m.hookSamples) : 0;
         fprintf(f, "\nHOOKCOST %.0f cycles/call (sampled 1/64, %lld samples)\n", cyc, (long long)m.hookSamples);
         writeMetrics3(f, m);
+        if (grp(g_cfg.ev)) {
+            writeEvt(f, m);
+            if (!strcmp(ev, "LOAD_DOWN") || !strcmp(ev, "UNLOAD")) writeTpcTop(f);
+        }
     }
-    if (g_cfg.vq) writeVq(f);
+    { VqScan v; scanVq(v); writeVa(f, v); if (g_cfg.vq) writeVq(f, v); }   // 0.5.0: one walk feeds the VA line (always) and the VQ lines (vq=1)
     fprintf(f, "#END %d\n", g_metricsN);
     fclose(f);
 }
@@ -909,6 +1189,7 @@ void readCfg() {
         else if (!strcmp(line, "vm")) g_cfg.vm = v != 0;
         else if (!strcmp(line, "misc")) g_cfg.misc = v != 0;
         else if (!strcmp(line, "ai")) g_cfg.ai = v != 0;
+        else if (!strcmp(line, "ev")) g_cfg.ev = v != 0;
     }
     fclose(f);
 }
@@ -941,6 +1222,7 @@ void __cdecl PerfLabResMalloc(void* resman, void* cres) {
     // BR: TGA (restype 3) loads by resref; key entry +0 = 16-byte CResRef (DestroyTable 0x726350 prints it from there)
     if (rt == 3 && grp(g_cfg.br)) countName(NtTgaLoad, *reinterpret_cast<const uintptr_t*>(c + 0x14), 16, 0);
     InterlockedIncrement64(&g_m->mallocN);
+    if (g_top) { char nm[17]; readResRef(c, nm); topInsert(static_cast<uint32_t>(c), size, rt == RtUnknown ? -1 : rt, nm); }   // 0.5.0 TPCTOP (ev group)
     if (resman) {
         int budget = *reinterpret_cast<const int*>(reinterpret_cast<uintptr_t>(resman) + 8);
         if (size > budget) InterlockedIncrement64(&g_m->mallocOverBudget);
@@ -966,6 +1248,7 @@ void __cdecl PerfLabResFreeData(void* cres, void* ret) {
     RtStat& r = g_m->rt[restypeOf(c)];
     InterlockedIncrement64(&r.freeN); InterlockedExchangeAdd64(&r.freeB, *reinterpret_cast<const int*>(c + 0x18));
     countCaller(g_m->freeCallers, reinterpret_cast<uintptr_t>(ret));
+    topRemove(static_cast<uint32_t>(c));   // 0.5.0 TPCTOP: no-op when the table is off
 }
 // 0x7130B0 Release(CRes* [esp+4]): refcount 1 -> 0 puts the CRes on the evict list.
 void __cdecl PerfLabResRelease(void* cres) {
@@ -985,7 +1268,9 @@ void __cdecl PerfLabResDemand(void* cres) {
     InterlockedIncrement64(&r.demN);
     EvSlot& e = g_m->ev[evHash(c)];
     if (e.cres == static_cast<LONG>(c)) {
-        if (static_cast<DWORD>(GetTickCount() - static_cast<DWORD>(e.tick)) < 60000) { InterlockedIncrement64(&r.redemN); InterlockedIncrement64(&g_m->redemAll); }
+        if (static_cast<DWORD>(GetTickCount() - static_cast<DWORD>(e.tick)) < 60000) {
+            InterlockedIncrement64(&r.redemN); InterlockedIncrement64(&g_m->redemAll); InterlockedExchangeAdd64(&r.redemB, *reinterpret_cast<const int*>(c + 0x18));   // 0.5.0: bytes re-demanded
+        }
         e.cres = 0;
     }
 }
@@ -1026,6 +1311,22 @@ void __cdecl PerfLabGetImage(void* tex, void* ret) {
     else { InterlockedIncrement64(&m.getImgOther); if (retained) InterlockedIncrement64(&m.getImgOtherTpcRetained); }
 }
 
+// 0.5.0: size of the retained image buffer at tex+0x44. +0x44 is the raw pixel buffer, not an owner CRes (its size is not stored next to it), so the size is
+// derived with FreeImage's own formula (0x425160, which computes it to free the buffer): level 0 = [+0x5C] bytes, each further level of the [+0xD2]
+// (s16) mip count adds ceil(w/4)*ceil(h/4)*blockBytes with the width/height halved per level (+0x68 = width, +0x6C = height; height/width == 6 = cube map:
+// the face height is height/6 and the total is x6), block bytes 8 for format [+0x74] == 3, 16 for 4. Any other layout (format, [+0x5C] == 0, width 0) -> 0
+// bytes (the engine's own local would be uninitialised there); the count still increments.
+static LONG64 retainedBytes(uintptr_t x) {
+    int w = *reinterpret_cast<const int*>(x + 0x68), h = *reinterpret_cast<const int*>(x + 0x6C), fmt = *reinterpret_cast<const int*>(x + 0x74);
+    int base = *reinterpret_cast<const int*>(x + 0x5C), mips = *reinterpret_cast<const int16_t*>(x + 0xD2);
+    int blk = fmt == 3 ? 8 : fmt == 4 ? 16 : 0;
+    if (!blk || base <= 0 || w <= 0 || h <= 0 || mips < 1 || mips > 16) return 0;
+    bool cube = h / w == 6;
+    if (cube) h /= 6;
+    LONG64 total = base;
+    for (int i = 0; i < mips - 1; ++i) { w >>= 1; h >>= 1; total += static_cast<LONG64>((w + 3) / 4) * ((h + 3) / 4) * blk; }
+    return cube ? total * 6 : total;
+}
 // ---- C1/C2 (T1): BuildAndStoreTexture 0x4260E0 entry (ECX = texture). A built TPC texture that still has its buffer and is
 // queued again is re-uploaded today; with tx=1 its buffer is gone and the re-upload is skipped (TX's only behaviour delta).
 void __cdecl PerfLabBuildTex(void* tex) {
@@ -1036,7 +1337,10 @@ void __cdecl PerfLabBuildTex(void* tex) {
     InterlockedIncrement64(&m.buildN);
     if (grp(g_cfg.br)) countName(NtBuild, x + 0x7C, NameLen - 1, 0);   // texture name, inline at +0x7C (FindTextureByName 0x4269F0)
     if (*reinterpret_cast<const uint8_t*>(x + 0xE9) == 1) {
-        if (*reinterpret_cast<const uint8_t*>(x + 0xE4) == 1 && *reinterpret_cast<const uint32_t*>(x + 0x44) != 0) InterlockedIncrement64(&m.buildRequeueTpcRetained);
+        if (*reinterpret_cast<const uint8_t*>(x + 0xE4) == 1 && *reinterpret_cast<const uint32_t*>(x + 0x44) != 0) {
+            InterlockedIncrement64(&m.buildRequeueTpcRetained);
+            InterlockedExchangeAdd64(&m.requeueRetainedBytes, retainedBytes(x));
+        }
         if (*reinterpret_cast<const uint32_t*>(x + 0x34) != 0) InterlockedIncrement64(&m.buildTpcCtrl);
     }
 }
@@ -1105,7 +1409,15 @@ void __cdecl PerfLabUafWrite(void* cres) {
     else InterlockedIncrement64(&g_m->releaseOk);   // normal path: key entry still valid
 }
 // 0x93BEA6: TXI provider falls back to Demanding the TPC to read its embedded TXI ([EBP+8] = char* name) (U5, TPC2X).
-void __cdecl PerfLabTxiTpc(void* name) { if (g_m && grp(g_cfg.kt)) { MTimer t(HkTxiTpc); InterlockedIncrement64(&g_m->txiTpc); countName(NtTxiTpc, reinterpret_cast<uintptr_t>(name), NameLen - 1, 0); } }
+// 0.5.0: second parameter [EBP-0x12C] = the TPC resource wrapper found at 0x93BE6B (FUN_0093dab0); wrapper+8 = its CRes (0x93F870 tests [wrapper+8] and
+// reads the CRes refcount at +4), CRes+0x18 = size. txi_via_tpc_kb = bytes of the TPC resource demanded to read a TXI (the whole TPC, not the TXI text).
+void __cdecl PerfLabTxiTpc(void* name, void* res) {
+    if (!g_m || !grp(g_cfg.kt)) return;
+    MTimer t(HkTxiTpc);
+    InterlockedIncrement64(&g_m->txiTpc); countName(NtTxiTpc, reinterpret_cast<uintptr_t>(name), NameLen - 1, 0);
+    uintptr_t cres = 0; int size = 0; saferead::beginScope();
+    if (saferead::readAt(66, reinterpret_cast<uintptr_t>(res), 8, &cres) && cres && saferead::readAt(67, cres, 0x18, &size) && size > 0) InterlockedExchangeAdd64(&g_m->txiTpcBytes, size);
+}
 // 0x474000 UniquePush entry (ECX = list, [esp+4] = texture, [esp+0] = caller); only the pending-texture list 0xA1BC2C.
 void __cdecl PerfLabRequeue(void* list, void* tex, void* ra) {
     if (!g_m || !grp(g_cfg.kt) || reinterpret_cast<uintptr_t>(list) != 0x00A1BC2C || !tex) return;
@@ -1132,6 +1444,18 @@ void __cdecl PerfLabUnload() {
     MTimer t(HkUnload);
     InterlockedIncrement64(&g_m->unloadN); InterlockedExchange(&g_unloadNow, 1);
 }
+
+// ---- 0.5.0 EVT (ev group): save / load / options events. Stack args as the toml delivers them (thiscall: ECX = this, args from [esp+4]); the hooks only
+// count and copy into the ring, the helper writes the lines. All seven return immediately (counters untouched) with ev=0 or metrics off.
+// 0x52F610 server SaveGame(this, int slot [esp+4], CExoString* name [esp+8]).
+void __cdecl PerfLabSaveGame(int slot, void* name) { if (evOn()) { MTimer t(HkEvt); evtRecord(EkSave, slot, reinterpret_cast<uintptr_t>(name)); } }
+// 0x52FB80 server LoadGame(this, int slot [esp+4], CExoString* name [esp+8], CExoString* module [esp+0xC]; module not recorded).
+void __cdecl PerfLabLoadGame(int slot, void* name) { if (evOn()) { MTimer t(HkEvt); evtRecord(EkLoad, slot, reinterpret_cast<uintptr_t>(name)); } }
+void __cdecl PerfLabQuickLoad() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkQLoad, -1, 0); } }      // 0x7D0F50
+void __cdecl PerfLabQuickSave() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkQSave, -1, 0); } }      // 0x7A06B0
+void __cdecl PerfLabAutosave() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkAutosave, -1, 0); } }    // 0x53AF20
+void __cdecl PerfLabOptSave() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkOptSave, -1, 0); } }      // 0x740B40
+void __cdecl PerfLabSoundApply() { if (evOn()) { MTimer t(HkEvt); evtRecord(EkSndApply, -1, 0); } }  // 0x70B9B0
 
 // ---- 0.3.0 NWScript VM (U1) ----
 // RunScript 0x7022A0 (ECX = VMInternal, [esp+4] = CExoString* script; CExoString = { char* text; int len }).
@@ -1234,7 +1558,10 @@ void __cdecl PerfLabTestSetGl(void** f) {
     if (f[5]) rGluMip = reinterpret_cast<GluMip_t>(f[5]);
     g_glState = 1;   // event bits are kept: the helper logs each once
     g_hwCalls = g_hwHw = g_hwFbNpot = g_hwFbSize = g_hwFbType = g_hwFbTarget = g_hwFbNull = g_hwFbNoGl = g_hwGlError = g_hwCube = g_hwCubeFallback = 0;
+    hwvReset();
 }
+// 0.5.0 harness-only: stand-in for glGetTexLevelParameteriv (NULL = unavailable, no level-1 validation); resets the HWV state (call after PerfLabTestSetGl).
+void __cdecl PerfLabTestSetGetTexLevel(void* f) { g_gl.getTexLevel = reinterpret_cast<PglGetTexLevelParameteriv>(f); hwvReset(); }
 // calls, hw, fb_npot, fb_size, fb_type, fb_target, fb_null, fb_nogl, glerror, cube, cube_fallback
 int __cdecl PerfLabTestHwmipCounters(long long* out, int n) {
     long long v[11] = { g_hwCalls, g_hwHw, g_hwFbNpot, g_hwFbSize, g_hwFbType, g_hwFbTarget, g_hwFbNull, g_hwFbNoGl, g_hwGlError, g_hwCube, g_hwCubeFallback };
@@ -1264,8 +1591,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         g_gameProcess = g_exeLo == 0x00400000 && nt->OptionalHeader.SizeOfImage > 0x600000;
         { LARGE_INTEGER f; QueryPerformanceFrequency(&f); g_qpf = f.QuadPart ? f.QuadPart : 1; }
-        logf("perf-lab 0.4.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s", (unsigned)g_exeLo, (unsigned)g_exeHi,
-             g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF", g_cfg.hwmip ? "ON" : "OFF");
+        logf("perf-lab 0.5.0 attach exe=%08x-%08x game=%d alloc=%d heapfilter=%d scan=%d metrics=%d vq=%d tx=%s g1skip=%s hwmip=%s ev=%d", (unsigned)g_exeLo, (unsigned)g_exeHi,
+             g_gameProcess, g_cfg.alloc, g_cfg.heapFilter, g_cfg.scan, g_cfg.metrics, g_cfg.vq, g_cfg.tx ? "ON" : "OFF", g_cfg.g1skip ? "ON" : "OFF", g_cfg.hwmip ? "ON" : "OFF", grp(g_cfg.ev));
         if (g_cfg.alloc) {
             g_sites = static_cast<Site*>(VirtualAlloc(nullptr, sizeof(Site) * SiteCap, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
             g_pk = static_cast<uint32_t*>(VirtualAlloc(nullptr, PtrCap * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -1296,8 +1623,16 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
                 if (s) rSwap = reinterpret_cast<Swap_t>(o1);
                 bool g = installGluHook(exe);   // rGluMip is stored by patchIat before the IAT slot flips
                 o2 = reinterpret_cast<void*>(rGluMip);
+                // 0.5.0: GlobalMemoryStatus IAT hook (rGms is stored by patchIat before the slot flips); TPCTOP table + snapshot scratch (ev group)
+                bool gm = patchIat(exe, "KERNEL32.dll", "GlobalMemoryStatus", reinterpret_cast<void*>(hkGlobalMemoryStatus), reinterpret_cast<void**>(&rGms));
+                if (grp(g_cfg.ev)) {
+                    g_top = static_cast<TopEnt*>(VirtualAlloc(nullptr, sizeof(TopEnt) * TopSlots, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+                    g_topCopy = static_cast<TopCopy*>(VirtualAlloc(nullptr, sizeof(TopCopy) * TopSlots, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+                    if (!g_top || !g_topCopy) { logf("TPCTOP table allocation FAILED (%lu); TPCTOP off", GetLastError()); g_top = nullptr; g_topCopy = nullptr; }
+                }
                 g_m = m;   // publish last: detours see NULL until everything is set
-                logf("metrics on: block=%uKB IAT SwapBuffers=%d gluBuild2DMipmaps=%d (orig %p %p) qpf=%lld", (unsigned)(sizeof(Metrics) >> 10), s, g, o1, o2, (long long)g_qpf);
+                logf("metrics on: block=%uKB IAT SwapBuffers=%d gluBuild2DMipmaps=%d GlobalMemoryStatus=%d (orig %p %p) qpf=%lld ev=%d tpctop=%d", (unsigned)(sizeof(Metrics) >> 10), s, g, gm, o1, o2,
+                     (long long)g_qpf, grp(g_cfg.ev), g_top != nullptr);
             }
         }
         if (g_cfg.hwmip) {   // hwmip needs the GLU hook even with metrics=0; installGluHook never patches the IAT twice

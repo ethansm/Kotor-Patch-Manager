@@ -151,3 +151,14 @@ runtime_dlls = false
 modes = ["run", "disabled", "refuse"]
 needs_display = false
 timeout_s = 60
+
+[[smoke]]
+name = "perflab5"
+src = "smoke_perflab5.cpp"
+kpatch = "PerfLab/PerfLab.kpatch"
+dll_name = "perflab.dll"
+cxxflags = ["-lgdi32", "-lglu32"]
+runtime_dlls = true
+modes = ["run", "off", "noev"]
+needs_display = false
+timeout_s = 120

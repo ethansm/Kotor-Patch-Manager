@@ -1,0 +1,4 @@
+alloc=1
+metrics=1
+vq=1
+flush_ms=30000

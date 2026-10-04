@@ -14,6 +14,7 @@ import analyze_runs as ar
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAME = os.path.join(HERE, "fixtures", "game")
+GAME050 = os.path.join(HERE, "fixtures", "game050")       # perf-lab 0.5.0 log content (see gen_fixtures.py)
 ZERO = {n: 0 for n in ar.ALL_FILES}
 
 
@@ -21,10 +22,15 @@ def run(offsets=None, arms=None, game=GAME):
     return ar.run(game, ZERO if offsets is None else offsets, arms)
 
 
+def run050(arms=None):
+    return run(arms=arms, game=GAME050)
+
+
 class FixtureSize(unittest.TestCase):
     def test_small_fixtures(self):
-        for n in os.listdir(GAME):
-            self.assertLess(os.path.getsize(os.path.join(GAME, n)), 20 * 1024, n)
+        for g in (GAME, GAME050):
+            for n in os.listdir(g):
+                self.assertLess(os.path.getsize(os.path.join(g, n)), 20 * 1024, n)
 
 
 class LaunchSplit(unittest.TestCase):
@@ -126,6 +132,179 @@ class Counters(unittest.TestCase):
         self.assertEqual(fs["n"], 100)
         self.assertEqual(fs["p50"], "16-31")
         self.assertEqual(fs["p95"], "32-63")
+
+
+class Perf050(unittest.TestCase):
+    """perf-lab 0.5.0 log content: fixtures/game050 (3 launches, see gen_fixtures.py)."""
+
+    def test_split_and_module_header_not_a_flag(self):
+        md, L, A = run050()
+        self.assertEqual([x.pid for x in L], [200, 201, 202])
+        self.assertEqual([x.version for x in L], ["0.5.0"] * 3)
+        self.assertEqual([x.hwmip for x in L], [1, 0, 0])
+        self.assertNotIn("module=", L[0].flags())
+        self.assertNotIn(" module=", md.split("### Launch 1")[1].split("- first load")[0])
+
+    def test_module_per_load_and_round_trip(self):
+        md, L, A = run050()
+        self.assertEqual([ar.mod_label(l) for l in A[1]["loads"]], ["menu -> 001EBO", "001EBO -> m01aa", "m01aa -> 001EBO"])
+        self.assertEqual([l["module"] for l in A[1]["loads"]], ["001EBO", "m01aa", "001EBO"])
+        self.assertEqual(A[1]["modules"], ["001EBO", "m01aa", "001EBO"])
+        self.assertTrue(A[1]["round_trip"])
+        self.assertEqual(A[1]["scen"]["S2"][0], "covered")
+        self.assertIn("PASS round trip by module name: 001EBO -> m01aa -> 001EBO", md)
+        self.assertIn("| 2 | 4000 | 001EBO -> m01aa |", md)
+        # one module only: no round trip, rendered as "-" with the names
+        self.assertFalse(A[2]["round_trip"])
+        self.assertEqual(A[2]["scen"]["S2"][0], "not covered")
+        self.assertIn("round trip: - (no module name seen again after a different one); modules seen: m01aa", md)
+
+    def test_old_logs_have_no_modules(self):
+        md, L, A = run()
+        self.assertEqual(A[1]["modules"], [])
+        self.assertEqual([ar.mod_label(l) for l in A[1]["loads"]], ["n/a"] * 3)
+        self.assertIn("(heuristic)", A[1]["scen"]["S2"][1])          # S2 falls back to the UNLOAD-count heuristic
+
+    def test_evt_s3_measured(self):
+        md, L, A = run050()
+        self.assertTrue(L[0].has_evt())
+        self.assertEqual(L[0].evt_counts()["qsave"], 6)
+        self.assertEqual(A[1]["scen"]["S3"][0], "covered")             # 2 save + 6 qsave + 3 autosave = 11 >= 10, 1 qload
+        self.assertIn("11 save-type events", A[1]["scen"]["S3"][1])
+        self.assertIn("measured: EVT", A[1]["scen"]["S3"][1])
+        self.assertNotIn("(heuristic)", A[1]["scen"]["S3"][1])
+        self.assertEqual(len(L[0].evt_list()), 6)
+        self.assertIn("EVT counts (cumulative since attach): save=2 load=0 qsave=6 qload=1 autosave=3 optsave=1 sndapply=1", md)
+        self.assertEqual(A[2]["scen"]["S3"][0], "not covered")         # EVT present, all zero: measured, not heuristic
+        self.assertIn("measured: EVT", A[2]["scen"]["S3"][1])
+
+    def test_evt_threshold_and_load_requirement(self):
+        d = tempfile.mkdtemp()
+        try:
+            shutil.copytree(GAME050, os.path.join(d, "g"))
+            path = os.path.join(d, "g", "perflab_metrics.txt")
+            with open(path) as f:
+                txt = f.read()
+            # 10 saves but zero loads, then 9 saves + 1 load
+            for counts, want in (("save=2 load=0 qsave=6 qload=0 autosave=3", "unknown"), ("save=2 load=1 qsave=5 qload=0 autosave=2", "not covered"),
+                                 ("save=2 load=1 qsave=5 qload=0 autosave=3", "covered")):
+                t2 = txt.replace("save=2 load=0 qsave=6 qload=1 autosave=3", counts)
+                with open(path, "w") as f:
+                    f.write(t2)
+                _, L, A = run(game=os.path.join(d, "g"))
+                self.assertEqual(A[1]["scen"]["S3"][0], want, counts)
+        finally:
+            shutil.rmtree(d)
+
+    def test_heuristic_fallback_without_evt(self):
+        md, L, A = run()                                               # 0.3.0/0.4.0 fixtures have no EVT lines
+        self.assertFalse(L[3].has_evt())
+        self.assertEqual(A[4]["scen"]["S3"][0], "covered")
+        self.assertTrue(A[4]["scen"]["S3"][1].endswith("(heuristic)"), A[4]["scen"]["S3"][1])
+        for i in (1, 2, 3):
+            self.assertTrue(A[i]["scen"]["S3"][1].endswith("(heuristic)"), (i, A[i]["scen"]["S3"][1]))
+        self.assertIn("no EVT lines in this launch (pre-0.5.0 log)", md)
+
+    def test_sndri_verdicts(self):
+        md, L, A = run050()
+        self.assertEqual(A[1]["scen"]["SNDRI"][0], "toggled, no fire")  # sndapply=1, no FIRED sndri
+        self.assertIn("sndapply=1 optsave=1", A[1]["scen"]["SNDRI"][1])
+        self.assertEqual(A[2]["scen"]["SNDRI"][0], "not toggled")      # sndapply=0
+        self.assertEqual(A[3]["scen"]["SNDRI"][0], "covered")          # FIRED sndri
+        self.assertIn("fired", A[3]["scen"]["SNDRI"][1])
+        self.assertIn("sndapply=2", A[3]["scen"]["SNDRI"][1])
+        # 0.3.0 logs: previous behaviour unchanged
+        _, _, A0 = run()
+        self.assertEqual(A0[2]["scen"]["SNDRI"][0], "covered")
+        self.assertEqual(A0[1]["scen"]["SNDRI"][0], "unknown")
+
+    def test_tpctop_first_and_largest(self):
+        md, L, A = run050()
+        first, big = A[1]["tpc_first"], A[1]["tpc_largest"]
+        self.assertEqual((first.n, first.module), (3, "001EBO"))
+        self.assertEqual((big.n, big.module), (5, "m01aa"))
+        self.assertEqual(len(big.tpctop["items"]), 20)
+        self.assertEqual(len(big.restop["items"]), 10)
+        self.assertEqual(big.tpctop["hdr"]["overflow"], 3)
+        self.assertEqual(big.tpctop["items"][0], (1, 8155, "tex8192_01"))
+        self.assertIn("TPCTOP top 20, first capture: block #3 LOAD_DOWN tick 5045000, module 001EBO; n=25 total_mb=180.50", md)
+        self.assertIn("TPCTOP top 20, largest total_mb: block #5 LOAD_DOWN tick 5104000, module m01aa; n=61 total_mb=320.25 overflow=3", md)
+        self.assertIn("| 20 | 7452 | tex8192_20 |", md)
+        self.assertIn("RESTOP top 10 of the same block:", md)
+        self.assertEqual(md.count("RESTOP top 10"), 1)                  # only for the largest capture
+        self.assertIn("| 10 | 2002 | 15874 | res8192_10 |", md)
+        self.assertIsNone(A[2]["tpc_first"])
+
+    def test_va(self):
+        md, L, A = run050()
+        va = A[1]["va"]
+        self.assertEqual((va["min"], va["last"], va["first"], va["trend"], va["warn"]), (190, 320, 700, "falling", True))
+        self.assertIn("**WARN: min largest_free_mb 190 < 256 MB**", md)
+        self.assertEqual((A[2]["va"]["min"], A[2]["va"]["warn"], A[2]["va"]["trend"]), (850, False, "flat"))
+        self.assertIsNone(A[3]["va"])
+        self.assertIn("190 WARN |", md)
+        self.assertEqual(L[0].blocks[0].kv["VA"]["largest_free_at"], "0x20001000")
+
+    def test_hwv_arms(self):
+        md, L, A = run050(arms="hwmip")
+        h = A[1]["hwv"]
+        self.assertEqual((h["ok"], h["bad"], h["verdict"], h["first_bad"]), (47, 1, "FAIL", "0xde1/512/128"))
+        self.assertEqual(len(h["fb"]), 2)
+        self.assertEqual(h["fb"][1]["reason"], "glerror")
+        self.assertIsNone(A[2]["hwv"])
+        self.assertIn("### HWV (hwmip upload formats", md)
+        self.assertIn("| 1 | 1 | 40 | 5 | 1 | 2 | 0 | 47 | 1 | **FAIL** | 0xde1/512/128 | 2 |", md)
+        self.assertIn("**HWV lvl1 verdict: FAIL (launch 1)**", md)
+        self.assertIn("| 1 | npot | 0xde1 | 300 | 200 | 0x1908 | 0x1401 |", md)
+        self.assertIn("| 2 | glerror | 0xde1 | 512 | 512 | 0x1907 | 0x1401 |", md)
+
+    def test_hwv_pass_when_no_bad(self):
+        d = tempfile.mkdtemp()
+        try:
+            shutil.copytree(GAME050, os.path.join(d, "g"))
+            path = os.path.join(d, "g", "perflab_metrics.txt")
+            with open(path) as f:
+                t = f.read().replace("lvl1_bad=1 lvl1_first_bad=0xde1/512/128", "lvl1_bad=0 lvl1_first_bad=-")
+            with open(path, "w") as f:
+                f.write(t)
+            md, L, A = run(arms="hwmip", game=os.path.join(d, "g"))
+            self.assertEqual(A[1]["hwv"]["verdict"], "PASS")
+            self.assertIn("**HWV lvl1 verdict: PASS", md)
+        finally:
+            shutil.rmtree(d)
+
+    def test_hwv_absent_on_old_logs(self):
+        md, L, A = run(arms="hwmip")
+        self.assertTrue(all(A[x.idx]["hwv"] is None for x in L))
+        self.assertIn("no HWV lines in these launches", md)
+        self.assertNotIn("TPCTOP", md)
+        self.assertNotIn("EVT counts (cumulative", md)
+
+    def test_new_byte_fields(self):
+        md, L, A = run050()
+        a = A[1]
+        self.assertEqual((a["gms_calls"], a["gms_ms"], a["txi_kb"], a["requeue_kb"], a["redemB"]), (12, 34.5, 2048, 512, 524288))
+        self.assertIn("gms_calls=12 gms_ms=34.5", md)
+        self.assertIn("txi_via_tpc=57 (2048 kb)", md)
+        self.assertIn("requeue_tpc_retained=5 (512 kb)", md)
+        self.assertIn("redemB (last) 524288 B = 0.50 MB", md)
+        self.assertEqual(A[2]["redemB"], 4096)                          # `redemB=<n>` token form
+        self.assertEqual(L[0].blocks[7].rt[3007], 190 * 1048576)        # resident column unaffected by the appended redemB
+        # absent on old logs (and no stray labels)
+        md0, _, A0 = run()
+        self.assertIsNone(A0[3]["gms_calls"])
+        self.assertIsNone(A0[3]["txi_kb"])
+        self.assertIsNone(A0[3]["redemB"])
+        self.assertNotIn("gms_calls", md0)
+        self.assertNotIn("redemB", md0)
+
+    def test_mid_file_offset_still_parses(self):
+        # an offset inside launch 1 of the 0.5.0 fixture must not crash and still finds launches 2 and 3
+        with open(os.path.join(GAME050, "perflab_metrics.txt"), "rb") as f:
+            data = f.read()
+        off = data.index(b"TPCTOP 7 ") + 3
+        _, L, _ = run({"perflab_metrics.txt": off}, game=GAME050)
+        self.assertGreaterEqual(len([x for x in L if not x.stub]), 2)
 
 
 class Offsets(unittest.TestCase):

@@ -1,4 +1,4 @@
-// Smoke test for perf-lab 0.4.0 hwmip=1 (hardware mipmaps behind the gluBuild2DMipmaps IAT hook).
+// Smoke test for perf-lab 0.4.0/0.5.0 hwmip=1 (hardware mipmaps behind the gluBuild2DMipmaps IAT hook).
 // Build: i686-w64-mingw32-g++ -std=c++17 -O1 -o smoke_hwmip.exe smoke_hwmip.cpp -lgdi32 -lglu32
 //   (dynamic CRT; needs libstdc++-6.dll, libgcc_s_dw2-1.dll, libwinpthread-1.dll next to the exe; no .bss pad: hwmip touches no engine address)
 // Run:   smoke_hwmip.exe <run|metrics|off|bare>   (dir needs the DLL from PerfLab.kpatch as perflab.dll). Exit code 0 = all checks passed.
@@ -93,6 +93,8 @@ static long long field(const std::string& l, const char* key) {
     size_t p = l.find(std::string(" ") + key + "="); if (p == std::string::npos) return -999999;
     return atoll(l.c_str() + p + strlen(key) + 2);
 }
+// 0.5.0 appends ` module=<name>` to the END of the #METRICS header: strip it before the older "ends with" checks.
+static std::string noModule(const std::string& h) { size_t p = h.rfind(" module="); return p == std::string::npos ? h : h.substr(0, p); }
 static bool endsWith(const std::string& s, const char* suf) { size_t n = strlen(suf); return s.size() >= n && !s.compare(s.size() - n, n, suf); }
 
 static const unsigned kSeq[6] = { 0x8515, 0x8516, 0x8517, 0x8518, 0x8519, 0x851A };      // vanilla order of 0x436250
@@ -122,7 +124,7 @@ int main(int argc, char** argv) {
     std::string log0 = fileText("perflab_log.txt");
 
     // ---- install / ordering ----
-    check(log0.find("perf-lab 0.4.0 attach") != std::string::npos, "0.4.0 version in the attach line");
+    check(log0.find("perf-lab 0.5.0 attach") != std::string::npos, "0.5.0 version in the attach line");
     check(log0.find(hw ? "hwmip=ON" : "hwmip=OFF") != std::string::npos, hw ? "attach line records hwmip=ON" : "attach line records hwmip=OFF");
     if (bare) {
         check(rglu() == nullptr, "bare: neither metrics nor hwmip -> GLU IAT slot untouched (rGluMip NULL)");
@@ -150,7 +152,7 @@ int main(int argc, char** argv) {
         ((void (__cdecl*)())GetProcAddress(g_dll, "PerfLabMetricsNow"))();
         for (int i = 0; i < 30 && lastBlock().find("#END") == std::string::npos; ++i) Sleep(100);
         std::string b = lastBlock(), hdr = b.substr(0, b.find('\n')), gl = lineOf(b, "GL ");
-        check(endsWith(hdr, " hwmip=0"), "off: #METRICS header ends with hwmip=0");
+        check(endsWith(noModule(hdr), " hwmip=0") && hdr.find(" module=") != std::string::npos, "off: #METRICS header ends with hwmip=0 (then the 0.5.0 module= field)");
         check(field(gl, "mipmaps") == 3 && field(gl, "hwmip_calls") == 0 && field(gl, "hwmip_hw") == 0 && field(gl, "hwmip_cube_fallback") == 0, "off: GL line mipmaps=3, hwmip_* fields present and 0");
         check(fileText("perflab_log.txt").find("HWMIP ") == std::string::npos, "off: no HWMIP log lines");
         printf("%s: %d failures\n", mode, g_fail); return g_fail ? 1 : 0;
@@ -262,7 +264,7 @@ int main(int argc, char** argv) {
         ((void (__cdecl*)())GetProcAddress(g_dll, "PerfLabMetricsNow"))();
         std::string b; for (int i = 0; i < 40; ++i) { b = lastBlock(); if (b.find("#END") != std::string::npos && b.find(" MANUAL ") != std::string::npos) break; Sleep(100); }
         std::string hdr = b.substr(0, b.find('\n')), gl = lineOf(b, "GL ");
-        check(endsWith(hdr, " g1skip=0 hwmip=1") || endsWith(hdr, " hwmip=1"), "#METRICS header ends with hwmip=1");
+        check(endsWith(noModule(hdr), " g1skip=0 hwmip=1") || endsWith(noModule(hdr), " hwmip=1"), "#METRICS header ends with hwmip=1 (then the 0.5.0 module= field)");
         check(hdr.find("tx=0 g1skip=0 hwmip=1") != std::string::npos, "header keeps its existing fields in order (tx= g1skip=) before hwmip=");
         check(gl.find("GL glimage=") == 0 && gl.find(" mip_mpix=") != std::string::npos && gl.find(" mip_mpix=") < gl.find(" hwmip_calls="), "GL line keeps its existing fields; hwmip_* appended after mip_mpix");
         check(field(gl, "hwmip_calls") == snap[C_CALLS] && field(gl, "hwmip_hw") == snap[C_HW] && field(gl, "hwmip_fallback_npot") == snap[C_NPOT] &&

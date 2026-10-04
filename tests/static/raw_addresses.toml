@@ -80,6 +80,9 @@ addresses = ["0x00401234", "0x00712245", "0x009A5C84"]
 [files."patch_manager_mods/perf_lab_src/harness/smoke_perflab3.cpp"]
 addresses = ["0x00401234", "0x00712245", "0x009A5C84"]
 
+[files."patch_manager_mods/perf_lab_src/harness/smoke_perflab5.cpp"]
+addresses = ["0x00401000", "0x00712245", "0x009A5C84"]
+
 [files."patch_manager_mods/perf_lab_src/harness/smoke_probe12.cpp"]
 addresses = ["0x0078237C", "0x007B3107"]
 

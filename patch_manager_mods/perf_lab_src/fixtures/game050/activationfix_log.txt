@@ -1,0 +1,3 @@
+[11:23:20.060 5000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=200
+[11:40:00.060 6000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=201
+[11:56:40.060 7000060] k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched (CALL [PostMessageA] -> ActFixMoviePost 795f15a0) pid=202
