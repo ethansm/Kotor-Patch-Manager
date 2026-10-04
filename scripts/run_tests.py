@@ -92,6 +92,7 @@ class Item:
     build_timeout: int = 600
     cmd: list | None = None        # the run step
     pre: object = None             # optional callable() -> str|None run before build; str = ERROR message
+    src: Path | None = None        # cpp items: the test source
 
 
 @dataclass
@@ -242,7 +243,7 @@ def _prepare_build(exe: Path):
     return None
 
 
-def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None, cfg=None) -> Item:
+def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None, cfg=None, exe_dir=None) -> Item:
     stem = src.stem
     d = src.parent
     if cfg is None:
@@ -250,7 +251,7 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         sub = raw.get(stem) if isinstance(raw.get(stem), dict) else {}
         cfg = {k: v for k, v in raw.items() if not isinstance(v, dict)}
         cfg.update(sub)
-    exe = TMP / "host" / (f"{stem}{tag}")
+    exe = (exe_dir or TMP / "host") / (f"{stem}{tag}")
     flags = ["-std=c++17", "-O1", "-Wall", "-Wextra", "-I", str(d), "-I", str(REPO / "tests" / "include")]
     for inc in include_dirs or []:
         flags += ["-I", str(inc)]
@@ -264,7 +265,7 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         cmd=[str(exe)] + [expand(a) for a in cfg.get("args", [])], timeout=120,
         env={"KT_VERBOSE": "", "UBSAN_OPTIONS": "print_stacktrace=1",
              "ASAN_OPTIONS": "abort_on_error=0"},
-        pre=lambda: _prepare_build(exe),
+        pre=lambda: _prepare_build(exe), src=src,
     )
 
 
@@ -341,6 +342,122 @@ def discover(sanitize=True, tiers=()):
                           cwd=suite_cwd(s.get("cwd")), cmd=cmd,
                           timeout=int(s.get("timeout_s", 300)), env={"PYTHONDONTWRITEBYTECODE": "1"}))
     return items
+
+
+# ---------------------------------------------------------------- coverage (--coverage)
+
+COV_ROOTS = ("patch_manager_mods/_shared_src", "patch_manager_mods/force_power_hotbar_src")
+# -fkeep-*: unused inline/static functions would otherwise be dropped by the compiler and read as "no code" instead of "not hit".
+COV_FLAGS = ["--coverage", "-O0", "-fkeep-inline-functions", "-fkeep-static-functions"]
+
+
+def parse_gcov(text: str):
+    """Parse one gcov text report -> (source path as written, {line: count}) for executable lines only.
+    A count line is `  <count|-|#####|=====>:  <lineno>:<source>`; '-' = not executable, #####/===== = executable, 0 hits."""
+    source, lines = "", {}
+    for raw in text.splitlines():
+        parts = raw.split(":", 2)
+        if len(parts) < 3:
+            continue
+        cnt, no = parts[0].strip(), parts[1].strip()
+        if not no.isdigit():
+            continue
+        if int(no) == 0:
+            if parts[2].startswith("Source:"):
+                source = parts[2][len("Source:"):].strip()
+            continue
+        if cnt == "-":
+            continue
+        cnt = cnt.rstrip("*")
+        if cnt.startswith("#") or cnt.startswith("="):
+            lines[int(no)] = 0
+        elif cnt.isdigit():
+            lines[int(no)] = int(cnt)
+    return source, lines
+
+
+def split_gcov(text: str) -> list:
+    """Split `gcov -t` output (several files back to back) into one text per `0:Source:` header."""
+    blocks, cur = [], []
+    for ln in text.splitlines():
+        if re.match(r"\s*-:\s*0:Source:", ln) and cur:
+            blocks.append("\n".join(cur))
+            cur = []
+        cur.append(ln)
+    if cur:
+        blocks.append("\n".join(cur))
+    return blocks
+
+
+def merge_cov(acc: dict, source: str, lines: dict):
+    """Fold one test's {line: count} into acc[source]; counts add, so a line is hit if any test hit it."""
+    d = acc.setdefault(source, {})
+    for ln, c in lines.items():
+        d[ln] = d.get(ln, 0) + c
+
+
+def cov_counts(lines: dict):
+    return sum(1 for c in lines.values() if c > 0), len(lines)
+
+
+def cov_line(name: str, hit: int, total: int) -> str:
+    pct = "n/a" if total == 0 else f"{100.0 * hit / total:.1f}%"
+    return f"COV  {pct}  {hit}/{total}  {name}"
+
+
+def cov_summary(acc: dict, want, label=lambda p: p):
+    """COV lines for every source in acc that `want(path)` accepts, sorted by path."""
+    return [cov_line(label(p), *cov_counts(acc[p])) for p in sorted(acc) if want(p)]
+
+
+@dataclass
+class CovRun:
+    acc: dict
+    lines: list
+    failed: list
+    results: list
+
+
+def _is_cov_header(p: Path) -> bool:
+    return p.suffix == ".h" and any(p.parent == (REPO / r).resolve() for r in COV_ROOTS)
+
+
+def run_coverage(srcs, jobs=4, want=None, verbose=False, items=None) -> CovRun:
+    """Build srcs (or the prepared `items`) with --coverage, run them, gcov the objects, merge per header.
+    Output files live under $TMPDIR/kotor-tests/coverage/."""
+    want = want or _is_cov_header
+    cdir = TMP / "coverage"
+    shutil.rmtree(cdir, ignore_errors=True)
+    bin_dir = cdir / "bin"
+    bin_dir.mkdir(parents=True)
+    if items is None:
+        items = [cpp_item(Path(s), False, extra_flags=COV_FLAGS, exe_dir=bin_dir) for s in srcs]
+    if not shutil.which("gcov"):
+        raise SystemExit("gcov not found")
+    with cf.ThreadPoolExecutor(max(1, jobs)) as ex:
+        results = list(ex.map(execute, items))
+    acc, failed = {}, []
+    for it, r in zip(items, results):
+        report(r, verbose)
+        if r.status in ("FAIL", "ERROR"):
+            failed.append(r.id)
+        stem = it.src.stem
+        gcdas = sorted(bin_dir.glob(f"{Path(it.cmd[0]).name}.gcda"))
+        for g in gcdas:
+            # gcov runs in the test's build cwd (sources are recorded relative to it) with -t: report on stdout, no files.
+            st, why, out = run_cmd(["gcov", "-t", "-o", str(bin_dir), str(g)], it.cwd, None, 120)
+            (cdir / f"{stem}.gcov.txt").write_text(out, encoding="utf-8")
+            for block in split_gcov(out):
+                source, lines = parse_gcov(block)
+                if not source:
+                    continue
+                path = Path(source)
+                path = (path if path.is_absolute() else it.cwd / path).resolve()
+                if want(path):
+                    merge_cov(acc, str(path), lines)
+    out_lines = cov_summary(acc, lambda p: True, lambda p: rel(Path(p)))
+    (cdir / "summary.txt").write_text("\n".join(out_lines) + "\n", encoding="utf-8")
+    return CovRun(acc, out_lines, failed, results)
 
 
 # ---------------------------------------------------------------- wine smokes
@@ -522,10 +639,45 @@ def main() -> int:
     ap.add_argument("-v", action="store_true", help="print the full output of every item (as each finishes)")
     ap.add_argument("--no-sanitize", action="store_true", help="drop -fsanitize=address,undefined from C++ builds")
     ap.add_argument("--selftest", action="store_true", help="check that failing tests are reported as FAIL")
+    ap.add_argument("--coverage", action="store_true",
+                    help="build host C++ tests with --coverage -O0, run, gcov; print per-header COV lines (_shared_src, hotbar)")
+    ap.add_argument("--mutate", metavar="HEADER", help="run the mutation gate on one header (scripts/mutate_header.py)")
     a = ap.parse_args()
 
     if a.selftest:
         return selftest(a.jobs, a.v)
+
+    if a.mutate:
+        cmd = [sys.executable, str(Path(__file__).resolve().parent / "mutate_header.py"), a.mutate, "--jobs", str(a.jobs)]
+        if a.list:
+            cmd.append("--list")
+        if a.json:
+            cmd += ["--json", a.json]
+        if a.no_sanitize:
+            cmd.append("--no-sanitize")
+        if a.v:
+            cmd.append("-v")
+        return subprocess.call(cmd)
+
+    if a.coverage:
+        cpp = [i for i in discover(sanitize=False) if i.kind == "cpp" and (not a.k or a.k in i.id)]
+        if a.list:
+            for i in cpp:
+                print(f"{i.id}  [cpp]" + (f"  SKIP ({i.skip})" if i.skip else ""))
+            return 0
+        t0 = time.monotonic()
+        TMP.mkdir(parents=True, exist_ok=True)
+        bin_dir = TMP / "coverage" / "bin"
+        run_items = []
+        for i in cpp:
+            ci = cpp_item(i.src, False, extra_flags=COV_FLAGS, exe_dir=bin_dir)
+            ci.id, ci.skip = i.id, i.skip
+            run_items.append(ci)
+        cr = run_coverage(None, a.jobs, items=run_items, verbose=a.v)
+        for line in cr.lines:
+            print(line)
+        print(f"\ncoverage: {len(cr.lines)} header(s), {len(run_items)} test(s), output in {TMP / 'coverage'} in {time.monotonic() - t0:.1f}s")
+        return 1 if cr.failed else 0
 
     t_start = time.monotonic()
     items = discover(sanitize=not a.no_sanitize, tiers=("build",) if (a.build or a.wine) else ())
