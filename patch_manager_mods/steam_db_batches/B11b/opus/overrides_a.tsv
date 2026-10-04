@@ -1,0 +1,61 @@
+gog_addr	steam_addr	final_verdict	note
+0x004cd090	0x007bce00	verified	007bd728 PUSH 0x9a04cc 'Compass', 007bd739 PUSH 0x9a04bc 'Display Options'; sz3333 = GOG; sole caller StartServices 0x788d90. Recheck addr kept.
+0x004ce110	0x007bde80	verified	007bdecb PUSH 0x9c8 + 007bded0 CALL 0x919723 (new); 007bdec0 CALL GetSWGuiManager 0x73fea0; sz515; caller Initialize 0x7819e0. Accepted decoy = true slot (key error).
+0x004d00e0	0x007bfa50	verified	007bfa87 PUSH 0x45c0 + CALL 0x919723, 007bfaec CALL 0x8bd7a0 (sz62 = GOG CSWGuiDialogComputer::SetType); sz192 r8; no layout shift.
+0x004d05c0	0x007bff30	verified	007bff43 CALL 0x7c0110 (StoreLastDialogAnimationData) + 007bff4b CALL 0x7c0090 (Clear...); 007bff60 MOV [EAX+0x1b8]; Mac InitializeDialogAnimationData same disps.
+0x004d06c0	0x007c0030	verified	007c003d CMP ECX,[EAX+0x1b8] bound check, stores to +0x1c0/+0x1c4 arrays, RET 0xc; same 3 callers as GOG (HandleDialogSelection/Entry, UpdateDialog).
+0x004d6890	0x007c6200	verified	Entry of merged fn: GOG 0x4d6890 (r=-1, falls through) + 0x4d6920 (0 callers) = Steam 803 B, RET 0xc. 007c6265 CALL AddPanel 0x410530; same 3 callers. Never ship 0x4d6920.
+0x004d6c40	0x007c65b0	label_suspect	Counterpart sure: 007c65c7 CALL GetModule, 007c65ce CALL 0x7f7220 (RestoreCamera), 007c6605 MOV EAX,0x2772. Mac ResetComputerCameraShot = GOG 0x4d6bc0 shape (0x38/0x48/0x1028).
+0x004db4b0	0x007cadb0	label_suspect	007cae2e CALL 0x7ef780 AnimationDialog, 007caddf CMP [ECX+0x1b8] loop. = Mac IsAnimationPlayingInDialog (0x1b8/0x1c0, 2 callees); Mac DestroyDeathMenuGUI is 5 B. B0 ships that name here.
+0x004db920	0x007cb220	label_suspect	Counterpart sure: 007cb22b CMP EAX,0x3e8 / 007cb236 CMP ECX,0x52f (unique). Mac IsLoopingDialogAnimation is a 318-B 2DA lookup (GOG 0x4db560/0x4db710 shape); real name unknown.
+0x004dba50	0x007cb350	label_suspect	007cb3a0 CALL ResetFade 0x8bafd0, 007cb3c4 PUSH 0x2ee, no ClearRepliesData. = Mac CleanUpEntryNode (165 B, imm 0x43/0xb5/0x2ee); not a menu Show.
+0x004dbaf0	0x007cb3f0	label_suspect	007cb448 CALL 0x7c0290 ClearRepliesData (distinguishes from 0x7cb350), 007cb46c PUSH 0x2ee. = Mac CleanUpReplyNode (173 B); not a menu Hide.
+0x004dbda0	0x007cb6a0	label_suspect	007cb6c9 MOV ECX,[EAX+0x68]; 007cb6cc CALL 0x8bb0e0 Letterbox::SetFade, RET 0x10: void fade forwarder, not a predicate. Mac IsCameraDialog = GOG 0x4dbe50 (+0x3c/+0x40).
+0x004dbde0	0x007cb6e0	label_suspect	007cb6f3 MOV [ECX+0xfb4],1 then vcall +0x84; caller Letterbox::Draw. = Mac DialogGuiDoneScroll (d 0x3c,0x64,0x88,0xfb4; Mac vtbl +4). Not a predicate.
+0x004dbe20	0x007cb720	label_suspect	CORRECTION from 0x7cb5e0 (=GOG 0x4dbce0 UnlockDialogParticipantOrientations). 007cb733 MOV ECX,[ECX+0x68]; 007cb736 CALL 0x8bb200 IsFadeDone = Mac IsFadingInDialog.
+0x004dbe50	0x007cb750	label_suspect	CORRECTION from 0x7cb720. 007cb766 MOV EAX,[ECX+0x3c]; 007cb769 CMP EAX,[EDX+0x40]; sz43 no callees = Mac IsCameraDialog. No fade. (B0 ships IsCameraDialog here.)
+0x004dc370	0x007cbc70	label_suspect	007cbc7c MOV ECX,[EAX+0x6c]; 007cbc7f FLD [ECX+0x50]; 007cbc90 TEST AH,0x41: fade-object float predicate (callers MainLoop, UpdateRumble). Mac InitializePlaceableCameras = GOG 0x4dc3b0.
+0x004dd7d0	0x007cd0d0	label_suspect	007cd0da MOV ECX,[EAX+0x4c]; 007cd0dd CALL 0x8be630 (sz108 = GOG BarkBubble::Resume; sibling 0x7cd0b0 calls Pause sz81); caller HideSWInGameGui. Mac HideSwoopUpgradeScreen = GOG 0x4de610.
+0x004df1f0	0x007ceaf0	label_suspect	007ceb22 MOV EDX,[ECX+0x9c]; 007ceb28 ADD EDX,0x440 vector copy to out ptr; caller Door::UpdateAreaTransitionDisplay. = Mac GetAreaTranstionPosition.
+0x004dfe10	0x007cf710	label_suspect	CORRECTION from 0x7cf4b0 (=GOG 0x4dfbb0 ShowFlashingStatus). 007cf725 ADD ECX,0xf24 list walk + 0x7f000000 = Mac GetCanOrientInDialog (B0 ships it here).
+0x004e00e0	0x007cf9e0	verified	CORRECTION from 0x7cf960 (=GOG 0x4e0060 TutorialReasonWillShowWindow). 007cf9ff MOV ECX,[EDX+0xb0]; 007cfa05 CALL 0x898f60 (TutorialBox::SetTutorialReason sz360). Decoy = true slot.
+0x004e0bf0	0x007d04f0	label_suspect	007d050e MOV AL,[EDX+0xa900] via [this+0x98]: byte getter, r0, caller BarkBubble::Draw 0x8be740. Mac ShowDialogMessage = GOG 0x4e0c60 shape. Real name unknown.
+0x004e0c60	0x007d0560	label_suspect	007d0570 CMP EDX,[ECX+0x40] on +0x3c, vcall +0x84; caller SendDialogEntry. = Mac ShowDialogMessage (d 0x3c,0x40,0x88; Mac vtbl +4). Permuted label.
+0x004e0ca0	0x007d05a0	label_suspect	CORRECTION from 0x7d0560 (=GOG 0x4e0c60). 007d05b7 CALL GetClientOptions, 007d05e0 CALL GetMiniGame, 007d0602 [EDX+0x59b4] = Mac GetMiniMapVisible (B0 ships it here).
+0x004e0d20	0x007d0620	label_suspect	007d065c PUSH 0x28 + 007d0669 CALL [vtbl+0x3c] on 5 panels after IsCached 0x410800; caller OnApplyDeath. = Mac RemoveGUIPopUps (imm 0x28 x5). B0 ships it here.
+0x004e2390	0x007d1c90	label_suspect	007d1cb9 MOV EAX,[EDX+0x6c]/CALL EAX on [this+0x98] panels, 8-entry loop; sole caller UpdateAllFonts 0x413dd0. = Mac ResetInterfaceFont (0xc,0x70,0x98). Mac CopyQuick... = GOG 0x4e2040.
+0x00517f80	0x00746950	label_suspect	00746982 CALL 0x7469a0, 00746995 CALL 0x7468e0 (PopHelpGui) over 9 slots; direct callers HandleInputEvent/PopulateMenus/PopupActionMenu: not a panel-added event. Mac OnPanelAdded 34 B.
+0x00517fd0	0x007469a0	label_suspect	007469b6 IMUL EAX,EAX,0x750; 007469bf LEA EAX,[ECX+EAX+0x733c]; index<9 check: returns sub-panel ptr by index, not StartRotation (Mac 29 B, d 0x4).
+0x00518570	0x00746f40	label_suspect	00746fa1 CMP ECX,[ESI+EAX*4+0x1c7c] with +0x78/+0x7c, imul 0x3c: = Mac GetActiveActionIdx (0x74,0x78,0x1c3c). Mac OnCombatYButton = GOG 0x522930 (0x10dc). Permuted.
+0x005185f0	0x00746fc0	label_suspect	00746feb IMUL ECX,ECX,0x1d0; 00746ff4 MOV EAX,[EDX+ECX+0x10074]; no args, returns button index. Not DisplayToolTipMessage (Mac 39 B with 0x6e90 group).
+0x00518640	0x00747010	label_suspect	00747041 LEA EDX,[ECX+EAX+0x10030] (imul 0x1d0); 00747079 CALL 0x412c00 (sz1496 = GOG CSWGuiManager::HandleMouseMove). Mac QueueActiveAction is a 5-B stub.
+0x0051e680	0x0074cf00	verified	0074cf16 CALL 0x416e30 (CSWGuiTextParams::SetText sz103); disps 0xa66c/0xa7b4 = GOG; callers ctor 0x747210 + UpdateActionDescription 0x74cc90.
+0x0051e730	0x0074cfb0	label_suspect	0074cfd4 FSTP [ECX+0x595c] + store [+0x68], RET 8; sole caller CGuiInGame::SetMainInterfaceTarget 0x7ce710. = Mac SetTarget (0x64,0x588c). Real UpdateActionQueue = GOG 0x51f400.
+0x0051f0b0	0x0074d930	verified	0074d93f CALL 0x74d8f0 (HandleButtonActionX), 0074d9b1 CALL 0x751750 (DoPersonalAction sz833); 0074d97e MOV [EAX+0x1c98],0. Mac HandleButtonAction 0x1c58 (+0x40 Win).
+0x00522d00	0x00751580	verified	0075167f CALL 0x7c9df0 ShowSWInGameGui; 0075169b CALL 0x73fee0 SetInputClass; 00751678 CALL GetInGameGui; caller OnCharacterClicked 0x752050.
+0x00523230	0x00751ab0	label_suspect	00751ad7 CMP EDX,[ECX+0x1c98]; 00751ae5 MOV [EAX+0x1c98],ECX from ctrl +0x50/+0x5c = Mac OnDefaultActionFocus (0x1c58+0x40). Mac DoTargetAction (62 B, imm 0xc8) = GOG 0x522e90.
+0x00523280	0x00751b00	label_suspect	00751bcb CALL 0x74da40 RevertActionBarStates; 00751bd3 MOV [EAX+0x15414],0: void handler. = Mac OnPersonalActionExit (0x30,0x50,0x5c,0x74,0x78,0x1c3c). Getter is GOG 0x518570.
+0x00523370	0x00751bf0	label_suspect	00751c1a MOV byte [EDX+0x1c77],CL after SUB 6, from ctrl +0x50/+0x5c = Mac OnTargetActionFocus (0x1c37, imm -6). Mac UpdateActionMenuSelected (165 B, 0xfd94) differs.
+0x00523510	0x00751d90	label_suspect	00751e2c CALL 0x744410 (sz436 = GOG TargetActionMenu::SelectPrevAction; twin 0x751e40 calls sz420 Next). = Mac OnTargetUpArrowPressed shape (imm 0xcc). Not ShowActionQueue.
+0x005235c0	0x00751e40	label_suspect	00751edc CALL 0x744260 (sz420 = GOG SelectNextAction 0x515860; twin calls Prev sz436). = Mac OnTargetDownArrowPressed shape. Mac OnClearOneButtonPressed = GOG 0x523ab0.
+0x00523670	0x00751ef0	verified	00751f1b CALL GetPausedByCombat 0x740330, 00751f40 CALL SetPausedByCombat 0x740350, 00751f54 CALL GetAutoPaused 0x740960, 00751f91 CALL ShowTutorialWindow. Mac shape agrees.
+0x00523ab0	0x00752330	label_suspect	0075234b CALL 0x752360 (= GOG 0x523ae0; twin 0x7523b0 calls 0x7523e0) after ctrl +0x50 check: = Mac OnClearOneButtonPressed (20 B, d 0x50). Real SetTarget = GOG 0x51e730.
+0x00523ae0	0x00752360	label_suspect	00752396 CALL ShowTutorialWindow 0x740a20; 007523a2 CALL 0x7511b0 (GOG 0x522930); [+0x68e4]. = Mac ClearOneAction (0x67e8, 0x20/0x7f000000). Real GetActionsFromActionIndex = GOG 0x51ebb0.
+0x00523b30	0x007523b0	label_suspect	007523cb CALL 0x7523e0 (= GOG 0x523b60 = Mac ClearAllActions shape) after ctrl +0x50: = Mac OnClearAllButtonPressed (20 B). No fog-of-war code (Mac UpdateAndDrawFogOfWar 784 B).
+0x00524590	0x00752e10	label_suspect	00752e8d MOV [EAX+0x732c],1 (twin 0x752ea0 writes 0); sole caller SetToolTipInstantMode 0x7a0750. Real MainInterface ShowFlashingStatus = GOG 0x522610 (Mac 0xa7bc group).
+0x00524620	0x00752ea0	label_suspect	00752ecf MOV EAX,[EDX+0xa904]; 00752f3c MOV [ECX+0x732c],0; sole caller SetToolTipInstantMode: tooltip mode off. Real AddFloatyText = GOG 0x5226b0 (Mac 0x150/0x5890).
+0x00524a20	0x007532a0	label_suspect	007532aa MOV CL,[EAX+0x154]+1, 007532c6 CMP ECX,5, returns alive flag; this = floaty entry, not MainInterface; removes nothing. Mac RemoveFloatyText uses list +0x5890.
+0x00524ea0	0x00753720	verified	0075372a ADD EAX,0xd588 + 3x CALL 0x410670 (RemovePanel), 00753768 CALL 0x40f4c0 CSWGuiPanel::OnPanelRemoved. Imms 0xd588/0xffb8/0x148b4 = GOG.
+0x005a4790	0x008b0890	verified	CORRECTION from 0x894110 (scalar dtor). 008b08af CALL GetInGameGui 0x73f750; 008b08b6 CALL 0x7d1f70 -> 0x760170 (GOG CSWGuiInGameMenu::ShowChangeButtons sz148); sz80.
+0x0051bec0	0x0074a750	verified	0074a75a CALL 0x74ad90 (sz1551 = GOG ~CSWGuiMainInterface 0x51c510); 0074a76b CALL 0x9196fd free. Callee separates it from fp-equal 0x74a620.
+0x004df5c0	0x007ceec0	verified	007ceed6 MOV ECX,[ECX+0x98]; 007ceedc CALL 0x750c10 (= GOG CSWGuiMainInterface::InitializeMap sz577); caller MainLoop 0x781be0.
+0x004d8410	0x007c7d20	likely	Getter: 007c7d2a MOV EAX,[EAX+0x110] (sibling 0x7c7d40 reads +0x11c); sole caller SaveTableInfo 0x5fb1a0 = GOG caller. Thin.
+0x004dfbb0	0x007cf4b0	verified	007cf4cb MOV ECX,[EDX+0x98]; 007cf4d1 CALL 0x750e90 (= GOG 0x522610 sz144, the MainInterface ShowFlashingStatus body). RET 4.
+0x004d00b0	0x007bfa20	likely	Setter: 007bfa3d MOV [EDX+0x12c],EAX, RET 4, sz41; Mac SetLevelUpMode d 0x12c. Already in Steam DB (B0) at this address.
+0x005265a0	0x00754e20	verified	00754e2a MOV [EAX+0x15234],-1; 00754e37 MOV [ECX+0x15230],0; 8 shared mapped callers (DoPersonalAction, 4 arrow handlers, OnCancelPartyItemSelect...).
+0x004db710	0x007cb010	verified	CORRECTION from 0x7cae60 (= GOG FUN_004db560, calls 0x7cb1f0). 007cb149 CALL 0x7cb220 = GOG callee 0x4db920 (0x3e8..0x52f). fp-equal twins split by callee.
+0x004d8430	0x007c7d40	likely	Getter: 007c7d4a MOV EAX,[EAX+0x11c]; sole caller SaveTableInfo 0x5fb1a0. Already in Steam DB (B0) at this address.
+0x004dee10	0x007ce710	verified	007ce72e MOV ECX,[EAX+0x98]; 007ce734 CALL 0x74cfb0 (= GOG 0x51e730, sz48 r8) with 2 args, RET 8.
+0x00523a80	0x00752300	likely	0075230c MOV ECX,[EAX+0x15230]; 0075231e MOV [EDX+0x15234],-1; vtable slot after OnCharacterEntered 0x7522c0, sz46 = GOG; Mac OnCharacterExited 27 B. Thin.
+0x004dc340	0x007cbc40	verified	007cbc53 MOV ECX,[ECX+0x6c]; 007cbc56 CALL 0x7bca60 (sz73 = GOG CSWGuiFade::IsFadeDone); callers MainLoop, UpdateRumble. In Steam DB (B0).
+0x00523460	0x00751ce0	label_suspect	00751d7f CALL 0x752450 (SelectNextPersonalAction; twin 0x751c30 calls Prev 0x7525d0). = Mac OnActionDownArrowPressed shape; 3rd HandleButtonAction label.
