@@ -114,13 +114,14 @@ class ForgeTests(unittest.TestCase):
         rc, out, _ = run("--saves-dir", str(REAL), "list")
         self.assertEqual(rc, 0)
         line = next(l for l in out.splitlines() if l.startswith("000000 - QUICKSAVE"))
-        self.assertIn("GUID gfb7bdbf7", line)
+        self.assertRegex(line, r"GUID g[0-9a-f]{8}\b")
 
     def test_inspect_runs(self):
         rc, out, _ = run("--saves-dir", str(self.saves), "inspect", "Game2")
         self.assertEqual(rc, 0)
         self.assertIn("atton", out)
-        self.assertIn("GUID: none", out)
+        found, guid = F.luo_bits((self.saves / G2.name / "GLOBALVARS.res").read_bytes())  # live slot: GUID changes with play
+        self.assertIn(f"GUID: {F.guid_text(found, guid)}", out)
 
     def test_dry_run_writes_nothing(self):
         before = sorted(p.name for p in self.saves.iterdir())
@@ -236,7 +237,9 @@ class ForgeTests(unittest.TestCase):
         names = [x.acquire("Name", "") for x in r.get_list("CatBoolean")]
         vb = r.acquire("ValBoolean", b"")
         v = sum(((vb[names.index("LUO_G%02d" % k) // 8] >> (7 - names.index("LUO_G%02d" % k) % 8)) & 1) << k for k in range(16))
-        self.assertEqual(v, 0xfb7bdbf7 & 0xFFFF)
+        _, qs_guid = F.luo_bits((self.saves / QS.name / "GLOBALVARS.res").read_bytes())  # live QS: GUID changes with play
+        self.assertIsNotNone(qs_guid)
+        self.assertEqual(v, qs_guid & 0xFFFF)
 
     def test_guid_none_from_qs_and_roundtrip_values(self):
         slot, _ = self.forge("S7", "QUICKSAVE")
