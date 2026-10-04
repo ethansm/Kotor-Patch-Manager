@@ -178,12 +178,10 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     const bh::ColumnLayout lay = bh::columnLayout(n, nOther, isLarge, cardW, cardH, scale);
     const int gap = lay.gap, size = lay.size, cols = lay.cols, fit = lay.fit, drawN = lay.drawN;
 
-    static int lastSig[8]; static int sigSlot[8]; static int nSig = 0;
-    int si = -1; for (int k = 0; k < nSig; ++k) if (sigSlot[k] == slotPtr) si = k;
-    if (si < 0 && nSig < 8) { si = nSig++; sigSlot[si] = slotPtr; lastSig[si] = -1; }
+    static bh::ColumnLogGate colGate;           // keyed by (slot, debuff): the two columns of a slot alternate and must not thrash one cache entry
     int sig = bh::columnSig(n, debuff, nOther, size, cardW, cardH, isLarge);
-    bool logIt = callNo <= 30 || (si >= 0 && lastSig[si] != sig);
-    if (si >= 0) lastSig[si] = sig;
+    const bool sigChanged = colGate.shouldLog(slotPtr, debuff ? 1 : 0, sig);   // always evaluated so the table stays current during the first 30 calls
+    bool logIt = callNo <= 30 || sigChanged;
     if (logIt) logf("COLUMN#%d %s slot=%08x large=%d card=%dx%d scale=%.3f tracked=%d cols=%d fit=%d draw=%d size=%d gap=%d",
                     callNo, debuff ? "DEBUFF" : "buff", slotPtr, isLarge, cardW, cardH, scale, n, cols, fit, drawN, size, gap);
     if (drawN <= 0) return;

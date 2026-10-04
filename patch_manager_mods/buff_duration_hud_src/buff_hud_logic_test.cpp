@@ -374,6 +374,33 @@ static void testColumnSig() {
     KT_CHECK_EQ(bh::columnSig(0, 1, 0, 0, 0, 0, 0), bh::columnSig(0, 0, 0, 0, 0, 16, 0));
 }
 
+// COLUMN log gate: keyed by (slot, debuff); regression for the buff/DEBUFF alternation that logged every frame.
+static void testColumnLogGate() {
+    {   // alternating columns of one slot: exactly 2 logs (first sight of each key), not 20
+        bh::ColumnLogGate g{}; int logs = 0;
+        for (int i = 0; i < 10; ++i) { logs += g.shouldLog(0xA, 0, 111); logs += g.shouldLog(0xA, 1, 222); }
+        KT_CHECK_EQ(logs, 2);
+        // sig change on (A,0) logs once, then is quiet again; (A,1) unaffected
+        KT_CHECK(g.shouldLog(0xA, 0, 333));
+        KT_CHECK(!g.shouldLog(0xA, 0, 333));
+        KT_CHECK(!g.shouldLog(0xA, 1, 222));
+        // a new slot logs once per column
+        KT_CHECK(g.shouldLog(0xB, 0, 111));
+        KT_CHECK(!g.shouldLog(0xB, 0, 111));
+        KT_CHECK(g.shouldLog(0xB, 1, 111));
+    }
+    {   // full table: 16 keys fill it, a 17th new key never logs, known keys still log on change
+        bh::ColumnLogGate g{};
+        for (int i = 0; i < 16; ++i) KT_CHECK(g.shouldLog(0x100 + i, 0, 5));
+        KT_CHECK_EQ(g.n, 16);
+        KT_CHECK(!g.shouldLog(0x200, 0, 5));
+        KT_CHECK(!g.shouldLog(0x200, 0, 6));
+        KT_CHECK_EQ(g.n, 16);
+        KT_CHECK(!g.shouldLog(0x100, 0, 5));
+        KT_CHECK(g.shouldLog(0x100, 0, 6));
+    }
+}
+
 // ================================================================ menu companion portraits
 static void testMenuGates() {
     KT_CHECK(!bh::menuPortraitVisible(0));
@@ -552,6 +579,7 @@ int main() {
     testBrightPx();
     testDiscLine();
     testColumnSig();
+    testColumnLogGate();
     testMenuGates();
     testTableGates();
 

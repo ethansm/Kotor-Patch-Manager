@@ -159,6 +159,25 @@ inline int columnSig(int n, int debuff, int nOther, int size, int cardW, int car
     return (n << 16) ^ (debuff << 4) ^ (nOther << 12) ^ (size << 8) ^ (cardW << 20) ^ cardH ^ isLarge;
 }
 
+// Per-(slot, debuff) change gate for the COLUMN log line. One slot draws its buff and DEBUFF columns alternately and the sig includes
+// debuff, so a per-slot "last sig" flips every call; keying by the pair keeps each column's own last sig. Zero-init = empty.
+// Logs on first sight of a key (if the table has room) and when a known key's sig changes; a full table never logs unknown keys.
+struct ColumnLogGate {
+    int slot[16]; int debuff[16]; int sig[16]; int n;
+    bool shouldLog(int slotPtr, int debuffFlag, int newSig) {
+        for (int k = 0; k < n; ++k) {
+            if (slot[k] == slotPtr && debuff[k] == debuffFlag) {
+                if (sig[k] == newSig) return false;
+                sig[k] = newSig;
+                return true;
+            }
+        }
+        if (n >= 16) return false;
+        slot[n] = slotPtr; debuff[n] = debuffFlag; sig[n] = newSig; ++n;
+        return true;
+    }
+};
+
 // ---------------------------------------------------------------- menu companion portraits (onMenuOverlay)
 // Control flag word at +0x48: bit 1 = visible.
 inline bool menuPortraitVisible(int flags) { return (flags & 2) != 0; }
