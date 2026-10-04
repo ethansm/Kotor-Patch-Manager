@@ -6,7 +6,8 @@
 - 10-04 later: user added in-game config (auto-consume, HP%/reserve thresholds, auto-on indicator, no click at full HP) -> section 3b. R4 done: own hook 0x0040F5A0 gives text labels without touching the hotbar.
 - 10-04 CS1 DONE `6f67e8b` (KPM `84c2586`): `_shared_src/HealItems.h` (formulaFor/healEstimate/pickHealItem/shouldAutoUse/isHealingRow copy), GuiKit `rclickEdge`; cov 100%, 23/23 mutants killed.
 - 10-04 CS2 DONE `4c8f7e7` (KPM `fa18db3`): `companion_selfheal_src` 0.1.0-probe, built NOT installed; pre_install_gate PASS, dll md5 `af3a6fde587c1df32c419fe6e71c5689`. New `_shared_src/ItemRead.h` (hotbar adopts in CS7). Deviation: the dump calls the hotbar's two read-only lookups ClientToServerObjectId 0x51C8B0 + GetItemByObjectId 0x51C0E0 (needed for item props); no CanUseItem, no 0x57D8B0, no engine writes. Candidate cost is fixed at 0 in the probe.
-- Next: CS3 = live probe install (user GO), then read `companion_selfheal` log lines:
+- 10-04 16:57 CS3 probe INSTALLED (user GO): dll `c968a0cd81b23196e1492c8f9979ff30` (, rebuilt in KPM `ad1ef30`; STAGE_INFO head=ad1ef302), stage `$K/selfheal_stage_1004`, 33 ids / 211 hooks, config `522e9917`, backup `$G/backups/selfheal_cs3_install_20261004_1657`. Config diff = appended block only; no other dll changed. Rollback: restore that backup dir. Log file: `$G/companion-selfheal_log.txt` (KpLog).
+- Next: user play session, then read the `companion-selfheal_log.txt` lines with `kotor2_logs.py check` (the CS3 one-click live call stays TODO until this log PASSes):
   - `P1 hud built ... layoutOpen=1` once per HUD build (hook fires with layout still open; ctlCount sane).
   - `P3 slot[i]=... k=0|1|2` for every portrait slot (never `k=none`) -> confirms slot->HUD formula.
   - Ctrl+Shift+H: per companion `cand` rows (row 64-66 organic / 84,127,128 droid, heal vs in-game skills, count = stack), the pick, route A args (server ids = client & ~mask), auto decision.
