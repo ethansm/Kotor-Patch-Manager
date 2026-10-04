@@ -298,7 +298,7 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | force-power-hotbar | hotbar | pending |
 | level-up-override | level-up | pending |
 | perf-lab, robustness-fixes | engine research / engine-bug | pending |
-| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 + 1.0.2-probe, staged (not installed)** (local-setup 2823ff6/aea74cb, fork b4e1db6) |
+| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 LIVE 10-03 22:42 (7b3936bc, backup pre_lb102_1003_2242), awaiting user conversation**; 1.0.2-probe staged (local-setup 2823ff6/aea74cb, fork b4e1db6) |
 | companion-ai, ranged-ai | engine AI atlas | pending (parser `^` anchors: analyze_play_logs.py) |
 | char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe, activation-fix | their sessions | pending |
 
@@ -341,3 +341,5 @@ Plan (user-approved): one source `dialogue_letterbox_fix_src/K2DialogueLetterbox
 4. Append to `$G/kplog.ini`: `[k2-dialogue-letterbox-fix]` / `enabled=1` / `level=info` / `channels=main,set` (probe variant: add `,probe,probe_w4`, and set `probe=1` in `dialogue_letterbox_fix.ini`).
 5. After play: expect `$G/k2-dialogue-letterbox-fix_log.txt`. The old `dialogue_letterbox_fix_log.txt` must not grow. Grep for `DROPPED`, then run `analyze_engfix_logs.py` on the new file.
 6. Rollback: `cp $B/patches/k2-dialogue-letterbox-fix.dll "$G/patches/"` (plus `patch_config.toml` if the probe was installed) and remove the kplog.ini section.
+
+- **Installed 10-03 22:42** (user "install"): the shipping DLL was hot-swapped and the kplog.ini section added (see the doc 17 top line). Next: the user plays one conversation, then check `k2-dialogue-letterbox-fix_log.txt` and run the analyzer.
