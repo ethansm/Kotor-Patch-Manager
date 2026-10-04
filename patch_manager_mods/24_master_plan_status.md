@@ -27,6 +27,7 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | M0 | Create doc 24; refresh 19b status column | - | - | DONE | (this commit) | T1 |
+| T0 | `run_tests.py --coverage` roots = every `patch_manager_mods/*_src` with test.toml; exe name `<dir>__<stem>` (same-stem `common_contract_test` collided: Text file busy) | - | - | DONE | (T0 commit) | B8-style: GuiKit 78.1 / K2Addr 9.6 to >=80% |
 | T1 | `tests/include/FakeKPatchApi.h` from ps_dispatch_test.cpp:58-80; port ps_dispatch_test | M0 | split (doc 21) read-only | DONE | (T1 commit) | ps_dispatch 64/64 host + m32 + mingw build; Wine not on PATH |
 | T2 | `scripts/check_library_manifests.py` (provides/require vs source, consumer requires, no dup hook addrs) + selftest, static tier | M0 | - | TODO | | |
 | T3 | `portrait_slots_src/ps_registry_test.cpp` (inert w/o provider, late provider via poll, require after close, short struct_size, k2ps m32 layout asserts) | T1 | split | TODO | | |
@@ -70,3 +71,5 @@ M0 -> T1 -> T2 -> T3 -> T4 -> T6 -> T7 -> T8 -> S1a -> L2 -> C1 -> T5a/b/c -> C2
 ## Status log
 - 2026-10-03 M0 DONE: doc 24 created; 19b ranked-list status column refreshed (KpLog pilot done, items 2/3/7/8 adoption counts).
 - 2026-10-03 T1 DONE: tests/include/FakeKPatchApi.h (registry.cpp semantics: dup/closed/empty rejected, struct_size override, fake kpatch.log sink); ps_dispatch_test ported, 64 checks host/m32, mingw build clean.
+
+- 2026-10-03 T0 DONE: baseline default run 66 items 29-41s, 66 PASS after fix (was 65 + 1 ERROR exe collision). `--coverage` now 18 headers / 6 roots: _shared_src EffectIcons 100, Effects 93.5, FileWatch 100, Gui2D 98.4, GuiKit 78.1, K2Addr 9.6, Party 97.3, PortraitSlots 89.3, SafeRead 100, SceneView 90.9; hotbar HotbarConfig 99.2, HotbarLogic 98.7, Tlk 97.8, TwoDA 100; BuffHudLogic 100; Inv3dQuat 100; PsDispatch 100; ShieldLogic 100. Below 80%: GuiKit, K2Addr. companion_levelup parity is suite-only (not a cov root). Mods with no unit tests (13): active_effects_panel (py decoder only), activation_fix, equip_icon_fix, texture_memory_release, robustness_fixes, perf_lab, load_hang_probe, dialogue_letterbox_fix (smoke not in smokes.toml), ranged_ai, mouse_probe, wrap_measure_fix, dialogue_letterbox_fix_probe. 20e_mutation_triage_hotbar_common.md referenced but missing; SafeRead mutation 121/175.

@@ -251,7 +251,7 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         sub = raw.get(stem) if isinstance(raw.get(stem), dict) else {}
         cfg = {k: v for k, v in raw.items() if not isinstance(v, dict)}
         cfg.update(sub)
-    exe = (exe_dir or TMP / "host") / (f"{stem}{tag}")
+    exe = (exe_dir or TMP / "host") / f"{d.name}__{stem}{tag}"  # parent in the name: same-stem tests must not share an exe
     flags = ["-std=c++17", "-O1", "-Wall", "-Wextra", "-I", str(d), "-I", str(REPO / "tests" / "include")]
     for inc in include_dirs or []:
         flags += ["-I", str(inc)]
@@ -346,7 +346,12 @@ def discover(sanitize=True, tiers=()):
 
 # ---------------------------------------------------------------- coverage (--coverage)
 
-COV_ROOTS = ("patch_manager_mods/_shared_src", "patch_manager_mods/force_power_hotbar_src")
+
+def cov_roots(base: Path = CPP_ROOT) -> list:
+    """Coverage header roots: every dir under base holding a test.toml (testdata fixtures excluded)."""
+    return [dp.resolve() for dp, fns in walk(base) if "test.toml" in fns and "testdata" not in dp.relative_to(base).parts]
+
+
 # -fkeep-*: unused inline/static functions would otherwise be dropped by the compiler and read as "no code" instead of "not hit".
 COV_FLAGS = ["--coverage", "-O0", "-fkeep-inline-functions", "-fkeep-static-functions"]
 
@@ -418,14 +423,17 @@ class CovRun:
     results: list
 
 
-def _is_cov_header(p: Path) -> bool:
-    return p.suffix == ".h" and any(p.parent == (REPO / r).resolve() for r in COV_ROOTS)
+def _is_cov_header(p: Path, roots=None) -> bool:
+    """A .h sitting directly in a coverage root."""
+    return p.suffix == ".h" and p.parent.resolve() in (cov_roots() if roots is None else roots)
 
 
 def run_coverage(srcs, jobs=4, want=None, verbose=False, items=None) -> CovRun:
     """Build srcs (or the prepared `items`) with --coverage, run them, gcov the objects, merge per header.
     Output files live under $TMPDIR/kotor-tests/coverage/."""
-    want = want or _is_cov_header
+    if want is None:
+        roots = cov_roots()
+        want = lambda p: _is_cov_header(p, roots)  # noqa: E731
     cdir = TMP / "coverage"
     shutil.rmtree(cdir, ignore_errors=True)
     bin_dir = cdir / "bin"
@@ -441,8 +449,8 @@ def run_coverage(srcs, jobs=4, want=None, verbose=False, items=None) -> CovRun:
         report(r, verbose)
         if r.status in ("FAIL", "ERROR"):
             failed.append(r.id)
-        stem = it.src.stem
-        gcdas = sorted(bin_dir.glob(f"{Path(it.cmd[0]).name}.gcda"))
+        stem = Path(it.cmd[0]).name
+        gcdas = sorted(bin_dir.glob(f"{stem}-{it.src.stem}.gcda"))  # gcc names it <exe>-<src> when the two differ
         for g in gcdas:
             # gcov runs in the test's build cwd (sources are recorded relative to it) with -t: report on stdout, no files.
             st, why, out = run_cmd(["gcov", "-t", "-o", str(bin_dir), str(g)], it.cwd, None, 120)
@@ -640,7 +648,7 @@ def main() -> int:
     ap.add_argument("--no-sanitize", action="store_true", help="drop -fsanitize=address,undefined from C++ builds")
     ap.add_argument("--selftest", action="store_true", help="check that failing tests are reported as FAIL")
     ap.add_argument("--coverage", action="store_true",
-                    help="build host C++ tests with --coverage -O0, run, gcov; print per-header COV lines (_shared_src, hotbar)")
+                    help="build host C++ tests with --coverage -O0, run, gcov; print per-header COV lines (every dir with a test.toml)")
     ap.add_argument("--mutate", metavar="HEADER", help="run the mutation gate on one header (scripts/mutate_header.py)")
     a = ap.parse_args()
 

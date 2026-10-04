@@ -2,6 +2,7 @@
 """Tests for `run_tests.py --coverage`: the pure gcov parse/merge/format functions on synthetic .gcov text, and one real
 gcov run on the toy fixture. Run: python3 scripts/test_run_tests_coverage.py"""
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -59,6 +60,31 @@ class ParseMerge(unittest.TestCase):
         acc = {"/r/z/Z.h": {1: 1}, "/r/a/A.h": {1: 0, 2: 1}, "/usr/include/x.h": {1: 1}}
         out = rt.cov_summary(acc, lambda p: p.startswith("/r/"), lambda p: p[3:])
         self.assertEqual(out, ["COV  50.0%  1/2  a/A.h", "COV  100.0%  1/1  z/Z.h"])
+
+
+class Roots(unittest.TestCase):
+    def test_roots_need_test_toml_and_skip_testdata(self):
+        with tempfile.TemporaryDirectory() as t:
+            b = Path(t).resolve()
+            for d in ("a_src", "b_src", "a_src/testdata/fx"):
+                (b / d).mkdir(parents=True)
+            (b / "a_src" / "test.toml").write_text("")
+            (b / "a_src" / "testdata" / "fx" / "test.toml").write_text("")
+            self.assertEqual(rt.cov_roots(b), [b / "a_src"])
+            roots = rt.cov_roots(b)
+            self.assertTrue(rt._is_cov_header(b / "a_src" / "X.h", roots))
+            self.assertFalse(rt._is_cov_header(b / "b_src" / "X.h", roots))
+            self.assertFalse(rt._is_cov_header(b / "a_src" / "X.cpp", roots))
+
+    def test_real_roots_include_known_dirs(self):
+        names = {r.name for r in rt.cov_roots()}
+        self.assertTrue({"_shared_src", "force_power_hotbar_src"} <= names, names)
+
+    def test_same_stem_distinct_exe(self):
+        a = rt.cpp_item(Path("/x/a_src/common_contract_test.cpp"), cfg={})
+        b = rt.cpp_item(Path("/x/b_src/common_contract_test.cpp"), cfg={})
+        self.assertNotEqual(a.cmd[0], b.cmd[0])
+        self.assertEqual(a.build_cmd[-1 - 0] if False else a.cmd[0], a.build_cmd[a.build_cmd.index("-o") + 1])
 
 
 class RealRun(unittest.TestCase):
