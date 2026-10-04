@@ -1,8 +1,11 @@
 // Playthrough.h -- pure model of the per-playthrough level-up config (levelup_playthroughs.ini) and the playthrough GUID bit packing.
 // No windows.h, no STL, fixed caps (host-tested by research/companion_levelup/tools/parity/playthrough_test.cpp).
 //
-// File format: sections `[g<8 lowercase hex>]` (one per playthrough GUID), lines `<tag>=<preset id>|instant=0|1|hold=0|1|pause=N` (missing fields:
-// instant 0, hold 1, pause 0; `|pause=N` is written only when N > 0, so older files round-trip byte-identical; a garbage/negative pause parses as 0 like the other numeric fields). Everything else (comments, blank lines, unparseable lines, other sections, lines before the first section) is kept
+// File format: sections `[g<8 lowercase hex>]` (one per playthrough GUID), lines `<tag>=<preset id>|instant=0|1|hold=0|1|pause=N|pcfilter=<role>/<style>/<align>|ffilter=<mode>|pfilter=<mode>` (missing fields:
+// instant 0, hold 1, pause 0, pcfilter/ffilter/pfilter empty; `|pause=N` is written only when N > 0 and the three R10 filter fields only when set (ffilter/pfilter
+// `all` = default = not written), so older files round-trip byte-identical; a garbage/negative pause parses as 0 like the other numeric fields. The R10 PC level-up filter
+// fields are stored as RAW lowercase tokens ([a-z0-9_/] only, shorter than the field, else ignored = empty) and validated by the caller with R10Filter.h
+// (r10f::parseProfile / parseMode): this header stays independent of R10Filter.h.) Everything else (comments, blank lines, unparseable lines, other sections, lines before the first section) is kept
 // verbatim and in order, so a rewrite never destroys hand-written content: section header lines are kept byte-identical (text after `]` included), a tag
 // line keeps its inline `; comment` (normalised value, comment appended unchanged), and the file's line endings are kept (CRLF when most lines of the parsed
 // file end in CRLF, else LF; a mixed file is normalised to the majority). Tags/presets are lowercased on parse. If a cap is exceeded the
@@ -18,7 +21,8 @@
 namespace pt {
 
 constexpr int MaxSections = 64, MaxTags = 16, MaxExtra = 16, MaxLines = MaxTags + MaxExtra, MaxLine = 256, TagLen = 32, PresetLen = 48, NameLen = 64;
-constexpr size_t MaxText = static_cast<size_t>(MaxSections + 1) * (static_cast<size_t>(MaxLines) * (MaxLine + 2) + NameLen + 8);
+constexpr int FilterLen = 24, ModeLen = 12;   // raw token caps incl. NUL (melee/single/light and build_hide fit)
+constexpr size_t MaxText = static_cast<size_t>(MaxSections + 1) * (static_cast<size_t>(MaxLines) * (MaxLine + 2 + 96) + NameLen + 8);
 
 // ---- GUID bit packing ---------------------------------------------------------------------------------------
 inline void bitName(int i, char* out /* >= 8 */) { snprintf(out, 8, "LUO_G%02d", i); }
@@ -38,6 +42,9 @@ struct Line {
     char preset[PresetLen] = "";    // isTag: lowercase preset id
     bool instant = false, hold = true;
     int pause = 0;                  // 0 = preset default; N > 0 = last character level taken before banking
+    char pcfilter[FilterLen] = "";  // R10 PC build profile "role/style/align" (raw token, "" = unset)
+    char ffilter[ModeLen] = "";     // R10 feat panel filter mode token ("" = all)
+    char pfilter[ModeLen] = "";     // R10 power panel filter mode token ("" = all)
 };
 struct Section {
     char name[NameLen] = "";        // as written between the brackets; sec[0] (the preamble) has no header
@@ -85,6 +92,22 @@ inline int eqi(const char* a, const char* b) {
     }
 }
 
+// Stores a raw filter token: lowercased, only [a-z0-9_/], shorter than cap, else empty. `all` is the default and stored as empty when allDefault.
+inline void setToken(char* dst, int cap, const char* v, bool allDefault) {
+    dst[0] = 0;
+    if (!v) return;
+    const size_t n = strlen(v);
+    if (n == 0 || n >= static_cast<size_t>(cap)) return;
+    for (size_t i = 0; i < n; ++i) {
+        char c = v[i];
+        if (c >= 'A' && c <= 'Z') c = static_cast<char>(c + 32);
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '/')) { dst[0] = 0; return; }
+        dst[i] = c;
+    }
+    dst[n] = 0;
+    if (allDefault && !strcmp(dst, "all")) dst[0] = 0;
+}
+
 inline Section* findGuid(Doc& d, uint32_t guid) {
     for (int i = 1; i < d.n; ++i) if (d.sec[i].isGuid && d.sec[i].guid == guid) return &d.sec[i];
     return nullptr;
@@ -98,7 +121,7 @@ inline const Line* findTag(const Section& s, const char* tag) {
 
 // Parses one value `<preset>|instant=0|1|hold=0|1|pause=N` into l (tag already set). False when the preset is empty / too long.
 inline bool parseValue(char* v, Line* l) {
-    l->instant = false; l->hold = true; l->pause = 0;
+    l->instant = false; l->hold = true; l->pause = 0; l->pcfilter[0] = l->ffilter[0] = l->pfilter[0] = 0;
     char* bar = strchr(v, '|');
     if (bar) *bar = 0;
     char* p = trimStr(v);
@@ -117,6 +140,9 @@ inline bool parseValue(char* v, Line* l) {
         if (!strcmp(k, "instant")) l->instant = atoi(val) != 0;
         else if (!strcmp(k, "hold")) l->hold = atoi(val) != 0;
         else if (!strcmp(k, "pause")) { const int n = atoi(val); l->pause = n > 0 ? n : 0; }
+        else if (!strcmp(k, "pcfilter")) setToken(l->pcfilter, FilterLen, val, false);
+        else if (!strcmp(k, "ffilter")) setToken(l->ffilter, ModeLen, val, true);
+        else if (!strcmp(k, "pfilter")) setToken(l->pfilter, ModeLen, val, true);
     }
     return true;
 }
@@ -211,9 +237,13 @@ inline size_t serialise(const Doc& d, char* out, size_t cap) {
         for (int j = 0; j < s.n; ++j) {
             const Line& l = s.lines[j];
             if (l.isTag) {
-                char b[2 * MaxLine + 64];
-                if (l.pause > 0) snprintf(b, sizeof b, "%s=%s|instant=%d|hold=%d|pause=%d%s%s", l.tag, l.preset, l.instant, l.hold, l.pause, l.text, nl);
-                else snprintf(b, sizeof b, "%s=%s|instant=%d|hold=%d%s%s", l.tag, l.preset, l.instant, l.hold, l.text, nl);
+                char b[2 * MaxLine + 160], x[96];
+                x[0] = 0;   // the optional fields, written only when set (older files round-trip byte-identical)
+                if (l.pause > 0) snprintf(x + strlen(x), sizeof x - strlen(x), "|pause=%d", l.pause);
+                if (l.pcfilter[0]) snprintf(x + strlen(x), sizeof x - strlen(x), "|pcfilter=%s", l.pcfilter);
+                if (l.ffilter[0]) snprintf(x + strlen(x), sizeof x - strlen(x), "|ffilter=%s", l.ffilter);
+                if (l.pfilter[0]) snprintf(x + strlen(x), sizeof x - strlen(x), "|pfilter=%s", l.pfilter);
+                snprintf(b, sizeof b, "%s=%s|instant=%d|hold=%d%s%s%s", l.tag, l.preset, l.instant, l.hold, x, l.text, nl);
                 if (!put(b)) return 0;
             } else if (!put(l.text) || !put(nl)) {
                 return 0;
@@ -250,6 +280,22 @@ inline bool setTag(Doc& d, uint32_t guid, const char* tag, const char* preset, b
     lowerStr(l->preset);
     l->instant = instant; l->hold = hold; l->pause = pause > 0 ? pause : 0;
     return true;
+}
+
+// Sets the R10 filter fields of an EXISTING tag line (setTag leaves them untouched, and a new line starts with all three unset). Tokens are sanitised
+// like parsed ones (see setToken; null / "" / invalid = unset; "all" for ffilter/pfilter = unset). False when the section or tag line is absent.
+inline bool setFilters(Doc& d, uint32_t guid, const char* tag, const char* pcfilter, const char* ffilter, const char* pfilter) {
+    Section* s = findGuid(d, guid);
+    if (!s || !tag) return false;
+    for (int i = 0; i < s->n; ++i) {
+        Line& l = s->lines[i];
+        if (!l.isTag || !eqi(l.tag, tag)) continue;
+        setToken(l.pcfilter, FilterLen, pcfilter, false);
+        setToken(l.ffilter, ModeLen, ffilter, true);
+        setToken(l.pfilter, ModeLen, pfilter, true);
+        return true;
+    }
+    return false;
 }
 
 // Removes the tag line; the section stays (an empty section still means "playthrough-bound: dev keys do not apply"). False when absent.

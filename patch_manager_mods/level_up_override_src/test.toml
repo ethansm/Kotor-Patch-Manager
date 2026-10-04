@@ -6,3 +6,8 @@ cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity
 # R10 probe state machine (pure header R10Probe.h); no shared headers needed.
 [r10_probe_test]
 cxxflags = ["-Werror"]
+
+# R10 filter logic (pure header R10Filter.h) + the real r10_tags.ini (path relative to this directory, the run cwd).
+[r10_filter_test]
+cxxflags = ["-Werror"]
+args = ["../../research/companion_levelup/runtime/r10_tags.ini"]

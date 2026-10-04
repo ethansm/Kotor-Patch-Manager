@@ -21,6 +21,7 @@ SRC = os.path.join(REPO, "patch_manager_mods", "level_up_override_src")
 DEFAULT_REPORT = os.path.join(CL, "phase6_evidence", "A3_mutation_report.md")
 
 CPP, UI, OPT, PT, WIZ = "LevelUpOverride.cpp", "LevelUpUi.h", "OptionsLogic.h", "Playthrough.h", "WizardLogic.h"
+R10F = "R10Filter.h"
 # regex helpers: M = mutation list entry
 M = []
 def m(mid, f, rx, rep, desc): M.append((mid, f, rx, rep, desc))
@@ -179,6 +180,34 @@ m("TP08", G, r"r\.y = ctl\.y - r\.h - gap;", "r.y = ctl.y + ctl.h + gap;", "tip 
 m("TP10", UI, r"guitip::setNative\(r->c\[i\], uiTipText\(i\)\)", "false", "UI: native tip strings never set")
 m("TP11", UI, r"if \(clicked \|\| r->open != r->tipOpen\)", "if (r->open != r->tipOpen)", "UI: a click no longer hides the tip box")
 m("TP12", UI, r"uiPlace\(UiPanel\* r, const guikit::Scale& s\) \{\n    for \(int i = 0; i < C_TIPBG; \+\+i\)", "uiPlace(UiPanel* r, const guikit::Scale& s) {\n    for (int i = 0; i < C_N; ++i)", "UI: uiPlace also moves the tip controls back to their spec rect each tick")
+# ---- R10 PC level-up filter (R10Filter.h + the Playthrough.h filter fields; killed by r10_filter_test.cpp (run from parity.py) and playthrough_test.cpp) ---------
+m("RF01", R10F, r"if \(kept == 0 && picksLeft > 0 && m != All\) return -1;", "if (kept == 0 && picksLeft >= 0 && m != All) return -1;", "filterChoosable: fallback also with no picks left")
+m("RF02", R10F, r"if \(kept == 0 && picksLeft > 0 && m != All\) return -1;", "if (kept == 0 && picksLeft > 1 && m != All) return -1;", "filterChoosable: fallback only with 2+ picks left (soft-lock with one pick)")
+m("RF03", R10F, r"m == BuildHide \? Combat :", "m == BuildHide ? Force :", "nextMode: BuildHide skips Combat")
+m("RF04", R10F, r"m == Combat \? Force : All;", "m == Combat ? All : All;", "nextMode: Force unreachable")
+m("RF05", R10F, r"    if \(\(tags & T_Dark\) && \(p\.align & T_Light\)\) return false;\n", "", "fits: dark row vs light build no longer conflicts")
+m("RF06", R10F, r"\(tags & T_Light\) && \(p\.align & T_Dark\)", "(tags & T_Light) && (p.align & T_Neutral)", "fits: light row conflicts with a neutral build instead of dark")
+m("RF07", R10F, r"    if \(tags & T_General\) return true;\n    if \(!\(\(tags & p\.role\)", "    if (!((tags & p.role)", "fitsMask: the general shortcut dropped")
+m("RF08", R10F, r"\(tags & p\.role\) \|\| \(tags & p\.style\)", "(tags & p.role) && (tags & p.style)", "fitsMask: role AND style required")
+m("RF09", R10F, r"    if \(tags & T_General\) return true;\n    return \(tags & \(m == Combat", "    return (tags & (m == Combat", "fits: general no longer passes the Combat/Force modes")
+m("RF10", R10F, r"if \(!tags\) return true;   // untagged / unknown: never filter", "if (!tags) return false;", "fits: untagged ids are filtered")
+m("RF11", R10F, r"m == Combat \? T_Combat : T_Force", "m == Combat ? T_Force : T_Combat", "fits: Combat and Force tags swapped")
+m("RF12", R10F, r"return m == BuildHide;", "return m == BuildHide || m == BuildDim;", "hides(): BuildDim hides")
+m("RF13", R10F, r"return m == BuildDim \|\| m == Combat \|\| m == Force;", "return m == BuildDim || m == Combat;", "dims(): Force never dims")
+m("RF14", R10F, r"if \(\*slot & Present\) \{ setErr\(err, errCap, lineNo, \"duplicate id\"\);", "if (false) { setErr(err, errCap, lineNo, \"duplicate id\");", "tag ini: duplicate ids accepted")
+m("RF15", R10F, r"else \{ setErr\(err, errCap, lineNo, \"unknown section\"\); t->clear\(\); return false; \}", "else sec = Feat;", "tag ini: unknown sections accepted as feats")
+m("RF16", R10F, r"if \(id >= MaxId\) \{", "if (id > MaxId) {", "tag ini: id == MaxId accepted")
+m("RF17", R10F, r"if \(!\(role & RoleMask\)\) return false;", "if (!role) return false;", "parseProfile: a non-role word accepted as the role")
+m("RF18", R10F, r"strcmp\(parts\[2\], \"none\"\) && !\(align & AlignMask\)", "strcmp(parts[2], \"none\") && !align", "parseProfile: a non-alignment word accepted as the alignment")
+m("RF19", R10F, r"\*p = Profile\(\);\n    if \(!text\) return false;", "if (!text) return false;", "parseProfile: failure leaves a stale profile")
+m("RF20", R10F, r"\"unknown tag word\"\); t->clear\(\); return false; \}", "\"unknown tag word\"); return false; }", "tag ini: an unknown tag word leaves partial data")
+m("PF01", PT, r"if \(l\.pcfilter\[0\]\) snprintf", "if (true) snprintf", "serialise: |pcfilter= always written")
+m("PF02", PT, r"if \(l\.ffilter\[0\]\) snprintf", "if (true) snprintf", "serialise: |ffilter= always written")
+m("PF03", PT, r"if \(l\.pfilter\[0\]\) snprintf", "if (true) snprintf", "serialise: |pfilter= always written")
+m("PF04", PT, r"if \(allDefault && !strcmp\(dst, \"all\"\)\) dst\[0\] = 0;", "", "setToken: `all` mode kept (default would be written)")
+m("PF06", PT, r"c == '_' \|\| c == '/'\)\) \{ dst\[0\] = 0; return; \}", "c == '_' || c == '/' || c == ' ')) { dst[0] = 0; return; }", "setToken: blanks accepted in a token")
+m("PF07", PT, r"if \(n == 0 \|\| n >= static_cast<size_t>\(cap\)\) return;", "if (n == 0) return;", "setToken: over-long token not rejected")
+
 BY_ID = {x[0]: x for x in M}
 assert len(BY_ID) == len(M), "duplicate mutation id"
 
@@ -200,6 +229,7 @@ def build_base(base):
     cp("patch_manager_mods/level_up_override_src", None)
     cp("patch_manager_mods/_shared_src", None)
     cp("tests/luo_scenarios", None)
+    cp("tests/include", None)   # check.h for the colocated r10_filter_test.cpp built by parity.py
     os.makedirs(os.path.join(base, "research/companion_levelup"))
     for sub in ("runtime", "tools/parity"):
         cp("research/companion_levelup/" + sub, None)

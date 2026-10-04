@@ -19,6 +19,8 @@ GATE_EXE = os.path.join(HERE, "gate_test_bin")
 PT_EXE = os.path.join(HERE, "playthrough_test_bin")
 UI_EXE = os.path.join(HERE, "ui_test_bin")
 GAP_EXE = os.path.join(HERE, "unit_gap_test_bin")
+R10_DIR = os.path.join(os.path.dirname(os.path.dirname(ROOT)), "patch_manager_mods", "level_up_override_src")
+R10_EXE = os.path.join(HERE, "r10_filter_test_bin")
 
 
 def case(tag, key, p, mask=0):
@@ -517,6 +519,15 @@ def main():
     print(pt.stdout.strip())
     if pt.stderr:
         print(pt.stderr[:4000])
+    # R10 filter logic (R10Filter.h; colocated r10_filter_test.cpp, run with the cwd and ini path run_tests.py uses) - built here too so mutate.py kills R10Filter.h mutations
+    rb = subprocess.run(["g++", "-std=c++17", "-O1", "-Wall", "-Wextra", "-I", R10_DIR, "-I", os.path.join(os.path.dirname(os.path.dirname(ROOT)), "tests", "include"),
+                         os.path.join(R10_DIR, "r10_filter_test.cpp"), "-o", R10_EXE], capture_output=True, text=True)
+    if rb.returncode:
+        sys.exit("COMPILE FAILED r10_filter_test.cpp\n" + rb.stderr)
+    r10 = subprocess.run([R10_EXE, "../../research/companion_levelup/runtime/r10_tags.ini"], cwd=R10_DIR, capture_output=True, text=True)
+    print("r10_filter_test: " + (r10.stdout.strip() or ("rc=%d" % r10.returncode)))
+    if r10.stderr:
+        print(r10.stderr[:4000])
     # M4 character-screen UI + R11 banked message on fake GuiKit/engine structs (ui_test.cpp)
     ui = subprocess.run([UI_EXE, INI], capture_output=True, text=True)
     print(ui.stdout.strip())
@@ -539,7 +550,7 @@ def main():
             m32bad += 1 if r32.returncode else 0
     else:
         print("-m32 gate/ui tests SKIPPED (g++ -m32 unavailable)")
-    sys.exit(1 if cfails or m32bad or bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or ui.returncode or gp.returncode else 0)
+    sys.exit(1 if cfails or m32bad or bad or lbad or ebad or pbad or len(pcpp) != len(ppy) or len(ecpp) != len(epy) or len(cpp) != len(py) or len(lcpp) != len(lpy) or ap.returncode or gt.returncode or pt.returncode or r10.returncode or ui.returncode or gp.returncode else 0)
 
 
 if __name__ == "__main__":

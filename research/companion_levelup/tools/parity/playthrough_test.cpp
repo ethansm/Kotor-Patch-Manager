@@ -186,6 +186,40 @@ int main() {
         CHECK(pt::removeTagRaw(&u[0], &un, 2, "atton") && u.substr(0, un) == "[g00000001]\nkreia=a__b\n[g00000002]\n", "section of another guid without the tag does not end the search: '%s'", u.substr(0, un).c_str());
     }
 
+    // R10 filter fields: |pcfilter=/|ffilter=/|pfilter= are written only when set (ffilter/pfilter `all` = default), parse tolerant, raw tokens, round trip
+    {
+        std::unique_ptr<pt::Doc> f(new pt::Doc);
+        load(*f, "[g000000bb]\natton=a__b|instant=0|hold=1|pause=4|pcfilter=melee/single/light|ffilter=build_hide|pfilter=combat ; n\nbao=b__c|pfilter=force|pcfilter=CASTER/none/dark\nkreia=k__x|ffilter=all|pfilter=all\nhk=h__x|pcfilter=bad value!|ffilter=|pfilter=waytoolongtokenvalue\nt3=t__x|pcfilter=a/b/c/d/e/f/g/h/i/j/k/l/m|ffilter=bad-char\nmand=m__x|pcfilter=\n");
+        const pt::Section* s = pt::findGuid(*f, 0xbb);
+        const pt::Line* a = s ? pt::findTag(*s, "atton") : nullptr;
+        CHECK(a && !strcmp(a->pcfilter, "melee/single/light") && !strcmp(a->ffilter, "build_hide") && !strcmp(a->pfilter, "combat") && a->pause == 4, "all three filter fields parsed");
+        const pt::Line* b = s ? pt::findTag(*s, "bao") : nullptr;
+        CHECK(b && !strcmp(b->pcfilter, "caster/none/dark") && !*b->ffilter && !strcmp(b->pfilter, "force"), "order-independent, lowercased");
+        const pt::Line* c = s ? pt::findTag(*s, "kreia") : nullptr;
+        CHECK(c && !*c->pcfilter && !*c->ffilter && !*c->pfilter, "`all` is the default and stored empty");
+        for (const char* t : {"hk", "t3", "mand"}) { const pt::Line* g = s ? pt::findTag(*s, t) : nullptr; CHECK(g && !*g->pcfilter && !*g->ffilter && !*g->pfilter, "garbage / over-long / empty values -> unset (%s)", t); }
+        CHECK(!f->lossy, "filter parsing never flags lossy");
+        const std::string want = "[g000000bb]\natton=a__b|instant=0|hold=1|pause=4|pcfilter=melee/single/light|ffilter=build_hide|pfilter=combat ; n\nbao=b__c|instant=0|hold=1|pcfilter=caster/none/dark|pfilter=force\nkreia=k__x|instant=0|hold=1\nhk=h__x|instant=0|hold=1\nt3=t__x|instant=0|hold=1\nmand=m__x|instant=0|hold=1\n";
+        CHECK(ser(*f) == want, "filter serialisation:\n%s", ser(*f).c_str());
+        { std::string o = ser(*f); std::unique_ptr<pt::Doc> f2(new pt::Doc); load(*f2, o); CHECK(ser(*f2) == o, "filter lines are a fixed point"); }
+        // setTag keeps the filter fields of an existing line; a new line starts unset; setFilters edits an existing line only
+        CHECK(pt::setTag(*f, 0xbb, "atton", "a__b", true, true, 0) && ser(*f).find("atton=a__b|instant=1|hold=1|pcfilter=melee/single/light|ffilter=build_hide|pfilter=combat ; n\n") != std::string::npos, "setTag preserves the filter fields");
+        CHECK(pt::setTag(*f, 0xbb, "new", "n__p", false, true, 0) && !*pt::findTag(*pt::findGuid(*f, 0xbb), "new")->pcfilter, "new line: filters unset");
+        CHECK(pt::setFilters(*f, 0xbb, "new", "Tank/Rifle/None", "build_dim", "all") && ser(*f).find("new=n__p|instant=0|hold=1|pcfilter=tank/rifle/none|ffilter=build_dim\n") != std::string::npos, "setFilters sets the fields (lowercased, all dropped): %s", ser(*f).c_str());
+        CHECK(pt::setFilters(*f, 0xbb, "new", nullptr, "", "x y") && ser(*f).find("new=n__p|instant=0|hold=1\n") != std::string::npos, "setFilters null / empty / invalid clears");
+        CHECK(!pt::setFilters(*f, 0xbb, "nope", "a", "b", "c") && !pt::setFilters(*f, 0x99, "new", "a", "b", "c") && !pt::setFilters(*f, 0xbb, nullptr, "a", "b", "c"), "setFilters: absent tag / section / null -> false");
+        // defaults are not written
+        CHECK(pt::setTag(*f, 0xcc, "x", "y__z", false, true, 0) && ser(*f).find("x=y__z|instant=0|hold=1\n") != std::string::npos && ser(*f).substr(ser(*f).find("[g000000cc]")).find("filter") == std::string::npos, "default line has no filter fields");
+        std::unique_ptr<pt::Doc> f3(new pt::Doc); load(*f3, "[g00000001]\nx=y__z|instant=1|hold=0\n; keep\n");
+        CHECK(ser(*f3) == "[g00000001]\nx=y__z|instant=1|hold=0\n; keep\n", "filter-less line round-trips byte-identical");
+        // CRLF + filters
+        std::unique_ptr<pt::Doc> f4(new pt::Doc); load(*f4, "[g00000002]\r\nx=y__z|pcfilter=melee/dual/dark\r\n");
+        CHECK(ser(*f4) == "[g00000002]\r\nx=y__z|instant=0|hold=1|pcfilter=melee/dual/dark\r\n", "CRLF kept with filter fields");
+        // worst-case line fits MaxText
+        std::string big = "[g00000003]\n"; for (int i = 0; i < pt::MaxTags; ++i) { char l[400]; snprintf(l, sizeof l, "t%02d=preset_%036d|instant=1|hold=0|pause=2147483647|pcfilter=melee/unarmed/neutral|ffilter=build_hide|pfilter=build_hide ; %0200d\n", i, i, i); big += l; }
+        std::unique_ptr<pt::Doc> f5(new pt::Doc); load(*f5, big); CHECK(ser(*f5).size() > 0, "worst-case document serialises within MaxText");
+    }
+
     printf("playthrough_test checks %d failures %d\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }
