@@ -366,4 +366,21 @@ inline std::string fmtAssign(int slot, const std::string& slotKey, bool saveOk, 
 }
 inline std::string fmtAssignValue(bool hasEntry, const std::string& refText) { return sfmt("edit: assign value=%s", hasEntry ? refText.c_str() : "none"); }
 
+// Stance / form watch: the vanilla action bar only resyncs on a character switch (0x74DA40), so we detect mode edges ourselves.
+struct ModeWatch { uint32_t creature = 0; int stance = 0; uint32_t form = 0; bool valid = false; };
+inline uint32_t maskForm(uint32_t raw) { return raw & 0xDFFFFFFFu; }   // vanilla 0x74DA40 masks bit 29 before storing hud+0x1C90
+// True exactly once per stance/form edge. First sight and a character switch only record (vanilla resyncs on the switch itself);
+// a failed read (readOk=false) neither fires nor disturbs the stored state.
+inline bool modeChanged(ModeWatch& w, uint32_t creature, int stance, uint32_t form, bool readOk) {
+    if (!readOk) return false;
+    form = maskForm(form);
+    if (!w.valid || w.creature != creature) { w.creature = creature; w.stance = stance; w.form = form; w.valid = true; return false; }
+    if (w.stance == stance && w.form == form) return false;
+    w.stance = stance; w.form = form;
+    return true;
+}
+inline int stanceKey(int stance) {
+    switch (stance) { case 9: return 0x410; case 10: return 0x411; case 0xB: return 0x412; case 0xC: return 0x413; case 0xD: return 0x414; case 16: return 0x415; default: return 0; }
+}
+
 }  // namespace hb

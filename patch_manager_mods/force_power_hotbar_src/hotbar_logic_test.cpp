@@ -585,5 +585,25 @@ int main() {
     h[12] = 0; TgaInfo z; z.bytes = 7; KT_CHECK_EQ(tgaInspect(h, 18, &z), TGA_TRUNCATED); KT_CHECK_EQ((long long)z.bytes, 0);   // w == 0
     TgaInfo e; KT_CHECK_EQ(e.w, 0); KT_CHECK_EQ(e.h, 0); KT_CHECK_EQ((long long)e.off, 0); KT_CHECK_EQ((long long)e.bytes, 0);
   }
+  { // ModeWatch / modeChanged / maskForm / stanceKey: fire once per stance/form edge; vanilla resyncs on character switch itself
+    ModeWatch w;
+    KT_CHECK(!modeChanged(w, 0x100, 9, 0x5, true));                 // first sight: no fire
+    KT_CHECK(w.valid && w.creature == 0x100 && w.stance == 9 && w.form == 0x5);
+    KT_CHECK(!modeChanged(w, 0x200, 10, 0x6, true));                // character switch: no fire
+    KT_CHECK(w.creature == 0x200 && w.stance == 10 && w.form == 0x6);
+    KT_CHECK(modeChanged(w, 0x200, 0xB, 0x6, true));                // stance change on new creature fires
+    KT_CHECK(!modeChanged(w, 0x200, 0xB, 0x6, true));               // ...exactly once
+    KT_CHECK(modeChanged(w, 0x200, 0xB, 0x7, true));                // form change fires
+    KT_CHECK(!modeChanged(w, 0x200, 0xB, 0x7 | 0x20000000u, true)); // bit 29 only: vanilla masks it, no fire
+    KT_CHECK_EQ(maskForm(0x20000007u), 7u); KT_CHECK_EQ(maskForm(0xFFFFFFFFu), 0xDFFFFFFFu);
+    ModeWatch before = w;
+    KT_CHECK(!modeChanged(w, 0x999, 16, 0x1, false));               // read failure: never fires, state untouched
+    KT_CHECK(w.creature == before.creature && w.stance == before.stance && w.form == before.form && w.valid);
+    KT_CHECK(!modeChanged(w, 0x200, 0xB, 0x7, true));               // still in sync after the failed read
+    ModeWatch f; KT_CHECK(!modeChanged(f, 1, 2, 3, false)); KT_CHECK(!f.valid && f.creature == 0);   // failed first read leaves it invalid
+    KT_CHECK_EQ(stanceKey(9), 0x410); KT_CHECK_EQ(stanceKey(10), 0x411); KT_CHECK_EQ(stanceKey(0xB), 0x412);
+    KT_CHECK_EQ(stanceKey(0xC), 0x413); KT_CHECK_EQ(stanceKey(0xD), 0x414); KT_CHECK_EQ(stanceKey(16), 0x415);
+    KT_CHECK_EQ(stanceKey(0), 0); KT_CHECK_EQ(stanceKey(14), 0); KT_CHECK_EQ(stanceKey(-1), 0);
+  }
   return kt::Report("hotbar_logic_test");
 }
