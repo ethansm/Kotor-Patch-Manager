@@ -76,18 +76,16 @@ Phase 0 verification:
 - `Patches/MouseProbe/`, untracked in the KPM fork.
 
 ## Next
-**Phase 1 is DONE (10-02).** It is on KPM branch `feat/patch-registry-logging` in worktree `~/Games/KOTOR2_Mod_Workspace/tools/kpm-registry`, from upstream/master. Commits A-F and the gate are in `19d_phase1_plan.md` "Execution log". It is not merged into `ethansm/local-mods` and not installed live.
+**Phase 2 is DONE (10-03).** Plan + execution log: `19e_phase2_plan.md`. Phase 1 (fa67a3b) and Phase 2 (fc11fa3, 706b150) are merged into `ethansm/local-mods`; the live core `36f10b7f` already has `kpatch.log` (installed by the portrait-slots session). Multilib is installed; gate = "GATE PASS (full, multilib)".
 
 Open items, in order:
-1. **User:** install `g++-multilib` (`sudo apt install g++-multilib`). Then run the full `make -C src/KotorPatcher all test` in the worktree. That covers the i386 test rows, the 32-bit fixtures and the Linux `.so`, none of which could build here. Also re-run the host smoke as a real 32-bit `.so`.
-2. **Optional live regression smoke (user-gated):**
-   - Back up the live `KotorPatcher.dll` and install the branch DLL.
-   - The user launches the game and plays briefly. Never launch it ourselves.
-   - Expect no new files unless a WARN/ERR occurs or `kplog.ini` exists.
-   - Then roll back or keep it, as the user chooses.
-3. Merge or cherry-pick the branch into `ethansm/local-mods` for local use.
-4. **Phase 2:** `Patches/Common/KpLog.h` (pre-init buffer, `KPatchInit` chaining, macros), the `debugLog()` reroute and `debuglog=` ini key, and migrating mouse-probe first.
-5. **Upstream:** the PR waits for Phase 2 and Phase 3 (perf numbers). The 19a comment is still HELD. Posting needs the user's go.
+1. **User test of mouse-probe 0.2.0** (staged, not installed): follow 19e "Step U" (hot-swap DLL + optional `[mouse-probe]` kplog.ini section; rollback listed). Needs the user's go; game closed; never launch it.
+2. Read the test log with `scripts/kplog_parse.py --stats`; look for `DROPPED`; update doc 18.
+3. Other mods migrate per `19f_kplog_migration_guide.md` (owning sessions; memory `kotor2-kplog-adoption`); track in the 19e adoption table.
+4. **Upstream:** the logger PR (`19g_upstream_pr_draft.md` + 19a comment) goes up with the first mod that ships with the logger. Rebase onto upstream/master first. Posting needs the user's go.
+5. Untested here: MSVC build of KpLog.h (preprocessor, /W4, `_fsopen`); first Windows/CI build covers it.
+
+(Phase 1 hand-off text kept below for history.)
 
 ## Session 2 hand-off (Phase 1 execution, 10-02 13:50 to 10-03)
 - Phase 1 is fully executed. Branch state, commits, gate and decisions are in `19d_phase1_plan.md` "Execution log". The gate is `scripts/kpm_registry_gate.sh`; it writes its logs to `/tmp/kpm_registry_gate`.
