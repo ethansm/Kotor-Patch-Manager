@@ -1,4 +1,4 @@
-// Smoke test for k2-activation-fix 1.0.0 (DLL-only; DllMain rewrites the movie thread's CALL [PostMessageA] at 0x40D69E).
+// Smoke test for k2-activation-fix 1.1.0 (DLL-only; DllMain rewrites the movie thread's CALL [PostMessageA] at 0x40D69E).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_activationfix.exe smoke_activationfix.cpp
 //        (default base 0x400000; the 7 MB .bss pad makes the image cover 0x400000-0xB00000, so 0x40D692, the IAT slot
 //        0x98646C and the engine globals 0xA1B4xx are ordinary memory of this exe; check `objdump -h`: .text must end
@@ -19,6 +19,7 @@ static BOOL __stdcall FakePost(HWND h, UINT m, WPARAM w, LPARAM l) { ++g_posts; 
 static char* g_log;   // heap: a static buffer would sit in .bss in front of pad and push it past 0x40D692
 static void readLog() { if (!g_log) g_log = (char*)malloc(16384); g_log[0] = 0; FILE* f = fopen("activationfix_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 16383, f); g_log[k] = 0; fclose(f); }
 static int count(const char* s) { int n = 0; for (const char* p = g_log; (p = strstr(p, s)) != nullptr; ++p) ++n; return n; }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.1.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 // Calls the fake fragment and returns ESP after minus ESP before (0 = stack balanced, i.e. the replacement pops 16 bytes).
 static int callSite() {
     int delta;
@@ -52,6 +53,7 @@ int main(int argc, char** argv) {
     if (!strcmp(mode, "disabled")) { FILE* cf = fopen("activationfix.txt", "w"); fprintf(cf, "enabled=0\n"); fclose(cf); } else DeleteFileA("activationfix.txt");
     unsigned char before[6]; memcpy(before, (void*)0x40D69E, 6);
     HMODULE m = LoadLibraryA("windows_x86.dll"); if (!m) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { typedef void (__cdecl *InitFn)(const void*); InitFn ini = (InitFn)GetProcAddress(m, "KPatchInit"); check(ini != nullptr, "KPatchInit export present"); if (ini) ini(nullptr); }
     SetFg setFg = (SetFg)GetProcAddress(m, "ActFixTestSetForeground"); GetSt state = (GetSt)GetProcAddress(m, "ActFixTestState");
     check(setFg && state, "test exports present");
     if (!setFg || !state) return 3;
@@ -69,19 +71,19 @@ int main(int argc, char** argv) {
         setFg(-1); g_posts = 0; bool fgOurs = GetForegroundWindow() == w; int d3 = callSite();
         if (fgOurs) check(g_posts == 0 && d3 == 0, "real foreground check (harness window in front): dropped");
         else printf("SKIP real foreground check: harness window is not foreground under this Wine session (posts=%d)\n", g_posts);
-        readLog();
-        check(strstr(g_log, "k2-activation-fix 1.0.0 loaded: site 0x0040d69e patched") != nullptr, "log: patched line");
+        readLog(); checkLoadOnce();
+        check(strstr(g_log, "k2-activation-fix 1.1.0 loaded: site 0x0040d69e patched") != nullptr, "log: patched line");
         check(count("IGNORED synthetic WM_ACTIVATEAPP(0,0)") == (fgOurs ? 2 : 1) && count("PASSED movie-thread post msg=001c") == 1, "log: IGNORED/PASSED lines");
         check(strstr(g_log, "a1b4e0=1 76c=1") != nullptr, "log: engine flags recorded");
     } else if (!strcmp(mode, "disabled")) {
         check(state() == 0 && memcmp(site, before, 6) == 0, "disabled: site untouched");
         g_posts = 0; int d = callSite();
         check(g_posts == 1 && d == 0, "disabled: original CALL [PostMessageA] runs");
-        readLog(); check(strstr(g_log, "DISABLED by activationfix.txt") != nullptr, "log: disabled line");
+        readLog(); checkLoadOnce(); check(strstr(g_log, "DISABLED by activationfix.txt") != nullptr, "log: disabled line");
         DeleteFileA("activationfix.txt");
     } else {
         check(state() == -1 && memcmp(site, before, 6) == 0, "refuse: wrong bytes -> refused, site untouched");
-        readLog(); check(strstr(g_log, "REFUSED(bytes ff 15 6c 64 98 01") != nullptr, "log: REFUSED(bytes ...) line");
+        readLog(); checkLoadOnce(); check(strstr(g_log, "REFUSED(bytes ff 15 6c 64 98 01") != nullptr, "log: REFUSED(bytes ...) line");
     }
     printf("%s: %d failures\n", mode, g_fail);
     return g_fail ? 1 : 0;

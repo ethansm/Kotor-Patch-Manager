@@ -45,6 +45,9 @@ import re
 import statistics
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts"))
+import kplog_parse  # noqa: E402
+
 DEFAULT_GAME_DIR = os.path.expanduser("~/.local/share/Steam/steamapps/common/Knights of the Old Republic II")
 DEFAULT_OFFSETS = {
     "perflab_metrics.txt": 10828745,
@@ -56,6 +59,10 @@ DEFAULT_OFFSETS = {
     "texmem_log.txt": 0,
 }
 LOG_FILES = ("robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt", "equipiconfix_log.txt")
+# KpLog core file (kplog.ini enabled) for each text-log key; the key stays the legacy/fallback file name.
+LOG_ALIASES = {"texmem_log.txt": "k2-texture-memory-release_log.txt",
+               "activationfix_log.txt": "k2-activation-fix_log.txt",
+               "equipiconfix_log.txt": "k2-equip-icon-fix_log.txt"}
 ALL_FILES = ("perflab_metrics.txt", "perflab_alloc_snaps.txt", "perflab_log.txt") + LOG_FILES
 CONFIG_FILES = ("perflab_debug.txt", "texmem.txt")
 MATCH_SLACK_MS = 2000
@@ -404,24 +411,82 @@ class LogBlock:
         return [m for _, m in self.lines if m.startswith(prefix)]
 
 
+def _session_wall(sess):
+    """'YYYY-MM-DD HH:MM:SS' -> seconds since midnight (same unit as the legacy wall_s)."""
+    try:
+        hh, mm, ss = sess.split()[1].split(":")
+        return int(hh) * 3600 + int(mm) * 60 + int(ss)
+    except (IndexError, ValueError):
+        return None
+
+
 def parse_textlog(info):
-    """-> (blocks, headless_line_count)"""
+    """-> (blocks, headless_line_count). Accepts legacy `[hh:mm:ss.mmm tick] msg`, KpLog fallback
+    `<tick> id/chan [LVL ]msg` (wall_s None) and KpLog core `T=<s> f=<n> id/chan [LVL ]msg` (tick rebuilt from the
+    load line's `tick=` plus the T delta; wall_s = `# kplog session` time + T)."""
     blocks, headless = [], 0
+    sess_wall = None
+    t_load = None     # core T (seconds) of the current block's load line, None for legacy/fallback blocks
     for ln in read_lines(info):
         m = _LG.match(ln)
-        if not m:
-            if blocks and ln.strip():
-                blocks[-1].lines.append((blocks[-1].tick, ln.strip()))   # continuation (e.g. "  kt REFUSED: ...")
+        if m:
+            hh, mm, ss, ms, tick, msg = m.groups()
+            wall = int(hh) * 3600 + int(mm) * 60 + int(ss) + int(ms) / 1000.0
+            tick = int(tick)
+            core_t = None
+        else:
+            p = kplog_parse.parse_line(ln)
+            if p is None or p["kind"] not in ("line", "fallback", "header"):
+                if blocks and ln.strip():
+                    blocks[-1].lines.append((blocks[-1].tick, ln.strip()))   # continuation (e.g. "  kt REFUSED: ...")
+                continue
+            if p["kind"] == "header":
+                if p.get("session"):
+                    sess_wall = _session_wall(p["session"])
+                continue
+            msg = p["msg"]
+            if p["kind"] == "fallback":
+                tick, wall, core_t = int(p["t_ms"]), None, None
+            else:
+                core_t = p["t_ms"]   # core lines: t_ms is actually seconds (T=<s>.<ms>); fallback lines: milliseconds
+                wall = (sess_wall + core_t) % 86400 if sess_wall is not None else None
+                tick = None
+        is_load = " loaded" in msg and "loaded:" in msg
+        if core_t is not None:
+            if is_load:
+                tm = re.search(r"\btick=(\d+)", msg)
+                t_load = core_t
+                tick = int(tm.group(1)) if tm else int(core_t * 1000)
+                blocks.append(LogBlock(info.name, tick, wall, msg))
+                continue
+            if not blocks:
+                headless += 1
+                continue
+            tick = blocks[-1].tick + int(round((core_t - t_load) * 1000)) if t_load is not None else blocks[-1].tick
+            blocks[-1].lines.append((tick, msg))
             continue
-        hh, mm, ss, ms, tick, msg = m.groups()
-        wall = int(hh) * 3600 + int(mm) * 60 + int(ss) + int(ms) / 1000.0
-        if " loaded" in msg and "loaded:" in msg:
-            blocks.append(LogBlock(info.name, int(tick), wall, msg))
+        if is_load:
+            blocks.append(LogBlock(info.name, tick, wall, msg))
         elif blocks:
-            blocks[-1].lines.append((int(tick), msg))
+            blocks[-1].lines.append((tick, msg))
         else:
             headless += 1
     return blocks, headless
+
+
+def parse_textlog_pair(old_info, new_info):
+    """Per mod there may be two files (legacy/fallback name and KpLog core name). Choose the one whose newest
+    `loaded:` block has the larger tick (core ticks are rebuilt from the same GetTickCount base, so they compare);
+    ties and empty files fall back to the legacy name. Blocks are returned under the legacy key."""
+    ob, oh = parse_textlog(old_info)
+    if new_info is None:
+        return ob, oh
+    nb, nh = parse_textlog(new_info)
+    for blk in nb:
+        blk.name = old_info.name
+    if nb and (not ob or tdiff(nb[-1].tick, ob[-1].tick) < 0x80000000 and nb[-1].tick != ob[-1].tick):
+        return nb, nh
+    return ob, oh
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -702,7 +767,7 @@ def build_launches(mlaunches, attaches, snaps, text_logs):
                     x.pid = b.pid
                 elif x.pid != b.pid:
                     x.pid_conflict = True
-            if x.wall_s is None:
+            if x.wall_s is None and b.wall_s is not None:   # fallback-shape blocks carry no wall time
                 x.wall_s = (b.wall_s - tdiff(b.tick, x.start) / 1000.0) % 86400
     snap_orph = 0
     for s in snaps:
@@ -1280,7 +1345,11 @@ def run(game_dir, offsets, arms=None, latest=None, summary=False):
     attaches, _ = parse_perflab_log(infos["perflab_log.txt"])
     text, headless = {}, {}
     for n in LOG_FILES:
-        text[n], headless[n] = parse_textlog(infos[n])
+        alias = LOG_ALIASES.get(n)
+        ainfo = ReadInfo(alias, os.path.join(game_dir, alias), offsets.get(alias, 0)) if alias else None
+        if ainfo is not None and not ainfo.present:
+            ainfo = None
+        text[n], headless[n] = parse_textlog_pair(infos[n], ainfo)
     L, orphans, snap_orph = build_launches(mlaunches, attaches, snaps, text)
     A = {x.idx: analyze(x) for x in L}
     cfg = {}

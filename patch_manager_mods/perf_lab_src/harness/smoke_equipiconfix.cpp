@@ -1,4 +1,4 @@
-// Smoke test for k2-equip-icon-fix 1.0.0 (DLL-only; DllMain re-targets 8 CALL rel32 sites in/around 0x8AD930).
+// Smoke test for k2-equip-icon-fix 1.1.0 (DLL-only; DllMain re-targets 8 CALL rel32 sites in/around 0x8AD930).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_equipiconfix.exe smoke_equipiconfix.cpp
 //        (default base 0x400000; the 7 MB .bss pad covers 0x414000-0xB00000, so 0x414840, 0x8AD930 and every site are
 //        ordinary memory of this exe; `objdump -h`: .text must end below 0x414000, pad must start below 0x414840)
@@ -105,6 +105,7 @@ static void putJmp(uintptr_t at, void* to) { unsigned char b[7] = { 0xB8, 0, 0, 
 static void putCall(uintptr_t at, uintptr_t target) { unsigned char b[6] = { 0xE8, 0, 0, 0, 0, 0xC3 }; int32_t d = (int32_t)(target - (at + 5)); memcpy(b + 1, &d, 4); memcpy((void*)at, b, 6); }
 static char* g_log;   // heap: static buffers in .bss sit in front of pad
 static void readLog() { if (!g_log) g_log = (char*)malloc(16384); g_log[0] = 0; FILE* f = fopen("equipiconfix_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 16383, f); g_log[k] = 0; fclose(f); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.1.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 typedef int (__cdecl *GetSt)(); typedef void (__cdecl *GetCnt)(long*);
 int main(int argc, char** argv) {
     const char* mode = argc > 1 ? argv[1] : "run";
@@ -125,6 +126,7 @@ int main(int argc, char** argv) {
     unsigned char before[8][5]; const uintptr_t all[8] = { 0x8ABA8C, 0x8ADA08, 0x8ADA81, 0x8ADFA2, 0x8AE02D, 0x8AE19A, 0x8AE1CD, 0x8AE793 };
     for (int i = 0; i < 8; ++i) memcpy(before[i], (void*)all[i], 5);
     HMODULE m = LoadLibraryA("windows_x86.dll"); if (!m) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { typedef void (__cdecl *InitFn)(const void*); InitFn ini = (InitFn)GetProcAddress(m, "KPatchInit"); check(ini != nullptr, "KPatchInit export present"); if (ini) ini(nullptr); }
     GetSt state = (GetSt)GetProcAddress(m, "EquipFixTestState"); GetCnt cnt = (GetCnt)GetProcAddress(m, "EquipFixTestCounters");
     check(state && cnt, "test exports present"); if (!state || !cnt) return 3;
     bool untouched = true; for (int i = 0; i < 8; ++i) untouched &= memcmp(before[i], (void*)all[i], 5) == 0;
@@ -146,19 +148,19 @@ int main(int argc, char** argv) {
         long c[7]; cnt(c);
         printf("counters passes=%ld deferred=%ld cancelled=%ld applied=%ld sets=%ld outside=%ld replaced=%ld\n", c[0], c[1], c[2], c[3], c[4], c[5], c[6]);
         check(c[0] == NF && c[1] >= 2 * NF && c[2] + c[3] + c[6] == c[1] && c[5] == 0, "counters: one pass per frame, >= 2 deferred per pass, each cancelled, replaced or applied");
-        Sleep(10500); readLog();
-        check(strstr(g_log, "k2-equip-icon-fix 1.0.0 loaded: 8 sites patched") != nullptr, "log: patched line");
+        Sleep(10500); readLog(); checkLoadOnce();
+        check(strstr(g_log, "k2-equip-icon-fix 1.1.0 loaded: 8 sites patched") != nullptr, "log: patched line");
         check(strstr(g_log, "CANCEL ctl=") != nullptr && strstr(g_log, "deferred 'iweap_l' superseded by 'iw_vbroshort_001'") != nullptr, "log: CANCEL event names the alternation");
         check(strstr(g_log, "STATS passes=15") != nullptr, "log: STATS line");
     } else if (!strcmp(mode, "disabled")) {
         check(state() == 0 && untouched, "disabled: all sites untouched");
         play(pat); int r = 0; for (int f = 0; f < NF; ++f) for (int k = 0; k < 11; ++k) r += pat.changes[f][k];
         check(r == refReloads, "disabled: engine behaviour (same reload count)");
-        readLog(); check(strstr(g_log, "DISABLED by equipiconfix.txt") != nullptr, "log: disabled line");
+        readLog(); checkLoadOnce(); check(strstr(g_log, "DISABLED by equipiconfix.txt") != nullptr, "log: disabled line");
         DeleteFileA("equipiconfix.txt");
     } else {
         check(state() == -1 && untouched, "refuse: one wrong site -> refused, all 8 sites untouched");
-        readLog(); check(strstr(g_log, "REFUSED(bytes") != nullptr && strstr(g_log, "at 0x008ae1cd") != nullptr, "log: REFUSED(bytes ...) names the site");
+        readLog(); checkLoadOnce(); check(strstr(g_log, "REFUSED(bytes") != nullptr && strstr(g_log, "at 0x008ae1cd") != nullptr, "log: REFUSED(bytes ...) names the site");
     }
     printf("%s: %d failures\n", mode, g_fail);
     return g_fail ? 1 : 0;

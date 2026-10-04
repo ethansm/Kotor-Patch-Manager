@@ -72,7 +72,8 @@ class Routing(Tmp):
         self.assertEqual(a[2:], ["--log", os.path.join(self.g, "levelup_override_log.txt")])
 
     def test_runs_class(self):
-        for n in ("perflab_log.txt", "perflab_metrics.txt", "robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt"):
+        for n in ("perflab_log.txt", "perflab_metrics.txt", "robustnessfixes_log.txt", "texmem_log.txt", "activationfix_log.txt",
+                  "equipiconfix_log.txt", "k2-texture-memory-release_log.txt", "k2-activation-fix_log.txt", "k2-equip-icon-fix_log.txt"):
             a = self.argv(n)
             self.assertTrue(a[1].endswith("patch_manager_mods/perf_lab_src/analyze_runs.py"), n)
             self.assertEqual(a[2:], ["--game-dir", self.g, "--summary", "--latest", "1"], n)

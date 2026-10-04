@@ -1,4 +1,4 @@
-// k2-equip-icon-fix 1.0.0 (Steam Aspyr build 6A522E71...). Fixes candidate BR (doc 10, Phase 5C):
+// k2-equip-icon-fix 1.1.0 (Steam Aspyr build 6A522E71...). Fixes candidate BR (doc 10, Phase 5C):
 // the equipment screen reloads the equipped weapon's icon texture every frame.
 //
 // Mechanism (static, decomp/8a/008ad930.*; run A NAME tables incidents_15_1824): the equipment panel per-frame update
@@ -22,8 +22,8 @@
 // every control ends each frame with exactly the name the engine would have left, with one setter call per control.
 // Outside a pass (should not happen: 0x8AD930 has one caller) EquipFixDefer sets immediately.
 //
-// Config: $G/equipiconfix.txt `enabled=0` disables (sites untouched). Log: $G/equipiconfix_log.txt (DllMain line; a
-// helper thread appends a STATS line every 10 s while counters change and the first 16 cancel events).
+// Config: $G/equipiconfix.txt `enabled=0` disables (sites untouched). Log (1.1.0): shared KpLog.h (channel main;
+// load line + tick= emitted by KPatchInit; statsThread appends STATS / the first 16 CANCEL). Old core: fallback equipiconfix_log.txt at INFO.
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +31,9 @@
 #include <stdint.h>
 #include "../_shared/SafeRead.h"
 #include "CodePatch.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("k2-equip-icon-fix");
 
 namespace {
 
@@ -56,20 +59,28 @@ volatile LONG g_passes = 0, g_deferred = 0, g_cancelled = 0, g_applied = 0, g_se
 struct CancelEv { void* ctl; char from[17], to[17]; uintptr_t ra; };
 CancelEv g_cancelEv[16]; volatile LONG g_cancelHead = 0; LONG g_cancelFlushed = 0;
 
-CRITICAL_SECTION g_logLock;
 int g_state = 0;            // 1 patched, 0 disabled, -1 refused (bytes), -2 refused (protect), -3 refused (unmapped)
 int g_badSite = -1; uint8_t g_seen[5];
 
-void logf(const char* fmt, ...) {
-    char line[400];
-    va_list ap; va_start(ap, fmt); vsnprintf(line, sizeof(line), fmt, ap); va_end(ap);
-    EnterCriticalSection(&g_logLock);
-    if (FILE* f = fopen("equipiconfix_log.txt", "a")) {
-        SYSTEMTIME t; GetLocalTime(&t);
-        fprintf(f, "[%02u:%02u:%02u.%03u %lu] %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, GetTickCount(), line);
-        fclose(f);
-    }
-    LeaveCriticalSection(&g_logLock);
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser. Old core: same file as 1.0.0, at INFO.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("equipiconfix_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+// The load line is formatted in DllMain (setLoad) but emitted later, once the logger is known: by KPatchInit (whether or not
+// KpLog_Init succeeded), else by the first hook call / helper-thread tick (old core without KPatchInit).
+char g_loadLine[400]; int g_loadLevel = KPLOG_INFO;
+volatile LONG g_loadEmitted = 0;
+void setLoad(int level, const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt); vsnprintf(g_loadLine, sizeof(g_loadLine), fmt, ap); va_end(ap);
+    size_t n = strlen(g_loadLine);
+    snprintf(g_loadLine + n, sizeof(g_loadLine) - n, " tick=%lu", GetTickCount());
+    g_loadLevel = level;
+}
+void emitLoadLine() {
+    if (g_loadEmitted) return;                         // cheap fast path (hot after the first call)
+    if (InterlockedExchange(&g_loadEmitted, 1)) return;
+    KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
 }
 
 bool configEnabled() {
@@ -90,13 +101,14 @@ DWORD WINAPI statsThread(LPVOID) {
     LONG last = -1;
     for (;;) {
         Sleep(10000);
+        emitLoadLine();
         while (g_cancelFlushed < g_cancelHead && g_cancelFlushed < 16) {
             const CancelEv& e = g_cancelEv[g_cancelFlushed++];
-            logf("CANCEL ctl=%p deferred '%s' superseded by '%s' (ra=%08x) in the same pass", e.ctl, e.from, e.to, (unsigned)e.ra);
+            KP_LOG(chMain, "CANCEL ctl=%p deferred '%s' superseded by '%s' (ra=%08x) in the same pass", e.ctl, e.from, e.to, (unsigned)e.ra);
         }
         LONG p = g_passes;
         if (p != last) {
-            logf("STATS passes=%ld deferred=%ld cancelled=%ld replaced=%ld applied=%ld sets=%ld outside_pass=%ld", p, (long)g_deferred, (long)g_cancelled, (long)g_replaced, (long)g_applied, (long)g_sets, (long)g_outside);
+            KP_LOG(chMain, "STATS passes=%ld deferred=%ld cancelled=%ld replaced=%ld applied=%ld sets=%ld outside_pass=%ld", p, (long)g_deferred, (long)g_cancelled, (long)g_replaced, (long)g_applied, (long)g_sets, (long)g_outside);
             last = p;
         }
     }
@@ -106,6 +118,7 @@ DWORD WINAPI statsThread(LPVOID) {
 
 // 0x8ABA8C: replaces CALL 0x8AD930 (fastcall, ECX = panel). Main thread.
 extern "C" void __fastcall EquipFixPass(void* panel) {
+    emitLoadLine();
     InterlockedIncrement(&g_passes);
     for (Pending& d : g_pending) d.live = false;
     g_inPass = true;
@@ -155,11 +168,14 @@ extern "C" void __cdecl EquipFixTestCounters(long* out7) {
     out7[0] = g_passes; out7[1] = g_deferred; out7[2] = g_cancelled; out7[3] = g_applied; out7[4] = g_sets; out7[5] = g_outside; out7[6] = g_replaced;
 }
 
+// Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
-    InitializeCriticalSection(&g_logLock);
     if (!configEnabled()) {
-        logf("k2-equip-icon-fix 1.0.0 loaded: DISABLED by equipiconfix.txt (8 sites untouched) pid=%lu", GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-equip-icon-fix 1.1.0 loaded: DISABLED by equipiconfix.txt (8 sites untouched) pid=%lu", GetCurrentProcessId());
+        emitLoadLine();   // unpatched: nothing later emits it
         return TRUE;
     }
     // Verify all 8 sites before writing any of them.
@@ -182,13 +198,15 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         }
     }
     if (g_state == 1)
-        logf("k2-equip-icon-fix 1.0.0 loaded: 8 sites patched (pass 0x8ABA8C, defer 0x8ADA08/0x8ADA81/0x8AE793, set x4) pid=%lu", GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-equip-icon-fix 1.1.0 loaded: 8 sites patched (pass 0x8ABA8C, defer 0x8ADA08/0x8ADA81/0x8AE793, set x4) pid=%lu", GetCurrentProcessId());
     else if (g_state == -1)
-        logf("k2-equip-icon-fix 1.0.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x at 0x%08x) all sites untouched pid=%lu",
+        setLoad(KPLOG_WARN, "k2-equip-icon-fix 1.1.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x at 0x%08x) all sites untouched pid=%lu",
              g_seen[0], g_seen[1], g_seen[2], g_seen[3], g_seen[4], (unsigned)Sites[g_badSite].at, GetCurrentProcessId());
     else
-        logf("k2-equip-icon-fix 1.0.0 loaded: REFUSED(%s at 0x%08x)%s pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)Sites[g_badSite].at,
+        setLoad(KPLOG_WARN, "k2-equip-icon-fix 1.1.0 loaded: REFUSED(%s at 0x%08x)%s pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)Sites[g_badSite].at,
              g_state == -2 && g_badSite > 0 ? " PARTIAL WRITE" : " all sites untouched", GetCurrentProcessId());
+    // Unpatched: no thread or hook runs later to emit the line, so write it now (fallback sink, as 1.0.0 did).
     if (g_state == 1) CloseHandle(CreateThread(nullptr, 0, statsThread, nullptr, 0, nullptr));
+    else emitLoadLine();
     return TRUE;
 }

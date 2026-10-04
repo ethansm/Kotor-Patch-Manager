@@ -1,4 +1,4 @@
-// k2-texture-memory-release 1.0.0 (Steam Aspyr build 6A522E71...). Candidate TX (doc 10, Phase 6C).
+// k2-texture-memory-release 1.1.0 (Steam Aspyr build 6A522E71...). Candidate TX (doc 10, Phase 6C).
 //
 // Problem: BuildAndStoreTexture 0x4260E0 frees the CPU-side image after the GL upload only for non-TPC textures
 // (`if (!IsTPCLoaded()) FreeImage()`, 0x4261CA-0x4261E4). TPC textures use the CResTPC buffer zero-copy (tex+0x44) and
@@ -16,14 +16,17 @@
 // 0x426C30 -> 0x427DE0) re-Demand from resman; a requeue with +0x44 == 0 skips glImage (JZ 0x426141).
 // Conflict: perf-lab's own `tx=1` experiment writes the same site; keep it 0 (the second writer refuses on bytes).
 //
-// Config: $G/texmem.txt `enabled=0` disables (site untouched). Log: $G/texmem_log.txt (DllMain line; a helper thread
-// appends a COUNTERS line every 30 s when they changed).
+// Config: $G/texmem.txt `enabled=0` disables (site untouched). Log (1.1.0): shared KpLog.h (channel main). The load line (+ tick=) is
+// formatted in DllMain, emitted by KPatchInit; a helper thread appends COUNTERS every 30 s. Old core: fallback texmem_log.txt at INFO.
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include "CodePatch.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("k2-texture-memory-release");
 
 namespace {
 
@@ -31,20 +34,28 @@ constexpr uintptr_t Site = 0x004261CF, TxFree = 0x004261D6, TxSkip = 0x004261E6;
 const uint8_t SiteOrig[7] = { 0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x75, 0x10 };
 
 volatile LONG g_freed = 0, g_kept = 0;
-CRITICAL_SECTION g_logLock;
 int g_state = 0;            // 1 patched, 0 disabled, -1 refused (bytes), -2 refused (protect), -3 refused (unmapped), -4 no cave
 uint8_t g_seen[7]; uint8_t* g_cave = nullptr;
 
-void logf(const char* fmt, ...) {
-    char line[400];
-    va_list ap; va_start(ap, fmt); vsnprintf(line, sizeof(line), fmt, ap); va_end(ap);
-    EnterCriticalSection(&g_logLock);
-    if (FILE* f = fopen("texmem_log.txt", "a")) {
-        SYSTEMTIME t; GetLocalTime(&t);
-        fprintf(f, "[%02u:%02u:%02u.%03u %lu] %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, GetTickCount(), line);
-        fclose(f);
-    }
-    LeaveCriticalSection(&g_logLock);
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser. Old core: same file as 1.0.0, at INFO.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("texmem_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+// The load line is formatted in DllMain (setLoad) but emitted later, once the logger is known: by KPatchInit (whether or not
+// KpLog_Init succeeded), else by the first hook call / helper-thread tick (old core without KPatchInit).
+char g_loadLine[400]; int g_loadLevel = KPLOG_INFO;
+volatile LONG g_loadEmitted = 0;
+void setLoad(int level, const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt); vsnprintf(g_loadLine, sizeof(g_loadLine), fmt, ap); va_end(ap);
+    size_t n = strlen(g_loadLine);
+    snprintf(g_loadLine + n, sizeof(g_loadLine) - n, " tick=%lu", GetTickCount());
+    g_loadLevel = level;
+}
+void emitLoadLine() {
+    if (g_loadEmitted) return;                         // cheap fast path (hot after the first call)
+    if (InterlockedExchange(&g_loadEmitted, 1)) return;
+    KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
 }
 
 bool configEnabled() {
@@ -97,8 +108,9 @@ DWORD WINAPI helperThread(LPVOID) {
     LONG lf = -1, lk = -1;
     for (;;) {
         Sleep(30000);
+        emitLoadLine();
         LONG f = g_freed, k = g_kept;
-        if (f != lf || k != lk) { logf("COUNTERS tpc_freed=%ld tpc_kept_controller=%ld", f, k); lf = f; lk = k; }
+        if (f != lf || k != lk) { KP_LOG(chMain, "COUNTERS tpc_freed=%ld tpc_kept_controller=%ld", f, k); lf = f; lk = k; }
     }
 }
 
@@ -108,21 +120,26 @@ DWORD WINAPI helperThread(LPVOID) {
 extern "C" int __cdecl TexMemTestState() { return g_state; }
 extern "C" void __cdecl TexMemTestCounters(long* out2) { out2[0] = g_freed; out2[1] = g_kept; }
 
+// Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
-    InitializeCriticalSection(&g_logLock);
     if (!configEnabled()) {
-        logf("k2-texture-memory-release 1.0.0 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=%lu", GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-texture-memory-release 1.1.0 loaded: DISABLED by texmem.txt (site 0x004261cf untouched) pid=%lu", GetCurrentProcessId());
+        emitLoadLine();   // unpatched: nothing later emits it
         return TRUE;
     }
     g_state = apply();
     if (g_state == 1)
-        logf("k2-texture-memory-release 1.0.0 loaded: site 0x004261cf patched (cave %p) pid=%lu", (void*)g_cave, GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-texture-memory-release 1.1.0 loaded: site 0x004261cf patched (cave %p) pid=%lu", (void*)g_cave, GetCurrentProcessId());
     else if (g_state == -1)
-        logf("k2-texture-memory-release 1.0.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x %02x at 0x004261cf; perf-lab tx=1 active?) site untouched pid=%lu",
+        setLoad(KPLOG_WARN, "k2-texture-memory-release 1.1.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x %02x at 0x004261cf; perf-lab tx=1 active?) site untouched pid=%lu",
              g_seen[0], g_seen[1], g_seen[2], g_seen[3], g_seen[4], g_seen[5], g_seen[6], GetCurrentProcessId());
     else
-        logf("k2-texture-memory-release 1.0.0 loaded: REFUSED(%s) site untouched pid=%lu", g_state == -2 ? "protect" : g_state == -3 ? "unmapped" : "cave alloc", GetCurrentProcessId());
+        setLoad(KPLOG_WARN, "k2-texture-memory-release 1.1.0 loaded: REFUSED(%s) site untouched pid=%lu", g_state == -2 ? "protect" : g_state == -3 ? "unmapped" : "cave alloc", GetCurrentProcessId());
+    // Unpatched: no thread or hook runs later to emit the line, so write it now (fallback sink, as 1.0.0 did).
     if (g_state == 1) CloseHandle(CreateThread(nullptr, 0, helperThread, nullptr, 0, nullptr));
+    else emitLoadLine();
     return TRUE;
 }

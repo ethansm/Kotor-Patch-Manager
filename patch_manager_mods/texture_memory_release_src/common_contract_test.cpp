@@ -12,9 +12,18 @@
 #include <initializer_list>
 #include "CodePatch.h"
 #include "check.h"
+#include "KpLog.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <unistd.h>
 
 #define CCHECK(why, expr) ::kt::Check("texture_memory_release relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define CEQ(why, a, b) ::kt::CheckEq("texture_memory_release relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+
+KP_LOG_PATCH("k2-texture-memory-release");
+KP_CHANNEL(chMain, "main");
 
 namespace {
 struct ProtCall { void* p; SIZE_T n; DWORD newProt; uint8_t firstByte; int seq; };
@@ -102,6 +111,28 @@ int main() {
         CEQ("putRel32 forward jump of 7 bytes past the field end encodes +7", rd32(cave), 7);
         codepatch::putRel32(cave, 0x1000 + 24, 0x1000 + 24 + 4);
         CEQ("putRel32 target == end of field encodes 0", rd32(cave), 0);
+    }
+
+    // ---- KpLog fallback sink (before any KpLog_Init; the mod sets it from a static initialiser): an INFO line lands in the
+    // fallback file with the "<ms> <id>/main " prefix, and the file is only created by the first line (SetFallbackFile does no I/O).
+    {
+        const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
+        char path[300]; snprintf(path, sizeof path, "%s/texmem_contract_%d.txt", td, (int)getpid());
+        remove(path);
+        CCHECK("KpLog_HasCore() is false before KPatchInit (old-core path: emit from the first hook call / helper tick)", !KpLog_HasCore());
+        KpLog_SetFallbackFile(path); KpLog_SetFallbackLevel(KPLOG_INFO);
+        CCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser)", access(path, F_OK) != 0);
+        CCHECK("fallback level INFO enables INFO on the main channel (the load line is INFO)", KP_ENABLED(chMain, KPLOG_INFO));
+        KP_LOGV(chMain, KPLOG_INFO, "%s", "k2-texture-memory-release 1.1.0 loaded: probe tick=1");
+        std::string t; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) t.append(b, n); fclose(f); }
+        size_t sp = t.find(' ');
+        CCHECK("fallback line starts with a decimal tick count", sp != std::string::npos && sp > 0 && t.find_first_not_of("0123456789") == sp);
+        CCHECK("fallback line has the prefix \"<ms> k2-texture-memory-release/main \" then the text unchanged", t.substr(sp) == " k2-texture-memory-release/main k2-texture-memory-release 1.1.0 loaded: probe tick=1\n");
+        KP_LOGV(chMain, KPLOG_WARN, "%s", "REFUSED probe");
+        std::string u; if (FILE* f = fopen(path, "r")) { char b[512]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) u.append(b, n); fclose(f); }
+        CCHECK("a WARN line carries the WARN tag (REFUSED load lines)", u.find(" k2-texture-memory-release/main WARN REFUSED probe\n") != std::string::npos);
+        KpLog_SetFallbackFile(nullptr);
+        remove(path);
     }
 
     return kt::Report("common_contract_test (texture_memory_release)");

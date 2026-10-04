@@ -1,4 +1,4 @@
-// Smoke test for k2-texture-memory-release 1.0.0 (DLL-only; DllMain rewrites BuildAndStoreTexture's tail 0x4261CF).
+// Smoke test for k2-texture-memory-release 1.1.0 (DLL-only; DllMain rewrites BuildAndStoreTexture's tail 0x4261CF).
 // Build: i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -o smoke_texmem.exe smoke_texmem.cpp
 //        (.bss pad covers 0x420000-0x430000; check `objdump -h`: .bss must start below 0x4261C0)
 // Run:   smoke_texmem.exe <run|disabled|refuse|foreign>   (dir needs windows_x86.dll from TextureMemoryRelease.kpatch). Exit 0 = pass.
@@ -27,6 +27,7 @@ static int g_ctrlObj;
 static int scenario(int tpc, int ctrl) { static Tex t; memset(&t, 0, sizeof t); t.vt = g_vt; t.isTpc = tpc; t.ctrl = ctrl ? &g_ctrlObj : 0; return runTail(&t); }
 static char* g_log;
 static void readLog() { if (!g_log) g_log = (char*)malloc(8192); g_log[0] = 0; FILE* f = fopen("texmem_log.txt", "r"); if (!f) return; size_t k = fread(g_log, 1, 8191, f); g_log[k] = 0; fclose(f); }
+static void checkLoadOnce() { int n = 0; if (g_log) for (const char* p = g_log; (p = strstr(p, " 1.1.0 loaded: ")) != nullptr; ++p) ++n; check(n == 1, "log: load line appears exactly once"); }
 typedef int (__cdecl *StFn)(); typedef void (__cdecl *CtFn)(long*);
 int main(int argc, char** argv) {
     const char* mode = argc > 1 ? argv[1] : "run";
@@ -48,9 +49,10 @@ int main(int argc, char** argv) {
     DeleteFileA("texmem_log.txt");
     if (!strcmp(mode, "disabled")) { FILE* f = fopen("texmem.txt", "w"); fprintf(f, "enabled=0\n"); fclose(f); } else DeleteFileA("texmem.txt");
     HMODULE m = LoadLibraryA("windows_x86.dll"); if (!m) { printf("LoadLibrary failed %lu\n", GetLastError()); return 1; }
+    { typedef void (__cdecl *InitFn)(const void*); InitFn ini = (InitFn)GetProcAddress(m, "KPatchInit"); check(ini != nullptr, "KPatchInit export present"); if (ini) ini(nullptr); }
     StFn st = (StFn)GetProcAddress(m, "TexMemTestState"); CtFn ct = (CtFn)GetProcAddress(m, "TexMemTestCounters");
     check(st && ct, "test exports present"); if (!st || !ct) return 3;
-    readLog(); long c[2];
+    readLog(); checkLoadOnce(); long c[2];
     const unsigned char* s = (const unsigned char*)0x4261CF;
     if (!strcmp(mode, "run")) {
         check(st() == 1, "state = patched");
@@ -60,7 +62,7 @@ int main(int argc, char** argv) {
         check(scenario(1, 0) == 1, "TPC without controller: FREED (the fix)");
         check(scenario(1, 1) == 0, "TPC with controller: kept (guard)");
         ct(c); check(c[0] == 1 && c[1] == 1, "counters tpc_freed=1 tpc_kept_controller=1");
-        check(strstr(g_log, "k2-texture-memory-release 1.0.0 loaded: site 0x004261cf patched") != NULL, "log: patched line");
+        check(strstr(g_log, "k2-texture-memory-release 1.1.0 loaded: site 0x004261cf patched") != NULL, "log: patched line");
     } else if (!strcmp(mode, "disabled")) {
         check(st() == 0 && memcmp(s, before, 7) == 0, "disabled: site untouched");
         check(scenario(1, 0) == 0, "disabled: TPC kept (engine)");

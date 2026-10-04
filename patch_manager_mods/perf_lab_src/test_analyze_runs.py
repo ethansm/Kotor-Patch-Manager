@@ -134,6 +134,76 @@ class Counters(unittest.TestCase):
         self.assertEqual(fs["p95"], "32-63")
 
 
+
+class KpLogShapes(unittest.TestCase):
+    """The same texmem / activation content in legacy, KpLog fallback and KpLog core shape parses identically."""
+    TM = "k2-texture-memory-release"
+    AF = "k2-activation-fix"
+
+    def _legacy(self):
+        return {"texmem_log.txt": "[10:00:00.150 1000150] %s 1.0.0 loaded: site 0x004261cf patched (cave 1234) pid=42\n"
+                "[10:00:05.000 1005000] COUNTERS tpc_freed=120 tpc_seen=5\n" % self.TM,
+                "activationfix_log.txt": "[10:00:00.060 1000060] %s 1.0.0 loaded: site 0x0040d69e patched pid=42\n"
+                "[10:00:08.000 1008000] IGNORED a\n[10:00:09.000 1009000] IGNORED b\n" % self.AF}
+
+    def _fallback(self):
+        return {"texmem_log.txt": "1000150 %s/main %s 1.1.0 loaded: site 0x004261cf patched (cave 1234) pid=42 tick=1000150\n"
+                "1005000 %s/main COUNTERS tpc_freed=120 tpc_seen=5\n" % (self.TM, self.TM, self.TM),
+                "activationfix_log.txt": "1000060 %s/main %s 1.1.0 loaded: site 0x0040d69e patched pid=42 tick=1000060\n"
+                "1008000 %s/main IGNORED a\n1009000 %s/main IGNORED b\n" % (self.AF, self.AF, self.AF, self.AF)}
+
+    def _core(self):
+        return {self.TM + "_log.txt": "# kplog session 2026-10-04 10:00:00\nT=0.150 f=- %s/main %s 1.1.0 loaded: site 0x004261cf patched (cave 1234) pid=42 tick=1000150\n"
+                "T=5.000 f=3 %s/main COUNTERS tpc_freed=120 tpc_seen=5\n" % (self.TM, self.TM, self.TM),
+                self.AF + "_log.txt": "# kplog session 2026-10-04 10:00:00\nT=0.060 f=- %s/main %s 1.1.0 loaded: site 0x0040d69e patched pid=42 tick=1000060\n"
+                "T=8.000 f=- %s/main IGNORED a\nT=9.000 f=- %s/main WARN IGNORED b\n" % (self.AF, self.AF, self.AF, self.AF)}
+
+    def _parse(self, files, key):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        for n, t in files.items():
+            with open(os.path.join(d, n), "w") as f:
+                f.write(t)
+        old = ar.ReadInfo(key, os.path.join(d, key), 0)
+        alias = ar.LOG_ALIASES[key]
+        new = ar.ReadInfo(alias, os.path.join(d, alias), 0)
+        return ar.parse_textlog_pair(old, new if new.present else None)
+
+    def test_same_counters_and_ignored(self):
+        for mk in (self._legacy, self._fallback, self._core):
+            files = mk()
+            tb, _ = self._parse(files, "texmem_log.txt")
+            ab, _ = self._parse(files, "activationfix_log.txt")
+            self.assertEqual(len(tb), 1, mk.__name__)
+            self.assertEqual(tb[0].counters()["tpc_freed"], 120, mk.__name__)
+            self.assertEqual(tb[0].pid, 42)
+            self.assertEqual(len(ab), 1)
+            self.assertEqual(ab[0].count("IGNORED"), 2, mk.__name__)
+            self.assertEqual(tb[0].tick, 1000150)
+            self.assertEqual(tb[0].lines[0][0], 1005000, mk.__name__)
+
+    def test_wall_s(self):
+        self.assertIsNone(self._parse(self._fallback(), "texmem_log.txt")[0][0].wall_s)
+        self.assertAlmostEqual(self._parse(self._core(), "texmem_log.txt")[0][0].wall_s, 36000.15)
+
+    def test_newest_file_wins(self):
+        files = dict(self._legacy())
+        files[self.TM + "_log.txt"] = self._core()[self.TM + "_log.txt"].replace("tick=1000150", "tick=9000150")
+        b, _ = self._parse(files, "texmem_log.txt")
+        self.assertEqual(b[0].tick, 9000150)
+
+    def test_wall_none_does_not_break_launch_matching(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        for n in os.listdir(GAME):
+            shutil.copy(os.path.join(GAME, n), d)
+        with open(os.path.join(d, "texmem_log.txt"), "w") as f:
+            f.write(self._fallback()["texmem_log.txt"].replace("1000150", "2000150").replace("1005000", "2005000"))
+        md, L, A = ar.run(d, ZERO, None)
+        self.assertTrue(any("texmem_log.txt" in x.logs for x in L))
+        self.assertIsInstance(md, str)
+
+
 class Perf050(unittest.TestCase):
     """perf-lab 0.5.0 log content: fixtures/game050 (3 launches, see gen_fixtures.py)."""
 

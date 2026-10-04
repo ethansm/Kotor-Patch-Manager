@@ -1,4 +1,4 @@
-// k2-activation-fix 1.0.0 (Steam Aspyr build 6A522E71...). Real fix for the first-load hang H1
+// k2-activation-fix 1.1.0 (Steam Aspyr build 6A522E71...). Real fix for the first-load hang H1
 // (doc 09 s18-19, doc 10 Phase 5B).
 //
 // Mechanism (incidents 16/17): at the end of the intro movie the movie thread (0x40D430, after setting [0xA1B76C]=1)
@@ -16,13 +16,17 @@
 // untouched. Not chosen: a WndProc gate at 0x40B4BA, which would also swallow the deliberate Alt+Enter minimize.
 //
 // Config: $G/activationfix.txt with `enabled=0` disables the patch (site left untouched); absent = enabled.
-// Log: $G/activationfix_log.txt (appended; one `loaded` line per launch + one line per movie-thread post).
+// Log (1.1.0): shared KpLog.h (channel main): one `loaded` line per launch (+ tick=, emitted by KPatchInit) + one line per post.
+// Old core: fallback activationfix_log.txt at INFO.
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include "CodePatch.h"
+#include "KpLog.h"
+
+KP_LOG_PATCH("k2-activation-fix");
 
 namespace {
 
@@ -32,22 +36,30 @@ constexpr uintptr_t FlagA1B4E0 = 0x00A1B4E0;   // engine app-active flag
 constexpr uintptr_t Gate76C = 0x00A1B76C;      // movie-thread "restore will not re-activate" flag
 const uint8_t SiteOrig[6] = { 0xFF, 0x15, 0x6C, 0x64, 0x98, 0x00 };
 
-CRITICAL_SECTION g_logLock;
 volatile LONG g_ignored = 0, g_passed = 0;
 int g_state = 0;            // 1 patched, 0 disabled, -1 refused (bytes), -2 refused (protect), -3 refused (unmapped)
 uint8_t g_seen[6];
 int g_testFg = -1;          // harness only: -1 real foreground check, 0/1 forced
 
-void logf(const char* fmt, ...) {
-    char line[400];
-    va_list ap; va_start(ap, fmt); vsnprintf(line, sizeof(line), fmt, ap); va_end(ap);
-    EnterCriticalSection(&g_logLock);
-    if (FILE* f = fopen("activationfix_log.txt", "a")) {
-        SYSTEMTIME t; GetLocalTime(&t);
-        fprintf(f, "[%02u:%02u:%02u.%03u %lu] %s\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, GetTickCount(), line);
-        fclose(f);
-    }
-    LeaveCriticalSection(&g_logLock);
+KP_CHANNEL(chMain, "main");
+
+// Only stores the path and the level (no I/O): safe from a static initialiser. Old core: same file as 1.0.0, at INFO.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("activationfix_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+
+// The load line is formatted in DllMain (setLoad) but emitted later, once the logger is known: by KPatchInit (whether or not
+// KpLog_Init succeeded), else by the first hook call / helper-thread tick (old core without KPatchInit).
+char g_loadLine[400]; int g_loadLevel = KPLOG_INFO;
+volatile LONG g_loadEmitted = 0;
+void setLoad(int level, const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt); vsnprintf(g_loadLine, sizeof(g_loadLine), fmt, ap); va_end(ap);
+    size_t n = strlen(g_loadLine);
+    snprintf(g_loadLine + n, sizeof(g_loadLine) - n, " tick=%lu", GetTickCount());
+    g_loadLevel = level;
+}
+void emitLoadLine() {
+    if (g_loadEmitted) return;                         // cheap fast path (hot after the first call)
+    if (InterlockedExchange(&g_loadEmitted, 1)) return;
+    KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
 }
 
 bool configEnabled() {
@@ -79,12 +91,13 @@ int writeSite(uintptr_t at, const uint8_t* expect, const uint8_t* repl, int n, u
 
 // Replaces the movie thread's PostMessageA(main hwnd, WM_ACTIVATEAPP, 0, 0) at 0x40D69E (movie thread).
 extern "C" BOOL __stdcall ActFixMoviePost(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    emitLoadLine();
     HWND fg; DWORD fgPid;
     bool ours = foregroundIsOurs(&fg, &fgPid);
     int active = *reinterpret_cast<volatile int*>(FlagA1B4E0), f76c = *reinterpret_cast<volatile int*>(Gate76C);
     if (msg == WM_ACTIVATEAPP && wp == 0 && ours) {
         LONG n = InterlockedIncrement(&g_ignored);
-        logf("IGNORED synthetic WM_ACTIVATEAPP(0,0) post from movie thread tid=%lu hwnd=%p fg=%p fgPid=%lu (ours) a1b4e0=%d 76c=%d n=%ld",
+        KP_LOG(chMain, "IGNORED synthetic WM_ACTIVATEAPP(0,0) post from movie thread tid=%lu hwnd=%p fg=%p fgPid=%lu (ours) a1b4e0=%d 76c=%d n=%ld",
              GetCurrentThreadId(), hwnd, fg, fgPid, active, f76c, n);
         return TRUE;
     }
@@ -92,7 +105,7 @@ extern "C" BOOL __stdcall ActFixMoviePost(HWND hwnd, UINT msg, WPARAM wp, LPARAM
     auto post = *reinterpret_cast<BOOL (WINAPI* volatile*)(HWND, UINT, WPARAM, LPARAM)>(IatPostMessageA);
     BOOL r = post(hwnd, msg, wp, lp);
     LONG n = InterlockedIncrement(&g_passed);
-    logf("PASSED movie-thread post msg=%04x wp=%08lx lp=%08lx tid=%lu hwnd=%p fg=%p fgPid=%lu ours=%d a1b4e0=%d 76c=%d ret=%d n=%ld",
+    KP_LOG(chMain, "PASSED movie-thread post msg=%04x wp=%08lx lp=%08lx tid=%lu hwnd=%p fg=%p fgPid=%lu ours=%d a1b4e0=%d 76c=%d ret=%d n=%ld",
          msg, static_cast<unsigned long>(wp), static_cast<unsigned long>(lp), GetCurrentThreadId(), hwnd, fg, fgPid, ours ? 1 : 0, active, f76c, r, n);
     return r;
 }
@@ -101,24 +114,26 @@ extern "C" BOOL __stdcall ActFixMoviePost(HWND hwnd, UINT msg, WPARAM wp, LPARAM
 extern "C" void __cdecl ActFixTestSetForeground(int ours) { g_testFg = ours; }
 extern "C" int __cdecl ActFixTestState() { return g_state; }
 
+// Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); emitLoadLine(); }
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason != DLL_PROCESS_ATTACH) return TRUE;
-    InitializeCriticalSection(&g_logLock);
     if (!configEnabled()) {
         g_state = 0;
-        logf("k2-activation-fix 1.0.0 loaded: DISABLED by activationfix.txt (site 0x%08x untouched) pid=%lu", (unsigned)SitePost, GetCurrentProcessId());
+        setLoad(KPLOG_INFO, "k2-activation-fix 1.1.0 loaded: DISABLED by activationfix.txt (site 0x%08x untouched) pid=%lu", (unsigned)SitePost, GetCurrentProcessId());
         return TRUE;
     }
     uint8_t repl[6] = { 0xE8, 0, 0, 0, 0, 0x90 };
     codepatch::putRel32(repl + 1, SitePost + 1, reinterpret_cast<uintptr_t>(&ActFixMoviePost));
     g_state = writeSite(SitePost, SiteOrig, repl, 6, g_seen);
     if (g_state == 1)
-        logf("k2-activation-fix 1.0.0 loaded: site 0x%08x patched (CALL [PostMessageA] -> ActFixMoviePost %p) pid=%lu",
+        setLoad(KPLOG_INFO, "k2-activation-fix 1.1.0 loaded: site 0x%08x patched (CALL [PostMessageA] -> ActFixMoviePost %p) pid=%lu",
              (unsigned)SitePost, reinterpret_cast<void*>(&ActFixMoviePost), GetCurrentProcessId());
     else if (g_state == -1)
-        logf("k2-activation-fix 1.0.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x, expected ff 15 6c 64 98 00) site 0x%08x untouched pid=%lu",
+        setLoad(KPLOG_WARN, "k2-activation-fix 1.1.0 loaded: REFUSED(bytes %02x %02x %02x %02x %02x %02x, expected ff 15 6c 64 98 00) site 0x%08x untouched pid=%lu",
              g_seen[0], g_seen[1], g_seen[2], g_seen[3], g_seen[4], g_seen[5], (unsigned)SitePost, GetCurrentProcessId());
     else
-        logf("k2-activation-fix 1.0.0 loaded: REFUSED(%s) site 0x%08x untouched pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)SitePost, GetCurrentProcessId());
+        setLoad(KPLOG_WARN, "k2-activation-fix 1.1.0 loaded: REFUSED(%s) site 0x%08x untouched pid=%lu", g_state == -2 ? "protect" : "unmapped", (unsigned)SitePost, GetCurrentProcessId());
     return TRUE;
 }
