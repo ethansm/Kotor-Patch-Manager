@@ -105,18 +105,7 @@ template <typename T> bool wr(int addr, T v) {
 }
 // Copy an engine string (CExoString char* + length) into out, bounded and sanitized. "" when missing, "?" unreadable.
 void copyStr(int p, int len, char* out, int cap) {
-    out[0] = 0;
-    if (!p || cap < 2) return;
-    int n = cap - 1;
-    if (len >= 0 && len < n) n = len;
-    if (n <= 0) return;
-    if (!saferead::probeRead(3, reinterpret_cast<const void*>(p), n)) {
-        int toPage = int(((static_cast<unsigned>(p) | 0xFFFu) + 1u) - static_cast<unsigned>(p));
-        if (toPage < n && saferead::probeRead(3, reinterpret_cast<const void*>(p), toPage)) n = toPage;
-        else { out[0] = '?'; out[1] = 0; return; }
-    }
-    memcpy(out, reinterpret_cast<const void*>(p), n);
-    out[n] = 0;
+    saferead::readExoLoose(3, static_cast<uint32_t>(p), len, out, cap);
     cai::sanitize(out);
 }
 void readTag(int obj, char* out, int cap) {

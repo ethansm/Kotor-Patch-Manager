@@ -160,6 +160,42 @@ static void probe_contract() {
     setup();
 }
 
+// CompanionAI.cpp copyStr (107-110): `saferead::readExoLoose(3, p, len, out, cap); cai::sanitize(out);` -- the helper only copies; sanitizing stays in the mod.
+static void exoloose_contract() {
+    setup();
+    char out[16];
+    memcpy(g_arena + 0x600, "TagValue\0junk", 13);
+    memset(out, 'x', sizeof out);
+    int n = saferead::readExoLoose(3, static_cast<uint32_t>(A(0x600)), 8, out, sizeof out);
+    HCHECK("readExoLoose copies exactly len bytes and NUL-terminates (CompanionAI.cpp:107 copyStr)", n == 8 && !strcmp(out, "TagValue"));
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(0x600)), 8, out, 5);
+    HCHECK("readExoLoose truncates to cap-1 bytes and NUL-terminates (c.script is char[33], tags are char[cap])", n == 4 && !strcmp(out, "TagV"));
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(0x600)), -1, out, 7);
+    HCHECK("readExoLoose with len -1 (unknown, rd default) copies up to cap-1 bytes", n == 6 && !strcmp(out, "TagVal"));
+    n = saferead::readExoLoose(3, 0, 8, out, sizeof out);
+    HCHECK("readExoLoose gives \"\" on p == 0 (readTag then falls back to \"-\", CompanionAI.cpp:112)", n == 0 && out[0] == 0);
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(0x600)), 0, out, sizeof out);
+    HCHECK("readExoLoose gives \"\" for len 0", n == 0 && out[0] == 0);
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(0x600)), 8, out, 1);
+    HCHECK("readExoLoose gives \"\" for cap < 2", n == 0 && out[0] == 0);
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(kBad)), 8, out, sizeof out);
+    HCHECK("readExoLoose gives \"?\" (-1) on an unreadable page", n == -1 && !strcmp(out, "?"));
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(kFree)), 8, out, sizeof out);
+    HCHECK("readExoLoose gives \"?\" (-1) on an uncommitted page", n == -1 && !strcmp(out, "?"));
+    // page-end fallback: 8 readable bytes then the NOACCESS page; a 12-byte request falls back to the 8 bytes up to the page end
+    memcpy(g_arena + kBad - 8, "ABCDEFGH", 8);
+    char big[32]; memset(big, 'x', sizeof big);
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(kBad - 8)), 12, big, sizeof big);
+    HCHECK("readExoLoose falls back to the bytes up to the page end when the rest is unreadable (CompanionAI.cpp:114-115 semantics)", n == 8 && !strcmp(big, "ABCDEFGH"));
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(kBad - 8)), 8, big, sizeof big);
+    HCHECK("readExoLoose reads a string ending exactly at the page end in full", n == 8 && !strcmp(big, "ABCDEFGH"));
+    // the helper does NOT sanitize: control bytes pass through (cai::sanitize in copyStr handles them)
+    memcpy(g_arena + 0x700, "a\x01\x7f" "b\xe9", 5);
+    n = saferead::readExoLoose(3, static_cast<uint32_t>(A(0x700)), 5, out, sizeof out);
+    HCHECK("readExoLoose does NOT sanitize: control / high bytes are copied verbatim (copyStr must still call cai::sanitize)", n == 5 && !memcmp(out, "a\x01\x7f" "b\xe9", 6));
+    setup();
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -172,5 +208,6 @@ int main() {
     readat_contract();
     scope_contract();
     probe_contract();
+    exoloose_contract();
     return kt::Report("common_contract_test (companion_ai)");
 }
