@@ -102,3 +102,5 @@ Before W5, `Patches/BuffDurationHUD/BuffDurationHUD.kpatch` stays the live singl
 - PortraitSlots.h client gaps (doc 24 T3 session, c07cfc6 ps_registry_test.cpp pins current behaviour):
   1. If the provider refuses some registrations, `k2ps::Client` still marks itself connected and never retries the refused ones.
   2. The failure path of `onConnect` fires once, whatever the cause. Changing either alters the interface's behaviour: decide with the k2.portraitslots@1 contract in mind (doc 24 T4 contract tests are split-gated; claim them with this session).
+
+- Note (log analysis 2026-10-04, session 10-03 evening, buff c58f1743 / portrait-slots ee5affeb): portrait-slots CLEAN (5 shield-bar + 3 buff registrations); shieldprobe signatures all present (DRAW 49, MENUCOMP 27, FORCEMOVE 4, MENUMOVE 16, TIP "Shield: 40/40"). **Bug:** buffhud_log hit its 6000-line cap in ~2 min with per-frame `COLUMN` lines (all tracked=0 draw=0), so there is no buff evidence for the session; log COLUMN on change only. Report `play_session_reports/2026-10-03_evening.md`.

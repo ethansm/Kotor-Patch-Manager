@@ -1090,3 +1090,5 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (2026-10-04 ~04:00, handoff):** UX build 8f9ca9e2 LIVE, NOT yet play-tested (user away; read TIPPROBE + `UI pause` lines from
   log line 629 when they return). Next phase (user: "keep working in the next set of feature development work", offline) = R10 PC level-up
   filter batch 1 (doc 25): probe hooks + PC/theme data + pure filter logic, built not installed. Handoff `.claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`.
+
+- Note (log analysis 2026-10-04, 1.0.0 a8fa2534 session, lines 473-628): `luo_log_check --from 473` V1/V2/V5/V7 PASS, V3 PARTIAL (no GUARD), V6 PARTIAL (first load g00000000). **V4 FAIL is a checker false positive:** `flow=portrait-refresh` (via AutoLevelup, after INSTANT-LEADER, lines 495-555) is counted as manual by `scripts/luo_log_check.py:64`; count it as auto. The unscoped run also FAILs V5 on old 0.1.0/0.2.1 lines; always pass `--from`. Report `play_session_reports/2026-10-03_evening.md`.

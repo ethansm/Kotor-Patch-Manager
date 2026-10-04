@@ -161,3 +161,5 @@ Run A = current live (no new patches; do this BEFORE installing), run B = after 
 - `dialogue_letterbox_fix_src/` (`K2DialogueLetterboxFix.cpp`, `kotor2-steam-aspyr.hooks.toml`, `manifest.toml`, `exports.def`, `smoke_dialogueletterbox.cpp`, `README.md`), `wrap_measure_fix_src/` (`kotor2-steam-aspyr.hooks.toml`, `manifest.toml`, `README.md`).
 - Live source of both: `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/{K2DialogueLetterboxFix,K2WrapMeasureFix}`.
 - `engine_research_findings/V1.md`, `V3.md`, `V7.md`; `engine_bug_research/tools/check_engfix_windows.py` + `check_engfix_windows_output_2026-10-02.txt`, `engine_bug_research/tools/persist_phase2_db.py` (knowledge DB rows).
+
+- Note (log analysis 2026-10-04): session 10-03 evening, letterbox 1.0.2 log PASS (h6 3840x1600, bar 267, 12 dialogues, verifyOK, 0 errs). No F12 screenshots, so the T1 visual check stays OPEN; L1 not yet accepted. Report `play_session_reports/2026-10-03_evening.md`.

@@ -426,3 +426,5 @@ One diagnostic build (extend `perf-lab`, all counters off unless `perflab_debug.
 - Backup: ~/Games/KOTOR2_Mod_Workspace/backups_perflab5_2049/ (config + both DLLs). Next analysis: `analyze_runs.py --from-offsets ~/Games/KOTOR2_Mod_Workspace/runs_after_2049_offsets.txt`.
 - First-launch checks: perflab_log.txt `perf-lab 0.5.0 attach`, `#METRICS ... module=`, a `VA` line per block, `EVT counts`; robustnessfixes_log `k2-robustness-fixes 1.2.1 loaded: 12/12`.
 - NEXT: 0.6.0 plan from W9 sites (Opus), after the first 0.5.0 launch log is read.
+
+- Note (log analysis 2026-10-04): first 0.5.0 launch read (pid 320, 00:48). `analyze_runs --summary`: PASS, 10 launches, 0 hangs, gate B PASS; 4 loads, first load 5271 ms, TPC 549.5 MB, VA min largest 823 MB, robust FIRED 0, S2/S3 not covered. 0.6.0 plan is unblocked. Report `play_session_reports/2026-10-03_evening.md`.

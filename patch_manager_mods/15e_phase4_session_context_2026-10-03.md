@@ -62,3 +62,5 @@ Re-read 2026-10-03 15:29 (before the install):
 - **Superseded later on 10-03:** the shared-logging session moved L1 to KpLog.h as **1.0.2** (installed live 22:42, DLL `7b3936bc`; log `k2-dialogue-letterbox-fix_log.txt` via `kplog.ini`). See doc 17 top + 19e. 1.0.1 and stage A are history; 1.0.2-probe is the no-bands path.
 - `analyze_engfix_logs.py` takes `<logfile> [--json]` (no `--help`). Smoke harness logs are synthetic (fake structs); judge the analyzer on real game logs.
 - Earlier gotchas in 15d section 6 still apply (pgrep self-match, sibling-owned paths, DB idempotency).
+
+- Note (log analysis 2026-10-04): T1 log PASS (12 dialogues, 0 errs); visual check OPEN (no screenshots), so L1 is not accepted yet and the register T1 card waits on F12 + first-NPC-line text. Report `play_session_reports/2026-10-03_evening.md`.

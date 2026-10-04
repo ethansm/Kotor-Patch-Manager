@@ -836,3 +836,5 @@ Goal: the `.kpatch` alone delivers the mod (no `.gui` edit, no override TGAs). E
 - **B6 party/leader accessor: DONE** (`party::controlledCreature`, `failText`).
 - **B7: DONE** (`readExoStr` over `saferead::readExo`).
 - **SafeRead: DONE** (0 `IsBadReadPtr`; sites 0x4801-0x480C; `beginScope()` in all 8 hooks). Engine constants alias `gameaddr::`.
+
+- Note (log analysis 2026-10-04, 1.0.0 afe1553c session, before the d16f521e hot-swap): ALERTS(1) benign: `invalid object id ffffffff` on the first HUD tick after load (lines 3504, 3848). Watch: last line 4842 `persave: save written: save folder not recognised (''), no snapshot`. Report `play_session_reports/2026-10-03_evening.md`.

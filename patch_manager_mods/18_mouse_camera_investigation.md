@@ -286,3 +286,5 @@ level=info
 channels=*
 ```
 - **Build notes:** DLL 80 KB -> 89 KB (KpLog.h uses `GetTickCount` on Windows; a first build with `std::chrono` was 181 KB and imported `SetSystemTime` etc., fixed in KPM 22add9a). Exports: `KPatchInit`, `ProbeCameraFrame`, `ProbeMouseNorm`, `ProbeMouseRaw`. `-DMOUSEPROBE_FRAMETICK` (off) adds `KP_FRAME_TICK()` to the camera hook, for tests only. Fork build source committed on `ethansm/local-mods` (see 19e chunk M).
+
+- Note (log analysis 2026-10-04, session 10-03 evening, mouse-probe c4fa4f8f): over the full session NORM is 23773/23820 SAT (99.8%), raw deltas up to -2244/-1120. This confirms the line-260 finding at scale. Report `play_session_reports/2026-10-03_evening.md`.
