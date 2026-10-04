@@ -6,6 +6,7 @@
 #include "PsDispatch.h"
 #include "K2Addr.h"
 #include "check.h"
+#include "FakeKPatchApi.h"
 #include <string.h>
 #include <string>
 
@@ -56,7 +57,7 @@ static void t1() {
     KT_CHECK_EQ(g_trace.c_str(), "a@1;b@1;");
 }
 
-// ---- T2: fake provider + registry, consumers connect through k2ps::Client ----
+// ---- T2: fake provider + registry (tests/include/FakeKPatchApi.h), consumers connect through k2ps::Client ----
 static psd::Dispatcher g_disp;
 static int32_t KPATCH_CALL fReg(int32_t ph, int32_t pr, K2PsCallback fn, void* u, const char* o) { return g_disp.add(ph, pr, fn, u, o); }
 static void KPATCH_CALL fUnreg(int32_t t) { g_disp.remove(t); }
@@ -64,23 +65,18 @@ static int32_t KPATCH_CALL fCreature(int32_t s) { return s == 0x10 ? 0x1000 : 0;
 static int32_t KPATCH_CALL fSlotAt(int32_t i, int32_t* s, int32_t* c) { if (i) return 0; *s = 0x10; *c = 0x1000; return 1; }
 static uint32_t KPATCH_CALL fFrame() { return 7; }
 static const K2PortraitSlotsApi g_fakePs = { sizeof(K2PortraitSlotsApi), fReg, fUnreg, fCreature, fSlotAt, fFrame };
-static bool g_provided = false;
-static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) {
-    return (g_provided && v == K2PS_VERSION && !strcmp(n, K2PS_IFACE)) ? &g_fakePs : nullptr;
-}
-static int32_t KPATCH_CALL fProvide(const char*, uint32_t, const void*) { return 0; }
-static const KPatchApi g_api = { sizeof(KPatchApi), KPATCH_ABI_VERSION, fProvide, fRequire };
 static int g_connectLogs = 0;
 static void onConn(bool, const char*) { ++g_connectLogs; }
 
 static void t2() {
+    fakekp::reset();
     k2ps::Client buff, shield;
     // consumers init BEFORE the provider exists (worst-case config order), then connect lazily via poll()
-    buff.init(&g_api, "buff-duration-hud"); buff.onConnect = onConn;
+    buff.init(fakekp::api(), "buff-duration-hud"); buff.onConnect = onConn;
     buff.add(K2PS_PRE_ENGINE_READ, K2PS_PRIO_BUFF, buffArrows);
     buff.add(K2PS_FRAME_BEGIN, K2PS_PRIO_BUFF, buffPoll);
     buff.add(K2PS_MENU_OVERLAY, K2PS_PRIO_BUFF, buffMenuCols);
-    shield.init(&g_api, "shield-bar"); shield.onConnect = onConn;
+    shield.init(fakekp::api(), "shield-bar"); shield.onConnect = onConn;
     shield.add(K2PS_FRAME_BEGIN, K2PS_PRIO_SHIELD, shieldPoll);
     shield.add(K2PS_SLOT, K2PS_PRIO_SHIELD, shieldSlot);
     shield.add(K2PS_MENU_OVERLAY, K2PS_PRIO_SHIELD, shieldMenuBars);
@@ -90,7 +86,7 @@ static void t2() {
     KT_CHECK_EQ(g_connectLogs, 2);
     KT_CHECK_EQ(buff.creatureForSlot(0x10), 0);   // inert without provider
     int32_t s = 0, cr = 0; KT_CHECK(!buff.slotAt(0, &s, &cr)); KT_CHECK_EQ(buff.frame(), 0u);
-    g_provided = true;
+    KT_CHECK_EQ(fakekp::provide(K2PS_IFACE, K2PS_VERSION, &g_fakePs), 0);
     // shield's hook runs first this time: registration order must not matter, priorities decide
     shield.pollCount = 0; shield.poll(); buff.pollCount = 0; buff.poll();
     KT_CHECK(shield.connected && buff.connected);

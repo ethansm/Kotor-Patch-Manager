@@ -12,6 +12,9 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 5. Update this table + memory; live install only with user GO (splice pattern, or KPM after L2).
 
 ## Traps
+- Shared index with sibling sessions: commit with `git commit -- <paths>` only (6f9363e swept staged renames; fixed 456a3b0). Docs 25/26 are taken by the level-up session.
+- `scripts/run_tests.py` + `test_run_tests_coverage.py` owned by session test-coverage-dll-integration (T0: coverage roots + common_contract_test exe collision).
+- LevelUpOverride (src, KPM Patches/LevelUpOverride, luo_log_check, docs 08/25/26) owned by level-up session (research/companion_levelup/PHASE7_COMMON_MASTER.md).
 - KPM reinstall over the hand-edited live config reverts the split (kpm_install_state.json stale) until L2. Splice one `[[patches]]` block instead.
 - `check_raw_addresses.py --write-baseline` while siblings' GameAddr.h/K2Addr.h are dirty: restore HEAD toml, add own lines only.
 - `pgrep -f 'swkotor2\.exe'` matches itself in compound commands: use `pgrep -ax swkotor2.exe`.
@@ -24,14 +27,14 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | M0 | Create doc 24; refresh 19b status column | - | - | DONE | (this commit) | T1 |
-| T1 | `tests/include/FakeKPatchApi.h` from ps_dispatch_test.cpp:58-80; port ps_dispatch_test | M0 | split (doc 21) read-only | TODO | | `run_tests.py -k ps_dispatch` (53) + m32 |
+| T1 | `tests/include/FakeKPatchApi.h` from ps_dispatch_test.cpp:58-80; port ps_dispatch_test | M0 | split (doc 21) read-only | DONE | (T1 commit) | ps_dispatch 64/64 host + m32 + mingw build; Wine not on PATH |
 | T2 | `scripts/check_library_manifests.py` (provides/require vs source, consumer requires, no dup hook addrs) + selftest, static tier | M0 | - | TODO | | |
 | T3 | `portrait_slots_src/ps_registry_test.cpp` (inert w/o provider, late provider via poll, require after close, short struct_size, k2ps m32 layout asserts) | T1 | split | TODO | | |
 | T4 | contract tests buff / shield / portrait | T1 | split | TODO | | `-k common_contract` |
 | T5a | contract tests companion_ai + ranged_ai | T1 | - | TODO | | |
 | T5b | contract tests inventory_sort_filter + perf_lab | T1 | - | TODO | | |
 | T5c | contract tests load_hang_probe + mouse_probe | T1 | - | TODO | | |
-| T5d | contract test level_up_override | T1 | doc 08 | TODO | | |
+| T5d | contract test level_up_override | T1 | OWNED level-up session (PHASE7 C2) | TODO | | |
 | T5e | contract tests char_effects + equip3d | C3, C4 | doc 23 / 14 | TODO | | |
 | T6 | Wine smoke portrait-slots + buff + shield (`smoke_portraitslots.cpp`, extra_dlls) | T2 | split | TODO | | `--wine -k portraitslots` x3 |
 | T7 | Wine smoke K2DialogueLetterboxFix | M0 | - | TODO | | `--wine -k letterbox` x3 |
@@ -39,10 +42,10 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | T9 | check.h into TestHarness.h; VTableOverride/MemberFunctionThunk m32 tests (doc 20 Phase 4) | - | - | TODO | | default tier x2 |
 | S1a | mirror sync buff + shield + portrait (K2Addr) | - | split | TODO | | `diff -q` clean + check_shared_headers |
 | S1b | mirror sync ForcePowerHotbar FileWatch | - | hotbar | TODO | | |
-| S1c | mirror sync LevelUpOverride | - | doc 08 | TODO | | |
+| S1c | mirror sync LevelUpOverride | - | OWNED level-up session | TODO | | |
 | S1d | mirror sync EquipCharPreview | - | doc 23 | TODO | | |
 | C1 | `CodePatch.h` from RobustnessFixes; adopt ActivationFix, EquipIconFix, TexMem, then PerfLab/LoadHangProbe | - | - | TODO | | each Wine smoke x3 unchanged |
-| C2 | ExoString helpers onto `saferead::readExo` + `readResRef16` | - | doc 08 (level_up part) | TODO | | saferead_test + perflab5/companion tests |
+| C2 | ExoString helpers onto `saferead::readExo` + `readResRef16` | - | level_up part OWNED level-up session (proposals via 19b) | TODO | | saferead_test + perflab5/companion tests |
 | C3 | EquipCharPreview Common adoption (doc 23:133 step 1) | S1d | doc 23 | TODO | | |
 | C4 | CharEffectsPanel: EffectIcons, GuiKit, `TextFit.h` | build 4c accepted | doc 14 | TODO | | |
 | C5 | KpLog adoption (ranged_ai, equip_icon_fix, activation_fix, texmem, then perf-lab/robustness diagnostics) | - | - | TODO | | |
@@ -66,3 +69,4 @@ M0 -> T1 -> T2 -> T3 -> T4 -> T6 -> T7 -> T8 -> S1a -> L2 -> C1 -> T5a/b/c -> C2
 
 ## Status log
 - 2026-10-03 M0 DONE: doc 24 created; 19b ranked-list status column refreshed (KpLog pilot done, items 2/3/7/8 adoption counts).
+- 2026-10-03 T1 DONE: tests/include/FakeKPatchApi.h (registry.cpp semantics: dup/closed/empty rejected, struct_size override, fake kpatch.log sink); ps_dispatch_test ported, 64 checks host/m32, mingw build clean.
