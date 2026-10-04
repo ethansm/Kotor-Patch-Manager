@@ -20,8 +20,7 @@ static uint8_t* g_arena = nullptr;
 template <typename T> static T& at(uintptr_t b, int off) { return *reinterpret_cast<T*>(b + off); }
 
 // Every kSteam field against today's constant (literal list).
-static void checkSteamTable() {
-    const K2AddrTable& t = kSteam;
+static void checkSteamFields(const K2AddrTable& t) {
 #define STEAM(field, value) KT_CHECK_EQ((unsigned long long)t.field, (unsigned long long)(value))
     STEAM(AppGlobal, 0x00A1B4A4);
     STEAM(GuiSoundMgr, 0x00A1B49C);
@@ -133,6 +132,9 @@ static void checkSteamTable() {
     STEAM(Tip_Text, 0x1d4);
 #undef STEAM
     KT_CHECK_EQ(t.sha, kSteamSha);
+}
+static void checkSteamTable() {
+    checkSteamFields(kSteam);
     KT_CHECK_EQ(kGog.sha, kGogSha);
     // the headers still export the Steam column under their old names
     KT_CHECK_EQ((unsigned long long)gui2d::AddrPushClipRect, 0x479460ull);
@@ -148,8 +150,7 @@ static void checkSteamTable() {
 
 // kGog against the literals of 21b_gog_address_map.md section 4 (static-verified from the Steam bodies; untested live). Every
 // non-zero field is listed; fields 21b leaves out (KeyboardDeviceGlobal + the inventory-3D Scene/Gob/View/GuiGate block) stay zero.
-static void checkGogTable() {
-    const K2AddrTable& g = kGog;
+static void checkGogFields(const K2AddrTable& g) {
 #define GOG(field, value) KT_CHECK_EQ((long long)g.field, (long long)(value))
     GOG(AppGlobal, 0x00A11C04);
     GOG(GuiSoundMgr, 0x00A11BFC);
@@ -275,6 +276,29 @@ static void checkGogTable() {
              g.PopClipRect && g.FlushGuiBatch && g.HudScale && g.PanelRect && g.GuiLoadImage && g.New && g.LabelCtor && g.InitControl &&
              g.StopLoadFromLayout && g.ExoCtor && g.ExoDtor && g.TextSet && g.SetFont && g.SetAlign && g.TextColor && g.PtrListAdd &&
              g.PlayGuiSound && g.GetControlledCreature && g.PartyGetAt && g.MemberServerCreature && g.ClientPartyTable && g.AppGlobal);
+}
+static void checkGogTable() { checkGogFields(kGog); }
+
+// makeSteam()/makeGog() are constexpr and normally only evaluated at compile time (kSteam/kGog). Call them at RUNTIME through
+// volatile function pointers so their bodies really execute, then check the result field by field against the same literals.
+static void checkRuntimeTables() {
+    K2AddrTable (*volatile mkSteam)() = &k2addr::detail::makeSteam;
+    K2AddrTable (*volatile mkGog)() = &k2addr::detail::makeGog;
+    const K2AddrTable s = mkSteam();
+    const K2AddrTable g = mkGog();
+    checkSteamFields(s);
+    checkGogFields(g);
+    KT_CHECK(k2addr::detail::ieq(s.sha, kSteam.sha));
+    KT_CHECK(k2addr::detail::ieq(g.sha, kGog.sha));
+    KT_CHECK(!k2addr::detail::ieq(s.sha, g.sha));
+    // the runtime table is a drop-in for the constexpr one: selection by its sha lands on the compile-time tables
+    KT_CHECK(k2addr::selectBySha(s.sha) == &kSteam);
+    KT_CHECK(k2addr::selectBySha(g.sha) == &kGog);
+    // runtime tables are independent copies: mutating one leaves the other and the constexpr table untouched
+    K2AddrTable s2 = mkSteam(); s2.AppGlobal = 0x1234;
+    KT_CHECK_EQ((unsigned long long)s2.AppGlobal, 0x1234ull);
+    KT_CHECK_EQ((unsigned long long)s.AppGlobal, (unsigned long long)kSteam.AppGlobal);
+    KT_CHECK_EQ((unsigned long long)mkSteam().AppGlobal, 0xA1B4A4ull);
 }
 
 static void checkSelection() {
@@ -494,6 +518,7 @@ int main() {
     g_stubVirtualQueryAll = true;
     checkSteamTable();
     checkGogTable();
+    checkRuntimeTables();
     checkSelection();
     checkEffects();
     checkGui2D();

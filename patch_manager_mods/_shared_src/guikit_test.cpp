@@ -88,5 +88,98 @@ int main() {
     KT_CHECK(createLabelFromTemplate(0x10, "LBL_X", &why) == 0); KT_CHECK_EQ(why, (int)CF_Count);
 
     why = -1; KT_CHECK(createLabelFromTemplate(panel, "LBL_X", &why) != 0 && why == CF_None);
+
+    // ---- flags, border readback, units, cursor, hit, clickEdge ----
+    {
+        uintptr_t k = arenaAlloc(0x200);
+        at<int>(k, Ctl_Flags) = FlagVisible | FlagClickThrough;
+        KT_CHECK(setClickable(k, true)); KT_CHECK_EQ(at<int>(k, Ctl_Flags), (int)FlagVisible);       // clears bit5 (write path)
+        KT_CHECK(setClickable(k, true)); KT_CHECK_EQ(at<int>(k, Ctl_Flags), (int)FlagVisible);       // no-op path returns true
+        KT_CHECK(setClickable(k, false)); KT_CHECK_EQ(at<int>(k, Ctl_Flags), (int)(FlagVisible | FlagClickThrough));
+        KT_CHECK(!setClickable(0, true));
+
+        // border tint / alpha: gated on the border vtable at ctl+Label_Border
+        float rgb[3] = { -1.f, -1.f, -1.f }, al = -1.f;
+        KT_CHECK(!getBorderTint(k, rgb)); KT_CHECK(!getAlpha(k, &al));                                // vtable not set
+        at<uint32_t>(k, Label_Border) = 0x9875BC;
+        at<float>(k, Label_Border + Border_Tint) = 0.25f; at<float>(k, Label_Border + Border_Tint + 4) = 0.5f; at<float>(k, Label_Border + Border_Tint + 8) = 0.75f;
+        at<float>(k, Label_Border + Border_Alpha) = 0.125f;
+        KT_CHECK(getBorderTint(k, rgb)); KT_CHECK(rgb[0] == 0.25f && rgb[1] == 0.5f && rgb[2] == 0.75f);
+        KT_CHECK(getAlpha(k, &al)); KT_CHECK(al == 0.125f);
+        KT_CHECK(!getBorderTint(k, nullptr)); KT_CHECK(!getBorderTint(0, rgb)); KT_CHECK(!getAlpha(k, nullptr)); KT_CHECK(!getAlpha(0, &al));
+
+        // scaleFromRef: ref ctl px rect (100,50,800,600) vs layout units (10,20,400,300) -> s = 2, origin (100,50)
+        at<int>(k, Ctl_X) = 100; at<int>(k, Ctl_Y) = 50; at<int>(k, Ctl_W) = 800; at<int>(k, Ctl_H) = 600;
+        Scale s = scaleFromRef(k, 10, 20, 400, 300);
+        KT_CHECK(s.ok); KT_CHECK(s.sx == 2.f && s.sy == 2.f && s.ox == 100.f && s.oy == 50.f); KT_CHECK(s.refX == 10 && s.refY == 20);
+        KT_CHECK_EQ(unitX(s, 30.f), 140);   // 100 + (30-10)*2
+        KT_CHECK_EQ(unitY(s, 120.f), 250);  // 50 + (120-20)*2
+        int rx = -1, ry = -1, rw = -1, rh = -1;
+        unitRect(s, 20, 30, 5, 3, &rx, &ry, &rw, &rh);
+        KT_CHECK(rx == 120 && ry == 70 && rw == 10 && rh == 6);   // x0=120, x1=unitX(25)=130; y0=70, y1=unitY(33)=76
+        unitRect(s, 20, 30, 5, 3, nullptr, nullptr, nullptr, nullptr);   // null out-params are skipped
+        rw = -1; unitRect(s, 20, 30, 5, 3, nullptr, nullptr, &rw, nullptr); KT_CHECK_EQ(rw, 10);
+        // fractional scale: edges rounded first, size = difference of rounded edges
+        at<int>(k, Ctl_X) = 0; at<int>(k, Ctl_Y) = 0; at<int>(k, Ctl_W) = 10; at<int>(k, Ctl_H) = 7;
+        Scale f = scaleFromRef(k, 0, 0, 3, 4);   // sx = 10/3, sy = 1.75
+        KT_CHECK(f.ok);
+        unitRect(f, 1, 1, 1, 1, &rx, &ry, &rw, &rh);
+        KT_CHECK(rx == 3 && rw == 4 && ry == 2 && rh == 2);   // x: lround(3.33)=3, lround(6.67)=7; y: lround(1.75)=2, lround(3.5)=4
+        // failure paths: identity scale, ok=false, ref unit carried through
+        Scale b1 = scaleFromRef(k, 5, 6, 0, 4), b2 = scaleFromRef(k, 5, 6, 4, -1), b3 = scaleFromRef(0, 5, 6, 4, 4);
+        KT_CHECK(!b1.ok && !b2.ok && !b3.ok);
+        KT_CHECK(b1.sx == 1.f && b1.sy == 1.f && b1.ox == 0.f && b1.oy == 0.f && b1.refX == 5 && b1.refY == 6);
+        KT_CHECK_EQ(unitX(b1, 9.f), 4);   // identity: 0 + (9-5)*1
+        at<int>(k, Ctl_W) = 0; KT_CHECK(!scaleFromRef(k, 0, 0, 3, 4).ok);
+        at<int>(k, Ctl_W) = 10; at<int>(k, Ctl_H) = -2; KT_CHECK(!scaleFromRef(k, 0, 0, 3, 4).ok);
+
+        // hit / isVisible
+        at<int>(k, Ctl_X) = 10; at<int>(k, Ctl_Y) = 20; at<int>(k, Ctl_W) = 30; at<int>(k, Ctl_H) = 40; at<int>(k, Ctl_Flags) = FlagVisible;
+        KT_CHECK(hit(k, 10, 20)); KT_CHECK(hit(k, 39, 59)); KT_CHECK(hit(k, 25, 30));
+        KT_CHECK(!hit(k, 40, 30)); KT_CHECK(!hit(k, 25, 60));   // x == ex+ew, y == ey+eh are exclusive
+        KT_CHECK(!hit(k, 9, 30)); KT_CHECK(!hit(k, 25, 19));
+        at<int>(k, Ctl_Flags) = 0; KT_CHECK(!hit(k, 25, 30));    // invisible
+        KT_CHECK(!hit(0, 25, 30));
+
+        // cursorEngine
+        Engine saved = g_gk;
+        static int cCx = 100, cCy = 50, cCw = 800, cCh = 600; static bool cOk = true;
+        g_gk.cursorClient = [](int* x, int* y, int* w, int* h) { *x = cCx; *y = cCy; *w = cCw; *h = cCh; return cOk; };
+        uintptr_t gw = arenaAlloc(16), gh = gw + 4;
+        g_gk.screenWAddr = gw; g_gk.screenHAddr = gh;
+        int ox = -1, oy = -1;
+        at<int>(gw, 0) = 1600; at<int>(gh, 0) = 1200;
+        KT_CHECK(cursorEngine(&ox, &oy)); KT_CHECK(ox == 200 && oy == 100);   // 100*1600/800, 50*1200/600
+        at<int>(gw, 0) = 0;                                                    // out of range -> client px
+        KT_CHECK(cursorEngine(&ox, &oy)); KT_CHECK(ox == 100 && oy == 50);
+        at<int>(gw, 0) = 1600; at<int>(gh, 0) = 199;
+        KT_CHECK(cursorEngine(&ox, &oy)); KT_CHECK(ox == 100 && oy == 50);
+        at<int>(gh, 0) = 1200; at<int>(gw, 0) = 20000;
+        KT_CHECK(cursorEngine(&ox, &oy)); KT_CHECK(ox == 100 && oy == 50);
+        g_gk.screenWAddr = 0; g_gk.screenHAddr = 0;                            // unknown addresses -> client px
+        KT_CHECK(cursorEngine(&ox, &oy)); KT_CHECK(ox == 100 && oy == 50);
+        g_gk.screenWAddr = gw; g_gk.screenHAddr = gh; at<int>(gw, 0) = 1600;
+        cCw = 0; KT_CHECK(!cursorEngine(&ox, &oy)); cCw = 800;
+        cCh = 0; KT_CHECK(!cursorEngine(&ox, &oy)); cCh = 600;
+        cOk = false; KT_CHECK(!cursorEngine(&ox, &oy)); cOk = true;
+        KT_CHECK(!cursorEngine(nullptr, &oy)); KT_CHECK(!cursorEngine(&ox, nullptr));
+        g_gk.cursorClient = nullptr; KT_CHECK(!cursorEngine(&ox, &oy));
+
+        // clickEdge
+        static bool fg = true, dn = false;
+        g_gk.gameForeground = [] { return fg; }; g_gk.lbuttonDown = [] { return dn; };
+        ClickEdge ce;
+        KT_CHECK(!clickEdge(ce));
+        dn = true; KT_CHECK(clickEdge(ce));
+        KT_CHECK(!clickEdge(ce)); KT_CHECK(!clickEdge(ce));         // held: fires once
+        dn = false; KT_CHECK(!clickEdge(ce));
+        dn = true; KT_CHECK(clickEdge(ce));                          // new press fires again
+        fg = false; KT_CHECK(!clickEdge(ce)); KT_CHECK(!ce.prev);    // lost focus counts as up
+        fg = true; KT_CHECK(clickEdge(ce));                          // press that resumes in foreground re-fires
+        g_gk.gameForeground = nullptr; KT_CHECK(!clickEdge(ce));
+        g_gk.gameForeground = [] { return true; }; g_gk.lbuttonDown = nullptr;
+        KT_CHECK(!clickEdge(ce));
+        g_gk = saved;
+    }
     return kt::Report("guikit_test");
 }
