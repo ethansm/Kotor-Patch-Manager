@@ -47,10 +47,11 @@ def test_from_skips_earlier_lines():
 
 def test_dump_failures():
     L = lines("pass.txt")
-    L = [l.replace("hp=12/40", "hp=50/40").replace("row=84 heal=17", "row=99 heal=0").replace("idOk=1", "idOk=0") for l in L]
+    L = [l.replace("hp=12/40", "hp=50/40").replace("row=84 heal=17", "row=99 heal=17").replace("row=65 heal=27", "row=65 heal=0").replace("idOk=1", "idOk=0") for l in L]
     r = S.check(L)
     msgs = " ".join(m for _, m in r["dump_fail"])
-    assert "cur 50 > max 40" in msgs and "row=99" in msgs and "heal=0" in msgs and "idOk=0" in msgs
+    assert "cur 50 > max 40" in msgs and "row=99" in msgs and "heal row 65 but heal=0" in msgs and "idOk=0" in msgs
+    assert "Frag Grenade" not in msgs  # non-heal item (row=-1 heal=-1) is skipped
     assert r["verdict"] == "FAIL" and all(isinstance(n, int) for n, _ in r["dump_fail"])
 
 
@@ -60,6 +61,8 @@ def test_malformed_numbers():
     assert r["p1"] == "FAIL" and r["verdict"] == "FAIL"
     assert any("malformed hp" in m for _, m in r["dump_fail"])
     assert S.check(["P1 hud built layoutOpen=1 ctlCount=5000"])["p1"] == "FAIL"
+    L = [l.replace("row=65 heal=27", "row=?? heal=27") for l in lines("pass.txt")]
+    assert any("malformed row" in m for _, m in S.check(L)["dump_fail"])
 
 
 def test_bare_lines_without_prefix():

@@ -10,6 +10,7 @@
 9001 companion-selfheal/dump   skills stats=0b000100 TreatInjury=6 Repair=2 WIS=12 INT=10
 9001 companion-selfheal/dump   cand "Medical Supplies" key=80000a01 client=00000a01 server=00000b01 item=0c000100 props=1 type=10 row=65 heal=27 count=4 usable=1
 9001 companion-selfheal/dump   cand "Repair Kit" key=80000a02 client=00000a02 server=00000b02 item=0c000200 props=1 type=10 row=84 heal=17 count=2 usable=1
+9001 companion-selfheal/dump   cand "Frag Grenade" key=80000a03 client=00000a03 server=00000b03 item=0c000300 props=1 type=10 row=-1 heal=-1 count=5 usable=1
 9001 companion-selfheal/dump   pick missing=28 -> "Medical Supplies" row=65 heal=27 count=4
 9001 companion-selfheal/dump   routeA (not called): ecx=00000011 fn=006a1230 args(0,0,self=00000011,0,item=00000b01,0,0,0) clientId=7f000011 idOk=1
 9001 companion-selfheal/dump   auto(on, 35%, keep 2): shouldAutoUse=1 alive=1 commandable=1

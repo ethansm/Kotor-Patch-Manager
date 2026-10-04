@@ -9,7 +9,7 @@ Usage: selfheal_log_check.py [LOG | --log LOG] [--from LINE] [--to LINE]
 Line formats come from patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp; KpLog.h prefixes each line with
 "<ms> companion-selfheal/<chan> [ERR |WARN ]" (prefix optional here so bare lines parse too).
 Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
-DUMP blocks (hp cur<=max, cand row in {64,65,66,84,127,128} and heal>0, a pick line, routeA idOk=1 when a pick exists).
+DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
 """
 from __future__ import annotations
 
@@ -115,10 +115,14 @@ def check(lines, lo=1, hi=None):
         if m:
             row, heal, cnt = to_int(m.group(2)), to_int(m.group(3)), to_int(m.group(4))
             mem["cands"].append((n, m.group(1), row, heal, cnt))
-            if row not in ROWS:
-                r["dump_fail"].append((n, "cand \"%s\": row=%s not in %s" % (m.group(1), m.group(2), sorted(ROWS))))
-            if heal is None or heal <= 0:
-                r["dump_fail"].append((n, "cand \"%s\": heal=%s not > 0" % (m.group(1), m.group(3))))
+            # The HUD item group also lists non-heal items (grenades, stims: row=-1 or another spell row, heal=-1); they are skipped.
+            # A heal row must estimate heal > 0, and only a heal row may estimate any heal.
+            if row is None or heal is None:
+                r["dump_fail"].append((n, "cand \"%s\": malformed row=%s heal=%s" % (m.group(1), m.group(2), m.group(3))))
+            elif row in ROWS and heal <= 0:
+                r["dump_fail"].append((n, "cand \"%s\": heal row %d but heal=%s not > 0" % (m.group(1), row, m.group(3))))
+            elif row not in ROWS and heal > 0:
+                r["dump_fail"].append((n, "cand \"%s\": row=%s not in %s but heal=%d" % (m.group(1), m.group(2), sorted(ROWS), heal)))
             continue
         m = PICK_RE.match(t)
         if m:
@@ -152,7 +156,7 @@ def fmt(r):
     if r["table"]:
         o.append("idx  hp        family            pick                         heal count (block@line)")
         for m in r["table"]:
-            fams = sorted({FAMILY.get(c[2], "?") for c in m["cands"]})
+            fams = sorted({FAMILY.get(c[2], "?") for c in m["cands"] if c[2] in ROWS})
             hp = "%s/%s" % (m["cur"], m["max"])
             p = m["pick"]
             o.append("%-4s %-9s %-17s %-28s %-4s %-5s (@%d)" % (
