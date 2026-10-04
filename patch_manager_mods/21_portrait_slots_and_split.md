@@ -98,3 +98,6 @@ Before W5, `Patches/BuffDurationHUD/BuffDurationHUD.kpatch` stays the live singl
   1. columnLayout re-derive on the next column (~BuffHudLogic.h:180-186) has no MinIconSize clamp: a tiny card can get size 0.
   2. `(cardH-gap)/(size+gap)` can divide by zero when scale < 0.2 and cardW < 0; DrawBuffColumn passes engine cardW/cardH unchecked -> guard cardW/cardH >= 1 at entry.
   3. columnSig fields overlap, so a COLUMN log line can be missed (diagnostics only).
+- PortraitSlots.h client gaps (doc 24 T3 session, c07cfc6 ps_registry_test.cpp pins current behaviour):
+  1. If the provider refuses some registrations, `k2ps::Client` still marks itself connected and never retries the refused ones.
+  2. The failure path of `onConnect` fires once, whatever the cause. Changing either alters the interface's behaviour: decide with the k2.portraitslots@1 contract in mind (doc 24 T4 contract tests are split-gated; claim them with this session).
