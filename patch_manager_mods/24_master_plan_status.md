@@ -51,7 +51,9 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | C2 | ExoString helpers onto `saferead::readExo` + `readResRef16` | - | level_up part OWNED level-up session (proposals via 19b) | DONE | beeb7b7 | readExoLoose + formatResRef16/readResRef16 in SafeRead.h (KPM 55c1185); adopters companion 3871828, perflab caab256, equip-icon 3422ace (KPM 03c34ed/313b27e/40200a3); gate PASS x3 (companion: build + host tests only, no Wine smoke); not installed |
 | C3 | EquipCharPreview Common adoption (doc 23:133 step 1) | S1d | doc 23 | TODO | | |
 | C4 | CharEffectsPanel: EffectIcons, GuiKit, `TextFit.h` | build 4c accepted | doc 14 | TODO | | |
-| C5 | KpLog adoption (ranged_ai, equip_icon_fix, activation_fix, texmem, then perf-lab/robustness diagnostics) | - | - | TODO | | |
+| C5a | KpLog adoption texmem, activation_fix, equip_icon_fix (1.1.0) + analyze_runs/kotor2_logs read legacy/fallback/core | - | - | DONE | ed52d2b | KPM 34c0785; dll md5 texmem 3d0e2caa, activation 78a4bb7b, equip-icon f97906a0; default 107/107, `--wine` 176/176; **not installed**: install needs user GO + kplog.ini `[k2-texture-memory-release]` `[k2-activation-fix]` `[k2-equip-icon-fix]` enabled=1 level=info |
+| C5b | KpLog adoption ranged_ai (analyze_play_logs R_* regexes) | C5a | engine AI atlas | TODO | | |
+| C5c | KpLog adoption perf-lab + robustness diagnostics | C5a | engine research | TODO | | |
 | C6 | K2Addr intake of hotbar raw addresses (Steam col; GOG zero + callout) | - | hotbar | TODO | | |
 | L1 | Optional dependency decision (`optional_requires` vs runtime lazy require) — ask user | - | user | DONE | | runtime lazy require (user 10-04): requires_interfaces info-only + lazy connect, no KPM change |
 | L2 | Install the split through KPM (dry-run byte-identical blocks 2-4, then GO) | S1a, T6, T8 | user GO | DONE | install 10-04 11:55, stage head edc4d00 | refreshed kpm_install_state.json |
