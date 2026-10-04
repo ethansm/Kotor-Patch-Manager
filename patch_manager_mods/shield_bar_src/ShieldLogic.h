@@ -35,6 +35,39 @@ template <class T> inline bool tooltipFieldsOk(const T* t) {
     return t && t->Tip_Slot && t->Tip_Text && t->CExoStringFormat;
 }
 
+// ---------------------------------------------------------------- menu companion bar geometry
+// Bar art (uibit_bar_vp_p / uibit_bar_fp_p, 128x256 override TGAs, alpha > 50%): health columns 58..97 (col 57 half), force 30..69
+// (col 29 half); rows 4..251 for both on the portrait side. Edges below are the half-alpha boundaries, in art units.
+constexpr float kHealthArtLeft = 57.5f, kHealthArtRight = 98.0f, kForceArtLeft = 29.5f, kForceArtRight = 70.0f;
+constexpr float kArtTop = 4.0f, kArtBottom = 252.0f, kArtW = 128.0f, kArtH = 256.0f;
+
+// Health bar left of a companion card (x, y, w, h), force bar right of it, both drawn rects. The visible art meets the card frame on
+// both sides and its top / bottom rows line up with the card's top / bottom edge (user 10-04: "flush with frame").
+struct MenuBars { int vx, fx, by, bw, bwF, bh; };
+inline int ceilPos(float f) { int i = int(f); return (f > float(i)) ? i + 1 : i; }   // f >= 0
+inline MenuBars menuBars(int x, int y, int w, int h) {
+    MenuBars b;
+    const float visH = (kArtBottom - kArtTop) / kArtH;                 // visible fraction of the drawn height
+    b.bh = ceilPos(h / visH);                                          // visible art at least as tall as the card
+    b.by = y - int(kArtTop / kArtH * b.bh + (visH * b.bh - h) / 2.0f + 0.5f);   // overhang (< 1 px) split evenly top / bottom
+    b.bw = int(47.0f * (h + 4) / 96.0f + 0.5f);
+    b.bwF = int(b.bw * 1.2f + 0.5f);                                   // force bar 20% wider (read skinny next to health)
+    b.vx = x - int(kHealthArtRight / kArtW * b.bw);                    // visible right edge at or just inside the card's left edge
+    b.fx = x + w - ceilPos(kForceArtLeft / kArtW * b.bwF);             // visible left edge at or just inside the card's right edge
+    return b;
+}
+inline float healthVisLeft(int vx, int bw) { return vx + kHealthArtLeft / kArtW * bw; }
+inline float forceVisRight(int fx, int bwF) { return fx + kForceArtRight / kArtW * bwF; }
+
+// x for the second companion card so the companion-to-companion gap equals the gap between the leader's force bar
+// (lfx, lfw: drawn rect) and the first companion's health bar. c1x: first companion card x; w, h: companion card size.
+inline int secondCompanionX(int lfx, int lfw, int c1x, int y, int w, int h) {
+    MenuBars b = menuBars(c1x, y, w, h);
+    float gap = healthVisLeft(b.vx, b.bw) - forceVisRight(lfx, lfw);
+    float c2VisLeft = forceVisRight(b.fx, b.bwF) + gap;
+    return int(c2VisLeft - (healthVisLeft(b.vx, b.bw) - c1x) + 0.5f);   // same card-to-visible-left offset on every card
+}
+
 // Bounded printf-append: a copy of bh::appendf (buff_duration_hud_src/BuffHudLogic.h, audit 20a F7, abc01d8). The two patches build
 // from separate folders and cannot include each other's headers; shield_logic_test.cpp checks the copies stay identical.
 // Appends at buf[len], never writes past buf[cap-1], always NUL-terminated, returns the new length clamped to cap-1.

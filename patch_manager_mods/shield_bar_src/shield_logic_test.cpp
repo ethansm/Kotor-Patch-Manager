@@ -68,6 +68,33 @@ void testTableGates() {
     k2addr::clearForTest();
 }
 
+// Menu companion bars (user 10-04: bars flush with the frame, companion gap = leader-to-companion gap). Numbers from the 10-04
+// 00:48 Steam session log at 3840x1600: companion cards 96x96 at y 1365, leader force rect x 2640 w 100, companion 1 at 2750.
+void testMenuBars() {
+    sb::MenuBars b = sb::menuBars(2750, 1365, 96, 96);
+    KT_CHECK_EQ(b.vx, 2713); KT_CHECK_EQ(b.bw, 49); KT_CHECK_EQ(b.bwF, 59);      // health unchanged vs the live build
+    KT_CHECK_EQ(b.by, 1363); KT_CHECK_EQ(b.bh, 100);                             // vertical unchanged: already flush within 0.5 px
+    KT_CHECK_EQ(b.fx, 2832);                                                     // force 1 px left (was 2833: ~1 px gap to the frame)
+    // every card size: visible art meets the frame within 1 px on both sides and top / bottom
+    for (int h = 20; h <= 400; ++h) for (int x = 0; x < 3; ++x) {
+        const int w = h, y = 100 + x;
+        sb::MenuBars m = sb::menuBars(1000 + x, y, w, h);
+        float hr = m.vx + sb::kHealthArtRight / sb::kArtW * m.bw, fl = m.fx + sb::kForceArtLeft / sb::kArtW * m.bwF;
+        float top = m.by + sb::kArtTop / sb::kArtH * m.bh, bot = m.by + sb::kArtBottom / sb::kArtH * m.bh;
+        KT_CHECK(hr >= 1000 + x && hr < 1000 + x + 1.0f);                       // health edge on / just inside the left frame edge
+        KT_CHECK(fl <= 1000 + x + w && fl > 1000 + x + w - 1.0f);               // force edge on / just inside the right frame edge
+        KT_CHECK(top > y - 1.0f && top < y + 1.0f);                             // integer by: each art edge within 1 px of the frame edge
+        KT_CHECK(bot > y + h - 1.0f && bot < y + h + 1.0f);
+    }
+    // companion 3 placement: same visible gap as leader force -> companion 1 health
+    int c3 = sb::secondCompanionX(2640, 100, 2750, 1365, 96, 96);
+    KT_CHECK_EQ(c3, 2920);                                                       // was 2942 (gap 62 px vs 40 px)
+    sb::MenuBars b3 = sb::menuBars(c3, 1365, 96, 96);
+    float gapLead = sb::healthVisLeft(b.vx, b.bw) - sb::forceVisRight(2640, 100);
+    float gapComp = sb::healthVisLeft(b3.vx, b3.bw) - sb::forceVisRight(b.fx, b.bwF);
+    KT_CHECK(gapComp - gapLead > -1.0f && gapComp - gapLead < 1.0f);
+}
+
 }  // namespace
 
 int main() {
@@ -191,6 +218,7 @@ int main() {
     }
 
     testTableGates();
+    testMenuBars();
 
     return kt::Report("shield_logic");
 }

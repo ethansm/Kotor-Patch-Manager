@@ -398,10 +398,12 @@ void drawGauge(const char* texture, int x, int y, int w, int h, const float* fil
 }
 
 // Spread the two companion portrait groups apart (runtime write of the controls' x, so no .gui edit and the hit areas move too).
+// Group 2 moves 0.30w; group 3 is placed so the gap between the companions equals the gap between the leader's force bar and
+// companion 1 (sb::secondCompanionX; leader force rect lfx/lfw, 0 = unknown -> fallback 1.00w).
 // Shifts are remembered per panel; a layout we did not write (menu rebuilt) is adopted as the new original.
 struct ShiftRec { int panel; int orig[2][4], shifted[2][4]; };
 ShiftRec g_shift[8];
-void spreadCompanions(int panel, int w) {
+void spreadCompanions(int panel, int w, int lfx, int lfw) {
     const K2AddrTable* T = k2addr::get();
     if (!featureOk(sb::menuFieldsOk(T), "companion spacing")) return;
     const int grp[2][4] = { { T->Menu_Char2, T->Menu_Level2, T->Menu_Back2, T->Menu_Change2 },    // LBL_CHARn, LEVELUPn, BACKn, BTN_CHANGEn
@@ -409,20 +411,30 @@ void spreadCompanions(int panel, int w) {
     ShiftRec* rec = nullptr;
     for (auto& r : g_shift) if (r.panel == panel) { rec = &r; break; }
     if (!rec) { static int next = 0; rec = &g_shift[next++ & 7]; *rec = {}; rec->panel = panel; }
-    const int dx[2] = { int(0.30f * w + 0.5f), int(1.00f * w + 0.5f) };
+    int rc[2][4][4] = {};
     for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
-        int ctl = panel + grp[g][i], rc[4] = {};
-        readCtlRect(ctl, rc);
-        if (rc[2] < 1 || rc[3] < 1) continue;
-        int cur = rc[0];
-        if (cur != rec->orig[g][i] && cur != rec->shifted[g][i]) { rec->orig[g][i] = cur; rec->shifted[g][i] = cur + dx[g]; }
+        readCtlRect(panel + grp[g][i], rc[g][i]);
+        int cur = rc[g][i][0];
+        if (rc[g][i][2] >= 1 && rc[g][i][3] >= 1 && cur != rec->orig[g][i] && cur != rec->shifted[g][i]) rec->orig[g][i] = cur;
+    }
+    int dx[2] = { int(0.30f * w + 0.5f), int(1.00f * w + 0.5f) };
+    const int* c2 = rc[0][0];
+    if (lfw >= 8 && lfw <= 2000 && c2[3] >= 8 && c2[3] <= 2000) {
+        int c3x = sb::secondCompanionX(lfx, lfw, rec->orig[0][0] + dx[0], c2[1], w, c2[3]);
+        int d = c3x - rec->orig[1][0];
+        if (d > 0 && d < 3 * w) dx[1] = d;
+    }
+    for (int g = 0; g < 2; ++g) for (int i = 0; i < 4; ++i) {
+        int ctl = panel + grp[g][i], cur = rc[g][i][0];
+        if (rc[g][i][2] < 1 || rc[g][i][3] < 1) continue;
+        rec->shifted[g][i] = rec->orig[g][i] + dx[g];
         if (cur == rec->shifted[g][i]) continue;
         // engine SetRect (vtable slot 1, RET 4: moves the rect + border/text copies, so the drawn portrait follows; raw int writes only moved the hit area)
         int vt = 0, fn = 0;
         if (!readAt(ctl, 0, &vt) || !vt || !readAt(vt, T->Ctl_VtSetRect, &fn) || !fn) continue;
-        int nr[4] = { rec->shifted[g][i], rc[1], rc[2], rc[3] };
+        int nr[4] = { rec->shifted[g][i], rc[g][i][1], rc[g][i][2], rc[g][i][3] };
         reinterpret_cast<void(__thiscall*)(int, int*)>(fn)(ctl, nr);
-        probeLog("MENUMOVE g=%d i=%d x %d -> %d", g, i, cur, nr[0]);
+        probeLog("MENUMOVE g=%d i=%d x %d -> %d (dx %d, leader force x=%d w=%d)", g, i, cur, nr[0], dx[g], lfx, lfw);
     }
 }
 
@@ -520,26 +532,28 @@ void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
     if (g_probe && haveMenu) { int q[2][4] = {}; for (int k = 0; k < 2; ++k) readCtlRect(c->companionCtrl[k], q[k]);
         static int lastQ = -1; int sq = q[0][0] * 3 ^ q[1][0] * 7 ^ q[0][1] ^ q[1][2];
         static int pc = 0; if (sq != lastQ || (++pc % 120) == 0) { lastQ = sq; probeLog("MENUPRE c2=(%d,%d,%d,%d) c3=(%d,%d,%d,%d) panel=%08x", q[0][0], q[0][1], q[0][2], q[0][3], q[1][0], q[1][1], q[1][2], q[1][3], panel); } }
-    if (haveMenu) { int w2 = 0; if (readAt(c->companionCtrl[0], T->Ctl_W, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2); }
+    if (haveMenu) {
+        int w2 = 0, lf[4] = {};   // leader force rect (after the SLOT-phase FORCEMOVE slide): companion 3 is spaced from it
+        if (T->Slot_ForceRect) for (int k = 0; k < 4; ++k) readAt(slotPtr, T->Slot_ForceRect + 4 * k, &lf[k]);
+        if (readAt(c->companionCtrl[0], T->Ctl_W, &w2) && w2 >= 8 && w2 <= 2000) spreadCompanions(panel, w2, lf[0], lf[2]);
+    }
     for (int k = 0; haveMenu && k < 2; ++k) {
         int ctrl = c->companionCtrl[k], fl = 0, r[4] = {};
         if (!comp[k] || !readAt(ctrl, T->Ctl_Flags, &fl) || !(fl & 2)) continue;
         readCtlRect(ctrl, r);
         if (r[2] < 1 || r[3] < 1 || r[2] > 2000 || r[3] > 2000) continue;
-        // bars around the portrait (HUD small-card geometry scaled to this card), shield beside the health bar
         int hp = 0, hpMax = 0, fp = 0, fpMax = 0;
         if (!readVitals(comp[k], &hp, &hpMax, &fp, &fpMax)) continue;
-        float sf = (r[3] + 4) / 96.0f;                       // bars about as tall as the portrait (visible art = 97% of the draw height)
-        int bw = int(47 * sf + 0.5f), bh = int(96 * sf + 0.5f), by = r[1] - 2;
-        // art columns: health 57..97 of 128, force 29..69: put the visible health edge flush against the portrait's left edge and the
-        // visible force edge flush against its right edge (the 40/77 HUD constants left a ~5 px gap on the 96 px menu cards)
-        int vx = r[0] - int(97.0f / 128.0f * bw + 0.5f), bwF = int(bw * 1.2f + 0.5f), fx = r[0] + r[2] - int(29.0f / 128.0f * bwF + 0.5f);   // force bar 20% wider (read skinny next to health)
+        // bars around the portrait: visible health edge on the card's left edge, force edge on its right edge, art rows flush with the
+        // card's top / bottom (sb::menuBars, art columns measured from the override TGAs); shield beside the health bar
+        const sb::MenuBars mb = sb::menuBars(r[0], r[1], r[2], r[3]);
+        const int vx = mb.vx, fx = mb.fx, by = mb.by, bw = mb.bw, bwF = mb.bwF, bh = mb.bh;
         drawGauge(HealthBarTexture, vx, by, bw, bh, HealthFillRed, hp, hpMax);
         drawGauge(ForceBarTexture, fx, by, bwF, bh, ForceFillCyan, fp, fpMax);
         DrawShieldPools(comp[k], vx, by, bw, bh, scale, ctrl, false);
         ++bars;
         static int lastV[2] = { -1, -1 }; int vs = hp * 7 + hpMax * 13 + fp * 17 + fpMax * 19;
-        if (lastV[k] != vs) { lastV[k] = vs; probeLog("MENUCOMP k=%d creature=%08x hp=%d/%d fp=%d/%d card=(%d,%d,%d,%d) vit=(%d,%d,%d,%d)", k, comp[k], hp, hpMax, fp, fpMax, r[0], r[1], r[2], r[3], vx, by, bw, bh); }
+        if (lastV[k] != vs) { lastV[k] = vs; probeLog("MENUCOMP k=%d creature=%08x hp=%d/%d fp=%d/%d card=(%d,%d,%d,%d) vit=(%d,%d,%d,%d) force=(%d,%d,%d,%d)", k, comp[k], hp, hpMax, fp, fpMax, r[0], r[1], r[2], r[3], vx, by, bw, bh, fx, by, bwF, bh); }
     }
     static int lastShown = -2, lastBars = -2;
     if (shown != lastShown || bars != lastBars) { lastShown = shown; lastBars = bars; probeLog("MENUDRAW panel=(%d,%d,%d,%d) bar=%d companionBars=%d", c->panelRect[0], c->panelRect[1], c->panelRect[2], c->panelRect[3], shown, bars); }
