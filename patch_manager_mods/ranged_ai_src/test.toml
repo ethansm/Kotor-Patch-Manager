@@ -1,0 +1,6 @@
+# Default for every ranged_ai test: warnings are errors. Per-test tables replace (not merge) these keys.
+cxxflags = ["-Werror"]
+
+# Per-test table: the Common contract test needs the shared headers + host Win32 stub (mirrors _shared_src/test.toml).
+[common_contract_test]
+cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
