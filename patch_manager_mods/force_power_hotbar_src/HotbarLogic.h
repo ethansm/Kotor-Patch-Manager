@@ -394,6 +394,10 @@ inline TargetSpec nextTargetMode(const ActionRef& a, bool isHealing, bool selfAl
     return n;
 }
 inline bool dropsCustomSuffix(const TargetSpec& from) { return from.thresholdPct >= 0 || from.fallback >= 0; }
+// Target badge label of slot 0..9: 13x13 flush top-right inside the 35x35 frame (frame x = 29+40i, y = 478); the digit label ends at slotX+22.
+struct Rect4 { int x, y, w, h; };
+constexpr Rect4 badgeRect(int slot) { return { 29 + 40 * slot + 22, 479, 13, 13 }; }
+inline bool rectsOverlap(Rect4 a, Rect4 b) { return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; }
 inline const char* badgeFor(const TargetSpec& t) { return t.mode == TM_LowHp ? "fph_tgt_lowhp" : t.mode == TM_Self ? "fph_tgt_self" : nullptr; }
 enum ModeBtn { MB_Hidden, MB_Enabled, MB_DisabledItemsOnly, MB_DisabledCannotTarget };
 inline ModeBtn modeButtonState(const ActionRef& a, bool isHealing, bool selfAllowed) {

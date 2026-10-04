@@ -157,3 +157,7 @@
 [2880477947 f45605] H3 LBL_HOTBARTIPBG: created at index 184 from LBL_MOULDING3 rect=[32,1013,800,240] fill=- text=-
 [2880477947 f45605] H3 LBL_HOTBARTIP: created at index 185 from LBL_QUEUE1 rect=[32,1013,800,240] fill=- text=
 [2880477947 f45605] H3: 75 controls created at runtime (indices 111..185), 10/10 buttons, editor controls 25/25 -> editor ENABLED, picker background rect [11,960,1120,298]
+
+# NOTE (build 27+): ControlCount 75 -> 86. 11 controls are inserted after LBL_HOTBARCELLQTY7 and before the tooltip pair:
+# LBL_HOTBARTGT1..9,0 (13x13 target badges at slotX+22,479) and LBL_HOTBARMODE (24x24 at 318,394). All 75 older rects are identical;
+# only the tooltip pair's list indices move from 109/110 to 120/121 (relative to the first appended control).

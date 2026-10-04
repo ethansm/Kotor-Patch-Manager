@@ -84,10 +84,12 @@ constexpr int CellCount = 8, CellBgOff0 = ClearOff + 1, CellIcOff0 = CellBgOff0 
 constexpr int NumOff0 = CellIcOff0 + CellCount;                              // key-digit labels (own labels so the digit can sit above-left of the icon)
 constexpr int QtyOff0 = NumOff0 + ButtonCount;                               // item stack counts (bottom-right of the slot, above the icon)
 constexpr int CellQtyOff0 = QtyOff0 + ButtonCount;                           // item stack counts on the picker cells (optional: the editor works without them)
-constexpr int TipBgOff = CellQtyOff0 + CellCount, TipOff = TipBgOff + 1;     // hover tooltip frame + text
-constexpr int ControlCount = TipOff + 1;                                     // 75
+constexpr int TgtOff0 = CellQtyOff0 + CellCount;                             // per-slot target-mode badges (optional, build 27+; top-right of the frame)
+constexpr int ModeOff = TgtOff0 + ButtonCount;                               // target-mode button in the editor panel (optional: the editor works without it)
+constexpr int TipBgOff = ModeOff + 1, TipOff = TipBgOff + 1;                 // hover tooltip frame + text
+constexpr int ControlCount = TipOff + 1;                                     // 86 (build 26 had 75; build 27+ inserts the 11 target-mode controls before the tooltip pair)
 constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 25: the editor is enabled only when all of them exist
-constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210;                  // tooltip owner ids >= this are picker cells
+constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210, ModeTipId = 220;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t GuiSoundMgrGlobal = gameaddr::GuiSoundMgr;  // global GUI sound manager pointer (hover sound played through guikit)
 constexpr uintptr_t TextVtable = gameaddr::TextVtable;
 constexpr DWORD TipDelayMs = 450;
@@ -468,14 +470,14 @@ void ensureLookups() {
 std::string nullish(const std::string& s) { return s == "****" ? std::string() : s; }
 
 // Client item id -> engine CSWSItem* (app -> objTable(+8) -> ClientToServerObjectId -> GetItemByObjectId); 0 + a WARN log on any failure.
-uintptr_t serverItemFor(uint32_t clientItem, uint32_t* serverOut = nullptr) {
+uintptr_t serverItemFor(uint32_t clientItem, uint32_t* serverOut = nullptr, bool quiet = false) {   // quiet: periodic UI refresh, no log/ring dump on failure
     uint32_t app = 0, objTable = 0;   // objTable = *(app+8), exactly as 0x77c7aa (NOT app+4, which is the client/party side)
     if (!saferead::readAt<uint32_t>(S_Target, AppGlobal, 0, &app) || !app ||
-        !saferead::readAt<uint32_t>(S_Target, app, 8, &objTable) || !objTable) { KP_LOGV(chTarget, KPLOG_WARN, "target: object table unreadable (app=%08x), using it normally", (unsigned)app); dumpRing("target"); return 0; }
+        !saferead::readAt<uint32_t>(S_Target, app, 8, &objTable) || !objTable) { if (!quiet) KP_LOGV(chTarget, KPLOG_WARN, "target: object table unreadable (app=%08x), using it normally", (unsigned)app); if (!quiet) dumpRing("target"); return 0; }
     uint32_t serverItem = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t, uint32_t)>(ClientToServerObjectId)(objTable, clientItem);
-    if (!serverItem) { KP_LOGV(chTarget, KPLOG_WARN, "target: no server id for client item %08x, using it normally", (unsigned)clientItem); dumpRing("target"); return 0; }
+    if (!serverItem) { if (!quiet) KP_LOGV(chTarget, KPLOG_WARN, "target: no server id for client item %08x, using it normally", (unsigned)clientItem); if (!quiet) dumpRing("target"); return 0; }
     uintptr_t itemPtr = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, uint32_t)>(GetItemByObjectId)(objTable, serverItem);
-    if (!itemPtr) { KP_LOGV(chTarget, KPLOG_WARN, "target: item %08x (server %08x) not found, using it normally", (unsigned)clientItem, (unsigned)serverItem); dumpRing("target"); return 0; }
+    if (!itemPtr) { if (!quiet) KP_LOGV(chTarget, KPLOG_WARN, "target: item %08x (server %08x) not found, using it normally", (unsigned)clientItem, (unsigned)serverItem); if (!quiet) dumpRing("target"); return 0; }
     if (serverOut) *serverOut = serverItem;
     return itemPtr;
 }
@@ -628,7 +630,7 @@ void widgetOk(Widget& w, unsigned kind, ::kplog::Channel& ch, const char* what) 
     w.failLogged &= ~kind;
     KP_LOGV(ch, KPLOG_DEBUG, "widget: %s recovered ctl=%p", what, (void*)w.ctl);
 }
-struct Button { Widget bg, ic, num, qty; bool avail = false; int lastHave = -1; Entry entry; };
+struct Button { Widget bg, ic, num, qty, tgt; bool avail = false; int lastHave = -1; Entry entry; };
 // ---- in-game editor state (the editor and the per-HUD hover/refresh/repeat timers live in Bar, so a HUD rebuild resets them) ----
 enum EditMode { M_Normal = 0, M_Edit = 1, M_Pick = 2 };
 const char* const ModeName[] = { "Normal", "Edit", "Pick" };
@@ -643,10 +645,12 @@ struct Editor {
     int othLast = -1; DWORD othSince = 0;                         // hovered picker control (tab / arrow / Clear) + when the hover began
     bool toggleWasOver = false; DWORD toggleSince = 0;            // cursor over the wrench toggle + since when
     DWORD arrowHeldSince = 0, arrowLastRep = 0; int arrowHeld = 0; // arrow-hold auto-repeat state
+    bool modeWasOver = false; DWORD modeSince = 0;                // cursor over the target-mode button + since when
+    int clsSlot = -1; uint32_t clsKey = 0; bool clsHeal = false, clsSelf = false;   // classifyItem cache of the edited slot's item (per slot + item key)
 };
 struct Bar {
     uintptr_t panel = 0; int built = 0; Button b[ButtonCount]; Widget tipBg, tip; int tipSlot = -1; std::string tipText;
-    Widget edit, pbg, title, tab[TabCount], prev, next, clear; Cell cell[CellCount]; int editBound = 0; Editor ed;
+    Widget edit, pbg, title, tab[TabCount], prev, next, clear, mode; Cell cell[CellCount]; int editBound = 0; Editor ed;
     int hoverLast = -2; DWORD hoverStart = 0;   // slot under the cursor (-2 = never evaluated) + when that hover began
     long refreshLast = -1000;                   // frame of the last button re-resolve
 };
@@ -672,7 +676,7 @@ void* imageFor(const char* resref) {
 }
 
 using hb::slotDigit;
-const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : &w == &b.ic ? "ic" : &w == &b.num ? "num" : "qty"; }
+const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : &w == &b.ic ? "ic" : &w == &b.num ? "num" : &w == &b.tgt ? "tgt" : "qty"; }
 
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
 void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
@@ -825,7 +829,6 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     }
 }
 
-void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { showTipText(anchor, buildTipText(digit, entry), s); }
 
 // The same short sound the native quick-action buttons play when the mouse enters them.
 void playHoverSound(const char* why) {
@@ -833,6 +836,9 @@ void playHoverSound(const char* why) {
     if (!guikit::playHoverSound()) { if (logs < 20) { ++logs; KP_LOG(chTip, "sound: manager null (%s), skipped", why); } return; }
     if (logs < 40) { ++logs; void* mgr = nullptr; saferead::readAt(S_Misc, GuiSoundMgrGlobal, 0, &mgr); KP_LOGV(chTip, KPLOG_DEBUG, "sound: hover (%s) mgr=%p", why, mgr); }
 }
+
+std::string slotTipText(int s, const Entry& e, bool verboseLog);
+void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { (void)digit; showTipText(anchor, slotTipText(s, entry, true), s); }
 
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
 void updateHover(bool gate) {
@@ -870,6 +876,29 @@ void updateHover(bool gate) {
 
 // Per-tick button state. gate = HUD is the active panel. Entries are re-resolved every ButtonRefreshFrames frames or when
 // the cached view is stale (config/character/gate change), never per frame.
+// LowHp slot with nobody who can take the item (hb::slotEnabled false): the icon is drawn dimmed. Quiet (no logs), called only on the button refresh cadence.
+// Anything unreadable / not a healing item = enabled (never dim on a failed read).
+bool lowHpSlotEnabled(const Entry& e, const hb::ActionRef& a) {
+    uintptr_t itemPtr = serverItemFor((uint32_t)e.key & ~ItemKeyFlag, nullptr, true);
+    if (!itemPtr) return true;
+    ItemClass ic = classifyItem(itemPtr);
+    if (ic.row < 0 || !ic.healing) return true;
+    party::Vitals v[3]; int n = party::members(v, 3);
+    if (n <= 0) return true;
+    hb::Candidate c[3];
+    for (int i = 0; i < n; ++i) {
+        c[i].cur = v[i].cur; c[i].max = v[i].max; c[i].ok = v[i].ok; c[i].down = v[i].down;
+        c[i].eligible = v[i].ok && v[i].server && reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(v[i].server, itemPtr, 0, 1) != 0;
+    }
+    return hb::slotEnabled(c, n, 0, a.target, g_cfg.general);
+}
+// Hover text of a bar slot: the entry text plus the target line (item slots with a non-default mode).
+std::string slotTipText(int s, const Entry& e, bool verboseLog) {
+    std::string t = buildTipText(slotDigit(s), e, verboseLog);
+    std::string line = hb::slotTargetLine(g_eff[s].target, hb::effectiveThreshold(g_eff[s].target, g_cfg.general));
+    if (g_eff[s].kind == hb::K_Item && !line.empty()) t += "\n" + line;
+    return t;
+}
 void wText(Widget& w, const char* nm, const std::string& text);
 void wTextColor(Widget& w, const char* nm, const float* rgb);
 void updateButtons(uintptr_t hud, bool gate) {
@@ -886,15 +915,15 @@ void updateButtons(uintptr_t hud, bool gate) {
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
         if (!b.bg.ctl && !b.ic.ctl) continue;
-        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); setVisible(b, b.num, s, false, "hud not active"); setVisible(b, b.qty, s, false, "hud not active"); continue; }
+        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); setVisible(b, b.num, s, false, "hud not active"); setVisible(b, b.qty, s, false, "hud not active"); setVisible(b, b.tgt, s, false, "hud not active"); continue; }
         // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
         hb::ActionRef want = g_eff[s];
         if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
-            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); setVisible(b, b.qty, s, false, "unassigned"); continue;
+            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); setVisible(b, b.qty, s, false, "unassigned"); setVisible(b, b.tgt, s, false, "unassigned"); continue;
         }
         Entry e; bool have = !want.empty() && resolve(hud, want, &e);
         hb::SlotView sv = hb::slotView(want.empty(), want.kind == hb::K_Item, have, have ? e.flags : 0, have ? e.key : 0, have ? e.name : std::string(), settling && g_bar.ed.mode == M_Normal);
-        if (sv.hideSettling) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); setVisible(b, b.qty, s, false, "settling after character switch"); continue; }
+        if (sv.hideSettling) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); setVisible(b, b.qty, s, false, "settling after character switch"); setVisible(b, b.tgt, s, false, "settling after character switch"); continue; }
         if (!want.empty()) {   // change-only per slot (map section 4 #18); skipped while settling (that branch continued above)
             int h = have ? 1 : 0;
             if (b.lastHave != h) {
@@ -905,7 +934,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         } else b.lastHave = -1;
         const char* state = sv.state;
         b.avail = have; if (have) b.entry = e;
-        if (have && g_bar.tipSlot == s && buildTipText(slotDigit(s), e, false) != g_bar.tipText) { KP_LOGV(chTip, KPLOG_DEBUG, "tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
+        if (have && g_bar.tipSlot == s && slotTipText(s, e, false) != g_bar.tipText) { KP_LOGV(chTip, KPLOG_DEBUG, "tip: slot %d entry changed while hovered, refreshing", s); showTipAt(b.bg, e, slotDigit(s), s); }
         // An item that left the HUD's lists is out of stock: keep its (dimmed) icon from the last time it was seen and show "0"; it is not
         // hoverable or clickable (avail = false) and comes back by itself on the next refresh once the party has one again.
         std::string icon = have ? e.icon : (sv.outOfStock ? itemIconFor(want.name) : std::string());
@@ -914,7 +943,11 @@ void updateButtons(uintptr_t hud, bool gate) {
         else setVisible(b, b.qty, s, false, sv.qtyHideWhy);
         setAlpha(b, b.bg, s, b.bg.baseAlpha * sv.bgFactor);
         setFill(b, b.ic, s, icon);
-        setAlpha(b, b.ic, s, b.ic.baseAlpha * sv.icFactor);
+        bool lowHpDim = have && want.kind == hb::K_Item && want.target.mode == hb::TM_LowHp && !lowHpSlotEnabled(e, want);   // once per refresh, only for @lowhp item slots
+        setAlpha(b, b.ic, s, b.ic.baseAlpha * (lowHpDim ? std::min(sv.icFactor, DimAlpha) : sv.icFactor));
+        const char* badge = want.kind == hb::K_Item ? hb::badgeFor(want.target) : nullptr;
+        if (badge) { setFill(b, b.tgt, s, badge); setAlpha(b, b.tgt, s, b.tgt.baseAlpha); setVisible(b, b.tgt, s, true, state); }
+        else setVisible(b, b.tgt, s, false, want.kind == hb::K_Item ? "default target" : "not an item");
     }
 }
 
@@ -1017,8 +1050,8 @@ void placePanel(bool pick) {
 void setMode(int m, int slot, const char* why) {
     Editor& ed = g_bar.ed;
     KP_LOG(chEdit, "edit: mode %s -> %s slot %d -> %d (%s) char='%s'", ModeName[ed.mode], ModeName[m], ed.slot, slot, why, g_charKey.c_str());
-    if (m == M_Pick && ed.mode != M_Pick) { ed.off = 0; ed.sig = 0; ed.lastRefresh = -1000; g_wheelAccum = 0; }
-    if (m != M_Pick) { ed.over = -1; if (g_bar.tipSlot >= CellTipBase) hideTip("picker closed"); }
+    if (m == M_Pick && ed.mode != M_Pick) { ed.clsSlot = -1; ed.off = 0; ed.sig = 0; ed.lastRefresh = -1000; g_wheelAccum = 0; }
+    if (m != M_Pick) { ed.over = -1; ed.modeWasOver = false; if (g_bar.tipSlot >= CellTipBase) hideTip("picker closed"); }
     ed.mode = m; ed.slot = slot; ed.msg.clear();
     g_editOpen = (m != M_Normal);
     if (m != M_Normal) placePanel(m == M_Pick); else { g_pickRect[2] = 0; ed.placed = -1; }
@@ -1076,6 +1109,33 @@ void scrollPicker(int no, const char* why) {
     playHoverSound("picker scroll");
 }
 
+// Target-mode button inputs for the edited slot: isHealing / selfOk of its resolved item, cached per slot + item key (classifyItem logs on failure: not per frame).
+void modeInputs(int slot, const hb::ActionRef& a, bool* heal, bool* selfOk) {
+    Editor& ed = g_bar.ed; *heal = *selfOk = false;
+    if (a.kind != hb::K_Item || slot < 0 || slot >= ButtonCount || !g_bar.b[slot].avail) return;   // not resolved (out of stock): nothing to classify
+    uint32_t key = (uint32_t)g_bar.b[slot].entry.key;
+    if (ed.clsSlot != slot || ed.clsKey != key) {
+        ed.clsSlot = slot; ed.clsKey = key; ed.clsHeal = ed.clsSelf = false;
+        uintptr_t item = serverItemFor(key & ~ItemKeyFlag);
+        if (item) { ItemClass ic = classifyItem(item); ed.clsHeal = ic.healing; ed.clsSelf = ic.selfOk; }
+    }
+    *heal = ed.clsHeal; *selfOk = ed.clsSelf;
+}
+
+// Mode button click on the edited slot: next mode, persisted through assignSlot (same SetSlot + Save + FileWatch accept as a picker assignment).
+void modeClick(uintptr_t hud, int slot) {
+    Editor& ed = g_bar.ed;
+    hb::ActionRef a = g_eff[slot]; bool heal, selfOk; modeInputs(slot, a, &heal, &selfOk);
+    hb::ModeBtn st = hb::modeButtonState(a, heal, selfOk);
+    if (st != hb::MB_Enabled) { KP_LOG(chTarget, "target: mode click slot %s ignored (%s)", hb::SlotKeyName(0, slot).c_str(), st == hb::MB_Hidden ? "empty slot" : st == hb::MB_DisabledItemsOnly ? "items only" : "cannot target this item"); return; }
+    hb::TargetSpec n = hb::nextTargetMode(a, heal, selfOk);
+    if (hb::dropsCustomSuffix(a.target)) KP_LOG(chEdit, "edit: target mode slot %s drops custom suffix (threshold=%d fallback=%d)", hb::SlotKeyName(0, slot).c_str(), a.target.thresholdPct, a.target.fallback);
+    KP_LOG(chEdit, "edit: target mode slot %s %s -> %s", hb::SlotKeyName(0, slot).c_str(), hb::targetModeName(a.target.mode), hb::targetModeName(n.mode));
+    Entry t; t.ref = a; t.ref.target = n; t.name = a.name;
+    if (!assignSlot(hud, slot, &t)) KP_LOG(chTarget, "target: mode change slot %s refused (%s)", hb::SlotKeyName(0, slot).c_str(), ed.msg.c_str());
+    g_bar.refreshLast = -1000;   // badge + dim refresh on the next frame
+}
+
 void updateEditor(uintptr_t hud, bool gate) {
     Editor& ed = g_bar.ed;
     {
@@ -1118,6 +1178,10 @@ void updateEditor(uintptr_t hud, bool gate) {
     wVisible(g_bar.title, "title", showTitle, true);
     for (int i = 0; i < TabCount; ++i) wVisible(g_bar.tab[i], TabNm[i], showPick, true);
     wVisible(g_bar.prev, "prev", showPick, true); wVisible(g_bar.next, "next", showPick, true); wVisible(g_bar.clear, "clear", showPick, true);
+    bool mHeal = false, mSelf = false; hb::ModeBtn mst = hb::MB_Hidden;
+    if (showPick && ed.slot >= 0) { modeInputs(ed.slot, g_eff[ed.slot], &mHeal, &mSelf); mst = hb::modeButtonState(g_eff[ed.slot], mHeal, mSelf); }
+    wVisible(g_bar.mode, "mode", mst != hb::MB_Hidden, true);
+    wAlpha(g_bar.mode, "mode", mst == hb::MB_Enabled ? 1.0f : DimAlpha);
     for (int i = 0; i < CellCount; ++i) { wVisible(g_bar.cell[i].bg, CellBgNm[i], showPick, true); wVisible(g_bar.cell[i].ic, CellIcNm[i], showPick, false); if (!showPick) wVisible(g_bar.cell[i].qty, CellQtyNm[i], false, false); }
 
     // ---- hover over the tabs / arrows / Clear (highlight + short tooltip)
@@ -1128,6 +1192,13 @@ void updateEditor(uintptr_t hud, bool gate) {
     {
         if (oth != ed.othLast) { KP_LOGV(chEdit, KPLOG_DEBUG, "edit: control hover %d -> %d", ed.othLast, oth); if (g_bar.tipSlot >= OtherTipBase) hideTip("control hover changed"); ed.othLast = oth; ed.othSince = GetTickCount(); if (oth >= 0) playHoverSound("picker control"); }
         if (oth >= 0 && g_bar.tipSlot != OtherTipBase + oth && GetTickCount() - ed.othSince >= TipDelayMs) showTipText(*ow[oth], otip[oth], OtherTipBase + oth, g_pickRect[1]);
+    }
+
+    {   // target-mode button: highlight art while hovered (enabled only), tooltip after the usual delay
+        bool mov = haveCur && mst != hb::MB_Hidden && wHit(g_bar.mode, pt);
+        wFill(g_bar.mode, "mode", (mov && mst == hb::MB_Enabled) ? "fph_mode_hi" : "fph_mode");
+        if (mov != ed.modeWasOver) { ed.modeWasOver = mov; ed.modeSince = GetTickCount(); if (!mov && g_bar.tipSlot == ModeTipId) hideTip("left mode button"); if (mov && mst == hb::MB_Enabled) playHoverSound("mode button"); }
+        if (mov && g_bar.tipSlot != ModeTipId && GetTickCount() - ed.modeSince >= TipDelayMs) showTipText(g_bar.mode, hb::modeTooltip(g_eff[ed.slot], mHeal, mSelf), ModeTipId, g_pickRect[1]);
     }
 
     // ---- picker contents (rebuilt from the HUD's group lists when stale)
@@ -1216,6 +1287,7 @@ void updateEditor(uintptr_t hud, bool gate) {
     for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], pt)) { KP_LOG(chEdit, "edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.off = 0; ed.sig = 0; ed.msg.clear(); return; }
     if (wHit(g_bar.prev, pt)) { if (ed.off > 0) scrollPicker(ed.off - 1, "prev click"); else KP_LOG(chEdit, "edit: prev click ignored (at start)"); return; }
     if (wHit(g_bar.next, pt)) { if (ed.off < maxOff) scrollPicker(ed.off + 1, "next click"); else KP_LOG(chEdit, "edit: next click ignored (at end)"); return; }
+    if (mst != hb::MB_Hidden && wHit(g_bar.mode, pt)) { modeClick(hud, ed.slot); return; }
     if (wHit(g_bar.clear, pt)) { KP_LOG(chEdit, "edit: Clear click slot %d", ed.slot); if (assignSlot(hud, ed.slot, nullptr)) setMode(M_Edit, -1, "cleared"); return; }
     for (int i = 0; i < CellCount; ++i) if (wHit(g_bar.cell[i].bg, pt)) {
         if (!g_bar.cell[i].avail) { KP_LOG(chEdit, "edit: click on empty cell %d ignored", i); return; }
@@ -1301,9 +1373,9 @@ unsigned char* createLabel(uintptr_t panel, const CtlSpec& sp, Widget* w) {
     return ctl;
 }
 
-// All 75 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
+// All 86 controls in list (= draw) order, in 800x600 layout units. Offsets: see BgOff0..TipOff. align -1 / font nullptr / text nullptr
 // keep the template's value (LBL_QUEUE1: white dialogfont16x16, align 9 = top-left; 17 = top-centre, 18 = centre).
-const CtlSpec Layout[] = {
+constexpr CtlSpec Layout[] = {
     { "LBL_HOTBARBG1",       TP_Plain,  29, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
     { "LBL_HOTBARBG2",       TP_Plain,  69, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
     { "LBL_HOTBARBG3",       TP_Plain, 109, 478,  35,  35, "fph_slot", nullptr,  nullptr,           -1 },
@@ -1379,10 +1451,26 @@ const CtlSpec Layout[] = {
     { "LBL_HOTBARCELLQTY5",  TP_Plain, 260, 443,  27,  17, nullptr,    "",       nullptr,           36 },
     { "LBL_HOTBARCELLQTY6",  TP_Plain, 300, 443,  27,  17, nullptr,    "",       nullptr,           36 },
     { "LBL_HOTBARCELLQTY7",  TP_Plain, 340, 443,  27,  17, nullptr,    "",       nullptr,           36 },
+    { "LBL_HOTBARTGT1",       TP_Plain,  51, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT2",       TP_Plain,  91, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT3",       TP_Plain, 131, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT4",       TP_Plain, 171, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT5",       TP_Plain, 211, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT6",       TP_Plain, 251, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT7",       TP_Plain, 291, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT8",       TP_Plain, 331, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT9",       TP_Plain, 371, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARTGT0",       TP_Plain, 411, 479,  13,  13, nullptr,    nullptr,  nullptr,           -1 },
+    { "LBL_HOTBARMODE",      TP_Plain, 318, 394,  24,  24, "fph_mode", nullptr,  nullptr,           -1 },
     { "LBL_HOTBARTIPBG",     TP_Panel,  12, 380, 300,  90, nullptr,    nullptr,  nullptr,           -1 },
     { "LBL_HOTBARTIP",       TP_Plain,  12, 380, 300,  90, nullptr,    "",       nullptr,           18 },
 };
 static_assert(sizeof Layout / sizeof Layout[0] == ControlCount, "Layout[] must list every control in offset order");
+constexpr bool badgeLayoutMatches() {
+    for (int i = 0; i < ButtonCount; ++i) { hb::Rect4 r = hb::badgeRect(i); const CtlSpec& c = Layout[TgtOff0 + i]; if (c.x != r.x || c.y != r.y || c.w != r.w || c.h != r.h) return false; }
+    return true;
+}
+static_assert(badgeLayoutMatches(), "LBL_HOTBARTGT<d> rects must equal hb::badgeRect(slot) (hotbar_logic_test pins the numbers)");
 
 Widget* widgetFor(Bar& bar, int off) {
     if (off < IcOff0) return &bar.b[off - BgOff0].bg;
@@ -1398,7 +1486,9 @@ Widget* widgetFor(Bar& bar, int off) {
     if (off < NumOff0) return &bar.cell[off - CellIcOff0].ic;
     if (off < QtyOff0) return &bar.b[off - NumOff0].num;
     if (off < CellQtyOff0) return &bar.b[off - QtyOff0].qty;
-    if (off < TipBgOff) return &bar.cell[off - CellQtyOff0].qty;
+    if (off < TgtOff0) return &bar.cell[off - CellQtyOff0].qty;
+    if (off < ModeOff) return &bar.b[off - TgtOff0].tgt;
+    if (off == ModeOff) return &bar.mode;
     return off == TipBgOff ? &bar.tipBg : &bar.tip;
 }
 

@@ -651,6 +651,15 @@ int main() {
     KT_CHECK_EQ(slotTargetLine(M(TM_Self), 50).c_str(), "Target: Self");
     KT_CHECK_EQ(slotTargetLine(M(TM_Default), 50).c_str(), "");
   }
+  { // per-slot target badge rect: flush top-right inside the frame, clear of the digit and the qty row
+    KT_CHECK(rectsOverlap({0,0,10,10},{5,5,10,10})); KT_CHECK(!rectsOverlap({0,0,10,10},{10,0,5,5})); KT_CHECK(!rectsOverlap({0,0,10,10},{0,10,5,5}));
+    for (int i = 0; i < 10; ++i) {
+        Rect4 b = badgeRect(i), digit = {33 + 40 * i, 479, 18, 18}, qty = {33 + 40 * i, 495, 27, 17}, frame = {29 + 40 * i, 478, 35, 35};
+        KT_CHECK(!rectsOverlap(b, digit)); KT_CHECK(!rectsOverlap(b, qty));
+        KT_CHECK(b.x >= frame.x && b.y >= frame.y && b.x + b.w <= frame.x + frame.w && b.y + b.h <= frame.y + frame.h);
+        KT_CHECK_EQ(b.x, 29 + 40 * i + 22); KT_CHECK_EQ(b.y, 479); KT_CHECK_EQ(b.w, 13); KT_CHECK_EQ(b.h, 13);
+    }
+  }
   { // B2: item edge-case decision table (spells.2da columns, item property 0)
     KT_CHECK_EQ(parseHexOrInt("0x1408"), 0x1408);
     KT_CHECK_EQ(parseHexOrInt("0X1048"), 0x1048);

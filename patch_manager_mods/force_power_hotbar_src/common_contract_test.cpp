@@ -346,8 +346,8 @@ static void guikit_contract() {
     HCHECK("playHoverSound returns false when the manager global is unreadable", !playHoverSound());
     e.guiSoundMgrAddr = gameaddr::GuiSoundMgr;
 
-    // ---- createLabelFromTemplate + appendToPanel: the HUD build appends 75 controls and relies on ids/counts ----
-    const int Native = 41, Controls = 75;   // native control count (arbitrary) + ControlCount
+    // ---- createLabelFromTemplate + appendToPanel: the HUD build appends 86 controls and relies on ids/counts ----
+    const int Native = 41, Controls = 86;   // native control count (arbitrary) + ControlCount
     uintptr_t panel = arenaAlloc(0x100), arr = arenaAlloc((Native + Controls + 8) * 4);
     at<uint32_t>(panel, Panel_CtlArray) = (uint32_t)arr; at<int>(panel, Panel_CtlCount) = Native;
     bool idsOk = true, countsOk = true, slotsOk = true, hiddenOk = true, whyOk = true, listOk = true, noDouble = true;
@@ -364,12 +364,12 @@ static void guikit_contract() {
         countsOk &= at<int>(panel, Panel_CtlCount) == Native + i + 1;
         slotsOk &= at<uint32_t>(arr, (Native + i) * 4) == (uint32_t)c;
     }
-    HCHECK("createLabelFromTemplate succeeds 75 times with why == CF_None", whyOk);
+    HCHECK("createLabelFromTemplate succeeds 86 times with why == CF_None", whyOk);
     HCHECK("created labels are not on the panel list yet (InitControl addToList=0, scale=1), so appendToPanel owns the count", noDouble);
     HCHECK("created labels are hidden and click-through until the hotbar shows them", hiddenOk);
-    HCHECK("appendToPanel returns true for each of 75 appends", listOk);
-    HCHECK("appendToPanel stamps id == old count == list index (ids Native..Native+74)", idsOk);
-    HCHECK("appendToPanel raises the panel count by exactly 1 per append (75 total)", countsOk && at<int>(panel, Panel_CtlCount) == Native + Controls);
+    HCHECK("appendToPanel returns true for each of 86 appends", listOk);
+    HCHECK("appendToPanel stamps id == old count == list index (ids Native..Native+85)", idsOk);
+    HCHECK("appendToPanel raises the panel count by exactly 1 per append (86 total)", countsOk && at<int>(panel, Panel_CtlCount) == Native + Controls);
     HCHECK("appendToPanel stores the control at array[index] (draw order = append order)", slotsOk);
     HEQ("createLabelFromTemplate passes the template tag through the CExoString", (const char*)g_initTag, "LBL_QUEUE1");
 
