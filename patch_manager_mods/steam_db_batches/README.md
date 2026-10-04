@@ -143,3 +143,24 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
   errors are recorded (`GOG_LABEL_SUSPECTS.md`, B9 subsection).
 - Open: the KDB names 0x6E6880 "ApplyOnHitInstantDeath" (low confidence), but it is GetFirstAttacker. The rename
   needs a kdb_overrides row.
+
+## B12b: `CSWSCreature` upper half, GOG >= 0x696F00 (2026-10-03)
+
+- Scope: 201 GOG rows. Gates: AUTO 148, REVIEW 33, REJECT 17, NOCAND 3. 1 Sonnet chunk, 0/10 decoys accepted.
+- Opus: part a (27 rows) found 1 sample error (a rotated GOG label) -> ESCALATE. Part r (lead addition: the 20
+  REJECT/NOCAND rows) recovered all 20 by whole-binary fp scans (local delta -0x10ADC0, not the run delta -0x118B30).
+  Part z (consolidation): the 14 escalated rows + an AUTO rotation audit (14 checked, 2 flagged). Sample errors 3, all
+  name errors (AddChemical/AddComponent swapped, 0x6C66E0 rotated). Details: `B12b/B12b_SUMMARY.md`.
+- Final: verified 179, likely 2, label_suspect 20 (GOG label rotations, recorded in `GOG_LABEL_SUSPECTS.md` ## B12b).
+- Tool fix: a reviewer `match` on a `mac_rotation` row now goes to the Opus 100% list (b7114f4).
+- KDB (`persist B12b --apply`): insert 20, update 154, demote 14 (rotated names), 6 lessons, 179 marks; skip 5 (3
+  CONFLICT rows keep trusted descriptive names of the same bodies: SetPartyMemberFlag 0x58A330, FollowState5_Hold
+  0x5CA6A0, UpdatePerception 0x5D0F30 = UpdateVisibleList, which calls DoPerceptionUpdateOnCreature). Second apply 0,
+  integrity ok. Backup `backups/kdb/kotor2_ghidra_knowledge.db.pre_B12b_persist_20261003`.
+- Branch (a72c344, append, `tools/precheck_import.py` 0 problems): 2,569 -> 2,747 (+178, 1 confirm). `validate`
+  passed, 0 duplicate addresses/names. Backup `backups/steam_db/kotor2_steam_aspyr.db.76cedbe_preB12b_20261003`.
+- `check-validated`: 2,747 / 2,747 validated.
+- Lead spot-checks (Steam fp = GOG fp: size, RET, n_insn, disp, imm):
+  - SetInParty 0x58A330 (318 B, RET 8): `0058a3ef CALL 0x0051c280` GetServerAIMaster, `0058a3f6 CALL 0x0051e120`.
+  - QuickWalk OffsetWaitDest 0x5CACD0 (286 B, RET 0x10): `005cada2 MOV dword ptr [ECX + 0x4],0x1`.
+  - SetDetectMode 0x5B7A60 (51 B, RET 4): `005b7a7f MOV byte ptr [EAX + 0x510],CL`.
