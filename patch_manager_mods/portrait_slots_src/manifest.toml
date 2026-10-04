@@ -10,7 +10,9 @@ description = "Owns the party-portrait hooks (UpdatePortraits + the per-slot dra
 requires = []
 conflicts = []
 
-# Steam/LAA only (same hook sites as Buff Duration HUD v1.1.0). See patch_manager_mods/21_portrait_slots_and_split.md
+# Steam/LAA: live-tested (same hook sites as Buff Duration HUD v1.1.0). See patch_manager_mods/21_portrait_slots_and_split.md
 # (local-setup/KOTOR-II worktree).
+# GOG = static-verified only (doc 21b_gog_address_map.md), untested live; GOG contributor testing required.
 [patch.supported_versions]
 kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+kotor2_gog_aspyr = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"

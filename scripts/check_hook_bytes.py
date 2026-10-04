@@ -12,6 +12,13 @@ For each hook (patch_manager_mods/**/kotor2-steam-aspyr.hooks.toml) and each cod
   FAIL  detour: a relative call/jmp/jcc/loop/jecxz with an immediate target inside the stolen bytes while
         skip_original_bytes is false (KPM copies the bytes into the trampoline unrelocated); INFO when it is true
   FAIL  simple hook: replacement_bytes length != original_bytes length
+GOG (every patch_manager_mods/**/kotor2-gog-aspyr.hooks.toml): the GOG exe is not kept locally, so the sites are checked against the
+GOG instruction dumps of doc 21b (patch_manager_mods/gog_map_21b/dumps/gog_r*.txt, a sparse image of every hook-host function):
+  FAIL  target_versions != the GOG sha / manifest supported_versions lacks kotor2_gog_aspyr = GOG sha
+  FAIL  function / type / original_bytes / parameter sources / skip_original_bytes differ from the Steam hooks file (same order)
+  FAIL  original_bytes differ from the dump bytes, or the window does not start/end on a dumped instruction boundary
+  FAIL  detour: a relative call/jmp/jcc inside the stolen window while skip_original_bytes is false
+  SKIP  a site whose address is not covered by any dump (extend the dumps; not a failure)
 Packaging (every Patches/<Name>/*.kpatch of our mods, plus --kpatch files):
   FAIL  missing manifest.toml / hooks toml / binaries/windows_x86.dll (DLL only expected if the mod has one)
   WARN  embedded hooks (compared parsed; comments and extra target_versions such as the LAA exe are fine) or manifest
@@ -19,8 +26,10 @@ Packaging (every Patches/<Name>/*.kpatch of our mods, plus --kpatch files):
 Exit 1 on any FAIL. A missing or different exe is SKIP (exit 0) / FAIL. Needs i686-w64-mingw32-objdump.
 """
 import argparse
+import re
 import shutil
 import sys
+import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -100,6 +109,110 @@ def _check_mod_sites(rep, pe, mod, label=None, hooks=None, code_patches=None):
         check_site(rep, pe, f"{label} {h.type}", h.address, h.orig, "code", h.type, h.skip_original, h.replacement)
     for cp in (mod.code_patches if code_patches is None else code_patches):
         check_site(rep, pe, f"{label} code_patch {cp.name}", cp.address, cp.orig, cp.kind, "code_patch")
+
+
+GOG_SHA = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"
+GOG_HOOKS_TOML = "kotor2-gog-aspyr.hooks.toml"
+GOG_DUMPS_REL = "patch_manager_mods/gog_map_21b/dumps"
+_INS_RE = re.compile(r"^([0-9a-f]{8})  ((?:[0-9a-f]{2} )+) *(.*)$")
+
+
+def load_gog_dump_insns(dumps_dir) -> dict:
+    """{va: (bytes, text)} from every gog_r*.txt ExportRangeDisasm dump in dumps_dir (instruction lines only)."""
+    insns = {}
+    for f in sorted(Path(dumps_dir).glob("gog_r*.txt")):
+        for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
+            m = _INS_RE.match(line)
+            if m:
+                rest = m.group(3)
+                k = rest.find("  ->")
+                insns[int(m.group(1), 16)] = (bytes.fromhex(m.group(2).replace(" ", "")), (rest if k < 0 else rest[:k]).strip())
+    return insns
+
+
+def _is_rel_branch_text(text) -> bool:
+    mn = text.split(" ", 1)[0].upper()
+    return (mn == "CALL" or mn.startswith("J") or mn.startswith("LOOP")) and re.search(r"\b0x[0-9a-f]{8}\b", text) is not None
+
+
+def check_gog_site(rep, insns, label, h):
+    """One GOG hook against the dumped instructions; returns False on FAIL (a site with no dump coverage is SKIP)."""
+    where = f"{label} 0x{h.address:08X} ({len(h.orig)} bytes)"
+    if h.address not in insns:
+        mid = next(((v, t) for v, (b, t) in insns.items() if v < h.address < v + len(b)), None)
+        if mid:
+            rep.fail("gog-boundary", f"{where}: starts mid-instruction ({mid[1]} at 0x{mid[0]:08X}) in the 21b dumps")
+            return False
+        rep.skip("gog-bytes", f"{where}: address not an instruction in the 21b dumps (no GOG data)")
+        return True
+    ok, got, va, covered = True, b"", h.address, []
+    while len(got) < len(h.orig):
+        if va not in insns:
+            rep.fail("gog-bytes", f"{where}: dump has no instruction at 0x{va:08X} (window runs off the dumped range)")
+            return False
+        b, text = insns[va]
+        covered.append((va, text))
+        got += b
+        va += len(b)
+    if got[:len(h.orig)] != h.orig:
+        rep.fail("gog-bytes", f"{where}: original_bytes [{_hx(h.orig)}] != GOG dump [{_hx(got[:len(h.orig)])}]")
+        ok = False
+    if len(got) != len(h.orig):
+        rep.fail("gog-boundary", f"{where}: window ends mid-instruction (dump instructions cover {len(got)} bytes)")
+        ok = False
+    if h.type == "detour":
+        br = [(v, t) for v, t in covered if _is_rel_branch_text(t)]
+        if br and not h.skip_original:
+            rep.fail("gog-rel-branch", f"{where}: relative branch in stolen bytes with skip_original_bytes=false: "
+                     + ", ".join(f"{t}@0x{v:X}" for v, t in br))
+            ok = False
+    if ok:
+        rep.passed("gog-site", where)
+    return ok
+
+
+def _hook_sig_doc(path):
+    """(target_versions, [(function, type, original_bytes, skip_original, parameter sources)]) of a hooks toml, address-free."""
+    doc = tomllib.loads(Path(path).read_text(encoding="utf-8"))
+    tv = [str(x).upper() for x in doc.get("metadata", {}).get("target_versions", [])]
+    sig = [(h.get("function"), h.get("type", "detour"), sc._to_bytes(h["original_bytes"]), bool(h.get("skip_original_bytes", False)),
+            tuple((p.get("source"), p.get("type")) for p in h.get("parameters", []))) for h in doc.get("hooks", [])]
+    return tv, sig
+
+
+def check_gog(rep, repo=sc.REPO, mod_ids=None, dumps_dir=None):
+    """GOG hooks files vs the Steam ones (same sites) and vs the 21b GOG dumps; manifests list the GOG sha."""
+    root = Path(repo) / "patch_manager_mods"
+    dumps_dir = Path(dumps_dir) if dumps_dir else Path(repo) / GOG_DUMPS_REL
+    found = sorted(d for d in (p.parent for p in root.rglob(GOG_HOOKS_TOML))
+                   if not any(x in sc.SKIP_DIRS for x in d.relative_to(root).parts) and (d / "manifest.toml").is_file())
+    if not found:
+        return
+    insns = load_gog_dump_insns(dumps_dir) if dumps_dir.is_dir() else {}
+    if not insns:
+        rep.skip("gog-bytes", f"no GOG instruction dumps under {dumps_dir}")
+    for d in found:
+        pt = tomllib.loads((d / "manifest.toml").read_text(encoding="utf-8")).get("patch", {})
+        pid = pt.get("id", d.name)
+        if mod_ids and pid not in mod_ids:
+            continue
+        gv = str(pt.get("supported_versions", {}).get("kotor2_gog_aspyr", "")).upper()
+        if gv != GOG_SHA:
+            rep.fail("gog-manifest", f"{pid}: [patch.supported_versions] kotor2_gog_aspyr is {gv or 'missing'}, expected {GOG_SHA}")
+        gtv, gsig = _hook_sig_doc(d / GOG_HOOKS_TOML)
+        if gtv != [GOG_SHA]:
+            rep.fail("gog-version", f"{pid}: {GOG_HOOKS_TOML} target_versions {gtv} != [{GOG_SHA}]")
+        if (d / sc.HOOKS_TOML).is_file():
+            _, ssig = _hook_sig_doc(d / sc.HOOKS_TOML)
+            if gsig != ssig:
+                rep.fail("gog-parity", f"{pid}: {GOG_HOOKS_TOML} differs from {sc.HOOKS_TOML} in function/type/original_bytes/"
+                         f"parameters/skip_original_bytes (or hook count/order): {len(gsig)} vs {len(ssig)} hooks")
+        _, ghooks = sc.parse_hooks((d / GOG_HOOKS_TOML).read_bytes(), mod=pid, source=str(d / GOG_HOOKS_TOML))
+        if insns:
+            for h in ghooks:
+                check_gog_site(rep, insns, f"{pid} GOG {h.type}", h)
+        if len({h.address for h in ghooks}) != len(ghooks):
+            rep.fail("gog-parity", f"{pid}: duplicate hook address in {GOG_HOOKS_TOML}")
 
 
 def _sig(h):
@@ -211,6 +324,7 @@ def main(argv=None):
         rep.skip("tools", f"{sc.OBJDUMP} not found")
         return rep.finish("check_hook_bytes")
     run(exe=a.exe, kpatches=a.kpatch, mod_ids=set(a.mod) or None, reporter=rep)
+    check_gog(rep, mod_ids=set(a.mod) or None)
     return rep.finish("check_hook_bytes")
 
 
