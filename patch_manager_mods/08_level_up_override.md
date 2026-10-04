@@ -1073,3 +1073,15 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (2026-10-04, handoff):** next phase = UX cleanup + polish (user: tooltips for buttons; future-Jedi "Pause at level" defaults
   to the character's current level when the page opens, user can raise it). Plan built in plan mode from `.claude/session_handoff.md`.
   Pending: install consent for d5602400; Phase 7 C1 after the UX phase.
+- **UX polish DONE (2026-10-04, built, NOT installed):** (1) Pause "-"/"+" from the current level (a96adb1): Bank = On/Off toggle,
+  `Pause at level N` label + "-"/"+"; lo = max(minPause, current character level from readClasses, refreshed each uiTick), hi =
+  convertAt-1 (stored 0); unconfigured -> pause = current level; preset switch re-clamps (fixes the :940 rough edge). New log line
+  `UI pause lo= hi= cur=`. (2) Tooltips (f33235f): new Common `_shared_src/GuiTip.h` (additive; KPM c7a2bb6). Spike
+  `research/companion_levelup/phase7_evidence/UX_native_tooltip.md` = NATIVE+PROBE: engine DisplayToolTip shows CExoString ctl+0x2C when
+  strref ctl+0x28 == 0. Hybrid: native strings set once in uiAppend (`UI tips native=N`), custom box C_TIPBG/C_TIP in the page column only
+  if the engine never owns the hovered control after appear time + 250 ms (`UI tip custom ctl=`); `TIPPROBE` lines on change.
+  Gates: ui_test 640/640 (x64 + m32), guitip_test 97/97, contract 40/40, mutate 136/136, run_tests 95/95, mingw 0 warnings.
+  **Build:** kpatch ac531c4c (`ac531c4c22b86a0e07649c4c02ac1936`), DLL 8f9ca9e2 (`8f9ca9e2dd3bd74fa3ac07743b5ff42f`), KPM c7a2bb6.
+  Supersedes d5602400 (same install recipe: DLL swap + v3 `levelup_paths.ini`, user consent, game closed, backup).
+  **Live check:** Atton (future Jedi) Configure -> pause = his current level, "+" raises; hover each control -> read TIPPROBE lines:
+  `owner_is_ours=1` = native works (custom box never shows); `over_is_ours=0` = hit-test misses (custom box covers it).

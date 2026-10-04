@@ -36,7 +36,8 @@ A companion is only configurable when the table has presets for it. The player c
 | Variant | Shown only when several presets match all the rows above. Click to cycle between them. |
 | Build line | The short name of the current preset. |
 | Instant: On/Off | Level-ups for this companion happen at once, without the level-up screen. Off by default. |
-| Bank for Jedi / Pause at level N | Controls holding levels for the Jedi class. See below. |
+| Bank for Jedi: On/Off | Holds levels for the Jedi class. See below. |
+| Pause at level N, "-", "+" | Shown when Bank for Jedi is On. Sets the last level taken before banking. See below. |
 | Use recommended | Switches to the recommended preset for this companion. |
 | Apply | Saves the choice for the current playthrough. |
 | Vanilla | Removes the companion's configuration. Shown only when the companion is configured. |
@@ -79,24 +80,33 @@ Some presets make a companion a Jedi at a set character level (for example Atton
 companion's levels around that. The Bank control decides what happens between the companion's current level and the
 conversion.
 
-For presets with a Jedi class, the control cycles through these states each click:
+For presets with a Jedi class:
 
-1. `Pause at level <convert level - 1>`: the default. The companion levels on the base class up to the level before
-   conversion. Levels after that are banked until the Jedi class exists.
-2. `Pause at level` lower values, one step per click.
-3. `Bank for Jedi: Off`: no banking. The companion keeps levelling on the base class.
-4. Back to the default.
+- `Bank for Jedi: On/Off` turns banking on or off. Off: the companion keeps levelling on the base class.
+- `Pause at level N` (shown when banking is On) with `-` and `+` buttons. When you open the page for a companion with
+  no plan yet, N starts at the companion's **current** character level: every further level is banked. Press `+` to let
+  the companion level further on the base class first. The highest value is the conversion level minus 1 (the preset
+  default). `-` stops at the current level. A button is hidden when it is at its limit.
+- A saved pause below the companion's current level is raised to the current level when the page opens. Changing the
+  preset (a row or **Use recommended**) moves the pause into the new preset's range instead of resetting it.
 
 "Pause at level N" means: N is the last character level the companion may take before banking. Every level above N is
 held (XP still counts) until the companion has the Jedi class. After conversion the levels are taken normally.
 
-The lowest N you can choose (minPause) is the preset's first planned character level minus 1 (at least 1). Atton's presets
-start planning at character level 4, so his lowest pause is 3. The highest is the conversion level minus 2.
+The lowest N is the larger of the companion's current level and the preset's first planned character level minus 1
+(at least 1). If the current level cannot be read, only the preset limit applies. If the companion is already at or past
+the conversion level minus 1, the default is shown and both buttons are hidden.
 
-**Bank everything until Jedi** (for example Atton, to get the most Jedi levels): press the Bank control until it shows
-the lowest value (for Atton, `Pause at level 3`), then press **Apply**. Every level after his current one is banked
-until he becomes a Jedi (through the story, mid-game). If you would rather keep him a Scoundrel longer, leave
-the default or turn banking off.
+**Bank everything until Jedi** (for example Atton, to get the most Jedi levels): open the page, leave the pause at his
+current level, and press **Apply**. Every level after his current one is banked until he becomes a Jedi (through the
+story, mid-game). To keep him a Scoundrel longer, press `+` or turn banking off.
+
+## Tooltips
+
+Hover over a page control (or the Configure button) to see what it does. The patch gives each control its text in the
+game's own tooltip, so the game's box appears next to the cursor after the usual tooltip delay. If the game's box does
+not appear, the patch draws its own box inside the page column instead. The log says which one was used:
+`TIPPROBE ...` lines and `UI tip custom ctl=<name>` when the patch's own box is shown.
 
 **Clamp:** when you change a row or press Use recommended and the new preset has a different pause range, the pause
 resets to the preset's default (0 in the ini). The value you typed is not remembered.

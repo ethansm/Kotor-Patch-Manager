@@ -80,6 +80,7 @@ Companion to doc 19. Question (user): can the RFC #180 registry simplify our pat
 | 10 | `Textures.h` | hotbar only | defer until a second user |
 | 11 | `TestHarness.h` | perf_lab harness, pure-logic tests | doc 20 |
 | - | `TwoDA.h`, `Tlk.h` | hotbar | move with #4 if level_up adopts them |
+| 12 | `GuiTip.h` (`namespace guitip`: native engine tooltip string `setNative` + custom-box fallback `tick`/`layout`, `readMgr` probe) | level_up (first, 10-04 f33235f / KPM c7a2bb6); candidates Mod 14 (`showTip`), hotbar (`tipLayout`) | landed, additive; native path unverified live (spike `research/companion_levelup/phase7_evidence/UX_native_tooltip.md`); migrations in their own sessions after level_up's live TIPPROBE result |
 
 **Address duplication (input for `GameAddr.h`).**
 
