@@ -1,7 +1,7 @@
 [patch]
 id = "force-power-hotbar"
 name = "Force Power Hotbar"
-version = "1.0.0"
+version = "1.1.0"
 author = "ethansm"
 description = "Ten on-screen hotbar slots for keys 1-0 above the action bar: each invokes a Force power, item or mode through the HUD's own quick-action path. An in-game editor (wrench button) assigns them per character, saved to force_power_hotbar.ini. Self-contained: the DLL creates its controls, art and INI. Logging uses the shared KpLog logger (kplog.ini [force-power-hotbar]; without the kpatch.log core it falls back to force_power_hotbar_log.txt)."
 
