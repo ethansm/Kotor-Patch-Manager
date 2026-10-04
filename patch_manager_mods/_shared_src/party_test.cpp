@@ -4,6 +4,7 @@
 #endif
 #include "Party.h"
 #include "GuiKit.h"
+#include "K2Addr.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <initializer_list>
@@ -28,6 +29,19 @@ static_assert(gameaddr::ScreenH == guikit::AddrScreenH, "ScreenH");
 static_assert(gameaddr::LabelVtable == uintptr_t(guikit::LabelVtable), "LabelVtable");
 static_assert(gameaddr::BorderVtable == uintptr_t(guikit::BorderVtable), "BorderVtable");
 static_assert(gameaddr::TextVtable == uintptr_t(guikit::TextVtable), "TextVtable");
+
+// Every address / offset Party.h uses, against the validated Steam values. Party.h reads these from gameaddr:: (compile-time), not through
+// the K2Addr table; kSteam is built from the same constants, so both columns must agree.
+static_assert(gameaddr::AppGlobal == 0x00A1B4A4u, "AppGlobal");
+static_assert(gameaddr::GetControlledCreature == 0x007E5D80u, "GetControlledCreature");
+static_assert(gameaddr::PartyGetAt == 0x007E5DA0u, "PartyGetAt");
+static_assert(gameaddr::MemberServerCreature == 0x0077D800u, "MemberServerCreature");
+static_assert(kSteam.AppGlobal == gameaddr::AppGlobal, "kSteam.AppGlobal");
+static_assert(kSteam.GetControlledCreature == gameaddr::GetControlledCreature, "kSteam.GetControlledCreature");
+static_assert(kSteam.PartyGetAt == gameaddr::PartyGetAt, "kSteam.PartyGetAt");
+static_assert(kSteam.MemberServerCreature == gameaddr::MemberServerCreature, "kSteam.MemberServerCreature");
+static_assert(party::SlotMaxHp == 0x98 && party::SlotCurHp == 0x9C, "vtable HP slots");
+static_assert(party::SiteBase == 0x6C00, "saferead site id");
 
 static uint8_t* g_arena = nullptr; static size_t g_used = 0; constexpr size_t ArenaSize = 1u << 16;
 static uintptr_t arenaAlloc(size_t n) { n = (n + 15) & ~size_t(15); uintptr_t a = reinterpret_cast<uintptr_t>(g_arena + g_used); memset(g_arena + g_used, 0, n); g_used += n; return a; }
@@ -86,6 +100,13 @@ static uintptr_t mkCreature(int i, int hp, int maxhp) {
     g_servers[i] = c; g_clients[i] = 0x1000 + 0x10 * (i + 1); g_fc[i] = { c, hp, maxhp };
     return vt;
 }
+
+// counting wrappers for the edge-case tests
+static int g_memberCalls = 0, g_serverCalls = 0; static uintptr_t g_serverArgs[8];
+static uintptr_t __thiscall countMember(void* t, int i) { (void)t; ++g_memberCalls; return g_clients[i]; }
+static uintptr_t __thiscall countServer(void* m) { if (g_serverCalls < 8) g_serverArgs[g_serverCalls] = (uintptr_t)m; ++g_serverCalls; return fakeServer(m); }
+// shrinks the party table to 2 after the first PartyGetAt (member 2 "leaves" between partyCount and the per-member reads)
+static uintptr_t __thiscall shrinkMember(void* t, int i) { ++g_memberCalls; if (i == 2) return g_clients[i]; at<int>((uintptr_t)t, 0) = 2; return g_clients[i]; }
 
 int main() {
     void* m = mmap(nullptr, ArenaSize,PROT_READ | PROT_WRITE,
@@ -249,10 +270,77 @@ int main() {
         build(0); KT_CHECK_EQ((long long)party::members(out, 4), 0ll);
         build(3); at<uint32_t>(cell, 0) = 0; KT_CHECK_EQ((long long)party::members(out, 4), 0ll);
 
+        // ---- edge cases ----
+        // (1) PartyGetAt returns 0 for the middle index: entry stays in place, ok=false, client 0, NO serverCreature call for it, neighbours read.
+        party::g_member = countMember; party::g_serverCreature = countServer;
+        build(3); mkCreature(0, 50, 100); mkCreature(1, 10, 80); mkCreature(2, 7, 7);
+        g_clients[1] = 0; g_memberCalls = g_serverCalls = g_vcalls = 0;
+        for (auto& o : out) o = party::Vitals();
+        out[1].cur = 1234; out[1].server = 0xDEAD;   // stale data must be overwritten
+        KT_CHECK_EQ((long long)party::members(out, 4), 3ll);          // full count kept, list not truncated
+        KT_CHECK_EQ((long long)g_memberCalls, 3ll);
+        KT_CHECK_EQ((long long)g_serverCalls, 2ll);                    // only members 0 and 2
+        KT_CHECK(g_serverArgs[0] != 0 && g_serverArgs[1] != 0);
+        KT_CHECK_EQ((unsigned long long)g_serverArgs[0], (unsigned long long)(0x1000 + 0x10 * 1));
+        KT_CHECK_EQ((unsigned long long)g_serverArgs[1], (unsigned long long)(0x1000 + 0x10 * 3));
+        KT_CHECK_EQ((long long)g_vcalls, 4ll);                         // no vital call for the missing member
+        KT_CHECK(!out[1].ok); KT_CHECK(!out[1].down);
+        KT_CHECK_EQ((unsigned long long)out[1].client, 0ull); KT_CHECK_EQ((unsigned long long)out[1].server, 0ull);
+        KT_CHECK_EQ((long long)out[1].cur, 0ll); KT_CHECK_EQ((long long)out[1].max, 0ll);
+        KT_CHECK(out[0].ok && out[2].ok); KT_CHECK_EQ((long long)out[2].cur, 7ll);
+        // missing FIRST and LAST member too
+        g_clients[1] = 0x1020; g_clients[0] = 0; g_clients[2] = 0; g_memberCalls = g_serverCalls = g_vcalls = 0;
+        KT_CHECK_EQ((long long)party::members(out, 4), 3ll);
+        KT_CHECK(!out[0].ok && !out[2].ok && out[1].ok);
+        KT_CHECK_EQ((long long)g_serverCalls, 1ll); KT_CHECK_EQ((long long)g_vcalls, 2ll);
+
+        // (2) cur < 0 / == 0 / == 1 through vitals()
+        party::g_member = fakeMember; party::g_serverCreature = fakeServer;
+        g_clients[0] = 0x1010; g_clients[2] = 0x1030;
+        { party::Vitals w;
+          g_fc[0].hp = -1;       KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(w.down); KT_CHECK_EQ((long long)w.cur, -1ll);
+          g_fc[0].hp = -32768;   KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(w.down);
+          g_fc[0].hp = 0;        KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(w.down);
+          g_fc[0].hp = 1;        KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);
+          g_fc[0].hp = 100;      KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);   // cur == max
+          g_fc[0].hp = 500;      KT_CHECK(party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);   // cur > max is not clamped
+          g_fc[0].hp = -1; g_fc[0].maxhp = 0; KT_CHECK(!party::vitals(g_servers[0], &w)); KT_CHECK(!w.down);   // down needs ok
+          g_fc[0].hp = 50; g_fc[0].maxhp = 100; }
+
+        // (3) party shrinks between partyCount and the per-member reads: member() re-reads the count, so no PartyGetAt past the end
+        party::g_member = shrinkMember;
+        build(3); g_memberCalls = 0;
+        KT_CHECK_EQ((long long)party::members(out, 4), 3ll);           // n was captured before the shrink (pinned)
+        KT_CHECK_EQ((long long)at<int>(tbl, 0), 2ll);
+        KT_CHECK_EQ((long long)g_memberCalls, 2ll);                    // member(2) never reached the engine
+        KT_CHECK(out[0].ok); KT_CHECK(out[1].ok);
+        KT_CHECK(!out[2].ok); KT_CHECK_EQ((unsigned long long)out[2].client, 0ull); KT_CHECK_EQ((unsigned long long)out[2].server, 0ull);
+        // count drops to 0 / negative mid-flight: nothing reaches the engine
+        party::g_member = countMember;
+        for (int c : {0, -4}) {
+            build(3); at<int>(tbl, 0) = c; g_memberCalls = 0;
+            KT_CHECK_EQ((unsigned long long)party::member(tbl, 0), 0ull);
+            KT_CHECK_EQ((unsigned long long)party::member(tbl, 2), 0ull);
+            KT_CHECK_EQ((long long)g_memberCalls, 0ll);
+        }
+        // table pointer goes unreadable after the chain walk: count reads 0, no engine call
+        build(3); g_memberCalls = 0; KT_CHECK_EQ((unsigned long long)party::member(0x20, 0), 0ull); KT_CHECK_EQ((long long)g_memberCalls, 0ll);
+
         party::g_member = sM; party::g_serverCreature = sS; party::g_callVital = sV;
     }
 
     KT_CHECK_EQ(party::failText(party::F_None), "ok");
+    // (4) failText for out-of-range Fail values: always a non-null, non-empty string ("ok" default)
+    {
+        volatile int vals[] = { -1, -2147483647 - 1, 6, 7, 99, 2147483647 };
+        for (int iv : vals) {
+            const char* t = party::failText(static_cast<party::Fail>(iv));
+            KT_CHECK(t != nullptr); KT_CHECK(t && t[0] != 0);
+            KT_CHECK_EQ(t, "ok");
+        }
+        for (int i = party::F_None; i <= party::F_Count; ++i) { const char* t = party::failText(static_cast<party::Fail>(i)); KT_CHECK(t != nullptr && t[0]); }
+        KT_CHECK_EQ(party::failText(party::F_Count), "party count 0");
+    }
     KT_CHECK(party::failText(party::F_App) == party::failText(party::F_App));
     return kt::Report("party_test");
 }
