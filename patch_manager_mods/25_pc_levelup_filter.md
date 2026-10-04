@@ -77,3 +77,22 @@ a forged save with a PC that can level (scenario S10 in `tests/luo_scenarios/sav
 1. Build R10 at all, or park it?
 2. If build: filter source A (PC presets) / B (themes) / C?
 3. Dim only, or dim then hide?
+
+## 11. User proposal 2026-10-04: in-screen filter toggle (R10 UI)
+Proposal (user-pasted): a button ON the feats panel (`CSWGuiFeatSelection`, ctor 0x909E00, init 0x90AEA0, grid +0x1BF4) and the powers panel
+(`CSWGuiPowersLevelUp`, ctor 0x9074E0, grid +0x1BF8) cycling `Filter: [All] -> [Build (Dim)] -> [Build (Hide)] -> [Combat] -> [Force] -> [All]`,
+refreshed in place, last choice remembered per playthrough (`feat_filter=` / `power_filter=`). Phases: probe (section 8) -> dim toggle -> hide toggle.
+Same safety rules as sections 4-5 (fallback to All + `R10 FALLBACK` when picks remain and the filtered set is empty; PC gate = empty tag + IsPC).
+
+Review notes (Opus, 2026-10-04; not yet planned):
+- Fits this doc: it replaces section 7 (options-page row) with an in-panel control and implies source C (A presets for "Build", B themes for
+  Combat/Force). Theme tags are still a new ~230-row data set.
+- Dim refresh in place = re-run BuildChoosableFeatVector 0x90C230 then RefreshGridStates 0x90BD50 (both DB-verified C1b, CSWGuiFeatsCharGen).
+  0x90BD50 is FEATS only - powers need their own pair (candidate 0x909360 `CSWGuiPowersLevelUp::RefreshGridStates`, check its C1b verdict;
+  the proposal's powers "data build 0x908540" conflicts with a C1b claim naming it a feats function - verify before use).
+  These would be NEW direct calls from a button handler (not hooks): call them deferred, outside the GUI click stack, like the level-up
+  apply-now fix (doc 08, 2026-10-04).
+- Hide toggle = rebuild the grid (0x89B600 / 0x89AAA0) on click: cursor/empty-grid risk from section 3 applies; keep it last.
+- Persistence: Playthrough.h is a line format (`pc=<preset>|filter=dim`, section 7), not INI sections - use `pc=...|feat_filter=..|power_filter=..`
+  rather than a `[PC]` section, or the playthrough parser/lossy checks need a change.
+- The "<0.1 ms" and effort numbers are estimates, not measured. Section 10 questions (build or park; source; dim vs hide) still gate this.
