@@ -47,6 +47,13 @@ int main(){
   KT_CHECK(r.empty());
   KT_CHECK(Parse("",&r));
   KT_CHECK(r.empty());
+  KT_CHECK(Parse("item: (3)",&r)); KT_CHECK_EQ(r.name.c_str(), "(3)");   // a bare parenthetical is a name (normalize only strips " (..")
+  { // a long bad value must not truncate the slot key out of the warning (msg buffer)
+    Config w; w.Parse("[Profile.Long]\nBottom7=item:" + std::string(300, 'x') + "@lowhp:0\n");
+    for (auto& x : w.warnings) printf("warn: %s\n", x.c_str());
+    KT_CHECK_EQ(w.warnings.size(), 1);
+    if (!w.warnings.empty()) { KT_CHECK(w.warnings[0].find("Bottom7") != std::string::npos); KT_CHECK(w.warnings[0].size() <= 200); }
+  }
   KT_CHECK(Parse("OTHER:FF",&r));
   KT_CHECK_EQ(r.id,255);
   int row=-1,slot=-1;

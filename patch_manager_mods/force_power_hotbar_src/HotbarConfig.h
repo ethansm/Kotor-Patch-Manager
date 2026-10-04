@@ -293,14 +293,14 @@ struct Config {
             if (sc != std::string::npos) { note = trim(line.substr(sc + 1)); line = line.substr(0, sc); }
             line = trim(line);
             if (line.empty() || line[0] == '#') continue;
-            char msg[160];
+            char msg[200];   // every %s below is clipped (%.Ns) so the line number and key always survive
             if (line[0] == '[') {
                 size_t rb = line.find(']');
                 if (rb == std::string::npos) { snprintf(msg, sizeof msg, "line %d: unterminated section", lineNo); warnings.push_back(msg); cur = nullptr; inGeneral = false; continue; }
                 section = trim(line.substr(1, rb - 1)); inGeneral = false; cur = nullptr;
                 if (lower(section) == "general") inGeneral = true;
                 else if (lower(section).compare(0, 8, "profile.") == 0 && section.size() > 8) cur = &profile(section.substr(8));
-                else { snprintf(msg, sizeof msg, "line %d: unknown section [%s]", lineNo, section.c_str()); warnings.push_back(msg); }
+                else { snprintf(msg, sizeof msg, "line %d: unknown section [%.60s]", lineNo, section.c_str()); warnings.push_back(msg); }
                 continue;
             }
             size_t eq = line.find('=');
@@ -311,7 +311,7 @@ struct Config {
                 if (k == "schemaversion") { /* validated on Save only */ }
                 else if (k == "invoke" || k == "verbose" || k == "autofill" || k == "keyboarddevice") {
                     int n = 0;
-                    if (!parseInt32(val, &n)) { snprintf(msg, sizeof msg, "line %d: %s '%s' must be an integer (kept default)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
+                    if (!parseInt32(val, &n)) { snprintf(msg, sizeof msg, "line %d: %.40s '%.60s' must be an integer (kept default)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
                     else if (k == "invoke") general.invoke = n;
                     else if (k == "verbose") general.verbose = n;
                     else if (k == "autofill") general.autoFill = n;
@@ -319,22 +319,22 @@ struct Config {
                 }
                 else if (k == "healthreshold") {
                     char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
-                    if (val.empty() || *e || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }
+                    if (val.empty() || *e || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%.60s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }
                     else general.healThreshold = (int)n;
                 } else if (k == "healfallback") {
                     std::string v = lower(val);
                     if (v == "self") general.healFallbackSelf = 1; else if (v == "none") general.healFallbackSelf = 0;
-                    else { snprintf(msg, sizeof msg, "line %d: HealFallback '%s' must be self or none", lineNo, val.c_str()); warnings.push_back(msg); }
+                    else { snprintf(msg, sizeof msg, "line %d: HealFallback '%.60s' must be self or none", lineNo, val.c_str()); warnings.push_back(msg); }
                 }
                 else general.extra[key] = val;
             } else if (cur) {
                 int r, s;
                 if (IsRemovedRowKey(key)) continue;
-                if (!SlotFromKeyName(key, &r, &s)) { snprintf(msg, sizeof msg, "line %d: unknown key '%s' in [%s]", lineNo, key.c_str(), section.c_str()); warnings.push_back(msg); continue; }
+                if (!SlotFromKeyName(key, &r, &s)) { snprintf(msg, sizeof msg, "line %d: unknown key '%.40s' in [%.60s]", lineNo, key.c_str(), section.c_str()); warnings.push_back(msg); continue; }
                 ActionRef ref;
-                if (!hb::Parse(val, &ref)) { snprintf(msg, sizeof msg, "line %d: bad value '%s' for %s (slot left empty)", lineNo, val.c_str(), key.c_str()); warnings.push_back(msg); }
+                if (!hb::Parse(val, &ref)) { snprintf(msg, sizeof msg, "line %d: %.40s: bad value '%.100s' (slot left empty)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
                 cur->slots[r][s] = ref; cur->notes[r][s] = note;
-            } else { snprintf(msg, sizeof msg, "line %d: key '%s' outside any section", lineNo, key.c_str()); warnings.push_back(msg); }
+            } else { snprintf(msg, sizeof msg, "line %d: key '%.40s' outside any section", lineNo, key.c_str()); warnings.push_back(msg); }
         }
         return true;
     }
