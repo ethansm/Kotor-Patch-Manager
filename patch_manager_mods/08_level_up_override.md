@@ -1048,3 +1048,10 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   222726bb06b671dc, 0 warnings; 0.3.1 kpatch kept as `LevelUpOverride.kpatch.031_aaedb93e.bak`. Hooks/exports identical to 0.3.1 -> install =
   DLL swap of `$G/patches/level-up-override.dll` (live aaedb93e) + copy repo `runtime/levelup_paths.ini` (v3; the old DLL rejects it and the new
   DLL needs it for carry-over -> swap both together). NOT installed; independent review running; install needs user consent, game closed.
+- 1.0.0 independent review: SHIP, no blockers; 3 SHOULD-FIX + 1 NIT being fixed by an agent at handoff (uncommitted edits may be in the tree).
+- **RESUME HERE (Phase 6b end, 2026-10-03 ~20:45, handoff):** (1) verify + commit the review-fix edits (gates in `.claude/session_handoff.md`
+  "Verification Commands"), (2) rebuild 1.0.0, (3) ask install consent (DLL swap + v3 table together; backup first; game closed; re-md5 live dll),
+  (4) after install: user play card = run 5 (Atton Pause at level 3) + forged scenarios via the kotor2-forced-state-testing skill; read the log
+  from line 473 with `scripts/luo_log_check.py`; first CARRYREAD line verifies the known-power layout. Open: renumber doc 22 (collision with
+  22_compat_check_plan.md); C3 user gate for R10 (doc 22 questions); knowledge-DB rows uncommitted (shared DB). Next phase (user): Common /
+  library-DLL integration review -> plan `research/companion_levelup/PHASE7_COMMON_PLAN.md` (master plan, chunked).
