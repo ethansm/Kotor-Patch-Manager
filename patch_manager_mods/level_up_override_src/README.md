@@ -203,7 +203,7 @@ The patch writes `levelup_override_log.txt` in the game folder (the previous log
 - To check a session automatically, run from the repository:
   `python3 scripts/luo_log_check.py --from N`, where N is the log line count before you started plus one.
   It reports PASS / FAIL / PARTIAL / NOT-EXERCISED for each check. `--scenario ID` checks a named scenario and
-  `--expect-crc` compares the banner crc32 with a DLL. See `patch_manager_mods/21_FORCED_STATE_TESTING.md`.
+  `--expect-crc` compares the banner crc32 with a DLL. See `patch_manager_mods/26_FORCED_STATE_TESTING.md`.
 - No Configure button: the character has no presets in `levelup_paths.ini`, it is the PC, or the table failed to load.
 - A companion shows the level-up icon even though you configured a path: the icon is hidden only when the NEXT level
   is held. Levels before the conversion point follow the path and are not held.
@@ -234,7 +234,7 @@ Reviewer notes (claims and sources):
   Jedi class names derived from hold_until_class ids (5 Sentinel, 3 Guardian, 4 Consular) - see presets .md for atton/Sentinel; others inferred.
 - Instant leader: doc 08 "U5"; LevelUpOverride.cpp leaderInstant ~1565. Held GUI guards and indicator hiding: header hooks 2-5; doc 08 R5/R11.
 - Per-save, PC unaffected, manual picks: doc 08 Status R1/R2, header hooks 6-8 and "pre-save/post-load/new server"; PC = empty tag, LevelUpUi.h ~414.
-- Uninstall safety S7/S5: doc 21 section 6, doc 08 Phase 6b M3 notes, A4 adoption notes (removal safety).
-- Troubleshooting: log name LevelUpOverride.cpp LogName; log.old rotation per luo_log_check.py header; banner line cpp ~934; luo_log_check.py usage; doc 21.
+- Uninstall safety S7/S5: doc 26 section 6, doc 08 Phase 6b M3 notes, A4 adoption notes (removal safety).
+- Troubleshooting: log name LevelUpOverride.cpp LogName; log.old rotation per luo_log_check.py header; banner line cpp ~934; luo_log_check.py usage; doc 26.
 - Compatibility: Mod 14 hook 0x84D871 note in cpp header (Hook 9); indicator suppresses buff icons: doc 08 R5, R11; mod #142: presets/atton.md.
 -->

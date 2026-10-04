@@ -138,7 +138,7 @@ game in about a minute from a forged save, with the log auto-checked.
 - Tests: fixtures cut from the committed run-3/4 logs (`phase6_evidence/V_run4*.txt`, doc 08 run-3 excerpts).
 
 ### M5 - persist the strategy: doc + skill
-- Doc `patch_manager_mods/21_FORCED_STATE_TESTING.md` covers:
+- Doc `patch_manager_mods/26_FORCED_STATE_TESTING.md` covers:
   - the 3 layers (offline fake-engine scenarios / ini overrides / forged saves);
   - the safety rules (new slots only, consent, cleanup, cloud-sync note, game closed, never launch);
   - the scenario-file format;
@@ -197,7 +197,7 @@ game in about a minute from a forged save, with the log auto-checked.
 ## Track C - R10 PC level-up filter (research only)
 - **C1b DB rows:** verify the R10 identities from `phase6_evidence/R10_findings.md` per `ghidra_knowledge/RE_AGENT_GUIDE.md` (Haiku + decoys),
   then insert.
-- **C2 design note:** `patch_manager_mods/22_pc_levelup_filter.md`. Covers:
+- **C2 design note:** `patch_manager_mods/25_pc_levelup_filter.md`. Covers:
   - filter source (preset-style PC paths vs a theme filter);
   - hide (F1+P1 with F2+P2) vs dim (F2/P2 only);
   - the accept-trap (hidden-but-counted soft-lock) and the Recommended-button bypass;

@@ -305,7 +305,7 @@ Rules that apply to every phase:
   `tests/suites.toml` entries (scenario runner, forge test) will be posted here for the doc-20 owner before they are added; `run_tests.py` is not touched.
 - 10-03 (level-up Phase 6b): LevelUpOverride item 6 (§5) - the onLevelUp T2 test and the LUO_G round-trip / removal-safety test are DONE in
   `research/companion_levelup/tools/parity/scenarios.py` (`scenario_test.cpp`, host + `--m32`, 0481b70). Forced-state testing (forged saves,
-  ini switcher, log checker) is doc 21 `21_FORCED_STATE_TESTING.md`. Proposed suites.toml entries for the owner:
+  ini switcher, log checker) is doc 26 `26_FORCED_STATE_TESTING.md`. Proposed suites.toml entries for the owner:
   `{name = "levelup-scenarios", cmd = ["python", "research/companion_levelup/tools/parity/scenarios.py"], requires = ["which:g++"]}` and the same
   with `"--m32"`; `scripts/test_kotor_save_forge.py` re-execs itself under `.venv` when pykotor is missing (auto-discovery works).
 - 10-03: **Phase 2 done** (`abc01d8`; session record doc 20d "Phase 2-3 session").

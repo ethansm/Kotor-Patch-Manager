@@ -11,7 +11,7 @@ description: >-
 
 # KOTOR II forced-state testing
 
-Details, safety rules and the save layout are in `patch_manager_mods/21_FORCED_STATE_TESTING.md`; read it first if anything here is
+Details, safety rules and the save layout are in `patch_manager_mods/26_FORCED_STATE_TESTING.md`; read it first if anything here is
 unclear. Scenarios live in `tests/luo_scenarios/saves.toml` (one id = save edits + config + expectations).
 
 ## Step 1: pick or define the scenario
