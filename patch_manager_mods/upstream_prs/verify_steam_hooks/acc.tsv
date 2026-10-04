@@ -1,0 +1,341 @@
+patch	hook_index	address	function	check	result	detail
+4GBPatch	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+4GBPatch	0	0x0040011E	-	BYTES	PASS	2 bytes match
+4GBPatch	0	0x0040011E	-	BOUNDARY	SKIP	outside .text
+4GBPatch	0	0x0040011E	-	UNIQUE	SKIP	outside .text
+4GBPatch	0	0x0040011E	-	DRIFT	PASS	fields equal
+AdditionalConsoleCommands	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+AdditionalConsoleCommands	0	0x0091D52D	InitializeAdditionalCommands	BYTES	PASS	5 bytes match
+AdditionalConsoleCommands	0	0x0091D52D	InitializeAdditionalCommands	BOUNDARY	PASS	votes 7/7
+AdditionalConsoleCommands	0	0x0091D52D	InitializeAdditionalCommands	UNIQUE	PASS	13-byte pattern occurs 1x in .text
+AdditionalConsoleCommands	0	0x0091D52D	InitializeAdditionalCommands	DRIFT	PASS	fields equal
+AdditionalConsoleCommands	1	0x004752D8	-	BYTES	PASS	7 bytes match
+AdditionalConsoleCommands	1	0x004752D8	-	BOUNDARY	PASS	votes 8/8
+AdditionalConsoleCommands	1	0x004752D8	-	UNIQUE	PASS	15-byte pattern occurs 1x in .text
+AdditionalConsoleCommands	1	0x004752D8	-	DRIFT	PASS	fields equal
+BorderlessFullscreen	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+BorderlessFullscreen	0	0x00476D69	-	BYTES	PASS	6 bytes match
+BorderlessFullscreen	0	0x00476D69	-	BOUNDARY	WARN	mid-instruction (votes 0/9); allowed for in-place byte patches
+BorderlessFullscreen	0	0x00476D69	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+BorderlessFullscreen	0	0x00476D69	-	DRIFT	PASS	fields equal
+DeSteamify	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+DeSteamify	0	0x009F10F4	-	BYTES	PASS	240 bytes match
+DeSteamify	0	0x009F10F4	-	BOUNDARY	SKIP	outside .text
+DeSteamify	0	0x009F10F4	-	UNIQUE	SKIP	outside .text
+DeSteamify	0	0x009F10F4	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	1	0x004072F0	-	BYTES	PASS	6 bytes match
+DeSteamify	1	0x004072F0	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	1	0x004072F0	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	1	0x004072F0	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	2	0x00407260	-	BYTES	PASS	6 bytes match
+DeSteamify	2	0x00407260	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	2	0x00407260	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	2	0x00407260	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	3	0x004016E0	-	BYTES	PASS	6 bytes match
+DeSteamify	3	0x004016E0	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	3	0x004016E0	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	3	0x004016E0	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	4	0x004073B0	-	BYTES	PASS	9 bytes match
+DeSteamify	4	0x004073B0	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	4	0x004073B0	-	UNIQUE	PASS	17-byte pattern occurs 1x in .text
+DeSteamify	4	0x004073B0	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	5	0x00407490	-	BYTES	PASS	6 bytes match
+DeSteamify	5	0x00407490	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	5	0x00407490	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	5	0x00407490	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	6	0x004076F0	-	BYTES	PASS	9 bytes match
+DeSteamify	6	0x004076F0	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	6	0x004076F0	-	UNIQUE	PASS	17-byte pattern occurs 1x in .text
+DeSteamify	6	0x004076F0	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	7	0x00407E3D	-	BYTES	PASS	6 bytes match
+DeSteamify	7	0x00407E3D	-	BOUNDARY	PASS	votes 7/7
+DeSteamify	7	0x00407E3D	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	7	0x00407E3D	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	8	0x0040C3D5	-	BYTES	PASS	6 bytes match
+DeSteamify	8	0x0040C3D5	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	8	0x0040C3D5	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	8	0x0040C3D5	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	9	0x0040C40D	-	BYTES	PASS	6 bytes match
+DeSteamify	9	0x0040C40D	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	9	0x0040C40D	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	9	0x0040C40D	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	10	0x0040C45E	-	BYTES	PASS	6 bytes match
+DeSteamify	10	0x0040C45E	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	10	0x0040C45E	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	10	0x0040C45E	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	11	0x0040C491	-	BYTES	PASS	6 bytes match
+DeSteamify	11	0x0040C491	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	11	0x0040C491	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+DeSteamify	11	0x0040C491	-	DRIFT	SKIP	no sibling gog toml
+DeSteamify	12	0x0073D650	-	BYTES	PASS	9 bytes match
+DeSteamify	12	0x0073D650	-	BOUNDARY	PASS	votes 9/9
+DeSteamify	12	0x0073D650	-	UNIQUE	WARN	17-byte pattern occurs 2x in .text; also at 0x00528710 [allowlisted: generic 55 8B EC 81 EC 80 prologue shared with 0x528710; hook is address-pinned]
+DeSteamify	12	0x0073D650	-	DRIFT	SKIP	no sibling gog toml
+FullPartySelect	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+FullPartySelect	0	0x0089E319	-	BYTES	PASS	5 bytes match
+FullPartySelect	0	0x0089E319	-	BOUNDARY	PASS	votes 7/7
+FullPartySelect	0	0x0089E319	-	UNIQUE	PASS	13-byte pattern occurs 1x in .text
+FullPartySelect	0	0x0089E319	-	DRIFT	PASS	fields equal
+GoodAlignmentHeads	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+GoodAlignmentHeads	0	0x0085D719	-	BYTES	PASS	446 bytes match
+GoodAlignmentHeads	0	0x0085D719	-	BOUNDARY	PASS	votes 7/7
+GoodAlignmentHeads	0	0x0085D719	-	UNIQUE	PASS	454-byte pattern occurs 1x in .text
+GoodAlignmentHeads	0	0x0085D719	-	DRIFT	WARN	replacement_bytes: 23 bytes differ, only in address-operand-sized windows
+K2AspyrColorCorrection	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrColorCorrection	0	0x00989DB0	-	BYTES	PASS	266 bytes match
+K2AspyrColorCorrection	0	0x00989DB0	-	BOUNDARY	SKIP	outside .text
+K2AspyrColorCorrection	0	0x00989DB0	-	UNIQUE	SKIP	outside .text
+K2AspyrColorCorrection	0	0x00989DB0	-	DRIFT	PASS	fields equal
+K2AspyrFogReflectionFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrFogReflectionFix	0	0x00990EC8	-	BYTES	PASS	276 bytes match
+K2AspyrFogReflectionFix	0	0x00990EC8	-	BOUNDARY	SKIP	outside .text
+K2AspyrFogReflectionFix	0	0x00990EC8	-	UNIQUE	SKIP	outside .text
+K2AspyrFogReflectionFix	0	0x00990EC8	-	DRIFT	WARN	replacement_bytes: 2 bytes differ, only in address-operand-sized windows
+K2AspyrFogReflectionFix	1	0x009F7B80	-	BYTES	PASS	1094 bytes match
+K2AspyrFogReflectionFix	1	0x009F7B80	-	BOUNDARY	SKIP	outside .text
+K2AspyrFogReflectionFix	1	0x009F7B80	-	UNIQUE	SKIP	outside .text
+K2AspyrFogReflectionFix	1	0x009F7B80	-	DRIFT	PASS	fields equal
+K2AspyrFogReflectionFix	2	0x00990918	-	BYTES	PASS	344 bytes match
+K2AspyrFogReflectionFix	2	0x00990918	-	BOUNDARY	SKIP	outside .text
+K2AspyrFogReflectionFix	2	0x00990918	-	UNIQUE	SKIP	outside .text
+K2AspyrFogReflectionFix	2	0x00990918	-	DRIFT	PASS	fields equal
+K2AspyrFogReflectionFix	3	0x009F7FC8	-	BYTES	PASS	1462 bytes match
+K2AspyrFogReflectionFix	3	0x009F7FC8	-	BOUNDARY	SKIP	outside .text
+K2AspyrFogReflectionFix	3	0x009F7FC8	-	UNIQUE	SKIP	outside .text
+K2AspyrFogReflectionFix	3	0x009F7FC8	-	DRIFT	PASS	fields equal
+K2AspyrFogReflectionFix	4	0x00990020	-	BYTES	PASS	459 bytes match
+K2AspyrFogReflectionFix	4	0x00990020	-	BOUNDARY	SKIP	outside .text
+K2AspyrFogReflectionFix	4	0x00990020	-	UNIQUE	SKIP	outside .text
+K2AspyrFogReflectionFix	4	0x00990020	-	DRIFT	PASS	fields equal
+K2AspyrFogReflectionFix	5	0x009F8580	-	BYTES	PASS	1462 bytes match
+K2AspyrFogReflectionFix	5	0x009F8580	-	BOUNDARY	SKIP	outside .text
+K2AspyrFogReflectionFix	5	0x009F8580	-	UNIQUE	SKIP	outside .text
+K2AspyrFogReflectionFix	5	0x009F8580	-	DRIFT	PASS	fields equal
+K2AspyrMusicFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrMusicFix	0	0x0070E130	-	BYTES	PASS	8 bytes match
+K2AspyrMusicFix	0	0x0070E130	-	BOUNDARY	PASS	votes 9/9
+K2AspyrMusicFix	0	0x0070E130	-	UNIQUE	PASS	16-byte pattern occurs 1x in .text
+K2AspyrMusicFix	0	0x0070E130	-	DRIFT	PASS	fields equal
+K2AspyrNormalMapsFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrNormalMapsFix	0	0x004A715E	-	BYTES	PASS	20 bytes match
+K2AspyrNormalMapsFix	0	0x004A715E	-	BOUNDARY	PASS	votes 9/9
+K2AspyrNormalMapsFix	0	0x004A715E	-	UNIQUE	PASS	28-byte pattern occurs 1x in .text
+K2AspyrNormalMapsFix	0	0x004A715E	-	DRIFT	WARN	replacement_bytes: 14 bytes differ, only in address-operand-sized windows
+K2AspyrSaberTextureFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrSaberTextureFix	0	0x004313A2	-	BYTES	PASS	18 bytes match
+K2AspyrSaberTextureFix	0	0x004313A2	-	BOUNDARY	PASS	votes 7/7
+K2AspyrSaberTextureFix	0	0x004313A2	-	UNIQUE	PASS	26-byte pattern occurs 1x in .text
+K2AspyrSaberTextureFix	0	0x004313A2	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrShaderFixes	0	0x00990EC8	-	BYTES	PASS	272 bytes match
+K2AspyrShaderFixes	0	0x00990EC8	-	BOUNDARY	SKIP	outside .text
+K2AspyrShaderFixes	0	0x00990EC8	-	UNIQUE	SKIP	outside .text
+K2AspyrShaderFixes	0	0x00990EC8	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	1	0x00990020	-	BYTES	PASS	459 bytes match
+K2AspyrShaderFixes	1	0x00990020	-	BOUNDARY	SKIP	outside .text
+K2AspyrShaderFixes	1	0x00990020	-	UNIQUE	SKIP	outside .text
+K2AspyrShaderFixes	1	0x00990020	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	2	0x0098FE50	-	BYTES	PASS	461 bytes match
+K2AspyrShaderFixes	2	0x0098FE50	-	BOUNDARY	SKIP	outside .text
+K2AspyrShaderFixes	2	0x0098FE50	-	UNIQUE	SKIP	outside .text
+K2AspyrShaderFixes	2	0x0098FE50	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	3	0x00990918	-	BYTES	PASS	344 bytes match
+K2AspyrShaderFixes	3	0x00990918	-	BOUNDARY	SKIP	outside .text
+K2AspyrShaderFixes	3	0x00990918	-	UNIQUE	SKIP	outside .text
+K2AspyrShaderFixes	3	0x00990918	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	4	0x0098F068	-	BYTES	PASS	349 bytes match
+K2AspyrShaderFixes	4	0x0098F068	-	BOUNDARY	SKIP	outside .text
+K2AspyrShaderFixes	4	0x0098F068	-	UNIQUE	SKIP	outside .text
+K2AspyrShaderFixes	4	0x0098F068	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	5	0x0098F950	-	BYTES	PASS	274 bytes match
+K2AspyrShaderFixes	5	0x0098F950	-	BOUNDARY	SKIP	outside .text
+K2AspyrShaderFixes	5	0x0098F950	-	UNIQUE	SKIP	outside .text
+K2AspyrShaderFixes	5	0x0098F950	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	6	0x0046AADD	-	BYTES	PASS	21 bytes match
+K2AspyrShaderFixes	6	0x0046AADD	-	BOUNDARY	PASS	votes 9/9
+K2AspyrShaderFixes	6	0x0046AADD	-	UNIQUE	PASS	29-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	6	0x0046AADD	-	DRIFT	WARN	replacement_bytes: 2 bytes differ, only in address-operand-sized windows
+K2AspyrShaderFixes	7	0x007D5997	-	BYTES	PASS	3 bytes match
+K2AspyrShaderFixes	7	0x007D5997	-	BOUNDARY	PASS	votes 9/9
+K2AspyrShaderFixes	7	0x007D5997	-	UNIQUE	PASS	11-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	7	0x007D5997	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	8	0x007D59A2	-	BYTES	PASS	3 bytes match
+K2AspyrShaderFixes	8	0x007D59A2	-	BOUNDARY	PASS	votes 9/9
+K2AspyrShaderFixes	8	0x007D59A2	-	UNIQUE	PASS	11-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	8	0x007D59A2	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	9	0x007BBFA0	-	BYTES	PASS	3 bytes match
+K2AspyrShaderFixes	9	0x007BBFA0	-	BOUNDARY	PASS	votes 8/8
+K2AspyrShaderFixes	9	0x007BBFA0	-	UNIQUE	PASS	11-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	9	0x007BBFA0	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	10	0x007BBFAF	-	BYTES	PASS	3 bytes match
+K2AspyrShaderFixes	10	0x007BBFAF	-	BOUNDARY	PASS	votes 9/9
+K2AspyrShaderFixes	10	0x007BBFAF	-	UNIQUE	PASS	11-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	10	0x007BBFAF	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	11	0x004313A2	-	BYTES	PASS	18 bytes match
+K2AspyrShaderFixes	11	0x004313A2	-	BOUNDARY	PASS	votes 7/7
+K2AspyrShaderFixes	11	0x004313A2	-	UNIQUE	PASS	26-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	11	0x004313A2	-	DRIFT	PASS	fields equal
+K2AspyrShaderFixes	12	0x004A715E	-	BYTES	PASS	182 bytes match
+K2AspyrShaderFixes	12	0x004A715E	-	BOUNDARY	PASS	votes 9/9
+K2AspyrShaderFixes	12	0x004A715E	-	UNIQUE	PASS	190-byte pattern occurs 1x in .text
+K2AspyrShaderFixes	12	0x004A715E	-	DRIFT	WARN	replacement_bytes: 14 bytes differ, only in address-operand-sized windows
+K2AspyrVisibleConsole	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2AspyrVisibleConsole	0	0x004748BA	DrawPrintStringHook	BYTES	PASS	5 bytes match
+K2AspyrVisibleConsole	0	0x004748BA	DrawPrintStringHook	BOUNDARY	PASS	votes 8/9
+K2AspyrVisibleConsole	0	0x004748BA	DrawPrintStringHook	UNIQUE	PASS	13-byte pattern occurs 1x in .text
+K2AspyrVisibleConsole	0	0x004748BA	DrawPrintStringHook	DRIFT	PASS	fields equal
+K2AspyrVisibleConsole	1	0x004082E0	DrawPrintStringHook	BYTES	PASS	5 bytes match
+K2AspyrVisibleConsole	1	0x004082E0	DrawPrintStringHook	BOUNDARY	PASS	votes 7/7
+K2AspyrVisibleConsole	1	0x004082E0	DrawPrintStringHook	UNIQUE	PASS	13-byte pattern occurs 1x in .text
+K2AspyrVisibleConsole	1	0x004082E0	DrawPrintStringHook	DRIFT	PASS	fields equal
+K2AspyrVisibleConsole	2	0x004083C5	DrawPrintStringHook	BYTES	PASS	5 bytes match
+K2AspyrVisibleConsole	2	0x004083C5	DrawPrintStringHook	BOUNDARY	PASS	votes 7/7
+K2AspyrVisibleConsole	2	0x004083C5	DrawPrintStringHook	UNIQUE	PASS	13-byte pattern occurs 1x in .text
+K2AspyrVisibleConsole	2	0x004083C5	DrawPrintStringHook	DRIFT	PASS	fields equal
+K2FinesseMeleeFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2FinesseMeleeFix	0	0x006B8DF9	-	BYTES	PASS	2 bytes match
+K2FinesseMeleeFix	0	0x006B8DF9	-	BOUNDARY	PASS	votes 8/9
+K2FinesseMeleeFix	0	0x006B8DF9	-	UNIQUE	PASS	10-byte pattern occurs 1x in .text
+K2FinesseMeleeFix	0	0x006B8DF9	-	DRIFT	PASS	fields equal
+K2GrassFogFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2GrassFogFix	0	0x004665D8	-	BYTES	PASS	30 bytes match
+K2GrassFogFix	0	0x004665D8	-	BOUNDARY	PASS	votes 9/9
+K2GrassFogFix	0	0x004665D8	-	UNIQUE	PASS	38-byte pattern occurs 1x in .text
+K2GrassFogFix	0	0x004665D8	-	DRIFT	WARN	replacement_bytes: 3 bytes differ, only in address-operand-sized windows
+K2MP3PlaybackFix	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+K2MP3PlaybackFix	0	0x0070CDCB	K2LooseMp3	BYTES	PASS	10 bytes match
+K2MP3PlaybackFix	0	0x0070CDCB	K2LooseMp3	BOUNDARY	PASS	votes 7/7
+K2MP3PlaybackFix	0	0x0070CDCB	K2LooseMp3	UNIQUE	WARN	18-byte pattern occurs 2x in .text; also at 0x008FBF90 [allowlisted: the 18-byte mov [ebp+disp],0 sequence also occurs at 0x8FBF90 (other function); hook is address-pinned]
+K2MP3PlaybackFix	0	0x0070CDCB	K2LooseMp3	DRIFT	WARN	parameters: steam=[{'source': 'ebp-0x13C', 'type': 'pointer'}, {'source': 'ebp-0x12C', 'type': ... gog=[{'source': 'ebp-0xBC', 'type': 'pointer'}, {'source': 'ebp-0xAC', 'type': 'p... [allowlisted: stack buffer layout differs per build: steam ebp-0x13C/ebp-0x12C/const:32 vs gog ebp-0xBC/ebp-0xAC/const:16; needs maintainer confirmation]
+K2MP3PlaybackFix	1	0x0070CF34	K2Mp3RiffOffsetByPath	BYTES	PASS	6 bytes match
+K2MP3PlaybackFix	1	0x0070CF34	K2Mp3RiffOffsetByPath	BOUNDARY	PASS	votes 7/7
+K2MP3PlaybackFix	1	0x0070CF34	K2Mp3RiffOffsetByPath	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+K2MP3PlaybackFix	1	0x0070CF34	K2Mp3RiffOffsetByPath	DRIFT	WARN	parameters: only stack-relative sources differ (build-dependent frame layout)
+Max Lights	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+Max Lights	0	0x00A0F03C	-	BYTES	PASS	4 bytes match
+Max Lights	0	0x00A0F03C	-	BOUNDARY	SKIP	outside .text
+Max Lights	0	0x00A0F03C	-	UNIQUE	SKIP	outside .text
+Max Lights	0	0x00A0F03C	-	DRIFT	PASS	fields equal
+Max Lights	1	0x00508DBC	-	BYTES	PASS	4 bytes match
+Max Lights	1	0x00508DBC	-	BOUNDARY	PASS	votes 9/9
+Max Lights	1	0x00508DBC	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+Max Lights	1	0x00508DBC	-	DRIFT	PASS	fields equal
+Max Lights	2	0x00468112	-	BYTES	PASS	2 bytes match
+Max Lights	2	0x00468112	-	BOUNDARY	PASS	votes 7/7
+Max Lights	2	0x00468112	-	UNIQUE	WARN	10-byte pattern occurs 2x in .text; also at 0x0046812F [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	2	0x00468112	-	DRIFT	PASS	fields equal
+Max Lights	3	0x0046812F	-	BYTES	PASS	2 bytes match
+Max Lights	3	0x0046812F	-	BOUNDARY	PASS	votes 7/7
+Max Lights	3	0x0046812F	-	UNIQUE	WARN	10-byte pattern occurs 2x in .text; also at 0x00468112 [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	3	0x0046812F	-	DRIFT	PASS	fields equal
+Max Lights	4	0x0046818B	-	BYTES	PASS	2 bytes match
+Max Lights	4	0x0046818B	-	BOUNDARY	PASS	votes 7/7
+Max Lights	4	0x0046818B	-	UNIQUE	PASS	10-byte pattern occurs 1x in .text
+Max Lights	4	0x0046818B	-	DRIFT	PASS	fields equal
+Max Lights	5	0x004685BD	-	BYTES	PASS	2 bytes match
+Max Lights	5	0x004685BD	-	BOUNDARY	PASS	votes 7/7
+Max Lights	5	0x004685BD	-	UNIQUE	WARN	10-byte pattern occurs 2x in .text; also at 0x004685DA [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	5	0x004685BD	-	DRIFT	PASS	fields equal
+Max Lights	6	0x004685DA	-	BYTES	PASS	2 bytes match
+Max Lights	6	0x004685DA	-	BOUNDARY	PASS	votes 7/7
+Max Lights	6	0x004685DA	-	UNIQUE	WARN	10-byte pattern occurs 2x in .text; also at 0x004685BD [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	6	0x004685DA	-	DRIFT	PASS	fields equal
+Max Lights	7	0x00468636	-	BYTES	PASS	2 bytes match
+Max Lights	7	0x00468636	-	BOUNDARY	PASS	votes 7/7
+Max Lights	7	0x00468636	-	UNIQUE	WARN	10-byte pattern occurs 2x in .text; also at 0x00877AA5 [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	7	0x00468636	-	DRIFT	PASS	fields equal
+Max Lights	8	0x0046878F	-	BYTES	PASS	2 bytes match
+Max Lights	8	0x0046878F	-	BOUNDARY	PASS	votes 7/7
+Max Lights	8	0x0046878F	-	UNIQUE	WARN	10-byte pattern occurs 3x in .text; also at 0x004676F7, 0x00467714 [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	8	0x0046878F	-	DRIFT	PASS	fields equal
+Max Lights	9	0x004676F7	-	BYTES	PASS	2 bytes match
+Max Lights	9	0x004676F7	-	BOUNDARY	PASS	votes 9/9
+Max Lights	9	0x004676F7	-	UNIQUE	WARN	10-byte pattern occurs 3x in .text; also at 0x00467714, 0x0046878F [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	9	0x004676F7	-	DRIFT	PASS	fields equal
+Max Lights	10	0x00467714	-	BYTES	PASS	2 bytes match
+Max Lights	10	0x00467714	-	BOUNDARY	PASS	votes 9/9
+Max Lights	10	0x00467714	-	UNIQUE	WARN	10-byte pattern occurs 3x in .text; also at 0x004676F7, 0x0046878F [allowlisted: Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address]
+Max Lights	10	0x00467714	-	DRIFT	PASS	fields equal
+Max Lights	11	0x0050973E	-	BYTES	PASS	4 bytes match
+Max Lights	11	0x0050973E	-	BOUNDARY	PASS	votes 7/7
+Max Lights	11	0x0050973E	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+Max Lights	11	0x0050973E	-	DRIFT	PASS	fields equal
+Max Lights	12	0x0050908C	-	BYTES	PASS	4 bytes match
+Max Lights	12	0x0050908C	-	BOUNDARY	PASS	votes 9/9
+Max Lights	12	0x0050908C	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+Max Lights	12	0x0050908C	-	DRIFT	PASS	fields equal
+Max Lights	13	0x0050C251	-	BYTES	PASS	4 bytes match
+Max Lights	13	0x0050C251	-	BOUNDARY	PASS	votes 9/9
+Max Lights	13	0x0050C251	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+Max Lights	13	0x0050C251	-	DRIFT	PASS	fields equal
+Max Lights	14	0x0050C353	-	BYTES	PASS	4 bytes match
+Max Lights	14	0x0050C353	-	BOUNDARY	PASS	votes 9/9
+Max Lights	14	0x0050C353	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+Max Lights	14	0x0050C353	-	DRIFT	PASS	fields equal
+Max Lights	15	0x0050A601	-	BYTES	PASS	4 bytes match
+Max Lights	15	0x0050A601	-	BOUNDARY	PASS	votes 7/7
+Max Lights	15	0x0050A601	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+Max Lights	15	0x0050A601	-	DRIFT	PASS	fields equal
+Max Lights	16	0x005067FA	-	BYTES	PASS	5 bytes match
+Max Lights	16	0x005067FA	-	BOUNDARY	PASS	votes 9/9
+Max Lights	16	0x005067FA	-	UNIQUE	PASS	13-byte pattern occurs 1x in .text
+Max Lights	16	0x005067FA	-	DRIFT	PASS	fields equal
+Max Lights	17	0x00506599	SetProgramLightCount	BYTES	PASS	10 bytes match
+Max Lights	17	0x00506599	SetProgramLightCount	BOUNDARY	PASS	votes 9/9
+Max Lights	17	0x00506599	SetProgramLightCount	UNIQUE	PASS	18-byte pattern occurs 1x in .text
+Max Lights	17	0x00506599	SetProgramLightCount	DRIFT	PASS	fields equal
+Max Lights	18	0x0050BAF0	RelocateLightBlock	BYTES	PASS	7 bytes match
+Max Lights	18	0x0050BAF0	RelocateLightBlock	BOUNDARY	PASS	votes 6/7
+Max Lights	18	0x0050BAF0	RelocateLightBlock	UNIQUE	PASS	15-byte pattern occurs 1x in .text
+Max Lights	18	0x0050BAF0	RelocateLightBlock	DRIFT	PASS	fields equal
+Max Lights	19	0x0050B0A6	RelocateLightBlock	BYTES	PASS	7 bytes match
+Max Lights	19	0x0050B0A6	RelocateLightBlock	BOUNDARY	PASS	votes 7/7
+Max Lights	19	0x0050B0A6	RelocateLightBlock	UNIQUE	PASS	15-byte pattern occurs 1x in .text
+Max Lights	19	0x0050B0A6	RelocateLightBlock	DRIFT	PASS	fields equal
+SemiTransparentLetterbox	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+SemiTransparentLetterbox	0	0x008BAA5E	-	BYTES	PASS	26 bytes match
+SemiTransparentLetterbox	0	0x008BAA5E	-	BOUNDARY	PASS	votes 7/9
+SemiTransparentLetterbox	0	0x008BAA5E	-	UNIQUE	PASS	34-byte pattern occurs 1x in .text
+SemiTransparentLetterbox	0	0x008BAA5E	-	DRIFT	PASS	fields equal
+SemiTransparentLetterbox	1	0x008BB043	-	BYTES	PASS	92 bytes match
+SemiTransparentLetterbox	1	0x008BB043	-	BOUNDARY	PASS	votes 9/9
+SemiTransparentLetterbox	1	0x008BB043	-	UNIQUE	PASS	100-byte pattern occurs 1x in .text
+SemiTransparentLetterbox	1	0x008BB043	-	DRIFT	PASS	fields equal
+SemiTransparentLetterbox	2	0x008BB108	-	BYTES	PASS	94 bytes match
+SemiTransparentLetterbox	2	0x008BB108	-	BOUNDARY	PASS	votes 8/8
+SemiTransparentLetterbox	2	0x008BB108	-	UNIQUE	PASS	102-byte pattern occurs 1x in .text
+SemiTransparentLetterbox	2	0x008BB108	-	DRIFT	WARN	replacement_bytes: 3 bytes differ, only in address-operand-sized windows
+SemiTransparentLetterbox	3	0x008BB3C3	-	BYTES	PASS	9 bytes match
+SemiTransparentLetterbox	3	0x008BB3C3	-	BOUNDARY	PASS	votes 9/9
+SemiTransparentLetterbox	3	0x008BB3C3	-	UNIQUE	PASS	17-byte pattern occurs 1x in .text
+SemiTransparentLetterbox	3	0x008BB3C3	-	DRIFT	WARN	replacement_bytes: 3 bytes differ, only in address-operand-sized windows
+StoreConfirmThreshold2500	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+StoreConfirmThreshold2500	0	0x008B62EA	-	BYTES	PASS	2 bytes match
+StoreConfirmThreshold2500	0	0x008B62EA	-	BOUNDARY	PASS	votes 7/7
+StoreConfirmThreshold2500	0	0x008B62EA	-	UNIQUE	PASS	10-byte pattern occurs 1x in .text
+StoreConfirmThreshold2500	0	0x008B62EA	-	DRIFT	PASS	fields equal
+StoreConfirmThreshold2500	1	0x008B62F2	-	BYTES	PASS	4 bytes match
+StoreConfirmThreshold2500	1	0x008B62F2	-	BOUNDARY	WARN	mid-instruction (votes 0/7); allowed for in-place byte patches
+StoreConfirmThreshold2500	1	0x008B62F2	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+StoreConfirmThreshold2500	1	0x008B62F2	-	DRIFT	PASS	fields equal
+StoreConfirmThreshold2500	2	0x008B632E	-	BYTES	PASS	4 bytes match
+StoreConfirmThreshold2500	2	0x008B632E	-	BOUNDARY	WARN	mid-instruction (votes 0/7); allowed for in-place byte patches
+StoreConfirmThreshold2500	2	0x008B632E	-	UNIQUE	PASS	12-byte pattern occurs 1x in .text
+StoreConfirmThreshold2500	2	0x008B632E	-	DRIFT	PASS	fields equal
+StoreConfirmThreshold2500	3	0x008B6A43	-	BYTES	PASS	2 bytes match
+StoreConfirmThreshold2500	3	0x008B6A43	-	BOUNDARY	PASS	votes 9/9
+StoreConfirmThreshold2500	3	0x008B6A43	-	UNIQUE	PASS	10-byte pattern occurs 1x in .text
+StoreConfirmThreshold2500	3	0x008B6A43	-	DRIFT	PASS	fields equal
+StoreConfirmThreshold2500	4	0x008B6A5E	-	BYTES	PASS	15 bytes match
+StoreConfirmThreshold2500	4	0x008B6A5E	-	BOUNDARY	PASS	votes 9/9
+StoreConfirmThreshold2500	4	0x008B6A5E	-	UNIQUE	PASS	23-byte pattern occurs 1x in .text
+StoreConfirmThreshold2500	4	0x008B6A5E	-	DRIFT	PASS	fields equal
+StoreNoConfirmThreshold	-	-	-	SHA	PASS	exe sha256 6a522e71.. in target_versions
+StoreNoConfirmThreshold	0	0x008B6656	-	BYTES	PASS	6 bytes match
+StoreNoConfirmThreshold	0	0x008B6656	-	BOUNDARY	PASS	votes 7/7
+StoreNoConfirmThreshold	0	0x008B6656	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+StoreNoConfirmThreshold	0	0x008B6656	-	DRIFT	PASS	fields equal
+StoreNoConfirmThreshold	1	0x008B6A7C	-	BYTES	PASS	6 bytes match
+StoreNoConfirmThreshold	1	0x008B6A7C	-	BOUNDARY	PASS	votes 8/9
+StoreNoConfirmThreshold	1	0x008B6A7C	-	UNIQUE	PASS	14-byte pattern occurs 1x in .text
+StoreNoConfirmThreshold	1	0x008B6A7C	-	DRIFT	PASS	fields equal

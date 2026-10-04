@@ -87,6 +87,8 @@ Log 10-03 01:39: 2 HUD builds, 75 controls each, 0 WARNING, 0 pool full (baselin
   syntax per slot, editor UX to cycle the mode, and a small corner badge icon per mode (generated like the other fph_* textures).
 - (U4, user 10-04, backlog, NOT started) Expanded Keyboard Control support for the Action Hotbar. Both patches detour 0x72CB63 (action-bar key capture)
   and 0x74B3F0 (action-bar update), so today they are mutually exclusive. Design research: `upstream_prs/ekc_hotbar_coexist/DESIGN.md` (task R-A).
+  Gate B (10-04): option (c) picked: move the hotbar hooks to 0x72CB84 (stolen `8B 55 10 C1 E2 06`) and 0x74B3F5 (stolen `68 E8 30 96 00`);
+  no KPM change. Still needs a live check with both installed (DESIGN.md section 6).
 
 **RESUME HERE (2026-10-03 ~00:15, end of session 6):** live = **build 26 `504372b1`** (stage `hotbar_stage15/`, backup `backups/inst15_1003_0003`,
 31 installed ids; rollback = stage14 `a3303cb3`). Build 26 = stack counts on the bar and picker cells, out-of-stock items dimmed with "0", per-save hotbars

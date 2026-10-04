@@ -1,0 +1,6 @@
+# patch	hook_index|*	check	reason
+Max Lights	*	UNIQUE	Gob-bucket/light-count constants are repeated inlined code copies; each copy is its own hook, applied by address
+DeSteamify	12	UNIQUE	generic 55 8B EC 81 EC 80 prologue shared with 0x528710; hook is address-pinned
+K2MP3PlaybackFix	0	UNIQUE	the 18-byte mov [ebp+disp],0 sequence also occurs at 0x8FBF90 (other function); hook is address-pinned
+K2MP3PlaybackFix	0	DRIFT	stack buffer layout differs per build: steam ebp-0x13C/ebp-0x12C/const:32 vs gog ebp-0xBC/ebp-0xAC/const:16; needs maintainer confirmation
+Movie Patch	1	UNIQUE	function-entry prologue (CExoMoviePlayerInternal::ShutDown); 22 bytes unique; identity pinned by its 3 callers (GOG-0x5131F0 delta); address-pinned

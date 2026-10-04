@@ -1,0 +1,64 @@
+[metadata]
+target_versions = [
+    "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+]
+
+# Start loading one class preview.
+[[hooks]]
+address = 0x008F9DCA
+type = "detour"
+function = "BeginClassMenuAppearance"
+original_bytes = [
+    0x8D, 0x45, 0x88,
+    0x50,
+    0x8B, 0x8D, 0x5C, 0xFF, 0xFF, 0xFF
+]
+skip_original_bytes = false
+exclude_from_restore = []
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Replace the preview model.
+[[hooks]]
+address = 0x0085E4E4
+type = "detour"
+function = "OverrideClassMenuModel"
+original_bytes = [
+    0x8D, 0x45, 0xE0,
+    0x50,
+    0x8D, 0x4D, 0x8C
+]
+skip_original_bytes = false
+exclude_from_restore = []
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Replace the preview texture.
+[[hooks]]
+address = 0x0085E601
+type = "detour"
+function = "OverrideClassMenuTexture"
+original_bytes = [
+    0xC6, 0x45, 0xFC, 0x00,
+    0x8D, 0x4D, 0xB4
+]
+skip_original_bytes = false
+exclude_from_restore = []
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Stop overriding the preview.
+[[hooks]]
+address = 0x008F9DD9
+type = "detour"
+function = "EndClassMenuAppearance"
+original_bytes = [
+    0x8B, 0x4D, 0x80,
+    0x51,
+    0x8B, 0x95, 0x5C, 0xFF, 0xFF, 0xFF
+]
+skip_original_bytes = false
+exclude_from_restore = []
