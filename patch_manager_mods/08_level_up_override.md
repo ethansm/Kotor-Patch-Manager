@@ -1070,3 +1070,6 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   is not replicated - check the first live log/feedback message. mutate 120/120.
   **Build:** kpatch d5602400 (`d560240bc8acd46154384138a07b1b47`), DLL 9df5edad (`9df5edad9af1f6393859399522a1ff39`), KPM 9c60e5b.
   Supersedes c77b1cc0. NOT installed; install = DLL swap + v3 `levelup_paths.ini` together (user consent, game closed, backup).
+- **RESUME HERE (2026-10-04, handoff):** next phase = UX cleanup + polish (user: tooltips for buttons; future-Jedi "Pause at level" defaults
+  to the character's current level when the page opens, user can raise it). Plan built in plan mode from `.claude/session_handoff.md`.
+  Pending: install consent for d5602400; Phase 7 C1 after the UX phase.
