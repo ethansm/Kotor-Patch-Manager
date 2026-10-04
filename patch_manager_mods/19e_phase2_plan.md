@@ -285,3 +285,28 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 - Chunk D (10-03, 1eeb133): PatchRegistry.md 'Logging with KpLog.h' (+92), core README pointer, tests README (+79); 19f migration guide (97 l) in local-setup. analyze_play_logs ^-anchored regexes actually at 125-151 (ai_trace), 160-168 (ranged), 171-180 (inventory), 1086+ (PR_*).
 - Merge (10-03): feat/kplog-header -> ethansm/local-mods as **fc11fa3** (merge commit, no rebase; parent 63a9239 = sibling tip, intact). Resolved in a temp worktree, then --ff-only in the fork clone (its dirty sibling files do not overlap). Only conflict: docs/PatchRegistry.md (local-mods 'Library patches' + our section replacing 'Not yet available'; both kept). Gate on the merged tree (first attempt 17a4414, identical for our paths): GATE PASS (full, multilib) + kplog-check OK.
 - Chunk M (10-03): mouse-probe 0.2.0 on KpLog.h (channels main/raw/polls/norm/drag/cam, tags unchanged, STUCKDRAG? WARN, flag file -> fallback level on old core only, fallback file mouseprobe_log.txt, no FrameTick). Opus review found the MinGW DLL at 181 KB with SetSystemTime/GetSystemTimeAdjustment imports from std::chrono -> KpLog.h NowMs uses GetTickCount on Windows (KPM 22add9a, gate PASS, merged local-mods 706b150). Rebuilt: 89 KB (0.1.0 was 80 KB), exports KPatchInit/ProbeCameraFrame/ProbeMouseNorm/ProbeMouseRaw, strings mouse-probe/kpatch.log/mouseprobe_log.txt. Staged ~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020/MouseProbe.kpatch sha256 483eaec8...d102. Fork source committed ceeca81 (Patches/MouseProbe was already tracked since c4c5715). Not installed.
+- Chunk R (10-03, 434a32b): `19g_upstream_pr_draft.md` (HOLD; stack e36afa4..22add9a, rebase onto upstream/master needed: 10 commits ahead, tip 3f8b858), 19a refreshed (KpLog.h exists, opt-in debugLog, fallback sink instead of pre-init buffer, ships with the first mod), doc 19 Phase 2 DONE / Phase 3 status / 8a PR trigger rule.
+- Chunk A (10-03): memory `kotor2-kplog-adoption.md` + MEMORY.md line; `kotor2-shared-logging.md` Phase 2 status. **Correction to this plan's Context:** the live `KotorPatcher.dll` is **`36f10b7f` = the registry core** (installed 10-03 11:44 by the portrait-slots session, restored 16:44 per doc 17/21) and already provides `kpatch.log`; live `kplog.ini` has `[global] enabled=1 sink=perpatch` + `[portrait-slots]`. Phase 2 changed no core source, so no core reinstall is needed for mouse-probe.
+
+## Adoption table (KpLog.h migration per mod)
+| Mod | Owner session | Status |
+|---|---|---|
+| mouse-probe | shared-logging (this) | **migrated 0.2.0, staged, awaiting user test** |
+| portrait-slots | buff/shield split | pending (already uses the registry for `k2.portraitslots`) |
+| buff-duration-hud | buff HUD | pending (Phase 3 next per doc 19) |
+| shield-bar | shield bar | pending |
+| force-power-hotbar | hotbar | pending |
+| level-up-override | level-up | pending |
+| perf-lab, robustness-fixes, k2-dialogue-letterbox-fix | engine research / engine-bug | pending |
+| companion-ai, ranged-ai | engine AI atlas | pending (parser `^` anchors: analyze_play_logs.py) |
+| char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe, activation-fix | their sessions | pending |
+
+## Step U: user test hand-off (prepared, NOT done; needs the user's go; game closed; never launch it)
+G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"; S=~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020; B=~/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_$(date +%Y%m%d_%H%M)
+1. Check: game not running (`pgrep -f swkotor2.exe` empty); live core md5 `36f10b7f…` (has kpatch.log); live `patches/mouse-probe.dll` md5 `548d4237…` (0.1.0).
+2. Backup: `mkdir -p $B && cp "$G/patches/mouse-probe.dll" "$G/kplog.ini" "$G/patch_config.toml" "$G/KotorPatcher.dll" $B/`.
+3. Install (hot-swap, hooks unchanged from 0.1.0, same as the L1 1.0.1 precedent in doc 17): `unzip -p $S/MouseProbe.kpatch binaries/windows_x86.dll > "$G/patches/mouse-probe.dll"`; verify md5 = the staged DLL. (Alternative: full KPM reinstall per the CLAUDE.md "KPM Install Rule" with all live ids; source is committed at fork ceeca81.)
+4. Optional channels: append to `$G/kplog.ini`: `[mouse-probe]` / `enabled=1` / `level=info` / `channels=*`, and under `[global]` consider `max_lines_per_sec=0` (RAW/CAM can exceed 2000/s; leave it and look for DROPPED first).
+5. User plays a few minutes in-world with right-drag camera moves.
+6. Expect: `$G/mouse-probe_log.txt` with the `# kplog session` header; with the ini: `mouse-probe/main START mouseprobe 0.2.0`, `raw`/`polls`/`norm`/`drag`/`cam` lines with the old tags; without the ini: only `STUCKDRAG?` WARN lines (if any). `mouseprobe_log.txt` must NOT grow (proves the new-core path). Read with `python3 scripts/kplog_parse.py --stats "$G/mouse-probe_log.txt"`; check for `DROPPED`.
+7. Rollback: `cp $B/mouse-probe.dll "$G/patches/" && cp $B/kplog.ini "$G/"`.
