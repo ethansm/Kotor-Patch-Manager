@@ -295,7 +295,7 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | portrait-slots | buff/shield split | pending (already uses the registry for `k2.portraitslots`) |
 | buff-duration-hud | buff HUD | pending (Phase 3 next per doc 19) |
 | shield-bar | shield bar | pending |
-| force-power-hotbar | hotbar | pending |
+| force-power-hotbar | hotbar | **migrated (7cdbe17), 1.1.0 LIVE 10-04 02:35 (d16f521e), level=debug, awaiting user test** |
 | level-up-override | level-up | pending |
 | perf-lab, robustness-fixes | engine research / engine-bug | pending |
 | k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 LIVE 10-03 22:42 (7b3936bc, backup pre_lb102_1003_2242), NOT VALIDATED: 17-row manual checklist in doc 17 "Manual validation checklist (1.0.2)"**; 1.0.2-probe staged (local-setup 2823ff6/aea74cb, fork b4e1db6) |
