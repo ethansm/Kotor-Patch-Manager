@@ -1,13 +1,1 @@
 gog_addr	corrected_addr	source	reason
-0x00595eb0	0x0084c3a0	review:sonnet_c1.tsv	Candidate is a tiny accessor; 0x84c3a0 has identical size 6331, panel strings and +0x4b6c/+0x4b70.
-0x00597770	0x0084def0	review:sonnet_c1.tsv	Candidate is another class dtor; 0x84def0 is the 44-byte wrapper calling Destructor_2 + delete.
-0x00651470	0x006545b0	review:sonnet_c1.tsv	Candidate is an adder; 0x6545b0 has 0x93d, 0x18 stride, CompareNoCase, size 190.
-0x00651600	0x00654740	review:sonnet_c1.tsv	Candidate is GetBit; 0x654740 holds GOG strings and size 280.
-0x00651720	0x00654860	review:sonnet_c1.tsv	Candidate is GetBit; 0x654860 has NUMBER strings, +0xde29 read, size 267.
-0x00651a70	0x00654bb0	review:sonnet_c1.tsv	Candidate handles STRING type; 0x654bb0 has BOOLEAN strings, SetBit, +0xddb8 (GOG imm).
-0x00653500	0x00656640	review:sonnet_c2.tsv	Candidate 0x6564c0 is ReadTable (377B); Save is 0x656640 with WriteTable call.
-0x006535d0	0x00656710	review:sonnet_c2.tsv	Candidate 0x656780 is a 31-byte ctor stub; Load is 0x656710 with GLOBALVARS string.
-0x00815b80	0x00423480	review:sonnet_c2.tsv	Candidate is the 17-byte getter; destructor is 0x423480 with FreeImage and list calls.
-0x00816030	0x00423930	review:sonnet_c2.tsv	Candidate 0x423820 has no list Remove/Count and no +0xd7; real body is 0x423930.
-0x00920c10	0x0040da20	review:sonnet_c2.tsv	Candidate builds a fade panel; StopMovie is 0x40da20 (ShutDown call, +0x30=0).
-0x00921000	0x0040de10	review:sonnet_c2.tsv	Candidate 0x40de50 is ResumeMovie (+0x64=0); PauseMovie sets +0x64=1 at 0x40de10.

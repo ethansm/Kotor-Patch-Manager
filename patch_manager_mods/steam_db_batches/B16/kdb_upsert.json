@@ -2,6 +2,30 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified;  retn=0; GOG 0x004bcf10] Steam batch B16: gate evidence was for a corrected pick | override: [r] correction (NOCAND). fp 1:1 unique (17/ret0, disp 0xc); 0040de9a MOV EAX,[EAX+0xc]; sole caller 0x93b600 = CExoMoviePlayer::GetNumberOfMoviesToPlay (GOG 0x921250, 33b, same run)",
+  "name": "CExoMoviePlayerInternal::GetNumberOfMoviesToPlay",
+  "source": "steam-db-B16",
+  "steam_addr": "0x0040de90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00595eb0] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x73b4d0 (149b list accessor). fp 1:1 unique (6331/ret4/1436); 0084c3ea MOV [ECX],0x9a3e7c (CSWGuiInGameCharacter vftable); 0084da65 MOV [EDX+0x4b6c],EAX",
+  "name": "CSWGuiInGameCharacter::Constructor",
+  "source": "steam-db-B16",
+  "steam_addr": "0x0084c3a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00597770] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x84de70 (120b, CSWGui3DSceneView vftable). Slot 0 of Character vftable 0x9a3e7c; 0084defa CALL 0x84df70 (~CSWGuiInGameCharacter); 0084df0b CALL 0x9196fd",
+  "name": "CSWGuiInGameCharacter::Destructor",
+  "source": "steam-db-B16",
+  "steam_addr": "0x0084def0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=0; GOG 0x00597870] Steam batch B16: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CSWGuiInGameCharacter::Destructor_2",
   "source": "steam-db-B16",
@@ -26,7 +50,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00599070] Steam batch B16: SIG 0.50 | reviewer match with anchor: 0084f850 ADD ECX,0xf0; 0084f856 CALL 0x00416e30 (SetText); 0084f7f2 CALL 0x00733df0 (operator+)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00599070] Steam batch B16: SIG 0.50 | override: [a] fp 1:1 unique (360/ret8); 0084f850 ADD ECX,0xf0; 0084f856 CALL 0x416e30 (SetText); 5/5 callees",
   "name": "CSWGuiInGameCharacter::SetModText",
   "source": "steam-db-B16",
   "steam_addr": "0x0084f770"
@@ -50,7 +74,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005994b0] Steam batch B16: CALLEE 1 (callees: Draw 0x40ec90); SIG 1.00 | reviewer match with anchor: 0084fbc4 MOV ECX,[EAX+0x3ad8]; 0084fbd4 ADD ECX,0x3a60; 0084fbda CALL 0x0041b1d0; Draw 0x40ec90",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005994b0] Steam batch B16: CALLEE 1 (callees: Draw 0x40ec90); SIG 1.00 | override: [a] fp 1:1 unique; 0084fbc4 MOV ECX,[EAX+0x3ad8]; 0084fbd4 ADD ECX,0x3a60; slot 13 (Draw) of vftable 0x9a3e7c. Mac contra = Mac offsets only",
   "name": "CSWGuiInGameCharacter::Draw",
   "source": "steam-db-B16",
   "steam_addr": "0x0084fbb0"
@@ -90,6 +114,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00599990] Steam batch B16: no content anchor (C0) | override: [a] fp 1:1 unique (86/ret8); 008500a5/c0/d5 ADD ECX,0xf0 x3 + CALL 0x417010 (SetColor); RET 8",
+  "name": "CSWGuiInGameCharacter::SetLabelBonusPenaltyColour",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00850090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x005999f0] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008500f9 CMP [EBP+8],0 picks FLD [0x98bd88]/[0x987704]; 0085011c ADD ECX,0x30; SUB ESP,0x60 (GOG imm 0x60); size 566",
   "name": "CSWGuiInGameCharacter::RotateCharacter",
   "source": "steam-db-B16",
@@ -102,6 +134,14 @@
   "name": "CSWGuiDialogLetterbox::Constructor",
   "source": "steam-db-B16",
   "steam_addr": "0x008ba980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005af1f0] Steam batch B16: no content anchor (C0) | override: [a] fp 1:1 unique (114/ret4); 008baad0 ADD ECX,0x90; 008baae5 CALL 0x40e860 (~CSWGuiPanel); _free 0x9196fd",
+  "name": "CSWGuiDialogLetterbox::`scalar",
+  "source": "steam-db-B16",
+  "steam_addr": "0x008baaa0"
  },
  {
   "confidence": "high",
@@ -178,10 +218,18 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005e43c0] Steam batch B16: STR 'LBL_MOUSESEN'@009a1ecc; 'SLI_MOUSESEN'@009a1edc; 'BTN_MOUSE'@009a8e2c; CALLEE 1 (callees: SetActiveControl 0x40ec00); SIG 1.00 | reviewer match with anchor: 008dfebf PUSH 0x9a1ecc LBL_MOUSESEN; 008dffd6 PUSH 0x9a8e2c BTN_MOUSE; 008dfc09 PUSH CB_LEVELUP",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e43c0] Steam batch B16: STR 'LBL_MOUSESEN'@009a1ecc; 'SLI_MOUSESEN'@009a1edc; 'BTN_MOUSE'@009a8e2c; CALLEE 1 (callees: SetActiveControl 0x40ec00); SIG 1.00 | override: [a] fp 1:1 unique (3659/ret4/837, same disp set, no layout shift); 008dfebf PUSH 0x9a1ecc LBL_MOUSESEN; 008df97a MOV [ECX],0x9a8ee4 (Gameplay vftable); 20/20 callees",
   "name": "CSWGuiInGameGameplay::Constructor",
   "source": "steam-db-B16",
   "steam_addr": "0x008df930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e5210] Steam batch B16: no content anchor (C0) | override: [a] slot 0 of Gameplay vftable 0x9a8ee4; 008e078c CALL 0x8e07b0 (~CSWGuiInGameGameplay); 008e079d CALL 0x9196fd",
+  "name": "CSWGuiInGameGameplay::Destructor",
+  "source": "steam-db-B16",
+  "steam_addr": "0x008e0780"
  },
  {
   "confidence": "high",
@@ -198,6 +246,14 @@
   "name": "CSWGuiInGameGameplay::HandleInputEvent",
   "source": "steam-db-B16",
   "steam_addr": "0x008e0a80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x005e56e0] Steam batch B16: gate evidence was for a corrected pick | override: [r] correction of 0x8e0cc0 (OnAutoSave). Slot 18 of Gameplay vftable 0x9a8ee4 (0x9a8f2c); 007dceaa CALL 0x40f3c0 (CSWGuiPanel::OnPanelAdded). ICF-shared w/ CSWGuiOptionsMouse slot 18",
+  "name": "CSWGuiInGameGameplay::OnPanelAdded",
+  "source": "steam-db-B16",
+  "steam_addr": "0x007dcea0"
  },
  {
   "confidence": "high",
@@ -250,7 +306,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005e59f0] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008e0f4c MOV ECX,[EAX+0x5c]; 008e0f59 CALL 0x008e1410 (SetDescription)",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e59f0] Steam batch B16: SIG 1.00 | override: [a] 36b/ret4; 008e0f4c MOV ECX,[EAX+0x5c]; 008e0f59 CALL 0x8e1410 (SetDescription), neighbour run of OnDefault/OnKeyMap",
   "name": "CSWGuiInGameGameplay::OnEnterSlot",
   "source": "steam-db-B16",
   "steam_addr": "0x008e0f40"
@@ -266,7 +322,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005e5a70] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008e0ff7 PUSH 0x1370; 008e105c CALL 0x00410530 (AddPanel)",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e5a70] Steam batch B16: SIG 1.00 | override: [a] fp 1:1 unique; 008e0ff7 PUSH 0x1370; callee CSWGuiInGameOptKeyMapping ctor 0x8fff20; 008e105c CALL 0x410530 (AddPanel). No offset shift",
   "name": "CSWGuiInGameGameplay::OnKeyMap",
   "source": "steam-db-B16",
   "steam_addr": "0x008e0fc0"
@@ -274,7 +330,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005e5b30] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008e10b7 PUSH 0x147c; 008e111c CALL 0x00410530 (AddPanel)",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e5b30] Steam batch B16: SIG 1.00 | override: [a] fp 1:1 unique; 008e10b7 PUSH 0x147c; callee CSWGuiOptionsMouse ctor 0x7dc410; 008e111c CALL 0x410530 (AddPanel). No offset shift",
   "name": "CSWGuiInGameGameplay::OnMouse",
   "source": "steam-db-B16",
   "steam_addr": "0x008e1080"
@@ -298,7 +354,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x005e5d30] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008e12eb CALL 0x0071bcf0 (GetINTEntry_2); 008e130f ADD ECX,0xea0; 008e1343 ADD EDX,0xef8; 008e131d ADD EAX,0x10c8",
+  "evidence": "[verified; thiscall retn=0; GOG 0x005e5d30] Steam batch B16: SIG 1.00 | override: [lead] sample: fp identical 391 B RET 0, 117 insn, disp 0x2b74x3/0x130, imm 0xea0/0xef8/0x10c8",
   "name": "CSWGuiInGameGameplay::SetDifficultyText",
   "source": "steam-db-B16",
   "steam_addr": "0x008e1280"
@@ -314,7 +370,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005e6020] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008e1597 MOV ECX,1; 008e15b6 CALL 0x008e1280; 008e15bb PUSH 0xa519; 008e15c3 CALL 0x008e1410",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e6020] Steam batch B16: SIG 1.00 | override: [a] fp 1:1 unique; 008e15b6 CALL 0x8e1280 (SetDifficultyText); 008e15bb PUSH 0xa519; CALL 0x8e1410 (SetDescription); RET 4. Mac shape same (3 callees)",
   "name": "CSWGuiInGameGameplay::OnEnterDiff",
   "source": "steam-db-B16",
   "steam_addr": "0x008e1570"
@@ -322,7 +378,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x005e6080] Steam batch B16: SIG 1.00 | reviewer match with anchor: 008e15e1 ADD ECX,0xea0; 008e15f7 XOR ECX,ECX; 008e1602 MOV EAX,[EDX+0x38]; 008e1605 AND EAX,0xffffffbf; size 70",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005e6080] Steam batch B16: SIG 1.00 | override: [a] fp 1:1 unique (70b); 008e15e1 ADD ECX,0xea0; 008e1605 AND EAX,0xffffffbf; only callee SetColor 0x417010; RET 4",
   "name": "CSWGuiInGameGameplay::OnExitDiff",
   "source": "steam-db-B16",
   "steam_addr": "0x008e15d0"
@@ -370,7 +426,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0064da60] Steam batch B16: CALLEE 9 (callees: RemoveObject 0x51e0c0; callers: SetAILevel 0x51e120, Constructor 0x5ffd60, Constructor 0x561f30); SIG 1.00 | AUTO: CALLEE 9 (callees: RemoveObject 0x51e0c0; callers: SetAILevel 0x51e120, Constructor 0x5ffd60, Constructor 0x561f30); SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0064da60] Steam batch B16: CALLEE 9 (callees: RemoveObject 0x51e0c0; callers: SetAILevel 0x51e120, Constructor 0x5ffd60, Constructor 0x561f30); SIG 1.00 | override: [a] AUTO c2 pass: fp 1:1 unique (116/ret8); 0051e062 MOV ECX,[EAX+0x78]; 0051e075 CALL 0x51e0c0 (RemoveObject); 0051e094 CALL 0x51d150",
   "name": "CServerAIMaster::AddObject",
   "source": "steam-db-B16",
   "steam_addr": "0x0051e040"
@@ -378,7 +434,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x0064dae0] Steam batch B16: CALLEE 8 (callers: AddObject 0x51e040, Destructor_2 0x6000e0, Destructor_2 0x5634c0); SIG 1.00 | AUTO: CALLEE 8 (callers: AddObject 0x51e040, Destructor_2 0x6000e0, Destructor_2 0x5634c0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0064dae0] Steam batch B16: CALLEE 8 (callers: AddObject 0x51e040, Destructor_2 0x6000e0, Destructor_2 0x5634c0); SIG 1.00 | override: [a] AUTO c2 pass: fp 1:1 unique (93/ret4); 0051e0fc CALL 0x51d170; 0051e10d MOV [ECX+0x78],0xffffffff",
   "name": "CServerAIMaster::RemoveObject",
   "source": "steam-db-B16",
   "steam_addr": "0x0051e0c0"
@@ -402,7 +458,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=24; GOG 0x0064dc40] Steam batch B16: CALLEE 3 (callees: CompareWorldTimes 0x51afe0; callers: ? 0x57e140, ValidateLevelUp 0x6b9640); SIG 1.00 | reviewer match with anchor: 0051e24a PUSH 0x18 (alloc node); 0051e2eb CALL 0x0051afe0 (CompareWorldTimes); caller ValidateLevelUp 0x6b9640",
+  "evidence": "[verified; thiscall retn=24; GOG 0x0064dc40] Steam batch B16: CALLEE 3 (callees: CompareWorldTimes 0x51afe0; callers: ? 0x57e140, ValidateLevelUp 0x6b9640); SIG 1.00 | override: [a] fp 1:1 unique (290/ret24, identical disp, no layout shift); 0051e24a PUSH 0x18; 0051e2eb CALL 0x51afe0 (CompareWorldTimes); LogEventAdd 0x51e350",
   "name": "CServerAIMaster::AddEventAbsoluteTime",
   "source": "steam-db-B16",
   "steam_addr": "0x0051e220"
@@ -426,7 +482,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0064e840] Steam batch B16: CALLEE 1 (callers: SaveModuleIFOStart 0x55bd10); SIG 0.50 | reviewer match with anchor: 0051ee43 CALL 0x00719740 (CResGFF::AddList, \"EventQueue\"); 0051ee7d PUSH 0xabcd; 0051ee8d CALL 0x00719800",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0064e840] Steam batch B16: CALLEE 1 (callers: SaveModuleIFOStart 0x55bd10); SIG 0.50 | override: [a] fp 1:1 unique (168/ret8); 0051ee43 CALL 0x719740 (CResGFF::AddList); 0051ee7d PUSH 0xabcd; SaveNode 0x520190",
   "name": "CServerAIMaster::SaveEventQueue",
   "source": "steam-db-B16",
   "steam_addr": "0x0051ee20"
@@ -442,7 +498,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=12; GOG 0x0064e9f0] Steam batch B16: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0064e9f0] Steam batch B16: SIG 1.00 | override: [a] AUTO sig pass: fp 1:1 unique (46/ret12); 0051efe6 MOV ECX,[EAX+0x58]; 0051effb RET 0xc",
   "name": "CServerAIMaster::OnEffectApplied",
   "source": "steam-db-B16",
   "steam_addr": "0x0051efd0"
@@ -450,7 +506,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x0064ea20] Steam batch B16: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0064ea20] Steam batch B16: SIG 1.00 | override: [a] AUTO sig pass: fp 1:1 unique (40/ret8); 0051f012 MOV EAX,[EDX+0x58]; 0051f025 RET 8 (Applied is 46/ret12, distinct)",
   "name": "CServerAIMaster::OnEffectRemoved",
   "source": "steam-db-B16",
   "steam_addr": "0x0051f000"
@@ -474,7 +530,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=12; GOG 0x0064eac0] Steam batch B16: CALLEE 2 (callers: EventHandler 0x56efd0, OnApplyDeath 0x597d90) | reviewer match with anchor: 0051f0b1 SUB ESP,0x118; 0051f0ce JMP 0x0051f8f9 (skips body); 0051f907 RET 0xc; caller OnApplyDeath 0x597d90",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0064eac0] Steam batch B16: CALLEE 2 (callers: EventHandler 0x56efd0, OnApplyDeath 0x597d90) | override: [a] fp 1:1 unique (68/ret12); 0051f0b1 SUB ESP,0x118; 0051f907 RET 0xc (param 12; GOG DB param bad). Body jumps over (dead in both)",
   "name": "CServerAIMaster::AdjustTargetAndWitnessReputations",
   "source": "steam-db-B16",
   "steam_addr": "0x0051f0a0"
@@ -490,7 +546,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00650700] Steam batch B16: CALLEE 2 (callees: DeleteScriptSituation 0x6fdbb0; callers: UpdateState 0x51d790); SIG 0.50 | reviewer match with anchor: 00520e6d CALL 0x006fdbb0 (DeleteScriptSituation); switch(type) then operator delete 0x9196fd",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00650700] Steam batch B16: CALLEE 2 (callees: DeleteScriptSituation 0x6fdbb0; callers: UpdateState 0x51d790); SIG 0.50 | override: [lead] sample: fp identical 491 B RET 8, 145 insn, imm 0x19/0x1c/0x50",
   "name": "CServerAIMaster::DeleteEventData",
   "source": "steam-db-B16",
   "steam_addr": "0x00520ce0"
@@ -522,7 +578,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x00650c90] Steam batch B16: SIG 0.50 | reviewer match with anchor: decomp 00653dd0: memset +0xddb8 len 0x71, +0xde29 len 1000, +0xe214 len 0x960, +0xeb74 len 0x28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00650c90] Steam batch B16: SIG 0.50 | override: [a] fp 1:1 unique (103/ret0, imm 0x71/0x3e8/0x960/0x28); 00653dde ADD EAX,0xddb8; 00653e25 ADD EAX,0xeb74; memset 0x91c630",
   "name": "CSWGlobalVariableTable::ClearValues",
   "source": "steam-db-B16",
   "steam_addr": "0x00653dd0"
@@ -570,7 +626,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x006513b0] Steam batch B16: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006513b0] Steam batch B16: SIG 1.00 | override: [a] AUTO sig pass: fp 1:1 unique (85/ret4); 00654503 CMP [EAX+0xeba4],0x64; 0065451f CALL 0x6542d0 (AddIdentifier)",
   "name": "CSWGlobalVariableTable::AddIdentifierLocation",
   "source": "steam-db-B16",
   "steam_addr": "0x006544f0"
@@ -582,6 +638,14 @@
   "name": "CSWGlobalVariableTable::AddIdentifierString",
   "source": "steam-db-B16",
   "steam_addr": "0x00654550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00651470] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x6544f0 (AddIdentifierLocation). fp 1:1 unique (190/ret4); 006545f6 MOV ECX,0x93d; 00654626 CALL 0x734f60 (CompareNoCase); Hash 0x654210",
+  "name": "CSWGlobalVariableTable::FindIdentifierIndex",
+  "source": "steam-db-B16",
+  "steam_addr": "0x006545b0"
  },
  {
   "confidence": "high",
@@ -602,6 +666,22 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00651600] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x654670 (GetBit). fp 1:1 unique; 0065479e PUSH 0x9984f8 \"Script var BOOLEAN '%s' not in catalogue!\"; 0065483d CALL 0x654670 (GetBit); RET 8",
+  "name": "CSWGlobalVariableTable::GetValueBoolean",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00654740"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00651720] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x654670 (GetBit). fp 1:1 unique (267/ret8); 00654951 MOV DL,[ECX+EDX+0xde29]; \"NUMBER\" strings; FindIdentifierIndex 0x6545b0",
+  "name": "CSWGlobalVariableTable::GetValueNumber",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00654860"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=8; GOG 0x00651830] Steam batch B16: STR 'Script var '%s' not a LOCATION!'@00998570; 'Script var LOCATION '%s' not in catalogu'@00998590; CALLEE 1 (callers: ExecuteCommandGetGlobalLocation 0x67da50); SIG 1.00 | AUTO: STR 'Script var '%s' not a LOCATION!'@00998570; 'Script var LOCATION '%s' not in catalogu'@00998590; CALLEE 1 (callers: ExecuteCommandGetGlobalLocation 0x67da50",
   "name": "CSWGlobalVariableTable::GetValueLocation",
   "source": "steam-db-B16",
@@ -614,6 +694,14 @@
   "name": "CSWGlobalVariableTable::GetValueString",
   "source": "steam-db-B16",
   "steam_addr": "0x00654aa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00651a70] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x654aa0 (string getter, +0xeb74). fp 1:1 unique; 00654c9f ADD EAX,0xddb8; 00654ca8 CALL 0x6546c0 (SetBit); RET 8",
+  "name": "CSWGlobalVariableTable::SetValueBoolean",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00654bb0"
  },
  {
   "confidence": "high",
@@ -650,7 +738,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=8; GOG 0x00652550] Steam batch B16: SIG 1.00 | reviewer match with anchor: 00655736 'ValBoolean' 0065577d 'ValLocation' 006557a4 'ValString' 00655758 'ValNumber'; no Cat* strings (decoy 0x655b00 has CatBoolean)",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00652550] Steam batch B16: SIG 1.00 | override: [a] fp 1:1 (1110/ret8/285, disp/imm identical) except GOG empty-string ref 0x9858f5; 00655736 PUSH 0x998654 \"ValBoolean\"; no Cat* strings; ReadTable calls it 006565e8",
   "name": "CSWGlobalVariableTable::ReadTableWithoutCatalogue",
   "source": "steam-db-B16",
   "steam_addr": "0x00655690"
@@ -658,7 +746,15 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00653380] Steam batch B16: CALLEE 2 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0); SIG 1.00 | AUTO: CALLEE 2 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0); SIG 1.00",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006529c0] Steam batch B16: STR 'String'@00998628; 'ValString'@00998630; 'ValLocation'@0099863c; SIG 1.00 | override: [r] G6 holder is the same function (name_map \"ReadTableWithCat\"). fp 1:1 (2481/ret8/621) bar GOG empty str; 00655d37 PUSH 0x998720 \"ReadTableWithCat(): BOOLEAN '%s' won't fit!\"",
+  "name": "CSWGlobalVariableTable::ReadTableWithCatalogue",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00655b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00653380] Steam batch B16: CALLEE 2 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0); SIG 1.00 | override: [a] AUTO c2 pass: fp 1:1 unique (377/ret4); 0065655e PUSH 0xbe76; 006565d6 CALL 0x655b00 (WithCat); 006565e8 CALL 0x655690 (WithoutCat)",
   "name": "CSWGlobalVariableTable::ReadTable",
   "source": "steam-db-B16",
   "steam_addr": "0x006564c0"
@@ -666,7 +762,23 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x0077e650] Steam batch B16: CALLEE 1 (callers: RunScriptCallback 0x669020); SIG 0.50 | AUTO: CALLEE 1 (callers: RunScriptCallback 0x669020); SIG 0.50",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00653500] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x6564c0 (ReadTable). fp 1:1 unique (204/ret4); 00656668 PUSH 0x99874c \"GLOBALVARS\"; 006566e7 CALL 0x655010 (WriteTable)",
+  "name": "CSWGlobalVariableTable::Save",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00656640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006535d0] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x656780 (31b). fp 1:1 unique (108/ret0); 00656738 PUSH 0x99874c \"GLOBALVARS\"; 00656753 CALL 0x6564c0 (ReadTable)",
+  "name": "CSWGlobalVariableTable::Load",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00656710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0077e650] Steam batch B16: CALLEE 1 (callers: RunScriptCallback 0x669020); SIG 0.50 | override: [a] fp 1:1 unique (192/ret4); 006690b7 ADD ECX,0x60; CALL 0x733df0 (CExoString::operator+) x2; 4/4 callees; Mac AppendToScriptsRun same shape (imm 0x2c/0x60)",
   "name": "CServerAIMaster::AppendToScriptsRun",
   "source": "steam-db-B16",
   "steam_addr": "0x00669070"
@@ -678,6 +790,14 @@
   "name": "CAurTextureBasic::Constructor",
   "source": "steam-db-B16",
   "steam_addr": "0x00423000"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00815b80] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x4233a0 (GetController). fp 1:1 unique (543/ret0); 00423645 CALL 0x425160 (FreeImage); 0042365c CALL 0x423930 (RemoveFromOrderedLists); 9/9 callees",
+  "name": "CAurTextureBasic::Destructor",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00423480"
  },
  {
   "confidence": "high",
@@ -694,6 +814,14 @@
   "name": "CAurTextureBasic::AddToOrderedLists",
   "source": "steam-db-B16",
   "steam_addr": "0x00423860"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00816030] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x423820. fp 1:1 unique (87b); 00423940 CALL 0x476620 (Count); 0042395a MOVZX EAX,byte [EDX+0xd7]; Remove 0x449170",
+  "name": "CAurTextureBasic::RemoveFromOrderedLists",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00423930"
  },
  {
   "confidence": "high",
@@ -778,7 +906,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00818ce0] Steam batch B16: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00818ce0] Steam batch B16: SIG 1.00 | override: [a] AUTO sig pass: fp 1:1 unique (600/ret4); 00426771 CALL 0x432fa0 (CreateCubeTexture); 004267d6 CALL 0x433cd0 (CreateTexture); 9/9 callees",
   "name": "CAurTextureBasic::glImage",
   "source": "steam-db-B16",
   "steam_addr": "0x004265e0"
@@ -858,6 +986,22 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x009151b0] Steam batch B16: no content anchor (C0) | override: [a] fp 1:1 unique (36/ret4); 00416dea ADD EAX,0x3c; 00416df9 CALL 0x416d60 (SetFontRename); CopyToString 0x710980",
+  "name": "CSWGuiTextParams::SetBaseFont",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00416de0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x009151e0] Steam batch B16: no content anchor (C0) | override: [a] 19b wrapper; 00416e1a CALL 0x416d60 (SetFontRename). SetFontRename has 3 callers each side (36/19/198b), 1:1 by size; only 19b one",
+  "name": "CSWGuiTextParams::ReSetFont",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00416e10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=4; GOG 0x00915200] Steam batch B16: CALLEE 7 (callers: OnPanelAdded 0x894320, PopulateItemListBox 0x8a7ba0, OnControlEntered 0x8a8100); SIG 1.00 | AUTO: CALLEE 7 (callers: OnPanelAdded 0x894320, PopulateItemListBox 0x8a7ba0, OnControlEntered 0x8a8100); SIG 1.00",
   "name": "CSWGuiTextParams::SetText",
   "source": "steam-db-B16",
@@ -890,7 +1034,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x00915440] Steam batch B16: SIG 1.00 | AUTO: SIG 1.00",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00915440] Steam batch B16: SIG 1.00 | override: [a] AUTO sig pass: fp 1:1 unique (198/ret4); 004170ce CALL 0x47ec30 (NewCAurGUIString); 00417109 CALL 0x416fa0 (SetAlignment); 8/8 callees",
   "name": "CSWGuiTextParams::SetTextObject",
   "source": "steam-db-B16",
   "steam_addr": "0x00417070"
@@ -906,6 +1050,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00915550] Steam batch B16: no content anchor (C0) | override: [a] fp 1:1 unique (26b); 0041718a ADD EAX,0x2c; 00417191 CALL 0x417010 (SetColor)",
+  "name": "CSWGuiTextParams::SetDefaultColor_2",
+  "source": "steam-db-B16",
+  "steam_addr": "0x00417180"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=0; GOG 0x0091fa70] Steam batch B16: SIG 1.00 | reviewer match with anchor: 0040c8c0 CALL 0x733540 (CExoString ctor), 0040c906 CALL 0x7338d0 (operator=_2), 0040c944 PUSH 0x8000 + CreateThread; disp/imm identical",
   "name": "CExoMoviePlayerInternal::Constructor",
   "source": "steam-db-B16",
@@ -914,7 +1066,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=0; GOG 0x0091fbe0] Steam batch B16: SIG 1.00 | reviewer match with anchor: 0040caae CALL 0x0040cb20 (ShutDown), 0040cacf/0040caed CALL 0x733780, 0040cade CALL 0x739c90 (CS dtor); disp {4,0x38,0x44}",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0091fbe0] Steam batch B16: SIG 1.00 | override: [lead] sample: fp identical 291 B RET 0, 85 insn, disp 0x38/0x44, imm 0x103/0x90",
   "name": "CExoMoviePlayerInternal::Destructor",
   "source": "steam-db-B16",
   "steam_addr": "0x0040c9f0"
@@ -946,7 +1098,7 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
-  "evidence": "[verified; thiscall retn=4; GOG 0x0091fe60] Steam batch B16: STR 'Error'@00986c58; 'CExoMoviePlayerInternal::CExoMoviePlayer'@00986d28; 'SW Movie Player Window'@00986d70; SIG 1.00 | reviewer match with anchor: 0040d063 PUSH 0x986d28 \"CExoMoviePlayerInternal::CExoMoviePlayerInternal()  Can't open movie: \"; 0040cd64 'Error'; 0040cd23 'SWMovieWindow'; CALL 0x0072fb00 GetClientOptions",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0091fe60] Steam batch B16: STR 'Error'@00986c58; 'CExoMoviePlayerInternal::CExoMoviePlayer'@00986d28; 'SW Movie Player Window'@00986d70; SIG 1.00 | override: [lead] sample: fp identical 1975 B RET 4, 468 insn, 12 callees, same disp set",
   "name": "CExoMoviePlayerInternal::StartMovie",
   "source": "steam-db-B16",
   "steam_addr": "0x0040cc70"
@@ -958,6 +1110,14 @@
   "name": "CExoMoviePlayerInternal::RunMovieFrameLoop",
   "source": "steam-db-B16",
   "steam_addr": "0x0040d6f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00920c10] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x40dac0 (= Internal::ShowFadePanel, 390b). fp 1:1 unique (29b); 0040da2a CALL 0x40cb20 (ShutDown); 0040da32 MOV [EAX+0x30],0",
+  "name": "CExoMoviePlayerInternal::StopMovie",
+  "source": "steam-db-B16",
+  "steam_addr": "0x0040da20"
  },
  {
   "confidence": "high",
@@ -982,6 +1142,22 @@
   "name": "CExoMoviePlayerInternal::UpdateMovieWindow",
   "source": "steam-db-B16",
   "steam_addr": "0x0040dd10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00921000] Steam batch B16: gate evidence was for a corrected pick | override: [a] correction of 0x40de50 (Resume). 0040de2c MOV [EDX+0x64],1; 0040de41 CALL [BinkPause] arg 1; caller WindowProc 0x40c4a0 (GOG 0x91f690 calls Pause)",
+  "name": "CExoMoviePlayerInternal::PauseMovie",
+  "source": "steam-db-B16",
+  "steam_addr": "0x0040de10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00921040] Steam batch B16: no content anchor (C0) | override: [a] 0040de63 CMP [ECX+0x64],1; 0040de6c MOV [EDX+0x64],0; BinkPause arg 0; caller 0040d74a in RunMovieFrameLoop 0x40d6f0 (GOG 0x9208e0 calls Resume)",
+  "name": "CExoMoviePlayerInternal::ResumeMovie",
+  "source": "steam-db-B16",
+  "steam_addr": "0x0040de50"
  },
  {
   "confidence": "high",

@@ -164,3 +164,25 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
   - SetInParty 0x58A330 (318 B, RET 8): `0058a3ef CALL 0x0051c280` GetServerAIMaster, `0058a3f6 CALL 0x0051e120`.
   - QuickWalk OffsetWaitDest 0x5CACD0 (286 B, RET 0x10): `005cada2 MOV dword ptr [ECX + 0x4],0x1`.
   - SetDetectMode 0x5B7A60 (51 B, RET 4): `005b7a7f MOV byte ptr [EAX + 0x510],CL`.
+
+## B16: mod GUI and engine classes (2026-10-03)
+
+- Scope: 149 GOG rows over 8 classes (see Roadmap). Gates: AUTO 65, REVIEW 81, REJECT 2, NOCAND 1. 2 Sonnet
+  chunks, 0/20 decoys accepted.
+- Opus a (42 rows) + r (3 rows; `part_r.md` was deleted by `opus-parts`, so Opus rebuilt it from evidence.tsv):
+  44 verified, 1 likely (GetController 0x4233A0 getter), sample_errors 0, 8/8 AUTO checks pass. 14 corrections; the
+  CSWGlobalVariableTable cluster 0x6544xx-0x6567xx was off by one function. Lead: 4 re-drawn sample rows fp-identical.
+- RotateCharacterLeft/Right: `unresolved` (lead override). The GOG disp/imm sets are identical; Steam 0x850330 loads
+  -10.0 and 0x850550 +10.0 (Mac signs say Left/Right), but no GOG float is quoted. The gate had Left on 0x8500F0
+  (= RotateCharacter) and Right on 0x850330. Follow-up: quote the GOG constants.
+- Notable: Gameplay OnPanelAdded 0x7DCEA0 is shared with CSWGuiOptionsMouse (a hook fires for both). GOG label error:
+  0x920CB0 `CSWGuiSaveLoad::HandleCloudButton2` is CExoMoviePlayerInternal::ShowFadePanel.
+- Final: verified 146, likely 1, unresolved 2.
+- KDB: insert 84, update 35, 146 marks, skip 27 (trusted equivalents from the level-up, letterbox, texture and AI
+  research, e.g. "GlobalVars GetBoolean" = GetValueBoolean 0x654740). Second apply 0, integrity ok. Backup
+  `backups/kdb/kotor2_ghidra_knowledge.db.pre_B16_persist_20261003`.
+- Branch (append, precheck 0 problems): 2,747 -> 2,893 (+146). `validate` passed, 0 duplicate addresses/names.
+  Backup `backups/steam_db/kotor2_steam_aspyr.db.a72c344_preB16_20261003`. `check-validated`: 2,893 / 2,893.
+- Lead spot-checks: Pause 0x40DE10 `0040de2c MOV [EDX+0x64],1` then pushes +0x64 to BinkPause `0040de41 CALL
+  [0x009864cc]`; SetValueBoolean 0x654BB0 `00654bdf CALL 0x006545b0` (FindIdentifier); StartMovie 0x40CC70 fp =
+  GOG (1975 B, RET 4, 468 insn, 12 callees).

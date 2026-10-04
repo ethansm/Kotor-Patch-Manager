@@ -1,0 +1,7 @@
+gog_addr	steam_addr	final_verdict	note
+0x00599c30	0x00850330	unresolved	[lead] symmetric pair: GOG disp/imm sets of Left/Right identical; Steam 0x850330 loads -10.0, 0x850550 +10.0 (Mac Left/Right signs); GOG float not quoted; gate pick 0x8500f0 is RotateCharacter
+0x00599e50	0x00850550	unresolved	[lead] symmetric pair: see RotateCharacterLeft; gate pick 0x850330 loads -10.0 (Mac Left sign); unresolved until the GOG constant is quoted
+0x005e5d30	0x008e1280	verified	[lead] sample: fp identical 391 B RET 0, 117 insn, disp 0x2b74x3/0x130, imm 0xea0/0xef8/0x10c8
+0x0091fbe0	0x0040c9f0	verified	[lead] sample: fp identical 291 B RET 0, 85 insn, disp 0x38/0x44, imm 0x103/0x90
+0x0091fe60	0x0040cc70	verified	[lead] sample: fp identical 1975 B RET 4, 468 insn, 12 callees, same disp set
+0x00650700	0x00520ce0	verified	[lead] sample: fp identical 491 B RET 8, 145 insn, imm 0x19/0x1c/0x50

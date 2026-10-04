@@ -2,7 +2,7 @@
  "batch": "B16",
  "chunks_short": [],
  "chunks_unreviewed": [],
- "clean": false,
+ "clean": true,
  "clean_streak_before": 1,
  "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
  "decoy_cards": 20,
@@ -11,51 +11,51 @@
   "1": 10,
   "2": 10
  },
- "full_read": 22,
+ "full_read": 26,
  "key_error_cards": [],
  "key_errors": 0,
  "rows_auto": [
   {
-   "class": "CServerAIMaster",
-   "gog": "0x0064ea20",
-   "name": "OnEffectRemoved",
+   "class": "CAurTextureBasic",
+   "gog": "0x00819060",
+   "name": "SetNewDownSampleLevel",
    "route": "sig",
-   "steam_addr": "0x0051f000"
+   "steam_addr": "0x00426960"
   },
   {
    "class": "CSWGuiTextParams",
-   "gog": "0x00915440",
-   "name": "SetTextObject",
+   "gog": "0x00915370",
+   "name": "SetAlignment",
    "route": "sig",
-   "steam_addr": "0x00417070"
-  },
-  {
-   "class": "CServerAIMaster",
-   "gog": "0x0064e9f0",
-   "name": "OnEffectApplied",
-   "route": "sig",
-   "steam_addr": "0x0051efd0"
+   "steam_addr": "0x00416fa0"
   },
   {
    "class": "CAurTextureBasic",
-   "gog": "0x00818ce0",
-   "name": "glImage",
+   "gog": "0x00817f00",
+   "name": "LoadImagePLT",
    "route": "sig",
-   "steam_addr": "0x004265e0"
+   "steam_addr": "0x00425800"
   },
   {
-   "class": "CSWGlobalVariableTable",
-   "gog": "0x006513b0",
-   "name": "AddIdentifierLocation",
+   "class": "CSWGuiDialogLetterbox",
+   "gog": "0x005af4f0",
+   "name": "SetBottom",
    "route": "sig",
-   "steam_addr": "0x006544f0"
+   "steam_addr": "0x008bada0"
   },
   {
-   "class": "CSWGlobalVariableTable",
-   "gog": "0x00653380",
-   "name": "ReadTable",
+   "class": "CAurTextureBasic",
+   "gog": "0x008184b0",
+   "name": "GetMemoryUsage",
+   "route": "sig",
+   "steam_addr": "0x00425db0"
+  },
+  {
+   "class": "CAurTextureBasic",
+   "gog": "0x00818970",
+   "name": "ConstructImage",
    "route": "c2",
-   "steam_addr": "0x006564c0"
+   "steam_addr": "0x00426270"
   },
   {
    "class": "CServerAIMaster",
@@ -77,14 +77,14 @@
    "class": "CSWGuiInGameCharacter",
    "gog": "0x00595eb0",
    "name": "Constructor",
-   "steam_addr": "0x0073b4d0",
+   "steam_addr": "0x0084c3a0",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CSWGuiInGameCharacter",
    "gog": "0x00597770",
    "name": "Destructor",
-   "steam_addr": "0x0084de70",
+   "steam_addr": "0x0084def0",
    "why": "reviewer corrected_addr"
   },
   {
@@ -106,14 +106,21 @@
    "gog": "0x005e5a70",
    "name": "OnKeyMap",
    "steam_addr": "0x008e0fc0",
-   "why": "match cites a layout/offset difference"
+   "why": "match cites a layout/offset difference, match on a mac_rotation row"
   },
   {
    "class": "CSWGuiInGameGameplay",
    "gog": "0x005e5b30",
    "name": "OnMouse",
    "steam_addr": "0x008e1080",
-   "why": "match cites a layout/offset difference"
+   "why": "match cites a layout/offset difference, match on a mac_rotation row"
+  },
+  {
+   "class": "CSWGuiInGameGameplay",
+   "gog": "0x005e5d30",
+   "name": "SetDifficultyText",
+   "steam_addr": "0x008e1280",
+   "why": "match on a mac_rotation row"
   },
   {
    "class": "CSWGuiInGameGameplay",
@@ -137,31 +144,38 @@
    "why": "match cites a layout/offset difference"
   },
   {
+   "class": "CServerAIMaster",
+   "gog": "0x0064e840",
+   "name": "SaveEventQueue",
+   "steam_addr": "0x0051ee20",
+   "why": "match on a mac_rotation row"
+  },
+  {
    "class": "CSWGlobalVariableTable",
    "gog": "0x00651470",
    "name": "FindIdentifierIndex",
-   "steam_addr": "0x006544f0",
+   "steam_addr": "0x006545b0",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CSWGlobalVariableTable",
    "gog": "0x00651600",
    "name": "GetValueBoolean",
-   "steam_addr": "0x00654670",
+   "steam_addr": "0x00654740",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CSWGlobalVariableTable",
    "gog": "0x00651720",
    "name": "GetValueNumber",
-   "steam_addr": "0x00654670",
+   "steam_addr": "0x00654860",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CSWGlobalVariableTable",
    "gog": "0x00651a70",
    "name": "SetValueBoolean",
-   "steam_addr": "0x00654aa0",
+   "steam_addr": "0x00654bb0",
    "why": "reviewer corrected_addr"
   },
   {
@@ -175,14 +189,14 @@
    "class": "CSWGlobalVariableTable",
    "gog": "0x00653500",
    "name": "Save",
-   "steam_addr": "0x006564c0",
+   "steam_addr": "0x00656640",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CSWGlobalVariableTable",
    "gog": "0x006535d0",
    "name": "Load",
-   "steam_addr": "0x00656780",
+   "steam_addr": "0x00656710",
    "why": "reviewer corrected_addr"
   },
   {
@@ -203,28 +217,42 @@
    "class": "CAurTextureBasic",
    "gog": "0x00815b80",
    "name": "Destructor",
-   "steam_addr": "0x004233a0",
+   "steam_addr": "0x00423480",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CAurTextureBasic",
    "gog": "0x00816030",
    "name": "RemoveFromOrderedLists",
-   "steam_addr": "0x00423820",
+   "steam_addr": "0x00423930",
    "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CExoMoviePlayerInternal",
+   "gog": "0x0091fbe0",
+   "name": "Destructor",
+   "steam_addr": "0x0040c9f0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CExoMoviePlayerInternal",
+   "gog": "0x0091fe60",
+   "name": "StartMovie",
+   "steam_addr": "0x0040cc70",
+   "why": "match on a mac_rotation row"
   },
   {
    "class": "CExoMoviePlayerInternal",
    "gog": "0x00920c10",
    "name": "StopMovie",
-   "steam_addr": "0x0040dac0",
+   "steam_addr": "0x0040da20",
    "why": "reviewer corrected_addr"
   },
   {
    "class": "CExoMoviePlayerInternal",
    "gog": "0x00921000",
    "name": "PauseMovie",
-   "steam_addr": "0x0040de50",
+   "steam_addr": "0x0040de10",
    "why": "reviewer corrected_addr"
   }
  ],
@@ -235,13 +263,6 @@
    "gog": "0x009151b0",
    "name": "SetBaseFont",
    "steam_addr": "0x00416de0"
-  },
-  {
-   "class": "CExoMoviePlayerInternal",
-   "content_level": "C0",
-   "gog": "0x00921040",
-   "name": "ResumeMovie",
-   "steam_addr": "0x0040de50"
   },
   {
    "class": "CSWGuiTextParams",
@@ -256,6 +277,13 @@
    "gog": "0x00915550",
    "name": "SetDefaultColor_2",
    "steam_addr": "0x00417180"
+  },
+  {
+   "class": "CExoMoviePlayerInternal",
+   "content_level": "C0",
+   "gog": "0x00921040",
+   "name": "ResumeMovie",
+   "steam_addr": "0x0040de50"
   },
   {
    "class": "CSWGuiInGameCharacter",
@@ -288,9 +316,9 @@
   {
    "class": "CServerAIMaster",
    "content_level": "C2",
-   "gog": "0x0064e840",
-   "name": "SaveEventQueue",
-   "steam_addr": "0x0051ee20"
+   "gog": "0x00650700",
+   "name": "DeleteEventData",
+   "steam_addr": "0x00520ce0"
   },
   {
    "class": "CSWGuiInGameCharacter",
@@ -300,13 +328,6 @@
    "steam_addr": "0x0084f770"
   },
   {
-   "class": "CServerAIMaster",
-   "content_level": "C1",
-   "gog": "0x0064eac0",
-   "name": "AdjustTargetAndWitnessReputations",
-   "steam_addr": "0x0051f0a0"
-  },
-  {
    "class": "CSWGlobalVariableTable",
    "content_level": "C1",
    "gog": "0x00650c90",
@@ -314,9 +335,9 @@
    "steam_addr": "0x00653dd0"
   }
  ],
- "sample_errors": null,
- "sample_pool": 57,
+ "sample_errors": 0,
+ "sample_pool": 53,
  "sample_rate": 0.2,
- "sample_size": 12,
+ "sample_size": 11,
  "unanswered_decoys": 0
 }
