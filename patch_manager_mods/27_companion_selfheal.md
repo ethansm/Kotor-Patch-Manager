@@ -3,12 +3,18 @@
 ## Status
 - 2026-10-04 CS0 research DONE (static only, nothing installed). Evidence: `27_companion_selfheal_evidence/` R1 actor route, R2 portrait UI, R3 item choice.
 - Home (user, 10-04): **new mod `companion-selfheal`**, a `k2.portraitslots@1` consumer. No new hook address.
+- 10-04 later: user added in-game config (auto-consume, HP%/reserve thresholds, auto-on indicator, no click at full HP) -> section 3b. R4 done: own hook 0x0040F5A0 gives text labels without touching the hotbar.
 - Next: CS1 (pure logic + tests). Build rows live in doc 24 (CS0-CS6, owner gate "selfheal").
 
 ## User decisions (10-04)
 - One click on a button by a companion's portrait: the mod picks the **smallest healing item that covers the companion's missing HP** (else the largest). Droids get repair kits.
 - The **companion itself is the actor**: it plays the animation and uses its own action (and its own skill scales the heal).
 - Leader card gets no button (the hotbar / normal item use covers the controlled character).
+- **(10-04, later)** In-game configuration through GUI elements like the Action Hotbar's, not only an INI:
+  - click-to-use stays;
+  - **auto-consume** with an **HP threshold** and an **inventory reserve threshold**;
+  - the button **shows when auto is on** and is still clickable to force a use;
+  - **unclickable at 100% vitality** (the user suggested it, so it's adopted).
 
 ## 1. Actor route (R1)
 Client `PerformUseItem 0x775600` is out: server handler `0x65BE70` runs UseItem on the sender's controlled creature (`0065c5ff`).
@@ -65,6 +71,72 @@ itemServerId = 0x51C8B0(clientItemId)              // ClientToServerObjectId, ve
 
   11 worked examples are in `R3_item_choice/FINDINGS.md`.
 - **Missing HP:** `party::Vitals{cur,max}` (Party.h) on the companion.
+
+## 3b. Auto-consume + config (requirement 10-04, design draft; GUI mechanism pending R4)
+**Settings.** Each companion has its own settings. Defaults come from the INI, and per-save storage follows the hotbar's per-save model.
+
+| Setting | Meaning | Default |
+|---|---|---|
+| `auto` | Auto-consume on/off for this companion | off |
+| `hpPct` | Auto fires when `cur*100 < hpPct*max` | 35 |
+| `keep` | Inventory reserve: auto only uses an item while the party stack of the picked item is > `keep` (manual clicks ignore `keep`) | 2 |
+
+**Auto rule (pure, CS1).** `shouldAutoUse(cfg, vitals, now, lastUse, pending)` fires only when all of these hold:
+- `auto` is on;
+- the companion is alive, commandable (`+0xEC`) and in the HUD frame, with no dialog/menu/pause;
+- HP is below the threshold;
+- no use of ours is pending;
+- at least 6 s (one combat round) has passed since our last use;
+- `pickHealItem` finds a candidate whose count is > `keep`. The picker gets a `minCount` parameter (`keep+1` for auto, 1 for manual).
+
+Auto runs the same route A as a click. It's evaluated in FRAME_BEGIN at most every 250 ms.
+
+**Button states** (flat draw; order = priority):
+
+| State | Look | Click |
+|---|---|---|
+| hidden | the slot has no creature, or it's the leader | none |
+| full HP (100%) | dimmed | ignored (user) |
+| no usable item | dimmed + red tint | logs "no item" |
+| use pending | pulse | ignored |
+| auto on | green ring/border | forces a use (ignores `keep`) |
+| normal | plain | uses the pick |
+
+**Config GUI (R4, `27_companion_selfheal_evidence/R4_config_gui/FINDINGS.md`).** The mod gets its own hook at **StopLoadFromLayout entry `0x0040F5A0`**:
+- Original bytes `55 8B EC 83 EC 10`, ECX = panel. The HUD constructor calls it at `0x00748508`, after the hotbar's `0x748502` hook.
+- The hook filters on HUD vtable `0x0099DCC4`, and checks the layout is still open (`[panel+0x30] != 0`, `[panel+0x48] & 2`).
+- No mod hooks it. KPM only rejects an identical address (`HookValidator.cs:116-132`), and `check_hook_spans.py` passes.
+- Opus verified the bytes, the callsite and that no other hook uses this address.
+
+**What the hook builds.** About 16 runtime labels from the `LBL_QUEUE1` / `LBL_MOULDING3` templates (hotbar recipe: `guikit::createLabelFromTemplate` + `appendToPanel`, projection flag `0x00A1B9F0` cleared around the binds). This gives:
+- real text: `setText`, `setFont("dialogfont10x10")`;
+- **native click absorption**, which removes R2's click-through risk;
+- tooltips.
+
+Per-frame work stays in `K2PS_FRAME_BEGIN`, and HUD_DRAW becomes optional.
+
+**Widgets:**
+- **Button:** `H` per companion card, positioned each frame with the R2 formula.
+  - Left click: use now.
+  - Right click: open the popover. This needs a new `VK_RBUTTON` edge in GuiKit; the fallback is Shift+LMB.
+- **Popover:** `[Auto: ON/OFF]`, `[Use below − 35% +]` (step 5, 5–95), `[Keep − 2 +]` (step 1, 0–20). "Apply to all" is optional.
+
+**Persistence.** v1 uses a global `companion_selfheal.ini`: FileWatch reload + atomicWrite, keyed per companion. Per-save storage needs the save hooks (hotbar / perf-lab), so it waits for `k2.saveevents@1` (L3) + a shared `SaveDir.h`.
+
+**Fallbacks:**
+1. b1, a hook at `0x007484F7` inside the HUD constructor (check_hook_spans WARN).
+2. INI + a flat R2 button (no text).
+
+**Upgrade.** `k2.hud@1` (L4) later replaces our hook.
+
+**Probes:**
+- P1: log-only hook (panel, vtable, layout-open flags).
+- P2: one "TEST" label with text; a click on it must not move the leader.
+- P3: the slot→HUD formula `slot-0x1F34-i*0xDE4` equals the hook's panel.
+- P4: native GuiTip.
+- P5: right-click edge.
+
+**companion-ai interplay.** The AI may already medpac (backlog AI-MEDPAC-FORCECLASS, R4 `GN_PartyMedpacStock` design), and its ClearAllActions can wipe our queued use. CS3 measures both. If they clash, our auto skips a companion that companion-ai has just healed (no shared flag in v1).
 
 ## 4. Home decision
 | Option | For | Against |
