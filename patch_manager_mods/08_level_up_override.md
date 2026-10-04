@@ -1041,3 +1041,10 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
   record's picks keep their slots; owed base picks only as pulled prerequisites or for slots without a legal pick); Opus decisions: no legal pick
   -> the engine's own pick for that slot (never an empty slot); owed POWERS need the creature known-power list (RE in the port step; else
   min-level check only). Port agent running (twin + generator + C++ + tests + mutations). Then A6 build.
+- Carry-over port DONE 5d6f35c (Jedi-first; table v3 `[featrules]`/`[powerrules]`; known powers = `{data,count,cap}` at stats+0x90+classPos*0x28,
+  Opus re-read vanilla AddKnownSpell 0x6B86A0: `cmp classIdx, byte [stats+0x8D]`, `imul 0x28`, `lea ecx,[stats+edx+0x90]`, call 0x6A4030; gaps
+  94/250 -> 0; on-time byte-identical; 22 offline scenarios; mutate 102/102). New log tags CARRY / CARRYREAD / CARRY disabled.
+- **A6 build 1.0.0 (2026-10-03 20:38):** `$T/Patches/LevelUpOverride/LevelUpOverride.kpatch` md5 d16bfe5f, DLL (`binaries/windows_x86.dll`)
+  222726bb06b671dc, 0 warnings; 0.3.1 kpatch kept as `LevelUpOverride.kpatch.031_aaedb93e.bak`. Hooks/exports identical to 0.3.1 -> install =
+  DLL swap of `$G/patches/level-up-override.dll` (live aaedb93e) + copy repo `runtime/levelup_paths.ini` (v3; the old DLL rejects it and the new
+  DLL needs it for carry-over -> swap both together). NOT installed; independent review running; install needs user consent, game closed.
