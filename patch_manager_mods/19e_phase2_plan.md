@@ -291,7 +291,7 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 ## Adoption table (KpLog.h migration per mod)
 | Mod | Owner session | Status |
 |---|---|---|
-| mouse-probe | shared-logging (this) | **migrated 0.2.0, staged, awaiting user test** |
+| mouse-probe | shared-logging (this) | **migrated 0.2.0, LIVE 10-03 21:02, awaiting user test** |
 | portrait-slots | buff/shield split | pending (already uses the registry for `k2.portraitslots`) |
 | buff-duration-hud | buff HUD | pending (Phase 3 next per doc 19) |
 | shield-bar | shield bar | pending |
@@ -311,3 +311,4 @@ G="$HOME/.local/share/Steam/steamapps/common/Knights of the Old Republic II"; S=
 6. Expect: `$G/mouse-probe_log.txt` with the `# kplog session` header; with the ini: `mouse-probe/main START mouseprobe 0.2.0`, `raw`/`polls`/`norm`/`drag`/`cam` lines with the old tags; without the ini: only `STUCKDRAG?` WARN lines (if any). `mouseprobe_log.txt` must NOT grow (proves the new-core path). Read with `python3 scripts/kplog_parse.py --stats "$G/mouse-probe_log.txt"`; check for `DROPPED`.
 7. Rollback: `cp $B/mouse-probe.dll "$G/patches/" && cp $B/kplog.ini "$G/"`.
 - Chunk P (10-03, 1ec9833): scripts/kplog_parse.py (+40 tests, testdata/kplog real + hand-written samples); analyze_play_logs tests 53/53 still green. Final: gate GATE PASS (full, multilib) after the last KpLog.h change (22add9a); kplog-check OK; chunk T needed no re-check (multilib present all phase). **Phase 2 DONE 10-03.** Next = step U (user go).
+- **Step U INSTALLED 10-03 21:02 (user go: "install")**: game closed; live core 36f10b7f unchanged; `patches/mouse-probe.dll` 548d4237 (0.1.0) -> **c4fa4f8f** (0.2.0, = staged kpatch DLL); `kplog.ini` += `[mouse-probe] enabled=1 level=info channels=*`; config hooks ProbeMouseRaw/Norm/CameraFrame all exported (+KPatchInit). Backup `/home/ethansm/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_20261003_2102` (dll, kplog.ini, config, core). Rollback: `cp /home/ethansm/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_20261003_2102/mouse-probe.dll "$G/patches/" && cp /home/ethansm/Games/KOTOR2_Mod_Workspace/backups/mouseprobe_020_20261003_2102/kplog.ini "$G/"`. Awaiting user play test -> expect `mouse-probe_log.txt`; `mouseprobe_log.txt` must not grow (last write 10-03 01:41).

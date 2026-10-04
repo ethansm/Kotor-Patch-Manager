@@ -265,7 +265,7 @@ Log: `backups/shield_bar23_install_20261002_151504/mouseprobe_log.txt.run22` (mo
 
 
 ## 10-03 mouse-probe 0.2.0 (KpLog)
-Reference migration to `KpLog.h` (19e chunk M, guide 19f). **Staged, not installed:** `~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020/MouseProbe.kpatch` (sha256 `483eaec862318af96bf403b99da01ce162049c20c90e11b67ea4343e3acdd102`). Source: `mouse_probe_src/` (synced to the fork's `Patches/MouseProbe/`).
+Reference migration to `KpLog.h` (19e chunk M, guide 19f). **INSTALLED 10-03 21:02** (live DLL md5 c4fa4f8f, `[mouse-probe]` in kplog.ini, backup `backups/mouseprobe_020_20261003_2102`) from `~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020/MouseProbe.kpatch` (sha256 `483eaec862318af96bf403b99da01ce162049c20c90e11b67ea4343e3acdd102`). Source: `mouse_probe_src/` (synced to the fork's `Patches/MouseProbe/`).
 - **Log file:** new core (registry + `kpatch.log`) writes `mouse-probe_log.txt`. Old core (live Sep-28 build, no service) writes `mouseprobe_log.txt` through the header's fallback sink, same name and 60000-line cap as 0.1.0.
 - **Line prefix:** new core `T=<ms> f=- mouse-probe/<ch> <text>` (`f=` is `-` because the probe never calls `KP_FRAME_TICK`). Old core `<ms32> mouse-probe/<ch> <text>`, where `<ms32>` is `GetTickCount()` ms, not the old raw-QPC `%.3f`. A parser that anchored on the QPC float needs `strip_prefix` (or a regex that allows both shapes). Tag words and field layouts are unchanged.
 - **Channels:** `main` START (new core: once, on the first hook call, no STOP; old core: START/STOP when `mouseprobe.txt` appears/disappears), `raw` RAW, `polls` POLLS, `norm` NORM, `drag` DRAGSTATE + STUCKDRAG?, `cam` CAM.
