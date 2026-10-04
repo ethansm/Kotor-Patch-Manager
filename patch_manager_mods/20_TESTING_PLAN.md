@@ -135,6 +135,7 @@ Each tier says what it proves, where its tests live and how fast it is. The runn
 
 ### 4.2 The gate before an install
 Run in this order: `run_tests.py`, then a `.kpatch` rebuild, then `run_tests.py --wine` for touched mods, then install. This extends the "verify, commit, then launch" sequencing rule (feedback memory). Add a short `scripts/pre_install_gate.sh` that does exactly this and prints PASS or FAIL. It replaces the ad-hoc `kpm_registry_gate.sh` pattern.
+- **Usage (T8, 10-04):** `scripts/pre_install_gate.sh --mod <dir under patch_manager_mods> [--mod ...]` prints `GATE PASS mods=.. smokes=.. head=..` + the rebuilt DLL md5s, or `GATE FAIL <n> <step>: <reason>`. It rebuilds into `$TMPDIR/kotor-tests/gate/` and smokes the fresh DLL through a scratch `KPM_DIR` (never the KPM tree or the game dir). `--selftest` proves a syntax error FAILs at step 2 and a wrong DLL FAILs at step 4.
 
 ### 4.3 KPM side (upstream-shaped)
 - **Test-file exclusion in `create-patch.py`.** `patch_sources()` (create-patch.py:444) excludes `*_test.cpp` and `t32_*`. This is needed before any test file lives in `Patches/`. Today tests stay in `patch_manager_mods/` only, so nothing breaks yet.
@@ -242,7 +243,7 @@ Rules that apply to every phase:
 
 **Phase 6: Wine tier and the gate before an install.**
 - `run_tests.py --wine` and `pre_install_gate.sh`; smoke tests rebuild `.kpatch` from source first.
-- **Exit:** the gate is used for the next real install.
+- **Exit:** the gate is used for the next real install. 10-04: the gate exists (`scripts/pre_install_gate.sh`, doc 24 T8); it is used at the next real install.
 
 **Phase 7: upstream (needs explicit approval for each PR).**
 - The `create-patch.py` test exclusion, overlapping ranges in `HookValidator` with xunit cases, and the Common `t32_` tests. Draft each in `issue_drafts/` first.
