@@ -7,6 +7,8 @@ python3 tools/batch.py finalize $B 2>&1 | tail -2
 cp $B/evidence.tsv $S/${B}_ev_pre.tsv
 python3 tools/batch.py gates $B 2>&1 | head -1
 python3 tools/batch.py finalize $B 2>&1 | tail -2
+# opus-parts deletes part files it did not write, so it runs BEFORE part_r is written
+python3 tools/batch.py opus-parts $B --rows 60 2>&1 | tail -1
 python3 - $B $S <<'PY'
 import csv,sys
 b,s=sys.argv[1:3]
@@ -29,4 +31,3 @@ import os; os.makedirs(f"{b}/opus",exist_ok=True)
 if rows: open(f"{b}/opus/part_r.md","w").write("\n".join(L)+"\n")
 print("part_r rows:",len(rows))
 PY
-python3 tools/batch.py opus-parts $B --rows 60 2>&1 | tail -1
