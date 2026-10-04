@@ -73,6 +73,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include "../_shared/SafeRead.h"
+#include "CodePatch.h"
 
 namespace {
 
@@ -255,32 +256,6 @@ LPVOID WINAPI hkHeapReAlloc(HANDLE h, DWORD f, LPVOID p, SIZE_T n) {
 BOOL WINAPI hkHeapFree(HANDLE h, DWORD f, LPVOID p) {
     if (p && mine(h)) { Timer t; trackFree(h, p); }
     return rHeapFree(h, f, p);
-}
-
-// ---- IAT patching -----------------------------------------------------------------------------------------
-bool patchIat(HMODULE mod, const char* dll, const char* fn, void* hook, void** orig) {
-    auto base = reinterpret_cast<uint8_t*>(mod);
-    auto dos = reinterpret_cast<IMAGE_DOS_HEADER*>(base);
-    auto nt = reinterpret_cast<IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
-    auto& dir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-    if (!dir.VirtualAddress) return false;
-    for (auto d = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + dir.VirtualAddress); d->Name; ++d) {
-        if (_stricmp(reinterpret_cast<const char*>(base + d->Name), dll) != 0) continue;
-        auto oft = reinterpret_cast<IMAGE_THUNK_DATA32*>(base + (d->OriginalFirstThunk ? d->OriginalFirstThunk : d->FirstThunk));
-        auto ft = reinterpret_cast<IMAGE_THUNK_DATA32*>(base + d->FirstThunk);
-        for (; oft->u1.AddressOfData; ++oft, ++ft) {
-            if (oft->u1.Ordinal & IMAGE_ORDINAL_FLAG32) continue;
-            auto ibn = reinterpret_cast<IMAGE_IMPORT_BY_NAME*>(base + oft->u1.AddressOfData);
-            if (strcmp(reinterpret_cast<const char*>(ibn->Name), fn) != 0) continue;
-            DWORD old;
-            if (!VirtualProtect(&ft->u1.Function, 4, PAGE_READWRITE, &old)) return false;
-            *orig = reinterpret_cast<void*>(ft->u1.Function);
-            ft->u1.Function = reinterpret_cast<DWORD>(hook);
-            VirtualProtect(&ft->u1.Function, 4, old, &old);
-            return true;
-        }
-    }
-    return false;
 }
 
 // ---- 0.2.0 measurement pack (doc 10 "Runtime measurement pack"; sites verified with perf_lab_src/hookbytes.py) -------
@@ -708,7 +683,7 @@ int WINAPI hkGluBuild2DMipmaps(unsigned target, int comps, int w, int h, unsigne
 // BEFORE it flips the IAT slot, so no call can reach the hook with rGluMip still NULL.
 int g_gluState = 0;                                   // 0 = not tried, 1 = hooked, -1 = failed
 bool installGluHook(HMODULE exe) {
-    if (g_gluState == 0) g_gluState = patchIat(exe, "GLU32.dll", "gluBuild2DMipmaps", reinterpret_cast<void*>(hkGluBuild2DMipmaps), reinterpret_cast<void**>(&rGluMip)) ? 1 : -1;
+    if (g_gluState == 0) g_gluState = codepatch::patchIat(exe, "GLU32.dll", "gluBuild2DMipmaps", reinterpret_cast<void*>(hkGluBuild2DMipmaps), reinterpret_cast<void**>(&rGluMip)) ? 1 : -1;
     return g_gluState > 0;
 }
 // 0.5.0: KERNEL32!GlobalMemoryStatus (the exe imports it: IAT 0x986128, called from the per-frame function 0x478A20 and from 0x711360). Count + time only.
@@ -740,18 +715,6 @@ BOOL WINAPI hkSwapBuffers(HDC dc) {
 // Experiments, applied from the first tick (main thread: the engine cannot be executing the patched bytes then).
 uint8_t g_txSeen[7], g_g1Seen[2];
 uint8_t* g_txCave = nullptr;
-int writeCode(uintptr_t at, const uint8_t* expect, const uint8_t* repl, int n, uint8_t* seen) {
-    auto p = reinterpret_cast<uint8_t*>(at);
-    memcpy(seen, p, n);
-    if (memcmp(p, expect, n) != 0) return -1;
-    DWORD old;
-    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old)) return -2;
-    memcpy(p, repl, n);
-    VirtualProtect(p, n, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), p, n);
-    return 1;
-}
-inline void putRel32(uint8_t* at, uintptr_t target) { int32_t d = static_cast<int32_t>(target - (reinterpret_cast<uintptr_t>(at) + 4)); memcpy(at, &d, 4); }
 // TX cave (EAX = IsTPCLoaded() result, [EBP-4] = texture; EDX is reloaded at 0x4261D6 and dead at the epilogue 0x4261E6):
 //   movzx ecx,al / test ecx,ecx / jz free        ; not TPC: free as the engine always did
 //   mov edx,[ebp-4] / cmp dword [edx+0x34],0 / jnz skip   ; TPC with a procedural controller: keep the image (engine behaviour)
@@ -763,19 +726,19 @@ int applyTx() {
     if (!g_txCave) return -3;
     static const uint8_t body[16] = { 0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x74, 0x09, 0x8B, 0x55, 0xFC, 0x83, 0x7A, 0x34, 0x00, 0x75, 0x05 };
     memcpy(g_txCave, body, 16);
-    g_txCave[16] = 0xE9; putRel32(g_txCave + 17, TxFree);
-    g_txCave[21] = 0xE9; putRel32(g_txCave + 22, TxSkip);
+    g_txCave[16] = 0xE9; codepatch::putRel32(g_txCave + 17, reinterpret_cast<uintptr_t>(g_txCave + 17), TxFree);
+    g_txCave[21] = 0xE9; codepatch::putRel32(g_txCave + 22, reinterpret_cast<uintptr_t>(g_txCave + 22), TxSkip);
     FlushInstructionCache(GetCurrentProcess(), g_txCave, 26);
     uint8_t jmp[7] = { 0xE9, 0, 0, 0, 0, 0x90, 0x90 };
     int32_t d = static_cast<int32_t>(reinterpret_cast<uintptr_t>(g_txCave) - (PatchTx + 5)); memcpy(jmp + 1, &d, 4);
-    return writeCode(PatchTx, orig, jmp, 7, g_txSeen);
+    return codepatch::writeChecked(PatchTx, orig, jmp, 7, g_txSeen);
 }
 void applyExperiments() {
     static const uint8_t g1Orig[2] = { 0x74, 0x06 }, g1New[2] = { 0xEB, 0x06 };
     memcpy(g_txSeen, reinterpret_cast<const void*>(PatchTx), 7);   // logged even when the experiment is off (0.3.0)
     memcpy(g_g1Seen, reinterpret_cast<const void*>(PatchG1), 2);
     if (g_cfg.tx) g_txState = applyTx();
-    if (g_cfg.g1skip) g_g1State = writeCode(PatchG1, g1Orig, g1New, 2, g_g1Seen);
+    if (g_cfg.g1skip) g_g1State = codepatch::writeChecked(PatchG1, g1Orig, g1New, 2, g_g1Seen);
 }
 
 // ---- logging / reports (helper thread only) ---------------------------------------------------------------
@@ -1604,11 +1567,11 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
             rHeapSize = reinterpret_cast<HeapSize_t>(GetProcAddress(k32, "HeapSize"));
             void* o1 = nullptr; void* o2 = nullptr; void* o3 = nullptr;
             // resolve the originals first (through the IAT slot values), then flip all three
-            bool a = patchIat(exe, "KERNEL32.dll", "HeapAlloc", reinterpret_cast<void*>(hkHeapAlloc), &o1);
+            bool a = codepatch::patchIat(exe, "KERNEL32.dll", "HeapAlloc", reinterpret_cast<void*>(hkHeapAlloc), &o1);
             if (a) rHeapAlloc = reinterpret_cast<HeapAlloc_t>(o1);
-            bool r = patchIat(exe, "KERNEL32.dll", "HeapReAlloc", reinterpret_cast<void*>(hkHeapReAlloc), &o2);
+            bool r = codepatch::patchIat(exe, "KERNEL32.dll", "HeapReAlloc", reinterpret_cast<void*>(hkHeapReAlloc), &o2);
             if (r) rHeapReAlloc = reinterpret_cast<HeapReAlloc_t>(o2);
-            bool fr = patchIat(exe, "KERNEL32.dll", "HeapFree", reinterpret_cast<void*>(hkHeapFree), &o3);
+            bool fr = codepatch::patchIat(exe, "KERNEL32.dll", "HeapFree", reinterpret_cast<void*>(hkHeapFree), &o3);
             if (fr) rHeapFree = reinterpret_cast<HeapFree_t>(o3);
             logf("IAT hooks: HeapAlloc=%d HeapReAlloc=%d HeapFree=%d (orig %p %p %p) tables: sites=%uKB ptrs=%uMB", a, r, fr, o1, o2, o3,
                  (unsigned)(sizeof(Site) * SiteCap >> 10), (unsigned)(PtrCap * 8 >> 20));
@@ -1619,12 +1582,12 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
             else {
                 m->budgetMin = 0x7FFFFFFF;
                 void* o1 = nullptr; void* o2 = nullptr;
-                bool s = patchIat(exe, "GDI32.dll", "SwapBuffers", reinterpret_cast<void*>(hkSwapBuffers), &o1);
+                bool s = codepatch::patchIat(exe, "GDI32.dll", "SwapBuffers", reinterpret_cast<void*>(hkSwapBuffers), &o1);
                 if (s) rSwap = reinterpret_cast<Swap_t>(o1);
                 bool g = installGluHook(exe);   // rGluMip is stored by patchIat before the IAT slot flips
                 o2 = reinterpret_cast<void*>(rGluMip);
                 // 0.5.0: GlobalMemoryStatus IAT hook (rGms is stored by patchIat before the slot flips); TPCTOP table + snapshot scratch (ev group)
-                bool gm = patchIat(exe, "KERNEL32.dll", "GlobalMemoryStatus", reinterpret_cast<void*>(hkGlobalMemoryStatus), reinterpret_cast<void**>(&rGms));
+                bool gm = codepatch::patchIat(exe, "KERNEL32.dll", "GlobalMemoryStatus", reinterpret_cast<void*>(hkGlobalMemoryStatus), reinterpret_cast<void**>(&rGms));
                 if (grp(g_cfg.ev)) {
                     g_top = static_cast<TopEnt*>(VirtualAlloc(nullptr, sizeof(TopEnt) * TopSlots, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
                     g_topCopy = static_cast<TopCopy*>(VirtualAlloc(nullptr, sizeof(TopCopy) * TopSlots, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
