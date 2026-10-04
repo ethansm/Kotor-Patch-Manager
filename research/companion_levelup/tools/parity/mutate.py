@@ -22,6 +22,7 @@ DEFAULT_REPORT = os.path.join(CL, "phase6_evidence", "A3_mutation_report.md")
 
 CPP, UI, OPT, PT, WIZ = "LevelUpOverride.cpp", "LevelUpUi.h", "OptionsLogic.h", "Playthrough.h", "WizardLogic.h"
 R10F = "R10Filter.h"
+R10P = "R10Page.h"
 # regex helpers: M = mutation list entry
 M = []
 def m(mid, f, rx, rep, desc): M.append((mid, f, rx, rep, desc))
@@ -208,9 +209,21 @@ m("RF23", R10F, r"    if \(m == BuildDim && !p\.valid\(\)\) return DimNoProfile;
 m("RF24", R10F, r"return m == BuildHide \? BuildDim : m;", "return m;", "dimMode: build_hide no longer dims in batch 2a")
 m("RF25", R10F, r"    if \(kept == n\) return DimNoChange;\n", "", "dimInPlace: rewrites an unchanged vector")
 m("RD01", CPP, r"if \(pc != 1\) \{ logLine", "if (pc == 1) { logLine", "r10Dim: PC gate inverted (companions dimmed, PC vanilla)")
-m("RD02", CPP, r"if \(!g_cfg\.r10 \|\| g_cfg\.mode == Mode::Off\) return;", "if (g_cfg.mode == Mode::Off) return;", "r10Dim: r10=0 ignored")
+m("RD02", CPP, r"if \(!eff\.on \|\| g_cfg\.mode == Mode::Off\) return;", "if (g_cfg.mode == Mode::Off) return;", "r10Dim: r10=0 / pc line off ignored")
 m("RD03", CPP, r"    \*reinterpret_cast<int32_t\*>\(static_cast<uintptr_t>\(vec\) \+ 4\) = n;\n", "", "r10DimVector: count not written back")
-m("RD04", CPP, r"if \(!g_cfg\.r10 \|\| g_cfg\.mode == Mode::Off\) return;", "if (!g_cfg.r10) return;", "r10Dim: mode=off no longer disables the dim")
+m("RD04", CPP, r"if \(!eff\.on \|\| g_cfg\.mode == Mode::Off\) return;", "if (!eff.on) return;", "r10Dim: mode=off no longer disables the dim")
+# ---- R10 batch 3a (Playthrough.h pc line, R10Page.h, LevelUpUi.h icon/PC page, r10Dim precedence; killed by playthrough/r10_page/ui/gate tests) -----
+m("RB01", PT, r"if \(l\.r10\) snprintf", "if (true) snprintf", "serialise: |r10=1 written when off (old files no longer byte-identical)")
+m("RB02", PT, r"s->lines\[i\]\.r10 = on;", "s->lines[i].r10 = true;", "setPc: filter off saved as on")
+m("RB03", PT, r"    if \(d\.lossy\) return false;\n    if \(!findPc", "    if (!findPc", "setPc: rewrites a lossy doc")
+m("RB04", R10P, r"\*f = \(\(\*f \+ \(dir < 0 \? -1 : 1\)\) % n \+ n\) % n;", "*f = ((*f + (dir < 0 ? -1 : 1)) % (n - 1) + n - 1) % (n - 1);", "R10Page cycle: wraps one value early (last value unreachable)")
+m("RB05", R10P, r"st\.feats = modeIndex\(r10f::parseMode\(ffilter && \*ffilter \? ffilter : \"all\"\)\);", "st.feats = 1;", "R10Page fromTokens: a saved feats mode (incl. all) reloads as build_dim")
+m("RB06", UI, r"    uiShow\(r, C_CFG, lvl\);   // batch 3a", "    uiShow(r, C_CFG, !lvl);   // batch 3a", "companion: Configure / icon rule inverted")
+m("RB07", UI, r"    uiShow\(r, C_ICON, !lvl\);\n    char st", "    uiShow(r, C_ICON, lvl);\n    char st", "PC: icon shown next to the level-up buttons instead of without them")
+m("RB08", UI, r"if \(!haveTag \|\| \(!pc && !uiCountSelectable\(tag\)\)\)", "if (!haveTag || pc || !uiCountSelectable(tag))", "the PC treated as hidden again (no filter page)")
+m("RB09", UI, r"if \(r->pc\) uiOpenR10\(r\); else uiOpenPage", "if (false) uiOpenR10(r); else uiOpenPage", "the PC's icon opens the companion options page")
+m("RB10", CPP, r"if \(const pt::Line\* l = ptPcLine\(\)\) \{\n        e\.playthrough = true;", "if (const pt::Line* l = g_cfg.r10 ? nullptr : ptPcLine()) {\n        e.playthrough = true;", "r10Effective: ini r10=1 wins over the playthrough pc line")
+m("RB11", CPP, r"if \(!l\.isTag \|\| pt::eqi\(l\.tag, pt::kPcKey\)\) continue;", "if (!l.isTag) continue;", "rebuildPtCfg: the pc line becomes a companion tag")
 m("RD05", CPP, r"kind == r10::Powers \? r10DimVector<uint32_t>", "kind == r10::Powers ? r10DimVector<uint16_t>", "r10Dim: powers vector read as ushort ids")
 m("RD06", CPP, r"return \(!str \|\| !len\) \? 1 : 0;", "return (!str || !len) ? 1 : 1;", "r10IsPc: every readable creature counts as the PC")
 m("PF01", PT, r"if \(l\.pcfilter\[0\]\) snprintf", "if (true) snprintf", "serialise: |pcfilter= always written")
