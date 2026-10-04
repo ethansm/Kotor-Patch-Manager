@@ -1,0 +1,160 @@
+// common_contract_test.cpp -- Patches/Common + _shared_src CONTRACT test for Companion Self-Heal (doc 20 section 4.1).
+// Pins the semantics THIS mod relies on in SafeRead.h, KpLog.h, K2Addr.h/GameAddr.h, Party.h, PortraitSlots.h, HealItems.h and ItemRead.h
+// (CompanionSelfHeal.cpp). Every message starts with "companion-selfheal relies on:" so a failure names the consumer and the reason.
+// Built against ../_shared_src and the KPM checkout's Patches/Common (see test.toml). Host-only, deterministic.
+#ifndef GUIKIT_HOST
+#define GUIKIT_HOST 1
+#endif
+#include "SafeRead.h"
+#include "KpLog.h"
+#include "K2Addr.h"
+#include "Party.h"
+#include "PortraitSlots.h"
+#include "HealItems.h"
+#include "ItemRead.h"
+#include "check.h"
+#include <sys/mman.h>
+#include <string.h>
+#include <string>
+#include <vector>
+
+#define HCHECK(why, expr) ::kt::Check("companion-selfheal relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
+#define HEQ(why, a, b) ::kt::CheckEq("companion-selfheal relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+
+KP_LOG_PATCH("companion-selfheal");
+KP_CHANNEL(chHud, "hud");
+
+// ---- fake kpatch.log + k2.portraitslots providers behind one require()
+struct Sub { int ch, lvl; std::string text; };
+static std::vector<Sub> g_subs; static std::vector<std::string> g_regs;
+static int32_t KPATCH_CALL fReg(const char* id) { g_regs.push_back(id); return 7; }
+static int32_t KPATCH_CALL fChan(int32_t, const char*) { return 200; }
+static int32_t KPATCH_CALL fEn(int32_t, int32_t lvl) { return lvl <= KPLOG_INFO; }
+static void KPATCH_CALL fSub(int32_t ch, int32_t lvl, const char* line, uint32_t len) { g_subs.push_back({ ch, lvl, std::string(line, len) }); }
+static void KPATCH_CALL fMark(const char*) {}
+static void KPATCH_CALL fTick(int32_t) {}
+static uint32_t KPATCH_CALL fFrame() { return 41; }
+static uint64_t KPATCH_CALL fNow() { return 0; }
+static KPatchLogApi g_log = { sizeof(KPatchLogApi), fReg, fChan, fEn, fSub, fMark, fTick, fFrame, fNow };
+
+static int g_registered; static int32_t g_regPhase = -1, g_regPrio = -1; static std::string g_regOwner;
+static int32_t KPATCH_CALL psRegister(int32_t phase, int32_t prio, K2PsCallback fn, void*, const char* owner) { if (!fn) return 0; ++g_registered; g_regPhase = phase; g_regPrio = prio; g_regOwner = owner; return 1; }
+static void KPATCH_CALL psUnreg(int32_t) {}
+static int32_t KPATCH_CALL psCreature(int32_t) { return 0; }
+static int32_t KPATCH_CALL psSlotAt(int32_t i, int32_t* slot, int32_t* cr) { if (i != 1) return 0; *slot = 0x5000; *cr = 0x6000; return 1; }
+static uint32_t KPATCH_CALL psFrame() { return 9; }
+static K2PortraitSlotsApi g_psApi = { sizeof(K2PortraitSlotsApi), psRegister, psUnreg, psCreature, psSlotAt, psFrame };
+static std::string g_reqName; static uint32_t g_reqVer;
+static const void* KPATCH_CALL fRequire(const char* n, uint32_t v) { g_reqName = n; g_reqVer = v; return strcmp(n, "kpatch.log") == 0 ? (const void*)&g_log : (const void*)&g_psApi; }
+static KPatchApi g_api = { sizeof(KPatchApi), 1, nullptr, fRequire };
+
+static void KPATCH_CALL dummyCb(const K2PsContext*, void*) {}
+
+static uint8_t* g_a;
+static uintptr_t A(size_t off) { return reinterpret_cast<uintptr_t>(g_a + off); }
+template <typename T> static void put(size_t off, T v) { memcpy(g_a + off, &v, sizeof v); }
+static int fakeVital(uintptr_t fn, uintptr_t c, int arg) { (void)fn; (void)c; return arg ? 100 : 40; }
+
+int main() {
+    int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#ifdef MAP_32BIT
+    flags |= MAP_32BIT;
+#endif
+    void* m = mmap(nullptr, 0x10000, PROT_READ | PROT_WRITE, flags, -1, 0);
+    if (m == MAP_FAILED) { perror("mmap"); return 5; }
+    memset(m, 0, 0x10000);
+    g_a = static_cast<uint8_t*>(m);
+    g_stubVirtualQueryAll = true;
+
+    // ===== 1. saferead as rd<T> uses it
+    saferead::beginScope();
+    put<uint32_t>(0x100, 0x0099DCC4u); put<uint8_t>(0x174 + 7, 9); put<uint32_t>(0x200, 0xFFFF0000u);
+    uint32_t vt = 0; uint8_t b = 0; uint32_t mask = 0;
+    HCHECK("rd<uint32_t>(panel, 0) reads the vtable word", saferead::readAt(0x6E00u, A(0x100), 0, &vt) && vt == 0x0099DCC4u);
+    HCHECK("rd<uint8_t> reads a skill byte at base+off", saferead::readAt(0x6E00u, A(0), 0x174 + 7, &b) && b == 9);
+    HCHECK("rd<uint32_t>(global, 0) reads the id mask global", saferead::readAt(0x6E00u, A(0x200), 0, &mask) && mask == 0xFFFF0000u);
+    uint32_t keep = 77;
+    HCHECK("rd with base 0 fails (a null panel/creature must not fault)", !saferead::readAt(0x6E00u, 0, 0x30, &keep));
+    HEQ("failed rd leaves *out untouched", keep, 77u);
+
+    // ===== 2. KpLog_Init + channels
+    HCHECK("HasCore() false before init", !KpLog_HasCore());
+    HEQ("KpLog_Init(api) returns 1 on a complete kpatch.log service (KPatchInit)", KpLog_Init(&g_api), 1);
+    HCHECK("registered under the manifest id \"companion-selfheal\"", g_regs.size() == 1 && g_regs[0] == "companion-selfheal");
+    HEQ("kpatch.log version 1 requested", (unsigned long long)g_reqVer, 1ULL);
+    KP_LOG(chHud, "P1 hud built panel=%08x", 0x1234u);
+    HCHECK("an INFO KP_LOG with %08x is submitted verbatim", g_subs.size() == 1 && g_subs[0].text == "P1 hud built panel=00001234");
+
+    // ===== 3. K2Addr / GameAddr
+    HEQ("gameaddr::AppGlobal is the Steam app global (ItemRead g_appGlobal default)", (unsigned long long)gameaddr::AppGlobal, 0x00A1B4A4ULL);
+
+    // ===== 4. Party: Vitals defaults + vitals() through the vtable slots
+    party::Vitals def;
+    HCHECK("a default Vitals is zeroed and not ok (members() leaves unreadable members like this)", def.client == 0 && def.server == 0 && def.cur == 0 && def.max == 0 && !def.ok && !def.down);
+    put<uint32_t>(0x300, (uint32_t)A(0x400));                       // server creature +0 = vtable
+    put<uint32_t>(0x400 + party::SlotMaxHp, 0x1111); put<uint32_t>(0x400 + party::SlotCurHp, 0x2222);
+    party::g_callVital = fakeVital;
+    party::Vitals v;
+    HCHECK("party::vitals(server) reads max via slot 0x98 (arg 1) and cur via slot 0x9C (arg 0)", party::vitals(A(0x300), &v) && v.max == 100 && v.cur == 40 && v.ok && !v.down);
+    HEQ("vitals() records the server pointer it was given", (unsigned long long)v.server, (unsigned long long)A(0x300));
+    party::g_appGlobal = A(0x500);   // cell holds 0 -> chain fails
+    party::Vitals ms[3];
+    HEQ("members() returns 0 when the app chain is unreadable (no engine call)", party::members(ms, 3), 0);
+    HEQ("members(nullptr, 3) returns 0", party::members(nullptr, 3), 0);
+
+    // ===== 5. PortraitSlots client
+    k2ps::Client c;
+    c.init(&g_api, "companion-selfheal");
+    HCHECK("add() accepts the FRAME_BEGIN callback at prio 300", c.add(K2PS_FRAME_BEGIN, 300, dummyCb));
+    HCHECK("connect() succeeds against a complete v1 table", c.connect());
+    HEQ("it required \"k2.portraitslots\"", g_reqName == K2PS_IFACE, 1);
+    HEQ("version 1", (unsigned long long)g_reqVer, (unsigned long long)K2PS_VERSION);
+    HEQ("one registration", g_registered, 1);
+    HEQ("phase FRAME_BEGIN", (long long)g_regPhase, (long long)K2PS_FRAME_BEGIN);
+    HEQ("priority 300", (long long)g_regPrio, 300LL);
+    HCHECK("owner is the manifest id", g_regOwner == "companion-selfheal");
+    int32_t slot = 0, cr = 0;
+    HCHECK("slotAt(1) returns the slot/creature pair", c.slotAt(1, &slot, &cr) && slot == 0x5000 && cr == 0x6000);
+    HCHECK("slotAt on an empty entry returns false", !c.slotAt(0, &slot, &cr));
+    HEQ("K2PS_MAX_SLOTS bounds the P3 walk", K2PS_MAX_SLOTS, 4);
+    k2ps::Client c2; c2.poll();   // poll() before init/connect must not crash
+    HCHECK("poll() on an unconnected, uninitialised client stays unconnected", !c2.connected);
+
+    // ===== 6. HealItems
+    heal::AutoCfg cfg;
+    HCHECK("default AutoCfg is off, 35 percent, keep 2 (the probe sets on=true)", !cfg.on && cfg.hpPct == 35 && cfg.keep == 2);
+    cfg.on = true; heal::AutoState st;
+    HCHECK("shouldAutoUse: 20/100 alive commandable gameplay, fresh state -> true", heal::shouldAutoUse(cfg, 20, 100, true, true, true, st, 1000));
+    HCHECK("shouldAutoUse: exactly 35/100 is NOT below the threshold", !heal::shouldAutoUse(cfg, 35, 100, true, true, true, st, 1000));
+    HCHECK("shouldAutoUse: not commandable -> false", !heal::shouldAutoUse(cfg, 20, 100, true, false, true, st, 1000));
+    HEQ("healEstimate(64, TI 10, repair 0, WIS 14, INT 0) = 10 + 10 + 2", heal::healEstimate(64, 10, 0, 14, 0), 22);
+    HEQ("healEstimate of an unknown spells.2da row is -1", heal::healEstimate(5, 10, 10, 10, 10), -1);
+    heal::HealCand cands[2] = { { 1, 64, 22, 3, 0, true }, { 2, 65, 42, 1, 0, true } };
+    HEQ("pickHealItem(missing 30) takes the smallest covering heal (index 1)", heal::pickHealItem(30, cands, 2, 1), 1);
+    HEQ("pickHealItem with missing 0 picks nothing", heal::pickHealItem(0, cands, 2, 1), -1);
+    HEQ("HealCand brace-init order is key,row,heal,count,cost,usable", cands[1].count, 1);
+
+    // ===== 7. ItemRead
+    using namespace itemread;
+    HEQ("item key flag", (long long)ItemKeyFlag, 0x40000000LL);
+    HEQ("stackCount parses a trailing (N)", stackCount(0x40000001, "Medpac (3)"), 3);
+    HEQ("stackCount: no suffix means 0 (the probe treats that as count 1)", stackCount(0x40000001, "Medpac"), 0);
+    const size_t hud = 0x1000, ents = 0x1800;
+    put<int32_t>(hud + Hud_GroupLists + 12, (int32_t)A(ents)); put<int32_t>(hud + Hud_GroupLists + 12 + 4, 1);
+    put<uint32_t>(ents, (uint32_t)A(0x1C00)); put<int32_t>(ents + 4, 10); memcpy(g_a + 0x1C00, "Medpac (3)", 11);
+    put<int32_t>(ents + Entry_Key, 0x40000123);
+    std::vector<Entry> items;
+    HEQ("readGroup(hud, 1) reads group 1's list (ItemGroup)", readGroup(A(hud), 1, &items), 1);
+    HCHECK("entry key/name round-trip", items.size() == 1 && items[0].key == 0x40000123 && items[0].name == "Medpac (3)");
+    put<uint32_t>(0x80, (uint32_t)A(0x90)); put<uint32_t>(0x90 + 8, (uint32_t)A(0xA00));
+    g_appGlobal = A(0x80);
+    g_clientToServer = [](uintptr_t, uint32_t id) -> uint32_t { return id + 1; };
+    g_getItem = [](uintptr_t, uint32_t) -> uint32_t { return (uint32_t)A(0x2000); };
+    uint32_t srv = 0;
+    HCHECK("serverItemFor reports the server id through its out param and returns the item pointer", serverItemFor(0x123, &srv) == A(0x2000) && srv == 0x124);
+    put<int32_t>(0x2000 + Item_PropCount, 1); put<uint32_t>(0x2000 + Item_PropArray, (uint32_t)A(0x2100));
+    put<int16_t>(0x2100, 10); put<int16_t>(0x2102, 64); put<uint8_t>(0x2100 + 0xC, 1);
+    ItemProp p = readItemProp(A(0x2000));
+    HCHECK("readItemProp: type 10 (CastSpell), row at +2, usable at +0xC", p.count == 1 && p.type == 10 && p.row == 64 && p.usable == 1);
+    return kt::Report("common_contract_test (companion_selfheal)");
+}

@@ -1,0 +1,14 @@
+# Companion Self-Heal probe: log only (doc 27 CS2).
+
+# StopLoadFromLayout entry (FUN_0040f5a0), called by every panel ctor; HUD ctor calls it at 0x00748508 (after the hotbar's 0x748502). ecx = panel.
+[[hooks]]
+address = 0x0040F5A0
+type = "detour"
+function = "SelfHealLayoutClosing"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x10]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

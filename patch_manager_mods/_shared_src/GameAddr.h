@@ -55,4 +55,11 @@ constexpr uintptr_t GobGetPosition = 0x00459710;        // Gob vtable slot 0x64
 constexpr uintptr_t GobGetOrientation = 0x00459740;     // Gob vtable slot 0x68
 constexpr uintptr_t GobGetParent = 0x00461530;          // Gob vtable slot 0x108
 
+// ---- companion-selfheal probe / ItemRead.h (doc 27) ----
+constexpr uintptr_t ClientToServerObjectId = 0x0051C8B0; // thiscall(objTable, clientId) RET 4 -> server object id
+constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;      // thiscall(objTable, serverId) RET 4 -> item ptr (0 = none)
+constexpr uintptr_t HudVtable = 0x0099DCC4;              // CSWGuiInGame (HUD panel) RTTI vtable
+constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask]
+constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0): logged by the probe, never called
+
 } // namespace gameaddr
