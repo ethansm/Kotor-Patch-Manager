@@ -1,5 +1,7 @@
 # 19h. Hand-off: fold the dialogue-letterbox probe into the shared logging/probe library (2026-10-03)
 
+**Status: DONE 2026-10-03 (built + smoked, not installed).** Commits: local-setup `2823ff6` (source + analyzer), `e77f557` (allowlist), `aea74cb` (smoke + fixtures); fork `3a86d89` (1.0.1 baseline), `b4e1db6` (1.0.2). Install checklist: 19e "Phase 3 (letterbox)" Task 6.
+
 **For:** the shared-logging session (owner of docs 19/19e/19f, `KpLog.h`, mouse-probe 0.2.0).
 **From:** the vanilla-exe/launcher session, at the user's request ("generate a detailed handoff document so the probe session can integrate this probe as well").
 **Subject:** `k2-dialogue-letterbox-fix` and its log-only probe variant `1.0.1-probe` (doc 15 finding L1, build doc 17).

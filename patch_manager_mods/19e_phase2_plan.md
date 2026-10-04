@@ -298,7 +298,7 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | force-power-hotbar | hotbar | pending |
 | level-up-override | level-up | pending |
 | perf-lab, robustness-fixes | engine research / engine-bug | pending |
-| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | planning 10-03 22:20 |
+| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 + 1.0.2-probe, staged (not installed)** (local-setup 2823ff6/aea74cb, fork b4e1db6) |
 | companion-ai, ranged-ai | engine AI atlas | pending (parser `^` anchors: analyze_play_logs.py) |
 | char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe, activation-fix | their sessions | pending |
 
@@ -329,3 +329,15 @@ Plan (user-approved): one source `dialogue_letterbox_fix_src/K2DialogueLetterbox
 - PROBE W3 is split into W3 + W3b (same `n=`) to stay under 232 bytes.
 - The analyzer accepts the legacy, core and fallback prefixes and joins W3b into W3.
 - Tasks: 0 baseline (fork `3a86d89` = 1.0.1 committed), 1 source, 2 smoke (+ core stub mode), 3 builds + DLL checks, 4 analyzer + fixtures, 5 review/commits/docs, 6 install checklist (prepare only).
+
+### Phase 3 result (10-03)
+- Built: shipping `stage_lb_102/K2DialogueLetterboxFix.kpatch` (DLL `7b3936bc`, 55296 B, KPatchInit + 3) and probe `KPM/letterbox_probe_stage/1.0.2-probe/K2DialogueLetterboxFixProbe.kpatch` (DLL `969fe458`, 67072 B, KPatchInit + 8). 1.0.1 was 47616 B. Imports are KERNEL32 + msvcrt only.
+- Gates: Wine smoke passes (shipping 11 modes, probe 14), longest message 182 B, check_engfix_windows ALL OK, validate-patches 0 errors, analyzer 88 tests, kplog_parse and analyze_play_logs green, kpm_registry_gate PASS, raw-address FAIL=0.
+
+### Task 6: install checklist (prepare only; needs the user's go; game closed; never launch the game)
+1. Re-md5 the core: `md5sum "$G/KotorPatcher.dll"` must be `36f10b7f…`. Re-md5 `$G/patches/k2-dialogue-letterbox-fix.dll` (expect `cf45a03a…`). Check `$G/dialogue_letterbox_fix.ini`.
+2. Backup: `B=~/Games/KOTOR2_Mod_Workspace/backups/pre_lb102_$(date +%m%d_%H%M); mkdir -p $B; cp -a "$G"/{patch_config.toml,kpm_install_state.json,kplog.ini,KotorPatcher.dll,dialogue_letterbox_fix.ini} "$G/patches" $B/`.
+3. Fork is committed (`b4e1db6`). Run `stage_and_verify_install.py stage <dir>`, check the `<-` path picks `stage_lb_102` (or the probe kpatch for T1), and record the STAGE_INFO `head=` in doc 17. Then install with `KPATCH_NO_LAUNCH=1 …/bin/NoLaunch/KPatchLauncher` plus all live ids. The shipping hooks are unchanged, so a DLL hot-swap (as on 10-03 16:44) is the lighter alternative.
+4. Append to `$G/kplog.ini`: `[k2-dialogue-letterbox-fix]` / `enabled=1` / `level=info` / `channels=main,set` (probe variant: add `,probe,probe_w4`, and set `probe=1` in `dialogue_letterbox_fix.ini`).
+5. After play: expect `$G/k2-dialogue-letterbox-fix_log.txt`. The old `dialogue_letterbox_fix_log.txt` must not grow. Grep for `DROPPED`, then run `analyze_engfix_logs.py` on the new file.
+6. Rollback: `cp $B/patches/k2-dialogue-letterbox-fix.dll "$G/patches/"` (plus `patch_config.toml` if the probe was installed) and remove the kplog.ini section.

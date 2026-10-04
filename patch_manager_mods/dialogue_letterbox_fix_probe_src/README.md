@@ -1,5 +1,7 @@
 # k2-dialogue-letterbox-fix 1.0.1-probe (log-only probe build; STAGED, not installed)
 
+**SUPERSEDED by 1.0.2-probe** (`../dialogue_letterbox_fix_src/probe/`, built by `build_probe.sh`, on KpLog.h and based on 1.0.1). This dir and stage B (`stage_lbprobe_1003_1529`) stay as the T1 fallback until 1.0.2-probe has run once live.
+
 Doc 15 Phase 2 S3, finding L1 (build doc: `../17_dialogue_letterbox_and_wrap_fixes.md`). Targets KOTOR II Steam Aspyr (sha256 6A522E71...).
 
 ## What / why
