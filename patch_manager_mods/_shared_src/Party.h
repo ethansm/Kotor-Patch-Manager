@@ -1,4 +1,7 @@
-// Party.h -- shared party-table / controlled-creature lookup for KOTOR2 patch DLLs (Steam Aspyr build).
+// Party.h -- shared party-table / controlled-creature lookup for KOTOR2 patch DLLs (Steam + GOG Aspyr builds).
+// Engine addresses (app global, GetControlledCreature, PartyGetAt, MemberServerCreature) come from the per-version table
+// k2addr::get() (K2Addr.h); an unknown exe or a zero field makes every helper return 0 without calling anything. The g_* hooks
+// default to the sentinel "use the table"; a host test assigns an arena address / fake function (nullptr = none) to override it.
 // Walks app -> *(app+4) -> *(a+4) -> *(b+0x270) with saferead probes, then asks the engine for the controlled creature.
 // Replaces the per-mod copies of this chain; failure reasons are static strings so callers can dedupe by pointer.
 // Also: per-member accessors (member / serverCreature) and HP vitals read through the server creature's vtable (+0x98 max, +0x9C cur, one stack arg each).
@@ -6,6 +9,7 @@
 #pragma once
 #include "SafeRead.h"
 #include "GameAddr.h"
+#include "K2Addr.h"
 
 namespace party {
 
@@ -15,14 +19,21 @@ enum Fail { F_None, F_App, F_App4, F_A4, F_Table, F_Count };
 
 using GetControlledFn = uintptr_t(__thiscall*)(void*);
 
-inline uintptr_t g_appGlobal = gameaddr::AppGlobal;
-inline GetControlledFn g_getControlled = reinterpret_cast<GetControlledFn>(gameaddr::GetControlledCreature);
+// Engine-function hook default: the sentinel means "the table's address" (resolved at each call, so a late-selected table is honoured).
+template <typename F> inline F useTableFn() { return reinterpret_cast<F>(k2addr::UseTable); }
+template <typename F> inline F resolveFn(F set, uintptr_t K2AddrTable::* field) {
+    return set == useTableFn<F>() ? k2addr::fnptr<F>(field) : set;
+}
+
+inline uintptr_t g_appGlobal = k2addr::UseTable;   // UseTable = the table's AppGlobal (0 when unknown); a test sets an arena cell
+inline GetControlledFn g_getControlled = useTableFn<GetControlledFn>();
+inline uintptr_t appGlobalAddr() { return g_appGlobal != k2addr::UseTable ? g_appGlobal : k2addr::addr(&K2AddrTable::AppGlobal); }
 
 // Party table pointer, or 0 with *why set to the failing link.
 inline uintptr_t table(Fail* why = nullptr) {
     auto fail = [&](Fail f) -> uintptr_t { if (why) *why = f; return 0; };
     uint32_t app = 0, a = 0, b = 0, t = 0;
-    if (!saferead::readAt<uint32_t>(SiteBase, g_appGlobal, 0, &app) || !app) return fail(F_App);
+    if (!saferead::readAt<uint32_t>(SiteBase, appGlobalAddr(), 0, &app) || !app) return fail(F_App);
     if (!saferead::readAt<uint32_t>(SiteBase, app, 4, &a) || !a) return fail(F_App4);
     if (!saferead::readAt<uint32_t>(SiteBase, a, 4, &b) || !b) return fail(F_A4);
     if (!saferead::readAt<uint32_t>(SiteBase, b, 0x270, &t) || !t) return fail(F_Table);
@@ -46,7 +57,8 @@ inline uintptr_t controlledCreature(Fail* why = nullptr, int* count = nullptr) {
     if (count) *count = n;
     if (n <= 0) { *w = F_Count; return 0; }
     *w = F_None;
-    return g_getControlled ? g_getControlled(reinterpret_cast<void*>(t)) : 0;
+    GetControlledFn fn = resolveFn(g_getControlled, &K2AddrTable::GetControlledCreature);
+    return fn ? fn(reinterpret_cast<void*>(t)) : 0;
 }
 
 inline const char* failText(Fail f) {
@@ -62,20 +74,22 @@ inline const char* failText(Fail f) {
 
 // ---- party members + vitals (additive) ----
 using MemberFn = uintptr_t(__thiscall*)(void* table, int idx);   // PartyGetAt: thiscall(table, idx) RET 4 -> client creature of position idx (0 = controlled)
-inline MemberFn g_member = reinterpret_cast<MemberFn>(gameaddr::PartyGetAt);
+inline MemberFn g_member = useTableFn<MemberFn>();
 
 // Client creature at party position i, or 0 (null table, i out of [0, count), or no engine fn).
 inline uintptr_t member(uintptr_t table, int i) {
-    if (table == 0 || i < 0 || i >= partyCount(table) || !g_member) return 0;
-    return g_member(reinterpret_cast<void*>(table), i);
+    MemberFn fn = resolveFn(g_member, &K2AddrTable::PartyGetAt);
+    if (table == 0 || i < 0 || i >= partyCount(table) || !fn) return 0;
+    return fn(reinterpret_cast<void*>(table), i);
 }
 
 using ServerCreatureFn = uintptr_t(__thiscall*)(void* member);   // client member -> server creature (CSWSCreature*)
-inline ServerCreatureFn g_serverCreature = reinterpret_cast<ServerCreatureFn>(gameaddr::MemberServerCreature);
+inline ServerCreatureFn g_serverCreature = useTableFn<ServerCreatureFn>();
 
 inline uintptr_t serverCreature(uintptr_t member) {
-    if (member == 0 || !g_serverCreature) return 0;
-    return g_serverCreature(reinterpret_cast<void*>(member));
+    ServerCreatureFn fn = resolveFn(g_serverCreature, &K2AddrTable::MemberServerCreature);
+    if (member == 0 || !fn) return 0;
+    return fn(reinterpret_cast<void*>(member));
 }
 
 // KOTOR party members at 0 HP are unconscious/dead; the engine's dead check is never called.

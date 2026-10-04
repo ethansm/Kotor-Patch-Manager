@@ -146,21 +146,135 @@ static void checkSteamTable() {
     KT_CHECK_EQ((unsigned long long)gameaddr::AppGlobal, 0xA1B4A4ull);
 }
 
-// kGog is the unfilled table: sha set, every address / offset zero.
+// kGog against the literals of 21b_gog_address_map.md section 4 (static-verified from the Steam bodies; untested live). Every
+// non-zero field is listed; fields 21b leaves out (KeyboardDeviceGlobal + the inventory-3D Scene/Gob/View/GuiGate block) stay zero.
 static void checkGogTable() {
     const K2AddrTable& g = kGog;
-    KT_CHECK_EQ((unsigned long long)g.AppGlobal, 0ull);
-    KT_CHECK_EQ((unsigned long long)g.New, 0ull);
-    KT_CHECK_EQ((unsigned long long)g.PushClipRect, 0ull);
-    KT_CHECK_EQ((long long)g.Creature_EffectArray, 0ll);
-    KT_CHECK_EQ((long long)g.Ctl_Flags, 0ll);
-    KT_CHECK_EQ((long long)g.LabelSize, 0ll);
-    KT_CHECK_EQ((unsigned long long)g.CExoStringFormat, 0ull);
-    KT_CHECK_EQ((unsigned long long)g.GetMaxForcePoints, 0ull);
-    KT_CHECK_EQ((long long)g.Slot_Flags, 0ll);
-    KT_CHECK_EQ((long long)g.Menu_PortraitSlot, 0ll);
-    KT_CHECK_EQ((long long)g.MenuCaller_Creature, 0ll);
-    KT_CHECK_EQ((long long)g.Tip_Text, 0ll);
+#define GOG(field, value) KT_CHECK_EQ((long long)g.field, (long long)(value))
+    GOG(AppGlobal, 0x00A11C04);
+    GOG(GuiSoundMgr, 0x00A11BFC);
+    GOG(PlayGuiSound, 0x00910720);
+    GOG(ScreenW, 0x009F22A4);
+    GOG(ScreenH, 0x009F22A8);
+    GOG(GuiRefW, 0x00A0FFE8);
+    GOG(GuiRefH, 0x00A0FFEC);
+    GOG(ProjectionFlag, 0x00A76858);
+    GOG(New, 0x00921347);
+    GOG(LabelCtor, 0x009179E0);
+    GOG(InitControl, 0x0090DAA0);
+    GOG(StopLoadFromLayout, 0x0090DA20);
+    GOG(ExoCtor, 0x00605680);
+    GOG(ExoDtor, 0x00605890);
+    GOG(TextSet, 0x00915200);
+    GOG(SetFont, 0x009151B0);
+    GOG(SetAlign, 0x00915370);
+    GOG(TextColor, 0x00915510);
+    GOG(PtrListAdd, 0x00534170);
+    GOG(GuiLoadImage, 0x008D5470);
+    GOG(GetControlledCreature, 0x004789B0);
+    GOG(PartyGetAt, 0x004789D0);
+    GOG(MemberServerCreature, 0x00429780);
+    GOG(ClientPartyTable, 0x0040D070);
+    GOG(LabelVtable, 0x0098998C);
+    GOG(BorderVtable, 0x009A994C);
+    GOG(TextVtable, 0x009A9A28);
+    GOG(TexPendingList, 0x00A14CD4);
+    GOG(WorldTimerGetCurrentTime, 0x0080B200);
+    GOG(AppGlobal_ToWorld, 0x8);
+    GOG(World_ToSub, 0x4);
+    GOG(Sub_ToTimer, 0x10048);
+    GOG(Creature_EffectArray, 0x148);
+    GOG(Creature_EffectCount, 0x14C);
+    GOG(Effect_Type, 0x8);
+    GOG(Effect_Subtype, 0xA);
+    GOG(Effect_Duration, 0xC);
+    GOG(Effect_ExpiryDay, 0x10);
+    GOG(Effect_ExpiryTime, 0x14);
+    GOG(Effect_Creator, 0x18);
+    GOG(Effect_SpellId, 0x1C);
+    GOG(Effect_IntCount, 0x30);
+    GOG(Effect_Ints, 0x34);
+    GOG(BeginGui2D, 0x008CFBD0);
+    GOG(EndGui2D, 0x008CFD00);
+    GOG(PushClipRect, 0x008CFD70);
+    GOG(PopClipRect, 0x008D02D0);
+    GOG(FlushGuiBatch, 0x008D5370);
+    GOG(FlushArg, 0x009F7144);
+    GOG(HudScale, 0x008D03C0);
+    GOG(ClipDepth, 0x00A32B90);
+    GOG(ClipNoFillColor, 0x00A768A4);
+    GOG(PanelRect, 0x0090E4A0);
+    GOG(ImageVt_Draw, 0x6);
+    GOG(LabelSize, 0x148);
+    GOG(Ctl_Flags, 0x48);
+    GOG(Ctl_Id, 0x54);
+    GOG(Ctl_X, 0x4);
+    GOG(Ctl_Y, 0x8);
+    GOG(Ctl_W, 0xC);
+    GOG(Ctl_H, 0x10);
+    GOG(Ctl_VtSetRect, 0x4);
+    GOG(Label_Border, 0x60);
+    GOG(Label_Text, 0xD8);
+    GOG(Text_Renderer, 0x14);
+    GOG(Text_StringSub, 0x18);
+    GOG(Text_Color, 0x2C);
+    GOG(Border_Alpha, 0x24);
+    GOG(Border_Tint, 0x28);
+    GOG(Border_Fill, 0x74);
+    GOG(Panel_CtlArray, 0x24);
+    GOG(Panel_CtlCount, 0x28);
+    GOG(CExoStringFormat, 0x00606380);
+    GOG(GetMaxForcePoints, 0x006977D0);
+    GOG(Slot_CardRect, 0x54C);
+    GOG(Slot_Flags, 0x590);
+    GOG(Slot_VitCtl, 0x690);
+    GOG(Slot_VitRect, 0x694);
+    GOG(Slot_ForceCtl, 0x7FC);
+    GOG(Slot_ForceRect, 0x800);
+    GOG(Slot_ArrowBuff, 0xDDC);
+    GOG(Slot_ArrowDebuff, 0xDDD);
+    GOG(Slot_Overlay0, 0x1B8);
+    GOG(Slot_Overlay1, 0x300);
+    GOG(Slot_Overlay2, 0x448);
+    GOG(Menu_PortraitSlot, 0x2350);
+    GOG(Menu_Char2, 0x3134);
+    GOG(Menu_Level2, 0x327C);
+    GOG(Menu_Back2, 0x33C4);
+    GOG(Menu_Change2, 0x350C);
+    GOG(Menu_Char3, 0x36DC);
+    GOG(Menu_Level3, 0x3824);
+    GOG(Menu_Back3, 0x396C);
+    GOG(Menu_Change3, 0x3AB4);
+    GOG(MenuCaller_Creature, -0x38);
+    GOG(Creature_Stats, 0x1198);
+    GOG(Stats_ForceA, 0x130);
+    GOG(Stats_ForceB, 0x132);
+    GOG(Creature_VtMaxHp, 0x98);
+    GOG(Creature_VtCurHp, 0x9C);
+    GOG(Creature_IconCacheData, 0xFFC);
+    GOG(Creature_IconCacheCount, 0x1000);
+    GOG(IconEnt_F14, 0x14);
+    GOG(IconEnt_F1c, 0x1C);
+    GOG(Border_Width, 0xC);
+    GOG(Border_Height, 0x10);
+    GOG(Border_Rot, 0x20);
+    GOG(Tip_Slot, 0x1D0);
+    GOG(Tip_Text, 0x1D4);
+#undef GOG
+    // unknown / out-of-scope fields stay zero (helper inert)
+    KT_CHECK_EQ((unsigned long long)g.KeyboardDeviceGlobal, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.GuiGateGlobal, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.SceneAddModel, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.GobVtable, 0ull);
+    KT_CHECK_EQ((long long)g.View_Scene, 0ll);
+    KT_CHECK_EQ((long long)g.Gob_Scale, 0ll);
+    // GOG really differs from Steam for the functions the three mods call
+    KT_CHECK(g.GetMaxForcePoints != kSteam.GetMaxForcePoints && g.PushClipRect != kSteam.PushClipRect);
+    // every function field the three mods call is non-zero on GOG
+    KT_CHECK(g.GetMaxForcePoints && g.CExoStringFormat && g.WorldTimerGetCurrentTime && g.BeginGui2D && g.EndGui2D && g.PushClipRect &&
+             g.PopClipRect && g.FlushGuiBatch && g.HudScale && g.PanelRect && g.GuiLoadImage && g.New && g.LabelCtor && g.InitControl &&
+             g.StopLoadFromLayout && g.ExoCtor && g.ExoDtor && g.TextSet && g.SetFont && g.SetAlign && g.TextColor && g.PtrListAdd &&
+             g.PlayGuiSound && g.GetControlledCreature && g.PartyGetAt && g.MemberServerCreature && g.ClientPartyTable && g.AppGlobal);
 }
 
 static void checkSelection() {
@@ -172,6 +286,10 @@ static void checkSelection() {
     for (char* p = lower; *p; ++p) if (*p >= 'A' && *p <= 'Z') *p = (char)(*p - 'A' + 'a');
     KT_CHECK(k2addr::selectBySha(lower) == &kSteam);
     KT_CHECK(k2addr::selectBySha(kGogSha) == &kGog);
+    char gl[80]; strncpy(gl, kGogSha, sizeof gl - 1); gl[sizeof gl - 1] = 0;
+    for (char* p = gl; *p; ++p) if (*p >= 'A' && *p <= 'Z') *p = (char)(*p - 'A' + 'a');
+    KT_CHECK(k2addr::selectBySha(gl) == &kGog);                                    // GOG sha, lower case
+    KT_CHECK(k2addr::selectBySha("777BEE23") == nullptr);                          // GOG prefix is not a match
     KT_CHECK(k2addr::selectBySha("deadbeef") == nullptr);
     KT_CHECK(k2addr::selectBySha("7751F7D8") == nullptr);                         // the 4gb-patched file hash prefix is not an env value
     char longer[96]; snprintf(longer, sizeof longer, "%sAA", kSteamSha);
@@ -186,6 +304,8 @@ static void checkSelection() {
     setenv("KOTOR_VERSION_SHA", lower, 1);
     KT_CHECK(k2addr::selectFromEnv() == &kSteam);
     setenv("KOTOR_VERSION_SHA", kGogSha, 1);
+    KT_CHECK(k2addr::selectFromEnv() == &kGog);
+    setenv("KOTOR_VERSION_SHA", gl, 1);
     KT_CHECK(k2addr::selectFromEnv() == &kGog);
     setenv("KOTOR_VERSION_SHA", "0000", 1);
     KT_CHECK(k2addr::selectFromEnv() == nullptr);
@@ -265,8 +385,9 @@ static void checkEffects() {
 // ---- Gui2D.h: default engine calls never call address 0; pushClip refuses without the no-fill colour ----
 static int g_pushCalls = 0;
 static void checkGui2D() {
-    // default Engine under a table that knows nothing: every call is a no-op / neutral (Steam would jump into the real exe)
-    k2addr::setForTest(&kGog);
+    // default Engine under a table that knows nothing: every call is a no-op / neutral (Steam / GOG would jump into the real exe)
+    static const K2AddrTable kEmpty{};
+    k2addr::setForTest(&kEmpty);
     gui2d::Engine def;
     def.begin(); def.end(); def.pop(); def.flush(1.0f);
     KT_CHECK_EQ((long long)def.push(1, 2, 3, 4, nullptr, 0, 1.0f), 0ll);
@@ -307,11 +428,20 @@ static void checkGuiKit() {
     KT_CHECK_EQ((unsigned long long)steam.guiSoundMgrAddr, 0xA1B49Cull);
     KT_CHECK_EQ((unsigned long long)steam.screenWAddr, 0x9F42A4ull);
 
-    k2addr::setForTest(&kGog);
+    k2addr::setForTest(&kGog);                                   // GOG binds its own addresses (never called here)
     Engine gog;
-    KT_CHECK(!gog.alloc && !gog.labelCtor && !gog.initControl && !gog.exoCtor && !gog.exoDtor && !gog.textSet);
-    KT_CHECK(!gog.setFont && !gog.setAlign && !gog.textColor && !gog.listAdd && !gog.loadImage && !gog.playSound);
-    KT_CHECK(gog.guiSoundMgrAddr == 0 && gog.screenWAddr == 0 && gog.screenHAddr == 0);
+    KT_CHECK_EQ((unsigned long long)reinterpret_cast<uintptr_t>(gog.alloc), 0x921347ull);
+    KT_CHECK_EQ((unsigned long long)reinterpret_cast<uintptr_t>(gog.labelCtor), 0x9179E0ull);
+    KT_CHECK_EQ((unsigned long long)reinterpret_cast<uintptr_t>(gog.playSound), 0x910720ull);
+    KT_CHECK_EQ((unsigned long long)gog.guiSoundMgrAddr, 0xA11BFCull);
+    KT_CHECK_EQ((unsigned long long)gog.screenWAddr, 0x9F22A4ull);
+    KT_CHECK_EQ((unsigned long long)gog.screenHAddr, 0x9F22A8ull);
+    static const K2AddrTable kEmptyGk{};
+    k2addr::setForTest(&kEmptyGk);
+    Engine none;
+    KT_CHECK(!none.alloc && !none.labelCtor && !none.initControl && !none.exoCtor && !none.exoDtor && !none.textSet);
+    KT_CHECK(!none.setFont && !none.setAlign && !none.textColor && !none.listAdd && !none.loadImage && !none.playSound);
+    KT_CHECK(none.guiSoundMgrAddr == 0 && none.screenWAddr == 0 && none.screenHAddr == 0);
     k2addr::setForTest(nullptr);
     Engine unknown;
     KT_CHECK(!unknown.alloc && !unknown.listAdd && unknown.guiSoundMgrAddr == 0);

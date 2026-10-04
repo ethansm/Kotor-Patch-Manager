@@ -409,9 +409,13 @@ void testTableGates() {
     // Steam: everything available
     KT_CHECK(bh::arrowFieldsOk(&kSteam)); KT_CHECK(bh::arrowHideFieldsOk(&kSteam)); KT_CHECK(bh::columnFieldsOk(&kSteam));
     KT_CHECK(bh::menuFieldsOk(&kSteam)); KT_CHECK(bh::iconCacheFieldsOk(&kSteam));
-    // GOG column is zeros: every feature off
-    KT_CHECK(!bh::arrowFieldsOk(&kGog)); KT_CHECK(!bh::arrowHideFieldsOk(&kGog)); KT_CHECK(!bh::columnFieldsOk(&kGog));
-    KT_CHECK(!bh::menuFieldsOk(&kGog)); KT_CHECK(!bh::iconCacheFieldsOk(&kGog));
+    // GOG column is filled from doc 21b (static-verified): every feature available
+    KT_CHECK(bh::arrowFieldsOk(&kGog)); KT_CHECK(bh::arrowHideFieldsOk(&kGog)); KT_CHECK(bh::columnFieldsOk(&kGog));
+    KT_CHECK(bh::menuFieldsOk(&kGog)); KT_CHECK(bh::iconCacheFieldsOk(&kGog));
+    // a table that knows nothing: every feature off
+    static const K2AddrTable kEmpty{};
+    KT_CHECK(!bh::arrowFieldsOk(&kEmpty)); KT_CHECK(!bh::arrowHideFieldsOk(&kEmpty)); KT_CHECK(!bh::columnFieldsOk(&kEmpty));
+    KT_CHECK(!bh::menuFieldsOk(&kEmpty)); KT_CHECK(!bh::iconCacheFieldsOk(&kEmpty));
     // null table (unknown exe)
     const K2AddrTable* none = nullptr;
     KT_CHECK(!bh::arrowFieldsOk(none)); KT_CHECK(!bh::arrowHideFieldsOk(none)); KT_CHECK(!bh::columnFieldsOk(none));

@@ -40,6 +40,12 @@ static_assert(kSteam.AppGlobal == gameaddr::AppGlobal, "kSteam.AppGlobal");
 static_assert(kSteam.GetControlledCreature == gameaddr::GetControlledCreature, "kSteam.GetControlledCreature");
 static_assert(kSteam.PartyGetAt == gameaddr::PartyGetAt, "kSteam.PartyGetAt");
 static_assert(kSteam.MemberServerCreature == gameaddr::MemberServerCreature, "kSteam.MemberServerCreature");
+// GOG column (doc 21b section 4)
+static_assert(kGog.AppGlobal == 0x00A11C04u, "kGog.AppGlobal");
+static_assert(kGog.GetControlledCreature == 0x004789B0u, "kGog.GetControlledCreature");
+static_assert(kGog.PartyGetAt == 0x004789D0u, "kGog.PartyGetAt");
+static_assert(kGog.MemberServerCreature == 0x00429780u, "kGog.MemberServerCreature");
+static_assert(kGog.ClientPartyTable == 0x0040D070u, "kGog.ClientPartyTable");
 static_assert(party::SlotMaxHp == 0x98 && party::SlotCurHp == 0x9C, "vtable HP slots");
 static_assert(party::SiteBase == 0x6C00, "saferead site id");
 
@@ -327,6 +333,56 @@ int main() {
         build(3); g_memberCalls = 0; KT_CHECK_EQ((unsigned long long)party::member(0x20, 0), 0ull); KT_CHECK_EQ((long long)g_memberCalls, 0ll);
 
         party::g_member = sM; party::g_serverCreature = sS; party::g_callVital = sV;
+    }
+
+    // ---- addresses come from the K2Addr table (default g_* = "use the table") ----
+    {
+        auto sA = party::g_appGlobal; auto sG = party::g_getControlled; auto sM = party::g_member; auto sS = party::g_serverCreature;
+        party::g_appGlobal = k2addr::UseTable;
+        party::g_getControlled = party::useTableFn<party::GetControlledFn>();
+        party::g_member = party::useTableFn<party::MemberFn>();
+        party::g_serverCreature = party::useTableFn<party::ServerCreatureFn>();
+        g_slotMax = 0x401000; g_slotCur = 0x402000;
+        build(3); mkCreature(0, 50, 100);
+
+        K2AddrTable t = kSteam;                       // a table pointing every Party address at the fakes / the arena
+        t.AppGlobal = cell;
+        t.GetControlledCreature = reinterpret_cast<uintptr_t>(&fakeGetControlled);
+        t.PartyGetAt = reinterpret_cast<uintptr_t>(&fakeMember);
+        t.MemberServerCreature = reinterpret_cast<uintptr_t>(&fakeServer);
+        k2addr::setForTest(&t);
+        party::Fail w = party::F_App; int n = 0;
+        KT_CHECK_EQ((unsigned long long)party::controlledCreature(&w, &n), (unsigned long long)Creature);
+        KT_CHECK_EQ((long long)w, (long long)party::F_None); KT_CHECK_EQ((long long)n, 3ll);
+        KT_CHECK_EQ((unsigned long long)party::table(), (unsigned long long)tbl);
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, 0), (unsigned long long)g_clients[0]);
+        KT_CHECK_EQ((unsigned long long)party::serverCreature(g_clients[0]), (unsigned long long)g_servers[0]);
+
+        // a zero field = unknown: that helper returns 0 and calls nothing
+        g_calls = 0;
+        K2AddrTable noCtl = t; noCtl.GetControlledCreature = 0;
+        k2addr::setForTest(&noCtl);
+        KT_CHECK_EQ((unsigned long long)party::controlledCreature(), 0ull); KT_CHECK_EQ((long long)g_calls, 0ll);
+        K2AddrTable noMem = t; noMem.PartyGetAt = 0; noMem.MemberServerCreature = 0;
+        k2addr::setForTest(&noMem);
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, 0), 0ull);
+        KT_CHECK_EQ((unsigned long long)party::serverCreature(g_clients[0]), 0ull);
+        K2AddrTable noApp = t; noApp.AppGlobal = 0;
+        k2addr::setForTest(&noApp);
+        { party::Fail f = party::F_None; KT_CHECK_EQ((unsigned long long)party::table(&f), 0ull); KT_CHECK_EQ((long long)f, (long long)party::F_App); }
+        KT_CHECK_EQ((long long)party::members(nullptr, 4), 0ll);
+
+        // unknown exe (null table): inert end to end
+        k2addr::setForTest(nullptr);
+        { party::Fail f = party::F_None; int c = 55; KT_CHECK_EQ((unsigned long long)party::controlledCreature(&f, &c), 0ull);
+          KT_CHECK_EQ((long long)f, (long long)party::F_App); KT_CHECK_EQ((long long)c, 55ll); }
+        KT_CHECK_EQ((unsigned long long)party::member(tbl, 0), 0ull);
+        KT_CHECK_EQ((unsigned long long)party::serverCreature(g_clients[0]), 0ull);
+        party::Vitals vs[2]; KT_CHECK_EQ((long long)party::members(vs, 2), 0ll);
+        KT_CHECK_EQ((long long)g_calls, 0ll);
+        k2addr::clearForTest();
+
+        party::g_appGlobal = sA; party::g_getControlled = sG; party::g_member = sM; party::g_serverCreature = sS;
     }
 
     KT_CHECK_EQ(party::failText(party::F_None), "ok");

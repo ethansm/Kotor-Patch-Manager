@@ -39,5 +39,20 @@ constexpr uintptr_t BorderVtable = 0x009875BC;          // CSWGuiBorder RTTI vta
 constexpr uintptr_t TextVtable = 0x009876B4;            // CSWGuiText RTTI vtable
 constexpr uintptr_t KeyboardDeviceGlobal = 0x0099C884;  // rdata constant 0 (device-array index)
 constexpr uintptr_t TexPendingList = 0x00A1BC2C;        // engine pending-texture list
+// ---- CSWGui3DSceneView (SceneView.h; Mod 1 Inventory3DViewport.cpp 31-60 / Mod 5 EquipCharPreview.cpp 28-62) ----
+constexpr uintptr_t GuiGateGlobal = 0x009F42B4;         // int, non-zero once the GUI/3D layer is up (inv3d/equip refuse a scene view while 0)
+constexpr uintptr_t GuiControlCtor = 0x00418990;        // CSWGuiControl ctor, thiscall ECX only
+constexpr uintptr_t GuiSceneCtor = 0x00417F40;          // CSWGuiScene ctor, thiscall ECX = view+0x60
+constexpr uintptr_t SceneAddModel = 0x00418360;         // thiscall(view+0x60, CExoString* resref, int idx) -> model
+constexpr uintptr_t SceneRemoveModel = 0x00418430;      // thiscall(view+0x60, int idx, int deleteIt) RET 8
+constexpr uintptr_t SceneGetModel = 0x004184B0;         // thiscall(view+0x60, int idx) -> Gob*
+constexpr uintptr_t SceneViewVtable = 0x009A3D34;       // CSWGui3DSceneView RTTI vtable
+constexpr uintptr_t SceneCameraVtable = 0x0098C45C;     // scene camera object vtable (view+0x78)
+constexpr uintptr_t GobVtable = 0x0098B5CC;             // scene model (Gob) vtable
+constexpr uintptr_t GobSetPosition = 0x00461490;        // Gob vtable slot 0x5C
+constexpr uintptr_t GobSetOrientation = 0x004614E0;     // Gob vtable slot 0x60
+constexpr uintptr_t GobGetPosition = 0x00459710;        // Gob vtable slot 0x64
+constexpr uintptr_t GobGetOrientation = 0x00459740;     // Gob vtable slot 0x68
+constexpr uintptr_t GobGetParent = 0x00461530;          // Gob vtable slot 0x108
 
 } // namespace gameaddr

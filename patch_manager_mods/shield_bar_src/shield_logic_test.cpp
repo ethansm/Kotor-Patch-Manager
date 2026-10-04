@@ -30,9 +30,15 @@ void testTableGates() {
     KT_CHECK(sb::slotFieldsOk(&kSteam)); KT_CHECK(sb::vitRectOk(&kSteam)); KT_CHECK(sb::menuFieldsOk(&kSteam));
     KT_CHECK(sb::vitalsFieldsOk(&kSteam)); KT_CHECK(sb::tooltipFieldsOk(&kSteam)); KT_CHECK(sb::drawFieldsOk(&kSteam));
     KT_CHECK(sb::effectProbeFieldsOk(&kSteam));
-    KT_CHECK(!sb::slotFieldsOk(&kGog)); KT_CHECK(!sb::vitRectOk(&kGog)); KT_CHECK(!sb::menuFieldsOk(&kGog));
-    KT_CHECK(!sb::vitalsFieldsOk(&kGog)); KT_CHECK(!sb::tooltipFieldsOk(&kGog)); KT_CHECK(!sb::drawFieldsOk(&kGog));
-    KT_CHECK(!sb::effectProbeFieldsOk(&kGog));
+    // GOG column is filled from doc 21b (static-verified): every feature available
+    KT_CHECK(sb::slotFieldsOk(&kGog)); KT_CHECK(sb::vitRectOk(&kGog)); KT_CHECK(sb::menuFieldsOk(&kGog));
+    KT_CHECK(sb::vitalsFieldsOk(&kGog)); KT_CHECK(sb::tooltipFieldsOk(&kGog)); KT_CHECK(sb::drawFieldsOk(&kGog));
+    KT_CHECK(sb::effectProbeFieldsOk(&kGog));
+    // a table that knows nothing: every feature off
+    static const K2AddrTable kEmpty{};
+    KT_CHECK(!sb::slotFieldsOk(&kEmpty)); KT_CHECK(!sb::vitRectOk(&kEmpty)); KT_CHECK(!sb::menuFieldsOk(&kEmpty));
+    KT_CHECK(!sb::vitalsFieldsOk(&kEmpty)); KT_CHECK(!sb::tooltipFieldsOk(&kEmpty)); KT_CHECK(!sb::drawFieldsOk(&kEmpty));
+    KT_CHECK(!sb::effectProbeFieldsOk(&kEmpty));
     const K2AddrTable* none = nullptr;
     KT_CHECK(!sb::slotFieldsOk(none)); KT_CHECK(!sb::vitRectOk(none)); KT_CHECK(!sb::menuFieldsOk(none));
     KT_CHECK(!sb::vitalsFieldsOk(none)); KT_CHECK(!sb::tooltipFieldsOk(none)); KT_CHECK(!sb::drawFieldsOk(none));

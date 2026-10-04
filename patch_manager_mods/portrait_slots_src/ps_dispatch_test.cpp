@@ -130,7 +130,9 @@ static void t2() {
 // ---- T3: the provider's menu overlay is gated on the address table (null table / any zero menu field = off) ----
 static void t3() {
     KT_CHECK(psd::menuFieldsOk(&kSteam));
-    KT_CHECK(!psd::menuFieldsOk(&kGog));                         // GOG column is all zeros until it is mapped
+    KT_CHECK(psd::menuFieldsOk(&kGog));                          // GOG column filled from doc 21b (static-verified)
+    static const K2AddrTable kEmpty{};
+    KT_CHECK(!psd::menuFieldsOk(&kEmpty));                       // a table that knows nothing is off
     KT_CHECK(!psd::menuFieldsOk(static_cast<const K2AddrTable*>(nullptr)));
     K2AddrTable t = kSteam; t.Menu_PortraitSlot = 0; KT_CHECK(!psd::menuFieldsOk(&t));
     t = kSteam; t.Menu_Char2 = 0; KT_CHECK(!psd::menuFieldsOk(&t));
