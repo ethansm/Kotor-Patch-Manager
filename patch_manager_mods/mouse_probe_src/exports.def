@@ -1,5 +1,6 @@
 LIBRARY MouseProbe
 EXPORTS
+    KPatchInit
     ProbeMouseRaw
     ProbeMouseNorm
     ProbeCameraFrame

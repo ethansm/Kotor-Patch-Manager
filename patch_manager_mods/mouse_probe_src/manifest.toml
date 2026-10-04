@@ -1,7 +1,7 @@
 [patch]
 id = "mouse-probe"
 name = "Mouse Probe"
-version = "0.1.0"
+version = "0.2.0"
 author = "local"
 description = "Read-only mouse/camera probe (logs raw DirectInput deltas, drag flag, camera yaw/pitch)"
 

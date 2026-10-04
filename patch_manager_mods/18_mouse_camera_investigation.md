@@ -262,3 +262,27 @@ Log: `backups/shield_bar23_install_20261002_151504/mouseprobe_log.txt.run22` (mo
 - **Top windows:** (1) 2842726400-2842726553, the RMB drag: lx -68796..-48482 with NORM saturated, camera never rotated. (2) 2841882923 burst -279277/-61357 after 21.97 s gap. (3) 2842025887 -528820/-299228 after the 77 s gap. (4) 2842753554 -475546/-255284. (5) 2842220304 44.6 s gap with 14 of 15 polls zero.
 - **Verdict:** the input already arrives broken at the raw DirectInput level (huge, one-signed, quantized, absolute-or-offset-like deltas), well before the engine. NORM/CAM saturation is a consequence. The pitch/yaw fields need re-verifying before blaming engine camera code.
 - **Next A/B:** (a) run with game window focus/cursor grab variations (windowed vs fullscreen, Proton `PROTON_USE_WINED3D`, `winex11` raw-input / DInput relative-mode on and off, `SDL_VIDEO_MINIMIZE...` not needed) and watch whether lx/ly sign mix becomes normal. (b) Log SetCursorPos/ClipCursor/ShowCursor calls and GetCursorPos next to RAW to test the warp-offset theory; check whether deltas equal (cursor - window centre) x constant. (c) Log pitch via the 0x7F3C70 sink arg instead of ctl+0x94, and a RAW-sampled run with no loading screens, doing a deliberate slow right-drag look. (d) Mark the moment of the user-visible bug (hotkey writing a marker line) so windows can be correlated.
+
+
+## 10-03 mouse-probe 0.2.0 (KpLog)
+Reference migration to `KpLog.h` (19e chunk M, guide 19f). **Staged, not installed:** `~/Games/KOTOR2_Mod_Workspace/stage_mouseprobe_020/MouseProbe.kpatch` (sha256 `483eaec862318af96bf403b99da01ce162049c20c90e11b67ea4343e3acdd102`). Source: `mouse_probe_src/` (synced to the fork's `Patches/MouseProbe/`).
+- **Log file:** new core (registry + `kpatch.log`) writes `mouse-probe_log.txt`. Old core (live Sep-28 build, no service) writes `mouseprobe_log.txt` through the header's fallback sink, same name and 60000-line cap as 0.1.0.
+- **Line prefix:** new core `T=<ms> f=- mouse-probe/<ch> <text>` (`f=` is `-` because the probe never calls `KP_FRAME_TICK`). Old core `<ms32> mouse-probe/<ch> <text>`, where `<ms32>` is `GetTickCount()` ms, not the old raw-QPC `%.3f`. A parser that anchored on the QPC float needs `strip_prefix` (or a regex that allows both shapes). Tag words and field layouts are unchanged.
+- **Channels:** `main` START (new core: once, on the first hook call, no STOP; old core: START/STOP when `mouseprobe.txt` appears/disappears), `raw` RAW, `polls` POLLS, `norm` NORM, `drag` DRAGSTATE + STUCKDRAG?, `cam` CAM.
+- **STUCKDRAG? is now WARN** (on `drag`), so it is written even with no `kplog.ini`. Drag state and the RMB bit are always tracked, even with every channel off. On the old core with no `mouseprobe.txt` it therefore also lands in `mouseprobe_log.txt` (fallback level WARN).
+- **Old core flag file:** `mouseprobe.txt` only runs when there is no core; it sets the fallback level to INFO (present) or WARN (absent). On a new core it is ignored.
+- **kplog.ini** (game dir, re-read about once a second):
+```ini
+[global]
+enabled=1
+sink=perpatch
+; RAW + CAM can pass 2000/s; 0 = unlimited (still look for DROPPED)
+max_lines_per_sec=0
+
+[mouse-probe]
+enabled=1
+level=info
+; or *,-polls to drop a channel
+channels=*
+```
+- **Build notes:** DLL 80 KB -> 89 KB (KpLog.h uses `GetTickCount` on Windows; a first build with `std::chrono` was 181 KB and imported `SetSystemTime` etc., fixed in KPM 22add9a). Exports: `KPatchInit`, `ProbeCameraFrame`, `ProbeMouseNorm`, `ProbeMouseRaw`. `-DMOUSEPROBE_FRAMETICK` (off) adds `KP_FRAME_TICK()` to the camera hook, for tests only. Fork build source committed on `ethansm/local-mods` (see 19e chunk M).
