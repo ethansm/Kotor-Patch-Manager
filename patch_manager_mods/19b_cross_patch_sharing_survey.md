@@ -113,3 +113,12 @@ that log. `scripts/check_effect_decode.py` parses the effects panel output. Any 
 **Hotbar (Mod 3), Phase X (2026-10-03):** adopts SafeRead, B7 `readExo`, B2 GuiKit setters, `GameAddr.h`, B6 `Party.h` before its Phase D/T.
 Logging, wheel/WndProc, textures and per-save hooks stay local. New headers: mutation pass pending (doc 20 mutation gate, no C++ tool yet).
 **Status 10-03 01:57:** items 2, 3, 7 (setters + label creation), 8 DONE for the hotbar; build 27 `106be06e` installed, awaiting user smoke test. Common commits: repo 8e0da7c, clone 2c1bba4. Next adopters per the order above (quiet mods first; equip3d/inv3d for SafeRead).
+
+**C2 follow-ups (2026-10-04, proposals for owning sessions; no edits made in these dirs).** C2 added `saferead::readExoLoose`
+(tolerant CExoString copy: truncates, page-end fallback, `"?"` when unreadable) and `saferead::formatResRef16` / `readResRef16`
+(flags `RR_LOWER`, `RR_SPACE_BAD`, `RR_EMPTY_Q`) to `SafeRead.h`; companion_ai, perf_lab and equip_icon_fix adopted them.
+- Hotbar (`ActionHotbar.cpp` ~:222, inline icon resref at `e+0x20`): `readResRef16(S_Entry, e + 0x20, ib, 0)`; keep the
+  `g_iconFaults` log on a `false` return. `en.icon = ib` already stops at the NUL, so the output is unchanged. Hotbar session's call.
+- equip3d (`EquipCharPreview.cpp` ~:557, helmet model resref): goes with C3 (IsBadReadPtr removal). Its alnum+underscore `okName`
+  check differs from the resref formatter, so it keeps a local predicate over `readResRef16(site, item + ItemModelResOff, name, 0)`.
+- level_up `readTag` (`LevelUpOverride.cpp` ~:946): `readExo` (strict) or `readExoLoose` (tolerant); owner's call, level-up session.
