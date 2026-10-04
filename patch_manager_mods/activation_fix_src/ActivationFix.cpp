@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include "CodePatch.h"
 
 namespace {
 
@@ -69,21 +70,10 @@ bool foregroundIsOurs(HWND* fgOut, DWORD* pidOut) {
     return fg && pid == GetCurrentProcessId();
 }
 
-int writeCode(uintptr_t at, const uint8_t* expect, const uint8_t* repl, int n, uint8_t* seen) {
-    MEMORY_BASIC_INFORMATION mb;
-    if (!VirtualQuery(reinterpret_cast<void*>(at), &mb, sizeof(mb)) || mb.State != MEM_COMMIT) return -3;
-    auto p = reinterpret_cast<uint8_t*>(at);
-    memcpy(seen, p, n);
-    if (memcmp(p, expect, n) != 0) return -1;
-    DWORD old;
-    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old)) return -2;
-    memcpy(p, repl, n);
-    VirtualProtect(p, n, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), p, n);
-    return 1;
+int writeSite(uintptr_t at, const uint8_t* expect, const uint8_t* repl, int n, uint8_t* seen) {
+    if (!codepatch::committed(at, n)) return -3;
+    return codepatch::writeChecked(at, expect, repl, n, seen);
 }
-// rel32 for an instruction that will live at `site` (not at the staging buffer it is assembled in).
-inline void putRel32(uint8_t* buf, uintptr_t site, uintptr_t target) { int32_t d = static_cast<int32_t>(target - (site + 4)); memcpy(buf, &d, 4); }
 
 }  // namespace
 
@@ -120,8 +110,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         return TRUE;
     }
     uint8_t repl[6] = { 0xE8, 0, 0, 0, 0, 0x90 };
-    putRel32(repl + 1, SitePost + 1, reinterpret_cast<uintptr_t>(&ActFixMoviePost));
-    g_state = writeCode(SitePost, SiteOrig, repl, 6, g_seen);
+    codepatch::putRel32(repl + 1, SitePost + 1, reinterpret_cast<uintptr_t>(&ActFixMoviePost));
+    g_state = writeSite(SitePost, SiteOrig, repl, 6, g_seen);
     if (g_state == 1)
         logf("k2-activation-fix 1.0.0 loaded: site 0x%08x patched (CALL [PostMessageA] -> ActFixMoviePost %p) pid=%lu",
              (unsigned)SitePost, reinterpret_cast<void*>(&ActFixMoviePost), GetCurrentProcessId());
