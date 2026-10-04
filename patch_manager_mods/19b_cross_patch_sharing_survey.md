@@ -64,18 +64,18 @@ Companion to doc 19. Question (user): can the RFC #180 registry simplify our pat
 - PRs cherry-pick the Common headers they include, at the tested version. Steam constants stay until the PR3 address-DB rows exist, then
   move to `GameAPI/GameVersion` lookups.
 
-**Ranked list (status).**
+**Ranked list (status, refreshed 2026-10-03; live tracking in doc 24).**
 
 | # | Item | Adopters | Status |
 |---|---|---|---|
-| 1 | `KpLog.h` (doc 19 Phase 2/6) | all 16 mods with a hand-copied `logf` | waits for doc 19 Phase 2 |
-| 2 | `GameAddr.h` (`namespace gameaddr`) | 19 addresses in 2-8 mods each | hotbar first (Phase X, 10-03) |
-| 3 | SafeRead adoption + B7 `saferead::readExo` | hotbar, equip3d, inv3d (IsBadReadPtr copies); buff/effects partial | hotbar first (Phase X) |
+| 1 | `KpLog.h` (doc 19 Phase 2/6) | all 16 mods with a hand-copied `logf` | header merged (KPM local-mods 706b150); pilot mouse-probe 0.2.0 live 10-03; rest = doc 24 C5 |
+| 2 | `GameAddr.h` (`namespace gameaddr`) | 19 addresses in 2-8 mods each | DONE hotbar only (10-03); K2Addr in buff/shield/portrait repo copies; intake = doc 24 C6 |
+| 3 | SafeRead adoption + B7 `saferead::readExo` | hotbar, equip3d, inv3d (IsBadReadPtr copies); buff/effects partial | SafeRead in 13 mods; holdouts equip3d (14 IsBadReadPtr), level_up = doc 24 C2/C3 |
 | 4 | `IniFile.h` (B3) | effects, equip3d, inv3d, sort_filter, ranged_ai, companion_ai, level_up | open; fold into the kplog.ini reloader |
 | 5 | wheel/WndProc = A1 `k2.guiinput` | effects, inv3d, equip3d, hotbar | registry interface, not a header |
-| 6 | `CodePatch.h` (`writeCode(at, expect, repl, n)` with original-byte check, keep state codes 1/0/-1/-2/-3) | activation_fix, equip_icon_fix, robustness_fixes, perf_lab | candidate |
-| 7 | B2 GuiKit adoption (+ `showTip`, `inRect`) | hotbar, effects, equip3d, sort_filter, inv3d | hotbar first (Phase X) |
-| 8 | B6 `Party.h` (`controlledCreature`, `partyCount`, `table`) | hotbar, companion_ai, buff, effects | hotbar first (Phase X) |
+| 6 | `CodePatch.h` (`writeCode(at, expect, repl, n)` with original-byte check, keep state codes 1/0/-1/-2/-3) | activation_fix, equip_icon_fix, robustness_fixes, perf_lab | candidate = doc 24 C1 |
+| 7 | B2 GuiKit adoption (+ `showTip`, `inRect`) | hotbar, effects, equip3d, sort_filter, inv3d | 4 adopters (hotbar first); effects = doc 24 C4 |
+| 8 | B6 `Party.h` (`controlledCreature`, `partyCount`, `table`) | hotbar, companion_ai, buff, effects | 2 adopters (hotbar first) |
 | 9 | `SaveBinding.h` | hotbar (per-save files), level_up (GUID globals) | needs framework save events; stays local |
 | 10 | `Textures.h` | hotbar only | defer until a second user |
 | 11 | `TestHarness.h` | perf_lab harness, pure-logic tests | doc 20 |
