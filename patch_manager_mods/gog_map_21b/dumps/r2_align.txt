@@ -1,0 +1,30 @@
+SetMainInterfaceChar 00744b20 -> 00516120  insn 10/10  bytes 25/25  identical 10  addr-diff 0  other 0
+DisplayToolTip     00744b40 -> 00516140  insn 27/27  bytes 77/77  identical 25  addr-diff 3  other 0
+CharButtonDraw     00744b90 -> 00516190  insn 38/38  bytes 133/133  identical 35  addr-diff 4  other 0
+CharInitialize     007450e0 -> 005166e0  insn 345/345  bytes 1148/1148  identical 300  addr-diff 46  other 0
+CharAdjust         00745560 -> 00516b60  insn 155/155  bytes 519/519  identical 151  addr-diff 4  other 0
+SetVitality        0074f940 -> 005210c0  insn 41/41  bytes 137/137  identical 37  addr-diff 4  other 0
+SetForcePoints     0074f9d0 -> 00521150  insn 36/36  bytes 120/120  identical 32  addr-diff 4  other 0
+CharCtor           0074a910 -> 0051c110  insn 67/67  bytes 254/254  identical 52  addr-diff 15  other 0
+InGameMenuCtor     00754ed0 -> 005265d0  insn 1189/1189  bytes 5288/5288  identical 956  addr-diff 233  other 0
+BorderCtor         00414a50 00912e20  MISSING DUMP (False,False)
+TextCtor           004171a0 00915570  MISSING DUMP (False,False)
+LabelDraw          00419880 -> 00917b20  insn 25/25  bytes 67/67  identical 25  addr-diff 0  other 0
+TextDraw           00417720 -> 00915af0  insn 30/30  bytes 82/82  identical 29  addr-diff 1  other 0
+GEffectCtor        005e4920 -> 007345e0  insn 111/111  bytes 416/416  identical 97  addr-diff 15  other 0
+GEffectSetNumInts  005e4dd0 -> 00734a90  insn 47/47  bytes 134/134  identical 44  addr-diff 3  other 0
+GEffectGetInt      005e4e60 -> 00734b20  insn 11/11  bytes 25/25  identical 11  addr-diff 0  other 0
+GEffectSetInt      005e4e80 -> 00734b40  insn 12/12  bytes 28/28  identical 12  addr-diff 0  other 0
+GEffectSetExpiry   005e4f80 -> 00734c40  insn 13/13  bytes 31/31  identical 13  addr-diff 0  other 0
+GEffectGetExpiry   005e4fa0 -> 00734c60  insn 15/15  bytes 35/35  identical 15  addr-diff 0  other 0
+GEffectSetCreator  005e5ea0 -> 00735b60  insn 67/67  bytes 191/191  identical 65  addr-diff 2  other 0
+ScaleHelperA       0040fa30 -> 0090deb0  insn 29/29  bytes 79/79  identical 27  addr-diff 2  other 0
+ScaleHelperB       0040fa80 -> 0090df00  insn 64/64  bytes 188/188  identical 58  addr-diff 7  other 0
+TexResetAll        00427d90 -> 0081a490  insn 22/22  bytes 70/70  identical 17  addr-diff 6  other 0
+TexSetMem          00427de0 -> 0081a4e0  insn 81/81  bytes 330/330  identical 42  addr-diff 42  other 0
+TexBuildAll        00427810 -> 00819f00  insn 93/93  bytes 348/348  identical 74  addr-diff 19  other 0
+AppRef1            00413f90 -> 00912410  insn 24/24  bytes 67/67  identical 22  addr-diff 2  other 0
+AppRef2            00539d60 -> 0066a400  insn 30/28  bytes 87/87  identical 4  addr-diff 0  other 24
+AppRef3            005453c0 -> 006ac0a0  insn 31/31  bytes 94/94  identical 28  addr-diff 3  other 0
+AppRef4            00546a70 -> 006ad750  insn 14/14  bytes 46/46  identical 12  addr-diff 2  other 0
+AppRef5            00579790 -> 006922c0  insn 36/36  bytes 105/105  identical 31  addr-diff 5  other 0

@@ -1,0 +1,9 @@
+SetCornerImage     00414680 -> 00912a50  insn 73/73  bytes 219/219  identical 66  addr-diff 7  other 0
+SetEdgeImage       00414760 -> 00912b30  insn 73/73  bytes 219/219  identical 66  addr-diff 7  other 0
+SetFillImage       00414840 -> 00912c10  insn 73/73  bytes 219/219  identical 66  addr-diff 7  other 0
+TargetMenuSound    00744260 -> 00515860  insn 125/125  bytes 420/420  identical 119  addr-diff 6  other 0
+TextLoad           00417480 -> 00915850  insn 196/196  bytes 666/666  identical 170  addr-diff 32  other 0
+PanelDtor          0040e860 -> 0090cce0  insn 85/85  bytes 276/276  identical 80  addr-diff 8  other 0
+AppCtor            00401730 -> 004016f0  insn 103/103  bytes 385/385  identical 93  addr-diff 12  other 0
+AppCreateServer    00401bc0 -> 00401b80  insn 50/50  bytes 168/168  identical 44  addr-diff 7  other 0
+AppDestroyServer   00401c70 -> 00401c30  insn 39/39  bytes 125/125  identical 34  addr-diff 5  other 0

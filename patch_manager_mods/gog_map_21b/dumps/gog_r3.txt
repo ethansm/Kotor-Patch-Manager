@@ -1,0 +1,985 @@
+=== FN 912a50
+FUNC SetCornerImage entry=00912a50 size=219 conv=__thiscall thunk=false
+00912a50  55                        PUSH EBP
+00912a51  8b ec                     MOV EBP,ESP
+00912a53  83 ec 38                  SUB ESP,0x38
+00912a56  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+00912a5b  33 c5                     XOR EAX,EBP
+00912a5d  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+00912a60  89 4d cc                  MOV dword ptr [EBP + -0x34],ECX
+00912a63  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912a66  83 c0 24                  ADD EAX,0x24
+00912a69  50                        PUSH EAX
+00912a6a  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00912a6d  e8 4e 79 d0 ff            CALL 0x0061a3c0  ->0061a3c0(operator!=@0061a3c0)
+00912a72  85 c0                     TEST EAX,EAX
+00912a74  75 0a                     JNZ 0x00912a80  ->00912a80(SetCornerImage@00912a50)
+00912a76  83 7d 0c 00               CMP dword ptr [EBP + 0xc],0x0
+00912a7a  0f 84 9b 00 00 00         JZ 0x00912b1b  ->00912b1b(SetCornerImage@00912a50)
+00912a80  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00912a83  51                        PUSH ECX
+00912a84  8d 55 d8                  LEA EDX,[EBP + -0x28]
+00912a87  52                        PUSH EDX
+00912a88  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912a8b  83 c1 24                  ADD ECX,0x24
+00912a8e  e8 5d 7b d0 ff            CALL 0x0061a5f0  ->0061a5f0(operator=@0061a5f0)
+00912a93  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912a96  83 78 54 00               CMP dword ptr [EAX + 0x54],0x0
+00912a9a  74 7f                     JZ 0x00912b1b  ->00912b1b(SetCornerImage@00912a50)
+00912a9c  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912a9f  8b 51 54                  MOV EDX,dword ptr [ECX + 0x54]
+00912aa2  83 7a 6c 00               CMP dword ptr [EDX + 0x6c],0x0
+00912aa6  74 40                     JZ 0x00912ae8  ->00912ae8(SetCornerImage@00912a50)
+00912aa8  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912aab  8b 48 54                  MOV ECX,dword ptr [EAX + 0x54]
+00912aae  8b 51 6c                  MOV EDX,dword ptr [ECX + 0x6c]
+00912ab1  89 55 d0                  MOV dword ptr [EBP + -0x30],EDX
+00912ab4  8b 45 d0                  MOV EAX,dword ptr [EBP + -0x30]
+00912ab7  89 45 d4                  MOV dword ptr [EBP + -0x2c],EAX
+00912aba  83 7d d4 00               CMP dword ptr [EBP + -0x2c],0x0
+00912abe  74 14                     JZ 0x00912ad4  ->00912ad4(SetCornerImage@00912a50)
+00912ac0  6a 01                     PUSH 0x1
+00912ac2  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00912ac5  8b 11                     MOV EDX,dword ptr [ECX]
+00912ac7  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00912aca  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+00912acd  ff d0                     CALL EAX
+00912acf  89 45 c8                  MOV dword ptr [EBP + -0x38],EAX
+00912ad2  eb 07                     JMP 0x00912adb  ->00912adb(SetCornerImage@00912a50)
+00912ad4  c7 45 c8 00 00 00 00      MOV dword ptr [EBP + -0x38],0x0
+00912adb  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912ade  8b 51 54                  MOV EDX,dword ptr [ECX + 0x54]
+00912ae1  c7 42 6c 00 00 00 00      MOV dword ptr [EDX + 0x6c],0x0
+00912ae8  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912aeb  83 c1 24                  ADD ECX,0x24
+00912aee  e8 6d 78 d0 ff            CALL 0x0061a360  ->0061a360(IsValid@0061a360)
+00912af3  85 c0                     TEST EAX,EAX
+00912af5  74 24                     JZ 0x00912b1b  ->00912b1b(SetCornerImage@00912a50)
+00912af7  8d 45 e8                  LEA EAX,[EBP + -0x18]
+00912afa  50                        PUSH EAX
+00912afb  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912afe  83 c1 24                  ADD ECX,0x24
+00912b01  e8 ca 77 d0 ff            CALL 0x0061a2d0  ->0061a2d0(CopyToString@0061a2d0)
+00912b06  8d 4d e8                  LEA ECX,[EBP + -0x18]
+00912b09  51                        PUSH ECX
+00912b0a  e8 61 29 fc ff            CALL 0x008d5470  ->008d5470(NewCAurGUIImage@008d5470)
+00912b0f  83 c4 04                  ADD ESP,0x4
+00912b12  8b 55 cc                  MOV EDX,dword ptr [EBP + -0x34]
+00912b15  8b 4a 54                  MOV ECX,dword ptr [EDX + 0x54]
+00912b18  89 41 6c                  MOV dword ptr [ECX + 0x6c],EAX
+00912b1b  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+00912b1e  33 cd                     XOR ECX,EBP
+00912b20  e8 ed e7 00 00            CALL 0x00921312  ->00921312(@__security_check_cookie@4@00921312)
+00912b25  8b e5                     MOV ESP,EBP
+00912b27  5d                        POP EBP
+00912b28  c2 08 00                  RET 0x8
+=== FN 912b30
+FUNC SetEdgeImage entry=00912b30 size=219 conv=__thiscall thunk=false
+00912b30  55                        PUSH EBP
+00912b31  8b ec                     MOV EBP,ESP
+00912b33  83 ec 38                  SUB ESP,0x38
+00912b36  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+00912b3b  33 c5                     XOR EAX,EBP
+00912b3d  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+00912b40  89 4d cc                  MOV dword ptr [EBP + -0x34],ECX
+00912b43  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912b46  83 c0 34                  ADD EAX,0x34
+00912b49  50                        PUSH EAX
+00912b4a  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00912b4d  e8 6e 78 d0 ff            CALL 0x0061a3c0  ->0061a3c0(operator!=@0061a3c0)
+00912b52  85 c0                     TEST EAX,EAX
+00912b54  75 0a                     JNZ 0x00912b60  ->00912b60(SetEdgeImage@00912b30)
+00912b56  83 7d 0c 00               CMP dword ptr [EBP + 0xc],0x0
+00912b5a  0f 84 9b 00 00 00         JZ 0x00912bfb  ->00912bfb(SetEdgeImage@00912b30)
+00912b60  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00912b63  51                        PUSH ECX
+00912b64  8d 55 d8                  LEA EDX,[EBP + -0x28]
+00912b67  52                        PUSH EDX
+00912b68  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912b6b  83 c1 34                  ADD ECX,0x34
+00912b6e  e8 7d 7a d0 ff            CALL 0x0061a5f0  ->0061a5f0(operator=@0061a5f0)
+00912b73  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912b76  83 78 54 00               CMP dword ptr [EAX + 0x54],0x0
+00912b7a  74 7f                     JZ 0x00912bfb  ->00912bfb(SetEdgeImage@00912b30)
+00912b7c  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912b7f  8b 51 54                  MOV EDX,dword ptr [ECX + 0x54]
+00912b82  83 7a 70 00               CMP dword ptr [EDX + 0x70],0x0
+00912b86  74 40                     JZ 0x00912bc8  ->00912bc8(SetEdgeImage@00912b30)
+00912b88  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912b8b  8b 48 54                  MOV ECX,dword ptr [EAX + 0x54]
+00912b8e  8b 51 70                  MOV EDX,dword ptr [ECX + 0x70]
+00912b91  89 55 d0                  MOV dword ptr [EBP + -0x30],EDX
+00912b94  8b 45 d0                  MOV EAX,dword ptr [EBP + -0x30]
+00912b97  89 45 d4                  MOV dword ptr [EBP + -0x2c],EAX
+00912b9a  83 7d d4 00               CMP dword ptr [EBP + -0x2c],0x0
+00912b9e  74 14                     JZ 0x00912bb4  ->00912bb4(SetEdgeImage@00912b30)
+00912ba0  6a 01                     PUSH 0x1
+00912ba2  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00912ba5  8b 11                     MOV EDX,dword ptr [ECX]
+00912ba7  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00912baa  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+00912bad  ff d0                     CALL EAX
+00912baf  89 45 c8                  MOV dword ptr [EBP + -0x38],EAX
+00912bb2  eb 07                     JMP 0x00912bbb  ->00912bbb(SetEdgeImage@00912b30)
+00912bb4  c7 45 c8 00 00 00 00      MOV dword ptr [EBP + -0x38],0x0
+00912bbb  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912bbe  8b 51 54                  MOV EDX,dword ptr [ECX + 0x54]
+00912bc1  c7 42 70 00 00 00 00      MOV dword ptr [EDX + 0x70],0x0
+00912bc8  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912bcb  83 c1 34                  ADD ECX,0x34
+00912bce  e8 8d 77 d0 ff            CALL 0x0061a360  ->0061a360(IsValid@0061a360)
+00912bd3  85 c0                     TEST EAX,EAX
+00912bd5  74 24                     JZ 0x00912bfb  ->00912bfb(SetEdgeImage@00912b30)
+00912bd7  8d 45 e8                  LEA EAX,[EBP + -0x18]
+00912bda  50                        PUSH EAX
+00912bdb  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912bde  83 c1 34                  ADD ECX,0x34
+00912be1  e8 ea 76 d0 ff            CALL 0x0061a2d0  ->0061a2d0(CopyToString@0061a2d0)
+00912be6  8d 4d e8                  LEA ECX,[EBP + -0x18]
+00912be9  51                        PUSH ECX
+00912bea  e8 81 28 fc ff            CALL 0x008d5470  ->008d5470(NewCAurGUIImage@008d5470)
+00912bef  83 c4 04                  ADD ESP,0x4
+00912bf2  8b 55 cc                  MOV EDX,dword ptr [EBP + -0x34]
+00912bf5  8b 4a 54                  MOV ECX,dword ptr [EDX + 0x54]
+00912bf8  89 41 70                  MOV dword ptr [ECX + 0x70],EAX
+00912bfb  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+00912bfe  33 cd                     XOR ECX,EBP
+00912c00  e8 0d e7 00 00            CALL 0x00921312  ->00921312(@__security_check_cookie@4@00921312)
+00912c05  8b e5                     MOV ESP,EBP
+00912c07  5d                        POP EBP
+00912c08  c2 08 00                  RET 0x8
+=== FN 912c10
+FUNC SetFillImage entry=00912c10 size=219 conv=__thiscall thunk=false
+00912c10  55                        PUSH EBP
+00912c11  8b ec                     MOV EBP,ESP
+00912c13  83 ec 38                  SUB ESP,0x38
+00912c16  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+00912c1b  33 c5                     XOR EAX,EBP
+00912c1d  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+00912c20  89 4d cc                  MOV dword ptr [EBP + -0x34],ECX
+00912c23  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912c26  83 c0 44                  ADD EAX,0x44
+00912c29  50                        PUSH EAX
+00912c2a  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00912c2d  e8 8e 77 d0 ff            CALL 0x0061a3c0  ->0061a3c0(operator!=@0061a3c0)
+00912c32  85 c0                     TEST EAX,EAX
+00912c34  75 0a                     JNZ 0x00912c40  ->00912c40(SetFillImage@00912c10)
+00912c36  83 7d 0c 00               CMP dword ptr [EBP + 0xc],0x0
+00912c3a  0f 84 9b 00 00 00         JZ 0x00912cdb  ->00912cdb(SetFillImage@00912c10)
+00912c40  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00912c43  51                        PUSH ECX
+00912c44  8d 55 d8                  LEA EDX,[EBP + -0x28]
+00912c47  52                        PUSH EDX
+00912c48  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912c4b  83 c1 44                  ADD ECX,0x44
+00912c4e  e8 9d 79 d0 ff            CALL 0x0061a5f0  ->0061a5f0(operator=@0061a5f0)
+00912c53  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912c56  83 78 54 00               CMP dword ptr [EAX + 0x54],0x0
+00912c5a  74 7f                     JZ 0x00912cdb  ->00912cdb(SetFillImage@00912c10)
+00912c5c  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912c5f  8b 51 54                  MOV EDX,dword ptr [ECX + 0x54]
+00912c62  83 7a 74 00               CMP dword ptr [EDX + 0x74],0x0
+00912c66  74 40                     JZ 0x00912ca8  ->00912ca8(SetFillImage@00912c10)
+00912c68  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00912c6b  8b 48 54                  MOV ECX,dword ptr [EAX + 0x54]
+00912c6e  8b 51 74                  MOV EDX,dword ptr [ECX + 0x74]
+00912c71  89 55 d0                  MOV dword ptr [EBP + -0x30],EDX
+00912c74  8b 45 d0                  MOV EAX,dword ptr [EBP + -0x30]
+00912c77  89 45 d4                  MOV dword ptr [EBP + -0x2c],EAX
+00912c7a  83 7d d4 00               CMP dword ptr [EBP + -0x2c],0x0
+00912c7e  74 14                     JZ 0x00912c94  ->00912c94(SetFillImage@00912c10)
+00912c80  6a 01                     PUSH 0x1
+00912c82  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00912c85  8b 11                     MOV EDX,dword ptr [ECX]
+00912c87  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00912c8a  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+00912c8d  ff d0                     CALL EAX
+00912c8f  89 45 c8                  MOV dword ptr [EBP + -0x38],EAX
+00912c92  eb 07                     JMP 0x00912c9b  ->00912c9b(SetFillImage@00912c10)
+00912c94  c7 45 c8 00 00 00 00      MOV dword ptr [EBP + -0x38],0x0
+00912c9b  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912c9e  8b 51 54                  MOV EDX,dword ptr [ECX + 0x54]
+00912ca1  c7 42 74 00 00 00 00      MOV dword ptr [EDX + 0x74],0x0
+00912ca8  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912cab  83 c1 44                  ADD ECX,0x44
+00912cae  e8 ad 76 d0 ff            CALL 0x0061a360  ->0061a360(IsValid@0061a360)
+00912cb3  85 c0                     TEST EAX,EAX
+00912cb5  74 24                     JZ 0x00912cdb  ->00912cdb(SetFillImage@00912c10)
+00912cb7  8d 45 e8                  LEA EAX,[EBP + -0x18]
+00912cba  50                        PUSH EAX
+00912cbb  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+00912cbe  83 c1 44                  ADD ECX,0x44
+00912cc1  e8 0a 76 d0 ff            CALL 0x0061a2d0  ->0061a2d0(CopyToString@0061a2d0)
+00912cc6  8d 4d e8                  LEA ECX,[EBP + -0x18]
+00912cc9  51                        PUSH ECX
+00912cca  e8 a1 27 fc ff            CALL 0x008d5470  ->008d5470(NewCAurGUIImage@008d5470)
+00912ccf  83 c4 04                  ADD ESP,0x4
+00912cd2  8b 55 cc                  MOV EDX,dword ptr [EBP + -0x34]
+00912cd5  8b 4a 54                  MOV ECX,dword ptr [EDX + 0x54]
+00912cd8  89 41 74                  MOV dword ptr [ECX + 0x74],EAX
+00912cdb  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+00912cde  33 cd                     XOR ECX,EBP
+00912ce0  e8 2d e6 00 00            CALL 0x00921312  ->00921312(@__security_check_cookie@4@00921312)
+00912ce5  8b e5                     MOV ESP,EBP
+00912ce7  5d                        POP EBP
+00912ce8  c2 08 00                  RET 0x8
+=== FN 515860
+FUNC SelectNextAction entry=00515860 size=420 conv=unknown thunk=false
+00515860  55                        PUSH EBP
+00515861  8b ec                     MOV EBP,ESP
+00515863  83 ec 28                  SUB ESP,0x28
+00515866  56                        PUSH ESI
+00515867  89 4d d8                  MOV dword ptr [EBP + -0x28],ECX
+0051586a  83 7d 08 00               CMP dword ptr [EBP + 0x8],0x0
+0051586e  0f 8c 89 01 00 00         JL 0x005159fd  ->005159fd(SelectNextAction@00515860)
+00515874  83 7d 08 03               CMP dword ptr [EBP + 0x8],0x3
+00515878  0f 8d 7f 01 00 00         JGE 0x005159fd  ->005159fd(SelectNextAction@00515860)
+0051587e  8b 45 08                  MOV EAX,dword ptr [EBP + 0x8]
+00515881  6b c0 0c                  IMUL EAX,EAX,0xc
+00515884  8b 4d d8                  MOV ECX,dword ptr [EBP + -0x28]
+00515887  8b 54 01 04               MOV EDX,dword ptr [ECX + EAX*0x1 + 0x4]
+0051588b  89 55 ec                  MOV dword ptr [EBP + -0x14],EDX
+0051588e  83 7d ec 00               CMP dword ptr [EBP + -0x14],0x0
+00515892  0f 84 65 01 00 00         JZ 0x005159fd  ->005159fd(SelectNextAction@00515860)
+00515898  a1 04 1c a1 00            MOV EAX,[0x00a11c04]
+0051589d  8b 48 04                  MOV ECX,dword ptr [EAX + 0x4]
+005158a0  89 4d f8                  MOV dword ptr [EBP + -0x8],ECX
+005158a3  8b 4d f8                  MOV ECX,dword ptr [EBP + -0x8]
+005158a6  e8 c5 77 ef ff            CALL 0x0040d070  ->0040d070(GetSWParty@0040d070)
+005158ab  8b c8                     MOV ECX,EAX
+005158ad  e8 fe 30 f6 ff            CALL 0x004789b0  ->004789b0(GetPlayerCharacter@004789b0)
+005158b2  89 45 f4                  MOV dword ptr [EBP + -0xc],EAX
+005158b5  c7 45 fc 00 00 00 00      MOV dword ptr [EBP + -0x4],0x0
+005158bc  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+005158bf  0f be 82 aa 1b 00 00      MOVSX EAX,byte ptr [EDX + 0x1baa]
+005158c6  6b c0 0c                  IMUL EAX,EAX,0xc
+005158c9  8b 4d d8                  MOV ECX,dword ptr [EBP + -0x28]
+005158cc  8d 54 01 24               LEA EDX,[ECX + EAX*0x1 + 0x24]
+005158d0  8b 45 08                  MOV EAX,dword ptr [EBP + 0x8]
+005158d3  83 3c 82 ff               CMP dword ptr [EDX + EAX*0x4],-0x1
+005158d7  0f 84 b0 00 00 00         JZ 0x0051598d  ->0051598d(SelectNextAction@00515860)
+005158dd  c7 45 f0 00 00 00 00      MOV dword ptr [EBP + -0x10],0x0
+005158e4  eb 09                     JMP 0x005158ef  ->005158ef(SelectNextAction@00515860)
+005158e6  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+005158e9  83 c1 01                  ADD ECX,0x1
+005158ec  89 4d f0                  MOV dword ptr [EBP + -0x10],ECX
+005158ef  8b 55 08                  MOV EDX,dword ptr [EBP + 0x8]
+005158f2  6b d2 0c                  IMUL EDX,EDX,0xc
+005158f5  8b 45 d8                  MOV EAX,dword ptr [EBP + -0x28]
+005158f8  8b 4c 10 04               MOV ECX,dword ptr [EAX + EDX*0x1 + 0x4]
+005158fc  89 4d e8                  MOV dword ptr [EBP + -0x18],ECX
+005158ff  8b 55 f0                  MOV EDX,dword ptr [EBP + -0x10]
+00515902  3b 55 e8                  CMP EDX,dword ptr [EBP + -0x18]
+00515905  0f 8d 82 00 00 00         JGE 0x0051598d  ->0051598d(SelectNextAction@00515860)
+0051590b  8b 45 08                  MOV EAX,dword ptr [EBP + 0x8]
+0051590e  6b c0 0c                  IMUL EAX,EAX,0xc
+00515911  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+00515914  6b c9 3c                  IMUL ECX,ECX,0x3c
+00515917  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+0051591a  8b 04 02                  MOV EAX,dword ptr [EDX + EAX*0x1]
+0051591d  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+00515920  0f be 92 aa 1b 00 00      MOVSX EDX,byte ptr [EDX + 0x1baa]
+00515927  6b d2 0c                  IMUL EDX,EDX,0xc
+0051592a  8b 75 d8                  MOV ESI,dword ptr [EBP + -0x28]
+0051592d  8d 54 16 24               LEA EDX,[ESI + EDX*0x1 + 0x24]
+00515931  8b 75 08                  MOV ESI,dword ptr [EBP + 0x8]
+00515934  8b 44 08 08               MOV EAX,dword ptr [EAX + ECX*0x1 + 0x8]
+00515938  3b 04 b2                  CMP EAX,dword ptr [EDX + ESI*0x4]
+0051593b  75 4b                     JNZ 0x00515988  ->00515988(SelectNextAction@00515860)
+0051593d  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00515940  6b c9 0c                  IMUL ECX,ECX,0xc
+00515943  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+00515946  8b 44 0a 04               MOV EAX,dword ptr [EDX + ECX*0x1 + 0x4]
+0051594a  89 45 e4                  MOV dword ptr [EBP + -0x1c],EAX
+0051594d  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+00515950  83 c1 01                  ADD ECX,0x1
+00515953  3b 4d e4                  CMP ECX,dword ptr [EBP + -0x1c]
+00515956  7d 1a                     JGE 0x00515972  ->00515972(SelectNextAction@00515860)
+00515958  8b 55 08                  MOV EDX,dword ptr [EBP + 0x8]
+0051595b  6b d2 0c                  IMUL EDX,EDX,0xc
+0051595e  8b 45 f0                  MOV EAX,dword ptr [EBP + -0x10]
+00515961  83 c0 01                  ADD EAX,0x1
+00515964  6b c0 3c                  IMUL EAX,EAX,0x3c
+00515967  8b 4d d8                  MOV ECX,dword ptr [EBP + -0x28]
+0051596a  03 04 11                  ADD EAX,dword ptr [ECX + EDX*0x1]
+0051596d  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+00515970  eb 14                     JMP 0x00515986  ->00515986(SelectNextAction@00515860)
+00515972  8b 55 08                  MOV EDX,dword ptr [EBP + 0x8]
+00515975  6b d2 0c                  IMUL EDX,EDX,0xc
+00515978  33 c0                     XOR EAX,EAX
+0051597a  6b c0 3c                  IMUL EAX,EAX,0x3c
+0051597d  8b 4d d8                  MOV ECX,dword ptr [EBP + -0x28]
+00515980  03 04 11                  ADD EAX,dword ptr [ECX + EDX*0x1]
+00515983  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+00515986  eb 05                     JMP 0x0051598d  ->0051598d(SelectNextAction@00515860)
+00515988  e9 59 ff ff ff            JMP 0x005158e6  ->005158e6(SelectNextAction@00515860)
+0051598d  8b 55 08                  MOV EDX,dword ptr [EBP + 0x8]
+00515990  6b d2 0c                  IMUL EDX,EDX,0xc
+00515993  8b 45 d8                  MOV EAX,dword ptr [EBP + -0x28]
+00515996  8b 4c 10 04               MOV ECX,dword ptr [EAX + EDX*0x1 + 0x4]
+0051599a  89 4d e0                  MOV dword ptr [EBP + -0x20],ECX
+0051599d  83 7d e0 01               CMP dword ptr [EBP + -0x20],0x1
+005159a1  7e 5a                     JLE 0x005159fd  ->005159fd(SelectNextAction@00515860)
+005159a3  83 7d fc 00               CMP dword ptr [EBP + -0x4],0x0
+005159a7  75 17                     JNZ 0x005159c0  ->005159c0(SelectNextAction@00515860)
+005159a9  8b 55 08                  MOV EDX,dword ptr [EBP + 0x8]
+005159ac  6b d2 0c                  IMUL EDX,EDX,0xc
+005159af  b8 01 00 00 00            MOV EAX,0x1
+005159b4  6b c0 3c                  IMUL EAX,EAX,0x3c
+005159b7  8b 4d d8                  MOV ECX,dword ptr [EBP + -0x28]
+005159ba  03 04 11                  ADD EAX,dword ptr [ECX + EDX*0x1]
+005159bd  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+005159c0  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+005159c3  0f be 82 aa 1b 00 00      MOVSX EAX,byte ptr [EDX + 0x1baa]
+005159ca  6b c0 0c                  IMUL EAX,EAX,0xc
+005159cd  8b 4d d8                  MOV ECX,dword ptr [EBP + -0x28]
+005159d0  8d 54 01 24               LEA EDX,[ECX + EAX*0x1 + 0x24]
+005159d4  8b 45 08                  MOV EAX,dword ptr [EBP + 0x8]
+005159d7  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+005159da  8b 49 08                  MOV ECX,dword ptr [ECX + 0x8]
+005159dd  89 0c 82                  MOV dword ptr [EDX + EAX*0x4],ECX
+005159e0  8b 15 04 1c a1 00         MOV EDX,dword ptr [0x00a11c04]
+005159e6  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+005159e9  89 45 dc                  MOV dword ptr [EBP + -0x24],EAX
+005159ec  6a 07                     PUSH 0x7
+005159ee  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+005159f1  e8 8a 79 ef ff            CALL 0x0040d380  ->0040d380(GetSWGuiManager@0040d380)
+005159f6  8b c8                     MOV ECX,EAX
+005159f8  e8 23 ad 3f 00            CALL 0x00910720  ->00910720(PlayGuiSound@00910720)
+005159fd  5e                        POP ESI
+005159fe  8b e5                     MOV ESP,EBP
+00515a00  5d                        POP EBP
+00515a01  c2 04 00                  RET 0x4
+=== FN 915850
+FUNC Load entry=00915850 size=666 conv=unknown thunk=false
+00915850  55                        PUSH EBP
+00915851  8b ec                     MOV EBP,ESP
+00915853  6a ff                     PUSH -0x1
+00915855  68 b0 1d 98 00            PUSH 0x981db0
+0091585a  64 a1 00 00 00 00         MOV EAX,FS:[0x0]
+00915860  50                        PUSH EAX
+00915861  81 ec 88 00 00 00         SUB ESP,0x88
+00915867  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+0091586c  33 c5                     XOR EAX,EBP
+0091586e  89 45 e8                  MOV dword ptr [EBP + -0x18],EAX
+00915871  50                        PUSH EAX
+00915872  8d 45 f4                  LEA EAX,[EBP + -0xc]
+00915875  64 a3 00 00 00 00         MOV FS:[0x0],EAX
+0091587b  89 8d 78 ff ff ff         MOV dword ptr [EBP + 0xffffff78],ECX
+00915881  8b 4d 10                  MOV ECX,dword ptr [EBP + 0x10]
+00915884  e8 97 08 cf ff            CALL 0x00606120  ->00606120(CStr@00606120)
+00915889  50                        PUSH EAX
+0091588a  8b 45 0c                  MOV EAX,dword ptr [EBP + 0xc]
+0091588d  50                        PUSH EAX
+0091588e  8d 4d f0                  LEA ECX,[EBP + -0x10]
+00915891  51                        PUSH ECX
+00915892  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00915895  e8 26 f2 d0 ff            CALL 0x00624ac0  ->00624ac0(GetStructFromStruct@00624ac0)
+0091589a  85 c0                     TEST EAX,EAX
+0091589c  0f 84 2d 02 00 00         JZ 0x00915acf  ->00915acf(Load@00915850)
+009158a2  68 94 e3 98 00            PUSH 0x98e394
+009158a7  8d 4d c4                  LEA ECX,[EBP + -0x3c]
+009158aa  e8 e1 48 d0 ff            CALL 0x0061a190  ->0061a190(CResRef@0061a190)
+009158af  8d 55 c4                  LEA EDX,[EBP + -0x3c]
+009158b2  52                        PUSH EDX
+009158b3  8d 45 ec                  LEA EAX,[EBP + -0x14]
+009158b6  50                        PUSH EAX
+009158b7  68 44 9a 9a 00            PUSH 0x9a9a44
+009158bc  8d 4d f0                  LEA ECX,[EBP + -0x10]
+009158bf  51                        PUSH ECX
+009158c0  8d 55 b4                  LEA EDX,[EBP + -0x4c]
+009158c3  52                        PUSH EDX
+009158c4  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+009158c7  e8 d4 f6 d0 ff            CALL 0x00624fa0  ->00624fa0(ReadFieldCResRef@00624fa0)
+009158cc  50                        PUSH EAX
+009158cd  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+009158d3  83 c1 18                  ADD ECX,0x18
+009158d6  e8 d5 f8 ff ff            CALL 0x009151b0  ->009151b0(SetBaseFont@009151b0)
+009158db  d9 e8                     FLD1
+009158dd  d9 5d a8                  FSTP float ptr [EBP + -0x58]
+009158e0  d9 e8                     FLD1
+009158e2  d9 5d ac                  FSTP float ptr [EBP + -0x54]
+009158e5  d9 e8                     FLD1
+009158e7  d9 5d b0                  FSTP float ptr [EBP + -0x50]
+009158ea  8d 45 a8                  LEA EAX,[EBP + -0x58]
+009158ed  50                        PUSH EAX
+009158ee  8d 4d ec                  LEA ECX,[EBP + -0x14]
+009158f1  51                        PUSH ECX
+009158f2  68 84 98 9a 00            PUSH 0x9a9884
+009158f7  8d 55 f0                  LEA EDX,[EBP + -0x10]
+009158fa  52                        PUSH EDX
+009158fb  8d 45 9c                  LEA EAX,[EBP + -0x64]
+009158fe  50                        PUSH EAX
+009158ff  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00915902  e8 79 fd d0 ff            CALL 0x00625680  ->00625680(ReadFieldVector@00625680)
+00915907  50                        PUSH EAX
+00915908  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+0091590e  83 c1 18                  ADD ECX,0x18
+00915911  e8 fa fb ff ff            CALL 0x00915510  ->00915510(SetDefaultColor@00915510)
+00915916  68 f5 58 98 00            PUSH 0x9858f5
+0091591b  8d 4d 94                  LEA ECX,[EBP + -0x6c]
+0091591e  e8 5d fd ce ff            CALL 0x00605680  ->00605680(CExoString@00605680)
+00915923  c7 45 fc 00 00 00 00      MOV dword ptr [EBP + -0x4],0x0
+0091592a  8d 4d 94                  LEA ECX,[EBP + -0x6c]
+0091592d  51                        PUSH ECX
+0091592e  8d 55 ec                  LEA EDX,[EBP + -0x14]
+00915931  52                        PUSH EDX
+00915932  68 3c 9a 9a 00            PUSH 0x9a9a3c
+00915937  8d 45 f0                  LEA EAX,[EBP + -0x10]
+0091593a  50                        PUSH EAX
+0091593b  8d 4d 8c                  LEA ECX,[EBP + -0x74]
+0091593e  51                        PUSH ECX
+0091593f  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00915942  e8 a9 f7 d0 ff            CALL 0x006250f0  ->006250f0(ReadFieldCExoString@006250f0)
+00915947  89 85 74 ff ff ff         MOV dword ptr [EBP + 0xffffff74],EAX
+0091594d  8b 95 74 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff74]
+00915953  89 95 70 ff ff ff         MOV dword ptr [EBP + 0xffffff70],EDX
+00915959  c6 45 fc 01               MOV byte ptr [EBP + -0x4],0x1
+0091595d  8b 85 70 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff70]
+00915963  50                        PUSH EAX
+00915964  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+0091596a  83 c1 18                  ADD ECX,0x18
+0091596d  e8 8e f8 ff ff            CALL 0x00915200  ->00915200(SetText@00915200)
+00915972  c6 45 fc 00               MOV byte ptr [EBP + -0x4],0x0
+00915976  8d 4d 8c                  LEA ECX,[EBP + -0x74]
+00915979  e8 12 ff ce ff            CALL 0x00605890  ->00605890(~CExoString@00605890)
+0091597e  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+00915985  8d 4d 94                  LEA ECX,[EBP + -0x6c]
+00915988  e8 03 ff ce ff            CALL 0x00605890  ->00605890(~CExoString@00605890)
+0091598d  6a ff                     PUSH -0x1
+0091598f  8d 4d ec                  LEA ECX,[EBP + -0x14]
+00915992  51                        PUSH ECX
+00915993  68 3c 8e 98 00            PUSH 0x988e3c
+00915998  8d 55 f0                  LEA EDX,[EBP + -0x10]
+0091599b  52                        PUSH EDX
+0091599c  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+0091599f  e8 bc f3 d0 ff            CALL 0x00624d60  ->00624d60(ReadFieldDWORD@00624d60)
+009159a4  50                        PUSH EAX
+009159a5  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+009159ab  83 c1 18                  ADD ECX,0x18
+009159ae  e8 bd f8 ff ff            CALL 0x00915270  ->00915270(SetStrRef@00915270)
+009159b3  6a 09                     PUSH 0x9
+009159b5  8d 45 ec                  LEA EAX,[EBP + -0x14]
+009159b8  50                        PUSH EAX
+009159b9  68 f8 99 9a 00            PUSH 0x9a99f8
+009159be  8d 4d f0                  LEA ECX,[EBP + -0x10]
+009159c1  51                        PUSH ECX
+009159c2  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+009159c5  e8 16 f4 d0 ff            CALL 0x00624de0  ->00624de0(ReadFieldINT@00624de0)
+009159ca  50                        PUSH EAX
+009159cb  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+009159d1  83 c1 18                  ADD ECX,0x18
+009159d4  e8 97 f9 ff ff            CALL 0x00915370  ->00915370(SetAlignment@00915370)
+009159d9  6a 00                     PUSH 0x0
+009159db  8d 55 ec                  LEA EDX,[EBP + -0x14]
+009159de  52                        PUSH EDX
+009159df  68 78 99 9a 00            PUSH 0x9a9978
+009159e4  8d 45 f0                  LEA EAX,[EBP + -0x10]
+009159e7  50                        PUSH EAX
+009159e8  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+009159eb  e8 70 f1 d0 ff            CALL 0x00624b60  ->00624b60(ReadFieldBYTE@00624b60)
+009159f0  0f b6 c8                  MOVZX ECX,AL
+009159f3  89 8d 7c ff ff ff         MOV dword ptr [EBP + 0xffffff7c],ECX
+009159f9  8b 95 78 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff78]
+009159ff  83 c2 18                  ADD EDX,0x18
+00915a02  89 55 80                  MOV dword ptr [EBP + -0x80],EDX
+00915a05  8b 85 7c ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff7c]
+00915a0b  83 e0 01                  AND EAX,0x1
+00915a0e  c1 e0 06                  SHL EAX,0x6
+00915a11  8b 4d 80                  MOV ECX,dword ptr [EBP + -0x80]
+00915a14  8b 51 38                  MOV EDX,dword ptr [ECX + 0x38]
+00915a17  83 e2 bf                  AND EDX,0xffffffbf
+00915a1a  0b d0                     OR EDX,EAX
+00915a1c  8b 45 80                  MOV EAX,dword ptr [EBP + -0x80]
+00915a1f  89 50 38                  MOV dword ptr [EAX + 0x38],EDX
+00915a22  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+00915a28  83 79 14 00               CMP dword ptr [ECX + 0x14],0x0
+00915a2c  74 46                     JZ 0x00915a74  ->00915a74(Load@00915850)
+00915a2e  8b 95 78 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff78]
+00915a34  8b 42 14                  MOV EAX,dword ptr [EDX + 0x14]
+00915a37  89 45 84                  MOV dword ptr [EBP + -0x7c],EAX
+00915a3a  8b 4d 84                  MOV ECX,dword ptr [EBP + -0x7c]
+00915a3d  89 4d 88                  MOV dword ptr [EBP + -0x78],ECX
+00915a40  83 7d 88 00               CMP dword ptr [EBP + -0x78],0x0
+00915a44  74 17                     JZ 0x00915a5d  ->00915a5d(Load@00915850)
+00915a46  6a 01                     PUSH 0x1
+00915a48  8b 55 88                  MOV EDX,dword ptr [EBP + -0x78]
+00915a4b  8b 02                     MOV EAX,dword ptr [EDX]
+00915a4d  8b 4d 88                  MOV ECX,dword ptr [EBP + -0x78]
+00915a50  8b 50 04                  MOV EDX,dword ptr [EAX + 0x4]
+00915a53  ff d2                     CALL EDX
+00915a55  89 85 6c ff ff ff         MOV dword ptr [EBP + 0xffffff6c],EAX
+00915a5b  eb 0a                     JMP 0x00915a67  ->00915a67(Load@00915850)
+00915a5d  c7 85 6c ff ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffff6c],0x0
+00915a67  8b 85 78 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff78]
+00915a6d  c7 40 14 00 00 00 00      MOV dword ptr [EAX + 0x14],0x0
+00915a74  8d 4d d4                  LEA ECX,[EBP + -0x2c]
+00915a77  51                        PUSH ECX
+00915a78  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+00915a7e  83 c1 24                  ADD ECX,0x24
+00915a81  e8 4a 48 d0 ff            CALL 0x0061a2d0  ->0061a2d0(CopyToString@0061a2d0)
+00915a86  51                        PUSH ECX
+00915a87  d9 e8                     FLD1
+00915a89  d9 1c 24                  FSTP float ptr [ESP]
+00915a8c  8b 95 78 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff78]
+00915a92  83 c2 34                  ADD EDX,0x34
+00915a95  52                        PUSH EDX
+00915a96  8d 45 d4                  LEA EAX,[EBP + -0x2c]
+00915a99  50                        PUSH EAX
+00915a9a  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+00915aa0  83 c1 18                  ADD ECX,0x18
+00915aa3  e8 78 06 cf ff            CALL 0x00606120  ->00606120(CStr@00606120)
+00915aa8  50                        PUSH EAX
+00915aa9  e8 92 fa fb ff            CALL 0x008d5540  ->008d5540(NewCAurGUIString@008d5540)
+00915aae  83 c4 10                  ADD ESP,0x10
+00915ab1  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+00915ab7  89 41 14                  MOV dword ptr [ECX + 0x14],EAX
+00915aba  8b 95 78 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff78]
+00915ac0  52                        PUSH EDX
+00915ac1  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+00915ac7  83 c1 18                  ADD ECX,0x18
+00915aca  e8 71 f9 ff ff            CALL 0x00915440  ->00915440(SetTextObject@00915440)
+00915acf  8b 4d f4                  MOV ECX,dword ptr [EBP + -0xc]
+00915ad2  64 89 0d 00 00 00 00      MOV dword ptr FS:[0x0],ECX
+00915ad9  59                        POP ECX
+00915ada  8b 4d e8                  MOV ECX,dword ptr [EBP + -0x18]
+00915add  33 cd                     XOR ECX,EBP
+00915adf  e8 2e b8 00 00            CALL 0x00921312  ->00921312(@__security_check_cookie@4@00921312)
+00915ae4  8b e5                     MOV ESP,EBP
+00915ae6  5d                        POP EBP
+00915ae7  c2 0c 00                  RET 0xc
+=== FN 90cce0
+FUNC ~CSWGuiPanel entry=0090cce0 size=276 conv=__thiscall thunk=false
+0090cce0  55                        PUSH EBP
+0090cce1  8b ec                     MOV EBP,ESP
+0090cce3  6a ff                     PUSH -0x1
+0090cce5  68 f3 18 98 00            PUSH 0x9818f3
+0090ccea  64 a1 00 00 00 00         MOV EAX,FS:[0x0]
+0090ccf0  50                        PUSH EAX
+0090ccf1  83 ec 20                  SUB ESP,0x20
+0090ccf4  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+0090ccf9  33 c5                     XOR EAX,EBP
+0090ccfb  50                        PUSH EAX
+0090ccfc  8d 45 f4                  LEA EAX,[EBP + -0xc]
+0090ccff  64 a3 00 00 00 00         MOV FS:[0x0],EAX
+0090cd05  89 4d dc                  MOV dword ptr [EBP + -0x24],ECX
+0090cd08  8b 45 dc                  MOV EAX,dword ptr [EBP + -0x24]
+0090cd0b  c7 00 ec 97 9a 00         MOV dword ptr [EAX],0x9a97ec
+0090cd11  c7 45 fc 01 00 00 00      MOV dword ptr [EBP + -0x4],0x1
+0090cd18  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+0090cd1b  8b 51 28                  MOV EDX,dword ptr [ECX + 0x28]
+0090cd1e  89 55 f0                  MOV dword ptr [EBP + -0x10],EDX
+0090cd21  8b 45 dc                  MOV EAX,dword ptr [EBP + -0x24]
+0090cd24  8b 48 60                  MOV ECX,dword ptr [EAX + 0x60]
+0090cd27  89 4d e8                  MOV dword ptr [EBP + -0x18],ECX
+0090cd2a  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+0090cd2d  89 55 ec                  MOV dword ptr [EBP + -0x14],EDX
+0090cd30  83 7d ec 00               CMP dword ptr [EBP + -0x14],0x0
+0090cd34  74 13                     JZ 0x0090cd49  ->0090cd49(~CSWGuiPanel@0090cce0)
+0090cd36  6a 01                     PUSH 0x1
+0090cd38  8b 45 ec                  MOV EAX,dword ptr [EBP + -0x14]
+0090cd3b  8b 10                     MOV EDX,dword ptr [EAX]
+0090cd3d  8b 4d ec                  MOV ECX,dword ptr [EBP + -0x14]
+0090cd40  8b 02                     MOV EAX,dword ptr [EDX]
+0090cd42  ff d0                     CALL EAX
+0090cd44  89 45 d8                  MOV dword ptr [EBP + -0x28],EAX
+0090cd47  eb 07                     JMP 0x0090cd50  ->0090cd50(~CSWGuiPanel@0090cce0)
+0090cd49  c7 45 d8 00 00 00 00      MOV dword ptr [EBP + -0x28],0x0
+0090cd50  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+0090cd53  c7 41 60 00 00 00 00      MOV dword ptr [ECX + 0x60],0x0
+0090cd5a  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+0090cd5d  e8 be 0c 00 00            CALL 0x0090da20  ->0090da20(StopLoadFromLayout@0090da20)
+0090cd62  8b 55 dc                  MOV EDX,dword ptr [EBP + -0x24]
+0090cd65  8b 42 30                  MOV EAX,dword ptr [EDX + 0x30]
+0090cd68  89 45 e0                  MOV dword ptr [EBP + -0x20],EAX
+0090cd6b  8b 4d e0                  MOV ECX,dword ptr [EBP + -0x20]
+0090cd6e  89 4d e4                  MOV dword ptr [EBP + -0x1c],ECX
+0090cd71  83 7d e4 00               CMP dword ptr [EBP + -0x1c],0x0
+0090cd75  74 13                     JZ 0x0090cd8a  ->0090cd8a(~CSWGuiPanel@0090cce0)
+0090cd77  6a 01                     PUSH 0x1
+0090cd79  8b 55 e4                  MOV EDX,dword ptr [EBP + -0x1c]
+0090cd7c  8b 02                     MOV EAX,dword ptr [EDX]
+0090cd7e  8b 4d e4                  MOV ECX,dword ptr [EBP + -0x1c]
+0090cd81  8b 10                     MOV EDX,dword ptr [EAX]
+0090cd83  ff d2                     CALL EDX
+0090cd85  89 45 d4                  MOV dword ptr [EBP + -0x2c],EAX
+0090cd88  eb 07                     JMP 0x0090cd91  ->0090cd91(~CSWGuiPanel@0090cce0)
+0090cd8a  c7 45 d4 00 00 00 00      MOV dword ptr [EBP + -0x2c],0x0
+0090cd91  8b 45 dc                  MOV EAX,dword ptr [EBP + -0x24]
+0090cd94  c7 40 30 00 00 00 00      MOV dword ptr [EAX + 0x30],0x0
+0090cd9b  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+0090cd9e  83 79 1c 00               CMP dword ptr [ECX + 0x1c],0x0
+0090cda2  74 22                     JZ 0x0090cdc6  ->0090cdc6(~CSWGuiPanel@0090cce0)
+0090cda4  8b 55 dc                  MOV EDX,dword ptr [EBP + -0x24]
+0090cda7  52                        PUSH EDX
+0090cda8  8b 45 dc                  MOV EAX,dword ptr [EBP + -0x24]
+0090cdab  8b 48 1c                  MOV ECX,dword ptr [EAX + 0x1c]
+0090cdae  e8 cd 1e 00 00            CALL 0x0090ec80  ->0090ec80(PanelExists@0090ec80)
+0090cdb3  85 c0                     TEST EAX,EAX
+0090cdb5  74 0f                     JZ 0x0090cdc6  ->0090cdc6(~CSWGuiPanel@0090cce0)
+0090cdb7  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+0090cdba  51                        PUSH ECX
+0090cdbb  8b 55 dc                  MOV EDX,dword ptr [EBP + -0x24]
+0090cdbe  8b 4a 1c                  MOV ECX,dword ptr [EDX + 0x1c]
+0090cdc1  e8 2a 1d 00 00            CALL 0x0090eaf0  ->0090eaf0(RemovePanel@0090eaf0)
+0090cdc6  c6 45 fc 00               MOV byte ptr [EBP + -0x4],0x0
+0090cdca  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+0090cdcd  83 c1 24                  ADD ECX,0x24
+0090cdd0  e8 9b e8 cf ff            CALL 0x0060b670  ->0060b670(~CExoArrayList@0060b670)
+0090cdd5  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+0090cddc  8b 45 dc                  MOV EAX,dword ptr [EBP + -0x24]
+0090cddf  c7 00 30 9a 98 00         MOV dword ptr [EAX],0x989a30
+0090cde5  8b 4d f4                  MOV ECX,dword ptr [EBP + -0xc]
+0090cde8  64 89 0d 00 00 00 00      MOV dword ptr FS:[0x0],ECX
+0090cdef  59                        POP ECX
+0090cdf0  8b e5                     MOV ESP,EBP
+0090cdf2  5d                        POP EBP
+0090cdf3  c3                        RET
+=== FN 4016f0
+FUNC CAppManager entry=004016f0 size=385 conv=__thiscall thunk=false
+004016f0  55                        PUSH EBP
+004016f1  8b ec                     MOV EBP,ESP
+004016f3  6a ff                     PUSH -0x1
+004016f5  68 bc 6e 94 00            PUSH 0x946ebc
+004016fa  64 a1 00 00 00 00         MOV EAX,FS:[0x0]
+00401700  50                        PUSH EAX
+00401701  83 ec 34                  SUB ESP,0x34
+00401704  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+00401709  33 c5                     XOR EAX,EBP
+0040170b  50                        PUSH EAX
+0040170c  8d 45 f4                  LEA EAX,[EBP + -0xc]
+0040170f  64 a3 00 00 00 00         MOV FS:[0x0],EAX
+00401715  89 4d d0                  MOV dword ptr [EBP + -0x30],ECX
+00401718  8b 45 d0                  MOV EAX,dword ptr [EBP + -0x30]
+0040171b  c7 40 04 00 00 00 00      MOV dword ptr [EAX + 0x4],0x0
+00401722  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+00401725  c7 41 08 00 00 00 00      MOV dword ptr [ECX + 0x8],0x0
+0040172c  ff 15 cc 50 98 00         CALL dword ptr [0x009850cc]  ->EXTERNAL:00000082(GetTickCount@EXTERNAL:00000082)
+00401732  8b 55 d0                  MOV EDX,dword ptr [EBP + -0x30]
+00401735  89 42 18                  MOV dword ptr [EDX + 0x18],EAX
+00401738  6a 08                     PUSH 0x8
+0040173a  e8 08 fc 51 00            CALL 0x00921347  ->00921347(operator_new_uint@00921347)
+0040173f  83 c4 04                  ADD ESP,0x4
+00401742  89 45 ec                  MOV dword ptr [EBP + -0x14],EAX
+00401745  c7 45 fc 00 00 00 00      MOV dword ptr [EBP + -0x4],0x0
+0040174c  83 7d ec 00               CMP dword ptr [EBP + -0x14],0x0
+00401750  74 0d                     JZ 0x0040175f  ->0040175f(CAppManager@004016f0)
+00401752  8b 4d ec                  MOV ECX,dword ptr [EBP + -0x14]
+00401755  e8 76 ac 00 00            CALL 0x0040c3d0  ->0040c3d0(CClientExoApp@0040c3d0)
+0040175a  89 45 cc                  MOV dword ptr [EBP + -0x34],EAX
+0040175d  eb 07                     JMP 0x00401766  ->00401766(CAppManager@004016f0)
+0040175f  c7 45 cc 00 00 00 00      MOV dword ptr [EBP + -0x34],0x0
+00401766  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+00401769  89 45 f0                  MOV dword ptr [EBP + -0x10],EAX
+0040176c  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+00401773  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+00401776  8b 55 f0                  MOV EDX,dword ptr [EBP + -0x10]
+00401779  89 51 04                  MOV dword ptr [ECX + 0x4],EDX
+0040177c  6a 3c                     PUSH 0x3c
+0040177e  e8 c4 fb 51 00            CALL 0x00921347  ->00921347(operator_new_uint@00921347)
+00401783  83 c4 04                  ADD ESP,0x4
+00401786  89 45 e4                  MOV dword ptr [EBP + -0x1c],EAX
+00401789  c7 45 fc 01 00 00 00      MOV dword ptr [EBP + -0x4],0x1
+00401790  83 7d e4 00               CMP dword ptr [EBP + -0x1c],0x0
+00401794  74 0d                     JZ 0x004017a3  ->004017a3(CAppManager@004016f0)
+00401796  8b 4d e4                  MOV ECX,dword ptr [EBP + -0x1c]
+00401799  e8 e2 00 00 00            CALL 0x00401880  ->00401880(FUN_00401880@00401880)
+0040179e  89 45 c8                  MOV dword ptr [EBP + -0x38],EAX
+004017a1  eb 07                     JMP 0x004017aa  ->004017aa(CAppManager@004016f0)
+004017a3  c7 45 c8 00 00 00 00      MOV dword ptr [EBP + -0x38],0x0
+004017aa  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+004017ad  89 45 e8                  MOV dword ptr [EBP + -0x18],EAX
+004017b0  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+004017b7  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+004017ba  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+004017bd  89 51 14                  MOV dword ptr [ECX + 0x14],EDX
+004017c0  68 84 01 00 00            PUSH 0x184
+004017c5  e8 7d fb 51 00            CALL 0x00921347  ->00921347(operator_new_uint@00921347)
+004017ca  83 c4 04                  ADD ESP,0x4
+004017cd  89 45 dc                  MOV dword ptr [EBP + -0x24],EAX
+004017d0  c7 45 fc 02 00 00 00      MOV dword ptr [EBP + -0x4],0x2
+004017d7  83 7d dc 00               CMP dword ptr [EBP + -0x24],0x0
+004017db  74 0d                     JZ 0x004017ea  ->004017ea(CAppManager@004016f0)
+004017dd  8b 4d dc                  MOV ECX,dword ptr [EBP + -0x24]
+004017e0  e8 ab a7 00 00            CALL 0x0040bf90  ->0040bf90(CObjectTableManager@0040bf90)
+004017e5  89 45 c4                  MOV dword ptr [EBP + -0x3c],EAX
+004017e8  eb 07                     JMP 0x004017f1  ->004017f1(CAppManager@004016f0)
+004017ea  c7 45 c4 00 00 00 00      MOV dword ptr [EBP + -0x3c],0x0
+004017f1  8b 45 c4                  MOV EAX,dword ptr [EBP + -0x3c]
+004017f4  89 45 e0                  MOV dword ptr [EBP + -0x20],EAX
+004017f7  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+004017fe  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+00401801  8b 55 e0                  MOV EDX,dword ptr [EBP + -0x20]
+00401804  89 51 0c                  MOV dword ptr [ECX + 0xc],EDX
+00401807  68 84 01 00 00            PUSH 0x184
+0040180c  e8 36 fb 51 00            CALL 0x00921347  ->00921347(operator_new_uint@00921347)
+00401811  83 c4 04                  ADD ESP,0x4
+00401814  89 45 d4                  MOV dword ptr [EBP + -0x2c],EAX
+00401817  c7 45 fc 03 00 00 00      MOV dword ptr [EBP + -0x4],0x3
+0040181e  83 7d d4 00               CMP dword ptr [EBP + -0x2c],0x0
+00401822  74 0d                     JZ 0x00401831  ->00401831(CAppManager@004016f0)
+00401824  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+00401827  e8 64 a7 00 00            CALL 0x0040bf90  ->0040bf90(CObjectTableManager@0040bf90)
+0040182c  89 45 c0                  MOV dword ptr [EBP + -0x40],EAX
+0040182f  eb 07                     JMP 0x00401838  ->00401838(CAppManager@004016f0)
+00401831  c7 45 c0 00 00 00 00      MOV dword ptr [EBP + -0x40],0x0
+00401838  8b 45 c0                  MOV EAX,dword ptr [EBP + -0x40]
+0040183b  89 45 d8                  MOV dword ptr [EBP + -0x28],EAX
+0040183e  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+00401845  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+00401848  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+0040184b  89 51 10                  MOV dword ptr [ECX + 0x10],EDX
+0040184e  8b 45 d0                  MOV EAX,dword ptr [EBP + -0x30]
+00401851  c7 00 00 00 00 00         MOV dword ptr [EAX],0x0
+00401857  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+0040185a  e8 51 04 00 00            CALL 0x00401cb0  ->00401cb0(FUN_00401cb0@00401cb0)
+0040185f  8b 45 d0                  MOV EAX,dword ptr [EBP + -0x30]
+00401862  8b 4d f4                  MOV ECX,dword ptr [EBP + -0xc]
+00401865  64 89 0d 00 00 00 00      MOV dword ptr FS:[0x0],ECX
+0040186c  59                        POP ECX
+0040186d  8b e5                     MOV ESP,EBP
+0040186f  5d                        POP EBP
+00401870  c3                        RET
+=== FN 401b80
+FUNC CreateServer entry=00401b80 size=168 conv=unknown thunk=false
+00401b80  55                        PUSH EBP
+00401b81  8b ec                     MOV EBP,ESP
+00401b83  6a ff                     PUSH -0x1
+00401b85  68 6b ca 96 00            PUSH 0x96ca6b
+00401b8a  64 a1 00 00 00 00         MOV EAX,FS:[0x0]
+00401b90  50                        PUSH EAX
+00401b91  83 ec 10                  SUB ESP,0x10
+00401b94  a1 60 02 a1 00            MOV EAX,[0x00a10260]
+00401b99  33 c5                     XOR EAX,EBP
+00401b9b  50                        PUSH EAX
+00401b9c  8d 45 f4                  LEA EAX,[EBP + -0xc]
+00401b9f  64 a3 00 00 00 00         MOV FS:[0x0],EAX
+00401ba5  89 4d e8                  MOV dword ptr [EBP + -0x18],ECX
+00401ba8  8b 45 e8                  MOV EAX,dword ptr [EBP + -0x18]
+00401bab  83 78 08 00               CMP dword ptr [EAX + 0x8],0x0
+00401baf  74 08                     JZ 0x00401bb9  ->00401bb9(CreateServer@00401b80)
+00401bb1  8b 4d e8                  MOV ECX,dword ptr [EBP + -0x18]
+00401bb4  e8 77 00 00 00            CALL 0x00401c30  ->00401c30(DestroyServer@00401c30)
+00401bb9  6a 08                     PUSH 0x8
+00401bbb  e8 87 f7 51 00            CALL 0x00921347  ->00921347(operator_new_uint@00921347)
+00401bc0  83 c4 04                  ADD ESP,0x4
+00401bc3  89 45 ec                  MOV dword ptr [EBP + -0x14],EAX
+00401bc6  c7 45 fc 00 00 00 00      MOV dword ptr [EBP + -0x4],0x0
+00401bcd  83 7d ec 00               CMP dword ptr [EBP + -0x14],0x0
+00401bd1  74 0d                     JZ 0x00401be0  ->00401be0(CreateServer@00401b80)
+00401bd3  8b 4d ec                  MOV ECX,dword ptr [EBP + -0x14]
+00401bd6  e8 65 9a 24 00            CALL 0x0064b640  ->0064b640(CServerExoApp@0064b640)
+00401bdb  89 45 e4                  MOV dword ptr [EBP + -0x1c],EAX
+00401bde  eb 07                     JMP 0x00401be7  ->00401be7(CreateServer@00401b80)
+00401be0  c7 45 e4 00 00 00 00      MOV dword ptr [EBP + -0x1c],0x0
+00401be7  8b 4d e4                  MOV ECX,dword ptr [EBP + -0x1c]
+00401bea  89 4d f0                  MOV dword ptr [EBP + -0x10],ECX
+00401bed  c7 45 fc ff ff ff ff      MOV dword ptr [EBP + -0x4],0xffffffff
+00401bf4  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+00401bf7  8b 45 f0                  MOV EAX,dword ptr [EBP + -0x10]
+00401bfa  89 42 08                  MOV dword ptr [EDX + 0x8],EAX
+00401bfd  8b 4d 08                  MOV ECX,dword ptr [EBP + 0x8]
+00401c00  51                        PUSH ECX
+00401c01  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+00401c04  8b 4a 08                  MOV ECX,dword ptr [EDX + 0x8]
+00401c07  e8 d4 a3 24 00            CALL 0x0064bfe0  ->0064bfe0(StartServices@0064bfe0)
+00401c0c  8b 45 e8                  MOV EAX,dword ptr [EBP + -0x18]
+00401c0f  8b 48 08                  MOV ECX,dword ptr [EAX + 0x8]
+00401c12  e8 59 a2 24 00            CALL 0x0064be70  ->0064be70(Initialize@0064be70)
+00401c17  8b 4d f4                  MOV ECX,dword ptr [EBP + -0xc]
+00401c1a  64 89 0d 00 00 00 00      MOV dword ptr FS:[0x0],ECX
+00401c21  59                        POP ECX
+00401c22  8b e5                     MOV ESP,EBP
+00401c24  5d                        POP EBP
+00401c25  c2 04 00                  RET 0x4
+=== FN 401c30
+FUNC DestroyServer entry=00401c30 size=125 conv=unknown thunk=false
+00401c30  55                        PUSH EBP
+00401c31  8b ec                     MOV EBP,ESP
+00401c33  83 ec 10                  SUB ESP,0x10
+00401c36  89 4d f4                  MOV dword ptr [EBP + -0xc],ECX
+00401c39  8b 45 f4                  MOV EAX,dword ptr [EBP + -0xc]
+00401c3c  83 78 08 00               CMP dword ptr [EAX + 0x8],0x0
+00401c40  74 62                     JZ 0x00401ca4  ->00401ca4(DestroyServer@00401c30)
+00401c42  8b 4d f4                  MOV ECX,dword ptr [EBP + -0xc]
+00401c45  8b 49 08                  MOV ECX,dword ptr [ECX + 0x8]
+00401c48  e8 c3 a8 00 00            CALL 0x0040c510  ->0040c510(EndLoadBar@0040c510)
+00401c4d  8b 55 f4                  MOV EDX,dword ptr [EBP + -0xc]
+00401c50  8b 4a 08                  MOV ECX,dword ptr [EDX + 0x8]
+00401c53  e8 a8 a3 24 00            CALL 0x0064c000  ->0064c000(StopServices@0064c000)
+00401c58  8b 45 f4                  MOV EAX,dword ptr [EBP + -0xc]
+00401c5b  8b 48 08                  MOV ECX,dword ptr [EAX + 0x8]
+00401c5e  89 4d f8                  MOV dword ptr [EBP + -0x8],ECX
+00401c61  8b 55 f8                  MOV EDX,dword ptr [EBP + -0x8]
+00401c64  89 55 fc                  MOV dword ptr [EBP + -0x4],EDX
+00401c67  83 7d fc 00               CMP dword ptr [EBP + -0x4],0x0
+00401c6b  74 26                     JZ 0x00401c93  ->00401c93(DestroyServer@00401c30)
+00401c6d  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+00401c70  e8 8b 9a 24 00            CALL 0x0064b700  ->0064b700(~CServerExoApp@0064b700)
+00401c75  b8 01 00 00 00            MOV EAX,0x1
+00401c7a  83 e0 01                  AND EAX,0x1
+00401c7d  74 0c                     JZ 0x00401c8b  ->00401c8b(DestroyServer@00401c30)
+00401c7f  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+00401c82  51                        PUSH ECX
+00401c83  e8 99 f6 51 00            CALL 0x00921321  ->00921321(_free@00921321)
+00401c88  83 c4 04                  ADD ESP,0x4
+00401c8b  8b 55 fc                  MOV EDX,dword ptr [EBP + -0x4]
+00401c8e  89 55 f0                  MOV dword ptr [EBP + -0x10],EDX
+00401c91  eb 07                     JMP 0x00401c9a  ->00401c9a(DestroyServer@00401c30)
+00401c93  c7 45 f0 00 00 00 00      MOV dword ptr [EBP + -0x10],0x0
+00401c9a  8b 45 f4                  MOV EAX,dword ptr [EBP + -0xc]
+00401c9d  c7 40 08 00 00 00 00      MOV dword ptr [EAX + 0x8],0x0
+00401ca4  e8 67 6c 00 00            CALL 0x00408910  ->00408910(SetWindowTitle@00408910)
+00401ca9  8b e5                     MOV ESP,EBP
+00401cab  5d                        POP EBP
+00401cac  c3                        RET
+=== RAW a0ffe8 8
+00a0ffe8: 20 03 00 00 58 02 00 00
+=== RAW a768a4 16
+ERR ghidra.program.model.mem.MemoryAccessException: Unable to read bytes at ram:00a768a4
+=== RAW 9f7144 8
+009f7144: 00 00 80 3f 00 00 80 3f
+=== RAW a76858 4
+ERR ghidra.program.model.mem.MemoryAccessException: Unable to read bytes at ram:00a76858
+=== REFS a11bfc
+  from 0091e4fb READ in HandleMouseMove@0091e490
+  from 009179b7 READ in RemoveToolTip@009179b0
+  from 0090e359 READ in GetLocalMouseCoords@0090e350
+  from 0090e36b READ in GetLocalMouseCoords@0090e350
+  from 00438b94 READ in UpdateCamera@00438930
+  from 00438bb3 READ in UpdateCamera@00438930
+  from 00438c3d READ in UpdateCamera@00438930
+  from 00438c5d READ in UpdateCamera@00438930
+  from 00459a8a READ in ProcessInput@00459080
+  from 00459a93 READ in ProcessInput@00459080
+  from 00459c76 READ in ProcessInput@00459080
+  from 00459c84 READ in ProcessInput@00459080
+  from 00459c93 READ in ProcessInput@00459080
+  from 0045a8f0 READ in ProcessInput@00459080
+  from 0045a8ff READ in ProcessInput@00459080
+  from 0040a224 READ in HandleWMCharMessage@00409f70
+  from 0040a232 READ in HandleWMCharMessage@00409f70
+  from 004606d1 READ in HandleMouseOver@00460630
+  from 00469242 READ in SetGammaSetting@00469230
+  from 0046924b READ in SetGammaSetting@00469230
+  from 004692b0 READ in SetUseSmallFonts@00469270
+  from 004692b9 READ in SetUseSmallFonts@00469270
+  from 0090e77d WRITE in CSWGuiManager@0090e540
+  from 0090e959 WRITE in ~CSWGuiManager@0090e800
+  from 0091515a READ in SetFontRename@00915130
+  from 004603e2 READ in PerformLButtonUpAction@00460290
+  from 00460431 READ in PerformRButtonDownAction@00460420
+  from 00460451 READ in PerformRButtonUpAction@00460440
+  from 0046046b READ in PerformZMouseMoveAction@00460460
+  from 0044cd73 READ in SetToolTipInstantMode@0044cd50
+  from 0044cddd READ in SetToolTipInstantMode@0044cd50
+  from 004a3ccd READ in HandleServerToPlayerInventory@004a35a0
+  from 004a3d13 READ in HandleServerToPlayerInventory@004a35a0
+  from 0044d78a READ in StartCreditSequence@0044d730
+  from 0044d7c7 READ in StartCreditSequence@0044d730
+  from 0044d7f0 READ in StartCreditSequence@0044d730
+  from 0044d805 READ in StartCreditSequence@0044d730
+  from 00558a82 READ in CSWGuiInGameCredits@00558940
+  from 00558a91 READ in CSWGuiInGameCredits@00558940
+  from 00558ad5 READ in CSWGuiInGameCredits@00558940
+  from 00558b0a READ in CSWGuiInGameCredits@00558940
+  from 00558b17 READ in CSWGuiInGameCredits@00558940
+  from 00558c02 READ in CSWGuiInGameCredits@00558940
+  from 00558c0e READ in CSWGuiInGameCredits@00558940
+  from 004e46ae READ in Control_UpdateCameraDesiredOrientation@004e42c0
+  from 004e46f8 READ in Control_UpdateCameraDesiredOrientation@004e42c0
+  from 0051616a READ in DisplayToolTip@00516140
+  from 005315c0 READ in PositionToolTip@00531550
+  from 005315cb READ in PositionToolTip@00531550
+  from 005161dc READ in Draw@00516190
+  from 00517c18 READ in AddHelpPanel@00517490
+  from 00517e0c READ in HideHelp@00517df0
+  from 00517d12 READ in FUN_00517ca0@00517ca0
+  from 0051ed5d READ in PopupActionMenu@0051eca0
+  from 0051ed79 READ in PopupActionMenu@0051eca0
+  from 0051dbb2 READ in Update@0051daa0
+  from 0051dc17 READ in Update@0051daa0
+  from 0051f050 READ in FUN_0051f040@0051f040
+  from 00524e46 READ in PopupGamepadMenu@00524e00
+  from 00524e63 READ in PopupGamepadMenu@00524e00
+  from 00524eb0 READ in OnPanelRemoved@00524ea0
+  from 00524ec5 READ in OnPanelRemoved@00524ea0
+  from 00524eda READ in OnPanelRemoved@00524ea0
+  from 0090d949 READ in OnPanelRemoved@0090d940
+  from 0090d954 READ in OnPanelRemoved@0090d940
+  from 0090d965 READ in OnPanelRemoved@0090d940
+  from 0090d989 READ in OnPanelRemoved@0090d940
+  from 00526491 READ in HandleInputEvent@005260d0
+  from 0052e237 READ in OnPanelAdded@0052e060
+  from 0052e24a READ in OnPanelAdded@0052e060
+  from 0090d856 READ in OnPanelAdded@0090d840
+  from 0052e31c READ in OnPanelRemoved@0052e260
+  from 00530b5d READ in OnPanelAdded@0052f310
+  from 00530b70 READ in OnPanelAdded@0052f310
+  from 00530c17 READ in OnPanelRemoved@00530c10
+  from 0054c423 READ in SetEnabled@0054c370
+  from 0054c5e8 READ in ~CSWGuiPazaakCard@0054c5b0
+  from 0054c5fc READ in ~CSWGuiPazaakCard@0054c5b0
+  from 0054ccd9 READ in DrawDragDrop@0054ccd0
+  from 0054ccec READ in DrawDragDrop@0054ccd0
+  from 0054ccfd READ in DrawDragDrop@0054ccd0
+  from 0054cea9 READ in HandleLMouseDown@0054cea0
+  from 0054cebf READ in HandleLMouseDown@0054cea0
+  from 00917413 READ in HandleLMouseDown@009173d0
+  from 0054cf09 READ in HandleMouseCapturedMovement@0054cef0
+  from 0054cf1b READ in HandleMouseCapturedMovement@0054cef0
+  from 0054cf77 READ in HandleMouseCapturedMovement@0054cef0
+  from 0054cfa9 READ in HandleLMouseUp@0054cfa0
+  from 0054cfbc READ in HandleLMouseUp@0054cfa0
+  from 0054cfce READ in HandleLMouseUp@0054cfa0
+  from 0054cff2 READ in HandleLMouseUp@0054cfa0
+  from 00917439 READ in HandleLMouseUp@00917430
+  from 0091744a READ in HandleLMouseUp@00917430
+  from 0091745e READ in HandleLMouseUp@00917430
+  from 00917477 READ in HandleLMouseUp@00917430
+  from 009174bc READ in HandleLMouseUp@00917430
+  from 00917526 READ in HandleRMouseDown@009174e0
+  from 0054e038 READ in Draw@0054e020
+  from 00551128 READ in HandleAvailCardDrop@00551110
+  from 005511bb READ in HandleChosenCardDrop@00551190
+  from 00555ed2 READ in HandleHandCardDrop@00555ec0
+  from 00559000 READ in ~CSWGuiInGameCredits@00558ea0
+  from 0056f0de READ in OnResolutionChosen@0056eb90
+  from 0056f0e9 READ in OnResolutionChosen@0056eb90
+  from 0057356a READ in Control@00573320
+  from 005735b5 READ in Control@00573320
+  from 005a7299 READ in OnPanelAdded@005a71d0
+  from 005a72ac READ in OnPanelAdded@005a71d0
+  from 005a72d7 READ in OnPanelRemoved@005a72d0
+  from 005d3f38 READ in PromptForSaveName@005d3df0
+  from 005d7faf READ in OnPanelAdded@005d7ef0
+  from 005d7fc2 READ in OnPanelAdded@005d7ef0
+  from 005d7fef READ in OnPanelRemoved@005d7fe0
+  from 00916a1b READ in HandleMouseOver@009169f0
+  from 0091730d READ in HandleMouseOver@00917300
+  from 009172d0 READ in HandleFocusChange@00917280
+  from 00917549 READ in HandleRMouseUp@00917540
+  from 0091755a READ in HandleRMouseUp@00917540
+  from 0091756e READ in HandleRMouseUp@00917540
+  from 009175aa READ in HandleRMouseUp@00917540
+  from 00917963 READ in DisplayToolTip@009176c0
+  from 00918bdb READ in HandleLMouseDown@00918b90
+  from 00918bf9 READ in HandleLMouseUp@00918bf0
+  from 00918c0a READ in HandleLMouseUp@00918bf0
+  from 00918c1e READ in HandleLMouseUp@00918bf0
+  from 00918c37 READ in HandleLMouseUp@00918bf0
+  from 00918c6e READ in HandleLMouseUp@00918bf0
+  from 00919781 READ in HandleLMouseDown@00919700
+  from 0091979a READ in HandleMouseCapturedMovement@00919790
+  from 0091dafb READ in Draw@0091d920
+  from 0091e8f9 READ in HandleLMouseDown@0091e750
+  from 0091e90b READ in HandleLMouseDown@0091e750
+  from 0091e91e READ in HandleLMouseDown@0091e750
+  from 0091e936 READ in HandleLMouseDown@0091e750
+  from 0091e9d9 READ in HandleLMouseDown@0091e750
+  from 0091eaa7 READ in HandleLMouseUp@0091ea00
+  from 0091eae4 READ in HandleLMouseUp@0091ea00
+  from 0091eb10 READ in HandleMouseCapturedMovement@0091eb00
+  from 0091f19a READ in HandleFocusChange@0091f180
+  from 0091f1c8 READ in HandleFocusChange@0091f180
+  from 0091f46b READ in HandleLMouseUp@0091f460

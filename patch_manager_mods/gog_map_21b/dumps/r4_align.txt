@@ -1,0 +1,3 @@
+HudUpdate          0074c320 -> 0051daa0  insn 577/577  bytes 2402/2402  identical 521  addr-diff 57  other 0
+GetCanClick        007d0b90 -> 004e1290  insn 51/51  bytes 153/153  identical 45  addr-diff 6  other 0
+PanelDraw          0040ec90 -> 0090d110  insn 142/142  bytes 432/432  identical 138  addr-diff 5  other 0

@@ -1,0 +1,1448 @@
+=== FN 51daa0
+FUNC Update entry=0051daa0 size=2402 conv=unknown thunk=false
+0051daa0  55                        PUSH EBP
+0051daa1  8b ec                     MOV EBP,ESP
+0051daa3  81 ec f8 00 00 00         SUB ESP,0xf8
+0051daa9  89 8d 14 ff ff ff         MOV dword ptr [EBP + 0xffffff14],ECX
+0051daaf  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dab5  8b 48 1c                  MOV ECX,dword ptr [EAX + 0x1c]
+0051dab8  89 4d b4                  MOV dword ptr [EBP + -0x4c],ECX
+0051dabb  8b 55 b4                  MOV EDX,dword ptr [EBP + -0x4c]
+0051dabe  8b 82 98 00 00 00         MOV EAX,dword ptr [EDX + 0x98]
+0051dac4  89 45 b0                  MOV dword ptr [EBP + -0x50],EAX
+0051dac7  33 c9                     XOR ECX,ECX
+0051dac9  83 7d b0 00               CMP dword ptr [EBP + -0x50],0x0
+0051dacd  0f 94 c1                  SETZ CL
+0051dad0  88 4d e7                  MOV byte ptr [EBP + -0x19],CL
+0051dad3  0f b6 55 e7               MOVZX EDX,byte ptr [EBP + -0x19]
+0051dad7  85 d2                     TEST EDX,EDX
+0051dad9  74 46                     JZ 0x0051db21  ->0051db21(Update@0051daa0)
+0051dadb  83 3d 68 2b 9f 00 00      CMP dword ptr [0x009f2b68],0x0
+0051dae2  7c 3d                     JL 0x0051db21  ->0051db21(Update@0051daa0)
+0051dae4  83 3d 08 37 a1 00 00      CMP dword ptr [0x00a13708],0x0
+0051daeb  7f 27                     JG 0x0051db14  ->0051db14(Update@0051daa0)
+0051daed  83 3d 04 37 a1 00 00      CMP dword ptr [0x00a13704],0x0
+0051daf4  0f 95 c0                  SETNZ AL
+0051daf7  0f b6 c8                  MOVZX ECX,AL
+0051dafa  51                        PUSH ECX
+0051dafb  8b 15 68 2b 9f 00         MOV EDX,dword ptr [0x009f2b68]
+0051db01  52                        PUSH EDX
+0051db02  e8 99 a1 ff ff            CALL 0x00517ca0  ->00517ca0(FUN_00517ca0@00517ca0)
+0051db07  83 c4 08                  ADD ESP,0x8
+0051db0a  c7 05 68 2b 9f 00 ff ff ff ff MOV dword ptr [0x009f2b68],0xffffffff
+0051db14  a1 08 37 a1 00            MOV EAX,[0x00a13708]
+0051db19  83 e8 01                  SUB EAX,0x1
+0051db1c  a3 08 37 a1 00            MOV [0x00a13708],EAX
+0051db21  d9 05 6c 2b 9f 00         FLD float ptr [0x009f2b6c]
+0051db27  dc 1d 00 5b 98 00         FCOMP double ptr [0x00985b00]
+0051db2d  df e0                     FNSTSW AX
+0051db2f  f6 c4 41                  TEST AH,0x41
+0051db32  75 2f                     JNZ 0x0051db63  ->0051db63(Update@0051daa0)
+0051db34  d9 05 6c 2b 9f 00         FLD float ptr [0x009f2b6c]
+0051db3a  d8 65 08                  FSUB float ptr [EBP + 0x8]
+0051db3d  d9 1d 6c 2b 9f 00         FSTP float ptr [0x009f2b6c]
+0051db43  d9 05 6c 2b 9f 00         FLD float ptr [0x009f2b6c]
+0051db49  dc 1d 00 5b 98 00         FCOMP double ptr [0x00985b00]
+0051db4f  df e0                     FNSTSW AX
+0051db51  f6 c4 41                  TEST AH,0x41
+0051db54  7a 0d                     JP 0x0051db63  ->0051db63(Update@0051daa0)
+0051db56  6a 00                     PUSH 0x0
+0051db58  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051db5e  e8 8d a2 ff ff            CALL 0x00517df0  ->00517df0(HideHelp@00517df0)
+0051db63  8b 0d 04 1c a1 00         MOV ECX,dword ptr [0x00a11c04]
+0051db69  8b 51 04                  MOV EDX,dword ptr [ECX + 0x4]
+0051db6c  89 55 ac                  MOV dword ptr [EBP + -0x54],EDX
+0051db6f  8b 4d ac                  MOV ECX,dword ptr [EBP + -0x54]
+0051db72  e8 99 f0 ee ff            CALL 0x0040cc10  ->0040cc10(GetInGameGui@0040cc10)
+0051db77  89 45 a8                  MOV dword ptr [EBP + -0x58],EAX
+0051db7a  8b 45 a8                  MOV EAX,dword ptr [EBP + -0x58]
+0051db7d  8b 88 cc 00 00 00         MOV ECX,dword ptr [EAX + 0xcc]
+0051db83  89 4d f8                  MOV dword ptr [EBP + -0x8],ECX
+0051db86  8b 15 04 1c a1 00         MOV EDX,dword ptr [0x00a11c04]
+0051db8c  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+0051db8f  89 45 a4                  MOV dword ptr [EBP + -0x5c],EAX
+0051db92  8b 4d a4                  MOV ECX,dword ptr [EBP + -0x5c]
+0051db95  e8 76 f0 ee ff            CALL 0x0040cc10  ->0040cc10(GetInGameGui@0040cc10)
+0051db9a  89 45 a0                  MOV dword ptr [EBP + -0x60],EAX
+0051db9d  8b 4d a0                  MOV ECX,dword ptr [EBP + -0x60]
+0051dba0  8b 51 30                  MOV EDX,dword ptr [ECX + 0x30]
+0051dba3  89 55 ec                  MOV dword ptr [EBP + -0x14],EDX
+0051dba6  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dbac  05 b8 ff 00 00            ADD EAX,0xffb8
+0051dbb1  50                        PUSH EAX
+0051dbb2  8b 0d fc 1b a1 00         MOV ECX,dword ptr [0x00a11bfc]
+0051dbb8  e8 c3 10 3f 00            CALL 0x0090ec80  ->0090ec80(PanelExists@0090ec80)
+0051dbbd  85 c0                     TEST EAX,EAX
+0051dbbf  0f 84 26 02 00 00         JZ 0x0051ddeb  ->0051ddeb(Update@0051daa0)
+0051dbc5  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051dbcb  83 b9 dc 46 01 00 00      CMP dword ptr [ECX + 0x146dc],0x0
+0051dbd2  7e 3f                     JLE 0x0051dc13  ->0051dc13(Update@0051daa0)
+0051dbd4  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051dbda  8b 82 dc 46 01 00         MOV EAX,dword ptr [EDX + 0x146dc]
+0051dbe0  83 e8 01                  SUB EAX,0x1
+0051dbe3  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051dbe9  89 81 dc 46 01 00         MOV dword ptr [ECX + 0x146dc],EAX
+0051dbef  8b 15 8c 2b 9f 00         MOV EDX,dword ptr [0x009f2b8c]
+0051dbf5  52                        PUSH EDX
+0051dbf6  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051dbfc  e8 6f a9 ff ff            CALL 0x00518570  ->00518570(OnCombatYButton@00518570)
+0051dc01  89 45 d8                  MOV dword ptr [EBP + -0x28],EAX
+0051dc04  8b 45 d8                  MOV EAX,dword ptr [EBP + -0x28]
+0051dc07  50                        PUSH EAX
+0051dc08  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051dc0e  e8 2d aa ff ff            CALL 0x00518640  ->00518640(QueueActiveAction@00518640)
+0051dc13  c6 45 de 00               MOV byte ptr [EBP + -0x22],0x0
+0051dc17  8b 0d fc 1b a1 00         MOV ECX,dword ptr [0x00a11bfc]
+0051dc1d  8b 51 10                  MOV EDX,dword ptr [ECX + 0x10]
+0051dc20  89 55 e0                  MOV dword ptr [EBP + -0x20],EDX
+0051dc23  83 7d e0 00               CMP dword ptr [EBP + -0x20],0x0
+0051dc27  0f 84 66 01 00 00         JZ 0x0051dd93  ->0051dd93(Update@0051daa0)
+0051dc2d  8b 45 e0                  MOV EAX,dword ptr [EBP + -0x20]
+0051dc30  8b 10                     MOV EDX,dword ptr [EAX]
+0051dc32  8b 4d e0                  MOV ECX,dword ptr [EBP + -0x20]
+0051dc35  8b 42 30                  MOV EAX,dword ptr [EDX + 0x30]
+0051dc38  ff d0                     CALL EAX
+0051dc3a  89 45 d4                  MOV dword ptr [EBP + -0x2c],EAX
+0051dc3d  83 7d d4 00               CMP dword ptr [EBP + -0x2c],0x0
+0051dc41  0f 84 4c 01 00 00         JZ 0x0051dd93  ->0051dd93(Update@0051daa0)
+0051dc47  8b 4d d4                  MOV ECX,dword ptr [EBP + -0x2c]
+0051dc4a  8b 51 38                  MOV EDX,dword ptr [ECX + 0x38]
+0051dc4d  89 55 9c                  MOV dword ptr [EBP + -0x64],EDX
+0051dc50  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dc56  05 b8 ff 00 00            ADD EAX,0xffb8
+0051dc5b  39 45 9c                  CMP dword ptr [EBP + -0x64],EAX
+0051dc5e  75 09                     JNZ 0x0051dc69  ->0051dc69(Update@0051daa0)
+0051dc60  c6 45 de 01               MOV byte ptr [EBP + -0x22],0x1
+0051dc64  e9 2a 01 00 00            JMP 0x0051dd93  ->0051dd93(Update@0051daa0)
+0051dc69  c7 45 d0 00 00 00 00      MOV dword ptr [EBP + -0x30],0x0
+0051dc70  eb 09                     JMP 0x0051dc7b  ->0051dc7b(Update@0051daa0)
+0051dc72  8b 4d d0                  MOV ECX,dword ptr [EBP + -0x30]
+0051dc75  83 c1 01                  ADD ECX,0x1
+0051dc78  89 4d d0                  MOV dword ptr [EBP + -0x30],ECX
+0051dc7b  83 7d d0 07               CMP dword ptr [EBP + -0x30],0x7
+0051dc7f  7d 77                     JGE 0x0051dcf8  ->0051dcf8(Update@0051daa0)
+0051dc81  8b 55 d0                  MOV EDX,dword ptr [EBP + -0x30]
+0051dc84  69 d2 50 07 00 00         IMUL EDX,EDX,0x750
+0051dc8a  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dc90  8d 8c 10 3c 73 00 00      LEA ECX,[EAX + EDX*0x1 + 0x733c]
+0051dc97  3b 4d d4                  CMP ECX,dword ptr [EBP + -0x2c]
+0051dc9a  74 51                     JZ 0x0051dced  ->0051dced(Update@0051daa0)
+0051dc9c  8b 55 d0                  MOV EDX,dword ptr [EBP + -0x30]
+0051dc9f  69 d2 50 07 00 00         IMUL EDX,EDX,0x750
+0051dca5  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dcab  8d 8c 10 0c 75 00 00      LEA ECX,[EAX + EDX*0x1 + 0x750c]
+0051dcb2  3b 4d d4                  CMP ECX,dword ptr [EBP + -0x2c]
+0051dcb5  74 36                     JZ 0x0051dced  ->0051dced(Update@0051daa0)
+0051dcb7  8b 55 d0                  MOV EDX,dword ptr [EBP + -0x30]
+0051dcba  69 d2 50 07 00 00         IMUL EDX,EDX,0x750
+0051dcc0  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dcc6  8d 8c 10 dc 76 00 00      LEA ECX,[EAX + EDX*0x1 + 0x76dc]
+0051dccd  3b 4d d4                  CMP ECX,dword ptr [EBP + -0x2c]
+0051dcd0  74 1b                     JZ 0x0051dced  ->0051dced(Update@0051daa0)
+0051dcd2  8b 55 d0                  MOV EDX,dword ptr [EBP + -0x30]
+0051dcd5  69 d2 50 07 00 00         IMUL EDX,EDX,0x750
+0051dcdb  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dce1  8d 8c 10 ac 78 00 00      LEA ECX,[EAX + EDX*0x1 + 0x78ac]
+0051dce8  3b 4d d4                  CMP ECX,dword ptr [EBP + -0x2c]
+0051dceb  75 06                     JNZ 0x0051dcf3  ->0051dcf3(Update@0051daa0)
+0051dced  c6 45 de 01               MOV byte ptr [EBP + -0x22],0x1
+0051dcf1  eb 05                     JMP 0x0051dcf8  ->0051dcf8(Update@0051daa0)
+0051dcf3  e9 7a ff ff ff            JMP 0x0051dc72  ->0051dc72(Update@0051daa0)
+0051dcf8  0f b6 55 de               MOVZX EDX,byte ptr [EBP + -0x22]
+0051dcfc  85 d2                     TEST EDX,EDX
+0051dcfe  0f 85 8f 00 00 00         JNZ 0x0051dd93  ->0051dd93(Update@0051daa0)
+0051dd04  c7 45 cc 00 00 00 00      MOV dword ptr [EBP + -0x34],0x0
+0051dd0b  eb 09                     JMP 0x0051dd16  ->0051dd16(Update@0051daa0)
+0051dd0d  8b 45 cc                  MOV EAX,dword ptr [EBP + -0x34]
+0051dd10  83 c0 01                  ADD EAX,0x1
+0051dd13  89 45 cc                  MOV dword ptr [EBP + -0x34],EAX
+0051dd16  83 7d cc 03               CMP dword ptr [EBP + -0x34],0x3
+0051dd1a  7d 77                     JGE 0x0051dd93  ->0051dd93(Update@0051daa0)
+0051dd1c  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+0051dd1f  69 c9 50 07 00 00         IMUL ECX,ECX,0x750
+0051dd25  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051dd2b  8d 84 0a 20 01 00 00      LEA EAX,[EDX + ECX*0x1 + 0x120]
+0051dd32  3b 45 d4                  CMP EAX,dword ptr [EBP + -0x2c]
+0051dd35  74 51                     JZ 0x0051dd88  ->0051dd88(Update@0051daa0)
+0051dd37  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+0051dd3a  69 c9 50 07 00 00         IMUL ECX,ECX,0x750
+0051dd40  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051dd46  8d 84 0a f0 02 00 00      LEA EAX,[EDX + ECX*0x1 + 0x2f0]
+0051dd4d  3b 45 d4                  CMP EAX,dword ptr [EBP + -0x2c]
+0051dd50  74 36                     JZ 0x0051dd88  ->0051dd88(Update@0051daa0)
+0051dd52  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+0051dd55  69 c9 50 07 00 00         IMUL ECX,ECX,0x750
+0051dd5b  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051dd61  8d 84 0a c0 04 00 00      LEA EAX,[EDX + ECX*0x1 + 0x4c0]
+0051dd68  3b 45 d4                  CMP EAX,dword ptr [EBP + -0x2c]
+0051dd6b  74 1b                     JZ 0x0051dd88  ->0051dd88(Update@0051daa0)
+0051dd6d  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+0051dd70  69 c9 50 07 00 00         IMUL ECX,ECX,0x750
+0051dd76  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051dd7c  8d 84 0a 90 06 00 00      LEA EAX,[EDX + ECX*0x1 + 0x690]
+0051dd83  3b 45 d4                  CMP EAX,dword ptr [EBP + -0x2c]
+0051dd86  75 06                     JNZ 0x0051dd8e  ->0051dd8e(Update@0051daa0)
+0051dd88  c6 45 de 01               MOV byte ptr [EBP + -0x22],0x1
+0051dd8c  eb 05                     JMP 0x0051dd93  ->0051dd93(Update@0051daa0)
+0051dd8e  e9 7a ff ff ff            JMP 0x0051dd0d  ->0051dd0d(Update@0051daa0)
+0051dd93  83 3d c8 32 a1 00 00      CMP dword ptr [0x00a132c8],0x0
+0051dd9a  74 14                     JZ 0x0051ddb0  ->0051ddb0(Update@0051daa0)
+0051dd9c  0f b6 4d de               MOVZX ECX,byte ptr [EBP + -0x22]
+0051dda0  85 c9                     TEST ECX,ECX
+0051dda2  75 0c                     JNZ 0x0051ddb0  ->0051ddb0(Update@0051daa0)
+0051dda4  c7 85 10 ff ff ff 01 00 00 00 MOV dword ptr [EBP + 0xffffff10],0x1
+0051ddae  eb 0a                     JMP 0x0051ddba  ->0051ddba(Update@0051daa0)
+0051ddb0  c7 85 10 ff ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffff10],0x0
+0051ddba  8a 95 10 ff ff ff         MOV DL,byte ptr [EBP + 0xffffff10]
+0051ddc0  88 55 df                  MOV byte ptr [EBP + -0x21],DL
+0051ddc3  83 7d f8 00               CMP dword ptr [EBP + -0x8],0x0
+0051ddc7  75 08                     JNZ 0x0051ddd1  ->0051ddd1(Update@0051daa0)
+0051ddc9  0f b6 45 df               MOVZX EAX,byte ptr [EBP + -0x21]
+0051ddcd  85 c0                     TEST EAX,EAX
+0051ddcf  74 1a                     JZ 0x0051ddeb  ->0051ddeb(Update@0051daa0)
+0051ddd1  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051ddd7  c6 81 e0 46 01 00 01      MOV byte ptr [ECX + 0x146e0],0x1
+0051ddde  6a 00                     PUSH 0x0
+0051dde0  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051dde6  e8 85 12 00 00            CALL 0x0051f070  ->0051f070(HandleButtonActionX@0051f070)
+0051ddeb  83 3d f4 36 a1 00 00      CMP dword ptr [0x00a136f4],0x0
+0051ddf2  74 49                     JZ 0x0051de3d  ->0051de3d(Update@0051daa0)
+0051ddf4  8b 15 f4 36 a1 00         MOV EDX,dword ptr [0x00a136f4]
+0051ddfa  83 ea 01                  SUB EDX,0x1
+0051ddfd  89 15 f4 36 a1 00         MOV dword ptr [0x00a136f4],EDX
+0051de03  75 38                     JNZ 0x0051de3d  ->0051de3d(Update@0051daa0)
+0051de05  a1 04 1c a1 00            MOV EAX,[0x00a11c04]
+0051de0a  8b 48 04                  MOV ECX,dword ptr [EAX + 0x4]
+0051de0d  89 4d 98                  MOV dword ptr [EBP + -0x68],ECX
+0051de10  6a 06                     PUSH 0x6
+0051de12  8b 4d 98                  MOV ECX,dword ptr [EBP + -0x68]
+0051de15  e8 f6 ed ee ff            CALL 0x0040cc10  ->0040cc10(GetInGameGui@0040cc10)
+0051de1a  8b c8                     MOV ECX,EAX
+0051de1c  e8 cf c6 fb ff            CALL 0x004da4f0  ->004da4f0(ShowSWInGameGui@004da4f0)
+0051de21  85 c0                     TEST EAX,EAX
+0051de23  74 18                     JZ 0x0051de3d  ->0051de3d(Update@0051daa0)
+0051de25  8b 15 04 1c a1 00         MOV EDX,dword ptr [0x00a11c04]
+0051de2b  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+0051de2e  89 45 94                  MOV dword ptr [EBP + -0x6c],EAX
+0051de31  6a 01                     PUSH 0x1
+0051de33  6a 02                     PUSH 0x2
+0051de35  8b 4d 94                  MOV ECX,dword ptr [EBP + -0x6c]
+0051de38  e8 83 f5 ee ff            CALL 0x0040d3c0  ->0040d3c0(SetInputClass@0040d3c0)
+0051de3d  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051de43  8b 91 64 59 00 00         MOV EDX,dword ptr [ECX + 0x5964]
+0051de49  89 55 90                  MOV dword ptr [EBP + -0x70],EDX
+0051de4c  8b 45 90                  MOV EAX,dword ptr [EBP + -0x70]
+0051de4f  83 e8 01                  SUB EAX,0x1
+0051de52  89 45 fc                  MOV dword ptr [EBP + -0x4],EAX
+0051de55  eb 09                     JMP 0x0051de60  ->0051de60(Update@0051daa0)
+0051de57  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+0051de5a  83 e9 01                  SUB ECX,0x1
+0051de5d  89 4d fc                  MOV dword ptr [EBP + -0x4],ECX
+0051de60  83 7d fc 00               CMP dword ptr [EBP + -0x4],0x0
+0051de64  7c 4c                     JL 0x0051deb2  ->0051deb2(Update@0051daa0)
+0051de66  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051de6c  8b 82 60 59 00 00         MOV EAX,dword ptr [EDX + 0x5960]
+0051de72  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+0051de75  83 3c 88 00               CMP dword ptr [EAX + ECX*0x4],0x0
+0051de79  74 35                     JZ 0x0051deb0  ->0051deb0(Update@0051daa0)
+0051de7b  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051de81  8b 82 60 59 00 00         MOV EAX,dword ptr [EDX + 0x5960]
+0051de87  8b 4d fc                  MOV ECX,dword ptr [EBP + -0x4]
+0051de8a  8b 14 88                  MOV EDX,dword ptr [EAX + ECX*0x4]
+0051de8d  89 95 0c ff ff ff         MOV dword ptr [EBP + 0xffffff0c],EDX
+0051de93  51                        PUSH ECX
+0051de94  d9 45 08                  FLD float ptr [EBP + 0x8]
+0051de97  d9 1c 24                  FSTP float ptr [ESP]
+0051de9a  8b 85 0c ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff0c]
+0051dea0  8b 10                     MOV EDX,dword ptr [EAX]
+0051dea2  8b 8d 0c ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff0c]
+0051dea8  8b 82 a0 00 00 00         MOV EAX,dword ptr [EDX + 0xa0]
+0051deae  ff d0                     CALL EAX
+0051deb0  eb a5                     JMP 0x0051de57  ->0051de57(Update@0051daa0)
+0051deb2  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051deb8  d9 81 34 73 00 00         FLD float ptr [ECX + 0x7334]
+0051debe  dc 1d f0 60 98 00         FCOMP double ptr [0x009860f0]
+0051dec4  df e0                     FNSTSW AX
+0051dec6  f6 c4 44                  TEST AH,0x44
+0051dec9  0f 8b e6 00 00 00         JNP 0x0051dfb5  ->0051dfb5(Update@0051daa0)
+0051decf  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051ded5  d9 82 34 73 00 00         FLD float ptr [EDX + 0x7334]
+0051dedb  d8 65 08                  FSUB float ptr [EBP + 0x8]
+0051dede  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051dee4  d9 98 34 73 00 00         FSTP float ptr [EAX + 0x7334]
+0051deea  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051def0  d9 81 34 73 00 00         FLD float ptr [ECX + 0x7334]
+0051def6  dc 1d 00 5b 98 00         FCOMP double ptr [0x00985b00]
+0051defc  df e0                     FNSTSW AX
+0051defe  f6 c4 41                  TEST AH,0x41
+0051df01  7a 6b                     JP 0x0051df6e  ->0051df6e(Update@0051daa0)
+0051df03  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051df09  d9 05 e8 60 98 00         FLD float ptr [0x009860e8]
+0051df0f  d9 9a 34 73 00 00         FSTP float ptr [EDX + 0x7334]
+0051df15  a1 04 1c a1 00            MOV EAX,[0x00a11c04]
+0051df1a  8b 48 04                  MOV ECX,dword ptr [EAX + 0x4]
+0051df1d  89 4d c8                  MOV dword ptr [EBP + -0x38],ECX
+0051df20  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0051df23  e8 08 ea ee ff            CALL 0x0040c930  ->0040c930(GetPlayerCreatureId@0040c930)
+0051df28  50                        PUSH EAX
+0051df29  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0051df2c  e8 3f f1 ee ff            CALL 0x0040d070  ->0040d070(GetSWParty@0040d070)
+0051df31  8b c8                     MOV ECX,EAX
+0051df33  e8 d8 b8 f5 ff            CALL 0x00479810  ->00479810(GetIndex@00479810)
+0051df38  89 45 c4                  MOV dword ptr [EBP + -0x3c],EAX
+0051df3b  83 7d c4 00               CMP dword ptr [EBP + -0x3c],0x0
+0051df3f  7c 2b                     JL 0x0051df6c  ->0051df6c(Update@0051daa0)
+0051df41  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0051df44  e8 27 f1 ee ff            CALL 0x0040d070  ->0040d070(GetSWParty@0040d070)
+0051df49  89 45 8c                  MOV dword ptr [EBP + -0x74],EAX
+0051df4c  8b 55 c4                  MOV EDX,dword ptr [EBP + -0x3c]
+0051df4f  69 d2 88 00 00 00         IMUL EDX,EDX,0x88
+0051df55  8b 45 8c                  MOV EAX,dword ptr [EBP + -0x74]
+0051df58  8d 4c 10 24               LEA ECX,[EAX + EDX*0x1 + 0x24]
+0051df5c  89 4d c0                  MOV dword ptr [EBP + -0x40],ECX
+0051df5f  68 c7 b2 01 00            PUSH 0x1b2c7
+0051df64  8b 4d c0                  MOV ECX,dword ptr [EBP + -0x40]
+0051df67  e8 e4 9c f5 ff            CALL 0x00477c50  ->00477c50(SetCombatMessage@00477c50)
+0051df6c  eb 47                     JMP 0x0051dfb5  ->0051dfb5(Update@0051daa0)
+0051df6e  d9 e8                     FLD1
+0051df70  d9 5d bc                  FSTP float ptr [EBP + -0x44]
+0051df73  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051df79  d9 82 34 73 00 00         FLD float ptr [EDX + 0x7334]
+0051df7f  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051df85  d8 b0 30 73 00 00         FDIV float ptr [EAX + 0x7330]
+0051df8b  d9 5d b8                  FSTP float ptr [EBP + -0x48]
+0051df8e  d9 45 b8                  FLD float ptr [EBP + -0x48]
+0051df91  dc 1d 28 61 98 00         FCOMP double ptr [0x00986128]
+0051df97  df e0                     FNSTSW AX
+0051df99  f6 c4 05                  TEST AH,0x5
+0051df9c  7a 08                     JP 0x0051dfa6  ->0051dfa6(Update@0051daa0)
+0051df9e  d9 45 b8                  FLD float ptr [EBP + -0x48]
+0051dfa1  dc c0                     FADD ST0,ST0
+0051dfa3  d9 5d bc                  FSTP float ptr [EBP + -0x44]
+0051dfa6  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051dfac  d9 45 bc                  FLD float ptr [EBP + -0x44]
+0051dfaf  d9 99 6c 70 00 00         FSTP float ptr [ECX + 0x706c]
+0051dfb5  8b 15 04 1c a1 00         MOV EDX,dword ptr [0x00a11c04]
+0051dfbb  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+0051dfbe  89 45 88                  MOV dword ptr [EBP + -0x78],EAX
+0051dfc1  8b 4d 88                  MOV ECX,dword ptr [EBP + -0x78]
+0051dfc4  e8 47 e9 ee ff            CALL 0x0040c910  ->0040c910(GetPlayerCreature@0040c910)
+0051dfc9  89 45 f0                  MOV dword ptr [EBP + -0x10],EAX
+0051dfcc  8b 0d 04 1c a1 00         MOV ECX,dword ptr [0x00a11c04]
+0051dfd2  8b 51 08                  MOV EDX,dword ptr [ECX + 0x8]
+0051dfd5  89 55 84                  MOV dword ptr [EBP + -0x7c],EDX
+0051dfd8  8b 4d 84                  MOV ECX,dword ptr [EBP + -0x7c]
+0051dfdb  e8 10 e3 12 00            CALL 0x0064c2f0  ->0064c2f0(GetSwoopUpgradeRowProvider@0064c2f0)
+0051dfe0  89 45 80                  MOV dword ptr [EBP + -0x80],EAX
+0051dfe3  8b 45 80                  MOV EAX,dword ptr [EBP + -0x80]
+0051dfe6  8b 08                     MOV ECX,dword ptr [EAX]
+0051dfe8  89 8d 7c ff ff ff         MOV dword ptr [EBP + 0xffffff7c],ECX
+0051dfee  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051dff4  81 c2 24 ce 00 00         ADD EDX,0xce24
+0051dffa  89 95 78 ff ff ff         MOV dword ptr [EBP + 0xffffff78],EDX
+0051e000  33 c0                     XOR EAX,EAX
+0051e002  83 bd 7c ff ff ff 00      CMP dword ptr [EBP + 0xffffff7c],0x0
+0051e009  0f 9f c0                  SETG AL
+0051e00c  83 e0 01                  AND EAX,0x1
+0051e00f  d1 e0                     SHL EAX,0x1
+0051e011  8b 8d 78 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff78]
+0051e017  8b 51 48                  MOV EDX,dword ptr [ECX + 0x48]
+0051e01a  83 e2 fd                  AND EDX,0xfffffffd
+0051e01d  0b d0                     OR EDX,EAX
+0051e01f  8b 85 78 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff78]
+0051e025  89 50 48                  MOV dword ptr [EAX + 0x48],EDX
+0051e028  8b 0d 04 1c a1 00         MOV ECX,dword ptr [0x00a11c04]
+0051e02e  8b 51 08                  MOV EDX,dword ptr [ECX + 0x8]
+0051e031  89 95 74 ff ff ff         MOV dword ptr [EBP + 0xffffff74],EDX
+0051e037  8b 8d 74 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff74]
+0051e03d  e8 ae e2 12 00            CALL 0x0064c2f0  ->0064c2f0(GetSwoopUpgradeRowProvider@0064c2f0)
+0051e042  89 85 70 ff ff ff         MOV dword ptr [EBP + 0xffffff70],EAX
+0051e048  8b 85 70 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff70]
+0051e04e  8b 88 38 02 00 00         MOV ECX,dword ptr [EAX + 0x238]
+0051e054  89 8d 6c ff ff ff         MOV dword ptr [EBP + 0xffffff6c],ECX
+0051e05a  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051e060  81 c2 24 ce 00 00         ADD EDX,0xce24
+0051e066  89 95 68 ff ff ff         MOV dword ptr [EBP + 0xffffff68],EDX
+0051e06c  8b 85 6c ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff6c]
+0051e072  83 e0 01                  AND EAX,0x1
+0051e075  8b 8d 68 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff68]
+0051e07b  8b 91 d4 01 00 00         MOV EDX,dword ptr [ECX + 0x1d4]
+0051e081  83 e2 fe                  AND EDX,0xfffffffe
+0051e084  0b d0                     OR EDX,EAX
+0051e086  8b 85 68 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff68]
+0051e08c  89 90 d4 01 00 00         MOV dword ptr [EAX + 0x1d4],EDX
+0051e092  83 7d f0 00               CMP dword ptr [EBP + -0x10],0x0
+0051e096  74 10                     JZ 0x0051e0a8  ->0051e0a8(Update@0051daa0)
+0051e098  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+0051e09b  e8 d0 dd f0 ff            CALL 0x0042be70  ->0042be70(IsStealthCapable@0042be70)
+0051e0a0  89 85 60 ff ff ff         MOV dword ptr [EBP + 0xffffff60],EAX
+0051e0a6  eb 0a                     JMP 0x0051e0b2  ->0051e0b2(Update@0051daa0)
+0051e0a8  c7 85 60 ff ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffff60],0x0
+0051e0b2  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051e0b8  81 c1 ec d0 00 00         ADD ECX,0xd0ec
+0051e0be  89 8d 64 ff ff ff         MOV dword ptr [EBP + 0xffffff64],ECX
+0051e0c4  8b 95 60 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff60]
+0051e0ca  83 e2 01                  AND EDX,0x1
+0051e0cd  d1 e2                     SHL EDX,0x1
+0051e0cf  8b 85 64 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff64]
+0051e0d5  8b 48 48                  MOV ECX,dword ptr [EAX + 0x48]
+0051e0d8  83 e1 fd                  AND ECX,0xfffffffd
+0051e0db  0b ca                     OR ECX,EDX
+0051e0dd  8b 95 64 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff64]
+0051e0e3  89 4a 48                  MOV dword ptr [EDX + 0x48],ECX
+0051e0e6  83 7d f0 00               CMP dword ptr [EBP + -0x10],0x0
+0051e0ea  74 1d                     JZ 0x0051e109  ->0051e109(Update@0051daa0)
+0051e0ec  8b 85 5c ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff5c]
+0051e0f2  89 85 54 ff ff ff         MOV dword ptr [EBP + 0xffffff54],EAX
+0051e0f8  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+0051e0fb  8b 91 9c 01 00 00         MOV EDX,dword ptr [ECX + 0x19c]
+0051e101  89 95 54 ff ff ff         MOV dword ptr [EBP + 0xffffff54],EDX
+0051e107  eb 0a                     JMP 0x0051e113  ->0051e113(Update@0051daa0)
+0051e109  c7 85 54 ff ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffff54],0x0
+0051e113  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051e119  05 ec d0 00 00            ADD EAX,0xd0ec
+0051e11e  89 85 58 ff ff ff         MOV dword ptr [EBP + 0xffffff58],EAX
+0051e124  8b 8d 54 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff54]
+0051e12a  83 e1 01                  AND ECX,0x1
+0051e12d  8b 95 58 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff58]
+0051e133  8b 82 d4 01 00 00         MOV EAX,dword ptr [EDX + 0x1d4]
+0051e139  83 e0 fe                  AND EAX,0xfffffffe
+0051e13c  0b c1                     OR EAX,ECX
+0051e13e  8b 8d 58 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff58]
+0051e144  89 81 d4 01 00 00         MOV dword ptr [ECX + 0x1d4],EAX
+0051e14a  83 7d f0 00               CMP dword ptr [EBP + -0x10],0x0
+0051e14e  74 10                     JZ 0x0051e160  ->0051e160(Update@0051daa0)
+0051e150  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+0051e153  e8 68 c9 0f 00            CALL 0x0061aac0  ->0061aac0(IsTargetting@0061aac0)
+0051e158  89 85 4c ff ff ff         MOV dword ptr [EBP + 0xffffff4c],EAX
+0051e15e  eb 0a                     JMP 0x0051e16a  ->0051e16a(Update@0051daa0)
+0051e160  c7 85 4c ff ff ff 00 00 00 00 MOV dword ptr [EBP + 0xffffff4c],0x0
+0051e16a  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051e170  81 c2 b4 d3 00 00         ADD EDX,0xd3b4
+0051e176  89 95 50 ff ff ff         MOV dword ptr [EBP + 0xffffff50],EDX
+0051e17c  8b 85 4c ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff4c]
+0051e182  83 e0 01                  AND EAX,0x1
+0051e185  d1 e0                     SHL EAX,0x1
+0051e187  8b 8d 50 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff50]
+0051e18d  8b 51 48                  MOV EDX,dword ptr [ECX + 0x48]
+0051e190  83 e2 fd                  AND EDX,0xfffffffd
+0051e193  0b d0                     OR EDX,EAX
+0051e195  8b 85 50 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff50]
+0051e19b  89 50 48                  MOV dword ptr [EAX + 0x48],EDX
+0051e19e  8b 0d 04 1c a1 00         MOV ECX,dword ptr [0x00a11c04]
+0051e1a4  8b 51 04                  MOV EDX,dword ptr [ECX + 0x4]
+0051e1a7  89 95 48 ff ff ff         MOV dword ptr [EBP + 0xffffff48],EDX
+0051e1ad  8b 8d 48 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff48]
+0051e1b3  e8 38 f6 ee ff            CALL 0x0040d7f0  ->0040d7f0(GetPausedByCombat@0040d7f0)
+0051e1b8  89 85 40 ff ff ff         MOV dword ptr [EBP + 0xffffff40],EAX
+0051e1be  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051e1c4  05 5c cb 00 00            ADD EAX,0xcb5c
+0051e1c9  89 85 44 ff ff ff         MOV dword ptr [EBP + 0xffffff44],EAX
+0051e1cf  8b 8d 40 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff40]
+0051e1d5  83 e1 01                  AND ECX,0x1
+0051e1d8  8b 95 44 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff44]
+0051e1de  8b 82 d4 01 00 00         MOV EAX,dword ptr [EDX + 0x1d4]
+0051e1e4  83 e0 fe                  AND EAX,0xfffffffe
+0051e1e7  0b c1                     OR EAX,ECX
+0051e1e9  8b 8d 44 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff44]
+0051e1ef  89 81 d4 01 00 00         MOV dword ptr [ECX + 0x1d4],EAX
+0051e1f5  8b 15 04 1c a1 00         MOV EDX,dword ptr [0x00a11c04]
+0051e1fb  8b 42 04                  MOV EAX,dword ptr [EDX + 0x4]
+0051e1fe  89 85 3c ff ff ff         MOV dword ptr [EBP + 0xffffff3c],EAX
+0051e204  8b 8d 3c ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff3c]
+0051e20a  e8 e1 ea ee ff            CALL 0x0040ccf0  ->0040ccf0(GetClientOptions@0040ccf0)
+0051e20f  89 45 f4                  MOV dword ptr [EBP + -0xc],EAX
+0051e212  83 7d f4 00               CMP dword ptr [EBP + -0xc],0x0
+0051e216  74 1b                     JZ 0x0051e233  ->0051e233(Update@0051daa0)
+0051e218  8b 4d f4                  MOV ECX,dword ptr [EBP + -0xc]
+0051e21b  8b 51 1c                  MOV EDX,dword ptr [ECX + 0x1c]
+0051e21e  c1 ea 09                  SHR EDX,0x9
+0051e221  83 e2 01                  AND EDX,0x1
+0051e224  f7 da                     NEG EDX
+0051e226  1b d2                     SBB EDX,EDX
+0051e228  83 c2 01                  ADD EDX,0x1
+0051e22b  89 95 08 ff ff ff         MOV dword ptr [EBP + 0xffffff08],EDX
+0051e231  eb 0a                     JMP 0x0051e23d  ->0051e23d(Update@0051daa0)
+0051e233  c7 85 08 ff ff ff 01 00 00 00 MOV dword ptr [EBP + 0xffffff08],0x1
+0051e23d  8b 85 08 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff08]
+0051e243  89 45 e8                  MOV dword ptr [EBP + -0x18],EAX
+0051e246  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051e24c  81 c1 4c ba 00 00         ADD ECX,0xba4c
+0051e252  89 8d 38 ff ff ff         MOV dword ptr [EBP + 0xffffff38],ECX
+0051e258  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+0051e25b  83 e2 01                  AND EDX,0x1
+0051e25e  d1 e2                     SHL EDX,0x1
+0051e260  8b 85 38 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff38]
+0051e266  8b 48 48                  MOV ECX,dword ptr [EAX + 0x48]
+0051e269  83 e1 fd                  AND ECX,0xfffffffd
+0051e26c  0b ca                     OR ECX,EDX
+0051e26e  8b 95 38 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff38]
+0051e274  89 4a 48                  MOV dword ptr [EDX + 0x48],ECX
+0051e277  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051e27d  05 1c bc 00 00            ADD EAX,0xbc1c
+0051e282  89 85 34 ff ff ff         MOV dword ptr [EBP + 0xffffff34],EAX
+0051e288  8b 4d e8                  MOV ECX,dword ptr [EBP + -0x18]
+0051e28b  83 e1 01                  AND ECX,0x1
+0051e28e  d1 e1                     SHL ECX,0x1
+0051e290  8b 95 34 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff34]
+0051e296  8b 42 48                  MOV EAX,dword ptr [EDX + 0x48]
+0051e299  83 e0 fd                  AND EAX,0xfffffffd
+0051e29c  0b c1                     OR EAX,ECX
+0051e29e  8b 8d 34 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff34]
+0051e2a4  89 41 48                  MOV dword ptr [ECX + 0x48],EAX
+0051e2a7  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051e2ad  81 c2 ec bd 00 00         ADD EDX,0xbdec
+0051e2b3  89 95 30 ff ff ff         MOV dword ptr [EBP + 0xffffff30],EDX
+0051e2b9  8b 45 e8                  MOV EAX,dword ptr [EBP + -0x18]
+0051e2bc  83 e0 01                  AND EAX,0x1
+0051e2bf  d1 e0                     SHL EAX,0x1
+0051e2c1  8b 8d 30 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff30]
+0051e2c7  8b 51 48                  MOV EDX,dword ptr [ECX + 0x48]
+0051e2ca  83 e2 fd                  AND EDX,0xfffffffd
+0051e2cd  0b d0                     OR EDX,EAX
+0051e2cf  8b 85 30 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff30]
+0051e2d5  89 50 48                  MOV dword ptr [EAX + 0x48],EDX
+0051e2d8  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051e2de  81 c1 bc bf 00 00         ADD ECX,0xbfbc
+0051e2e4  89 8d 2c ff ff ff         MOV dword ptr [EBP + 0xffffff2c],ECX
+0051e2ea  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+0051e2ed  83 e2 01                  AND EDX,0x1
+0051e2f0  d1 e2                     SHL EDX,0x1
+0051e2f2  8b 85 2c ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff2c]
+0051e2f8  8b 48 48                  MOV ECX,dword ptr [EAX + 0x48]
+0051e2fb  83 e1 fd                  AND ECX,0xfffffffd
+0051e2fe  0b ca                     OR ECX,EDX
+0051e300  8b 95 2c ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff2c]
+0051e306  89 4a 48                  MOV dword ptr [EDX + 0x48],ECX
+0051e309  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051e30f  05 8c c1 00 00            ADD EAX,0xc18c
+0051e314  89 85 28 ff ff ff         MOV dword ptr [EBP + 0xffffff28],EAX
+0051e31a  8b 4d e8                  MOV ECX,dword ptr [EBP + -0x18]
+0051e31d  83 e1 01                  AND ECX,0x1
+0051e320  d1 e1                     SHL ECX,0x1
+0051e322  8b 95 28 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff28]
+0051e328  8b 42 48                  MOV EAX,dword ptr [EDX + 0x48]
+0051e32b  83 e0 fd                  AND EAX,0xfffffffd
+0051e32e  0b c1                     OR EAX,ECX
+0051e330  8b 8d 28 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff28]
+0051e336  89 41 48                  MOV dword ptr [ECX + 0x48],EAX
+0051e339  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051e33f  81 c2 5c c3 00 00         ADD EDX,0xc35c
+0051e345  89 95 24 ff ff ff         MOV dword ptr [EBP + 0xffffff24],EDX
+0051e34b  8b 45 e8                  MOV EAX,dword ptr [EBP + -0x18]
+0051e34e  83 e0 01                  AND EAX,0x1
+0051e351  d1 e0                     SHL EAX,0x1
+0051e353  8b 8d 24 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff24]
+0051e359  8b 51 48                  MOV EDX,dword ptr [ECX + 0x48]
+0051e35c  83 e2 fd                  AND EDX,0xfffffffd
+0051e35f  0b d0                     OR EDX,EAX
+0051e361  8b 85 24 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff24]
+0051e367  89 50 48                  MOV dword ptr [EAX + 0x48],EDX
+0051e36a  8b 8d 14 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff14]
+0051e370  81 c1 2c c5 00 00         ADD ECX,0xc52c
+0051e376  89 8d 20 ff ff ff         MOV dword ptr [EBP + 0xffffff20],ECX
+0051e37c  8b 55 e8                  MOV EDX,dword ptr [EBP + -0x18]
+0051e37f  83 e2 01                  AND EDX,0x1
+0051e382  d1 e2                     SHL EDX,0x1
+0051e384  8b 85 20 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff20]
+0051e38a  8b 48 48                  MOV ECX,dword ptr [EAX + 0x48]
+0051e38d  83 e1 fd                  AND ECX,0xfffffffd
+0051e390  0b ca                     OR ECX,EDX
+0051e392  8b 95 20 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff20]
+0051e398  89 4a 48                  MOV dword ptr [EDX + 0x48],ECX
+0051e39b  8b 85 14 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff14]
+0051e3a1  05 fc c6 00 00            ADD EAX,0xc6fc
+0051e3a6  89 85 1c ff ff ff         MOV dword ptr [EBP + 0xffffff1c],EAX
+0051e3ac  8b 4d e8                  MOV ECX,dword ptr [EBP + -0x18]
+0051e3af  83 e1 01                  AND ECX,0x1
+0051e3b2  d1 e1                     SHL ECX,0x1
+0051e3b4  8b 95 1c ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff1c]
+0051e3ba  8b 42 48                  MOV EAX,dword ptr [EDX + 0x48]
+0051e3bd  83 e0 fd                  AND EAX,0xfffffffd
+0051e3c0  0b c1                     OR EAX,ECX
+0051e3c2  8b 8d 1c ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff1c]
+0051e3c8  89 41 48                  MOV dword ptr [ECX + 0x48],EAX
+0051e3cb  8b 95 14 ff ff ff         MOV EDX,dword ptr [EBP + 0xffffff14]
+0051e3d1  81 c2 cc c8 00 00         ADD EDX,0xc8cc
+0051e3d7  89 95 18 ff ff ff         MOV dword ptr [EBP + 0xffffff18],EDX
+0051e3dd  8b 45 e8                  MOV EAX,dword ptr [EBP + -0x18]
+0051e3e0  83 e0 01                  AND EAX,0x1
+0051e3e3  d1 e0                     SHL EAX,0x1
+0051e3e5  8b 8d 18 ff ff ff         MOV ECX,dword ptr [EBP + 0xffffff18]
+0051e3eb  8b 51 48                  MOV EDX,dword ptr [ECX + 0x48]
+0051e3ee  83 e2 fd                  AND EDX,0xfffffffd
+0051e3f1  0b d0                     OR EDX,EAX
+0051e3f3  8b 85 18 ff ff ff         MOV EAX,dword ptr [EBP + 0xffffff18]
+0051e3f9  89 50 48                  MOV dword ptr [EAX + 0x48],EDX
+0051e3fc  8b e5                     MOV ESP,EBP
+0051e3fe  5d                        POP EBP
+0051e3ff  c2 04 00                  RET 0x4
+=== FN 4e1290
+FUNC GetCanClick entry=004e1290 size=153 conv=unknown thunk=false
+004e1290  55                        PUSH EBP
+004e1291  8b ec                     MOV EBP,ESP
+004e1293  83 ec 1c                  SUB ESP,0x1c
+004e1296  89 4d e4                  MOV dword ptr [EBP + -0x1c],ECX
+004e1299  c7 45 f4 00 00 00 00      MOV dword ptr [EBP + -0xc],0x0
+004e12a0  a1 04 1c a1 00            MOV EAX,[0x00a11c04]
+004e12a5  8b 48 04                  MOV ECX,dword ptr [EAX + 0x4]
+004e12a8  89 4d ec                  MOV dword ptr [EBP + -0x14],ECX
+004e12ab  8d 55 f8                  LEA EDX,[EBP + -0x8]
+004e12ae  52                        PUSH EDX
+004e12af  8d 45 f0                  LEA EAX,[EBP + -0x10]
+004e12b2  50                        PUSH EAX
+004e12b3  8b 4d ec                  MOV ECX,dword ptr [EBP + -0x14]
+004e12b6  e8 b5 b5 f2 ff            CALL 0x0040c870  ->0040c870(GetWorldTimer@0040c870)
+004e12bb  8b c8                     MOV ECX,EAX
+004e12bd  e8 3e 9f 32 00            CALL 0x0080b200  ->0080b200(GetWorldTime@0080b200)
+004e12c2  8b 0d 04 1c a1 00         MOV ECX,dword ptr [0x00a11c04]
+004e12c8  8b 51 04                  MOV EDX,dword ptr [ECX + 0x4]
+004e12cb  89 55 e8                  MOV dword ptr [EBP + -0x18],EDX
+004e12ce  8d 45 f4                  LEA EAX,[EBP + -0xc]
+004e12d1  50                        PUSH EAX
+004e12d2  8d 4d fc                  LEA ECX,[EBP + -0x4]
+004e12d5  51                        PUSH ECX
+004e12d6  8b 55 e4                  MOV EDX,dword ptr [EBP + -0x1c]
+004e12d9  8b 82 d0 0f 00 00         MOV EAX,dword ptr [EDX + 0xfd0]
+004e12df  50                        PUSH EAX
+004e12e0  8b 4d e4                  MOV ECX,dword ptr [EBP + -0x1c]
+004e12e3  8b 91 cc 0f 00 00         MOV EDX,dword ptr [ECX + 0xfcc]
+004e12e9  52                        PUSH EDX
+004e12ea  8b 45 f8                  MOV EAX,dword ptr [EBP + -0x8]
+004e12ed  50                        PUSH EAX
+004e12ee  8b 4d f0                  MOV ECX,dword ptr [EBP + -0x10]
+004e12f1  51                        PUSH ECX
+004e12f2  8b 4d e8                  MOV ECX,dword ptr [EBP + -0x18]
+004e12f5  e8 76 b5 f2 ff            CALL 0x0040c870  ->0040c870(GetWorldTimer@0040c870)
+004e12fa  8b c8                     MOV ECX,EAX
+004e12fc  e8 3f a1 32 00            CALL 0x0080b440  ->0080b440(SubtractWorldTimes@0080b440)
+004e1301  83 7d fc 00               CMP dword ptr [EBP + -0x4],0x0
+004e1305  76 07                     JBE 0x004e130e  ->004e130e(GetCanClick@004e1290)
+004e1307  b8 01 00 00 00            MOV EAX,0x1
+004e130c  eb 17                     JMP 0x004e1325  ->004e1325(GetCanClick@004e1290)
+004e130e  8b 55 e4                  MOV EDX,dword ptr [EBP + -0x1c]
+004e1311  8b 45 f4                  MOV EAX,dword ptr [EBP + -0xc]
+004e1314  3b 82 d4 0f 00 00         CMP EAX,dword ptr [EDX + 0xfd4]
+004e131a  73 04                     JNC 0x004e1320  ->004e1320(GetCanClick@004e1290)
+004e131c  33 c0                     XOR EAX,EAX
+004e131e  eb 05                     JMP 0x004e1325  ->004e1325(GetCanClick@004e1290)
+004e1320  b8 01 00 00 00            MOV EAX,0x1
+004e1325  8b e5                     MOV ESP,EBP
+004e1327  5d                        POP EBP
+004e1328  c3                        RET
+=== FN 90d110
+FUNC Draw entry=0090d110 size=432 conv=__thiscall thunk=false
+0090d110  55                        PUSH EBP
+0090d111  8b ec                     MOV EBP,ESP
+0090d113  83 ec 3c                  SUB ESP,0x3c
+0090d116  89 4d c8                  MOV dword ptr [EBP + -0x38],ECX
+0090d119  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d11c  8b 48 48                  MOV ECX,dword ptr [EAX + 0x48]
+0090d11f  c1 e9 06                  SHR ECX,0x6
+0090d122  83 e1 01                  AND ECX,0x1
+0090d125  0f 84 8f 01 00 00         JZ 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d12b  8b 55 c8                  MOV EDX,dword ptr [EBP + -0x38]
+0090d12e  83 7a 04 00               CMP dword ptr [EDX + 0x4],0x0
+0090d132  0f 8c 82 01 00 00         JL 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d138  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d13b  83 78 08 00               CMP dword ptr [EAX + 0x8],0x0
+0090d13f  0f 8c 75 01 00 00         JL 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d145  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d148  83 79 10 00               CMP dword ptr [ECX + 0x10],0x0
+0090d14c  0f 8e 68 01 00 00         JLE 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d152  8b 55 c8                  MOV EDX,dword ptr [EBP + -0x38]
+0090d155  83 7a 0c 00               CMP dword ptr [EDX + 0xc],0x0
+0090d159  0f 8e 5b 01 00 00         JLE 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d15f  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d162  83 c0 04                  ADD EAX,0x4
+0090d165  89 45 e4                  MOV dword ptr [EBP + -0x1c],EAX
+0090d168  8b 4d e4                  MOV ECX,dword ptr [EBP + -0x1c]
+0090d16b  8b 11                     MOV EDX,dword ptr [ECX]
+0090d16d  8b 45 e4                  MOV EAX,dword ptr [EBP + -0x1c]
+0090d170  03 50 08                  ADD EDX,dword ptr [EAX + 0x8]
+0090d173  89 55 e0                  MOV dword ptr [EBP + -0x20],EDX
+0090d176  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d179  8b 51 1c                  MOV EDX,dword ptr [ECX + 0x1c]
+0090d17c  89 55 dc                  MOV dword ptr [EBP + -0x24],EDX
+0090d17f  8b 45 dc                  MOV EAX,dword ptr [EBP + -0x24]
+0090d182  0f bf 48 6c               MOVSX ECX,word ptr [EAX + 0x6c]
+0090d186  39 4d e0                  CMP dword ptr [EBP + -0x20],ECX
+0090d189  0f 8f 2b 01 00 00         JG 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d18f  8b 55 c8                  MOV EDX,dword ptr [EBP + -0x38]
+0090d192  83 c2 04                  ADD EDX,0x4
+0090d195  89 55 d8                  MOV dword ptr [EBP + -0x28],EDX
+0090d198  8b 45 d8                  MOV EAX,dword ptr [EBP + -0x28]
+0090d19b  8b 48 04                  MOV ECX,dword ptr [EAX + 0x4]
+0090d19e  8b 55 d8                  MOV EDX,dword ptr [EBP + -0x28]
+0090d1a1  03 4a 0c                  ADD ECX,dword ptr [EDX + 0xc]
+0090d1a4  89 4d d4                  MOV dword ptr [EBP + -0x2c],ECX
+0090d1a7  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d1aa  8b 48 1c                  MOV ECX,dword ptr [EAX + 0x1c]
+0090d1ad  89 4d d0                  MOV dword ptr [EBP + -0x30],ECX
+0090d1b0  8b 55 d0                  MOV EDX,dword ptr [EBP + -0x30]
+0090d1b3  0f bf 42 6e               MOVSX EAX,word ptr [EDX + 0x6e]
+0090d1b7  39 45 d4                  CMP dword ptr [EBP + -0x2c],EAX
+0090d1ba  0f 8f fa 00 00 00         JG 0x0090d2ba  ->0090d2ba(Draw@0090d110)
+0090d1c0  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d1c3  8b 51 28                  MOV EDX,dword ptr [ECX + 0x28]
+0090d1c6  89 55 e8                  MOV dword ptr [EBP + -0x18],EDX
+0090d1c9  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d1cc  83 c0 04                  ADD EAX,0x4
+0090d1cf  8b 08                     MOV ECX,dword ptr [EAX]
+0090d1d1  89 4d f0                  MOV dword ptr [EBP + -0x10],ECX
+0090d1d4  8b 50 04                  MOV EDX,dword ptr [EAX + 0x4]
+0090d1d7  89 55 f4                  MOV dword ptr [EBP + -0xc],EDX
+0090d1da  8b 48 08                  MOV ECX,dword ptr [EAX + 0x8]
+0090d1dd  89 4d f8                  MOV dword ptr [EBP + -0x8],ECX
+0090d1e0  8b 50 0c                  MOV EDX,dword ptr [EAX + 0xc]
+0090d1e3  89 55 fc                  MOV dword ptr [EBP + -0x4],EDX
+0090d1e6  8d 45 f0                  LEA EAX,[EBP + -0x10]
+0090d1e9  50                        PUSH EAX
+0090d1ea  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d1ed  e8 ae 12 00 00            CALL 0x0090e4a0  ->0090e4a0(GetExtentAccountingForPanelOffset@0090e4a0)
+0090d1f2  e8 d9 29 fc ff            CALL 0x008cfbd0  ->008cfbd0(AurGUIStartLayer@008cfbd0)
+0090d1f7  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d1fa  51                        PUSH ECX
+0090d1fb  d9 41 50                  FLD float ptr [ECX + 0x50]
+0090d1fe  d9 1c 24                  FSTP float ptr [ESP]
+0090d201  6a 00                     PUSH 0x0
+0090d203  8b 55 c8                  MOV EDX,dword ptr [EBP + -0x38]
+0090d206  83 c2 54                  ADD EDX,0x54
+0090d209  52                        PUSH EDX
+0090d20a  8b 45 fc                  MOV EAX,dword ptr [EBP + -0x4]
+0090d20d  50                        PUSH EAX
+0090d20e  8b 4d f8                  MOV ECX,dword ptr [EBP + -0x8]
+0090d211  51                        PUSH ECX
+0090d212  8b 55 f4                  MOV EDX,dword ptr [EBP + -0xc]
+0090d215  52                        PUSH EDX
+0090d216  8b 45 f0                  MOV EAX,dword ptr [EBP + -0x10]
+0090d219  50                        PUSH EAX
+0090d21a  e8 51 2b fc ff            CALL 0x008cfd70  ->008cfd70(AurGUISetupViewport@008cfd70)
+0090d21f  83 c4 1c                  ADD ESP,0x1c
+0090d222  85 c0                     TEST EAX,EAX
+0090d224  0f 84 8b 00 00 00         JZ 0x0090d2b5  ->0090d2b5(Draw@0090d110)
+0090d22a  51                        PUSH ECX
+0090d22b  d9 45 08                  FLD float ptr [EBP + 0x8]
+0090d22e  d9 1c 24                  FSTP float ptr [ESP]
+0090d231  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d234  8b 51 60                  MOV EDX,dword ptr [ECX + 0x60]
+0090d237  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d23a  8b 48 60                  MOV ECX,dword ptr [EAX + 0x60]
+0090d23d  8b 12                     MOV EDX,dword ptr [EDX]
+0090d23f  8b 42 0c                  MOV EAX,dword ptr [EDX + 0xc]
+0090d242  ff d0                     CALL EAX
+0090d244  c7 45 ec 00 00 00 00      MOV dword ptr [EBP + -0x14],0x0
+0090d24b  eb 09                     JMP 0x0090d256  ->0090d256(Draw@0090d110)
+0090d24d  8b 4d ec                  MOV ECX,dword ptr [EBP + -0x14]
+0090d250  83 c1 01                  ADD ECX,0x1
+0090d253  89 4d ec                  MOV dword ptr [EBP + -0x14],ECX
+0090d256  8b 55 ec                  MOV EDX,dword ptr [EBP + -0x14]
+0090d259  3b 55 e8                  CMP EDX,dword ptr [EBP + -0x18]
+0090d25c  7d 52                     JGE 0x0090d2b0  ->0090d2b0(Draw@0090d110)
+0090d25e  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d261  8b 48 24                  MOV ECX,dword ptr [EAX + 0x24]
+0090d264  8b 55 ec                  MOV EDX,dword ptr [EBP + -0x14]
+0090d267  83 3c 91 00               CMP dword ptr [ECX + EDX*0x4],0x0
+0090d26b  74 41                     JZ 0x0090d2ae  ->0090d2ae(Draw@0090d110)
+0090d26d  8b 45 c8                  MOV EAX,dword ptr [EBP + -0x38]
+0090d270  8b 48 24                  MOV ECX,dword ptr [EAX + 0x24]
+0090d273  8b 55 ec                  MOV EDX,dword ptr [EBP + -0x14]
+0090d276  8d 04 91                  LEA EAX,[ECX + EDX*0x4]
+0090d279  89 45 cc                  MOV dword ptr [EBP + -0x34],EAX
+0090d27c  8b 4d cc                  MOV ECX,dword ptr [EBP + -0x34]
+0090d27f  8b 11                     MOV EDX,dword ptr [ECX]
+0090d281  8b 42 48                  MOV EAX,dword ptr [EDX + 0x48]
+0090d284  d1 e8                     SHR EAX,0x1
+0090d286  83 e0 01                  AND EAX,0x1
+0090d289  74 23                     JZ 0x0090d2ae  ->0090d2ae(Draw@0090d110)
+0090d28b  8b 4d c8                  MOV ECX,dword ptr [EBP + -0x38]
+0090d28e  8b 51 24                  MOV EDX,dword ptr [ECX + 0x24]
+0090d291  8b 45 ec                  MOV EAX,dword ptr [EBP + -0x14]
+0090d294  8b 0c 82                  MOV ECX,dword ptr [EDX + EAX*0x4]
+0090d297  89 4d c4                  MOV dword ptr [EBP + -0x3c],ECX
+0090d29a  51                        PUSH ECX
+0090d29b  d9 45 08                  FLD float ptr [EBP + 0x8]
+0090d29e  d9 1c 24                  FSTP float ptr [ESP]
+0090d2a1  8b 55 c4                  MOV EDX,dword ptr [EBP + -0x3c]
+0090d2a4  8b 02                     MOV EAX,dword ptr [EDX]
+0090d2a6  8b 4d c4                  MOV ECX,dword ptr [EBP + -0x3c]
+0090d2a9  8b 50 38                  MOV EDX,dword ptr [EAX + 0x38]
+0090d2ac  ff d2                     CALL EDX
+0090d2ae  eb 9d                     JMP 0x0090d24d  ->0090d24d(Draw@0090d110)
+0090d2b0  e8 1b 30 fc ff            CALL 0x008d02d0  ->008d02d0(AurGUICloseViewport@008d02d0)
+0090d2b5  e8 46 2a fc ff            CALL 0x008cfd00  ->008cfd00(AurGUIStopLayer@008cfd00)
+0090d2ba  8b e5                     MOV ESP,EBP
+0090d2bc  5d                        POP EBP
+0090d2bd  c2 04 00                  RET 0x4
+=== REFS 4789b0
+  from 00444562 UNCONDITIONAL_CALL in ChangeCharacter@00444550
+  from 00444585 UNCONDITIONAL_CALL in ChangeCharacter@00444550
+  from 0044459c UNCONDITIONAL_CALL in ChangeCharacter@00444550
+  from 0051e77f UNCONDITIONAL_CALL in PopulateMenus@0051e760
+  from 00513dcb UNCONDITIONAL_CALL in SetNameLabel@00513d50
+  from 0051f212 UNCONDITIONAL_CALL in RevertActionBarStates@0051f1c0
+  from 0057382a UNCONDITIONAL_CALL in PutAtDesiredLocation@00573800
+  from 00773934 UNCONDITIONAL_CALL in EndCombatRound@00773040
+  from 00446b1a UNCONDITIONAL_CALL in DoPassiveSelection@00446ae0
+  from 00460d70 UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 00463e74 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00427eb0 UNCONDITIONAL_CALL in CreateUsableItemEntry@00427c70
+  from 005a4f3d UNCONDITIONAL_CALL in SetItem@005a4df0
+  from 004609f7 UNCONDITIONAL_CALL in HandleMouseClickInWorld@004608d0
+  from 0044bdf5 UNCONDITIONAL_CALL in ChangeCharacterToNextLivingPartyMember@0044bd70
+  from 0044bed4 UNCONDITIONAL_CALL in ChangeCharacterToNextLivingPartyMember@0044bd70
+  from 0044bfba UNCONDITIONAL_CALL in ChangeCharacterToNextLivingPartyMember@0044bd70
+  from 0045e2a1 UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 004da5ff UNCONDITIONAL_CALL in ShowSWInGameGui@004da4f0
+  from 004da61d UNCONDITIONAL_CALL in ShowSWInGameGui@004da4f0
+  from 0045e6cb UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 00447e26 UNCONDITIONAL_CALL in SelectNearestObject@00447d00
+  from 00448100 UNCONDITIONAL_CALL in SelectNearestObject@00447d00
+  from 0045eeaf UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 00522f43 UNCONDITIONAL_CALL in DoPersonalAction@00522ed0
+  from 00523b7e UNCONDITIONAL_CALL in OnClearAllButtonPressed@00523b60
+  from 00523c1d UNCONDITIONAL_CALL in SelectNextPersonalAction@00523bd0
+  from 005158ad UNCONDITIONAL_CALL in SelectNextAction@00515860
+  from 00515c24 UNCONDITIONAL_CALL in DoTargetAction@00515bd0
+  from 0045f70f UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 0045f8c7 UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 0052294e UNCONDITIONAL_CALL in ClearOneAction@00522930
+  from 004496c6 UNCONDITIONAL_CALL in StartPazaakGame@00449670
+  from 0054dc3e UNCONDITIONAL_CALL in CSWGuiWagerPopup@0054d690
+  from 0044987a UNCONDITIONAL_CALL in EndPazaakGame@00449830
+  from 0040f0e9 UNCONDITIONAL_CALL in HitEvent@0040ee90
+  from 0041c754 UNCONDITIONAL_CALL in AddFireForgetAnimation@0041c180
+  from 0052a643 UNCONDITIONAL_CALL in AddMessages@0052a530
+  from 0052ab13 UNCONDITIONAL_CALL in AddDialogMessages@0052a9f0
+  from 0052b036 UNCONDITIONAL_CALL in AddCombatMessages@0052af20
+  from 005a7c79 UNCONDITIONAL_CALL in SetItem@005a7b20
+  from 0059bae3 UNCONDITIONAL_CALL in PopulateItemListBox@0059baa0
+  from 00515a5d UNCONDITIONAL_CALL in SelectPrevAction@00515a10
+  from 00518041 UNCONDITIONAL_CALL in HandleInputEvent@00518020
+  from 00523d9d UNCONDITIONAL_CALL in SelectPrevPersonalAction@00523d50
+  from 0051cbcf UNCONDITIONAL_CALL in Draw@0051cb70
+  from 0051f44c UNCONDITIONAL_CALL in UpdateActionQueue@0051f400
+  from 005213c7 UNCONDITIONAL_CALL in UpdateIndicator@005212a0
+  from 00523fb0 UNCONDITIONAL_CALL in UpdateStickyTarget@00523ee0
+  from 005237b1 UNCONDITIONAL_CALL in OnStealthButtonPressed@00523760
+  from 0057340f UNCONDITIONAL_CALL in Control@00573320
+  from 00591dfd UNCONDITIONAL_CALL in PopulateItemListBox@00591bd0
+  from 0059190e UNCONDITIONAL_CALL in OnControlEntered@005916e0
+  from 0059975d UNCONDITIONAL_CALL in StartAutoLevelup@00599720
+  from 0059995b UNCONDITIONAL_CALL in DoAutoLevelup@00599910
+  from 0059c0c7 UNCONDITIONAL_CALL in OnControlEntered@0059c000
+  from 0059ee49 UNCONDITIONAL_CALL in OnPrevNPCClicked@0059ecf0
+  from 0059f16c UNCONDITIONAL_CALL in OnNextNPCClicked@0059eeb0
+  from 0059f72b UNCONDITIONAL_CALL in SetDescription@0059f6b0
+  from 0059f8cb UNCONDITIONAL_CALL in Draw@0059f8a0
+  from 0059fb25 UNCONDITIONAL_CALL in OnPanelAdded@0059f980
+  from 005a7136 UNCONDITIONAL_CALL in GiveItem@005a70a0
+  from 005ab33d UNCONDITIONAL_CALL in OnControlEntered@005aadb0
+  from 005c0dd9 UNCONDITIONAL_CALL in SetItem@005c0b50
+  from 005bc2cd UNCONDITIONAL_CALL in OnPanelAdded@005bc1a0
+  from 005bd02f UNCONDITIONAL_CALL in OnControlEntered@005bcf40
+  from 005be91f UNCONDITIONAL_CALL in OnEnterSlot@005be7b0
+  from 005beb78 UNCONDITIONAL_CALL in OnEnterSlot@005be7b0
+  from 005c5c6e UNCONDITIONAL_CALL in OnControlXButton@005c54b0
+  from 005ce840 UNCONDITIONAL_CALL in OnEnterSlot@005ce6b0
+  from 00785e20 UNCONDITIONAL_CALL in ExecuteCommandDestroyObject@00785d40
+  from 00785ecc UNCONDITIONAL_CALL in ExecuteCommandDestroyObject@00785d40
+  from 007fca74 UNCONDITIONAL_CALL in HandlePlayerToServerCheatMessage@007fc890
+  from 007fdcf0 UNCONDITIONAL_CALL in HandlePlayerToServerCheatMessage@007fc890
+  from 0051fd0d UNCONDITIONAL_CALL in GetActionIcon@0051f830
+  from 005262a2 UNCONDITIONAL_CALL in HandleInputEvent@005260d0
+  from 005a2f18 UNCONDITIONAL_CALL in HandleInputEvent@005a2b60
+  from 0052fc12 UNCONDITIONAL_CALL in OnPanelAdded@0052f310
+=== REFS 80b200
+  from 0068f9b5 UNCONDITIONAL_CALL in DoPerceptionUpdateOnCreature@0068f8f0
+  from 0064dbc5 UNCONDITIONAL_CALL in AddEventDeltaTime@0064db90
+  from 006aaf1c UNCONDITIONAL_CALL in ApplyEffect@006aaef0
+  from 0042f4fe UNCONDITIONAL_CALL in MainLoop@0042e160
+  from 00430c3e UNCONDITIONAL_CALL in ClearPauseExclusionList@00430bd0
+  from 00430d37 UNCONDITIONAL_CALL in AddToPauseExclusionList@00430ca0
+  from 0045319c UNCONDITIONAL_CALL in Update@00453160
+  from 00474cc0 UNCONDITIONAL_CALL in GetTopFireForgetAnimation@00474c20
+  from 004f9120 UNCONDITIONAL_CALL in CSWCVisualEffect@004f90c0
+  from 004105e3 UNCONDITIONAL_CALL in CSWCCreature@004102b0
+  from 005585f1 UNCONDITIONAL_CALL in RecordMusicRestartTime@005585c0
+  from 00558626 UNCONDITIONAL_CALL in GetTimeDiff@00558600
+  from 006ac29d UNCONDITIONAL_CALL in IsDialogDelay@006ac200
+  from 006a5cb0 UNCONDITIONAL_CALL in CSWSObject@006a55e0
+  from 0067b39d UNCONDITIONAL_CALL in CSWSCreature@0067ab60
+  from 006ac17c UNCONDITIONAL_CALL in SetDialogDelay@006ac150
+  from 007526e5 UNCONDITIONAL_CALL in AddJournalEntry@00752610
+  from 00753062 UNCONDITIONAL_CALL in SendDialogEntryNode@00752910
+  from 007b6ea6 UNCONDITIONAL_CALL in MainLoop@007b6bb0
+  from 0064d1f0 UNCONDITIONAL_CALL in UpdateState@0064d1b0
+  from 006cee64 UNCONDITIONAL_CALL in WalkUpdateLocation_QuickWalk@006ced30
+  from 006cf06c UNCONDITIONAL_CALL in WalkUpdateLocation_QuickWalk@006ced30
+  from 0072940f UNCONDITIONAL_CALL in CSWSModule@00728e20
+  from 00717036 UNCONDITIONAL_CALL in AIUpdate@00717010
+  from 00729a36 UNCONDITIONAL_CALL in AIUpdate@00729a10
+  from 0072b647 UNCONDITIONAL_CALL in LoadModuleStart@0072aaa0
+  from 00716945 UNCONDITIONAL_CALL in CSWSArea@00716560
+  from 0072e87c UNCONDITIONAL_CALL in SaveModuleIFOStart@0072e4c0
+  from 007bbfb2 UNCONDITIONAL_CALL in ReprocessExclusionListActions@007bbf50
+  from 007bf050 UNCONDITIONAL_CALL in DoPCAutosave@007be170
+  from 007e62bb UNCONDITIONAL_CALL in CSWSAreaOfEffectObject@007e6190
+  from 007e921c UNCONDITIONAL_CALL in CSWSEncounter@007e9150
+  from 0080b1c4 UNCONDITIONAL_CALL in GetTimeDifferenceFromWorldTime@0080b1b0
+  from 0080b54d UNCONDITIONAL_CALL in PauseWorldTimer@0080b530
+  from 00534878 UNCONDITIONAL_CALL in CSWCPlaceable@005347d0
+  from 0055c271 UNCONDITIONAL_CALL in UpdateTimeStamp@0055c240
+  from 00476835 UNCONDITIONAL_CALL in SetDesiredFadeState@004767b0
+  from 00579013 UNCONDITIONAL_CALL in CSWCProjectile@00578ec0
+  from 00474dd5 UNCONDITIONAL_CALL in InsertFireForgetAnimation@00474da0
+  from 0044f4ef UNCONDITIONAL_CALL in CSWCArea@0044ef30
+  from 00506968 UNCONDITIONAL_CALL in CSWCDoor@005068c0
+  from 005376ea UNCONDITIONAL_CALL in CSWCTrigger@00537660
+  from 00581fce UNCONDITIONAL_CALL in CSWCAreaOfEffectObject@00581f60
+  from 00412256 UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 00412b74 UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 00476539 UNCONDITIONAL_CALL in FadeObject@00476430
+  from 00476632 UNCONDITIONAL_CALL in FadeObject@00476430
+  from 00476748 UNCONDITIONAL_CALL in FadeObject@00476430
+  from 004e12bd UNCONDITIONAL_CALL in GetCanClick@004e1290
+  from 0047e616 UNCONDITIONAL_CALL in AIUpdate@0047e5f0
+  from 004e1271 UNCONDITIONAL_CALL in MarkNoClickEvent@004e1240
+  from 004f93b8 UNCONDITIONAL_CALL in AIUpdate@004f9380
+  from 00506b46 UNCONDITIONAL_CALL in AIUpdate@00506b20
+  from 00534b46 UNCONDITIONAL_CALL in AIUpdate@00534b20
+  from 00537926 UNCONDITIONAL_CALL in AIUpdate@00537900
+  from 00537ac6 UNCONDITIONAL_CALL in AIUpdate@00537900
+  from 0055c2a6 UNCONDITIONAL_CALL in GetTimeDiff@0055c280
+  from 0057940f UNCONDITIONAL_CALL in AIUpdate@005793a0
+  from 005822ec UNCONDITIONAL_CALL in AIUpdate@005822a0
+  from 0066478d UNCONDITIONAL_CALL in AIUpdate@00664750
+  from 0068215c UNCONDITIONAL_CALL in AIUpdate@00681f50
+  from 00682af4 UNCONDITIONAL_CALL in AIUpdate@00681f50
+  from 0068456c UNCONDITIONAL_CALL in SpawnInHeartbeatPerception@006844d0
+  from 00684907 UNCONDITIONAL_CALL in SpawnInHeartbeatPerception@006844d0
+  from 00684fc7 UNCONDITIONAL_CALL in UpdateMineCheck@00684f40
+  from 006df495 UNCONDITIONAL_CALL in CleanInvitationLists@006df450
+  from 006a29ff UNCONDITIONAL_CALL in SetInvitedToParty@006a29c0
+  from 007eb16a UNCONDITIONAL_CALL in RemoveFromActiveCreatureCount@007eb020
+  from 006a4994 UNCONDITIONAL_CALL in ResetHeartbeatTimer@006a4960
+  from 006b5d7b UNCONDITIONAL_CALL in AIActionWait@006b5c90
+  from 006b610e UNCONDITIONAL_CALL in AIActionPlayAnimation@006b5f90
+  from 006c2ed8 UNCONDITIONAL_CALL in AIActionItemCastSpell@006c2dc0
+  from 006c3160 UNCONDITIONAL_CALL in AIActionItemCastSpell@006c2dc0
+  from 006c3622 UNCONDITIONAL_CALL in AIActionItemCastSpell@006c2dc0
+  from 006c545d UNCONDITIONAL_CALL in AIActionCastSpell@006c44b0
+  from 006caec4 UNCONDITIONAL_CALL in AIActionMoveToPoint@006ca9c0
+  from 006cb032 UNCONDITIONAL_CALL in AIActionMoveToPoint@006ca9c0
+  from 006ccf0f UNCONDITIONAL_CALL in AIActionMoveToPoint@006ca9c0
+  from 006cd30f UNCONDITIONAL_CALL in AIActionMoveToPoint@006ca9c0
+  from 006dc456 UNCONDITIONAL_CALL in AIActionAppear@006dc430
+  from 006dc526 UNCONDITIONAL_CALL in AIActionDisappear@006dc500
+  from 006dd8e2 UNCONDITIONAL_CALL in AIActionStanceTotalDefense@006dd610
+  from 006dd9a3 UNCONDITIONAL_CALL in AIActionStanceTotalDefense@006dd610
+  from 006dda24 UNCONDITIONAL_CALL in AIActionStanceTotalDefense@006dd610
+  from 006df106 UNCONDITIONAL_CALL in GetIsInInvitationsOffered@006df080
+  from 006df275 UNCONDITIONAL_CALL in AddToInvitationsIgnored@006df230
+  from 006defd5 UNCONDITIONAL_CALL in AddToInvitationsOffered@006def90
+  from 006df3a6 UNCONDITIONAL_CALL in GetIsInInvitationsIgnored@006df320
+  from 007425b8 UNCONDITIONAL_CALL in OnApplyRegenerate@00742580
+  from 00742960 UNCONDITIONAL_CALL in OnApplyPoison@007425f0
+  from 0074337f UNCONDITIONAL_CALL in OnApplyDisease@00742fc0
+  from 007475a2 UNCONDITIONAL_CALL in OnRemoveDisguise@007474a0
+  from 00747767 UNCONDITIONAL_CALL in OnApplyTimestop@00747660
+  from 0075d62a UNCONDITIONAL_CALL in AIUpdate@0075d5f0
+  from 00762e89 UNCONDITIONAL_CALL in AIUpdate@00762e30
+  from 0076f029 UNCONDITIONAL_CALL in AIUpdate@0076efd0
+  from 00781851 UNCONDITIONAL_CALL in ExecuteCommandAddJournalQuestEntry@00781740
+  from 00781b5c UNCONDITIONAL_CALL in ExecuteCommandAddJournalWorldEntry@00781a10
+  from 00781cd4 UNCONDITIONAL_CALL in ExecuteCommandAddJournalWorldEntryStrref@00781c40
+  from 0080b5d4 UNCONDITIONAL_CALL in GetWorldTimeTimeOfDay@0080b5c0
+  from 007a8113 UNCONDITIONAL_CALL in ExecuteCommandSetTime@007a8050
+  from 0080b96e UNCONDITIONAL_CALL in Hash;@0080b8c0
+  from 007e656a UNCONDITIONAL_CALL in AIUpdate@007e6530
+  from 007e9841 UNCONDITIONAL_CALL in AIUpdate@007e97e0
+  from 0066aa9b UNCONDITIONAL_CALL in DecrementUses@0066a8d0
+  from 006b2594 UNCONDITIONAL_CALL in RunActions@006b18a0
+  from 00655b82 UNCONDITIONAL_CALL in AIActionCombat@006557b0
+  from 00807f9d UNCONDITIONAL_CALL in HandlePlayerToServerJournalMessage@00807e00
+=== REFS 516de0
+  from 00516da5 UNCONDITIONAL_CALL in DrawEffects@00516d70
+  from 00516dc8 UNCONDITIONAL_CALL in DrawEffects@00516d70
+=== REFS 516d70
+  from 0051da5d UNCONDITIONAL_CALL in Draw@0051cb70
+  from 0051da79 UNCONDITIONAL_CALL in Draw@0051cb70
+  from 00528a04 UNCONDITIONAL_CALL in Draw@00528270
+=== REFS 516220
+  from 0051615b UNCONDITIONAL_CALL in DisplayToolTip@00516140
+  from 005161ce UNCONDITIONAL_CALL in Draw@00516190
+=== REFS 516500
+  from 0051d873 UNCONDITIONAL_CALL in Draw@0051cb70
+  from 00520d62 UNCONDITIONAL_CALL in UpdatePortraits@00520610
+  from 0052106d UNCONDITIONAL_CALL in UpdatePortraits@00520610
+  from 00521096 UNCONDITIONAL_CALL in UpdatePortraits@00520610
+  from 005289d8 UNCONDITIONAL_CALL in Draw@00528270
+=== REFS 520610
+  from 0051cc6e UNCONDITIONAL_CALL in Draw@0051cb70
+=== REFS 429780
+  from 004445e1 UNCONDITIONAL_CALL in ChangeCharacter@00444550
+  from 004117e5 UNCONDITIONAL_CALL in PlaySoundSetSound@00411770
+  from 004117f5 UNCONDITIONAL_CALL in PlaySoundSetSound@00411770
+  from 00411814 UNCONDITIONAL_CALL in PlaySoundSetSound@00411770
+  from 00478ba9 UNCONDITIONAL_CALL in SetLeader@00478a20
+  from 00478bc1 UNCONDITIONAL_CALL in SetLeader@00478a20
+  from 00478fbb UNCONDITIONAL_CALL in SetLeader@00478eee
+  from 0051e790 UNCONDITIONAL_CALL in PopulateMenus@0051e760
+  from 0042aa23 UNCONDITIONAL_CALL in GetMenuPoint@0042a990
+  from 0051f223 UNCONDITIONAL_CALL in RevertActionBarStates@0051f1c0
+  from 004140c2 UNCONDITIONAL_CALL in SetCombatState@00414080
+  from 00446b36 UNCONDITIONAL_CALL in DoPassiveSelection@00446ae0
+  from 00445aad UNCONDITIONAL_CALL in ShowObject@00445390
+  from 0044a08c UNCONDITIONAL_CALL in UpdateCombatMode@00449e40
+  from 0044a27a UNCONDITIONAL_CALL in UpdateCombatMode@00449e40
+  from 0045a300 UNCONDITIONAL_CALL in ProcessInput@00459080
+  from 0045a322 UNCONDITIONAL_CALL in ProcessInput@00459080
+  from 0045a35c UNCONDITIONAL_CALL in ProcessInput@00459080
+  from 0045bd60 UNCONDITIONAL_CALL in ProcessInput@00459080
+  from 00448691 UNCONDITIONAL_CALL in GetControlledCharacterDead@00448660
+  from 00460d81 UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 00463e8c UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046b32e UNCONDITIONAL_CALL in TurnCamera@0046b0c0
+  from 0046b347 UNCONDITIONAL_CALL in TurnCamera@0046b0c0
+  from 0042197a UNCONDITIONAL_CALL in HasFeat@00421970
+  from 00411cce UNCONDITIONAL_CALL in PlayFootstep@00411b60
+  from 0042ab8c UNCONDITIONAL_CALL in GetForceShield@0042ab80
+  from 00530cea UNCONDITIONAL_CALL in PlayPendingSounds@00530c30
+  from 0048a449 UNCONDITIONAL_CALL in CreateBodyAppearance@0048a280
+  from 00419662 UNCONDITIONAL_CALL in UpdateWeaponClass@00419400
+  from 0041966e UNCONDITIONAL_CALL in UpdateWeaponClass@00419400
+  from 0041968b UNCONDITIONAL_CALL in UpdateWeaponClass@00419400
+  from 0047e9c9 UNCONDITIONAL_CALL in SetEquippedBy@0047e980
+  from 0048d53b UNCONDITIONAL_CALL in SetAppearanceAlignment@0048d4c0
+  from 0048f61f UNCONDITIONAL_CALL in GetArmorClass@0048f5e0
+  from 0048f45c UNCONDITIONAL_CALL in GetLevel@0048f3d0
+  from 0055e254 UNCONDITIONAL_CALL in DoHitCheck@0055d9c0
+  from 00683d5c UNCONDITIONAL_CALL in HandleAlignmentInfluence@00683a70
+  from 007b70ed UNCONDITIONAL_CALL in MainLoop@007b6bb0
+  from 007b83ba UNCONDITIONAL_CALL in StallEventSaveGame@007b7980
+  from 007bd48f UNCONDITIONAL_CALL in TempDeathUpdate@007bd310
+  from 007bd6d5 UNCONDITIONAL_CALL in TempDeathUpdate@007bd310
+  from 007bd73e UNCONDITIONAL_CALL in TempDeathUpdate@007bd310
+  from 007bf32b UNCONDITIONAL_CALL in DoPCAutosave@007be170
+  from 00425591 UNCONDITIONAL_CALL in GetSelfForcePowers@004254d0
+  from 00425633 UNCONDITIONAL_CALL in GetSelfForcePowers@004254d0
+  from 00425655 UNCONDITIONAL_CALL in GetSelfForcePowers@004254d0
+  from 00507908 UNCONDITIONAL_CALL in GetTargetActions@005077a0
+  from 0050767c UNCONDITIONAL_CALL in GetUseItems@00507670
+  from 00507ec1 UNCONDITIONAL_CALL in GetDoorInterfaceMines@00507e70
+  from 005368d9 UNCONDITIONAL_CALL in GetTargetActions@005365c0
+  from 005368e9 UNCONDITIONAL_CALL in GetTargetActions@005365c0
+  from 00536051 UNCONDITIONAL_CALL in GetUseItems@00536020
+  from 0042849c UNCONDITIONAL_CALL in GetUsableItems@00428490
+  from 00536dd1 UNCONDITIONAL_CALL in GetPlaceableInterfaceMines@00536d80
+  from 0042760f UNCONDITIONAL_CALL in IsLeaderUsableItem@004275f0
+  from 00538cdb UNCONDITIONAL_CALL in GetMineForcePowers@00538c80
+  from 004269f4 UNCONDITIONAL_CALL in GetBehaviors@004269a0
+  from 00426a46 UNCONDITIONAL_CALL in GetBehaviors@004269a0
+  from 004264e1 UNCONDITIONAL_CALL in GetHostileForcePowers@004264b0
+  from 00426785 UNCONDITIONAL_CALL in GetHostileForcePowers@004264b0
+  from 004267a7 UNCONDITIONAL_CALL in GetHostileForcePowers@004264b0
+  from 0042869e UNCONDITIONAL_CALL in GetHostileItems@00428690
+  from 00427bb0 UNCONDITIONAL_CALL in IsHostileUsableItem@00427b10
+  from 00427c0a UNCONDITIONAL_CALL in IsHostileUsableItem@00427b10
+  from 0042862e UNCONDITIONAL_CALL in GetHostileItems@00428620
+  from 00429b35 UNCONDITIONAL_CALL in GetCombatFeatsSkills@00429b20
+  from 004247b3 UNCONDITIONAL_CALL in CheckFeat@004247a0
+  from 0042a19b UNCONDITIONAL_CALL in GetHostileInterfaceActions@0042a170
+  from 00461097 UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 00461618 UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 00461628 UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 004619fc UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 00461a0c UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 00462666 UNCONDITIONAL_CALL in GetDefaultActions@00460d20
+  from 0044bee9 UNCONDITIONAL_CALL in ChangeCharacterToNextLivingPartyMember@0044bd70
+  from 0044bf07 UNCONDITIONAL_CALL in ChangeCharacterToNextLivingPartyMember@0044bd70
+  from 004ddca4 UNCONDITIONAL_CALL in ShowSoloModeQuery@004ddc10
+  from 004da624 UNCONDITIONAL_CALL in ShowSWInGameGui@004da4f0
+  from 0045e64c UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 0045e666 UNCONDITIONAL_CALL in HandleInputEvent@0045ded0
+  from 0042be7c UNCONDITIONAL_CALL in IsStealthCapable@0042be70
+  from 0042be8c UNCONDITIONAL_CALL in IsStealthCapable@0042be70
+  from 0042bf99 UNCONDITIONAL_CALL in IsStealthCapable@0042be70
+  from 0042bfca UNCONDITIONAL_CALL in IsStealthCapable@0042be70
+  from 0042bff6 UNCONDITIONAL_CALL in IsStealthCapable@0042be70
+  from 0042c022 UNCONDITIONAL_CALL in IsStealthCapable@0042be70
+  from 0044ba78 UNCONDITIONAL_CALL in PlayerFlourishWeapons@0044ba30
+  from 004299f3 UNCONDITIONAL_CALL in ActionMenuSwitchWeapons@004299d0
+  from 00523152 UNCONDITIONAL_CALL in DoPersonalAction@00522ed0
+  from 00523160 UNCONDITIONAL_CALL in DoPersonalAction@00522ed0
+  from 00515ee7 UNCONDITIONAL_CALL in DoTargetAction@00515bd0
+  from 00515ef5 UNCONDITIONAL_CALL in DoTargetAction@00515bd0
+  from 00522955 UNCONDITIONAL_CALL in ClearOneAction@00522930
+  from 00419a2f UNCONDITIONAL_CALL in SetStealthState@00419850
+  from 0049bdd2 UNCONDITIONAL_CALL in HandleServerToPlayerCreatureUpdate_Delete@0049bd20
+  from 0049a048 UNCONDITIONAL_CALL in HandleServerToPlayerCreatureUpdate_Appearance@00499500
+  from 0040efe3 UNCONDITIONAL_CALL in HitEvent@0040ee90
+  from 0041269e UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 00412859 UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 0041286c UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 00412898 UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 00412ac1 UNCONDITIONAL_CALL in AIUpdate@00412180
+  from 00413300 UNCONDITIONAL_CALL in AnimationUpdate@004132e0
+  from 0041330c UNCONDITIONAL_CALL in AnimationUpdate@004132e0
+  from 00414445 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 0041445a UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414474 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 0041449f UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414501 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414515 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414528 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 0041455a UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414574 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 004145a3 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 004145cf UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 004145e6 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414619 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414645 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00414660 UNCONDITIONAL_CALL in RotateCreatureToOrientation@00414430
+  from 00422fea UNCONDITIONAL_CALL in DriveAnimationUpdate@00422fa0
+  from 00423985 UNCONDITIONAL_CALL in FollowAnimationUpdate@00423970
+  from 00423998 UNCONDITIONAL_CALL in FollowAnimationUpdate@00423970
+  from 004239e2 UNCONDITIONAL_CALL in FollowAnimationUpdate@00423970
+  from 00423a0f UNCONDITIONAL_CALL in FollowAnimationUpdate@00423970
+  from 004163f1 UNCONDITIONAL_CALL in LoadModel@00415d80
+  from 00416780 UNCONDITIONAL_CALL in LoadModel@00415d80
+  from 0041b9f4 UNCONDITIONAL_CALL in ResolveReactionAnimation@0041b9c0
+  from 004219bf UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 00421b47 UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 00421b67 UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 00421caa UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 00421ce4 UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 00421d56 UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 00421e6c UNCONDITIONAL_CALL in SetPrecalculatedPosition@00421990
+  from 004290ac UNCONDITIONAL_CALL in ActionMenuForm@004290a0
+  from 0042637e UNCONDITIONAL_CALL in ActionSwapImplant@00426240
+  from 00428779 UNCONDITIONAL_CALL in PartyMenuUseItemSelect@00428700
+  from 004288c6 UNCONDITIONAL_CALL in PartyMenuUseItemSelect@00428700
+  from 00428a24 UNCONDITIONAL_CALL in PartyMenuUseItemSelect@00428700
+  from 0042981c UNCONDITIONAL_CALL in ActionMenuSelectBehavior@00429810
+  from 0042ad52 UNCONDITIONAL_CALL in Setup3DScene@0042ac40
+  from 0042ad5f UNCONDITIONAL_CALL in Setup3DScene@0042ac40
+  from 0042bd0c UNCONDITIONAL_CALL in SetSWAnimationSpeed@0042bd00
+  from 0042bd18 UNCONDITIONAL_CALL in SetSWAnimationSpeed@0042bd00
+  from 00472b79 UNCONDITIONAL_CALL in SetAnimation@00472b00
+  from 00504e21 UNCONDITIONAL_CALL in UpdateMotionBlur@00504d40
+  from 004934c6 UNCONDITIONAL_CALL in AddDefaultPackageSkills@00493400
+  from 00598089 UNCONDITIONAL_CALL in SetStats@00597ff0
+  from 005988cc UNCONDITIONAL_CALL in SetStats@00597ff0
+  from 00598955 UNCONDITIONAL_CALL in SetStats@00597ff0
+  from 005989df UNCONDITIONAL_CALL in SetStats@00597ff0
+  from 005e93ff UNCONDITIONAL_CALL in AbilitiesChanged@005e90b0
+  from 005e947b UNCONDITIONAL_CALL in AbilitiesChanged@005e90b0
+  from 005e94f7 UNCONDITIONAL_CALL in AbilitiesChanged@005e90b0
+  from 0059452e UNCONDITIONAL_CALL in CreateFeatList@00594510
+  from 0059459e UNCONDITIONAL_CALL in CreatePowerList@00594580
+  from 00594624 UNCONDITIONAL_CALL in CreateSkillList@005945f0
+  from 0059479b UNCONDITIONAL_CALL in OnEnterPower@00594720
+  from 0059487b UNCONDITIONAL_CALL in OnEnterPower@00594720
+  from 0059489c UNCONDITIONAL_CALL in OnEnterPower@00594720
+  from 005948cb UNCONDITIONAL_CALL in OnEnterPower@00594720
+  from 00594906 UNCONDITIONAL_CALL in OnEnterPower@00594720
+  from 00594bfa UNCONDITIONAL_CALL in OnEnterPower@00594720
+  from 0059baee UNCONDITIONAL_CALL in PopulateItemListBox@0059baa0
+  from 0059b6f5 UNCONDITIONAL_CALL in CreateItemEntry@0059b4f0
+  from 0059b7db UNCONDITIONAL_CALL in CreateItemEntry@0059b4f0
+  from 0059b84b UNCONDITIONAL_CALL in CreateItemEntry@0059b4f0
+  from 0059b8a8 UNCONDITIONAL_CALL in CreateItemEntry@0059b4f0
+  from 004f09f6 UNCONDITIONAL_CALL in Control@004f0950
+  from 00518057 UNCONDITIONAL_CALL in HandleInputEvent@00518020
+  from 0051ccec UNCONDITIONAL_CALL in Draw@0051cb70
+  from 0051d00e UNCONDITIONAL_CALL in Draw@0051cb70
+  from 0051f463 UNCONDITIONAL_CALL in UpdateActionQueue@0051f400
+  from 005206a4 UNCONDITIONAL_CALL in UpdatePortraits@00520610
+  from 005238ee UNCONDITIONAL_CALL in OnCharacterClicked@005237d0
+  from 005239ca UNCONDITIONAL_CALL in OnCharacterClicked@005237d0
+  from 005239d6 UNCONDITIONAL_CALL in OnCharacterClicked@005237d0
+  from 00525178 UNCONDITIONAL_CALL in InitGamepadMenu@00524fd0
+  from 00528353 UNCONDITIONAL_CALL in Draw@00528270
+  from 00528bf9 UNCONDITIONAL_CALL in Draw@00528270
+  from 00528e4c UNCONDITIONAL_CALL in Draw@00528270
+  from 00528fd1 UNCONDITIONAL_CALL in Draw@00528270
+  from 0052c0eb UNCONDITIONAL_CALL in ShowEffects@0052bec0
+  from 005799d9 UNCONDITIONAL_CALL in AIUpdate@005793a0
+  from 0058d93b UNCONDITIONAL_CALL in AcceptParty@0058d6e0
+  from 00599962 UNCONDITIONAL_CALL in DoAutoLevelup@00599910
+  from 005a0202 UNCONDITIONAL_CALL in OnEnterSlot@005a0180
+  from 005a20e0 UNCONDITIONAL_CALL in UpdateInventory@005a1780
+  from 005a2725 UNCONDITIONAL_CALL in UpdateInventory@005a1780
+  from 005a2739 UNCONDITIONAL_CALL in UpdateInventory@005a1780
+  from 0059fe43 UNCONDITIONAL_CALL in OnSelectSlot@0059fcc0
+  from 0059fe6a UNCONDITIONAL_CALL in OnSelectSlot@0059fcc0
+  from 005a34c2 UNCONDITIONAL_CALL in OnItemSelected@005a3120
+  from 005a42ac UNCONDITIONAL_CALL in EquipItem@005a4220
+  from 005a4453 UNCONDITIONAL_CALL in EquipItem@005a4420
+  from 005a4540 UNCONDITIONAL_CALL in UnequipItem@005a44e0
+  from 005aa349 UNCONDITIONAL_CALL in OnControlInvAButton@005aa0e0
+  from 005aa7f3 UNCONDITIONAL_CALL in OnControlInvAButton@005aa0e0
+  from 005ab950 UNCONDITIONAL_CALL in SellItemCallback@005ab830
+=== REFS 606380
+  from 0060c88e UNCONDITIONAL_CALL in Warning@0060c840
+  from 0060c8ad UNCONDITIONAL_CALL in Warning@0060c840
+  from 0060c944 UNCONDITIONAL_CALL in Warning@0060c840
+  from 0047b660 UNCONDITIONAL_CALL in GetPathData@0047b610
+  from 00514346 UNCONDITIONAL_CALL in UpdateNameLabel@00514000
+  from 0051e636 UNCONDITIONAL_CALL in UpdateActionDescription@0051e410
+  from 00627f5b UNCONDITIONAL_CALL in Fetch@00627ef0
+  from 00627938 UNCONDITIONAL_CALL in FetchInternal@006278d0
+  from 0063b17c UNCONDITIONAL_CALL in Play@0063b060
+  from 0063b397 UNCONDITIONAL_CALL in Play@0063b060
+  from 0063b44f UNCONDITIONAL_CALL in Play@0063b060
+  from 0063b514 UNCONDITIONAL_CALL in Play@0063b060
+  from 0060febd UNCONDITIONAL_CALL in ResolveFileName@0060fd90
+  from 0060fefe UNCONDITIONAL_CALL in ResolveFileName@0060fd90
+  from 0063c136 UNCONDITIONAL_CALL in InitializeSource@0063ba40
+  from 0063c514 UNCONDITIONAL_CALL in InitializeSource@0063ba40
+  from 0063c7e5 UNCONDITIONAL_CALL in InitializeSource@0063ba40
+  from 00651784 UNCONDITIONAL_CALL in GetValueNumber@00651720
+  from 006517dc UNCONDITIONAL_CALL in GetValueNumber@00651720
+  from 0064e012 UNCONDITIONAL_CALL in LogEventAdd@0064dd70
+  from 0064e2ec UNCONDITIONAL_CALL in LogEventAdd@0064dd70
+  from 0064e333 UNCONDITIONAL_CALL in LogEventAdd@0064dd70
+  from 0064e537 UNCONDITIONAL_CALL in LogEventAddGetObject@0064e4c0
+  from 0064e54e UNCONDITIONAL_CALL in LogEventAddGetObject@0064e4c0
+  from 00693411 UNCONDITIONAL_CALL in SetCombatState@00693090
+  from 00773287 UNCONDITIONAL_CALL in EndCombatRound@00773040
+  from 0063ff9e UNCONDITIONAL_CALL in SendMessageToPlayer@0063fc00
+  from 004076b9 UNCONDITIONAL_CALL in WinMain@00407450
+  from 0042f1de UNCONDITIONAL_CALL in MainLoop@0042e160
+  from 0042f1fa UNCONDITIONAL_CALL in MainLoop@0042e160
+  from 00431fec UNCONDITIONAL_CALL in SetCaptureEvents@00431ef0
+  from 004320d1 UNCONDITIONAL_CALL in SetCaptureEvents@00431ef0
+  from 0043226b UNCONDITIONAL_CALL in SetCaptureEventPlayBack@00432170
+  from 00433555 UNCONDITIONAL_CALL in SetEventDescriptions@00432410
+  from 00433911 UNCONDITIONAL_CALL in SetEventDescriptions@00432410
+  from 00433bee UNCONDITIONAL_CALL in SetEventDescriptions@00432410
+  from 00436327 UNCONDITIONAL_CALL in StartServices@004353b0
+  from 004393b8 UNCONDITIONAL_CALL in UpdateCamera@00438930
+  from 00443519 UNCONDITIONAL_CALL in InitializeClientOptions@00443420
+  from 004436fb UNCONDITIONAL_CALL in InitializeClientOptions@00443420
+  from 004438cd UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 00443f69 UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 00444048 UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 004440f4 UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 0044419e UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 00444248 UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 004442e5 UNCONDITIONAL_CALL in InitializeSoundOptions@004437c0
+  from 0044b0cf UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b0e4 UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b17b UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b1cd UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b21b UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b269 UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b2e6 UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044b30a UNCONDITIONAL_CALL in AddDownloadedResources@0044b050
+  from 0044d2a9 UNCONDITIONAL_CALL in AddMovieToExoArrayList@0044d040
+  from 0044d31e UNCONDITIONAL_CALL in AddMovieToExoArrayList@0044d040
+  from 0044cefa UNCONDITIONAL_CALL in FindMovieInOverrides@0044ce60
+  from 0044cfed UNCONDITIONAL_CALL in FindMovieInOverrides@0044ce60
+  from 0045b366 UNCONDITIONAL_CALL in ProcessInput@00459080
+  from 00409d2e UNCONDITIONAL_CALL in HandleWMKeyDownMessage@00409c70
+  from 0040a011 UNCONDITIONAL_CALL in HandleWMCharMessage@00409f70
+  from 0042de6f UNCONDITIONAL_CALL in HandleMessage@0042ddc0
+  from 0042dec4 UNCONDITIONAL_CALL in HandleMessage@0042ddc0
+  from 00467cab UNCONDITIONAL_CALL in LoadOptions@00465580
+  from 00462d27 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00462dd2 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00462e7d UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00462f22 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00462fc8 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463073 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046311d UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004631c5 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046326b UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463311 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004633b6 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463461 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046350c UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004635b7 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463662 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046370c UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004637b4 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046385f UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046390a UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004639ff UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463a29 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463adb UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463ba9 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463c5d UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463d0f UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463dc1 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463f08 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00463fc7 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464067 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464107 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004641be UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464272 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464324 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004643d6 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464481 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046452c UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004645d7 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464682 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046472d UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004647d8 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046487e UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464923 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004649c8 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464a6d UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464b10 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464bb6 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464c5c UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464d01 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464da6 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464e4b UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464ef1 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00464f97 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046503d UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004650e3 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004651aa UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004651c9 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046527f UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 0046532c UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004653d9 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 00465484 UNCONDITIONAL_CALL in SaveOptions@00462cc0
+  from 004a53b3 UNCONDITIONAL_CALL in HandleServerToPlayerMessage@004a52e0
+  from 004a590b UNCONDITIONAL_CALL in HandleServerToPlayerMessage@004a52e0
+  from 004a5938 UNCONDITIONAL_CALL in HandleServerToPlayerMessage@004a52e0
+  from 004ec74a UNCONDITIONAL_CALL in Load@004eb010
+  from 004ec7ff UNCONDITIONAL_CALL in Load@004eb010
+  from 00510827 UNCONDITIONAL_CALL in LoadSpellKnownTable@00510570
+  from 0051912b UNCONDITIONAL_CALL in CSWGuiMainInterface@00518840
+  from 00512fec UNCONDITIONAL_CALL in Initialize@00512f40
+  from 00513029 UNCONDITIONAL_CALL in Initialize@00512f40
+  from 0051306c UNCONDITIONAL_CALL in Initialize@00512f40
+  from 005130ae UNCONDITIONAL_CALL in Initialize@00512f40
+  from 00516724 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 00516752 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 00516781 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 005167b0 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 005167de UNCONDITIONAL_CALL in Initialize@005166e0
+  from 0051680a UNCONDITIONAL_CALL in Initialize@005166e0
+  from 00516839 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 00516867 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 00516896 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 005168c5 UNCONDITIONAL_CALL in Initialize@005166e0
+  from 00522411 UNCONDITIONAL_CALL in InitializeMap@00522390
+  from 0048e603 UNCONDITIONAL_CALL in GetBTypeModelAndTextureResRef@0048e3b0
+  from 0048e663 UNCONDITIONAL_CALL in GetBTypeModelAndTextureResRef@0048e3b0
+  from 0053f782 UNCONDITIONAL_CALL in HandleServerToSysAdminMessage@0053f020
+  from 0058712e UNCONDITIONAL_CALL in SetNextMessage@005870d0
+  from 00587199 UNCONDITIONAL_CALL in SetNextMessage@005870d0
+  from 0060a21f UNCONDITIONAL_CALL in LoadAliases@0060a1d0
+  from 0060f590 UNCONDITIONAL_CALL in WriteIniEntry@0060e760
+  from 00613465 UNCONDITIONAL_CALL in WriteEventToFile@006133c0
+  from 006097d2 UNCONDITIONAL_CALL in GetDirectoryList@00609660
+  from 00609800 UNCONDITIONAL_CALL in GetDirectoryList@00609660
+  from 00634b44 UNCONDITIONAL_CALL in ShutDown@00634a60
+  from 00651bde UNCONDITIONAL_CALL in SetValueNumber@00651b80
+  from 00651c36 UNCONDITIONAL_CALL in SetValueNumber@00651b80
+  from 0068b69f UNCONDITIONAL_CALL in LoadFromTemplate@0068b5a0
+  from 0068f576 UNCONDITIONAL_CALL in PostProcess@0068f280
+  from 006eea68 UNCONDITIONAL_CALL in ReadStatsFromGff@006ec350
+  from 006eeb53 UNCONDITIONAL_CALL in ReadStatsFromGff@006ec350
+  from 006f00b9 UNCONDITIONAL_CALL in ReadSpellsFromGff@006efff0
+  from 006f3156 UNCONDITIONAL_CALL in SetExperience@006f3050
+  from 006fecbb UNCONDITIONAL_CALL in GetFilename@006fec70
+  from 0075556e UNCONDITIONAL_CALL in SendDialogEntry@00754e50
+  from 007559d5 UNCONDITIONAL_CALL in SendDialogEntry@00754e50
+  from 007559f7 UNCONDITIONAL_CALL in SendDialogEntry@00754e50
+  from 00752c87 UNCONDITIONAL_CALL in SendDialogEntryNode@00752910
+  from 007546c7 UNCONDITIONAL_CALL in SendDialogReplyNode@00753b30
+  from 0069f6f1 UNCONDITIONAL_CALL in BumpFriends@0069f650
+  from 0069fad9 UNCONDITIONAL_CALL in BumpFriends@0069f650
+  from 0069fce6 UNCONDITIONAL_CALL in BumpFriends@0069f650
+  from 006f1569 UNCONDITIONAL_CALL in SaveClassInfo@006f1320
+  from 006f1822 UNCONDITIONAL_CALL in SaveClassInfo@006f1320
+  from 006f193b UNCONDITIONAL_CALL in SaveClassInfo@006f1320
+  from 006fed4b UNCONDITIONAL_CALL in GetPupFilename@006fed00
+  from 00719fcf UNCONDITIONAL_CALL in LoadAreaHeader@00718a20
+  from 007323d7 UNCONDITIONAL_CALL in AddModuleResources@00732120
+  from 00732491 UNCONDITIONAL_CALL in AddModuleResources@00732120
+  from 0073250a UNCONDITIONAL_CALL in AddModuleResources@00732120
+  from 0044963a UNCONDITIONAL_CALL in SetLoadBarProgress@004495b0
+  from 00732d68 UNCONDITIONAL_CALL in RemoveModuleResources@00732700
+  from 007330ad UNCONDITIONAL_CALL in RemoveModuleResources@00732700
+  from 007331dc UNCONDITIONAL_CALL in RemoveModuleResources@00732700
+  from 0073329c UNCONDITIONAL_CALL in RemoveModuleResources@00732700
+  from 007332c6 UNCONDITIONAL_CALL in RemoveModuleResources@00732700
+  from 0076989c UNCONDITIONAL_CALL in LoadFromTemplate@007697a0
+  from 007b2aaf UNCONDITIONAL_CALL in SaveGame@007b2990
+  from 007b2e46 UNCONDITIONAL_CALL in SaveGame@007b2990
+  from 00609fa1 UNCONDITIONAL_CALL in GetDirectorySize@00609e80
+  from 00609fc3 UNCONDITIONAL_CALL in GetDirectorySize@00609e80
+  from 0075bd40 UNCONDITIONAL_CALL in SaveServerCharacter@0075b5d0
+  from 0075bd6b UNCONDITIONAL_CALL in SaveServerCharacter@0075b5d0
+  from 0075be0b UNCONDITIONAL_CALL in SaveServerCharacter@0075b5d0
+  from 0075c0ae UNCONDITIONAL_CALL in SaveServerCharacter@0075b5d0
+  from 007b57dd UNCONDITIONAL_CALL in LoadModule@007b4fd0
+  from 0060cbdb UNCONDITIONAL_CALL in GetCurrentTimestamp@0060cb90
+=== REFS 8d03c0
+  from 0052c83a UNCONDITIONAL_CALL in CSWGuiMessageBox@0052c540
+  from 0052cd89 UNCONDITIONAL_CALL in CSWGuiMessageBox@0052c960
+  from 005b03ac UNCONDITIONAL_CALL in CSWGuiDialogCinematic@005b01d0
+  from 005b04c1 UNCONDITIONAL_CALL in CSWGuiDialogCinematic@005b01d0
+  from 005af584 UNCONDITIONAL_CALL in SetBottom@005af4f0
+  from 008d078f UNCONDITIONAL_CALL in CAurGUIStringInternal@008d05b0
+  from 0059e204 UNCONDITIONAL_CALL in CSWGuiInGameEquip@0059d120
+  from 00592cce UNCONDITIONAL_CALL in CSWGuiInGameAbilities@00592310
+  from 0059086b UNCONDITIONAL_CALL in CSWGuiInGameJournal@00590190
+  from 005646ef UNCONDITIONAL_CALL in CSWGuiMapHider@00564590
+  from 0052ecc6 UNCONDITIONAL_CALL in CSWGuiStatusSummary@0052e4c0
+  from 005a5e0c UNCONDITIONAL_CALL in CSWGuiContainer@005a5a40
+  from 005acc69 UNCONDITIONAL_CALL in CSWGuiInGameAreaTransition@005aca30
+  from 005b21ce UNCONDITIONAL_CALL in CSWGuiDialogComputerCamera@005b2060
+  from 005246d9 UNCONDITIONAL_CALL in SetupPauseGuiExtent@005246d0
+  from 00589a9d UNCONDITIONAL_CALL in AddFeatSet@00589970
+  from 00915d05 UNCONDITIONAL_CALL in GetIdealWidthAndHeight@00915ce0
+  from 00516f3a UNCONDITIONAL_CALL in DrawStack@00516de0
+  from 00517014 UNCONDITIONAL_CALL in DrawStack@00516de0
+  from 0052d620 UNCONDITIONAL_CALL in FixMessageLabel@0052d610
+  from 0052f33f UNCONDITIONAL_CALL in OnPanelAdded@0052f310
+  from 005d52c1 UNCONDITIONAL_CALL in CSWGuiSaveLoadEntry@005d5140
+  from 005e08ce UNCONDITIONAL_CALL in PopulateMovies@005e02b0
+  from 005e2000 UNCONDITIONAL_CALL in PopulateSongList@005e1f8d
+  from 00564c5e UNCONDITIONAL_CALL in Draw@00564c30
+  from 0056913a UNCONDITIONAL_CALL in PopulateOptionsListbox@00569020
+  from 0056e2d2 UNCONDITIONAL_CALL in CSWGuiOptionsResolution@0056de50
+  from 0056e581 UNCONDITIONAL_CALL in CSWGuiOptionsResolution@0056de50
+  from 005877ee UNCONDITIONAL_CALL in SetExtent@00587750
+  from 005e4bfe UNCONDITIONAL_CALL in CSWGuiInGameGameplay@005e43c0
+  from 00591ca3 UNCONDITIONAL_CALL in PopulateItemListBox@00591bd0
+  from 00591a29 UNCONDITIONAL_CALL in OnControlEntered@005916e0
+  from 00595666 UNCONDITIONAL_CALL in SetExtent@00595630
+  from 00595ac1 UNCONDITIONAL_CALL in Initialize@005958f0
+  from 0059f810 UNCONDITIONAL_CALL in SetDescription@0059f6b0
+  from 005a4d66 UNCONDITIONAL_CALL in Initialize@005a4b50
+  from 005a74e2 UNCONDITIONAL_CALL in Draw@005a7480
+  from 005a7a10 UNCONDITIONAL_CALL in Initialize@005a7800
+  from 005b0bf1 UNCONDITIONAL_CALL in Reset@005b0b30
+  from 005c0542 UNCONDITIONAL_CALL in SetExtent@005c04e0
+  from 005c0aec UNCONDITIONAL_CALL in Initialize@005c0840
+  from 005e5f92 UNCONDITIONAL_CALL in SetDescription@005e5ec0
+  from 005f957a UNCONDITIONAL_CALL in CSWGuiFeatsCharGen@005f8c90
+  from 005fb319 UNCONDITIONAL_CALL in SetDescription@005fb220
+  from 008d0e51 UNCONDITIONAL_CALL in GetFontPixelHeight@008d0e20
+  from 008d2255 UNCONDITIONAL_CALL in Draw@008d1e10
+=== REFS 8cfbd0
+  from 0090f878 UNCONDITIONAL_CALL in Draw@0090f820
+  from 0090fa98 UNCONDITIONAL_CALL in Draw@0090f820
+  from 0090fbd0 UNCONDITIONAL_CALL in Draw@0090f820
+  from 0051489b UNCONDITIONAL_CALL in Draw@00514880
+  from 00516e0b UNCONDITIONAL_CALL in DrawStack@00516de0
+  from 0051d94f UNCONDITIONAL_CALL in Draw@0051cb70
+  from 00522231 UNCONDITIONAL_CALL in DrawMap@00521f10
+  from 0090d1f2 UNCONDITIONAL_CALL in Draw@0090d110
+  from 00540499 UNCONDITIONAL_CALL in Draw@00540490
+  from 00563cb4 UNCONDITIONAL_CALL in Draw@00563c40
+=== REFS 90e4a0
+  from 0090e402 UNCONDITIONAL_CALL in GetLocalMouseCoords@0090e350
+  from 0090cfc8 UNCONDITIONAL_CALL in HitCheckMouse@0090cf60
+  from 0090d1ed UNCONDITIONAL_CALL in Draw@0090d110
+  from 0054d358 UNCONDITIONAL_CALL in PlaceRightOf@0054d2e0
+  from 0054d439 UNCONDITIONAL_CALL in PlaceAbove@0054d3c0

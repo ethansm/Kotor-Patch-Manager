@@ -1,0 +1,9 @@
+SetCornerImage	414680	912a50
+SetEdgeImage	414760	912b30
+SetFillImage	414840	912c10
+TargetMenuSound	744260	515860
+TextLoad	417480	915850
+PanelDtor	40e860	90cce0
+AppCtor	401730	4016f0
+AppCreateServer	401bc0	401b80
+AppDestroyServer	401c70	401c30
