@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <sys/mman.h>
 #include <initializer_list>
+#include <unistd.h>
 // Protection faking: the host stub's VirtualQuery reports every address as one committed PAGE_READWRITE region. Route SafeRead.h's
 // VirtualQuery through a wrapper that can override State/Protect for a chosen range (and clip RegionSize at its edges) while
 // forwarding everything else to the stub, so probeWrite's protection rules are testable without touching the shared stub.
@@ -10,7 +11,15 @@ struct FakeRange { uintptr_t lo, hi; DWORD protect, state; };
 static FakeRange g_fake[8];
 static int g_fakeN = 0;
 static auto g_realVQ = &VirtualQuery;
+static int g_vqCalls = 0;   // how many times SafeRead asked the OS (cache behaviour is observable only through this)
+static int g_vqMode = 0;    // 0 normal; 1 fail (returns 0 but leaves a committed-looking answer behind); 2 degenerate (RegionSize 0)
 static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
+    ++g_vqCalls;
+    if (g_vqMode) {
+        m->BaseAddress = const_cast<void*>(a); m->RegionSize = g_vqMode == 1 ? 0x1000 : 0;
+        m->State = MEM_COMMIT; m->Protect = PAGE_READWRITE;
+        return g_vqMode == 1 ? 0 : sizeof *m;
+    }
     SIZE_T r = g_realVQ(a, m, n);
     if (!r) return r;
     uintptr_t p = reinterpret_cast<uintptr_t>(a);
@@ -148,8 +157,11 @@ int main() {
 
     // ---- dump(): cap clamping (cap <= 0 used to pass a negative length to snprintf as a huge size_t)
     {
+        { char z[128]; KT_CHECK_EQ(saferead::dump(z, sizeof z), 43); KT_CHECK_EQ(z, "saferead: 0 failed probes (showing last 0)\n"); }   // fresh ring: count starts at 0
         saferead::enableRing(true);
         saferead::probeRead(7, reinterpret_cast<const void*>(0x20), 4);   // one recorded failure
+        { char z[256]; saferead::dump(z, sizeof z);
+          KT_CHECK(std::strstr(z, "1 failed probes (showing last 1)") != nullptr); KT_CHECK(std::strstr(z, "site=7 ") != nullptr); }   // count<RingSize: entry index is count-n+k
         char g[64]; auto gfill = [&] { std::memset(g, 'G', sizeof g); };
         gfill(); KT_CHECK_EQ(saferead::dump(g, 0), 0);  KT_CHECK_EQ(g[0], 'G');
         gfill(); KT_CHECK_EQ(saferead::dump(g, -1), 0); KT_CHECK_EQ(g[0], 'G'); KT_CHECK_EQ(g[10], 'G');
@@ -163,6 +175,12 @@ int main() {
             gfill(); std::memset(full, 'G', 200);
             int n = saferead::dump(full, cap);
             KT_CHECK(n >= 0 && n <= cap - 1); KT_CHECK_EQ((int)std::strlen(full), n); KT_CHECK_EQ(full[cap], 'G');
+        }
+        // exact truncation: the result is always min(full length, cap-1)
+        for (int cap = 2; cap <= fl + 2; ++cap) {
+            char big[256]; std::memset(big, 'G', sizeof big);
+            int n = saferead::dump(big, cap);
+            KT_CHECK_EQ(n, cap - 1 < fl ? cap - 1 : fl); KT_CHECK_EQ((int)std::strlen(big), n);
         }
         saferead::enableRing(false);
     }
@@ -221,6 +239,63 @@ int main() {
         KT_CHECK_EQ(saferead::readExo(1, s7, b6, 7), 0);
         std::memset(b6, 'X', sizeof b6);
         KT_CHECK_EQ(saferead::readExo(1, s7, b6, 8), 6); KT_CHECK_EQ(b6, "abcdef");
+    }
+
+    // ---- readExo edge cases found by the mutation gate (doc 20e)
+    {
+        fill(); { uintptr_t s = mkExo("Foo", 4, 4); KT_CHECK_EQ(saferead::readExo(1, s, buf, 1), 0); KT_CHECK_EQ(buf[0], 0); }   // cap 1: buf[0] still cleared
+        fill(); { uintptr_t s = mkExo("a", 1, 1); KT_CHECK_EQ(saferead::readExo(1, s, buf, 96), 1); KT_CHECK_EQ(buf, "a"); }       // one-byte string is valid
+        fill(); { const char z[1] = { 0 }; uintptr_t s = mkExo(z, 1, 1);
+                  KT_CHECK_EQ(saferead::readExo(1, s, buf, 96, 80, false), 0); KT_CHECK_EQ(buf[0], 0); }                         // lone NUL strips to empty
+        fill(); { const char r[] = { 0x07, 'b', 'c' }; uintptr_t s = mkExo(r, 3, 3);
+                  KT_CHECK_EQ(saferead::readExo(1, s, buf, 96), 0); KT_CHECK_EQ(buf[0], 0); }                                    // first byte is checked for printability
+        fill(); { const char r[] = { 'a', 0x1F }; uintptr_t s = mkExo(r, 2, 2);
+                  KT_CHECK_EQ(saferead::readExo(1, s, buf, 96), 0); KT_CHECK_EQ(buf[0], 0); }                                    // 0x1F is the last control byte
+    }
+
+    // ---- probe floor / len 0 / len 1 / region geometry (mutation gate additions)
+    {
+        g_fakeN = 0; saferead::beginScope();
+        auto Rd = [&](uintptr_t p, size_t n) { return saferead::probeRead(1, reinterpret_cast<const void*>(p), n); };
+        auto Wr = [&](uintptr_t p, size_t n) { return saferead::probeWrite(1, reinterpret_cast<void*>(p), n); };
+        KT_CHECK(Rd(0x20, 0)); KT_CHECK(Rd(0, 0)); KT_CHECK(Wr(0x20, 0)); KT_CHECK(Wr(0, 0));   // len 0 is true even for a bad address
+        KT_CHECK(Rd(0x10000, 4)); KT_CHECK(Wr(0x10000, 4));                                      // the floor itself is allowed
+        KT_CHECK(!Rd(0xFFFF, 1)); KT_CHECK(!Wr(0xFFFF, 1));
+        const uintptr_t base = 0x300000;
+        g_fake[0] = { base, base + 0x1000, PAGE_NOACCESS, MEM_COMMIT }; g_fakeN = 1; saferead::beginScope();
+        KT_CHECK(!Rd(base, 1)); KT_CHECK(!Wr(base, 1));                                          // len 1 is really probed
+        g_fake[0] = { base, base + 0x1000, PAGE_READONLY, MEM_COMMIT };
+        KT_CHECK(Rd(base, 1)); KT_CHECK(!Wr(base, 1));
+        // regionReadable/Writable called directly: an empty range is true without asking the OS; a cleared cache has no phantom entries
+        g_fake[0] = { 0, 0x1000, PAGE_NOACCESS, MEM_COMMIT }; saferead::beginScope();
+        KT_CHECK(saferead::regionReadable(0x20, 0x20)); KT_CHECK(saferead::regionWritable(0x20, 0x20));
+        KT_CHECK(!saferead::regionReadable(0, 1)); KT_CHECK(!saferead::regionWritable(0, 1));
+        // OS failure / degenerate answers are refused (never an infinite loop: alarm kills a hung mutant)
+        g_fakeN = 0; saferead::beginScope(); uintptr_t a = arenaAlloc(32);
+        g_vqMode = 1; KT_CHECK(!Rd(a, 8)); KT_CHECK(!Wr(a, 8));
+        g_vqMode = 2; saferead::beginScope(); alarm(3);
+        KT_CHECK(!Rd(a, 8)); KT_CHECK(!Wr(a, 8));
+        alarm(0); g_vqMode = 0; saferead::beginScope();
+        KT_CHECK(Rd(a, 8)); KT_CHECK(Wr(a, 8));
+    }
+
+    // ---- cache geometry via VirtualQuery call counts: 4 slots, round-robin eviction, hit at the region's first byte
+    {
+        auto lo = [](int i) { return uintptr_t(0x200000) + uintptr_t(i) * 0x10000; };
+        g_fakeN = 5; for (int i = 0; i < 5; ++i) g_fake[i] = { lo(i), lo(i) + 0x1000, PAGE_READWRITE, MEM_COMMIT };
+        auto run = [&](auto Q) {
+            saferead::beginScope(); g_vqCalls = 0;
+            KT_CHECK(Q(0)); KT_CHECK(Q(0)); KT_CHECK_EQ(g_vqCalls, 1);                 // second probe at the region start is a cache hit
+            for (int i = 1; i < 5; ++i) KT_CHECK(Q(i));
+            KT_CHECK_EQ(g_vqCalls, 5);
+            for (int i = 4; i >= 1; --i) KT_CHECK(Q(i));
+            KT_CHECK_EQ(g_vqCalls, 5);                                                 // the 4 newest regions are all cached
+            KT_CHECK(Q(0)); KT_CHECK_EQ(g_vqCalls, 6);                                 // the oldest was evicted
+            KT_CHECK(Q(0)); KT_CHECK_EQ(g_vqCalls, 6);
+        };
+        run([&](int i) { return saferead::probeRead(1, reinterpret_cast<const void*>(lo(i)), 8); });
+        run([&](int i) { return saferead::probeWrite(1, reinterpret_cast<void*>(lo(i)), 8); });
+        g_fakeN = 0; saferead::beginScope();
     }
 
     // ---- probeWrite
