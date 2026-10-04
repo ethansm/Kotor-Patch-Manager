@@ -343,3 +343,6 @@ Negative-evidence probes for "does any walk reach the server" (both [V]): `0x005
 
 ### Next probe step
 mouse-probe `click` channel: H2 (isDbl, hovered, sel, last) + H3 (branch) + H3b (fn) + the two negative probes; one session with (1) double click on a door/NPC that is not yet selected, (2) double click on a selected object, (3) double click on bare ground. Expected from the static trace: (1) A,A (no activation) for a real 0x203 press2, B only if both presses are plain 0x201; (2) B once, then A; (3) A only, no walk anywhere.
+
+### 0.3.0 install (2026-10-04 17:48)
+mouse-probe 0.3.0 INSTALLED: kpatch md5 `77a3b41e`, KOTOR-II `cb7e361`, fork STAGE_INFO head=`9e18c52`; 33 ids / 217 hooks, verify mismatches 0; backup `backups_mp030_1004_1748`. Log cursor advanced (`kotor2_logs.py check mouse-probe_log.txt --new`). **RESUME HERE:** after the user test (double-click unselected object x5, selected object x5, bare ground x5), run `--new`, count CLICK/MISSEDDBL/DBLGUARD/DBLACT/WORLDCLICK/DEFACT/MOVEPT/WALKWP, and write the verdict here.
