@@ -38,24 +38,25 @@ const char* cfgButtonText(bool configured, bool canLevelUp, bool* highlight) {
 constexpr unsigned S_Ui = 120;
 constexpr int NumRows = opt::NumRows + 1, MaxUiPanels = 4, BtnLevelUpIndex = 66, UiText = 160;   // option rows: Convert, Role, Style, Alignment, Skills, Variant
 constexpr uint32_t UiMagic = 0x4C554932;   // 'LUI2'
-enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_N };
+enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_N };
 constexpr int NumBg = 3;
 struct UiSpec { bool framed; int x, y, w, h; };   // layout units (800x600)
 // Options page over the stats column only (live 2026-10-02: BTN_AUTO/BTN_LEVELUP, SLD_ALIGN x 310 and LBL_LIGHT/DARK x 304 draw ON TOP of anything
 // placed in the 3D-character column, whatever the list order) -> x 54..300, y 134..470. Three stacked framed labels with the black fill = opaque.
-constexpr int kRowY0 = 162, kRowStep = 30;   // option rows: y = kRowY0 + kRowStep * (index among the SHOWN rows)
+constexpr int kRowY0 = 162, kRowStep = 28;   // option rows: y = kRowY0 + kRowStep * (index among the SHOWN rows)
 const UiSpec kUiSpec[C_N] = {
     {true, 362, 372, 94, 26},                                                                            // cfgBtn, under BTN_LEVELUP [362,325,94,40]
     {false, 54, 474, 350, 20},                                                                           // status, below LBL_XP_BACK (bottom 470), left of LBL_BAR5 (x 407)
     {true, 54, 134, 246, 336}, {true, 54, 134, 246, 336}, {true, 54, 134, 246, 336},                     // backgrounds
     {false, 62, 138, 230, 20},                                                                           // title
-    {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26},               // option rows (y recomputed per slot)
-    {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26}, {true, 62, kRowY0, 230, 26},
-    {false, 62, 346, 230, 20},                                                                           // build line
-    {true, 62, 370, 113, 26}, {true, 179, 370, 113, 26},                                                 // Instant, Bank for Jedi
-    {true, 62, 400, 230, 24},                                                                            // Use recommended
-    {true, 62, 428, 72, 32}, {true, 138, 428, 72, 32}, {true, 214, 428, 78, 32}};                        // Apply, Vanilla, Cancel
-const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "recommended", "apply", "vanilla", "cancel"};
+    {true, 62, kRowY0, 230, 24}, {true, 62, kRowY0, 230, 24}, {true, 62, kRowY0, 230, 24},               // option rows (y recomputed per slot)
+    {true, 62, kRowY0, 230, 24}, {true, 62, kRowY0, 230, 24}, {true, 62, kRowY0, 230, 24},
+    {false, 62, 332, 230, 20},                                                                           // build line
+    {true, 62, 356, 113, 26}, {true, 179, 356, 113, 26},                                                 // Instant, Bank for Jedi (plain On/Off toggle)
+    {false, 62, 386, 150, 24}, {true, 216, 386, 36, 24}, {true, 256, 386, 36, 24},                       // Pause at level N (label), "-", "+"
+    {true, 62, 414, 230, 24},                                                                            // Use recommended
+    {true, 62, 442, 72, 26}, {true, 138, 442, 72, 26}, {true, 214, 442, 78, 26}};                        // Apply, Vanilla, Cancel
+const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel"};
 const char* const kLossyText = "levelup_playthroughs.ini too large - edit by hand";   // F6: shown instead of the generic failure / status text when the file parse was lossy
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
@@ -85,6 +86,7 @@ struct UiPanel {
     int nItems = 0, recItem = -1;
     opt::State os = {};
     bool instant = false, bank = true, failed = false;
+    int curLevel = -1;           // total character level of the page's creature (-1 = unreadable); refreshed by uiTick before input, so clicks can clamp without engine calls
     int pause = 0;               // 0.3.1: bank on + pause N = last character level taken before banking; 0 = preset default (convertAt-1)
     int rowSlot[NumRows] = {};   // compact slot of each shown option row, -1 = hidden
 };
@@ -234,38 +236,61 @@ int presetBaseClass(const Preset& p) {
     for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return p.lv[cl].cls;
     return -1;
 }
-// 0.3.1 Pause at level N. Only presets with a hold class and a conversion level can pause. Default pause = convertAt-1 (the preset's own rule);
-// valid explicit range minPause .. convertAt-2, minPause = max(1, char level of the first present record - 1) (the level the companion already is).
+// 0.3.1 Pause at level N. Only presets with a hold class and a conversion level can pause. Default pause = convertAt-1 (the preset's own rule, stored as 0).
+// Explicit range lo .. convertAt-2: lo = max(minPause, the creature's current character level), minPause = max(1, char level of the first present record - 1).
+// Range helpers are pure (no engine access): cur = total character level, -1 = unknown (-> lo = minPause).
 bool uiCanPause(const Preset& p) { return p.holdClass != 0 && p.convertAt > 0; }
 int uiMinPause(const Preset& p) {
     for (int cl = 0; cl <= MaxLevel; ++cl) if (p.lv[cl].present) return cl - 1 > 1 ? cl - 1 : 1;
     return 1;
 }
+int uiPauseLo(const Preset& p, int cur) { const int mn = uiMinPause(p); return cur > mn ? cur : mn; }
+int uiPauseHi(const Preset& p) { return p.convertAt - 1; }   // = the default (stored as 0); an explicit pause is lo .. hi-1
 // Pause value as stored: out of range (incl. the default convertAt-1 and above) or not pausable -> 0.
-int uiClampPause(const Preset& p, int pause) {
-    if (!uiCanPause(p) || pause < uiMinPause(p) || pause > p.convertAt - 2) return 0;
+int uiClampPause(const Preset& p, int pause, int cur = -1) {
+    if (!uiCanPause(p) || pause < uiPauseLo(p, cur) || pause >= uiPauseHi(p)) return 0;
     return pause;
 }
-// Next state of the Bank control: default -> convertAt-2 -> ... -> minPause -> Off -> default. Presets without a pause range just toggle.
-void uiBankCycle(const Preset& p, bool* bank, int* pause) {
+// Effective pause level shown / used: the explicit one, else the default hi.
+int uiPauseShown(const Preset& p, int pause) { return pause > 0 ? pause : uiPauseHi(p); }
+// Page pause after the preset or creature changed: 0 stays 0 (default); an explicit pause below lo is raised to lo, at/above hi it becomes the default.
+int uiNormPause(const Preset& p, int pause, int cur) {
+    if (!uiCanPause(p) || pause <= 0) return 0;
+    const int lo = uiPauseLo(p, cur);
+    if (lo >= uiPauseHi(p)) return 0;
+    return pause < lo ? lo : uiClampPause(p, pause, cur);
+}
+// Pause a bank toggled On (or an unconfigured page) starts with: the creature's current level when it is known and below the default, else 0.
+int uiStartPause(const Preset& p, int cur) {
+    if (!uiCanPause(p) || cur < 0) return 0;
+    const int lo = uiPauseLo(p, cur);
+    return lo < uiPauseHi(p) ? lo : 0;
+}
+bool uiPauseMinusShown(const Preset& p, int pause, int cur) { return uiCanPause(p) && uiPauseShown(p, pause) > uiPauseLo(p, cur); }
+bool uiPausePlusShown(const Preset& p, int pause) { return uiCanPause(p) && uiPauseShown(p, pause) < uiPauseHi(p); }
+// "-": one level lower, stops at lo. "+": one level higher; reaching hi stores 0 (the default).
+void uiPauseStep(const Preset& p, int* pause, int dir, int cur) {
+    if (!uiCanPause(p)) { *pause = 0; return; }
+    const int lo = uiPauseLo(p, cur), hi = uiPauseHi(p), e = uiPauseShown(p, *pause);
+    if (dir < 0) { if (e > lo) *pause = e - 1 >= hi ? 0 : e - 1; }
+    else if (e < hi) *pause = e + 1 >= hi ? 0 : e + 1;
+}
+// Bank toggle: Off -> On starts at the current level (uiStartPause); On -> Off clears the pause. Presets without a pause range just toggle.
+void uiBankToggle(const Preset& p, bool* bank, int* pause, int cur) {
     if (!uiCanPause(p)) { *bank = !*bank; *pause = 0; return; }
-    if (!*bank) { *bank = true; *pause = 0; return; }
-    const int next = (*pause > 0 ? *pause : p.convertAt - 1) - 1;
-    if (next < uiMinPause(p)) { *bank = false; *pause = 0; } else *pause = next;
+    if (!*bank) { *bank = true; *pause = uiStartPause(p, cur); }
+    else { *bank = false; *pause = 0; }
 }
 // Text of the Bank control (<= 18 chars: the control is 113 wide).
-const char* uiBankText(const Preset& p, bool bank, int pause, char* buf, size_t cap) {
-    if (!uiCanPause(p)) snprintf(buf, cap, "%s", bank ? "Bank for Jedi: On" : "Bank for Jedi: Off");
-    else if (!bank) snprintf(buf, cap, "Bank for Jedi: Off");
-    else snprintf(buf, cap, "Pause at level %d", pause > 0 ? pause : p.convertAt - 1);
-    return buf;
-}
-// Re-clamps the page's pause into the current preset's range (after a row cycle / Use recommended changed the preset).
-void uiClampPagePause(UiPanel* r) { if (r->os.n > 0) r->pause = uiClampPause(g_presets[r->itemPreset[r->os.cur]], r->pause); }
+const char* uiBankText(bool bank, char* buf, size_t cap) { snprintf(buf, cap, "%s", bank ? "Bank for Jedi: On" : "Bank for Jedi: Off"); return buf; }
+const char* uiPauseText(const Preset& p, int pause, char* buf, size_t cap) { snprintf(buf, cap, "Pause at level %d", uiPauseShown(p, pause)); return buf; }
+// Re-normalises the page's pause into the current preset's range (after a row cycle / Use recommended changed the preset).
+void uiClampPagePause(UiPanel* r) { if (r->os.n > 0) r->pause = uiNormPause(g_presets[r->itemPreset[r->os.cur]], r->pause, r->curLevel); }
 
 // Opens the page: items = the tag's selectable presets; start = the configured preset, else the recommended one, else the first.
-void uiOpenPage(UiPanel* r, const char* tag) {
+void uiOpenPage(UiPanel* r, const char* tag, int curLevel) {
     uiClosePage(r);
+    r->curLevel = curLevel;
     for (int i = 0; i < g_nPresets && r->nItems < wiz::MaxItems; ++i) {
         const Preset& p = g_presets[i];
         if (!p.indexed || _stricmp(p.tag, tag)) continue;
@@ -288,12 +313,16 @@ void uiOpenPage(UiPanel* r, const char* tag) {
     opt::init(r->os, r->items, r->nItems, start);
     r->instant = configured ? cfg->instant : false;
     r->bank = configured ? cfg->hold : true;
-    r->pause = configured ? cfg->pause : 0;
+    const Preset& sp = g_presets[r->itemPreset[start]];
+    r->pause = configured ? cfg->pause : uiStartPause(sp, curLevel);   // unconfigured: hold from the current level; configured: the saved pause (raised to lo below)
     uiClampPagePause(r);
     snprintf(r->pageTag, sizeof r->pageTag, "%s", tag);
     r->pageTable = g_tableStamp;
     r->open = r->nItems > 0;
-    if (r->open) logLine("UI page open tag=%s start=%s (%s)", tag, r->items[start].id, how);
+    if (r->open) {
+        logLine("UI page open tag=%s start=%s (%s)", tag, r->items[start].id, how);
+        if (uiCanPause(sp)) logLine("UI pause lo=%d hi=%d cur=%d", uiPauseLo(sp, curLevel), uiPauseHi(sp), curLevel);
+    }
 }
 // Text of one option row for the current preset (rows Convert, Role, Style, Alignment, Skills, Variant).
 const char* uiRowText(const Preset& p, int row, char* buf, size_t cap) {
@@ -336,8 +365,15 @@ void uiRenderPage(UiPanel* r, const char* tag) {
     uiShow(r, C_BUILD, true);
     uiSetText(r, C_INSTANT, r->instant ? "Instant: On" : "Instant: Off");
     uiShow(r, C_INSTANT, true);
-    { char bb[24]; uiSetText(r, C_BANK, uiBankText(P, r->bank, r->pause, bb, sizeof bb)); }
+    { char bb[24]; uiSetText(r, C_BANK, uiBankText(r->bank, bb, sizeof bb)); }
     uiShow(r, C_BANK, P.holdClass != 0);
+    const bool pz = uiCanPause(P) && r->bank;
+    { char bb[24]; uiSetText(r, C_PAUSE, uiPauseText(P, r->pause, bb, sizeof bb)); }
+    uiShow(r, C_PAUSE, pz);
+    uiSetText(r, C_PMINUS, "-");
+    uiShow(r, C_PMINUS, pz && uiPauseMinusShown(P, r->pause, r->curLevel));
+    uiSetText(r, C_PPLUS, "+");
+    uiShow(r, C_PPLUS, pz && uiPausePlusShown(P, r->pause));
     uiSetText(r, C_REC, "Use recommended");
     uiShow(r, C_REC, r->recItem >= 0 && r->os.cur != r->recItem);
     uiSetText(r, C_APPLY, "Apply");
@@ -359,7 +395,7 @@ bool uiClickable(const UiPanel* r, int i) {
     if (!(r->shownMask & (1u << i))) return false;
     if (i == C_CFG) return !r->open;
     if (!r->open) return false;
-    return (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
+    return (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
 }
 // Clickable shown control under (x,y); -1 = none.
 int uiHit(const UiPanel* r, int x, int y) {
@@ -370,19 +406,21 @@ int uiHit(const UiPanel* r, int x, int y) {
 void uiClick(UiPanel* r, const char* tag, int ctl) {
     const int row = (ctl >= C_ROW0 && ctl < C_ROW0 + NumRows) ? ctl - C_ROW0 : -1;
     logLine("UI click %s tag=%s row=%s", kUiName[ctl], tag, row >= 0 ? opt::rowName(row) : "-");
-    if (ctl == C_CFG) { uiOpenPage(r, tag); return; }
+    if (ctl == C_CFG) { uiOpenPage(r, tag, r->curLevel); return; }
     if (!r->open) return;
     if (ctl == C_CANCEL) { uiClosePage(r); return; }
     r->failed = false;
     if (row >= 0) { opt::cycle(r->os, row, +1); uiClampPagePause(r); return; }
     switch (ctl) {
     case C_INSTANT: r->instant = !r->instant; break;
-    case C_BANK: uiBankCycle(g_presets[r->itemPreset[r->os.cur]], &r->bank, &r->pause); break;
+    case C_BANK: uiBankToggle(g_presets[r->itemPreset[r->os.cur]], &r->bank, &r->pause, r->curLevel); break;
+    case C_PMINUS: uiPauseStep(g_presets[r->itemPreset[r->os.cur]], &r->pause, -1, r->curLevel); break;
+    case C_PPLUS: uiPauseStep(g_presets[r->itemPreset[r->os.cur]], &r->pause, +1, r->curLevel); break;
     case C_REC: if (r->recItem >= 0) { r->os.cur = r->recItem; uiClampPagePause(r); } break;   // re-init on the recommended item; toggles are kept (pause clamped)
     case C_APPLY: {
         const Preset& P = g_presets[r->itemPreset[r->os.cur]];
         const bool hold = P.holdClass ? r->bank : true;
-        const int pause = (P.holdClass && r->bank) ? uiClampPause(P, r->pause) : 0;
+        const int pause = (P.holdClass && r->bank) ? uiClampPause(P, r->pause, r->curLevel) : 0;
         const bool ok = ptApply(tag, P.id, r->instant, hold, pause);
         logLine("UI apply tag=%s preset=%s instant=%d hold=%d pause=%d ok=%d", tag, P.id, r->instant, hold, pause, ok);
         if (ok && r->instant) requestApplyNow(tag);   // consumed by the next menu-draw gate call (outside SetStats)
@@ -408,6 +446,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
         if (!g_uiNoRecLogged) { g_uiNoRecLogged = true; logLine("UI tick: no record for panel=%08x (ctor hook not seen)", (unsigned)panel); }
         return;
     }
+    { uint8_t ids[4] = {}, lv[4] = {}; int n = 0, total = 0; r->curLevel = readClasses(stats, ids, lv, &n, &total) ? total : -1; }   // refreshed before input: uiClick only touches UI state
     const bool click = guikit::clickEdge(r->edge);   // sampled every tick so a press that began elsewhere never fires
     if (!r->appended) uiAppend(r);
     if (!gateActive()) { uiHideAll(r); return; }
