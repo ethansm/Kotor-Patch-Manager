@@ -4,7 +4,8 @@
 Writes patch_manager_mods/force_power_hotbar_src/HotbarTextures.inc: one uncompressed 32-bit TGA byte array per texture
 (fph_slot / fph_slot_hi: 128x128 rounded-square slot frame, teal / beige like the native lbl_mibox00 / 00a;
 fph_edit / fph_edit_hi: 72x128 thin frame with a wrench, normal / active; fph_mode / fph_mode_hi: same frame with a
-crosshair, the target-mode button; fph_tgt_lowhp: 32x32 red-cross corner badge for 'lowest-HP party member' slots). The DLL registers them with the engine at
+crosshair, the target-mode button; fph_tgt_lowhp: 32x32 red-cross corner badge for 'lowest-HP party member' slots;
+fph_tgt_self: 32x32 teal person-silhouette corner badge for 'apply to self' slots). The DLL registers them with the engine at
 start-up, so nothing is installed into override/. Re-run after changing the art, then rebuild the patch.
 
   --out-dir DIR   also write the .tga files to DIR (for inspection)
@@ -40,7 +41,8 @@ def make_textures(out: Path) -> list[Path]:
 EDIT_COLS = ((EDIT_TEX[0], (10, 96, 80)), (EDIT_TEX[1], (208, 204, 170)))
 MODE_TEX = ("fph_mode", "fph_mode_hi")
 BADGE_TEX = "fph_tgt_lowhp"
-ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX,) + MODE_TEX
+SELF_BADGE_TEX = "fph_tgt_self"
+ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX, SELF_BADGE_TEX) + MODE_TEX
 
 
 def _editor_frame(col, S=4, W=72, H=128):
@@ -181,9 +183,35 @@ def make_badge_texture(out: Path) -> list[Path]:
     return [p]
 
 
+def make_self_badge_texture(out: Path) -> list[Path]:
+    """32x32 'apply to self' corner badge: same disc as the low-HP badge, teal/mint person silhouette (head + shoulders)."""
+    from PIL import Image, ImageChops, ImageDraw, ImageFilter
+    S, N = 4, 32
+    im = Image.new("RGBA", (N * S, N * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([1 * S, 1 * S, 31 * S - 1, 31 * S - 1], fill=(235, 240, 238, 255))   # light outline
+    d.ellipse([2.5 * S, 2.5 * S, 29.5 * S - 1, 29.5 * S - 1], fill=(8, 10, 12, 200))   # dark backing
+    # shoulders are clipped to the backing disc so nothing spills over the outline
+    fg = Image.new("L", (N * S, N * S), 0)
+    fd = ImageDraw.Draw(fg)
+    fd.ellipse([9.5 * S, 7 * S, 22.5 * S - 1, 20 * S - 1], fill=255)                # head
+    fd.ellipse([6 * S, 21 * S, 26 * S - 1, 41 * S - 1], fill=255)                   # shoulders (top arc of a big ellipse)
+    clip = Image.new("L", (N * S, N * S), 0)
+    ImageDraw.Draw(clip).ellipse([4.5 * S, 4.5 * S, 27.5 * S - 1, 27.5 * S - 1], fill=255)
+    fg = ImageChops.multiply(fg, clip)
+    im.paste(Image.new("RGBA", im.size, (20, 90, 76, 255)), (0, 0), fg)      # dark teal edge
+    inner = fg.copy()
+    inner = inner.filter(ImageFilter.MinFilter(S + 1))
+    im.paste(Image.new("RGBA", im.size, (80, 230, 190, 255)), (0, 0), inner)                 # bright mint body
+    im = im.resize((N, N), Image.LANCZOS)
+    p = out / f"{SELF_BADGE_TEX}.tga"
+    im.save(p, format="TGA")
+    return [p]
+
+
 def make_all(out: Path) -> list[Path]:
     """Every texture, in EmbeddedTextures[] order (new art appended after the original four)."""
-    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_mode_textures(out)
+    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_self_badge_texture(out) + make_mode_textures(out)
 
 
 def render_inc(blobs) -> str:

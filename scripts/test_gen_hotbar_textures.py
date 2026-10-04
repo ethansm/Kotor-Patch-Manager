@@ -20,7 +20,7 @@ sys.path.insert(0, str(HERE))
 import gen_hotbar_textures as gt  # noqa: E402
 
 EXPECTED = {"fph_slot": (128, 128), "fph_slot_hi": (128, 128), "fph_edit": (72, 128), "fph_edit_hi": (72, 128),
-            "fph_tgt_lowhp": (32, 32), "fph_mode": (72, 128), "fph_mode_hi": (72, 128)}
+            "fph_tgt_lowhp": (32, 32), "fph_tgt_self": (32, 32), "fph_mode": (72, 128), "fph_mode_hi": (72, 128)}
 
 
 def gen():
@@ -49,6 +49,19 @@ class GenHotbarTextures(unittest.TestCase):
             self.assertEqual(a(x, y), 0, (x, y))
         self.assertGreater(a(16, 16), 0)
         self.assertGreater(a(15, 15), 0)
+
+    def test_self_badge(self):
+        d = dict(gen())["fph_tgt_self"]
+        off = 18 + d[0]
+        px = [d[off + i * 4:off + i * 4 + 4] for i in range(32 * 32)]   # B, G, R, A
+        for i in (0, 31, 31 * 32, 32 * 32 - 1):
+            self.assertEqual(px[i][3], 0, i)
+        self.assertGreater(px[16 * 32 + 16][3], 0)
+        fg = [p for p in px if p[3] == 255 and p[1] > 150 and p[0] > 120 and p[2] < 140]   # teal/mint, opaque
+        self.assertGreater(len(fg), 40)
+        red = [p for p in px if p[3] == 255 and p[2] > 180 and p[1] < 100]
+        self.assertEqual(len(red), 0)
+        self.assertNotEqual(d, dict(gen())["fph_tgt_lowhp"])
 
     def test_deterministic(self):
         self.assertEqual(gen(), gen())
