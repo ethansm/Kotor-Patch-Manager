@@ -220,6 +220,49 @@ int main() {
         std::unique_ptr<pt::Doc> f5(new pt::Doc); load(*f5, big); CHECK(ser(*f5).size() > 0, "worst-case document serialises within MaxText");
     }
 
+    // R10 PC line: r10 field, findPc, setPc
+    {
+        std::unique_ptr<pt::Doc> f(new pt::Doc);
+        load(*f, "[g000000dd]\npc=r10|instant=0|hold=1|r10=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim\nzaalbar=z__x|instant=0|hold=1|r10=0\n");
+        const pt::Line* p = pt::findPc(*f, 0xdd);
+        CHECK(p && p->r10 && !strcmp(p->pcfilter, "melee/single/light"), "r10=1 parsed");
+        const pt::Line* z = pt::findTag(*pt::findGuid(*f, 0xdd), "zaalbar");
+        CHECK(z && !z->r10, "r10=0 parsed false");
+        CHECK(ser(*f) == "[g000000dd]\npc=r10|instant=0|hold=1|r10=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim\nzaalbar=z__x|instant=0|hold=1\n", "r10=1 written, r10=0 not: %s", ser(*f).c_str());
+        CHECK(!pt::findPc(*f, 0xee), "findPc: other GUID -> null");
+        std::unique_ptr<pt::Doc> e(new pt::Doc);
+        CHECK(!pt::findPc(*e, 0xdd), "findPc: empty doc -> null");
+        load(*e, "[g000000dd]\nzaalbar=z__x\n");
+        CHECK(!pt::findPc(*e, 0xdd), "findPc: section without pc -> null");
+        // old file with filters, no r10: byte-identical
+        const std::string old = "[g000000dd]\nx=y__z|instant=1|hold=0|pause=3|pcfilter=melee/single/light|ffilter=build_dim|pfilter=combat ; c\n";
+        load(*e, old); CHECK(ser(*e) == old && !pt::findTag(*pt::findGuid(*e, 0xdd), "x")->r10, "old file with filters byte-identical");
+        // create in empty doc
+        std::unique_ptr<pt::Doc> c(new pt::Doc);
+        CHECK(pt::setPc(*c, 0xab, true, "melee/single/light", "build_dim", "build_dim"), "setPc create");
+        CHECK(ser(*c) == "[g000000ab]\npc=r10|instant=0|hold=1|r10=1|pcfilter=melee/single/light|ffilter=build_dim|pfilter=build_dim\n", "setPc create text: %s", ser(*c).c_str());
+        { std::string o = ser(*c); std::unique_ptr<pt::Doc> c2(new pt::Doc); load(*c2, o); CHECK(ser(*c2) == o && pt::findPc(*c2, 0xab)->r10, "setPc output is a fixed point"); }
+        // update existing: keeps instant/hold/pause, flips off
+        load(*c, "[g000000ab]\nkreia=k__x|instant=1|hold=0\npc=r10|instant=1|hold=0|pause=5|r10=1|pcfilter=a/b/c ; note\n");
+        CHECK(pt::setPc(*c, 0xab, false, "caster/none/dark", "", "force"), "setPc update");
+        CHECK(ser(*c) == "[g000000ab]\nkreia=k__x|instant=1|hold=0\npc=r10|instant=1|hold=0|pause=5|pcfilter=caster/none/dark|pfilter=force ; note\n", "setPc update text (companion untouched): %s", ser(*c).c_str());
+        // companion line in the same section untouched when pc is created
+        load(*c, "[g000000ab]\nkreia=k__x|instant=1|hold=0|pause=2|pcfilter=m/s/l\n");
+        CHECK(pt::setPc(*c, 0xab, true, "x/y/z", "", ""), "setPc add next to companion");
+        CHECK(ser(*c) == "[g000000ab]\nkreia=k__x|instant=1|hold=0|pause=2|pcfilter=m/s/l\npc=r10|instant=0|hold=1|r10=1|pcfilter=x/y/z\n", "companion unaffected: %s", ser(*c).c_str());
+        // lossy refused, doc unchanged
+        load(*c, "[g000000ab]\nkreia=k__x\n"); c->lossy = true;
+        const std::string before = ser(*c);
+        CHECK(!pt::setPc(*c, 0xab, true, "x/y/z", "", "") && ser(*c) == before && c->lossy, "setPc refuses a lossy doc");
+        // MaxTags full: refuse
+        std::string full = "[g000000ab]\n"; for (int i = 0; i < pt::MaxTags; ++i) { char l[64]; snprintf(l, sizeof l, "t%02d=a__b\n", i); full += l; }
+        load(*c, full); CHECK(!pt::setPc(*c, 0xab, true, "", "", "") && !pt::findPc(*c, 0xab), "setPc respects MaxTags");
+        // worst case line fits x[]
+        std::unique_ptr<pt::Doc> w(new pt::Doc);
+        load(*w, "[g00000003]\npc=r10|pause=2147483647|r10=1|pcfilter=melee/unarmed/neutral|ffilter=build_hide|pfilter=build_hide\n");
+        CHECK(ser(*w) == "[g00000003]\npc=r10|instant=0|hold=1|pause=2147483647|r10=1|pcfilter=melee/unarmed/neutral|ffilter=build_hide|pfilter=build_hide\n", "worst-case pc line: %s", ser(*w).c_str());
+    }
+
     printf("playthrough_test checks %d failures %d\n", g_checks, g_fail);
     return g_fail ? 1 : 0;
 }

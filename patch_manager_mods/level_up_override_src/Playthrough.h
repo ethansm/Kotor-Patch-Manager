@@ -1,8 +1,8 @@
 // Playthrough.h -- pure model of the per-playthrough level-up config (levelup_playthroughs.ini) and the playthrough GUID bit packing.
 // No windows.h, no STL, fixed caps (host-tested by research/companion_levelup/tools/parity/playthrough_test.cpp).
 //
-// File format: sections `[g<8 lowercase hex>]` (one per playthrough GUID), lines `<tag>=<preset id>|instant=0|1|hold=0|1|pause=N|pcfilter=<role>/<style>/<align>|ffilter=<mode>|pfilter=<mode>` (missing fields:
-// instant 0, hold 1, pause 0, pcfilter/ffilter/pfilter empty; `|pause=N` is written only when N > 0 and the three R10 filter fields only when set (ffilter/pfilter
+// File format: sections `[g<8 lowercase hex>]` (one per playthrough GUID), lines `<tag>=<preset id>|instant=0|1|hold=0|1|pause=N|r10=0|1|pcfilter=<role>/<style>/<align>|ffilter=<mode>|pfilter=<mode>` (missing fields:
+// instant 0, hold 1, pause 0, r10 0, pcfilter/ffilter/pfilter empty; `|pause=N` is written only when N > 0, `|r10=1` only when set, and the three R10 filter fields only when set (ffilter/pfilter
 // `all` = default = not written), so older files round-trip byte-identical; a garbage/negative pause parses as 0 like the other numeric fields. The R10 PC level-up filter
 // fields are stored as RAW lowercase tokens ([a-z0-9_/] only, shorter than the field, else ignored = empty) and validated by the caller with R10Filter.h
 // (r10f::parseProfile / parseMode): this header stays independent of R10Filter.h.) Everything else (comments, blank lines, unparseable lines, other sections, lines before the first section) is kept
@@ -20,9 +20,13 @@
 
 namespace pt {
 
+// The PC's R10 filter line is a reserved key `pc` (the PC's real tag is empty, so it never collides with a companion tag) with placeholder preset `r10`;
+// callers must never treat `pc` as a companion tag.
+constexpr const char* kPcKey = "pc";
+constexpr const char* kPcPreset = "r10";
 constexpr int MaxSections = 64, MaxTags = 16, MaxExtra = 16, MaxLines = MaxTags + MaxExtra, MaxLine = 256, TagLen = 32, PresetLen = 48, NameLen = 64;
 constexpr int FilterLen = 24, ModeLen = 12;   // raw token caps incl. NUL (melee/single/light and build_hide fit)
-constexpr size_t MaxText = static_cast<size_t>(MaxSections + 1) * (static_cast<size_t>(MaxLines) * (MaxLine + 2 + 96) + NameLen + 8);
+constexpr size_t MaxText = static_cast<size_t>(MaxSections + 1) * (static_cast<size_t>(MaxLines) * (MaxLine + 2 + 128) + NameLen + 8);
 
 // ---- GUID bit packing ---------------------------------------------------------------------------------------
 inline void bitName(int i, char* out /* >= 8 */) { snprintf(out, 8, "LUO_G%02d", i); }
@@ -41,6 +45,7 @@ struct Line {
     char tag[TagLen] = "";          // isTag: lowercase tag
     char preset[PresetLen] = "";    // isTag: lowercase preset id
     bool instant = false, hold = true;
+    bool r10 = false;               // R10 filter on/off (written as |r10=1 only when true)
     int pause = 0;                  // 0 = preset default; N > 0 = last character level taken before banking
     char pcfilter[FilterLen] = "";  // R10 PC build profile "role/style/align" (raw token, "" = unset)
     char ffilter[ModeLen] = "";     // R10 feat panel filter mode token ("" = all)
@@ -121,7 +126,7 @@ inline const Line* findTag(const Section& s, const char* tag) {
 
 // Parses one value `<preset>|instant=0|1|hold=0|1|pause=N` into l (tag already set). False when the preset is empty / too long.
 inline bool parseValue(char* v, Line* l) {
-    l->instant = false; l->hold = true; l->pause = 0; l->pcfilter[0] = l->ffilter[0] = l->pfilter[0] = 0;
+    l->instant = false; l->hold = true; l->pause = 0; l->r10 = false; l->pcfilter[0] = l->ffilter[0] = l->pfilter[0] = 0;
     char* bar = strchr(v, '|');
     if (bar) *bar = 0;
     char* p = trimStr(v);
@@ -140,6 +145,7 @@ inline bool parseValue(char* v, Line* l) {
         if (!strcmp(k, "instant")) l->instant = atoi(val) != 0;
         else if (!strcmp(k, "hold")) l->hold = atoi(val) != 0;
         else if (!strcmp(k, "pause")) { const int n = atoi(val); l->pause = n > 0 ? n : 0; }
+        else if (!strcmp(k, "r10")) l->r10 = atoi(val) != 0;
         else if (!strcmp(k, "pcfilter")) setToken(l->pcfilter, FilterLen, val, false);
         else if (!strcmp(k, "ffilter")) setToken(l->ffilter, ModeLen, val, true);
         else if (!strcmp(k, "pfilter")) setToken(l->pfilter, ModeLen, val, true);
@@ -237,9 +243,10 @@ inline size_t serialise(const Doc& d, char* out, size_t cap) {
         for (int j = 0; j < s.n; ++j) {
             const Line& l = s.lines[j];
             if (l.isTag) {
-                char b[2 * MaxLine + 160], x[96];
+                char b[2 * MaxLine + 160], x[128];
                 x[0] = 0;   // the optional fields, written only when set (older files round-trip byte-identical)
                 if (l.pause > 0) snprintf(x + strlen(x), sizeof x - strlen(x), "|pause=%d", l.pause);
+                if (l.r10) snprintf(x + strlen(x), sizeof x - strlen(x), "|r10=1");
                 if (l.pcfilter[0]) snprintf(x + strlen(x), sizeof x - strlen(x), "|pcfilter=%s", l.pcfilter);
                 if (l.ffilter[0]) snprintf(x + strlen(x), sizeof x - strlen(x), "|ffilter=%s", l.ffilter);
                 if (l.pfilter[0]) snprintf(x + strlen(x), sizeof x - strlen(x), "|pfilter=%s", l.pfilter);
@@ -296,6 +303,18 @@ inline bool setFilters(Doc& d, uint32_t guid, const char* tag, const char* pcfil
         return true;
     }
     return false;
+}
+
+// PC R10 filter line (reserved tag `pc`, see kPcKey): the line of that GUID section or nullptr.
+inline const Line* findPc(const Doc& d, uint32_t guid) { const Section* s = findGuid(d, guid); return s ? findTag(*s, kPcKey) : nullptr; }
+// Create-or-update the PC's `pc=r10` line: r10 = on and the three filter tokens as given (sanitised like setFilters). A new line gets instant=0 hold=1 pause=0;
+// an existing one keeps its instant/hold/pause. False (doc untouched) when d.lossy (a lossy doc must not be rewritten) or the section / MaxTags cap is full.
+inline bool setPc(Doc& d, uint32_t guid, bool on, const char* pcfilter, const char* ffilter, const char* pfilter) {
+    if (d.lossy) return false;
+    if (!findPc(d, guid) && !setTag(d, guid, kPcKey, kPcPreset, false, true, 0)) return false;
+    Section* s = findGuid(d, guid);
+    for (int i = 0; s && i < s->n; ++i) if (s->lines[i].isTag && eqi(s->lines[i].tag, kPcKey)) s->lines[i].r10 = on;
+    return setFilters(d, guid, kPcKey, pcfilter, ffilter, pfilter);
 }
 
 // Removes the tag line; the section stays (an empty section still means "playthrough-bound: dev keys do not apply"). False when absent.
