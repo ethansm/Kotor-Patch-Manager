@@ -2,7 +2,7 @@
 
 ## Status
 
-inv3d 0.2.1-dev: migrated, built and gated; STAGED, NOT INSTALLED (awaits the user's OK). Live DLL is still 0.2.0-dev `f0eba5be`.
+inv3d 0.2.1-dev: INSTALLED 2026-10-03 21:00 (DLL swap, `59ed7c77`; rollback `patches/inventory-3d-viewport.dll.bak_1003_2100` = 0.2.0-dev `f0eba5be`); awaiting the user in-game check. New log starts at `inv3d_log.txt` line 10161.
 - KPM commits (branch `ethansm/local-mods`): `6544ac5` step 1 SafeRead, `0beffc1` step 2 SceneView, `f1b68d3` step 3 GameAddr names, `2391b5c` 0.2.1-dev bump. Common: KPM `6312284` (synced from KOTOR-II `5652226`, joint commit with the GOG-table session).
 - Step 4 (GuiKit) deliberately skipped for inv3d: no GuiKit helper has identical semantics (section e, "GuiKit not drop-in").
 - Gates after step 3 + bump: check_hook_bytes / check_exports `--mod inventory-3d-viewport --kpatch` PASS (0 WARN), check_hook_spans PASS, check_gui_ids PASS, check_subclassers PASS, check_raw_addresses rc 0, run_tests.py 65/65, check_shared_headers 13 headers 0 drift.
