@@ -69,7 +69,10 @@ int main() {
   KT_CHECK_EQ(fmtPersaveDst("save", "a/b.ini").c_str(), "persave: save: dst=a/b.ini");
   KT_CHECK_EQ(fmtPersaveReplace("load", true, 3, 1, true).c_str(), "persave: load: live hotbar replaced profiles=3 snapshot_warnings=1 backup=ok");
   KT_CHECK_EQ(fmtPersaveReplace("load", false, 0, 0, false).c_str(), "persave: load: live hotbar NOT replaced (save failed) profiles=0 snapshot_warnings=0 backup=none");
-  KT_CHECK_EQ(fmtPersaveSource("load", "x/y.ini found").c_str(), "persave: load: source=x/y.ini found");
+  KT_CHECK_EQ(fmtPersaveSource("load", "found", "x/y.ini").c_str(), "persave: load: found: source=x/y.ini");
+  { std::string l = fmtPersaveSource(WHY24, "UNREADABLE (live hotbar kept)", P260);   // status survives the path clip
+    LineOk("source 300", l, "persave: "); KT_CHECK(l.find("UNREADABLE (live hotbar kept)") != std::string::npos);
+    std::string l3 = fmtPersaveSource(WHY24, "found", std::string(300, 'q')); LineOk("source 300q", l3, "persave: "); KT_CHECK(l3.find(": found: source=") != std::string::npos); }
   KT_CHECK_EQ(fmtAssign(4, "Bottom5", true, 0, 99LL, "obj1").c_str(), "edit: assign slot=4 key=Bottom5 save=ok froze=0 mtime=99 char='obj1'");
   KT_CHECK_EQ(fmtAssign(4, "Bottom5", false, 1, -2LL, "obj1").c_str(), "edit: assign slot=4 key=Bottom5 save=FAILED froze=1 mtime=-2 char='obj1'");
   KT_CHECK_EQ(fmtAssignValue(true, "spell:8").c_str(), "edit: assign value=spell:8");
@@ -134,7 +137,7 @@ int main() {
     all.push_back({fmtPersaveDst(WHY24, P260), "persave: "});
     all.push_back({fmtPersaveReplace(WHY24, false, INT_MIN, INT_MIN, false), "persave: "});
     all.push_back({fmtPersaveReplace(WHY24, true, INT_MAX, INT_MAX, true), "persave: "});
-    all.push_back({fmtPersaveSource(WHY24, P260 + " found"), "persave: "});
+    all.push_back({fmtPersaveSource(WHY24, snapStatus(SS_Legacy, true), P260), "persave: "});
     all.push_back({fmtAssign(INT_MIN, "Bottom10", false, INT_MIN, LLONG_MIN, K64), "edit: assign "});
     all.push_back({fmtAssign(INT_MAX, "Bottom10", true, INT_MAX, LLONG_MAX, K64), "edit: assign "});
     all.push_back({fmtAssignValue(true, R100), "edit: assign "});
@@ -163,7 +166,7 @@ int main() {
     KP_CHANNEL(ch, "main");
     std::vector<std::string> lines;
     lines.push_back(fmtSlotMiss("Bottom10", R100, K64));
-    lines.push_back(fmtPersaveSource(WHY24, P260));
+    lines.push_back(fmtPersaveSource(WHY24, snapStatus(SS_Absent, false), P260));
     lines.push_back(fmtAssignValue(true, R100));
     for (auto& l : fmtTipLines("a\nb\n\nc")) lines.push_back(l);
     for (auto& l : fmtChunks("cwd", P260)) lines.push_back(l);

@@ -3,6 +3,7 @@
 #pragma once
 #include "HotbarConfig.h"
 #include <algorithm>
+#include <cctype>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -360,7 +361,8 @@ inline std::string fmtPersaveDst(const char* why, const std::string& dst) { retu
 inline std::string fmtPersaveReplace(const char* why, bool replaced, int profiles, int snapWarnings, bool backupOk) {
     return sfmt("persave: %s: live hotbar %s profiles=%d snapshot_warnings=%d backup=%s", why, replaced ? "replaced" : "NOT replaced (save failed)", profiles, snapWarnings, backupOk ? "ok" : "none");
 }
-inline std::string fmtPersaveSource(const char* why, const std::string& source) { return sfmt("persave: %s: source=%.170s", why, source.c_str()); }
+// Status first so the 232-byte core cut can only clip the path.
+inline std::string fmtPersaveSource(const char* why, const char* status, const std::string& path) { return sfmt("persave: %s: %s: source=%.150s", why, status, path.c_str()); }
 
 inline std::string fmtAssign(int slot, const std::string& slotKey, bool saveOk, int frozen, long long mtime, const std::string& charKey) {
     return sfmt("edit: assign slot=%d key=%s save=%s froze=%d mtime=%lld char='%s'", slot, slotKey.c_str(), saveOk ? "ok" : "FAILED", frozen, mtime, charKey.c_str());
@@ -436,6 +438,58 @@ inline const char* itemPropWhy(const ItemProp& p) {
     if (p.type != 10) return "property 0 not CastSpell";
     if (p.usable == 0) return "no uses left";
     return p.row < 0 ? "bad row" : "ok";
+}
+
+
+// ---- pure helpers extracted from ActionHotbar.cpp (tip title/qty, per-save snapshot merge/pick, TargetProbe) ----
+struct TipTitle { std::string title, qty; };
+// "Medpac (3)" -> {"Medpac","3"}; the trailing " (...)" is stripped from the title either way, but qty is set only when it is digits-only.
+inline TipTitle tipTitleQty(const std::string& name) {
+    TipTitle t; t.title = name;
+    size_t par = name.rfind(" (");
+    if (par == std::string::npos || par == 0 || name.back() != ')') return t;
+    t.title.resize(par);
+    std::string q = name.substr(par + 2, name.size() - par - 3);
+    bool digits = !q.empty();
+    for (char c : q) if (c < '0' || c > '9') { digits = false; break; }
+    if (digits) t.qty = q;
+    return t;
+}
+
+// replaceLiveProfiles rule: keep the live [General], always have a Default profile, snapshot profiles overwrite.
+inline Config mergeSnapshot(const General& live, const Config* snap) {
+    Config n; n.general = live; n.profile("Default");
+    if (snap) for (auto& kv : snap->profiles) n.profiles[kv.first] = kv.second;
+    return n;
+}
+
+enum SnapSrc { SS_New, SS_Legacy, SS_Absent };
+struct SnapPick { std::string path; SnapSrc src; };
+inline SnapPick pickSnapshot(const std::string& dir, bool (*exists)(const std::string&)) {
+    for (const std::string& nm : snapshotNames()) {   // new name first, then the pre-1.2.0 one
+        std::string cand = dir + "/" + nm;
+        if (exists(cand)) { SnapPick p; p.path = cand; p.src = (nm == LegacyIniName) ? SS_Legacy : SS_New; return p; }
+    }
+    SnapPick p; p.path = dir + "/" + IniName; p.src = SS_Absent; return p;
+}
+inline const char* snapStatus(SnapSrc src, bool loaded) {
+    if (src == SS_Absent) return "absent (empty bar)";
+    if (!loaded) return "UNREADABLE (live hotbar kept)";
+    return src == SS_Legacy ? "found (legacy name)" : "found";
+}
+
+// [General] TargetProbe (kept in extra): 0 off, 1 log only, 2 live. Missing -> 2; unparsable -> 2 and *bad = true.
+inline int targetProbe(const General& g, bool* bad = nullptr) {
+    if (bad) *bad = false;
+    for (auto& kv : g.extra) {
+        std::string k = kv.first; for (auto& ch : k) ch = (char)tolower((unsigned char)ch);
+        if (k != "targetprobe") continue;
+        int n = 0;
+        if (parseInt32(kv.second, &n)) return n;
+        if (bad) *bad = true;
+        return 2;
+    }
+    return 2;
 }
 
 }  // namespace hb

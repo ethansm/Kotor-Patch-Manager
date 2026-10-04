@@ -123,8 +123,8 @@ KP_CHANNEL(chGate,   "gate");     // gate, panels, modal, tick
 KP_CHANNEL(chMain,   "main");     // banner, addresses, heartbeat (same channel name KP_WARN/KP_ERR use)
 
 // Only stores the path (no I/O), so it is safe from a static initialiser. Old core: same file as 1.0.0.
-const bool g_fallbackSet = (KpLog_SetFallbackFile("action_hotbar_log.txt"), true);
-const char* const LogPath = "action_hotbar_log.txt", *const LogPrevPath = "action_hotbar_log.1.txt";   // old core only: previous session is kept as .1
+const char* const LogPath = "action_hotbar_log.txt", *const LogPrevPath = "action_hotbar_log.1.txt";
+const bool g_fallbackSet = (KpLog_SetFallbackFile(LogPath), true);   // old core only: previous session is kept as .1
 
 // Logs `s` as "tag[0]=<chunk>", "tag[1]=<chunk>" ... so no line exceeds the core's 232-byte cut (map section 3, fmtChunks).
 void logChunks(::kplog::Channel& ch, int lvl, const char* tag, const std::string& s, size_t chunk = 200) {
@@ -225,6 +225,8 @@ int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
 
 // ---- state --------------------------------------------------------------------------------------------
 const char* IniPath = hb::IniName;
+const char* const BakPath = "action_hotbar.ini.bak", *const LoadBakPath = "action_hotbar.ini.load.bak";   // BakPath: first-edit backup; LoadBakPath: written by save loads / new game
+bool g_pendingReload = false;   // set by load/new-game hooks, consumed by HotbarHudTick (widgets must only be touched from the HUD tick)
 hb::Config g_cfg;
 int g_qtyColorFail = 0; std::string g_qtyColorFirst;   // qty controls whose text-colour readback failed in the current HUD build (map section 4 #14)
 int g_buildSeq = 0;   // HUD builds so far (once-per-build change-only caches)
@@ -375,11 +377,10 @@ void refreshEffective(uintptr_t hud) {
 
 // [General] TargetProbe (not parsed by HotbarConfig, so it lives in extra): 0 off, 1 log the decision only, 2 live (default: a missing key means 2).
 int targetProbeMode() {
-    for (auto& kv : g_cfg.general.extra) {
-        std::string k = kv.first; for (auto& ch : k) ch = (char)tolower((unsigned char)ch);
-        if (k == "targetprobe") return atoi(kv.second.c_str());
-    }
-    return 2;
+    bool bad = false; int v = hb::targetProbe(g_cfg.general, &bad);
+    static bool warned = false;
+    if (bad && !warned) { warned = true; KP_LOGV(chCfg, KPLOG_WARN, "cfg: TargetProbe value not a number, using 2"); }
+    return v;
 }
 
 void checkConfig(bool force) {
@@ -596,6 +597,7 @@ void drainRing(uintptr_t hud) {
         }
         KP_LOG(chSlots, "%s", hb::fmtSlotResolve(sk, e.group, e.index, (unsigned)e.key, (unsigned)e.flags, g_cfg.general.invoke != 0, hb::Format(a)).c_str());   // ref last: it can be 100 bytes
         if (a.kind != hb::K_Item && a.target.mode != hb::TM_Default) KP_LOG(chTarget, "target: mode ignored for non-item %.100s", hb::Format(a).c_str());
+        // @self has no target decision to log, so TargetProbe=1 leaves it on the vanilla path
         if (a.kind == hb::K_Item && a.target.mode == hb::TM_Self && targetProbeMode() >= 2 && selfUse(hud, e, a)) continue;
         if (a.kind == hb::K_Item && a.target.mode == hb::TM_LowHp) {
             int probe = targetProbeMode();
@@ -759,8 +761,7 @@ using hb::wrapText; using hb::shortDesc;   // greedy word wrap / first-sentence 
 
 // Title, key, type, cost and description of slot s's current entry ('\n'-separated lines).
 std::string buildTipText(char digit, const Entry& e, bool verboseLog = true) {
-    std::string title = e.name; size_t par = title.rfind(" ("); if (par != std::string::npos && par > 0 && title.back() == ')') title.resize(par);
-    std::string qty = e.name.size() > title.size() + 3 ? e.name.substr(title.size() + 2, e.name.size() - title.size() - 3) : "";
+    auto tt = hb::tipTitleQty(e.name); const std::string& title = tt.title; const std::string& qty = tt.qty;
     std::string out = title + "\n";
     const char* kind = (e.key & 0x40000000) ? "Item" : ((e.key & 0x20000000) ? "Force Power" : "Mode");
     if (digit) out += std::string("Key: ") + digit + "   " + kind + "\n"; else out += std::string(kind) + "\n";
@@ -1088,7 +1089,7 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     if (e) for (int from : hb::moveDuplicates(d, 0, slot, a)) KP_LOG(chEdit, "edit: '%s' moved from slot %c to %c", e->name.c_str(), hb::slotDigit(from), hb::slotDigit(slot));   // re-pick of an action already on the bar = move
     g_cfg.SetSlot(g_charKey, 0, slot, a, e ? e->name : "cleared");
     static bool backedUp = false;
-    if (!backedUp) { backedUp = true; BOOL ok = CopyFileA(IniPath, "action_hotbar.ini.bak", FALSE); KP_LOGV(chEdit, ok ? KPLOG_INFO : KPLOG_WARN, "edit: backup %s -> action_hotbar.ini.bak: %s", IniPath, ok ? "ok" : "FAILED (no ini yet?)"); }
+    if (!backedUp) { backedUp = true; BOOL ok = CopyFileA(IniPath, BakPath, FALSE); KP_LOGV(chEdit, ok ? KPLOG_INFO : KPLOG_WARN, "edit: backup %.40s -> %.40s: %s", IniPath, BakPath, ok ? "ok" : "FAILED (no ini yet?)"); }
     bool ok = g_cfg.Save(IniPath);
     filewatch::Stamp st = filewatch::stamp(IniPath); long long mt = st.mtimeMs(); if (ok) filewatch::accept(g_cfgPoll, st);
     {   // two lines (map section 3): the Format value (up to 100 bytes) goes on its own line; WARN when the save failed
@@ -1597,12 +1598,12 @@ void snapshotToSave(const char* folder, const char* why) {
     KP_LOGV(chCfg, lv, "%s", hb::fmtPersaveDst(why, dst).c_str());
 }
 
-// Replaces the live INI's profiles with `snap`'s (nullptr = none: empty bar), keeping [General]; the previous file goes to .ini.bak.
-void replaceLiveProfiles(const hb::Config* snap, const std::string& source, const char* why) {
+// Replaces the live INI's profiles with `snap`'s (nullptr = none: empty bar), keeping [General]; the previous file goes to .ini.load.bak.
+// Runs from load/new-game hooks, so no widget is touched here: the HUD tick applies the reload (g_pendingReload).
+void replaceLiveProfiles(const hb::Config* snap, const char* status, const std::string& path, const char* why) {
     checkConfig(true);
-    hb::Config n; n.general = g_cfg.general; n.profile("Default");
-    if (snap) for (auto& kv : snap->profiles) n.profiles[kv.first] = kv.second;
-    BOOL bak = CopyFileA(IniPath, "action_hotbar.ini.bak", FALSE);
+    hb::Config n = hb::mergeSnapshot(g_cfg.general, snap);
+    BOOL bak = CopyFileA(IniPath, LoadBakPath, FALSE);
     if (snap) {   // BEFORE the save: Parse leaves the offending slot empty and Serialize never writes warnings back (map section 6)
         int nw = (int)snap->warnings.size();
         for (int i = 0; i < nw && i < 10; ++i) KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: snapshot warning [%d/%d] %.160s", why, i + 1, nw, snap->warnings[i].c_str());
@@ -1610,21 +1611,27 @@ void replaceLiveProfiles(const hb::Config* snap, const std::string& source, cons
     }
     bool ok = n.Save(IniPath);
     if (ok) { g_cfg = n; filewatch::accept(g_cfgPoll, IniPath); recomputeBound(); }
-    if (g_bar.ed.mode != M_Normal) setMode(M_Normal, -1, why);
+    g_pendingReload = true;
     KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "%s", hb::fmtPersaveReplace(why, ok, (int)n.profiles.size(), snap ? (int)snap->warnings.size() : 0, bak != 0).c_str());
-    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "%s", hb::fmtPersaveSource(why, source).c_str());
+    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "%s", hb::fmtPersaveSource(why, status, path).c_str());
 }
+
+static bool snapExists(const std::string& p) { return filewatch::stamp(p.c_str()).exists; }
 
 void restoreFromSave(const char* folder, const char* why) {
     std::string dir = saveDirFor(folder);
-    if (dir.empty()) { KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%.120s'), live hotbar kept", why, folder && saferead::probeRead(S_Save, folder, 1) ? folder : "?"); return; }
-    std::string src = dir + "/" + SnapshotFile; bool legacy = false;
-    for (const std::string& nm : hb::snapshotNames()) {   // new name first, then the pre-1.2.0 one; the first file that exists is used
-        std::string cand = dir + "/" + nm;
-        if (filewatch::stamp(cand.c_str()).exists) { src = cand; legacy = (nm == hb::LegacyIniName); break; }
+    if (dir.empty()) {
+        char shown[121]; size_t n = 0;   // bounded copy: every byte is probed before it is read
+        if (folder) while (n < 120 && saferead::probeRead(S_Save, folder + n, 1) && folder[n]) { shown[n] = folder[n]; ++n; }
+        shown[n] = 0;
+        KP_LOGV(chCfg, KPLOG_WARN, "persave: %s: save folder not recognised ('%.120s'), live hotbar kept", why, n ? shown : "?");
+        return;
     }
-    hb::Config snap; bool have = filewatch::stamp(src.c_str()).exists && snap.Load(src);
-    replaceLiveProfiles(have ? &snap : nullptr, src + (have ? (legacy ? " found (legacy name)" : " found") : " absent (empty bar)"), why);
+    hb::SnapPick pick = hb::pickSnapshot(dir, snapExists);
+    if (pick.src == hb::SS_Absent) { replaceLiveProfiles(nullptr, hb::snapStatus(pick.src, false), pick.path, why); return; }
+    hb::Config snap;
+    if (!snap.Load(pick.path)) { KP_LOGV(chCfg, KPLOG_WARN, "%s", hb::fmtPersaveSource(why, hb::snapStatus(pick.src, false), pick.path).c_str()); return; }
+    replaceLiveProfiles(&snap, hb::snapStatus(pick.src, true), pick.path, why);
 }
 
 // Runs at the top of every exported hook (once). Not in DllMain: KpLog_Init runs from KPatchInit, so KpLog_HasCore() is always false
@@ -1639,8 +1646,8 @@ void startOnce() {
     {   // 1.2.0 rename: carry a pre-existing force_power_hotbar.ini over once; the old file stays untouched
         DWORD an = GetFileAttributesA(hb::IniName), al = GetFileAttributesA(hb::LegacyIniName);
         if (hb::iniMigrateAction(an != INVALID_FILE_ATTRIBUTES, al != INVALID_FILE_ATTRIBUTES) == hb::IM_CopyLegacy) {
-            if (CopyFileA(hb::LegacyIniName, hb::IniName, TRUE)) KP_LOG(chMain, "migrate: copied force_power_hotbar.ini -> action_hotbar.ini (old file kept)");
-            else KP_LOGV(chMain, KPLOG_WARN, "migrate: copy force_power_hotbar.ini -> action_hotbar.ini failed (err=%lu), using defaults", (unsigned long)GetLastError());
+            if (CopyFileA(hb::LegacyIniName, hb::IniName, TRUE)) KP_LOG(chMain, "migrate: copied %s -> %s (old file kept)", hb::LegacyIniName, hb::IniName);
+            else KP_LOGV(chMain, KPLOG_WARN, "migrate: copy %s -> %s failed (err=%lu), using defaults", hb::LegacyIniName, hb::IniName, (unsigned long)GetLastError());
         }
     }
     char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
@@ -1710,7 +1717,7 @@ extern "C" void __cdecl HotbarOnLoadRequest(const char* folder) { startOnce(); s
 extern "C" void __cdecl HotbarOnAutosaveSlotLoad() { startOnce(); saferead::beginScope(); restoreFromSave(AutosaveFolder, "autosave loading"); }
 // NG 0x008FACA0: chargen "Play" commit (only caller CSWGuiMainCharGen::BeginPlayGame 0x00907340), before the server is re-created.
 // Backing out of New Game never reaches it, so the previous game's hotbar is only dropped once the new game really starts.
-extern "C" void __cdecl HotbarOnNewGame() { startOnce(); saferead::beginScope(); replaceLiveProfiles(nullptr, "new game", "new game started"); }
+extern "C" void __cdecl HotbarOnNewGame() { startOnce(); saferead::beginScope(); replaceLiveProfiles(nullptr, "new game", "-", "new game started"); }
 
 // ---- hook 3: HUD constructor -- build the button labels ---------------------------------------------------
 // Runs inside CSWGuiMainInterface's constructor between the last InitControl and StopLoadFromLayout, so the layout GFF
@@ -1796,6 +1803,11 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     if (!hud || !saferead::probeRead(S_Hud, hudPtr, 0x1CA0)) { if (g_hudGateOk) KP_LOGV(chGate, KPLOG_WARN, "tick: hud %08x unreadable -> gate off", (unsigned)hud); g_hudGateOk = false; return; }
 
     checkConfig(g_frame == 1);
+    if (g_pendingReload) {   // set by replaceLiveProfiles (load / new game); widgets are only touched here, on the HUD tick
+        g_pendingReload = false;
+        if (g_bar.ed.mode != M_Normal) setMode(M_Normal, -1, "reload");
+        refreshEffective(hud);
+    }
     healTextures();
     if (g_frame == 120) logTextures("frame 120");
 

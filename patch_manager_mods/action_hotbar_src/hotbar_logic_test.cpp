@@ -689,5 +689,49 @@ int main() {
       KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, true), -1); }
     { Candidate m[1] = { C(10, 100) }; KT_CHECK_EQ(chooseTarget(m, 1, 0, 50, false), 0); }
   }
+
+  { // tipTitleQty: qty only for a digits-only trailing " (N)"
+    TipTitle a = tipTitleQty("Medpac (3)"); KT_CHECK_EQ(a.title.c_str(), "Medpac"); KT_CHECK_EQ(a.qty.c_str(), "3");
+    TipTitle b = tipTitleQty("Medpac (Type)"); KT_CHECK_EQ(b.title.c_str(), "Medpac"); KT_CHECK_EQ(b.qty.c_str(), "");
+    TipTitle c = tipTitleQty("X (Type) (3)"); KT_CHECK_EQ(c.title.c_str(), "X (Type)"); KT_CHECK_EQ(c.qty.c_str(), "3");
+    TipTitle d = tipTitleQty("(3)"); KT_CHECK_EQ(d.title.c_str(), "(3)"); KT_CHECK_EQ(d.qty.c_str(), "");
+    TipTitle e = tipTitleQty(""); KT_CHECK_EQ(e.title.c_str(), ""); KT_CHECK_EQ(e.qty.c_str(), "");
+  }
+  { // mergeSnapshot
+    General g; g.healThreshold = 33; g.extra["Foo"] = "1";
+    Config n = mergeSnapshot(g, nullptr);
+    KT_CHECK_EQ(n.general.healThreshold, 33); KT_CHECK_EQ(n.profiles.size(), 1); KT_CHECK(n.find("Default") != nullptr);
+    Config s; s.general.healThreshold = 99; s.profile("Default").slots[0][1] = mk(K_Spell, 8); s.profile("Bob");
+    Config m = mergeSnapshot(g, &s);
+    KT_CHECK_EQ(m.general.healThreshold, 33); KT_CHECK_EQ(m.profiles.size(), 2);
+    KT_CHECK(m.find("Default") && m.find("Default")->slots[0][1].id == 8); KT_CHECK(m.find("Bob") != nullptr);
+    Config s2; s2.profile("default").slots[0][0] = mk(K_Spell, 5);
+    Config m2 = mergeSnapshot(g, &s2);
+    KT_CHECK_EQ(m2.profiles.size(), 1); KT_CHECK(m2.find("Default") && m2.find("Default")->slots[0][0].id == 5);
+    Config s3; s3.warnings.push_back("w"); Config m3 = mergeSnapshot(g, &s3);
+    KT_CHECK(m3.warnings.empty()); KT_CHECK(m3.find("Default") != nullptr);
+  }
+  { // pickSnapshot
+    struct Ex { static bool newOnly(const std::string& p) { return p == "d/action_hotbar.ini"; }
+                static bool legOnly(const std::string& p) { return p == "d/force_power_hotbar.ini"; }
+                static bool both(const std::string&) { return true; }
+                static bool none(const std::string&) { return false; } };
+    SnapPick a = pickSnapshot("d", Ex::newOnly); KT_CHECK(a.src == SS_New); KT_CHECK_EQ(a.path.c_str(), "d/action_hotbar.ini");
+    SnapPick b = pickSnapshot("d", Ex::legOnly); KT_CHECK(b.src == SS_Legacy); KT_CHECK_EQ(b.path.c_str(), "d/force_power_hotbar.ini");
+    SnapPick c = pickSnapshot("d", Ex::both); KT_CHECK(c.src == SS_New);
+    SnapPick d = pickSnapshot("d", Ex::none); KT_CHECK(d.src == SS_Absent); KT_CHECK_EQ(d.path.c_str(), "d/action_hotbar.ini");
+    KT_CHECK_EQ(snapStatus(SS_New, true), "found"); KT_CHECK_EQ(snapStatus(SS_Legacy, true), "found (legacy name)");
+    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (empty bar)");
+    KT_CHECK_EQ(snapStatus(SS_New, false), "UNREADABLE (live hotbar kept)"); KT_CHECK_EQ(snapStatus(SS_Legacy, false), "UNREADABLE (live hotbar kept)");
+  }
+  { // targetProbe
+    General g; bool bad = true;
+    KT_CHECK_EQ(targetProbe(g, &bad), 2); KT_CHECK(!bad); KT_CHECK_EQ(targetProbe(g), 2);
+    g.extra["TargetProbe"] = "0"; KT_CHECK_EQ(targetProbe(g, &bad), 0); KT_CHECK(!bad);
+    g.extra["TargetProbe"] = "1"; KT_CHECK_EQ(targetProbe(g), 1);
+    g.extra["TargetProbe"] = "2"; KT_CHECK_EQ(targetProbe(g), 2);
+    g.extra["TargetProbe"] = "abc"; bad = false; KT_CHECK_EQ(targetProbe(g, &bad), 2); KT_CHECK(bad);
+    General h; h.extra["targetprobe"] = "1"; bad = true; KT_CHECK_EQ(targetProbe(h, &bad), 1); KT_CHECK(!bad);
+  }
   return kt::Report("hotbar_logic_test");
 }
