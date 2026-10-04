@@ -55,7 +55,7 @@ GENERATED_INC = {
     "patch_manager_mods/inventory_3d_viewport_src/ItemModelTable.inc": "scripts/gen_inventory_3dview_table.py (baseitems.2da)",
     "patch_manager_mods/inventory_3d_viewport_src/ItemFitTable.inc": "scripts/gen_inventory_3dview_table.py (model fit bboxes)",
     "patch_manager_mods/inventory_3d_viewport_src/RigCamera.inc": "scripts/make_inv3d_light.py (camera rest pose)",
-    "patch_manager_mods/force_power_hotbar_src/HotbarTextures.inc": "scripts/gen_hotbar_textures.py (TGA byte arrays)",
+    "patch_manager_mods/action_hotbar_src/HotbarTextures.inc": "scripts/gen_hotbar_textures.py (TGA byte arrays)",
 }
 
 TOML_HEADER = """\

@@ -106,11 +106,11 @@ source_regex = [
 file = "mipc28x6_p.gui"    # vanilla ids 0..110 (HUD)
 
 [[gui.append]]
-mod = "force-power-hotbar"
+mod = "action-hotbar"
 count = 86
 after = []
 rects = [[4, 478, 420, 35], [4, 360, 420, 112]]    # slot bar (edit button + 10 slots), picker panel (tooltip lies inside it)
-source = "ForcePowerHotbar.cpp:76,1079"
+source = "ActionHotbar.cpp:76,1079"
 source_regex = [
   "constexpr int ControlCount = TipOff \\+ 1;\\s*// 86",
   "static_assert\\(sizeof Layout / sizeof Layout\\[0\\] == ControlCount,",

@@ -1,4 +1,4 @@
-// common_contract_test.cpp -- Patches/Common CONTRACT test for the Force Power Hotbar (doc 20 section 4.1; rule of 2026-10-03).
+// common_contract_test.cpp -- Patches/Common CONTRACT test for the Action Hotbar (doc 20 section 4.1; rule of 2026-10-03).
 //
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod. It pins the semantics THIS mod
 // relies on, not the header's own behaviour (that is _shared_src/{saferead,guikit,party}_test.cpp). Every message starts with
@@ -32,7 +32,7 @@
 #define HEQ(why, a, b) ::kt::CheckEq("hotbar relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
 
 // ============================================================ 1. GameAddr (compile time)
-// Values validated in 07_force_power_hotbar.md / ForcePowerHotbar.cpp comments / the Steam Address DB. A changed value means the
+// Values validated in 07_force_power_hotbar.md / ActionHotbar.cpp comments / the Steam Address DB. A changed value means the
 // hotbar would patch or call the wrong address.
 #define HADDR(name, val) static_assert(gameaddr::name == (val), "hotbar relies on: gameaddr::" #name " == " #val " (validated Steam address)")
 HADDR(AppGlobal, 0x00A1B4A4);              // app -> +4 -> +4 -> +0x270 party table chain; also the save-request holder
@@ -72,7 +72,7 @@ static_assert(gameaddr::GuiSoundMgr == guikit::AddrGuiSoundMgr && gameaddr::Play
               "hotbar relies on: gameaddr and guikit agree on the GUI sound manager (hotbar logs gameaddr::GuiSoundMgr, guikit plays through its copy)");
 static_assert(gameaddr::LabelVtable == guikit::LabelVtable && gameaddr::BorderVtable == guikit::BorderVtable && gameaddr::TextVtable == guikit::TextVtable,
               "hotbar relies on: gameaddr and guikit agree on the label/border/text vtables (the hotbar gates its own reads with gameaddr's)");
-// The hotbar keeps local copies of the control-layout offsets (ForcePowerHotbar.cpp 52-90); GuiKit's must match what it reads/writes itself.
+// The hotbar keeps local copies of the control-layout offsets (ActionHotbar.cpp 52-90); GuiKit's must match what it reads/writes itself.
 static_assert(guikit::LabelSize == 0x148 && guikit::Ctl_Flags == 0x48 && guikit::Ctl_Id == 0x54 && guikit::Label_Border == 0x60 &&
               guikit::Border_Alpha == 0x24 && guikit::Border_Fill == 0x74 && guikit::Ctl_W == 0xC && guikit::Ctl_H == 0x10,
               "hotbar relies on: GuiKit control/border layout offsets equal the hotbar's local Ctl_/Border_/Label_ constants");
@@ -567,7 +567,7 @@ static void saferead_write_contract() {
 }
 
 // ============================================================ 5. FileWatch (config reload + atomic save)
-// The hotbar polls force_power_hotbar.ini once a second and saves it from the editor; see checkConfig / assignSlot / replaceLiveProfiles.
+// The hotbar polls action_hotbar.ini once a second and saves it from the editor; see checkConfig / assignSlot / replaceLiveProfiles.
 static std::string fwRead(const std::string& p) {
     std::string o; FILE* f = fopen(p.c_str(), "rb"); if (!f) return "<missing>";
     char b[256]; size_t n; while ((n = fread(b, 1, sizeof b, f)) > 0) o.append(b, n);
@@ -581,7 +581,7 @@ static void filewatch_contract() {
     std::string tmpl = std::string(t && *t ? t : "/tmp") + "/hotbar_fw.XXXXXX";
     char* d = mkdtemp(&tmpl[0]);
     if (!d) { HCHECK("mkdtemp works", false); return; }
-    std::string dir = d, ini = dir + "/force_power_hotbar.ini";
+    std::string dir = d, ini = dir + "/action_hotbar.ini";
 
     // A hand edit within the same second as the previous write must be seen (the old 1 s stat mtime missed it).
     fwPut(ini, "[General]\nInvoke=1\n");
@@ -638,7 +638,7 @@ static void filewatch_contract() {
 // The hotbar logs through KpLog.h only (channels build cfg input edit slots target tip char gate main). Pinned here: init fails soft,
 // the channel names are accepted by the core's name rule, WARN needs no ini, KP_LOG_EVERY gates, the header's own 511-byte cut,
 // the fallback file line format and its 60000-line cap. KpLog state is process-global: failed inits, then fallback, then the real init.
-KP_LOG_PATCH("force-power-hotbar");   // == manifest id (one per test TU)
+KP_LOG_PATCH("action-hotbar");   // == manifest id (one per test TU)
 
 namespace klt {
 struct Cap { std::string chan; int lvl; std::string text; };
@@ -672,11 +672,11 @@ std::vector<std::string> fileLines(const std::string& path) {
     if (!cur.empty()) v.push_back(cur);
     fclose(f); return v;
 }
-// "<ms> force-power-hotbar/<chan> <rest>" -> rest (empty + ok=false when the shape is wrong); the ms stamp is all digits.
+// "<ms> action-hotbar/<chan> <rest>" -> rest (empty + ok=false when the shape is wrong); the ms stamp is all digits.
 bool parseFb(const std::string& line, const std::string& chan, std::string* rest) {
     size_t sp = line.find(' '); if (sp == std::string::npos || sp == 0) return false;
     for (size_t i = 0; i < sp; ++i) if (line[i] < '0' || line[i] > '9') return false;
-    std::string pre = " force-power-hotbar/" + chan + " ";
+    std::string pre = " action-hotbar/" + chan + " ";
     if (line.compare(sp, pre.size(), pre) != 0) return false;
     *rest = line.substr(sp + pre.size()); return true;
 }
@@ -707,7 +707,7 @@ static void kplog_contract() {
     std::string tmpl = std::string(t && *t ? t : "/tmp") + "/hotbar_kplog." + std::to_string((long)getpid()) + ".XXXXXX";
     char* d = mkdtemp(&tmpl[0]);
     if (!d) { HCHECK("mkdtemp works", false); return; }
-    std::string dir = d, path = dir + "/force_power_hotbar_log." + std::to_string((long)getpid()) + ".txt";
+    std::string dir = d, path = dir + "/action_hotbar_log." + std::to_string((long)getpid()) + ".txt";
     KpLog_SetFallbackFile(std::string(260, 'x').c_str());   // 260+ chars ignored
     KpLog_SetFallbackFile(path.c_str());
     KpLog_SetFallbackLevel(KPLOG_INFO);                      // what startOnce() sets on an old core
@@ -727,7 +727,7 @@ static void kplog_contract() {
         std::vector<std::string> L = fileLines(path); std::string r;
         HCHECK("the fallback file is created at the configured path (and the 260-char path was ignored)", !L.empty());
         size_t k = 0;
-        HCHECK("WARN line shape: '<ms> force-power-hotbar/main WARN text'", k < L.size() && parseFb(L[k], "main", &r) && r == "WARN warn 7"); ++k;
+        HCHECK("WARN line shape: '<ms> action-hotbar/main WARN text'", k < L.size() && parseFb(L[k], "main", &r) && r == "WARN warn 7"); ++k;
         HCHECK("ERR line shape: 'ERR text'", k < L.size() && parseFb(L[k], "main", &r) && r == "ERR err x"); ++k;
         HCHECK("INFO line has no level tag (level is implied by the fallback level)", k < L.size() && parseFb(L[k], "cfg", &r) && r == "info line"); ++k;
         HCHECK("DEBUG and TRACE are dropped at fallback level INFO", k < L.size() && L[k].find("dropped") == std::string::npos);
@@ -802,5 +802,5 @@ int main() {
     party_contract();
     filewatch_contract();
     kplog_contract();
-    return kt::Report("common_contract_test (force_power_hotbar)");
+    return kt::Report("common_contract_test (action_hotbar)");
 }

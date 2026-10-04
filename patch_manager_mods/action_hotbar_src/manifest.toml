@@ -1,0 +1,14 @@
+[patch]
+id = "action-hotbar"
+name = "Action Hotbar"
+version = "1.2.0"
+author = "ethansm"
+description = "Ten on-screen action slots (Force powers, items, stances/forms) for keys 1-0 above the action bar: each invokes its action through the HUD's own quick-action path. An in-game editor (wrench button) assigns them per character, saved to action_hotbar.ini. Self-contained: the DLL creates its controls, art and INI. Logging uses the shared KpLog logger (kplog.ini [action-hotbar]; without the kpatch.log core it falls back to action_hotbar_log.txt)."
+
+requires = []
+conflicts = []
+
+# Steam/LAA only. Input/gating/invoke design follows ExpandedKeyboardControl's K2 path (GOG);
+# see patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

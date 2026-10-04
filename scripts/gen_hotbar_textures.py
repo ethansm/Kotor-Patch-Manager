@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the Force Power Hotbar textures and embed them in the DLL source (Mod 3).
+"""Generate the Action Hotbar textures and embed them in the DLL source (Mod 3).
 
-Writes patch_manager_mods/force_power_hotbar_src/HotbarTextures.inc: one uncompressed 32-bit TGA byte array per texture
+Writes patch_manager_mods/action_hotbar_src/HotbarTextures.inc: one uncompressed 32-bit TGA byte array per texture
 (fph_slot / fph_slot_hi: 128x128 rounded-square slot frame, teal / beige like the native lbl_mibox00 / 00a;
 fph_edit / fph_edit_hi: 72x128 thin frame with a wrench, normal / active; fph_mode / fph_mode_hi: same frame with a
 crosshair, the target-mode button; fph_tgt_lowhp: 32x32 red-cross corner badge for 'lowest-HP party member' slots;
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-INC = REPO / "patch_manager_mods/force_power_hotbar_src/HotbarTextures.inc"
+INC = REPO / "patch_manager_mods/action_hotbar_src/HotbarTextures.inc"
 TEX = ("fph_slot", "fph_slot_hi")
 EDIT_TEX = ("fph_edit", "fph_edit_hi")
 

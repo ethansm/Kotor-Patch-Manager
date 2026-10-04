@@ -1,4 +1,4 @@
-// Regression tests for Force Power Hotbar bugs found in the doc 20 audit.
+// Regression tests for Action Hotbar bugs found in the doc 20 audit.
 #include "HotbarConfig.h"
 #include "check.h"
 #include <climits>

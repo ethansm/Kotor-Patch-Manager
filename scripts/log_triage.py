@@ -28,7 +28,7 @@ Text report (one block per file, blank line between files):
 
 Launch split: a new launch starts at a line whose message (leading timestamp/tick prefix removed) is a banner,
   "<name> [v]<version> loaded" with an optional leading "== ", where <name> has a lowercase letter and no colon
-  (also "<name> <version> attach", e.g. perflab; "force-power-hotbar 1.0.0 loaded", "buffhud loaded", "inv3d v2 loaded", "== LevelUpOverride 0.1.0-probe loaded";
+  (also "<name> <version> attach", e.g. perflab; "force-power-hotbar 1.0.0 loaded", "action-hotbar 1.2.0 loaded", "buffhud loaded", "inv3d v2 loaded", "== LevelUpOverride 0.1.0-probe loaded";
   NOT "cfg: loaded x", "img: loaded x", "INI loaded: ...", "CONFIG loaded ..."). If the file has "# kplog session" headers
   ONLY those split (a KpLog patch also prints its own "... loaded" line right after the header). No banner anywhere = the whole
   file is one launch. Lines before the first banner form their own (earlier) launch.

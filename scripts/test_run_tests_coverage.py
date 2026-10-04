@@ -78,7 +78,7 @@ class Roots(unittest.TestCase):
 
     def test_real_roots_include_known_dirs(self):
         names = {r.name for r in rt.cov_roots()}
-        self.assertTrue({"_shared_src", "force_power_hotbar_src"} <= names, names)
+        self.assertTrue({"_shared_src", "action_hotbar_src"} <= names, names)
 
     def test_same_stem_distinct_exe(self):
         a = rt.cpp_item(Path("/x/a_src/common_contract_test.cpp"), cfg={})

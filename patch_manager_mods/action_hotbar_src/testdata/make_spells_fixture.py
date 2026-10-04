@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate testdata/spells_fixture.2da (binary 2DA V2.b) for twoda_test.cpp.
 
-Run with the repo venv:  .venv/bin/python patch_manager_mods/force_power_hotbar_src/testdata/make_spells_fixture.py
+Run with the repo venv:  .venv/bin/python patch_manager_mods/action_hotbar_src/testdata/make_spells_fixture.py
 
 43 rows (labels "0".."42", like the real spells.2da). Rows 8, 10, 22, 42 carry real
 cells copied from vanilla spells.2da (category is the hex string, e.g. "0x1808");

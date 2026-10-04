@@ -14,9 +14,9 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import kotor2_logs as K  # noqa: E402
 
-LIVE = ["buffhud_log.txt", "perflab_log.txt", "perflab_metrics.txt", "kpatch.log", "force_power_hotbar_log.txt",
+LIVE = ["buffhud_log.txt", "perflab_log.txt", "perflab_metrics.txt", "kpatch.log", "force_power_hotbar_log.txt", "action_hotbar_log.txt",
         "k2-dialogue-letterbox-fix_log.txt", "levelup_override_log.txt", "inv3d_log.txt", "mouse-probe_log.txt"]
-ROTATED = ["force_power_hotbar_log.1.txt", "force_power_hotbar_log.build1b_test.txt", "force_power_hotbar_log.build3_mouse_report.txt",
+ROTATED = ["force_power_hotbar_log.1.txt", "action_hotbar_log.1.txt", "force_power_hotbar_log.build1b_test.txt", "force_power_hotbar_log.build3_mouse_report.txt",
            "inv3d_log_235439_prev.txt", "inv3d_log_v1_20260929_213925.txt", "mouseprobe_log.run23.txt", "shieldprobe_log.crash22.txt",
            "shieldprobe_log_pre11_1805.txt", "shieldprobe_log_pre_counterbump.txt", "shieldprobe_log.prev21.txt", "shieldprobe_log_session4a.txt",
            "buffhud_log_b7dbebe9_baseline.txt", "buffhud_log.old.txt", "mouseprobe_log.txt.bak"]

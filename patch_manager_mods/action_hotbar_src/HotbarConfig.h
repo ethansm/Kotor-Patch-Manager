@@ -1,4 +1,4 @@
-// Force Power Hotbar -- configuration model (pure C++17, no Win32 types so it can be unit-tested on the host).
+// Action Hotbar -- configuration model (pure C++17, no Win32 types so it can be unit-tested on the host).
 // A binding stores a stable, human-meaningful ActionRef, never a raw runtime key. The future in-game
 // editor mutates a Profile and calls Config::Save; nothing else in the mod depends on the INI text.
 #pragma once
@@ -353,7 +353,7 @@ struct Config {
 
     // Canonical text: General, Default first, then the other profiles in name order.
     std::string Serialize() const {
-        std::string o = "; Force Power Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
+        std::string o = "; Action Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
                         "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
                         "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
                         "; Item/power value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"

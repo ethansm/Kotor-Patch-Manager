@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
         KT_CHECK_EQ(m.Get(0, "SpellDesc").c_str(), "d");
         { hb::TwoDA z; KT_CHECK(z.Parse(Build2da({"Z", "a"}, {{"1", "2"}})));      // 'Z' is the last upper-case letter folded
           KT_CHECK_EQ(z.Col("z"), 0); KT_CHECK_EQ(z.Col("Z"), 0); KT_CHECK_EQ(z.Col("A"), 1); }
-        // The real fixture, with the exact names ForcePowerHotbar.cpp uses, resolves to the same columns either way.
+        // The real fixture, with the exact names ActionHotbar.cpp uses, resolves to the same columns either way.
         for (const char* n : {"name", "forcepoints", "range", "category", "iconresref", "spelldesc", "label"}) {
             std::string up = n; for (char& ch : up) ch = (char)toupper((unsigned char)ch);
             KT_CHECK_EQ(t.Col(up.c_str()), t.Col(n)); KT_CHECK(t.Col(n) >= 0);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate testdata/fixture.tlk (TLK V3.0) for tlk_test.cpp. Deterministic; the output is committed.
 
-Run:  python3 patch_manager_mods/force_power_hotbar_src/testdata/make_tlk_fixture.py
+Run:  python3 patch_manager_mods/action_hotbar_src/testdata/make_tlk_fixture.py
 
 Layout (same as Tlk.h): "TLK V3.0", u32 language, u32 count, u32 stringsOffset, then count * 40-byte entries
 (u32 flags, char[16] sound, u32 volVar, u32 pitchVar, u32 offset, u32 size, f32 soundLen), then the string blob.

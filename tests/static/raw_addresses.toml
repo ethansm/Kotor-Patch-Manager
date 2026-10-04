@@ -50,7 +50,7 @@ addresses = ["0x00414840", "0x008ABA8C", "0x008AD930", "0x008ADA08", "0x008ADA81
 [files."patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"]
 addresses = ["0x00417F40", "0x00418360", "0x004184B0", "0x00418990", "0x00462320", "0x0073F530", "0x007645F0", "0x0076D200", "0x0077EC20", "0x0085D430", "0x008AA16A", "0x008AA6F0", "0x008ABA50", "0x0098B5CC", "0x0098C45C", "0x0099EE14", "0x009A3D34", "0x009A4AB0", "0x009F42B4"]
 
-[files."patch_manager_mods/force_power_hotbar_src/ForcePowerHotbar.cpp"]
+[files."patch_manager_mods/action_hotbar_src/ActionHotbar.cpp"]
 addresses = ["0x0040EC90", "0x00414840", "0x00414C60", "0x00418D20", "0x00421C40", "0x00423000", "0x00423990", "0x00427D90", "0x00427DE0", "0x004491C0", "0x0051C0E0", "0x0051C8B0", "0x0052FD1E", "0x00534527", "0x00534600", "0x0053C5AA", "0x005D2F80", "0x006D6E30", "0x0072CB63", "0x00748502", "0x0074850D", "0x0074B3F0", "0x0074DA40", "0x00751750", "0x00775600", "0x008529E0", "0x008FACA0", "0x00907340", "0x0091D288", "0x0099E5EC", "0x009A044C", "0x009A7BAC", "0x009A8FCC", "0x00A7EA88", "0x00A7EABC"]
 
 [files."patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp"]

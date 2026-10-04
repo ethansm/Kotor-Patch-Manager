@@ -1,4 +1,4 @@
-LIBRARY ForcePowerHotbar
+LIBRARY ActionHotbar
 EXPORTS
     KPatchInit
     CaptureHotbarKey

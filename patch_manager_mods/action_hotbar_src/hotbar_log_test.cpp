@@ -10,7 +10,7 @@
 #include <vector>
 using namespace hb;
 
-KP_LOG_PATCH("force-power-hotbar");
+KP_LOG_PATCH("action-hotbar");
 
 namespace {
 struct Got { std::string chan; int lvl; std::string text; };

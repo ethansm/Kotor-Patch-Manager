@@ -1,4 +1,4 @@
-// Force Power Hotbar -- item target selection (pure C++17, no Win32/engine types so it can be unit-tested on the host).
+// Action Hotbar -- item target selection (pure C++17, no Win32/engine types so it can be unit-tested on the host).
 // The DLL fills one Candidate per party position (HP, "readable", "down", "can this item be used on them"); this header decides.
 #pragma once
 #include "HotbarConfig.h"
@@ -42,7 +42,7 @@ inline bool slotEnabled(const Candidate* m, int n, int selfIdx, const TargetSpec
 // energy shields, self only) and not 47 (squad recovery kit, used directly). Negative = unknown -> false.
 inline bool isTargetableItemType(int itemType) { return itemType >= 0 && itemType != 20 && itemType != 47; }
 
-// ======== pure units extracted from ForcePowerHotbar.cpp (behaviour-neutral; tested in hotbar_logic_test.cpp) ========
+// ======== pure units extracted from ActionHotbar.cpp (behaviour-neutral; tested in hotbar_logic_test.cpp) ========
 // (this header is included by the DLL after windows.h: only <cstdint>/<algorithm>/<string>/<vector> here, no Win32 types)
 
 // HUD entry key -> stable ref: bit 0x40000000 = item (identity = normalised name), 0x20000000 = spell row, else other.
@@ -265,7 +265,7 @@ inline void tgaBgraToRgba(const unsigned char* d, const TgaInfo& t, unsigned cha
     for (unsigned j = 0; j < t.bytes; j += 4) { dst[j] = d[t.off + j + 2]; dst[j + 1] = d[t.off + j + 1]; dst[j + 2] = d[t.off + j]; dst[j + 3] = d[t.off + j + 3]; }
 }
 
-// ======== log formatters (pure; ForcePowerHotbar.cpp passes the result to KP_LOG as "%s") ========
+// ======== log formatters (pure; ActionHotbar.cpp passes the result to KP_LOG as "%s") ========
 // One call = one log line (or one vector element per line). Every line starts with its tag and stays <= LogMax bytes for the
 // worst-case arguments (the core cuts a text at 232 bytes; map 07b section 3), tested in hotbar_log_test.cpp. No '\n' in any line:
 // KpLog.h splits on it and the pieces would arrive untagged. Text is byte-identical to the pre-extraction KP_LOG format strings.

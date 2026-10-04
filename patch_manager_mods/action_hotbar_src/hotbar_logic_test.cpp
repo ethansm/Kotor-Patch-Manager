@@ -185,7 +185,7 @@ int main() {
     for (int t : { 45, 26, 25, 0 }) KT_CHECK(isTargetableItemType(t));
     for (int t : { 20, 47, -1, -100 }) KT_CHECK(!isTargetableItemType(t));
   }
-  // ======== units extracted from ForcePowerHotbar.cpp (behaviour-neutral; doc 20 sec 4.1) ========
+  // ======== units extracted from ActionHotbar.cpp (behaviour-neutral; doc 20 sec 4.1) ========
   { // 1. decodeKey / tabOfKey
     ActionRef i = decodeKey(0x40000007, "Medpac (3)");
     KT_CHECK(i.kind == K_Item); KT_CHECK_EQ(i.name.c_str(), "Medpac"); KT_CHECK_EQ(i.id, 0);
