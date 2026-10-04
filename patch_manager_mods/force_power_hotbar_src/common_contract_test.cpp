@@ -6,7 +6,8 @@
 // SafeRead.h / GuiKit.h / Party.h / GameAddr.h re-runs this test: a Common change that would break the hotbar fails here first.
 //
 // Areas: (1) gameaddr constants (compile time), (2) saferead, (3) guikit on fake engine objects in a MAP_32BIT arena,
-// (4) party on a fake app -> a -> b -> table chain with fake vtable HP slots, (5) filewatch (INI reload poll + atomic save) in a temp dir. Host-only, deterministic, no game, no DLL.
+// (4) party on a fake app -> a -> b -> table chain with fake vtable HP slots, (5) filewatch (INI reload poll + atomic save) in a temp dir,
+// (6) KpLog.h (init fail-soft, channel names, WARN without ini, KP_LOG_EVERY, 511 cut, fallback file format + 60000-line cap). Host-only, deterministic, no game, no DLL.
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -15,6 +16,7 @@
 #include "GuiKit.h"
 #include "Party.h"
 #include "FileWatch.h"
+#include "KpLog.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <type_traits>
@@ -23,6 +25,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <cstring>
+#include <vector>
 
 #define HCHECK(why, expr) ::kt::Check("hotbar relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("hotbar relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
@@ -629,6 +633,160 @@ static void filewatch_contract() {
     std::error_code ec; std::filesystem::remove_all(dir, ec);
 }
 
+
+// ============================================================ 6. KpLog.h (logging; map 07b sections 7-8)
+// The hotbar logs through KpLog.h only (channels build cfg input edit slots target tip char gate main). Pinned here: init fails soft,
+// the channel names are accepted by the core's name rule, WARN needs no ini, KP_LOG_EVERY gates, the header's own 511-byte cut,
+// the fallback file line format and its 60000-line cap. KpLog state is process-global: failed inits, then fallback, then the real init.
+KP_LOG_PATCH("force-power-hotbar");   // == manifest id (one per test TU)
+
+namespace klt {
+struct Cap { std::string chan; int lvl; std::string text; };
+std::vector<Cap> cap; std::vector<std::string> chans; int threshold = KPLOG_WARN; int regRet = 3;
+const char* reqName = nullptr; unsigned reqVer = 0; int reqCalls = 0; const void* reqIface = nullptr;
+int32_t KPATCH_CALL fReg(const char*) { return regRet; }
+int32_t KPATCH_CALL fChan(int32_t, const char* n) {   // the core's rule: 1..63 chars of [A-Za-z0-9_.-]
+    size_t len = n ? strlen(n) : 0; if (len < 1 || len > 63) return -1;
+    for (size_t i = 0; i < len; ++i) { char c = n[i]; if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '.' || c == '-')) return -1; }
+    for (size_t i = 0; i < chans.size(); ++i) if (chans[i] == n) return (int32_t)i;   // idempotent per name
+    chans.push_back(n); return (int32_t)chans.size() - 1;
+}
+int32_t KPATCH_CALL fEnabled(int32_t, int32_t lvl) { return lvl <= threshold; }   // like the core: no ini -> WARN and ERR only
+void KPATCH_CALL fSubmit(int32_t c, int32_t l, const char* t, uint32_t n) { cap.push_back({chans[(size_t)c], l, std::string(t, n)}); }
+void KPATCH_CALL fMark(const char*) {}
+void KPATCH_CALL fTick(int32_t) {}
+uint32_t KPATCH_CALL fFrame() { return 0; }
+uint64_t KPATCH_CALL fNow() { return 0; }
+KPatchLogApi mk() {
+    KPatchLogApi l; memset(&l, 0, sizeof l); l.struct_size = sizeof l;
+    l.Register = fReg; l.Channel = fChan; l.Enabled = fEnabled; l.Submit = fSubmit; l.Mark = fMark; l.FrameTick = fTick; l.Frame = fFrame; l.NowUs = fNow;
+    return l;
+}
+KPatchLogApi g_api;
+const void* KPATCH_CALL fRequire(const char* n, uint32_t v) { ++reqCalls; reqName = n; reqVer = v; return reqIface; }
+KPatchApi mkReg() { KPatchApi a; memset(&a, 0, sizeof a); a.struct_size = sizeof a; a.abi_version = KPATCH_ABI_VERSION; a.require = fRequire; return a; }
+
+std::vector<std::string> fileLines(const std::string& path) {
+    std::vector<std::string> v; FILE* f = fopen(path.c_str(), "rb"); if (!f) return v;
+    std::string cur; int c; while ((c = fgetc(f)) != EOF) { if (c == '\n') { v.push_back(cur); cur.clear(); } else cur += (char)c; }
+    if (!cur.empty()) v.push_back(cur);
+    fclose(f); return v;
+}
+// "<ms> force-power-hotbar/<chan> <rest>" -> rest (empty + ok=false when the shape is wrong); the ms stamp is all digits.
+bool parseFb(const std::string& line, const std::string& chan, std::string* rest) {
+    size_t sp = line.find(' '); if (sp == std::string::npos || sp == 0) return false;
+    for (size_t i = 0; i < sp; ++i) if (line[i] < '0' || line[i] > '9') return false;
+    std::string pre = " force-power-hotbar/" + chan + " ";
+    if (line.compare(sp, pre.size(), pre) != 0) return false;
+    *rest = line.substr(sp + pre.size()); return true;
+}
+}  // namespace klt
+
+static void kplog_contract() {
+    using namespace klt;
+    const char* hotbarChans[] = {"build", "cfg", "input", "edit", "slots", "target", "tip", "char", "gate", "main"};
+
+    // ---- init fails soft: the patch stays on the fallback and nothing crashes
+    HCHECK("KpLog_HasCore is false before KpLog_Init (DllMain/static-init logging is fallback only)", !KpLog_HasCore());
+    HCHECK("KpLog_Init(nullptr) == 0", KpLog_Init(nullptr) == 0);
+    KPatchApi reg = mkReg(); reg.require = nullptr;
+    HCHECK("KpLog_Init with null require == 0", KpLog_Init(&reg) == 0);
+    reg = mkReg(); reqIface = nullptr; reqCalls = 0;
+    HCHECK("KpLog_Init with no kpatch.log service (old core) == 0", KpLog_Init(&reg) == 0);
+    HCHECK("the service is asked as (\"kpatch.log\", 1)", reqCalls == 1 && reqName && strcmp(reqName, "kpatch.log") == 0 && reqVer == 1u);
+    g_api = mk(); g_api.struct_size = sizeof(KPatchLogApi) - 1; reqIface = &g_api;
+    HCHECK("KpLog_Init with a too-short struct == 0", KpLog_Init(&reg) == 0);
+    g_api.struct_size = 0; HCHECK("KpLog_Init with struct_size 0 == 0", KpLog_Init(&reg) == 0);
+    g_api = mk(); g_api.Submit = nullptr; HCHECK("KpLog_Init with a missing Submit == 0", KpLog_Init(&reg) == 0);
+    g_api = mk(); g_api.Enabled = nullptr; HCHECK("KpLog_Init with a missing Enabled == 0", KpLog_Init(&reg) == 0);
+    g_api = mk(); regRet = -1; HCHECK("KpLog_Init when Register rejects the id == 0", KpLog_Init(&reg) == 0); regRet = 3;
+    HCHECK("no failed init leaves the header thinking a core exists", !KpLog_HasCore());
+
+    // ---- fallback file mode (old core): documented line format, level gate, 511 cut, 60000-line cap
+    const char* t = std::getenv("TMPDIR");
+    std::string tmpl = std::string(t && *t ? t : "/tmp") + "/hotbar_kplog." + std::to_string((long)getpid()) + ".XXXXXX";
+    char* d = mkdtemp(&tmpl[0]);
+    if (!d) { HCHECK("mkdtemp works", false); return; }
+    std::string dir = d, path = dir + "/force_power_hotbar_log." + std::to_string((long)getpid()) + ".txt";
+    KpLog_SetFallbackFile(std::string(260, 'x').c_str());   // 260+ chars ignored
+    KpLog_SetFallbackFile(path.c_str());
+    KpLog_SetFallbackLevel(KPLOG_INFO);                      // what startOnce() sets on an old core
+    {
+        kplog::Channel cw{"cfg"};
+        KP_WARN("warn %d", 7);
+        KP_ERR("err %s", "x");
+        KP_LOGV(cw, KPLOG_INFO, "info line");
+        KP_LOGV(cw, KPLOG_DEBUG, "debug dropped");
+        int sideEffects = 0; KP_LOGV(cw, KPLOG_TRACE, "trace dropped %d", ++sideEffects);
+        HCHECK("a line above the fallback level is not even formatted", sideEffects == 0);
+        KP_LOGV(cw, KPLOG_WARN, "two\nlines");
+        for (const char* n : hotbarChans) { kplog::Channel c{n}; KP_LOGV(c, KPLOG_INFO, "hello-%s", n); }
+        std::string longmsg(600, 'L');
+        kplog::Channel ct{"tip"}; KP_LOGV(ct, KPLOG_INFO, "%s", longmsg.c_str());
+        for (int i = 0; i < 3; ++i) KP_LOG_EVERY(cw, 60000, "every-%d", i);
+        std::vector<std::string> L = fileLines(path); std::string r;
+        HCHECK("the fallback file is created at the configured path (and the 260-char path was ignored)", !L.empty());
+        size_t k = 0;
+        HCHECK("WARN line shape: '<ms> force-power-hotbar/main WARN text'", k < L.size() && parseFb(L[k], "main", &r) && r == "WARN warn 7"); ++k;
+        HCHECK("ERR line shape: 'ERR text'", k < L.size() && parseFb(L[k], "main", &r) && r == "ERR err x"); ++k;
+        HCHECK("INFO line has no level tag (level is implied by the fallback level)", k < L.size() && parseFb(L[k], "cfg", &r) && r == "info line"); ++k;
+        HCHECK("DEBUG and TRACE are dropped at fallback level INFO", k < L.size() && L[k].find("dropped") == std::string::npos);
+        HCHECK("an embedded newline becomes two tagged lines", k + 1 < L.size() && parseFb(L[k], "cfg", &r) && r == "WARN two" && parseFb(L[k + 1], "cfg", &r) && r == "WARN lines"); k += 2;
+        for (const char* n : hotbarChans) { std::string want = std::string("hello-") + n; HCHECK("every hotbar channel name writes in fallback mode", k < L.size() && parseFb(L[k], n, &r) && r == want); ++k; }
+        HCHECK("a >511-byte message is cut at 511 bytes ending with [...]", k < L.size() && parseFb(L[k], "tip", &r) && r.size() == 511 && r.compare(506, 5, "[...]") == 0 && r.compare(0, 506, std::string(506, 'L')) == 0); ++k;
+        HCHECK("KP_LOG_EVERY logs the first call only inside the window", k < L.size() && parseFb(L[k], "cfg", &r) && r == "every-0" && k + 1 == L.size());
+    }
+    {   // cap: line 60000 is "--- log cap reached ---", nothing after it
+        const unsigned cap = KP_LOG_FALLBACK_MAX_LINES;
+        HCHECK("the cap is 60000 lines (KpLog.h default)", cap == 60000u);
+        for (unsigned i = 0; i < cap + 50; ++i) KP_WARN("fill");
+        std::vector<std::string> L = fileLines(path);
+        HCHECK("the file holds exactly 60000 lines plus the cap line", L.size() == (size_t)cap + 1);
+        HCHECK("the last line is the cap marker", !L.empty() && L.back() == "--- log cap reached ---");
+        size_t n = 0; for (const std::string& l : L) if (l == "--- log cap reached ---") ++n;
+        HCHECK("the cap marker is written once", n == 1);
+    }
+    KpLog_SetFallbackFile(nullptr);
+    { std::error_code ec; std::filesystem::remove_all(dir, ec); }
+
+    // ---- with the core: real init, channel names, thresholds
+    g_api = mk(); reqIface = &g_api;
+    HCHECK("KpLog_Init with a valid api == 1", KpLog_Init(&reg) == 1);
+    HCHECK("KpLog_HasCore is true after a successful init", KpLog_HasCore());
+    cap.clear();
+    for (const char* n : hotbarChans) { kplog::Channel c{n}; KP_LOGV(c, KPLOG_WARN, "w-%s", n); }
+    HCHECK("all ten hotbar channels are accepted by the core's name rule and deliver", cap.size() == 10);
+    for (size_t i = 0; i < cap.size() && i < 10; ++i) HCHECK("each line arrives on its own channel at WARN with its text", cap[i].chan == hotbarChans[i] && cap[i].lvl == KPLOG_WARN && cap[i].text == std::string("w-") + hotbarChans[i]);
+    { kplog::Channel bad{"bad name"}; size_t before = cap.size(); KP_LOGV(bad, KPLOG_WARN, "x"); HCHECK("sanity: the fake core rejects a bad channel name (so acceptance above means something)", cap.size() == before); }
+
+    cap.clear(); threshold = KPLOG_WARN;   // no kplog.ini: the core records WARN and ERR only
+    KP_WARN("no ini %d", 1); KP_ERR("no ini err");
+    HCHECK("KP_WARN and KP_ERR pass with no ini/threshold on channel main", cap.size() == 2 && cap[0].chan == "main" && cap[0].lvl == KPLOG_WARN && cap[0].text == "no ini 1" && cap[1].lvl == KPLOG_ERR);
+    cap.clear();
+    { kplog::Channel c{"slots"}; int se = 0; KP_LOG(c, "info %d", ++se); KP_LOGV(c, KPLOG_DEBUG, "dbg %d", ++se);
+      HCHECK("INFO/DEBUG are dropped without a threshold and their arguments are not evaluated", cap.empty() && se == 0 && !KP_ENABLED(c, KPLOG_INFO) && KP_ENABLED(c, KPLOG_WARN)); }
+
+    threshold = KPLOG_TRACE; cap.clear();
+    {
+        kplog::Channel c{"gate"};
+        for (int i = 0; i < 3; ++i) KP_LOG_EVERY(c, 60000, "tick %d", i);
+        HCHECK("KP_LOG_EVERY gates a second call inside the window (first logs, rest dropped)", cap.size() == 1 && cap[0].text == "tick 0" && cap[0].lvl == KPLOG_INFO);
+        cap.clear();
+        KP_LOGV(c, KPLOG_TRACE, "t"); KP_LOG(c, "i");
+        HCHECK("explicit levels are passed through unchanged (TRACE, INFO)", cap.size() == 2 && cap[0].lvl == KPLOG_TRACE && cap[1].lvl == KPLOG_INFO);
+        cap.clear();
+        std::string longmsg(600, 'M'); KP_LOGV(c, KPLOG_INFO, "%s", longmsg.c_str());
+        HCHECK("the header cuts a >511-byte message at 511 bytes ending with [...]", cap.size() == 1 && cap[0].text.size() == 511 && cap[0].text.compare(506, 5, "[...]") == 0 && cap[0].text.compare(0, 506, std::string(506, 'M')) == 0);
+        cap.clear();
+        std::string exact(511, 'E'); KP_LOGV(c, KPLOG_INFO, "%s", exact.c_str());
+        HCHECK("a 511-byte message is not cut", cap.size() == 1 && cap[0].text == exact);
+        cap.clear();
+        KP_LOGV(c, KPLOG_INFO, "a\nb\n\nc");
+        HCHECK("an embedded newline arrives as separate lines (formatters must not emit one), empties skipped", cap.size() == 3 && cap[0].text == "a" && cap[1].text == "b" && cap[2].text == "c");
+    }
+    threshold = KPLOG_WARN;
+}
+
 int main() {
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
@@ -643,5 +801,6 @@ int main() {
     guikit_contract();
     party_contract();
     filewatch_contract();
+    kplog_contract();
     return kt::Report("common_contract_test (force_power_hotbar)");
 }

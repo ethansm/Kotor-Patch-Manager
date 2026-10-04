@@ -3,7 +3,11 @@
 #pragma once
 #include "HotbarConfig.h"
 #include <algorithm>
+#include <cstdarg>
 #include <cstdint>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 namespace hb {
 
@@ -259,5 +263,107 @@ inline TgaStatus tgaInspect(const unsigned char* d, size_t size, TgaInfo* t) {
 inline void tgaBgraToRgba(const unsigned char* d, const TgaInfo& t, unsigned char* dst) {
     for (unsigned j = 0; j < t.bytes; j += 4) { dst[j] = d[t.off + j + 2]; dst[j + 1] = d[t.off + j + 1]; dst[j + 2] = d[t.off + j]; dst[j + 3] = d[t.off + j + 3]; }
 }
+
+// ======== log formatters (pure; ForcePowerHotbar.cpp passes the result to KP_LOG as "%s") ========
+// One call = one log line (or one vector element per line). Every line starts with its tag and stays <= LogMax bytes for the
+// worst-case arguments (the core cuts a text at 232 bytes; map 07b section 3), tested in hotbar_log_test.cpp. No '\n' in any line:
+// KpLog.h splits on it and the pieces would arrive untagged. Text is byte-identical to the pre-extraction KP_LOG format strings.
+constexpr size_t LogMax = 232;
+
+#if defined(__GNUC__)
+#if defined(__MINGW32__) && defined(__MINGW_PRINTF_FORMAT)
+#define HB_PRINTF_ATTR(f, a) __attribute__((format(__MINGW_PRINTF_FORMAT, f, a)))
+#else
+#define HB_PRINTF_ATTR(f, a) __attribute__((format(printf, f, a)))
+#endif
+#else
+#define HB_PRINTF_ATTR(f, a)
+#endif
+
+HB_PRINTF_ATTR(1, 2)
+inline std::string sfmt(const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt);
+    va_list cp; va_copy(cp, ap);
+    int n = vsnprintf(nullptr, 0, fmt, cp);
+    va_end(cp);
+    std::string r;
+    if (n > 0) { r.resize((size_t)n + 1); vsnprintf(&r[0], r.size(), fmt, ap); r.resize((size_t)n); }
+    va_end(ap);
+    return r;
+}
+
+// One char per slot: -1 '?', 0 '0', anything else '1'.
+inline std::string fmtVisMask(const int* vis, int n) {
+    std::string r;
+    if (!vis) return r;
+    for (int i = 0; i < n; ++i) r += vis[i] < 0 ? '?' : (vis[i] ? '1' : '0');
+    return r;
+}
+
+// "tag[0]=<chunk>", "tag[1]=<chunk>" ...; an empty string gives "tag[0]=". chunk 0 = the default 200.
+inline std::vector<std::string> fmtChunks(const char* tag, const std::string& s, size_t chunk = 200) {
+    std::vector<std::string> r;
+    if (chunk == 0) chunk = 200;
+    if (s.empty()) { r.push_back(sfmt("%s[0]=", tag)); return r; }
+    int i = 0;
+    for (size_t off = 0; off < s.size(); off += chunk, ++i) r.push_back(sfmt("%s[%d]=%s", tag, i, s.substr(off, chunk).c_str()));
+    return r;
+}
+
+// "tip: text[i] \"<piece>\"" for each '\n'-separated piece (a trailing '\n' or an empty text gives a final empty piece), piece clipped to 200.
+inline std::vector<std::string> fmtTipLines(const std::string& text) {
+    std::vector<std::string> r;
+    int li = 0;
+    for (size_t off = 0; off <= text.size(); ++li) {
+        size_t nl = text.find('\n', off); if (nl == std::string::npos) nl = text.size();
+        r.push_back(sfmt("tip: text[%d] \"%.200s\"", li, text.substr(off, nl - off).c_str()));
+        off = nl + 1;
+    }
+    return r;
+}
+
+// "slot <key>: group=.. index=.. key=.. flags=.. usable=<flags&1> INVOKING|(Invoke=0) ref=<ref>" (ref last: it can be 100 bytes)
+inline std::string fmtSlotResolve(const std::string& slotKey, int group, int index, unsigned key, unsigned flags, bool invoke, const std::string& refText) {
+    return sfmt("slot %s: group=%d index=%d key=%08x flags=%08x usable=%d %s ref=%s", slotKey.c_str(), group, index, key, flags, (int)(flags & 1),
+                invoke ? "INVOKING" : "(Invoke=0)", refText.c_str());
+}
+inline std::string fmtSlotMiss(const std::string& slotKey, const std::string& refText, const std::string& charKey) {
+    return sfmt("slot %s: entry not available for '%s' ref=%s", slotKey.c_str(), charKey.c_str(), refText.c_str());
+}
+
+struct HeartbeatInfo {
+    long frame = 0; int gate = 0; std::string charKey; int ring = 0; int invoke = 0; long long cfgMtime = 0;
+    unsigned panel = 0; int built = 0; int vis[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    unsigned widgetFaults = 0, probeFaults = 0, exoFaults = 0, iconFaults = 0, gateFlaps = 0;
+};
+inline std::string fmtHeartbeat(const HeartbeatInfo& h) {
+    return sfmt("heartbeat: frame=%ld gate=%d char='%s' ring=%d invoke=%d cfgMtime=%lld", h.frame, h.gate, h.charKey.c_str(), h.ring, h.invoke, h.cfgMtime);
+}
+inline std::string fmtHeartbeatBar(const HeartbeatInfo& h) {
+    return sfmt("heartbeat: bar panel=%08x built=%d vis=%s wfaults=%u pfaults=%u efaults=%u ifaults=%u gateflaps=%u", h.panel, h.built,
+                fmtVisMask(h.vis, 10).c_str(), h.widgetFaults, h.probeFaults, h.exoFaults, h.iconFaults, h.gateFlaps);
+}
+
+struct H3Summary {
+    int created = 0, total = 0, first = 0, last = 0, buttons = 0, buttonCount = 0, editorBound = 0, editorCount = 0;   // first..last = panel control indices
+    bool editorEnabled = false; long frame = 0; int rect[4] = {0, 0, 0, 0};
+};
+inline std::string fmtH3Summary(const H3Summary& s) {
+    return sfmt("H3: %d/%d controls created (indices %d..%d) buttons=%d/%d editor=%d/%d -> editor %s frame=%ld", s.created, s.total, s.first, s.last,
+                s.buttons, s.buttonCount, s.editorBound, s.editorCount, s.editorEnabled ? "ENABLED" : "DISABLED", s.frame);
+}
+inline std::string fmtH3Rect(const H3Summary& s) { return sfmt("H3: picker background rect [%d,%d,%d,%d]", s.rect[0], s.rect[1], s.rect[2], s.rect[3]); }
+
+inline std::string fmtPersaveSnapshot(const char* why, bool ok, int profiles) { return sfmt("persave: %s: save %s profiles=%d", why, ok ? "ok" : "FAILED", profiles); }
+inline std::string fmtPersaveDst(const char* why, const std::string& dst) { return sfmt("persave: %s: dst=%.170s", why, dst.c_str()); }
+inline std::string fmtPersaveReplace(const char* why, bool replaced, int profiles, int snapWarnings, bool backupOk) {
+    return sfmt("persave: %s: live hotbar %s profiles=%d snapshot_warnings=%d backup=%s", why, replaced ? "replaced" : "NOT replaced (save failed)", profiles, snapWarnings, backupOk ? "ok" : "none");
+}
+inline std::string fmtPersaveSource(const char* why, const std::string& source) { return sfmt("persave: %s: source=%.170s", why, source.c_str()); }
+
+inline std::string fmtAssign(int slot, const std::string& slotKey, bool saveOk, int frozen, long long mtime, const std::string& charKey) {
+    return sfmt("edit: assign slot=%d key=%s save=%s froze=%d mtime=%lld char='%s'", slot, slotKey.c_str(), saveOk ? "ok" : "FAILED", frozen, mtime, charKey.c_str());
+}
+inline std::string fmtAssignValue(bool hasEntry, const std::string& refText) { return sfmt("edit: assign value=%s", hasEntry ? refText.c_str() : "none"); }
 
 }  // namespace hb

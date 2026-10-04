@@ -4,7 +4,7 @@ cxxflags = ["-Werror"]
 # Per-test table: only the Common contract test needs the shared headers + host Win32 stub (mirrors _shared_src/test.toml).
 # The four older hotbar tests keep their defaults.
 [common_contract_test]
-cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
 
 # HotbarConfig.h includes the shared FileWatch.h (POSIX branch on the host; no Win32 stub needed).
 [config_roundtrip_test]
@@ -18,3 +18,7 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 [textures_test]
 cxxflags = ["-I../_shared_src", "-Werror"]
+
+# Log formatters (HotbarLogic.h fmt*) + their delivery through KpLog.h.
+[hotbar_log_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]

@@ -124,9 +124,7 @@ const char* const LogPath = "force_power_hotbar_log.txt", *const LogPrevPath = "
 // Logs `s` as "tag[0]=<chunk>", "tag[1]=<chunk>" ... so no line exceeds the core's 232-byte cut (map section 3, fmtChunks).
 void logChunks(::kplog::Channel& ch, int lvl, const char* tag, const std::string& s, size_t chunk = 200) {
     if (!KP_ENABLED(ch, lvl)) return;
-    if (s.empty()) { KP_LOGV(ch, lvl, "%s[0]=", tag); return; }
-    int i = 0;
-    for (size_t off = 0; off < s.size(); off += chunk, ++i) KP_LOGV(ch, lvl, "%s[%d]=%s", tag, i, s.substr(off, chunk).c_str());
+    for (const std::string& l : hb::fmtChunks(tag, s, chunk)) KP_LOGV(ch, lvl, "%s", l.c_str());
 }
 
 // saferead site ids (per DLL; the ring buffer reports them). 0x4800-0x48FF belong to this mod.
@@ -488,14 +486,13 @@ void drainRing(uintptr_t hud) {
         if (a.empty()) { KP_LOG(chSlots, "slot %s: unbound now (config changed?)", sk.c_str()); continue; }
         Entry e;
         if (!resolve(hud, a, &e)) {
-            KP_LOG(chSlots, "slot %s: entry not available for '%s' ref=%s", sk.c_str(), g_charKey.c_str(), hb::Format(a).c_str());
+            KP_LOG(chSlots, "%s", hb::fmtSlotMiss(sk, hb::Format(a), g_charKey).c_str());
             std::vector<Entry> es;
             static int availLogs = 0;   // per process: the full list is only worth dumping a few times
             for (int g = 0; g < 6; ++g) { readGroup(hud, g, &es); for (auto& x : es) if (availLogs < 20) { ++availLogs; KP_LOG(chSlots, "avail g%d.%d key=%08x %s%s%s%s", g, x.index, (unsigned)x.key, hb::Format(x.ref).c_str(), x.ref.kind == hb::K_Item ? "" : " \"", x.ref.kind == hb::K_Item ? "" : x.name.c_str(), x.ref.kind == hb::K_Item ? "" : "\""); } }
             continue;
         }
-        KP_LOG(chSlots, "slot %s: group=%d index=%d key=%08x flags=%08x usable=%d %s ref=%s", sk.c_str(), e.group, e.index,
-               (unsigned)e.key, (unsigned)e.flags, e.flags & 1, g_cfg.general.invoke ? "INVOKING" : "(Invoke=0)", hb::Format(a).c_str());   // ref last: it can be 100 bytes
+        KP_LOG(chSlots, "%s", hb::fmtSlotResolve(sk, e.group, e.index, (unsigned)e.key, (unsigned)e.flags, g_cfg.general.invoke != 0, hb::Format(a)).c_str());   // ref last: it can be 100 bytes
         if (a.kind == hb::K_Item && a.target.mode == hb::TM_LowHp) {
             int probe = targetProbeMode();
             if (probe > 0 && targetedUse(hud, e, a, probe)) continue;
@@ -740,11 +737,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
     int th = 0; { void** tvt = *reinterpret_cast<void***>(tx); if (saferead::probeRead(S_Border, tvt + 2, 4)) th = reinterpret_cast<int(__fastcall*)(void*)>(tvt[2])(reinterpret_cast<void*>(tx)); }
     if (KP_ENABLED(chTip, KPLOG_DEBUG)) {   // header, then one line per text line: an embedded '\n' would split into untagged lines (map section 3)
         KP_LOGV(chTip, KPLOG_DEBUG, "tip: show slot %d lines=%d maxLen=%d rect=[%d,%d,%d,%d] client=%ldx%ld textHeight(engine)=%d", s, lines, maxLen, x, y, w, h, (long)cr.right, (long)cr.bottom, th);
-        int li = 0; for (size_t off = 0; off <= text.size(); ++li) {
-            size_t nl = text.find('\n', off); if (nl == std::string::npos) nl = text.size();
-            KP_LOGV(chTip, KPLOG_DEBUG, "tip: text[%d] \"%.200s\"", li, text.substr(off, nl - off).c_str());
-            off = nl + 1;
-        }
+        for (const std::string& l : hb::fmtTipLines(text)) KP_LOGV(chTip, KPLOG_DEBUG, "%s", l.c_str());
     }
 }
 
@@ -982,8 +975,8 @@ bool assignSlot(uintptr_t hud, int slot, const Entry* e) {
     filewatch::Stamp st = filewatch::stamp(IniPath); long long mt = st.mtimeMs(); if (ok) filewatch::accept(g_cfgPoll, st);
     {   // two lines (map section 3): the Format value (up to 100 bytes) goes on its own line; WARN when the save failed
         int lv = ok ? KPLOG_INFO : KPLOG_WARN;
-        KP_LOGV(chEdit, lv, "edit: assign slot=%d key=%s save=%s froze=%d mtime=%lld char='%s'", slot, hb::SlotKeyName(0, slot).c_str(), ok ? "ok" : "FAILED", frozen, mt, g_charKey.c_str());
-        KP_LOGV(chEdit, lv, "edit: assign value=%s", e ? hb::Format(a).c_str() : "none");
+        KP_LOGV(chEdit, lv, "%s", hb::fmtAssign(slot, hb::SlotKeyName(0, slot), ok, frozen, mt, g_charKey).c_str());
+        KP_LOGV(chEdit, lv, "%s", hb::fmtAssignValue(e != nullptr, e ? hb::Format(a) : std::string()).c_str());
     }
     if (!ok) { ed.msg = "Saving the config failed (see log)"; return false; }
     recomputeBound(); refreshEffective(hud);
@@ -1425,8 +1418,8 @@ void snapshotToSave(const char* folder, const char* why) {
     std::string dst = dir + "/" + SnapshotFile;
     BOOL ok = CopyFileA(IniPath, dst.c_str(), FALSE);
     int lv = ok ? KPLOG_INFO : KPLOG_WARN;   // two lines (map section 3): the destination path can be long
-    KP_LOGV(chCfg, lv, "persave: %s: save %s profiles=%d", why, ok ? "ok" : "FAILED", (int)g_cfg.profiles.size());
-    KP_LOGV(chCfg, lv, "persave: %s: dst=%.170s", why, dst.c_str());
+    KP_LOGV(chCfg, lv, "%s", hb::fmtPersaveSnapshot(why, ok != 0, (int)g_cfg.profiles.size()).c_str());
+    KP_LOGV(chCfg, lv, "%s", hb::fmtPersaveDst(why, dst).c_str());
 }
 
 // Replaces the live INI's profiles with `snap`'s (nullptr = none: empty bar), keeping [General]; the previous file goes to .ini.bak.
@@ -1443,8 +1436,8 @@ void replaceLiveProfiles(const hb::Config* snap, const std::string& source, cons
     bool ok = n.Save(IniPath);
     if (ok) { g_cfg = n; filewatch::accept(g_cfgPoll, IniPath); recomputeBound(); }
     if (g_bar.ed.mode != M_Normal) setMode(M_Normal, -1, why);
-    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "persave: %s: live hotbar %s profiles=%d snapshot_warnings=%d backup=%s", why, ok ? "replaced" : "NOT replaced (save failed)", (int)n.profiles.size(), snap ? (int)snap->warnings.size() : 0, bak ? "ok" : "none");
-    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "persave: %s: source=%.170s", why, source.c_str());
+    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "%s", hb::fmtPersaveReplace(why, ok, (int)n.profiles.size(), snap ? (int)snap->warnings.size() : 0, bak != 0).c_str());
+    KP_LOGV(chCfg, ok ? KPLOG_INFO : KPLOG_WARN, "%s", hb::fmtPersaveSource(why, source).c_str());
 }
 
 void restoreFromSave(const char* folder, const char* why) {
@@ -1574,9 +1567,13 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     }
     g_bar.built = built;
     int after = rdInt(S_Create, panel, guikit::Panel_CtlCount, -1);
-    KP_LOG(chBuild, "H3: %d/%d controls created (indices %d..%d) buttons=%d/%d editor=%d/%d -> editor %s frame=%ld",
-           created, ControlCount, before, after - 1, built, ButtonCount, eb, EditorControlCount, g_bar.editBound ? "ENABLED" : "DISABLED", g_frame);
-    KP_LOG(chBuild, "H3: picker background rect [%d,%d,%d,%d]", g_bar.ed.pbgRect[0], g_bar.ed.pbgRect[1], g_bar.ed.pbgRect[2], g_bar.ed.pbgRect[3]);
+    {
+        hb::H3Summary h3; h3.created = created; h3.total = ControlCount; h3.first = before; h3.last = after - 1; h3.buttons = built; h3.buttonCount = ButtonCount;
+        h3.editorBound = eb; h3.editorCount = EditorControlCount; h3.editorEnabled = g_bar.editBound != 0; h3.frame = g_frame;
+        for (int i = 0; i < 4; ++i) h3.rect[i] = g_bar.ed.pbgRect[i];
+        KP_LOG(chBuild, "%s", hb::fmtH3Summary(h3).c_str());
+        KP_LOG(chBuild, "%s", hb::fmtH3Rect(h3).c_str());
+    }
     if (created != ControlCount) {
         KP_LOGV(chBuild, KPLOG_WARN, "H3: WARNING %d of %d controls NOT created (see the lines above)", ControlCount - created, ControlCount);
         KP_LOGV(chBuild, KPLOG_WARN, "H3: disabled parts: slots=%d/%d editor=%s tooltip=%s", built, ButtonCount, g_bar.editBound ? "ok" : "off", (g_bar.tipBg.ctl && g_bar.tip.ctl) ? "ok" : "off");
@@ -1597,9 +1594,13 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     if (lastTickTime && nowT - lastTickTime > 1500) KP_LOG(chGate, "tick: gap of %lu ms since previous HUD tick (load/menu/HUD destroyed?)", (unsigned long)(nowT - lastTickTime));
     lastTickTime = nowT;
     if (g_frame % 1800 == 0) {   // ~30 s; two lines, frame first (the hotbar's own tick counter, not the core's f=)
-        char vis[ButtonCount + 1]; for (int i = 0; i < ButtonCount; ++i) { int v = g_bar.b[i].ic.visible; vis[i] = v < 0 ? '?' : (v ? '1' : '0'); } vis[ButtonCount] = 0;
-        KP_LOG(chMain, "heartbeat: frame=%ld gate=%d char='%s' ring=%d invoke=%d cfgMtime=%lld", g_frame, (int)g_hudGateOk, g_charKey.c_str(), (g_ringHead - g_ringTail + 16) % 16, g_cfg.general.invoke, g_cfgPoll.seenMs());
-        KP_LOG(chMain, "heartbeat: bar panel=%08x built=%d vis=%s wfaults=%u pfaults=%u efaults=%u ifaults=%u gateflaps=%u", (unsigned)g_bar.panel, g_bar.built, vis, g_widgetFaults, g_probeFaults, g_exoFaults, g_iconFaults, g_gateFlaps);
+        static_assert(ButtonCount == 10, "hb::HeartbeatInfo::vis has 10 slots");
+        hb::HeartbeatInfo hbi; hbi.frame = g_frame; hbi.gate = (int)g_hudGateOk; hbi.charKey = g_charKey; hbi.ring = (g_ringHead - g_ringTail + 16) % 16;
+        hbi.invoke = g_cfg.general.invoke; hbi.cfgMtime = g_cfgPoll.seenMs(); hbi.panel = (unsigned)g_bar.panel; hbi.built = g_bar.built;
+        for (int i = 0; i < ButtonCount; ++i) hbi.vis[i] = g_bar.b[i].ic.visible;
+        hbi.widgetFaults = g_widgetFaults; hbi.probeFaults = g_probeFaults; hbi.exoFaults = g_exoFaults; hbi.iconFaults = g_iconFaults; hbi.gateFlaps = g_gateFlaps;
+        KP_LOG(chMain, "%s", hb::fmtHeartbeat(hbi).c_str());
+        KP_LOG(chMain, "%s", hb::fmtHeartbeatBar(hbi).c_str());
     }
     if (g_frame % 600 == 0) dumpRing("25 new failures", 25);   // ~10 s, never per frame
     if (g_frame == 600 && g_capMatched == 0 && g_capForeign > 0)   // map section 4 #4: once per session
