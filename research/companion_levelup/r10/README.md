@@ -73,4 +73,8 @@ defects, so the tags stay truthful (`goodevil=G` -> light) and the conflict is w
   the tags are not too narrow for the 80 curated builds, not that they are minimal.
 
 ## Model spot-check
-PENDING: Haiku spot-check of 20 random rows
+2026-10-04, Haiku, ini md5 67121be7: 20 rows (`random.seed(1004)`, 12 feats + 8 powers) judged against the TLK names, plus 3 constructed decoys
+(Force Lightning tagged light, Sniper Shot tagged melee, Toughness tagged dark): **18/20 OK, decoys 3/3 caught**. The 2 flagged rows are the
+deliberate preset-driven overrides 32 (Weapon Focus: Blaster Pistol, +tank/support for T3-M4) and 36 (Weapon Focus: Lightsaber,
++caster/support for Disciple-style presets). Opus review: kept as is. Removing them reintroduces preset conflicts. They show the same limit as the
+power roles: the Build filter is permissive (it narrows by alignment and by clearly off-build rows). Batch 2 may revisit this after live use.
