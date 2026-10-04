@@ -1,6 +1,6 @@
 # Engine Fixes L1 + L4: dialogue letterbox and wrap-measure (doc 15 Phase 2)
 
-**INSTALLED 2026-10-03 22:42 (user: "install"):** 1.0.2 DLL `7b3936bc` hot-swapped into `patches/k2-dialogue-letterbox-fix.dll` (hooks unchanged; the core runs `KPatchInit` by export at module load). `kplog.ini` += `[k2-dialogue-letterbox-fix] enabled=1 level=info channels=main,set`; `dialogue_letterbox_fix.ini` unchanged (`enabled=1 mode=h6 log=1`). Core `36f10b7f` re-checked; exe md5 `62411a3a` unchanged. Backup `~/Games/KOTOR2_Mod_Workspace/backups/pre_lb102_1003_2242/`. Source fork `b4e1db6`. Expect `k2-dialogue-letterbox-fix_log.txt`; the old `dialogue_letterbox_fix_log.txt` (10524 B, 01:30) must not grow. Rollback: `cp $B/k2-dialogue-letterbox-fix.dll "$G/patches/"; cp $B/kplog.ini "$G/"`.
+**INSTALLED 2026-10-03 22:42 (user: "install"):** 1.0.2 DLL `7b3936bc` hot-swapped into `patches/k2-dialogue-letterbox-fix.dll` (hooks unchanged; the core runs `KPatchInit` by export at module load). `kplog.ini` += `[k2-dialogue-letterbox-fix] enabled=1 level=info channels=main,set`; `dialogue_letterbox_fix.ini` unchanged (`enabled=1 mode=h6 log=1`). Core `36f10b7f` re-checked; exe md5 `62411a3a` unchanged. Backup `~/Games/KOTOR2_Mod_Workspace/backups/pre_lb102_1003_2242/`. Source fork `b4e1db6`. Expect `k2-dialogue-letterbox-fix_log.txt`; the old `dialogue_letterbox_fix_log.txt` (10524 B, 01:30) must not grow. Rollback: `cp $B/k2-dialogue-letterbox-fix.dll "$G/patches/"; cp $B/kplog.ini "$G/"`. **NOT VALIDATED yet: see "Manual validation checklist (1.0.2)" (17 manual checks).**
 
 **1.0.2 + 1.0.2-probe BUILT + SMOKED, NOT installed (2026-10-03, shared-logging session, 19h):** logging moved to KpLog.h with no behaviour change. One source; the probe variant is `dialogue_letterbox_fix_src/probe/` + `build_probe.sh`. Local-setup `2823ff6`/`aea74cb`, fork `b4e1db6`. Kpatches: shipping `~/Games/KOTOR2_Mod_Workspace/stage_lb_102/K2DialogueLetterboxFix.kpatch` (DLL `7b3936bc`), probe `KPM/letterbox_probe_stage/1.0.2-probe/K2DialogueLetterboxFixProbe.kpatch` (DLL `969fe458`). Wine smoke: shipping 11 modes, probe 14 modes. Read the log with `analyze_engfix_logs.py`: the new core writes `k2-dialogue-letterbox-fix_log.txt` (needs `kplog.ini` `[k2-dialogue-letterbox-fix] enabled=1 level=info channels=main,set[,probe,probe_w4]`); an old core keeps writing `dialogue_letterbox_fix_log.txt`. Install checklist: 19e "Phase 3 (letterbox)" Task 6. For the T1 "no bands" path, use 1.0.2-probe; stage B stays as the fallback.
 
@@ -104,6 +104,35 @@ python3 /home/ethansm/orca/workspaces/local-setup/KOTOR-II/patch_manager_mods/mo
 md5sum "$G/swkotor2.exe"   # compare with the pre-install md5 (KPM rewrites the exe per install; record the new value)
 ```
 30 ids = the live 31 minus `k2-wrap-measure-fix` (decision 10-03); `k2-dialogue-letterbox-fix` comes from the stage. Rollback: restore `$BK` (state json, config, patches/) or reinstall from the stage with the 1.0.0 kpatch (`~/Games/KOTOR2_Mod_Workspace/backups/k2_dialogue_letterbox_fix_1.0.0/`, md5 `6033b700...`).
+
+## Manual validation checklist (1.0.2, live since 10-03 22:42): ALL must pass before "validated"
+Status: **NOT VALIDATED, 0 / 17 done.** Setup: 3840x1600, live core `36f10b7f`, letterbox DLL `7b3936bc` (re-md5 both before each session), `kplog.ini` section `channels=main,set`, `dialogue_letterbox_fix.ini` `enabled=1 mode=h6 log=1`. Edit INI files only with the game closed, except `kplog.ini`, which the core re-reads about once a second. Log = `$G/k2-dialogue-letterbox-fix_log.txt`; analyzer = `python3 patch_manager_mods/engine_bug_research/tools/analyze_engfix_logs.py <log>`. Mark each row `[x] date + evidence` (screenshot path, log line, analyzer verdict).
+
+**A. Logging (KpLog.h migration; the shared-logging session checks these)**
+- [ ] A1 Log file: after launch + load, `k2-dialogue-letterbox-fix_log.txt` exists and starts with a `# kplog session` header, followed by `.../main k2-dialogue-letterbox-fix 1.0.2 loaded: enabled=1 mode=h6 log=1 const@...` exactly once per launch.
+- [ ] A2 APPLY: a `main` line `APPLY src=SetScreenSize W=3840 H=1600 ... newBar=267 ...` followed by `wrote ...; verify OK`.
+- [ ] A3 SET lines: the first conversation gives `.../set SETTOP ... target h 267` and `.../set SETBOTTOM ... target y 1333`, one pair per conversation.
+- [ ] A4 Old file silent: `dialogue_letterbox_fix_log.txt` stays at 10524 B (01:30). It must not grow.
+- [ ] A5 Clean: no `WARN`, `ERR`, `DROPPED` or `[...]` (line-cut) text in the log.
+- [ ] A6 Analyzer: PASS on the new log, 0 unparsed lines.
+- [ ] A7 Live channel switch: during play, set `channels=main` in `kplog.ini`, wait 2 s, start another conversation. No new SETTOP lines. Put `main,set` back.
+- [ ] A8 No-ini run: remove the `[k2-dialogue-letterbox-fix]` section and play one conversation. Only WARN/ERR lines may appear (expect none, so no file or a header-only file). Restore the section.
+- [ ] A9 `log=0` run (`dialogue_letterbox_fix.ini`): only the load line, the first APPLY pair and the first SETTOP/SETBOTTOM pair, then nothing more across 2+ conversations.
+
+**B. Fix behaviour (engine-bug session; doc 16 card T1)**
+- [ ] B1 T1 top band: F12 screenshot during an NPC line in a voiced conversation (Peragus or the first Kreia/Atton talk). A top band about 267 px tall is visible. **If it is absent, go to section C.**
+- [ ] B2 Bottom band + reply list: screenshot with the reply list shown. Bottom band about 267 px from y 1333; reply list inside it, not clipped, scrollbar usable.
+- [ ] B3 A/B: `enabled=0`, restart, same conversation. Expect no top band and a 200 px bottom band (vanilla). This shows the fix is what changes the picture.
+- [ ] B4 Computer terminal conversation (ConversationType 1): no bars, as in vanilla. No crash.
+- [ ] B5 Cinematic/cutscene conversation (a Bink movie or camera-animated scene): bars slide in and out normally, no stuck bar after the conversation ends.
+- [ ] B6 Options > Graphics Apply (or a resolution change and back): a new APPLY line (`unchanged` or `wrote ... verify OK`), bars still right in the next conversation.
+- [ ] B7 Module transition + save/load: 3+ conversations across 2 modules and one save load. No crash or hang; SETTOP/SETBOTTOM per conversation.
+- [ ] B8 Clairvoyance/Fury video effect, if reachable (V11: effect band [242,1358]): nothing looks clipped wrongly.
+
+**C. Only if B1 fails (no bands): probe path**
+- [ ] C1 Install 1.0.2-probe (`KPM/letterbox_probe_stage/1.0.2-probe/`, hooks change, so use `stage_and_verify_install.py` + KPatchLauncher). Set `probe=1` and `channels=main,set,probe,probe_w4`. Play one conversation, run the analyzer, and give its DIAGNOSIS to the engine-bug session (15e A3). Stage B (1.0.1-probe) is the fallback.
+
+**Validated** = every A and B row checked (C is not needed when B1 passes). Then update the doc 17 top line, 19e adoption row ("validated"), register 16 T1 card, and memory.
 
 ## Test plan (doc 16 cards T1 / T2, run once WITHOUT and once WITH the staged patches)
 Run A = current live (no new patches; do this BEFORE installing), run B = after the install. Resolution 3840x1600 for both.

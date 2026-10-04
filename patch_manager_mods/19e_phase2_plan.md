@@ -298,7 +298,7 @@ Step 0 → T (if multilib) → K → C → H → D → merge into local-mods (Op
 | force-power-hotbar | hotbar | pending |
 | level-up-override | level-up | pending |
 | perf-lab, robustness-fixes | engine research / engine-bug | pending |
-| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 LIVE 10-03 22:42 (7b3936bc, backup pre_lb102_1003_2242), awaiting user conversation**; 1.0.2-probe staged (local-setup 2823ff6/aea74cb, fork b4e1db6) |
+| k2-dialogue-letterbox-fix (+ probe variant) | engine-bug owns behaviour; shared-logging does the KpLog migration (19h) | **migrated 1.0.2 LIVE 10-03 22:42 (7b3936bc, backup pre_lb102_1003_2242), NOT VALIDATED: 17-row manual checklist in doc 17 "Manual validation checklist (1.0.2)"**; 1.0.2-probe staged (local-setup 2823ff6/aea74cb, fork b4e1db6) |
 | companion-ai, ranged-ai | engine AI atlas | pending (parser `^` anchors: analyze_play_logs.py) |
 | char-effects-panel, equip/inv3d, inventory-sort-filter, load-hang-probe, activation-fix | their sessions | pending |
 
