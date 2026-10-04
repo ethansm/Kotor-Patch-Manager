@@ -4,7 +4,14 @@
 - 2026-10-04 CS0 research DONE (static only, nothing installed). Evidence: `27_companion_selfheal_evidence/` R1 actor route, R2 portrait UI, R3 item choice.
 - Home (user, 10-04): **new mod `companion-selfheal`**, a `k2.portraitslots@1` consumer. No new hook address.
 - 10-04 later: user added in-game config (auto-consume, HP%/reserve thresholds, auto-on indicator, no click at full HP) -> section 3b. R4 done: own hook 0x0040F5A0 gives text labels without touching the hotbar.
-- Next: CS1 (pure logic + tests). Build rows live in doc 24 (CS0-CS6, owner gate "selfheal").
+- 10-04 CS1 DONE `6f67e8b` (KPM `84c2586`): `_shared_src/HealItems.h` (formulaFor/healEstimate/pickHealItem/shouldAutoUse/isHealingRow copy), GuiKit `rclickEdge`; cov 100%, 23/23 mutants killed.
+- 10-04 CS2 DONE `4c8f7e7` (KPM `fa18db3`): `companion_selfheal_src` 0.1.0-probe, built NOT installed; pre_install_gate PASS, dll md5 `af3a6fde587c1df32c419fe6e71c5689`. New `_shared_src/ItemRead.h` (hotbar adopts in CS7). Deviation: the dump calls the hotbar's two read-only lookups ClientToServerObjectId 0x51C8B0 + GetItemByObjectId 0x51C0E0 (needed for item props); no CanUseItem, no 0x57D8B0, no engine writes. Candidate cost is fixed at 0 in the probe.
+- Next: CS3 = live probe install (user GO), then read `companion_selfheal` log lines:
+  - `P1 hud built ... layoutOpen=1` once per HUD build (hook fires with layout still open; ctlCount sane).
+  - `P3 slot[i]=... k=0|1|2` for every portrait slot (never `k=none`) -> confirms slot->HUD formula.
+  - Ctrl+Shift+H: per companion `cand` rows (row 64-66 organic / 84,127,128 droid, heal vs in-game skills, count = stack), the pick, route A args (server ids = client & ~mask), auto decision.
+  - Pass = 2 companions x (organic, droid) match in-game numbers (section 6). Then the one-click live call.
+- Build rows live in doc 24 (CS0-CS7, owner gate "selfheal").
 
 ## User decisions (10-04)
 - One click on a button by a companion's portrait: the mod picks the **smallest healing item that covers the companion's missing HP** (else the largest). Droids get repair kits.
