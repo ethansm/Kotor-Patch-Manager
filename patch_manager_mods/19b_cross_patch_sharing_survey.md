@@ -51,12 +51,14 @@ Companion to doc 19. Question (user): can the RFC #180 registry simplify our pat
 
 ## D. 2026-10-03 survey additions (folded from COMMON_EXTRACTION_PLAN.md)
 
+**3D-viewport menu mods (inv3d / equip / Mod 14): plan + status in `23_menu_3d_shared_migration.md`.** B4 (scene view) shipped as `SceneView.h` (5652226); inv3d 0.2.1-dev is the first consumer.
+
 **Workflow.**
 - Canonical headers: `patch_manager_mods/_shared_src/*.h`. `scripts/check_shared_headers.py --sync` copies them to the framework clone
   `Patches/Common/` (branch `ethansm/local-mods`) and rewrites the `Patches/_shared/` forwarders; a plain run reports drift (exit 1).
   Subdirectories and `*.cpp`/`*.toml` (colocated tests) are not synced.
 - Header-only, no hooks (Common is a static lib in every DLL). Changes are additive, with defaulted parameters; existing consumers
-  (LevelUpOverride for GuiKit) must compile unchanged. saferead site ids are per DLL (hotbar 0x48xx, GuiKit 0x6Bxx, Party.h 0x6Cxx).
+  (LevelUpOverride for GuiKit) must compile unchanged. saferead site ids are per DLL (hotbar 0x48xx, GuiKit 0x6Bxx, Party.h 0x6Cxx, SceneView.h 0x6Dxx, inv3d 0x0100).
 - One mod per behaviour-neutral migration: warning-clean build, host tests, log diff (+ screenshot for visual mods), one install and live check.
   The owning session migrates its mod; never edit a mod another session changed in the last hours (`ls -lt`, `git log -1 -- <dir>`).
 - PRs cherry-pick the Common headers they include, at the tested version. Steam constants stay until the PR3 address-DB rows exist, then

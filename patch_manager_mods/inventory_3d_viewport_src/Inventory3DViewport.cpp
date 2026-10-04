@@ -18,6 +18,8 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
+#include "SceneView.h"  // CSWGui3DSceneView block, scene models, Gob vtable guard (doc 23)
 #include "Inv3dQuat.h"
 #include "ItemModelTable.inc"
 #include "ItemFitTable.inc"
@@ -28,56 +30,34 @@
 
 namespace {
 
-constexpr int GateGlobal = 0x009f42b4;
-constexpr int FnControlCtor = 0x00418990;   // CSWGuiControl ctor, ECX = ctrl
-constexpr int ViewVftable = 0x009a3d34;     // CSWGui3DSceneView
-constexpr int FnSceneCtor = 0x00417f40;     // CSWGuiScene ctor, ECX = view+0x60
-constexpr int FnInitControl = 0x0040f620;   // thiscall(panel, view, CExoString*, addToList, scale) RET 16
-constexpr int FnExoCtor = 0x00733570;
-constexpr int FnExoDtor = 0x00733780;
-constexpr int FnNew = 0x00919723;           // cdecl(size)
-constexpr int FnAddModel = 0x00418360;      // thiscall(view+0x60, CExoString*, int)
-constexpr int FnRemoveModel = 0x00418430;   // thiscall(view+0x60, index, deleteIt) RET 8
-constexpr int FnGetModel = 0x004184b0;      // thiscall(view+0x60, int idx) -> Gob*
-constexpr int FnLabelCtor = 0x00419740;     // CSWGuiLabel ctor, fastcall(ECX=this), object size 0x148 (same as the Force Power Hotbar)
+// Scene view (block ctor, scene room, AddModel/GetModel/RemoveModel, camera, Gob guard/pose/scale): SceneView.h.
+// Shared engine addresses: GameAddr.h names (Steam column; bindCover only). -> K2Addr table once bindCover moves to Common (doc 23).
+constexpr int FnInitControl = gameaddr::InitControl;   // thiscall(panel, view, CExoString*, addToList, scale) RET 16
+constexpr int FnExoCtor = gameaddr::ExoCtor;
+constexpr int FnExoDtor = gameaddr::ExoDtor;
+constexpr int FnNew = gameaddr::New;                   // cdecl(size)
+constexpr int FnLabelCtor = gameaddr::LabelCtor;       // CSWGuiLabel ctor, fastcall(ECX=this), object size 0x148 (same as the Force Power Hotbar)
 constexpr int LabelSize = 0x148;
-constexpr int LabelVftable = 0x009878BC;
+constexpr int LabelVftable = gameaddr::LabelVtable;
 constexpr int CtlFlagsOff = 0x48;           // bit1 = visible, bit5 (0x20) = hit-test rejects the mouse (click-through)
 constexpr int CtlIdOff = 0x54;
 constexpr int FnRender = 0x008cd2c0;        // fastcall(fakeThis)
-constexpr int SceneOffset = 0x60;
-constexpr int SceneObjOffset = 0x74;        // view+0x60+0x14 = Scene*
-constexpr int CameraOffset = 0x78;          // view+0x78 = camera object
-constexpr int ModelCountOffset = 0x80;      // view+0x80 = scene+0x20
+constexpr int SceneOffset = 0x60;           // view+0x60 = CSWGuiScene (dumped for diagnostics only)
 constexpr int FakeCategoryBlockOff = 0x2fc;
 constexpr int FakeItemBlockOff = 0x304;
 constexpr int FakeThisDelta = 0x3a30;
-constexpr int BlockSize = 0x400;
 constexpr int ExpectedControlId = 21;
-constexpr int GobScaleOff = 0x1e0;          // float, 1.0 = none (render 004b3c90 glScalef)
 constexpr int ItemVarOff = 0x2a4;           // item model variation byte
-constexpr int ExpectedCamVtable = 0x0098c45c;
-constexpr int ExpectedGobVtable = 0x0098b5cc;
+constexpr unsigned ExpectedCamVtable = gameaddr::SceneCameraVtable;   // logged only (SceneView.h reads the K2Addr table)
+constexpr unsigned ExpectedGobVtable = gameaddr::GobVtable;
 
-struct GobSlotCheck { int off; int addr; const char* name; };
-const GobSlotCheck kGobSlots[] = {
-    {0x5C, 0x00461490, "SetPosition"}, {0x60, 0x004614e0, "SetOrientation"},
-    {0x64, 0x00459710, "GetPosition"}, {0x68, 0x00459740, "GetOrientation"}, {0x108, 0x00461530, "GetParent"}};
-
-using Fast1 = void(__fastcall*)(void*);
-using ThisCall2 = void*(__thiscall*)(void*, void*, int);
-using GetModelFn = void*(__thiscall*)(void*, int);
 using InitCtl = void(__thiscall*)(void*, void*, void*, int, int);
 using CExoCtor = void*(__thiscall*)(void*, const char*);
 using CExoDtor = void(__thiscall*)(void*);
-using Remove = void(__thiscall*)(void*, int, int);
-using SceneInit = void(__thiscall*)(void*, const char*, float*, float*);
 using NewFn = void*(__cdecl*)(unsigned);
 using Render = void(__fastcall*)(void*);
-using SetPosFn = void*(__thiscall*)(void*, float*, float, float, float);
-using SetOriFn = void*(__thiscall*)(void*, float*, float, float, float, float);
-using GetVecFn = void*(__thiscall*)(void*, float*);
-using GetParentFn = void*(__thiscall*)(void*, int);
+using sceneview::modelCount;
+using sceneview::getModel;
 
 // ---- diagnostics: inv3d_log.txt in the game dir, capped ----
 int g_logLines = 0;
@@ -102,12 +82,13 @@ void dlogf(const char* fmt, ...) {  // debug-only, own cap so it cannot starve t
     fputc('\n', f); fclose(f);
 }
 
+constexpr unsigned SiteInv3d = 0x0100;   // saferead site id for this DLL's own probes
 void dumpMem(const char* tag, int addr, int words) {
     if (addr == 0) { logf("  dump %s @0: null", tag); return; }
     for (int i = 0; i < words; i += 8) {
         char line[200]; int p = 0;
         for (int j = i; j < i + 8 && j < words; ++j) {
-            if (IsBadReadPtr(reinterpret_cast<const void*>(addr + j * 4), 4)) p += snprintf(line + p, sizeof(line) - p, " ????????");
+            if (!saferead::probeRead(SiteInv3d, reinterpret_cast<const void*>(addr + j * 4), 4)) p += snprintf(line + p, sizeof(line) - p, " ????????");
             else p += snprintf(line + p, sizeof(line) - p, " %08x", *reinterpret_cast<const int*>(addr + j * 4));
         }
         logf("  dump %s +%03x:%s", tag, i * 4, line);
@@ -115,11 +96,7 @@ void dumpMem(const char* tag, int addr, int words) {
 }
 
 template <typename T>
-bool readAt(int base, int off, T* out) {
-    if (base == 0 || IsBadReadPtr(reinterpret_cast<const void*>(base + off), sizeof(T))) return false;
-    *out = *reinterpret_cast<const T*>(base + off);
-    return true;
-}
+bool readAt(int base, int off, T* out) { return saferead::readAt<T>(SiteInv3d, static_cast<uintptr_t>(static_cast<unsigned>(base)), off, out); }
 
 // ---- configuration: $GAME/inv3d.ini (missing/garbage = defaults; every key and rejected line logged) ----
 struct Ov { bool set; float v[5]; };  // rx,ry,rz,pitch[,zoom]
@@ -288,38 +265,23 @@ Slot* claimSlot(int panel) {
     }
     return pick;
 }
-int modelCount(unsigned char* view) {
-    int n = -1;
-    if (!readAt<int>(reinterpret_cast<int>(view), ModelCountOffset, &n)) return -1;
-    return n;
-}
-
-// ---- Gob access with the vtable guard (Design 8) ----
-void* getModel(unsigned char* view, int idx) {
-    return reinterpret_cast<GetModelFn>(FnGetModel)(view + SceneOffset, idx);
-}
+// ---- Gob access with the vtable guard (Design 8; checks in SceneView.h gobCheck, log lines kept here) ----
 bool gobGuard(void* gob, const char* why) {
-    if (!gob || IsBadReadPtr(gob, 0x200)) { logf("GUARD(%s): gob %p unreadable", why, gob); return false; }
-    void** vt = *reinterpret_cast<void***>(gob);
-    if (IsBadReadPtr(vt, 0x10c)) { logf("GUARD(%s): vtable %p unreadable", why, vt); return false; }
-    bool ok = true;
-    for (auto& c : kGobSlots)
-        if (reinterpret_cast<int>(vt[c.off / 4]) != c.addr) {
-            ok = false;
-            if (!g_guardLogged) logf("GUARD(%s): slot 0x%x (%s) = %08x, expected %08x", why, c.off, c.name, (int)vt[c.off / 4], c.addr);
-        }
-    if (!ok && !g_guardLogged) {
+    uint32_t vtv = 0; sceneview::GobSlotCheck ck[sceneview::GobSlotCount]; int bad = 0;
+    int r = sceneview::gobCheck(gob, &vtv, ck, &bad);
+    void* vt = reinterpret_cast<void*>(static_cast<uintptr_t>(vtv));
+    if (r == sceneview::GF_Unknown) { logf("GUARD(%s): engine address table unknown for this exe", why); return false; }
+    if (r == sceneview::GF_Unreadable) { logf("GUARD(%s): gob %p unreadable", why, gob); return false; }
+    if (r == sceneview::GF_VtUnreadable) { logf("GUARD(%s): vtable %p unreadable", why, vt); return false; }
+    if (r == sceneview::GF_None) return true;
+    if (!g_guardLogged) {
+        for (auto& c : ck)
+            if (c.got != c.expect) logf("GUARD(%s): slot 0x%x (%s) = %08x, expected %08x", why, c.off, c.name, c.got, c.expect);
         g_guardLogged = true;
         logf("GUARD: gob vtable %p (expected %08x); first 0x44 slots:", vt, ExpectedGobVtable);
-        dumpMem("gobvt", reinterpret_cast<int>(vt), 0x44);
+        dumpMem("gobvt", static_cast<int>(vtv), 0x44);
     }
-    return ok;
-}
-void gobGetPose(void* gob, float* pos, float* q) {
-    void** vt = *reinterpret_cast<void***>(gob);
-    pos[0] = pos[1] = pos[2] = q[1] = q[2] = q[3] = 0; q[0] = 1;
-    reinterpret_cast<GetVecFn>(vt[0x64 / 4])(gob, pos);
-    reinterpret_cast<GetVecFn>(vt[0x68 / 4])(gob, q);
+    return false;
 }
 
 // ---- presentation ----
@@ -369,7 +331,6 @@ void applyTransform(Slot* s, const char* why) {
     if (n < 2) { dlogf("apply(%s): model count %d < 2, skip", why, n); return; }
     void* gob = getModel(view, 1);
     if (!gobGuard(gob, why)) { p.valid = false; logf("apply(%s): guard failed, presentation off for this item", why); return; }
-    void** vt = *reinterpret_cast<void***>(gob);
     float right[3]; camBasis(right);
     Q qy = qaxis(g_cfg.camUp, p.yaw), qp = qaxis(right, p.pitch);
     Q qr = qaxis(g_cfg.camFwd, p.roll);
@@ -380,14 +341,11 @@ void applyTransform(Slot* s, const char* why) {
     float pos[3];
     for (int k = 0; k < 3; ++k) pos[k] = g_cfg.camPos[k] + g_cfg.camFwd[k] * Deff - rc[k];
     float cur = 0;
-    if (readAt<float>(reinterpret_cast<int>(gob), GobScaleOff, &cur) && cur > 0.01f && cur < 100 && fabsf(cur - p.s) > 1e-6f &&
-        !IsBadWritePtr(reinterpret_cast<char*>(gob) + GobScaleOff, 4)) {
-        *reinterpret_cast<float*>(reinterpret_cast<char*>(gob) + GobScaleOff) = p.s;
+    if (sceneview::gobGetScale(gob, &cur) && cur > 0.01f && cur < 100 && fabsf(cur - p.s) > 1e-6f && sceneview::gobSetScale(gob, p.s)) {
         dlogf("apply(%s): scale %.4f -> %.4f", why, cur, p.s);
     }
-    float o3[3], o4[4];
-    reinterpret_cast<SetPosFn>(vt[0x5C / 4])(gob, o3, pos[0], pos[1], pos[2]);
-    reinterpret_cast<SetOriFn>(vt[0x60 / 4])(gob, o4, q.w, q.x, q.y, q.z);
+    sceneview::gobSetPosition(gob, pos[0], pos[1], pos[2]);
+    sceneview::gobSetOrientation(gob, q.w, q.x, q.y, q.z);
     p.lastYaw = p.yaw; p.lastPitch = p.pitch; p.dirty = false;
     static DWORD lastSpinLog = 0; DWORD nowT = GetTickCount();
     if (strcmp(why, "spin") || nowT - lastSpinLog >= 1000) { if (!strcmp(why, "spin")) lastSpinLog = nowT;
@@ -406,16 +364,16 @@ void setupPresentation(Slot* s, int row, int var, int cat, const FitEntry* fe) {
     if (!g_cfg.enabled) { logf("  presentation disabled (enabled=0)"); return; }
     if (!gob) { logf("  no item gob, skip"); return; }
     if (!gobGuard(gob, "setup")) return;
-    void** vt = *reinterpret_cast<void***>(gob);
-    logf("  gob vtable=%08x (expect %08x)", (int)vt, ExpectedGobVtable);
-    void* par = reinterpret_cast<GetParentFn>(vt[0x108 / 4])(gob, -1);
-    float pos[3], q[4]; gobGetPose(gob, pos, q);
-    float sc = -1; readAt<float>(reinterpret_cast<int>(gob), GobScaleOff, &sc);
+    int vt = 0; readAt<int>(reinterpret_cast<int>(gob), 0, &vt);
+    logf("  gob vtable=%08x (expect %08x)", vt, ExpectedGobVtable);
+    void* par = nullptr; sceneview::gobGetParent(gob, &par, -1);
+    float pos[3], q[4]; sceneview::gobGetPose(gob, pos, q);
+    float sc = -1; sceneview::gobGetScale(gob, &sc);
     logf("  parent=%p (expect 0) pos=(%.3f %.3f %.3f) quat=(%.3f %.3f %.3f %.3f) scale=%.3f", par, pos[0], pos[1], pos[2], q[0], q[1], q[2], q[3], sc);
     if (par) { logf("  item has an attached parent (%p): presentation skipped (rig hooks in play)", par); return; }
     void* g0 = getModel(view, 0);
-    if (g0 && gobGuard(g0, "rig")) { float p0[3], q0[4]; gobGetPose(g0, p0, q0); logf("  rig gob=%p pos=(%.3f %.3f %.3f) quat=(%.3f %.3f %.3f %.3f)", g0, p0[0], p0[1], p0[2], q0[0], q0[1], q0[2], q0[3]); }
-    int camv = 0, cam = 0; readAt<int>(reinterpret_cast<int>(view), CameraOffset, &cam); if (cam) readAt<int>(cam, 0, &camv);
+    if (g0 && gobGuard(g0, "rig")) { float p0[3], q0[4]; sceneview::gobGetPose(g0, p0, q0); logf("  rig gob=%p pos=(%.3f %.3f %.3f) quat=(%.3f %.3f %.3f %.3f)", g0, p0[0], p0[1], p0[2], q0[0], q0[1], q0[2], q0[3]); }
+    uint32_t camv = 0, cam = 0; sceneview::camera(view, &cam, &camv);
     logf("  camera=%08x vtable=%08x (expect %08x) rigFallback=%d", cam, camv, ExpectedCamVtable, s->rigFallback);
 
     if (cat == 4) {
@@ -459,10 +417,10 @@ BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
     return TRUE;
 }
 // ---- mouse wheel: subclass the game window (only consumes wheel events over the 3D view while the inventory ticks) ----
-// Engine framebuffer size (Aspyr globals 0x009F42A4/0x009F42A8, same ones BuffDurationHUD reads): used unless the INI sets screen_w/screen_h explicitly.
+// Engine framebuffer size (gameaddr::ScreenW/ScreenH, same ones BuffDurationHUD reads): used unless the INI sets screen_w/screen_h explicitly.
 void syncScreen() {
     if (g_cfg.screenExplicit) return;
-    int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
+    int w = 0, h = 0; readAt<int>(static_cast<int>(gameaddr::ScreenW), 0, &w); readAt<int>(static_cast<int>(gameaddr::ScreenH), 0, &h);
     if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
 WNDPROC g_oldProc = nullptr;
@@ -472,6 +430,7 @@ volatile LONG g_viewRect[4] = {0, 0, 0, 0};  // engine px [L, top(after flip), W
 int g_wheelLogs = 0;
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
+        saferead::beginScope();
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
@@ -588,25 +547,17 @@ void bindCover(int panel, const char* tagName, int expectId) {
 } // namespace
 
 extern "C" void __cdecl BindInventoryView(int panel) {
+    saferead::beginScope();   // engine code ran since the last hook: drop the readable-region cache
     int ctlCount = -1; readAt<int>(panel, 0x28, &ctlCount);
-    int gate = 0; readAt<int>(GateGlobal, 0, &gate);
+    int gate = 0; sceneview::gateOpen(&gate);
     int stackLocal = 0;
     logf("H1 BindInventoryView panel=%08x controls=%d gate=%d stack=%p", panel, ctlCount, gate, &stackLocal);
     if (!panel) { logf("H1: null panel, abort"); return; }
 
-    unsigned char* block = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(BlockSize));
+    // alloc 0x400 + CSWGuiControl ctor + scene-view vtable + scene ctor + InitControl("3D_MODEL", addToList=1, scale=1)
+    unsigned char* block = sceneview::createView(static_cast<uintptr_t>(static_cast<unsigned>(panel)), "3D_MODEL");
     if (!block) { logf("H1: operator new failed"); return; }
-    memset(block, 0, BlockSize);
     unsigned char* view = block;
-
-    reinterpret_cast<Fast1>(FnControlCtor)(view);
-    *reinterpret_cast<void**>(view) = reinterpret_cast<void*>(ViewVftable);
-    reinterpret_cast<Fast1>(FnSceneCtor)(view + SceneOffset);
-
-    char tag[16] = {0};
-    reinterpret_cast<CExoCtor>(FnExoCtor)(tag, "3D_MODEL");
-    reinterpret_cast<InitCtl>(FnInitControl)(reinterpret_cast<void*>(panel), view, tag, 1, 1);
-    reinterpret_cast<CExoDtor>(FnExoDtor)(tag);
 
     int id = -999, newCount = -1; int ext[4] = {0};
     readAt<int>(reinterpret_cast<int>(view), 0x54, &id);
@@ -623,30 +574,23 @@ extern "C" void __cdecl BindInventoryView(int panel) {
     if (id != ExpectedControlId) { logf("H1: GUI control missing (id=%d), slot unusable", id); return; }
     if (!gate) { logf("H1: gate global 009f42b4 is zero, slot unusable"); return; }
 
-    int scene = 0;
-    if (!readAt<int>(reinterpret_cast<int>(view), SceneObjOffset, &scene) || !scene || IsBadReadPtr(reinterpret_cast<void*>(scene), 4)) {
-        logf("H1: scene pointer bad (%08x), slot unusable", scene); return;
-    }
-    void** vt = *reinterpret_cast<void***>(scene);
-    if (IsBadReadPtr(vt + 0x70 / 4, 4)) { logf("H1: scene vtable bad, slot unusable"); return; }
-    float pos[3] = {0, 0, 0}, quat[4] = {0, 0, 0, 1};
-    reinterpret_cast<SceneInit>(vt[0x70 / 4])(reinterpret_cast<void*>(scene), "gui3D_room", pos, quat);
-    logf("H1: scene %08x initialised (gui3D_room)", scene);
+    uintptr_t scene = 0;
+    int sf = sceneview::initScene(view, "gui3D_room", &scene);
+    if (sf == sceneview::SF_VtableBad) { logf("H1: scene vtable bad, slot unusable"); return; }
+    if (sf != sceneview::SF_None) { logf("H1: scene pointer bad (%08x), slot unusable", (unsigned)scene); return; }
+    logf("H1: scene %08x initialised (gui3D_room)", (unsigned)scene);
 
     const char* rig = g_cfg.enabled ? g_cfg.rig : "upgitem_light";
     void* light = nullptr; int n = -1;
     for (int attempt = 0; attempt < 2; ++attempt) {
-        char tag2[16] = {0};
-        reinterpret_cast<CExoCtor>(FnExoCtor)(tag2, rig);
-        light = reinterpret_cast<ThisCall2>(FnAddModel)(view + SceneOffset, tag2, -1);
-        reinterpret_cast<CExoDtor>(FnExoDtor)(tag2);
+        light = sceneview::addModel(view, rig, -1);
         n = modelCount(view);
         logf("H1: rig '%s' model=%p, scene model count=%d", rig, light, n);
         if (light && n >= 1) break;
         if (attempt == 0 && strcmp(rig, "upgitem_light")) { logf("H1: rig '%s' failed, falling back to upgitem_light", rig); rig = "upgitem_light"; s->rigFallback = true; }
     }
     if (!light || n < 1) { logf("H1: light model missing, slot unusable"); return; }
-    int cam = 0, camv = 0; readAt<int>(reinterpret_cast<int>(view), CameraOffset, &cam); if (cam) readAt<int>(cam, 0, &camv);
+    uint32_t cam = 0, camv = 0; sceneview::camera(view, &cam, &camv);
     logf("H1: camera=%08x vtable=%08x (expect %08x)", cam, camv, ExpectedCamVtable);
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
     s->usable = true;
@@ -654,6 +598,7 @@ extern "C" void __cdecl BindInventoryView(int panel) {
 }
 
 extern "C" void __cdecl ShowItem(int item, int panel) {
+    saferead::beginScope();
     static int repeatLogs = 0, detailLogs = 0;
     Slot* s = findSlot(panel);
     if (!s) { logf("H2: no slot for panel=%08x", panel); return; }
@@ -676,7 +621,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
     int n = modelCount(view);
     s->p.valid = false; s->p.dragging = false;
     if (cat == 0) {
-        if (n >= 2) reinterpret_cast<Remove>(FnRemoveModel)(view + SceneOffset, 1, 1);
+        if (n >= 2) { sceneview::removeModel(view, 1, true); saferead::beginScope(); }
         s->lastItem = item; s->lastBase = id; s->lastVar = var;
         logf("H2: item %08x base=%d var=%04x cat=0 (no preview), models %d -> %d", item, id, var, n, modelCount(view));
         return;
@@ -688,11 +633,11 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
     int savedVarWord = 0; bool haveSaved = readAt<int>(item, ItemVarOff, &savedVarWord);
     struct VarGuard {   // restores the real item's variation word on every exit path (never leave the live CItem mutated)
         int item; int saved; bool armed;
-        ~VarGuard() { if (armed && !IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4)) *reinterpret_cast<int*>(item + ItemVarOff) = saved; }
+        ~VarGuard() { if (armed && saferead::probeWrite(SiteInv3d, reinterpret_cast<void*>(item + ItemVarOff), 4)) *reinterpret_cast<int*>(item + ItemVarOff) = saved; }
     } guard = {item, savedVarWord, false};
     const FitEntry* fe = (cat == 2) ? fitLookup(id, v0) : nullptr;
     auto subst = [&](const char* why) {
-        if (!haveSaved || IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4)) { logf("H2: cannot substitute (%s): item bytes unwritable", why); return false; }
+        if (!haveSaved || !saferead::probeWrite(SiteInv3d, reinterpret_cast<void*>(item + ItemVarOff), 4)) { logf("H2: cannot substitute (%s): item bytes unwritable", why); return false; }
         *reinterpret_cast<unsigned char*>(item + ItemVarOff) = 1;
         guard.armed = true; effVar = 1; substituted = true; fe = fitLookup(id, 1);
         logf("H2: substituting var %d -> 1 (%s), item %08x", v0, why, item);
@@ -705,6 +650,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         *reinterpret_cast<int*>(view + FakeItemBlockOff) = item;
         reinterpret_cast<Render>(FnRender)(view - FakeThisDelta);
         *reinterpret_cast<int*>(view + FakeItemBlockOff) = 0;
+        saferead::beginScope();   // the render created/freed scene models: drop the readable-region cache
     };
     doRender();
     int n2 = modelCount(view);
@@ -712,7 +658,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
         logf("H2: model count did not grow (%d), retrying with var 1", n2);
         if (subst("no model after render")) { doRender(); n2 = modelCount(view); }
     }
-    if (guard.armed) { guard.armed = false; if (!IsBadWritePtr(reinterpret_cast<void*>(item + ItemVarOff), 4)) *reinterpret_cast<int*>(item + ItemVarOff) = savedVarWord; }  // restore all 4 bytes (guard covers early exits)
+    if (guard.armed) { guard.armed = false; if (saferead::probeWrite(SiteInv3d, reinterpret_cast<void*>(item + ItemVarOff), 4)) *reinterpret_cast<int*>(item + ItemVarOff) = savedVarWord; }  // restore all 4 bytes (guard covers early exits)
     if (cat == 2 && n2 < 2) {
         logf("H2: item %08x base=%d var=%04x: still no model after render (count=%d), no preview", item, id, var, n2);
         s->lastItem = item; s->lastBase = id; s->lastVar = var;
@@ -725,6 +671,7 @@ extern "C" void __cdecl ShowItem(int item, int panel) {
 }
 
 extern "C" void __cdecl InventoryTick(int panel) {
+    saferead::beginScope();
     static int calls = 0;
     if (!g_qpcFreq.QuadPart) { QueryPerformanceFrequency(&g_qpcFreq); QueryPerformanceCounter(&g_qpcLast); }
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
@@ -765,6 +712,6 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
         reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
         SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
     }
-    if (reason == DLL_PROCESS_ATTACH) { logf("inv3d v2 loaded"); loadIni(); }
+    if (reason == DLL_PROCESS_ATTACH) { logf("inv3d v2 0.2.1-dev loaded (Common SafeRead + SceneView)"); loadIni(); }
     return TRUE;
 }

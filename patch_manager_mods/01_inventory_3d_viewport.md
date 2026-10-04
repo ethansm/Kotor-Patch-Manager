@@ -1,5 +1,7 @@
 # Mod Idea 1: Inventory 3D Viewport
 
+**RESUME HERE (2026-10-03): 0.2.1-dev = behaviour-neutral migration onto Common `SafeRead.h` + `SceneView.h` + GameAddr names (doc 23). KPM `6544ac5 0beffc1 f1b68d3 2391b5c`; all gates PASS; STAGED in `$TOOL/inv3d_stage_1003` (STAGE_INFO head=2391b5c), NOT installed. Live is still 0.2.0-dev `f0eba5be`. On the user's OK: DLL swap with .bak (doc 23 "Next action"), then the in-game regression check and an `inv3d_log.txt` read (copy it first) against the old lines. Only expected log change: the load line `inv3d v2 0.2.1-dev loaded (Common SafeRead + SceneView)`.**
+
 **Status (2026-09-30): Mod 1 v2 (0.2.0-dev) is COMPLETE and ACCEPTED by the user ("this initial phase of the mod is excellent"). Live, 17-id install. Final commits `ff2870f 3f0b561 b1b2d0e c3740e6 de64e60 40839b2 bec307d`. Read "v2 live test — READ THIS FIRST" and "v2 build" below. Verbose logging (`inv3d_debug.txt`) is still ON; Phase 6 (trim logging) was NOT done. NEXT (separate mod effort): equipment-page live 3D character, see "Future: equipment-page 3D character" and the research plan referenced there.**
 
 ## v2 live test — READ THIS FIRST (2026-09-29/30)
