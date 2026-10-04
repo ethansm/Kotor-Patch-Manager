@@ -102,6 +102,16 @@ int main() {
         LCHECK("ctl flag 0x40 is a change", guitip::probeChanged(last, g, 0x10, 0x40));
     }
 
+    // ---- SafeRead: every hook starts with beginScope(); readCreatureTag / pending reads / R10 frame reads (ushort feat ids) go through readAt ----
+    {
+        uintptr_t b = arenaAlloc(32); at<uint32_t>(b, 4) = 0xCAFEF00D; at<uint16_t>(b, 8) = 0xFFFE;
+        saferead::beginScope();
+        uint32_t v = 0; unsigned short us = 0;
+        LCHECK("readAt delivers a uint32 and a ushort (featId) from readable memory", saferead::readAt(1u, b, 4, &v) && v == 0xCAFEF00Du && saferead::readAt<unsigned short>(1u, b, 8, &us) && us == 0xFFFE);
+        v = 7; LCHECK("readAt on base 0 / below 0x10000 is a miss that leaves the pre-seeded value", !saferead::readAt(1u, 0, 0x68, &v) && !saferead::readAt(1u, 0x20, 0, &v) && v == 7);
+        LCHECK("probeRead rejects null (readCreatureTag treats it as empty tag = PC)", !saferead::probeRead(1u, nullptr, 4) && saferead::probeRead(1u, reinterpret_cast<const void*>(b), 16));
+    }
+
     // ---- GuiKit helpers the UI uses ----
     LEQ("panel control list pointer / count offsets 0x24 / 0x28", guikit::Panel_CtlArray * 100 + guikit::Panel_CtlCount, 0x24 * 100 + 0x28);
     LEQ("control flags offset 0x48 (bit1 visible, bit5 click-through)", guikit::Ctl_Flags, 0x48);
