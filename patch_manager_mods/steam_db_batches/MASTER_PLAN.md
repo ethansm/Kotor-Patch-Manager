@@ -19,7 +19,7 @@ the user directs PR 5). User decisions: mod-demand order, then Phase E and the P
 | P5 | B12a CSWSCreature lower half | SHIPPED (branch db4f5cf, +171; 3,420 rows) | README B12a |
 | P6 | B13a CSWCCreature: Opus gate+consolidation, then ship | Opus running at handoff | B13a/ |
 | P7 | B10a CSWSObject+CSWCObject: Opus gate+consolidation, then ship | Opus running at handoff | B10a/ |
-| P8 | B11b CGuiInGame+CSWGuiMainInterface: Opus a/b (c+r done), consolidation, ship | Opus a/b running | B11b/ |
+| P8 | B11b CGuiInGame+CSWGuiMainInterface: consolidation (summary, lessons, ledger side file, AUTO rotation audit; GOG labels heavily rotated), then ship | Opus a/b/c/r DONE (sample_errors a 2, b 0, c 0 -> finalize --opus-sample-errors 2) | B11b/ |
 | P9 | Ledger + audit catch-up: append B13a/B10a/B11b `gog_ledger_section.md` to GOG_LABEL_SUSPECTS.md; `mod_audit.py` re-run + diff; report label findings to the user | TODO | mod_audit/ |
 | P10 | Phase E-1: scripted same-name Mac-score sweep over all AUTO rows of B12b/B16/B11a/B13a/B10a/B11b; Opus reads low scorers; fix via overrides / KDB renames (B12a lesson) | TODO | - |
 | P11 | Phase E-2: `check-validated --out`; Opus final review of branch commits since c9a58bd (evidence pointer per row, validate, no dup, ICF folds documented) | TODO | - |
