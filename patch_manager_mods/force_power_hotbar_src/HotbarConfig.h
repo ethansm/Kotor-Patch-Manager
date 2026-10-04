@@ -227,6 +227,7 @@ struct General {
     int keyboardDevice = -1;      // -1 = read the engine's constant (0x0099C884)
     int healThreshold = 50;       // 1..100: "@lowhp" slots only target a member below this HP%
     int healFallbackSelf = 1;     // when nobody is below the threshold: 1 = use on self, 0 = do nothing
+    int syncActionBar = 1;        // 1 = resync the vanilla action bar (stance/form icons) after an AI stance or form change, 0 = off
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
 };
 
@@ -321,6 +322,10 @@ struct Config {
                     char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
                     if (val.empty() || *e || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%.60s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }
                     else general.healThreshold = (int)n;
+                } else if (k == "syncactionbar") {
+                    char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
+                    if (val.empty() || *e || (n != 0 && n != 1)) { snprintf(msg, sizeof msg, "line %d: SyncActionBar '%.60s' must be 0 or 1", lineNo, val.c_str()); warnings.push_back(msg); }
+                    else general.syncActionBar = (int)n;
                 } else if (k == "healfallback") {
                     std::string v = lower(val);
                     if (v == "self") general.healFallbackSelf = 1; else if (v == "none") general.healFallbackSelf = 0;
@@ -361,6 +366,7 @@ struct Config {
         snprintf(b, sizeof b, "AutoFill=%d\n", general.autoFill); o += b;
         snprintf(b, sizeof b, "HealThreshold=%d\n", general.healThreshold); o += b;
         o += general.healFallbackSelf ? "HealFallback=self\n" : "HealFallback=none\n";
+        snprintf(b, sizeof b, "SyncActionBar=%d\n", general.syncActionBar); o += b;
         if (general.keyboardDevice >= 0) { snprintf(b, sizeof b, "KeyboardDevice=%d\n", general.keyboardDevice); o += b; }
         for (auto& kv : general.extra) o += kv.first + "=" + kv.second + "\n";
         auto emit = [&](const Profile& p) {

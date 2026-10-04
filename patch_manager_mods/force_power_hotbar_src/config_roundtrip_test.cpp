@@ -126,6 +126,11 @@ int main(){
       t.thresholdPct=30; t.fallback=1;
       KT_CHECK_EQ(effectiveThreshold(t,g),30); KT_CHECK(effectiveFallbackSelf(t,g));
       t.fallback=0; g.healFallbackSelf=1; KT_CHECK(!effectiveFallbackSelf(t,g)); } }
+  { Config a; a.Parse("[General]\nInvoke=1\n"); KT_CHECK(a.warnings.empty()); KT_CHECK_EQ(a.general.syncActionBar,1);
+    Config z; z.Parse("[General]\nSyncActionBar=0\n"); KT_CHECK(z.warnings.empty()); KT_CHECK_EQ(z.general.syncActionBar,0);
+    std::string oz=z.Serialize(); KT_CHECK(oz.find("SyncActionBar=0\n")!=std::string::npos);
+    Config z2; z2.Parse(oz); KT_CHECK(z2.warnings.empty()); KT_CHECK_EQ(z2.general.syncActionBar,0); KT_CHECK(z2.general.extra.empty());
+    Config bad; bad.Parse("[General]\nSyncActionBar=2\n"); KT_CHECK_EQ(bad.warnings.size(),1); KT_CHECK_EQ(bad.general.syncActionBar,1); }
   { Config g; g.Parse("[General]\nHealThreshold=35\nHealFallback=NONE\n");
     KT_CHECK(g.warnings.empty()); KT_CHECK_EQ(g.general.healThreshold,35); KT_CHECK_EQ(g.general.healFallbackSelf,0);
     std::string o=g.Serialize(); KT_CHECK(o.find("HealThreshold=35\n")!=std::string::npos); KT_CHECK(o.find("HealFallback=none\n")!=std::string::npos);

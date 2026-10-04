@@ -35,6 +35,8 @@ KP_LOG_PATCH("force-power-hotbar");   // == manifest id
 namespace {
 
 // ---- addresses (Steam) -----------------------------------------------------------------------------
+constexpr uintptr_t HudSyncStance = 0x0074DA40;       // fastcall(ECX=hud), no stack args, plain RET: resyncs hud+0x1C8C (stance) / +0x1C90 (form) from the creature; vanilla callers 0x74D0E1 char switch, 0x7CA0E8 HideSWInGameGui, 0x751BCB arrow release
+constexpr int Hud_ArrowCycle = 0x15414;               // int != 0 while an arrow-cycle is in progress
 constexpr uintptr_t HudInvokeGroup = 0x00751750;      // thiscall(hud, group 0..6, 0) RET 8
 constexpr uintptr_t KeyboardDeviceGlobal = gameaddr::KeyboardDeviceGlobal; // rdata constant 0 (device-array index); verify live
 constexpr uintptr_t AppGlobal = gameaddr::AppGlobal;           // *(app)+4 -> A ; FUN_0073fb90(A) = *(*(A+4)+0x270)
@@ -129,7 +131,8 @@ void logChunks(::kplog::Channel& ch, int lvl, const char* tag, const std::string
 
 // saferead site ids (per DLL; the ring buffer reports them). 0x4800-0x48FF belong to this mod.
 enum Site : unsigned { S_Hud = 0x4801, S_Entry, S_Ctl, S_Border, S_Geom, S_Create, S_Save, S_Tex, S_Input, S_Misc, S_Aspect, S_Proj, S_Target,
-                       S_WrSel, S_WrActive, S_WrProjSet, S_WrProjRestore };   // 0x480E..0x4811: probeWrite sites
+                       S_WrSel, S_WrActive, S_WrProjSet, S_WrProjRestore,   // 0x480E..0x4811: probeWrite sites
+                       S_Mode };   // 0x4812: stance/form watch reads
 
 int rdInt(unsigned site, uintptr_t base, int off, int dflt = 0) { int v; return saferead::readAt(site, base, off, &v) ? v : dflt; }
 
@@ -411,6 +414,20 @@ bool resolve(uintptr_t hud, const hb::ActionRef& want, Entry* out) {
     return false;
 }
 
+// ---- stance / form watch (vanilla resyncs the action bar only on char switch / panel close / arrow release) ----
+hb::ModeWatch g_modeWatch;
+bool readMode(uintptr_t& s, int& stance, uint32_t& form) {
+    s = 0; stance = 0; form = 0;
+    uintptr_t c = controlledCreature();
+    if (!c) return false;
+    s = party::serverCreature(c);
+    uint32_t stats = 0, rawForm = 0; uint16_t st = 0;
+    if (!s || !saferead::readAt(S_Mode, s, 0x1198, &stats) || !stats || !saferead::readAt(S_Mode, stats, 0x146, &st) || !saferead::readAt(S_Mode, s, 0x1110, &rawForm)) return false;
+    stance = (int)st; form = rawForm;
+    return true;
+}
+void resyncActionBar(uintptr_t hud) { reinterpret_cast<void(__fastcall*)(void*)>(HudSyncStance)(reinterpret_cast<void*>(hud)); }
+
 void invokeEntry(uintptr_t hud, const Entry& e) {
     int* sel = reinterpret_cast<int*>(hud + Hud_GroupSel + e.group * 4);
     int* active = reinterpret_cast<int*>(hud + Hud_ActiveGroup);
@@ -424,6 +441,12 @@ void invokeEntry(uintptr_t hud, const Entry& e) {
     if (*sel == e.key) { *sel = oldSel; KP_LOG(chSlots, "invoke: selection restored to %08x", (unsigned)oldSel); }
     else KP_LOGV(chSlots, KPLOG_WARN, "invoke: selection changed by the game to %08x, NOT restoring", (unsigned)*sel);
     *active = oldActive;
+    if ((e.group == 4 || e.group == 5) && g_cfg.general.syncActionBar) {   // our restore of the old key leaves the stance/form group stale
+        resyncActionBar(hud);
+        KP_LOG(chSlots, "actionbar: resync after invoke group=%d", e.group);
+        uintptr_t s; int stance; uint32_t form; bool ok = readMode(s, stance, form);
+        hb::modeChanged(g_modeWatch, (uint32_t)s, stance, form, ok);   // re-record so the tick does not resync again for this edge
+    }
 }
 
 // "@lowhp" item slot: pick the party member with the lowest HP% and use the item on them via the game's own PerformUseItem.
@@ -1635,6 +1658,16 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
         lastCreature = cr; lastOid = oid;
         std::string k = same ? g_charKey : computeCharacterKey();
         if (k != g_charKey) { KP_LOG(chChar, "character: '%s' -> '%s'", g_charKey.c_str(), k.c_str()); g_charKey = k; g_charChangeTick = GetTickCount(); recomputeBound(); charChanged = true; }
+    }
+    if (gate && g_cfg.general.syncActionBar && rdInt(S_Mode, hud, Hud_ArrowCycle, 1) == 0) {
+        uintptr_t s; int stance; uint32_t form; bool ok = readMode(s, stance, form);
+        static bool warned = false;
+        if (!ok && !warned) { warned = true; KP_LOGV(chSlots, KPLOG_WARN, "actionbar: stance/form read failed (creature/server/stats unreadable); watch idle until it recovers"); }
+        int oldSt = g_modeWatch.stance; uint32_t oldForm = g_modeWatch.form;
+        if (hb::modeChanged(g_modeWatch, (uint32_t)s, stance, form, ok)) {
+            KP_LOG(chSlots, "actionbar: stance %d->%d form %08x->%08x -> resync (0x74DA40)", oldSt, stance, (unsigned)oldForm, (unsigned)hb::maskForm(form));
+            resyncActionBar(hud);
+        }
     }
     if (charChanged || g_frame % ButtonRefreshFrames == 1 || g_frame == 2) refreshEffective(hud);
     updateButtons(hud, gate);
