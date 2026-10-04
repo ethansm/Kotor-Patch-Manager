@@ -179,6 +179,22 @@ int main() {
         g_gk.gameForeground = nullptr; KT_CHECK(!clickEdge(ce));
         g_gk.gameForeground = [] { return true; }; g_gk.lbuttonDown = nullptr;
         KT_CHECK(!clickEdge(ce));
+
+        // rclickEdge (same cases; independent of the left button)
+        static bool rdn = false;
+        g_gk.gameForeground = [] { return fg; }; g_gk.lbuttonDown = [] { return dn; }; g_gk.rbuttonDown = [] { return rdn; };
+        fg = true; dn = false; ClickEdge re;
+        KT_CHECK(!rclickEdge(re));
+        dn = true; KT_CHECK(!rclickEdge(re));                         // left button does not fire right edge
+        rdn = true; KT_CHECK(rclickEdge(re));
+        KT_CHECK(!rclickEdge(re)); KT_CHECK(!rclickEdge(re));         // held: fires once
+        rdn = false; KT_CHECK(!rclickEdge(re));
+        rdn = true; KT_CHECK(rclickEdge(re));                         // new press fires again
+        fg = false; KT_CHECK(!rclickEdge(re)); KT_CHECK(!re.prev);    // lost focus counts as up
+        fg = true; KT_CHECK(rclickEdge(re));                          // press that resumes in foreground re-fires
+        g_gk.gameForeground = nullptr; KT_CHECK(!rclickEdge(re));
+        g_gk.gameForeground = [] { return true; }; g_gk.rbuttonDown = nullptr;
+        KT_CHECK(!rclickEdge(re));
         g_gk = saved;
     }
     return kt::Report("guikit_test");

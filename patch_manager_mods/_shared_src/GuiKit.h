@@ -87,6 +87,7 @@ struct Engine {
     bool (*cursorClient)(int* cx, int* cy, int* cw, int* ch) = nullptr;   // cursor in game-window client px + client size; false = none
     bool (*gameForeground)() = nullptr;                                   // game window is the foreground window of this process
     bool (*lbuttonDown)() = nullptr;                                      // GetAsyncKeyState(VK_LBUTTON) & 0x8000
+    bool (*rbuttonDown)() = nullptr;                                      // GetAsyncKeyState(VK_RBUTTON) & 0x8000
 
     Engine() { rebind(); }
     // Re-point the engine-call and global-address fields at the current K2Addr.h table (also resets test fakes in those fields).
@@ -376,6 +377,13 @@ inline bool clickEdge(ClickEdge& e) {
     e.prev = down;
     return click;
 }
+// Same as clickEdge for the right mouse button (own ClickEdge state per button).
+inline bool rclickEdge(ClickEdge& e) {
+    bool down = g_gk.gameForeground && g_gk.rbuttonDown && g_gk.gameForeground() && g_gk.rbuttonDown();
+    bool click = down && !e.prev;
+    e.prev = down;
+    return click;
+}
 // The native quick-button mouse-enter sound (Mod 3 playHoverSound 608). False when the sound manager is null.
 inline bool playHoverSound() {
     uint32_t mgr = 0;
@@ -422,7 +430,8 @@ inline bool winForeground() {
     return pid == GetCurrentProcessId();
 }
 inline bool winLButton() { return (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0; }
-struct InstallPlatform { InstallPlatform() { g_gk.cursorClient = winCursorClient; g_gk.gameForeground = winForeground; g_gk.lbuttonDown = winLButton; } };
+inline bool winRButton() { return (GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0; }
+struct InstallPlatform { InstallPlatform() { g_gk.cursorClient = winCursorClient; g_gk.gameForeground = winForeground; g_gk.lbuttonDown = winLButton; g_gk.rbuttonDown = winRButton; } };
 inline InstallPlatform g_installPlatform;
 }
 #endif

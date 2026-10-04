@@ -14,3 +14,6 @@ cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HO
 
 [codepatch_test]
 cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+[heal_items_test]
+cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
