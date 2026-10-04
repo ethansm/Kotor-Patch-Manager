@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "FileWatch.h"   // filewatch::atomicWrite / stamp (Patches/Common; pulls in windows.h on Win32)
 
 namespace hb {
@@ -18,6 +19,18 @@ constexpr int SchemaVersion = 1;
 
 // Key digit shown for a slot (0..8 -> '1'..'9', 9 -> '0'); '?' for anything out of range.
 inline char slotDigit(int slot) { return (slot >= 0 && slot < 10) ? "1234567890"[slot] : '?'; }
+
+// Row/slot index validity: every indexed accessor below checks this (negative or == count is out of range).
+inline bool validSlot(int row, int slot) { return row >= 0 && row < Rows && slot >= 0 && slot < Slots; }
+
+// Strict base-10 int32 parse (explicit 32-bit limits: the DLL is 32-bit but host `long` is 64-bit). Optional leading '-'/'+',
+// digits only, no trailing junk, no empty string, no overflow.
+inline bool parseInt32(const std::string& v, int* out) {
+    if (v.empty()) return false;
+    errno = 0; char* e = nullptr; long long n = strtoll(v.c_str(), &e, 10);
+    if (*e || e == v.c_str() || errno == ERANGE || n < -2147483647LL - 1 || n > 2147483647LL) return false;
+    *out = (int)n; return true;
+}
 
 // Row name used in INI keys ("Bottom1".."Bottom0") + required modifier (0 none).
 struct RowDef { const char* name; int modifier; };
@@ -61,13 +74,15 @@ inline std::string normalizeItemName(const std::string& s) {
 }
 
 // Item stack count from a HUD entry: the engine formats item names "%s (%d)" only when the stack is > 1 (FUN_0074CF00).
-// Returns 0 for non-items (key bit 0x40000000 clear) and for names without a trailing " (<digits>)".
+// Returns 0 for non-items (key bit 0x40000000 clear), for names without a trailing " (<digits>)" (no sign/spaces inside the
+// parens), for "(0)" (the engine only prints counts > 1) and for more than 6 digits (not a plausible stack).
 inline int StackCount(int key, const std::string& name) {
     if (!(key & 0x40000000) || name.size() < 4 || name.back() != ')') return 0;
     size_t p = name.rfind(" (");
     if (p == std::string::npos || p + 3 > name.size() - 1) return 0;
     int n = 0;
-    for (size_t i = p + 2; i < name.size() - 1; ++i) { if (name[i] < '0' || name[i] > '9' || n > 100000) return 0; n = n * 10 + (name[i] - '0'); }
+    if (name.size() - 1 - (p + 2) > 6) return 0;
+    for (size_t i = p + 2; i < name.size() - 1; ++i) { if (name[i] < '0' || name[i] > '9') return 0; n = n * 10 + (name[i] - '0'); }
     return n;
 }
 
@@ -142,14 +157,15 @@ inline bool Parse(const std::string& text, ActionRef* out) {
     if (v.empty()) return false;
     char* end = nullptr;
     if (k == "spell" || k == "feat") {
-        long n = strtol(v.c_str(), &end, 10);
-        if (*end || n < 0) return false;
+        int n = 0;
+        if (!parseInt32(v, &n) || n < 0) return false;   // 0..INT32_MAX
         out->kind = (k == "spell") ? K_Spell : K_Feat; out->id = (int)n; out->target = ts; return true;
     }
     if (k == "other") {
-        unsigned long n = strtoul(v.c_str(), &end, 16);
-        if (*end) return false;
-        out->kind = K_Other; out->id = (int)n; out->target = ts; return true;
+        if (v[0] == '-' || v[0] == '+') return false;   // strtoull would wrap a '-'
+        errno = 0; unsigned long long n = strtoull(v.c_str(), &end, 16);
+        if (*end || end == v.c_str() || errno == ERANGE || n > 0xFFFFFFFFULL) return false;   // 32-bit raw key
+        out->kind = K_Other; out->id = (int)(unsigned)n; out->target = ts; return true;
     }
     if (k == "item") { out->kind = K_Item; out->name = normalizeItemName(v); out->target = ts; return !out->name.empty(); }
     return false;
@@ -163,6 +179,7 @@ inline bool Same(const ActionRef& a, const ActionRef& b) {
 
 // "Bottom1".."Bottom9","Bottom0" etc.
 inline std::string SlotKeyName(int row, int slot) {
+    if (!validSlot(row, slot)) return "";
     char b[24]; snprintf(b, sizeof b, "%s%d", kRows[row].name, (slot + 1) % 10); return b;
 }
 inline bool SlotFromKeyName(const std::string& key, int* row, int* slot) {
@@ -233,6 +250,7 @@ struct Config {
     }
     // Per-slot resolution: the character's profile, falling back to Default when the slot is empty/missing.
     ActionRef slotFor(const std::string& characterKey, int row, int slot) const {
+        if (!validSlot(row, slot)) return ActionRef();
         if (!characterKey.empty()) {
             const Profile* p = find(characterKey);
             if (p && (!p->slots[row][slot].empty() || p->slots[row][slot].blank)) return p->slots[row][slot];
@@ -243,6 +261,7 @@ struct Config {
 
     // Editor API: sets (or, with a blank ref, clears) one slot of a profile. note = trailing comment.
     void SetSlot(const std::string& profileName, int row, int slot, const ActionRef& a, const std::string& note) {
+        if (!validSlot(row, slot)) return;   // no write, and no profile created for a bad index
         Profile& p = profile(profileName);
         p.slots[row][slot] = a; p.notes[row][slot] = note;
     }
@@ -264,9 +283,10 @@ struct Config {
         size_t pos = 0; int lineNo = 0;
         if (text.size() >= 3 && (unsigned char)text[0] == 0xEF && (unsigned char)text[1] == 0xBB && (unsigned char)text[2] == 0xBF) pos = 3;
         while (pos <= text.size()) {
-            size_t e = text.find('\n', pos);
+            size_t e = text.find_first_of("\r\n", pos);   // LF, CRLF or a lone CR ends a line
             std::string line = text.substr(pos, e == std::string::npos ? std::string::npos : e - pos);
             pos = (e == std::string::npos) ? text.size() + 1 : e + 1;
+            if (e != std::string::npos && text[e] == '\r' && pos < text.size() && text[pos] == '\n') ++pos;
             ++lineNo;
             std::string note;
             size_t sc = line.find(';');
@@ -289,10 +309,14 @@ struct Config {
             if (inGeneral) {
                 std::string k = lower(key);
                 if (k == "schemaversion") { /* validated on Save only */ }
-                else if (k == "invoke") general.invoke = atoi(val.c_str());
-                else if (k == "verbose") general.verbose = atoi(val.c_str());
-                else if (k == "autofill") general.autoFill = atoi(val.c_str());
-                else if (k == "keyboarddevice") general.keyboardDevice = atoi(val.c_str());
+                else if (k == "invoke" || k == "verbose" || k == "autofill" || k == "keyboarddevice") {
+                    int n = 0;
+                    if (!parseInt32(val, &n)) { snprintf(msg, sizeof msg, "line %d: %s '%s' must be an integer (kept default)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
+                    else if (k == "invoke") general.invoke = n;
+                    else if (k == "verbose") general.verbose = n;
+                    else if (k == "autofill") general.autoFill = n;
+                    else general.keyboardDevice = n;
+                }
                 else if (k == "healthreshold") {
                     char* e = nullptr; long n = strtol(val.c_str(), &e, 10);
                     if (val.empty() || *e || n < 1 || n > 100) { snprintf(msg, sizeof msg, "line %d: HealThreshold '%s' must be 1..100", lineNo, val.c_str()); warnings.push_back(msg); }

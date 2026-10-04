@@ -145,6 +145,123 @@ int main(){
     KT_CHECK(o1.find("Bottom4=item:Adrenal\n")!=std::string::npos);
     KT_CHECK(o1.find("Bottom5=item:A@bogus\n")!=std::string::npos);
     KT_CHECK(o1.find("[Profile.Atton]\nBottom1=spell:22@lowhp:10\n")!=std::string::npos); }
+
+  // ================= hardening (doc 20 4.1): parsing robustness =================
+  static const Profile kNoProf;
+  auto P=[](const Config& c,const char* n)->const Profile&{ const Profile* p=c.find(n); return p?*p:kNoProf; };
+  auto W=[](const std::string& t){ Config c; c.Parse(t); return c; };
+  { // BOM / CRLF / lone CR
+    Config c=W("\xEF\xBB\xBF[General]\nInvoke=0\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0);
+    c=W("[General]\r\nInvoke=0\r\nVerbose=1\r\n[Profile.Default]\r\nBottom1=spell:8 ; hi\r\n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(c.general.verbose,1);
+    KT_CHECK_EQ(P(c,"Default").slots[0][0].id,8); KT_CHECK_EQ(P(c,"Default").notes[0][0].c_str(),"hi");
+    c=W("[General]\rInvoke=0\rVerbose=1\r[Profile.Default]\rBottom1=spell:8\r");   // old-Mac line ends: must not be silently ignored
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(c.general.verbose,1); KT_CHECK_EQ(P(c,"Default").slots[0][0].id,8);
+    c=W("\xEF\xBB\xBF[Profile.Default]\r\nBottom2=feat:3\r\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(P(c,"Default").slots[0][1].id,3);
+    // structure oddities
+    c=W("[General\nInvoke=0\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK_EQ(c.general.invoke,1);   // unterminated section, then the key is outside any section
+    c=W("Invoke=0\n[General]\nVerbose=1\n"); KT_CHECK_EQ(c.warnings.size(),1); KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,1);
+    c=W("[]\nBottom1=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK(c.profiles.empty());
+    c=W("[Profile.]\nBottom1=spell:1\n"); KT_CHECK_EQ(c.warnings.size(),2); KT_CHECK(c.profiles.empty());
+    c=W("[Profile.X]\nBottom1 spell:1\n"); KT_CHECK_EQ(c.warnings.size(),1);   // no '='
+    c=W("# comment\n; other comment\n   # indented\n[General]\n#Invoke=0\n;Verbose=1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,0);
+    c=W("[General]\nInvoke=0\nInvoke=1\nFoo=a\nFoo=b\n[Profile.D]\nBottom1=spell:1\nBottom1=spell:2\n[profile.d]\nBottom1=spell:3\n");   // last wins, profile names case-insensitive
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.extra["Foo"].c_str(),"b");
+    KT_CHECK_EQ(c.profiles.size(),1); KT_CHECK_EQ(P(c,"D").slots[0][0].id,3);
+    c=W("[ General ]\n  Invoke  =  0  \nKeyboardDevice\t=\t3\n[ Profile.Z ]\n Bottom3 =  spell:5  \n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(c.general.keyboardDevice,3); KT_CHECK_EQ(P(c,"Z").slots[0][2].id,5);
+    // KeyboardDevice round trip
+    c=W("[General]\nKeyboardDevice=2\n"); KT_CHECK_EQ(c.general.keyboardDevice,2);
+    std::string o=c.Serialize(); KT_CHECK(o.find("KeyboardDevice=2\n")!=std::string::npos);
+    Config d=W(o); KT_CHECK(d.warnings.empty()); KT_CHECK_EQ(d.general.keyboardDevice,2); KT_CHECK(d.Serialize()==o);
+    c=W("[General]\nKeyboardDevice=0\n"); KT_CHECK_EQ(c.general.keyboardDevice,0); KT_CHECK(c.Serialize().find("KeyboardDevice=0\n")!=std::string::npos);
+    c=W("[General]\nKeyboardDevice=-1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.keyboardDevice,-1); KT_CHECK(c.Serialize().find("\nKeyboardDevice=")==std::string::npos);
+    // documented quirk (NOT fixed): ';' always starts the note, even inside an item name, so such a name is truncated at the ';'.
+    c=W("[Profile.Default]\nBottom1=item:Foo; Bar\n");
+    KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(P(c,"Default").slots[0][0].name.c_str(),"Foo"); KT_CHECK_EQ(P(c,"Default").notes[0][0].c_str(),"Bar");
+  }
+  // ================= strict General ints =================
+  { for(const char* bad:{"Invoke=abc","Verbose=x","AutoFill=y","Invoke=","Verbose=1x","AutoFill=0.5","Invoke=99999999999","KeyboardDevice=abc","KeyboardDevice=","KeyboardDevice=-2x","KeyboardDevice=2147483648"}){
+      Config c=W(std::string("[General]\n")+bad+"\n");
+      if(!KT_CHECK_EQ(c.warnings.size(),1)) printf("  (case %s)\n",bad);
+      KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,0); KT_CHECK_EQ(c.general.autoFill,0); KT_CHECK_EQ(c.general.keyboardDevice,-1); }
+    Config c=W("[General]\nInvoke=0\nVerbose=1\nAutoFill=1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(c.general.verbose,1); KT_CHECK_EQ(c.general.autoFill,1);
+    c=W("[General]\nInvoke=2\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,2);   // any in-range int is kept (callers test != 0)
+    c=W("[General]\nInvoke=abc\nInvoke=0\n"); KT_CHECK_EQ(c.warnings.size(),1); KT_CHECK_EQ(c.general.invoke,0);   // a later good line still applies
+  }
+  // ================= 32-bit range checks (host long is 64-bit; the DLL's is 32-bit) =================
+  { ActionRef r;
+    KT_CHECK(Parse("spell:2147483647",&r)); KT_CHECK_EQ(r.id,2147483647);
+    KT_CHECK(!Parse("spell:2147483648",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("spell:99999999999",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("feat:4294967296",&r)); KT_CHECK(!Parse("feat:99999999999999999999999",&r));
+    KT_CHECK(!Parse("spell:-1",&r));
+    KT_CHECK(Parse("other:ffffffff",&r)); KT_CHECK_EQ(r.kind,K_Other); KT_CHECK_EQ((unsigned)r.id,0xFFFFFFFFu);
+    KT_CHECK_EQ(Format(r).c_str(),"other:ffffffff");
+    KT_CHECK(!Parse("other:100000000",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("other:1ffffffff",&r)); KT_CHECK(r.empty());
+    KT_CHECK(!Parse("other:ffffffffffffffffff",&r));
+    KT_CHECK(!Parse("other:-1",&r)); KT_CHECK(!Parse("other:zz",&r));
+    KT_CHECK(Parse("other:80000000",&r)); KT_CHECK_EQ((unsigned)r.id,0x80000000u); KT_CHECK_EQ(Format(r).c_str(),"other:80000000");
+    Config c=W("[Profile.D]\nBottom1=spell:99999999999\nBottom2=other:1ffffffff\nBottom3=spell:7\n");
+    KT_CHECK_EQ(c.warnings.size(),2); const Profile* p=&P(c,"D");
+    KT_CHECK(p->slots[0][0].empty()); KT_CHECK(p->slots[0][1].empty()); KT_CHECK_EQ(p->slots[0][2].id,7);
+  }
+  // ================= bounds checks =================
+  { Config c=W("[Profile.Default]\nBottom1=spell:8\nBottom0=spell:9\n");
+    const int rows[]={-1,Rows,Rows+5,0,0,0,0}, slots[]={0,0,0,-1,Slots,Slots+3,-100};
+    for(int i=0;i<7;++i){ KT_CHECK(c.slotFor("",rows[i],slots[i]).empty()); KT_CHECK(c.slotFor("Nobody",rows[i],slots[i]).empty());
+      KT_CHECK_EQ(SlotKeyName(rows[i],slots[i]).c_str(),""); }
+    KT_CHECK_EQ(SlotKeyName(0,0).c_str(),"Bottom1"); KT_CHECK_EQ(SlotKeyName(0,8).c_str(),"Bottom9"); KT_CHECK_EQ(SlotKeyName(0,9).c_str(),"Bottom0");
+    ActionRef a; a.kind=K_Spell; a.id=5;
+    for(int i=0;i<7;++i){ size_t before=c.profiles.size();
+      c.SetSlot("Ghost",rows[i],slots[i],a,"n"); KT_CHECK_EQ(c.profiles.size(),before); KT_CHECK(c.find("Ghost")==nullptr);
+      c.SetSlot("Default",rows[i],slots[i],a,"n"); }
+    const Profile* p=c.find("Default");
+    KT_CHECK_EQ(p->slots[0][0].id,8); KT_CHECK_EQ(p->slots[0][9].id,9); KT_CHECK(p->notes[0][0].empty()); KT_CHECK(p->notes[0][9].empty());
+    for(int s=1;s<9;++s) KT_CHECK(p->slots[0][s].empty());
+    c.SetSlot("Ghost",0,9,a,"ok"); KT_CHECK(c.find("Ghost")!=nullptr); KT_CHECK_EQ(P(c,"Ghost").slots[0][9].id,5);   // valid edge still works
+    Profile pr; pr.slots[0][2]=a; ActionRef q=a; q.id=77;   // moveDuplicates: out-of-range slot/row must not touch anything
+    KT_CHECK(moveDuplicates(pr,0,Slots,q).empty()); KT_CHECK(moveDuplicates(pr,0,-1,q).empty()); KT_CHECK(moveDuplicates(pr,-1,0,a).empty()); KT_CHECK(moveDuplicates(pr,Rows,0,a).empty());
+    KT_CHECK_EQ(pr.slots[0][2].id,5);
+    KT_CHECK_EQ(moveDuplicates(pr,0,Slots,a).size(),1); KT_CHECK(pr.slots[0][2].blank);   // slot==Slots: nothing is "the target", so the one holder is moved
+    KT_CHECK_EQ(slotDigit(-1),'?'); KT_CHECK_EQ(slotDigit(10),'?'); KT_CHECK_EQ(slotDigit(9),'0');
+  }
+  // ================= StackCount semantics =================
+  { const int K=0x40000001;
+    KT_CHECK_EQ(StackCount(K,"X (0)"),0);          // "0" is not a real stack (engine only prints counts > 1): treated as no count
+    KT_CHECK_EQ(StackCount(K,"X (1)"),1); KT_CHECK_EQ(StackCount(K,"X (999999)"),999999);
+    KT_CHECK_EQ(StackCount(K,"X (1000000)"),0);     // 7+ digits: not a plausible stack count
+    KT_CHECK_EQ(StackCount(K,"X (99999999999999)"),0);
+    KT_CHECK_EQ(StackCount(K,"X ( 3)"),0); KT_CHECK_EQ(StackCount(K,"X (3 )"),0); KT_CHECK_EQ(StackCount(K,"X (-3)"),0); KT_CHECK_EQ(StackCount(K,"X (+3)"),0);
+    KT_CHECK_EQ(StackCount(K,"X (3) "),0); KT_CHECK_EQ(StackCount(K,"X(3)"),0);
+    KT_CHECK_EQ(StackCount(K,"Medpac (Type) (3)"),3); KT_CHECK_EQ(StackCount(K,"Medpac (Type)"),0);
+    KT_CHECK_EQ(StackCount(0,"X (3)"),0); KT_CHECK_EQ(StackCount(K,""),0); KT_CHECK_EQ(StackCount(K,")"),0);
+  }
+  // ================= round trip: everything Serialize writes parses back identically =================
+  { Config c; c.general.invoke=0; c.general.verbose=1; c.general.autoFill=1; c.general.keyboardDevice=4; c.general.healThreshold=77; c.general.healFallbackSelf=0;
+    c.general.extra["Zed"]="1"; c.general.extra["Alpha"]="two words";
+    const char* vals[]={"spell:0","spell:2147483647","feat:12","item:Medpac","item:Adrenal Stimulant@lowhp","spell:8@lowhp:40","feat:3@lowhp::none","item:Repair Kit@lowhp:100:self",
+                        "other:1a","other:ffffffff","other:80000000@lowhp","none","item:A@bogus"};
+    for(int i=0;i<10;++i){ ActionRef a; KT_CHECK(Parse(vals[i],&a)); c.SetSlot("Default",0,i,a,i%2?"note "+std::to_string(i):"");
+      ActionRef b; KT_CHECK(Parse(vals[i+3],&b)); c.SetSlot("Atton",0,i,b,i%3?"":"a; b"); }
+    c.SetSlot("Bastila",0,4,ActionRef(),"");   // empty slot: not written
+    std::string o=c.Serialize(); Config d=W(o);
+    KT_CHECK(d.warnings.empty()); KT_CHECK(d.Serialize()==o);
+    KT_CHECK_EQ(d.general.invoke,0); KT_CHECK_EQ(d.general.verbose,1); KT_CHECK_EQ(d.general.autoFill,1); KT_CHECK_EQ(d.general.keyboardDevice,4);
+    KT_CHECK_EQ(d.general.healThreshold,77); KT_CHECK_EQ(d.general.healFallbackSelf,0); KT_CHECK(d.general.extra==c.general.extra);
+    KT_CHECK_EQ(d.profiles.size(),c.profiles.size());
+    for(const char* pn:{"Default","Atton"}){ const Profile* x=c.find(pn); const Profile* y=d.find(pn);
+      if(!KT_CHECK(x&&y)) continue;
+      KT_CHECK_EQ(y->name.c_str(),pn);
+      for(int s=0;s<Slots;++s){ KT_CHECK_EQ(Format(x->slots[0][s]).c_str(),Format(y->slots[0][s]).c_str()); KT_CHECK_EQ(x->slots[0][s].blank,y->slots[0][s].blank);
+        KT_CHECK_EQ(x->slots[0][s].kind,y->slots[0][s].kind); KT_CHECK_EQ(x->slots[0][s].target.thresholdPct,y->slots[0][s].target.thresholdPct);
+        KT_CHECK_EQ(x->slots[0][s].target.fallback,y->slots[0][s].target.fallback); KT_CHECK_EQ(x->notes[0][s].c_str(),y->notes[0][s].c_str()); } }
+    // file round trip through Save/Load
+    const char* td=getenv("TMPDIR"); std::string path=std::string(td&&*td?td:"/tmp")+"/test_rt2.ini";
+    KT_CHECK(c.Save(path)); Config e; KT_CHECK(e.Load(path)); KT_CHECK(e.warnings.empty()); KT_CHECK(e.Serialize()==o); remove(path.c_str());
+    Config nf; KT_CHECK(!nf.Load("/nonexistent_dir_xyz/none.ini"));
+  }
   puts(s1.c_str());
   return kt::Report("config_roundtrip_test");
 }
