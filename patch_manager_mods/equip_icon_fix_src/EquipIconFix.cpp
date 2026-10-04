@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include "CodePatch.h"
 
 namespace {
 
@@ -83,24 +84,6 @@ bool configEnabled() {
 }
 
 void resrefName(const void* r, char out[17]) { memcpy(out, r, 16); out[16] = 0; for (int i = 0; i < 16; ++i) if (out[i] && (out[i] < 0x20 || out[i] > 0x7e)) out[i] = '?'; }
-
-bool committed(uintptr_t at, size_t n) {
-    MEMORY_BASIC_INFORMATION mb;
-    return VirtualQuery(reinterpret_cast<void*>(at), &mb, sizeof(mb)) && mb.State == MEM_COMMIT &&
-           at + n <= reinterpret_cast<uintptr_t>(mb.BaseAddress) + mb.RegionSize;
-}
-uint8_t* callBytes(uintptr_t at, uintptr_t target, uint8_t out[5]) {
-    out[0] = 0xE8; int32_t d = static_cast<int32_t>(target - (at + 5)); memcpy(out + 1, &d, 4); return out;
-}
-int writeCode(uintptr_t at, const uint8_t* repl, int n) {
-    auto p = reinterpret_cast<uint8_t*>(at);
-    DWORD old;
-    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old)) return -2;
-    memcpy(p, repl, n);
-    VirtualProtect(p, n, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), p, n);
-    return 1;
-}
 
 DWORD WINAPI statsThread(LPVOID) {
     LONG last = -1;
@@ -181,8 +164,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     // Verify all 8 sites before writing any of them.
     for (int i = 0; i < 8; ++i) {
         uint8_t want[5];
-        callBytes(Sites[i].at, Sites[i].target, want);
-        if (!committed(Sites[i].at, 5)) { g_state = -3; g_badSite = i; break; }
+        codepatch::callRel(Sites[i].at, Sites[i].target, want);
+        if (!codepatch::committed(Sites[i].at, 5)) { g_state = -3; g_badSite = i; break; }
         memcpy(g_seen, reinterpret_cast<void*>(Sites[i].at), 5);
         if (memcmp(g_seen, want, 5) != 0) { g_state = -1; g_badSite = i; break; }
     }
@@ -192,7 +175,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
             uintptr_t to = Sites[i].kind == 0 ? reinterpret_cast<uintptr_t>(&EquipFixPass)
                          : Sites[i].kind == 1 ? reinterpret_cast<uintptr_t>(&EquipFixDefer) : reinterpret_cast<uintptr_t>(&EquipFixSet);
             uint8_t repl[5];
-            int r = writeCode(Sites[i].at, callBytes(Sites[i].at, to, repl), 5);
+            codepatch::callRel(Sites[i].at, to, repl);
+            int r = codepatch::write(Sites[i].at, repl, 5);
             if (r != 1) { g_state = r; g_badSite = i; }
         }
     }
