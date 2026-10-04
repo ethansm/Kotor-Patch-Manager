@@ -553,6 +553,82 @@ int main(int argc, char** argv) {
         CHECK(rk(nonJ, 1, &np) && np == 0, "droid class level 9 with 0 powers is fine");
     }
 
+    { // R10 dim (batch 2a): plain detours LuoR10Dim_90C36A / LuoR10Dim_909B56 on a fake panel; tags = the real runtime/r10_tags.ini next to `table`
+        const uintptr_t frame = arenaAlloc(0x200), ebp = frame + 0x100;
+        const uintptr_t panel = arenaAlloc(0x1C00), client = arenaAlloc(0x400);
+        *reinterpret_cast<uint32_t*>(panel + Pn_Client) = (uint32_t)client;
+        *reinterpret_cast<uint32_t*>(ebp + F2_Panel) = (uint32_t)panel;
+        *reinterpret_cast<uint32_t*>(ebp + P2_Panel) = (uint32_t)panel;
+        const Fake pc = makeCreature("", {{1, 4}}), comp = makeCreature("Atton", {{1, 4}});
+        const uintptr_t fArr = arenaAlloc(2 * 16), pArr = arenaAlloc(4 * 16);
+        // feats (profile melee/single/light): 1 general, 3/9 melee, 7 general, 2 untagged = kept; 18/20/26 ranged = dropped
+        const uint16_t fBase[10] = {1, 18, 3, 20, 7, 2, 26, 9, 18, 1}, fWant[6] = {1, 3, 7, 2, 9, 1};
+        auto setF = [&](const uint16_t* ids, int n, int picks) {
+            memcpy(P(fArr), ids, 2 * n);
+            *reinterpret_cast<uint32_t*>(panel + PnF_Vec) = (uint32_t)fArr;
+            *reinterpret_cast<int32_t*>(panel + PnF_Vec + 4) = n;
+            *reinterpret_cast<int32_t*>(panel + PnF_Vec + 8) = 16;
+            *reinterpret_cast<uint16_t*>(panel + PnF_Picks) = (uint16_t)picks;
+        };
+        auto fCount = [&] { return *reinterpret_cast<int32_t*>(panel + PnF_Vec + 4); };
+        auto fSame = [&](const uint16_t* want, int n) { return fCount() == n && !memcmp(P(fArr), want, 2 * n); };
+        const char* on = "r10=1\nr10.profile=melee/single/light\nr10.feats=build_dim\nr10.powers=build_dim";
+        g_creatureRet = P(pc.creature);
+
+        setIni("r10=0\nr10.profile=melee/single/light\nr10.feats=build_dim", table); clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fBase, 10) && !logHas("R10 dim"), "r10=0: vector untouched, no R10 line:\n%s", readLog().c_str());
+
+        setIni(on, table); clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fWant, 6), "r10=1 PC feats: compacted to 6 in order (count %d)", fCount());
+        CHECK(reinterpret_cast<uint16_t*>(fArr)[6] == 26 && reinterpret_cast<uint16_t*>(fArr)[9] == 1, "slots past the new count are not rewritten");
+        CHECK(logHas("R10 tags loaded") && logHas("feats=82 powers=73"), "tag table loaded:\n%s", readLog().c_str());
+        { char want[160]; snprintf(want, sizeof want, "R10 dim kind=feats panel=%08x mode=build_dim before=10 after=6 picks=1 fallback=0 verdict=applied", (unsigned)panel);
+          CHECK(logHas(want), "dim line '%s' missing:\n%s", want, readLog().c_str()); }
+        LuoR10Dim_90C36A(P(ebp));   // a rebuild that kept the compacted vector: nothing left to drop, nothing written
+        CHECK(fSame(fWant, 6) && logHas("before=6 after=6 picks=1 fallback=0 verdict=nochange"), "second build idempotent:\n%s", readLog().c_str());
+
+        g_creatureRet = P(comp.creature); clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fBase, 10) && logHas("reason=not_pc") && !logHas("verdict="), "companion (tagged): untouched:\n%s", readLog().c_str());
+        g_creatureRet = nullptr; clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fBase, 10) && logHas("reason=unreadable"), "no server creature: untouched:\n%s", readLog().c_str());
+        g_creatureRet = P(pc.creature);
+
+        const uint16_t ranged[2] = {18, 20};
+        clearLog(); setF(ranged, 2, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(ranged, 2) && logHas("fallback=1 verdict=fallback"), "nothing fits with a pick left: vanilla:\n%s", readLog().c_str());
+        clearLog(); setF(ranged, 2, 0);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fCount() == 0 && logHas("before=2 after=0 picks=0"), "nothing fits, no picks left: emptied (count %d)", fCount());
+
+        setIni("r10=1\nr10.profile=melee/single/light\nr10.feats=all\nr10.powers=build_dim", table); clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fBase, 10) && !logHas("R10 dim"), "r10.feats=all: untouched:\n%s", readLog().c_str());
+        setIni("r10=1\nr10.profile=bogus\nr10.feats=build_hide", table); clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fBase, 10) && logHas("verdict=noprofile"), "invalid profile: untouched:\n%s", readLog().c_str());
+        setIni("mode=off\nr10=1\nr10.profile=melee/single/light\nr10.feats=build_dim", table); clearLog(); setF(fBase, 10, 1);
+        LuoR10Dim_90C36A(P(ebp));
+        CHECK(fSame(fBase, 10) && !logHas("R10 dim"), "mode=off: untouched:\n%s", readLog().c_str());
+
+        // powers: dword ids; every power carries all roles, so a light build drops only the dark powers 7 and 9
+        setIni(on, table); clearLog();
+        const uint32_t pBase[6] = {4, 7, 10, 9, 0x10007, 12}, pWant[4] = {4, 10, 0x10007, 12};
+        memcpy(P(pArr), pBase, sizeof pBase);
+        *reinterpret_cast<uint32_t*>(panel + PnP_Vec) = (uint32_t)pArr;
+        *reinterpret_cast<int32_t*>(panel + PnP_Vec + 4) = 6;
+        *reinterpret_cast<uint8_t*>(panel + PnP_Picks) = 2;
+        LuoR10Dim_909B56(P(ebp));
+        CHECK(*reinterpret_cast<int32_t*>(panel + PnP_Vec + 4) == 4 && !memcmp(P(pArr), pWant, sizeof pWant), "powers: dark 7, 9 dropped (count %d)",
+              *reinterpret_cast<int32_t*>(panel + PnP_Vec + 4));
+        CHECK(logHas("R10 dim kind=powers") && logHas("before=6 after=4 picks=2 fallback=0 verdict=applied"), "powers dim line:\n%s", readLog().c_str());
+        remove("levelup_override.ini");
+    }
+
     printf("gate_test checks %d failures %d (engine calls %d)\n", g_checks, g_fail, g_fakeCalls);
     return g_fail ? 1 : 0;
 }

@@ -1096,3 +1096,6 @@ classes 6-8). Paths end at char 30 (engine cap is 50, EXPTABLE 51 rows; practica
 - **RESUME HERE (2026-10-04 ~12:00):** R10 batch 1 DONE offline, NOT installed (doc 25 section 12): 1.1.0-probe KPM 06c67a4, kpatch 2604a541.
   Live is still 8f9ca9e2 (UX build, not play-tested). When the user is back: (1) play-test 8f9ca9e2 (TIPPROBE / `UI pause` from line 629), (2) with consent
   reinstall with the probe (full KPatchLauncher run, hooks changed), `r10probe=1`, PC + companion feats/powers level-up, read `R10` lines -> batch 2 plan.
+- **RESUME HERE (2026-10-04, R10 batch 2a):** dim wiring DONE offline, NOT installed, gated `r10=0` (doc 25 section 13): 1.2.0-dev kpatch 7c687dec
+  (32 hooks). Live still 8f9ca9e2. When the user is back: play-test 8f9ca9e2, then one reinstall (consent) carries probe + dim; run `r10probe=1 r10=0`
+  first, then `r10=1` per doc 25 s13 "Live test". Next offline = batch 2b (in-panel Filter button, needs panel GUI RE).

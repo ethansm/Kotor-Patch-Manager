@@ -58,6 +58,10 @@
 //   dev=0 (default). With dev=1 the dev keys are read (otherwise they are ignored; the per-playthrough config of the options page is the product path):
 //     preset.<tag>=<preset id>   instant.<tag>=0|1 (default 0)   hold.<tag>=0|1 (default 1)   pause.<tag>=N
 //     tags=atton,kreia   legacy: each tag without a preset key gets preset <tag>__live, instant 0, hold 0 (0.2.1 behaviour)
+//   r10probe=0 (default)  1 = log-only R10 probe lines (feats/powers level-up panels)
+//   r10=0 (default)  1 = R10 dim (batch 2a): on the PC's feats/powers level-up panels, ids that do not fit the build are left out of the panel's
+//     choosable vector, so the engine greys them. r10.profile=<role>/<style>/<align> (R10Filter.h), r10.feats= / r10.powers= all | build_dim |
+//     build_hide (= build_dim for now) | combat | force. Tags: r10_tags.ini in the directory of table=. Off with mode=off.
 // Config levelup_playthroughs.ini (game dir, mtime-reloaded like the above; written by ptApply/ptRemove via .tmp + MoveFileExA; format in
 // Playthrough.h): sections [g<8 hex guid>], lines <tag>=<preset id>|instant=0|1|hold=0|1. Precedence in tagConfig: if the current GUID has a
 // section there, ONLY that section applies (a tag missing from it is unconfigured = vanilla, even if a dev key names it); otherwise the dev keys.
@@ -73,6 +77,7 @@
 #include "../_shared/GuiTip.h"
 #include "Playthrough.h"
 #include "R10Probe.h"
+#include "R10Filter.h"
 #include "WizardLogic.h"
 #include "OptionsLogic.h"
 
@@ -81,7 +86,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "1.1.0-probe";
+constexpr const char* Version = "1.2.0-dev";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------
@@ -187,6 +192,9 @@ struct Config {
     bool verbose = false;
     bool apply = true;
     bool r10probe = false;   // r10probe=1: log-only R10 probe hooks (feats/powers level-up panels; doc 25 section 8); default off
+    bool r10 = false;        // r10=1: R10 dim on the PC's feats/powers level-up panels (batch 2a); default off
+    char r10Profile[48] = "";
+    r10f::Mode r10Feats = r10f::All, r10Powers = r10f::All;
     bool dev = false;    // dev=1: read the dev keys (preset./instant./hold./pause.<tag>=, legacy tags=)
     char table[MAX_PATH] = "levelup_paths.ini";
     TagCfg tags[MaxTagCfg] = {};
@@ -267,6 +275,14 @@ void reloadConfig(bool force = false) {
                 c.dev = atoi(v) != 0;
             } else if (!strcmp(k, "r10probe")) {
                 c.r10probe = atoi(v) != 0;
+            } else if (!strcmp(k, "r10")) {
+                c.r10 = atoi(v) != 0;
+            } else if (!strcmp(k, "r10.profile")) {
+                lower(v); snprintf(c.r10Profile, sizeof c.r10Profile, "%s", v);
+            } else if (!strcmp(k, "r10.feats")) {
+                lower(v); c.r10Feats = r10f::parseMode(v);
+            } else if (!strcmp(k, "r10.powers")) {
+                lower(v); c.r10Powers = r10f::parseMode(v);
             } else if (!strcmp(k, "verbose")) {
                 c.verbose = atoi(v) != 0;
             } else if (!strcmp(k, "apply")) {
@@ -310,6 +326,7 @@ void reloadConfig(bool force = false) {
     for (int i = 0; i < c.nTags; ++i) b.add("%s%s:%s/i%d/h%d/p%d", i ? "," : "", c.tags[i].tag, c.presetId[i][0] ? c.presetId[i] : "-", c.tags[i].instant, c.tags[i].hold, c.tags[i].pause);
     logLine("CONFIG %s mode=%s apply=%d verbose=%d table=%s tags=%s", st ? "loaded" : "missing (defaults)",
             c.mode == Mode::Off ? "off" : c.mode == Mode::Rewrite ? "rewrite" : "log", c.apply, c.verbose, c.table, b.s);
+    if (c.r10) logLine("R10 config r10=1 profile=%s feats=%s powers=%s", c.r10Profile[0] ? c.r10Profile : "-", r10f::modeName(c.r10Feats), r10f::modeName(c.r10Powers));
     if (c.dev) logLine("DEV keys enabled (dev=1): preset./instant./hold./pause.<tag>= and tags= are read");
 }
 
@@ -2101,6 +2118,107 @@ void r10Close() {
     if (r10Active()) r10::flush(g_r10); else g_r10.active = false;
 }
 
+// ---- R10 dim (batch 2a): plain detours after the choosable-vector build loops (R10b_sites.md), gated by r10=1 -----------------------------
+// Feats 0x90C36A in 0x90C230 (panel [ebp-0x28]), powers 0x909B56 in 0x9098D0 (panel [ebp-0x68]); both run before the panel's RefreshGridStates
+// (0x90BD50 / 0x909360), which greys every grid id NOT in the choosable vector. The builders are re-run from a cleared vector (0x90C670) or
+// de-duplicate against it (0x90C620 / 0x4142E0), so compacting on every build is idempotent. Only the PC is touched: the server creature
+// (0x77D800 on the panel's client creature, as the engine does at 0x90777B) has an EMPTY tag (R10_findings (d) candidate 1); any read failure
+// = not the PC = vanilla. The vector only ever shrinks, is written only when ids are dropped, and is left vanilla when nothing would remain
+// while picks are left (r10f::dimInPlace). Vectors {ptr, count, cap}: feats ushort ids, powers dword ids.
+constexpr int PnF_Vec = 0x1BC0, PnP_Vec = 0x1BD4;
+r10f::TagTable g_r10Tags;
+bool g_r10TagsOk = false;
+uint64_t g_r10TagsStamp = ~0ULL;
+char g_r10TagsPath[MAX_PATH] = "";
+char g_r10TagsBuf[65536];
+
+// r10_tags.ini next to the runtime table (same lookup as table=); re-parsed when the path or the file stamp changes. False = filter off.
+bool r10TagsReady() {
+    char path[MAX_PATH];
+    snprintf(path, sizeof path, "%s", g_cfg.table);
+    char* slash = strrchr(path, '\\');
+    if (char* s2 = strrchr(path, '/')) if (!slash || s2 > slash) slash = s2;
+    if (slash) slash[1] = 0; else path[0] = 0;
+    strncat(path, "r10_tags.ini", sizeof path - strlen(path) - 1);
+    const uint64_t st = fileStamp(path);
+    if (st == g_r10TagsStamp && !strcmp(path, g_r10TagsPath)) return g_r10TagsOk;
+    g_r10TagsStamp = st;
+    snprintf(g_r10TagsPath, sizeof g_r10TagsPath, "%s", path);
+    g_r10TagsOk = false;
+    g_r10Tags.clear();
+    FILE* f = fopen(path, "rb");
+    if (!f) { logLine("R10 tags error line=0 cannot open %s", path); return false; }
+    const size_t len = fread(g_r10TagsBuf, 1, sizeof g_r10TagsBuf - 1, f);
+    const bool full = feof(f) != 0;
+    fclose(f);
+    if (!full) { logLine("R10 tags error line=0 %s larger than %u bytes", path, (unsigned)sizeof g_r10TagsBuf - 1); return false; }
+    g_r10TagsBuf[len] = 0;
+    char err[96];
+    if (!r10f::parseTagIni(g_r10TagsBuf, &g_r10Tags, err, sizeof err)) {
+        int line = 0, pos = 0;
+        if (sscanf(err, "line %d: %n", &line, &pos) < 1) pos = 0;
+        logLine("R10 tags error line=%d %s", line, err + pos);
+        return false;
+    }
+    logLine("R10 tags loaded %s feats=%d powers=%d", path, g_r10Tags.nFeats, g_r10Tags.nPowers);
+    return g_r10TagsOk = true;
+}
+
+// 1 = the panel's creature is the PC (server creature with an empty tag), 0 = a tagged creature, -1 = unreadable / engine mismatch.
+int r10IsPc(uint32_t panel) {
+    uint32_t client = 0, str = 0, len = 0;
+    if (!readAt(S_R10, panel, Pn_Client, &client) || !client || !engineOk()) return -1;
+    const uintptr_t cr = reinterpret_cast<uintptr_t>(reinterpret_cast<GetCreature_t>(g_eng.getCreature)(reinterpret_cast<void*>(static_cast<uintptr_t>(client))));
+    if (!cr || !readAt(S_R10, cr, Cr_Tag, &str) || !readAt(S_R10, cr, Cr_Tag + 4, &len)) return -1;
+    return (!str || !len) ? 1 : 0;
+}
+
+// Dims one vector of esz-byte ids in place. Returns the verdict; *before / *after = counts (after == before unless applied).
+template <class T>
+int r10DimVector(int kind, uint32_t vec, const r10f::Profile& p, r10f::Mode m, int picks, int* before, int* after) {
+    static T buf[r10f::MaxVector];
+    uint32_t ptr = 0; int32_t count = 0;
+    *before = *after = -1;
+    if (!readAt(S_R10, vec, 0, &ptr) || !readAt(S_R10, vec, 4, &count)) return -1;
+    *before = *after = count;
+    if (count < 0 || count > r10f::MaxVector) return r10f::DimBadCount;
+    if (count && (!ptr || !probeRead(S_R10, reinterpret_cast<const void*>(static_cast<uintptr_t>(ptr)), static_cast<size_t>(count) * sizeof(T)))) return -1;
+    if (count) memcpy(buf, reinterpret_cast<const void*>(static_cast<uintptr_t>(ptr)), static_cast<size_t>(count) * sizeof(T));
+    int n = count;
+    const r10f::DimVerdict v = r10f::dimInPlace(g_r10Tags, kind == r10::Powers ? r10f::Power : r10f::Feat, p, m, buf, count, picks, &n);
+    if (v != r10f::DimApplied || n >= count) return v;   // never grow, never write an unchanged vector
+    if (n) memcpy(reinterpret_cast<void*>(static_cast<uintptr_t>(ptr)), buf, static_cast<size_t>(n) * sizeof(T));
+    *reinterpret_cast<int32_t*>(static_cast<uintptr_t>(vec) + 4) = n;
+    *after = n;
+    return v;
+}
+
+void r10Dim(int kind, uintptr_t ebp, int panelOff) {
+    saferead::beginScope();
+    reloadConfig();
+    if (!g_cfg.r10 || g_cfg.mode == Mode::Off) return;
+    const r10f::Mode m = kind == r10::Powers ? g_cfg.r10Powers : g_cfg.r10Feats;
+    if (!r10f::dims(r10f::dimMode(m))) return;
+    uint32_t panel = 0;
+    if (!readAt(S_Frame, ebp, panelOff, &panel) || !panel) return;
+    const char* const kn = r10::kindName(kind);
+    const int pc = r10IsPc(panel);
+    if (pc != 1) { logLine("R10 dim skip kind=%s panel=%08x reason=%s", kn, (unsigned)panel, pc ? "unreadable" : "not_pc"); return; }
+    if (!r10TagsReady()) return;
+    r10f::Profile prof;
+    r10f::parseProfile(g_cfg.r10Profile, &prof);   // invalid -> empty profile -> build modes report noprofile
+    int picks = -1;
+    uint16_t w = 0; uint8_t b = 0;
+    if (kind == r10::Feats) { if (readAt(S_R10, panel, PnF_Picks, &w)) picks = w; }
+    else if (readAt(S_R10, panel, PnP_Picks, &b)) picks = b;
+    if (picks < 0) { logLine("R10 dim skip kind=%s panel=%08x reason=picks_unreadable", kn, (unsigned)panel); return; }
+    int before = -1, after = -1;
+    const int v = kind == r10::Powers ? r10DimVector<uint32_t>(kind, panel + PnP_Vec, prof, m, picks, &before, &after)
+                                      : r10DimVector<uint16_t>(kind, panel + PnF_Vec, prof, m, picks, &before, &after);
+    logLine("R10 dim kind=%s panel=%08x mode=%s before=%d after=%d picks=%d fallback=%d verdict=%s", kn, (unsigned)panel, r10f::modeName(m), before, after,
+            picks, v == r10f::DimFallback, v < 0 ? "unreadable" : r10f::dimVerdictName(v));
+}
+
 #include "LevelUpUi.h"
 
 } // namespace
@@ -2148,6 +2266,9 @@ int __cdecl LuoR10_89B6E4(void* ecx) {
 int __cdecl LuoR10_89AB29(unsigned spellId) { r10Row(r10::Powers, spellId); return 0; }
 int __cdecl LuoR10_90C2BE(void* ebp) { r10Choosable(r10::Feats, reinterpret_cast<uintptr_t>(ebp), F2_Panel); return 0; }
 int __cdecl LuoR10_9099A2(void* ebp) { r10Choosable(r10::Powers, reinterpret_cast<uintptr_t>(ebp), P2_Panel); return 0; }
+// R10 dim (batch 2a, r10=1): plain detours after the choosable-vector build loops; see the R10 dim block above.
+void __cdecl LuoR10Dim_90C36A(void* ebp) { r10Dim(r10::Feats, reinterpret_cast<uintptr_t>(ebp), F2_Panel); }
+void __cdecl LuoR10Dim_909B56(void* ebp) { r10Dim(r10::Powers, reinterpret_cast<uintptr_t>(ebp), P2_Panel); }
 // CSWGuiInGameCharacter ctor 0x84C3A0, site 0x84D82C (layout still open): param [ebp-0x254] = the panel. Creates (does not append) the UI labels.
 void __cdecl LuoUiPanelCtor(int panel) { uiPanelCtor(static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
 

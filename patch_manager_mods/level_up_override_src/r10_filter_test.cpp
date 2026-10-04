@@ -158,6 +158,64 @@ int main(int argc, char** argv) {
         KT_CHECK_EQ(filterChoosable(*t, Feat, m, BuildHide, one, 1, 1, out), 1);
         delete t;
     }
+    { // dimInPlace (batch 2a): a fake panel vector of 10 ids, every mode, picks 1 / 0, both element widths
+        TagTable* t = new TagTable;
+        KT_CHECK(parseOk("[feats]\n1=melee,single,combat\n2=caster,force\n3=melee,combat\n4=caster,force,dark\n5=general\n6=ranged,rifle,combat\n"
+                         "[powers]\n1=force,caster,light\n2=force,melee,dark\n", t));
+        const Profile m = prof("melee/single/light");
+        const uint16_t base[10] = {1, 2, 3, 4, 5, 6, 7, 8, 2, 1};   // 7, 8 untagged
+        uint16_t v[12];
+        int nc = -5;
+        auto reset = [&] { memcpy(v, base, sizeof base); v[10] = 0xAAAA; v[11] = 0xBBBB; nc = -5; };
+        reset();   // BuildDim: casters 2, 4 (x2 for 2) and ranged 6 go
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, 10, 1, &nc), (int)DimApplied);
+        KT_CHECK_EQ(nc, 6);
+        { const uint16_t want[] = {1, 3, 5, 7, 8, 1}; for (int i = 0; i < 6; ++i) KT_CHECK_EQ((int)v[i], (int)want[i]); }
+        KT_CHECK(v[10] == 0xAAAA && v[11] == 0xBBBB);   // never writes past n
+        reset();   // BuildHide behaves as BuildDim in batch 2a
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildHide, v, 10, 0, &nc), (int)DimApplied);
+        KT_CHECK_EQ(nc, 6);
+        reset();   // Combat: drops the force-only casters 2, 4
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, Combat, v, 10, 1, &nc), (int)DimApplied);
+        KT_CHECK_EQ(nc, 7);
+        { const uint16_t want[] = {1, 3, 5, 6, 7, 8, 1}; for (int i = 0; i < 7; ++i) KT_CHECK_EQ((int)v[i], (int)want[i]); }
+        reset();   // Force: keeps 2, 4, general 5, untagged 7, 8
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, Force, v, 10, 1, &nc), (int)DimApplied);
+        KT_CHECK_EQ(nc, 6);
+        { const uint16_t want[] = {2, 4, 5, 7, 8, 2}; for (int i = 0; i < 6; ++i) KT_CHECK_EQ((int)v[i], (int)want[i]); }
+        for (Mode md : {All, ModeCount}) {   // All / unknown: off, untouched
+            reset();
+            KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, md, v, 10, 1, &nc), (int)DimOff);
+            KT_CHECK_EQ(nc, 10); KT_CHECK(!memcmp(v, base, sizeof base));
+        }
+        reset();   // invalid profile in a build mode: off, untouched; tag modes ignore the profile
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, Profile(), BuildDim, v, 10, 1, &nc), (int)DimNoProfile);
+        KT_CHECK_EQ(nc, 10); KT_CHECK(!memcmp(v, base, sizeof base));
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, Profile(), Combat, v, 10, 1, &nc), (int)DimApplied);
+        KT_CHECK_EQ(nc, 7);
+        const uint16_t fitAll[] = {1, 3, 5, 7};
+        memcpy(v, fitAll, sizeof fitAll); nc = -5;
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, 4, 1, &nc), (int)DimNoChange);
+        KT_CHECK_EQ(nc, 4);
+        const uint16_t casters[] = {2, 4, 2};
+        memcpy(v, casters, sizeof casters);   // nothing would remain: fallback with picks left, untouched
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, 3, 1, &nc), (int)DimFallback);
+        KT_CHECK_EQ(nc, 3); KT_CHECK(!memcmp(v, casters, sizeof casters));
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, 3, 0, &nc), (int)DimApplied);   // no picks left: an empty vector is fine
+        KT_CHECK_EQ(nc, 0);
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, 0, 1, &nc), (int)DimNoChange);   // empty in: nothing to drop, never a fallback
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, -1, 1, &nc), (int)DimBadCount);
+        KT_CHECK_EQ(nc, -1);
+        KT_CHECK_EQ((int)dimInPlace(*t, Feat, m, BuildDim, v, MaxVector + 1, 1, &nc), (int)DimBadCount);
+        // 4-byte elements (powers vector if it holds uint32 ids); ids > 0xFFFF are never filtered
+        uint32_t pw[5] = {1, 2, 0x10002, 9, 1};
+        KT_CHECK_EQ((int)dimInPlace(*t, Power, prof("caster/none/light"), BuildDim, pw, 5, 1, &nc), (int)DimApplied);   // power 2: no role match + dark
+        KT_CHECK_EQ(nc, 4);
+        KT_CHECK(pw[0] == 1 && pw[1] == 0x10002 && pw[2] == 9 && pw[3] == 1);
+        KT_CHECK_EQ(dimVerdictName(DimApplied), "applied"); KT_CHECK_EQ(dimVerdictName(DimFallback), "fallback"); KT_CHECK_EQ(dimVerdictName(99), "?");
+        KT_CHECK_EQ((int)dimMode(BuildHide), (int)BuildDim); KT_CHECK_EQ((int)dimMode(Force), (int)Force);
+        delete t;
+    }
     { // the REAL generated table
         const char* path = argc > 1 ? argv[1] : "../../research/companion_levelup/runtime/r10_tags.ini";
         FILE* f = fopen(path, "rb");

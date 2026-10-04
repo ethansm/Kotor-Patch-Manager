@@ -205,4 +205,46 @@ inline int filterChoosable(const TagTable& t, Kind k, const Profile& p, Mode m, 
     return kept;
 }
 
+// ---- dim (batch 2a) ---------------------------------------------------------------------------------------------
+// The engine greys every grid row whose id is NOT in the panel's choosable vector, so "dim" = drop the non-fitting ids from that vector. Batch 2a
+// treats BuildHide as BuildDim (the real hide needs the grid edit, batch 2c). Ids >= MaxId (or > 0xFFFF for a 4-byte element) are untagged = kept.
+inline Mode dimMode(Mode m) { return m == BuildHide ? BuildDim : m; }
+
+enum DimVerdict { DimOff = 0, DimNoChange, DimFallback, DimNoProfile, DimBadCount, DimApplied };
+inline const char* dimVerdictName(int v) {
+    static const char* const n[] = {"off", "nochange", "fallback", "noprofile", "badcount", "applied"};
+    return v >= 0 && v <= DimApplied ? n[v] : "?";
+}
+constexpr int MaxVector = 1024;   // sanity cap on an engine vector count (2DA rows are < MaxId; a feat/power panel holds far fewer)
+
+// Compacts v[0..n) IN PLACE (order kept) to the ids that fit and stores the new count in *newCount. Never grows, never touches v unless the
+// verdict is DimApplied (then exactly the first *newCount slots are rewritten). *newCount = n for every other verdict.
+//   DimOff       mode does not dim (All, or an unknown value)
+//   DimNoProfile a build mode with an invalid profile (an empty role would dim almost everything)
+//   DimBadCount  n < 0 or n > MaxVector
+//   DimFallback  nothing would remain while picks are left (filterChoosable's -1: the engine would let Accept skip the picks)
+//   DimNoChange  every id fits
+template <class T>
+inline DimVerdict dimInPlace(const TagTable& t, Kind k, const Profile& p, Mode mode, T* v, int n, int picksLeft, int* newCount) {
+    *newCount = n;
+    const Mode m = dimMode(mode);
+    if (!dims(m)) return DimOff;
+    if (m == BuildDim && !p.valid()) return DimNoProfile;
+    if (n < 0 || n > MaxVector) return DimBadCount;
+    int kept = 0;
+    for (int i = 0; i < n; ++i) {
+        const uint32_t id = static_cast<uint32_t>(v[i]);
+        if (id > 0xFFFFu || fits(t, k, static_cast<uint16_t>(id), p, m)) ++kept;
+    }
+    if (kept == n) return DimNoChange;
+    if (kept == 0 && picksLeft > 0) return DimFallback;
+    int w = 0;
+    for (int i = 0; i < n; ++i) {
+        const uint32_t id = static_cast<uint32_t>(v[i]);
+        if (id > 0xFFFFu || fits(t, k, static_cast<uint16_t>(id), p, m)) v[w++] = v[i];
+    }
+    *newCount = w;
+    return DimApplied;
+}
+
 } // namespace r10f

@@ -436,3 +436,30 @@ exclude_from_restore = ["eax"]
 [[hooks.parameters]]
 source = "ebp"
 type = "pointer"
+
+# R10 dim (batch 2a, r10=1; doc 25 section 13, evidence research/companion_levelup/phase6_evidence/R10b_sites.md): PLAIN detours on
+# `mov dword [ebp-4],-1` right after the choosable-vector build loop (single loop exit, no inbound branch into the 7 bytes, flag/EAX-free).
+# The handler compacts the PC's choosable vector in place (shrink only) before the panel's RefreshGridStates greys the dropped ids.
+[[hooks]]
+address = 0x0090C36A
+type = "detour"
+function = "LuoR10Dim_90C36A"
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x00909B56
+type = "detour"
+function = "LuoR10Dim_909B56"
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"

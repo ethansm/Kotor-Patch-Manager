@@ -120,3 +120,23 @@ Gates 2026-10-04: run_tests 97/97, check_hook_bytes FAIL=0 (30 hooks), check_exp
 3. In-panel `Filter:` button (GuiKit, feats + powers panels) cycling the mode, persisted in `ffilter=`/`pfilter=`; rebuild choosable on click.
 4. Hide last: F1/P1 skip grid rows together with F2/P2 (never F1/P1 alone: accept soft-lock), empty-grid guard (R10_findings open question 2).
 5. Recommended button ignores the filter (calls CanChooseFeat directly): document, or filter later.
+
+## 13. Batch 2a: dim wiring (built, NOT installed, gated off) - 2026-10-04
+Changed vs the section 12 outline: dim is NOT done at F2/P2 (consumed exit per id). Instead, two PLAIN detours after the build loops compact the
+finished choosable vector in place, so one decision covers the whole set (fallback included) and the probe hooks stay log-only.
+| part | what |
+|---|---|
+| sites | feats **0x90C36A** (in 0x90C230, panel `[ebp-0x28]`), powers **0x909B56** (in 0x9098D0, panel `[ebp-0x68]`): 7 bytes `c7 45 fc ff ff ff ff`, single loop exit, no inbound branch, no hook within +-16, live == vanilla. Evidence `research/companion_levelup/phase6_evidence/R10b_sites.md`. Vectors {ptr, count, cap}: feats `panel+0x1BC0` **ushort**, powers `panel+0x1BD4` **dword**. Callers clear the vector (0x90C670) or the builder de-duplicates (0x90C620 / 0x4142E0), then RefreshGridStates (0x90BD50 / 0x909360) greys ids not in it, so compacting each build is idempotent. |
+| logic | `R10Filter.h` `dimInPlace<T>()` -> verdict off / nochange / fallback / noprofile / badcount / applied; never grows, writes only on applied; `build_hide` = `build_dim` this batch. r10_filter_test 265. |
+| wiring | `LevelUpOverride.cpp` `r10Dim` / `LuoR10Dim_90C36A` / `LuoR10Dim_909B56`. Gate: `r10=1` and mode != off -> PC test (0x77D800 on `panel+0x68` client creature, server tag EMPTY; any read failure = skip) -> tags `r10_tags.ini` in the directory of `table=` (re-read on stamp change; error -> `R10 tags error line=N <reason>`, dim off). |
+| config | `r10=0|1`, `r10.profile=<role>/<style>/<align>`, `r10.feats=` / `r10.powers=` `all|build_dim|build_hide|combat|force`. |
+| log | `R10 dim kind= panel= mode= before= after= picks= fallback= verdict=`; `R10 dim skip kind= panel= reason=not_pc|unreadable|picks_unreadable`; `R10 config ...`; `R10 tags loaded <path> feats= powers=`. |
+| tests | gate_test.cpp R10 block (fake panel, 10 feat ids, powers dword, r10=0 / PC / companion / null creature / fallback picks 1 vs 0 / all / bad profile / mode=off / idempotent rebuild), 209 checks incl. -m32. mutate 173/173 (RF21-25, RD01-06 new). |
+Build: version 1.2.0-dev, LevelUpOverride.kpatch md5 7c687dec (dll 66392e8d), previous kept as `LevelUpOverride.kpatch.110probe_2604a541.bak`.
+Gates: run_tests 97/97, check_hook_bytes FAIL=0 (32 hooks), check_hook_spans FAIL=0, check_exports FAIL=0, parity/scenarios(-m32)/options/wizard/guikit/
+simulate/check_paths/gen_r10_tags --check green, mingw 0 warnings.
+
+**Live test (user present, game closed, consent):** one full KPatchLauncher run carries probe + dim (hooks changed). Run 1: `r10probe=1`, `r10=0` ->
+confirm tag="" only for the PC in the `R10 panel` lines. Run 2: `r10=1`, `r10.profile=melee/single/light` (or the PC's build), `r10.feats=build_dim`,
+`r10.powers=build_dim`; PC level-up: non-fitting feats greyed, `R10 dim ... verdict=applied`; companion: `reason=not_pc`. Recommended button still
+ignores the filter (section 12 item 5). Next offline: batch 2b = in-panel `Filter:` button + save-bound `pcfilter=` (needs panel GUI RE).
