@@ -288,3 +288,6 @@ channels=*
 - **Build notes:** DLL 80 KB -> 89 KB (KpLog.h uses `GetTickCount` on Windows; a first build with `std::chrono` was 181 KB and imported `SetSystemTime` etc., fixed in KPM 22add9a). Exports: `KPatchInit`, `ProbeCameraFrame`, `ProbeMouseNorm`, `ProbeMouseRaw`. `-DMOUSEPROBE_FRAMETICK` (off) adds `KP_FRAME_TICK()` to the camera hook, for tests only. Fork build source committed on `ethansm/local-mods` (see 19e chunk M).
 
 - Note (log analysis 2026-10-04, session 10-03 evening, mouse-probe c4fa4f8f): over the full session NORM is 23773/23820 SAT (99.8%), raw deltas up to -2244/-1120. This confirms the line-260 finding at scale. Report `play_session_reports/2026-10-03_evening.md`.
+
+## RESUME HERE (2026-10-04): double-click-to-move logging
+Direction: doc 28's point-and-click mod is **dropped**, because vanilla already has double-click-to-move (doc 28 §6, c0b486d). The new goal is to find out with logs why vanilla double-click move no longer works. mouse-probe 0.2.0 only hooks DirectInput (0x72F14E/0x72F2EC/0x78C452), so it sees LMB down/up but not the Win32 WM_LBUTTONDBLCLK path (WndProc 0x40A750 -> OnMouseMessage 0x72E030 value -1 -> GetEvents 0x72C7E0 -> HandleInputEvent 0x7B12C0 -> walk dispatch, not traced). Plan: mouse-probe 0.3.0 adds a `click` channel along that chain. Handoff: `.claude/handoffs/18_mouse_camera_investigation.handoff.md`.
