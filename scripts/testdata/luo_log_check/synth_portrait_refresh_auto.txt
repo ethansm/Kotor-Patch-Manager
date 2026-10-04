@@ -1,0 +1,7 @@
+[2963948000] CONFIG loaded mode=rewrite apply=1 verbose=0 table=levelup_paths.ini tags=
+[2963948001] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_light_early/i0/h1/p0
+[2963948102] INSTANT-LEADER tag=atton key=4 controlledId=8000029e creature=08403548 site=0x74F423
+[2963948102] #1 tid=324 flow=portrait-refresh ret=006b9770(ValidateLevelUp) <- 006c00af(AutoLevelup) <- 0074f47f(PortraitRefresh) <- 0074b4f3(?) <- 00411571(?) stats=083fb320 pending=169857e0 addToList=1 tag=atton classes=2:3 total=3 key=4 xp=24140 unspent170=0
+  DECIDE tag=atton preset=atton__melee_dual_light_early key=4 decision=PATH rec=4
+  DRY tag=atton__melee_dual_light_early key=4 status=rewrite feats=[] spells=[] deltas=[0,0,0,0,0,0,0,2] unspent=0 ability=1
+  APPLIED tag=atton__melee_dual_light_early key=4 ok=1

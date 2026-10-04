@@ -62,7 +62,8 @@ V_RULES = {
         "FAIL: `WOULD HOLD` while mode=rewrite, `BANKED engine function bytes differ`, `ENGINE gate function bytes differ`, "
         "or the same BANKED (tag,n) logged twice with no HOLD/UNHOLD between. NOT-EXERCISED: none of HOLD/WOULD HOLD/UNHOLD/GUARD/BANKED."),
     4: ("R1 manual picks kept (LevelUpOverride.cpp:1287-1299)",
-        "A manual call = header flow not starting with `auto`. PASS: >=1 manual call (or `SKIP manual` line) and no APPLIED in any "
+        "A manual call = header flow not starting with `auto` AND no `(AutoLevelup)` frame in the header call stack (mirrors viaAutoLevelup; "
+        "e.g. flow=portrait-refresh via AutoLevelup is the leader instant level-up = auto). PASS: >=1 manual call (or `SKIP manual` line) and no APPLIED in any "
         "manual call. FAIL: APPLIED inside a manual-flow call. NOT-EXERCISED: no manual-flow call with a DECIDE and no SKIP manual."),
     5: ("Unconfigured tag + PC vanilla (LevelUpOverride.cpp:1274)",
         "PASS: >=1 level-up call header whose tag has no DECIDE (unconfigured, e.g. pc) and that call has no APPLIED/DRY/SKIP/HOLD. "
@@ -300,21 +301,28 @@ def call_flow(evs, e):
     return evs[e.call].g[3]
 
 
+def call_is_auto(evs, e):
+    """Mirror of LevelUpOverride.cpp viaAutoLevelup: AUTO if flow starts with `auto` OR the call stack has an (AutoLevelup) frame.
+    None when e is outside a call."""
+    f = call_flow(evs, e)
+    if f is None:
+        return None
+    return f.startswith("auto") or "(AutoLevelup)" in evs[e.call].raw
+
+
 def v4(evs_all, rng):
     evs = rng
     applied_bad, ok_calls = [], []
     for e in evs:
         if e.kind == "APPLIED":
-            f = call_flow(evs_all, e)
-            if f is not None and not f.startswith("auto"):
+            if call_is_auto(evs_all, e) is False:
                 applied_bad.append(e)
     if applied_bad:
         return "FAIL", ln(applied_bad), "APPLIED in a manual-flow call"
     ok_calls = by(evs, "SKIP_MANUAL")
     for e in evs:
         if e.kind == "DECIDE":
-            f = call_flow(evs_all, e)
-            if f is not None and not f.startswith("auto"):
+            if call_is_auto(evs_all, e) is False:
                 ok_calls.append(e)
     if not ok_calls:
         return "NOT-EXERCISED", [], "no manual-flow call with a DECIDE"

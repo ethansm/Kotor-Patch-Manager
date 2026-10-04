@@ -105,6 +105,12 @@ class Synthetic(unittest.TestCase):
         self.assertEqual(status(r, 4), "FAIL")
         self.assertEqual(r["exit"], 1)
 
+    def test_portrait_refresh_via_autolevelup_is_auto(self):
+        # leader instant level-up: flow=portrait-refresh but the call stack has (AutoLevelup) -> auto, V4 must not FAIL
+        r = run("synth_portrait_refresh_auto.txt")
+        self.assertEqual(status(r, 4), "NOT-EXERCISED")
+        self.assertNotIn(4, r["fails"])
+
     def test_fail_case(self):
         r = run("synth_fail.txt")
         self.assertEqual(status(r, 3), "FAIL")
