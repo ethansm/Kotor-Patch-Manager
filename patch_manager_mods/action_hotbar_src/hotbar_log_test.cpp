@@ -148,7 +148,7 @@ int main() {
     for (const std::string& l : fmtTipLines(std::string(4000, 'T') + "\n" + std::string(4000, 'U'))) LineOk("tip long", l, "tip: ");
     for (const std::string& l : fmtChunks("cwd", P260)) LineOk("chunk cwd", l, "cwd[");
     for (const std::string& l : fmtChunks("H3: missing controls", std::string(2000, 'm'))) LineOk("chunk h3", l, "H3: missing controls[");
-    // 10 control names of up to 24 bytes, space separated (the shape FPH builds)
+    // 10 control names of up to 24 bytes, space separated (the shape the hotbar builds)
     std::string names; for (int i = 0; i < 10; ++i) names += (i ? " " : "") + std::string(24, 'c');
     for (const std::string& l : fmtChunks("H3: missing controls", names)) LineOk("chunk names", l, "H3: missing controls[");
     // a 64-char char key inside a 10-member list in a chunk

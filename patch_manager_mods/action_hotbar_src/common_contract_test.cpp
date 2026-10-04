@@ -32,7 +32,7 @@
 #define HEQ(why, a, b) ::kt::CheckEq("hotbar relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
 
 // ============================================================ 1. GameAddr (compile time)
-// Values validated in 07_force_power_hotbar.md / ActionHotbar.cpp comments / the Steam Address DB. A changed value means the
+// Values validated in 07_force_power_hotbar.md (Action Hotbar doc) / ActionHotbar.cpp comments / the Steam Address DB. A changed value means the
 // hotbar would patch or call the wrong address.
 #define HADDR(name, val) static_assert(gameaddr::name == (val), "hotbar relies on: gameaddr::" #name " == " #val " (validated Steam address)")
 HADDR(AppGlobal, 0x00A1B4A4);              // app -> +4 -> +4 -> +0x270 party table chain; also the save-request holder

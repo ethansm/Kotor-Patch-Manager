@@ -1,4 +1,4 @@
-// Minimal on-demand reader for KotOR dialog.tlk (V3.0). Pure C++17, host-testable (twoda_test.cpp).
+// Minimal on-demand reader for KotOR dialog.tlk (V3.0). Pure C++17, host-testable (tlk_test.cpp).
 // Header: "TLK V3.0", u32 language, u32 count, u32 stringsOffset. Entries at +20, 40 bytes each:
 // u32 flags, char[16] sound, u32 volVar, u32 pitchVar, u32 offset (relative to stringsOffset), u32 size, f32 soundLen.
 #pragma once

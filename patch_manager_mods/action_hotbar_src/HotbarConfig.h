@@ -1,5 +1,5 @@
 // Action Hotbar -- configuration model (pure C++17, no Win32 types so it can be unit-tested on the host).
-// A binding stores a stable, human-meaningful ActionRef, never a raw runtime key. The future in-game
+// A binding stores a stable, human-meaningful ActionRef, never a raw runtime key. The in-game
 // editor mutates a Profile and calls Config::Save; nothing else in the mod depends on the INI text.
 #pragma once
 #include <string>
@@ -15,7 +15,7 @@ namespace hb {
 
 constexpr int Rows = 1;    // Bottom (keys 1..0). The early Ctrl/Alt rows (Left/Right) were removed in 1.0.0: Alt+digit never reaches the game under Proton
 constexpr int Slots = 10;  // digits 1..9, 0
-constexpr int SchemaVersion = 1;
+constexpr int SchemaVersion = 1;   // written to [General] on save; NOT validated: Parse ignores the key on load
 
 // 1.2.0 rename (Force Power Hotbar -> Action Hotbar): the INI and its per-save snapshots changed name. Old files are never deleted or rewritten.
 constexpr const char* IniName = "action_hotbar.ini", *LegacyIniName = "force_power_hotbar.ini";
@@ -317,7 +317,7 @@ struct Config {
             std::string key = trim(line.substr(0, eq)), val = trim(line.substr(eq + 1));
             if (inGeneral) {
                 std::string k = lower(key);
-                if (k == "schemaversion") { /* validated on Save only */ }
+                if (k == "schemaversion") { /* written on save, not validated on load */ }
                 else if (k == "invoke" || k == "verbose" || k == "autofill" || k == "keyboarddevice") {
                     int n = 0;
                     if (!parseInt32(val, &n)) { snprintf(msg, sizeof msg, "line %d: %.40s '%.60s' must be an integer (kept default)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
@@ -362,9 +362,12 @@ struct Config {
         std::string o = "; Action Hotbar. Slots: Bottom1..Bottom9, Bottom0 = the on-screen slots for keys 1..9, 0.\n"
                         "; Values: spell:<spells.2da row>  feat:<row>  item:<item name>  other:<hex>  none (explicitly empty)  (missing/empty = unbound, AutoFill may fill it)\n"
                         "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
-                        "; Item/power value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
+                        "; Item value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
                         "; Item value suffix @self = always use the item on the controlled character, whatever is targeted\n"
                         "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
+                        "; [General] SyncActionBar=0|1 (default 1) resync the vanilla action bar (stance/form icons) after an AI stance or form change\n"
+                        "; [General] TargetProbe=0|1|2 (default 2) item target modes: 0 off, 1 log the decision only, 2 live\n"
+                        "; [General] SchemaVersion=<n> is written by the mod and ignored on load\n"
                         "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
                         "; Profiles belong to the loaded save: saving copies this file into the save folder, loading a save restores its copy (none = empty bar).\n";
         char b[64];
@@ -392,7 +395,7 @@ struct Config {
         return o;
     }
 
-    // Atomic: <path>.tmp then replace (filewatch::atomicWrite). No .bak here: the hotbar makes its own backups (FPH assignSlot / replaceLiveProfiles).
+    // Atomic: <path>.tmp then replace (filewatch::atomicWrite). No .bak here: the hotbar makes its own backups (assignSlot / replaceLiveProfiles).
     bool Save(const std::string& path) const { return filewatch::atomicWrite(path.c_str(), Serialize(), false); }
 };
 

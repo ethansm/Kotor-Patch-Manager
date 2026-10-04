@@ -2,13 +2,20 @@
 // quick-action, plus an in-game editor. Self-contained: controls, art and the INI template are all created by this DLL.
 // Research trail and every address: patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
 //
-// Hooks (cdecl detours, original bytes still run):
+// Hooks (8 cdecl detours, original bytes still run; see kotor2-steam-aspyr.hooks.toml):
 //   0x0072CB63  CExoInputInternal::GetEvents+0x383  CaptureHotbarKey(record*, device)  -- swallow bound digits
-//   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, invoke, button state
-//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our 75 CSWGuiLabel controls
-//               at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
+//   0x0074B3F0  CSWGuiMainInterface::Draw           HotbarHudTick(hud)                 -- gate, config, invoke, button state, vanilla action-bar resync
+//   0x00748502  HUD ctor (FUN_00747210), just before StopLoadFromLayout  HotbarBuildButtons(panel) -- create our ControlCount CSWGuiLabel
+//               controls at runtime (Layout[], copied from native template labels of the HUD layout) and append them to the panel's control
 //               list. The panel's own Draw (0x0040EC90) then draws them with the HUD; the tick only swaps fill (border+0x74), alpha
 //               (border+0x24), text and visibility. Frame/wrench art is embedded (HotbarTextures.inc) and registered as engine textures.
+//   Per-save hotbars (the INI is snapshotted into each save folder and restored on load):
+//     S1  HotbarOnSaved             -- a save was written (menu save, quicksave, timer autosave)
+//     S2  HotbarOnAutosaved         -- the module-entry autosave was written
+//     L1  HotbarOnLoadRequest       -- a save is loading (folder from the load request)
+//     L1b HotbarOnAutosaveSlotLoad  -- the autosave slot is loading (bypasses L1)
+//     NG  HotbarOnNewGame           -- new game started: reset to the default profile
+//   Item slots can carry a per-slot target mode (@lowhp = lowest-HP party member, @self); it needs override/spells.2da.
 //
 // Invoke design: the HUD's own per-group action list (hud+0x78+g*0xC, entry stride 0x3C) holds powers
 // (key = spells.2da row | 0x20000000) and items (key = item object id | 0x40000000). We set the group's selection
@@ -85,10 +92,10 @@ constexpr int CellCount = 8, CellBgOff0 = ClearOff + 1, CellIcOff0 = CellBgOff0 
 constexpr int NumOff0 = CellIcOff0 + CellCount;                              // key-digit labels (own labels so the digit can sit above-left of the icon)
 constexpr int QtyOff0 = NumOff0 + ButtonCount;                               // item stack counts (bottom-right of the slot, above the icon)
 constexpr int CellQtyOff0 = QtyOff0 + ButtonCount;                           // item stack counts on the picker cells (optional: the editor works without them)
-constexpr int TgtOff0 = CellQtyOff0 + CellCount;                             // per-slot target-mode badges (optional, build 27+; top-right of the frame)
+constexpr int TgtOff0 = CellQtyOff0 + CellCount;                             // per-slot target-mode badges (optional; top-right of the frame)
 constexpr int ModeOff = TgtOff0 + ButtonCount;                               // target-mode button in the editor panel (optional: the editor works without it)
 constexpr int TipBgOff = ModeOff + 1, TipOff = TipBgOff + 1;                 // hover tooltip frame + text
-constexpr int ControlCount = TipOff + 1;                                     // 86 (build 26 had 75; build 27+ inserts the 11 target-mode controls before the tooltip pair)
+constexpr int ControlCount = TipOff + 1;                                     // 86 at present; the target-mode controls sit before the tooltip pair
 constexpr int EditorControlCount = CellIcOff0 + CellCount - EditOff;         // 25: the editor is enabled only when all of them exist
 constexpr int CellTipBase = 100, ToggleTipId = 200, OtherTipBase = 210, ModeTipId = 220;                  // tooltip owner ids >= this are picker cells
 constexpr uintptr_t GuiSoundMgrGlobal = gameaddr::GuiSoundMgr;  // global GUI sound manager pointer (hover sound played through guikit)
@@ -109,7 +116,7 @@ using hb::QtyOutOfStockRgb;   // "0" on an out-of-stock slot is drawn gray (user
 
 // ---- logging: shared KpLog.h logger (map: patch_manager_mods/07b_hotbar_logging_map.md) -------------------------------
 // New core: <patch-id>_log.txt + kplog.ini decide what is recorded. Old core (no KPatchInit): everything goes to the fallback file
-// action_hotbar_log.txt (was force_power_hotbar_log.txt before 1.2.0; LoadHangProbe still tails the old name), at INFO, or DEBUG when the INI has Verbose=1.
+// action_hotbar_log.txt (LoadHangProbe still tails the old force_power_hotbar_log.txt name), at INFO, or DEBUG when the INI has Verbose=1.
 // Every tag (`target:`, `H3`, `cfg:` ...) stays the first word of its message, so old greps keep working.
 KP_CHANNEL(chBuild,  "build");    // H3, tex
 KP_CHANNEL(chCfg,    "cfg");      // cfg, persave
@@ -122,9 +129,9 @@ KP_CHANNEL(chChar,   "char");     // character, creature
 KP_CHANNEL(chGate,   "gate");     // gate, panels, modal, tick
 KP_CHANNEL(chMain,   "main");     // banner, addresses, heartbeat (same channel name KP_WARN/KP_ERR use)
 
-// Only stores the path (no I/O), so it is safe from a static initialiser. Old core: same file as 1.0.0.
-const char* const LogPath = "action_hotbar_log.txt", *const LogPrevPath = "action_hotbar_log.1.txt";
-const bool g_fallbackSet = (KpLog_SetFallbackFile(LogPath), true);   // old core only: previous session is kept as .1
+// Only stores the path (no I/O), so it is safe from a static initialiser.
+const char* const LogPath = "action_hotbar_log.txt", *const LogPrevPath = "action_hotbar_log.1.txt";   // old core only: previous session is kept as .1
+const bool g_fallbackSet = (KpLog_SetFallbackFile(LogPath), true);
 
 // Logs `s` as "tag[0]=<chunk>", "tag[1]=<chunk>" ... so no line exceeds the core's 232-byte cut (map section 3, fmtChunks).
 void logChunks(::kplog::Channel& ch, int lvl, const char* tag, const std::string& s, size_t chunk = 200) {
@@ -1006,7 +1013,7 @@ bool wHit(const Widget& w, const POINT& pt) {
 }
 
 // ---- in-game editor: Normal -> (toggle) Edit -> (slot click) Pick -> (cell / Clear) assign+save -> Edit; Esc backs out one level ----
-// ---- mouse wheel over the picker: subclass the game window like Mod 1 (DirectInput never sees the wheel). Chains to the old proc; never restored.
+// ---- mouse wheel over the picker: subclass the game window like Mod 1 (DirectInput never sees the wheel). Chains to the old proc; DllMain restores it on detach if we are still the outermost proc.
 WNDPROC g_oldProc = nullptr; volatile LONG g_wheelAccum = 0; volatile LONG g_pickRect[4] = {0, 0, 0, 0}; int g_wheelLogs = 0;
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (m == WM_MOUSEWHEEL && g_editOpen && g_pickRect[2] > 0 && GetTickCount() - g_hudTick < 300) {
@@ -1146,7 +1153,7 @@ void updateEditor(uintptr_t hud, bool gate) {
         if (key != 7u) {
             if (key != lastKey) {
                 lastKey = key;
-                bool miss = g_bar.panel == hud && g_bar.built > 0 && !g_bar.editBound;   // 667 already WARNs for the other two cases
+                bool miss = g_bar.panel == hud && g_bar.built > 0 && !g_bar.editBound;   // updateButtons already WARNs for the other two cases
                 KP_LOGV(chEdit, miss ? KPLOG_WARN : KPLOG_INFO, "edit: editor disabled panel=%08x hud=%08x built=%d editBound=%d (%s)", (unsigned)g_bar.panel, (unsigned)hud, g_bar.built, g_bar.editBound,
                         g_bar.panel != hud ? "bar panel is not this hud" : (g_bar.built == 0 ? "no buttons built" : "editor controls missing"));
             }
@@ -1310,7 +1317,7 @@ using hb::Scale;   // layout units -> px as InitControl scales (sx, sy), then th
 Scale g_scale;
 void aspectFix() {
     // NOT FnScreenInfo: FUN_0073FEA0 is a thiscall that reads [this+0x274]; calling it as cdecl passes a garbage/null ECX and crashed on load
-    // (build 8, null read at 0x73FEAF). The window client size is what the engine renders at.
+    // (null read at 0x73FEAF). The window client size is what the engine renders at.
     short w = 0, h = 0; int rw = rdInt(S_Aspect, GuiRefW, 0), rh = rdInt(S_Aspect, GuiRefH, 0);
     HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
     RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
@@ -1318,7 +1325,7 @@ void aspectFix() {
     g_scale = hb::makeScale(w, h, rw, rh); double c = hb::aspectCorrection(w, h, rw, rh);
     KP_LOG(chBuild, "H3: window %p client=%dx%d ref=%dx%d -> x correction %.4f", (void*)win, (int)w, (int)h, rw, rh, c);
 }
-// ---- runtime-created controls + textures served from DLL memory (1.0.0; doc 07 "Phase R") ------------------------------------
+// ---- runtime-created controls + textures served from DLL memory (doc 07 "Phase R") ------------------------------------
 // Labels: a native template struct of the open HUD layout initialises our label (InitControl with addToList=0 never touches the
 // panel list), then we set our own id/rect/text/fill and append it to the panel list ourselves (draw order = list index).
 enum { TP_Plain = 0, TP_Panel = 1 };
@@ -1639,11 +1646,11 @@ void restoreFromSave(const char* folder, const char* why) {
 void startOnce() {
     static bool done = false; if (done) return; done = true;
     saferead::enableRing(true);
-    if (!KpLog_HasCore()) {                                        // old core: behave exactly like 1.0.0
+    if (!KpLog_HasCore()) {                                        // old core: fallback file, rotated manually
         KpLog_SetFallbackLevel(KPLOG_INFO);                        // header default is WARN: the INFO trail would be dropped
         DeleteFileA(LogPrevPath); MoveFileA(LogPath, LogPrevPath); // rotate BEFORE the first fallback write (the header keeps the file open)
     }
-    {   // 1.2.0 rename: carry a pre-existing force_power_hotbar.ini over once; the old file stays untouched
+    {   // rename migration: carry a pre-existing force_power_hotbar.ini over once; the old file stays untouched
         DWORD an = GetFileAttributesA(hb::IniName), al = GetFileAttributesA(hb::LegacyIniName);
         if (hb::iniMigrateAction(an != INVALID_FILE_ATTRIBUTES, al != INVALID_FILE_ATTRIBUTES) == hb::IM_CopyLegacy) {
             if (CopyFileA(hb::LegacyIniName, hb::IniName, TRUE)) KP_LOG(chMain, "migrate: copied %s -> %s (old file kept)", hb::LegacyIniName, hb::IniName);
@@ -1731,7 +1738,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     if (!panel || !saferead::probeRead(S_Create, reinterpret_cast<void*>(panel), 0x40)) { KP_LOGV(chBuild, KPLOG_WARN, "H3: panel null/unreadable, abort"); return; }
     if (g_bar.panel) KP_LOG(chBuild, "H3: replacing bar of old HUD %08x (its labels stay leaked, never freed)", (unsigned)g_bar.panel);
     g_bar = Bar(); g_bar.panel = panel;
-    // InitControl (0x0040F620) applies a non-linear aspect projection to the extent while the global at 0x00A1B9F0 is nonzero (live build 3:
+    // InitControl (0x0040F620) applies a non-linear aspect projection to the extent while the global at 0x00A1B9F0 is nonzero (observed live:
     // slots 8 and 0 came out 964 px wide). The ctor clears it right after this hook (0x0074850D), so clear it for our binds and restore.
     int* projFlag = reinterpret_cast<int*>(ProjectionFlag);
     bool flagRead = saferead::probeRead(S_Proj, projFlag, 4), projWriteFailed = false;
@@ -1744,7 +1751,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     }
     aspectFix();
     ensureTextures();
-    // Every control is created from Layout[] and appended after the native ones (ids base..base+56). A control that fails stays
+    // Every control is created from Layout[] and appended after the native ones (ids base..base+ControlCount-1). A control that fails stays
     // nullptr: its slot part / the editor / the tooltip is then disabled, everything else still works.
     int created = 0;
     for (int i = 0; i < ControlCount; ++i) created += createLabel(panel, Layout[i], widgetFor(g_bar, i)) != nullptr;
