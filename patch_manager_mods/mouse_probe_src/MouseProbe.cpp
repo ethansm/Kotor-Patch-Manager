@@ -1,4 +1,4 @@
-// Mouse Probe 0.2.0 -- STRICTLY READ-ONLY diagnostics for the Wine mouse/camera investigation
+// Mouse Probe 0.3.0 -- STRICTLY READ-ONLY diagnostics for the Wine mouse/camera investigation
 // (patch_manager_mods/18_mouse_camera_investigation.md). Every hook only reads (through SafeRead) and
 // logs through KpLog.h; it never writes engine memory.
 //
@@ -8,12 +8,21 @@
 // core (no service, KPatchInit never runs) the header's fallback sink writes mouseprobe_log.txt as
 // before and the legacy flag file "mouseprobe.txt" (polled every ~30 hook calls; delete = kill switch)
 // toggles the fallback level, so behaviour matches 0.1.0 apart from the line prefix.
+//
+// 0.3.0 adds the "click" channel (doc 18 "Double-click chain (traced)"): CLICK (every WM_*BUTTON* message at
+// OnMouseMessage 0x72E039, with the SetCursorPos guard this+0x3EC and time/distance since the last 0x201), DBLACT
+// (PerformLButtonDownAction entry), WORLDCLICK (HandleMouseClickInWorld entry + derived branch A/B), DEFACT (the default-action
+// call in branch B), MOVEPT (AddMoveToPointAction entry, only within 3 s of an LMB message, else counted in movept_bg= on the
+// next CLICK) and WALKWP (HandlePlayerToServerInputWalkToWaypoint, expected never). WARN heuristics MISSEDDBL (two 0x201 within
+// 500 ms / 4 px with no 0x203 between) and DBLGUARD (0x203 while the guard int is set) live in ClickLogic.h (pure, tested).
+// Hooks at function entries read ECX / [ESP+4] (KPM passes the game's stack: [esp+0] = return address).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
 #include "KpLog.h"
+#include "ClickLogic.h"
 #include "../_shared/SafeRead.h"
 
 KP_LOG_PATCH("mouse-probe");
@@ -31,6 +40,7 @@ KP_CHANNEL(chPolls, "polls");
 KP_CHANNEL(chNorm, "norm");
 KP_CHANNEL(chDrag, "drag");
 KP_CHANNEL(chCam, "cam");
+KP_CHANNEL(chClick, "click");
 
 // Only stores the path (no I/O), so it is safe from a static initialiser. Old core: same file as 0.1.0.
 // The header's default cap (60000 lines) matches the old MaxLogLines.
@@ -54,7 +64,7 @@ double nowMs() {
 void enter() {
     saferead::beginScope();
     if (KpLog_HasCore()) {
-        if (!g_started) { g_started = true; KP_LOG(chMain, "START mouseprobe 0.2.0"); }
+        if (!g_started) { g_started = true; KP_LOG(chMain, "START mouseprobe 0.3.0"); }
         return;                                    // new core: kplog.ini is the switch, no STOP line
     }
     if (g_calls++ % 30 == 0) {
@@ -63,7 +73,7 @@ void enter() {
         bool want = GetFileAttributesA("mouseprobe.txt") != INVALID_FILE_ATTRIBUTES;
         if (want && !g_flagOn) {
             g_flagOn = true; KpLog_SetFallbackLevel(KPLOG_INFO);
-            KP_LOG(chMain, "START mouseprobe 0.2.0");
+            KP_LOG(chMain, "START mouseprobe 0.3.0");
         } else if (!want && g_flagOn) {
             KP_LOG(chMain, "STOP (flag file gone)");
             g_flagOn = false; KpLog_SetFallbackLevel(KPLOG_WARN);
@@ -85,6 +95,10 @@ int g_drag = -1;                   // last drag flag value seen (always tracked,
 double g_dragSince = 0;
 bool g_stuckLogged = false;
 float g_lastPitch = 0; bool g_havePitch = false;
+
+// ---- click channel state (0.3.0); always tracked so the WARN heuristics work with the channel off ----
+clicklogic::ClickState g_click;
+int g_moveptBg = 0;                // AddMoveToPointAction calls outside the 3 s click window since the last CLICK line
 
 } // namespace
 
@@ -161,6 +175,83 @@ void __cdecl ProbeCameraFrame(uintptr_t ebp) {
         }
     }
     if (haveCtl) { g_lastPitch = pitch; g_havePitch = true; }
+}
+
+// ---------------- 0.3.0 click channel ----------------
+
+// 0x72E039 inside OnMouseMessage: this=[ebp-0x1C], msg struct=[ebp+8]; msg id at msg+4, lParam at msg+0xC
+// (x = LOWORD, y = HIWORD, y already flipped). this+0x3EC = SetCursorPos guard int.
+void __cdecl ProbeMouseMsg(uintptr_t ebp) {
+    enter();
+    uintptr_t msgp = 0;
+    if (!rd(ebp, 8, &msgp)) return;
+    int id = 0;
+    if (!rd(msgp, 4, &id) || !clicklogic::isMouseButtonMsg(id)) return;
+    uint32_t lp = 0;
+    if (!rd(msgp, 0xC, &lp)) return;
+    uintptr_t self = 0; int guard = 0;
+    if (rd(ebp, -0x1C, &self)) rd(self, 0x3EC, &guard);   // unreadable guard -> 0, the CLICK line still goes out
+    int x = clicklogic::unpackX(lp), y = clicklogic::unpackY(lp);
+    double t = nowMs();
+    clicklogic::Verdict v = g_click.step(id, x, y, guard, t);
+    if (KP_ENABLED(chClick)) {
+        if (g_click.haveDelta)
+            KP_LOG(chClick, "CLICK msg=0x%03x x=%d y=%d guard3EC=%d dtLmbDown=%.0f dpos=%.1f movept_bg=%d",
+                   id, x, y, guard, g_click.dtMs, g_click.dpos, g_moveptBg);
+        else
+            KP_LOG(chClick, "CLICK msg=0x%03x x=%d y=%d guard3EC=%d dtLmbDown=none dpos=none movept_bg=%d", id, x, y, guard, g_moveptBg);
+        g_moveptBg = 0;
+    }
+    if (v == clicklogic::Verdict::MissedDbl)
+        KP_LOGV(chClick, KPLOG_WARN, "MISSEDDBL dt=%.0f dpos=%.1f", g_click.dtMs, g_click.dpos);
+    else if (v == clicklogic::Verdict::DblGuard)
+        KP_LOGV(chClick, KPLOG_WARN, "DBLGUARD 0x203 with guard3EC=%d", guard);
+}
+
+// 0x7B3560 PerformLButtonDownAction entry: ECX=this, [ESP+4]=isDbl (1 if the LMB axis value was -1)
+void __cdecl ProbeLButtonDown(uintptr_t self, int isDbl) {
+    enter();
+    if (!KP_ENABLED(chClick)) return;
+    uint32_t hov = 0, sel = 0, last = 0; float vx = 0, vy = 0, vz = 0;
+    if (!rd(self, 0x4B0, &hov) || !rd(self, 0x2B4, &sel) || !rd(self, 0x2B8, &last)) return;
+    rd(self, 0x4B4, &vx); rd(self, 0x4B8, &vy); rd(self, 0x4BC, &vz);
+    KP_LOG(chClick, "DBLACT isDbl=%d hov=0x%08x sel=0x%08x last=0x%08x vec=(%.3f%s,%.3f%s,%.3f%s)",
+           isDbl, hov, sel, last, vx, tag(vx), vy, tag(vy), vz, tag(vz));
+}
+
+// 0x7B3CA0 HandleMouseClickInWorld entry (fastcall): ECX=this
+void __cdecl ProbeClickInWorld(uintptr_t self) {
+    enter();
+    if (!KP_ENABLED(chClick)) return;
+    uint32_t hov = 0, sel = 0, last = 0; int nact = -1;
+    if (!rd(self, 0x4B0, &hov) || !rd(self, 0x2B4, &sel) || !rd(self, 0x2B8, &last)) return;
+    rd(self, 0x4D0, &nact);
+    KP_LOG(chClick, "WORLDCLICK hov=0x%08x sel=0x%08x last=0x%08x nact=%d branch=%c",
+           hov, sel, last, nact, clicklogic::isBranchB(hov, sel, last) ? 'B' : 'A');
+}
+
+// 0x7B3E3C branch B, just before the default-action call: this=[ebp-0x70], entry=[ebp-4] (+8 arg, +0xC fn, +0x1C type), actor=[ebp-8]
+void __cdecl ProbeDefaultAction(uintptr_t ebp) {
+    enter();
+    if (!KP_ENABLED(chClick)) return;
+    uintptr_t self = 0, entry = 0; uint32_t actor = 0, fn = 0, arg = 0, type = 0, hov = 0;
+    if (!rd(ebp, -0x70, &self) || !rd(ebp, -4, &entry) || !rd(entry, 0xC, &fn)) return;
+    rd(entry, 8, &arg); rd(entry, 0x1C, &type); rd(ebp, -8, &actor); rd(self, 0x4B0, &hov);
+    KP_LOG(chClick, "DEFACT fn=0x%08x arg=0x%08x type=0x%08x actor=0x%08x hov=0x%08x", fn, arg, type, actor, hov);
+}
+
+// 0x564770 AddMoveToPointAction entry: ECX=creature, [ESP+0]=return address. Called often by AI/scripts: only
+// logged within 3 s of an LMB message; otherwise counted and reported as movept_bg= on the next CLICK.
+void __cdecl ProbeMoveToPoint(uintptr_t creature, uintptr_t caller) {
+    enter();
+    if (!g_click.recentLmb(nowMs())) { ++g_moveptBg; return; }
+    KP_LOG(chClick, "MOVEPT caller=0x%08x obj=0x%08x", (unsigned)caller, (unsigned)creature);
+}
+
+// 0x65B4F0 HandlePlayerToServerInputWalkToWaypoint entry: [ESP+0]=return address. Expected never to fire.
+void __cdecl ProbeWalkToWaypoint(uintptr_t caller) {
+    enter();
+    KP_LOG(chClick, "WALKWP caller=0x%08x", (unsigned)caller);
 }
 
 } // extern "C"

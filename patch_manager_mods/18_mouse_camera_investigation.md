@@ -291,3 +291,55 @@ channels=*
 
 ## RESUME HERE (2026-10-04): double-click-to-move logging
 Direction: doc 28's point-and-click mod is **dropped**, because vanilla already has double-click-to-move (doc 28 §6, c0b486d). The new goal is to find out with logs why vanilla double-click move no longer works. mouse-probe 0.2.0 only hooks DirectInput (0x72F14E/0x72F2EC/0x78C452), so it sees LMB down/up but not the Win32 WM_LBUTTONDBLCLK path (WndProc 0x40A750 -> OnMouseMessage 0x72E030 value -1 -> GetEvents 0x72C7E0 -> HandleInputEvent 0x7B12C0 -> walk dispatch, not traced). Plan: mouse-probe 0.3.0 adds a `click` channel along that chain. Handoff: `.claude/handoffs/18_mouse_camera_investigation.handoff.md`.
+
+## Double-click chain (traced)
+Static trace 2026-10-04 from the Steam dump (`ghidra_dumps/steam_6a522e71/decomp`). [V] = asm read, [S] = inferred. Names come from the Steam DB (B11a). Nothing was run.
+
+### Chain
+1. **Win32 -> axis event [V].** `OnMouseMessage 0x72E030` maps 0x201/0x202/0x203 to LMB axis `DAT_0099C89C` with value 1/0/**-1** and queues it through `0x72E730` (device `DAT_0099C888`).
+2. **Axis -> action id [V].** `0x785DF0` (Steam `SetEventDescriptions`, 12175 B) registers the bindings with `0x72F8C0(action, type=1, DAT_0099C888, axis, 0x86)`:
+   - LMB `DAT_0099C89C` -> action **0x19** (GUI input class) and action **0x43** (in-game input class).
+   - RMB `DAT_0099C8A0` -> 0x1A / **0x44**. Middle `DAT_0099C8A4` -> 0x45. Wheel -> 0x46. Mouse X/Y `DAT_0099C8A8/AC` -> 0x17/0x18 (GUI) and **0x41/0x42** (game).
+3. **GetEvents `0x72C7E0` [V].** It drains the OS queue, matches the binding by axis (`binding+0x1C`) and posts `0x72F540(value, a, b, bindingObj)`. The value stays -1 for a double click.
+4. **ProcessInput `0x7AC470` [V].** In the event loop (asm `007ACE0A`) it reads `value = event[0]` and `action = *(bindingObj+0x10)` and calls `HandleInputEvent 0x7B12C0(action, value)`. This happens only when `action` is outside 0x27..0x40. Actions 0xB4..0xBB, 0xCE, 0xDF, 0xF3, 0xF4 and 0xFE..0x106 go to the GUI path `0x410AA0` when `this+0x40 -> +0x34 != 1`.
+5. **HandleInputEvent `0x7B12C0` (thiscall, RET 8) [V].** `case 0x43` (asm `007B13B4`..`007B13DC`):
+   - value != 0 -> `PerformLButtonDownAction 0x7B3560(isDbl)` with `isDbl = (value == -1)`.
+   - value == 0 -> `PerformLButtonUpAction 0x7B3680()`.
+6. **The double click differs from a single click in exactly one place [V].** `0x7B3560` does `if (isDbl == 0) this+0x2B8 = this+0x2B4`, then `GuiMgr(this+0x274)->0x4131E0(isDbl)` (sets bit0 of `gui+0x1C`, used only by GUI controls). A double-click press does **not** refresh `this+0x2B8` ("last clicked").
+7. **Release `0x7B3680` [V]** clears `DAT_00A7FCC0` (LMB held) and, if the GUI did not consume it (`0x4132E0 == 0`) and `DAT_00A1B4A4+8 != 0`, calls `HandleMouseClickInWorld 0x7B3CA0` (fastcall, ECX = this).
+8. **`0x7B3CA0` decision [V]** (asm, `H` = `this+0x4B0` hovered, `S` = `this+0x2B4` selected, `L` = `this+0x2B8` last clicked):
+   - **Branch A** (`L == 0x7F000000 || S != H || L != S`, asm `007B3E50`): if `H != 0x7F000000` -> `SetLastTarget 0x7A0530(H, 0)`, then `0x74CFE0(1)` (HUD action panel refresh). No move, no message.
+   - **Branch B** (`L != invalid && S == H && L == S`, asm `007B3D71`): sets `L = 0x7F000000`, takes `entry = *(this+0x4CC)` (first default action, only if `*(this+0x4D0) > 0`), calls `0x4122A0(6)`, then `entry->fn(entry->arg, actor)` at asm **`007B3E42 CALL EAX`**. The entry stride is 0x3C: +8 arg, +0xC fn, +0x10 this-adjust, +0x1C object-type id.
+   - So the "second click on the selected object" runs the default action. Because of step 6, a true WM_LBUTTONDBLCLK second press (value -1) leaves `L` at the pre-click-1 selection, so it falls into Branch A unless the object was already selected. Two plain 0x201 presses reach Branch B. **This is the only double-click-specific logic in the chain; the spec of "double click = move" is not implemented here.**
+9. **Default-action callbacks [V]** (set in `GetDefaultActions 0x7B40F0`): `0x77CF70` (dialog -> `0x879E80`), `0x77CE00` (attack -> `0x8799A0`, P2S minor 2), `0x841CE0/0x841D40` (use object -> `0x879CC0`, minor 0xB), `0x87BB20/0x87BD10` (P2S minor 3), `0x87F2D0/0x87F330` (use skill/item -> `0x879A20`). These send server-side actions (walk-to-and-do). None is a plain "walk to point".
+
+### Findings that change the working theory
+- **0xDB/0xDC are not walk.** `case 0xDB/0xDC: DAT_00A7FCBC = value` only (mouse-steer modifier; RMB press `0x44 -> 0x7B3810` sets the same flag). 0xDD/0xDE set `DAT_00A7FCC4`. Doc 18's suspicion of 0xDB/0xDC as the double-click action is refuted.
+- **No ground click-to-move in this chain [V].**
+  - `this+0x4B4..0x4BC` (hit vector) is written only by `HandleMouseOver 0x7B3A00` and never read: `rg '\+ 0x4b[4-c]\]'` over the whole dump finds only that store (plus the ctor zero and InitCommands). At the six `0x7B3A00` call sites in ProcessInput the vector is a stack local zeroed with `FLDZ` or not populated, so treat it as unreliable.
+  - On a ground hover `H = 0x7F000000`, so Branch A skips SetLastTarget and Branch B is unreachable (`L == invalid` or `S != H`). The ground click ends at `0x74CFE0(1)`.
+- **No walk sender exists in the Steam image [V].** All P2S messages go through `0x87A350` (the only writer of the 'p' = 0x70 header byte). `callgraph.tsv` shows 27 caller sites, all enumerated: major 6 minors sent are 2,3,7,8,9,0xB,0xC,0x12,0x21,0x24,0x25,0x26. Server `0x65BE70` switch: minor 1 -> `0x65B4F0` WalkToWaypoint, minor 0x1D -> `0x65B270` DriveControl, 0x21 -> `0x65B3D0`. **Nothing sends (6,1) or (6,0x1D).** Linux has the Drive and Walk senders (`0x08257080`, `0x082571E8`); the Windows builds do not, so `SendPlayerToServerInput_WalkToWayPoint` has no Steam address, and the only server walk path is dead from the client side. How the party leader actually moves on a ground click in Steam is **not** found in the Win32/ProcessInput chain.
+- `AddMoveToPointAction 0x564770` callers are server-side only (`0x65B4F0`, script commands, spell actions). `0x5644B0` is the ToFront variant.
+
+### Hook sites
+Both are on instruction boundaries with no rel32 and no jump target inside the patched bytes (checked: no `0x007b13ba`, `0x007b3e3c`, `0x007b3e53` reference in the asm).
+
+**(b) double-click press.**
+
+| id | addr | patched bytes (asm) | tag | registers / stack at the hook | what to log |
+|---|---|---|---|---|---|
+| **H2** | `0x007B3560` `PerformLButtonDownAction` entry | `55 8B EC 83 EC 18` (PUSH EBP; MOV EBP,ESP; SUB ESP,0x18; patch 6) | [V] | ECX = this (CClientExoAppInternal). `[ESP]` = ret, `[ESP+4]` = isDbl (1 if value was -1). Function ends `RET 4`. Hovered id `[ECX+0x4B0]`; vector floats `[ECX+0x4B4]`, `[ECX+0x4B8]`, `[ECX+0x4BC]` (expect 0); selected `[ECX+0x2B4]`; last-clicked `[ECX+0x2B8]`; GUI mgr `[ECX+0x274]` and hovered GUI control `[[ECX+0x274]+8]`; input class `[ECX+0x9C]`; game-state `[[ECX+0x40]+0x34]`. | `isDbl`, hovered id, selected, last, GUI control ptr, `DAT_00A7FCC0`, tick. |
+| H2b (alt) | `0x007B13BA` inside `0x7B12C0` case 0x43 | `33 C0 83 7D 0C FF` (XOR EAX,EAX; CMP [EBP+0xC],-1; patch 6) | [V] | EBP frame of HandleInputEvent: action `[EBP+8]` (= 0x43), value `[EBP+0xC]` (-1 for dbl, 1 for press), this `[EBP-0x304]`; ECX is not this here. Reached only for value != 0 (the `JZ` at `007B13B8` skips it). | action, value, then same this-fields via `[EBP-0x304]`. |
+
+**(c) the action issue (walk not found, see above).**
+
+| id | addr | patched bytes (asm) | tag | registers / stack at the hook | what to log |
+|---|---|---|---|---|---|
+| **H3** | `0x007B3CA0` `HandleMouseClickInWorld` entry (every LMB release that reaches the world) | `55 8B EC 83 EC 74` (patch 6) | [V] | ECX = this (fastcall, no stack args, plain `RET`). Same field offsets as H2: hovered `[ECX+0x4B0]`, vector `[ECX+0x4B4..0x4BC]`, selected `[ECX+0x2B4]`, last `[ECX+0x2B8]`, default-action list `[ECX+0x4CC]` (count `[ECX+0x4D0]`), `[ECX+0x40]`, `[ECX+0x4]->+0x75` (input mode byte). | hovered, selected, last, list count, and the derived branch (A if `last==0x7F000000 || sel!=hov || last!=sel`, else B). |
+| H3b | `0x007B3E3C` Branch B, just before the indirect default-action call | `8B 55 FC 8B 42 0C` (MOV EDX,[EBP-4]; MOV EAX,[EDX+0xC]; the original `FF D0` CALL EAX follows at `007B3E42`; patch 6) | [V] | ECX = callee object (already `obj + entry+0x10`), EBP frame of 0x7B3CA0: this `[EBP-0x70]`, entry `[EBP-4]` (+8 arg, +0xC fn, +0x10 adj, +0x1C type), actor `[EBP-8]`, target obj ptr `[EBP-0xC]`. Pushed args: `[ESP]` = entry+8, `[ESP+4]` = actor. Hovered via `[[EBP-0x70]+0x4B0]`. | `entry->fn` (identifies Talk/Attack/Use), arg, actor, hovered id. This is the one real "action issue" call reachable from the double click. |
+| H3c (alt) | `0x007B3E53` Branch A body | `8B 91 B0 04 00 00` (MOV EDX,[ECX+0x4B0]; patch 6) | [V] | ECX = this (just loaded from `[EBP-0x70]`). Branch A only (select / ground, no action). | confirm that ground clicks land in A. |
+
+Negative-evidence probes for "does any walk reach the server" (both [V]): `0x00564770` `AddMoveToPointAction`, patched bytes `55 8B EC 83 EC 0C` (ECX = CSWSCreature, RET 0x44), and `0x0065B4F0` `HandlePlayerToServerInputWalkToWaypoint`, patched bytes `55 8B EC 81 EC BC 01 00 00` (patch 9; message bits are read inside, no register args). Log the return address `[ESP]` to see the caller. If H2/H3 fire on a double click but neither of these does, the ground "walk" is not part of the double click at all in this build.
+
+### Next probe step
+mouse-probe `click` channel: H2 (isDbl, hovered, sel, last) + H3 (branch) + H3b (fn) + the two negative probes; one session with (1) double click on a door/NPC that is not yet selected, (2) double click on a selected object, (3) double click on bare ground. Expected from the static trace: (1) A,A (no activation) for a real 0x203 press2, B only if both presses are plain 0x201; (2) B once, then A; (3) A only, no walk anywhere.

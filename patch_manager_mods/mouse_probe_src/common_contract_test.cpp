@@ -6,6 +6,7 @@
 // Patches/Common (see test.toml), so ANY edit to SafeRead.h / KpLog.h re-runs this test: a Common change that would break the probe
 // fails here first.
 //
+// 0.3.0 adds area (5): the pure click heuristics in ClickLogic.h and the hook-side pointer hops that ProbeMouseMsg / ProbeClickInWorld / ProbeDefaultAction make.
 // Areas: (1) saferead as rd<T> uses it (MouseProbe.cpp:55,74), (2) KpLog fallback sink BEFORE any successful KpLog_Init (init cannot be
 // undone): file path, level gate, old-core path, (3) KpLog_Init rejections, (4) KpLog_Init success against a fake kpatch.log service.
 // Host-only, deterministic.
@@ -14,6 +15,7 @@
 #endif
 #include "SafeRead.h"
 #include "KpLog.h"
+#include "ClickLogic.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <unistd.h>
@@ -30,6 +32,7 @@ KP_LOG_PATCH("mouse-probe");   // MouseProbe.cpp:19 (compile-time id validity)
 KP_CHANNEL(chMain, "main");    // :28
 KP_CHANNEL(chRaw, "raw");      // :29
 KP_CHANNEL(chDrag, "drag");    // :32
+KP_CHANNEL(chClick, "click");  // 0.3.0 click channel
 
 // ---- rd<T> exactly as MouseProbe.cpp:74
 template <typename T> static bool rd(uintptr_t base, int off, T* out) { return saferead::readAt(1, base, off, out); }
@@ -128,6 +131,96 @@ int main() {
         HEQ("ring is off by default: a failed rd records nothing (mod never calls enableRing)", (long long)saferead::g_ringCount, (long long)c0);
     }
 
+    // ================= 5. click channel (0.3.0): ClickLogic.h + the hook-side reads
+    {
+        using namespace clicklogic;
+        // lParam unpacking: x = LOWORD, y = HIWORD, signed (multi-monitor negatives)
+        HEQ("unpackX takes LOWORD", unpackX(0x00640032u), 0x32);
+        HEQ("unpackY takes HIWORD", unpackY(0x00640032u), 0x64);
+        HEQ("unpackX is signed (0xFFF6 = -10)", unpackX(0x0010FFF6u), -10);
+        HEQ("unpackY is signed (0xFFF0 = -16)", unpackY(0xFFF00005u), -16);
+        HCHECK("0x201..0x206 are the click messages, 0x200 (move) and 0x207 are not",
+               isMouseButtonMsg(0x201) && isMouseButtonMsg(0x206) && !isMouseButtonMsg(0x200) && !isMouseButtonMsg(0x207));
+        HCHECK("only 0x201..0x203 are LMB", isLmbMsg(0x201) && isLmbMsg(0x203) && !isLmbMsg(0x204));
+
+        // Branch A/B derivation (HandleMouseClickInWorld)
+        const uint32_t H = 0x1234, INV = 0x7F000000u;
+        HCHECK("branch B: last==sel==hov, valid", isBranchB(H, H, H));
+        HCHECK("branch A: last invalid", !isBranchB(H, H, INV));
+        HCHECK("branch A: sel != hov", !isBranchB(H, 0x55, 0x55));
+        HCHECK("branch A: last != sel", !isBranchB(H, H, 0x55));
+        HCHECK("ground hover (hov invalid, sel==last==invalid) is A, never B", !isBranchB(INV, INV, INV));
+
+        // MISSEDDBL: two 0x201 within 500 ms and <=4 px, no 0x203 between
+        { ClickState c;
+          HCHECK("first press is no verdict and has no delta", c.step(0x201, 100, 100, 0, 1000) == Verdict::None && !c.haveDelta);
+          HCHECK("second 0x201 at 300 ms / 3 px -> MissedDbl", c.step(0x201, 102, 102, 0, 1300) == Verdict::MissedDbl);
+          HEQ("dt reported", (long long)c.dtMs, 300LL);
+          HCHECK("dpos reported (sqrt(8))", fabs(c.dpos - sqrt(8.0)) < 1e-9); }
+        { ClickState c; c.step(0x201, 100, 100, 0, 1000);
+          HCHECK("501 ms apart -> no verdict", c.step(0x201, 100, 100, 0, 1501) == Verdict::None); }
+        { ClickState c; c.step(0x201, 100, 100, 0, 1000);
+          HCHECK("exactly 500 ms apart still counts", c.step(0x201, 100, 100, 0, 1500) == Verdict::MissedDbl); }
+        { ClickState c; c.step(0x201, 100, 100, 0, 1000);
+          HCHECK("5 px apart -> no verdict", c.step(0x201, 105, 100, 0, 1200) == Verdict::None); }
+        { ClickState c; c.step(0x201, 100, 100, 0, 1000);
+          HCHECK("exactly 4 px apart still counts", c.step(0x201, 104, 100, 0, 1200) == Verdict::MissedDbl); }
+        { ClickState c; c.step(0x201, 100, 100, 0, 1000); c.step(0x202, 100, 100, 0, 1050);
+          HCHECK("a release between the presses does not suppress MissedDbl", c.step(0x201, 100, 100, 0, 1200) == Verdict::MissedDbl); }
+        { ClickState c; c.step(0x201, 100, 100, 0, 1000); c.step(0x202, 100, 100, 0, 1040);
+          HCHECK("0x203 between -> a proper double click: no DblGuard at guard 0", c.step(0x203, 100, 100, 0, 1200) == Verdict::None);
+          c.step(0x202, 100, 100, 0, 1240);
+          HCHECK("the next 0x201 after a real double click is not MissedDbl", c.step(0x201, 100, 100, 0, 1300) == Verdict::None); }
+        { ClickState c;
+          HCHECK("0x203 with a set guard -> DblGuard", c.step(0x203, 5, 5, 1, 50) == Verdict::DblGuard);
+          HCHECK("0x201 with a set guard is not DblGuard", c.step(0x201, 5, 5, 1, 90) == Verdict::None);
+          HCHECK("0x203 with guard 0 is not DblGuard", c.step(0x203, 5, 5, 0, 120) == Verdict::None); }
+        { ClickState c;
+          HCHECK("right-button messages never produce a verdict", c.step(0x204, 1, 1, 1, 10) == Verdict::None && c.step(0x204, 1, 1, 0, 20) == Verdict::None);
+          HCHECK("an RMB press does not count as an LMB press", !c.haveLmb && !c.havePress); }
+        // recent-LMB window for MOVEPT
+        { ClickState c;
+          HCHECK("no LMB seen -> not recent", !c.recentLmb(1000));
+          c.step(0x202, 1, 1, 0, 1000);
+          HCHECK("0x202 counts as an LMB event", c.recentLmb(3500) && c.recentLmb(4000));
+          HCHECK("just past 3000 ms is no longer recent", !c.recentLmb(4001)); }
+
+        // Hook-side reads: ProbeMouseMsg (ebp+8 -> msg, msg+4 id, msg+0xC lParam, ebp-0x1C -> this, this+0x3EC guard)
+        saferead::beginScope();
+        const uintptr_t ebp = A + 0x2400, msg = A + 0x2800, self = A + 0x3000;
+        *reinterpret_cast<uint32_t*>(ebp + 8) = static_cast<uint32_t>(msg);
+        *reinterpret_cast<int32_t*>(msg + 4) = 0x203;
+        *reinterpret_cast<uint32_t*>(msg + 0xC) = 0x012C00C8u;
+        *reinterpret_cast<uint32_t*>(ebp - 0x1C) = static_cast<uint32_t>(self);
+        *reinterpret_cast<int32_t*>(self + 0x3EC) = 1;
+        uintptr_t gm = 0, gs = 0; int gid = 0, gg = 0; uint32_t lp = 0;
+        HCHECK("rd(ebp, 8, &msgp) reads a POSITIVE offset (ProbeMouseMsg)", rd(ebp, 8, &gm));
+        HEQ("msg pointer exact", (unsigned long long)gm, (unsigned long long)msg);
+        HCHECK("msg id at +4 and lParam at +0xC", rd(gm, 4, &gid) && rd(gm, 0xC, &lp));
+        HEQ("msg id", gid, 0x203);
+        HEQ("lParam x", unpackX(lp), 200);
+        HEQ("lParam y", unpackY(lp), 300);
+        HCHECK("this at ebp-0x1C then guard at this+0x3EC", rd(ebp, -0x1C, &gs) && rd(gs, 0x3EC, &gg));
+        HEQ("guard value", gg, 1);
+        // ProbeDefaultAction: this=[ebp-0x70], entry=[ebp-4] (+8 arg, +0xC fn, +0x1C type), actor=[ebp-8]
+        const uintptr_t entry = A + 0x3800;
+        *reinterpret_cast<uint32_t*>(ebp - 4) = static_cast<uint32_t>(entry);
+        *reinterpret_cast<uint32_t*>(entry + 0xC) = 0x0077CF70u; *reinterpret_cast<uint32_t*>(entry + 8) = 7u; *reinterpret_cast<uint32_t*>(entry + 0x1C) = 5u;
+        uintptr_t ge = 0; uint32_t fn = 0, arg = 0, ty = 0;
+        HCHECK("entry ptr and fn/arg/type reads", rd(ebp, -4, &ge) && rd(ge, 0xC, &fn) && rd(ge, 8, &arg) && rd(ge, 0x1C, &ty));
+        HCHECK("entry fields exact", fn == 0x0077CF70u && arg == 7u && ty == 5u);
+        // ProbeLButtonDown / ProbeClickInWorld: hov +0x4B0, sel +0x2B4, last +0x2B8, vec +0x4B4.., nact +0x4D0
+        *reinterpret_cast<uint32_t*>(self + 0x4B0) = 0x11; *reinterpret_cast<uint32_t*>(self + 0x2B4) = 0x11; *reinterpret_cast<uint32_t*>(self + 0x2B8) = 0x11;
+        *reinterpret_cast<float*>(self + 0x4B4) = 1.5f; *reinterpret_cast<int32_t*>(self + 0x4D0) = 2;
+        uint32_t hov = 0, sel = 0, last = 0; float vx = 0; int nact = 0;
+        HCHECK("this+0x4B0/0x2B4/0x2B8/0x4B4/0x4D0 reads", rd(self, 0x4B0, &hov) && rd(self, 0x2B4, &sel) && rd(self, 0x2B8, &last) && rd(self, 0x4B4, &vx) && rd(self, 0x4D0, &nact));
+        HCHECK("values exact and derive branch B", hov == 0x11 && vx == 1.5f && nact == 2 && isBranchB(hov, sel, last));
+        // an unreadable message pointer fails soft (ProbeMouseMsg returns without logging)
+        int keepId = 77;
+        HCHECK("rd on a null msg pointer fails and leaves *out untouched", !rd(0, 4, &keepId) && keepId == 77);
+
+    }
+
     // ================= 2. KpLog fallback sink (before any successful init)
     HCHECK("KpLog_HasCore() is false before KPatchInit: the old-core path in enter() (:56)", !KpLog_HasCore());
     const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
@@ -137,8 +230,10 @@ int main() {
     HCHECK("KpLog_SetFallbackFile only stores the path, no I/O (safe from a static initialiser, :37)", access(path, F_OK) != 0);
     HCHECK("fallback default level is WARN: KP_ENABLED(INFO) is false (mod starts quiet until the flag file, :62-65)", !KP_ENABLED(chMain, KPLOG_INFO));
     HCHECK("fallback default level WARN lets WARN through (STUCKDRAG?, :144)", KP_ENABLED(chDrag, KPLOG_WARN));
+    HCHECK("click channel INFO is off at the default WARN fallback level (CLICK/DBLACT/... stay quiet)", !KP_ENABLED(chClick));
+    HCHECK("click channel WARN is on at the default fallback level (MISSEDDBL / DBLGUARD)", KP_ENABLED(chClick, KPLOG_WARN));
     HCHECK("channel macros accept the one-argument KP_ENABLED(chRaw) form the hooks use (:99)", !KP_ENABLED(chRaw));
-    KP_LOG(chMain, "START mouseprobe %s", "0.2.0");
+    KP_LOG(chMain, "START mouseprobe %s", "0.3.0");
     HCHECK("at the default WARN level an INFO KP_LOG is dropped and writes no file (:57/:66)", access(path, F_OK) != 0);
     KP_LOGV(chDrag, KPLOG_WARN, "STUCKDRAG? flag set %.1fs with no RMB in raw mask", 2.5);
     {

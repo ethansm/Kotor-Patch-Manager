@@ -4,3 +4,9 @@ EXPORTS
     ProbeMouseRaw
     ProbeMouseNorm
     ProbeCameraFrame
+    ProbeMouseMsg
+    ProbeLButtonDown
+    ProbeClickInWorld
+    ProbeDefaultAction
+    ProbeMoveToPoint
+    ProbeWalkToWaypoint
