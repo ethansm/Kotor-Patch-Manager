@@ -41,6 +41,7 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | T7 | Wine smoke K2DialogueLetterboxFix | M0 | - | TODO | | `--wine -k letterbox` x3 |
 | T8 | `pre_install_gate.sh` (doc 20 Phase 6) | T2 | - | TODO | | PASS perf-lab, FAIL broken tmp kpatch |
 | T9 | check.h into TestHarness.h; VTableOverride/MemberFunctionThunk m32 tests (doc 20 Phase 4) | - | - | TODO | | default tier x2 |
+| T10 | Coverage gaps from T0: K2Addr.h 9.6% -> >=80% (k2addr_test), GuiKit.h 78.1% -> >=80% | T0 | split (K2Addr) | TODO | | `run_tests.py --coverage` |
 | S1a | mirror sync buff + shield + portrait (K2Addr) | - | split | TODO | | `diff -q` clean + check_shared_headers |
 | S1b | mirror sync ForcePowerHotbar FileWatch | - | hotbar | TODO | | |
 | S1c | mirror sync LevelUpOverride | - | OWNED level-up session | TODO | | |
@@ -59,7 +60,7 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 Track P (engine research, separate): perf-lab 0.6.0 from W9 (doc 10 "Status log 20:49"), robustness 1.3.0 Delay/AssignCommand leak fix (shim 0x7037C0).
 
 ## Suggested order
-M0 -> T1 -> T2 -> T3 -> T4 -> T6 -> T7 -> T8 -> S1a -> L2 -> C1 -> T5a/b/c -> C2 -> L1 -> L3 -> S1b-d/C3/C4/C6 (owner-gated) -> C5 -> T9 -> T5d/e.
+M0 -> T1 -> T2 -> T3 -> T4 (T0 done: unblocked) -> T6 -> T7 -> T8 -> S1a -> L2 -> C1 -> T5a/b/c -> C2 -> L1 -> L3 -> S1b-d/C3/C4/C6 (owner-gated) -> C5 -> T9 -> T5d/e.
 
 ## Final verification (end of each track)
 - `python3 scripts/run_tests.py` and `--wine` all PASS x3.
