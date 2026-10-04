@@ -1,5 +1,6 @@
 [1000001] TABLE loaded levelup_paths.ini: 82 presets, 2047 records; atton=atton__melee_dual_dark_early
 [1000002] CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off
+[1000003] CARRY disabled: malformed rule line 17
 [1000003] CONFIG loaded mode=rewrite apply=1 verbose=1 table=levelup_paths.ini tags=
 [1000004] CONFIG source=playthrough gfb7bdbf7 tags=atton:atton__melee_dual_dark_early/i0/h1/p3
 [1000100] #1 tid=5 flow=auto-button ret=00850062(DoAutoLevelup) stats=0a0b0c0d pending=0e0f0a0b addToList=1 tag=atton classes=2:3,5:5 total=8 key=9 xp=36000 unspent170=0

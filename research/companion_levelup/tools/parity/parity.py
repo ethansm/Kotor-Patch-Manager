@@ -257,7 +257,8 @@ name=Synthetic
 """ + "\n".join([_syn_rec(4, 2, [3], [], 4, "0:1"), _syn_rec(5, 2, [60], [], 5), _syn_rec(6, 2, [], [], 6),
                   _syn_rec(8, 5, [9], [10], 1), _syn_rec(9, 5, [30, 31], [11, 20], 2), _syn_rec(10, 5, [20], [21, 23], 3),
                   _syn_rec(11, 5, [50], [22], 4), _syn_rec(12, 5, [75], [], 5), _syn_rec(13, 5, [74], [], 6),
-                  _syn_rec(14, 5, [60], [], 7), _syn_rec(15, 5, [30], [11, 10], 8, "0:5"), _syn_rec(16, 5, [], [144, 11], 9)]) + "\n"
+                  _syn_rec(14, 5, [60], [], 7), _syn_rec(15, 5, [30], [11, 10], 8, "0:5"), _syn_rec(16, 5, [], [144, 11], 9),
+                  _syn_rec(17, 5, [30, 31], [11, 20], 9, "", "100")]) + "\n"
 
 
 def synthetic_tests(fails):
@@ -298,6 +299,11 @@ def synthetic_tests(fails):
         t("feats unreadable: carry skipped", 9, 5, None, set(), info="skipped")
         t("powers unreadable: feats carried, powers plain", 9, 5, set(), None, feats=[30, 31], spells=[11, 20], info="carry", pk=0)
         t("no record: n/a", 3, 5, set(), set(), info="n/a")
+        full = [100] * 63
+        t("MaxPend: 63 kept feats + 63 kept powers, 2 owed picks each: never past 64, valid prefix", 17, 17, set(), set(),
+          pend_of(5, full, [0x90] * 63), feats=full + [30], spells=[0x90] * 63 + [11], info="carry")
+        t("MaxPend: 64 kept feats + 64 kept powers (array full): kept all, no pick appended", 17, 17, set(), set(),
+          pend_of(5, [100] * 64, [0x90] * 64), feats=[100] * 64, spells=[0x90] * 64, info="carry")
         t("negative unspent in carry mode stays negative-unspent", 15, 6, {3}, set(), pend_of(5, [], [], 0, 6, [0] * 8), info="negative-unspent")
         t("class mismatch: n/a", 9, 5, set(), set(), pend_of(2), info="n/a")
         cases = [kline(pid, cl, key, pend, 0, kf, kp) for _n, cl, key, pend, kf, kp, _e in T]
@@ -342,7 +348,9 @@ def synthetic_tests(fails):
                ("min level 256", SYN.replace("p10=|5:6", "p10=|5:256")),
                ("power class 16", SYN.replace("p10=|5:6", "p10=|16:6")),
                ("power entry without colon", SYN.replace("p10=|5:6", "p10=|56")),
-               ("non-numeric", SYN.replace("f9=4|3||2,5", "f9=4|x||2,5"))]
+               ("non-numeric", SYN.replace("f9=4|3||2,5", "f9=4|x||2,5")),
+               ("rule row without =", SYN.replace("f3=0|||2,5\n", "f3=0|||2,5\ngarbage\n")),
+               ("dup power row", SYN.replace("p10=|5:6\n", "p10=|5:6\np10=|5:7\n"))]
         texts = [("v3", SYN), ("old (no rules)", base_old), ("only featrules", SYN[:SYN.index("[powerrules]")] + SYN[SYN.index("[t__x]"):]),
                  ("rules before presets", SYN[SYN.index("[featrules]"):SYN.index("[t__x]")] + SYN[:SYN.index("[featrules]")] + SYN[SYN.index("[t__x]"):])] + bad
         files = []
@@ -357,7 +365,9 @@ def synthetic_tests(fails):
                 want = "OK rules=%d feat=%d power=%d presets=%d" % (R2 is not None, len(R2.feat) if R2 else 0, len(R2.power) if R2 else 0, len(rc2))
             except ValueError:
                 want = "ERR"
-            if line != want or (name in {n for n, _t in bad} and want != "ERR"):
+            # a bad rule row disables carry only: the table still loads (rules=0, no rule rows kept, the preset section still counted)
+            is_bad = name in {n for n, _t in bad}
+            if line != want or (is_bad and (want != "OK rules=0 feat=0 power=0 presets=1" or S.parse_table_v3.rule_bad is None)):
                 fails.append("parse " + name)
                 print("FAIL table parse:", name, "C++:", line, "Py:", want)
         for fp in files:

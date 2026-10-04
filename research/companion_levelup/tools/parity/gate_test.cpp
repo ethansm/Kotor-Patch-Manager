@@ -457,6 +457,47 @@ int main(int argc, char** argv) {
         g_eng.checkCode = false;
     }
 
+    // ---- readKnown sanity (carry-over power read): {ptr,count,cap} must satisfy count <= cap < 4096 (and count <= 100); a Jedi class at class level >= 2 with no
+    // known power at all means the array is not what we think -> pkOk=false (powers stay plain, no owed powers). Feat lists (empty here) stay readable.
+    {
+        auto setPow = [&](const Fake& c, int cls, uint32_t count, uint32_t cap, uint32_t first) {
+            uint8_t* st = reinterpret_cast<uint8_t*>(c.stats);
+            uintptr_t arr = arenaAlloc(4 * 128 + 16);
+            for (uint32_t i = 0; i < count && i < 128; ++i) reinterpret_cast<uint32_t*>(arr)[i] = first + i;
+            uint8_t* h = st + 0x90 + cls * 0x28;   // literal layout on purpose: {uint32* data, int count, int cap}
+            *reinterpret_cast<uint32_t*>(h) = (uint32_t)arr; *reinterpret_cast<uint32_t*>(h + 4) = count; *reinterpret_cast<uint32_t*>(h + 8) = cap;
+        };
+        auto rk = [&](const Fake& c, int nCls, int* np) { static KnownSet ks; bool ok = true; const bool r = readKnown(c.stats, nCls, &ks, &ok); *np = ks.np; return r ? ok : !ok; };
+        int np = 0;
+        Fake sol = makeCreature("rk1", {{0, 4}}); setPow(sol, 0, 3, 3, 10);
+        CHECK(rk(sol, 1, &np) && np == 3, "count == cap ok (np %d)", np);
+        Fake solNone = makeCreature("rk2", {{0, 4}});
+        CHECK(rk(solNone, 1, &np) && np == 0, "non-Jedi with 0 powers is fine (np %d)", np);
+        Fake over = makeCreature("rk3", {{0, 4}}); setPow(over, 0, 3, 2, 10);
+        CHECK(!rk(over, 1, &np) && np == 0, "count > cap rejected (np %d)", np);
+        Fake bigCap = makeCreature("rk4", {{0, 4}}); setPow(bigCap, 0, 3, 4096, 10);
+        CHECK(!rk(bigCap, 1, &np), "cap 4096 rejected");
+        Fake okCap = makeCreature("rk5", {{0, 4}}); setPow(okCap, 0, 3, 4095, 10);
+        CHECK(rk(okCap, 1, &np) && np == 3, "cap 4095 accepted (np %d)", np);
+        Fake big = makeCreature("rk6", {{0, 4}}); setPow(big, 0, 101, 128, 10);
+        CHECK(!rk(big, 1, &np), "count 101 rejected");
+        Fake atCap = makeCreature("rk7", {{0, 4}}); setPow(atCap, 0, 100, 100, 10);
+        CHECK(rk(atCap, 1, &np) && np == 100, "count 100 accepted (np %d)", np);
+        Fake jNone = makeCreature("rk8", {{5, 2}});
+        CHECK(!rk(jNone, 1, &np) && np == 0, "Jedi (5) level 2 with 0 powers -> not ok (np %d)", np);
+        for (int jc : {3, 4, 11, 12, 13}) { Fake j = makeCreature("rkj", {{jc, 3}}); CHECK(!rk(j, 1, &np), "Jedi class %d level 3, 0 powers -> not ok", jc); }
+        Fake jLvl1 = makeCreature("rk9", {{5, 1}});
+        CHECK(rk(jLvl1, 1, &np) && np == 0, "Jedi level 1 with 0 powers is fine (np %d)", np);
+        Fake jOk = makeCreature("rk10", {{5, 2}}); setPow(jOk, 0, 1, 1, 20);
+        CHECK(rk(jOk, 1, &np) && np == 1, "Jedi level 2 with a power ok (np %d)", np);
+        Fake multi = makeCreature("rk11", {{0, 3}, {5, 4}}); setPow(multi, 0, 2, 2, 30);
+        CHECK(rk(multi, 2, &np) && np == 2, "total over all classes: Jedi entry empty but another class has powers -> ok (np %d)", np);
+        Fake multiNone = makeCreature("rk12", {{0, 3}, {5, 4}});
+        CHECK(!rk(multiNone, 2, &np), "two classes, Jedi level 4, no powers anywhere -> not ok");
+        Fake nonJ = makeCreature("rk13", {{6, 9}});
+        CHECK(rk(nonJ, 1, &np) && np == 0, "droid class level 9 with 0 powers is fine");
+    }
+
     printf("gate_test checks %d failures %d (engine calls %d)\n", g_checks, g_fail, g_fakeCalls);
     return g_fail ? 1 : 0;
 }

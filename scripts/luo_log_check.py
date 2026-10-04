@@ -106,7 +106,7 @@ GRAMMAR = [
     ("PLAYTHROUGH", r"PLAYTHROUGH (loaded|missing|write g([0-9a-f]+) tag=(\S+) ok=(\d+))", "cpp:1071/1114"),
     ("TABLE_ERROR", r"TABLE ERROR", "cpp:522"),
     ("TABLE", r"TABLE (loaded|warning)", "cpp:519"),
-    ("CARRY_DISABLED", r"CARRY disabled: table has no \[featrules\]/\[powerrules\] sections", "cpp:reloadTable (carry-over, table without rule sections)"),
+    ("CARRY_DISABLED", r"CARRY disabled: (?:table has no \[featrules\]/\[powerrules\] sections|malformed rule line \d+)", "cpp:reloadTable (carry-over, table without rule sections)"),
     ("UI_CTOR", r"UI ctor panel=([0-9a-f]+) created=(\d+)/(\d+) fallbackScale=(\d+)", "ui.h:122"),
     ("UI_PAGE_BACK", r"UI page back(\d+) fill=(\S+) ok=(\d+) alpha ok=(\d+)", "ui.h:138"),
     ("UI_CREATE", r"UI create panel=([0-9a-f]+) n=(\d+) appended=(\d+) textobj=([0-9a-f]+)", "ui.h:146"),

@@ -84,6 +84,10 @@ def scenario_dat(sid, sc):
         for key, verb in (("feats", "KFEATS"), ("powers", "KPOWERS"), ("engine_feats", "ENGF"), ("engine_powers", "ENGS")):
             if c.get(key):   # carry-over: the creature's known feats/powers and the engine's own picks in the auto level-up's pending list (offline only)
                 L.append("%s %s %s" % (verb, c["tag"], ",".join(map(str, c[key]))))
+        if c.get("engine_feats") and not c.get("powers") and any(CLASS_IDS[n] in (3, 4, 5, 11, 12, 13) and lv >= 2 for n, lv in c.get("classes", [])):
+            # readKnown sanity (1.0.0): a Jedi class past level 1 always knows powers, an empty array reads as not-OK. Carry fixtures that name no known powers get one
+            # engine-granted power (144, counted as known anyway) so the fixture stays a plausible creature and the carry counts do not move.
+            L.append("KPOWERS %s 144" % c["tag"])
     L.append("INI mode=%s" % cfg.get("mode", "rewrite"))
     L.append("INI apply=%s" % cfg.get("apply", 1))
     L.append("INI verbose=%s" % cfg.get("verbose", 1))

@@ -10,6 +10,7 @@ import sys
 from collections import namedtuple
 
 NSKILL = 8
+MAX_PEND = 64   # C++ MaxPend: capacity of the pending feat / power arrays
 Rec = namedtuple("Rec", "cls ability feats powers skills granted clvl", defaults=(None,))
 Preset = namedtuple("Preset", "role style alignment convert skills convert_at hold_class short")
 ENGINE_GRANT_POWERS = (set(range(0x90, 0x95)) | set(range(0x9C, 0x9F)) |
@@ -48,10 +49,37 @@ def parse_table_v2(text):
     return cs, presets, recs
 
 
+def _parse_rule_row(sect, k, v, rules):
+    if sect == "featrules":
+        # f<id>=<mincharlevel>|<req feat ids ,>|<any-of feat ids ,>|<class ids that may pick it ,>
+        f = v.split("|")
+        if len(f) != 4 or not k.startswith("f"):
+            raise ValueError("need 4 featrule fields")
+        fid, mc = int(k[1:]), int(f[0])
+        if not 0 <= fid <= MAX_FEAT_ID or not 0 <= mc <= 255 or fid in rules.feat:
+            raise ValueError("featrule id/min level")
+        rules.feat[fid] = (mc, _rule_ids(f[1], 2, 0xFFFF), _rule_ids(f[2], 5, 0xFFFF), set(_rule_ids(f[3], 16, MAX_RULE_CLASS)))
+    else:
+        # p<id>=<prereq power ids ,>|<class:min character level ,>   (99 = never selectable)
+        f = v.split("|")
+        if len(f) != 2 or not k.startswith("p"):
+            raise ValueError("need 2 powerrule fields")
+        pid = int(k[1:])
+        if not 0 <= pid <= MAX_POWER_ID or pid in rules.power:
+            raise ValueError("powerrule id")
+        mins = {}
+        for x in (f[1].split(",") if f[1].strip() else []):
+            c, m = x.split(":")
+            if not 0 <= int(c) <= MAX_RULE_CLASS or not 0 <= int(m) <= 255:
+                raise ValueError("powerrule class/min")
+            mins[int(c)] = int(m)
+        rules.power[pid] = (_rule_ids(f[0], 4, 0xFFFFFF), mins)
+
+
 def parse_table_v3(text):
     """-> (classskills, presets, records, Rules or None). Rules is None for an old (v2) table without [featrules]/[powerrules]: carry-over off."""
     cs, recs, presets, sect = {}, {}, {}, None
-    rules, seen_rules = Rules(), False
+    rules, seen_rules, rule_bad = Rules(), False, None
     for n, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith(";"):
@@ -63,6 +91,9 @@ def parse_table_v3(text):
                     seen_rules = True
                 elif sect not in ("classskills", "presets", "recommended"):
                     recs.setdefault(sect, {})
+                continue
+            if sect in ("featrules", "powerrules") and "=" not in line:
+                rule_bad = rule_bad or n   # a rule row without '=' is a bad rule row too
                 continue
             if sect is None or "=" not in line:
                 raise ValueError("no section/key")
@@ -79,30 +110,13 @@ def parse_table_v3(text):
                 presets[k] = Preset(f[0], f[1], f[2], f[3], f[4], int(f[5]), int(f[6]), f[7])
             elif sect == "recommended":
                 pass   # <tag>=<preset id>: UI default only
-            elif sect == "featrules":
-                # f<id>=<mincharlevel>|<req feat ids ,>|<any-of feat ids ,>|<class ids that may pick it ,>
-                f = v.split("|")
-                if len(f) != 4 or not k.startswith("f"):
-                    raise ValueError("need 4 featrule fields")
-                fid, mc = int(k[1:]), int(f[0])
-                if not 0 <= fid <= MAX_FEAT_ID or not 0 <= mc <= 255 or fid in rules.feat:
-                    raise ValueError("featrule id/min level")
-                rules.feat[fid] = (mc, _rule_ids(f[1], 2, 0xFFFF), _rule_ids(f[2], 5, 0xFFFF), set(_rule_ids(f[3], 16, MAX_RULE_CLASS)))
-            elif sect == "powerrules":
-                # p<id>=<prereq power ids ,>|<class:min character level ,>   (99 = never selectable)
-                f = v.split("|")
-                if len(f) != 2 or not k.startswith("p"):
-                    raise ValueError("need 2 powerrule fields")
-                pid = int(k[1:])
-                if not 0 <= pid <= MAX_POWER_ID or pid in rules.power:
-                    raise ValueError("powerrule id")
-                mins = {}
-                for x in (f[1].split(",") if f[1].strip() else []):
-                    c, m = x.split(":")
-                    if not 0 <= int(c) <= MAX_RULE_CLASS or not 0 <= int(m) <= 255:
-                        raise ValueError("powerrule class/min")
-                    mins[int(c)] = int(m)
-                rules.power[pid] = (_rule_ids(f[0], 4, 0xFFFFFF), mins)
+            elif sect in ("featrules", "powerrules"):
+                # a malformed / duplicate / over-cap rule row disables carry-over only (C++ g_ruleBadLine); the rest of the table still loads
+                if rule_bad is None:
+                    try:
+                        _parse_rule_row(sect, k, v, rules)
+                    except ValueError:
+                        rule_bad = n
             elif k == "name":
                 pass
             elif k.startswith("l"):
@@ -124,7 +138,8 @@ def parse_table_v3(text):
                 raise ValueError("unknown key")
         except ValueError as e:
             raise ValueError("line %d: %s: %r" % (n, e, raw))
-    return cs, presets, recs, (rules if seen_rules else None)
+    parse_table_v3.rule_bad = rule_bad   # first bad rule line (None = none): carry-over off, presets/records still returned
+    return cs, presets, recs, (rules if seen_rules and rule_bad is None else None)
 
 
 def lookup_record(recs, tag, key_level):
@@ -147,8 +162,10 @@ def compute_rewrite(rec, pend, cs, cs_extra=0):
         return res("class-mismatch")
     feats = [f for f in pend["feats"] if f in rec.granted]
     feats += [f for f in rec.feats if f not in feats]
+    feats = feats[:MAX_PEND]
     spells = [s for s in pend["spells"] if s in ENGINE_GRANT_POWERS]
     spells += [s for s in rec.powers if s not in spells]
+    spells = spells[:MAX_PEND]
     deltas = [0] * NSKILL
     for i, r in rec.skills:
         deltas[i] = r
@@ -309,7 +326,7 @@ def carry_rewrite(rec, cl, key, recs, pend, known_f, known_p, R, cs, cs_extra=0)
             if len(fb_p) < nofill_p and e not in picks_p and e not in fb_p:
                 fb_p.append(e)
         spells = kept_p + fb_p + picks_p
-    new = dict(base, feats=kept_f + fb_f + feats, spells=spells)
+    new = dict(base, feats=(kept_f + fb_f + feats)[:MAX_PEND], spells=spells[:MAX_PEND])   # C++ MaxPend: every append is bounded
     same = all(new[k] == pend[k] for k in ("feats", "spells", "deltas", "unspent", "ability"))
     new["status"] = "already" if same else "rewrite"
     new["info"] = "carry"

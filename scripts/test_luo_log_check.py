@@ -112,7 +112,7 @@ class Synthetic(unittest.TestCase):
         self.assertEqual(r["unknown_lines"], 0)
         self.assertEqual(r["kinds"].get("CARRY"), 2)
         self.assertEqual(r["kinds"].get("CARRYREAD"), 1)
-        self.assertEqual(r["kinds"].get("CARRY_DISABLED"), 1)
+        self.assertEqual(r["kinds"].get("CARRY_DISABLED"), 2)   # no rule sections + malformed rule line N
         self.assertEqual(r["exit"], 0)
 
     def test_replay_missing_fields(self):

@@ -357,6 +357,7 @@ struct PowerRule { bool present; uint8_t nPre; uint32_t pre[4]; uint8_t minLvl[M
 FeatRule g_fr[MaxFeatId + 1];
 PowerRule g_pr[MaxPowerId + 1];
 bool g_rules = false;
+int g_ruleBadLine = 0;   // first malformed/duplicate/over-cap rule row of the last parse (0 = none): carry-over off, the rest of the table still loads
 
 // Parses "1,2,3" (may be empty) into out; false on a non-digit token or overflow.
 template <typename T> bool parseIds(char* s, T* out, int cap, int* n, uint32_t maxv) {
@@ -435,6 +436,55 @@ Preset* presetSlot(const char* id, bool create) {
     return p;
 }
 
+// [featrules] row: f<id>=<mincharlevel>|<req feat ids ,>|<any-of feat ids ,>|<class ids that may pick it ,>
+bool parseFeatRule(char* k, char* v) {
+    char* fl[4]; int nf = 0;
+    fl[nf++] = v;
+    for (char* p = v; *p; ++p) if (*p == '|') { *p = 0; if (nf == 4) return false; fl[nf++] = p + 1; }
+    uint16_t id[1]; int n, mc = 0; uint8_t cl[MaxRuleClass + 1];
+    if (nf != 4 || k[0] != 'f' || !parseIds(k + 1, id, 1, &n, MaxFeatId) || n != 1 || g_fr[id[0]].present || !parseInt(fl[0], 255, &mc)) return false;
+    FeatRule& fr = g_fr[id[0]];
+    int nc = 0;
+    if (!parseIds(fl[1], fr.req, 2, &n, 0xFFFF)) return false;
+    fr.nReq = static_cast<uint8_t>(n);
+    if (!parseIds(fl[2], fr.orr, 5, &n, 0xFFFF)) return false;
+    fr.nOr = static_cast<uint8_t>(n);
+    if (!parseIds(fl[3], cl, MaxRuleClass + 1, &nc, MaxRuleClass)) return false;
+    fr.clsMask = 0;
+    for (int i = 0; i < nc; ++i) fr.clsMask = static_cast<uint16_t>(fr.clsMask | (1u << cl[i]));
+    fr.minChar = static_cast<uint8_t>(mc);
+    fr.present = true;
+    return true;
+}
+// [powerrules] row: p<id>=<prereq power ids ,>|<class>:<min character level ,>   (99 = never selectable, 0 = no minimum)
+bool parsePowerRule(char* k, char* v) {
+    char* fl[2]; int nf = 0;
+    fl[nf++] = v;
+    for (char* p = v; *p; ++p) if (*p == '|') { *p = 0; if (nf == 2) return false; fl[nf++] = p + 1; }
+    uint16_t id[1]; int n;
+    if (nf != 2 || k[0] != 'p' || !parseIds(k + 1, id, 1, &n, MaxPowerId) || n != 1 || g_pr[id[0]].present) return false;
+    PowerRule& pr = g_pr[id[0]];
+    if (!parseIds(fl[0], pr.pre, 4, &n, 0xFFFFFF)) return false;
+    pr.nPre = static_cast<uint8_t>(n);
+    memset(pr.minLvl, 0xFF, sizeof pr.minLvl);
+    if (*fl[1]) {
+        for (char* p = fl[1];;) {
+            char* comma = strchr(p, ',');
+            if (comma) *comma = 0;
+            char* colon = strchr(p, ':');
+            if (!colon) return false;
+            *colon = 0;
+            uint8_t a[1], b[1]; int na, nb;
+            if (!parseIds(p, a, 1, &na, MaxRuleClass) || na != 1 || !parseIds(colon + 1, b, 1, &nb, 255) || nb != 1) return false;
+            pr.minLvl[a[0]] = b[0];
+            if (!comma) break;
+            p = comma + 1;
+        }
+    }
+    pr.present = true;
+    return true;
+}
+
 bool parseTable(const char* path) {
     g_nPresets = 0;
     g_tableWarn = 0; g_tableWarnIds[0] = 0;
@@ -448,7 +498,7 @@ bool parseTable(const char* path) {
     g_fileBuf[len] = 0;
     memset(g_fr, 0, sizeof g_fr);
     memset(g_pr, 0, sizeof g_pr);
-    g_rules = false;
+    g_rules = false; g_ruleBadLine = 0;
     enum { None, ClassSkills, PresetIndex, Recommended, FeatRules, PowerRules, PresetSec } sec = None;
     Preset* cur = nullptr;
     int lineNo = 0;
@@ -474,7 +524,11 @@ bool parseTable(const char* path) {
             continue;
         }
         char* eq = strchr(l, '=');
-        if (!eq) goto bad;
+        if (!eq) {
+            if (sec != FeatRules && sec != PowerRules) goto bad;
+            if (!g_ruleBadLine) g_ruleBadLine = lineNo;   // a rule row without '=' is a bad rule row too
+            continue;
+        }
         *eq = 0;
         char* k = trim(l); char* v = trim(eq + 1);
         lower(k);
@@ -510,50 +564,9 @@ bool parseTable(const char* path) {
             Preset* p = presetSlot(v, true);
             if (!p) goto bad;
             p->recommended = true;
-        } else if (sec == FeatRules) {
-            // f<id>=<mincharlevel>|<req feat ids ,>|<any-of feat ids ,>|<class ids that may pick it ,>
-            char* fl[4]; int nf = 0;
-            fl[nf++] = v;
-            for (char* p = v; *p; ++p) if (*p == '|') { *p = 0; if (nf == 4) goto bad; fl[nf++] = p + 1; }
-            uint16_t id[1]; int n, mc = 0; uint8_t cl[MaxRuleClass + 1];
-            if (nf != 4 || k[0] != 'f' || !parseIds(k + 1, id, 1, &n, MaxFeatId) || n != 1 || g_fr[id[0]].present || !parseInt(fl[0], 255, &mc)) goto bad;
-            FeatRule& fr = g_fr[id[0]];
-            int nc = 0;
-            if (!parseIds(fl[1], fr.req, 2, &n, 0xFFFF)) goto bad;
-            fr.nReq = static_cast<uint8_t>(n);
-            if (!parseIds(fl[2], fr.orr, 5, &n, 0xFFFF)) goto bad;
-            fr.nOr = static_cast<uint8_t>(n);
-            if (!parseIds(fl[3], cl, MaxRuleClass + 1, &nc, MaxRuleClass)) goto bad;
-            fr.clsMask = 0;
-            for (int i = 0; i < nc; ++i) fr.clsMask = static_cast<uint16_t>(fr.clsMask | (1u << cl[i]));
-            fr.minChar = static_cast<uint8_t>(mc);
-            fr.present = true;
-        } else if (sec == PowerRules) {
-            // p<id>=<prereq power ids ,>|<class>:<min character level ,>   (99 = never selectable, 0 = no minimum)
-            char* fl[2]; int nf = 0;
-            fl[nf++] = v;
-            for (char* p = v; *p; ++p) if (*p == '|') { *p = 0; if (nf == 2) goto bad; fl[nf++] = p + 1; }
-            uint16_t id[1]; int n;
-            if (nf != 2 || k[0] != 'p' || !parseIds(k + 1, id, 1, &n, MaxPowerId) || n != 1 || g_pr[id[0]].present) goto bad;
-            PowerRule& pr = g_pr[id[0]];
-            if (!parseIds(fl[0], pr.pre, 4, &n, 0xFFFFFF)) goto bad;
-            pr.nPre = static_cast<uint8_t>(n);
-            memset(pr.minLvl, 0xFF, sizeof pr.minLvl);
-            if (*fl[1]) {
-                for (char* p = fl[1];;) {
-                    char* comma = strchr(p, ',');
-                    if (comma) *comma = 0;
-                    char* colon = strchr(p, ':');
-                    if (!colon) goto bad;
-                    *colon = 0;
-                    uint8_t a[1], b[1]; int na, nb;
-                    if (!parseIds(p, a, 1, &na, MaxRuleClass) || na != 1 || !parseIds(colon + 1, b, 1, &nb, 255) || nb != 1) goto bad;
-                    pr.minLvl[a[0]] = b[0];
-                    if (!comma) break;
-                    p = comma + 1;
-                }
-            }
-            pr.present = true;
+        } else if (sec == FeatRules || sec == PowerRules) {
+            // a malformed / duplicate / over-cap rule row disables carry-over only (rules cleared after the loop); presets, holds and paths keep working
+            if (!g_ruleBadLine && !(sec == FeatRules ? parseFeatRule(k, v) : parsePowerRule(k, v))) g_ruleBadLine = lineNo;
         } else if (sec == PresetSec) {
             if (!strcmp(k, "name")) { snprintf(cur->name, sizeof cur->name, "%s", v); continue; }
             if (k[0] != 'l') goto bad;
@@ -570,6 +583,7 @@ bool parseTable(const char* path) {
         size_t n = strlen(g_tableWarnIds);
         snprintf(g_tableWarnIds + n, sizeof g_tableWarnIds - n, " %s", g_presets[i].id);
     }
+    if (g_ruleBadLine) { memset(g_fr, 0, sizeof g_fr); memset(g_pr, 0, sizeof g_pr); g_rules = false; }
     return true;
 bad:
     snprintf(g_tableErr, sizeof g_tableErr, "%s line %d malformed", path, lineNo);
@@ -597,7 +611,8 @@ void reloadTable(bool force = false) {
             b.add(" %s=%s", tc.tag, tc.preset >= 0 ? g_presets[tc.preset].id : "UNRESOLVED");
         }
         logLine("TABLE loaded %s: %d presets, %d records;%s", g_cfg.table, g_nPresets, total, b.s);
-        if (!g_rules) logLine("CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off");
+        if (g_ruleBadLine) logLine("CARRY disabled: malformed rule line %d", g_ruleBadLine);
+        else if (!g_rules) logLine("CARRY disabled: table has no [featrules]/[powerrules] sections (old table format) - carry-over off");
         if (g_tableWarn) logLine("TABLE warning: %d preset section(s) without an index row (hold_class 0):%s", g_tableWarn, g_tableWarnIds);
     } else {
         logLine("TABLE ERROR %s -> rewrite disabled", g_tableErr);
@@ -839,10 +854,10 @@ Result computeCarry(const Rec* r, const Preset* p, int cl, int key, const Pend& 
         if (!has(r->granted, r->nGranted, e) && !has(pickF, nPickF, e) && !has(fbF, nFbF, e)) fbF[nFbF++] = e;
     }
     o.nFeats = 0;
-    for (int i = 0; i < nKeptF; ++i) o.feats[o.nFeats++] = keptF[i];
-    for (int i = 0; i < nFbF; ++i) o.feats[o.nFeats++] = fbF[i];
+    for (int i = 0; i < nKeptF && o.nFeats < MaxPend; ++i) o.feats[o.nFeats++] = keptF[i];
+    for (int i = 0; i < nFbF && o.nFeats < MaxPend; ++i) o.feats[o.nFeats++] = fbF[i];
     res.nKeptFeats = o.nFeats;
-    for (int i = 0; i < nPickF; ++i) o.feats[o.nFeats++] = pickF[i];
+    for (int i = 0; i < nPickF && o.nFeats < MaxPend; ++i) o.feats[o.nFeats++] = pickF[i];
     int nPickP = 0, nFbP = 0, preP = 0, noFillP = 0;
     if (pkOk) {
         uint32_t pickP[MaxPicks], fbP[MaxPicks];
@@ -861,10 +876,10 @@ Result computeCarry(const Rec* r, const Preset* p, int cl, int key, const Pend& 
             if (!isEngineGrantPower(e) && !has(pickP, nPickP, e) && !has(fbP, nFbP, e)) fbP[nFbP++] = e;
         }
         o.nSpells = 0;
-        for (int i = 0; i < nKeptP; ++i) o.spells[o.nSpells++] = keptP[i];
-        for (int i = 0; i < nFbP; ++i) o.spells[o.nSpells++] = fbP[i];
+        for (int i = 0; i < nKeptP && o.nSpells < MaxPend; ++i) o.spells[o.nSpells++] = keptP[i];
+        for (int i = 0; i < nFbP && o.nSpells < MaxPend; ++i) o.spells[o.nSpells++] = fbP[i];
         res.nKeptSpells = o.nSpells;
-        for (int i = 0; i < nPickP; ++i) o.spells[o.nSpells++] = pickP[i];
+        for (int i = 0; i < nPickP && o.nSpells < MaxPend; ++i) o.spells[o.nSpells++] = pickP[i];
     } else {
         nOwedP = 0;
     }
@@ -1218,13 +1233,20 @@ bool readKnown(uintptr_t stats, int nClass, KnownSet* ks, bool* pkOk) {
     }
     bool ok = nClass >= 1 && nClass <= 4;
     for (int c = 0; ok && c < nClass; ++c) {
-        uint32_t pa = 0, pc = 0;
+        uint32_t pa = 0, pc = 0, pcap = 0;
         const int off = St_ClassSpells + c * St_ClassStride;
-        if (!readAt(S_Class, stats, off, &pa) || !readAt(S_Class, stats, off + 4, &pc) || pc > static_cast<uint32_t>(MaxPowersPerClass)) { ok = false; break; }
+        if (!readAt(S_Class, stats, off, &pa) || !readAt(S_Class, stats, off + 4, &pc) || !readAt(S_Class, stats, off + 8, &pcap) ||
+            pc > static_cast<uint32_t>(MaxPowersPerClass) || pc > pcap || pcap >= 4096) { ok = false; break; }   // {ptr, count, cap}: count <= cap < 4096 or it is not a power array
         if (!pc) continue;
         const uintptr_t a = pa;
         if (!a || !probeRead(S_Class, reinterpret_cast<const void*>(a), pc * 4)) { ok = false; break; }
         for (uint32_t i = 0; i < pc; ++i) ks->p[ks->np++] = reinterpret_cast<const uint32_t*>(a)[i];
+    }
+    // sanity: a Jedi class past its first level always has powers (Force powers from the class table); none at all = the array is not what we think it is
+    for (int c = 0; ok && c < nClass; ++c) {
+        uint8_t id = 0, lv = 0;
+        if (!readAt(S_Class, stats, St_ClassId + c * St_ClassStride, &id) || !readAt(S_Class, stats, St_ClassLevel + c * St_ClassStride, &lv)) { ok = false; break; }
+        if (isJediClass(id) && lv >= 2 && !ks->np) ok = false;
     }
     *pkOk = ok;
     if (!ok) ks->np = 0;
@@ -1723,9 +1745,9 @@ void noteHold(const char* tag, int key, bool held, unsigned site, bool real) {
     }
     s->held = held; s->key = key;
     const bool differs = held ? (!s->logHeld || s->logKey != key) : s->logHeld;   // same predicate as before: HOLD on a new (held,key), UNHOLD when the log showed HOLD
-    if (!differs) return;
+    if (!differs && !s->suppressed) return;   // a withheld flap that ended back on the logged state still owes its " suppressed=N" line
     const DWORD now = GetTickCount();
-    if (s->everLogged && now - s->lastLog < HoldLogGapMs) { ++s->suppressed; return; }
+    if (s->everLogged && now - s->lastLog < HoldLogGapMs) { if (differs) ++s->suppressed; return; }
     char sup[32] = "";
     if (s->suppressed) snprintf(sup, sizeof sup, " suppressed=%d", s->suppressed);
     if (held) logLine("%s tag=%s key=%d site=0x%X%s", real ? "HOLD" : "WOULD HOLD", tag, key, site, sup);
