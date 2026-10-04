@@ -38,7 +38,7 @@ const char* cfgButtonText(bool configured, bool canLevelUp, bool* highlight) {
 constexpr unsigned S_Ui = 120;
 constexpr int NumRows = opt::NumRows + 1, MaxUiPanels = 4, BtnLevelUpIndex = 66, UiText = 160;   // option rows: Convert, Role, Style, Alignment, Skills, Variant
 constexpr uint32_t UiMagic = 0x4C554932;   // 'LUI2'
-enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_N };
+enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_TIPBG, C_TIP, C_N };
 constexpr int NumBg = 3;
 struct UiSpec { bool framed; int x, y, w, h; };   // layout units (800x600)
 // Options page over the stats column only (live 2026-10-02: BTN_AUTO/BTN_LEVELUP, SLD_ALIGN x 310 and LBL_LIGHT/DARK x 304 draw ON TOP of anything
@@ -55,8 +55,9 @@ const UiSpec kUiSpec[C_N] = {
     {true, 62, 356, 113, 26}, {true, 179, 356, 113, 26},                                                 // Instant, Bank for Jedi (plain On/Off toggle)
     {false, 62, 386, 150, 24}, {true, 216, 386, 36, 24}, {true, 256, 386, 36, 24},                       // Pause at level N (label), "-", "+"
     {true, 62, 414, 230, 24},                                                                            // Use recommended
-    {true, 62, 442, 72, 26}, {true, 138, 442, 72, 26}, {true, 214, 442, 78, 26}};                        // Apply, Vanilla, Cancel
-const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel"};
+    {true, 62, 442, 72, 26}, {true, 138, 442, 72, 26}, {true, 214, 442, 78, 26},                         // Apply, Vanilla, Cancel
+    {true, 54, 134, 120, 40}, {false, 60, 139, 108, 30}};                                                // tooltip box + text (CUSTOM fallback, placed per hover by uiTipTick; created last = on top)
+const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel", "tipbg", "tip"};
 const char* const kLossyText = "levelup_playthroughs.ini too large - edit by hand";   // F6: shown instead of the generic failure / status text when the file parse was lossy
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
@@ -89,6 +90,11 @@ struct UiPanel {
     int curLevel = -1;           // total character level of the page's creature (-1 = unreadable); refreshed by uiTick before input, so clicks can clamp without engine calls
     int pause = 0;               // 0.3.1: bank on + pause N = last character level taken before banking; 0 = preset default (convertAt-1)
     int rowSlot[NumRows] = {};   // compact slot of each shown option row, -1 = hidden
+    // hover tooltips (GuiTip.h): native strings are set once in uiAppend; the custom box is the fallback
+    guitip::State tip;
+    guitip::ProbeSnap tipProbe;
+    int tipProbeKey = -1;
+    bool tipOpen = false;        // page-open state seen by the previous uiTipTick (a change resets the tip)
 };
 UiPanel g_ui[MaxUiPanels];
 int g_uiNext = 0;
@@ -126,6 +132,29 @@ void uiPanelCtor(uintptr_t panel) {
 }
 
 
+// ---- tooltip text (pure; every line <= TipMaxChars chars, <= TipMaxLines lines: the engine box does not wrap, ours is sized from the text) ----
+constexpr int TipMaxChars = 36, TipMaxLines = 3;
+// nullptr = no tip (status, title, build line, backgrounds, the tip controls themselves).
+const char* uiTipText(int ctl) {
+    switch (ctl) {
+    case C_CFG: return "Choose a level-up plan for this\ncompanion. Unplanned companions\nlevel up as in the vanilla game.";
+    case C_ROW0 + 0: return "When (or whether) this companion\nbecomes a Jedi.";
+    case C_ROW0 + 1: return "Click to cycle Role choices;\nthe build below updates.";
+    case C_ROW0 + 2: return "Click to cycle Weapons choices;\nthe build below updates.";
+    case C_ROW0 + 3: return "Click to cycle Powers choices;\nthe build below updates.";
+    case C_ROW0 + 4: return "Click to cycle Skills choices;\nthe build below updates.";
+    case C_ROW0 + 5: return "Click to cycle Variant choices;\nthe build below updates.";
+    case C_INSTANT: return "On: levels apply automatically\nwhen earned. Off: you level up\nby hand, following the plan.";
+    case C_BANK: return "On: keep earned levels unspent\nuntil the Jedi class is available,\nthen spend them as Jedi.";
+    case C_PAUSE: case C_PMINUS: case C_PPLUS: return "Stay at this level, bank later\nlevels for Jedi. Starts at the\ncurrent level; use + to go higher.";
+    case C_REC: return "Switch to the recommended build\nfor this companion.";
+    case C_APPLY: return "Save this plan for the current\nplaythrough.";
+    case C_VANILLA: return "Remove the plan; this companion\nlevels up as in the vanilla game.";
+    case C_CANCEL: return "Close without changes.";
+    default: return nullptr;
+    }
+}
+
 // First tick: append every control (draw order = append order: the three backgrounds first), set alignments, log once.
 void uiAppend(UiPanel* r) {
     int ok = 0;
@@ -140,9 +169,19 @@ void uiAppend(UiPanel* r) {
         const bool a = guikit::setAlpha(r->c[C_BG0 + b], 1.0f);
         logLine("UI page back%d fill=%s ok=%d alpha ok=%d", b, kPageBackFill, f, a);
     }
+    if (r->c[C_TIPBG]) {   // tooltip box: same opaque black fill as the page back (one label, alpha 1)
+        const bool f = guikit::setFill(r->c[C_TIPBG], guikit::imageFor(kPageBackFill));
+        const bool a = guikit::setAlpha(r->c[C_TIPBG], 1.0f);
+        logLine("UI tip back fill=%s ok=%d alpha ok=%d", kPageBackFill, f, a);
+    }
     for (int i = 0; i < C_N; ++i) {
-        if (!r->c[i] || (i >= C_BG0 && i <= C_BG2) || i == C_STATUS) continue;
-        guikit::setAlign(r->c[i], i == C_TITLE ? 17 : 18);   // 17 top-centre, 18 centre; the status line keeps the template's left alignment
+        if (!r->c[i] || (i >= C_BG0 && i <= C_BG2) || i == C_STATUS || i == C_TIPBG) continue;
+        guikit::setAlign(r->c[i], i == C_TITLE ? 17 : (i == C_TIP ? 9 : 18));   // 17 top-centre, 18 centre, 9 top-left (multi-line tip); the status line keeps the template's left alignment
+    }
+    {   // native tooltip strings: static per control, set once here (never from uiClick, which runs inside the engine's SetStats)
+        int nat = 0;
+        for (int i = 0; i < C_N; ++i) if (r->c[i] && uiTipText(i) && guitip::setNative(r->c[i], uiTipText(i))) ++nat;
+        logLine("UI tips native=%d", nat);
     }
     unsigned mask = 0;
     for (int i = 0; i < C_N; ++i) if (r->c[i] && guikit::detail::textObjOk(r->c[i])) mask |= 1u << i;
@@ -176,7 +215,7 @@ void uiSlots(UiPanel* r) {
     for (int row = 0; row < NumRows; ++row) r->rowSlot[row] = (r->open && opt::shown(r->os, row)) ? k++ : -1;
 }
 void uiPlace(UiPanel* r, const guikit::Scale& s) {
-    for (int i = 0; i < C_N; ++i) {
+    for (int i = 0; i < C_TIPBG; ++i) {   // the tooltip controls are placed per hover by uiTipTick
         if (!r->c[i]) continue;
         int y = kUiSpec[i].y;
         if (i >= C_ROW0 && i < C_ROW0 + NumRows) y = kRowY0 + kRowStep * (r->rowSlot[i - C_ROW0] >= 0 ? r->rowSlot[i - C_ROW0] : 0);
@@ -384,10 +423,67 @@ void uiRenderPage(UiPanel* r, const char* tag) {
     uiShow(r, C_CANCEL, true);
 }
 
+// ---- hover tooltips: custom fallback box (GuiTip.h; the native strings are set in uiAppend) --------------------------------------
+// Box metrics in layout units (the controls' dialog font is ~6 units per char at 800x600): 36 chars + padding = 228 <= the 246-wide column.
+constexpr guitip::Metrics kTipMetrics = {6, 12, 6, 5};
+constexpr int kTipGap = 4;
+constexpr guitip::Region kTipRegionPage = {54, 134, 300, 470};   // stats column (nothing may sit right of x 300 inside the page area)
+constexpr guitip::Region kTipRegionCfg = {54, 134, 300, 372};    // page closed: the box goes left of / above the Configure button (y 372)
+
+// Rect of control i in layout units as uiPlace places it.
+guitip::Rect uiRectUnits(const UiPanel* r, int i) {
+    guitip::Rect q = {kUiSpec[i].x, kUiSpec[i].y, kUiSpec[i].w, kUiSpec[i].h};
+    if (i >= C_ROW0 && i < C_ROW0 + NumRows) q.y = kRowY0 + kRowStep * (r->rowSlot[i - C_ROW0] >= 0 ? r->rowSlot[i - C_ROW0] : 0);
+    return q;
+}
+// Shown control with tip text under (x,y); -1 = none. Separate from uiHit: the pause label has a tip but is not clickable.
+int uiTipHit(const UiPanel* r, int x, int y) {
+    for (int i = 0; i < C_TIPBG; ++i) if ((r->shownMask & (1u << i)) && r->c[i] && uiTipText(i) && guikit::hit(r->c[i], x, y)) return i;
+    return -1;
+}
+void uiTipHide(UiPanel* r) { uiShow(r, C_TIPBG, false); uiShow(r, C_TIP, false); }
+void uiTipReset(UiPanel* r) { guitip::reset(r->tip); r->tipProbe = guitip::ProbeSnap(); r->tipProbeKey = -1; uiTipHide(r); }
+void uiPlaceUnits(UiPanel* r, int i, const guikit::Scale& sc, const guitip::Rect& q) {
+    int x, y, w, h, ex, ey, ew, eh;
+    guikit::unitRect(sc, q.x, q.y, q.w, q.h, &x, &y, &w, &h);
+    if (!guikit::getExtent(r->c[i], &ex, &ey, &ew, &eh) || ex != x || ey != y || ew != w || eh != h) guikit::setRect(r->c[i], x, y, w, h);
+}
+// Every tick after the draw. hov = control with tip text under the cursor (-1 none); clicked = a press edge this tick (hides the tip).
+void uiTipTick(UiPanel* r, const guikit::Scale& sc, int hov, bool clicked) {
+    if (clicked || r->open != r->tipOpen) { r->tipOpen = r->open; uiTipReset(r); }
+    guitip::Mgr mg;
+    guitip::readMgr(&mg);
+    const uintptr_t hc = hov >= 0 ? r->c[hov] : 0;
+    const bool wasShown = r->tip.boxShown;
+    const bool show = guitip::tick(r->tip, hov, hc && mg.ok && mg.owner == hc, GetTickCount(), guitip::delayMs(mg));
+    if (hov != r->tipProbeKey) { r->tipProbeKey = hov; r->tipProbe = guitip::ProbeSnap(); }
+    if (hc) {   // probe: one line per change of {over, owner, drawn, ctl bit 0x40} for the hovered control
+        int fl = 0;
+        guikit::detail::rdInt(hc, guikit::Ctl_Flags, &fl);
+        if (guitip::probeChanged(r->tipProbe, mg, hc, fl))
+            logLine("TIPPROBE over_is_ours=%d owner_is_ours=%d shown=%d ctl40=%d timer=%.2f appear=%.2f dis=%u ctl=%s", r->tipProbe.over, r->tipProbe.owner, r->tipProbe.shown, r->tipProbe.ctl40,
+                    mg.timer, mg.appear, (unsigned)mg.disabled, kUiName[hov]);
+    }
+    if (!show || !r->c[C_TIPBG] || !r->c[C_TIP]) { if (!show) uiTipHide(r); return; }
+    const char* t = uiTipText(hov);
+    int lines = 0, maxLen = 0;
+    guitip::measure(t, &lines, &maxLen);
+    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov), r->open ? kTipRegionPage : kTipRegionCfg, kTipGap);
+    uiPlaceUnits(r, C_TIPBG, sc, b);
+    uiPlaceUnits(r, C_TIP, sc, {b.x + kTipMetrics.padX, b.y + kTipMetrics.padY, b.w - 2 * kTipMetrics.padX, b.h - 2 * kTipMetrics.padY});
+    uiSetText(r, C_TIP, t);
+    uiShow(r, C_TIPBG, true);
+    uiShow(r, C_TIP, true);
+    guikit::setClickable(r->c[C_TIPBG], false);   // the box never swallows clicks / native hover
+    guikit::setClickable(r->c[C_TIP], false);
+    if (!wasShown) logLine("UI tip custom ctl=%s (native box not seen)", kUiName[hov]);
+}
+
 void uiHideAll(UiPanel* r) {
     for (int i = 0; i < C_N; ++i) uiShow(r, i, false);
     if (r->open) uiClosePage(r);
     r->hover = -1;
+    uiTipReset(r);
 }
 
 // ---- input ----------------------------------------------------------------------------------------------------------------
@@ -463,7 +559,8 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     }
     // input first (acts on what the previous tick drew)
     int cx = 0, cy = 0;
-    const int hit = guikit::cursorEngine(&cx, &cy) ? uiHit(r, cx, cy) : -1;
+    const bool haveCur = guikit::cursorEngine(&cx, &cy);
+    const int hit = haveCur ? uiHit(r, cx, cy) : -1;
     const bool clickable = hit >= 0 && uiClickable(r, hit);
     const bool hovered = clickable && hit == r->hover;   // the cursor was already over this control on the previous tick (guards clicks meant for a GUI on top)
     if (clickable && hit != r->hover) guikit::playHoverSound();
@@ -481,9 +578,10 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
         uiShow(r, C_CFG, false);
         uiShow(r, C_STATUS, false);
         uiRenderPage(r, tag);
+        uiTipTick(r, sc, haveCur ? uiTipHit(r, cx, cy) : -1, click);
         return;
     }
-    for (int i = C_BG0; i < C_N; ++i) uiShow(r, i, false);
+    for (int i = C_BG0; i < C_TIPBG; ++i) uiShow(r, i, false);
     bool hl = false;
     uiSetText(r, C_CFG, cfgButtonText(configured, realCan != 0, &hl));
     uiNudge(r, hl);
@@ -501,4 +599,5 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     if (g_ptDoc.lossy) { snprintf(st, sizeof st, "%s", kLossyText); sv = true; }   // F6: the file cannot be rewritten (Apply refused); say why on the screen
     if (sv) uiSetText(r, C_STATUS, st);
     uiShow(r, C_STATUS, sv);
+    uiTipTick(r, sc, haveCur ? uiTipHit(r, cx, cy) : -1, click);
 }

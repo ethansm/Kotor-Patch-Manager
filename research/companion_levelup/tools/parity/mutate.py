@@ -166,6 +166,19 @@ m("CO29", CPP, r"pc > pcap \|\|", "", "known powers: count <= cap sanity dropped
 m("CO30", CPP, r"lv >= 2 && !ks->np\) ok = false;", "lv >= 3 && !ks->np) ok = false;", "known powers: Jedi class level 2 with no powers accepted")
 m("CO31", CPP, r"isJediClass\(id\) && lv >= 2", "isJediClass(id) && lv >= 2 && id != 13", "known powers: Watchman (13) exempt from the empty-array sanity")
 
+# ---- hover tooltips (GuiTip.h in _shared_src + the LevelUpUi.h adoption; killed by ui_test section 5) ---------------------------------------------------
+G = "../_shared_src/GuiTip.h"
+m("TP01", G, r"delay \+ FallbackGraceMs;", "delay;", "tip fallback: grace after the engine delay removed")
+m("TP02", G, r">= delay \+ FallbackGraceMs", "> delay + FallbackGraceMs", "tip fallback: box one ms late (>= -> >)")
+m("TP03", G, r"if \(nativeOwnsHovered\) s\.nativeSeen = true;", "if (false) s.nativeSeen = true;", "tip fallback: nativeSeen never set")
+m("TP04", G, r"if \(nativeOwnsHovered \|\| s\.nativeSeen\) \{", "if (nativeOwnsHovered) {", "tip fallback: nativeSeen not sticky")
+m("TP05", G, r"m\.appear \* 1000\.f", "m.appear * 100.f", "tip delay: appear time seconds -> ms factor")
+m("TP06", G, r"return DefaultDelayMs;", "return 0;", "tip delay: unreadable manager gives no default delay")
+m("TP07", G, r"if \(r\.x \+ r\.w > reg\.x1\) r\.x = reg\.x1 - r\.w;", "", "tip layout: right clamp removed")
+m("TP08", G, r"r\.y = ctl\.y - r\.h - gap;", "r.y = ctl.y + ctl.h + gap;", "tip layout: no flip above at the bottom")
+m("TP10", UI, r"guitip::setNative\(r->c\[i\], uiTipText\(i\)\)", "false", "UI: native tip strings never set")
+m("TP11", UI, r"if \(clicked \|\| r->open != r->tipOpen\)", "if (r->open != r->tipOpen)", "UI: a click no longer hides the tip box")
+m("TP12", UI, r"uiPlace\(UiPanel\* r, const guikit::Scale& s\) \{\n    for \(int i = 0; i < C_TIPBG; \+\+i\)", "uiPlace(UiPanel* r, const guikit::Scale& s) {\n    for (int i = 0; i < C_N; ++i)", "UI: uiPlace also moves the tip controls back to their spec rect each tick")
 BY_ID = {x[0]: x for x in M}
 assert len(BY_ID) == len(M), "duplicate mutation id"
 
@@ -203,7 +216,11 @@ def run_one(mut, root, keep):
     shutil.copytree(os.path.join(root, "base"), d, symlinks=True)
     tgt = os.path.join(d, "patch_manager_mods/level_up_override_src", mut[1])
     with open(tgt, newline="") as fh: text = fh.read()
-    with open(tgt, "w", newline="") as fh: fh.write(apply(mut, text))
+    mutated = apply(mut, text)
+    with open(tgt, "w", newline="") as fh: fh.write(mutated)
+    twin = os.path.join(d, "research/companion_levelup/tools/parity/stub/_shared", os.path.basename(mut[1]))   # build_base copied the stub's symlinked headers as plain files
+    if mut[1].startswith("../_shared_src/") and os.path.isfile(twin) and not os.path.islink(twin):
+        with open(twin, "w", newline="") as fh: fh.write(mutated)
     cwd = os.path.join(d, "research/companion_levelup")
     t0 = time.time()
     status, by = "SURVIVED", ""

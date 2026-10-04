@@ -1,0 +1,4 @@
+# Per-test table: the Common contract test needs the shared headers and the host Win32 stub (mirrors shield_bar_src/test.toml).
+# Per-test tables replace the top-level keys, so ../_shared_src is repeated.
+[common_contract_test]
+cxxflags = ["-I../_shared_src", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]

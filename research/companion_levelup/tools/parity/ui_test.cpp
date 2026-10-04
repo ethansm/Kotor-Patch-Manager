@@ -67,11 +67,13 @@ static void fCtor(void* t) {
     ++nCtor; uintptr_t c = reinterpret_cast<uintptr_t>(t);
     at<uint32_t>(c, 0) = LabelVtable; at<uint32_t>(c, Label_Border) = BorderVtable; at<uint32_t>(c, Label_Text) = TextVtable;
     at<uint32_t>(c, Label_Text + Text_Renderer) = 0x1000; at<int>(c, Ctl_Flags) = 0x2;
+    at<int>(c, 0x28) = 77;   // stale tooltip strref: GuiTip::setNative must zero it on tip controls only
     at<float>(c, Label_Text + Text_StringSub + Text_Color) = 0.f; at<float>(c, Label_Text + Text_StringSub + Text_Color + 4) = 1.f; at<float>(c, Label_Text + Text_StringSub + Text_Color + 8) = 0.f;
 }
 // CExoString fake: the first dword of the 16-byte buffer GuiKit passes holds a pointer to a copy (ring of 64 arena slots).
 static uintptr_t g_exoSlots[64]; static int g_exoNext = 0;
-static void* fExoCtor(void* e, const char* s) { uintptr_t sl = g_exoSlots[g_exoNext++ & 63]; strncpy(reinterpret_cast<char*>(sl), s, 255); memset(e, 0, 16); *reinterpret_cast<uint32_t*>(e) = (uint32_t)sl; return e; }
+static std::map<uintptr_t, std::string> g_exoDst;   // destination buffer -> last string constructed there (the native tooltip field ctl+0x2C is one)
+static void* fExoCtor(void* e, const char* s) { g_exoDst[reinterpret_cast<uintptr_t>(e)] = s; uintptr_t sl = g_exoSlots[g_exoNext++ & 63]; strncpy(reinterpret_cast<char*>(sl), s, 255); memset(e, 0, 16); *reinterpret_cast<uint32_t*>(e) = (uint32_t)sl; return e; }
 static const char* exoStr(void* e) { return reinterpret_cast<const char*>(static_cast<uintptr_t>(*reinterpret_cast<uint32_t*>(e))); }
 static void fExoDtor(void*) {}
 static void fInit(void* panel, void* ctl, void* exo, int addToList, int scale) {
@@ -95,6 +97,7 @@ static void fList(void* list, void* v) { ++nList; uintptr_t l = reinterpret_cast
 static void* fLoadImage(const char*) { return reinterpret_cast<void*>(0x5000); }
 static void fSound(void*, char) { ++nSound; }
 static void fSetRect(uint32_t, uintptr_t ctl, int* r) { ++nSetRect; for (int k = 0; k < 4; ++k) at<int>(ctl, Ctl_X + 4 * k) = r[k]; }
+static uintptr_t g_tipCell = 0, g_tipMgr = 0;
 static int curX = 0, curY = 0; static bool fg = true, lmb = false;
 static bool fCursor(int* x, int* y, int* w, int* h) { *x = curX; *y = curY; *w = 1920; *h = 800; return true; }
 static bool fFg() { return fg; }
@@ -168,6 +171,43 @@ static void clickCtl(uintptr_t panel, const Fake& who, int real, int idx) {
     lmb = true; tick(panel, who, real);
     lmb = false; tick(panel, who, real);
 }
+// ---- hover tooltip helpers (section 5) ----
+static unsigned g_tipCovered = 0; static int g_tipHovers = 0;
+static bool boxShown(uintptr_t panel) { return vis(panel, C_TIPBG) || vis(panel, C_TIP); }
+static const uintptr_t kTipDelay = 500;   // fake manager appear time 0.5 s
+// Hover the centre of control idx from a fresh hover, step the clock around delay + grace (500 + 250 ms), check the box, then move away.
+static void tipHover(uintptr_t panel, const Fake& who, int idx) {
+    UiPanel* r = rec(panel);
+    int x, y, w, h;
+    if (!r || !getExtent(ctl(panel, idx), &x, &y, &w, &h)) { ++g_fail; fprintf(stderr, "FAIL tipHover: no extent for %d\n", idx); return; }
+    at<uint32_t>(g_tipMgr, 0x40) = 0; at<uint32_t>(g_tipMgr, 0x08) = (uint32_t)ctl(panel, idx); at<uint32_t>(g_tipMgr, 0x1C) = 0;
+    curX = 0; curY = 0; lmb = false; tick(panel, who, 0);   // start from no hover
+    curX = x + w / 2; curY = y + h / 2;
+    g_stubTick += 20000;
+    const DWORD t0 = g_stubTick;
+    ++g_tipHovers;
+    tick(panel, who, 0);
+    CHECK(!boxShown(panel), "%s: no box on the first hover tick", kUiName[idx]);
+    g_stubTick = t0 + kTipDelay + 249; tick(panel, who, 0);
+    CHECK(!boxShown(panel), "%s: no box before delay + 250 ms grace", kUiName[idx]);
+    g_stubTick = t0 + kTipDelay + 250; tick(panel, who, 0);
+    CHECK(boxShown(panel) && vis(panel, C_TIPBG) && vis(panel, C_TIP) && txt(panel, C_TIP) == uiTipText(idx), "%s: custom box at delay + grace (tipbg %d tip %d '%s')", kUiName[idx], vis(panel, C_TIPBG), vis(panel, C_TIP), txt(panel, C_TIP).c_str());
+    int bx, by, bw, bh, tx, ty, tw, th;
+    getExtent(ctl(panel, C_TIPBG), &bx, &by, &bw, &bh); getExtent(ctl(panel, C_TIP), &tx, &ty, &tw, &th);
+    const int yEnd = r->open ? 940 : 744;   // page column y 134..470, or above the Configure button (y 372) when the page is closed; scale 2, origin 0
+    CHECK(bx >= 108 && bx + bw <= 600 && by >= 268 && by + bh <= yEnd && bw > 0 && bh > 0, "%s: box px rect %d,%d,%d,%d outside the column (y end %d)", kUiName[idx], bx, by, bw, bh, yEnd);
+    CHECK(tx >= bx && ty >= by && tx + tw <= bx + bw && ty + th <= by + bh, "%s: text rect %d,%d,%d,%d not inside the box", kUiName[idx], tx, ty, tw, th);
+    CHECK(!(at<int>(ctl(panel, C_TIPBG), Ctl_Flags) & 0x2) == false && (at<int>(ctl(panel, C_TIPBG), Ctl_Flags) & FlagClickThrough) && (at<int>(ctl(panel, C_TIP), Ctl_Flags) & FlagClickThrough), "%s: box click-through", kUiName[idx]);
+    CHECK(bx + bw <= x || x + w <= bx || by + bh <= y || y + h <= by, "%s: box %d,%d,%d,%d must not cover the control %d,%d,%d,%d", kUiName[idx], bx, by, bw, bh, x, y, w, h);
+    { const int sr = nSetRect; tick(panel, who, 0); CHECK(nSetRect == sr && boxShown(panel), "%s: a steady box costs no setRect (%d)", kUiName[idx], nSetRect - sr); }
+    g_tipCovered |= 1u << idx;
+    curX = 0; curY = 0; tick(panel, who, 0);   // moving away hides it
+    CHECK(!boxShown(panel), "%s: box hidden on move", kUiName[idx]);
+}
+static void tipCoverShown(uintptr_t panel, const Fake& who) {
+    for (int i = 0; i < C_TIPBG; ++i) if (uiTipText(i) && vis(panel, i) && !(g_tipCovered & (1u << i))) tipHover(panel, who, i);
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) return 2;
     const char* table = argv[1];
@@ -238,7 +278,8 @@ int main(int argc, char** argv) {
     g_eng.rulesGlobal = rulesCell;
     // GuiKit fakes
     uintptr_t screen = arenaAlloc(16), snd = arenaAlloc(16);   // screen size 0 -> cursor is engine px 1:1
-    at<uint32_t>(snd, 0) = (uint32_t)arenaAlloc(16);
+    g_tipCell = snd; g_tipMgr = arenaAlloc(0x100);   // fake tooltip manager (GuiTip.h reads it through the GuiSoundMgr cell)
+    at<uint32_t>(snd, 0) = (uint32_t)g_tipMgr; at<float>(g_tipMgr, 0x48) = 0.5f;
     guikit::Engine& e = g_gk;
     e.alloc = fAlloc; e.labelCtor = fCtor; e.initControl = fInit; e.exoCtor = fExoCtor; e.exoDtor = fExoDtor; e.textSet = fTextSet; e.setFont = fFont; e.setAlign = fAlign;
     e.textColor = fColor; e.listAdd = fList; e.loadImage = fLoadImage; e.playSound = fSound; e.callSetRect = fSetRect;
@@ -262,7 +303,7 @@ int main(int argc, char** argv) {
     uintptr_t pA = makePanel();
     LuoUiPanelCtor((int)pA);
     CHECK(rec(pA) && rec(pA)->nCreated == C_N && nCtor == C_N && nInit == C_N, "ctor created %d (nCtor %d nInit %d)", rec(pA) ? rec(pA)->nCreated : -1, nCtor, nInit);
-    CHECK(nInitFramed == 18 && nInitPlain == 4, "templates framed %d plain %d (want 18/4)", nInitFramed, nInitPlain);
+    CHECK(nInitFramed == 19 && nInitPlain == 5, "templates framed %d plain %d (want 19/5)", nInitFramed, nInitPlain);
     CHECK(g_addToListSeen == 0, "InitControl addToList must be 0");
     CHECK(at<int>(pA, Panel_CtlCount) == 70 && nList == 0, "ctor must not append (count %d, listAdd %d)", at<int>(pA, Panel_CtlCount), nList);
     { bool allHidden = true; for (int i = 0; i < C_N; ++i) if (isVisible(ctl(pA, i))) allHidden = false; CHECK(allHidden, "created hidden"); }
@@ -780,6 +821,121 @@ int main(int argc, char** argv) {
         g_stubTick += 6000;
         LuoHold_74F3C7(P(attonXp5.stats));
         CHECK(g_banked.size() == bAfter + 1, "banked count dropped then rose again -> announced again (%zu)", g_banked.size());
+    }
+
+    // 5. hover tooltips (GuiTip.h): native strings set once in uiAppend, custom fallback box, probe log
+    {
+        unsigned wantMask = 0;
+        for (int i = 0; i < C_N; ++i) {
+            const char* t = uiTipText(i);
+            const bool want = i == C_CFG || (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PAUSE || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
+            CHECK((t != nullptr) == want, "tip text for %s: %s (want %d)", kUiName[i], t ? "set" : "null", want);
+            if (!t) continue;
+            wantMask |= 1u << i;
+            int lines = 0, maxLen = 0;
+            guitip::measure(t, &lines, &maxLen);
+            CHECK(lines >= 1 && lines <= TipMaxLines && maxLen <= TipMaxChars, "tip %s: %d lines, longest %d chars (max %d x %d)", kUiName[i], lines, maxLen, TipMaxLines, TipMaxChars);
+        }
+        CHECK(strstr(uiTipText(C_ROW0 + 1), "Role") && strstr(uiTipText(C_ROW0 + 2), "Weapons") && strstr(uiTipText(C_ROW0 + 3), "Powers") && strstr(uiTipText(C_ROW0 + 4), "Skills") && strstr(uiTipText(C_ROW0 + 5), "Variant"), "row tips name their row");
+        CHECK(uiTipText(C_PAUSE) == uiTipText(C_PMINUS) && uiTipText(C_PMINUS) == uiTipText(C_PPLUS), "pause label, - and + share one tip");
+        ptApply("atton", PRESET, false, true, 0);   // configured -> Vanilla offered
+        CHECK(tagConfig("atton") != nullptr, "atton configured for the tip tests");
+        setIni("mode=rewrite", table);
+        clearLog();
+        g_exoDst.clear();
+        uintptr_t pT = makePanel();
+        LuoUiPanelCtor((int)pT);
+        tick(pT, attonLo, 0);
+        CHECK(logCount("UI tips native=") == 1 && logHas(("UI tips native=" + std::to_string(__builtin_popcount(wantMask))).c_str()), "native tips logged once with the tip-control count:\n%s", readLog().c_str());
+        for (int i = 0; i < C_N; ++i) {
+            const uintptr_t c = ctl(pT, i);
+            if (uiTipText(i)) CHECK(at<int>(c, 0x28) == 0 && g_exoDst.count(c + 0x2C) && g_exoDst[c + 0x2C] == uiTipText(i), "native tip of %s: strref %d text '%s'", kUiName[i], at<int>(c, 0x28), g_exoDst.count(c + 0x2C) ? g_exoDst[c + 0x2C].c_str() : "(none)");
+            else CHECK(at<int>(c, 0x28) == 77 && !g_exoDst.count(c + 0x2C), "no native tip on %s", kUiName[i]);
+        }
+        // closed page: Configure button tip (box goes above y 372, inside x 54..300)
+        tipCoverShown(pT, attonLo);
+        CHECK(g_tipCovered == (1u << C_CFG), "closed page: only the Configure button has a tip (%x)", g_tipCovered);
+        clickCtl(pT, attonLo, 0, C_CFG);
+        CHECK(rec(pT)->open && !boxShown(pT), "page open, box hidden after the click");
+        tipCoverShown(pT, attonLo);
+        clickCtl(pT, attonLo, 0, C_ROW0 + 1); tipCoverShown(pT, attonLo);      // off the recommended preset: 'Use recommended' appears
+        clickCtl(pT, attonLo, 0, C_REC); tipCoverShown(pT, attonLo);
+        if (vis(pT, C_PMINUS)) clickCtl(pT, attonLo, 0, C_PMINUS); else if (vis(pT, C_PPLUS)) clickCtl(pT, attonLo, 0, C_PPLUS);
+        tipCoverShown(pT, attonLo);
+        if (vis(pT, C_PPLUS)) clickCtl(pT, attonLo, 0, C_PPLUS);
+        if (vis(pT, C_PMINUS)) clickCtl(pT, attonLo, 0, C_PMINUS);
+        tipCoverShown(pT, attonLo);
+        {   // the Variant row only shows for an identical-answer pair (g0t0, as the variant test above)
+            const Fake g0 = makeCreature("g0t0", {{0, 3}});
+            uintptr_t pV = makePanel();
+            LuoUiPanelCtor((int)pV);
+            tick(pV, g0, 0);
+            clickCtl(pV, g0, 0, C_CFG);
+            for (int i = 0; i < 6 && !vis(pV, C_ROW0 + opt::VariantRow); ++i) clickCtl(pV, g0, 0, C_ROW0 + 1);
+            CHECK(vis(pV, C_ROW0 + opt::VariantRow), "variant row shown for the tip test");
+            if (vis(pV, C_ROW0 + opt::VariantRow)) { tipHover(pV, g0, C_ROW0 + opt::VariantRow); }
+        }
+        CHECK(g_tipCovered == wantMask, "every tip control shown + hovered once (covered %06x, want %06x)", g_tipCovered, wantMask);
+        CHECK(logCount("UI tips native=") == 2, "native tips set once per appended panel (pT, pV), not from clicks (%d)", logCount("UI tips native="));
+        { bool same = true; for (int i = 0; i < C_N; ++i) if (uiTipText(i) && g_exoDst[ctl(pT, i) + 0x2C] != uiTipText(i)) same = false; CHECK(same, "native strings unchanged after the clicks"); }
+        CHECK(logCount("TIPPROBE over_is_ours=1 owner_is_ours=0 shown=0 ctl40=0 timer=0.00 appear=0.50 dis=0 ctl=") >= g_tipHovers && logCount("UI tip custom ctl=") == g_tipHovers,
+              "one probe line + one custom-box line per hover (%d hovers):\n%s", g_tipHovers, readLog().c_str());
+        // manager unreadable: engine delay unknown -> 400 ms default (+ 250 grace)
+        {
+            at<uint32_t>(g_tipCell, 0) = 0;
+            int x, y, w, h; getExtent(ctl(pT, C_CANCEL), &x, &y, &w, &h);
+            curX = x + w / 2; curY = y + h / 2; g_stubTick += 20000; const DWORD t0 = g_stubTick;
+            tick(pT, attonLo, 0); g_stubTick = t0 + 649; tick(pT, attonLo, 0);
+            CHECK(!boxShown(pT), "default delay: hidden at 649 ms");
+            g_stubTick = t0 + 650; tick(pT, attonLo, 0);
+            CHECK(boxShown(pT), "default delay 400 + 250 grace: shown at 650 ms");
+            at<uint32_t>(g_tipCell, 0) = (uint32_t)g_tipMgr;
+            curX = 0; curY = 0; tick(pT, attonLo, 0);
+        }
+        // a click hides the box (and restarts the hover clock); the toggle still works
+        {
+            int x, y, w, h; getExtent(ctl(pT, C_INSTANT), &x, &y, &w, &h);
+            at<uint32_t>(g_tipMgr, 0x40) = 0;
+            curX = x + w / 2; curY = y + h / 2; lmb = false; g_stubTick += 20000; const DWORD t0 = g_stubTick;
+            tick(pT, attonLo, 0); g_stubTick = t0 + 750; tick(pT, attonLo, 0);
+            CHECK(boxShown(pT), "box up before the click");
+            const bool before = rec(pT)->instant;
+            lmb = true; tick(pT, attonLo, 0);
+            CHECK(!boxShown(pT) && rec(pT)->instant != before, "press hides the box, click handling unchanged");
+            lmb = false; g_stubTick += 100; tick(pT, attonLo, 0);
+            CHECK(!boxShown(pT), "box stays hidden after the click until the hover clock runs out again");
+            g_stubTick = t0 + 750 + 100 + 750; tick(pT, attonLo, 0);
+            CHECK(boxShown(pT), "box comes back after a fresh delay");
+            // gate inactive / other character: hidden
+            const Fake hk = makeCreature("zzz-nobody", {{6, 7}}, 0);
+            tick(pT, hk, 0);
+            CHECK(!boxShown(pT) && !anyVisible(pT), "tag without presets: box hidden with everything else");
+            curX = 0; curY = 0;
+        }
+        // native box seen: custom box never shows, even after the owner is gone, for any control (fresh panel: sticky is per record)
+        {
+            uintptr_t pN = makePanel();
+            LuoUiPanelCtor((int)pN);
+            tick(pN, attonLo, 0);
+            const uintptr_t c = ctl(pN, C_CFG);
+            int x, y, w, h; getExtent(c, &x, &y, &w, &h);
+            at<uint32_t>(g_tipMgr, 0x08) = (uint32_t)c; at<uint32_t>(g_tipMgr, 0x40) = (uint32_t)c; at<uint32_t>(g_tipMgr, 0x1C) = 8; at<int>(c, Ctl_Flags) |= 0x40;
+            curX = x + w / 2; curY = y + h / 2; g_stubTick += 20000; const DWORD t0 = g_stubTick;
+            clearLog();
+            tick(pN, attonLo, 0); g_stubTick = t0 + 100; tick(pN, attonLo, 0);   // the engine owns the tooltip from here on
+            g_stubTick = t0 + 900; tick(pN, attonLo, 0);
+            CHECK(!boxShown(pN), "engine owns the hovered control: no custom box");
+            CHECK(logHas("TIPPROBE over_is_ours=1 owner_is_ours=1 shown=1 ctl40=1 "), "probe sees the native box:\n%s", readLog().c_str());
+            at<uint32_t>(g_tipMgr, 0x40) = 0; at<uint32_t>(g_tipMgr, 0x1C) = 0; at<int>(c, Ctl_Flags) &= ~0x40;
+            g_stubTick = t0 + 30000; tick(pN, attonLo, 0);
+            CHECK(!boxShown(pN) && rec(pN)->tip.nativeSeen, "owner gone later: still no custom box (sticky)");
+            curX = 0; curY = 0; tick(pN, attonLo, 0);
+            clickCtl(pN, attonLo, 0, C_CFG);   // open the page and hover another control
+            int ax, ay, aw, ah; getExtent(ctl(pN, C_CANCEL), &ax, &ay, &aw, &ah);
+            curX = ax + aw / 2; curY = ay + ah / 2; g_stubTick += 20000; const DWORD t1 = g_stubTick;
+            tick(pN, attonLo, 0); g_stubTick = t1 + 5000; tick(pN, attonLo, 0);
+            CHECK(!boxShown(pN), "sticky: no custom box on other controls either");
+        }
     }
 
     printf("ui_test checks %d failures %d\n", g_checks, g_fail);

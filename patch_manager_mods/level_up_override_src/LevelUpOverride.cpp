@@ -70,6 +70,7 @@
 #include <stdint.h>
 #include "../_shared/SafeRead.h"
 #include "../_shared/GuiKit.h"
+#include "../_shared/GuiTip.h"
 #include "Playthrough.h"
 #include "WizardLogic.h"
 #include "OptionsLogic.h"
