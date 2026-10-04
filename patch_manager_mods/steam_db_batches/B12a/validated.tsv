@@ -7,6 +7,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x005632f0	CSWSCreature::GetFirstName	verified	auto:sig	0x0067bf20	B12a	061e914885280bf0	steam_db_batches/B12a/final_rows.tsv
 0x00563320	CSWSCreature::GetLastName	verified	auto:sig	0x0067bf50	B12a	caa5d1eabcb10107	steam_db_batches/B12a/final_rows.tsv
 0x00563350	CSWSCreature::GetEffectSpellId	verified	opus	0x0067bf80	B12a	3c8f65c9b2e734fa	steam_db_batches/B12a/final_rows.tsv
+0x00563370	CSWSCreature::SetEffectSpellId	verified	opus	0x0067bfa0	B12a	e09c563d6eeec048	steam_db_batches/B12a/final_rows.tsv
 0x00563390	CSWSCreature::GetPortrait	verified	auto:sig	0x0067bfc0	B12a	2c7a5a16b8d7b9ee	steam_db_batches/B12a/final_rows.tsv
 0x00563400	CSWSCreature::SetPortrait	verified	auto:sig	0x0067c030	B12a	245092955279649b	steam_db_batches/B12a/final_rows.tsv
 0x00563460	CSWSCreature::GetDead	verified	reviewer	0x0067c090	B12a	39edca226471b4b2	steam_db_batches/B12a/final_rows.tsv
@@ -33,7 +34,6 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x005672c0	CSWSCreature::ReplaceUnequipItemActions	verified	auto:sig	0x0067fef0	B12a	d37577b1278f5f5e	steam_db_batches/B12a/final_rows.tsv
 0x00567490	CSWSCreature::AddUnequipActions	verified	auto:c2	0x006800c0	B12a	5b9db4bdb5ee3261	steam_db_batches/B12a/final_rows.tsv
 0x005676d0	CSWSCreature::RunUnequip	verified	auto:c2	0x00680300	B12a	9cc972b7245d3ab8	steam_db_batches/B12a/final_rows.tsv
-0x00568020	CSWSCreature::Rest	verified	auto:sig	0x00680c50	B12a	e17ff3ed206483c5	steam_db_batches/B12a/final_rows.tsv
 0x005680d0	CSWSCreature::AddMineActions	verified	auto:c2	0x00680d00	B12a	d312baac49e31132	steam_db_batches/B12a/final_rows.tsv
 0x005683d0	CSWSCreature::AddCutsceneAttackActions	verified	auto:c2	0x00681000	B12a	ef35be93a78d4123	steam_db_batches/B12a/final_rows.tsv
 0x00568480	CSWSCreature::AddCutsceneMoveActions	verified	auto:c2	0x006810b0	B12a	cdada779ad97a469	steam_db_batches/B12a/final_rows.tsv
@@ -93,7 +93,6 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x00579590	CSWSCreature::BroadcastFloatyData	verified	reviewer	0x006920c0	B12a	0e1732302f80c2f2	steam_db_batches/B12a/final_rows.tsv
 0x005796e0	CSWSCreature::BroadcastSkillData	verified	auto:c2	0x00692210	B12a	a99e2ebc8934123a	steam_db_batches/B12a/final_rows.tsv
 0x00579790	CSWSCreature::BroadcastSavingThrowData	verified	auto:c2	0x006922c0	B12a	b51b74e4dcaf3a89	steam_db_batches/B12a/final_rows.tsv
-0x00579800	CSWSCreature::BroadcastForcePointUsageData	verified	auto:sig	0x00692330	B12a	0061345beb8922cb	steam_db_batches/B12a/final_rows.tsv
 0x005798f0	CSWSCreature::BroadcastMineDetectionData	verified	opus	0x00692420	B12a	3436dcf158a0e33a	steam_db_batches/B12a/final_rows.tsv
 0x00579a10	CSWSCreature::BroadcastSpellCast	verified	auto:c2	0x00692540	B12a	2341fa8b31e5510b	steam_db_batches/B12a/final_rows.tsv
 0x00579d00	CSWSCreature::BroadcastBattleCry	verified	auto:c2	0x00692830	B12a	9034cf4bd5b974e2	steam_db_batches/B12a/final_rows.tsv
@@ -126,7 +125,6 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x0057dc20	CSWSCreature::SetExcitedState	verified	auto:c2	0x00696750	B12a	b22ee9e88d97793d	steam_db_batches/B12a/final_rows.tsv
 0x0057dd90	CSWSCreature::UpdateExcitedStateTimer	verified	auto:sig	0x006968c0	B12a	d5304baf43f25d5d	steam_db_batches/B12a/final_rows.tsv
 0x0057e140	CSWSCreature::CancelRest	verified	auto:c2	0x00696c70	B12a	f6f1cef19891cd9c	steam_db_batches/B12a/final_rows.tsv
-0x0057e350	CSWSCreature::Rest_2	verified	auto:c2	0x00696e80	B12a	e18cc59da98b73f7	steam_db_batches/B12a/final_rows.tsv
 0x006d7390	CSWSCreature::AIActionPhysicalAttacks	verified	auto:c2	0x00653640	B12a	7731af50e3e5604f	steam_db_batches/B12a/final_rows.tsv
 0x006d9410	CSWSCreature::IsCreature	verified	auto:c2	0x006556c0	B12a	edaa0307e437489f	steam_db_batches/B12a/final_rows.tsv
 0x006d9500	CSWSCreature::AIActionCombat	verified	auto:c2	0x006557b0	B12a	aeb444d6924f275d	steam_db_batches/B12a/final_rows.tsv
@@ -140,8 +138,6 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x006daf00	CSWSCreature::ResolveRangedAttack	verified	opus	0x006571b0	B12a	8db304d1c0df69fa	steam_db_batches/B12a/final_rows.tsv
 0x006db4a0	CSWSCreature::ResolveRangedSpecialAttack	verified	auto:c2	0x00657750	B12a	d99a5a8dd5cc78e2	steam_db_batches/B12a/final_rows.tsv
 0x006dc140	CSWSCreature::ResolveSafeProjectile	verified	auto:sig	0x006583f0	B12a	b97963e70d56f9a8	steam_db_batches/B12a/final_rows.tsv
-0x006dc290	CSWSCreature::ResolvePostRangedDamage	verified	auto:c2	0x00658540	B12a	84f8e30e5a936200	steam_db_batches/B12a/final_rows.tsv
-0x006dc530	CSWSCreature::IsLightsaberEquipped	verified	auto:sig	0x006587e0	B12a	a0919254ec6e2485	steam_db_batches/B12a/final_rows.tsv
 0x006dc5c0	CSWSCreature::ResolveProjectileMissLocation	verified	auto:sig	0x00658870	B12a	59d9a8c4b4347e09	steam_db_batches/B12a/final_rows.tsv
 0x006dca70	CSWSCreature::ResolveProjectileMissImpact	verified	auto:sig	0x00658d20	B12a	07ac0a1248957f69	steam_db_batches/B12a/final_rows.tsv
 0x006dcbe0	CSWSCreature::SignalDamage	verified	auto:sig	0x00658e90	B12a	e46cda79df16a62c	steam_db_batches/B12a/final_rows.tsv
@@ -152,7 +148,6 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x006de720	CSWSCreature::GetWeaponHitShots	verified	opus	0x0065aa20	B12a	8aaef26593e3da2a	steam_db_batches/B12a/final_rows.tsv
 0x006de890	CSWSCreature::GetWeaponDischargeHand	verified	auto:c2	0x0065ab90	B12a	7e3ad1d254b1175b	steam_db_batches/B12a/final_rows.tsv
 0x006dea90	CSWSCreature::ResolveMeleeAttack	verified	auto:c2	0x0065ad90	B12a	d2493c430c439927	steam_db_batches/B12a/final_rows.tsv
-0x006df230	CSWSCreature::ResolveRangedHit	verified	auto:sig	0x0065b530	B12a	a61f94483d98b649	steam_db_batches/B12a/final_rows.tsv
 0x006df2a0	CSWSCreature::ResolveMeleeSpecialAttack	verified	opus	0x0065b5a0	B12a	8660ae296ea3fc1d	steam_db_batches/B12a/final_rows.tsv
 0x006e0410	CSWSCreature::ResolveMeleeAnimations	verified	opus	0x0065c710	B12a	ed922b05a9422506	steam_db_batches/B12a/final_rows.tsv
 0x006e0650	CSWSCreature::SignalMeleeDamage	verified	opus	0x0065c950	B12a	e9bf8df55c93a57d	steam_db_batches/B12a/final_rows.tsv
@@ -161,9 +156,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x006e1540	CSWSCreature::ResolveDamage	verified	auto:c2	0x0065d840	B12a	80726fff14c8b4a0	steam_db_batches/B12a/final_rows.tsv
 0x006e1720	CSWSCreature::CalculateMaxElementalDamage	verified	opus	0x0065da20	B12a	fe2ea96bc9b8bcc1	steam_db_batches/B12a/final_rows.tsv
 0x006e1780	CSWSCreature::ResolvePostMeleeDamage	verified	auto:sig	0x0065da80	B12a	d2eca59c7f7328a9	steam_db_batches/B12a/final_rows.tsv
-0x006e1930	CSWSCreature::ApplyOnHitSleep	verified	reviewer	0x0065dc30	B12a	2c984bd5a6166398	steam_db_batches/B12a/final_rows.tsv
 0x006e1c60	CSWSCreature::ResolveDefensiveEffects	verified	auto:c2	0x0065df60	B12a	2d7414863db5de98	steam_db_batches/B12a/final_rows.tsv
-0x006e2410	CSWSCreature::ApplyOnHitSlayAlignmentGroup	verified	auto:sig	0x0065e710	B12a	900b9dcda0155a6a	steam_db_batches/B12a/final_rows.tsv
 0x006e24b0	CSWSCreature::IsProjectileParryable	verified	auto:c2	0x0065e7b0	B12a	d1537e8b5cba5fb4	steam_db_batches/B12a/final_rows.tsv
 0x006e29b0	CSWSCreature::ResolveMoveToForceJump	verified	auto:c2	0x0065ecb0	B12a	1bd8229d295245fc	steam_db_batches/B12a/final_rows.tsv
 0x006e2cd0	CSWSCreature::ResolveOnHitVisuals	verified	auto:c2	0x0065efd0	B12a	624fae801782a8a2	steam_db_batches/B12a/final_rows.tsv
@@ -172,7 +165,6 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x006e3a40	CSWSCreature::DoCombatStep	verified	opus	0x0065fd40	B12a	562568bb03be0467	steam_db_batches/B12a/final_rows.tsv
 0x006e4630	CSWSCreature::SavingThrowRoll	verified	opus	0x00660930	B12a	68691a9f3069015d	steam_db_batches/B12a/final_rows.tsv
 0x006e5030	CSWSCreature::CreateLinkedEffect	verified	auto:sig	0x00661330	B12a	09b2f61d20058382	steam_db_batches/B12a/final_rows.tsv
-0x006e51d0	CSWSCreature::ApplyOnHitHold	verified	reviewer	0x006614d0	B12a	6ac493c8b80eb901	steam_db_batches/B12a/final_rows.tsv
 0x006e5310	CSWSCreature::ApplyOnHitConfusion	verified	opus	0x00661610	B12a	61246e59494d8599	steam_db_batches/B12a/final_rows.tsv
 0x006e54b0	CSWSCreature::ApplyOnHitFear	verified	opus	0x006617b0	B12a	ceb45464b3804935	steam_db_batches/B12a/final_rows.tsv
 0x006e5f00	CSWSCreature::ApplyOnHitAbilityDamage	verified	auto:sig	0x00662200	B12a	9a8ce400da04c111	steam_db_batches/B12a/final_rows.tsv

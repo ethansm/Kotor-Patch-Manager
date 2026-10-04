@@ -1,0 +1,12 @@
+gog_addr	steam_addr	final_verdict	note
+0x0065dc30	0x006e1930	label_suspect	fp 1:1 808B RET 4; 006e1bb3 CALL 0x00580c50 GetIsWeaponEffective, 006e1999 CALL 0x0058d290 GetTotalDamage, 006e1c10 PUSH 0x75; caller ResolveRangedAttack = Mac ResolvePostRangedDamage; Sleep=0x661b60
+0x006614d0	0x006e51d0	label_suspect	fp 1:1 305B RET 0xc; 2x new 0x8c+CGameEffect, 006e52e8 CALL 0x005e5260 SetLinked; 7 callers = Mac CreateLinkedEffect callers (2-effect overload). Hold=GOG 0x661950->0x6e5650
+0x0067bfa0	0x00563370	verified	fp 1:1 unique 25B: 0056337d MOV [EAX+0xff8],ECX; 00563386 RET 0x4 = Mac CSWSCreature::SetEffectSpellId (disp 0xff8); getter 0x563350 reads +0xff8
+0x00658540	0x006dc290	label_suspect	AUTO audit. fp 1:1 456B; 006dc338 MOV [EAX+0xa98],ECX, 006dc370 MOV EDX,[ECX+0xb08], 006dc347 CALL 0x006e2c50 IsLightsaberEquipped = Mac ResolveRangedAnimations. PostRangedDmg=GOG 0x65dc30
+0x006587e0	0x006dc530	label_suspect	AUTO audit. fp 1:1 135B RET 4; 006dc57e CALL 0x006dc5c0 ResolveProjectileMissLocation, no GetItemInSlot = Mac ResolveRangedMiss. IsLightsaberEquipped=GOG 0x65ef50->0x6e2c50
+0x0065b530	0x006df230	label_suspect	AUTO audit. fp 1:1 104B RET 4: 006df24a/006df269/006df288 MOV [+0x59c],0/1/2 after 3 dice helpers, no GetAttack; no Mac symbol. ResolveRangedHit=GOG 0x658710->0x6dc460
+0x0065e710	0x006e2410	label_suspect	AUTO audit. fp 1:1 145B RET 0xc; 006e2440 CALL 0x006e24b0 IsProjectileParryable, 006e248b MOV byte [EAX+0x5c],0xa = Mac ResolveRangedMissToParry. Mac SlayAlignmentGroup = 5B stub
+0x00680c50	0x00568020	label_suspect	AUTO audit. fp 1:1 166B RET 0xc; 00568035 PUSH 0x7 + CALL 0x006b7a00 GetCanUseSkill (TreatInjury), 005680b1 PUSH 0x38 + CALL 0x0053f7f0 AddAction = Mac AddHealActions; Mac Rest 792B
+0x0068f7d0	0x00576ca0	label_suspect	note only (part a). callees GetAtPos/GetNext/Remove/~CSWSObjectActionNode/free, 00576ce0 MOVZX EDX,[ECX+0x6c]==arg = Mac CSWSCreature::CancelAction (284B). GetBlind=GOG 0x69df00
+0x00692330	0x00579800	label_suspect	AUTO sweep. fp 1:1 225B RET 4; 005798c1 PUSH 0x10 msg id, sole caller DoSpotDetection 0x578850 = Mac BroadcastStealthDetectionData (imm 0x10). No Mac ForcePointUsageData symbol
+0x00696e80	0x0057e350	label_suspect	AUTO sweep. fp 1:1 114B RET 4; 0057e35c MOV ECX,[EAX+0x53c], 0057e38c MOV DL,[ECX+0x1b] (base item size), 0057e3af MOV EAX,-10 = Mac GetRelativeWeaponSize; Mac Rest is 792B

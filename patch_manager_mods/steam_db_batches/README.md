@@ -207,3 +207,23 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
   `check-validated`: 3,249 / 3,249.
 - Lead spot-checks (fp = GOG): GetModuleCamera 0x781810 (46 B) `0078182d MOV ECX,[EAX+0x40]`; EndLoadBar 0x7400D0
   (22 B) `007400dd CALL 0x00623320`; GetPlayerByGameObjectID 0x78BD20 (93 B, RET 4) `0078bd4e MOV ECX,[EAX+0x28]`.
+
+## B12a: `CSWSCreature` lower half, GOG < 0x696F00 (2026-10-03)
+
+- Scope: 201 GOG rows. Gates: AUTO 147, REVIEW 39, REJECT 13, NOCAND 2. 1 Sonnet chunk, 0/10 decoys accepted.
+- Opus a (31) + r (16 REJECT/NOCAND, all recovered) + z (3 rows + AUTO audit). Sample errors 0. Details:
+  `B12a/B12a_SUMMARY.md`.
+  - The combat block GOG 0x6571B0-0x663170 sits at Steam = GOG + 0x83D00 (not the class run delta). Its GOG labels
+    (ranged combat, ApplyOnHit*) are rotated; ResolveOnHitEffect 0x6E2FA0's dispatch order names the handlers.
+  - AUTO audit: 37 rows read in the rotation windows plus a scripted same-name Mac score over all 150 AUTO rows;
+    7 AUTO rows had wrong GOG names (now label_suspect). Lesson: rotation windows are not enough.
+- Final: verified 171, label_suspect 29, rejected 1 (GOG 0x692F53, a 3-byte fragment).
+- KDB: insert 23, update 139, demote 5, rename 10 (`B12a/kdb_overrides.tsv`: e.g. 0x6E51D0 CreateLinkedEffect_2,
+  0x57C990 GetNearestEnemy, 0x57A960 ResolveInitiative), 6 lessons, 171 marks. Second apply 0, integrity ok. Backup
+  `backups/kdb/kotor2_ghidra_knowledge.db.pre_B12a_persist_20261003`.
+- Branch (db4f5cf, append, precheck 0 problems): 3,249 -> 3,420 (+171). `validate` passed, 0 duplicates.
+  `check-validated`: 3,420 / 3,420.
+- Lead spot-checks (fp = GOG): ResolveMeleeSpecialAttack 0x6DF2A0 (4075 B, RET 0x14, 973 insn) `006df337 CALL
+  0x0051c280`; DoCombatStep 0x6E3A40 (3044 B, RET 0xC, 786 insn) `006e3aa2 CALL 0x0051c0a0`; GetPortrait 0x563390
+  (100 B, RET 4, disp 0x1198) `005633e6 CALL 0x00710840`.
+- Open: the real `Rest` is unlocated (both GOG `Rest` labels are wrong).

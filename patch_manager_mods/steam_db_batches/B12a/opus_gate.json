@@ -10,7 +10,7 @@
  "decoys_per_chunk": {
   "1": 10
  },
- "full_read": 25,
+ "full_read": 32,
  "key_error_cards": [],
  "key_errors": 0,
  "rows_auto": [
@@ -88,10 +88,31 @@
   },
   {
    "class": "CSWSCreature",
+   "gog": "0x00658540",
+   "name": "ResolvePostRangedDamage",
+   "steam_addr": "0x006dc290",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
    "gog": "0x00658710",
    "name": "GetWeaponDischargeTime",
    "steam_addr": "0x006dc460",
    "why": "label_suspect, match on a mac_contra row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x006587e0",
+   "name": "IsLightsaberEquipped",
+   "steam_addr": "0x006dc530",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x0065b530",
+   "name": "ResolveRangedHit",
+   "steam_addr": "0x006df230",
+   "why": "label_suspect"
   },
   {
    "class": "CSWSCreature",
@@ -119,7 +140,14 @@
    "gog": "0x0065dc30",
    "name": "ApplyOnHitSleep",
    "steam_addr": "0x006e1930",
-   "why": "match on a mac_rotation row"
+   "why": "label_suspect, match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x0065e710",
+   "name": "ApplyOnHitSlayAlignmentGroup",
+   "steam_addr": "0x006e2410",
+   "why": "label_suspect"
   },
   {
    "class": "CSWSCreature",
@@ -140,7 +168,7 @@
    "gog": "0x006614d0",
    "name": "ApplyOnHitHold",
    "steam_addr": "0x006e51d0",
-   "why": "match on a mac_rotation row"
+   "why": "label_suspect, match on a mac_rotation row"
   },
   {
    "class": "CSWSCreature",
@@ -200,6 +228,13 @@
   },
   {
    "class": "CSWSCreature",
+   "gog": "0x00680c50",
+   "name": "Rest",
+   "steam_addr": "0x00568020",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
    "gog": "0x0068a4b0",
    "name": "ResolveInitiative",
    "steam_addr": "0x00571980",
@@ -217,6 +252,13 @@
    "gog": "0x0068f7d0",
    "name": "GetBlind",
    "steam_addr": "0x00576ca0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x00692330",
+   "name": "BroadcastForcePointUsageData",
+   "steam_addr": "0x00579800",
    "why": "label_suspect"
   },
   {
@@ -246,6 +288,13 @@
    "name": "SetLastInstantEquip",
    "steam_addr": "0x0057e280",
    "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWSCreature",
+   "gog": "0x00696e80",
+   "name": "Rest_2",
+   "steam_addr": "0x0057e350",
+   "why": "label_suspect"
   }
  ],
  "rows_sample": [

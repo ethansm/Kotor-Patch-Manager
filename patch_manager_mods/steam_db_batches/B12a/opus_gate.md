@@ -15,18 +15,22 @@ None.
 
 None.
 
-## Opus reads 100% (25 rows)
+## Opus reads 100% (32 rows)
 
 - CSWSCreature::CanUseForcePowerOrSpell gog 0x00494d00 -> 0x0084a170: label_suspect
 - CSWSCreature::IsInTotalDefense_2 gog 0x00657710 -> 0x006db460: label_suspect
+- CSWSCreature::ResolvePostRangedDamage gog 0x00658540 -> 0x006dc290: label_suspect
 - CSWSCreature::GetWeaponDischargeTime gog 0x00658710 -> 0x006dc460: label_suspect, match on a mac_contra row
+- CSWSCreature::IsLightsaberEquipped gog 0x006587e0 -> 0x006dc530: label_suspect
+- CSWSCreature::ResolveRangedHit gog 0x0065b530 -> 0x006df230: label_suspect
 - CSWSCreature::ResolveMeleeSpecialAttack gog 0x0065b5a0 -> 0x006df2a0: reviewer corrected_addr
 - CSWSCreature::ResolveRangedMiss gog 0x0065c680 -> 0x006e0380: reviewer corrected_addr, label_suspect
 - CSWSCreature::ResolveRangedAnimations gog 0x0065c900 -> 0x006e0600: reviewer corrected_addr, label_suspect
-- CSWSCreature::ApplyOnHitSleep gog 0x0065dc30 -> 0x006e1930: match on a mac_rotation row
+- CSWSCreature::ApplyOnHitSleep gog 0x0065dc30 -> 0x006e1930: label_suspect, match on a mac_rotation row
+- CSWSCreature::ApplyOnHitSlayAlignmentGroup gog 0x0065e710 -> 0x006e2410: label_suspect
 - CSWSCreature::ResolveRangedMissToParry gog 0x0065ef50 -> 0x006e2c50: label_suspect, match on a mac_contra row, match on a mac_rotation row
 - CSWSCreature::DoCombatStep gog 0x0065fd40 -> 0x006e3a40: reviewer corrected_addr
-- CSWSCreature::ApplyOnHitHold gog 0x006614d0 -> 0x006e51d0: match on a mac_rotation row
+- CSWSCreature::ApplyOnHitHold gog 0x006614d0 -> 0x006e51d0: label_suspect, match on a mac_rotation row
 - CSWSCreature::ApplyOnHitSlow gog 0x00661950 -> 0x006e5650: label_suspect
 - CSWSCreature::ApplyOnHitPoison gog 0x00661b60 -> 0x006e5860: label_suspect
 - CSWSCreature::ApplyOnHitSlayRacialGroup gog 0x00662060 -> 0x006e5d60: label_suspect
@@ -35,13 +39,16 @@ None.
 - CSWSCreature::Destructor gog 0x0067c0c0 -> 0x00563490: reviewer corrected_addr
 - CSWSCreature::AddDropItemActions gog 0x00680a70 -> 0x00567e40: label_suspect
 - CSWSCreature::AddHealActions gog 0x00680b30 -> 0x00567f00: label_suspect
+- CSWSCreature::Rest gog 0x00680c50 -> 0x00568020: label_suspect
 - CSWSCreature::ResolveInitiative gog 0x0068a4b0 -> 0x00571980: label_suspect
 - CSWSCreature::RemoveMindTrickEffects gog 0x0068ddf0 -> 0x005752c0: reviewer corrected_addr, label_suspect
 - CSWSCreature::GetBlind gog 0x0068f7d0 -> 0x00576ca0: label_suspect
+- CSWSCreature::BroadcastForcePointUsageData gog 0x00692330 -> 0x00579800: label_suspect
 - CSWSCreature::SetAmbientAnimationState gog 0x00692510 -> 0x005799e0: label_suspect, match on a mac_contra row
 - CSWSCreature::GetDetectMode gog 0x00693490 -> 0x0057a960: label_suspect
 - CSWSCreature::AddPickUpItemActions gog 0x00693ac0 -> 0x0057af90: label_suspect
 - CSWSCreature::SetLastInstantEquip gog 0x00696db0 -> 0x0057e280: reviewer corrected_addr, label_suspect
+- CSWSCreature::Rest_2 gog 0x00696e80 -> 0x0057e350: label_suspect
 
 ## Sample of the other reviewer matches (5 of 18)
 
