@@ -1,0 +1,21 @@
+1200 companion-selfheal/main portraitslots: connected (ok)
+5310 companion-selfheal/hud P1 hud built panel=0a1b2c00 +0x30=0a1b3000 +0x48=00000002 layoutOpen=1 ctlList=0a1c0000 ctlCount=212
+7310 companion-selfheal/hud P3 slot[0]=0a1b4f34 creature=00000011 hud=0a1b2c00 k=0
+7310 companion-selfheal/hud P3 slot[1]=0a1b5d18 creature=00000012 hud=0a1b2c00 k=1
+7310 companion-selfheal/hud P3 slot[2]=0a1b6afc creature=00000013 hud=0a1b2c00 k=2
+9000 companion-selfheal/dump DUMP begin hud=0a1b2c00
+9000 companion-selfheal/dump item group 1: 3 entries
+9000 companion-selfheal/dump party members=3
+9001 companion-selfheal/dump member 1 client=7f000011 server=00000011 ok=1 hp=12/40 down=0 commandable(+0xEC)=1
+9001 companion-selfheal/dump   skills stats=0b000100 TreatInjury=6 Repair=2 WIS=12 INT=10
+9001 companion-selfheal/dump   cand "Medical Supplies" key=80000a01 client=00000a01 server=00000b01 item=0c000100 props=1 type=10 row=65 heal=27 count=4 usable=1
+9001 companion-selfheal/dump   cand "Repair Kit" key=80000a02 client=00000a02 server=00000b02 item=0c000200 props=1 type=10 row=84 heal=17 count=2 usable=1
+9001 companion-selfheal/dump   pick missing=28 -> "Medical Supplies" row=65 heal=27 count=4
+9001 companion-selfheal/dump   routeA (not called): ecx=00000011 fn=006a1230 args(0,0,self=00000011,0,item=00000b01,0,0,0) clientId=7f000011 idOk=1
+9001 companion-selfheal/dump   auto(on, 35%, keep 2): shouldAutoUse=1 alive=1 commandable=1
+9002 companion-selfheal/dump member 2 client=7f000012 server=00000012 ok=1 hp=30/30 down=0 commandable(+0xEC)=1
+9002 companion-selfheal/dump   skills stats=0b000200 TreatInjury=0 Repair=9 WIS=8 INT=14
+9002 companion-selfheal/dump   cand "Repair Kit" key=80000a02 client=00000a02 server=00000b02 item=0c000200 props=1 type=10 row=127 heal=31 count=2 usable=1
+9002 companion-selfheal/dump   pick missing=0 -> none (1 candidates)
+9002 companion-selfheal/dump   auto(on, 35%, keep 2): shouldAutoUse=0 alive=1 commandable=1
+9003 companion-selfheal/dump DUMP end

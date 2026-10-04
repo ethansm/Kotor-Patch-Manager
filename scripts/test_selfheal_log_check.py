@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Tests for scripts/selfheal_log_check.py (fixtures in scripts/testdata/selfheal/). Run: python3 -m pytest scripts/test_selfheal_log_check.py -q"""
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import selfheal_log_check as S  # noqa: E402
+
+FX = HERE / "testdata" / "selfheal"
+
+
+def lines(name):
+    return (FX / name).read_text().splitlines()
+
+
+def test_pass():
+    r = S.check(lines("pass.txt"))
+    assert (r["p1"], r["p3"], len(r["blocks"]), r["verdict"]) == ("PASS", "PASS", 1, "PASS")
+    assert len(r["table"]) == 2 and r["table"][0]["pick"][1] == 65
+    assert S.fmt(r).splitlines()[-1] == "SELFHEAL P1=PASS P3=PASS DUMP=1 blocks VERDICT=PASS"
+
+
+def test_fail_knone():
+    r = S.check(lines("fail_knone.txt"))
+    assert r["p3"] == "FAIL" and r["verdict"] == "FAIL" and r["p3_fail"]
+
+
+def test_fail_nop1():
+    r = S.check(lines("fail_nop1.txt"))
+    assert r["p1"] == "MISSING" and r["verdict"] == "FAIL"
+    assert S.fmt(r).splitlines()[-1] == "SELFHEAL P1=MISSING P3=PASS DUMP=1 blocks VERDICT=FAIL"
+
+
+def test_incomplete():
+    r = S.check([l for l in lines("pass.txt") if "DUMP" not in l and not l.startswith(("9001", "9002"))
+                 and " member " not in l])
+    assert r["verdict"] == "INCOMPLETE" and r["p1"] == "PASS" and not r["blocks"]
+
+
+def test_from_skips_earlier_lines():
+    r = S.check(lines("pass.txt"), lo=6)  # drops connect + P1 (+P3 slots)
+    assert r["p1"] == "MISSING"
+    r = S.check(lines("pass.txt"), lo=1, hi=5)
+    assert r["p1"] == "PASS" and r["verdict"] == "INCOMPLETE"
+
+
+def test_dump_failures():
+    L = lines("pass.txt")
+    L = [l.replace("hp=12/40", "hp=50/40").replace("row=84 heal=17", "row=99 heal=0").replace("idOk=1", "idOk=0") for l in L]
+    r = S.check(L)
+    msgs = " ".join(m for _, m in r["dump_fail"])
+    assert "cur 50 > max 40" in msgs and "row=99" in msgs and "heal=0" in msgs and "idOk=0" in msgs
+    assert r["verdict"] == "FAIL" and all(isinstance(n, int) for n, _ in r["dump_fail"])
+
+
+def test_malformed_numbers():
+    L = [l.replace("ctlCount=212", "ctlCount=xyz").replace("hp=30/30", "hp=ab/30") for l in lines("pass.txt")]
+    r = S.check(L)
+    assert r["p1"] == "FAIL" and r["verdict"] == "FAIL"
+    assert any("malformed hp" in m for _, m in r["dump_fail"])
+    assert S.check(["P1 hud built layoutOpen=1 ctlCount=5000"])["p1"] == "FAIL"
+
+
+def test_bare_lines_without_prefix():
+    r = S.check([l.split(" ", 2)[2] if l[0].isdigit() else l for l in lines("pass.txt")])
+    assert r["verdict"] == "PASS"
+
+
+def test_missing_file(tmp_path, capsys):
+    p = tmp_path / "nope.txt"
+    assert S.main([str(p)]) == 2
+    assert capsys.readouterr().out.strip() == "no log: %s" % p
+
+
+def test_main_exit_codes(capsys):
+    assert S.main(["--log", str(FX / "pass.txt")]) == 0
+    assert S.main([str(FX / "fail_knone.txt")]) == 1
+    assert S.main(["--log", str(FX / "pass.txt"), "--from", "99"]) == 0
+    assert "VERDICT=INCOMPLETE" in capsys.readouterr().out
