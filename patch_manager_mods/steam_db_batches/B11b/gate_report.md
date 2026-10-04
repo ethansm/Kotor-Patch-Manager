@@ -6,11 +6,11 @@ Rows: 238. Source order for tie-breaks: server > trusted name_map > mapper:vote 
 
 | class | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|
-| CGuiInGame | 111 | 59 | 2 | 0 | 172 |
+| CGuiInGame | 112 | 58 | 2 | 0 | 172 |
 | CSWGuiMainInterface | 0 | 65 | 0 | 1 | 66 |
-| **all** | 111 | 124 | 2 | 1 | 238 |
+| **all** | 112 | 123 | 2 | 1 | 238 |
 
-AUTO by route: c2=66 sig=45 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=68 sig=44 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 

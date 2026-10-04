@@ -1,0 +1,30 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x004db4b0	CGuiInGame::DestroyDeathMenuGUI	0x007cadb0	callees and disps match; body runs dialog animations over a list, not death menu destroy	review:sonnet_c1.tsv
+0x004dba50	CGuiInGame::ShowSubItemCreateMenu_2	0x007cb350	body resets dialog reply fields/fade and cools input events; not showing a menu. Fits dialog end cleanup	review:sonnet_c1.tsv
+0x004dbaf0	CGuiInGame::HideSubItemCreateMenu_2	0x007cb3f0	body clears dialog replies/fade state; not Hide...Menu. Differs from card 08 by the ClearRepliesData call	review:sonnet_c1.tsv
+0x004dbda0	CGuiInGame::IsCameraDialog	0x007cb6a0	body forwards 4 args to SetFade; not an Is predicate. Fits SetDialogFade/SetLetterboxFade	review:sonnet_c1.tsv
+0x004dbde0	CGuiInGame::IsAnimationPlayingInDialog	0x007cb6e0	void body sets a flag and calls a vfunc; not a predicate. Fits a dialog animation finish/skip action	review:sonnet_c1.tsv
+0x004dbe20	CGuiInGame::IsLoopingDialogStuntAnimation_2	0x007cb720	0x7cb5e0 is a 190-byte vfunc/0x190 function. True body tests letterbox fade, so name suspect (swap with 0x4dbe50)	review:sonnet_c1.tsv
+0x004dbe50	CGuiInGame::IsFadingInDialog	0x007cb750	0x7cb720 uses +0x68/IsFadeDone (GOG 0x4dbe20). True body compares +0x3c==+0x40, no fade: name suspect, likely swapped with 0x4dbe20	review:sonnet_c1.tsv
+0x004dc370	CGuiInGame::InitializePlaceableCameras	0x007cbc70	body is a float compare predicate on the fade object, not InitializePlaceableCameras; fits fade-alpha test	review:sonnet_c1.tsv
+0x004dd7d0	CGuiInGame::HideSwoopUpgradeScreen	0x007cd0d0	thunk resumes a bark bubble (AddPanel 0x410530), not hide swoop upgrade screen	review:sonnet_c1.tsv
+0x004df1f0	CGuiInGame::GetCanOrientInDialog	0x007ceaf0	body is a position-vector getter through out pointer, not a boolean Can predicate	review:sonnet_c1.tsv
+0x004e0bf0	CGuiInGame::ShowDialogMessage	0x007d04f0	Counterpart by size and offsets; body is a byte getter through +0x98, not ShowDialogMessage.	review:sonnet_c2.tsv
+0x004e0c60	CGuiInGame::GetMiniMapVisible	0x007d0560	Counterpart by size and offsets; body conditionally calls manager vfunc +0x84, not a minimap getter (that body is 0x7d05a0).	review:sonnet_c2.tsv
+0x004e0ca0	CGuiInGame::RemoveGUIPopUps	0x007d05a0	Candidate 0x7d0560 is size 49 with different offsets; true match 0x7d05a0 returns minimap bit, so RemoveGUIPopUps label is wrong.	review:sonnet_c2.tsv
+0x004e0d20	CGuiInGame::ResetInterfaceFont	0x007d0620	Counterpart by caller and offsets; sends cancel event (0x28, ESC case in 0x4213d0) to 5 popups, fits RemoveGUIPopUps not ResetInterfaceFont.	review:sonnet_c2.tsv
+0x004e2390	CGuiInGame::CopyQuickSaveGameToFutureGame	0x007d1c90	Only function in dump with this loop and offsets; calls vfunc +0x6c on 9 panel pointers, not a quicksave copy.	review:sonnet_c2.tsv
+0x00517f80	CSWGuiMainInterface::OnPanelAdded	0x00746950	Counterpart by callee and imm 9/0xc; body clears active-panel index and highlight on 9 slots, not OnPanelAdded.	review:sonnet_c2.tsv
+0x00517fd0	CSWGuiMainInterface::StartRotation	0x007469a0	Counterpart by 0x750/0x733c/0x120 (GOG sets identical); body returns panel pointer for index 0..8, not StartRotation.	review:sonnet_c2.tsv
+0x00518570	CSWGuiMainInterface::OnCombatYButton	0x00746f40	Counterpart by size 122 and offsets; body returns active action index in list, fits GetActiveActionIdx, not OnCombatYButton.	review:sonnet_c2.tsv
+0x005185f0	CSWGuiMainInterface::DisplayToolTipMessage	0x00746fc0	Counterpart by size 79 and immediates; body returns last button index with flag set, not DisplayToolTipMessage.	review:sonnet_c2.tsv
+0x00518640	CSWGuiMainInterface::QueueActiveAction	0x00747010	Counterpart by size, offsets and 0x1d0; body moves mouse to button index, not QueueActiveAction; callee identity moderately confirmed.	review:sonnet_c2.tsv
+0x0051e730	CSWGuiMainInterface::UpdateActionQueue	0x0074cfb0	Counterpart by size and offsets; sets target object id (+0x68, read by PopulateMenus) and timer, not UpdateActionQueue.	review:sonnet_c2.tsv
+0x00523280	CSWGuiMainInterface::GetActiveActionIdx	0x00751b00	Counterpart by callee and offsets; body is void handler clearing flag +0x15414, not an index getter (getter is 0x746f40).	review:sonnet_c2.tsv
+0x00523510	CSWGuiMainInterface::ShowActionQueue	0x00751d90	Counterpart by callees and 0x7f000000; body is select-previous-action button handler, not ShowActionQueue; sibling 0x751e40 uses SelectNext.	review:sonnet_c2.tsv
+0x005235c0	CSWGuiMainInterface::OnClearOneButtonPressed	0x00751e40	Counterpart by callees; body selects next action, not clear-one (real clear is 0x7511b0); sibling 0x751d90 uses SelectPrev.	review:sonnet_c2.tsv
+0x00523ab0	CSWGuiMainInterface::SetTarget	0x00752330	Counterpart by callee; body is On*ButtonPressed wrapper (ctrl+0x50 check then forward), stores no target; not SetTarget.	review:sonnet_c3.tsv
+0x00523ae0	CSWGuiMainInterface::GetActionsFromActionIndex	0x00752360	Counterpart sure; body tests flag, tutorial check, then clears one action; not a Get; fits OnClearOneAction handler.	review:sonnet_c3.tsv
+0x00523b30	CSWGuiMainInterface::UpdateAndDrawFogOfWar	0x007523b0	Counterpart via size, disp 0x50 and callee; body forwards ctrl click to clear-all, no fog of war; On*Pressed wrapper.	review:sonnet_c3.tsv
+0x00524620	CSWGuiMainInterface::AddFloatyText	0x00752ea0	Same disps and caller as GOG; body restores control visibility, clears flag; no text added. Fits tooltip-mode-off, not AddFloatyText.	review:sonnet_c3.tsv
+0x00524a20	CSWGuiMainInterface::RemoveFloatyText	0x007532a0	Counterpart by disp set and size, between FloatyText CreateEntry/Update; body ages and scrolls an entry, removes nothing.	review:sonnet_c3.tsv

@@ -1,0 +1,932 @@
+{
+ "batch": "B11b",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus",
+ "decoy_cards": 30,
+ "decoys_accepted": 2,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 10
+ },
+ "full_read": 48,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004ddbd0",
+   "name": "SetDialogSelection",
+   "route": "sig",
+   "steam_addr": "0x007cd4d0"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dd740",
+   "name": "UpdateMessageGUI",
+   "route": "sig",
+   "steam_addr": "0x007cd040"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d46f0",
+   "name": "LoadCameraModelForDialog",
+   "route": "sig",
+   "steam_addr": "0x007c4060"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d8a80",
+   "name": "LoadStuntModelsForDialog",
+   "route": "sig",
+   "steam_addr": "0x007c8390"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dc660",
+   "name": "HandleDialogEntry",
+   "route": "sig",
+   "steam_addr": "0x007cbf60"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004ce720",
+   "name": "AppendToMsgBuffer",
+   "route": "c2",
+   "steam_addr": "0x007be090"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e1490",
+   "name": "GetFadeOverridePanelVisible",
+   "route": "c2",
+   "steam_addr": "0x007d0d90"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e2730",
+   "name": "DisplayDeathMessage",
+   "route": "c2",
+   "steam_addr": "0x007d2030"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004cd090",
+   "name": "Constructor",
+   "steam_addr": "0x007bce00",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004ce110",
+   "name": "InitializeGlobal",
+   "steam_addr": "0x007bde80",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d00e0",
+   "name": "SetConversationType",
+   "steam_addr": "0x007bfa50",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d05c0",
+   "name": "InitializeDialogAnimationData",
+   "steam_addr": "0x007bff30",
+   "why": "match cites a layout/offset difference, match on a mac_rotation row"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d06c0",
+   "name": "SetDialogAnimationData",
+   "steam_addr": "0x007c0030",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d6890",
+   "name": "SetComputerCameraShot",
+   "steam_addr": "0x007c6200",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004d6c40",
+   "name": "ResetComputerCameraShot",
+   "steam_addr": "0x007c65b0",
+   "why": "match on a mac_contra row, match on a mac_rotation row"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004db4b0",
+   "name": "DestroyDeathMenuGUI",
+   "steam_addr": "0x007cadb0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004db920",
+   "name": "IsLoopingDialogAnimation",
+   "steam_addr": "0x007cb220",
+   "why": "match on a mac_contra row, match on a mac_rotation row"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dba50",
+   "name": "ShowSubItemCreateMenu_2",
+   "steam_addr": "0x007cb350",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dbaf0",
+   "name": "HideSubItemCreateMenu_2",
+   "steam_addr": "0x007cb3f0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dbda0",
+   "name": "IsCameraDialog",
+   "steam_addr": "0x007cb6a0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dbde0",
+   "name": "IsAnimationPlayingInDialog",
+   "steam_addr": "0x007cb6e0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dbe20",
+   "name": "IsLoopingDialogStuntAnimation_2",
+   "steam_addr": "0x007cb5e0",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dbe50",
+   "name": "IsFadingInDialog",
+   "steam_addr": "0x007cb720",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dc370",
+   "name": "InitializePlaceableCameras",
+   "steam_addr": "0x007cbc70",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dd7d0",
+   "name": "HideSwoopUpgradeScreen",
+   "steam_addr": "0x007cd0d0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004df1f0",
+   "name": "GetCanOrientInDialog",
+   "steam_addr": "0x007ceaf0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004dfe10",
+   "name": "IsOverlayDialogAnimation_2",
+   "steam_addr": "0x007cf4b0",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e00e0",
+   "name": "SetTutorialReason",
+   "steam_addr": "0x007cf960",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e0bf0",
+   "name": "ShowDialogMessage",
+   "steam_addr": "0x007d04f0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e0c60",
+   "name": "GetMiniMapVisible",
+   "steam_addr": "0x007d0560",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e0ca0",
+   "name": "RemoveGUIPopUps",
+   "steam_addr": "0x007d0560",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e0d20",
+   "name": "ResetInterfaceFont",
+   "steam_addr": "0x007d0620",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x004e2390",
+   "name": "CopyQuickSaveGameToFutureGame",
+   "steam_addr": "0x007d1c90",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00517f80",
+   "name": "OnPanelAdded",
+   "steam_addr": "0x00746950",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00517fd0",
+   "name": "StartRotation",
+   "steam_addr": "0x007469a0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00518570",
+   "name": "OnCombatYButton",
+   "steam_addr": "0x00746f40",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x005185f0",
+   "name": "DisplayToolTipMessage",
+   "steam_addr": "0x00746fc0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00518640",
+   "name": "QueueActiveAction",
+   "steam_addr": "0x00747010",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x0051e680",
+   "name": "SetActionDescription",
+   "steam_addr": "0x0074cf00",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x0051e730",
+   "name": "UpdateActionQueue",
+   "steam_addr": "0x0074cfb0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x0051f0b0",
+   "name": "HandleButtonAction",
+   "steam_addr": "0x0074d930",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00522d00",
+   "name": "OnMenuButtonPressed",
+   "steam_addr": "0x00751580",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523230",
+   "name": "DoTargetAction",
+   "steam_addr": "0x00751ab0",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523280",
+   "name": "GetActiveActionIdx",
+   "steam_addr": "0x00751b00",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523370",
+   "name": "UpdateActionMenuSelected",
+   "steam_addr": "0x00751bf0",
+   "why": "match on a mac_contra row, match on a mac_rotation row"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523510",
+   "name": "ShowActionQueue",
+   "steam_addr": "0x00751d90",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x005235c0",
+   "name": "OnClearOneButtonPressed",
+   "steam_addr": "0x00751e40",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523670",
+   "name": "OnPauseButtonPressed",
+   "steam_addr": "0x00751ef0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523ab0",
+   "name": "SetTarget",
+   "steam_addr": "0x00752330",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523ae0",
+   "name": "GetActionsFromActionIndex",
+   "steam_addr": "0x00752360",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00523b30",
+   "name": "UpdateAndDrawFogOfWar",
+   "steam_addr": "0x007523b0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00524590",
+   "name": "ShowFlashingStatus",
+   "steam_addr": "0x00752e10",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00524620",
+   "name": "AddFloatyText",
+   "steam_addr": "0x00752ea0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00524a20",
+   "name": "RemoveFloatyText",
+   "steam_addr": "0x007532a0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "gog": "0x00524ea0",
+   "name": "OnPanelRemoved",
+   "steam_addr": "0x00753720",
+   "why": "match on a mac_contra row, match on a mac_rotation row"
+  },
+  {
+   "class": "CGuiInGame",
+   "gog": "0x005a4790",
+   "name": "ShowGameMenuChangeButtons",
+   "steam_addr": "0x008b0890",
+   "why": "reviewer corrected_addr"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C0",
+   "gog": "0x0051bec0",
+   "name": "Destructor",
+   "steam_addr": "0x0074a750"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004df5c0",
+   "name": "InitializeMap",
+   "steam_addr": "0x007ceec0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004d8410",
+   "name": "GetMessageBuffer",
+   "steam_addr": "0x007c7d20"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004dfbb0",
+   "name": "ShowFlashingStatus",
+   "steam_addr": "0x007cf4b0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004d00b0",
+   "name": "SetLevelUpMode",
+   "steam_addr": "0x007bfa20"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C0",
+   "gog": "0x005265a0",
+   "name": "ResetPartyMemberItemUse",
+   "steam_addr": "0x00754e20"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004db710",
+   "name": "IsFireForgetDialogAnimation",
+   "steam_addr": "0x007cae60"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004d8430",
+   "name": "GetMessageBufferSize",
+   "steam_addr": "0x007c7d40"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004dee10",
+   "name": "SetMainInterfaceTarget",
+   "steam_addr": "0x007ce710"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C0",
+   "gog": "0x00523a80",
+   "name": "OnCharacterExited",
+   "steam_addr": "0x00752300"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004dc340",
+   "name": "IsGlobalFading",
+   "steam_addr": "0x007cbc40"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C0",
+   "gog": "0x00523460",
+   "name": "HandleButtonAction_3",
+   "steam_addr": "0x00751ce0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C0",
+   "gog": "0x004e09d0",
+   "name": "SetupPauseGuiExtent",
+   "steam_addr": "0x007d02d0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x005237d0",
+   "name": "OnCharacterClicked",
+   "steam_addr": "0x00752050"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00522ed0",
+   "name": "DoPersonalAction",
+   "steam_addr": "0x00751750"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051f070",
+   "name": "HandleButtonActionX",
+   "steam_addr": "0x0074d8f0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051f400",
+   "name": "UpdateActionQueue_2",
+   "steam_addr": "0x0074dc80"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00518840",
+   "name": "Constructor",
+   "steam_addr": "0x00747210"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004de2e0",
+   "name": "HideUpgradeScreen",
+   "steam_addr": "0x007cdbe0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004dfff0",
+   "name": "GetCanHeadFollowInDialog",
+   "steam_addr": "0x007cf8f0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00524790",
+   "name": "ResetFont",
+   "steam_addr": "0x00753010"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004df250",
+   "name": "RePopulateMainInterface",
+   "steam_addr": "0x007ceb50"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00523bd0",
+   "name": "SelectNextPersonalAction",
+   "steam_addr": "0x00752450"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051c510",
+   "name": "Destructor_2",
+   "steam_addr": "0x0074ad90"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051ff70",
+   "name": "ShowActionIcon",
+   "steam_addr": "0x0074e7f0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00522e30",
+   "name": "OnCharacterRightClicked",
+   "steam_addr": "0x007516b0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C2",
+   "gog": "0x004d01a0",
+   "name": "ShowDialogEntry",
+   "steam_addr": "0x007bfb10"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00523a40",
+   "name": "OnCharacterEntered",
+   "steam_addr": "0x007522c0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e0b70",
+   "name": "ClearDialogNonDependantList",
+   "steam_addr": "0x007d0470"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004ce840",
+   "name": "AppendToCombatBuffer",
+   "steam_addr": "0x007be1b0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x0051e760",
+   "name": "PopulateMenus",
+   "steam_addr": "0x0074cfe0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e11f0",
+   "name": "SetGlobalUnpauseableState",
+   "steam_addr": "0x007d0af0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004dbc40",
+   "name": "HidePowersFeatsSkillsDebugMenu",
+   "steam_addr": "0x007cb540"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00518020",
+   "name": "HandleInputEvent",
+   "steam_addr": "0x007469f0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004daac0",
+   "name": "PrevSWInGameGui",
+   "steam_addr": "0x007ca3c0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00522930",
+   "name": "ClearOneAction",
+   "steam_addr": "0x007511b0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x0051f1c0",
+   "name": "RevertActionBarStates",
+   "steam_addr": "0x0074da40"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00523ee0",
+   "name": "UpdateStickyTarget",
+   "steam_addr": "0x00752760"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e0ae0",
+   "name": "IsOnDialogNonDependantList",
+   "steam_addr": "0x007d03e0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00526570",
+   "name": "OnCancelPartyItemSelect",
+   "steam_addr": "0x00754df0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x0051cb70",
+   "name": "Draw",
+   "steam_addr": "0x0074b3f0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00517df0",
+   "name": "HideHelp",
+   "steam_addr": "0x007467c0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004df580",
+   "name": "AddFloatyText",
+   "steam_addr": "0x007cee80"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x005211d0",
+   "name": "UpdateGameMenu",
+   "steam_addr": "0x0074fa50"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x005246d0",
+   "name": "SetupPauseGuiExtent",
+   "steam_addr": "0x00752f50"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051e410",
+   "name": "UpdateActionDescription",
+   "steam_addr": "0x0074cc90"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e0110",
+   "name": "TutorialReasonHasShown",
+   "steam_addr": "0x007cfa10"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00523760",
+   "name": "OnStealthButtonPressed",
+   "steam_addr": "0x00751fe0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e09b0",
+   "name": "ChangeCharacter",
+   "steam_addr": "0x007d02b0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00517490",
+   "name": "AddHelpPanel",
+   "steam_addr": "0x00745e60"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x0051eca0",
+   "name": "PopupActionMenu",
+   "steam_addr": "0x0074d520"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004db8f0",
+   "name": "IsLoopingDialogStuntAnimation",
+   "steam_addr": "0x007cb1f0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x0051f830",
+   "name": "GetActionIcon",
+   "steam_addr": "0x0074e0b0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00520390",
+   "name": "SetCombatMessage",
+   "steam_addr": "0x0074ec10"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00523720",
+   "name": "OnSoloButtonPressed",
+   "steam_addr": "0x00751fa0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051cb20",
+   "name": "HitCheckMouse",
+   "steam_addr": "0x0074b3a0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004db8c0",
+   "name": "IsDialogAnimationRange1000_1727",
+   "steam_addr": "0x007cb1c0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00524e00",
+   "name": "PopupGamepadMenu",
+   "steam_addr": "0x00753680"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00526530",
+   "name": "OnSwapWeaponsPressed",
+   "steam_addr": "0x00754db0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e0170",
+   "name": "SetTutorialReasonTracked",
+   "steam_addr": "0x007cfa70"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004da930",
+   "name": "NextSWInGameGui",
+   "steam_addr": "0x007ca230"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00522390",
+   "name": "InitializeMap",
+   "steam_addr": "0x00750c10"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x0051daa0",
+   "name": "Update",
+   "steam_addr": "0x0074c320"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00520610",
+   "name": "UpdatePortraits",
+   "steam_addr": "0x0074ee90"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x005212a0",
+   "name": "UpdateIndicator",
+   "steam_addr": "0x0074fb20"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0051f180",
+   "name": "HandleButtonAction_2",
+   "steam_addr": "0x0074da00"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00521f10",
+   "name": "DrawMap",
+   "steam_addr": "0x00750790"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004db020",
+   "name": "HideGalaxyMapGui",
+   "steam_addr": "0x007ca920"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004de3c0",
+   "name": "HideChemicalUpgradeScreen",
+   "steam_addr": "0x007cdcc0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C2",
+   "gog": "0x00523b60",
+   "name": "OnClearAllButtonPressed",
+   "steam_addr": "0x007523e0"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004e0c30",
+   "name": "SetCombatMessage",
+   "steam_addr": "0x007d0530"
+  },
+  {
+   "class": "CGuiInGame",
+   "content_level": "C1",
+   "gog": "0x004dbba0",
+   "name": "HideLoadModuleDebugMenu",
+   "steam_addr": "0x007cb4a0"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x00523d50",
+   "name": "SelectPrevPersonalAction",
+   "steam_addr": "0x007525d0"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 73,
+ "sample_rate": 0.2,
+ "sample_size": 73,
+ "unanswered_decoys": 0
+}

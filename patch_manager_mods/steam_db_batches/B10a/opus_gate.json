@@ -1,0 +1,238 @@
+{
+ "batch": "B10a",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 20,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10
+ },
+ "full_read": 9,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CSWSObject",
+   "gog": "0x006bd060",
+   "name": "AIActionSetCommandable",
+   "route": "sig",
+   "steam_addr": "0x005e0e70"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00475a80",
+   "name": "DeleteVisualEffect",
+   "route": "sig",
+   "steam_addr": "0x007f0920"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006aa7c0",
+   "name": "DoSpellImmunity",
+   "route": "sig",
+   "steam_addr": "0x00543ae0"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00472a30",
+   "name": "ReplaceTexture_2",
+   "route": "sig",
+   "steam_addr": "0x007ed8d0"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00474800",
+   "name": "AnimationOverlay",
+   "route": "sig",
+   "steam_addr": "0x007ef6a0"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006b0c50",
+   "name": "ReportOverflow",
+   "route": "c2",
+   "steam_addr": "0x00549f70"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006a70f0",
+   "name": "SaveActionQueue",
+   "route": "c2",
+   "steam_addr": "0x00540410"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00477360",
+   "name": "SetFeedbackInfo",
+   "route": "c2",
+   "steam_addr": "0x007f2200"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CSWCObject",
+   "gog": "0x004744b0",
+   "name": "AnimationPlayOutOfPlace",
+   "steam_addr": "0x007ef730",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00474540",
+   "name": "AnimationHideEquippedItems",
+   "steam_addr": "0x007ef910",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x004745d0",
+   "name": "AnimationWalking",
+   "steam_addr": "0x007ef3e0",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00474890",
+   "name": "AnimationPause",
+   "steam_addr": "0x007ef350",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWCObject",
+   "gog": "0x00474a70",
+   "name": "AnimationRunning",
+   "steam_addr": "0x007ef470",
+   "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006a60a0",
+   "name": "GetActionByGroupId",
+   "steam_addr": "0x0053f3c0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006ad780",
+   "name": "RemoveObjectFromDialog",
+   "steam_addr": "0x00546aa0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006adc90",
+   "name": "AddMatchedExpressionString",
+   "steam_addr": "0x00546fb0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWSObject",
+   "gog": "0x006b3410",
+   "name": "GetAQActionIDByID",
+   "steam_addr": "0x005d7220",
+   "why": "match on a mac_rotation row"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00472720",
+   "name": "Destructor",
+   "steam_addr": "0x007ed5c0"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00475b50",
+   "name": "StopAllVisualEffects",
+   "steam_addr": "0x007f09f0"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x004726f0",
+   "name": "ClientServerSyncHandler_Orientation",
+   "steam_addr": "0x007ed590"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00475420",
+   "name": "RemoveAllFireForgetAnimations",
+   "steam_addr": "0x007f02c0"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00472610",
+   "name": "GetPortraitId",
+   "steam_addr": "0x007ed4b0"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00472660",
+   "name": "TurnOffShadows",
+   "steam_addr": "0x007ed500"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00472630",
+   "name": "TurnOnShadows",
+   "steam_addr": "0x007ed4d0"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x004725e0",
+   "name": "GetPortrait",
+   "steam_addr": "0x007ed480"
+  },
+  {
+   "class": "CSWSObject",
+   "content_level": "C0",
+   "gog": "0x006b1160",
+   "name": "IsDirtyFlagSet",
+   "steam_addr": "0x0054a480"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00410c30",
+   "name": "SetId",
+   "steam_addr": "0x00764f60"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00477820",
+   "name": "DisableDistortion",
+   "steam_addr": "0x007f2680"
+  },
+  {
+   "class": "CSWCObject",
+   "content_level": "C0",
+   "gog": "0x00410cb0",
+   "name": "GetCanSeeHeight",
+   "steam_addr": "0x00764fe0"
+  },
+  {
+   "class": "CSWSObject",
+   "content_level": "C0",
+   "gog": "0x006638a0",
+   "name": "GetPortraitId",
+   "steam_addr": "0x0053f000"
+  }
+ ],
+ "sample_errors": null,
+ "sample_pool": 61,
+ "sample_rate": 0.2,
+ "sample_size": 13,
+ "unanswered_decoys": 0
+}

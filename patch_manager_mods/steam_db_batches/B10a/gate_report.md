@@ -6,11 +6,11 @@ Rows: 245. Source order for tie-breaks: server > trusted name_map > mapper:vote 
 
 | class | AUTO | REVIEW | REJECT | NOCAND | total |
 |---|---|---|---|---|---|
-| CSWCObject | 51 | 46 | 2 | 2 | 101 |
+| CSWCObject | 52 | 45 | 2 | 2 | 101 |
 | CSWSObject | 109 | 25 | 5 | 5 | 144 |
-| **all** | 160 | 71 | 7 | 7 | 245 |
+| **all** | 161 | 70 | 7 | 7 | 245 |
 
-AUTO by route: c2=99 sig=61 (the sig route is non-propagating, see DESIGN 4.2)
+AUTO by route: c2=105 sig=56 (the sig route is non-propagating, see DESIGN 4.2)
 
 ## REJECT rows
 

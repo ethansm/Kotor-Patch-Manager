@@ -1,0 +1,7 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x004744b0	CSWCObject::AnimationPlayOutOfPlace	0x007ef350	GOG 0x4744b0 is a column lookup (disps 0x68/0xcc/0xe0/0x130), aligning to 0x7ef350 (Pause). Pause and PlayOutOfPlace labels swapped.	review:sonnet_c1.tsv
+0x00474540	CSWCObject::AnimationHideEquippedItems	0x007ef3e0	Candidate is the counterpart of GOG 0x474a70, not 0x474540. 0x474540 aligns to 0x7ef3e0 (Walking); GOG labels rotated.	review:sonnet_c1.tsv
+0x004745d0	CSWCObject::AnimationWalking	0x007ef470	GOG family labels rotated: 0x4745d0 aligns to 0x7ef470 (Running column), not Walking. Candidate is Walking, counterpart of 0x474540.	review:sonnet_c1.tsv
+0x00474890	CSWCObject::AnimationPause	0x007ef730	GOG 0x474890 (68 B, ranges 0x4b0-0x52f, 0x640-0x6bf) is 0x7ef730, a range predicate. Pause label wrong; candidate is Pause column fn.	review:sonnet_c1.tsv
+0x00474a70	CSWCObject::AnimationRunning	0x007ef910	GOG 0x474a70 aligns to 0x7ef910 (HideEquippedItems column; callee of TestAndReEquip). Candidate 0x7ef470 is Running. GOG label rotated.	review:sonnet_c1.tsv
+0x006ad780	CSWSObject::RemoveObjectFromDialog	0x00546aa0	Same body as GOG, but it calls a GUI object-list predicate with no object argument; not removal. 0x546b00 likelier.	review:sonnet_c2.tsv

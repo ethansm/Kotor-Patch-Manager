@@ -1,0 +1,1522 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004721b0] Steam batch B10a: CALLEE 4 (callers: ? 0x7645f0, Constructor 0x87afe0, Constructor 0x840f50); SIG 1.00 | AUTO: CALLEE 4 (callers: ? 0x7645f0, Constructor 0x87afe0, Constructor 0x840f50); SIG 1.00",
+  "name": "CSWCObject::Constructor",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed050"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004725b0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::GetCameraFollowPart",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed450"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00472750] Steam batch B10a: CALLEE 5 (callees: RemoveObjectFromHitcheckIgnoreList 0x73f8d0; callers: ? 0x7651b0, Destructor_2 0x87b1a0, Destructor_2 0x841200) | reviewer match with anchor: 007ed643 CALL 0x0073f8d0 (RemoveObjectFromHitcheckIgnoreList) + 007ed64b CALL 0x007f0a50 (KillAllVisualEffects) in 0x7ed5f0; both GOG callees",
+  "name": "CSWCObject::Destructor_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed5f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004727b0] Steam batch B10a: CALLEE 1 (callees: GetClientAIMaster 0x73f790); SIG 0.94 | reviewer match with anchor: 007ed65e CALL 0x0073f790 (GetClientAIMaster) + 007ed777 CALL 0x00733780 (CExoString::Destructor), GOG callees, in 0x7ed5f0",
+  "name": "CSWCObject::Destructor_3",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed5f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00472930] Steam batch B10a: CALLEE 14 (callers: ClientServerSyncHandler_Animation 0x769620, ClientServerSyncHandler_Orientation 0x7696e0, ClientServerSyncHandler_Position 0x769780) | reviewer match with anchor: 007ed7da MOV AX,word ptr [EAX+0x48], size 18; GOG disp {0x48}; GOG callers ShowObject/ProcessInput map to Steam callers",
+  "name": "CSWCObject::GetCurrentAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed7d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00472950] Steam batch B10a: CALLEE 1 (callers: AttachToScene 0x77d840); SIG 1.00 | AUTO: CALLEE 1 (callers: AttachToScene 0x77d840); SIG 1.00",
+  "name": "CSWCObject::AttachToScene",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed7f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00472990] Steam batch B10a: CALLEE 24 (callers: AIUpdate_2 0x7664b0, RotateCreatureToOrientation 0x768610, UpdateWeaponClass 0x76d590) | reviewer match with anchor: 007ed83a MOV EAX,[EAX+0x68] (size 17, RET 0); GOG callers MainLoop 0x781be0 and GetClientMeleeAnimation 0x79c9c0 call it",
+  "name": "CSWCObject::GetAnimationBase",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004729b0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::GetModel",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed850"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004729f0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::ReplaceTexture",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00472a30] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::ReplaceTexture_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed8d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00472a70] Steam batch B10a: CALLEE 7 (callers: ClientServerSyncHandler_Position 0x769780, AddFireForgetAnimation 0x770310, DriveAnimationUpdate 0x776fe0); SIG 1.00 | AUTO: CALLEE 7 (callers: ClientServerSyncHandler_Position 0x769780, AddFireForgetAnimation 0x770310, DriveAnimationUpdate 0x776fe0); SIG 1.00",
+  "name": "CSWCObject::GetAnimationLength",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed910"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00472ab0] Steam batch B10a: CALLEE 3 (callees: AnimationLooping 0x7ef500; callers: SetAppearance 0x76d200, SetAnimationWithoutTrigger 0x87b9e0) | reviewer match with anchor: 007ed95f CALL 0x007ef500 (AnimationLooping, GOG callee) + 007ed970 MOV word ptr [ECX+0x58],DX",
+  "name": "CSWCObject::SetLoopingAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed950"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00472ae0] Steam batch B10a: CALLEE 6 (callers: AnimationUpdate 0x7675b0, ForceAppearanceUpdate 0x768060, SetAppearance 0x76d200) | reviewer match with anchor: 007ed98a MOV AX,word ptr [EAX+0x58], size 18; GOG disp {0x58}",
+  "name": "CSWCObject::GetLoopingAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00472b00] Steam batch B10a: STR 'DeathVFXNode'@009a2374; 'DeathVFX'@009a2384; CALLEE 9 (callees: BlurWeapon 0x767a80, HideEquippedItems 0x773a10, StopAmbientPauseAnim 0x774b40; callers: SetAnimation 0x841c00); SIG 1.00 | AUTO: STR 'DeathVFXNode'@009a2374; 'DeathVFX'@009a2384; CALLEE 9 (callees: BlurWeapon 0x767a80, HideEquippedItems 0x773a10, StopAmbientPauseAnim 0x774b40; callers: Se",
+  "name": "CSWCObject::SetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ed9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00474040] Steam batch B10a: CALLEE 2 (callees: ShowEquippedItems 0x773af0; callers: AnimateFireAndForget 0x777e30); SIG 1.00 | AUTO: CALLEE 2 (callees: ShowEquippedItems 0x773af0; callers: AnimateFireAndForget 0x777e30); SIG 1.00",
+  "name": "CSWCObject::TestAndReEquipweapons",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007eeee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004740f0] Steam batch B10a: CALLEE 1 (callees: GetServerPlaceable 0x842d00); SIG 1.00 | AUTO: CALLEE 1 (callees: GetServerPlaceable 0x842d00); SIG 1.00",
+  "name": "CSWCObject::SetPosition",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007eef90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004743a0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetOrientation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef240"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00474420] Steam batch B10a: CALLEE 4 (callers: AnimationUpdate 0x7675b0, ClientServerSyncHandler_Orientation 0x7696e0, ClientServerSyncHandler_Position 0x769780) | reviewer match with anchor: 007ef317 MOV EAX,[0x00a0fe28] = column 'Stationary' (PUSH 0x99af58, store 006ebad1); size 132 = GOG 132",
+  "name": "CSWCObject::AnimationStationary",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef2c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00474660] Steam batch B10a: CALLEE 7 (callers: AddFireForgetAnimation 0x770310, AnimateFireAndForget 0x777e30, MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 7 (callers: AddFireForgetAnimation 0x770310, AnimateFireAndForget 0x777e30, MainLoop 0x781be0); SIG 1.00",
+  "name": "CSWCObject::AnimationLooping",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef500"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00474730] Steam batch B10a: CALLEE 5 (callers: ClientServerSyncHandler_Animation 0x769620, AnimateFireAndForget 0x777e30, AnimationUpdate 0x87b3f0); SIG 1.00 | AUTO: CALLEE 5 (callers: ClientServerSyncHandler_Animation 0x769620, AnimateFireAndForget 0x777e30, AnimationUpdate 0x87b3f0); SIG 1.00",
+  "name": "CSWCObject::AnimationFireAndForget",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef5d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00474800] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::AnimationOverlay",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef6a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004748e0] Steam batch B10a: CALLEE 3 (callers: InCreatureCombat 0x776e40, DriveAnimationUpdate 0x776fe0, FollowAnimationUpdate 0x7779b0); SIG 1.00 | AUTO: CALLEE 3 (callers: InCreatureCombat 0x776e40, DriveAnimationUpdate 0x776fe0, FollowAnimationUpdate 0x7779b0); SIG 1.00",
+  "name": "CSWCObject::AnimationDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00474950] Steam batch B10a: CALLEE 1 (callers: PlayHitSound 0x772020) | reviewer match with anchor: 007ef847 MOV EAX,[0x00a0fe3c] = column 'Parry' (PUSH 0x99af74, store 006eb9f6)",
+  "name": "CSWCObject::AnimationParry",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef7f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00474b00] Steam batch B10a: CALLEE 2 (callees: AddFireAndForgetAnimation 0x87bbd0, AddFireAndForgetAnimation 0x841c70); SIG 1.00 | AUTO: CALLEE 2 (callees: AddFireAndForgetAnimation 0x87bbd0, AddFireAndForgetAnimation 0x841c70); SIG 1.00",
+  "name": "CSWCObject::AddFireForgetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007ef9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00474c20] Steam batch B10a: CALLEE 4 (callees: CompareWorldTimes 0x51afe0; callers: AnimateFireAndForget 0x777e30, AnimationUpdate 0x87b3f0, AnimationUpdate 0x841440); SIG 1.00 | AUTO: CALLEE 4 (callees: CompareWorldTimes 0x51afe0; callers: AnimateFireAndForget 0x777e30, AnimationUpdate 0x87b3f0, AnimationUpdate 0x841440); SIG 1.00",
+  "name": "CSWCObject::GetTopFireForgetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007efac0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x00474da0] Steam batch B10a: CALLEE 9 (callees: AnimationFireAndForget 0x7ef5d0, AddWorldTimes 0x51aef0, CompareWorldTimes 0x51afe0; callers: AddFireForgetAnimation 0x770310, ? 0x77fd90, PlayerFlourishWeapons 0x79f430); SIG 1.00 | AUTO: CALLEE 9 (callees: AnimationFireAndForget 0x7ef5d0, AddWorldTimes 0x51aef0, CompareWorldTimes 0x51afe0; callers: AddFireForgetAnimation 0x770310, ? 0x77fd90, Pl",
+  "name": "CSWCObject::InsertFireForgetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007efc40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00475210] Steam batch B10a: CALLEE 3 (callers: AnimateFireAndForget 0x777e30, AnimationUpdate 0x87b3f0, AnimationUpdate 0x841440); SIG 1.00 | AUTO: CALLEE 3 (callers: AnimateFireAndForget 0x777e30, AnimationUpdate 0x87b3f0, AnimationUpdate 0x841440); SIG 1.00",
+  "name": "CSWCObject::RemoveTopFireForgetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f00b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00475460] Steam batch B10a: CALLEE 9 (callees: GetLoopingAnimation 0x7ed980; callers: RotateCreatureToOrientation 0x768610, SetAppearance 0x76d200, AddFireForgetAnimation 0x770310); SIG 1.00 | AUTO: CALLEE 9 (callees: GetLoopingAnimation 0x7ed980; callers: RotateCreatureToOrientation 0x768610, SetAppearance 0x76d200, AddFireForgetAnimation 0x770310); SIG 1.",
+  "name": "CSWCObject::AbortFireForgetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0300"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00475510] Steam batch B10a: CALLEE 1 (callers: FadeObject 0x7f12d0); SIG 1.00 | AUTO: CALLEE 1 (callers: FadeObject 0x7f12d0); SIG 1.00",
+  "name": "CSWCObject::SetAlpha",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f03b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00475550] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetEnvMap",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f03f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004756d0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetEnvMap_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0570"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004758b0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::RestoreTexture_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=28; GOG 0x004758f0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::AddVisualEffect",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0790"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00475a80] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::DeleteVisualEffect",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0920"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00475c30] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::RefreshVisualEffects",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0ad0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00475cb0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::UpdateVisualEffectsList",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0b50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00475e00] Steam batch B10a: CALLEE 1 (callees: GetIsDark 0x7aa7f0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetIsDark 0x7aa7f0); SIG 1.00",
+  "name": "CSWCObject::ActivateHardCodedVisualWithHighestPriority",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0ca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004760d0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::DetachVisualEffectsMatchingHardCodedClass",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f0f70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004761a0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::HasVisualEffectApplied",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00476210] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::GetVisualEffectAlpha",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f10b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004762d0] Steam batch B10a: CALLEE 1 (callers: FadeObject 0x7f12d0); SIG 1.00 | AUTO: CALLEE 1 (callers: FadeObject 0x7f12d0); SIG 1.00",
+  "name": "CSWCObject::GetFinalFadeAlpha",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1170"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00476430] Steam batch B10a: CALLEE 5 (callees: ? 0x775860, SubtractWorldTimes 0x51af60; callers: AIUpdate_2 0x7664b0, AIUpdate 0x87b240, AIUpdate 0x8412a0); SIG 1.00 | AUTO: CALLEE 5 (callees: ? 0x775860, SubtractWorldTimes 0x51af60; callers: AIUpdate_2 0x7664b0, AIUpdate 0x87b240, AIUpdate 0x8412a0); SIG 1.00",
+  "name": "CSWCObject::FadeObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f12d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004767b0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetDesiredFadeState",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1650"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00476a20] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetFadeState",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f18c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00476c90] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetPortrait",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1b30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00476ce0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetArea",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1b80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00476d60] Steam batch B10a: CALLEE 1 (callees: GetServerPlaceable 0x842d00); SIG 1.00 | AUTO: CALLEE 1 (callees: GetServerPlaceable 0x842d00); SIG 1.00",
+  "name": "CSWCObject::SetObjectVisibilityOnSetArea",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1c00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00476ec0] Steam batch B10a: SIG 0.50 | reviewer match with anchor: 007f1d6c ADD EAX,0x24 + 007f1d78 CALL 0x004452b0 + 007f1d81 CALL 0x005142f0 + 007f1dc4 OR EAX,0xc00; GOG imms {4,8,0xc,0x24,0x38,0xc00} all present",
+  "name": "CSWCObject::CalculateProjectileTimeToTarget",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1d60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00477020] Steam batch B10a: SIG 0.50 | reviewer match with anchor: 007f1ee0 MOV EAX,[EDX+0xa8], 007f1eeb CMP [ECX+0xd4],0, 007f1f02 MOV EAX,[EDX+0xb8]; GOG disps {0x68,0xa8,0xb8,0xd4}",
+  "name": "CSWCObject::RemoveShadowBlob",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00477070] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetGroundNormal",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00477110] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::SetPortraitId",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f1fb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004771c0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::NewVocalization",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00477290] Steam batch B10a: CALLEE 2 (callees: GetActivePauseState 0x73fe00; callers: AIUpdate_2 0x7664b0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetActivePauseState 0x73fe00; callers: AIUpdate_2 0x7664b0); SIG 1.00",
+  "name": "CSWCObject::SetWind",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2130"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00477360] Steam batch B10a: CALLEE 1 (callers: ExecuteCommandDisplayFeedBackText 0x670ae0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandDisplayFeedBackText 0x670ae0); SIG 1.00",
+  "name": "CSWCObject::SetFeedbackInfo",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2200"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00477390] Steam batch B10a: CALLEE 1 (callers: UpdateNameLabel 0x742a00); SIG 1.00 | AUTO: CALLEE 1 (callers: UpdateNameLabel 0x742a00); SIG 1.00",
+  "name": "CSWCObject::GetFeedbackInfo",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004773e0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::QueuedCallback",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2280"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00477520] Steam batch B10a: CALLEE 2 (callees: GetCurrentAnimation 0x7ed7d0, AnimationFireAndForget 0x7ef5d0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetCurrentAnimation 0x7ed7d0, AnimationFireAndForget 0x7ef5d0); SIG 1.00",
+  "name": "CSWCObject::ClientServerSyncHandler_Animation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2380"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00477590] Steam batch B10a: CALLEE 1 (callees: ClearAllActions 0x7f24c0); SIG 1.00 | AUTO: CALLEE 1 (callees: ClearAllActions 0x7f24c0); SIG 1.00",
+  "name": "CSWCObject::MenuActionUseSecuritySpike",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f23f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x004775f0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCObject::EnableBumpedOutShell",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2450"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00477660] Steam batch B10a: CALLEE 9 (callees: ClearAllActions 0x51cb10; callers: ProcessInput 0x7ac470, HandleInputEvent 0x7b12c0, DoorSaber 0x87bad0) | reviewer match with anchor: 007f24e4 CALL 0x0051c8b0 (ClientToServerObjectId) + 007f24ed CALL 0x0051cb10 (CServerExoApp::ClearAllActions); both GOG callees mapped",
+  "name": "CSWCObject::ClearAllActions",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f24c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004776a0] Steam batch B10a: CALLEE 2 (callees: ClearAllQueuedCombatActions 0x51cba0; callers: ? 0x751750) | reviewer match with anchor: 007f252d CALL 0x0051cba0 (CServerExoApp::ClearAllQueuedCombatActions) after 007f2524 CALL 0x0051c8b0",
+  "name": "CSWCObject::ClearAllQueuedCombatActions",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2500"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004776e0] Steam batch B10a: CALLEE 8 (callers: ? 0x77cf70, GetTargetActions 0x77e370, ShowObject 0x798d70); SIG 1.00 | AUTO: CALLEE 8 (callers: ? 0x77cf70, GetTargetActions 0x77e370, ShowObject 0x798d70); SIG 1.00",
+  "name": "CSWCObject::GetServerObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004777b0] Steam batch B10a: CALLEE 1 (callers: GetClientObject 0x54a840) | reviewer match with anchor: 007f261d MOV [EAX+0xf8],ECX, RET 4; caller 0x54a840 (CSWSObject::GetClientObject) 0054a8c7 CALL 0x007f2610",
+  "name": "CSWCObject::AttachmentFromServerObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2610"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00477850] Steam batch B10a: STR 'lookathook'@0099edc4; CALLEE 2 (callees: GetModuleCamera 0x73f490; callers: GetReticlePoint 0x843b80); SIG 1.00 | AUTO: STR 'lookathook'@0099edc4; CALLEE 2 (callees: GetModuleCamera 0x73f490; callers: GetReticlePoint 0x843b80); SIG 1.00",
+  "name": "CSWCObject::GetReticlePoint",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f26b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00477ab0] Steam batch B10a: CALLEE 1 (callees: UnRegisterCallbacks 0x77f580); SIG 1.00 | AUTO: CALLEE 1 (callees: UnRegisterCallbacks 0x77f580); SIG 1.00",
+  "name": "CSWCObject::AcquireAnimationBase",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x007f2910"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00663840] Steam batch B10a: SIG 1.00 | reviewer match with anchor: 0053efaa ADD EAX,0x20 copying 4 dwords from +0x20..+0x2c into return struct, RET 4; GOG disps {4,8,0xc} imm 0x20",
+  "name": "CSWSObject::GetPortrait",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053efa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00663870] Steam batch B10a: SIG 0.50 | reviewer match with anchor: 0053efe4 ADD ECX,0x20 + 0053efe7 CALL 0x00710ca0 (CResRef assign-style, GOG callee CResRef::operator=), RET 4",
+  "name": "CSWSObject::SetPortrait",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053efd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006a55e0] Steam batch B10a: CALLEE 7 (callers: Constructor 0x5ffd60, Constructor 0x561f30, Constructor 0x61dcf0); SIG 1.00 | reviewer match with anchor: 0053e88e CALL 0x00733540 CExoString::Constructor (GOG 0x4eaed0 trusted); 0053eb7f MOV [EAX+0x54],0x7f000000; vftable store 0053e873; size 1789 RET 12",
+  "name": "CSWSObject::Constructor",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053e830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a5d30] Steam batch B10a: CALLEE 9 (callees: DetachFromServerObject 0x7f2630, Destructor 0x5e6de0; callers: Destructor_2 0x6000e0, Destructor_2 0x5634c0, Destructor_2 0x61e0e0); SIG 1.00 | AUTO: CALLEE 9 (callees: DetachFromServerObject 0x7f2630, Destructor 0x5e6de0; callers: Destructor_2 0x6000e0, Destructor_2 0x5634c0, Destructor_2 0x61e0e0); SIG 1.00",
+  "name": "CSWSObject::Destructor_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f050"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a60a0] Steam batch B10a: CALLEE 3 (callees: GetAcceptableAction 0x5d7190; callers: ClearHostileActionsVersus 0x5867e0, UpdateActionQueue 0x588ed0); SIG 1.00 | reviewer match with anchor: 0053f44a CALL 0x005d7190 GetAcceptableAction (GOG 0x6b3380 trusted) inside list loop matching short at [+0x6c]; MOV EAX,0xffff at 0053f3c9",
+  "name": "CSWSObject::GetActionByGroupId",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f3c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a6180] Steam batch B10a: SIG 1.00 | reviewer match with anchor: 0053f4d3 CALL 0x007a1720, 0053f4e8 CALL 0x00561430, loop CALL 0x0058c370; returns list position when group-change count == param; size 187 RET 4",
+  "name": "CSWSObject::GetPositionByGroupIndex",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f4a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a6240] Steam batch B10a: CALLEE 7 (callers: AddItemCastSpellActions 0x5648d0, AddCastSpellActions 0x565310, AddStanceActions 0x566410); SIG 0.50 | AUTO: CALLEE 7 (callers: AddItemCastSpellActions 0x5648d0, AddCastSpellActions 0x565310, AddStanceActions 0x566410); SIG 0.50",
+  "name": "CSWSObject::GetNodeById",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f560"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a62c0] Steam batch B10a: SIG 1.00 | reviewer match with anchor: 0053f642 MOV DX,word ptr [ECX+0x6c], 0053f653/0053f662 compare to count changes; callees 0x7a1780,0x7a1720,0x561430,0x58c370 = GOG's four list helpers; size 177 ret 0",
+  "name": "CSWSObject::GetNumActionGroups",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f5e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a6380] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::RemoveGroup",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f6a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a6480] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::GetNewActionGroupId",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f7a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=112; GOG 0x006a64d0] Steam batch B10a: CALLEE 37 (callers: ? 0x564610, AddMoveToPointAction 0x564770, AddItemCastSpellActions 0x5648d0); SIG 1.00 | AUTO: CALLEE 37 (callers: ? 0x564610, AddMoveToPointAction 0x564770, AddItemCastSpellActions 0x5648d0); SIG 1.00",
+  "name": "CSWSObject::AddAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053f7f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006a6760] Steam batch B10a: CALLEE 1 (callers: ForceMoveToPoint 0x581070); SIG 1.00 | AUTO: CALLEE 1 (callers: ForceMoveToPoint 0x581070); SIG 1.00",
+  "name": "CSWSObject::AddActionNodeParameter",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053fa80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a6880] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SetGroupInterruptable",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053fba0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a6950] Steam batch B10a: CALLEE 10 (callers: LoadFromTemplate 0x572a70, LoadCreature 0x574180, LoadItems 0x5263c0); SIG 1.00 | AUTO: CALLEE 10 (callers: LoadFromTemplate 0x572a70, LoadCreature 0x574180, LoadItems 0x5263c0); SIG 1.00",
+  "name": "CSWSObject::LoadObjectState",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053fc70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a69c0] Steam batch B10a: CALLEE 11 (callees: WriteFieldBYTE 0x7199d0; callers: SaveCreature 0x574500, SaveItems 0x52a730, SaveDoors 0x52a840) | reviewer match with anchor: 0053fd25 PUSH 0x9945ec 'Commandable' + 007199d0 CResGFF::WriteFieldBYTE of [this+0xec]; calls SaveEffectList 0x540860, SaveActionQueue 0x540410",
+  "name": "CSWSObject::SaveObjectState",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053fce0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a6a30] Steam batch B10a: CALLEE 3 (callees: GetStructFromStruct 0x718960, ReadFieldWORD 0x718b00, LoadScriptSituation 0x6fdb80); SIG 0.50 | AUTO: CALLEE 3 (callees: GetStructFromStruct 0x718960, ReadFieldWORD 0x718b00, LoadScriptSituation 0x6fdb80); SIG 0.50",
+  "name": "CSWSObject::LoadActionQueue",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0053fd50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a70f0] Steam batch B10a: CALLEE 6 (callees: AddStructToStruct 0x719940, WriteFieldWORD 0x719ab0, WriteFieldINT 0x719bf0); SIG 1.00 | AUTO: CALLEE 6 (callees: AddStructToStruct 0x719940, WriteFieldWORD 0x719ab0, WriteFieldINT 0x719bf0); SIG 1.00",
+  "name": "CSWSObject::SaveActionQueue",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a73c0] Steam batch B10a: CALLEE 1 (callees: LoadGameEffect 0x5e5510); SIG 1.00 | AUTO: CALLEE 1 (callees: LoadGameEffect 0x5e5510); SIG 1.00",
+  "name": "CSWSObject::LoadEffectList",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005406e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a7540] Steam batch B10a: CALLEE 1 (callees: SaveGameEffect 0x5e5b40); SIG 1.00 | AUTO: CALLEE 1 (callees: SaveGameEffect 0x5e5b40); SIG 1.00",
+  "name": "CSWSObject::SaveEffectList",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540860"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a75e0] Steam batch B10a: CALLEE 3 (callees: WriteFieldINT 0x719bf0, WriteFieldCExoString 0x719e50; callers: SaveCreature 0x574500); SIG 1.00 | AUTO: CALLEE 3 (callees: WriteFieldINT 0x719bf0, WriteFieldCExoString 0x719e50; callers: SaveCreature 0x574500); SIG 1.00",
+  "name": "CSWSObject::SaveListenData",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540900"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a76d0] Steam batch B10a: CALLEE 1 (callers: LoadCreature 0x574180); SIG 0.50 | AUTO: CALLEE 1 (callers: LoadCreature 0x574180); SIG 0.50",
+  "name": "CSWSObject::LoadListenData",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005409f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a7820] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SetPortraitId",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540b40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=112; GOG 0x006a7980] Steam batch B10a: CALLEE 33 (callers: AIActionPhysicalAttacks 0x6d7390, AIActionCombat 0x6d9500, AddMoveToPointActionToFront 0x5644b0); SIG 1.00 | AUTO: CALLEE 33 (callers: AIActionPhysicalAttacks 0x6d7390, AIActionCombat 0x6d9500, AddMoveToPointActionToFront 0x5644b0); SIG 1.00",
+  "name": "CSWSObject::AddActionToFront",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540ca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006a7c10] Steam batch B10a: CALLEE 1 (callers: OnApplyDamage 0x5959e0); SIG 1.00 | AUTO: CALLEE 1 (callers: OnApplyDamage 0x5959e0); SIG 1.00",
+  "name": "CSWSObject::DeleteCurrentAIAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540f30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a7cb0] Steam batch B10a: CALLEE 3 (callers: ResetCombatAnimations 0x5713f0, DoListenDetection 0x577fa0, DoSpotDetection 0x578850); SIG 0.50 | AUTO: CALLEE 3 (callers: ResetCombatAnimations 0x5713f0, DoListenDetection 0x577fa0, DoSpotDetection 0x578850); SIG 0.50",
+  "name": "CSWSObject::AnimationStationary",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00540fd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a7d60] Steam batch B10a: CALLEE 36 (callees: ClearAllAttacks 0x5908f0; callers: ? 0x77cf70, ? 0x7469f0, ? 0x7511b0); SIG 1.00 | AUTO: CALLEE 36 (callees: ClearAllAttacks 0x5908f0; callers: ? 0x77cf70, ? 0x7469f0, ? 0x7511b0); SIG 1.00",
+  "name": "CSWSObject::ClearAllActions",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00541080"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a8070] Steam batch B10a: CALLEE 1 (callers: Constructor 0x61dcf0) | reviewer match with anchor: 00541397 PUSH 0 / 0054139c CALL 0x0054a430 (SetDirtyFlag) then 005413a7 MOV [EDX+0xd8],EAX RET 4; caller Constructor 0x61dcf0",
+  "name": "CSWSObject::SetAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00541390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a80a0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::GetCurrentHitPoints",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005413c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a80e0] Steam batch B10a: CALLEE 2 (callees: SetCurrentHitPoints 0x54a610; callers: DoDamage 0x57f450) | reviewer match with anchor: 00541423 CALL 0x0054a610 SetCurrentHitPoints (GOG 0x6b12f0 trusted); 00541411 MOV EAX,[EDX+0x9c] vtable call, SUB ECX,[EBP+8]",
+  "name": "CSWSObject::DoDamage",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00541400"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x006a8110] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::DoDamageReduction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00541430"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x006a8cb0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::DoDamageResistance",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00541fd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x006a9ae0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::DoDamageImmunity",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00542e00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a9e40] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::GetDamageImmunity",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543160"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006a9ed0] Steam batch B10a: CALLEE 4 (callers: OnApplyDamageImmunityIncrease 0x59b130, OnRemoveDamageImmunityIncrease 0x59b1a0, OnApplyDamageImmunityDecrease 0x59b2e0); SIG 1.00 | AUTO: CALLEE 4 (callers: OnApplyDamageImmunityIncrease 0x59b130, OnRemoveDamageImmunityIncrease 0x59b1a0, OnApplyDamageImmunityDecrease 0x59b2e0); SIG 1.00",
+  "name": "CSWSObject::SetDamageImmunity",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005431f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006a9f40] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::GetDamageImmunityByFlags",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543260"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006aa030] Steam batch B10a: CALLEE 2 (callers: ExecuteCommandGetDamageDealtByType 0x67b230, ExecuteCommandGetTotalDamageDealt 0x689810); SIG 1.00 | AUTO: CALLEE 2 (callers: ExecuteCommandGetDamageDealtByType 0x67b230, ExecuteCommandGetTotalDamageDealt 0x689810); SIG 1.00",
+  "name": "CSWSObject::GetLastDamageAmountByFlags",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543350"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006aa080] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::DoSpellLevelAbsorption",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005433a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006aa7c0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::DoSpellImmunity",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543ae0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006aaac0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::GetDamageLevel",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543de0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006aabf0] Steam batch B10a: CALLEE 37 (callers: RotateCreatureToOrientation 0x768610, ? 0x77cf70, UpdateShotCamera 0x7c41f0); SIG 1.00 | AUTO: CALLEE 37 (callers: RotateCreatureToOrientation 0x768610, ? 0x77cf70, UpdateShotCamera 0x7c41f0); SIG 1.00",
+  "name": "CSWSObject::SetOrientation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006aac30] Steam batch B10a: CALLEE 49 (callees: UpdatePositionInObjectsArray 0x522e00; callers: ? 0x6e3a40, AddToArea 0x600eb0, RemoveFromArea 0x6037f0); SIG 1.00 | AUTO: CALLEE 49 (callees: UpdatePositionInObjectsArray 0x522e00; callers: ? 0x6e3a40, AddToArea 0x600eb0, RemoveFromArea 0x6037f0); SIG 1.00",
+  "name": "CSWSObject::SetPosition",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00543f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006aae10] Steam batch B10a: CALLEE 1 (callers: OnApplyVisualEffect 0x59ec70); SIG 1.00 | AUTO: CALLEE 1 (callers: OnApplyVisualEffect 0x59ec70); SIG 1.00",
+  "name": "CSWSObject::AddLoopingVisualEffect",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544130"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006aae60] Steam batch B10a: CALLEE 1 (callers: OnRemoveVisualEffect 0x59f120); SIG 1.00 | AUTO: CALLEE 1 (callers: OnRemoveVisualEffect 0x59f120); SIG 1.00",
+  "name": "CSWSObject::RemoveLoopingVisualEffect",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544180"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006aaef0] Steam batch B10a: CALLEE 96 (callees: OnEffectApplied 0x51efd0, AddWorldTimes 0x51aef0; callers: ResolveRangedSpecialAttack 0x6db4a0, ? 0x6df2a0, SignalMeleeDamage 0x6e0650); SIG 1.00 | AUTO: CALLEE 96 (callees: OnEffectApplied 0x51efd0, AddWorldTimes 0x51aef0; callers: ResolveRangedSpecialAttack 0x6db4a0, ? 0x6df2a0, SignalMeleeDamage 0x6e0650); SIG",
+  "name": "CSWSObject::ApplyEffect",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ab320] Steam batch B10a: CALLEE 5 (callees: OnEffectRemoved 0x51f000; callers: OnApplyUltraVision 0x5a5130, OnRemoveUltraVision 0x5a53c0, OnApplyTrueSeeing 0x5a5600); SIG 1.00 | AUTO: CALLEE 5 (callees: OnEffectRemoved 0x51f000; callers: OnApplyUltraVision 0x5a5130, OnRemoveUltraVision 0x5a53c0, OnApplyTrueSeeing 0x5a5600); SIG 1.00",
+  "name": "CSWSObject::RemoveEffect",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544640"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006ab470] Steam batch B10a: CALLEE 43 (callees: OnEffectRemoved 0x51f000; callers: AddToArea 0x568bd0, EventHandler 0x56efd0, DoDamage 0x57f450); SIG 1.00 | AUTO: CALLEE 43 (callees: OnEffectRemoved 0x51f000; callers: AddToArea 0x568bd0, EventHandler 0x56efd0, DoDamage 0x57f450); SIG 1.00",
+  "name": "CSWSObject::RemoveEffectById",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544790"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ab670] Steam batch B10a: CALLEE 1 (callers: RemoveItemProperties 0x6045e0); SIG 1.00 | AUTO: CALLEE 1 (callers: RemoveItemProperties 0x6045e0); SIG 1.00",
+  "name": "CSWSObject::RemoveEffectByCreator",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544990"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ab6f0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::RemoveSomeEffectsOfDurationType",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544a10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006ab7b0] Steam batch B10a: CALLEE 9 (callees: GetActiveTimer 0x51c350, GetMaxForcePoints 0x57eca0, ApplyDiseasePayload 0x587290; callers: AIUpdate 0x569320, AIUpdate 0x617980, AIUpdate 0x5f4c00); SIG 1.00 | AUTO: CALLEE 9 (callees: GetActiveTimer 0x51c350, GetMaxForcePoints 0x57eca0, ApplyDiseasePayload 0x587290; callers: AIUpdate 0x569320, AIUpdate 0x617980, AIUpdate 0x",
+  "name": "CSWSObject::UpdateEffectList",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00544ad0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006abfa0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::RemoveEffectTarget",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005452c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ac0a0] Steam batch B10a: CALLEE 178 (callers: SetPrecalculatedPosition 0x775aa0, GetSelfForcePowers 0x779510, GetHostileForcePowers 0x77a4f0); SIG 1.00 | AUTO: CALLEE 178 (callers: SetPrecalculatedPosition 0x775aa0, GetSelfForcePowers 0x779510, GetHostileForcePowers 0x77a4f0); SIG 1.00",
+  "name": "CSWSObject::GetArea",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005453c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ac100] Steam batch B10a: CALLEE 15 (callers: AddToArea 0x600eb0, RemoveFromArea 0x6037f0, AddToArea 0x568bd0); SIG 1.00 | AUTO: CALLEE 15 (callers: AddToArea 0x600eb0, RemoveFromArea 0x6037f0, AddToArea 0x568bd0); SIG 1.00",
+  "name": "CSWSObject::SetArea",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00545420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ac140] Steam batch B10a: CALLEE 1 (callers: GetGender 0x5632b0) | reviewer match with anchor: 005632c8 CALL 0x00545460 in Steam CSWSCreature::GetGender 0x5632b0 (GOG 0x67bee0 calls 0x6ac140); 00545467 MOV AL,[0x0099c4a2]; size 16",
+  "name": "CSWSObject::GetGender",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00545460"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ac150] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SetDialogDelay",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00545470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ac200] Steam batch B10a: CALLEE 4 (callees: GetCanSendDialog 0x740440, StopSoundPlayingInDialog 0x546a70, AddWorldTimes 0x51aef0); SIG 1.00 | AUTO: CALLEE 4 (callees: GetCanSendDialog 0x740440, StopSoundPlayingInDialog 0x546a70, AddWorldTimes 0x51aef0); SIG 1.00",
+  "name": "CSWSObject::IsDialogDelay",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00545520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006ac440] Steam batch B10a: STR 'carth'@009946a0; CALLEE 11 (callees: SetDialogSent 0x740470, SetDialogModelsSent 0x7404a0, ClearEnemySighted 0x740c90; callers: ExecuteCommandBeginConversation 0x66df70); SIG 1.00 | AUTO: STR 'carth'@009946a0; CALLEE 11 (callees: SetDialogSent 0x740470, SetDialogModelsSent 0x7404a0, ClearEnemySighted 0x740c90; callers: ExecuteCommandBeginConversa",
+  "name": "CSWSObject::StartDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00545760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006acdd0] Steam batch B10a: CALLEE 2 (callees: Constructor_2 0x716fd0; callers: ExecuteCommandSpeakOneLinerConversation 0x693710); SIG 1.00 | AUTO: CALLEE 2 (callees: Constructor_2 0x716fd0; callers: ExecuteCommandSpeakOneLinerConversation 0x693710); SIG 1.00",
+  "name": "CSWSObject::RunDialogOneLiner",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005460f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ad220] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SendDialogEntry",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ad330] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SendDialogReplies",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546650"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x006ad3f0] Steam batch B10a: CALLEE 2 (callers: HandleDialogSelection 0x7c7d60, UpdateDialog 0x7cd0f0); SIG 1.00 | AUTO: CALLEE 2 (callers: HandleDialogSelection 0x7c7d60, UpdateDialog 0x7cd0f0); SIG 1.00",
+  "name": "CSWSObject::ReplyDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ad490] Steam batch B10a: CALLEE 3 (callees: UpdateDialogLipSync 0x7d0c70, StopDialog 0x546900; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 3 (callees: UpdateDialogLipSync 0x7d0c70, StopDialog 0x546900; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CSWSObject::UpdateDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005467b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ad5e0] Steam batch B10a: CALLEE 2 (callees: SetLockOrientationToObject 0x57d370; callers: SetActivity 0x563da0); SIG 1.00 | AUTO: CALLEE 2 (callees: SetLockOrientationToObject 0x57d370; callers: SetActivity 0x563da0); SIG 1.00",
+  "name": "CSWSObject::StopDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546900"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ad750] Steam batch B10a: CALLEE 1 (callees: StopSoundPlayingInDialog 0x7402b0); SIG 1.00 | AUTO: CALLEE 1 (callees: StopSoundPlayingInDialog 0x7402b0); SIG 1.00",
+  "name": "CSWSObject::StopSoundPlayingInDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546a70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ad7e0] Steam batch B10a: CALLEE 2 (callees: StopDialog 0x546900; callers: StopDialog 0x546900); SIG 1.00 | AUTO: CALLEE 2 (callees: StopDialog 0x546900; callers: StopDialog 0x546900); SIG 1.00",
+  "name": "CSWSObject::RemoveObjectFromDialog_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006ad8b0] Steam batch B10a: CALLEE 2 (callees: GetNextObjectInArea 0x5232b0, GetFirstObjectInArea 0x523250); SIG 1.00 | AUTO: CALLEE 2 (callees: GetNextObjectInArea 0x5232b0, GetFirstObjectInArea 0x523250); SIG 1.00",
+  "name": "CSWSObject::GetNearestObjectByName",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546bd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006adb20] Steam batch B10a: CALLEE 1 (callers: ExecuteCommandSetListenString 0x692130); SIG 0.50 | AUTO: CALLEE 1 (callers: ExecuteCommandSetListenString 0x692130); SIG 0.50",
+  "name": "CSWSObject::SetListenExpression",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546e40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006adbf0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::TestListenExpression",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006adc90] Steam batch B10a: SIG 0.50 | reviewer match with anchor: 00546fd8 PUSH 8 / CALL 0x00919723 new, 00546ff9 CALL 0x007335f0 CExoString copy, 00547024 ADD ECX,0x1c4 / CALL 0x0083ea60 Add",
+  "name": "CSWSObject::AddMatchedExpressionString",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00546fb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006add20] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::ClearMatchedExpressionStrings",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006adde0] Steam batch B10a: CALLEE 3 (callees: GetListenCheckDistance 0x58b210, GetVisibleListElement 0x5d1750, GetFirstObjectIndiceByX 0x522af0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetListenCheckDistance 0x58b210, GetVisibleListElement 0x5d1750, GetFirstObjectIndiceByX 0x522af0); SIG 1.00",
+  "name": "CSWSObject::BroadcastDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547100"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ae2e0] Steam batch B10a: CALLEE 1 (callers: ExecuteCommandGetLocation 0x682f50); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandGetLocation 0x682f50); SIG 1.00",
+  "name": "CSWSObject::GetScriptLocation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547600"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ae3a0] Steam batch B10a: CALLEE 2 (callers: ExecuteCommandGetHasSpellEffect 0x67e670, ExecuteCommandGetNearestCreature/Object 0x683d40); SIG 1.00 | AUTO: CALLEE 2 (callers: ExecuteCommandGetHasSpellEffect 0x67e670, ExecuteCommandGetNearestCreature/Object 0x683d40); SIG 1.00",
+  "name": "CSWSObject::HasSpellEffectApplied",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005476c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006ae410] Steam batch B10a: CALLEE 1 (callers: ApplyPoisonDamage 0x587ac0); SIG 1.00 | AUTO: CALLEE 1 (callers: ApplyPoisonDamage 0x587ac0); SIG 1.00",
+  "name": "CSWSObject::RemoveEffectByType",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547730"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006ae4d0] Steam batch B10a: CALLEE 1 (callers: GetDead 0x563460); SIG 1.00 | AUTO: CALLEE 1 (callers: GetDead 0x563460); SIG 1.00",
+  "name": "CSWSObject::GetDead",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005477f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006ae5a0] Steam batch B10a: CALLEE 1 (callers: ExecuteCommandOpenDoor 0x68d6e0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandOpenDoor 0x68d6e0); SIG 1.00",
+  "name": "CSWSObject::AddOpenDoorAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005478c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006ae620] Steam batch B10a: CALLEE 1 (callers: ExecuteCommandCloseDoor 0x66f3b0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandCloseDoor 0x66f3b0); SIG 1.00",
+  "name": "CSWSObject::AddCloseDoorAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547940"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006ae6a0] Steam batch B10a: CALLEE 3 (callees: GetCanUseSkill 0x6b7a00; callers: UseSkill 0x57b280, ExecuteCommandActionLockActions 0x66a4e0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetCanUseSkill 0x6b7a00; callers: UseSkill 0x57b280, ExecuteCommandActionLockActions 0x66a4e0); SIG 1.00",
+  "name": "CSWSObject::AddUnlockObjectAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005479c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ae770] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AddLockObjectAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547a90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006ae890] Steam batch B10a: CALLEE 4 (callees: ActionManager 0x563c90, GetActionPending 0x590110, AddSwitchWeaponsAction 0x5917e0; callers: AIActionCombat 0x6d9500); SIG 1.00 | AUTO: CALLEE 4 (callees: ActionManager 0x563c90, GetActionPending 0x590110, AddSwitchWeaponsAction 0x5917e0; callers: AIActionCombat 0x6d9500); SIG 1.00",
+  "name": "CSWSObject::AddDoorSaberAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547bb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006aea40] Steam batch B10a: CALLEE 1 (callees: GetFirstPCObject 0x51c870); SIG 1.00 | AUTO: CALLEE 1 (callees: GetFirstPCObject 0x51c870); SIG 1.00",
+  "name": "CSWSObject::BroadcastSpellData",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547d60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=40; GOG 0x006aeba0] Steam batch B10a: CALLEE 2 (callers: ResolveSafeProjectile 0x6dc140, EventHandler 0x56efd0); SIG 1.00 | AUTO: CALLEE 2 (callers: ResolveSafeProjectile 0x6dc140, EventHandler 0x56efd0); SIG 1.00",
+  "name": "CSWSObject::BroadcastSafeProjectile",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00547ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=44; GOG 0x006aed70] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::BroadcastSafeProjectile_2",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00548090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=36; GOG 0x006aef80] Steam batch B10a: CALLEE 5 (callees: GetRoomForceRating 0x54b4f0; callers: InstantUseItem 0x58b360, AIActionItemCastSpell 0x5b8000, AIActionCastSpell 0x5b96f0); SIG 1.00 | AUTO: CALLEE 5 (callees: GetRoomForceRating 0x54b4f0; callers: InstantUseItem 0x58b360, AIActionItemCastSpell 0x5b8000, AIActionCastSpell 0x5b96f0); SIG 1.00",
+  "name": "CSWSObject::SpellCastAndImpact",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005482a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006af7f0] Steam batch B10a: CALLEE 4 (callers: EventHandler 0x56efd0, AIActionItemCastSpell 0x5b8000, AIActionCastSpell 0x5b96f0); SIG 1.00 | AUTO: CALLEE 4 (callers: EventHandler 0x56efd0, AIActionItemCastSpell 0x5b8000, AIActionCastSpell 0x5b96f0); SIG 1.00",
+  "name": "CSWSObject::CalculateLastSpellProjectileTime",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00548b10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006afa90] Steam batch B10a: STR '@creperspace'@009946ab; CALLEE 1 (callers: OnApplyVisualEffect 0x59ec70); SIG 1.00 | AUTO: STR '@creperspace'@009946ab; CALLEE 1 (callers: OnApplyVisualEffect 0x59ec70); SIG 1.00",
+  "name": "CSWSObject::CalculateSpellRangedMissTarget",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00548db0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006b0460] Steam batch B10a: STR 'Corpse'@009946b8; 'BODY_BAG'@009946c0; CALLEE 11 (callees: GetItemCount 0x57e3f0, GetGold 0x5812e0, GetBodyBagAppearance 0x588d50; callers: EventHandler 0x56efd0, EventHandler 0x5f2fe0); SIG 1.00 | AUTO: STR 'Corpse'@009946b8; 'BODY_BAG'@009946c0; CALLEE 11 (callees: GetItemCount 0x57e3f0, GetGold 0x5812e0, GetBodyBagAppearance 0x588d50; callers: EventHandler 0x",
+  "name": "CSWSObject::SpawnBodyBag",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00549780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b0bb0] Steam batch B10a: CALLEE 1 (callers: ExecuteCommandGetHasFeatEffect 0x67e2d0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandGetHasFeatEffect 0x67e2d0); SIG 1.00",
+  "name": "CSWSObject::GetHasFeatEffectApplied",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00549ed0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006b0c50] Steam batch B10a: CALLEE 2 (callees: GetDebugMode 0x51c400; callers: UpdateState 0x51d790); SIG 1.00 | AUTO: CALLEE 2 (callees: GetDebugMode 0x51c400; callers: UpdateState 0x51d790); SIG 1.00",
+  "name": "CSWSObject::ReportOverflow",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x00549f70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006b0ec0] Steam batch B10a: CALLEE 9 (callers: EventHandler 0x56efd0, SetCombatState 0x57a560, PacifyCreature 0x5864d0); SIG 1.00 | AUTO: CALLEE 9 (callers: EventHandler 0x56efd0, SetCombatState 0x57a560, PacifyCreature 0x5864d0); SIG 1.00",
+  "name": "CSWSObject::SetLastHostileActor",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a1e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b10c0] Steam batch B10a: CALLEE 1 (callers: WalkUpdateLocationDistance 0x5cb430); SIG 0.50 | AUTO: CALLEE 1 (callers: WalkUpdateLocationDistance 0x5cb430); SIG 0.50",
+  "name": "CSWSObject::AnimationWalking",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a3e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b1110] Steam batch B10a: CALLEE 2 (callers: SetAnimation 0x56d350, SetAnimation 0x541390) | reviewer match with anchor: 0054a460 OR EAX,[EDX+ECX*4+0x224] / 0054a46d MOV [..],EAX; callers SetAnimation 0x541390 and creature SetAnimation 0x56d350",
+  "name": "CSWSObject::SetDirtyFlag",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a430"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b11b0] Steam batch B10a: CALLEE 2 (callers: UpdateState 0x51d790, ExecuteCommandBeginConversation 0x66df70) | reviewer match with anchor: 0054a4fa OR ECX,-1 ... 0054a505 AND ECX,[EAX+EDX*4+0x224] / 0054a512 MOV [..+0x224],ECX; callers UpdateState 0x51d790, BeginConversation 0x66df70",
+  "name": "CSWSObject::ClearDirtyFlag",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a4d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b1200] Steam batch B10a: CALLEE 4 (callers: SurrenderToEnemies 0x5d51a0, RemoveMember 0x5f8b00, RemovePuppet 0x5f8c60); SIG 1.00 | AUTO: CALLEE 4 (callers: SurrenderToEnemies 0x5d51a0, RemoveMember 0x5f8b00, RemovePuppet 0x5f8c60); SIG 1.00",
+  "name": "CSWSObject::ClearAllEffects",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b12f0] Steam batch B10a: CALLEE 18 (callers: AIUpdate 0x569320, HandleHPRegeneration 0x56a230, UpdateAttributesOnEffect 0x5724d0); SIG 1.00 | AUTO: CALLEE 18 (callers: AIUpdate 0x569320, HandleHPRegeneration 0x56a230, UpdateAttributesOnEffect 0x5724d0); SIG 1.00",
+  "name": "CSWSObject::SetCurrentHitPoints",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a610"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b1340] Steam batch B10a: CALLEE 9 (callers: Constructor 0x561f30, EventHandler 0x56efd0, AIActionRecoverMine 0x5b3380); SIG 1.00 | AUTO: CALLEE 9 (callers: Constructor 0x561f30, EventHandler 0x56efd0, AIActionRecoverMine 0x5b3380); SIG 1.00",
+  "name": "CSWSObject::SetFadeOutTime",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a660"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b13e0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SetDeleteNoFade",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a700"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b1480] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::SetKeepCorpse",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a7a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006b1520] Steam batch B10a: CALLEE 9 (callees: AttachmentFromServerObject 0x7f2610; callers: UpdateState 0x51d790, GetClientItem 0x607690, OnEndDialog 0x58a500); SIG 1.00 | AUTO: CALLEE 9 (callees: AttachmentFromServerObject 0x7f2610; callers: UpdateState 0x51d790, GetClientItem 0x607690, OnEndDialog 0x58a500); SIG 1.00",
+  "name": "CSWSObject::GetClientObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b15c0] Steam batch B10a: CALLEE 1 (callers: GetServerObject 0x7f2540) | reviewer match with anchor: 0054a8ed MOV [EAX+0x264],ECX RET 4; caller 007f25fe CALL 0x0054a8e0 inside CSWCObject::GetServerObject 0x7f2540 (GOG 0x4776e0 trusted)",
+  "name": "CSWSObject::AttachmentFromClientObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a8e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006b1600] Steam batch B10a: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CSWSObject::DeleteDialog",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a920"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006b1660] Steam batch B10a: CALLEE 1 (callers: SetAnimatedCamera 0x7c3f50); SIG 1.00 | AUTO: CALLEE 1 (callers: SetAnimatedCamera 0x7c3f50); SIG 1.00",
+  "name": "CSWSObject::TimeStampCameraAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a980"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006b16a0] Steam batch B10a: CALLEE 1 (callees: SetGlobalDialogState 0x7ceb80); SIG 1.00 | AUTO: CALLEE 1 (callees: SetGlobalDialogState 0x7ceb80); SIG 1.00",
+  "name": "CSWSObject::ClearAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x0054a9c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x006b18a0] Steam batch B10a: STR ' %d(%d)'@00996674; CALLEE 48 (callees: GetPlayerCreatureId 0x73f470, AIActionPhysicalAttacks 0x6d7390, AIActionCombat 0x6d9500; callers: AIUpdate 0x569320, AIUpdate 0x61e360, AIUpdate 0x617980); SIG 1.00 | AUTO: STR ' %d(%d)'@00996674; CALLEE 48 (callees: GetPlayerCreatureId 0x73f470, AIActionPhysicalAttacks 0x6d7390, AIActionCombat 0x6d9500; callers: AIUpdate 0x569320,",
+  "name": "CSWSObject::RunActions",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d56b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b3380] Steam batch B10a: SIG 0.50 | reviewer match with anchor: 005d71a8 CMP [EBP-0x8],0x46 switch returning 1 for 32 action types else 0; 62 bytes; caller ExecuteCommandGetCurrentAction 0x67b100",
+  "name": "CSWSObject::GetAcceptableAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d7190"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006b3410] Steam batch B10a: CALLEE 2 (callers: UpdateActionQueue 0x588ed0, ExecuteCommandGetCurrentAction 0x67b100); SIG 0.50 | reviewer match with anchor: 005d7236/005d7277 switch on ushort (CMP 0x46, table at 0x5d73b0) mapping action type to queue index, 0xffff default; 388 bytes; callers UpdateActionQueue 0x588ed0, GetCurrentAction 0x67b100",
+  "name": "CSWSObject::GetAQActionIDByID",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d7220"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b3670] Steam batch B10a: CALLEE 1 (callees: BarkString 0x740260); SIG 1.00 | AUTO: CALLEE 1 (callees: BarkString 0x740260); SIG 1.00",
+  "name": "CSWSObject::AIActionBarkString",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d7480"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b37a0] Steam batch B10a: CALLEE 16 (callees: GetAreaNotReadyToDisplay 0x740020, GetPausedByCombat 0x740330, ChangeCharacter 0x740380); SIG 1.00 | AUTO: CALLEE 16 (callees: GetAreaNotReadyToDisplay 0x740020, GetPausedByCombat 0x740330, ChangeCharacter 0x740380); SIG 1.00",
+  "name": "CSWSObject::AIActionDialogObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d75b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b59d0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionSpeakStrRef",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d97e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b5a80] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionSpeak",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d9890"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b5bc0] Steam batch B10a: CALLEE 1 (callees: RunScriptSituation 0x6fd930); SIG 1.00 | AUTO: CALLEE 1 (callees: RunScriptSituation 0x6fd930); SIG 1.00",
+  "name": "CSWSObject::AIActionDoCommand",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d99d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b5c90] Steam batch B10a: CALLEE 1 (callees: SubtractWorldTimes 0x51af60); SIG 1.00 | AUTO: CALLEE 1 (callees: SubtractWorldTimes 0x51af60); SIG 1.00",
+  "name": "CSWSObject::AIActionWait",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d9aa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b5de0] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionPlaySound",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d9bf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b5f90] Steam batch B10a: STR 'gui_minedisarm'@00996688; 'gui_doorsaber'@00996698; 'gui_lockpick'@009966a8; CALLEE 3 (callees: AnimationFireAndForget 0x7ef5d0, GetClientObject 0x54a840, SubtractWorldTimes 0x51af60); SIG 1.00 | AUTO: STR 'gui_minedisarm'@00996688; 'gui_doorsaber'@00996698; 'gui_lockpick'@009966a8; CALLEE 3 (callees: AnimationFireAndForget 0x7ef5d0, GetClientObject 0x54a840, ",
+  "name": "CSWSObject::AIActionPlayAnimation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005d9da0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b66c0] Steam batch B10a: CALLEE 10 (callees: UpdateStatus 0x7ceef0, SplitItem 0x604ec0, AcquireItem 0x606e20); SIG 1.00 | AUTO: CALLEE 10 (callees: UpdateStatus 0x7ceef0, SplitItem 0x604ec0, AcquireItem 0x606e20); SIG 1.00",
+  "name": "CSWSObject::AIActionGiveItem",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005da4d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b6d70] Steam batch B10a: CALLEE 3 (callees: UpdateStatus 0x7ceef0, AcquireItem 0x5bdb60, AcquireItem 0x5f4ed0); SIG 1.00 | AUTO: CALLEE 3 (callees: UpdateStatus 0x7ceef0, AcquireItem 0x5bdb60, AcquireItem 0x5f4ed0); SIG 1.00",
+  "name": "CSWSObject::AIActionTakeItem",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005dab80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b6f00] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionCloseDoor",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005dad10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b7290] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionOpenDoor",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005db0a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b7ae0] Steam batch B10a: CALLEE 18 (callees: AddEventAbsoluteTime 0x51e220, GetActiveProperty 0x604260, GetItemInRepository 0x605d80); SIG 1.00 | AUTO: CALLEE 18 (callees: AddEventAbsoluteTime 0x51e220, GetActiveProperty 0x604260, GetItemInRepository 0x605d80); SIG 1.00",
+  "name": "CSWSObject::AIActionUnlockObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005db8f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006b9c50] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionLockObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005dda60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006bae10] Steam batch B10a: CALLEE 10 (callees: GetClientItem 0x607690, ActivityManager 0x563d20, AddMoveToPointActionToFront 0x5644b0); SIG 1.00 | AUTO: CALLEE 10 (callees: GetClientItem 0x607690, ActivityManager 0x563d20, AddMoveToPointActionToFront 0x5644b0); SIG 1.00",
+  "name": "CSWSObject::AIActionDoorSaber",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005dec20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006bbdd0] Steam batch B10a: STR 'Opened'@009966b8; CALLEE 10 (callees: OpenInventory 0x6062c0, CloseInventory 0x606460, ActivityManager 0x563d20); SIG 1.00 | AUTO: STR 'Opened'@009966b8; CALLEE 10 (callees: OpenInventory 0x6062c0, CloseInventory 0x606460, ActivityManager 0x563d20); SIG 1.00",
+  "name": "CSWSObject::AIActionUseObject",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005dfbe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006bd060] Steam batch B10a: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWSObject::AIActionSetCommandable",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005e0e70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006bd530] Steam batch B10a: CALLEE 2 (callees: DeleteScriptSituation 0x6fdbb0; callers: ExecuteCommandActionDoCommand 0x6699d0); SIG 1.00 | AUTO: CALLEE 2 (callees: DeleteScriptSituation 0x6fdbb0; callers: ExecuteCommandActionDoCommand 0x6699d0); SIG 1.00",
+  "name": "CSWSObject::AddDoCommandAction",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005e1340"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x006bd5b0] Steam batch B10a: CALLEE 23 (callees: GetFactionOfObject 0x51c690, GetCreatureReputation 0x5d0d00; callers: RotateCreatureToOrientation 0x768610, GetTargetActions 0x77e370, ? 0x74fb20); SIG 1.00 | AUTO: CALLEE 23 (callees: GetFactionOfObject 0x51c690, GetCreatureReputation 0x5d0d00; callers: RotateCreatureToOrientation 0x768610, GetTargetActions 0x77e370, ? 0x7",
+  "name": "CSWSObject::GetReputation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005e13c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x006bd870] Steam batch B10a: CALLEE 6 (callers: AddAttackActions 0x568540, UseSkill 0x57b280, ValidNearestObjectType 0x57bb90); SIG 1.00 | AUTO: CALLEE 6 (callers: AddAttackActions 0x568540, UseSkill 0x57b280, ValidNearestObjectType 0x57bb90); SIG 1.00",
+  "name": "CSWSObject::GetAIStateReputation",
+  "source": "steam-db-B10a",
+  "steam_addr": "0x005e1680"
+ }
+]

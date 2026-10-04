@@ -1,0 +1,5 @@
+gog_addr	corrected_addr	source	reason
+0x004cd090	0x007bce00	review:sonnet_c1.tsv	0x7bc760 is a 140-byte vftable/destructor-like function; 0x7bce00 has all GOG strings
+0x004ce110	0x007bde80	review:sonnet_c1.tsv	candidate 0x7bdbc0 is 702-byte destructor-like; 0x7bde80 allocs message/tutorial/skill boxes, name fits
+0x004dfe10	0x007cf710	review:sonnet_c1.tsv	candidate 0x7cf4b0 is a 44-byte panel forwarder; 0x7cf710 is the +0xf24 list check; name not clearly contradicted
+0x004e00e0	0x007cf9e0	review:sonnet_c1.tsv	candidate 117-byte fn checks options/+0xcc and returns bool; 0x7cf9e0 forwards reason to tutorial box, name fits

@@ -1,0 +1,1482 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004ce720] Steam batch B11b: CALLEE 2 (callers: LoadTableInfo 0x5fbf60, EventHandler 0x617b40); SIG 1.00 | AUTO: CALLEE 2 (callers: LoadTableInfo 0x5fbf60, EventHandler 0x617b40); SIG 1.00",
+  "name": "CGuiInGame::AppendToMsgBuffer",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007be090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004ce840] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007be1b0: 0x007337c0 CExoString::operator= x2; [this+0x118] array of 0x10 entries, count [this+0x124] capped at 0x3f",
+  "name": "CGuiInGame::AppendToCombatBuffer",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007be1b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004ce960] Steam batch B11b: CALLEE 1 (callers: UpdateDialog 0x7cd0f0); SIG 1.00 | AUTO: CALLEE 1 (callers: UpdateDialog 0x7cd0f0); SIG 1.00",
+  "name": "CGuiInGame::AppendToDialogBuffer",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007be2d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004cea50] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::AppendToDialogBuffer_2",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007be3c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004ceb50] Steam batch B11b: CALLEE 8 (callees: SetLoadBarProgress 0x7405d0, GetLoadStep 0x740c60, Constructor 0x893950; callers: InitializeInGameGUI 0x78c330); SIG 1.00 | AUTO: CALLEE 8 (callees: SetLoadBarProgress 0x7405d0, GetLoadStep 0x740c60, Constructor 0x893950; callers: InitializeInGameGUI 0x78c330); SIG 1.00",
+  "name": "CGuiInGame::Initialize",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007be4c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004d00e0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: PUSH 0x45c0 + CALL 0x00919723 (alloc, GOG imm 0x45c0) in 0x7bfa50; stores [this+0x3c] from +0x44/+0x40 (type==1 branch)",
+  "name": "CGuiInGame::SetConversationType",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007bfa50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004d01a0] Steam batch B11b: CALLEE 5 (callees: ResetDriveAcceleration 0x740240, HideMouse 0x7b38d0, SetTop 0x8baca0); SIG 1.00 | reviewer match with anchor: 007bfb10 calls 0x008baf10 SetMiddle, 0x008baca0 SetTop, 0x008bada0 SetBottom, 0x007b38d0 HideMouse, 0x00740240, 0x0073fee0; [this+0x134]<2",
+  "name": "CGuiInGame::ShowDialogEntry",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007bfb10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004d0350] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::InitializeStuntModelData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007bfcc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004d0550] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetStuntModelData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007bfec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004d05c0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007bff30: [this+0x1b8]=param; allocs n*4 -> [+0x1c0] and n*2 -> [+0x1c4] via 0x00919723 (GOG disps 0x1b8,0x1c0,0x1c4)",
+  "name": "CGuiInGame::InitializeDialogAnimationData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007bff30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004d06c0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007c0030: bounds check vs [this+0x1b8], stores [+0x1c0][i*4], [+0x1c4][i*2] (GOG disps 0x1b8,0x1c0,0x1c4)",
+  "name": "CGuiInGame::SetDialogAnimationData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0030"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d0720] Steam batch B11b: CALLEE 1 (callers: ShutDown 0x7c7030); SIG 1.00 | AUTO: CALLEE 1 (callers: ShutDown 0x7c7030); SIG 1.00",
+  "name": "CGuiInGame::ClearDialogAnimationData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0090"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d07a0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::StoreLastDialogAnimationData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0110"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d08a0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ClearLastDialogAnimationData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d0920] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ClearRepliesData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0290"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004d0d80] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::InitializeRepliesData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c06f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=76; GOG 0x004d1300] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetReplyData",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0c70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004d1550] Steam batch B11b: STR 'cut128wl'@009a0564; 'cut127wl'@009a0570; 'cut126wl'@009a057c; SIG 0.50 | AUTO: STR 'cut128wl'@009a0564; 'cut127wl'@009a0570; 'cut126wl'@009a057c; SIG 0.50",
+  "name": "CGuiInGame::GetCameraAnimationName",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c0ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d4570] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::InitializeShotCamera",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c3ee0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004d45e0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetAnimatedCamera",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c3f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004d46f0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::LoadCameraModelForDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c4060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004d4750] Steam batch B11b: CALLEE 1 (callers: WaitForMovie 0x798820); SIG 1.00 | AUTO: CALLEE 1 (callers: WaitForMovie 0x798820); SIG 1.00",
+  "name": "CGuiInGame::LoadAmbientTrackForDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c40c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x004d4880] Steam batch B11b: STR 'MbP?CU_PB_Range'@009a174c; CALLEE 6 (callees: EnableVideoEffect 0x7409a0, DisableVideoEffect 0x7409c0, LookAt 0x773bf0); SIG 1.00 | AUTO: STR 'MbP?CU_PB_Range'@009a174c; CALLEE 6 (callees: EnableVideoEffect 0x7409a0, DisableVideoEffect 0x7409c0, LookAt 0x773bf0); SIG 1.00",
+  "name": "CGuiInGame::UpdateShotCamera",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c41f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d6bc0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::CleanUpReplyNode",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c6530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d6c40] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007c65b0: CALL 0x0073f430 GetModule; MOV word [..+0x184],0x2772; MOV [..+0x1a4],0x7f000000; disps 0xf00..0xf14 all 12 match",
+  "name": "CGuiInGame::ResetComputerCameraShot",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c65b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004d6d00] Steam batch B11b: CALLEE 2 (callees: ShowMouse 0x7b3930, UpdateDialog 0x7cd0f0); SIG 1.00 | AUTO: CALLEE 2 (callees: ShowMouse 0x7b3930, UpdateDialog 0x7cd0f0); SIG 1.00",
+  "name": "CGuiInGame::ShowDialogReplies",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c6670"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d70b0] Steam batch B11b: CALLEE 11 (callees: GetInputClass 0x73ff00, GetMiniGame 0x7400a0, ResetDriveAcceleration 0x740240; callers: StartNewModule 0x52fda0); SIG 1.00 | AUTO: CALLEE 11 (callees: GetInputClass 0x73ff00, GetMiniGame 0x7400a0, ResetDriveAcceleration 0x740240; callers: StartNewModule 0x52fda0); SIG 1.00",
+  "name": "CGuiInGame::CloseDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c6a20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d7720] Steam batch B11b: CALLEE 3 (callers: MainLoop 0x781be0, StopServices 0x78ac40, CleanUpModuleServices 0x78bc50); SIG 1.00 | AUTO: CALLEE 3 (callers: MainLoop 0x781be0, StopServices 0x78ac40, CleanUpModuleServices 0x78bc50); SIG 1.00",
+  "name": "CGuiInGame::ShutDown",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c7030"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004d8450] Steam batch B11b: CALLEE 1 (callers: UpdateDialog 0x7cd0f0); SIG 1.00 | AUTO: CALLEE 1 (callers: UpdateDialog 0x7cd0f0); SIG 1.00",
+  "name": "CGuiInGame::HandleDialogSelection",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c7d60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d8a80] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::LoadStuntModelsForDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c8390"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d8bd0] Steam batch B11b: CALLEE 5 (callees: LookAt 0x773bf0, AnimateFireAndForget 0x777e30, GetCurrentAnimation 0x7ed7d0; callers: UpdateDialog 0x7cd0f0); SIG 1.00 | AUTO: CALLEE 5 (callees: LookAt 0x773bf0, AnimateFireAndForget 0x777e30, GetCurrentAnimation 0x7ed7d0; callers: UpdateDialog 0x7cd0f0); SIG 1.00",
+  "name": "CGuiInGame::SetDialogAnimations",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c84e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d9ad0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ResetDialogAnimations",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c93e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d9c50] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ResetTalkAnimations",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c9560"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004d9f40] Steam batch B11b: CALLEE 1 (callees: GetServerPlaceable 0x842d00); SIG 1.00 | AUTO: CALLEE 1 (callees: GetServerPlaceable 0x842d00); SIG 1.00",
+  "name": "CGuiInGame::UnloadStuntModelsForDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c9850"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004da340] Steam batch B11b: CALLEE 5 (callers: MainLoop 0x781be0, SetInputClass 0x7b3050, ShowGalaxyMapGui 0x7ca730); SIG 1.00 | AUTO: CALLEE 5 (callers: MainLoop 0x781be0, SetInputClass 0x7b3050, ShowGalaxyMapGui 0x7ca730); SIG 1.00",
+  "name": "CGuiInGame::SetSWGuiStatus",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c9c40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004da4f0] Steam batch B11b: STR 'k_sup_guiopen'@009a1770; CALLEE 3 (callees: IndicateObject 0x7401f0, CanLevelUp 0x6b9790; callers: HandleInputEvent 0x7b12c0); SIG 1.00 | AUTO: STR 'k_sup_guiopen'@009a1770; CALLEE 3 (callees: IndicateObject 0x7401f0, CanLevelUp 0x6b9790; callers: HandleInputEvent 0x7b12c0); SIG 1.00",
+  "name": "CGuiInGame::ShowSWInGameGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007c9df0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004da760] Steam batch B11b: CALLEE 7 (callers: MainLoop 0x781be0, HandleInputEvent 0x7b12c0, DismissInGameGUI 0x7b33b0); SIG 1.00 | AUTO: CALLEE 7 (callers: MainLoop 0x781be0, HandleInputEvent 0x7b12c0, DismissInGameGUI 0x7b33b0); SIG 1.00",
+  "name": "CGuiInGame::HideSWInGameGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca060"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004da930] Steam batch B11b: SIG 1.00 | reviewer match with anchor: string 'k_pend_screenchg' to 0x00733570 in 0x7ca230; increments [this+0x2c] wrapping at 7 to 0; GOG string identical",
+  "name": "CGuiInGame::NextSWInGameGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004daac0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: string 'k_pend_screenchg' passed to 0x00733570 in 0x7ca3c0; decrements [this+0x2c] wrapping to 7; GOG string identical",
+  "name": "CGuiInGame::PrevSWInGameGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca3c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dac50] Steam batch B11b: CALLEE 1 (callers: HandleInputEvent 0x7b12c0); SIG 1.00 | AUTO: CALLEE 1 (callers: HandleInputEvent 0x7b12c0); SIG 1.00",
+  "name": "CGuiInGame::SwitchToSWInGameGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004dade0] Steam batch B11b: CALLEE 2 (callers: BarkString 0x79bc40, ExecuteCommandBarkString 0x66dd30); SIG 1.00 | AUTO: CALLEE 2 (callers: BarkString 0x79bc40, ExecuteCommandBarkString 0x66dd30); SIG 1.00",
+  "name": "CGuiInGame::ShowBarkBubble",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca6e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dae30] Steam batch B11b: CALLEE 5 (callees: IndicateObject 0x7401f0, GetPausedByCombat 0x740330, SetPausedByCombat 0x740350; callers: ExecuteCommandShowGalaxyMapGui 0x697460); SIG 1.00 | AUTO: CALLEE 5 (callees: IndicateObject 0x7401f0, GetPausedByCombat 0x740330, SetPausedByCombat 0x740350; callers: ExecuteCommandShowGalaxyMapGui 0x697460); SIG 1.00",
+  "name": "CGuiInGame::ShowGalaxyMapGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca730"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004db020] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007ca9f3 CALL 0x004122a0 PlayGuiSound(5); 0x0073fee0 SetInputClass; 0x00740330/0x00740350 pause; disps 0x80,0x128,0x38; imms 4,5,0x1c",
+  "name": "CGuiInGame::HideGalaxyMapGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ca920"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004db110] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ShowItemCreateMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007caa10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004db160] Steam batch B11b: CALLEE 1 (callees: GetMiniGame 0x7400a0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetMiniGame 0x7400a0); SIG 1.00",
+  "name": "CGuiInGame::HideItemCreateMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007caa60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004db200] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ShowSubItemCreateMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cab00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004db260] Steam batch B11b: CALLEE 1 (callees: GetMiniGame 0x7400a0); SIG 1.00 | AUTO: CALLEE 1 (callees: GetMiniGame 0x7400a0); SIG 1.00",
+  "name": "CGuiInGame::HideSubItemCreateMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cab60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004db310] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HideExamineBox",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cac10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004db3b0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ShowContainerGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cacb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004db430] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HideContainerGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cad30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004db8c0] Steam batch B11b: SIG 0.50 | reviewer match with anchor: 007cb1c0 range check ushort 0x3e8..0x6bf (GOG imms 0x3e8,0x6bf); decoys 0x7cb1f0 (0x578..) and 0x7cb220 (..0x52f)",
+  "name": "CGuiInGame::IsDialogAnimationRange1000_1727",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb1c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004db8f0] Steam batch B11b: SIG 0.50 | reviewer match with anchor: 007cb1f0 range check on ushort 0x578..0x6bf (GOG imms 0x578,0x6bf); decoys 0x7cb1c0 (0x3e8..0x6bf), 0x7cb220 (0x3e8..0x52f)",
+  "name": "CGuiInGame::IsLoopingDialogStuntAnimation",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb1f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004db920] Steam batch B11b: SIG 0.50 | reviewer match with anchor: 007cb220 range check ushort 0x3e8..0x52f (GOG imms 0x3e8,0x52f); decoys 0x7cb1c0, 0x7cb1f0",
+  "name": "CGuiInGame::IsLoopingDialogAnimation",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb220"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004db950] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::IsOverlayDialogAnimation",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb250"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dbba0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007cb4a0 calls 0x004109c0 PopModalPanel, 0x007400a0 GetMiniGame, 0x0073fee0 SetInputClass; panel pointer +0x70 (GOG disp 0x70)",
+  "name": "CGuiInGame::HideLoadModuleDebugMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb4a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dbc40] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007cb540 calls 0x004109c0 PopModalPanel, 0x007400a0 GetMiniGame, 0x0073fee0 SetInputClass; panel pointer +0x74 (GOG disp 0x74)",
+  "name": "CGuiInGame::HidePowersFeatsSkillsDebugMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dbce0] Steam batch B11b: CALLEE 1 (callees: SetLockOrientationToObject 0x77fc10); SIG 1.00 | AUTO: CALLEE 1 (callees: SetLockOrientationToObject 0x77fc10); SIG 1.00",
+  "name": "CGuiInGame::UnlockDialogParticipantOrientations",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb5e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dbe80] Steam batch B11b: CALLEE 1 (callers: AIUpdate_2 0x7664b0); SIG 1.00 | AUTO: CALLEE 1 (callers: AIUpdate_2 0x7664b0); SIG 1.00",
+  "name": "CGuiInGame::IsInDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dbec0] Steam batch B11b: CALLEE 4 (callees: GetCharacterChangeInProgress 0x740fc0, CSWGuiInGameCharacter 0x84c3a0, ShowLevelUpGUI 0x84fcd0; callers: ExecuteCommandShowLevelUpGUI 0x692c80); SIG 1.00 | AUTO: CALLEE 4 (callees: GetCharacterChangeInProgress 0x740fc0, CSWGuiInGameCharacter 0x84c3a0, ShowLevelUpGUI 0x84fcd0; callers: ExecuteCommandShowLevelUpGUI 0x692c8",
+  "name": "CGuiInGame::ShowLevelUpGUI",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb7c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x004dc020] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandShowPartySelection 0x692ce0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandShowPartySelection 0x692ce0); SIG 1.00",
+  "name": "CGuiInGame::ShowPartySelection",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cb920"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004dc240] Steam batch B11b: CALLEE 14 (callees: SetVisible 0x40fe60; callers: MainLoop 0x781be0, ShowLoadScreen 0x798190, HideLoadScreen 0x7983e0); SIG 1.00 | AUTO: CALLEE 14 (callees: SetVisible 0x40fe60; callers: MainLoop 0x781be0, ShowLoadScreen 0x798190, HideLoadScreen 0x7983e0); SIG 1.00",
+  "name": "CGuiInGame::StartGlobalFade",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cbb40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dc2f0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::StopGlobalFade",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cbbf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=32; GOG 0x004dc3e0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetPlaceableCamera",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cbce0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004dc4b0] Steam batch B11b: CALLEE 2 (callees: GetMiniGame 0x7400a0; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetMiniGame 0x7400a0; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CGuiInGame::SetPaused",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cbdb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dc630] Steam batch B11b: CALLEE 1 (callers: SavePlaceableCameras 0x52b380); SIG 1.00 | AUTO: CALLEE 1 (callers: SavePlaceableCameras 0x52b380); SIG 1.00",
+  "name": "CGuiInGame::GetPlaceableCamera",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cbf30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=92; GOG 0x004dc660] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HandleDialogEntry",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cbf60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x004dcc30] Steam batch B11b: CALLEE 2 (callees: LoadAmbientTrackForDialog 0x7c40c0, LoadStuntModelsForDialog 0x7c8390); SIG 0.50 | AUTO: CALLEE 2 (callees: LoadAmbientTrackForDialog 0x7c40c0, LoadStuntModelsForDialog 0x7c8390); SIG 0.50",
+  "name": "CGuiInGame::HandleDialogModels",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cc530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=100; GOG 0x004dccc0] Steam batch B11b: CALLEE 1 (callees: SubString 0x734a00); SIG 1.00 | AUTO: CALLEE 1 (callees: SubString 0x734a00); SIG 1.00",
+  "name": "CGuiInGame::HandleDialogReplies",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cc5c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=28; GOG 0x004dd0a0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HandleDialogReplyChosen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cc9a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004dd200] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HandleDialogSound",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ccb00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004dd440] Steam batch B11b: CALLEE 4 (callees: IndicateObject 0x7401f0, GetPausedByCombat 0x740330, SetPausedByCombat 0x740350; callers: ExecuteCommandOpenStore 0x68d7d0); SIG 1.00 | AUTO: CALLEE 4 (callees: IndicateObject 0x7401f0, GetPausedByCombat 0x740330, SetPausedByCombat 0x740350; callers: ExecuteCommandOpenStore 0x68d7d0); SIG 1.00",
+  "name": "CGuiInGame::ShowStoreGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ccd40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dd630] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HideStoreGui",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ccf30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dd740] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::UpdateMessageGUI",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cd040"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dd7f0] Steam batch B11b: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CGuiInGame::UpdateDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cd0f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004ddbd0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetDialogSelection",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cd4d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004ddc10] Steam batch B11b: CALLEE 4 (callees: GetAreaNotReadyToDisplay 0x740020, GetServerArea 0x7aae00; callers: ? 0x77b020, HandleInputEvent 0x7b12c0); SIG 1.00 | AUTO: CALLEE 4 (callees: GetAreaNotReadyToDisplay 0x740020, GetServerArea 0x7aae00; callers: ? 0x77b020, HandleInputEvent 0x7b12c0); SIG 1.00",
+  "name": "CGuiInGame::ShowSoloModeQuery",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cd510"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dde60] Steam batch B11b: CALLEE 1 (callees: SetPausedByCombat 0x740350); SIG 1.00 | AUTO: CALLEE 1 (callees: SetPausedByCombat 0x740350); SIG 1.00",
+  "name": "CGuiInGame::HideSoloMode",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cd760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x004ddee0] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandShowUpgradeScreen 0x692e50); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandShowUpgradeScreen 0x692e50); SIG 1.00",
+  "name": "CGuiInGame::ShowUpgradeScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cd7e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004de1a0] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandShowChemicalUpgradeScreen 0x699df0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandShowChemicalUpgradeScreen 0x699df0); SIG 1.00",
+  "name": "CGuiInGame::ShowChemicalUpgradeScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cdaa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004de2e0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007cdbe0 calls 0x0073f810 GetSWCMessage, 0x0073fee0 SetInputClass; MOV [this+0x88]=0 with AND 0xfffffcff|0x200; GOG disp 0x88",
+  "name": "CGuiInGame::HideUpgradeScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cdbe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004de3c0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007cdcc0 calls 0x0073f810 GetSWCMessage and 0x0073fee0 SetInputClass; MOV [this+0x8c]=0 with AND 0xfffffcff|0x200; decoy 0x7cdbe0 uses +0x88",
+  "name": "CGuiInGame::HideChemicalUpgradeScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cdcc0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004de4a0] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandShowSwoopUpgradeScreen 0x699e50); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandShowSwoopUpgradeScreen 0x699e50); SIG 1.00",
+  "name": "CGuiInGame::ShowSwoopUpgradeScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cdda0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004de6f0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::DialogNodeSpanningTextParse",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cdff0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004deae0] Steam batch B11b: CALLEE 2 (callees: EnableVideoEffect 0x7409a0; callers: ExecuteCommandSetDialogPlaceableCamera 0x6977f0); SIG 1.00 | AUTO: CALLEE 2 (callees: EnableVideoEffect 0x7409a0; callers: ExecuteCommandSetDialogPlaceableCamera 0x6977f0); SIG 1.00",
+  "name": "CGuiInGame::SetShotFromScript",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ce3e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004dee40] Steam batch B11b: CALLEE 2 (callers: MainLoop 0x781be0, UpdateAreaTransitionDisplay 0x87c9f0); SIG 1.00 | AUTO: CALLEE 2 (callers: MainLoop 0x781be0, UpdateAreaTransitionDisplay 0x87c9f0); SIG 1.00",
+  "name": "CGuiInGame::SetAreaTransition",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ce740"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004dee80] Steam batch B11b: CALLEE 3 (callees: GetServerArea 0x7aae00, HideAreaTransition 0x7ce970; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 3 (callees: GetServerArea 0x7aae00, HideAreaTransition 0x7ce970; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CGuiInGame::UpdateAreaTransitionGUI",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ce780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004df070] Steam batch B11b: CALLEE 2 (callees: GetServerArea 0x7aae00; callers: UpdateAreaTransitionGUI 0x7ce780); SIG 1.00 | AUTO: CALLEE 2 (callees: GetServerArea 0x7aae00; callers: UpdateAreaTransitionGUI 0x7ce780); SIG 1.00",
+  "name": "CGuiInGame::HideAreaTransition",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ce970"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004df190] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::GetBarkBubbleVisible",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cea90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004df250] Steam batch B11b: CALLEE 2 (callers: MainLoop 0x781be0, SetCombatMode 0x79d6e0) | reviewer match with anchor: 007ceb50 CMP [this+0x98],0 then CALL 0x0074cfe0 (GOG callee PopulateMenus 0x51e760 + 0x22e880)",
+  "name": "CGuiInGame::RePopulateMainInterface",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ceb50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004df280] Steam batch B11b: CALLEE 8 (callees: ShowMouse 0x7b3930, SetIgnoreConversationStartRange 0x51cd60; callers: ? 0x77cf70, ClearAction 0x56e620, ExecuteCommandActionStartConversation 0x66ad10); SIG 1.00 | AUTO: CALLEE 8 (callees: ShowMouse 0x7b3930, SetIgnoreConversationStartRange 0x51cd60; callers: ? 0x77cf70, ClearAction 0x56e620, ExecuteCommandActionStartConversatio",
+  "name": "CGuiInGame::SetGlobalDialogState",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ceb80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004df360] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::GetDialogCameraPosition",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cec60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004df550] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::GetGuiInGameScreenPanel",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cee50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004df580] Steam batch B11b: CALLEE 1 (callers: AddFloatyText 0x79de60) | reviewer match with anchor: 007cee80 CMP [this+0x98],0 ; CALL 0x00750f30 with 4 args (GOG callee 0x5226b0 + 0x22e880), RET 0x10; caller 0x79de60",
+  "name": "CGuiInGame::AddFloatyText",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cee80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004df5f0] Steam batch B11b: CALLEE 15 (callers: EndPazaakGame 0x79d230, EventHandler 0x6010b0, GivePlotXP 0x5fdea0); SIG 1.00 | AUTO: CALLEE 15 (callers: EndPazaakGame 0x79d230, EventHandler 0x6010b0, GivePlotXP 0x5fdea0); SIG 1.00",
+  "name": "CGuiInGame::UpdateStatus",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007ceef0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004df910] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::GetPendingStatusSummary",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004df970] Steam batch B11b: CALLEE 3 (callees: SetPausedByCombat 0x740350, GetTogglePauseAtEndOfFrame 0x740ec0; callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 3 (callees: SetPausedByCombat 0x740350, GetTogglePauseAtEndOfFrame 0x740ec0; callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CGuiInGame::ShowStatusSummary",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf270"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dfab0] Steam batch B11b: CALLEE 2 (callers: LoadPCAutoSave 0x8529e0, LoadTableInfo 0x5fbf60); SIG 1.00 | AUTO: CALLEE 2 (callers: LoadPCAutoSave 0x8529e0, LoadTableInfo 0x5fbf60); SIG 1.00",
+  "name": "CGuiInGame::SetStatusSummary",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf3b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dfb30] Steam batch B11b: CALLEE 2 (callers: SaveTableInfo 0x5fb1a0, DoPCAutosave 0x53af20); SIG 1.00 | AUTO: CALLEE 2 (callers: SaveTableInfo 0x5fb1a0, DoPCAutosave 0x53af20); SIG 1.00",
+  "name": "CGuiInGame::GetStatusSummary",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf430"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dfb70] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandSuppressStatusSummaryEntry 0x699760); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandSuppressStatusSummaryEntry 0x699760); SIG 1.00",
+  "name": "CGuiInGame::SuppressStatusSummary",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dfbe0] Steam batch B11b: CALLEE 3 (callees: IsDebilitated 0x6daa00; callers: ResetDialogAnimations 0x7c93e0, ResetTalkAnimations 0x7c9560); SIG 1.00 | AUTO: CALLEE 3 (callees: IsDebilitated 0x6daa00; callers: ResetDialogAnimations 0x7c93e0, ResetTalkAnimations 0x7c9560); SIG 1.00",
+  "name": "CGuiInGame::CanPlayDialogAnimations",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf4e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004dfcd0] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandSetLockOrientationInDialog 0x698070); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandSetLockOrientationInDialog 0x698070); SIG 1.00",
+  "name": "CGuiInGame::SetLockObjectOrientationInDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf5d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004dfe80] Steam batch B11b: CALLEE 2 (callees: LookAt 0x773bf0; callers: ExecuteCommandSetLockHeadFollowInDialog 0x698100); SIG 1.00 | AUTO: CALLEE 2 (callees: LookAt 0x773bf0; callers: ExecuteCommandSetLockHeadFollowInDialog 0x698100); SIG 1.00",
+  "name": "CGuiInGame::SetLockHeadFollowInDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004dfff0] Steam batch B11b: SIG 0.50 | reviewer match with anchor: 007cf8f9 CMP [EBP+8],0x7f000000; 007cf905 ADD ECX,0xf28; list walk (GOG imms 0x7f000000,0xf28)",
+  "name": "CGuiInGame::GetCanHeadFollowInDialog",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf8f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e0060] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::TutorialReasonWillShowWindow",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cf960"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e0110] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007cfa10 bit test [this+0xf88+(id>>3)] with id<0x100 (GOG disp 0xf88, imms 0x100,7,8,3)",
+  "name": "CGuiInGame::TutorialReasonHasShown",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cfa10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004e0170] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007cfa70: byte bit set/clear at [this+0xf88+(id>>3)], id<0x100 (GOG disp 0xf88, imms 3,7,8,0x100), RET 8",
+  "name": "CGuiInGame::SetTutorialReasonTracked",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cfa70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=16; GOG 0x004e0210] Steam batch B11b: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00 | AUTO: CALLEE 1 (callers: MainLoop 0x781be0); SIG 1.00",
+  "name": "CGuiInGame::ShowTutorialWindow",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cfb10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e03a0] Steam batch B11b: CALLEE 2 (callees: CenterPanel 0x40ea00; callers: SetVideoMode 0x78dbf0); SIG 1.00 | AUTO: CALLEE 2 (callees: CenterPanel 0x40ea00; callers: SetVideoMode 0x78dbf0); SIG 1.00",
+  "name": "CGuiInGame::ResetInterfaceForSize",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007cfca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e08b0] Steam batch B11b: CALLEE 1 (callers: MainLoop 0x781be0); SIG 0.50 | AUTO: CALLEE 1 (callers: MainLoop 0x781be0); SIG 0.50",
+  "name": "CGuiInGame::UpdateControllerPauseState",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d01b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e0920] Steam batch B11b: CALLEE 1 (callees: SetPausedByCombat 0x740350); SIG 1.00 | AUTO: CALLEE 1 (callees: SetPausedByCombat 0x740350); SIG 1.00",
+  "name": "CGuiInGame::EndControllerPauseState",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0220"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e09b0] Steam batch B11b: CALLEE 1 (callers: HandleInputEvent 0x7b12c0) | reviewer match with anchor: 007d02ba MOV ECX,[EAX+0x98]; 007d02c0 CALL 0x00750e60 (GOG callee 0x5225e0 + 0x22e880 region delta)",
+  "name": "CGuiInGame::ChangeCharacter",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d02b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e09f0] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandActionStartConversation 0x66ad10); SIG 0.50 | AUTO: CALLEE 1 (callers: ExecuteCommandActionStartConversation 0x66ad10); SIG 0.50",
+  "name": "CGuiInGame::AddToDialogNonDependantList",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d02f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e0ae0] Steam batch B11b: SIG 0.50 | reviewer match with anchor: 007d0401 ADD ECX,0xf2c; list walk; CALL 0x00734010 CStr and 0x00734f60 compare per element; PUSH 0x986925 (GOG imms 0xf2c,0xc,4)",
+  "name": "CGuiInGame::IsOnDialogNonDependantList",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d03e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e0b70] Steam batch B11b: SIG 0.50 | reviewer match with anchor: 007d04b1 CALL 0x00733780 ~CExoString; 007d0494 CALL 0x007f2a90 loop; operator delete 0x9196fd; GOG imm {4,0x14,0xf2c}",
+  "name": "CGuiInGame::ClearDialogNonDependantList",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e0c30] Steam batch B11b: CALLEE 2 (callers: UpdateCombatMode 0x79d840, WalkUpdateLocationDistance 0x5cb430) | reviewer match with anchor: 007d0550 CALL 0x0074ec10 (CSWGuiMainInterface::SetCombatMessage, card 32); callers UpdateCombatMode 0x79d840 and 0x5cb430 (GOG callers)",
+  "name": "CGuiInGame::SetCombatMessage",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004e0e60] Steam batch B11b: CALLEE 6 (callees: Constructor 0x893950, CSWGuiInGameCharacter 0x84c3a0, Constructor 0x8a6170; callers: NextSWInGameGui 0x7ca230, PrevSWInGameGui 0x7ca3c0, SwitchToSWInGameGui 0x7ca550); SIG 1.00 | AUTO: CALLEE 6 (callees: Constructor 0x893950, CSWGuiInGameCharacter 0x84c3a0, Constructor 0x8a6170; callers: NextSWInGameGui 0x7ca230, PrevSWInGameGui 0x7ca3c0, Swit",
+  "name": "CGuiInGame::UpdateCreatedInGameGUI",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e11f0] Steam batch B11b: CALLEE 10 (callers: DisplayMainMenu 0x781590, Initialize 0x7819e0, MainLoop 0x781be0) | reviewer match with anchor: 007d0b00 MOV ECX,[EAX+0xf0]; 16 callers incl. MainLoop 0x781be0 and Initialize 0x7819e0 (GOG callers, trusted)",
+  "name": "CGuiInGame::SetGlobalUnpauseableState",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0af0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e1240] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandNoClicksFor 0x699690); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandNoClicksFor 0x699690); SIG 1.00",
+  "name": "CGuiInGame::MarkNoClickEvent",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0b40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e1290] Steam batch B11b: CALLEE 3 (callees: SubtractWorldTimes 0x51af60; callers: ? 0x77cf70, UsePlaceable 0x841ce0); SIG 1.00 | AUTO: CALLEE 3 (callees: SubtractWorldTimes 0x51af60; callers: ? 0x77cf70, UsePlaceable 0x841ce0); SIG 1.00",
+  "name": "CGuiInGame::GetCanClick",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0b90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004e1330] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::EnterControllerPauseState",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0c30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e1370] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::UpdateDialogLipSync",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0c70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e1460] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetDeferredFOVCallForAnimatedCutscenes",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0d60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e1490] Steam batch B11b: CALLEE 1 (callees: GetPazaakIsRunning 0x740f20); SIG 1.00 | AUTO: CALLEE 1 (callees: GetPazaakIsRunning 0x740f20); SIG 1.00",
+  "name": "CGuiInGame::GetFadeOverridePanelVisible",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0d90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e15c0] Steam batch B11b: CALLEE 2 (callees: FadeAndStopStreamingSoundSource 0x741010; callers: UnloadArea 0x7a5fa0); SIG 1.00 | AUTO: CALLEE 2 (callees: FadeAndStopStreamingSoundSource 0x741010; callers: UnloadArea 0x7a5fa0); SIG 1.00",
+  "name": "CGuiInGame::FadeAndStopDialogAmbientTrack",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0ec0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e1650] Steam batch B11b: CALLEE 18 (callees: SendLoadGameRequest 0x73f720, ShowLoadScreen 0x73ff20, SetLoadScreenByModuleName 0x740540; callers: HandleInputEvent 0x7b12c0); SIG 1.00 | AUTO: CALLEE 18 (callees: SendLoadGameRequest 0x73f720, ShowLoadScreen 0x73ff20, SetLoadScreenByModuleName 0x740540; callers: HandleInputEvent 0x7b12c0); SIG 1.00",
+  "name": "CGuiInGame::DoQuickLoad",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d0f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x004e1c30] Steam batch B11b: CALLEE 3 (callees: HideLoadScreen 0x73ff50, NukeDirectory 0x715710; callers: DoQuickLoad 0x7d0f50); SIG 1.00 | AUTO: CALLEE 3 (callees: HideLoadScreen 0x73ff50, NukeDirectory 0x715710; callers: DoQuickLoad 0x7d0f50); SIG 1.00",
+  "name": "CGuiInGame::UnpackQuickSaveGame",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d1530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x004e2410] Steam batch B11b: CALLEE 1 (callers: ExecuteCommandShowDemoScreen 0x69aec0); SIG 1.00 | AUTO: CALLEE 1 (callers: ExecuteCommandShowDemoScreen 0x69aec0); SIG 1.00",
+  "name": "CGuiInGame::ShowDemoScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d1d10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e2590] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::HideDemoScreen",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d1e90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e2690] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::UpdateAbilitiesCharacter",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d1f90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e26e0] Steam batch B11b: CALLEE 1 (callees: PopulateItemListBox 0x8a7ba0); SIG 1.00 | AUTO: CALLEE 1 (callees: PopulateItemListBox 0x8a7ba0); SIG 1.00",
+  "name": "CGuiInGame::UpdateInventory",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d1fe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e2730] Steam batch B11b: CALLEE 2 (callers: MainLoop 0x781be0, RunDeathSequence 0x79c0e0); SIG 1.00 | AUTO: CALLEE 2 (callers: MainLoop 0x781be0, RunDeathSequence 0x79c0e0); SIG 1.00",
+  "name": "CGuiInGame::DisplayDeathMessage",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d2030"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e2800] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::RemoveDeathMessage",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d2100"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e28a0] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::EnableCharacterChangeButtons",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d21a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e28e0] Steam batch B11b: CALLEE 1 (callers: OnNewGamePicked 0x882230); SIG 1.00 | AUTO: CALLEE 1 (callers: OnNewGamePicked 0x882230); SIG 1.00",
+  "name": "CGuiInGame::ResetTutorialWindowTracker",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d21e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004e2920] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::SetTopMenuOverrideCharacter",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d2220"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e2950] Steam batch B11b: CALLEE 1 (callers: RunUnequip 0x5676d0); SIG 1.00 | AUTO: CALLEE 1 (callers: RunUnequip 0x5676d0); SIG 1.00",
+  "name": "CGuiInGame::GetTopMenuOverrideCharacter",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d2250"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004e2980] Steam batch B11b: CALLEE 1 (callers: ProcessInput 0x7ac470); SIG 1.00 | AUTO: CALLEE 1 (callers: ProcessInput 0x7ac470); SIG 1.00",
+  "name": "CGuiInGame::GetGlobalFadeActive",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007d2280"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00517490] Steam batch B11b: STR '%s%s%s'@0098ba58; 'cntrl_xb360_%s'@0099d904; 'panish'@0099d918; SIG 1.00 | reviewer match with anchor: 00746032 PUSH 0x98ba58 '%s%s%s'; 0x0099D99C 'ios_help_1' at 00745f83; 007465ee CALL 0x00410530 AddPanel (GOG callee)",
+  "name": "CSWGuiMainInterface::AddHelpPanel",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00745e60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00517df0] Steam batch B11b: CALLEE 2 (callees: SetPausedByCombat 0x740350, SetBackground 0x40f390); SIG 1.00 | reviewer match with anchor: 0074685c CALL 0x00745e60 (AddHelpPanel, card 53); 007467fc CALL 0x0040f390 SetBackground; 007468c2 CALL 0x00740350 SetPausedByCombat",
+  "name": "CSWGuiMainInterface::HideHelp",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007467c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00518020] Steam batch B11b: CALLEE 5 (callees: HandleInputEvent 0x73ff80, ChangeCharacter 0x740380, SetCombatMode 0x740880); SIG 1.00 | reviewer match with anchor: callees 0x0073ff80 HandleInputEvent, 0x00740380 ChangeCharacter, 0x00740880 SetCombatMode (all GOG callees, trusted); size 1310",
+  "name": "CSWGuiMainInterface::HandleInputEvent",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007469f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00518840] Steam batch B11b: STR 'uibit_fill_2bt'@0099d9b4; 'uibit_brdr_16bet'@0099d9c4; 'uibit_brdr_16bct'@0099d9d8; CALLEE 6 (callees: SetExtent 0x40e980, AddControl 0x40fd80, SetCornerImage 0x414680; callers: ResetInterfaceForSize 0x7cfca0); SIG 1.00 | reviewer match with anchor: 0x0099DB68 'BTN_CLEARONE' at 00747cc8; 'LBL_ACTIONDESC' at 00747d99; caller ResetInterfaceForSize 0x7cfca0 (GOG caller)",
+  "name": "CSWGuiMainInterface::Constructor",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00747210"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0051c510] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074adcb CMP [ECX+0xd584],0 (GOG disp 0xd584); 0074ae14 CALL 0x0041a3d0 CSWGuiButton dtor repeated; size 1551",
+  "name": "CSWGuiMainInterface::Destructor_2",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074ad90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0051cb20] Steam batch B11b: CALLEE 1 (callees: HitCheckMouse 0x40eae0) | reviewer match with anchor: 0074b3ba CALL 0x007433b0 (TargetActionMenu::HitCheckMouse) and 0074b3d3 CALL 0x0040eae0 CSWGuiPanel::HitCheckMouse (GOG callees)",
+  "name": "CSWGuiMainInterface::HitCheckMouse",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074b3a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051cb70] Steam batch B11b: CALLEE 5 (callees: GetCombatMode 0x740860, IsDebilitated 0x6daa00, CanUseItem 0x5d2f80); SIG 1.00 | reviewer match with anchor: 0074b57f CALL 0x006daa00 IsDebilitated; 0074c11b CALL 0x00740860 GetCombatMode; 21 shared offsets, size 3874",
+  "name": "CSWGuiMainInterface::Draw",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074b3f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051daa0] Steam batch B11b: CALLEE 3 (callees: GetPlayerCreatureId 0x73f470, GetPausedByCombat 0x740330, IsStealthCapable 0x77fe50); SIG 1.00 | reviewer match with anchor: 0074c7a3 CALL 0x0073f470 GetPlayerCreatureId; 0074ca33 CALL 0x00740330 GetPausedByCombat; 27 shared offsets, size 2402",
+  "name": "CSWGuiMainInterface::Update",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074c320"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0051e410] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074cead PUSH 0x99d78c '%s (%d)' (GOG string); 0074cec5 CALL 0x0074cf00 (SetActionDescription)",
+  "name": "CSWGuiMainInterface::UpdateActionDescription",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074cc90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051e680] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074cf16 CALL 0x00416e30 (CSWGuiTextParams::SetText, GOG callee too); 0074cf76 MOV EDX,[EAX+0xa66c]",
+  "name": "CSWGuiMainInterface::SetActionDescription",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074cf00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051e760] Steam batch B11b: CALLEE 3 (callees: GetPersonalActions 0x77e650; callers: HandleMouseClickInWorld 0x7b3ca0, RePopulateMainInterface 0x7ceb50); SIG 1.00 | reviewer match with anchor: 0074d0e1 CALL 0x0074da40; 0074d07a CMP [ECX+0x11ac],0; callers HandleMouseClickInWorld 0x7b3ca0 and RePopulateMainInterface 0x7ceb50 (GOG callers)",
+  "name": "CSWGuiMainInterface::PopulateMenus",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074cfe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051eca0] Steam batch B11b: CALLEE 2 (callees: GetPausedByCombat 0x740330, SetPausedByCombat 0x740350); SIG 1.00 | reviewer match with anchor: 0074d771 PUSH 0x99d78c '%s (%d)' (GOG string); 0074d613 CALL 0x00740330 GetPausedByCombat",
+  "name": "CSWGuiMainInterface::PopupActionMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074d520"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051f070] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074d922 CALL 0x00740350 SetPausedByCombat (GOG callee); 0074d8fc CALL 0x0074d8c0",
+  "name": "CSWGuiMainInterface::HandleButtonActionX",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074d8f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0051f0b0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074d93f CALL 0x0074d8f0 (HandleButtonActionX, card 28); 0074d97e MOV [EAX+0x1c98],0; GOG disp 0x1c76/0x1c7c/0x1c98",
+  "name": "CSWGuiMainInterface::HandleButtonAction",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074d930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0051f180] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074da29 CALL 0x0074d930 (HandleButtonAction, card 34); 0074da18 MOV EAX,[EDX+0x5c]; 0074da0c MOV ECX,[EAX+0x10020]",
+  "name": "CSWGuiMainInterface::HandleButtonAction_2",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074da00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0051f1c0] Steam batch B11b: STR 'CANDEROUS_CUR_IMPLANT'@0099defc; CALLEE 2 (callees: GetGlobalVariableTable 0x51c890, GlobalVars 0x654860); SIG 1.00 | reviewer match with anchor: 0074daf0 PUSH 0x99defc 'CANDEROUS_CUR_IMPLANT' (GOG string); 0074db22 CALL 0x00654860 GlobalVars GetNumber; 0074dc43 CALL 0x0074cfe0",
+  "name": "CSWGuiMainInterface::RevertActionBarStates",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074da40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0051f400] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074de6c CALL 0x0074e0b0 GetActionIcon and 0074de89 CALL 0x0074e7f0 ShowActionIcon (GOG callees); 0074dd25 CALL 0x00590880",
+  "name": "CSWGuiMainInterface::UpdateActionQueue_2",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074dc80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=24; GOG 0x0051f830] Steam batch B11b: STR 'i_stancedefm'@0099df14; 'i_stancedef'@0099df24; 'i_swtchwpn'@0099df30; CALLEE 2 (callees: IsInTotalDefense 0x6daac0, GetIcon 0x615cc0); SIG 1.00 | reviewer match with anchor: 0074e559 PUSH 0x99df14 'i_stancedefm' (GOG string); 0074e265 CALL 0x00615cc0 GetIcon; size 1667",
+  "name": "CSWGuiMainInterface::GetActionIcon",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074e0b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=20; GOG 0x0051ff70] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0074e844 CALL 0x00414840 SetFillImage (GOG callee); 0074e8d6 LEA EAX,[EDX+ECX*1+0x5f2c]; called at 0074de89 by UpdateActionQueue_2",
+  "name": "CSWGuiMainInterface::ShowActionIcon",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074e7f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00520390] Steam batch B11b: CALLEE 1 (callees: GetAutoPaused 0x740960); SIG 1.00 | reviewer match with anchor: 0074ecdc CALL 0x00740960 GetAutoPaused (GOG callee); 0074ed3a FSTP [ECX+0x7330]; GOG disp 0x7330/0x7334/0x7338",
+  "name": "CSWGuiMainInterface::SetCombatMessage",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074ec10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00520610] Steam batch B11b: CALLEE 5 (callees: IsDebilitated 0x6daa00, GetMaxForcePoints 0x57eca0, GetExpNeededForLevelUp 0x6b72e0); SIG 1.00 | reviewer match with anchor: 0074f1f5 CALL 0x0057eca0 GetMaxForcePoints; 0074f2b2 CALL 0x006b72e0 GetExpNeededForLevelUp; 25 shared offsets, size 2732",
+  "name": "CSWGuiMainInterface::UpdatePortraits",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074ee90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x005211d0] Steam batch B11b: CALLEE 2 (callees: GetQuestJournal 0x73f070, GetPartyItems 0x5f7a30); SIG 1.00 | reviewer match with anchor: 0074fa6e CALL 0x005f7a30 GetPartyItems; 0074face CALL 0x0073f070 GetQuestJournal; 0074fa87 MOV EAX,[EDX+0xbcc0]",
+  "name": "CSWGuiMainInterface::UpdateGameMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074fa50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005212a0] Steam batch B11b: STR 'hostilereticle2'@0099dfa4; 'combatreticle'@0099dfb4; 'friendlyarrow'@0099dfc4; CALLEE 3 (callees: GetCombatMode 0x740860, GetTargetChanging 0x740e80, GetServerObject 0x7f2540); SIG 1.00 | reviewer match with anchor: 0074fe5f PUSH 0x99dfb4 'combatreticle' (GOG string); 0074ff35 'hostilereticle2'; callees GetCombatMode 0x740860, GetTargetChanging 0x740e80",
+  "name": "CSWGuiMainInterface::UpdateIndicator",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x0074fb20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00521f10] Steam batch B11b: CALLEE 1 (callees: GetModuleCamera 0x73f490); SIG 1.00 | reviewer match with anchor: 007507ad CALL 0x0072fb00 GetClientOptions; callee 0x73f490 (GetModuleCamera); 0075084a ADD EAX,0x5ab4 (GOG imm 0x5ab4)",
+  "name": "CSWGuiMainInterface::DrawMap",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00750790"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00522390] Steam batch B11b: STR 'lbl_map%s'@00993220; SIG 1.00 | reviewer match with anchor: 00750c88 PUSH 0x993220 'lbl_map%s' (GOG string); 00750c4d CALL 0x0051bd90 GetModule",
+  "name": "CSWGuiMainInterface::InitializeMap",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00750c10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00522930] Steam batch B11b: CALLEE 1 (callees: RemoveLastAction 0x5904c0); SIG 1.00 | reviewer match with anchor: 0075120b CALL 0x005904c0 RemoveLastAction; 0075121e CALL 0x00541080 ClearAllActions (both GOG callees); +0x10dc",
+  "name": "CSWGuiMainInterface::ClearOneAction",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007511b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00522d00] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 0075167f CALL 0x007c9df0 ShowSWInGameGui; 0075169b CALL 0x0073fee0 SetInputClass; GetInGameGui 0x73f750 (GOG callees)",
+  "name": "CSWGuiMainInterface::OnMenuButtonPressed",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00522e30] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007516e6 CALL 0x00751750 (DoPersonalAction, card 50); 007516f9 CALL 0x00751710; GOG callees DoPersonalAction + 0x522e90",
+  "name": "CSWGuiMainInterface::OnCharacterRightClicked",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007516b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=8; GOG 0x00522ed0] Steam batch B11b: CALLEE 3 (callees: GetAutoPaused 0x740960, ClearAllQueuedCombatActions 0x7f2500; callers: HandleInputEvent 0x7b12c0); SIG 1.00 | reviewer match with anchor: 00751952 CALL 0x007f2500 ClearAllQueuedCombatActions; 0075196f CALL 0x00740960 GetAutoPaused; caller HandleInputEvent 0x7b12c0 (GOG caller)",
+  "name": "CSWGuiMainInterface::DoPersonalAction",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751750"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523230] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00751ae5 MOV [EAX+0x1c98],ECX after 00751ad7 CMP EDX,[ECX+0x1c98]; GOG disp {0x50,0x5c,0x1c98}, size 65",
+  "name": "CSWGuiMainInterface::DoTargetAction",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751ab0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523370] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00751c1a MOV byte [EDX+0x1c77],CL after 00751c14 SUB ECX,6 (GOG disp 0x1c77, imm 6, size 54)",
+  "name": "CSWGuiMainInterface::UpdateActionMenuSelected",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751bf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523670] Steam batch B11b: CALLEE 5 (callees: GetPausedByCombat 0x740330, SetPausedByCombat 0x740350, SetAutoPaused 0x740930); SIG 1.00 | reviewer match with anchor: 00751f1b CALL 0x00740330 GetPausedByCombat; 00751f40 CALL 0x00740350 SetPausedByCombat; 00751f91 CALL 0x00740a20 ShowTutorialWindow; 5 callees match",
+  "name": "CSWGuiMainInterface::OnPauseButtonPressed",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751ef0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523720] Steam batch B11b: CALLEE 1 (callees: ShowSoloModeQuery 0x7cd510); SIG 1.00 | reviewer match with anchor: 00751fc9 CALL 0x0073f750 GetGuiInGame; 00751fd0 CALL 0x007cd510 ShowSoloModeQuery; 00751fac MOV ECX,[EAX+0x50]",
+  "name": "CSWGuiMainInterface::OnSoloButtonPressed",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751fa0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523760] Steam batch B11b: CALLEE 2 (callees: ? 0x77b020, IsStealthCapable 0x77fe50); SIG 1.00 | reviewer match with anchor: 00752007 CALL 0x0073f450 GetPlayerCreature; 0075200e CALL 0x0077fe50 IsStealthCapable; 00752038 CALL 0x0077b020; 00751fec MOV ECX,[EAX+0x50]",
+  "name": "CSWGuiMainInterface::OnStealthButtonPressed",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00751fe0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005237d0] Steam batch B11b: CALLEE 3 (callees: ChangeCharacter 0x740380, PartyMenuUseItemSelect 0x77c780, CanLevelUp 0x6b9790); SIG 1.00 | reviewer match with anchor: 007522ad CALL 0x00740380 ChangeCharacter; 0075218b CALL 0x006b9790 CanLevelUp; 007521b7 MOV [ECX+0xba9c],1; 00752261 CMP [ECX+0x11ac],0",
+  "name": "CSWGuiMainInterface::OnCharacterClicked",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00752050"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523a40] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007522e4 MOV EAX,[EDX+0x5c] (GOG disp 0x5c); 007522f3 MOV [EDX+0x15234],ECX; 007522cc CMP [EAX+0x15230]",
+  "name": "CSWGuiMainInterface::OnCharacterEntered",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007522c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00523b60] Steam batch B11b: CALLEE 2 (callees: SetCombatMode 0x77fd20, ClearAllActions 0x7f24c0); SIG 1.00 | reviewer match with anchor: 00752419 CALL 0x007f24c0 ClearAllActions; 00752411 CALL 0x0077fd20 SetCombatMode; 0075243a FSTP [ECX+0x595c]; 00752449 FSTP [EDX+0x70]",
+  "name": "CSWGuiMainInterface::OnClearAllButtonPressed",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007523e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523bd0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00752453 SUB ESP,0x28 (GOG imm 0x28; Prev has 0x2c); 007524b2 CMP [EAX+EDX*4+0x1c7c],-1; 007525b7 CALL 0x004122a0 PlayGuiSound; next-index wrap",
+  "name": "CSWGuiMainInterface::SelectNextPersonalAction",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00752450"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00523d50] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 007525d3 SUB ESP,0x2c (GOG imm 0x2c; Next has 0x28); 00752747 CALL 0x004122a0 PlayGuiSound; prev-index wrap using (count-1)*0x3c",
+  "name": "CSWGuiMainInterface::SelectPrevPersonalAction",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x007525d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00523ee0] Steam batch B11b: STR 'hostilereticle'@0099e13c; 'friendlyreticle'@0099e14c; CALLEE 1 (callees: GetServerObject 0x7f2540); SIG 1.00 | reviewer match with anchor: 00752d4e MOV [EBP-0xfc],0x99e14c 'friendlyreticle'; 00752d5a 0x99e13c 'hostilereticle' (both GOG strings); 00752b91 CALL 0x007f2540 GetServerObject",
+  "name": "CSWGuiMainInterface::UpdateStickyTarget",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00752760"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00524590] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00752e8d MOV [EAX+0x732c],0x1; sole caller 007a07b7 CALL 0x00752e10 in SetToolTipInstantMode (GOG caller 0x44cd50 mapped)",
+  "name": "CSWGuiMainInterface::ShowFlashingStatus",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00752e10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005246d0] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00752f84 CALL 0x0072fb00 CClientExoApp::GetClientOptions (GOG callee); 00752fba MOV ECX,[EAX+0xba5c]; 00752fc3 ADD ECX,[EDX+0xba54]",
+  "name": "CSWGuiMainInterface::SetupPauseGuiExtent",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00752f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00524790] Steam batch B11b: CALLEE 1 (callees: ResetFont 0x40ffb0) | reviewer match with anchor: 0075301a CALL 0x0040ffb0 CSWGuiPanel::ResetFont (GOG callee); 00753028 CALL 0x00744ac0 TargetActionMenu::Destructor (GOG callee 0x5160c0)",
+  "name": "CSWGuiMainInterface::ResetFont",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00753010"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00524e00] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00753697 CALL 0x0073f750 GetGuiInGame; 007536e9 CALL 0x00410530 AddPanel; 00753700 CALL 0x0073fee0 SetInputClass; 0075370e CALL 0x00753850 (InitGamepadMenu)",
+  "name": "CSWGuiMainInterface::PopupGamepadMenu",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00753680"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00524ea0] Steam batch B11b: CALLEE 1 (callees: OnPanelRemoved 0x40f4c0); SIG 0.50 | reviewer match with anchor: 0075372a ADD EAX,0xd588 / 00753745 ADD ECX,0xffb8 / 00753753 ADD EDX,0x148b4 each CALL 0x00410670; 00753768 CALL 0x0040f4c0 CSWGuiPanel::OnPanelRemoved",
+  "name": "CSWGuiMainInterface::OnPanelRemoved",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00753720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00526530] Steam batch B11b: CALLEE 2 (callees: ? 0x77da50; callers: HandleInputEvent 0x7b12c0); SIG 1.00 | reviewer match with anchor: 00754dc7 CALL 0x0073f450 GetPlayerCreature; 00754ddc CALL 0x0077da50 (switch weapons, GOG ActionMenuSwitchWeapons); caller HandleInputEvent 7b12c0",
+  "name": "CSWGuiMainInterface::OnSwapWeaponsPressed",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00754db0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00526570] Steam batch B11b: SIG 1.00 | reviewer match with anchor: 00754e02 MOV ECX,[EAX+0x50]; 00754e11 CALL 0x00754e20 (37-byte reset, GOG callee ResetPartyMemberItemUse 0x5265a0)",
+  "name": "CSWGuiMainInterface::OnCancelPartyItemSelect",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x00754df0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005a4790] Steam batch B11b: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CGuiInGame::ShowGameMenuChangeButtons",
+  "source": "steam-db-B11b",
+  "steam_addr": "0x008b0890"
+ }
+]
