@@ -2,48 +2,47 @@
 
 Decision: **ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer matches to Opus**
 
-- decoy cards: 50 (per chunk {'1': 10, '2': 10, '3': 10, '4': 10, '5': 10}), accepted by the reviewer: 2, unanswered: 0
+- decoy cards: 50 (per chunk {'1': 10, '2': 10, '3': 9, '4': 10, '5': 10}), accepted by the reviewer: 1, unanswered: 0
 - chunks not reviewed: none
-- Opus-found sample errors: pending (pass `finalize --opus-sample-errors N` after the Opus pass)
+- Opus-found sample errors: 1 (pass `finalize --opus-sample-errors N` after the Opus pass)
 - consecutive clean batches before this one: 0 -> sample rate 20%
 
 ## Decoy key errors (decoy = Opus-shipped counterpart)
 
-None.
+- B11a-3-52 0x0040d250 -> 0x0073fd70 (decoy_prev): the decoy is the Opus-shipped counterpart, so the reviewer was right; fix the key
 
 ## Decoys accepted (0 tolerance)
 
 - B11a-2-11 0x004381a0 -> 0x0078bbc0 (decoy_prev)
-- B11a-3-52 0x0040d250 -> 0x0073fd70 (decoy_prev)
 
-## Opus reads 100% (66 rows)
+## Opus reads 100% (67 rows)
 
 - CClientExoApp::Constructor gog 0x0040c3d0 -> 0x0073ef30: match cites a layout/offset difference
-- CClientExoApp::GetFPS gog 0x0040c470 -> 0x0073f410: reviewer corrected_addr
-- CClientExoApp::BeginIntro gog 0x0040c4f0 -> 0x0073f490: reviewer corrected_addr
+- CClientExoApp::GetFPS gog 0x0040c470 -> 0x0073efd0: reviewer corrected_addr
+- CClientExoApp::BeginIntro gog 0x0040c4f0 -> 0x0073f050: reviewer corrected_addr
 - CClientExoApp::CreateModule gog 0x0040c730 -> 0x0073f270: match cites a layout/offset difference
-- CClientExoApp::AddObjectToHitcheckIgnoreList gog 0x0040cd90 -> 0x0073f8d0: reviewer corrected_addr
-- CClientExoApp::RemoveObjectFromHitcheckIgnoreList gog 0x0040cdb0 -> 0x0073f8b0: reviewer corrected_addr
-- CClientExoApp::ContinueMessageProcessing gog 0x0040ce40 -> 0x0073f980: reviewer corrected_addr
-- CClientExoApp::Initialize gog 0x0040ce60 -> 0x0073f9a0: reviewer corrected_addr
-- CClientExoApp::SetCaptureEvents gog 0x0040cf30 -> 0x0073fa70: reviewer corrected_addr
-- CClientExoApp::SetCaptureEventPlayBack gog 0x0040cf50 -> 0x0073fa90: reviewer corrected_addr
-- CClientExoApp::SetCaptureEventPlayBackRate gog 0x0040cf70 -> 0x0073fab0: reviewer corrected_addr
-- CClientExoApp::SetDebugMode gog 0x0040cf90 -> 0x0073fa70: reviewer corrected_addr
-- CClientExoApp::GetSWParty gog 0x0040d070 -> 0x0073fbb0: reviewer corrected_addr
-- CClientExoApp::RestartMoviesIfNecessary gog 0x0040d1c0 -> 0x0073fd00: reviewer corrected_addr
-- CClientExoApp::GetApplicationId gog 0x0040d1e0 -> 0x0073fd70: reviewer corrected_addr
-- CClientExoApp::StopMenuMusic gog 0x0040d250 -> 0x0073fd90: reviewer corrected_addr
-- CClientExoApp::StopLoadMusic gog 0x0040d270 -> 0x0073fd70: reviewer corrected_addr
-- CClientExoApp::AquireLoadMusic gog 0x0040d290 -> 0x0073fdd0: reviewer corrected_addr
-- CClientExoApp::GetPlayerCharacterName gog 0x0040d4c0 -> 0x00740000: reviewer corrected_addr
-- CClientExoApp::BarkString gog 0x0040d720 -> 0x007404d0: reviewer corrected_addr
+- CClientExoApp::AddObjectToHitcheckIgnoreList gog 0x0040cd90 -> 0x0073f8b0: reviewer corrected_addr
+- CClientExoApp::RemoveObjectFromHitcheckIgnoreList gog 0x0040cdb0 -> 0x0073f8d0: reviewer corrected_addr
+- CClientExoApp::ContinueMessageProcessing gog 0x0040ce40 -> 0x0073f960: reviewer corrected_addr
+- CClientExoApp::Initialize gog 0x0040ce60 -> 0x0073f980: reviewer corrected_addr
+- CClientExoApp::SetCaptureEvents gog 0x0040cf30 -> 0x0073fa50: reviewer corrected_addr
+- CClientExoApp::SetCaptureEventPlayBack gog 0x0040cf50 -> 0x0073fa70: reviewer corrected_addr
+- CClientExoApp::SetCaptureEventPlayBackRate gog 0x0040cf70 -> 0x0073fa90: reviewer corrected_addr
+- CClientExoApp::SetDebugMode gog 0x0040cf90 -> 0x0073fab0: reviewer corrected_addr
+- CClientExoApp::GetSWParty gog 0x0040d070 -> 0x0073fb90: reviewer corrected_addr
+- CClientExoApp::RestartMoviesIfNecessary gog 0x0040d1c0 -> 0x0073fce0: reviewer corrected_addr
+- CClientExoApp::GetApplicationId gog 0x0040d1e0 -> 0x0073fd00: reviewer corrected_addr
+- CClientExoApp::StopMenuMusic gog 0x0040d250 -> 0x0073fd70: reviewer corrected_addr
+- CClientExoApp::StopLoadMusic gog 0x0040d270 -> 0x0073fd90: reviewer corrected_addr
+- CClientExoApp::AquireLoadMusic gog 0x0040d290 -> 0x0073fdb0: reviewer corrected_addr
+- CClientExoApp::GetPlayerCharacterName gog 0x0040d4c0 -> 0x0073ffe0: reviewer corrected_addr
+- CClientExoApp::BarkString gog 0x0040d720 -> 0x00740260: reviewer corrected_addr
 - CClientExoApp::RunDeathSequence gog 0x0040d860 -> 0x007403a0: match cites a layout/offset difference
 - CClientExoApp::StartPazaakGame gog 0x0040db90 -> 0x007406d0: match cites a layout/offset difference
-- CClientExoApp::EndPazaakGame gog 0x0040dbc0 -> 0x007404d0: reviewer corrected_addr
+- CClientExoApp::EndPazaakGame gog 0x0040dbc0 -> 0x00740700: reviewer corrected_addr
 - CClientExoAppInternal::GetPlayerMovementInput gog 0x0040df80 -> 0x00740ac0: reviewer corrected_addr
 - CClientExoApp::StartCreditSequence gog 0x0040e4f0 -> 0x00741030: match cites a layout/offset difference
-- CClientExoAppInternal::GetModuleCamera gog 0x0042dd90 -> 0x007819e0: reviewer corrected_addr
+- CClientExoAppInternal::GetModuleCamera gog 0x0042dd90 -> 0x00781810: reviewer corrected_addr
 - CClientExoAppInternal::Initialize gog 0x0042df60 -> 0x007819e0: reviewer corrected_addr
 - CClientExoAppInternal::StallServerCode gog 0x00430300 -> 0x00783d80: label_suspect
 - CClientExoAppInternal::GetPauseState gog 0x00430a40 -> 0x00784420: reviewer corrected_addr
@@ -52,7 +51,7 @@ None.
 - CClientExoAppInternal::CreateWorldJournal gog 0x00431850 -> 0x00785230: match cites a layout/offset difference
 - CClientExoAppInternal::DestroyWorldJournal gog 0x004318e0 -> 0x007852c0: match cites a layout/offset difference
 - CClientExoAppInternal::LoadItemDropSoundList gog 0x00436970 -> 0x0078a420: reviewer corrected_addr
-- CClientExoAppInternal::ShutDownMoviePlayer gog 0x004381a0 -> 0x0078bcc0: reviewer corrected_addr, label_suspect
+- CClientExoAppInternal::ShutDownMoviePlayer gog 0x004381a0 -> 0x0078bbc0: reviewer corrected_addr, label_suspect
 - CClientExoAppInternal::CleanUpModuleServices gog 0x00438230 -> 0x0078bc50: reviewer corrected_addr
 - CClientExoAppInternal::GetPlayerByPlayerID gog 0x004382a0 -> 0x0078bcc0: reviewer corrected_addr
 - CClientExoAppInternal::GetItemByGameObjectID gog 0x00438360 -> 0x0078bd80: reviewer corrected_addr
@@ -65,8 +64,8 @@ None.
 - CClientExoAppInternal::GetAreaOfEffectByGameObjectID gog 0x00438670 -> 0x0078c090: reviewer corrected_addr
 - CClientExoAppInternal::GetSoundObjectByGameObjectID gog 0x004386e0 -> 0x0078c100: reviewer corrected_addr
 - CClientExoAppInternal::AttachPlayerGameObjectToArea gog 0x00438750 -> 0x0078c170: reviewer corrected_addr
-- CClientExoAppInternal::ResetDriveAcceleration gog 0x004388e0 -> 0x0078bc50: reviewer corrected_addr
-- CClientExoAppInternal::InitializeInGameGUI gog 0x00438910 -> 0x0078bc50: reviewer corrected_addr
+- CClientExoAppInternal::ResetDriveAcceleration gog 0x004388e0 -> 0x0078c300: reviewer corrected_addr
+- CClientExoAppInternal::InitializeInGameGUI gog 0x00438910 -> 0x0078c330: reviewer corrected_addr
 - CClientExoAppInternal::UpdateCamera gog 0x00438930 -> 0x0078c350: reviewer corrected_addr
 - CClientExoAppInternal::GetPlayerCreature gog 0x004394c0 -> 0x0078cee0: reviewer corrected_addr
 - CClientExoAppInternal::ContinueMessageProcessing gog 0x00439570 -> 0x0078cfa0: reviewer corrected_addr
@@ -80,24 +79,26 @@ None.
 - CClientExoAppInternal::StopLoadMusic gog 0x0043b020 -> 0x0078ea50: reviewer corrected_addr
 - CClientExoAppInternal::GetObjectName gog 0x0043b150 -> 0x0078eba0: reviewer corrected_addr
 - CClientExoAppInternal::IndicateObject gog 0x00444b60 -> 0x00798540: label_suspect
+- CClientExoAppInternal::StopMovie gog 0x004452f0 -> 0x00798cd0: label_suspect
 - CClientExoAppInternal::SetAutoPaused gog 0x0044aa20 -> 0x0079e420: reviewer corrected_addr
 - CClientExoAppInternal::ChangeCharacterToNextLivingPartyMember gog 0x0044bd70 -> 0x0079f770: reviewer corrected_addr
-- CClientExoAppInternal::GetPausedByCombat gog 0x0044deb0 -> 0x007a1b90: reviewer corrected_addr, label_suspect
-- CClientExoAppInternal::InitializeMoviePlayer_2 gog 0x0044ded0 -> 0x007a1130: reviewer corrected_addr, label_suspect
+- CClientExoAppInternal::GetPausedByCombat gog 0x0044deb0 -> 0x005936d0: reviewer corrected_addr, label_suspect
+- CClientExoAppInternal::InitializeMoviePlayer_2 gog 0x0044ded0 -> 0x007a17a0: reviewer corrected_addr, label_suspect
 
-## Sample of the other reviewer matches (174 of 174)
+## Sample of the other reviewer matches (173 of 173)
 
 - CClientExoApp::InitializeInGameGUI gog 0x0040cd50 -> 0x0073f870 (C0)
 - CClientExoApp::MovieWindowActivated gog 0x0040e730 -> 0x00741270 (C0)
-- CClientExoAppInternal::PerformRButtonDownAction gog 0x00460420 -> 0x007b3810 (C0)
+- CClientExoAppInternal::PerformRButtonUpAction gog 0x00460440 -> 0x007b3830 (C0)
+- CClientExoAppInternal::MovieWindowDeactivated gog 0x0044d6f0 -> 0x007a10f0 (C0)
 - CClientExoApp::ClearCachedCreatures gog 0x0040df10 -> 0x00740a50 (C0)
 - CClientExoApp::SendLoadGameRequest gog 0x0040cbe0 -> 0x0073f720 (C0)
-- CClientExoAppInternal::HurryDeathSequence gog 0x004489b0 -> 0x0079c3b0 (C0)
+- CClientExoAppInternal::SetLoadScreenHint gog 0x00449540 -> 0x0079cf40 (C0)
 - CClientExoApp::HideMouse gog 0x0040e440 -> 0x00740f80 (C0)
 - CClientExoApp::GetLoadMusicByModuleName gog 0x0040da20 -> 0x00740560 (C0)
 - CClientExoApp::AddObjectModelDirectlyToIgnoreList gog 0x0040d200 -> 0x0073fd20 (C0)
 - CClientExoAppInternal::JournalUpdated gog 0x00431950 -> 0x00785330 (C0)
-- CClientExoAppInternal::SetLoadScreenHint gog 0x00449540 -> 0x0079cf40 (C0)
+- CClientExoAppInternal::SaveOptions gog 0x0044bcc0 -> 0x0079f6c0 (C0)
 - CClientExoApp::CancelMovie gog 0x0040e420 -> 0x00740f60 (C0)
 - CClientExoApp::IsPlayerCreature gog 0x0040d360 -> 0x0073fe80 (C0)
 - CClientExoApp::UpdateRoom gog 0x0040db70 -> 0x007406b0 (C0)
@@ -126,17 +127,14 @@ None.
 - CClientExoApp::SetCombatMode gog 0x0040dd40 -> 0x00740880 (C0)
 - CClientExoApp::JournalUpdated gog 0x0040c570 -> 0x0073f0b0 (C0)
 - CClientExoApp::GetPauseState gog 0x0040cb40 -> 0x0073f680 (C0)
-- CClientExoAppInternal::MovieWindowDeactivated gog 0x0044d6f0 -> 0x007a10f0 (C0)
-- CClientExoAppInternal::EnableMouseAtEndOfLoadModuleMovie gog 0x0044d940 -> 0x007a1340 (C0)
+- CClientExoAppInternal::MovieWindowActivated gog 0x0044d710 -> 0x007a1110 (C0)
 - CClientExoApp::ExitProgram gog 0x0040c750 -> 0x0073f290 (C0)
 - CClientExoApp::GetProjectileByGameObjectID gog 0x0040ca70 -> 0x0073f5b0 (C0)
 - CClientExoApp::LookUpAndPerformRumbleWithCutOff gog 0x0040df30 -> 0x00740a70 (C0)
 - CClientExoApp::GetAreaOfEffectByGameObjectID gog 0x0040cad0 -> 0x0073f610 (C0)
 - CClientExoApp::LoadOptions gog 0x0040e020 -> 0x00740b60 (C0)
-- CClientExoAppInternal::PerformZMouseMoveAction gog 0x00460460 -> 0x007b3850 (C0)
-- CClientExoAppInternal::SaveOptions gog 0x0044bcc0 -> 0x0079f6c0 (C0)
 - CClientExoApp::GetActivePauseState gog 0x0040d2e0 -> 0x0073fe00 (C0)
-- CClientExoAppInternal::PerformRButtonUpAction gog 0x00460440 -> 0x007b3830 (C0)
+- CClientExoAppInternal::PerformZMouseMoveAction gog 0x00460460 -> 0x007b3850 (C0)
 - CClientExoApp::GetPlayerList gog 0x0040cc70 -> 0x0073f7b0 (C0)
 - CClientExoApp::DismissInGameGUI gog 0x0040d7d0 -> 0x00740310 (C0)
 - CClientExoApp::StopCreditSequence gog 0x0040e510 -> 0x00741050 (C0)
@@ -144,11 +142,11 @@ None.
 - CClientExoApp::BusyWaitMenuMusic gog 0x0040e3a0 -> 0x00740ee0 (C0)
 - CClientExoApp::UnloadModule gog 0x0040c710 -> 0x0073f250 (C0)
 - CClientExoApp::TurnOffKeyboardModal gog 0x0040d340 -> 0x0073fe60 (C0)
-- CClientExoAppInternal::MovieWindowActivated gog 0x0044d710 -> 0x007a1110 (C0)
 - CClientExoApp::GetCanSendDialog gog 0x0040d900 -> 0x00740440 (C0)
 - CClientExoApp::GetPlayerByGameObjectID gog 0x0040c9d0 -> 0x0073f510 (C0)
 - CClientExoApp::GetDisplayCharacterForKey gog 0x0040e7c0 -> 0x00741300 (C0)
 - CClientExoApp::TogglePartyFollow gog 0x0040dd00 -> 0x00740840 (C0)
+- CClientExoAppInternal::PerformRButtonDownAction gog 0x00460420 -> 0x007b3810 (C0)
 - CClientExoApp::ServerModeChange gog 0x0040cd70 -> 0x0073f890 (C0)
 - CClientExoApp::GetDoorByGameObjectID gog 0x0040cab0 -> 0x0073f5f0 (C0)
 - CClientExoApp::IsSoundPlayingInDialog gog 0x0040d750 -> 0x00740290 (C0)
@@ -159,6 +157,7 @@ None.
 - CClientExoApp::SetPlayerCreature gog 0x0040cdf0 -> 0x0073f910 (C0)
 - CClientExoApp::PlayerFlourishWeapons gog 0x0040dd60 -> 0x007408a0 (C0)
 - CClientExoApp::GetAutoPaused gog 0x0040de20 -> 0x00740960 (C0)
+- CClientExoAppInternal::EnableMouseAtEndOfLoadModuleMovie gog 0x0044d940 -> 0x007a1340 (C0)
 - CClientExoApp::ShowMouse gog 0x0040e460 -> 0x00740fa0 (C0)
 - CClientExoApp::GetMoveToModuleMovies gog 0x0040d660 -> 0x007401a0 (C0)
 - CClientExoApp::HandleInputEvent gog 0x0040d460 -> 0x0073ff80 (C0)
@@ -170,14 +169,13 @@ None.
 - CClientExoAppInternal::SetDebugMode gog 0x00439c50 -> 0x0078d680 (C0)
 - CClientExoApp::IndicateObject gog 0x0040d6b0 -> 0x007401f0 (C0)
 - CClientExoApp::SetPlayerCharacterName gog 0x0040d4a0 -> 0x0073ffc0 (C0)
+- CClientExoAppInternal::HurryDeathSequence gog 0x004489b0 -> 0x0079c3b0 (C0)
 - CClientExoApp::StopServices gog 0x0040d000 -> 0x0073fb20 (C0)
 - CClientExoApp::SetTexturePack gog 0x0040d0d0 -> 0x0073fbf0 (C0)
-- CClientExoAppInternal::GetDefaultActions gog 0x00460d20 -> 0x007b40f0 (C2)
 - CClientExoAppInternal::ShutDownToMainMenu gog 0x0043a6c0 -> 0x0078e0f0 (C2)
-- CClientExoAppInternal::StopCreditSequence gog 0x0044d8c0 -> 0x007a12c0 (C1)
+- CClientExoAppInternal::PlayCharacterSelectSound gog 0x0044d8e0 -> 0x007a12e0 (C1)
 - CClientExoAppInternal::ReadVideoModeSettings gog 0x00436cf0 -> 0x0078a7a0 (C2)
 - CClientExoApp::GetAreaByGameObjectID gog 0x0040ca30 -> 0x0073f570 (C1)
-- CClientExoAppInternal::PlayMovieQueue gog 0x0044d550 -> 0x007a0f50 (C1)
 - CClientExoApp::MainLoop gog 0x0040cea0 -> 0x0073f9c0 (C1)
 - CClientExoAppInternal::AddSimpleObjectModelDirectlyToIgnoreList gog 0x0043ab70 -> 0x0078e5a0 (C1)
 - CClientExoApp::ChangeCharacter gog 0x0040d840 -> 0x00740380 (C1)
@@ -188,7 +186,7 @@ None.
 - CClientExoAppInternal::AddItemModelDirectlyToIgnoreList gog 0x0043aaf0 -> 0x0078e520 (C1)
 - CClientExoApp::Destructor gog 0x0040c490 -> 0x0073eff0 (C1)
 - CClientExoAppInternal::GetActivePauseState gog 0x00430a60 -> 0x00784440 (C1)
-- CClientExoAppInternal::HandleMouseOver gog 0x00460630 -> 0x007b3a00 (C2)
+- CClientExoAppInternal::GetDefaultActions gog 0x00460d20 -> 0x007b40f0 (C2)
 - CClientExoAppInternal::AddFeedbackMessage gog 0x0043b710 -> 0x0078f160 (C2)
 - CClientExoApp::StopSoundPlayingInDialog gog 0x0040d770 -> 0x007402b0 (C1)
 - CClientExoApp::GetModuleCamera gog 0x0040c950 -> 0x0073f490 (C1)
@@ -204,12 +202,13 @@ None.
 - CClientExoApp::SetLoadScreenByModuleName gog 0x0040da00 -> 0x00740540 (C1)
 - CClientExoAppInternal::InitializeMoviePlayer gog 0x00445250 -> 0x00798c30 (C1)
 - CClientExoApp::SetLoadScreenHint gog 0x0040de40 -> 0x00740980 (C1)
-- CClientExoAppInternal::GetDisplayCharacterForKey gog 0x0044d980 -> 0x007a1380 (C1)
+- CClientExoAppInternal::ProcessInput gog 0x00459080 -> 0x007ac470 (C2)
 - CClientExoApp::HideLoadScreen gog 0x0040d430 -> 0x0073ff50 (C1)
 - CClientExoApp::EnableVideoEffect gog 0x0040de60 -> 0x007409a0 (C1)
 - CClientExoApp::GetInGameGui gog 0x0040cc10 -> 0x0073f750 (C2)
+- CClientExoAppInternal::GetDisplayCharacterForKey gog 0x0044d980 -> 0x007a1380 (C1)
 - CClientExoApp::GetPausedByCombat gog 0x0040d7f0 -> 0x00740330 (C1)
-- CClientExoAppInternal::DisableInput gog 0x0045ff80 -> 0x007b3370 (C1)
+- CClientExoAppInternal::EnableInput gog 0x0045ffa0 -> 0x007b3390 (C1)
 - CClientExoAppInternal::AddCreatureModelDirectlyToIgnoreList_2 gog 0x0043a920 -> 0x0078e350 (C1)
 - CClientExoApp::GetMGOArray gog 0x0040d550 -> 0x00740070 (C1)
 - CClientExoApp::GetHitCheckMaterialMask gog 0x0040d090 -> 0x0073fbb0 (C2)
@@ -217,8 +216,10 @@ None.
 - CClientExoApp::AttachPlayerGameObjectToArea gog 0x0040cd30 -> 0x0073f850 (C1)
 - CClientExoApp::GetConnectionLib gog 0x0040c8d0 -> 0x0073f410 (C1)
 - CClientExoApp::GetCreatureByGameObjectID gog 0x0040ca10 -> 0x0073f550 (C1)
+- CClientExoAppInternal::SetMouseCursor gog 0x00460480 -> 0x007b3870 (C1)
+- CClientExoAppInternal::CancelMovie gog 0x0044cb00 -> 0x007a0500 (C1)
 - CClientExoApp::DelayNextEnemyAutoPause gog 0x0040dec0 -> 0x00740a00 (C1)
-- CClientExoAppInternal::ProcessInput gog 0x00459080 -> 0x007ac470 (C2)
+- CClientExoAppInternal::DisableInput gog 0x0045ff80 -> 0x007b3370 (C1)
 - CClientExoApp::DisableVideoEffect gog 0x0040de80 -> 0x007409c0 (C1)
 - CClientExoApp::GetSoundObjectByGameObjectID gog 0x0040caf0 -> 0x0073f630 (C1)
 - CClientExoApp::GetClientOptions gog 0x0040ccf0 -> 0x0072fb00 (C1)
@@ -228,11 +229,11 @@ None.
 - CClientExoApp::GetItemByGameObjectID gog 0x0040c9f0 -> 0x0073f530 (C1)
 - CClientExoApp::GetPlayerCharacterSet gog 0x0040d4e0 -> 0x00740000 (C1)
 - CClientExoApp::SetInputActive gog 0x0040d320 -> 0x0073fe40 (C1)
+- CClientExoAppInternal::StopCreditSequence gog 0x0044d8c0 -> 0x007a12c0 (C1)
 - CClientExoApp::AddMoveToModuleMovie gog 0x0040d640 -> 0x00740180 (C1)
 - CClientExoApp::DisableInput gog 0x0040d790 -> 0x007402d0 (C1)
 - CClientExoAppInternal::SetHitcheckIgnoreList gog 0x00439850 -> 0x0078d280 (C1)
 - CClientExoAppInternal::DismissInGameGUI gog 0x0045ffc0 -> 0x007b33b0 (C1)
-- CClientExoAppInternal::EnableInput gog 0x0045ffa0 -> 0x007b3390 (C1)
 - CClientExoApp::PlayMovieQueue gog 0x0040e6f0 -> 0x00741230 (C1)
 - CClientExoApp::PlayRumblePattern gog 0x0040dcc0 -> 0x00740800 (C1)
 - CClientExoApp::IsClientInitialized gog 0x0040ce80 -> 0x0073f9a0 (C1)
@@ -245,7 +246,6 @@ None.
 - CClientExoAppInternal::AddObjectModelDirectlyToIgnoreList gog 0x0043a890 -> 0x0078e2c0 (C1)
 - CClientExoApp::FadeAndStopStreamingSoundSource gog 0x0040e4d0 -> 0x00741010 (C1)
 - CClientExoAppInternal::ServerToClientObjectId gog 0x00444780 -> 0x00798160 (C1)
-- CClientExoAppInternal::PlayCharacterSelectSound gog 0x0044d8e0 -> 0x007a12e0 (C1)
 - CClientExoApp::GetPlayerCreature gog 0x0040c910 -> 0x0073f450 (C1)
 - CClientExoApp::GetModule gog 0x0040c8f0 -> 0x0073f430 (C1)
 - CClientExoApp::ChangeCharacterToNextLivingPartyMember gog 0x0040e040 -> 0x00740b80 (C1)
@@ -253,11 +253,10 @@ None.
 - CClientExoApp::ShowLoadScreen gog 0x0040d400 -> 0x0073ff20 (C1)
 - CClientExoAppInternal::ExitProgram gog 0x00431980 -> 0x00785360 (C1)
 - CClientExoAppInternal::ClearCachedCreatures gog 0x00439530 -> 0x0078cf50 (C1)
-- CClientExoAppInternal::CancelMovie gog 0x0044cb00 -> 0x007a0500 (C1)
-- CClientExoAppInternal::SetMouseCursor gog 0x00460480 -> 0x007b3870 (C1)
+- CClientExoAppInternal::PlayMovieQueue gog 0x0044d550 -> 0x007a0f50 (C1)
+- CClientExoAppInternal::HandleMouseOver gog 0x00460630 -> 0x007b3a00 (C2)
 - CClientExoAppInternal::SendLoadGameRequest gog 0x00431c80 -> 0x00785660 (C1)
 - CClientExoApp::AddFloatyText gog 0x0040dd80 -> 0x007408c0 (C1)
-- CClientExoAppInternal::StopMovie gog 0x004452f0 -> 0x00798cd0 (C1)
 - CClientExoAppInternal::StopServices gog 0x00437190 -> 0x0078ac40 (C2)
 - CClientExoApp::GetPlaceableByGameObjectID gog 0x0040ca90 -> 0x0073f5d0 (C1)
 - CClientExoApp::StopRumblePattern gog 0x0040dce0 -> 0x00740820 (C1)
@@ -266,9 +265,9 @@ None.
 
 - sig: CClientExoApp::GetClientName gog 0x0040c7d0 -> 0x0073f310
 - sig: CClientExoApp::GetCaptureEvents gog 0x0040c790 -> 0x0073f2d0
-- sig: CClientExoApp::SetFutureLeader gog 0x0040dc30 -> 0x00740770
-- sig: CClientExoAppInternal::DestroyQuestJournal gog 0x004316e0 -> 0x007850c0
-- sig: CClientExoAppInternal::PlayMoviesInExoArrayList gog 0x0044d5b0 -> 0x007a0fb0
+- sig: CClientExoAppInternal::CrownFutureLeader gog 0x0044b360 -> 0x0079ed60
+- sig: CClientExoApp::GetGameOver gog 0x0040d8a0 -> 0x007403e0
+- sig: CClientExoAppInternal::SetToolTipInstantMode gog 0x0044cd50 -> 0x007a0750
 - c2: CClientExoApp::GetWorldTimer gog 0x0040c870 -> 0x0073f3b0
 - c2: CClientExoAppInternal::SetCaptureEvents gog 0x00431ef0 -> 0x007858d0
 - c2: CClientExoApp::GetPlayerCreatureId gog 0x0040c930 -> 0x0073f470

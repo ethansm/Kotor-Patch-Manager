@@ -1,0 +1,266 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040c3d0	0x0073ef30	verified	[a] 0073ef8a CALL 0x00780460 sz3132 = GOG Internal ctor 0x42c9e0 sz3132; imm 0x4dc alloc identical. Pipeline addr kept.
+0x0040c470	0x0073efd0	likely	[a] CORRECTION from 0x73f410 (= GetConnectionLib, disp 0x34). 0x73efd0 sz17 no disp = GOG sz17; 0073efd7 FLD float ptr [0x00a10724]; slot before dtor as on GOG. Thin anchor.
+0x0040c490	0x0073eff0	verified	[c] 0073f01a CALL 0x7810a0 (sz767 = GOG internal dtor 0x42d620) + free; sz88 = GOG; caller sz346 matches
+0x0040c4f0	0x0073f050	verified	[a] CORRECTION from 0x73f490 (GetModuleCamera fwd). 0073f05d CALL 0x007813a0 sz481 imm 0x7d0, disps 0x1fc/0x274/0x27c = GOG Internal::BeginIntro 0x42d920.
+0x0040c570	0x0073f0b0	verified	[b] fwd 0073f0c9 CALL 0x00785330; callee = GOG 0x431950 Int::JournalUpdated (sz 45, deep2 unique, callers match)
+0x0040c5a0	0x0073f0e0	verified	[b] fwd 0073f0f5 CALL 0x0078eba0 (=Internal::GetObjectName sz1424 ret8, verified row 61); sz32 ret8 = GOG
+0x0040c5c0	0x0073f100	verified	[c] 0073f160 CALL 0x78f160 (Internal AddFeedbackMessage) + CExoString ctor/dtor/== callees; sz159 ret12 = GOG; fp diff only from truncated callee fp
+0x0040c6c0	0x0073f200	verified	[b] fwd 0073f219 CALL 0x0078e040; callee = GOG 0x43a610 Int::SetCharacterFile (sz 166, deep2 unique, callers match)
+0x0040c6f0	0x0073f230	verified	[b] fwd 0073f241 CALL 0x00781590; callee = GOG 0x42db10 Int::DisplayMainMenu (sz 629, deep2 unique, callers match)
+0x0040c710	0x0073f250	verified	[c] 0073f25d CALL 0x785410 = GOG Internal::UnloadModule 0x431a30 (sz520, disp 0x248..0x3a0 identical); callers sz329/2611 (LoadGame) match
+0x0040c730	0x0073f270	verified	[a] 0073f27d CALL 0x00785380 sz132 imm 0x13c disp 0x18 = GOG Internal::CreateModule 0x4319a0. Pipeline addr kept.
+0x0040c750	0x0073f290	verified	[b] fwd 0073f29d CALL 0x00785360; callee = GOG 0x431980 Int::ExitProgram (sz 19, deep2 unique, callers match)
+0x0040c790	0x0073f2d0	verified	[e] 0073f2df MOV EDX,[ECX+0x8c] = Mac GetCaptureEvents disp 0x8c; Internal::SetCaptureEvents 0x7858d0 writes +0x8c (00785902); fp identical, unique
+0x0040c7d0	0x0073f310	verified	[e] 0073f326 ADD ECX,0x140 (Internal+0x140 CExoString, Mac GetClientName imm 0x140); 0073f336 CALL 0x007335f0 CExoString copy-ctor; RET 4; fp identical
+0x0040c830	0x0073f370	verified	[c] 0073f37f MOV EDX,[ECX+0xdc] = GOG disp {0x4,0xdc} sz31; neighbour uses 0xe0; callers sz533/4787 match
+0x0040c870	0x0073f3b0	verified	[e] 0073f3bf MOV EDX,[ECX+0x24] = Mac GetWorldTimer disp 0x24; called by Internal::HandleMessage 0x781840 like GOG; fp identical
+0x0040c8d0	0x0073f410	likely	[d] 0073f41f MOV EDX,[ECX+0x34] via [this+4] (GOG disp 0x4,0x34; Mac 0x34); shape unique in both exes, but getter with no callers in either exe.
+0x0040c8f0	0x0073f430	verified	[d] 0073f43d CALL 0x00726f80 (17 B, [+0x18] getter fp eq GOG 0x4f0520, ICF-folded, GOG label GetPlayerWalking); 111/112 callers size-match incl. GetMiniGame fwd.
+0x0040c910	0x0073f450	verified	[d] 0073f45d CALL 0x0078cee0 = Internal::GetPlayerCreature (101 B fp eq GOG 0x4394c0, disp 0x3bc/0x3c0); 57/57 callers size-match.
+0x0040c930	0x0073f470	verified	[e] 0073f47f MOV EDX,[ECX+0x20] = Mac GetPlayerCreatureId disp 0x20 (WorldTimer is +0x24, distinct); fp identical, unique
+0x0040c950	0x0073f490	verified	[c] CALL 0x781810: 0078182d MOV ECX,[EAX+0x40] = GOG 0x42dd90 sz46 disp 0x40; 8+ callers match. Internal::GetModuleCamera is 0x781810 (not 0x7819e0)
+0x0040c9d0	0x0073f510	verified	[c] callee 0x78bd20: 0078bd4e MOV ECX,[EAX+0x28] = GOG 0x438300 disp 0x28 (sz93); only matching fwd of 20 by-id getters; callers match
+0x0040c9f0	0x0073f530	verified	[d] 0073f541 CALL 0x0078bd80 = Internal::GetItemByGameObjectID (fp eq GOG 0x438360 incl. vtable disp); 54/54 callers size-match.
+0x0040ca10	0x0073f550	verified	[d] 0073f561 CALL 0x0078bdf0 = Internal::GetCreatureByGameObjectID (102 B, 0078be47 MOV EAX,[EDX+0x2c] = GOG disp 0x2c); 71/73 callers size-match.
+0x0040ca30	0x0073f570	verified	[c] callee 0x78be60: 0078beb7 MOV EAX,[EDX+0x24] = GOG 0x438440 disp 0x24; only full fwd match among by-id getters; caller sz118 matches
+0x0040ca50	0x0073f590	verified	[b] fwd 0073f5a1 CALL 0x0078bed0; callee 0078bf27 MOV EAX,[EDX+0x3c] = GOG 0x4384b0 disp 0x3c (Trigger slot)
+0x0040ca70	0x0073f5b0	verified	[b] fwd 0073f5c1 CALL 0x0078bf40; callee 0078bf97 MOV EAX,[EDX+0x44] = GOG 0x438520 disp 0x44 (Projectile slot)
+0x0040ca90	0x0073f5d0	verified	[d] 0073f5e1 CALL 0x0078bfb0 = Internal::GetPlaceableByGameObjectID (fp eq GOG 0x438590 incl. vtable disp); callers AddPlaceableObjectStatic/AddCorpse size-match.
+0x0040cab0	0x0073f5f0	verified	[c] callee 0x78c020: 0078c033 MOV ECX,[EAX+0x14] = GOG 0x438600 disp {0x8,0x14,0x14} sz102; only full fwd match among by-id getters
+0x0040cad0	0x0073f610	verified	[b] fwd 0073f621 CALL 0x0078c090; callee 0078c0e7 MOV EAX,[EDX+0x54] = GOG 0x438670 disp 0x54 (AoE slot)
+0x0040caf0	0x0073f630	verified	[d] 0073f641 CALL 0x0078c100 = Internal::GetSoundObjectByGameObjectID (fp eq GOG 0x4386e0 incl. vtable disp); 6/6 callers size-match (UnloadArea 1972).
+0x0040cb40	0x0073f680	verified	[b] fwd 0073f692 CALL 0x00784420; callee = GOG 0x430a40 Int::GetPauseState (sz 29, deep2 unique, callers match)
+0x0040cb60	0x0073f6a0	verified	[b] fwd 0073f6ba CALL 0x00784740; callee = GOG 0x430d60 Int::SetPauseState (sz 2280, deep2 unique, callers match)
+0x0040cb90	0x0073f6d0	verified	[b] fwd 0073f6e1 CALL 0x00784480; callee = GOG 0x430aa0 Int::GetActiveTimer (sz 180, deep2 unique, callers match)
+0x0040cbb0	0x0073f6f0	verified	[c] CALL 0x785620 -> 0x87a430: 0087a494 PUSH 0x4 = GOG SaveGame 0x505d10 imm 0x4; Load twin 0x87a4b0 PUSH 0x5 = GOG 0x505d90 imm 0x5
+0x0040cbe0	0x0073f720	verified	[b] fwd 0073f739 CALL 0x00785660; callee = GOG 0x431c80 Int::SendLoadGameRequest (sz 57, deep2 unique, callers match)
+0x0040cc10	0x0073f750	verified	[d] 0073f75f MOV EDX,[ECX+0x40] via [this+4] (GOG disp 0x4,0x40; Mac 0x40); shape unique in both exes; 354/361 callers size-match.
+0x0040cc70	0x0073f7b0	likely	[b] getter: 0073f7ba MOV EAX,[EAX+0x4]; 0073f7bd ADD EAX,0x1c = GOG disp 0x4 imm 0x1c; sz20 unique, callers match; thin stub
+0x0040cc90	0x0073f7d0	verified	[b] fwd 0073f7e1 CALL 0x0078bcc0; callee = GOG 0x4382a0 Int::GetPlayerByPlayerID (sz 93, deep2 unique, callers match)
+0x0040ccf0	0x0072fb00	verified	[d] 0072fb0c MOV ECX,[EAX+4]; 0072fb0f MOV EDX,[ECX+4] (GOG/Mac disp 0x4,0x4, unique shape); Internal::AddFloatyText calls it in both; 166/168 callers. Sits out of block, in CExoInput fwds.
+0x0040cd10	0x0073f830	verified	[c] 0073f83f MOV EDX,[ECX+0x8] = GOG disp {0x4,0x8} sz28 ret0; only such getter in +-0x600; caller sz2929 matches
+0x0040cd30	0x0073f850	verified	[d] 0073f85d CALL 0x0078c170 = Internal::AttachPlayerGameObjectToArea (385 B fp eq GOG 0x438750, disp 0x328/0x32c/0x330); 3/3 callers size-match.
+0x0040cd50	0x0073f870	verified	[b] fwd 0073f87d CALL 0x0078c330; callee = GOG 0x438910 Int::InitializeInGameGUI (sz 22, deep2 unique, callers match); both -> sz5472
+0x0040cd70	0x0073f890	verified	[c] callee 0x7856a0: 007856af MOV word [ECX+0x14c],AX = GOG 0x431cc0 disp 0x14c sz28; caller sz593 matches
+0x0040cd90	0x0073f8b0	verified	[a] CORRECTION from 0x73f8d0 (Remove). 0073f8c1 CALL 0x0078d100 sz141 (0078d15c CALL 0x919723 alloc) = GOG Add 0x4396d0 sz141; Remove callee is sz132 with free.
+0x0040cdb0	0x0073f8d0	verified	[a] CORRECTION from 0x73f8b0 (Add). 0073f8e1 CALL 0x0078d190 sz132 (0078d1ed CALL 0x9196fd free) = GOG Remove 0x439760 sz132.
+0x0040cdd0	0x0073f8f0	verified	[b] fwd 0073f8fd CALL 0x0078d220; callee = GOG 0x4397f0 Int::EmptyHitcheckIgnoreList (sz 91, deep2 unique, callers match)
+0x0040cdf0	0x0073f910	verified	[c] callee 0x798660: 00798673 CMP [EDX+0x270],0 = GOG 0x444c80 disp 0x20/0x270 sz55; callers sz589/883/6709 match
+0x0040ce10	0x0073f930	verified	[b] fwd 0073f94d CALL 0x00781840; callee = GOG 0x42ddc0 Int::HandleMessage (sz 407, deep2 unique, callers match)
+0x0040ce40	0x0073f960	likely	[a] CORRECTION from 0x73f980 (Initialize fwd). 0073f96d CALL 0x0078cf90 sz16 (0078cf97 MOV EAX,1) = GOG callee 0x61aac0 sz16 return-1 stub; generic callee, positional.
+0x0040ce60	0x0073f980	verified	[a] CORRECTION from 0x73f9a0 (IsClientInitialized getter). 0073f98d CALL 0x007819e0 sz511 imm 0x6f8/0x154 = GOG Internal::Initialize 0x42df60.
+0x0040ce80	0x0073f9a0	verified	[d] 0073f9af MOV EDX,[ECX+0x204] via [this+4] (GOG disp 0x4,0x204; Mac 0x204); unique shape; sole caller ReInitAurora 0x409750 (1711 B = GOG 0x409260).
+0x0040cea0	0x0073f9c0	verified	[c] CALL 0x781be0 sz8599 = GOG 0x42e160 MainLoop; unique fwd; caller 3581->3611 (WinMain-level layout growth)
+0x0040cf10	0x0073fa30	verified	[b] fwd 0073fa3d CALL 0x007856c0; callee = GOG 0x431ce0 Int::Uninitialize (sz 522, deep2 unique, callers match)
+0x0040cf30	0x0073fa50	verified	[a] CORRECTION from 0x73fa70. 0073fa61 CALL 0x007858d0 sz635 imm 0x3e8/0xfff disps 0x88-0x90 = GOG Internal::SetCaptureEvents 0x431ef0.
+0x0040cf50	0x0073fa70	verified	[a] CORRECTION from 0x73fa90. 0073fa81 CALL 0x00785b50 sz586 imm 0x98/0x40 disp 0x94 = GOG Internal::SetCaptureEventPlayBack 0x432170.
+0x0040cf70	0x0073fa90	verified	[a] CORRECTION from 0x73fab0. 0073faa1 CALL 0x00785da0 sz66 disp 0x94 x2 = GOG Internal::SetCaptureEventPlayBackRate 0x4323c0 sz66.
+0x0040cf90	0x0073fab0	verified	[a] CORRECTION from 0x73fa70. 0073fac1 CALL 0x0078d680 sz25 disp 0x194 = GOG Internal::SetDebugMode 0x439c50 sz25. Ghidra SetCompletionList label is FID noise.
+0x0040cfb0	0x0073fad0	verified	[b] fwd 0073faf1 CALL 0x00788d90 (StartServices ret20, 65 callees = GOG 0x4353b0; Steam +208 B growth); fwd sz44 ret20; caller WinMain
+0x0040cfe0	0x0073fb00	verified	[b] fwd 0073fb0d CALL 0x00785df0; callee = GOG 0x432410 Int::SetEventDescriptions (sz 12175, deep2 unique, callers match)
+0x0040d000	0x0073fb20	verified	[c] CALL 0x78ac40 = GOG 0x437190 shape; callee has 'HD0:MOVIES' (0078b66e) and 'SERVERVAULT:'; caller 3581->3611 (layout growth)
+0x0040d020	0x0073fb40	verified	[c] CALL 0x78e0f0 = GOG 0x43a6c0 (sz339; 0078e190 CALL 0x7a5fa0 UnloadArea, CALL 0x785410 UnloadModule); unique fwd
+0x0040d070	0x0073fb90	verified	[a] CORRECTION from 0x73fbb0 (GetHitCheckMaterialMask, +0xa4). 0073fb9f MOV EDX,[ECX+0x270] = GOG disp 0x270, sz31; 4 mapped GOG callers call 0x73fb90.
+0x0040d090	0x0073fbb0	verified	[d] 0073fbbf MOV EDX,[ECX+0xa4] via [this+4] (GOG disp 0x4,0xa4; Mac 0xa4); 3/3 callers size-match (SetPosition x2, SetInstanceRandomPosition).
+0x0040d0b0	0x0073fbd0	verified	[b] fwd 0073fbe3 CALL 0x0078dbf0; callee = GOG 0x43a1c0 Int::SetVideoMode (sz 839, deep2 unique, callers match)
+0x0040d0d0	0x0073fbf0	verified	[c] CALL 0x78d6a0: 0078d7f3 PUSH 'texpacks'; = GOG 0x439c70 shape; byte arg RET 4; caller sz52 matches
+0x0040d1a0	0x0073fcc0	verified	[c] 0073fccf MOV EDX,[ECX+0x1f8] = GOG disp {0x4,0x1f8} sz31; caller sz735 matches
+0x0040d1c0	0x0073fce0	verified	[a] CORRECTION from 0x73fd00 (GetApplicationId). 0073fced CALL 0x0078e250 sz109 disp 0x130 x4 = GOG Internal::RestartMoviesIfNecessary 0x43a820.
+0x0040d1e0	0x0073fd00	likely	[a] CORRECTION from 0x73fd70 (StopMenuMusic fwd). sz27 = GOG sz27; 0073fd0e MOV ECX,[EAX+0x18] off a global = GOG disp 0x18 imm 8. Getter, thin.
+0x0040d200	0x0073fd20	verified	[b] fwd 0073fd35 CALL 0x0078e2c0; callee = GOG 0x43a890 Int::AddObjectModelDirectlyToIgnoreList (sz 137, deep2 unique, callers match)
+0x0040d220	0x0073fd40	verified	[b] fwd 0073fd59 CALL 0x0078e620; callee = GOG 0x43abf0 Int::StartMenuMusic (sz 441, deep2 unique, callers match)
+0x0040d250	0x0073fd70	verified	[a] CORRECTION from 0x73fd90. 0073fd7d CALL 0x0078e7e0 sz130 disp 0x238 imm 0x1f4 = GOG Internal::StopMenuMusic 0x43adb0; Load side uses 0x23c. Accepted decoy was the true slot.
+0x0040d270	0x0073fd90	verified	[a] CORRECTION from 0x73fd70. 0073fd9d CALL 0x0078ea50 sz123 disp 0x23c x4 = GOG Internal::StopLoadMusic 0x43b020 (Menu side: 0x238 + imm 0x1f4).
+0x0040d290	0x0073fdb0	verified	[a] CORRECTION from 0x73fdd0 (flag setter). 0073fdc1 CALL 0x0078ead0 sz168 disp 0x23c imm 0x304 = GOG Internal::AquireLoadMusic 0x43b0a0.
+0x0040d2b0	0x0073fdd0	verified	[c] 0073fde8 MOV [EDX+0x1ec],EAX = GOG disp {0x4,0x1ec} sz36 ret4; callers sz139/228/342 match
+0x0040d2e0	0x0073fe00	verified	[b] fwd 0073fe0d CALL 0x00784440; callee = GOG 0x430a60 Int::GetActivePauseState (sz 49, deep2 unique, callers match)
+0x0040d300	0x0073fe20	verified	[b] fwd 0073fe2d CALL 0x00796ba0; callee = GOG 0x4431c0 Int::QueryExitProgram (sz 508, deep2 unique, callers match)
+0x0040d320	0x0073fe40	verified	[d] 0073fe55 CALL 0x00797d90 = Internal::SetInputActive (84 B fp eq GOG 0x4443b0, calls CExoInput SetActive 0x72fb20); callers WinMain/ReInitAurora/WinMessageHandler.
+0x0040d340	0x0073fe60	verified	[c] CALL 0x797df0 = GOG 0x444410 (sz199, disp 0xf8..0x150, imm 7/7/0x10); unique fwd in 28 same-shape slots; caller sz743 matches
+0x0040d360	0x0073fe80	verified	[b] fwd 0073fe91 CALL 0x007985d0; callee = GOG 0x444bf0 Int::IsPlayerCreature (sz 133, deep2 unique, callers match)
+0x0040d3a0	0x0073fec0	verified	[c] 0073fed1 CALL 0x798160 = GOG 0x444780 shape (id|0x80000000); 10+ callers match by size
+0x0040d3c0	0x0073fee0	verified	[c] 0073fef5 CALL 0x7b3050 = GOG 0x45fc60 shape (switch on [+0x9c]); RET 8; callers match
+0x0040d400	0x0073ff20	verified	[d] 0073ff39 CALL 0x00798190 = Internal::ShowLoadScreen (590 B fp eq GOG 0x4447b0); Hide twin calls 346 B 0x7983e0; 8/8 callers size-match.
+0x0040d430	0x0073ff50	verified	[d] 0073ff69 CALL 0x007983e0 = Internal::HideLoadScreen (346 B fp equal GOG 0x444a00); 5/5 callers size-match. Ghidra 'Statistics' autolabel ignored.
+0x0040d460	0x0073ff80	verified	[c] 0073ff95 CALL 0x7b12c0 = GOG 0x45ded0 (sz7087 ret8); RET 8; caller sz1310 matches
+0x0040d480	0x0073ffa0	verified	[b] fwd 0073ffad CALL 0x00798540; callee = GOG 0x444b60 (labelled IndicateObject) (sz 63, deep2 unique, callers match); 0x274/0x278 panel test
+0x0040d4a0	0x0073ffc0	verified	[c] 0073ffd1 CALL 0x798580 = GOG 0x444ba0 shape (CExoString assign); callers sz1118/1151/2611 match
+0x0040d4c0	0x0073ffe0	verified	[a] CORRECTION from 0x740000 (GetPlayerCharacterSet, reads +0x290). 0073ffed CALL 0x007985b0 sz32 disp 0x290 imm 0x294 = GOG 0x444bd0.
+0x0040d4e0	0x00740000	verified	[d] 0074000f MOV EDX,[ECX+0x290] via [this+4] (GOG disp 0x4,0x290; Mac 0x290); unique shape; sole caller 0x812350 (593 B = GOG HandleServerToPlayerSe.. 0x4a6940).
+0x0040d500	0x00740020	verified	[c] 0074002f MOV EDX,[ECX+0x288] = GOG disp {0x4,0x288}; 8 callers match by size
+0x0040d550	0x00740070	verified	[d] 0074007c MOV ECX,[EAX+0x4] / 00740085 MOV EAX,[EDX] (GOG sz33 disp 0x4; Mac 13 B disp 0x4); 46/46 callers size-match incl. SWMG commands 0x6f6320/0x6f6420.
+0x0040d580	0x007400a0	verified	[d] 007400ac CALL 0x0073f430 (GetModule fwd) then 007400bd CALL 0x007fae30 (CSWCModule::GetMiniGame), as GOG 0x40d580; 32/32 callers size-match.
+0x0040d5b0	0x007400f0	verified	[c] CALL 0x7986a0 = GOG 0x444cc0 shape (calls GetMoveToModuleMovies 0x7401a0); caller sz969 matches
+0x0040d620	0x00740160	verified	[d] 0074016d CALL 0x00798c00 (41 B) -> 0x93b570 = CExoMoviePlayer::IsMoviePlaying (GOG 0x9211c0 +0x1a3b0); CancelMovie twin uses 0x93b550; callers WinMain/UpdateScreen/WinMsgHandler.
+0x0040d640	0x00740180	verified	[d] 00740191 CALL 0x00798b70 = Internal::AddMoveToModuleMovie (34 B, imm 0x2d8 fp eq GOG 0x445190); 3/3 callers size-match.
+0x0040d660	0x007401a0	verified	[c] 007401ad ADD EAX,0x2d8 = GOG imm 0x2d8; callers sz379/5789 match (DoPCAutosave, PlayLoadModuleMovies body)
+0x0040d6b0	0x007401f0	verified	[c] CALL 0x796b50 = GOG 0x443170 shape (sz70 ret8, imm 0x7f000000); callers 490/494/622 match. GOG 0x443170 label CSWCCreature::SwitchMode is rotated, see md
+0x0040d700	0x00740240	verified	[d] 0074024d CALL 0x0078c300 = Internal::ResetDriveAcceleration (48 B fp eq GOG 0x4388e0, disp 0x2c/0x2a0); 5/5 callers size-match.
+0x0040d720	0x00740260	verified	[a] CORRECTION from 0x7404d0 (GetClientRangedAnimation fwd). 0074027d CALL 0x0079bc40 sz125 r16 imm 0x7f000000 disp 0x120 = GOG Internal::BarkString 0x448240.
+0x0040d750	0x00740290	verified	[c] CALL 0x79bcc0 = GOG 0x4482c0 (sz376, disp 0x1a0/0xf20); unique fwd; caller sz32 matches
+0x0040d770	0x007402b0	verified	[c] CALL 0x79be40 = GOG 0x448440 shape (stops speaker [+0x1a0] sound); caller sz46 = CSWSObject::StopSoundPlayingInDialog
+0x0040d790	0x007402d0	verified	[d] 007402dd CALL 0x007b3370 (stores 1 to [+0x2bc]); Enable twin 0x7402f0 calls 0x7b3390 (stores 0); callers LoadGame 0x853a00/ExecuteLoadModule 0x530170/OnModulePicked 0x883560.
+0x0040d7b0	0x007402f0	verified	[c] CALL 0x7b3390: 007b339a MOV [EAX+0x2bc],0 vs Disable twin 007b337a ...,1; sole caller sz508 = GOG QueryExitProgram (Disable callers LoadGame etc)
+0x0040d7d0	0x00740310	verified	[b] fwd 0074031d CALL 0x007b33b0; callee = GOG 0x45ffc0 Int::DismissInGameGUI (sz 49, deep2 unique, callers match)
+0x0040d7f0	0x00740330	verified	[d] 0074033d CALL 0x0079bf00 (56 B fp eq GOG 0x448500: returns GetPauseState(2)); Mac Internal::GetPausedByCombat imm 0x2. Real Internal getter = GOG 0x448500, not 0x44deb0.
+0x0040d810	0x00740350	verified	[c] 0074036a CALL 0x79bf40 = GOG 0x448540 shape; RET 0xc; callers match (combat GUI 0x7ca730..)
+0x0040d840	0x00740380	verified	[c] CALL 0x797f30 = GOG 0x444550 shape (sz355); RET 8; 6 callers match (incl. ExecuteCommandDestroyObject)
+0x0040d860	0x007403a0	verified	[a] 007403ad CALL 0x0079c0e0 sz325 disps 0x7c/0xd0/0x274/0x2d4 = GOG Internal::RunDeathSequence 0x4486e0. Pipeline addr kept.
+0x0040d880	0x007403c0	verified	[b] fwd 007403d1 CALL 0x0079c230; callee = GOG 0x448830 FUN_00448830 (sz 38, deep2 unique, callers match)
+0x0040d8c0	0x00740400	verified	[c] CALL 0x79c4e0 = GOG 0x448ae0 shape (writes [+0x2d4], disp 0x11ac); caller sz4322 (OnApplyDeath) matches
+0x0040d8e0	0x00740420	verified	[d] 00740431 CALL 0x0079c550 = Internal::SetCanSendDialog (88 B fp eq GOG 0x448b50, disp 0x228/0x22c, imm 0x3e8); callers StartNewModule/MainLoop/StallEventSaveGame.
+0x0040d900	0x00740440	verified	[c] 00740459 CALL 0x79c5b0 sz1033 ret12 = GOG 0x448bb0 (imm 0x3e8/0x7d0, disp 0x228/0x22c); caller sz564 matches
+0x0040d990	0x007404d0	verified	[r] correction (gate 0x740930=SetAutoPaused fwd). 007404e9 CALL 0x0079ca90 (Internal::GetClientRangedAnimation, disp 0x400/0xc5=Mac); RET 0x10; caller IsInTotalDefense 0x6db460
+0x0040d9c0	0x00740500	verified	[c] CALL 0x79c9c0 RET 0x18 = GOG 0x448fc0 ret24; Ranged sibling RET 0x10; caller sz69 matches
+0x0040da00	0x00740540	verified	[d] 00740551 CALL 0x0079cb20 = Internal::SetLoadScreenByModuleName (560 B fp equal GOG 0x449120; 'BMPResRef'/'load_%s'); 8/8 callers size-match.
+0x0040da20	0x00740560	verified	[b] fwd 0074057e CALL 0x0079cd60; callee = GOG 0x449360 Int::GetLoadMusicByModuleName (sz 478, deep2 unique, callers match)
+0x0040da90	0x007405d0	verified	[d] 007405e5 CALL 0x0079cfb0 = Internal::SetLoadBarProgress (178 B fp eq GOG 0x4495b0, disp 0x278, imm 0x5f/0x68); 13/13 callers size-match.
+0x0040db00	0x00740640	verified	[d] 00740655 CALL 0x007a0530 = Internal::SetLastTarget (70 B fp eq GOG 0x44cb30: 007a056a MOV [EDX+0x2b4],EAX, disp 0x37c, imm -2); caller CreateNewAttackActions.
+0x0040db70	0x007406b0	verified	[b] fwd 007406c1 CALL 0x00783dc0; callee = GOG 0x430340 Int::UpdateRoom (sz 284, deep2 unique, callers match)
+0x0040db90	0x007406d0	verified	[a] 007406f1 CALL 0x0079d070 sz442 r20 imm 0xa974 = GOG Internal::StartPazaakGame 0x449670 (End side: sz436 r16, no 0xa974). Pipeline addr kept.
+0x0040dbc0	0x00740700	verified	[a] CORRECTION from 0x7404d0. 0074071d CALL 0x0079d230 sz436 r16 imm 0x7f000000, clears +0x70 = GOG Internal::EndPazaakGame 0x449830.
+0x0040dc30	0x00740770	verified	[e] 00740788 MOV [EDX+0x338],EAX = Mac SetFutureLeader disp 0x338; RET 4; fp identical, unique in binary
+0x0040dcc0	0x00740800	verified	[d] 00740811 CALL 0x0079d3f0 = Internal::PlayRumblePattern (239 B fp eq GOG 0x4499f0); Stop twin calls 105 B 0x79d4e0; callers EventHandler/ExecuteCommandPlayRumblePattern.
+0x0040dce0	0x00740820	verified	[d] 00740831 CALL 0x0079d4e0 = Internal::StopRumblePattern (105 B fp eq GOG 0x449ae0, disp 0x34c/0x350); Play twin calls 239 B 0x79d3f0; caller ExecuteCommandStopRumblePattern.
+0x0040dd00	0x00740840	verified	[c] callee 0x7980a0: 007980c8 PUSH 0x99f8d0 'k_sup_solo'; = GOG 0x4446c0 sz185 disp 0x238; callers sz219/989 match
+0x0040dd40	0x00740880	verified	[b] fwd 00740891 CALL 0x0079d6e0; callee = GOG 0x449ce0 Int::SetCombatMode (sz 133, deep2 unique, callers match)
+0x0040dd60	0x007408a0	verified	[c] CALL 0x79f430 = GOG 0x44ba30 (sz642, imm 0x27ad/0x27ae, disp 0x11ac); unique fwd; callers sz44/7087 match
+0x0040dd80	0x007408c0	verified	[d] 007408da CALL 0x0079de60 = Internal::AddFloatyText (916 B fp eq GOG 0x44a460, imm 0x55d/0x56f/0x7d9a); 6/6 callers size-match (DoDamage, ApplyDeathExperience).
+0x0040ddb0	0x007408f0	verified	[d] 0074090e CALL 0x0079e210 = Internal::GetGUIString (528 B fp eq GOG 0x44a810, disp 0x358/0x35c); 57/59 callers size-match.
+0x0040ddf0	0x00740930	verified	[c] CALL 0x79e420: 0079e4fa MOV [EAX+0x384],EDX (bit GetAutoPaused reads); = GOG 0x44aa20; RET 8; 8 callers match
+0x0040de20	0x00740960	verified	[c] 0074096d MOV EAX,[ECX+0x384] = GOG disp {0x4,0x384}; SetAutoPaused body writes it (0079e4fa); 7 callers match (one 625->627)
+0x0040de40	0x00740980	verified	[d] 00740991 CALL 0x0079cf40 = Internal::SetLoadScreenHint (43 B, disp 0x278 fp equal GOG 0x449540); 8/8 callers size-match.
+0x0040de60	0x007409a0	verified	[d] 007409b1 CALL 0x0079e550 = Internal::EnableVideoEffect (1036 B fp equal GOG 0x44ab50, 'EnableClairvoyance' strs); Disable twin calls 54 B 0x79e960.
+0x0040de80	0x007409c0	verified	[d] 007409cd CALL 0x0079e960 = Internal::DisableVideoEffect (54 B fp eq GOG 0x44af60, disp 0x3a8, stores -2); Enable twin calls 1036 B 0x79e550.
+0x0040dec0	0x00740a00	verified	[d] 00740a0d CALL 0x0079e9a0 = Internal::DelayNextEnemyAutoPause (48 B fp eq GOG 0x44afa0, disp 0x38c/0x390, imm 0x41); callers ToggleDoorState/MenuActionSecurity/Bash.
+0x0040dee0	0x00740a20	verified	[d] 00740a3e CALL 0x0079e9d0 = Internal::ShowTutorialWindow (114 B fp eq GOG 0x44afd0, disp 0x3ac-0x3b8), RET 0x10; 29/29 callers size-match.
+0x0040df10	0x00740a50	verified	[b] fwd 00740a61 CALL 0x0078cf50; callee = GOG 0x439530 Int::ClearCachedCreatures (sz 53, deep2 unique, callers match)
+0x0040df30	0x00740a70	verified	[b] fwd 00740a8a CALL 0x0079f010; callee = GOG 0x44b610 Int::LookUpAndPerformRumbleWithCutOff (sz 1041, deep2 unique, callers match)
+0x0040df60	0x00740aa0	verified	[c] 00740aad CALL 0x740ac0: 00740acc CMP [EAX+0x2a0],0 = GOG 0x40df80 shape (sz124); callers sz188/686/696 match
+0x0040df80	0x00740ac0	verified	[a] 00740acc CMP [EAX+0x2a0],0; sz124 imm 0x44 x2 = GOG; called by App fwd 0x740aa0 as GOG 0x40df60 calls 0x40df80. Pipeline addr kept.
+0x0040e000	0x00740b40	verified	[b] fwd 00740b4d CALL 0x0079f6c0; callee = GOG 0x44bcc0 Int::SaveOptions (sz 39, deep2 unique, callers match); ret0 vs Load ret4
+0x0040e020	0x00740b60	verified	[b] fwd 00740b71 CALL 0x0079f6f0; callee = GOG 0x44bcf0 Int::LoadOptions (sz 114, deep2 unique, callers match); ret4 vs Save ret0
+0x0040e040	0x00740b80	verified	[d] 00740b9a CALL 0x0079f770 = Internal::ChangeCharacterToNextLivingPartyMember (715 B fp eq GOG 0x44bd70; calls PlayCharacterSelectSound 0x7a12e0); 11/11 callers.
+0x0040e280	0x00740dc0	verified	[c] CALL 0x79fc40: 0079fcbc PUSH 'loadscreenhints'; = GOG 0x44c240 shape; 7 callers match
+0x0040e3a0	0x00740ee0	verified	[c] CALL 0x7a0580 = GOG 0x44cb80 shape (sz166, imm 0x2ee/0x9c4, disp 0x238); unique fwd; callers 215/249/1151/2611 match. MuteSound twin -> 0x7a0630
+0x0040e3c0	0x00740f00	verified	[c] CALL 0x7a0630 = GOG 0x44cc30 shape (500 ms wait); callers sz1503/2611 = DoQuickLoad/LoadGame; MenuMusic twin -> 0x7a0580
+0x0040e400	0x00740f40	verified	[c] CALL 0x7a0490 = GOG 0x44ca90 shape; body calls Hide 0x7b38d0 / Show 0x7b3930 around mode set; RET 4; caller sz116 matches
+0x0040e420	0x00740f60	verified	[b] fwd 00740f6d CALL 0x007a0500; callee = GOG 0x44cb00 Int::CancelMovie (sz 41, deep2 unique, callers match)
+0x0040e440	0x00740f80	verified	[b] fwd 00740f91 CALL 0x007b38d0; callee = GOG 0x4604e0 Int::HideMouse (sz 92, deep2 unique, callers match); ShowMouse=sz197
+0x0040e460	0x00740fa0	verified	[c] CALL 0x7b3930 sz197: 007b393c NOT/AND [+0x3d8] (clear bits), 007b3963 AND ECX,0x4a = GOG ShowMouse imm 0x4a; HideMouse 0x7b38d0 ORs (sz92=GOG)
+0x0040e4d0	0x00741010	verified	[d] 00741025 CALL 0x0078e870 = Internal::FadeAndStopStreamingSoundSource (118 B fp eq GOG 0x43ae40, imm 0x3e8); caller 0x7d0ec0 = GOG FadeAndStopDialogAmbientTrack.
+0x0040e4f0	0x00741030	verified	[a] 00741045 CALL 0x007a1130 sz397 disp 0x4c0/0x4c4 imm 0x61c = GOG Internal::StartCreditSequence 0x44d730. Pipeline addr kept.
+0x0040e510	0x00741050	verified	[b] fwd 0074105d CALL 0x007a12c0; callee = GOG 0x44d8c0 Int::StopCreditSequence (sz 24, deep2 unique, callers match)
+0x0040e550	0x00741090	verified	[b] fwd 0074109d CALL 0x007a1340; callee = GOG 0x44d940 Int::EnableMouseAtEndOfLoadModuleMovie (sz 58, deep2 unique, callers match)
+0x0040e6f0	0x00741230	verified	[d] 00741241 CALL 0x007a0f50 = Internal::PlayMovieQueue (91 B fp eq GOG 0x44d550, imm 0x2e4/0x2f0); sole caller ExecuteCommandPlayMovieQueue 0x69a4d0 (67 B = GOG).
+0x0040e730	0x00741270	verified	[b] fwd 0074127d CALL 0x007a1110; callee = GOG 0x44d710 Int::MovieWindowActivated (sz 22, deep2 unique, callers match); -> sz29 Resume*
+0x0040e7c0	0x00741300	verified	[c] 0074131e CALL 0x7a1380 = GOG 0x44d980 (sz115 ret8, imm 0xbe54); RET 8; callers sz2215/4547 match
+0x0042db10	0x00781590	verified	[r] correction (gate 0x781810=GetModuleCamera). 0078173c PUSH 0x1ca8 (GOG imm); 007817c1 CALL 0x0078e620 StartMenuMusic; AddPanel 0x410530; RET 4; disp 0x49c/0x274 = GOG
+0x0042dd90	0x00781810	verified	[a] CORRECTION from 0x7819e0 (Initialize). 0078181c CALL 0x00726f80 (=App::GetModule callee, 0073f43d) then 0078182d MOV ECX,[EAX+0x40]; sz46 = GOG.
+0x0042ddc0	0x00781840	verified	[r] correction (gate 0x781590=DisplayMainMenu). 007818cb CALL 0x0073f3b0 GetWorldTimer; 007818e6 PUSH 0x99f4a4 "%d %c %d %d %d "; RET 0x10; sz407 = GOG; Mac disp 0x150/0x1c0
+0x0042df60	0x007819e0	verified	[a] sz511 disps 0x204/0x274/0x278 imm 0x6f8/0x154 identical to GOG; called by App::Initialize fwd 0073f98d. Pipeline addr kept.
+0x00430300	0x00783d80	label_suspect	[a] Counterpart exact (sz49 r4, imm 0x10, CExoString copy-ctor callee). 00783d93 ADD EAX,0x10 / 00783d9a CALL 0x7335f0: returns string at this+0x10. Mac StallServerCode is sz97 with 0x264.
+0x00430a40	0x00784420	verified	[a] 0078442a MOVZX EAX,byte ptr [EAX+0x1cc] sz29 r4 = GOG disp 0x1cc; called twice by GetActivePauseState 0x784440 (0078444c/00784460).
+0x00430a60	0x00784440	verified	[c] 0078444c CALL 0x784420 (GetPauseState) twice with PUSH 2/1; imm 2,2; sz49 = GOG; 5 callers match (incl MainLoop 8599)
+0x004316e0	0x007850c0	verified	[e] 007850cc CMP [EAX+0x38],0 / 007850ea CALL 0x00785130 (GOG callee 0x431750) / free / 00785117 MOV [ECX+0x38],0; Mac disp 0x38; fp identical
+0x00431750	0x00785130	label_suspect	[a] Counterpart exact (sz146, imm set 2/3/8/c/20/44, Free+array-dtor callees). 00785162 ADD ECX,0x44 / CALL 0x7a1740: member-array destructor, not a quest-journal destroy.
+0x004317f0	0x007851d0	label_suspect	[a] Counterpart exact (sz86 imm 0xc). 00785200 ADD ECX,0xc / 00785203 CALL 0x64ddb0 / 00785212 CALL 0x6d2cb0: compiler dtor of 2 arrays. Real AddToPauseExclusionList = GOG 0x430ca0 (Mac sz185).
+0x00431850	0x00785230	verified	[a] 00785261 PUSH 0x20 / 00785263 CALL 0x919723 / 0078527e CALL 0x84b7f0 stored to [+0x3c] = GOG new+CSWCWorldJournal ctor; Destroy side deletes.
+0x004318e0	0x007852c0	verified	[a] 007852ea CALL 0x0084b870 (=GOG ~CSWCWorldJournal sz86) + 007852fd CALL 0x9196fd under [+0x3c] check; sz98 = GOG. Create side allocates 0x20.
+0x00431950	0x00785330	verified	[b] 00785352 CALL 0x0084b630 (=JournalUpdated sz444 ret12, same 13-callee multiset); sz45 ret12 = GOG
+0x00431980	0x00785360	verified	[d] 00785369 CALL [0x009863f0] = USER32 PostQuitMessage after PUSH 0; 19 B fp equal; callers fwd 0x73f290 (= GOG 0x40c750 ExitProgram) + 0x796da0.
+0x00431c40	0x00785620	verified	[d] 0078564a CALL 0x0087a430 = SendPlayerToServerModule_SaveGame (118 B, imm 0x4; Load twin 0x87a4b0 imm 0x5), disp 0x150; caller fwd 0x73f6f0 = GOG 0x40cbb0.
+0x00431c80	0x00785660	verified	[d] 0078568a CALL 0x0087a4b0 = SendPlayerToServerModule_LoadGame (118 B, imm 0x5; Save twin 0x87a430 imm 0x4), disp 0x150; caller fwd 0x73f720 = GOG 0x40cbe0.
+0x00431cc0	0x007856a0	verified	[r] correction (gate 0x785030=CreateQuestJournal). 007856af MOV word [ECX+0x14c],AX = Mac ServerModeChange disp 0x14c; RET 4; sole caller fwd 0x73f890 like GOG 0x40cd70
+0x00431ef0	0x007858d0	verified	[e] 00785902 MOV [EAX+0x8c],1 capture flag; strings "HD0:%s"/"Start: %d\n" (PUSH 0x99f4e8 at 007859c3); 14 callees map 1:1 incl CExoFile::Write; RET 4
+0x004353b0	0x00788d90	verified	[r] NOCAND fill. RET 0x14; 0078a11f CALL 0x00785030 CreateQuestJournal, 00789223 CALL 0x00785230 CreateWorldJournal, calls SetTexturePack 0x78d6a0; size 5620 vs 5412 (Steam growth)
+0x00436970	0x0078a420	verified	[a] 0078a47d PUSH 0x99f6ec 'inventorysnds'; sz522 disp 0x1c8 imm 0x54/0x6c = GOG LoadItemDropSoundList (two strings).
+0x00436b80	0x0078a630	verified	[d] 360 B fp equal; callees SetVideoMode 0x78dbf0 (839 B eq GOG 0x43a1c0), ReadVideoModeSettings 0x78a7a0 (1172 B eq), CExoIni ctor/dtor; caller StartServices.
+0x00436cf0	0x0078a7a0	verified	[c] 0078a96b PUSH 0x99f6fc 'RefreshRate' (+ 'Width', 'Graphics Options'); sz1172 RET 0x10 = GOG; callers sz333/360 match
+0x00437190	0x0078ac40	verified	[d] 3811 B fp equal; 0078ac7f CALL 0x00798cd0 (movie-player shutdown, GOG 0x4452f0), 0078ac8a MOV ECX,[EAX+0x274]; sole caller fwd 0x73fb20 = GOG 0x40d000 StopServices.
+0x004381a0	0x0078bbc0	label_suspect	[a] CORRECTION from 0x78bcc0 (GetPlayerByPlayerID). 0x78bbc0 sz129 imm 4/c/14/30 = GOG; 0078bc1c AND EAX,1/JZ/CALL 0x9196fd/RET 4 = scalar deleting dtor. ShutDownMoviePlayer = GOG 0x4452f0.
+0x00438230	0x0078bc50	verified	[a] 0078bc9c CALL 0x007c7030 sz2831 = GOG CGuiInGame::ShutDown 0x4d7720; disps 0x38/0x3c/0x40/0x2a0 sz111 identical.
+0x004382a0	0x0078bcc0	verified	[a] 0078bcee MOV ECX,[EAX+0x4] (player id) vs ByGameObjectID 0x78bd20 0078bd4e [EAX+0x28]; GOG disp 0x4 vs 0x28; sz93; App fwd 0x73f7d0 calls it.
+0x00438300	0x0078bd20	verified	[r] NOCAND fill. 0078bd4e MOV ECX,[EAX+0x28] = Mac GetPlayerByGameObjectID disp 0x28 (twin GetPlayerByPlayerID 0x78bcc0 reads +0x4); GetFirstPlayer 0x521060; RET 4
+0x00438360	0x0078bd80	verified	[a] 0078bdd7 MOV EAX,[EDX+0x34] = GOG slot 0x34 (Mac Item 0x38 = +4); App fwd 0x73f530 calls it.
+0x004383d0	0x0078bdf0	verified	[a] 0078be47 MOV EAX,[EDX+0x2c] = GOG slot 0x2c (Mac Creature 0x30); App fwd 0x73f550 calls it.
+0x00438440	0x0078be60	verified	[a] 0078beb7 MOV EAX,[EDX+0x24] = GOG slot 0x24 (Mac Area 0x28); App fwd 0x73f570 calls it.
+0x004384b0	0x0078bed0	verified	[a] 0078bf27 MOV EAX,[EDX+0x3c] = GOG slot 0x3c (Mac Trigger 0x40); App fwd 0x73f590 calls it.
+0x00438520	0x0078bf40	verified	[a] 0078bf97 MOV EAX,[EDX+0x44] = GOG slot 0x44 (Mac Projectile 0x48); App fwd 0x73f5b0 calls it.
+0x00438590	0x0078bfb0	verified	[a] 0078c007 MOV EAX,[EDX+0x4c] = GOG slot 0x4c (Mac Placeable 0x50); App fwd 0x73f5d0 calls it.
+0x00438600	0x0078c020	verified	[a] 0078c077 MOV EAX,[EDX+0x14] = GOG slot 0x14 (Mac Door 0x18); App fwd 0x73f5f0 calls it.
+0x00438670	0x0078c090	verified	[a] 0078c0e7 MOV EAX,[EDX+0x54] = GOG slot 0x54 (Mac AoE 0x58); App fwd 0x73f610 calls it.
+0x004386e0	0x0078c100	verified	[a] 0078c157 MOV EAX,[EDX+0x6c] = GOG slot 0x6c (Mac Sound 0x70); App fwd 0x73f630 calls it.
+0x00438750	0x0078c170	verified	[a] 0078c19b CALL 0x0078cee0 (GetPlayerCreature) / 0078c278 CALL 0x919723 new 0xcc; sz385 disps 0x2a0/0x328 = GOG; App fwd 0x73f850 calls it.
+0x004388e0	0x0078c300	verified	[a] CORRECTION from 0x78bc50 (CleanUpModuleServices). 0078c30a CMP [EAX+0x2a0],0 + vcall [EDX+0x2c], sz48 = GOG; App fwd 0074024d CALL 0x0078c300.
+0x00438910	0x0078c330	verified	[a] CORRECTION from 0x78bc50. 0078c33a MOV ECX,[EAX+0x40] / 0078c33d CALL 0x007be4c0 sz5472 = GOG CGuiInGame::Initialize 0x4ceb50 sz5472.
+0x00438930	0x0078c350	verified	[a] 0078cdcc PUSH 0x99f734 '%d %c %f %f %f\n'; sz2883 r4 = GOG UpdateCamera (same fmt string); caller MainLoop 0x781be0.
+0x004394c0	0x0078cee0	verified	[a] 0078cf1b CALL 0x0073f550 (App::GetCreatureByGameObjectID) with disps 0x20/0x3bc/0x3c0, sz101 = GOG.
+0x00439530	0x0078cf50	verified	[d] 0078cf68 MOV [EDX+0x3bc],0x7f000000 (GOG disp 0x3bc/0x3c0, imm 0x7f000000; Mac same); 53 B ret 4; sole caller fwd 0x740a50 = GOG 0x40df10.
+0x00439570	0x0078cfa0	verified	[a] 0078d076 CALL 0x0078e0f0 (ShutDownToMainMenu sz339) / 0078d064 [ECX+0x264]; imm 0x10bbd..0x10c34 sz322 = GOG.
+0x004396d0	0x0078d100	verified	[b] calls new 0x919723 + AddTail 0x54aa30, 0078d150 CALL 0x0058c370 (GetNext); Remove uses Remove+free; sz141 ret4 = GOG
+0x00439760	0x0078d190	verified	[b] 0078d1de CALL 0x0064dde0 (list Remove sz27), 0078d1ed CALL 0x009196fd (free); Add uses new+AddTail; sz132 ret4 = GOG
+0x004397f0	0x0078d220	verified	[c] 0078d22c ADD ECX,0x190 + RemoveHead/free loop; = GOG sz91 imm 4/0x10/0x190; callers sz22/522/15798 match
+0x00439850	0x0078d280	verified	[d] 1020 B fp equal; callees GetItemByGameObjectID fwd 0x73f530, GetEquippedItemID 0x76e610, List::Add 0x4491c0, GetGameObject 0x53dfb0; sole caller ProcessInput.
+0x00439c50	0x0078d680	verified	[c] 0078d68d MOV [EAX+0x194],ECX = GOG disp 0x194 sz25 RET 4; caller sz28 (App fwd) matches. FID label UMSThreadScheduler ignored
+0x00439c70	0x0078d6a0	verified	[r] correction (gate 0x78cf50). strings "TEXTUREPACKS:"/"texpacks"/"DynMemRatio"; 0078da5d CALL 0x0093c7a0 CAuroraInterface::SetTexturePack; RET 8; sz1345 = GOG
+0x0043a1c0	0x0078dbf0	verified	[a] 0078df12 CALL 0x007cfca0 (=GOG CGuiInGame::ResetInterfaceForSize 0x4e03a0); sz839 r8 imm 0x6f8/0xfc = GOG; App fwd 0x73fbd0 calls it.
+0x0043a510	0x0078df40	label_suspect	[a] Counterpart exact (sz208 r16 imm 0x9c/0xac). 0078dfbf memset + 0078dfa6 CALL 0x93ca40 (=GOG CAuroraInterface::GetNearestVideoMode). Fits Mac CClientExoAppInternal::GetNearestVideoMode.
+0x0043a5e0	0x0078e010	label_suspect	[a] Counterpart exact (sz38 RET 0x10). 0078e028 CALL 0x0093cd00 (=GOG CAuroraInterface::GetExactVideoMode 0x907320 sz206): GetExactVideoMode wrapper. Ignore-list fn = GOG 0x43a920.
+0x0043a610	0x0078e040	verified	[a] 0078e087 CALL 0x919723 / 0078e098 MOV [EAX+0x1b4],ECX / 0078e0b0 CALL 0x91dba0 memcpy; disps 0x1b4/0x1b8/0x1bc sz166 r12 = GOG.
+0x0043a6c0	0x0078e0f0	verified	[c] 0078e190 CALL 0x7a5fa0 UnloadArea + CALL 0x785410 UnloadModule; sz339, 14 disps identical to GOG; callers sz22/322 match
+0x0043a820	0x0078e250	verified	[b] 0078e27a CALL 0x007b38d0 (=HideMouse), 0078e27f CALL 0x0040be50 (=ChangeResolutionForMovie sz230); sz109, 8-callee multiset = GOG
+0x0043a890	0x0078e2c0	verified	[d] 0078e301 CMP [EBP-0x14],0x5 / 0x6 type dispatch to 0078e31a CALL 0x78e350 (creature), 0x78e520 (item), 0x78e5a0 (simple); fp eq; caller fwd 0x73fd20.
+0x0043a920	0x0078e350	verified	[d] 450 B fp equal; 0078e360 CALL 0x0078bdf0 (GetCreatureByGameObjectID), 0078e3dc CALL 0x0076e610 (GetEquippedItemID 429 B eq), List::Add 0x4491c0; caller 0x78e2c0.
+0x0043aaf0	0x0078e520	verified	[c] 0078e530 CALL 0x78bd80 (Item getter), 0078e553 CMP EDX,0xfb; sz115 ret8 = GOG imm 0xfb; caller sz137 matches
+0x0043ab70	0x0078e5a0	verified	[c] 0078e5bb CALL 0x73f4d0 GetGameObject, vtable +0xc/+0x98, imm 0xff; sz117 ret8 = GOG; caller sz137 matches
+0x0043abf0	0x0078e620	verified	[r] correction (gate 0x78e7e0=StopMenuMusic). 0078e648 PUSH 0x99f77c "mus_sion"; 0078e6cb CALL 0x0078e7e0 StopMenuMusic; RET 0xc; disp 0x1ec/0x238 = GOG+Mac; called by DisplayMainMenu
+0x0043adb0	0x0078e7e0	verified	[a] 0078e7ec CMP [EAX+0x238],0 / 0078e807 CALL 0x78e870 (FadeAndStop, 0x1f4) sz130 = GOG. StopLoadMusic side uses 0x23c + Stop. Pair distinguished.
+0x0043ae40	0x0078e870	verified	[a] 0078e881 CALL 0x00736220 (hi-res timer) + 0x70b320 FadeAndStop + 0x70b8f0 Render; imm 0x3e8 x2 sz118 r8 = GOG.
+0x0043aec0	0x0078e8f0	verified	[a] 0078e93c CMP [ECX+0x2dc],0 / 0078e94c CMP [EDX+0x23c],0; imm 0x304 x2, sz352 = GOG StartLoadMusic.
+0x0043b020	0x0078ea50	verified	[a] 0078ea5c CMP [EAX+0x23c],0, CALL 0x70b2f0 (=GOG CExoStreamingSoundSource::Stop) + dtor + delete; sz123 = GOG. Menu side uses 0x238 + FadeAndStop.
+0x0043b0a0	0x0078ead0	verified	[r] correction (gate 0x78e350=AddCreatureModel..IgnoreList). 0078eb02 CMP [EAX+0x23c],0; 0078eb29 ADD EDX,0x304; 0078eb33 CALL 0x00734d60 CompareNoCase; RET 4; Mac disp 0x23c/0x304
+0x0043b150	0x0078eba0	verified	[b] 0078ec19 CALL 0x0053dfb0 (=GetGameObject sz167); 0078efa4 CALL 0x007fdfa0 (=CSWCItem::GetName sz618); sz1424 ret8, disps 0x10c/0x310, imm 0x58d = GOG
+0x0043b710	0x0078f160	verified	[c] 0078f1e4 CMP [..],0xeb + JMP [ECX*4+0x796788] switch; PUSH 0x59b/0x59c/0x289 = GOG imms; exit 0x79663f ~ +30173 = GOG size; fp size truncated
+0x004443b0	0x00797d90	verified	[b] 00797db8 CALL 0x00797df0 (=TurnOffKeyboardModal sz199), 00797dd9 CALL 0x007b3930 (=ShowMouse sz197); sz84 ret8 = GOG
+0x00444780	0x00798160	verified	[d] 00798167 CMP [EBP+0x8],0x7f000000 / 00798173 OR EAX,0x80000000 (GOG + Mac imms); 35 B ret 4; callers fwd 0x73fec0, DoPassiveSelection, GetClientMeleeAnimation.
+0x00444a00	0x007983e0	verified	[r] correction (gate 0x797d90=SetInputActive). 00798446 CALL 0x007cbb40 StartGlobalFade; 00798509 CALL 0x00409ed0 UpdateScreen; 007983f6 CMP [EAX+0x278],0; RET 0xc; Mac disp 0x274/0x278
+0x00444b60	0x00798540	label_suspect	[b] 00798572 CALL 0x00410800 (=PanelExists), 0079854a CMP [EAX+0x278]; fits Internal::GetLoadScreenVisible (Mac 0x1a3ac4). Real IndicateObject = target of GOG 0x40d6b0 (0x443170)
+0x00444bd0	0x007985b0	verified	[c] 007985ba MOV [EAX+0x290],0 / 007985c7 ADD EAX,0x294 = GOG disp 0x290 imm 0x294 sz32; caller sz22 (App fwd) matches
+0x00445190	0x00798b70	verified	[d] 00798b87 CALL 0x007a0a40 = AddMovieToExoArrayList (1229 B fp eq GOG 0x44d040), imm 0x2d8 list offset; callers fwd 0x740180 + PlayMovie 0x798ba0 (89 B = GOG).
+0x004451c0	0x00798ba0	verified	[r] correction (gate 0x798580). 00798bc6 CALL 0x00798b70 AddMoveToModuleMovie; 00798be4 ADD EDX,0x2d8; 00798bee CALL 0x007a0fb0 PlayMoviesInExoArrayList; RET 0x14
+0x00445220	0x00798c00	verified	[r] gate pick right; G6 holder is the same function (bare name). 00798c20 CALL 0x0093b570 = CExoMoviePlayer::IsMoviePlaying (GOG 0x9211c0 ladder); fwd 0x740160 calls it
+0x00445250	0x00798c30	verified	[d] 00798c82 CALL 0x0093b470 = CExoMoviePlayer ctor (128 B fp equal GOG 0x9210c0) after operator new, stored at [+0x130]; sole caller StartServices; Mac shape agrees.
+0x004452f0	0x00798cd0	label_suspect	[d] Counterpart right (158 B fp eq; 00798cf2 CALL 0x93b570 IsMoviePlaying loop, 00798d09 CALL 0x93b550 CancelMovie, then ~CExoMoviePlayer, [+0x130]=0). Fits Mac Internal::ShutDownMoviePlayer.
+0x00445390	0x00798d70	verified	[r] correction (gate 0x7983e0=HideLoadScreen). sz5780 RET 0x10; callers DoPassiveSelection 0x79a4c0 + SelectNearestObject 0x79b700 as GOG; imm/disp sets = GOG; str clientexoappinternal.cpp
+0x00447d00	0x0079b700	verified	[r] NOCAND fill. 0079bbf9 CALL 0x00798d70 ShowObject; 0079b82d CALL 0x00778510 CSWCCreature::CanSee; RET 8; sz1336, disp 0x2a8/0x2ac/0x2b4 = GOG+Mac
+0x004489b0	0x0079c3b0	verified	[b] 0079c3e4 CALL 0x007cbb40 (=StartGlobalFade sz170); sz61; caller Internal::HandleInputEvent 0x7b12c0 sz7087 = GOG
+0x00449540	0x0079cf40	verified	[b] 0079cf60 CALL 0x008857e0 (=SetHint sz209); sz43 ret4, disp 0x278 = GOG
+0x0044aa20	0x0079e420	verified	[b] 0079e50c CALL 0x0079bf40 (=SetPausedByCombat sz275 ret12); 0079e42c MOV ECX,[EAX+0x384]; sz296 ret8 disps/imms = GOG; caller MainLoop
+0x0044bcc0	0x0079f6c0	verified	[b] 0079f6d7 CALL 0x0072fb00 (=GetClientOptions), 0079f6de CALL 0x007b5f50 (CClientOptions::SaveOptions, 14 callees = GOG, +163 B growth); sz39
+0x0044bd70	0x0079f770	verified	[b] 0079f8c0 CALL 0x00797f30 (=ChangeCharacter sz355); 0079fa1a CALL 0x0073fb90 (=GetSWParty); 0079f851 CMP [EAX+0x11ac],0; sz715 ret12 = GOG
+0x0044c240	0x0079fc40	verified	[r] correction (gate 0x79f770). strings "loadscreenhints"/"loadstoryhints"; 0079ff09 CALL 0x0051d070 GetModulePreviouslyVisited; 007a001e [EAX+0x490] (Mac 0x48c+4); RET 8
+0x0044ca90	0x007a0490	verified	[r] correction (gate 0x79fc40=GetNextLoadScreenHintSTRREF). 007a049c CALL 0x007b38d0 HideMouse; 007a04e9 CALL 0x007b3930 ShowMouse; [ECX+0x274]; RET 4; caller fwd 0x740f40
+0x0044cb00	0x007a0500	verified	[d] 007a050a CMP [EAX+0x130],0 / 007a0520 CALL 0x0093b550 = CExoMoviePlayer::CancelMovie (GOG 0x9211a0 +0x1a3b0, 31 B ret 8 eq); sole caller fwd 0x740f60.
+0x0044d550	0x007a0f50	verified	[c] 007a0f7a CALL 0x7a0fb0 (PlayMoviesInExoArrayList, GOG 0x44d5b0 same delta); imm 0x2e4/0x2f0; sz91; callers match
+0x0044d5b0	0x007a0fb0	verified	[e] sz309 RET 0x18; callees SetInputActive 0x797d90, Hide/ShowMouse 0x7b38d0/0x7b3930, CExoMoviePlayer 0x93b590/5c0/5e0; disp 0x130/0x1f8/0x40 = GOG+Mac
+0x0044d6f0	0x007a10f0	verified	[b] 007a1105 CALL 0x0070bc60 (=SetSoundMode wrapper sz39 ret8); sz30 = GOG; Activated 0x7a1110 calls 0x70bbe0 instead
+0x0044d710	0x007a1110	verified	[c] 007a111d CALL 0x70bbe0 = GOG CExoSound::ResumeMovieStreamingSounds 0x63ab80 shape (sz29); Deactivated twin 0x7a10f0 calls 0x70bc60 (GOG 0x63ac00)
+0x0044d8c0	0x007a12c0	verified	[c] 007a12ca MOV [EAX+0x4c0],0 = GOG disp 0x4c0 sz24; sole caller = App::StopCreditSequence fwd (sz22) as on GOG
+0x0044d8e0	0x007a12e0	verified	[d] 007a12e9 CALL 0x0091eb8b (_rand) / 007a12f4 IDIV ECX (ECX=3), 007a1306 CALL 0x765aa0 (PlaySoundSetSound 836 B eq); callers ChangeCharacter + ...NextLivingPartyMember.
+0x0044d940	0x007a1340	verified	[b] 007a134a CALL 0x00798c00 (=IsMoviePlaying sz41), 007a1371 CALL 0x007b3930 (=ShowMouse); sz58 = GOG
+0x0044d980	0x007a1380	verified	[d] 007a1390 MOV [EBP-4],0xbe54 (GOG imm 0xbe54); 007a13dc CALL 0x0072fea0 = CExoInput::GetDisplayCharacterForKey (53 B fp eq GOG 0x616aa0); caller forwarder 0x741300.
+0x0044deb0	0x005936d0	label_suspect	[b] fix from 0x7a1b90 (CMemoryDC dtor sz86). 005936dc CALL 0x0073a2a0 (=CExoLinkedListInternal::RemoveTail); sz21; callers 0x785b50/0x5904c0 = GOG. RemoveTail wrapper
+0x0044ded0	0x007a17a0	label_suspect	[b] fix from 0x7a1130 (alloc 0x61c credits panel). 007a17f7 CALL [EBP+0xc] in loop, 007a180e RET 0x8; sz113 no callees; callers 0x79b700/0x7b3a00 = GOG; find-with-callback
+0x00459080	0x007ac470	verified	[d] 15798 B fp equal; 007aecf6 PUSH 0x99ffe4 'TILTDOWN', 007ae74d PUSH 0x99f734 '%d %c %f %f %f'; sole caller MainLoop 0x781be0 (8599 B = GOG).
+0x0045ff80	0x007b3370	verified	[d] 007b337a MOV [EAX+0x2bc],0x1 (Enable twin 0x7b3390 stores 0); sole caller forwarder 0x7402d0 = GOG 0x40d790 DisableInput (callers LoadGame/ExecuteLoadModule/OnModulePicked).
+0x0045ffa0	0x007b3390	verified	[d] 007b339a MOV [EAX+0x2bc],0x0 (Disable twin stores 1); callers fwd 0x7402f0 and MainLoop 0x781be0 = GOG 0x40d7b0 + MainLoop 0x42e160 (Disable has no MainLoop caller).
+0x0045ffc0	0x007b33b0	verified	[d] 007b33bc MOV ECX,[EAX+0x40] / 007b33bf CALL 0x007ca060 (HideSWInGameGui) + 007b33cf CALL 0x7b3050 (SetInputClass), as GOG; sole caller forwarder 0x740310.
+0x00460420	0x007b3810	verified	[b] fwd 007b3827 CALL 0x00413350; callee = GOG 0x9117d0 HandleRMouseDown (sz 104, deep2 unique, callers match); Up=sz84
+0x00460440	0x007b3830	verified	[b] fwd 007b3847 CALL 0x004133c0; callee = GOG 0x911840 HandleRMouseUp (sz 84, deep2 unique, callers match); Down=sz104
+0x00460460	0x007b3850	verified	[b] fwd 007b3861 CALL 0x004134a0; callee = GOG 0x911920 HandleZMouse (sz 430, deep2 unique, callers match)
+0x00460480	0x007b3870	verified	[d] 007b389d CMP [EAX+0x274],0 / 007b38bb CALL 0x00413a80 = SetSoftwareMouseCursor (287 B fp eq GOG 0x911f00); 007b3892 CALL CExoInput::SetMouseCursor 0x72fc50.
+0x00460630	0x007b3a00	verified	[c] 007b3c5d CALL 0x7a17a0 + calls GetDefaultActions 0x7b40f0; sz667 ret12, imm 0x2a8/0x4b4 = GOG; caller sz15798 matches
+0x00460b10	0x007b3ee0	verified	[r] correction (gate 0x7b3ca0). 007b3f37 CMP [EBP-0xc],0x3e9 / 007b3f50 SUB EDX,0x3f4: same 22-value imm table as GOG; RET 8 stdcall; sole caller HandleMouseOver 0x7b3a00
+0x00460d20	0x007b40f0	verified	[c] 007b45db PUSH 0x99f364 'i_dialog'; sz6909 n1516 = GOG; callers sz667 (HandleMouseOver)/7087 match
