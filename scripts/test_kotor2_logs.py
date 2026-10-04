@@ -46,6 +46,16 @@ class Rules(unittest.TestCase):
         self.assertFalse(K.is_live_log("AR_ERROR.LOG"))
 
 
+class CheckHelp(unittest.TestCase):
+    def test_check_help_lists_passthrough_flags(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = K.main(["check", "--help"])
+        self.assertEqual(rc, 0)
+        for flag in ("--new", "--no-advance", "--all-launches", "--launch", "--game-dir"):
+            self.assertIn(flag, buf.getvalue())
+
+
 class Routing(Tmp):
     def argv(self, name, text="x\n"):
         self.w(name, text)

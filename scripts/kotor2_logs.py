@@ -214,6 +214,15 @@ def check(name: str, extra: list[str], game_dir: str) -> int:
     return rc
 
 
+CHECK_USAGE = """usage: kotor2_logs.py check NAME [extra args...] [--game-dir G]
+  extra args pass through to the routed tool; for the log_triage route:
+  --new              only lines added since the last --new, then advance the bookmark
+  --no-advance       with --new: do not move the bookmark
+  --all-launches     every launch instead of the last one
+  --launch N         one launch by index
+  other routes: run `kotor2_logs.py routes` and that tool's --help"""
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in ("-h", "--help"):
@@ -233,8 +242,11 @@ def main(argv=None) -> int:
         return status(a.game_dir, a.since_hours)
     if cmd == "check":
         if not rest:
-            print("usage: kotor2_logs.py check NAME [extra args...] [--game-dir G]", file=sys.stderr)
+            print(CHECK_USAGE, file=sys.stderr)
             return 2
+        if rest[0] in ("-h", "--help"):
+            print(CHECK_USAGE)
+            return 0
         game_dir, name, extra, i = DEFAULT_GAME_DIR, rest[0], [], 1
         while i < len(rest):
             if rest[i] == "--game-dir" and i + 1 < len(rest):
