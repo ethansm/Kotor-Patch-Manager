@@ -66,6 +66,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <initializer_list>
+#include "CodePatch.h"
 
 namespace {
 
@@ -150,21 +151,6 @@ void readConfig(int lvl[G_COUNT]) {   // lvl: 0 off, 1 on (fs: 1 = count only, 2
     if (!all) for (int g = 0; g < G_COUNT; ++g) lvl[g] = 0;
 }
 
-bool committed(uintptr_t at, size_t n) {
-    MEMORY_BASIC_INFORMATION mb;
-    return VirtualQuery(reinterpret_cast<void*>(at), &mb, sizeof(mb)) && mb.State == MEM_COMMIT &&
-           at + n <= reinterpret_cast<uintptr_t>(mb.BaseAddress) + mb.RegionSize;
-}
-int writeCode(uintptr_t at, const uint8_t* repl, int n) {
-    auto p = reinterpret_cast<uint8_t*>(at);
-    DWORD old;
-    if (!VirtualProtect(p, n, PAGE_EXECUTE_READWRITE, &old)) return -2;
-    memcpy(p, repl, n);
-    VirtualProtect(p, n, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), p, n);
-    return 1;
-}
-
 // Cave builder: appends to the RWX block; rel32 fields are resolved against the final cave address.
 struct Emit {
     uint8_t* base; size_t n;
@@ -188,19 +174,14 @@ uint8_t* caveAlloc(size_t want) {
     uint8_t* p = g_cave + g_caveUsed; g_caveUsed += (want + 15) & ~size_t(15);
     return p;
 }
-void jmpTo(uintptr_t at, uintptr_t target, uint8_t* out, int n) {   // E9 rel32 + NOP pad to n bytes
-    out[0] = 0xE9; int32_t r = static_cast<int32_t>(target - (at + 5)); memcpy(out + 1, &r, 4);
-    for (int i = 5; i < n; ++i) out[i] = 0x90;
-}
-
 bool verifySite(int g, const Site& s) {
-    if (!committed(s.at, s.n)) { g_state[g] = -3; g_badAt[g] = s.at; return false; }
+    if (!codepatch::committed(s.at, s.n)) { g_state[g] = -3; g_badAt[g] = s.at; return false; }
     memcpy(g_seen[g], reinterpret_cast<void*>(s.at), s.n); g_seenN[g] = s.n;
     if (memcmp(g_seen[g], s.orig, s.n) != 0) { g_state[g] = -1; g_badAt[g] = s.at; return false; }
     return true;
 }
 bool write(int g, uintptr_t at, const uint8_t* bytes, int n) {
-    int r = writeCode(at, bytes, n);
+    int r = codepatch::write(at, bytes, n);
     if (r != 1) { g_state[g] = r; g_badAt[g] = at; return false; }
     return true;
 }
@@ -223,8 +204,8 @@ void applyKt() {
     b.lockInc(&g_ktUpdate);                    // flags dead: 0x726CDD JMP 0x726D57 JMP 0x726B61
     b.rel(0xE9, KtBResume);                    // replays EB 3C (JMP 0x726CDD)
     uint8_t ra[10], rb[5];
-    jmpTo(KtA.at, reinterpret_cast<uintptr_t>(ca), ra, 10);
-    jmpTo(KtB.at, reinterpret_cast<uintptr_t>(cb), rb, 5);
+    codepatch::jmpRel(KtA.at, reinterpret_cast<uintptr_t>(ca), ra, 10);
+    codepatch::jmpRel(KtB.at, reinterpret_cast<uintptr_t>(cb), rb, 5);
     if (write(g, KtA.at, ra, 10) && write(g, KtB.at, rb, 5)) g_state[g] = 1;
 }
 
@@ -246,7 +227,7 @@ void applyVmid() {
     e.fix8(jDone, done);
     if (e.bad8) { g_state[g] = -4; return; }
     const uint8_t r1[2] = { 0x73, 0x30 };      // JAE 0x669012 (same rel8)
-    uint8_t r2[5]; jmpTo(VmidB.at, reinterpret_cast<uintptr_t>(cv), r2, 5);
+    uint8_t r2[5]; codepatch::jmpRel(VmidB.at, reinterpret_cast<uintptr_t>(cv), r2, 5);
     if (write(g, Vmid.at, r1, 2) && write(g, VmidB.at, r2, 5)) g_state[g] = 1;
 }
 
@@ -259,7 +240,7 @@ void applySndri() {
     e.lockInc(&g_sndri);                       // teardown-branch hit: sound was about to stay dead
     e.b({ 0xFF, 0x15 }); e.d(AilQuickShutdownIat);   // call dword [0x98657C] (_AIL_quick_shutdown@0)
     e.rel(0xE9, SndriResume);                  // jmp 0x7054DA (AIL_quick_startup block)
-    uint8_t r[12]; jmpTo(Sndri.at, reinterpret_cast<uintptr_t>(cv), r, 12);
+    uint8_t r[12]; codepatch::jmpRel(Sndri.at, reinterpret_cast<uintptr_t>(cv), r, 12);
     if (write(g, Sndri.at, r, 12)) g_state[g] = 1;
 }
 
@@ -277,7 +258,7 @@ void applyNetovf() {
     e.rel(0xE8, NetStrDtor);                   // call 0x733780          (replayed, rel32 from the cave)
     e.b({ 0x33, 0xC0 });                       // xor eax,eax (return 0 = not sent)
     e.rel(0xE9, NetEpilogue);                  // jmp 0x70446D
-    uint8_t ra[15]; jmpTo(NetA.at, reinterpret_cast<uintptr_t>(cv), ra, 15);
+    uint8_t ra[15]; codepatch::jmpRel(NetA.at, reinterpret_cast<uintptr_t>(cv), ra, 15);
     const uint8_t rb[5] = { 0xB8, 0x00, 0x00, 0x02, 0x00 };   // mov eax,0x20000 (end > ring size = heap overflow)
     if (write(g, NetA.at, ra, 15) && write(g, NetB.at, rb, 5)) g_state[g] = 1;
 }
@@ -299,7 +280,7 @@ void applyGuiid() {
     uintptr_t accept = e.here();       e.rel(0xE9, GuiAccept);   // jmp 0x40F978
     e.fix8(jNeg, engineReject); e.fix8(jOk, accept);
     if (e.bad8) { g_state[g] = -4; return; }
-    uint8_t r[6]; jmpTo(Guiid.at, reinterpret_cast<uintptr_t>(cv), r, 6);
+    uint8_t r[6]; codepatch::jmpRel(Guiid.at, reinterpret_cast<uintptr_t>(cv), r, 6);
     if (write(g, Guiid.at, r, 6)) g_state[g] = 1;
 }
 
@@ -319,7 +300,7 @@ void applyAbBound() {
     uintptr_t exitAt = e.here(); e.rel(0xE9, AbExit);
     auto fix = [&](size_t at, uintptr_t target) { int32_t r = static_cast<int32_t>(target - (reinterpret_cast<uintptr_t>(cv) + at + 4)); memcpy(cv + at, &r, 4); };
     fix(jExit, exitAt); fix(jClamp, clamp);
-    uint8_t r[8]; jmpTo(AbB.at, reinterpret_cast<uintptr_t>(cv), r, 8);
+    uint8_t r[8]; codepatch::jmpRel(AbB.at, reinterpret_cast<uintptr_t>(cv), r, 8);
     if (write(g, AbB.at, r, 8)) g_state[g] = 1;
 }
 
@@ -355,7 +336,7 @@ void applyFs() {
     e.rel(0xE9, FsResume);                     // jmp 0x00712F5B
     e.fix8(jNone, done); e.fix8(jBusy, done); e.fix8(jCount, done);
     if (e.bad8) { g_state[g] = -4; return; }
-    uint8_t r[6]; jmpTo(FsA.at, reinterpret_cast<uintptr_t>(cv), r, 6);
+    uint8_t r[6]; codepatch::jmpRel(FsA.at, reinterpret_cast<uintptr_t>(cv), r, 6);
     if (write(g, FsA.at, r, 6)) g_state[g] = 1;
 }
 
@@ -372,7 +353,7 @@ void applySsb() {
     uintptr_t present = e.here(); e.rel(0xE9, SsbPresent);   // jmp 0x00428B33   camera present: normal path
     e.fix8(jPresent, present);
     if (e.bad8) { g_state[g] = -4; return; }
-    uint8_t r[9]; jmpTo(SsbA.at, reinterpret_cast<uintptr_t>(cv), r, 9);
+    uint8_t r[9]; codepatch::jmpRel(SsbA.at, reinterpret_cast<uintptr_t>(cv), r, 9);
     if (write(g, SsbA.at, r, 9)) g_state[g] = 1;
 }
 
@@ -388,7 +369,7 @@ void applySsc() {
     uintptr_t cont = e.here(); e.rel(0xE9, SscResume);   // jmp 0x00428AEA   both outcomes continue (JLE dropped)
     e.fix8(jOk, cont);
     if (e.bad8) { g_state[g] = -4; return; }
-    uint8_t r[5]; jmpTo(SscA.at, reinterpret_cast<uintptr_t>(cv), r, 5);
+    uint8_t r[5]; codepatch::jmpRel(SscA.at, reinterpret_cast<uintptr_t>(cv), r, 5);
     if (write(g, SscA.at, r, 5)) g_state[g] = 1;
 }
 
@@ -418,7 +399,7 @@ void applyTd() {
         0xFF, 0x45, 0xFC,                      // inc dword [ebp-4]
         0xFF, 0x45, 0xF8,                      // inc dword [ebp-8]
         0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 };
-    uint8_t rc[6]; jmpTo(TdC.at, reinterpret_cast<uintptr_t>(cv), rc, 6);
+    uint8_t rc[6]; codepatch::jmpRel(TdC.at, reinterpret_cast<uintptr_t>(cv), rc, 6);
     if (write(g, TdA.at, blk, 37) && write(g, TdB.at, blk, 37) && write(g, TdC.at, rc, 6)) g_state[g] = 1;
 }
 
@@ -439,7 +420,7 @@ void applyVmlk() {
     e.rel(0xE9, VmlkDone);                     // jmp 0x00669A3E                xor eax,eax / epilogue, as before
     e.fix8(jMissing, missing);
     if (e.bad8) { g_state[g] = -4; return; }
-    uint8_t r[11]; jmpTo(VmlkA.at, reinterpret_cast<uintptr_t>(cv), r, 11);
+    uint8_t r[11]; codepatch::jmpRel(VmlkA.at, reinterpret_cast<uintptr_t>(cv), r, 11);
     if (write(g, VmlkA.at, r, 11)) g_state[g] = 1;
 }
 
@@ -455,7 +436,7 @@ void applyMovspin() {
     e.b({ 0x8B, 0x45, 0x84 });                 // mov eax,[ebp-0x7C]            (replayed)
     e.b({ 0x8B, 0x88, 0x54, 0x02, 0x00, 0x00 });   // mov ecx,[eax+0x254]       (replayed)
     e.rel(0xE9, MovResume);                    // jmp 0x00798A50
-    uint8_t r[9]; jmpTo(MovA.at, reinterpret_cast<uintptr_t>(cv), r, 9);
+    uint8_t r[9]; codepatch::jmpRel(MovA.at, reinterpret_cast<uintptr_t>(cv), r, 9);
     if (write(g, MovA.at, r, 9)) g_state[g] = 1;
 }
 
