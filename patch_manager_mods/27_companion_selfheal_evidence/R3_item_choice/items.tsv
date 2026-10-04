@@ -1,0 +1,9 @@
+resref	name	base type/category	spell row	impact script	heal formula/amount	organic|droid	source anchor
+g_i_medeqpmnt01	Medpac	baseitem 55 Medical_Equipment; spells cat 0x1408	64	k_sup_healing	TreatInjury(user) + 10 + WIS mod(user)	organic	k_sup_healing.nss:19-22; spells.2da row 64; Templates.bif uti (CastSpell sub 64)
+g_i_medeqpmnt02	Advanced Medpac	baseitem 55; cat 0x1408	65	k_sup_healing	20 + 2*TreatInjury + WIS mod	organic	k_sup_healing.nss:23-26; spells.2da row 65
+g_i_medeqpmnt03	Life Support Pack	baseitem 55; cat 0x1408	66	k_sup_healing	30 + 3*TreatInjury + WIS mod	organic	k_sup_healing.nss:27-30; spells.2da row 66
+g_i_medeqpmnt04	Antidote Kit	baseitem 55; cat 0x1048 (cure)	67	k_sup_healing	NO HEAL: removes EFFECT_TYPE_POISON only (bHeal=FALSE)	organic	k_sup_healing.nss:31-35; EXCLUDE from pickHealItem
+g_i_drdrepeqp001	Repair Kit	baseitem 56 Droid_Repair_Equipment; cat 0x1404	84	k_sup_healing	Repair(user) + INT mod(user) + 15	droid	k_sup_healing.nss:36-39; spells.2da row 84
+g_i_drdrepeqp002	Advanced Repair Kit	baseitem 56; cat 0x1404	127	k_sup_healing	2*Repair + INT mod + 25	droid	k_sup_healing.nss:40-43; spells.2da row 127
+g_i_drdrepeqp003	Construction Kit	baseitem 56; cat 0x1404	128	k_sup_healing	3*Repair + INT mod + 35	droid	k_sup_healing.nss:44-47; spells.2da row 128
+g_i_medeqpmnt08	Squad Recovery Stim	baseitem 94 Squad_Recovery_kit; cat 0x1408	129	k_sup_healing	FIXED 10 HP to EVERY party member (any race) + resurrect dead; target ignored	party-wide (not organic-only)	k_sup_healing.nss:48-70; EXCLUDE from pickHealItem (party-wide, wastes a 500-cr item; isHealingRow still true)

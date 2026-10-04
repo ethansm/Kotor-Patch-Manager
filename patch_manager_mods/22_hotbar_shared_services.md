@@ -211,3 +211,4 @@ is the destination. The constants stay local in FPH, and this table is the hand-
   1. Is `k2.saveevents@1` worth doing before the hotbar 1.0.0 PR? Upstream order rule: shared code goes upstream inside the first mod PR that uses
      it (doc 19:126), so it would grow the hotbar PR.
   2. Is portrait click-to-target wanted for UB-U, or is the picker button enough for 1.0.0?
+     (10-04: portrait-side buttons are now designed in doc 27 companion self-heal: FRAME_BEGIN click polling, no input swallow; a hotbar-owned click-absorbing label via `hud-host` would remove its click-through risk.)
