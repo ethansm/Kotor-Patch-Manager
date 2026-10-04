@@ -13,7 +13,7 @@
 #   src           source file, relative to this directory
 #   kpatch        patch archive, relative to $KPM_DIR/Patches; the DLL is `unzip -j <kpatch> binaries/windows_x86.dll`
 #   dll_name      file name the smoke LoadLibrary's; the extracted DLL is renamed to it (perflab: perflab.dll)
-#   extra_dlls    (optional) list of further {kpatch, dll_name} tables for smokes that need more than one DLL (none today)
+#   extra_dlls    (optional) list of further {kpatch, dll_name} tables for smokes that need more than one DLL (portraitslots)
 #   cxxflags      link-style flags and libs ONLY; the runner always adds `i686-w64-mingw32-g++ -std=c++17 -O1 -I <this dir> -I tests/include`
 #   runtime_dlls  true = copy the 3 MinGW runtime DLLs next to the exe (the exe links libstdc++/libgcc dynamically)
 #   modes         argv[1] values, one run each, every one must exit 0; empty list = run once with no argument
@@ -162,3 +162,18 @@ runtime_dlls = true
 modes = ["run", "off", "noev"]
 needs_display = false
 timeout_s = 120
+
+[[smoke]]
+name = "portraitslots"
+src = "smoke_portraitslots.cpp"
+kpatch = "../split_build/PortraitSlots.kpatch"
+dll_name = "portrait-slots.dll"
+extra_dlls = [
+  { kpatch = "../split_build/BuffDurationHUD.kpatch", dll_name = "buff-duration-hud.dll" },
+  { kpatch = "../split_build/ShieldBar.kpatch", dll_name = "shield-bar.dll" },
+]
+cxxflags = ["-static", "-I../../_shared_src", "-I$KPM_DIR/Patches/Common"]
+runtime_dlls = false
+modes = ["wire", "late", "inert", "order"]
+needs_display = false
+timeout_s = 60
