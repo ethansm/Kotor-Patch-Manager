@@ -26,6 +26,14 @@
  {
   "confidence": "high",
   "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040c510] Steam batch B11a: gate evidence was for a corrected pick | override: [z] corr (gate 0x73f430=GetModule fwd). 007400dd CALL 0x00623320 (11 B empty = GOG return_void 0x6133b0); only such App fwd in Steam; 7 callers = GOG by size incl QueryExitProgram 0x796ba0",
+  "name": "CClientExoApp::EndLoadBar",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x007400d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
   "evidence": "[verified; thiscall retn=0; GOG 0x0040c530] Steam batch B11a: SIG 1.00 | AUTO: SIG 1.00",
   "name": "CClientExoApp::GetQuestJournal",
   "source": "steam-db-B11a",
@@ -1702,6 +1710,14 @@
   "name": "CClientExoApp::PlayMovieQueue",
   "source": "steam-db-B11a",
   "steam_addr": "0x00741230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-03",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0040e710] Steam batch B11a: no content anchor (C0) | override: [z] 0074125d CALL 0x007a10f0 = Internal::MovieWindowDeactivated (GOG 0x44d6f0, part b); sole caller WindowProc 0x40c4a0 sz693 = GOG 0x91f690; twin Activated 0x741270 calls 0x7a1110",
+  "name": "CClientExoApp::MovieWindowDeactivated",
+  "source": "steam-db-B11a",
+  "steam_addr": "0x00741250"
  },
  {
   "confidence": "high",

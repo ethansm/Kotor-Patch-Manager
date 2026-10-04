@@ -186,3 +186,24 @@ Every shipped row is marked in the KDB table `steam_validated` (DESIGN 4.7). A f
 - Lead spot-checks: Pause 0x40DE10 `0040de2c MOV [EDX+0x64],1` then pushes +0x64 to BinkPause `0040de41 CALL
   [0x009864cc]`; SetValueBoolean 0x654BB0 `00654bdf CALL 0x006545b0` (FindIdentifier); StartMovie 0x40CC70 fp =
   GOG (1975 B, RET 4, 468 insn, 12 callees).
+
+## B11a: `CClientExoApp`, `CClientExoAppInternal` (2026-10-03)
+
+- Scope: 429 GOG rows (52 already in the branch). Gates: AUTO 164, REVIEW 248, REJECT 14, NOCAND 3. 5 Sonnet chunks.
+- Decoys: 2/50 accepted -> ESCALATE (100% Opus). Both were true counterparts: `decoy_prev` cards were built one slot
+  off from mis-slotted pipeline picks (lesson). 
+- Opus a-e (248 rows) + r (17 REJECT/NOCAND) + z (8 unresolved + AUTO rotation audit 45/45 clean). Sample errors 1
+  (a name: GOG 0x4452F0 "StopMovie" is ShutDownMoviePlayer). Details: `B11a/B11a_SUMMARY.md`.
+  - The CClientExoApp forwarders were one 0x20 slot off for most REVIEW rows; the Internal music cluster maps 1:1 in
+    order (GOG 0x43A5E0-0x43B150 -> Steam 0x78E010-0x78EBA0).
+  - GOG 0x44DE70-0x44E0D0 are CExoArrayList<T> template instances under Internal method names (label_suspect).
+  - EndLoadBar 0x7400D0 forwards to an empty ICF body (a hook there patches nothing).
+- Final: verified 408, likely 5, label_suspect 16, rejected 0, unresolved 0.
+- KDB: insert 56, update 295, demote 7, 6 lessons, 408 marks; 3 CONFLICT skips keep equivalent trusted names
+  (GetSWParty 0x73FB90, IsMoviePlaying 0x798C00, ActionIconToMouseCursor 0x7B3EE0). Second apply 0, integrity ok.
+  Backup `backups/kdb/kotor2_ghidra_knowledge.db.pre_B11a_persist_20261003`.
+- Branch (bcb4acb, append, precheck 0 problems): 2,893 -> 3,249 (+356 new, 52 confirmed at the same address). `validate`
+  passed, 0 duplicate addresses/names. Backup `backups/steam_db/kotor2_steam_aspyr.db.caf65ec_preB11a_20261003`.
+  `check-validated`: 3,249 / 3,249.
+- Lead spot-checks (fp = GOG): GetModuleCamera 0x781810 (46 B) `0078182d MOV ECX,[EAX+0x40]`; EndLoadBar 0x7400D0
+  (22 B) `007400dd CALL 0x00623320`; GetPlayerByGameObjectID 0x78BD20 (93 B, RET 4) `0078bd4e MOV ECX,[EAX+0x28]`.

@@ -16,7 +16,7 @@
   "4": 10,
   "5": 10
  },
- "full_read": 67,
+ "full_read": 73,
  "key_error_cards": [
   "B11a-3-52"
  ],
@@ -537,6 +537,13 @@
   },
   {
    "class": "CClientExoAppInternal",
+   "gog": "0x0044de70",
+   "name": "IsMoviePlaying_2",
+   "steam_addr": "0x006d2cb0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
    "gog": "0x0044deb0",
    "name": "GetPausedByCombat",
    "steam_addr": "0x005936d0",
@@ -548,6 +555,41 @@
    "name": "InitializeMoviePlayer_2",
    "steam_addr": "0x007a17a0",
    "why": "reviewer corrected_addr, label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044df50",
+   "name": "GetNearestVideoMode",
+   "steam_addr": "0x00838f70",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044dfb0",
+   "name": "HandleExitGameButton",
+   "steam_addr": "0x007a18c0",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044dff0",
+   "name": "GetLoadScreenVisible",
+   "steam_addr": "0x007a1900",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044e070",
+   "name": "AddMoveToModuleMovie_2",
+   "steam_addr": "0x008a6110",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CClientExoAppInternal",
+   "gog": "0x0044e0d0",
+   "name": "SetGameOver",
+   "steam_addr": "0x007a19a0",
+   "why": "label_suspect"
   }
  ],
  "rows_sample": [

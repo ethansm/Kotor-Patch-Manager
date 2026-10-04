@@ -110,6 +110,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x00740040	CClientExoApp::SetAreaNotReadyToDisplay	verified	auto:sig	0x0040d520	B11a	de2c5fa0b016a7af	steam_db_batches/B11a/final_rows.tsv
 0x00740070	CClientExoApp::GetMGOArray	verified	opus	0x0040d550	B11a	b2adf374f1bf00dd	steam_db_batches/B11a/final_rows.tsv
 0x007400a0	CClientExoApp::GetMiniGame	verified	opus	0x0040d580	B11a	3e0351a0aa1b6e3c	steam_db_batches/B11a/final_rows.tsv
+0x007400d0	CClientExoApp::EndLoadBar	verified	opus	0x0040c510	B11a	0333013999e66612	steam_db_batches/B11a/final_rows.tsv
 0x007400f0	CClientExoApp::PlayLoadModuleMovies	verified	opus	0x0040d5b0	B11a	b0e9b05f51c4be60	steam_db_batches/B11a/final_rows.tsv
 0x00740110	CClientExoApp::PlayMovie	verified	auto:sig	0x0040d5d0	B11a	f1e1db8ed1911cc6	steam_db_batches/B11a/final_rows.tsv
 0x00740160	CClientExoApp::IsMoviePlaying	verified	opus	0x0040d620	B11a	d95bc790fc9e5187	steam_db_batches/B11a/final_rows.tsv
@@ -212,6 +213,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x007410b0	CClientExoApp::SetLastClickedOnTarget	verified	auto:sig	0x0040e570	B11a	6de2ef8653226f64	steam_db_batches/B11a/final_rows.tsv
 0x007411c0	CClientExoApp::AddMovieToMovieQueue	verified	auto:c2	0x0040e680	B11a	f533a34b909971fa	steam_db_batches/B11a/final_rows.tsv
 0x00741230	CClientExoApp::PlayMovieQueue	verified	opus	0x0040e6f0	B11a	83ea39fe04d91c8e	steam_db_batches/B11a/final_rows.tsv
+0x00741250	CClientExoApp::MovieWindowDeactivated	verified	opus	0x0040e710	B11a	4b98fdade10887ec	steam_db_batches/B11a/final_rows.tsv
 0x00741270	CClientExoApp::MovieWindowActivated	verified	opus	0x0040e730	B11a	4c738abdf3c1f857	steam_db_batches/B11a/final_rows.tsv
 0x00741290	CClientExoApp::GetInFreeLook	verified	auto:sig	0x0040e750	B11a	3f982e02cd5d2aaf	steam_db_batches/B11a/final_rows.tsv
 0x00741300	CClientExoApp::GetDisplayCharacterForKey	verified	opus	0x0040e7c0	B11a	a58921538e7d128f	steam_db_batches/B11a/final_rows.tsv

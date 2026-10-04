@@ -1,0 +1,9 @@
+gog_addr	steam_addr	final_verdict	note
+0x0040c510	0x007400d0	verified	corr (gate 0x73f430=GetModule fwd). 007400dd CALL 0x00623320 (11 B empty = GOG return_void 0x6133b0); only such App fwd in Steam; 7 callers = GOG by size incl QueryExitProgram 0x796ba0
+0x0040e710	0x00741250	verified	0074125d CALL 0x007a10f0 = Internal::MovieWindowDeactivated (GOG 0x44d6f0, part b); sole caller WindowProc 0x40c4a0 sz693 = GOG 0x91f690; twin Activated 0x741270 calls 0x7a1110
+0x0044de70	0x006d2cb0	label_suspect	corr. 006d2cd2 CALL 0x6d2ee0 (=GOG 0x44e2d0 SJournalEntry array delete); callers 0x785130/0x7851d0/0x6d0cb0 = GOG. Body = CExoArrayList<SJournalEntry> dtor; IsMoviePlaying = 0x445220
+0x0044df50	0x00838f70	label_suspect	corr. 00838fb7 CALL 0x7a1bf0 (=GOG 0x733d10 Allocate), 00838f93 CALL 0x9196fd free, RET 4; callers 0x798d70/0x833de0 = GOG. 8 B-elem CExoArrayList SetSize; GetNearestVideoMode = 0x43a510
+0x0044dfb0	0x007a18c0	label_suspect	corr. 007a18f1 CALL 0x7a1ca0 (=GOG 0x44e5b0 Allocate, elem 0x24); sole caller Internal ctor 0x780460 = GOG 0x42c9e0. Body = CExoArrayList<CSWRumblePattern> ctor
+0x0044dff0	0x007a1900	label_suspect	corr. 007a1922 CALL 0x7a1ae0 (=GOG 0x44e390, imm 0x24 = Mac ~CExoArrayList<CSWRumblePattern>); callers ~Internal 0x7810a0 + 2 unwind = GOG. GetLoadScreenVisible = 0x444b60
+0x0044e070	0x008a6110	label_suspect	corr. 008a6157 CALL 0x8a6060 (=GOG 0x44e700 Allocate, elem 0xc); callers 0x79a4c0/0x79d3f0/0x8a6030 = GOG. 12 B-elem CExoArrayList SetSize; AddMoveToModuleMovie = 0x445190
+0x0044e0d0	0x007a19a0	label_suspect	corr. 007a19d1 CALL 0x7a1df0 (=GOG 0x44e7b0 CGuiStringStruct Allocate); sole caller Internal ctor 0x780460. Body = CExoArrayList<CGuiStringStruct> ctor; SetGameOver = GOG 0x448830

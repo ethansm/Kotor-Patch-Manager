@@ -15,7 +15,7 @@ Decision: **ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer
 
 - B11a-2-11 0x004381a0 -> 0x0078bbc0 (decoy_prev)
 
-## Opus reads 100% (67 rows)
+## Opus reads 100% (73 rows)
 
 - CClientExoApp::Constructor gog 0x0040c3d0 -> 0x0073ef30: match cites a layout/offset difference
 - CClientExoApp::GetFPS gog 0x0040c470 -> 0x0073efd0: reviewer corrected_addr
@@ -82,8 +82,14 @@ Decision: **ESCALATE: decoy cards accepted -> send 100% of this batch's reviewer
 - CClientExoAppInternal::StopMovie gog 0x004452f0 -> 0x00798cd0: label_suspect
 - CClientExoAppInternal::SetAutoPaused gog 0x0044aa20 -> 0x0079e420: reviewer corrected_addr
 - CClientExoAppInternal::ChangeCharacterToNextLivingPartyMember gog 0x0044bd70 -> 0x0079f770: reviewer corrected_addr
+- CClientExoAppInternal::IsMoviePlaying_2 gog 0x0044de70 -> 0x006d2cb0: label_suspect
 - CClientExoAppInternal::GetPausedByCombat gog 0x0044deb0 -> 0x005936d0: reviewer corrected_addr, label_suspect
 - CClientExoAppInternal::InitializeMoviePlayer_2 gog 0x0044ded0 -> 0x007a17a0: reviewer corrected_addr, label_suspect
+- CClientExoAppInternal::GetNearestVideoMode gog 0x0044df50 -> 0x00838f70: label_suspect
+- CClientExoAppInternal::HandleExitGameButton gog 0x0044dfb0 -> 0x007a18c0: label_suspect
+- CClientExoAppInternal::GetLoadScreenVisible gog 0x0044dff0 -> 0x007a1900: label_suspect
+- CClientExoAppInternal::AddMoveToModuleMovie_2 gog 0x0044e070 -> 0x008a6110: label_suspect
+- CClientExoAppInternal::SetGameOver gog 0x0044e0d0 -> 0x007a19a0: label_suspect
 
 ## Sample of the other reviewer matches (173 of 173)
 

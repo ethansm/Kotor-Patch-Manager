@@ -3,6 +3,7 @@ gog_addr	steam_addr	final_verdict	note
 0x0040c470	0x0073efd0	likely	[a] CORRECTION from 0x73f410 (= GetConnectionLib, disp 0x34). 0x73efd0 sz17 no disp = GOG sz17; 0073efd7 FLD float ptr [0x00a10724]; slot before dtor as on GOG. Thin anchor.
 0x0040c490	0x0073eff0	verified	[c] 0073f01a CALL 0x7810a0 (sz767 = GOG internal dtor 0x42d620) + free; sz88 = GOG; caller sz346 matches
 0x0040c4f0	0x0073f050	verified	[a] CORRECTION from 0x73f490 (GetModuleCamera fwd). 0073f05d CALL 0x007813a0 sz481 imm 0x7d0, disps 0x1fc/0x274/0x27c = GOG Internal::BeginIntro 0x42d920.
+0x0040c510	0x007400d0	verified	[z] corr (gate 0x73f430=GetModule fwd). 007400dd CALL 0x00623320 (11 B empty = GOG return_void 0x6133b0); only such App fwd in Steam; 7 callers = GOG by size incl QueryExitProgram 0x796ba0
 0x0040c570	0x0073f0b0	verified	[b] fwd 0073f0c9 CALL 0x00785330; callee = GOG 0x431950 Int::JournalUpdated (sz 45, deep2 unique, callers match)
 0x0040c5a0	0x0073f0e0	verified	[b] fwd 0073f0f5 CALL 0x0078eba0 (=Internal::GetObjectName sz1424 ret8, verified row 61); sz32 ret8 = GOG
 0x0040c5c0	0x0073f100	verified	[c] 0073f160 CALL 0x78f160 (Internal AddFeedbackMessage) + CExoString ctor/dtor/== callees; sz159 ret12 = GOG; fp diff only from truncated callee fp
@@ -154,6 +155,7 @@ gog_addr	steam_addr	final_verdict	note
 0x0040e510	0x00741050	verified	[b] fwd 0074105d CALL 0x007a12c0; callee = GOG 0x44d8c0 Int::StopCreditSequence (sz 24, deep2 unique, callers match)
 0x0040e550	0x00741090	verified	[b] fwd 0074109d CALL 0x007a1340; callee = GOG 0x44d940 Int::EnableMouseAtEndOfLoadModuleMovie (sz 58, deep2 unique, callers match)
 0x0040e6f0	0x00741230	verified	[d] 00741241 CALL 0x007a0f50 = Internal::PlayMovieQueue (91 B fp eq GOG 0x44d550, imm 0x2e4/0x2f0); sole caller ExecuteCommandPlayMovieQueue 0x69a4d0 (67 B = GOG).
+0x0040e710	0x00741250	verified	[z] 0074125d CALL 0x007a10f0 = Internal::MovieWindowDeactivated (GOG 0x44d6f0, part b); sole caller WindowProc 0x40c4a0 sz693 = GOG 0x91f690; twin Activated 0x741270 calls 0x7a1110
 0x0040e730	0x00741270	verified	[b] fwd 0074127d CALL 0x007a1110; callee = GOG 0x44d710 Int::MovieWindowActivated (sz 22, deep2 unique, callers match); -> sz29 Resume*
 0x0040e7c0	0x00741300	verified	[c] 0074131e CALL 0x7a1380 = GOG 0x44d980 (sz115 ret8, imm 0xbe54); RET 8; callers sz2215/4547 match
 0x0042db10	0x00781590	verified	[r] correction (gate 0x781810=GetModuleCamera). 0078173c PUSH 0x1ca8 (GOG imm); 007817c1 CALL 0x0078e620 StartMenuMusic; AddPanel 0x410530; RET 4; disp 0x49c/0x274 = GOG
@@ -251,8 +253,14 @@ gog_addr	steam_addr	final_verdict	note
 0x0044d8e0	0x007a12e0	verified	[d] 007a12e9 CALL 0x0091eb8b (_rand) / 007a12f4 IDIV ECX (ECX=3), 007a1306 CALL 0x765aa0 (PlaySoundSetSound 836 B eq); callers ChangeCharacter + ...NextLivingPartyMember.
 0x0044d940	0x007a1340	verified	[b] 007a134a CALL 0x00798c00 (=IsMoviePlaying sz41), 007a1371 CALL 0x007b3930 (=ShowMouse); sz58 = GOG
 0x0044d980	0x007a1380	verified	[d] 007a1390 MOV [EBP-4],0xbe54 (GOG imm 0xbe54); 007a13dc CALL 0x0072fea0 = CExoInput::GetDisplayCharacterForKey (53 B fp eq GOG 0x616aa0); caller forwarder 0x741300.
+0x0044de70	0x006d2cb0	label_suspect	[z] corr. 006d2cd2 CALL 0x6d2ee0 (=GOG 0x44e2d0 SJournalEntry array delete); callers 0x785130/0x7851d0/0x6d0cb0 = GOG. Body = CExoArrayList<SJournalEntry> dtor; IsMoviePlaying = 0x445220
 0x0044deb0	0x005936d0	label_suspect	[b] fix from 0x7a1b90 (CMemoryDC dtor sz86). 005936dc CALL 0x0073a2a0 (=CExoLinkedListInternal::RemoveTail); sz21; callers 0x785b50/0x5904c0 = GOG. RemoveTail wrapper
 0x0044ded0	0x007a17a0	label_suspect	[b] fix from 0x7a1130 (alloc 0x61c credits panel). 007a17f7 CALL [EBP+0xc] in loop, 007a180e RET 0x8; sz113 no callees; callers 0x79b700/0x7b3a00 = GOG; find-with-callback
+0x0044df50	0x00838f70	label_suspect	[z] corr. 00838fb7 CALL 0x7a1bf0 (=GOG 0x733d10 Allocate), 00838f93 CALL 0x9196fd free, RET 4; callers 0x798d70/0x833de0 = GOG. 8 B-elem CExoArrayList SetSize; GetNearestVideoMode = 0x43a510
+0x0044dfb0	0x007a18c0	label_suspect	[z] corr. 007a18f1 CALL 0x7a1ca0 (=GOG 0x44e5b0 Allocate, elem 0x24); sole caller Internal ctor 0x780460 = GOG 0x42c9e0. Body = CExoArrayList<CSWRumblePattern> ctor
+0x0044dff0	0x007a1900	label_suspect	[z] corr. 007a1922 CALL 0x7a1ae0 (=GOG 0x44e390, imm 0x24 = Mac ~CExoArrayList<CSWRumblePattern>); callers ~Internal 0x7810a0 + 2 unwind = GOG. GetLoadScreenVisible = 0x444b60
+0x0044e070	0x008a6110	label_suspect	[z] corr. 008a6157 CALL 0x8a6060 (=GOG 0x44e700 Allocate, elem 0xc); callers 0x79a4c0/0x79d3f0/0x8a6030 = GOG. 12 B-elem CExoArrayList SetSize; AddMoveToModuleMovie = 0x445190
+0x0044e0d0	0x007a19a0	label_suspect	[z] corr. 007a19d1 CALL 0x7a1df0 (=GOG 0x44e7b0 CGuiStringStruct Allocate); sole caller Internal ctor 0x780460. Body = CExoArrayList<CGuiStringStruct> ctor; SetGameOver = GOG 0x448830
 0x00459080	0x007ac470	verified	[d] 15798 B fp equal; 007aecf6 PUSH 0x99ffe4 'TILTDOWN', 007ae74d PUSH 0x99f734 '%d %c %f %f %f'; sole caller MainLoop 0x781be0 (8599 B = GOG).
 0x0045ff80	0x007b3370	verified	[d] 007b337a MOV [EAX+0x2bc],0x1 (Enable twin 0x7b3390 stores 0); sole caller forwarder 0x7402d0 = GOG 0x40d790 DisableInput (callers LoadGame/ExecuteLoadModule/OnModulePicked).
 0x0045ffa0	0x007b3390	verified	[d] 007b339a MOV [EAX+0x2bc],0x0 (Disable twin stores 1); callers fwd 0x7402f0 and MainLoop 0x781be0 = GOG 0x40d7b0 + MainLoop 0x42e160 (Disable has no MainLoop caller).
