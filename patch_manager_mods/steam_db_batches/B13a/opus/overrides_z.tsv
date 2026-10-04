@@ -1,0 +1,46 @@
+gog_addr	steam_addr	final_verdict	note
+0x004102b0	0x007645f0	verified	fp 1:1 (2405 B, 536 insns, same disp/imm); 0076491c CALL 0x73f3b0 GetWorldTimer; caller CSWGuiInGameCharacter ctor 0x84c3a0 = GOG caller. Mac CSWCCreature ctor
+0x00410cd0	0x00765000	verified	fp 1:1 (82 B RET 8); 0076500c MOV ECX,[EAX+0x310], CALL 0x84a230 (dword arg); imm {0x8,0xc} without 0x70 separates it from _2. Mac has two GetPortrait overloads
+0x00410d30	0x00765060	verified	fp 1:1 (86 B RET 8); 00765096 CALL 0x85e8c0 (byte arg), imm 0x70 as GOG; Mac GetPortrait overload with imm 0x70
+0x00411770	0x00765aa0	verified	fp 1:1 (836 B RET 8); 00765af5 CALL 0x765df0 GetSoundSetStrres; disp 0xcc x11, 0x11ac = Mac PlaySoundSetSound (calls GetSoundSetStrres)
+0x004132e0	0x007675b0	verified	fp 1:1 (592 B); 00767615 CALL 0x7678f0 (SetDesiredOrientationForLock body), 0076763a CALL 0x768610 RotateCreatureToOrientation = Mac AnimationUpdate callees
+0x00413850	0x00767a80	verified	fp 1:1 (152 B RET 4); 00767a9a MOV ECX,[EAX+0x2e4], 00767af5 MOV ECX,[EAX+0x198]; Mac BlurWeapon disp 0x198/0x2e4
+0x004138f0	0x00767b20	verified	fp 1:1 (1337 B); 00767d56 CMP [ECX+0x2d8],0, 00767d65 MOV EAX,[EDX+0x308]; Mac HandleConjuringCreature disp 0x2d8/0x2dc/0x308 x10
+0x00413e30	0x00768060	label_suspect	fp 1:1; 0076806a CALL 0x7ed980 GetLoopingAnimation, 00768072 CMP EAX,0x2711, vt +0x9c; caller EquipToInventorySlot = Mac ResetAnimationState. ForceAppearanceUpdate = GOG 0x420720
+0x00414080	0x007682b0	verified	fp 1:1 (397 B RET 4); 007682cb MOV [EDX+0x138],EAX, CALL 0x7fe6c0 PowerItem, imm 0x7f000000 x2, +0x11ac = Mac SetCombatState
+0x00414210	0x00768440	verified	fp 1:1 (429 B); 0076846d CMP EDX,[ECX+0x1f0], +0x44, imm 0x1e4; callers AIUpdate/AnimationUpdate/SyncHandler_Position = Mac MoveCreatureToPosition callers
+0x00415d50	0x00769f30	verified	fp 1:1 (38 B); 00769f3a MOVZX ECX,[EAX+0x1f4], 00769f4c MOV EAX,[EDX+0x1c4], no imm = Mac GetStartWayPoint (GetEndWayPoint adds imm 0xc)
+0x00419c50	0x0076dde0	verified	fp 1:1 (363 B); 0076dee7 PUSH 0x7d1, frame 0x30, no +0x378 = Mac UpdateRelativePerception overload 1 (no 0x378)
+0x00419dc0	0x0076df50	verified	fp 1:1 (470 B); 0076df78 ADD EAX,0x378, PUSH 0x7d1 = Mac UpdateRelativePerception overload 2 (0x378/0x37c)
+0x0041a710	0x0076e8a0	verified	fp 1:1 (473 B RET 8); 0076e978 MOV [ECX+0x228],EDX .. 0076ea6d MOV [EAX+0x268],ECX = Mac SetEquippedItemID disp 0x228..0x268
+0x0041f7e0	0x00773910	verified	fp 1:1; 0077391c CALL 0x7ed830 GetAnimationBase, 0077392a MOV byte [EAX+0xc8],CL = Mac SetSpecialWalkAnimation (0xc8; SetRunLooksAwful is 0xcc)
+0x0041f940	0x00773a70	verified	fp 1:1; 00773a90 vcall [EDX+0x88], 00773a9b MOV [ECX+0x3e8],1 = Mac HideEquippedHeadItem (vt 0x8c = Win 0x88)
+0x0041f980	0x00773ab0	verified	fp 1:1; 00773ad0 vcall [EDX+0x8c], 00773adb MOV [ECX+0x3e8],0 = Mac ShowEquippedHeadItem (vt 0x90 = Win 0x8c)
+0x00420130	0x00774260	verified	fp 1:1 (458 B); 00774328 PUSH 0x99f1a4 / 00774346 PUSH 0x99f18c (Fx_Shadow_* strings = GOG str_refs) = Mac ApplyShadowBlob
+0x00420310	0x00774440	verified	fp 1:1 (19 B); 0077444a CALL 0x7f1ec0 (= GOG callee 0x477020 CSWCObject::RemoveShadowBlob); Mac RemoveShadowBlob is a thunk to CSWCObject's
+0x00421370	0x007754a0	verified	fp 1:1 (33 B RET 4); 007754ae CALL 0x7f1b80 CSWCObject::SetArea, 007754b6 CALL 0x7754d0 (UpdateAreaId body) = Mac SetArea (CSWCObject::SetArea)
+0x00421410	0x00775520	verified	fp 1:1; 00775537 CALL 0x73f430 GetModule, 00775563 MOV ECX,[EAX+0x3b4] = Mac UpdatePopUpBubble disp 0x48/0x108/0x3b4
+0x00421480	0x00775590	verified	fp 1:1 (RET 0xc); 007755b5 CALL 0x73f810, 007755e7 CALL 0x879a20 (= GOG SendPlayerToServerInput_UseSkill 0x505300) = Mac PerformSkill
+0x004214f0	0x00775600	verified	fp 1:1; 00775658 CALL 0x879af0 (= GOG SendPlayerToServerInput_UseItem 0x5053d0), 00775660 RET 0x10 = Mac PerformUseItem
+0x00421560	0x00775670	verified	fp 1:1 (RET 0xc); 007756b1 CALL 0x87aec0 (= GOG SendPlayerToServerInput_GiveItem 0x5067a0) = Mac PerformGiveItem
+0x004215b0	0x007756c0	verified	fp 1:1 (RET 4); 007756ee CALL 0x8799a0 (= GOG SendPlayerToServerInput_Attack 0x505280) = Mac PerformAttack
+0x004215f0	0x00775700	verified	fp 1:1; 00775747 CALL 0x87a5c0 (= GOG SendPlayerToServerInput_CastSpell 0x505ea0), 0077574f RET 0x1c = Mac PerformCastSpell
+0x004216d0	0x007757e0	verified	fp 1:1; 007757ec CMP [EAX+0x3b8],0, 00775833 CALL 0x9196fd delete = Mac DeleteSpellLikeAbilityList (0x3b8)
+0x004218a0	0x007759b0	verified	fp 1:1 (188 B); 00775a07 CALL 0x51c6f0 IsInjured, 00775a5a MOV EAX,0x276c; called by FollowAnimationUpdate as in Mac; Mac GetPauseReadyAnimation disp 0x138
+0x00421990	0x00775aa0	verified	fp 1:1 (4873 B); 007762c1 PUSH 0x99f208 (wccreature.cpp), 00775fcb CALL 0x776e40 (IsDriveAnimationBlocked body; Mac SetPrecalculatedPosition calls it)
+0x00424900	0x00778940	verified	fp 1:1 (600 B RET 0x1c); 00778a05 PUSH 0x9475, 007789bf CALL 0x7408f0 GetGUIString; imm 0x10000000 = Mac EnableFeatForMenu
+0x004269a0	0x0077a9e0	verified	not fp 1:1 (GOG 813, Steam 1206 B: Steam adds behaviours 0x410-0x414 as Mac); 0077aaf8 PUSH 'NAME_STRREF', 0077ab2f 'AISTATE'; sole caller GetPersonalActions 0077e6c6
+0x004275c0	0x0077b600	verified	fp 1:1 (44 B); 0077b61c MOV EAX,[EDX+0x68] then vcall +0x5c (Mac +0x60); callers LipSync + StopSoundPlayingInDialog = Mac StopLipSync
+0x004275f0	0x0077b670	verified	fp 1:1 (1291 B RET 0xc); 0077b6a6 CALL 0x7aae00 GetServerArea, 0077b75b CALL 0x5d2f80 CanUseItem; disp set = Mac IsLeaderUsableItem
+0x00428130	0x0077c1b0	verified	fp 1:1 (398 B); 0077c1e8 CALL 0x77bb90 IsHostileUsableItem, 0077c264 OR EDX,0x40000000; no format string = Mac CreateHostileItemEntry overload 1
+0x004282c0	0x0077c340	verified	fp 1:1 (458 B); 0077c3e7 PUSH 0x99d78c '%s (%d)', +0x2cc x3 = Mac CreateHostileItemEntry overload 2 (string, 0x2cc x3)
+0x00428d50	0x0077cdd0	verified	fp 1:1 (45 B RET 8); 0077cde2 CALL 0x77fd20 SetCombatMode, 0077cdf2 CALL 0x77cc80 PartyMenuUseItem = Mac PerformUseHostileItem callees
+0x004291f0	0x0077d270	verified	fp 1:1; 0077d2dd MOV word [EDX+0x80],AX, 0077d300 CALL 0x85d430 SetAppearanceAlignment, imm 0x64 = Mac SetAlignmentGoodEvil
+0x00429780	0x0077d800	verified	fp 1:1 (53 B); 0077d80c CALL 0x7f2540 GetServerObject, vt +0x30 (Mac +0x34); 132 callers (GOG 133, same size multiset head) = Mac GetServerCreature
+0x00429810	0x0077d890	verified	fp 1:1 (417 B RET 8); 0077d8dd SUB EAX,0x410 (switch 0x410-0x414), 0077d9e9 CALL 0x740a20 ShowTutorialWindow; disp 0x146/0x1198 = Mac
+0x0042a040	0x0077e0c0	verified	fp 1:1; 0077e1bb MOV [EBP-4],3 (imm {2,3,3,4,4}); callers GetTargetActions 0x77e370 + 007b4273 = Mac GetTargetActions -> GetInterfaceTargetType
+0x0042a5d0	0x0077e650	verified	fp 1:1 (129 B RET 8); 0077e676 CALL 0x779510 GetSelfForcePowers, 0077e686 CALL 0x77c510, 0077e6c6 CALL 0x77a9e0 = Mac GetPersonalActions 4 callees
+0x0041ade0	0x0076ef70	label_suspect	AUTO audit: fp 1:1 (107 B RET 4); 0076efc3 vcall [EDX+0x34] (Mac +0x38); callers EquipToInventorySlot + StripEquippedItems body = Mac SetItemUnEquippedByMe
+0x0041f840	0x00773970	label_suspect	AUTO audit: fp 1:1 (157 B); 0077397c MOV ECX,[EAX+0x37c], 007739b8 ADD ECX,0x378; callers ~CSWCCreature 0x7651b0 + 0x813200 = Mac ClearVisibilityList (0x378/0x37c)
+0x0041bd70	0x0076ff00	label_suspect	AUTO audit (outside window): fp 1:1 (91 B RET 4); 0076ff19 CALL 0x76fe00 IsCreature, vt +0x2c (Mac 0x30); caller UpdateAttackData = Mac InCreatureCombat
+0x00420720	0x00774850	label_suspect	AUTO audit (outside window): fp 1:1 (174 B); 007748a6 PUSH 0xef, 007748b7 CALL 0x76d200 SetAppearance; callers AIUpdate + GetModel = Mac ForceAppearanceUpdate

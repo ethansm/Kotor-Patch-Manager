@@ -1,0 +1,2 @@
+gog_addr	steam_addr	final_verdict	note
+0x00443170	0x00796b50	label_suspect	unique fp 1:1 (70 B RET 8); 00796b70 MOV [EBP-0x10],0x7f000000, 00796b88 MOV ECX,[EAX+0x40], 00796b8b CALL 0x7ce710 (SetMainInterfaceTarget). = Mac CClientExoAppInternal::IndicateObject

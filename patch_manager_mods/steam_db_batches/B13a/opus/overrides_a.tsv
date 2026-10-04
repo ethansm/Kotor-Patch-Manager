@@ -1,0 +1,46 @@
+gog_addr	steam_addr	final_verdict	note
+0x00410e50	0x00765180	verified	fp 1:1 (44 B RET 4); 0076518a CALL 0x7651b0 (~CSWCCreature = GOG 0x410e80), 0076519b CALL 0x9196fd (delete). Gate pick 0x765110 is GetName (61 B, +0x310)
+0x00413620	0x007678f0	label_suspect	fp 1:1; 0076791c MOV EAX,[EDX+0x30c], 007679b5 ADD ECX,0x1d8, normalize 0x5143c0 x2; sole caller AnimationUpdate. = Mac SetDesiredOrientationForLock; StripEquippedItems is GOG 0x41f5a0
+0x004137c0	0x007679f0	label_suspect	fp 1:1; 00767a55 MOV [ECX+0x178],0, 00767a62 MOV [EDX+0x17c],0, vt +0x4c. = Mac UnloadMonkVisuals (0x50/0x178/0x17c/0x180). ClearVisibilityList (0x378/0x37c) = GOG 0x41f840
+0x00413e70	0x007680a0	label_suspect	fp 1:1; 007680d1 PUSH 0x272e, vt +0x4c x8, +0x2e8/+0x3b0; callers Show/HideEquippedItems, UpdateVisibleWeapons = Mac ComputeWeaponOverlays. UpdateRollingFootstepSound = GOG 0x42bb30
+0x0041ac10	0x0076eda0	label_suspect	fp 1:1; 0076ee5a MOV EAX,[ECX+0x280] .. 0076eefd [EAX+0x2b8], RET 4: slot-mask getter mirroring SetLastInstant (GetLastInstant, no Mac symbol). UpdateRangedAttackData = GOG 0x41b7b0
+0x0041ae50	0x0076efe0	label_suspect	fp 1:1; switch 1..6 -> 0076f00d CALL 0x76e610 GetEquippedItemID, default 0076f04d MOV EAX,0x7f000000; sole caller SpawnHitVisuals. Attack-index->item helper, not BarkBubble
+0x0041f5a0	0x007736d0	label_suspect	fp 1:1; 0077370a CMP ECX,0x14 loop, 00773717 CALL GetEquippedItemID, 00773720 CALL 0x76ef70 (SetItemUnEquippedByMe body), vt +0x7c. = Mac StripEquippedItems (swap with 0x413620)
+0x0041f6b0	0x007737e0	unresolved	twin 116 B getters, GOG side has no distinguishing anchor. Steam 0x7737e0 = GetPersonalRadius cb (0077f4f7 PUSH 'GetPersonalRadius', 0x7737e0); position fits. Re-gate on GOG 0x42b260 asm
+0x0041f730	0x00773860	unresolved	twin; gate pick 0x7737e0 is the previous slot. Steam 0x773860 = GetCreatureRadius cb (0077f527 PUSH 'GetCreatureRadius', 0x773860); position fits. Re-gate on GOG RegisterCallbacks asm
+0x00420070	0x007741a0	verified	fp 1:1 (92 B); 3 callers = GOG 3 (LookAt 1448, QuickWalk 4082, UpdateShotCamera 8198); 007741a0 column [0xa0fdc4]. Gate pick 0x774200 is Vertical
+0x004200d0	0x00774200	verified	fp 1:1 (93 B); sole caller LookAt both sides (Mac LookAt calls GetHeadTurnVertical); MOV EDX,[0xa0fdc8]. Gate pick 0x774260 is ApplyShadowBlob (Fx_Shadow strings)
+0x004213c0	0x007754d0	label_suspect	fp 1:1; 007754e8 MOV EAX,[EDX+0x108], 007754f7 MOV [ECX+0x3b4],EDX; callers SetArea+LoadArea. = Mac UpdateAreaId; SetThrownLightsaber (+0x3e0) = GOG 0x4213a0 (no Steam fp twin)
+0x00421650	0x00775760	verified	fp 1:1; 0077578a CALL 0x919723 new(0xc), 007757cb MOV [ECX+0x3b8],EDX; Mac CreateNewSpellLikeAbilityList disp 0x3b8 imm 0xc
+0x00421750	0x00775860	verified	fp 1:1; 007758af CALL 0x73fb90 GetSWParty, 00775881 MOV [EDX+0x3bc],EAX, imm 0xfffffffd = Mac SetInParty (0x3bc, 0xfffffffd); mac_rotation flag is noise
+0x00421820	0x00775930	verified	fp 1:1 thunk; 00775940 CALL 0x85d260 (=GOG callee 0x48d2f0 fp 1:1, disp +0x18) = Mac Appearance::GetCameraFollowPart shape. GOG label right, gate pick rotated
+0x00421840	0x00775950	verified	fp 1:1 thunk; 00775960 CALL 0x85d2d0 (=GOG 0x48d360 fp 1:1, 80 B) = Mac Appearance::GetFollowingBody shape. Gate pick 0x775970 was the next thunk
+0x00421860	0x00775970	verified	fp 1:1 thunk; 00775980 CALL 0x85d320 (=GOG 0x48d3b0, 164 B, one helper callee) = Mac Appearance::GetHeadHeightOffset shape. Gate pick 0x775990 was the next thunk
+0x00421880	0x00775990	verified	fp 1:1 thunk; 007759a0 CALL 0x85d3d0 (=GOG 0x48d460, 2DA float) = Mac Appearance::GetCameraOffset; 3 callers = GOG (SetCameraFollow, UpdateCameraFollow, RestoreCamera)
+0x00422dd0	0x00776e10	label_suspect	fp 1:1; 00776e1d FSTP [EAX+0x3cc], 00776e29 FSTP [ECX+0x3c8], RET 8; caller Control. = Mac SetSWAnimationSpeed (0x3c8/0x3cc). IsDriveAnimationBlocked = GOG 0x422e00
+0x00422e00	0x00776e40	label_suspect	fp 1:1; 00776e4c MOV ECX,[EAX+0x13c], CALL 0x51c8b0/0x51cbe0/0x7ef780; callers DriveAnimationUpdate, SetPrecalculatedPosition = Mac IsDriveAnimationBlocked. InCreatureCombat = 0x41bd70
+0x004248c0	0x00778900	label_suspect	fp 1:1; no calls, 00778910 CMP EAX,[EBP+0xc], 00778934 RET 0x10; callers Update{Melee,Ranged}AttackData. Compare helper; GetEquipmentForcePowers = GOG 0x424b60 -> 0x778ba0
+0x00426430	0x0077a470	verified	fp 1:1; 0077a477 PUSH 0x408, 0077a47f CALL 0x77a280 ActionSwapImplant; GOG imm 0x408 = Mac Regen 0x408. Gate pick 0x77a490 pushes 0x409
+0x00426450	0x0077a490	verified	fp 1:1; 0077a497 PUSH 0x409 then CALL 0x77a280; GOG imm 0x409 = Mac Str 0x409. Gate pick 0x77a4b0 pushes 0x40b
+0x00426490	0x0077a4d0	verified	fp 1:1; 0077a4d7 PUSH 0x40a then CALL 0x77a280; GOG imm 0x40a = Mac End 0x40a. Gate pick 0x77a4b0 is Agi (0x40b)
+0x0042bae0	0x0077fac0	label_suspect	fp 1:1; 0077faca CMP [EAX+0x448],0, 0077faea CALL 0x70af80 (sound Stop), clears +0x450/+0x454; sole caller GOG 0x42bb30. StopRollingFootstepSound; IsInjured = GOG 0x421970 -> 0x775a80
+0x0042bd00	0x0077fce0	label_suspect	fp 1:1; 0077fcec CALL 0x77d800 GetServerCreature, 0077fd03 FLD [EAX+0x11dc]; caller ApplyLightsaberThrow. = Mac GetLightSaberThrowRate (0x11dc). SetSWAnimationSpeed = GOG 0x422dd0
+0x00422e80	0x00776ec0	verified	fp 1:1 (25 B RET 4); 00776ecd MOV [EAX+0x13c],ECX; Mac SetEngagedState disp 0x13c (the field IsDriveAnimationBlocked 0x776e40 reads)
+0x0041f7b0	0x007738e0	label_suspect	fp 1:1; cdecl cb: 007738ed MOV [ECX+0x4],0, 007738f7 [EDX+0x8],0; RegisterCallbacks 0077f557 PUSH 'GetPath'+0x7738e0 = Mac GetPath. ResetDesiredPositionTimer = GOG 0x414410 -> 0x7685f0
+0x00415cf0	0x00769ed0	verified	fp 1:1 (20 B); 00769eda MOV EAX,[EAX+0x1c8]; Mac GetCurrentWayPoint disp {0x1c8} only, GetStart/End use 0x1c4/0x1f4
+0x004208e0	0x00774a10	verified	fp 1:1 (RET 0x10); 00774a33 CALL 0x861400 (= GOG CSWCAnimBase::Hilite 0x4c92d0, fp 1:1); Mac Hilite calls CSWCAnimBase::Hilite
+0x00426470	0x0077a4b0	verified	fp 1:1; 0077a4b7 PUSH 0x40b, 0077a4bf CALL 0x77a280; GOG imm 0x40b = Mac ActionMenuSwapImplantAgi imm 0x40b (End is 0x40a)
+0x00428620	0x0077c6a0	verified	fp 1:1; 0077c6fe CALL 0x77c1b0 (CreateHostileItemEntry, no format string), 0077c6e7 CALL 0x606100; twin 0x77c710 calls the _2 builder
+0x00428690	0x0077c710	verified	fp 1:1; 0077c76e CALL 0x77c340 (CreateHostileItemEntry_2, '%s (%d)'), 0077c757 CALL 0x606100; same callee split as GOG 0x4282c0
+0x00420920	0x00774a50	verified	fp 1:1 (RET 4); 00774a6b CALL 0x861480 (= GOG CSWCAnimBase::UnHilite 0x4c9350); Mac UnHilite calls CSWCAnimBase::UnHilite
+0x0041ce10	0x00770fa0	verified	fp 1:1; 00770fb6 MOV ECX,[ECX+0x224], 00770fbc CALL 0x4558a0 (return-0 stub = GOG return_zero); Mac GetArmourClass calls 7 B Appearance::GetArmourClass on +0x224
+0x0041cdb0	0x00770f40	verified	fp 1:1; 00770f52 CALL 0x70af80 (sound Stop), 00770f8c MOV [ECX+0x184],0; Mac DeleteLoopingCreatureSound disp 0x184 x3 + one Stop callee
+0x00429f10	0x0077df90	verified	fp 1:1; caller 00743551 (PopulateMenus, 782 B both sides); 0077e08b MOV [EBP-4],2: imm {2,2,3,4} = GOG = Mac GetTargetInterfaceTargetType; twin 0x77e0c0 has {2,3,3,4,4}
+0x00420410	0x00774540	verified	AUTO sig pass: fp 1:1; 0077457c MOV EDX,[EAX+0x114]; GOG Off uses 0xbc/0x114, On 0xb8/0x110; Mac Off/On keep that order (0xc0/0x118 vs 0xbc/0x114)
+0x00416c70	0x0076ae50	verified	AUTO sig pass: fp 1:1 (RET 0xc); 0076ae6f MOV EDX,[ECX+0x1c4], 0076aeaa CMP EAX,[EDX+0x1c8]; disp multiset {0x1c4 x2,0x1c8,0x1f4 x2} = Mac GetWayPoints
+0x00423970	0x007779b0	verified	AUTO sig pass: fp 1:1 (1144 B, 32 disps, imm 0x2712/0x276d/0x2795); callees GetPauseReadyAnimation 0x7759b0 + RotateCreatureToOrientation 0x768610 = Mac FollowAnimationUpdate
+0x00428c00	0x0077cc80	verified	AUTO sig pass: fp 1:1; 0077cc95 AND EDX,0xbfffffff, 0077ccc3 CALL 0x775600 PerformUseItem = Mac PartyMenuUseItem (imm 0xbfffffff, PerformUseItem)
+0x004247a0	0x007787e0	verified	AUTO sig pass: fp 1:1; 007787f3 CALL 0x77d800 GetServerCreature, 00778808 MOV ECX,[EAX+0x1198], CALL 0x6b83f0 HasFeat = Mac CheckFeat (0x310, 0x1198)
+0x004244d0	0x00778510	verified	AUTO c2 pass: fp 1:1 (706 B); 007786a5 CALL 0x7783b0 (SceneHitCheck), 00778714 MOV DL,[ECX+0x31c] = Mac CanSee (calls SceneHitCheck, disp 0x188/0x31c)
+0x0041dbb0	0x00771d40	verified	AUTO c2 pass: fp 1:1 (559 B RET 0xc, 15 callees); 00771d7f CALL 0x76e610 GetEquippedItemID, 00771db0 MOVZX EAX,[EDX+0x8c] = Mac PlaySwingSound (0x64/0x8c)
+0x0041a480	0x0076e610	verified	AUTO c2 pass: fp 1:1; 0076e6e5 MOV EAX,[ECX+0x228] .. +0x268 by slot mask, RET 4 (one arg); setter twin 0x76e8a0 RET 8 = Mac SetEquippedItemID same offsets
