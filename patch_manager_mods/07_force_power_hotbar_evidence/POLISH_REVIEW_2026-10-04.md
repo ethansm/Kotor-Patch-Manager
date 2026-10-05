@@ -93,22 +93,22 @@ D10 | Tlk.h:1 | low | S | tlk_test.cpp (HP1) DONE
 D11 | manifest.toml:6 | med | S | description incomplete, log names (HP1) DONE
 D12 | RuntimeGuiControls.md:5,186,188,216 | med | S | old name, 57/75 counts, old path (HP2) DONE ad68a19 (KPM e16a378)
 D13 | clone docs/RuntimeGuiControls.md | med | S | sync copies (HP2) DONE ad68a19 (KPM e16a378)
-D14 | doc07:3-191 | high | M | 6 RESUME blocks -> one status block + History (HP3)
-D15 | doc07:11 vs 18 | med | S | mode cycle contradiction (HP3)
-D16 | doc07:12 vs 4 | low | S | log name in checklist (HP3)
-D17 | doc07:74,78,182,526,650,741 | med | S | force_power_hotbar_src paths (HP3)
-D18 | doc07:104,160,166,183,189,526 | med | S | Patches/ForcePowerHotbar paths (HP3)
-D19 | doc07:182-183 | med | S | Sources bullet stale (1200 lines, 2 tests) (HP3)
-D20 | doc07:184 | med | S | Known gaps re-triage (HP3)
-D21 | doc07:50,73,78,142,170 | low | S | 75/168 control counts (HP3)
-D22 | doc07:23-26 | med | S | install recipe id force-power-hotbar (HP3)
-D23 | doc07:187-191 | med | S | second old install workflow (HP3)
-D24 | doc07:21,30,33 | low | S | stale build-30/probe lines (HP3)
-D25 | doc07:1,186,193-523 | med | M | title, index, old spec -> appendix (HP3)
-D26 | doc07:408-523 | low | M | 30-slot design/open questions -> Deferred ideas (HP3)
+D14 | doc07:3-191 | high | M | 6 RESUME blocks -> one status block + History (HP3) DONE c393dcd
+D15 | doc07:11 vs 18 | med | S | mode cycle contradiction (HP3) DONE c393dcd
+D16 | doc07:12 vs 4 | low | S | log name in checklist (HP3) DONE c393dcd
+D17 | doc07:74,78,182,526,650,741 | med | S | force_power_hotbar_src paths (HP3) DONE c393dcd
+D18 | doc07:104,160,166,183,189,526 | med | S | Patches/ForcePowerHotbar paths (HP3) DONE c393dcd
+D19 | doc07:182-183 | med | S | Sources bullet stale (1200 lines, 2 tests) (HP3) DONE c393dcd
+D20 | doc07:184 | med | S | Known gaps re-triage (HP3) DONE c393dcd
+D21 | doc07:50,73,78,142,170 | low | S | 75/168 control counts (HP3) DONE c393dcd
+D22 | doc07:23-26 | med | S | install recipe id force-power-hotbar (HP3) DONE c393dcd
+D23 | doc07:187-191 | med | S | second old install workflow (HP3) DONE c393dcd
+D24 | doc07:21,30,33 | low | S | stale build-30/probe lines (HP3) DONE c393dcd
+D25 | doc07:1,186,193-523 | med | M | title, index, old spec -> appendix (HP3) DONE c393dcd
+D26 | doc07:408-523 | low | M | 30-slot design/open questions -> Deferred ideas (HP3) DONE c393dcd
 D27 | doc07:174,138,162 | med | S | persistence rule not written down (HP2 README + HP3 section) DONE ad68a19 (KPM e16a378)
-D28 | 07_force_power_hotbar_feedback.md | med | S | all resolved -> resolution column, archive in evidence (HP3)
-D29 | evidence dir | low | S | README index; rename decision (HP3)
+D28 | 07_force_power_hotbar_feedback.md | med | S | all resolved -> resolution column, archive in evidence (HP3) DONE c393dcd
+D29 | evidence dir | low | S | README index; rename decision (HP3) DONE c393dcd
 D30 | doc07:4,12 | med | S | troubleshooting for players (HP2) DONE ad68a19 (KPM e16a378)
 
 ### HP1 result (2026-10-04)
