@@ -2,6 +2,7 @@
 // The DLL fills one Candidate per party position (HP, "readable", "down", "can this item be used on them"); this header decides.
 #pragma once
 #include "HotbarConfig.h"
+#include "HealItems.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdarg>
@@ -427,9 +428,7 @@ inline int parseHexOrInt(const std::string& s) {   // spells.2da category is "0x
     char* e = nullptr; long v = strtol(s.c_str(), &e, 0);
     return (e && e != s.c_str() && *e == 0) ? (int)v : -1;
 }
-inline bool isHealingRow(int usertype, const std::string& range, int category) {
-    return usertype == 4 && range == "T" && (category == 0x1408 || category == 0x1404 || category == 0x1048);
-}
+using heal::isHealingRow;   // shared (_shared_src/HealItems.h): usertype 4, range "T", category medpac/repair/cure
 inline bool selfAllowedRow(const std::string& range, int hostileSetting) { return (range == "T" || range == "t") && hostileSetting != 1; }
 struct ItemProp { int count = 0; int type = -1; int row = -1; int usable = 0; };
 inline int usableSpellRow(const ItemProp& p) { return (p.count > 0 && p.type == 10 && p.usable != 0 && p.row >= 0) ? p.row : -1; }

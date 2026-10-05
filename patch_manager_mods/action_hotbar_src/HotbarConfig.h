@@ -232,7 +232,7 @@ struct General {
     int invoke = 1;               // 1 = keys/clicks use the slot's action, 0 = log only (dry run)
     int verbose = 0;              // 1 = detailed trace log (hover, widgets, every key), 0 = state changes and errors only
     int autoFill = 0;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order (default off: start empty)
-    int keyboardDevice = -1;      // -1 = read the engine's constant (0x0099C884)
+    int keyboardDevice = -1;      // -1 = read the engine's constant (gameaddr::KeyboardDeviceGlobal)
     int healThreshold = 50;       // 1..100: "@lowhp" slots only target a member below this HP%
     int healFallbackSelf = 1;     // when nobody is below the threshold: 1 = use on self, 0 = do nothing
     int syncActionBar = 1;        // 1 = resync the vanilla action bar (stance/form icons) after an AI stance or form change, 0 = off

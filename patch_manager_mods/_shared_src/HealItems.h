@@ -70,7 +70,7 @@ inline bool shouldAutoUse(const AutoCfg& cfg, int cur, int max, bool alive, bool
     return st.lastUseMs == 0 || (uint32_t)(nowMs - st.lastUseMs) >= AutoCooldownMs;
 }
 
-// copy; hotbar keeps its own until CS7 (HotbarLogic.h isHealingRow). usertype 4, range "T", category 0x1408 medpac / 0x1404 repair / 0x1048 cure.
+// shared; hotbar uses it via `using` (CS7, HotbarLogic.h isHealingRow). usertype 4, range "T", category 0x1408 medpac / 0x1404 repair / 0x1048 cure.
 inline bool isHealingRow(int usertype, const std::string& range, int category) {
     return usertype == 4 && range == "T" && (category == 0x1408 || category == 0x1404 || category == 0x1048);
 }

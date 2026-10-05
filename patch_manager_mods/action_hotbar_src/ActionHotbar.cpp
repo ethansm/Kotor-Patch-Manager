@@ -44,23 +44,23 @@ constexpr const char* Version = "1.2.1";
 namespace {
 
 // ---- addresses (Steam) -----------------------------------------------------------------------------
-constexpr uintptr_t HudSyncStance = 0x0074DA40;       // fastcall(ECX=hud), no stack args, plain RET: resyncs hud+0x1C8C (stance) / +0x1C90 (form) from the creature; vanilla callers 0x74D0E1 char switch, 0x7CA0E8 HideSWInGameGui, 0x751BCB arrow release
+constexpr uintptr_t HudSyncStance = gameaddr::HudSyncStance;       // fastcall(ECX=hud), no stack args, plain RET: resyncs hud+0x1C8C (stance) / +0x1C90 (form) from the creature; vanilla callers 0x74D0E1 char switch, 0x7CA0E8 HideSWInGameGui, 0x751BCB arrow release
 constexpr int Hud_ArrowCycle = 0x15414;               // int != 0 while an arrow-cycle is in progress
-constexpr uintptr_t HudInvokeGroup = 0x00751750;      // thiscall(hud, group 0..6, 0) RET 8
+constexpr uintptr_t HudInvokeGroup = gameaddr::HudInvokeGroup;      // thiscall(hud, group 0..6, 0) RET 8
 constexpr uintptr_t KeyboardDeviceGlobal = gameaddr::KeyboardDeviceGlobal; // rdata constant 0 (device-array index); verify live
 constexpr uintptr_t AppGlobal = gameaddr::AppGlobal;           // *(app)+4 -> A ; FUN_0073fb90(A) = *(*(A+4)+0x270)
 constexpr uintptr_t GetControlledCreature = gameaddr::GetControlledCreature; // thiscall(partyTable) -> creature (party slot 0)
 // Targeted item use ("@lowhp" probe), all from vanilla "use item on party member" 0x77C780 (Steam exe).
-constexpr uintptr_t ClientToServerObjectId = 0x0051C8B0;  // thiscall(objTable, clientItemId) RET 4 -> server object id
-constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;       // thiscall(objTable, serverItemId) RET 4 -> item ptr (0 = none)
+constexpr uintptr_t ClientToServerObjectId = gameaddr::ClientToServerObjectId;  // thiscall(objTable, clientItemId) RET 4 -> server object id
+constexpr uintptr_t GetItemByObjectId = gameaddr::GetItemByObjectId;       // thiscall(objTable, serverItemId) RET 4 -> item ptr (0 = none)
 constexpr uintptr_t GetBaseItem = gameaddr::GetBaseItem;      // thiscall(itemPtr), no stack args -> baseitems row ptr
 constexpr int BaseItem_Type = 0xAC;                       // byte: baseitems.2da itemtype
-constexpr uintptr_t CanUseItem = 0x005D2F80;              // thiscall(member SERVER creature; itemPtr, 0, 1) RET 0xC -> nonzero = usable (e.g. repair kits only on droids)
-constexpr uintptr_t PerformUseItem = 0x00775600;          // thiscall(controlled client creature (stored, unused); clientItemId, 0, targetClientId, float* pos) RET 0x10, void
+constexpr uintptr_t CanUseItem = gameaddr::CanUseItem;              // thiscall(member SERVER creature; itemPtr, 0, 1) RET 0xC -> nonzero = usable (e.g. repair kits only on droids)
+constexpr uintptr_t PerformUseItem = gameaddr::PerformUseItem;          // thiscall(controlled client creature (stored, unused); clientItemId, 0, targetClientId, float* pos) RET 0x10, void
 constexpr int Client_ObjectId = 4, Client_Pos = 0x24;     // member client creature: object id, position float[3]
 constexpr uint32_t ItemKeyFlag = 0x40000000;              // HUD entry key of an item = object id | this
 // Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
-constexpr uintptr_t PanelWhitelist[] = { 0x0099E5EC, 0x009A044C, 0x009A7BAC, 0x009A8FCC };
+constexpr uintptr_t PanelWhitelist[] = { gameaddr::MessagesPanelVtable, gameaddr::FadePanelVtable, gameaddr::PausePanelVtable, gameaddr::AutoPausePanelVtable };
 
 // ---- HUD / manager layout (EKC K2_CONFIG; verified live) -------------------------
 constexpr int Hud_Manager = 0x1C;
@@ -1586,10 +1586,10 @@ Widget* widgetFor(Bar& bar, int off) {
 
 // Textures: a CAurTextureBasic registered under our name (like the engine's own "NormCubeMap") with the decoded pixels already in place
 // and +0xE4 "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
-constexpr uintptr_t FnTexBasicCtor = 0x00423000;    // CAurTextureBasic ctor thiscall(this 0xF4 B, name, name) RET 8; registers the name globally
-constexpr uintptr_t FnEngineMalloc = 0x0091D288;    // engine operator new[]: FreeImage (0x00421C40) releases +0x44 with delete[] when +0xE7 == 0
-constexpr uintptr_t FnTexListAdd = 0x004491C0, TexPendingList = gameaddr::TexPendingList;   // pending-build list, consumed by the texture tick
-constexpr uintptr_t FnTexReset = 0x00423990;        // CAurTextureBasic::Reset fastcall(basic)
+constexpr uintptr_t FnTexBasicCtor = gameaddr::TexBasicCtor;    // CAurTextureBasic ctor thiscall(this 0xF4 B, name, name) RET 8; registers the name globally
+constexpr uintptr_t FnEngineMalloc = gameaddr::EngineNewArr;    // engine operator new[]: FreeImage (0x00421C40) releases +0x44 with delete[] when +0xE7 == 0
+constexpr uintptr_t FnTexListAdd = gameaddr::TexListAdd, TexPendingList = gameaddr::TexPendingList;   // pending-build list, consumed by the texture tick
+constexpr uintptr_t FnTexReset = gameaddr::TexReset;        // CAurTextureBasic::Reset fastcall(basic)
 constexpr int TexBasicSize = 0xF4;
 constexpr int Tex_Pixels = 0x44, Tex_MipBytes = 0x5C, Tex_W = 0x68, Tex_H = 0x6C, Tex_Bpp = 0x74, Tex_Format = 0x78;
 constexpr int Tex_Cube = 0xDF, Tex_Constructed = 0xE4, Tex_Missing = 0xE5, Tex_FromRes = 0xE7, Tex_Tpc = 0xE9;
@@ -1661,7 +1661,7 @@ void healTextures() {
 // the SAVES: alias = the CExoString at 0xA7EABC ("cloudsaves/<steam id>/") while the Steam Cloud byte 0xA7EA88 is set, else saves/).
 constexpr uintptr_t SaveRequestHolder = gameaddr::AppGlobal;   // same global as AppGlobal: *(*(it)+0x14) = server save/load request
 constexpr int SaveReq_Folder = 0x18;
-constexpr uintptr_t CloudSavesFlag = 0x00A7EA88, CloudSavesDir = 0x00A7EABC;
+constexpr uintptr_t CloudSavesFlag = gameaddr::CloudSavesFlag, CloudSavesDir = gameaddr::CloudSavesDir;
 const char* const SnapshotFile = hb::IniName;
 const char* const AutosaveFolder = "000001 - AUTOSAVE";
 
@@ -1821,7 +1821,7 @@ extern "C" void __cdecl HotbarBuildButtons(int panelArg) {
     if (!panel || !saferead::probeRead(S_Create, reinterpret_cast<void*>(panel), 0x40)) { KP_LOGV(chBuild, KPLOG_WARN, "H3: panel null/unreadable, abort"); return; }
     if (g_bar.panel) KP_LOG(chBuild, "H3: replacing bar of old HUD %08x (its labels stay leaked, never freed)", (unsigned)g_bar.panel);
     g_bar = Bar(); g_bar.panel = panel;
-    // InitControl (0x0040F620) applies a non-linear aspect projection to the extent while the global at 0x00A1B9F0 is nonzero (observed live:
+    // InitControl (gameaddr::InitControl) applies a non-linear aspect projection to the extent while the global gameaddr::ProjectionFlag is nonzero (observed live:
     // slots 8 and 0 came out 964 px wide). The ctor clears it right after this hook (0x0074850D), so clear it for our binds and restore.
     int* projFlag = reinterpret_cast<int*>(ProjectionFlag);
     bool flagRead = saferead::probeRead(S_Proj, projFlag, 4), projWriteFailed = false;
