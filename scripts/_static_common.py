@@ -193,6 +193,7 @@ class Mod:
     code_patches: list               # [CodePatch]
     hooks_path: Path | None = None
     has_def: bool = False
+    conflicts: tuple = ()            # manifest `conflicts` ids (KPM refuses to install both)
 
 
 def parse_hooks(data, mod="", source="") -> tuple[list, list]:
@@ -309,7 +310,8 @@ def load_mods(repo=REPO, kpm_dir=KPM_DIR, variants=False) -> list:
             cp.mod = pid
         mods.append(Mod(id=pid, version=ver, dir=d, kpm_dir=kd, hooks=hooks, target_versions=tv,
                         exports=parse_def(defp.read_text(encoding="utf-8")) if defp.is_file() else [],
-                        code_patches=cps, hooks_path=d / HOOKS_TOML, has_def=defp.is_file()))
+                        code_patches=cps, hooks_path=d / HOOKS_TOML, has_def=defp.is_file(),
+                        conflicts=tuple(pt.get("conflicts", []))))
     if not variants:
         best = {}
         for m in mods:

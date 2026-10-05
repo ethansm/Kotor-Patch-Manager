@@ -90,10 +90,12 @@ def _match_exception(exc, a, b):
     return ""
 
 
-def check_scope(spans, exceptions, only=None):
+def check_scope(spans, exceptions, only=None, declared=frozenset()):
     """Pairwise checks for one scope -> ([(key, sev, check, msg)], used exception indexes).
 
     only: set of patch ids; when given, pairs not involving one of them are skipped.
+    declared: set of frozenset({id_a, id_b}) pairs a manifest lists in `conflicts` (KPM refuses to install both), so their
+              overlaps are INFO, not FAIL (e.g. a library that takes over another mod's hooks before that mod migrates).
     """
     recs, used = [], set()
     ordered = sorted(spans, key=lambda s: (s.start, s.end, s.patch))
@@ -106,6 +108,10 @@ def check_scope(spans, exceptions, only=None):
             if _overlap(a, b):
                 if a.patch == b.patch:
                     recs.append((("self", str(a), str(b)), "FAIL", "overlap-self", f"{a} <-> {b}"))
+                    continue
+                if frozenset((a.patch, b.patch)) in declared:
+                    recs.append((("decl", str(a), str(b)), "INFO", "declared-conflict",
+                                 f"{a} <-> {b}: accepted, the manifests declare `conflicts` (KPM never installs both)"))
                     continue
                 hit = [(k, v) for k, e in enumerate(exceptions) if (v := _match_exception(e, a, b)) is not None]
                 good = [k for k, v in hit if v == ""]
@@ -181,8 +187,10 @@ def run(mods, live_config=None, exceptions=None, live_sha=None, mod_ids=None, sm
     merged = {}   # key -> [sev, check, msg, [scopes]]
     used_any = set()
 
+    declared = {frozenset((m.id, c)) for m in mods for c in getattr(m, "conflicts", ()) if c != m.id}
+
     def add_scope(name, spans):
-        recs, used = check_scope(spans, excs, only)
+        recs, used = check_scope(spans, excs, only, declared if name == "source" else frozenset())
         used_any.update(used)
         for key, sev, chk, msg in recs:
             if key in merged:

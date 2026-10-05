@@ -23,9 +23,9 @@ def cp(mod, addr, n=7, name="tx", verifies=True):
     return sc.CodePatch(name=name, address=addr, orig=bytes([0x90]) * n, verifies_original=verifies, mod=mod)
 
 
-def mod(mid, hooks=(), cps=(), tv=(SHA,)):
+def mod(mid, hooks=(), cps=(), tv=(SHA,), conflicts=()):
     return sc.Mod(id=mid, version="1.0.0", dir=Path("."), kpm_dir=None, hooks=list(hooks), target_versions=list(tv),
-                  exports=[], code_patches=list(cps))
+                  exports=[], code_patches=list(cps), conflicts=tuple(conflicts))
 
 
 def exc(addr=0x4261CF, patches=("a", "b"), tests=("wine:x[y]",)):
@@ -39,6 +39,21 @@ def sevs(findings, check=None):
 class SpanTests(unittest.TestCase):
     def test_overlap_between_patches_fails(self):
         f = chs.run([mod("a", [hook(0x1000, 6)]), mod("b", [hook(0x1005, 6)])])   # share byte 0x1005
+        self.assertEqual(sevs(f, "overlap"), ["FAIL"])
+
+    def test_declared_conflict_overlap_is_info_either_direction(self):
+        for a_c, b_c in ((("b",), ()), ((), ("a",))):
+            f = chs.run([mod("a", [hook(0x1000, 6)], conflicts=a_c), mod("b", [hook(0x1000, 6)], conflicts=b_c)])
+            self.assertEqual(sevs(f), [])
+            self.assertTrue(any(x.sev == "INFO" and x.check == "declared-conflict" for x in f))
+
+    def test_declared_conflict_with_a_third_patch_does_not_excuse(self):
+        f = chs.run([mod("a", [hook(0x1000, 6)], conflicts=("c",)), mod("b", [hook(0x1000, 6)])])
+        self.assertEqual(sevs(f, "overlap"), ["FAIL"])
+
+    def test_declared_conflict_not_applied_to_installed_scope(self):
+        mods = [mod("a", [hook(0x1000, 6)], conflicts=("b",)), mod("b", [hook(0x1000, 6)])]
+        f = chs.run(mods, live_config={"a": [hook(0x1000, 6, "a")], "b": [hook(0x1000, 6, "b")]}, live_sha=SHA)
         self.assertEqual(sevs(f, "overlap"), ["FAIL"])
 
     def test_touching_spans_do_not_overlap(self):
