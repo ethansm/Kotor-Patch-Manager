@@ -1,9 +1,9 @@
 [patch]
 id = "companion-selfheal"
 name = "Companion Self-Heal"
-version = "0.2.0-probe"
+version = "0.3.0-dev"
 author = "local"
-description = "Probe for companion self-heal (doc 27 CS2): logs the HUD panel layout, portrait slot to HUD mapping, companion vitals/skills, healing-item candidates and the route A args on Ctrl+Shift+H. Default INI = log only (no engine calls, no engine writes). Opt-in [probe] call=1 adds Ctrl+Shift+J: one CanUseItem + UseItemRouteA self-heal call with POST logging; [probe] label=1 adds one test label on the HUD. Needs portrait-slots."
+description = "Companion self-heal (doc 27 CS4+CS5): an H button beside each companion health bar (left click = use the best healing item now, right click = popover with Auto on/off, use-below %, keep reserve; settings persist to companion_selfheal.ini) and an optional per-companion auto mode. One hook (StopLoadFromLayout) builds 10 HUD labels; route A is only called behind the HUD gate, commandable and CanUseItem. Ctrl+Shift+H dump and the opt-in [probe] call=1 Ctrl+Shift+J are kept. Needs portrait-slots."
 
 requires = ["portrait-slots"]
 requires_interfaces = ["k2.portraitslots@1"]

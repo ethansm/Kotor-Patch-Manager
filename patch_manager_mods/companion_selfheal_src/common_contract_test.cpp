@@ -13,9 +13,14 @@
 #include "HealItems.h"
 #include "ItemRead.h"
 #include "GuiKit.h"
+#include "GuiTip.h"
+#include "FileWatch.h"
+#include "SelfHealUi.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <string>
 #include <vector>
 
@@ -167,5 +172,52 @@ int main() {
     put<int16_t>(0x2100, 10); put<int16_t>(0x2102, 64); put<uint8_t>(0x2100 + 0xC, 1);
     ItemProp p = readItemProp(A(0x2000));
     HCHECK("readItemProp: type 10 (CastSpell), row at +2, usable at +0xC", p.count == 1 && p.type == 10 && p.row == 64 && p.usable == 1);
+
+    // ===== 8. 0.3.0-dev UI APIs (CS4 + CS5)
+    HCHECK("guikit::setClickable(ctl, bool) / hit(ctl, x, y) / cursorEngine(int*, int*) keep their signatures", static_cast<bool(*)(uintptr_t, bool)>(&guikit::setClickable) != nullptr && static_cast<bool(*)(uintptr_t, int, int)>(&guikit::hit) != nullptr && static_cast<bool(*)(int*, int*)>(&guikit::cursorEngine) != nullptr);
+    HCHECK("guikit::setRect/setFont/setAlign/setAlpha/setTextColor/getTextColor/playHoverSound keep their signatures", static_cast<bool(*)(uintptr_t, int, int, int, int)>(&guikit::setRect) != nullptr && static_cast<bool(*)(uintptr_t, const char*)>(&guikit::setFont) != nullptr && static_cast<bool(*)(uintptr_t, unsigned)>(&guikit::setAlign) != nullptr && static_cast<bool(*)(uintptr_t, float)>(&guikit::setAlpha) != nullptr && static_cast<bool(*)(uintptr_t, float, float, float)>(&guikit::setTextColor) != nullptr && static_cast<bool(*)(uintptr_t, float*)>(&guikit::getTextColor) != nullptr && static_cast<bool(*)()>(&guikit::playHoverSound) != nullptr);
+    HCHECK("guikit::clickEdge/rclickEdge(ClickEdge&) -> bool with a default-constructed (prev=false) edge", static_cast<bool(*)(guikit::ClickEdge&)>(&guikit::clickEdge) != nullptr && static_cast<bool(*)(guikit::ClickEdge&)>(&guikit::rclickEdge) != nullptr && !guikit::ClickEdge().prev);
+    HCHECK("guitip::setNative(ctl, text) -> bool and nativeSupported() -> bool", static_cast<bool(*)(uintptr_t, const char*)>(&guitip::setNative) != nullptr && static_cast<bool(*)()>(&guitip::nativeSupported) != nullptr);
+    HEQ("Slot_VitRect is +0x694 on Steam (the card vit rect read per frame)", (long long)k2addr::get()->Slot_VitRect, 0x694LL);
+
+    using namespace shui;
+    Rect vit{ 3700, 100, 120, 36 };
+    const Rect none{ 0, 0, 0, 0 }, leaderVit{ 3700, 100, 60, 36 };
+    Rect br = buttonRect(vit);
+    HCHECK("shui::buttonRect(vit 120x36) is a 16..24 px square left of the bar", br.w == br.h && br.w >= 16 && br.w <= 24 && br.x + br.w < vit.x);
+    HCHECK("shui::buttonRect of a leader-width bar (<70) is the empty rect", buttonRect(leaderVit) == none);
+    HCHECK("shui::resolveState priority: hidden > full > noitem > pending > auto > normal", resolveState(true, false, 10, 10, true, false, false) == BtnState::FullHp && resolveState(true, false, 5, 10, false, false, false) == BtnState::NoItem && resolveState(true, false, 5, 10, true, true, true) == BtnState::Pending && resolveState(true, false, 5, 10, true, false, true) == BtnState::AutoOn && resolveState(true, true, 5, 10, true, false, false) == BtnState::Hidden);
+    HCHECK("shui::clickAllowed false for Hidden/FullHp/Pending, true for NoItem (it logs) and Normal; clickMinCount is 1", !clickAllowed(BtnState::Pending) && !clickAllowed(BtnState::FullHp) && clickAllowed(BtnState::NoItem) && clickAllowed(BtnState::Normal) && clickMinCount(BtnState::AutoOn) == 1);
+    PopLayout L = popoverLayout(br, 3840);
+    HCHECK("shui::popoverLayout: bg first, items inside the bg, left of the button", L.r[0].x + L.r[0].w <= br.x && L.r[1].y == L.r[0].y && L.r[5].x + L.r[5].w == L.r[0].x + L.r[0].w);
+    HEQ("shui::popoverHit on item 3 (HpPlus) centre", (int)popoverHit(L, L.r[3].x + 1, L.r[3].y + 1), (int)PopItem::HpPlus);
+    HEQ("shui::popoverHit outside the items", (int)popoverHit(L, L.r[0].x - 5, L.r[0].y), (int)PopItem::None);
+    HCHECK("shui::popValueRect rows 2/3 are between the steppers, other rows empty", popValueRect(L, 2).w > 0 && popValueRect(L, 3).y == L.r[4].y && popValueRect(L, 1) == none);
+    CompCfg cc;
+    HCHECK("shui::applyPop: toggle auto, hp +5, keep -1 (defaults 35/2)", applyPop(cc, PopItem::AutoToggle).autoOn && applyPop(cc, PopItem::HpPlus).hpPct == 40 && applyPop(cc, PopItem::KeepMinus).keep == 1 && applyPop(cc, PopItem::None) == cc);
+    HCHECK("shui::popLabel / popValueLabel texts", popLabel(PopItem::AutoToggle, cc) == "Auto: OFF" && popLabel(PopItem::HpMinus, cc) == "-" && popLabel(PopItem::KeepPlus, cc) == "+" && popValueLabel(2, cc) == "Use below 35%" && popValueLabel(3, cc) == "Keep 2");
+    CfgTable tb = parseFile("[General]\nLog=1\n[defaults]\ndefault=auto:0,hp:35,keep:2\n[companions]\nbao_dur=auto:1,hp:50,keep:3\n");
+    HCHECK("shui::parseFile + lookup: known tag row, unknown tag -> defaults", lookup(tb, "bao_dur").autoOn && lookup(tb, "bao_dur").hpPct == 50 && lookup(tb, "nobody") == tb.def);
+    upsert(tb, "bao_dur", CompCfg{ false, 60, 4 }); upsert(tb, "t3m4", CompCfg{ true, 20, 0 });
+    std::string out = serializeFile(tb, "[General]\nLog=1\n[defaults]\ndefault=auto:0,hp:35,keep:2\n[companions]\nbao_dur=auto:1,hp:50,keep:3\n");
+    HCHECK("shui::serializeFile keeps foreign sections and round-trips through parseFile", out.find("[General]\nLog=1\n") == 0 && parseFile(out) == tb);
+    Pending pe; pe.on = true; pe.since = 1000; pe.preHp = 10; pe.preStack = 3;
+    HCHECK("shui::pendingDone: HP up, stack down, item gone, timeout; otherwise false", pendingDone(pe, 1100, 11, 3) && pendingDone(pe, 1100, 10, 2) && pendingDone(pe, 1100, 10, -1) && pendingDone(pe, 1000 + kPendingTimeoutMs, 10, 3) && !pendingDone(pe, 1100, 10, 3));
+    HEQ("kPendingTimeoutMs is 6000", (long long)kPendingTimeoutMs, 6000LL);
+
+    // filewatch: atomicWrite + changed/accept (the INI save + hot reload)
+    char tmpl[] = "/tmp/cs_contract_XXXXXX";
+    int fd = mkstemp(tmpl);
+    HCHECK("mkstemp for the filewatch checks", fd >= 0);
+    if (fd >= 0) {
+        close(fd);
+        std::string path = tmpl;
+        HCHECK("filewatch::atomicWrite(path, text, makeBakOnce) -> true", filewatch::atomicWrite(path.c_str(), "a=1\n", true));
+        filewatch::ReloadPoll rp;
+        HCHECK("filewatch::changed: the first call reports a change", filewatch::changed(rp, path.c_str(), 5000));
+        HCHECK("filewatch::changed is throttled (1 s) and quiet when unchanged", !filewatch::changed(rp, path.c_str(), 5100) && !filewatch::changed(rp, path.c_str(), 7000));
+        HCHECK("filewatch::atomicWrite again (bak exists) works; accept() makes our own write quiet", filewatch::atomicWrite(path.c_str(), "a=2\n", true) && (filewatch::accept(rp, path.c_str()), !filewatch::changed(rp, path.c_str(), 9000)));
+        remove(path.c_str()); remove((path + ".bak").c_str());
+    }
     return kt::Report("common_contract_test (companion_selfheal)");
 }
