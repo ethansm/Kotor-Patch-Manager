@@ -1,6 +1,6 @@
 // common_contract_test.cpp -- Patches/Common CONTRACT test for Combat Action Hotbar (Mod 31).
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod.
-// Pins semantics relied on by CombatHotbar.cpp in SafeRead.h and KpLog.h.
+// Pins semantics relied on by CombatHotbar.cpp in SafeRead.h, KpLog.h and HudHost.h (k2hud::Client inert without hud-host).
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -12,7 +12,9 @@
 
 #include "SafeRead.h"
 #include "KpLog.h"
+#include "HudHost.h"
 #include "check.h"
+#include "FakeKPatchApi.h"
 
 #define HCHECK(why, expr) ::kt::Check("combat-hotbar relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("combat-hotbar relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
@@ -29,6 +31,7 @@ int main() {
     HCHECK("arena allocated", arena != nullptr && arena != MAP_FAILED);
 
     uintptr_t menu = reinterpret_cast<uintptr_t>(arena);
+    g_stubVirtualQueryAll = true;   // host stub: all memory reads as one committed read-write region (off = every probe fails)
     saferead::beginScope();
 
     // 1. Verify readAt for int and int8_t
@@ -71,7 +74,15 @@ int main() {
     HCHECK("readResRef16 succeeds", saferead::readResRef16(4, menu + 0x600, iconBuf, 0));
     HEQ("readResRef16 matches", (const char*)iconBuf, "ip_flurry");
 
+    // 4. HudHost.h: with hud-host missing (not installed / listed later) KPatchInit's connect() is a safe no-op
+    fakekp::reset();
+    k2hud::Client hud; hud.init(fakekp::api(), "combat-hotbar");
+    HCHECK("add() accepts the TARGET_MENU_PRE callback", hud.add(K2HUD_TARGET_MENU_PRE, 100, [](const K2HudContext*, void*) {}));
+    HCHECK("connect() without hud-host is false (inert)", !hud.connect());
+    HCHECK("client stays unconnected", !hud.connected);
+    HEQ("hud() without hud-host = 0", hud.hud(), 0);
+    HEQ("K2HudContext v1 size", int(sizeof(K2HudContext)), 40);
+
     munmap(arena, 0x10000);
-    printf("common_contract_test (combat-hotbar): PASS\n");
-    return 0;
+    return ::kt::Report("common_contract_test (combat-hotbar)");
 }

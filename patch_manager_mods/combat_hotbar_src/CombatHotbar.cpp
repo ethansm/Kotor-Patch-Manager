@@ -1,15 +1,20 @@
-// Combat Action Hotbar (Mod 31, Phase 1 Probe)
+// Combat Action Hotbar (Mod 31, Phase 1 Probe, 0.2.0: consumer of hud-host)
 // Diagnostic probe for CSWGuiTargetActionMenu (hud + 0xCC).
 // Safely reads and logs target action groups when an enemy is targeted.
+// 0.2.0: no own hook any more. hud-host owns the PopulateMenus hook (0x00743540) and calls onTargetMenu through k2.hud@1
+// (K2HUD_TARGET_MENU_PRE). Connects once in KPatchInit, so hud-host must be listed before combat-hotbar in the config:
+// there is no hook of ours to retry g_hud.poll() from.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <vector>
 #include <string>
 
 #include "KpLog.h"
 #include "SafeRead.h"
+#include "HudHost.h"
 
 KP_LOG_PATCH("combat-hotbar");
 
@@ -36,6 +41,11 @@ struct TargetState {
 };
 
 TargetState g_state;
+k2hud::Client g_hud;
+
+void onConnect(bool ok, const char* why) {
+    KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "k2.hud connect: %s (%s)", ok ? "ok" : "FAILED", why ? why : "?");
+}
 
 void logTargetGroup(uintptr_t menu, int g, int count) {
     if (count <= 0) return;
@@ -68,18 +78,16 @@ void logTargetGroup(uintptr_t menu, int g, int count) {
     }
 }
 
-} // namespace
+void KPATCH_CALL onTargetMenu(const K2HudContext* ctx, void*) {
+    if (!ctx || ctx->struct_size < offsetof(K2HudContext, targetType) + sizeof(ctx->targetType)) return;
+    if (!ctx->menu) return;   // hud-host already called saferead::beginScope() for this PopulateMenus call
+    uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
+    uintptr_t leader = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->leader));
+    uintptr_t targetObj = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->target));
+    const int forceUnusable = ctx->forceUnusable;
 
-extern "C" __declspec(dllexport) void __cdecl CombatTargetMenuUpdate(void* menuPtr, void* leaderPtr, int forceUnusable, void* targetObjPtr) {
-    saferead::beginScope();
-    if (!menuPtr) return;
-    uintptr_t menu = reinterpret_cast<uintptr_t>(menuPtr);
-    uintptr_t leader = reinterpret_cast<uintptr_t>(leaderPtr);
-    uintptr_t targetObj = reinterpret_cast<uintptr_t>(targetObjPtr);
-
-    // menu+0x1BAA: target type 0..3, 0xFF (-1) = no target.
-    int8_t targetType = -1;
-    saferead::readAt(S_Menu, menu, 0x1BAA, &targetType);
+    // ctx->targetType (read from menu+0x1BAA by hud-host): target type 0..3, -1 = no target (engine 0xFF).
+    const int8_t targetType = static_cast<int8_t>(ctx->targetType);
     int menuState = 0;
     saferead::readAt(S_Menu2, menu, 0x1644, &menuState);
 
@@ -132,3 +140,17 @@ extern "C" __declspec(dllexport) void __cdecl CombatTargetMenuUpdate(void* menuP
         }
     }
 }
+
+} // namespace
+
+extern "C" {
+
+__declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    g_hud.init(api, "combat-hotbar");
+    g_hud.onConnect = onConnect;
+    g_hud.add(K2HUD_TARGET_MENU_PRE, 100, onTargetMenu);
+    g_hud.connect();
+}
+
+} // extern "C"
