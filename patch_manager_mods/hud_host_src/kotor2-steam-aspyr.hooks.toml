@@ -27,27 +27,29 @@ type = "int"
 source = "[esp+0xC]"
 type = "pointer"
 
-# CSWGuiTargetActionMenu POST (0x00743850), called once at the end of PopulateMenus (0x743540), before the menu is drawn.
-# Detour at the prologue: ecx = menu (hud + 0xCC), [esp+4] = leader, [esp+8] = target (may be null); callee RET 8.
-# Design/RE: patch_manager_mods/31a_target_menu_post_re.md.
+# CSWGuiTargetActionMenu::PopulateMenus tail (0x00743847, hud-host 0.4.0): POP ESI / MOV ESP,EBP / POP EBP / RET 0xC (7 bytes),
+# nothing branches into it. 0x743850 (called just before) has written the menu origin (+0x1648/+0x164C), so the origin is final
+# here and nothing has been drawn yet. The hook runs first, then the stolen bytes (incl. the RET). Frame is still up:
+# [ebp-0x30] = menu, [ebp+8] = leader, [ebp+0x10] = target (may be null). The old 0x00743850 entry hook read last frame's origin
+# (one-frame lag, doc 31 CH4c). Design/RE: patch_manager_mods/31a_target_menu_post_re.md, doc 31 CH4c.
 [[hooks]]
-address = 0x00743850
+address = 0x00743847
 type = "detour"
-function = "HH_TargetMenuPost"
-original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0xE4, 0x00, 0x00, 0x00]
+function = "HH_TargetMenuTail"
+original_bytes = [0x5E, 0x8B, 0xE5, 0x5D, 0xC2, 0x0C, 0x00]
 skip_original_bytes = false
 exclude_from_restore = []
 
 [[hooks.parameters]]
-source = "ecx"
+source = "[ebp-0x30]"
 type = "pointer"
 
 [[hooks.parameters]]
-source = "[esp+4]"
+source = "[ebp+8]"
 type = "pointer"
 
 [[hooks.parameters]]
-source = "[esp+8]"
+source = "[ebp+0x10]"
 type = "pointer"
 
 # CGuiInGame/HUD layout load (0x0040F5A0, StopLoadFromLayout entry, called by every panel ctor), detour at the prologue: ecx = panel.

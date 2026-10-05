@@ -96,7 +96,7 @@ inline void runBuild(const Dispatcher& d, K2HudContext& ctx) {
     d.run(ctx);
 }
 
-// ---- TARGET_MENU_POST (0x00743850, called once at the end of PopulateMenus) ----
+// ---- TARGET_MENU_POST (0x00743847 PopulateMenus tail since hud-host 0.4.0; was the 0x00743850 entry) ----
 // POST only fires for a PopulateMenus call whose PRE was seen: PreState remembers the last PRE; runPost consumes it. Rules:
 //   - no PRE seen yet, or the PRE was already consumed by an earlier POST (second POST in the same frame) -> skipped;
 //   - POST menu != PRE menu -> skipped (a PRE stays pending, so the matching POST can still fire);

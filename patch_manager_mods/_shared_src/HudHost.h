@@ -12,7 +12,8 @@
  * Phases (all on the game thread, inside the hooked engine function):
  *   K2HUD_FRAME            dispatched BEFORE K2HUD_TARGET_MENU_PRE on every PopulateMenus call (0x00743540).
  *   K2HUD_TARGET_MENU_PRE  PopulateMenus, before the stock target-menu population.
- *   K2HUD_TARGET_MENU_POST end of PopulateMenus (hud-host 0.2.0+, hook at PopulateMenus exit); fires once per PRE, same frame.
+ *   K2HUD_TARGET_MENU_POST end of PopulateMenus (hud-host 0.2.0+; 0.4.0+: PopulateMenus tail 0x743847), after 0x743850 has
+ *                          positioned the menu (origin final), before both draws; fires once per PRE, same frame.
  *   K2HUD_BUILD            hud-host 0.3.0+: source = the layout-closing function 0x0040F5A0, which runs for every panel ctor; fires
  *                          only for the HUD panel (vtable 0x0099DCC4), once per HUD layout load. The layout is still open while
  *                          the callbacks run, so guikit::createLabelFromTemplate + appendToPanel are valid there. ctx.panel ==

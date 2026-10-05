@@ -7,8 +7,9 @@
 //               menu+0x1BAA = int8 target type (0..3, 0xFF none), read through SafeRead (site 0x7001).
 //   0x0040F5A0  BUILD (hud-host 0.3.0): layout-closing function of every panel ctor, ecx = panel; dispatched only when the panel
 //               vtable (read through SafeRead, site 0x7C10) is the HUD's (gameaddr::HudVtable); the layout is still open there.
-//   0x00743850  TARGET_MENU_POST, called once at the end of PopulateMenus: ecx = menu, [esp+4] = leader, [esp+8] = target (may be
-//               null); callee RET 8. Dispatched only after a matching PRE (hhd::runPost), frame number reused from the PRE.
+//   0x00743847  TARGET_MENU_POST (hud-host 0.4.0), PopulateMenus tail (before POP ESI/.../RET 0xC): [ebp-0x30] = menu,
+//               [ebp+8] = leader, [ebp+0x10] = target (may be null). 0x743850 has positioned the menu (origin +0x1648/+0x164C
+//               final), nothing drawn yet. Dispatched only after a matching PRE (hhd::runPost), frame number reused from the PRE.
 // Logging: kpatch.log patch "hud-host", channel "core" (registrations and the first dispatch at INFO).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -83,7 +84,7 @@ __declspec(dllexport) void __cdecl HH_TargetMenuPopulate(void* menuPtr, void* le
     hhd::runPopulate(g_disp, ctx);
 }
 
-__declspec(dllexport) void __cdecl HH_TargetMenuPost(void* menuPtr, void* leaderPtr, void* targetPtr) {
+__declspec(dllexport) void __cdecl HH_TargetMenuTail(void* menuPtr, void* leaderPtr, void* targetPtr) {
     saferead::beginScope();
     const uintptr_t menu = reinterpret_cast<uintptr_t>(menuPtr);
     int8_t tt = -1;
