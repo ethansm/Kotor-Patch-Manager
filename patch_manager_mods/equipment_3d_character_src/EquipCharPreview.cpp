@@ -20,6 +20,8 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <math.h>
+#include "GameAddr.h"
+#include "WindowHook.h"  // one game-HWND subclass, safe against out-of-order unhook (F28)
 #include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
 
 namespace {
@@ -63,7 +65,7 @@ constexpr int ExpectedGobVtable = 0x0098b5cc;
 constexpr int PanelCharOff = 0x68;          // panel+0x68 = client creature POINTER of the shown character (SetCharacter arg)
 constexpr int FnCreatureCtor = 0x007645f0;  // CSWCCreature ctor, fastcall ECX = block (0x470 bytes)
 constexpr int CreatureSize = 0x470;
-constexpr int CreatureVftable = 0x0099ee14;
+constexpr int CreatureVftable = static_cast<int>(gameaddr::ClientCreatureVtable);
 constexpr int CreatureAppOff = 0x224;       // creature[0x89] = appearance object pointer (0x6c bytes, first 0x3c copied)
 constexpr int CreatureStatsOff = 0x310;     // creature[0xc4] = stats; +0x80 short = alignment
 constexpr int CreatureHolderOff = 0x68;     // creature[0x1a] = part holder: holder->vt[8](0xff) body Gob, (0xfe) head Gob
@@ -260,13 +262,14 @@ void syncScreen() {
     int w = 0, h = 0; readAt<int>(0x009F42A4, 0, &w); readAt<int>(0x009F42A8, 0, &h);
     if (eq3d::screenValid(w, h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
-WNDPROC g_oldProc = nullptr;
+struct Equip3dWheelTag {};
+using WheelHook = kp::WindowHook<Equip3dWheelTag>;
 volatile LONG g_wheelAccum = 0;
 volatile DWORD g_lastTickMs = 0;
 volatile LONG g_viewRect[4] = {0, 0, 0, 0};
 int g_wheelLogs = 0;
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
+    if (WheelHook::active() && m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
         if (ScreenToClient(h, &pt) && GetClientRect(h, &r) && r.right > 0 && r.bottom > 0) {
@@ -276,7 +279,7 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
         if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
     }
-    return CallWindowProcA(g_oldProc, h, m, w, l);
+    return WheelHook::forward(h, m, w, l);
 }
 HWND gameWindow() {
     if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
@@ -288,9 +291,9 @@ HWND gameWindow() {
     g_hwnd = c.best;
     RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
     logf("INPUT: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
-    if (g_hwnd && g_cfg.wheelZoom && !g_oldProc) {
-        g_oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(wheelProc)));
-        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, g_oldProc, g_oldProc ? 0UL : GetLastError());
+    if (g_hwnd && g_cfg.wheelZoom && !WheelHook::old) {
+        WheelHook::install(g_hwnd, &wheelProc);
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, WheelHook::old, WheelHook::old ? 0UL : GetLastError());
     }
     return g_hwnd;
 }
@@ -1011,10 +1014,7 @@ extern "C" void __cdecl EquipDestroy(int panel) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_hwnd && IsWindow(g_hwnd) &&
-        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
-        SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
-    }
+    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // restore if still on top, else stay chained but inert
     if (reason == DLL_PROCESS_ATTACH) { logf("equip3d 0.1.0-probe loaded"); loadIni(); g_rng ^= GetTickCount(); }
     return TRUE;
 }
