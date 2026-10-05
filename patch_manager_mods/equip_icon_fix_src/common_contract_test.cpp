@@ -14,6 +14,7 @@
 #include "SafeRead.h"
 #include "check.h"
 #include "KpLog.h"
+#include "IniKit.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -155,6 +156,15 @@ int main() {
         CCHECK("a WARN line carries the WARN tag (REFUSED load lines)", u.find(" k2-equip-icon-fix/main WARN REFUSED probe\n") != std::string::npos);
         KpLog_SetFallbackFile(nullptr);
         remove(path);
+    }
+
+    // ---- IniKit kill switch (EquipIconFix.cpp configEnabled -> inikit::enabledFile("equipiconfix.txt"))
+    {
+        CCHECK("inikit::enabledFlag(\"enabled=0\") is false (kill switch off)", !inikit::enabledFlag("enabled=0"));
+        CCHECK("inikit::enabledFlag treats a missing key as on", inikit::enabledFlag("other=1"));
+        CCHECK("inikit::enabledFlag: the last matching line wins", inikit::enabledFlag("enabled=0\nenabled=1"));
+        CCHECK("inikit::enabledFlag skips leading tab, spaces and '=' before the value", !inikit::enabledFlag("\tenabled = 0"));
+        CCHECK("inikit::enabledFile treats a missing file as on", inikit::enabledFile("/nonexistent/equipiconfix_missing.txt"));
     }
 
     return kt::Report("common_contract_test (equip_icon_fix)");

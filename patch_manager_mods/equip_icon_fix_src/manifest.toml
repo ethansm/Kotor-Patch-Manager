@@ -1,7 +1,7 @@
 [patch]
 id = "k2-equip-icon-fix"
 name = "Equipment Screen Icon Reload Fix"
-version = "1.1.0"
+version = "1.1.1"
 author = "local"
 description = "Stops the equipment screen from reloading the equipped weapon's icon texture every frame. The engine's per-frame slot refresh (0x008AD930) first resets the weapon slot images to their placeholders and then sets the item icon on the same control, so the icon texture is destroyed and re-read from disk/re-uploaded each frame (~2.6 ms/frame with loose override icons). This DLL-only patch defers the refresh's placeholder resets to its end and drops each one when the same control gets another image in the same pass; every slot ends each frame showing exactly what the engine would show. Disable with equipiconfix.txt containing enabled=0. Log: equipiconfix_log.txt."
 
