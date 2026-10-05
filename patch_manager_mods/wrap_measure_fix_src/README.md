@@ -17,7 +17,10 @@ engine_research_findings/V3.md and doc 16 lead L4.)
 
     0x0047B232  DC 05 D8 C1 98 00  ->  DC 05 08 7F 98 00
 
-Identical in both target exes. No function, no parameters, no INI.
+The manifest targets the vanilla Steam Aspyr exe only (6A522E71; the 4gb-patch
+flag does not move these bytes). No function, no parameters, no INI.
+(The hooks.toml comment still says "both the Steam Aspyr and Steam Aspyr LAA
+exes"; it mirrors the KPM copy byte-for-byte, so it is left as is.)
 
 ## Build
 
@@ -28,5 +31,10 @@ The `.toml` files here are byte-identical mirrors of the ones in that folder.
 
 ## Status
 
-STAGED, not installed. Rollback = reinstall the KPM patch set without the id
-`k2-wrap-measure-fix`.
+LIVE (in the installed KPM patch set; doc 20a audit §4, 2026-10-03). Rollback =
+reinstall the KPM patch set without the id `k2-wrap-measure-fix`.
+
+## Tests
+
+T0 only (doc 20 §5 Low): `python3 scripts/check_hook_bytes.py` checks the
+6 original bytes against the vanilla exe and the `.kpatch` packaging.

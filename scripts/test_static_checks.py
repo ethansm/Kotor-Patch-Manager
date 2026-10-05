@@ -380,5 +380,55 @@ class RunTests(unittest.TestCase):
         self.assertFalse([x for x in f if x.sev in ("FAIL", "WARN")], f)
 
 
+@needs_objdump
+class H6bTests(unittest.TestCase):
+    """InventorySortFilter H6b (doc 20 §5 Low): the 79-byte stolen-byte detour at 0x008A7E22, read from the repo
+    hooks.toml and placed at its real VA in a synthetic exe. It holds a jne and a rel CALL, so it is only legal with
+    skip_original_bytes = true; the window must end on an instruction boundary (resume at 0x008A7E71)."""
+
+    TOML = HERE.parent / "patch_manager_mods" / "inventory_sort_filter_src" / "kotor2-steam-aspyr.hooks.toml"
+    VA = 0x008A7E22
+
+    def setUp(self):
+        _, hooks = sc.parse_hooks(self.TOML.read_text(), mod="inventory-sort-filter")
+        found = [h for h in hooks if h.address == self.VA]
+        self.assertEqual(len(found), 1, "H6b hook missing from inventory_sort_filter_src hooks.toml")
+        self.h = found[0]
+        rva = (self.VA - BASE) & ~0xFFF
+        text = bytearray(b"\x90" * 0x1000)
+        off = self.VA - BASE - rva
+        text[off:off + len(self.h.orig)] = self.h.orig
+        self.pe = sc.PeImage(data=build_pe([(".text", rva, bytes(text), CODE_FLAGS)]))
+
+    def check(self, skip, orig=None):
+        rep = sc.Reporter(out=None)
+        ok = chb.check_site(rep, self.pe, "isf", self.VA, orig or self.h.orig, "code", "detour", skip, None)
+        return rep, ok
+
+    def test_shape(self):
+        self.assertEqual((self.h.type, self.h.function, len(self.h.orig), self.h.skip_original),
+                         ("detour", "SortFilterBufferRow", 79, True))
+        self.assertEqual(self.VA + len(self.h.orig), 0x008A7E71)    # resume address in the hooks.toml comment
+
+    def test_passes_with_two_rel_branch_infos(self):
+        rep, ok = self.check(skip=True)
+        self.assertTrue(ok)
+        self.assertNotIn("FAIL", sevs(rep))
+        infos = [f.msg for f in rep.findings if f.check == "rel-branch"]
+        self.assertEqual(len(infos), 1, infos)                       # one line naming both branches
+        self.assertIn("0x8A7E3A", infos[0])                          # jne 0x8a7e52
+        self.assertIn("0x8A7E6C", infos[0])                          # call 0x8a75f0 (CreateItemEntry)
+        self.assertEqual(sevs(rep, "rel-branch"), ["INFO"])
+
+    def test_skip_false_fails(self):
+        rep, ok = self.check(skip=False)
+        self.assertFalse(ok)
+        self.assertEqual(sevs(rep, "rel-branch"), ["FAIL"])
+
+    def test_window_one_byte_short_fails(self):
+        rep, ok = self.check(skip=True, orig=self.h.orig[:-1])     # ends inside the CALL rel32
+        self.assertFalse(ok)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
