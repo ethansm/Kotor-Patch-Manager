@@ -3,6 +3,7 @@
 ## Status
 - **Mod id:** `combat-hotbar` · source `combat_hotbar_src/` · Steam Aspyr `6A522E71…` (live exe = vanilla+4GB, same as all mods)
 - **Current (2026-10-04 23:17): CH1c + HL2 INSTALLED** (user GO). hud-host 0.1.0-dev dll `4dabbff1` + combat-hotbar 0.2.0-probe dll `4af3e9b6` (src commits `e091df9` / `3cdc84e`; KPM local-mods `d1a7dbb` `Patches/HudHost` + `Patches/CombatHotbar`). Stage `$K/combathud_stage_1004` (STAGE_INFO head=d1a7dbb; DIRTY = sibling .bak/CharEffectsPanel only; PROBLEMS 1 = known 4gb artifact), 36 ids applied, verify mismatches 0, config `b073054f` -> `67da27ea` (2 appended blocks, hud-host first). kplog.ini: `[hud-host]` info, `[combat-hotbar]` debug. Backup `$G/backups/combathud_install_20261004_231706` (rollback: restore it). Gate: pre_install_gate `--skip-default` PASS (default tier 118/119; the 1 FAIL = queue-hud session's `smoke_queuehud.cpp:60` raw address). **Next:** user targets enemy, door, placeable, mine, droid (~5 min), then `kotor2_logs.py check` on `$G/combat-hotbar_log.txt` + `hud-host_log.txt` -> answer open Q1/Q4, mark CH1c + HL2 DONE.
+- **Offline next (user 10-04 23:30 "keep building; test everything ready at once"):** CH2 build (invoke keys, INI-gated), CH3a RE, CH4a logic, then CH3b; one combined install for the user's next play session.
 - **Resume here:** first row of the §4 plan table whose Status is not DONE (`python3 scripts/plan_manager.py resume --plan patch_manager_mods/31_combat_action_hotbar.md`). Library: §5.
 
 ---
