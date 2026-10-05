@@ -23,7 +23,7 @@ from PIL import Image  # noqa: E402
 sys.path.insert(0, str(HERE))
 import gen_selfheal_textures as gt  # noqa: E402
 
-EXPECTED = {"csh_cross": (32, 32), **{f"csh_ring{k}": (48, 48) for k in range(8)}}
+EXPECTED = {"csh_cross": (32, 32), **{f"csh_ring{k}": (48, 48) for k in range(8)}, "csh_disc": (48, 48)}
 
 
 def gen():
@@ -50,10 +50,40 @@ class GenSelfHealTextures(unittest.TestCase):
     def test_cross(self):
         im = img(dict(gen())["csh_cross"])
         self.assertEqual(im.getpixel((16, 16))[3], 255)
-        self.assertEqual(im.getpixel((16, 16))[:3], (255, 255, 255))
+        self.assertGreater(min(im.getpixel((16, 16))[:3]), 150)   # bright body, engine tints it
         for xy in ((0, 0), (31, 0), (0, 31), (31, 31), (5, 5)):
             self.assertEqual(im.getpixel(xy)[3], 0, xy)
         self.assertGreater(im.getpixel((16, 2))[3], 0)   # arm reaches near the edge
+
+    def test_cross_v2(self):
+        im = img(dict(gen())["csh_cross"])
+        lum = lambda p: sum(p[:3]) / 3
+        self.assertGreater(lum(im.getpixel((16, 5))), lum(im.getpixel((16, 26))) + 40)   # gradient inside the body
+        o = im.getpixel((16, 0))   # outline-only pixel
+        self.assertLess(lum(o), 10)
+        self.assertLess(abs(o[3] - 200), 8)
+
+    def test_disc(self):
+        im = img(dict(gen())["csh_disc"])
+        c = im.getpixel((24, 24))
+        self.assertLessEqual(abs(c[3] - 175), 3)
+        self.assertLessEqual(max(c[:3]), 3)
+        rim = im.getpixel((24 + 20, 24))   # inside the 2 px rim
+        for got, want in zip(rim[:3], (10, 96, 80)):
+            self.assertLessEqual(abs(got - want), 12, rim)
+        self.assertGreater(rim[3], 230)
+        # radius from the alpha extent along the centre rows, as a coverage sum
+        xs = [x for x in range(48) if im.getpixel((x, 24))[3] > 128]
+        radius = (xs[-1] - xs[0] + 1) / 2
+        self.assertLessEqual(abs(radius - gt.RING_RADIUS), 1.0)
+        self.assertEqual(im.getpixel((0, 0))[3], 0)
+
+    def test_disc_is_last_in_inc(self):
+        t = gt.INC.read_text()
+        names = re.findall(r'^    \{ "(csh_\w+)", SHTex_', t, re.M)
+        self.assertEqual(names[-1], "csh_disc")
+        self.assertEqual(names[0], "csh_cross")
+        self.assertIn(f"kSelfHealTextureCount = {len(names)}u", t)
 
     def test_ring_frames_differ(self):
         b = [d for n, d in gen() if n.startswith("csh_ring")]
