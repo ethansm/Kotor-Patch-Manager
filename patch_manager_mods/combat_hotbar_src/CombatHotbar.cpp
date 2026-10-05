@@ -1,4 +1,4 @@
-// Combat Action Hotbar (Mod 31, 0.4.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4b icon button grid; consumer of hud-host)
+// Combat Action Hotbar (Mod 31, 0.5.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes; consumer of hud-host)
 // Diagnostic probe for CSWGuiTargetActionMenu (hud + 0xCC).
 // Safely reads and logs target action groups when an enemy is targeted.
 // 0.2.0: no own hook any more. hud-host owns the PopulateMenus hook (0x00743540) and calls onTargetMenu through k2.hud@1
@@ -10,6 +10,11 @@
 // 0.4.0-dev: CH4b clickable icon buttons (INI [Buttons] Enabled/Cols/MaxRows/Gap). K2HUD_BUILD (hud-host 0.3.0+) creates 3*Cols*MaxRows hidden
 // labels from LBL_QUEUE1 while the HUD layout is open; TARGET_MENU_POST lays them out under the three vanilla group boxes (ch::layoutGroupGrid,
 // 2 columns per group, row-major), fills icon/alpha/tooltip from the group entries and invokes the clicked entry (same path as the CH2 keys).
+// 0.5.0-dev: CH4c replaces the three vanilla target-menu group boxes (BTN/LBL/UP/DOWN, bit1 cleared every POST) with our own vanilla-styled buttons
+// (lbl_miscroll_f frame, lbl_miscroll_hi on hover, entry icon inset on top = 2 labels per slot). TARGET_MENU_POST now runs at the PopulateMenus tail
+// (hud-host 0.4.0), after the engine wrote the menu origin and before anything is drawn, so origin reads are zero-lag. ch::layoutBannerGrid puts three
+// columns under the banner (LBL_NAME + PB_HEALTH); while the cursor is over the grid the origin menu+0x1648/+0x164C is frozen (written back) so the banner
+// stops following the target. INI [Buttons] Replace/Cols/MaxRows/BtnPx/Pad/GroupGap/Inset/ClickSound (Gap is gone); hover plays GUI sound 1, a click ClickSound.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -43,6 +48,8 @@ constexpr unsigned S_BtnRd  = SiteBase + 0x80;   // CH4b reads (menu origin, 1BA
 constexpr unsigned S_ProjRd = SiteBase + 0x90;   // CH4b BUILD projection flag read / write / restore
 constexpr unsigned S_ProjWr = SiteBase + 0x91;
 constexpr unsigned S_ProjRs = SiteBase + 0x92;
+constexpr unsigned S_OrgWr  = SiteBase + 0xA0;   // CH4c menu origin (+0x1648/+0x164C) freeze write probe
+constexpr unsigned S_VanWr  = SiteBase + 0xA1;   // CH4c vanilla group control flag write probe (hide / restore)
 
 constexpr uintptr_t HudTargetInvoke = 0x00751710;   // thiscall (hud, group, 0), RET 8; reads the selected key (fallback entry[0])
 
@@ -72,7 +79,12 @@ struct Config {
     bool btnEnabled = true;      // CH4b [Buttons]
     int cols = 2;                // 1..4
     int maxRows = 4;             // 1..8
-    int gap = 2;                 // 0..16 px
+    bool replace = true;         // CH4c: hide the vanilla group controls
+    int btnPx = 0;               // 0 = auto (vanilla BTN width / 2, capped by fit), else 8..256
+    int pad = 4;                 // 0..32 px between buttons / rows
+    int groupGap = 8;            // 0..64 px between the three group columns
+    int inset = 3;               // 0..16 px icon inset inside the frame
+    int clickSound = 0;          // GUI sound idx on click, -1 off
 } g_cfg;
 ch::KeyEdge g_edge[3];
 int g_arrowState = -1;   // -1 never applied, 0 failed, 1 applied (log on change only)
@@ -95,10 +107,16 @@ void loadIni() {
     g_cfg.btnEnabled = GetPrivateProfileIntA("Buttons", "Enabled", 1, IniPath) != 0;
     g_cfg.cols = clampInt(GetPrivateProfileIntA("Buttons", "Cols", 2, IniPath), 1, 4);
     g_cfg.maxRows = clampInt(GetPrivateProfileIntA("Buttons", "MaxRows", 4, IniPath), 1, 8);
-    g_cfg.gap = clampInt(GetPrivateProfileIntA("Buttons", "Gap", 2, IniPath), 0, 16);
-    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d cols=%d maxRows=%d gap=%d",
+    g_cfg.replace = GetPrivateProfileIntA("Buttons", "Replace", 1, IniPath) != 0;
+    const int bp = GetPrivateProfileIntA("Buttons", "BtnPx", 0, IniPath);
+    g_cfg.btnPx = bp <= 0 ? 0 : clampInt(bp, 8, 256);
+    g_cfg.pad = clampInt(GetPrivateProfileIntA("Buttons", "Pad", 4, IniPath), 0, 32);
+    g_cfg.groupGap = clampInt(GetPrivateProfileIntA("Buttons", "GroupGap", 8, IniPath), 0, 64);
+    g_cfg.inset = clampInt(GetPrivateProfileIntA("Buttons", "Inset", 3, IniPath), 0, 16);
+    g_cfg.clickSound = clampInt(GetPrivateProfileIntA("Buttons", "ClickSound", 0, IniPath), -1, 18);
+    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d",
             (int)g_cfg.invokeEnabled, g_cfg.mod, g_cfg.keys[0], g_cfg.keys[1], g_cfg.keys[2], (int)g_cfg.keepSelection, (int)g_cfg.hideArrows,
-            (int)g_cfg.btnEnabled, g_cfg.cols, g_cfg.maxRows, g_cfg.gap);
+            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound);
 }
 
 bool modifiersMatch() {
@@ -128,12 +146,12 @@ void readGroups(uintptr_t menu, ch::GroupView gv[3], uintptr_t base[3]) {
     for (int g = 0; g < 3; ++g) readGroup(menu, g, &gv[g], &base[g]);
 }
 
-// Select entry ev of group g for target type `type` (selection slot menu+0x24+type*12+g*4 := key), call the engine invoke wrapper, restore the slot.
-void invokeEntry(uintptr_t hud, uintptr_t menu, int g, int type, int idx, const ch::EntryView& ev) {
+// Returns true when the engine invoke ran. Select entry ev of group g for target type `type` (selection slot menu+0x24+type*12+g*4 := key), call the engine invoke wrapper, restore the slot.
+bool invokeEntry(uintptr_t hud, uintptr_t menu, int g, int type, int idx, const ch::EntryView& ev) {
     int32_t* slot = reinterpret_cast<int32_t*>(menu + 0x24 + (uintptr_t)type * 12 + (uintptr_t)g * 4);
     int32_t oldSel = 0;
-    if (!saferead::readAt(S_InvRd, reinterpret_cast<uintptr_t>(slot), 0, &oldSel)) { KP_LOGV(chTarget, KPLOG_WARN, "invoke g%d: skip, selection slot unreadable", g); return; }
-    if (!saferead::probeWrite(S_InvWr, slot, 4)) { KP_LOGV(chTarget, KPLOG_WARN, "invoke g%d: skip, not writable (slot=%p)", g, (void*)slot); return; }
+    if (!saferead::readAt(S_InvRd, reinterpret_cast<uintptr_t>(slot), 0, &oldSel)) { KP_LOGV(chTarget, KPLOG_WARN, "invoke g%d: skip, selection slot unreadable", g); return false; }
+    if (!saferead::probeWrite(S_InvWr, slot, 4)) { KP_LOGV(chTarget, KPLOG_WARN, "invoke g%d: skip, not writable (slot=%p)", g, (void*)slot); return false; }
     KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: pre idx=%d key=%08x oldSel=%08x owner=%08x usable=%d type=%d", g, idx, (unsigned)ev.key, (unsigned)oldSel, (unsigned)ev.owner, (int)ev.usable, type);
     *slot = static_cast<int32_t>(ev.key);
     using Fn = void(__thiscall*)(void*, int, int);
@@ -143,6 +161,7 @@ void invokeEntry(uintptr_t hud, uintptr_t menu, int g, int type, int idx, const 
     bool restored = false;
     if (!g_cfg.keepSelection && selAfter == static_cast<int32_t>(ev.key) && saferead::probeWrite(S_InvWr, slot, 4)) { *slot = oldSel; restored = true; }
     KP_LOGV(chTarget, KPLOG_INFO, "invoke g%d: returned selAfter=%08x restored=%d", g, (unsigned)selAfter, (int)restored);
+    return true;
 }
 
 // CH2 key path: the last usable owned entry of group g.
@@ -165,30 +184,85 @@ void pollInvokeKeys(const K2HudContext* ctx) {
     }
 }
 
-// ---- CH4b: icon button grid under the three vanilla group boxes ----
+// ---- CH4c: own vanilla-styled buttons replacing the three vanilla target-menu group boxes ----
 constexpr int MaxBtn = 3 * 4 * 8;   // 3 groups * Cols max * MaxRows max
+constexpr const char* FrameResref = "lbl_miscroll_f";    // doc 31b Q: 64x128 pill, stretched into a square (accepted)
+constexpr const char* HiResref = "lbl_miscroll_hi";
 
-struct Btn {
+// One engine label with change-only setters (cache = last value written).
+struct Wid {
     uintptr_t c = 0;
     int vis = -1;                 // -1 unknown, 0 hidden, 1 shown
     ch::Rect rect = { 0, 0, 0, 0 };
     bool rectSet = false;
-    char icon[17] = { 0 };
-    bool iconSet = false;
+    void* fill = nullptr;
+    bool fillSet = false;
     float alpha = -1.f;
+};
+
+struct Btn {
+    Wid bg, icon;
+    char iconName[17] = { 0 };
+    bool iconSet = false;
     uint32_t tipKey = 0;
     bool tipSet = false;
 };
 Btn g_btn[MaxBtn];
-int g_nBtn = 0;                    // controls created in the last BUILD
+int g_nBtn = 0;                    // slots created in the last BUILD
 int g_per = 0;                     // Cols*MaxRows used by that BUILD
 guikit::ClickEdge g_click;
-ch::Rect g_lastRect[MaxBtn];       // last frame's laid-out rects (zeroed when unused)
+ch::Rect g_lastRect[MaxBtn];       // last frame's displayed rects (zeroed when unused); only used to compute cursorInGrid
 int g_lastN[3] = { 0, 0, 0 };
 bool g_haveLast = false;
-bool g_frozen = false;
+ch::FreezeState g_freeze = { false, 0, 0 };
+bool g_frozenLog = false;
+int g_hover = -1;                  // flat slot under the cursor, -1 none
+void* g_imgFrame = nullptr;        // guikit::imageFor results, cached once non-null (pooled, never released)
+void* g_imgHi = nullptr;
+bool g_imgWarned = false;
+bool g_replaced = false;           // vanilla bit1 cleared by us (Replace=1), so Replace=0 must restore it
+int g_replState = -1;              // -1 never applied, 0 failed, 1 applied (log on change only)
 uintptr_t g_logObj = 0; int g_logType = -2;
 int g_flagLast = -1;
+
+// GUI sound by index (mirrors guikit::playHoverSound, which is idx 1): idx < 0 = off. False when the manager is null.
+bool playGuiSound(int idx) {
+    if (idx < 0) return false;
+    uint32_t mgr = 0;
+    if (!guikit::g_gk.playSound || !guikit::g_gk.guiSoundMgrAddr || !guikit::detail::rd32(guikit::g_gk.guiSoundMgrAddr, 0, &mgr) || !mgr) return false;
+    guikit::g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgr)), static_cast<char>(idx));
+    return true;
+}
+
+void widHide(Wid& w) {
+    if (!w.c || w.vis == 0) return;
+    guikit::setVisible(w.c, false); guikit::setClickable(w.c, false);
+    w.vis = 0;
+}
+void widShow(Wid& w, bool clickable) {
+    if (!w.c || w.vis == 1) return;
+    guikit::setVisible(w.c, true); guikit::setClickable(w.c, clickable);
+    w.vis = 1;
+}
+void widRect(Wid& w, const ch::Rect& r) {
+    if (!w.c) return;
+    if (!w.rectSet || w.rect.x != r.x || w.rect.y != r.y || w.rect.w != r.w || w.rect.h != r.h) { guikit::setRect(w.c, r.x, r.y, r.w, r.h); w.rect = r; w.rectSet = true; }
+}
+void widFill(Wid& w, void* img) {
+    if (!w.c) return;
+    if (!w.fillSet || w.fill != img) { guikit::setFill(w.c, img); w.fill = img; w.fillSet = true; }
+}
+void widAlpha(Wid& w, float a) {
+    if (!w.c) return;
+    if (w.alpha != a) { guikit::setAlpha(w.c, a); w.alpha = a; }
+}
+
+ch::Rect unionRect(const ch::Rect& a, const ch::Rect& b) {
+    const int x0 = a.x < b.x ? a.x : b.x, y0 = a.y < b.y ? a.y : b.y;
+    const int x1 = (a.x + a.w) > (b.x + b.w) ? (a.x + a.w) : (b.x + b.w), y1 = (a.y + a.h) > (b.y + b.h) ? (a.y + a.h) : (b.y + b.h);
+    ch::Rect r = { x0, y0, x1 - x0, y1 - y0 };
+    return r;
+}
 
 // RAII: ProjectionFlag cleared for the label binds, restored on EVERY path (same recipe as companion-selfheal / hotbar BUILD).
 struct ProjGuard {
@@ -202,9 +276,10 @@ struct ProjGuard {
 };
 
 // BUILD phase (hud-host 0.3.0+): the HUD layout is open, so labels can be created from the LBL_QUEUE1 template. A new HUD = new controls.
+// Per slot: bg first, then icon (later in the panel list draws on top).
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     for (Btn& b : g_btn) b = Btn();
-    g_nBtn = 0; g_per = 0; g_click = guikit::ClickEdge(); g_haveLast = false; g_frozen = false; g_logObj = 0; g_logType = -2;
+    g_nBtn = 0; g_per = 0; g_click = guikit::ClickEdge(); g_haveLast = false; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
     if (!g_cfg.btnEnabled) { KP_LOGV(chMain, KPLOG_INFO, "BUILD: buttons disabled ([Buttons] Enabled=0)"); return; }
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: no panel in the context"); return; }
     saferead::beginScope();
@@ -214,43 +289,84 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0;
     uint32_t badVt = 0;
     for (int i = 0; i < total && i < MaxBtn; ++i) {
-        int why = guikit::CF_None; uint32_t bv = 0;
-        uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
-        if (!c) {
-            switch (why) { case guikit::CF_Alloc: ++failAlloc; break; case guikit::CF_Vtable: ++failVt; badVt = bv; break; case guikit::CF_Template: ++failTpl; break; default: ++failOther; break; }
-            continue;
+        uintptr_t cs[2] = { 0, 0 };
+        bool okSlot = true;
+        for (int k = 0; k < 2 && okSlot; ++k) {   // 0 = bg, 1 = icon
+            int why = guikit::CF_None; uint32_t bv = 0;
+            uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
+            if (!c) {
+                switch (why) { case guikit::CF_Alloc: ++failAlloc; break; case guikit::CF_Vtable: ++failVt; badVt = bv; break; case guikit::CF_Template: ++failTpl; break; default: ++failOther; break; }
+                okSlot = false; break;
+            }
+            guikit::setVisible(c, false);
+            guikit::setClickable(c, false);
+            if (!guikit::appendToPanel(panel, c)) { ++failAppend; KP_LOGV(chMain, KPLOG_WARN, "BUILD: append failed, control %08x left hidden + click-through", (unsigned)c); okSlot = false; break; }
+            cs[k] = c;
         }
-        guikit::setVisible(c, false);
-        guikit::setClickable(c, false);
-        if (!guikit::appendToPanel(panel, c)) { ++failAppend; KP_LOGV(chMain, KPLOG_WARN, "BUILD: append failed, control %08x left hidden + click-through", (unsigned)c); continue; }
-        g_btn[i].c = c; g_btn[i].vis = 0; ++n;
+        if (!okSlot) continue;   // slot stays unused (a half-built slot's appended bg stays hidden + click-through)
+        g_btn[i].bg.c = cs[0]; g_btn[i].bg.vis = 0;
+        g_btn[i].icon.c = cs[1]; g_btn[i].icon.vis = 0;
+        ++n;
     }
     g_nBtn = total < MaxBtn ? total : MaxBtn; g_per = per;
-    if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d (panel=%08x cols=%d rows=%d)", n, total, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
+    if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d slots x2 labels (panel=%08x cols=%d rows=%d)", n, total, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
     else KP_LOGV(chMain, KPLOG_WARN, "BUILD buttons created=%d/%d alloc=%d vtable=%d(%08x) template=%d append=%d other=%d", n, total, failAlloc, failVt, (unsigned)badVt, failTpl, failAppend, failOther);
 }
 
 void hideAllButtons() {
     for (int i = 0; i < g_nBtn; ++i) {
         Btn& b = g_btn[i];
-        if (!b.c || b.vis == 0) continue;
-        guikit::setVisible(b.c, false); guikit::setClickable(b.c, false);
-        b.vis = 0; b.tipSet = false;
+        if (!b.bg.c) continue;
+        widHide(b.bg); widHide(b.icon);
+        b.tipSet = false;
     }
-    g_haveLast = false; g_frozen = false; g_logObj = 0; g_logType = -2;
+    g_haveLast = false; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
     memset(g_lastRect, 0, sizeof(g_lastRect)); memset(g_lastN, 0, sizeof(g_lastN));
 }
 
-bool anyButtonVisible() { for (int i = 0; i < g_nBtn; ++i) if (g_btn[i].c && g_btn[i].vis == 1) return true; return false; }
+bool anyButtonVisible() { for (int i = 0; i < g_nBtn; ++i) if (g_btn[i].bg.c && g_btn[i].bg.vis == 1) return true; return false; }
+
+// Vanilla group controls: block g at menu+0x54+g*0x750, sub-controls BTN +0, LBL +0x1D0, UP +0x3A0, DOWN +0x570; flags dword at control +0x48 (bit1 = visible + hit-testable).
+constexpr uintptr_t GroupBase = 0x54, GroupStride = 0x750, CtlFlags = 0x48;
+constexpr uintptr_t VanillaOffs[4] = { 0, 0x1D0, 0x3A0, 0x570 };
+
+// Replace=1: clear bit1 on all four sub-controls of the three vanilla groups (the engine rewrites the arrow bits every populate, so every POST).
+void hideVanilla(uintptr_t menu) {
+    bool ok = true;
+    for (int g = 0; g < 3; ++g)
+        for (int k = 0; k < 4; ++k) {
+            uint32_t* p = reinterpret_cast<uint32_t*>(menu + GroupBase + (uintptr_t)g * GroupStride + VanillaOffs[k] + CtlFlags);
+            if (!saferead::probeWrite(S_VanWr, p, 4)) { ok = false; continue; }
+            *p &= ~2u;
+        }
+    g_replaced = true;
+    const int st = ok ? 1 : 0;
+    if (st != g_replState) { g_replState = st; KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "buttons: vanilla group controls hide %s (menu=%08x)", ok ? "applied" : "FAILED (not writable)", (unsigned)menu); }
+}
+
+// Replace turned off after it was applied: give the vanilla box (BTN) and label back once; the engine owns the arrows again.
+void restoreVanilla(uintptr_t menu) {
+    for (int g = 0; g < 3; ++g)
+        for (int k = 0; k < 2; ++k) {
+            uint32_t* p = reinterpret_cast<uint32_t*>(menu + GroupBase + (uintptr_t)g * GroupStride + VanillaOffs[k] + CtlFlags);
+            if (saferead::probeWrite(S_VanWr, p, 4)) *p |= 2u;
+        }
+    g_replaced = false; g_replState = -1;
+    KP_LOGV(chMain, KPLOG_INFO, "buttons: vanilla group boxes restored (menu=%08x)", (unsigned)menu);
+}
 
 void updateButtons(const K2HudContext* ctx) {
-    if (!g_cfg.btnEnabled || g_nBtn == 0 || g_per == 0) return;
     const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
+    const bool replace = g_cfg.btnEnabled && g_cfg.replace;
+    if (!replace && g_replaced) restoreVanilla(menu);
+    if (!g_cfg.btnEnabled || g_nBtn == 0 || g_per == 0) return;
     const uintptr_t hud = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud));
     const int8_t type = static_cast<int8_t>(ctx->targetType);
     // Click edge is sampled every frame so a press that started while the buttons were hidden never fires when they appear.
     const bool click = guikit::clickEdge(g_click);
     if (!ctx->target || type < 0 || type > 3) { hideAllButtons(); return; }
+
+    if (replace) hideVanilla(menu);
 
     uint8_t hoverFlag = 0;
     if (saferead::readAt(S_BtnRd, menu, 0x1BAC, &hoverFlag) && (int)hoverFlag != g_flagLast) { KP_LOGV(chTarget, KPLOG_DEBUG, "menu+0x1BAC = %02x (bit1=%d)", (unsigned)hoverFlag, (hoverFlag >> 1) & 1); g_flagLast = hoverFlag; }
@@ -261,48 +377,92 @@ void updateButtons(const K2HudContext* ctx) {
     int ox = 0, oy = 0, ow = 0, oh = 0;
     bool ok = sw >= 320 && sh >= 200 && saferead::readAt(S_BtnRd, menu, 0x1648, &ox) && saferead::readAt(S_BtnRd, menu, 0x164C, &oy) &&
               saferead::readAt(S_BtnRd, menu, 0x1650, &ow) && saferead::readAt(S_BtnRd, menu, 0x1654, &oh);
-    ch::Rect box[3];
-    for (int g = 0; ok && g < 3; ++g) {
-        int ex = 0, ey = 0, ew = 0, eh = 0;
-        if (!guikit::getExtent(menu + 0x54 + (uintptr_t)g * 0x750, &ex, &ey, &ew, &eh)) { ok = false; break; }
-        box[g].x = ox + ex; box[g].y = oy + ey; box[g].w = ew; box[g].h = eh;
-    }
-    if (!ok) { hideAllButtons(); return; }
 
     ch::GroupView gv[3]; uintptr_t base[3] = { 0, 0, 0 };
     readGroups(menu, gv, base);
-    int counts[3] = { gv[0].count, gv[1].count, gv[2].count };
     const int per = g_per;
-    ch::Rect rects[MaxBtn]; int outN[3] = { 0, 0, 0 };
-    ch::layoutGroupGrid(box, counts, g_cfg.cols, g_cfg.maxRows, g_cfg.gap, sw, sh, rects, outN);
+    int pre[3];   // displayed counts = what layoutBannerGrid will report in outN
+    for (int g = 0; g < 3; ++g) pre[g] = gv[g].count < 0 ? 0 : (gv[g].count > per ? per : gv[g].count);
 
-    // Hover freeze: while the cursor is over last frame's buttons, keep their positions (the banner reflows with the carousel), unless the entry counts changed.
-    // Union = bounding box of every used slot, so crossing a gap between buttons does not unfreeze for a frame.
-    bool freeze = false; int cx = 0, cy = 0;
-    if (g_haveLast && outN[0] == g_lastN[0] && outN[1] == g_lastN[1] && outN[2] == g_lastN[2] && guikit::cursorEngine(&cx, &cy)) {
-        int x0 = INT_MAX, y0 = INT_MAX, x1 = INT_MIN, y1 = INT_MIN;
-        for (int s = 0; s < 3 * per; ++s) {
-            const ch::Rect& r = g_lastRect[s];
-            if (r.w <= 0 || r.h <= 0) continue;
-            if (r.x < x0) x0 = r.x; if (r.y < y0) y0 = r.y;
-            if (r.x + r.w > x1) x1 = r.x + r.w; if (r.y + r.h > y1) y1 = r.y + r.h;
-        }
-        freeze = x0 < x1 && cx >= x0 && cx < x1 && cy >= y0 && cy < y1;
+    // Hover freeze: while the cursor is over last frame's grid (and the counts did not change) the menu origin is held, so the whole banner and
+    // the buttons under the cursor stop following the target. Written back before the engine draws (POST runs at the PopulateMenus tail).
+    const uintptr_t obj = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->target));
+    const bool retarget = obj != g_logObj || type != g_logType;
+    int cx = 0, cy = 0;
+    const bool haveCursor = guikit::cursorEngine(&cx, &cy);
+    bool inGrid = false;
+    if (ok && !retarget && g_haveLast && haveCursor && pre[0] == g_lastN[0] && pre[1] == g_lastN[1] && pre[2] == g_lastN[2]) {
+        const ch::Rect gb = ch::gridBounds(g_lastRect, g_lastN, per);
+        inGrid = gb.w > 0 && gb.h > 0 && cx >= gb.x && cx < gb.x + gb.w && cy >= gb.y && cy < gb.y + gb.h;
     }
-    if (freeze != g_frozen) { g_frozen = freeze; KP_LOGV(chTarget, KPLOG_DEBUG, "buttons: hover freeze %s (cursor %d,%d)", freeze ? "on" : "off", cx, cy); }
-    if (freeze) memcpy(rects, g_lastRect, sizeof(ch::Rect) * 3 * per);
+    int fx = ox, fy = oy;
+    bool frozen = false;
+    if (ok) {
+        frozen = ch::freezeOrigin(g_freeze, inGrid, ox, oy, &fx, &fy);
+        if (frozen && (fx != ox || fy != oy)) {
+            int* px = reinterpret_cast<int*>(menu + 0x1648); int* py = reinterpret_cast<int*>(menu + 0x164C);
+            if (saferead::probeWrite(S_OrgWr, px, 4) && saferead::probeWrite(S_OrgWr, py, 4)) { *px = fx; *py = fy; }
+            else { fx = ox; fy = oy; KP_LOGV(chTarget, KPLOG_WARN, "buttons: freeze origin write failed (menu=%08x), following the live origin", (unsigned)menu); }
+        }
+        if (frozen != g_frozenLog) { g_frozenLog = frozen; KP_LOGV(chTarget, KPLOG_DEBUG, "buttons: hover freeze %s (cursor %d,%d origin %d,%d live %d,%d)", frozen ? "on" : "off", cx, cy, fx, fy, ox, oy); }
+    }
+
+    // Screen rects: banner = LBL_NAME + PB_HEALTH, boxesUnion = the three vanilla BTN extents (menu-local extent + origin).
+    ch::Rect banner = { 0, 0, 0, 0 }, boxes[3], boxesUnion = { 0, 0, 0, 0 };
+    for (int g = 0; ok && g < 3; ++g) {
+        int ex = 0, ey = 0, ew = 0, eh = 0;
+        if (!guikit::getExtent(menu + GroupBase + (uintptr_t)g * GroupStride, &ex, &ey, &ew, &eh)) { ok = false; break; }
+        boxes[g].x = fx + ex; boxes[g].y = fy + ey; boxes[g].w = ew; boxes[g].h = eh;
+        boxesUnion = g == 0 ? boxes[0] : unionRect(boxesUnion, boxes[g]);
+    }
+    if (ok) {
+        int nx = 0, ny = 0, nw = 0, nh = 0, hx = 0, hy = 0, hw = 0, hh = 0;
+        if (!guikit::getExtent(menu + 0x1668, &nx, &ny, &nw, &nh) || !guikit::getExtent(menu + 0x1A40, &hx, &hy, &hw, &hh)) ok = false;
+        else { const ch::Rect a = { fx + nx, fy + ny, nw, nh }, b = { fx + hx, fy + hy, hw, hh }; banner = unionRect(a, b); }
+    }
+    if (!ok) { hideAllButtons(); return; }
+
+    ch::Rect rects[MaxBtn]; int outN[3] = { 0, 0, 0 };
+    const int btnPx = g_cfg.btnPx > 0 ? g_cfg.btnPx : boxes[0].w / 2;
+    ch::layoutBannerGrid(banner, boxesUnion, pre, g_cfg.cols, g_cfg.maxRows, btnPx, g_cfg.pad, g_cfg.groupGap, sw, sh, rects, outN);
     memcpy(g_lastRect, rects, sizeof(ch::Rect) * 3 * per);
     memcpy(g_lastN, outN, sizeof(outN)); g_haveLast = true;
 
-    const uintptr_t obj = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->target));
-    if (obj != g_logObj || type != g_logType) {
+    if (retarget) {
         g_logObj = obj; g_logType = type;
-        KP_LOGV(chTarget, KPLOG_INFO, "buttons: first draw obj=%p type=%d origin=[%d,%d,%d,%d] boxes=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] outN=[%d,%d,%d] first=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] screen=%dx%d",
-                (void*)obj, (int)type, ox, oy, ow, oh,
-                box[0].x, box[0].y, box[0].w, box[0].h, box[1].x, box[1].y, box[1].w, box[1].h, box[2].x, box[2].y, box[2].w, box[2].h,
+        int firstW = 0;
+        for (int g = 0; g < 3 && !firstW; ++g) if (outN[g] > 0) firstW = rects[g * per].w;
+        KP_LOGV(chTarget, KPLOG_INFO, "buttons: first draw obj=%p type=%d origin=[%d,%d,%d,%d]%s banner=[%d,%d,%d,%d] boxesUnion=[%d,%d,%d,%d] outN=[%d,%d,%d] first=[%d,%d,%d,%d][%d,%d,%d,%d][%d,%d,%d,%d] btn=%d screen=%dx%d",
+                (void*)obj, (int)type, fx, fy, ow, oh, frozen ? " frozen" : "",
+                banner.x, banner.y, banner.w, banner.h, boxesUnion.x, boxesUnion.y, boxesUnion.w, boxesUnion.h,
                 outN[0], outN[1], outN[2],
                 rects[0].x, rects[0].y, rects[0].w, rects[0].h, rects[per].x, rects[per].y, rects[per].w, rects[per].h, rects[2 * per].x, rects[2 * per].y, rects[2 * per].w, rects[2 * per].h,
-                sw, sh);
+                firstW, sw, sh);
+    }
+
+    // Art (cached once resolved).
+    if (!g_imgFrame) g_imgFrame = guikit::imageFor(FrameResref);
+    if (!g_imgHi) g_imgHi = guikit::imageFor(HiResref);
+    if ((!g_imgFrame || !g_imgHi) && !g_imgWarned) { g_imgWarned = true; KP_LOGV(chMain, KPLOG_WARN, "buttons: art not resolved yet (frame=%p hi=%p)", g_imgFrame, g_imgHi); }
+    else if (g_imgFrame && g_imgHi && g_imgWarned) { g_imgWarned = false; KP_LOGV(chMain, KPLOG_INFO, "buttons: art resolved (frame=%p hi=%p)", g_imgFrame, g_imgHi); }
+
+    // Hover: the visible button under the cursor (unused slots have zeroed rects, which never hit).
+    int over = -1;
+    if (haveCursor) {
+        const int hit = ch::hitSlot(rects, 3 * per, cx, cy);
+        int hg = -1;
+        const int hidx = ch::slotEntry(hit, g_cfg.cols, g_cfg.maxRows, &hg);
+        if (hidx >= 0 && hg >= 0 && hidx < outN[hg] && hit < g_nBtn && g_btn[hit].bg.c) over = hit;
+    }
+    if (over != g_hover) {
+        const int prev = g_hover;
+        g_hover = over;
+        KP_LOGV(chTarget, KPLOG_DEBUG, "buttons: hover slot %d -> %d cursor=(%d,%d)", prev, over, cx, cy);
+        if (over >= 0) {
+            int hg = -1;
+            const int hidx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &hg);
+            if (hidx >= 0 && gv[hg].e[hidx].usable) playGuiSound(1);
+        }
     }
 
     for (int g = 0; g < 3; ++g) {
@@ -310,42 +470,46 @@ void updateButtons(const K2HudContext* ctx) {
             const int s = g * per + k;
             if (s >= g_nBtn) break;
             Btn& b = g_btn[s];
-            if (!b.c) continue;
+            if (!b.bg.c) continue;
             if (k >= outN[g]) {
-                if (b.vis != 0) { guikit::setVisible(b.c, false); guikit::setClickable(b.c, false); b.vis = 0; b.tipSet = false; }
+                if (b.bg.vis != 0 || b.icon.vis != 0) { widHide(b.bg); widHide(b.icon); b.tipSet = false; }
                 continue;
             }
             const ch::EntryView& e = gv[g].e[k];
             const ch::Rect& r = rects[s];
-            if (!b.rectSet || b.rect.x != r.x || b.rect.y != r.y || b.rect.w != r.w || b.rect.h != r.h) { guikit::setRect(b.c, r.x, r.y, r.w, r.h); b.rect = r; b.rectSet = true; }
-            if (!b.iconSet || strncmp(b.icon, e.icon, 16) != 0) {
-                guikit::setFill(b.c, e.icon[0] ? guikit::imageFor(e.icon) : nullptr);
-                memcpy(b.icon, e.icon, 16); b.icon[16] = 0; b.iconSet = true;
+            int in = g_cfg.inset;
+            if (r.w - 2 * in < 1 || r.h - 2 * in < 1) in = 0;
+            const ch::Rect ir = { r.x + in, r.y + in, r.w - 2 * in < 1 ? 1 : r.w - 2 * in, r.h - 2 * in < 1 ? 1 : r.h - 2 * in };
+            widRect(b.bg, r); widRect(b.icon, ir);
+            void* want = (s == g_hover) ? g_imgHi : g_imgFrame;
+            if (want) widFill(b.bg, want);
+            if (!b.iconSet || strncmp(b.iconName, e.icon, 16) != 0) {
+                widFill(b.icon, e.icon[0] ? guikit::imageFor(e.icon) : nullptr);
+                memcpy(b.iconName, e.icon, 16); b.iconName[16] = 0; b.iconSet = true;
             }
-            const float a = e.usable ? 1.0f : 0.35f;
-            if (b.alpha != a) { guikit::setAlpha(b.c, a); b.alpha = a; }
-            if (b.vis != 1) { guikit::setVisible(b.c, true); guikit::setClickable(b.c, true); b.vis = 1; }
+            widAlpha(b.bg, 1.0f);
+            widAlpha(b.icon, e.usable ? 1.0f : 0.35f);
+            widShow(b.bg, true); widShow(b.icon, false);
             if (!b.tipSet || b.tipKey != e.key) {
                 char name[64] = { 0 };
                 saferead::readExo(S_BtnRd, base[g] + (uintptr_t)k * EntryStride, name, sizeof(name));
-                if (name[0]) guitip::setNative(b.c, name);
+                if (name[0]) guitip::setNative(b.bg.c, name);
                 b.tipKey = e.key; b.tipSet = true;
             }
         }
     }
 
-    if (click && anyButtonVisible() && guikit::cursorEngine(&cx, &cy)) {
-        const int hit = ch::hitSlot(rects, 3 * per, cx, cy);
+    if (click && anyButtonVisible() && haveCursor && over >= 0) {
         int g = -1;
-        const int idx = ch::slotEntry(hit, g_cfg.cols, g_cfg.maxRows, &g);
-        if (idx >= 0 && g >= 0 && idx < outN[g] && g_btn[hit].c && g_btn[hit].vis == 1 && hud) {
+        const int idx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &g);
+        if (idx >= 0 && g >= 0 && idx < outN[g] && g_btn[over].bg.vis == 1 && hud) {
             KP_LOGV(chTarget, KPLOG_INFO, "click g=%d idx=%d key=%08x", g, idx, (unsigned)gv[g].e[idx].key);
-            invokeEntry(hud, menu, g, type, idx, gv[g].e[idx]);
+            if (invokeEntry(hud, menu, g, type, idx, gv[g].e[idx])) playGuiSound(g_cfg.clickSound);
         }
     }
 }
 
-// CH3b: clear bit1 (visible) of the 6 carousel arrow controls after the stock population; log only when the outcome changes. Then CH4b buttons.
+// CH3b: clear bit1 (visible) of the 6 carousel arrow controls after the stock population; log only when the outcome changes. Then CH4c buttons.
 void KPATCH_CALL onTargetMenuPost(const K2HudContext* ctx, void*) {
     if (!ctx || !ctx->menu) return;
     saferead::beginScope();

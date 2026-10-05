@@ -60,10 +60,10 @@ addresses = ["0x00414840", "0x008ABA8C", "0x008AD930", "0x008ADA08", "0x008ADA81
 addresses = ["0x00417F40", "0x00418360", "0x004184B0", "0x00418990", "0x00462320", "0x0073F530", "0x007645F0", "0x0076D200", "0x0077EC20", "0x0085D430", "0x008AA16A", "0x008AA6F0", "0x008ABA50", "0x0098B5CC", "0x0098C45C", "0x0099EE14", "0x009A3D34", "0x009A4AB0", "0x009F42B4"]
 
 [files."patch_manager_mods/hud_host_src/HhDispatch.h"]
-addresses = ["0x00743850"]
+addresses = ["0x00743847", "0x00743850"]
 
 [files."patch_manager_mods/hud_host_src/HudHostProvider.cpp"]
-addresses = ["0x00743540", "0x00743850"]
+addresses = ["0x00743540", "0x00743847", "0x00743850"]
 
 [files."patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp"]
 addresses = ["0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0"]

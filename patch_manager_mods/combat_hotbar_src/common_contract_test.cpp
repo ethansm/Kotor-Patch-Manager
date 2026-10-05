@@ -1,6 +1,6 @@
 // common_contract_test.cpp -- Patches/Common CONTRACT test for Combat Action Hotbar (Mod 31).
 // Rule: every Patches/Common API a mod uses gets a mod-owned contract test colocated with the mod.
-// Pins semantics relied on by CombatHotbar.cpp in SafeRead.h, KpLog.h and HudHost.h (k2hud::Client inert without hud-host).
+// Pins semantics relied on by CombatHotbar.cpp in SafeRead.h, KpLog.h, HudHost.h and GuiKit.h (sound/image hooks, CH4c grid + freeze helpers) (k2hud::Client inert without hud-host).
 #ifndef GUIKIT_HOST
 #define GUIKIT_HOST 1
 #endif
@@ -24,6 +24,12 @@
 
 KP_LOG_PATCH("combat-hotbar");
 KP_CHANNEL(chTarget, "target");
+
+// CH4c fakes: GUI sound manager call recorder, image loader.
+static int g_soundCalls = 0, g_soundIdx = -1; static void* g_soundMgr = nullptr;
+static void fPlaySound(void* mgr, char idx) { ++g_soundCalls; g_soundIdx = idx; g_soundMgr = mgr; }
+static int g_imgLoads = 0;
+static void* fLoadImg(const char* name) { ++g_imgLoads; return strcmp(name, "lbl_miscroll_f") == 0 ? reinterpret_cast<void*>(0x1111) : (strcmp(name, "lbl_miscroll_hi") == 0 ? reinterpret_cast<void*>(0x2222) : nullptr); }
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
@@ -138,6 +144,44 @@ int main() {
         HEQ("slotEntry maps flat slot back to entry", ch::slotEntry(8 + 5, 2, 4, &g), 5);
         HEQ("slotEntry group", g, 1);
         HEQ("hitSlot hits the first button", ch::hitSlot(out, 24, 101, 73), 0);
+    }
+
+    // 7. CH4c: own buttons. GuiKit sound/image engine hooks (playGuiSound mirrors playHoverSound with an idx param), imageFor pool, banner grid + freeze helpers
+    {
+        guikit::Engine saved = guikit::g_gk;
+        const uint32_t mgrVal = static_cast<uint32_t>(menu + 0xA00);
+        memcpy(arena + 0xB00, &mgrVal, 4);   // *guiSoundMgrAddr = manager pointer
+        guikit::g_gk.playSound = fPlaySound;
+        guikit::g_gk.guiSoundMgrAddr = menu + 0xB00;
+        uint32_t mgrRead = 0;
+        HCHECK("detail::rd32 reads the GUI sound manager global", guikit::detail::rd32(guikit::g_gk.guiSoundMgrAddr, 0, &mgrRead) && mgrRead == mgrVal);
+        HCHECK("g_gk.playSound is substitutable and called with (mgr, idx)", (guikit::g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgrRead)), 0), g_soundCalls == 1 && g_soundIdx == 0 && g_soundMgr == reinterpret_cast<void*>(static_cast<uintptr_t>(mgrVal))));
+        HCHECK("playHoverSound plays idx 1 (hover)", guikit::playHoverSound() && g_soundCalls == 2 && g_soundIdx == 1);
+        memset(arena + 0xB00, 0, 4);
+        HCHECK("playHoverSound is false with a null manager (no call)", !guikit::playHoverSound() && g_soundCalls == 2);
+        guikit::g_gk.loadImage = fLoadImg;
+        HEQ("imageFor resolves the frame art", reinterpret_cast<uintptr_t>(guikit::imageFor("lbl_miscroll_f")), uintptr_t(0x1111));
+        HEQ("imageFor is case-insensitive and pooled (one load)", reinterpret_cast<uintptr_t>(guikit::imageFor("LBL_MISCROLL_F")), uintptr_t(0x1111));
+        HEQ("imageFor resolves the hover art", reinterpret_cast<uintptr_t>(guikit::imageFor("lbl_miscroll_hi")), uintptr_t(0x2222));
+        HEQ("imageFor loads each resref once", g_imgLoads, 2);
+        guikit::g_gk = saved;
+
+        HCHECK("probeWrite accepts the menu origin dword and a group control flags dword", saferead::probeWrite(0x6FA0, arena + 0x1648, 4) && saferead::probeWrite(0x6FA1, arena + 0x54 + 0x3A0 + 0x48, 4));
+        // layoutBannerGrid: 800x600, banner 200..400 x 40..70, boxes y=75, 3 columns of 2x4
+        ch::Rect banner = { 200, 40, 200, 30 }, boxes = { 200, 75, 200, 18 };
+        int cnt[3] = { 2, 0, 5 }, outN[3] = { -1, -1, -1 };
+        ch::Rect out[3 * 8];
+        ch::layoutBannerGrid(banner, boxes, cnt, 2, 4, 0, 4, 8, 800, 600, out, outN);
+        HCHECK("layoutBannerGrid: outN clamps counts", outN[0] == 2 && outN[1] == 0 && outN[2] == 5);
+        HCHECK("layoutBannerGrid: grid starts at boxesUnion.y, square buttons", out[0].y == 75 && out[0].w == out[0].h && out[0].w > 0);
+        HCHECK("layoutBannerGrid: group g rects at g*cols*maxRows (slotEntry stride)", out[2 * 8].w > 0 && out[1 * 8].w == 0);
+        ch::Rect gb = ch::gridBounds(out, outN, 8);
+        HCHECK("gridBounds covers the used rects", gb.w > 0 && gb.x <= out[0].x && gb.x + gb.w >= out[2 * 8].x + out[2 * 8].w);
+        ch::FreezeState fs = { false, 0, 0 }; int fx = -1, fy = -1;
+        HCHECK("freezeOrigin: cursor outside follows the live origin", !ch::freezeOrigin(fs, false, 10, 20, &fx, &fy) && fx == 10 && fy == 20);
+        HCHECK("freezeOrigin: cursor in grid latches the entry origin", ch::freezeOrigin(fs, true, 10, 20, &fx, &fy) && fx == 10 && fy == 20);
+        HCHECK("freezeOrigin: stays latched while the live origin moves", ch::freezeOrigin(fs, true, 50, 60, &fx, &fy) && fx == 10 && fy == 20);
+        HCHECK("freezeOrigin: leaving unfreezes", !ch::freezeOrigin(fs, false, 50, 60, &fx, &fy) && fx == 50 && fy == 60);
     }
 
     munmap(arena, 0x10000);

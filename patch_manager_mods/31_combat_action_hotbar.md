@@ -114,10 +114,17 @@ Rules: one batch per row; each batch ends with `build_check.py --mod combat_hotb
 | HL3 | hud-host takes `0x40F5A0` (StopLoadFromLayout, filtered on HUD vtable `0x0099DCC4`) → BUILD phase with `ReserveIds(n)`; companion-selfheal migrates its build to BUILD (same install, KPM rejects double hooks) | HL2 | selfheal session owner + user play | PARTIAL (BUILT 9E18444+A9EE44D, LIVE PENDING) | a9ee44d | CH4b |
 | CH4a | `CombatLogic.h` pure layout + hit + slot model + host tests (no engine) | CH2 | - | DONE | 30929bd | CH4b |
 | CH4b | Runtime buttons via GuiKit on the HUD panel (hud-host BUILD phase), icon = entry `+0x20`, greyed when `+0x30` bit0 clear, GuiTip names, click → CH2 invoke path; dock under target banner; ultrawide-safe (`aspectFix`) | CH4a, HL3 | user play | PARTIAL (BUILT D75D4D0, LIVE PENDING) | d75d4d0 | CH5 |
-| CH4c | Vanilla-styled buttons replace the 3 target-menu boxes: hud-host POST moves to the PopulateMenus tail 0x743847 (origin final, zero lag); 2 labels/slot (bg `lbl_miscroll_f`/`_hi` + icon), boxes hidden via `+0x48` bit1, banner-wide grid (`ch::layoutBannerGrid`), hover freeze by origin write-back (`ch::freezeOrigin`), hover/click sounds; INI `[Buttons] Replace/Cols/MaxRows/BtnPx/Pad/GroupGap/Inset/ClickSound` | CH4b, HL3 | user play | PARTIAL (A built: 78193fc hud-host tail, d0397cf layout, RE doc 31b) | d0397cf | CH5 |
+| CH4c | Vanilla-styled buttons replace the 3 target-menu boxes: hud-host POST moves to the PopulateMenus tail 0x743847 (origin final, zero lag); 2 labels/slot (bg `lbl_miscroll_f`/`_hi` + icon), boxes hidden via `+0x48` bit1, banner-wide grid (`ch::layoutBannerGrid`), hover freeze by origin write-back (`ch::freezeOrigin`), hover/click sounds; INI `[Buttons] Replace/Cols/MaxRows/BtnPx/Pad/GroupGap/Inset/ClickSound` | CH4b, HL3 | user play | PARTIAL (built, live pending) | d0397cf | CH5 |
 | CH5 | Auto-fill + INI profiles: highest tier per feat/power family, carried grenades by count; `FileWatch.h` hot-reload; INI codec in `CombatLogic.h` with tests | CH4b | user play | TODO | | ship |
 | CH6 | Ship: KpLog trim, mutation run on `CombatLogic.h`, doc 24 row, upstream PR candidate | CH5 | user approval | TODO | | - |
 | HL4 | Later, optional: action-hotbar (`0x748502`, `0x74B3F0`) and queue-hud (`0x74C168`) migrate to BUILD/FRAME; GOG hooks file (static-verified, GOG callout rule doc 21) | HL3 | owners | TODO | | - |
+
+### Play-test checklist v3 (CH4c, ~10 min)
+1. Target an enemy: the vanilla boxes are gone; framed buttons span the banner width, 2 per group column.
+2. Pan the camera fast: the buttons stay locked to the banner (no 1-frame lag).
+3. Hover: teal frame turns cream (`lbl_miscroll_hi`) + hover sound; the banner stops following while you hover. Click Flurry: it queues + click sound.
+4. Grenade column works; unusable entries are dimmed. Note: the frame art is a 64x128 pill squashed into a square (doc 31b Q2); say if it looks wrong.
+5. Say "check combat log" (look for `vanilla group controls hide applied`, `buttons: first draw ... banner=`, `hover freeze on/off`, `click g=`, `first POST dispatch` in hud-host).
 
 ### Play-test checklist v2 (HL3 + CH4b, ~10 min)
 1. Target an enemy: icon buttons appear under the 3 vanilla boxes, 2 per row; unusable icons dimmed.
