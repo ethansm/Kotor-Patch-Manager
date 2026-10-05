@@ -71,8 +71,8 @@ Companion to doc 19. Question (user): can the RFC #180 registry simplify our pat
 | 1 | `KpLog.h` (doc 19 Phase 2/6) | all 16 mods with a hand-copied `logf` | header merged (KPM local-mods 706b150); pilot mouse-probe 0.2.0 live 10-03; rest = doc 24 C5 |
 | 2 | `GameAddr.h` (`namespace gameaddr`) | 19 addresses in 2-8 mods each | DONE hotbar only (10-03); K2Addr in buff/shield/portrait repo copies; intake = doc 24 C6 |
 | 3 | SafeRead adoption + B7 `saferead::readExo` | hotbar, equip3d, inv3d (IsBadReadPtr copies); buff/effects partial | SafeRead in 13 mods; holdouts equip3d (14 IsBadReadPtr), level_up = doc 24 C2/C3 |
-| 4 | `IniFile.h` (B3) | effects, equip3d, inv3d, sort_filter, ranged_ai, companion_ai, level_up | open; fold into the kplog.ini reloader |
-| 5 | wheel/WndProc = A1 `k2.guiinput` | effects, inv3d, equip3d, hotbar | registry interface, not a header |
+| 4 | `IniFile.h` (B3) | effects, equip3d, inv3d, sort_filter, ranged_ai, companion_ai, level_up | PARTIAL 10-05: `IniKit.h` (C7, 67ef3c3) covers the trio dialect (effects/equip3d/inv3d) + `.txt` toggles only; the other dialects stay per-mod (doc 32) |
+| 5 | wheel/WndProc = A1 `k2.guiinput` | effects, inv3d, equip3d, hotbar | interim header 10-05: `guikit::WheelHook` (C8, a3286fe), per-DLL; `k2.guiinput` stays the long-term owner (doc 32) |
 | 6 | `CodePatch.h` (`writeCode(at, expect, repl, n)` with original-byte check, keep state codes 1/0/-1/-2/-3) | activation_fix, equip_icon_fix, robustness_fixes, perf_lab | candidate = doc 24 C1 |
 | 7 | B2 GuiKit adoption (+ `showTip`, `inRect`) | hotbar, effects, equip3d, sort_filter, inv3d | 4 adopters (hotbar first); effects = doc 24 C4 |
 | 8 | B6 `Party.h` (`controlledCreature`, `partyCount`, `table`) | hotbar, companion_ai, buff, effects | 2 adopters (hotbar first) |

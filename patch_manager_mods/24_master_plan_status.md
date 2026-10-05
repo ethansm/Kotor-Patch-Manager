@@ -55,6 +55,11 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | C5b | KpLog adoption ranged_ai 0.4.0 (analyze_play_logs reads legacy/fallback/core `ranged-ai_log.txt`) | C5a | engine AI atlas | DONE | 1ec207f | KPM 98d53f6; dll md5 b57f75b5 (exports KPatchInit, 7 hooks); default tier 126/126, `--wine` 205/205; NOT installed (needs GO) |
 | C5c | KpLog adoption perf-lab + robustness diagnostics | C5a | engine research | TODO | | |
 | C6 | K2Addr intake of hotbar raw addresses (Steam col; GOG zero + callout) | - | hotbar | TODO | | |
+| C7 | `IniKit.h`: trio INI dialect (trim/parseFloats/splitIniLine/forEachLine) + `.txt` toggle `enabledFlag`/`enabledFile` | - | - | DONE | 67ef3c3 | KPM 564d315; 199 checks; mutation survivors equivalent; additive, no adopters yet (doc 32) |
+| C8 | `GuiKit.h`: `cursorEngineF`, `syncScreen`, `WheelHook` (+install/uninstall), `bindByTag` | C7 C9 C10 | - | DONE | a3286fe | KPM c060999; guikit 319 checks, common_contract 21/21; Win32 glue syntax-checked only (first live use = MG3) |
+| C9 | `PanelSlots.h`: per-panel slot table (find/claim/evict-oldest/release, onEvict) | - | - | DONE | 21d5c9b | KPM 4df4a29; 105 checks; 2 equivalent survivors |
+| C10 | small helpers: `k2addr::featureOk`, `codepatch::allocCave`, `gui2d::Rect/vfillClip/drawVFill` | - | - | DONE | 60b61b4 | KPM 6cfa7e2; contract 21/21 |
+| MG1-MG5 | per-mod migration onto C7-C10 (quiet mods, split HUD, inv3d, equip3d, chareffects) | C7-C10 | per doc 32 | TODO | | plan: `32_common_migration_round2.md` |
 | L1 | Optional dependency decision (`optional_requires` vs runtime lazy require) — ask user | - | user | DONE | | runtime lazy require (user 10-04): requires_interfaces info-only + lazy connect, no KPM change |
 | L2 | Install the split through KPM (dry-run byte-identical blocks 2-4, then GO) | S1a, T6, T8 | user GO | DONE | install 10-04 11:55, stage head edc4d00 | refreshed kpm_install_state.json |
 | L3 | `k2.saveevents@1` library `save-events` 0.1.0-dev: the hotbar's 5 detours 0x534527/0x53C5AA/0x52FD1E/0x8529E0/0x8FACA0 (NOT the perf-lab EVT sites, perf-lab owns those); BUILT not installed, `conflicts = ["action-hotbar"]` until the owner-gated migration (doc 22 §4.1a) | L1, T3, T6 | hotbar (consumer) | DONE | 57999f4 | built, not installed; hotbar migration owner-gated |
