@@ -135,6 +135,40 @@ Do not start two mods in parallel (rule: finish, verify, commit, then next). Rul
 1. **equip (Mod 5):** reconcile the repo mirror vs the KPM copy, ship the `Equip3dLogic.h` extraction ALONE as its own build and get the user's OK; then SafeRead (14 IsBadReadPtr sites), SceneView (view recipe `E:874-917`, `modelCount/getModel` `E:241-245`; equip also needs camera attach/FOV slots `0x74/0x44` = candidate `sceneview::cameraAttach/cameraFov`), GameAddr names, contract test.
 2. **Mod 14 (after the user accepts build 4c):** commit the dirty KPM copy, drop the duplicate icon `.inc` copies for `EffectIcons.h`, GuiKit setters, then extract `TextFit.h` (move, do not change widths).
 
+## §C3c Equip vertical pan (doc 24 C3c; feature, not a migration step)
+
+**Status: DONE + INSTALLED 2026-10-05 18:29** (repo e77e64c, KPM 4e7ed44, live dll d954782a; awaiting the combined play test). As built: tooltip reads "Drag sideways to rotate, / up/down to move; wheel zooms."
+
+Source: Gemini/Antigravity proposal 2026-10-05, corrected against the code (`E` = `equipment_3d_character_src/EquipCharPreview.cpp`, `L` = `Equip3dLogic.h`).
+
+Corrections to the proposal:
+1. **Precedent is wrong.** inv3d does not use `CrSetPos`; it moves the item Gob with `sceneview::gobSetPosition` (`Inventory3DViewport.cpp:218`). Equip's own precedent is `buildPreview` calling `vt[CrSetPos/4](pv, {0,0,0})` once before `FnSetupScene` (`E:762-765`). Calling it from `applyView` is unproven: `applyView` runs every tick while spinning (`E:981`). Only call `CrSetPos` when `panZ != appliedPanZ`, and log the first call per build (`logf`, not `dlogf`).
+2. **Sign is unknown.** `cursorEngine` Y origin is not proven (`hitFlipY` exists, `L:26,200`). Do not hard-code the direction: `pan_per_px` may be negative and `clampCfg` must keep its sign. Live check sets the sign.
+3. **Drag conflict.** One LMB drag would both rotate and pan on any diagonal motion. Add axis lock: after `lockPx` (4 px) total travel from the drag start, the dominant axis wins for the rest of that drag.
+4. **Zoom.** Zoom is FOV scale (`L:210`, `E:727`), not model scale. `delta / zoom` is close enough; keep it.
+5. **Clamp ±1.2 is a guess** (droids are shorter). INI keys, logged on change, checked live.
+6. Proposal omitted: the tooltip (`E:380` "Drag to rotate" -> "Drag to rotate or move up/down"), the Reset log line (`E:473`, add `panZ`), the KPM mirror sync, and the version bump.
+
+Contract (`L`, pure, host-tested in `equip3d_logic_test.cpp`):
+```cpp
+// Cfg: float panPerPx = 0.003f, panMin = -1.2f, panMax = 1.2f; float lockPx = 4.0f;
+// INI: pan_per_px, pan_min, pan_max, drag_lock_px.  clampCfg: if (panMax < panMin) panMax = panMin; lockPx >= 0; panPerPx sign kept.
+inline float panDrag(float panZ, float cy, float lastY, float panPerPx, float zoom, float panMin, float panMax) {
+    float z = zoom > 0.1f ? zoom : 1.0f;
+    return fminf(fmaxf(panZ + (cy - lastY) * panPerPx / z, panMin), panMax);
+}
+// 0 = undecided, 1 = yaw (X), 2 = pan (Y). Decided once per drag.
+inline int dragAxis(float dx, float dy, float lockPx) {
+    if (fabsf(dx) < lockPx && fabsf(dy) < lockPx) return 0;
+    return fabsf(dx) >= fabsf(dy) ? 1 : 2;
+}
+```
+`E` changes: `Slot` gets `float panZ = 0, appliedPanZ = 0, startX = 0, startY = 0; int axis = 0;`. Drag start (`E:834`) sets `lastX/lastY/startX/startY`, `axis = 0`. Drag move (`E:837`): if `axis == 0`, `axis = dragAxis(cx-startX, cy-startY, lockPx)`; axis 1 -> existing `yawDrag`; axis 2 -> `panDrag`; always update `lastX/lastY`. Drag end logs `yaw` and `panZ`. MMB reset (`E:833`) and button 3 Reset (`E:473`) set `panZ = 0`. `applyView` (`E:725`) adds the `CrSetPos {0,0,panZ}` call under the guard in correction 1. `buildPreview` resets `appliedPanZ = 0` beside its own `CrSetPos` so the next `applyView` puts `panZ` back.
+
+Tests: panDrag (both signs, both clamps, zoom 0 / 0.6 / 2.5), dragAxis (undecided, X wins, Y wins, tie -> X), INI round trip + clamp (swapped min/max, negative `pan_per_px` kept). Red-prove one test. Gates: `run_tests.py -k equip`, `pre_install_gate`, hook_spans/gui_ids/raw_addresses, KPM mirror `diff -q` 0.
+
+Live check (combined play test): drag straight up and down -> model moves with the cursor (if reversed, flip the `pan_per_px` sign in the INI); diagonal drag rotates OR pans, never both; clamp keeps feet and helmet visible on a humanoid and on T3-M4; spin + pan, then Reset/MMB -> centred; switch party member -> pan kept and no drift.
+
 ## Next action (2 minutes)
 
 User OK -> install the staged inv3d 0.2.1-dev (see the session handoff for the stage dir + install recipe), then the in-game check: open inventory, select items (model shows and fits), drag, wheel, Shift+LMB, MMB, close/reopen, switch party member.
