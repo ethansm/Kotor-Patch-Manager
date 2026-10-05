@@ -1,0 +1,12 @@
+[patch]
+id = "combat-hotbar"
+name = "Combat Action Hotbar"
+version = "0.1.1-probe"
+author = "local"
+description = "Diagnostic probe for Combat Action Hotbar (Mod 31, Phase 1). Hooks CSWGuiTargetActionMenu::PopulateMenus (0x00743540) to safely probe and log the target menu groups (groups 0-2, meanings unverified), selected keys, target type, leader, and per-entry usability flags and owner fields when an enemy is targeted."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
