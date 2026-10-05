@@ -41,7 +41,7 @@ workers, gates, commits explicit paths, then updates its row here (status, commi
 | T7 | Wine smoke K2DialogueLetterboxFix | M0 | - | DONE | | `--wine -k letterbox` x3 PASS 25/25 (ship 11 + probe 14 modes, ~1.1 s/mode, probe 2.3 s, ~30 s total) |
 | T8 | `pre_install_gate.sh` (doc 20 Phase 6) | T2 | - | DONE | | PASS perf-lab, FAIL broken tmp kpatch |
 | T9a | VTableOverride host + m32 test (doc 20 Phase 4) | - | - | DONE | | _shared_src/vtable_override_test.cpp 43 checks |
-| T9b | MemberFunctionThunk m32 test + check.h into TestHarness.h (doc 20 Phase 4) | - | level-up stubs / KPM write | TODO | | owner-gated: Common.h -> Platform.h #error on 64-bit + vsnprintf_s |
+| T9b | MemberFunctionThunk m32 test + check.h into TestHarness.h (doc 20 Phase 4) | - | level-up stubs / KPM write | DONE | abbfa9b,0966844 | 47 checks m32 (ASan/UBSan + _GLIBCXX_DEBUG); TestHarness.h mirrored to KPM ca22462 (unpushed); level-up CHECK migration = T9c (owned) |
 | T10 | Coverage gaps from T0: K2Addr.h 9.6% -> >=80% (k2addr_test), GuiKit.h 78.1% -> >=80% | T0 | split (K2Addr) | DONE | (T10 commit) | `run_tests.py --coverage`: GuiKit 98.5, K2Addr 100 |
 | S1a | mirror sync buff + shield + portrait (K2Addr) | - | split | DONE | KPM edc4d00 | `diff -q` clean + check_shared_headers |
 | S1b | mirror sync ForcePowerHotbar FileWatch | - | hotbar | TODO | | |
