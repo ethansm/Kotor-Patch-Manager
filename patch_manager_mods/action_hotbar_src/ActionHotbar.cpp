@@ -703,18 +703,52 @@ void* imageFor(const char* resref) {
 using hb::slotDigit;
 const char* wname(const Widget& w, const Button& b) { return &w == &b.bg ? "bg" : &w == &b.ic ? "ic" : &w == &b.num ? "num" : &w == &b.tgt ? "tgt" : "qty"; }
 
+// ---- single widget-writer cores (no logging: the family wrappers below log with their own channel + format)
+// Common candidate later: guikit::setVisible clears bit5 on show for every control; here bit5 follows per-widget rules (frames / hit flag), so the writes stay local.
+enum FlagsRead { FR_Fault, FR_FaultWarn, FR_Ok };   // FaultWarn: unreadable and widgetFault() said this is the first time (caller logs the WARN)
+FlagsRead readFlags(Widget& w, int* fl, ::kplog::Channel& ch, const char* okName) {
+    *fl = 0;
+    if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), guikit::Ctl_Flags, fl)) return widgetFault(w, WF_Flags) ? FR_FaultWarn : FR_Fault;
+    widgetOk(w, WF_Flags, ch, okName);
+    return FR_Ok;
+}
+// bit1 = shown; bit5 (0x20, not hit-testable): bit5 < 0 untouched, 0 cleared, 1 set
+int visFlags(int fl, bool vis, int bit5) {
+    int nf = vis ? (fl | 2) : (fl & ~2);
+    if (bit5 == 0) nf &= ~0x20; else if (bit5 > 0) nf |= 0x20;
+    return nf;
+}
+// the only Ctl_Flags writer for widgets
+void writeFlags(Widget& w, int fl, int nf, bool force) {
+    if (force || nf != fl) *reinterpret_cast<int*>(w.ctl + guikit::Ctl_Flags) = nf;
+}
+enum ApplyResult { AR_Fault, AR_FaultWarn, AR_Ok };
+ApplyResult applyFill(Widget& w, void* image, ::kplog::Channel& ch, const char* okName) {
+    if (!guikit::setFill(reinterpret_cast<uintptr_t>(w.ctl), image)) return widgetFault(w, WF_Fill) ? AR_FaultWarn : AR_Fault;
+    widgetOk(w, WF_Fill, ch, okName);
+    return AR_Ok;
+}
+ApplyResult applyAlpha(Widget& w, float a, ::kplog::Channel& ch, const char* okName) {
+    if (!guikit::setAlpha(reinterpret_cast<uintptr_t>(w.ctl), a)) return widgetFault(w, WF_Alpha) ? AR_FaultWarn : AR_Fault;
+    widgetOk(w, WF_Alpha, ch, okName);
+    return AR_Ok;
+}
+
 // Shown/hidden via ctl+0x48 bit1 (what the panel's Draw loop tests); logs every change.
 void setVisible(Button& bt, Widget& b, int slot, bool vis, const char* why) {
     if (!b.ctl) return;
-    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(b.ctl), guikit::Ctl_Flags, &fl)) { if (widgetFault(b, WF_Flags)) KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: flags unreadable, cannot set visible ctl=%p", slot, wname(b, bt), (void*)b.ctl); return; }
-    widgetOk(b, WF_Flags, chSlots, "btn flags");
+    int fl = 0; FlagsRead fr = readFlags(b, &fl, chSlots, "btn flags");
+    if (fr != FR_Ok) { if (fr == FR_FaultWarn) KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: flags unreadable, cannot set visible ctl=%p", slot, wname(b, bt), (void*)b.ctl); return; }
     if (b.visible == (vis ? 1 : 0) && b.why == why) return;
-    // Common candidate later: guikit::setVisible clears bit5 on show for every control; here bit5 follows per-widget rules (frames / hit flag), so the writes stay local.
-    int nf = vis ? (fl | 2) : (fl & ~2);
-    if (&b == &bt.bg) nf = vis ? (nf & ~0x20) : (nf | 0x20);   // shown frames are hit-testable so clicks on the bar do not reach the world
-    if (nf != fl) *reinterpret_cast<int*>(b.ctl + guikit::Ctl_Flags) = nf;
+    int nf = visFlags(fl, vis, &b == &bt.bg ? (vis ? 0 : 1) : -1);   // shown frames are hit-testable so clicks on the bar do not reach the world
+    writeFlags(b, fl, nf, false);
     KP_LOGV(chSlots, KPLOG_DEBUG, "btn[%d].%s key %c: %s -> %s (%s) flags %08x->%08x", slot, wname(b, bt), slotDigit(slot), b.visible < 0 ? "?" : (b.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", why, (unsigned)fl, (unsigned)nf);
     b.visible = vis ? 1 : 0; b.why = why;
+}
+
+void hideSlot(Button& b, int s, const char* why) {
+    b.avail = false;
+    setVisible(b, b.bg, s, false, why); setVisible(b, b.ic, s, false, why); setVisible(b, b.num, s, false, why); setVisible(b, b.qty, s, false, why); setVisible(b, b.tgt, s, false, why);
 }
 
 void setFill(Button& bt, Widget& b, int slot, const std::string& icon) {
@@ -722,19 +756,19 @@ void setFill(Button& bt, Widget& b, int slot, const std::string& icon) {
     uintptr_t border = reinterpret_cast<uintptr_t>(b.ctl) + guikit::Label_Border;
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
     int old = rdInt(S_Border, border, guikit::Border_Fill);
-    if (!guikit::setFill(reinterpret_cast<uintptr_t>(b.ctl), image)) {
-        if (widgetFault(b, WF_Fill)) { int bvt = rdInt(S_Border, border, 0); KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); }
+    ApplyResult ar = applyFill(b, image, chSlots, "btn fill");
+    if (ar != AR_Ok) {
+        if (ar == AR_FaultWarn) { int bvt = rdInt(S_Border, border, 0); KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: border vtable %08x != %08x, not setting fill '%s'", slot, wname(b, bt), (unsigned)bvt, (unsigned)BorderVtable, icon.c_str()); }
         return;
     }
-    widgetOk(b, WF_Fill, chSlots, "btn fill");
     KP_LOGV(chSlots, KPLOG_DEBUG, "btn[%d].%s key %c: fill '%s' -> '%s' image=%p (old fill %08x) border w=%d h=%d", slot, wname(b, bt), slotDigit(slot), b.icon.c_str(), icon.c_str(), image, (unsigned)old, rdInt(S_Border, border, Border_W), rdInt(S_Border, border, Border_H));
     b.icon = icon;
 }
 
 void setAlpha(Button& bt, Widget& b, int slot, float a) {
     if (!b.ctl || b.alpha == a) return;
-    if (!guikit::setAlpha(reinterpret_cast<uintptr_t>(b.ctl), a)) { if (widgetFault(b, WF_Alpha)) KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: border vtable bad, not setting alpha ctl=%p", slot, wname(b, bt), (void*)b.ctl); return; }
-    widgetOk(b, WF_Alpha, chSlots, "btn alpha");
+    ApplyResult ar = applyAlpha(b, a, chSlots, "btn alpha");
+    if (ar != AR_Ok) { if (ar == AR_FaultWarn) KP_LOGV(chSlots, KPLOG_WARN, "btn[%d].%s: border vtable bad, not setting alpha ctl=%p", slot, wname(b, bt), (void*)b.ctl); return; }
     KP_LOGV(chSlots, KPLOG_DEBUG, "btn[%d].%s key %c: alpha %.2f -> %.2f", slot, wname(b, bt), slotDigit(slot), b.alpha, a);
     b.alpha = a;
 }
@@ -812,10 +846,9 @@ void setRect(Widget& w, const char* nm, int x, int y, int ww, int hh) {
 
 void setWidgetVisible(Widget& w, const char* name, bool vis) {
     if (!w.ctl) return;
-    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), guikit::Ctl_Flags, &fl)) { if (widgetFault(w, WF_Flags)) KP_LOGV(chTip, KPLOG_WARN, "tip: widget flags unreadable ctl=%p name=%s, visibility not applied", (void*)w.ctl, name); return; }
-    widgetOk(w, WF_Flags, chTip, name);
-    int nf = vis ? (fl | 2) : (fl & ~2);
-    if (nf != fl) *reinterpret_cast<int*>(w.ctl + guikit::Ctl_Flags) = nf;
+    int fl = 0; FlagsRead fr = readFlags(w, &fl, chTip, name);
+    if (fr != FR_Ok) { if (fr == FR_FaultWarn) KP_LOGV(chTip, KPLOG_WARN, "tip: widget flags unreadable ctl=%p name=%s, visibility not applied", (void*)w.ctl, name); return; }
+    writeFlags(w, fl, visFlags(fl, vis, -1), false);
     w.visible = vis ? 1 : 0;
 }
 
@@ -936,15 +969,15 @@ void updateButtons(uintptr_t hud, bool gate) {
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
         if (!b.bg.ctl && !b.ic.ctl) continue;
-        if (!gate) { b.avail = false; setVisible(b, b.bg, s, false, "hud not active"); setVisible(b, b.ic, s, false, "hud not active"); setVisible(b, b.num, s, false, "hud not active"); setVisible(b, b.qty, s, false, "hud not active"); setVisible(b, b.tgt, s, false, "hud not active"); continue; }
+        if (!gate) { hideSlot(b, s, "hud not active"); continue; }
         // frame + digit are always shown while the HUD is active (an empty slot reads as a dim frame)
         hb::ActionRef want = g_eff[s];
         if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
-            b.avail = false; setVisible(b, b.bg, s, false, "unassigned"); setVisible(b, b.ic, s, false, "unassigned"); setVisible(b, b.num, s, false, "unassigned"); setVisible(b, b.qty, s, false, "unassigned"); setVisible(b, b.tgt, s, false, "unassigned"); continue;
+            hideSlot(b, s, "unassigned"); continue;
         }
         Entry e; bool have = !want.empty() && resolve(hud, want, &e);
         hb::SlotView sv = hb::slotView(want.empty(), want.kind == hb::K_Item, have, have ? e.flags : 0, have ? e.key : 0, have ? e.name : std::string(), settling && g_bar.ed.mode == M_Normal);
-        if (sv.hideSettling) { b.avail = false; setVisible(b, b.bg, s, false, "settling after character switch"); setVisible(b, b.ic, s, false, "settling after character switch"); setVisible(b, b.num, s, false, "settling after character switch"); setVisible(b, b.qty, s, false, "settling after character switch"); setVisible(b, b.tgt, s, false, "settling after character switch"); continue; }
+        if (sv.hideSettling) { hideSlot(b, s, "settling after character switch"); continue; }
         if (!want.empty()) {   // change-only per slot (map section 4 #18); skipped while settling (that branch continued above)
             int h = have ? 1 : 0;
             if (b.lastHave != h) {
@@ -976,29 +1009,27 @@ void updateButtons(uintptr_t hud, bool gate) {
 // ---- generic widget helpers for the editor controls (log every change) -------------------------------------
 void wVisible(Widget& w, const char* nm, bool vis, bool hit) {
     if (!w.ctl) return;
-    int fl = 0; if (!saferead::readAt(S_Ctl, reinterpret_cast<uintptr_t>(w.ctl), guikit::Ctl_Flags, &fl)) { if (widgetFault(w, WF_Flags)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s flags unreadable ctl=%p", nm, (void*)w.ctl); return; }
-    widgetOk(w, WF_Flags, chEdit, nm);
-    // Common candidate later: guikit::setVisible clears bit5 on show for every control; here bit5 follows per-widget rules (frames / hit flag), so the writes stay local.
-    int nf = vis ? (fl | 2) : (fl & ~2);
-    nf = (vis && hit) ? (nf & ~0x20) : (nf | 0x20);   // hit-testable only while shown, so hidden controls never swallow clicks
+    int fl = 0; FlagsRead fr = readFlags(w, &fl, chEdit, nm);
+    if (fr != FR_Ok) { if (fr == FR_FaultWarn) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s flags unreadable ctl=%p", nm, (void*)w.ctl); return; }
+    int nf = visFlags(fl, vis, (vis && hit) ? 0 : 1);   // hit-testable only while shown, so hidden controls never swallow clicks
     int v = vis ? 1 : 0;
     if (w.visible == v && nf == fl) return;
-    *reinterpret_cast<int*>(w.ctl + guikit::Ctl_Flags) = nf;
+    writeFlags(w, fl, nf, true);
     KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s %s -> %s flags %08x->%08x", nm, w.visible < 0 ? "?" : (w.visible ? "shown" : "hidden"), vis ? "shown" : "hidden", (unsigned)fl, (unsigned)nf);
     w.visible = v;
 }
 void wFill(Widget& w, const char* nm, const std::string& icon) {
     if (!w.ctl || w.icon == icon) return;
     void* image = icon.empty() ? nullptr : imageFor(icon.c_str());
-    if (!guikit::setFill(reinterpret_cast<uintptr_t>(w.ctl), image)) { if (widgetFault(w, WF_Fill)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
-    widgetOk(w, WF_Fill, chEdit, nm);
+    ApplyResult ar = applyFill(w, image, chEdit, nm);
+    if (ar != AR_Ok) { if (ar == AR_FaultWarn) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s border vtable bad, not setting fill '%s'", nm, icon.c_str()); return; }
     KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s fill '%s' -> '%s' image=%p", nm, w.icon.c_str(), icon.c_str(), image);
     w.icon = icon;
 }
 void wAlpha(Widget& w, const char* nm, float a) {
     if (!w.ctl || w.alpha == a) return;
-    if (!guikit::setAlpha(reinterpret_cast<uintptr_t>(w.ctl), a)) { if (widgetFault(w, WF_Alpha)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s border vtable bad, not setting alpha", nm); return; }
-    widgetOk(w, WF_Alpha, chEdit, nm);
+    ApplyResult ar = applyAlpha(w, a, chEdit, nm);
+    if (ar != AR_Ok) { if (ar == AR_FaultWarn) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s border vtable bad, not setting alpha", nm); return; }
     KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s alpha %.2f -> %.2f", nm, w.alpha, a);
     w.alpha = a;
 }
