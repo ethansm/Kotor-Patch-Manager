@@ -1,6 +1,9 @@
 """Generate Patches/CharEffectsPanel/EffectNameTable.inc (Mod 14 Active Effects panel names) from the LIVE install.
 
-Usage: gen_effect_name_table.py <game dir> <out.inc>
+Usage: gen_effect_name_table.py <game dir> <out.inc> [<fonts.inc>]
+
+The font tables are written separately to the shared FontWidths.inc (default patch_manager_mods/_shared_src/FontWidths.inc,
+included by _shared_src/TextFit.h); <out.inc> carries only the 2da tables.
 
 Two tables, both resolved against the live dialog.tlk (so compatch edits are included):
   kSpellRows[spells.2da row]       name text, iconresref (checked against the installed textures), spelldesc strref
@@ -30,6 +33,7 @@ from pykotor.resource.formats.twoda import read_2da  # noqa: E402
 from pykotor.resource.type import ResourceType  # noqa: E402
 
 game, out = sys.argv[1:3]
+fonts_out = sys.argv[3] if len(sys.argv) > 3 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "patch_manager_mods", "_shared_src", "FontWidths.inc")
 inst = Installation(game)
 tlk = inst.talktable()
 tex = set()
@@ -131,18 +135,21 @@ for i in range(fs.get_height()):
 lines.append("};")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import character_page_mockup as L  # noqa: E402  (font reader shared with the mock-up)
+flines = [lines[0]]   # the "GENERATED" banner
 for fname, arr, note in (("dialogfont16x16", "kFontTexW", "drawn at 8/3 px per texel at 1600 px height"),
                          ("dialogfont10x10", "kFont10TexW", "same texel scale as 16x16 (texturewidth 2.56)")):
     _, boxes = L.font(fname)
     w = [b[2] - b[0] for b in boxes]
-    lines += [f"// {fname} glyph widths in font texels (index = byte); {note}", f"constexpr unsigned char {arr}[256] = {{"]
-    lines += ["    " + ", ".join(str(max(0, min(255, v))) for v in w[i:i + 16]) + "," for i in range(0, 256, 16)]
-    lines.append("};")
+    flines += [f"// {fname} glyph widths in font texels (index = byte); {note}", f"constexpr unsigned char {arr}[256] = {{"]
+    flines += ["    " + ", ".join(str(max(0, min(255, v))) for v in w[i:i + 16]) + "," for i in range(0, 256, 16)]
+    flines.append("};")
     if fname == "dialogfont10x10":
         h = boxes[ord("A")][3] - boxes[ord("A")][1]
-        lines.append(f"constexpr float kFont10LineH = {h * 1.25:.2f}f;   // line pitch estimate in texels (glyph {h} + 25 %); tip_line_scale tunes it")
+        flines.append(f"constexpr float kFont10LineH = {h * 1.25:.2f}f;   // line pitch estimate in texels (glyph {h} + 25 %); tip_line_scale tunes it")
 with open(out, "w", newline="\n") as f:
     f.write("\n".join(lines) + "\n")
+with open(fonts_out, "w", newline="\n") as f:
+    f.write("\n".join(flines) + "\n")
 print(f"{sum(1 for d in descs if d)} descriptions (max {max(len(d) for d in descs)} chars), {fs.get_height()} forceshields rows")
 print(f"{sp.get_height()} spells rows, {ei.get_height()} effecticon rows -> {out}")
 print("icons not installed (nullptr):", missing)

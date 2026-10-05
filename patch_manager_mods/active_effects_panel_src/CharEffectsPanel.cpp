@@ -584,7 +584,7 @@ int lastFirstOf(const Entry* e, int n) {
     return lf < 0 ? 0 : lf;
 }
 
-// text width in engine px: see ChareffDecode.h (kFontTexW / kFont10TexW from gen_effect_name_table.py; TextK measured; text_scale = INI fine-tune)
+// text width in engine px: see TextFit.h via ChareffDecode.h (kFontTexW / kFont10TexW in FontWidths.inc from gen_effect_name_table.py; TextK measured; text_scale = INI fine-tune)
 // Slot*/g_cfg wrappers over the pure text layer in ChareffDecode.h (cfx::textPx/fitText/marqueeText/wrapAppend)
 cfx::TextCtx textCtx(const Slot* s) { return {s->sy, g_cfg.textK10, g_cfg.textScale}; }
 float textPx(Slot* s, const char* t, int len, Font f = F16) { return cfx::textPx(textCtx(s), t, len, f); }
