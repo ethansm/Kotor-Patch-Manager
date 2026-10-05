@@ -157,7 +157,10 @@ inline int clampCfg(Cfg& c) {
 }
 
 // ---------------------------------------------------------------- weapons
-// Engine wield-style rule (R7f 0076d590 / R7h 00863650). Only the weapons we actually attached count.
+// Engine wield-style rule: CSWCCreature::UpdateWeaponClass (Steam 0076d590 / GOG 00419400; R7h 00863650). Only the weapons
+// we actually attached count. Both hands: only the LEFT weaponwield decides (engine behaviour, F17); the right is ignored.
+// Right only: weaponwield 1..6 -> 1,2,3,5,7,9, else 0. Deliberate deviation: the engine gives "nothing equipped" style 8
+// (unarmed); we return 0 to keep the normal idle.
 inline constexpr const char* kStyleAnim[10] = {"", "g1r1", "g2r1", "g3r1", "g4r1", "g5r1", "g6r1", "g7r1", "g8r1", "g7r1"};
 inline int styleFor(int rWield, int lWield, bool rHas, bool lHas) {
     if (rHas && lHas) return lWield == 2 ? 4 : (lWield == 4 ? 6 : 0);
@@ -218,7 +221,7 @@ struct Box { int x, y, w, h; };
 inline bool layoutSpin(Box row, bool spinUi, Box* spin, Box* reset) {
     int x = row.x, y = row.y, W = row.w, H = row.h;
     if (!spinUi) { *spin = Box{x, y, W, H}; return false; }
-    int w1 = (int)(W * 0.30f), gp = (int)(W * 0.04f);
+    int w1 = W * 30 / 100, gp = W * 4 / 100;   // integer math: float 0.30f/0.04f rounded 1 px differently under x87 vs SSE (F18)
     *spin = Box{x, y, w1, H}; *reset = Box{x + w1 + gp, y, W - w1 - gp, H};
     return true;
 }

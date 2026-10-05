@@ -477,6 +477,16 @@ static void testStyleFor() {
         kt::CheckEq(what, styleFor(rw, 5, true, true), 0);
         kt::CheckEq(what, styleFor(rw, 0, true, true), 0);
     }
+    // F17: full engine table (CSWCCreature::UpdateWeaponClass, Steam 0x0076d590), rWield/lWield 0..7 x rHas/lHas
+    for (int rw = 0; rw <= 7; ++rw) for (int lw = 0; lw <= 7; ++lw) for (int m = 0; m < 4; ++m) {
+        bool rHas = (m & 1) != 0, lHas = (m & 2) != 0;
+        int want;
+        if (rHas && lHas) want = lw == 2 ? 4 : (lw == 4 ? 6 : 0);                       // only the LEFT wield decides
+        else if (rHas) { const int r[8] = {0, 1, 2, 3, 5, 7, 9, 0}; want = r[rw]; }      // right only: 1..6 -> 1,2,3,5,7,9 else 0
+        else want = 0;                                                                   // left only 0; none 0 (engine 8, deliberate deviation)
+        char what[64]; snprintf(what, sizeof what, "engine table r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, styleFor(rw, lw, rHas, lHas), want);
+    }
     // left only / nothing: no stance (unarmed style 8 deliberately not applied)
     KT_CHECK_EQ(styleFor(0, 2, false, true), 0);
     KT_CHECK_EQ(styleFor(0, 4, false, true), 0);
@@ -652,7 +662,7 @@ static void testLayoutSpin() {
     KT_CHECK(!layoutSpin(Box{100, 200, 333, 40}, false, &sp, &rs));
     KT_CHECK(sp.x == 100 && sp.y == 200 && sp.w == 333 && sp.h == 40);
     KT_CHECK(rs.x == -2 && rs.w == -2);
-    // split row: play/pause 30 %, 4 % gap, Reset takes the rest (W chosen off the x87/SSE rounding knife edge, see findings)
+    // split row: play/pause 30 %, 4 % gap, Reset takes the rest (integer math, F18: no x87/SSE float rounding)
     KT_CHECK(layoutSpin(Box{100, 200, 333, 40}, true, &sp, &rs));
     KT_CHECK(sp.x == 100 && sp.y == 200 && sp.w == 99 && sp.h == 40);                     // (int)(333*0.30) = 99
     KT_CHECK(rs.x == 100 + 99 + 13 && rs.y == 200 && rs.w == 333 - 99 - 13 && rs.h == 40);   // gap (int)(333*0.04) = 13
@@ -662,6 +672,22 @@ static void testLayoutSpin() {
     KT_CHECK(layoutSpin(Box{5, 6, 1, 7}, true, &sp, &rs)); KT_CHECK(sp.w == 0 && rs.x == 5 && rs.w == 1);
     KT_CHECK(layoutSpin(Box{5, 6, 0, 7}, true, &sp, &rs)); KT_CHECK(sp.w == 0 && rs.w == 0);
     KT_CHECK(layoutSpin(Box{5, 6, -10, 7}, true, &sp, &rs)); KT_CHECK(sp.w == -3 && rs.w == -10 + 3 + 0);   // truncation toward zero: (int)-3.0, (int)-0.4
+    // F18: integer math, exact for every width (the float version was 1 px off at multiples of 25 under x87 vs SSE)
+    for (int W : {25, 100, 1000}) {
+        layoutSpin(Box{7, 9, W, 30}, true, &sp, &rs);
+        kt::CheckEq("explicit W sp.w", sp.w, W * 30 / 100);
+        kt::CheckEq("explicit W gap", rs.x - (sp.x + sp.w), W * 4 / 100);
+        kt::CheckEq("explicit W rs.w", rs.w, W - W * 30 / 100 - W * 4 / 100);
+    }
+    for (int W = 1; W <= 4000; ++W) {
+        layoutSpin(Box{7, 9, W, 30}, true, &sp, &rs);
+        int w1 = W * 30 / 100, gp = W * 4 / 100;
+        kt::CheckEq("sweep sp.w", sp.w, w1);
+        kt::CheckEq("sweep gap", rs.x - (sp.x + sp.w), gp);
+        kt::CheckEq("sweep rs.x", rs.x, 7 + w1 + gp);
+        kt::CheckEq("sweep rs.w fills remainder", rs.w, W - w1 - gp);
+        kt::CheckEq("sweep rs.x + rs.w", rs.x + rs.w, 7 + W);
+    }
     // invariant: the two buttons plus the gap always add up to the row, whatever the rounding
     for (int W = 0; W <= 3000; ++W) {
         layoutSpin(Box{10, 20, W, 30}, true, &sp, &rs);
