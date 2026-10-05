@@ -123,7 +123,7 @@ Sketch: `on_build(panel, reserveIds(n) -> first id)`, `on_tick`, `on_destroy`, `
 
 - **Consumers:** hotbar, a future shield/buff HUD button (the Shield Bar already shifts HUD buttons via .gui), any HUD widget mod.
 - Overlaps 19b A2 (`k2.charscreen`, same shape for the character screen) and A3.
-- **Verdict:** **design together with A2** (one "panel host" pattern, two panels). It is not worth a library for the hotbar alone.
+- **Verdict:** building now, doc 31 §5, 4 consumers (supersedes "design together with A2"; still overlaps A2's panel-host shape).
 
 ### 4.4 A1 `k2.guiinput`: the hotbar as consumer
 

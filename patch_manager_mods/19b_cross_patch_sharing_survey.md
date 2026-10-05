@@ -58,7 +58,7 @@ Companion to doc 19. Question (user): can the RFC #180 registry simplify our pat
   `Patches/Common/` (branch `ethansm/local-mods`) and rewrites the `Patches/_shared/` forwarders; a plain run reports drift (exit 1).
   Subdirectories and `*.cpp`/`*.toml` (colocated tests) are not synced.
 - Header-only, no hooks (Common is a static lib in every DLL). Changes are additive, with defaulted parameters; existing consumers
-  (LevelUpOverride for GuiKit) must compile unchanged. saferead site ids are per DLL (hotbar 0x48xx, GuiKit 0x6Bxx, Party.h 0x6Cxx, SceneView.h 0x6Dxx, inv3d 0x0100).
+  (LevelUpOverride for GuiKit) must compile unchanged. saferead site ids are per DLL (hotbar 0x48xx, GuiKit 0x6Bxx, Party.h 0x6Cxx, SceneView.h 0x6Dxx, inv3d 0x0100, combat-hotbar 0x6Fxx, hud-host 0x70xx).
 - One mod per behaviour-neutral migration: warning-clean build, host tests, log diff (+ screenshot for visual mods), one install and live check.
   The owning session migrates its mod; never edit a mod another session changed in the last hours (`ls -lt`, `git log -1 -- <dir>`).
 - PRs cherry-pick the Common headers they include, at the tested version. Steam constants stay until the PR3 address-DB rows exist, then
