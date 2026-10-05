@@ -479,15 +479,31 @@ void ensureLookups() {
 
 std::string nullish(const std::string& s) { return s == "****" ? std::string() : s; }
 
+// Engine CanUseItem(strict) on a server creature: true = usable.
+static bool canUseItem(uintptr_t server, uintptr_t itemPtr) {
+    return reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(server, itemPtr, 0, 1) != 0;
+}
+// Party vitals -> hb::Candidate[n] (eligible = readable, has a server object and the item is usable on it).
+static int buildCandidates(const party::Vitals* v, int n, uintptr_t itemPtr, hb::Candidate* c) {
+    for (int i = 0; i < n; ++i) {
+        c[i].cur = v[i].cur; c[i].max = v[i].max; c[i].ok = v[i].ok; c[i].down = v[i].down;
+        c[i].eligible = v[i].ok && v[i].server && itemPtr && canUseItem(v[i].server, itemPtr);
+    }
+    return n;
+}
+// Target-resolution failure: run the WARN log call passed in, dump the ring, return false / 0 (literal formats stay inside KP_LOGV(...) at the call site).
+#define TARGET_FAIL(logcall) do { logcall; dumpRing("target"); return false; } while (0)
+#define SERVERITEM_FAIL(logcall) do { if (!quiet) { logcall; dumpRing("target"); } return 0; } while (0)
+
 // Client item id -> engine CSWSItem* (app -> objTable(+8) -> ClientToServerObjectId -> GetItemByObjectId); 0 + a WARN log on any failure.
 uintptr_t serverItemFor(uint32_t clientItem, uint32_t* serverOut = nullptr, bool quiet = false) {   // quiet: periodic UI refresh, no log/ring dump on failure
     uint32_t app = 0, objTable = 0;   // objTable = *(app+8), exactly as 0x77c7aa (NOT app+4, which is the client/party side)
     if (!saferead::readAt<uint32_t>(S_Target, AppGlobal, 0, &app) || !app ||
-        !saferead::readAt<uint32_t>(S_Target, app, 8, &objTable) || !objTable) { if (!quiet) KP_LOGV(chTarget, KPLOG_WARN, "target: object table unreadable (app=%08x), using it normally", (unsigned)app); if (!quiet) dumpRing("target"); return 0; }
+        !saferead::readAt<uint32_t>(S_Target, app, 8, &objTable) || !objTable) { SERVERITEM_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: object table unreadable (app=%08x), using it normally", (unsigned)app)); }
     uint32_t serverItem = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t, uint32_t)>(ClientToServerObjectId)(objTable, clientItem);
-    if (!serverItem) { if (!quiet) KP_LOGV(chTarget, KPLOG_WARN, "target: no server id for client item %08x, using it normally", (unsigned)clientItem); if (!quiet) dumpRing("target"); return 0; }
+    if (!serverItem) { SERVERITEM_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: no server id for client item %08x, using it normally", (unsigned)clientItem)); }
     uintptr_t itemPtr = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, uint32_t)>(GetItemByObjectId)(objTable, serverItem);
-    if (!itemPtr) { if (!quiet) KP_LOGV(chTarget, KPLOG_WARN, "target: item %08x (server %08x) not found, using it normally", (unsigned)clientItem, (unsigned)serverItem); if (!quiet) dumpRing("target"); return 0; }
+    if (!itemPtr) { SERVERITEM_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: item %08x (server %08x) not found, using it normally", (unsigned)clientItem, (unsigned)serverItem)); }
     if (serverOut) *serverOut = serverItem;
     return itemPtr;
 }
@@ -520,16 +536,16 @@ ItemClass classifyItem(uintptr_t itemPtr) {
 // CanUseItem(strict) on member idx, then PerformUseItem(item -> member idx) exactly as the original member path. True = handled (also when refused);
 // false = a read failed (caller falls back to invokeEntry).
 bool useOnMember(int idx, const party::Vitals* v, uint32_t clientItem, uintptr_t itemPtr, const char* why) {
-    if (!v[idx].server || !itemPtr || reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(v[idx].server, itemPtr, 0, 1) == 0) {
+    if (!v[idx].server || !itemPtr || !canUseItem(v[idx].server, itemPtr)) {
         KP_LOG(chTarget, "target: %s: CanUseItem refused member %d", why, idx); return true;
     }
     if (!g_cfg.general.invoke) { KP_LOG(chTarget, "target: %s: (Invoke=0: would use on member %d)", why, idx); return true; }
     uint32_t memberId = 0;
     if (!v[0].client || !v[idx].client || !saferead::readAt<uint32_t>(S_Target, v[idx].client, Client_ObjectId, &memberId) || !memberId) {
-        KP_LOGV(chTarget, KPLOG_WARN, "target: member %d id/client unreadable (self=%08x member=%08x), using it normally", idx, (unsigned)v[0].client, (unsigned)v[idx].client); dumpRing("target"); return false;
+        TARGET_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: member %d id/client unreadable (self=%08x member=%08x), using it normally", idx, (unsigned)v[0].client, (unsigned)v[idx].client));
     }
     uint8_t posProbe[12];
-    if (!saferead::probeRead(S_Target, reinterpret_cast<const void*>(v[idx].client + Client_Pos), sizeof posProbe)) { KP_LOGV(chTarget, KPLOG_WARN, "target: member %d position unreadable, using it normally", idx); dumpRing("target"); return false; }
+    if (!saferead::probeRead(S_Target, reinterpret_cast<const void*>(v[idx].client + Client_Pos), sizeof posProbe)) { TARGET_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: member %d position unreadable, using it normally", idx)); }
     KP_LOG(chTarget, "target: PerformUseItem(item %08x -> member %d id %08x) called", (unsigned)clientItem, idx, (unsigned)memberId);
     reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t, int, uint32_t, float*)>(PerformUseItem)(v[0].client, clientItem, 0, memberId, reinterpret_cast<float*>(v[idx].client + Client_Pos));
     KP_LOG(chTarget, "target: PerformUseItem(item %08x -> member %d id %08x) returned", (unsigned)clientItem, idx, (unsigned)memberId);
@@ -545,7 +561,7 @@ bool targetedUse(uintptr_t hud, const Entry& e, const hb::ActionRef& a, int prob
     if (!itemPtr) return false;
     uintptr_t baseItem = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t)>(GetBaseItem)(itemPtr);
     uint8_t typeByte = 0;
-    if (!baseItem || !saferead::readAt<uint8_t>(S_Target, baseItem, BaseItem_Type, &typeByte)) { KP_LOGV(chTarget, KPLOG_WARN, "target: base item unreadable (item=%08x base=%08x), using it normally", (unsigned)itemPtr, (unsigned)baseItem); dumpRing("target"); return false; }
+    if (!baseItem || !saferead::readAt<uint8_t>(S_Target, baseItem, BaseItem_Type, &typeByte)) { TARGET_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: base item unreadable (item=%08x base=%08x), using it normally", (unsigned)itemPtr, (unsigned)baseItem)); }
     int itemType = typeByte;
     bool targetable = hb::isTargetableItemType(itemType);
     KP_LOG(chTarget, "target: slot item '%s' client=%08x server=%08x item=%08x type=%d targetable=%d", a.name.c_str(), (unsigned)clientItem, (unsigned)serverItem, (unsigned)itemPtr, itemType, targetable);
@@ -555,12 +571,10 @@ bool targetedUse(uintptr_t hud, const Entry& e, const hb::ActionRef& a, int prob
     if (!ic.healing) { KP_LOG(chTarget, "target: not a healing item (spells row %d), lowhp ignored", ic.row); return false; }
     party::Vitals v[3];
     int n = party::members(v, 3);
-    if (n <= 0) { KP_LOGV(chTarget, KPLOG_WARN, "target: party members unreadable, using it normally"); dumpRing("target"); return false; }
+    if (n <= 0) { TARGET_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: party members unreadable, using it normally")); }
     hb::Candidate c[3];
+    buildCandidates(v, n, itemPtr, c);
     for (int i = 0; i < n; ++i) {
-        c[i].cur = v[i].cur; c[i].max = v[i].max; c[i].ok = v[i].ok; c[i].down = v[i].down;
-        c[i].eligible = v[i].ok && v[i].server && itemPtr &&
-            reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(v[i].server, itemPtr, 0, 1) != 0;
         uint32_t mid = 0;
         if (v[i].client) saferead::readAt<uint32_t>(S_Target, v[i].client, Client_ObjectId, &mid);
         KP_LOGV(chTarget, KPLOG_TRACE, "target:   [%d] client=%08x id=%08x server=%08x hp=%d/%d ok=%d down=%d eligible=%d", i, (unsigned)v[i].client, (unsigned)mid, (unsigned)v[i].server, v[i].cur, v[i].max, v[i].ok, v[i].down, c[i].eligible);
@@ -585,7 +599,7 @@ bool selfUse(uintptr_t hud, const Entry& e, const hb::ActionRef& a) {
     if (ic.row < 0) { KP_LOG(chTarget, "target: self '%s': item not usable (%s), vanilla path", a.name.c_str(), ic.why); return false; }
     if (!ic.selfOk) { KP_LOG(chTarget, "target: self not allowed for row %d", ic.row); return false; }
     party::Vitals v[3];
-    if (party::members(v, 3) <= 0 || !v[0].client) { KP_LOGV(chTarget, KPLOG_WARN, "target: party members unreadable, using it normally"); dumpRing("target"); return false; }
+    if (party::members(v, 3) <= 0 || !v[0].client) { TARGET_FAIL(KP_LOGV(chTarget, KPLOG_WARN, "target: party members unreadable, using it normally")); }
     return useOnMember(0, v, clientItem, itemPtr, "self");
 }
 
@@ -896,10 +910,7 @@ bool lowHpSlotEnabled(const Entry& e, const hb::ActionRef& a) {
     party::Vitals v[3]; int n = party::members(v, 3);
     if (n <= 0) return true;
     hb::Candidate c[3];
-    for (int i = 0; i < n; ++i) {
-        c[i].cur = v[i].cur; c[i].max = v[i].max; c[i].ok = v[i].ok; c[i].down = v[i].down;
-        c[i].eligible = v[i].ok && v[i].server && reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(v[i].server, itemPtr, 0, 1) != 0;
-    }
+    buildCandidates(v, n, itemPtr, c);
     return hb::slotEnabled(c, n, 0, a.target, g_cfg.general);
 }
 // Hover text of a bar slot: the entry text plus the target line (item slots with a non-default mode).
