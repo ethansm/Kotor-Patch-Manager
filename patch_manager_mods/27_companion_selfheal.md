@@ -61,6 +61,8 @@
   - Cross v3 (CS9b): a custom cross like the hotbar wrench/gear (pre-coloured mint->teal gradient, outline, rim light, shade, as in `gen_hotbar_textures.py` `make_edit_textures`), NOT a white body tinted bright green. Make it a bit smaller inside the circle. Use the UX scheme.
   - CS11 not visible: no dark-green out-of-combat action bar with a Cancel button at the bottom, and none on the companion queues. queue-hud 0.2.0 is loaded (portrait-slots register line 16) but has no log file in `$G`. It draws only when the queue is non-empty, and it has no Cancel.
   - Log so far (8 lines): only `WARN member=1/2 has an empty tag`, no USE/REFUSE yet; TAG probe line not visible at the current log level.
+- **CS9b + CS11 built 10-05 ~01:10, NOT installed (KOTOR-II f645863 + ca81e72, KPM 70e5144, stage `$K/cs11_stage_1005`):** cross v3 (mint/teal shaded, ~22 px, untinted; gold ring via `shui::kRingR/G/B`), selfheal on shared `EmbedTex.h`; queue-hud 0.3.0-dev kit frames + Cancel (doc 30, R7). Install awaits GO; restore perf-lab, mouse-probe AND shield-bar (01:22 hot-swap) dlls after.
+- **CS12 user report 10-05 01:09 — RESUME HERE:** companion heal items queued via route A stay queued / run seconds late / run at once when the companion becomes leader; can double-queue (screenshot: 2 medpacs on one strip). H1 = queued behind FollowLeader/AI actions of a non-controlled creature; H2 = 6 s pending timeout re-arms the button while the item is still queued. Plan: R8 RE + dedupe + front-insert/kick. See `.claude/handoffs/27_companion_selfheal.handoff.md` addendum.
 - Build rows live in doc 24 (CS0-CS7, owner gate "selfheal").
 
 ## User decisions (10-04)
