@@ -284,5 +284,67 @@ int main() {
     KT_CHECK(!fs.active);
     KT_CHECK(freezeOrigin(fs, true, 7, 8, &ox, &oy)); KT_CHECK_EQ(ox, 7); KT_CHECK_EQ(oy, 8);
   }
+  // ---- layoutBannerGroups (pill containers)
+  {
+    const int cols = 2, maxRows = 4, per = cols * maxRows, pad = 2, gap = 6, cap = 4, side = 3, btnPx = 28;
+    Rect out[3 * per], cont[3]; int n[3];
+    const Rect wide = {50, 20, 600, 30}, boxes = {100, 50, 300, 56};   // span 600, colW (600-12)/3 = 196
+    const int c403[3] = {4, 0, 3};
+    layoutBannerGroups(wide, boxes, c403, cols, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(n[0], 4); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], 3);
+    // every button inside its own container, at least cap from top and bottom
+    bool inCont = true;
+    for (int g = 0; g < 3; ++g) for (int i = 0; i < n[g]; ++i) {
+      const Rect& r = out[g * per + i];
+      inCont = inCont && r.x >= cont[g].x && r.x + r.w <= cont[g].x + cont[g].w
+                      && r.y - cont[g].y >= cap && (cont[g].y + cont[g].h) - (r.y + r.h) >= cap;
+    }
+    KT_CHECK(inCont);
+    // equal heights, no overlap between containers
+    KT_CHECK_EQ(cont[0].h, cont[1].h); KT_CHECK_EQ(cont[1].h, cont[2].h);
+    KT_CHECK(!overlap(cont[0], cont[1]) && !overlap(cont[1], cont[2]) && !overlap(cont[0], cont[2]));
+    KT_CHECK_EQ(cont[1].x - (cont[0].x + cont[0].w), gap);
+    // empty group still gets a container; unused slots zeroed
+    KT_CHECK(cont[1].w > 0 && cont[1].h > 0);
+    KT_CHECK_EQ(cont[1].y, boxes.y);
+    KT_CHECK(out[per].w == 0 && out[per].x == 0 && out[4].w == 0 && out[2 * per + 3].w == 0);
+    // counts 4/0/3 with cols 2 -> 2 rows
+    KT_CHECK_EQ(cont[0].h, 2 * cap + 2 * btnPx + pad);
+    KT_CHECK_EQ(out[0].y, boxes.y + cap); KT_CHECK_EQ(out[3].y, boxes.y + cap + btnPx + pad);
+    // count above cols*maxRows caps at cols*maxRows (and the container grows to maxRows rows)
+    const int cBig[3] = {99, -3, 9};
+    layoutBannerGroups(wide, boxes, cBig, cols, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(n[0], per); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], per);
+    KT_CHECK_EQ(cont[2].h, 2 * cap + maxRows * btnPx + (maxRows - 1) * pad);
+    // banner near the right edge: all shifted left together, sizes unchanged
+    layoutBannerGroups(wide, boxes, c403, cols, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    const Rect c0 = cont[0], b0 = out[0], b3 = out[3];
+    const Rect rightB = {1700, 20, 600, 30};
+    layoutBannerGroups(rightB, {1700, 50, 300, 56}, c403, cols, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(cont[2].x + cont[2].w, 1920);
+    KT_CHECK(cont[0].x + cont[0].w <= 1920 && cont[1].x + cont[1].w <= 1920 && cont[2].x + cont[2].w <= 1920);
+    KT_CHECK_EQ(cont[0].w, c0.w); KT_CHECK_EQ(cont[0].h, c0.h); KT_CHECK_EQ(out[0].w, b0.w);
+    KT_CHECK_EQ(out[3].x - out[0].x, b3.x - b0.x); KT_CHECK_EQ(out[3].y - out[0].y, b3.y - b0.y);
+    KT_CHECK_EQ(out[0].x - cont[0].x, b0.x - c0.x);               // buttons keep their place inside the container
+    KT_CHECK_EQ(cont[0].y, c0.y);                                 // no vertical shift
+    // btnPx = 0 auto-fits: (196 - 2*3 - 2)/2 = 94, buttons keep >= side from the container sides
+    layoutBannerGroups(wide, boxes, c403, cols, maxRows, 0, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    const int fit = (196 - 2 * side - (cols - 1) * pad) / cols;
+    KT_CHECK_EQ(out[0].w, fit); KT_CHECK_EQ(out[0].h, fit); KT_CHECK_EQ(fit, 94);
+    bool sides = true;
+    for (int g = 0; g < 3; ++g) for (int i = 0; i < n[g]; ++i) {
+      const Rect& r = out[g * per + i];
+      sides = sides && r.x - cont[g].x >= side && (cont[g].x + cont[g].w) - (r.x + r.w) >= side;
+    }
+    KT_CHECK(sides);
+    // bottom edge shifts the whole pill row up, top edge shifts it down
+    layoutBannerGroups(wide, {100, 1070, 300, 56}, c403, cols, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(cont[0].y + cont[0].h, 1080); KT_CHECK_EQ(out[0].y - cont[0].y, cap);
+    layoutBannerGroups(wide, {100, -40, 300, 56}, c403, cols, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(cont[1].y, 0);
+    // degenerate input zeroes everything
+    layoutBannerGroups(wide, boxes, c403, 0, maxRows, btnPx, pad, gap, cap, side, 1920, 1080, out, n, cont);
+    KT_CHECK_EQ(n[0], 0); KT_CHECK_EQ(cont[0].w, 0); KT_CHECK_EQ(cont[2].h, 0);
+  }
   return kt::Report("combat_logic_test");
 }

@@ -182,6 +182,69 @@ inline void layoutBannerGrid(Rect banner, Rect boxesUnion, const int count[3], i
         for (int k = 0; k < outN[g]; ++k) { out[g * per + k].x += dx; out[g * per + k].y += dy; }
 }
 
+// Pill variant of layoutBannerGrid: one rounded container per group (cont[g]), buttons inside it. span, spanX, colW and colX = spanX + g*(colW+gapPx) as in layoutBannerGrid.
+// Buttons are square, side = btnPx (<= 0 or > fit -> fit), fit = (colW - 2*sidePx - (cols-1)*padPx)/cols, min 1; rows centred in the column, padPx between buttons and rows.
+// rows = max over groups of ceil(outN[g]/cols), at least 1; every container is cont = {colX, boxesUnion.y, colW, 2*capPx + rows*btn + (rows-1)*padPx} (uniform height, empty groups included).
+// Row r of a container sits at y = cont.y + capPx + r*(btn+padPx). outN[g] = min(max(count,0), cols*maxRows); group g's rects at out[g*cols*maxRows + i], unused ones zeroed.
+// The bounding box of the 3 containers is shifted, never shrunk, back inside [0,screenW) x [0,screenH) (right/bottom edge first, then left/top wins); containers and buttons move together.
+inline void layoutBannerGroups(Rect banner, Rect boxesUnion, const int count[3], int cols, int maxRows, int btnPx, int padPx, int gapPx, int capPx, int sidePx, int screenW, int screenH, Rect* out, int outN[3], Rect cont[3]) {
+    if (!out || !outN || !cont) return;
+    if (!count || cols < 1 || maxRows < 1) {
+        if (cols >= 1 && maxRows >= 1) memset(out, 0, sizeof(Rect) * 3 * cols * maxRows);
+        for (int g = 0; g < 3; ++g) { outN[g] = 0; cont[g].x = cont[g].y = cont[g].w = cont[g].h = 0; }
+        return;
+    }
+    const int per = cols * maxRows;
+    memset(out, 0, sizeof(Rect) * 3 * per);
+    const int span = boxesUnion.w > banner.w ? boxesUnion.w : banner.w;
+    const int spanX = banner.x + banner.w / 2 - span / 2;
+    const int colW = (span - 2 * gapPx) / 3;
+    int fit = (colW - 2 * sidePx - (cols - 1) * padPx) / cols;
+    if (fit < 1) fit = 1;
+    int btn = (btnPx <= 0 || btnPx > fit) ? fit : btnPx;
+    if (btn < 1) btn = 1;
+    int rows = 1;
+    for (int g = 0; g < 3; ++g) {
+        int n = count[g] < 0 ? 0 : count[g];
+        if (n > per) n = per;
+        outN[g] = n;
+        const int r = (n + cols - 1) / cols;
+        if (r > rows) rows = r;
+    }
+    const int h = 2 * capPx + rows * btn + (rows - 1) * padPx;
+    for (int g = 0; g < 3; ++g) {
+        const int n = outN[g];
+        const int colX = spanX + g * (colW + gapPx);
+        cont[g].x = colX; cont[g].y = boxesUnion.y; cont[g].w = colW; cont[g].h = h;
+        for (int k = 0; k < n; ++k) {
+            const int row = k / cols;
+            int inRow = n - row * cols;
+            if (inRow > cols) inRow = cols;
+            const int rowW = inRow * btn + (inRow - 1) * padPx;
+            Rect& r = out[g * per + k];
+            r.x = colX + (colW - rowW) / 2 + (k % cols) * (btn + padPx);
+            r.y = cont[g].y + capPx + row * (btn + padPx);
+            r.w = btn; r.h = btn;
+        }
+    }
+    int x0 = cont[0].x, x1 = cont[0].x + cont[0].w;
+    for (int g = 1; g < 3; ++g) {
+        if (cont[g].x < x0) x0 = cont[g].x;
+        if (cont[g].x + cont[g].w > x1) x1 = cont[g].x + cont[g].w;
+    }
+    const int y0 = cont[0].y, y1 = cont[0].y + h;
+    int dx = 0, dy = 0;
+    if (x1 > screenW) dx = screenW - x1;
+    if (x0 + dx < 0) dx = -x0;
+    if (y1 > screenH) dy = screenH - y1;
+    if (y0 + dy < 0) dy = -y0;
+    if (dx == 0 && dy == 0) return;
+    for (int g = 0; g < 3; ++g) {
+        cont[g].x += dx; cont[g].y += dy;
+        for (int k = 0; k < outN[g]; ++k) { out[g * per + k].x += dx; out[g * per + k].y += dy; }
+    }
+}
+
 // Hover freeze (CH4c): while the cursor stays inside the grid, the menu origin (menu+0x1648/+0x164C) captured on entry is held, so the banner and
 // the buttons under the cursor stop following the target. curX/curY = this frame's engine origin, not the cursor.
 struct FreezeState { bool active; int x, y; };
