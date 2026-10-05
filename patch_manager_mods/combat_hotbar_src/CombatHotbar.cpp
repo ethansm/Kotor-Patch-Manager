@@ -1,4 +1,4 @@
-// Combat Action Hotbar (Mod 31, 0.6.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers; consumer of hud-host)
+// Combat Action Hotbar (Mod 31, 0.7.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers + CH4e content-sized pills; consumer of hud-host)
 // Diagnostic probe for CSWGuiTargetActionMenu (hud + 0xCC).
 // Safely reads and logs target action groups when an enemy is targeted.
 // 0.2.0: no own hook any more. hud-host owns the PopulateMenus hook (0x00743540) and calls onTargetMenu through k2.hud@1
@@ -20,6 +20,10 @@
 // buttons inside; empty groups keep their pill. Tint and alpha of each pill (and of that group's button frames) are copied live every POST from the hidden vanilla
 // BTN_TARGETn (getBorderTint/getAlpha), so the pills keep the vanilla look; the hover highlight keeps the copied tint. The pills are clickable but carry no action,
 // so a click in a gap between buttons is swallowed instead of reaching the world. The hover-freeze area is the union of last frame's three pills.
+// 0.7.0-dev: CH4e hides the pill of an empty group and draws no pills at all when every group is empty (matches the vanilla row collapse in 00743850). [Buttons] ColsTotal
+// (default 6) is split across the visible pills (3x2, 2x3, 1x6); every pill gets the same content-sized width and height and the set is centred under the banner
+// (ch::layoutBannerPills). Reflow click guard: a click, or a hover sound, on the frame the group counts change is ignored (the buttons moved under the cursor).
+// [Buttons] HideEmpty=0 restores the CH4d three-equal-pill layout (ch::layoutBannerGroups).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -92,6 +96,8 @@ struct Config {
     int clickSound = 0;          // GUI sound idx on click, -1 off
     int capPad = 10;             // CH4d 0..64 px above/below the buttons inside a group pill
     int sidePad = 6;             // CH4d 0..64 px left/right of the buttons inside a group pill
+    int hideEmpty = 1;           // CH4e 0/1: hide the pill of an empty group, content-sized centred pills (0 = CH4d three equal pills)
+    int colsTotal = 6;           // CH4e 1..12: button columns split across the visible pills (6 = 3x2, 2x3, 1x6)
 } g_cfg;
 ch::KeyEdge g_edge[3];
 int g_arrowState = -1;   // -1 never applied, 0 failed, 1 applied (log on change only)
@@ -123,9 +129,11 @@ void loadIni() {
     g_cfg.clickSound = clampInt(GetPrivateProfileIntA("Buttons", "ClickSound", 0, IniPath), -1, 18);
     g_cfg.capPad = clampInt(GetPrivateProfileIntA("Buttons", "CapPad", 10, IniPath), 0, 64);
     g_cfg.sidePad = clampInt(GetPrivateProfileIntA("Buttons", "SidePad", 6, IniPath), 0, 64);
-    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d",
+    g_cfg.hideEmpty = GetPrivateProfileIntA("Buttons", "HideEmpty", 1, IniPath) != 0 ? 1 : 0;
+    g_cfg.colsTotal = clampInt(GetPrivateProfileIntA("Buttons", "ColsTotal", 6, IniPath), 1, 12);
+    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d hideEmpty=%d colsTotal=%d",
             (int)g_cfg.invokeEnabled, g_cfg.mod, g_cfg.keys[0], g_cfg.keys[1], g_cfg.keys[2], (int)g_cfg.keepSelection, (int)g_cfg.hideArrows,
-            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad);
+            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad, g_cfg.hideEmpty, g_cfg.colsTotal);
 }
 
 bool modifiersMatch() {
@@ -227,6 +235,7 @@ ch::Rect g_lastRect[MaxBtn];       // last frame's displayed button rects (zeroe
 ch::Rect g_lastCont[3];            // last frame's pill rects; their union is the hover-freeze area
 int g_lastN[3] = { 0, 0, 0 };
 bool g_haveLast = false;
+int g_pillMask = -1;               // CH4e last logged visible-pill bitmask (bit g = group g has a pill), -1 = nothing logged yet
 ch::FreezeState g_freeze = { false, 0, 0 };
 bool g_frozenLog = false;
 int g_hover = -1;                  // flat slot under the cursor, -1 none
@@ -305,7 +314,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     for (Wid& w : g_cont) w = Wid();
     for (int g = 0; g < 3; ++g) { g_contState[g] = -1; for (int k = 0; k < 4; ++k) g_contLog[g][k] = 0.f; }
     memset(g_lastCont, 0, sizeof(g_lastCont));
-    g_nBtn = 0; g_per = 0; g_click = guikit::ClickEdge(); g_haveLast = false; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
+    g_nBtn = 0; g_per = 0; g_click = guikit::ClickEdge(); g_haveLast = false; g_pillMask = -1; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
     if (!g_cfg.btnEnabled) { KP_LOGV(chMain, KPLOG_INFO, "BUILD: buttons disabled ([Buttons] Enabled=0)"); return; }
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: no panel in the context"); return; }
     saferead::beginScope();
@@ -359,7 +368,7 @@ void hideAllButtons() {
         widHide(b.bg); widHide(b.icon);
         b.tipSet = false;
     }
-    g_haveLast = false; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
+    g_haveLast = false; g_pillMask = -1; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
     memset(g_lastRect, 0, sizeof(g_lastRect)); memset(g_lastCont, 0, sizeof(g_lastCont)); memset(g_lastN, 0, sizeof(g_lastN));
 }
 
@@ -420,7 +429,7 @@ void updateButtons(const K2HudContext* ctx) {
     ch::GroupView gv[3]; uintptr_t base[3] = { 0, 0, 0 };
     readGroups(menu, gv, base);
     const int per = g_per;
-    int pre[3];   // displayed counts = what layoutBannerGroups will report in outN
+    int pre[3];   // displayed counts = what layoutBannerPills (HideEmpty=1) or layoutBannerGroups (HideEmpty=0) will report in outN
     for (int g = 0; g < 3; ++g) pre[g] = gv[g].count < 0 ? 0 : (gv[g].count > per ? per : gv[g].count);
 
     // Hover freeze: while the cursor is over last frame's pill containers (and the counts did not change) the menu origin is held, so the whole banner and
@@ -431,9 +440,15 @@ void updateButtons(const K2HudContext* ctx) {
     const bool haveCursor = guikit::cursorEngine(&cx, &cy);
     bool inGrid = false;
     if (ok && !retarget && g_haveLast && haveCursor && pre[0] == g_lastN[0] && pre[1] == g_lastN[1] && pre[2] == g_lastN[2]) {
-        ch::Rect gb = g_lastCont[0];
-        for (int g = 1; g < 3; ++g) gb = unionRect(gb, g_lastCont[g]);
-        inGrid = gb.w > 0 && gb.h > 0 && cx >= gb.x && cx < gb.x + gb.w && cy >= gb.y && cy < gb.y + gb.h;
+        // Union only the visible pills: a hidden pill's zero rect would stretch the union to the screen origin.
+        ch::Rect gb = { 0, 0, 0, 0 };
+        bool anyPill = false;
+        for (int g = 0; g < 3; ++g) {
+            if (g_lastCont[g].w <= 0 || g_lastCont[g].h <= 0) continue;
+            gb = anyPill ? unionRect(gb, g_lastCont[g]) : g_lastCont[g];
+            anyPill = true;
+        }
+        inGrid = anyPill && gb.w > 0 && gb.h > 0 && cx >= gb.x && cx < gb.x + gb.w && cy >= gb.y && cy < gb.y + gb.h;
     }
     int fx = ox, fy = oy;
     bool frozen = false;
@@ -464,10 +479,28 @@ void updateButtons(const K2HudContext* ctx) {
 
     ch::Rect rects[MaxBtn]; int outN[3] = { 0, 0, 0 }; ch::Rect cont[3];
     const int btnPx = g_cfg.btnPx > 0 ? g_cfg.btnPx : boxes[0].w / 2;
-    ch::layoutBannerGroups(banner, boxesUnion, pre, g_cfg.cols, g_cfg.maxRows, btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.capPad, g_cfg.sidePad, sw, sh, rects, outN, cont);
+    if (g_cfg.hideEmpty) ch::layoutBannerPills(banner, boxesUnion, pre, per, g_cfg.colsTotal, btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.capPad, g_cfg.sidePad, sw, sh, rects, outN, cont);
+    else ch::layoutBannerGroups(banner, boxesUnion, pre, g_cfg.cols, g_cfg.maxRows, btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.capPad, g_cfg.sidePad, sw, sh, rects, outN, cont);
+    // Reflow: the counts changed since last frame, so the buttons moved under a possibly stationary cursor; hover sound and click are ignored this frame.
+    const bool reflow = g_haveLast && (pre[0] != g_lastN[0] || pre[1] != g_lastN[1] || pre[2] != g_lastN[2]);
     memcpy(g_lastRect, rects, sizeof(ch::Rect) * 3 * per);
     memcpy(g_lastCont, cont, sizeof(cont));
     memcpy(g_lastN, outN, sizeof(outN)); g_haveLast = true;
+
+    int mask = 0, firstVis = -1;
+    for (int g = 0; g < 3; ++g) if (cont[g].w > 0 && cont[g].h > 0) { mask |= 1 << g; if (firstVis < 0) firstVis = g; }
+    if (mask != g_pillMask) {
+        int nVis = 0, maxN = 0, rowsU = 0, colsU = 0, usedCols = 0, pw = 0, ph = 0, bw = 0;
+        if (firstVis >= 0) {
+            for (int g = 0; g < 3; ++g) if (mask & (1 << g)) { ++nVis; if (outN[g] > maxN) maxN = outN[g]; }
+            colsU = g_cfg.hideEmpty ? clampInt(g_cfg.colsTotal / nVis, 1, per) : g_cfg.cols;
+            usedCols = colsU < maxN ? colsU : maxN;
+            for (int g = 0; g < 3; ++g) if (mask & (1 << g)) { const int r = (outN[g] + colsU - 1) / colsU; if (r > rowsU) rowsU = r; }
+            pw = cont[firstVis].w; ph = cont[firstVis].h; bw = rects[firstVis * per].w;
+        }
+        KP_LOGV(chTarget, KPLOG_INFO, "pills: visible=%d%d%d cols=%d usedCols=%d rows=%d pill=[%d,%d] btn=%d", mask & 1, (mask >> 1) & 1, (mask >> 2) & 1, colsU, usedCols, rowsU, pw, ph, bw);
+        g_pillMask = mask;
+    }
 
     if (retarget) {
         g_logObj = obj; g_logType = type;
@@ -503,7 +536,7 @@ void updateButtons(const K2HudContext* ctx) {
         if (over >= 0) {
             int hg = -1;
             const int hidx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &hg);
-            if (hidx >= 0 && gv[hg].e[hidx].usable) playGuiSound(1);
+            if (hidx >= 0 && gv[hg].e[hidx].usable && !reflow) playGuiSound(1);
         }
     }
 
@@ -525,6 +558,7 @@ void updateButtons(const K2HudContext* ctx) {
         Wid& c = g_cont[g];
         if (!c.c) continue;
         if (!replace) { widHide(c); continue; }   // Replace=0: the vanilla pills are still drawn, never stack ours on them
+        if (cont[g].w == 0 || cont[g].h == 0) { widHide(c); continue; }   // CH4e: empty group, no pill
         widRect(c, cont[g]);
         if (g_imgFrame) widFill(c, g_imgFrame);
         if (tOk[g]) widTint(c, tint[g]);
@@ -567,7 +601,8 @@ void updateButtons(const K2HudContext* ctx) {
         }
     }
 
-    if (click && anyButtonVisible() && haveCursor && over >= 0) {
+    if (click && reflow) KP_LOGV(chTarget, KPLOG_DEBUG, "click ignored: layout reflow");
+    else if (click && anyButtonVisible() && haveCursor && over >= 0) {
         int g = -1;
         const int idx = ch::slotEntry(over, g_cfg.cols, g_cfg.maxRows, &g);
         if (idx >= 0 && g >= 0 && idx < outN[g] && g_btn[over].bg.vis == 1 && hud) {

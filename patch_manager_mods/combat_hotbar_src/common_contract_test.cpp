@@ -184,6 +184,22 @@ int main() {
         HCHECK("layoutBannerGroups: three pills of equal height, empty group included, starting at boxesUnion.y", gcont[0].w > 0 && gcont[1].w > 0 && gcont[2].w > 0 && gcont[0].y == 75 && gcont[0].h == gcont[1].h && gcont[1].h == gcont[2].h);
         HCHECK("layoutBannerGroups: group g buttons at g*cols*maxRows, unused zeroed", gout[2 * 8].w > 0 && gout[1 * 8].w == 0);
         HCHECK("layoutBannerGroups: buttons sit inside their pill (capPx top, sidePx sides)", gout[0].x >= gcont[0].x + 6 && gout[0].y >= gcont[0].y + 10 && gout[2 * 8].x + gout[2 * 8].w <= gcont[2].x + gcont[2].w - 6);
+        // layoutBannerPills (CH4e): same inputs, per 8, colsTotal 6; counts {2,0,5} -> two visible pills (3 cols each), the empty group hidden
+        {
+            ch::Rect pout[3 * 8], pcont[3]; int poutN[3] = { -1, -1, -1 };
+            ch::layoutBannerPills(banner, boxes, cnt, 8, 6, 0, 4, 8, 10, 6, 800, 600, pout, poutN, pcont);
+            HCHECK("layoutBannerPills: outN clamps counts", poutN[0] == 2 && poutN[1] == 0 && poutN[2] == 5);
+            HCHECK("layoutBannerPills: empty group's pill is the zero rect", pcont[1].x == 0 && pcont[1].y == 0 && pcont[1].w == 0 && pcont[1].h == 0);
+            HCHECK("layoutBannerPills: visible pills share one content-sized width and height", pcont[0].w > 0 && pcont[0].h > 0 && pcont[0].w == pcont[2].w && pcont[0].h == pcont[2].h && pcont[0].y == pcont[2].y && pcont[0].y == 75);
+            HCHECK("layoutBannerPills: group g buttons at g*per (slotEntry stride), unused zeroed", pout[0].w > 0 && pout[2 * 8].w > 0 && pout[1 * 8].w == 0 && pout[2].w == 0);
+            HCHECK("layoutBannerPills: buttons sit inside their pill (capPx top, sidePx sides)", pout[0].x >= pcont[0].x + 6 && pout[0].y >= pcont[0].y + 10 &&
+                   pout[2 * 8 + 4].x + pout[2 * 8 + 4].w <= pcont[2].x + pcont[2].w - 6 && pout[2 * 8 + 4].y + pout[2 * 8 + 4].h <= pcont[2].y + pcont[2].h - 10);
+            HCHECK("layoutBannerPills: the pill set is centred under the banner", pcont[0].x < banner.x + banner.w / 2 && pcont[2].x + pcont[2].w > banner.x + banner.w / 2 && pcont[0].x < pcont[2].x);
+            int zero[3] = { 0, 0, 0 };
+            ch::layoutBannerPills(banner, boxes, zero, 8, 6, 0, 4, 8, 10, 6, 800, 600, pout, poutN, pcont);
+            HCHECK("layoutBannerPills: all-empty yields no pills and no buttons", poutN[0] == 0 && poutN[1] == 0 && poutN[2] == 0 &&
+                   pcont[0].w == 0 && pcont[0].h == 0 && pcont[1].w == 0 && pcont[1].h == 0 && pcont[2].w == 0 && pcont[2].h == 0 && pout[0].w == 0 && pout[2 * 8].w == 0);
+        }
         // GuiKit tint/alpha copy (CH4d): the borderOk gate refuses a control with no label border vtable, the setters/getters never fault on it
         {
             float rgb[3] = { 0.f, 0.f, 0.f }, al = 0.f;
