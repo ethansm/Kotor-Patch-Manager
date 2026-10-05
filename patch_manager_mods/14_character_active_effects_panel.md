@@ -23,7 +23,9 @@
   - The engine ignores right alignment, so right-align by placement.
   - Unit scale: sx 4.7963, sy 2.6667 px/unit (BACK 1036x896 px).
 
-**STATUS 2026-10-03 11:51: build 4c INSTALLED (DLL swap only, md5 `2e14e871`, backup `.bak_1003_1151` = 4b), AWAITING USER TEST (checklist in "Build 4c").**
+**STATUS 2026-10-05 18:18: Common migration (doc 24 C4a/b/c: EffectIcons.h, GuiKit setters, shared TextFit.h; no behaviour change intended) INSTALLED by DLL hot-swap, md5 `cf0da9fa`, backup `backups/c3b_c4_swap_20261005_1818` (= build 4c `24bf5738` line). AWAITING COMBINED USER PLAY TEST (build 4c checklist + this).**
+
+Previous status line: **STATUS 2026-10-03 11:51: build 4c INSTALLED (DLL swap only, md5 `2e14e871`, backup `.bak_1003_1151` = 4b), AWAITING USER TEST (checklist in "Build 4c").**
 
 Previous status line: **STATUS 2026-10-02 15:14: build 4b INSTALLED (DLL swap only, md5 `0891be67`, backup `.bak_1002_1514` = build 4 `dbb080ae`; GUI unchanged), AWAITING USER RETEST of the columns.** See "Build 4 first look + 4b" at the end.
 

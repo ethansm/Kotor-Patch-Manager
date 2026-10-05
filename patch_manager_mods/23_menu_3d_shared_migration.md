@@ -13,8 +13,8 @@ inv3d 0.2.1-dev: INSTALLED 2026-10-03 21:00 (DLL swap, `59ed7c77`; rollback `pat
 | Mod | Patch id | Manifest | Step | Gate to start |
 |---|---|---|---|---|
 | Mod 1 Inventory 3D viewport | `inventory-3d-viewport` | 0.2.0-dev (bump to 0.2.1-dev, `manifest.toml:4`) | Step 1 (IsBad* -> saferead) committed in the KPM clone as 6544ac5 (20:28); repo mirror NOT yet synced | now |
-| Mod 5 Equipment 3D character | `equipment-3d-character` | 0.1.0-probe | Step 1 (IsBad* -> saferead, SiteEquip 0x0500) committed 2026-10-05 as repo e180af1 / KPM c9dbe25 (doc 24 C3a); INSTALLED 10-05 17:58 by DLL hot-swap (e281ab86, backup backups/c3a_swap_20261005_1758); SceneView + camera = C3b | inv3d accepted + Equip3dLogic.h extraction shipped alone |
-| Mod 14 Character effects panel | `character-effects-panel` | 0.1.0-probe | waiting | user accepts build 4c (doc 14 line 26: awaiting test) |
+| Mod 5 Equipment 3D character | `equipment-3d-character` | 0.1.0-probe | Step 1 (IsBad* -> saferead, SiteEquip 0x0500) committed 2026-10-05 as repo e180af1 / KPM c9dbe25 (doc 24 C3a); INSTALLED 10-05 17:58 by DLL hot-swap (e281ab86, backup backups/c3a_swap_20261005_1758). Step 2 (SceneView createView/initScene/addModel/camera + cameraAttach/cameraFov) = doc 24 C3b repo ba361f8 / KPM 48cc872, INSTALLED 10-05 18:18 hot-swap (b6eeee09, backup backups/c3b_c4_swap_20261005_1818), awaiting combined play test | inv3d accepted + Equip3dLogic.h extraction shipped alone |
+| Mod 14 Character effects panel | `character-effects-panel` | 0.1.0-probe | Steps 1-3 done (doc 24 C4: EffectIcons.h fde5680, GuiKit swaps c9b54d2, TextFit.h 8e23979+d581600; KPM a0f964c/d6eb583/cb19d4e). Gate waived by user 10-05 ("Build and install everything possible before the next play test"); INSTALLED 10-05 18:18 hot-swap (cf0da9fa, backup backups/c3b_c4_swap_20261005_1818), awaiting combined play test with build 4c checks | step 4 (joins KpLog/IniKit) later |
 
 Out of scope: Mod 11 sort/filter, equip icon fix. Related: 19b sections A1/A2/B4/D, 19e (KpLog), 22 section 4.4, `$TOOL/docs/PatchRegistry.md:273` (library patches).
 
