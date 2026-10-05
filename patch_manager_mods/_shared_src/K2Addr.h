@@ -169,6 +169,24 @@ struct K2AddrTable {
     int GobVtReadable = 0;               // bytes of the Gob vtable a guard must be able to read (covers every slot above)
     int GobReadable = 0;                 // bytes of the Gob a guard must be able to read
     int Gob_Scale = 0;                   // Gob +uniform scale (float, 1.0 = none)
+
+    // ---- Action Hotbar (hotbar-only engine entry points / globals; GOG unmapped) ----
+    uintptr_t ClientToServerObjectId = 0;            // thiscall(objTable, clientId) -> server object id
+    uintptr_t GetItemByObjectId = 0;                 // thiscall(objTable, serverId) -> item ptr
+    uintptr_t CanUseItem = 0;                        // thiscall(server creature; itemPtr,0,1) RET 0xC
+    uintptr_t TexBasicCtor = 0;                      // CAurTextureBasic ctor
+    uintptr_t TexReset = 0;                          // CAurTextureBasic::Reset, fastcall(basic)
+    uintptr_t TexListAdd = 0;                        // thiscall(pendingList, basic)
+    uintptr_t EngineNewArr = 0;                      // engine operator new[]
+    uintptr_t MessagesPanelVtable = 0;               // CSWGuiMessages vtable
+    uintptr_t FadePanelVtable = 0;                   // fade panel vtable
+    uintptr_t PausePanelVtable = 0;                  // pause panel vtable
+    uintptr_t AutoPausePanelVtable = 0;              // auto-pause panel vtable
+    uintptr_t HudSyncStance = 0;                     // fastcall(ECX=hud) resyncs HUD stance
+    uintptr_t HudInvokeGroup = 0;                    // thiscall(hud, group, 0) RET 8
+    uintptr_t PerformUseItem = 0;                    // thiscall(creature; clientItemId,0,targetClientId,float* pos) RET 0x10
+    uintptr_t CloudSavesFlag = 0;                    // Steam Cloud byte
+    uintptr_t CloudSavesDir = 0;                     // CExoString cloudsaves/<id>/
 };
 
 // Steam Aspyr exe (vanilla 6A522E..., which is also what the live 4gb-patched file reports). Built by name so a new field
@@ -327,6 +345,22 @@ constexpr K2AddrTable makeSteam() {
     t.GobVtReadable = 0x10c;
     t.GobReadable = 0x200;
     t.Gob_Scale = 0x1e0;
+    t.ClientToServerObjectId = gameaddr::ClientToServerObjectId;
+    t.GetItemByObjectId = gameaddr::GetItemByObjectId;
+    t.CanUseItem = gameaddr::CanUseItem;
+    t.TexBasicCtor = gameaddr::TexBasicCtor;
+    t.TexReset = gameaddr::TexReset;
+    t.TexListAdd = gameaddr::TexListAdd;
+    t.EngineNewArr = gameaddr::EngineNewArr;
+    t.MessagesPanelVtable = gameaddr::MessagesPanelVtable;
+    t.FadePanelVtable = gameaddr::FadePanelVtable;
+    t.PausePanelVtable = gameaddr::PausePanelVtable;
+    t.AutoPausePanelVtable = gameaddr::AutoPausePanelVtable;
+    t.HudSyncStance = gameaddr::HudSyncStance;
+    t.HudInvokeGroup = gameaddr::HudInvokeGroup;
+    t.PerformUseItem = gameaddr::PerformUseItem;
+    t.CloudSavesFlag = gameaddr::CloudSavesFlag;
+    t.CloudSavesDir = gameaddr::CloudSavesDir;
     return t;
 }
 
@@ -337,7 +371,7 @@ inline constexpr K2AddrTable kSteam = k2addr::detail::makeSteam();
 // Source: patch_manager_mods/21b_gog_address_map.md section 4 (static-verified only: every function pair instruction-aligned to
 // the Steam body, every struct offset byte-identical; nothing here has run on a live GOG process). A ZERO FIELD MEANS UNKNOWN:
 // KeyboardDeviceGlobal (hotbar only, no GOG pair found) and the inventory-3D Scene/Gob/View/GuiGate fields (out of scope for
-// portrait-slots / buff-duration-hud / shield-bar) stay 0, so those helpers are inert on GOG. ClipNoFillColor and TexPendingList
+// portrait-slots / buff-duration-hud / shield-bar) stay 0, so those helpers are inert on GOG. The whole Action Hotbar block (16 fields) is all-zero on GOG. ClipNoFillColor and TexPendingList
 // are "high" in 21b: each quotes an aligned absolute operand (PUSH 0xa1ba3c -> 0xa768a4 in RowDraw; MOV ECX,0xa1bc2c -> 0xa14cd4 in
 // three functions) but has no second semantic anchor, so they need the live GOG check.
 namespace k2addr { namespace detail {
@@ -476,6 +510,22 @@ constexpr K2AddrTable makeGog() {
     // GobVtReadable: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobReadable: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // Gob_Scale: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    t.ClientToServerObjectId = 0;   // UNKNOWN (zero = helper inert)
+    t.GetItemByObjectId = 0;   // UNKNOWN (zero = helper inert)
+    t.CanUseItem = 0;   // UNKNOWN (zero = helper inert)
+    t.TexBasicCtor = 0;   // UNKNOWN (zero = helper inert)
+    t.TexReset = 0;   // UNKNOWN (zero = helper inert)
+    t.TexListAdd = 0;   // UNKNOWN (zero = helper inert)
+    t.EngineNewArr = 0;   // UNKNOWN (zero = helper inert)
+    t.MessagesPanelVtable = 0;   // UNKNOWN (zero = helper inert)
+    t.FadePanelVtable = 0;   // UNKNOWN (zero = helper inert)
+    t.PausePanelVtable = 0;   // UNKNOWN (zero = helper inert)
+    t.AutoPausePanelVtable = 0;   // UNKNOWN (zero = helper inert)
+    t.HudSyncStance = 0;   // UNKNOWN (zero = helper inert)
+    t.HudInvokeGroup = 0;   // UNKNOWN (zero = helper inert)
+    t.PerformUseItem = 0;   // UNKNOWN (zero = helper inert)
+    t.CloudSavesFlag = 0;   // UNKNOWN (zero = helper inert)
+    t.CloudSavesDir = 0;   // UNKNOWN (zero = helper inert)
     return t;
 }
 } } // namespace k2addr::detail

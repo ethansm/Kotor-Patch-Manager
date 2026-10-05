@@ -139,6 +139,22 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(Border_Rot, 0x20);
     STEAM(Tip_Slot, 0x1d0);
     STEAM(Tip_Text, 0x1d4);
+    STEAM(ClientToServerObjectId, 0x0051C8B0);
+    STEAM(GetItemByObjectId, 0x0051C0E0);
+    STEAM(CanUseItem, 0x005D2F80);
+    STEAM(TexBasicCtor, 0x00423000);
+    STEAM(TexReset, 0x00423990);
+    STEAM(TexListAdd, 0x004491C0);
+    STEAM(EngineNewArr, 0x0091D288);
+    STEAM(MessagesPanelVtable, 0x0099E5EC);
+    STEAM(FadePanelVtable, 0x009A044C);
+    STEAM(PausePanelVtable, 0x009A7BAC);
+    STEAM(AutoPausePanelVtable, 0x009A8FCC);
+    STEAM(HudSyncStance, 0x0074DA40);
+    STEAM(HudInvokeGroup, 0x00751750);
+    STEAM(PerformUseItem, 0x00775600);
+    STEAM(CloudSavesFlag, 0x00A7EA88);
+    STEAM(CloudSavesDir, 0x00A7EABC);
 #undef STEAM
     KT_CHECK_EQ(t.sha, kSteamSha);
 }
@@ -280,6 +296,22 @@ static void checkGogFields(const K2AddrTable& g) {
     KT_CHECK_EQ((long long)g.Gob_Scale, 0ll);
     KT_CHECK_EQ((long long)g.SceneCamVt_Attach, 0ll);
     KT_CHECK_EQ((long long)g.SceneCamVt_Fov, 0ll);
+    KT_CHECK_EQ((unsigned long long)g.ClientToServerObjectId, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.GetItemByObjectId, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.CanUseItem, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.TexBasicCtor, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.TexReset, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.TexListAdd, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.EngineNewArr, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.MessagesPanelVtable, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.FadePanelVtable, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.PausePanelVtable, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.AutoPausePanelVtable, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.HudSyncStance, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.HudInvokeGroup, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.PerformUseItem, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.CloudSavesFlag, 0ull);
+    KT_CHECK_EQ((unsigned long long)g.CloudSavesDir, 0ull);
     // GOG really differs from Steam for the functions the three mods call
     KT_CHECK(g.GetMaxForcePoints != kSteam.GetMaxForcePoints && g.PushClipRect != kSteam.PushClipRect);
     // every function field the three mods call is non-zero on GOG

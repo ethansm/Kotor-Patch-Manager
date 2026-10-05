@@ -62,7 +62,13 @@ constexpr uintptr_t GobGetParent = 0x00461530;          // Gob vtable slot 0x108
 // ---- companion-selfheal probe / ItemRead.h (doc 27) ----
 constexpr uintptr_t ClientToServerObjectId = 0x0051C8B0; // thiscall(objTable, clientId) RET 4 -> server object id
 constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;      // thiscall(objTable, serverId) RET 4 -> item ptr (0 = none)
-constexpr uintptr_t HudVtable = 0x0099DCC4;              // CSWGuiInGame (HUD panel) RTTI vtable
+// ---- Action Hotbar (hotbar-only engine entry points / globals) ----
+constexpr uintptr_t HudSyncStance = 0x0074DA40;          // fastcall(ECX=hud), no stack args, plain RET: resyncs hud+0x1C8C (stance) / +0x1C90 (form) from the creature
+constexpr uintptr_t HudInvokeGroup = 0x00751750;         // thiscall(hud, group 0..6, 0) RET 8
+constexpr uintptr_t PerformUseItem = 0x00775600;         // thiscall(controlled client creature; clientItemId, 0, targetClientId, float* pos) RET 0x10, void
+constexpr uintptr_t CloudSavesFlag = 0x00A7EA88;         // Steam Cloud byte (set -> SAVES: alias = cloudsaves dir, else saves/)
+constexpr uintptr_t CloudSavesDir = 0x00A7EABC;          // CExoString "cloudsaves/<steam id>/"
+constexpr uintptr_t HudVtable = 0x0099DCC4;             // CSWGuiInGame (HUD panel) RTTI vtable
 // Panels that do not block gameplay hotkeys (RTTI vtables; doc 07 gate whitelist; shared by the hotbar/selfheal HUD gates)
 constexpr uintptr_t MessagesPanelVtable = 0x0099E5EC;    // CSWGuiMessages
 constexpr uintptr_t FadePanelVtable = 0x009A044C;        // fade panel
