@@ -23,6 +23,7 @@ struct Cfg {
     float fov = 22.726f;
     int bevels = 1;
     float dragDegPx = 0.5f; int wheelZoom = 1; float wheelStep = 0.9f, zoomMin = 0.6f, zoomMax = 2.5f;
+    float panPerPx = 0.003f, panMin = -1.2f, panMax = 1.2f, lockPx = 4.0f;
     int hitFlipY = 0; float screenW = 3840, screenH = 1600; bool screenExplicit = false;
     int screenSet = 0;   // bit 1 = screen_w parsed, bit 2 = screen_h parsed; clampCfg keeps screenExplicit only when both are set
     int flourish = 1; float flMin = 12, flMax = 25, flFirst = 6, flQuiet = 3; int flOnEquip = 1;
@@ -108,6 +109,10 @@ inline IniResult parseIniLine(Cfg& c, const char* k, const char* v) {
     else if (!strcmp(k, "wheel_step")) { good = parseFloats(v, a, 1); if (good) c.wheelStep = a[0]; }
     else if (!strcmp(k, "zoom_min")) { good = parseFloats(v, a, 1); if (good) c.zoomMin = a[0]; }
     else if (!strcmp(k, "zoom_max")) { good = parseFloats(v, a, 1); if (good) c.zoomMax = a[0]; }
+    else if (!strcmp(k, "pan_per_px")) { good = parseFloats(v, a, 1); if (good) c.panPerPx = a[0]; }
+    else if (!strcmp(k, "pan_min")) { good = parseFloats(v, a, 1); if (good) c.panMin = a[0]; }
+    else if (!strcmp(k, "pan_max")) { good = parseFloats(v, a, 1); if (good) c.panMax = a[0]; }
+    else if (!strcmp(k, "drag_lock_px")) { good = parseFloats(v, a, 1); if (good) c.lockPx = a[0]; }
     else if (!strcmp(k, "hit_flip_y")) { good = parseFloats(v, a, 1); if (good) c.hitFlipY = toIntSat(a[0]); }
     else if (!strcmp(k, "screen_w")) { good = parseFloats(v, a, 1); if (good) { c.screenW = a[0]; c.screenExplicit = true; c.screenSet |= 1; } }
     else if (!strcmp(k, "screen_h")) { good = parseFloats(v, a, 1); if (good) { c.screenH = a[0]; c.screenExplicit = true; c.screenSet |= 2; } }
@@ -145,6 +150,8 @@ inline int clampCfg(Cfg& c) {
     if (c.zoomMin < 0.2f) c.zoomMin = 0.2f;
     if (c.fov / c.zoomMin > kMaxSceneFov) c.zoomMin = c.fov / kMaxSceneFov;
     if (c.zoomMax < c.zoomMin) c.zoomMax = c.zoomMin;
+    if (c.panMax < c.panMin) c.panMax = c.panMin;
+    if (c.lockPx < 0) c.lockPx = 0;
     if (c.flMin < 2) c.flMin = 2;
     if (c.flMax < c.flMin) c.flMax = c.flMin;
     if (c.pollMs < 16) c.pollMs = 16;
@@ -202,6 +209,16 @@ inline float hitTop(int flipY, float screenH, int extY, int extH) {
     return flipY ? screenH - extY - extH : (float)extY;
 }
 inline float yawDrag(float yaw, float cx, float lastX, float dragDegPx) { return yaw + (cx - lastX) * dragDegPx; }
+// Vertical drag -> creature Z offset; divided by zoom so the model tracks the cursor at any FOV. Negative pan_per_px inverts.
+inline float panDrag(float panZ, float cy, float lastY, float panPerPx, float zoom, float panMin, float panMax) {
+    float z = zoom > 0.1f ? zoom : 1.0f;
+    return fminf(fmaxf(panZ + (cy - lastY) * panPerPx / z, panMin), panMax);
+}
+// Drag axis, decided once per drag: 0 = undecided (inside lockPx), 1 = yaw (X), 2 = pan (Y); a tie goes to yaw.
+inline int dragAxis(float dx, float dy, float lockPx) {
+    if (fabsf(dx) < lockPx && fabsf(dy) < lockPx) return 0;
+    return fabsf(dx) >= fabsf(dy) ? 1 : 2;
+}
 // Wheel (+120 per notch up = zoom in) -> new zoom, clamped to [zoomMin, zoomMax].
 inline float zoomStep(float zoom, long wheel, float wheelStep, float zoomMin, float zoomMax) {
     zoom *= powf(wheelStep, -wheel / 120.0f);

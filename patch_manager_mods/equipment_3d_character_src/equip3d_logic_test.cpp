@@ -602,6 +602,37 @@ static void testHitTop() {
     KT_CHECK(hitTop(1, 1080.5f, 10, 20) == 1050.5f);
 }
 
+static void testPanDrag() {
+    KT_CHECK(approx(panDrag(0, 100, 0, 0.003f, 1.f, -1.2f, 1.2f), 0.3f));      // + delta
+    KT_CHECK(approx(panDrag(0, 0, 100, 0.003f, 1.f, -1.2f, 1.2f), -0.3f));     // - delta
+    KT_CHECK(approx(panDrag(0.5f, 50, 0, 0.003f, 1.f, -1.2f, 1.2f), 0.65f));
+    KT_CHECK(panDrag(1.0f, 1000, 0, 0.003f, 1.f, -1.2f, 1.2f) == 1.2f);        // clamp at max
+    KT_CHECK(panDrag(-1.0f, 0, 1000, 0.003f, 1.f, -1.2f, 1.2f) == -1.2f);      // clamp at min
+    KT_CHECK(panDrag(0.7f, 10, 10, 0.003f, 1.f, -1.2f, 1.2f) == 0.7f);         // no move
+    KT_CHECK(approx(panDrag(0, 100, 0, 0.003f, 0.f, -1.2f, 1.2f), 0.3f));      // zoom 0 treated as 1
+    KT_CHECK(approx(panDrag(0, 100, 0, 0.003f, 0.6f, -1.2f, 1.2f), 0.5f));     // delta scales 1/zoom
+    KT_CHECK(approx(panDrag(0, 100, 0, 0.003f, 2.5f, -1.2f, 1.2f), 0.12f));
+    KT_CHECK(approx(panDrag(0, 100, 0, -0.003f, 1.f, -1.2f, 1.2f), -0.3f));    // negative inverts
+
+    KT_CHECK_EQ(dragAxis(1, 1, 4), 0);
+    KT_CHECK_EQ(dragAxis(5, 1, 4), 1);
+    KT_CHECK_EQ(dragAxis(1, 5, 4), 2);
+    KT_CHECK_EQ(dragAxis(5, 5, 4), 1);                                          // tie -> yaw
+    KT_CHECK_EQ(dragAxis(-5, 1, 4), 1);
+    KT_CHECK_EQ(dragAxis(1, -5, 4), 2);
+    KT_CHECK_EQ(dragAxis(0, 0, 0), 1);                                          // lockPx 0 decides at once
+
+    Cfg c;
+    KT_CHECK(approx(c.panPerPx, 0.003f)); KT_CHECK(approx(c.panMin, -1.2f)); KT_CHECK(approx(c.panMax, 1.2f)); KT_CHECK(approx(c.lockPx, 4.f));
+    KT_CHECK_EQ(applyLine(c, "pan_per_px=0.01"), IniOk); KT_CHECK(approx(c.panPerPx, 0.01f));
+    KT_CHECK_EQ(applyLine(c, "pan_min=-0.8"), IniOk); KT_CHECK(approx(c.panMin, -0.8f));
+    KT_CHECK_EQ(applyLine(c, "pan_max=0.9"), IniOk); KT_CHECK(approx(c.panMax, 0.9f));
+    KT_CHECK_EQ(applyLine(c, "drag_lock_px=7"), IniOk); KT_CHECK(approx(c.lockPx, 7.f));
+    { Cfg b = loadText("pan_min=1\npan_max=-1\n"); KT_CHECK(b.panMax == b.panMin); KT_CHECK(approx(b.panMin, 1.f)); }
+    { Cfg b = loadText("pan_per_px=-0.003\n"); KT_CHECK(b.panPerPx < 0.f); KT_CHECK(approx(b.panPerPx, -0.003f)); }
+    { Cfg b = loadText("drag_lock_px=-2\n"); KT_CHECK(b.lockPx == 0.f); }
+}
+
 static void testYawZoomFov() {
     KT_CHECK(approx(yawDrag(10, 110, 100, 0.5f), 15.f));
     KT_CHECK(approx(yawDrag(10, 90, 100, 0.5f), 5.f));         // dragging left turns the other way
@@ -806,6 +837,7 @@ int main() {
     testRectContains();
     testHitTop();
     testYawZoomFov();
+    testPanDrag();
     testLayoutSpin();
     testMenuPitch();
     testLayoutMenu();

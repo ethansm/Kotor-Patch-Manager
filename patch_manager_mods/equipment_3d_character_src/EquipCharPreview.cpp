@@ -191,6 +191,7 @@ struct Slot {
     // input
     float yaw = 0, zoom = 1;
     bool dragging = false; float lastX = 0, lastY = 0;
+    float panZ = 0, appliedPanZ = 0, startX = 0, startY = 0; int axis = 0;   // vertical pan (CrSetPos z) + drag axis lock (0 undecided, 1 yaw, 2 pan)
     // flourish scheduler
     DWORD nextFlourish = 0, flourishEnd = 0, lastEquipMs = 0;
     bool flourishActive = false;
@@ -377,7 +378,7 @@ bool playFlourish(Slot* s, const char* name, const char* why, float forceLen = 0
 void menuBuild(Slot* s);
 const char* const kTips[NumButtons + 1] = {
     "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
-    "Play / Pause\nSlowly turns the character;\npauses in place. Drag to rotate,\nwheel to zoom.",
+    "Play / Pause\nSlowly turns; click to pause.\nDrag sideways to rotate,\nup/down to move; wheel zooms.",
     "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle.",
     "Reset\nCentres the view again and goes\nback to the Spin button.",
     "Emotes\nPick a gesture (or, with\nWeapons on, an attack) to play.",
@@ -470,7 +471,7 @@ void tickButtons(Slot* s) {
             s->btnHover[i] = -1;
             if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
             else if (i == 1) { if (!g_spinUi) { g_spinUi = true; g_spinOn = true; logf("btn: spin started (row split)"); } else { g_spinOn = !g_spinOn; logf("btn: auto-spin %s at yaw=%.1f", g_spinOn ? "ON" : "paused", s->yaw); } }
-            else if (i == 3) { logf("btn: view reset (yaw=%.1f zoom=%.2f spin=%d)", s->yaw, s->zoom, g_spinOn); s->yaw = 0; s->zoom = 1; g_spinOn = false; g_spinUi = false; applyView(s); }
+            else if (i == 3) { logf("btn: view reset (yaw=%.1f zoom=%.2f panZ=%.3f spin=%d)", s->yaw, s->zoom, s->panZ, g_spinOn); s->yaw = 0; s->zoom = 1; s->panZ = 0; g_spinOn = false; g_spinUi = false; applyView(s); }
             else if (i == 2) { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
             else { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuPage = 0; s->menuPhase = 0; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
         }
@@ -728,7 +729,15 @@ void applyView(Slot* s) {
     if (s->creature) {
         float v[3]; eq3d::yawVec(s->yaw, v);
         void** cv = vtOf(s->creature);
-        if (cv) reinterpret_cast<CrPtrFn>(cv[CrSetFacing / 4])(s->creature, v);
+        if (cv) {
+            reinterpret_cast<CrPtrFn>(cv[CrSetFacing / 4])(s->creature, v);
+            if (s->panZ != s->appliedPanZ) {   // CrSetPos only on change (spin calls applyView every tick)
+                float pos[3] = {0, 0, s->panZ};
+                reinterpret_cast<CrPtrFn>(cv[CrSetPos / 4])(s->creature, pos);
+                s->appliedPanZ = s->panZ;
+                dlogf("VIEW: panZ=%.3f", s->panZ);
+            }
+        }
     }
 }
 
@@ -752,7 +761,7 @@ bool buildPreview(Slot* s, int real, const char* why) {
     void* pv = s->creature; void** vt = vtOf(pv);
     int scene = 0; readAt<int>(reinterpret_cast<int>(s->block), SceneObjOffset, &scene);
     if (!vt || !scene) { logf("build: bad vtable %p / scene %08x", vt, scene); return false; }
-    logf("build #%d (%s): real=%08x align=%d creature=%p scene=%08x", s->builds + 1, why, real, al, pv, scene);
+    logf("build #%d (%s): real=%08x align=%d creature=%p scene=%08x panZ=%.3f", s->builds + 1, why, real, al, pv, scene, s->panZ);
     dumpMem("appcopy", reinterpret_cast<int>(copy), 15);
     int ok = reinterpret_cast<BuildAppFn>(FnBuildApp)(pv, copy, 3, 1, 0);
     logf("build: 0076d200 returned %d", ok);
@@ -761,6 +770,7 @@ bool buildPreview(Slot* s, int real, const char* why) {
     reinterpret_cast<CrPtrFn>(vt[CrSetScene / 4])(pv, reinterpret_cast<void*>(scene));
     float pos[3] = {0, 0, 0}, face[3] = {1, 0, 0};
     reinterpret_cast<CrPtrFn>(vt[CrSetPos / 4])(pv, pos);
+    s->appliedPanZ = 0;   // creature is back at the origin; applyView below restores panZ
     reinterpret_cast<CrPtrFn>(vt[CrSetFacing / 4])(pv, face);
     reinterpret_cast<SetupSceneFn>(FnSetupScene)(pv, s->block, reinterpret_cast<void*>(real), 0, 1);
     { int mc = modelCount(s->block); if (s->baseModels < 0) s->baseModels = mc;
@@ -830,11 +840,16 @@ void tickInput(Slot* s) {
     static int presses = 0;
     if (((l && !wasL) || (mb && !wasM)) && presses < 30) { ++presses; logf("INPUT: press #%d L=%d M=%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f inside=%d fg=%d", presses, l, mb, cx, cy, ext[0], ext[1], ext[2], ext[3], top, inside, fg); }
     bool changed = false;
-    if (inside && fg && mb && !wasM) { s->yaw = 0; s->zoom = 1; changed = true; logf("INPUT: view reset (MMB)"); }
-    if (inside && fg && l && !wasL && !overAnyButton(s, cx, cy)) { s->dragging = true; s->lastX = cx; logf("INPUT: drag start at (%.0f,%.0f) yaw=%.1f", cx, cy, s->yaw); }
+    if (inside && fg && mb && !wasM) { logf("INPUT: view reset (MMB) yaw=%.1f zoom=%.2f panZ=%.3f", s->yaw, s->zoom, s->panZ); s->yaw = 0; s->zoom = 1; s->panZ = 0; changed = true; }
+    if (inside && fg && l && !wasL && !overAnyButton(s, cx, cy)) { s->dragging = true; s->lastX = s->startX = cx; s->lastY = s->startY = cy; s->axis = 0; logf("INPUT: drag start at (%.0f,%.0f) yaw=%.1f panZ=%.3f", cx, cy, s->yaw, s->panZ); }
     if (s->dragging) {
-        if (!l) { s->dragging = false; logf("INPUT: drag end yaw=%.1f", s->yaw); }
-        else if (haveCur && cx != s->lastX) { s->yaw = eq3d::yawDrag(s->yaw, cx, s->lastX, g_cfg.dragDegPx); s->lastX = cx; changed = true; dlogf("INPUT: yaw=%.1f", s->yaw); }
+        if (!l) { s->dragging = false; logf("INPUT: drag end axis=%d yaw=%.1f panZ=%.3f", s->axis, s->yaw, s->panZ); }
+        else if (haveCur) {
+            if (!s->axis) { s->axis = eq3d::dragAxis(cx - s->startX, cy - s->startY, g_cfg.lockPx); if (s->axis) logf("INPUT: drag axis %s", s->axis == 1 ? "yaw" : "pan"); }
+            if (s->axis == 1 && cx != s->lastX) { s->yaw = eq3d::yawDrag(s->yaw, cx, s->lastX, g_cfg.dragDegPx); changed = true; dlogf("INPUT: yaw=%.1f", s->yaw); }
+            else if (s->axis == 2 && cy != s->lastY) { s->panZ = eq3d::panDrag(s->panZ, cy, s->lastY, g_cfg.panPerPx, s->zoom, g_cfg.panMin, g_cfg.panMax); changed = true; dlogf("INPUT: panZ=%.3f", s->panZ); }
+            s->lastX = cx; s->lastY = cy;
+        }
     }
     LONG wheel = InterlockedExchange(&g_wheelAccum, 0);
     if (wheel) {
