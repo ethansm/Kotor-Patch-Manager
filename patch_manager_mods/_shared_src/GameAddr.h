@@ -78,4 +78,12 @@ constexpr uintptr_t ServerClearAllActions = 0x0051CB10;    // CServerExoApp::Cle
 constexpr uintptr_t RmbHoldFlag = 0x00A7FCBC;          // DAT_00A7FCBC: RMB-hold flag; the camera director (0x78C350) follows mouse deltas while it is nonzero
 constexpr uintptr_t RButtonDownHoldSite = 0x007B3817;    // PerformRButtonDownAction 0x7B3810: MOV [RmbHoldFlag],1 (10 bytes); companion-selfheal detours it (R6 swallow)
 
+// ---- addresses shared by several mods under different local names (F20; canonical names, mods still hold their own copies) ----
+constexpr uintptr_t GetBaseItem = 0x006D6E30;            // CSWItem::GetBaseItem (verified B0) thiscall(itemPtr), no stack args -> baseitems row ptr (slot mask +4, gender req byte +0xB4); action-hotbar GetBaseItem, inventory-sort FnGetBaseItem
+constexpr uintptr_t ServerObjectGetArea = 0x005453C0;    // CSWSObject::GetArea (name_map, medium conf) thiscall(server object) -> area ptr (0 = none); companion-ai / ranged-ai FnGetArea
+constexpr uintptr_t AppActiveFlag = 0x00A1B4E0;          // int: engine app-active flag; AppActivated 0x40BCF0 sets it 1, AppDeactivated 0x40BC40 clears it; MainLoop's load-screen dismiss tests it; activation-fix / load-hang-probe FlagA1B4E0
+constexpr uintptr_t MovieRestoreSkipFlag = 0x00A1B76C;   // int: set to 1 by the movie thread (0x40D637); RestoreAfterMovie 0x40BF40 then skips its re-activation (compared with 0); activation-fix / load-hang-probe Gate76C
+constexpr uintptr_t ClientCreatureVtable = 0x0099EE14;   // CSWCCreature vtable: the client creature ctor 0x7645F0 stores it at [this] (mov [ecx],0x99EE14); CharEffectsPanel ClientCreatureVftable == EquipCharPreview CreatureVftable
+constexpr uintptr_t WorldTimerGetCurrentTime = 0x0051AD20; // CWorldTimer::GetWorldTime (verified B0) thiscall(timer, int* day, uint* ms) RET 8; mirrors K2Addr Effects.h field
+
 } // namespace gameaddr

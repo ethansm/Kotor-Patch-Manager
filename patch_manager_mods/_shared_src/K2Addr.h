@@ -53,6 +53,11 @@ struct K2AddrTable {
     uintptr_t TextVtable = 0;            // CSWGuiText RTTI vtable
     uintptr_t KeyboardDeviceGlobal = 0;  // rdata constant 0 (device-array index)
     uintptr_t TexPendingList = 0;        // engine pending-texture list
+    uintptr_t GetBaseItem = 0;           // CSWItem::GetBaseItem thiscall(itemPtr) -> baseitems row ptr
+    uintptr_t ServerObjectGetArea = 0;   // CSWSObject::GetArea thiscall(server object) -> area ptr
+    uintptr_t AppActiveFlag = 0;         // int: engine app-active flag (AppActivated sets, AppDeactivated clears)
+    uintptr_t MovieRestoreSkipFlag = 0;  // int: movie thread sets 1; RestoreAfterMovie then skips its re-activation
+    uintptr_t ClientCreatureVtable = 0;  // CSWCCreature vtable (stored by the client creature ctor)
 
     // ---- Effects.h ----
     uintptr_t WorldTimerGetCurrentTime = 0;   // FUN_0051ad20 thiscall(timer, int* day, uint* ms) RET 8
@@ -198,8 +203,13 @@ constexpr K2AddrTable makeSteam() {
     t.TextVtable = gameaddr::TextVtable;
     t.KeyboardDeviceGlobal = gameaddr::KeyboardDeviceGlobal;
     t.TexPendingList = gameaddr::TexPendingList;
+    t.GetBaseItem = gameaddr::GetBaseItem;
+    t.ServerObjectGetArea = gameaddr::ServerObjectGetArea;
+    t.AppActiveFlag = gameaddr::AppActiveFlag;
+    t.MovieRestoreSkipFlag = gameaddr::MovieRestoreSkipFlag;
+    t.ClientCreatureVtable = gameaddr::ClientCreatureVtable;
 
-    t.WorldTimerGetCurrentTime = 0x0051AD20;
+    t.WorldTimerGetCurrentTime = gameaddr::WorldTimerGetCurrentTime;
     t.AppGlobal_ToWorld = 8;
     t.World_ToSub = 4;
     t.Sub_ToTimer = 0x10048;

@@ -53,6 +53,11 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(TextVtable, 0x009876B4);
     STEAM(KeyboardDeviceGlobal, 0x0099C884);
     STEAM(TexPendingList, 0x00A1BC2C);
+    STEAM(GetBaseItem, 0x006D6E30);
+    STEAM(ServerObjectGetArea, 0x005453C0);
+    STEAM(AppActiveFlag, 0x00A1B4E0);
+    STEAM(MovieRestoreSkipFlag, 0x00A1B76C);
+    STEAM(ClientCreatureVtable, 0x0099EE14);
     STEAM(WorldTimerGetCurrentTime, 0x0051AD20);
     STEAM(Creature_EffectArray, 0x148);
     STEAM(Creature_EffectCount, 0x14c);
