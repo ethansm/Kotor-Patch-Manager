@@ -5,7 +5,7 @@
 // so a failure names the consumer and the reason. Built against ../_shared_src (see test.toml), so ANY edit to GameAddr.h /
 // WindowHook.h re-runs this test: a Common change that would break the preview fails here first.
 //
-// Areas: (1) gameaddr constants (compile time), (2) WindowHook as the mouse-wheel subclass: install only while old is null, handle
+// Areas: (1) gameaddr constants (compile time), (2) saferead (host stub: every address reads as committed), (3) WindowHook as the mouse-wheel subclass: install only while old is null, handle
 // only while active, forward chains to the previous proc, top uninstall restores, buried uninstall goes pass-through. Host-only.
 #include "check.h"
 #include "fake_wndproc.h"
@@ -31,6 +31,7 @@ inline LONG xchg(volatile LONG* t, LONG v) { return __atomic_exchange_n(t, v, __
 } }
 #include "WindowHook.h"
 #include "GameAddr.h"
+#include "SafeRead.h"
 
 #define HCHECK(why, expr) ::kt::Check("equip3d relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("equip3d relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
@@ -39,7 +40,27 @@ inline LONG xchg(volatile LONG* t, LONG v) { return __atomic_exchange_n(t, v, __
 #define HADDR(name, val) static_assert(gameaddr::name == (val), "equip3d relies on: gameaddr::" #name " == " #val " (validated Steam address)")
 HADDR(ClientCreatureVtable, 0x0099EE14);
 
-// ============================================================ 2. WindowHook as the wheel subclass
+// ============================================================ 2. SafeRead (probes replace IsBadReadPtr; DB lesson 234)
+static void saferead_contract() {
+    constexpr unsigned kSite = 0x0500;
+    g_stubVirtualQueryAll = true;   // host stub: every address is one committed read-write region
+    saferead::beginScope();
+    HCHECK("saferead::beginScope is callable (every hook entry and after engine alloc/free)", true);
+    HCHECK("probeRead refuses nullptr", !saferead::probeRead(kSite, nullptr, 4));
+    HCHECK("probeRead refuses an address below 0x10000", !saferead::probeRead(kSite, reinterpret_cast<const void*>(0x1000), 4));
+    volatile int cell = 0x1234ABCD;
+    HCHECK("probeRead accepts readable memory", saferead::probeRead(kSite, const_cast<const int*>(&cell), 4));
+    int v = 7;
+    HCHECK("readAt<int> on a stack int (off 0) succeeds", saferead::readAt<int>(kSite, reinterpret_cast<uintptr_t>(&cell), 0, &v));
+    HEQ("readAt<int> delivers the value", (long long)v, 0x1234ABCDll);
+    v = 7;
+    HCHECK("readAt refuses base 0 (the wrapper no longer needs its own base==0 guard)", !saferead::readAt<int>(kSite, 0, 0, &v));
+    HEQ("readAt failure leaves *out untouched", (long long)v, 7ll);
+    saferead::beginScope();
+    HCHECK("reads still work after a second beginScope", saferead::readAt<int>(kSite, reinterpret_cast<uintptr_t>(&cell), 0, &v));
+}
+
+// ============================================================ 3. WindowHook as the wheel subclass
 struct EquipTestTag {};
 using Hook = kp::WindowHook<EquipTestTag>;
 static int g_handled = 0;
@@ -113,6 +134,7 @@ static void windowhook_contract() {
 }
 
 int main() {
+    saferead_contract();
     windowhook_contract();
     return kt::Report("common_contract_test (equipment_3d_character)");
 }

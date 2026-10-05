@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "GameAddr.h"
+#include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
 #include "WindowHook.h"  // one game-HWND subclass, safe against out-of-order unhook (F28)
 #include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
 
@@ -120,12 +121,13 @@ void dlogf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); vfprintf(f, fmt, ap); va_end(ap);
     fputc('\n', f); fclose(f);
 }
+constexpr unsigned SiteEquip = 0x0500;   // saferead site id for this DLL's own probes
 void dumpMem(const char* tag, int addr, int words) {
     if (addr == 0) { logf("  dump %s @0: null", tag); return; }
     for (int i = 0; i < words; i += 8) {
         char line[200]; int p = 0;
         for (int j = i; j < i + 8 && j < words; ++j) {
-            if (IsBadReadPtr(reinterpret_cast<const void*>(addr + j * 4), 4)) p += snprintf(line + p, sizeof(line) - p, " ????????");
+            if (!saferead::probeRead(SiteEquip, reinterpret_cast<const void*>(addr + j * 4), 4)) p += snprintf(line + p, sizeof(line) - p, " ????????");
             else p += snprintf(line + p, sizeof(line) - p, " %08x", *reinterpret_cast<const int*>(addr + j * 4));
         }
         logf("  dump %s +%03x:%s", tag, i * 4, line);
@@ -133,9 +135,7 @@ void dumpMem(const char* tag, int addr, int words) {
 }
 template <typename T>
 bool readAt(int base, int off, T* out) {
-    if (base == 0 || IsBadReadPtr(reinterpret_cast<const void*>(base + off), sizeof(T))) return false;
-    *out = *reinterpret_cast<const T*>(base + off);
-    return true;
+    return saferead::readAt<T>(SiteEquip, static_cast<uintptr_t>(static_cast<unsigned>(base)), off, out);
 }
 
 // ---- configuration: $GAME/equip3d.ini (missing/garbage = defaults; every key and rejected line logged) ----
@@ -313,6 +313,7 @@ unsigned char* bindCover(int panel, const char* tagName, int expectId) {
     if (!ctl) { logf("H1 cover %s: allocation failed", tagName); return nullptr; }
     memset(ctl, 0, LabelSize);
     reinterpret_cast<LabelCtorFn>(FnLabelCtor)(ctl);
+    saferead::beginScope();   // engine alloc+ctor ran: cached readable regions may be stale
     int vt = 0; readAt<int>(reinterpret_cast<int>(ctl), 0, &vt);
     if (vt != LabelVftable) { logf("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, vt, LabelVftable); return nullptr; }
     char exo[16] = {0};
@@ -384,7 +385,7 @@ void setCtlVisible(unsigned char* c, bool vis) {
     if (nf != fl) *reinterpret_cast<int*>(c + CtlFlagsOff) = nf;
 }
 void setCtlRect(unsigned char* c, int x, int y, int w, int h) {
-    void** vt = vtOfCtl(c); if (!vt || IsBadReadPtr(vt + 1, 4)) return;
+    void** vt = vtOfCtl(c); if (!vt || !saferead::probeRead(SiteEquip, vt + 1, 4)) return;
     int r[4] = {x, y, w, h}; reinterpret_cast<void(__thiscall*)(void*, int*)>(vt[1])(c, r);
 }
 bool playFlourish(Slot* s, const char* name, const char* why, float forceLen = 0.0f);
@@ -522,10 +523,11 @@ void detachWeapons(Slot* s, const char* why) {
         void* g = s->wpn[i]; if (!g) continue;
         s->wpn[i] = nullptr;
         void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
-        if (!vt || vt0 != ExpectedGobVtable || IsBadReadPtr(vt + 0x50 / 4, 4)) { logf("weapon[%d]: detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", i, g, why, vt0); continue; }
+        if (!vt || vt0 != ExpectedGobVtable || !saferead::probeRead(SiteEquip, vt + 0x50 / 4, 4)) { logf("weapon[%d]: detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", i, g, why, vt0); continue; }
         reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
         reinterpret_cast<void(__thiscall*)(void*, int)>(vt[GobDetachSlot / 4])(g, 0);
         reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(g, 1);
+        saferead::beginScope();
         logf("weapon[%d]: detached+freed %p '%s' (%s)", i, g, s->wpnNames[i], why);
     }
     s->wpnNames[0][0] = s->wpnNames[1][0] = 0;
@@ -538,10 +540,11 @@ void detachHelmet(Slot* s, const char* why) {
     void* g = s->helm; if (!g) return;
     s->helm = nullptr;
     void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
-    if (!vt || vt0 != ExpectedGobVtable || IsBadReadPtr(vt + GobAttachSlot / 4, 4)) { logf("helmet: WARNING detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", g, why, vt0); s->helmName[0] = 0; return; }
+    if (!vt || vt0 != ExpectedGobVtable || !saferead::probeRead(SiteEquip, vt + GobAttachSlot / 4, 4)) { logf("helmet: WARNING detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", g, why, vt0); s->helmName[0] = 0; return; }
     reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
     reinterpret_cast<void(__thiscall*)(void*, int)>(vt[GobDetachSlot / 4])(g, 0);
     reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(g, 1);
+    saferead::beginScope();
     logf("helmet: detached+freed %p '%s' (%s)", g, s->helmName, why);
     s->helmName[0] = 0;
 }
@@ -554,7 +557,7 @@ void attachHelmet(Slot* s, int id, const char* why) {
     int item = getItemObj(id);
     if (!item) { logf("helmet: WARNING id=%08x -> no client item object (%s), skipped", id, why); return; }
     char name[17] = {};
-    if (IsBadReadPtr(reinterpret_cast<void*>(item + ItemModelResOff), 16)) { logf("helmet: WARNING item %08x model ResRef unreadable, skipped", item); return; }
+    if (!saferead::probeRead(SiteEquip, reinterpret_cast<void*>(item + ItemModelResOff), 16)) { logf("helmet: WARNING item %08x model ResRef unreadable, skipped", item); return; }
     memcpy(name, reinterpret_cast<void*>(item + ItemModelResOff), 16); name[16] = 0;
     bool okName = name[0] != 0;
     for (char* p = name; *p; ++p) if (!isalnum((unsigned char)*p) && *p != '_') okName = false;
@@ -563,12 +566,14 @@ void attachHelmet(Slot* s, int id, const char* why) {
     void* head = partGob(s, 0xfe);
     if (!head) { logf("helmet: WARNING no head part on the preview (%s), skipped", why); return; }
     void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
+    saferead::beginScope();
     int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
     if (!g) { logf("helmet: WARNING model '%s' failed to load (id=%08x), skipped", name, id); return; }
     if (gvt != ExpectedGobVtable) { logf("helmet: WARNING model '%s' gob=%p vtable %08x (expect %08x), not attaching (leak instead of crash)", name, g, gvt, ExpectedGobVtable); return; }
     void** vt = vtOf(g);
     reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, head, "GoggleHook", 0);   // same node + call as 0085a9e0; missing node = silently unattached (00461670)
     reinterpret_cast<PartPlayFn>(vt[PartPlaySlot / 4])(g, "default", 1.0f, 0, 0.0f);   // as 0085a9e0 does (animated visors)
+    saferead::beginScope();
     s->helm = g; strncpy(s->helmName, name, sizeof(s->helmName) - 1);
     logf("helmet: item id=%08x obj=%08x base=%d var=%d model='%s' gob=%p head=%p attach ok (%s)", id, item, base, var, name, g, head, why);
 }
@@ -579,8 +584,9 @@ void destroyCreature(Slot* s, const char* why) {
     void** vt = vtOf(s->creature);
     int vt0 = 0; readAt<int>(reinterpret_cast<int>(s->creature), 0, &vt0);
     logf("creature: destroy %p (%s) vtable=%08x", s->creature, why, vt0);
-    if (vt0 == CreatureVftable && vt && !IsBadReadPtr(vt, 4)) reinterpret_cast<CrDtorFn>(vt[0])(s->creature, 1);
+    if (vt0 == CreatureVftable && vt && saferead::probeRead(SiteEquip, vt, 4)) reinterpret_cast<CrDtorFn>(vt[0])(s->creature, 1);
     else logf("creature: vtable mismatch, NOT calling dtor (leak instead of crash)");
+    saferead::beginScope();
     s->creature = nullptr; s->built = false; s->real = 0; s->flourishActive = false; s->baseModels = -1;
 }
 
@@ -591,6 +597,7 @@ bool allocCreature(Slot* s) {
     if (!c) { logf("creature: allocation failed"); s->creatureBad = true; return false; }
     memset(c, 0, CreatureSize);
     reinterpret_cast<Fast1>(FnCreatureCtor)(c);
+    saferead::beginScope();
     int vt = 0; readAt<int>(reinterpret_cast<int>(c), 0, &vt);
     logf("creature: allocated %p vtable=%08x (expect %08x)", c, vt, CreatureVftable);
     if (vt != CreatureVftable) { logf("creature: ctor left wrong vtable, abandoning this panel"); dumpMem("creature", reinterpret_cast<int>(c), 24); s->creatureBad = true; return false; }
@@ -608,7 +615,7 @@ int realValid(int real) {
 }
 bool readApp(int real, unsigned char* out, short* align) {
     int app = 0, stats = 0;
-    if (!readAt<int>(real, CreatureAppOff, &app) || !app || IsBadReadPtr(reinterpret_cast<void*>(app), AppCopyBytes)) return false;
+    if (!readAt<int>(real, CreatureAppOff, &app) || !app || !saferead::probeRead(SiteEquip, reinterpret_cast<void*>(app), AppCopyBytes)) return false;
     memcpy(out, reinterpret_cast<void*>(app), AppCopyBytes);
     *align = eq3d::kNeutralAlign;   // unreadable stats -> neutral idle, not evil
     if (readAt<int>(real, CreatureStatsOff, &stats) && stats) readAt<short>(stats, 0x80, align);
@@ -619,12 +626,12 @@ void* partGob(Slot* s, int id) {
     int holder = 0;
     if (!s->creature || !readAt<int>(reinterpret_cast<int>(s->creature), CreatureHolderOff, &holder) || !holder) return nullptr;
     void** hv = vtOf(reinterpret_cast<void*>(holder));
-    if (!hv || IsBadReadPtr(hv + 2, 4)) return nullptr;
+    if (!hv || !saferead::probeRead(SiteEquip, hv + 2, 4)) return nullptr;
     return reinterpret_cast<PartGetFn>(hv[2])(reinterpret_cast<void*>(holder), id);
 }
 void playPart(void* part, const char* name, float speed, unsigned flags) {
     void** pv = vtOf(part);
-    if (!pv || IsBadReadPtr(pv + PartPlaySlot / 4, 4)) return;
+    if (!pv || !saferead::probeRead(SiteEquip, pv + PartPlaySlot / 4, 4)) return;
     reinterpret_cast<PartPlayFn>(pv[PartPlaySlot / 4])(part, name, speed, flags, 0.0f);
 }
 // Static animation knowledge (R5 inventory): the vt[0x1c] length probe cannot see supermodel-inherited anims, so it is NOT used.
@@ -695,12 +702,14 @@ void attachWeapons(Slot* s, int real, const char* why) {
         char name[28]; int ww = 0;
         if (!eq3d::weaponModelName(base, var, name, sizeof name, &ww)) { logf("weapons: %s id=%08x item=%08x base=%d var=%d: not a wieldable weapon (rows=%d), skipped", hook, id, item, base, var, eq3d::kWeaponRows); continue; }
         void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
+        saferead::beginScope();
         int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
         logf("weapons: %s id=%08x item=%08x base=%d var=%d wield=%d model='%s' -> gob=%p vtable=%08x (expect %08x)", hook, id, item, base, var, ww, name, g, gvt, ExpectedGobVtable);
         if (!g) continue;
         if (gvt != ExpectedGobVtable) { logf("weapons: model gob vtable mismatch, not attaching (leak instead of crash)"); continue; }
         void** vt = vtOf(g);
         reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, body, hook, 0);
+        saferead::beginScope();
         s->wpn[i] = g; strncpy(s->wpnNames[i], name, sizeof(s->wpnNames[i]) - 1);
         has[i] = true; wield[i] = ww; baseOf[i] = base;
         logf("weapons: attached %p to body %p node %s", g, body, hook);
@@ -733,7 +742,7 @@ void applyView(Slot* s) {
     int cam = 0; readAt<int>(reinterpret_cast<int>(s->block), CameraOffset, &cam);
     if (cam) {
         void** cv = vtOf(reinterpret_cast<void*>(cam));
-        if (cv && !IsBadReadPtr(cv + CamFovSlot / 4, 4)) reinterpret_cast<CamFov>(cv[CamFovSlot / 4])(reinterpret_cast<void*>(cam), eq3d::fovForZoom(g_cfg.fov, s->zoom));
+        if (cv && saferead::probeRead(SiteEquip, cv + CamFovSlot / 4, 4)) reinterpret_cast<CamFov>(cv[CamFovSlot / 4])(reinterpret_cast<void*>(cam), eq3d::fovForZoom(g_cfg.fov, s->zoom));
     }
     if (s->creature) {
         float v[3]; eq3d::yawVec(s->yaw, v);
@@ -858,6 +867,7 @@ void tickInput(Slot* s) {
 } // namespace
 
 extern "C" void __cdecl BindEquipView(int panel) {
+    saferead::beginScope();
     int ctlCount = -1; readAt<int>(panel, 0x28, &ctlCount);
     int gate = 0; readAt<int>(GateGlobal, 0, &gate);
     logf("H1 BindEquipView panel=%08x controls=%d gate=%d enabled=%d stage=%d", panel, ctlCount, gate, g_cfg.enabled, g_cfg.stage);
@@ -871,6 +881,7 @@ extern "C" void __cdecl BindEquipView(int panel) {
     reinterpret_cast<Fast1>(FnControlCtor)(view);
     *reinterpret_cast<void**>(view) = reinterpret_cast<void*>(ViewVftable);
     reinterpret_cast<Fast1>(FnSceneCtor)(view + SceneOffset);
+    saferead::beginScope();
 
     char tag[16] = {0};
     reinterpret_cast<CExoCtor>(FnExoCtor)(tag, "3D_MODEL");
@@ -892,17 +903,19 @@ extern "C" void __cdecl BindEquipView(int panel) {
     if (id != ExpectedControlId) { logf("H1: GUI control missing/mismatched (id=%d), slot unusable (is equip_p.gui patched? scripts/add_equip_3dview_control.py)", id); return; }
     if (!gate) { logf("H1: gate global 009f42b4 is zero, slot unusable"); return; }
     int scene = 0;
-    if (!readAt<int>(reinterpret_cast<int>(view), SceneObjOffset, &scene) || !scene || IsBadReadPtr(reinterpret_cast<void*>(scene), 4)) { logf("H1: scene pointer bad (%08x), slot unusable", scene); return; }
+    if (!readAt<int>(reinterpret_cast<int>(view), SceneObjOffset, &scene) || !scene || !saferead::probeRead(SiteEquip, reinterpret_cast<void*>(scene), 4)) { logf("H1: scene pointer bad (%08x), slot unusable", scene); return; }
     void** svt = *reinterpret_cast<void***>(scene);
-    if (IsBadReadPtr(svt + 0x70 / 4, 4)) { logf("H1: scene vtable bad, slot unusable"); return; }
+    if (!saferead::probeRead(SiteEquip, svt + 0x70 / 4, 4)) { logf("H1: scene vtable bad, slot unusable"); return; }
     float pos[3] = {0, 0, 0}, quat[4] = {0, 0, 0, 1};
     reinterpret_cast<SceneInit>(svt[0x70 / 4])(reinterpret_cast<void*>(scene), "gui3D_room", pos, quat);
+    saferead::beginScope();
     logf("H1: scene %08x initialised (gui3D_room)", scene);
 
     char tag2[16] = {0};
     reinterpret_cast<CExoCtor>(FnExoCtor)(tag2, g_cfg.rig);
     void* rig = reinterpret_cast<ThisCall2>(FnAddModel)(view + SceneOffset, tag2, -1);
     reinterpret_cast<CExoDtor>(FnExoDtor)(tag2);
+    saferead::beginScope();
     int n = modelCount(view);
     logf("H1: rig '%s' model=%p, scene model count=%d", g_cfg.rig, rig, n);
     if (!rig || n < 1) { logf("H1: rig missing, slot unusable"); return; }
@@ -934,6 +947,7 @@ extern "C" void __cdecl BindEquipView(int panel) {
 }
 
 extern "C" void __cdecl EquipTick(int panel) {
+    saferead::beginScope();
     static int calls = 0;
     if (!g_qpcFreq.QuadPart) { QueryPerformanceFrequency(&g_qpcFreq); QueryPerformanceCounter(&g_qpcLast); }
     LARGE_INTEGER now; QueryPerformanceCounter(&now);
@@ -1006,6 +1020,7 @@ extern "C" void __cdecl EquipTick(int panel) {
 }
 
 extern "C" void __cdecl EquipDestroy(int panel) {
+    saferead::beginScope();
     Slot* s = findSlot(panel);
     logf("H4 EquipDestroy panel=%08x slot=%s creature=%p", panel, s ? "found" : "none", s ? s->creature : nullptr);
     if (!s) return;
