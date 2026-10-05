@@ -1,0 +1,2 @@
+# doc 20 T3: also build the chain model 32-bit (the game is x86-32; HWND/LONG_PTR are 4 bytes). Needs g++ multilib.
+cxxflags = ["-m32", "-Werror"]

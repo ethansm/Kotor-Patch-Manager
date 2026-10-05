@@ -9,7 +9,7 @@
   python3 scripts/run_tests.py --selftest      # prove the runner reports failures as FAIL
 
 Items and how they are found
-  cpp:<stem>     patch_manager_mods/**/*_test.cpp. Built with
+  cpp:<stem>     patch_manager_mods/**/*_test.cpp and tests/**/*_test.cpp. Built with
                  g++ -std=c++17 -O1 -Wall -Wextra -I <test dir> -I tests/include -fsanitize=address,undefined
                  into $TMPDIR/kotor-tests/host/, run with cwd = the test's directory.
                  (research/**/parity/*_test.cpp are NOT discovered here; parity.py builds those.)
@@ -71,6 +71,7 @@ HARNESS = REPO / "patch_manager_mods" / "perf_lab_src" / "harness"
 SMOKES_TOML = HARNESS / "smokes.toml"
 SUITES_TOML = REPO / "tests" / "suites.toml"
 CPP_ROOT = REPO / "patch_manager_mods"
+CPP_ROOTS = (CPP_ROOT, REPO / "tests")   # tests/: cross-mod model tests (e.g. tests/wndproc_chain, doc 20 T3)
 
 PRUNE_DIRS = {".venv", "__pycache__", ".git", "node_modules", "retired", "testdata", "fixtures"}
 TAIL_LINES = 40
@@ -288,9 +289,12 @@ def discover(sanitize=True, tiers=()):
         excludes[(REPO / e["path"]).resolve()] = e.get("reason", "excluded")
     items = []
 
-    # C++ host tests, only under patch_manager_mods/ (parity tests live in research/ and are run by parity.py).
+    # C++ host tests under patch_manager_mods/ and tests/ (parity tests live in research/ and are run by parity.py;
+    # tests/selftest holds the runner's own fixtures).
     seen = {}
-    for dp, fns in walk(CPP_ROOT):
+    for dp, fns in (x for root in CPP_ROOTS for x in walk(root)):
+        if "selftest" in dp.relative_to(REPO).parts:
+            continue
         for fn in fns:
             if fn.endswith("_test.cpp"):
                 src = dp / fn
