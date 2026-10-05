@@ -173,6 +173,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
     int n = collectBuffs(creature, day, ms, haveTime, buffs, 16, debuff);
     int nOther = collectBuffs(creature, day, ms, haveTime, other, 16, !debuff);
 
+    if (cardW < 1 || cardH < 1) return;         // degenerate card (F23): nothing sensible to lay out
     float scale = gui2d::hudScale();
     // both columns share one icon size; preferred size shrunk so all fit down the column, else another column (bh::columnLayout)
     const bh::ColumnLayout lay = bh::columnLayout(n, nOther, isLarge, cardW, cardH, scale);

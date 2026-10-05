@@ -241,20 +241,34 @@ static void testColumnLayout() {
         ColumnLayout n = columnLayout(2, 2, 1, -50, -80, 2.0f);
         KT_CHECK(n.size >= 1); KT_CHECK(n.perCol >= 1);
         ColumnLayout tiny = columnLayout(0, 0, 0, 0, 0, 0.1f);      // smallest scale hudScale() lets through: min size int(0.5) = 0
-        KT_CHECK(tiny.perCol >= 1);
+        KT_CHECK(tiny.perCol >= 1); KT_CHECK(tiny.size >= 1);
     }
-    // CHARACTERIZATION: the multi-column loop re-derives the preferred size WITHOUT the MinIconSize clamp, so a degenerate card
-    // (cardW 0 at scale 2: preferred int(0)=0) can end at size 0 (zero-sized icons), and at HUD scale < 0.2 (min size int(5*s) = 0)
-    // a negative cardW gives size -1 and `(cardH-gap)/(size+gap)` divides by zero. Neither is reachable with real cards (cardW >= ~60,
-    // scale 1..3); the division case is deliberately NOT exercised here.
-    KT_CHECK_EQ(columnLayout(0, 4, 0, 0, 30, 2.0f).size, 0);
-    KT_CHECK_EQ(columnLayout(1, 0, 0, 0, 5000, 2.0f).size, 10);   // but with room to spare the min clamp of the FIRST pass stands
+    // F22/F23 (were characterisation pins of the old bugs): the multi-column re-derive now honours MinIconSize, cardW/cardH < 1 are
+    // clamped to 1 on entry, and size never reaches 0, so `(cardH-gap)/(size+gap)` cannot divide by zero even at scale 0.1.
+    {
+        ColumnLayout a = columnLayout(0, 4, 0, 0, 30, 2.0f);       // cardW 0 -> 1: preferred 0 -> min 10, fits shrink it, never 0
+        KT_CHECK(a.size >= 1); KT_CHECK(a.perCol >= 1);
+        ColumnLayout b = columnLayout(2, 2, 1, -50, -80, 0.1f);    // the formerly-crashing case: negative cardW at scale 0.1
+        KT_CHECK(b.size >= 1); KT_CHECK(b.gap >= 1); KT_CHECK(b.perCol >= 1); KT_CHECK(b.cols >= 1 && b.cols <= bh::MaxColumns);
+        KT_CHECK(b.fit == b.perCol * b.cols); KT_CHECK(b.drawN >= 0 && b.drawN <= 2);
+        ColumnLayout c = columnLayout(1, 0, 0, 0, 5000, 2.0f);
+        KT_CHECK_EQ(c.size, 10);                                   // with room to spare the min clamp stands
+        // Tiny cards (any cardW >= 1, any scale): size >= 1 always, and size >= minSize whenever the card has room for it.
+        for (float sc : { 0.1f, 0.19f, 0.2f, 0.5f, 1.0f, 2.0f }) for (int w : { -5, 0, 1, 2, 5 }) for (int lg = 0; lg < 2; ++lg) {
+            ColumnLayout t = columnLayout(1, 0, lg, w, 100000, sc);
+            int minS = int(bh::MinIconSize * sc);
+            bool ok = t.size >= 1 && t.size >= minS;
+            kt::Check("tiny card size", ok, ok ? "" : "size below 1 or minSize");
+            ColumnLayout t2 = columnLayout(3, 3, lg, w, w, sc);
+            kt::Check("tiny card both", t2.size >= 1 && t2.perCol >= 1, "tiny card degenerate");
+        }
+    }
 
-    // Property sweep over a spread of inputs (no negative cardW, see above): invariants only.
-    for (int n = 0; n <= 16; ++n) for (int no = 0; no <= 16; no += 4) for (int w : { 0, 1, 30, 100, 400, 2000 })
+    // Property sweep over a spread of inputs (cardW/cardH < 1 are clamped on entry): invariants only.
+    for (int n = 0; n <= 16; ++n) for (int no = 0; no <= 16; no += 4) for (int w : { -3, 0, 1, 30, 100, 400, 2000 })
     for (int h : { -10, 0, 1, 30, 100, 400, 2000 }) for (float sc : { 0.1f, 0.5f, 1.0f, 2.0f, 3.7f, 9.9f }) for (int lg = 0; lg < 2; ++lg) {
         ColumnLayout l = columnLayout(n, no, lg, w, h, sc);
-        bool ok = l.gap >= 1 && l.size >= 0 && (w < 30 || l.size >= 1) && l.cols >= 1 && l.cols <= bh::MaxColumns && l.perCol >= 1
+        bool ok = l.gap >= 1 && l.size >= 0 && l.size >= 1 && l.cols >= 1 && l.cols <= bh::MaxColumns && l.perCol >= 1
                && l.fit == l.perCol * l.cols && l.drawN >= 0 && l.drawN <= n && l.drawN <= l.fit && (l.drawN == n || l.drawN == l.fit);
         kt::Check("layout invariants", ok, ok ? "" : "invariant violated");
     }
@@ -351,17 +365,9 @@ static void testDiscLine() {
 }
 
 static void testColumnSig() {
-    KT_CHECK_EQ(bh::columnSig(0, 0, 0, 0, 0, 0, 0), 0);
-    KT_CHECK_EQ(bh::columnSig(1, 0, 0, 0, 0, 0, 0), 1 << 16);
-    KT_CHECK_EQ(bh::columnSig(0, 1, 0, 0, 0, 0, 0), 1 << 4);
-    KT_CHECK_EQ(bh::columnSig(0, 0, 1, 0, 0, 0, 0), 1 << 12);
-    KT_CHECK_EQ(bh::columnSig(0, 0, 0, 1, 0, 0, 0), 1 << 8);
-    KT_CHECK_EQ(bh::columnSig(0, 0, 0, 0, 1, 0, 0), 1 << 20);
-    KT_CHECK_EQ(bh::columnSig(0, 0, 0, 0, 0, 7, 0), 7);
-    KT_CHECK_EQ(bh::columnSig(0, 0, 0, 0, 0, 0, 1), 1);
-    KT_CHECK_EQ(bh::columnSig(3, 1, 2, 19, 100, 200, 0), (3 << 16) ^ (1 << 4) ^ (2 << 12) ^ (19 << 8) ^ (100 << 20) ^ 200);
-    // Any single input changing changes the signature (when fields do not overlap).
+    // Deterministic, and any single input changing changes the signature.
     int base = bh::columnSig(3, 1, 2, 19, 100, 200, 0);
+    KT_CHECK_EQ(bh::columnSig(3, 1, 2, 19, 100, 200, 0), base);
     KT_CHECK(bh::columnSig(4, 1, 2, 19, 100, 200, 0) != base);
     KT_CHECK(bh::columnSig(3, 0, 2, 19, 100, 200, 0) != base);
     KT_CHECK(bh::columnSig(3, 1, 3, 19, 100, 200, 0) != base);
@@ -369,9 +375,19 @@ static void testColumnSig() {
     KT_CHECK(bh::columnSig(3, 1, 2, 19, 101, 200, 0) != base);
     KT_CHECK(bh::columnSig(3, 1, 2, 19, 100, 201, 0) != base);
     KT_CHECK(bh::columnSig(3, 1, 2, 19, 100, 200, 1) != base);
-    // CHARACTERIZATION (log-only weakness): the fields overlap (cardH is up to 11 bits and shares bits 0-10 with isLarge, debuff<<4
-    // and size<<8), so distinct inputs can collide and a real change would then go unlogged: debuff=1/cardH=0 == debuff=0/cardH=16.
-    KT_CHECK_EQ(bh::columnSig(0, 1, 0, 0, 0, 0, 0), bh::columnSig(0, 0, 0, 0, 0, 16, 0));
+    // F24 (was a characterisation pin of the overlap): the old pair debuff=1/cardH=0 vs debuff=0/cardH=16 no longer collides.
+    KT_CHECK(bh::columnSig(0, 1, 0, 0, 0, 0, 0) != bh::columnSig(0, 0, 0, 0, 0, 16, 0));
+    // No collisions over a small grid of the 7 parameters (values chosen to straddle the old overlapping bit fields).
+    {
+        static int seen[40000]; int cnt = 0, collisions = 0;
+        for (int n : {0, 1, 3, 16}) for (int d : {0, 1}) for (int no : {0, 2, 16}) for (int sz : {0, 5, 19, 48})
+        for (int w : {0, 100, 300}) for (int h : {0, 16, 200, 2047}) for (int lg : {0, 1}) {
+            int s = bh::columnSig(n, d, no, sz, w, h, lg);
+            for (int k = 0; k < cnt; ++k) if (seen[k] == s) ++collisions;
+            if (cnt < 40000) seen[cnt++] = s;
+        }
+        KT_CHECK(cnt > 0); KT_CHECK_EQ(collisions, 0);
+    }
 }
 
 // COLUMN log gate: keyed by (slot, debuff); regression for the buff/DEBUFF alternation that logged every frame.
@@ -426,7 +442,7 @@ static void testMenuGates() {
     // Every size menuRectOk accepts yields a sane layout (the menu draws with isLarge=0 and the control rect as the card).
     for (int w = 1; w <= 2000; w += 37) for (int h = 1; h <= 2000; h += 41) {
         bh::ColumnLayout l = bh::columnLayout(4, 2, 0, w, h, 2.0f);
-        KT_CHECK(l.size >= 0 && (w < 30 || l.size >= 1) && l.perCol >= 1);   // w of a few px can give size 0 (see testColumnLayout)
+        KT_CHECK(l.size >= 0 && l.size >= 1 && l.perCol >= 1);   // w of a few px can give size 0 (see testColumnLayout)
     }
 }
 

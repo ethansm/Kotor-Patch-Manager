@@ -105,6 +105,8 @@ struct ColumnLayout { int gap, size, cols, perCol, fit, drawN; };
 // Preferred size (smaller on the little companion cards so the face stays visible), then shrink so all of nSize fit down the
 // column; below MinIconSize add another column (up to MaxColumns) instead. drawN = how many of the n icons fit.
 inline ColumnLayout columnLayout(int n, int nOther, int isLarge, int cardW, int cardH, float scale) {
+    if (cardW < 1) cardW = 1;                  // degenerate card: keeps size + gap and every division below non-zero
+    if (cardH < 1) cardH = 1;
     int nSize = n > nOther ? n : nOther;
     int gap = int(scale + 0.5f); if (gap < 1) gap = 1;
     int size = int(cardW * (isLarge ? LargeCardFraction : SmallCardFraction));
@@ -119,7 +121,9 @@ inline ColumnLayout columnLayout(int n, int nOther, int isLarge, int cardW, int 
         if (size >= minSize || cols >= MaxColumns) break;
         size = int(cardW * (isLarge ? LargeCardFraction : SmallCardFraction));
         if (size > maxSize) size = maxSize;
+        if (size < minSize) size = minSize;   // re-derive honours the min clamp too (F22)
     }
+    if (size < 1) size = 1;                    // tiny scale (minSize 0) + tiny card: never a zero-sized icon, size + gap >= 2
     int perCol = (cardH - gap) / (size + gap); if (perCol < 1) perCol = 1;
     int fit = perCol * cols;
     int drawN = n < fit ? n : fit;
@@ -154,9 +158,15 @@ inline DiscLine discLine(int ix, int iy, int size, int y0) {
     return { lx, lw };
 }
 
-// Change-detect signature for the COLUMN log line (log only; fields overlap, so distinct inputs can collide).
+// Change-detect signature for the COLUMN log line (log only): 64-bit FNV-1a over the bytes of the 7 inputs, folded to int.
 inline int columnSig(int n, int debuff, int nOther, int size, int cardW, int cardH, int isLarge) {
-    return (n << 16) ^ (debuff << 4) ^ (nOther << 12) ^ (size << 8) ^ (cardW << 20) ^ cardH ^ isLarge;
+    const int v[7] = { n, debuff, nOther, size, cardW, cardH, isLarge };
+    unsigned long long h = 0xcbf29ce484222325ULL;
+    for (int k = 0; k < 7; ++k) {
+        unsigned int u = (unsigned int)v[k];
+        for (int b = 0; b < 4; ++b) { h ^= (unsigned long long)((u >> (8 * b)) & 0xffu); h *= 0x100000001b3ULL; }
+    }
+    return (int)(unsigned int)((h >> 32) ^ (h & 0xffffffffULL));
 }
 
 // Per-(slot, debuff) change gate for the COLUMN log line. One slot draws its buff and DEBUFF columns alternately and the sig includes
