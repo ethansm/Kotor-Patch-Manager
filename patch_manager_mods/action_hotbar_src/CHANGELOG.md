@@ -5,6 +5,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 ## 1.2.2-dev (2026-10-05)
 
 - Internal: refactor (HP4), no behavior change.
+- Internal: engine addresses from the shared tables, shared healing-item check (C6, CS7).
 
 ## 1.2.1 (2026-10-04)
 
