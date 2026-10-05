@@ -265,5 +265,37 @@ int main() {
         KT_CHECK(!codepatch::committed(reinterpret_cast<uintptr_t>(code), sizeof code));
     }
 
+    // ---- allocCave: zero-filled writable block; nullptr for n == 0 / failure; jmpRel into the cave + write() patches a site ----
+    {
+        KT_CHECK(codepatch::allocCave(0) == nullptr);
+        uint8_t* cave = codepatch::allocCave(64);
+        KT_CHECK(cave != nullptr);
+        if (cave) {
+            bool zero = true; for (int i = 0; i < 64; ++i) zero = zero && cave[i] == 0;
+            KT_CHECK(zero);
+            for (int i = 0; i < 64; ++i) cave[i] = static_cast<uint8_t>(i + 1);          // all 64 bytes writable
+            KT_CHECK_EQ(cave[63], 64);
+            uint8_t* cave2 = codepatch::allocCave(64);
+            KT_CHECK(cave2 != nullptr && cave2 != cave);                                 // distinct blocks
+            // cave tail jumps back to a return site: E9 rel32 resolves to the target from the cave address
+            uint8_t site[8]; memset(site, 0xCC, sizeof site);
+            uint8_t jmp[7]; codepatch::jmpRel(reinterpret_cast<uintptr_t>(site), reinterpret_cast<uintptr_t>(cave), jmp, 7);
+            reset(); g_oldProt = PAGE_EXECUTE_READ; codepatch::ops() = saved;
+            g_stubVirtualQueryAll = true;
+            KT_CHECK_EQ(codepatch::write(reinterpret_cast<uintptr_t>(site), jmp, 7), 1);
+            g_stubVirtualQueryAll = false;
+            int32_t rel; memcpy(&rel, site + 1, 4);
+            KT_CHECK_EQ(site[0], 0xE9); KT_CHECK_EQ(site[5], 0x90); KT_CHECK_EQ(site[6], 0x90); KT_CHECK_EQ(site[7], 0xCC);
+            KT_CHECK_EQ(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(site) + 5 + rel), static_cast<uint32_t>(reinterpret_cast<uintptr_t>(cave)));   // mod 2^32: the test may be a 64-bit build
+            uint8_t* back = cave + 20;                                                  // cave -> site return jump
+            codepatch::jmpRel(reinterpret_cast<uintptr_t>(back), reinterpret_cast<uintptr_t>(site) + 7, back, 5);
+            memcpy(&rel, back + 1, 4);
+            KT_CHECK_EQ(back[0], 0xE9);
+            KT_CHECK_EQ(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(back) + 5 + rel), static_cast<uint32_t>(reinterpret_cast<uintptr_t>(site) + 7));
+            free(cave2);
+        }
+        free(cave);
+    }
+
     return kt::Report("codepatch_test");
 }

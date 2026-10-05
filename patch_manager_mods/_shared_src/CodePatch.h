@@ -18,6 +18,7 @@
 #include <windows.h>
 #include <cstdint>
 #include <cstring>
+#include <cstdlib>
 
 #ifdef GUIKIT_HOST
 typedef void* HMODULE; typedef DWORD* PDWORD;   // missing from the stub (identical redefinition is harmless)
@@ -107,6 +108,19 @@ inline void putRel32(uint8_t* field, uintptr_t fieldSite, uintptr_t target) {
 inline void jmpRel(uintptr_t at, uintptr_t target, uint8_t* out, int n) {
     out[0] = 0xE9; int32_t r = static_cast<int32_t>(target - (at + 5)); memcpy(out + 1, &r, 4);
     for (int i = 5; i < n; ++i) out[i] = 0x90;
+}
+
+// Executable scratch memory for a code cave: n bytes, zero-filled, committed RWX (VirtualAlloc MEM_COMMIT|MEM_RESERVE,
+// PAGE_EXECUTE_READWRITE). nullptr when n == 0 or the allocation fails. Never freed (a cave lives as long as its hook). Fill it,
+// then hook with jmpRel(at, cave, out, n) + write(at, out, n); flush the cave with ops().flush(cave, used) after filling.
+// Host build (GUIKIT_HOST): calloc-backed (the stub has no VirtualAlloc); the bytes are data only.
+inline uint8_t* allocCave(size_t n) {
+    if (n == 0) return nullptr;
+#ifdef GUIKIT_HOST
+    return static_cast<uint8_t*>(calloc(n, 1));
+#else
+    return static_cast<uint8_t*>(VirtualAlloc(nullptr, n, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+#endif
 }
 
 // E8 rel32 for a call instruction at `at`.

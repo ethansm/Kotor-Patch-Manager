@@ -12,6 +12,8 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 static const char* const kSteamSha = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF";
 static const char* const kGogSha = "777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914";
@@ -511,6 +513,34 @@ static void checkGuiKit() {
     k2addr::clearForTest();
 }
 
+static int g_logN = 0; static char g_logBuf[256];
+static void fakeLog(const char* fmt, ...) { ++g_logN; va_list ap; va_start(ap, fmt); vsnprintf(g_logBuf, sizeof g_logBuf, fmt, ap); va_end(ap); }
+
+// featureOk: returns ok; logs the shield_bar line once per `noted` flag; null log / null noted are safe.
+static void checkFeatureOk() {
+    bool noted = false; g_logN = 0; g_logBuf[0] = 0;
+    KT_CHECK(k2addr::featureOk(true, "gauge draw", fakeLog, &noted));
+    KT_CHECK_EQ((long long)g_logN, 0ll); KT_CHECK(!noted);                       // ok: silent, flag untouched
+    KT_CHECK(!k2addr::featureOk(false, "gauge draw", fakeLog, &noted));
+    KT_CHECK_EQ((long long)g_logN, 1ll); KT_CHECK(noted);
+    KT_CHECK(strcmp(g_logBuf, "K2ADDR gauge draw disabled (no address table for this exe, or a needed field is 0)") == 0);
+    KT_CHECK(!k2addr::featureOk(false, "other", fakeLog, &noted));               // already noted: no second line, even for another feature
+    KT_CHECK_EQ((long long)g_logN, 1ll);
+    KT_CHECK(k2addr::featureOk(true, "other", fakeLog, &noted)); KT_CHECK_EQ((long long)g_logN, 1ll);
+    bool fresh = false;                                                          // an independent flag logs on its own
+    KT_CHECK(!k2addr::featureOk(false, "other", fakeLog, &fresh));
+    KT_CHECK_EQ((long long)g_logN, 2ll); KT_CHECK(fresh); KT_CHECK(strstr(g_logBuf, "K2ADDR other disabled") == g_logBuf);
+    // null log: still returns false and sets the flag
+    bool n2 = false; KT_CHECK(!k2addr::featureOk(false, "x", nullptr, &n2)); KT_CHECK(n2); KT_CHECK_EQ((long long)g_logN, 2ll);
+    KT_CHECK(k2addr::featureOk(true, "x", nullptr, &n2));
+    // null noted: logs every !ok call
+    KT_CHECK(!k2addr::featureOk(false, "y", fakeLog, nullptr)); KT_CHECK(!k2addr::featureOk(false, "y", fakeLog, nullptr));
+    KT_CHECK_EQ((long long)g_logN, 4ll);
+    // both null, null feature: no crash
+    KT_CHECK(!k2addr::featureOk(false, nullptr, nullptr, nullptr)); KT_CHECK(k2addr::featureOk(true, nullptr, nullptr, nullptr));
+    KT_CHECK(!k2addr::featureOk(false, nullptr, fakeLog, nullptr)); KT_CHECK(strstr(g_logBuf, "K2ADDR ? disabled") == g_logBuf);
+}
+
 int main() {
     void* m = mmap(nullptr, 1u << 20, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
     if (m == MAP_FAILED) { perror("mmap MAP_32BIT"); return 5; }
@@ -523,5 +553,6 @@ int main() {
     checkEffects();
     checkGui2D();
     checkGuiKit();
+    checkFeatureOk();
     return kt::Report("k2addr_test");
 }

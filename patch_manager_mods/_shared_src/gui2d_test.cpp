@@ -176,5 +176,73 @@ int main() {
         g_g2d.panelRect = saved;
     }
 
+    // ---- vfillClip: bottom-anchored fill, frac clamped, NaN = 0, round half up ----
+    {
+        Rect r{ 10, 20, 30, 40 };                                     // bottom edge y+h = 60
+        auto chk = [&](const char* nm, float f, int wantH) {
+            Rect c = vfillClip(r, f);
+            char w[64]; snprintf(w, sizeof w, "vfillClip %s", nm);
+            kt::Check(w, c.h == wantH && c.x == 10 && c.w == 30 && c.y + c.h == 60 && c.y == 20 + 40 - wantH);
+        };
+        chk("0", 0.0f, 0); chk("1", 1.0f, 40); chk("0.5", 0.5f, 20); chk("0.25", 0.25f, 10);
+        chk(">1", 2.5f, 40); chk("<0", -0.5f, 0); chk("nan", NAN, 0); chk("inf", INFINITY, 40); chk("-inf", -INFINITY, 0);
+        chk("tiny", 0.001f, 0); chk("just-below-1", 0.999f, 40);
+        // odd heights: round half up (int(h*f + 0.5f))
+        Rect o{ 0, 0, 5, 7 };
+        KT_CHECK_EQ((long long)vfillClip(o, 0.5f).h, 4ll);            // 3.5 -> 4
+        KT_CHECK_EQ((long long)vfillClip(o, 0.0f).h, 0ll);
+        KT_CHECK_EQ((long long)vfillClip(o, 1.0f).h, 7ll);
+        KT_CHECK_EQ((long long)vfillClip(o, 0.25f).h, 2ll);           // 1.75 -> 2
+        KT_CHECK_EQ((long long)vfillClip(o, 0.2f).h, 1ll);            // 1.4 -> 1
+        KT_CHECK_EQ((long long)vfillClip(o, 0.5f).y, 3ll);            // bottom edge 7
+        Rect one{ 3, 4, 2, 1 };
+        KT_CHECK_EQ((long long)vfillClip(one, 0.5f).h, 1ll);          // 0.5 -> 1
+        KT_CHECK_EQ((long long)vfillClip(one, 0.49f).h, 0ll);
+        Rect z{ 1, 2, 3, 0 };                                         // empty rect stays empty
+        KT_CHECK_EQ((long long)vfillClip(z, 1.0f).h, 0ll); KT_CHECK_EQ((long long)vfillClip(z, 1.0f).y, 2ll);
+        // matches buff_duration_hud brightPx (int(size*ratio+0.5f)) and shield_bar's gauge (round(h*cur/mx)) on the same inputs
+        for (int h = 1; h <= 24; ++h) for (int n = 0; n <= 10; ++n) {
+            float f = float(n) / 10.0f;
+            KT_CHECK_EQ((long long)vfillClip({ 0, 0, 1, h }, f).h, (long long)int(h * f + 0.5f));
+        }
+    }
+
+    // ---- drawVFill: clip on the bottom slice, image drawn offset so the slice shows the bottom part ----
+    {
+        static const float rgb[3] = { 1, 0.5f, 0.25f };
+        int img; Rect r{ 10, 20, 30, 40 };
+        reset(); g_draws = 0;
+        KT_CHECK(drawVFill(&img, r, 0.5f, rgb, 0.75f));
+        KT_CHECK_EQ((long long)g_pushes, 1ll); KT_CHECK_EQ((long long)g_pops, 1ll);
+        KT_CHECK_EQ((long long)g_last.x, 10ll); KT_CHECK_EQ((long long)g_last.y, 40ll);
+        KT_CHECK_EQ((long long)g_last.w, 30ll); KT_CHECK_EQ((long long)g_last.h, 20ll);
+        KT_CHECK(g_last.color == clipNoFill());
+        KT_CHECK_EQ((long long)g_draws, 1ll); KT_CHECK(g_drawImg == &img);
+        KT_CHECK_EQ((long long)g_drawArgs[0], 0ll); KT_CHECK_EQ((long long)g_drawArgs[1], -20ll);
+        KT_CHECK_EQ((long long)g_drawArgs[2], 30ll); KT_CHECK_EQ((long long)g_drawArgs[3], 40ll);
+        KT_CHECK(g_drawRgb == rgb); KT_CHECK(g_drawAlpha == 0.75f);
+        KT_CHECK_EQ((long long)g_order[0], 3ll); KT_CHECK_EQ((long long)g_order[1], 4ll);
+        // full fill: offset 0
+        reset(); g_draws = 0; KT_CHECK(drawVFill(&img, r, 1.0f, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_drawArgs[1], 0ll); KT_CHECK_EQ((long long)g_last.h, 40ll);
+        KT_CHECK_EQ((long long)g_drawArgs[4], 0ll); KT_CHECK_EQ((long long)g_drawArgs[5], 0ll);   // a5 and rotation bits stay 0
+        // 1 px high / 1 px wide slices still draw
+        reset(); g_draws = 0; KT_CHECK(drawVFill(&img, { 0, 0, 30, 40 }, 0.025f, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_last.h, 1ll); KT_CHECK_EQ((long long)g_last.y, 39ll); KT_CHECK_EQ((long long)g_draws, 1ll);
+        KT_CHECK_EQ((long long)g_drawArgs[1], -39ll);
+        reset(); g_draws = 0; KT_CHECK(drawVFill(&img, { 5, 0, 1, 40 }, 1.0f, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_last.w, 1ll); KT_CHECK_EQ((long long)g_draws, 1ll);
+        // empty fill: nothing pushed or drawn
+        reset(); g_draws = 0; KT_CHECK(!drawVFill(&img, r, 0.0f, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_pushes, 0ll); KT_CHECK_EQ((long long)g_draws, 0ll);
+        reset(); g_draws = 0; KT_CHECK(!drawVFill(&img, { 0, 0, 0, 10 }, 1.0f, rgb, 1.0f));   // zero width
+        KT_CHECK_EQ((long long)g_pushes, 0ll);
+        // refused clip push: no draw, no pop
+        reset(); g_draws = 0; g_pushResult = 0;
+        KT_CHECK(!drawVFill(&img, r, 0.5f, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_pushes, 1ll); KT_CHECK_EQ((long long)g_pops, 0ll); KT_CHECK_EQ((long long)g_draws, 0ll);
+        reset();
+    }
+
     return kt::Report("gui2d_test");
 }

@@ -513,4 +513,16 @@ template <typename F> inline F fnptr(uintptr_t K2AddrTable::* m) {
     return a ? reinterpret_cast<F>(a) : nullptr;
 }
 
+// A feature runs only when the exe's address table has every field it needs (null table / 0 = unknown). Returns ok; the first
+// !ok call per `*noted` flag logs ONE line (a mod keeps one `static bool noted` per session) and sets it. `log` is the mod's
+// printf-style logger (call from the hook, never from KPatchInit); a null `log` is safe, a null `noted` logs on every !ok call.
+// Text is shield_bar's probe line: "K2ADDR <feature> disabled (no address table for this exe, or a needed field is 0)".
+inline bool featureOk(bool ok, const char* feature, void (*log)(const char* fmt, ...), bool* noted) {
+    if (ok) return true;
+    if (noted && *noted) return false;
+    if (noted) *noted = true;
+    if (log) log("K2ADDR %s disabled (no address table for this exe, or a needed field is 0)", feature ? feature : "?");
+    return false;
+}
+
 } // namespace k2addr
