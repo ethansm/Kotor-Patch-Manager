@@ -197,5 +197,92 @@ int main() {
     g = 7; KT_CHECK_EQ(slotEntry(3 * per, cols, maxRows, &g), -1); KT_CHECK_EQ(g, -1);
     g = 7; KT_CHECK_EQ(slotEntry(per, cols, maxRows, &g), 0); KT_CHECK_EQ(g, 1);
   }
+  // ---- layoutBannerGrid / gridBounds / freezeOrigin
+  {
+    const int cols = 2, maxRows = 4, per = cols * maxRows;
+    Rect out[3 * per]; int n[3];
+    const Rect boxes = {100, 50, 300, 56};
+    const int c403[3] = {4, 0, 3};
+    // banner wider than the boxes -> span follows the banner, centred on it
+    const Rect wide = {50, 20, 600, 30};
+    layoutBannerGrid(wide, boxes, c403, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    Rect b = gridBounds(out, n, per);
+    KT_CHECK(b.w > boxes.w);
+    KT_CHECK(b.x >= 50 && b.x + b.w <= 650);
+    KT_CHECK_EQ(out[0].w, 28); KT_CHECK_EQ(out[0].h, 28);
+    KT_CHECK_EQ(out[0].y, 50);                                    // starts at boxesUnion.y
+    KT_CHECK(out[per].x == 0 && out[per].w == 0);                 // empty group zeroed
+    KT_CHECK(out[2 * per].x > out[0].x + 28 * 2);                 // group 2 is in a later column
+    // counts 4/0/3
+    KT_CHECK_EQ(n[0], 4); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], 3);
+    // no overlaps
+    {
+      bool ok = true;
+      for (int g = 0; g < 3; ++g) for (int i = 0; i < n[g]; ++i)
+        for (int h = 0; h < 3; ++h) for (int j = 0; j < n[h]; ++j)
+          if ((g != h || i != j) && overlap(out[g * per + i], out[h * per + j])) ok = false;
+      KT_CHECK(ok);
+    }
+    // narrower banner -> span follows the boxes
+    const Rect narrow = {150, 20, 100, 30};
+    const int c1[3] = {2, 2, 2};
+    layoutBannerGrid(narrow, boxes, c1, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    b = gridBounds(out, n, per);
+    KT_CHECK(b.x >= 50 && b.x + b.w <= 350);               // span 300 centred on the banner centre (200)
+    // cap at maxRows, negative counts clamp to 0
+    const int c20[3] = {20, -5, 9};
+    layoutBannerGrid(wide, boxes, c20, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    KT_CHECK_EQ(n[0], 8); KT_CHECK_EQ(n[1], 0); KT_CHECK_EQ(n[2], 8);
+    KT_CHECK_EQ(out[7].y, 50 + 3 * 30);                           // row 3 of group 0
+    int grp = -1; KT_CHECK_EQ(slotEntry(2 * per + 3, cols, maxRows, &grp), 3); KT_CHECK_EQ(grp, 2);
+    KT_CHECK_EQ(hitSlot(out, 3 * per, out[2 * per + 3].x + 5, out[2 * per + 3].y + 5), 2 * per + 3);
+    // clamp at the left edge keeps the size
+    const Rect leftB = {-100, 20, 300, 30};
+    layoutBannerGrid(leftB, {-100, 50, 300, 56}, c403, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    b = gridBounds(out, n, per);
+    KT_CHECK_EQ(b.x, 0); KT_CHECK_EQ(out[0].w, 28);
+    // clamp at the right edge keeps the size, shifts all groups together
+    layoutBannerGrid(wide, boxes, c403, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    const Rect before = gridBounds(out, n, per);
+    const Rect rightB = {1700, 20, 600, 30};
+    layoutBannerGrid(rightB, {1700, 50, 300, 56}, c403, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    b = gridBounds(out, n, per);
+    KT_CHECK_EQ(b.x + b.w, 1920); KT_CHECK_EQ(b.w, before.w); KT_CHECK_EQ(out[0].w, 28);
+    // bottom edge shifts up, top edge shifts down
+    layoutBannerGrid(wide, {100, 1070, 300, 56}, c403, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    b = gridBounds(out, n, per);
+    KT_CHECK_EQ(b.y + b.h, 1080);
+    layoutBannerGrid(wide, {100, -40, 300, 56}, c403, cols, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    KT_CHECK_EQ(gridBounds(out, n, per).y, 0);
+    // btnPx = 0 -> auto-fit; btnPx larger than fit is capped
+    layoutBannerGrid(wide, boxes, c403, cols, maxRows, 0, 2, 6, 1920, 1080, out, n);
+    KT_CHECK_EQ(out[0].w, 97); KT_CHECK_EQ(out[0].h, 97);         // colW (600-12)/3 = 196, fit (196-2)/2 = 97
+    layoutBannerGrid(wide, boxes, c403, cols, maxRows, 500, 2, 6, 1920, 1080, out, n);
+    KT_CHECK_EQ(out[0].w, 97);
+    // degenerate input
+    layoutBannerGrid(wide, boxes, c403, 0, maxRows, 28, 2, 6, 1920, 1080, out, n);
+    KT_CHECK_EQ(n[0], 0); KT_CHECK_EQ(n[2], 0);
+
+    // gridBounds
+    const int none[3] = {0, 0, 0};
+    b = gridBounds(out, none, per);
+    KT_CHECK_EQ(b.w, 0); KT_CHECK_EQ(b.h, 0);
+    Rect g2[3 * 2] = {};
+    g2[0] = {10, 20, 5, 5}; g2[1] = {30, 25, 5, 5}; g2[4] = {0, 40, 8, 8};
+    const int n2[3] = {2, 0, 1};
+    b = gridBounds(g2, n2, 2);
+    KT_CHECK_EQ(b.x, 0); KT_CHECK_EQ(b.y, 20); KT_CHECK_EQ(b.w, 35); KT_CHECK_EQ(b.h, 28);
+
+    // freezeOrigin: holds the entry point while hovering, releases on exit, re-captures on re-entry
+    FreezeState fs = {false, 0, 0};
+    int ox = -1, oy = -1;
+    KT_CHECK(!freezeOrigin(fs, false, 5, 6, &ox, &oy)); KT_CHECK_EQ(ox, 5); KT_CHECK_EQ(oy, 6);
+    KT_CHECK(freezeOrigin(fs, true, 100, 200, &ox, &oy)); KT_CHECK_EQ(ox, 100); KT_CHECK_EQ(oy, 200);
+    KT_CHECK(freezeOrigin(fs, true, 130, 210, &ox, &oy)); KT_CHECK_EQ(ox, 100); KT_CHECK_EQ(oy, 200);
+    KT_CHECK(fs.active);
+    KT_CHECK(!freezeOrigin(fs, false, 300, 400, &ox, &oy)); KT_CHECK_EQ(ox, 300); KT_CHECK_EQ(oy, 400);
+    KT_CHECK(!fs.active);
+    KT_CHECK(freezeOrigin(fs, true, 7, 8, &ox, &oy)); KT_CHECK_EQ(ox, 7); KT_CHECK_EQ(oy, 8);
+  }
   return kt::Report("combat_logic_test");
 }
