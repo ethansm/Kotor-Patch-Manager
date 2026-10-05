@@ -1,0 +1,18 @@
+# Python build/runtime output
+__pycache__/
+*.pyc
+.venv/
+
+# PyKotor auto-logs (rotate on every run; ~400k lines of diff churn)
+*pykotor.log*
+/logs/
+/scripts/logs/
+
+# Local caches, scratch backups, compiled test binaries
+.doc_search_cache.db
+kdb_backup_*.db
+*_test_bin
+
+# Kept on purpose (evidence / fixtures), do NOT add patterns that match:
+#   patch_manager_mods/*_src/logs/*.txt, mods678_research/testdata/playlogs/,
+#   upstream_prs/*/build*/, research/companion_levelup/logs/live/
