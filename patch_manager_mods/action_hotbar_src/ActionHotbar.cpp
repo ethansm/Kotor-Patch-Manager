@@ -194,6 +194,7 @@ std::string itemIconFor(const std::string& name) { auto it = g_itemIcon.find(nam
 // Reads group g's entry list from the hud (guarded) and remembers item icons. Returns count read.
 struct GroupFault { int count = -2, base = 0; uintptr_t entry = 0; int idx = -1; int logs = 0; };   // change-only cache per group (map R1)
 GroupFault g_gf[7];
+constexpr int InvokableGroups = 6;   // groups 0..5 are the invokable lists
 int readGroup(uintptr_t hud, int g, std::vector<Entry>* out) {
     out->clear();
     GroupFault& gf = g_gf[(unsigned)g % 7];
@@ -344,6 +345,7 @@ void recomputeBound() {
     }
 }
 
+unsigned& barLastPick(int g);   // Bar::lastPick[g]; defined after g_bar
 void refreshEffective(uintptr_t hud) {
     std::vector<hb::ActionRef> explicitRefs; hb::ActionRef cfgSlots[hb::Slots];
     for (int i = 0; i < hb::Slots; ++i) { cfgSlots[i] = g_cfg.slotFor(g_charKey, 0, i); if (!cfgSlots[i].empty()) explicitRefs.push_back(cfgSlots[i]); }
@@ -362,10 +364,10 @@ void refreshEffective(uintptr_t hud) {
             int keys[256]; int nk = std::min((int)is.size(), 256); for (int i = 0; i < nk; ++i) keys[i] = is[i].key;
             const Entry* pick = &is[std::max(0, hb::pickIndexByKey(keys, nk, selKey))];
             bool dup = hb::hasSame(explicitRefs, pick->ref) || hb::hasSame(autos, pick->ref);
-            static unsigned lastPick[4] = {0, 0, 0, 0};   // per group: key*31+dup+1 of the last logged pick (map R3: change-only, was every refresh)
+            unsigned& lastPick = barLastPick(g);   // per group: key*31+dup+1 of the last logged pick (map R3: change-only, was every refresh); per-HUD state in Bar
             unsigned pk = (unsigned)pick->key * 31u + (dup ? 1u : 0u) + 1u;
-            if (lastPick[g] != pk && KP_ENABLED(chSlots, KPLOG_DEBUG)) {
-                lastPick[g] = pk;
+            if (lastPick != pk && KP_ENABLED(chSlots, KPLOG_DEBUG)) {
+                lastPick = pk;
                 std::string nm = pick->ref.kind == hb::K_Item ? std::string() : " name='" + pick->name + "'";   // an item ref already contains the name
                 KP_LOGV(chSlots, KPLOG_DEBUG, "eff: autofill group %d pick key=%08x ref=%s%s%s", g, (unsigned)pick->key, hb::Format(pick->ref).c_str(), dup ? " (dup, skipped)" : "", nm.c_str());
             }
@@ -417,11 +419,15 @@ void checkConfig(bool force) {
 }
 
 // ---- resolver + invoker -------------------------------------------------------------------------------
-bool resolve(uintptr_t hud, const hb::ActionRef& want, Entry* out) {
-    std::vector<Entry> es;
-    for (int g = 0; g < 6; ++g) {
-        readGroup(hud, g, &es);
-        for (auto& e : es) if (hb::Same(e.ref, want)) { *out = e; return true; }
+// Lazy per-tick group snapshot: a group is read only when first asked for (readGroup has change-only fault logging + counters).
+struct GroupSnapshot {
+    uintptr_t hud; bool loaded[InvokableGroups] = {}; std::vector<Entry> es[InvokableGroups];
+    explicit GroupSnapshot(uintptr_t h) : hud(h) {}
+    const std::vector<Entry>& get(int g) { if (!loaded[g]) { readGroup(hud, g, &es[g]); loaded[g] = true; } return es[g]; }
+};
+bool resolve(GroupSnapshot& snap, const hb::ActionRef& want, Entry* out) {
+    for (int g = 0; g < InvokableGroups; ++g) {
+        for (auto& e : snap.get(g)) if (hb::Same(e.ref, want)) { *out = e; return true; }
     }
     return false;
 }
@@ -610,11 +616,11 @@ void drainRing(uintptr_t hud) {
         std::string sk = hb::SlotKeyName(0, r.slot);
         if (a.empty()) { KP_LOG(chSlots, "slot %s: unbound now (config changed?)", sk.c_str()); continue; }
         Entry e;
-        if (!resolve(hud, a, &e)) {
+        GroupSnapshot snap(hud);   // fresh read per request
+        if (!resolve(snap, a, &e)) {
             KP_LOG(chSlots, "%s", hb::fmtSlotMiss(sk, hb::Format(a), g_charKey).c_str());
-            std::vector<Entry> es;
             static int availLogs = 0;   // per process: the full list is only worth dumping a few times
-            for (int g = 0; g < 6; ++g) { readGroup(hud, g, &es); for (auto& x : es) if (availLogs < 20) { ++availLogs; KP_LOG(chSlots, "avail g%d.%d key=%08x %s%s%s%s", g, x.index, (unsigned)x.key, hb::Format(x.ref).c_str(), x.ref.kind == hb::K_Item ? "" : " \"", x.ref.kind == hb::K_Item ? "" : x.name.c_str(), x.ref.kind == hb::K_Item ? "" : "\""); } }
+            for (int g = 0; g < InvokableGroups; ++g) { for (auto& x : snap.get(g)) if (availLogs < 20) { ++availLogs; KP_LOG(chSlots, "avail g%d.%d key=%08x %s%s%s%s", g, x.index, (unsigned)x.key, hb::Format(x.ref).c_str(), x.ref.kind == hb::K_Item ? "" : " \"", x.ref.kind == hb::K_Item ? "" : x.name.c_str(), x.ref.kind == hb::K_Item ? "" : "\""); } }
             continue;
         }
         KP_LOG(chSlots, "%s", hb::fmtSlotResolve(sk, e.group, e.index, (unsigned)e.key, (unsigned)e.flags, g_cfg.general.invoke != 0, hb::Format(a)).c_str());   // ref last: it can be 100 bytes
@@ -671,6 +677,7 @@ struct Editor {
     bool toggleWasOver = false; DWORD toggleSince = 0;            // cursor over the wrench toggle + since when
     DWORD arrowHeldSince = 0, arrowLastRep = 0; int arrowHeld = 0; // arrow-hold auto-repeat state
     bool modeWasOver = false; DWORD modeSince = 0;                // cursor over the target-mode button + since when
+    unsigned lastKey = 0;             // updateEditor change-only enable key
     int clsSlot = -1; uint32_t clsKey = 0; bool clsHeal = false, clsSelf = false;   // classifyItem cache of the edited slot's item (per slot + item key)
 };
 struct Bar {
@@ -678,10 +685,16 @@ struct Bar {
     Widget edit, pbg, title, tab[TabCount], prev, next, clear, mode; Cell cell[CellCount]; int editBound = 0; Editor ed;
     int hoverLast = -2; DWORD hoverStart = 0;   // slot under the cursor (-2 = never evaluated) + when that hover began
     long refreshLast = -1000;                   // frame of the last button re-resolve
+    // per-HUD log/edge state (was function statics; reset with the Bar on every HUD build)
+    unsigned lastPick[4] = {0, 0, 0, 0};        // refreshEffective: per group key*31+dup+1 of the last logged pick
+    int tipSoundLogs = 0;                       // playHoverSound log counter
+    POINT hoverLastPt = {-1, -1}; long hoverLastLog = -1000;   // updateHover
+    bool refreshLastGate = false; std::string refreshLastChar = "\x01"; int refreshLastMode = -1; bool wasSettling = false;   // updateButtons
 };
 volatile bool g_editOpen = false;    // Edit or Pick mode active (read by the input hook: digits pass through, Esc is swallowed)
 volatile bool g_escHit = false;      // set by the input hook when it swallowed an Esc key-down
 Bar g_bar;
+unsigned& barLastPick(int g) { return g_bar.lastPick[g]; }
 
 // one engine image object per icon resref, created lazily and never released (the border only borrows the pointer).
 // The pool itself now lives in guikit::imageFor (lowercased resref, 256 entries, never released); this wrapper only adds the log lines.
@@ -781,13 +794,14 @@ BOOL CALLBACK enumWnd(HWND h, LPARAM lp) {
     if (pid == GetCurrentProcessId() && IsWindowVisible(h)) { RECT r; if (GetClientRect(h, &r) && r.right > 320 && r.bottom > 240) { *reinterpret_cast<HWND*>(lp) = h; return FALSE; } }
     return TRUE;
 }
+static HWND findGameWnd() { HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win)); return win; }
 bool cursorInGame(POINT* out) {
     static bool lastCursorOk = true;
     if (!g_gameWnd || !IsWindow(g_gameWnd)) {
         static long lastTry = -1000; if (g_frame - lastTry < 120) return false;   // failed lookups retry every 120 frames, not every frame
         lastTry = g_frame;
         if (g_gameWnd) KP_LOG(chInput, "hover: game window %p gone, searching again", (void*)g_gameWnd);
-        g_gameWnd = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&g_gameWnd));
+        g_gameWnd = findGameWnd();
         RECT r = {0, 0, 0, 0}; if (g_gameWnd) GetClientRect(g_gameWnd, &r);
         // change-only on (hwnd, w, h); a failing lookup used to log every 120 frames forever (map R5)
         static HWND lastHwnd = reinterpret_cast<HWND>(1); static long lastW = -1, lastH = -1; static int misses = 0; static bool missWarned = false;
@@ -889,7 +903,7 @@ void showTipText(Widget& anchor, const std::string& text, int s, int topAnchor =
 
 // The same short sound the native quick-action buttons play when the mouse enters them.
 void playHoverSound(const char* why) {
-    static int logs = 0;
+    int& logs = g_bar.tipSoundLogs;
     if (!guikit::playHoverSound()) { if (logs < 20) { ++logs; KP_LOG(chTip, "sound: manager null (%s), skipped", why); } return; }
     if (logs < 40) { ++logs; void* mgr = nullptr; saferead::readAt(S_Misc, GuiSoundMgrGlobal, 0, &mgr); KP_LOGV(chTip, KPLOG_DEBUG, "sound: hover (%s) mgr=%p", why, mgr); }
 }
@@ -899,7 +913,7 @@ void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { (void)di
 
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
 void updateHover(bool gate) {
-    static POINT lastPt = {-1, -1}; static long lastLog = -1000;
+    POINT& lastPt = g_bar.hoverLastPt; long& lastLog = g_bar.hoverLastLog;
     int over = -1; POINT pt = {0, 0};
     if (gate && cursorInGame(&pt)) {
         for (int s = 0; s < ButtonCount && over < 0; ++s) {
@@ -956,15 +970,17 @@ std::string slotTipText(int s, const Entry& e, bool verboseLog) {
 void wText(Widget& w, const char* nm, const std::string& text);
 void wTextColor(Widget& w, const char* nm, const float* rgb);
 void updateButtons(uintptr_t hud, bool gate) {
-    static uintptr_t lastMissingHud = 0; static bool lastGateSeen = false; static std::string lastChar = "\x01"; static int lastMode = -1;
+    static uintptr_t lastMissingHud = 0;   // stays process-wide: it is read while g_bar belongs to a different HUD
+    bool& lastGateSeen = g_bar.refreshLastGate; std::string& lastChar = g_bar.refreshLastChar; int& lastMode = g_bar.refreshLastMode;
     if (g_bar.panel != hud || g_bar.built == 0) {
         if (lastMissingHud != hud) { lastMissingHud = hud; KP_LOGV(chSlots, KPLOG_WARN, "buttons: no usable bar for hud %08x (bar panel=%08x built=%d/%d) -- HUD ctor hook did not run for it, or no button bound", (unsigned)hud, (unsigned)g_bar.panel, g_bar.built, ButtonCount); }
         return;
     }
     bool settling = hb::isSettling(g_charChangeTick, GetTickCount(), SettleMs);
-    static bool wasSettling = false; bool settleEdge = settling != wasSettling; wasSettling = settling;
+    bool& wasSettling = g_bar.wasSettling; bool settleEdge = settling != wasSettling; wasSettling = settling;
     bool stale = settling || settleEdge || g_frame - g_bar.refreshLast >= ButtonRefreshFrames || gate != lastGateSeen || g_charKey != lastChar || g_bar.ed.mode != lastMode;
     if (!stale) return;
+    GroupSnapshot snap(hud);   // one lazy snapshot per tick
     g_bar.refreshLast = g_frame; lastGateSeen = gate; lastChar = g_charKey; lastMode = g_bar.ed.mode;
     for (int s = 0; s < ButtonCount; ++s) {
         Button& b = g_bar.b[s];
@@ -975,7 +991,7 @@ void updateButtons(uintptr_t hud, bool gate) {
         if (want.empty() && g_bar.ed.mode == M_Normal) {   // unassigned slots are invisible during play; edit mode shows them so they can be filled
             hideSlot(b, s, "unassigned"); continue;
         }
-        Entry e; bool have = !want.empty() && resolve(hud, want, &e);
+        Entry e; bool have = !want.empty() && resolve(snap, want, &e);
         hb::SlotView sv = hb::slotView(want.empty(), want.kind == hb::K_Item, have, have ? e.flags : 0, have ? e.key : 0, have ? e.name : std::string(), settling && g_bar.ed.mode == M_Normal);
         if (sv.hideSettling) { hideSlot(b, s, "settling after character switch"); continue; }
         if (!want.empty()) {   // change-only per slot (map section 4 #18); skipped while settling (that branch continued above)
@@ -1192,7 +1208,7 @@ void modeClick(uintptr_t hud, int slot) {
 void updateEditor(uintptr_t hud, bool gate) {
     Editor& ed = g_bar.ed;
     {
-        static unsigned lastKey = 0;   // change-only on (panel == hud, built > 0, editBound): map section 4 #5
+        unsigned& lastKey = ed.lastKey;   // change-only on (panel == hud, built > 0, editBound): map section 4 #5
         unsigned key = (g_bar.panel == hud ? 4u : 0u) | (g_bar.built > 0 ? 2u : 0u) | (g_bar.editBound ? 1u : 0u);
         if (key != 7u) {
             if (key != lastKey) {
@@ -1258,9 +1274,9 @@ void updateEditor(uintptr_t hud, bool gate) {
     int maxOff = 0;
     if (ed.mode == M_Pick) {
         std::vector<Entry> all; unsigned h = 2166136261u;
-        for (int g = 0; g < 6; ++g) {
-            std::vector<Entry> es; readGroup(hud, g, &es);
-            for (auto& x : es) {
+        GroupSnapshot snap(hud);
+        for (int g = 0; g < InvokableGroups; ++g) {
+            for (auto& x : snap.get(g)) {
                 if (tabOf(x) != ed.tab || x.ref.empty()) continue;
                 bool dup = false; for (auto& y : all) if (hb::Same(y.ref, x.ref)) dup = true;
                 if (dup) continue;
@@ -1363,7 +1379,7 @@ void aspectFix() {
     // NOT FnScreenInfo: FUN_0073FEA0 is a thiscall that reads [this+0x274]; calling it as cdecl passes a garbage/null ECX and crashed on load
     // (null read at 0x73FEAF). The window client size is what the engine renders at.
     short w = 0, h = 0; int rw = rdInt(S_Aspect, GuiRefW, 0), rh = rdInt(S_Aspect, GuiRefH, 0);
-    HWND win = nullptr; EnumWindows(enumWnd, reinterpret_cast<LPARAM>(&win));
+    HWND win = findGameWnd();
     RECT cr = {0, 0, 0, 0}; if (win) GetClientRect(win, &cr);
     w = (short)cr.right; h = (short)cr.bottom;
     g_scale = hb::makeScale(w, h, rw, rh); double c = hb::aspectCorrection(w, h, rw, rh);
