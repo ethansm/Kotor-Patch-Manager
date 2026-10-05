@@ -138,8 +138,8 @@ struct ClipScope {
 // A screen rect (x, y, w, h).
 struct Rect { int x, y, w, h; };
 // Bottom-anchored vertical fill: the bottom `frac` of r (frac clamped to 0..1, NaN = 0). The result shares r's x, w and bottom edge;
-// height = int(h * frac + 0.5f) in float math (round half up: buff_duration_hud brightPx and shield_bar's gauge both round this way);
-// h == 0 in the result means "draw nothing".
+// height = int(h * frac + 0.5f) in float math (round half up: buff_duration_hud brightPx rounds this way; shield_bar's gauge uses the
+// int cur / mx overload below); h == 0 in the result means "draw nothing".
 inline Rect vfillClip(Rect r, float frac) {
     if (!(frac > 0.0f)) frac = 0.0f;            // also NaN
     if (frac > 1.0f) frac = 1.0f;
@@ -148,10 +148,30 @@ inline Rect vfillClip(Rect r, float frac) {
     if (fh < 0) fh = 0;
     return { r.x, r.y + r.h - fh, r.w, fh };
 }
+// Integer-ratio form: the bottom cur/mx of r (cur clamped to 0..mx, mx < 1 = empty). Ratio rounded in double, half up, pixel-identical
+// to shield_bar's drawGauge (the float form can differ by 1 px at exact .5 boundaries).
+inline Rect vfillClip(Rect r, int cur, int mx) {
+    if (mx < 1) return { r.x, r.y + r.h, r.w, 0 };
+    if (cur < 0) cur = 0;
+    if (cur > mx) cur = mx;
+    int fh = int(double(r.h) * cur / mx + 0.5);
+    if (fh > r.h) fh = r.h;
+    if (fh < 0) fh = 0;
+    return { r.x, r.y + r.h - fh, r.w, fh };
+}
 // Draw `img` (sized to the full r) through a clip on its bottom `frac`, as the stock gauges do: the clip push moves the origin to
 // the clip's (x, y), so the image goes at (0, -(clip.y - r.y)). false = nothing drawn (empty fill, or the clip push was refused).
 inline bool drawVFill(void* img, Rect r, float frac, const float* rgb, float alpha) {
     Rect c = vfillClip(r, frac);
+    if (c.h <= 0 || c.w <= 0) return false;
+    ClipScope cs(c.x, c.y, c.w, c.h);
+    if (!cs) return false;
+    drawImage(img, 0, -(c.y - r.y), r.w, r.h, 0, rgb, alpha);
+    return true;
+}
+// Same as above with an integer cur / mx ratio (see the int vfillClip).
+inline bool drawVFill(void* img, Rect r, int cur, int mx, const float* rgb, float alpha) {
+    Rect c = vfillClip(r, cur, mx);
     if (c.h <= 0 || c.w <= 0) return false;
     ClipScope cs(c.x, c.y, c.w, c.h);
     if (!cs) return false;

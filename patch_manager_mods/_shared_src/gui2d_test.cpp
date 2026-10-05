@@ -244,5 +244,56 @@ int main() {
         reset();
     }
 
+    // ---- vfillClip int overload: cur / mx ratio rounded in double, clamped, mx < 1 = empty ----
+    {
+        long long bad = 0, n = 0;
+        for (int h = 0; h <= 256; ++h) for (int mx = 1; mx <= 300; ++mx) for (int cur = -2; cur <= mx + 2; ++cur) {
+            Rect r{ 7, 11, 13, h };
+            Rect c = vfillClip(r, cur, mx);
+            int cc = cur < 0 ? 0 : (cur > mx ? mx : cur);
+            int want = int(double(h) * cc / mx + 0.5);
+            if (want > h) want = h;
+            if (want < 0) want = 0;
+            ++n;
+            if (!(c.h == want && c.y == r.y + r.h - want && c.x == 7 && c.w == 13)) ++bad;
+        }
+        KT_CHECK_EQ(bad, 0ll); KT_CHECK(n > 0);
+        static const int badMx[2] = { 0, -5 };
+        for (int mx : badMx) {
+            Rect c = vfillClip({ 1, 2, 3, 40 }, 10, mx);
+            KT_CHECK_EQ((long long)c.h, 0ll); KT_CHECK_EQ((long long)c.y, 42ll); KT_CHECK_EQ((long long)c.x, 1ll); KT_CHECK_EQ((long long)c.w, 3ll);
+        }
+        Rect r{ 10, 20, 30, 40 };
+        KT_CHECK_EQ((long long)vfillClip(r, 0, 100).h, 0ll); KT_CHECK_EQ((long long)vfillClip(r, 100, 100).h, 40ll);
+        KT_CHECK_EQ((long long)vfillClip(r, 50, 100).h, 20ll); KT_CHECK_EQ((long long)vfillClip(r, 500, 100).h, 40ll);
+        KT_CHECK_EQ((long long)vfillClip({ 0, 0, 5, 7 }, 1, 2).h, 4ll);       // 3.5 -> 4
+        // float overload unchanged and still picked for a float frac
+        KT_CHECK_EQ((long long)vfillClip(r, 0.5f).h, 20ll); KT_CHECK_EQ((long long)vfillClip(r, 1.0f).h, 40ll);
+    }
+
+    // ---- drawVFill int overload: same clip / draw path as the float form ----
+    {
+        static const float rgb[3] = { 1, 0.5f, 0.25f };
+        int img; Rect r{ 10, 20, 30, 40 };
+        reset(); g_draws = 0;
+        KT_CHECK(drawVFill(&img, r, 50, 100, rgb, 0.75f));
+        KT_CHECK_EQ((long long)g_pushes, 1ll); KT_CHECK_EQ((long long)g_pops, 1ll);
+        KT_CHECK_EQ((long long)g_last.x, 10ll); KT_CHECK_EQ((long long)g_last.y, 40ll);
+        KT_CHECK_EQ((long long)g_last.w, 30ll); KT_CHECK_EQ((long long)g_last.h, 20ll);
+        KT_CHECK_EQ((long long)g_draws, 1ll); KT_CHECK(g_drawImg == &img);
+        KT_CHECK_EQ((long long)g_drawArgs[0], 0ll); KT_CHECK_EQ((long long)g_drawArgs[1], -20ll);
+        KT_CHECK(g_drawRgb == rgb); KT_CHECK(g_drawAlpha == 0.75f);
+        reset(); g_draws = 0; KT_CHECK(drawVFill(&img, r, 7, 7, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_drawArgs[1], 0ll); KT_CHECK_EQ((long long)g_last.h, 40ll);
+        reset(); g_draws = 0; KT_CHECK(!drawVFill(&img, r, 0, 7, rgb, 1.0f));
+        KT_CHECK_EQ((long long)g_pushes, 0ll); KT_CHECK_EQ((long long)g_draws, 0ll);
+        reset(); g_draws = 0; KT_CHECK(!drawVFill(&img, r, 5, 0, rgb, 1.0f));       // mx < 1 = empty
+        KT_CHECK_EQ((long long)g_pushes, 0ll); KT_CHECK_EQ((long long)g_draws, 0ll);
+        reset(); g_draws = 0; g_pushResult = 0;
+        KT_CHECK(!drawVFill(&img, r, 1, 2, rgb, 1.0f));                              // refused clip push
+        KT_CHECK_EQ((long long)g_pushes, 1ll); KT_CHECK_EQ((long long)g_pops, 0ll); KT_CHECK_EQ((long long)g_draws, 0ll);
+        reset();
+    }
+
     return kt::Report("gui2d_test");
 }
