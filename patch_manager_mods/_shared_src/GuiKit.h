@@ -316,6 +316,15 @@ inline bool getBorderTint(uintptr_t ctl, float* rgb) {
     for (int k = 0; k < 3; ++k) if (!rd<float>(ctl + off(&K2AddrTable::Label_Border), oTint + 4 * k, &rgb[k])) return false;
     return true;
 }
+// border+0x28 = rgb. Draw 0x415300 tints corners, edges and fill with it, so this recolours the whole frame
+// (vanilla HILIGHT is the same images with another COLOR).
+inline bool setBorderTint(uintptr_t ctl, const float* rgb) {
+    using namespace detail;
+    const int oTint = off(&K2AddrTable::Border_Tint);
+    if (!ctl || !rgb || !oTint || !borderOk(ctl)) return false;
+    for (int k = 0; k < 3; ++k) if (!wr<float>(ctl + off(&K2AddrTable::Label_Border), oTint + 4 * k, rgb[k])) return false;
+    return true;
+}
 inline bool setAlpha(uintptr_t ctl, float a) {   // border+0x24 (Mod 3 setAlpha 457)
     using namespace detail;
     const int oAlpha = off(&K2AddrTable::Border_Alpha);

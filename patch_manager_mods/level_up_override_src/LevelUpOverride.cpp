@@ -93,7 +93,7 @@ namespace {
 using saferead::readAt;
 using saferead::probeRead;
 
-constexpr const char* Version = "1.4.0-dev";
+constexpr const char* Version = "1.5.0-dev";
 constexpr bool ApplyEnabled = true;    // build-level switch; runtime switches are mode=rewrite + apply=1
 
 // ---- engine layout (doc 08 "Struct offsets" + "Phase 1b results" O5) ------------------------------------

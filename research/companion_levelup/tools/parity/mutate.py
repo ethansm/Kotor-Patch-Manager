@@ -219,7 +219,7 @@ m("RB03", PT, r"    if \(d\.lossy\) return false;\n    if \(!findPc", "    if (!
 m("RB04", R10P, r"\*f = \(\(\*f \+ \(dir < 0 \? -1 : 1\)\) % n \+ n\) % n;", "*f = ((*f + (dir < 0 ? -1 : 1)) % (n - 1) + n - 1) % (n - 1);", "R10Page cycle: wraps one value early (last value unreachable)")
 m("RB05", R10P, r"st\.feats = modeIndex\(r10f::parseMode\(ffilter && \*ffilter \? ffilter : \"all\"\)\);", "st.feats = 1;", "R10Page fromTokens: a saved feats mode (incl. all) reloads as build_dim")
 m("RB06", UI, r"    uiShow\(r, C_CFG, lvl\);   // batch 3a", "    uiShow(r, C_CFG, !lvl);   // batch 3a", "companion: Configure / icon rule inverted")
-m("RB07", UI, r"    uiShow\(r, C_ICON, !lvl\);\n    char st", "    uiShow(r, C_ICON, lvl);\n    char st", "PC: icon shown next to the level-up buttons instead of without them")
+m("RB07", UI, r"    uiShowIcon\(r, !lvl\);\n    char st", "    uiShowIcon(r, lvl);\n    char st", "PC: icon shown next to the level-up buttons instead of without them")
 m("RB08", UI, r"if \(!haveTag \|\| \(!pc && !uiCountSelectable\(tag\)\)\)", "if (!haveTag || pc || !uiCountSelectable(tag))", "the PC treated as hidden again (no filter page)")
 m("RB09", UI, r"if \(r->pc\) uiOpenR10\(r\); else uiOpenPage", "if (false) uiOpenR10(r); else uiOpenPage", "the PC's icon opens the companion options page")
 m("RB10", CPP, r"if \(const pt::Line\* l = ptPcLine\(\)\) \{\n        e\.playthrough = true;", "if (const pt::Line* l = g_cfg.r10 ? nullptr : ptPcLine()) {\n        e.playthrough = true;", "r10Effective: ini r10=1 wins over the playthrough pc line")
@@ -240,6 +240,12 @@ m("IC02", UI, r"if \(x\) \*x = right - side;", "if (x) *x = guikit::unitX(s, sta
 m("IC03", UI, r"if \(i == C_BG0 && \(c = guikit::createLabelFromTemplate\(panel, kTplWindow\)\) != 0\) r->win = true;", "if (i == C_BG0 && (c = guikit::createLabelFromTemplate(panel, kTplWindow)) == 0) r->win = true;", "window template fallback inverted")
 m("IC04", UI, r"    embtex::heal\(\);   // refill", "    // embtex::heal();   // refill", "embtex::heal() never called")
 m("IC05", E, r"if \(s\.heals >= MaxHeals\) continue;", "if (s.heals > MaxHeals) continue;", "EmbedTex: refill cap off by one (21 refills)")
+# ---- R10 batch 3d (LevelUpUi.h hover tint, gear closes the page, one opaque back, gear inset; killed by ui_test section 8) -----
+m("HL01", UI, r"if \(r->tinted >= 0 && r->c\[r->tinted\]\) guikit::setBorderTint\(r->c\[r->tinted\], r->baseTint\[r->tinted\]\);", "", "hover tint never restored")
+m("HL02", UI, r"if \(i == C_ICON\) return true;", "if (i == C_ICON) return !r->open;", "icon not clickable while the page is open")
+m("HL03", UI, r"if \(ctl == C_ICON && r->open\) \{", "if (ctl == C_ICON && r->open && false) {", "icon click on an open page re-opens instead of closing")
+m("HL04", UI, r"r->oneBack = r->win \|\| r->fillOk;", "r->oneBack = r->win;", "one-back flag ignores the fill result")
+m("HL05", UI, r"lroundf\(side \* kGearInset\)", "lroundf(side * 0.f)", "gear inset 0 (C_GEAR == C_ICON rect)")
 
 BY_ID = {x[0]: x for x in M}
 assert len(BY_ID) == len(M), "duplicate mutation id"

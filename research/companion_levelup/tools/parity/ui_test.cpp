@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
     uintptr_t pA = makePanel();
     LuoUiPanelCtor((int)pA);
     CHECK(rec(pA) && rec(pA)->nCreated == C_N && nCtor == C_N + 1 && nInit == C_N + 1, "(+1: the LBL_EFX_BACK window try) ctor created %d (nCtor %d nInit %d)", rec(pA) ? rec(pA)->nCreated : -1, nCtor, nInit);
-    CHECK(nInitFramed == 20 && nInitPlain == 5, "templates framed %d plain %d (want 20/5)", nInitFramed, nInitPlain);
+    CHECK(nInitFramed == 20 && nInitPlain == 6, "templates framed %d plain %d (want 20/6: batch 3d C_GEAR is plain)", nInitFramed, nInitPlain);
     CHECK(g_addToListSeen == 0, "InitControl addToList must be 0");
     CHECK(at<int>(pA, Panel_CtlCount) == 70 && nList == 0, "ctor must not append (count %d, listAdd %d)", at<int>(pA, Panel_CtlCount), nList);
     { bool allHidden = true; for (int i = 0; i < C_N; ++i) if (isVisible(ctl(pA, i))) allHidden = false; CHECK(allHidden, "created hidden"); }
@@ -714,7 +714,7 @@ int main(int argc, char** argv) {
             clickCtl(pW, pc, 0, C_ICON);
             CHECK(r->open && r->pcPage && logHas("UI click icon tag= row=-") && logHas("UI r10 page open start=default on=0"), "PC icon opens the R10 page:\n%s", readLog().c_str());
             CHECK(vis(pW, C_BG0) && txt(pW, C_TITLE) == "Level-up filter" && vis(pW, C_APPLY) && vis(pW, C_CANCEL) && !vis(pW, C_INSTANT) && !vis(pW, C_BANK) && !vis(pW, C_PAUSE) &&
-                  !vis(pW, C_BUILD) && !vis(pW, C_VANILLA) && !vis(pW, C_REC) && !vis(pW, C_ICON) && !vis(pW, C_CFG) && !vis(pW, C_STATUS), "R10 page controls");
+                  !vis(pW, C_BUILD) && !vis(pW, C_VANILLA) && !vis(pW, C_REC) && vis(pW, C_ICON) && !vis(pW, C_CFG) && !vis(pW, C_STATUS), "R10 page controls (batch 3d: the icon stays)");
             { bool rows = true; for (int i = 0; i < NumRows; ++i) if (!vis(pW, C_ROW0 + i)) rows = false; CHECK(rows, "all six R10 rows shown"); }
             CHECK(txt(pW, C_ROW0) == "Filter: off" && txt(pW, C_ROW0 + 1) == "Role: melee" && txt(pW, C_ROW0 + 4) == "Feats: build_dim" && txt(pW, C_ROW0 + 5) == "Powers: build_dim",
                   "R10 rows '%s' '%s' '%s'", txt(pW, C_ROW0).c_str(), txt(pW, C_ROW0 + 1).c_str(), txt(pW, C_ROW0 + 4).c_str());
@@ -1019,40 +1019,41 @@ int main(int argc, char** argv) {
 
         // placed on a panel whose BTN_LEVELUP gives sx 2.298 / sy 2 (aspect 2.7, accepted): square, right edge = unitX(520)
         embtex::g_et = {efNew, efNewArr, efCtor, efAdd, efReset, arenaAlloc(16)};
-        g_img["luo_gear"] = reinterpret_cast<void*>(0x5200); g_img["luo_gear_hi"] = reinterpret_cast<void*>(0x5100);
+        g_img["luo_gear"] = reinterpret_cast<void*>(0x5200); g_img["luo_gear_hi"] = reinterpret_cast<void*>(0x5100); g_img["luo_fill"] = reinterpret_cast<void*>(0x5300);
         uintptr_t pI = makePanel(216, 80);
         LuoUiPanelCtor((int)pI);
         clearLog();
         tick(pI, atton, 0);
-        const uintptr_t ic = ctl(pI, C_ICON);
+        const uintptr_t ic = ctl(pI, C_ICON), gc = ctl(pI, C_GEAR);
         getExtent(ic, &x, &y, &w, &h);
         CHECK(w == h && w == 56 && x + w == 724 + (int)lroundf((520 - 362) * (216.f / 94.f)), "placed icon %d,%d,%d,%d", x, y, w, h);
-        CHECK(logHas("tex luo_gear: created") && logHas("tex luo_gear_hi: created") && eCtor == 2 && eAdd == 2, "embedded textures created (ctor %d add %d):\n%s", eCtor, eAdd, readLog().c_str());
+        CHECK(logHas("tex luo_gear: created") && logHas("tex luo_gear_hi: created") && logHas("tex luo_fill: created") && eCtor == 3 && eAdd == 3, "embedded textures created (ctor %d add %d):\n%s", eCtor, eAdd, readLog().c_str());
         CHECK(logHas("UI icon fill=luo_gear ok=1") && logHas("UI icon emb=1 hi=1 style=1"), "gear fill log:\n%s", readLog().c_str());
-        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5200 && (at<uint32_t>(ic, Label_Border + Border_FillStyle) & 3) == 2, "gear fill / stretch style");
+        CHECK(at<uint32_t>(gc, Label_Border + Border_Fill) == 0x5200 && (at<uint32_t>(gc, Label_Border + Border_FillStyle) & 3) == 2, "gear fill / stretch style (on C_GEAR)");
+        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0, "batch 3d: the icon button keeps its template fill");
         // hover: the gold fill once, back on leave
         curX = x + w / 2; curY = y + h / 2; tick(pI, atton, 0);
-        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5100, "hover -> luo_gear_hi");
-        at<uint32_t>(ic, Label_Border + Border_Fill) = 0xDEAD; tick(pI, atton, 0);
-        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0xDEAD, "hover fill written only on a change");
+        CHECK(at<uint32_t>(gc, Label_Border + Border_Fill) == 0x5100, "hover -> luo_gear_hi");
+        at<uint32_t>(gc, Label_Border + Border_Fill) = 0xDEAD; tick(pI, atton, 0);
+        CHECK(at<uint32_t>(gc, Label_Border + Border_Fill) == 0xDEAD, "hover fill written only on a change");
         curX = 0; curY = 0; tick(pI, atton, 0);
-        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0x5200, "leave -> luo_gear");
+        CHECK(at<uint32_t>(gc, Label_Border + Border_Fill) == 0x5200, "leave -> luo_gear");
         for (int k = 0; k < embtex::slotCount(); ++k) at<uint32_t>(reinterpret_cast<uintptr_t>(embtex::slots()[k].basic), embtex::Tex_Uploaded) = 1;   // the texture tick uploaded both
         auto glReset = [](unsigned char* b) { b[embtex::Tex_Constructed] = 0; *reinterpret_cast<void**>(b + embtex::Tex_Pixels) = nullptr; };   // what an engine GL reset leaves
         tick(pI, atton, 0);
-        CHECK(eCtor == 2 && eAdd == 2, "heal: healthy textures are not refilled (add %d)", eAdd);
+        CHECK(eCtor == 3 && eAdd == 3, "heal: healthy textures are not refilled (add %d)", eAdd);
         // GL reset -> heal() refills on the next UI tick; a texture that never comes back is given up after exactly 20 refills
         unsigned char* gb = embtex::slots()[0].basic;
         clearLog(); glReset(gb); tick(pI, atton, 0);
-        CHECK(eAdd == 3 && logHas("tex luo_gear: refilled after a texture reset"), "heal refills after a reset (add %d):\n%s", eAdd, readLog().c_str());
+        CHECK(eAdd == 4 && logHas("tex luo_gear: refilled after a texture reset"), "heal refills after a reset (add %d):\n%s", eAdd, readLog().c_str());
         at<uint32_t>(reinterpret_cast<uintptr_t>(gb), embtex::Tex_Uploaded) = 0;
         clearLog();
         for (int k = 0; k < 30; ++k) { glReset(gb); tick(pI, atton, 0); }
-        CHECK(eAdd == 2 + 20 && logCount("tex luo_gear: giving up after 20") == 1, "give-up after 20 refills in all (the first one above counts; adds %d)", eAdd - 2);
+        CHECK(eAdd == 3 + 20 && logCount("tex luo_gear: giving up after 20") == 1, "give-up after 20 refills in all (the first one above counts; adds %d)", eAdd - 3);
 
         // a second panel reuses the created textures (ensure is idempotent)
         uintptr_t pI2 = makePanel(); LuoUiPanelCtor((int)pI2); clearLog(); tick(pI2, atton, 0);
-        CHECK(eCtor == 2 && logHas("UI icon emb=1 hi=1 style=1"), "second panel: no new textures");
+        CHECK(eCtor == 3 && logHas("UI icon emb=1 hi=1 style=1"), "second panel: no new textures");
         // embedded fill fails (engine table unusable) -> lbl_icn_opt2, no hover swap
         const embtex::Engine saved = embtex::g_et; embtex::g_et.ctorFn = nullptr;
         uintptr_t pJ = makePanel(); LuoUiPanelCtor((int)pJ); clearLog(); tick(pJ, atton, 0);
@@ -1075,7 +1076,8 @@ int main(int argc, char** argv) {
         CHECK(logHas("UI page window back alpha ok=1") && !logHas("UI page back0"), "window: no fill swap:\n%s", readLog().c_str());
         clickCtl(pX, atton, 0, C_CFG);
         CHECK(rec(pX)->open && vis(pX, C_BG0) && !vis(pX, C_BG1) && !vis(pX, C_BG2), "one window: bg0 %d bg1 %d bg2 %d", vis(pX, C_BG0), vis(pX, C_BG1), vis(pX, C_BG2));
-        CHECK(at<uint32_t>(ctl(pX, C_BG0), Label_Border + Border_Fill) == 0 && at<float>(ctl(pX, C_BG0), Label_Border + Border_Alpha) == 1.0f, "window keeps its fill, alpha 1");
+        CHECK(at<uint32_t>(ctl(pX, C_BG0), Label_Border + Border_Fill) == 0x5300 && (at<uint32_t>(ctl(pX, C_BG0), Label_Border + Border_FillStyle) & 3) == 2 &&
+              at<float>(ctl(pX, C_BG0), Label_Border + Border_Alpha) == 1.0f, "batch 3d: the window gets the opaque luo_fill (stretch), alpha 1");
         getExtent(ctl(pX, C_BG0), &x, &y, &w, &h);
         CHECK(x == 108 && y == 268 && w == 492 && h == 672, "window rect %d,%d,%d,%d (stats column, x <= unit 300)", x, y, w, h);
         clickCtl(pX, atton, 0, C_CANCEL);
@@ -1092,6 +1094,77 @@ int main(int argc, char** argv) {
         CHECK(logCount("UI lvlbtn shown=") == 1 && logCount(" isVisible=") == 1, "next tick:\n%s", readLog().c_str());
         tick(pS, atton, 1);
         CHECK(logCount("UI lvlbtn shown=") == 1, "once per change");
+    }
+
+    // 8. batch 3d: gear label on a framed button, vanilla hover tint, the icon closes an open page, one opaque luo_fill back (embedded engine still installed)
+    {
+        CHECK(C_N == 26 && C_GEAR == C_ICON + 1 && !strcmp(kUiName[C_GEAR], "gear"), "C_N %d (gui_ids count 26)", (int)C_N);
+        // 8.1 gear rect: square, strictly inside the icon rect, inset round(side * 0.18) per side
+        const guikit::Scale ws = {4.8f, 2.667f, 100.f, 50.f, 362, 325, true};
+        int ix, iy, iw, ih, gx, gy, gw, gh;
+        uiIconRect(ws, &ix, &iy, &iw, &ih); uiGearRect(ws, &gx, &gy, &gw, &gh);
+        const int in = (int)lroundf(iw * 0.18f);
+        CHECK(in > 0 && gw == gh && gx == ix + in && gy == iy + in && gw == iw - 2 * in, "gear rect %d,%d,%d,%d in icon %d,%d,%d,%d", gx, gy, gw, gh, ix, iy, iw, ih);
+        uintptr_t p8 = makePanel();
+        LuoUiPanelCtor((int)p8);
+        const float base[3] = {0.05098f, 0.34902f, 0.27059f};
+        for (int i = 0; i < C_N; ++i) for (int k = 0; k < 3; ++k) at<float>(ctl(p8, i), Label_Border + Border_Tint + 4 * k) = base[k];
+        clearLog();
+        tick(p8, atton, 0);
+        const uintptr_t ic = ctl(p8, C_ICON), gc = ctl(p8, C_GEAR);
+        getExtent(ic, &ix, &iy, &iw, &ih); getExtent(gc, &gx, &gy, &gw, &gh);
+        CHECK(vis(p8, C_ICON) && vis(p8, C_GEAR) && gw == gh && gx > ix && gy > iy && gx + gw < ix + iw && gy + gh < iy + ih, "placed gear %d,%d,%d,%d inside icon %d,%d,%d,%d", gx, gy, gw, gh, ix, iy, iw, ih);
+        CHECK(at<uint32_t>(ic, Label_Border + Border_Fill) == 0 && at<uint32_t>(gc, Label_Border + Border_Fill) == 0x5200 && (at<int>(gc, Ctl_Flags) & FlagClickThrough), "icon keeps the template fill, gear = luo_gear, click-through");
+        CHECK(logHas("UI hover tint base_ok=1") && logHas("UI page fill=luo_fill ok=1 style=1 one=1"), "3d logs:\n%s", readLog().c_str());
+        // 8.2 hover tint: cream on enter, written once, base on leave; follows the cursor; a hidden control is restored
+        auto tintIs = [&](uintptr_t c, const float* v) { for (int k = 0; k < 3; ++k) if (at<float>(c, Label_Border + Border_Tint + 4 * k) != v[k]) return false; return true; };
+        auto hoverAt = [&](int idx) { int x, y, w, h; getExtent(ctl(p8, idx), &x, &y, &w, &h); curX = x + w / 2; curY = y + h / 2; lmb = false; tick(p8, atton, 0); };
+        hoverAt(C_ICON);
+        CHECK(tintIs(ic, kHiTint) && rec(p8)->tinted == C_ICON, "icon hover -> HILIGHT tint");
+        at<float>(ic, Label_Border + Border_Tint) = 0.5f; tick(p8, atton, 0);
+        CHECK(at<float>(ic, Label_Border + Border_Tint) == 0.5f, "tint written only on a change");
+        curX = 0; curY = 0; tick(p8, atton, 0);
+        CHECK(tintIs(ic, base) && rec(p8)->tinted == -1, "leave -> base tint");
+        // 8.3 the page stays reachable through the icon: open, icon + gear visible, icon click closes like Cancel
+        const std::string before = fileText("levelup_playthroughs.ini");
+        clickCtl(p8, atton, 0, C_ICON);
+        CHECK(rec(p8)->open && vis(p8, C_ICON) && vis(p8, C_GEAR) && vis(p8, C_BG0), "page open: icon %d gear %d", vis(p8, C_ICON), vis(p8, C_GEAR));
+        hoverAt(C_APPLY);
+        CHECK(tintIs(ctl(p8, C_APPLY), kHiTint) && tintIs(ic, base), "Apply hover tinted, icon restored");
+        hoverAt(C_ROW0);
+        CHECK(tintIs(ctl(p8, C_ROW0), kHiTint) && tintIs(ctl(p8, C_APPLY), base), "row hover tinted, Apply restored");
+        clearLog();
+        clickCtl(p8, atton, 0, C_ICON);
+        CHECK(!rec(p8)->open && !vis(p8, C_BG0) && !vis(p8, C_APPLY) && vis(p8, C_ICON) && vis(p8, C_GEAR) && logHas("UI gear close tag=Atton") &&
+              fileText("levelup_playthroughs.ini") == before, "icon click closes the page, writes nothing:\n%s", readLog().c_str());
+        CHECK(tintIs(ctl(p8, C_ROW0), base), "rows restored");
+        // level-up buttons shown: the open page still shows the icon (it closes it), Configure hidden
+        clickCtl(p8, atton, 1, C_CFG);
+        CHECK(rec(p8)->open && vis(p8, C_ICON) && !vis(p8, C_CFG), "open with lvl: icon %d cfg %d", vis(p8, C_ICON), vis(p8, C_CFG));
+        hoverAt(C_CANCEL);
+        CHECK(tintIs(ctl(p8, C_CANCEL), kHiTint), "Cancel hover tinted");
+        clickCtl(p8, atton, 0, C_CANCEL);   // Cancel hides itself while hovered: its tint is restored
+        CHECK(!rec(p8)->open && !vis(p8, C_CANCEL) && tintIs(ctl(p8, C_CANCEL), base) && rec(p8)->tinted != C_CANCEL, "hidden control restored");
+        // PC page: the icon closes the R10 page too
+        clickCtl(p8, pc, 0, C_ICON);
+        CHECK(rec(p8)->open && rec(p8)->pcPage && vis(p8, C_ICON), "PC page open, icon shown");
+        clickCtl(p8, pc, 0, C_ICON);
+        CHECK(!rec(p8)->open && logHas("UI gear close tag="), "PC page: icon closes");
+        // 8.4 one opaque back on the 3-stack template: BG0 = luo_fill stretched, BG1/BG2 hidden
+        clickCtl(p8, atton, 0, C_ICON);
+        CHECK(rec(p8)->oneBack && !rec(p8)->win && vis(p8, C_BG0) && !vis(p8, C_BG1) && !vis(p8, C_BG2), "one back: bg0 %d bg1 %d bg2 %d", vis(p8, C_BG0), vis(p8, C_BG1), vis(p8, C_BG2));
+        CHECK(at<uint32_t>(ctl(p8, C_BG0), Label_Border + Border_Fill) == 0x5300 && (at<uint32_t>(ctl(p8, C_BG0), Label_Border + Border_FillStyle) & 3) == 2 &&
+              at<float>(ctl(p8, C_BG0), Label_Border + Border_Alpha) == 1.0f, "BG0 luo_fill, stretch, alpha 1");
+        clickCtl(p8, atton, 0, C_ICON);
+        // fill failure (embedded engine unusable) -> the 3-stack, gear hidden, fallback icon fill on the button
+        const embtex::Engine saved = embtex::g_et; embtex::g_et.ctorFn = nullptr;
+        uintptr_t p9 = makePanel(); LuoUiPanelCtor((int)p9); clearLog(); tick(p9, atton, 0);
+        CHECK(logHas("UI page fill=luo_fill ok=0 style=0 one=0") && !rec(p9)->oneBack && logHas("UI page back0 fill="), "fill failure log:\n%s", readLog().c_str());
+        CHECK(vis(p9, C_ICON) && !vis(p9, C_GEAR) && at<uint32_t>(ctl(p9, C_ICON), Label_Border + Border_Fill) == 0x5000, "fallback icon on the button, gear hidden");
+        clickCtl(p9, atton, 0, C_ICON);
+        CHECK(rec(p9)->open && vis(p9, C_BG0) && vis(p9, C_BG1) && vis(p9, C_BG2) && !vis(p9, C_GEAR), "3-stack after a fill failure");
+        embtex::g_et = saved;
+        curX = 0; curY = 0;
     }
 
     printf("ui_test checks %d failures %d\n", g_checks, g_fail);

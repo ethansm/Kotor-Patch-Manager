@@ -91,12 +91,12 @@ source_regex = ["constexpr int FirstId = 69, MaxRows = 14;", "static_assert\\(Nu
 
 [[gui.append]]
 mod = "level-up-override"
-count = 25
+count = 26
 after = ["character-effects-panel"]    # Mod 14 binds its ids 69..150 at panel construction, the level-up UI appends on its first tick
 rects = [[54, 134, 466, 360]]    # union of kUiSpec: x 54..520 (settings icon right edge, batch 3a), y 134..494 (status line bottom)
 source = "LevelUpUi.h:14,41,43-62"
 source_regex = [
-  "enum UiCtl \\{ C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 \\+ NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_ICON, C_TIPBG, C_TIP, C_N \\};",
+  "enum UiCtl \\{ C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 \\+ NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_ICON, C_GEAR, C_TIPBG, C_TIP, C_N \\};",
   "NumRows = opt::NumRows \\+ 1,",
   "const UiSpec kUiSpec\\[C_N\\]",
 ]

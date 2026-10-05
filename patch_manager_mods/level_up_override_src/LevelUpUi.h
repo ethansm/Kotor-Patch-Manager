@@ -13,6 +13,8 @@
 // Templates: plain LBL_EXPERIENCE_STAT (green text, unit rect 60,449,108,18), framed LBL_XP_BACK (framed fill, 54,431,223,39).
 // Batch 3c: the icon is the embedded gear (EmbedTex.h + LuoTextures.inc; gold luo_gear_hi on hover), square in engine px (uiIconRect); the page
 //   back is ONE opaque framed window from Mod 14's LBL_EFX_BACK when its layout has it (r->win), else the three stacked LBL_XP_BACK clones.
+// Batch 3d: the gear is its own plain label (C_GEAR, uiGearRect) on top of a normal framed C_ICON button; hovered buttons take vanilla's HILIGHT
+//   COLOR (border +0x28, uiHoverTint); the icon stays shown on an open page and closes it; BG0 gets the opaque embedded luo_fill (r->oneBack).
 // "Character screen is the active panel" = this tick runs: SetStats is called from CSWGuiInGameCharacter::Update 0x84FBB0 (the function Mod 14
 // ticks on, CharEffectsPanel.cpp CharEffectsTick ~1162 + its hooks.toml), so a click is only evaluated while the panel is being updated, and
 // guikit::clickEdge adds the foreground-window check (the same two conditions Mod 14's tickInput 969-973 uses: its tick + GetForegroundWindow).
@@ -43,7 +45,7 @@ const char* cfgButtonText(bool configured, bool canLevelUp, bool* highlight) {
 constexpr unsigned S_Ui = 120;
 constexpr int NumRows = opt::NumRows + 1, MaxUiPanels = 4, BtnLevelUpIndex = 66, UiText = 160;   // option rows: Convert, Role, Style, Alignment, Skills, Variant
 constexpr uint32_t UiMagic = 0x4C554932;   // 'LUI2'
-enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_ICON, C_TIPBG, C_TIP, C_N };
+enum UiCtl { C_CFG, C_STATUS, C_BG0, C_BG1, C_BG2, C_TITLE, C_ROW0, C_BUILD = C_ROW0 + NumRows, C_INSTANT, C_BANK, C_PAUSE, C_PMINUS, C_PPLUS, C_REC, C_APPLY, C_VANILLA, C_CANCEL, C_ICON, C_GEAR, C_TIPBG, C_TIP, C_N };
 constexpr int NumBg = 3;
 static_assert(NumRows == r10p::RowCount, "the R10 page reuses the option rows one to one");
 struct UiSpec { bool framed; int x, y, w, h; };   // layout units (800x600)
@@ -63,14 +65,18 @@ const UiSpec kUiSpec[C_N] = {
     {true, 62, 414, 230, 24},                                                                            // Use recommended
     {true, 62, 442, 72, 26}, {true, 138, 442, 72, 26}, {true, 214, 442, 78, 26},                         // Apply, Vanilla, Cancel
     {true, 492, 172, 28, 28},                                                                            // settings icon: top-right of LBL_3DCHAR [295,134,230,336] (r10/ui_icon README)
+    {false, 492, 172, 28, 28},                                                                           // gear glyph on the icon button (placed by uiGearRect)
     {true, 54, 134, 120, 40}, {false, 60, 139, 108, 30}};                                                // tooltip box + text (CUSTOM fallback, placed per hover by uiTipTick; created last = on top)
-const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel", "icon", "tipbg", "tip"};
+const char* const kUiName[C_N] = {"cfg", "status", "bg0", "bg1", "bg2", "title", "row0", "row1", "row2", "row3", "row4", "row5", "build", "instant", "bank", "pause", "pminus", "pplus", "recommended", "apply", "vanilla", "cancel", "icon", "gear", "tipbg", "tip"};
 const char* const kLossyText = "levelup_playthroughs.ini too large - edit by hand";   // F6: shown instead of the generic failure / status text when the file parse was lossy
 const char* const kTplPlain = "LBL_EXPERIENCE_STAT";
 const char* const kTplFramed = "LBL_XP_BACK";
 const char* const kTplWindow = "LBL_EFX_BACK";   // Mod 14 (live character_p.gui override): opaque frame uibit_brdr_16wc/16we, fill uibit_fill_2bt, FILLSTYLE 0
 const char* const kIconFallback = "lbl_icn_opt2";   // vanilla icon used when the embedded gear (or the ui.icon= resref) does not load
 constexpr int kIconRight = 520, kIconTop = 172, kIconSide = 28;   // = kUiSpec[C_ICON]: right edge, top, side in layout units (the side follows sy)
+constexpr float kGearInset = 0.18f;   // C_GEAR = the icon rect inset by round(side * kGearInset) per side (the button frame shows around it)
+const char* const kPageFill = "luo_fill";   // batch 3d: embedded opaque near-black (LuoTextures.inc), stretched over BG0
+const float kHiTint[3] = {0.8f, 0.8f, 0.69804f};   // vanilla BTN_LEVELUP HILIGHT COLOR (character_p.gui); its BORDER COLOR is 0.05098, 0.34902, 0.27059
 const char* const kPageBackFill = "uibit_fill_2bt";   // opaque black (Mod 14 LBL_EFX_BACK); LBL_XP_BACK's own fill uibit_fill_2wt is see-through
 constexpr int kPlainRect[4] = {60, 449, 108, 18}, kFramedRect[4] = {54, 431, 223, 39};   // the templates' own unit rects (fallback scale)
 
@@ -96,6 +102,12 @@ struct UiPanel {
     void* iconHiIm = nullptr;
     bool iconHot = false;        // the hover fill is the one set
     bool win = false;            // batch 3c: C_BG0 was created from kTplWindow (one framed window; BG1/BG2 stay hidden)
+    bool fillOk = false;         // batch 3d: BG0 carries the opaque luo_fill
+    bool oneBack = false;        // win || fillOk: BG0 alone is the page back
+    bool gearOk = false;         // C_GEAR carries the embedded gear (else C_ICON has the fallback fill and C_GEAR stays hidden)
+    float baseTint[C_N][3] = {}; // border COLOR read once in uiAppend (tintMask bit i = valid); restored when the hover leaves
+    uint32_t tintMask = 0;
+    int tinted = -1;             // control currently showing kHiTint
     int lvlPending = -1;         // UI lvlbtn line due on the next tick (the engine writes BTN_LEVELUP's bit1 after our hook)
     // options page
     bool open = false;
@@ -194,6 +206,12 @@ const char* uiTipText(int ctl, bool pc = false) {
     }
 }
 
+// Controls that take the hover highlight = everything uiClickable can return.
+bool uiTintable(int i) {
+    return i == C_CFG || i == C_ICON || (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY ||
+           i == C_VANILLA || i == C_CANCEL;
+}
+
 // First tick: append every control (draw order = append order: the three backgrounds first), set alignments, log once.
 void uiAppend(UiPanel* r) {
     int ok = 0;
@@ -203,8 +221,18 @@ void uiAppend(UiPanel* r) {
     }
     r->appended = true;
     if (r->win && r->c[C_BG0]) logLine("UI page window back alpha ok=%d", guikit::setAlpha(r->c[C_BG0], 1.0f));   // keeps its own frame / fill / FILLSTYLE
+    embtex::g_log = logLine;
+    const bool texOk = embtex::ensure(kLuoTex, static_cast<int>(kLuoTexCount));   // gear, gear_hi, page fill (idempotent across panels)
+    {   // batch 3d: one copy of a framed back is see-through (its tiled fill is not opaque): stretch the opaque luo_fill over BG0; frame + COLOR stay
+        bool st = false;
+        void* fim = texOk && r->c[C_BG0] ? guikit::imageFor(kPageFill) : nullptr;
+        r->fillOk = fim && guikit::setFill(r->c[C_BG0], fim);
+        if (r->fillOk) { st = guikit::setFillStyle(r->c[C_BG0], 2); guikit::setAlpha(r->c[C_BG0], 1.0f); }
+        r->oneBack = r->win || r->fillOk;
+        logLine("UI page fill=%s ok=%d style=%d one=%d", kPageFill, r->fillOk, st, r->oneBack);
+    }
     for (int b = 0; b < NumBg; ++b) {   // opaque background: swap the framed template's translucent fill for black, full alpha (3 stacked = opaque)
-        if (!r->c[C_BG0 + b] || r->win) continue;
+        if (!r->c[C_BG0 + b] || r->oneBack) continue;
         const bool f = guikit::setFill(r->c[C_BG0 + b], guikit::imageFor(kPageBackFill));
         const bool a = guikit::setAlpha(r->c[C_BG0 + b], 1.0f);
         logLine("UI page back%d fill=%s ok=%d alpha ok=%d", b, kPageBackFill, f, a);
@@ -226,18 +254,35 @@ void uiAppend(UiPanel* r) {
     if (r->c[C_ICON]) {   // settings icon texture (ui.icon=, default the embedded gear); then kIconFallback; the text "LU" stays as the last fallback
         const char* name = g_cfg.uiIcon;
         const bool emb = !_stricmp(name, kLuoTex[0].resref);
-        embtex::g_log = logLine;
-        bool embOk = emb && embtex::ensure(kLuoTex, static_cast<int>(kLuoTexCount));
+        bool embOk = emb && texOk;
         if (emb && !embOk) name = kIconFallback;
         void* im = guikit::imageFor(name);
         if (!im && strcmp(name, kIconFallback)) { name = kIconFallback; embOk = false; im = guikit::imageFor(name); }
-        r->iconOk = im && guikit::setFill(r->c[C_ICON], im) && guikit::setAlpha(r->c[C_ICON], 1.0f);
+        // batch 3d: the embedded gear goes on its own label over the framed button (C_ICON keeps the template fill, like the rows); a fallback
+        // image replaces C_ICON's fill as before
+        const uintptr_t gc = embOk && r->c[C_GEAR] ? r->c[C_GEAR] : r->c[C_ICON];
+        r->iconOk = im && guikit::setFill(gc, im) && guikit::setAlpha(gc, 1.0f);
+        r->gearOk = r->iconOk && gc == r->c[C_GEAR];
         r->iconIm = im;
         r->iconHiIm = r->iconOk && embOk ? guikit::imageFor(kLuoTex[1].resref) : nullptr;
-        const bool st = r->iconOk && guikit::setFillStyle(r->c[C_ICON], 2);   // stretch the image over the (square) control
+        const bool st = r->iconOk && guikit::setFillStyle(gc, 2);   // stretch the image over the (square) control
+        if (r->gearOk) { guikit::setClickable(gc, false); guikit::setText(gc, ""); }   // clicks and hover go to the button underneath
         r->iconTried = true;
         logLine("UI icon fill=%s ok=%d", name, r->iconOk);
         logLine("UI icon emb=%d hi=%d style=%d", embOk, r->iconHiIm != nullptr, st);
+    }
+    {   // batch 3d: base border COLOR of every control that can take the hover highlight (restored when the hover leaves)
+        int n = 0, got = 0;
+        for (int i = 0; i < C_N; ++i) {
+            if (!r->c[i] || !uiTintable(i)) continue;
+            ++n;
+            float v[3];
+            if (!guikit::getBorderTint(r->c[i], v) || !(v[0] >= 0.f && v[0] <= 2.f && v[1] >= 0.f && v[1] <= 2.f && v[2] >= 0.f && v[2] <= 2.f)) continue;
+            memcpy(r->baseTint[i], v, sizeof v);
+            r->tintMask |= 1u << i;
+            ++got;
+        }
+        logLine("UI hover tint base_ok=%d n=%d/%d", n > 0 && got == n, got, n);
     }
     unsigned mask = 0;
     for (int i = 0; i < C_N; ++i) if (r->c[i] && guikit::detail::textObjOk(r->c[i])) mask |= 1u << i;
@@ -279,6 +324,16 @@ void uiIconRect(const guikit::Scale& s, int* x, int* y, int* w, int* h) {
     if (w) *w = side;
     if (h) *h = side;
 }
+// Gear glyph rect: the icon rect inset by round(side * kGearInset) per side (still square), so the button frame shows around it.
+void uiGearRect(const guikit::Scale& s, int* x, int* y, int* w, int* h) {
+    int ix, iy, side;
+    uiIconRect(s, &ix, &iy, &side, nullptr);
+    const int in = static_cast<int>(lroundf(side * kGearInset));
+    if (x) *x = ix + in;
+    if (y) *y = iy + in;
+    if (w) *w = side - 2 * in;
+    if (h) *h = side - 2 * in;
+}
 void uiPlace(UiPanel* r, const guikit::Scale& s) {
     for (int i = 0; i < C_TIPBG; ++i) {   // the tooltip controls are placed per hover by uiTipTick
         if (!r->c[i]) continue;
@@ -286,29 +341,46 @@ void uiPlace(UiPanel* r, const guikit::Scale& s) {
         if (i >= C_ROW0 && i < C_ROW0 + NumRows) y = kRowY0 + kRowStep * (r->rowSlot[i - C_ROW0] >= 0 ? r->rowSlot[i - C_ROW0] : 0);
         int x, py, w, h, ex, ey, ew, eh;
         if (i == C_ICON) uiIconRect(s, &x, &py, &w, &h);
+        else if (i == C_GEAR) uiGearRect(s, &x, &py, &w, &h);
         else guikit::unitRect(s, kUiSpec[i].x, y, kUiSpec[i].w, kUiSpec[i].h, &x, &py, &w, &h);
         if (!guikit::getExtent(r->c[i], &ex, &ey, &ew, &eh) || ex != x || ey != py || ew != w || eh != h) guikit::setRect(r->c[i], x, py, w, h);
     }
 }
-// Hover fill of the gear (only on a change; no-op without a hover image).
+// Hover fill of the gear (only on a change; no-op without a hover image). Batch 3d: on C_GEAR when the gear has its own label.
 void uiIconHover(UiPanel* r, bool hot) {
-    if (!r->iconHiIm || !r->c[C_ICON] || hot == r->iconHot) return;
-    if (guikit::setFill(r->c[C_ICON], hot ? r->iconHiIm : r->iconIm)) r->iconHot = hot;
+    const uintptr_t g = r->c[r->gearOk ? C_GEAR : C_ICON];
+    if (!r->iconHiIm || !g || hot == r->iconHot) return;
+    if (guikit::setFill(g, hot ? r->iconHiIm : r->iconIm)) r->iconHot = hot;
+}
+// Batch 3d: vanilla HILIGHT = the same border images with another COLOR. hov = hovered clickable control (-1 none); only on a change.
+void uiHoverTint(UiPanel* r, int hov) {
+    if (hov == r->tinted) return;
+    if (r->tinted >= 0 && r->c[r->tinted]) guikit::setBorderTint(r->c[r->tinted], r->baseTint[r->tinted]);
+    r->tinted = -1;
+    if (hov >= 0 && (r->tintMask & (1u << hov)) && r->c[hov] && guikit::setBorderTint(r->c[hov], kHiTint)) r->tinted = hov;
 }
 
 // ---- small setters ------------------------------------------------------------------------------------------------------
 void uiShow(UiPanel* r, int i, bool vis) {
+    if (!vis && i == r->tinted) uiHoverTint(r, -1);   // a hidden control never keeps the highlight
     if (vis) r->shownMask |= 1u << i; else r->shownMask &= ~(1u << i);
     if (r->c[i]) guikit::setVisible(r->c[i], vis);
 }
-// Page back: one window (r->win) or the three stacked labels.
+// Page back: one opaque label (r->oneBack: the efx window and/or the luo_fill) or the three stacked labels.
 void uiShowBack(UiPanel* r, bool vis) {
-    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, vis && (b == 0 || !r->win));
+    for (int b = 0; b < NumBg; ++b) uiShow(r, C_BG0 + b, vis && (b == 0 || !r->oneBack));
 }
 void uiSetText(UiPanel* r, int i, const char* t) {
     if (!r->c[i] || !strcmp(r->text[i], t)) return;
     if (guikit::setText(r->c[i], t)) { snprintf(r->text[i], UiText, "%s", t); return; }
     if (!(r->textFail & (1u << i))) { r->textFail |= 1u << i; logLine("UI setText failed ctl=%s panel=%08x (text object not ready?)", kUiName[i], (unsigned)r->panel); }
+}
+// Settings icon button + its gear glyph (C_GEAR only when it carries the gear).
+void uiShowIcon(UiPanel* r, bool vis) {
+    uiSetText(r, C_ICON, r->iconOk ? "" : "LU");
+    uiShow(r, C_ICON, vis);
+    uiShow(r, C_GEAR, vis && r->gearOk);
+    if (vis && r->gearOk) guikit::setClickable(r->c[C_GEAR], false);   // setVisible clears click-through: hover / native tip stay on the button
 }
 // R9 highlight on the Configure button. The base colour is read back once (silently); colour writes happen only when that readback looks sane (Mod 14 1140-1150).
 void uiNudge(UiPanel* r, bool on) {
@@ -621,7 +693,7 @@ void uiTipTick(UiPanel* r, const guikit::Scale& sc, int hov, bool clicked) {
     const char* t = uiTipText(hov, r->tipPc);
     int lines = 0, maxLen = 0;
     guitip::measure(t, &lines, &maxLen);
-    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov, &sc), r->open ? kTipRegionPage : hov == C_ICON ? kTipRegionIcon : kTipRegionCfg, kTipGap);
+    const guitip::Rect b = guitip::layout(lines, maxLen, kTipMetrics, uiRectUnits(r, hov, &sc), hov == C_ICON ? kTipRegionIcon : r->open ? kTipRegionPage : kTipRegionCfg, kTipGap);
     uiPlaceUnits(r, C_TIPBG, sc, b);
     uiPlaceUnits(r, C_TIP, sc, {b.x + kTipMetrics.padX, b.y + kTipMetrics.padY, b.w - 2 * kTipMetrics.padX, b.h - 2 * kTipMetrics.padY});
     uiSetText(r, C_TIP, t);
@@ -642,7 +714,8 @@ void uiHideAll(UiPanel* r) {
 // ---- input ----------------------------------------------------------------------------------------------------------------
 bool uiClickable(const UiPanel* r, int i) {
     if (!(r->shownMask & (1u << i))) return false;
-    if (i == C_CFG || i == C_ICON) return !r->open;
+    if (i == C_CFG) return !r->open;
+    if (i == C_ICON) return true;   // batch 3d: stays on an open page and closes it
     if (!r->open) return false;
     return (i >= C_ROW0 && i < C_ROW0 + NumRows) || i == C_INSTANT || i == C_BANK || i == C_PMINUS || i == C_PPLUS || i == C_REC || i == C_APPLY || i == C_VANILLA || i == C_CANCEL;
 }
@@ -655,6 +728,7 @@ int uiHit(const UiPanel* r, int x, int y) {
 void uiClick(UiPanel* r, const char* tag, int ctl) {
     const int row = (ctl >= C_ROW0 && ctl < C_ROW0 + NumRows) ? ctl - C_ROW0 : -1;
     logLine("UI click %s tag=%s row=%s", kUiName[ctl], tag, row >= 0 ? (r->pcPage ? r10p::rowName(row) : opt::rowName(row)) : "-");
+    if (ctl == C_ICON && r->open) { logLine("UI gear close tag=%s", tag); uiClosePage(r); return; }   // batch 3d: same as Cancel
     if (ctl == C_CFG || ctl == C_ICON) { if (r->pc) uiOpenR10(r); else uiOpenPage(r, tag, r->curLevel); return; }
     if (!r->open) return;
     if (ctl == C_CANCEL) { uiClosePage(r); return; }
@@ -725,6 +799,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     if (clickable && hit != r->hover) guikit::playHoverSound();
     r->hover = clickable ? hit : -1;
     uiIconHover(r, r->hover == C_ICON);
+    uiHoverTint(r, r->hover);
     if (click && hovered) uiClick(r, tag, hit);
 
     uiSlots(r);
@@ -733,7 +808,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     // draw
     if (pc) {
         if (r->open) {
-            uiShow(r, C_CFG, false); uiShow(r, C_ICON, false); uiShow(r, C_STATUS, false);
+            uiShow(r, C_CFG, false); uiShowIcon(r, true); uiShow(r, C_STATUS, false);
             uiRenderR10(r);
         } else {
             for (int i = C_BG0; i <= C_CANCEL; ++i) uiShow(r, i, false);
@@ -741,8 +816,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
             uiSetText(r, C_CFG, "Level-up filter");
             uiNudge(r, hl);
             uiShow(r, C_CFG, lvl);
-            uiSetText(r, C_ICON, r->iconOk ? "" : "LU");
-            uiShow(r, C_ICON, !lvl);
+            uiShowIcon(r, !lvl);
             char st[UiText];
             bool sv = buildPcStatus(st, sizeof st);
             if (g_ptDoc.lossy) { snprintf(st, sizeof st, "%s", kLossyText); sv = true; }
@@ -757,7 +831,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     const bool configured = P != nullptr;
     if (r->open) {
         uiShow(r, C_CFG, false);
-        uiShow(r, C_ICON, false);
+        uiShowIcon(r, true);
         uiShow(r, C_STATUS, false);
         uiRenderPage(r, tag);
         uiTipTick(r, sc, haveCur ? uiTipHit(r, cx, cy) : -1, click);
@@ -768,8 +842,7 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     uiSetText(r, C_CFG, cfgButtonText(configured, realCan != 0, &hl));
     uiNudge(r, hl && lvl);
     uiShow(r, C_CFG, lvl);   // batch 3a: the big button only next to the engine's level-up buttons; else the corner icon
-    uiSetText(r, C_ICON, r->iconOk ? "" : "LU");
-    uiShow(r, C_ICON, !lvl);
+    uiShowIcon(r, !lvl);
     char st[UiText];
     bool held = false;
     int banked = 0;

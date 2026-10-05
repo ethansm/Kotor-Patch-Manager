@@ -107,6 +107,12 @@ int main() {
         KT_CHECK(getBorderTint(k, rgb)); KT_CHECK(rgb[0] == 0.25f && rgb[1] == 0.5f && rgb[2] == 0.75f);
         KT_CHECK(getAlpha(k, &al)); KT_CHECK(al == 0.125f);
         KT_CHECK(!getBorderTint(k, nullptr)); KT_CHECK(!getBorderTint(0, rgb)); KT_CHECK(!getAlpha(k, nullptr)); KT_CHECK(!getAlpha(0, &al));
+        // setBorderTint: writes the 3 floats at border+0x28; gated like getBorderTint
+        const float hi[3] = { 0.8f, 0.8f, 0.69804f };
+        KT_CHECK(setBorderTint(k, hi)); KT_CHECK(getBorderTint(k, rgb)); KT_CHECK(rgb[0] == 0.8f && rgb[1] == 0.8f && rgb[2] == 0.69804f);
+        KT_CHECK(!setBorderTint(k, nullptr)); KT_CHECK(!setBorderTint(0, hi));
+        at<uint32_t>(k, Label_Border) = 0; KT_CHECK(!setBorderTint(k, rgb)); at<uint32_t>(k, Label_Border) = 0x9875BC;
+        KT_CHECK(at<float>(k, Label_Border + Border_Tint) == 0.8f);
         // setFillStyle: low 2 bits only, other bits kept; gated like the other border setters
         at<uint32_t>(k, Label_Border + Border_FillStyle) = 0xF0u | 1u;
         KT_CHECK(setFillStyle(k, 2)); KT_CHECK_EQ((unsigned long long)at<uint32_t>(k, Label_Border + Border_FillStyle), 0xF2ull);

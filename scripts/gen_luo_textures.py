@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the level-up-override gear button textures (luo_gear / luo_gear_hi) and embed them in the DLL source.
+"""Generate the level-up-override textures (gear button luo_gear / luo_gear_hi, page fill luo_fill) and embed them in the DLL source.
 
 Writes patch_manager_mods/level_up_override_src/LuoTextures.inc (64x64 uncompressed 32-bit TGAs, same flavour as
 gen_hotbar_textures.py) plus PNG previews in research/companion_levelup/r10/ui_icon/.
@@ -25,6 +25,9 @@ VARIANTS = (
     ("luo_gear", "kLuoGear", PAL_NORMAL),
     ("luo_gear_hi", "kLuoGearHi", PAL_HI),
 )
+# Page window fill: opaque near-black (vanilla panel black with a hint of teal). One copy of LBL_EFX_BACK's tiled
+# uibit_fill_2bt is see-through live, so the window gets this stretched over it instead (batch 3d).
+FILL = ("luo_fill", "kLuoFill", (2, 8, 6), 8)
 
 
 def gear_mask(teeth=8, margin=5.0, depth=0.20, hole=0.25):
@@ -105,10 +108,17 @@ def render_inc(blobs) -> str:
     return "\n".join(out) + "\n"
 
 
+def render_fill():
+    from PIL import Image
+    name, ident, rgb, side = FILL
+    return name, ident, Image.new("RGBA", (side, side), rgb + (255,))
+
+
 def build():
     ims = [(n, i, render(p)) for n, i, p in VARIANTS]
-    blobs = [(n, i, tga_bytes(im)) for n, i, im in ims]
-    return ims, blobs
+    fill = render_fill()
+    blobs = [(n, i, tga_bytes(im)) for n, i, im in ims + [fill]]
+    return ims, fill, blobs
 
 
 def compare(ims):
@@ -133,7 +143,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
-    ims, blobs = build()
+    ims, fill, blobs = build()
     text = render_inc(blobs)
     if a.check:
         if INC.exists() and INC.read_text() == text:
@@ -146,6 +156,7 @@ def main() -> int:
     for n, _, im in ims:
         im.save(PREVIEW / f"{n}.png")
         im.resize((N * 8, N * 8), Image.NEAREST).save(PREVIEW / f"{n}_x8.png")
+    fill[2].save(PREVIEW / f"{fill[0]}.png")
     compare(ims)
     print(f"wrote {INC} ({', '.join(f'{n} {len(d)} B' for n, _, d in blobs)})")
     return 0
