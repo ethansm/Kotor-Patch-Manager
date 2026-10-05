@@ -109,14 +109,21 @@ Rules: one batch per row; each batch ends with `build_check.py --mod combat_hotb
 | CH2 | Invoke test (inside the hud-host TARGET_MENU_PRE callback): per-frame edge poll (`GetAsyncKeyState` gated on `guikit::winForeground`, not key hook 0x72CB63) Ctrl+Shift+1/2/3 = invoke entry[last] of group g via write-sel + `0x751710` from inside the 0x743540 detour (entries still valid). Log queue result. Add DB rows 0x7445D0 / 0x751710 (Haiku verify + decoys) | HL2 | user play | PARTIAL (built 6c8047e, installed 10-04 23:46, live pending; keys Ctrl+Shift+F9/F10/F11 via INI, not digits; DB rows deferred to steam-db session) | 6c8047e | CH3a |
 | CH3a | Static RE: find a post-`0x741660` point (becomes hud-host TARGET_MENU_POST phase) for arrow suppression. Candidates: entry of `0x743850` (called at end of PopulateMenus), or a mid-function site after the call at `0x74D19F` in 0x74CFE0 (must not overlap perf-lab span). Confirm arrow sub-control flags `+0x3E8/+0x5B8` and the hit-test path `0x7433B0` HitCheckMouse | CH2 | - | DONE | ec793cf | CH3b |
 | CH3b | Suppression behind INI `hide_arrows=0/1` (default 0); wheel still works | CH3a | user play | PARTIAL (built 8094fbd + 6c8047e, installed 10-04 23:46, live pending; INI [Arrows] Hide=1) | 6c8047e | CH4 |
-| HL3 | hud-host takes `0x40F5A0` (StopLoadFromLayout, filtered on HUD vtable `0x0099DCC4`) → BUILD phase with `ReserveIds(n)`; companion-selfheal migrates its build to BUILD (same install, KPM rejects double hooks) | HL2 | selfheal session owner + user play | TODO | | CH4b |
+| HL3 | hud-host takes `0x40F5A0` (StopLoadFromLayout, filtered on HUD vtable `0x0099DCC4`) → BUILD phase with `ReserveIds(n)`; companion-selfheal migrates its build to BUILD (same install, KPM rejects double hooks) | HL2 | selfheal session owner + user play | PARTIAL (BUILT 9E18444+A9EE44D, LIVE PENDING) | a9ee44d | CH4b |
 | CH4a | `CombatLogic.h` pure layout + hit + slot model + host tests (no engine) | CH2 | - | DONE | 30929bd | CH4b |
-| CH4b | Runtime buttons via GuiKit on the HUD panel (hud-host BUILD phase), icon = entry `+0x20`, greyed when `+0x30` bit0 clear, GuiTip names, click → CH2 invoke path; dock under target banner; ultrawide-safe (`aspectFix`) | CH4a, HL3 | user play | TODO | | CH5 |
+| CH4b | Runtime buttons via GuiKit on the HUD panel (hud-host BUILD phase), icon = entry `+0x20`, greyed when `+0x30` bit0 clear, GuiTip names, click → CH2 invoke path; dock under target banner; ultrawide-safe (`aspectFix`) | CH4a, HL3 | user play | PARTIAL (BUILT D75D4D0, LIVE PENDING) | d75d4d0 | CH5 |
 | CH5 | Auto-fill + INI profiles: highest tier per feat/power family, carried grenades by count; `FileWatch.h` hot-reload; INI codec in `CombatLogic.h` with tests | CH4b | user play | TODO | | ship |
 | CH6 | Ship: KpLog trim, mutation run on `CombatLogic.h`, doc 24 row, upstream PR candidate | CH5 | user approval | TODO | | - |
 | HL4 | Later, optional: action-hotbar (`0x748502`, `0x74B3F0`) and queue-hud (`0x74C168`) migrate to BUILD/FRAME; GOG hooks file (static-verified, GOG callout rule doc 21) | HL3 | owners | TODO | | - |
 
-### Play-test checklist (combined CH1c + CH2 + CH3b, ~10 min)
+### Play-test checklist v2 (HL3 + CH4b, ~10 min)
+1. Target an enemy: icon buttons appear under the 3 vanilla boxes, 2 per row; unusable icons dimmed.
+2. Hover a button: tooltip shows the name and the row stays put. Click Flurry: it queues.
+3. Throw a grenade from the grenade column.
+4. Selfheal regression: its HUD buttons + popover still work.
+5. Say "check combat log" (look for `first BUILD dispatch`, `BUILD buttons created=`, `buttons: first draw`, `click g=`).
+
+### Play-test checklist v1 (combined CH1c + CH2 + CH3b, ~10 min)
 1. Target an enemy, door, placeable, mine and droid (CH1c).
 2. With an enemy targeted, press Ctrl+Shift+F9, F10, F11. Does the action queue? (CH2)
 3. Quit, create `combat_hotbar.ini` in the game dir with `[Arrows]` / `Hide=1`, relaunch: carousel arrows gone, mouse wheel still cycles (also with the pointer where an arrow was)? (CH3b)
