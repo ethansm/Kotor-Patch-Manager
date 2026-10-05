@@ -1,5 +1,5 @@
 // Host test of StrFmt.h strfmt::appendf (finding F26): the bounded printf-append cases ported from buff_hud_logic_test.cpp (F7)
-// plus a drift guard against the two original copies (bh::appendf, sb::appendf), so the extraction cannot change behaviour.
+// plus a check that bh::appendf and sb::appendf are now aliases of it (MG2), so no copy can drift.
 #include "StrFmt.h"
 #include "check.h"
 #include "../buff_duration_hud_src/BuffHudLogic.h"
@@ -169,27 +169,9 @@ int main() {
         KT_CHECK(g.canaryIntact());
     }
 
-    // 7. Drift guard: identical buffers and lengths from strfmt::, bh:: and sb:: appendf over caps, start lengths and payloads.
-    {
-        const char* payloads[] = { "", "x", "Shield: ", "0123456789abcdefghij", "%", " +a0: 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f" };
-        int diffs = 0, cases = 0;
-        for (int cap = -1; cap <= 40; ++cap)
-            for (int start = -2; start <= 45; start += 3)
-                for (const char* pl : payloads) {
-                    char a[64], b[64], c[64]; memset(a, 0x5A, sizeof a); memset(b, 0x5A, sizeof b); memset(c, 0x5A, sizeof c);
-                    if (cap > 0) {
-                        int fill = start < 0 ? 0 : (start < cap ? start : cap - 1);
-                        memset(a, 'p', fill); memset(b, 'p', fill); memset(c, 'p', fill); a[fill] = b[fill] = c[fill] = 0;
-                    }
-                    int la = strfmt::appendf(a, cap, start, "%s|%d", pl, cap);
-                    int lb = bh::appendf(b, cap, start, "%s|%d", pl, cap);
-                    int lc = sb::appendf(c, cap, start, "%s|%d", pl, cap);
-                    ++cases;
-                    if (la != lb || la != lc || memcmp(a, b, sizeof a) != 0 || memcmp(a, c, sizeof a) != 0) ++diffs;
-                }
-        KT_CHECK(cases > 3000);
-        KT_CHECK_EQ(diffs, 0);
-    }
+    // 7. bh::appendf and sb::appendf are aliases of strfmt::appendf (MG2), not copies: nothing left to drift.
+    KT_CHECK(&bh::appendf == &strfmt::appendf);
+    KT_CHECK(&sb::appendf == &strfmt::appendf);
 
     return kt::Report("strfmt_test");
 }

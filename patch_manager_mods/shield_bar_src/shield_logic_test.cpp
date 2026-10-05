@@ -1,5 +1,5 @@
-// Regression tests for ShieldLogic.h sb::appendf: a port of buff_hud_logic_test.cpp (F7) + a check that sb::appendf and
-// sb::appendf (its original) give identical results, so the two copies cannot drift.
+// Regression tests for ShieldLogic.h sb::appendf: a port of buff_hud_logic_test.cpp (F7) + a check that sb::appendf is the
+// shared strfmt::appendf (MG2 alias), so there is no second copy to drift.
 #include "ShieldLogic.h"
 #include "K2Addr.h"
 #include "../buff_duration_hud_src/BuffHudLogic.h"
@@ -217,22 +217,8 @@ int main() {
         KT_CHECK_EQ(len, (int)want.size());
     }
 
-    // 8. Drift guard: identical buffers and lengths from sb::appendf and bh::appendf over caps, start lengths and payloads.
-    {
-        const char* payloads[] = { "", "x", "Shield: ", "0123456789abcdefghij", "%", " +a0: 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f" };
-        int diffs = 0, cases = 0;
-        for (int cap = -1; cap <= 40; ++cap)
-            for (int start = -2; start <= 45; start += 3)
-                for (const char* pl : payloads) {
-                    char a[64], b[64]; memset(a, 0x5A, sizeof a); memset(b, 0x5A, sizeof b);
-                    if (cap > 0) { int fill = start < 0 ? 0 : (start < cap ? start : cap - 1); memset(a, 'p', fill); memset(b, 'p', fill); a[fill] = b[fill] = 0; }
-                    int la = sb::appendf(a, cap, start, "%s|%d", pl, cap);
-                    int lb = bh::appendf(b, cap, start, "%s|%d", pl, cap);
-                    ++cases; if (la != lb || memcmp(a, b, sizeof a) != 0) ++diffs;
-                }
-        KT_CHECK(cases > 3000);
-        KT_CHECK_EQ(diffs, 0);
-    }
+    // 8. sb::appendf is the shared strfmt::appendf (MG2), so the two copies can no longer drift.
+    KT_CHECK(&sb::appendf == &strfmt::appendf);
 
     testTableGates();
     testMenuBars();
