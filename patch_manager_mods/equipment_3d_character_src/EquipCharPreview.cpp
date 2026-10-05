@@ -22,22 +22,17 @@
 #include <math.h>
 #include "GameAddr.h"
 #include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
+#include "SceneView.h"   // shared CSWGui3DSceneView block / scene / camera helpers (K2Addr.h table; Mods 1 + 5)
 #include "WindowHook.h"  // one game-HWND subclass, safe against out-of-order unhook (F28)
 #include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
 
 namespace {
 
 // ---- engine addresses (Steam Aspyr) ----
-constexpr int GateGlobal = 0x009f42b4;
-constexpr int FnControlCtor = 0x00418990;   // CSWGuiControl ctor, fastcall ECX = ctrl
-constexpr int ViewVftable = 0x009a3d34;     // CSWGui3DSceneView
-constexpr int FnSceneCtor = 0x00417f40;     // CSWGuiScene ctor, ECX = view+0x60
 constexpr int FnInitControl = 0x0040f620;   // thiscall(panel, ctl, CExoString*, addToList, scale) RET 16
 constexpr int FnExoCtor = 0x00733570;
 constexpr int FnExoDtor = 0x00733780;
 constexpr int FnNew = 0x00919723;           // cdecl(size)
-constexpr int FnAddModel = 0x00418360;      // thiscall(view+0x60, CExoString*, int)
-constexpr int FnGetModel = 0x004184b0;      // thiscall(view+0x60, int idx) -> Gob*
 constexpr int FnLabelCtor = 0x00419740;     // CSWGuiLabel ctor, fastcall
 constexpr int LabelSize = 0x148;
 constexpr int LabelVftable = 0x009878BC;
@@ -53,11 +48,7 @@ constexpr int NumButtons = 5;   // LBL_E3D_ANIM / SPIN / WEAP / RESET / EMOTE (i
 constexpr int MaxMenu = 20;     // LBL_E3D_M00..M19 (ids +8..+27): Emotes pop-up items; then LBL_E3D_TIPBG / LBL_E3D_TIP (+28,+29)
 constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
 constexpr int CtlIdOff = 0x54;
-constexpr int SceneOffset = 0x60;
 constexpr int SceneObjOffset = 0x74;        // view+0x74 = Scene*
-constexpr int CameraOffset = 0x78;
-constexpr int ModelCountOffset = 0x80;
-constexpr int BlockSize = 0x400;
 constexpr int ExpectedControlId = 49;       // equip_p.gui has 49 controls (ids 0..48); 3D_MODEL=49, LBL_BEVEL=50, LBL_BEVEL2=51
 constexpr int TipBgId = ExpectedControlId + 3 + NumButtons + MaxMenu, TipId = TipBgId + 1;
 constexpr int ExpectedCamVtable = 0x0098c45c;
@@ -73,21 +64,15 @@ constexpr int CreatureHolderOff = 0x68;     // creature[0x1a] = part holder: hol
 constexpr int FnBuildApp = 0x0076d200;      // thiscall(preview, copy60, flags, 1, 0) RET 0x10
 constexpr int FnSetAlign = 0x0085d430;      // thiscall(preview[0x89], int align) RET 4
 constexpr int FnSetupScene = 0x0077ec20;    // thiscall(preview, view, real, 0, 1) RET 0x10
-constexpr int CamAttachSlot = 0x74, CamFovSlot = 0x44;
 constexpr int CrSetScene = 0x94, CrSetPos = 0x8c, CrSetFacing = 0x88;
 constexpr int PartPlaySlot = 0x18, PartLenSlot = 0x1c;
 constexpr int AppCopyBytes = 0x3c;
 
 using Fast1 = void(__fastcall*)(void*);
-using ThisCall2 = void*(__thiscall*)(void*, void*, int);
-using GetModelFn = void*(__thiscall*)(void*, int);
 using InitCtl = void(__thiscall*)(void*, void*, void*, int, int);
 using CExoCtor = void*(__thiscall*)(void*, const char*);
 using CExoDtor = void(__thiscall*)(void*);
-using SceneInit = void(__thiscall*)(void*, const char*, float*, float*);
 using NewFn = void*(__cdecl*)(unsigned);
-using CamAttach = void(__thiscall*)(void*, void*, const char*, int);
-using CamFov = void(__thiscall*)(void*, float);
 using BuildAppFn = int(__thiscall*)(void*, void*, int, int, int);
 using SetAlignFn = void(__thiscall*)(void*, int);
 using SetupSceneFn = void(__thiscall*)(void*, void*, void*, int, int);
@@ -242,7 +227,7 @@ Slot* claimSlot(int panel) {
     return oldest;
 }
 
-int modelCount(unsigned char* view) { int n = -1; readAt<int>(reinterpret_cast<int>(view), ModelCountOffset, &n); return n; }
+using sceneview::modelCount;
 
 // ---- game window / wheel (copied from Mod 1) ----
 HWND g_hwnd = nullptr;
@@ -739,11 +724,7 @@ void refreshWeapons(Slot* s, int real, const char* why) {
 }
 void applyView(Slot* s) {
     // zoom = FOV scale on the scene camera; the facing yaw is re-applied after every rebuild
-    int cam = 0; readAt<int>(reinterpret_cast<int>(s->block), CameraOffset, &cam);
-    if (cam) {
-        void** cv = vtOf(reinterpret_cast<void*>(cam));
-        if (cv && saferead::probeRead(SiteEquip, cv + CamFovSlot / 4, 4)) reinterpret_cast<CamFov>(cv[CamFovSlot / 4])(reinterpret_cast<void*>(cam), eq3d::fovForZoom(g_cfg.fov, s->zoom));
-    }
+    sceneview::cameraFov(s->block, eq3d::fovForZoom(g_cfg.fov, s->zoom));
     if (s->creature) {
         float v[3]; eq3d::yawVec(s->yaw, v);
         void** cv = vtOf(s->creature);
@@ -766,7 +747,7 @@ bool buildPreview(Slot* s, int real, const char* why) {
     // then takes it down (headgear-loss bug, doc 10). keep_obj10 is ignored; attachHelmet shows the helmet from our own model.
     int headId = *reinterpret_cast<int*>(copy + 0x10);
     *reinterpret_cast<int*>(copy + 0x10) = NoItemId;
-    int gate = 0; readAt<int>(GateGlobal, 0, &gate);
+    int gate = 0; sceneview::gateOpen(&gate);
     if (!gate) { logf("build: gate 009f42b4 is zero, skipping"); return false; }
     void* pv = s->creature; void** vt = vtOf(pv);
     int scene = 0; readAt<int>(reinterpret_cast<int>(s->block), SceneObjOffset, &scene);
@@ -869,24 +850,15 @@ void tickInput(Slot* s) {
 extern "C" void __cdecl BindEquipView(int panel) {
     saferead::beginScope();
     int ctlCount = -1; readAt<int>(panel, 0x28, &ctlCount);
-    int gate = 0; readAt<int>(GateGlobal, 0, &gate);
+    int gate = 0; sceneview::gateOpen(&gate);
     logf("H1 BindEquipView panel=%08x controls=%d gate=%d enabled=%d stage=%d", panel, ctlCount, gate, g_cfg.enabled, g_cfg.stage);
     if (!panel) { logf("H1: null panel, abort"); return; }
     if (!g_cfg.enabled || g_cfg.stage < 1) { logf("H1: disabled by INI (enabled=%d stage=%d)", g_cfg.enabled, g_cfg.stage); return; }
 
-    unsigned char* block = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(BlockSize));
+    unsigned char* block = sceneview::createView(static_cast<uintptr_t>(static_cast<unsigned>(panel)), "3D_MODEL");
     if (!block) { logf("H1: operator new failed"); return; }
-    memset(block, 0, BlockSize);
-    unsigned char* view = block;
-    reinterpret_cast<Fast1>(FnControlCtor)(view);
-    *reinterpret_cast<void**>(view) = reinterpret_cast<void*>(ViewVftable);
-    reinterpret_cast<Fast1>(FnSceneCtor)(view + SceneOffset);
     saferead::beginScope();
-
-    char tag[16] = {0};
-    reinterpret_cast<CExoCtor>(FnExoCtor)(tag, "3D_MODEL");
-    reinterpret_cast<InitCtl>(FnInitControl)(reinterpret_cast<void*>(panel), view, tag, 1, 1);
-    reinterpret_cast<CExoDtor>(FnExoDtor)(tag);
+    unsigned char* view = block;
 
     int id = -999, newCount = -1; int ext[4] = {0};
     readAt<int>(reinterpret_cast<int>(view), CtlIdOff, &id);
@@ -902,29 +874,23 @@ extern "C" void __cdecl BindEquipView(int panel) {
 
     if (id != ExpectedControlId) { logf("H1: GUI control missing/mismatched (id=%d), slot unusable (is equip_p.gui patched? scripts/add_equip_3dview_control.py)", id); return; }
     if (!gate) { logf("H1: gate global 009f42b4 is zero, slot unusable"); return; }
-    int scene = 0;
-    if (!readAt<int>(reinterpret_cast<int>(view), SceneObjOffset, &scene) || !scene || !saferead::probeRead(SiteEquip, reinterpret_cast<void*>(scene), 4)) { logf("H1: scene pointer bad (%08x), slot unusable", scene); return; }
-    void** svt = *reinterpret_cast<void***>(scene);
-    if (!saferead::probeRead(SiteEquip, svt + 0x70 / 4, 4)) { logf("H1: scene vtable bad, slot unusable"); return; }
-    float pos[3] = {0, 0, 0}, quat[4] = {0, 0, 0, 1};
-    reinterpret_cast<SceneInit>(svt[0x70 / 4])(reinterpret_cast<void*>(scene), "gui3D_room", pos, quat);
+    uintptr_t scene = 0;
+    int sf = sceneview::initScene(view, "gui3D_room", &scene);
+    if (sf == sceneview::SF_VtableBad) { logf("H1: scene vtable bad, slot unusable"); return; }
+    if (sf != sceneview::SF_None) { logf("H1: scene pointer bad (%08x), slot unusable", static_cast<unsigned>(scene)); return; }
     saferead::beginScope();
     logf("H1: scene %08x initialised (gui3D_room)", scene);
 
-    char tag2[16] = {0};
-    reinterpret_cast<CExoCtor>(FnExoCtor)(tag2, g_cfg.rig);
-    void* rig = reinterpret_cast<ThisCall2>(FnAddModel)(view + SceneOffset, tag2, -1);
-    reinterpret_cast<CExoDtor>(FnExoDtor)(tag2);
+    void* rig = sceneview::addModel(view, g_cfg.rig, -1);
     saferead::beginScope();
     int n = modelCount(view);
     logf("H1: rig '%s' model=%p, scene model count=%d", g_cfg.rig, rig, n);
     if (!rig || n < 1) { logf("H1: rig missing, slot unusable"); return; }
-    int cam = 0, camv = 0; readAt<int>(reinterpret_cast<int>(view), CameraOffset, &cam); if (cam) readAt<int>(cam, 0, &camv);
-    logf("H1: camera=%08x vtable=%08x (expect %08x)", cam, camv, ExpectedCamVtable);
-    if (cam && camv == ExpectedCamVtable) {
-        void** cv = *reinterpret_cast<void***>(cam);
-        reinterpret_cast<CamAttach>(cv[CamAttachSlot / 4])(reinterpret_cast<void*>(cam), rig, "camerahook", 1);
-        reinterpret_cast<CamFov>(cv[CamFovSlot / 4])(reinterpret_cast<void*>(cam), g_cfg.fov);
+    uint32_t cam = 0, camv = 0; bool camOk = sceneview::camera(view, &cam, &camv);
+    logf("H1: camera=%08x vtable=%08x (expect %08x)", static_cast<int>(cam), static_cast<int>(camv), ExpectedCamVtable);
+    if (camOk) {
+        sceneview::cameraAttach(view, rig, "camerahook", 1);
+        sceneview::cameraFov(view, g_cfg.fov);
         logf("H1: camera attached to 'camerahook', fov=%.3f", g_cfg.fov);
     } else logf("H1: camera vtable mismatch, camera left as is");
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }

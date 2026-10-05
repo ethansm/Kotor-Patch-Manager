@@ -58,6 +58,8 @@ static void checkSteamFields(const K2AddrTable& t) {
     STEAM(AppActiveFlag, 0x00A1B4E0);
     STEAM(MovieRestoreSkipFlag, 0x00A1B76C);
     STEAM(ClientCreatureVtable, 0x0099EE14);
+    STEAM(SceneCamVt_Attach, 0x74);
+    STEAM(SceneCamVt_Fov, 0x44);
     STEAM(WorldTimerGetCurrentTime, 0x0051AD20);
     STEAM(Creature_EffectArray, 0x148);
     STEAM(Creature_EffectCount, 0x14c);
@@ -276,6 +278,8 @@ static void checkGogFields(const K2AddrTable& g) {
     KT_CHECK_EQ((unsigned long long)g.GobVtable, 0ull);
     KT_CHECK_EQ((long long)g.View_Scene, 0ll);
     KT_CHECK_EQ((long long)g.Gob_Scale, 0ll);
+    KT_CHECK_EQ((long long)g.SceneCamVt_Attach, 0ll);
+    KT_CHECK_EQ((long long)g.SceneCamVt_Fov, 0ll);
     // GOG really differs from Steam for the functions the three mods call
     KT_CHECK(g.GetMaxForcePoints != kSteam.GetMaxForcePoints && g.PushClipRect != kSteam.PushClipRect);
     // every function field the three mods call is non-zero on GOG

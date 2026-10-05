@@ -163,6 +163,8 @@ struct K2AddrTable {
     int View_Camera = 0;                 // view +camera object*
     int View_ModelCount = 0;             // view +model count (= scene sub-object +0x20)
     int SceneVt_Init = 0;                // Scene* vtable byte offset: thiscall(scene, const char* room, float pos[3], float quat[4])
+    int SceneCamVt_Attach = 0;           // camera vtable byte offset: thiscall(cam, model, const char* node, int)
+    int SceneCamVt_Fov = 0;              // camera vtable byte offset: thiscall(cam, float fov)
     int GobVt_SetPosition = 0, GobVt_SetOrientation = 0, GobVt_GetPosition = 0, GobVt_GetOrientation = 0, GobVt_GetParent = 0;   // Gob vtable byte offsets
     int GobVtReadable = 0;               // bytes of the Gob vtable a guard must be able to read (covers every slot above)
     int GobReadable = 0;                 // bytes of the Gob a guard must be able to read
@@ -315,6 +317,8 @@ constexpr K2AddrTable makeSteam() {
     t.View_Camera = 0x78;
     t.View_ModelCount = 0x80;
     t.SceneVt_Init = 0x70;
+    t.SceneCamVt_Attach = 0x74;
+    t.SceneCamVt_Fov = 0x44;
     t.GobVt_SetPosition = 0x5C;
     t.GobVt_SetOrientation = 0x60;
     t.GobVt_GetPosition = 0x64;
@@ -466,6 +470,8 @@ constexpr K2AddrTable makeGog() {
     // View_Camera: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // View_ModelCount: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // SceneVt_Init: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // SceneCamVt_Attach: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
+    // SceneCamVt_Fov: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobVt_SetPosition: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobVtReadable: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)
     // GobReadable: out of scope (not used by portrait-slots / buff-duration-hud / shield-bar; added to K2Addr.h after this work started)

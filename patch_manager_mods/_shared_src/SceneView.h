@@ -63,6 +63,14 @@ struct Engine {
         return reinterpret_cast<void*(__thiscall*)(void*, int)>(static_cast<uintptr_t>(fn))(gob, arg);
     };
 
+    void (*callCamAttach)(uint32_t fn, uintptr_t cam, void* model, const char* node, int flag) =
+        [](uint32_t fn, uintptr_t cam, void* model, const char* node, int flag) {
+            reinterpret_cast<void(__thiscall*)(void*, void*, const char*, int)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(cam), model, node, flag);
+        };
+    void (*callCamFov)(uint32_t fn, uintptr_t cam, float fov) = [](uint32_t fn, uintptr_t cam, float fov) {
+        reinterpret_cast<void(__thiscall*)(void*, float)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(cam), fov);
+    };
+
     Engine() { rebind(); }
     // Re-point the engine-call fields at the current K2Addr.h table (also resets test fakes in those fields).
     void rebind() {
@@ -184,6 +192,24 @@ inline bool camera(void* view, uint32_t* cam, uint32_t* camVt) {
     if (cam) *cam = c;
     if (camVt) *camVt = v;
     return c && want && v == want;
+}
+
+// Attaches the camera to `node` of `model` (camera vtable slot SceneCamVt_Attach). False (nothing called) when the camera is not the
+// expected camera object, the offset is unknown or the slot is unreadable / zero.
+inline bool cameraAttach(void* view, void* model, const char* node, int flag) {
+    uint32_t cam = 0, v = 0, fn = 0;
+    const int o = detail::off(&K2AddrTable::SceneCamVt_Attach);
+    if (!camera(view, &cam, &v) || !o || !detail::rd<uint32_t>(v, o, &fn) || !fn || !g_sv.callCamAttach) return false;
+    g_sv.callCamAttach(fn, cam, model, node, flag);
+    return true;
+}
+// Sets the camera field of view (camera vtable slot SceneCamVt_Fov); same refusal rules as cameraAttach.
+inline bool cameraFov(void* view, float fov) {
+    uint32_t cam = 0, v = 0, fn = 0;
+    const int o = detail::off(&K2AddrTable::SceneCamVt_Fov);
+    if (!camera(view, &cam, &v) || !o || !detail::rd<uint32_t>(v, o, &fn) || !fn || !g_sv.callCamFov) return false;
+    g_sv.callCamFov(fn, cam, fov);
+    return true;
 }
 
 // ---- scene models (Gob) ----

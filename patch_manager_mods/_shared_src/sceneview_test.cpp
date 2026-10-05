@@ -31,6 +31,7 @@ static uint32_t siFn; static uintptr_t siScene; static const char* siRoom; stati
 static uint32_t spFn; static void* spGob; static float spV[3];
 static uint32_t soFn; static void* soGob; static float soV[4];
 static uint32_t gvFn[4]; static void* gvGob[4]; static float gvOut0[4];
+static int nCamAttach, nCamFov; static uint32_t caFn, cfFn; static uintptr_t caCam, cfCam; static void* caModel; static const char* caNode; static int caFlag; static float cfFov;
 static uint32_t gpFn; static void* gpGob; static int gpArg; static void* gpResult = reinterpret_cast<void*>(0x7003);
 
 static void* fAlloc(unsigned n) { ++nAlloc; lastAllocSize = n; if (allocFails) return nullptr; uintptr_t a = arenaAlloc(n); memset(reinterpret_cast<void*>(a), 0xAB, n); return reinterpret_cast<void*>(a); }
@@ -50,10 +51,12 @@ static void fGetVec(uint32_t fn, void* g, float* out) {
     if (nGetVec == 0) { out[0] = 1.5f; out[1] = 2.5f; out[2] = 3.5f; } else { out[0] = 0.5f; out[1] = 0.25f; out[2] = 0.125f; out[3] = 0.0625f; }
     ++nGetVec; (void)gvOut0;
 }
+static void fCamAttach(uint32_t fn, uintptr_t cam, void* m, const char* node, int flag) { ++nCamAttach; caFn = fn; caCam = cam; caModel = m; caNode = node; caFlag = flag; }
+static void fCamFov(uint32_t fn, uintptr_t cam, float fov) { ++nCamFov; cfFn = fn; cfCam = cam; cfFov = fov; }
 static void* fGetParent(uint32_t fn, void* g, int arg) { ++nGetParent; gpFn = fn; gpGob = g; gpArg = arg; return gpResult; }
 
 static void resetCounters() {
-    nAlloc = nCtl = nScene = nInit = nExoCtor = nExoDtor = nAdd = nRem = nGet = nSceneInit = nSetPos = nSetOri = nGetVec = nGetParent = 0;
+    nAlloc = nCtl = nScene = nInit = nExoCtor = nExoDtor = nAdd = nRem = nGet = nSceneInit = nSetPos = nSetOri = nGetVec = nGetParent = nCamAttach = nCamFov = 0;
     allocFails = false; lastAllocSize = 0; lastCtlThis = lastSceneThis = lastInitPanel = lastInitView = lastInitExo = lastDtorExo = lastExoCtorExo = nullptr;
     lastInitTag[0] = 0; lastInitA = lastInitB = 0; vtAtCtlCtor = 0;
 }
@@ -62,6 +65,7 @@ static void installFakes() {
     g_sv.alloc = fAlloc; g_sv.controlCtor = fCtl; g_sv.sceneCtor = fScene; g_sv.initControl = fInitCtl; g_sv.exoCtor = fExoCtor; g_sv.exoDtor = fExoDtor;
     g_sv.addModel = fAdd; g_sv.removeModel = fRem; g_sv.getModel = fGet;
     g_sv.callSceneInit = fSceneInit; g_sv.callSetPos = fSetPos; g_sv.callSetOri = fSetOri; g_sv.callGetVec = fGetVec; g_sv.callGetParent = fGetParent;
+    g_sv.callCamAttach = fCamAttach; g_sv.callCamFov = fCamFov;
 }
 
 // fake Gob + vtable in the arena; slot values from the Steam table
@@ -261,6 +265,46 @@ static void testCamera() {
     k2addr::clearForTest();
 }
 
+static void testCameraCalls() {
+    k2addr::clearForTest(); installFakes(); resetCounters();
+    uintptr_t view = arenaAlloc(0x400), cam = arenaAlloc(0x40), cvt = arenaAlloc(0x100);
+    void* vp = reinterpret_cast<void*>(view);
+    at<uint32_t>(cam, 0) = 0x0098C45C; at<uint32_t>(view, 0x78) = (uint32_t)cam;
+    at<uint32_t>(cvt, 0x74) = 0xA1A1A1A1; at<uint32_t>(cvt, 0x44) = 0xB2B2B2B2;
+    // happy path needs the camera vtable at the real address; point the table's expectation at our arena vtable instead
+    K2AddrTable t = kSteam; t.SceneCameraVtable = cvt; k2addr::setForTest(&t);
+    at<uint32_t>(cam, 0) = (uint32_t)cvt;
+    char model[4]; 
+    KT_CHECK(cameraAttach(vp, model, "camerahook", 1));
+    KT_CHECK_EQ(U(nCamAttach), 1ull); KT_CHECK_EQ(U(caFn), 0xA1A1A1A1ull); KT_CHECK_EQ(U(caCam), U(cam)); KT_CHECK(caModel == model);
+    KT_CHECK(strcmp(caNode, "camerahook") == 0); KT_CHECK_EQ((long long)caFlag, 1ll);
+    KT_CHECK(cameraFov(vp, 42.5f));
+    KT_CHECK_EQ(U(nCamFov), 1ull); KT_CHECK_EQ(U(cfFn), 0xB2B2B2B2ull); KT_CHECK_EQ(U(cfCam), U(cam)); KT_CHECK(cfFov == 42.5f);
+    // null table
+    k2addr::setForTest(nullptr); resetCounters();
+    KT_CHECK(!cameraAttach(vp, model, "n", 1) && !cameraFov(vp, 1.f)); KT_CHECK_EQ(U(nCamAttach + nCamFov), 0ull);
+    k2addr::setForTest(&kZero);
+    KT_CHECK(!cameraAttach(vp, model, "n", 1) && !cameraFov(vp, 1.f)); KT_CHECK_EQ(U(nCamAttach + nCamFov), 0ull);
+    // wrong camera vtable
+    k2addr::setForTest(&t); at<uint32_t>(cam, 0) = 0x12345678;
+    KT_CHECK(!cameraAttach(vp, model, "n", 1) && !cameraFov(vp, 1.f)); KT_CHECK_EQ(U(nCamAttach + nCamFov), 0ull);
+    at<uint32_t>(cam, 0) = (uint32_t)cvt;
+    KT_CHECK(!cameraAttach(nullptr, model, "n", 1) && !cameraFov(nullptr, 1.f));
+    // zero offsets
+    K2AddrTable z1 = t; z1.SceneCamVt_Attach = 0; k2addr::setForTest(&z1);
+    KT_CHECK(!cameraAttach(vp, model, "n", 1)); KT_CHECK(cameraFov(vp, 1.f)); KT_CHECK_EQ(U(nCamAttach), 0ull);
+    K2AddrTable z2 = t; z2.SceneCamVt_Fov = 0; k2addr::setForTest(&z2); resetCounters();
+    KT_CHECK(!cameraFov(vp, 1.f)); KT_CHECK(cameraAttach(vp, model, "n", 1)); KT_CHECK_EQ(U(nCamFov), 0ull);
+    // zero slot value
+    at<uint32_t>(cvt, 0x74) = 0; resetCounters(); k2addr::setForTest(&t);
+    KT_CHECK(!cameraAttach(vp, model, "n", 1)); KT_CHECK_EQ(U(nCamAttach), 0ull);
+    // no engine fn
+    at<uint32_t>(cvt, 0x74) = 0xA1A1A1A1; g_sv.callCamAttach = nullptr; g_sv.callCamFov = nullptr;
+    KT_CHECK(!cameraAttach(vp, model, "n", 1) && !cameraFov(vp, 1.f));
+    installFakes();
+    k2addr::clearForTest();
+}
+
 static void testGobCheck() {
     k2addr::clearForTest(); installFakes();
     uintptr_t vt = makeVtable(); uintptr_t gob = makeGob(vt); void* gp = reinterpret_cast<void*>(gob);
@@ -385,6 +429,7 @@ int main() {
     testInitScene();
     testModels();
     testCamera();
+    testCameraCalls();
     testGobCheck();
     testGobPose();
     testScale();
