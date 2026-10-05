@@ -21,6 +21,7 @@
 #include "SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
 #include "SceneView.h"  // CSWGui3DSceneView block, scene models, Gob vtable guard (doc 23)
 #include "Inv3dQuat.h"
+#include "WindowHook.h"  // one game-HWND subclass, safe against out-of-order unhook (F28)
 #include "Inv3dLogic.h"   // pure logic (INI parse/clamp, fit, cursor math): host-tested by inv3d_logic_test.cpp (doc 20 T1)
 #include "ItemModelTable.inc"
 
@@ -307,13 +308,14 @@ void syncScreen() {
     int w = 0, h = 0; readAt<int>(static_cast<int>(gameaddr::ScreenW), 0, &w); readAt<int>(static_cast<int>(gameaddr::ScreenH), 0, &h);
     if (w >= 320 && w <= 16384 && h >= 200 && h <= 16384) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
 }
-WNDPROC g_oldProc = nullptr;
+struct Inv3dWheelTag {};
+using WheelHook = kp::WindowHook<Inv3dWheelTag>;
 volatile LONG g_wheelAccum = 0;          // sum of WHEEL_DELTA units seen over the view since the last tick
 volatile DWORD g_lastTickMs = 0;         // GetTickCount() of the last InventoryTick
 volatile LONG g_viewRect[4] = {0, 0, 0, 0};  // engine px [L, top(after flip), W, H]
 int g_wheelLogs = 0;
 LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    if (m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
+    if (WheelHook::active() && m == WM_MOUSEWHEEL && g_cfg.wheelZoom && GetTickCount() - g_lastTickMs < 300 && g_viewRect[2] > 0) {
         saferead::beginScope();
         POINT pt = {(short)LOWORD(l), (short)HIWORD(l)}; RECT r;
         bool inside = false;
@@ -324,7 +326,7 @@ LRESULT CALLBACK wheelProc(HWND h, UINT m, WPARAM w, LPARAM l) {
         if (g_wheelLogs < 20) { ++g_wheelLogs; logf("WHEEL: delta=%d cursor=(%ld,%ld) inside=%d", (int)(short)HIWORD(w), pt.x, pt.y, inside); }
         if (inside) { InterlockedExchangeAdd(&g_wheelAccum, (short)HIWORD(w)); return 0; }
     }
-    return CallWindowProcA(g_oldProc, h, m, w, l);
+    return WheelHook::forward(h, m, w, l);
 }
 
 HWND gameWindow() {
@@ -337,9 +339,9 @@ HWND gameWindow() {
     g_hwnd = c.best;
     RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
     logf("DRAG: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
-    if (g_hwnd && g_cfg.wheelZoom && !g_oldProc) {
-        g_oldProc = reinterpret_cast<WNDPROC>(SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(wheelProc)));
-        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, g_oldProc, g_oldProc ? 0UL : GetLastError());
+    if (g_hwnd && g_cfg.wheelZoom && !WheelHook::old) {
+        WheelHook::install(g_hwnd, &wheelProc);
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", g_hwnd, WheelHook::old, WheelHook::old ? 0UL : GetLastError());
     }
     return g_hwnd;
 }
@@ -592,10 +594,7 @@ extern "C" void __cdecl InventoryTick(int panel) {
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_DETACH && g_oldProc && g_hwnd && IsWindow(g_hwnd) &&
-        reinterpret_cast<WNDPROC>(GetWindowLongPtrA(g_hwnd, GWLP_WNDPROC)) == wheelProc) {
-        SetWindowLongPtrA(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_oldProc)); g_oldProc = nullptr;   // never leave a dangling window proc
-    }
+    if (reason == DLL_PROCESS_DETACH) WheelHook::uninstall(&wheelProc);   // restore if still on top, else stay chained but inert
     if (reason == DLL_PROCESS_ATTACH) { logf("inv3d v2 0.2.1-dev loaded (Common SafeRead + SceneView)"); loadIni(); }
     return TRUE;
 }
