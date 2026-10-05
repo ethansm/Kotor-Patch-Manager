@@ -30,13 +30,14 @@
 #include "../_shared/SafeRead.h"
 #include "RangedAiLogic.h"
 #include "KpLog.h"
+#include "GameAddr.h"
 
 KP_LOG_PATCH("ranged-ai");
 
 namespace {
 
 constexpr int FnRangeWeaponEquipped = 0x0056E1E0;   // thiscall(creature), no stack args, returns bool
-constexpr int FnGetArea = 0x005453C0;               // thiscall(creature), returns area*
+constexpr int FnGetArea = (int)gameaddr::ServerObjectGetArea;   // thiscall(creature), returns area*
 using RangedFn = int(__thiscall*)(int);
 using AreaFn = int(__thiscall*)(int);
 
