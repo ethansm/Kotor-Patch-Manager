@@ -1,7 +1,7 @@
 [patch]
 id = "k2-activation-fix"
 name = "Activation Fix (intro-movie load hang)"
-version = "1.1.0"
+version = "1.1.1"
 author = "local"
 description = "Fixes the first-load hang where the load screen never goes away after the intro movie. At movie end the engine's movie thread posts a synthetic WM_ACTIVATEAPP(0,0) to the main window even though the game is still in front (under Wine the movie window sees activation move to our own main window as a deactivate); the engine then pauses itself, minimizes, and is never re-activated, so the load screen stays up. This DLL-only patch replaces that single PostMessageA call (0x0040D69E) and drops the post while the foreground window belongs to the game; real alt-tabs, Alt+Enter and the WndProc are unchanged. Disable with activationfix.txt containing enabled=0. Log: activationfix_log.txt."
 

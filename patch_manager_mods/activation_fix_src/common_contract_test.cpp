@@ -13,6 +13,7 @@
 #include "CodePatch.h"
 #include "check.h"
 #include "KpLog.h"
+#include "IniKit.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -154,6 +155,15 @@ int main() {
         CCHECK("a WARN line carries the WARN tag (REFUSED load lines)", u.find(" k2-activation-fix/main WARN REFUSED probe\n") != std::string::npos);
         KpLog_SetFallbackFile(nullptr);
         remove(path);
+    }
+
+    // ---- IniKit (configEnabled() == inikit::enabledFile("activationfix.txt")): the kill-switch rule the mod's toggle depends on
+    {
+        CCHECK("enabledFlag(\"enabled=0\") is off (kill switch)", !inikit::enabledFlag("enabled=0"));
+        CCHECK("enabledFlag with the key missing is on", inikit::enabledFlag("other=1"));
+        CCHECK("enabledFlag: the last matching line wins", inikit::enabledFlag("enabled=0\nenabled=1"));
+        CCHECK("enabledFlag skips leading tab, spaces and '=' before the value", !inikit::enabledFlag("\tenabled = 0"));
+        CCHECK("enabledFile on a missing file is on", inikit::enabledFile("/nonexistent/activationfix_missing.txt"));
     }
 
     return kt::Report("common_contract_test (activation_fix)");

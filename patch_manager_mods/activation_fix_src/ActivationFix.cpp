@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include "CodePatch.h"
+#include "IniKit.h"
 #include "KpLog.h"
 
 KP_LOG_PATCH("k2-activation-fix");
@@ -62,17 +63,7 @@ void emitLoadLine() {
     KP_LOGV(chMain, g_loadLevel, "%s", g_loadLine);
 }
 
-bool configEnabled() {
-    FILE* f = fopen("activationfix.txt", "r");
-    if (!f) return true;
-    bool on = true; char line[128];
-    while (fgets(line, sizeof(line), f)) {
-        char* p = line; while (*p == ' ' || *p == '\t') ++p;
-        if (!strncmp(p, "enabled", 7)) { p += 7; while (*p == ' ' || *p == '=') ++p; on = *p != '0'; }
-    }
-    fclose(f);
-    return on;
-}
+bool configEnabled() { return inikit::enabledFile("activationfix.txt"); }
 
 bool foregroundIsOurs(HWND* fgOut, DWORD* pidOut) {
     HWND fg = GetForegroundWindow(); DWORD pid = 0;
