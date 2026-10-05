@@ -119,3 +119,4 @@ Companion self-heal (owner selfheal, doc 27; user 10-04: shared from the start, 
 - [x] M1 (completed)
 
 - [x] M1 (completed)
+- 2026-10-05 C1+C2 live check PASS (session 00:58-01:16): perf-lab 0.5.0 run 13 gateB PASS, 0 hangs, 0 error lines; robustness 1.2.1 11/12 groups, COUNTERS all 0; equip-icon 1.1.0 STATS passes=166 outside_pass=0, from/to names shown; activation 1.1.0 site patched + IGNORED/PASS 1/0; texmem 1.1.0 loaded DISABLED (as configured); companion ai_trace tags present (t3m4; 48 of 54 '-' tags are the 7ffffffd invalid-object id). Note: the live set was since reinstalled by siblings (36 ids, 220 hooks, 23:46) with C5a KpLog builds of activation/equip-icon/texmem; level-up now 1.4.0-dev d14fa7cd. kotor2_logs.py check --new fails on analyze_runs logs (passes --new to analyze_runs.py).
