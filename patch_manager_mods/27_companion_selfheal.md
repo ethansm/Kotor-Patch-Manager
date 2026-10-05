@@ -1,6 +1,7 @@
 # 27 — Companion self-heal portrait buttons (design)
 
 ## Status
+- **10-05 01:41 CS9b + CS11 INSTALLED (user GO):** stage `$K/cs11_stage_1005` (head 70e5144), 36 ids / 221 hooks, selfheal dll `fe9025eb` (kpatch `6f73a4f7`), queue-hud 0.3.0-dev `8bfa99d9`, config `d9ed58a2`, backup `$G/backups/cs11_install_20261005_0141` (keep_shield-bar/perf-lab/mouse-probe restored; verify = those 3 mismatches only). CS12 fix (0.6.0-dev) in progress, see CS12 RESUME HERE below.
 - 2026-10-04 CS0 research DONE (static only, nothing installed). Evidence: `27_companion_selfheal_evidence/` R1 actor route, R2 portrait UI, R3 item choice.
 - Home (user, 10-04): **new mod `companion-selfheal`**, a `k2.portraitslots@1` consumer. No new hook address.
 - 10-04 later: user added in-game config (auto-consume, HP%/reserve thresholds, auto-on indicator, no click at full HP) -> section 3b. R4 done: own hook 0x0040F5A0 gives text labels without touching the hotbar.

@@ -1,6 +1,15 @@
 # 30 — Queue HUD (`queue-hud` 0.2.0-dev): green out-of-combat action queue, leader + companion strips
 
 ## RESUME HERE
+- **0.3.0-dev INSTALLED 2026-10-05 01:41 (user GO, with selfheal CS9b)**: stage `$K/cs11_stage_1005` (STAGE_INFO head=70e5144), 36 ids / 221 hooks,
+  live dll `8bfa99d9` (kpatch `8ddf09fe`), config `d9ed58a2`. Backup `$G/backups/cs11_install_20261005_0141` (rollback = restore it, game closed).
+  Hand-swapped shield-bar / perf-lab / mouse-probe dlls restored after the install; verify = exactly those 3 md5 mismatches. `kplog.ini` has `[queue-hud] enabled=1`.
+  0.3.0 checklist (play test, then "check queue-hud log"):
+  1. Out of combat, pause, queue a medpac: green strip uses the kit frame (`qh_frame`), current slot highlighted (`qh_frame_hi`).
+  2. A Cancel button shows under the leader queue; clicking it empties the queue (ClearAllActions 0x51CB10, R7).
+  3. Companion strips show a Cancel too. OPEN RISK: after a companion Cancel, check the companion still follows the leader (0x3D may be dropped).
+  4. Combat: green panel + Cancel hidden, vanilla red panel unchanged.
+  5. Log file `$G/queue-hud_log.txt` exists (0.2.0 never wrote one).
 - **0.2.0-dev LIVE 2026-10-05 00:09 (user "install when ready")**: DLL hot-swap (hooks/exports unchanged since 0.1.0), live dll `2950ce26`,
   config `629754e3` untouched. Backup `$G/backups/queuehud020_swap_20261005_0009/queue-hud.dll` (= 0.1.0 `75defebf`; rollback = copy it back,
   game closed). Repo `1181d18`, KPM `b53229b`. Gate `--mod queue_hud_src --mod save_events_src` GATE PASS, smokes queuehud 7/7 (new `strips`).
