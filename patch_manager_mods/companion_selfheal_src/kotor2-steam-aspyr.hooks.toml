@@ -1,5 +1,16 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# No hooks: DLL-only consumer of hud-host (k2.hud@1). The StopLoadFromLayout detour (0x0040F5A0) moved to hud-host
-# (K2HUD_BUILD, HUD panel only); this patch registers onHudBuild for K2HUD_BUILD in KPatchInit.
+# The StopLoadFromLayout detour (0x0040F5A0) moved to hud-host (K2HUD_BUILD, HUD panel only); this patch registers onHudBuild
+# for K2HUD_BUILD in KPatchInit. One hook of its own (CS8, R6): the RMB camera-hold swallow.
+
+# PerformRButtonDownAction 0x7B3810, after the prologue: MOV dword [0x00A7FCBC],1 (RMB-hold flag the camera director follows).
+# Skip-only detour: the handler writes 1 itself unless the cursor is over a shown selfheal widget. Resumes at 0x7B3821.
+# EAX/ECX/EDX are dead here (next insn reloads ECX), no flags live. Span 0x7B3817..0x7B3821 = exactly this one instruction.
+[[hooks]]
+address = 0x007B3817
+type = "detour"
+function = "SelfHealRmbHold"
+original_bytes = [0xC7, 0x05, 0xBC, 0xFC, 0xA7, 0x00, 0x01, 0x00, 0x00, 0x00]
+skip_original_bytes = true
+exclude_from_restore = []

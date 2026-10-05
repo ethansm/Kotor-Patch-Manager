@@ -110,6 +110,7 @@ int main() {
     HEQ("gameaddr::CanUseItem is the Steam CanUseItem (thiscall, RET 0xC, called with itemPtr,0,1)", (unsigned long long)gameaddr::CanUseItem, 0x005D2F80ULL);
     HEQ("gameaddr::UseItemRouteA is the Steam route A (thiscall, RET 0x20, 8 stack args)", (unsigned long long)gameaddr::UseItemRouteA, 0x0057D8B0ULL);
     HEQ("gameaddr::ProjectionFlag is cleared/restored around the label create", (unsigned long long)gameaddr::ProjectionFlag, 0x00A1B9F0ULL);
+    HEQ("gameaddr::RmbHoldFlag / RButtonDownHoldSite are the R6 RMB swallow flag and hook site", (unsigned long long)gameaddr::RmbHoldFlag * 0 + gameaddr::RmbHoldFlag + gameaddr::RButtonDownHoldSite, 0x00A7FCBCULL + 0x007B3817ULL);
     HCHECK("guikit::createLabelFromTemplate(panel, tag, int* why, uint32_t* badVt) -> uintptr_t", static_cast<uintptr_t(*)(uintptr_t, const char*, int*, uint32_t*)>(&guikit::createLabelFromTemplate) != nullptr);
     HCHECK("guikit::appendToPanel(panel, ctl) -> bool", static_cast<bool(*)(uintptr_t, uintptr_t)>(&guikit::appendToPanel) != nullptr);
     HCHECK("guikit::setText(ctl, const char*) -> bool", static_cast<bool(*)(uintptr_t, const char*)>(&guikit::setText) != nullptr);

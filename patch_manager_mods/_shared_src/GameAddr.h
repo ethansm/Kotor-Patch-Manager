@@ -71,5 +71,7 @@ constexpr uintptr_t AutoPausePanelVtable = 0x009A8FCC;   // auto-pause panel
 constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask]
 constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0) RET 0x20: called only by companion-selfheal 0.2.0-probe with [probe] call=1
 constexpr uintptr_t CanUseItem = 0x005D2F80;             // thiscall(server creature; itemPtr,0,1) RET 0xC -> nonzero = usable; verified B12b
+constexpr uintptr_t RmbHoldFlag = 0x00A7FCBC;          // DAT_00A7FCBC: RMB-hold flag; the camera director (0x78C350) follows mouse deltas while it is nonzero
+constexpr uintptr_t RButtonDownHoldSite = 0x007B3817;    // PerformRButtonDownAction 0x7B3810: MOV [RmbHoldFlag],1 (10 bytes); companion-selfheal detours it (R6 swallow)
 
 } // namespace gameaddr

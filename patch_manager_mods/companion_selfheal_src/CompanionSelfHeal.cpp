@@ -1,5 +1,5 @@
-// Companion Self-Heal 0.4.2-dev (doc 27, CS4 restyle + CS5). The HUD gets, from hud-host's K2HUD_BUILD phase (k2.hud@1, source 0x0040F5A0, HUD panel only; no hook of ours), 12 runtime
-// labels (2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross + ring art are
+// Companion Self-Heal 0.5.0-dev (doc 27, CS4 restyle + CS5 + CS8/CS9). The HUD gets, from hud-host's K2HUD_BUILD phase (k2.hud@1, source 0x0040F5A0, HUD panel only; the only own hook is the RMB camera swallow 0x7B3817), 14 runtime
+// labels (2 dark discs under the buttons, 2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross, disc + ring art are
 // embedded textures, see namespace tex; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
 // buttons follow the companion cards (slot+0x694 vit rect); LMB = use the picked healing item now (route A), RMB = popover
 // (Auto on/off, use-below %, keep reserve; persisted to companion_selfheal.ini); Auto mode uses items by itself (HealItems.h rules).
@@ -42,6 +42,7 @@ constexpr int Panel_Ctl = 0x24, Panel_CtlCount = 0x28, Panel_Open = 0x30, Panel_
 constexpr int SlotFromHud = 0x1F34, SlotStride = 0xDE4;  // portrait slot k = hud + 0x1F34 + k*0xDE4
 constexpr int Client_ObjectId = 4;
 constexpr int Server_Commandable = 0xEC, Server_Stats = 0x1198;
+constexpr int Stats_Race = 0xE0;                          // short, creature race (R5 probe)
 constexpr int Stats_Skills = 0x174, Stats_Abilities = 0xED, Skill_Repair = 5, Skill_TreatInjury = 7, Abil_Int = 3, Abil_Wis = 4;
 constexpr int ItemGroup = 1;                              // HUD item group
 constexpr int MaxCands = 64;
@@ -50,7 +51,7 @@ constexpr int Hud_Manager = 0x1C, Mgr_Panels = 0x88, Mgr_PanelCount = 0x8C, Mgr_
 constexpr int Cr_Tag = 0x18, PanelIgnoredByInput = 0x600;
 // Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
 constexpr uintptr_t PanelWhitelist[] = { gameaddr::MessagesPanelVtable, gameaddr::FadePanelVtable, gameaddr::PausePanelVtable, gameaddr::AutoPausePanelVtable };
-constexpr int NWidgets = 12;
+constexpr int NWidgets = 14;
 constexpr DWORD CacheMs = 250;
 constexpr DWORD DebounceMs = 2000, PostMs = 10000, PostStepMs = 500;
 
@@ -123,6 +124,8 @@ struct Pick {
     int ti = 0, rep = 0, wis = 0, intel = 0;
 };
 
+int canUseStrict(uintptr_t server, uintptr_t itemPtr) { return reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(server, itemPtr, 0, 1); }
+
 // Skills + candidate building + pickHealItem for one member. log=true emits the DUMP skills/cand lines (byte-identical to 0.1.0).
 Pick analyzeMember(const party::Vitals& m, const std::vector<itemread::Entry>& items, bool log, int minCount = 1) {
     Pick pk;
@@ -137,6 +140,7 @@ Pick analyzeMember(const party::Vitals& m, const std::vector<itemread::Entry>& i
         if (log) KP_LOG(chDump, "  skills stats=%08x TreatInjury=%d Repair=%d WIS=%d INT=%d", (unsigned)stats, ti, rep, wis, intel);
     } else if (log) KP_LOGV(chDump, KPLOG_WARN, "  skills: stats pointer unreadable (server=%08x)", (unsigned)m.server);
 
+    pk.missing = m.max - m.cur;
     heal::HealCand cands[MaxCands]; int idxOf[MaxCands]; uintptr_t ptrOf[MaxCands]; int n = 0;
     for (const itemread::Entry& e : items) {
         if (!(e.key & itemread::ItemKeyFlag)) continue;
@@ -148,11 +152,13 @@ Pick analyzeMember(const party::Vitals& m, const std::vector<itemread::Entry>& i
         int row = isSpell ? p.row : -1;
         int est = row >= 0 ? heal::healEstimate(row, ti, rep, wis, intel) : -1;
         bool usable = isSpell && p.usable != 0;
-        if (log) KP_LOG(chDump, "  cand \"%s\" key=%08x client=%08x server=%08x item=%08x props=%d type=%d row=%d heal=%d count=%d usable=%d", e.name.c_str(), (unsigned)e.key, (unsigned)clientItem, (unsigned)srv, (unsigned)itemPtr, p.count, p.type, row, est, count, (int)usable);
+        // R5 (a): only items the engine accepts for THIS member (strict). Skipped at full HP: strict refuses medpacs there (full-HP gate), the FullHp state must still resolve.
+        int can = -1;
+        if (usable && itemPtr && m.server && pk.missing > 0) { can = canUseStrict(m.server, itemPtr); usable = can != 0; }
+        if (log) KP_LOG(chDump, "  cand \"%s\" key=%08x client=%08x server=%08x item=%08x props=%d type=%d row=%d heal=%d count=%d usable=%d can=%d", e.name.c_str(), (unsigned)e.key, (unsigned)clientItem, (unsigned)srv, (unsigned)itemPtr, p.count, p.type, row, est, count, (int)usable, can);
         if (n < MaxCands) { cands[n] = heal::HealCand{ e.key, row, est, count, 0, usable }; idxOf[n] = (int)(&e - &items[0]); ptrOf[n] = itemPtr; ++n; }
     }
     pk.ncands = n;
-    pk.missing = m.max - m.cur;
     pk.pick = heal::pickHealItem(pk.missing, cands, n, minCount);
     if (pk.pick >= 0) {
         const itemread::Entry& e = items[(size_t)idxOf[pk.pick]];
@@ -258,7 +264,6 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     if (ctx->inMenu) REFUSEF("REFUSE in menu (ctx.inMenu=1) (%s)", src);
     if (!gameplayHudActive(g_hud)) REFUSEF("REFUSE hud gate not active (%s)", src);
     if (g_lastUseMs[mi] && now - g_lastUseMs[mi] < DebounceMs) REFUSEF("REFUSE debounce member=%d (%lu ms since the last use) (%s)", mi, (unsigned long)(now - g_lastUseMs[mi]), src);
-    g_lastUseMs[mi] = now;
     std::vector<itemread::Entry> items;
     itemread::readGroup(g_hud, ItemGroup, &items);
     party::Vitals v[3];
@@ -273,8 +278,15 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     if (!m.client || !rd<uint32_t>(m.client, Client_ObjectId, &clientId)) REFUSEF("REFUSE ids: client object id unreadable member=%d", mi);
     uint32_t selfServerId = serverIdOf(clientId), itemServerId = pk.srv;
     if (!selfServerId || !itemServerId || !pk.itemPtr) REFUSEF("REFUSE ids self=%08x item=%08x itemPtr=%08x", (unsigned)selfServerId, (unsigned)itemServerId, (unsigned)pk.itemPtr);
-    int can = reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t, int, int)>(CanUseItem)(m.server, pk.itemPtr, 0, 1);
-    if (can == 0) REFUSEF("REFUSE canuse=0 member=%d item=%08x", mi, (unsigned)itemServerId);
+    int can = canUseStrict(m.server, pk.itemPtr);
+    if (can == 0) {
+        // R5 probe: race short at stats+0xE0; base-item type (+0xAC) needs the 0x6D5200 lookup, not a GameAddr constant -> -1
+        uint32_t st = 0; int16_t race = -1; int type = -1;
+        if (rd<uint32_t>(m.server, Server_Stats, &st) && st) { int16_t r = 0; if (rd<int16_t>(st, Stats_Race, &r)) race = r; }
+        KP_LOGV(chCall, KPLOG_WARN, "REFUSE canuse=0 member=%d item=%08x ptr=%08x name=\"%s\" type=%d race=%d", mi, (unsigned)itemServerId, (unsigned)pk.itemPtr, pk.name.c_str(), type, (int)race);
+        return false;
+    }
+    g_lastUseMs[mi] = now;   // only real uses debounce
     KP_LOG(chCall, "USE member=%d item=%08x \"%s\" heal=%d hp=%d/%d src=%s", mi, (unsigned)itemServerId, pk.name.c_str(), pk.heal, m.cur, m.max, src);
     g_pend[mi] = shui::Pending(); g_pend[mi].on = true; g_pend[mi].since = now; g_pend[mi].preHp = m.cur; g_pend[mi].preStack = pk.count;
     g_pendKey[mi] = pk.key;
@@ -357,13 +369,14 @@ constexpr int TexBasicSize = 0xF4;
 constexpr int Tex_Pixels = 0x44, Tex_MipBytes = 0x5C, Tex_W = 0x68, Tex_H = 0x6C, Tex_Bpp = 0x74, Tex_Format = 0x78, Tex_Gl = 0x58;
 constexpr int Tex_Cube = 0xDF, Tex_Constructed = 0xE4, Tex_Missing = 0xE5, Tex_FromRes = 0xE7, Tex_Tpc = 0xE9;
 constexpr int MaxDim = 256;
-constexpr int Count = 1 + shui::kRingFrames;   // csh_cross, csh_ring0..7
+constexpr int DiscIdx = 1 + shui::kRingFrames;
+constexpr int Count = 2 + shui::kRingFrames;   // csh_cross, csh_ring0..7, csh_disc
 using NewFn = void*(__cdecl*)(unsigned);
 using PtrListAddFn = void(__thiscall*)(void*, void*);
 struct Emb { unsigned char* basic = nullptr; int w = 0, h = 0, heals = 0; };
 Emb g_tex[Count]; bool g_texInit = false;
-void* g_crossImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
-static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7");
+void* g_crossImg = nullptr; void* g_discImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
+static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7 + csh_disc");
 
 int rdI(const unsigned char* b, int off) { int v = 0; return rd<int>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
 uint8_t rdB(const unsigned char* b, int off) { uint8_t v = 0; return rd<uint8_t>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
@@ -408,7 +421,7 @@ void ensureTextures() {   // once per process; the textures outlive every HUD (n
         g_tex[i].basic = b;
         if (fillTexture(i, "queued")) {
             void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
-            if (i == 0) g_crossImg = im; else g_ringImg[i - 1] = im;
+            if (i == 0) g_crossImg = im; else if (i == DiscIdx) g_discImg = im; else g_ringImg[i - 1] = im;
         }
     }
 }
@@ -447,14 +460,16 @@ struct W {
     std::string tip;
     bool hover = false;
 };
-enum { W_Btn0 = 0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal, W_Ring0, W_Ring1 };   // rings last: appended after the buttons, drawn on top
+enum { W_Disc0 = 0, W_Disc1, W_Btn0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal, W_Ring0, W_Ring1 };   // discs first (under the buttons), rings last: appended after the buttons, drawn on top
 W g_w[NWidgets];
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
+bool isPopText(const W& w) { int i = static_cast<int>(&w - g_w); return i == W_Auto || i == W_HpM || i == W_HpP || i == W_KeepM || i == W_KeepP || i == W_HpVal || i == W_KeepVal; }
+void popStyle(W& w) { if (!w.c || !isPopText(w)) return; guikit::setTextColor(w.c, 0.85f, 0.95f, 0.85f); guikit::setAlpha(w.c, 1.0f); w.alpha = 1.0f; w.tr = 0.85f; w.tg = 0.95f; w.tb = 0.85f; }   // popover text was invisible (CS8 R-pop): explicit light colour + alpha 1 on build and every show
 void wShow(W& w, bool on) {
     if (!w.c) return;
-    if (on) { if (w.clk != 1) { guikit::setClickable(w.c, true); w.clk = 1; } if (w.vis != 1) { guikit::setVisible(w.c, true); w.vis = 1; } }
-    else { if (w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } if (w.vis != 0) { guikit::setVisible(w.c, false); w.vis = 0; } w.hover = false; w.alpha = -1.f; w.tr = w.tg = w.tb = -1.f; w.frame = -1; w.filled = false; }   // hidden: forget the look so a re-show re-applies it
+    if (on) { if (w.vis != 1) popStyle(w); if (w.clk != 1) { guikit::setClickable(w.c, true); w.clk = 1; } if (w.vis != 1) { guikit::setVisible(w.c, true); w.vis = 1; } }
+    else { if (w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } if (w.vis != 0) { guikit::setVisible(w.c, false); w.vis = 0; } w.hover = false; w.alpha = -1.f; w.tr = w.tg = w.tb = -1.f; w.frame = -1; w.filled = false; if (isPopText(w)) w.txt.clear(); }   // popover text re-applied on the next show (button "+"/"" state is tracked separately)
 }
 void wVis(W& w, bool on) { if (!w.c || w.vis == (on ? 1 : 0)) return; guikit::setVisible(w.c, on); w.vis = on ? 1 : 0; }   // visibility only: rings are NEVER clickable
 void wText(W& w, const std::string& t) { if (!w.c || w.txt == t) return; if (guikit::setText(w.c, t.c_str())) w.txt = t; }
@@ -478,6 +493,12 @@ bool wRing(W& w, const shui::Look& L) {
     void* img = tex::g_ringImg[L.ringFrame];
     if (!img) return false;
     if (w.frame != L.ringFrame) { float rgb[3] = { L.r, L.g, L.b }; if (!guikit::setFill(w.c, img, rgb)) return false; w.frame = L.ringFrame; }
+    return true;
+}
+// Disc backdrop: csh_disc untinted (change-gated). False = no image / fill refused (caller hides the disc).
+bool wDisc(W& w) {
+    if (!w.c || !tex::g_discImg) return false;
+    if (!w.filled) { float rgb[3] = { 1.f, 1.f, 1.f }; if (!guikit::setFill(w.c, tex::g_discImg, rgb)) return false; w.filled = true; }
     return true;
 }
 void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativeSupported()) return; if (guitip::setNative(w.c, t.c_str())) w.tip = t; }
@@ -504,11 +525,20 @@ Card g_card[3];
 
 std::string keyFor(int mi) {
     if (!g_card[mi].tag.empty()) return g_card[mi].tag;
+    if (!g_warnTag[mi]) {
+        uintptr_t sv = g_card[mi].m.server; char hex[64] = {}; int hn = 0;   // CS8 investigation: raw bytes of the CExoString field {char*, len, ...} at server+0x18
+        for (int i = 0; i < 16; ++i) { uint8_t b = 0; bool ok = sv && rd<uint8_t>(sv, Cr_Tag + i, &b); hn += snprintf(hex + hn, sizeof hex - hn, ok ? "%02x" : "??", b); }
+        uint32_t tp = 0; rd<uint32_t>(sv, Cr_Tag, &tp);
+        KP_LOG(chCfg, "TAG member=%d raw=%s ptr=%08x server=%08x", mi, hex, (unsigned)tp, (unsigned)sv);
+    }
     if (!g_warnTag[mi]) { g_warnTag[mi] = true; KP_LOGV(chCfg, KPLOG_WARN, "WARN member=%d has an empty tag, INI key slot%d", mi, g_card[mi].k >= 0 ? g_card[mi].k : mi); }
     return "slot" + std::to_string(g_card[mi].k >= 0 ? g_card[mi].k : mi);
 }
 
+// Screen rects (engine px) of the currently shown selfheal widgets; read by the RMB hook (same main thread). R6.
+shui::Rect g_shown[8]; int g_nShown = 0;
 void hideAll() {
+    g_nShown = 0;
     for (W& w : g_w) wShow(w, false);
     g_popMi = 0;
     for (Card& c : g_card) { c.seen = false; c.st = shui::BtnState::Hidden; }
@@ -575,6 +605,19 @@ std::string tipFor(const Card& c) {
     }
 }
 
+// One-shot DIAG after the first popover show: what the engine holds for each text item (CS8 invisible-text probe).
+bool g_popDiagDone = false;
+void popDiag(bool popOpen) {
+    if (g_popDiagDone || !popOpen) return;
+    g_popDiagDone = true;
+    const int items[7] = { W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal };
+    for (int i = 0; i < 7; ++i) {
+        W& w = g_w[items[i]]; float rgb[3] = { -1.f, -1.f, -1.f }, a = -1.f;
+        bool gc = w.c && guikit::getTextColor(w.c, rgb), ga = w.c && guikit::getAlpha(w.c, &a);
+        KP_LOG(chUi, "DIAG pop item=%d rgb=%.2f,%.2f,%.2f alpha=%.2f txt=\"%s\" (rgbOk=%d alphaOk=%d)", items[i], rgb[0], rgb[1], rgb[2], a, w.txt.c_str(), (int)gc, (int)ga);
+    }
+}
+
 void uiFrame(const K2PsContext* ctx, DWORD now) {
     // INI hot reload (1 s throttle inside changed())
     if (filewatch::changed(g_cfgPoll, IniPath, now)) loadCfg();
@@ -618,8 +661,11 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         c.st = shui::resolveState(c.have && c.seen, false, c.m.cur, c.m.max, c.pk.pick >= 0, g_pend[mi].on, c.cfg.autoOn);
         if (c.btn.w <= 0) c.st = shui::BtnState::Hidden;
         W& ring = g_w[W_Ring0 + mi - 1];
-        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); if (g_popMi == mi) g_popMi = 0; continue; }
+        W& disc = g_w[W_Disc0 + mi - 1];
+        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); wShow(disc, false); if (g_popMi == mi) g_popMi = 0; continue; }
         wRect(b, c.btn);
+        wRect(disc, shui::ringRect(c.btn));
+        wVis(disc, wDisc(disc));
         const shui::Look L = shui::lookFor(c.st, c.cfg.autoOn, now);
         wIcon(b, mi, L);
         if (L.ring) {
@@ -683,6 +729,11 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         wRect(g_w[W_KeepVal], shui::popValueRect(L, 3)); wText(g_w[W_KeepVal], shui::popValueLabel(3, cfg));
     }
     for (int i = W_PopBg; i < W_Ring0; ++i) wShow(g_w[i], popOpen);
+    popDiag(popOpen);
+    int ns = 0;   // rects the RMB camera hook must not turn into a camera drag: buttons, rings, popover bg
+    for (int mi = 1; mi <= 2; ++mi) if (g_card[mi].st != shui::BtnState::Hidden && g_card[mi].btn.w > 0) { g_shown[ns++] = g_card[mi].btn; g_shown[ns++] = shui::ringRect(g_card[mi].btn); }   // disc and ring share ringRect (outer extent)
+    if (popOpen) g_shown[ns++] = L.r[0];
+    g_nShown = ns;
 }
 
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
@@ -747,9 +798,11 @@ void buildWidgets(uintptr_t panel) {
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why); if (c) whys += std::string(name) + ":moulding3 fallback ";}
         g_w[idx].c = c; g_w[idx].txt = text ? text : "";
-        if (idx >= W_Ring0 && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // rings start hidden + click-through and stay non-clickable
+        if ((idx >= W_Ring0 || idx <= W_Disc1) && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // discs + rings start hidden + click-through and stay non-clickable
         if (c) ++n; else whys += std::string(name) + ":" + std::to_string(why) + " ";
     };
+    add(W_Disc0, "LBL_QUEUE1", nullptr, false, "disc0");   // before the buttons: z-order disc < button < ring
+    add(W_Disc1, "LBL_QUEUE1", nullptr, false, "disc1");
     add(W_Btn0, "LBL_QUEUE1", "+", true, "btn0");   // "+" = the fallback glyph until the cross fill is applied
     add(W_Btn1, "LBL_QUEUE1", "+", true, "btn1");
     add(W_PopBg, "LBL_MOULDING3", nullptr, false, "popbg");
@@ -762,6 +815,7 @@ void buildWidgets(uintptr_t panel) {
     add(W_KeepVal, "LBL_QUEUE1", "", true, "keepval");
     add(W_Ring0, "LBL_QUEUE1", nullptr, false, "ring0");   // after the buttons: drawn on top
     add(W_Ring1, "LBL_QUEUE1", nullptr, false, "ring1");
+    for (W& w : g_w) popStyle(w);
     KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s", n, NWidgets, whys.empty() ? "ok" : whys.c_str());
 }
 
@@ -786,12 +840,23 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
 
 extern "C" {
 
+// R6: detour at gameaddr::RButtonDownHoldSite (PerformRButtonDownAction 0x7B3810), skip_original_bytes: replaces MOV [RmbHoldFlag],1.
+// Vanilla (write 1) unless the cursor is over a shown selfheal rect, so RMB on our buttons/popover never drags the camera.
+// TODO(CS8): when Mouse Look (options bit1) is set the flag semantics invert (0078c350 XORs it); the options object is not exposed in GameAddr, so that case is not handled (ini = 0 here).
+void __cdecl SelfHealRmbHold() {
+    int cx = 0, cy = 0;
+    if (g_nShown > 0 && guikit::cursorEngine(&cx, &cy)) {
+        for (int i = 0; i < g_nShown; ++i) if (shui::detail::inRect(g_shown[i], cx, cy)) return;
+    }
+    *reinterpret_cast<volatile int*>(gameaddr::RmbHoldFlag) = 1;
+}
+
 void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.4.2-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.5.0-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

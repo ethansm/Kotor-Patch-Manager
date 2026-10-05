@@ -134,3 +134,11 @@ def test_v040_build_denominator():
     assert S.check(v30(["BUILD n=10/12"]))["verdict"] == "FAIL"
     assert S.check(v30(["BUILD n=10/12 why=ring failed"]))["verdict"] == "PASS"
     assert "n=10/12 without why" in S.check(v30(["BUILD n=10/12 why="]))["v"]["fail"][0][1]
+
+
+def test_v050_pass_new_refuse_format():
+    r = S.check(lines("v050.txt"))
+    assert r["verdict"] == "PASS" and not r["v"]["fail"]
+    assert [b[1] for b in r["v"]["build"]] == [14]
+    assert any(k.startswith("canuse=0 member=1") for k in r["v"]["refuse"])
+    assert S.fmt(r).splitlines()[-1].endswith("VERDICT=PASS")
