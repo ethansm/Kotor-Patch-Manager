@@ -14,7 +14,7 @@ int32_t (KPATCH_CALL *ReserveSlot)(const char* owner, int32_t card, int32_t orde
 - hud-host computes the strip from the live card/vit rects once per layout and replaces the `selfHealReserve(vit)` constant (QueueHudLogic.h:178).
 - Until it lands, the constant stays. A selfheal contract test pins that `selfHealReserve` matches `shui::buttonRect` on vit (3671,1285,47,96).
 
-## 2. Hook collision on 0x0040F5A0
+## 2. Hook collision on 0x0040F5A0 (RESOLVED 10-05: a9ee44d took option b)
 - hud-host 0.3.0-dev (9e18444) hooks 0x0040F5A0 for `K2HUD_BUILD`.
 - companion-selfheal 0.3.0+ hooks the same address, and that build is live.
 - Ask: before hud-host 0.3.0 installs, either

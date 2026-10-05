@@ -34,6 +34,27 @@
     5. `WARN member=2 has an empty tag, INI key slot2` (tag read empty for member 2).
     User direction: cross styled like the hotbar wrench (texture + shading) + a dark disc/outline the gold ring spins on; companion queue = separate mod on the shared HUD dll (hud-host, doc 31 s5), selfheal takes the right-most slot; dark-green hotbar-style panels (border (0,44,26)/(10,96,80), fill (0,0,0,175)) + Cancel button like vanilla "Cancel Combat"; slim per-companion version.
   - Batch test checklist (on user GO): 1) install 0.3.0-dev; 2) play ~10 min: each companion's button heals, full HP dimmed, right-click popover toggles persist across restart, auto fires below threshold and stops at keep, clicks on buttons do not move the party; 3) `python3 scripts/selfheal_log_check.py` (USE/DONE/TIMEOUT summary). 0.4.0-dev additions: green cross when hurt; grey + faint at full HP / no item; gold cross + circling ring when auto is on (ring also at full HP); ring gone in menus/dialogue; log has no `ICON fallback` / `TEX ... giving up`.
+- 10-05 (sibling, combat-hotbar session): **0.4.2-dev** a9ee44d (KPM 0e8942d) moves the 12-label build onto hud-host `K2HUD_BUILD` (hud-host 0.3.0-dev). The 0x40F5A0 hook is gone, so hud-host must be installed and listed before companion-selfheal. That session is installing 0.4.2.
+- 10-05 **CS8 + CS9: 0.5.0-dev BUILT, NOT installed** (repo 174984a, art 03710fd, design f0fa15a):
+  - The KPM mirror is pending: `$K/Patches/CompanionSelfHeal` belongs to the combat-hotbar install until it finishes. After that: re-mirror the .cpp/.toml/.def/.inc/manifest + Common/GameAddr.h, rebuild, gate, commit.
+  - Pre-collision build dll md5 `69ab6d08` (gate PASS, hook_spans FAIL=0). It must be rebuilt.
+  - Evidence:
+    - R5 `R5_canuse/FINDINGS.md`: the args were right. analyzeMember never ran CanUseItem per candidate, so the pick could be an item the engine refuses for that member.
+    - R6 `R6_rmb/FINDINGS.md`: the RMB-hold flag 0xA7FCBC is set in 0x7B3810 before the GUI sees the click. Fix = own detour 0x7B3817 (skip_original_bytes; bytes checked against the exe).
+  - Changes:
+    - CanUseItem runs strict per candidate (skipped at full HP).
+    - Debounce stamps only real uses. REFUSE logs ptr/name/race.
+    - RMB swallow over the shown rects (Mouse Look=1 TODO).
+    - Popover colour + alpha are set on show; one-shot `DIAG pop`.
+    - `TAG member raw=` probe.
+    - 14 widgets: csh_disc under each button.
+  - Install needs: hud-host 0.3.0 live (HL3); the hook set changes (+0x7B3817), so a full staged KPM install (not a dll swap); `dll=NO-MATCH` 0 first.
+  - Checklist:
+    1. Click heals (log `USE` + `DONE`).
+    2. RMB opens a readable popover and the camera stays still.
+    3. Textured cross on a dark disc.
+    4. Gold ring spins on the disc edge.
+    5. `TAG member=2 raw=` line for the empty-tag investigation.
 - Build rows live in doc 24 (CS0-CS7, owner gate "selfheal").
 
 ## User decisions (10-04)
@@ -226,6 +247,7 @@ Same look as the action hotbar, from `scripts/gen_hotbar_textures.py`:
 
 ### 7.3 Queue as its own mod (CS12)
 - queue-hud stays a separate mod. Both mods are hud-host consumers, so there is one shared dll for HUD phases and no private copies of the kit.
+- **RESOLVED 10-05 by a9ee44d (option b): selfheal 0.4.2+ registers `K2HUD_BUILD` and has no 0x40F5A0 hook.** Original note:
 - **Hook collision to settle first:** hud-host 0.3.0-dev (9e18444) hooks 0x0040F5A0 for `K2HUD_BUILD`, and selfheal has hooked the same address since 0.3.0. Two KPM hooks on one address must not both ship.
   - Plan: selfheal moves to `Register(K2HUD_BUILD, ...)` and drops its own hook once hud-host 0.3.0 is live.
   - Until then, installing hud-host 0.3.0 needs a check that both hooks don't overlap (`check_hook_spans.py`).
