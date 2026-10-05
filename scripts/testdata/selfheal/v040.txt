@@ -1,0 +1,42 @@
+1200 companion-selfheal/main portraitslots: connected (ok)
+5310 companion-selfheal/hud P1 hud built panel=0a1b2c00 +0x30=0a1b3000 +0x48=00000002 layoutOpen=1 ctlList=0a1c0000 ctlCount=212
+7310 companion-selfheal/hud P3 slot[0]=0a1b4f34 creature=00000011 hud=0a1b2c00 k=0
+7310 companion-selfheal/hud P3 slot[1]=0a1b5d18 creature=00000012 hud=0a1b2c00 k=1
+7310 companion-selfheal/hud P3 slot[2]=0a1b6afc creature=00000013 hud=0a1b2c00 k=2
+9000 companion-selfheal/dump DUMP begin hud=0a1b2c00
+9000 companion-selfheal/dump item group 1: 3 entries
+9000 companion-selfheal/dump party members=3
+9001 companion-selfheal/dump member 1 client=7f000011 server=00000011 ok=1 hp=12/40 down=0 commandable(+0xEC)=1
+9001 companion-selfheal/dump   skills stats=0b000100 TreatInjury=6 Repair=2 WIS=12 INT=10
+9001 companion-selfheal/dump   cand "Medical Supplies" key=80000a01 client=00000a01 server=00000b01 item=0c000100 props=1 type=10 row=65 heal=27 count=4 usable=1
+9001 companion-selfheal/dump   cand "Repair Kit" key=80000a02 client=00000a02 server=00000b02 item=0c000200 props=1 type=10 row=84 heal=17 count=2 usable=1
+9001 companion-selfheal/dump   cand "Frag Grenade" key=80000a03 client=00000a03 server=00000b03 item=0c000300 props=1 type=10 row=-1 heal=-1 count=5 usable=1
+9001 companion-selfheal/dump   pick missing=28 -> "Medical Supplies" row=65 heal=27 count=4
+9001 companion-selfheal/dump   routeA (not called): ecx=00000011 fn=006a1230 args(0,0,self=00000011,0,item=00000b01,0,0,0) clientId=7f000011 idOk=1
+9001 companion-selfheal/dump   auto(on, 35%, keep 2): shouldAutoUse=1 alive=1 commandable=1
+9002 companion-selfheal/dump member 2 client=7f000012 server=00000012 ok=1 hp=30/30 down=0 commandable(+0xEC)=1
+9002 companion-selfheal/dump   skills stats=0b000200 TreatInjury=0 Repair=9 WIS=8 INT=14
+9002 companion-selfheal/dump   cand "Repair Kit" key=80000a02 client=00000a02 server=00000b02 item=0c000200 props=1 type=10 row=127 heal=31 count=2 usable=1
+9002 companion-selfheal/dump   pick missing=0 -> none (1 candidates)
+9002 companion-selfheal/dump   auto(on, 35%, keep 2): shouldAutoUse=0 alive=1 commandable=1
+9003 companion-selfheal/dump DUMP end
+9500 companion-selfheal/ui TEX csh_cross queued (32x32)
+9500 companion-selfheal/ui TEX csh_ring0 queued (48x48)
+9800 companion-selfheal/ui TEX csh_ring0 refilled (48x48)
+9900 companion-selfheal/ui ICON fallback member=2 (no cross image)
+9950 companion-selfheal/ui WARN TEX csh_ring3 giving up after 20 failed refills (built=1 missing=1 pixels=00000000); art missing, labels still work
+10000 companion-selfheal/hud BUILD n=12/12 why=
+10010 companion-selfheal/hud BUILD n=7/12 why=slot 3 has no creature
+10500 companion-selfheal/ui CLICK member=2 noitem
+10600 companion-selfheal/ui USE member=1 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=click
+11200 companion-selfheal/ui DONE member=1 hp+27 stack-1 timeout=0
+12000 companion-selfheal/ui AUTO member=1 hp=10/40 pick="Medical Supplies" keep=2
+12010 companion-selfheal/ui USE member=1 item=0c000100 "Medical Supplies" heal=27 hp=10/40 src=auto
+12700 companion-selfheal/ui DONE member=1 hp+40 stack-1 timeout=0
+13000 companion-selfheal/ui USE member=2 item=0c000200 "Repair Kit" heal=31 hp=5/30 src=key
+15000 companion-selfheal/ui DONE member=2 hp+0 stack+0 timeout=1
+15100 companion-selfheal/ui REFUSE keep reserve
+15200 companion-selfheal/ui REFUSE keep reserve
+15300 companion-selfheal/ui REFUSE in combat lock
+16000 companion-selfheal/cfg CFG save tag=hud auto=1 hp=35 keep=2 ok=1
+16100 companion-selfheal/cfg CFG reload n=3

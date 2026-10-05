@@ -1,9 +1,10 @@
-// Companion Self-Heal 0.3.0-dev (doc 27, CS4 + CS5). The HUD gets, from ONE hook (StopLoadFromLayout 0x0040F5A0, HUD vtable only), 10 runtime
-// labels (2 "H" buttons, a popover background, 5 popover items, 2 value labels). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
+// Companion Self-Heal 0.4.0-dev (doc 27, CS4 restyle + CS5). The HUD gets, from ONE hook (StopLoadFromLayout 0x0040F5A0, HUD vtable only), 12 runtime
+// labels (2 cross-icon buttons, a popover background, 5 popover items, 2 value labels, 2 gold auto rings drawn on top; the cross + ring art are
+// embedded textures, see namespace tex; fallback = the text "+"). Per frame (K2PS_FRAME_BEGIN, only in gameplay HUD):
 // buttons follow the companion cards (slot+0x694 vit rect); LMB = use the picked healing item now (route A), RMB = popover
 // (Auto on/off, use-below %, keep reserve; persisted to companion_selfheal.ini); Auto mode uses items by itself (HealItems.h rules).
 // Route A is reachable ONLY through useNow(): HUD gate + commandable (+0xEC) + CanUseItem + per-member 2 s debounce. The popover never calls it.
-// Engine writes: label setters + the ProjectionFlag clear/restore around the creates. Everything else is SafeRead.
+// Engine writes: label setters + the ProjectionFlag clear/restore around the creates + our own texture objects. Everything else is SafeRead.
 // Logs: P1/P3 (hook, slot map), DUMP (Ctrl+Shift+ProbeKey), BUILD, MAP, CLICK/USE/AUTO/DONE/REFUSE, CFG.
 // Opt-in (companion_selfheal.ini [probe] call=1): Ctrl+Shift+CallKey (default 'J') = useNow(first companion with a pick, "key") + POST/RESULT window.
 #define WIN32_LEAN_AND_MEAN
@@ -46,8 +47,9 @@ constexpr int MaxCands = 64;
 constexpr int Slot_VitRect = 0x694;                       // K2Addr Slot_VitRect: 4 ints x,y,w,h (screen px)
 constexpr int Hud_Manager = 0x1C, Mgr_Panels = 0x88, Mgr_PanelCount = 0x8C, Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
 constexpr int Cr_Tag = 0x18, PanelIgnoredByInput = 0x600;
-constexpr uintptr_t PanelWhitelist[] = { 0x0099E5EC, 0x009A044C, 0x009A7BAC, 0x009A8FCC };
-constexpr int NWidgets = 10;
+// Panels that do not block gameplay hotkeys (RTTI vtables): messages, fade, pause, auto-pause
+constexpr uintptr_t PanelWhitelist[] = { gameaddr::MessagesPanelVtable, gameaddr::FadePanelVtable, gameaddr::PausePanelVtable, gameaddr::AutoPausePanelVtable };
+constexpr int NWidgets = 12;
 constexpr DWORD CacheMs = 250;
 constexpr DWORD DebounceMs = 2000, PostMs = 10000, PostStepMs = 500;
 
@@ -342,6 +344,92 @@ bool saveIni(const std::string& key, const shui::CompCfg& c) {
     return ok;
 }
 
+// ---- embedded textures (cross + 8 ring frames) ----
+// Copy of hotbar embedded-texture recipe; Common candidate (19b section D).
+// A CAurTextureBasic registered under our name (like the engine's own "NormCubeMap") with the decoded pixels already in place and +0xE4
+// "constructed" set, so the engine never asks the resource manager for it; the texture tick uploads it and frees the buffer.
+namespace tex {
+#include "SelfHealTextures.inc"
+constexpr int TexBasicSize = 0xF4;
+constexpr int Tex_Pixels = 0x44, Tex_MipBytes = 0x5C, Tex_W = 0x68, Tex_H = 0x6C, Tex_Bpp = 0x74, Tex_Format = 0x78, Tex_Gl = 0x58;
+constexpr int Tex_Cube = 0xDF, Tex_Constructed = 0xE4, Tex_Missing = 0xE5, Tex_FromRes = 0xE7, Tex_Tpc = 0xE9;
+constexpr int MaxDim = 256;
+constexpr int Count = 1 + shui::kRingFrames;   // csh_cross, csh_ring0..7
+using NewFn = void*(__cdecl*)(unsigned);
+using PtrListAddFn = void(__thiscall*)(void*, void*);
+struct Emb { unsigned char* basic = nullptr; int w = 0, h = 0, heals = 0; };
+Emb g_tex[Count]; bool g_texInit = false;
+void* g_crossImg = nullptr; void* g_ringImg[shui::kRingFrames] = {};
+static_assert(sizeof kSelfHealTextures / sizeof kSelfHealTextures[0] == Count, "csh_cross + csh_ring0..7");
+
+int rdI(const unsigned char* b, int off) { int v = 0; return rd<int>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
+uint8_t rdB(const unsigned char* b, int off) { uint8_t v = 0; return rd<uint8_t>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
+uintptr_t rdP(const unsigned char* b, int off) { uintptr_t v = 0; return rd<uintptr_t>(reinterpret_cast<uintptr_t>(b), off, &v) ? v : 0; }
+
+// Minimal TGA check: uncompressed true-colour (type 2), 32 bpp, no colour map, w,h in 1..MaxDim, size >= 18 + idlen + w*h*4.
+bool tgaOk(const unsigned char* d, unsigned size, int* w, int* h, unsigned* off) {
+    if (size < 18 || d[1] != 0 || d[2] != 2 || d[16] != 32) return false;
+    int ww = d[12] | d[13] << 8, hh = d[14] | d[15] << 8; unsigned o = 18u + d[0];
+    if (ww <= 0 || hh <= 0 || ww > MaxDim || hh > MaxDim) return false;
+    if ((uint64_t)o + (uint64_t)ww * (uint64_t)hh * 4u > (uint64_t)size) return false;
+    *w = ww; *h = hh; *off = o;
+    return true;
+}
+
+bool fillTexture(int i, const char* why) {
+    const SelfHealEmbeddedTexture& src = kSelfHealTextures[i]; Emb& t = g_tex[i];
+    int w = 0, h = 0; unsigned off = 0;
+    if (!tgaOk(src.data, src.size, &w, &h, &off)) { KP_LOGV(chUi, KPLOG_WARN, "TEX %s: embedded TGA invalid (not 32-bit type 2, truncated or > %d px), skipped", src.resref, MaxDim); return false; }
+    unsigned n = (unsigned)(w * h * 4);
+    unsigned char* px = static_cast<unsigned char*>(reinterpret_cast<NewFn>(gameaddr::EngineNewArr)(n));
+    if (!px) { KP_LOGV(chUi, KPLOG_WARN, "TEX %s: engine new[](%u) failed", src.resref, n); return false; }
+    for (unsigned j = 0; j < n; j += 4) { px[j] = src.data[off + j + 2]; px[j + 1] = src.data[off + j + 1]; px[j + 2] = src.data[off + j]; px[j + 3] = src.data[off + j + 3]; }   // BGRA -> RGBA, rows as stored (bottom-up, = CResTGA)
+    unsigned char* b = t.basic;
+    *reinterpret_cast<unsigned char**>(b + Tex_Pixels) = px;
+    *reinterpret_cast<int*>(b + Tex_W) = w; *reinterpret_cast<int*>(b + Tex_H) = h; *reinterpret_cast<int*>(b + Tex_Bpp) = 4;
+    *reinterpret_cast<int*>(b + Tex_Format) = 0; *reinterpret_cast<int*>(b + Tex_MipBytes) = 0;
+    b[Tex_Cube] = 0; b[Tex_FromRes] = 0; b[Tex_Tpc] = 0; b[Tex_Missing] = 0; b[Tex_Constructed] = 1;
+    reinterpret_cast<PtrListAddFn>(gameaddr::TexListAdd)(reinterpret_cast<void*>(gameaddr::TexPendingList), b);
+    t.w = w; t.h = h;
+    KP_LOG(chUi, "TEX %s %s (%dx%d)", src.resref, why, w, h);
+    return true;
+}
+void ensureTextures() {   // once per process; the textures outlive every HUD (never freed)
+    if (g_texInit) return;
+    g_texInit = true;
+    for (int i = 0; i < Count; ++i) {
+        unsigned char* b = static_cast<unsigned char*>(reinterpret_cast<NewFn>(gameaddr::New)(TexBasicSize));
+        if (!b) { KP_LOGV(chUi, KPLOG_WARN, "TEX %s: allocation failed", kSelfHealTextures[i].resref); continue; }
+        memset(b, 0, TexBasicSize);
+        reinterpret_cast<void*(__thiscall*)(void*, const char*, const char*)>(gameaddr::TexBasicCtor)(b, kSelfHealTextures[i].resref, kSelfHealTextures[i].resref);
+        g_tex[i].basic = b;
+        if (fillTexture(i, "queued")) {
+            void* im = guikit::imageFor(kSelfHealTextures[i].resref);   // a pooled GUI handle that is never released keeps the texture alive
+            if (i == 0) g_crossImg = im; else g_ringImg[i - 1] = im;
+        }
+    }
+}
+// A GL reset (texture ResetAll / SetMem) Resets every registered texture (+0xE4 = 0, pixels and GL names freed) and
+// re-queues all of them on the work list. If we see it first, refill (the duplicate list entry is a no-op: +0xE4 = 1, +0x44 = NULL after
+// the first build). If the engine rebuilt first, its resource lookup missed our name (+0xE5 = 1): Reset and refill. DB lesson 290.
+void healTextures() {
+    for (int i = 0; i < Count; ++i) {
+        Emb& t = g_tex[i]; unsigned char* b = t.basic;
+        if (!b) continue;
+        bool built = rdB(b, Tex_Constructed) != 0; uintptr_t px = rdP(b, Tex_Pixels); int w = rdI(b, Tex_W);
+        if (built && !px && !rdB(b, Tex_Missing) && rdI(b, Tex_Gl)) { t.heals = 0; continue; }   // uploaded: healthy
+        if (t.heals >= 20) continue;   // give up after 20 consecutive failed refills (art missing, labels still work)
+        if (!built && !px) { ++t.heals; fillTexture(i, "refilled"); }
+        else if (built && !px && (rdB(b, Tex_Missing) || w != t.w)) {
+            ++t.heals;
+            reinterpret_cast<void(__fastcall*)(void*)>(gameaddr::TexReset)(b);
+            fillTexture(i, "refilled");
+        }
+        if (t.heals == 20) KP_LOGV(chUi, KPLOG_WARN, "TEX %s giving up after 20 failed refills (built=%d missing=%d pixels=%08x); art missing, labels still work", kSelfHealTextures[i].resref, (int)rdB(b, Tex_Constructed), (int)rdB(b, Tex_Missing), (unsigned)rdP(b, Tex_Pixels));   // crossed once: the guard above skips at >= 20
+    }
+}
+}  // namespace tex
+
 // ---- widgets ----
 struct W {
     uintptr_t c = 0;
@@ -349,25 +437,45 @@ struct W {
     bool rectSet = false;
     int vis = -1, clk = -1;
     std::string txt;
-    int look = -1;
     float alpha = -1.f;
+    float tr = -1.f, tg = -1.f, tb = -1.f;   // last tint / text colour sent
+    int frame = -1;                          // ring: last texture frame sent
+    bool filled = false, fb = false;         // cross fill applied / fell back to the "+" text
     std::string tip;
     bool hover = false;
 };
-enum { W_Btn0 = 0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal };
+enum { W_Btn0 = 0, W_Btn1, W_PopBg, W_Auto, W_HpM, W_HpP, W_KeepM, W_KeepP, W_HpVal, W_KeepVal, W_Ring0, W_Ring1 };   // rings last: appended after the buttons, drawn on top
 W g_w[NWidgets];
 
 void wRect(W& w, const shui::Rect& r) { if (!w.c || (w.rectSet && w.r == r)) return; if (guikit::setRect(w.c, r.x, r.y, r.w, r.h)) { w.r = r; w.rectSet = true; } }
 void wShow(W& w, bool on) {
     if (!w.c) return;
     if (on) { if (w.clk != 1) { guikit::setClickable(w.c, true); w.clk = 1; } if (w.vis != 1) { guikit::setVisible(w.c, true); w.vis = 1; } }
-    else { if (w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } if (w.vis != 0) { guikit::setVisible(w.c, false); w.vis = 0; } w.hover = false; }
+    else { if (w.clk != 0) { guikit::setClickable(w.c, false); w.clk = 0; } if (w.vis != 0) { guikit::setVisible(w.c, false); w.vis = 0; } w.hover = false; w.alpha = -1.f; w.tr = w.tg = w.tb = -1.f; w.frame = -1; w.filled = false; }   // hidden: forget the look so a re-show re-applies it
 }
+void wVis(W& w, bool on) { if (!w.c || w.vis == (on ? 1 : 0)) return; guikit::setVisible(w.c, on); w.vis = on ? 1 : 0; }   // visibility only: rings are NEVER clickable
 void wText(W& w, const std::string& t) { if (!w.c || w.txt == t) return; if (guikit::setText(w.c, t.c_str())) w.txt = t; }
-void wLook(W& w, int look, float alpha, float r, float g, float b) {
+bool g_iconFbLogged[3] = {};
+void wAlpha(W& w, float a) { if (w.alpha != a) { guikit::setAlpha(w.c, a); w.alpha = a; } }
+// Button look: the cross image tinted rgb (change-gated); if the image is missing or setFill is refused, the "+" text coloured via setTextColor.
+void wIcon(W& w, int member, const shui::Look& L) {
     if (!w.c) return;
-    if (w.look != look) { float rgb[3]; if (guikit::getTextColor(w.c, rgb)) guikit::setTextColor(w.c, r, g, b); w.look = look; }
-    if (w.alpha != alpha) { guikit::setAlpha(w.c, alpha); w.alpha = alpha; }
+    bool colourChanged = w.tr != L.r || w.tg != L.g || w.tb != L.b;
+    if (!w.fb && (colourChanged || !w.filled)) {
+        float rgb[3] = { L.r, L.g, L.b };
+        if (tex::g_crossImg && guikit::setFill(w.c, tex::g_crossImg, rgb)) { w.filled = true; w.tr = L.r; w.tg = L.g; w.tb = L.b; wText(w, ""); }
+        else { w.fb = true; if (!g_iconFbLogged[member]) { g_iconFbLogged[member] = true; KP_LOGV(chUi, KPLOG_WARN, "ICON fallback member=%d (%s)", member, tex::g_crossImg ? "setFill refused" : "no cross image"); } colourChanged = true; }
+    }
+    if (w.fb && colourChanged) { wText(w, "+"); guikit::setTextColor(w.c, L.r, L.g, L.b); w.tr = L.r; w.tg = L.g; w.tb = L.b; }
+    wAlpha(w, L.alpha);
+}
+// Ring look: texture frame (change-gated); false = no image for this frame (caller hides the ring).
+bool wRing(W& w, const shui::Look& L) {
+    if (!w.c) return false;
+    void* img = tex::g_ringImg[L.ringFrame];
+    if (!img) return false;
+    if (w.frame != L.ringFrame) { float rgb[3] = { L.r, L.g, L.b }; if (!guikit::setFill(w.c, img, rgb)) return false; w.frame = L.ringFrame; }
+    return true;
 }
 void wTip(W& w, const std::string& t) { if (!w.c || w.tip == t || !guitip::nativeSupported()) return; if (guitip::setNative(w.c, t.c_str())) w.tip = t; }
 
@@ -468,6 +576,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
     // INI hot reload (1 s throttle inside changed())
     if (filewatch::changed(g_cfgPoll, IniPath, now)) loadCfg();
     pendingTick(now);
+    tex::healTextures();   // every frame, before the gate: a GL reset can happen in menus too
     bool ledge = guikit::clickEdge(g_lmb), redge = guikit::rclickEdge(g_rmb);   // polled every frame so a held press never fires on reopen
     if (!gateOpen(ctx)) { hideAll(); return; }
     if (!g_cacheValid || now - g_cacheMs >= CacheMs) refreshCache(ctx, now);
@@ -505,15 +614,15 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         c.btn = c.seen ? shui::buttonRect(c.vit) : shui::Rect{ 0, 0, 0, 0 };
         c.st = shui::resolveState(c.have && c.seen, false, c.m.cur, c.m.max, c.pk.pick >= 0, g_pend[mi].on, c.cfg.autoOn);
         if (c.btn.w <= 0) c.st = shui::BtnState::Hidden;
-        if (c.st == shui::BtnState::Hidden) { wShow(b, false); if (g_popMi == mi) g_popMi = 0; continue; }
+        W& ring = g_w[W_Ring0 + mi - 1];
+        if (c.st == shui::BtnState::Hidden) { wShow(b, false); wShow(ring, false); if (g_popMi == mi) g_popMi = 0; continue; }
         wRect(b, c.btn);
-        switch (c.st) {
-            case shui::BtnState::FullHp: wLook(b, 1, 0.4f, 1.f, 1.f, 1.f); break;
-            case shui::BtnState::NoItem: wLook(b, 2, 0.6f, 1.f, 0.3f, 0.3f); break;
-            case shui::BtnState::Pending: wLook(b, ((now / 250) % 2) ? 3 : 4, ((now / 250) % 2) ? 1.0f : 0.5f, 1.f, 1.f, 1.f); break;
-            case shui::BtnState::AutoOn: wLook(b, 5, 1.0f, 0.3f, 1.f, 0.3f); break;
-            default: wLook(b, 0, 1.0f, 1.f, 1.f, 1.f); break;
-        }
+        const shui::Look L = shui::lookFor(c.st, c.cfg.autoOn, now);
+        wIcon(b, mi, L);
+        if (L.ring) {
+            wRect(ring, shui::ringRect(c.btn));
+            if (wRing(ring, L)) wVis(ring, true); else wVis(ring, false);
+        } else wVis(ring, false);
         wTip(b, tipFor(c));
         wShow(b, true);
     }
@@ -570,7 +679,7 @@ void uiFrame(const K2PsContext* ctx, DWORD now) {
         wRect(g_w[W_HpVal], shui::popValueRect(L, 2)); wText(g_w[W_HpVal], shui::popValueLabel(2, cfg));
         wRect(g_w[W_KeepVal], shui::popValueRect(L, 3)); wText(g_w[W_KeepVal], shui::popValueLabel(3, cfg));
     }
-    for (int i = W_PopBg; i < NWidgets; ++i) wShow(g_w[i], popOpen);
+    for (int i = W_PopBg; i < W_Ring0; ++i) wShow(g_w[i], popOpen);
 }
 
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
@@ -621,9 +730,10 @@ uintptr_t makeLabel(uintptr_t panel, const char* tmpl, const char* text, bool fo
     return c;
 }
 
-// 10 widgets while the HUD layout is still open (before StopLoadFromLayout).
+// 12 widgets while the HUD layout is still open (before StopLoadFromLayout).
 void buildWidgets(uintptr_t panel) {
     for (W& w : g_w) w = W();
+    tex::ensureTextures();
     g_popMi = 0; g_lmb = guikit::ClickEdge(); g_rmb = guikit::ClickEdge();
     for (Card& c : g_card) c.seen = false;
     ProjGuard pg;
@@ -633,11 +743,12 @@ void buildWidgets(uintptr_t panel) {
         int why = 0;
         uintptr_t c = makeLabel(panel, tmpl, text, font, &why);
         if (!c && !strcmp(tmpl, "LBL_MOULDING3")) { c = makeLabel(panel, "LBL_QUEUE1", text, font, &why); if (c) whys += std::string(name) + ":moulding3 fallback ";}
-        g_w[idx].c = c;
+        g_w[idx].c = c; g_w[idx].txt = text ? text : "";
+        if (idx >= W_Ring0 && c) { g_w[idx].vis = 0; g_w[idx].clk = 0; }   // rings start hidden + click-through and stay non-clickable
         if (c) ++n; else whys += std::string(name) + ":" + std::to_string(why) + " ";
     };
-    add(W_Btn0, "LBL_QUEUE1", "H", true, "btn0");
-    add(W_Btn1, "LBL_QUEUE1", "H", true, "btn1");
+    add(W_Btn0, "LBL_QUEUE1", "+", true, "btn0");   // "+" = the fallback glyph until the cross fill is applied
+    add(W_Btn1, "LBL_QUEUE1", "+", true, "btn1");
     add(W_PopBg, "LBL_MOULDING3", nullptr, false, "popbg");
     add(W_Auto, "LBL_QUEUE1", "Auto", true, "auto");
     add(W_HpM, "LBL_QUEUE1", "-", true, "hpm");
@@ -646,6 +757,8 @@ void buildWidgets(uintptr_t panel) {
     add(W_KeepP, "LBL_QUEUE1", "+", true, "keepp");
     add(W_HpVal, "LBL_QUEUE1", "", true, "hpval");
     add(W_KeepVal, "LBL_QUEUE1", "", true, "keepval");
+    add(W_Ring0, "LBL_QUEUE1", nullptr, false, "ring0");   // after the buttons: drawn on top
+    add(W_Ring1, "LBL_QUEUE1", nullptr, false, "ring1");
     KP_LOGV(chHud, n == NWidgets ? KPLOG_INFO : KPLOG_WARN, "BUILD n=%d/%d why=%s", n, NWidgets, whys.empty() ? "ok" : whys.c_str());
 }
 
@@ -658,7 +771,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.3.0-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.4.0-dev: probe call=%d CallKey=0x%02X cfg rows=%d", g_probeCall, g_callKey, (int)g_cfg.rows.size());
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

@@ -8,6 +8,7 @@ Usage: selfheal_log_check.py [LOG | --log LOG] [--from LINE] [--to LINE]
 
 Line formats come from patch_manager_mods/companion_selfheal_src/CompanionSelfHeal.cpp; KpLog.h prefixes each line with
 "<ms> companion-selfheal/<chan> [ERR |WARN ]" (prefix optional here so bare lines parse too).
+Checks (0.4.0-dev adds): BUILD n=N/D (FAIL if N<D without why=), ICON fallback and TEX giving up are WARN.
 Checks: P1 (>=1 `P1 hud built ... layoutOpen=1`, ctlCount 1..4096), P3 (every `P3 slot[i]=` has k=0|1|2),
 DUMP blocks (hp cur<=max, heal-row cand {64,65,66,84,127,128} has heal>0 and only those have heal>0, a pick line, routeA idOk=1 when a pick exists).
 """
@@ -27,7 +28,9 @@ MEMBER_RE = re.compile(r"^member (\d+) .*?\bhp=(\S+?)/(\S+?) ")
 CAND_RE = re.compile(r"^\s+cand \"(.*)\" .*?\brow=(\S+) heal=(\S+) count=(\S+)")
 PICK_RE = re.compile(r"^\s+pick missing=(\S+) -> (?:\"(.*)\" row=(\S+) heal=(\S+) count=(\S+)|none)")
 ROUTE_RE = re.compile(r"^\s+routeA \(not called\):.*\bidOk=(\S+)")
-BUILD_RE = re.compile(r"^BUILD n=(\S+)/10(?:\s+why=(.*))?$")
+BUILD_RE = re.compile(r"^BUILD n=(\S+)/(\d+)(?:\s+why=(.*))?$")   # 0.3.0: /10, 0.4.0-dev: /12 (+2 ring labels)
+ICON_RE = re.compile(r"^ICON fallback member=(\S+)")
+TEX_RE = re.compile(r"^TEX (\S+) (queued|refilled|giving up)\b")
 USE_RE = re.compile(r"^USE member=(\S+) item=(\S+) \"(.*)\" heal=(\S+) hp=(\S+?)/(\S+) src=(\S+)\s*$")
 REFUSE_RE = re.compile(r"^REFUSE\s*(.*?)\s*$")
 DONE_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) timeout=(\S+)\s*$")
@@ -56,10 +59,17 @@ def v030_line(v, n, t):
     """Parse one companion-selfheal 0.3.0 line into v; True if it was one."""
     m = BUILD_RE.match(t)
     if m:
-        k, why = to_int(m.group(1)), (m.group(2) or "").strip()
+        k, den, why = to_int(m.group(1)), to_int(m.group(2)), (m.group(3) or "").strip()
         v["build"].append((n, k, why))
-        if k is None or (k < 10 and not why):
-            v["fail"].append((n, "BUILD n=%s/10 without why" % m.group(1)))
+        if k is None or (k < den and not why):
+            v["fail"].append((n, "BUILD n=%s/%s without why" % (m.group(1), m.group(2))))
+    elif ICON_RE.match(t):
+        v["warn"].append((n, "ICON fallback member=%s (cross texture not usable, \"+\" text shown)" % ICON_RE.match(t).group(1)))
+    elif TEX_RE.match(t):
+        g = TEX_RE.match(t).groups()
+        v["tex"][g[1]] = v["tex"].get(g[1], 0) + 1
+        if g[1] == "giving up":
+            v["warn"].append((n, "TEX %s giving up (art missing, labels still work)" % g[0]))
     elif USE_RE.match(t):
         g = USE_RE.match(t).groups()
         v["use"].append({"line": n, "member": g[0], "item": g[1], "name": g[2], "heal": to_int(g[3]), "src": g[6]})
@@ -91,7 +101,7 @@ def check(lines, lo=1, hi=None):
     r = {"p1": "MISSING", "p1_fail": [], "p1_ok": 0, "p3": "PASS", "p3_fail": [], "p3_n": 0,
          "blocks": [], "dump_fail": [], "table": [],
          "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
-               "fail": [], "seen": False}}
+               "fail": [], "warn": [], "tex": {}, "seen": False}}
     v = r["v"]
     cur = None  # current DUMP block
     mem = None  # current member dict in the block
@@ -229,6 +239,10 @@ def fmt(r):
         if v["refuse"]:
             o.append("REFUSE: " + ", ".join("%s x%d" % kv for kv in sorted(v["refuse"].items())))
         o.append("AUTO=%d CLICK-noitem=%d CFG save=%d reload=%d" % (len(v["auto"]), v["click_noitem"], len(v["cfg_save"]), len(v["cfg_reload"])))
+        if v["tex"]:
+            o.append("TEX " + ", ".join("%s x%d" % kv for kv in sorted(v["tex"].items())))
+        for n, msg in v["warn"]:
+            o.append("WARN line %d: %s" % (n, msg))
         for n, msg in v["fail"]:
             o.append("FAIL 0.3.0 line %d: %s" % (n, msg))
     for tag, key in (("P1", "p1_fail"), ("P3", "p3_fail"), ("DUMP", "dump_fail")):

@@ -39,6 +39,10 @@ constexpr uintptr_t BorderVtable = 0x009875BC;          // CSWGuiBorder RTTI vta
 constexpr uintptr_t TextVtable = 0x009876B4;            // CSWGuiText RTTI vtable
 constexpr uintptr_t KeyboardDeviceGlobal = 0x0099C884;  // rdata constant 0 (device-array index)
 constexpr uintptr_t TexPendingList = 0x00A1BC2C;        // engine pending-texture list
+constexpr uintptr_t TexBasicCtor = 0x00423000;           // CAurTextureBasic ctor, thiscall(this 0xF4 B, name, name) RET 8; registers the name globally
+constexpr uintptr_t EngineNewArr = 0x0091D288;          // engine operator new[] (FreeImage releases +0x44 with delete[] when +0xE7 == 0)
+constexpr uintptr_t TexListAdd = 0x004491C0;            // thiscall(pendingList, basic): pending-build list add, consumed by the texture tick
+constexpr uintptr_t TexReset = 0x00423990;              // CAurTextureBasic::Reset, fastcall(basic)
 // ---- CSWGui3DSceneView (SceneView.h; Mod 1 Inventory3DViewport.cpp 31-60 / Mod 5 EquipCharPreview.cpp 28-62) ----
 constexpr uintptr_t GuiGateGlobal = 0x009F42B4;         // int, non-zero once the GUI/3D layer is up (inv3d/equip refuse a scene view while 0)
 constexpr uintptr_t GuiControlCtor = 0x00418990;        // CSWGuiControl ctor, thiscall ECX only
@@ -59,6 +63,11 @@ constexpr uintptr_t GobGetParent = 0x00461530;          // Gob vtable slot 0x108
 constexpr uintptr_t ClientToServerObjectId = 0x0051C8B0; // thiscall(objTable, clientId) RET 4 -> server object id
 constexpr uintptr_t GetItemByObjectId = 0x0051C0E0;      // thiscall(objTable, serverId) RET 4 -> item ptr (0 = none)
 constexpr uintptr_t HudVtable = 0x0099DCC4;              // CSWGuiInGame (HUD panel) RTTI vtable
+// Panels that do not block gameplay hotkeys (RTTI vtables; doc 07 gate whitelist; shared by the hotbar/selfheal HUD gates)
+constexpr uintptr_t MessagesPanelVtable = 0x0099E5EC;    // CSWGuiMessages
+constexpr uintptr_t FadePanelVtable = 0x009A044C;        // fade panel
+constexpr uintptr_t PausePanelVtable = 0x009A7BAC;       // pause panel
+constexpr uintptr_t AutoPausePanelVtable = 0x009A8FCC;   // auto-pause panel
 constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask]
 constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0) RET 0x20: called only by companion-selfheal 0.2.0-probe with [probe] call=1
 constexpr uintptr_t CanUseItem = 0x005D2F80;             // thiscall(server creature; itemPtr,0,1) RET 0xC -> nonzero = usable; verified B12b

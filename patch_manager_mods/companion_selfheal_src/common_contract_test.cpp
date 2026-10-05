@@ -203,6 +203,17 @@ int main() {
     HCHECK("shui::serializeFile keeps foreign sections and round-trips through parseFile", out.find("[General]\nLog=1\n") == 0 && parseFile(out) == tb);
     Pending pe; pe.on = true; pe.since = 1000; pe.preHp = 10; pe.preStack = 3;
     HCHECK("shui::pendingDone: HP up, stack down, item gone, timeout; otherwise false", pendingDone(pe, 1100, 11, 3) && pendingDone(pe, 1100, 10, 2) && pendingDone(pe, 1100, 10, -1) && pendingDone(pe, 1000 + kPendingTimeoutMs, 10, 3) && !pendingDone(pe, 1100, 10, 3));
+    HEQ("shui::kRingFrames is 8 (csh_ring0..7) and kRingFrameMs is 90", (long long)kRingFrames * 1000 + (long long)kRingFrameMs, 8090LL);
+    {
+        Look g = lookFor(BtnState::Normal, true, 0), n = lookFor(BtnState::Normal, false, 0), d = lookFor(BtnState::FullHp, false, 0), h = lookFor(BtnState::Hidden, true, 0);
+        HCHECK("shui::lookFor: ring only when autoOn and not Hidden; Hidden alpha 0; FullHp/NoItem grey+dim", g.ring && !n.ring && !h.ring && h.alpha == 0.0f && d.alpha < 1.0f && d.r == d.g && d.g == d.b);
+        HCHECK("shui::lookFor: gold (r>g>b) when auto, ringFrame in [0,kRingFrames) and advances every kRingFrameMs", g.r > g.g && g.g > g.b && lookFor(BtnState::Normal, true, 90 * 3 + 5).ringFrame == 3 && lookFor(BtnState::Normal, true, 0xFFFFFFF0u).ringFrame < kRingFrames);
+        Rect rr = ringRect(br);
+        HCHECK("shui::ringRect is a square larger than the button and centred on it; empty for h<=0", rr.w == rr.h && rr.w > br.w && rr.x + rr.w / 2 == br.x + br.w / 2 && ringRect(none) == none);
+    }
+    HCHECK("guikit::setFill(ctl, image, tint) -> bool and guikit::imageFor(resref) -> void*", static_cast<bool(*)(uintptr_t, void*, const float*)>(&guikit::setFill) != nullptr && static_cast<void*(*)(const char*, bool*, int*)>(&guikit::imageFor) != nullptr);
+    HEQ("gameaddr::TexBasicCtor/EngineNewArr/TexListAdd/TexReset (embedded-texture recipe)", (long long)gameaddr::TexBasicCtor + gameaddr::EngineNewArr + gameaddr::TexListAdd + gameaddr::TexReset, 0x423000LL + 0x91D288LL + 0x4491C0LL + 0x423990LL);
+    HEQ("gameaddr::MessagesPanelVtable is 0x0099E5EC (gate whitelist)", (long long)gameaddr::MessagesPanelVtable, 0x99E5ECLL);
     HEQ("kPendingTimeoutMs is 6000", (long long)kPendingTimeoutMs, 6000LL);
 
     // filewatch: atomicWrite + changed/accept (the INI save + hot reload)

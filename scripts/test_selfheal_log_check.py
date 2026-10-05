@@ -117,3 +117,20 @@ def test_v030_route_a_never_lands():
 def test_v030_cfg_save_fail():
     r = S.check(v30(["CFG save tag=hud auto=1 hp=35 keep=2 ok=0"]))
     assert r["verdict"] == "FAIL" and any("ok=0" in m for _, m in r["v"]["fail"])
+
+
+def test_v040_pass_with_warns():
+    r = S.check(lines("v040.txt"))
+    assert r["verdict"] == "PASS" and not r["v"]["fail"]
+    assert [b[1] for b in r["v"]["build"]] == [12, 7] and r["v"]["tex"] == {"queued": 2, "refilled": 1, "giving up": 1}
+    out = S.fmt(r).splitlines()
+    assert any(l.startswith("WARN") and "ICON fallback member=2" in l for l in out) and any(l.startswith("WARN") and "giving up" in l for l in out)
+    assert out[-1].endswith("VERDICT=PASS")
+
+
+def test_v040_build_denominator():
+    assert S.check(v30(["BUILD n=12/12 why="]))["verdict"] == "PASS"
+    assert S.check(v30(["BUILD n=10/12 why="]))["verdict"] == "FAIL"
+    assert S.check(v30(["BUILD n=10/12"]))["verdict"] == "FAIL"
+    assert S.check(v30(["BUILD n=10/12 why=ring failed"]))["verdict"] == "PASS"
+    assert "n=10/12 without why" in S.check(v30(["BUILD n=10/12 why="]))["v"]["fail"][0][1]

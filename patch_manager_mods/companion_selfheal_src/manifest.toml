@@ -1,9 +1,9 @@
 [patch]
 id = "companion-selfheal"
 name = "Companion Self-Heal"
-version = "0.3.0-dev"
+version = "0.4.0-dev"
 author = "local"
-description = "Companion self-heal (doc 27 CS4+CS5): an H button beside each companion health bar (left click = use the best healing item now, right click = popover with Auto on/off, use-below %, keep reserve; settings persist to companion_selfheal.ini) and an optional per-companion auto mode. One hook (StopLoadFromLayout) builds 10 HUD labels; route A is only called behind the HUD gate, commandable and CanUseItem. Ctrl+Shift+H dump and the opt-in [probe] call=1 Ctrl+Shift+J are kept. Needs portrait-slots."
+description = "Companion self-heal (doc 27 CS4+CS5): a cross-icon button beside each companion health bar (grey when disabled, a rotating gold ring when auto is on) (left click = use the best healing item now, right click = popover with Auto on/off, use-below %, keep reserve; settings persist to companion_selfheal.ini) and an optional per-companion auto mode. One hook (StopLoadFromLayout) builds 12 HUD labels (cross and ring art are embedded textures); route A is only called behind the HUD gate, commandable and CanUseItem. Ctrl+Shift+H dump and the opt-in [probe] call=1 Ctrl+Shift+J are kept. Needs portrait-slots."
 
 requires = ["portrait-slots"]
 requires_interfaces = ["k2.portraitslots@1"]
