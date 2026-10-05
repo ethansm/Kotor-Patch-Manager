@@ -80,19 +80,19 @@ HB29 | tests/static/gui_ids.toml:113 | low | S | stale source line numbers (HP1)
 HB30 | config_roundtrip_test.cpp:381 | low | S | prints whole INI on pass -> only on failure (HP5)
 
 ### Docs (D) — doc 07 = 844 lines (status 1-191, old spec 193-523, dev log 524-844); no README, no CHANGELOG
-D01 | no README anywhere | high | M | player README in Patches/ActionHotbar (HP2)
-D02 | HotbarConfig.h:231-239 | high | S | INI key reference table (HP2)
+D01 | no README anywhere | high | M | player README in Patches/ActionHotbar (HP2) DONE ad68a19 (KPM e16a378)
+D02 | HotbarConfig.h:231-239 | high | S | INI key reference table (HP2) DONE ad68a19 (KPM e16a378)
 D03 | HotbarConfig.h:362-368 | med | S | INI header missing keys (HP1) DONE
-D04 | action_hotbar_src/PULL_REQUEST.md | high | M | 30 slots/Ctrl-Alt/v1.0.0 -> rewrite 1.2.x (HP2)
-D05 | clone PULL_REQUEST.md | high | S | drifted copy -> one canonical (HP2)
-D06 | PR readiness | high | S | screenshots, CHANGELOG, test evidence list (HP2)
+D04 | action_hotbar_src/PULL_REQUEST.md | high | M | 30 slots/Ctrl-Alt/v1.0.0 -> rewrite 1.2.x (HP2) DONE ad68a19 (KPM e16a378)
+D05 | clone PULL_REQUEST.md | high | S | drifted copy -> one canonical (HP2) DONE ad68a19 (KPM e16a378)
+D06 | PR readiness | high | S | screenshots, CHANGELOG, test evidence list (HP2) DONE ad68a19 (KPM e16a378); screenshots still a live TODO
 D07 | ActionHotbar.cpp:5 | med | S | 75 -> 86 controls (HP1) DONE
 D08 | ActionHotbar.cpp:5-8 | med | S | header 3 of 8 hooks (HP1) DONE
 D09 | HotbarConfig.h:2-3 | low | S | "future editor" (HP1) DONE
 D10 | Tlk.h:1 | low | S | tlk_test.cpp (HP1) DONE
 D11 | manifest.toml:6 | med | S | description incomplete, log names (HP1) DONE
-D12 | RuntimeGuiControls.md:5,186,188,216 | med | S | old name, 57/75 counts, old path (HP2)
-D13 | clone docs/RuntimeGuiControls.md | med | S | sync copies (HP2)
+D12 | RuntimeGuiControls.md:5,186,188,216 | med | S | old name, 57/75 counts, old path (HP2) DONE ad68a19 (KPM e16a378)
+D13 | clone docs/RuntimeGuiControls.md | med | S | sync copies (HP2) DONE ad68a19 (KPM e16a378)
 D14 | doc07:3-191 | high | M | 6 RESUME blocks -> one status block + History (HP3)
 D15 | doc07:11 vs 18 | med | S | mode cycle contradiction (HP3)
 D16 | doc07:12 vs 4 | low | S | log name in checklist (HP3)
@@ -106,10 +106,10 @@ D23 | doc07:187-191 | med | S | second old install workflow (HP3)
 D24 | doc07:21,30,33 | low | S | stale build-30/probe lines (HP3)
 D25 | doc07:1,186,193-523 | med | M | title, index, old spec -> appendix (HP3)
 D26 | doc07:408-523 | low | M | 30-slot design/open questions -> Deferred ideas (HP3)
-D27 | doc07:174,138,162 | med | S | persistence rule not written down (HP2 README + HP3 section)
+D27 | doc07:174,138,162 | med | S | persistence rule not written down (HP2 README + HP3 section) DONE ad68a19 (KPM e16a378)
 D28 | 07_force_power_hotbar_feedback.md | med | S | all resolved -> resolution column, archive in evidence (HP3)
 D29 | evidence dir | low | S | README index; rename decision (HP3)
-D30 | doc07:4,12 | med | S | troubleshooting for players (HP2)
+D30 | doc07:4,12 | med | S | troubleshooting for players (HP2) DONE ad68a19 (KPM e16a378)
 
 ### HP1 result (2026-10-04)
 - Commits KOTOR-II 6fcb8ec (helpers + bug fixes, red first: hotbar_logic_test, hotbar_log_test failed to build), 054e0e9 (comment sweep), eb86aef (1.2.1); local-mods 8557111. DLL md5 df48fc9e.
