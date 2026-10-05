@@ -47,6 +47,9 @@
     - Popover colour + alpha are set on show; one-shot `DIAG pop`.
     - `TAG member raw=` probe.
     - 14 widgets: csh_disc under each button.
+  - **INSTALLED 10-05 00:57 (user GO "install")**: stage `$K/selfheal050_stage_1005` (STAGE_INFO head=5a9e9c95), 36 ids / 221 hooks, live dll `693cc97b`, config 1f7b0947 -> `db096abc` (diff = the new 0x7B3817 hook block only). Backup `$G/backups/selfheal050_install_20261005_005737` (rollback: restore patch_config.toml, kpm_install_state.json, patches/).
+    - Stage had dll=NO-MATCH for perf-lab / mouse-probe / queue-hud (hand-swapped, hooks SAME). User chose install + restore: their pre-install live dlls (`f085f754` / `71e8f8e5` / `2950ce26`, copies `keep_*.dll` in the backup) were copied back after the install, so verify reports these 3 as expected mismatches.
+    - Next = play the checklist below, then `python3 scripts/selfheal_log_check.py`.
   - Install needs: hud-host 0.3.0 live (HL3); the hook set changes (+0x7B3817), so a full staged KPM install (not a dll swap); `dll=NO-MATCH` 0 first.
   - Checklist:
     1. Click heals (log `USE` + `DONE`).
