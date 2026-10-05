@@ -345,45 +345,6 @@ void recomputeBound() {
     }
 }
 
-unsigned& barLastPick(int g);   // Bar::lastPick[g]; defined after g_bar
-void refreshEffective(uintptr_t hud) {
-    std::vector<hb::ActionRef> explicitRefs; hb::ActionRef cfgSlots[hb::Slots];
-    for (int i = 0; i < hb::Slots; ++i) { cfgSlots[i] = g_cfg.slotFor(g_charKey, 0, i); if (!cfgSlots[i].empty()) explicitRefs.push_back(cfgSlots[i]); }
-    std::vector<hb::ActionRef> autos;
-    if (g_cfg.general.autoFill) {
-        std::vector<Entry> es; readGroup(hud, 0, &es);
-        for (auto& e : es) {
-            if (!hb::isKnownPowerKey(e.key)) continue;   // known Force powers only (no items, no mode toggles)
-            if (!hb::hasSame(explicitRefs, e.ref)) autos.push_back(e.ref);
-        }
-        // then the selected entry of each item group (1 medpac/stim, 2 shield, 3 mine), like the native quick bar's current pick
-        for (int g = 1; g <= 3; ++g) {
-            std::vector<Entry> is; readGroup(hud, g, &is);
-            if (is.empty()) continue;
-            unsigned selKey = (unsigned)rdInt(S_Hud, hud, Hud_GroupSel + g * 4);
-            int keys[256]; int nk = std::min((int)is.size(), 256); for (int i = 0; i < nk; ++i) keys[i] = is[i].key;
-            const Entry* pick = &is[std::max(0, hb::pickIndexByKey(keys, nk, selKey))];
-            bool dup = hb::hasSame(explicitRefs, pick->ref) || hb::hasSame(autos, pick->ref);
-            unsigned& lastPick = barLastPick(g);   // per group: key*31+dup+1 of the last logged pick (map R3: change-only, was every refresh); per-HUD state in Bar
-            unsigned pk = (unsigned)pick->key * 31u + (dup ? 1u : 0u) + 1u;
-            if (lastPick != pk && KP_ENABLED(chSlots, KPLOG_DEBUG)) {
-                lastPick = pk;
-                std::string nm = pick->ref.kind == hb::K_Item ? std::string() : " name='" + pick->name + "'";   // an item ref already contains the name
-                KP_LOGV(chSlots, KPLOG_DEBUG, "eff: autofill group %d pick key=%08x ref=%s%s%s", g, (unsigned)pick->key, hb::Format(pick->ref).c_str(), dup ? " (dup, skipped)" : "", nm.c_str());
-            }
-            if (!dup && !pick->ref.empty()) autos.push_back(pick->ref);
-        }
-    }
-    bool effAuto[hb::Slots]; hb::ActionRef eff[hb::Slots];
-    int nAuto = hb::assignAutoFill(cfgSlots, autos, eff, effAuto);   // explicit "none" stays empty
-    for (int s = 0; s < hb::Slots; ++s) { g_eff[s] = eff[s]; g_effAuto[s] = effAuto[s]; g_slotBound[s] = !eff[s].empty(); }
-    unsigned h = hb::effSignature(g_eff, g_effAuto);
-    if (h != g_effHash) {
-        g_effHash = h;
-        KP_LOG(chSlots, "eff: character '%s' autofill=%d explicit=%d auto=%d", g_charKey.c_str(), g_cfg.general.autoFill, (int)explicitRefs.size(), nAuto);
-        for (int s = 0; s < hb::Slots; ++s) if (!g_eff[s].empty()) KP_LOG(chSlots, "eff:   Bottom%c = %s%s", "1234567890"[s], hb::Format(g_eff[s]).c_str(), g_effAuto[s] ? " (auto)" : "");
-    }
-}
 
 // [General] TargetProbe (not parsed by HotbarConfig, so it lives in extra): 0 off, 1 log the decision only, 2 live (default: a missing key means 2).
 int targetProbeMode() {
@@ -694,7 +655,44 @@ struct Bar {
 volatile bool g_editOpen = false;    // Edit or Pick mode active (read by the input hook: digits pass through, Esc is swallowed)
 volatile bool g_escHit = false;      // set by the input hook when it swallowed an Esc key-down
 Bar g_bar;
-unsigned& barLastPick(int g) { return g_bar.lastPick[g]; }
+void refreshEffective(uintptr_t hud) {
+    std::vector<hb::ActionRef> explicitRefs; hb::ActionRef cfgSlots[hb::Slots];
+    for (int i = 0; i < hb::Slots; ++i) { cfgSlots[i] = g_cfg.slotFor(g_charKey, 0, i); if (!cfgSlots[i].empty()) explicitRefs.push_back(cfgSlots[i]); }
+    std::vector<hb::ActionRef> autos;
+    if (g_cfg.general.autoFill) {
+        std::vector<Entry> es; readGroup(hud, 0, &es);
+        for (auto& e : es) {
+            if (!hb::isKnownPowerKey(e.key)) continue;   // known Force powers only (no items, no mode toggles)
+            if (!hb::hasSame(explicitRefs, e.ref)) autos.push_back(e.ref);
+        }
+        // then the selected entry of each item group (1 medpac/stim, 2 shield, 3 mine), like the native quick bar's current pick
+        for (int g = 1; g <= 3; ++g) {
+            std::vector<Entry> is; readGroup(hud, g, &is);
+            if (is.empty()) continue;
+            unsigned selKey = (unsigned)rdInt(S_Hud, hud, Hud_GroupSel + g * 4);
+            int keys[256]; int nk = std::min((int)is.size(), 256); for (int i = 0; i < nk; ++i) keys[i] = is[i].key;
+            const Entry* pick = &is[std::max(0, hb::pickIndexByKey(keys, nk, selKey))];
+            bool dup = hb::hasSame(explicitRefs, pick->ref) || hb::hasSame(autos, pick->ref);
+            unsigned& lastPick = g_bar.lastPick[g];   // per group: key*31+dup+1 of the last logged pick (map R3: change-only, was every refresh); per-HUD state in Bar
+            unsigned pk = (unsigned)pick->key * 31u + (dup ? 1u : 0u) + 1u;
+            if (lastPick != pk && KP_ENABLED(chSlots, KPLOG_DEBUG)) {
+                lastPick = pk;
+                std::string nm = pick->ref.kind == hb::K_Item ? std::string() : " name='" + pick->name + "'";   // an item ref already contains the name
+                KP_LOGV(chSlots, KPLOG_DEBUG, "eff: autofill group %d pick key=%08x ref=%s%s%s", g, (unsigned)pick->key, hb::Format(pick->ref).c_str(), dup ? " (dup, skipped)" : "", nm.c_str());
+            }
+            if (!dup && !pick->ref.empty()) autos.push_back(pick->ref);
+        }
+    }
+    bool effAuto[hb::Slots]; hb::ActionRef eff[hb::Slots];
+    int nAuto = hb::assignAutoFill(cfgSlots, autos, eff, effAuto);   // explicit "none" stays empty
+    for (int s = 0; s < hb::Slots; ++s) { g_eff[s] = eff[s]; g_effAuto[s] = effAuto[s]; g_slotBound[s] = !eff[s].empty(); }
+    unsigned h = hb::effSignature(g_eff, g_effAuto);
+    if (h != g_effHash) {
+        g_effHash = h;
+        KP_LOG(chSlots, "eff: character '%s' autofill=%d explicit=%d auto=%d", g_charKey.c_str(), g_cfg.general.autoFill, (int)explicitRefs.size(), nAuto);
+        for (int s = 0; s < hb::Slots; ++s) if (!g_eff[s].empty()) KP_LOG(chSlots, "eff:   Bottom%c = %s%s", "1234567890"[s], hb::Format(g_eff[s]).c_str(), g_effAuto[s] ? " (auto)" : "");
+    }
+}
 
 // one engine image object per icon resref, created lazily and never released (the border only borrows the pointer).
 // The pool itself now lives in guikit::imageFor (lowercased resref, 256 entries, never released); this wrapper only adds the log lines.
@@ -908,7 +906,13 @@ void playHoverSound(const char* why) {
     if (logs < 40) { ++logs; void* mgr = nullptr; saferead::readAt(S_Misc, GuiSoundMgrGlobal, 0, &mgr); KP_LOGV(chTip, KPLOG_DEBUG, "sound: hover (%s) mgr=%p", why, mgr); }
 }
 
-std::string slotTipText(int s, const Entry& e, bool verboseLog);
+// Hover text of a bar slot: the entry text plus the target line (item slots with a non-default mode).
+std::string slotTipText(int s, const Entry& e, bool verboseLog) {
+    std::string t = buildTipText(slotDigit(s), e, verboseLog);
+    std::string line = hb::slotTargetLine(g_eff[s].target, hb::effectiveThreshold(g_eff[s].target, g_cfg.general));
+    if (g_eff[s].kind == hb::K_Item && !line.empty()) t += "\n" + line;
+    return t;
+}
 void showTipAt(Widget& anchor, const Entry& entry, char digit, int s) { (void)digit; showTipText(anchor, slotTipText(s, entry, true), s); }
 
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
@@ -960,15 +964,21 @@ bool lowHpSlotEnabled(const Entry& e, const hb::ActionRef& a) {
     buildCandidates(v, n, itemPtr, c);
     return hb::slotEnabled(c, n, 0, a.target, g_cfg.general);
 }
-// Hover text of a bar slot: the entry text plus the target line (item slots with a non-default mode).
-std::string slotTipText(int s, const Entry& e, bool verboseLog) {
-    std::string t = buildTipText(slotDigit(s), e, verboseLog);
-    std::string line = hb::slotTargetLine(g_eff[s].target, hb::effectiveThreshold(g_eff[s].target, g_cfg.general));
-    if (g_eff[s].kind == hb::K_Item && !line.empty()) t += "\n" + line;
-    return t;
+void wText(Widget& w, const char* nm, const std::string& text) {
+    if (!w.ctl || w.text == text) return;
+    if (!guikit::setText(reinterpret_cast<uintptr_t>(w.ctl), text.c_str())) { if (widgetFault(w, WF_Text)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s text object bad, cannot set \"%.100s\"", nm, text.c_str()); return; }
+    widgetOk(w, WF_Text, chEdit, nm);
+    KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s text \"%.80s\" -> \"%.80s\"", nm, w.text.c_str(), text.c_str());
+    w.text = text;
 }
-void wText(Widget& w, const char* nm, const std::string& text);
-void wTextColor(Widget& w, const char* nm, const float* rgb);
+void wTextColor(Widget& w, const char* nm, const float* rgb) {
+    if (!w.ctl || !w.textRgbSet) return;   // no colour call without a working readback
+    if (w.curRgb[0] == rgb[0] && w.curRgb[1] == rgb[1] && w.curRgb[2] == rgb[2]) return;
+    if (!guikit::setTextColor(reinterpret_cast<uintptr_t>(w.ctl), rgb[0], rgb[1], rgb[2])) { if (widgetFault(w, WF_Color)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s text object bad, cannot set colour", nm); return; }
+    widgetOk(w, WF_Color, chEdit, nm);
+    KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s text colour (%.2f,%.2f,%.2f) -> (%.2f,%.2f,%.2f)", nm, w.curRgb[0], w.curRgb[1], w.curRgb[2], rgb[0], rgb[1], rgb[2]);
+    w.curRgb[0] = rgb[0]; w.curRgb[1] = rgb[1]; w.curRgb[2] = rgb[2];
+}
 void updateButtons(uintptr_t hud, bool gate) {
     static uintptr_t lastMissingHud = 0;   // stays process-wide: it is read while g_bar belongs to a different HUD
     bool& lastGateSeen = g_bar.refreshLastGate; std::string& lastChar = g_bar.refreshLastChar; int& lastMode = g_bar.refreshLastMode;
@@ -1048,21 +1058,6 @@ void wAlpha(Widget& w, const char* nm, float a) {
     if (ar != AR_Ok) { if (ar == AR_FaultWarn) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s border vtable bad, not setting alpha", nm); return; }
     KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s alpha %.2f -> %.2f", nm, w.alpha, a);
     w.alpha = a;
-}
-void wText(Widget& w, const char* nm, const std::string& text) {
-    if (!w.ctl || w.text == text) return;
-    if (!guikit::setText(reinterpret_cast<uintptr_t>(w.ctl), text.c_str())) { if (widgetFault(w, WF_Text)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s text object bad, cannot set \"%.100s\"", nm, text.c_str()); return; }
-    widgetOk(w, WF_Text, chEdit, nm);
-    KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s text \"%.80s\" -> \"%.80s\"", nm, w.text.c_str(), text.c_str());
-    w.text = text;
-}
-void wTextColor(Widget& w, const char* nm, const float* rgb) {
-    if (!w.ctl || !w.textRgbSet) return;   // no colour call without a working readback
-    if (w.curRgb[0] == rgb[0] && w.curRgb[1] == rgb[1] && w.curRgb[2] == rgb[2]) return;
-    if (!guikit::setTextColor(reinterpret_cast<uintptr_t>(w.ctl), rgb[0], rgb[1], rgb[2])) { if (widgetFault(w, WF_Color)) KP_LOGV(chEdit, KPLOG_WARN, "edit: %s text object bad, cannot set colour", nm); return; }
-    widgetOk(w, WF_Color, chEdit, nm);
-    KP_LOGV(chEdit, KPLOG_DEBUG, "edit: %s text colour (%.2f,%.2f,%.2f) -> (%.2f,%.2f,%.2f)", nm, w.curRgb[0], w.curRgb[1], w.curRgb[2], rgb[0], rgb[1], rgb[2]);
-    w.curRgb[0] = rgb[0]; w.curRgb[1] = rgb[1]; w.curRgb[2] = rgb[2];
 }
 // Common candidate later: guikit::hit() re-reads the visible flag from the engine; this tests the cached Widget::visible (set by our own writes).
 bool wHit(const Widget& w, const POINT& pt) {
@@ -1205,41 +1200,46 @@ void modeClick(uintptr_t hud, int slot) {
     g_bar.refreshLast = -1000;   // badge + dim refresh on the next frame
 }
 
-void updateEditor(uintptr_t hud, bool gate) {
-    Editor& ed = g_bar.ed;
-    {
-        unsigned& lastKey = ed.lastKey;   // change-only on (panel == hud, built > 0, editBound): map section 4 #5
-        unsigned key = (g_bar.panel == hud ? 4u : 0u) | (g_bar.built > 0 ? 2u : 0u) | (g_bar.editBound ? 1u : 0u);
-        if (key != 7u) {
-            if (key != lastKey) {
-                lastKey = key;
-                bool miss = g_bar.panel == hud && g_bar.built > 0 && !g_bar.editBound;   // updateButtons already WARNs for the other two cases
-                KP_LOGV(chEdit, miss ? KPLOG_WARN : KPLOG_INFO, "edit: editor disabled panel=%08x hud=%08x built=%d editBound=%d (%s)", (unsigned)g_bar.panel, (unsigned)hud, g_bar.built, g_bar.editBound,
-                        g_bar.panel != hud ? "bar panel is not this hud" : (g_bar.built == 0 ? "no buttons built" : "editor controls missing"));
-            }
-            return;
+static bool edEnabled(uintptr_t hud, Editor& ed) {
+    unsigned& lastKey = ed.lastKey;   // change-only on (panel == hud, built > 0, editBound): map section 4 #5
+    unsigned key = (g_bar.panel == hud ? 4u : 0u) | (g_bar.built > 0 ? 2u : 0u) | (g_bar.editBound ? 1u : 0u);
+    if (key != 7u) {
+        if (key != lastKey) {
+            lastKey = key;
+            bool miss = g_bar.panel == hud && g_bar.built > 0 && !g_bar.editBound;   // updateButtons already WARNs for the other two cases
+            KP_LOGV(chEdit, miss ? KPLOG_WARN : KPLOG_INFO, "edit: editor disabled panel=%08x hud=%08x built=%d editBound=%d (%s)", (unsigned)g_bar.panel, (unsigned)hud, g_bar.built, g_bar.editBound,
+                    g_bar.panel != hud ? "bar panel is not this hud" : (g_bar.built == 0 ? "no buttons built" : "editor controls missing"));
         }
-        lastKey = 7;
+        return false;
     }
+    lastKey = 7;
+    return true;
+}
+
+// Cross-block values of one updateEditor frame.
+struct EdFrame { POINT pt; bool haveCur, click, down; bool mHeal, mSelf; hb::ModeBtn mst; int oth, maxOff; };
+static void edInput(Editor& ed, bool gate, EdFrame& f) {
     static std::string lastChar = "\x01"; static guikit::ClickEdge clickState; static bool lastFgOk = true;
     ensureWheelHook();
     if (lastChar != g_charKey) { if (lastChar != "\x01" && ed.mode != M_Normal) setMode(M_Normal, -1, "character changed"); lastChar = g_charKey; }
     if (!gate && ed.mode != M_Normal) setMode(M_Normal, -1, "gate closed");
     if (g_escHit) { g_escHit = false; if (ed.mode == M_Pick) setMode(M_Edit, -1, "Esc"); else if (ed.mode == M_Edit) setMode(M_Normal, -1, "Esc"); else KP_LOG(chEdit, "edit: Esc flag set in Normal mode (ignored)"); }
 
-    POINT pt = {0, 0}; bool haveCur = gate && cursorInGame(&pt);
+    f.pt = POINT{0, 0}; f.haveCur = gate && cursorInGame(&f.pt);
     HWND fg = GetForegroundWindow(); DWORD fgPid = 0; if (fg) GetWindowThreadProcessId(fg, &fgPid);
     bool fgOk = fg && fgPid == GetCurrentProcessId();
     if (fgOk != lastFgOk) { KP_LOG(chEdit, "edit: foreground window %p pid=%lu ours=%d", (void*)fg, (unsigned long)fgPid, (int)fgOk); lastFgOk = fgOk; }
     if (!gate) clickState.prev = false;
-    bool click = gate && guikit::clickEdge(clickState);   // clickEdge = LMB down AND game window foreground (same test as fgOk above)
-    bool down = clickState.prev;   // level state (gate && fg && LMB), as the old local `down`
+    f.click = gate && guikit::clickEdge(clickState);   // clickEdge = LMB down AND game window foreground (same test as fgOk above)
+    f.down = clickState.prev;   // level state (gate && fg && LMB), as the old local `down`
+}
 
+static void edVisibility(Editor& ed, bool gate, EdFrame& f) {
     // ---- visibility of the always-present toggle and the mode-dependent parts
     bool showTitle = gate && ed.mode != M_Normal, showPick = gate && ed.mode == M_Pick;
     wVisible(g_bar.edit, "toggle", gate, true);
     {   // hover highlight: beige frame while hovered; in edit mode the beige frame is the "active" look, dimmed until hovered
-        bool hov = haveCur && wHit(g_bar.edit, pt);
+        bool hov = f.haveCur && wHit(g_bar.edit, f.pt);
         wFill(g_bar.edit, "toggle", (ed.mode != M_Normal || hov) ? EditHiResref : EditResref);
         wAlpha(g_bar.edit, "toggle", (ed.mode != M_Normal && !hov) ? 0.8f : 1.0f);
     }
@@ -1247,31 +1247,35 @@ void updateEditor(uintptr_t hud, bool gate) {
     wVisible(g_bar.title, "title", showTitle, true);
     for (int i = 0; i < TabCount; ++i) wVisible(g_bar.tab[i], TabNm[i], showPick, true);
     wVisible(g_bar.prev, "prev", showPick, true); wVisible(g_bar.next, "next", showPick, true); wVisible(g_bar.clear, "clear", showPick, true);
-    bool mHeal = false, mSelf = false; hb::ModeBtn mst = hb::MB_Hidden;
+    bool& mHeal = f.mHeal; bool& mSelf = f.mSelf; hb::ModeBtn& mst = f.mst; mHeal = false; mSelf = false; mst = hb::MB_Hidden;
     if (showPick && ed.slot >= 0) { modeInputs(ed.slot, g_eff[ed.slot], &mHeal, &mSelf); mst = hb::modeButtonState(g_eff[ed.slot], mHeal, mSelf); }
     wVisible(g_bar.mode, "mode", mst != hb::MB_Hidden, true);
     wAlpha(g_bar.mode, "mode", mst == hb::MB_Enabled ? 1.0f : DimAlpha);
     for (int i = 0; i < CellCount; ++i) { wVisible(g_bar.cell[i].bg, CellBgNm[i], showPick, true); wVisible(g_bar.cell[i].ic, CellIcNm[i], showPick, false); if (!showPick) wVisible(g_bar.cell[i].qty, CellQtyNm[i], false, false); }
+}
 
+static void edHover(Editor& ed, EdFrame& f) {
     // ---- hover over the tabs / arrows / Clear (highlight + short tooltip)
     Widget* ow[6] = { &g_bar.tab[0], &g_bar.tab[1], &g_bar.tab[2], &g_bar.prev, &g_bar.next, &g_bar.clear };
     static const char* const otip[6] = { "Force powers", "Items: medpacs, stims, shields, mines", "Modes and stances", "Scroll back (mouse wheel up)", "Scroll forward (mouse wheel down)", "Empty this slot" };
-    int oth = -1;
-    if (ed.mode == M_Pick && haveCur) for (int i = 0; i < 6 && oth < 0; ++i) if (wHit(*ow[i], pt)) oth = i;
+    int& oth = f.oth; oth = -1;
+    if (ed.mode == M_Pick && f.haveCur) for (int i = 0; i < 6 && oth < 0; ++i) if (wHit(*ow[i], f.pt)) oth = i;
     {
         if (oth != ed.othLast) { KP_LOGV(chEdit, KPLOG_DEBUG, "edit: control hover %d -> %d", ed.othLast, oth); if (g_bar.tipSlot >= OtherTipBase) hideTip("control hover changed"); ed.othLast = oth; ed.othSince = GetTickCount(); if (oth >= 0) playHoverSound("picker control"); }
         if (oth >= 0 && g_bar.tipSlot != OtherTipBase + oth && GetTickCount() - ed.othSince >= TipDelayMs) showTipText(*ow[oth], otip[oth], OtherTipBase + oth, g_pickRect[1]);
     }
 
     {   // target-mode button: highlight art while hovered (enabled only), tooltip after the usual delay
-        bool mov = haveCur && mst != hb::MB_Hidden && wHit(g_bar.mode, pt);
-        wFill(g_bar.mode, "mode", (mov && mst == hb::MB_Enabled) ? "fph_mode_hi" : "fph_mode");
-        if (mov != ed.modeWasOver) { ed.modeWasOver = mov; ed.modeSince = GetTickCount(); if (!mov && g_bar.tipSlot == ModeTipId) hideTip("left mode button"); if (mov && mst == hb::MB_Enabled) playHoverSound("mode button"); }
-        if (mov && g_bar.tipSlot != ModeTipId && GetTickCount() - ed.modeSince >= TipDelayMs) showTipText(g_bar.mode, hb::modeTooltip(g_eff[ed.slot], mHeal, mSelf), ModeTipId, g_pickRect[1]);
+        bool mov = f.haveCur && f.mst != hb::MB_Hidden && wHit(g_bar.mode, f.pt);
+        wFill(g_bar.mode, "mode", (mov && f.mst == hb::MB_Enabled) ? "fph_mode_hi" : "fph_mode");
+        if (mov != ed.modeWasOver) { ed.modeWasOver = mov; ed.modeSince = GetTickCount(); if (!mov && g_bar.tipSlot == ModeTipId) hideTip("left mode button"); if (mov && f.mst == hb::MB_Enabled) playHoverSound("mode button"); }
+        if (mov && g_bar.tipSlot != ModeTipId && GetTickCount() - ed.modeSince >= TipDelayMs) showTipText(g_bar.mode, hb::modeTooltip(g_eff[ed.slot], f.mHeal, f.mSelf), ModeTipId, g_pickRect[1]);
     }
+}
 
+static void edPicker(uintptr_t hud, Editor& ed, EdFrame& f) {
     // ---- picker contents (rebuilt from the HUD's group lists when stale)
-    int maxOff = 0;
+    int& maxOff = f.maxOff; maxOff = 0;
     if (ed.mode == M_Pick) {
         std::vector<Entry> all; unsigned h = 2166136261u;
         GroupSnapshot snap(hud);
@@ -1303,8 +1307,8 @@ void updateEditor(uintptr_t hud, bool gate) {
         char t[112]; if (n == 0) snprintf(t, sizeof t, "Slot %c - %s: none available - Esc: back", slotDigit(ed.slot), TabName[ed.tab]);
         else snprintf(t, sizeof t, "Slot %c - %s %d-%d of %d - Esc: back", slotDigit(ed.slot), TabName[ed.tab], ed.off + 1, ed.off + shown, n);
         wText(g_bar.title, "title", ed.msg.empty() ? std::string(t) : ed.msg);
-        for (int i = 0; i < TabCount; ++i) wFill(g_bar.tab[i], TabNm[i], (i == ed.tab || oth == i) ? FrameHiResref : FrameResref);
-        wFill(g_bar.prev, "prev", oth == 3 ? FrameHiResref : FrameResref); wFill(g_bar.next, "next", oth == 4 ? FrameHiResref : FrameResref); wFill(g_bar.clear, "clear", oth == 5 ? FrameHiResref : FrameResref);
+        for (int i = 0; i < TabCount; ++i) wFill(g_bar.tab[i], TabNm[i], (i == ed.tab || f.oth == i) ? FrameHiResref : FrameResref);
+        wFill(g_bar.prev, "prev", f.oth == 3 ? FrameHiResref : FrameResref); wFill(g_bar.next, "next", f.oth == 4 ? FrameHiResref : FrameResref); wFill(g_bar.clear, "clear", f.oth == 5 ? FrameHiResref : FrameResref);
         wAlpha(g_bar.prev, "prev", ed.off > 0 ? 1.0f : 0.4f); wAlpha(g_bar.next, "next", ed.off < maxOff ? 1.0f : 0.4f);
         for (int i = 0; i < CellCount; ++i) {
             Cell& c = g_bar.cell[i]; size_t idx = (size_t)ed.off + i;
@@ -1321,44 +1325,50 @@ void updateEditor(uintptr_t hud, bool gate) {
     } else if (ed.mode == M_Edit) {
         wText(g_bar.title, "title", ed.msg.empty() ? std::string("Click a slot to change it") : ed.msg);
     }
+}
 
+static void edCellTips(Editor& ed, const EdFrame& f) {
     // ---- picker hover (cells) + tooltip
     int over = -1;
-    if (ed.mode == M_Pick && haveCur) for (int i = 0; i < CellCount && over < 0; ++i) if (g_bar.cell[i].avail && wHit(g_bar.cell[i].bg, pt)) over = i;
+    if (ed.mode == M_Pick && f.haveCur) for (int i = 0; i < CellCount && over < 0; ++i) if (g_bar.cell[i].avail && wHit(g_bar.cell[i].bg, f.pt)) over = i;
     if (over != ed.over) { KP_LOGV(chEdit, KPLOG_DEBUG, "edit: cell hover %d -> %d", ed.over, over); if (g_bar.tipSlot >= CellTipBase && g_bar.tipSlot < ToggleTipId) hideTip("cell hover changed"); ed.over = over; ed.overStart = GetTickCount(); if (over >= 0) playHoverSound("picker cell"); }
     if (over >= 0 && g_bar.tipSlot != CellTipBase + over && GetTickCount() - ed.overStart >= TipDelayMs) showTipText(g_bar.cell[over].bg, buildTipText(0, g_bar.cell[over].entry), CellTipBase + over, g_pickRect[1]);
 
     // ---- toggle hover tooltip
     {
-        bool ov = haveCur && wHit(g_bar.edit, pt);
+        bool ov = f.haveCur && wHit(g_bar.edit, f.pt);
         if (ov != ed.toggleWasOver) { KP_LOGV(chEdit, KPLOG_DEBUG, "edit: toggle hover %d -> %d", (int)ed.toggleWasOver, (int)ov); ed.toggleWasOver = ov; ed.toggleSince = GetTickCount(); if (ov) playHoverSound("toggle"); if (!ov && g_bar.tipSlot == ToggleTipId) hideTip("left toggle"); }
         if (ov && g_bar.tipSlot != ToggleTipId && GetTickCount() - ed.toggleSince >= TipDelayMs) showTipText(g_bar.edit, ed.mode == M_Normal ? "Edit hotbar" : "Finish editing", ToggleTipId);
     }
+}
 
+static void edArrows(Editor& ed, const EdFrame& f) {
     // ---- holding an arrow keeps scrolling (first repeat after 350 ms, then every 90 ms), like the native quick-action arrows
-    if (ed.mode == M_Pick && haveCur) {
-        int arrow = wHit(g_bar.prev, pt) ? -1 : (wHit(g_bar.next, pt) ? 1 : 0);
-        if (!down || !arrow) ed.arrowHeld = 0;
-        else if (click) { ed.arrowHeld = arrow; ed.arrowHeldSince = ed.arrowLastRep = GetTickCount(); }
+    if (ed.mode == M_Pick && f.haveCur) {
+        int arrow = wHit(g_bar.prev, f.pt) ? -1 : (wHit(g_bar.next, f.pt) ? 1 : 0);
+        if (!f.down || !arrow) ed.arrowHeld = 0;
+        else if (f.click) { ed.arrowHeld = arrow; ed.arrowHeldSince = ed.arrowLastRep = GetTickCount(); }
         else if (arrow == ed.arrowHeld) {
             DWORD now = GetTickCount();
-            if (hb::arrowRepeatDue(now, ed.arrowHeldSince, ed.arrowLastRep)) { scrollPicker(hb::scrollClamp(ed.off + arrow, maxOff), "arrow held"); ed.arrowLastRep = now; }
+            if (hb::arrowRepeatDue(now, ed.arrowHeldSince, ed.arrowLastRep)) { scrollPicker(hb::scrollClamp(ed.off + arrow, f.maxOff), "arrow held"); ed.arrowLastRep = now; }
         }
     }
+}
 
+static void edClick(uintptr_t hud, bool gate, Editor& ed, const EdFrame& f) {
     // ---- clicks
-    if (click && !haveCur) KP_LOG_EVERY(chEdit, 2000, "edit: click ignored, no cursor position (gate=%d mode=%s)", (int)gate, ModeName[ed.mode]);
-    if (!click || !haveCur) return;
-    if (wHit(g_bar.edit, pt)) { setMode(ed.mode == M_Normal ? M_Edit : M_Normal, -1, "toggle click"); return; }
+    if (f.click && !f.haveCur) KP_LOG_EVERY(chEdit, 2000, "edit: click ignored, no cursor position (gate=%d mode=%s)", (int)gate, ModeName[ed.mode]);
+    if (!f.click || !f.haveCur) return;
+    if (wHit(g_bar.edit, f.pt)) { setMode(ed.mode == M_Normal ? M_Edit : M_Normal, -1, "toggle click"); return; }
     if (ed.mode == M_Normal) return;
-    for (int s = 0; s < ButtonCount; ++s) if (wHit(g_bar.b[s].bg, pt)) { setMode(M_Pick, s, "slot click"); return; }
+    for (int s = 0; s < ButtonCount; ++s) if (wHit(g_bar.b[s].bg, f.pt)) { setMode(M_Pick, s, "slot click"); return; }
     if (ed.mode != M_Pick) return;
-    for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], pt)) { KP_LOG(chEdit, "edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.off = 0; ed.sig = 0; ed.msg.clear(); return; }
-    if (wHit(g_bar.prev, pt)) { if (ed.off > 0) scrollPicker(ed.off - 1, "prev click"); else KP_LOG(chEdit, "edit: prev click ignored (at start)"); return; }
-    if (wHit(g_bar.next, pt)) { if (ed.off < maxOff) scrollPicker(ed.off + 1, "next click"); else KP_LOG(chEdit, "edit: next click ignored (at end)"); return; }
-    if (mst != hb::MB_Hidden && wHit(g_bar.mode, pt)) { modeClick(hud, ed.slot); return; }
-    if (wHit(g_bar.clear, pt)) { KP_LOG(chEdit, "edit: Clear click slot %d", ed.slot); if (assignSlot(hud, ed.slot, nullptr)) setMode(M_Edit, -1, "cleared"); return; }
-    for (int i = 0; i < CellCount; ++i) if (wHit(g_bar.cell[i].bg, pt)) {
+    for (int i = 0; i < TabCount; ++i) if (wHit(g_bar.tab[i], f.pt)) { KP_LOG(chEdit, "edit: tab click %d (%s)", i, TabName[i]); ed.tab = i; ed.off = 0; ed.sig = 0; ed.msg.clear(); return; }
+    if (wHit(g_bar.prev, f.pt)) { if (ed.off > 0) scrollPicker(ed.off - 1, "prev click"); else KP_LOG(chEdit, "edit: prev click ignored (at start)"); return; }
+    if (wHit(g_bar.next, f.pt)) { if (ed.off < f.maxOff) scrollPicker(ed.off + 1, "next click"); else KP_LOG(chEdit, "edit: next click ignored (at end)"); return; }
+    if (f.mst != hb::MB_Hidden && wHit(g_bar.mode, f.pt)) { modeClick(hud, ed.slot); return; }
+    if (wHit(g_bar.clear, f.pt)) { KP_LOG(chEdit, "edit: Clear click slot %d", ed.slot); if (assignSlot(hud, ed.slot, nullptr)) setMode(M_Edit, -1, "cleared"); return; }
+    for (int i = 0; i < CellCount; ++i) if (wHit(g_bar.cell[i].bg, f.pt)) {
         if (!g_bar.cell[i].avail) { KP_LOG(chEdit, "edit: click on empty cell %d ignored", i); return; }
         Entry chosen = g_bar.cell[i].entry;
         KP_LOG(chEdit, "edit: cell %d click -> slot %d := group %d key=%08x", i, ed.slot, chosen.group, (unsigned)chosen.key);
@@ -1367,7 +1377,20 @@ void updateEditor(uintptr_t hud, bool gate) {
         if (assignSlot(hud, ed.slot, &chosen)) setMode(M_Edit, -1, "assigned");
         return;
     }
-    KP_LOG(chEdit, "edit: click at (%ld,%ld) in Pick mode hit nothing", (long)pt.x, (long)pt.y);
+    KP_LOG(chEdit, "edit: click at (%ld,%ld) in Pick mode hit nothing", (long)f.pt.x, (long)f.pt.y);
+}
+
+void updateEditor(uintptr_t hud, bool gate) {
+    Editor& ed = g_bar.ed;
+    if (!edEnabled(hud, ed)) return;
+    EdFrame f = {};
+    edInput(ed, gate, f);
+    edVisibility(ed, gate, f);
+    edHover(ed, f);
+    edPicker(hud, ed, f);
+    edCellTips(ed, f);
+    edArrows(ed, f);
+    edClick(hud, gate, ed, f);
 }
 
 // Layout units -> px. With the projection flag cleared InitControl scales x by W/800 and y by H/600 (so 3840x1600 stretches x by 1.8).
