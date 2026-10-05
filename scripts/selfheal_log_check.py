@@ -27,6 +27,14 @@ MEMBER_RE = re.compile(r"^member (\d+) .*?\bhp=(\S+?)/(\S+?) ")
 CAND_RE = re.compile(r"^\s+cand \"(.*)\" .*?\brow=(\S+) heal=(\S+) count=(\S+)")
 PICK_RE = re.compile(r"^\s+pick missing=(\S+) -> (?:\"(.*)\" row=(\S+) heal=(\S+) count=(\S+)|none)")
 ROUTE_RE = re.compile(r"^\s+routeA \(not called\):.*\bidOk=(\S+)")
+BUILD_RE = re.compile(r"^BUILD n=(\S+)/10(?:\s+why=(.*))?$")
+USE_RE = re.compile(r"^USE member=(\S+) item=(\S+) \"(.*)\" heal=(\S+) hp=(\S+?)/(\S+) src=(\S+)\s*$")
+REFUSE_RE = re.compile(r"^REFUSE\s*(.*?)\s*$")
+DONE_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) timeout=(\S+)\s*$")
+AUTO_RE = re.compile(r"^AUTO member=(\S+) hp=(\S+?)/(\S+) pick=\"(.*)\" keep=(\S+)\s*$")
+CFGSAVE_RE = re.compile(r"^CFG save tag=(\S*) auto=(\S+) hp=(\S+) keep=(\S+) ok=(\S+)\s*$")
+CFGRELOAD_RE = re.compile(r"^CFG reload n=(\S+)\s*$")
+CLICK_RE = re.compile(r"^CLICK member=(\S+) noitem\s*$")
 ROWS = {64, 65, 66, 84, 127, 128}
 FAMILY = {64: "organic medpac(10+1*TI)", 65: "organic medpac(20+2*TI)", 66: "organic medpac(30+3*TI)",
           84: "droid repair(15+1*Rep)", 127: "droid repair(25+2*Rep)", 128: "droid repair(35+3*Rep)"}
@@ -44,9 +52,47 @@ def strip(raw):
     return m.group(1) if m else raw
 
 
+def v030_line(v, n, t):
+    """Parse one companion-selfheal 0.3.0 line into v; True if it was one."""
+    m = BUILD_RE.match(t)
+    if m:
+        k, why = to_int(m.group(1)), (m.group(2) or "").strip()
+        v["build"].append((n, k, why))
+        if k is None or (k < 10 and not why):
+            v["fail"].append((n, "BUILD n=%s/10 without why" % m.group(1)))
+    elif USE_RE.match(t):
+        g = USE_RE.match(t).groups()
+        v["use"].append({"line": n, "member": g[0], "item": g[1], "name": g[2], "heal": to_int(g[3]), "src": g[6]})
+    elif DONE_RE.match(t):
+        g = DONE_RE.match(t).groups()
+        v["done"].append({"line": n, "member": g[0], "hp": to_int(g[1]), "stack": to_int(g[2]), "timeout": to_int(g[3])})
+    elif AUTO_RE.match(t):
+        g = AUTO_RE.match(t).groups()
+        v["auto"].append({"line": n, "member": g[0], "pick": g[3]})
+    elif CFGSAVE_RE.match(t):
+        g = CFGSAVE_RE.match(t).groups()
+        v["cfg_save"].append((n, g[0], to_int(g[4])))
+        if to_int(g[4]) != 1:
+            v["fail"].append((n, "CFG save tag=%s ok=%s" % (g[0], g[4])))
+    elif CFGRELOAD_RE.match(t):
+        v["cfg_reload"].append((n, to_int(CFGRELOAD_RE.match(t).group(1))))
+    elif CLICK_RE.match(t):
+        v["click_noitem"] += 1
+    elif REFUSE_RE.match(t):
+        why = REFUSE_RE.match(t).group(1) or "(none)"
+        v["refuse"][why] = v["refuse"].get(why, 0) + 1
+    else:
+        return False
+    v["seen"] = True
+    return True
+
+
 def check(lines, lo=1, hi=None):
     r = {"p1": "MISSING", "p1_fail": [], "p1_ok": 0, "p3": "PASS", "p3_fail": [], "p3_n": 0,
-         "blocks": [], "dump_fail": [], "table": []}
+         "blocks": [], "dump_fail": [], "table": [],
+         "v": {"build": [], "use": [], "done": [], "auto": [], "refuse": {}, "cfg_save": [], "cfg_reload": [], "click_noitem": 0,
+               "fail": [], "seen": False}}
+    v = r["v"]
     cur = None  # current DUMP block
     mem = None  # current member dict in the block
 
@@ -82,6 +128,8 @@ def check(lines, lo=1, hi=None):
             r["p3_n"] += 1
             if m.group(2) not in ("0", "1", "2"):
                 r["p3_fail"].append((n, "slot[%s] k=%s" % (m.group(1), m.group(2))))
+            continue
+        if v030_line(v, n, t):
             continue
         if t.startswith("DUMP begin"):
             if cur is not None:
@@ -145,9 +193,11 @@ def check(lines, lo=1, hi=None):
         r["p1"] = "FAIL"
     if r["p3_fail"]:
         r["p3"] = "FAIL"
-    bad = (r["p1"] == "FAIL" or r["p3"] == "FAIL" or bool(r["dump_fail"])
+    if v["use"] and v["done"] and all(d["timeout"] == 1 for d in v["done"]):
+        v["fail"].append((v["use"][0]["line"], "route A never lands: %d USE, every DONE has timeout=1" % len(v["use"])))
+    bad = (bool(v["fail"]) or r["p1"] == "FAIL" or r["p3"] == "FAIL" or bool(r["dump_fail"])
            or (r["p1"] == "MISSING" and (r["blocks"] or r["p3_n"])))
-    r["verdict"] = "FAIL" if bad else ("PASS" if r["blocks"] else "INCOMPLETE")
+    r["verdict"] = "FAIL" if bad else ("PASS" if (r["blocks"] or v["seen"]) else "INCOMPLETE")
     return r
 
 
@@ -162,10 +212,32 @@ def fmt(r):
             o.append("%-4s %-9s %-17s %-28s %-4s %-5s (@%d)" % (
                 m["idx"], hp, ",".join(f.split("(")[0] for f in fams) or "-",
                 ('"%s" row=%s' % (p[0], p[1])) if p else "none", p[2] if p else "-", p[3] if p else "-", m["block"]))
+    v = r["v"]
+    if v["seen"]:
+        o.append("member USE->DONE: hp-delta stack-delta timeout")
+        pend = {}
+        for ev in sorted(v["use"] + v["done"], key=lambda e: e["line"]):
+            if "src" in ev:
+                pend.setdefault(ev["member"], []).append(ev)
+            else:
+                u = pend.get(ev["member"], [None]).pop(0) if pend.get(ev["member"]) else None
+                o.append("  m%s %s hp%+d stack%+d timeout=%s" % (ev["member"], ('"%s" src=%s' % (u["name"], u["src"])) if u else "(no USE)",
+                         ev["hp"] or 0, ev["stack"] or 0, ev["timeout"]))
+        for ms, us in pend.items():
+            for u in us:
+                o.append("  m%s \"%s\" src=%s no DONE" % (ms, u["name"], u["src"]))
+        if v["refuse"]:
+            o.append("REFUSE: " + ", ".join("%s x%d" % kv for kv in sorted(v["refuse"].items())))
+        o.append("AUTO=%d CLICK-noitem=%d CFG save=%d reload=%d" % (len(v["auto"]), v["click_noitem"], len(v["cfg_save"]), len(v["cfg_reload"])))
+        for n, msg in v["fail"]:
+            o.append("FAIL 0.3.0 line %d: %s" % (n, msg))
     for tag, key in (("P1", "p1_fail"), ("P3", "p3_fail"), ("DUMP", "dump_fail")):
         for n, msg in r[key]:
             o.append("FAIL %s line %d: %s" % (tag, n, msg))
-    o.append("SELFHEAL P1=%s P3=%s DUMP=%d blocks VERDICT=%s" % (r["p1"], r["p3"], len(r["blocks"]), r["verdict"]))
+    extra = ""
+    if v["seen"]:
+        extra = " USE=%d DONE=%d TIMEOUT=%d" % (len(v["use"]), len(v["done"]), sum(1 for d in v["done"] if d["timeout"] == 1))
+    o.append("SELFHEAL P1=%s P3=%s DUMP=%d blocks%s VERDICT=%s" % (r["p1"], r["p3"], len(r["blocks"]), extra, r["verdict"]))
     return "\n".join(o)
 
 

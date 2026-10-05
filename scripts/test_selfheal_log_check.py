@@ -81,3 +81,39 @@ def test_main_exit_codes(capsys):
     assert S.main([str(FX / "fail_knone.txt")]) == 1
     assert S.main(["--log", str(FX / "pass.txt"), "--from", "99"]) == 0
     assert "VERDICT=INCOMPLETE" in capsys.readouterr().out
+
+
+def v30(extra):
+    return lines("pass.txt") + extra
+
+
+def test_v030_pass():
+    r = S.check(lines("v030.txt"))
+    assert r["verdict"] == "PASS" and not r["v"]["fail"]
+    assert len(r["v"]["use"]) == 3 and len(r["v"]["done"]) == 3 and r["v"]["refuse"] == {"keep reserve": 2, "in combat lock": 1}
+    out = S.fmt(r)
+    assert out.splitlines()[-1] == "SELFHEAL P1=PASS P3=PASS DUMP=1 blocks USE=3 DONE=3 TIMEOUT=1 VERDICT=PASS"
+    assert "m1" in out and "hp+40 stack-1 timeout=0" in out and "keep reserve x2" in out
+
+
+def test_v030_absent_unchanged():
+    assert not S.check(lines("pass.txt"))["v"]["seen"]
+
+
+def test_v030_build_why():
+    assert S.check(v30(["BUILD n=10/10 why="]))["verdict"] == "PASS"
+    assert S.check(v30(["BUILD n=4/10 why="]))["verdict"] == "FAIL"
+    assert S.check(v30(["BUILD n=4/10"]))["verdict"] == "FAIL"
+    assert S.check(v30(["BUILD n=4/10 why=no slot"]))["verdict"] == "PASS"
+
+
+def test_v030_route_a_never_lands():
+    L = v30(['USE member=1 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=click', "DONE member=1 hp+0 stack+0 timeout=1"])
+    r = S.check(L)
+    assert r["verdict"] == "FAIL" and any("never lands" in m for _, m in r["v"]["fail"])
+    assert S.fmt(r).splitlines()[-1].endswith("USE=1 DONE=1 TIMEOUT=1 VERDICT=FAIL")
+
+
+def test_v030_cfg_save_fail():
+    r = S.check(v30(["CFG save tag=hud auto=1 hp=35 keep=2 ok=0"]))
+    assert r["verdict"] == "FAIL" and any("ok=0" in m for _, m in r["v"]["fail"])
